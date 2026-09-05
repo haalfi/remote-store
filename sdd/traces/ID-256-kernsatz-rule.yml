@@ -170,6 +170,25 @@ phases:
           review-enforced like its six siblings, and enforcement is inherited
           from /ship and /rvw-pr already reviewing changed docs against this file.
         outcome: ok
+      - file: sdd/research/research-appropriate-level-of-detail.md
+        section: "6.3, ledger rows 21a and 21b, Status"
+        read_type: verify
+        outcome: ok
+        extract: >-
+          A live /ship session supplied the strongest evidence this record has for
+          its own mechanism: findings per round 7 -> 2 -> 13 -> 16, rising while
+          the shipped code stayed clean from round 1, and essentially every
+          round-4 finding a defect the round-3 fix pass introduced. That sharpens
+          section 6.3 from "a prose finding never runs out" (unbounded demand) to
+          a positive feedback loop - each fix adds claims, and claims are the
+          surface the next round reads. Recorded this record as the second
+          instance and derived it rather than recalled it: 13 commits touching the
+          file, 2,697 -> 9,296 words monotone with no pass reducing it, three of
+          them describing themselves as tightening, each of the last three
+          introducing a defect the next caught, and zero files under src/, tests/
+          or examples/ on the branch. The record is now marked closed to further
+          prose passes in its Status block, because continuing to review it is the
+          failure it documents.
       - file: .claude/agents/documentation-expert.md
         section: "Reader test"
         read_type: verify

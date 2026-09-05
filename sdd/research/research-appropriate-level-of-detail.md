@@ -4,7 +4,13 @@
 **Backlog items:** ID-256, which shipped the authoring test in § 5.3.
 **Status:** Advisory research, not a spec or ADR. A standing reference on one
 question — *is the level of detail appropriate?* — rather than a record of how it
-was investigated. Point-in-time snapshot per
+was investigated.
+**Closed to further prose passes.** § 6.3 measures this record diverging under
+review — 13 commits, monotone growth, each of the last three introducing a defect
+the next caught — which is the failure it documents, committed by itself. A later
+finding is filed as a backlog item and fixed only if it names something **false**;
+"this could be tighter" is refused here by § 9.4, and by this line. Point-in-time
+snapshot per
 [`sdd/000-process.md` § Document types](../000-process.md): the repo figures in
 §§ 6–7 drift with the corpus, and the sourcing tiers in § 7 record what was
 reachable on the date above, so read every figure against that date.
@@ -434,9 +440,27 @@ code-versus-prose split is not derivable from the corpus; it was read by hand fo
 one item. And the corpus spans the project's whole history, most of it predating
 the current review loop.
 
-**The mechanism generalises even where the measurement does not.** A code finding
-runs out — there are finitely many wrong call sites. A prose finding never runs
-out, because any text can be tightened and nothing bounds the request.
+**The mechanism is worse than an unbounded request, and a live session measured
+it.** A code finding runs out: there are finitely many wrong call sites. A prose
+finding does not, because any text can be tightened and nothing bounds the demand.
+But a `/ship` session reported findings per round running **7 → 2 → 13 → 16 and
+counting** — rising, not falling — with the shipped code clean since round 1 (two
+independent revert simulations, no behavioural defect across four rounds) and
+essentially **every round-4 finding a defect the round-3 fix pass had
+introduced**. So the supply is self-generating, not merely inexhaustible: each fix
+to explanatory prose adds claims, and claims are the surface the next round reads.
+That is a positive feedback loop, and it is why § 9.4 puts a floor under what
+counts as a finding at all.
+
+**This record is the second instance, and it is reproducible.** Thirteen commits
+touched it before this sentence was written, and its length went 2,697 → 9,296
+words **monotonically — not one pass reduced it**, including three that described
+themselves as tightening. Each of the last three introduced a defect the next
+caught: four claims dropped in a restructure, a confidence rubric that contradicted
+its own table, and a false statement about which proposals were adopted. No file
+under `src/`, `tests/` or `examples/` was touched on the branch. Derivation:
+`git log --format=%h --reverse origin/master..HEAD -- <this file>`, word-counting
+each blob, and `git diff --name-only origin/master...HEAD`.
 
 ## 7. Figures and their derivations
 
@@ -515,6 +539,8 @@ of evidence weak evidence of absence.
 | 19 | Repo at `f7eb5b7`: 267 negative trace tags, and all 40 `unclear` extracts name a missing unit rather than a buried one | Local | High | High |
 | 20 | Repo at `f7eb5b7`: 232 of 296 traces carry `review_rounds`; median 2, mean 2.48, max 13; 36 (15.5%) at ≥5 | Local | High | High |
 | 21 | Repo: BUG-248's eight rounds split roughly three-to-four behavioural, rest prose | Local, one item | Medium | Medium |
+| 21a | A `/ship` session's findings per round rose 7 → 2 → 13 → 16 while the shipped code stayed clean from round 1 (two revert simulations, no behavioural defect in four rounds), with essentially every round-4 finding a defect the round-3 fix pass introduced. Prose findings are self-generating, not merely inexhaustible | Local, one session, self-reported by the agent under review and not independently re-derived | High | Low as evidence; high as a signature |
+| 21b | This record is the same pattern: 13 commits, 2,697 → 9,296 words **monotone**, three passes that called themselves tightening, each of the last three introducing a defect the next caught, no file under `src/`, `tests/` or `examples/` touched. Derivation in § 6.3 | Local, reproducible by the named commands | High | High |
 | 22 | Repo: **four** volume decisions taken with no authoring rule to cite — two litigated at backlog level (BK-351 declining a 5,000-word budget; BK-353 condensing `/ship`, its first cut silently deleting two load-bearing clauses) and two made in review (`bk-313-sftp-roundtrips.yml:176`, a CHANGELOG entry "grown into a verbose paragraph"; `BK-280-ci-build-improvements.yml:92,96`, an entry "too chatty" and comments "too long"). Derivation: `git grep -il` for each ID over `sdd/`, then reading the four extracts | Local | High | High |
 | 22a | Repo experiment: whole against condensed ripple-check, 12 agent readers, 120 answers — obligations tied 42–42 after a 66% cut; rationale lost 12–0; zero invented answers on either page | Local, pre-registered | Medium | High for the tally, low for its reach |
 | 22b | The extra material was misused only by readers who had both the whole page and advance knowledge of the question (2 of 3) | Local, discovered in data | Low | Low — hypothesis for a dedicated run |
