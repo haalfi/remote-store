@@ -12,6 +12,10 @@ source_items:
   - BK-357
 audience:
   - user.api
+  # The migration guide gains a subsection a caller acts on, which is what
+  # the schema defines user.site as. Every sibling in this release that touched
+  # that page declares it too (BUG-265, BK-356, BK-357, BK-359).
+  - user.site
 # Counted from the commits on `git log --oneline origin/master..HEAD` that exist
 # because review feedback was incorporated. In order on the branch:
 #   518479e  implementation                       -- does not count
@@ -300,7 +304,12 @@ phases:
           positive-controlled. Round 4 then found two assertions inside that fix that could
           not fail — an unreachable `SFTPError` guard, and a prefix check over bytes read
           before the drop was armed. Writing an assertion is not the same as writing one
-          that can fail, and I did the first twice
+          that can fail, and I did the first twice. Round 5 then measured that my fix for
+          the second had not worked either: the accumulator collected 0 bytes on 8 of 8
+          runs, because the staging tears down on the reply the client is blocked waiting
+          for, so nothing is ever delivered across the drop. Third time at one site, so the
+          repeat-site rule applied — the enumeration showed the set empty *by construction*,
+          and the claim was deleted rather than attempted a third time
         outcome: ok
       - file: CLAUDE.md
         section: "Principles 3, 4, 8, 9"

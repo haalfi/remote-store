@@ -953,8 +953,10 @@ class TestSFTPConnection:
         ``SSHException`` — so before this test, deleting ``paramiko.SFTPError``
         from the construction site left the whole suite green while silently
         re-opening half the BE-021 / SFTP-024 breach: a malformed packet
-        mid-stream would leak ``SFTPError`` raw again. Measured, that mutation
-        passed 424 tests.
+        mid-stream would leak ``SFTPError`` raw again. Measured: with that shape
+        removed from the construction site,
+        ``pytest tests/backends/sftp/ tests/test_stream.py`` passed 424 tests
+        and exited 0. That is the set the figure comes from, not the full suite.
 
         Driven the way the sibling above is, by wrapping ``_sftp_client.file``,
         because that is what makes ``read()`` construct the wrapper for real
@@ -985,11 +987,23 @@ class TestSFTPConnection:
 
         sftp_backend._sftp_client.file = _wrap  # type: ignore[method-assign]
         stream = sftp_backend.read("shapes.txt")
-        with pytest.raises(BackendUnavailable) as mapped:
-            stream.read()
+        try:
+            with pytest.raises(BackendUnavailable) as mapped:
+                stream.read()
+            assert mapped.value.__cause__ is raised, "the wrapper must map this shape, not let it escape"
+        finally:
+            # Closed rather than left to collection. On the ``SSHException``
+            # parametrisation ``_is_connection_dead`` returns ``False``, so the
+            # futile-close guard stays unarmed and this is what releases the
+            # inner handle. Left open, a *failing* run finalises the
+            # ``BufferedReader`` during the next test, where
+            # ``filterwarnings = error`` turns the ``ResourceWarning`` into a
+            # failure attributed to that test instead of this one.
+            stream.close()
 
-        assert mapped.value.__cause__ is raised, "the wrapper must map this shape, not let it escape"
-        assert sftp_backend._sftp_client is None, "every concluded BackendUnavailable clears the client"
+        # Client invalidation is deliberately not asserted here: the drop module
+        # pins it against a real socket, and the cause check above is what makes
+        # this test catch the mutation it exists for.
 
     @pytest.mark.spec("SFTP-003")
     @pytest.mark.parametrize("op", ["write", "write_atomic"])

@@ -556,6 +556,15 @@ is worth more than the instance: this invariant is stated over the backend, and
 the surface where it is hardest to hold is the one the backend has already
 handed away.
 
+**On that surface this clause is a goal rather than a description, and the
+difference is worth stating** now that the clause names it. Every other surface
+here runs inside `_errors()`, which catches `Exception` — the universal is what
+the code does. The streamed handle is bounded by a set the backend supplies, and
+SIO-012 says that set is "not closed by construction". A transport shape outside
+it is therefore a **breach of this clause**, to be closed by widening the
+supplied set, and not an exemption from it. BK-358 was exactly that breach; the
+clause is what makes the next one findable rather than arguable.
+
 ---
 
 ## Resource Management
@@ -962,9 +971,13 @@ recorded the doubt: a send-side `EOFError` *is* swallowed by
 `BufferedFile.read` into a short read before the wrapper sees it, and whether the
 receive side did the same was unmeasured. It does not.
 `test_a_dropped_stream_raises_rather_than_truncating` drives a relay that closes
-the connection mid-transfer and asserts both halves — that the read raises, and
-that everything delivered, across the drop and not merely before it, is a valid
-prefix of the payload rather than something reordered or truncated silently. A drop is otherwise outside this clause's subject, which is what
+the connection mid-transfer and asserts that the read raises rather than
+returning what it has, and that the prefix delivered before the drop is a valid
+prefix of the payload. It does not inspect bytes delivered *across* the drop:
+that staging delivers none, because it tears the connection down on the reply
+the client is already blocked waiting for, so the first read after it raises
+before any byte arrives. The no-short-read half rests on the raise — had the
+drop landed after the last byte, the drain would have returned cleanly. A drop is otherwise outside this clause's subject, which is what
 `io_timeout` bounds; it is named here only because this one sentence is about
 truncation rather than about the bound, and truncation does not care which fault
 ended the transfer.

@@ -221,7 +221,7 @@ if evidence changes; these are retired.
 ## Unreleased
 
 - [x] **BK-358 — Two paramiko exception shapes escape `_ErrorMappingStream` unmapped**
-  spec: BE-021, SIO-010, SIO-012, SFTP-024 · effort: M · audience: user.api
+  spec: BE-021, SIO-010, SIO-012, SFTP-024 · effort: M · audience: user.api, user.site
   Reproduced before it was fixed and re-run after, against a real dropped socket:
   an in-process SFTP server behind a TCP relay that closes the connection while a
   reply is outstanding. Mid-read, `Backend.read()`'s stream raised
@@ -265,8 +265,8 @@ if evidence changes; these are retired.
   read. The receive side does not do the same: the drop raised with a valid
   prefix delivered, so no short-read defect sat underneath this one and widening
   the caught set was sufficient. `test_a_dropped_stream_raises_rather_than_truncating`
-  pins it over the bytes actually delivered, and SFTP-030 records the drop beside
-  the stall.
+  pins it, and SFTP-030 records the drop beside the stall and says what that test
+  does and does not reach.
   **`is_fatal` was left unchanged, on a measurement rather than a judgement.**
   Widening it to match the `SSHException` family — as the two write-side sites in
   `_sftp.py` already spell — would buy nothing: the inner close after an

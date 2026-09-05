@@ -125,11 +125,8 @@ class _DropRelay:
     passed before the fix and been called flaky.
 
     **What guards this choice is ``_assert_reached_by_the_eof_path``, not this
-    paragraph.** Every test here asserts ``BackendUnavailable``, and both
-    outcomes of the race now map to it, so the mapped type alone cannot tell the
-    staging apart — measured, four of the five tests pass under a bare close.
-    The cause-chain assertion is what makes a regression here fail rather than
-    quietly pass.
+    paragraph** — see that helper for why the mapped type alone cannot tell the
+    two stagings apart, and what it costs when nothing does.
 
     **``arm()`` is one-shot.** The teardown re-opens the gate, so the listener
     keeps serving and the next connection is pumped normally — which is what lets
@@ -243,20 +240,16 @@ def _written(backend: Any, prefix: str) -> tuple[str, bytes]:
     return name, payload
 
 
-def _drain(stream: Any, into: bytearray | None = None) -> None:
-    """Read *stream* to exhaustion, optionally accumulating into *into*.
+def _drain(stream: Any) -> None:
+    """Read *stream* to exhaustion, discarding what it yields.
 
-    The accumulator is what lets a caller assert over the bytes delivered
-    *around* the drop. Discarding them, as this helper first did, left the
-    prefix assertion below checking only the read taken before the relay was
-    armed — which no staging can falsify.
+    No accumulating variant, deliberately: one was added to let a caller assert
+    over "the bytes delivered around the drop", and measurement showed that set
+    is empty by construction — see
+    ``test_a_dropped_stream_raises_rather_than_truncating``.
     """
-    while True:
-        chunk = stream.read(64 * 1024)
-        if not chunk:
-            return
-        if into is not None:
-            into.extend(chunk)
+    while stream.read(64 * 1024):
+        pass
 
 
 def _assert_reached_by_the_eof_path(exc: BackendUnavailable) -> None:
@@ -366,32 +359,36 @@ def test_a_dropped_stream_raises_rather_than_truncating(drop_relay: _DropRelay) 
     the drop raises with a valid prefix delivered, so a truncated transfer is
     never mistaken for a complete one on either fault.
 
-    The prefix assertion is what makes this more than a duplicate of the first
-    test. Raising is half the claim; a stream that raised *and* handed back
-    reordered or duplicated bytes would satisfy the other test alone.
+    **What the prefix check does and does not reach**, because two attempts to
+    make it reach further both failed and the second failed silently. This
+    staging delivers *nothing* across the drop: ``arm()`` tears the sockets down
+    on the reply the client is already blocked waiting for, so the first read
+    after arming raises before any byte arrives. Measured over 8 independent
+    runs, the bytes accumulated after arming were **0 every time**. So there is
+    no "data around the drop" for an assertion to inspect — the set is empty by
+    construction, not merely empty in practice, and any staging that raises on
+    the first post-arm read has the same property.
+
+    The check below therefore covers the prefix delivered *before* the drop, and
+    is stated that way rather than dressed up as more. The no-short-read claim
+    itself is carried by ``pytest.raises``: had the drop landed after the last
+    byte, ``_drain`` would have returned cleanly and that context manager would
+    have failed. A separate length assertion added nothing — ``first`` is one
+    64 KiB read against a 1 MiB payload, so it could not fail — and is gone.
     """
     backend = _make_backend(drop_relay.port)
     name, payload = _written(backend, "prefix")
 
-    received = bytearray()
     with backend.read(name) as stream:
         first = stream.read(64 * 1024)
         assert first, "expected the stream to deliver bytes before the drop"
-        received.extend(first)
         drop_relay.arm()
 
         with pytest.raises(BackendUnavailable) as raised:
-            _drain(stream, received)
+            _drain(stream)
         _assert_reached_by_the_eof_path(raised.value)
 
-    # Over everything delivered, not just the read taken before the relay was
-    # armed: the bytes that arrive *around* the drop are the ones a truncation
-    # or a reordering would corrupt, and asserting over `first` alone checks an
-    # ordinary undisturbed read that no staging can falsify.
-    assert len(received) < len(payload), (
-        f"the drop must land mid-transfer: got all {len(received)} bytes, so nothing was interrupted"
-    )
-    assert payload.startswith(received), "what arrived before the drop must be a valid prefix of the payload"
+    assert payload.startswith(first), "what the stream delivered before the drop must be a valid prefix"
 
 
 @pytest.mark.spec("SIO-012")
