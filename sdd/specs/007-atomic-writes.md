@@ -39,14 +39,15 @@ target before it can put the new file there, and the caller's file is that
 backend's to hand back. `SFTPBackend`'s `rename` fallback is the one such window
 in the library: it renames the destination to `.~bak.<name>.<uuid8>` and renames
 it back if the promote fails. **Putting it back is best-effort, so the clause
-promises the copy and not the path**: a dropped connection stops the restore
-being attempted and a live server can refuse a step of it, and in both the
-caller's file is under the backup name rather than at its own. That is the second
-arm, and it is the whole reason a backup is taken instead of a delete. See
-[009-sftp-backend.md](009-sftp-backend.md) SFTP-014 and SFTP-030 for the residue,
-and AW-004 below for the backup's own lifetime. Backends whose overwrite is one
-operation (`os.replace`, a PUT, a DFS rename) have no window and nothing to add
-here.
+promises the copy and not the path**: where the file actually ends up per outcome
+is enumerated once, in
+[009-sftp-backend.md § Where the caller's previous file ends up](009-sftp-backend.md#where-the-previous-file-is),
+and cited from here rather than restated — three attempts to describe that
+condition in prose were each refuted by a state the description had not
+considered. What this clause needs from it is only that no row ends in the file
+being gone, which is the whole reason a backup is taken instead of a delete.
+Backends whose overwrite is one operation (`os.replace`, a PUT, a DFS rename)
+have no window and nothing to add here.
 
 ## AW-004: Cleanup on Failure
 
@@ -73,21 +74,21 @@ fail, which [012-azure-backend.md](012-azure-backend.md) already records as an
 inherent limitation of simulated atomicity over a network.
 
 **A second artifact class on the SFTP fallback path, and it is not litter.**
-The `.~bak.<name>.<uuid8>` AW-003 describes is released once the promote
-succeeds and renamed back once it fails, and both of those are best-effort — so
-it outlives the call in three ways, not one: the restore was never attempted (a
-dropped connection), the restore was refused (a live server), or the *release*
-did not run after a promote that succeeded. Cleaning it up unasked is the one
-thing that would make AW-003's second arm false, so it is left where a caller
-can find it.
+The `.~bak.<name>.<uuid8>` AW-003 describes is released once the promote succeeds
+and renamed back once it fails, and both of those are best-effort — so it
+outlives the call in more than one way. The
+[enumeration](009-sftp-backend.md#where-the-previous-file-is) has the rows;
+what belongs here is that cleaning it up unasked is the one thing that would make
+AW-003's second arm false, so it is left where a caller can find it.
 
-**Which of the three a caller met is not written on the backup**, and that is
-worth knowing before acting on one: after a failed call it holds the file that
-should be at the target, while after a successful one the target already holds
-the newer content and restoring the backup over it would lose the write. The
-target is the thing to read, not the backup. `test_a_restore_the_server_refuses_leaves_the_old_content_findable`
-measures the live-refusal case; the third is the same skipped-teardown class as
-the orphan temp above.
+**Which row a caller met is not written on the backup**, and that is worth
+knowing before acting on one: after a failed call it holds the file that should be
+at the target, while after a *successful* one — the release skipped by a drop —
+the target already holds the newer content and restoring the backup over it would
+lose the write. The target is the thing to read, not the backup.
+`test_a_restore_the_server_refuses_leaves_the_old_content_findable` measures the
+live-refusal row; the skipped release is the same teardown class as the orphan
+temp above.
 
 **"Renamed back" is a claim about a path that may not be free**, which is the
 part of it that had to be built rather than assumed: `move`'s copy rung opens the

@@ -241,10 +241,11 @@ that `_is_connection_dead` does not recognise and `_raise_if_dir` has not
 rejected the target, so not only on servers lacking the extension — cannot rename
 onto an occupied path, so it displaces the destination to
 `.~bak.<name>.<uuid8>` first and renames it back if the promote fails. Renaming
-it back is best-effort, so a stall in that window — where it is not attempted at
-all — leaves the destination path empty with its old content in the backup and
-the payload in the temp; a live server that refuses a step of the restore reaches
-the same residue without any drop.
+it back is best-effort, so a stall in that window leaves the destination path
+empty with its old content in the backup and the payload in the temp — one row of
+[§ Where the caller's previous file ends up](#where-the-previous-file-is), which
+enumerates the rest rather than leaving a reader to infer the scope from this
+sentence.
 So "atomic" here guarantees no reader sees a half-written file; it guarantees
 neither that a reported failure means the write did not happen, nor that the
 destination path is still occupied — only that what occupied it is still
@@ -273,12 +274,12 @@ if the target already exists. With `overwrite=True`, the existing file is replac
 **On success.** A failure can leave it replaced, unchanged, or displaced to
 `.~bak.<name>.<uuid8>` with the destination path empty — see
 [SFTP-030 § What a stalled operation leaves behind](#stalled-write-destination).
-The displaced case is the one this invariant reads as excluding. It is reached
-whenever the restore does not complete — over a dropped connection, where it is
-never attempted, and on a live one where the server refuses a step of it. What it
-never does is leave the caller without the file, which is the guarantee AW-003
-states cross-backend and the reason the displace takes a backup rather than
-deleting.
+The displaced case is the one this invariant reads as excluding, and which
+failures reach it is enumerated at
+[§ Where the caller's previous file ends up](#where-the-previous-file-is) rather
+than scoped here. What no row does is leave the caller without the file, which is
+the guarantee AW-003 states cross-backend and the reason the displace takes a
+backup rather than deleting.
 
 ### SFTP-016: delete_folder Recursive
 
@@ -1143,12 +1144,38 @@ the body — not against a lost promote reply, and not on the fallback path.
 **The fallback path is the worst state here**, and it is `_rename_fallback` /
 `_move_fallback`: those displace the destination and then rename onto it, so a
 silence beginning at the promote `rename` leaves the destination path empty. What
-is at stake there is which copies survive, not whether the path is occupied: the
-displace is a rename, and the restore that undoes it is best-effort — not
-attempted over a dead channel, refusable by a live server — so this state keeps
-the old content under `.~bak.<name>.<uuid8>` beside the target. Before BUG-272 the displace was a
-`remove` and this residue had no old content in it at all — on a *non-dead*
-failure the same window also ran the temp cleanup, and neither copy remained.
+is at stake there is which copies survive, not whether the path is occupied.
+Before BUG-272 the displace was a `remove` and this residue had no old content in
+it at all — on a *non-dead* failure the same window also ran the temp cleanup,
+and neither copy remained.
+
+<a id="where-the-previous-file-is"></a>
+##### Where the caller's previous file ends up
+
+**Enumerated rather than described**,
+because describing it went wrong three times: each attempt narrowed the condition
+to a dropped connection, and each was refuted by a live-connection state the
+narrowing had not considered. The space is small enough to write down, so here it
+is, and every other clause in the repo that speaks to it cites this table instead
+of restating the scope. Two independent steps decide it — whether the destination
+was displaced, and whether the fallback got it back — and the second is
+best-effort on both of its own calls:
+
+| Displace | Promote | Then | The caller's previous file is |
+| --- | --- | --- | --- |
+| refused | not attempted | the refusal propagates | **at its path** — nothing was moved, and this is why the refusal is not reported as "nothing to restore" |
+| `ENOENT` | either | nothing to restore | there was none |
+| done | succeeded | `_release` drops the backup | replaced, as asked |
+| done | succeeded | `_release` skipped (channel down) | replaced — but a `.~bak.` **outlives a successful call**, and restoring it would undo the write |
+| done | failed | restore ran and completed | **back at its path** — the ordinary failure, and what the fix buys |
+| done | failed | restore not attempted (dead channel) | in `.~bak.<name>.<uuid8>` |
+| done | failed | restore refused by a live server | in `.~bak.<name>.<uuid8>` |
+
+**Two readings follow, and they are what the prose kept getting wrong.** The
+`.~bak.` residue is not a dropped-connection signal — three of its four rows are
+reachable on a live connection, one of them after a call that *succeeded*. And
+the guarantee is the last column having no "gone" in it, not the file being at its
+path: AW-003 promises the copy, and only the ordinary row promises the path.
 **It is not confined to servers lacking `posix-rename@openssh.com`.**
 The route in is a `posix_rename` failure that `_is_connection_dead` does not
 recognise, on a target the operation's own directory guard has not already

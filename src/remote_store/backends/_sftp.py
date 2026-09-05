@@ -2287,7 +2287,10 @@ class SFTPBackend(Backend):
         out (see its docstring), and an ordinary EOF drop arrives as exactly that
         shape. The old content then stays under its ``.~bak.<name>.<uuid8>`` name
         beside the target — which is the point of taking one, since the
-        alternative is that it no longer exists.
+        alternative is that it no longer exists. Where the caller's file ends up
+        per outcome is enumerated in the SFTP backend spec rather than described
+        again in each caller's docstring; three prose attempts at that scope were
+        each refuted by a state they had not considered.
 
         **The target is cleared first, and that is not the window reopening.**
         Anything occupying it now is this operation's own half-done work: the
