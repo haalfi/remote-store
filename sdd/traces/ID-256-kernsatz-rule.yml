@@ -20,13 +20,14 @@ expected_ripples:
   - sdd/backlogid.json
 surprising_ripples: []
 co_shipped_items: []
-# Two commits exist specifically because review feedback was incorporated: the
-# maintainer's three findings plus an external validation pass (f7eb5b7), and the
-# PR's eleven inline threads plus its review body (this commit). The Tao-shape
-# restructure is not counted -- it answered a request for a different structure,
-# not a review finding. Derivation: `git log --oneline origin/master..HEAD` read
-# against what each commit body says it responded to.
-review_rounds: 2
+# Three commits exist specifically because review feedback was incorporated: the
+# maintainer's three findings plus an external validation pass (f7eb5b7), the PR's
+# first eleven inline threads (a511623), and its second review round of eleven
+# more (this commit). The Tao-shape restructure is not counted -- it answered a
+# request for a different structure, not a review finding. Derivation:
+# `git log --oneline origin/master..HEAD` read against what each commit body says
+# it responded to.
+review_rounds: 3
 phases:
   - id: orient
     name: Orient
@@ -189,6 +190,27 @@ phases:
           or examples/ on the branch. The record is now marked closed to further
           prose passes in its Status block, because continuing to review it is the
           failure it documents.
+      - file: sdd/research/research-appropriate-level-of-detail.md
+        section: "2 (Study 1 table), 7 row 8d, 9.5"
+        read_type: verify
+        outcome: misleading
+        extract: >-
+          Round-two review found the Study 1 table and the sentence under it
+          disagreeing. Re-read Table 1 from the supplied PDF (pages 5-6) rather
+          than defending the sentence, and the reviewer was right with more in it
+          than the finding saw. Task orientation: .80/.80 tasks correct, 33.5 vs
+          36.1 minutes, 95.8 vs 94.2 commands - same accuracy, 1.6 fewer commands,
+          2.6 minutes SLOWER without elaborations, so the cut was a wash rather
+          than a win. General orientation moved together and far on all three:
+          .85 -> .76, 29.4 -> 40.2, 76.8 -> 101.8. The record had omitted the
+          proportion-correct row entirely, which is the row that settles it, and
+          had bolded the unelaborated task-oriented cell as winning. Tagged
+          misleading against my own earlier reading of the table. Also a bound on
+          the source worth recording: the authors' prose calls the task-directed
+          result "much more efficiently" and points at commands, the one measure
+          of three that favours the cut, by 1.6. Their prose is stronger than
+          their table; the record now takes the table. Overshoot's evidence is
+          therefore Reder and Anderson's textbook studies, not this cell.
       - file: .claude/agents/documentation-expert.md
         section: "Reader test"
         read_type: verify

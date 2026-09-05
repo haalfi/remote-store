@@ -25,8 +25,10 @@ argues for.
 *This record recommends; it does not rule.* Item 1 alone is binding, and not from
 here: it ships as [`CONTENT-RULES.md` Rule 7](../CONTENT-RULES.md#kernsatz), which
 is its authoritative home (principle 4). Items 2–5 are this record's advice and no
-gate enforces them; § 9 argues each and marks it **Adopt** where the evidence
-supports acting now, **Pilot** where it rests on one page or one run.
+gate enforces them. § 9 argues items 1, 3, 4 and 5 as numbered proposals and marks
+each **Adopt** or **Pilot**; item 2 restates `research-id-232`'s placement gate
+rather than proposing anything, and carries no maturity mark. § 9's opening
+paragraph gives the mapping in both directions.
 
 **Set no word count, no readability target and no general "be concise" rule.**
 Appropriateness is a relation between the text, the reader's purpose and
@@ -69,8 +71,10 @@ The recommendations rest on this chain, and every section below argues one link:
 5. The reader is absent at writing time and the author is not, which is why the
    shipped control is an author-side test: state the section's core claim, or
    return to the source (§ 5).
-6. The reader-side instruments this repo owns detect the *opposite* failure from
-   the one it commits, so they cannot close the loop unaided (§ 6).
+6. Reviewers here *report* overshoot and readers here *report* undershoot, and no
+   instrument this repo owns adjudicates between them (§ 6). Which failure the
+   repo actually commits is therefore unmeasured — and Rule 7 does not depend on
+   the answer, because § 5's case rests on the author, not on the reader.
 7. Therefore: keep the author-side test, condition cutting on **recoverability**
    rather than on length, and require a prose review finding to name the reader
    harm it prevents (§ 9).
@@ -87,8 +91,11 @@ The question is asked constantly here and answered ad hoc every time. It arrives
 as a review finding ("this could be tighter"), as an authoring hesitation (how
 much of the reasoning goes in the ADR), and as a recurring cost: `/ship` sessions
 reach stable code and tests in two to four rounds and then spend the remainder on
-prose findings (§ 6.3). This record exists to give that question a standing
-answer, and to say which parts of the answer are evidenced and which are not.
+prose findings (§ 6.3). **What that cost does not establish is which direction the
+prose errs in** — reviewers report overshoot, the trace corpus reports undershoot,
+and § 6.1 says why neither instrument settles it. This record exists to give the
+question a standing answer, and to say which parts of the answer are evidenced and
+which are not.
 
 **Standing caveat: five sources have been read in full, one of them a primary.**
 Every other external claim rests on an abstract or a search summary, because
@@ -127,7 +134,7 @@ reader opened it.
 
 | | **Overshoot** — more detail than the reader needs | **Undershoot** — less context than the reader needs |
 |---|---|---|
-| Direct evidence | Reder & Anderson: textbook chapters against summaries one-fifth their length; **summary readers scored significantly higher on the main points, study after study** | The same experiment's other half: readers with no specific task performed **much worse** with the short manual |
+| Direct evidence | Reder & Anderson's **textbook** experiments: chapters against summaries one-fifth their length; **summary readers scored significantly higher on the main points, study after study** | A different experiment — Reder, Charney & Morgan's (1986) **manual** study, reported below: readers with no specific task performed **much worse** with the short manual, on all three measures |
 | Robustness | Held across immediate and up-to-one-year delays, true/false, short-answer and free recall, timed and take-home reading | Charney, Reder & Wells call these readers "more greatly impeded by *under-elaborated* texts than the task-directed learners were by the *over-elaborated* version" |
 | Mechanism | Encoding *and* retrieval: with study time on the main points equated, summary readers still won, so elaborations also make the main point harder to retrieve — and "may make it harder for readers to distinguish important points from unimportant ones" | Curse of knowledge: authors impute their own knowledge and omit bridging detail |
 | What the repo measures | The **cost**: review rounds spent on prose (§ 6.3) | The **incidence**: trace tags dominated by missing units (§ 6.2) |
@@ -140,21 +147,34 @@ Press, 47–72, read in full. Reder is an author of the studies she reports.]**
 40 inexperienced users, an elaborated 11,000-word PC-DOS manual against an
 unelaborated 3,500-word one, 45 minutes' reading, then tasks on the machine):
 
-| Reader | Elaborated manual | Unelaborated manual |
-|---|---:|---:|
-| Knew the tasks in advance | 33.5 min, 95.8 commands | **36.1 min, 94.2 commands** |
-| No specific goal | **29.4 min, 76.8 commands** | 40.2 min, 101.8 commands |
+| Reader | | Elaborated | Unelaborated |
+|---|---|---:|---:|
+| **Knew the tasks in advance** | tasks correct | .80 | .80 |
+| | time | 33.5 min | 36.1 min |
+| | commands | 95.8 | 94.2 |
+| **No specific goal** | tasks correct | **.85** | .76 |
+| | time | **29.4 min** | 40.2 min |
+| | commands | **76.8** | 101.8 |
 
-Task-directed readers did slightly better without the elaborations. Readers
-without a goal did far worse without them. **Same text, opposite verdicts,
-decided by what the reader came for.**
+**For the task-directed reader the cut was close to a wash, and the record has to
+say so because the two measures disagree.** Same proportion of tasks completed;
+1.6 fewer commands without the elaborations; 2.6 minutes *slower* without them.
+For the goal-less reader every measure moved the same way and moved far: accuracy
+down .85 → .76, time up 29.4 → 40.2 minutes, commands up 76.8 → 101.8.
 
-**The asymmetry that matters is in the size of the two penalties.** Overshoot is
-evidenced, for readers who know what they are looking for, and the effect is
-small. **The penalty for cutting too much fell on the reader who lacked a goal,
-and it was the larger of the two.** A rule that only cuts is therefore aimed at
-the case where cutting helps least and hurts most, which is why
-`research-id-232`'s justification-sufficiency test still applies.
+**A bound on the source, since this is its central table.** The authors summarise
+the top row as "the Task Orientation group performed much more efficiently after
+reading the short, unelaborated version", adding that the pattern shows "most
+clearly for the average number of commands" — which is the one measure of the
+three that favours the cut, by 1.6. Their prose is stronger than their table. This
+record takes the table.
+
+**So overshoot's evidence here is Reder & Anderson's textbook studies, not this
+cell.** What Study 1 establishes is the *undershoot* half and the interaction:
+**the penalty for cutting fell on the reader who lacked a goal, and it was much
+the larger of the two.** A rule that only cuts is therefore aimed at the case
+where cutting helps least and hurts most, which is why `research-id-232`'s
+justification-sufficiency test still applies.
 
 **The authors' own resolution is the sentence this whole document is circling:**
 "It is possible for both expounders and minimalists to be right if we shift the
@@ -320,7 +340,8 @@ distinction it names, not for a finding.]**
 
 Rozenblit & Keil (2002), "The misunderstood limits of folk science: an illusion
 of explanatory depth", *Cognitive Science* 26(5), 521–562. **[Verified, read in
-full — the one source in this document that was.]** Twelve studies: 1–4 document
+full — the one *primary* read in full; four other sources were, all of them
+secondary or review (§ 8.2).]** Twelve studies: 1–4 document
 the illusion for devices across populations, 5–6 test its robustness, 7–10 track
 it across knowledge domains, 11–12 examine what drives it.
 
@@ -440,7 +461,7 @@ code-versus-prose split is not derivable from the corpus; it was read by hand fo
 one item. And the corpus spans the project's whole history, most of it predating
 the current review loop.
 
-**The mechanism is worse than an unbounded request, and a live session measured
+**The mechanism is worse than an unbounded request, and a live session reported
 it.** A code finding runs out: there are finitely many wrong call sites. A prose
 finding does not, because any text can be tightened and nothing bounds the demand.
 But a `/ship` session reported findings per round running **7 → 2 → 13 → 16 and
@@ -494,7 +515,7 @@ goes above it only for a reason the table names:
 |---|---|---|---|
 | Source read in full | High | — | — |
 | Verified against an abstract or record | Medium-high | High | The retrieved text *is* the claim — a quoted maxim, a stated thesis (rows 1, 2) |
-| Secondary read in full | Medium | Medium-high | Two independent secondaries agree (rows 9–9c) |
+| Secondary read in full | Medium | Medium-high | Two independent secondaries agree, and the claim is the one both state directly (row 9 only; 9a–9c stay at Medium) |
 | Search summary | Low-medium | Medium | The row carries the authors' own criteria rather than a summariser's gloss (row 13) |
 | Local, reproducible by the named command | High | — | — |
 | Local, read by hand | Medium | — | — |
@@ -510,7 +531,7 @@ of evidence weak evidence of absence.
 | 1 | Adequacy is indexed to purpose and stage (Grice) | Verified | High | High |
 | 2 | Adequacy is indexed to addressee knowledge (Nickerson) | Verified | High | High |
 | 3 | Curse of knowledge predicts under-specification | Verified | Medium | Medium |
-| 4 | No direct evidence that surplus on-topic detail conceals a claim in prose | Verified | Medium | Medium |
+| 4 | **Superseded by 8b/8c.** Before Charney, Reder & Wells was read, no source reached supplied direct evidence that surplus on-topic detail harms a reader. Row 8b is that evidence. What survives of this row: no source reached tests *concealment* specifically — a claim present but buried — as against a main point that is harder to recall | Verified | Medium | Medium |
 | 5 | Seductive detail covers interesting-and-irrelevant material only | Verified | Medium | Medium |
 | 6 | McNamara et al. (1996) manipulated coherence, not surplus detail | Verified | Low | Medium |
 | 7 | Carroll et al. (1987) is a four-way bundle, not a brevity result | Verified | Medium | Medium |
@@ -518,7 +539,7 @@ of evidence weak evidence of absence.
 | 8a | The same review reads McNamara et al. (1996) as redundancy rather than active processing, because mental-effort ratings **rose** where the active-processing account predicts a fall | Verified against that review | Low | Medium |
 | 8b | Reder & Anderson (1980, 1982): textbook chapters against summaries one-fifth as long; summary readers scored significantly higher on the main points, across delays up to a year and several test types | Verified against Charney, Reder & Wells (1988), read in full; an author reporting her own studies | Medium | Medium-high |
 | 8c | With study time on the main points equated, summary readers still won, so the handicap is retrieval as well as encoding; the authors add that elaborations "may make it harder for readers to distinguish important points from unimportant ones" | Same | Medium | Medium |
-| 8d | Study 1: task-directed readers did better with the short manual, goal-less readers far worse with it — and the goal-less readers were the more greatly impeded of the two | Same | High | Medium-high |
+| 8d | Study 1: for task-directed readers the cut was a wash (same accuracy, 1.6 fewer commands, 2.6 min slower); goal-less readers were worse on all three measures, and much the more impeded of the two. The authors' prose calls the task-directed result "much more efficient", which their own table does not support | Same | High | Medium-high |
 | 8e | Study 2: procedural (worked-example) elaboration decided performance; **conceptual elaboration made no difference at all**, for novices or experienced users | Same | Medium | Medium-high |
 | 9 | *Kürze/Prägnanz*'s optimum sits between `0` and `+`; both extremes impede comprehension | Two secondary sources read in full, in agreement; book unread | Medium | Medium-high |
 | 9a | It is the only **unconditional** mid-scale optimum; *anregende Zusätze* is mid-scale but conditional on the other dimensions | Same | Medium | Medium |
@@ -574,7 +595,7 @@ every external row, and the bounds on the one experiment run here.
 | Relevance ≈ cognitive effect ÷ processing effort | Sperber and Wilson operate a **comparative** notion and distinguish it from a quantitative one; the quotient is a popularization. **[Search-summary]** |
 | Verbosity bias in LLM judges | Establishes that *raters* over-reward length, not that verbose output harms a reader's task. **[Search-summary]** |
 | Seductive-detail research as a general cutting licence | Covers interesting-**and**-irrelevant material whose mechanism depends on grabbing attention. Bland, on-topic surplus is a different class |
-| The minimal manual as proof that cutting works | Carroll, Smith-Kerker, Ford & Mazur-Rimetz (1987), *Human-Computer Interaction* 3(2): the manual differs from its comparator on **four** dimensions at once — briefer, better attention coordination, error-recovery training, better reference support. It shows one package beating another, not that deleting detail is what did it. Charney, Reder & Wells reach the same verdict independently: Carroll's team "clarified the terminology and organized the discussion around typical situations", so "we do not know how much the results are due to differences in elaboration and how much they are due to these other clarifications". **[Verified twice]** |
+| The minimal manual as proof that cutting works | Carroll, Smith-Kerker, Ford & Mazur-Rimetz (1987), *Human-Computer Interaction* 3(2): the manual differs from its comparator on **four** dimensions at once — briefer, better attention coordination, error-recovery training, better reference support. It shows one package beating another, not that deleting detail is what did it. Charney, Reder & Wells reach the same verdict independently: Carroll's team "clarified the terminology and organized the discussion around typical situations", so "we do not know how much the results are due to differences in elaboration and how much they are due to these other clarifications". **[Verified twice: against the abstract, and against Charney, Reder & Wells, read in full — so this row is not abstract-only, contrary to the blanket statement above the ledger, which is scoped to numbered rows]** |
 
 ### 8.2 The access limitation
 
@@ -601,7 +622,7 @@ of the argument:
 | Source | Carries | Note |
 |---|---|---|
 | Rozenblit & Keil (2002) | § 5.2 and rows 12, 12a — the mechanism the shipped rule rests on | The one primary read in full |
-| Sweller, van Merriënboer & Paas (1998) | § 3's expertise reversal and rows 8, 8a, 8b | Supplied as Kalyuga, Chandler & Sweller (1998), *Human Factors* 40(1); it is a different paper, the CLT review in *Educational Psychology Review* 10(3), sharing one author. It describes the target study in enough detail to settle row 8; the target itself is unread |
+| Sweller, van Merriënboer & Paas (1998) | § 3's expertise reversal and rows 8, 8a | Supplied as Kalyuga, Chandler & Sweller (1998), *Human Factors* 40(1); it is a different paper, the CLT review in *Educational Psychology Review* 10(3), sharing one author. It describes the target study in enough detail to settle row 8; the target itself is unread |
 | Charney, Reder & Wells (1988) | § 2 entire, § 3's detail-kind input, rows 8b–8e | Supplied in place of Reder & Anderson (1980, 1982), whose studies Reder reports there along with the later manual experiments. The most consequential source here after § 5.2's |
 | German Wikipedia, *Hamburger Verständlichkeitsmodell* | § 4, with the row below | An encyclopaedia article is a lead rather than an authority by this document's own method, so § 4's rows are tiered secondary and the book stays on § 10's list |
 | Kroop, Mangler, Hutterer & Swertz, on comprehensibility training at the University of Vienna | § 4's validation studies and standing criticisms | Agrees with the row above on the optimum and the scale |
@@ -619,10 +640,20 @@ reason.
 
 ## 9. Proposals
 
-Six, at three levels of maturity. **Adopt** means the evidence supports acting on
-it now. **Pilot** means the idea is sound and the evidence is one page or one run
-— act on it as an experiment, not as a rule. Each names the section that forces
-it, because a proposal without a citation is a preference.
+Six, at two levels of maturity. **Adopt** means the evidence supports acting on it
+now; 9.1 adds *in force*, because it has already shipped. **Pilot** means the idea
+is sound and the evidence is one page or one run — act on it as an experiment, not
+as a rule. Each names the section that forces it, because a proposal without a
+citation is a preference.
+
+**How these map onto the Recommendations block.** Item 1 = 9.1, item 3 = 9.3,
+item 4 = 9.2, item 5 = 9.4. **Item 2 has no proposal here**: "keep the detail that
+answers a question, supports a decision or lets an action be executed" is the
+record's restatement of `research-id-232`'s placement gate, not a new proposal, and
+9.4 reuses its three clauses as the harms a review finding must name. Going the
+other way, 9.5 appears in that block only as its closing caution, and **9.6 has no
+recommendation at all** — it is an instruction for running an instrument, not for
+writing a section.
 
 **9.1 Keep the control on the author, and put no length rule beside it.
 [Adopt — in force.]**
@@ -636,8 +667,16 @@ the author as the only party present at writing time.
 
 Cut rationale divides in two, and only one half is safe to remove. Readers
 rebuilt rationale explaining something the surviving text still shows; none
-rebuilt rationale carrying a fact from outside the section (Appendix). Rule 7
-gives both the same licence today.
+rebuilt rationale carrying a fact from outside the section (Appendix).
+
+**The rule this amends is not Rule 7.** Rule 7 is an authoring test — state the
+core claim or return to the source — and says nothing about removing anything.
+The licence to cut lives in [`CLAUDE.md` principle 8](../../CLAUDE.md#principles),
+whose test is that consolidation and tightening are legitimate and deleting a
+load-bearing reason is not, and in `research-id-232`'s justification-sufficiency
+test. **Those are what the recoverability split refines**: they draw the line at
+*load-bearing*, and this proposal says a rationale the surviving section cannot
+reconstruct is load-bearing whether or not it reads as one.
 
 *Provisional test, because "recoverable" is otherwise just an author's assertion.*
 Before removing a rationale, answer three questions:
@@ -690,8 +729,10 @@ with the weaker evidence.
 **9.5 Set the licence by reader purpose, with the directory as its default proxy.
 [Adopt, cautiously.]**
 
-Cutting helped the reader who arrived with a task and hurt the reader who did not
-(§ 2), so purpose is the variable and the directory only stands in for it.
+Cutting cost the reader who arrived with a task almost nothing and hurt the reader
+who did not, badly (§ 2), so purpose is the variable and the directory only stands
+in for it. Note which way that runs: the licence rests on cutting being **cheap**
+where the reader has a goal, not on its being beneficial.
 Defaults: **task-oriented documents are candidates for stronger compression;
 exploratory, onboarding and public reference documents need stronger
 justification before context is removed.** Mapped onto this repo, that makes the
@@ -806,8 +847,8 @@ half of one probe from the command it described: the command searches two
 phrasings, so a single phrase would obviously miss the other. None could rebuild
 the half that depends on a `.gitignore` fact the page never shows. **Rationale
 explaining what the reader can already see is cheap to cut; rationale carrying a
-fact from elsewhere is not.** Rule 7 does not currently make that distinction,
-which is what § 9.2 asks it to fix.
+fact from elsewhere is not.** Neither principle 8 nor `research-id-232` makes
+that distinction, which is what § 9.2 asks them to carry.
 
 **Exploratory observation, n = 1.** One human reader, an expert already familiar
 with the page, also took the condensed version. He recovered less than any naïve
@@ -825,10 +866,14 @@ blind to condition, and both cells open-book so no memory effect is in view.
 
 ## Sources
 
-No URLs are given: every scholarly host is blocked from this environment (§ 8.2),
-so a link here would be one this document could not itself follow. The grouping
-is by how each source was read, which is the fact a reader needs in order to
-weight it.
+Each entry carries enough to identify the document — author, year, title, and
+venue where it is known — because § 7 tells the reader to treat search-summary
+rows as leads to verify, and a lead with no locator cannot be. Where a field is
+missing it is because this pass never established it, and the entry says so rather
+than leaving the reader to guess. **No URLs**: the environment's blocked egress
+(§ 8.2) meant none was ever resolved here, and an unverified link is worse than a
+citation a reader resolves themselves. The grouping is by how each source was
+read, which is what a reader needs in order to weight it.
 
 **Read in full, supplied as documents by the maintainer:**
 
@@ -857,7 +902,8 @@ only, per § 7's tiers:
 - Nickerson, R. (1999). "How We Know — and Sometimes Misjudge — What Others Know:
   Imputing One's Own Knowledge to Others." *Psychological Bulletin* 125, 737–759.
 - Groeben, N. (1982). *Leserpsychologie: Textverständnis — Textverständlichkeit*.
-- Göpferich, S. *Karlsruher Verständlichkeitskonzept*.
+- Göpferich, S. *Karlsruher Verständlichkeitskonzept*. (Year and venue not
+  established by this pass.)
 - Langer, I., Schulz von Thun, F. & Tausch, R. (1974). *Sich verständlich
   ausdrücken*. (The book itself: unread — see § 10 item 4.)
 - Kalyuga, S., Chandler, P. & Sweller, J. (1998). *Human Factors* 40(1). (Unread;
@@ -865,20 +911,24 @@ only, per § 7's tiers:
 - Reder, L. & Anderson, J. (1980, 1982). (Unread; reached through Charney, Reder
   & Wells 1988.)
 - McNamara, D., Kintsch, E., Songer, N. & Kintsch, W. (1996). The reverse
-  cohesion effect.
+  cohesion effect. (Venue not established by this pass; reached through
+  Sweller et al. 1998, which discusses it.)
 - Carroll, J., Smith-Kerker, P., Ford, J. & Mazur-Rimetz, S. (1987). The minimal
   manual. *Human-Computer Interaction* 3(2).
 - Bereiter, C. & Scardamalia, M. (1987). *The Psychology of Written Composition*.
 - Bisra, K., Liu, Q., Nesbit, J., Salimi, F. & Winne, P. (2018). Meta-analysis of
-  the self-explanation effect.
+  the self-explanation effect. (Venue not established by this pass.)
 - Carlson, L., Marcu, D. & Okurowski, M. E. (2003). RST Discourse Treebank
   corpus documentation, LDC2002T07.
 - Kintsch, W. & van Dijk, T. (1978). Macrorules for discourse comprehension.
+  (Venue not established by this pass.)
 - Sperber, D. & Wilson, D. (1986). *Relevance: Communication and Cognition*.
-- Brinker, K. *Textsorte / Textfunktion*.
-- Yeung, A., Jin, P. & Sweller, J. (1998). (Unread — see § 10 item 3.)
+- Brinker, K. *Textsorte / Textfunktion*. (Year and venue not established by
+  this pass.)
+- Yeung, A., Jin, P. & Sweller, J. (1998). (Unread, and venue not established
+  — see § 10 item 3.)
 
 **Derived from this repository**, reproducible by the commands named in §§ 6–7:
-`hatch run report-trace-outcomes` at `2bbb802`; the `review_rounds` scan over
+`hatch run report-trace-outcomes` at `f7eb5b7`; the `review_rounds` scan over
 `sdd/traces/[!_]*.yml`; BUG-248's commit subjects; BK-351 and BK-353; and the
 pre-registered reader experiment reported in the Appendix.
