@@ -884,8 +884,12 @@ class TestSFTPConnection:
         call site: a real mid-read drop surfaces as ``SSHException`` because
         ``_read_response`` catches the ``EOFError`` and converts it, which is
         why this test bypasses ``_read_response`` and why it never caught the
-        gap BK-358 records. What it does pin is the wiring: ``read()`` wraps the
-        handle in ``_ErrorMappingStream``, so a caught shape must surface
+        gap BK-358 recorded. That gap is closed, and by a test that drives a real
+        dropped socket rather than a shape —
+        ``tests/backends/sftp/test_connection_drop.py``, which is where the
+        ``SSHException`` path is asserted. This one is kept because it pins
+        something that file does not: the *wiring*. ``read()`` wraps the handle
+        in ``_ErrorMappingStream``, so a caught shape must surface
         ``BackendUnavailable``, invalidate the client, and reconnect on the next
         read. The direct ``_ErrorMappingStream`` unit test (fake mapper, no
         ``BufferedReader``) pins none of that — dropping the wrap at ``read()``
@@ -930,6 +934,83 @@ class TestSFTPConnection:
         stream.close()
         assert sftp_backend._sftp_client is None, "a read-path channel death must invalidate the client"
         assert sftp_backend.read_bytes("r.txt") == b"payload", "the next read must reconnect, not wedge"
+
+    @pytest.mark.spec("SIO-012")
+    @pytest.mark.spec("SFTP-024")
+    @pytest.mark.parametrize(
+        "exc_factory",
+        [
+            pytest.param(lambda: paramiko.SSHException("Server connection dropped: "), id="sshexception"),
+            pytest.param(lambda: paramiko.SFTPError("Garbage packet received"), id="sftperror"),
+        ],
+    )
+    def test_read_maps_every_shape_it_supplies_to_the_wrapper(self, sftp_backend: Backend, exc_factory: Any) -> None:
+        """Both shapes ``read()`` puts in ``also_catch`` must map, driven through ``read()`` itself.
+
+        **This pins the argument, where the other tests pin the mechanism.**
+        ``TestSFTPStreamCaughtSetMeetsTheGuard`` builds its own wrapper with a
+        *copy* of the tuple, and the drop-relay module only ever reaches
+        ``SSHException`` — so before this test, deleting ``paramiko.SFTPError``
+        from the construction site left the whole suite green while silently
+        re-opening half the BE-021 / SFTP-024 breach: a malformed packet
+        mid-stream would leak ``SFTPError`` raw again.
+
+        **What to run to see that, and what it returns now.** Remove
+        ``paramiko.SFTPError`` from ``read()``'s ``also_catch`` and run
+        ``pytest tests/backends/sftp/ tests/test_stream.py``: this test's
+        ``sftperror`` parameter fails, which is the whole point of it existing.
+        Before it was written the same mutation passed that set outright — that
+        is what made the gap invisible — so the historical figure and the
+        current one are measured on different trees and neither reproduces the
+        other. Only the second is re-runnable here, so only it is stated as a
+        command.
+
+        Driven the way the sibling above is, by wrapping ``_sftp_client.file``,
+        because that is what makes ``read()`` construct the wrapper for real
+        rather than the test constructing one that resembles it.
+        """
+        assert isinstance(sftp_backend, SFTPBackend)
+        sftp_backend.write("shapes.txt", b"payload")
+        real_file = sftp_backend._sftp_client.file
+        raised = exc_factory()
+
+        class _RaisingReadHandle:
+            def __init__(self, inner: Any) -> None:
+                self._inner = inner
+
+            def readinto(self, _b: Any) -> int:
+                raise raised
+
+            def read(self, _size: int = -1) -> bytes:
+                raise raised
+
+            def __getattr__(self, name: str) -> Any:
+                return getattr(self._inner, name)
+
+        def _wrap(remote_path: str, mode: str = "r", *a: Any, **k: Any) -> Any:
+            if "r" in mode:
+                return _RaisingReadHandle(real_file(remote_path, mode, *a, **k))
+            return real_file(remote_path, mode, *a, **k)
+
+        sftp_backend._sftp_client.file = _wrap  # type: ignore[method-assign]
+        stream = sftp_backend.read("shapes.txt")
+        try:
+            with pytest.raises(BackendUnavailable) as mapped:
+                stream.read()
+            assert mapped.value.__cause__ is raised, "the wrapper must map this shape, not let it escape"
+        finally:
+            # Closed rather than left to collection. On the ``SSHException``
+            # parametrisation ``_is_connection_dead`` returns ``False``, so the
+            # futile-close guard stays unarmed and this is what releases the
+            # inner handle. Left open, a *failing* run finalises the
+            # ``BufferedReader`` during the next test, where
+            # ``filterwarnings = error`` turns the ``ResourceWarning`` into a
+            # failure attributed to that test instead of this one.
+            stream.close()
+
+        # Client invalidation is deliberately not asserted here: the drop module
+        # pins it against a real socket, and the cause check above is what makes
+        # this test catch the mutation it exists for.
 
     @pytest.mark.spec("SFTP-003")
     @pytest.mark.parametrize("op", ["write", "write_atomic"])
@@ -2023,6 +2104,84 @@ class TestSFTPMapException:
         assert isinstance(mapped, RemoteStoreError)
         ours = [r for r in caplog.records if r.name.startswith("remote_store")]
         assert not ours, f"an unrelated errno logged {[r.getMessage() for r in ours]}"
+
+
+class TestSFTPStreamCaughtSetMeetsTheGuard:
+    """What ``read()``'s wrapper does per shape: the caught set and the predicate are separate.
+
+    The caught set decides what reaches ``_fail``; ``is_fatal`` decides what
+    ``_fail`` arms. Widening the first does not widen the second, and on this
+    backend the two disagree about one of the very shapes the widening added:
+    ``_is_connection_dead`` matches ``SFTPError`` but deliberately excludes the
+    ``SSHException`` family, which has its own ``_map_exception`` arm.
+
+    So a dropped connection — an ``SSHException`` — is mapped and clears the
+    cached client while leaving the futile-close guard unarmed, and that is a
+    decision rather than a residue: the close it would skip costs under a
+    millisecond, because paramiko's transport thread has already torn the socket
+    down. The end-to-end drop tests cannot see this split, because staging a real
+    ``SFTPError`` needs a server that emits a malformed packet.
+
+    **Pinned because two prose artifacts now assert it and nothing else checks
+    them.** A per-shape claim resting on prose is one paramiko release away from
+    being silently wrong, and the first draft of one of those artifacts said both
+    consequences were fixed when one is fixed for a single shape.
+    """
+
+    @pytest.mark.spec("SIO-010")
+    @pytest.mark.spec("SIO-012")
+    @pytest.mark.parametrize(
+        ("exc_factory", "expect_armed"),
+        [
+            pytest.param(
+                lambda: paramiko.SSHException("Server connection dropped: "),
+                False,
+                id="sshexception-the-drop-shape",
+            ),
+            pytest.param(
+                lambda: paramiko.SFTPError("Garbage packet received"),
+                True,
+                id="sftperror",
+            ),
+            pytest.param(lambda: EOFError("server closed connection"), True, id="eoferror"),
+            pytest.param(lambda: OSError("Socket is closed"), True, id="oserror-socket-closed"),
+        ],
+    )
+    def test_every_caught_shape_maps_and_only_some_arm_the_guard(self, exc_factory: Any, expect_armed: bool) -> None:
+        """Each shape in ``read()``'s caught set maps; the predicate decides the close."""
+        from remote_store._stream import _ErrorMappingStream
+
+        class _RaisingHandle:
+            def __init__(self, exc: Exception) -> None:
+                self._exc = exc
+                self.close_calls = 0
+
+            def read(self, size: int = -1) -> bytes:
+                raise self._exc
+
+            def close(self) -> None:
+                self.close_calls += 1
+
+        backend = SFTPBackend(host="dummy", host_key_policy="auto")
+        inner = _RaisingHandle(exc_factory())
+        # The real mapper and the real predicate, wired as ``read()`` wires them,
+        # so this pins the backend's choice rather than the wrapper's mechanics.
+        stream = _ErrorMappingStream(
+            inner,
+            backend._map_exception,
+            "delivery.csv",
+            is_fatal=backend._is_connection_dead,
+            also_catch=(paramiko.SSHException, paramiko.SFTPError),
+        )
+
+        with pytest.raises(BackendUnavailable):
+            stream.read()
+        stream.close()
+
+        expected_closes = 0 if expect_armed else 1
+        assert inner.close_calls == expected_closes, (
+            f"guard {'should' if expect_armed else 'should not'} have skipped the inner close"
+        )
 
 
 class TestSFTPConnectTimePredicateSpace:

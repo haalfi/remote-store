@@ -7,6 +7,7 @@ This project follows [Semantic Versioning](https://semver.org/). Pre-1.0, minor 
 
 ## [Unreleased]
 
+- BK-358: **Fix** — a dropped SFTP connection mid-read raises `BackendUnavailable` from a `read()` stream, where it leaked a raw `paramiko.SSHException` while the same drop on `read_bytes()` mapped. Upgrade path in the [migration guide](https://docs.remotestore.dev/stable/reference/migration/#v0300-to-v0310).
 - ID-256: Content rule 7 — a new or substantially rewritten section in `sdd/` or `.claude/` opens with its core claim in at most three sentences, and an author who cannot write them returns to the source rather than writing around the gap
 - BUG-265: **Fix** — a refused SFTP connect and a DNS failure raise `BackendUnavailable`, the type fifteen docstrings and the health-check guide promise, instead of the base `RemoteStoreError`. Upgrade path in the [migration guide](https://docs.remotestore.dev/stable/reference/migration/#v0300-to-v0310).
 - ID-253: Write down the release CHANGELOG expansion step and give the released section order its first home in `CONTRIBUTING.md`

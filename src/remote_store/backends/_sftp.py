@@ -848,18 +848,39 @@ class SFTPBackend(Backend):
                     raise NotFound(f"Not found: {path}", path=path, backend=self.name) from None
                 raise
             try:
+                import paramiko
+
                 # ``is_fatal`` is ``_handle``'s guard, applied to the one handle
                 # ``_handle`` cannot reach: the wrapper owns this close, so a
                 # stall would otherwise pay ``io_timeout`` again on the way out
                 # (SIO-010, SFTP-030). ``size_probe`` is what gives that guard
                 # something to arm on a ``SEEK_END`` seek, whose failure
                 # paramiko would otherwise swallow (SIO-011).
+                #
+                # ``also_catch`` is what makes SFTP-024 hold for this handle
+                # (SIO-012). The wrapper's base set is ``(OSError, EOFError)``
+                # and a *dropped* connection is outside it: paramiko's
+                # ``SFTPClient._read_response`` converts the underlying
+                # ``EOFError`` into ``SSHException("Server connection dropped:
+                # ...")``, and ``_read_packet`` raises ``SFTPError`` on a
+                # malformed one. Both used to walk out of ``read()``'s stream
+                # raw while the same drop on ``read_bytes`` -- which fails
+                # inside ``_errors()`` -- mapped correctly (BK-358). The shapes
+                # are passed rather than converted to ``OSError`` because
+                # ``_map_exception`` dispatches on the type: ``SFTPError``
+                # through ``_is_connection_dead``, ``SSHException`` through its
+                # own arm, both of which conclude ``BackendUnavailable`` and
+                # clear the cached client. An ``OSError(str(exc))`` would carry
+                # no errno and land in the generic ``RemoteStoreError`` arm,
+                # losing the classification and the SFTP-010 tier-2
+                # invalidation with it.
                 raw = _ErrorMappingStream(
                     f,
                     self._map_exception,
                     path,
                     is_fatal=self._is_connection_dead,
                     size_probe=_sftp_handle_size,
+                    also_catch=(paramiko.SSHException, paramiko.SFTPError),
                 )
                 return io.BufferedReader(cast(io.RawIOBase, raw))  # noqa: TC006
             except Exception:
