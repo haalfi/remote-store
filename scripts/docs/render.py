@@ -48,7 +48,23 @@ def _index_row(kind: SddKind, e: SddEntry) -> str:
     cells = [first, f"[{e.title}]({e.slug}.md)"]
     if kind.status:
         cells.append(kind.status)
+    if kind.dated:
+        cells.append(e.date or "—")
     return "| " + " | ".join(cells) + " |"
+
+
+def _index_order(kind: SddKind, entries: list[SddEntry]) -> list[SddEntry]:
+    """Order index rows: newest first for dated kinds, else scan order.
+
+    Undated entries sort last. Same-date entries fall back to title so the
+    rendered table is stable across builds. Applies to the index table only —
+    nav and the design landing page keep their scan (filename) order.
+    """
+    if not kind.dated:
+        return entries
+    ordered = sorted(entries, key=lambda e: e.title)  # tie-break, kept by the stable sort below
+    ordered.sort(key=lambda e: e.date or "", reverse=True)  # "" sorts undated last
+    return ordered
 
 
 def _design_link(kind: SddKind, e: SddEntry) -> str:
@@ -69,10 +85,14 @@ def render_sdd_indexes(
     writer: Writer,
     entries_by_kind: dict[str, list[SddEntry]],
 ) -> None:
-    """Emit ``explanation/design/<kind>/index.md`` per kind, plus ``explanation/design/index.md``."""
+    """Emit ``explanation/design/<kind>/index.md`` per kind, plus ``explanation/design/index.md``.
+
+    Dated kinds (``SddKind.dated``) get an extra date column and list newest
+    first; the landing page below keeps scan order for every kind.
+    """
     for kind in SDD_KINDS:
         entries = entries_by_kind.get(kind.slug, [])
-        rows = "\n".join(_index_row(kind, e) for e in entries)
+        rows = "\n".join(_index_row(kind, e) for e in _index_order(kind, entries))
         placeholder = f"{{{{ {_PLACEHOLDER_STEM[kind.slug]}_rows }}}}"
         tmpl = docs_src / "explanation" / "design" / kind.slug / "_index.tmpl"
         writer(f"explanation/design/{kind.slug}/index.md", _fill_template(tmpl, {placeholder: rows}))
