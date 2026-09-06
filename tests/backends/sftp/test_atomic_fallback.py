@@ -201,6 +201,24 @@ def _fail_after_renaming(backend: Any, target: str) -> None:
     client.rename = landed_then_failed
 
 
+def _fail_stat_with(backend: Any, code: int | None) -> None:
+    """Make every ``stat`` fail with *code*, which is never ``ENOENT``.
+
+    Stages a server whose stat cannot say "not there" — errno-less for the
+    generic ``SSH_FX_FAILURE``, or ``EACCES`` for a denied directory. The
+    displace's probes then have nothing to go on, which is the state the
+    fallback must not read as an answer.
+    """
+    import paramiko
+
+    client = backend.unwrap(paramiko.SFTPClient)
+
+    def failing(*_args: Any, **_kwargs: Any) -> Any:
+        raise OSError("staged stat failure") if code is None else OSError(code, "staged stat failure")
+
+    client.stat = failing
+
+
 def _kill_stat(backend: Any) -> None:
     """Make every ``stat`` answer as a dropped connection.
 
@@ -456,16 +474,20 @@ def test_an_errno_less_displace_failure_over_nothing_still_creates(sftp_backend:
 
 @pytest.mark.spec("AW-003")
 @pytest.mark.spec("SFTP-014")
-def test_a_displace_that_landed_but_reported_failure_is_treated_as_displaced(
-    sftp_backend: SFTPBackend,
-) -> None:
-    """A rename whose answer failed still moved the file, and the fallback must know.
+def test_a_displace_that_landed_but_reported_failure_is_reported(sftp_backend: SFTPBackend) -> None:
+    """A rename whose answer failed still moved the file, and the fallback says so.
 
-    The displace is resolved by looking rather than by reading the failure, and
-    the order matters: the backup is checked first. Answer "nothing was
-    displaced" here and the destination *is* free — the rename moved it — so the
-    promote lands and the call looks clean, while the caller's old file sits
-    orphaned under a generated name that nothing will release or restore.
+    The destination is empty afterwards — the rename moved it — so the one thing
+    the fallback must not do is call that "there was nothing to displace": the
+    promote would land on a path that only *looks* free and the caller's old file
+    would sit under a generated name nothing releases or restores. Both probes
+    have to agree, and the backup's probe disagrees.
+
+    So the caller is told the write failed and their file is under `.~bak.`,
+    which is a residue this backend already documents. Recovering instead — using
+    the backup and continuing — was tried and withdrawn: it required inferring
+    "the backup exists" from a probe that had merely failed to answer, and a
+    refused displace read that way cost a destination.
 
     Staged by letting the rename through and failing only its report.
     """
@@ -479,13 +501,62 @@ def test_a_displace_that_landed_but_reported_failure_is_treated_as_displaced(
     _strict_rename(backend)
     _fail_after_renaming(backend, dst)
 
-    backend.write_atomic(dst, new, overwrite=True)
+    with pytest.raises(RemoteStoreError):
+        backend.write_atomic(dst, new, overwrite=True)
 
-    assert backend.read_bytes(dst) == new, "the promote still lands; the displace's report is what failed"
-    assert _litter(backend) == [], (
-        "the fallback saw its own backup and released it — reporting 'nothing displaced' here is what "
-        "would strand the caller's old file under a name nothing cleans up"
+    backups = [name for name in _litter(backend) if name.startswith(f".~bak.{dst}.")]
+    assert len(backups) == 1, "the rename landed, so the caller's file is under the backup name"
+    assert backend.read_bytes(backups[0]) == old
+    assert not backend.exists(dst), (
+        "the destination is empty because the displace really happened — which is exactly why "
+        "answering 'nothing was displaced' here would be a lie the promote acts on"
     )
+
+
+@pytest.mark.spec("AW-003")
+@pytest.mark.spec("SFTP-014")
+def test_a_probe_that_cannot_answer_does_not_become_an_answer(sftp_backend: SFTPBackend) -> None:
+    """An unanswerable probe leaves the question open, and an open question propagates.
+
+    The displace is refused *and* the probes cannot tell what is there — the
+    server answers the stat with something other than ``ENOENT``. The only safe
+    reading is "still occupied", because the alternative reads a refused displace
+    as a landed one: the promote is told nothing needs restoring, `_restore`
+    clears the destination, and there is no backup to put back.
+
+    That is not hypothetical. An earlier revision tested the backup with
+    ``not _is_absent(...)``, which is true both when the backup exists and when
+    the probe merely failed, and this staging left the destination **gone** with
+    no backup and no temp — BUG-272 and BUG-277 both re-opened by their own fix.
+
+    **Staged errno-less rather than parametrised over errnos**, because only this
+    shape reaches the fallback: a stat answering ``EACCES`` is classified by
+    ``_raise_if_dir`` into ``PermissionDenied`` before the displace is attempted,
+    so an ``EACCES`` variant passes without exercising anything here.
+    """
+    code = None
+    backend: Any = sftp_backend
+    dst = f"dst_{uuid.uuid4().hex[:8]}.bin"
+    old = b"OLD" * 100
+
+    backend.write(dst, old)
+
+    _break_posix_rename(backend)
+    _strict_rename(backend)
+    _deny_displacing(backend, dst, code)
+    _fail_stat_with(backend, code)
+
+    with pytest.raises(RemoteStoreError) as caught:
+        backend.write_atomic(dst, b"NEW" * 100, overwrite=True)
+
+    assert not isinstance(caught.value, AlreadyExists), (
+        "the displace was refused and the probes could not contradict it, so the caller gets the "
+        "refusal — being told the file already exists means the fallback acted on a guess"
+    )
+    assert backend.read_bytes(dst) == old, (
+        "a destination the fallback could not clear, and could not establish was clear, must be left exactly as it was"
+    )
+    assert not [name for name in _litter(backend) if name.startswith(".~bak.")]
 
 
 @pytest.mark.spec("SFTP-014")

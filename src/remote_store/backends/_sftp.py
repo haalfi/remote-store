@@ -2247,40 +2247,50 @@ class SFTPBackend(Backend):
         and the temp cleaned up after it precisely because the connection was
         alive enough to unlink.
 
-        **A failed rename is resolved by looking, not by reading the errno**, and
-        it is looked at in a fixed order because the three answers are not
-        symmetric:
+        **``None`` means the destination is known to have been absent, and
+        nothing else.** A failed rename is resolved by looking rather than by
+        reading the errno, and both probes must agree the paths are empty:
+        `sftp_path` because that is the claim being made, and `backup` because a
+        rename that *landed* and only failed to report it leaves `sftp_path`
+        empty too, and answering ``None`` there would tell the caller nothing was
+        displaced while a backup sits on the server.
 
-        1. **The backup exists** — the rename landed and only its report failed,
-           so the destination *was* displaced and the backup is returned. Getting
-           this wrong is the expensive one: reporting "nothing displaced" here
-           leaves `_restore` and `_release` unaware of a backup that exists, so
-           the caller's old file is orphaned under a generated name after a call
-           that looked clean.
-        2. **The destination is absent** — nothing was there. This is the
-           ordinary ``overwrite=True`` create, and ``None`` says so.
-        3. **Otherwise the refusal propagates**, because a refusal leaves the
-           destination *occupied* and a caller told nothing was displaced treats
-           an occupied path as a free one. ``_move_fallback`` did exactly that —
-           it ran its copy rung, which opens the destination ``"w"``, and
-           truncated the caller's file with no backup taken. Propagating also
-           gives the caller the reason (a denied directory, say) in place of the
-           ``AlreadyExists`` the promote would otherwise raise against the file
-           it could not move, from a call that passed ``overwrite=True``.
+        **Everything else propagates**, which is the safe direction and the one
+        the data rides on. A refusal leaves the destination *occupied*, and a
+        caller told nothing was displaced treats an occupied path as a free one:
+        ``_move_fallback`` did exactly that — it ran its copy rung, which opens
+        the destination ``"w"``, and truncated the caller's file with no backup
+        taken. Propagating also gives the caller the reason (a denied directory,
+        say) in place of the ``AlreadyExists`` the promote would otherwise raise
+        against the file it could not move, from a call that passed
+        ``overwrite=True``.
+
+        **A landed-but-unreported rename is reported, not recovered.** An earlier
+        revision returned the backup in that case so the promote could continue;
+        it inferred "the backup exists" from a probe that had merely failed to
+        answer, and a refused displace was then treated as a landed one —
+        ``_restore`` removed the destination and had no backup to put back.
+        Reporting costs the caller a failed call whose file is under
+        ``.~bak.<name>.<uuid8>``, which is a residue this backend already
+        documents; inferring cost a destination.
 
         **Why not the errno.** paramiko attaches one to exactly two SFTP statuses
         — ``SSH_FX_NO_SUCH_FILE`` and ``SSH_FX_PERMISSION_DENIED`` — so a server
         answering "rename: no such source" with the generic ``SSH_FX_FAILURE``
-        arrives errno-less, and an ``errno == ENOENT`` test calls that a refusal
-        and fails an ordinary create. On a server without
+        arrives errno-less, and an ``errno == ENOENT`` test on *that* failure
+        calls it a refusal and fails an ordinary create. On a server without
         ``posix-rename@openssh.com`` every overwrite promote reaches this method,
         so that would be every such create on the server class the fallback
         exists for. **The dependency is narrowed rather than removed**: the
-        probes below still read ``ENOENT`` off a *stat*, where it is far more
-        reliably reported than for a rename's missing source, but a server
-        generic enough to answer both without an errno reaches step 3 and its
-        create fails. Stated because that is the same defect one layer down, not
-        its absence.
+        probes still read ``ENOENT`` off a *stat*, where it is far more reliably
+        reported than for a rename's missing source, and a server generic enough
+        to answer both without an errno propagates instead — its create fails,
+        loudly, with the destination intact. Stated because that is the same
+        defect one layer down, not its absence.
+
+        **Cost.** Two stats on a failed displace, none on the ordinary path.
+        ``_promote``'s own classification stat is paid separately and costed
+        there.
 
         A dead connection propagates ahead of either probe: the promote cannot
         succeed over it and would pay a second ``io_timeout`` bound. The
@@ -2295,22 +2305,28 @@ class SFTPBackend(Backend):
         except OSError as exc:
             if self._is_connection_dead(exc):
                 raise
-            if not self._is_absent(backup):
-                return backup  # the rename landed; only its answer failed
-            if not self._is_absent(sftp_path):
-                raise
-            return None
+            # Both probes must answer ``ENOENT`` for this to be "there was
+            # nothing to move". Either one failing for any other reason leaves
+            # the question open, and an open question propagates.
+            if self._is_absent(sftp_path) and self._is_absent(backup):
+                return None
+            raise
         return backup
 
     def _is_absent(self, sftp_path: str) -> bool:
-        """Whether *sftp_path* holds nothing, by a stat rather than by an errno.
+        """Whether *sftp_path* is known to hold nothing — ``ENOENT``, and only that.
 
-        Used only on a failed displace, to tell a rename that landed from one
-        that did not, and "there was nothing to move" from "the server refused to
-        move it" — distinctions the caller's data rides on and the failure's own
-        errno cannot always carry (see ``_displace``). A dead connection
-        re-raises rather than answering, since a probe that cannot reach the
-        server has not established anything.
+        **Every other answer is ``False``, including "the probe failed".** That
+        asymmetry is the point: this decides whether the caller's file was there,
+        so it reports absence only on positive evidence and treats an
+        unanswerable probe as "still occupied", which is the direction that
+        cannot lose data. A dead connection re-raises rather than answering at
+        all, since a probe that cannot reach the server has established nothing.
+
+        The shape a reader should not write is ``not _is_absent(x)`` as a test
+        for "x exists": it is true both when *x* exists and when the probe could
+        not tell, and reading a refused displace as a landed one that way cost a
+        destination in review.
         """
         try:
             self._sftp.stat(sftp_path)
