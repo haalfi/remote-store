@@ -1,7 +1,8 @@
 # Research: Is the level of detail appropriate?
 
 **Date:** 2026-08-17
-**Backlog items:** ID-256, which shipped the authoring test in § 5.3.
+**Backlog items:** ID-256, which shipped the authoring test in § 5.3; ID-257,
+which added § Digest and changed nothing below it.
 **Status:** Advisory research, not a spec or ADR. A standing reference on one
 question — *is the level of detail appropriate?* — rather than a record of how it
 was investigated.
@@ -10,7 +11,10 @@ review — seventeen commits touching it and not one reducing it, each of severa
 passes introducing a defect the next caught — which is the failure it documents,
 committed by itself. A later
 finding is filed as a backlog item and fixed only if it names something **false**;
-"this could be tighter" is refused here by § 9.4, and by this line. Point-in-time
+"this could be tighter" is refused here by § 9.4, and by this line. **One additive
+exception has been taken since**: ID-257 prepended § Digest and left every section
+below it byte-identical. The closure governs the body, and an addition that rewrites
+nothing is not the divergence § 6.3 measures. Point-in-time
 snapshot per
 [`sdd/000-process.md` § Document types](../000-process.md): the repo figures in
 §§ 6–7 drift with the corpus, and the sourcing tiers in § 7 record what was
@@ -20,6 +24,71 @@ reachable on the date above, so read every figure against that date.
 answers the neighbouring question, *where does this detail belong?*;
 [`../CONTENT-RULES.md`](../CONTENT-RULES.md) carries the rules this document
 argues for.
+
+## Digest
+
+**Appropriate detail is a relation between a text and its reader's purpose, not a
+property of the text.** No word count, readability index or general "be concise"
+rule decides it, because none of those instruments sees the reader. What is
+observable while writing is the author's grasp of the claim, which is where this
+record's one binding rule sits.
+
+*This section is the argument in one screen, for a reader who will not read the
+record below.* It carries nothing the record does not: each claim names the section
+it compresses, and every figure is quoted from that section, where its derivation
+lives. Read § Recommendations for what to do, this for why, and § TL;DR for where
+each link is argued.
+
+### The evidence, and what each part settles
+
+**The literature constrains the answer in both directions and on kind rather than
+amount**: it measures a cost to surplus explanation, a larger cost to missing
+context, and a difference between the kinds of detail that carry each. Every row
+names the section that argues it, and no figure below is derived here.
+
+| Finding | What it settles |
+|---|---|
+| **Overshoot is real.** Reder & Anderson's textbook studies: readers of summaries one-fifth the length of the chapters scored higher on the main points, across delays up to a year and true/false, short-answer and free-recall questions (§ 2) | Surplus explanation does not merely cost reading time. It makes the main point harder to retrieve, and harder to tell apart from the unimportant ones |
+| **Undershoot is real, and here it was the larger failure.** Reder, Charney & Morgan (1986): an 11,000-word PC-DOS manual against a 3,500-word one. Readers who knew the tasks in advance were close to unaffected. Readers with no goal fell .85 → .76 on accuracy, and rose 29.4 → 40.2 minutes and 76.8 → 101.8 commands (§ 2) | The same text reverses its verdict on reader purpose. A rule that only cuts is aimed at the reader for whom cutting helps least and hurts most |
+| **Which kind of detail decides more than how much.** Charney, Reder & Wells's Study 2 crossed conceptual elaboration (what a command is for) with procedural elaboration (worked examples of correct commands). Procedural richness moved every measure; conceptual elaboration moved none, for novices or experienced users (§ 3) | What to test for redundancy first, and what to keep instead: examples, exact commands, identifiers |
+| **Expertise reverses the sign.** Kalyuga, Chandler & Sweller (1998): text re-describing a wiring diagram was essential for novices and better *eliminated* for experts, with mental-effort ratings running the same way (§ 3) | Why expertise-conditioned rules work inside `sdd/` and fail on `docs-src/`, where the reader's prior knowledge cannot be observed |
+| **Brevity's optimum sits mid-scale.** In the Hamburg model, simplicity and structure optimise at `++`; *Kürze/Prägnanz* optimises between `0` and `+`, because compressed texts impede comprehension as verbose ones do (§ 4) | "Shorter" is not a direction to push monotonically. The definition worth borrowing is a ratio rather than a length: the text matched to the information it means to convey |
+| **The attempt to explain exposes the gap.** Rozenblit & Keil (2002), twelve studies: people rate their understanding, write a step-by-step causal explanation, and re-rate lower — down to where independent raters had already scored them. The illusion is far stronger for explanatory knowledge than for facts, procedures or narratives (§ 5.2) | The author is the one party present at writing time, and stating the claim is a test they can fail. ADR rationale, spec reasoning and research argument are exactly the explanatory kind |
+| **Cut rationale divides in two.** This repo's paired run on the ripple-check page (3,255 words against 1,121, all obligations preserved): obligations tied 42–42, rationale went 12 answers to 0. Readers rebuilt rationale explaining what the surviving text still showed; none rebuilt rationale carrying a fact from outside the page (Appendix) | The cutting criterion is **recoverability**, not length. Twelve agent readers on one page: a hypothesis for a dedicated run, not a law |
+
+### The sequence
+
+**Only the first step binds; the other four are this record's advice and no gate
+enforces them.** They run in this order at authoring time, because each one is
+answerable only once the step above it has been answered.
+
+1. **State the core claim in at most three sentences.** If they will not come, stop
+   writing and return to the source — the material the section is about. This is the
+   only binding item, and it binds as
+   [`CONTENT-RULES.md` Rule 7](../CONTENT-RULES.md#kernsatz), not from here.
+2. **Keep the detail that answers a question, supports a decision, or lets an action
+   be executed.** Everything else is a candidate for cutting.
+3. **When reducing, test explanatory elaboration for redundancy before touching
+   worked examples, exact commands, identifiers, constraints or exceptions** — and
+   keep conceptual material that fixes scope, applicability or a choice between
+   alternatives, which does work the manual studies' conceptual text did not.
+4. **Move rationale the surviving section cannot recover; do not delete it.**
+5. **A prose review finding names the reader harm it prevents** — a question the
+   reader cannot answer, a decision they would get wrong, an action they cannot
+   execute — or it is a preference, not yet a finding.
+
+Apply 2 to 4 the more cautiously the less the reader's purpose can be observed: the
+licence is strongest in task-oriented internal material and weakest in public
+documentation and onboarding.
+
+### What this does not establish
+
+Rule 7 detects an author who cannot state a claim. It says nothing about whether any
+reader was harmed, and it is not evidence that shorter prose is better prose. Which
+direction this repo's prose actually errs in is unmeasured — reviewers report
+overshoot, the trace corpus reports undershoot, and § 6.1 records that no instrument
+this repo owns adjudicates between them. Rule 7 does not depend on that answer,
+because its case rests on the author rather than the reader.
 
 ## Recommendations
 

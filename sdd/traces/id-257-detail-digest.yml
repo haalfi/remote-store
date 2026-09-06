@@ -1,0 +1,150 @@
+id: ID-257
+title: "Give the appropriate-detail record a one-screen digest"
+trigger: >-
+  sdd/research/research-appropriate-level-of-detail.md was 959 lines and opened
+  with two summary blocks that between them carried no argument: § Recommendations
+  lists five rules with no warrant, § TL;DR is seven one-line links naming the
+  sections that argue them. A reader deciding whether a "this could be tighter"
+  finding was legitimate had to read the record or accept the rules on trust.
+source_items:
+  - ID-257
+  - ID-256
+audience:
+  - contributor.process
+
+# No CHANGELOG entry owed. The audience is contributor.process alone, and the
+# _schema.yml clause for that tag requires an entry only when the change
+# introduces a user-facing framework or spec. A digest of an existing internal
+# record introduces neither; the framework it summarises (CONTENT-RULES Rule 7)
+# shipped under ID-256.
+
+expected_ripples:
+  - sdd/backlogid.json
+  - sdd/BACKLOG.md
+  - sdd/BACKLOG-DONE.md
+
+# Derived from `git log --oneline origin/master..HEAD`, re-run at the commit
+# carrying this line. Stated as of that commit, not as an open-ended total.
+#   (this commit)  implements; does not count
+# No review-driven commits as of the commit carrying this line. Value is 0.
+# Any later fix pass owes a re-derivation, not an increment.
+review_rounds: 0
+
+phases:
+  - id: orient
+    name: Orient
+    steps:
+      - file: sdd/research/research-appropriate-level-of-detail.md
+        section: "header block, Recommendations, TL;DR"
+        read_type: gate
+        extract: >-
+          Established what the record already summarises and what it does not.
+          The header also closes the record to further prose passes on the
+          strength of § 6.3, which is the constraint the whole change had to be
+          shaped around: an additive section is admissible, a reduction is not
+        outcome: ok
+      - file: sdd/CONTENT-RULES.md
+        section: "Rule 7 (Kernsatz), Provenance"
+        read_type: gate
+        extract: >-
+          Rule 7 is the binding half and already ships; the digest must not
+          restate it as a second authority. Provenance already links the record,
+          so no new back-reference is owed from here
+        outcome: ok
+      - file: CONTRIBUTING.md
+        section: "Authoritative Document Format — Scope, Exclusions"
+        read_type: gate
+        extract: >-
+          Decided the placement question negatively before deciding it
+          positively: CONTENT-RULES.md is in scope, and Exclusion 1 bars
+          explanation and rationale from documents in it, so the condensed
+          argument cannot live beside the rule it argues for
+        outcome: ok
+      - file: sdd/AUTHORING.md
+        section: "Where does my new file go?, Directory defaults"
+        read_type: reference
+        extract: >-
+          Confirmed sdd/research/*.md defaults to dual with no marker needed, so
+          an in-place section inherits the record's classification and nothing
+          in the docs bridge moves. This is the read that made "section in the
+          record" cheaper than "new file" on mechanics as well as on principle 4
+        outcome: ok
+      - file: sdd/CLAUDE-REFERENCE.md
+        section: "Ripple-check > Pre-work index > Release & meta"
+        read_type: gate
+        extract: >-
+          Rows that fire: Backlog item touched (this trace, backlogid.json).
+          "Authority direction amended" does not, because sdd/research/ is a
+          record rather than an instruction and the row skips it by name
+        outcome: ok
+
+  - id: design
+    name: Decide placement and shape
+    steps:
+      - file: sdd/BACKLOG.md
+        section: "BK-365; section 6 promise"
+        read_type: reference
+        extract: >-
+          BK-365 is the neighbouring open item — backlog-file length, measured,
+          with no decision yet on whether it is a defect — and it cites this same
+          record's § 9.2 as the test that would settle it. That is what placed
+          ID-257 under section 6 rather than anywhere else: the promise is that
+          the artifacts maintainers coordinate through say what is true, and a
+          standing answer nobody can read fails it by being unread
+        outcome: ok
+      - file: sdd/research/research-appropriate-level-of-detail.md
+        section: "§§ 2, 3, 4, 5.2, 9, Appendix"
+        read_type: reference
+        extract: >-
+          Read for the figures the digest quotes rather than re-derives — the
+          Study 1 table, Study 2's procedural/conceptual split, the Hamburg
+          mid-scale optimum, Rozenblit & Keil's twelve studies, the local paired
+          run's 42-42 tie and 12-to-0 rationale loss. Every digest row cites the
+          section it came from so the derivation stays in one place, which is the
+          condition that keeps the digest a presentation rather than a second
+          source of truth
+        outcome: ok
+
+  - id: implement
+    name: Write the digest
+    steps:
+      - file: sdd/research/research-appropriate-level-of-detail.md
+        section: "Digest (new); header block"
+        read_type: reference
+        extract: >-
+          Section inserted above § Recommendations, opening with its Kernsatz per
+          the rule it summarises. The header's closure line gains an explicit
+          carve-out naming ID-257 rather than leaving a reader to infer that an
+          addition is not the divergence § 6.3 measures, and the Backlog items
+          line names the second item
+        outcome: ok
+      - file: sdd/BACKLOG-DONE.md
+        section: "Unreleased — ID-257"
+        read_type: reference
+        extract: >-
+          Entry records the diagnosis, the bound that keeps the digest a
+          presentation, and the three rejected placements with the authority that
+          rejected each — the alternatives were the substance of the decision and
+          are the part a later reader would otherwise re-argue
+        outcome: ok
+
+  - id: verify
+    name: Ripple-check and gates
+    steps:
+      - file: sdd/BACKLOG.md
+        section: "section 6 Closes when"
+        read_type: verify
+        extract: >-
+          Clause added and the count re-derived from the semicolon-separated
+          list, thirteen to fourteen, rather than incremented — the bound states
+          the count is derived by enumerating that list, so incrementing would
+          break the derivation it names
+        outcome: ok
+      - file: sdd/CLAUDE-REFERENCE.md
+        section: "Ripple-check > Detailed checklist"
+        read_type: verify
+        extract: >-
+          Backlog item touched (trace, backlogid.json regenerated). No CHANGELOG
+          stub, per the audience reasoning recorded above. No docs-nav or
+          _index.tmpl ripple, because no file was added or renamed
+        outcome: ok

@@ -1885,8 +1885,12 @@ assertion rather than citation (ID-207); both open revisit pins have fired
 and named successors (ID-150, ID-249); the two backlog files are readable by the
 person they are for, or the decision that their length is the right price is
 recorded (BK-365); and the repo can say whether its own quality promise is
-holding rather than only asserting it (BK-366).
-**Bounded to those thirteen deliberately** — count derived by enumerating the
+holding rather than only asserting it (BK-366); and the standing answer to *is the
+level of detail appropriate?* is readable without reading 959 lines — **met** by
+ID-257, whose stated bound is that the digest is a presentation of the record and
+carries no claim the record does not, so a reader who needs the derivation behind a
+figure still goes to the section the digest cites.
+**Bounded to those fourteen deliberately** — count derived by enumerating the
 semicolon-separated clauses above, not carried forward. "No artifact asserts what
 no mechanism can check" is the promise and cannot be a closing condition: this section's own
 preamble records that detecting the remaining class needs semantic comparison of
