@@ -406,7 +406,7 @@ See the [capabilities matrix](../../reference/capabilities-matrix.md) for full d
     Parent directories created for a write remain behind in every case — a
     failed write is not a rollback.
 
-!!! warning "A `.~bak.` file can outlive a failure that was **not** a stall"
+!!! warning "A `.~bak.` file can outlive a call that did not stall — including one that succeeded"
     The note above is about `BackendUnavailable`. The rename fallback can also
     leave a `.~bak.<name>.<uuid>` behind on a connection that never dropped: it
     moves your file aside, and if the server then refuses to move it back you
@@ -415,10 +415,11 @@ See the [capabilities matrix](../../reference/capabilities-matrix.md) for full d
     the same — read the target, then the `.~bak.` beside it.
 
     **Read the target before restoring a backup.** A `.~bak.` also outlives a
-    call that *succeeded*, when the connection drops between the rename and the
-    tidy-up. There the target already holds your new content, and copying the
-    backup over it would undo the write. The file's name does not say which case
-    you are in; the target's contents do.
+    call that *succeeded* — the tidy-up that removes it is best-effort, so a
+    server that refuses it, or a connection that drops first, leaves the backup
+    behind with nothing raised. There the target already holds your new content,
+    and copying the backup over it would undo the write. The file's name does not
+    say which case you are in; the target's contents do.
 
 !!! note "Move fallback"
     `move()` tries `posix_rename` (atomic), then standard `rename()`, then

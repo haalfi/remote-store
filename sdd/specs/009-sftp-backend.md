@@ -1191,43 +1191,6 @@ accidentally by a fixture that happens to use bare filenames.
 In every case, parent directories `_ensure_parent_dirs` created on the way in
 remain behind — a failed write is not a rollback.
 
-<a id="where-the-previous-file-is"></a>
-##### Where the caller's previous file ends up
-
-**Enumerated rather than described**,
-because describing it went wrong three times: each attempt narrowed the condition
-to a dropped connection, and each was refuted by a live-connection state the
-narrowing had not considered. The space is small enough to write down, so here it
-is, and every other clause in the repo that speaks to it cites this table instead
-of restating the scope. **Three steps decide it**, not two: whether the
-destination was displaced, whether the promote landed, and what the fallback then
-did about the backup — and that third step is best-effort in both directions,
-`_restore` on each of its two calls and `_release` on its one.
-
-| Displace | Promote | Then | The caller's previous file is | Pinned by |
-| --- | --- | --- | --- | --- |
-| refused | not attempted | the refusal propagates | **at its path** — nothing was moved, and this is why a refusal is not reported as "nothing to restore" | `test_a_refused_displace_reports_rather_than_writing_the_destination` |
-| absent | not attempted | nothing to restore | there was none | `test_an_errno_less_displace_failure_over_nothing_still_creates` |
-| **done, reply lost** | not attempted | the drop propagates | in `.~bak.<name>.<uuid8>` — the rename happened and only its answer was lost, so the path is empty though nothing reported a displace | — argued from SFTP-030's closure, not measured |
-| done | succeeded | `_release` drops the backup | replaced, as asked | `test_the_fallback_replaces_an_existing_destination` |
-| done | succeeded | `_release` refused (live server) | replaced — but a `.~bak.` **outlives a successful call** | `test_a_release_the_server_refuses_leaves_a_backup_beside_a_good_write` |
-| done | succeeded | `_release` skipped (channel down) | replaced, with a `.~bak.<name>.<uuid8>` outliving the call as in the row above — reached by a drop instead of a refusal | — argued, same skipped-teardown class as the orphan temp |
-| done | failed | restore ran and completed | **back at its path** — the ordinary failure, and what the fix buys | `test_a_failed_promote_leaves_the_destination_as_it_found_it` |
-| done | failed | restore refused (live server) | in `.~bak.<name>.<uuid8>` | `test_a_restore_the_server_refuses_leaves_the_old_content_findable` |
-| done | failed | restore not attempted (dead channel) | in `.~bak.<name>.<uuid8>` | `test_a_stalled_promote_in_the_fallback_leaves_the_old_content_in_a_backup` |
-
-**Which rows are measured is in the table** rather than left uniform, on the same
-reasoning the named-states list above gives: seven of the nine carry a test, and
-the two that do not say so.
-
-**Two readings follow, and they are what the prose kept getting wrong.** The
-`.~bak.` residue is **not** a dropped-connection signal: of the five rows that
-leave one, two are reachable on a live connection and one of those follows a call
-that *succeeded* and raised nothing. And the guarantee is the last column never
-reading "gone", not the file being at its path — AW-003 promises the copy, and
-only the ordinary-failure row promises the path. The two successful rows replace
-the file by design, which is the antecedent AW-003 carries and this table does not
-repeat.
 **Derivation.** The closure above is argued from the mechanism. The named states
 are **not uniformly pinned, and the difference is stated rather than blurred**:
 those with a test were run against a real silent peer through the `_StallRelay`
@@ -1275,3 +1238,42 @@ stated with its bound. Both halves are false outside that bound: a lost promote
 reply leaves the rename performed, and the fallback path empties the destination
 path while keeping both copies beside it. Found by running the contrast this
 clause is stated against instead of quoting it.
+
+<a id="where-the-previous-file-is"></a>
+##### Where the caller's previous file ends up
+
+**Enumerated rather than described**,
+because describing it went wrong three times: each attempt narrowed the condition
+to a dropped connection, and each was refuted by a live-connection state the
+narrowing had not considered. The space is small enough to write down, so here it
+is, and every other clause in the repo that speaks to it cites this table instead
+of restating the scope. **Three steps decide it**, not two: whether the
+destination was displaced, whether the promote landed, and what the fallback then
+did about the backup — and that third step is best-effort in both directions,
+`_restore` on each of its two calls and `_release` on its one.
+
+| Displace | Promote | Then | The caller's previous file is | Pinned by |
+| --- | --- | --- | --- | --- |
+| refused | not attempted | the refusal propagates | **at its path** — nothing was moved, and this is why a refusal is not reported as "nothing to restore" | `test_a_refused_displace_reports_rather_than_writing_the_destination` |
+| absent | attempted, and ordinarily lands | nothing to restore | there was none — the ordinary `overwrite=True` create | `test_an_errno_less_displace_failure_over_nothing_still_creates` |
+| **landed, reported failed** | attempted, and ordinarily lands | the backup is found and released | replaced, as asked — the rename moved it and only the answer failed, which is why the backup is looked for before the destination | `test_a_displace_that_landed_but_reported_failure_is_treated_as_displaced` |
+| **done, reply lost to a drop** | not attempted | the drop propagates | in `.~bak.<name>.<uuid8>` — the path is empty though nothing reported a displace | — argued from SFTP-030's closure, not measured |
+| done | succeeded | `_release` drops the backup | replaced, as asked | `test_the_fallback_replaces_an_existing_destination` |
+| done | succeeded | `_release` refused (live server) | replaced — but a `.~bak.` **outlives a successful call** | `test_a_release_the_server_refuses_leaves_a_backup_beside_a_good_write` |
+| done | succeeded | `_release` reaches a silent channel | replaced, with a `.~bak.<name>.<uuid8>` outliving the call — and the call pays one `io_timeout` bound inside the suppressed unlink, which is the one place a **success** costs a bound | — argued |
+| done | failed | restore ran and completed | **back at its path** — the ordinary failure, and what the fix buys | `test_a_failed_promote_leaves_the_destination_as_it_found_it` |
+| done | failed | restore refused (live server) | in `.~bak.<name>.<uuid8>` | `test_a_restore_the_server_refuses_leaves_the_old_content_findable` |
+| done | failed | restore not attempted (dead channel) | in `.~bak.<name>.<uuid8>` | `test_a_stalled_promote_in_the_fallback_leaves_the_old_content_in_a_backup` |
+
+**Which rows are measured is in the table** rather than left uniform, on the same
+reasoning the named-states list above gives: eight of the ten carry a test, and
+the two that do not say so.
+
+**Two readings follow, and they are what the prose kept getting wrong.** The
+`.~bak.` residue is **not** a dropped-connection signal: of the five rows that
+leave one, two are reachable on a live connection and one of those follows a call
+that *succeeded* and raised nothing. And the guarantee is the last column never
+reading "gone", not the file being at its path — AW-003 promises the copy, and
+only the ordinary-failure row promises the path. The four rows reading "replaced"
+replace the file by design, which is the antecedent AW-003 carries and this table
+does not repeat.

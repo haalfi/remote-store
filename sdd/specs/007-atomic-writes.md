@@ -83,12 +83,14 @@ AW-003's second arm false, so it is left where a caller can find it.
 
 **Which row a caller met is not written on the backup**, and that is worth
 knowing before acting on one: after a failed call it holds the file that should be
-at the target, while after a *successful* one — the release skipped by a drop —
-the target already holds the newer content and restoring the backup over it would
-lose the write. The target is the thing to read, not the backup.
-`test_a_restore_the_server_refuses_leaves_the_old_content_findable` measures the
-live-refusal row; the skipped release is the same teardown class as the orphan
-temp above.
+at the target, while after a *successful* one — the release refused or never
+reached — the target already holds the newer content and restoring the backup over
+it would lose the write. The target is the thing to read, not the backup. Both
+sides are measured on a live connection:
+`test_a_restore_the_server_refuses_leaves_the_old_content_findable` for the failed
+call and `test_a_release_the_server_refuses_leaves_a_backup_beside_a_good_write`
+for the successful one; only the drop variants are argued, as the same
+skipped-teardown class as the orphan temp above.
 
 **"Renamed back" is a claim about a path that may not be free**, which is the
 part of it that had to be built rather than assumed: `move`'s copy rung opens the

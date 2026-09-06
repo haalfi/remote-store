@@ -24,7 +24,12 @@ import pytest
 # Guard: skip entire module if dependencies are missing
 pytest.importorskip("paramiko", reason="paramiko not installed")
 
-from remote_store._errors import AlreadyExists, PermissionDenied, RemoteStoreError  # noqa: E402
+from remote_store._errors import (  # noqa: E402
+    AlreadyExists,
+    BackendUnavailable,
+    PermissionDenied,
+    RemoteStoreError,
+)
 from tests.backends.fixtures._state import INFRA  # noqa: E402
 
 if TYPE_CHECKING:
@@ -130,11 +135,11 @@ def _deny_removing(backend: Any, target: str | None, code: int, *, prefix: str |
 
     By *target*, this ends ``_copy_and_delete`` at its last step, after the
     destination has been written — the cheapest way to stage a copy rung that
-    fails with the destination already occupied. By *prefix*, it refuses the
-    fallback's own unlink of a backup, which is how ``_release`` and
-    ``_restore``'s clear-first step are made to fail on a live connection.
-    Scoping either way is what keeps this a staged server failure rather than a
-    blanket one.
+    fails with the destination already occupied — and, passed the destination's
+    own name, it is also what makes ``_restore``'s clear-first step fail, since
+    that step removes the *target*. By *prefix*, it refuses the fallback's unlink
+    of a **backup**, which is ``_release``. Scoping either way is what keeps this
+    a staged server failure rather than a blanket one.
     """
     import paramiko
 
@@ -173,6 +178,43 @@ def _deny_displacing(backend: Any, target: str, code: int | None) -> None:
         return original(src, dst, *args, **kwargs)
 
     client.rename = denied
+
+
+def _fail_after_renaming(backend: Any, target: str) -> None:
+    """Let the displace of *target* happen, then report it as failed.
+
+    A rename whose reply is lost, or whose success the server misreports: the
+    file has moved and the caller's client is told otherwise. Distinct from
+    ``_deny_displacing``, where the rename does **not** happen.
+    """
+    import paramiko
+
+    client = backend.unwrap(paramiko.SFTPClient)
+    original = client.rename
+
+    def landed_then_failed(src: str, dst: str, *args: Any, **kwargs: Any) -> Any:
+        if src.rsplit("/", 1)[-1] == target and dst.rsplit("/", 1)[-1].startswith(".~bak."):
+            original(src, dst, *args, **kwargs)
+            raise OSError("staged lost reply")
+        return original(src, dst, *args, **kwargs)
+
+    client.rename = landed_then_failed
+
+
+def _kill_stat(backend: Any) -> None:
+    """Make every ``stat`` answer as a dropped connection.
+
+    Reaches the displace's probes, which are the only stats on that path, so a
+    test can ask what the fallback does when it cannot establish anything.
+    """
+    import paramiko
+
+    client = backend.unwrap(paramiko.SFTPClient)
+
+    def dead(*_args: Any, **_kwargs: Any) -> Any:
+        raise OSError(errno.ECONNRESET, "Connection reset by peer")
+
+    client.stat = dead
 
 
 def _litter(backend: Any) -> list[str]:
@@ -410,6 +452,74 @@ def test_an_errno_less_displace_failure_over_nothing_still_creates(sftp_backend:
 
     assert backend.read_bytes(dst) == payload
     assert _litter(backend) == []
+
+
+@pytest.mark.spec("AW-003")
+@pytest.mark.spec("SFTP-014")
+def test_a_displace_that_landed_but_reported_failure_is_treated_as_displaced(
+    sftp_backend: SFTPBackend,
+) -> None:
+    """A rename whose answer failed still moved the file, and the fallback must know.
+
+    The displace is resolved by looking rather than by reading the failure, and
+    the order matters: the backup is checked first. Answer "nothing was
+    displaced" here and the destination *is* free — the rename moved it — so the
+    promote lands and the call looks clean, while the caller's old file sits
+    orphaned under a generated name that nothing will release or restore.
+
+    Staged by letting the rename through and failing only its report.
+    """
+    backend: Any = sftp_backend
+    dst = f"dst_{uuid.uuid4().hex[:8]}.bin"
+    old, new = b"OLD" * 100, b"NEW" * 100
+
+    backend.write(dst, old)
+
+    _break_posix_rename(backend)
+    _strict_rename(backend)
+    _fail_after_renaming(backend, dst)
+
+    backend.write_atomic(dst, new, overwrite=True)
+
+    assert backend.read_bytes(dst) == new, "the promote still lands; the displace's report is what failed"
+    assert _litter(backend) == [], (
+        "the fallback saw its own backup and released it — reporting 'nothing displaced' here is what "
+        "would strand the caller's old file under a name nothing cleans up"
+    )
+
+
+@pytest.mark.spec("SFTP-014")
+@pytest.mark.spec("SFTP-030")
+def test_a_probe_that_cannot_reach_the_server_reclassifies_nothing(sftp_backend: SFTPBackend) -> None:
+    """The displace's probe fails closed: an unanswerable stat is not an absence.
+
+    `_is_absent` decides whether the caller's file was there, so a probe that
+    cannot reach the server must raise rather than answer. Reading a dead
+    channel as "nothing was displaced" is the same mistake as reading a refusal
+    that way, and it ends the same place — a promote onto a path that is not
+    free.
+    """
+    backend: Any = sftp_backend
+    dst = f"dst_{uuid.uuid4().hex[:8]}.bin"
+    old = b"OLD" * 100
+
+    backend.write(dst, old)
+
+    _break_posix_rename(backend)
+    _deny_displacing(backend, dst, None)
+    _kill_stat(backend)
+
+    with pytest.raises(BackendUnavailable):
+        backend.write_atomic(dst, b"NEW" * 100, overwrite=True)
+
+    assert backend.read_bytes(dst) == old, "nothing was displaced, so the destination stands"
+    assert not [name for name in _litter(backend) if name.startswith(".~bak.")], (
+        "the probe raised rather than answering, so no backup was taken"
+    )
+    assert [name for name in _litter(backend) if name.startswith(".~tmp.")], (
+        "the orphan temp is the documented cost of a dead channel — the cleanup unlink is skipped "
+        "rather than re-entering it, which is what makes this a drop and not a refusal"
+    )
 
 
 @pytest.mark.spec("AW-004")

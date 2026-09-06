@@ -235,9 +235,14 @@ if evidence changes; these are retired.
   rung, which opens the destination `"w"` and **truncates the caller's file with
   no backup taken** — the very state BUG-272 exists to remove, reached through
   the one arm that reported nothing to restore.
-  **Fixed** by returning `None` only for `ENOENT` and propagating every other
-  refusal, so the caller gets the reason where it happened. Measured in both
-  directions by `test_a_refused_displace_reports_rather_than_writing_the_destination`:
+  **Fixed** by resolving a failed displace with a look rather than an errno:
+  `_is_absent` checks the backup first (a rename that landed and only failed to
+  report it *is* a displace), then the destination (absent means the ordinary
+  create), and every other refusal propagates — so the caller gets the reason
+  where it happened. An `errno == ENOENT` test shipped for one round and was
+  itself wrong in the other direction, failing every ordinary `overwrite=True`
+  create on a server that answers without an errno. Measured in both directions
+  by `test_a_refused_displace_reports_rather_than_writing_the_destination`:
   against the pre-fix arm the two atomic ops raise `AlreadyExists` and `move`
   does not raise **at all**, having completed over the truncated destination.
   **The `move` half was not pre-existing in the same shape.** Before BUG-272 the

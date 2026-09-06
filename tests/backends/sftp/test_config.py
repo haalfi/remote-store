@@ -3774,8 +3774,12 @@ class TestSFTPLowSeverityCorrectnessEdges:
         instead, ``_displace`` re-raises, and the inner guard this test exists
         for is never reached — the assertion below then holds for the wrong
         reason and the guard could be deleted without failing anything. Staged
-        here as a real absent destination would answer (``ENOENT``, so nothing is
-        displaced), with the stall on the promote that follows it.
+        here as a real absent destination answers, with the stall on the promote
+        that follows it. The errno on that first raise is not what makes the
+        displace a no-op — ``_displace`` resolves a failed rename by probing, and
+        it is the fixture server's own ``stat`` of an absent ``mvf_dst.txt`` that
+        answers — so any non-dead failure would do; ``ENOENT`` is chosen because
+        it is what such a server really sends.
         """
         assert isinstance(sftp_backend, SFTPBackend)
         sftp_backend.write("mvf_src.txt", b"payload")
