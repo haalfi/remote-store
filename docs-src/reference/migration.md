@@ -219,6 +219,45 @@ it already did after a drop on any other method.
 backends, and what those map is unchanged — the extra shapes are supplied by the
 SFTP backend for its own transport, not added for everyone.
 
+**An SFTP overwrite the rename fallback cannot perform now reports the refusal,
+and can leave a `.~bak.` file behind:**
+
+A server without `posix-rename@openssh.com` cannot rename onto an occupied path,
+so `write_atomic(..., overwrite=True)`, `open_atomic(..., overwrite=True)` and
+`move(..., overwrite=True)` have to clear the destination before promoting. In
+v0.30.0 they removed it. If the promote then failed for a reason the backend
+could not attribute to a dropped connection, the destination was gone and the
+temp holding your payload was cleaned up after it — the call raised, correctly,
+having destroyed both copies. v0.31.0 moves the destination aside as
+`.~bak.<name>.<uuid>` instead, and puts it back when the promote fails.
+
+| | v0.30.0 | v0.31.0 |
+| --- | --- | --- |
+| An overwrite whose destination the server refuses to move aside | `AlreadyExists`, destination **gone** | the refusal itself, destination untouched |
+| A failure after the destination was moved aside | destination **gone**, payload in an orphan temp | destination restored, or left under `.~bak.<name>.<uuid>` when the restore cannot run |
+
+**What to change.** An `except AlreadyExists` clause around an `overwrite=True`
+call no longer fires. That error was the fallback reporting a file it had failed
+to clear, not a name collision — a call that passes `overwrite=True` has no
+collision to report. The refusal now arrives as itself: `RemoteStoreError` for
+the generic decline an SFTP server sends, and the matching subclass where the
+server says why. Catch [`RemoteStoreError`](api/errors.md) if you depended on the
+old shape.
+
+**A cleanup or listing that walks the destination's directory has a second
+dotted name to expect.** `.~tmp.<name>.<uuid>` was already possible;
+`.~bak.<name>.<uuid>` joins it, and unlike the temp it holds your *previous*
+file rather than your payload. Read the target before restoring one — a backup
+also outlives a call that **succeeded**, because the tidy-up that removes it is
+best-effort. The [SFTP guide](../guides/backends/sftp.md) enumerates what each
+outcome leaves where.
+
+**Scope:** SFTP, and only `overwrite=True`. `overwrite=False` displaces nothing,
+so its `AlreadyExists` is unchanged and still means what it says. The fallback is
+not confined to servers lacking the extension either: any `posix_rename` that
+fails for a reason the backend cannot attribute to a dropped connection takes the
+same path.
+
 **Flat-namespace backends now raise `InvalidPath` for a wrong-typed path:**
 
 A backend that stores keys rather than nodes — the S3 family, Azure on a flat

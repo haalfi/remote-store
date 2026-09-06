@@ -1252,8 +1252,6 @@ destination was displaced, whether the promote landed, and what the fallback the
 did about the backup — and that third step is best-effort in both directions,
 `_restore` on each of its two calls and `_release` on its one.
 
-| Displace | Promote | Then | The caller's previous file is | Pinned by |
-| --- | --- | --- | --- | --- |
 The **Reached on** column is what makes the readings below countable rather than
 recalled: `live` for a connection that never dropped, `drop` for one that did.
 

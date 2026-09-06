@@ -43,7 +43,8 @@ surprising_ripples:
 # minus one — every commit after the first is review-driven. **Counted including
 # the commit that carries this line**, which is the arithmetic three earlier
 # revisions got wrong: the query run *before* committing is one short, every time.
-# At the sixth round's fix pass it returns 9, so the value is 8, over 6 rounds.
+# At the verify-end close it returns 11 counting this commit, so the value is 10,
+# over 7 rounds.
 #
 # **No SHAs are named, and `_schema.yml` § review_rounds now permits that** — it
 # was amended in this PR, on this trace's evidence. Four corrections: a
@@ -52,7 +53,7 @@ surprising_ripples:
 # in it, leaving four hashes that still resolved as objects while matching
 # nothing the stated query returns; and the value itself was computed pre-commit
 # twice more. The query is the derivation. Re-run it; do not copy its output back.
-review_rounds: 8
+review_rounds: 10
 phases:
   - id: orient
     name: Orient
@@ -148,7 +149,25 @@ phases:
       - file: sdd/CLAUDE-REFERENCE.md
         section: "Ripple-check / Detailed checklist"
         read_type: verify
-        extract: "Bug fix, Backlog item touched, CHANGELOG entry, Spec section, Tracker ID in published prose"
+        extract: >-
+          Bug fix, Backlog item touched, CHANGELOG entry, Spec section, Tracker
+          ID in published prose — and Breaking change, which the pre-work scan of
+          the same table had passed over. The row's softer half applies here: the
+          fix changes an `except` clause without earning the marker, so it owes
+          the migration section alone. The CHANGELOG line naming the new error
+          shape had been written five rounds earlier and read past every time,
+          because nothing mechanical asks for a section when the entry is a
+          `**Fix**` — `check_breaking_migration_link` gates only the marked half,
+          and says so.
+      - file: docs-src/reference/migration.md
+        section: "v0.30.0 to v0.31.0"
+        read_type: verify
+        extract: >-
+          The version pair already had a section from earlier work in this
+          release, so the change is appended rather than opening a second
+          heading. Two caller-visible items: the error an `overwrite=True`
+          refusal now raises, and `.~bak.` joining `.~tmp.` as a name a directory
+          walk can meet.
       - file: CHANGELOG.md
         section: "[Unreleased]"
         read_type: verify
