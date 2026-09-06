@@ -1968,7 +1968,7 @@ class TestSFTPMapException:
 
         rejected = backend._map_exception(_os_with_errno(errno.EPERM, "Operation not permitted"), "delivery.csv")
         assert not isinstance(rejected, BackendUnavailable), (
-            f"EPERM was claimed as unreachable; a live channel reports it on a denied operation: {rejected!r}"
+            f"EPERM was claimed as unreachable; the mapping cannot tell that from a live-channel denial: {rejected!r}"
         )
         assert isinstance(rejected, RemoteStoreError)
 

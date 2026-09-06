@@ -430,10 +430,15 @@ compliant the day before.
   changing what a live channel reports.
   **BUG-275 has since shipped and moved the evidence**: `_raise_if_dir` raises
   `PermissionDenied` itself, so the classification stat no longer routes either
-  errno through the mapping. The exclusion still holds — an ordinary denied
-  operation reports either errno from a working channel — but the measurement
-  above is now a record of a path that no longer exists, and this item's fix
-  must not re-derive its scope from it. BUG-275 also declined the errno-dispatch
+  errno through the mapping. The exclusion still holds, but the two errnos now
+  rest on different evidence, and this item's fix must not re-derive its scope
+  from the measurement above, which records a path that no longer exists.
+  `EACCES` has a live-channel producer: paramiko's
+  `SFTPClient._convert_status` renders `SSH_FX_PERMISSION_DENIED` as
+  `IOError(EACCES)` (paramiko 5.0.0). **`EPERM` has none known** — that dispatch
+  has no arm rendering it — so what excludes it is the mapping's inability to
+  tell an arrival from outside the protocol from a connect-time one, which is
+  precisely the context this item exists to supply. BUG-275 also declined the errno-dispatch
   arm precisely *because* it would pre-empt this item's connect-time answer;
   `test_the_errno_dispatch_still_declines_eperm` pins that, and closing this
   item is what may legitimately change it.
