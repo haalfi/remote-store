@@ -220,6 +220,99 @@ if evidence changes; these are retired.
 
 ## Unreleased
 
+- [x] **BUG-274 — A keyed SFTP operation against an unreachable host pays the connect budget two or three times over**
+  spec: SFTP-023 · effort: S · audience: user.api
+  Not a regression — master behaved identically — but BUG-265 introduced the
+  predicate that closed it, and BUG-265's own round-4 measurement is what
+  exposed the mechanism.
+  **The mechanism.** The mid-operation re-entry guards asked
+  `_is_connection_dead` alone, and that predicate answers `False` for every
+  shape `_is_unreachable` claims. A guard that declines lets control fall
+  through to a classification path that re-evaluates the lazy `_sftp` property
+  and pays the whole `RetryPolicy` budget again — three attempts with 2–10 s
+  exponential backoff by default.
+  **What it cost, measured over the product of connect-time shape and
+  operation** (three shapes x twenty-eight argument shapes over the nineteen
+  operations that reach the backend, `_connect` entries counted per cell):
+  **22 of 84 cells entered `_connect` two or three times**, 111 entries where 84
+  were owed, distributed `{1: 62, 2: 17, 3: 5}`. All 84 now cost one. The
+  `connect-timeout` column was already at one throughout and is the control that
+  identifies the defect: that shape raises `TimeoutError`, which
+  `_is_connection_dead` matches, so the guards fired. The mechanism was never
+  broken — only the predicate the guards consulted.
+  **Measurement widened the item's stated scope, twice.** The body filed by
+  BUG-265 named `read` and `read_bytes`; running it added `delete` (including
+  `missing_ok=True`) and **`write(overwrite=True)`**, which pays a second cycle
+  through `_open_write` → `_raise_if_dir`'s *cause* guard. Review then added a
+  fifth, **`read_seekable`**, which is inherited from `Backend` and delegates to
+  `read` — invisible to the `vars(SFTPBackend)` walk the enumeration's own
+  derivation had used, and so absent from it.
+  **The third cycle is the file-ancestor walk**, reached only when the shape's
+  `errno` is `None`, so a nested key costs three against a refused port and two
+  against a DNS failure — on the four read-and-delete operations. **Not on
+  `write(overwrite=True)`**, where `_ensure_parent_dirs` runs ahead of
+  `_open_write`: a nested key issues the first request there, so the failure
+  never reaches the classification path and the operation costs *one* cycle
+  nested against two flat. Nesting makes it cheaper. The generalisation "each
+  with a nested key costing three where a flat one cost two" was published
+  across three artifacts and is false for exactly that operation; no cell
+  covered nested `write(overwrite=True)` until review added one.
+  **Wall clock at shipped defaults**, no `retry=` passed, against a
+  just-released ephemeral port, **both revisions timed on one machine with the
+  process's first call discarded**:
+
+  | call | before | after |
+  |---|---|---|
+  | `check_health()` | 4.00 s | 4.00 s |
+  | `exists("a.csv")` | 4.00 s | 4.00 s |
+  | `read_bytes("a.csv")` | 8.00 s | 4.00 s |
+  | `read_bytes("a/b/c.csv")` | 12.00 s | 4.00 s |
+
+  The item's own table reported `check_health` at 4.37 s and an earlier revision
+  of this entry paired it with a fresh 4.10 s reading, printing a 0.27 s
+  improvement for the one call both artifacts said did not change. Neither
+  figure was `check_health`'s: the tenth of a second belongs to whichever call
+  runs first in a process, and the 4.37 s came from another machine. Two
+  quantities compared as one, in the row whose job was to be the control.
+
+  **The fix is a third predicate, not a widening.** `_probe_is_futile` asks the
+  guards' own question — will another round-trip buy anything — and is the
+  disjunction of the two existing predicates, consulted at six guard sites.
+  `_map_exception` keeps asking them separately, because it dispatches on
+  *which* is true. Widening `_is_connection_dead` instead was the shape BUG-265
+  declined under review and BUG-273 records the measured harm of; it would also
+  have moved a connect-time shape onto the dropped-connection arm.
+  **Two of the six sites are latent** — `read`'s open guard and
+  `_has_file_ancestor`'s walk guard are unreachable for this shape once the
+  other four fire. They were widened anyway: `_has_file_ancestor` evaluates the
+  lazy property once per ancestor, so a guard correct only because a sibling
+  fires first is one refactor from paying a budget per level.
+  **Six of seventeen guard sites, and the bound on the other eleven is a fact
+  about the fault rather than about those sites.** The item's premise — that
+  "the fourteen mid-operation re-entry guards all ask `_is_connection_dead`
+  alone" — was wrong in its count as well as its scope. Derived by filter
+  rather than by arithmetic, since two spellings of the arithmetic were refuted
+  under review: walk the module for attribute *references* to
+  `_is_connection_dead` or `_probe_is_futile` (references, because `read` hands
+  the predicate to `_ErrorMappingStream` as `is_fatal=` without calling it),
+  keep those whose owning function is neither `_probe_is_futile` nor
+  `_map_exception`, and seventeen fall out — six and eleven. The fault the six
+  serve is an operation whose **first** `_sftp` evaluation fails, which is what
+  "a host that was never reached" means and is all the enumeration drives, every
+  cell building a fresh backend. **Four of the six are reached under it** —
+  measured at 15, 12 and 6 consultations across the 84 cells — and the two named
+  latent above are never consulted by any cell at all, which is the same fact
+  stated from the other end rather than a second claim.
+  **A transport that dies mid-operation is a different fault and is not fixed
+  here** — filed as BUG-278 with its measurement (`write_atomic` with the
+  transport flipped inactive between the temp close and the promote: three
+  `_connect` entries, 12.01 s at shipped defaults, against four before this
+  item). An earlier revision of this entry claimed those eleven were
+  *unreachable* and that the enumeration would catch it if they were not; both
+  halves were refuted by measurement, the second because no cell can put a
+  live-then-dead transport in front of a guard.
+  **Found by BUG-265's round-5 unprimed reviewer**, as a `Possible: Perf:`.
+
 - [x] **BUG-277 — An `overwrite=True` atomic write can raise `AlreadyExists` when the SFTP fallback cannot clear the destination**
   spec: AW-003, SFTP-018 · effort: S · audience: user.api
   **Filed and closed inside BUG-272's own review**, which is why it has no

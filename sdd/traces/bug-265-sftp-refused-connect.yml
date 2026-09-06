@@ -232,7 +232,24 @@ phases:
           prose mentions until round 4 found that stale too — the docstring
           edits in this very PR moved it. That second figure is now dropped
           rather than corrected: "prose mention" has no crisp definition and the
-          number moves every time a docstring is touched
+          number moves every time a docstring is touched.
+          Annotated by BUG-274, which moved this figure too: six of those call
+          sites now consult _probe_is_futile. **No replacement number is given,
+          for the reason the line above already gives.** A first attempt at this
+          annotation said the stated `rg` returns 12 on that branch; it returns
+          13, because BUG-274's own _probe_is_futile docstring quotes
+          `is_fatal=self._is_connection_dead` verbatim and the command matches
+          prose. So the annotation correcting a figure that "moves every time a
+          docstring is touched" was moved by a docstring in the commit that
+          wrote it. The durable statement is the shape rather than the count:
+          the command mixes code references with prose ones, which is why the
+          module's own docstring derives its site count by walking attribute
+          references and filtering by owning function instead. The figure was
+          already stale here before BUG-274 touched the file, so none of this is
+          a correction of that work — it is recorded because BUG-274 annotated
+          the sibling step below for exactly this cause, and annotating only one
+          of two figures its own change moved is the uneven treatment a reviewer
+          would have to re-derive
         outcome: ok
       - file: sdd/specs/009-sftp-backend.md
         section: "SFTP-023"
@@ -429,7 +446,14 @@ phases:
           made it unarguable: read_bytes against a refused port consults
           _is_connection_dead three times, twice before the mapping, so the
           replacement rationale round 3 wrote was false in the same way as the
-          one it replaced
+          one it replaced.
+          Annotated, not rewritten, per this trace's own rule from the
+          fix_vacuous phase — a trace states a past reading: **BUG-274 changed
+          that measurement to twice, once before the mapping.** The guards now
+          consult both predicates through _probe_is_futile, so read_bytes' own
+          guard acts instead of declining and the second pre-mapping consult —
+          the classification path it used to fall through to — never happens.
+          The refutation this step records stands; only its figure moved
         outcome: ok
       - file: tests/backends/sftp/test_config.py
         section: "TestSFTPConnectTimePredicateSpace"

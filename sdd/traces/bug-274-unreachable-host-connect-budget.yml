@@ -1,0 +1,481 @@
+id: BUG-274
+title: "A keyed SFTP operation against an unreachable host pays the connect budget two or three times over"
+trigger: >-
+  BUG-265's round-5 unprimed reviewer noticed, as a Possible: Perf: it could not
+  run, that the mid-operation re-entry guards all consult _is_connection_dead
+  alone while the connect-time shapes are claimed by _is_unreachable. A guard
+  that declines lets control fall through to a classification path that
+  re-evaluates the lazy _sftp property, so an operation against a host that was
+  never reached pays the whole RetryPolicy budget again — twice for a flat key,
+  three times for a nested one.
+source_items:
+  - BUG-274
+  - BUG-265
+audience:
+  - user.api
+expected_ripples:
+  - CHANGELOG.md
+  - sdd/BACKLOG.md
+  - sdd/BACKLOG-DONE.md
+  - sdd/specs/009-sftp-backend.md
+  - src/remote_store/backends/_sftp.py
+  - tests/backends/sftp/test_config.py
+surprising_ripples:
+  # test_the_dead_connection_guard_is_consulted_on_the_connect_path records the
+  # *calling frame* of _is_connection_dead, precisely so the mapping's own
+  # guaranteed consult cannot satisfy it. Interposing _probe_is_futile between
+  # every guard and that predicate made the recorded frame the helper for all of
+  # them, collapsing the distinction the test is built on, and it failed. No
+  # ripple-check row routes from "I extracted a helper" to "which tests assert
+  # on a call stack": the Bug-fix row reaches the test that pins the behaviour,
+  # not the one that pins how the behaviour is reached. Repaired by skipping the
+  # helper's frame, and the repair re-verified by mutation — deleting
+  # read_bytes' guard leaves ['_raise_if_dir', '_map_exception'] and the test
+  # still fails.
+  - tests/backends/sftp/test_config.py
+  # The sibling trace is here for the schema's own reason (_schema.yml,
+  # surprising_ripples): no ripple-check row routes from "a measured figure
+  # changed" to "the past records that quote it". BUG-265's trace recorded
+  # read_bytes consulting _is_connection_dead three times, twice before the
+  # mapping — this PR makes it twice, once — and the same figure had to be
+  # corrected in TestSFTPConnectTimePredicateSpace's class docstring. The trace
+  # is annotated rather than rewritten, per the rule BUG-265's own fix_vacuous
+  # phase established: a register entry states current fact and gets corrected,
+  # a trace states a past reading and gets annotated.
+  - sdd/traces/bug-265-sftp-refused-connect.yml
+discovery_followups:
+  # BUG-278 was born in round 2, from the measuring member driving a transport
+  # death into _promote rather than reading the reachability argument this
+  # item's own round-1 fix pass had written. That argument was refuted: the
+  # eleven unwidened guard sites are not unreachable, they are out of scope,
+  # and the difference is a fact about the fault rather than about the sites.
+  # Filed rather than fixed on the user's decision — it needs a live-then-dead
+  # transport fixture this suite does not have, and its sites sit in the
+  # rename-fallback ladder BUG-270/272/277 have just reworked.
+  - BUG-278
+# Derived from `git log --format='%s' origin/master..HEAD --reverse`, run before
+# this line was written, and counting the commit that carries it. Five rows:
+#   BUG-274: Ask whether another probe can answer, not only whether the channel
+#            died -> does not count (implements the item)
+#   BUG-274: Re-derive the enumeration's size, and widen it to every operation
+#            -> counts (round 1, 5 findings from a solo unprimed reviewer)
+#   BUG-274: Scope the guarantee to the fault it covers, and file the residue
+#            -> counts (round 2, 5 findings from a solo measuring reviewer)
+#   BUG-274: Correct the figures a three-member panel refuted, and give BUG-278
+#            its fifth site -> counts (round 3, 11 findings after dedup from a
+#            three-member panel: unprimed, measuring, whole-file)
+#   BUG-274: Scope the CHANGELOG subject, and state four exclusions truthfully
+#            -> counts (round 4, 8 findings after dedup from a three-member
+#            panel: unprimed, measuring, whole-file)
+# Value is 4. Re-derive from that command before each push; a review round that
+# lands a fix raises it. Retrospective: the lead-in above said "Two rows" over a
+# four-row list until round 4 — rounds 2 and 3 each appended a row and left the
+# phrase, and the value stayed right while the list it was checkable against did
+# not, which is the quiet half of this failure.
+review_rounds: 4
+phases:
+  - id: orient
+    name: Orient
+    steps:
+      - file: sdd/BACKLOG.md
+        section: "(item) BUG-274"
+        read_type: gate
+        extract: >-
+          The measured mechanism, the 1x/2x/3x wall-clock table, and the item's
+          own two warnings: the widening is the one BUG-265 declined under
+          review, and TestSFTPConnectTimePredicateSpace asserts the observable
+          answer and *not* a connect count, so nothing in the suite notices this
+          either way. "Pinning the count is part of the work" is the sentence
+          that set the shape of the test
+        outcome: ok
+      - file: sdd/traces/bug-265-sftp-refused-connect.yml
+        section: "discovery_followups, fix_enumerated"
+        read_type: reference
+        extract: >-
+          Where the item came from and what its sibling items are: BUG-273 owns
+          the permission errnos, BUG-275 the absent EPERM arm. Confirms this
+          item is the latency half alone and touches neither
+        outcome: ok
+      - file: sdd/CLAUDE-REFERENCE.md
+        section: "Ripple-check / Pre-work index"
+        read_type: gate
+        extract: >-
+          Triggered rows: Bug fix, Backlog item touched, CHANGELOG entry, Spec
+          section. **Breaking change was checked and does not trigger** — the
+          error type is unchanged, so no except clause stops catching and no
+          migration section is owed.
+          **The grounds, corrected in round 4, because the measurement cited
+          here does not cover everything the change touches.** All 84 cells
+          answer BackendUnavailable on both revisions, but every cell builds a
+          fresh backend, and two of the six widened sites — _raise_if_dir's stat
+          guard and _has_file_ancestor's walk guard — are also reachable on a
+          *live* channel. There an errno-less SSH_FX_FAILURE followed by a
+          reconnect into a gone host used to be swallowed and surface as the
+          caller's original error at the generic arm; it now surfaces as
+          BackendUnavailable. The disposition still holds, but by the subclass
+          relation — BackendUnavailable is a RemoteStoreError — and not by the
+          84 cells, which is the half a reader reopening the question would
+          otherwise lean on
+        outcome: ok
+  - id: reproduce
+    name: Reproduce by measurement
+    steps:
+      - file: src/remote_store/backends/_sftp.py
+        section: "_is_connection_dead, _is_unreachable, the guard sites"
+        read_type: gate
+        extract: >-
+          Counted _connect entries per operation against a just-released
+          ephemeral port with _connect wrapped in a counter, rather than reading
+          which guards a connect failure can reach. **The subject set came out
+          of the run, not out of the item**: 24 operations measured, 8 paying
+          more than one cycle, and one of them —
+          `write(path, content, overwrite=True)` via _open_write ->
+          _raise_if_dir's cause guard — is named nowhere in the item's body.
+          Extended to the product of shape x operation: **84 cells, 111
+          cycles, 22 cells over one, five operations moved**.
+          Retrospective, and this figure moved twice under review. It said "48
+          cells, 67 cycles" while three shipped artifacts said "16 of 36" — the
+          enumeration was written with 16 operations, the figure carried while
+          the tuple grew, and 36 was never any basis's answer. Round 1 re-derived
+          it at 72; round 2 found the population itself short, since
+          `read_seekable` is inherited from `Backend` and the stated
+          `vars(SFTPBackend)` derivation cannot see it. The derivation that
+          finally holds does not recount anything: `tmp/totals.py` imports the
+          test class's own OPERATIONS and _call and runs them against the
+          pre-fix backend, so the prose figure and the suite's cells cannot
+          disagree by construction
+        outcome: ok
+      - file: tests/backends/sftp/test_config.py
+        section: "TestSFTPConnectTimePredicateSpace"
+        read_type: reference
+        extract: >-
+          The three connect-time shapes and the _backend fixture that builds
+          each deterministically, reused rather than copied. The
+          `connect-timeout` column measured 1 throughout **before** the fix,
+          because that shape raises TimeoutError which _is_connection_dead
+          already matches — so it is the control proving the guard mechanism
+          works and only the predicate was wrong
+        outcome: ok
+  - id: tests
+    name: Failing test first
+    steps:
+      - file: sdd/000-process.md
+        section: "Rule 6 (bug-fix pipeline)"
+        read_type: gate
+        extract: "BACKLOG → CHANGELOG → failing test → fix, in one commit"
+        outcome: ok
+      - file: tests/backends/sftp/test_config.py
+        section: "TestSFTPUnreachableHostCostsOneConnect"
+        read_type: reference
+        extract: >-
+          72 cells asserting one _connect entry each. Run against the pre-fix
+          backend: **16 failed, 56 passed** — the same 16 cells the standalone
+          script measured, which is what makes the script and the test one
+          measurement rather than two. What is asserted is the *budget*, not a
+          probe count: the sibling class declines to pin probe counts because
+          they are the operation's own business, and that reasoning binds here
+          too.
+          Widened from 16 operations to 24 in round 1: the spec clause claims
+          "whatever the operation" and the tuple pinned a subset, so the
+          universal half rested on the reachability argument for the unwidened
+          guard sites rather than on measurement. The eight added operations all
+          passed pre-fix, which is the argument's conclusion arrived at by
+          running it.
+          **Annotated after round 3: every figure in this step was superseded.**
+          Round 2 took the tuple to 28 entries and the class to 84 cells, which
+          run pre-fix as 22 failed / 62 passed. The figures above are round 1's
+          reading and are kept as that, per this file's own rule — but round 2
+          rewrote the `reproduce` step in place while leaving this one, so the
+          file gave two uncontextualised counts for one class until a
+          three-member panel found it. The rule applies to both steps or neither
+        outcome: ok
+  - id: implement
+    name: Implement
+    steps:
+      - file: src/remote_store/backends/_sftp.py
+        section: "_probe_is_futile"
+        read_type: reference
+        extract: >-
+          A third predicate rather than a widening of either existing one. The
+          guards ask "will another round-trip buy anything", which is neither
+          "was the host reached" nor "is the channel dead"; naming it is what
+          keeps SFTP-023's split intact while fixing the sites. Six call sites,
+          four measured-reachable and two latent
+        outcome: ok
+      - file: sdd/specs/009-sftp-backend.md
+        section: "SFTP-023"
+        read_type: gate
+        extract: >-
+          The clause to amend. The existing paragraph already said the guards
+          are consulted on the connect path — true before the fix and after —
+          so what was missing was that they now *act*. Added the one-budget
+          invariant with the measured figures and a pointer to the enumeration,
+          and stated the bound: the clause is about the budget, not about probe
+          counts
+        outcome: ok
+      - file: src/remote_store/backends/_sftp.py
+        section: "_raise_if_dir (docstring), _is_unreachable (docstring)"
+        read_type: verify
+        extract: >-
+          Two docstrings describing the old guard condition in prose —
+          _raise_if_dir's "when that failure already concludes the connection is
+          dead" and _is_unreachable's account of the three refuted rationales.
+          Neither sits on a line the fix would otherwise have touched
+        outcome: ok
+  - id: fix_round_1
+    name: Round-1 fix pass (solo unprimed reviewer)
+    steps:
+      - file: tests/backends/sftp/test_config.py
+        section: "TestSFTPUnreachableHostCostsOneConnect (OPERATIONS)"
+        read_type: verify
+        extract: >-
+          **The figure was wrong in three shipped artifacts and the reviewer
+          derived it two independent ways**: by counting the tuples (3 x 16 =
+          48) and by reconstructing the 67-cycle total from the code paths.
+          Neither matched the "16 of 36" the spec, the helper docstring and the
+          test docstring all carried. The deeper defect was underneath it: the
+          spec clause says "whatever the operation" while the tuple pinned 16 of
+          the 24 that reach the backend, so the universal half rested on a prose
+          reachability argument about ten unwidened guard sites. Widened to all
+          24 and re-measured on one basis — 72 cells, 91 cycles pre-fix, 16 over
+          one — which is why every figure in this trace moved at once rather
+          than being patched from 36 to 48
+        outcome: ok
+      - file: tests/backends/sftp/test_config.py
+        section: "test_the_dead_connection_guard_is_consulted_on_the_connect_path"
+        read_type: verify
+        extract: >-
+          The repair this PR made to BUG-265's test described a mutation result
+          this PR's own trace recorded differently, and the trace was right. The
+          docstring claimed the mutation empties `outside_mapping` and fires the
+          second assertion; it actually leaves `['_raise_if_dir',
+          '_map_exception']` and fires the third. The claimed version was the
+          stronger sensitivity, so the sentence promised discriminating power
+          the test does not have — and the reason it does not is this PR:
+          widening `_raise_if_dir`'s guard put a second guard's consult in the
+          list. Corrected to the measured list, with the assertion that actually
+          moves named. The value was sitting in this session's own scrollback
+          and in the trace; only the docstring restated it from memory
+        outcome: misleading
+      - file: sdd/specs/009-sftp-backend.md
+        section: "SFTP-023 (one-budget clause)"
+        read_type: verify
+        extract: >-
+          "all four now cost one budget" counted a fourth call the spec never
+          names — `exists`, which appears only in BACKLOG-DONE's table — and
+          folded `check_health` in as though its 4.37 s were a defect this
+          change removed. Both were already at one budget: the retired item said
+          so explicitly ("check_health is unaffected: it has no re-entry
+          guard"). Rewritten to say which four operations moved and to state
+          that nothing else did
+        outcome: ok
+  - id: fix_round_2
+    name: Round-2 fix pass (solo measuring reviewer)
+    steps:
+      - file: src/remote_store/backends/_sftp.py
+        section: "_probe_is_futile (reachability paragraph)"
+        read_type: gate
+        extract: >-
+          **The round-1 fix pass answered a reviewer's request for a written
+          reason by writing one that was false, and a measuring round refuted it
+          in the only way prose cannot argue back from.** The paragraph claimed
+          a connect failure reaches a guard only where the operation evaluates
+          _sftp inside its own try, then excluded _promote — which does exactly
+          that — on a different ground. _sftp re-reads transport.is_active() on
+          every access, so a transport dying after a handle was produced sends
+          the next access to _connect. Driven: write_atomic with the transport
+          flipped inactive between the temp close and the promote, 3 _connect
+          entries and 12.01 s at shipped defaults, the same figure this item
+          publishes as the defect for a nested read_bytes.
+          Annotated after round 4: that identity was false when this line was
+          written. The same commit re-measured the wall-clock table and moved
+          the published nested read_bytes figure to 12.00 s, so the two are near
+          neighbours — both three budgets at a 4 s budget — rather than one
+          number. Round 3 corrected the identical bridge in BUG-278's register
+          entry and did not sweep to this copy. Reproduced
+          independently before acting on it. The paragraph's fallback — that the
+          enumeration would catch it anyway — was false for a second reason: no
+          cell can put a live-then-dead transport in front of a guard, because
+          every cell builds a fresh backend. Rewritten to scope the guarantee to
+          the fault it covers; residue filed as BUG-278 on the user's decision
+        outcome: misleading
+      - file: tests/backends/sftp/test_config.py
+        section: "TestSFTPUnreachableHostCostsOneConnect (OPERATIONS)"
+        read_type: verify
+        extract: >-
+          Round 1 widened this tuple to "every operation that reaches the
+          backend" and named its derivation; round 2 ran that derivation and it
+          did not produce the tuple. vars(SFTPBackend) cannot see members
+          inherited from Backend, and read_seekable is one — an operation that
+          delegates to read() and therefore moved, 2/2/1 flat and 3/2/1 nested
+          on the base. A fifth operation, absent from a tuple whose whole claim
+          was completeness. Derivation restated over dir() with every exclusion
+          accounted for, and **four** cells added: read_seekable, its nested
+          variant and delete/missing_ok/nested, which fail pre-fix, plus
+          write/overwrite/nested, which passes — and that fourth is the
+          load-bearing one, since it is what refutes the nested-key
+          generalisation published across three artifacts. An earlier revision
+          of this line said "three cells added ... all of which fail pre-fix",
+          dropping the cell that carried the round's point in order to keep the
+          clause true
+        outcome: ok
+      - file: sdd/specs/009-sftp-backend.md
+        section: "SFTP-023 (one-budget clause)"
+        read_type: verify
+        extract: >-
+          Two claims refuted by cells that did not exist. "Each with a nested key
+          costing three where a flat one cost two" distributes over four
+          operations and is backwards for write(overwrite=True):
+          _ensure_parent_dirs runs ahead of _open_write, so a nested key issues
+          the first request and costs *one* cycle against a flat key's two —
+          nesting makes it cheaper. Nothing contradicted it because OPERATIONS
+          had no nested write/overwrite cell; there is one now. And the
+          wall-clock table's check_health row (4.37 -> 4.10 s) was process
+          warm-up compared against another machine's reading, printed as a
+          saving in the row whose stated job was to show nothing moved. Whole
+          table re-measured on one machine, both revisions, first call discarded
+        outcome: ok
+  - id: fix_round_3
+    name: Round-3 fix pass (three-member panel)
+    steps:
+      - file: sdd/BACKLOG-DONE.md
+        section: "(item) BUG-274, cost paragraph"
+        read_type: verify
+        extract: >-
+          **All three panel members found this independently**, which is the
+          signal worth recording: the register entry's headline figures were one
+          fix pass behind (twenty-four operations, 16 of 72, 91 cycles) while
+          four other artifacts said 84. Round 2 edited three paragraphs of this
+          one entry and left the fourth — a sibling sweep that stopped at the
+          paragraph boundary rather than the entry boundary. The entry also
+          contradicted itself six lines down, recording the very additions that
+          moved 72 to 84
+        outcome: ok
+      - file: src/remote_store/backends/_sftp.py
+        section: "_probe_is_futile (site-count derivation)"
+        read_type: gate
+        extract: >-
+          **Second consecutive round to refute this one sentence** — round 2 its
+          figure, round 3 its recipe — which is the repeat-site rule's trigger,
+          and the response is the rule's: stop rewriting the prose and state
+          something runnable. Both spellings failed the same way, by inviting a
+          reader to subtract a count from a total. Replaced with a filter over
+          attribute *references* (not calls: read's `is_fatal=` handoff is a
+          bare reference and is one of the eleven) kept by owning function,
+          which yields seventeen directly. Settled by running it rather than by
+          adjudicating the two members' differing arithmetic, which disagreed
+          because they walked different name sets
+        outcome: ok
+      - file: sdd/BACKLOG.md
+        section: "(item) BUG-278"
+        read_type: verify
+        extract: >-
+          The measuring member drove the *filed follow-up item* and found its
+          prescribed fix does not close the fault it describes: `move`'s own
+          guard is a fifth site on identical footing, and with the four-site fix
+          simulated `move` still costs 2 entries / 8.00 s. Reproduced
+          independently before acting — 3 entries / 12.01 s, declining at
+          move -> _displace -> _is_absent on overwrite=True and
+          move -> _move_fallback on overwrite=False, which is also why the item
+          now asks for both paths to be asserted. The item had additionally
+          called _displace and _is_absent "unmeasured" while its own published
+          measurement was made of their declines. A follow-up item nobody has
+          reviewed is the easiest place for a wrong disposition to survive
+        outcome: ok
+      - file: sdd/traces/bug-274-unreachable-host-connect-budget.yml
+        section: "tests phase, fix_round_2 OPERATIONS step"
+        read_type: verify
+        extract: >-
+          Two defects in this file, both about treating like things unalike.
+          The `tests` phase still read as current at 72 cells while `reproduce`
+          had been rewritten in place to 84 — round 2 applied this file's own
+          annotate-vs-correct rule to one step and not its sibling. And
+          "three cells added ... all of which fail pre-fix" dropped the fourth,
+          write/overwrite/nested, whose passing is exactly what refuted the
+          nested-key generalisation: the clause stayed true by omitting the cell
+          that mattered most
+        outcome: ok
+  - id: fix_round_4
+    name: Round-4 fix pass (three-member panel)
+    steps:
+      - file: CHANGELOG.md
+        section: "[Unreleased] (BUG-274 stub)"
+        read_type: verify
+        extract: >-
+          **The only changed file no round had examined, and it carried the one
+          claim a user reads.** Its subject was the unscoped "a host that cannot
+          be reached", which round 2 spent its whole pass removing from the spec,
+          the register entry, the helper docstring and the test class — and it is
+          measurably false: move after a mid-operation transport death pays three
+          budgets on this branch. `git log -L 10,11:CHANGELOG.md` shows the
+          round-2 commit, titled "Scope the guarantee to the fault it covers",
+          editing this very line to change 12.01 to 12.00. The sweep passed
+          through the sentence it was about and changed a digit in it. Fixed to
+          "a host that was never reached", which is the phrasing every sibling
+          artifact uses and which excludes the transport-death case by
+          construction, since there the host was reached
+        outcome: ok
+      - file: src/remote_store/backends/_sftp.py
+        section: "_probe_is_futile (six/eleven partition)"
+        read_type: verify
+        extract: >-
+          The partition sentence said the six are what an operation reaches when
+          its first _sftp evaluation fails, while site comments this PR adds two
+          screens below say two of the six are never reached at all. Both halves
+          were true and were written a round apart; nothing brought them into
+          contact. The measuring member settled it by counting consultations
+          across the 84 cells — 15, 12 and 6 for the reached guards, zero for
+          both latent ones — so the split is stated as four reachable plus two
+          prophylactic, with the measured counts, in the docstring the two other
+          artifacts defer to
+        outcome: ok
+      - file: tests/backends/sftp/test_config.py
+        section: "TestSFTPUnreachableHostCostsOneConnect (OPERATIONS exclusions)"
+        read_type: verify
+        extract: >-
+          unwrap was grouped with the names that issue no request; it returns
+          self._sftp, so it evaluates the lazy property and pays a full budget.
+          The tuple's whole claim is completeness with every exclusion accounted
+          for, so a false accounting is the defect rather than the missing cell.
+          The true reason is also the more useful one: unwrap hands back the
+          driver's handle rather than performing a store operation and sits
+          outside _errors(), so a cell for it would meet a raw
+          NoValidConnectionsError and fail rather than pass — which is a live
+          question about the error model's reach that this item does not decide
+          and now names
+        outcome: ok
+      - file: sdd/traces/bug-265-sftp-refused-connect.yml
+        section: "fix_* step (call-site count annotation)"
+        read_type: verify
+        extract: >-
+          **The round's sharpest lesson, and it is recursive.** Round 3's
+          annotation gave a replacement `rg` count of 12; the command returns 13,
+          the thirteenth hit being a line of _probe_is_futile's docstring added
+          by the same commit, which quotes is_fatal=self._is_connection_dead
+          verbatim. So an annotation correcting a figure — sitting directly under
+          a retrospective that drops a *different* figure because "the number
+          moves every time a docstring is touched" — was moved by a docstring in
+          its own commit. Two members found it independently. The replacement
+          number is now withdrawn rather than corrected a second time: what is
+          recorded is why that command cannot hold a stable count (it matches
+          prose as well as code), which is the same reasoning that made the
+          module's own count a reference-walk filtered by owning function
+        outcome: ok
+  - id: verify
+    name: Verify
+    steps:
+      - file: tests/backends/sftp/test_config.py
+        section: "TestSFTPConnectTimePredicateSpace (guard-reachability test)"
+        read_type: verify
+        extract: >-
+          Caught by running the whole SFTP suite, not by the diff: the helper
+          changed the frame the test records. See surprising_ripples. The
+          repaired test was re-verified by mutation rather than by reading —
+          `if False and self._probe_is_futile(exc)` in read_bytes, both this
+          test and the new cost test fail, revert, both pass
+        outcome: ok
+      - file: sdd/CLAUDE-REFERENCE.md
+        section: "Ripple-check / Detailed checklist"
+        read_type: verify
+        extract: "Bug fix, Backlog item touched, CHANGELOG entry, Spec section rows"
+        outcome: ok
