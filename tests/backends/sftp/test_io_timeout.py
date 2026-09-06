@@ -1723,8 +1723,12 @@ def test_the_fallback_pays_one_bound_not_two(
     displace. The band matches ``test_stall_costs_one_bound_not_several``: 1.75x
     fails the doubling while leaving slack on a loaded runner.
 
-    The destination is untouched because the request never left the client — the
-    other direction would leave it displaced, which the test above covers.
+    The destination is untouched because the request never left the client. The
+    other direction — the displace performed, its reply lost — leaves the
+    destination displaced with nothing having reported it, and **nothing in the
+    suite stages that**: the test above silences the *promote*, whose predicate a
+    ``.~bak.`` destination never matches. SFTP-030's enumeration carries that row
+    as argued rather than measured, and says so.
     """
     if sftp_server is None:
         pytest.skip("paramiko not installed")

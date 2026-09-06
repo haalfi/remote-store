@@ -258,14 +258,19 @@ connect is rejected locally — `PermissionDenied` blaming the caller's key on t
 so it is the promised-type defect again; the qualifier is load-bearing, because
 the reproducible half is the one that answers the base class.
 **The what-it-leaves-behind clause is met and has left the list**, closed by
-BUG-272 with BUG-270 and BUG-277: the one place in the library where a reported
-failure could destroy the caller's file was SFTP's rename fallback, which removed
-the destination before renaming onto it. It now displaces and restores, so the
-file the caller had is either back at its path or findable beside it under a
-`.~bak.` name — which is the guarantee, since putting it back is best-effort and
-a dead channel or a refusing server can stop it. The clause was added to
-this section by BK-360's measurements and closed by the two items those
-measurements filed, which is the shortest a clause has been open here.
+BUG-272 with BUG-270 and BUG-277: the place where an operation *asked to
+preserve* the caller's file destroyed it was SFTP's rename fallback, which
+removed the destination before renaming onto it. It now displaces and restores,
+so the file the caller had is either back at its path or findable beside it under
+a `.~bak.` name — which is the guarantee, since putting it back is best-effort
+and a dead channel or a refusing server can stop it. **The narrower claim is the
+defensible one**: a non-atomic `write(..., overwrite=True)` still has an `empty`
+residue that destroys a pre-existing file, which SFTP-030 states as one of its
+consequences — that operation makes no such promise, which is exactly why
+`write_atomic` exists. BK-360's measurements added this clause and filed the two
+items that closed it; BUG-277 came out of their own review rather than those
+measurements, which is why three IDs close what two filed, and it is the shortest
+a clause has been open here.
 **One cross-section dependency remains**, per
 [§ How this file works](#how-this-file-works): BK-345 waits on **ID-244** in
 section 2 for the seeding hook, stated inside the item that carries it, so this

@@ -125,14 +125,16 @@ def _strict_rename(backend: Any) -> None:
     client.rename = strict
 
 
-def _deny_removing(backend: Any, target: str, code: int) -> None:
-    """Fail every ``remove`` of *target*, leaving every other unlink alone.
+def _deny_removing(backend: Any, target: str | None, code: int, *, prefix: str | None = None) -> None:
+    """Fail every ``remove`` of *target* (or of any name starting with *prefix*).
 
-    Ends ``_copy_and_delete`` at its last step, after the destination has been
-    written — the cheapest way to stage a copy rung that fails with the
-    destination already occupied. The fallback's own cleanup unlinks other names,
-    so scoping to *target* is what keeps this a staged server failure rather than
-    a blanket one.
+    By *target*, this ends ``_copy_and_delete`` at its last step, after the
+    destination has been written — the cheapest way to stage a copy rung that
+    fails with the destination already occupied. By *prefix*, it refuses the
+    fallback's own unlink of a backup, which is how ``_release`` and
+    ``_restore``'s clear-first step are made to fail on a live connection.
+    Scoping either way is what keeps this a staged server failure rather than a
+    blanket one.
     """
     import paramiko
 
@@ -140,20 +142,25 @@ def _deny_removing(backend: Any, target: str, code: int) -> None:
     original = client.remove
 
     def denied(path: str, *args: Any, **kwargs: Any) -> Any:
-        if path.rsplit("/", 1)[-1] == target:
+        name = path.rsplit("/", 1)[-1]
+        if (target is not None and name == target) or (prefix is not None and name.startswith(prefix)):
             raise OSError(code, "staged remove failure")
         return original(path, *args, **kwargs)
 
     client.remove = denied
 
 
-def _deny_displacing(backend: Any, target: str, code: int) -> None:
+def _deny_displacing(backend: Any, target: str, code: int | None) -> None:
     """Fail the rename that moves *target* aside, leaving every other rename alone.
 
     The branch no other staging in this file reaches: ``_deny_promote_onto``
     lets the displace through by design, and ``_strict_rename`` only refuses an
     *occupied* destination, which a fresh ``.~bak.`` name never is. Apply after
     ``_strict_rename`` so this wrapper sits outside it.
+
+    ``code=None`` raises the **errno-less** ``OSError`` paramiko produces for
+    every SFTP status but two — the shape a server uses when it answers a
+    generic ``SSH_FX_FAILURE``, and the one an errno test silently misreads.
     """
     import paramiko
 
@@ -162,7 +169,7 @@ def _deny_displacing(backend: Any, target: str, code: int) -> None:
 
     def denied(src: str, dst: str, *args: Any, **kwargs: Any) -> Any:
         if src.rsplit("/", 1)[-1] == target and dst.rsplit("/", 1)[-1].startswith(".~bak."):
-            raise OSError(code, "staged displace failure")
+            raise OSError("staged displace failure") if code is None else OSError(code, "staged displace failure")
         return original(src, dst, *args, **kwargs)
 
     client.rename = denied
@@ -370,6 +377,72 @@ def test_a_refused_displace_reports_rather_than_writing_the_destination(sftp_bac
     assert _litter(backend) == []
     if op == "move":
         assert backend.read_bytes(src) == new, "a failed move leaves its source in place"
+
+
+@pytest.mark.spec("AW-003")
+@pytest.mark.spec("SFTP-014")
+@pytest.mark.parametrize("op", ["write_atomic", "open_atomic"])
+def test_an_errno_less_displace_failure_over_nothing_still_creates(sftp_backend: SFTPBackend, op: str) -> None:
+    """ "Nothing was there" is a fact about the destination, not about the errno.
+
+    paramiko attaches an errno to two SFTP statuses only, so a server that
+    answers "rename: no such source" with the generic ``SSH_FX_FAILURE`` arrives
+    errno-less. Reading `ENOENT` off the failure calls that a refusal — and since
+    every overwrite promote on an extension-less server reaches the displace,
+    that is every ordinary `overwrite=True` create on the server class this
+    fallback exists for.
+
+    Staged as such a server answers: the displace fails with no errno over a
+    destination that genuinely is not there. The write must land.
+    """
+    backend: Any = sftp_backend
+    dst = f"fresh_{uuid.uuid4().hex[:8]}.bin"
+    payload = b"NEW" * 100
+
+    _break_posix_rename(backend)
+    _deny_displacing(backend, dst, None)
+
+    if op == "open_atomic":
+        with backend.open_atomic(dst, overwrite=True) as handle:
+            handle.write(payload)
+    else:
+        backend.write_atomic(dst, payload, overwrite=True)
+
+    assert backend.read_bytes(dst) == payload
+    assert _litter(backend) == []
+
+
+@pytest.mark.spec("AW-004")
+@pytest.mark.spec("SFTP-015")
+def test_a_release_the_server_refuses_leaves_a_backup_beside_a_good_write(sftp_backend: SFTPBackend) -> None:
+    """A `.~bak.` outlives a call that **succeeded**, and that is the dangerous one.
+
+    `_release` unlinks the backup best-effort, so a server that refuses the
+    unlink leaves it there while the destination holds the new content — on a
+    connection that never dropped, and with nothing raised. A caller who treats
+    every `.~bak.` as "the file that should be at the target" and copies it back
+    would undo a good write, which is why the guide tells them to read the target
+    first.
+
+    The row this pins carried caller advice in three artifacts and was exercised
+    by nothing.
+    """
+    backend: Any = sftp_backend
+    dst = f"dst_{uuid.uuid4().hex[:8]}.bin"
+    old, new = b"OLD" * 100, b"NEW" * 100
+
+    backend.write(dst, old)
+
+    _break_posix_rename(backend)
+    _strict_rename(backend)
+    _deny_removing(backend, None, errno.EACCES, prefix=".~bak.")
+
+    backend.write_atomic(dst, new, overwrite=True)
+
+    assert backend.read_bytes(dst) == new, "the write succeeded; nothing about the backup changes that"
+    backups = [name for name in _litter(backend) if name.startswith(f".~bak.{dst}.")]
+    assert len(backups) == 1, "the unlink was refused, so the backup outlives a call that reported success"
+    assert backend.read_bytes(backups[0]) == old
 
 
 @pytest.mark.spec("AW-004")

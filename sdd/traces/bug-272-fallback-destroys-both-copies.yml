@@ -39,16 +39,18 @@ surprising_ripples:
   - tests/backends/sftp/test_config.py
 # The schema counts review-driven *commits*, not rounds, and the two differ here:
 # round 2 produced two (its fix pass, then a CHANGELOG line its own review reply
-# had claimed and not made). Counted from `git log --oneline origin/master..HEAD`,
-# oldest first: 8ed1dc7 implements and does not count; d7c4818 (round 1),
-# 0a0e934 and 8e7c37b (round 2), and the commit carrying this line (round 3) are
-# review-driven. Value is 4 over 3 rounds.
+# had claimed and not made). The value is `git log --oneline origin/master..HEAD`
+# minus one — every commit after the first is review-driven — which at the fifth
+# round's fix pass is 7 - 1 = 6, over 5 rounds.
 #
-# The rule, since the list has gone stale twice: every commit after the first is
-# review-driven, so the value is that query's count minus one. An enumeration
-# written inside the branch it enumerates can never include the commit carrying
-# it, which is why the rule is stated alongside the list rather than instead of it.
-review_rounds: 4
+# **No SHAs are named, and that is the third correction of this field.** A
+# transcribed list cannot include the commit carrying it, so it is stale on
+# arrival; it went stale again on the next push; and a rebase then orphaned every
+# SHA in it, leaving four hashes that still resolved as objects while matching
+# nothing the stated query returns — the failure `_schema.yml` warns about, in its
+# worst form, because such a hash verifies. The query is the derivation. Re-run
+# it; do not copy its output back into this comment.
+review_rounds: 6
 phases:
   - id: orient
     name: Orient
@@ -148,4 +150,7 @@ phases:
       - file: CHANGELOG.md
         section: "[Unreleased]"
         read_type: verify
-        extract: "One line per ID; all three are user- or process-facing"
+        extract: >-
+          One line per ID; four ship here and all are user- or process-facing.
+          The gate caught the fourth: BUG-277 closed mid-review and
+          check_changelog_unreleased failed until it had an entry of its own.

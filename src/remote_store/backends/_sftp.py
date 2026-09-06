@@ -2259,6 +2259,17 @@ class SFTPBackend(Backend):
         otherwise raise against the file it could not move, from a call that
         passed ``overwrite=True``.
 
+        **Absence is established by asking, not by reading the errno.** paramiko
+        attaches one to exactly two SFTP statuses — ``SSH_FX_NO_SUCH_FILE`` and
+        ``SSH_FX_PERMISSION_DENIED`` — so a server that answers "rename: no such
+        source" with the generic ``SSH_FX_FAILURE`` arrives here errno-less, and
+        an ``errno == ENOENT`` test would call that a refusal and fail an
+        ordinary ``overwrite=True`` create. On a server without
+        ``posix-rename@openssh.com`` every overwrite promote reaches this method,
+        so that would be every such create on the server class the fallback
+        exists for. The `stat` costs a round-trip on a path that has already
+        failed, and buys not depending on which status code a server picks.
+
         A dead connection propagates for its own reason on top: the promote
         cannot succeed over it either and would pay a second ``io_timeout``
         bound doing so. The ``SSHException`` shape of a drop needs no arm here —
@@ -2270,10 +2281,27 @@ class SFTPBackend(Backend):
         try:
             self._sftp.rename(sftp_path, backup)
         except OSError as exc:
-            if getattr(exc, "errno", None) == errno.ENOENT and not self._is_connection_dead(exc):
-                return None
-            raise
+            if self._is_connection_dead(exc) or not self._is_absent(sftp_path):
+                raise
+            return None
         return backup
+
+    def _is_absent(self, sftp_path: str) -> bool:
+        """Whether *sftp_path* holds nothing, by a stat rather than by an errno.
+
+        Used only on a failed displace, to tell "there was nothing to move" from
+        "the server refused to move it" — a distinction the caller's data rides
+        on and the failure's own errno cannot always carry (see ``_displace``).
+        A dead connection re-raises rather than answering, since a probe that
+        cannot reach the server has not established anything.
+        """
+        try:
+            self._sftp.stat(sftp_path)
+        except OSError as exc:
+            if self._is_connection_dead(exc):
+                raise
+            return getattr(exc, "errno", None) == errno.ENOENT
+        return False
 
     def _restore(self, backup: str, sftp_path: str, exc: BaseException) -> None:
         """Put a displaced destination back after a failed promote, best-effort.

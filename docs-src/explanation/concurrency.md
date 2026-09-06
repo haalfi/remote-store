@@ -71,13 +71,13 @@ Several backends implement `move(src, dst)` as a **copy followed by a delete**. 
 | [Azure](../guides/backends/azure.md) (non-HNS) | Copy blob + delete blob | — |
 | [Graph](../guides/backends/graph.md) | Server-side move / copy (monitor-polled) | — |
 | [SFTP](../guides/backends/sftp.md) (`posix_rename`) | `posix_rename` | Yes |
-| [SFTP](../guides/backends/sftp.md) (`rename`) | `rename()` | Yes (but not guaranteed atomic on all servers) |
+| [SFTP](../guides/backends/sftp.md) (`rename`) | `rename()`, preceded by moving an existing destination aside | Only onto a free path; an overwrite is two renames and is never atomic |
 | [SFTP](../guides/backends/sftp.md) (final fallback) | Read + write + delete | — |
 | [HTTP](../guides/backends/http.md) | — (read-only) | — |
 | [SQLBlob](../guides/backends/sql-blob.md) | SQL `UPDATE` in transaction | Yes |
 | [SQLQuery](../guides/backends/sql-query.md) | — (read-only) | — |
 
-SFTP tries three strategies in order: `posix_rename` (atomic), standard `rename()`, and finally copy+delete. Most OpenSSH servers support `posix_rename`. Servers that lack it usually still support `rename()`, which is atomic on most POSIX filesystems.
+SFTP tries three strategies in order: `posix_rename` (atomic), standard `rename()`, and finally copy+delete. Most OpenSSH servers support `posix_rename`. Servers that lack it usually still support `rename()` — atomic onto a free path, but not for an overwrite: `rename()` cannot replace an occupied path on those servers, so the backend moves the existing file aside first and moves it back if the rename fails. A reader looking between the two sees the path briefly absent, which is why this rung is not atomic even where `rename()` itself is.
 
 ### Mitigations
 
