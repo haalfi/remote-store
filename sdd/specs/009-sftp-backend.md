@@ -394,14 +394,22 @@ dropped-connection one alone. A guard asking only the latter declines for every
 shape the connect-time set claims, and control then falls through to a
 classification path that re-evaluates the lazy `_sftp` property and pays the
 whole `RetryPolicy` budget (SFTP-009) again. Measured over the product of shape
-and operation before this held: 16 of 36 cells entered `_connect` two or three
-times, `read` / `read_bytes` / `delete` / `write(overwrite=True)` among them,
-and a nested key cost three where a flat one cost two — because the third cycle
-is the file-ancestor walk, reached only when the shape's `errno` is `None`,
-which is the refused-port case. At shipped defaults that was 8.00 s for a flat
-`read_bytes` and 12.01 s for a nested one against a refused port, where
-`check_health` cost 4.37 s; all four now cost one budget.
-`TestSFTPUnreachableHostCostsOneConnect` pins one entry per cell.
+and operation before this held: 16 of 72 cells entered `_connect` two or three
+times — 91 entries where 72 were owed — and the operations paying them were
+`read`, `read_bytes`, `delete` (including `missing_ok=True`) and
+`write(overwrite=True)`, each with a nested key costing three where a flat one
+cost two, because the third cycle is the file-ancestor walk and it is reached
+only when the shape's `errno` is `None`, which is the refused-port case.
+**Only those four moved**; every other operation entered `_connect` once before
+this clause held and still does, which is why the enumeration carries them as
+controls rather than as coverage padding. At shipped defaults a flat
+`read_bytes` against a refused port went from 8.00 s to 4.00 s and a nested one
+from 12.01 s to 4.00 s, against a `check_health` that cost 4.37 s throughout —
+one budget before and after, since it has no re-entry guard to decline.
+`TestSFTPUnreachableHostCostsOneConnect` pins one entry per cell, over **every
+operation that reaches the backend** rather than a sample, which is what makes
+the "whatever the operation" above a measured claim rather than a generalisation
+from the four that moved.
 
 The clause is about the *budget*, not about probe counts: how many round-trips a
 classification path would have made is the operation's own business, and the

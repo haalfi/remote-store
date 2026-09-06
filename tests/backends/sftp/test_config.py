@@ -2323,9 +2323,22 @@ class TestSFTPConnectTimePredicateSpace:
         BUG-274 interposed it between every guard and this predicate: recording
         the immediate caller would name that helper for all of them and collapse
         the distinction this test is built on. Skipping to the frame above it
-        names the guard itself again, so the failure mode the docstring
-        describes still holds — deleting ``read_bytes``' guard leaves only
-        ``_map_exception`` in the list and the last assertion fails.
+        names the guard itself again.
+
+        **Which assertion the mutation moves, measured rather than assumed.**
+        Disabling ``read_bytes``' guard leaves ``callers ==
+        ['_raise_if_dir', '_map_exception']``, so ``outside_mapping`` is
+        *non-empty* and the second assertion passes; the third one — naming
+        ``read_bytes`` — is what fails. An earlier revision of this block
+        claimed the list came back as ``['_map_exception']`` alone and the
+        second assertion fired, which would have been the stronger sensitivity
+        and is not what happens: with the guard gone, control reaches
+        ``_raise_if_dir``, whose own widened guard consults this predicate on
+        the way. So the second assertion can now be satisfied by a *different*
+        guard's consult reached through a second connect budget — the situation
+        BUG-274 exists to prevent — and the third assertion is the one carrying
+        this test's discriminating power. ``TestSFTPUnreachableHostCostsOneConnect``
+        is what fails if that second budget ever comes back.
         """
         import inspect
 
@@ -2360,11 +2373,11 @@ class TestSFTPUnreachableHostCostsOneConnect:
 
     ``TestSFTPConnectTimePredicateSpace`` above asserts *what* each connect-time
     shape answers and deliberately asserts no connect count; this class asserts
-    the cost, which is the half that was free to drift. It did: measured before
-    the fix, 16 of these 36 cells entered ``_connect`` two or three times, so a
-    caller against a down store paid the whole ``RetryPolicy`` budget — three
-    attempts with 2-10 s backoff at shipped defaults — over again per extra
-    cycle.
+    the cost, which is the half that was free to drift. It did: run against the
+    pre-fix backend, **16 of these 72 cells failed** — 91 ``_connect`` entries
+    where 72 were owed — so a caller against a down store paid the whole
+    ``RetryPolicy`` budget (three attempts with 2-10 s backoff at shipped
+    defaults) over again per extra cycle.
 
     **What is asserted is one entry into ``_connect``, not a probe count.** The
     budget is what a caller waits on and what the re-entry guards exist to
@@ -2378,13 +2391,25 @@ class TestSFTPUnreachableHostCostsOneConnect:
 
     SHAPES = TestSFTPConnectTimePredicateSpace.SHAPES
 
-    #: Every operation measured at more than one cycle before the fix, plus the
-    #: ones already at one. The controls are not padding: the fix widens shared
-    #: guards, and an operation that gains a cycle would otherwise be invisible.
+    #: **Every operation that reaches the backend**, not a sample: the eight
+    #: measured over one cycle before the fix and every other one, each with the
+    #: argument shape that reaches a distinct guard path (a nested key walks
+    #: ancestors, ``overwrite=True`` skips the eager stat). Derived from
+    #: ``[n for n, v in vars(SFTPBackend).items() if not n.startswith("_")]``
+    #: minus the four that issue no request — ``close``, ``native_path``,
+    #: ``to_key``, ``unwrap`` — and ``resolve``, which is pure path arithmetic.
+    #: The controls are not padding and the completeness is not either: the fix
+    #: widens shared guards, so an operation that *gains* a cycle would
+    #: otherwise be invisible, and the ten guard sites left asking
+    #: ``_is_connection_dead`` alone are load-bearing only for operations in
+    #: this tuple's second half.
     OPERATIONS = (
         "check_health",
         "exists",
+        "is_file",
+        "is_folder",
         "get_file_info",
+        "get_folder_info",
         "read",
         "read/nested",
         "read_bytes",
@@ -2392,12 +2417,17 @@ class TestSFTPUnreachableHostCostsOneConnect:
         "delete",
         "delete/nested",
         "delete/missing_ok",
+        "delete_folder",
         "write",
         "write/overwrite",
+        "write_atomic",
         "write_atomic/overwrite",
+        "open_atomic",
         "move",
         "copy",
         "list_files",
+        "list_folders",
+        "iter_children",
     )
 
     FLAT = "delivery.csv"
@@ -2407,15 +2437,25 @@ class TestSFTPUnreachableHostCostsOneConnect:
     def _call(cls, backend: SFTPBackend, operation: str) -> Any:
         """Return a zero-argument callable driving *operation* on *backend*.
 
-        ``list_files`` is drained because it is a generator: leaving it lazy
-        would enter ``_connect`` zero times and pass this test without running
-        the operation at all.
+        The three listing operations are drained because they are generators:
+        left lazy they would enter ``_connect`` zero times and pass this test
+        without running the operation at all. ``open_atomic`` is entered as a
+        context manager for the same reason — its setup phase is where the
+        connect happens.
         """
         flat, nested = cls.FLAT, cls.NESTED
+
+        def enter_open_atomic() -> None:
+            with backend.open_atomic(flat) as handle:
+                handle.write(b"x")
+
         calls = {
             "check_health": lambda: backend.check_health(),
             "exists": lambda: backend.exists(flat),
+            "is_file": lambda: backend.is_file(flat),
+            "is_folder": lambda: backend.is_folder(flat),
             "get_file_info": lambda: backend.get_file_info(flat),
+            "get_folder_info": lambda: backend.get_folder_info(flat),
             "read": lambda: backend.read(flat),
             "read/nested": lambda: backend.read(nested),
             "read_bytes": lambda: backend.read_bytes(flat),
@@ -2423,12 +2463,17 @@ class TestSFTPUnreachableHostCostsOneConnect:
             "delete": lambda: backend.delete(flat),
             "delete/nested": lambda: backend.delete(nested),
             "delete/missing_ok": lambda: backend.delete(flat, missing_ok=True),
+            "delete_folder": lambda: backend.delete_folder(flat),
             "write": lambda: backend.write(flat, b"x"),
             "write/overwrite": lambda: backend.write(flat, b"x", overwrite=True),
+            "write_atomic": lambda: backend.write_atomic(flat, b"x"),
             "write_atomic/overwrite": lambda: backend.write_atomic(flat, b"x", overwrite=True),
+            "open_atomic": enter_open_atomic,
             "move": lambda: backend.move(flat, "moved.csv"),
             "copy": lambda: backend.copy(flat, "copied.csv"),
             "list_files": lambda: list(backend.list_files("")),
+            "list_folders": lambda: list(backend.list_folders("")),
+            "iter_children": lambda: list(backend.iter_children("")),
         }
         return calls[operation]
 

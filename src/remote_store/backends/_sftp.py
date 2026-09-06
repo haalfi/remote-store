@@ -2837,9 +2837,25 @@ class SFTPBackend(Backend):
         ``_is_unreachable`` claims, so control falls through to a classification
         path that re-evaluates the lazy ``_sftp`` property and pays the whole
         ``RetryPolicy`` budget again. Measured before this method existed, over
-        the product of connect-time shape and operation: 16 of 36 cells entered
-        ``_connect`` two or three times.
+        the product of connect-time shape and operation: 16 of 72 cells entered
+        ``_connect`` two or three times, 91 entries where 72 were owed.
         ``TestSFTPUnreachableHostCostsOneConnect`` pins one entry per cell.
+
+        **Six guard sites reach here; ten still ask ``_is_connection_dead``
+        alone, and that is correct rather than unfinished.** A connect failure
+        can only reach a guard whose operation evaluates the lazy ``_sftp``
+        property inside its own ``try``, and the other ten are unreachable for
+        it three different ways: the temp-cleanup guards in ``write_atomic`` /
+        ``open_atomic`` and ``_restore`` are additionally gated on
+        ``_sftp_client is not None``, which a failed connect never sets;
+        ``_handle``, ``_promote``, ``_displace``, ``_is_absent``,
+        ``_move_fallback`` and ``open_atomic``'s yield-phase close all sit
+        downstream of a handle or a rename that a failed connect never produces;
+        and ``move``'s ``posix_rename`` guard re-raises a non-``ENOENT``
+        destination stat before it is consulted. That reachability argument is
+        not what the guarantee rests on — the enumeration covers every operation
+        that reaches the backend, so an operation whose budget those ten do
+        govern fails there rather than here.
 
         **Reached only from a guard, never from ``_map_exception``.** The mapping
         must keep asking the two predicates separately, because it dispatches on

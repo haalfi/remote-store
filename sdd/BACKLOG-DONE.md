@@ -232,13 +232,13 @@ if evidence changes; these are retired.
   and pays the whole `RetryPolicy` budget again — three attempts with 2–10 s
   exponential backoff by default.
   **What it cost, measured over the product of connect-time shape and
-  operation** (three shapes x sixteen operations, `_connect` entries counted per
-  cell): **16 of 48 cells entered `_connect` two or three times**, 67 cycles
-  where 48 were owed. All 48 now cost one. The `connect-timeout` column was
-  already at one throughout and is the control that identifies the defect: that
-  shape raises `TimeoutError`, which `_is_connection_dead` matches, so the
-  guards fired. The mechanism was never broken — only the predicate the guards
-  consulted.
+  operation** (three shapes x every one of the twenty-four operations that
+  reaches the backend, `_connect` entries counted per cell): **16 of 72 cells
+  entered `_connect` two or three times**, 91 cycles where 72 were owed. All 72
+  now cost one. The `connect-timeout` column was already at one throughout and
+  is the control that identifies the defect: that shape raises `TimeoutError`,
+  which `_is_connection_dead` matches, so the guards fired. The mechanism was
+  never broken — only the predicate the guards consulted.
   **Measurement widened the item's stated scope.** The body filed by BUG-265
   named `read` and `read_bytes`; running it added `delete` (including
   `missing_ok=True`) and **`write(overwrite=True)`**, which pays a second cycle
@@ -269,6 +269,16 @@ if evidence changes; these are retired.
   other four fire. They were widened anyway: `_has_file_ancestor` evaluates the
   lazy property once per ancestor, so a guard correct only because a sibling
   fires first is one refactor from paying a budget per level.
+  **Six of the item's fourteen guards, and the other ten are correct as they
+  stand** — the item's premise was that the predicate was wrong at every guard,
+  and it is not. A connect failure reaches a guard only where the operation
+  evaluates the lazy `_sftp` property inside its own `try`; the remaining ten
+  are unreachable for it three ways, enumerated in `_probe_is_futile`'s
+  docstring (client-gated cleanups, sites downstream of a handle or rename a
+  failed connect never produces, and `move`'s stat re-raise). That argument is
+  not what the guarantee rests on: the enumeration covers **every** operation
+  that reaches the backend, so an operation whose budget those ten do govern
+  fails in the test rather than being argued about here.
   **Found by BUG-265's round-5 unprimed reviewer**, as a `Possible: Perf:`.
 
 - [x] **BUG-277 — An `overwrite=True` atomic write can raise `AlreadyExists` when the SFTP fallback cannot clear the destination**

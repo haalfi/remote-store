@@ -33,14 +33,26 @@ surprising_ripples:
   # read_bytes' guard leaves ['_raise_if_dir', '_map_exception'] and the test
   # still fails.
   - tests/backends/sftp/test_config.py
+  # The sibling trace is here for the schema's own reason (_schema.yml,
+  # surprising_ripples): no ripple-check row routes from "a measured figure
+  # changed" to "the past records that quote it". BUG-265's trace recorded
+  # read_bytes consulting _is_connection_dead three times, twice before the
+  # mapping — this PR makes it twice, once — and the same figure had to be
+  # corrected in TestSFTPConnectTimePredicateSpace's class docstring. The trace
+  # is annotated rather than rewritten, per the rule BUG-265's own fix_vacuous
+  # phase established: a register entry states current fact and gets corrected,
+  # a trace states a past reading and gets annotated.
+  - sdd/traces/bug-265-sftp-refused-connect.yml
 discovery_followups: []
 # Derived from `git log --format='%s' origin/master..HEAD --reverse`, run before
-# this line was written, and counting the commit that carries it. One row:
+# this line was written, and counting the commit that carries it. Two rows:
 #   BUG-274: Ask whether another probe can answer, not only whether the channel
 #            died -> does not count (implements the item)
-# Value is 0 — no review round has produced a commit yet. Re-derive from that
-# command before each push; a review round that lands a fix raises it.
-review_rounds: 0
+#   BUG-274: Re-derive the enumeration's size, and widen it to every operation
+#            -> counts (round 1, 5 findings from a solo unprimed reviewer)
+# Value is 1. Re-derive from that command before each push; a review round that
+# lands a fix raises it.
+review_rounds: 1
 phases:
   - id: orient
     name: Orient
@@ -88,8 +100,16 @@ phases:
           more than one cycle, and one of them —
           `write(path, content, overwrite=True)` via _open_write ->
           _raise_if_dir's cause guard — is named nowhere in the item's body.
-          Extended to the product of shape x operation: 48 cells, 67 cycles, 16
-          cells over one
+          Extended to the product of shape x operation: **72 cells, 91 cycles,
+          16 cells over one**.
+          Retrospective: this said "48 cells, 67 cycles" until round 1, and
+          three shipped artifacts said "16 of 36" — the enumeration was written
+          with 16 operations, the figure was then carried while the tuple grew
+          to 24, and 36 was never any basis's answer at all. Re-derived by
+          running the enumeration itself against the pre-fix backend
+          (`git checkout origin/master -- src/remote_store/backends/_sftp.py`,
+          run, restore), which reproduces where a recount by hand is what
+          produced the wrong number twice
         outcome: ok
       - file: tests/backends/sftp/test_config.py
         section: "TestSFTPConnectTimePredicateSpace"
@@ -114,12 +134,19 @@ phases:
         section: "TestSFTPUnreachableHostCostsOneConnect"
         read_type: reference
         extract: >-
-          36 cells asserting one _connect entry each. Run before the fix: 16
-          failed, 32 passed — the same 16 cells the standalone script measured,
-          which is what makes the script and the test one measurement rather
-          than two. What is asserted is the *budget*, not a probe count: the
-          sibling class declines to pin probe counts because they are the
-          operation's own business, and that reasoning binds here too
+          72 cells asserting one _connect entry each. Run against the pre-fix
+          backend: **16 failed, 56 passed** — the same 16 cells the standalone
+          script measured, which is what makes the script and the test one
+          measurement rather than two. What is asserted is the *budget*, not a
+          probe count: the sibling class declines to pin probe counts because
+          they are the operation's own business, and that reasoning binds here
+          too.
+          Widened from 16 operations to 24 in round 1: the spec clause claims
+          "whatever the operation" and the tuple pinned a subset, so the
+          universal half rested on the reachability argument for the ten
+          unwidened guard sites rather than on measurement. The eight added
+          operations all passed pre-fix, which is the argument's conclusion
+          arrived at by running it
         outcome: ok
   - id: implement
     name: Implement
@@ -153,6 +180,53 @@ phases:
           _raise_if_dir's "when that failure already concludes the connection is
           dead" and _is_unreachable's account of the three refuted rationales.
           Neither sits on a line the fix would otherwise have touched
+        outcome: ok
+  - id: fix_round_1
+    name: Round-1 fix pass (solo unprimed reviewer)
+    steps:
+      - file: tests/backends/sftp/test_config.py
+        section: "TestSFTPUnreachableHostCostsOneConnect (OPERATIONS)"
+        read_type: verify
+        extract: >-
+          **The figure was wrong in three shipped artifacts and the reviewer
+          derived it two independent ways**: by counting the tuples (3 x 16 =
+          48) and by reconstructing the 67-cycle total from the code paths.
+          Neither matched the "16 of 36" the spec, the helper docstring and the
+          test docstring all carried. The deeper defect was underneath it: the
+          spec clause says "whatever the operation" while the tuple pinned 16 of
+          the 24 that reach the backend, so the universal half rested on a prose
+          reachability argument about ten unwidened guard sites. Widened to all
+          24 and re-measured on one basis — 72 cells, 91 cycles pre-fix, 16 over
+          one — which is why every figure in this trace moved at once rather
+          than being patched from 36 to 48
+        outcome: ok
+      - file: tests/backends/sftp/test_config.py
+        section: "test_the_dead_connection_guard_is_consulted_on_the_connect_path"
+        read_type: verify
+        extract: >-
+          The repair this PR made to BUG-265's test described a mutation result
+          this PR's own trace recorded differently, and the trace was right. The
+          docstring claimed the mutation empties `outside_mapping` and fires the
+          second assertion; it actually leaves `['_raise_if_dir',
+          '_map_exception']` and fires the third. The claimed version was the
+          stronger sensitivity, so the sentence promised discriminating power
+          the test does not have — and the reason it does not is this PR:
+          widening `_raise_if_dir`'s guard put a second guard's consult in the
+          list. Corrected to the measured list, with the assertion that actually
+          moves named. The value was sitting in this session's own scrollback
+          and in the trace; only the docstring restated it from memory
+        outcome: misleading
+      - file: sdd/specs/009-sftp-backend.md
+        section: "SFTP-023 (one-budget clause)"
+        read_type: verify
+        extract: >-
+          "all four now cost one budget" counted a fourth call the spec never
+          names — `exists`, which appears only in BACKLOG-DONE's table — and
+          folded `check_health` in as though its 4.37 s were a defect this
+          change removed. Both were already at one budget: the retired item said
+          so explicitly ("check_health is unaffected: it has no re-entry
+          guard"). Rewritten to say which four operations moved and to state
+          that nothing else did
         outcome: ok
   - id: verify
     name: Verify
