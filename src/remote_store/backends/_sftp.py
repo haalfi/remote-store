@@ -834,6 +834,13 @@ class SFTPBackend(Backend):
                     # the channel this exception says is dead, re-paying
                     # ``io_timeout`` on each probe — or, for a host that was
                     # never reached, the whole connect budget (BUG-274).
+                    #
+                    # Unasserted for the unreachable half: the eager
+                    # ``_raise_if_dir`` above fires first, so no cell of
+                    # ``TestSFTPUnreachableHostCostsOneConnect`` distinguishes
+                    # the widened predicate here from the narrow one, and
+                    # reverting this line leaves the suite green. Kept because
+                    # correctness-by-sibling is what goes stale.
                     raise
                 if code is None and self._has_file_ancestor(sftp_path):
                     # ID-209 round-3: paramiko surfaces SSH_FX_FAILURE as
@@ -2594,6 +2601,12 @@ class SFTPBackend(Backend):
                     # this walk evaluates the lazy ``_sftp`` property once per
                     # ancestor, so a guard correct only because a sibling fires
                     # first is one refactor from paying a budget per level.
+                    #
+                    # Unasserted for that half, like ``read``'s open guard: no
+                    # cell of ``TestSFTPUnreachableHostCostsOneConnect``
+                    # distinguishes the widened predicate here from the narrow
+                    # one, so reverting this line is free today and not free
+                    # after the refactor above.
                     raise
                 # Opaque error walking the chain (below the base) — be
                 # conservative and let the caller's original failure
@@ -2756,11 +2769,14 @@ class SFTPBackend(Backend):
         pinned by ``test_a_host_never_reached_maps_to_backend_unavailable``,
         which seeds a sentinel first.)
 
-        Those guards **reach** this predicate through ``_probe_is_futile``, and
-        the distinction is why: reaching them and acting on them are different
-        things, and a guard that consulted only the other predicate declined for
-        every shape below, then fell through to a classification path that paid
-        the connect retry budget again. What a caller pays is enumerated in
+        **Six** of those guards — not the ``is_fatal`` one, and not most of the
+        re-entry ones — **reach** this predicate through ``_probe_is_futile``,
+        and the distinction is why: reaching them and acting on them are
+        different things, and a guard that consulted only the other predicate
+        declined for every shape below, then fell through to a classification
+        path that paid the connect retry budget again. The other eleven still
+        ask the dropped-connection predicate alone, for the reasons
+        ``_probe_is_futile`` gives. What a caller pays is enumerated in
         ``TestSFTPUnreachableHostCostsOneConnect`` on the same terms as what a
         caller gets — one ``_connect`` entry per operation, generated over the
         same axes rather than argued here.
@@ -2839,7 +2855,9 @@ class SFTPBackend(Backend):
         ``RetryPolicy`` budget again. Measured before this method existed, over
         the product of connect-time shape and operation: 22 of 84 cells entered
         ``_connect`` two or three times, 111 entries where 84 were owed.
-        ``TestSFTPUnreachableHostCostsOneConnect`` pins one entry per cell.
+        ``TestSFTPUnreachableHostCostsOneConnect`` pins one entry per cell, and
+        is where that figure is re-derived — the enumeration is run against the
+        pre-fix module rather than recounted.
 
         **Six of the seventeen guard sites reach here; eleven still ask
         ``_is_connection_dead`` alone, and the bound on that is a fact about the
@@ -2856,19 +2874,30 @@ class SFTPBackend(Backend):
         and the promote, against a host that is then gone, and ``_promote``'s
         guard declines a connect-time shape exactly as these six used to —
         measured at three ``_connect`` entries, 12.01 s at shipped defaults.
-        ``_displace``, ``_is_absent`` and ``_move_fallback`` sit on the same
-        footing. That shape is **not fixed here and no test in this suite
-        reaches it**; it is tracked as its own item, because it needs a
-        live-then-dead fixture this suite does not have and it lands in the
+        ``move``'s own guard, ``_displace``, ``_is_absent`` and
+        ``_move_fallback`` sit on the same footing — ``move`` measures the same
+        three entries by itself. That shape is **not fixed here and no test in
+        this suite reaches it**; it is tracked as its own item, because it needs
+        a live-then-dead fixture this suite does not have and it lands in the
         rename-fallback ladder rather than in the connect path.
 
-        The count above is derived, not carried: an AST walk over this module
-        for calls to either predicate returns nineteen sites, less this method's
-        own body and ``_map_exception``'s dispatch. Line 882's
-        ``is_fatal=_is_connection_dead`` handoff is one of the eleven and is
-        deliberately left: it arms a guard on an **open stream**, where a
-        connect-time shape cannot arise, and widening it would change what a
-        mid-read drop does.
+        **The count is derived by a filter, not by arithmetic on a total.** Walk
+        this module for attribute *references* to ``_is_connection_dead`` or
+        ``_probe_is_futile`` — references, because ``read``'s
+        ``_ErrorMappingStream(..., is_fatal=self._is_connection_dead, ...)``
+        hands the predicate over without calling it, and that handoff is one of
+        the eleven — then keep those whose **owning function** is neither this
+        method nor ``_map_exception``. That yields the seventeen directly. Two
+        earlier spellings of this sentence were each refuted under review, both
+        by inviting the reader to subtract a count from a total; the filter is
+        stated instead because it is the thing that reproduces.
+
+        That ``is_fatal`` handoff is deliberately left on the narrower
+        predicate: it arms a guard on an **open stream**, reached only from
+        ``_ErrorMappingStream``'s own failure path, which holds the handle and
+        the mapping and never touches ``_sftp`` — so no path from it can enter
+        ``_connect``, and widening it would change what a mid-read drop does for
+        no measured gain.
 
         **Reached only from a guard, never from ``_map_exception``.** The mapping
         must keep asking the two predicates separately, because it dispatches on

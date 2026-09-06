@@ -232,7 +232,15 @@ phases:
           prose mentions until round 4 found that stale too — the docstring
           edits in this very PR moved it. That second figure is now dropped
           rather than corrected: "prose mention" has no crisp definition and the
-          number moves every time a docstring is touched
+          number moves every time a docstring is touched.
+          Annotated by BUG-274, which moved this figure too: six of those call
+          sites now consult _probe_is_futile, so the stated `rg` returns 12 (11
+          outside the mapping) on that branch. The figure was already stale here
+          before BUG-274 touched the file, so this is not a correction of that
+          work — it is recorded because BUG-274 annotated the sibling step below
+          for exactly this cause and annotating only one of two figures its own
+          change moved is the uneven treatment a reviewer would have to
+          re-derive
         outcome: ok
       - file: sdd/specs/009-sftp-backend.md
         section: "SFTP-023"

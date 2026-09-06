@@ -536,24 +536,38 @@ compliant the day before.
   next `_sftp` access reconnect, and against a host that is now gone that raises
   a connect-time shape into a guard which asks `_is_connection_dead` alone and
   declines — the exact defect BUG-274 fixed at six other sites.
-  **Measured** on BUG-274's head, driving `write_atomic` with the transport
-  flipped inactive between the temp close and the promote, a just-released
-  ephemeral port behind it: **3 `_connect` entries, 12.01 s at shipped
-  defaults** (4 entries / 16.01 s before BUG-274, so that item improved this
-  case without closing it). 12.01 s is the same figure BUG-274 reports as the
-  *defect* for a nested `read_bytes`.
-  **The sites.** `_promote` is the one driven. `_displace`, `_is_absent` and
-  `_move_fallback` each evaluate `_sftp` inside their own `try` on the same
-  footing and are unmeasured. Downstream of `_promote`'s declining guard,
-  `_raise_if_dir` now returns immediately, then `_rename_fallback` → `_displace`
-  → `_is_absent` each re-evaluate `_sftp`.
-  **Disposition:** the one-line shape is `_probe_is_futile` at those four sites,
+  **Measured** on BUG-274's head, at shipped defaults, with a just-released
+  ephemeral port behind a transport flipped inactive mid-operation. Two entry
+  points, and each declining guard costs one budget:
+
+  | driver | entries | elapsed | declining frames |
+  |---|---|---|---|
+  | `write_atomic(overwrite=True)`, transport dies at the temp close | 3 | 12.01 s | `_promote` → `_displace` → `_is_absent` |
+  | `move(overwrite=True)`, transport dies at the destination probe | 3 | 12.01 s | `move` → `_displace` → `_is_absent` |
+  | `move(overwrite=False)`, same | 3 | 12.01 s | `move` → `_move_fallback` |
+
+  Before BUG-274 the `write_atomic` case cost 4 entries / 16.01 s, so that item
+  improved this case without closing it. (BUG-274's own published figure for a
+  nested `read_bytes` is 12.00 s, re-measured on one machine; these are near
+  neighbours rather than the same number.)
+  **Five sites, not four, and `move`'s is the one an implementer will miss.**
+  `move`'s own guard classifies a `posix_rename` failure inside `move`'s own
+  `try`, with `_move_fallback` re-evaluating `_sftp` behind it, and its comment
+  already says "Same reasoning as `_promote`". **Simulating the four-site fix
+  without it leaves `move` at 2 entries / 8.00 s on both `overwrite` values** —
+  so a fix that measures `write_atomic`, sees one budget and stops would ship
+  the defect. The five: `move`'s guard, `_promote`, `_displace`, `_is_absent`,
+  `_move_fallback`. Every one is exercised by the two fixtures above except that
+  `_move_fallback` and the `_displace`/`_is_absent` pair appear on different
+  `overwrite` paths, so both are needed.
+  **Disposition:** the one-line shape is `_probe_is_futile` at those five sites,
   as BUG-274 did elsewhere. What makes this its own item rather than more of
   that one is the **fixture**: proving it needs a transport that reports active
-  and then does not, which this suite has nowhere, and the four sites sit in the
+  and then does not, which this suite has nowhere, and the five sites sit in the
   atomic-write rename ladder that BUG-270 / BUG-272 / BUG-277 have just reworked
   — so the failing test is the work, and it is a different test from BUG-274's.
-  Per the bug-fix protocol, write it and watch it fail first.
+  Per the bug-fix protocol, write it and watch it fail first, and assert the
+  budget on **both** `overwrite` paths, since they decline at different sites.
   **Found by BUG-274's round-2 measuring reviewer**, which refuted a
   reachability argument BUG-274's own round-1 fix pass had written.
 

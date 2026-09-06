@@ -61,9 +61,12 @@ discovery_followups:
 #            -> counts (round 1, 5 findings from a solo unprimed reviewer)
 #   BUG-274: Scope the guarantee to the fault it covers, and file the residue
 #            -> counts (round 2, 5 findings from a solo measuring reviewer)
-# Value is 2. Re-derive from that command before each push; a review round that
+#   BUG-274: Correct the figures a three-member panel refuted, and give BUG-278
+#            its fifth site -> counts (round 3, 11 findings after dedup from a
+#            three-member panel: unprimed, measuring, whole-file)
+# Value is 3. Re-derive from that command before each push; a review round that
 # lands a fix raises it.
-review_rounds: 2
+review_rounds: 3
 phases:
   - id: orient
     name: Orient
@@ -158,10 +161,17 @@ phases:
           too.
           Widened from 16 operations to 24 in round 1: the spec clause claims
           "whatever the operation" and the tuple pinned a subset, so the
-          universal half rested on the reachability argument for the ten
-          unwidened guard sites rather than on measurement. The eight added
-          operations all passed pre-fix, which is the argument's conclusion
-          arrived at by running it
+          universal half rested on the reachability argument for the unwidened
+          guard sites rather than on measurement. The eight added operations all
+          passed pre-fix, which is the argument's conclusion arrived at by
+          running it.
+          **Annotated after round 3: every figure in this step was superseded.**
+          Round 2 took the tuple to 28 entries and the class to 84 cells, which
+          run pre-fix as 22 failed / 62 passed. The figures above are round 1's
+          reading and are kept as that, per this file's own rule — but round 2
+          rewrote the `reproduce` step in place while leaving this one, so the
+          file gave two uncontextualised counts for one class until a
+          three-member panel found it. The rule applies to both steps or neither
         outcome: ok
   - id: implement
     name: Implement
@@ -278,8 +288,14 @@ phases:
           delegates to read() and therefore moved, 2/2/1 flat and 3/2/1 nested
           on the base. A fifth operation, absent from a tuple whose whole claim
           was completeness. Derivation restated over dir() with every exclusion
-          accounted for, and three cells added: read_seekable, its nested
-          variant, and delete/missing_ok/nested, all of which fail pre-fix
+          accounted for, and **four** cells added: read_seekable, its nested
+          variant and delete/missing_ok/nested, which fail pre-fix, plus
+          write/overwrite/nested, which passes — and that fourth is the
+          load-bearing one, since it is what refutes the nested-key
+          generalisation published across three artifacts. An earlier revision
+          of this line said "three cells added ... all of which fail pre-fix",
+          dropping the cell that carried the round's point in order to keep the
+          clause true
         outcome: ok
       - file: sdd/specs/009-sftp-backend.md
         section: "SFTP-023 (one-budget clause)"
@@ -296,6 +312,66 @@ phases:
           warm-up compared against another machine's reading, printed as a
           saving in the row whose stated job was to show nothing moved. Whole
           table re-measured on one machine, both revisions, first call discarded
+        outcome: ok
+  - id: fix_round_3
+    name: Round-3 fix pass (three-member panel)
+    steps:
+      - file: sdd/BACKLOG-DONE.md
+        section: "(item) BUG-274, cost paragraph"
+        read_type: verify
+        extract: >-
+          **All three panel members found this independently**, which is the
+          signal worth recording: the register entry's headline figures were one
+          fix pass behind (twenty-four operations, 16 of 72, 91 cycles) while
+          four other artifacts said 84. Round 2 edited three paragraphs of this
+          one entry and left the fourth — a sibling sweep that stopped at the
+          paragraph boundary rather than the entry boundary. The entry also
+          contradicted itself six lines down, recording the very additions that
+          moved 72 to 84
+        outcome: ok
+      - file: src/remote_store/backends/_sftp.py
+        section: "_probe_is_futile (site-count derivation)"
+        read_type: gate
+        extract: >-
+          **Second consecutive round to refute this one sentence** — round 2 its
+          figure, round 3 its recipe — which is the repeat-site rule's trigger,
+          and the response is the rule's: stop rewriting the prose and state
+          something runnable. Both spellings failed the same way, by inviting a
+          reader to subtract a count from a total. Replaced with a filter over
+          attribute *references* (not calls: read's `is_fatal=` handoff is a
+          bare reference and is one of the eleven) kept by owning function,
+          which yields seventeen directly. Settled by running it rather than by
+          adjudicating the two members' differing arithmetic, which disagreed
+          because they walked different name sets
+        outcome: ok
+      - file: sdd/BACKLOG.md
+        section: "(item) BUG-278"
+        read_type: verify
+        extract: >-
+          The measuring member drove the *filed follow-up item* and found its
+          prescribed fix does not close the fault it describes: `move`'s own
+          guard is a fifth site on identical footing, and with the four-site fix
+          simulated `move` still costs 2 entries / 8.00 s. Reproduced
+          independently before acting — 3 entries / 12.01 s, declining at
+          move -> _displace -> _is_absent on overwrite=True and
+          move -> _move_fallback on overwrite=False, which is also why the item
+          now asks for both paths to be asserted. The item had additionally
+          called _displace and _is_absent "unmeasured" while its own published
+          measurement was made of their declines. A follow-up item nobody has
+          reviewed is the easiest place for a wrong disposition to survive
+        outcome: ok
+      - file: sdd/traces/bug-274-unreachable-host-connect-budget.yml
+        section: "tests phase, fix_round_2 OPERATIONS step"
+        read_type: verify
+        extract: >-
+          Two defects in this file, both about treating like things unalike.
+          The `tests` phase still read as current at 72 cells while `reproduce`
+          had been rewritten in place to 84 — round 2 applied this file's own
+          annotate-vs-correct rule to one step and not its sibling. And
+          "three cells added ... all of which fail pre-fix" dropped the fourth,
+          write/overwrite/nested, whose passing is exactly what refuted the
+          nested-key generalisation: the clause stayed true by omitting the cell
+          that mattered most
         outcome: ok
   - id: verify
     name: Verify

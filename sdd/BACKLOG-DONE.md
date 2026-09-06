@@ -232,13 +232,14 @@ if evidence changes; these are retired.
   and pays the whole `RetryPolicy` budget again — three attempts with 2–10 s
   exponential backoff by default.
   **What it cost, measured over the product of connect-time shape and
-  operation** (three shapes x every one of the twenty-four operations that
-  reaches the backend, `_connect` entries counted per cell): **16 of 72 cells
-  entered `_connect` two or three times**, 91 cycles where 72 were owed. All 72
-  now cost one. The `connect-timeout` column was already at one throughout and
-  is the control that identifies the defect: that shape raises `TimeoutError`,
-  which `_is_connection_dead` matches, so the guards fired. The mechanism was
-  never broken — only the predicate the guards consulted.
+  operation** (three shapes x twenty-eight argument shapes over the nineteen
+  operations that reach the backend, `_connect` entries counted per cell):
+  **22 of 84 cells entered `_connect` two or three times**, 111 entries where 84
+  were owed, distributed `{1: 62, 2: 17, 3: 5}`. All 84 now cost one. The
+  `connect-timeout` column was already at one throughout and is the control that
+  identifies the defect: that shape raises `TimeoutError`, which
+  `_is_connection_dead` matches, so the guards fired. The mechanism was never
+  broken — only the predicate the guards consulted.
   **Measurement widened the item's stated scope, twice.** The body filed by
   BUG-265 named `read` and `read_bytes`; running it added `delete` (including
   `missing_ok=True`) and **`write(overwrite=True)`**, which pays a second cycle
@@ -289,12 +290,16 @@ if evidence changes; these are retired.
   **Six of seventeen guard sites, and the bound on the other eleven is a fact
   about the fault rather than about those sites.** The item's premise — that
   "the fourteen mid-operation re-entry guards all ask `_is_connection_dead`
-  alone" — was wrong in its count as well as its scope: an AST walk over the
-  module for calls to either predicate returns nineteen sites, less
-  `_probe_is_futile`'s own body and `_map_exception`'s dispatch, so seventeen
-  are guards. Six are the ones an operation reaches when its **first** `_sftp`
-  evaluation fails, which is what "a host that was never reached" means and is
-  all the enumeration drives, every cell building a fresh backend.
+  alone" — was wrong in its count as well as its scope. Derived by filter
+  rather than by arithmetic, since two spellings of the arithmetic were refuted
+  under review: walk the module for attribute *references* to
+  `_is_connection_dead` or `_probe_is_futile` (references, because `read` hands
+  the predicate to `_ErrorMappingStream` as `is_fatal=` without calling it),
+  keep those whose owning function is neither `_probe_is_futile` nor
+  `_map_exception`, and seventeen fall out — six and eleven. Six are the ones an
+  operation reaches when its **first** `_sftp` evaluation fails, which is what
+  "a host that was never reached" means and is all the enumeration drives, every
+  cell building a fresh backend.
   **A transport that dies mid-operation is a different fault and is not fixed
   here** — filed as BUG-278 with its measurement (`write_atomic` with the
   transport flipped inactive between the temp close and the promote: three
