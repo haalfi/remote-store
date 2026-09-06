@@ -422,12 +422,26 @@ compliant the day before.
   connection was discarded on a server-reported denial. **The grounds matter
   and were first stated too strongly:** the published v0.29.1→v0.30.0 migration
   row promising `PermissionDenied` for that stat was *already* not honoured for
-  `EPERM` before the change and is not honoured after it, which is BUG-275, not
+  `EPERM` before the change and is not honoured after it, which was BUG-275, not
   this item. What claiming `EPERM` did was move that path from the base class to
   `BackendUnavailable` plus a client reset — worse, and enough on its own.
   Reverted; `test_the_permission_errnos_stay_out_of_the_connect_arm`
   now pins the exclusion so a future widening fails loudly instead of silently
   changing what a live channel reports.
+  **BUG-275 has since shipped and moved the evidence**: `_raise_if_dir` raises
+  `PermissionDenied` itself, so the classification stat no longer routes either
+  errno through the mapping. The exclusion still holds, but the two errnos now
+  rest on different evidence, and this item's fix must not re-derive its scope
+  from the measurement above, which records a path that no longer exists.
+  `EACCES` has a live-channel producer: paramiko's
+  `SFTPClient._convert_status` renders `SSH_FX_PERMISSION_DENIED` as
+  `IOError(EACCES)` (paramiko 5.0.0). **`EPERM` has none known** — that dispatch
+  has no arm rendering it — so what excludes it is the mapping's inability to
+  tell an arrival from outside the protocol from a connect-time one, which is
+  precisely the context this item exists to supply. BUG-275 also declined the errno-dispatch
+  arm precisely *because* it would pre-empt this item's connect-time answer;
+  `test_the_errno_dispatch_still_declines_eperm` pins that, and closing this
+  item is what may legitimately change it.
   **The lesson for whoever picks this up:** "nothing else wants this errno" is a
   claim about the whole module, not about one if-chain, and `rg -n 'EPERM' src/
   docs-src/` is the derivation. Both errnos are one problem, not two.
@@ -481,48 +495,45 @@ compliant the day before.
   half as a `Possible: Bug:` with its trigger flagged unreproduced; the `EPERM`
   half was found, fixed and reverted across its rounds 5 and 6.
 
-- [ ] **BUG-275 — `_raise_if_dir`'s permission re-raise delivers `PermissionDenied` for one of the two errnos it names, and four artifacts promise both**
-  spec: SFTP-021 · effort: S · audience: user.api, user.api_docs
-  Pre-existing, not introduced by BUG-265 — found by its closing whole-file
-  pass, which was checking whether that item's `EPERM` revert had left half a
-  claim standing and found a whole one that predates it.
-  **Measured on the shipped code**, driving `_map_exception` with a plain
-  `OSError` carrying each errno:
-  `EACCES` → `PermissionDenied("Permission denied: delivery.csv")`;
-  `EPERM` → base `RemoteStoreError("denied")`. The errno dispatch has an
-  `EACCES` arm and **no `EPERM` arm**, so a re-raised `EPERM` classification
-  stat falls to the generic arm.
-  **What promises otherwise**, all saying the re-raise exists "so a server that
-  denies even statting the target surfaces `PermissionDenied` rather than a
-  generic `RemoteStoreError`": `_raise_if_dir`'s docstring, its BK-316 inline
-  comment beside the guard, BK-316's `BACKLOG-DONE.md` register entry, and —
-  published — the v0.29.1 → v0.30.0 migration table row
-  `| Permission-denied classification stat (EACCES/EPERM) | RemoteStoreError | PermissionDenied |`.
-  For `EPERM` that row's "after" column is exactly its "before" column.
-  **Trigger is unestablished, and that bounds the priority rather than the
-  diagnosis.** paramiko's `SFTPClient._convert_status` maps
-  `SSH_FX_PERMISSION_DENIED` to `EACCES`, so an SFTP-protocol `EPERM` looks
-  unproducible; the re-raise names both errnos because BK-316 was written for
-  "non-OpenSSH servers whose error shapes differ from OpenSSH", which is the
-  case nobody has a fixture for.
-  **What it costs a caller if left:** a user on such a server whose stat is
-  denied with `EPERM` gets the base `RemoteStoreError`, so an `except
-  PermissionDenied` clause written on the strength of the published migration
-  row falls through to their generic handler and a permissions problem is
-  logged as an unknown failure. BUG-265 caveated that published row, so what
-  remains is the code-vs-docs divergence rather than a silently misleading
-  page — the cost of leaving it is that three in-tree artifacts still describe
-  behaviour the module does not have, and the next reader of `_raise_if_dir`
-  has to re-derive which half is true.
-  **Disposition:** two ways to make the four artifacts agree, and they differ in
-  what a caller gets. Either give the dispatch an `EPERM` arm mapping to
-  `PermissionDenied` — which makes every promise true and is a behaviour change
-  — or narrow all four to say `EACCES` alone reaches `PermissionDenied` and
-  `EPERM` reaches the base class. **Do not answer it by widening
-  `_is_unreachable`**: BUG-273 records that attempt and its measured harm.
-  **Found by BUG-265's closing pass**, which also caught the two places where
-  that item's own body had cited the migration row as though it were satisfied
-  before and after — corrected there.
+- [ ] **BUG-278 — An operation denied with `EPERM` answers `PermissionDenied` on Local and the base class on SFTP**
+  spec: SFTP-021 · effort: S · audience: user.api
+  Found while shipping BUG-275, which fixed the classification stat and
+  deliberately left the general case; this is that remainder, and it is a
+  cross-backend divergence rather than one backend's gap.
+  **Measured on the shipped code**, driving each backend with an `EPERM` at the
+  operation — `SFTPBackend._map_exception(OSError(errno.EPERM, "denied"),
+  "delivery.csv")`, and `LocalBackend.read_bytes` with the read raising
+  `PermissionError(errno.EPERM, ...)`:
+
+  | backend | answer |
+  |---|---|
+  | SFTP  | `RemoteStoreError('[Errno 1] denied')` |
+  | Local | `PermissionDenied('Permission denied: delivery.csv')` |
+
+  Local reaches it without naming the errno: `rg -n 'except PermissionError:'
+  src/remote_store/backends/_local.py` gives 14 sites, 11 of which raise
+  `PermissionDenied` outright (the other three check `is_dir()` first for
+  Windows), and `isinstance(OSError(errno.EPERM, "x"), PermissionError)` is
+  `True` — so Python's own hierarchy claims the errno SFTP's dispatch declines.
+  **What it costs a caller:** the promise this library exists to keep is that a
+  denied store answers the same way on every backend. A caller who moves a store
+  from Local to SFTP, or writes one `except PermissionDenied` clause across
+  both, gets it honoured on one and not the other for a server that reports
+  denial with `EPERM`.
+  **Why BUG-275 did not do it, and the constraint that outlives it:** the
+  obvious fix — an `EPERM` arm in the errno dispatch — cannot be scoped to a
+  live channel, because the mapping sees only the exception. It would also
+  re-answer a **connect-time** `EPERM`, the shape a netfilter `REJECT` on the
+  `OUTPUT` chain reproduces, as a denial naming the caller's key. That is
+  BUG-273's territory, and it is the reason this is filed rather than folded in:
+  **the two items share one decision**, so whichever runs second inherits the
+  other's answer. `test_the_errno_dispatch_still_declines_eperm` pins the
+  current bound so adding the arm is a deliberate act.
+  **Disposition, undecided:** either classify `EPERM` at `_connect` first (which
+  is BUG-273's own disposition and would free the dispatch arm), or narrow the
+  claim to Local and accept the divergence in the docs. Do not answer it by
+  widening `_is_unreachable`: BUG-273 records that attempt and its measured
+  harm.
 
 - [ ] **BUG-274 — A keyed SFTP operation against an unreachable host pays the connect budget two or three times over**
   spec: SFTP-010, SFTP-023 · effort: S · audience: user.api

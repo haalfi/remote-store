@@ -1,0 +1,144 @@
+id: BUG-275
+title: "_raise_if_dir's permission re-raise delivers PermissionDenied for one of the two errnos it names"
+trigger: |
+  _raise_if_dir bare-re-raised a permission classification-stat failure and let
+  _map_exception classify it. That dispatch has an EACCES arm and no EPERM arm,
+  so the promise four artifacts make — the re-raise exists "so a server that
+  denies even statting the target surfaces PermissionDenied rather than a
+  generic RemoteStoreError", naming both errnos — held for EACCES only.
+source_items:
+  - BUG-275
+  - BUG-265
+  - BK-316
+audience:
+  - user.api
+  - user.api_docs
+discovery_followups:
+  - BUG-278
+surprising_ripples:
+  # Neither the backlog item's four-artifact list nor the ripple-check table
+  # named this one: BUG-265's own v0.31.0 scope note asserts "the classification
+  # stat ... still answers exactly as it did", which this change falsifies in
+  # the same unreleased section.
+  - docs-src/reference/migration.md
+# No expected_ripples: sdd/backlogid.json would be the usual one after a
+# BACKLOG/BACKLOG-DONE edit, and it is genuinely untouched here — gen_backlogid
+# derives the floor from the backlog files, and the stored max was already past
+# the ID this PR mints.
+phases:
+  - id: orient
+    name: Orient
+    steps:
+      - file: sdd/BACKLOG.md
+        section: "(item) BUG-275"
+        read_type: gate
+        extract: "The four artifacts, the measurement, and the two dispositions the item offers"
+      - file: sdd/BACKLOG.md
+        section: "(item) BUG-273"
+        read_type: reference
+        extract: >-
+          Why widening _is_unreachable is off the table, and that a connect-time
+          EPERM is the reproducible shape a global dispatch arm would also change
+      - file: sdd/CLAUDE-REFERENCE.md
+        section: "Pre-work index"
+        read_type: gate
+        extract: "Triggered rows: Spec section, Error type, Bug fix, Backlog item touched, Tracker ID in published prose"
+  - id: reproduce
+    name: Reproduce
+    steps:
+      - file: src/remote_store/backends/_sftp.py
+        section: "_map_exception (errno dispatch)"
+        read_type: verify
+        extract: >-
+          Drove _map_exception with a plain OSError per errno before touching
+          anything: EACCES -> PermissionDenied("Permission denied: delivery.csv"),
+          EPERM -> RemoteStoreError("[Errno 1] denied"). The item's measurement
+          reproduced exactly
+      - file: src/remote_store/backends/_local.py
+        section: "write / read PermissionError arms"
+        read_type: reference
+        extract: >-
+          LocalBackend catches bare PermissionError, and OSError(EPERM) is a
+          PermissionError, so Local answers PermissionDenied for the errno SFTP
+          declines. Cross-backend divergence the item did not record
+  - id: design
+    name: Design
+    steps:
+      - file: src/remote_store/backends/_sftp.py
+        section: "_raise_if_dir call sites (read, read_bytes, delete, _open_write, _promote)"
+        read_type: reference
+        extract: >-
+          All five callers are inside _errors(path) and let the raise propagate;
+          _map_exception's first arm returns a RemoteStoreError unchanged. A
+          PermissionDenied raised by the helper therefore reaches the caller
+          untouched, which is what makes the scoped disposition available at all
+  - id: tests
+    name: Failing test first
+    steps:
+      - file: sdd/000-process.md
+        section: "Rule 6 (workflows)"
+        read_type: gate
+        extract: "BACKLOG -> CHANGELOG -> failing test -> fix -> commit together"
+      - file: tests/backends/sftp/test_config.py
+        section: "test_raise_if_dir_permission_stat_maps_permission_denied"
+        read_type: reference
+        extract: "The EACCES shape to parametrise over both errnos"
+  - id: implement
+    name: Implement
+    steps:
+      - file: src/remote_store/backends/_sftp.py
+        section: "_raise_if_dir (permission re-raise)"
+        read_type: reference
+        extract: "Answer PermissionDenied directly instead of delegating to a dispatch that has no EPERM arm"
+  - id: spec
+    name: Spec
+    steps:
+      - file: sdd/specs/009-sftp-backend.md
+        section: "SFTP-021, SFTP-023"
+        read_type: gate
+        extract: >-
+          SFTP-021 claims EACCES alone, so the stat guard needs its own clause.
+          SFTP-023's EPERM bullet predicted BUG-275 would change the connect-time
+          shape's answer; under this disposition it does not
+  - id: verify
+    name: Verify
+    steps:
+      - file: sdd/CLAUDE-REFERENCE.md
+        section: "Detailed checklist"
+        read_type: verify
+        extract: >-
+          Bug fix, Spec section, Error type, Backlog item touched, Tracker ID in
+          published prose. Marked verified and was not: the "Error type" row
+          names the "error docstring 'raised by' list", and six public Raises:
+          blocks promising PermissionDenied for EACCES alone were left falsified
+          by the change. The round-1 review found them. The row said what to
+          check; reading it was not the same as running it, and the derivation
+          that would have caught it — resolve every _raise_if_dir call site, and
+          every _open_write/_promote call site, to its enclosing def — was only
+          run afterwards
+        outcome: ok
+  - id: fix
+    name: Fix pass (round 1)
+    steps:
+      - file: src/remote_store/backends/_sftp.py
+        section: "_raise_if_dir (permission guard), _is_unreachable"
+        read_type: reference
+        extract: >-
+          Round 1 posted five findings, all confirmed by measurement and all
+          fixed. The sharpest: the guard raised `from exc` where the module's
+          sixteen other mapped raises use `from None`, so EACCES gained a
+          __cause__ it did not have — measured, and it falsified four artifacts
+          claiming that errno's answer was unchanged. Fixing the raise was
+          cheaper than weakening all four
+      - file: sdd/BACKLOG.md
+        section: "(item) BUG-275, deleted body"
+        read_type: reference
+        extract: >-
+          Deleting the item dropped its "trigger is unestablished" measurement,
+          which the replacement grounds for _is_unreachable's exclusion then
+          silently over-claimed. Re-derived on paramiko 5.0.0 and carried into
+          the register entry: _convert_status renders SSH_FX_PERMISSION_DENIED
+          as IOError(EACCES) and has no EPERM arm, so the two errnos are
+          excluded on different evidence, not one. No outcome tag: the item said
+          plainly that the trigger was unestablished, so this was the author
+          dropping it on deletion, not the document failing a reader

@@ -812,7 +812,9 @@ class SFTPBackend(Backend):
             NotFound: If the file does not exist, or a path component is itself a
                 file.
             InvalidPath: If *path* names a directory.
-            PermissionDenied: If the server denies access (``EACCES``).
+            PermissionDenied: If the server denies access (``EACCES``, or
+                either permission errno when the is-dir classification ``stat``
+                is itself denied).
             BackendUnavailable: If the SSH/SFTP connection cannot be established
                 or fails mid-read.
         """
@@ -906,7 +908,9 @@ class SFTPBackend(Backend):
                 file.
             InvalidPath: If *path* names a directory (subject to the server
                 assumption above).
-            PermissionDenied: If the server denies access (``EACCES``).
+            PermissionDenied: If the server denies access (``EACCES``, or
+                either permission errno when the is-dir classification ``stat``
+                is itself denied).
             BackendUnavailable: If the SSH/SFTP connection cannot be established
                 or fails mid-read.
         """
@@ -974,7 +978,9 @@ class SFTPBackend(Backend):
             AlreadyExists: If the file exists and ``overwrite`` is ``False``.
             InvalidPath: If *path* is the store root, or names a directory, or
                 an ancestor of *path* exists as a regular file.
-            PermissionDenied: If the server denies access (``EACCES``).
+            PermissionDenied: If the server denies access (``EACCES``, or
+                either permission errno when the is-dir classification ``stat``
+                is itself denied).
             BackendUnavailable: If the SSH/SFTP connection cannot be established
                 or fails mid-write.
         """
@@ -1059,7 +1065,9 @@ class SFTPBackend(Backend):
             AlreadyExists: If the file exists and ``overwrite`` is ``False``.
             InvalidPath: If *path* is the store root, or names a directory, or
                 an ancestor of *path* exists as a regular file.
-            PermissionDenied: If the server denies access (``EACCES``).
+            PermissionDenied: If the server denies access (``EACCES``, or
+                either permission errno when the is-dir classification ``stat``
+                is itself denied).
             BackendUnavailable: If the SSH/SFTP connection cannot be established
                 or fails.
         """
@@ -1149,7 +1157,9 @@ class SFTPBackend(Backend):
             AlreadyExists: If the file exists and ``overwrite`` is ``False``.
             InvalidPath: If *path* is the store root, or names a directory, or
                 an ancestor of *path* exists as a regular file.
-            PermissionDenied: If the server denies access (``EACCES``).
+            PermissionDenied: If the server denies access (``EACCES``, or
+                either permission errno when the is-dir classification ``stat``
+                is itself denied).
             BackendUnavailable: If the SSH/SFTP connection cannot be established
                 or fails.
         """
@@ -1268,7 +1278,9 @@ class SFTPBackend(Backend):
             NotFound: If the file does not exist (or a path component is itself a
                 file) and ``missing_ok`` is ``False``.
             InvalidPath: If *path* names a directory (use ``delete_folder``).
-            PermissionDenied: If the server denies access (``EACCES``).
+            PermissionDenied: If the server denies access (``EACCES``, or
+                either permission errno when the is-dir classification ``stat``
+                is itself denied).
             BackendUnavailable: If the SSH/SFTP connection cannot be established
                 or fails.
         """
@@ -2038,9 +2050,12 @@ class SFTPBackend(Backend):
         unclassifiably (the entry vanished in a race → ``ENOENT``, or an
         errno-less ``SSH_FX_FAILURE``), leaves the original failure to
         ``_map_exception``.  One classification-stat failure is *not* swallowed:
-        a **permission** error (``EACCES`` / ``EPERM``) re-raises so a server that
-        denies even statting the target surfaces ``PermissionDenied`` rather than a
-        generic ``RemoteStoreError``.
+        a **permission** error (``EACCES`` / ``EPERM``) raises ``PermissionDenied``
+        so a server that denies even statting the target surfaces that type rather
+        than a generic ``RemoteStoreError``.  This helper builds the error itself
+        instead of re-raising for ``_map_exception`` to classify — see the guard
+        for why the delegated form delivered the promise for only one of the two
+        errnos it names.
 
         ``read`` is **eager** instead — it must reject a directory before handing
         back a handle, because the deferred I/O that would otherwise surface it
@@ -2069,12 +2084,31 @@ class SFTPBackend(Backend):
             # swallowed so the original failure stands. A *permission* error is the
             # exception: a server that denies even statting the target should
             # surface ``PermissionDenied``, not degrade to a generic
-            # ``RemoteStoreError`` (master's ``_check_not_dir`` re-raised it). The
-            # re-raise is kept narrow — permission only — so it never masks the
-            # file-ancestor ``NotFound`` path on a server whose classification stat
-            # reports the failure with a different errno.
+            # ``RemoteStoreError`` (master's ``_check_not_dir`` re-raised it). It is
+            # kept narrow — permission only — so it never masks the file-ancestor
+            # ``NotFound`` path on a server whose classification stat reports the
+            # failure with a different errno.
+            #
+            # BUG-275: answer with the type directly rather than bare-re-raising
+            # for ``_map_exception``. That dispatch has an ``EACCES`` arm and none
+            # for ``EPERM``, so the delegated form kept the promise above for one
+            # of the two errnos it names and gave the other the very
+            # ``RemoteStoreError`` the promise rules out. Adding the missing arm
+            # there would fix it globally and cost more than it buys: the mapping
+            # sees only the exception, so the arm would also re-answer a
+            # connect-time ``EPERM`` — the shape a netfilter ``REJECT`` on the
+            # ``OUTPUT`` chain reproduces (BUG-273) — as a denial naming a key that
+            # had no part in the failure. Here the connect-time case cannot arise:
+            # the stat ran, so there is a channel. ``_map_exception`` returns a
+            # ``RemoteStoreError`` unchanged, so this reaches the caller as built.
+            #
+            # ``from None`` matches every other mapped raise in this module,
+            # ``_errors``' own included, and it is what makes ``EACCES``
+            # indistinguishable rather than merely similar: that errno already
+            # reached the caller through ``_errors``' ``from None``, so chaining
+            # here would hand it a ``__cause__`` it did not have before.
             if getattr(exc, "errno", None) in (errno.EACCES, errno.EPERM):
-                raise
+                raise PermissionDenied(f"Permission denied: {path}", path=path, backend=self.name) from None
             if self._is_connection_dead(exc):
                 # A dead channel is not "cannot classify": swallowing it leaves
                 # the caller to re-enter the same channel and pay ``io_timeout``
@@ -2762,15 +2796,22 @@ class SFTPBackend(Backend):
         the reason is the same for both: this predicate sees only the exception,
         so it cannot tell a connect-time one from a live-channel one. ``EACCES``
         is the obvious case — on an operation it genuinely is a denied path.
-        ``EPERM`` looks safer and is not: ``_raise_if_dir``'s permission
-        re-raise deliberately passes **both** errnos back through the mapping
-        from a *working* channel, so claiming either here would answer a
-        server-reported denial with ``BackendUnavailable`` and discard a healthy
-        client. That was measured, after a revision of this docstring claimed
-        ``EPERM`` was free to take because the errno dispatch has no arm for it
-        — true of the dispatch, false of the module. Reaching these two needs
-        connect-time context the mapping does not have; both are tracked as
-        their own item rather than widened here.
+        ``EPERM`` looks safer and is not, and the two rest on different
+        evidence. ``EACCES`` reaches the mapping from a *working* channel on any
+        denied operation — paramiko's ``SFTPClient._convert_status`` renders an
+        SFTP ``SSH_FX_PERMISSION_DENIED`` as ``IOError(EACCES)``, measured on
+        paramiko 5.0.0 — so claiming it would answer a server-reported denial
+        with ``BackendUnavailable`` and discard a healthy client, which
+        ``test_eacces_maps_to_permission_denied`` drives. **No live-channel
+        producer of ``EPERM`` is known**: that same dispatch has no arm
+        rendering it, so the errno arrives only from outside the SFTP protocol.
+        It stays excluded anyway, because this predicate sees only the exception
+        and cannot tell such an arrival from a connect-time one, and because the
+        widening was tried and measured harmful after a revision of this
+        docstring claimed ``EPERM`` was free to take — true of the errno
+        dispatch, false of the module. Reaching either needs connect-time
+        context the mapping does not have; both are tracked as their own item
+        rather than widened here.
         """
         import paramiko
 

@@ -338,6 +338,14 @@ mapped to `NotFound`.
 
 **Invariant:** `IOError` with `errno.EACCES` (errno 13) is mapped to `PermissionDenied`.
 
+**The classification stat is the one site that also claims `errno.EPERM`** (errno
+1). `_raise_if_dir`'s permission guard raises `PermissionDenied` itself, with the
+same message the mapping builds, so a server that denies even statting the target
+surfaces that type for **either** permission errno. It does not delegate: the
+mapping has no `EPERM` arm, and adding one would re-answer a connect-time `EPERM`
+as a denial naming a key that had no part in the failure (SFTP-023). Everywhere
+else `EPERM` keeps the base `RemoteStoreError`.
+
 ### SFTP-022: AlreadyExists Mapping
 
 **Invariant:** `IOError` with `errno.EEXIST` (errno 17) is mapped to `AlreadyExists`.
@@ -406,16 +414,22 @@ then reaches differs:
   netfilter `REJECT` on the `OUTPUT` chain yields it — so it is the shape a
   reader meets, and it is BUG-265's own defect surviving in the errno the
   connect-time set does not claim. **BUG-273 carries this half** — a fix needs
-  the connect-time context, which only `_connect` has. BUG-275 carries the
-  absent `EPERM` arm itself, an older live-channel defect and the reason the
-  fall-through lands where it does; it would change this shape's answer from
-  the base class to `PermissionDenied`, which is still not the promised type.
+  the connect-time context, which only `_connect` has. Adding the missing arm is
+  not that fix and was declined for this reason: it would answer a rejected
+  connect `PermissionDenied` naming the caller's key, which is no closer to the
+  promised type than the base class. BUG-275 instead gave the site that needed
+  `EPERM` its own answer (SFTP-021), leaving this shape as described.
 
-Neither is claimed here because `_raise_if_dir`'s permission re-raise
-deliberately passes **both** back through this mapping from a working channel,
-so claiming either would answer a server-reported denial with
-`BackendUnavailable` and discard a healthy client. BUG-273 carries that
-exclusion for both.
+Neither is claimed here, on different evidence. `EACCES` reaches this mapping
+from a *working* channel on any denied operation — paramiko's
+`SFTPClient._convert_status` renders `SSH_FX_PERMISSION_DENIED` as
+`IOError(EACCES)`, measured on paramiko 5.0.0 — so claiming it would answer a
+server-reported denial with `BackendUnavailable` and discard a healthy client.
+**No live-channel producer of `EPERM` is known**: that dispatch has no arm
+rendering it, so the errno arrives only from outside the SFTP protocol. It stays
+excluded because this mapping cannot tell such an arrival from a connect-time
+one, and because the widening was tried and measured harmful. BUG-273 carries
+that exclusion for both.
 
 **Every** `BackendUnavailable` this mapping returns — the `SSHException` family
 included — invalidates the cached SFTP client so the next operation reconnects

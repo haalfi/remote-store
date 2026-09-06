@@ -163,11 +163,47 @@ you point one at a store you expect to be unreachable for a while.
 **Scope:** SFTP only, and only the shapes a connect actually produces. An
 `OSError` from a connection that is working — a full disk, a device error —
 still raises the base `RemoteStoreError` and still logs nothing. **Permission
-errnos are deliberately untouched**, which is what keeps that sentence true: the
-mapping sees only the exception, so it cannot tell a connect-time `EACCES` or
-`EPERM` from one a working server reported, and the classification stat
-described [in the v0.30.0 notes](#v0291-to-v0300) still answers exactly as it
-did. Other backends are unchanged.
+errnos are deliberately untouched by this change**, which is what keeps that
+sentence true: the mapping sees only the exception, so it cannot tell a
+connect-time `EACCES` or `EPERM` from one a working server reported. The
+classification stat described [in the v0.30.0 notes](#v0291-to-v0300) does change
+in this release, but at that guard rather than in the mapping — see the next
+section. Other backends are unchanged.
+
+**A denied classification stat now raises `PermissionDenied` for both permission
+errnos:**
+
+v0.30.0 made a denied classification stat — the extra `stat` the SFTP backend
+issues to tell "you asked for a directory" apart from the other failures a
+server can report — raise `PermissionDenied` instead of the base
+`RemoteStoreError`. It reached that type through the error mapping, which
+recognises `EACCES` and not `EPERM`, so a server reporting the denial with
+`EPERM` still got the generic error:
+
+```python
+# a non-OpenSSH server that denies statting the target, reporting EPERM
+# v0.30.0: RemoteStoreError('[Errno 1] Permission denied')
+# v0.31.0: PermissionDenied('Permission denied: delivery.csv')
+store.read_bytes("delivery.csv")
+```
+
+`EACCES` is unaffected — same type, same message as v0.30.0. **If you catch
+`RemoteStoreError` for this case, narrow it to `PermissionDenied`**, which is
+what the v0.30.0 notes told you to write and what now holds for both errnos.
+
+**Which calls:** `read`, `read_bytes`, `write`, `write_atomic`, `open_atomic`
+and `delete` — the six that issue this stat, whose `Raises:` documentation now
+names both errnos. `read` stats before handing back a handle; the other five
+only after the operation has already failed, so a successful call never pays the
+round trip.
+
+**Scope:** the classification stat only. An `EPERM` reported by the operation
+itself, rather than by that guard, still raises the base `RemoteStoreError` — the
+mapping is unchanged, deliberately, so that a connect a local firewall rejects is
+not reported as a permissions problem with your key's name on it. In practice no
+`EPERM` trigger is known for either path: paramiko reports an SFTP
+permission denial as `EACCES`, so reaching this needs a server whose error shapes
+come from outside the SFTP protocol.
 
 **A dropped SFTP connection now raises `BackendUnavailable` from a `read()`
 stream too:**
@@ -572,14 +608,15 @@ whose error shapes differ from OpenSSH now raise the canonical type:
 | Mode-less existing target on an `overwrite=False` write    | `RemoteStoreError` | `InvalidPath`      |
 | `delete` of a missing path behind an opaque-error ancestor | `RemoteStoreError` | `NotFound`         |
 
-!!! warning "The first row was published as `EACCES`/`EPERM` and holds only for `EACCES`"
+!!! warning "The first row was published as `EACCES`/`EPERM` and holds only for `EACCES` **in v0.30.0**"
 
-    The classification-stat re-raise names both permission errnos, but the error
-    mapping has an `EACCES` arm and none for `EPERM`, so an `EPERM` stat still
-    reaches you as the base `RemoteStoreError` — the same answer it gave before
-    v0.30.0. Corrected here rather than left standing; the fix is tracked and
-    may change the type or narrow the promise, so do not rely on either
-    outcome for `EPERM` yet.
+    The classification-stat re-raise names both permission errnos, but v0.30.0
+    reached the type through the error mapping, which has an `EACCES` arm and
+    none for `EPERM` — so on v0.30.0 an `EPERM` stat reaches you as the base
+    `RemoteStoreError`, the same answer it gave before. Corrected here rather
+    than left standing. **v0.31.0 makes the row true as published**: the guard
+    raises `PermissionDenied` itself for both errnos
+    ([notes above](#v0300-to-v0310)).
 
 One accepted consequence of the defensive mode-less policy: a mode-less *regular file*
 written under `overwrite=False` now surfaces `InvalidPath` rather than `AlreadyExists`.

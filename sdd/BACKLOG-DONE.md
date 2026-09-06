@@ -304,6 +304,79 @@ if evidence changes; these are retired.
   **Found by BK-360's review round 2, by a measuring pass**, with the
   server-class scope corrected by its round 3.
 
+- [x] **BUG-275 — `_raise_if_dir`'s permission re-raise delivers `PermissionDenied` for one of the two errnos it names, and four artifacts promise both**
+  spec: SFTP-021 · effort: S · audience: user.api, user.api_docs
+  Pre-existing, not introduced by BUG-265 — found by its closing whole-file
+  pass, which was checking whether that item's `EPERM` revert had left half a
+  claim standing and found a whole one that predates it.
+  **The defect, reproduced before the fix** by driving `read_bytes` against the
+  live SFTP fixture with an errno-less op failure at `file` and each permission
+  errno at the classification `stat`: `EACCES` gave
+  `PermissionDenied("Permission denied: denied.txt")` and `EPERM` gave
+  `RemoteStoreError("[Errno 1] Permission denied")`. The guard bare-re-raised
+  and let `_map_exception` classify; that dispatch has an `EACCES` arm and none
+  for `EPERM`, so the promise four artifacts make held for one of the two errnos
+  they name.
+  **What shipped: the guard answers, the dispatch does not.** `_raise_if_dir`
+  raises `PermissionDenied` itself for both errnos, with the message the
+  dispatch built for `EACCES` and `from None` like every other mapped raise in
+  the module, so that errno's answer is unchanged **down to `__cause__`** — an
+  earlier revision chained `from exc`, which the round-1 review caught and a
+  measurement confirmed: `EACCES` gained a `PermissionError(13, ...)` cause it
+  did not have. The callers are all inside `_errors(path)`, where
+  `_map_exception` returns a `RemoteStoreError` unchanged, so it arrives as
+  built.
+  **The `EPERM` trigger stays unestablished, and that bounds the fix rather than
+  the diagnosis.** paramiko's `SFTPClient._convert_status` renders an SFTP
+  `SSH_FX_PERMISSION_DENIED` as `IOError(EACCES)` and has no arm producing
+  `EPERM` (read on paramiko 5.0.0), so the errno reaches this guard only from
+  outside the SFTP protocol. BK-316 named it because that item was written for
+  "non-OpenSSH servers whose error shapes differ from OpenSSH", which is the
+  case nobody has a fixture for. What this item fixes is therefore the
+  code-vs-docs divergence, on a path whose trigger nobody has produced — which
+  is why the same measurement now also anchors `_is_unreachable`'s exclusion
+  asymmetrically: `EACCES` has a live-channel producer, `EPERM` has none known
+  and is excluded on the predicate's blindness instead.
+  **The rejected alternative is the load-bearing part.** An `EPERM` arm in the
+  errno dispatch is a smaller diff and makes every promise true, and it was
+  declined because the mapping sees only the exception: the arm would also
+  re-answer a **connect-time** `EPERM` — the shape a netfilter `REJECT` on the
+  `OUTPUT` chain reproduces, and the one BUG-273 carries — as a denial naming a
+  key that had no part in the failure. At the guard the connect-time case cannot
+  arise, because the stat ran. `test_the_errno_dispatch_still_declines_eperm`
+  pins the bound, asserting the **exact** type: the pre-existing
+  `test_the_permission_errnos_stay_out_of_the_connect_arm` asserts
+  `isinstance(..., RemoteStoreError)`, which a widening to `PermissionDenied`
+  would satisfy silently.
+  **Four artifacts made true, and a fifth corrected that nothing anticipated.**
+  The four the item named: `_raise_if_dir`'s docstring, its BK-316 inline
+  comment, BK-316's register entry below, and the published v0.29.1 → v0.30.0
+  migration row. The fifth is BUG-265's own scope note in the *unreleased*
+  section of the same page, which asserts the classification stat "still answers
+  exactly as it did" — true when written and falsified by this change in the
+  same release. `_is_unreachable`'s docstring needed the same repair for the
+  opposite reason: its stated evidence for excluding both permission errnos was
+  that `_raise_if_dir` routes them through the mapping, which it no longer does.
+  The exclusion stands, now stated per errno rather than jointly — see the
+  trigger paragraph above.
+  **Six public `Raises:` blocks, and exactly six.** `read`, `read_bytes` and
+  `delete` reach the guard directly; `write` reaches it through `_open_write`,
+  and `write_atomic` and `open_atomic` through `_promote`. All six promised
+  `PermissionDenied`
+  for `EACCES` alone, so the change falsified them — the mirror image of the
+  defect this item was filed for, and caught by the round-1 review rather than
+  by the "Error type" ripple row this work had already marked verified. The
+  other eight `Raises:` blocks naming `EACCES` (`exists`, `is_file`,
+  `is_folder`, `delete_folder`, `get_file_info`, `get_folder_info`, `move`,
+  `copy`) do not reach the guard and stay as they were. Derived, not recalled:
+  the fourteen are the `PermissionDenied: ... EACCES` lines in `_sftp.py`, the
+  six from resolving every `_raise_if_dir` call site — and every `_open_write` /
+  `_promote` call site — to its enclosing `def`.
+  **What was deliberately not done: BUG-278**, the same errno on an operation
+  rather than the classification stat, where SFTP keeps the base class and Local
+  answers `PermissionDenied`. It shares BUG-273's one decision, which is why it
+  is filed rather than folded in.
+
 - [x] **BUG-271 — `022-streaming-atomic-writes.md` carries three `open_atomic` invariants that shipped tests refute**
   spec: SAW-004, SAW-005, SAW-009 · effort: S · audience: contributor.process
   Co-shipped with BUG-272 rather than left standing, because that fix changed
@@ -560,10 +633,13 @@ if evidence changes; these are retired.
   `BackendUnavailable` and discarded a healthy client, where `EPERM` had
   answered the base `RemoteStoreError`. The argument that admitted it ("the
   errno dispatch has no `EPERM` arm") was true of the dispatch and false of the
-  module. That dispatch gap is real and older than this item — four artifacts,
-  one of them the published migration table, say the re-raise delivers
-  `PermissionDenied` for both errnos, and it never has for `EPERM` — filed as
-  **BUG-275**. They
+  module. That dispatch gap was real and older than this item — four artifacts,
+  one of them the published migration table, said the re-raise delivers
+  `PermissionDenied` for both errnos, and it never had for `EPERM` — filed as
+  **BUG-275** and since closed, by giving the guard its own answer rather than
+  the dispatch an arm. The exclusion here is unaffected; its evidence is now
+  `EACCES` alone, which is the errno with a measured live-channel producer —
+  see that entry. They
   classify through
   `_is_unreachable` and an arm of their own rather than by widening
   `_is_connection_dead`, because **the two predicates answer different
@@ -3785,10 +3861,13 @@ if evidence changes; these are retired.
   injection-tested in `tests/backends/sftp/test_config.py`; the
   OpenSSH-reproducible subset (L1 permission path, L5 temp-litter, L3
   no-regression) is additionally covered live against the `atmoz/sftp` container in
-  `tests/e2e/test_sftp_correctness_edges.py`. **L1** `_raise_if_dir` now re-raises a
-  permission (`EACCES`/`EPERM`) classification-stat failure so it maps to
-  `PermissionDenied` rather than a generic `RemoteStoreError`, kept narrow
-  (permission only) so the errno-less file-ancestor path is preserved. **L2** the
+  `tests/e2e/test_sftp_correctness_edges.py`. **L1** `_raise_if_dir` no longer
+  swallows a permission (`EACCES`/`EPERM`) classification-stat failure, so it
+  surfaces `PermissionDenied` rather than a generic `RemoteStoreError`, kept
+  narrow (permission only) so the errno-less file-ancestor path is preserved.
+  As shipped here it bare-re-raised for `_map_exception` to classify, which
+  delivered the promise for `EACCES` alone; **BUG-275** closed the `EPERM` half
+  by having the guard raise the type itself. **L2** the
   mode-less-target policy folds into one `_classify_existing_target` helper treating
   a mode-less target defensively as `InvalidPath` (matching `_ensure_parent_dirs`),
   unified on the eager existence-check path — the `overwrite=False` check for all
