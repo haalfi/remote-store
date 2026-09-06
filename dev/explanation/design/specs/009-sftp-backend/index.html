@@ -9898,6 +9898,23 @@
     </span>
   </a>
   
+    <nav class="md-nav" aria-label="What a stalled operation leaves behind">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#where-the-callers-previous-file-ends-up" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Where the caller's previous file ends up
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
 </li>
         
       </ul>
@@ -11598,6 +11615,23 @@
     </span>
   </a>
   
+    <nav class="md-nav" aria-label="What a stalled operation leaves behind">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#where-the-callers-previous-file-ends-up" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Where the caller's previous file ends up
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
 </li>
         
       </ul>
@@ -11824,12 +11858,18 @@ Two failures fall outside it. A stall whose lost reply is the promote
 new content, no temp remains, and the caller is told <code>BackendUnavailable</code>. And
 the <code>_rename_fallback</code> path — entered when <code>posix_rename</code> raises an <code>OSError</code>
 that <code>_is_connection_dead</code> does not recognise and <code>_raise_if_dir</code> has not
-rejected the target, so not only on servers lacking the extension — removes the
-destination before renaming onto it, so a stall in that window destroys it and strands the
-payload in the temp (<strong>BUG-270</strong>). So "atomic" here guarantees no reader sees a
-half-written file; it guarantees neither that a reported failure means the write
-did not happen, nor that an existing destination survives. Measured, not
-inferred:
+rejected the target, so not only on servers lacking the extension — cannot rename
+onto an occupied path, so it displaces the destination to
+<code>.~bak.&lt;name&gt;.&lt;uuid8&gt;</code> first and renames it back if the promote fails. Renaming
+it back is best-effort, so a stall in that window leaves the destination path
+empty with its old content in the backup and the payload in the temp — one row of
+<a href="#where-the-previous-file-is">§ Where the caller's previous file ends up</a>, which
+enumerates the rest rather than leaving a reader to infer the scope from this
+sentence.
+So "atomic" here guarantees no reader sees a half-written file; it guarantees
+neither that a reported failure means the write did not happen, nor that the
+destination path is still occupied — only that what occupied it is still
+somewhere. Measured, not inferred:
 <a href="#stalled-write-destination">SFTP-030 § What a stalled operation leaves behind</a>
 carries the closure, the named states and the derivation.
 <strong>Postconditions:</strong> On success, the temp file is gone and the target contains the
@@ -11849,11 +11889,15 @@ only this half is what left that choice undecidable.</p>
 <h3 id="sftp-015-atomic-write-overwrite-semantics">SFTP-015: Atomic Write Overwrite Semantics<a class="headerlink" href="#sftp-015-atomic-write-overwrite-semantics" title="Permanent link">&para;</a></h3>
 <p><strong>Invariant:</strong> <code>write_atomic(path, content, overwrite=False)</code> raises <code>AlreadyExists</code>
 if the target already exists. With <code>overwrite=True</code>, the existing file is replaced.
-<strong>On success.</strong> A failure can leave it replaced, unchanged, or removed with
-nothing in its place — see
-<a href="#stalled-write-destination">SFTP-030 § What a stalled operation leaves behind</a>,
-and BUG-272 for the removed case, which is the one this invariant reads as
-excluding.</p>
+<strong>On success.</strong> A failure can leave it replaced, unchanged, or displaced to
+<code>.~bak.&lt;name&gt;.&lt;uuid8&gt;</code> with the destination path empty — see
+<a href="#stalled-write-destination">SFTP-030 § What a stalled operation leaves behind</a>.
+The displaced case is the one this invariant reads as excluding, and which
+failures reach it is enumerated at
+<a href="#where-the-previous-file-is">§ Where the caller's previous file ends up</a> rather
+than scoped here. What no row does is leave the caller without the file, which is
+the guarantee AW-003 states cross-backend and the reason the displace takes a
+backup rather than deleting.</p>
 <h3 id="sftp-016-delete_folder-recursive">SFTP-016: delete_folder Recursive<a class="headerlink" href="#sftp-016-delete_folder-recursive" title="Permanent link">&para;</a></h3>
 <p><strong>Invariant:</strong> <code>delete_folder(path, recursive=True)</code> walks the directory tree
 bottom-up, deleting files then directories.
@@ -11869,8 +11913,17 @@ to <code>rename</code>, and falls back to copy + delete if rename fails entirely
 <code>overwrite=False</code>.
 <strong>On failure</strong>, see
 <a href="#stalled-write-destination">SFTP-030 § What a stalled operation leaves behind</a>:
-a reported failure may mean the move was performed, and the fallback path can
-leave the destination removed.</p>
+a reported failure may mean the move was performed, and over a dropped
+connection the fallback path can leave the destination path empty with its old
+content displaced to <code>.~bak.&lt;name&gt;.&lt;uuid8&gt;</code>. On a live connection a failed
+<code>rename</code> is not reported at all — the copy rung answers it, which is the third
+rung of this invariant — and a failure of <em>that</em> rung has a destination to give
+back: the copy opens it before it can fail, so the restore clears the path before
+renaming the backup onto it rather than assuming it free. Whether the caller gets
+it back is the restore's own best-effort question, above. A destination the
+fallback could not clear at all is never written: the displace propagates its
+refusal instead of reporting nothing to restore, which is what kept the copy rung
+from truncating a file it had no backup for.</p>
 <h3 id="sftp-019-copy-via-read-write">SFTP-019: Copy Via Read + Write<a class="headerlink" href="#sftp-019-copy-via-read-write" title="Permanent link">&para;</a></h3>
 <p><strong>Invariant:</strong> <code>copy(src, dst)</code> reads the source file and writes it to the destination.
 There is no server-side copy operation in SFTP — data passes through the client.
@@ -12350,22 +12403,31 @@ paramiko release away from being silently unnecessary.</p>
 <p>Read the Postconditions as scoped to the failures that surface; the exception
 list is not a footnote to them.</p>
 <p>The caller-visible wall clock for a stalled operation is one bound, not
-several — <strong>with one known exception, recorded below rather than assumed away</strong>,
-and BUG-270 tracks it. <strong>The exception is the fallback's remove-then-rename
-chain</strong>, which both operations reach — what differs is when.</p>
-<p><code>move</code> reaches it directly: it has no <code>_raise_if_dir</code> step, so when <code>posix_rename</code>
-fails with a non-dead <code>OSError</code> nothing here fires and <code>_move_fallback</code> runs on
-into the stalled channel. Measured 4.00 s at a 2.0 s bound.</p>
-<p>The promote path does not, under that same antecedent: mechanism 2 fires, because
-<code>_raise_if_dir</code>'s classification stat re-enters the silent channel and re-raises,
-so <code>_rename_fallback</code> is never entered and the cost is one bound (measured
-2.00 s). It reaches the exception only when the silence begins <em>later</em> — at the
-fallback's own suppressed <code>remove</code>, with the channel healthy through the
-classification stat.</p>
-<p>Stated at this length because an earlier revision attributed the 4.00 s to the
-promote path under the first antecedent, where it is 2.00 s. One exception, two
-routes in, and which route an operation takes is decided by whether it has a
-classification step between the failed rename and the fallback.</p>
+several. <strong>The one exception this clause used to carry is closed</strong> (BUG-270): the
+fallback opened with a <code>remove</code> under <code>contextlib.suppress(OSError)</code>, so a
+silence beginning there was swallowed and the following <code>rename</code> re-entered the
+same channel — 4.00 s at a 2.0 s bound, reached directly by <code>move</code>, which has no
+<code>_raise_if_dir</code> step between the failed <code>posix_rename</code> and its fallback, and by
+the promote path only when the silence began at that <code>remove</code> rather than at the
+classification stat. <code>_displace</code> re-raises a dead-connection failure instead of
+suppressing it, which is mechanism 2 below covering the round-trip that was
+outside it. Measured after the change: 2.13 s (<code>move</code>), 2.11 s (<code>write_atomic</code>),
+by <code>pytest tests/backends/sftp/test_io_timeout.py -k pays_one_bound
+--durations=0</code>.</p>
+<p><strong>That derivation reaches one shape of drop, and the guard has to cover two.</strong>
+The measurement stages a stall, so what it fires on is a <code>socket.timeout</code> /
+<code>TimeoutError</code> — matched by <code>_is_connection_dead</code>. An EOF drop arrives as
+<code>paramiko.SSHException</code>, which that predicate <strong>deliberately excludes</strong>, so
+every guard on this path is written to reach it another way: <code>_displace</code> needs
+no arm at all, since an <code>SSHException</code> is not an <code>OSError</code> and never reaches its
+<code>except</code>; <code>_restore</code> carries the <code>or isinstance(exc, paramiko.SSHException)</code>
+clause verbatim from the two temp-cleanup sites; and <code>_release</code>, which has no
+exception to test, asks the transport instead. Stated because the figure above
+cannot be read as covering the shape it could not raise.</p>
+<p>The two-route detail is kept because it is what the guard's placement turns on:
+an earlier revision attributed the 4.00 s to the promote path under the first
+antecedent, where it was 2.00 s, and a guard written from that reading would have
+gone in the wrong method.</p>
 <p>A failed operation re-enters the channel two ways — to classify the
 failure (<code>_raise_if_dir</code>, <code>_has_file_ancestor</code>) and to release resources — and
 each re-entry would pay <code>io_timeout</code> again on a client <code>_map_exception</code> has not
@@ -12375,19 +12437,31 @@ re-entries differently:</p>
 <li><strong>A passed cause.</strong> A caller holding a failed operation's exception passes it
    to <code>_raise_if_dir</code>, which skips the probe when that exception already
    concludes the connection is dead.</li>
-<li><strong>A dead-stat re-raise.</strong> <code>_raise_if_dir</code> and <code>_has_file_ancestor</code> each
-   re-raise a dead-connection error from their own stat rather than swallowing
-   it as unclassifiable. This is what covers <code>read</code>, whose is-dir check is eager
+<li><strong>A dead round-trip re-raise.</strong> <code>_raise_if_dir</code>, <code>_has_file_ancestor</code> and
+   <code>_displace</code> each re-raise a dead-connection error from their own request
+   rather than swallowing it — as unclassifiable in the first two, as a
+   destination that was not there in the third. This is what covers <code>read</code>, whose is-dir check is eager
    and so has no prior exception to pass, and it also fixes a correctness
    residue in <code>_has_file_ancestor</code>: swallowing there returned <code>False</code>, the
    caller's original error surfaced, and <code>_map_exception</code> classified it as a
    generic <code>RemoteStoreError</code> — which does <em>not</em> clear the cached client, so
    SFTP-010 tier 2 never fired on the operation that surfaced the drop.</li>
 <li><strong>Skipped teardown.</strong> Every promote-or-rename path skips what follows a dead
-   rename: <code>_promote</code> skips the <code>rename</code> fallback, whose <code>remove</code> + <code>rename</code>
-   would each pay the bound again, and <code>move</code> skips its own fallback chain — a
-   suppressed <code>remove</code>, a <code>rename</code>, and the copy fallback's two file opens.
-   <code>write_atomic</code> and <code>open_atomic</code> skip their temp cleanup. And <strong>every</strong>
+   rename: <code>_promote</code> skips the fallback and <code>move</code> skips its own fallback chain.
+   <strong>Each saves one bound, not the chain's length</strong> — the displace re-raises a
+   dead-connection failure, so the <code>rename</code> behind it and the copy fallback's two
+   file opens are unreachable anyway; the displace is the round-trip that would
+   otherwise be paid. <strong>The chains were never worth their length</strong>, and the
+   figures are measured on both sides rather than inferred from the code shape:
+   removing each guard costs 1 further round-trip at this head, and 2 against the
+   base implementations (<code>remove</code> + <code>rename</code>) — never the 3 and 4 an earlier
+   revision of this clause and its two source comments claimed, because
+   <code>_raise_if_dir</code>'s cause-skip predates this change and <code>_move_fallback</code>'s own
+   inner guard already stopped the copy rung. <code>write_atomic</code> and
+   <code>open_atomic</code> skip their temp cleanup, and <code>_restore</code> skips putting a
+   displaced destination back — on the temp cleanup's own predicate, the one
+   that adds <code>SSHException</code> to this list's first clause — which is why that
+   residue keeps its backup. And <strong>every</strong>
    paramiko file handle held in a <code>with</code> block skips its close on a
    dead-connection exit, since <code>SFTPFile.close()</code> flushes and then issues a
    synchronous <code>CMD_CLOSE</code> whose reply never comes.</li>
@@ -12409,15 +12483,17 @@ re-entries differently:</p>
    its read fails in paramiko's prefetch machinery rather than on the close of a
    partly-read handle, and a test there would pin something other than what it
    claimed. <code>move</code>'s copy fallback (<code>_copy_and_delete</code>) is reached only when both
-   <code>posix_rename</code> and <code>rename</code> fail for non-dead reasons, which needs a server
-   refusing both, so it carries a <code>no cover</code> pragma.</p>
+   <code>posix_rename</code> and <code>rename</code> fail for non-dead reasons; its handles are
+   exercised, but never against a stall, because a dead channel stops the ladder
+   a rung above them.</p>
 <p>The distinction is drawn because <code>copy</code> shipped unrouted for a round while
    five artifacts named it covered — the call-site list was read as evidence that
-   the list had been run. The same reading is what put the pragma on too much
-   code twice: first over <code>move</code>'s dead-rename guard, then over <code>_move_fallback</code>'s
-   own, each of which is reachable well outside the case the pragma names. Each
-   split moved the pragma down to the method that genuinely needs it, and the two
-   guards now have a test apiece.</p>
+   the list had been run. The same reading is what put a <code>no cover</code> pragma on too
+   much code twice: first over <code>move</code>'s dead-rename guard, then over
+   <code>_move_fallback</code>'s own, each of which is reachable well outside the case the
+   pragma named. Each split moved the pragma down a level; what finally removed
+   it was staging the refusal client-side, which reaches every rung on a live
+   connection. Both guards have a test apiece.</p>
 <p>The helper bounds what the caller waits inline; it does not promise the
    round-trip is never made. <code>SFTPFile.__del__</code> calls <code>_close(async_=True)</code>
    unconditionally, and the <code>BufferedFile.close</code> inside it — which flushes —
@@ -12425,16 +12501,17 @@ re-entries differently:</p>
    bytes can attempt one blocking write when it is collected, on whatever thread
    collects it. A read handle cannot: its write buffer is empty and <code>_write_all</code>
    returns without a round-trip.</p>
-<p>The <code>move</code> guard is a case where a coverage pragma hid a gap. The pragma
-   <code># pragma: no cover -- fallback for servers without posix_rename</code> sits on
-   <code>_rename_fallback</code>, the <em>promote</em> path's fallback — <code>_move_fallback</code> carries
-   none, and says why in its own docstring. <strong>The pragma's wording is itself
-   stale</strong>: the residue subsection below establishes that neither fallback is
-   confined to servers lacking the extension, so it names a bound that does not
-   hold (BUG-270). What the gap was: the dead-connection guard above
-   it is reachable on <em>any</em> server, since a stalled channel fails <code>posix_rename</code>
-   like anything else. The fallback is therefore a separate method
-   (<code>_move_fallback</code>), so the pragma covers only what it names.</p>
+<p>The <code>move</code> guard is a case where a coverage pragma hid a gap. A
+   <code># pragma: no cover -- fallback for servers without posix_rename</code> sat on
+   <code>_rename_fallback</code> and named a bound that does not hold: the residue
+   subsection below establishes that neither fallback is confined to servers
+   lacking the extension. What the gap was: the dead-connection guard above it is
+   reachable on <em>any</em> server, since a stalled channel fails <code>posix_rename</code> like
+   anything else. Splitting <code>_move_fallback</code> out is what stopped the pragma
+   covering that guard; the pragma itself is gone, because denying the promote on
+   a live connection reaches both fallbacks and the copy rung below them
+   (<code>tests/backends/sftp/test_atomic_fallback.py</code>). A pragma whose stated bound
+   is wrong is the shape to look for here, not the pragma.</p>
 <p><strong>Bounded, with one stated exception.</strong> It is not fixed here:</p>
 <ul>
 <li><strong>The <code>subsystem</code> request.</strong> <code>Channel.invoke_subsystem</code> waits in
@@ -12601,15 +12678,15 @@ never affected and is omitted.</p>
 </tr>
 <tr>
 <td><code>move</code></td>
-<td><strong>untouched</strong> · <strong>absent</strong> · <strong>the move completed</strong> (source gone) · <strong>the destination destroyed while the source survives</strong> — fallback path only</td>
+<td><strong>untouched</strong> · <strong>absent</strong> · <strong>the move completed</strong> (source gone) · <strong>the destination path empty, its old content in a <code>.~bak.&lt;name&gt;.&lt;uuid8&gt;</code>, the source still there</strong> — fallback path only</td>
 </tr>
 <tr>
 <td><code>write_atomic</code> / <code>open_atomic</code></td>
-<td><strong>untouched</strong> or <strong>absent</strong>, usually with an orphan temp · <strong>the write completed</strong>, no temp · <strong>the destination destroyed with the payload stranded in the temp</strong> — fallback path only</td>
+<td><strong>untouched</strong> or <strong>absent</strong>, usually with an orphan temp · <strong>the write completed</strong>, no temp · <strong>the destination path empty, its old content in a <code>.~bak.&lt;name&gt;.&lt;uuid8&gt;</code> and the payload in the temp</strong> — fallback path only</td>
 </tr>
 </tbody>
 </table>
-<p>Six consequences follow, and each is why the closure and its illustrations are
+<p>Seven consequences follow, and each is why the closure and its illustrations are
 here rather than left to a reader's inference.</p>
 <p><strong>Reported failure does not mean unchanged, and does not mean incomplete.</strong>
 Every operation here has a state in which it was performed in full and then
@@ -12622,9 +12699,13 @@ destroys a pre-existing file and replaces it with nothing.</p>
 residue is what the capability is bought for, and it holds against a failure in
 the body — not against a lost promote reply, and not on the fallback path.</p>
 <p><strong>The fallback path is the worst state here</strong>, and it is <code>_rename_fallback</code> /
-<code>_move_fallback</code>: those remove the destination and then rename onto it, so a
-silence beginning at the <code>rename</code> leaves the destination gone with nothing put in
-its place. <strong>It is not confined to servers lacking <code>posix-rename@openssh.com</code>.</strong>
+<code>_move_fallback</code>: those displace the destination and then rename onto it, so a
+silence beginning at the promote <code>rename</code> leaves the destination path empty. What
+is at stake there is which copies survive, not whether the path is occupied.
+Before BUG-272 the displace was a <code>remove</code> and this residue had no old content in
+it at all — on a <em>non-dead</em> failure the same window also ran the temp cleanup,
+and neither copy remained.
+<strong>It is not confined to servers lacking <code>posix-rename@openssh.com</code>.</strong>
 The route in is a <code>posix_rename</code> failure that <code>_is_connection_dead</code> does not
 recognise, on a target the operation's own directory guard has not already
 rejected — <code>_raise_if_dir</code> for the promote path, and for <code>move</code> the eager
@@ -12637,10 +12718,16 @@ naming them requires knowing what every guard between <code>posix_rename</code> 
 fallback does, an earlier revision named three of which two were unreachable,
 and the two guards involved (<code>_raise_if_dir</code> here, the destination <code>stat</code> in
 <code>move</code>) are the kind of detail a reader should check in the code rather than
-trust from prose. It is pre-existing behaviour rather than anything
-this clause introduced, and it is tracked as <strong>BUG-270</strong> along with the
-second <code>io_timeout</code> bound it costs — the suppressed <code>remove</code> swallows its own
-timeout, which is the exception the one-bound paragraph above records.</p>
+trust from prose.</p>
+<p><strong>The path costs one bound, not two.</strong> The exception the one-bound paragraph
+above records was this one: the displace ran as a <code>remove</code> under
+<code>contextlib.suppress(OSError)</code>, which swallowed its own timeout and let the
+promote re-enter the same silent channel — 4.00 s at a 2.0 s bound. <code>_displace</code>
+re-raises a dead-connection failure instead, so the promote is never attempted:
+measured 2.13 s (<code>move</code>) and 2.11 s (<code>write_atomic</code>) at the same bound, by
+<code>pytest tests/backends/sftp/test_io_timeout.py -k pays_one_bound --durations=0</code>.
+<code>move</code>'s two rungs below the promote are unreachable on a dead channel for the
+same reason, so nothing further is paid there either.</p>
 <p><strong>The prefix is not a resume point.</strong> Its length is a function of the chunk size
 and the SSH window, not of anything the caller controls or is told, so a caller
 that seeks past it and appends will corrupt the file. Discard and re-write. This
@@ -12683,9 +12770,11 @@ it <em>did</em> reach are sound and are among those named above.</p>
 <code>test_a_stalled_write_can_have_delivered_the_payload_in_full</code>,
 <code>test_stalled_copy_leaves_a_prefix_at_the_destination_too</code>,
 <code>test_a_lost_reply_can_complete_the_operation_it_reports_as_failed</code>,
-<code>test_the_rename_fallback_destroys_the_destination_when_the_promote_stalls</code> and
+<code>test_a_stalled_promote_in_the_fallback_leaves_the_old_content_in_a_backup</code> and
 <code>test_a_stalled_atomic_write_preserves_the_destination_and_leaves_an_orphan_temp</code>
-in <code>tests/backends/sftp/test_io_timeout.py</code>. No claim is made that they span the
+in <code>tests/backends/sftp/test_io_timeout.py</code>. The fallback's <em>non-dead</em> failures
+are not stall states and are pinned separately, in
+<code>tests/backends/sftp/test_atomic_fallback.py</code>. No claim is made that they span the
 reachable space — the closure says no finite list can. Byte counts are
 deliberately absent: the prefix length moves with the chunk size and the window,
 so a figure would be a derived artifact going stale exactly as the enumeration
@@ -12695,9 +12784,132 @@ merely citing it</strong>, and amends it in two directions. SFTP-014's caveat sa
 that the orphan temp remains; the untouched-destination half a reader takes from
 "atomic" was never written down there, so it could not be relied on and is now
 stated with its bound. Both halves are false outside that bound: a lost promote
-reply leaves the rename performed, and the fallback path destroys the destination
-while keeping the temp. Found by running the contrast this clause is stated
-against instead of quoting it.</p>
+reply leaves the rename performed, and the fallback path empties the destination
+path while keeping both copies beside it. Found by running the contrast this
+clause is stated against instead of quoting it.</p>
+<p><a id="where-the-previous-file-is"></a></p>
+<h5 id="where-the-callers-previous-file-ends-up">Where the caller's previous file ends up<a class="headerlink" href="#where-the-callers-previous-file-ends-up" title="Permanent link">&para;</a></h5>
+<p><strong>Enumerated rather than described</strong>,
+because describing it went wrong three times: each attempt narrowed the condition
+to a dropped connection, and each was refuted by a live-connection state the
+narrowing had not considered. The space is small enough to write down, so here it
+is, and every other clause in the repo that speaks to it cites this table instead
+of restating the scope. <strong>Three steps decide it</strong>, not two: whether the
+destination was displaced, whether the promote landed, and what the fallback then
+did about the backup — and that third step is best-effort in both directions,
+<code>_restore</code> on each of its two calls and <code>_release</code> on its one.</p>
+<p>The <strong>Reached on</strong> column is what makes the readings below countable rather than
+recalled: <code>live</code> for a connection that never dropped, <code>drop</code> for one that did.</p>
+<table>
+<thead>
+<tr>
+<th>Displace</th>
+<th>Promote</th>
+<th>Then</th>
+<th>Reached on</th>
+<th>The caller's previous file is</th>
+<th>Pinned by</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>refused, or unprobeable</td>
+<td>not attempted</td>
+<td>the refusal propagates</td>
+<td>live · drop</td>
+<td><strong>at its path</strong> — nothing was moved, and this is why a refusal is not reported as "nothing to restore". On a drop the probe raises instead of answering and a <code>.~tmp.</code> orphan is left, since the cleanup unlink is skipped rather than re-entering the channel</td>
+<td><code>test_a_refused_displace_reports_rather_than_writing_the_destination</code>, <code>test_a_probe_that_cannot_reach_the_server_reclassifies_nothing</code></td>
+</tr>
+<tr>
+<td>absent</td>
+<td>attempted, and ordinarily lands</td>
+<td>nothing to restore</td>
+<td>live</td>
+<td>there was none — the ordinary <code>overwrite=True</code> create</td>
+<td><code>test_an_errno_less_displace_failure_over_nothing_still_creates</code></td>
+</tr>
+<tr>
+<td><strong>landed, reported failed</strong></td>
+<td>not attempted</td>
+<td>the failure propagates</td>
+<td>live</td>
+<td>in <code>.~bak.&lt;name&gt;.&lt;uuid8&gt;</code> — the rename moved it and only the answer failed, so the path is empty and the caller is told so rather than the fallback guessing</td>
+<td><code>test_a_displace_that_landed_but_reported_failure_is_reported</code></td>
+</tr>
+<tr>
+<td>done, reply lost</td>
+<td>not attempted</td>
+<td>the drop propagates</td>
+<td>drop</td>
+<td>in <code>.~bak.&lt;name&gt;.&lt;uuid8&gt;</code>, the path empty — the landed-but-unreported row above, reached by a drop rather than by a server that answered</td>
+<td>— argued from SFTP-030's closure</td>
+</tr>
+<tr>
+<td>done</td>
+<td>succeeded</td>
+<td><code>_release</code> drops the backup</td>
+<td>live</td>
+<td>replaced, as asked</td>
+<td><code>test_the_fallback_replaces_an_existing_destination</code></td>
+</tr>
+<tr>
+<td>done</td>
+<td>succeeded</td>
+<td><code>_release</code> refused</td>
+<td>live</td>
+<td>replaced — but a <code>.~bak.&lt;name&gt;.&lt;uuid8&gt;</code> <strong>outlives a successful call</strong></td>
+<td><code>test_a_release_the_server_refuses_leaves_a_backup_beside_a_good_write</code></td>
+</tr>
+<tr>
+<td>done</td>
+<td>succeeded</td>
+<td><code>_release</code> reaches a silent channel</td>
+<td>drop</td>
+<td>replaced, and the call pays one <code>io_timeout</code> bound inside the suppressed unlink — the one place a <strong>success</strong> costs a bound. Whether a <code>.~bak.&lt;name&gt;.&lt;uuid8&gt;</code> outlives it depends on which direction went silent, and a caller cannot tell which they met</td>
+<td>— argued</td>
+</tr>
+<tr>
+<td>done</td>
+<td>failed</td>
+<td>restore ran and completed</td>
+<td>live</td>
+<td><strong>back at its path</strong> — the ordinary failure, and what the fix buys</td>
+<td><code>test_a_failed_promote_leaves_the_destination_as_it_found_it</code></td>
+</tr>
+<tr>
+<td>done</td>
+<td>failed</td>
+<td>restore refused</td>
+<td>live</td>
+<td>in <code>.~bak.&lt;name&gt;.&lt;uuid8&gt;</code></td>
+<td><code>test_a_restore_the_server_refuses_leaves_the_old_content_findable</code></td>
+</tr>
+<tr>
+<td>done</td>
+<td>failed</td>
+<td>restore not attempted</td>
+<td>drop</td>
+<td>in <code>.~bak.&lt;name&gt;.&lt;uuid8&gt;</code></td>
+<td><code>test_a_stalled_promote_in_the_fallback_leaves_the_old_content_in_a_backup</code></td>
+</tr>
+</tbody>
+</table>
+<p><strong>Which rows are measured is in the table</strong> rather than left uniform, on the same
+reasoning the named-states list above gives: eight of the ten carry a test, and
+the two that do not say so.</p>
+<p><strong>Two readings follow, and they are what the prose kept getting wrong.</strong> The
+<code>.~bak.</code> residue is <strong>not</strong> a dropped-connection signal: five rows leave one for
+certain and a sixth may, and of those five, three are reached on a live
+connection — one of them following a call that <em>succeeded</em> and raised nothing.
+(The sixth is the silent-channel release, whose row says a caller cannot tell
+which direction went silent and so cannot tell whether a backup outlived the
+call. It is counted apart because a count that folds a maybe into a certainty is
+the kind of figure this table exists to stop.) And the guarantee is the last
+column never reading "gone", not the file being at its path: two rows do read "at
+its path", but only one of them <strong>restores</strong> it there — the other never moved it
+— so AW-003 promises the copy and the ordinary-failure row alone promises the
+return. The three rows reading "replaced" replace the file by design, which is
+the antecedent AW-003 carries and this table does not repeat.</p>
 
 
 

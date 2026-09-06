@@ -11875,7 +11875,8 @@ See the <a href="../../../reference/capabilities-matrix/">capabilities matrix</a
 <p>Atomic writes use a temp file (<code>.~tmp.&lt;name&gt;.&lt;uuid&gt;</code>) and rename. If the
 connection drops between write and rename, the destination is untouched but
 the orphan temp file will remain on the server. If it drops <em>during</em> the
-rename, see the danger note below — the write may have landed.</p>
+rename, see the danger note below — the write may have landed, and on the
+fallback path a <code>.~bak.&lt;name&gt;.&lt;uuid&gt;</code> may hold your previous file.</p>
 </div>
 <div class="admonition danger">
 <p class="admonition-title">A stalled operation may have succeeded</p>
@@ -11905,22 +11906,27 @@ states below are the ones worth naming, not a complete list:</p>
 </tr>
 <tr>
 <td><code>move()</code></td>
-<td>The paths unchanged, <strong>the move completed</strong> (source gone), or <strong>the destination destroyed</strong> with the source still there</td>
+<td>The paths unchanged, <strong>the move completed</strong> (source gone), or <strong>the destination path empty</strong> with its old content in a <code>.~bak.&lt;name&gt;.&lt;uuid&gt;</code> file and the source still there</td>
 </tr>
 <tr>
 <td><code>write_atomic()</code> / <code>open_atomic()</code></td>
-<td>The destination unchanged, often with an orphan temp; <strong>the write completed</strong>; or <strong>the destination destroyed</strong> with your data left in an orphan temp file</td>
+<td>The destination unchanged, often with an orphan temp; <strong>the write completed</strong>; or <strong>the destination path empty</strong> with its old content in a <code>.~bak.&lt;name&gt;.&lt;uuid&gt;</code> file and your data in an orphan temp</td>
 </tr>
 </tbody>
 </table>
-<p>The destroyed-destination cases come from a rename fallback that removes the
-destination before renaming onto it, and it is not confined to old servers —
-any rename that <em>fails</em> for a reason the backend cannot attribute to a
-dropped connection takes that path. It also needs <code>overwrite=True</code>: with
-the default the call raises <code>AlreadyExists</code> before the fallback is reached,
-so an existing file cannot be destroyed this way. No example failure is
-given: which ones reach it depends on guards that differ per operation, and
-every attempt to name one here has been wrong.</p>
+<p>The empty-destination cases come from a rename fallback, which cannot rename
+onto a path that is occupied: it moves the old file aside first and moves it
+back if the rename fails. Over a dropped connection it cannot move anything
+back — <strong>nothing is lost, but the path you wrote to is not the file you
+had.</strong> Your previous file is beside it as <code>.~bak.&lt;name&gt;.&lt;uuid&gt;</code>, and your
+payload is in the <code>.~tmp.&lt;name&gt;.&lt;uuid&gt;</code> for <code>write_atomic()</code> /
+<code>open_atomic()</code>, or still at <code>src</code> for <code>move()</code>, which never writes a temp.
+The fallback is not confined to old servers: any rename that <em>fails</em> for a
+reason the backend cannot attribute to a dropped connection takes that path.
+It also needs <code>overwrite=True</code>: with the default the call raises
+<code>AlreadyExists</code> before the fallback is reached. No example failure is given:
+which ones reach it depends on guards that differ per operation, and every
+attempt to name one here has been wrong.</p>
 <p>So:</p>
 <ul>
 <li><strong>Do not treat a failure as a no-op.</strong> Re-check the state before acting on
@@ -11929,18 +11935,46 @@ every attempt to name one here has been wrong.</p>
   file without replacing it.</li>
 <li><strong>Retry with <code>overwrite=True</code>.</strong> The path is usually still occupied, so a
   plain retry raises <code>AlreadyExists</code> instead of retrying.</li>
-<li><strong>Do not resume from a partial file.</strong> The prefix length depends on
+<li>
+<p><strong>Do not resume from a partial file.</strong> The prefix length depends on
   buffering you cannot see, so appending to it corrupts the file. Discard
-  and re-write from the start.</li>
+  and re-write from the start.</p>
+</li>
+<li>
+<p><strong>Look for a <code>.~bak.</code> file beside the target</strong> before you re-create
+  anything. On the fallback path it is your previous file, left where the
+  call could not put it back. Your payload is in the <code>.~tmp.</code> beside it for
+  <code>write_atomic()</code> / <code>open_atomic()</code>, and still at <code>src</code> for <code>move()</code>.</p>
+</li>
 </ul>
 <p><strong><code>write_atomic()</code> is still the right choice when readers must never see a
 half-written file</strong> (see the caveat above, and
 <a href="../../../explanation/concurrency/">atomicity semantics</a>): no reader ever
 observes a partial file at the destination. What it does not promise is that
 a reported failure means nothing happened, nor that your existing file
-survives one.</p>
+survives one: a stall that loses the reply to a <em>successful</em> rename has
+replaced it, and nothing was kept. The fallback path is the one that keeps a
+copy, because it is the one that moved your file aside to begin with.</p>
 <p>Parent directories created for a write remain behind in every case — a
 failed write is not a rollback.</p>
+</div>
+<div class="admonition warning">
+<p class="admonition-title">A <code>.~bak.</code> file can outlive a call that did not stall — including one that succeeded</p>
+<p>The note above is about <code>BackendUnavailable</code>. The rename fallback can also
+leave a <code>.~bak.&lt;name&gt;.&lt;uuid&gt;</code> behind on a connection that never dropped, by
+two routes. It moves your file aside, and the server then refuses to move it
+back. Or the move-aside itself lands and the server fails to say so, in which
+case nothing is put back because the call never learns there is anything to
+put back. Either way you get <code>PermissionDenied</code> (or another mapped error)
+with your previous file under that name instead of at its path. Nothing is
+lost, and the recovery is the same — read the target, then the <code>.~bak.</code>
+beside it.</p>
+<p><strong>Read the target before restoring a backup.</strong> A <code>.~bak.</code> also outlives a
+call that <em>succeeded</em> — the tidy-up that removes it is best-effort, so a
+server that refuses it, or a connection that drops first, leaves the backup
+behind with nothing raised. There the target already holds your new content,
+and copying the backup over it would undo the write. The file's name does not
+say which case you are in; the target's contents do.</p>
 </div>
 <div class="admonition note">
 <p class="admonition-title">Move fallback</p>
@@ -12686,7 +12720,7 @@ or fails mid-write.</p>
 temp file in the destination directory, then promoted with
 <code>posix_rename</code> (atomic on POSIX-compliant servers). Servers without
 <code>posix_rename</code> fall back to a plain <code>rename</code> (non-atomic overwrite:
-the target is removed first).</p>
+the target is moved aside first, and moved back if the rename fails).</p>
 <p>A failure <em>before</em> the promote leaves the destination untouched, and the
 temp file is cleaned up <strong>best-effort</strong>: the cleanup is deliberately
 skipped when the failure is itself a dropped connection, so a stall
@@ -12697,12 +12731,15 @@ so the destination holds the new content and no temp remains, while the
 caller is told <code>BackendUnavailable</code>. What is guaranteed is that no
 reader ever sees a half-written file — not that a reported failure means
 the write did not happen.</p>
-<p>The destination is also unprotected on the <strong>rename-fallback</strong> path,
-which removes it before renaming onto it: a stall in that window leaves
-the destination gone. That path is entered when <code>posix_rename</code> fails
-for a reason <code>_is_connection_dead</code> does not recognise and the target
-is not a directory, so it is not confined to servers lacking the
-extension.</p>
+<p>The <strong>rename-fallback</strong> path cannot rename onto an occupied path, so it
+displaces the destination first and puts it back if the promote fails.
+Ordinarily the restore succeeds and the old content is back at its own
+path. It is best-effort, though: a dropped connection stops it being
+attempted at all, and a live server can refuse it — and <em>then</em> the old
+content is beside the target as <code>.~bak.&lt;name&gt;.&lt;uuid8&gt;</code> instead. That
+path is entered when <code>posix_rename</code> fails for a reason
+<code>_is_connection_dead</code> does not recognise and the target is not a
+directory, so it is not confined to servers lacking the extension.</p>
 <p>As in <code>write</code>, the returned <code>WriteResult</code> carries <code>size</code> and
 <code>source="native"</code> but leaves every rich field (<code>last_modified</code> /
 <code>etag</code> / <code>version_id</code> / <code>digest</code>) <code>None</code>.</p>
@@ -12772,10 +12809,11 @@ terms as <code>write_atomic</code>, whose docstring carries the detail. The temp
 cleanup is deliberately skipped when the failure is itself a
 dropped-connection signal, so an orphan <code>.~tmp.&lt;name&gt;.&lt;uuid8&gt;</code> remains;
 a stall whose lost reply is the promote leaves the rename <em>performed</em>, so
-<em>path</em> holds the new content; and on the rename-fallback path <em>path</em> can
-be removed with the payload stranded in the temp. No reader ever sees a
-half-written file, which is what the atomicity buys — but a reported
-failure means neither that nothing happened nor that <em>path</em> survived.</p>
+<em>path</em> holds the new content; and on the rename-fallback path a dropped
+connection can leave <em>path</em> empty with its old content displaced to
+<code>.~bak.&lt;name&gt;.&lt;uuid8&gt;</code>. No reader ever sees a half-written file, which
+is what the atomicity buys — but a reported failure means neither that
+nothing happened nor that <em>path</em> still holds what it held.</p>
 
 
 <p><span class="doc-section-title">Raises:</span></p>
@@ -13187,11 +13225,13 @@ rename did not happen: if the stall swallowed the <em>reply</em> to
 <code>posix_rename</code>, the server performed the move and the caller is told it
 failed. Re-check both paths before retrying — a blind retry of a move
 that actually succeeded raises <code>NotFound</code> on a source that is gone.
-There is a further state on the <strong>rename-fallback</strong> path, which removes
+There is a further state on the <strong>rename-fallback</strong> path, which displaces
 the destination before renaming onto it: a stall in that window leaves
-the destination gone while the source survives. That path is entered
-when <code>posix_rename</code> fails for a reason <code>_is_connection_dead</code> does
-not recognise and the destination is not a directory, so it is not
+the destination path empty, its old content under
+<code>.~bak.&lt;name&gt;.&lt;uuid8&gt;</code> and the source still there, because the restore
+is best-effort and a dropped connection stops it being attempted. That path is
+entered when <code>posix_rename</code> fails for a reason <code>_is_connection_dead</code>
+does not recognise and the destination is not a directory, so it is not
 confined to servers lacking <code>posix-rename@openssh.com</code>.</p>
 
 

@@ -238,7 +238,7 @@ The SFTP backend supports all capabilities except `GLOB` and `ATOMIC_MOVE`. See 
 
 Atomic write caveat
 
-Atomic writes use a temp file (`.~tmp.<name>.<uuid>`) and rename. If the connection drops between write and rename, the destination is untouched but the orphan temp file will remain on the server. If it drops *during* the rename, see the danger note below — the write may have landed.
+Atomic writes use a temp file (`.~tmp.<name>.<uuid>`) and rename. If the connection drops between write and rename, the destination is untouched but the orphan temp file will remain on the server. If it drops *during* the rename, see the danger note below — the write may have landed, and on the fallback path a `.~bak.<name>.<uuid>` may hold your previous file.
 
 A stalled operation may have succeeded
 
@@ -246,24 +246,31 @@ When a transfer stalls, the timeout tells you **no reply came back**. It does no
 
 The general rule is that **any amount of the operation may have happened, from none of it to all of it**, and the error does not tell you which. The states below are the ones worth naming, not a complete list:
 
-| Operation                          | What a `BackendUnavailable` may have left                                                                                                                  |
-| ---------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `write()`                          | The destination unchanged, absent, **emptied**, holding an unpredictable prefix, or **written in full**                                                    |
-| `copy()`                           | The same five, at `dst`; the source is never affected                                                                                                      |
-| `move()`                           | The paths unchanged, **the move completed** (source gone), or **the destination destroyed** with the source still there                                    |
-| `write_atomic()` / `open_atomic()` | The destination unchanged, often with an orphan temp; **the write completed**; or **the destination destroyed** with your data left in an orphan temp file |
+| Operation                          | What a `BackendUnavailable` may have left                                                                                                                                                             |
+| ---------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `write()`                          | The destination unchanged, absent, **emptied**, holding an unpredictable prefix, or **written in full**                                                                                               |
+| `copy()`                           | The same five, at `dst`; the source is never affected                                                                                                                                                 |
+| `move()`                           | The paths unchanged, **the move completed** (source gone), or **the destination path empty** with its old content in a `.~bak.<name>.<uuid>` file and the source still there                          |
+| `write_atomic()` / `open_atomic()` | The destination unchanged, often with an orphan temp; **the write completed**; or **the destination path empty** with its old content in a `.~bak.<name>.<uuid>` file and your data in an orphan temp |
 
-The destroyed-destination cases come from a rename fallback that removes the destination before renaming onto it, and it is not confined to old servers — any rename that *fails* for a reason the backend cannot attribute to a dropped connection takes that path. It also needs `overwrite=True`: with the default the call raises `AlreadyExists` before the fallback is reached, so an existing file cannot be destroyed this way. No example failure is given: which ones reach it depends on guards that differ per operation, and every attempt to name one here has been wrong.
+The empty-destination cases come from a rename fallback, which cannot rename onto a path that is occupied: it moves the old file aside first and moves it back if the rename fails. Over a dropped connection it cannot move anything back — **nothing is lost, but the path you wrote to is not the file you had.** Your previous file is beside it as `.~bak.<name>.<uuid>`, and your payload is in the `.~tmp.<name>.<uuid>` for `write_atomic()` / `open_atomic()`, or still at `src` for `move()`, which never writes a temp. The fallback is not confined to old servers: any rename that *fails* for a reason the backend cannot attribute to a dropped connection takes that path. It also needs `overwrite=True`: with the default the call raises `AlreadyExists` before the fallback is reached. No example failure is given: which ones reach it depends on guards that differ per operation, and every attempt to name one here has been wrong.
 
 So:
 
 - **Do not treat a failure as a no-op.** Re-check the state before acting on it. A failed `move()` that actually succeeded gives `NotFound` on retry; a failed `write(..., overwrite=True)` may have truncated your previous file without replacing it.
 - **Retry with `overwrite=True`.** The path is usually still occupied, so a plain retry raises `AlreadyExists` instead of retrying.
 - **Do not resume from a partial file.** The prefix length depends on buffering you cannot see, so appending to it corrupts the file. Discard and re-write from the start.
+- **Look for a `.~bak.` file beside the target** before you re-create anything. On the fallback path it is your previous file, left where the call could not put it back. Your payload is in the `.~tmp.` beside it for `write_atomic()` / `open_atomic()`, and still at `src` for `move()`.
 
-**`write_atomic()` is still the right choice when readers must never see a half-written file** (see the caveat above, and [atomicity semantics](https://docs.remotestore.dev/stable/explanation/concurrency/index.md)): no reader ever observes a partial file at the destination. What it does not promise is that a reported failure means nothing happened, nor that your existing file survives one.
+**`write_atomic()` is still the right choice when readers must never see a half-written file** (see the caveat above, and [atomicity semantics](https://docs.remotestore.dev/stable/explanation/concurrency/index.md)): no reader ever observes a partial file at the destination. What it does not promise is that a reported failure means nothing happened, nor that your existing file survives one: a stall that loses the reply to a *successful* rename has replaced it, and nothing was kept. The fallback path is the one that keeps a copy, because it is the one that moved your file aside to begin with.
 
 Parent directories created for a write remain behind in every case — a failed write is not a rollback.
+
+A `.~bak.` file can outlive a call that did not stall — including one that succeeded
+
+The note above is about `BackendUnavailable`. The rename fallback can also leave a `.~bak.<name>.<uuid>` behind on a connection that never dropped, by two routes. It moves your file aside, and the server then refuses to move it back. Or the move-aside itself lands and the server fails to say so, in which case nothing is put back because the call never learns there is anything to put back. Either way you get `PermissionDenied` (or another mapped error) with your previous file under that name instead of at its path. Nothing is lost, and the recovery is the same — read the target, then the `.~bak.` beside it.
+
+**Read the target before restoring a backup.** A `.~bak.` also outlives a call that *succeeded* — the tidy-up that removes it is best-effort, so a server that refuses it, or a connection that drops first, leaves the backup behind with nothing raised. There the target already holds your new content, and copying the backup over it would undo the write. The file's name does not say which case you are in; the target's contents do.
 
 Move fallback
 
@@ -492,11 +499,11 @@ write_atomic(
 
 Write *content* to *path* atomically via a temp file plus server rename.
 
-Readers never observe a partial file: the body is streamed to a hidden temp file in the destination directory, then promoted with `posix_rename` (atomic on POSIX-compliant servers). Servers without `posix_rename` fall back to a plain `rename` (non-atomic overwrite: the target is removed first).
+Readers never observe a partial file: the body is streamed to a hidden temp file in the destination directory, then promoted with `posix_rename` (atomic on POSIX-compliant servers). Servers without `posix_rename` fall back to a plain `rename` (non-atomic overwrite: the target is moved aside first, and moved back if the rename fails).
 
 A failure *before* the promote leaves the destination untouched, and the temp file is cleaned up **best-effort**: the cleanup is deliberately skipped when the failure is itself a dropped connection, so a stall leaves an orphan `.~tmp.<name>.<uuid8>` beside the target rather than stalling again on an unlink the server cannot answer. A stall whose lost reply is the **promote itself** is different: the rename was performed, so the destination holds the new content and no temp remains, while the caller is told `BackendUnavailable`. What is guaranteed is that no reader ever sees a half-written file — not that a reported failure means the write did not happen.
 
-The destination is also unprotected on the **rename-fallback** path, which removes it before renaming onto it: a stall in that window leaves the destination gone. That path is entered when `posix_rename` fails for a reason `_is_connection_dead` does not recognise and the target is not a directory, so it is not confined to servers lacking the extension.
+The **rename-fallback** path cannot rename onto an occupied path, so it displaces the destination first and puts it back if the promote fails. Ordinarily the restore succeeds and the old content is back at its own path. It is best-effort, though: a dropped connection stops it being attempted at all, and a live server can refuse it — and *then* the old content is beside the target as `.~bak.<name>.<uuid8>` instead. That path is entered when `posix_rename` fails for a reason `_is_connection_dead` does not recognise and the target is not a directory, so it is not confined to servers lacking the extension.
 
 As in `write`, the returned `WriteResult` carries `size` and `source="native"` but leaves every rich field (`last_modified` / `etag` / `version_id` / `digest`) `None`.
 
@@ -519,7 +526,7 @@ Yield a writable handle promoted to *path* atomically on clean exit.
 
 Writes stream to a hidden temp file in the destination directory; on clean exit it is promoted with `posix_rename` (atomic on POSIX servers, falling back to `rename`). On an exception raised by the caller's own code, the temp file is removed and *path* is left untouched.
 
-**A dropped connection is the exception to both halves**, on the same terms as `write_atomic`, whose docstring carries the detail. The temp cleanup is deliberately skipped when the failure is itself a dropped-connection signal, so an orphan `.~tmp.<name>.<uuid8>` remains; a stall whose lost reply is the promote leaves the rename *performed*, so *path* holds the new content; and on the rename-fallback path *path* can be removed with the payload stranded in the temp. No reader ever sees a half-written file, which is what the atomicity buys — but a reported failure means neither that nothing happened nor that *path* survived.
+**A dropped connection is the exception to both halves**, on the same terms as `write_atomic`, whose docstring carries the detail. The temp cleanup is deliberately skipped when the failure is itself a dropped-connection signal, so an orphan `.~tmp.<name>.<uuid8>` remains; a stall whose lost reply is the promote leaves the rename *performed*, so *path* holds the new content; and on the rename-fallback path a dropped connection can leave *path* empty with its old content displaced to `.~bak.<name>.<uuid8>`. No reader ever sees a half-written file, which is what the atomicity buys — but a reported failure means neither that nothing happened nor that *path* still holds what it held.
 
 Raises:
 
@@ -647,7 +654,7 @@ Move or rename the file *src* to *dst*.
 
 Tries `posix_rename` first (atomic on POSIX-compliant servers), then a plain `rename`, and finally a stream copy-then-delete. Because the outcome depends on server support, atomicity is not guaranteed across all servers and `ATOMIC_MOVE` is not declared. `src == dst` is a no-op; missing parent directories of *dst* are created first.
 
-A `BackendUnavailable` here means no reply came back, not that the rename did not happen: if the stall swallowed the *reply* to `posix_rename`, the server performed the move and the caller is told it failed. Re-check both paths before retrying — a blind retry of a move that actually succeeded raises `NotFound` on a source that is gone. There is a further state on the **rename-fallback** path, which removes the destination before renaming onto it: a stall in that window leaves the destination gone while the source survives. That path is entered when `posix_rename` fails for a reason `_is_connection_dead` does not recognise and the destination is not a directory, so it is not confined to servers lacking `posix-rename@openssh.com`.
+A `BackendUnavailable` here means no reply came back, not that the rename did not happen: if the stall swallowed the *reply* to `posix_rename`, the server performed the move and the caller is told it failed. Re-check both paths before retrying — a blind retry of a move that actually succeeded raises `NotFound` on a source that is gone. There is a further state on the **rename-fallback** path, which displaces the destination before renaming onto it: a stall in that window leaves the destination path empty, its old content under `.~bak.<name>.<uuid8>` and the source still there, because the restore is best-effort and a dropped connection stops it being attempted. That path is entered when `posix_rename` fails for a reason `_is_connection_dead` does not recognise and the destination is not a directory, so it is not confined to servers lacking `posix-rename@openssh.com`.
 
 Raises:
 

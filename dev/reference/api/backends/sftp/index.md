@@ -197,11 +197,11 @@ write_atomic(
 
 Write *content* to *path* atomically via a temp file plus server rename.
 
-Readers never observe a partial file: the body is streamed to a hidden temp file in the destination directory, then promoted with `posix_rename` (atomic on POSIX-compliant servers). Servers without `posix_rename` fall back to a plain `rename` (non-atomic overwrite: the target is removed first).
+Readers never observe a partial file: the body is streamed to a hidden temp file in the destination directory, then promoted with `posix_rename` (atomic on POSIX-compliant servers). Servers without `posix_rename` fall back to a plain `rename` (non-atomic overwrite: the target is moved aside first, and moved back if the rename fails).
 
 A failure *before* the promote leaves the destination untouched, and the temp file is cleaned up **best-effort**: the cleanup is deliberately skipped when the failure is itself a dropped connection, so a stall leaves an orphan `.~tmp.<name>.<uuid8>` beside the target rather than stalling again on an unlink the server cannot answer. A stall whose lost reply is the **promote itself** is different: the rename was performed, so the destination holds the new content and no temp remains, while the caller is told `BackendUnavailable`. What is guaranteed is that no reader ever sees a half-written file — not that a reported failure means the write did not happen.
 
-The destination is also unprotected on the **rename-fallback** path, which removes it before renaming onto it: a stall in that window leaves the destination gone. That path is entered when `posix_rename` fails for a reason `_is_connection_dead` does not recognise and the target is not a directory, so it is not confined to servers lacking the extension.
+The **rename-fallback** path cannot rename onto an occupied path, so it displaces the destination first and puts it back if the promote fails. Ordinarily the restore succeeds and the old content is back at its own path. It is best-effort, though: a dropped connection stops it being attempted at all, and a live server can refuse it — and *then* the old content is beside the target as `.~bak.<name>.<uuid8>` instead. That path is entered when `posix_rename` fails for a reason `_is_connection_dead` does not recognise and the target is not a directory, so it is not confined to servers lacking the extension.
 
 As in `write`, the returned `WriteResult` carries `size` and `source="native"` but leaves every rich field (`last_modified` / `etag` / `version_id` / `digest`) `None`.
 
@@ -224,7 +224,7 @@ Yield a writable handle promoted to *path* atomically on clean exit.
 
 Writes stream to a hidden temp file in the destination directory; on clean exit it is promoted with `posix_rename` (atomic on POSIX servers, falling back to `rename`). On an exception raised by the caller's own code, the temp file is removed and *path* is left untouched.
 
-**A dropped connection is the exception to both halves**, on the same terms as `write_atomic`, whose docstring carries the detail. The temp cleanup is deliberately skipped when the failure is itself a dropped-connection signal, so an orphan `.~tmp.<name>.<uuid8>` remains; a stall whose lost reply is the promote leaves the rename *performed*, so *path* holds the new content; and on the rename-fallback path *path* can be removed with the payload stranded in the temp. No reader ever sees a half-written file, which is what the atomicity buys — but a reported failure means neither that nothing happened nor that *path* survived.
+**A dropped connection is the exception to both halves**, on the same terms as `write_atomic`, whose docstring carries the detail. The temp cleanup is deliberately skipped when the failure is itself a dropped-connection signal, so an orphan `.~tmp.<name>.<uuid8>` remains; a stall whose lost reply is the promote leaves the rename *performed*, so *path* holds the new content; and on the rename-fallback path a dropped connection can leave *path* empty with its old content displaced to `.~bak.<name>.<uuid8>`. No reader ever sees a half-written file, which is what the atomicity buys — but a reported failure means neither that nothing happened nor that *path* still holds what it held.
 
 Raises:
 
@@ -352,7 +352,7 @@ Move or rename the file *src* to *dst*.
 
 Tries `posix_rename` first (atomic on POSIX-compliant servers), then a plain `rename`, and finally a stream copy-then-delete. Because the outcome depends on server support, atomicity is not guaranteed across all servers and `ATOMIC_MOVE` is not declared. `src == dst` is a no-op; missing parent directories of *dst* are created first.
 
-A `BackendUnavailable` here means no reply came back, not that the rename did not happen: if the stall swallowed the *reply* to `posix_rename`, the server performed the move and the caller is told it failed. Re-check both paths before retrying — a blind retry of a move that actually succeeded raises `NotFound` on a source that is gone. There is a further state on the **rename-fallback** path, which removes the destination before renaming onto it: a stall in that window leaves the destination gone while the source survives. That path is entered when `posix_rename` fails for a reason `_is_connection_dead` does not recognise and the destination is not a directory, so it is not confined to servers lacking `posix-rename@openssh.com`.
+A `BackendUnavailable` here means no reply came back, not that the rename did not happen: if the stall swallowed the *reply* to `posix_rename`, the server performed the move and the caller is told it failed. Re-check both paths before retrying — a blind retry of a move that actually succeeded raises `NotFound` on a source that is gone. There is a further state on the **rename-fallback** path, which displaces the destination before renaming onto it: a stall in that window leaves the destination path empty, its old content under `.~bak.<name>.<uuid8>` and the source still there, because the restore is best-effort and a dropped connection stops it being attempted. That path is entered when `posix_rename` fails for a reason `_is_connection_dead` does not recognise and the destination is not a directory, so it is not confined to servers lacking `posix-rename@openssh.com`.
 
 Raises:
 

@@ -61,23 +61,23 @@ The exception is **[Graph](https://docs.remotestore.dev/stable/guides/backends/g
 
 Several backends implement `move(src, dst)` as a **copy followed by a delete**. If the process crashes between the two steps, both the source and destination will exist (data duplication, not data loss).
 
-| Backend                                                                                    | `move()` implementation                                                | Atomic?                                        |
-| ------------------------------------------------------------------------------------------ | ---------------------------------------------------------------------- | ---------------------------------------------- |
-| [Local](https://docs.remotestore.dev/stable/guides/backends/local/index.md)                | `shutil.move()` (`os.rename()` on same filesystem, copy+delete across) | Yes\*                                          |
-| [Memory](https://docs.remotestore.dev/stable/guides/backends/memory/index.md)              | Dict key reassignment                                                  | Yes                                            |
-| [S3](https://docs.remotestore.dev/stable/guides/backends/s3/index.md)                      | Copy object + delete object                                            | —                                              |
-| [S3-PyArrow](https://docs.remotestore.dev/stable/guides/backends/s3-pyarrow/index.md)      | Copy object + delete object                                            | —                                              |
-| [Azure](https://docs.remotestore.dev/stable/guides/backends/azure/index.md) (HNS)          | `rename_file()`                                                        | Yes                                            |
-| [Azure](https://docs.remotestore.dev/stable/guides/backends/azure/index.md) (non-HNS)      | Copy blob + delete blob                                                | —                                              |
-| [Graph](https://docs.remotestore.dev/stable/guides/backends/graph/index.md)                | Server-side move / copy (monitor-polled)                               | —                                              |
-| [SFTP](https://docs.remotestore.dev/stable/guides/backends/sftp/index.md) (`posix_rename`) | `posix_rename`                                                         | Yes                                            |
-| [SFTP](https://docs.remotestore.dev/stable/guides/backends/sftp/index.md) (`rename`)       | `rename()`                                                             | Yes (but not guaranteed atomic on all servers) |
-| [SFTP](https://docs.remotestore.dev/stable/guides/backends/sftp/index.md) (final fallback) | Read + write + delete                                                  | —                                              |
-| [HTTP](https://docs.remotestore.dev/stable/guides/backends/http/index.md)                  | — (read-only)                                                          | —                                              |
-| [SQLBlob](https://docs.remotestore.dev/stable/guides/backends/sql-blob/index.md)           | SQL `UPDATE` in transaction                                            | Yes                                            |
-| [SQLQuery](https://docs.remotestore.dev/stable/guides/backends/sql-query/index.md)         | — (read-only)                                                          | —                                              |
+| Backend                                                                                    | `move()` implementation                                                | Atomic?                                                                |
+| ------------------------------------------------------------------------------------------ | ---------------------------------------------------------------------- | ---------------------------------------------------------------------- |
+| [Local](https://docs.remotestore.dev/stable/guides/backends/local/index.md)                | `shutil.move()` (`os.rename()` on same filesystem, copy+delete across) | Yes\*                                                                  |
+| [Memory](https://docs.remotestore.dev/stable/guides/backends/memory/index.md)              | Dict key reassignment                                                  | Yes                                                                    |
+| [S3](https://docs.remotestore.dev/stable/guides/backends/s3/index.md)                      | Copy object + delete object                                            | —                                                                      |
+| [S3-PyArrow](https://docs.remotestore.dev/stable/guides/backends/s3-pyarrow/index.md)      | Copy object + delete object                                            | —                                                                      |
+| [Azure](https://docs.remotestore.dev/stable/guides/backends/azure/index.md) (HNS)          | `rename_file()`                                                        | Yes                                                                    |
+| [Azure](https://docs.remotestore.dev/stable/guides/backends/azure/index.md) (non-HNS)      | Copy blob + delete blob                                                | —                                                                      |
+| [Graph](https://docs.remotestore.dev/stable/guides/backends/graph/index.md)                | Server-side move / copy (monitor-polled)                               | —                                                                      |
+| [SFTP](https://docs.remotestore.dev/stable/guides/backends/sftp/index.md) (`posix_rename`) | `posix_rename`                                                         | Yes                                                                    |
+| [SFTP](https://docs.remotestore.dev/stable/guides/backends/sftp/index.md) (`rename`)       | `rename()`, preceded by moving an existing destination aside           | Only onto a free path; an overwrite is two renames and is never atomic |
+| [SFTP](https://docs.remotestore.dev/stable/guides/backends/sftp/index.md) (final fallback) | Read + write + delete                                                  | —                                                                      |
+| [HTTP](https://docs.remotestore.dev/stable/guides/backends/http/index.md)                  | — (read-only)                                                          | —                                                                      |
+| [SQLBlob](https://docs.remotestore.dev/stable/guides/backends/sql-blob/index.md)           | SQL `UPDATE` in transaction                                            | Yes                                                                    |
+| [SQLQuery](https://docs.remotestore.dev/stable/guides/backends/sql-query/index.md)         | — (read-only)                                                          | —                                                                      |
 
-SFTP tries three strategies in order: `posix_rename` (atomic), standard `rename()`, and finally copy+delete. Most OpenSSH servers support `posix_rename`. Servers that lack it usually still support `rename()`, which is atomic on most POSIX filesystems.
+SFTP tries three strategies in order: `posix_rename` (atomic), standard `rename()`, and finally copy+delete. Most OpenSSH servers support `posix_rename`. Servers that lack it usually still support `rename()` — atomic onto a free path, but not for an overwrite: `rename()` cannot replace an occupied path on those servers, so the backend moves the existing file aside first and moves it back if the rename fails. A reader looking between the two sees the path briefly absent, which is why this rung is not atomic even where `rename()` itself is.
 
 ### Mitigations
 
@@ -103,7 +103,7 @@ SFTP tries three strategies in order: `posix_rename` (atomic), standard `rename(
 
 \* Local `move()` uses `shutil.move()`, which delegates to `os.rename()` on the same filesystem (atomic) but falls back to copy+delete across filesystems. Only `write_atomic()` uses `os.replace()`.
 
-\*\* SFTP `move()` is atomic when `posix_rename` or `rename()` succeeds; falls back to copy+delete as a last resort. `write_atomic()` is atomic for *readers* — no one ever sees a half-written file — but a stalled connection is not a rollback: besides the well-known orphan-file risk, the operation may have completed despite raising, and on the rename-fallback path it can leave the destination removed with the payload stranded in the temp. What a failure leaves behind, per operation, is in the [SFTP backend guide](https://docs.remotestore.dev/stable/guides/backends/sftp/#capabilities).
+\*\* SFTP `move()` is atomic when `posix_rename` succeeds, and when `rename()` succeeds onto a free path; an overwrite through the `rename()` rung is two renames and is not atomic. It falls back to copy+delete as a last resort. `write_atomic()` is atomic for *readers* — no one ever sees a half-written file — but a stalled connection is not a rollback: besides the well-known orphan-file risk, the operation may have completed despite raising, and on the rename-fallback path a dropped connection can leave the destination path empty, with the old file moved aside to a `.~bak.*` name and the payload in the temp. What a failure leaves behind, per operation, is in the [SFTP backend guide](https://docs.remotestore.dev/stable/guides/backends/sftp/#capabilities).
 
 ## See also
 

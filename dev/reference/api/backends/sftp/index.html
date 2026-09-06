@@ -11835,7 +11835,7 @@ or fails mid-write.</p>
 temp file in the destination directory, then promoted with
 <code>posix_rename</code> (atomic on POSIX-compliant servers). Servers without
 <code>posix_rename</code> fall back to a plain <code>rename</code> (non-atomic overwrite:
-the target is removed first).</p>
+the target is moved aside first, and moved back if the rename fails).</p>
 <p>A failure <em>before</em> the promote leaves the destination untouched, and the
 temp file is cleaned up <strong>best-effort</strong>: the cleanup is deliberately
 skipped when the failure is itself a dropped connection, so a stall
@@ -11846,12 +11846,15 @@ so the destination holds the new content and no temp remains, while the
 caller is told <code>BackendUnavailable</code>. What is guaranteed is that no
 reader ever sees a half-written file — not that a reported failure means
 the write did not happen.</p>
-<p>The destination is also unprotected on the <strong>rename-fallback</strong> path,
-which removes it before renaming onto it: a stall in that window leaves
-the destination gone. That path is entered when <code>posix_rename</code> fails
-for a reason <code>_is_connection_dead</code> does not recognise and the target
-is not a directory, so it is not confined to servers lacking the
-extension.</p>
+<p>The <strong>rename-fallback</strong> path cannot rename onto an occupied path, so it
+displaces the destination first and puts it back if the promote fails.
+Ordinarily the restore succeeds and the old content is back at its own
+path. It is best-effort, though: a dropped connection stops it being
+attempted at all, and a live server can refuse it — and <em>then</em> the old
+content is beside the target as <code>.~bak.&lt;name&gt;.&lt;uuid8&gt;</code> instead. That
+path is entered when <code>posix_rename</code> fails for a reason
+<code>_is_connection_dead</code> does not recognise and the target is not a
+directory, so it is not confined to servers lacking the extension.</p>
 <p>As in <code>write</code>, the returned <code>WriteResult</code> carries <code>size</code> and
 <code>source="native"</code> but leaves every rich field (<code>last_modified</code> /
 <code>etag</code> / <code>version_id</code> / <code>digest</code>) <code>None</code>.</p>
@@ -11921,10 +11924,11 @@ terms as <code>write_atomic</code>, whose docstring carries the detail. The temp
 cleanup is deliberately skipped when the failure is itself a
 dropped-connection signal, so an orphan <code>.~tmp.&lt;name&gt;.&lt;uuid8&gt;</code> remains;
 a stall whose lost reply is the promote leaves the rename <em>performed</em>, so
-<em>path</em> holds the new content; and on the rename-fallback path <em>path</em> can
-be removed with the payload stranded in the temp. No reader ever sees a
-half-written file, which is what the atomicity buys — but a reported
-failure means neither that nothing happened nor that <em>path</em> survived.</p>
+<em>path</em> holds the new content; and on the rename-fallback path a dropped
+connection can leave <em>path</em> empty with its old content displaced to
+<code>.~bak.&lt;name&gt;.&lt;uuid8&gt;</code>. No reader ever sees a half-written file, which
+is what the atomicity buys — but a reported failure means neither that
+nothing happened nor that <em>path</em> still holds what it held.</p>
 
 
 <p><span class="doc-section-title">Raises:</span></p>
@@ -12336,11 +12340,13 @@ rename did not happen: if the stall swallowed the <em>reply</em> to
 <code>posix_rename</code>, the server performed the move and the caller is told it
 failed. Re-check both paths before retrying — a blind retry of a move
 that actually succeeded raises <code>NotFound</code> on a source that is gone.
-There is a further state on the <strong>rename-fallback</strong> path, which removes
+There is a further state on the <strong>rename-fallback</strong> path, which displaces
 the destination before renaming onto it: a stall in that window leaves
-the destination gone while the source survives. That path is entered
-when <code>posix_rename</code> fails for a reason <code>_is_connection_dead</code> does
-not recognise and the destination is not a directory, so it is not
+the destination path empty, its old content under
+<code>.~bak.&lt;name&gt;.&lt;uuid8&gt;</code> and the source still there, because the restore
+is best-effort and a dropped connection stops it being attempted. That path is
+entered when <code>posix_rename</code> fails for a reason <code>_is_connection_dead</code>
+does not recognise and the destination is not a directory, so it is not
 confined to servers lacking <code>posix-rename@openssh.com</code>.</p>
 
 

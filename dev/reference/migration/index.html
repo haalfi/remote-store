@@ -11161,6 +11161,67 @@ it already did after a drop on any other method.</p>
 <p><strong>Scope:</strong> SFTP only. The stream wrapper is shared with the S3, Azure and HTTP
 backends, and what those map is unchanged — the extra shapes are supplied by the
 SFTP backend for its own transport, not added for everyone.</p>
+<p><strong>An SFTP overwrite the rename fallback cannot perform now reports the refusal,
+and can leave a <code>.~bak.</code> file behind:</strong></p>
+<p>A server without <code>posix-rename@openssh.com</code> cannot rename onto an occupied path,
+so <code>write_atomic(..., overwrite=True)</code>, <code>open_atomic(..., overwrite=True)</code> and
+<code>move(..., overwrite=True)</code> have to clear the destination before promoting. In
+v0.30.0 they removed it, under a suppression that hid whether the removal had
+worked. v0.31.0 moves the destination aside as <code>.~bak.&lt;name&gt;.&lt;uuid&gt;</code> instead,
+puts it back when the promote fails, and reports a destination it could not move
+rather than acting as though it had.</p>
+<p>Two server behaviours separate the outcomes. Measured against both releases on a
+server staged to lack the extension and to follow the v3 rename rule:</p>
+<table>
+<thead>
+<tr>
+<th>The server…</th>
+<th>v0.30.0</th>
+<th>v0.31.0</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>refuses to clear the destination — <code>write_atomic</code> / <code>open_atomic</code></td>
+<td><code>AlreadyExists</code>, destination intact</td>
+<td><code>PermissionDenied</code>, destination intact</td>
+</tr>
+<tr>
+<td>refuses to clear the destination — <code>move</code></td>
+<td><strong>returns cleanly, having overwritten the destination through the copy fallback and deleted the source</strong></td>
+<td><code>PermissionDenied</code>, destination intact, source still there</td>
+</tr>
+<tr>
+<td>allows the clear but refuses the promote — <code>write_atomic</code> / <code>open_atomic</code></td>
+<td><code>PermissionDenied</code>, destination <strong>gone</strong> and the temp holding your payload removed after it: both copies destroyed</td>
+<td><code>PermissionDenied</code>, destination back at its path — or under <code>.~bak.&lt;name&gt;.&lt;uuid&gt;</code> if the server refuses that step too</td>
+</tr>
+</tbody>
+</table>
+<p>The <code>move</code> row is the one to read twice: in v0.30.0 a refusal to clear was not an
+error at all, because the copy fallback opened the destination <code>"w"</code> and wrote
+through it.</p>
+<p><strong>What to change.</strong> An <code>except AlreadyExists</code> clause around an <code>overwrite=True</code>
+call no longer fires. That error was the fallback reporting a file it had failed
+to clear, not a name collision — a call that passes <code>overwrite=True</code> has no
+collision to report. The refusal now arrives as itself: <code>PermissionDenied</code> when
+the server says the access was denied, and base
+<a href="../api/errors/"><code>RemoteStoreError</code></a> for the generic decline, which is the common
+case — an SFTP server attaches a distinguishable code to "no such file" and
+"permission denied" and to nothing else. Catch <code>RemoteStoreError</code> if you depended
+on the old shape.</p>
+<p><strong>A cleanup or listing that walks the destination's directory has a second
+dotted name to expect.</strong> <code>.~tmp.&lt;name&gt;.&lt;uuid&gt;</code> was already possible;
+<code>.~bak.&lt;name&gt;.&lt;uuid&gt;</code> joins it, and unlike the temp it holds your <em>previous</em>
+file rather than your payload. Read the target before restoring one — a backup
+also outlives a call that <strong>succeeded</strong>, because the tidy-up that removes it is
+best-effort. The <a href="../../guides/backends/sftp/">SFTP guide</a> enumerates what each
+outcome leaves where.</p>
+<p><strong>Scope:</strong> SFTP, and only <code>overwrite=True</code>. <code>overwrite=False</code> displaces nothing,
+so its <code>AlreadyExists</code> is unchanged and still means what it says. The fallback is
+not confined to servers lacking the extension either: any <code>posix_rename</code> that
+fails for a reason the backend cannot attribute to a dropped connection takes the
+same path.</p>
 <p><strong>Flat-namespace backends now raise <code>InvalidPath</code> for a wrong-typed path:</strong></p>
 <p>A backend that stores keys rather than nodes — the S3 family, Azure on a flat
 (non-hierarchical) account, and the SQL backends — cannot ask the store whether
