@@ -1,0 +1,206 @@
+id: BUG-272
+title: "A non-dead rename failure in the atomic fallback removes the destination and the temp, losing both copies"
+trigger: >-
+  BK-360's review measured SFTP's rename fallback removing the destination and
+  then, on a non-dead promote failure, successfully unlinking the temp as well —
+  a reported write failure that left the caller with neither their old file nor
+  the replacement.
+source_items:
+  - BUG-272
+  - BUG-270
+  - BUG-271
+audience:
+  - user.api
+  - contributor.process
+co_shipped_items:
+  - BUG-270
+  - BUG-271
+  # Born in round 3's measuring pass (the wrong error type, filed as
+  # out-of-scope) and closed in round 4, when the unprimed pass found the same
+  # arm destroys a move destination. One fix of two lines answers both, so it
+  # ships here rather than outliving the PR that found it — which is why it is
+  # co-shipped rather than a discovery_followup.
+  - BUG-277
+expected_ripples:
+  - sdd/backlogid.json
+surprising_ripples:
+  # None is in the ripple-check table. The first two are prose asserting
+  # behaviour the fix changed, in files the diff had no other reason to open.
+  - sdd/specs/009-sftp-backend.md  # the SFTP-030 pragma paragraph, 300 lines from the residue section that owns the claim
+  - sdd/BACKLOG.md                 # section 1's "Closes when" clause naming the two items as open
+  # The third is the sharper class: a test whose *meaning* the diff changed
+  # without changing the test. Hoisting the displace above _move_fallback's try
+  # made that method's dead-connection guard unreachable in the only test
+  # written for it, and the test kept passing for a new reason. No ripple row
+  # covers "a call-order change silently re-aims an existing test", and nothing
+  # mechanical would: the suite was green throughout. Found by round 2's
+  # neglected-surface pass, which was aimed at the untouched files rather than
+  # at this one.
+  - tests/backends/sftp/test_config.py
+# The schema counts review-driven *commits*, not rounds, and the two differ here:
+# round 2 produced two (its fix pass, then a CHANGELOG line its own review reply
+# had claimed and not made). The value is `git log --oneline origin/master..HEAD`
+# minus one — every commit after the first is review-driven. **Counted including
+# the commit that carries this line**, which is the arithmetic three earlier
+# revisions got wrong: the query run *before* committing is one short, every time.
+# At round 8's fix pass it returns 12 counting this commit, so the value is 11,
+# over 8 rounds.
+#
+# **No SHAs are named, and `_schema.yml` § review_rounds now permits that** — it
+# was amended in this PR, on this trace's evidence. Four corrections: a
+# transcribed list cannot include the commit carrying it, so it is stale on
+# arrival; it went stale again on the next push; a rebase then orphaned every SHA
+# in it, leaving four hashes that still resolved as objects while matching
+# nothing the stated query returns; and the value itself was computed pre-commit
+# twice more. The query is the derivation. Re-run it; do not copy its output back.
+review_rounds: 11
+phases:
+  - id: orient
+    name: Orient
+    steps:
+      - file: sdd/BACKLOG.md
+        section: "BUG-272, BUG-271, BUG-270"
+        read_type: gate
+        extract: "The measured residue per failure mode, and that BUG-272 was filed as a design question rather than a typo"
+      - file: sdd/CLAUDE-REFERENCE.md
+        section: "Ripple-check / Pre-work index"
+        read_type: gate
+        extract: "Triggered rows: Bug fix, Backlog item touched, CHANGELOG entry, Spec section"
+        outcome: unclear
+      - file: src/remote_store/backends/_sftp.py
+        section: "_promote, _rename_fallback, _move_fallback, _copy_and_delete"
+        read_type: reference
+        extract: >-
+          The window is two lines; the ordering is forced by servers that cannot
+          rename onto an occupied path. Reading _move_fallback is what showed
+          move has a third rung the atomic paths lack.
+      - file: src/remote_store/backends/_sftp.py
+        section: "write_atomic, open_atomic (connection_lost cleanup)"
+        read_type: reference
+        extract: "The cleanup guard is correct in itself — it is the removed destination that made unlinking the temp fatal"
+  - id: design
+    name: Design
+    steps:
+      - file: sdd/specs/007-atomic-writes.md
+        section: "AW-003, AW-004"
+        read_type: gate
+        extract: >-
+          Whether closing the window costs the overwrite contract. It does not:
+          displacing keeps it, so AW-003 gained a clause instead of losing one.
+      - file: sdd/specs/009-sftp-backend.md
+        section: "SFTP-030 § What a stalled operation leaves behind"
+        read_type: gate
+        extract: "The residue closure and its named states, which the fix rewrites rather than invalidates"
+  - id: reproduce
+    name: Reproduce
+    steps:
+      - file: tests/backends/sftp/test_io_timeout.py
+        section: "_break_posix_rename, _silence_at"
+        read_type: reference
+        extract: >-
+          Staging idiom for the fallback. The stall harness is not needed for
+          BUG-272 — a non-dead failure leaves the connection live — so the new
+          file stages by denying the promote instead.
+      - file: tests/backends/sftp/test_atomic_fallback.py
+        section: "(full)"
+        read_type: verify
+        extract: >-
+          Written first and run against the unfixed code: four cases raised
+          NotFound on the read-back, which is the defect. The move cases were
+          written into the same test and had to come out — move recovers by
+          copying, so it never reaches the state. That was the run correcting the
+          item, not the item correcting the run.
+  - id: implement
+    name: Implement
+    steps:
+      - file: src/remote_store/backends/_sftp.py
+        section: "_displace, _restore, _release"
+        read_type: reference
+        extract: >-
+          Three helpers rather than inline blocks, because both fallbacks need
+          the same sequence and _move_fallback has to hold the backup across two
+          rungs
+      - file: tests/backends/sftp/test_io_timeout.py
+        section: "test_a_stalled_promote_in_the_fallback_leaves_the_old_content_in_a_backup"
+        read_type: verify
+        extract: >-
+          The old stall test silenced the *first* rename, which after the fix is
+          the displace — it failed for the right reason and had to be re-aimed at
+          the promote. Splitting it also gave BUG-270's second half its own
+          measurement.
+  - id: docs
+    name: Docs and specs
+    steps:
+      - file: sdd/specs/022-streaming-atomic-writes.md
+        section: "SAW-004, SAW-005, SAW-009"
+        read_type: reference
+        extract: "BUG-271: two of the three rows cited a test this change renames, so the marks could not be left standing"
+      - file: docs-src/guides/backends/sftp.md
+        section: "Capabilities / danger note"
+        read_type: reference
+        extract: "The residue table a caller reads; a `.~bak.` file is only a recovery path if the guide says it exists"
+      - file: docs-src/explanation/concurrency.md
+        section: "Atomicity table, footnote **"
+        read_type: reference
+        extract: "The cross-backend framing of the same window"
+  - id: verify
+    name: Verify
+    steps:
+      - file: sdd/CLAUDE-REFERENCE.md
+        section: "Ripple-check / Detailed checklist"
+        read_type: verify
+        extract: >-
+          Bug fix, Backlog item touched, CHANGELOG entry, Spec section, Tracker
+          ID in published prose — and Breaking change, which the pre-work scan of
+          the same table had passed over. The row's softer half applies here: the
+          fix changes an `except` clause without earning the marker, so it owes
+          the migration section alone. The CHANGELOG line naming the new error
+          shape had been written five rounds earlier and read past every time,
+          because nothing mechanical asks for a section when the entry is a
+          `**Fix**` — `check_breaking_migration_link` gates only the marked half,
+          and says so.
+      - file: docs-src/reference/migration.md
+        section: "v0.30.0 to v0.31.0"
+        read_type: verify
+        extract: >-
+          The version pair already had a section from earlier work in this
+          release, so the change is appended rather than opening a second
+          heading. Two caller-visible items: the error an `overwrite=True`
+          refusal now raises, and `.~bak.` joining `.~tmp.` as a name a directory
+          walk can meet.
+        outcome: misleading
+      - file: docs-src/reference/migration.md
+        section: "v0.30.0 to v0.31.0 (round 8)"
+        read_type: verify
+        extract: >-
+          Three of the first draft's before/after cells were measured false: it
+          gave the caller's payload as surviving in an orphan temp where the
+          v0.30.0 cleanup had removed it, gave the destination as gone in the row
+          where the refused clear is precisely what saved it, and named `move`
+          alongside the atomic writers for a mechanism `move` does not share. A
+          migration table is the one artifact whose whole content is a claim
+          about code the repo no longer contains, so it cannot be written from
+          the diff; a worktree at the base commit answers all three in one run
+          and I did not open one until a reviewer did. The corrected table is
+          keyed on what the *server* refuses rather than on which internal call
+          fails, which is what a reader can recognise, and the `move` row now
+          carries the finding that matters most: in v0.30.0 a refused clear was
+          not an error at all.
+      - file: src/remote_store/backends/_sftp.py
+        section: "_displace § Cost, _rename_fallback docstring"
+        read_type: verify
+        extract: >-
+          The cost figure said two stats on a failed displace; the `and`
+          short-circuits, so it is one when the destination is still there —
+          which is the shape the whole commit is about. Counted by wrapping
+          `stat` on the live client: 2 and 3 including `_promote`'s own
+          classification stat, so 1 and 2 for the displace itself. A figure about
+          the code in the same docstring, wrong because it was reasoned rather
+          than run.
+      - file: CHANGELOG.md
+        section: "[Unreleased]"
+        read_type: verify
+        extract: >-
+          One line per ID; four ship here and all are user- or process-facing.
+          The gate caught the fourth: BUG-277 closed mid-review and
+          check_changelog_unreleased failed until it had an entry of its own.

@@ -342,7 +342,8 @@ See the [capabilities matrix](../../reference/capabilities-matrix.md) for full d
     Atomic writes use a temp file (`.~tmp.<name>.<uuid>`) and rename. If the
     connection drops between write and rename, the destination is untouched but
     the orphan temp file will remain on the server. If it drops *during* the
-    rename, see the danger note below — the write may have landed.
+    rename, see the danger note below — the write may have landed, and on the
+    fallback path a `.~bak.<name>.<uuid>` may hold your previous file.
 
 !!! danger "A stalled operation may have succeeded"
     When a transfer stalls, the timeout tells you **no reply came back**. It
@@ -359,17 +360,22 @@ See the [capabilities matrix](../../reference/capabilities-matrix.md) for full d
     | --- | --- |
     | `write()` | The destination unchanged, absent, **emptied**, holding an unpredictable prefix, or **written in full** |
     | `copy()` | The same five, at `dst`; the source is never affected |
-    | `move()` | The paths unchanged, **the move completed** (source gone), or **the destination destroyed** with the source still there |
-    | `write_atomic()` / `open_atomic()` | The destination unchanged, often with an orphan temp; **the write completed**; or **the destination destroyed** with your data left in an orphan temp file |
+    | `move()` | The paths unchanged, **the move completed** (source gone), or **the destination path empty** with its old content in a `.~bak.<name>.<uuid>` file and the source still there |
+    | `write_atomic()` / `open_atomic()` | The destination unchanged, often with an orphan temp; **the write completed**; or **the destination path empty** with its old content in a `.~bak.<name>.<uuid>` file and your data in an orphan temp |
 
-    The destroyed-destination cases come from a rename fallback that removes the
-    destination before renaming onto it, and it is not confined to old servers —
-    any rename that *fails* for a reason the backend cannot attribute to a
-    dropped connection takes that path. It also needs `overwrite=True`: with
-    the default the call raises `AlreadyExists` before the fallback is reached,
-    so an existing file cannot be destroyed this way. No example failure is
-    given: which ones reach it depends on guards that differ per operation, and
-    every attempt to name one here has been wrong.
+    The empty-destination cases come from a rename fallback, which cannot rename
+    onto a path that is occupied: it moves the old file aside first and moves it
+    back if the rename fails. Over a dropped connection it cannot move anything
+    back — **nothing is lost, but the path you wrote to is not the file you
+    had.** Your previous file is beside it as `.~bak.<name>.<uuid>`, and your
+    payload is in the `.~tmp.<name>.<uuid>` for `write_atomic()` /
+    `open_atomic()`, or still at `src` for `move()`, which never writes a temp.
+    The fallback is not confined to old servers: any rename that *fails* for a
+    reason the backend cannot attribute to a dropped connection takes that path.
+    It also needs `overwrite=True`: with the default the call raises
+    `AlreadyExists` before the fallback is reached. No example failure is given:
+    which ones reach it depends on guards that differ per operation, and every
+    attempt to name one here has been wrong.
 
     So:
 
@@ -383,15 +389,40 @@ See the [capabilities matrix](../../reference/capabilities-matrix.md) for full d
       buffering you cannot see, so appending to it corrupts the file. Discard
       and re-write from the start.
 
+    - **Look for a `.~bak.` file beside the target** before you re-create
+      anything. On the fallback path it is your previous file, left where the
+      call could not put it back. Your payload is in the `.~tmp.` beside it for
+      `write_atomic()` / `open_atomic()`, and still at `src` for `move()`.
+
     **`write_atomic()` is still the right choice when readers must never see a
     half-written file** (see the caveat above, and
     [atomicity semantics](../../explanation/concurrency.md)): no reader ever
     observes a partial file at the destination. What it does not promise is that
     a reported failure means nothing happened, nor that your existing file
-    survives one.
+    survives one: a stall that loses the reply to a *successful* rename has
+    replaced it, and nothing was kept. The fallback path is the one that keeps a
+    copy, because it is the one that moved your file aside to begin with.
 
     Parent directories created for a write remain behind in every case — a
     failed write is not a rollback.
+
+!!! warning "A `.~bak.` file can outlive a call that did not stall — including one that succeeded"
+    The note above is about `BackendUnavailable`. The rename fallback can also
+    leave a `.~bak.<name>.<uuid>` behind on a connection that never dropped, by
+    two routes. It moves your file aside, and the server then refuses to move it
+    back. Or the move-aside itself lands and the server fails to say so, in which
+    case nothing is put back because the call never learns there is anything to
+    put back. Either way you get `PermissionDenied` (or another mapped error)
+    with your previous file under that name instead of at its path. Nothing is
+    lost, and the recovery is the same — read the target, then the `.~bak.`
+    beside it.
+
+    **Read the target before restoring a backup.** A `.~bak.` also outlives a
+    call that *succeeded* — the tidy-up that removes it is best-effort, so a
+    server that refuses it, or a connection that drops first, leaves the backup
+    behind with nothing raised. There the target already holds your new content,
+    and copying the backup over it would undo the write. The file's name does not
+    say which case you are in; the target's contents do.
 
 !!! note "Move fallback"
     `move()` tries `posix_rename` (atomic), then standard `rename()`, then

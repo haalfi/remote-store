@@ -7,6 +7,10 @@ This project follows [Semantic Versioning](https://semver.org/). Pre-1.0, minor 
 
 ## [Unreleased]
 
+- BUG-277: **Fix** — an SFTP destination the rename fallback could not move aside is reported rather than written: `move` no longer truncates it through the copy fallback, and `write_atomic`/`open_atomic` give the refusal instead of `AlreadyExists` from an `overwrite=True` call
+- BUG-272: **Fix** — an SFTP atomic overwrite that fails in the rename fallback no longer destroys the file it was replacing: the fallback moves the destination aside and puts it back, where it removed the destination and then cleaned up the temp as well, leaving no copy of either
+- BUG-270: **Fix** — the same fallback reports a stall on its own first round-trip instead of swallowing it and paying the `io_timeout` bound a second time, and a drop mid-promote leaves the old content in a `.~bak.<name>.<uuid>` file rather than nowhere
+- BUG-271: Scope the three `022-streaming-atomic-writes.md` invariants that shipped tests refuted to the failure they were never written for — one the backend cannot fully act on
 - BUG-264: **Fix** — an Azure connection or timeout failure that the SDK reports without any text now says which side of the exchange failed, instead of raising `BackendUnavailable` with an empty message
 - BK-358: **Fix** — a dropped SFTP connection mid-read raises `BackendUnavailable` from a `read()` stream, where it leaked a raw `paramiko.SSHException` while the same drop on `read_bytes()` mapped. Upgrade path in the [migration guide](https://docs.remotestore.dev/stable/reference/migration/#v0300-to-v0310).
 - ID-256: Content rule 7 — a new or substantially rewritten section in `sdd/` or `.claude/` opens with its core claim in at most three sentences, and an author who cannot write them returns to the source rather than writing around the gap

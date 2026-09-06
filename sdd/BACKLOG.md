@@ -211,9 +211,7 @@ empty message (BUG-276, which is now that clause's whole remainder — its
 Disposition is exactly whether the base-class fall-throughs should be classified
 or merely given a message); a connect that fails locally is not reported
 against the caller's path
-(BUG-273); what a failed operation *leaves behind* is not
-worse than the failure itself, so a reported failure never silently destroys the
-caller's file (BUG-270, BUG-272); and a newly
+(BUG-273); and a newly
 registered backend cannot pass CI without meeting BE-004, BE-005 and BE-021
 (BK-345). BK-359 is why the Promise above carries a third clause, added with it
 rather than left implicit: an error that is
@@ -259,6 +257,20 @@ connect is rejected locally — `PermissionDenied` blaming the caller's key on t
 `EPERM` one a netfilter `REJECT` does produce. Neither is `BackendUnavailable`,
 so it is the promised-type defect again; the qualifier is load-bearing, because
 the reproducible half is the one that answers the base class.
+**The what-it-leaves-behind clause is met and has left the list**, closed by
+BUG-272 with BUG-270 and BUG-277: the place where an operation *asked to
+preserve* the caller's file destroyed it was SFTP's rename fallback, which
+removed the destination before renaming onto it. It now displaces and restores,
+so the file the caller had is either back at its path or findable beside it under
+a `.~bak.` name — which is the guarantee, since putting it back is best-effort
+and a dead channel or a refusing server can stop it. **The narrower claim is the
+defensible one**: a non-atomic `write(..., overwrite=True)` still has an `empty`
+residue that destroys a pre-existing file, which SFTP-030 states as one of its
+consequences — that operation makes no such promise, which is exactly why
+`write_atomic` exists. BK-360's measurements added this clause and filed the two
+items that closed it; BUG-277 came out of their own review rather than those
+measurements, which is why three IDs close what two filed, and it is the shortest
+a clause has been open here.
 **One cross-section dependency remains**, per
 [§ How this file works](#how-this-file-works): BK-345 waits on **ID-244** in
 section 2 for the seeding hook, stated inside the item that carries it, so this
@@ -307,114 +319,6 @@ backend. Graph is on both sides of this paragraph and that is not a bookkeeping
 error: it meets the rows it was brought to and misses the bound that arrived
 after, which is what a clause growing a new sentence does to a backend that was
 compliant the day before.
-
-- [ ] **BUG-272 — A non-dead rename failure in the atomic fallback removes the destination *and* the temp, losing both copies**
-  spec: SFTP-014, AW-003 · effort: M · audience: user.api
-  Distinct from BUG-270, which is about a *stall* in the same window and where the
-  payload survives in the orphan temp. Here nothing survives.
-  Measured against the in-process server with `posix_rename` unsupported and the
-  fallback `rename` failing for a **non-dead** reason (`EACCES`, and again with
-  `EIO`), for both `write_atomic` and `open_atomic`: `_rename_fallback` removes the
-  destination, the `rename` fails, and `write_atomic`'s `except BaseException`
-  handler then computes `connection_lost = False` and *successfully* unlinks the
-  temp. Observed `remove()` calls were the destination followed by the temp, and
-  the directory was left empty. `PermissionDenied` is raised, so the caller is
-  correctly told the write failed — and their pre-existing file is gone with no
-  copy of the replacement anywhere.
-  **The cleanup guard is doing exactly what it was designed to do**, which is why
-  this is a design question rather than a typo: it skips the unlink only when the
-  failure is a dropped connection, on the reasoning that a live connection can
-  afford the tidy-up. That reasoning does not account for the fallback having
-  already destroyed the destination before the failure, which makes the temp the
-  only remaining copy.
-  **`AW-003`** ("If `overwrite=True`, the atomic rename replaces the existing
-  file") is unqualified against this path and is the cross-backend clause to
-  amend, on the same terms AW-004 was amended by BK-360.
-  **Found by BK-360's review round 4, by a measuring pass.** BK-360 softened the
-  recoverability claims in the guide and in BUG-270 rather than asserting a temp
-  the caller may not have; it does not fix this.
-
-- [ ] **BUG-271 — `022-streaming-atomic-writes.md` carries three `open_atomic` invariants that shipped tests refute**
-  spec: SAW-004, SAW-005, SAW-009 · effort: S · audience: contributor.process
-  BK-360 amended AW-004 for the SFTP dropped-connection divergence and corrected
-  `open_atomic`'s docstring, but the spec that governs `open_atomic` was not told:
-  - **SAW-004** "On exception, target path is unchanged (no partial file)" —
-    refuted by `test_the_rename_fallback_destroys_the_destination_when_the_promote_stalls[open_atomic]`
-    (destination gone) and `test_a_lost_reply_can_complete_the_operation_it_reports_as_failed[open_atomic]`
-    (destination replaced), both shipped and passing.
-  - **SAW-005** "Temp artifact is cleaned up on both success and failure" — the
-    same clause AW-004 was amended for, refuted by
-    `test_a_stalled_atomic_write_preserves_the_destination_and_leaves_an_orphan_temp[open_atomic]`.
-  - **SAW-009**'s per-backend prose, "On failure, `sftp.remove()` cleans up" —
-    contradicted by the deliberate skip AW-004 now records.
-  The divergence is already established in code, in `open_atomic`'s docstring and
-  in AW-004; only this spec is stale, so the work is to carry the same scoping
-  across rather than to decide anything new. Left out of BK-360 deliberately: that
-  item's review had already absorbed two cross-spec surfaces, and the evidence
-  there was that each absorption was where the next defect came from.
-  **Found by BK-360's review round 4, by a measuring pass.**
-
-- [ ] **BUG-270 — `_rename_fallback` destroys the destination and strands the payload when the promote stalls**
-  spec: SFTP-014, SFTP-030 · effort: M · audience: user.api
-  Under `overwrite=True`, `_rename_fallback` and `_move_fallback` each
-  `remove(dst)` and then `rename(tmp, dst)`. A silence beginning at that `rename`
-  leaves the destination **gone** with nothing put in its place — for
-  `write_atomic` / `open_atomic` the payload is stranded in the orphan
-  `.~tmp.<name>.<uuid8>`; for `move` the source survives. Measured at
-  `io_timeout=2.0`, client→server silenced at the `rename`: destination absent,
-  one orphan temp for the atomic paths and an intact source for `move`.
-  The `overwrite=True` condition is load-bearing and part of the recipe: both
-  fallbacks guard the `remove` on it, and with `overwrite=False` the prior stat
-  raises `AlreadyExists` before either fallback is reached.
-  **It is not confined to servers lacking `posix-rename@openssh.com`.** The route
-  in is a `posix_rename` failure `_is_connection_dead` does not recognise, on a
-  target `_raise_if_dir` (or, for `move`, the destination `stat`) has not already
-  rejected. Measured per trigger against a server that answers the extended
-  request: `EACCES` reaches both fallbacks; `EXDEV` reaches `_move_fallback`
-  only, since `write_atomic` puts its temp in the target's own directory; a
-  **directory target reaches neither** — the promote path is guarded by
-  `_raise_if_dir` and `move` by its eager destination `stat`, which are different
-  guards and were conflated at one point in BK-360's own review.
-  Reproduced on a server that advertises and answers the extended request and
-  fails this one, with nothing patched client-side: destination gone, payload in
-  the temp. That widens who is exposed from a legacy-server edge case to any
-  store where a rename can fail for a mundane reason.
-  **It is the residue state that leaves the caller worst off**, and it is reached
-  through the operation the library recommends for safety. Under a *stall* the
-  payload usually survives — in the orphan temp for the atomic paths, or in the
-  source for `move` — because `_is_connection_dead` is true and the cleanup unlink
-  is skipped. **That consolation does not hold for a non-dead failure**: BUG-272
-  records a measured case where the fallback removes the destination, the rename
-  fails for a non-dead reason, and the cleanup then successfully removes the temp
-  too, so neither copy remains. So this item should not be fixed on the assumption
-  that the temp is a recovery path.
-  **A second, independent half: it costs two `io_timeout` bounds, not one.** The
-  `remove` runs under `contextlib.suppress(OSError)`, so its own timeout is
-  swallowed and the following `rename` re-enters the same stalled channel.
-  Measured 4.00 s at a 2.0 s bound. SFTP-030's one-bound paragraph does name a
-  suppressed `remove` in mechanism 3, so the gap is not a missing list entry.
-  It is that the mechanisms are **per operation**: `move` has no `_raise_if_dir`
-  step, so nothing fires between its failed `posix_rename` and `_move_fallback`
-  and it pays two bounds. The promote path does have one, and under the same
-  antecedent mechanism 2 fires — `_raise_if_dir`'s own stat re-enters the silent
-  channel and re-raises — so `_rename_fallback` is never entered and the cost is
-  one bound. `_rename_fallback` reaches two only when the silence begins later,
-  at its own suppressed `remove`. An earlier version of this item said all three
-  mechanisms key on the caller's `exc`; mechanism 2 does not, and that
-  conflation is what sent the spec's first attempt at this wrong.
-  **Fixing the first half needs a decision, not just a patch:** the
-  remove-then-rename ordering is what makes a non-atomic overwrite possible when
-  `posix_rename` is unavailable, so removing the window may mean accepting that
-  such a store cannot overwrite atomically and saying so, rather than silently
-  narrowing it.
-  `_rename_fallback` carries `# pragma: no cover` (`_move_fallback` does not, and
-  its docstring explains why). BK-360 added
-  `test_the_rename_fallback_destroys_the_destination_when_the_promote_stalls`,
-  which drives both, so the behaviour is pinned even though the pragma still
-  suppresses coverage reporting for one of them — worth revisiting with the fix.
-  **Found by BK-360's review round 2, by a measuring pass**, with the server-class
-  scope corrected by its round 3. BK-360 documents the resulting state in
-  SFTP-030 and the SFTP guide; it does not fix it.
 
 - [ ] **BUG-276 — A mapped error still reaches the caller with an empty message through five base-class arms**
   spec: ERR-009, AZ-025 · effort: M · audience: user.api

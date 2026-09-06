@@ -219,12 +219,27 @@ properties:
       revision; higher counts signal the trace under-modelled the actual
       work surface.
 
-      **Name the commits the value was counted from, in a comment above
+      **Name the derivation the value was counted from, in a comment above
       the field** (CLAUDE.md principle 9). This is a judgement over a
-      fixed list, so naming the list is what makes the judgement
-      checkable. It has gone wrong repeatedly in one PR (#956), including
-      inside the paragraph correcting the previous error — a total offers
-      a later reader nothing to check it against.
+      fixed list, so making the list recoverable is what makes the
+      judgement checkable. It has gone wrong repeatedly in one PR (#956),
+      including inside the paragraph correcting the previous error — a
+      total offers a later reader nothing to check it against.
+
+      **Naming the commits satisfies that; so does naming the query, and
+      on a long branch the query is better.** The transcribed list was the
+      original spelling and it fails in three measured ways, all on PR
+      #994: it cannot include the commit that carries it, so it is stale
+      on arrival; it goes stale again on the next push; and a rebase
+      orphans every SHA in it, leaving hashes that still resolve as
+      objects while matching nothing the stated query returns — worse than
+      a dangling SHA, because they verify. That branch corrected the field
+      four times before dropping the list for the rule
+      (`git log --oneline origin/master..HEAD` minus one). **A comment
+      giving a re-runnable derivation complies with this clause.** If it
+      states a value, that value is counted *including* the commit
+      carrying the line, which is the arithmetic three of those four
+      corrections got wrong.
       **Binds traces authored from BK-348 onward.** The existing corpus
       predates it and is not retrofitted: run
       `rg '^review_rounds:' sdd/traces` for the extent. No gate enforces

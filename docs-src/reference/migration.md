@@ -219,6 +219,54 @@ it already did after a drop on any other method.
 backends, and what those map is unchanged — the extra shapes are supplied by the
 SFTP backend for its own transport, not added for everyone.
 
+**An SFTP overwrite the rename fallback cannot perform now reports the refusal,
+and can leave a `.~bak.` file behind:**
+
+A server without `posix-rename@openssh.com` cannot rename onto an occupied path,
+so `write_atomic(..., overwrite=True)`, `open_atomic(..., overwrite=True)` and
+`move(..., overwrite=True)` have to clear the destination before promoting. In
+v0.30.0 they removed it, under a suppression that hid whether the removal had
+worked. v0.31.0 moves the destination aside as `.~bak.<name>.<uuid>` instead,
+puts it back when the promote fails, and reports a destination it could not move
+rather than acting as though it had.
+
+Two server behaviours separate the outcomes. Measured against both releases on a
+server staged to lack the extension and to follow the v3 rename rule:
+
+| The server… | v0.30.0 | v0.31.0 |
+| --- | --- | --- |
+| refuses to clear the destination — `write_atomic` / `open_atomic` | `AlreadyExists`, destination intact | `PermissionDenied`, destination intact |
+| refuses to clear the destination — `move` | **returns cleanly, having overwritten the destination through the copy fallback and deleted the source** | `PermissionDenied`, destination intact, source still there |
+| allows the clear but refuses the promote — `write_atomic` / `open_atomic` | `PermissionDenied`, destination **gone** and the temp holding your payload removed after it: both copies destroyed | `PermissionDenied`, destination back at its path — or under `.~bak.<name>.<uuid>` if the server refuses that step too |
+
+The `move` row is the one to read twice: in v0.30.0 a refusal to clear was not an
+error at all, because the copy fallback opened the destination `"w"` and wrote
+through it.
+
+**What to change.** An `except AlreadyExists` clause around an `overwrite=True`
+call no longer fires. That error was the fallback reporting a file it had failed
+to clear, not a name collision — a call that passes `overwrite=True` has no
+collision to report. The refusal now arrives as itself: `PermissionDenied` when
+the server says the access was denied, and base
+[`RemoteStoreError`](api/errors.md) for the generic decline, which is the common
+case — an SFTP server attaches a distinguishable code to "no such file" and
+"permission denied" and to nothing else. Catch `RemoteStoreError` if you depended
+on the old shape.
+
+**A cleanup or listing that walks the destination's directory has a second
+dotted name to expect.** `.~tmp.<name>.<uuid>` was already possible;
+`.~bak.<name>.<uuid>` joins it, and unlike the temp it holds your *previous*
+file rather than your payload. Read the target before restoring one — a backup
+also outlives a call that **succeeded**, because the tidy-up that removes it is
+best-effort. The [SFTP guide](../guides/backends/sftp.md) enumerates what each
+outcome leaves where.
+
+**Scope:** SFTP, and only `overwrite=True`. `overwrite=False` displaces nothing,
+so its `AlreadyExists` is unchanged and still means what it says. The fallback is
+not confined to servers lacking the extension either: any `posix_rename` that
+fails for a reason the backend cannot attribute to a dropped connection takes the
+same path.
+
 **Flat-namespace backends now raise `InvalidPath` for a wrong-typed path:**
 
 A backend that stores keys rather than nodes — the S3 family, Azure on a flat
