@@ -2038,9 +2038,12 @@ class SFTPBackend(Backend):
         unclassifiably (the entry vanished in a race → ``ENOENT``, or an
         errno-less ``SSH_FX_FAILURE``), leaves the original failure to
         ``_map_exception``.  One classification-stat failure is *not* swallowed:
-        a **permission** error (``EACCES`` / ``EPERM``) re-raises so a server that
-        denies even statting the target surfaces ``PermissionDenied`` rather than a
-        generic ``RemoteStoreError``.
+        a **permission** error (``EACCES`` / ``EPERM``) raises ``PermissionDenied``
+        so a server that denies even statting the target surfaces that type rather
+        than a generic ``RemoteStoreError``.  This helper builds the error itself
+        instead of re-raising for ``_map_exception`` to classify — see the guard
+        for why the delegated form delivered the promise for only one of the two
+        errnos it names.
 
         ``read`` is **eager** instead — it must reject a directory before handing
         back a handle, because the deferred I/O that would otherwise surface it
@@ -2069,12 +2072,26 @@ class SFTPBackend(Backend):
             # swallowed so the original failure stands. A *permission* error is the
             # exception: a server that denies even statting the target should
             # surface ``PermissionDenied``, not degrade to a generic
-            # ``RemoteStoreError`` (master's ``_check_not_dir`` re-raised it). The
-            # re-raise is kept narrow — permission only — so it never masks the
-            # file-ancestor ``NotFound`` path on a server whose classification stat
-            # reports the failure with a different errno.
+            # ``RemoteStoreError`` (master's ``_check_not_dir`` re-raised it). It is
+            # kept narrow — permission only — so it never masks the file-ancestor
+            # ``NotFound`` path on a server whose classification stat reports the
+            # failure with a different errno.
+            #
+            # BUG-275: answer with the type directly rather than bare-re-raising
+            # for ``_map_exception``. That dispatch has an ``EACCES`` arm and none
+            # for ``EPERM``, so the delegated form kept the promise above for one
+            # of the two errnos it names and gave the other the very
+            # ``RemoteStoreError`` the promise rules out. Adding the missing arm
+            # there would fix it globally and cost more than it buys: the mapping
+            # sees only the exception, so the arm would also re-answer a
+            # connect-time ``EPERM`` — the shape a netfilter ``REJECT`` on the
+            # ``OUTPUT`` chain reproduces (BUG-273) — as a denial naming a key that
+            # had no part in the failure. Here the connect-time case cannot arise:
+            # the stat ran, so there is a channel. ``_map_exception`` returns a
+            # ``RemoteStoreError`` unchanged, so this reaches the caller as built,
+            # and ``EACCES`` keeps the exact message the dispatch gave it.
             if getattr(exc, "errno", None) in (errno.EACCES, errno.EPERM):
-                raise
+                raise PermissionDenied(f"Permission denied: {path}", path=path, backend=self.name) from exc
             if self._is_connection_dead(exc):
                 # A dead channel is not "cannot classify": swallowing it leaves
                 # the caller to re-enter the same channel and pay ``io_timeout``
@@ -2762,8 +2779,8 @@ class SFTPBackend(Backend):
         the reason is the same for both: this predicate sees only the exception,
         so it cannot tell a connect-time one from a live-channel one. ``EACCES``
         is the obvious case — on an operation it genuinely is a denied path.
-        ``EPERM`` looks safer and is not: ``_raise_if_dir``'s permission
-        re-raise deliberately passes **both** errnos back through the mapping
+        ``EPERM`` looks safer and is not: a server denying an ordinary operation
+        can report either errno, and both reach the mapping through ``_errors()``
         from a *working* channel, so claiming either here would answer a
         server-reported denial with ``BackendUnavailable`` and discard a healthy
         client. That was measured, after a revision of this docstring claimed
@@ -2771,6 +2788,12 @@ class SFTPBackend(Backend):
         — true of the dispatch, false of the module. Reaching these two needs
         connect-time context the mapping does not have; both are tracked as
         their own item rather than widened here.
+
+        The measurement behind that came from ``_raise_if_dir``'s classification
+        stat, which no longer routes here — that guard answers
+        ``PermissionDenied`` itself — so the surviving instance is the plain
+        denied operation above, which ``test_eacces_maps_to_permission_denied``
+        drives.
         """
         import paramiko
 
