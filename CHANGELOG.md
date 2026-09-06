@@ -7,7 +7,7 @@ This project follows [Semantic Versioning](https://semver.org/). Pre-1.0, minor 
 
 ## [Unreleased]
 
-- BUG-274: **Fix** — an SFTP operation against a host that cannot be reached pays the connect retry budget once instead of two or three times. At shipped defaults a `read_bytes` against a refused port drops from 8.00 s to 4.00 s, and a nested key from 12.00 s to 4.00 s
+- BUG-274: **Fix** — an SFTP operation against a host that was never reached pays the connect retry budget once instead of two or three times. At shipped defaults a `read_bytes` against a refused port drops from 8.00 s to 4.00 s, and a nested key from 12.00 s to 4.00 s
 - BUG-277: **Fix** — an SFTP destination the rename fallback could not move aside is reported rather than written: `move` no longer truncates it through the copy fallback, and `write_atomic`/`open_atomic` give the refusal instead of `AlreadyExists` from an `overwrite=True` call
 - BUG-272: **Fix** — an SFTP atomic overwrite that fails in the rename fallback no longer destroys the file it was replacing: the fallback moves the destination aside and puts it back, where it removed the destination and then cleaned up the temp as well, leaving no copy of either
 - BUG-270: **Fix** — the same fallback reports a stall on its own first round-trip instead of swallowing it and paying the `io_timeout` bound a second time, and a drop mid-promote leaves the old content in a `.~bak.<name>.<uuid>` file rather than nowhere

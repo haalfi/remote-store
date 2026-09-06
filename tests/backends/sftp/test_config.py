@@ -2407,12 +2407,24 @@ class TestSFTPUnreachableHostCostsOneConnect:
     #: them, which is how ``read_seekable`` — an operation that moved, since it
     #: delegates to ``read()`` — was missing from an earlier revision of this
     #: tuple. Of the 29 public names, excluded are: ``close``, ``native_path``,
-    #: ``to_key``, ``unwrap``, ``resolve``, ``close_is_terminal`` (no request
-    #: issued — path arithmetic, teardown, or a constant); ``capabilities``,
-    #: ``CAPABILITIES``, ``name`` (metadata, not operations); and ``glob``,
-    #: which raises ``CapabilityNotSupported`` before any connect because
+    #: ``to_key``, ``resolve``, ``close_is_terminal`` (no request issued — path
+    #: arithmetic, teardown, or a constant); ``capabilities``, ``CAPABILITIES``,
+    #: ``name`` (metadata, not operations); ``glob``, which raises
+    #: ``CapabilityNotSupported`` before any connect because
     #: ``SFTPBackend.CAPABILITIES`` has no ``GLOB`` — measured at 0 ``_connect``
-    #: entries on both revisions, so it has no budget to pin.
+    #: entries on both revisions, so it has no budget to pin; and ``unwrap``,
+    #: which is the one exclusion that is **not** clerical.
+    #:
+    #: ``unwrap(paramiko.SFTPClient)`` returns ``self._sftp``, so it does
+    #: evaluate the lazy property and does pay a budget — an earlier revision
+    #: of this list grouped it with the no-request names, which was simply
+    #: false. It is excluded because it hands the caller the driver's own
+    #: handle rather than performing a store operation, and so is deliberately
+    #: outside ``_errors()``: a cell for it would meet a raw
+    #: ``NoValidConnectionsError`` and fail this test's ``pytest.raises``
+    #: rather than pass. Whether the error model should reach ``unwrap`` at all
+    #: is a separate question this item does not decide; what matters here is
+    #: that the exclusion is stated for the reason that is true.
     #:
     #: Completeness is the point, not padding: the fix widens shared guards, so
     #: an operation that *gains* a cycle would otherwise be invisible, and the

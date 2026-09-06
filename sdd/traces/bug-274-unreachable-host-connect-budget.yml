@@ -54,7 +54,7 @@ discovery_followups:
   # rename-fallback ladder BUG-270/272/277 have just reworked.
   - BUG-278
 # Derived from `git log --format='%s' origin/master..HEAD --reverse`, run before
-# this line was written, and counting the commit that carries it. Two rows:
+# this line was written, and counting the commit that carries it. Five rows:
 #   BUG-274: Ask whether another probe can answer, not only whether the channel
 #            died -> does not count (implements the item)
 #   BUG-274: Re-derive the enumeration's size, and widen it to every operation
@@ -64,9 +64,15 @@ discovery_followups:
 #   BUG-274: Correct the figures a three-member panel refuted, and give BUG-278
 #            its fifth site -> counts (round 3, 11 findings after dedup from a
 #            three-member panel: unprimed, measuring, whole-file)
-# Value is 3. Re-derive from that command before each push; a review round that
-# lands a fix raises it.
-review_rounds: 3
+#   BUG-274: Scope the CHANGELOG subject, and state four exclusions truthfully
+#            -> counts (round 4, 8 findings after dedup from a three-member
+#            panel: unprimed, measuring, whole-file)
+# Value is 4. Re-derive from that command before each push; a review round that
+# lands a fix raises it. Retrospective: the lead-in above said "Two rows" over a
+# four-row list until round 4 — rounds 2 and 3 each appended a row and left the
+# phrase, and the value stayed right while the list it was checkable against did
+# not, which is the quiet half of this failure.
+review_rounds: 4
 phases:
   - id: orient
     name: Orient
@@ -96,10 +102,20 @@ phases:
         extract: >-
           Triggered rows: Bug fix, Backlog item touched, CHANGELOG entry, Spec
           section. **Breaking change was checked and does not trigger** — the
-          error type is unchanged (measured: every operation answered
-          BackendUnavailable before the fix and after — re-confirmed in round 2
-          across all 84 cells on both revisions), so no except clause stops
-          catching and no migration section is owed
+          error type is unchanged, so no except clause stops catching and no
+          migration section is owed.
+          **The grounds, corrected in round 4, because the measurement cited
+          here does not cover everything the change touches.** All 84 cells
+          answer BackendUnavailable on both revisions, but every cell builds a
+          fresh backend, and two of the six widened sites — _raise_if_dir's stat
+          guard and _has_file_ancestor's walk guard — are also reachable on a
+          *live* channel. There an errno-less SSH_FX_FAILURE followed by a
+          reconnect into a gone host used to be swallowed and surface as the
+          caller's original error at the generic arm; it now surfaces as
+          BackendUnavailable. The disposition still holds, but by the subclass
+          relation — BackendUnavailable is a RemoteStoreError — and not by the
+          84 cells, which is the half a reader reopening the question would
+          otherwise lean on
         outcome: ok
   - id: reproduce
     name: Reproduce by measurement
@@ -270,7 +286,13 @@ phases:
           the next access to _connect. Driven: write_atomic with the transport
           flipped inactive between the temp close and the promote, 3 _connect
           entries and 12.01 s at shipped defaults, the same figure this item
-          publishes as the defect for a nested read_bytes. Reproduced
+          publishes as the defect for a nested read_bytes.
+          Annotated after round 4: that identity was false when this line was
+          written. The same commit re-measured the wall-clock table and moved
+          the published nested read_bytes figure to 12.00 s, so the two are near
+          neighbours — both three budgets at a 4 s budget — rather than one
+          number. Round 3 corrected the identical bridge in BUG-278's register
+          entry and did not sweep to this copy. Reproduced
           independently before acting on it. The paragraph's fallback — that the
           enumeration would catch it anyway — was false for a second reason: no
           cell can put a live-then-dead transport in front of a guard, because
@@ -372,6 +394,72 @@ phases:
           write/overwrite/nested, whose passing is exactly what refuted the
           nested-key generalisation: the clause stayed true by omitting the cell
           that mattered most
+        outcome: ok
+  - id: fix_round_4
+    name: Round-4 fix pass (three-member panel)
+    steps:
+      - file: CHANGELOG.md
+        section: "[Unreleased] (BUG-274 stub)"
+        read_type: verify
+        extract: >-
+          **The only changed file no round had examined, and it carried the one
+          claim a user reads.** Its subject was the unscoped "a host that cannot
+          be reached", which round 2 spent its whole pass removing from the spec,
+          the register entry, the helper docstring and the test class — and it is
+          measurably false: move after a mid-operation transport death pays three
+          budgets on this branch. `git log -L 10,11:CHANGELOG.md` shows the
+          round-2 commit, titled "Scope the guarantee to the fault it covers",
+          editing this very line to change 12.01 to 12.00. The sweep passed
+          through the sentence it was about and changed a digit in it. Fixed to
+          "a host that was never reached", which is the phrasing every sibling
+          artifact uses and which excludes the transport-death case by
+          construction, since there the host was reached
+        outcome: ok
+      - file: src/remote_store/backends/_sftp.py
+        section: "_probe_is_futile (six/eleven partition)"
+        read_type: verify
+        extract: >-
+          The partition sentence said the six are what an operation reaches when
+          its first _sftp evaluation fails, while site comments this PR adds two
+          screens below say two of the six are never reached at all. Both halves
+          were true and were written a round apart; nothing brought them into
+          contact. The measuring member settled it by counting consultations
+          across the 84 cells — 15, 12 and 6 for the reached guards, zero for
+          both latent ones — so the split is stated as four reachable plus two
+          prophylactic, with the measured counts, in the docstring the two other
+          artifacts defer to
+        outcome: ok
+      - file: tests/backends/sftp/test_config.py
+        section: "TestSFTPUnreachableHostCostsOneConnect (OPERATIONS exclusions)"
+        read_type: verify
+        extract: >-
+          unwrap was grouped with the names that issue no request; it returns
+          self._sftp, so it evaluates the lazy property and pays a full budget.
+          The tuple's whole claim is completeness with every exclusion accounted
+          for, so a false accounting is the defect rather than the missing cell.
+          The true reason is also the more useful one: unwrap hands back the
+          driver's handle rather than performing a store operation and sits
+          outside _errors(), so a cell for it would meet a raw
+          NoValidConnectionsError and fail rather than pass — which is a live
+          question about the error model's reach that this item does not decide
+          and now names
+        outcome: ok
+      - file: sdd/traces/bug-265-sftp-refused-connect.yml
+        section: "fix_* step (call-site count annotation)"
+        read_type: verify
+        extract: >-
+          **The round's sharpest lesson, and it is recursive.** Round 3's
+          annotation gave a replacement `rg` count of 12; the command returns 13,
+          the thirteenth hit being a line of _probe_is_futile's docstring added
+          by the same commit, which quotes is_fatal=self._is_connection_dead
+          verbatim. So an annotation correcting a figure — sitting directly under
+          a retrospective that drops a *different* figure because "the number
+          moves every time a docstring is touched" — was moved by a docstring in
+          its own commit. Two members found it independently. The replacement
+          number is now withdrawn rather than corrected a second time: what is
+          recorded is why that command cannot hold a stable count (it matches
+          prose as well as code), which is the same reasoning that made the
+          module's own count a reference-walk filtered by owning function
         outcome: ok
   - id: verify
     name: Verify

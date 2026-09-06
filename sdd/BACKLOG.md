@@ -537,8 +537,13 @@ compliant the day before.
   a connect-time shape into a guard which asks `_is_connection_dead` alone and
   declines — the exact defect BUG-274 fixed at six other sites.
   **Measured** on BUG-274's head, at shipped defaults, with a just-released
-  ephemeral port behind a transport flipped inactive mid-operation. Two entry
-  points, and each declining guard costs one budget:
+  ephemeral port behind a transport flipped inactive mid-operation. The first
+  entry is the transport death itself; after that a decline costs a budget only
+  when something downstream re-evaluates `_sftp`, which is why the frame counts
+  below do not simply track the entry counts — `_is_absent`'s decline in the
+  first two rows reaches nothing further, and the third row's third entry comes
+  from `_copy_and_delete`'s handle open, which is not a guard and so is not in
+  the frames column:
 
   | driver | entries | elapsed | declining frames |
   |---|---|---|---|

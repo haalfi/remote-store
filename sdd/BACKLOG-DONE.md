@@ -296,10 +296,13 @@ if evidence changes; these are retired.
   `_is_connection_dead` or `_probe_is_futile` (references, because `read` hands
   the predicate to `_ErrorMappingStream` as `is_fatal=` without calling it),
   keep those whose owning function is neither `_probe_is_futile` nor
-  `_map_exception`, and seventeen fall out — six and eleven. Six are the ones an
-  operation reaches when its **first** `_sftp` evaluation fails, which is what
+  `_map_exception`, and seventeen fall out — six and eleven. The fault the six
+  serve is an operation whose **first** `_sftp` evaluation fails, which is what
   "a host that was never reached" means and is all the enumeration drives, every
-  cell building a fresh backend.
+  cell building a fresh backend. **Four of the six are reached under it** —
+  measured at 15, 12 and 6 consultations across the 84 cells — and the two named
+  latent above are never consulted by any cell at all, which is the same fact
+  stated from the other end rather than a second claim.
   **A transport that dies mid-operation is a different fault and is not fixed
   here** — filed as BUG-278 with its measurement (`write_atomic` with the
   transport flipped inactive between the temp close and the promote: three

@@ -2861,10 +2861,20 @@ class SFTPBackend(Backend):
 
         **Six of the seventeen guard sites reach here; eleven still ask
         ``_is_connection_dead`` alone, and the bound on that is a fact about the
-        *fault*, not about those sites.** The six are the ones an operation can
-        reach when its **first** ``_sftp`` evaluation is the one that fails —
-        which is what "a host that was never reached" means, and is the whole of
-        what the enumeration drives, since every cell builds a fresh backend.
+        *fault*, not about those sites.** The fault is an operation whose
+        **first** ``_sftp`` evaluation is the one that fails — which is what "a
+        host that was never reached" means, and is the whole of what the
+        enumeration drives, since every cell builds a fresh backend.
+
+        **The six are not all reachable under it, and the split is four plus
+        two.** ``read_bytes``, ``delete`` and both ``_raise_if_dir`` guards are
+        reached and act — measured at 15, 12 and 6 consultations across the 84
+        cells. ``read``'s open guard and ``_has_file_ancestor``'s walk guard are
+        **never consulted by any cell**, because the eager ``_raise_if_dir`` and
+        those three callers' own guards respectively stop ahead of them; each
+        site says so where it sits. They are widened prophylactically, not
+        because the fault reaches them, and reverting either leaves the suite
+        green today.
 
         **A transport that dies mid-operation and then fails to reconnect is a
         different fault and the eleven do not cover it.** ``_sftp`` re-reads
