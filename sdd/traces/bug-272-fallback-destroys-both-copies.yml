@@ -43,8 +43,8 @@ surprising_ripples:
 # minus one — every commit after the first is review-driven. **Counted including
 # the commit that carries this line**, which is the arithmetic three earlier
 # revisions got wrong: the query run *before* committing is one short, every time.
-# At the verify-end close it returns 11 counting this commit, so the value is 10,
-# over 7 rounds.
+# At round 8's fix pass it returns 12 counting this commit, so the value is 11,
+# over 8 rounds.
 #
 # **No SHAs are named, and `_schema.yml` § review_rounds now permits that** — it
 # was amended in this PR, on this trace's evidence. Four corrections: a
@@ -53,7 +53,7 @@ surprising_ripples:
 # in it, leaving four hashes that still resolved as objects while matching
 # nothing the stated query returns; and the value itself was computed pre-commit
 # twice more. The query is the derivation. Re-run it; do not copy its output back.
-review_rounds: 10
+review_rounds: 11
 phases:
   - id: orient
     name: Orient
@@ -168,6 +168,35 @@ phases:
           heading. Two caller-visible items: the error an `overwrite=True`
           refusal now raises, and `.~bak.` joining `.~tmp.` as a name a directory
           walk can meet.
+        outcome: misleading
+      - file: docs-src/reference/migration.md
+        section: "v0.30.0 to v0.31.0 (round 8)"
+        read_type: verify
+        extract: >-
+          Three of the first draft's before/after cells were measured false: it
+          gave the caller's payload as surviving in an orphan temp where the
+          v0.30.0 cleanup had removed it, gave the destination as gone in the row
+          where the refused clear is precisely what saved it, and named `move`
+          alongside the atomic writers for a mechanism `move` does not share. A
+          migration table is the one artifact whose whole content is a claim
+          about code the repo no longer contains, so it cannot be written from
+          the diff; a worktree at the base commit answers all three in one run
+          and I did not open one until a reviewer did. The corrected table is
+          keyed on what the *server* refuses rather than on which internal call
+          fails, which is what a reader can recognise, and the `move` row now
+          carries the finding that matters most: in v0.30.0 a refused clear was
+          not an error at all.
+      - file: src/remote_store/backends/_sftp.py
+        section: "_displace § Cost, _rename_fallback docstring"
+        read_type: verify
+        extract: >-
+          The cost figure said two stats on a failed displace; the `and`
+          short-circuits, so it is one when the destination is still there —
+          which is the shape the whole commit is about. Counted by wrapping
+          `stat` on the live client: 2 and 3 including `_promote`'s own
+          classification stat, so 1 and 2 for the displace itself. A figure about
+          the code in the same docstring, wrong because it was reasoned rather
+          than run.
       - file: CHANGELOG.md
         section: "[Unreleased]"
         read_type: verify

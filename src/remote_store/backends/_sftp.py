@@ -2288,9 +2288,12 @@ class SFTPBackend(Backend):
         loudly, with the destination intact. Stated because that is the same
         defect one layer down, not its absence.
 
-        **Cost.** Two stats on a failed displace, none on the ordinary path.
-        ``_promote``'s own classification stat is paid separately and costed
-        there.
+        **Cost.** None on the ordinary path. On a failed displace the ``and``
+        short-circuits, so it is **one** stat when the destination is still there
+        — the refusal this method exists to report — and two only when it is not.
+        Counted end-to-end over a ``write_atomic`` those are 2 and 3;
+        ``_promote``'s own classification stat is the extra one, paid separately
+        and costed there.
 
         A dead connection propagates ahead of either probe: the promote cannot
         succeed over it and would pay a second ``io_timeout`` bound. The
@@ -2409,10 +2412,16 @@ class SFTPBackend(Backend):
         """Promote *tmp_path* with a plain ``rename`` (non-atomic overwrite).
 
         Under *overwrite* the destination is displaced before the rename and put
-        back if the rename fails, so a caller told the write failed still has the
-        file they had. What the fallback cannot offer is atomicity: a reader
-        looking between the two renames finds the path absent, which is why this
-        backend's ``ATOMIC_WRITE`` is documented as simulated.
+        back if the rename fails, so a caller told the write failed still has
+        their file — **at its path on the ordinary failure, and otherwise under
+        ``.~bak.<name>.<uuid8>``**. Both restore steps are best-effort and the
+        displace can land without reporting so, which is why the promise is the
+        copy rather than the path; the backend spec enumerates every outcome, and
+        that enumeration is the one place it is stated.
+
+        What the fallback cannot offer is atomicity: a reader looking between the
+        two renames finds the path absent, which is why this backend's
+        ``ATOMIC_WRITE`` is documented as simulated.
         """
         backup = self._displace(sftp_path) if overwrite else None
         try:

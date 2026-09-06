@@ -1257,10 +1257,10 @@ recalled: `live` for a connection that never dropped, `drop` for one that did.
 
 | Displace | Promote | Then | Reached on | The caller's previous file is | Pinned by |
 | --- | --- | --- | --- | --- | --- |
-| refused | not attempted | the refusal propagates | live | **at its path** — nothing was moved, and this is why a refusal is not reported as "nothing to restore" | `test_a_refused_displace_reports_rather_than_writing_the_destination` |
+| refused, or unprobeable | not attempted | the refusal propagates | live · drop | **at its path** — nothing was moved, and this is why a refusal is not reported as "nothing to restore". On a drop the probe raises instead of answering and a `.~tmp.` orphan is left, since the cleanup unlink is skipped rather than re-entering the channel | `test_a_refused_displace_reports_rather_than_writing_the_destination`, `test_a_probe_that_cannot_reach_the_server_reclassifies_nothing` |
 | absent | attempted, and ordinarily lands | nothing to restore | live | there was none — the ordinary `overwrite=True` create | `test_an_errno_less_displace_failure_over_nothing_still_creates` |
 | **landed, reported failed** | not attempted | the failure propagates | live | in `.~bak.<name>.<uuid8>` — the rename moved it and only the answer failed, so the path is empty and the caller is told so rather than the fallback guessing | `test_a_displace_that_landed_but_reported_failure_is_reported` |
-| done, reply lost | not attempted | the drop propagates | drop | in `.~bak.<name>.<uuid8>`, the path empty — the row above reached by a drop instead of a refusal | — argued from SFTP-030's closure |
+| done, reply lost | not attempted | the drop propagates | drop | in `.~bak.<name>.<uuid8>`, the path empty — the landed-but-unreported row above, reached by a drop rather than by a server that answered | — argued from SFTP-030's closure |
 | done | succeeded | `_release` drops the backup | live | replaced, as asked | `test_the_fallback_replaces_an_existing_destination` |
 | done | succeeded | `_release` refused | live | replaced — but a `.~bak.<name>.<uuid8>` **outlives a successful call** | `test_a_release_the_server_refuses_leaves_a_backup_beside_a_good_write` |
 | done | succeeded | `_release` reaches a silent channel | drop | replaced, and the call pays one `io_timeout` bound inside the suppressed unlink — the one place a **success** costs a bound. Whether a `.~bak.<name>.<uuid8>` outlives it depends on which direction went silent, and a caller cannot tell which they met | — argued |
@@ -1273,10 +1273,15 @@ reasoning the named-states list above gives: eight of the ten carry a test, and
 the two that do not say so.
 
 **Two readings follow, and they are what the prose kept getting wrong.** The
-`.~bak.` residue is **not** a dropped-connection signal: of the six rows that
-leave one, three are reached on a live connection and one of those follows a call
-that *succeeded* and raised nothing. And the guarantee is the last column never
-reading "gone", not the file being at its path — AW-003 promises the copy, and
-only the ordinary-failure row promises the path. The three rows reading "replaced"
-replace the file by design, which is the antecedent AW-003 carries and this table
-does not repeat.
+`.~bak.` residue is **not** a dropped-connection signal: five rows leave one for
+certain and a sixth may, and of those five, three are reached on a live
+connection — one of them following a call that *succeeded* and raised nothing.
+(The sixth is the silent-channel release, whose row says a caller cannot tell
+which direction went silent and so cannot tell whether a backup outlived the
+call. It is counted apart because a count that folds a maybe into a certainty is
+the kind of figure this table exists to stop.) And the guarantee is the last
+column never reading "gone", not the file being at its path: two rows do read "at
+its path", but only one of them **restores** it there — the other never moved it
+— so AW-003 promises the copy and the ordinary-failure row alone promises the
+return. The three rows reading "replaced" replace the file by design, which is
+the antecedent AW-003 carries and this table does not repeat.

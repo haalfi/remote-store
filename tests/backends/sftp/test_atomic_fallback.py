@@ -526,8 +526,13 @@ def test_a_probe_that_cannot_answer_does_not_become_an_answer(sftp_backend: SFTP
 
     That is not hypothetical. An earlier revision tested the backup with
     ``not _is_absent(...)``, which is true both when the backup exists and when
-    the probe merely failed, and this staging left the destination **gone** with
-    no backup and no temp — BUG-272 and BUG-277 both re-opened by their own fix.
+    the probe merely failed. Run against that revision, this staging does not
+    raise at all: the call **succeeds**, the destination holds the new payload,
+    and the caller's previous file is gone with nothing raised to say so. A
+    silent overwrite of a file the fallback had been refused permission to touch
+    is worse than the reported failure this suite was written for, and it is why
+    the assertion below is that the caller gets the refusal rather than merely
+    that the write failed.
 
     **Staged errno-less rather than parametrised over errnos**, because only this
     shape reaches the fallback: a stat answering ``EACCES`` is classified by

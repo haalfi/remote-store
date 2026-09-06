@@ -408,11 +408,14 @@ See the [capabilities matrix](../../reference/capabilities-matrix.md) for full d
 
 !!! warning "A `.~bak.` file can outlive a call that did not stall — including one that succeeded"
     The note above is about `BackendUnavailable`. The rename fallback can also
-    leave a `.~bak.<name>.<uuid>` behind on a connection that never dropped: it
-    moves your file aside, and if the server then refuses to move it back you
-    get `PermissionDenied` (or another mapped error) with your previous file
-    under that name instead of at its path. Nothing is lost, and the recovery is
-    the same — read the target, then the `.~bak.` beside it.
+    leave a `.~bak.<name>.<uuid>` behind on a connection that never dropped, by
+    two routes. It moves your file aside, and the server then refuses to move it
+    back. Or the move-aside itself lands and the server fails to say so, in which
+    case nothing is put back because the call never learns there is anything to
+    put back. Either way you get `PermissionDenied` (or another mapped error)
+    with your previous file under that name instead of at its path. Nothing is
+    lost, and the recovery is the same — read the target, then the `.~bak.`
+    beside it.
 
     **Read the target before restoring a backup.** A `.~bak.` also outlives a
     call that *succeeded* — the tidy-up that removes it is best-effort, so a
