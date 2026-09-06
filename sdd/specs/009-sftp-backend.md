@@ -420,10 +420,16 @@ then reaches differs:
   promised type than the base class. BUG-275 instead gave the site that needed
   `EPERM` its own answer (SFTP-021), leaving this shape as described.
 
-Neither is claimed here because a server denying an ordinary operation can
-report either errno from a *working* channel, so claiming either would answer a
+Neither is claimed here, on different evidence. `EACCES` reaches this mapping
+from a *working* channel on any denied operation — paramiko's
+`SFTPClient._convert_status` renders `SSH_FX_PERMISSION_DENIED` as
+`IOError(EACCES)`, measured on paramiko 5.0.0 — so claiming it would answer a
 server-reported denial with `BackendUnavailable` and discard a healthy client.
-BUG-273 carries that exclusion for both.
+**No live-channel producer of `EPERM` is known**: that dispatch has no arm
+rendering it, so the errno arrives only from outside the SFTP protocol. It stays
+excluded because this mapping cannot tell such an arrival from a connect-time
+one, and because the widening was tried and measured harmful. BUG-273 carries
+that exclusion for both.
 
 **Every** `BackendUnavailable` this mapping returns — the `SSHException` family
 included — invalidates the cached SFTP client so the next operation reconnects

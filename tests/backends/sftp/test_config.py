@@ -1943,16 +1943,19 @@ class TestSFTPMapException:
         be put back.** A round of review found a locally-rejected connect
         answering the base class for ``EPERM`` and argued it was free to claim,
         since ``_map_exception``'s errno dispatch has no ``EPERM`` arm. True of
-        the dispatch, false of the module: a live channel reports both permission
-        errnos on an ordinary denied operation, so claiming either turns a
+        the dispatch, false of the module: claiming either turns a
         server-reported denial into ``BackendUnavailable`` and discards a healthy
         client — measured, and contradicting a published migration row.
 
-        BUG-275 later moved the *classification-stat* case off this mapping —
-        ``_raise_if_dir`` now answers ``PermissionDenied`` itself — so that path
-        is no longer the evidence. The exclusion stands on the op-level denial
-        that still arrives here through ``_errors()``, which is what
-        ``test_eacces_maps_to_permission_denied`` drives.
+        **The two errnos rest on different evidence, so assert both.** ``EACCES``
+        has a measured live-channel producer — paramiko renders an SFTP
+        ``SSH_FX_PERMISSION_DENIED`` as ``IOError(EACCES)``, which
+        ``test_eacces_maps_to_permission_denied`` drives. ``EPERM`` has none
+        known, and stays excluded because this mapping cannot tell an arrival
+        from outside the protocol from a connect-time one. BUG-275 moved the
+        *classification-stat* case off this mapping entirely —
+        ``_raise_if_dir`` answers ``PermissionDenied`` itself — so that path is
+        no longer evidence for either.
 
         So the bound is asserted rather than left to a comment: both errnos keep
         their own answers, and a future widening of ``_is_unreachable``'s tuple

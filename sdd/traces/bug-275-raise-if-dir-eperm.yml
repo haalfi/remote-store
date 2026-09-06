@@ -13,14 +13,18 @@ source_items:
 audience:
   - user.api
   - user.api_docs
-expected_ripples:
-  - sdd/backlogid.json
+discovery_followups:
+  - BUG-278
 surprising_ripples:
   # Neither the backlog item's four-artifact list nor the ripple-check table
   # named this one: BUG-265's own v0.31.0 scope note asserts "the classification
   # stat ... still answers exactly as it did", which this change falsifies in
   # the same unreleased section.
   - docs-src/reference/migration.md
+# No expected_ripples: sdd/backlogid.json would be the usual one after a
+# BACKLOG/BACKLOG-DONE edit, and it is genuinely untouched here — gen_backlogid
+# derives the floor from the backlog files, and the stored max was already past
+# the ID this PR mints.
 phases:
   - id: orient
     name: Orient
@@ -102,4 +106,39 @@ phases:
       - file: sdd/CLAUDE-REFERENCE.md
         section: "Detailed checklist"
         read_type: verify
-        extract: "Bug fix, Spec section, Error type, Backlog item touched, Tracker ID in published prose"
+        extract: >-
+          Bug fix, Spec section, Error type, Backlog item touched, Tracker ID in
+          published prose. Marked verified and was not: the "Error type" row
+          names the "error docstring 'raised by' list", and six public Raises:
+          blocks promising PermissionDenied for EACCES alone were left falsified
+          by the change. The round-1 review found them. The row said what to
+          check; reading it was not the same as running it, and the derivation
+          that would have caught it — resolve every _raise_if_dir call site, and
+          every _open_write/_promote call site, to its enclosing def — was only
+          run afterwards
+        outcome: ok
+  - id: fix
+    name: Fix pass (round 1)
+    steps:
+      - file: src/remote_store/backends/_sftp.py
+        section: "_raise_if_dir (permission guard), _is_unreachable"
+        read_type: reference
+        extract: >-
+          Round 1 posted five findings, all confirmed by measurement and all
+          fixed. The sharpest: the guard raised `from exc` where the module's
+          sixteen other mapped raises use `from None`, so EACCES gained a
+          __cause__ it did not have — measured, and it falsified four artifacts
+          claiming that errno's answer was unchanged. Fixing the raise was
+          cheaper than weakening all four
+      - file: sdd/BACKLOG.md
+        section: "(item) BUG-275, deleted body"
+        read_type: reference
+        extract: >-
+          Deleting the item dropped its "trigger is unestablished" measurement,
+          which the replacement grounds for _is_unreachable's exclusion then
+          silently over-claimed. Re-derived on paramiko 5.0.0 and carried into
+          the register entry: _convert_status renders SSH_FX_PERMISSION_DENIED
+          as IOError(EACCES) and has no EPERM arm, so the two errnos are
+          excluded on different evidence, not one. No outcome tag: the item said
+          plainly that the trigger was unestablished, so this was the author
+          dropping it on deletion, not the document failing a reader

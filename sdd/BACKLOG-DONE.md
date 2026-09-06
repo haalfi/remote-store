@@ -319,9 +319,24 @@ if evidence changes; these are retired.
   they name.
   **What shipped: the guard answers, the dispatch does not.** `_raise_if_dir`
   raises `PermissionDenied` itself for both errnos, with the message the
-  dispatch built for `EACCES`, so that errno's answer is unchanged and the
-  callers — all inside `_errors(path)`, where `_map_exception` returns a
-  `RemoteStoreError` unchanged — see it as built.
+  dispatch built for `EACCES` and `from None` like every other mapped raise in
+  the module, so that errno's answer is unchanged **down to `__cause__`** — an
+  earlier revision chained `from exc`, which the round-1 review caught and a
+  measurement confirmed: `EACCES` gained a `PermissionError(13, ...)` cause it
+  did not have. The callers are all inside `_errors(path)`, where
+  `_map_exception` returns a `RemoteStoreError` unchanged, so it arrives as
+  built.
+  **The `EPERM` trigger stays unestablished, and that bounds the fix rather than
+  the diagnosis.** paramiko's `SFTPClient._convert_status` renders an SFTP
+  `SSH_FX_PERMISSION_DENIED` as `IOError(EACCES)` and has no arm producing
+  `EPERM` (read on paramiko 5.0.0), so the errno reaches this guard only from
+  outside the SFTP protocol. BK-316 named it because that item was written for
+  "non-OpenSSH servers whose error shapes differ from OpenSSH", which is the
+  case nobody has a fixture for. What this item fixes is therefore the
+  code-vs-docs divergence, on a path whose trigger nobody has produced — which
+  is why the same measurement now also anchors `_is_unreachable`'s exclusion
+  asymmetrically: `EACCES` has a live-channel producer, `EPERM` has none known
+  and is excluded on the predicate's blindness instead.
   **The rejected alternative is the load-bearing part.** An `EPERM` arm in the
   errno dispatch is a smaller diff and makes every promise true, and it was
   declined because the mapping sees only the exception: the arm would also
@@ -342,7 +357,21 @@ if evidence changes; these are retired.
   same release. `_is_unreachable`'s docstring needed the same repair for the
   opposite reason: its stated evidence for excluding both permission errnos was
   that `_raise_if_dir` routes them through the mapping, which it no longer does.
-  The exclusion stands on the ordinary denied operation instead.
+  The exclusion stands, now stated per errno rather than jointly — see the
+  trigger paragraph above.
+  **Six public `Raises:` blocks, and exactly six.** `read`, `read_bytes` and
+  `delete` reach the guard directly; `write` reaches it through `_open_write`,
+  and `write_atomic` and `open_atomic` through `_promote`. All six promised
+  `PermissionDenied`
+  for `EACCES` alone, so the change falsified them — the mirror image of the
+  defect this item was filed for, and caught by the round-1 review rather than
+  by the "Error type" ripple row this work had already marked verified. The
+  other eight `Raises:` blocks naming `EACCES` (`exists`, `is_file`,
+  `is_folder`, `delete_folder`, `get_file_info`, `get_folder_info`, `move`,
+  `copy`) do not reach the guard and stay as they were. Derived, not recalled:
+  the fourteen are the `PermissionDenied: ... EACCES` lines in `_sftp.py`, the
+  six from resolving every `_raise_if_dir` call site — and every `_open_write` /
+  `_promote` call site — to its enclosing `def`.
   **What was deliberately not done: BUG-278**, the same errno on an operation
   rather than the classification stat, where SFTP keeps the base class and Local
   answers `PermissionDenied`. It shares BUG-273's one decision, which is why it
@@ -608,7 +637,8 @@ if evidence changes; these are retired.
   one of them the published migration table, said the re-raise delivers
   `PermissionDenied` for both errnos, and it never had for `EPERM` — filed as
   **BUG-275** and since closed, by giving the guard its own answer rather than
-  the dispatch an arm. The exclusion here is unaffected and its evidence moved:
+  the dispatch an arm. The exclusion here is unaffected; its evidence is now
+  `EACCES` alone, which is the errno with a measured live-channel producer —
   see that entry. They
   classify through
   `_is_unreachable` and an arm of their own rather than by widening

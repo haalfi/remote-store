@@ -174,8 +174,7 @@ section. Other backends are unchanged.
 errnos:**
 
 v0.30.0 made a denied classification stat — the extra `stat` the SFTP backend
-issues on the *error* path of `read`, `read_bytes`, `delete` and the atomic
-writes, to tell "you asked for a directory" apart from the other failures a
+issues to tell "you asked for a directory" apart from the other failures a
 server can report — raise `PermissionDenied` instead of the base
 `RemoteStoreError`. It reached that type through the error mapping, which
 recognises `EACCES` and not `EPERM`, so a server reporting the denial with
@@ -192,10 +191,19 @@ store.read_bytes("delivery.csv")
 `RemoteStoreError` for this case, narrow it to `PermissionDenied`**, which is
 what the v0.30.0 notes told you to write and what now holds for both errnos.
 
+**Which calls:** `read`, `read_bytes`, `write`, `write_atomic`, `open_atomic`
+and `delete` — the six that issue this stat, whose `Raises:` documentation now
+names both errnos. `read` stats before handing back a handle; the other five
+only after the operation has already failed, so a successful call never pays the
+round trip.
+
 **Scope:** the classification stat only. An `EPERM` reported by the operation
 itself, rather than by that guard, still raises the base `RemoteStoreError` — the
 mapping is unchanged, deliberately, so that a connect a local firewall rejects is
-not reported as a permissions problem with your key's name on it.
+not reported as a permissions problem with your key's name on it. In practice no
+`EPERM` trigger is known for either path: paramiko reports an SFTP
+permission denial as `EACCES`, so reaching this needs a server whose error shapes
+come from outside the SFTP protocol.
 
 **A dropped SFTP connection now raises `BackendUnavailable` from a `read()`
 stream too:**
