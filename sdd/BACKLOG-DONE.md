@@ -220,6 +220,57 @@ if evidence changes; these are retired.
 
 ## Unreleased
 
+- [x] **BUG-274 — A keyed SFTP operation against an unreachable host pays the connect budget two or three times over**
+  spec: SFTP-023 · effort: S · audience: user.api
+  Not a regression — master behaved identically — but BUG-265 introduced the
+  predicate that closed it, and BUG-265's own round-4 measurement is what
+  exposed the mechanism.
+  **The mechanism.** The mid-operation re-entry guards asked
+  `_is_connection_dead` alone, and that predicate answers `False` for every
+  shape `_is_unreachable` claims. A guard that declines lets control fall
+  through to a classification path that re-evaluates the lazy `_sftp` property
+  and pays the whole `RetryPolicy` budget again — three attempts with 2–10 s
+  exponential backoff by default.
+  **What it cost, measured over the product of connect-time shape and
+  operation** (three shapes x sixteen operations, `_connect` entries counted per
+  cell): **16 of 48 cells entered `_connect` two or three times**, 67 cycles
+  where 48 were owed. All 48 now cost one. The `connect-timeout` column was
+  already at one throughout and is the control that identifies the defect: that
+  shape raises `TimeoutError`, which `_is_connection_dead` matches, so the
+  guards fired. The mechanism was never broken — only the predicate the guards
+  consulted.
+  **Measurement widened the item's stated scope.** The body filed by BUG-265
+  named `read` and `read_bytes`; running it added `delete` (including
+  `missing_ok=True`) and **`write(overwrite=True)`**, which pays a second cycle
+  through `_open_write` → `_raise_if_dir`'s *cause* guard and which no reading
+  of the item would have named. The third cycle is the file-ancestor walk,
+  reached only when the shape's `errno` is `None` — so a nested key costs three
+  against a refused port and two against a DNS failure, an asymmetry the item's
+  flat "for a nested key it is three" did not carry.
+  **Wall clock at shipped defaults**, no `retry=` passed, against a
+  just-released ephemeral port, timed per call — the item's own table re-run:
+
+  | call | before | after |
+  |---|---|---|
+  | `check_health()` | 4.37 s | 4.10 s |
+  | `exists("a.csv")` | 4.00 s | 4.00 s |
+  | `read_bytes("a.csv")` | 8.00 s | 4.00 s |
+  | `read_bytes("a/b/c.csv")` | 12.01 s | 4.00 s |
+
+  **The fix is a third predicate, not a widening.** `_probe_is_futile` asks the
+  guards' own question — will another round-trip buy anything — and is the
+  disjunction of the two existing predicates, consulted at six guard sites.
+  `_map_exception` keeps asking them separately, because it dispatches on
+  *which* is true. Widening `_is_connection_dead` instead was the shape BUG-265
+  declined under review and BUG-273 records the measured harm of; it would also
+  have moved a connect-time shape onto the dropped-connection arm.
+  **Two of the six sites are latent** — `read`'s open guard and
+  `_has_file_ancestor`'s walk guard are unreachable for this shape once the
+  other four fire. They were widened anyway: `_has_file_ancestor` evaluates the
+  lazy property once per ancestor, so a guard correct only because a sibling
+  fires first is one refactor from paying a budget per level.
+  **Found by BUG-265's round-5 unprimed reviewer**, as a `Possible: Perf:`.
+
 - [x] **BUG-277 — An `overwrite=True` atomic write can raise `AlreadyExists` when the SFTP fallback cannot clear the destination**
   spec: AW-003, SFTP-018 · effort: S · audience: user.api
   **Filed and closed inside BUG-272's own review**, which is why it has no

@@ -429,7 +429,14 @@ phases:
           made it unarguable: read_bytes against a refused port consults
           _is_connection_dead three times, twice before the mapping, so the
           replacement rationale round 3 wrote was false in the same way as the
-          one it replaced
+          one it replaced.
+          Annotated, not rewritten, per this trace's own rule from the
+          fix_vacuous phase — a trace states a past reading: **BUG-274 changed
+          that measurement to twice, once before the mapping.** The guards now
+          consult both predicates through _probe_is_futile, so read_bytes' own
+          guard acts instead of declining and the second pre-mapping consult —
+          the classification path it used to fall through to — never happens.
+          The refutation this step records stands; only its figure moved
         outcome: ok
       - file: tests/backends/sftp/test_config.py
         section: "TestSFTPConnectTimePredicateSpace"

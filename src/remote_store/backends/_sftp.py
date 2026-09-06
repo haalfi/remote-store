@@ -829,10 +829,11 @@ class SFTPBackend(Backend):
                 code = getattr(exc, "errno", None)
                 if code == errno.ENOENT:
                     raise NotFound(f"Not found: {path}", path=path, backend=self.name) from None
-                if self._is_connection_dead(exc):
+                if self._probe_is_futile(exc):
                     # See ``read_bytes``: the ancestor walk below would re-enter
                     # the channel this exception says is dead, re-paying
-                    # ``io_timeout`` on each probe.
+                    # ``io_timeout`` on each probe — or, for a host that was
+                    # never reached, the whole connect budget (BUG-274).
                     raise
                 if code is None and self._has_file_ancestor(sftp_path):
                     # ID-209 round-3: paramiko surfaces SSH_FX_FAILURE as
@@ -921,7 +922,7 @@ class SFTPBackend(Backend):
                 code = getattr(exc, "errno", None)
                 if code == errno.ENOENT:
                     raise NotFound(f"Not found: {path}", path=path, backend=self.name) from None
-                if self._is_connection_dead(exc):
+                if self._probe_is_futile(exc):
                     # The classification below re-enters the channel this
                     # exception says is unusable, and the cached client is still
                     # set (``_map_exception`` clears it only once this raise
@@ -930,6 +931,14 @@ class SFTPBackend(Backend):
                     # Same reasoning as the ``connection_lost`` guard in
                     # ``write_atomic`` / ``open_atomic``: classify no further,
                     # let the drop be reported.
+                    #
+                    # BUG-274: a host that was never reached is the same
+                    # situation reached a different way, and costs more. There
+                    # is no channel at all, so ``_raise_if_dir`` below
+                    # re-evaluates the lazy ``_sftp`` property and pays the
+                    # entire ``RetryPolicy`` budget a second time — three
+                    # attempts with 2-10 s backoff at shipped defaults — and
+                    # ``_has_file_ancestor`` a third for a nested key.
                     raise
                 # BK-313: lazy is-dir classification — see ``read``.
                 self._raise_if_dir(sftp_path, path)
@@ -1283,9 +1292,10 @@ class SFTPBackend(Backend):
                     if not missing_ok:
                         raise NotFound(f"File not found: {path}", path=path, backend=self.name) from None
                     return
-                if self._is_connection_dead(exc):
+                if self._probe_is_futile(exc):
                     # See ``read_bytes``: classifying past a dead channel re-enters
-                    # it and re-pays ``io_timeout`` on every probe.
+                    # it and re-pays ``io_timeout`` on every probe, and past a host
+                    # that was never reached re-pays the connect budget (BUG-274).
                     raise
                 # BK-313: lazy is-dir classification — see ``read``. Note this
                 # runs before ``missing_ok`` can swallow anything: a directory is
@@ -2051,14 +2061,16 @@ class SFTPBackend(Backend):
         than calling this helper.
 
         *cause* is the failure the caller is classifying, where it has one. When
-        that failure already concludes the connection is dead, this probe is
-        skipped: statting a channel that will not answer buys no classification
-        and pays another ``io_timeout``. Callers with no prior failure
-        — ``read``'s eager check — pass nothing, and are covered instead by the
-        dead-connection re-raise below.
+        that failure already settles that no round-trip can answer, this probe is
+        skipped: statting a server that will not reply buys no classification and
+        pays another bound — ``io_timeout`` for a channel that died, the whole
+        connect retry budget for a host that was never reached, which is what
+        ``write(overwrite=True)`` paid through ``_open_write``. Callers with no
+        prior failure — ``read``'s eager check — pass nothing, and are covered
+        instead by the re-raise below, which is the arm that carries that case.
         """
-        if cause is not None and self._is_connection_dead(cause):
-            return  # caller re-raises; do not re-enter a channel known to be dead
+        if cause is not None and self._probe_is_futile(cause):
+            return  # caller re-raises; do not re-enter a channel that cannot answer
         try:
             st = self._sftp.stat(sftp_path)
         except OSError as exc:
@@ -2075,13 +2087,20 @@ class SFTPBackend(Backend):
             # reports the failure with a different errno.
             if getattr(exc, "errno", None) in (errno.EACCES, errno.EPERM):
                 raise
-            if self._is_connection_dead(exc):
+            if self._probe_is_futile(exc):
                 # A dead channel is not "cannot classify": swallowing it leaves
                 # the caller to re-enter the same channel and pay ``io_timeout``
                 # a second time, and the eager caller (``read``) has no original
                 # error for it to stand aside for. Report the drop instead —
                 # ``_map_exception`` maps it to ``BackendUnavailable`` and clears
                 # the client, so the next operation reconnects (SFTP-030).
+                #
+                # BUG-274: this arm is what ``read`` relies on. Its check is
+                # eager, so the *first* ``_sftp`` evaluation of the operation
+                # happens here, and a connect that never succeeded surfaces as
+                # this stat's own failure with no *cause* to stand aside for.
+                # Swallowing it sent ``read`` on to its own open and a second
+                # connect budget.
                 raise
             return  # cannot classify — let the caller's original error stand
         if st is not None and st.st_mode is not None and stat.S_ISDIR(st.st_mode):
@@ -2559,7 +2578,7 @@ class SFTPBackend(Backend):
             except OSError as exc:
                 if getattr(exc, "errno", None) == errno.ENOENT:
                     return False  # ancestor missing, not a file
-                if self._is_connection_dead(exc):
+                if self._probe_is_futile(exc):
                     # A dead channel is not an opaque classification failure.
                     # Swallowing it returns ``False``, the caller's original
                     # (non-dead) error surfaces, and ``_map_exception`` maps that
@@ -2568,6 +2587,13 @@ class SFTPBackend(Backend):
                     # operation that actually surfaced the drop. Reachable when
                     # the channel dies between the caller's failure and this walk.
                     # Same reasoning as ``_raise_if_dir``.
+                    #
+                    # The unreachable half (BUG-274) is unreachable *from the
+                    # three read-side callers*, whose own guards now stop ahead
+                    # of this walk. It is asked anyway rather than left to that:
+                    # this walk evaluates the lazy ``_sftp`` property once per
+                    # ancestor, so a guard correct only because a sibling fires
+                    # first is one refactor from paying a budget per level.
                     raise
                 # Opaque error walking the chain (below the base) — be
                 # conservative and let the caller's original failure
@@ -2730,6 +2756,15 @@ class SFTPBackend(Backend):
         pinned by ``test_a_host_never_reached_maps_to_backend_unavailable``,
         which seeds a sentinel first.)
 
+        Those guards **reach** this predicate through ``_probe_is_futile``, and
+        the distinction is why: reaching them and acting on them are different
+        things, and a guard that consulted only the other predicate declined for
+        every shape below, then fell through to a classification path that paid
+        the connect retry budget again. What a caller pays is enumerated in
+        ``TestSFTPUnreachableHostCostsOneConnect`` on the same terms as what a
+        caller gets — one ``_connect`` entry per operation, generated over the
+        same axes rather than argued here.
+
         Three shapes reach here, none of them matched by the errno dispatch in
         ``_map_exception``:
 
@@ -2783,6 +2818,36 @@ class SFTPBackend(Backend):
             errno.ENETDOWN,
             errno.EHOSTDOWN,
         )
+
+    @classmethod
+    def _probe_is_futile(cls, exc: Exception) -> bool:
+        """Return True if no further round-trip can classify *exc* — re-raise instead.
+
+        **This is the re-entry guards' own question, and it is a third one**:
+        not "is a connection the backend had now unusable" (``_is_connection_dead``)
+        nor "was the host ever reached" (``_is_unreachable``), but "will probing
+        again buy the caller anything". Both of those conclude ``BackendUnavailable``
+        and neither leaves a channel that can answer a ``stat``, so both make a
+        probe futile — which is why the pair travels together here rather than
+        being widened into each other. Keeping them separate is what the mapping
+        turns on: they answer different questions, and merging them would put a
+        connect-time shape on the dropped-connection arm.
+
+        A guard that asks only ``_is_connection_dead`` declines for every shape
+        ``_is_unreachable`` claims, so control falls through to a classification
+        path that re-evaluates the lazy ``_sftp`` property and pays the whole
+        ``RetryPolicy`` budget again. Measured before this method existed, over
+        the product of connect-time shape and operation: 16 of 36 cells entered
+        ``_connect`` two or three times.
+        ``TestSFTPUnreachableHostCostsOneConnect`` pins one entry per cell.
+
+        **Reached only from a guard, never from ``_map_exception``.** The mapping
+        must keep asking the two predicates separately, because it dispatches on
+        *which* is true — the arms differ in their message and in what they say
+        about the host. This method is for the sites that only need to know
+        whether to stop.
+        """
+        return cls._is_connection_dead(exc) or cls._is_unreachable(exc)
 
     def _unreachable_message(self, exc: Exception) -> str | None:
         """Return the message for an unreachable-host signal, or ``None`` to keep the driver's.
