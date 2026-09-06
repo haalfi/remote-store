@@ -2374,10 +2374,16 @@ class TestSFTPUnreachableHostCostsOneConnect:
     ``TestSFTPConnectTimePredicateSpace`` above asserts *what* each connect-time
     shape answers and deliberately asserts no connect count; this class asserts
     the cost, which is the half that was free to drift. It did: run against the
-    pre-fix backend, **16 of these 72 cells failed** — 91 ``_connect`` entries
-    where 72 were owed — so a caller against a down store paid the whole
+    pre-fix backend, **22 of these 84 cells failed** — 111 ``_connect`` entries
+    where 84 were owed — so a caller against a down store paid the whole
     ``RetryPolicy`` budget (three attempts with 2-10 s backoff at shipped
     defaults) over again per extra cycle.
+
+    **Scope, and it is narrower than "an unreachable host" sounds.** Every cell
+    builds a fresh backend whose *first* ``_sftp`` evaluation fails. A transport
+    that dies mid-operation and then fails to reconnect reaches guards no cell
+    here touches and still costs up to three budgets; that is BUG-278, and this
+    class must not be read as ruling it out.
 
     **What is asserted is one entry into ``_connect``, not a probe count.** The
     budget is what a caller waits on and what the re-entry guards exist to
@@ -2391,18 +2397,27 @@ class TestSFTPUnreachableHostCostsOneConnect:
 
     SHAPES = TestSFTPConnectTimePredicateSpace.SHAPES
 
-    #: **Every operation that reaches the backend**, not a sample: the eight
-    #: measured over one cycle before the fix and every other one, each with the
-    #: argument shape that reaches a distinct guard path (a nested key walks
-    #: ancestors, ``overwrite=True`` skips the eager stat). Derived from
-    #: ``[n for n, v in vars(SFTPBackend).items() if not n.startswith("_")]``
-    #: minus the four that issue no request — ``close``, ``native_path``,
-    #: ``to_key``, ``unwrap`` — and ``resolve``, which is pure path arithmetic.
-    #: The controls are not padding and the completeness is not either: the fix
-    #: widens shared guards, so an operation that *gains* a cycle would
-    #: otherwise be invisible, and the ten guard sites left asking
-    #: ``_is_connection_dead`` alone are load-bearing only for operations in
-    #: this tuple's second half.
+    #: **Every operation that reaches the backend**, not a sample, each with the
+    #: argument shapes that reach a distinct guard path — a nested key walks
+    #: ancestors, ``overwrite=True`` skips the eager stat, ``missing_ok``
+    #: changes what the file-ancestor branch does with its answer.
+    #:
+    #: Derived from ``dir(SFTPBackend)``, **not** ``vars()``: three public
+    #: members are inherited from ``Backend`` and a ``vars()`` walk cannot see
+    #: them, which is how ``read_seekable`` — an operation that moved, since it
+    #: delegates to ``read()`` — was missing from an earlier revision of this
+    #: tuple. Of the 29 public names, excluded are: ``close``, ``native_path``,
+    #: ``to_key``, ``unwrap``, ``resolve``, ``close_is_terminal`` (no request
+    #: issued — path arithmetic, teardown, or a constant); ``capabilities``,
+    #: ``CAPABILITIES``, ``name`` (metadata, not operations); and ``glob``,
+    #: which raises ``CapabilityNotSupported`` before any connect because
+    #: ``SFTPBackend.CAPABILITIES`` has no ``GLOB`` — measured at 0 ``_connect``
+    #: entries on both revisions, so it has no budget to pin.
+    #:
+    #: Completeness is the point, not padding: the fix widens shared guards, so
+    #: an operation that *gains* a cycle would otherwise be invisible, and the
+    #: guard sites left asking ``_is_connection_dead`` alone are load-bearing
+    #: only for operations this tuple must therefore name.
     OPERATIONS = (
         "check_health",
         "exists",
@@ -2412,14 +2427,18 @@ class TestSFTPUnreachableHostCostsOneConnect:
         "get_folder_info",
         "read",
         "read/nested",
+        "read_seekable",
+        "read_seekable/nested",
         "read_bytes",
         "read_bytes/nested",
         "delete",
         "delete/nested",
         "delete/missing_ok",
+        "delete/missing_ok/nested",
         "delete_folder",
         "write",
         "write/overwrite",
+        "write/overwrite/nested",
         "write_atomic",
         "write_atomic/overwrite",
         "open_atomic",
@@ -2458,14 +2477,18 @@ class TestSFTPUnreachableHostCostsOneConnect:
             "get_folder_info": lambda: backend.get_folder_info(flat),
             "read": lambda: backend.read(flat),
             "read/nested": lambda: backend.read(nested),
+            "read_seekable": lambda: backend.read_seekable(flat),
+            "read_seekable/nested": lambda: backend.read_seekable(nested),
             "read_bytes": lambda: backend.read_bytes(flat),
             "read_bytes/nested": lambda: backend.read_bytes(nested),
             "delete": lambda: backend.delete(flat),
             "delete/nested": lambda: backend.delete(nested),
             "delete/missing_ok": lambda: backend.delete(flat, missing_ok=True),
+            "delete/missing_ok/nested": lambda: backend.delete(nested, missing_ok=True),
             "delete_folder": lambda: backend.delete_folder(flat),
             "write": lambda: backend.write(flat, b"x"),
             "write/overwrite": lambda: backend.write(flat, b"x", overwrite=True),
+            "write/overwrite/nested": lambda: backend.write(nested, b"x", overwrite=True),
             "write_atomic": lambda: backend.write_atomic(flat, b"x"),
             "write_atomic/overwrite": lambda: backend.write_atomic(flat, b"x", overwrite=True),
             "open_atomic": enter_open_atomic,

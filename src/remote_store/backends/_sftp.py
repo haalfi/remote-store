@@ -2837,25 +2837,38 @@ class SFTPBackend(Backend):
         ``_is_unreachable`` claims, so control falls through to a classification
         path that re-evaluates the lazy ``_sftp`` property and pays the whole
         ``RetryPolicy`` budget again. Measured before this method existed, over
-        the product of connect-time shape and operation: 16 of 72 cells entered
-        ``_connect`` two or three times, 91 entries where 72 were owed.
+        the product of connect-time shape and operation: 22 of 84 cells entered
+        ``_connect`` two or three times, 111 entries where 84 were owed.
         ``TestSFTPUnreachableHostCostsOneConnect`` pins one entry per cell.
 
-        **Six guard sites reach here; ten still ask ``_is_connection_dead``
-        alone, and that is correct rather than unfinished.** A connect failure
-        can only reach a guard whose operation evaluates the lazy ``_sftp``
-        property inside its own ``try``, and the other ten are unreachable for
-        it three different ways: the temp-cleanup guards in ``write_atomic`` /
-        ``open_atomic`` and ``_restore`` are additionally gated on
-        ``_sftp_client is not None``, which a failed connect never sets;
-        ``_handle``, ``_promote``, ``_displace``, ``_is_absent``,
-        ``_move_fallback`` and ``open_atomic``'s yield-phase close all sit
-        downstream of a handle or a rename that a failed connect never produces;
-        and ``move``'s ``posix_rename`` guard re-raises a non-``ENOENT``
-        destination stat before it is consulted. That reachability argument is
-        not what the guarantee rests on — the enumeration covers every operation
-        that reaches the backend, so an operation whose budget those ten do
-        govern fails there rather than here.
+        **Six of the seventeen guard sites reach here; eleven still ask
+        ``_is_connection_dead`` alone, and the bound on that is a fact about the
+        *fault*, not about those sites.** The six are the ones an operation can
+        reach when its **first** ``_sftp`` evaluation is the one that fails —
+        which is what "a host that was never reached" means, and is the whole of
+        what the enumeration drives, since every cell builds a fresh backend.
+
+        **A transport that dies mid-operation and then fails to reconnect is a
+        different fault and the eleven do not cover it.** ``_sftp`` re-reads
+        ``transport.is_active()`` on every access, so being downstream of a
+        handle says nothing about the connection the *next* access will use:
+        drive ``write_atomic`` with the transport dying between the temp close
+        and the promote, against a host that is then gone, and ``_promote``'s
+        guard declines a connect-time shape exactly as these six used to —
+        measured at three ``_connect`` entries, 12.01 s at shipped defaults.
+        ``_displace``, ``_is_absent`` and ``_move_fallback`` sit on the same
+        footing. That shape is **not fixed here and no test in this suite
+        reaches it**; it is tracked as its own item, because it needs a
+        live-then-dead fixture this suite does not have and it lands in the
+        rename-fallback ladder rather than in the connect path.
+
+        The count above is derived, not carried: an AST walk over this module
+        for calls to either predicate returns nineteen sites, less this method's
+        own body and ``_map_exception``'s dispatch. Line 882's
+        ``is_fatal=_is_connection_dead`` handoff is one of the eleven and is
+        deliberately left: it arms a guard on an **open stream**, where a
+        connect-time shape cannot arise, and widening it would change what a
+        mid-read drop does.
 
         **Reached only from a guard, never from ``_map_exception``.** The mapping
         must keep asking the two predicates separately, because it dispatches on

@@ -524,6 +524,39 @@ compliant the day before.
   that item's own body had cited the migration row as though it were satisfied
   before and after — corrected there.
 
+- [ ] **BUG-278 — A transport that dies mid-operation pays the connect budget up to three times over when the reconnect meets a host that is gone**
+  spec: SFTP-023, SFTP-018 · effort: S · audience: user.api
+  BUG-274's sibling, and **not** covered by it: that item's guarantee is scoped
+  to an operation whose *first* `_sftp` evaluation fails — a host that was never
+  reached — and its enumeration builds a fresh backend per cell, so nothing in
+  the suite puts a live-then-dead transport in front of a guard.
+  **The mechanism.** `_sftp` re-reads `transport.is_active()` on every access,
+  so being downstream of a handle says nothing about the connection the *next*
+  access will use. A transport that dies after a handle is produced makes the
+  next `_sftp` access reconnect, and against a host that is now gone that raises
+  a connect-time shape into a guard which asks `_is_connection_dead` alone and
+  declines — the exact defect BUG-274 fixed at six other sites.
+  **Measured** on BUG-274's head, driving `write_atomic` with the transport
+  flipped inactive between the temp close and the promote, a just-released
+  ephemeral port behind it: **3 `_connect` entries, 12.01 s at shipped
+  defaults** (4 entries / 16.01 s before BUG-274, so that item improved this
+  case without closing it). 12.01 s is the same figure BUG-274 reports as the
+  *defect* for a nested `read_bytes`.
+  **The sites.** `_promote` is the one driven. `_displace`, `_is_absent` and
+  `_move_fallback` each evaluate `_sftp` inside their own `try` on the same
+  footing and are unmeasured. Downstream of `_promote`'s declining guard,
+  `_raise_if_dir` now returns immediately, then `_rename_fallback` → `_displace`
+  → `_is_absent` each re-evaluate `_sftp`.
+  **Disposition:** the one-line shape is `_probe_is_futile` at those four sites,
+  as BUG-274 did elsewhere. What makes this its own item rather than more of
+  that one is the **fixture**: proving it needs a transport that reports active
+  and then does not, which this suite has nowhere, and the four sites sit in the
+  atomic-write rename ladder that BUG-270 / BUG-272 / BUG-277 have just reworked
+  — so the failing test is the work, and it is a different test from BUG-274's.
+  Per the bug-fix protocol, write it and watch it fail first.
+  **Found by BUG-274's round-2 measuring reviewer**, which refuted a
+  reachability argument BUG-274's own round-1 fix pass had written.
+
 - [ ] **BUG-266 — No artifact maps an observable SFTP failure onto the arm that handles it, and four prose attempts were each refuted**
   spec: SFTP-023, SFTP-030 · effort: M · audience: user.site, library.maintainer
   `_map_exception` dispatches on exception *type*, and SFTP-023 states the arms

@@ -43,16 +43,27 @@ surprising_ripples:
   # phase established: a register entry states current fact and gets corrected,
   # a trace states a past reading and gets annotated.
   - sdd/traces/bug-265-sftp-refused-connect.yml
-discovery_followups: []
+discovery_followups:
+  # BUG-278 was born in round 2, from the measuring member driving a transport
+  # death into _promote rather than reading the reachability argument this
+  # item's own round-1 fix pass had written. That argument was refuted: the
+  # eleven unwidened guard sites are not unreachable, they are out of scope,
+  # and the difference is a fact about the fault rather than about the sites.
+  # Filed rather than fixed on the user's decision — it needs a live-then-dead
+  # transport fixture this suite does not have, and its sites sit in the
+  # rename-fallback ladder BUG-270/272/277 have just reworked.
+  - BUG-278
 # Derived from `git log --format='%s' origin/master..HEAD --reverse`, run before
 # this line was written, and counting the commit that carries it. Two rows:
 #   BUG-274: Ask whether another probe can answer, not only whether the channel
 #            died -> does not count (implements the item)
 #   BUG-274: Re-derive the enumeration's size, and widen it to every operation
 #            -> counts (round 1, 5 findings from a solo unprimed reviewer)
-# Value is 1. Re-derive from that command before each push; a review round that
+#   BUG-274: Scope the guarantee to the fault it covers, and file the residue
+#            -> counts (round 2, 5 findings from a solo measuring reviewer)
+# Value is 2. Re-derive from that command before each push; a review round that
 # lands a fix raises it.
-review_rounds: 1
+review_rounds: 2
 phases:
   - id: orient
     name: Orient
@@ -82,15 +93,16 @@ phases:
         extract: >-
           Triggered rows: Bug fix, Backlog item touched, CHANGELOG entry, Spec
           section. **Breaking change was checked and does not trigger** — the
-          error type is unchanged (measured: all 24 operations answered
-          BackendUnavailable before the fix and after), so no except clause
-          stops catching and no migration section is owed
+          error type is unchanged (measured: every operation answered
+          BackendUnavailable before the fix and after — re-confirmed in round 2
+          across all 84 cells on both revisions), so no except clause stops
+          catching and no migration section is owed
         outcome: ok
   - id: reproduce
     name: Reproduce by measurement
     steps:
       - file: src/remote_store/backends/_sftp.py
-        section: "_is_connection_dead, _is_unreachable, the 14 guard sites"
+        section: "_is_connection_dead, _is_unreachable, the guard sites"
         read_type: gate
         extract: >-
           Counted _connect entries per operation against a just-released
@@ -100,16 +112,19 @@ phases:
           more than one cycle, and one of them —
           `write(path, content, overwrite=True)` via _open_write ->
           _raise_if_dir's cause guard — is named nowhere in the item's body.
-          Extended to the product of shape x operation: **72 cells, 91 cycles,
-          16 cells over one**.
-          Retrospective: this said "48 cells, 67 cycles" until round 1, and
-          three shipped artifacts said "16 of 36" — the enumeration was written
-          with 16 operations, the figure was then carried while the tuple grew
-          to 24, and 36 was never any basis's answer at all. Re-derived by
-          running the enumeration itself against the pre-fix backend
-          (`git checkout origin/master -- src/remote_store/backends/_sftp.py`,
-          run, restore), which reproduces where a recount by hand is what
-          produced the wrong number twice
+          Extended to the product of shape x operation: **84 cells, 111
+          cycles, 22 cells over one, five operations moved**.
+          Retrospective, and this figure moved twice under review. It said "48
+          cells, 67 cycles" while three shipped artifacts said "16 of 36" — the
+          enumeration was written with 16 operations, the figure carried while
+          the tuple grew, and 36 was never any basis's answer. Round 1 re-derived
+          it at 72; round 2 found the population itself short, since
+          `read_seekable` is inherited from `Backend` and the stated
+          `vars(SFTPBackend)` derivation cannot see it. The derivation that
+          finally holds does not recount anything: `tmp/totals.py` imports the
+          test class's own OPERATIONS and _call and runs them against the
+          pre-fix backend, so the prose figure and the suite's cells cannot
+          disagree by construction
         outcome: ok
       - file: tests/backends/sftp/test_config.py
         section: "TestSFTPConnectTimePredicateSpace"
@@ -227,6 +242,60 @@ phases:
           so explicitly ("check_health is unaffected: it has no re-entry
           guard"). Rewritten to say which four operations moved and to state
           that nothing else did
+        outcome: ok
+  - id: fix_round_2
+    name: Round-2 fix pass (solo measuring reviewer)
+    steps:
+      - file: src/remote_store/backends/_sftp.py
+        section: "_probe_is_futile (reachability paragraph)"
+        read_type: gate
+        extract: >-
+          **The round-1 fix pass answered a reviewer's request for a written
+          reason by writing one that was false, and a measuring round refuted it
+          in the only way prose cannot argue back from.** The paragraph claimed
+          a connect failure reaches a guard only where the operation evaluates
+          _sftp inside its own try, then excluded _promote — which does exactly
+          that — on a different ground. _sftp re-reads transport.is_active() on
+          every access, so a transport dying after a handle was produced sends
+          the next access to _connect. Driven: write_atomic with the transport
+          flipped inactive between the temp close and the promote, 3 _connect
+          entries and 12.01 s at shipped defaults, the same figure this item
+          publishes as the defect for a nested read_bytes. Reproduced
+          independently before acting on it. The paragraph's fallback — that the
+          enumeration would catch it anyway — was false for a second reason: no
+          cell can put a live-then-dead transport in front of a guard, because
+          every cell builds a fresh backend. Rewritten to scope the guarantee to
+          the fault it covers; residue filed as BUG-278 on the user's decision
+        outcome: misleading
+      - file: tests/backends/sftp/test_config.py
+        section: "TestSFTPUnreachableHostCostsOneConnect (OPERATIONS)"
+        read_type: verify
+        extract: >-
+          Round 1 widened this tuple to "every operation that reaches the
+          backend" and named its derivation; round 2 ran that derivation and it
+          did not produce the tuple. vars(SFTPBackend) cannot see members
+          inherited from Backend, and read_seekable is one — an operation that
+          delegates to read() and therefore moved, 2/2/1 flat and 3/2/1 nested
+          on the base. A fifth operation, absent from a tuple whose whole claim
+          was completeness. Derivation restated over dir() with every exclusion
+          accounted for, and three cells added: read_seekable, its nested
+          variant, and delete/missing_ok/nested, all of which fail pre-fix
+        outcome: ok
+      - file: sdd/specs/009-sftp-backend.md
+        section: "SFTP-023 (one-budget clause)"
+        read_type: verify
+        extract: >-
+          Two claims refuted by cells that did not exist. "Each with a nested key
+          costing three where a flat one cost two" distributes over four
+          operations and is backwards for write(overwrite=True):
+          _ensure_parent_dirs runs ahead of _open_write, so a nested key issues
+          the first request and costs *one* cycle against a flat key's two —
+          nesting makes it cheaper. Nothing contradicted it because OPERATIONS
+          had no nested write/overwrite cell; there is one now. And the
+          wall-clock table's check_health row (4.37 -> 4.10 s) was process
+          warm-up compared against another machine's reading, printed as a
+          saving in the row whose stated job was to show nothing moved. Whole
+          table re-measured on one machine, both revisions, first call discarded
         outcome: ok
   - id: verify
     name: Verify
