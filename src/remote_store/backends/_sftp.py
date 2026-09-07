@@ -2595,21 +2595,27 @@ class SFTPBackend(Backend):
                     # the channel dies between the caller's failure and this walk.
                     # Same reasoning as ``_raise_if_dir``.
                     #
-                    # The unreachable half (BUG-274) is unreachable from the
-                    # three read-side callers, which all stop earlier —
-                    # ``read_bytes`` and ``delete`` at their own guards,
-                    # ``read`` at the eager ``_raise_if_dir``, which is not
-                    # read's own guard. It is asked anyway rather than left to
-                    # that:
-                    # this walk evaluates the lazy ``_sftp`` property once per
-                    # ancestor, so a guard correct only because a sibling fires
-                    # first is one refactor from paying a budget per level.
-                    #
-                    # Unasserted for that half, like ``read``'s open guard: no
+                    # The unreachable half (BUG-274) is out of reach of the three
+                    # read-side callers *when the connect is the operation's
+                    # first* — they stop earlier, ``read_bytes`` and ``delete``
+                    # at their own guards and ``read`` at the eager
+                    # ``_raise_if_dir``, which is not read's own guard. So no
                     # cell of ``TestSFTPUnreachableHostCostsOneConnect``
                     # distinguishes the widened predicate here from the narrow
-                    # one, so reverting this line is free today and not free
-                    # after the refactor above.
+                    # one: this walk evaluates the lazy ``_sftp`` property once
+                    # per ancestor, and that is the cost the widening protects.
+                    #
+                    # **It is asserted, on the live-channel path.** When a
+                    # caller's own failure is an errno-less SSH_FX_FAILURE —
+                    # which neither predicate claims — ``read_bytes``'s guard
+                    # declines, ``_raise_if_dir``'s stat is swallowed, and the
+                    # walk is what re-enters; if the transport has died by then
+                    # and the reconnect meets a gone host, this guard is what
+                    # answers. ``TestSFTPProbeReconnectsIntoGoneHost``'s nested
+                    # cell drives exactly that, so reverting this line to
+                    # ``_is_connection_dead`` fails one test. That was not true
+                    # when this comment first said the revert was free; the test
+                    # that made it false landed in the same PR, one round later.
                     raise
                 # Opaque error walking the chain (below the base) — be
                 # conservative and let the caller's original failure
@@ -2897,8 +2903,16 @@ class SFTPBackend(Backend):
         own guards, ``read`` at that same eager ``_raise_if_dir``, which is
         **not** ``read``'s own guard and is the distinction an earlier revision
         of this sentence collapsed. Both are widened prophylactically rather
-        than because the fault reaches them, and reverting either leaves the
-        suite green today; each site says so where it sits.
+        than because *this* fault reaches them.
+
+        **The two differ in whether anything asserts them, and only one is
+        free to revert.** Reverting ``read``'s open guard leaves the whole SFTP
+        suite green. Reverting the walk guard fails one test —
+        ``TestSFTPProbeReconnectsIntoGoneHost``'s nested cell, which reaches it
+        on the *live-channel* path where a swallowed classification stat lets
+        the ancestor walk be what re-enters. The zero above is a fact about the
+        enumeration, which drives only first-evaluation failures; it is not a
+        claim that nothing covers the site. Each site says so where it sits.
 
         **A transport that dies mid-operation and then fails to reconnect is a
         different fault and the eleven do not cover it.** ``_sftp`` re-reads

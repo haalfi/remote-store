@@ -64,7 +64,7 @@ discovery_followups:
   - BUG-278
   - BUG-279
 # Derived from `git log --format='%s' origin/master..HEAD --reverse`, run before
-# this line was written, and counting the commit that carries it. Six rows:
+# this line was written, and counting the commit that carries it. Eight rows:
 #   BUG-274: Ask whether another probe can answer, not only whether the channel
 #            died -> does not count (implements the item)
 #   BUG-274: Re-derive the enumeration's size, and widen it to every operation
@@ -80,12 +80,17 @@ discovery_followups:
 #   BUG-274: Give the cost invariant its own spec ID, and pin the live-channel
 #            change -> counts (round 5, 7 findings after dedup from a
 #            three-member panel: unprimed, measuring, whole-file)
-# Value is 5. Re-derive from that command before each push; a review round that
+#   BUG-274: Make both probe cells earn their place, and withdraw the
+#            client-clearing claim -> counts (round 6, 5 findings after dedup
+#            from a three-member panel)
+#   BUG-274: Say that the walk guard is asserted now that it is -> counts
+#            (closing measuring pass, 3 findings)
+# Value is 7. Re-derive from that command before each push; a review round that
 # lands a fix raises it. Retrospective: the lead-in above said "Two rows" over a
 # four-row list until round 4 — rounds 2 and 3 each appended a row and left the
 # phrase, and the value stayed right while the list it was checkable against did
 # not, which is the quiet half of this failure.
-review_rounds: 5
+review_rounds: 7
 phases:
   - id: orient
     name: Orient
@@ -568,6 +573,48 @@ phases:
           stop covering two. The clearing claim is withdrawn from the test, the
           spec, the CHANGELOG and the register rather than corrected, because
           measurement left nothing of it
+        outcome: ok
+  - id: fix_closing
+    name: Closing fix pass (narrow measuring pass)
+    steps:
+      - file: src/remote_store/backends/_sftp.py
+        section: "_has_file_ancestor guard comment, _probe_is_futile"
+        read_type: verify
+        extract: >-
+          **The round-6 fix falsified a comment the round-5 fix wrote, inside one
+          PR.** Both said reverting the walk guard "is free today"; the nested
+          cell added to pin the live-channel path reaches exactly that guard, so
+          reverting it now fails one test — measured, 1 failed / 467 passed over
+          tests/backends/sftp. The zero consultations figure is still right and
+          was never the problem: it is a fact about the enumeration, which drives
+          only first-evaluation failures, and it was being read as a claim that
+          nothing covers the site. Both copies now separate the two — read's open
+          guard is genuinely free to revert (468 passed), the walk guard is not
+        outcome: ok
+      - file: sdd/BACKLOG-DONE.md
+        section: "(item) BUG-274, minted-ID paragraph"
+        read_type: verify
+        extract: >-
+          The paragraph justifying SFTP-010's place in the spec field said the
+          live-channel change "turns on its tier-2 wording", and the paragraph
+          eleven lines below said tier 2 is not what changed. The reviewer
+          measured which is right: the transport flag goes False and _sftp
+          reconnects, which is tier 1 — tier 2 is the drop that leaves the flag
+          True with the channel dead, and it neither fires nor is depended on.
+          The ID stays for the reason the filed item had it; the false
+          justification is replaced rather than deleted, since it is the kind a
+          reader would re-derive
+        outcome: ok
+      - file: sdd/specs/009-sftp-backend.md
+        section: "## Connection / SFTP-031 boundary"
+        read_type: verify
+        extract: >-
+          Moving SFTP-031 into ## Connection put it after the section rule rather
+          than before it, so the `---` sat between two clauses and ## Filesystem
+          Model lost the separator every other section heading in the file has.
+          No gate catches this — docs-check and mkdocs --strict both pass — but
+          the rule renders. Derived by diffing separator and heading line numbers
+          between the two commits rather than by eye
         outcome: ok
   - id: verify
     name: Verify

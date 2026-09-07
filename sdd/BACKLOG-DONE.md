@@ -228,8 +228,14 @@ if evidence changes; these are retired.
   drafted under SFTP-023, whose subject is `BackendUnavailable` *mapping*, which
   left the what-a-caller-gets and what-a-caller-pays tests sharing one ID and so
   unable to be told apart by the traceability gate. SFTP-009 gained the
-  back-reference it lacked; SFTP-010 is back in this field because the
-  live-channel change below turns on its tier-2 wording.
+  back-reference it lacked. SFTP-010 is back in this field because it is where
+  the filed item carried it and because the six widened guards are its
+  staleness-and-reconnect machinery — **not** because the live-channel change
+  turns on its tier-2 wording, which an earlier revision of this paragraph
+  claimed and the paragraph below refutes. Measured: in that scenario the
+  transport flag goes `False` and `_sftp` reconnects, which is tier 1; tier 2 is
+  the drop that leaves the flag `True` with the channel dead, and it neither
+  fires nor is depended on here.
   **A second, narrower behaviour change shipped with it**, and is recorded here
   because four other artifacts record it and this register was the one that did
   not. At `_raise_if_dir`'s classification stat and `_has_file_ancestor`'s walk,

@@ -200,9 +200,6 @@ self-heal for a channel-only death by clearing the client on every
 round-trip. A dropped connection surfaces as `BackendUnavailable` and the
 following call re-establishes it — recovery may take one failed call when the
 drop is channel-only (tier 2).
-
----
-
 ### SFTP-031: Connect Budget Per Operation
 
 **Invariant:** an operation against a host that was never reached enters
@@ -259,6 +256,8 @@ The clause is about the *budget*, not about probe counts: how many round-trips a
 classification path would have made is the operation's own business, and the
 enumeration above deliberately pins neither that nor which predicate claimed a
 shape.
+
+---
 
 ## Filesystem Model
 
