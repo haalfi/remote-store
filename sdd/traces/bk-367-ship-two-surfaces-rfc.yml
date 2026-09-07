@@ -1,0 +1,141 @@
+id: BK-367
+title: "The /ship loop reviews its own record past round 2, and nothing separates the two"
+trigger: >-
+  BUG-274's close report said that past round 3 the loop was largely auditing
+  its own prose, named three self-inflicted defects (a rationale written on
+  request, an attribution carried from a report, a test that could not fail)
+  and one process failure (a fix pass started under a certifying reviewer).
+  The user asked for a design of the next /ship, founded on evidence rather
+  than on the round count.
+source_items:
+  - BK-367
+  - BK-365
+  - BK-366
+audience:
+  - contributor.process
+expected_ripples:
+  - sdd/BACKLOG.md
+# Derived from `git log --format='%s' origin/master..HEAD --reverse` before this
+# line was written: one commit, which files the item and the RFC. Value is 0.
+review_rounds: 0
+phases:
+  - id: orient
+    name: Orient
+    steps:
+      - file: sdd/CONTENT-RULES.md
+        section: "Rule 7"
+        read_type: gate
+        extract: "The author-side test; binds sdd/ and .claude/, so the RFC itself"
+        outcome: ok
+      - file: sdd/research/research-appropriate-level-of-detail.md
+        section: "§ 5.2, § 6.3, § 9.2, § 9.4"
+        read_type: reference
+        extract: >-
+          § 6.3 names the positive feedback loop (each fix adds claims, claims
+          are what the next round reads); § 5.2 says explanatory prose is where
+          self-assessment fails most; § 9.4 is marked Adopt and is adopted in
+          no skill. These three carry the RFC's causes B and D
+        outcome: ok
+      - file: sdd/BACKLOG.md
+        section: "BK-365, BK-366"
+        read_type: gate
+        extract: >-
+          BK-365 measures the entry growth the loop's diary produces; BK-366
+          asks for a caught-versus-escaped classification the origin tag can
+          supply per delivery
+        outcome: ok
+      - file: .claude/skills/ship/SKILL.md
+        section: "(full)"
+        read_type: gate
+        extract: >-
+          Triage has no fix-shape constraint; the tree check is post-hoc; brief
+          requirement 3's distribution is computed by hand; the repeat-site
+          check fires after two refutations
+        outcome: ok
+      - file: sdd/adrs/0033-ship-convergence-driven-review.md
+        section: "(full), with 0034, 0035, 0036, 0037"
+        read_type: gate
+        extract: >-
+          Each record's Amends field read for its own targets. The whole-file
+          gate (0037) is the one that enlarged the reviewed surface to include
+          the loop's diary
+        outcome: ok
+      - file: .claude/skills/rvw-pr/SKILL.md
+        section: "Measuring pass, Step 1, Step 4 comment rules"
+        read_type: reference
+        extract: "The FILE subject route, and the shared tmp/base path that caps panels at one measurer"
+        outcome: ok
+      - file: .claude/skills/fix-pr/SKILL.md
+        section: "Rules"
+        read_type: reference
+        extract: "The action-claim rule binds replies; nothing binds the shape of the fix"
+        outcome: ok
+      - file: sdd/traces/bug-274-unreachable-host-connect-budget.yml
+        section: "fix_round_2, fix_round_5, review_rounds comment"
+        read_type: reference
+        extract: "The four failures the RFC maps onto its causes, in the trace's own words"
+        outcome: ok
+      - file: sdd/traces/bug-265-sftp-refused-connect.yml
+        section: "fix_enumerated, fix_vacuous, fix_reverted, review_rounds comment"
+        read_type: reference
+        extract: "Three refuted rationales, the EPERM claim-and-revert, the derivation comment stale four times"
+        outcome: ok
+      - file: sdd/traces/_schema.yml
+        section: "review_rounds"
+        read_type: gate
+        extract: >-
+          The field's derivation clause is what D1 and D4 replace. Followed as
+          written for this trace, since the rule in force is the current one
+        outcome: ok
+      - file: sdd/000-process.md
+        section: "Document types"
+        read_type: gate
+        extract: "'let's do X this way' is an RFC; the user chose that form"
+        outcome: ok
+      - file: docs-src/_path_rules.yml
+        section: "rfcs"
+        read_type: verify
+        extract: >-
+          Glob is rfc-*.md and the scanner globs Markdown only, so the two
+          derivation scripts beside the RFC are invisible to the bridge, as
+          the research directory's two .py files already are
+        outcome: ok
+  - id: measure
+    name: Measure
+    steps:
+      - file: sdd/rfcs/rfc-0015-findings.py
+        section: "(full)"
+        read_type: verify
+        extract: >-
+          Blame of each finding's line at the head the reviewer saw, against
+          that head's own merge-base and first commit. 19 PRs, 541 findings:
+          loop-introduced share by round 3%, 46%, 77%, 93%, 80%, 85%, 85%;
+          160 file-level findings unclassifiable. Sixteen reviewed heads were
+          absent from the PR refs (rebased away) and were fetched by SHA
+        outcome: ok
+      - file: sdd/rfcs/rfc-0015-rounds.py
+        section: "(full)"
+        read_type: verify
+        extract: "26 traces since the whole-file gate at median 7; 213 before at median 2"
+        outcome: ok
+      - file: tmp/wt-measure
+        section: "hatch run lint in a fresh worktree"
+        read_type: verify
+        extract: "31.5 s for environment creation plus the full lint gate, one run; the worktree was removed after"
+        outcome: ok
+  - id: design
+    name: Design
+    steps:
+      - file: sdd/templates/rfc-template.md
+        section: "(full)"
+        read_type: gate
+        extract: "Section shape; Impact fields adapted for a process change"
+        outcome: ok
+      - file: sdd/rfcs/rfc-0015-ship-two-surfaces.md
+        section: "(full)"
+        read_type: reference
+        extract: >-
+          Six decisions, each with rule, mechanism, evidence and reversal
+          condition, over four structural causes. Every figure names its
+          derivation and the two long derivations are committed beside it
+        outcome: ok
