@@ -398,7 +398,33 @@ mapped to `NotFound`.
 
 ### SFTP-021: PermissionDenied Mapping
 
-**Invariant:** `IOError` with `errno.EACCES` (errno 13) is mapped to `PermissionDenied`.
+**Invariant:** `IOError` with `errno.EACCES` (errno 13) **or `errno.EPERM`**
+(errno 1) is mapped to `PermissionDenied`.
+
+**Both errnos take one arm of the errno dispatch, and the single site is the
+guarantee.** Which stat or open a denial lands on depends on the method, the
+`overwrite` flag, and even the key's depth — `_ensure_parent_dirs` stats
+ancestors, which a depth-0 key does not have. None of that is visible to a
+caller, so none of it may decide their error type. Every operation classifies
+through the dispatch, so answering there is the only placement under which the
+site set stops mattering. No count is given deliberately: the point is that the
+set need not be enumerated, and a number here would invite the next reader to
+re-derive a boundary this arm exists to remove.
+
+**Guarding the sites individually was tried twice and does not converge**: each
+subset drew a boundary somewhere a caller cannot see — first between `write`'s
+two overwrite modes, then between `read_bytes` and `get_file_info` on one path
+and one denial. Every `Raises:` block that names a permission errno therefore
+states the same rule; `check_health`'s names none, and the three listing methods
+describe the answer in prose rather than a `Raises:` block. This also puts SFTP
+where `LocalBackend` already is, which catches bare `PermissionError` and so has
+always answered both errnos alike.
+
+**The bound, stated rather than hidden:** the dispatch sees only the exception,
+so a **connect-time** `EPERM` — a connect this machine rejected locally — is
+answered as a denial naming the caller's key. That was already true of `EACCES`;
+making the two alike is what lets one fix reach both, and repairing it needs
+connect-time context only `_connect` has (SFTP-023).
 
 ### SFTP-022: AlreadyExists Mapping
 
@@ -483,32 +509,34 @@ Every other `OSError` the errno dispatch declines keeps the base
 `RemoteStoreError` — `EIO` and `ENOSPC` are faults of a connection that is
 working.
 
-**The two permission errnos are known exclusions rather than oversights**, and
-one reason covers both: this mapping sees only the exception, so it cannot tell
-a connect-time errno from a live-channel one. paramiko re-raises `EACCES` and
-`EPERM` unwrapped like `ENETUNREACH` / `ENETDOWN` / `EHOSTDOWN`, and what each
-then reaches differs:
+**The two permission errnos are known exclusions rather than oversights.** One
+reason covers the pair — this mapping sees only the exception, so it cannot tell
+a connect-time errno from a live-channel one — but what keeps each *individually*
+out differs, and that per-errno evidence is below. paramiko re-raises `EACCES` and
+`EPERM` unwrapped like `ENETUNREACH` / `ENETDOWN` / `EHOSTDOWN`, and **both now
+reach the same arm and are answered `PermissionDenied`** (SFTP-021) — naming the
+caller's key on a keyed operation, and a bare `Permission denied: ` on
+`check_health`. For a connect that never left the machine that is the wrong
+type, identically for each.
 
-- `EACCES` takes the `EACCES` arm and is answered `PermissionDenied` — naming
-  the caller's key on a keyed operation, and a bare `Permission denied: ` on
-  `check_health`. **Whether any connect produces it is unestablished**; BUG-273
-  records the trigger as unknown, so this is what would happen and not a
-  behaviour a reader can currently observe.
-- `EPERM` has no arm at all and falls to the generic one as the base
-  `RemoteStoreError`. This is the local rejection that *is* reproducible — a
-  netfilter `REJECT` on the `OUTPUT` chain yields it — so it is the shape a
-  reader meets, and it is BUG-265's own defect surviving in the errno the
-  connect-time set does not claim. **BUG-273 carries this half** — a fix needs
-  the connect-time context, which only `_connect` has. BUG-275 carries the
-  absent `EPERM` arm itself, an older live-channel defect and the reason the
-  fall-through lands where it does; it would change this shape's answer from
-  the base class to `PermissionDenied`, which is still not the promised type.
+**BUG-273 carries both halves, and they are one shape rather than two.** A fix
+needs the connect-time context only `_connect` has. What differs is only how
+reachable each is: a netfilter `REJECT` on the `OUTPUT` chain reproduces the
+`EPERM` shape, so that is the one a reader meets, while whether any connect
+produces `EACCES` is unestablished. Before SFTP-021 claimed `EPERM` the two
+answered differently and the item would have had to fix them separately.
 
-Neither is claimed here because `_raise_if_dir`'s permission re-raise
-deliberately passes **both** back through this mapping from a working channel,
-so claiming either would answer a server-reported denial with
-`BackendUnavailable` and discard a healthy client. BUG-273 carries that
-exclusion for both.
+Neither is claimed *here* — in the unreachable set — and the evidence differs
+per errno. `EACCES` reaches this mapping from a *working* channel on any denied
+operation: paramiko's `SFTPClient._convert_status` renders
+`SSH_FX_PERMISSION_DENIED` as `IOError(EACCES)`, measured on paramiko 5.0.0. So
+claiming it would answer a server-reported denial with `BackendUnavailable` and
+discard a healthy client. **No live-channel producer of `EPERM` is known**: no
+SFTP status code renders as that errno, so it arrives only from outside the SFTP
+protocol. (paramiko's renderer, not this module's errno dispatch, which
+SFTP-021 gives an `EPERM` arm.) It stays excluded because claiming it would take away the
+`PermissionDenied` SFTP-021 now guarantees and clear the client with it, and
+because the widening was tried and measured harmful.
 
 **Every** `BackendUnavailable` this mapping returns — the `SSHException` family
 included — invalidates the cached SFTP client so the next operation reconnects

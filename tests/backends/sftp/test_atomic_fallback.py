@@ -423,7 +423,11 @@ def test_a_refused_displace_reports_rather_than_writing_the_destination(sftp_bac
         else:
             backend.write_atomic(dst, new, overwrite=True)
 
-    with pytest.raises(RemoteStoreError) as caught:
+    # ``PermissionDenied``, not the base class: this drives ``EPERM``, and the
+    # errno dispatch answers both permission errnos alike (SFTP-021), so this is
+    # now symmetric with its ``EACCES`` twin above. Asserted exactly, because a
+    # narrowing of that arm leaves this file green under the base class.
+    with pytest.raises(PermissionDenied) as caught:
         _run()
 
     assert not isinstance(caught.value, AlreadyExists), (

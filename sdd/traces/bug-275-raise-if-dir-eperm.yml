@@ -1,0 +1,321 @@
+id: BUG-275
+title: "A permission-denied SFTP failure raises PermissionDenied for one of the two errnos its callers name"
+trigger: |
+  _map_exception's errno dispatch had an EACCES arm and none for EPERM, so a
+  denial reported with EPERM reached the caller as the base RemoteStoreError.
+  The divergence was noticed at _raise_if_dir, whose re-raise names both errnos
+  and whose docstring, inline comment, register entry and published migration
+  row all promise PermissionDenied for both — hence this file's slug. It took
+  three rounds to establish that the guard was not where the defect lived.
+source_items:
+  - BUG-275
+  - BUG-265
+  - BK-316
+audience:
+  - user.api
+  - user.api_docs
+surprising_ripples:
+  # Neither the backlog item's four-artifact list nor the ripple-check table
+  # named this one: BUG-265's own v0.31.0 scope note asserts "the classification
+  # stat ... still answers exactly as it did", which this change falsifies in
+  # the same unreleased section.
+  - docs-src/reference/migration.md
+# No expected_ripples, on the third answer. sdd/backlogid.json is what the
+# ripple-check row anticipates after a BACKLOG/BACKLOG-DONE edit, and this note
+# has been wrong twice in opposite directions, so it states the derivation
+# rather than a conclusion. gen_backlogid takes the max per prefix from
+# BACKLOG-DONE.md only, so BUG-275 moving there does not raise it (275 <= the
+# stored 277). A second item filed and closed inside this branch did raise it —
+# until the rebase onto BUG-274 showed that ID had been minted concurrently by
+# that session for a different item, which `gen_backlogid --check` reported as a
+# collision. It was folded into BUG-275's register entry and the floor returned
+# to master's 277, so this PR does not touch the file.
+# Derivation, stated as a rule because every commit-based spelling of this has
+# gone stale: count this file's own review-driven phases — `rg '^  - id: (fix|replan)'`
+# over this trace — which is what a rebase cannot orphan. Two earlier spellings
+# did: one said 'minus the one implementing commit' and yielded 6 against a
+# value of 4, and by then there were two implementing commits; the branch was
+# then flattened onto BUG-274, which would have orphaned any SHA list too.
+review_rounds: 4
+phases:
+  - id: orient
+    name: Orient
+    steps:
+      - file: sdd/BACKLOG.md
+        section: "(item) BUG-275"
+        read_type: gate
+        extract: "The four artifacts, the measurement, and the two dispositions the item offers"
+      - file: sdd/BACKLOG.md
+        section: "(item) BUG-273"
+        read_type: reference
+        extract: >-
+          Why widening _is_unreachable is off the table, and that a connect-time
+          EPERM is the reproducible shape a global dispatch arm would also change
+      - file: sdd/CLAUDE-REFERENCE.md
+        section: "Pre-work index"
+        read_type: gate
+        extract: "Triggered rows: Spec section, Error type, Bug fix, Backlog item touched, Tracker ID in published prose"
+  - id: reproduce
+    name: Reproduce
+    steps:
+      - file: src/remote_store/backends/_sftp.py
+        section: "_map_exception (errno dispatch)"
+        read_type: verify
+        extract: >-
+          Drove _map_exception with a plain OSError per errno before touching
+          anything: EACCES -> PermissionDenied("Permission denied: delivery.csv"),
+          EPERM -> RemoteStoreError("[Errno 1] denied"). The item's measurement
+          reproduced exactly
+      - file: src/remote_store/backends/_local.py
+        section: "write / read PermissionError arms"
+        read_type: reference
+        extract: >-
+          LocalBackend catches bare PermissionError, and OSError(EPERM) is a
+          PermissionError, so Local answers PermissionDenied for the errno SFTP
+          declines. Cross-backend divergence the item did not record
+  - id: design
+    name: Design
+    steps:
+      - file: src/remote_store/backends/_sftp.py
+        section: "_raise_if_dir call sites (read, read_bytes, delete, _open_write, _promote)"
+        read_type: reference
+        extract: >-
+          All five callers are inside _errors(path) and let the raise propagate;
+          _map_exception's first arm returns a RemoteStoreError unchanged. A
+          PermissionDenied raised by the helper therefore reaches the caller
+          untouched, which is what makes the scoped disposition available at all
+  - id: tests
+    name: Failing test first
+    steps:
+      - file: sdd/000-process.md
+        section: "Rule 6 (workflows)"
+        read_type: gate
+        extract: "BACKLOG -> CHANGELOG -> failing test -> fix -> commit together"
+      - file: tests/backends/sftp/test_config.py
+        section: "test_raise_if_dir_permission_stat_maps_permission_denied"
+        read_type: reference
+        extract: "The EACCES shape to parametrise over both errnos"
+  - id: implement
+    name: Implement (first attempt, later abandoned)
+    steps:
+      - file: src/remote_store/backends/_sftp.py
+        section: "_raise_if_dir (permission re-raise)"
+        read_type: reference
+        extract: >-
+          Answer PermissionDenied at the guard instead of delegating to a
+          dispatch that has no EPERM arm. This is the shape rounds 2 and 3
+          refuted; it is kept as a step because the trace records what happened,
+          and the shipped implementation is the replan phase below
+  - id: spec
+    name: Spec
+    steps:
+      - file: sdd/specs/009-sftp-backend.md
+        section: "SFTP-021, SFTP-023"
+        read_type: gate
+        extract: >-
+          SFTP-021 claims EACCES alone, so it needs widening either way.
+          SFTP-023's EPERM bullet predicted BUG-275 would change the connect-time
+          shape's answer — read at the time as something the scoped disposition
+          avoided, and true after all: the shipped arm makes exactly that change,
+          and the bullet is now the record of a prediction the work spent three
+          rounds disproving before confirming
+  - id: verify
+    name: Verify
+    steps:
+      - file: sdd/CLAUDE-REFERENCE.md
+        section: "Detailed checklist"
+        read_type: verify
+        extract: >-
+          Bug fix, Spec section, Error type, Backlog item touched, Tracker ID in
+          published prose. Marked verified and was not: the "Error type" row
+          names the "error docstring 'raised by' list", and six public Raises:
+          blocks promising PermissionDenied for EACCES alone were left falsified
+          by the change. The round-1 review found them. The row said what to
+          check; reading it was not the same as running it, and the derivation
+          that would have caught it — resolve every _raise_if_dir call site, and
+          every _open_write/_promote call site, to its enclosing def — was only
+          run afterwards
+        outcome: ok
+  - id: fix
+    name: Fix pass (round 1)
+    steps:
+      - file: src/remote_store/backends/_sftp.py
+        section: "_raise_if_dir (permission guard), _is_unreachable"
+        read_type: reference
+        extract: >-
+          Round 1 posted five findings, all confirmed by measurement and all
+          fixed. The sharpest: the guard raised `from exc` where the module's
+          sixteen other mapped raises use `from None`, so EACCES gained a
+          __cause__ it did not have — measured, and it falsified four artifacts
+          claiming that errno's answer was unchanged. Fixing the raise was
+          cheaper than weakening all four
+      - file: sdd/BACKLOG.md
+        section: "(item) BUG-275, deleted body"
+        read_type: reference
+        extract: >-
+          Deleting the item dropped its "trigger is unestablished" measurement,
+          which the replacement grounds for _is_unreachable's exclusion then
+          silently over-claimed. Re-derived on paramiko 5.0.0 and carried into
+          the register entry: _convert_status renders SSH_FX_PERMISSION_DENIED
+          as IOError(EACCES) and has no EPERM arm, so the two errnos are
+          excluded on different evidence, not one. No outcome tag: the item said
+          plainly that the trigger was unestablished, so this was the author
+          dropping it on deletion, not the document failing a reader
+  - id: fix_2
+    name: Fix pass (round 2)
+    steps:
+      - file: src/remote_store/backends/_sftp.py
+        section: "write / write_atomic (overwrite=False stat), open_atomic (setup stat)"
+        read_type: reference
+        extract: >-
+          Round 2 was a measuring pass and refuted the item's own framing. The
+          backend stats a target from FOUR places, not one: the lazy guard plus
+          three eager stats that re-raise any non-ENOENT error into the mapping.
+          Fixing the guard alone left write answering PermissionDenied for a
+          denied stat under overwrite=True and the base class under
+          overwrite=False — and falsified the Raises: clause round 1 had just
+          added to open_atomic, whose primary path reaches only the eager stat.
+          Measured as a 9-cell table (six methods x both errnos, eager and lazy
+          shapes separated); four cells wrong, uniform after moving the answer
+          into one shared helper
+      - file: sdd/BACKLOG.md
+        section: "(item) BUG-275, Disposition"
+        read_type: reference
+        extract: >-
+          The item scoped itself to _raise_if_dir because that is where its four
+          artifacts pointed, and the work inherited that scope without asking
+          which sites the *contract* covers. The subject was never the guard; it
+          was a denied stat of the target. A backlog item's artifact list is
+          evidence of where the divergence was noticed, not a boundary on where
+          it lives
+        outcome: misleading
+      - file: tests/backends/sftp/test_config.py
+        section: "test_a_denied_target_stat_is_permission_denied_on_every_entry_point"
+        read_type: reference
+        extract: >-
+          The round-1 test drove read_bytes alone, which is how three eager
+          sites survived a round of review on a change whose whole claim was
+          about six methods. The replacement drives all nine cells, each with
+          the injection that actually reaches its target stat, and asserts
+          __cause__ — a from-exc mutant had passed all 384 SFTP tests
+      - file: .claude/skills/ship/SKILL.md
+        section: "Stop rule / Repeat-site check"
+        read_type: gate
+        extract: >-
+          Fired after round 2 and was answered too narrowly. Rounds 1 and 2 both
+          refuted the same condition — which sites the denial promise covers —
+          so the condition's space was enumerated instead of argued a third
+          time: six methods x both errnos, eager and lazy shapes separated. But
+          the enumeration was drawn over the axes the *previous* refutations had
+          named, and round 3 found two it did not have: the key's depth (a
+          depth-0 key reaches no ancestor stat, so `_ensure_parent_dirs` was
+          invisible) and the exception's provenance (a connect-time errno
+          arrives at a stat guard, because the lazy `_sftp` property is
+          evaluated inside the same try). Enumerating a space is only as good as
+          the axes chosen for it, and the axes a loop can name are the ones its
+          own earlier rounds happened to surface
+        outcome: unclear
+  - id: replan
+    name: Re-plan (round 3)
+    steps:
+      - file: .claude/skills/ship/SKILL.md
+        section: "Stop rule / Divergence check"
+        read_type: gate
+        extract: >-
+          Fired and was obeyed. Round 3's panel found something more severe than
+          round 2's, in code the fix passes had written: the four-site guard
+          answered a *connect-time* EPERM as PermissionDenied naming the
+          caller's key on 7 of 9 entry points, where the base answered the base
+          class on all 9 — precisely the harm the scoped disposition had been
+          chosen over the dispatch arm to avoid. Two further panel members
+          measured that the site set was 12, not 4, and that a nested key
+          reached an unguarded ancestor stat. The check says stop and re-plan
+          rather than keep patching; the site-by-site approach was abandoned for
+          the one arm every operation classifies through
+      - file: src/remote_store/backends/_sftp.py
+        section: "_map_exception (errno dispatch)"
+        read_type: reference
+        extract: >-
+          The lesson worth carrying: the disposition was chosen to keep a
+          blast radius small, and the smallness was an illusion the module's
+          own laziness defeated. `self._sftp` is a property that connects, so
+          "there is a channel because the stat ran" is false at every guarded
+          site. A placement argument that rests on what has already happened
+          needs checking against the code that makes it happen, not against the
+          call's apparent order
+  - id: fix_4
+    name: Fix pass (round 4)
+    steps:
+      - file: sdd/BACKLOG.md
+        section: "(item) BUG-273"
+        read_type: reference
+        extract: >-
+          The re-plan rewrote one paragraph of this item and left the next one
+          standing: it still said BUG-275 declined the errno-dispatch arm, and
+          cited a test the re-plan had deleted. All three round-4 members found
+          it independently. A rewrite that edits the paragraph it disagrees with
+          does not reach the paragraph that agreed with the old shape
+      - file: docs-src/reference/migration.md
+        section: "v0.30.0 to v0.31.0 (permission errnos)"
+        read_type: reference
+        extract: >-
+          The published page offered check_health() as the way to tell "the store
+          refused me" from "I could not reach the store". It is not: check_health
+          classifies through the same mapping, so a locally-rejected connect
+          answers PermissionDenied there too, with an empty key. This work's own
+          SFTP-023 text said so. Offering a workaround that does not work is
+          worse than stating the limitation, so the remedy is gone and the
+          limitation is explicit
+      - file: sdd/traces/_schema.yml
+        section: "review_rounds"
+        read_type: gate
+        extract: >-
+          The field's derivation must be RUN, not merely stated. "minus the one
+          implementing commit" yielded 6 against a value of 4, and by then there
+          were two implementing commits. Restated as a rule naming both
+          exclusions, which is what survives the next push
+      - file: tests/backends/sftp/test_config.py
+        section: "test_a_locally_rejected_connect_is_answered_as_a_denial"
+        read_type: reference
+        extract: >-
+          The one behavioural cell this change creates had no test: both new
+          tests drive _map_exception directly, which by construction cannot tell
+          a connect-time exception from an operation-time one. Added, on a keyed
+          operation and on check_health, so the item that repairs it fails here
+          rather than silently altering a published type
+  - id: rebase
+    name: Rebase onto BUG-274
+    steps:
+      - file: src/remote_store/backends/_sftp.py
+        section: "_raise_if_dir, _probe_is_futile"
+        read_type: verify
+        extract: >-
+          BUG-274 rewrote _raise_if_dir around a new _probe_is_futile predicate,
+          so the merge was checked by running rather than reading: both
+          permission errnos measure dead=False unreachable=False futile=False,
+          and the permission re-raise sits above the futile check, so nothing
+          intercepts it. The errno dispatch answers both errnos after the merge
+          exactly as before it, across five entry points
+      - file: sdd/backlogid.json
+        section: "(full)"
+        read_type: gate
+        extract: >-
+          The rebase surfaced an ID collision the loop could not have caught
+          alone: this branch minted BUG-278 for a cross-backend divergence while
+          the BUG-274 session concurrently minted BUG-278 for a different item,
+          now open on master. gen_backlogid --check reported it. The floor reads
+          the max from BACKLOG-DONE.md only, so an item filed OPEN on master does
+          not raise it — master's stored 277 sits behind its own open 278 and
+          279. The branch's item was folded into BUG-275's register entry and
+          the ID dropped
+        outcome: misleading
+      - file: sdd/BACKLOG-DONE.md
+        section: "(item) BUG-275"
+        read_type: reference
+        extract: >-
+          A message from the BUG-274 session drew the fixture/trigger
+          distinction, which caught a sentence of this entry's that was already
+          false of the tests shipping beside it: "the case nobody has a fixture
+          for" conflated no-fixture with no-trigger. Injection fixtures exist —
+          this item ships one — and what nobody has is a server that reports the
+          denial with EPERM, which no injection can supply
