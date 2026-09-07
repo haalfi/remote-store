@@ -1,8 +1,8 @@
 # extra: sql-query
 # python: 3.13
-# captured: 2026-07-14
+# captured: 2026-09-07
 # Regenerate with: hatch run drift-check refresh-baseline sql-query
 
-pyarrow==25.0.0
-sqlalchemy==2.1.0b3
+pyarrow==25.0.1
+sqlalchemy==2.1.0rc1
 typing-extensions==4.16.0
