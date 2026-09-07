@@ -2420,11 +2420,13 @@ class TestSFTPUnreachableHostCostsOneConnect:
     #: of this list grouped it with the no-request names, which was simply
     #: false. It is excluded because it hands the caller the driver's own
     #: handle rather than performing a store operation, and so is deliberately
-    #: outside ``_errors()``: a cell for it would meet a raw
-    #: ``NoValidConnectionsError`` and fail this test's ``pytest.raises``
-    #: rather than pass. Whether the error model should reach ``unwrap`` at all
-    #: is a separate question this item does not decide; what matters here is
-    #: that the exclusion is stated for the reason that is true.
+    #: outside ``_errors()``: cells for it would meet the raw driver error —
+    #: ``NoValidConnectionsError``, ``socket.gaierror`` and ``TimeoutError``
+    #: respectively, one per shape, since this tuple is parametrised over
+    #: ``SHAPES`` — and all three would fail this test's ``pytest.raises``
+    #: rather than pass. Whether SFTP-024 should reach ``unwrap`` at all is
+    #: tracked as its own item; what matters here is that the exclusion is
+    #: stated for the reason that is true.
     #:
     #: Completeness is the point, not padding: the fix widens shared guards, so
     #: an operation that *gains* a cycle would otherwise be invisible, and the
@@ -2512,13 +2514,13 @@ class TestSFTPUnreachableHostCostsOneConnect:
         }
         return calls[operation]
 
-    @pytest.mark.spec("SFTP-023")
+    @pytest.mark.spec("SFTP-031")
     @pytest.mark.parametrize("shape", SHAPES)
     @pytest.mark.parametrize("operation", OPERATIONS)
     def test_an_unreachable_host_costs_exactly_one_connect(
         self, operation: str, shape: str, monkeypatch: pytest.MonkeyPatch
     ) -> None:
-        """SFTP-023: one connect budget per operation, over shape x operation.
+        """SFTP-031: one connect budget per operation, over shape x operation.
 
         The ``connect-timeout`` column passed before the fix as well, and is the
         control that identifies the defect: that shape raises ``TimeoutError``,
@@ -2542,6 +2544,107 @@ class TestSFTPUnreachableHostCostsOneConnect:
             self._call(backend, operation)()
 
         assert attempts == 1, f"{operation}/{shape} entered _connect {attempts} times, not once"
+
+
+class TestSFTPProbeReconnectsIntoGoneHost:
+    """SFTP-023: the *other* behaviour change BUG-274 makes, on a live channel.
+
+    **The enumeration next door cannot reach this**, and that is the whole
+    reason this class exists: every one of its 84 cells builds a fresh backend
+    whose *first* ``_sftp`` evaluation fails, so no cell ever puts a working
+    channel in front of a widened guard. Two of the six widened guards are
+    reached that way — ``_raise_if_dir``'s classification stat and
+    ``_has_file_ancestor``'s ancestor walk — because both run on the error path
+    of an operation that already had a connection.
+
+    The sequence: an operation fails with an errno-less ``SSH_FX_FAILURE``
+    (which neither predicate claims), the classification probe re-enters the
+    lazy ``_sftp`` property, the transport has meanwhile died, and the reconnect
+    meets a host that is now gone. Before BUG-274 that probe failure was
+    swallowed as "cannot classify", the caller's original error surfaced at the
+    generic arm as a base ``RemoteStoreError``, and **the cached client was not
+    cleared**. Now the connect-time shape re-raises and the operation concludes
+    ``BackendUnavailable`` with the client cleared, so SFTP-010 tier 2 fires.
+
+    Not breaking — ``BackendUnavailable`` subclasses ``RemoteStoreError`` — but
+    a change of type and of recovery timing, which had no test until a fifth
+    review round pointed out that the only artifact describing it was a trace.
+    """
+
+    @staticmethod
+    def _closed_port() -> int:
+        sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+        sock.bind(("127.0.0.1", 0))
+        port = int(sock.getsockname()[1])
+        sock.close()
+        return port
+
+    def _backend_with_dying_channel(self, *, fail_on: str) -> SFTPBackend:
+        """A backend holding a live-looking client whose transport dies on failure.
+
+        *fail_on* is the client method that raises the errno-less
+        ``SSH_FX_FAILURE`` and kills the transport on its way out — ``file`` for
+        the flat-key path through ``_raise_if_dir``, and the same for the nested
+        path, where the ancestor walk is what re-enters afterwards.
+        """
+        state = {"alive": True}
+
+        class Transport:
+            def is_active(self) -> bool:
+                return state["alive"]
+
+        class SSH:
+            def get_transport(self) -> Any:
+                return Transport()
+
+            def close(self) -> None:
+                pass
+
+        class Client:
+            def __init__(self) -> None:
+                self.sock = type("S", (), {"settimeout": lambda self, t: None})()
+
+            def _boom(self, *a: Any, **k: Any) -> Any:
+                state["alive"] = False
+                raise OSError(None, "Failure")
+
+            file = _boom
+            stat = _boom
+
+            def close(self) -> None:
+                pass
+
+        assert fail_on == "file", "only the open path is driven here"
+        backend = SFTPBackend(
+            host="127.0.0.1",
+            port=self._closed_port(),
+            host_key_policy="auto",
+            timeout=3,
+            retry=RetryPolicy.disabled(),
+        )
+        backend._ssh_client = SSH()
+        backend._sftp_client = Client()
+        return backend
+
+    @pytest.mark.spec("SFTP-023")
+    @pytest.mark.parametrize("path", ["delivery.csv", "a/b/delivery.csv"])
+    def test_a_probe_reconnecting_into_a_gone_host_reports_backend_unavailable(self, path: str) -> None:
+        """SFTP-023: the classification probe's own connect failure is reported, not swallowed.
+
+        Both keys are driven because they reach *different* widened guards: a
+        flat key stops at ``_raise_if_dir``'s stat, a nested one gets past it to
+        ``_has_file_ancestor``'s walk. Before the fix both answered the base
+        ``RemoteStoreError``; the assertion below is what changed.
+        """
+        backend = self._backend_with_dying_channel(fail_on="file")
+
+        with pytest.raises(BackendUnavailable):
+            backend.read_bytes(path)
+
+        assert backend._sftp_client is None, (
+            "concluding BackendUnavailable must clear the cached client (SFTP-010 tier 2), "
+            "or the next operation reuses a client whose host is gone"
+        )
 
 
 class TestSFTPUnreachableHost:

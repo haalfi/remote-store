@@ -52,9 +52,19 @@ discovery_followups:
   # Filed rather than fixed on the user's decision — it needs a live-then-dead
   # transport fixture this suite does not have, and its sites sit in the
   # rename-fallback ladder BUG-270/272/277 have just reworked.
+  #
+  # BUG-279 was born in round 5, from the unprimed member reading the
+  # OPERATIONS exclusion list this item had just rewritten. unwrap returns
+  # self._sftp, so it pays a connect budget and, being outside _errors(),
+  # leaks the raw driver error — a standing SFTP-024 question the exclusion
+  # note had identified and then left in a test docstring. Filed because the
+  # repo's backlog rule is mandatory for discoveries, and because the same
+  # shape (a measuring round surfacing a neighbouring defect) is how BUG-278
+  # reached the register three rounds earlier.
   - BUG-278
+  - BUG-279
 # Derived from `git log --format='%s' origin/master..HEAD --reverse`, run before
-# this line was written, and counting the commit that carries it. Five rows:
+# this line was written, and counting the commit that carries it. Six rows:
 #   BUG-274: Ask whether another probe can answer, not only whether the channel
 #            died -> does not count (implements the item)
 #   BUG-274: Re-derive the enumeration's size, and widen it to every operation
@@ -67,12 +77,15 @@ discovery_followups:
 #   BUG-274: Scope the CHANGELOG subject, and state four exclusions truthfully
 #            -> counts (round 4, 8 findings after dedup from a three-member
 #            panel: unprimed, measuring, whole-file)
-# Value is 4. Re-derive from that command before each push; a review round that
+#   BUG-274: Give the cost invariant its own spec ID, and pin the live-channel
+#            change -> counts (round 5, 7 findings after dedup from a
+#            three-member panel: unprimed, measuring, whole-file)
+# Value is 5. Re-derive from that command before each push; a review round that
 # lands a fix raises it. Retrospective: the lead-in above said "Two rows" over a
 # four-row list until round 4 — rounds 2 and 3 each appended a row and left the
 # phrase, and the value stayed right while the list it was checkable against did
 # not, which is the quiet half of this failure.
-review_rounds: 4
+review_rounds: 5
 phases:
   - id: orient
     name: Orient
@@ -310,14 +323,18 @@ phases:
           delegates to read() and therefore moved, 2/2/1 flat and 3/2/1 nested
           on the base. A fifth operation, absent from a tuple whose whole claim
           was completeness. Derivation restated over dir() with every exclusion
-          accounted for, and **four** cells added: read_seekable, its nested
-          variant and delete/missing_ok/nested, which fail pre-fix, plus
-          write/overwrite/nested, which passes — and that fourth is the
+          accounted for, and **four entries — twelve cells** — added:
+          read_seekable, its nested variant and delete/missing_ok/nested, which
+          fail pre-fix, plus write/overwrite/nested, which passes — and that fourth is the
           load-bearing one, since it is what refutes the nested-key
           generalisation published across three artifacts. An earlier revision
           of this line said "three cells added ... all of which fail pre-fix",
           dropping the cell that carried the round's point in order to keep the
-          clause true
+          clause true — and round 5 caught that "cells" was the wrong unit in
+          both spellings: these are OPERATIONS *entries*, worth three cells
+          each, which is what takes 72 to 84 rather than to 76. Round 4's whole
+          subject was this sentence and it corrected the count without
+          re-reading what the count counted
         outcome: ok
       - file: sdd/specs/009-sftp-backend.md
         section: "SFTP-023 (one-budget clause)"
@@ -460,6 +477,74 @@ phases:
           recorded is why that command cannot hold a stable count (it matches
           prose as well as code), which is the same reasoning that made the
           module's own count a reference-walk filtered by owning function
+        outcome: ok
+  - id: fix_round_5
+    name: Round-5 fix pass (three-member panel, closing round)
+    steps:
+      - file: src/remote_store/backends/_sftp.py
+        section: "_probe_is_futile (four-plus-two split)"
+        read_type: verify
+        extract: >-
+          **All three members found the same transposition**, and it is the
+          round-4 fix pass's own defect: the consultation triple "15, 12 and 6"
+          was taken from a previous round's report — which gave three numbers
+          for four sites — and paired with this sentence's subject order without
+          checking the mapping. read_bytes is the 6, the _raise_if_dir pair the
+          15. Determined rather than arguable: read_bytes' guard sits in one
+          except handler over two argument shapes, so three shapes give it a
+          ceiling of six. What was carried was the *attribution*, one level up
+          from where principle 9 usually bites, and the fix is to publish per
+          site (6 / 12 / 12 / 3 / 0 / 0) so no ordering can be misread. Counts
+          re-derived here by instrumenting _probe_is_futile over the class's own
+          84 cells rather than by trusting the report a second time
+        outcome: misleading
+      - file: src/remote_store/backends/_sftp.py
+        section: "_has_file_ancestor comment, _is_unreachable (refutation list)"
+        read_type: verify
+        extract: >-
+          Two mis-attributions with one root. The docstring said the walk guard
+          is unreached because "those three callers' own guards" stop ahead of
+          it — but on read's path the stop is the *eager* _raise_if_dir, which
+          the same paragraph had just said is not read's own guard. And the
+          refutation list inherited from BUG-265 names read among the callers
+          that reach their own guard on the connect path, which this branch
+          silently made false: once the eager _raise_if_dir re-raises, read's
+          own try is never entered for a connect-time shape. The refutation
+          still stands on read_bytes and delete, so the fix is to withdraw one
+          name and say why, in a passage whose whole job is recording what was
+          refuted
+        outcome: ok
+      - file: sdd/specs/009-sftp-backend.md
+        section: "SFTP-031 (new), SFTP-023, SFTP-009"
+        read_type: gate
+        extract: >-
+          The cost invariant was living under SFTP-023, whose subject is
+          BackendUnavailable *mapping*, so the what-a-caller-gets and
+          what-a-caller-pays tests both traced to one ID — collapsing exactly
+          the distinction this item keeps apart in every other artifact. Minted
+          SFTP-031 on the user's decision, moved the clause, retagged
+          test_an_unreachable_host_costs_exactly_one_connect, and gave SFTP-009
+          the back-reference it lacked: it owns what one connect costs, SFTP-031
+          owns how many an operation may pay
+        outcome: ok
+      - file: tests/backends/sftp/test_config.py
+        section: "TestSFTPProbeReconnectsIntoGoneHost (new)"
+        read_type: reference
+        extract: >-
+          **A second behaviour change this PR makes, which had no test and no
+          published artifact — only a trace step.** At _raise_if_dir's stat
+          guard and _has_file_ancestor's walk, an errno-less SSH_FX_FAILURE on a
+          live channel whose classification probe reconnects into a gone host
+          used to surface as base RemoteStoreError with the client kept; it now
+          surfaces as BackendUnavailable with the client cleared, so SFTP-010
+          tier 2 fires. The enumeration cannot reach it — every cell builds a
+          fresh backend — which is why five rounds passed before anyone asked
+          what the widening does on a *live* channel. Pinned with a fake client
+          whose transport dies inside the failing call, driven flat and nested
+          so both guards are covered; both cells fail against the pre-fix module
+          with exactly the base RemoteStoreError, confirmed before shipping.
+          Recorded in SFTP-023 and the CHANGELOG, on the user's decision, rather
+          than being filed
         outcome: ok
   - id: verify
     name: Verify

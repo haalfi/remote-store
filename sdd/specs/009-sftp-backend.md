@@ -151,6 +151,12 @@ See also: spec `025-retry-policy.md` (RET-010).
 **Retried exceptions:** `paramiko.SSHException`, `OSError`, `EOFError`.
 **Postconditions:** After all retries are exhausted, the original exception is reraised.
 
+**How many times one operation may pay this budget is
+[SFTP-031](#sftp-031-connect-budget-per-operation)**, not this clause. This one
+says what a single `_connect` costs; that one says an operation against a host
+that was never reached enters `_connect` once, which is the guarantee a caller
+waits on and which nothing here implies.
+
 ### SFTP-010: Staleness Detection and Reconnect
 
 **Invariant:** Staleness is detected in two tiers, neither of which spends a
@@ -375,7 +381,11 @@ dropped-connection predicate already matches); that the `is_fatal` and re-entry
 guards are never consulted on the connect path (they are — `read`, `read_bytes`
 and `delete` evaluate the lazy `_sftp` property inside their own `try`, so a
 failure raised by `_connect` reaches them); and that the shapes partition by
-phase at all. A fourth reading is not more likely to be exhaustive than the
+phase at all. **`read` has since dropped out of that list without weakening the
+refutation**: once its eager `_raise_if_dir` re-raises rather than swallowing
+(SFTP-031), `read`'s own `try` is never entered for a connect-time shape, and
+the refutation stands on `read_bytes` and `delete`, both measured reaching their
+own guards. A fourth reading is not more likely to be exhaustive than the
 first three, so the condition's space is enumerated instead of argued:
 `TestSFTPConnectTimePredicateSpace` generates the product of connect-time shape
 and operation and asserts, per cell, that the caller gets `BackendUnavailable`
@@ -386,53 +396,24 @@ pinned separately, by `test_a_host_never_reached_maps_to_backend_unavailable`,
 which seeds a sentinel first — a per-cell assertion could not reach it, since
 the client is `None` on entry to every cell.
 
-**An operation against a host that was never reached enters `_connect` exactly
-once**, whatever the operation and whichever connect-time shape occurred. The
-guards those refuted rationales are about ask a third question — will another
-round-trip buy anything — so they consult both predicates rather than the
-dropped-connection one alone. A guard asking only the latter declines for every
-shape the connect-time set claims, and control then falls through to a
-classification path that re-evaluates the lazy `_sftp` property and pays the
-whole `RetryPolicy` budget (SFTP-009) again. Measured over the product of shape
-and operation before this held: 22 of 84 cells entered `_connect` two or three
-times — 111 entries where 84 were owed — and **five** operations paid them:
-`read`, `read_seekable` (which delegates to `read`), `read_bytes`, `delete`
-(including `missing_ok=True`) and `write(overwrite=True)`. Every other operation
-entered `_connect` once before this clause held and still does, which is why the
-enumeration carries them as controls rather than as coverage padding.
+**A probe that reconnects into a host that is now gone reports
+`BackendUnavailable`, where it used to report the caller's original error.** Two
+guards re-enter the lazy `_sftp` property while classifying a live-channel
+failure — `_raise_if_dir`'s classification stat and `_has_file_ancestor`'s walk.
+When the reconnect they trigger meets a connect-time shape, that shape is now
+re-raised instead of swallowed, so the operation concludes `BackendUnavailable`
+and the cached client is cleared (SFTP-010 tier 2 fires). Before, the probe's
+failure was discarded as "cannot classify", the caller's original errno-less
+`SSH_FX_FAILURE` surfaced at the generic arm as a base `RemoteStoreError`, and
+the client was **not** cleared, so the next operation reused it. Measured on both
+revisions, flat key through the stat guard and nested key through the walk.
 
-**The third cycle is the file-ancestor walk**, so it is reached only when the
-shape's `errno` is `None` — the refused-port case — and only on the four
-read-and-delete operations, where a nested key therefore costs three against a
-refused port and two against a DNS failure. `write(overwrite=True)` does **not**
-follow that pattern and is the instructive exception: `_ensure_parent_dirs` runs
-ahead of `_open_write`, so for a nested key it issues the first request and the
-connect failure never reaches `_open_write`'s classification path at all.
-Nesting makes that operation *cheaper* — one cycle against two for a flat key —
-and the walk is never on its path.
-
-At shipped defaults, warm-up discarded and both revisions timed on one machine:
-a flat `read_bytes` against a refused port went from 8.00 s to 4.00 s and a
-nested one from 12.00 s to 4.00 s, while `check_health` and `exists` cost 4.00 s
-on both sides — one budget before and after, since neither has a re-entry guard
-to decline.
-
-`TestSFTPUnreachableHostCostsOneConnect` pins one entry per cell, over **every
-operation that reaches the backend** rather than a sample, which is what makes
-the "whatever the operation" above a measured claim rather than a generalisation
-from the five that moved.
-
-**The clause's subject is load-bearing: a host that was never reached.** It says
-nothing about a transport that dies *mid-operation* and then fails to reconnect,
-which reaches guards this clause does not cover and costs up to three budgets —
-tracked as BUG-278, with the measurement. Every cell here builds a fresh backend
-whose first `_sftp` evaluation fails, so the enumeration cannot reach that shape
-and must not be read as ruling it out.
-
-The clause is about the *budget*, not about probe counts: how many round-trips a
-classification path would have made is the operation's own business, and the
-enumeration above deliberately pins neither that nor which predicate claimed a
-shape.
+This is a narrower behaviour change than the connect-budget one it rides with
+(SFTP-031) and is **not breaking**: `BackendUnavailable` subclasses
+`RemoteStoreError`, so no `except` clause stops catching. It is a change of
+*which* type and of when the client is invalidated, not of what a handler
+catches. Pinned by
+`test_a_probe_reconnecting_into_a_gone_host_reports_backend_unavailable`.
 
 Every other `OSError` the errno dispatch declines keeps the base
 `RemoteStoreError` — `EIO` and `ENOSPC` are faults of a connection that is
@@ -1333,3 +1314,62 @@ its path", but only one of them **restores** it there — the other never moved 
 — so AW-003 promises the copy and the ordinary-failure row alone promises the
 return. The three rows reading "replaced" replace the file by design, which is
 the antecedent AW-003 carries and this table does not repeat.
+
+### SFTP-031: Connect Budget Per Operation
+
+**Invariant:** an operation against a host that was never reached enters
+`_connect` exactly once, whatever the operation and whichever connect-time shape
+occurred.
+**Rationale:** the connect-time shapes are classified by
+[SFTP-023](#sftp-023-backendunavailable-mapping) and the budget itself is
+[SFTP-009](#sftp-009-tenacity-retry-on-connect)'s; this clause is what a caller
+*pays*, kept separate from what a caller *gets* because a single ID for both
+stopped the two tests distinguishing them.
+
+**An operation against a host that was never reached enters `_connect` exactly
+once**, whatever the operation and whichever connect-time shape occurred. The
+mid-operation re-entry guards ask a third question — will another round-trip buy
+anything — so they consult both the dropped-connection and the never-reached
+predicate rather than the former alone. A guard asking only the former declines
+for every shape the connect-time set claims, and control then falls through to a
+classification path that re-evaluates the lazy `_sftp` property and pays the
+whole `RetryPolicy` budget (SFTP-009) again. Measured over the product of shape
+and operation before this held: 22 of 84 cells entered `_connect` two or three
+times — 111 entries where 84 were owed — and **five** operations paid them:
+`read`, `read_seekable` (which delegates to `read`), `read_bytes`, `delete`
+(including `missing_ok=True`) and `write(overwrite=True)`. Every other operation
+entered `_connect` once before this clause held and still does, which is why the
+enumeration carries them as controls rather than as coverage padding.
+
+**The third cycle is the file-ancestor walk**, so it is reached only when the
+shape's `errno` is `None` — the refused-port case — and only on the four
+read-and-delete operations, where a nested key therefore costs three against a
+refused port and two against a DNS failure. `write(overwrite=True)` does **not**
+follow that pattern and is the instructive exception: `_ensure_parent_dirs` runs
+ahead of `_open_write`, so for a nested key it issues the first request and the
+connect failure never reaches `_open_write`'s classification path at all.
+Nesting makes that operation *cheaper* — one cycle against two for a flat key —
+and the walk is never on its path.
+
+At shipped defaults, warm-up discarded and both revisions timed on one machine:
+a flat `read_bytes` against a refused port went from 8.00 s to 4.00 s and a
+nested one from 12.00 s to 4.00 s, while `check_health` and `exists` cost 4.00 s
+on both sides — one budget before and after, since neither has a re-entry guard
+to decline.
+
+`TestSFTPUnreachableHostCostsOneConnect` pins one entry per cell, over **every
+operation that reaches the backend** rather than a sample, which is what makes
+the "whatever the operation" above a measured claim rather than a generalisation
+from the five that moved.
+
+**The clause's subject is load-bearing: a host that was never reached.** It says
+nothing about a transport that dies *mid-operation* and then fails to reconnect,
+which reaches guards this clause does not cover and costs up to three budgets —
+tracked as BUG-278, with the measurement. Every cell here builds a fresh backend
+whose first `_sftp` evaluation fails, so the enumeration cannot reach that shape
+and must not be read as ruling it out.
+
+The clause is about the *budget*, not about probe counts: how many round-trips a
+classification path would have made is the operation's own business, and the
+enumeration above deliberately pins neither that nor which predicate claimed a
+shape.

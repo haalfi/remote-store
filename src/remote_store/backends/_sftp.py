@@ -2595,9 +2595,12 @@ class SFTPBackend(Backend):
                     # the channel dies between the caller's failure and this walk.
                     # Same reasoning as ``_raise_if_dir``.
                     #
-                    # The unreachable half (BUG-274) is unreachable *from the
-                    # three read-side callers*, whose own guards now stop ahead
-                    # of this walk. It is asked anyway rather than left to that:
+                    # The unreachable half (BUG-274) is unreachable from the
+                    # three read-side callers, which all stop earlier —
+                    # ``read_bytes`` and ``delete`` at their own guards,
+                    # ``read`` at the eager ``_raise_if_dir``, which is not
+                    # read's own guard. It is asked anyway rather than left to
+                    # that:
                     # this walk evaluates the lazy ``_sftp`` property once per
                     # ancestor, so a guard correct only because a sibling fires
                     # first is one refactor from paying a budget per level.
@@ -2758,7 +2761,12 @@ class SFTPBackend(Backend):
         guards are never consulted on the connect path (they are — ``read``,
         ``read_bytes`` and ``delete`` evaluate the lazy ``_sftp`` property
         *inside* their own ``try``, so a failure raised by ``_connect`` reaches
-        them); and that the shapes partition by phase at all. What a caller
+        them); and that the shapes partition by phase at all. **``read`` no
+        longer belongs in that list and the refutation does not need it**: its
+        eager ``_raise_if_dir`` now re-raises instead of swallowing, so
+        ``read``'s own ``try`` is never entered for a connect-time shape. The
+        refutation stands on ``read_bytes`` and ``delete``, which are measured
+        reaching their own guards. What a caller
         actually gets is enumerated instead, as the product of connect-time
         shape and operation, in
         ``TestSFTPConnectTimePredicateSpace`` — twelve cells, each asserting
@@ -2867,14 +2875,30 @@ class SFTPBackend(Backend):
         enumeration drives, since every cell builds a fresh backend.
 
         **The six are not all reachable under it, and the split is four plus
-        two.** ``read_bytes``, ``delete`` and both ``_raise_if_dir`` guards are
-        reached and act — measured at 15, 12 and 6 consultations across the 84
-        cells. ``read``'s open guard and ``_has_file_ancestor``'s walk guard are
-        **never consulted by any cell**, because the eager ``_raise_if_dir`` and
-        those three callers' own guards respectively stop ahead of them; each
-        site says so where it sits. They are widened prophylactically, not
-        because the fault reaches them, and reverting either leaves the suite
-        green today.
+        two.** Consultations across the 84 cells, counted per site rather than
+        as a total, because a total is what let an earlier revision of this
+        paragraph pair the figures with the wrong guards:
+
+        - ``read_bytes``'s guard — **6** (its two argument shapes x three
+          connect-time shapes, once each; that product is also its ceiling)
+        - ``delete``'s guard — **12** (four argument shapes)
+        - ``_raise_if_dir``'s except guard — **12** (the ``read`` and
+          ``read_seekable`` cells, which reach it through the eager call)
+        - ``_raise_if_dir``'s cause guard — **3** (flat ``write(overwrite=True)``
+          only, through ``_open_write``; the nested cell never gets there)
+        - ``read``'s open guard — **0**
+        - ``_has_file_ancestor``'s walk guard — **0**
+
+        The last two are **never consulted by any cell**, and not for the same
+        reason. ``read``'s open guard is preceded by the eager ``_raise_if_dir``,
+        which now re-raises rather than swallowing, so ``read``'s own ``try`` is
+        never entered for this fault. The walk guard is unreached because each of
+        its three callers stops earlier — ``read_bytes`` and ``delete`` at their
+        own guards, ``read`` at that same eager ``_raise_if_dir``, which is
+        **not** ``read``'s own guard and is the distinction an earlier revision
+        of this sentence collapsed. Both are widened prophylactically rather
+        than because the fault reaches them, and reverting either leaves the
+        suite green today; each site says so where it sits.
 
         **A transport that dies mid-operation and then fails to reconnect is a
         different fault and the eleven do not cover it.** ``_sftp`` re-reads

@@ -299,10 +299,12 @@ if evidence changes; these are retired.
   `_map_exception`, and seventeen fall out — six and eleven. The fault the six
   serve is an operation whose **first** `_sftp` evaluation fails, which is what
   "a host that was never reached" means and is all the enumeration drives, every
-  cell building a fresh backend. **Four of the six are reached under it** —
-  measured at 15, 12 and 6 consultations across the 84 cells — and the two named
-  latent above are never consulted by any cell at all, which is the same fact
-  stated from the other end rather than a second claim.
+  cell building a fresh backend. **Four of the six are reached under it**, at 6
+  consultations for `read_bytes`' guard, 12 for `delete`'s, 12 for
+  `_raise_if_dir`'s except guard and 3 for its cause guard, across the 84 cells;
+  the two named latent above are consulted **zero** times. Per site rather than
+  as a triple, because the triple was published once with its subjects in the
+  wrong order and the multiset summed the same either way.
   **A transport that dies mid-operation is a different fault and is not fixed
   here** — filed as BUG-278 with its measurement (`write_atomic` with the
   transport flipped inactive between the temp close and the promote: three

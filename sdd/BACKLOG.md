@@ -524,6 +524,40 @@ compliant the day before.
   that item's own body had cited the migration row as though it were satisfied
   before and after — corrected there.
 
+- [ ] **BUG-279 — `unwrap(SFTPClient)` leaks the raw paramiko or socket error when the connection cannot be established**
+  spec: SFTP-024, SFTP-026 · effort: S · audience: user.api
+  SFTP-024's invariant is stated over "no paramiko, socket, or OS exception
+  raised *by the backend*" reaching callers. `unwrap` returns `self._sftp`
+  (`SFTP-026`), which evaluates the lazy property and so can run the whole
+  connect budget — and it is **not** wrapped in `_errors()`, so whatever
+  `_connect` raises escapes unmapped.
+  **Measured** against a backend that has never connected, one entry into
+  `_connect` per case:
+
+  | connect-time shape | raised |
+  |---|---|
+  | refused port | `paramiko.ssh_exception.NoValidConnectionsError` |
+  | DNS failure | `socket.gaierror` |
+  | connect timeout | `TimeoutError` |
+
+  Every other operation answers `BackendUnavailable` for all three.
+  **What it costs a caller:** someone following the health-check guide writes
+  `except BackendUnavailable` and gets none of these; an escape hatch that is
+  documented as returning the driver's client instead raises a driver exception
+  the error model promises never to surface.
+  **Disposition, and it is a real choice rather than a one-liner.** Either wrap
+  the property access in `_errors()` — which makes `unwrap` obey SFTP-024 at
+  the cost of the escape hatch no longer being transparent about *why* it could
+  not hand back a client — or amend SFTP-024 to carve `unwrap` out explicitly,
+  on the grounds that a caller reaching for the driver has opted into driver
+  errors. **The carve-out is the likelier answer** (the method's whole purpose
+  is driver access) but it is currently neither stated nor tested, so the
+  invariant reads as breached rather than bounded. Whichever way, SFTP-026 gains
+  a `Raises:` line, which it has never had.
+  **Pre-existing, not introduced by BUG-274** — that item only measured it,
+  while accounting for why `unwrap` is excluded from its operation enumeration.
+  **Found by BUG-274's round-5 unprimed reviewer.**
+
 - [ ] **BUG-278 — A transport that dies mid-operation pays the connect budget up to three times over when the reconnect meets a host that is gone**
   spec: SFTP-023, SFTP-018 · effort: S · audience: user.api
   BUG-274's sibling, and **not** covered by it: that item's guarantee is scoped
