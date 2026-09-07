@@ -507,7 +507,7 @@ The default implementation is a no-op (always succeeds). Backends override this 
 
 Raises:
 
-- `PermissionDenied` – If credentials are invalid.
+- `PermissionDenied` – If access is denied. Usually invalid credentials, but not always: on SFTP a connect the local machine refuses reaches this too, so treat it as "denied", not "denied by the server".
 - `NotFound` – If the bucket, container, or root path does not hold the container it names — it is absent, or something of another type occupies it.
 - `BackendUnavailable` – If the backend cannot be reached.
 

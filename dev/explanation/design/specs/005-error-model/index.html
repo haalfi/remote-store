@@ -10956,8 +10956,14 @@
 <a id="__codelineno-2-3" name="__codelineno-2-3" href="#__codelineno-2-3"></a>    <span class="n">store</span><span class="o">.</span><span class="n">write</span><span class="p">(</span><span class="s2">"file.txt"</span><span class="p">,</span> <span class="sa">b</span><span class="s2">"new"</span><span class="p">,</span> <span class="n">overwrite</span><span class="o">=</span><span class="kc">False</span><span class="p">)</span>
 </code></pre></div></p>
 <h2 id="err-004-permissiondenied">ERR-004: PermissionDenied<a class="headerlink" href="#err-004-permissiondenied" title="Permanent link">&para;</a></h2>
-<p><strong>Invariant:</strong> Raised when access is denied by the storage backend.
-<strong>Postconditions:</strong> <code>path</code> and <code>backend</code> attributes are set.</p>
+<p><strong>Invariant:</strong> Raised when access is denied.
+<strong>Postconditions:</strong> <code>path</code> and <code>backend</code> attributes are set.
+<strong>Not necessarily by the storage backend</strong>, and the earlier wording of this
+invariant said it was. SFTP classifies on the exception alone, so a connect the
+<em>local</em> machine refuses answers this type too, naming the caller's key — pinned
+by <code>test_a_locally_rejected_connect_is_answered_as_a_denial</code>. That divergence is
+deliberate rather than a mapping bug (SFTP-021), and repairing it needs
+connect-time context only <code>_connect</code> has (BUG-273).</p>
 <h2 id="err-005-invalidpath">ERR-005: InvalidPath<a class="headerlink" href="#err-005-invalidpath" title="Permanent link">&para;</a></h2>
 <p><strong>Invariant:</strong> Raised for malformed, unsafe, or out-of-scope paths, and for node-type mismatches at a valid path.
 <strong>Preconditions:</strong> Either (a) the caller provides a path containing <code>..</code>, null bytes, or that normalizes to empty; or (b) the operation targets a valid path that names the wrong node type — e.g. <code>read()</code> on a directory, <code>delete()</code> on a directory, <code>get_file_info()</code> on a directory, or <code>move()</code>/<code>copy()</code> with a directory as source. In case (b) the path is well-formed; the error is about type, not syntax. See BE-021 for the canonical per-method mapping.

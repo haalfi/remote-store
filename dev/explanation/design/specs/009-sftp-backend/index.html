@@ -11856,7 +11856,7 @@ drop is channel-only (tier 2).</p>
 <h3 id="sftp-031-connect-budget-per-operation">SFTP-031: Connect Budget Per Operation<a class="headerlink" href="#sftp-031-connect-budget-per-operation" title="Permanent link">&para;</a></h3>
 <p><strong>Invariant:</strong> an operation against a host that was never reached enters
 <code>_connect</code> exactly once, whatever the operation and whichever connect-time shape
-occurred.
+<a href="#sftp-023-backendunavailable-mapping">SFTP-023</a> claims.
 <strong>Rationale:</strong> the connect-time shapes are classified by
 <a href="#sftp-023-backendunavailable-mapping">SFTP-023</a> and the budget itself is
 <a href="#sftp-009-tenacity-retry-on-connect">SFTP-009</a>'s; this clause is what a caller
@@ -11898,6 +11898,19 @@ which reaches guards this clause does not cover and costs up to three budgets �
 tracked as BUG-278, with the measurement. Every cell here builds a fresh backend
 whose first <code>_sftp</code> evaluation fails, so the enumeration cannot reach that shape
 and must not be read as ruling it out.</p>
+<p><strong>And "whichever connect-time shape" means the ones SFTP-023 claims</strong>, which is
+the qualifier the invariant now carries and did not before. A connect refused
+with a <em>permission</em> errno is a host that was never reached, but <code>_is_unreachable</code>
+excludes both permission errnos deliberately (SFTP-023), so <code>_probe_is_futile</code>
+declines and the re-entry guard falls through exactly as it did before this
+clause held. Measured at the revision that minted this clause and at the one that
+gave the errno dispatch its <code>EPERM</code> arm, by patching <code>_connect</code> to raise the
+errno and counting entries: <code>read_bytes</code> and <code>delete</code> cost <strong>two</strong>, <code>read</code> /
+<code>exists</code> / <code>check_health</code> one, and <code>ECONNREFUSED</code> one everywhere. Identical on
+both revisions, so it is this clause's blind spot rather than a regression, and
+<code>TestSFTPUnreachableHostCostsOneConnect</code> cannot see it because permission errnos
+are not in the shape set it generates over. Tracked as <strong>BUG-273</strong>, whose fix —
+classifying at <code>_connect</code>, where the context exists — removes it by construction.</p>
 <p>The clause is about the <em>budget</em>, not about probe counts: how many round-trips a
 classification path would have made is the operation's own business, and the
 enumeration above deliberately pins neither that nor which predicate claimed a
@@ -12016,7 +12029,66 @@ The source is never affected.</p>
 mapped to <code>NotFound</code>.
 <strong>Postconditions:</strong> <code>path</code> and <code>backend</code> attributes are set on the error.</p>
 <h3 id="sftp-021-permissiondenied-mapping">SFTP-021: PermissionDenied Mapping<a class="headerlink" href="#sftp-021-permissiondenied-mapping" title="Permanent link">&para;</a></h3>
-<p><strong>Invariant:</strong> <code>IOError</code> with <code>errno.EACCES</code> (errno 13) is mapped to <code>PermissionDenied</code>.</p>
+<p><strong>Invariant:</strong> <code>IOError</code> with <code>errno.EACCES</code> (errno 13) <strong>or <code>errno.EPERM</code></strong>
+(errno 1) is mapped to <code>PermissionDenied</code>.</p>
+<p><strong>Both errnos take one arm of the errno dispatch, and the single site is what
+makes them agree.</strong> Which stat or open a denial lands on depends on the method,
+the <code>overwrite</code> flag, and even the key's depth — <code>_ensure_parent_dirs</code> stats
+ancestors, which a depth-0 key does not have. None of that is visible to a
+caller, so none of it may decide <strong>which permission errno gets which type</strong>.
+Every operation classifies through the dispatch, so answering there is the only
+placement under which the errno stops mattering. No count of sites is given
+deliberately: the point is that the set need not be enumerated for that
+guarantee, and a number here would invite the next reader to re-derive a
+boundary this arm exists to remove.</p>
+<p><strong>One site still swallows a denial, and the invariant is stated over errnos
+rather than sites because of it.</strong> <code>_has_file_ancestor</code>'s walk returns <code>False</code>
+for any non-<code>ENOENT</code>, non-futile stat failure, permission errnos included
+(BK-316 L6 kept that deliberately, so a false "no file ancestor" only forgoes
+the <code>NotFound</code> upgrade). Reaching that walk takes a <strong>conjunction a server does
+not normally produce</strong>, and the clause is stated over it rather than over "an
+ancestor denial", which an earlier revision said and which is false: the
+operation's own failure must be errno-less (<code>read_bytes</code> and <code>delete</code> consult
+<code>_has_file_ancestor</code> only when <code>code is None</code>), the target's classification stat
+must answer <code>ENOENT</code>, and an ancestor stat must answer the permission errno.
+Only then do <code>read_bytes</code> and <code>delete</code> answer the base <code>RemoteStoreError</code> while
+<code>write</code> / <code>write_atomic</code> / <code>open_atomic</code> answer <code>PermissionDenied</code>. <strong>Both
+errnos answer alike in every one of those cells</strong>, which is this clause's
+guarantee; what differs is read-side versus write-side, which is BK-316's
+carve-out and not an errno question.</p>
+<p><strong>Measured, because the conjunction is the whole point.</strong> Deny the operation
+<em>and</em> every stat with the permission errno — a server refusing a directory you
+must traverse, which fails the open with that errno rather than errno-lessly —
+and all 17 entry points answer <code>PermissionDenied</code> for both errnos, <code>read_bytes</code>
+and <code>delete</code> included. The base-class answer appears only under the staging
+<code>_drive_denial</code> constructs. That is why the published upgrade note carries no
+carve-out: a caller cannot reach one.</p>
+<p><strong>The carve-out is not something this arm left untouched</strong>, and an earlier
+revision of this clause said it was. Measured at both revisions: before the arm
+the read/write split held for <code>EACCES</code> alone, because every <code>EPERM</code> cell —
+writers included — answered the base class. The six writer cells reach the split
+<em>through</em> this arm, and they die when it is narrowed back
+(<code>test_the_two_permission_errnos_answer_alike_on_every_entry_point</code>, the
+<code>*---nested-ancestor</code> cells). What pre-dates the arm is the read-versus-write
+shape, not the answer either errno got.</p>
+<p><strong>Guarding the sites individually was tried twice and does not converge</strong>: each
+subset drew a boundary somewhere a caller cannot see — first between <code>write</code>'s
+two overwrite modes, then between <code>read_bytes</code> and <code>get_file_info</code> on one path
+and one denial. All fifteen <code>Raises:</code> blocks that name a permission errno
+therefore state the same rule — <code>check_health</code>'s included, which adds only that
+the denial need not be the server's — and the three listing methods describe the
+answer in prose rather than a <code>Raises:</code> block. <strong>Fifteen is derived</strong>, by an AST
+walk over <code>_sftp.py</code> collecting every function whose <code>Raises:</code> section names
+<code>EACCES</code> or <code>EPERM</code>; counting the shared wording instead returns 14, because
+<code>check_health</code>'s block is worded differently, and two revisions of this sentence
+were wrong from exactly that substitution. This also puts SFTP
+where <code>LocalBackend</code> already is, which catches bare <code>PermissionError</code> and so has
+always answered both errnos alike.</p>
+<p><strong>The bound, stated rather than hidden:</strong> the dispatch sees only the exception,
+so a <strong>connect-time</strong> <code>EPERM</code> — a connect this machine rejected locally — is
+answered as a denial naming the caller's key. That was already true of <code>EACCES</code>;
+making the two alike is what lets one fix reach both, and repairing it needs
+connect-time context only <code>_connect</code> has (SFTP-023).</p>
 <h3 id="sftp-022-alreadyexists-mapping">SFTP-022: AlreadyExists Mapping<a class="headerlink" href="#sftp-022-alreadyexists-mapping" title="Permanent link">&para;</a></h3>
 <p><strong>Invariant:</strong> <code>IOError</code> with <code>errno.EEXIST</code> (errno 17) is mapped to <code>AlreadyExists</code>.</p>
 <h3 id="sftp-023-backendunavailable-mapping">SFTP-023: BackendUnavailable Mapping<a class="headerlink" href="#sftp-023-backendunavailable-mapping" title="Permanent link">&para;</a></h3>
@@ -12090,32 +12162,32 @@ classification stat, which needs a nested key or the walk yields no ancestors.</
 <p>Every other <code>OSError</code> the errno dispatch declines keeps the base
 <code>RemoteStoreError</code> — <code>EIO</code> and <code>ENOSPC</code> are faults of a connection that is
 working.</p>
-<p><strong>The two permission errnos are known exclusions rather than oversights</strong>, and
-one reason covers both: this mapping sees only the exception, so it cannot tell
-a connect-time errno from a live-channel one. paramiko re-raises <code>EACCES</code> and
-<code>EPERM</code> unwrapped like <code>ENETUNREACH</code> / <code>ENETDOWN</code> / <code>EHOSTDOWN</code>, and what each
-then reaches differs:</p>
-<ul>
-<li><code>EACCES</code> takes the <code>EACCES</code> arm and is answered <code>PermissionDenied</code> — naming
-  the caller's key on a keyed operation, and a bare <code>Permission denied:</code> on
-  <code>check_health</code>. <strong>Whether any connect produces it is unestablished</strong>; BUG-273
-  records the trigger as unknown, so this is what would happen and not a
-  behaviour a reader can currently observe.</li>
-<li><code>EPERM</code> has no arm at all and falls to the generic one as the base
-  <code>RemoteStoreError</code>. This is the local rejection that <em>is</em> reproducible — a
-  netfilter <code>REJECT</code> on the <code>OUTPUT</code> chain yields it — so it is the shape a
-  reader meets, and it is BUG-265's own defect surviving in the errno the
-  connect-time set does not claim. <strong>BUG-273 carries this half</strong> — a fix needs
-  the connect-time context, which only <code>_connect</code> has. BUG-275 carries the
-  absent <code>EPERM</code> arm itself, an older live-channel defect and the reason the
-  fall-through lands where it does; it would change this shape's answer from
-  the base class to <code>PermissionDenied</code>, which is still not the promised type.</li>
-</ul>
-<p>Neither is claimed here because <code>_raise_if_dir</code>'s permission re-raise
-deliberately passes <strong>both</strong> back through this mapping from a working channel,
-so claiming either would answer a server-reported denial with
-<code>BackendUnavailable</code> and discard a healthy client. BUG-273 carries that
-exclusion for both.</p>
+<p><strong>The two permission errnos are known exclusions rather than oversights.</strong> One
+reason covers the pair — this mapping sees only the exception, so it cannot tell
+a connect-time errno from a live-channel one — but what keeps each <em>individually</em>
+out differs, and that per-errno evidence is below. paramiko re-raises <code>EACCES</code> and
+<code>EPERM</code> unwrapped like <code>ENETUNREACH</code> / <code>ENETDOWN</code> / <code>EHOSTDOWN</code>, and <strong>both now
+reach the same arm and are answered <code>PermissionDenied</code></strong> (SFTP-021) — naming the
+caller's key on a keyed operation, and a bare <code>Permission denied:</code> on
+<code>check_health</code>. For a connect that never left the machine that is the wrong
+type, identically for each.</p>
+<p><strong>BUG-273 carries both halves, and they are one shape rather than two.</strong> A fix
+needs the connect-time context only <code>_connect</code> has. What differs is only how
+reachable each is: a netfilter <code>REJECT</code> on the <code>OUTPUT</code> chain reproduces the
+<code>EPERM</code> shape, so that is the one a reader meets, while whether any connect
+produces <code>EACCES</code> is unestablished. Before SFTP-021 claimed <code>EPERM</code> the two
+answered differently and the item would have had to fix them separately.</p>
+<p>Neither is claimed <em>here</em> — in the unreachable set. <code>EACCES</code> reaches this
+mapping from a <em>working</em> channel on any denied
+operation: paramiko's <code>SFTPClient._convert_status</code> renders
+<code>SSH_FX_PERMISSION_DENIED</code> as <code>IOError(EACCES)</code>, measured on paramiko 5.0.0. So
+claiming it would answer a server-reported denial with <code>BackendUnavailable</code> and
+discard a healthy client. <strong>No live-channel producer of <code>EPERM</code> is known</strong>: no
+SFTP status code renders as that errno, so it arrives only from outside the SFTP
+protocol. (paramiko's renderer, not this module's errno dispatch, which
+SFTP-021 gives an <code>EPERM</code> arm.) It stays excluded because claiming it would take away the
+<code>PermissionDenied</code> SFTP-021 now guarantees and clear the client with it, and
+because the widening was tried and measured harmful.</p>
 <p><strong>Every</strong> <code>BackendUnavailable</code> this mapping returns — the <code>SSHException</code> family
 included — invalidates the cached SFTP client so the next operation reconnects
 (see SFTP-010, tier 2). The list is not the guarantee: recovery is anchored to

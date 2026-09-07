@@ -68,9 +68,11 @@ PermissionDenied(
 
 Bases: `RemoteStoreError`
 
-Raised when access is denied by the storage backend.
+Raised when access is denied.
 
 Raised by any Store or Backend method when the underlying storage system denies access (e.g., missing credentials, insufficient permissions on the bucket or container).
+
+**Not always the storage system**: on SFTP the error mapping sees only the exception, so a connect the local machine refuses — a firewall rule — is reported as a denial too, naming the key that was asked for. Read this type as "denied", not "denied by the server"; distinguishing the two needs connect-time context and is tracked separately.
 
 ## InvalidPath
 

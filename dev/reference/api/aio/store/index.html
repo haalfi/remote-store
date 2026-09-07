@@ -13689,7 +13689,10 @@ location.</p>
               <code><a class="autorefs autorefs-internal" title="            PermissionDenied (remote_store._errors.PermissionDenied)" href="../../errors/#remote_store.PermissionDenied">PermissionDenied</a></code>
             –
           <div class="doc-md-description">
-            <p>If credentials are invalid.</p>
+            <p>If access is denied. Usually invalid credentials,
+but not always: on SFTP a connect the local machine refuses
+reaches this too, so treat it as "denied", not "denied by the
+server".</p>
           </div>
         </li>
         <li class="doc-section-item field-body">

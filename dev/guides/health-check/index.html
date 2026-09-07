@@ -10821,7 +10821,7 @@ processing requests.</p>
 <tbody>
 <tr>
 <td><code>PermissionDenied</code></td>
-<td>Invalid credentials or insufficient permissions</td>
+<td>Access denied — usually invalid credentials or insufficient permissions, but see the warning below</td>
 </tr>
 <tr>
 <td><code>NotFound</code></td>
@@ -10844,6 +10844,21 @@ processing requests.</p>
 <a id="__codelineno-1-9" name="__codelineno-1-9" href="#__codelineno-1-9"></a><span class="k">except</span> <span class="n">BackendUnavailable</span><span class="p">:</span>
 <a id="__codelineno-1-10" name="__codelineno-1-10" href="#__codelineno-1-10"></a>    <span class="n">log</span><span class="o">.</span><span class="n">error</span><span class="p">(</span><span class="s2">"Backend unreachable for </span><span class="si">%s</span><span class="s2">"</span><span class="p">,</span> <span class="n">store</span><span class="p">)</span>
 </code></pre></div>
+<div class="admonition warning">
+<p class="admonition-title">On SFTP, a connection your own machine refuses reads as <code>PermissionDenied</code></p>
+<p>The SFTP error mapping sees only the exception, so it cannot tell a denial
+your server reported from one the local machine raised refusing to connect —
+a firewall rule, typically. Either way <code>ping()</code> raises <code>PermissionDenied</code>,
+not <code>BackendUnavailable</code>, so the handler above logs "Bad credentials" for a
+request that never left the machine.</p>
+<p><strong>Nothing on the error tells the two apart.</strong> <code>ping()</code> names no key, so both
+arrive as <code>Permission denied:</code> with <code>path=""</code>; on a keyed call both name
+that key instead. The empty <code>path</code> separates a <code>ping()</code> from a keyed
+operation, not a server denial from a local refusal. Distinguishing them
+needs connect-time context the mapping does not have, and is tracked as its
+own fix — until it lands, read a <code>PermissionDenied</code> from <code>ping()</code> as
+"denied", not "denied by the server". The other backends are unaffected.</p>
+</div>
 <h2 id="per-backend-strategies">Per-backend strategies<a class="headerlink" href="#per-backend-strategies" title="Permanent link">&para;</a></h2>
 <p>Each backend uses the cheapest possible read-only operation:</p>
 <table>

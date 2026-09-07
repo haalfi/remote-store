@@ -12275,7 +12275,12 @@ connection scope) and issues one <code>stat</code> round-trip.</p>
               <code><a class="autorefs autorefs-internal" title="            PermissionDenied (remote_store._errors.PermissionDenied)" href="../../../reference/api/errors/#remote_store.PermissionDenied">PermissionDenied</a></code>
             –
           <div class="doc-md-description">
-            <p>If the server denies access to the base path.</p>
+            <p>If access to the base path is denied (<code>EACCES</code> or
+<code>EPERM</code>). <strong>Not necessarily by the server</strong>: the mapping sees
+only the exception, so a connect this machine refused locally —
+a firewall rule — reaches this too, as <code>Permission denied:</code>
+with an empty key. Distinguishing the two needs connect-time
+context and is tracked separately.</p>
           </div>
         </li>
         <li class="doc-section-item field-body">
@@ -12382,7 +12387,8 @@ connection scope) and issues one <code>stat</code> round-trip.</p>
               <code><a class="autorefs autorefs-internal" title="            PermissionDenied (remote_store._errors.PermissionDenied)" href="../../../reference/api/errors/#remote_store.PermissionDenied">PermissionDenied</a></code>
             –
           <div class="doc-md-description">
-            <p>If the server denies access (<code>EACCES</code>).</p>
+            <p>If the server denies access (<code>EACCES</code> or
+<code>EPERM</code>).</p>
           </div>
         </li>
         <li class="doc-section-item field-body">
@@ -12422,7 +12428,8 @@ or fails.</p>
               <code><a class="autorefs autorefs-internal" title="            PermissionDenied (remote_store._errors.PermissionDenied)" href="../../../reference/api/errors/#remote_store.PermissionDenied">PermissionDenied</a></code>
             –
           <div class="doc-md-description">
-            <p>If the server denies access (<code>EACCES</code>).</p>
+            <p>If the server denies access (<code>EACCES</code> or
+<code>EPERM</code>).</p>
           </div>
         </li>
         <li class="doc-section-item field-body">
@@ -12462,7 +12469,8 @@ or fails.</p>
               <code><a class="autorefs autorefs-internal" title="            PermissionDenied (remote_store._errors.PermissionDenied)" href="../../../reference/api/errors/#remote_store.PermissionDenied">PermissionDenied</a></code>
             –
           <div class="doc-md-description">
-            <p>If the server denies access (<code>EACCES</code>).</p>
+            <p>If the server denies access (<code>EACCES</code> or
+<code>EPERM</code>).</p>
           </div>
         </li>
         <li class="doc-section-item field-body">
@@ -12524,7 +12532,8 @@ file.</p>
               <code><a class="autorefs autorefs-internal" title="            PermissionDenied (remote_store._errors.PermissionDenied)" href="../../../reference/api/errors/#remote_store.PermissionDenied">PermissionDenied</a></code>
             –
           <div class="doc-md-description">
-            <p>If the server denies access (<code>EACCES</code>).</p>
+            <p>If the server denies access (<code>EACCES</code> or
+<code>EPERM</code>).</p>
           </div>
         </li>
         <li class="doc-section-item field-body">
@@ -12589,7 +12598,8 @@ assumption above).</p>
               <code><a class="autorefs autorefs-internal" title="            PermissionDenied (remote_store._errors.PermissionDenied)" href="../../../reference/api/errors/#remote_store.PermissionDenied">PermissionDenied</a></code>
             –
           <div class="doc-md-description">
-            <p>If the server denies access (<code>EACCES</code>).</p>
+            <p>If the server denies access (<code>EACCES</code> or
+<code>EPERM</code>).</p>
           </div>
         </li>
         <li class="doc-section-item field-body">
@@ -12673,7 +12683,8 @@ an ancestor of <em>path</em> exists as a regular file.</p>
               <code><a class="autorefs autorefs-internal" title="            PermissionDenied (remote_store._errors.PermissionDenied)" href="../../../reference/api/errors/#remote_store.PermissionDenied">PermissionDenied</a></code>
             –
           <div class="doc-md-description">
-            <p>If the server denies access (<code>EACCES</code>).</p>
+            <p>If the server denies access (<code>EACCES</code> or
+<code>EPERM</code>).</p>
           </div>
         </li>
         <li class="doc-section-item field-body">
@@ -12766,7 +12777,8 @@ an ancestor of <em>path</em> exists as a regular file.</p>
               <code><a class="autorefs autorefs-internal" title="            PermissionDenied (remote_store._errors.PermissionDenied)" href="../../../reference/api/errors/#remote_store.PermissionDenied">PermissionDenied</a></code>
             –
           <div class="doc-md-description">
-            <p>If the server denies access (<code>EACCES</code>).</p>
+            <p>If the server denies access (<code>EACCES</code> or
+<code>EPERM</code>).</p>
           </div>
         </li>
         <li class="doc-section-item field-body">
@@ -12837,7 +12849,8 @@ an ancestor of <em>path</em> exists as a regular file.</p>
               <code><a class="autorefs autorefs-internal" title="            PermissionDenied (remote_store._errors.PermissionDenied)" href="../../../reference/api/errors/#remote_store.PermissionDenied">PermissionDenied</a></code>
             –
           <div class="doc-md-description">
-            <p>If the server denies access (<code>EACCES</code>).</p>
+            <p>If the server denies access (<code>EACCES</code> or
+<code>EPERM</code>).</p>
           </div>
         </li>
         <li class="doc-section-item field-body">
@@ -12892,7 +12905,8 @@ file) and <code>missing_ok</code> is <code>False</code>.</p>
               <code><a class="autorefs autorefs-internal" title="            PermissionDenied (remote_store._errors.PermissionDenied)" href="../../../reference/api/errors/#remote_store.PermissionDenied">PermissionDenied</a></code>
             –
           <div class="doc-md-description">
-            <p>If the server denies access (<code>EACCES</code>).</p>
+            <p>If the server denies access (<code>EACCES</code> or
+<code>EPERM</code>).</p>
           </div>
         </li>
         <li class="doc-section-item field-body">
@@ -12963,7 +12977,8 @@ it has no entries.</p>
               <code><a class="autorefs autorefs-internal" title="            PermissionDenied (remote_store._errors.PermissionDenied)" href="../../../reference/api/errors/#remote_store.PermissionDenied">PermissionDenied</a></code>
             –
           <div class="doc-md-description">
-            <p>If the server denies access (<code>EACCES</code>).</p>
+            <p>If the server denies access (<code>EACCES</code> or
+<code>EPERM</code>).</p>
           </div>
         </li>
         <li class="doc-section-item field-body">
@@ -13008,7 +13023,10 @@ or fails.</p>
 <p>Lazily walks the remote directory (<code>listdir_attr</code>); a missing <em>path</em>
 yields nothing. <code>recursive</code> descends via one directory-listing
 round-trip per folder (<code>max_depth</code> bounds the descent). Failures other
-than a missing path surface as <code>RemoteStoreError</code> during iteration.</p>
+than a missing path surface during iteration, mapped as they are for the
+single-object operations — a denied listing raises <code>PermissionDenied</code>
+(<code>EACCES</code> or <code>EPERM</code>), a dropped or unreachable connection
+<code>BackendUnavailable</code>, and anything else the base <code>RemoteStoreError</code>.</p>
 
 
     </div>
@@ -13034,8 +13052,9 @@ than a missing path surface as <code>RemoteStoreError</code> during iteration.</
     <div class="doc doc-contents ">
 
         <p>Yield immediate subfolders of <em>path</em> as <code>FolderEntry</code> records.</p>
-<p>One directory-listing round-trip; a missing <em>path</em> yields nothing, and
-other failures surface as <code>RemoteStoreError</code> during iteration.</p>
+<p>One directory-listing round-trip; a missing <em>path</em> yields nothing. Other
+failures surface during iteration, mapped as in <code>list_files</code> — a denied
+listing raises <code>PermissionDenied</code> (<code>EACCES</code> or <code>EPERM</code>).</p>
 
 
     </div>
@@ -13070,8 +13089,9 @@ other failures surface as <code>RemoteStoreError</code> during iteration.</p>
         <p>Yield the immediate files and folders under <em>path</em> in one listing.</p>
 <p>Overrides the base two-pass default with a single <code>listdir_attr</code>
 round-trip, yielding <code>FileInfo</code> for files and <code>FolderEntry</code> for
-folders. A missing <em>path</em> yields nothing; other failures surface as
-<code>RemoteStoreError</code> during iteration.</p>
+folders. A missing <em>path</em> yields nothing; other failures surface during
+iteration, mapped as in <code>list_files</code> — a denied listing raises
+<code>PermissionDenied</code> (<code>EACCES</code> or <code>EPERM</code>).</p>
 
 
     </div>
@@ -13119,7 +13139,8 @@ folders. A missing <em>path</em> yields nothing; other failures surface as
               <code><a class="autorefs autorefs-internal" title="            PermissionDenied (remote_store._errors.PermissionDenied)" href="../../../reference/api/errors/#remote_store.PermissionDenied">PermissionDenied</a></code>
             –
           <div class="doc-md-description">
-            <p>If the server denies access (<code>EACCES</code>).</p>
+            <p>If the server denies access (<code>EACCES</code> or
+<code>EPERM</code>).</p>
           </div>
         </li>
         <li class="doc-section-item field-body">
@@ -13181,7 +13202,8 @@ folder), so cost scales with the number of descendants.</p>
               <code><a class="autorefs autorefs-internal" title="            PermissionDenied (remote_store._errors.PermissionDenied)" href="../../../reference/api/errors/#remote_store.PermissionDenied">PermissionDenied</a></code>
             –
           <div class="doc-md-description">
-            <p>If the server denies access (<code>EACCES</code>).</p>
+            <p>If the server denies access (<code>EACCES</code> or
+<code>EPERM</code>).</p>
           </div>
         </li>
         <li class="doc-section-item field-body">
@@ -13264,7 +13286,8 @@ directory, or an ancestor of <em>dst</em> exists as a regular file.</p>
               <code><a class="autorefs autorefs-internal" title="            PermissionDenied (remote_store._errors.PermissionDenied)" href="../../../reference/api/errors/#remote_store.PermissionDenied">PermissionDenied</a></code>
             –
           <div class="doc-md-description">
-            <p>If the server denies access (<code>EACCES</code>).</p>
+            <p>If the server denies access (<code>EACCES</code> or
+<code>EPERM</code>).</p>
           </div>
         </li>
         <li class="doc-section-item field-body">
@@ -13337,7 +13360,8 @@ directory, or an ancestor of <em>dst</em> exists as a regular file.</p>
               <code><a class="autorefs autorefs-internal" title="            PermissionDenied (remote_store._errors.PermissionDenied)" href="../../../reference/api/errors/#remote_store.PermissionDenied">PermissionDenied</a></code>
             –
           <div class="doc-md-description">
-            <p>If the server denies access (<code>EACCES</code>).</p>
+            <p>If the server denies access (<code>EACCES</code> or
+<code>EPERM</code>).</p>
           </div>
         </li>
         <li class="doc-section-item field-body">

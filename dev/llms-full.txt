@@ -2970,11 +2970,11 @@ store.ping()  # raises on failure, silent on success
 
 `ping()` raises the same exceptions as other Store operations:
 
-| Exception            | Meaning                                             |
-| -------------------- | --------------------------------------------------- |
-| `PermissionDenied`   | Invalid credentials or insufficient permissions     |
-| `NotFound`           | Bucket, container, or root directory does not exist |
-| `BackendUnavailable` | Network error, DNS failure, or timeout              |
+| Exception            | Meaning                                                                                            |
+| -------------------- | -------------------------------------------------------------------------------------------------- |
+| `PermissionDenied`   | Access denied — usually invalid credentials or insufficient permissions, but see the warning below |
+| `NotFound`           | Bucket, container, or root directory does not exist                                                |
+| `BackendUnavailable` | Network error, DNS failure, or timeout                                                             |
 
 ```
 from remote_store import BackendUnavailable, NotFound, PermissionDenied
@@ -2988,6 +2988,12 @@ except NotFound:
 except BackendUnavailable:
     log.error("Backend unreachable for %s", store)
 ```
+
+On SFTP, a connection your own machine refuses reads as `PermissionDenied`
+
+The SFTP error mapping sees only the exception, so it cannot tell a denial your server reported from one the local machine raised refusing to connect — a firewall rule, typically. Either way `ping()` raises `PermissionDenied`, not `BackendUnavailable`, so the handler above logs "Bad credentials" for a request that never left the machine.
+
+**Nothing on the error tells the two apart.** `ping()` names no key, so both arrive as `Permission denied:` with `path=""`; on a keyed call both name that key instead. The empty `path` separates a `ping()` from a keyed operation, not a server denial from a local refusal. Distinguishing them needs connect-time context the mapping does not have, and is tracked as its own fix — until it lands, read a `PermissionDenied` from `ping()` as "denied", not "denied by the server". The other backends are unaffected.
 
 ## Per-backend strategies
 
@@ -8351,7 +8357,7 @@ Establishes the SSH/SFTP connection lazily if needed (retried at connection scop
 Raises:
 
 - `NotFound` – If the configured base path does not exist.
-- `PermissionDenied` – If the server denies access to the base path.
+- `PermissionDenied` – If access to the base path is denied (EACCES or EPERM). Not necessarily by the server: the mapping sees only the exception, so a connect this machine refused locally — a firewall rule — reaches this too, as Permission denied: with an empty key. Distinguishing the two needs connect-time context and is tracked separately.
 - `BackendUnavailable` – If the SSH/SFTP connection cannot be established.
 
 ### resolve
@@ -8383,7 +8389,7 @@ Issues one `stat` round-trip; a missing path returns `False`.
 
 Raises:
 
-- `PermissionDenied` – If the server denies access (EACCES).
+- `PermissionDenied` – If the server denies access (EACCES or EPERM).
 - `BackendUnavailable` – If the SSH/SFTP connection cannot be established or fails.
 
 ### is_file
@@ -8396,7 +8402,7 @@ Return `True` if *path* is an existing regular file (`False` if absent or a fold
 
 Raises:
 
-- `PermissionDenied` – If the server denies access (EACCES).
+- `PermissionDenied` – If the server denies access (EACCES or EPERM).
 - `BackendUnavailable` – If the SSH/SFTP connection cannot be established or fails.
 
 ### is_folder
@@ -8409,7 +8415,7 @@ Return `True` if *path* is an existing directory (`False` if absent or a file).
 
 Raises:
 
-- `PermissionDenied` – If the server denies access (EACCES).
+- `PermissionDenied` – If the server denies access (EACCES or EPERM).
 - `BackendUnavailable` – If the SSH/SFTP connection cannot be established or fails.
 
 ### read
@@ -8426,7 +8432,7 @@ Raises:
 
 - `NotFound` – If the file does not exist, or a path component is itself a file.
 - `InvalidPath` – If path names a directory.
-- `PermissionDenied` – If the server denies access (EACCES).
+- `PermissionDenied` – If the server denies access (EACCES or EPERM).
 - `BackendUnavailable` – If the SSH/SFTP connection cannot be established or fails mid-read.
 
 ### read_bytes
@@ -8445,7 +8451,7 @@ Raises:
 
 - `NotFound` – If the file does not exist, or a path component is itself a file.
 - `InvalidPath` – If path names a directory (subject to the server assumption above).
-- `PermissionDenied` – If the server denies access (EACCES).
+- `PermissionDenied` – If the server denies access (EACCES or EPERM).
 - `BackendUnavailable` – If the SSH/SFTP connection cannot be established or fails mid-read.
 
 ### write
@@ -8470,7 +8476,7 @@ Raises:
 
 - `AlreadyExists` – If the file exists and overwrite is False.
 - `InvalidPath` – If path is the store root, or names a directory, or an ancestor of path exists as a regular file.
-- `PermissionDenied` – If the server denies access (EACCES).
+- `PermissionDenied` – If the server denies access (EACCES or EPERM).
 - `BackendUnavailable` – If the SSH/SFTP connection cannot be established or fails mid-write.
 
 ### write_atomic
@@ -8499,7 +8505,7 @@ Raises:
 
 - `AlreadyExists` – If the file exists and overwrite is False.
 - `InvalidPath` – If path is the store root, or names a directory, or an ancestor of path exists as a regular file.
-- `PermissionDenied` – If the server denies access (EACCES).
+- `PermissionDenied` – If the server denies access (EACCES or EPERM).
 - `BackendUnavailable` – If the SSH/SFTP connection cannot be established or fails.
 
 ### open_atomic
@@ -8520,7 +8526,7 @@ Raises:
 
 - `AlreadyExists` – If the file exists and overwrite is False.
 - `InvalidPath` – If path is the store root, or names a directory, or an ancestor of path exists as a regular file.
-- `PermissionDenied` – If the server denies access (EACCES).
+- `PermissionDenied` – If the server denies access (EACCES or EPERM).
 - `BackendUnavailable` – If the SSH/SFTP connection cannot be established or fails.
 
 ### delete
@@ -8535,7 +8541,7 @@ Raises:
 
 - `NotFound` – If the file does not exist (or a path component is itself a file) and missing_ok is False.
 - `InvalidPath` – If path names a directory (use delete_folder).
-- `PermissionDenied` – If the server denies access (EACCES).
+- `PermissionDenied` – If the server denies access (EACCES or EPERM).
 - `BackendUnavailable` – If the SSH/SFTP connection cannot be established or fails.
 
 ### delete_folder
@@ -8558,7 +8564,7 @@ Raises:
 - `NotFound` – If the folder does not exist and missing_ok is False.
 - `InvalidPath` – If path names a file, not a folder.
 - `DirectoryNotEmpty` – If the folder is non-empty and recursive is False.
-- `PermissionDenied` – If the server denies access (EACCES).
+- `PermissionDenied` – If the server denies access (EACCES or EPERM).
 - `BackendUnavailable` – If the SSH/SFTP connection cannot be established or fails.
 
 ### list_files
@@ -8574,7 +8580,7 @@ list_files(
 
 Yield files under *path*, one `FileInfo` at a time.
 
-Lazily walks the remote directory (`listdir_attr`); a missing *path* yields nothing. `recursive` descends via one directory-listing round-trip per folder (`max_depth` bounds the descent). Failures other than a missing path surface as `RemoteStoreError` during iteration.
+Lazily walks the remote directory (`listdir_attr`); a missing *path* yields nothing. `recursive` descends via one directory-listing round-trip per folder (`max_depth` bounds the descent). Failures other than a missing path surface during iteration, mapped as they are for the single-object operations — a denied listing raises `PermissionDenied` (`EACCES` or `EPERM`), a dropped or unreachable connection `BackendUnavailable`, and anything else the base `RemoteStoreError`.
 
 ### list_folders
 
@@ -8584,7 +8590,7 @@ list_folders(path: str) -> Iterator[FolderEntry]
 
 Yield immediate subfolders of *path* as `FolderEntry` records.
 
-One directory-listing round-trip; a missing *path* yields nothing, and other failures surface as `RemoteStoreError` during iteration.
+One directory-listing round-trip; a missing *path* yields nothing. Other failures surface during iteration, mapped as in `list_files` — a denied listing raises `PermissionDenied` (`EACCES` or `EPERM`).
 
 ### iter_children
 
@@ -8596,7 +8602,7 @@ iter_children(
 
 Yield the immediate files and folders under *path* in one listing.
 
-Overrides the base two-pass default with a single `listdir_attr` round-trip, yielding `FileInfo` for files and `FolderEntry` for folders. A missing *path* yields nothing; other failures surface as `RemoteStoreError` during iteration.
+Overrides the base two-pass default with a single `listdir_attr` round-trip, yielding `FileInfo` for files and `FolderEntry` for folders. A missing *path* yields nothing; other failures surface during iteration, mapped as in `list_files` — a denied listing raises `PermissionDenied` (`EACCES` or `EPERM`).
 
 ### get_file_info
 
@@ -8610,7 +8616,7 @@ Raises:
 
 - `NotFound` – If the file does not exist.
 - `InvalidPath` – If path names a directory, not a file.
-- `PermissionDenied` – If the server denies access (EACCES).
+- `PermissionDenied` – If the server denies access (EACCES or EPERM).
 - `BackendUnavailable` – If the SSH/SFTP connection cannot be established or fails.
 
 ### get_folder_info
@@ -8627,7 +8633,7 @@ Raises:
 
 - `NotFound` – If the folder does not exist.
 - `InvalidPath` – If path names a file, not a folder.
-- `PermissionDenied` – If the server denies access (EACCES).
+- `PermissionDenied` – If the server denies access (EACCES or EPERM).
 - `BackendUnavailable` – If the SSH/SFTP connection cannot be established or fails.
 
 ### move
@@ -8649,7 +8655,7 @@ Raises:
 - `NotFound` – If src does not exist.
 - `InvalidPath` – If src or dst is the store root, or names a directory, or an ancestor of dst exists as a regular file.
 - `AlreadyExists` – If dst exists, src != dst, and overwrite is False.
-- `PermissionDenied` – If the server denies access (EACCES).
+- `PermissionDenied` – If the server denies access (EACCES or EPERM).
 - `BackendUnavailable` – If the SSH/SFTP connection cannot be established or fails.
 
 ### copy
@@ -8669,7 +8675,7 @@ Raises:
 - `NotFound` – If src does not exist.
 - `InvalidPath` – If src or dst is the store root, or names a directory, or an ancestor of dst exists as a regular file.
 - `AlreadyExists` – If dst exists, src != dst, and overwrite is False.
-- `PermissionDenied` – If the server denies access (EACCES).
+- `PermissionDenied` – If the server denies access (EACCES or EPERM).
 - `BackendUnavailable` – If the SSH/SFTP connection cannot be established or fails.
 
 # SQL Blob Backend
@@ -10149,7 +10155,7 @@ The default implementation is a no-op (always succeeds). Backends override this 
 
 Raises:
 
-- `PermissionDenied` – If credentials are invalid.
+- `PermissionDenied` – If access is denied. Usually invalid credentials, but not always: on SFTP a connect the local machine refuses reaches this too, so treat it as "denied", not "denied by the server".
 - `NotFound` – If the bucket, container, or root path does not hold the container it names — it is absent, or something of another type occupies it.
 - `BackendUnavailable` – If the backend cannot be reached.
 
@@ -10601,9 +10607,11 @@ PermissionDenied(
 
 Bases: `RemoteStoreError`
 
-Raised when access is denied by the storage backend.
+Raised when access is denied.
 
 Raised by any Store or Backend method when the underlying storage system denies access (e.g., missing credentials, insufficient permissions on the bucket or container).
+
+**Not always the storage system**: on SFTP the error mapping sees only the exception, so a connect the local machine refuses — a firewall rule — is reported as a denial too, naming the key that was asked for. Read this type as "denied", not "denied by the server"; distinguishing the two needs connect-time context and is tracked separately.
 
 ## InvalidPath
 
@@ -12121,7 +12129,7 @@ Verify that the backend is reachable.
 
 Raises:
 
-- `PermissionDenied` – If credentials are invalid.
+- `PermissionDenied` – If access is denied. Usually invalid credentials, but not always: on SFTP a connect the local machine refuses reaches this too, so treat it as "denied", not "denied by the server".
 - `NotFound` – If the bucket, container, or root path does not hold the container it names — it is absent, or something of another type occupies it.
 - `BackendUnavailable` – If the backend cannot be reached.
 
@@ -13324,7 +13332,7 @@ The default implementation is a no-op (always succeeds). Backends override this 
 
 Raises:
 
-- `PermissionDenied` – If credentials are invalid.
+- `PermissionDenied` – If access is denied. Usually invalid credentials, but not always: on SFTP a connect the local machine refuses reaches this too, so treat it as "denied", not "denied by the server".
 - `NotFound` – If the bucket, container, or root path does not hold the container it names — it is absent, or something of another type occupies it.
 - `BackendUnavailable` – If the backend cannot be reached.
 
@@ -14075,7 +14083,7 @@ Verify that the backend is reachable.
 
 Raises:
 
-- `PermissionDenied` – If credentials are invalid.
+- `PermissionDenied` – If access is denied. Usually invalid credentials, but not always: on SFTP a connect the local machine refuses reaches this too, so treat it as "denied", not "denied by the server".
 - `NotFound` – If the bucket, container, or root path does not hold the container it names — it is absent, or something of another type occupies it.
 - `BackendUnavailable` – If the backend cannot be reached.
 
@@ -17179,7 +17187,7 @@ Establishes the SSH/SFTP connection lazily if needed (retried at connection scop
 Raises:
 
 - `NotFound` – If the configured base path does not exist.
-- `PermissionDenied` – If the server denies access to the base path.
+- `PermissionDenied` – If access to the base path is denied (EACCES or EPERM). Not necessarily by the server: the mapping sees only the exception, so a connect this machine refused locally — a firewall rule — reaches this too, as Permission denied: with an empty key. Distinguishing the two needs connect-time context and is tracked separately.
 - `BackendUnavailable` – If the SSH/SFTP connection cannot be established.
 
 ### resolve
@@ -17211,7 +17219,7 @@ Issues one `stat` round-trip; a missing path returns `False`.
 
 Raises:
 
-- `PermissionDenied` – If the server denies access (EACCES).
+- `PermissionDenied` – If the server denies access (EACCES or EPERM).
 - `BackendUnavailable` – If the SSH/SFTP connection cannot be established or fails.
 
 ### is_file
@@ -17224,7 +17232,7 @@ Return `True` if *path* is an existing regular file (`False` if absent or a fold
 
 Raises:
 
-- `PermissionDenied` – If the server denies access (EACCES).
+- `PermissionDenied` – If the server denies access (EACCES or EPERM).
 - `BackendUnavailable` – If the SSH/SFTP connection cannot be established or fails.
 
 ### is_folder
@@ -17237,7 +17245,7 @@ Return `True` if *path* is an existing directory (`False` if absent or a file).
 
 Raises:
 
-- `PermissionDenied` – If the server denies access (EACCES).
+- `PermissionDenied` – If the server denies access (EACCES or EPERM).
 - `BackendUnavailable` – If the SSH/SFTP connection cannot be established or fails.
 
 ### read
@@ -17254,7 +17262,7 @@ Raises:
 
 - `NotFound` – If the file does not exist, or a path component is itself a file.
 - `InvalidPath` – If path names a directory.
-- `PermissionDenied` – If the server denies access (EACCES).
+- `PermissionDenied` – If the server denies access (EACCES or EPERM).
 - `BackendUnavailable` – If the SSH/SFTP connection cannot be established or fails mid-read.
 
 ### read_bytes
@@ -17273,7 +17281,7 @@ Raises:
 
 - `NotFound` – If the file does not exist, or a path component is itself a file.
 - `InvalidPath` – If path names a directory (subject to the server assumption above).
-- `PermissionDenied` – If the server denies access (EACCES).
+- `PermissionDenied` – If the server denies access (EACCES or EPERM).
 - `BackendUnavailable` – If the SSH/SFTP connection cannot be established or fails mid-read.
 
 ### write
@@ -17298,7 +17306,7 @@ Raises:
 
 - `AlreadyExists` – If the file exists and overwrite is False.
 - `InvalidPath` – If path is the store root, or names a directory, or an ancestor of path exists as a regular file.
-- `PermissionDenied` – If the server denies access (EACCES).
+- `PermissionDenied` – If the server denies access (EACCES or EPERM).
 - `BackendUnavailable` – If the SSH/SFTP connection cannot be established or fails mid-write.
 
 ### write_atomic
@@ -17327,7 +17335,7 @@ Raises:
 
 - `AlreadyExists` – If the file exists and overwrite is False.
 - `InvalidPath` – If path is the store root, or names a directory, or an ancestor of path exists as a regular file.
-- `PermissionDenied` – If the server denies access (EACCES).
+- `PermissionDenied` – If the server denies access (EACCES or EPERM).
 - `BackendUnavailable` – If the SSH/SFTP connection cannot be established or fails.
 
 ### open_atomic
@@ -17348,7 +17356,7 @@ Raises:
 
 - `AlreadyExists` – If the file exists and overwrite is False.
 - `InvalidPath` – If path is the store root, or names a directory, or an ancestor of path exists as a regular file.
-- `PermissionDenied` – If the server denies access (EACCES).
+- `PermissionDenied` – If the server denies access (EACCES or EPERM).
 - `BackendUnavailable` – If the SSH/SFTP connection cannot be established or fails.
 
 ### delete
@@ -17363,7 +17371,7 @@ Raises:
 
 - `NotFound` – If the file does not exist (or a path component is itself a file) and missing_ok is False.
 - `InvalidPath` – If path names a directory (use delete_folder).
-- `PermissionDenied` – If the server denies access (EACCES).
+- `PermissionDenied` – If the server denies access (EACCES or EPERM).
 - `BackendUnavailable` – If the SSH/SFTP connection cannot be established or fails.
 
 ### delete_folder
@@ -17386,7 +17394,7 @@ Raises:
 - `NotFound` – If the folder does not exist and missing_ok is False.
 - `InvalidPath` – If path names a file, not a folder.
 - `DirectoryNotEmpty` – If the folder is non-empty and recursive is False.
-- `PermissionDenied` – If the server denies access (EACCES).
+- `PermissionDenied` – If the server denies access (EACCES or EPERM).
 - `BackendUnavailable` – If the SSH/SFTP connection cannot be established or fails.
 
 ### list_files
@@ -17402,7 +17410,7 @@ list_files(
 
 Yield files under *path*, one `FileInfo` at a time.
 
-Lazily walks the remote directory (`listdir_attr`); a missing *path* yields nothing. `recursive` descends via one directory-listing round-trip per folder (`max_depth` bounds the descent). Failures other than a missing path surface as `RemoteStoreError` during iteration.
+Lazily walks the remote directory (`listdir_attr`); a missing *path* yields nothing. `recursive` descends via one directory-listing round-trip per folder (`max_depth` bounds the descent). Failures other than a missing path surface during iteration, mapped as they are for the single-object operations — a denied listing raises `PermissionDenied` (`EACCES` or `EPERM`), a dropped or unreachable connection `BackendUnavailable`, and anything else the base `RemoteStoreError`.
 
 ### list_folders
 
@@ -17412,7 +17420,7 @@ list_folders(path: str) -> Iterator[FolderEntry]
 
 Yield immediate subfolders of *path* as `FolderEntry` records.
 
-One directory-listing round-trip; a missing *path* yields nothing, and other failures surface as `RemoteStoreError` during iteration.
+One directory-listing round-trip; a missing *path* yields nothing. Other failures surface during iteration, mapped as in `list_files` — a denied listing raises `PermissionDenied` (`EACCES` or `EPERM`).
 
 ### iter_children
 
@@ -17424,7 +17432,7 @@ iter_children(
 
 Yield the immediate files and folders under *path* in one listing.
 
-Overrides the base two-pass default with a single `listdir_attr` round-trip, yielding `FileInfo` for files and `FolderEntry` for folders. A missing *path* yields nothing; other failures surface as `RemoteStoreError` during iteration.
+Overrides the base two-pass default with a single `listdir_attr` round-trip, yielding `FileInfo` for files and `FolderEntry` for folders. A missing *path* yields nothing; other failures surface during iteration, mapped as in `list_files` — a denied listing raises `PermissionDenied` (`EACCES` or `EPERM`).
 
 ### get_file_info
 
@@ -17438,7 +17446,7 @@ Raises:
 
 - `NotFound` – If the file does not exist.
 - `InvalidPath` – If path names a directory, not a file.
-- `PermissionDenied` – If the server denies access (EACCES).
+- `PermissionDenied` – If the server denies access (EACCES or EPERM).
 - `BackendUnavailable` – If the SSH/SFTP connection cannot be established or fails.
 
 ### get_folder_info
@@ -17455,7 +17463,7 @@ Raises:
 
 - `NotFound` – If the folder does not exist.
 - `InvalidPath` – If path names a file, not a folder.
-- `PermissionDenied` – If the server denies access (EACCES).
+- `PermissionDenied` – If the server denies access (EACCES or EPERM).
 - `BackendUnavailable` – If the SSH/SFTP connection cannot be established or fails.
 
 ### move
@@ -17477,7 +17485,7 @@ Raises:
 - `NotFound` – If src does not exist.
 - `InvalidPath` – If src or dst is the store root, or names a directory, or an ancestor of dst exists as a regular file.
 - `AlreadyExists` – If dst exists, src != dst, and overwrite is False.
-- `PermissionDenied` – If the server denies access (EACCES).
+- `PermissionDenied` – If the server denies access (EACCES or EPERM).
 - `BackendUnavailable` – If the SSH/SFTP connection cannot be established or fails.
 
 ### copy
@@ -17497,7 +17505,7 @@ Raises:
 - `NotFound` – If src does not exist.
 - `InvalidPath` – If src or dst is the store root, or names a directory, or an ancestor of dst exists as a regular file.
 - `AlreadyExists` – If dst exists, src != dst, and overwrite is False.
-- `PermissionDenied` – If the server denies access (EACCES).
+- `PermissionDenied` – If the server denies access (EACCES or EPERM).
 - `BackendUnavailable` – If the SSH/SFTP connection cannot be established or fails.
 
 ## See also
@@ -20415,7 +20423,32 @@ The first example's message names the address paramiko **tried**, not the host y
 
 **The error mapping now logs it.** Reaching the mapping means one `WARNING` on `remote_store.backends._sftp` carrying `op="error_mapping"`, where a refused connect previously left nothing from the mapping at all. That is one record more, not the first one: this logger already carried the connect retry's own `WARNING` per sleep and one more under the `AUTO_ADD` host-key policy, so neither the failure nor the logger is new — the mapping's record is. Filter on `op="error_mapping"` to see just this one. A `ping()` on a liveness probe against a host that is down repeats it per poll, which is worth knowing before you point one at a store you expect to be unreachable for a while.
 
-**Scope:** SFTP only, and only the shapes a connect actually produces. An `OSError` from a connection that is working — a full disk, a device error — still raises the base `RemoteStoreError` and still logs nothing. **Permission errnos are deliberately untouched**, which is what keeps that sentence true: the mapping sees only the exception, so it cannot tell a connect-time `EACCES` or `EPERM` from one a working server reported, and the classification stat described [in the v0.30.0 notes](#v0291-to-v0300) still answers exactly as it did. Other backends are unchanged.
+**Scope:** SFTP only, and only the shapes a connect actually produces. An `OSError` from a connection that is working — a full disk, a device error — still raises the base `RemoteStoreError` and still logs nothing. Permission errnos are untouched *by this change*, but they do change in this release — see the next section. Other backends are unchanged.
+
+**A permission-denied SFTP failure now raises `PermissionDenied` for `EPERM` as well as `EACCES`:**
+
+The SFTP error mapping recognised `errno.EACCES` and not `errno.EPERM`, so a server that reported a denial with `EPERM` reached you as the base `RemoteStoreError` — including on the classification `stat` whose [v0.30.0 note](#v0291-to-v0300) had to be corrected after publication for exactly that reason.
+
+```
+# a non-OpenSSH server that denies access, reporting EPERM
+# v0.30.0: RemoteStoreError('[Errno 1] Permission denied')
+# v0.31.0: PermissionDenied('Permission denied: delivery.csv')
+store.read_bytes("delivery.csv")
+```
+
+**If you catch `RemoteStoreError` for a permissions failure, narrow it to `PermissionDenied`.** `EACCES` is unaffected — same type, same message as v0.30.0 — so only the `EPERM` case moves, and it moves onto the clause you were already told to write.
+
+**Which calls:** every one of them. The change is in the error mapping that all SFTP operations classify through, not at any particular call, so **the errno stops mattering**: whichever method you called, the two permission errnos now give you the same type.
+
+This holds whether the server denies your key or a directory above it: refusing a directory you must traverse fails the operation with the permission errno too, and that is the errno this release maps.
+
+**The message changes with the type.** A denial that reached you as `RemoteStoreError` carried your server's own words; as `PermissionDenied` it carries the canonical `Permission denied: <key>` instead. If you log or match on that text, note that the driver's wording survives only on `__context__`, with `__suppress_context__` set — so it is reachable in code but does **not** appear in a traceback. This is not new to `EPERM`; it is how the `EACCES` case has always read. It is simply the second thing that moves for `EPERM` callers.
+
+**One thing this does not fix, and there is no workaround.** The mapping sees only the exception, so it cannot tell a denial your server reported from an `EPERM` your own machine raised refusing to connect — a local firewall rule, typically. Such a connect is now reported as `PermissionDenied` naming the key you asked for, for a request that never left the machine. That was already the answer for `EACCES`; `EPERM` now joins it, and both are tracked for a fix that needs connect-time context.
+
+`check_health()` does **not** distinguish the two: it classifies through the same mapping, so a locally-rejected connect raises `PermissionDenied` there too — with an empty key, which is the only outward difference. Until that fix lands, a `PermissionDenied` from any SFTP call means "denied", not "denied by the server", and telling the two apart needs something outside this library.
+
+In practice no `EPERM` trigger is known on a working channel: paramiko reports an SFTP permission denial as `EACCES`, so reaching this needs a server whose error shapes come from outside the SFTP protocol.
 
 **A dropped SFTP connection now raises `BackendUnavailable` from a `read()` stream too:**
 
@@ -20627,9 +20660,11 @@ Several SFTP failure paths that previously raised a generic `RemoteStoreError` o
 | Mode-less existing target on an `overwrite=False` write           | `RemoteStoreError` | `InvalidPath`      |
 | `delete` of a missing path behind an opaque-error ancestor        | `RemoteStoreError` | `NotFound`         |
 
-The first row was published as `EACCES`/`EPERM` and holds only for `EACCES`
+The first row's scope was corrected after publication
 
-The classification-stat re-raise names both permission errnos, but the error mapping has an `EACCES` arm and none for `EPERM`, so an `EPERM` stat still reaches you as the base `RemoteStoreError` — the same answer it gave before v0.30.0. Corrected here rather than left standing; the fix is tracked and may change the type or narrow the promise, so do not rely on either outcome for `EPERM` yet.
+It was published naming both permission errnos. On v0.30.0 it holds for `EACCES` only, which is why the row now says so: the classification-stat re-raise does name both, but the type came from the error mapping, which had an arm for `EACCES` and none for `EPERM` — so an `EPERM` stat reached you as the base `RemoteStoreError`, the same answer it gave before v0.30.0.
+
+**v0.31.0 gives the mapping the missing arm**, so from that release an `EPERM` denial raises `PermissionDenied` here and everywhere else ([notes above](#v0300-to-v0310)). If you are upgrading straight from v0.29.1 to v0.31.0 or later, read the row as naming both errnos and skip this caveat.
 
 One accepted consequence of the defensive mode-less policy: a mode-less *regular file* written under `overwrite=False` now surfaces `InvalidPath` rather than `AlreadyExists`. The `delete` recheck honours `missing_ok=True` exactly as the ENOENT path already did.
 

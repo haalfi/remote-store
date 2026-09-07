@@ -22,11 +22,11 @@ store.ping()  # raises on failure, silent on success
 
 `ping()` raises the same exceptions as other Store operations:
 
-| Exception            | Meaning                                             |
-| -------------------- | --------------------------------------------------- |
-| `PermissionDenied`   | Invalid credentials or insufficient permissions     |
-| `NotFound`           | Bucket, container, or root directory does not exist |
-| `BackendUnavailable` | Network error, DNS failure, or timeout              |
+| Exception            | Meaning                                                                                            |
+| -------------------- | -------------------------------------------------------------------------------------------------- |
+| `PermissionDenied`   | Access denied — usually invalid credentials or insufficient permissions, but see the warning below |
+| `NotFound`           | Bucket, container, or root directory does not exist                                                |
+| `BackendUnavailable` | Network error, DNS failure, or timeout                                                             |
 
 ```
 from remote_store import BackendUnavailable, NotFound, PermissionDenied
@@ -40,6 +40,12 @@ except NotFound:
 except BackendUnavailable:
     log.error("Backend unreachable for %s", store)
 ```
+
+On SFTP, a connection your own machine refuses reads as `PermissionDenied`
+
+The SFTP error mapping sees only the exception, so it cannot tell a denial your server reported from one the local machine raised refusing to connect — a firewall rule, typically. Either way `ping()` raises `PermissionDenied`, not `BackendUnavailable`, so the handler above logs "Bad credentials" for a request that never left the machine.
+
+**Nothing on the error tells the two apart.** `ping()` names no key, so both arrive as `Permission denied:` with `path=""`; on a keyed call both name that key instead. The empty `path` separates a `ping()` from a keyed operation, not a server denial from a local refusal. Distinguishing them needs connect-time context the mapping does not have, and is tracked as its own fix — until it lands, read a `PermissionDenied` from `ping()` as "denied", not "denied by the server". The other backends are unaffected.
 
 ## Per-backend strategies
 

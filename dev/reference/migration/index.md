@@ -87,7 +87,32 @@ The first example's message names the address paramiko **tried**, not the host y
 
 **The error mapping now logs it.** Reaching the mapping means one `WARNING` on `remote_store.backends._sftp` carrying `op="error_mapping"`, where a refused connect previously left nothing from the mapping at all. That is one record more, not the first one: this logger already carried the connect retry's own `WARNING` per sleep and one more under the `AUTO_ADD` host-key policy, so neither the failure nor the logger is new — the mapping's record is. Filter on `op="error_mapping"` to see just this one. A `ping()` on a liveness probe against a host that is down repeats it per poll, which is worth knowing before you point one at a store you expect to be unreachable for a while.
 
-**Scope:** SFTP only, and only the shapes a connect actually produces. An `OSError` from a connection that is working — a full disk, a device error — still raises the base `RemoteStoreError` and still logs nothing. **Permission errnos are deliberately untouched**, which is what keeps that sentence true: the mapping sees only the exception, so it cannot tell a connect-time `EACCES` or `EPERM` from one a working server reported, and the classification stat described [in the v0.30.0 notes](#v0291-to-v0300) still answers exactly as it did. Other backends are unchanged.
+**Scope:** SFTP only, and only the shapes a connect actually produces. An `OSError` from a connection that is working — a full disk, a device error — still raises the base `RemoteStoreError` and still logs nothing. Permission errnos are untouched *by this change*, but they do change in this release — see the next section. Other backends are unchanged.
+
+**A permission-denied SFTP failure now raises `PermissionDenied` for `EPERM` as well as `EACCES`:**
+
+The SFTP error mapping recognised `errno.EACCES` and not `errno.EPERM`, so a server that reported a denial with `EPERM` reached you as the base `RemoteStoreError` — including on the classification `stat` whose [v0.30.0 note](#v0291-to-v0300) had to be corrected after publication for exactly that reason.
+
+```
+# a non-OpenSSH server that denies access, reporting EPERM
+# v0.30.0: RemoteStoreError('[Errno 1] Permission denied')
+# v0.31.0: PermissionDenied('Permission denied: delivery.csv')
+store.read_bytes("delivery.csv")
+```
+
+**If you catch `RemoteStoreError` for a permissions failure, narrow it to `PermissionDenied`.** `EACCES` is unaffected — same type, same message as v0.30.0 — so only the `EPERM` case moves, and it moves onto the clause you were already told to write.
+
+**Which calls:** every one of them. The change is in the error mapping that all SFTP operations classify through, not at any particular call, so **the errno stops mattering**: whichever method you called, the two permission errnos now give you the same type.
+
+This holds whether the server denies your key or a directory above it: refusing a directory you must traverse fails the operation with the permission errno too, and that is the errno this release maps.
+
+**The message changes with the type.** A denial that reached you as `RemoteStoreError` carried your server's own words; as `PermissionDenied` it carries the canonical `Permission denied: <key>` instead. If you log or match on that text, note that the driver's wording survives only on `__context__`, with `__suppress_context__` set — so it is reachable in code but does **not** appear in a traceback. This is not new to `EPERM`; it is how the `EACCES` case has always read. It is simply the second thing that moves for `EPERM` callers.
+
+**One thing this does not fix, and there is no workaround.** The mapping sees only the exception, so it cannot tell a denial your server reported from an `EPERM` your own machine raised refusing to connect — a local firewall rule, typically. Such a connect is now reported as `PermissionDenied` naming the key you asked for, for a request that never left the machine. That was already the answer for `EACCES`; `EPERM` now joins it, and both are tracked for a fix that needs connect-time context.
+
+`check_health()` does **not** distinguish the two: it classifies through the same mapping, so a locally-rejected connect raises `PermissionDenied` there too — with an empty key, which is the only outward difference. Until that fix lands, a `PermissionDenied` from any SFTP call means "denied", not "denied by the server", and telling the two apart needs something outside this library.
+
+In practice no `EPERM` trigger is known on a working channel: paramiko reports an SFTP permission denial as `EACCES`, so reaching this needs a server whose error shapes come from outside the SFTP protocol.
 
 **A dropped SFTP connection now raises `BackendUnavailable` from a `read()` stream too:**
 
@@ -299,9 +324,11 @@ Several SFTP failure paths that previously raised a generic `RemoteStoreError` o
 | Mode-less existing target on an `overwrite=False` write           | `RemoteStoreError` | `InvalidPath`      |
 | `delete` of a missing path behind an opaque-error ancestor        | `RemoteStoreError` | `NotFound`         |
 
-The first row was published as `EACCES`/`EPERM` and holds only for `EACCES`
+The first row's scope was corrected after publication
 
-The classification-stat re-raise names both permission errnos, but the error mapping has an `EACCES` arm and none for `EPERM`, so an `EPERM` stat still reaches you as the base `RemoteStoreError` — the same answer it gave before v0.30.0. Corrected here rather than left standing; the fix is tracked and may change the type or narrow the promise, so do not rely on either outcome for `EPERM` yet.
+It was published naming both permission errnos. On v0.30.0 it holds for `EACCES` only, which is why the row now says so: the classification-stat re-raise does name both, but the type came from the error mapping, which had an arm for `EACCES` and none for `EPERM` — so an `EPERM` stat reached you as the base `RemoteStoreError`, the same answer it gave before v0.30.0.
+
+**v0.31.0 gives the mapping the missing arm**, so from that release an `EPERM` denial raises `PermissionDenied` here and everywhere else ([notes above](#v0300-to-v0310)). If you are upgrading straight from v0.29.1 to v0.31.0 or later, read the row as naming both errnos and skip this caveat.
 
 One accepted consequence of the defensive mode-less policy: a mode-less *regular file* written under `overwrite=False` now surfaces `InvalidPath` rather than `AlreadyExists`. The `delete` recheck honours `missing_ok=True` exactly as the ENOENT path already did.
 
