@@ -444,7 +444,17 @@ phases:
           across the 84 cells — 15, 12 and 6 for the reached guards, zero for
           both latent ones — so the split is stated as four reachable plus two
           prophylactic, with the measured counts, in the docstring the two other
-          artifacts defer to
+          artifacts defer to.
+          **Annotated after round 5, which found this step's own figures
+          defective in two ways.** The triple gives three numbers for four
+          reached guards, and it was published with its subjects transposed:
+          read_bytes is the 6 and the _raise_if_dir pair the 15. The docstring
+          this step points at no longer carries a triple at all — it carries
+          per-site figures, 6 / 12 / 12 / 3 / 0 / 0 — so its claim about that
+          file is stale too. Left as the round-4 reading, per this file's rule,
+          but annotated: it is the third figure this PR moved without annotating
+          at the time, which is the uneven treatment its own bug-265 annotation
+          complains about
         outcome: ok
       - file: tests/backends/sftp/test_config.py
         section: "TestSFTPUnreachableHostCostsOneConnect (OPERATIONS exclusions)"
@@ -544,7 +554,20 @@ phases:
           so both guards are covered; both cells fail against the pre-fix module
           with exactly the base RemoteStoreError, confirmed before shipping.
           Recorded in SFTP-023 and the CHANGELOG, on the user's decision, rather
-          than being filed
+          than being filed.
+          **Round 6 refuted two claims this step made about its own test.** The
+          nested cell did not reach the walk guard — read_bytes calls
+          _raise_if_dir unconditionally before the file-ancestor branch, so both
+          cells stopped at the stat guard and the walk guard had no test while
+          the docstring said it did. And the client-cleared assertion could not
+          fail: _connect's first act is _close_clients(), so the client is None
+          on both revisions and the clearing is not this change at all. The
+          fixture now kills the transport at a chosen point — the open for the
+          stat guard, the classification stat for the walk — and each cell
+          asserts which guard it reached, so the parametrisation cannot silently
+          stop covering two. The clearing claim is withdrawn from the test, the
+          spec, the CHANGELOG and the register rather than corrected, because
+          measurement left nothing of it
         outcome: ok
   - id: verify
     name: Verify

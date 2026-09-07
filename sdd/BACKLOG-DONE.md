@@ -221,7 +221,29 @@ if evidence changes; these are retired.
 ## Unreleased
 
 - [x] **BUG-274 — A keyed SFTP operation against an unreachable host pays the connect budget two or three times over**
-  spec: SFTP-023 · effort: S · audience: user.api
+  spec: SFTP-031 (minted here), SFTP-023, SFTP-010 · effort: S · audience: user.api
+  **The item minted a spec ID.** The one-budget invariant is now
+  [SFTP-031](specs/009-sftp-backend.md), and
+  `test_an_unreachable_host_costs_exactly_one_connect` carries that mark. It was
+  drafted under SFTP-023, whose subject is `BackendUnavailable` *mapping*, which
+  left the what-a-caller-gets and what-a-caller-pays tests sharing one ID and so
+  unable to be told apart by the traceability gate. SFTP-009 gained the
+  back-reference it lacked; SFTP-010 is back in this field because the
+  live-channel change below turns on its tier-2 wording.
+  **A second, narrower behaviour change shipped with it**, and is recorded here
+  because four other artifacts record it and this register was the one that did
+  not. At `_raise_if_dir`'s classification stat and `_has_file_ancestor`'s walk,
+  an errno-less `SSH_FX_FAILURE` whose probe reconnects into a host that is now
+  gone used to be swallowed as "cannot classify", surfacing the caller's original
+  error at the generic arm as a base `RemoteStoreError`; it now reports
+  `BackendUnavailable`. Not breaking — `BackendUnavailable` subclasses
+  `RemoteStoreError`. **The client-clearing half of this claim was withdrawn**
+  after review measured it: the reconnect runs `_connect`, whose first act is
+  `_close_clients()`, so the cached client is already `None` on both revisions
+  and SFTP-010 tier 2 is not what changed. The error type is the whole of it.
+  Pinned by `TestSFTPProbeReconnectsIntoGoneHost`, whose two cells reach the two
+  guards separately — an earlier revision drove both through the same one and
+  claimed otherwise.
   Not a regression — master behaved identically — but BUG-265 introduced the
   predicate that closed it, and BUG-265's own round-4 measurement is what
   exposed the mechanism.

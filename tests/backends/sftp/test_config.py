@@ -2552,23 +2552,32 @@ class TestSFTPProbeReconnectsIntoGoneHost:
     **The enumeration next door cannot reach this**, and that is the whole
     reason this class exists: every one of its 84 cells builds a fresh backend
     whose *first* ``_sftp`` evaluation fails, so no cell ever puts a working
-    channel in front of a widened guard. Two of the six widened guards are
-    reached that way — ``_raise_if_dir``'s classification stat and
-    ``_has_file_ancestor``'s ancestor walk — because both run on the error path
-    of an operation that already had a connection.
+    channel in front of a widened guard. Two of the six are reached only that
+    way — ``_raise_if_dir``'s classification stat and ``_has_file_ancestor``'s
+    ancestor walk — because both run on the error path of an operation that
+    already had a connection.
 
     The sequence: an operation fails with an errno-less ``SSH_FX_FAILURE``
-    (which neither predicate claims), the classification probe re-enters the
-    lazy ``_sftp`` property, the transport has meanwhile died, and the reconnect
-    meets a host that is now gone. Before BUG-274 that probe failure was
-    swallowed as "cannot classify", the caller's original error surfaced at the
-    generic arm as a base ``RemoteStoreError``, and **the cached client was not
-    cleared**. Now the connect-time shape re-raises and the operation concludes
-    ``BackendUnavailable`` with the client cleared, so SFTP-010 tier 2 fires.
+    (which neither predicate claims), a classification probe re-enters the lazy
+    ``_sftp`` property, the transport has meanwhile died, and the reconnect meets
+    a host that is now gone. Before BUG-274 that probe failure was swallowed as
+    "cannot classify" and the caller's original error surfaced at the generic arm
+    as a base ``RemoteStoreError``; now the connect-time shape re-raises and the
+    operation concludes ``BackendUnavailable``.
 
-    Not breaking — ``BackendUnavailable`` subclasses ``RemoteStoreError`` — but
-    a change of type and of recovery timing, which had no test until a fifth
-    review round pointed out that the only artifact describing it was a trace.
+    **What is *not* asserted here, and why.** An earlier revision also asserted
+    the cached client ends up ``None`` and called that SFTP-010 tier 2 firing.
+    Review measured it vacuous, and worse than vacuous — it is not this change:
+    the reconnect runs ``_connect``, whose first act is ``_close_clients()``, so
+    the client is already ``None`` before ``_map_exception`` is consulted, on
+    **both** revisions. Driving the pre-fix module through this same fixture
+    ends with ``_sftp_client`` at ``None`` and a base ``RemoteStoreError``. The
+    error type is the whole of the observable difference, so it is the whole of
+    what this class claims — the same correction the sibling
+    ``TestSFTPConnectTimePredicateSpace`` records having made to an identical
+    assertion.
+
+    Not breaking: ``BackendUnavailable`` subclasses ``RemoteStoreError``.
     """
 
     @staticmethod
@@ -2579,13 +2588,20 @@ class TestSFTPProbeReconnectsIntoGoneHost:
         sock.close()
         return port
 
-    def _backend_with_dying_channel(self, *, fail_on: str) -> SFTPBackend:
-        """A backend holding a live-looking client whose transport dies on failure.
+    def _backend_with_dying_channel(self, *, die_at: str) -> SFTPBackend:
+        """A backend whose live-looking transport dies at a chosen point.
 
-        *fail_on* is the client method that raises the errno-less
-        ``SSH_FX_FAILURE`` and kills the transport on its way out — ``file`` for
-        the flat-key path through ``_raise_if_dir``, and the same for the nested
-        path, where the ancestor walk is what re-enters afterwards.
+        *die_at* selects which probe re-enters ``_sftp`` after the death, and so
+        which widened guard the reconnect failure meets:
+
+        - ``"open"`` — ``file()`` raises the errno-less ``SSH_FX_FAILURE`` and
+          kills the transport, so ``_raise_if_dir``'s stat is what reconnects and
+          the **stat guard** answers.
+        - ``"classify"`` — ``file()`` raises with the transport still live, then
+          ``_raise_if_dir``'s stat raises ``ENOENT`` (which it swallows) and kills
+          the transport, so ``_has_file_ancestor``'s walk is what reconnects and
+          the **walk guard** answers. Needs a nested key, or the walk yields no
+          ancestors and never runs.
         """
         state = {"alive": True}
 
@@ -2604,17 +2620,21 @@ class TestSFTPProbeReconnectsIntoGoneHost:
             def __init__(self) -> None:
                 self.sock = type("S", (), {"settimeout": lambda self, t: None})()
 
-            def _boom(self, *a: Any, **k: Any) -> Any:
-                state["alive"] = False
+            def file(self, *a: Any, **k: Any) -> Any:
+                if die_at == "open":
+                    state["alive"] = False
                 raise OSError(None, "Failure")
 
-            file = _boom
-            stat = _boom
+            def stat(self, *a: Any, **k: Any) -> Any:
+                # Reached only in the "classify" case: an ENOENT here is
+                # swallowed by _raise_if_dir, which is what lets control fall
+                # through to the ancestor walk.
+                state["alive"] = False
+                raise OSError(errno.ENOENT, "No such file")
 
             def close(self) -> None:
                 pass
 
-        assert fail_on == "file", "only the open path is driven here"
         backend = SFTPBackend(
             host="127.0.0.1",
             port=self._closed_port(),
@@ -2627,23 +2647,46 @@ class TestSFTPProbeReconnectsIntoGoneHost:
         return backend
 
     @pytest.mark.spec("SFTP-023")
-    @pytest.mark.parametrize("path", ["delivery.csv", "a/b/delivery.csv"])
-    def test_a_probe_reconnecting_into_a_gone_host_reports_backend_unavailable(self, path: str) -> None:
+    @pytest.mark.parametrize(
+        ("die_at", "path", "expected_guard"),
+        [
+            ("open", "delivery.csv", "_raise_if_dir"),
+            ("classify", "a/b/delivery.csv", "_has_file_ancestor"),
+        ],
+    )
+    def test_a_probe_reconnecting_into_a_gone_host_reports_backend_unavailable(
+        self, die_at: str, path: str, expected_guard: str, monkeypatch: pytest.MonkeyPatch
+    ) -> None:
         """SFTP-023: the classification probe's own connect failure is reported, not swallowed.
 
-        Both keys are driven because they reach *different* widened guards: a
-        flat key stops at ``_raise_if_dir``'s stat, a nested one gets past it to
-        ``_has_file_ancestor``'s walk. Before the fix both answered the base
-        ``RemoteStoreError``; the assertion below is what changed.
+        **Each case names the guard it exists to cover, and asserts it was the
+        one reached.** Without that the two cases collapse: an earlier revision
+        drove both through ``file()`` and both stopped at ``_raise_if_dir``, so
+        the nested cell was a duplicate and ``_has_file_ancestor``'s guard had no
+        test at all while the docstring claimed it did. Recording the calling
+        frame is what stops that recurring — the parametrisation cannot silently
+        stop covering two guards.
         """
-        backend = self._backend_with_dying_channel(fail_on="file")
+        import inspect
+
+        reached: list[str] = []
+        original = SFTPBackend._probe_is_futile
+
+        def recording(cls: type[SFTPBackend], exc: Exception) -> bool:
+            frame = inspect.currentframe()
+            caller = frame.f_back if frame is not None else None
+            reached.append(caller.f_code.co_name if caller is not None else "?")
+            return bool(original(exc))
+
+        backend = self._backend_with_dying_channel(die_at=die_at)
+        monkeypatch.setattr(SFTPBackend, "_probe_is_futile", classmethod(recording))
 
         with pytest.raises(BackendUnavailable):
             backend.read_bytes(path)
 
-        assert backend._sftp_client is None, (
-            "concluding BackendUnavailable must clear the cached client (SFTP-010 tier 2), "
-            "or the next operation reuses a client whose host is gone"
+        assert expected_guard in reached, (
+            f"{die_at}/{path} was meant to reach {expected_guard}'s guard, "
+            f"but the predicate was consulted from {reached}"
         )
 
 
