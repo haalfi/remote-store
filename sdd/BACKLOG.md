@@ -253,10 +253,11 @@ base class. That is one backend's connect arm, not the clause — BUG-276 carrie
 the rest, and the two are the same promise met at different depths. It also
 opened BUG-273: the same connect path still answers the wrong type when the
 connect is rejected locally — `PermissionDenied` blaming the caller's key on the
-`EACCES` shape, whose trigger is unknown, and the base `RemoteStoreError` on the
-`EPERM` one a netfilter `REJECT` does produce. Neither is `BackendUnavailable`,
-so it is the promised-type defect again; the qualifier is load-bearing, because
-the reproducible half is the one that answers the base class.
+`EACCES` shape, whose trigger is unknown, and — since BUG-275 gave the errno
+dispatch an `EPERM` arm — the same `PermissionDenied` on the `EPERM` one a
+netfilter `REJECT` does produce. Neither is `BackendUnavailable`, so it is the
+promised-type defect again, and the two halves now answer alike: one fix closes
+both, and the reproducible half is the one to build it against.
 **The what-it-leaves-behind clause is met and has left the list**, closed by
 BUG-272 with BUG-270 and BUG-277: the place where an operation *asked to
 preserve* the caller's file destroyed it was SFTP's rename fallback, which
@@ -410,8 +411,9 @@ compliant the day before.
   **`EPERM` was tried and reverted inside BUG-265, which is the sharpest
   evidence this item has.** A round of review found a firewall-rejected connect
   answering the base `RemoteStoreError` and argued `EPERM` was free to claim,
-  because `_map_exception`'s errno dispatch has no `EPERM` arm. That premise is
-  true of the dispatch and false of the module, and the next round measured it:
+  because `_map_exception`'s errno dispatch had no `EPERM` arm. That premise was
+  true of the dispatch **as it then stood** and false of the module, and the
+  next round measured it:
   `_raise_if_dir` re-raises **both** permission errnos on purpose
   (`_sftp.py`, the classification-stat guard, and its docstring says why), from
   a **working** channel, inside the caller's `_errors(path)` block. Driving the
@@ -438,8 +440,10 @@ compliant the day before.
   **What did not change is the exclusion from `_is_unreachable`**, and its
   evidence is now per errno. `EACCES` has a live-channel producer: paramiko's
   `SFTPClient._convert_status` renders `SSH_FX_PERMISSION_DENIED` as
-  `IOError(EACCES)` (paramiko 5.0.0). **`EPERM` has none known** — that dispatch
-  has no arm rendering it — and what keeps it out is that claiming it would take
+  `IOError(EACCES)` (paramiko 5.0.0). **`EPERM` has none known** — that
+  *renderer* has no arm producing it, and no SFTP status code maps to it; not to
+  be confused with `_map_exception`'s errno dispatch, which SFTP-021 now gives
+  an `EPERM` arm — and what keeps it out is that claiming it would take
   away the `PermissionDenied` SFTP-021 now guarantees and clear the cached client
   with it.
   **The trigger asymmetry is what remains of the two halves**: the `EPERM` shape
@@ -510,6 +514,15 @@ compliant the day before.
   half as a `Possible: Bug:` with its trigger flagged unreproduced; the `EPERM`
   half was found, fixed and reverted across its rounds 5 and 6.
 
+- [ ] **BUG-279 — `unwrap(SFTPClient)` leaks the raw paramiko or socket error when the connection cannot be established**
+  spec: SFTP-024, SFTP-026 · effort: S · audience: user.api
+  SFTP-024's invariant is stated over "no paramiko, socket, or OS exception
+  raised *by the backend*" reaching callers. `unwrap` returns `self._sftp`
+  (`SFTP-026`), which evaluates the lazy property and so can run the whole
+  connect budget — and it is **not** wrapped in `_errors()`, so whatever
+  `_connect` raises escapes unmapped.
+  **Measured** against a backend that has never connected, one entry into
+  `_connect` per case:
 
   | connect-time shape | raised |
   |---|---|

@@ -36,7 +36,7 @@ surprising_ripples:
 # did: one said 'minus the one implementing commit' and yielded 6 against a
 # value of 4, and by then there were two implementing commits; the branch was
 # then flattened onto BUG-274, which would have orphaned any SHA list too.
-review_rounds: 4
+review_rounds: 5
 phases:
   - id: orient
     name: Orient
@@ -319,3 +319,52 @@ phases:
           for" conflated no-fixture with no-trigger. Injection fixtures exist —
           this item ships one — and what nobody has is a server that reports the
           denial with EPERM, which no injection can supply
+  - id: fix_5
+    name: Fix pass (closing round)
+    steps:
+      - file: sdd/BACKLOG.md
+        section: "(item) BUG-279"
+        read_type: verify
+        extract: >-
+          The rebase's conflict resolution deleted BUG-279 — a live item the
+          BUG-274 session had filed — by dropping a hunk that ran past the two
+          closed items into it, leaving its table and disposition orphaned inside
+          BUG-273. Two of the three closing members found it independently. No
+          gate covers this: check_no_tracker_refs does not resolve backlog IDs,
+          check_traces validates shape, and gen_backlogid checks maxima rather
+          than membership. Comparing item sets against master is the derivation
+          that catches it, and it was not run at rebase time
+        outcome: misleading
+      - file: src/remote_store/backends/_sftp.py
+        section: "_has_file_ancestor (walk swallow)"
+        read_type: verify
+        extract: >-
+          The measuring member refuted this work's own invariant. SFTP-021 said
+          the site set stops mattering; _has_file_ancestor's walk swallows a
+          denied ancestor stat (BK-316 L6, deliberate), so with the denial
+          restricted to an ancestor the read side answers RemoteStoreError and
+          the writers answer PermissionDenied. Measured identically before this
+          arm, so it is a claim-scope defect and not a regression. The claim is
+          narrowed to errno symmetry — which is what BUG-275 is about and what
+          holds in every cell — and the carve-out is stated in the spec, the
+          migration guide and the test
+      - file: tests/backends/sftp/test_config.py
+        section: "test_the_two_permission_errnos_answer_alike_on_every_entry_point"
+        read_type: reference
+        extract: >-
+          The table denied every stat at once, so no cell could isolate which
+          site answered — it proved "deny everything, get PermissionDenied",
+          which a fix answering only at each method's first stat would also
+          satisfy. Rebuilt with a site axis (target vs ancestor) and both errnos
+          driven inside one case, because the invariant is a comparison between
+          them rather than a property of either. 68 cells; the narrowing mutant
+          now dies on 40, including ancestor cells the old shape could not reach
+      - file: docs-src/guides/health-check.md
+        section: "Error handling"
+        read_type: reference
+        extract: >-
+          The page a reader actually lands on still tabled PermissionDenied as
+          "invalid credentials" above an except BackendUnavailable example, while
+          this change made a locally-rejected connect answer PermissionDenied on
+          the one shape BUG-273 records as reproducible. The migration guide
+          stated the limitation; the guide did not. Warned there too

@@ -687,7 +687,12 @@ class SFTPBackend(Backend):
 
         Raises:
             NotFound: If the configured base path does not exist.
-            PermissionDenied: If the server denies access to the base path.
+            PermissionDenied: If access to the base path is denied (``EACCES`` or
+                ``EPERM``). **Not necessarily by the server**: the mapping sees
+                only the exception, so a connect this machine refused locally —
+                a firewall rule — reaches this too, as ``Permission denied: ``
+                with an empty key. Distinguishing the two needs connect-time
+                context and is tracked separately.
             BackendUnavailable: If the SSH/SFTP connection cannot be established.
         """
         with self._errors():
@@ -2849,17 +2854,18 @@ class SFTPBackend(Backend):
         working, and answering them with ``BackendUnavailable`` would tell a
         caller to retry a different host over a full disk.
 
-        **The two permission errnos are known exclusions, not oversights**, and
-        the reason is the same for both: this predicate sees only the exception,
-        so it cannot tell a connect-time one from a live-channel one. ``EACCES``
-        is the obvious case — on an operation it genuinely is a denied path.
-        ``EPERM`` looks safer and is not, and the two rest on different
-        evidence. ``EACCES`` reaches the mapping from a *working* channel on any
-        denied operation — paramiko's ``SFTPClient._convert_status`` renders an
-        SFTP ``SSH_FX_PERMISSION_DENIED`` as ``IOError(EACCES)``, measured on
-        paramiko 5.0.0 — so claiming it would answer a server-reported denial
-        with ``BackendUnavailable`` and discard a healthy client, which
-        ``test_eacces_maps_to_permission_denied`` drives. **No live-channel
+        **The two permission errnos are known exclusions, not oversights.** One
+        reason covers the pair — this predicate sees only the exception, so it
+        cannot tell a connect-time one from a live-channel one — but what keeps
+        each *individually* out differs. ``EACCES`` reaches the mapping from a
+        *working* channel on any denied operation: paramiko's
+        ``SFTPClient._convert_status`` renders an SFTP
+        ``SSH_FX_PERMISSION_DENIED`` as ``IOError(EACCES)``, read on paramiko
+        5.0.0, which is the evidence for the producer. (No test drives that
+        renderer; ``test_eacces_maps_to_permission_denied`` injects the errno
+        and so pins the *mapping*, not the producer.) Claiming it would
+        therefore answer a server-reported denial with ``BackendUnavailable``
+        and discard a healthy client. **No live-channel
         producer of ``EPERM`` is known**: *that* renderer has no arm producing
         it — no SFTP status code maps to it — so the errno arrives only from
         outside the SFTP protocol.  (Not to be confused with ``_map_exception``'s

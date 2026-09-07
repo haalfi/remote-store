@@ -188,10 +188,16 @@ v0.30.0 — so only the `EPERM` case moves, and it moves onto the clause you wer
 already told to write.
 
 **Which calls:** every one of them. The change is in the error mapping that all
-SFTP operations classify through, not at any particular call, so a denial
-answers the same way whichever method you called and wherever in that method the
-server refused. `LocalBackend` has always behaved this way, and SFTP now matches
-it.
+SFTP operations classify through, not at any particular call, so **the errno
+stops mattering**: whichever method you called, the two permission errnos now
+give you the same type.
+
+One pre-existing wrinkle this does not remove, since it is not an errno
+question. If the denied path is an *ancestor* of your key rather than the key
+itself, `read_bytes` and `delete` still report the base `RemoteStoreError` while
+the writers report `PermissionDenied` — the read side deliberately swallows an
+unreadable ancestor so it can fall back to `NotFound`. Both errnos behave
+identically there, before and after this release.
 
 **The message changes with the type.** A denial that reached you as
 `RemoteStoreError` carried your server's own words; as `PermissionDenied` it

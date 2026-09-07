@@ -442,7 +442,10 @@ if evidence changes; these are retired.
   `EACCES` arm and none for `EPERM`.
   **What shipped: one arm in the errno dispatch**, so both permission errnos are
   answered `PermissionDenied` wherever a denial reaches `_map_exception` —
-  which is every SFTP operation, since they all classify through `_errors()`.
+  which is every SFTP operation. Most reach it through `_errors()`; the three
+  listing methods and the streamed `read()` call `_map_exception` directly,
+  which is why the invariant is stated over the dispatch and not over that
+  context manager.
   This also puts SFTP where `LocalBackend` already was: it catches bare
   `PermissionError`, and CPython raises that for both errnos.
   **The single site is the guarantee, and two rejected shapes are why.** The
@@ -470,8 +473,10 @@ if evidence changes; these are retired.
   ancestor stats, operations and connect-time alike — which is what lets
   **BUG-273**
   fix both with one change instead of carrying two halves; its body is updated
-  to say so. The migration guide states the limitation and points a caller at
-  `check_health()` for the distinction the error type cannot carry.
+  to say so. The migration guide states the limitation and says plainly there is
+  no workaround: `check_health()` classifies through the same mapping, so it
+  answers `PermissionDenied` too, with an empty key. The health-check guide
+  carries the same warning, since that is the page a reader lands on.
   **The `EPERM` trigger stays unestablished on a working channel, and that
   bounds the fix rather than the diagnosis.** paramiko's
   `SFTPClient._convert_status` renders an SFTP `SSH_FX_PERMISSION_DENIED` as
@@ -490,8 +495,9 @@ if evidence changes; these are retired.
   permission errno say `EACCES` or `EPERM`; `check_health`'s names none and is
   unchanged. Derived by counting the `PermissionDenied: If the server denies
   access` lines in `_sftp.py` (15, one errno-less) — an earlier revision of this
-  entry claimed the other eight "stat no target", which was measurably false for
-  all eight and is exactly the kind of unrun derivation
+  entry split those fourteen into six it changed and eight it left, and claimed
+  the eight "stat no target". That was measurably false for all eight, and is
+  exactly the kind of unrun derivation
   [CLAUDE.md principle 9](../CLAUDE.md#principles) is about.
   **The cross-backend half, folded in rather than tracked.** It was filed as its
   own ID mid-PR, while the fix was still scoped to a stat guard and therefore
@@ -505,7 +511,11 @@ if evidence changes; these are retired.
   naming the errno — `_local.py` catches bare `except PermissionError:` at 14
   sites, 11 raising `PermissionDenied` outright, and
   `isinstance(OSError(errno.EPERM, "x"), PermissionError)` is `True`, so Python's
-  hierarchy claims the errno SFTP's dispatch declined. Both backends now agree.
+  hierarchy claims the errno SFTP's dispatch declined. **Both backends now agree
+  on the errno**, which is what this measured and all it claims. Driven as an
+  unprivileged uid, `LocalBackend`'s three listing methods still leak a raw
+  `PermissionError` rather than mapping it, so the two are not equivalent across
+  the whole surface and nothing here says they are.
   **The ID collision is the lesson**: two sessions drawing from one floor mint
   the same number, and `gen_backlogid --check` is what caught it. An ID minted
   and retired inside one unmerged branch buys nothing a paragraph here does not.

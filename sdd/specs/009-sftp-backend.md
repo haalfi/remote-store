@@ -401,15 +401,27 @@ mapped to `NotFound`.
 **Invariant:** `IOError` with `errno.EACCES` (errno 13) **or `errno.EPERM`**
 (errno 1) is mapped to `PermissionDenied`.
 
-**Both errnos take one arm of the errno dispatch, and the single site is the
-guarantee.** Which stat or open a denial lands on depends on the method, the
-`overwrite` flag, and even the key's depth — `_ensure_parent_dirs` stats
+**Both errnos take one arm of the errno dispatch, and the single site is what
+makes them agree.** Which stat or open a denial lands on depends on the method,
+the `overwrite` flag, and even the key's depth — `_ensure_parent_dirs` stats
 ancestors, which a depth-0 key does not have. None of that is visible to a
-caller, so none of it may decide their error type. Every operation classifies
-through the dispatch, so answering there is the only placement under which the
-site set stops mattering. No count is given deliberately: the point is that the
-set need not be enumerated, and a number here would invite the next reader to
-re-derive a boundary this arm exists to remove.
+caller, so none of it may decide **which permission errno gets which type**.
+Every operation classifies through the dispatch, so answering there is the only
+placement under which the errno stops mattering. No count of sites is given
+deliberately: the point is that the set need not be enumerated for that
+guarantee, and a number here would invite the next reader to re-derive a
+boundary this arm exists to remove.
+
+**One site still swallows a denial, and the invariant is stated over errnos
+rather than sites because of it.** `_has_file_ancestor`'s walk returns `False`
+for any non-`ENOENT`, non-futile stat failure, permission errnos included
+(BK-316 L6 kept that deliberately, so a false "no file ancestor" only forgoes
+the `NotFound` upgrade). So for a key below depth 0 whose **ancestor** is the
+denied path, `read_bytes` and `delete` answer the base `RemoteStoreError` while
+`write` / `write_atomic` / `open_atomic` answer `PermissionDenied` — measured,
+and identical before this arm existed. **Both errnos answer alike in every one
+of those cells**, which is this clause's guarantee; what differs is read-side
+versus write-side, which is BK-316's carve-out and not an errno question.
 
 **Guarding the sites individually was tried twice and does not converge**: each
 subset drew a boundary somewhere a caller cannot see — first between `write`'s
@@ -526,8 +538,8 @@ reachable each is: a netfilter `REJECT` on the `OUTPUT` chain reproduces the
 produces `EACCES` is unestablished. Before SFTP-021 claimed `EPERM` the two
 answered differently and the item would have had to fix them separately.
 
-Neither is claimed *here* — in the unreachable set — and the evidence differs
-per errno. `EACCES` reaches this mapping from a *working* channel on any denied
+Neither is claimed *here* — in the unreachable set. `EACCES` reaches this
+mapping from a *working* channel on any denied
 operation: paramiko's `SFTPClient._convert_status` renders
 `SSH_FX_PERMISSION_DENIED` as `IOError(EACCES)`, measured on paramiko 5.0.0. So
 claiming it would answer a server-reported denial with `BackendUnavailable` and

@@ -43,6 +43,19 @@ except BackendUnavailable:
     log.error("Backend unreachable for %s", store)
 ```
 
+!!! warning "On SFTP, a connection your own machine refuses reads as `PermissionDenied`"
+
+    The SFTP error mapping sees only the exception, so it cannot tell a denial
+    your server reported from one the local machine raised refusing to connect —
+    a firewall rule, typically. Such a connect raises `PermissionDenied` with an
+    empty key (`Permission denied: `), not `BackendUnavailable`, so the handler
+    above logs "Bad credentials" for a request that never left the machine.
+
+    An empty `path` on the error is the only signal that distinguishes the two,
+    and it is not one to build on: telling them apart properly needs
+    connect-time context the mapping does not have, and is tracked as its own
+    fix. The other backends are unaffected.
+
 ## Per-backend strategies
 
 Each backend uses the cheapest possible read-only operation:
