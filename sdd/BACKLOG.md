@@ -524,51 +524,91 @@ compliant the day before.
   that item's own body had cited the migration row as though it were satisfied
   before and after — corrected there.
 
-- [ ] **BUG-274 — A keyed SFTP operation against an unreachable host pays the connect budget two or three times over**
-  spec: SFTP-010, SFTP-023 · effort: S · audience: user.api
-  Not a regression — master behaves identically — but BUG-265 introduced the
-  predicate that would close it, and BUG-265's own round-4 measurement is what
-  exposed the mechanism.
-  **The fourteen mid-operation re-entry guards all ask `_is_connection_dead`
-  alone**, and that predicate answers `False` for every shape `_is_unreachable`
-  claims. Measured on `read_bytes("delivery.csv")` against a just-released
-  ephemeral port, with `_is_connection_dead` wrapped in a frame-recording
-  counter: three consultations (`_sftp.py:903` — `read_bytes`'s own guard,
-  `_sftp.py:2047` — `_raise_if_dir`, and the mapping's own) and **two full
-  `_connect` cycles**. The guard at 903 declines, so control falls through to
-  `_raise_if_dir`, which re-evaluates the lazy `_sftp` property and pays the
-  whole `RetryPolicy` budget again — three attempts with 2–10 s exponential
-  backoff by default. For a nested key `_has_file_ancestor` makes it three.
-  `check_health` is unaffected: it has no re-entry guard, which is why
-  BUG-265's "connect attempts are identical on both revisions" holds for the
-  probe and not for keyed operations.
-  **What it costs a caller, measured as wall clock at shipped defaults** — no
-  `retry=` passed, against a just-released ephemeral port, timed per call:
+- [ ] **BUG-279 — `unwrap(SFTPClient)` leaks the raw paramiko or socket error when the connection cannot be established**
+  spec: SFTP-024, SFTP-026 · effort: S · audience: user.api
+  SFTP-024's invariant is stated over "no paramiko, socket, or OS exception
+  raised *by the backend*" reaching callers. `unwrap` returns `self._sftp`
+  (`SFTP-026`), which evaluates the lazy property and so can run the whole
+  connect budget — and it is **not** wrapped in `_errors()`, so whatever
+  `_connect` raises escapes unmapped.
+  **Measured** against a backend that has never connected, one entry into
+  `_connect` per case:
 
-  | call | elapsed |
+  | connect-time shape | raised |
   |---|---|
-  | `check_health()` | 4.37 s |
-  | `exists("a.csv")` | 4.00 s |
-  | `read_bytes("a.csv")` | **8.00 s** |
-  | `read_bytes("a/b/c.csv")` | **12.01 s** |
+  | refused port | `paramiko.ssh_exception.NoValidConnectionsError` |
+  | DNS failure | `socket.gaierror` |
+  | connect timeout | `TimeoutError` |
 
-  That is the 1x / 2x / 3x cycle count showing up as time. **A refused port is
-  the cheap case**: each attempt fails instantly, so the elapsed time is almost
-  all backoff. Against a blackholed address every attempt also burns the 10 s
-  `timeout`, so the same multiplier lands on a base roughly an order of
-  magnitude larger. A caller reading many keys from a store that is down pays
-  this per key, which is the shape most likely to be reported as "the library
-  hangs" rather than as a latency bug.
-  **Disposition:** `or self._is_unreachable(exc)` at those guard sites is the
-  one-line shape, and it is a **behaviour change**, not only a saving: `read`
-  and `read_bytes` would then raise at their guard instead of falling through
-  to classification. That is the correct answer for a host that was never
-  there, but it is the same widening BUG-265 declined to make under review, so
-  it wants its own failing test first — and note that
-  `TestSFTPConnectTimePredicateSpace` deliberately asserts the observable answer
-  and *not* a connect count, so nothing in the suite would notice this either
-  way today. Pinning the count is part of the work.
-  **Found by BUG-265's round-5 unprimed reviewer**, as a `Possible: Perf:`.
+  Every other operation answers `BackendUnavailable` for all three.
+  **What it costs a caller:** someone following the health-check guide writes
+  `except BackendUnavailable` and gets none of these; an escape hatch that is
+  documented as returning the driver's client instead raises a driver exception
+  the error model promises never to surface.
+  **Disposition, and it is a real choice rather than a one-liner.** Either wrap
+  the property access in `_errors()` — which makes `unwrap` obey SFTP-024 at
+  the cost of the escape hatch no longer being transparent about *why* it could
+  not hand back a client — or amend SFTP-024 to carve `unwrap` out explicitly,
+  on the grounds that a caller reaching for the driver has opted into driver
+  errors. **The carve-out is the likelier answer** (the method's whole purpose
+  is driver access) but it is currently neither stated nor tested, so the
+  invariant reads as breached rather than bounded. Whichever way, SFTP-026 gains
+  a `Raises:` line, which it has never had.
+  **Pre-existing, not introduced by BUG-274** — that item only measured it,
+  while accounting for why `unwrap` is excluded from its operation enumeration.
+  **Found by BUG-274's round-5 unprimed reviewer.**
+
+- [ ] **BUG-278 — A transport that dies mid-operation pays the connect budget up to three times over when the reconnect meets a host that is gone**
+  spec: SFTP-023, SFTP-018 · effort: S · audience: user.api
+  BUG-274's sibling, and **not** covered by it: that item's guarantee is scoped
+  to an operation whose *first* `_sftp` evaluation fails — a host that was never
+  reached — and its enumeration builds a fresh backend per cell, so nothing in
+  the suite puts a live-then-dead transport in front of a guard.
+  **The mechanism.** `_sftp` re-reads `transport.is_active()` on every access,
+  so being downstream of a handle says nothing about the connection the *next*
+  access will use. A transport that dies after a handle is produced makes the
+  next `_sftp` access reconnect, and against a host that is now gone that raises
+  a connect-time shape into a guard which asks `_is_connection_dead` alone and
+  declines — the exact defect BUG-274 fixed at six other sites.
+  **Measured** on BUG-274's head, at shipped defaults, with a just-released
+  ephemeral port behind a transport flipped inactive mid-operation. The first
+  entry is the transport death itself; after that a decline costs a budget only
+  when something downstream re-evaluates `_sftp`, which is why the frame counts
+  below do not simply track the entry counts — `_is_absent`'s decline in the
+  first two rows reaches nothing further, and the third row's third entry comes
+  from `_copy_and_delete`'s handle open, which is not a guard and so is not in
+  the frames column:
+
+  | driver | entries | elapsed | declining frames |
+  |---|---|---|---|
+  | `write_atomic(overwrite=True)`, transport dies at the temp close | 3 | 12.01 s | `_promote` → `_displace` → `_is_absent` |
+  | `move(overwrite=True)`, transport dies at the destination probe | 3 | 12.01 s | `move` → `_displace` → `_is_absent` |
+  | `move(overwrite=False)`, same | 3 | 12.01 s | `move` → `_move_fallback` |
+
+  Before BUG-274 the `write_atomic` case cost 4 entries / 16.01 s, so that item
+  improved this case without closing it. (BUG-274's own published figure for a
+  nested `read_bytes` is 12.00 s, re-measured on one machine; these are near
+  neighbours rather than the same number.)
+  **Five sites, not four, and `move`'s is the one an implementer will miss.**
+  `move`'s own guard classifies a `posix_rename` failure inside `move`'s own
+  `try`, with `_move_fallback` re-evaluating `_sftp` behind it, and its comment
+  already says "Same reasoning as `_promote`". **Simulating the four-site fix
+  without it leaves `move` at 2 entries / 8.00 s on both `overwrite` values** —
+  so a fix that measures `write_atomic`, sees one budget and stops would ship
+  the defect. The five: `move`'s guard, `_promote`, `_displace`, `_is_absent`,
+  `_move_fallback`. Every one is exercised by the two fixtures above except that
+  `_move_fallback` and the `_displace`/`_is_absent` pair appear on different
+  `overwrite` paths, so both are needed.
+  **Disposition:** the one-line shape is `_probe_is_futile` at those five sites,
+  as BUG-274 did elsewhere. What makes this its own item rather than more of
+  that one is the **fixture**: proving it needs a transport that reports active
+  and then does not, which this suite has nowhere, and the five sites sit in the
+  atomic-write rename ladder that BUG-270 / BUG-272 / BUG-277 have just reworked
+  — so the failing test is the work, and it is a different test from BUG-274's.
+  Per the bug-fix protocol, write it and watch it fail first, and assert the
+  budget on **both** `overwrite` paths, since they decline at different sites.
+  **Found by BUG-274's round-2 measuring reviewer**, which refuted a
+  reachability argument BUG-274's own round-1 fix pass had written.
 
 - [ ] **BUG-266 — No artifact maps an observable SFTP failure onto the arm that handles it, and four prose attempts were each refuted**
   spec: SFTP-023, SFTP-030 · effort: M · audience: user.site, library.maintainer

@@ -2193,10 +2193,17 @@ class TestSFTPConnectTimePredicateSpace:
     flight at connect time" (refuted — a connect that times out raises
     ``socket.timeout``, which ``_is_connection_dead`` already matches); "those
     guards are never consulted on the connect path" (refuted by measurement —
-    ``read_bytes`` against a refused port consults it three times, twice before
+    ``read_bytes`` against a refused port consulted it three times, twice before
     the mapping); and, implicitly, that the shapes partition neatly by phase
     (they do not — the same ``socket.timeout`` is both connect-time and
     mid-operation).
+
+    **The second figure is BUG-265's, and BUG-274 changed it**: those guards now
+    consult both predicates, so the same call consults twice, once before the
+    mapping — the guard acts instead of declining, and the second pre-mapping
+    consult was the classification path it used to fall through to. The
+    refutation stands; only its measurement moved, which is why the figure is in
+    the past tense rather than deleted.
 
     A fourth reading is not more likely to be exhaustive than the first three,
     so the condition's space is parametrised and generated instead. The axes are
@@ -2311,6 +2318,27 @@ class TestSFTPConnectTimePredicateSpace:
         Nor is the exception's class, which would depend on whether a given
         platform surfaces a just-released-port connect as a wrapped refusal or a
         reset — the sibling end-to-end test allows both.
+
+        **``_probe_is_futile`` is skipped when it is the frame found**, because
+        BUG-274 interposed it between every guard and this predicate: recording
+        the immediate caller would name that helper for all of them and collapse
+        the distinction this test is built on. Skipping to the frame above it
+        names the guard itself again.
+
+        **Which assertion the mutation moves, measured rather than assumed.**
+        Disabling ``read_bytes``' guard leaves ``callers ==
+        ['_raise_if_dir', '_map_exception']``, so ``outside_mapping`` is
+        *non-empty* and the second assertion passes; the third one — naming
+        ``read_bytes`` — is what fails. An earlier revision of this block
+        claimed the list came back as ``['_map_exception']`` alone and the
+        second assertion fired, which would have been the stronger sensitivity
+        and is not what happens: with the guard gone, control reaches
+        ``_raise_if_dir``, whose own widened guard consults this predicate on
+        the way. So the second assertion can now be satisfied by a *different*
+        guard's consult reached through a second connect budget — the situation
+        BUG-274 exists to prevent — and the third assertion is the one carrying
+        this test's discriminating power. ``TestSFTPUnreachableHostCostsOneConnect``
+        is what fails if that second budget ever comes back.
         """
         import inspect
 
@@ -2319,8 +2347,11 @@ class TestSFTPConnectTimePredicateSpace:
 
         def recording(exc: Exception) -> bool:
             frame = inspect.currentframe()
-            caller = frame.f_back.f_code.co_name if frame is not None and frame.f_back is not None else "?"
-            callers.append(caller)
+            caller_frame = frame.f_back if frame is not None else None
+            # Look through the shared guard helper to the guard that asked.
+            if caller_frame is not None and caller_frame.f_code.co_name == "_probe_is_futile":
+                caller_frame = caller_frame.f_back
+            callers.append(caller_frame.f_code.co_name if caller_frame is not None else "?")
             return bool(original(exc))
 
         monkeypatch.setattr(SFTPBackend, "_is_connection_dead", staticmethod(recording))
@@ -2335,6 +2366,328 @@ class TestSFTPConnectTimePredicateSpace:
             f"guards were not reached on the connect path: {callers}"
         )
         assert "read_bytes" in outside_mapping, f"read_bytes' own guard was not the one reached: {callers}"
+
+
+class TestSFTPUnreachableHostCostsOneConnect:
+    """BUG-274: a host that was never reached is paid for once, whatever the operation.
+
+    ``TestSFTPConnectTimePredicateSpace`` above asserts *what* each connect-time
+    shape answers and deliberately asserts no connect count; this class asserts
+    the cost, which is the half that was free to drift. It did: run against the
+    pre-fix backend, **22 of these 84 cells failed** — 111 ``_connect`` entries
+    where 84 were owed — so a caller against a down store paid the whole
+    ``RetryPolicy`` budget (three attempts with 2-10 s backoff at shipped
+    defaults) over again per extra cycle.
+
+    **Scope, and it is narrower than "an unreachable host" sounds.** Every cell
+    builds a fresh backend whose *first* ``_sftp`` evaluation fails. A transport
+    that dies mid-operation and then fails to reconnect reaches guards no cell
+    here touches and still costs up to three budgets; that is BUG-278, and this
+    class must not be read as ruling it out.
+
+    **What is asserted is one entry into ``_connect``, not a probe count.** The
+    budget is what a caller waits on and what the re-entry guards exist to
+    protect; how many round-trips a classification path would have made is
+    ``read_bytes``' business and pinning it would fail an unrelated refactor,
+    which is the reason the sibling class gives for pinning nothing here.
+
+    The shape fixture is the sibling's rather than a copy: one place builds a
+    failing connect, so a fourth shape added there is met here too.
+    """
+
+    SHAPES = TestSFTPConnectTimePredicateSpace.SHAPES
+
+    #: **Every operation that reaches the backend**, not a sample, each with the
+    #: argument shapes that reach a distinct guard path — a nested key walks
+    #: ancestors, ``overwrite=True`` skips the eager stat, ``missing_ok``
+    #: changes what the file-ancestor branch does with its answer.
+    #:
+    #: Derived from ``dir(SFTPBackend)``, **not** ``vars()``: three public
+    #: members are inherited from ``Backend`` and a ``vars()`` walk cannot see
+    #: them, which is how ``read_seekable`` — an operation that moved, since it
+    #: delegates to ``read()`` — was missing from an earlier revision of this
+    #: tuple. Of the 29 public names, excluded are: ``close``, ``native_path``,
+    #: ``to_key``, ``resolve``, ``close_is_terminal`` (no request issued — path
+    #: arithmetic, teardown, or a constant); ``capabilities``, ``CAPABILITIES``,
+    #: ``name`` (metadata, not operations); ``glob``, which raises
+    #: ``CapabilityNotSupported`` before any connect because
+    #: ``SFTPBackend.CAPABILITIES`` has no ``GLOB`` — measured at 0 ``_connect``
+    #: entries on both revisions, so it has no budget to pin; and ``unwrap``,
+    #: which is the one exclusion that is **not** clerical.
+    #:
+    #: ``unwrap(paramiko.SFTPClient)`` returns ``self._sftp``, so it does
+    #: evaluate the lazy property and does pay a budget — an earlier revision
+    #: of this list grouped it with the no-request names, which was simply
+    #: false. It is excluded because it hands the caller the driver's own
+    #: handle rather than performing a store operation, and so is deliberately
+    #: outside ``_errors()``: cells for it would meet the raw driver error —
+    #: ``NoValidConnectionsError``, ``socket.gaierror`` and ``TimeoutError``
+    #: respectively, one per shape, since this tuple is parametrised over
+    #: ``SHAPES`` — and all three would fail this test's ``pytest.raises``
+    #: rather than pass. Whether SFTP-024 should reach ``unwrap`` at all is
+    #: tracked as its own item; what matters here is that the exclusion is
+    #: stated for the reason that is true.
+    #:
+    #: Completeness is the point, not padding: the fix widens shared guards, so
+    #: an operation that *gains* a cycle would otherwise be invisible, and the
+    #: guard sites left asking ``_is_connection_dead`` alone are load-bearing
+    #: only for operations this tuple must therefore name.
+    OPERATIONS = (
+        "check_health",
+        "exists",
+        "is_file",
+        "is_folder",
+        "get_file_info",
+        "get_folder_info",
+        "read",
+        "read/nested",
+        "read_seekable",
+        "read_seekable/nested",
+        "read_bytes",
+        "read_bytes/nested",
+        "delete",
+        "delete/nested",
+        "delete/missing_ok",
+        "delete/missing_ok/nested",
+        "delete_folder",
+        "write",
+        "write/overwrite",
+        "write/overwrite/nested",
+        "write_atomic",
+        "write_atomic/overwrite",
+        "open_atomic",
+        "move",
+        "copy",
+        "list_files",
+        "list_folders",
+        "iter_children",
+    )
+
+    FLAT = "delivery.csv"
+    NESTED = "a/b/delivery.csv"
+
+    @classmethod
+    def _call(cls, backend: SFTPBackend, operation: str) -> Any:
+        """Return a zero-argument callable driving *operation* on *backend*.
+
+        The three listing operations are drained because they are generators:
+        left lazy they would enter ``_connect`` zero times and pass this test
+        without running the operation at all. ``open_atomic`` is entered as a
+        context manager for the same reason — its setup phase is where the
+        connect happens.
+        """
+        flat, nested = cls.FLAT, cls.NESTED
+
+        def enter_open_atomic() -> None:
+            with backend.open_atomic(flat) as handle:
+                handle.write(b"x")
+
+        calls = {
+            "check_health": lambda: backend.check_health(),
+            "exists": lambda: backend.exists(flat),
+            "is_file": lambda: backend.is_file(flat),
+            "is_folder": lambda: backend.is_folder(flat),
+            "get_file_info": lambda: backend.get_file_info(flat),
+            "get_folder_info": lambda: backend.get_folder_info(flat),
+            "read": lambda: backend.read(flat),
+            "read/nested": lambda: backend.read(nested),
+            "read_seekable": lambda: backend.read_seekable(flat),
+            "read_seekable/nested": lambda: backend.read_seekable(nested),
+            "read_bytes": lambda: backend.read_bytes(flat),
+            "read_bytes/nested": lambda: backend.read_bytes(nested),
+            "delete": lambda: backend.delete(flat),
+            "delete/nested": lambda: backend.delete(nested),
+            "delete/missing_ok": lambda: backend.delete(flat, missing_ok=True),
+            "delete/missing_ok/nested": lambda: backend.delete(nested, missing_ok=True),
+            "delete_folder": lambda: backend.delete_folder(flat),
+            "write": lambda: backend.write(flat, b"x"),
+            "write/overwrite": lambda: backend.write(flat, b"x", overwrite=True),
+            "write/overwrite/nested": lambda: backend.write(nested, b"x", overwrite=True),
+            "write_atomic": lambda: backend.write_atomic(flat, b"x"),
+            "write_atomic/overwrite": lambda: backend.write_atomic(flat, b"x", overwrite=True),
+            "open_atomic": enter_open_atomic,
+            "move": lambda: backend.move(flat, "moved.csv"),
+            "copy": lambda: backend.copy(flat, "copied.csv"),
+            "list_files": lambda: list(backend.list_files("")),
+            "list_folders": lambda: list(backend.list_folders("")),
+            "iter_children": lambda: list(backend.iter_children("")),
+        }
+        return calls[operation]
+
+    @pytest.mark.spec("SFTP-031")
+    @pytest.mark.parametrize("shape", SHAPES)
+    @pytest.mark.parametrize("operation", OPERATIONS)
+    def test_an_unreachable_host_costs_exactly_one_connect(
+        self, operation: str, shape: str, monkeypatch: pytest.MonkeyPatch
+    ) -> None:
+        """SFTP-031: one connect budget per operation, over shape x operation.
+
+        The ``connect-timeout`` column passed before the fix as well, and is the
+        control that identifies the defect: that shape raises ``TimeoutError``,
+        which ``_is_connection_dead`` already matches, so the guards fired and
+        the operation cost one cycle. The mechanism was never broken — only the
+        predicate the guards consulted, which had no arm for a host that was
+        never reached.
+        """
+        attempts = 0
+        original = SFTPBackend._connect
+
+        def counting(self: SFTPBackend) -> None:
+            nonlocal attempts
+            attempts += 1
+            original(self)
+
+        backend = TestSFTPConnectTimePredicateSpace._backend(monkeypatch, shape)
+        monkeypatch.setattr(SFTPBackend, "_connect", counting)
+
+        with pytest.raises(BackendUnavailable):
+            self._call(backend, operation)()
+
+        assert attempts == 1, f"{operation}/{shape} entered _connect {attempts} times, not once"
+
+
+class TestSFTPProbeReconnectsIntoGoneHost:
+    """SFTP-023: the *other* behaviour change BUG-274 makes, on a live channel.
+
+    **The enumeration next door cannot reach this**, and that is the whole
+    reason this class exists: every one of its 84 cells builds a fresh backend
+    whose *first* ``_sftp`` evaluation fails, so no cell ever puts a working
+    channel in front of a widened guard. Two of the six are reached only that
+    way — ``_raise_if_dir``'s classification stat and ``_has_file_ancestor``'s
+    ancestor walk — because both run on the error path of an operation that
+    already had a connection.
+
+    The sequence: an operation fails with an errno-less ``SSH_FX_FAILURE``
+    (which neither predicate claims), a classification probe re-enters the lazy
+    ``_sftp`` property, the transport has meanwhile died, and the reconnect meets
+    a host that is now gone. Before BUG-274 that probe failure was swallowed as
+    "cannot classify" and the caller's original error surfaced at the generic arm
+    as a base ``RemoteStoreError``; now the connect-time shape re-raises and the
+    operation concludes ``BackendUnavailable``.
+
+    **What is *not* asserted here, and why.** An earlier revision also asserted
+    the cached client ends up ``None`` and called that SFTP-010 tier 2 firing.
+    Review measured it vacuous, and worse than vacuous — it is not this change:
+    the reconnect runs ``_connect``, whose first act is ``_close_clients()``, so
+    the client is already ``None`` before ``_map_exception`` is consulted, on
+    **both** revisions. Driving the pre-fix module through this same fixture
+    ends with ``_sftp_client`` at ``None`` and a base ``RemoteStoreError``. The
+    error type is the whole of the observable difference, so it is the whole of
+    what this class claims — the same correction the sibling
+    ``TestSFTPConnectTimePredicateSpace`` records having made to an identical
+    assertion.
+
+    Not breaking: ``BackendUnavailable`` subclasses ``RemoteStoreError``.
+    """
+
+    @staticmethod
+    def _closed_port() -> int:
+        sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+        sock.bind(("127.0.0.1", 0))
+        port = int(sock.getsockname()[1])
+        sock.close()
+        return port
+
+    def _backend_with_dying_channel(self, *, die_at: str) -> SFTPBackend:
+        """A backend whose live-looking transport dies at a chosen point.
+
+        *die_at* selects which probe re-enters ``_sftp`` after the death, and so
+        which widened guard the reconnect failure meets:
+
+        - ``"open"`` — ``file()`` raises the errno-less ``SSH_FX_FAILURE`` and
+          kills the transport, so ``_raise_if_dir``'s stat is what reconnects and
+          the **stat guard** answers.
+        - ``"classify"`` — ``file()`` raises with the transport still live, then
+          ``_raise_if_dir``'s stat raises ``ENOENT`` (which it swallows) and kills
+          the transport, so ``_has_file_ancestor``'s walk is what reconnects and
+          the **walk guard** answers. Needs a nested key, or the walk yields no
+          ancestors and never runs.
+        """
+        state = {"alive": True}
+
+        class Transport:
+            def is_active(self) -> bool:
+                return state["alive"]
+
+        class SSH:
+            def get_transport(self) -> Any:
+                return Transport()
+
+            def close(self) -> None:
+                pass
+
+        class Client:
+            def __init__(self) -> None:
+                self.sock = type("S", (), {"settimeout": lambda self, t: None})()
+
+            def file(self, *a: Any, **k: Any) -> Any:
+                if die_at == "open":
+                    state["alive"] = False
+                raise OSError(None, "Failure")
+
+            def stat(self, *a: Any, **k: Any) -> Any:
+                # Reached only in the "classify" case: an ENOENT here is
+                # swallowed by _raise_if_dir, which is what lets control fall
+                # through to the ancestor walk.
+                state["alive"] = False
+                raise OSError(errno.ENOENT, "No such file")
+
+            def close(self) -> None:
+                pass
+
+        backend = SFTPBackend(
+            host="127.0.0.1",
+            port=self._closed_port(),
+            host_key_policy="auto",
+            timeout=3,
+            retry=RetryPolicy.disabled(),
+        )
+        backend._ssh_client = SSH()
+        backend._sftp_client = Client()
+        return backend
+
+    @pytest.mark.spec("SFTP-023")
+    @pytest.mark.parametrize(
+        ("die_at", "path", "expected_guard"),
+        [
+            ("open", "delivery.csv", "_raise_if_dir"),
+            ("classify", "a/b/delivery.csv", "_has_file_ancestor"),
+        ],
+    )
+    def test_a_probe_reconnecting_into_a_gone_host_reports_backend_unavailable(
+        self, die_at: str, path: str, expected_guard: str, monkeypatch: pytest.MonkeyPatch
+    ) -> None:
+        """SFTP-023: the classification probe's own connect failure is reported, not swallowed.
+
+        **Each case names the guard it exists to cover, and asserts it was the
+        one reached.** Without that the two cases collapse: an earlier revision
+        drove both through ``file()`` and both stopped at ``_raise_if_dir``, so
+        the nested cell was a duplicate and ``_has_file_ancestor``'s guard had no
+        test at all while the docstring claimed it did. Recording the calling
+        frame is what stops that recurring — the parametrisation cannot silently
+        stop covering two guards.
+        """
+        import inspect
+
+        reached: list[str] = []
+        original = SFTPBackend._probe_is_futile
+
+        def recording(cls: type[SFTPBackend], exc: Exception) -> bool:
+            frame = inspect.currentframe()
+            caller = frame.f_back if frame is not None else None
+            reached.append(caller.f_code.co_name if caller is not None else "?")
+            return bool(original(exc))
+
+        backend = self._backend_with_dying_channel(die_at=die_at)
+        monkeypatch.setattr(SFTPBackend, "_probe_is_futile", classmethod(recording))
+
+        with pytest.raises(BackendUnavailable):
+            backend.read_bytes(path)
+
+        assert expected_guard in reached, (
+            f"{die_at}/{path} was meant to reach {expected_guard}'s guard, "
+            f"but the predicate was consulted from {reached}"
+        )
 
 
 class TestSFTPUnreachableHost:
