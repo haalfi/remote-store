@@ -318,7 +318,7 @@ phases:
           the advice an agent reads was correct. The collision's real cause is
           that neither derivation can see the *other session's unpushed branch*:
           at mint time master carried no 278 anywhere, so both sessions computed
-          278 and both were right about what they could see. Filed as BUG-280.
+          278 and both were right about what they could see. Filed as ID-257.
           The tag stays: the tool's collision message names backlogid.json as
           "the floor", and that file alone would hand out a taken ID
         outcome: misleading

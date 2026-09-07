@@ -438,7 +438,11 @@ two overwrite modes, then between `read_bytes` and `get_file_info` on one path
 and one denial. All fifteen `Raises:` blocks that name a permission errno
 therefore state the same rule — `check_health`'s included, which adds only that
 the denial need not be the server's — and the three listing methods describe the
-answer in prose rather than a `Raises:` block. This also puts SFTP
+answer in prose rather than a `Raises:` block. **Fifteen is derived**, by an AST
+walk over `_sftp.py` collecting every function whose `Raises:` section names
+`EACCES` or `EPERM`; counting the shared wording instead returns 14, because
+`check_health`'s block is worded differently, and two revisions of this sentence
+were wrong from exactly that substitution. This also puts SFTP
 where `LocalBackend` already is, which catches bare `PermissionError` and so has
 always answered both errnos alike.
 

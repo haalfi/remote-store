@@ -2083,8 +2083,12 @@ class SFTPBackend(Backend):
         that denies even statting the target surfaces ``PermissionDenied`` rather
         than a generic ``RemoteStoreError``.  The type is the errno dispatch's,
         not this guard's — which is why the re-raise names both errnos and gets
-        both, and why every other stat in this module answers identically
-        without needing a guard of its own.  What this guard decides is only
+        both, and why every stat that *reaches* the dispatch answers the same
+        for either errno without needing a guard of its own.  Reaching it is the
+        qualifier, not a formality: ``_has_file_ancestor``'s walk swallows a
+        denied ancestor stat on purpose, so that one denial answers the base
+        class — for both errnos alike, which is why it is a read-versus-write
+        difference and not an errno one.  What this guard decides is only
         *whether* the classification stat's own failure reaches the caller at
         all, never which type it becomes.
 
@@ -2722,7 +2726,7 @@ class SFTPBackend(Backend):
         """Return True if *exc* signals a dropped or unusable SSH/SFTP connection.
 
         paramiko surfaces a dead channel in several unrelated shapes, none
-        carrying an errno the ENOENT/EACCES/EEXIST/ENOTDIR dispatch in
+        carrying an errno the ENOENT/EACCES/EPERM/EEXIST/ENOTDIR dispatch in
         ``_map_exception`` recognises: ``EOFError`` (not an ``OSError``);
         ``OSError('Socket is closed')`` with no errno (paramiko's own literal,
         not an OS-locale message, so matching it is safe on non-English hosts);

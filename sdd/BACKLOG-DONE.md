@@ -321,7 +321,9 @@ if evidence changes; these are retired.
   on the errno**, which is what this measured and all it claims. Driven as an
   unprivileged uid, `LocalBackend`'s three listing methods still leak a raw
   `PermissionError` rather than mapping it, so the two are not equivalent across
-  the whole surface and nothing here says they are.
+  the whole surface and nothing here says they are. **That leak is now
+  [BUG-280](BACKLOG.md)**, filed from this measurement rather than left standing
+  in a closed item's prose.
   **The entry-point table needed a third errno to stop being partly vacuous.**
   It drives 17 methods × 2 key depths × 2 denial sites and asserts the two
   permission errnos agree. Measured, a denial reaches a caller in only 40 of
@@ -335,6 +337,11 @@ if evidence changes; these are retired.
   **The ID collision is the lesson**: two sessions drawing from one floor mint
   the same number, and `gen_backlogid --check` is what caught it. An ID minted
   and retired inside one unmerged branch buys nothing a paragraph here does not.
+  **The coordination gap itself is now [ID-257](BACKLOG.md)**, which is where the
+  open question lives — what mechanism should own it — and which corrects the
+  first account of this incident: the floor was not at fault, since `--check`
+  already maxes over open items and the documented procedure says to check both.
+  What no derivation reads is another session's unpushed branch.
 
 - [x] **BUG-274 — A keyed SFTP operation against an unreachable host pays the connect budget two or three times over**
   spec: SFTP-031 (minted here), SFTP-023, SFTP-010 · effort: S · audience: user.api
