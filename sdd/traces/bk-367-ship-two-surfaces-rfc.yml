@@ -80,6 +80,18 @@ phases:
         read_type: reference
         extract: "Three refuted rationales, the EPERM claim-and-revert, the derivation comment stale four times"
         outcome: ok
+      - file: sdd/traces/bug-275-raise-if-dir-eperm.yml
+        section: "replan, fix_5, fix_6, fix_8, review_rounds comment (at PR #997's head 3cd4acb, unmerged)"
+        read_type: reference
+        extract: >-
+          Read after the draft was written, from the user's closing record of
+          that session. One-line shipped change, nine rounds; the recurring
+          defect was a fact measured through an injected fixture written as a
+          rule about the library, three instances. Added to the RFC as a fifth
+          shape and an instrument-bound clause in D2; the ID-set diff and the
+          posting-discipline evidence went to D4 and D5. Its own review_rounds
+          derivation had gone stale twice more
+        outcome: ok
       - file: sdd/traces/_schema.yml
         section: "review_rounds"
         read_type: gate

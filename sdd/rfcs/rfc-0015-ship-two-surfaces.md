@@ -137,6 +137,48 @@ and 4 were "all prose, all in artifacts the round-3 pass had rewritten", and
 the loop escaped by cutting the narrative rather than patching it, again on
 the user's call ([trace](../traces/bug-264-azure-blank-error-message.yml)).
 
+### A fifth delivery, read after this draft was written
+
+PR #997 (BUG-275, nine rounds, `2a1bbfe..3cd4acb`, 19 files, +1,551/−223 by
+its own close report) is the strongest single instance of the pattern and adds
+one defect shape the four causes above do not name. Its shipped code change is
+one line, unchanged since its second commit; everything after it was making
+the repo's claims about that line true. Its rounds 1 to 3 did find behaviour
+defects, and every one was in code a fix pass had written: a scoped guard that
+answered a connect-time denial as `PermissionDenied` on seven of nine entry
+points, abandoned when the divergence check fired and the work was re-planned
+onto the dispatch arm (its trace, `sdd/traces/bug-275-raise-if-dir-eperm.yml`
+at `3cd4acb`, phase `replan`; not linked because that PR is unmerged as this is
+written). Rounds 4 to 9 found prose.
+
+**The fifth shape: a fact measured through an injected fixture, written as a
+rule about the library.** The session's close report names it as its one
+recurring defect, and the trace records three instances: a `check_health`
+diagnostic that was constant across the two cases it claimed to separate
+(`fix_6`), an "identical before and after" that held for one errno only
+(`fix_6`), and a published upgrade note describing an ancestor carve-out
+"only the test produces" (`fix_8`), which took four rounds to restate and three
+to get wrong before it was removed from the published layer. Every one of them
+*was* measured, so ADR-0035's rule was met; what was missing was the
+instrument's reach beside the claim. No `EPERM` trigger exists on a working
+SFTP channel, so every test of the new behaviour is injection-based, and a
+sentence that drops the injection becomes a claim about what a user can meet.
+
+**The same delivery missed a ripple on its own measurement.** Round 8 measured
+that a permission-refused connect pays two connect budgets on two operations,
+recorded it against BUG-273, and did not ask whether it falsified a spec
+clause; SFTP-031 says "whichever connect-time shape occurred", and round 9
+caught it. A measurement is a change to what the repo may claim, and nothing
+routed from the number to the clauses it bears on.
+
+**Its findings are mostly unclassifiable by the origin tag**, which is
+Table 2's third bound in its sharpest form: `python sdd/rfcs/rfc-0015-findings.py 997`
+at `3cd4acb` returns 4 submissions and 20 inline findings for nine rounds, ten
+of the twenty file-level, so the loop-introduced share can be read for rounds 1
+and 2 only (0% and 40%). Nine rounds of review left a record from which the
+question this RFC asks cannot be answered, and that is the posting discipline
+D5 requires, not a new bound.
+
 ### The mechanism, in four parts
 
 **A. One file carries both the deliverable and the diary.** The loop records
@@ -273,6 +315,20 @@ shape.
   the condition of the push.
 - A reviewer's figure or attribution is a claim to re-derive, never a fact to
   carry. This is what failure 2 needed and principle 9 did not reach.
+- **A measured claim is bounded by its instrument, and says so.** A fact
+  established through injection (a patched method, a fake client, a forced
+  errno) is written as a fact about that injection unless a trigger a user can
+  produce is named beside it; a rule about the library needs the producer. The
+  question to ask once before publishing is the one PR #997's close report
+  ends on: *could a user reach this?* Shape (4) is the fix when the answer is
+  no. This is the fifth shape above, and ADR-0035 does not cover it because
+  measuring is exactly what those three claims had done.
+- **A new measurement is swept like a fix.** The number is not the deliverable;
+  the clauses it bears on are. Before a measured fact is recorded anywhere, the
+  artifacts that assert something about the same behaviour are listed and each
+  is left true, which is principle 2 applied to a measurement rather than to a
+  diff. PR #997's round-8 counter-example to SFTP-031 sat in a backlog item
+  for a round because nothing asked this.
 - A prose finding that does not state reader, task, failure, harm, change and
   what must survive ([research § 9.4](../research/research-appropriate-level-of-detail.md))
   is triaged *file as preference* and is never fixed in-loop. `/rvw-pr`'s
@@ -323,8 +379,11 @@ and guarded under `tests/scripts/`, reads the PR's comments (paged, per
 `/rvw-pr` Step 4's discipline) and `git log`, and emits: findings per
 submission; the per-file distribution, which replaces brief requirement 3's
 two-call recipe; the origin tag per finding (D5); the review-driven commit
-list and count; and CI's verdict on the head. Its output is the Step 5 report
-and the trace's review block, verbatim. Mid-loop, a brief quotes its output
+list and count; the set difference of backlog item IDs between the head and
+`origin/master`, so a rebase that drops a live item or a body that claims to
+close another branch's open item is visible (PR #997 did both, in rounds 5 and
+7, and no gate covers either); and CI's verdict on the head. Its output is the
+Step 5 report and the trace's review block, verbatim. Mid-loop, a brief quotes its output
 for the distribution and the origin counts; the orchestrator computes nothing
 by hand. BK-348 declined a script because "it guards nothing"; the hand
 enumerations since went stale eleven times across four traces (five, four,
@@ -349,7 +408,8 @@ corrects.
 - Posting discipline follows: a finding is posted with a `LINE` anchor
   whenever a line exists, and `FILE` is reserved for a subject that is the
   file. 160 of the 541 findings in Table 2 were file-level and could not be
-  classified, and from round 3 they are a third to a half of every round.
+  classified, from round 3 they are 40% to 58% of every round, and PR #997's
+  nine rounds left twenty inline findings, half of them file-level.
 - Stop-rule clause: if two consecutive rounds' must-fix findings are all
   loop-introduced, the next fix pass is a *retraction pass*. Each affected
   passage is restored to its last state that no round found false, and then,
@@ -446,6 +506,11 @@ runtime behaviour, no published page other than this RFC's own.
    the bound.
 5. Where the mid-loop `ship-report` output lives. A PR comment from the
    orchestrator primes nobody, because reviewers never fetch comments.
+6. Whether the instrument-bound clause in D2 can be checked at all. A test
+   that patches a method is recognisable (`monkeypatch`, `patch(`, a fake
+   client class); a prose claim that generalises from it is not. The clause
+   binds the fixer and the reviewer, and the `/rvw-pr` Premise lens is the
+   natural place to ask *could a user reach this?* of every published claim.
 
 ## References
 
@@ -459,7 +524,9 @@ runtime behaviour, no published page other than this RFC's own.
   `CLAUDE.md` principles 8 and 9; [`DRIFT-RULES.md`](../DRIFT-RULES.md#rules)
   Rules 5 and 7.
 - Backlog: BK-365, BK-366, BK-348, BK-353, BK-349.
-- Traces: BUG-274, BUG-265, BUG-264, BUG-272, BK-359, BK-360, BK-358.
+- Traces: BUG-274, BUG-265, BUG-264, BUG-272, BK-359, BK-360, BK-358, and
+  BUG-275 at PR #997's head `3cd4acb` (read before that PR merged; the path
+  above resolves once it has).
 - Derivations: `rfc-0015-findings.py`, `rfc-0015-rounds.py`; the phrase set
   behind the 14-line count is
   `Retrospective|Annotated after|annotated after|until round \d|an earlier revision of this|this (line|sentence|figure|step) (said|read|was)|corrected in round|Round \d (caught|found|corrected)`
