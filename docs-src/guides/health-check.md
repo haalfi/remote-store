@@ -26,7 +26,7 @@ store.ping()  # raises on failure, silent on success
 
 | Exception | Meaning |
 |-----------|---------|
-| `PermissionDenied` | Invalid credentials or insufficient permissions |
+| `PermissionDenied` | Access denied — usually invalid credentials or insufficient permissions, but see the warning below |
 | `NotFound` | Bucket, container, or root directory does not exist |
 | `BackendUnavailable` | Network error, DNS failure, or timeout |
 

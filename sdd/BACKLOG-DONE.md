@@ -257,12 +257,20 @@ if evidence changes; these are retired.
   here or in the spec: two revisions of this entry quoted one, neither
   reproduced from the derivation stated beside it, and the number was never what
   the argument rested on. It does **not** follow that every site answers
-  `PermissionDenied`: `_has_file_ancestor`'s walk swallows a denied ancestor
-  stat, so a denial on an ancestor reaches only the write side. Both errnos
-  answer alike there too, which is this item's invariant; the read/write split is
-  BK-316's. Three review rounds each restated that scope and the first two got it
-  wrong, the second by asserting the split pre-dated this arm — measured, before
-  the arm it held for `EACCES` alone.
+  `PermissionDenied` under every staging: `_has_file_ancestor`'s walk swallows a
+  denied ancestor stat, so where the walk is reached the denial lands only on the
+  write side. Both errnos answer alike there too, which is this item's invariant;
+  the read/write split is BK-316's.
+  **Four review rounds restated that scope and the first three got it wrong**,
+  each more subtly than the last: the first said the site set stops mattering;
+  the second asserted the split pre-dated this arm, when before the arm it held
+  for `EACCES` alone; the third published it as an upgrade rule. Measured, the
+  walk is reached only when the operation fails **errno-lessly**, the target stat
+  answers `ENOENT`, and an ancestor stat answers the permission errno — a
+  conjunction the test builds by hand. Deny the operation and every stat with the
+  errno, as a server refusing a directory you must traverse does, and all 17
+  entry points answer `PermissionDenied`. The carve-out is a fact about the
+  fixture, and is now stated only where the fixture is: the spec and the test.
   **What it costs, stated rather than hidden.** The dispatch sees only the
   exception, so a **connect-time** `EPERM` — a connect the local machine
   rejected, which a netfilter `REJECT` on the `OUTPUT` chain reproduces — is now

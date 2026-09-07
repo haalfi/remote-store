@@ -502,6 +502,17 @@ compliant the day before.
   keeping either way: the next person to consider widening `_is_unreachable`'s
   tuple finds here why that breaks a working channel, instead of rediscovering
   it the way BUG-265 did across two rounds.
+  **The shape also pays the connect budget twice, and the fix here is what would
+  end that too.** Measured by patching `_connect` to raise the errno and counting
+  invocations, at both `2a1bbfe` and this branch's head: `read_bytes` and
+  `delete` cost **two** connects, `read` / `exists` / `check_health` one, and
+  `ECONNREFUSED` costs one everywhere. `_probe_is_futile` does not claim a
+  permission errno, so the caller's guard declines and `_raise_if_dir` re-enters
+  the lazy `_sftp` property for a second full budget. **Pre-existing and
+  unchanged by BUG-275** — the counts are identical on both revisions, and only
+  the *type* moved — but it is the same waste BUG-274 closed for unreachable
+  hosts, and classifying at `_connect` (the disposition below) removes it by
+  construction rather than needing a second widening.
   **Disposition:** not widening the tuple — that was tried and measured harmful,
   above. The same errnos on a live operation genuinely are a denied path
   (`test_eacces_maps_to_permission_denied` and
@@ -1003,10 +1014,13 @@ compliant the day before.
   which is why it sits here and not with the coverage work.
 
 - [ ] **BUG-280 — `LocalBackend`'s three listing methods leak a raw `PermissionError`**
-  spec: LO-001 · effort: S · audience: user.api
-  Reproduced by patching `pathlib.Path.iterdir` to raise
-  `PermissionError(13, "Permission denied")` and driving each method against a
-  real root (`tmp/local_leak.py`):
+  spec: BE-021 · effort: S · audience: user.api
+  BE-021 is the never-leak invariant this breaches
+  ([003-backend-adapter-contract.md](specs/003-backend-adapter-contract.md)),
+  and the spec already records BUG-249 — the S3 twin below — against it.
+  Reproduced by constructing a `LocalBackend` on any root holding one file,
+  patching `pathlib.Path.iterdir` to raise
+  `PermissionError(13, "Permission denied")`, and calling each method:
 
   | call | answer |
   |---|---|

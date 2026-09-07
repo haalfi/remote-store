@@ -42,7 +42,7 @@ surprising_ripples:
 # did: one said 'minus the one implementing commit' and yielded 6 against a
 # value of 4, and by then there were two implementing commits; the branch was
 # then flattened onto BUG-274, which would have orphaned any SHA list too.
-review_rounds: 6
+review_rounds: 8
 phases:
   - id: orient
     name: Orient
@@ -428,3 +428,86 @@ phases:
           injected errno changes nothing. Measured: the narrowing mutant still
           dies on 40; a *widening* mutant (EIO joins the arm) now dies on 32
           where the pre-round table passed all 68
+
+  - id: fix_7
+    name: Fix pass (verification round over fix_6)
+    steps:
+      - file: sdd/BACKLOG.md
+        section: "(item) BUG-278"
+        read_type: verify
+        extract: >-
+          The PR body claimed to close BUG-278 and to have registered it under
+          BACKLOG-DONE § Absorbed. Neither was true: the branch dropped that ID
+          rather than registering it, and BUG-278 is a live open item the
+          BUG-274 session minted for an unrelated defect, cited by the SFTP spec
+          and by test_config. A merge record would have marked someone else's
+          open work done. Both round-7 members found it independently, and no
+          gate can — there is no active/done collision for gen_backlogid to see
+      - file: src/remote_store/backends/_sftp.py
+        section: "_is_connection_dead (docstring)"
+        read_type: verify
+        extract: >-
+          The docstring enumerated the dispatch's arms as
+          ENOENT/EACCES/EEXIST/ENOTDIR; there are five and EPERM was missing.
+          The predicate is unaffected, so this was a stale description — and the
+          derivation the loop had been running (an AST walk over Raises: blocks)
+          could never have found it, because this sentence is not one. An
+          unprimed reader found it. `rg -n 'ENOENT/EACCES' src/` is the
+          derivation that does
+      - file: .claude/hooks
+        section: "check_no_tracker_refs"
+        read_type: gate
+        extract: >-
+          The first rewrite of _raise_if_dir's docstring cited BK-316 and
+          SFTP-021 by ID. The gate rejected it: a docstring is a published
+          surface. Worth recording that a gate caught a fix-pass defect during
+          the round whose subject is fix-pass defects
+        outcome: unclear
+
+  - id: fix_8
+    name: Fix pass (verification round over fix_7)
+    steps:
+      - file: docs-src/reference/migration.md
+        section: "the ancestor carve-out"
+        read_type: verify
+        extract: >-
+          Both round-8 members refuted the carve-out as published, and measuring
+          settled it. Reaching _has_file_ancestor's swallow needs a conjunction
+          the fixture builds by hand: an errno-less operation failure (the read
+          side consults the walk only when code is None), a target stat
+          answering ENOENT, and a denied ancestor stat. Deny the operation and
+          every stat with the errno instead — a server refusing a directory you
+          must traverse — and all 17 entry points answer PermissionDenied for
+          both errnos. So the published upgrade note described a shape only the
+          test produces. Cut from the migration guide and the CHANGELOG; kept in
+          the spec and the test docstring, where the injected model is stated,
+          with the conjunction spelled out. This is the fourth round to restate
+          that scope and the third to get it wrong, which is why the disposition
+          moved from re-wording it to removing it from the published layer
+        outcome: misleading
+      - file: src/remote_store/_store.py
+        section: "Store.ping (Raises)"
+        read_type: verify
+        extract: >-
+          Four cross-backend docstrings — Store.ping, AsyncStore.ping,
+          Backend.check_health, AsyncBackend.check_health — still said
+          "PermissionDenied: If credentials are invalid". This change makes that
+          false on SFTP, where a locally-refused connect reaches the same type.
+          The ripple-check's Error-type row names the error docstring "raised
+          by" list and these are it; the branch had caveated SFTP's own override
+          and both guides but not the contract docs above them
+      - file: src/remote_store/backends/_sftp.py
+        section: "_connect budget on a permission-refused connect"
+        read_type: verify
+        extract: >-
+          Measured, at 2a1bbfe and at head: read_bytes and delete pay two
+          connect budgets for a connect refused with either permission errno,
+          where read/exists/check_health pay one and ECONNREFUSED pays one
+          everywhere. _probe_is_futile does not claim a permission errno, so
+          _raise_if_dir re-enters the lazy _sftp property. Identical on both
+          revisions, so not this item's regression — recorded on BUG-273, whose
+          fix removes it by construction. The first attempt at this measurement
+          reported head twice as base: `hatch run` resolves the editable install
+          against the main checkout, so cwd does not select the revision and
+          PYTHONPATH must
+        outcome: unclear

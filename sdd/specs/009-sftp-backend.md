@@ -416,12 +416,25 @@ boundary this arm exists to remove.
 rather than sites because of it.** `_has_file_ancestor`'s walk returns `False`
 for any non-`ENOENT`, non-futile stat failure, permission errnos included
 (BK-316 L6 kept that deliberately, so a false "no file ancestor" only forgoes
-the `NotFound` upgrade). So for a key below depth 0 whose **ancestor** is the
-denied path, `read_bytes` and `delete` answer the base `RemoteStoreError` while
+the `NotFound` upgrade). Reaching that walk takes a **conjunction a server does
+not normally produce**, and the clause is stated over it rather than over "an
+ancestor denial", which an earlier revision said and which is false: the
+operation's own failure must be errno-less (`read_bytes` and `delete` consult
+`_has_file_ancestor` only when `code is None`), the target's classification stat
+must answer `ENOENT`, and an ancestor stat must answer the permission errno.
+Only then do `read_bytes` and `delete` answer the base `RemoteStoreError` while
 `write` / `write_atomic` / `open_atomic` answer `PermissionDenied`. **Both
 errnos answer alike in every one of those cells**, which is this clause's
 guarantee; what differs is read-side versus write-side, which is BK-316's
 carve-out and not an errno question.
+
+**Measured, because the conjunction is the whole point.** Deny the operation
+*and* every stat with the permission errno — a server refusing a directory you
+must traverse, which fails the open with that errno rather than errno-lessly —
+and all 17 entry points answer `PermissionDenied` for both errnos, `read_bytes`
+and `delete` included. The base-class answer appears only under the staging
+`_drive_denial` constructs. That is why the published upgrade note carries no
+carve-out: a caller cannot reach one.
 
 **The carve-out is not something this arm left untouched**, and an earlier
 revision of this clause said it was. Measured at both revisions: before the arm

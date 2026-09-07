@@ -4417,6 +4417,17 @@ class TestSFTPLowSeverityCorrectnessEdges:
         the writers' half of it does not, because before this arm every ``EPERM``
         cell answered the base class.
 
+        **``site="ancestor"`` is a staging, not a scenario**, and nothing outside
+        this table should be phrased as though a caller can meet it. Reaching the
+        swallowing walk needs all three of: an errno-less operation failure (the
+        read side consults ``_has_file_ancestor`` only when ``code is None``), a
+        target stat answering ``ENOENT``, and an ancestor stat answering the
+        permission errno — which ``_drive_denial`` assembles by hand. A server
+        that refuses a directory you must traverse fails the *open* with the
+        permission errno instead, and then all 17 entry points answer
+        ``PermissionDenied``. A published upgrade note once described this
+        staging as a rule for callers; it was withdrawn.
+
         **The key axis is not decoration either.**
         ``_base_relative_ancestor_dirs`` yields nothing when the parent *is* the
         base, so depth 0 is the one depth at which no ancestor stat exists.

@@ -1400,8 +1400,8 @@ class SFTPBackend(Backend):
         round-trip per folder (``max_depth`` bounds the descent). Failures other
         than a missing path surface during iteration, mapped as they are for the
         single-object operations — a denied listing raises ``PermissionDenied``
-        (``EACCES`` or ``EPERM``), anything the mapping declines the base
-        ``RemoteStoreError``.
+        (``EACCES`` or ``EPERM``), a dropped or unreachable connection
+        ``BackendUnavailable``, and anything else the base ``RemoteStoreError``.
         """
         try:
             yield from self._list_files_depth(path, recursive=recursive, max_depth=max_depth, _depth=0)
@@ -2071,10 +2071,12 @@ class SFTPBackend(Backend):
         EISDIR, EACCES, or an errno-less SSH_FX_FAILURE depending on the
         platform, and none of those implies *directory*.
 
-        ``read_bytes`` / ``delete`` / ``write`` / ``write_atomic`` call this from
-        their **error** path, so the round-trip is paid only by an operation that
-        has already failed — never by a successful one, which is the common case
-        by a wide margin.  Those callers re-raise the original exception if this
+        ``read_bytes`` / ``delete`` / ``_open_write`` / ``_promote`` call this
+        from their **error** path, so the round-trip is paid only by an operation
+        that has already failed — never by a successful one, which is the common
+        case by a wide margin.  Those four are the reason ``open_atomic`` reaches
+        this helper after all, through ``_promote``, even though its *setup*
+        rejects a directory with its own single stat.  Those callers re-raise the original exception if this
         returns: a stat saying "not a directory", or one that fails
         unclassifiably (the entry vanished in a race → ``ENOENT``, or an
         errno-less ``SSH_FX_FAILURE``), leaves the original failure to
@@ -2097,8 +2099,8 @@ class SFTPBackend(Backend):
         never runs in-band (a real OpenSSH server opens a directory for reading
         and only errors on the first read, which the streaming path never
         issues). ``open_atomic`` also rejects a directory up front for the same
-        reason, but folds that check into its own single setup ``stat`` rather
-        than calling this helper.
+        reason, and folds *that* check into its own single setup ``stat`` — it
+        still reaches this helper later, on the promote's error path.
 
         *cause* is the failure the caller is classifying, where it has one. When
         that failure already settles that no round-trip can answer, this probe is
