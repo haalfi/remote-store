@@ -1654,7 +1654,9 @@ that diff actually triggers (BK-333); every extra's drift smoke exercises the
 packages it pins (BUG-250) and catches the drift that is visible only to a type
 checker (ID-250); **every install channel we intend to offer is
 published and working** (ID-018); every upstream that can break us on its
-own schedule has a standing watch (ID-229, ID-225); and every breaking change
+own schedule has a standing watch (ID-229, ID-225); the one deprecation that
+watch has caught is answered before the release that enforces it (BUG-281); and
+every breaking change
 carries a published upgrade path by the time it ships — **satisfied**: the four
 `[Unreleased]` entries marked `**Breaking**` all have a `migration.md` section,
 and the obligation to write one moved onto the PR making the break, where its
@@ -1720,6 +1722,35 @@ open item as neglect.
   without needing msal or a network. A fix must widen reach without regressing that:
   import the lazy call sites behind a no-network path, or add a cassette-backed target.
   Worth auditing the other `--import-only` entry (`otel`) for the same shape.
+
+- [ ] **BUG-281 — `_SQLAlchemyBaseBackend` leans on a pool selection SQLAlchemy 2.1.0rc1 deprecates**
+  spec: SQL-BLOB-071, SQL-BLOB-072 · effort: S · audience: user.api, infra.ci
+  `sa.create_engine(url)` in `_SQLAlchemyBaseBackend.__init__`
+  (`src/remote_store/backends/_sqlalchemy.py:81`) names no pool class, so for a
+  SQLite URL spelled `file:…?mode=memory` the pool is whatever the dialect infers.
+  SQLAlchemy 2.1.0rc1 emits `SADeprecationWarning` for exactly that inference:
+  "Selection of the SingletonThreadPool pool class based on the 'mode=memory'
+  query string argument is deprecated; a future release will use QueuePool for
+  this URL" (sqlalche.me/e/21/sqmp). Measured twice by drift-guard, runs
+  34127228028 and 34163916944: `check-sql` red on
+  `tests/backends/sqlblob/test_absent_table.py::TestADiscardedInMemoryStoreReadsAsEmpty::test_every_in_memory_spelling_answers_the_same[uri-named-shared]`
+  under `filterwarnings = error`, the other three in-memory spellings green, so
+  the deprecation is scoped to the query-string form. `infra/drift-locks/sql.txt`
+  is held at `sqlalchemy==2.1.0b3` until this closes; `[sql-query]` and
+  `[dagster]` took rc1 on smokes that never construct that URL.
+  Two consequences, one now and one deferred. Now: a caller running warnings as
+  errors cannot construct `SQLBlobBackend` or `SQLQueryBackend` on that spelling
+  (both inherit the `__init__`). Deferred: when the release the warning announces
+  lands, that URL moves to `QueuePool`, and the SQL-BLOB-072 carve-out — a
+  per-thread pool handing each thread its own database — silently stops
+  describing it; an anonymous `mode=memory` database then differs per checkout
+  rather than per thread, which is the URL-spelling-dependent behaviour
+  `TestADiscardedInMemoryStoreReadsAsEmpty` exists to rule out.
+  Fix shape is open, and either branch amends a spec clause. Passing `poolclass=`
+  explicitly for in-memory SQLite URLs pins today's semantics but contradicts
+  SQL-BLOB-071 ("no custom pool configuration"); letting the default move to
+  `QueuePool` keeps 071 and amends the 072 carve-out instead. Whichever lands,
+  the `[sql]` refresh follows on the next drift run with the smoke as evidence.
 
 - [ ] **BK-333 — Gate routing: checkers unreachable for the diffs that invalidate them**
   spec: — · effort: S · audience: contributor.tooling, infra.ci
