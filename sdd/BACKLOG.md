@@ -504,7 +504,7 @@ compliant the day before.
   **Disposition:** not widening the tuple — that was tried and measured harmful,
   above. The same errnos on a live operation genuinely are a denied path
   (`test_eacces_maps_to_permission_denied` and
-  `test_a_denied_target_stat_is_permission_denied_on_every_entry_point` pin
+  `test_the_two_permission_errnos_answer_alike_on_every_entry_point` pin
   them), and `_map_exception` dispatches on the exception alone, so it cannot
   tell a connect-time one from an operation-time one. The cheap shape is for the
   lazy `_sftp` property to classify what `_connect` raises **before** the

@@ -192,12 +192,17 @@ SFTP operations classify through, not at any particular call, so **the errno
 stops mattering**: whichever method you called, the two permission errnos now
 give you the same type.
 
-One pre-existing wrinkle this does not remove, since it is not an errno
-question. If the denied path is an *ancestor* of your key rather than the key
-itself, `read_bytes` and `delete` still report the base `RemoteStoreError` while
-the writers report `PermissionDenied` — the read side deliberately swallows an
-unreadable ancestor so it can fall back to `NotFound`. Both errnos behave
-identically there, before and after this release.
+One asymmetry this does not remove, since it is not an errno question. If the
+denied path is an *ancestor* of your key rather than the key itself, `read_bytes`
+and `delete` report the base `RemoteStoreError` while the writers report
+`PermissionDenied` — the read side deliberately swallows an unreadable ancestor
+so it can fall back to `NotFound`. From this release both errnos behave that way.
+
+**Do not read that as "an ancestor denial is unaffected".** On v0.30.0 the split
+held for `EACCES` only: an `EPERM` denial on an ancestor gave you the base
+`RemoteStoreError` from the writers too. Those six writer cases move to
+`PermissionDenied` here along with everything else, and only the two read-side
+ones stay on the base class.
 
 **The message changes with the type.** A denial that reached you as
 `RemoteStoreError` carried your server's own words; as `PermissionDenied` it
@@ -637,8 +642,10 @@ whose error shapes differ from OpenSSH now raise the canonical type:
     the base `RemoteStoreError`, the same answer it gave before v0.30.0.
 
     **v0.31.0 gives the mapping the missing arm**, so from that release an
-    `EPERM` denial raises `PermissionDenied` here and everywhere else
-    ([notes above](#v0300-to-v0310)). If you are upgrading straight from v0.29.1
+    `EPERM` denial raises `PermissionDenied` here and wherever else it reaches
+    the error mapping — with one read-side exception, for a denial on an
+    *ancestor* of your key, stated in the
+    [v0.31.0 notes](#v0300-to-v0310). If you are upgrading straight from v0.29.1
     to v0.31.0 or later, read the row as naming both errnos and skip this
     caveat.
 

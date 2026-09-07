@@ -47,14 +47,17 @@ except BackendUnavailable:
 
     The SFTP error mapping sees only the exception, so it cannot tell a denial
     your server reported from one the local machine raised refusing to connect —
-    a firewall rule, typically. Such a connect raises `PermissionDenied` with an
-    empty key (`Permission denied: `), not `BackendUnavailable`, so the handler
-    above logs "Bad credentials" for a request that never left the machine.
+    a firewall rule, typically. Either way `ping()` raises `PermissionDenied`,
+    not `BackendUnavailable`, so the handler above logs "Bad credentials" for a
+    request that never left the machine.
 
-    An empty `path` on the error is the only signal that distinguishes the two,
-    and it is not one to build on: telling them apart properly needs
-    connect-time context the mapping does not have, and is tracked as its own
-    fix. The other backends are unaffected.
+    **Nothing on the error tells the two apart.** `ping()` names no key, so both
+    arrive as `Permission denied: ` with `path=""`; on a keyed call both name
+    that key instead. The empty `path` separates a `ping()` from a keyed
+    operation, not a server denial from a local refusal. Distinguishing them
+    needs connect-time context the mapping does not have, and is tracked as its
+    own fix — until it lands, read a `PermissionDenied` from `ping()` as
+    "denied", not "denied by the server". The other backends are unaffected.
 
 ## Per-backend strategies
 

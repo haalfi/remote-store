@@ -418,17 +418,27 @@ for any non-`ENOENT`, non-futile stat failure, permission errnos included
 (BK-316 L6 kept that deliberately, so a false "no file ancestor" only forgoes
 the `NotFound` upgrade). So for a key below depth 0 whose **ancestor** is the
 denied path, `read_bytes` and `delete` answer the base `RemoteStoreError` while
-`write` / `write_atomic` / `open_atomic` answer `PermissionDenied` — measured,
-and identical before this arm existed. **Both errnos answer alike in every one
-of those cells**, which is this clause's guarantee; what differs is read-side
-versus write-side, which is BK-316's carve-out and not an errno question.
+`write` / `write_atomic` / `open_atomic` answer `PermissionDenied`. **Both
+errnos answer alike in every one of those cells**, which is this clause's
+guarantee; what differs is read-side versus write-side, which is BK-316's
+carve-out and not an errno question.
+
+**The carve-out is not something this arm left untouched**, and an earlier
+revision of this clause said it was. Measured at both revisions: before the arm
+the read/write split held for `EACCES` alone, because every `EPERM` cell —
+writers included — answered the base class. The six writer cells reach the split
+*through* this arm, and they die when it is narrowed back
+(`test_the_two_permission_errnos_answer_alike_on_every_entry_point`, the
+`*---nested-ancestor` cells). What pre-dates the arm is the read-versus-write
+shape, not the answer either errno got.
 
 **Guarding the sites individually was tried twice and does not converge**: each
 subset drew a boundary somewhere a caller cannot see — first between `write`'s
 two overwrite modes, then between `read_bytes` and `get_file_info` on one path
-and one denial. Every `Raises:` block that names a permission errno therefore
-states the same rule; `check_health`'s names none, and the three listing methods
-describe the answer in prose rather than a `Raises:` block. This also puts SFTP
+and one denial. All fifteen `Raises:` blocks that name a permission errno
+therefore state the same rule — `check_health`'s included, which adds only that
+the denial need not be the server's — and the three listing methods describe the
+answer in prose rather than a `Raises:` block. This also puts SFTP
 where `LocalBackend` already is, which catches bare `PermissionError` and so has
 always answered both errnos alike.
 

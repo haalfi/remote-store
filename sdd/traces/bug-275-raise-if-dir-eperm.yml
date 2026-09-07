@@ -36,7 +36,7 @@ surprising_ripples:
 # did: one said 'minus the one implementing commit' and yielded 6 against a
 # value of 4, and by then there were two implementing commits; the branch was
 # then flattened onto BUG-274, which would have orphaned any SHA list too.
-review_rounds: 5
+review_rounds: 6
 phases:
   - id: orient
     name: Orient
@@ -333,8 +333,10 @@ phases:
           gate covers this: check_no_tracker_refs does not resolve backlog IDs,
           check_traces validates shape, and gen_backlogid checks maxima rather
           than membership. Comparing item sets against master is the derivation
-          that catches it, and it was not run at rebase time
-        outcome: misleading
+          that catches it, and it was not run at rebase time. No outcome tag:
+          the document did not fail a reader, the author dropped the item on
+          deletion — the same reason the design phase's BACKLOG.md step declines
+          one
       - file: src/remote_store/backends/_sftp.py
         section: "_has_file_ancestor (walk swallow)"
         read_type: verify
@@ -343,11 +345,12 @@ phases:
           the site set stops mattering; _has_file_ancestor's walk swallows a
           denied ancestor stat (BK-316 L6, deliberate), so with the denial
           restricted to an ancestor the read side answers RemoteStoreError and
-          the writers answer PermissionDenied. Measured identically before this
-          arm, so it is a claim-scope defect and not a regression. The claim is
-          narrowed to errno symmetry — which is what BUG-275 is about and what
-          holds in every cell — and the carve-out is stated in the spec, the
-          migration guide and the test
+          the writers answer PermissionDenied. The claim is narrowed to errno
+          symmetry — which is what BUG-275 is about and what holds in every cell
+          — and the carve-out is stated in the spec, the migration guide and the
+          test. This round's own "measured identically before this arm" rider was
+          itself false and is corrected in fix_6: before the arm the split held
+          for EACCES alone, every EPERM cell answering the base class
       - file: tests/backends/sftp/test_config.py
         section: "test_the_two_permission_errnos_answer_alike_on_every_entry_point"
         read_type: reference
@@ -368,3 +371,47 @@ phases:
           this change made a locally-rejected connect answer PermissionDenied on
           the one shape BUG-273 records as reproducible. The migration guide
           stated the limitation; the guide did not. Warned there too
+
+  - id: fix_6
+    name: Fix pass (verification round over fix_5)
+    steps:
+      - file: docs-src/guides/health-check.md
+        section: "warning: a connection your own machine refuses"
+        read_type: verify
+        extract: >-
+          The warning fix_5 added told operators that an empty path
+          distinguishes a local refusal from a server denial. It does not:
+          ping() names no key, so a server denial of base_path arrives as
+          path="" too, and on a keyed call both name the key. The empty path
+          separates a probe from a keyed call — which is what the migration
+          guide says and what this branch's own connect test asserts. A
+          published diagnostic that is constant across the two cases it claims
+          to split, written in the round that was supposed to be closing
+        outcome: unclear
+      - file: sdd/specs/009-sftp-backend.md
+        section: "SFTP-021"
+        read_type: verify
+        extract: >-
+          Two clauses fix_5 wrote were false. "check_health's names none" — the
+          same commit had just given that block both errnos; the count is 15
+          naming a permission errno, of which 14 share the wording the register
+          entry was counting instead. And "measured, and identical before this
+          arm existed" about the ancestor carve-out: measured at both revisions,
+          before the arm the read/write split held for EACCES alone, every EPERM
+          cell answering the base class, so the six writer cells reach the split
+          *through* this arm. The published migration guide carried the same
+          sentence, telling an upgrader nothing moves for them when six cases do
+      - file: tests/backends/sftp/test_config.py
+        section: "test_the_two_permission_errnos_answer_alike_on_every_entry_point"
+        read_type: verify
+        extract: >-
+          The repeat-site rule fired: rounds 5 and 6 refuted the same carve-out,
+          so the space was enumerated rather than argued a third time. Measured
+          all 68 cells and found the denial reaches a caller in only six ancestor
+          cells (the write side, at a depth that has an ancestor); the other 28
+          compared two identical runs and could not fail. Added a third control
+          errno (EIO) at the same stat: cells that deliver assert the control
+          does *not* answer PermissionDenied, cells that do not assert the
+          injected errno changes nothing. Measured: the narrowing mutant still
+          dies on 40; a *widening* mutant (EIO joins the arm) now dies on 32
+          where the pre-round table passed all 68

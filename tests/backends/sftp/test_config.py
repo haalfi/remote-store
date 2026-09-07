@@ -4035,6 +4035,40 @@ class TestSFTPCredentialMasking:
 # region: Low-severity correctness edges (BK-316, audit-020 L1-L5)
 
 
+#: Entry points that reach a caller with a denial on an *ancestor* of the key
+#: (at a depth that has one). Everything else either never stats an ancestor or
+#: swallows the failure — ``_has_file_ancestor``'s walk, BK-316 L6. Enumerated
+#: from a measured run of all 68 cells rather than argued: two review rounds
+#: narrowed this set by reasoning and each narrowing was refuted by a cell the
+#: reasoning had not considered.
+_ANCESTOR_DELIVERS = frozenset(
+    {
+        "write_ow",
+        "write_no_ow",
+        "write_atomic_ow",
+        "write_atomic_no_ow",
+        "open_atomic_ow",
+        "open_atomic_no_ow",
+    }
+)
+
+#: A non-permission errno, injected at the same stat as a control. Where the
+#: permission answer and the control answer agree, the denial never reached the
+#: caller; where they differ, the permission arm is what produced the type.
+_CONTROL_ERRNO = errno.EIO
+
+
+def _drain_open_atomic(backend: Backend, key: str, *, overwrite: bool) -> None:
+    """Enter *and leave* ``open_atomic``, so a cell that does not raise cleans up.
+
+    An earlier revision called ``.__enter__()`` bare. On the cells where the
+    denial never arrives that left the context manager open, stranding the
+    ``.~tmp.`` file and its paramiko handle for GC to close.
+    """
+    with backend.open_atomic(key, overwrite=overwrite) as handle:
+        handle.write(b"x")
+
+
 class TestSFTPLowSeverityCorrectnessEdges:
     """BK-316 (audit-020 group G4): low-severity edges that manifest only on
     non-OpenSSH servers whose error shapes differ — an errno-less
@@ -4338,8 +4372,8 @@ class TestSFTPLowSeverityCorrectnessEdges:
             ("write_no_ow", lambda b, k: b.write(k, b"x", overwrite=False), ()),
             ("write_atomic_ow", lambda b, k: b.write_atomic(k, b"x", overwrite=True), ("rename", "posix_rename")),
             ("write_atomic_no_ow", lambda b, k: b.write_atomic(k, b"x", overwrite=False), ()),
-            ("open_atomic_ow", lambda b, k: b.open_atomic(k, overwrite=True).__enter__(), ()),
-            ("open_atomic_no_ow", lambda b, k: b.open_atomic(k, overwrite=False).__enter__(), ()),
+            ("open_atomic_ow", lambda b, k: _drain_open_atomic(b, k, overwrite=True), ()),
+            ("open_atomic_no_ow", lambda b, k: _drain_open_atomic(b, k, overwrite=False), ()),
             ("exists", lambda b, k: b.exists(k), ()),
             ("is_file", lambda b, k: b.is_file(k), ()),
             ("is_folder", lambda b, k: b.is_folder(k), ()),
@@ -4379,11 +4413,22 @@ class TestSFTPLowSeverityCorrectnessEdges:
         ``NotFound`` upgrade). Under ``site="ancestor"`` the read side therefore
         answers the base ``RemoteStoreError`` while the writers answer
         ``PermissionDenied`` — both errnos alike in every cell, which is the
-        invariant. That read/write split is BK-316's and predates this arm.
+        invariant. That read/write *shape* is BK-316's and pre-dates this arm;
+        the writers' half of it does not, because before this arm every ``EPERM``
+        cell answered the base class.
 
         **The key axis is not decoration either.**
         ``_base_relative_ancestor_dirs`` yields nothing when the parent *is* the
         base, so depth 0 is the one depth at which no ancestor stat exists.
+
+        **Every cell asserts something, via a third control errno.** Two rounds
+        of review narrowed this carve-out by argument and each narrowing was
+        refuted by a cell the argument had not considered, so the space is
+        enumerated instead: ``_ANCESTOR_DELIVERS`` names exactly the entry points
+        that reach a caller with an ancestor denial, and the rest are asserted to
+        be *unaffected* by the injected errno rather than merely self-consistent.
+        Without the control, the 28 cells where no denial is delivered compared
+        two identical runs and could not fail.
 
         *fails* names the client calls that must fail **errno-lessly** for this
         entry point to reach its target stat at all — the op whose failure
@@ -4400,7 +4445,7 @@ class TestSFTPLowSeverityCorrectnessEdges:
 
         answers: dict[int, str] = {}
         details: dict[int, RemoteStoreError] = {}
-        for code in (errno.EACCES, errno.EPERM):
+        for code in (errno.EACCES, errno.EPERM, _CONTROL_ERRNO):
             answers[code], caught = self._drive_denial(sftp_backend, call, key, target, site, code, fails, _op_fails)
             if caught is not None:
                 details[code] = caught
@@ -4409,16 +4454,31 @@ class TestSFTPLowSeverityCorrectnessEdges:
             f"{label}/{key}/{site}: the permission errnos disagree — "
             f"EACCES gave {answers[errno.EACCES]}, EPERM gave {answers[errno.EPERM]}"
         )
-        if site == "target":
-            assert answers[errno.EACCES] == "PermissionDenied", (
-                f"{label}/{key}: a denied target stat must answer PermissionDenied, got {answers[errno.EACCES]}"
+
+        delivered = site == "target" or (key == "sub/denied.txt" and label in _ANCESTOR_DELIVERS)
+        if not delivered:
+            # No denial reaches the caller here, so the injected errno must make
+            # no difference at all — including to the control, which is not a
+            # permission errno. This is what stops the cell being a tautology.
+            assert answers[_CONTROL_ERRNO] == answers[errno.EACCES], (
+                f"{label}/{key}/{site}: the injected errno reached the caller after all — "
+                f"permission gave {answers[errno.EACCES]}, control gave {answers[_CONTROL_ERRNO]}"
             )
-            for code, exc in details.items():
-                assert str(exc).startswith(f"Permission denied: {key}"), f"{label}/{key}/errno {code}: {exc!r}"
-                # ``path``/``backend`` are public and are what a caller logs;
-                # asserting the message alone left a ``path=""`` regression green.
-                assert exc.path == key, f"{label}/{key}/errno {code} lost its path: {exc!r}"
-                assert exc.backend == "sftp", f"{label}/{key}/errno {code} lost its backend: {exc!r}"
+            return
+
+        assert answers[errno.EACCES] == "PermissionDenied", (
+            f"{label}/{key}/{site}: a delivered denial must answer PermissionDenied, got {answers[errno.EACCES]}"
+        )
+        assert answers[_CONTROL_ERRNO] != "PermissionDenied", (
+            f"{label}/{key}/{site}: the control errno also answered PermissionDenied, so this cell "
+            "would pass without the permission arm"
+        )
+        for code, exc in details.items():
+            assert str(exc).startswith(f"Permission denied: {key}"), f"{label}/{key}/errno {code}: {exc!r}"
+            # ``path``/``backend`` are public and are what a caller logs;
+            # asserting the message alone left a ``path=""`` regression green.
+            assert exc.path == key, f"{label}/{key}/errno {code} lost its path: {exc!r}"
+            assert exc.backend == "sftp", f"{label}/{key}/errno {code} lost its backend: {exc!r}"
 
     @staticmethod
     def _drive_denial(
