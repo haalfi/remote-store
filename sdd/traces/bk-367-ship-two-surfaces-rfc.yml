@@ -81,7 +81,7 @@ phases:
         extract: "Three refuted rationales, the EPERM claim-and-revert, the derivation comment stale four times"
         outcome: ok
       - file: sdd/traces/bug-275-raise-if-dir-eperm.yml
-        section: "replan, fix_5, fix_6, fix_8, review_rounds comment (at PR #997's head 3cd4acb, unmerged)"
+        section: "replan, fix_5, fix_6, fix_8, review_rounds comment (read at PR #997's head 3cd4acb, since merged)"
         read_type: reference
         extract: >-
           Read after the draft was written, from the user's closing record of

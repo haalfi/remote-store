@@ -147,9 +147,8 @@ the repo's claims about that line true. Its rounds 1 to 3 did find behaviour
 defects, and every one was in code a fix pass had written: a scoped guard that
 answered a connect-time denial as `PermissionDenied` on seven of nine entry
 points, abandoned when the divergence check fired and the work was re-planned
-onto the dispatch arm (its trace, `sdd/traces/bug-275-raise-if-dir-eperm.yml`
-at `3cd4acb`, phase `replan`; not linked because that PR is unmerged as this is
-written). Rounds 4 to 9 found prose.
+onto the dispatch arm ([trace](../traces/bug-275-raise-if-dir-eperm.yml),
+`replan`). Rounds 4 to 9 found prose.
 
 **The fifth shape: a fact measured through an injected fixture, written as a
 rule about the library.** The session's close report names it as its one
@@ -525,8 +524,7 @@ runtime behaviour, no published page other than this RFC's own.
   Rules 5 and 7.
 - Backlog: BK-365, BK-366, BK-348, BK-353, BK-349.
 - Traces: BUG-274, BUG-265, BUG-264, BUG-272, BK-359, BK-360, BK-358, and
-  BUG-275 at PR #997's head `3cd4acb` (read before that PR merged; the path
-  above resolves once it has).
+  BUG-275 (read at PR #997's head `3cd4acb`, merged as `4452d26`).
 - Derivations: `rfc-0015-findings.py`, `rfc-0015-rounds.py`; the phrase set
   behind the 14-line count is
   `Retrospective|Annotated after|annotated after|until round \d|an earlier revision of this|this (line|sentence|figure|step) (said|read|was)|corrected in round|Round \d (caught|found|corrected)`
