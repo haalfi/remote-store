@@ -14,6 +14,12 @@ source_items:
 audience:
   - user.api
   - user.api_docs
+discovery_followups:
+  # Both born in the closing verification round, from the measuring member
+  # checking this PR's own cross-backend claim and from opening gen_backlogid.py
+  # rather than trusting an earlier account of the ID collision.
+  - BUG-280
+  - ID-257
 surprising_ripples:
   # Neither the backlog item's four-artifact list nor the ripple-check table
   # named this one: BUG-265's own v0.31.0 scope note asserts "the classification
@@ -303,11 +309,18 @@ phases:
           The rebase surfaced an ID collision the loop could not have caught
           alone: this branch minted BUG-278 for a cross-backend divergence while
           the BUG-274 session concurrently minted BUG-278 for a different item,
-          now open on master. gen_backlogid --check reported it. The floor reads
-          the max from BACKLOG-DONE.md only, so an item filed OPEN on master does
-          not raise it — master's stored 277 sits behind its own open 278 and
-          279. The branch's item was folded into BUG-275's register entry and
-          the ID dropped
+          now open on master. gen_backlogid --check reported it. The branch's
+          item was folded into BUG-275's register entry and the ID dropped.
+          **This step's first explanation was wrong and round 6 caught it by
+          opening the script.** It blamed the floor for reading BACKLOG-DONE.md
+          only. _generate does, but --check's "Next safe IDs" takes the max over
+          BACKLOG.md's open items too (gen_backlogid.py, the next_ids line), so
+          the advice an agent reads was correct. The collision's real cause is
+          that neither derivation can see the *other session's unpushed branch*:
+          at mint time master carried no 278 anywhere, so both sessions computed
+          278 and both were right about what they could see. Filed as BUG-280.
+          The tag stays: the tool's collision message names backlogid.json as
+          "the floor", and that file alone would hand out a taken ID
         outcome: misleading
       - file: sdd/BACKLOG-DONE.md
         section: "(item) BUG-275"

@@ -205,7 +205,8 @@ deleted mid-scan (BUG-255) or when a folder vanishes part-way through a
 recursive walk (BUG-257); `ping()` does not report a vanished store as healthy
 (BUG-256); a constructor does not leak its driver's exception
 (BUG-245); one operation does not answer by
-payload size (BUG-253); a caller who meets a failure on **any** backend catches
+payload size (BUG-253); a listing does not leak its driver's exception on the
+one backend where it still does (BUG-280); a caller who meets a failure on **any** backend catches
 the type the docs promised and can tell *which* failure it was, rather than an
 empty message (BUG-276, which is now that clause's whole remainder — its
 Disposition is exactly whether the base-class fall-throughs should be classified
@@ -1000,6 +1001,37 @@ compliant the day before.
   hand-written cassette would fabricate a response the tier has never produced.
   This is the item that makes the section's promise stay true for backend seven,
   which is why it sits here and not with the coverage work.
+
+- [ ] **BUG-280 — `LocalBackend`'s three listing methods leak a raw `PermissionError`**
+  spec: LO-001 · effort: S · audience: user.api
+  Reproduced by patching `pathlib.Path.iterdir` to raise
+  `PermissionError(13, "Permission denied")` and driving each method against a
+  real root (`tmp/local_leak.py`):
+
+  | call | answer |
+  |---|---|
+  | `list_files` | raw `PermissionError` |
+  | `list_folders` | raw `PermissionError` |
+  | `iter_children` | raw `PermissionError` |
+  | `read_bytes` | mapped (never reaches `iterdir`) |
+  | `delete` | mapped (never reaches `iterdir`) |
+
+  A caller catching `RemoteStoreError` around a listing gets nothing, and the
+  exception carries no `path` or `backend`. `LocalBackend` maps this correctly
+  everywhere else — it catches bare `except PermissionError:` at 14 sites, 11
+  raising `PermissionDenied` outright — so this is three unguarded methods, not a
+  design position.
+  **Exactly the shape of [BUG-249](BACKLOG-DONE.md)**, which fixed the same three
+  method names on `S3Boto3Backend` leaking a raw `botocore.ClientError`, and of
+  `TestSFTPBug146ListingEioRaises`, which pins the SFTP twin. The listing methods
+  are the repeat offender because they are generators whose body runs outside the
+  caller's `try`, which is the thing worth fixing once across backends rather
+  than a third time in isolation.
+  **Found by BUG-275's closing measuring member** while checking that PR's
+  narrowed cross-backend claim. That claim is about errno symmetry and survives
+  this — both errnos leak identically — so it was correctly out of that PR's
+  scope; `BACKLOG-DONE.md`'s BUG-275 entry records the measurement and says
+  plainly that the two backends are not equivalent across the whole surface.
 
 ---
 
@@ -1818,9 +1850,11 @@ the checker inventory has shipped; `check_formal_trace` proves
 assertion rather than citation (ID-207); both open revisit pins have fired
 and named successors (ID-150, ID-249); the two backlog files are readable by the
 person they are for, or the decision that their length is the right price is
-recorded (BK-365); and the repo can say whether its own quality promise is
-holding rather than only asserting it (BK-366).
-**Bounded to those thirteen deliberately** — count derived by enumerating the
+recorded (BK-365); the repo can say whether its own quality promise is
+holding rather than only asserting it (BK-366); and two sessions working in
+parallel cannot mint the same backlog ID with every derivation telling both they
+are right (ID-257).
+**Bounded to those fourteen deliberately** — count derived by enumerating the
 semicolon-separated clauses above, not carried forward. "No artifact asserts what
 no mechanism can check" is the promise and cannot be a closing condition: this section's own
 preamble records that detecting the remaining class needs semantic comparison of
@@ -2438,3 +2472,37 @@ the commit that writes it lands, so cite the generator instead.
   across the same window. Run before this entry was written.
   **Exit criteria:** each open `BUG-` classified escaped/caught with the catching
   mechanism named, and a recorded answer to which reading the data supports.
+
+- [ ] **ID-257 — Two sessions working in parallel mint the same backlog ID, and every derivation says both are right**
+  spec: — · effort: S · audience: contributor.tooling
+  **Reproduced by having happened**: BUG-275's branch minted `BUG-278` for a
+  cross-backend divergence while a concurrent BUG-274 session minted `BUG-278`
+  for something else. Neither session was careless — at mint time `master`
+  carried no 278 in either backlog file, so both computed the same next integer
+  and both were correct about everything they could see. It surfaced only when
+  the second branch rebased and `gen-backlogid --check` reported the collision;
+  one of the two items had to be retired and re-homed after the fact.
+  **The gap is unmerged branches, not the floor.** `gen_backlogid.py`'s `--check`
+  already takes `max(BACKLOG-DONE, BACKLOG open)` for its "Next safe IDs" line,
+  and [§ ID prefixes](#how-this-file-works) already tells an author to check
+  both — so the documented procedure is sound and was followed. What no
+  derivation reads is *another branch*, which is where a concurrently minted ID
+  lives until it merges. An earlier account of this incident inside BUG-275's
+  trace blamed the floor for reading `BACKLOG-DONE.md` only; that was wrong, and
+  opening the script is what showed it.
+  **One real inaccuracy to fix in passing**: the collision message prints
+  `(floor: sdd/backlogid.json)`, and that file *is* BACKLOG-DONE-only, so an
+  author who follows the pointer rather than the prose gets a number that may
+  already be taken.
+  **The open question is what mechanism**, which is why this is `ID-` and not
+  `BK-`. Cheapest is a check against the remote — `git ls-remote` plus the
+  backlog files on each open branch — which costs a network call on a gate that
+  is currently offline and pure. Alternatives worth pricing against it: minting
+  from a range reserved per session, deriving the ID from the branch, or
+  accepting collisions and making the *rebase* the enforcement point, which is
+  what caught this one and cost only a re-home.
+  **Filed here rather than as a `BUG-`** because nothing is defective: every
+  component behaved as specified, and it is the coordination between them that
+  has no owner. That is this section's promise — the artifacts maintainers
+  coordinate through say what is actually true — failing across two working
+  copies rather than inside one.
