@@ -1017,7 +1017,8 @@ compliant the day before.
   spec: BE-021 · effort: S · audience: user.api
   BE-021 is the never-leak invariant this breaches
   ([003-backend-adapter-contract.md](specs/003-backend-adapter-contract.md)),
-  and the spec already records BUG-249 — the S3 twin below — against it.
+  and the spec already records BUG-249 — the S3 twin, described further down
+  this entry — against it.
   Reproduced by constructing a `LocalBackend` on any root holding one file,
   patching `pathlib.Path.iterdir` to raise
   `PermissionError(13, "Permission denied")`, and calling each method:

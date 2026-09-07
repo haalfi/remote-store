@@ -461,8 +461,8 @@ phases:
           The first rewrite of _raise_if_dir's docstring cited BK-316 and
           SFTP-021 by ID. The gate rejected it: a docstring is a published
           surface. Worth recording that a gate caught a fix-pass defect during
-          the round whose subject is fix-pass defects
-        outcome: unclear
+          the round whose subject is fix-pass defects. No outcome tag: the gate
+          delivered exactly what it exists to deliver
 
   - id: fix_8
     name: Fix pass (verification round over fix_7)
@@ -505,9 +505,10 @@ phases:
           where read/exists/check_health pay one and ECONNREFUSED pays one
           everywhere. _probe_is_futile does not claim a permission errno, so
           _raise_if_dir re-enters the lazy _sftp property. Identical on both
-          revisions, so not this item's regression — recorded on BUG-273, whose
-          fix removes it by construction. The first attempt at this measurement
+          revisions, so not this item's regression — recorded on BUG-273, and it
+          falsified SFTP-031's "whichever connect-time shape", which round 9
+          caught and this round narrowed. The first attempt at the measurement
           reported head twice as base: `hatch run` resolves the editable install
           against the main checkout, so cwd does not select the revision and
-          PYTHONPATH must
-        outcome: unclear
+          PYTHONPATH must. No outcome tag: no document misled anyone there, the
+          author mis-built the instrument

@@ -42,8 +42,14 @@ with pytest.raises(AlreadyExists):
 
 ## ERR-004: PermissionDenied
 
-**Invariant:** Raised when access is denied by the storage backend.
+**Invariant:** Raised when access is denied.
 **Postconditions:** `path` and `backend` attributes are set.
+**Not necessarily by the storage backend**, and the earlier wording of this
+invariant said it was. SFTP classifies on the exception alone, so a connect the
+*local* machine refuses answers this type too, naming the caller's key — pinned
+by `test_a_locally_rejected_connect_is_answered_as_a_denial`. That divergence is
+deliberate rather than a mapping bug (SFTP-021), and repairing it needs
+connect-time context only `_connect` has (BUG-273).
 
 ## ERR-005: InvalidPath
 

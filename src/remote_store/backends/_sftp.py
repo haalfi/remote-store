@@ -2074,9 +2074,11 @@ class SFTPBackend(Backend):
         ``read_bytes`` / ``delete`` / ``_open_write`` / ``_promote`` call this
         from their **error** path, so the round-trip is paid only by an operation
         that has already failed — never by a successful one, which is the common
-        case by a wide margin.  Those four are the reason ``open_atomic`` reaches
-        this helper after all, through ``_promote``, even though its *setup*
-        rejects a directory with its own single stat.  Those callers re-raise the original exception if this
+        case by a wide margin.  ``_promote`` is why ``open_atomic`` reaches this
+        helper after all, even though its *setup* rejects a directory with its
+        own single stat; ``_open_write`` is likewise how ``write`` arrives.
+
+        Those callers re-raise the original exception if this
         returns: a stat saying "not a directory", or one that fails
         unclassifiably (the entry vanished in a race → ``ENOENT``, or an
         errno-less ``SSH_FX_FAILURE``), leaves the original failure to

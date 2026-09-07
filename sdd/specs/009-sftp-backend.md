@@ -204,7 +204,7 @@ drop is channel-only (tier 2).
 
 **Invariant:** an operation against a host that was never reached enters
 `_connect` exactly once, whatever the operation and whichever connect-time shape
-occurred.
+[SFTP-023](#sftp-023-backendunavailable-mapping) claims.
 **Rationale:** the connect-time shapes are classified by
 [SFTP-023](#sftp-023-backendunavailable-mapping) and the budget itself is
 [SFTP-009](#sftp-009-tenacity-retry-on-connect)'s; this clause is what a caller
@@ -251,6 +251,20 @@ which reaches guards this clause does not cover and costs up to three budgets �
 tracked as BUG-278, with the measurement. Every cell here builds a fresh backend
 whose first `_sftp` evaluation fails, so the enumeration cannot reach that shape
 and must not be read as ruling it out.
+
+**And "whichever connect-time shape" means the ones SFTP-023 claims**, which is
+the qualifier the invariant now carries and did not before. A connect refused
+with a *permission* errno is a host that was never reached, but `_is_unreachable`
+excludes both permission errnos deliberately (SFTP-023), so `_probe_is_futile`
+declines and the re-entry guard falls through exactly as it did before this
+clause held. Measured at the revision that minted this clause and at the one that
+gave the errno dispatch its `EPERM` arm, by patching `_connect` to raise the
+errno and counting entries: `read_bytes` and `delete` cost **two**, `read` /
+`exists` / `check_health` one, and `ECONNREFUSED` one everywhere. Identical on
+both revisions, so it is this clause's blind spot rather than a regression, and
+`TestSFTPUnreachableHostCostsOneConnect` cannot see it because permission errnos
+are not in the shape set it generates over. Tracked as **BUG-273**, whose fix —
+classifying at `_connect`, where the context exists — removes it by construction.
 
 The clause is about the *budget*, not about probe counts: how many round-trips a
 classification path would have made is the operation's own business, and the

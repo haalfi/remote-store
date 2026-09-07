@@ -7,9 +7,8 @@ where the caller's pre-existing file lives, and this file pins what happens to i
 when the promote fails.
 
 The stall half of the window is in ``test_io_timeout.py``, which needs the relay.
-Here the promote fails for a **non-dead** reason -- ``EACCES``, ``EPERM``,
-``EIO`` -- which
-needs no stall at all: the connection is live throughout, so the backend can both
+Here the promote fails for a **non-dead** reason -- ``EACCES``, ``EPERM``, ``EIO``
+-- which needs no stall at all: the connection is live throughout, so it can both
 fail and recover within the same call. That is the case BUG-272 measured, and the
 one where the old cleanup destroyed the destination *and* the temp.
 """
