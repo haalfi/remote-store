@@ -336,7 +336,7 @@ Amended with research round 2 §2.4 items and Phase 2 spec.
 ### ASYNC-052e: ping()
 
 **Invariant:** `async def ping()` verifies backend connectivity. Delegates to `await backend.check_health()`. The threading concern is handled by the backend layer: `SyncBackendAdapter.check_health()` uses `asyncio.to_thread()` (ASYNC-037); native async backends execute directly.
-**Raises:** `PermissionDenied` if credentials are invalid. `NotFound` if the bucket, container, or root path does not hold the container it names — it is absent, or something of another type occupies it. `BackendUnavailable` if the backend cannot be reached.
+**Raises:** `PermissionDenied` if access is denied — usually invalid credentials, but not always, since on SFTP a connect the local machine refuses reaches this too (ERR-004). `NotFound` if the bucket, container, or root path does not hold the container it names — it is absent, or something of another type occupies it. `BackendUnavailable` if the backend cannot be reached.
 **See also:** [026-health-check.md](026-health-check.md).
 
 ### ASYNC-052f: head()

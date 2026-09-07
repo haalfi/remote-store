@@ -15,6 +15,7 @@ import socket
 import sys
 import tempfile
 import uuid
+from contextlib import ExitStack
 from functools import partial
 from typing import TYPE_CHECKING, Any
 from unittest.mock import patch
@@ -46,7 +47,7 @@ from remote_store.backends._sftp import (  # noqa: E402
 )
 
 if TYPE_CHECKING:
-    from collections.abc import Iterator
+    from collections.abc import Callable, Iterator
 
     from remote_store._backend import Backend
 
@@ -1942,27 +1943,107 @@ class TestSFTPMapException:
         **This test exists because the exclusion was briefly lifted and had to
         be put back.** A round of review found a locally-rejected connect
         answering the base class for ``EPERM`` and argued it was free to claim,
-        since ``_map_exception``'s errno dispatch has no ``EPERM`` arm. True of
-        the dispatch, false of the module: ``_raise_if_dir`` re-raises **both**
-        permission errnos on purpose, from a *working* channel, so claiming
-        either turns a server-reported denial into ``BackendUnavailable`` and
-        discards a healthy client — measured, and contradicting a published
-        migration row.
+        since ``_map_exception``'s errno dispatch had no ``EPERM`` arm. True of
+        the dispatch **as it then stood**, false of the module: claiming either
+        turns a server-reported denial into ``BackendUnavailable`` and discards a
+        healthy client — measured, and contradicting a published migration row.
+        The dispatch has since gained that arm (SFTP-021), which removes the
+        premise but not the conclusion.
+
+        **The two errnos rest on different evidence, so assert both.** ``EACCES``
+        has a measured live-channel producer — paramiko renders an SFTP
+        ``SSH_FX_PERMISSION_DENIED`` as ``IOError(EACCES)``, which
+        ``test_eacces_maps_to_permission_denied`` drives. ``EPERM`` has none
+        known; what keeps it out is that the errno dispatch answers it
+        ``PermissionDenied`` too, so claiming it here would take that away and
+        clear the cached client with it.
 
         So the bound is asserted rather than left to a comment: both errnos keep
-        their own answers, and a future widening of ``_is_unreachable``'s tuple
-        fails here rather than silently changing what a live channel reports.
+        the dispatch's answer, and a future widening of ``_is_unreachable``'s
+        tuple fails here rather than silently changing what a live channel
+        reports.
         """
         backend = SFTPBackend(host="sftp.example.invalid", host_key_policy="auto")
 
-        denied = backend._map_exception(_os_with_errno(errno.EACCES, "Permission denied"), "delivery.csv")
-        assert isinstance(denied, PermissionDenied), f"EACCES moved off its arm: {denied!r}"
+        for code in (errno.EACCES, errno.EPERM):
+            mapped = backend._map_exception(_os_with_errno(code, "Permission denied"), "delivery.csv")
+            assert not isinstance(mapped, BackendUnavailable), (
+                f"errno {code} was claimed as unreachable; a live channel reports it on a denial: {mapped!r}"
+            )
+            assert isinstance(mapped, PermissionDenied), f"errno {code} left its arm: {mapped!r}"
 
-        rejected = backend._map_exception(_os_with_errno(errno.EPERM, "Operation not permitted"), "delivery.csv")
-        assert not isinstance(rejected, BackendUnavailable), (
-            f"EPERM was claimed as unreachable; _raise_if_dir re-raises it from a live channel: {rejected!r}"
-        )
-        assert isinstance(rejected, RemoteStoreError)
+    @pytest.mark.spec("SFTP-021")
+    @pytest.mark.parametrize("code", [errno.EACCES, errno.EPERM], ids=["eacces", "eperm"])
+    def test_the_errno_dispatch_answers_both_permission_errnos_alike(self, code: int) -> None:
+        """SFTP-021: the errno dispatch is where both permission errnos are answered.
+
+        **This one arm is the whole mechanism, and that is the point.** Every
+        operation classifies through here, so answering here is the only way all
+        of them agree. Guarding individual stat sites was tried first and each
+        subset drew a boundary a caller cannot see — between ``write``'s two
+        overwrite modes, then between ``read_bytes`` and ``get_file_info`` on one
+        path and one denial.
+
+        Assert the **exact** type, not ``isinstance``: ``PermissionDenied`` has
+        no subclass today, and pinning the type rather than the hierarchy is what
+        makes a later narrowing of this arm fail here rather than pass quietly.
+        """
+        backend = SFTPBackend(host="sftp.example.invalid", host_key_policy="auto")
+
+        mapped = backend._map_exception(_os_with_errno(code, "Permission denied"), "delivery.csv")
+        assert type(mapped) is PermissionDenied, f"errno {code} lost its arm: {mapped!r}"
+        assert str(mapped).startswith("Permission denied: delivery.csv"), repr(mapped)
+        assert mapped.path == "delivery.csv"
+        assert mapped.backend == "sftp"
+
+    @pytest.mark.spec("SFTP-023")
+    @pytest.mark.parametrize("code", [errno.EACCES, errno.EPERM], ids=["eacces", "eperm"])
+    def test_a_locally_rejected_connect_is_answered_as_a_denial(self, code: int) -> None:
+        """SFTP-023: a connect the local machine refuses answers ``PermissionDenied``, naming the key.
+
+        **This pins a stated cost, not a desired behaviour.** The mapping sees
+        only the exception, so it cannot tell a denial the server reported from
+        one this machine raised refusing to connect — a firewall rule, typically,
+        which a netfilter ``REJECT`` on the ``OUTPUT`` chain reproduces as
+        ``EPERM``. The answer names a key that had no part in the failure, and on
+        ``check_health`` it dangles a colon with nothing after it.
+
+        It is asserted because SFTP-021's arm made this the answer for **both**
+        permission errnos where it had been the answer for ``EACCES`` alone, and
+        the item that will repair it needs connect-time context only ``_connect``
+        has. Until then this is what ships; when that item lands, this test is
+        the one that must fail, and its two parametrizations must fail together
+        — the errnos being alike is what lets one fix reach both.
+
+        ``check_health`` is driven alongside a keyed operation because the
+        published health-check guidance turns on it and the two answers differ
+        only in the empty key.
+        """
+        for call, expected, exact in (
+            (lambda b: b.read_bytes("delivery.csv"), "Permission denied: delivery.csv", "delivery.csv"),
+            # ``check_health`` carries no key, so its message ends at the colon.
+            # Asserted with the key itself rather than a message prefix:
+            # "Permission denied: " is a prefix of the keyed message too, so a
+            # regression that made the probe name a key would pass a startswith.
+            (lambda b: b.check_health(), "Permission denied: ", ""),
+        ):
+            backend = SFTPBackend(
+                host="sftp.example.invalid", host_key_policy="auto", retry=RetryPolicy(max_attempts=1)
+            )
+
+            def _connect_refused(*_a: object, **_k: object) -> object:
+                raise OSError(code, "Permission denied")
+
+            with (
+                patch.object(SFTPBackend, "_connect", _connect_refused),
+                pytest.raises(PermissionDenied) as excinfo,
+            ):
+                call(backend)
+            assert str(excinfo.value).startswith(expected), f"errno {code}: {excinfo.value!r}"
+            assert excinfo.value.path == exact, (
+                f"errno {code}: the key on the error is what separates the probe from a keyed call, "
+                f"expected {exact!r}: {excinfo.value!r}"
+            )
 
     @pytest.mark.spec("SFTP-023")
     def test_a_dns_failure_names_the_host_that_did_not_resolve(self) -> None:
@@ -3954,6 +4035,40 @@ class TestSFTPCredentialMasking:
 # region: Low-severity correctness edges (BK-316, audit-020 L1-L5)
 
 
+#: Entry points that reach a caller with a denial on an *ancestor* of the key
+#: (at a depth that has one). Everything else either never stats an ancestor or
+#: swallows the failure — ``_has_file_ancestor``'s walk, BK-316 L6. Enumerated
+#: from a measured run of all 68 cells rather than argued: two review rounds
+#: narrowed this set by reasoning and each narrowing was refuted by a cell the
+#: reasoning had not considered.
+_ANCESTOR_DELIVERS = frozenset(
+    {
+        "write_ow",
+        "write_no_ow",
+        "write_atomic_ow",
+        "write_atomic_no_ow",
+        "open_atomic_ow",
+        "open_atomic_no_ow",
+    }
+)
+
+#: A non-permission errno, injected at the same stat as a control. Where the
+#: permission answer and the control answer agree, the denial never reached the
+#: caller; where they differ, the permission arm is what produced the type.
+_CONTROL_ERRNO = errno.EIO
+
+
+def _drain_open_atomic(backend: Backend, key: str, *, overwrite: bool) -> None:
+    """Enter *and leave* ``open_atomic``, so a cell that does not raise cleans up.
+
+    An earlier revision called ``.__enter__()`` bare. On the cells where the
+    denial never arrives that left the context manager open, stranding the
+    ``.~tmp.`` file and its paramiko handle for GC to close.
+    """
+    with backend.open_atomic(key, overwrite=overwrite) as handle:
+        handle.write(b"x")
+
+
 class TestSFTPLowSeverityCorrectnessEdges:
     """BK-316 (audit-020 group G4): low-severity edges that manifest only on
     non-OpenSSH servers whose error shapes differ — an errno-less
@@ -4159,8 +4274,9 @@ class TestSFTPLowSeverityCorrectnessEdges:
         assert sftp_backend._sftp_client is None
 
     @pytest.mark.spec("SFTP-021")
-    def test_raise_if_dir_permission_stat_maps_permission_denied(self, sftp_backend: Backend) -> None:
-        """L1: a classification stat that fails with ``EACCES`` surfaces ``PermissionDenied``.
+    @pytest.mark.parametrize("code", [errno.EACCES, errno.EPERM], ids=["eacces", "eperm"])
+    def test_raise_if_dir_permission_stat_maps_permission_denied(self, sftp_backend: Backend, code: int) -> None:
+        """L1: a classification stat denied with *either* permission errno surfaces ``PermissionDenied``.
 
         ``_raise_if_dir`` (the lazy is-dir check on ``read_bytes`` / ``delete`` /
         ``write_atomic``'s error path) swallowed *all* stat failures, so a server
@@ -4169,7 +4285,16 @@ class TestSFTPLowSeverityCorrectnessEdges:
         ``_check_not_dir`` re-raised non-``ENOENT``). The fix re-raises only
         *permission* errors; errno-less ``SSH_FX_FAILURE`` stays swallowed so the
         downstream file-ancestor recheck (L3/L6) still fires. Inject an errno-less
-        op failure at ``file`` and ``EACCES`` at the classification ``stat``.
+        op failure at ``file`` and the permission errno at the classification
+        ``stat``.
+
+        **Both errnos, because BK-316 promised both and shipped one.** The guard
+        names ``EACCES`` and ``EPERM`` and re-raises both for ``_map_exception``
+        to classify — but that dispatch had an ``EACCES`` arm and none for
+        ``EPERM``, so an ``EPERM`` stat reached the caller as the base
+        ``RemoteStoreError``. The guard is unchanged; what changed is the arm it
+        delegates to. The message is asserted and not only the type, because a
+        widening of that arm must not alter what ``EACCES`` callers already saw.
         """
         assert isinstance(sftp_backend, SFTPBackend)
         sftp_backend.exists("warmup.txt")  # warm the live connection
@@ -4177,15 +4302,222 @@ class TestSFTPLowSeverityCorrectnessEdges:
         def _file_fails(*_a: object, **_k: object) -> object:
             raise OSError("Failure")  # errno-less op failure -> lazy classification
 
-        def _stat_eacces(*_a: object, **_k: object) -> object:
-            raise OSError(errno.EACCES, "Permission denied")
+        def _stat_denied(*_a: object, **_k: object) -> object:
+            raise OSError(code, "Permission denied")
 
         with (
             patch.object(sftp_backend._sftp_client, "file", side_effect=_file_fails),
-            patch.object(sftp_backend._sftp_client, "stat", side_effect=_stat_eacces),
-            pytest.raises(PermissionDenied),
+            patch.object(sftp_backend._sftp_client, "stat", side_effect=_stat_denied),
+            pytest.raises(PermissionDenied) as excinfo,
         ):
             sftp_backend.read_bytes("denied.txt")
+        assert "Permission denied: denied.txt" in str(excinfo.value), (
+            f"the two errnos must be indistinguishable to a caller: {excinfo.value!r}"
+        )
+        assert excinfo.value.__cause__ is None, (
+            "``_errors()`` builds this with ``raise ... from None``, so the driver exception is "
+            f"dropped; a chained cause means something else now raises it: {excinfo.value.__cause__!r}"
+        )
+
+    @pytest.mark.spec("SFTP-021")
+    @pytest.mark.parametrize("code", [errno.EACCES, errno.EPERM], ids=["eacces", "eperm"])
+    @pytest.mark.parametrize(
+        ("label", "call"),
+        [
+            ("list_files", lambda b: list(b.list_files(""))),
+            ("list_folders", lambda b: list(b.list_folders(""))),
+            ("iter_children", lambda b: list(b.iter_children(""))),
+        ],
+        ids=lambda v: v if isinstance(v, str) else "",
+    )
+    def test_a_denied_listing_is_permission_denied(
+        self, sftp_backend: Backend, code: int, label: str, call: Callable[[Backend], object]
+    ) -> None:
+        """SFTP-021: a denied ``listdir_attr`` answers ``PermissionDenied`` for either errno.
+
+        **These three are the methods whose promise lives in prose**, not in a
+        ``Raises:`` block, and SFTP-021 says so — which makes them the easiest
+        place for the promise and the code to drift apart. They also reach the
+        dispatch by a different route from every other entry point: each wraps
+        its body in ``except Exception`` and calls ``_map_exception`` directly,
+        with no ``_errors()`` block, so a change to that context manager would
+        not cover them.
+
+        The pre-existing ``TestSFTPBug146ListingEioRaises`` drives the same three
+        with ``EIO`` and asserts the base class; this is its permission twin.
+        """
+        assert isinstance(sftp_backend, SFTPBackend)
+        sftp_backend.exists("warmup.txt")  # warm the live connection
+
+        def _denied(*_a: object, **_k: object) -> object:
+            raise OSError(code, "Permission denied")
+
+        with (
+            patch.object(sftp_backend._sftp_client, "listdir_attr", side_effect=_denied),
+            pytest.raises(PermissionDenied) as excinfo,
+        ):
+            call(sftp_backend)
+        assert type(excinfo.value) is PermissionDenied, f"{label} answered a subclass: {excinfo.value!r}"
+
+    @pytest.mark.spec("SFTP-021")
+    @pytest.mark.parametrize("site", ["target", "ancestor"])
+    @pytest.mark.parametrize("key", ["denied.txt", "sub/denied.txt"], ids=["depth0", "nested"])
+    @pytest.mark.parametrize(
+        ("label", "call", "fails"),
+        [
+            ("read", lambda b, k: b.read(k), ()),
+            ("read_bytes", lambda b, k: b.read_bytes(k), ("file",)),
+            ("delete", lambda b, k: b.delete(k), ("remove",)),
+            ("write_ow", lambda b, k: b.write(k, b"x", overwrite=True), ("file",)),
+            ("write_no_ow", lambda b, k: b.write(k, b"x", overwrite=False), ()),
+            ("write_atomic_ow", lambda b, k: b.write_atomic(k, b"x", overwrite=True), ("rename", "posix_rename")),
+            ("write_atomic_no_ow", lambda b, k: b.write_atomic(k, b"x", overwrite=False), ()),
+            ("open_atomic_ow", lambda b, k: _drain_open_atomic(b, k, overwrite=True), ()),
+            ("open_atomic_no_ow", lambda b, k: _drain_open_atomic(b, k, overwrite=False), ()),
+            ("exists", lambda b, k: b.exists(k), ()),
+            ("is_file", lambda b, k: b.is_file(k), ()),
+            ("is_folder", lambda b, k: b.is_folder(k), ()),
+            ("get_file_info", lambda b, k: b.get_file_info(k), ()),
+            ("get_folder_info", lambda b, k: b.get_folder_info(k), ()),
+            ("delete_folder", lambda b, k: b.delete_folder(k), ()),
+            ("move", lambda b, k: b.move(k, "dst.txt"), ()),
+            ("copy", lambda b, k: b.copy(k, "dst.txt"), ()),
+        ],
+        ids=lambda v: v if isinstance(v, str) else "",
+    )
+    def test_the_two_permission_errnos_answer_alike_on_every_entry_point(
+        self,
+        sftp_backend: Backend,
+        key: str,
+        site: str,
+        label: str,
+        call: Callable[[Backend, str], object],
+        fails: tuple[str, ...],
+    ) -> None:
+        """SFTP-021: the two permission errnos answer alike, whichever stat is denied.
+
+        **What this holds is errno symmetry, not site independence**, and both
+        errnos run inside one case rather than being parametrized apart because
+        the invariant is a comparison between them. Which stat a denial lands on
+        depends on the method, the ``overwrite`` flag, the key's *depth* and
+        whether the target or an ancestor is refused — none of which a caller can
+        see, and none of which may decide **which errno gets which type**. Two
+        earlier shapes of this fix guarded a subset of the sites and each made
+        the errnos disagree somewhere: first between ``write``'s two overwrite
+        modes, then between ``read_bytes`` and ``get_file_info``.
+
+        **It does not hold that every site answers ``PermissionDenied``**, and
+        the ``site`` axis exists so this table cannot be read as claiming so.
+        ``_has_file_ancestor``'s walk swallows a denied ancestor stat (BK-316 L6,
+        kept deliberately, so a false "no file ancestor" only forgoes the
+        ``NotFound`` upgrade). Under ``site="ancestor"`` the read side therefore
+        answers the base ``RemoteStoreError`` while the writers answer
+        ``PermissionDenied`` — both errnos alike in every cell, which is the
+        invariant. That read/write *shape* is BK-316's and pre-dates this arm;
+        the writers' half of it does not, because before this arm every ``EPERM``
+        cell answered the base class.
+
+        **``site="ancestor"`` is a staging, not a scenario**, and nothing outside
+        this table should be phrased as though a caller can meet it. Reaching the
+        swallowing walk needs all three of: an errno-less operation failure (the
+        read side consults ``_has_file_ancestor`` only when ``code is None``), a
+        target stat answering ``ENOENT``, and an ancestor stat answering the
+        permission errno — which ``_drive_denial`` assembles by hand. A server
+        that refuses a directory you must traverse fails the *open* with the
+        permission errno instead, and then all 17 entry points answer
+        ``PermissionDenied``. A published upgrade note once described this
+        staging as a rule for callers; it was withdrawn.
+
+        **The key axis is not decoration either.**
+        ``_base_relative_ancestor_dirs`` yields nothing when the parent *is* the
+        base, so depth 0 is the one depth at which no ancestor stat exists.
+
+        **Every cell asserts something, via a third control errno.** Two rounds
+        of review narrowed this carve-out by argument and each narrowing was
+        refuted by a cell the argument had not considered, so the space is
+        enumerated instead: ``_ANCESTOR_DELIVERS`` names exactly the entry points
+        that reach a caller with an ancestor denial, and the rest are asserted to
+        be *unaffected* by the injected errno rather than merely self-consistent.
+        Without the control, the 28 cells where no denial is delivered compared
+        two identical runs and could not fail.
+
+        *fails* names the client calls that must fail **errno-lessly** for this
+        entry point to reach its target stat at all — the op whose failure
+        triggers a lazy classification, and nothing for the callers that stat
+        before anything else can go wrong (``read`` among them: its is-dir check
+        runs *before* the open).
+        """
+        assert isinstance(sftp_backend, SFTPBackend)
+        sftp_backend.exists("warmup.txt")  # warm the live connection
+        target = sftp_backend._sftp_path(key)
+
+        def _op_fails(*_a: object, **_k: object) -> object:
+            raise OSError("Failure")  # errno-less op failure -> lazy classification
+
+        answers: dict[int, str] = {}
+        details: dict[int, RemoteStoreError] = {}
+        for code in (errno.EACCES, errno.EPERM, _CONTROL_ERRNO):
+            answers[code], caught = self._drive_denial(sftp_backend, call, key, target, site, code, fails, _op_fails)
+            if caught is not None:
+                details[code] = caught
+
+        assert answers[errno.EACCES] == answers[errno.EPERM], (
+            f"{label}/{key}/{site}: the permission errnos disagree — "
+            f"EACCES gave {answers[errno.EACCES]}, EPERM gave {answers[errno.EPERM]}"
+        )
+
+        delivered = site == "target" or (key == "sub/denied.txt" and label in _ANCESTOR_DELIVERS)
+        if not delivered:
+            # No denial reaches the caller here, so the injected errno must make
+            # no difference at all — including to the control, which is not a
+            # permission errno. This is what stops the cell being a tautology.
+            assert answers[_CONTROL_ERRNO] == answers[errno.EACCES], (
+                f"{label}/{key}/{site}: the injected errno reached the caller after all — "
+                f"permission gave {answers[errno.EACCES]}, control gave {answers[_CONTROL_ERRNO]}"
+            )
+            return
+
+        assert answers[errno.EACCES] == "PermissionDenied", (
+            f"{label}/{key}/{site}: a delivered denial must answer PermissionDenied, got {answers[errno.EACCES]}"
+        )
+        assert answers[_CONTROL_ERRNO] != "PermissionDenied", (
+            f"{label}/{key}/{site}: the control errno also answered PermissionDenied, so this cell "
+            "would pass without the permission arm"
+        )
+        for code, exc in details.items():
+            assert str(exc).startswith(f"Permission denied: {key}"), f"{label}/{key}/errno {code}: {exc!r}"
+            # ``path``/``backend`` are public and are what a caller logs;
+            # asserting the message alone left a ``path=""`` regression green.
+            assert exc.path == key, f"{label}/{key}/errno {code} lost its path: {exc!r}"
+            assert exc.backend == "sftp", f"{label}/{key}/errno {code} lost its backend: {exc!r}"
+
+    @staticmethod
+    def _drive_denial(
+        backend: SFTPBackend,
+        call: Callable[[Backend, str], object],
+        key: str,
+        target: str,
+        site: str,
+        code: int,
+        fails: tuple[str, ...],
+        op_fails: Callable[..., object],
+    ) -> tuple[str, RemoteStoreError | None]:
+        """Run *call* with the chosen stat denied; return the answer's type name."""
+
+        def _stat(path: str, *_a: object, **_k: object) -> object:
+            if site == "ancestor" and path == target:
+                raise OSError(errno.ENOENT, "No such file")  # only the parent chain refuses
+            raise OSError(code, "Permission denied")
+
+        with ExitStack() as stack:
+            for name in fails:
+                stack.enter_context(patch.object(backend._sftp_client, name, side_effect=op_fails))
+            stack.enter_context(patch.object(backend._sftp_client, "stat", side_effect=_stat))
+            try:
+                call(backend, key)
+            except RemoteStoreError as exc:
+                return type(exc).__name__, (exc if type(exc) is PermissionDenied else None)
+            return "no error", None
 
     @pytest.mark.spec("SFTP-021")
     def test_raise_if_dir_narrow_reraise_preserves_file_ancestor_notfound(self, sftp_backend: Backend) -> None:

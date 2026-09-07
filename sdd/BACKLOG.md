@@ -205,7 +205,8 @@ deleted mid-scan (BUG-255) or when a folder vanishes part-way through a
 recursive walk (BUG-257); `ping()` does not report a vanished store as healthy
 (BUG-256); a constructor does not leak its driver's exception
 (BUG-245); one operation does not answer by
-payload size (BUG-253); a caller who meets a failure on **any** backend catches
+payload size (BUG-253); a listing does not leak its driver's exception on the
+one backend where it still does (BUG-280); a caller who meets a failure on **any** backend catches
 the type the docs promised and can tell *which* failure it was, rather than an
 empty message (BUG-276, which is now that clause's whole remainder — its
 Disposition is exactly whether the base-class fall-throughs should be classified
@@ -253,10 +254,11 @@ base class. That is one backend's connect arm, not the clause — BUG-276 carrie
 the rest, and the two are the same promise met at different depths. It also
 opened BUG-273: the same connect path still answers the wrong type when the
 connect is rejected locally — `PermissionDenied` blaming the caller's key on the
-`EACCES` shape, whose trigger is unknown, and the base `RemoteStoreError` on the
-`EPERM` one a netfilter `REJECT` does produce. Neither is `BackendUnavailable`,
-so it is the promised-type defect again; the qualifier is load-bearing, because
-the reproducible half is the one that answers the base class.
+`EACCES` shape, whose trigger is unknown, and — since BUG-275 gave the errno
+dispatch an `EPERM` arm — the same `PermissionDenied` on the `EPERM` one a
+netfilter `REJECT` does produce. Neither is `BackendUnavailable`, so it is the
+promised-type defect again, and the two halves now answer alike: one fix closes
+both, and the reproducible half is the one to build it against.
 **The what-it-leaves-behind clause is met and has left the list**, closed by
 BUG-272 with BUG-270 and BUG-277: the place where an operation *asked to
 preserve* the caller's file destroyed it was SFTP's rename fallback, which
@@ -410,8 +412,9 @@ compliant the day before.
   **`EPERM` was tried and reverted inside BUG-265, which is the sharpest
   evidence this item has.** A round of review found a firewall-rejected connect
   answering the base `RemoteStoreError` and argued `EPERM` was free to claim,
-  because `_map_exception`'s errno dispatch has no `EPERM` arm. That premise is
-  true of the dispatch and false of the module, and the next round measured it:
+  because `_map_exception`'s errno dispatch had no `EPERM` arm. That premise was
+  true of the dispatch **as it then stood** and false of the module, and the
+  next round measured it:
   `_raise_if_dir` re-raises **both** permission errnos on purpose
   (`_sftp.py`, the classification-stat guard, and its docstring says why), from
   a **working** channel, inside the caller's `_errors(path)` block. Driving the
@@ -422,12 +425,38 @@ compliant the day before.
   connection was discarded on a server-reported denial. **The grounds matter
   and were first stated too strongly:** the published v0.29.1→v0.30.0 migration
   row promising `PermissionDenied` for that stat was *already* not honoured for
-  `EPERM` before the change and is not honoured after it, which is BUG-275, not
+  `EPERM` before the change and is not honoured after it, which was BUG-275, not
   this item. What claiming `EPERM` did was move that path from the base class to
   `BackendUnavailable` plus a client reset — worse, and enough on its own.
   Reverted; `test_the_permission_errnos_stay_out_of_the_connect_arm`
   now pins the exclusion so a future widening fails loudly instead of silently
   changing what a live channel reports.
+  **BUG-275 has since shipped and made this item simpler, not harder.** The
+  errno dispatch now has an `EPERM` arm, so **both** permission errnos answer
+  `PermissionDenied`, and a locally-rejected connect is answered identically for
+  each — `PermissionDenied` naming the caller's key, or a bare `Permission
+  denied: ` from `check_health`. The two halves this item used to carry
+  separately are now one shape, so one fix closes both; the `EPERM` half is no
+  longer "the base class" as the measurement above records.
+  **What did not change is the exclusion from `_is_unreachable`**, and its
+  evidence is now per errno. `EACCES` has a live-channel producer: paramiko's
+  `SFTPClient._convert_status` renders `SSH_FX_PERMISSION_DENIED` as
+  `IOError(EACCES)` (paramiko 5.0.0). **`EPERM` has none known** — that
+  *renderer* has no arm producing it, and no SFTP status code maps to it; not to
+  be confused with `_map_exception`'s errno dispatch, which SFTP-021 now gives
+  an `EPERM` arm — and what keeps it out is that claiming it would take
+  away the `PermissionDenied` SFTP-021 now guarantees and clear the cached client
+  with it.
+  **The trigger asymmetry is what remains of the two halves**: the `EPERM` shape
+  is reproducible (a netfilter `REJECT` on the `OUTPUT` chain), the `EACCES` one
+  is not, so the `EPERM` shape is the one to build the fix against and the
+  `EACCES` one comes along with it.
+  **The answer this item must change is pinned**, so closing it fails a test
+  rather than silently altering a published type:
+  `test_a_locally_rejected_connect_is_answered_as_a_denial` asserts today's
+  answer for both errnos, on a keyed operation and on `check_health`. Its two
+  parametrizations must go red together — them being alike is the property that
+  lets one fix reach both.
   **The lesson for whoever picks this up:** "nothing else wants this errno" is a
   claim about the whole module, not about one if-chain, and `rg -n 'EPERM' src/
   docs-src/` is the derivation. Both errnos are one problem, not two.
@@ -459,20 +488,36 @@ compliant the day before.
   `EACCES`. `EPERM` **does** have that trigger, which is what made it tempting;
   it is not a reason to claim it. If no `EACCES` trigger exists, that half is a
   documentation item rather than a code one.
-  **What it costs a caller if left: nothing observable today, and that is the
-  finding rather than a reason to close it.** No connect anyone has produced
-  raises `EACCES`, so the wrong-type answer is unreachable; were it reachable, a
-  caller following the health-check guide's `except BackendUnavailable` would
-  catch nothing and meet `PermissionDenied` naming their key, or a bare
-  `Permission denied: ` from `check_health`, for a request that never left the
-  machine. The item's real value is the measurement it carries: the next person
-  to consider widening `_is_unreachable`'s tuple finds here why that breaks a
-  working channel, instead of rediscovering it the way BUG-265 did across two
-  rounds.
+  **What it costs a caller if left, and BUG-275 changed the answer.** It used to
+  be nothing observable: the `EACCES` half has no producer anyone has found, and
+  the `EPERM` half — which a netfilter `REJECT` on the `OUTPUT` chain does
+  produce — answered the base class, so no caller met the wrong *type*. Since
+  the errno dispatch gained its `EPERM` arm, that shape answers
+  `PermissionDenied` naming the caller's key, or a bare `Permission denied: `
+  from `check_health`. So the cost is **observable today, on the half a reader
+  can reproduce**: someone following the health-check guide's
+  `except BackendUnavailable` catches nothing and lands in a permissions handler
+  for a request that never left the machine. **That raises the priority and
+  leaves the diagnosis where it was.** The item also carries a measurement worth
+  keeping either way: the next person to consider widening `_is_unreachable`'s
+  tuple finds here why that breaks a working channel, instead of rediscovering
+  it the way BUG-265 did across two rounds.
+  **The shape also pays the connect budget twice, and the fix here is what would
+  end that too.** Measured by patching `_connect` to raise the errno and counting
+  invocations, at both `2a1bbfe` and this branch's head: `read_bytes` and
+  `delete` cost **two** connects, `read` / `exists` / `check_health` one, and
+  `ECONNREFUSED` costs one everywhere. `_probe_is_futile` does not claim a
+  permission errno, so the caller's guard declines and `_raise_if_dir` re-enters
+  the lazy `_sftp` property for a second full budget. **Pre-existing and
+  unchanged by BUG-275** — the counts are identical on both revisions, and only
+  the *type* moved — but it is the same waste BUG-274 closed for unreachable
+  hosts, and classifying at `_connect` (the disposition below) removes it by
+  construction rather than needing a second widening.
   **Disposition:** not widening the tuple — that was tried and measured harmful,
   above. The same errnos on a live operation genuinely are a denied path
-  (`test_eacces_maps_to_permission_denied` pins one, `_raise_if_dir`'s guard the
-  other), and `_map_exception` dispatches on the exception alone, so it cannot
+  (`test_eacces_maps_to_permission_denied` and
+  `test_the_two_permission_errnos_answer_alike_on_every_entry_point` pin
+  them), and `_map_exception` dispatches on the exception alone, so it cannot
   tell a connect-time one from an operation-time one. The cheap shape is for the
   lazy `_sftp` property to classify what `_connect` raises **before** the
   caller's `_errors(path)` block sees it, which reaches both errnos at once and
@@ -480,49 +525,6 @@ compliant the day before.
   **Found by BUG-265's round-3 measuring member**, which reported the `EACCES`
   half as a `Possible: Bug:` with its trigger flagged unreproduced; the `EPERM`
   half was found, fixed and reverted across its rounds 5 and 6.
-
-- [ ] **BUG-275 — `_raise_if_dir`'s permission re-raise delivers `PermissionDenied` for one of the two errnos it names, and four artifacts promise both**
-  spec: SFTP-021 · effort: S · audience: user.api, user.api_docs
-  Pre-existing, not introduced by BUG-265 — found by its closing whole-file
-  pass, which was checking whether that item's `EPERM` revert had left half a
-  claim standing and found a whole one that predates it.
-  **Measured on the shipped code**, driving `_map_exception` with a plain
-  `OSError` carrying each errno:
-  `EACCES` → `PermissionDenied("Permission denied: delivery.csv")`;
-  `EPERM` → base `RemoteStoreError("denied")`. The errno dispatch has an
-  `EACCES` arm and **no `EPERM` arm**, so a re-raised `EPERM` classification
-  stat falls to the generic arm.
-  **What promises otherwise**, all saying the re-raise exists "so a server that
-  denies even statting the target surfaces `PermissionDenied` rather than a
-  generic `RemoteStoreError`": `_raise_if_dir`'s docstring, its BK-316 inline
-  comment beside the guard, BK-316's `BACKLOG-DONE.md` register entry, and —
-  published — the v0.29.1 → v0.30.0 migration table row
-  `| Permission-denied classification stat (EACCES/EPERM) | RemoteStoreError | PermissionDenied |`.
-  For `EPERM` that row's "after" column is exactly its "before" column.
-  **Trigger is unestablished, and that bounds the priority rather than the
-  diagnosis.** paramiko's `SFTPClient._convert_status` maps
-  `SSH_FX_PERMISSION_DENIED` to `EACCES`, so an SFTP-protocol `EPERM` looks
-  unproducible; the re-raise names both errnos because BK-316 was written for
-  "non-OpenSSH servers whose error shapes differ from OpenSSH", which is the
-  case nobody has a fixture for.
-  **What it costs a caller if left:** a user on such a server whose stat is
-  denied with `EPERM` gets the base `RemoteStoreError`, so an `except
-  PermissionDenied` clause written on the strength of the published migration
-  row falls through to their generic handler and a permissions problem is
-  logged as an unknown failure. BUG-265 caveated that published row, so what
-  remains is the code-vs-docs divergence rather than a silently misleading
-  page — the cost of leaving it is that three in-tree artifacts still describe
-  behaviour the module does not have, and the next reader of `_raise_if_dir`
-  has to re-derive which half is true.
-  **Disposition:** two ways to make the four artifacts agree, and they differ in
-  what a caller gets. Either give the dispatch an `EPERM` arm mapping to
-  `PermissionDenied` — which makes every promise true and is a behaviour change
-  — or narrow all four to say `EACCES` alone reaches `PermissionDenied` and
-  `EPERM` reaches the base class. **Do not answer it by widening
-  `_is_unreachable`**: BUG-273 records that attempt and its measured harm.
-  **Found by BUG-265's closing pass**, which also caught the two places where
-  that item's own body had cited the migration row as though it were satisfied
-  before and after — corrected there.
 
 - [ ] **BUG-279 — `unwrap(SFTPClient)` leaks the raw paramiko or socket error when the connection cannot be established**
   spec: SFTP-024, SFTP-026 · effort: S · audience: user.api
@@ -1010,6 +1012,41 @@ compliant the day before.
   hand-written cassette would fabricate a response the tier has never produced.
   This is the item that makes the section's promise stay true for backend seven,
   which is why it sits here and not with the coverage work.
+
+- [ ] **BUG-280 — `LocalBackend`'s three listing methods leak a raw `PermissionError`**
+  spec: BE-021 · effort: S · audience: user.api
+  BE-021 is the never-leak invariant this breaches
+  ([003-backend-adapter-contract.md](specs/003-backend-adapter-contract.md)),
+  and the spec already records BUG-249 — the S3 twin, described further down
+  this entry — against it.
+  Reproduced by constructing a `LocalBackend` on any root holding one file,
+  patching `pathlib.Path.iterdir` to raise
+  `PermissionError(13, "Permission denied")`, and calling each method:
+
+  | call | answer |
+  |---|---|
+  | `list_files` | raw `PermissionError` |
+  | `list_folders` | raw `PermissionError` |
+  | `iter_children` | raw `PermissionError` |
+  | `read_bytes` | mapped (never reaches `iterdir`) |
+  | `delete` | mapped (never reaches `iterdir`) |
+
+  A caller catching `RemoteStoreError` around a listing gets nothing, and the
+  exception carries no `path` or `backend`. `LocalBackend` maps this correctly
+  everywhere else — it catches bare `except PermissionError:` at 14 sites, 11
+  raising `PermissionDenied` outright — so this is three unguarded methods, not a
+  design position.
+  **Exactly the shape of [BUG-249](BACKLOG-DONE.md)**, which fixed the same three
+  method names on `S3Boto3Backend` leaking a raw `botocore.ClientError`, and of
+  `TestSFTPBug146ListingEioRaises`, which pins the SFTP twin. The listing methods
+  are the repeat offender because they are generators whose body runs outside the
+  caller's `try`, which is the thing worth fixing once across backends rather
+  than a third time in isolation.
+  **Found by BUG-275's closing measuring member** while checking that PR's
+  narrowed cross-backend claim. That claim is about errno symmetry and survives
+  this — both errnos leak identically — so it was correctly out of that PR's
+  scope; `BACKLOG-DONE.md`'s BUG-275 entry records the measurement and says
+  plainly that the two backends are not equivalent across the whole surface.
 
 ---
 
@@ -1828,9 +1865,11 @@ the checker inventory has shipped; `check_formal_trace` proves
 assertion rather than citation (ID-207); both open revisit pins have fired
 and named successors (ID-150, ID-249); the two backlog files are readable by the
 person they are for, or the decision that their length is the right price is
-recorded (BK-365); and the repo can say whether its own quality promise is
-holding rather than only asserting it (BK-366).
-**Bounded to those thirteen deliberately** — count derived by enumerating the
+recorded (BK-365); the repo can say whether its own quality promise is
+holding rather than only asserting it (BK-366); and two sessions working in
+parallel cannot mint the same backlog ID with every derivation telling both they
+are right (ID-257).
+**Bounded to those fourteen deliberately** — count derived by enumerating the
 semicolon-separated clauses above, not carried forward. "No artifact asserts what
 no mechanism can check" is the promise and cannot be a closing condition: this section's own
 preamble records that detecting the remaining class needs semantic comparison of
@@ -2448,3 +2487,37 @@ the commit that writes it lands, so cite the generator instead.
   across the same window. Run before this entry was written.
   **Exit criteria:** each open `BUG-` classified escaped/caught with the catching
   mechanism named, and a recorded answer to which reading the data supports.
+
+- [ ] **ID-257 — Two sessions working in parallel mint the same backlog ID, and every derivation says both are right**
+  spec: — · effort: S · audience: contributor.tooling
+  **Reproduced by having happened**: BUG-275's branch minted `BUG-278` for a
+  cross-backend divergence while a concurrent BUG-274 session minted `BUG-278`
+  for something else. Neither session was careless — at mint time `master`
+  carried no 278 in either backlog file, so both computed the same next integer
+  and both were correct about everything they could see. It surfaced only when
+  the second branch rebased and `gen-backlogid --check` reported the collision;
+  one of the two items had to be retired and re-homed after the fact.
+  **The gap is unmerged branches, not the floor.** `gen_backlogid.py`'s `--check`
+  already takes `max(BACKLOG-DONE, BACKLOG open)` for its "Next safe IDs" line,
+  and [§ ID prefixes](#how-this-file-works) already tells an author to check
+  both — so the documented procedure is sound and was followed. What no
+  derivation reads is *another branch*, which is where a concurrently minted ID
+  lives until it merges. An earlier account of this incident inside BUG-275's
+  trace blamed the floor for reading `BACKLOG-DONE.md` only; that was wrong, and
+  opening the script is what showed it.
+  **One real inaccuracy to fix in passing**: the collision message prints
+  `(floor: sdd/backlogid.json)`, and that file *is* BACKLOG-DONE-only, so an
+  author who follows the pointer rather than the prose gets a number that may
+  already be taken.
+  **The open question is what mechanism**, which is why this is `ID-` and not
+  `BK-`. Cheapest is a check against the remote — `git ls-remote` plus the
+  backlog files on each open branch — which costs a network call on a gate that
+  is currently offline and pure. Alternatives worth pricing against it: minting
+  from a range reserved per session, deriving the ID from the branch, or
+  accepting collisions and making the *rebase* the enforcement point, which is
+  what caught this one and cost only a re-home.
+  **Filed here rather than as a `BUG-`** because nothing is defective: every
+  component behaved as specified, and it is the coordination between them that
+  has no owner. That is this section's promise — the artifacts maintainers
+  coordinate through say what is actually true — failing across two working
+  copies rather than inside one.

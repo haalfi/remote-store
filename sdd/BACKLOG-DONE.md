@@ -220,6 +220,137 @@ if evidence changes; these are retired.
 
 ## Unreleased
 
+- [x] **BUG-275 — A permission-denied SFTP failure raises `PermissionDenied` for one of the two errnos its callers name**
+  spec: SFTP-021 · effort: S · audience: user.api, user.api_docs
+  Pre-existing, not introduced by BUG-265 — found by its closing whole-file
+  pass, which was checking whether that item's `EPERM` revert had left half a
+  claim standing and found a whole one that predates it. **The title is not the
+  one it was filed under**: it named `_raise_if_dir`'s re-raise, which is where
+  the divergence was noticed and not where it lived.
+  **The defect, reproduced before the fix** by driving `read_bytes` against the
+  live SFTP fixture with an errno-less op failure at `file` and each permission
+  errno at the classification `stat`: `EACCES` gave
+  `PermissionDenied("Permission denied: denied.txt")`, `EPERM` gave
+  `RemoteStoreError("[Errno 1] Permission denied")`. The errno dispatch had an
+  `EACCES` arm and none for `EPERM`.
+  **What shipped: one arm in the errno dispatch**, so both permission errnos are
+  answered `PermissionDenied` wherever a denial reaches `_map_exception` —
+  which is every SFTP operation. Most reach it through `_errors()`; the three
+  listing methods and the streamed `read()` call `_map_exception` directly,
+  which is why the invariant is stated over the dispatch and not over that
+  context manager.
+  This also puts SFTP where `LocalBackend` already was: it catches bare
+  `PermissionError`, and CPython raises that for both errnos.
+  **The single site is the guarantee, and two rejected shapes are why.** The
+  first fix answered at `_raise_if_dir` alone; review measured that this left
+  `open_atomic` — whose primary path stats eagerly and never reaches that guard —
+  falsifying the very `Raises:` clause the fix had just added to it. The second
+  widened to four stat sites; review measured that this left `write` answering
+  `PermissionDenied` under `overwrite=True` and the base class under
+  `overwrite=False` for a **nested** key, because `_ensure_parent_dirs` stats
+  ancestors and a depth-0 key has none — and left `read_bytes` and
+  `get_file_info` disagreeing on one path and one denial, since many sites in
+  the module stat a caller-named path and only four were guarded.
+  **Each subset drew a boundary a caller cannot see**, which is the same defect
+  this item was filed for, relocated. The dispatch is the one placement under
+  which no subset has to be argued — which is also why no site count is quoted
+  here or in the spec: two revisions of this entry quoted one, neither
+  reproduced from the derivation stated beside it, and the number was never what
+  the argument rested on. It does **not** follow that every site answers
+  `PermissionDenied` under every staging: `_has_file_ancestor`'s walk swallows a
+  denied ancestor stat, so where the walk is reached the denial lands only on the
+  write side. Both errnos answer alike there too, which is this item's invariant;
+  the read/write split is BK-316's.
+  **Four review rounds restated that scope and the first three got it wrong**,
+  each more subtly than the last: the first said the site set stops mattering;
+  the second asserted the split pre-dated this arm, when before the arm it held
+  for `EACCES` alone; the third published it as an upgrade rule. Measured, the
+  walk is reached only when the operation fails **errno-lessly**, the target stat
+  answers `ENOENT`, and an ancestor stat answers the permission errno — a
+  conjunction the test builds by hand. Deny the operation and every stat with the
+  errno, as a server refusing a directory you must traverse does, and all 17
+  entry points answer `PermissionDenied`. The carve-out is a fact about the
+  fixture, and is now stated only where the fixture is: the spec and the test.
+  **What it costs, stated rather than hidden.** The dispatch sees only the
+  exception, so a **connect-time** `EPERM` — a connect the local machine
+  rejected, which a netfilter `REJECT` on the `OUTPUT` chain reproduces — is now
+  answered `PermissionDenied` naming the caller's key. That was already true of
+  `EACCES`. Measured by driving every public entry point at several key
+  depths, the two errnos are now identical on every path — target stats,
+  ancestor stats, operations and connect-time alike — which is what lets
+  **BUG-273**
+  fix both with one change instead of carrying two halves; its body is updated
+  to say so. The migration guide states the limitation and says plainly there is
+  no workaround: `check_health()` classifies through the same mapping, so it
+  answers `PermissionDenied` too, with an empty key. The health-check guide
+  carries the same warning, since that is the page a reader lands on.
+  **The `EPERM` trigger stays unestablished on a working channel, and that
+  bounds the fix rather than the diagnosis.** paramiko's
+  `SFTPClient._convert_status` renders an SFTP `SSH_FX_PERMISSION_DENIED` as
+  `IOError(EACCES)` and has no arm producing `EPERM` (paramiko 5.0.0), so the
+  errno arrives only from outside the SFTP protocol. BK-316 named it because
+  that item was written for "non-OpenSSH servers whose error shapes differ from
+  OpenSSH".
+  **A fixture is not a trigger, and only the second is missing.** This item's own
+  entry-point table injects either errno at the stat, so the *mapping* is driven
+  and pinned; BUG-274 added a second injection fixture of the same kind. What
+  nobody has produced is a **server** that reports a denial with `EPERM` — and
+  no injection can supply that, because the question is about the wire, not the
+  dispatch. An earlier revision of this paragraph said "the case nobody has a
+  fixture for", which was already false of the tests shipping beside it.
+  **Every `Raises:` block now states one rule.** All fifteen naming a permission
+  errno say `EACCES` or `EPERM` — `check_health`'s included, which this PR
+  rewrote too, adding only that the denial need not be the server's. Derived by
+  an AST walk over `_sftp.py` collecting each `Raises:` section that names a
+  permission errno: 15, of which the 14 sharing the wording `PermissionDenied:
+  If the server denies access` are the ones widened from `(``EACCES``)`, with
+  `check_health`'s worded differently. **Two earlier revisions of this sentence
+  were wrong in the way it warns about.** The first split the fourteen into six
+  it changed and eight it left and claimed the eight "stat no target", false for
+  all eight. The second counted the wording string instead of the errnos, got 15
+  where that string now matches 14, and called `check_health`'s block errno-less
+  and unchanged when the closing commit had already given it both errnos. Both
+  are the unrun derivation [CLAUDE.md principle 9](../CLAUDE.md#principles) is
+  about; the second survived a round because re-reading the sentence cannot
+  catch it and only opening `_sftp.py` can.
+  **The cross-backend half, folded in rather than tracked.** It was filed as its
+  own ID mid-PR, while the fix was still scoped to a stat guard and therefore
+  left the general case; the re-plan closed it, and the rebase onto BUG-274
+  revealed the ID had been minted concurrently by that session for a different
+  item. So the measurement lives here instead:
+  `SFTPBackend._map_exception(OSError(errno.EPERM, "denied"), "delivery.csv")`
+  answered `RemoteStoreError('[Errno 1] denied')` where `LocalBackend.read_bytes`
+  with the read raising `PermissionError(errno.EPERM, ...)` answered
+  `PermissionDenied('Permission denied: delivery.csv')`. Local reaches it without
+  naming the errno — `_local.py` catches bare `except PermissionError:` at 14
+  sites, 11 raising `PermissionDenied` outright, and
+  `isinstance(OSError(errno.EPERM, "x"), PermissionError)` is `True`, so Python's
+  hierarchy claims the errno SFTP's dispatch declined. **Both backends now agree
+  on the errno**, which is what this measured and all it claims. Driven as an
+  unprivileged uid, `LocalBackend`'s three listing methods still leak a raw
+  `PermissionError` rather than mapping it, so the two are not equivalent across
+  the whole surface and nothing here says they are. **That leak is now
+  [BUG-280](BACKLOG.md)**, filed from this measurement rather than left standing
+  in a closed item's prose.
+  **The entry-point table needed a third errno to stop being partly vacuous.**
+  It drives 17 methods × 2 key depths × 2 denial sites and asserts the two
+  permission errnos agree. Measured, a denial reaches a caller in only 40 of
+  those 68 cells; the other 28 compared two identical runs, so a widening of the
+  arm — `EIO` joining it — left all 68 green. A non-permission control errno
+  injected at the same stat fixes both halves: where the denial is delivered the
+  control must *not* answer `PermissionDenied`, and where it is not, the injected
+  errno must change nothing. The narrowing mutant still dies on 40; the widening
+  mutant now dies on 32, measured against the same table one commit earlier,
+  which passed all 68.
+  **The ID collision is the lesson**: two sessions drawing from one floor mint
+  the same number, and `gen_backlogid --check` is what caught it. An ID minted
+  and retired inside one unmerged branch buys nothing a paragraph here does not.
+  **The coordination gap itself is now [ID-257](BACKLOG.md)**, which is where the
+  open question lives — what mechanism should own it — and which corrects the
+  first account of this incident: the floor was not at fault, since `--check`
+  already maxes over open items and the documented procedure says to check both.
+  What no derivation reads is another session's unpushed branch.
+
 - [x] **BUG-274 — A keyed SFTP operation against an unreachable host pays the connect budget two or three times over**
   spec: SFTP-031 (minted here), SFTP-023, SFTP-010 · effort: S · audience: user.api
   **The item minted a spec ID.** The one-budget invariant is now
@@ -683,10 +814,14 @@ if evidence changes; these are retired.
   `BackendUnavailable` and discarded a healthy client, where `EPERM` had
   answered the base `RemoteStoreError`. The argument that admitted it ("the
   errno dispatch has no `EPERM` arm") was true of the dispatch and false of the
-  module. That dispatch gap is real and older than this item — four artifacts,
-  one of them the published migration table, say the re-raise delivers
-  `PermissionDenied` for both errnos, and it never has for `EPERM` — filed as
-  **BUG-275**. They
+  module. That dispatch gap was real and older than this item — four artifacts,
+  one of them the published migration table, said the re-raise delivers
+  `PermissionDenied` for both errnos, and it never had for `EPERM` — filed as
+  **BUG-275** and since closed, by giving the dispatch the missing arm. The
+  exclusion here is unaffected and its evidence is now stated per errno: only
+  `EACCES` has a measured live-channel producer, and what keeps `EPERM` out is
+  that claiming it would take away the `PermissionDenied` that arm guarantees —
+  see that entry. They
   classify through
   `_is_unreachable` and an arm of their own rather than by widening
   `_is_connection_dead`, because **the two predicates answer different
@@ -720,11 +855,12 @@ if evidence changes; these are retired.
   never did — the guide's `BackendUnavailable` row was simply false, and needed
   nothing added. **It is true as written for the failures this item covers**, and
   the qualifier is load-bearing: BUG-273 records a locally-rejected connect that
-  still answers the wrong type — `PermissionDenied` on the `EACCES` shape, whose
-  trigger is unknown, and the base `RemoteStoreError` on the `EPERM` one, which
-  is the shape a reader can actually produce. Either way it is not
-  `BackendUnavailable`. The row is not unconditionally true and this entry does
-  not claim it is.
+  still answers the wrong type. When this entry was written that was
+  `PermissionDenied` on the `EACCES` shape and the base `RemoteStoreError` on
+  the `EPERM` one; BUG-275 gave the mapping an `EPERM` arm, so both shapes now
+  answer `PermissionDenied` — including the `EPERM` one, which is the shape a
+  reader can actually produce. Either way it is not `BackendUnavailable`. The
+  row is not unconditionally true and this entry does not claim it is.
   **What was deliberately not done:** the same class of defect on other
   backends — **BUG-264** took the Azure `BackendUnavailable` arm and **BUG-276**
   carries what is left, the base-class fall-throughs including two in this
@@ -3908,10 +4044,14 @@ if evidence changes; these are retired.
   injection-tested in `tests/backends/sftp/test_config.py`; the
   OpenSSH-reproducible subset (L1 permission path, L5 temp-litter, L3
   no-regression) is additionally covered live against the `atmoz/sftp` container in
-  `tests/e2e/test_sftp_correctness_edges.py`. **L1** `_raise_if_dir` now re-raises a
-  permission (`EACCES`/`EPERM`) classification-stat failure so it maps to
-  `PermissionDenied` rather than a generic `RemoteStoreError`, kept narrow
-  (permission only) so the errno-less file-ancestor path is preserved. **L2** the
+  `tests/e2e/test_sftp_correctness_edges.py`. **L1** `_raise_if_dir` no longer
+  swallows a permission (`EACCES`/`EPERM`) classification-stat failure, so it
+  surfaces `PermissionDenied` rather than a generic `RemoteStoreError`, kept
+  narrow (permission only) so the errno-less file-ancestor path is preserved.
+  It bare-re-raises for `_map_exception` to classify, which as shipped here
+  delivered the promise for `EACCES` alone; **BUG-275** closed the `EPERM` half
+  by giving that dispatch the missing arm, so the re-raise now gets both errnos
+  it names without changing. **L2** the
   mode-less-target policy folds into one `_classify_existing_target` helper treating
   a mode-less target defensively as `InvalidPath` (matching `_ensure_parent_dirs`),
   unified on the eager existence-check path — the `overwrite=False` check for all

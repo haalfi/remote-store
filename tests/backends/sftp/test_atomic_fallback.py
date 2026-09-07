@@ -7,8 +7,8 @@ where the caller's pre-existing file lives, and this file pins what happens to i
 when the promote fails.
 
 The stall half of the window is in ``test_io_timeout.py``, which needs the relay.
-Here the promote fails for a **non-dead** reason -- ``EACCES``, ``EIO`` -- which
-needs no stall at all: the connection is live throughout, so the backend can both
+Here the promote fails for a **non-dead** reason -- ``EACCES``, ``EPERM``, ``EIO``
+-- which needs no stall at all: the connection is live throughout, so it can both
 fail and recover within the same call. That is the case BUG-272 measured, and the
 one where the old cleanup destroyed the destination *and* the temp.
 """
@@ -384,7 +384,10 @@ def test_a_failed_copy_rung_still_gives_the_destination_back(sftp_backend: SFTPB
 @pytest.mark.spec("AW-003")
 @pytest.mark.spec("SFTP-018")
 @pytest.mark.parametrize("op", ["write_atomic", "open_atomic", "move"])
-def test_a_refused_displace_reports_rather_than_writing_the_destination(sftp_backend: SFTPBackend, op: str) -> None:
+@pytest.mark.parametrize("code", [errno.EACCES, errno.EPERM], ids=["eacces", "eperm"])
+def test_a_refused_displace_reports_rather_than_writing_the_destination(
+    sftp_backend: SFTPBackend, op: str, code: int
+) -> None:
     """A destination the fallback could not clear is not a destination it may write.
 
     ``_displace`` used to answer "the server refused to move it" the same way it
@@ -412,7 +415,7 @@ def test_a_refused_displace_reports_rather_than_writing_the_destination(sftp_bac
 
     _break_posix_rename(backend)
     _strict_rename(backend)
-    _deny_displacing(backend, dst, errno.EPERM)
+    _deny_displacing(backend, dst, code)
 
     def _run() -> None:
         if op == "move":
@@ -423,12 +426,23 @@ def test_a_refused_displace_reports_rather_than_writing_the_destination(sftp_bac
         else:
             backend.write_atomic(dst, new, overwrite=True)
 
+    # Caught as the base class, then narrowed by assertion. ``pytest.raises`` on
+    # the exact type would make the ``AlreadyExists`` check below unreachable —
+    # the two are sibling subclasses — and that check carries the point of the
+    # test, so it must be able to fail. The exact-type assertion is what a
+    # narrowing of the errno arm has to trip, and it is why both errnos are
+    # driven: ``_deny_displacing`` is the only staging in this file that reaches
+    # the displace branch, so without the parametrisation one of them is
+    # asserted nowhere.
     with pytest.raises(RemoteStoreError) as caught:
         _run()
 
     assert not isinstance(caught.value, AlreadyExists), (
         "the caller passed overwrite=True, so being told the file already exists answers a "
         "question they did not ask — the displace refusal is the reason and belongs in the error"
+    )
+    assert type(caught.value) is PermissionDenied, (
+        f"a denied displace is a denial, and SFTP-021 answers both permission errnos alike: {caught.value!r}"
     )
     assert backend.read_bytes(dst) == old, (
         "a destination the fallback could not clear must be left as it was: move's copy rung "
@@ -535,9 +549,11 @@ def test_a_probe_that_cannot_answer_does_not_become_an_answer(sftp_backend: SFTP
     that the write failed.
 
     **Staged errno-less rather than parametrised over errnos**, because only this
-    shape reaches the fallback: a stat answering ``EACCES`` is classified by
-    ``_raise_if_dir`` into ``PermissionDenied`` before the displace is attempted,
-    so an ``EACCES`` variant passes without exercising anything here.
+    shape reaches the fallback: a stat answering *either* permission errno is
+    re-raised by ``_raise_if_dir`` and answered ``PermissionDenied`` by the errno
+    dispatch before the displace is attempted (SFTP-021 — the guard re-raises,
+    the dispatch decides the type), so a permission variant passes without
+    exercising anything here.
     """
     code = None
     backend: Any = sftp_backend
