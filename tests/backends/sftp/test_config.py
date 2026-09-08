@@ -2633,7 +2633,7 @@ class TestSFTPProbeReconnectsIntoGoneHost:
     **The enumeration next door cannot reach this**, and that is the whole
     reason this class exists: every one of its 84 cells builds a fresh backend
     whose *first* ``_sftp`` evaluation fails, so no cell ever puts a working
-    channel in front of a widened guard. Two of the six are reached only that
+    channel in front of a widened guard. Two of BUG-274's six are reached only that
     way — ``_raise_if_dir``'s classification stat and ``_has_file_ancestor``'s
     ancestor walk — because both run on the error path of an operation that
     already had a connection.
@@ -2852,12 +2852,21 @@ class TestSFTPTransportDeathCostsOneConnect:
         in these cells and the stub says so rather than answering.
         *target_absent* makes the destination stat answer ``ENOENT``, which the
         ``overwrite=False`` atomic write needs to get past its eager check.
+
+        **Every stub answers only the calls these cells make and fails loud on
+        any other**, so a future change that issues a request the staging did
+        not anticipate surfaces as a stub gap rather than being answered
+        silently. Both keys are flat under the default ``base_path`` of ``/``,
+        so no ancestor is ever walked — ``_base_relative_ancestor_dirs`` yields
+        nothing for a parent of ``/`` — which is why ``stat`` has no ancestor
+        arm and ``mkdir`` is never reached. A nested key would change which
+        access reconnects (the ancestor stat between the destination probe and
+        ``posix_rename``), so it is not a free extension of ``CELLS``.
         """
         import stat as stat_mod
         import types
 
         state = {"alive": True}
-        directory = types.SimpleNamespace(st_mode=stat_mod.S_IFDIR | 0o755, st_size=0, st_mtime=0)
         regular = types.SimpleNamespace(st_mode=stat_mod.S_IFREG | 0o644, st_size=1, st_mtime=0)
         flat, moved = self.FLAT, self.MOVED
 
@@ -2896,9 +2905,10 @@ class TestSFTPTransportDeathCostsOneConnect:
                     if target_absent:
                         raise OSError(errno.ENOENT, "No such file")
                     return regular
-                return directory  # an ancestor, for _ensure_parent_dirs
+                raise AssertionError(f"stat({sftp_path}) is not a request these cells stage")
 
             def file(self, sftp_path: str, mode: str = "r") -> Any:
+                assert mode == "w", f"file({sftp_path}, {mode!r}) is not the temp open these cells stage"
                 return Handle()
 
             def posix_rename(self, src: str, dst: str) -> None:
@@ -2914,13 +2924,13 @@ class TestSFTPTransportDeathCostsOneConnect:
                 raise OSError(None, "Failure")
 
             def mkdir(self, sftp_path: str) -> None:
-                pass
+                raise AssertionError(f"mkdir({sftp_path}) reached: a flat key under '/' walks no ancestors")
 
             def remove(self, sftp_path: str) -> None:
-                pass
+                raise AssertionError(f"remove({sftp_path}) reached: every cleanup is skipped on a cleared client")
 
             def close(self) -> None:
-                pass
+                pass  # reached: _connect's _close_clients() closes the stale client first
 
         backend = SFTPBackend(
             host="127.0.0.1",

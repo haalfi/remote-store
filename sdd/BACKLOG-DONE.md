@@ -525,7 +525,9 @@ if evidence changes; these are retired.
   `_is_connection_dead` or `_probe_is_futile` (references, because `read` hands
   the predicate to `_ErrorMappingStream` as `is_fatal=` without calling it),
   keep those whose owning function is neither `_probe_is_futile` nor
-  `_map_exception`, and seventeen fall out — six and eleven. The fault the six
+  `_map_exception`, and seventeen fall out — six and eleven at this item's
+  close; BUG-278 has since widened five of the eleven, so the same walk now
+  yields eleven and six. The fault the six
   serve is an operation whose **first** `_sftp` evaluation fails, which is what
   "a host that was never reached" means and is all the enumeration drives, every
   cell building a fresh backend. **Four of the six are reached under it**, at 6

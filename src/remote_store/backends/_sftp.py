@@ -2971,8 +2971,8 @@ class SFTPBackend(Backend):
         rename ladder and its fault is a transport that dies *mid-operation*,
         covered further down.
 
-        **The six are not all reachable under the first fault, and the split
-        is four plus two.** Consultations across the 84 cells, counted per site
+        **The first group's six are not all reachable under its fault, and the
+        split is four plus two.** Consultations across the 84 cells, counted per site
         rather than as a total, because a total is what let an earlier revision
         of this paragraph pair the figures with the wrong guards:
 
@@ -3013,7 +3013,7 @@ class SFTPBackend(Backend):
         promote makes ``_promote``'s ``posix_rename`` the access that
         reconnects, and against a host that is then gone the failure it meets is
         a connect-time shape. Asking ``_is_connection_dead`` alone declined it
-        exactly as the six used to, and the ladder below re-entered ``_sftp``
+        exactly as the first group's six used to, and the ladder below re-entered ``_sftp``
         at each rung — measured before this group was widened at three
         ``_connect`` entries for ``write_atomic(overwrite=True)`` (12.01 s at
         shipped defaults) and for ``move`` on either ``overwrite`` value, two
@@ -3033,7 +3033,7 @@ class SFTPBackend(Backend):
         ``_probe_is_futile`` — references, because ``read``'s
         ``_ErrorMappingStream(..., is_fatal=self._is_connection_dead, ...)``
         hands the predicate over without calling it, and that handoff is one of
-        the six — then keep those whose **owning function** is neither this
+        the six that stay narrow — then keep those whose **owning function** is neither this
         method nor ``_map_exception``. That yields the seventeen directly. Two
         earlier spellings of this sentence were each refuted under review, both
         by inviting the reader to subtract a count from a total; the filter is

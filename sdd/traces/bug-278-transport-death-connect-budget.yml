@@ -46,10 +46,11 @@ surprising_ripples:
   # the item.
   - sdd/specs/009-sftp-backend.md
 # Derived from `git log --oneline origin/master..HEAD` minus the implementing
-# commit, re-run before each push. Two commits: 2469d79 implements and does
-# not count; the `fix: address PR #999 review` commit incorporates round 1
-# (2 Consistency findings) and counts. Value is 1.
-review_rounds: 1
+# commit, re-run before each push. Three commits: 2469d79 implements and does
+# not count; 6901670 incorporates round 1 (2 Consistency findings) and counts;
+# the second `fix: address PR #999 review` commit incorporates round 2
+# (1 Consistency, 1 Test) and counts. Value is 2.
+review_rounds: 2
 phases:
   - id: orient
     name: Orient
@@ -219,6 +220,41 @@ phases:
           day before by the same author from the three sites read, then
           generalised to five without opening the other two
         outcome: misleading
+  - id: fix_round_2
+    name: Round-2 fix pass (solo reviewer, 1 Consistency and 1 Test finding)
+    steps:
+      - file: src/remote_store/backends/_sftp.py
+        section: "_probe_is_futile (counting sentence, four-plus-two paragraph, second-fault paragraph)"
+        read_type: verify
+        extract: >-
+          The 11/6 re-partition left "the six" naming two sets inside one
+          docstring: the counting sentence's "one of the six" meant the narrow
+          group while the two paragraphs before it used the bare phrase for
+          the wide one. Swept every bare "the six" in the module
+          (`rg -n '\bthe six\b'` over _sftp.py: five hits) and qualified the
+          three that were unqualified — "the six that stay narrow", "the first
+          group's six" twice; the other two already carried "still ask" or
+          "that stay narrow". The sibling test class's "Two of the six" became
+          "Two of BUG-274's six", and the BUG-274 register entry's
+          "six and eleven" gained a clause dating it to that item's close.
+          Round 1 introduced the ambiguity by re-partitioning without
+          re-reading the pronouns
+        outcome: misleading
+      - file: tests/backends/sftp/test_config.py
+        section: "TestSFTPTransportDeathCostsOneConnect._backend_with_dying_transport"
+        read_type: verify
+        extract: >-
+          The fake's stat fell through to "a directory, for
+          _ensure_parent_dirs", and that branch is unreachable: both keys are
+          flat under base_path "/" and _base_relative_ancestor_dirs yields
+          nothing for them, so no ancestor stat and no mkdir ever happens. The
+          comment was carried from the repro script, where the base was also
+          "/", and never checked. Every stub now asserts on a call the cells
+          do not stage (stat on any other name, file on a non-"w" mode, mkdir,
+          remove); the class passes 7/7 with them, which is the measurement
+          that those calls are unreachable rather than a reading. The
+          docstring states why a nested key is not a free extension of CELLS
+        outcome: ok
   - id: verify
     name: Verify
     steps:
