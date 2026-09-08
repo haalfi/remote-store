@@ -44,6 +44,9 @@ Repo: `haalfi/remote-store`.
    `gh run view <id> --repo haalfi/remote-store --json jobs`, then for each
    failing `mutate-<scope>` job:
    `gh run view --repo haalfi/remote-store --job <jobId> --log-failed`.
+   From a sandboxed session that fetch is denied by egress policy (the log
+   host sits outside `api.github.com`); the GitHub MCP server's `get_job_logs`
+   serves the same log through the API — switch tool, do not retry.
    Classify the failure:
    - **Baseline test failure** — the scope's tests fail before mutation even
      starts. Fix the test/code regression first; mutation is a bystander.
@@ -75,7 +78,9 @@ Repo: `haalfi/remote-store`.
    Reference the rolling issue with `Refs #<n>` — never `Closes`: the workflow
    owns the issue lifecycle and closes it on the next healthy full run. To
    close promptly after merge, dispatch a full run:
-   `gh workflow run mutation.yml --repo haalfi/remote-store`.
+   `gh workflow run mutation.yml --repo haalfi/remote-store` (from a sandboxed
+   session the token lacks `actions: write` and `gh` gets 403; the MCP server's
+   `actions_run_trigger` dispatches).
 
 ## Rules
 

@@ -349,7 +349,8 @@ review_rounds: 6
 #      third, transient, is only decidable by a re-run on the same pins. S4 is
 #      the only test anywhere in CI that authenticates against legacy-sftp
 #      (ci.yml's e2e job never builds that container), on a 5 s auth_timeout
-#      right after a deliberately failed connection. Filed as BK-367.
+#      right after a deliberately failed connection. Filed as BK-367; the
+#      skill's step 3 now carries the transient class (PR #998 review).
 #  35. sql's red is a real finding, BUG-281: sqlalchemy 2.1.0rc1 deprecates the
 #      SingletonThreadPool inference for `mode=memory` URLs that
 #      `_SQLAlchemyBaseBackend` relies on, and `filterwarnings = error` turns
@@ -371,6 +372,10 @@ review_rounds: 6
 #      answer selected only BUG-281; the agent read the unselected options as
 #      declined and wrote that here, which the user corrected: an unselected
 #      option is not a decision. Filed on the same PR once asked directly.
+#      The PR review then caught that the skill's own cancelled-leg step still
+#      prescribed the single-leg dispatch this finding diagnoses — filing the
+#      defect in the workflow had not stopped the runbook steering people into
+#      it (principle 3). The step now re-runs the full matrix and names BUG-282.
 #  37. Two access findings for a sandboxed session, both routed around rather
 #      than fixed. `gh run view --log-failed` fetches from
 #      results-receiver.actions.githubusercontent.com, denied like the artifact
@@ -378,7 +383,8 @@ review_rounds: 6
 #      through api.github.com. `gh workflow run` got 403 "Resource not
 #      accessible by integration" (the session token lacks actions:write); the
 #      MCP actions_run_trigger tool dispatched fine. The skill's "GitHub reads
-#      via gh" holds for issues, runs and jobs, not for logs or dispatch.
+#      via gh" holds for issues, runs and jobs, not for logs or dispatch; the
+#      skill now records both routes beside its artifact-host note.
 
 discovery_followups:
   - BUG-232  # [s3-pyarrow] / [bench] float past the pyarrow<25 ceiling
@@ -395,6 +401,7 @@ surprising_ripples:
   - tests/scripts/test_drift_check.py
   - tests/scripts/test_drift_smoke_map.py
   - tests/ext/test_dagster.py  # operational firing #26: pyarrow-hardimport smoke gap
+  - .claude/skills/drift/SKILL.md  # PR #998 review: the runbook prescribed the single-leg re-run BUG-282 diagnoses
 
 phases:
   - id: orient
