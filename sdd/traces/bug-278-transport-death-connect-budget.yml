@@ -1,0 +1,275 @@
+id: BUG-278
+title: "A transport that dies mid-operation pays the connect budget up to three times over when the reconnect meets a host that is gone"
+trigger: >-
+  BUG-274 widened six re-entry guards to _probe_is_futile and scoped its
+  guarantee to an operation whose first _sftp evaluation fails. Its round-2
+  measuring reviewer drove a transport death between write_atomic's temp close
+  and the promote instead, and the rename ladder's guards — still asking
+  _is_connection_dead alone — declined the connect-time shape the reconnect
+  raised, so the ladder re-entered _sftp at each rung: three _connect entries,
+  12.01 s at shipped defaults. Filed rather than fixed there because it needed a
+  live-then-dead fixture the suite did not have. Taken up as the one item the
+  user chose to close before the 0.31.0 release.
+source_items:
+  - BUG-278
+  - BUG-274
+audience:
+  - user.api
+expected_ripples:
+  - CHANGELOG.md
+  - sdd/BACKLOG.md
+  - sdd/BACKLOG-DONE.md
+  # gen_backlogid takes the max per prefix from BACKLOG-DONE.md, and 278 is
+  # above the stored 277, so the register move raises the BUG floor by one.
+  - sdd/backlogid.json
+  - sdd/specs/009-sftp-backend.md
+  - src/remote_store/backends/_sftp.py
+  - tests/backends/sftp/test_config.py
+surprising_ripples:
+  # Two docstrings that partition the seventeen guard sites — _probe_is_futile's
+  # "six of the seventeen" and _is_unreachable's "**Six** of those guards" — sit
+  # 800 lines from the sites this change widens, and the Bug-fix row reaches
+  # the test and the spec, not the prose that counts the sites. Found by
+  # re-running the reference walk the docstring names, not by reading the diff.
+  - src/remote_store/backends/_sftp.py
+  # The sibling test class's docstring asserted, in the present tense, that the
+  # fault "still costs up to three budgets; that is BUG-278". A test docstring
+  # is a register entry nobody sweeps; the `rg BUG-278` sweep the backlog's
+  # completing-work rule prescribes is what found it.
+  - tests/backends/sftp/test_config.py
+  # Round 1 found the fallback's entry condition still spelled with the
+  # narrower predicate in three docstrings the diff did not touch; the class
+  # sweep (`rg 'does not recognise'` over src, sdd/specs, docs-src) found two
+  # more copies of the same clause in this spec, 300 and 1300 lines from the
+  # SFTP-031 clause the PR edited. Neither the `rg BUG-278` sweep nor the
+  # Spec-section row reaches a clause that names the predicate rather than
+  # the item.
+  - sdd/specs/009-sftp-backend.md
+# Derived from `git log --oneline origin/master..HEAD` minus the implementing
+# commit, re-run before each push. Three commits: 2469d79 implements and does
+# not count; 6901670 incorporates round 1 (2 Consistency findings) and counts;
+# the second `fix: address PR #999 review` commit incorporates round 2
+# (1 Consistency, 1 Test) and counts. Value is 2.
+review_rounds: 2
+phases:
+  - id: orient
+    name: Orient
+    steps:
+      - file: sdd/BACKLOG.md
+        section: "(item) BUG-278"
+        read_type: gate
+        extract: >-
+          The mechanism (_sftp re-reads is_active() on every access), the
+          three-row measurement with declining frames, the five sites with
+          move's named as the one an implementer misses, and the two
+          instructions that shaped the work: write the failing test first, and
+          assert the budget on both overwrite paths
+        outcome: ok
+      - file: sdd/BACKLOG-DONE.md
+        section: "(item) BUG-274"
+        read_type: reference
+        extract: >-
+          The predecessor's shape to copy — a third predicate, not a widening;
+          latent sites widened anyway; a second behaviour change (type, not
+          cost) recorded rather than filed — and the SFTP-031 ID it minted,
+          which is where this item's clause belongs rather than the SFTP-023
+          the item was filed under
+        outcome: ok
+      - file: sdd/traces/bug-274-unreachable-host-connect-budget.yml
+        section: "discovery_followups, fix_round_2, fix_round_3"
+        read_type: reference
+        extract: >-
+          Where the item came from, and that its fifth site was found by a
+          reviewer refuting the item's own four-site prescription — so the
+          item's disposition was to be re-derived, not trusted
+        outcome: ok
+      - file: sdd/CLAUDE-REFERENCE.md
+        section: "Ripple-check / Pre-work index"
+        read_type: gate
+        extract: >-
+          Triggered rows: Bug fix, Backlog item touched, CHANGELOG entry, Spec
+          section. Breaking change checked and does not trigger: the one type
+          change (_is_absent's cell) moves a base RemoteStoreError to its
+          subclass BackendUnavailable, so no except clause stops catching
+        outcome: ok
+      - file: sdd/traces/_schema.yml
+        section: "(full)"
+        read_type: gate
+        extract: "Trace shape, the review_rounds derivation clause, audience enum"
+        outcome: ok
+  - id: reproduce
+    name: Reproduce by measurement
+    steps:
+      - file: src/remote_store/backends/_sftp.py
+        section: "_sftp, _promote, _displace, _is_absent, _move_fallback, move, write_atomic"
+        read_type: gate
+        extract: >-
+          Walked the ladder by hand to predict which access reconnects after
+          each death point, then measured instead of trusting the walk: a fake
+          client whose is_active() flips at a chosen round-trip, _connect
+          wrapped in a counter, retry disabled. The item's three rows
+          reproduced at 3/3/3; four cells the item did not have added to reach
+          _displace, _is_absent and _move_fallback by name (2/1/2) and the
+          overwrite=False atomic write (2). The _is_absent cell came out at one
+          entry on the pre-fix module — a type defect (base RemoteStoreError
+          "[Errno None] Failure") rather than a budget one, which the item had
+          not distinguished
+        outcome: ok
+      - file: tests/backends/sftp/test_config.py
+        section: "TestSFTPProbeReconnectsIntoGoneHost"
+        read_type: reference
+        extract: >-
+          The fixture shape to extend — a live-looking SSH/Transport/Client
+          triple whose alive flag flips inside a chosen call — and the
+          reasoning for asserting the guard frame per cell rather than only
+          the outcome
+        outcome: ok
+      - file: sdd/BACKLOG-DONE.md
+        section: "(item) BUG-274, wall-clock table"
+        read_type: reference
+        extract: >-
+          How the predecessor timed shipped defaults — one machine, both
+          revisions, first call discarded — copied rather than approximated.
+          The first attempt warmed up with check_health on the live fake,
+          which never connects, and the first timed row carried the 0.10 s
+          the warm-up was meant to absorb; corrected to warm up on a real
+          reconnect. The item's three rows: 12.01 s each before, 4.00 s each
+          after, at the fix and at the stashed pre-fix module
+        outcome: ok
+  - id: tests
+    name: Failing test first
+    steps:
+      - file: sdd/000-process.md
+        section: "Rule 6 (bug-fix pipeline)"
+        read_type: gate
+        extract: "BACKLOG → CHANGELOG → failing test → fix, in one commit"
+        outcome: ok
+      - file: tests/backends/sftp/test_config.py
+        section: "TestSFTPTransportDeathCostsOneConnect (new)"
+        read_type: reference
+        extract: >-
+          Seven cells, each naming its guard. Run against the pre-fix module
+          with the fix stashed: 7 failed — six on the entry count (3, 2, 3, 3,
+          2, 2) and the _is_absent cell on the type, raising the base
+          RemoteStoreError through pytest.raises(BackendUnavailable). With the
+          fix: 7 passed, and the two sibling classes' 86 cells unchanged
+        outcome: ok
+  - id: implement
+    name: Implement
+    steps:
+      - file: src/remote_store/backends/_sftp.py
+        section: "move, _promote, _displace, _is_absent, _move_fallback (guards)"
+        read_type: reference
+        extract: >-
+          _is_connection_dead → _probe_is_futile at the five sites, each with a
+          comment naming which access reconnects there. Nothing else in the
+          ladder changed
+        outcome: ok
+      - file: src/remote_store/backends/_sftp.py
+        section: "_probe_is_futile, _is_unreachable (docstrings)"
+        read_type: verify
+        extract: >-
+          Both carried the six/eleven partition. Re-ran the reference walk the
+          docstring names (AST over attribute references, kept by owning
+          function, excluding _probe_is_futile and _map_exception): 17 sites,
+          11 wide, 6 narrow. The six that stay narrow are enumerated with the
+          reason none can pay a budget — five cleanup guards gated on
+          _sftp_client is None, which a failed reconnect has already set, plus
+          the is_fatal handoff
+        outcome: ok
+      - file: sdd/specs/009-sftp-backend.md
+        section: "SFTP-031"
+        read_type: gate
+        extract: >-
+          The clause's "load-bearing subject" paragraph said the mid-operation
+          fault is not covered and tracked as BUG-278, in the present tense.
+          Rewritten as the invariant's second subject with the per-site
+          measurement and the _is_absent type change; the item's spec field
+          named SFTP-023, which owns the mapping, so the test carries SFTP-031
+          on BUG-274's reasoning that pays and gets are different IDs
+        outcome: ok
+  - id: fix_round_1
+    name: Round-1 fix pass (solo reviewer, 2 Consistency findings)
+    steps:
+      - file: src/remote_store/backends/_sftp.py
+        section: "write_atomic, move, _promote (docstrings)"
+        read_type: verify
+        extract: >-
+          Three docstrings stated the fallback's entry condition as "a reason
+          _is_connection_dead does not recognise" — the pre-fix gate, and a
+          connect-time shape is exactly such a reason, so each sentence
+          described the behaviour this PR removes. Rewritten to name
+          _probe_is_futile with both halves spelled out. Swept the class by
+          phrase rather than by predicate name (`rg -n 'does not recognise'`
+          over src/, sdd/specs/, docs-src/, tests/): five hits in scope, the
+          three the review named plus two in 009-sftp-backend.md (the SFTP-014
+          atomicity caveat and the SFTP-030 residue section); the flat_ns
+          and 003 hits are about is_root and stand
+        outcome: ok
+      - file: src/remote_store/backends/_sftp.py
+        section: "_probe_is_futile (six narrow sites paragraph)"
+        read_type: verify
+        extract: >-
+          The paragraph this PR added gave one mechanism for all five cleanup
+          guards — skipped on the _sftp_client is None gate — and it is false
+          for the two handle closes, which have no such gate; a connect-time
+          shape reaches _handle's through _copy_and_delete's second open,
+          and the close is attempted. The conclusion holds on a different
+          ground (the close never evaluates _sftp). Corrected here and in the
+          BACKLOG-DONE entry, which had stated it more strongly. Written the
+          day before by the same author from the three sites read, then
+          generalised to five without opening the other two
+        outcome: misleading
+  - id: fix_round_2
+    name: Round-2 fix pass (solo reviewer, 1 Consistency and 1 Test finding)
+    steps:
+      - file: src/remote_store/backends/_sftp.py
+        section: "_probe_is_futile (counting sentence, four-plus-two paragraph, second-fault paragraph)"
+        read_type: verify
+        extract: >-
+          The 11/6 re-partition left "the six" naming two sets inside one
+          docstring: the counting sentence's "one of the six" meant the narrow
+          group while the two paragraphs before it used the bare phrase for
+          the wide one. Swept every bare "the six" in the module
+          (`rg -n '\bthe six\b'` over _sftp.py: five hits) and qualified the
+          three that were unqualified — "the six that stay narrow", "the first
+          group's six" twice; the other two already carried "still ask" or
+          "that stay narrow". The sibling test class's "Two of the six" became
+          "Two of BUG-274's six", and the BUG-274 register entry's
+          "six and eleven" gained a clause dating it to that item's close.
+          Round 1 introduced the ambiguity by re-partitioning without
+          re-reading the pronouns
+        outcome: misleading
+      - file: tests/backends/sftp/test_config.py
+        section: "TestSFTPTransportDeathCostsOneConnect._backend_with_dying_transport"
+        read_type: verify
+        extract: >-
+          The fake's stat fell through to "a directory, for
+          _ensure_parent_dirs", and that branch is unreachable: both keys are
+          flat under base_path "/" and _base_relative_ancestor_dirs yields
+          nothing for them, so no ancestor stat and no mkdir ever happens. The
+          comment was carried from the repro script, where the base was also
+          "/", and never checked. Every stub now asserts on a call the cells
+          do not stage (stat on any other name, file on a non-"w" mode, mkdir,
+          remove); the class passes 7/7 with them, which is the measurement
+          that those calls are unreachable rather than a reading. The
+          docstring states why a nested key is not a free extension of CELLS
+        outcome: ok
+  - id: verify
+    name: Verify
+    steps:
+      - file: sdd/BACKLOG.md
+        section: "How this file works / Completing work"
+        read_type: verify
+        extract: >-
+          Ran `rg -n 'BUG-278' -- sdd .claude scripts docs-src tests *.md` and
+          read every hit: two present-tense claims fixed (SFTP-031's "tracked
+          as", the sibling test class docstring's "still costs"); the
+          BACKLOG-DONE BUG-274 entry, the ID-collision note in BACKLOG.md and
+          the two traces are past-tense narration and stand
+        outcome: ok
+      - file: sdd/CLAUDE-REFERENCE.md
+        section: "Ripple-check / Detailed checklist"
+        read_type: verify
+        extract: "Bug fix, Backlog item touched, CHANGELOG entry, Spec section rows"
+        outcome: ok

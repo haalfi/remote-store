@@ -1075,7 +1075,8 @@ class SFTPBackend(Backend):
         attempted at all, and a live server can refuse it — and *then* the old
         content is beside the target as ``.~bak.<name>.<uuid8>`` instead. That
         path is entered when ``posix_rename`` fails for a reason
-        ``_is_connection_dead`` does not recognise and the target is not a
+        ``_probe_is_futile`` does not recognise — neither a dropped connection
+        nor a host the reconnect could not reach — and the target is not a
         directory, so it is not confined to servers lacking the extension.
 
         As in ``write``, the returned ``WriteResult`` carries ``size`` and
@@ -1589,9 +1590,10 @@ class SFTPBackend(Backend):
         the destination path empty, its old content under
         ``.~bak.<name>.<uuid8>`` and the source still there, because the restore
         is best-effort and a dropped connection stops it being attempted. That path is
-        entered when ``posix_rename`` fails for a reason ``_is_connection_dead``
-        does not recognise and the destination is not a directory, so it is not
-        confined to servers lacking ``posix-rename@openssh.com``.
+        entered when ``posix_rename`` fails for a reason ``_probe_is_futile``
+        does not recognise — neither a dropped connection nor a host the
+        reconnect could not reach — and the destination is not a directory, so
+        it is not confined to servers lacking ``posix-rename@openssh.com``.
 
         Raises:
             NotFound: If *src* does not exist.
@@ -1641,7 +1643,7 @@ class SFTPBackend(Backend):
             try:
                 self._sftp.posix_rename(src_sftp, dst_sftp)
             except OSError as exc:
-                if self._is_connection_dead(exc):
+                if self._probe_is_futile(exc):
                     # Same reasoning as ``_promote``, and reached on *every*
                     # server rather than only those without the extension: a
                     # stalled channel fails ``posix_rename`` too, and the
@@ -1652,6 +1654,13 @@ class SFTPBackend(Backend):
                     # ``_move_fallback``'s own inner guard, so neither the
                     # ``rename`` nor the two file opens is ever attempted here.
                     # Report the drop (SFTP-030).
+                    #
+                    # BUG-278: the wider predicate, because a transport that
+                    # died at the destination probe makes *this* the access
+                    # that reconnects, and a host that is gone by then raises a
+                    # connect-time shape here. Asking the dropped-connection
+                    # predicate alone declined it and the fallback paid the
+                    # connect budget twice more (SFTP-031).
                     raise
                 self._move_fallback(src_sftp, dst_sftp, overwrite=overwrite)
 
@@ -2276,7 +2285,7 @@ class SFTPBackend(Backend):
         otherwise removes. It is kept ahead of the fallback deliberately: the
         alternative (fallback first, classify on its failure) would feed a
         directory target to the displace + ``rename``. The extra stat is paid
-        whenever ``posix_rename`` fails for a reason ``_is_connection_dead``
+        whenever ``posix_rename`` fails for a reason ``_probe_is_futile``
         does not recognise — commonly a server without the (near-universal)
         ``posix-rename@openssh.com`` extension, but not only that, which is why
         ``_rename_fallback`` carries no ``no cover`` pragma: the suite reaches it
@@ -2286,7 +2295,7 @@ class SFTPBackend(Backend):
         try:
             self._sftp.posix_rename(tmp_path, sftp_path)
         except OSError as exc:
-            if self._is_connection_dead(exc):
+            if self._probe_is_futile(exc):
                 # Nothing below can succeed on a dead channel. What this guard
                 # saves is **one** further bound, measured by removing it:
                 # ``_raise_if_dir`` returns without probing when the cause it is
@@ -2296,6 +2305,13 @@ class SFTPBackend(Backend):
                 # one round-trip that would otherwise be paid. With
                 # ``overwrite=False`` there is no displace and the one is the
                 # promote itself. Report the drop (SFTP-030).
+                #
+                # BUG-278: the wider predicate, because a transport that died
+                # at the temp close makes this ``posix_rename`` the access that
+                # reconnects, and a host that is gone by then raises a
+                # connect-time shape here. ``_raise_if_dir`` already stood
+                # aside for it; the displace and its probe did not, and the
+                # caller paid three connect budgets (SFTP-031).
                 raise
             self._raise_if_dir(sftp_path, path, cause=exc)
             self._rename_fallback(tmp_path, sftp_path, overwrite=overwrite)
@@ -2371,7 +2387,12 @@ class SFTPBackend(Backend):
         try:
             self._sftp.rename(sftp_path, backup)
         except OSError as exc:
-            if self._is_connection_dead(exc):
+            if self._probe_is_futile(exc):
+                # Wider than the dropped-connection predicate alone (BUG-278):
+                # this rename is the access that reconnects when the transport
+                # died during ``_promote``'s classification stat, and against a
+                # host that is gone the failure is a connect-time shape the
+                # probes below would re-pay the connect budget to look at.
                 raise
             # Both probes must answer ``ENOENT`` for this to be "there was
             # nothing to move". Either one failing for any other reason leaves
@@ -2390,6 +2411,12 @@ class SFTPBackend(Backend):
         unanswerable probe as "still occupied", which is the direction that
         cannot lose data. A dead connection re-raises rather than answering at
         all, since a probe that cannot reach the server has established nothing.
+        So does a host the probe's own reconnect could not reach: this
+        stat is the access that reconnects when the transport died on the
+        displace's failing rename, and answering ``False`` there let the
+        displace re-raise the rename's failure — a base ``RemoteStoreError``
+        naming a server that was in fact gone — over the ``BackendUnavailable``
+        the reconnect had already established.
 
         The shape a reader should not write is ``not _is_absent(x)`` as a test
         for "x exists": it is true both when *x* exists and when the probe could
@@ -2399,7 +2426,7 @@ class SFTPBackend(Backend):
         try:
             self._sftp.stat(sftp_path)
         except OSError as exc:
-            if self._is_connection_dead(exc):
+            if self._probe_is_futile(exc):
                 raise
             return getattr(exc, "errno", None) == errno.ENOENT
         return False
@@ -2531,8 +2558,12 @@ class SFTPBackend(Backend):
             try:
                 self._sftp.rename(src_sftp, dst_sftp)
             except OSError as exc:
-                if self._is_connection_dead(exc):
-                    raise  # the copy below cannot succeed either, and pays two more bounds
+                if self._probe_is_futile(exc):
+                    # The copy below cannot succeed either, and pays two more
+                    # bounds — or, when this rename is the access that
+                    # reconnected into a gone host, one more connect budget at
+                    # the copy's source open (BUG-278, SFTP-031).
+                    raise
                 self._copy_and_delete(src_sftp, dst_sftp)
         except BaseException as exc:
             if backup is not None:
@@ -2822,17 +2853,19 @@ class SFTPBackend(Backend):
         pinned by ``test_a_host_never_reached_maps_to_backend_unavailable``,
         which seeds a sentinel first.)
 
-        **Six** of those guards — not the ``is_fatal`` one, and not most of the
-        re-entry ones — **reach** this predicate through ``_probe_is_futile``,
+        **Eleven** of those guards — not the ``is_fatal`` one, and not the
+        cleanup ones — **reach** this predicate through ``_probe_is_futile``,
         and the distinction is why: reaching them and acting on them are
         different things, and a guard that consulted only the other predicate
         declined for every shape below, then fell through to a classification
-        path that paid the connect retry budget again. The other eleven still
-        ask the dropped-connection predicate alone, for the reasons
+        path — or, in the rename ladder, to the next rung — that paid the
+        connect retry budget again. The other six still ask the
+        dropped-connection predicate alone, for the reasons
         ``_probe_is_futile`` gives. What a caller pays is enumerated in
         ``TestSFTPUnreachableHostCostsOneConnect`` on the same terms as what a
         caller gets — one ``_connect`` entry per operation, generated over the
-        same axes rather than argued here.
+        same axes rather than argued here — and in
+        ``TestSFTPTransportDeathCostsOneConnect`` for the ladder.
 
         Three shapes reach here, none of them matched by the errno dispatch in
         ``_map_exception``:
@@ -2928,17 +2961,20 @@ class SFTPBackend(Backend):
         is where that figure is re-derived — the enumeration is run against the
         pre-fix module rather than recounted.
 
-        **Six of the seventeen guard sites reach here; eleven still ask
-        ``_is_connection_dead`` alone, and the bound on that is a fact about the
-        *fault*, not about those sites.** The fault is an operation whose
-        **first** ``_sftp`` evaluation is the one that fails — which is what "a
-        host that was never reached" means, and is the whole of what the
-        enumeration drives, since every cell builds a fresh backend.
+        **Eleven of the seventeen guard sites reach here, in two groups that
+        serve two faults; six still ask ``_is_connection_dead`` alone.** The
+        first group is six sites and its fault is an operation whose **first**
+        ``_sftp`` evaluation fails — which is what "a host that was never
+        reached" means, and is the whole of what
+        ``TestSFTPUnreachableHostCostsOneConnect`` drives, since every cell
+        builds a fresh backend. The second group is the five sites of the
+        rename ladder and its fault is a transport that dies *mid-operation*,
+        covered further down.
 
-        **The six are not all reachable under it, and the split is four plus
-        two.** Consultations across the 84 cells, counted per site rather than
-        as a total, because a total is what let an earlier revision of this
-        paragraph pair the figures with the wrong guards:
+        **The first group's six are not all reachable under its fault, and the
+        split is four plus two.** Consultations across the 84 cells, counted per site
+        rather than as a total, because a total is what let an earlier revision
+        of this paragraph pair the figures with the wrong guards:
 
         - ``read_bytes``'s guard — **6** (its two argument shapes x three
           connect-time shapes, once each; that product is also its ceiling)
@@ -2969,34 +3005,59 @@ class SFTPBackend(Backend):
         enumeration, which drives only first-evaluation failures; it is not a
         claim that nothing covers the site. Each site says so where it sits.
 
-        **A transport that dies mid-operation and then fails to reconnect is a
-        different fault and the eleven do not cover it.** ``_sftp`` re-reads
-        ``transport.is_active()`` on every access, so being downstream of a
-        handle says nothing about the connection the *next* access will use:
-        drive ``write_atomic`` with the transport dying between the temp close
-        and the promote, against a host that is then gone, and ``_promote``'s
-        guard declines a connect-time shape exactly as these six used to —
-        measured at three ``_connect`` entries, 12.01 s at shipped defaults.
-        ``move``'s own guard, ``_displace``, ``_is_absent`` and
-        ``_move_fallback`` sit on the same footing — ``move`` measures the same
-        three entries by itself. That shape is **not fixed here and no test in
-        this suite reaches it**; it is tracked as its own item, because it needs
-        a live-then-dead fixture this suite does not have and it lands in the
-        rename-fallback ladder rather than in the connect path.
+        **A transport that dies mid-operation and then fails to reconnect is
+        the second fault, and the five rename-ladder sites are its guards.**
+        ``_sftp`` re-reads ``transport.is_active()`` on every access, so being
+        downstream of a handle says nothing about the connection the *next*
+        access will use: a transport that dies between the temp close and the
+        promote makes ``_promote``'s ``posix_rename`` the access that
+        reconnects, and against a host that is then gone the failure it meets is
+        a connect-time shape. Asking ``_is_connection_dead`` alone declined it
+        exactly as the first group's six used to, and the ladder below re-entered ``_sftp``
+        at each rung — measured before this group was widened at three
+        ``_connect`` entries for ``write_atomic(overwrite=True)`` (12.01 s at
+        shipped defaults) and for ``move`` on either ``overwrite`` value, two
+        for the ``overwrite=False`` atomic write and for the two fallback rungs
+        reached under a live ``posix_rename`` failure. ``move``'s own guard,
+        ``_promote``, ``_displace``, ``_is_absent`` and ``_move_fallback`` are
+        the five; ``TestSFTPTransportDeathCostsOneConnect`` reaches each one by
+        name and pins one entry there. ``_is_absent`` is the odd one: it was
+        never a budget defect — the probe's failure ended the ladder either way
+        — but a *type* one, since answering ``False`` let ``_displace``
+        re-raise its own errno-less rename failure as a base
+        ``RemoteStoreError`` over the ``BackendUnavailable`` the reconnect had
+        established.
 
         **The count is derived by a filter, not by arithmetic on a total.** Walk
         this module for attribute *references* to ``_is_connection_dead`` or
         ``_probe_is_futile`` — references, because ``read``'s
         ``_ErrorMappingStream(..., is_fatal=self._is_connection_dead, ...)``
         hands the predicate over without calling it, and that handoff is one of
-        the eleven — then keep those whose **owning function** is neither this
+        the six that stay narrow — then keep those whose **owning function** is neither this
         method nor ``_map_exception``. That yields the seventeen directly. Two
         earlier spellings of this sentence were each refuted under review, both
         by inviting the reader to subtract a count from a total; the filter is
         stated instead because it is the thing that reproduces.
 
-        That ``is_fatal`` handoff is deliberately left on the narrower
-        predicate: it arms a guard on an **open stream**, reached only from
+        **The six that stay narrow are all guards on a best-effort step, and
+        none of them can pay a budget — for two different reasons, and an
+        earlier revision of this paragraph gave the first for all five.** Three
+        guard a step that would re-enter ``_sftp``: the temp unlink in
+        ``write_atomic`` and ``open_atomic``, and ``_restore``. Each is also
+        gated on ``_sftp_client is not None``, and a failed reconnect's first act
+        is ``_close_clients()``, so by the time a connect-time shape reaches one
+        of them the client is already ``None`` and the step is skipped on that
+        ground before the predicate matters. Two guard a ``handle.close()``:
+        ``_handle``'s and ``open_atomic``'s yield-phase close. Neither has a
+        client gate, and a connect-time shape does reach ``_handle``'s —
+        ``_copy_and_delete`` opens its destination inside the source handle's
+        context, so a transport that dies after the source open makes that
+        second open the access that reconnects, and its failure passes through
+        the guard on the way out. There the close *is* attempted and
+        suppressed, and what keeps the site budget-free is that the call is on
+        the driver's file object and never evaluates ``_sftp``, so no path from
+        it can enter ``_connect``. The ``is_fatal`` handoff is the
+        sixth: it arms a guard on an **open stream**, reached only from
         ``_ErrorMappingStream``'s own failure path, which holds the handle and
         the mapping and never touches ``_sftp`` — so no path from it can enter
         ``_connect``, and widening it would change what a mid-read drop does for
