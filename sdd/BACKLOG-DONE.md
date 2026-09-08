@@ -239,10 +239,17 @@ if evidence changes; these are retired.
   guard, `_promote`, `_displace`, `_is_absent` and `_move_fallback` now ask
   `_probe_is_futile`. The six sites that still ask the narrower predicate are
   all guards on a best-effort cleanup step or the open-stream `is_fatal`
-  handoff, and none can pay a budget: a failed reconnect's first act is
-  `_close_clients()`, so each is skipped on its `_sftp_client is None` gate
-  before the predicate is asked. Derived by the reference walk
-  `_probe_is_futile`'s docstring states: 17 sites, 11 wide, 6 narrow.
+  handoff, and none can pay a budget — on two grounds, where the first
+  revision of this entry gave one for all of them. The three that guard a
+  step re-entering `_sftp` (both temp unlinks and `_restore`) are skipped on
+  their `_sftp_client is None` gate, which a failed reconnect's
+  `_close_clients()` has already set. The two that guard a `handle.close()`
+  (`_handle` and `open_atomic`'s yield-phase close) have no such gate and the
+  predicate *is* asked — a connect-time shape reaches `_handle`'s through
+  `_copy_and_delete`'s second open — but the close is on the driver's file
+  object and never evaluates `_sftp`, so it cannot enter `_connect`. Found in
+  review; the docstring carries the corrected split. Derived by the reference
+  walk `_probe_is_futile`'s docstring states: 17 sites, 11 wide, 6 narrow.
   **Measured at every site rather than at the three rows the item filed**, with
   `_connect` entries counted by the same wrapper the test uses and the retry
   policy disabled, on the pre-fix and post-fix module:

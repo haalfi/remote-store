@@ -332,7 +332,8 @@ Two failures fall outside it. A stall whose lost reply is the promote
 `posix_rename` itself leaves the rename *performed*: the destination holds the
 new content, no temp remains, and the caller is told `BackendUnavailable`. And
 the `_rename_fallback` path — entered when `posix_rename` raises an `OSError`
-that `_is_connection_dead` does not recognise and `_raise_if_dir` has not
+that `_probe_is_futile` does not recognise (neither a dropped connection nor a
+host the reconnect could not reach, per SFTP-031) and `_raise_if_dir` has not
 rejected the target, so not only on servers lacking the extension — cannot rename
 onto an occupied path, so it displaces the destination to
 `.~bak.<name>.<uuid8>` first and renames it back if the promote fails. Renaming
@@ -1342,8 +1343,9 @@ Before BUG-272 the displace was a `remove` and this residue had no old content i
 it at all — on a *non-dead* failure the same window also ran the temp cleanup,
 and neither copy remained.
 **It is not confined to servers lacking `posix-rename@openssh.com`.**
-The route in is a `posix_rename` failure that `_is_connection_dead` does not
-recognise, on a target the operation's own directory guard has not already
+The route in is a `posix_rename` failure that `_probe_is_futile` does not
+recognise — neither a dropped connection nor a host the reconnect could not
+reach (SFTP-031) — on a target the operation's own directory guard has not already
 rejected — `_raise_if_dir` for the promote path, and for `move` the eager
 destination `stat`, which fires before `posix_rename` is attempted at all.
 The two are **not** the same guard and `move` never calls `_raise_if_dir`;

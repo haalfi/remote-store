@@ -37,10 +37,19 @@ surprising_ripples:
   # is a register entry nobody sweeps; the `rg BUG-278` sweep the backlog's
   # completing-work rule prescribes is what found it.
   - tests/backends/sftp/test_config.py
+  # Round 1 found the fallback's entry condition still spelled with the
+  # narrower predicate in three docstrings the diff did not touch; the class
+  # sweep (`rg 'does not recognise'` over src, sdd/specs, docs-src) found two
+  # more copies of the same clause in this spec, 300 and 1300 lines from the
+  # SFTP-031 clause the PR edited. Neither the `rg BUG-278` sweep nor the
+  # Spec-section row reaches a clause that names the predicate rather than
+  # the item.
+  - sdd/specs/009-sftp-backend.md
 # Derived from `git log --oneline origin/master..HEAD` minus the implementing
-# commit, re-run before each push. One commit on the branch at authoring time,
-# and it implements; value is 0 until a review round lands a fix.
-review_rounds: 0
+# commit, re-run before each push. Two commits: 2469d79 implements and does
+# not count; the `fix: address PR #999 review` commit incorporates round 1
+# (2 Consistency findings) and counts. Value is 1.
+review_rounds: 1
 phases:
   - id: orient
     name: Orient
@@ -178,6 +187,38 @@ phases:
           named SFTP-023, which owns the mapping, so the test carries SFTP-031
           on BUG-274's reasoning that pays and gets are different IDs
         outcome: ok
+  - id: fix_round_1
+    name: Round-1 fix pass (solo reviewer, 2 Consistency findings)
+    steps:
+      - file: src/remote_store/backends/_sftp.py
+        section: "write_atomic, move, _promote (docstrings)"
+        read_type: verify
+        extract: >-
+          Three docstrings stated the fallback's entry condition as "a reason
+          _is_connection_dead does not recognise" — the pre-fix gate, and a
+          connect-time shape is exactly such a reason, so each sentence
+          described the behaviour this PR removes. Rewritten to name
+          _probe_is_futile with both halves spelled out. Swept the class by
+          phrase rather than by predicate name (`rg -n 'does not recognise'`
+          over src/, sdd/specs/, docs-src/, tests/): five hits in scope, the
+          three the review named plus two in 009-sftp-backend.md (the SFTP-014
+          atomicity caveat and the SFTP-030 residue section); the flat_ns
+          and 003 hits are about is_root and stand
+        outcome: ok
+      - file: src/remote_store/backends/_sftp.py
+        section: "_probe_is_futile (six narrow sites paragraph)"
+        read_type: verify
+        extract: >-
+          The paragraph this PR added gave one mechanism for all five cleanup
+          guards — skipped on the _sftp_client is None gate — and it is false
+          for the two handle closes, which have no such gate; a connect-time
+          shape reaches _handle's through _copy_and_delete's second open,
+          and the close is attempted. The conclusion holds on a different
+          ground (the close never evaluates _sftp). Corrected here and in the
+          BACKLOG-DONE entry, which had stated it more strongly. Written the
+          day before by the same author from the three sites read, then
+          generalised to five without opening the other two
+        outcome: misleading
   - id: verify
     name: Verify
     steps:

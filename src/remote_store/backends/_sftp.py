@@ -1075,7 +1075,8 @@ class SFTPBackend(Backend):
         attempted at all, and a live server can refuse it — and *then* the old
         content is beside the target as ``.~bak.<name>.<uuid8>`` instead. That
         path is entered when ``posix_rename`` fails for a reason
-        ``_is_connection_dead`` does not recognise and the target is not a
+        ``_probe_is_futile`` does not recognise — neither a dropped connection
+        nor a host the reconnect could not reach — and the target is not a
         directory, so it is not confined to servers lacking the extension.
 
         As in ``write``, the returned ``WriteResult`` carries ``size`` and
@@ -1589,9 +1590,10 @@ class SFTPBackend(Backend):
         the destination path empty, its old content under
         ``.~bak.<name>.<uuid8>`` and the source still there, because the restore
         is best-effort and a dropped connection stops it being attempted. That path is
-        entered when ``posix_rename`` fails for a reason ``_is_connection_dead``
-        does not recognise and the destination is not a directory, so it is not
-        confined to servers lacking ``posix-rename@openssh.com``.
+        entered when ``posix_rename`` fails for a reason ``_probe_is_futile``
+        does not recognise — neither a dropped connection nor a host the
+        reconnect could not reach — and the destination is not a directory, so
+        it is not confined to servers lacking ``posix-rename@openssh.com``.
 
         Raises:
             NotFound: If *src* does not exist.
@@ -2283,7 +2285,7 @@ class SFTPBackend(Backend):
         otherwise removes. It is kept ahead of the fallback deliberately: the
         alternative (fallback first, classify on its failure) would feed a
         directory target to the displace + ``rename``. The extra stat is paid
-        whenever ``posix_rename`` fails for a reason ``_is_connection_dead``
+        whenever ``posix_rename`` fails for a reason ``_probe_is_futile``
         does not recognise — commonly a server without the (near-universal)
         ``posix-rename@openssh.com`` extension, but not only that, which is why
         ``_rename_fallback`` carries no ``no cover`` pragma: the suite reaches it
@@ -3038,13 +3040,23 @@ class SFTPBackend(Backend):
         stated instead because it is the thing that reproduces.
 
         **The six that stay narrow are all guards on a best-effort step, and
-        none of them can pay a budget.** Five sit in cleanup: the temp unlink in
-        ``write_atomic`` and ``open_atomic``, ``open_atomic``'s yield-phase
-        close, ``_handle``'s close and ``_restore``. Each is also gated on
-        ``_sftp_client is not None`` or on the exception being a drop, and a
-        failed reconnect's first act is ``_close_clients()``, so by the time a
-        connect-time shape reaches one of them the client is already ``None``
-        and the step is skipped on that ground. The ``is_fatal`` handoff is the
+        none of them can pay a budget — for two different reasons, and an
+        earlier revision of this paragraph gave the first for all five.** Three
+        guard a step that would re-enter ``_sftp``: the temp unlink in
+        ``write_atomic`` and ``open_atomic``, and ``_restore``. Each is also
+        gated on ``_sftp_client is not None``, and a failed reconnect's first act
+        is ``_close_clients()``, so by the time a connect-time shape reaches one
+        of them the client is already ``None`` and the step is skipped on that
+        ground before the predicate matters. Two guard a ``handle.close()``:
+        ``_handle``'s and ``open_atomic``'s yield-phase close. Neither has a
+        client gate, and a connect-time shape does reach ``_handle``'s —
+        ``_copy_and_delete`` opens its destination inside the source handle's
+        context, so a transport that dies after the source open makes that
+        second open the access that reconnects, and its failure passes through
+        the guard on the way out. There the close *is* attempted and
+        suppressed, and what keeps the site budget-free is that the call is on
+        the driver's file object and never evaluates ``_sftp``, so no path from
+        it can enter ``_connect``. The ``is_fatal`` handoff is the
         sixth: it arms a guard on an **open stream**, reached only from
         ``_ErrorMappingStream``'s own failure path, which holds the handle and
         the mapping and never touches ``_sftp`` — so no path from it can enter
