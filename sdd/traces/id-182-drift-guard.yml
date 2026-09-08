@@ -349,8 +349,7 @@ review_rounds: 6
 #      third, transient, is only decidable by a re-run on the same pins. S4 is
 #      the only test anywhere in CI that authenticates against legacy-sftp
 #      (ci.yml's e2e job never builds that container), on a 5 s auth_timeout
-#      right after a deliberately failed connection. Not filed; a second
-#      occurrence should be.
+#      right after a deliberately failed connection. Filed as BK-367.
 #  35. sql's red is a real finding, BUG-281: sqlalchemy 2.1.0rc1 deprecates the
 #      SingletonThreadPool inference for `mode=memory` URLs that
 #      `_SQLAlchemyBaseBackend` relies on, and `filterwarnings = error` turns
@@ -368,8 +367,10 @@ review_rounds: 6
 #      for that reason, at the cost of re-resolving: between 13:24 and 21:39 UTC
 #      aiobotocore 3.9.0->3.9.1 and botocore 1.43.56->1.43.75 appeared in s3
 #      and s3-pyarrow, smoked green in run 35, and were accepted with the rest.
-#      Offered as a backlog item and declined this round; recorded here so the
-#      next firing does not learn it the hard way.
+#      Filed as BUG-282. First offered in a multi-select gate question whose
+#      answer selected only BUG-281; the agent read the unselected options as
+#      declined and wrote that here, which the user corrected: an unselected
+#      option is not a decision. Filed on the same PR once asked directly.
 #  37. Two access findings for a sandboxed session, both routed around rather
 #      than fixed. `gh run view --log-failed` fetches from
 #      results-receiver.actions.githubusercontent.com, denied like the artifact
@@ -385,6 +386,8 @@ discovery_followups:
   - BUG-250  # [graph] smoke loads 1 of 4 declared deps, 0 of the 3 that drifted
   - BK-350   # the five-site refresh procedure has no check_* gate over any of it
   - BUG-281  # _SQLAlchemyBaseBackend leans on a pool selection sqlalchemy 2.1.0rc1 deprecates
+  - BUG-282  # a single-extra dispatch rewrites the rolling issue body to that extra alone
+  - BK-367   # the guard's only legacy-sftp authentication runs on a 5 s budget
 
 surprising_ripples:
   - scripts/check_infra_settings.py
