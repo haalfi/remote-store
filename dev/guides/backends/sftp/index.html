@@ -12749,7 +12749,8 @@ path. It is best-effort, though: a dropped connection stops it being
 attempted at all, and a live server can refuse it — and <em>then</em> the old
 content is beside the target as <code>.~bak.&lt;name&gt;.&lt;uuid8&gt;</code> instead. That
 path is entered when <code>posix_rename</code> fails for a reason
-<code>_is_connection_dead</code> does not recognise and the target is not a
+<code>_probe_is_futile</code> does not recognise — neither a dropped connection
+nor a host the reconnect could not reach — and the target is not a
 directory, so it is not confined to servers lacking the extension.</p>
 <p>As in <code>write</code>, the returned <code>WriteResult</code> carries <code>size</code> and
 <code>source="native"</code> but leaves every rich field (<code>last_modified</code> /
@@ -13252,9 +13253,10 @@ the destination before renaming onto it: a stall in that window leaves
 the destination path empty, its old content under
 <code>.~bak.&lt;name&gt;.&lt;uuid8&gt;</code> and the source still there, because the restore
 is best-effort and a dropped connection stops it being attempted. That path is
-entered when <code>posix_rename</code> fails for a reason <code>_is_connection_dead</code>
-does not recognise and the destination is not a directory, so it is not
-confined to servers lacking <code>posix-rename@openssh.com</code>.</p>
+entered when <code>posix_rename</code> fails for a reason <code>_probe_is_futile</code>
+does not recognise — neither a dropped connection nor a host the
+reconnect could not reach — and the destination is not a directory, so
+it is not confined to servers lacking <code>posix-rename@openssh.com</code>.</p>
 
 
 <p><span class="doc-section-title">Raises:</span></p>

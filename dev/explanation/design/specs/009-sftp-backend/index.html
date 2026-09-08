@@ -11856,7 +11856,9 @@ drop is channel-only (tier 2).</p>
 <h3 id="sftp-031-connect-budget-per-operation">SFTP-031: Connect Budget Per Operation<a class="headerlink" href="#sftp-031-connect-budget-per-operation" title="Permanent link">&para;</a></h3>
 <p><strong>Invariant:</strong> an operation against a host that was never reached enters
 <code>_connect</code> exactly once, whatever the operation and whichever connect-time shape
-<a href="#sftp-023-backendunavailable-mapping">SFTP-023</a> claims.
+<a href="#sftp-023-backendunavailable-mapping">SFTP-023</a> claims. So does an operation
+whose transport dies mid-way and whose reconnect meets a host that is gone —
+the same shapes, arriving at a different set of guards, covered below.
 <strong>Rationale:</strong> the connect-time shapes are classified by
 <a href="#sftp-023-backendunavailable-mapping">SFTP-023</a> and the budget itself is
 <a href="#sftp-009-tenacity-retry-on-connect">SFTP-009</a>'s; this clause is what a caller
@@ -11892,12 +11894,29 @@ to decline.</p>
 operation that reaches the backend</strong> rather than a sample, which is what makes
 the "whatever the operation" above a measured claim rather than a generalisation
 from the five that moved.</p>
-<p><strong>The clause's subject is load-bearing: a host that was never reached.</strong> It says
-nothing about a transport that dies <em>mid-operation</em> and then fails to reconnect,
-which reaches guards this clause does not cover and costs up to three budgets —
-tracked as BUG-278, with the measurement. Every cell here builds a fresh backend
-whose first <code>_sftp</code> evaluation fails, so the enumeration cannot reach that shape
-and must not be read as ruling it out.</p>
+<p><strong>A transport that dies mid-operation is the same invariant's second subject,
+covered separately because the enumeration above cannot reach it.</strong> Every cell
+there builds a fresh backend whose first <code>_sftp</code> evaluation fails. A transport
+that dies <em>after</em> a handle or a probe was produced makes a later access inside
+the same operation the one that reconnects — <code>_sftp</code> re-reads
+<code>transport.is_active()</code> on every access — and when that reconnect meets a host
+that is now gone, the connect-time shape lands on the rename ladder's guards
+rather than on a classification path. Five guards sit there: <code>move</code>'s own,
+<code>_promote</code>, <code>_displace</code>, <code>_is_absent</code> and <code>_move_fallback</code>. Asking only the
+dropped-connection predicate, each declined and the next rung re-entered
+<code>_sftp</code>: measured at <strong>three</strong> <code>_connect</code> entries for <code>write_atomic(overwrite=True)</code>
+with the transport dying at the temp close (12.01 s at shipped defaults) and for
+<code>move</code> on either <code>overwrite</code> value with it dying at the destination probe, and
+<strong>two</strong> for the <code>overwrite=False</code> atomic write and for the two fallback rungs
+reached under a live <code>posix_rename</code> failure. All now cost one. <strong><code>_is_absent</code>'s
+guard changes the answer rather than the cost</strong>: the probe's failure ended the
+ladder either way, but declining it let <code>_displace</code> re-raise its own errno-less
+rename failure — a base <code>RemoteStoreError</code> naming a server that was gone — over
+the <code>BackendUnavailable</code> the reconnect had established. Not breaking, on the
+subclass relation SFTP-023 already leans on.
+<code>TestSFTPTransportDeathCostsOneConnect</code> reaches each of the five by name,
+asserting the guard consulted as well as the count, so a cell that stops a rung
+early cannot pass for the site it was written for.</p>
 <p><strong>And "whichever connect-time shape" means the ones SFTP-023 claims</strong>, which is
 the qualifier the invariant now carries and did not before. A connect refused
 with a <em>permission</em> errno is a host that was never reached, but <code>_is_unreachable</code>
@@ -11946,7 +11965,8 @@ Two failures fall outside it. A stall whose lost reply is the promote
 <code>posix_rename</code> itself leaves the rename <em>performed</em>: the destination holds the
 new content, no temp remains, and the caller is told <code>BackendUnavailable</code>. And
 the <code>_rename_fallback</code> path — entered when <code>posix_rename</code> raises an <code>OSError</code>
-that <code>_is_connection_dead</code> does not recognise and <code>_raise_if_dir</code> has not
+that <code>_probe_is_futile</code> does not recognise (neither a dropped connection nor a
+host the reconnect could not reach, per SFTP-031) and <code>_raise_if_dir</code> has not
 rejected the target, so not only on servers lacking the extension — cannot rename
 onto an occupied path, so it displaces the destination to
 <code>.~bak.&lt;name&gt;.&lt;uuid8&gt;</code> first and renames it back if the promote fails. Renaming
@@ -12882,8 +12902,9 @@ Before BUG-272 the displace was a <code>remove</code> and this residue had no ol
 it at all — on a <em>non-dead</em> failure the same window also ran the temp cleanup,
 and neither copy remained.
 <strong>It is not confined to servers lacking <code>posix-rename@openssh.com</code>.</strong>
-The route in is a <code>posix_rename</code> failure that <code>_is_connection_dead</code> does not
-recognise, on a target the operation's own directory guard has not already
+The route in is a <code>posix_rename</code> failure that <code>_probe_is_futile</code> does not
+recognise — neither a dropped connection nor a host the reconnect could not
+reach (SFTP-031) — on a target the operation's own directory guard has not already
 rejected — <code>_raise_if_dir</code> for the promote path, and for <code>move</code> the eager
 destination <code>stat</code>, which fires before <code>posix_rename</code> is attempted at all.
 The two are <strong>not</strong> the same guard and <code>move</code> never calls <code>_raise_if_dir</code>;
