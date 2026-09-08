@@ -340,10 +340,11 @@ calendar."
 **The ticket is pinned, not merely required.** ID-150 works because
 `formal/README.md` names the ID, so the next reader can find the previous
 decision instead of grepping for a phrase; a step that says only "record a
-backlog entry" keeps the ticket and drops the pin. So the first revisit is
-tracked as **ID-249**, it lives in `BACKLOG.md` as `[ ]` (a scheduled decision is
+backlog entry" keeps the ticket and drops the pin. So the first revisit was
+tracked as **ID-249**, filed in `BACKLOG.md` as `[ ]` (a scheduled decision is
 pending work, not completed work), and each revisit names its successor's ID on
-close — the same self-renewing chain ID-150 runs.
+close — the same self-renewing chain ID-150 runs. (ID-249 fired at the v0.31.0
+release and named ID-258; the live pin is whichever ID `BACKLOG.md` holds.)
 
 **Bound 1 — the cadence proxy, and its mitigation.** A release is a *proxy* for
 corpus growth, not the growth itself, so a lengthening cadence degrades the

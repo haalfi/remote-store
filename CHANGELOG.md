@@ -7,42 +7,241 @@ This project follows [Semantic Versioning](https://semver.org/). Pre-1.0, minor 
 
 ## [Unreleased]
 
-- BUG-278: **Fix** — an SFTP atomic write or move whose transport dies mid-operation pays the connect budget once, not three times, when the reconnect meets a host that is gone: 12.01 s drops to 4.00 s at shipped defaults. A fallback probe reconnecting into a gone host reports `BackendUnavailable`, not a generic error
-- BUG-275: **Fix** — an SFTP failure denied with `EPERM` raises `PermissionDenied`, where only `EACCES` did, so the two permission errnos no longer answer differently. Upgrade path in the [migration guide](https://docs.remotestore.dev/stable/reference/migration/#v0300-to-v0310).
-- BUG-274: **Fix** — an SFTP operation against a host that was never reached pays the connect retry budget once, not two or three times: a `read_bytes` against a refused port drops from 8.00 s to 4.00 s. A classification probe that reconnects into a gone host now reports `BackendUnavailable` instead of a generic error
-- BUG-277: **Fix** — an SFTP destination the rename fallback could not move aside is reported rather than written: `move` no longer truncates it through the copy fallback, and `write_atomic`/`open_atomic` give the refusal instead of `AlreadyExists` from an `overwrite=True` call
-- BUG-272: **Fix** — an SFTP atomic overwrite that fails in the rename fallback no longer destroys the file it was replacing: the fallback moves the destination aside and puts it back, where it removed the destination and then cleaned up the temp as well, leaving no copy of either
-- BUG-270: **Fix** — the same fallback reports a stall on its own first round-trip instead of swallowing it and paying the `io_timeout` bound a second time, and a drop mid-promote leaves the old content in a `.~bak.<name>.<uuid>` file rather than nowhere
-- BUG-271: Scope the three `022-streaming-atomic-writes.md` invariants that shipped tests refuted to the failure they were never written for — one the backend cannot fully act on
-- BUG-264: **Fix** — an Azure connection or timeout failure that the SDK reports without any text now says which side of the exchange failed, instead of raising `BackendUnavailable` with an empty message
-- BK-358: **Fix** — a dropped SFTP connection mid-read raises `BackendUnavailable` from a `read()` stream, where it leaked a raw `paramiko.SSHException` while the same drop on `read_bytes()` mapped. Upgrade path in the [migration guide](https://docs.remotestore.dev/stable/reference/migration/#v0300-to-v0310).
-- ID-256: Content rule 7 — a new or substantially rewritten section in `sdd/` or `.claude/` opens with its core claim in at most three sentences, and an author who cannot write them returns to the source rather than writing around the gap
-- BUG-265: **Fix** — a refused SFTP connect and a DNS failure raise `BackendUnavailable`, the type fifteen docstrings and the health-check guide promise, instead of the base `RemoteStoreError`. Upgrade path in the [migration guide](https://docs.remotestore.dev/stable/reference/migration/#v0300-to-v0310).
-- ID-253: Write down the release CHANGELOG expansion step and give the released section order its first home in `CONTRIBUTING.md`
-- BK-360: Document what a stalled SFTP operation leaves behind: a timeout reports one round-trip's lost reply, so any amount of the operation may have happened — from nothing to all of it — and a reported failure is neither a rollback nor proof the write did not land
-- BUG-268: **Docs** — the SFTP stall section of the troubleshooting guide shows the message the raise now carries and the log record that accompanies it, instead of the pre-fix blank traceback
-- BK-359: **Fix** — a stalled or dropped SFTP operation now says which failure it was, instead of raising `BackendUnavailable` with an empty message and no log record
-- BUG-262: Gate that every unreleased `**Breaking**` entry links its upgrade path in the migration guide
-- ID-252: Gate the CHANGELOG `[Unreleased]` section: one entry per item, each a single line within a prose budget, and one for every completed user-facing item
-- BUG-261: Publish the missing upgrade paths in the migration guide, and move the obligation to write one onto the PR making the breaking change
-- BK-356: **Breaking** — SFTP reads and writes are bounded by default: `io_timeout` defaults to 120 s rather than being opt-in, so an unconfigured store no longer hangs on a silent peer. Upgrade path in the [migration guide](https://docs.remotestore.dev/stable/reference/migration/#v0300-to-v0310).
-- BK-357: **Breaking** — seeking to the end of an `SFTPBackend` stream now raises when the size request fails, instead of silently answering `0` on a file of any size. Upgrade path in the [migration guide](https://docs.remotestore.dev/stable/reference/migration/#v0300-to-v0310).
-- BK-355: **Fix** — releasing a stream whose read failed on a stalled SFTP connection no longer pays the bound a second time
-- BK-354: **Added** — `SFTPBackend(io_timeout=...)` bounds a read or write that stalls on an already-open channel
-- BUG-259: **Fix** — a write to the store root is refused up front on every backend that declares `WRITE`, and the `move`/`copy` destination on the same terms; `GraphBackend(base_path=".")` scopes to the drive root where it scoped to a folder named `.`. Upgrade path in the [migration guide](https://docs.remotestore.dev/stable/reference/migration/#v0300-to-v0310).
-- BUG-247: **Fix** — `LocalBackend` reads a deleted root directory as an absent store, instead of answering every operation with `InvalidPath("Path escapes root directory")`.
-- ID-245: Derive the cross-artifact gate inventory from each gate's own docstring instead of maintaining it by hand
-- BUG-246: An absent container reads as an absent path on `S3Boto3Backend`, `AzureBackend`, `AsyncAzureBackend` and `SQLBlobBackend`
-- BUG-249: `S3Boto3Backend`'s three listings no longer leak a raw `botocore.ClientError`
-- BUG-258: Conform `RemoteStoreComputeLogManager.get_log_keys_for_log_key_prefix` to Dagster's narrowed return type
-- BUG-248: **Breaking** — `GraphBackend` (and its sync adapter) reads an absent drive as an absent path on every operation the contract decides, where it raised `BackendUnavailable`. Four callers it does not decide keep the old escalation, on a drive-identity 404 only. Upgrade path in the [migration guide](https://docs.remotestore.dev/stable/reference/migration/#v0300-to-v0310).
-- BUG-243: **Change** — a tolerant delete treats an absent container (bucket, Azure container, SQL table) as an absent path: both deletes return cleanly with `missing_ok=True`, and raise `NotFound` without it, where `delete` and `delete_folder` disagreed against the same missing container.
-- BUG-242: **Fix** — `S3Backend` and `S3PyArrowBackend` reported a 403 as `NotFound` on `delete`, `move`/`copy` source, `delete_folder` and `get_folder_info`, and `delete(missing_ok=True)` returned silently; all now raise `PermissionDenied`
-- BK-324: **Breaking** — flat-namespace backends raise `InvalidPath` for a wrong-type path instead of answering as if it were a file; `""`/`"."` is the root folder on every backend, and `max_depth` needs `recursive=True` at the Backend ABC. Upgrade path in the [migration guide](https://docs.remotestore.dev/stable/reference/migration/#v0300-to-v0310).
-- BK-331: Document each backend's depth-listing strategy in its own `list_files()` docstring, and drop the stale per-backend strategy tables from specs 037, 027 and 020
-- BK-320: Refresh the custom-backend guide's conformance-registration section to the registry-driven fixture system and add a CI drift gate keeping the guide in sync with the Backend ABC
-- BUG-235: Fix custom-backend guide snippets that broke at runtime (`list_files` missing `max_depth`, nonexistent `RegistryConfig.from_yaml` and `observe(hooks=)` APIs)
-- BK-317: Fix stale Context7 repo entry (folders cap, OneDrive tagline) and claim the docs-root entry
+## [0.31.0] - 2026-09-08
+
+### Added
+
+- **`SFTPBackend(io_timeout=...)` bounds a read or write that stalls on an open
+  channel** (BK-354): a peer that completed the SSH handshake and then went
+  quiet used to block forever, holding its pool slot and emitting nothing,
+  because paramiko's connect-phase timeouts never reach the channel. The bound
+  is on silence *between* bytes, so a slow transfer is unaffected however long
+  it takes; it is armed inside `_connect`, ahead of the SFTP version exchange,
+  so it survives a transparent reconnect and covers a peer that stalls before
+  the first request. A stall raises `BackendUnavailable` and drops the cached
+  client, so the next operation reconnects. Reported as
+  [issue #970](https://github.com/haalfi/remote-store/issues/970).
+
+### Changed
+
+- **SFTP reads and writes are bounded by default** (BK-356, **Breaking**):
+  `io_timeout` now defaults to `120.0` seconds rather than opting in, so an
+  unconfigured store raises `BackendUnavailable` after two minutes of silence
+  instead of hanging. Pass `io_timeout=None` to restore the unbounded channel;
+  `0` is not the opt-out and raises `ValueError`, because paramiko reads it as
+  non-blocking and every SFTP operation waits on a reply. Raise the value for
+  a server that legitimately pauses on one operation, such as an antivirus
+  appliance scanning a large file on `open()`. See the
+  [migration guide](https://docs.remotestore.dev/stable/reference/migration/#v0300-to-v0310).
+- **Seeking to the end of an `SFTPBackend` stream raises when the size request
+  fails** (BK-357, **Breaking**): `seek(0, os.SEEK_END)` resolved the position
+  through paramiko's `_get_size()`, which discards its own failure and answers
+  `0`, so a stalled connection returned `0` for a file of any size and raised
+  nothing. The wrapper now issues the size request itself: a stalled connection
+  raises `BackendUnavailable` and drops the client; a server refusing to stat
+  the open handle raises the base `RemoteStoreError`. Catch `RemoteStoreError`
+  to cover both. Analytical readers reached through `read_seekable()` (PyArrow
+  sizes a file this way before reading its footer) are affected too. See the
+  [migration guide](https://docs.remotestore.dev/stable/reference/migration/#v0300-to-v0310).
+- **Flat-namespace backends raise `InvalidPath` for a wrong-typed path, `""`
+  and `"."` name the store root on every backend that lists, and `max_depth`
+  needs `recursive=True` at the `Backend` ABC** (BK-324, **Breaking**): the S3
+  family, Azure on a flat account and the SQL backends answered a file
+  operation aimed at a folder with `NotFound`, a silent no-op or a reported
+  success, where the hierarchical backends already raised `InvalidPath`; all
+  now agree, and `missing_ok=True` does not suppress it. The root is a folder
+  that always exists on any backend declaring `Capability.LIST`, under either
+  spelling. `Store.list_files()` normalises `max_depth` into `recursive` and is
+  unaffected; only direct `Backend` callers change. See the
+  [migration guide](https://docs.remotestore.dev/stable/reference/migration/#v0300-to-v0310).
+- **`GraphBackend` reads an absent drive as an absent path** (BUG-248,
+  **Breaking**): a `404 resourceNotFound`, which any item-by-path URL can
+  return, used to raise `BackendUnavailable` on every operation. On the
+  operations the backend contract decides it now answers as for an absent
+  container: `NotFound`, `False` or an empty listing, with the tolerant deletes
+  returning cleanly. `Store.ping()`, `write()`, drive-id resolution and the
+  copy/move monitor keep the escalation, so a dead drive is still detectable;
+  the adjudication is [ADR-0038](https://docs.remotestore.dev/stable/explanation/design/adrs/0038-absent-container-outranks-drive-identity/).
+  See the
+  [migration guide](https://docs.remotestore.dev/stable/reference/migration/#v0300-to-v0310).
+- **A write to the store root is refused before any request is issued, on
+  every backend that declares `WRITE`, and so is a root `move`/`copy`
+  destination** (BUG-259): an SFTP store whose `base_path` did not exist wrote
+  the bytes *at* the container path and left it a regular file, and
+  `S3Boto3Backend.move(src, ".")` returned cleanly having deleted the source.
+  Every spelling that addresses the root is refused (`""`, `"."`, `"./"`,
+  `".//"`, `"./."`, `"/"`), decided from the key. `GraphBackend(base_path=".")`
+  now scopes to the drive root where it scoped to a folder literally named `.`.
+  See the
+  [migration guide](https://docs.remotestore.dev/stable/reference/migration/#v0300-to-v0310).
+- **An absent root or container reads as an absent path, not as an error**
+  (BUG-243, BUG-246, BUG-247): the contract now says a missing bucket, Azure
+  container, SQL table or `LocalBackend` root answers like an empty store. The
+  tolerant deletes return cleanly and the strict ones raise `NotFound`, where
+  `delete` and `delete_folder` disagreed against the same missing container;
+  the probes answer `False` and the listings empty, where four backends raised;
+  a deleted `LocalBackend` root reads as absence instead of
+  `InvalidPath("Path escapes root directory")`. `Store.ping()` is the operation
+  that reports the store missing, and `LocalBackend.check_health()` now also
+  catches a root path occupied by something other than a directory. On an
+  in-memory `SQLBlobBackend` every operation after `close()` reports an empty
+  store, tolerant deletes included. Two gaps are documented rather than
+  promised past: `exists("")` still answers `False` for a missing bucket on
+  `S3Backend` and `S3PyArrowBackend`, and `ping()` still reports healthy on the
+  SQL backends and `S3PyArrowBackend`. See the
+  [migration guide](https://docs.remotestore.dev/stable/reference/migration/#v0300-to-v0310).
+
+### Fixed
+
+- **A denied S3 operation raises `PermissionDenied`, not `NotFound`, and a
+  tolerant delete no longer swallows it** (BUG-242): on `S3Backend` and
+  `S3PyArrowBackend` a 403 was read as absence on `delete`, the `move`/`copy`
+  source, `delete_folder` and `get_folder_info`, and `delete(missing_ok=True)`
+  returned silently, reporting success for work that never happened. See the
+  [migration guide](https://docs.remotestore.dev/stable/reference/migration/#v0300-to-v0310).
+- **`S3Boto3Backend` listings no longer leak a raw `botocore.ClientError`**
+  (BUG-249): `list_files()`, `list_folders()` and `iter_children()` called the
+  paginator without the error mapping every other method uses, so an
+  `except RemoteStoreError` clause caught every backend but this one; `glob()`
+  inherited the fix. A missing bucket now reads as an empty listing. See the
+  [migration guide](https://docs.remotestore.dev/stable/reference/migration/#v0300-to-v0310).
+- **A refused SFTP connect and a DNS failure raise `BackendUnavailable`**
+  (BUG-265): fifteen docstrings and the health-check guide promised that type
+  and both shapes raised the base `RemoteStoreError`, so a caller following the
+  guide's `except BackendUnavailable` caught neither. The DNS arm names the
+  host, since paramiko's text never does; a refused connect keeps paramiko's
+  message, which names the address it tried. Reaching the mapping now leaves
+  one `WARNING` carrying `op="error_mapping"`. See the
+  [migration guide](https://docs.remotestore.dev/stable/reference/migration/#v0300-to-v0310).
+- **An SFTP denial reported with `EPERM` raises `PermissionDenied`, as
+  `EACCES` always did** (BUG-275): the errno dispatch had an arm for one
+  permission errno and not the other, so which type a caller got depended on
+  how the server spelled the refusal. Both now answer alike from every SFTP
+  operation. The cost is stated rather than hidden: a connect rejected by the
+  local machine with either errno is also reported as `PermissionDenied`, and
+  `check_health()` cannot tell the two apart. See the
+  [migration guide](https://docs.remotestore.dev/stable/reference/migration/#v0300-to-v0310).
+- **A dropped SFTP connection mid-read raises `BackendUnavailable` from a
+  `read()` stream** (BK-358): the same drop on `read_bytes()` already mapped,
+  while a stream leaked paramiko's own `SSHException("Server connection
+  dropped: ")` and left the dead client cached, so the next operation
+  re-entered it. The stream wrapper now catches the two paramiko shapes the
+  SFTP backend supplies, maps them, and drops the client; the S3, Azure and
+  HTTP backends that share the wrapper are unchanged. See the
+  [migration guide](https://docs.remotestore.dev/stable/reference/migration/#v0300-to-v0310).
+- **A stalled or dropped SFTP operation says which failure it was** (BK-359):
+  paramiko raises `socket.timeout()` with no arguments, so the
+  `BackendUnavailable` for a stall rendered as `" | path='…' | backend='sftp'"`
+  with no log record. A stall now reads `SFTP channel stalled: no data within
+  io_timeout=120.0s`, three other message-less shapes name their class, a
+  signal that explained itself is never overwritten, and the backend logs one
+  `WARNING` at the point it concludes the connection is unusable.
+- **The SFTP atomic-write fallback no longer destroys the file it is
+  replacing** (BUG-272, BUG-270, BUG-277): on a server without
+  `posix-rename@openssh.com`, an `overwrite=True` promote that failed for a
+  reason other than a dropped connection removed the destination and then
+  cleaned up the temp, leaving no copy of either. The fallback now moves the
+  destination aside as `.~bak.<name>.<uuid>`, restores it if the promote
+  fails, and removes the backup once the promote succeeds. A destination the
+  server refuses to move aside is reported as the refusal, where
+  `write_atomic`/`open_atomic` answered `AlreadyExists` from an
+  `overwrite=True` call and `move` truncated the destination through its copy
+  fallback; a stall on the fallback's first round trip is reported without
+  paying the bound a second time; and a drop mid-promote leaves the old
+  content under the `.~bak.` name rather than nowhere. See the
+  [migration guide](https://docs.remotestore.dev/stable/reference/migration/#v0300-to-v0310).
+- **Releasing a failed SFTP stream costs one bound, not two** (BK-355):
+  closing a stream whose read had already failed on a stalled connection
+  re-entered the same dead channel for a synchronous `CMD_CLOSE`, so leaving
+  the `with` block blocked for a further `io_timeout` under a suppression that
+  hid why. The wrapper now skips the close when the backend's own predicate
+  says the connection is dead: 4.00 s to 2.00 s at a 2 s bound.
+- **SFTP operations against a host that cannot be reached, or whose transport
+  dies mid-operation, pay the connect retry budget once** (BUG-274, BUG-278):
+  the mid-operation re-entry guards asked only whether an established
+  connection had dropped, so a refused port or DNS failure fell through to a
+  classification path that reconnected and paid the whole `RetryPolicy` again.
+  At shipped defaults `read_bytes` against a refused port drops from 8.00 s to
+  4.00 s and a nested key from 12.00 s, and a transport that dies between an
+  atomic write's temp close and its promote from 12.01 s; a probe that
+  reconnects into a gone host now reports `BackendUnavailable` rather than a
+  generic `RemoteStoreError`.
+- **An Azure connection or timeout failure names which side of the exchange
+  failed when the SDK gives no text** (BUG-264): `AzureError` stringifies an
+  argument-less driver exception to `""`, so the classifier could raise
+  `BackendUnavailable` with an empty message; it now synthesises one naming
+  the side and the SDK class, only when the driver supplied none. No shipped
+  transport produces the blank shape through the backend's own options; a
+  caller-supplied transport can.
+- **`RemoteStoreComputeLogManager.get_log_keys_for_log_key_prefix` conforms to
+  Dagster's narrowed return type** (BUG-258): a Dagster release narrowed the
+  supertype's return from `Sequence[Sequence[str]]` to `Sequence[list[str]]`
+  and `mypy` rejected the override. The annotation now matches both versions;
+  a downstream subclass still declaring the wider type fails `mypy` against
+  remote-store where it passed.
+
+### Documentation
+
+- **Every v0.31.0 upgrade path is in the migration guide, and the PR making a
+  breaking change now owes its section** (BUG-261): two `**Breaking**` entries
+  were on master with no upgrade path, and the obligation was stated only in
+  the release checklist their authors never read. The guide gained the
+  missing sections plus one for each unmarked change a caller must act on, and
+  the ripple-check has a **Breaking change** row that names the obligation
+  where an author meets it.
+- **What a stalled SFTP operation leaves behind is documented** (BK-360): a
+  timeout reports one round trip's lost reply, so any prefix of the operation's
+  effects may have happened, up to all of them; a `move` or atomic write can
+  succeed under a failure report, and a blind retry of a `move` that landed
+  meets `NotFound`. Stated in the SFTP guide, the `write`/`copy`/`move`/
+  `write_atomic` docstrings and the troubleshooting page.
+- **The troubleshooting page shows the stall message and log record a reader
+  will actually see** (BUG-268), replacing the pre-fix blank traceback and the
+  claim that the log was empty.
+- **The custom-backend guide runs again and cannot drift** (BK-320, BUG-235):
+  three snippets broke at runtime (`list_files` without `max_depth`, a
+  nonexistent `RegistryConfig.from_yaml`, an `observe(hooks=)` that does not
+  exist) and the conformance-registration section described the pre-registry
+  mechanism. Both are fixed, and `check_custom_backend_guide.py` in `lint` and
+  `docs-gate` keeps the guide's tables and snippets in step with the `Backend`
+  ABC and the fixture registry.
+- **Each backend's depth-listing strategy lives in its own `list_files()`
+  docstring** (BK-331): the per-backend strategy tables in specs 037, 027 and
+  020 were one row wrong and five implementations short, and nothing could
+  derive them; they are gone and the API reference carries the strategy
+  beside the code.
+- **Spec 022's three `open_atomic` invariants are scoped to the failure they
+  were written for** (BUG-271): shipped tests refuted them as stated for a
+  dropped connection, and on the SFTP fallback also for a live server refusing
+  a step of the undo, so the prose now states that scope once.
+- **Content rule 7: a section leads with its core claim in at most three
+  sentences** (ID-256): a new or substantially rewritten section under `sdd/`
+  or `.claude/` opens with its core claim, and an author who cannot write those
+  sentences returns to the source rather than writing around the gap.
+  Published with the other content rules.
+- **The Context7 repo entry parses again** (BK-317): its `folders` list
+  exceeded Context7's cap of five, so every re-parse failed and the dashboard
+  kept the four-backend tagline; the list is trimmed, the cap is now checked
+  in `check_links`, and the docs-root entry is claimable.
+
+### Internal
+
+- **The CHANGELOG `[Unreleased]` section is linted** (ID-252): one entry per
+  item, each a single line within a prose budget, and an entry for every
+  completed item with a `user.` audience, after a duplicated entry shipped and
+  contradicted itself.
+- **A breaking-change entry must link its upgrade path** (BUG-262):
+  `check_breaking_migration_link.py`, in `lint` and `docs-gate`, requires every
+  `[Unreleased]` entry carrying the breaking marker to link a `## ` heading the
+  migration guide really has.
+- **The release CHANGELOG expansion step is written down, and the section
+  order has one home** (ID-253): Phase 1 names its three sources and the
+  rewrite it performs, and `CONTRIBUTING.md` § CHANGELOG section order settles
+  Added / Changed / Fixed / Removed / Documentation / Internal.
+- **The cross-artifact gate inventory is generated from each gate's own
+  docstring** (ID-245): `sdd/GATE-INVENTORY.md` is rendered by
+  `gen_gate_inventory.py` and gated by `--check`, so a hand-maintained list of
+  what checks what can no longer go stale.
 
 ## [0.30.0] - 2026-07-19
 
