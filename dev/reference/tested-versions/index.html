@@ -10951,7 +10951,7 @@
 <p>Each <code>[&lt;extra&gt;]</code> declares its version range in <code>pyproject.toml</code> (a floor always, plus a ceiling only where a known-incompatible major looms — see the comment on <code>[project.optional-dependencies]</code> there for the authoritative per-extra ranges). The drift guard (<code>.github/workflows/drift-guard.yml</code>) records the last known-good resolution per extra in <code>infra/drift-locks/</code> and re-resolves weekly against the latest available versions (including pre-releases) to surface silent transitive upgrades before they reach users.</p>
 <p>The table below is the projection of those lock files onto the top-level packages each extra declares. "Tested up to" is the exact version pinned in the lock at capture time — that is what CI was last green against.</p>
 <h2 id="arrow"><code>[arrow]</code><a class="headerlink" href="#arrow" title="Permanent link">&para;</a></h2>
-<p><em>Captured 2026-07-14 on Python 3.13.</em></p>
+<p><em>Captured 2026-09-07 on Python 3.13.</em></p>
 <table>
 <thead>
 <tr>
@@ -10962,12 +10962,12 @@
 <tbody>
 <tr>
 <td><code>pyarrow</code></td>
-<td><code>25.0.0</code></td>
+<td><code>25.0.1</code></td>
 </tr>
 </tbody>
 </table>
 <h2 id="azure"><code>[azure]</code><a class="headerlink" href="#azure" title="Permanent link">&para;</a></h2>
-<p><em>Captured 2026-08-10 on Python 3.13.</em></p>
+<p><em>Captured 2026-09-07 on Python 3.13.</em></p>
 <table>
 <thead>
 <tr>
@@ -10982,12 +10982,12 @@
 </tr>
 <tr>
 <td><code>azure-storage-file-datalake</code></td>
-<td><code>12.25.0</code></td>
+<td><code>12.26.0b1</code></td>
 </tr>
 </tbody>
 </table>
 <h2 id="dagster"><code>[dagster]</code><a class="headerlink" href="#dagster" title="Permanent link">&para;</a></h2>
-<p><em>Captured 2026-08-10 on Python 3.13.</em></p>
+<p><em>Captured 2026-09-07 on Python 3.13.</em></p>
 <table>
 <thead>
 <tr>
@@ -10998,12 +10998,12 @@
 <tbody>
 <tr>
 <td><code>dagster</code></td>
-<td><code>1.13.17</code></td>
+<td><code>1.13.21</code></td>
 </tr>
 </tbody>
 </table>
 <h2 id="graph"><code>[graph]</code><a class="headerlink" href="#graph" title="Permanent link">&para;</a></h2>
-<p><em>Captured 2026-08-10 on Python 3.13.</em></p>
+<p><em>Captured 2026-09-07 on Python 3.13.</em></p>
 <table>
 <thead>
 <tr>
@@ -11018,7 +11018,7 @@
 </tr>
 <tr>
 <td><code>msal</code></td>
-<td><code>1.38.0rc2</code></td>
+<td><code>1.38.0</code></td>
 </tr>
 <tr>
 <td><code>msal-extensions</code></td>
@@ -11026,12 +11026,12 @@
 </tr>
 <tr>
 <td><code>platformdirs</code></td>
-<td><code>4.11.1</code></td>
+<td><code>4.11.7</code></td>
 </tr>
 </tbody>
 </table>
 <h2 id="httpx"><code>[httpx]</code><a class="headerlink" href="#httpx" title="Permanent link">&para;</a></h2>
-<p><em>Captured 2026-07-28 on Python 3.13.</em></p>
+<p><em>Captured 2026-09-07 on Python 3.13.</em></p>
 <table>
 <thead>
 <tr>
@@ -11063,7 +11063,7 @@
 </tbody>
 </table>
 <h2 id="pydantic"><code>[pydantic]</code><a class="headerlink" href="#pydantic" title="Permanent link">&para;</a></h2>
-<p><em>Captured 2026-08-10 on Python 3.13.</em></p>
+<p><em>Captured 2026-09-07 on Python 3.13.</em></p>
 <table>
 <thead>
 <tr>
@@ -11079,7 +11079,7 @@
 </tbody>
 </table>
 <h2 id="requests"><code>[requests]</code><a class="headerlink" href="#requests" title="Permanent link">&para;</a></h2>
-<p><em>Captured 2026-07-28 on Python 3.13.</em></p>
+<p><em>Captured 2026-09-07 on Python 3.13.</em></p>
 <table>
 <thead>
 <tr>
@@ -11099,7 +11099,7 @@
 </tbody>
 </table>
 <h2 id="s3"><code>[s3]</code><a class="headerlink" href="#s3" title="Permanent link">&para;</a></h2>
-<p><em>Captured 2026-08-10 on Python 3.13.</em></p>
+<p><em>Captured 2026-09-07 on Python 3.13.</em></p>
 <table>
 <thead>
 <tr>
@@ -11115,7 +11115,7 @@
 </tbody>
 </table>
 <h2 id="s3-pyarrow"><code>[s3-pyarrow]</code><a class="headerlink" href="#s3-pyarrow" title="Permanent link">&para;</a></h2>
-<p><em>Captured 2026-08-10 on Python 3.13.</em></p>
+<p><em>Captured 2026-09-07 on Python 3.13.</em></p>
 <table>
 <thead>
 <tr>
@@ -11126,7 +11126,7 @@
 <tbody>
 <tr>
 <td><code>pyarrow</code></td>
-<td><code>25.0.0</code></td>
+<td><code>25.0.1</code></td>
 </tr>
 <tr>
 <td><code>s3fs</code></td>
@@ -11135,7 +11135,7 @@
 </tbody>
 </table>
 <h2 id="sftp"><code>[sftp]</code><a class="headerlink" href="#sftp" title="Permanent link">&para;</a></h2>
-<p><em>Captured 2026-08-10 on Python 3.13.</em></p>
+<p><em>Captured 2026-09-07 on Python 3.13.</em></p>
 <table>
 <thead>
 <tr>
@@ -11171,7 +11171,7 @@
 </tbody>
 </table>
 <h2 id="sql-query"><code>[sql-query]</code><a class="headerlink" href="#sql-query" title="Permanent link">&para;</a></h2>
-<p><em>Captured 2026-07-14 on Python 3.13.</em></p>
+<p><em>Captured 2026-09-07 on Python 3.13.</em></p>
 <table>
 <thead>
 <tr>
@@ -11182,11 +11182,11 @@
 <tbody>
 <tr>
 <td><code>pyarrow</code></td>
-<td><code>25.0.0</code></td>
+<td><code>25.0.1</code></td>
 </tr>
 <tr>
 <td><code>sqlalchemy</code></td>
-<td><code>2.1.0b3</code></td>
+<td><code>2.1.0rc1</code></td>
 </tr>
 </tbody>
 </table>
