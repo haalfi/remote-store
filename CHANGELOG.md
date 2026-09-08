@@ -7,6 +7,7 @@ This project follows [Semantic Versioning](https://semver.org/). Pre-1.0, minor 
 
 ## [Unreleased]
 
+- BUG-278: **Fix** — an SFTP atomic write or move whose transport dies mid-operation pays the connect budget once, not three times, when the reconnect meets a host that is gone: 12.01 s drops to 4.00 s at shipped defaults. A fallback probe reconnecting into a gone host reports `BackendUnavailable`, not a generic error
 - BUG-275: **Fix** — an SFTP failure denied with `EPERM` raises `PermissionDenied`, where only `EACCES` did, so the two permission errnos no longer answer differently. Upgrade path in the [migration guide](https://docs.remotestore.dev/stable/reference/migration/#v0300-to-v0310).
 - BUG-274: **Fix** — an SFTP operation against a host that was never reached pays the connect retry budget once, not two or three times: a `read_bytes` against a refused port drops from 8.00 s to 4.00 s. A classification probe that reconnects into a gone host now reports `BackendUnavailable` instead of a generic error
 - BUG-277: **Fix** — an SFTP destination the rename fallback could not move aside is reported rather than written: `move` no longer truncates it through the copy fallback, and `write_atomic`/`open_atomic` give the refusal instead of `AlreadyExists` from an `overwrite=True` call

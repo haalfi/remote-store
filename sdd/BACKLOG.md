@@ -560,58 +560,6 @@ compliant the day before.
   while accounting for why `unwrap` is excluded from its operation enumeration.
   **Found by BUG-274's round-5 unprimed reviewer.**
 
-- [ ] **BUG-278 — A transport that dies mid-operation pays the connect budget up to three times over when the reconnect meets a host that is gone**
-  spec: SFTP-023, SFTP-018 · effort: S · audience: user.api
-  BUG-274's sibling, and **not** covered by it: that item's guarantee is scoped
-  to an operation whose *first* `_sftp` evaluation fails — a host that was never
-  reached — and its enumeration builds a fresh backend per cell, so nothing in
-  the suite puts a live-then-dead transport in front of a guard.
-  **The mechanism.** `_sftp` re-reads `transport.is_active()` on every access,
-  so being downstream of a handle says nothing about the connection the *next*
-  access will use. A transport that dies after a handle is produced makes the
-  next `_sftp` access reconnect, and against a host that is now gone that raises
-  a connect-time shape into a guard which asks `_is_connection_dead` alone and
-  declines — the exact defect BUG-274 fixed at six other sites.
-  **Measured** on BUG-274's head, at shipped defaults, with a just-released
-  ephemeral port behind a transport flipped inactive mid-operation. The first
-  entry is the transport death itself; after that a decline costs a budget only
-  when something downstream re-evaluates `_sftp`, which is why the frame counts
-  below do not simply track the entry counts — `_is_absent`'s decline in the
-  first two rows reaches nothing further, and the third row's third entry comes
-  from `_copy_and_delete`'s handle open, which is not a guard and so is not in
-  the frames column:
-
-  | driver | entries | elapsed | declining frames |
-  |---|---|---|---|
-  | `write_atomic(overwrite=True)`, transport dies at the temp close | 3 | 12.01 s | `_promote` → `_displace` → `_is_absent` |
-  | `move(overwrite=True)`, transport dies at the destination probe | 3 | 12.01 s | `move` → `_displace` → `_is_absent` |
-  | `move(overwrite=False)`, same | 3 | 12.01 s | `move` → `_move_fallback` |
-
-  Before BUG-274 the `write_atomic` case cost 4 entries / 16.01 s, so that item
-  improved this case without closing it. (BUG-274's own published figure for a
-  nested `read_bytes` is 12.00 s, re-measured on one machine; these are near
-  neighbours rather than the same number.)
-  **Five sites, not four, and `move`'s is the one an implementer will miss.**
-  `move`'s own guard classifies a `posix_rename` failure inside `move`'s own
-  `try`, with `_move_fallback` re-evaluating `_sftp` behind it, and its comment
-  already says "Same reasoning as `_promote`". **Simulating the four-site fix
-  without it leaves `move` at 2 entries / 8.00 s on both `overwrite` values** —
-  so a fix that measures `write_atomic`, sees one budget and stops would ship
-  the defect. The five: `move`'s guard, `_promote`, `_displace`, `_is_absent`,
-  `_move_fallback`. Every one is exercised by the two fixtures above except that
-  `_move_fallback` and the `_displace`/`_is_absent` pair appear on different
-  `overwrite` paths, so both are needed.
-  **Disposition:** the one-line shape is `_probe_is_futile` at those five sites,
-  as BUG-274 did elsewhere. What makes this its own item rather than more of
-  that one is the **fixture**: proving it needs a transport that reports active
-  and then does not, which this suite has nowhere, and the five sites sit in the
-  atomic-write rename ladder that BUG-270 / BUG-272 / BUG-277 have just reworked
-  — so the failing test is the work, and it is a different test from BUG-274's.
-  Per the bug-fix protocol, write it and watch it fail first, and assert the
-  budget on **both** `overwrite` paths, since they decline at different sites.
-  **Found by BUG-274's round-2 measuring reviewer**, which refuted a
-  reachability argument BUG-274's own round-1 fix pass had written.
-
 - [ ] **BUG-266 — No artifact maps an observable SFTP failure onto the arm that handles it, and four prose attempts were each refuted**
   spec: SFTP-023, SFTP-030 · effort: M · audience: user.site, library.maintainer
   `_map_exception` dispatches on exception *type*, and SFTP-023 states the arms

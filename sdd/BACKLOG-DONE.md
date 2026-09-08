@@ -220,6 +220,69 @@ if evidence changes; these are retired.
 
 ## Unreleased
 
+- [x] **BUG-278 — A transport that dies mid-operation pays the connect budget up to three times over when the reconnect meets a host that is gone**
+  spec: SFTP-031, SFTP-018 · effort: S · audience: user.api
+  Filed under SFTP-023 and SFTP-018; closed under SFTP-031, which BUG-274 minted
+  for what a caller *pays* after this item was filed, and which is where the
+  invariant's second subject now lives. BUG-274's sibling: that item's guarantee
+  is scoped to an operation whose *first* `_sftp` evaluation fails, and its
+  enumeration builds a fresh backend per cell, so nothing in the suite put a
+  live-then-dead transport in front of a guard until this one.
+  **The mechanism.** `_sftp` re-reads `transport.is_active()` on every access,
+  so being downstream of a handle says nothing about the connection the *next*
+  access will use. A transport that dies after a handle or a probe is produced
+  makes the next `_sftp` access reconnect, and against a host that is now gone
+  that raises a connect-time shape into a guard which asked
+  `_is_connection_dead` alone and declined — the defect BUG-274 fixed at six
+  other sites, on the five of the rename ladder.
+  **The fix is the item's own one-line shape at each of the five**: `move`'s
+  guard, `_promote`, `_displace`, `_is_absent` and `_move_fallback` now ask
+  `_probe_is_futile`. The six sites that still ask the narrower predicate are
+  all guards on a best-effort cleanup step or the open-stream `is_fatal`
+  handoff, and none can pay a budget: a failed reconnect's first act is
+  `_close_clients()`, so each is skipped on its `_sftp_client is None` gate
+  before the predicate is asked. Derived by the reference walk
+  `_probe_is_futile`'s docstring states: 17 sites, 11 wide, 6 narrow.
+  **Measured at every site rather than at the three rows the item filed**, with
+  `_connect` entries counted by the same wrapper the test uses and the retry
+  policy disabled, on the pre-fix and post-fix module:
+
+  | driver | transport dies at | guard reached | before | after |
+  |---|---|---|---|---|
+  | `write_atomic(overwrite=True)` | temp close | `_promote` | 3 | 1 |
+  | `write_atomic(overwrite=False)` | temp close | `_promote` | 2 | 1 |
+  | `move(overwrite=True)` | destination probe | `move` | 3 | 1 |
+  | `move(overwrite=False)` | destination probe | `move` | 3 | 1 |
+  | `write_atomic(overwrite=True)`, live `posix_rename` failure | classification stat | `_displace` | 2 | 1 |
+  | `write_atomic(overwrite=True)`, live `posix_rename` failure | displace's rename | `_is_absent` | 1 | 1 |
+  | `move(overwrite=False)`, live `posix_rename` failure | `posix_rename` | `_move_fallback` | 2 | 1 |
+
+  The three rows the item measured at shipped defaults are the first, third
+  and fourth; re-measured here on one machine with the process's first connect
+  discarded, no `retry=` passed, each costs **12.01 s before and 4.00 s after**,
+  which is the item's own figure and one budget. The four others were not in the item and are the
+  cells that reach `_displace`, `_is_absent` and `_move_fallback` by name, which
+  the item's own three rows cannot — on those, `_promote` or `move` fires first
+  once widened, and the three sites behind them go latent exactly as BUG-274's
+  two did. **The `_is_absent` row is a type change, not a cost change**: the
+  probe's failure ended the ladder on both revisions, but declining it let
+  `_displace` re-raise its own errno-less rename failure, so the caller got a
+  base `RemoteStoreError` (`[Errno None] Failure`) naming a server that was
+  gone; it now gets the `BackendUnavailable` the reconnect established. Not
+  breaking, on the subclass relation. Recorded in SFTP-031 and the CHANGELOG
+  rather than filed, as BUG-274 did for the same shape at `_raise_if_dir`.
+  **The fixture the item said was missing is a fake client whose transport flag
+  flips at a chosen round-trip** — the shape `TestSFTPProbeReconnectsIntoGoneHost`
+  already had, extended with two staging knobs (a live `posix_rename` failure,
+  and which round-trip kills the transport) so each rung of the ladder can be
+  the one that reconnects. Every cell asserts the guard consulted as well as the
+  count, per the sibling's reasoning: without it three of the five sites would
+  be covered by cells that never reach them.
+  **Found by BUG-274's round-2 measuring reviewer**, which refuted a
+  reachability argument BUG-274's own round-1 fix pass had written; round 3
+  found the fifth site (`move`'s own guard) and the two fallback-path cells this
+  entry adds are the ones that make that finding checkable.
+
 - [x] **BUG-275 — A permission-denied SFTP failure raises `PermissionDenied` for one of the two errnos its callers name**
   spec: SFTP-021 · effort: S · audience: user.api, user.api_docs
   Pre-existing, not introduced by BUG-265 — found by its closing whole-file

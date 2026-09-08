@@ -204,7 +204,9 @@ drop is channel-only (tier 2).
 
 **Invariant:** an operation against a host that was never reached enters
 `_connect` exactly once, whatever the operation and whichever connect-time shape
-[SFTP-023](#sftp-023-backendunavailable-mapping) claims.
+[SFTP-023](#sftp-023-backendunavailable-mapping) claims. So does an operation
+whose transport dies mid-way and whose reconnect meets a host that is gone —
+the same shapes, arriving at a different set of guards, covered below.
 **Rationale:** the connect-time shapes are classified by
 [SFTP-023](#sftp-023-backendunavailable-mapping) and the budget itself is
 [SFTP-009](#sftp-009-tenacity-retry-on-connect)'s; this clause is what a caller
@@ -245,12 +247,29 @@ operation that reaches the backend** rather than a sample, which is what makes
 the "whatever the operation" above a measured claim rather than a generalisation
 from the five that moved.
 
-**The clause's subject is load-bearing: a host that was never reached.** It says
-nothing about a transport that dies *mid-operation* and then fails to reconnect,
-which reaches guards this clause does not cover and costs up to three budgets —
-tracked as BUG-278, with the measurement. Every cell here builds a fresh backend
-whose first `_sftp` evaluation fails, so the enumeration cannot reach that shape
-and must not be read as ruling it out.
+**A transport that dies mid-operation is the same invariant's second subject,
+covered separately because the enumeration above cannot reach it.** Every cell
+there builds a fresh backend whose first `_sftp` evaluation fails. A transport
+that dies *after* a handle or a probe was produced makes a later access inside
+the same operation the one that reconnects — `_sftp` re-reads
+`transport.is_active()` on every access — and when that reconnect meets a host
+that is now gone, the connect-time shape lands on the rename ladder's guards
+rather than on a classification path. Five guards sit there: `move`'s own,
+`_promote`, `_displace`, `_is_absent` and `_move_fallback`. Asking only the
+dropped-connection predicate, each declined and the next rung re-entered
+`_sftp`: measured at **three** `_connect` entries for `write_atomic(overwrite=True)`
+with the transport dying at the temp close (12.01 s at shipped defaults) and for
+`move` on either `overwrite` value with it dying at the destination probe, and
+**two** for the `overwrite=False` atomic write and for the two fallback rungs
+reached under a live `posix_rename` failure. All now cost one. **`_is_absent`'s
+guard changes the answer rather than the cost**: the probe's failure ended the
+ladder either way, but declining it let `_displace` re-raise its own errno-less
+rename failure — a base `RemoteStoreError` naming a server that was gone — over
+the `BackendUnavailable` the reconnect had established. Not breaking, on the
+subclass relation SFTP-023 already leans on.
+`TestSFTPTransportDeathCostsOneConnect` reaches each of the five by name,
+asserting the guard consulted as well as the count, so a cell that stops a rung
+early cannot pass for the site it was written for.
 
 **And "whichever connect-time shape" means the ones SFTP-023 claims**, which is
 the qualifier the invariant now carries and did not before. A connect refused

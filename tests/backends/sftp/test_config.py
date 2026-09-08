@@ -2463,8 +2463,8 @@ class TestSFTPUnreachableHostCostsOneConnect:
     **Scope, and it is narrower than "an unreachable host" sounds.** Every cell
     builds a fresh backend whose *first* ``_sftp`` evaluation fails. A transport
     that dies mid-operation and then fails to reconnect reaches guards no cell
-    here touches and still costs up to three budgets; that is BUG-278, and this
-    class must not be read as ruling it out.
+    here touches; ``TestSFTPTransportDeathCostsOneConnect`` below drives that
+    fault, and this class must not be read as covering it.
 
     **What is asserted is one entry into ``_connect``, not a probe count.** The
     budget is what a caller waits on and what the re-entry guards exist to
@@ -2767,6 +2767,231 @@ class TestSFTPProbeReconnectsIntoGoneHost:
 
         assert expected_guard in reached, (
             f"{die_at}/{path} was meant to reach {expected_guard}'s guard, "
+            f"but the predicate was consulted from {reached}"
+        )
+
+
+class TestSFTPTransportDeathCostsOneConnect:
+    """SFTP-031: a transport that dies mid-operation is paid for once when the host is gone.
+
+    ``TestSFTPUnreachableHostCostsOneConnect`` drives an operation whose *first*
+    ``_sftp`` evaluation fails, and every one of its 84 cells builds a fresh
+    backend to do it. This class drives the fault that enumeration cannot reach:
+    a live-looking transport that dies *after* a handle or a probe has been
+    produced, so a later access inside the same operation is the one that
+    reconnects — into a host that is now gone. ``_sftp`` re-reads
+    ``transport.is_active()`` on every access, so being downstream of a handle
+    says nothing about the connection the next access will use.
+
+    **Every cell names the guard it exists to cover and asserts it was the one
+    reached**, on the sibling's reasoning: without that the five sites collapse
+    into whichever fires first, and three of them are reachable only when the
+    rename ladder is already past ``_promote`` or ``move``'s own guard. Two
+    staging knobs get there — a ``posix_rename`` that fails for a live reason,
+    which is how a server without ``posix-rename@openssh.com`` behaves, and a
+    choice of which round-trip kills the transport.
+
+    Run against the pre-fix module, with ``_connect`` entries counted the same
+    way: the three cells the backlog item measured cost **3** each, the two
+    fallback cells **2**, the ``overwrite=False`` atomic write **2**, and the
+    ``_is_absent`` cell **1** — that one was never a budget defect but a *type*
+    defect, the same shape ``TestSFTPProbeReconnectsIntoGoneHost`` pins: the
+    probe's reconnect failure was answered ``False`` and the displace re-raised
+    its own errno-less rename failure, so the caller got a base
+    ``RemoteStoreError`` naming a server that was gone. Every cell now costs one
+    entry and reports ``BackendUnavailable``.
+
+    Each ``_connect`` entry against a closed port is one refused connect, with
+    the retry policy disabled, so the count is the whole of what is measured;
+    the 12.01 s the item quotes is the same three entries at shipped defaults.
+    """
+
+    FLAT = "delivery.csv"
+    MOVED = "moved.csv"
+
+    #: ``(operation, staging, expected_guard)`` — *staging* is the keyword set
+    #: handed to ``_backend_with_dying_transport``. The five guards this class
+    #: covers are ``move``'s own, ``_promote``, ``_displace``, ``_is_absent`` and
+    #: ``_move_fallback``; ``_promote`` and ``move`` each appear twice because
+    #: the two ``overwrite`` values reach them by different paths and the
+    #: pre-fix costs differed (3 against 2 for the atomic write).
+    CELLS = (
+        ("write_atomic/overwrite", {"die_at": "temp-close"}, "_promote"),
+        ("write_atomic", {"die_at": "temp-close", "target_absent": True}, "_promote"),
+        ("move/overwrite", {"die_at": "dst-probe"}, "move"),
+        ("move", {"die_at": "dst-probe"}, "move"),
+        ("write_atomic/overwrite", {"die_at": "classify", "posix_rename_unsupported": True}, "_displace"),
+        ("write_atomic/overwrite", {"die_at": "displace", "posix_rename_unsupported": True}, "_is_absent"),
+        ("move", {"die_at": "posix-rename", "posix_rename_unsupported": True}, "_move_fallback"),
+    )
+
+    def _backend_with_dying_transport(
+        self, *, die_at: str, posix_rename_unsupported: bool = False, target_absent: bool = False
+    ) -> SFTPBackend:
+        """A backend whose live-looking transport dies at a chosen round-trip.
+
+        *die_at* names the round-trip after which ``is_active()`` answers
+        ``False``, and so which access reconnects into the closed port:
+
+        - ``"temp-close"`` — the atomic write's temp handle closes cleanly and
+          kills the transport, so ``_promote``'s ``posix_rename`` reconnects.
+        - ``"dst-probe"`` — ``move``'s destination stat answers ``ENOENT`` and
+          kills the transport, so ``move``'s ``posix_rename`` reconnects.
+        - ``"classify"`` — ``posix_rename`` fails for a live reason, then
+          ``_promote``'s classification stat kills the transport, so the
+          fallback's displace is what reconnects.
+        - ``"displace"`` — as above, but the displace's own ``rename`` fails
+          errno-less *and* kills the transport, so ``_is_absent``'s stat is
+          what reconnects.
+        - ``"posix-rename"`` — ``move``'s ``posix_rename`` fails for a live
+          reason and kills the transport, so ``_move_fallback``'s ``rename``
+          reconnects.
+
+        *posix_rename_unsupported* stages the server class the fallback exists
+        for; without it ``posix_rename`` is never reached on a live transport
+        in these cells and the stub says so rather than answering.
+        *target_absent* makes the destination stat answer ``ENOENT``, which the
+        ``overwrite=False`` atomic write needs to get past its eager check.
+        """
+        import stat as stat_mod
+        import types
+
+        state = {"alive": True}
+        directory = types.SimpleNamespace(st_mode=stat_mod.S_IFDIR | 0o755, st_size=0, st_mtime=0)
+        regular = types.SimpleNamespace(st_mode=stat_mod.S_IFREG | 0o644, st_size=1, st_mtime=0)
+        flat, moved = self.FLAT, self.MOVED
+
+        class Transport:
+            def is_active(self) -> bool:
+                return state["alive"]
+
+        class SSH:
+            def get_transport(self) -> Any:
+                return Transport()
+
+            def close(self) -> None:
+                pass
+
+        class Handle:
+            def write(self, data: bytes) -> int:
+                return len(data)
+
+            def close(self) -> None:
+                if die_at == "temp-close":
+                    state["alive"] = False
+
+        class Client:
+            def __init__(self) -> None:
+                self.sock = type("S", (), {"settimeout": lambda self, t: None})()
+
+            def stat(self, sftp_path: str) -> Any:
+                name = sftp_path.rsplit("/", 1)[-1]
+                if name == moved:
+                    if die_at == "dst-probe":
+                        state["alive"] = False
+                    raise OSError(errno.ENOENT, "No such file")
+                if name == flat:
+                    if die_at == "classify":
+                        state["alive"] = False
+                    if target_absent:
+                        raise OSError(errno.ENOENT, "No such file")
+                    return regular
+                return directory  # an ancestor, for _ensure_parent_dirs
+
+            def file(self, sftp_path: str, mode: str = "r") -> Any:
+                return Handle()
+
+            def posix_rename(self, src: str, dst: str) -> None:
+                assert posix_rename_unsupported, "posix_rename reached on a transport that should be dead"
+                if die_at == "posix-rename":
+                    state["alive"] = False
+                raise OSError("Operation unsupported")
+
+            def rename(self, src: str, dst: str) -> None:
+                assert die_at == "displace", f"rename({src}, {dst}) reached on a transport that should be dead"
+                assert ".~bak." in dst, f"rename({src}, {dst}) is not the displace this cell stages"
+                state["alive"] = False
+                raise OSError(None, "Failure")
+
+            def mkdir(self, sftp_path: str) -> None:
+                pass
+
+            def remove(self, sftp_path: str) -> None:
+                pass
+
+            def close(self) -> None:
+                pass
+
+        backend = SFTPBackend(
+            host="127.0.0.1",
+            port=TestSFTPProbeReconnectsIntoGoneHost._closed_port(),
+            host_key_policy="auto",
+            timeout=3,
+            retry=RetryPolicy.disabled(),
+        )
+        backend._ssh_client = SSH()
+        backend._sftp_client = Client()
+        return backend
+
+    def _call(self, backend: SFTPBackend, operation: str) -> None:
+        flat, moved = self.FLAT, self.MOVED
+        calls = {
+            "write_atomic": lambda: backend.write_atomic(flat, b"x"),
+            "write_atomic/overwrite": lambda: backend.write_atomic(flat, b"x", overwrite=True),
+            "move": lambda: backend.move(flat, moved),
+            "move/overwrite": lambda: backend.move(flat, moved, overwrite=True),
+        }
+        calls[operation]()
+
+    @pytest.mark.spec("SFTP-031")
+    @pytest.mark.parametrize(
+        ("operation", "staging", "expected_guard"),
+        CELLS,
+        ids=[f"{op}@{st['die_at']}" for op, st, _ in CELLS],
+    )
+    def test_a_transport_that_dies_mid_operation_costs_exactly_one_connect(
+        self,
+        operation: str,
+        staging: dict[str, Any],
+        expected_guard: str,
+        monkeypatch: pytest.MonkeyPatch,
+    ) -> None:
+        """SFTP-031: one connect budget, and ``BackendUnavailable``, at each of the five guards.
+
+        Three assertions, and the third is what keeps the first two honest:
+        the frame that consulted ``_probe_is_futile`` must be the guard the
+        cell names, or a cell that stops earlier would pass while the site it
+        was written for went untested — which is how the sibling class found
+        one of its own cells to be a duplicate.
+        """
+        import inspect
+
+        attempts = 0
+        original_connect = SFTPBackend._connect
+        reached: list[str] = []
+        original_futile = SFTPBackend._probe_is_futile
+
+        def counting(self: SFTPBackend) -> None:
+            nonlocal attempts
+            attempts += 1
+            original_connect(self)
+
+        def recording(cls: type[SFTPBackend], exc: Exception) -> bool:
+            frame = inspect.currentframe()
+            caller = frame.f_back if frame is not None else None
+            reached.append(caller.f_code.co_name if caller is not None else "?")
+            return bool(original_futile(exc))
+
+        backend = self._backend_with_dying_transport(**staging)
+        monkeypatch.setattr(SFTPBackend, "_connect", counting)
+        monkeypatch.setattr(SFTPBackend, "_probe_is_futile", classmethod(recording))
+
+        with pytest.raises(BackendUnavailable):
+            self._call(backend, operation)
+
+        assert attempts == 1, f"{operation}@{staging['die_at']} entered _connect {attempts} times, not once"
+        assert expected_guard in reached, (
+            f"{operation}@{staging['die_at']} was meant to reach {expected_guard}'s guard, "
             f"but the predicate was consulted from {reached}"
         )
 
