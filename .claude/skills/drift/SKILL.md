@@ -21,8 +21,9 @@ open the PR via `/pr`.
 **The core rule this skill exists to enforce:** the issue body reports *version*
 drift only. Whether drift is *safe to accept* is decided per-extra by that
 extra's **smoke job conclusion in the linked run** — not by the body. A red
-smoke means either a real regression or a smoke-harness gap; never refresh an
-extra whose smoke is red until you have explained why.
+smoke means a real regression, a smoke-harness gap, or a transient that only a
+re-run on the same pins can settle (step 3); never refresh an extra whose smoke
+is red until you have explained why.
 
 A green smoke means the committed pins were the ones *installed*: the smoke is
 pinned to the candidate resolution with a pip constraints file, so it cannot
@@ -40,6 +41,12 @@ whatever real evidence you do have.
 
 GitHub reads via `gh` CLI; writes (PR) via the configured GitHub MCP server,
 falling back to `gh` for GraphQL-only flows. Repo: `haalfi/remote-store`.
+Two `gh` paths do not work from a sandboxed session, and both are policy, not
+transient — switch tool, do not retry: job logs (`gh run view --log-failed`
+fetches from a results host outside `api.github.com`, denied like the artifact
+host in step 7; the MCP server's `get_job_logs` serves the same log through the
+API) and workflow dispatch (`gh workflow run` gets 403 because the session token
+lacks `actions: write`; the MCP server's `actions_run_trigger` dispatches).
 
 ## Steps
 
@@ -71,8 +78,21 @@ falling back to `gh` for GraphQL-only flows. Repo: `haalfi/remote-store`.
        so it errors with `ModuleNotFoundError` regardless of the bump). Fix the
        harness (`drift_smoke_map.py` target or the workflow's smoke-install
        list), not the lock. Refresh only after the smoke is genuinely green.
+     - **Transient** — the failure is not attributable to what drifted: it
+       lands after the phase the drifted package takes part in (a timeout at
+       auth after a successful key exchange, with only `cryptography` bumped),
+       and an earlier run smoked the identical pins green (check the package's
+       PyPI release date against the last green run). That is an argument, not
+       a verdict: re-run, and refresh only on the re-run's green conclusion.
+       Re-run the **full matrix** (see the cancelled case below for why), and
+       reconstruct from the re-run's body — it may carry rows the first run
+       did not.
    - **cancelled** → inconclusive (fail-fast neighbour or concurrency). Re-run
-     that leg via `workflow_dispatch` before trusting it.
+     before trusting it, as `workflow_dispatch` with `extra=all`, **not** the
+     single leg: a single-extra dispatch re-renders the rolling issue body from
+     that one report and drops every other extra's rows, which are the
+     reconstruction source step 7 depends on (BUG-282). Until that lands, a
+     single-leg re-run is acceptable only after you have saved the current body.
 
 4. **Triage the version bumps** for the green extras. Classify each
    `baseline → resolved` by semver: patch/minor and `rc → stable` are routine;
@@ -158,9 +178,12 @@ falling back to `gh` for GraphQL-only flows. Repo: `haalfi/remote-store`.
     Flag for the eventual PR body: list the accepted bumps per extra and
     **reference** the rolling issue with `Refs #<n>` — never `Closes`. The
     workflow owns the issue lifecycle and auto-closes it on the next run that
-    resolves clean. To close promptly after merge, the user can re-resolve via
+    resolves clean. When nothing was held, the user can close it promptly after
+    merge by re-resolving via
     `gh workflow run drift-guard.yml --repo haalfi/remote-store` (the workflow is
-    on `master`, so dispatch resolves fine).
+    on `master`, so dispatch resolves fine). A held extra still drifts against
+    its old lock, so that run re-renders the issue with the held section instead
+    of closing it; the issue closes only once the hold is lifted and refreshed.
 
 ## Rules
 

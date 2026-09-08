@@ -330,12 +330,70 @@ review_rounds: 6
 #      the divergence it was meant to prevent, because no check_* gate covers
 #      prose. The durable form is one description plus links, and the sites that
 #      are not the authority carry only what is true at their own altitude.
+#
+# Operational firing (2026-09-07, runs 34127228028 and 34163916944 -> rolling issue #943).
+# Twelve extras drifted. Run 34 (scheduled) had two red smokes, sftp and sql; a
+# full workflow_dispatch re-run (run 35) turned sftp green and left sql red on
+# the same test. Eleven refreshed by reconstruction from run 35's body; sql held.
+# Each lock's `==` diff is exactly the body's rows (47 rows across 11 extras,
+# counted from the reconstruction script's per-row output) and each carries
+# `# captured: 2026-09-07`. No harness fix was needed.
+#  34. A red smoke is not one thing. sftp's red was S4 of the legacy-recovery
+#      e2e failing on the SECOND connect with `AuthenticationException:
+#      Authentication timeout` — after the helper had re-added ssh-rsa and the
+#      key exchange had succeeded, so the drifted package (cryptography
+#      50.0.0->50.0.1) had already done its part. cryptography 50.0.1 was
+#      released 2026-08-25 (PyPI upload_time), so run 33 on 2026-08-31 smoked the
+#      identical sftp set and S4 passed there; run 35 passed it again. Neither
+#      of the skill's two classes (real regression / harness gap) fit; the
+#      third, transient, is only decidable by a re-run on the same pins. S4 is
+#      the only test anywhere in CI that authenticates against legacy-sftp
+#      (ci.yml's e2e job never builds that container), on a 5 s auth_timeout
+#      right after a deliberately failed connection. Filed as BK-367; the
+#      skill's step 3 now carries the transient class (PR #998 review).
+#  35. sql's red is a real finding, BUG-281: sqlalchemy 2.1.0rc1 deprecates the
+#      SingletonThreadPool inference for `mode=memory` URLs that
+#      `_SQLAlchemyBaseBackend` relies on, and `filterwarnings = error` turns
+#      the warning into a constructor failure on one of the four in-memory
+#      spellings. Reproduced identically in run 35. `[sql-query]` and
+#      `[dagster]` carry the same rc1 and went green because their smokes never
+#      construct that URL — the reach caveat of #32 again, this time working in
+#      the refresh's favour rather than against it, and said so in the PR body.
+#  36. A single-extra `workflow_dispatch` would have destroyed the reconstruction
+#      source. drift_report.py re-renders the rolling body from whichever
+#      reports the run produced, so `extra=sftp` rewrites #943 to an sftp-only
+#      body and the other eleven extras' rows are gone until the next scheduled
+#      run. mutation.yml carves out single-scope dispatches ("never closes it or
+#      rewrites its body"); drift-guard.yml does not. The full re-run was chosen
+#      for that reason, at the cost of re-resolving: between 13:24 and 21:39 UTC
+#      aiobotocore 3.9.0->3.9.1 and botocore 1.43.56->1.43.75 appeared in s3
+#      and s3-pyarrow, smoked green in run 35, and were accepted with the rest.
+#      Filed as BUG-282. First offered in a multi-select gate question whose
+#      answer selected only BUG-281; the agent read the unselected options as
+#      declined and wrote that here, which the user corrected: an unselected
+#      option is not a decision. Filed on the same PR once asked directly.
+#      The PR review then caught that the skill's own cancelled-leg step still
+#      prescribed the single-leg dispatch this finding diagnoses — filing the
+#      defect in the workflow had not stopped the runbook steering people into
+#      it (principle 3). The step now re-runs the full matrix and names BUG-282.
+#  37. Two access findings for a sandboxed session, both routed around rather
+#      than fixed. `gh run view --log-failed` fetches from
+#      results-receiver.actions.githubusercontent.com, denied like the artifact
+#      host in #30; the GitHub MCP server's get_job_logs returns the same log
+#      through api.github.com. `gh workflow run` got 403 "Resource not
+#      accessible by integration" (the session token lacks actions:write); the
+#      MCP actions_run_trigger tool dispatched fine. The skill's "GitHub reads
+#      via gh" holds for issues, runs and jobs, not for logs or dispatch; the
+#      skill now records both routes beside its artifact-host note.
 
 discovery_followups:
   - BUG-232  # [s3-pyarrow] / [bench] float past the pyarrow<25 ceiling
   - ID-231   # drift smoke validates a mixed version set, not the candidate baseline
   - BUG-250  # [graph] smoke loads 1 of 4 declared deps, 0 of the 3 that drifted
   - BK-350   # the five-site refresh procedure has no check_* gate over any of it
+  - BUG-281  # _SQLAlchemyBaseBackend leans on a pool selection sqlalchemy 2.1.0rc1 deprecates
+  - BUG-282  # a single-extra dispatch rewrites the rolling issue body to that extra alone
+  - BK-367   # the guard's only legacy-sftp authentication runs on a 5 s budget
 
 surprising_ripples:
   - scripts/check_infra_settings.py
@@ -343,6 +401,7 @@ surprising_ripples:
   - tests/scripts/test_drift_check.py
   - tests/scripts/test_drift_smoke_map.py
   - tests/ext/test_dagster.py  # operational firing #26: pyarrow-hardimport smoke gap
+  - .claude/skills/drift/SKILL.md  # PR #998 review: the runbook prescribed the single-leg re-run BUG-282 diagnoses
 
 phases:
   - id: orient
