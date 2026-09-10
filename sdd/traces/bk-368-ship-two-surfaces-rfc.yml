@@ -1,4 +1,4 @@
-id: BK-367
+id: BK-368
 title: "The /ship loop reviews its own record past round 2, and nothing separates the two"
 trigger: >-
   BUG-274's close report said that past round 3 the loop was largely auditing
@@ -8,7 +8,7 @@ trigger: >-
   The user asked for a design of the next /ship, founded on evidence rather
   than on the round count.
 source_items:
-  - BK-367
+  - BK-368
   - BK-365
   - BK-366
 audience:
