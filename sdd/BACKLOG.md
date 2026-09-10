@@ -1894,7 +1894,7 @@ recorded (BK-365); the repo can say whether its own quality promise is
 holding rather than only asserting it (BK-366); two sessions working in
 parallel cannot mint the same backlog ID with every derivation telling both they
 are right (ID-257); and the review loop stops recording itself in the artifacts
-it reviews (BK-367).
+it reviews (BK-368).
 **Bounded to those fifteen deliberately** — count derived by enumerating the
 semicolon-separated clauses above, not carried forward. "No artifact asserts what
 no mechanism can check" is the promise and cannot be a closing condition: this section's own
@@ -1951,6 +1951,11 @@ the commit that writes it lands, so cite the generator instead.
     `gen_backlogid.py` derives IDs from headers, the stale JSON was masked too.
     Lint the structure: every metadata line follows an entry header, headers
     unique across both files, BACKLOG-DONE status `[x]` only.
+    **And no merge-conflict marker survives**: a rebase of BK-368's branch left
+    a `<<<<<<< HEAD` line above an item in this file, and `docs-gate` passed
+    twice with it there (neither `gen_backlogid.py` nor `mkdocs --strict` reads
+    the line). A `^(<{7}|={7}|>{7})` scan over both files is the cheapest rule
+    in this list and the one a rebase-heavy workflow needs most.
     **Add the retirement sections to the structural rules**: every entry under
     `BACKLOG-DONE.md` § Absorbed names a host that exists in `BACKLOG.md`, and
     every ID retired by either route appears exactly once across both files.
@@ -2519,7 +2524,6 @@ the commit that writes it lands, so cite the generator instead.
   **Exit criteria:** each open `BUG-` classified escaped/caught with the catching
   mechanism named, and a recorded answer to which reading the data supports.
 
-<<<<<<< HEAD
 - [ ] **ID-257 — Two sessions working in parallel mint the same backlog ID, and every derivation says both are right**
   spec: — · effort: S · audience: contributor.tooling
   **Reproduced by having happened**: BUG-275's branch minted `BUG-278` for a
@@ -2553,8 +2557,16 @@ the commit that writes it lands, so cite the generator instead.
   has no owner. That is this section's promise — the artifacts maintainers
   coordinate through say what is actually true — failing across two working
   copies rather than inside one.
+  **A second instance, and it narrows the check's reach.** ID-182's branch
+  (#998) and BK-368's branch both minted `BK-367`, for unrelated items, from a
+  `master` whose next safe BK was 367 for each. This time the rebase reported
+  nothing: `gen-backlogid --check` compares open IDs against done ones, and two
+  *open* items sharing an ID pass it, so the duplicate was found by reading
+  `rg -n 'BK-367' sdd` after the rebase, not by a gate. Whatever mechanism
+  answers the open question above, the check's collision half needs to see
+  open-versus-open as well.
 
-- [ ] **BK-367 — The `/ship` loop reviews its own record past round 2, and nothing separates the two**
+- [ ] **BK-368 — The `/ship` loop reviews its own record past round 2, and nothing separates the two**
   spec: — · effort: L · audience: contributor.process
   Over the 19 deliveries reviewed since the whole-file gate merged, the share of
   findings sitting on text a fix pass wrote runs **3% in round 1, 46% in

@@ -2,7 +2,8 @@
 
 ## Status
 
-Draft. Tracked as BK-367. If accepted it graduates to an ADR amending
+Draft. Tracked as BK-368 (minted as BK-367 and re-homed after ID-182's branch
+minted the same number in parallel, which is ID-257's scenario). If accepted it graduates to an ADR amending
 [ADR-0033](../adrs/0033-ship-convergence-driven-review.md),
 [ADR-0034](../adrs/0034-ship-panel-rounds-and-unprimed-exit.md) and
 [ADR-0037](../adrs/0037-whole-file-gate-and-derived-figures.md), and to
