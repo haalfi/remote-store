@@ -1891,10 +1891,11 @@ and named successors (ID-150, ID-258 — the trace-outcome pin fired once
 already, as ID-249 at v0.31.0); the two backlog files are readable by the
 person they are for, or the decision that their length is the right price is
 recorded (BK-365); the repo can say whether its own quality promise is
-holding rather than only asserting it (BK-366); and two sessions working in
+holding rather than only asserting it (BK-366); two sessions working in
 parallel cannot mint the same backlog ID with every derivation telling both they
-are right (ID-257).
-**Bounded to those fourteen deliberately** — count derived by enumerating the
+are right (ID-257); and the review loop stops recording itself in the artifacts
+it reviews (BK-368).
+**Bounded to those fifteen deliberately** — count derived by enumerating the
 semicolon-separated clauses above, not carried forward. "No artifact asserts what
 no mechanism can check" is the promise and cannot be a closing condition: this section's own
 preamble records that detecting the remaining class needs semantic comparison of
@@ -1950,6 +1951,11 @@ the commit that writes it lands, so cite the generator instead.
     `gen_backlogid.py` derives IDs from headers, the stale JSON was masked too.
     Lint the structure: every metadata line follows an entry header, headers
     unique across both files, BACKLOG-DONE status `[x]` only.
+    **And no merge-conflict marker survives**: a rebase of BK-368's branch left
+    a `<<<<<<< HEAD` line above an item in this file, and `docs-gate` passed
+    twice with it there (neither `gen_backlogid.py` nor `mkdocs --strict` reads
+    the line). A `^(<{7}|={7}|>{7})` scan over both files is the cheapest rule
+    in this list and the one a rebase-heavy workflow needs most.
     **Add the retirement sections to the structural rules**: every entry under
     `BACKLOG-DONE.md` § Absorbed names a host that exists in `BACKLOG.md`, and
     every ID retired by either route appears exactly once across both files.
@@ -2551,3 +2557,34 @@ the commit that writes it lands, so cite the generator instead.
   has no owner. That is this section's promise — the artifacts maintainers
   coordinate through say what is actually true — failing across two working
   copies rather than inside one.
+  **A second instance, and it narrows the check's reach.** ID-182's branch
+  (#998) and BK-368's branch both minted `BK-367`, for unrelated items, from a
+  `master` whose next safe BK was 367 for each. This time the rebase reported
+  nothing: `gen-backlogid --check` compares open IDs against done ones, and two
+  *open* items sharing an ID pass it, so the duplicate was found by reading
+  `rg -n 'BK-367' sdd` after the rebase, not by a gate. Whatever mechanism
+  answers the open question above, the check's collision half needs to see
+  open-versus-open as well.
+
+- [ ] **BK-368 — The `/ship` loop reviews its own record past round 2, and nothing separates the two**
+  spec: — · effort: L · audience: contributor.process
+  Over the 19 deliveries reviewed since the whole-file gate merged, the share of
+  findings sitting on text a fix pass wrote runs **0% in round 1, 46% in
+  round 2, 77% or more from round 3**, the same shape when only findings the
+  fixer confirmed as must-fix are counted, and a quarter of all findings landed
+  on `sdd/traces/` or the two backlog files. Derivation:
+  `python sdd/rfcs/rfc-0015-findings.py` over the PRs its docstring lists, at
+  `2a1bbfe`; bounds in the RFC's Table 2. Traces added since that merge sit at
+  median 7 review rounds against 2 before (`rfc-0015-rounds.py 24d9464`).
+  **The diagnosis** is four structural causes — one file carries both the
+  deliverable and the loop's diary; a fix is an unconstrained authoring act;
+  one agent holds three roles on one tree; reviewers measure while the fixer
+  reasons — argued with evidence in
+  [RFC-0015](rfcs/rfc-0015-ship-two-surfaces.md), which proposes six decisions
+  against them. The RFC is the diagnosis's home; this entry does not restate it.
+  **Feeds BK-366**: the origin tag the RFC's D5 specifies gives each delivery
+  the caught-versus-escaped split that item asks for.
+  **Exit criteria:** RFC-0015 accepted or rejected with its open questions
+  answered; if accepted, an ADR amending ADR-0033/0034/0037, the skill
+  rewrites and the two scripts it names shipped, and Table 2 re-derived for
+  one delivery run under the new rules.
