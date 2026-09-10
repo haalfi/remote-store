@@ -16,8 +16,9 @@ expected_ripples:
 # Closed inside the v0.31.0 release PR rather than on a branch of its own, so
 # the review rounds are the release PR's; the derivation is
 # `git log --oneline origin/master..HEAD` on that branch minus the release
-# commit, counted when the PR merges. 0 at authoring.
-review_rounds: 0
+# commit. Two fix commits at the time of writing (the story rewrite and the
+# round-2 consistency fixes), so 2.
+review_rounds: 2
 phases:
   - id: orient
     name: Read the step and the ticket it closes
@@ -85,3 +86,25 @@ phases:
           claim about now, not narration, so it is the one research-doc sentence
           the close sweep edits; the rest of the doc narrates the decision and
           stays
+  - id: review
+    name: PR review round 2
+    steps:
+      - file: sdd/BACKLOG-DONE.md
+        section: "(item) ID-238"
+        read_type: verify
+        extract: >-
+          Review found the close sweep three-quarters done: rg 'ID-249' outside
+          traces returns four hits at the base and the sweep edited three,
+          leaving the ID-238 close note's identical present-tense "[ ] in
+          BACKLOG.md" claim standing. My own miss, not the document's: the same
+          tense test was applied to the research doc one step earlier and not
+          run over the remaining hit. Rewritten to past tense naming the firing
+      - file: CHANGELOG.md
+        section: "[0.31.0] / Changed"
+        read_type: verify
+        extract: >-
+          Same round: the condensed BUG-259 entry had dropped its Breaking
+          marker, so the released section showed four of the five entries the
+          minor bump was decided on. Not this item's edit, recorded here because
+          the release PR is the branch. check_breaking_migration_link reads
+          [Unreleased] only, so nothing gates a marker lost in a released section

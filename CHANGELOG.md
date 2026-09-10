@@ -66,7 +66,7 @@ This project follows [Semantic Versioning](https://semver.org/). Pre-1.0, minor 
   [migration guide](https://docs.remotestore.dev/stable/reference/migration/#v0300-to-v0310).
 - **A write to the store root is refused before any request is issued, on
   every backend that declares `WRITE`, and so is a root `move`/`copy`
-  destination** (BUG-259): an SFTP store whose `base_path` did not exist wrote
+  destination** (BUG-259, **Breaking**): an SFTP store whose `base_path` did not exist wrote
   the bytes *at* the container path and left it a regular file, and
   `S3Boto3Backend.move(src, ".")` returned cleanly having deleted the source.
   Every spelling that addresses the root is refused (`""`, `"."`, `"./"`,

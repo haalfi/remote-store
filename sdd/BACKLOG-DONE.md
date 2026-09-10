@@ -2894,7 +2894,9 @@ if evidence changes; these are retired.
   than the whole report. Re-check when the ranking shifts rather than inheriting.
   **The ticket is pinned too.** ID-150 works because `formal/README.md` names the
   ID; "record a backlog entry" keeps the ticket and drops the pin. First revisit
-  is **ID-249**, `[ ]` in `BACKLOG.md`, each revisit naming its successor on close.
+  was **ID-249**, filed `[ ]` in `BACKLOG.md` and since fired at v0.31.0 (its
+  entry above names ID-258 as the live pin), each revisit naming its successor
+  on close.
   **This settles BK-330's [Rule 6](DRIFT-RULES.md#tolerated) register entry**,
   which named this item as its owner. The standing owner is now the **Phase 0
   checklist step**, not this closed item: an owner must be answerable the next
