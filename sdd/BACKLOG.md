@@ -1887,7 +1887,8 @@ the ripple-check's six measured blind spots are answered (BK-346); the
 hand-maintained inventories ID-245 names are generated — four bullets, of which
 the checker inventory has shipped; `check_formal_trace` proves
 assertion rather than citation (ID-207); both open revisit pins have fired
-and named successors (ID-150, ID-249); the two backlog files are readable by the
+and named successors (ID-150, ID-258 — the trace-outcome pin fired once
+already, as ID-249 at v0.31.0); the two backlog files are readable by the
 person they are for, or the decision that their length is the right price is
 recorded (BK-365); the repo can say whether its own quality promise is
 holding rather than only asserting it (BK-366); and two sessions working in
@@ -2425,9 +2426,10 @@ the commit that writes it lands, so cite the generator instead.
   `gate.needs` list in `.github/workflows/ci.yml` and the caveat in
   `sdd/formal/README.md` is updated.
 
-- [ ] **ID-249 — Trace-outcome report revisit at the next release**
+- [ ] **ID-258 — Trace-outcome report revisit at the next release**
   spec: — · effort: S · audience: contributor.process
-  First revisit ticket for the release-anchored trigger ID-238 shipped. Per
+  Second revisit ticket for the release-anchored trigger ID-238 shipped;
+  successor to [ID-249](BACKLOG-DONE.md), which fired at v0.31.0. Per
   [`CONTRIBUTING.md` § Release](../CONTRIBUTING.md#release) Phase 0, each release
   reads `hatch run report-trace-outcomes` and closes the open revisit ticket.
   This item is the pin that makes the ticket findable.
@@ -2446,8 +2448,12 @@ the commit that writes it lands, so cite the generator instead.
   `reads` ≥ 20 — a fitted threshold, re-check it rather than inherit it); and per
   selected reference one of **act** (file work against it), **defer** (leave it,
   say why), or **accept** (the tags are exposure, not a defect).
-  **Baseline to difference against**, measured at `4076ed7`: 270 traces, 207
-  negative tags, `sdd/BACKLOG.md` top-ranked at 22 over 236 reads (9.3%).
+  **Baseline to difference against**, measured at `6cd170c` (the v0.31.0
+  release base): 302 traces, 284 negative tags (241 `misleading`, 43 `unclear`),
+  `sdd/BACKLOG.md` top-ranked at 29 over 295 reads (9.8%). The previous
+  baseline, at `4076ed7`, was 270 traces and 207 tags with the same top row at
+  22 over 236 (9.3%); ID-249's close note carries what the first difference
+  showed and how each selected reference was dispositioned.
   **Exit criteria:** decision logged here, then the successor ticket opened and
   its ID named in this item's close note.
 

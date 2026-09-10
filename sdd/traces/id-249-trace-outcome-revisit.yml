@@ -1,0 +1,110 @@
+id: ID-249
+title: "Trace-outcome report revisit at the next release"
+trigger: >-
+  The v0.31.0 release checklist reached Phase 0's trace-outcome step, which
+  reads the report and closes the open revisit ticket. ID-249 was that ticket,
+  the first since ID-238 anchored the review to the release.
+source_items:
+  - ID-249
+  - ID-238
+audience:
+  - contributor.process
+discovery_followups:
+  - ID-258
+expected_ripples:
+  - sdd/backlogid.json
+# Closed inside the v0.31.0 release PR rather than on a branch of its own, so
+# the review rounds are the release PR's; the derivation is
+# `git log --oneline origin/master..HEAD` on that branch minus the release
+# commit. Two fix commits at the time of writing (the story rewrite and the
+# round-2 consistency fixes), so 2.
+review_rounds: 2
+phases:
+  - id: orient
+    name: Read the step and the ticket it closes
+    steps:
+      - file: CONTRIBUTING.md
+        section: "Release / Phase 0: Pre-flight"
+        read_type: gate
+        extract: >-
+          Run the report, close the open revisit item against it, record the
+          corpus totals, the references selected and a per-reference decision.
+          Names no ID by design; the pin is the backlog item
+      - file: sdd/BACKLOG.md
+        section: "(item) ID-249"
+        read_type: gate
+        extract: >-
+          The selection rule (top row plus rate >= 1.5x the top row's at reads
+          >= 20, flagged as fitted), the three dispositions, the 4076ed7
+          baseline to difference against, and the exit criterion of naming a
+          successor
+      - file: sdd/BACKLOG-DONE.md
+        section: "(item) ID-238"
+        read_type: reference
+        extract: >-
+          How the previous decision was recorded and why the threshold is 1.5x:
+          the 2x draft selected nothing, and the refit was validated against the
+          full report rather than the research doc's excerpt
+  - id: measure
+    name: Run the report and read the tags
+    steps:
+      - file: scripts/report_trace_outcomes.py
+        section: "(generated report, full ranking at 6cd170c)"
+        read_type: reference
+        extract: >-
+          302 traces, 284 negative tags; BACKLOG.md top at 29/295 (9.8%), bar
+          14.7%; four rows clear it at reads >= 20. _sftp.py, selected in
+          ID-238's dry run, drops out at 12.1%
+      - file: sdd/traces/
+        section: "(every step citing a selected reference with an outcome set)"
+        read_type: reference
+        extract: >-
+          Walked all traces for the five references and read each tagged step's
+          extract rather than the report's four-ID summary column, which is
+          what let the dispositions name a cause per reference instead of a
+          verdict per row
+  - id: implement
+    name: Close the ticket and open its successor
+    steps:
+      - file: sdd/BACKLOG.md
+        section: "How this file works / Completing work, Assigning a new ID"
+        read_type: gate
+        extract: >-
+          Fully done moves to BACKLOG-DONE.md as [x] in the same commit; the
+          next free ID comes from gen_backlogid --check, which reported ID=258
+      - file: sdd/BACKLOG.md
+        section: "6. The repo does not mislead the next person / Closes when"
+        read_type: verify
+        extract: >-
+          The clause names the open pin by ID; re-pointed at ID-258 with the
+          firing recorded, count of clauses unchanged
+      - file: sdd/research/research-spec-kit-comparison.md
+        section: "4.1 (the ticket is pinned)"
+        read_type: verify
+        extract: >-
+          Present-tense "is tracked as ID-249, lives in BACKLOG.md as [ ]" is a
+          claim about now, not narration, so it is the one research-doc sentence
+          the close sweep edits; the rest of the doc narrates the decision and
+          stays
+  - id: review
+    name: PR review round 2
+    steps:
+      - file: sdd/BACKLOG-DONE.md
+        section: "(item) ID-238"
+        read_type: verify
+        extract: >-
+          Review found the close sweep three-quarters done: rg 'ID-249' outside
+          traces returns four hits at the base and the sweep edited three,
+          leaving the ID-238 close note's identical present-tense "[ ] in
+          BACKLOG.md" claim standing. My own miss, not the document's: the same
+          tense test was applied to the research doc one step earlier and not
+          run over the remaining hit. Rewritten to past tense naming the firing
+      - file: CHANGELOG.md
+        section: "[0.31.0] / Changed"
+        read_type: verify
+        extract: >-
+          Same round: the condensed BUG-259 entry had dropped its Breaking
+          marker, so the released section showed four of the five entries the
+          minor bump was decided on. Not this item's edit, recorded here because
+          the release PR is the branch. check_breaking_migration_link reads
+          [Unreleased] only, so nothing gates a marker lost in a released section

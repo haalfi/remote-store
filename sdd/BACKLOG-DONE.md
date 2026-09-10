@@ -220,6 +220,58 @@ if evidence changes; these are retired.
 
 ## Unreleased
 
+*(none)*
+
+## v0.31.0
+
+- [x] **ID-249 — Trace-outcome report revisit at the next release**
+  spec: — · effort: S · audience: contributor.process
+  Fired at the v0.31.0 release, Phase 0, as the first revisit of the trigger
+  ID-238 shipped. Successor: **ID-258**, `[ ]` in `BACKLOG.md`.
+  **Corpus at `6cd170c`** (`hatch run report-trace-outcomes`): 302 traces, 4694
+  steps, 284 negative tags (241 `misleading`, 43 `unclear`) across 134 traces
+  and 127 references. Against the ID-238 baseline at `4076ed7` (270 traces, 207
+  tags) that is +32 traces and +77 tags; the 67 PRs merged since v0.30.0 are
+  the window, derived from `gh api repos/haalfi/remote-store/releases/generate-notes`
+  with `previous_tag_name=v0.30.0`, and the baseline sits partway through it, so
+  no per-PR rate is stated — the clone is shallow and neither SHA resolves in it.
+  **Selection, by ID-238's rule.** Top row `sdd/BACKLOG.md` at 29 over 295 reads
+  (9.8%), so the second selector's bar is 14.7%; four more rows clear it at
+  `reads` ≥ 20: `CONTRIBUTING.md` (18.6%, 43), `src/remote_store/backends/_local.py`
+  (30.4%, 23), `sdd/specs/029-async-store-backend-api.md` (18.5%, 27) and
+  `tests/backends/fixtures/_cassettes.py` (15.0%, 20). `_sftp.py`, which ID-238's
+  dry run selected at 14.5% over 55, now reads 12.1% over 141 and drops out; the
+  threshold was re-checked against the full table rather than inherited and kept,
+  because it did what it was fitted for — `_local.py` is exactly the high-rate,
+  low-reads row the absolute sort hides.
+  **Every tag on each selected reference was read**, by walking each trace's steps
+  for the reference with an `outcome` set (the aggregation the report's own
+  ranking is built from), and the disposition is **accept** for all five:
+  - `sdd/BACKLOG.md`, 29 tags over 26 items: 25 are `misleading` on an item's own
+    prescription — a fix shape, a line reference, a count, a scope claim —
+    refuted by the work that read it. That is the class BK-343 declared
+    advisory, so a tag there measures the rule working rather than a document
+    failing; the stale-figure subset is principle 9's, and the file's growth is
+    BK-365's, both open and neither re-filed here.
+  - `CONTRIBUTING.md`, 8 tags over 5 items: § Release and § Adding a New Backend
+    account for seven: five were corrected in the PR that raised them (BK-310's
+    three, BK-311, BK-357) and ID-252's two were filed as ID-253, which rewrote
+    the Phase 1 line and has since closed. Nothing left open.
+  - `_local.py`, 7 tags over 4 items: the Windows `resolve()` race (BK-289,
+    BUG-220; BUG-221 measured not reproducible) and ID-209's three review-round
+    fixes. Source tags recording a defect the reader then fixed are exposure.
+  - spec 029, 5 tags over 5 items, one each: four were a stale clause corrected
+    in the tagging PR; the fifth, the dangling `ADR-0012 §` citation ID-232 left
+    for a follow-up, no longer greps outside that trace, so it has been closed
+    since.
+  - `_cassettes.py`, 3 tags over 2 items: BK-262's two scrub blind spots and
+    ID-127's redaction, all fixed where found.
+  **What the first difference shows**, and what it does not. The top row moved
+  9.3% → 9.8% on 59 more reads, which is within the noise of a corpus whose
+  tagged fraction is 50.8% and varies per reference — so no trend is claimed
+  from one interval, which is the reason the baseline is recorded rather than
+  interpreted. Trace: `sdd/traces/id-249-trace-outcome-revisit.yml`.
+
 - [x] **BUG-278 — A transport that dies mid-operation pays the connect budget up to three times over when the reconnect meets a host that is gone**
   spec: SFTP-031, SFTP-018 · effort: S · audience: user.api
   Filed under SFTP-023 and SFTP-018; closed under SFTP-031, which BUG-274 minted
@@ -2842,7 +2894,9 @@ if evidence changes; these are retired.
   than the whole report. Re-check when the ranking shifts rather than inheriting.
   **The ticket is pinned too.** ID-150 works because `formal/README.md` names the
   ID; "record a backlog entry" keeps the ticket and drops the pin. First revisit
-  is **ID-249**, `[ ]` in `BACKLOG.md`, each revisit naming its successor on close.
+  was **ID-249**, filed `[ ]` in `BACKLOG.md` and since fired at v0.31.0 (its
+  entry above names ID-258 as the live pin), each revisit naming its successor
+  on close.
   **This settles BK-330's [Rule 6](DRIFT-RULES.md#tolerated) register entry**,
   which named this item as its owner. The standing owner is now the **Phase 0
   checklist step**, not this closed item: an owner must be answerable the next
