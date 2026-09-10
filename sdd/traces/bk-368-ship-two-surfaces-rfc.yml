@@ -15,9 +15,14 @@ audience:
   - contributor.process
 expected_ripples:
   - sdd/BACKLOG.md
-# Derived from `git log --format='%s' origin/master..HEAD --reverse` before this
-# line was written: one commit, which files the item and the RFC. Value is 0.
-review_rounds: 0
+# Derivation, stated as the rule rather than as a transcribed list, because the
+# list went stale between this branch's first and fourth commit ("one commit")
+# and a round-1 finding caught it: run `git log --format='%s' origin/master..HEAD`
+# and count the subjects that answer a review round — they say so ("address PR
+# #1002 round N"). The four BK-368 commits before review implement the item and
+# do not count. Re-run before each push; the value is the count, including the
+# commit that carries this line.
+review_rounds: 1
 phases:
   - id: orient
     name: Orient
@@ -121,7 +126,7 @@ phases:
         extract: >-
           Blame of each finding's line at the head the reviewer saw, against
           that head's own merge-base and first commit. 19 PRs, 541 findings:
-          loop-introduced share by round 3%, 46%, 77%, 93%, 80%, 85%, 85%;
+          loop-introduced share by round 0%, 46%, 77%, 93%, 80%, 85%, 85%;
           160 file-level findings unclassifiable. Sixteen reviewed heads were
           absent from the PR refs (rebased away) and were fetched by SHA
         outcome: ok
@@ -133,7 +138,45 @@ phases:
       - file: tmp/wt-measure
         section: "hatch run lint in a fresh worktree"
         read_type: verify
-        extract: "31.5 s for environment creation plus the full lint gate, one run; the worktree was removed after"
+        extract: >-
+          31.5 s for environment creation plus the full lint gate, one run; the
+          worktree was removed after. Round 1 found the figure restated per
+          pass against a per-round mechanism, so a second worktree timed
+          `hatch env create` alone: 25.6 s, one run. The repo has one hatch
+          environment, so lint and tests share the creation cost
+        outcome: ok
+  - id: fix
+    name: Round-1 fix pass
+    steps:
+      - file: sdd/rfcs/rfc-0015-findings.py
+        section: "origin(), triage(), the D5 dry run"
+        read_type: verify
+        extract: >-
+          Round 1 refuted the classifier's premise that the implementation
+          push is one commit (false for 3 of the 19 PRs) and the absence of
+          severity. Origin now compares the blamed commit's author date with
+          the first review's submission time; a triage heuristic reads the
+          fixer's first reply; D5's trigger is dry-run under three readings.
+          Headline moved by one cell (round 1: 3% to 0%); the must-fix-only
+          table reproduces the shape. 173 of 541 findings have no readable
+          verdict, stated as the heuristic's bound
+        outcome: ok
+      - file: sdd/traces/_schema.yml
+        section: "review_rounds (Binds traces authored from BK-348 onward)"
+        read_type: gate
+        extract: >-
+          Round 1 pointed out that Table 1's split commit is also where this
+          clause began binding, an unstated confound on the opening figure.
+          Read to confirm the clause's wording before stating the bound beside
+          the table, together with the 61 pre-split traces that carry no field
+        outcome: ok
+      - file: sdd/DRIFT-RULES.md
+        section: "Rules 2, 5, 7"
+        read_type: gate
+        extract: >-
+          Round 1 found D4 burying a cross-artifact check inside a post-hoc
+          report. The ID-set diff becomes a gate script in the shared PR
+          validation gates, and all three scripts declare Drift-gate blocks
         outcome: ok
   - id: design
     name: Design

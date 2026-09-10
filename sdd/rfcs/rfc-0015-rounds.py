@@ -32,7 +32,7 @@ def main(since: str) -> None:
             "-C",
             str(ROOT),
             "log",
-            "--diff-filter=A",
+            "--diff-filter=AR",
             "--format=",
             "--name-only",
             f"{since}..HEAD",
@@ -43,17 +43,27 @@ def main(since: str) -> None:
         capture_output=True,
         text=True,
     ).stdout.split()
-    added = {p for p in out if p.endswith(".yml") and not Path(p).name.startswith("_")}
+    # AR: a trace added and later renamed on the branch is listed under both names;
+    # keep only paths that still exist.
+    added = {p for p in out if p.endswith(".yml") and not Path(p).name.startswith("_") and (ROOT / p).exists()}
     everything = {str(p.relative_to(ROOT)) for p in (ROOT / "sdd/traces").glob("[!_]*.yml")}
     for label, paths in ((f"since {since}", added), (f"before {since}", everything - added)):
         vals = []
+        missing = []
         for p in sorted(paths):
             m = RX.search((ROOT / p).read_text())
             if m:
                 vals.append((int(m.group(1)), Path(p).stem))
+            else:
+                missing.append(Path(p).stem)
         vals.sort()
         nums = [v for v, _ in vals]
-        print(f"{label}: n={len(nums)} median={statistics.median(nums)} mean={statistics.mean(nums):.2f}")
+        print(
+            f"{label}: n={len(nums)} median={statistics.median(nums)} mean={statistics.mean(nums):.2f} "
+            f"(traces without the field, excluded: {len(missing)}"
+            + (": " + ", ".join(missing) if missing else "")
+            + ")"
+        )
         print("  " + ", ".join(f"{n}:{name}" for n, name in vals))
 
 
