@@ -1,0 +1,1232 @@
+# Build Your Own Backend
+
+Write file storage code once. Run it against local files, S3, SFTP, Azure, OneDrive — or your own custom storage system.
+
+This guide walks you through implementing a custom [`Backend`](https://docs.remotestore.dev/stable/reference/api/backend/index.md) for remote-store. By the end, you'll have a working backend that plugs into [`Store`](https://docs.remotestore.dev/stable/reference/api/store/index.md), [`Registry`](https://docs.remotestore.dev/stable/reference/api/registry/index.md), and every extension in the ecosystem.
+
+______________________________________________________________________
+
+## What you'll build
+
+A **Redis backend** that stores files as Redis keys. It's simple enough to fit in one module, yet exercises every part of the Backend contract: reads, writes, listing, metadata, error mapping, and capability declarations.
+
+**Prerequisites:** `pip install remote-store redis`
+
+______________________________________________________________________
+
+## The Backend contract
+
+Every backend is a subclass of [`Backend`](https://docs.remotestore.dev/stable/reference/api/backend/index.md). The contract is straightforward:
+
+1. **Declare capabilities** — which operations does your backend support?
+1. **Implement abstract members** — methods and properties covering CRUD, listing, and metadata. See [Abstract methods](#abstract-methods-must-implement) for the full list.
+1. **Map all exceptions** — native errors must become `remote_store` errors. No leaks.
+
+The [`Store`](https://docs.remotestore.dev/stable/reference/api/store/index.md) class wraps your backend, adds path validation, capability gating, and scoping. You implement the raw operations; `Store` handles the policy.
+
+______________________________________________________________________
+
+## Step 1: Scaffold the class
+
+```
+from __future__ import annotations
+
+import contextlib
+import io
+from datetime import datetime, timezone
+from typing import TYPE_CHECKING, BinaryIO, ClassVar
+
+try:
+    import redis
+except ImportError:  # graceful fallback when redis is not installed
+    redis = None  # type: ignore[assignment]
+
+from remote_store import (
+    AlreadyExists,
+    Backend,
+    BackendUnavailable,
+    Capability,
+    CapabilitySet,
+    CapabilityNotSupported,
+    DirectoryNotEmpty,
+    FileInfo,
+    FolderEntry,
+    FolderInfo,
+    InvalidPath,
+    NotFound,
+    PermissionDenied,
+    RemotePath,
+    WriteResult,
+)
+
+if TYPE_CHECKING:
+    from collections.abc import Iterator, Mapping
+    from contextlib import AbstractContextManager
+
+    from remote_store._types import WritableContent
+```
+
+Every backend starts with these imports. The key types:
+
+| Import                                                                                                                                                                                                                                                 | Purpose                                                                                                                 |
+| ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ | ----------------------------------------------------------------------------------------------------------------------- |
+| [`Backend`](https://docs.remotestore.dev/stable/reference/api/backend/index.md)                                                                                                                                                                        | Abstract base class you subclass                                                                                        |
+| [`Capability`](https://docs.remotestore.dev/stable/reference/api/capabilities/index.md), [`CapabilitySet`](https://docs.remotestore.dev/stable/reference/api/capabilities/index.md)                                                                    | Declare supported operations                                                                                            |
+| [`NotFound`](https://docs.remotestore.dev/stable/reference/api/errors/index.md), [`AlreadyExists`](https://docs.remotestore.dev/stable/reference/api/errors/index.md), ...                                                                             | Normalized error types                                                                                                  |
+| [`FileInfo`](https://docs.remotestore.dev/stable/reference/api/models/index.md), [`FolderEntry`](https://docs.remotestore.dev/stable/reference/api/models/index.md), [`FolderInfo`](https://docs.remotestore.dev/stable/reference/api/models/index.md) | Return types for listing and metadata                                                                                   |
+| [`RemotePath`](https://docs.remotestore.dev/stable/reference/api/models/index.md)                                                                                                                                                                      | Immutable, validated path type                                                                                          |
+| [`WriteResult`](https://docs.remotestore.dev/stable/reference/api/models/index.md)                                                                                                                                                                     | Return type for `write()` and `write_atomic()`; carries the written path, size, and optional backend-native digest/etag |
+| `WritableContent`                                                                                                                                                                                                                                      | Type alias: `bytes \| BinaryIO`                                                                                         |
+
+______________________________________________________________________
+
+## Step 2: Declare capabilities
+
+```
+# Redis doesn't support atomic rename or native glob.
+_REDIS_CAPABILITIES = CapabilitySet(
+    {
+        Capability.READ,
+        Capability.WRITE,
+        Capability.DELETE,
+        Capability.LIST,
+        Capability.MOVE,
+        Capability.COPY,
+        Capability.METADATA,
+        Capability.SEEKABLE_READ,  # We return BytesIO, which is always seekable
+    }
+)
+```
+
+**Capabilities gate Store methods.** If you don't declare `ATOMIC_WRITE`, calls to `store.write_atomic()` raise `CapabilityNotSupported` automatically — you don't need to handle it.
+
+`_REDIS_CAPABILITIES` is assigned to the class-level `CAPABILITIES` attribute in Step 3. Tooling and conformance tests read `YourBackend.CAPABILITIES` without instantiating the class, so the constant must be a class attribute — not computed in `__init__`.
+
+Three further capabilities are worth declaring when they apply:
+
+- **`USER_METADATA`** — declare this when your backend stores the `metadata=` mapping passed to `write()` and `write_atomic()`. Without it, `Store` raises `CapabilityNotSupported` if the caller passes non-empty metadata.
+- **`WRITE_RESULT_NATIVE`** — declare this when your `write*()` methods fill the rich `WriteResult` fields directly from the backend's own write response (`source == "native"`). The criterion is provenance, not field count — which fields land depends on what the response carries, and a native backend may fill none (SFTP declares the flag yet its write response has no metadata). Without the flag, results carry `path`, `size`, and `source == "basic"`. See the [WriteResult reference](https://docs.remotestore.dev/stable/reference/api/models/index.md) for the full field list.
+- **`LAZY_READ`** — declare this when `read()` fetches data lazily from the remote source. A `BytesIO` return does not qualify — data is already materialized.
+
+The Redis example declares neither `USER_METADATA` nor `WRITE_RESULT_NATIVE` (it stores raw bytes without a metadata column and returns only `path` and `size` at write time).
+
+Each capability gates specific Store methods. See the [Capability reference](https://docs.remotestore.dev/stable/reference/api/capabilities/index.md) for the full list.
+
+______________________________________________________________________
+
+## Step 3: Constructor and properties
+
+```
+CAPABILITIES: ClassVar[CapabilitySet] = _REDIS_CAPABILITIES
+
+def __init__(self, url: str = "redis://localhost:6379/0", prefix: str = "rs:") -> None:
+    self._client = redis.Redis.from_url(url, decode_responses=False)
+    self._prefix = prefix
+
+@property
+def name(self) -> str:
+    return "redis"
+
+@property
+def capabilities(self) -> CapabilitySet:
+    return self.CAPABILITIES
+```
+
+**Rules:**
+
+- `name` must be a unique string. Used in error messages and the registry.
+- `CAPABILITIES: ClassVar[CapabilitySet]` exposes the capability set at class level — no instantiation required. The `capabilities` property delegates to `self.CAPABILITIES` so both the class view and the instance view always agree.
+- Constructor parameters become `options:` in YAML config (more on this later).
+
+______________________________________________________________________
+
+## Step 4: Internal helpers
+
+Before implementing the abstract methods, add helpers for key management and error mapping.
+
+```
+# -- Key helpers --
+
+def _key(self, path: str) -> str:
+    """Convert a backend-relative path to a Redis key."""
+    return f"{self._prefix}file:{path}"
+
+def _folder_marker(self, path: str) -> str:
+    """Key for folder existence markers."""
+    return f"{self._prefix}dir:{path}"
+
+def _all_file_keys_pattern(self) -> str:
+    """Pattern to scan all file keys."""
+    return f"{self._prefix}file:*"
+
+def _path_from_key(self, key: bytes) -> str:
+    """Extract the backend-relative path from a Redis key."""
+    prefix = f"{self._prefix}file:"
+    return key.decode().removeprefix(prefix)
+
+def _addressable_segments(self, path: str) -> list[str]:
+    """Return the segments of *path* that actually address something.
+
+    Empty and ``"."`` segments name nothing, so every spelling of the store
+    root -- ``""``, ``"."``, ``"./"``, ``".//"``, ``"./."``, ``"/"`` --
+    yields ``[]``. This is the predicate the backend contract requires for
+    deciding root-ness on a write, and it is deliberately wider than a
+    ``not path or path == "."`` test, which lets ``"./"`` through.
+    ``remote_store.backends._flat_ns._addressable_segments`` is the same
+    function; it is restated here so the tutorial stays dependency-free.
+
+    Use this one predicate everywhere you split a key, addressing included.
+    A backend that guards with it and addresses with something stricter
+    accepts ``"./x"`` at the guard and then writes it somewhere else.
+    """
+    return [s for s in path.split("/") if s and s != "."]
+
+def _reject_root_as_write_target(self, path: str) -> None:
+    """Refuse the store root as a write target, decided from the key."""
+    if not self._addressable_segments(path):
+        raise InvalidPath(
+            f"Cannot write -- '{path}' is the store root, which is a folder",
+            path=path,
+            backend=self.name,
+        )
+```
+
+Redis has no concept of folders, so we use key prefixes to simulate a hierarchical namespace. Files live under `rs:file:<path>`, and folder markers (optional) under `rs:dir:<path>`.
+
+```
+# -- Error mapping --
+
+def _map_error(self, exc: redis.RedisError, path: str = "") -> None:
+    """Map Redis exceptions to remote-store errors. Always raises."""
+    if isinstance(exc, redis.AuthenticationError):
+        raise PermissionDenied(
+            f"Redis authentication failed: {exc}",
+            path=path or None,
+            backend=self.name,
+        ) from exc
+    if isinstance(exc, redis.ConnectionError):
+        raise BackendUnavailable(
+            f"Redis connection failed: {exc}",
+            path=path or None,
+            backend=self.name,
+        ) from exc
+    raise BackendUnavailable(
+        f"Redis error: {exc}",
+        path=path or None,
+        backend=self.name,
+    ) from exc
+```
+
+**The cardinal rule:** backend-native exceptions must never leak. Every Redis error becomes a `remote_store` error. The `from exc` preserves the original traceback for debugging.
+
+______________________________________________________________________
+
+## Step 5: Existence checks
+
+```
+def exists(self, path: str) -> bool:
+    if not path or path == ".":
+        return True  # Root always exists
+    try:
+        return bool(self._client.exists(self._key(path)) or self._has_children(path))
+    except redis.RedisError as exc:
+        self._map_error(exc, path)
+
+def is_file(self, path: str) -> bool:
+    if not path or path == ".":
+        return False
+    try:
+        return bool(self._client.exists(self._key(path)))
+    except redis.RedisError as exc:
+        self._map_error(exc, path)
+
+def is_folder(self, path: str) -> bool:
+    if not path or path == ".":
+        return True  # Root is always a folder
+    try:
+        return self._has_children(path)
+    except redis.RedisError as exc:
+        self._map_error(exc, path)
+
+def _has_children(self, path: str) -> bool:
+    """Check if any keys exist under this path prefix."""
+    # SCAN may return an empty page with a nonzero cursor, so loop
+    # until a key shows up or the cursor wraps to 0. Note the cost:
+    # SCAN+MATCH walks the whole keyspace on a miss, so a production
+    # backend should keep a secondary index (e.g. a per-prefix set)
+    # instead of scanning per existence check.
+    pattern = f"{self._prefix}file:{path}/*"
+    cursor = 0
+    while True:
+        cursor, keys = self._client.scan(cursor=cursor, match=pattern, count=100)
+        if keys:
+            return True
+        if cursor == 0:
+            return False
+```
+
+**Key invariants:**
+
+- `exists()` **never raises `NotFound`** — always returns `bool`.
+- `""` and `"."` are root aliases. Root always exists and is always a folder.
+- `is_file("")` is always `False`. `is_folder("")` is always `True`.
+
+A layer note on the alias rules: `Store` normalizes `"."` to `""` before your backend runs, so through `Store` your backend only ever sees `""` (or, for a scoped store, its `root_path` prefix). Handling `"."` is nonetheless **required**, not optional defense: the backend surface has callers of its own — adapters, `unwrap()` consumers, anything that feeds a `FolderInfo.path` back into a query, since that renders the root as `"."` — and the conformance suite exercises both spellings. Answer both from one predicate rather than testing `if path`: on a flat namespace `"./"` is a real and permanently empty key prefix, so a backend that treats `"."` as an ordinary key answers for nothing and reports it as success. The precise backend-layer obligations live in the [Backend Adapter Contract](https://docs.remotestore.dev/stable/explanation/design/specs/003-backend-adapter-contract/index.md).
+
+______________________________________________________________________
+
+## Step 6: Reading
+
+```
+def read(self, path: str) -> BinaryIO:
+    try:
+        data = self._client.hget(self._key(path), "data")
+    except redis.RedisError as exc:
+        self._map_error(exc, path)
+    if data is None:
+        raise NotFound(f"File not found: {path}", path=path, backend=self.name)
+    return io.BytesIO(data)
+
+def read_bytes(self, path: str) -> bytes:
+    try:
+        data = self._client.hget(self._key(path), "data")
+    except redis.RedisError as exc:
+        self._map_error(exc, path)
+    if data is None:
+        raise NotFound(f"File not found: {path}", path=path, backend=self.name)
+    return bytes(data)
+```
+
+**Notes:**
+
+- `read()` returns a `BinaryIO`. Since we return `BytesIO`, streams are seekable — that's why we declared `SEEKABLE_READ`.
+- `read_bytes()` can be more efficient than `read().read()` because it avoids wrapping in a stream object.
+- Both raise `NotFound` for missing files.
+
+Since our `read()` returns seekable streams, we don't need to override `read_seekable()` — the default implementation detects seekability and returns the stream as-is.
+
+______________________________________________________________________
+
+## Step 7: Writing
+
+```
+def write(
+    self,
+    path: str,
+    content: WritableContent,
+    *,
+    overwrite: bool = False,
+    metadata: Mapping[str, str] | None = None,
+) -> WriteResult:
+    # Precondition (0): the root, from the key, before any request. Wider
+    # than ``not path or path == "."`` on purpose -- see _addressable_segments.
+    self._reject_root_as_write_target(path)
+
+    raw = content if isinstance(content, bytes) else content.read()
+
+    try:
+        if not overwrite and self._client.exists(self._key(path)):
+            raise AlreadyExists(
+                f"File already exists: {path}",
+                path=path,
+                backend=self.name,
+            )
+        self._client.hset(
+            self._key(path),
+            mapping={
+                "data": raw,
+                "size": str(len(raw)),
+                "modified_at": datetime.now(timezone.utc).isoformat(),
+            },
+        )
+    except (AlreadyExists, InvalidPath):
+        raise  # Don't re-map our own errors
+    except redis.RedisError as exc:
+        self._map_error(exc, path)
+
+    return WriteResult(path=RemotePath(path), size=len(raw))
+
+def write_atomic(
+    self,
+    path: str,
+    content: WritableContent,
+    *,
+    overwrite: bool = False,
+    metadata: Mapping[str, str] | None = None,
+) -> WriteResult:
+    # Redis HSET is already atomic, but we didn't declare ATOMIC_WRITE.
+    # Store will reject this call before it reaches us.
+    # If you want to support it, declare the capability and implement here.
+    raise CapabilityNotSupported(
+        "Redis backend does not support atomic writes",
+        capability="atomic_write",
+        backend=self.name,
+    )
+
+@contextlib.contextmanager
+def open_atomic(self, path: str, *, overwrite: bool = False) -> Iterator[BinaryIO]:
+    raise CapabilityNotSupported(
+        "Redis backend does not support atomic writes",
+        capability="atomic_write",
+        backend=self.name,
+    )
+    yield  # Unreachable, but satisfies the generator contract
+```
+
+**Key patterns:**
+
+- `content` is `bytes | BinaryIO`. Normalize with `content if isinstance(content, bytes) else content.read()`.
+- **Both `write()` and `write_atomic()` accept `metadata: Mapping[str, str] | None = None`.** If your backend declares `USER_METADATA`, persist the mapping alongside the file. If it doesn't, ignore the argument — `Store` rejects non-empty metadata before reaching your implementation.
+- **Both methods must return [`WriteResult`](https://docs.remotestore.dev/stable/reference/api/models/index.md).** Construct it with at minimum `path=RemotePath(path)` and `size=len(raw)`. If your backend can populate richer fields, declare `WRITE_RESULT_NATIVE` and include them. The Redis example constructs just the two required fields.
+- **Write creates parent folders implicitly** — in Redis, there's nothing to create, but filesystem-based backends must `mkdir -p`.
+- Re-raise your own errors (`AlreadyExists`, `InvalidPath`) before the catch-all `RedisError` handler.
+- Even though Store gates `write_atomic()` via capabilities, implement the methods anyway (they're abstract). Raise `CapabilityNotSupported` as a safety net.
+
+______________________________________________________________________
+
+## Step 8: Deletion
+
+```
+def delete(self, path: str, *, missing_ok: bool = False) -> None:
+    if not path or path == ".":
+        raise InvalidPath(
+            "Path must not be empty for file operations",
+            path=path,
+            backend=self.name,
+        )
+    try:
+        removed = self._client.delete(self._key(path))
+    except redis.RedisError as exc:
+        self._map_error(exc, path)
+    if not removed and not missing_ok:
+        raise NotFound(f"File not found: {path}", path=path, backend=self.name)
+
+def delete_folder(self, path: str, *, recursive: bool = False, missing_ok: bool = False) -> None:
+    if not path or path == ".":
+        raise InvalidPath(
+            "Cannot delete root folder",
+            path=path,
+            backend=self.name,
+        )
+
+    try:
+        children = list(self._iter_file_paths_under(path))
+    except redis.RedisError as exc:
+        self._map_error(exc, path)
+
+    if not children and not self._has_children(path):
+        if not missing_ok:
+            raise NotFound(f"Folder not found: {path}", path=path, backend=self.name)
+        return
+
+    if children and not recursive:
+        raise DirectoryNotEmpty(
+            f"Folder not empty: {path}",
+            path=path,
+            backend=self.name,
+        )
+
+    if recursive:
+        try:
+            keys = [self._key(p) for p in children]
+            if keys:
+                self._client.delete(*keys)
+        except redis.RedisError as exc:
+            self._map_error(exc, path)
+```
+
+**Invariants:**
+
+- `delete()` targets files. `delete_folder()` targets folders.
+- `missing_ok=True` suppresses `NotFound`.
+- `missing_ok=True` also covers an absent *container* — the bucket, container or table holding the path. Both deletes return cleanly against one, and both raise `NotFound` without `missing_ok`. No exemptions: if your backend's native error for an absent container is not already a not-found, reclassify it, subject to two constraints. Keep the reclassification narrow to that one case: a denial stays `PermissionDenied`, a timeout stays `BackendUnavailable`. And put any probe you need on the failure path, never on the miss path — an ordinary miss must not spend a round trip distinguishing an absent container from an absent path. The reasoning behind both is in the error-mapping section of the [Backend Adapter Contract](https://docs.remotestore.dev/stable/explanation/design/specs/003-backend-adapter-contract/index.md).
+- `delete_folder(recursive=False)` raises `DirectoryNotEmpty` if the folder has contents.
+- You cannot delete root (`""` or `"."`) — `Store` rejects it before your backend runs, so users never reach you with a root delete; the tutorial backend also guards it locally, which is the safer shape.
+
+______________________________________________________________________
+
+## Step 9: Listing
+
+```
+def list_files(
+    self,
+    path: str,
+    *,
+    recursive: bool = False,
+    max_depth: int | None = None,
+) -> Iterator[FileInfo]:
+    # The conformance suite calls backends directly and asserts the
+    # depth boundary on what *you* return, so honor max_depth here.
+    # recursive and max_depth are independent filters: recursive=False
+    # always wins (immediate children only), and max_depth prunes
+    # recursive listings.
+    try:
+        for file_path in self._iter_file_paths_under(path):
+            rel = file_path.removeprefix(f"{path}/" if path else "")
+            depth = rel.count("/")  # 0 = directly in `path`
+            if not recursive and depth > 0:
+                continue  # Skip nested files
+            if max_depth is not None and depth > max_depth:
+                continue  # Prune below the requested depth
+
+            info = self._build_file_info(file_path)
+            if info is not None:
+                yield info
+    except redis.RedisError as exc:
+        self._map_error(exc, path)
+
+def list_folders(self, path: str) -> Iterator[FolderEntry]:
+    seen: set[str] = set()
+    try:
+        for file_path in self._iter_file_paths_under(path):
+            # Extract the immediate subfolder name
+            prefix = f"{path}/" if path else ""
+            rel = file_path.removeprefix(prefix)
+            if "/" in rel:
+                folder_name = rel.split("/", 1)[0]
+                if folder_name not in seen:
+                    seen.add(folder_name)
+                    folder_path = f"{prefix}{folder_name}"
+                    yield FolderEntry(
+                        path=RemotePath(folder_path),
+                        name=folder_name,
+                    )
+    except redis.RedisError as exc:
+        self._map_error(exc, path)
+
+def _iter_file_paths_under(self, path: str) -> Iterator[str]:
+    """Scan Redis for all file keys under a path prefix."""
+    if path and path != ".":
+        pattern = f"{self._prefix}file:{path}/*"
+    else:
+        pattern = self._all_file_keys_pattern()
+
+    cursor = 0
+    while True:
+        cursor, keys = self._client.scan(cursor=cursor, match=pattern, count=100)
+        for key in keys:
+            yield self._path_from_key(key)
+        if cursor == 0:
+            break
+
+def _build_file_info(self, path: str) -> FileInfo | None:
+    """Build a FileInfo from Redis hash fields."""
+    fields = self._client.hgetall(self._key(path))
+    if not fields:
+        return None
+    return FileInfo(
+        path=RemotePath(path),
+        name=path.rsplit("/", 1)[-1],
+        size=int(fields.get(b"size", b"0")),
+        modified_at=datetime.fromisoformat(fields[b"modified_at"].decode()),
+    )
+```
+
+**Key rules:**
+
+- `list_files(path="")` lists from root.
+- `recursive=False` (default) yields only immediate children.
+- **Honor `max_depth`.** `Store` always passes it, and the conformance suite calls your backend directly and asserts the depth boundary on what *you* return — a backend that ignores the value fails those tests, even though `Store` additionally applies client-side depth filtering for its own callers. Treat `recursive` and `max_depth` as independent filters, exactly as the code above does: at the backend layer `recursive=False` wins (immediate children only, whatever `max_depth` says), and `max_depth` prunes recursive listings to the requested depth. `Store` never sends you a *conflicting* combination — when callers set `max_depth`, its facade derives `recursive` from it, and `max_depth=0` arrives as `recursive=False`, where both rules agree — so the backend-layer precedence is observable only in direct calls, which is how the conformance suite calls you. The tutorial follows the formal backend contract here; where older spec prose differs, the [Backend Adapter Contract](https://docs.remotestore.dev/stable/explanation/design/specs/003-backend-adapter-contract/index.md) and the conformance suite are the operative authorities.
+- `list_folders()` is always non-recursive — only immediate subfolders.
+- Non-existent paths yield nothing (no exception).
+- [`FileInfo`](https://docs.remotestore.dev/stable/reference/api/models/index.md)`.path` must be a [`RemotePath`](https://docs.remotestore.dev/stable/reference/api/models/index.md).
+
+______________________________________________________________________
+
+## Step 10: Metadata
+
+```
+def get_file_info(self, path: str) -> FileInfo:
+    if not path or path == ".":
+        raise NotFound("File not found: (empty path)", path=path, backend=self.name)
+    try:
+        info = self._build_file_info(path)
+    except redis.RedisError as exc:
+        self._map_error(exc, path)
+    if info is None:
+        raise NotFound(f"File not found: {path}", path=path, backend=self.name)
+    return info
+
+def get_folder_info(self, path: str) -> FolderInfo:
+    try:
+        file_count = 0
+        total_size = 0
+        latest: datetime | None = None
+
+        for file_path in self._iter_file_paths_under(path):
+            info = self._build_file_info(file_path)
+            if info is not None:
+                file_count += 1
+                total_size += info.size
+                if latest is None or info.modified_at > latest:
+                    latest = info.modified_at
+    except redis.RedisError as exc:
+        self._map_error(exc, path)
+
+    if file_count == 0 and path and path != ".":
+        raise NotFound(f"Folder not found: {path}", path=path, backend=self.name)
+
+    return FolderInfo(
+        path=RemotePath.from_backend_path(path),
+        file_count=file_count,
+        total_size=total_size,
+        modified_at=latest,
+    )
+```
+
+**Contrast with existence checks:**
+
+- `get_file_info()` raises `NotFound` if missing.
+- `get_folder_info()` raises `NotFound` if the folder doesn't exist.
+- `exists()` never raises — returns `bool`.
+
+______________________________________________________________________
+
+## Step 11: Move and copy
+
+```
+def move(self, src: str, dst: str, *, overwrite: bool = False) -> None:
+    # The source is a file-shaped operation on a folder; the destination is
+    # a write. Different messages, and the destination takes the wider
+    # predicate -- an unrecognised root spelling costs a read an error class
+    # and cost a write, on a shipped backend, its container.
+    if not src or src == ".":
+        raise InvalidPath("Source path is a folder, not a file", path=src, backend=self.name)
+    self._reject_root_as_write_target(dst)
+
+    try:
+        # Read source
+        data = self._client.hgetall(self._key(src))
+        if not data:
+            raise NotFound(f"Source not found: {src}", path=src, backend=self.name)
+
+        # src == dst is a data-preserving no-op (Backend contract) —
+        # after the source check, so a missing source still raises NotFound.
+        if src == dst:
+            return
+
+        # Check destination
+        if not overwrite and self._client.exists(self._key(dst)):
+            raise AlreadyExists(
+                f"Destination already exists: {dst}",
+                path=dst,
+                backend=self.name,
+            )
+
+        # Atomic: write destination then delete source
+        pipe = self._client.pipeline()
+        pipe.hset(self._key(dst), mapping=data)
+        pipe.delete(self._key(src))
+        pipe.execute()
+    except (NotFound, AlreadyExists, InvalidPath):
+        raise
+    except redis.RedisError as exc:
+        self._map_error(exc, src)
+
+def copy(self, src: str, dst: str, *, overwrite: bool = False) -> None:
+    if not src or src == ".":
+        raise InvalidPath("Source path is a folder, not a file", path=src, backend=self.name)
+    self._reject_root_as_write_target(dst)
+
+    try:
+        data = self._client.hgetall(self._key(src))
+        if not data:
+            raise NotFound(f"Source not found: {src}", path=src, backend=self.name)
+
+        if src == dst:
+            return  # Data-preserving no-op, same as move()
+
+        if not overwrite and self._client.exists(self._key(dst)):
+            raise AlreadyExists(
+                f"Destination already exists: {dst}",
+                path=dst,
+                backend=self.name,
+            )
+
+        # Update modified_at for the copy
+        data[b"modified_at"] = datetime.now(timezone.utc).isoformat().encode()
+        self._client.hset(self._key(dst), mapping=data)
+    except (NotFound, AlreadyExists, InvalidPath):
+        raise
+    except redis.RedisError as exc:
+        self._map_error(exc, src)
+```
+
+**Rules the code above implements:**
+
+- **`src == dst` is a data-preserving no-op** — never a delete-after-write on the same key. Place the no-op return *after* the source check so a missing source still raises `NotFound`. (Contract rule.)
+- **The store root is refused at both ends, from the key, before any request.** A source that names the root is a file-shaped operation on a folder; a destination that names it is a write to the root. Both raise `InvalidPath`. (Contract rule — this is the first precondition, ahead of the source-existence check below.) It used to be a `Store`-enforced convention that backends also guarded defensively; it is now a requirement, and the conformance suite holds you to it for the two canonical spellings `""` and `"."`, so a backend that leaves those to the layer above will fail.
+- **On the write end, decide "is this the root" on the key's addressable segments, not on `is_root`.** Drop empty and `"."` segments and refuse when nothing is left. `is_root` recognises only `""` and `"."`, so a guard written against it lets `"./"` through, and `"./"` addresses the same node. That is not a hypothetical: it is how a shipped backend came to leave its own container as a regular file. **The conformance suite cannot catch this for you** — its cells are parametrised over the two canonical spellings — so it is a rule you have to hold yourself to, which is why it is stated here rather than left to the gate. The write end is the three writers plus the `move`/`copy` **destination**.
+- **The `move`/`copy` source is held to the narrower predicate, and that is deliberate.** The contract requires only `""` and `"."` there. The tutorial above keeps `not src or src == "."` on the source for exactly that reason, which is why the two ends of the same `move` do not look alike. The asymmetry follows the damage: on the write side an unrecognised root spelling cost a backend its container, and on the read side it costs an error class or an empty listing. Refusing the source under the wider predicate is permitted and four shipped backends do it; none is required to.
+- **Do not fold backslashes into that predicate** to match `RemotePath`, tempting as the symmetry looks. If your backend also builds its native paths from it, the fold makes two distinct keys collide onto one address — `a\b` and `a/b` become the same node, and `a\b` stops being addressable as itself. That has been tried and measured. (It is not a round-trip-identity breach: a backslash key is not well-formed to begin with. The cost is the collision.)
+- **Use that one predicate everywhere the key is split, addressing included.** A backend that guards with the tolerant predicate and addresses with a stricter one accepts `"./x"` at the guard and then names a folder literally called `.` on the wire, while its own `write("./x")` goes to the root. Whether a key names a node and *which* node it names have to be decided the same way. That has been measured on a shipped backend three separate times, in three functions that each split a key their own way — so audit every one of yours, not only the guard.
+- **Precondition order matters:** after the root check, a missing source raises `NotFound` before the destination is checked for `AlreadyExists`. (Contract rule.) Note the root check outranks both — a root *destination* is refused even when the source does not exist, so the caller hears about the destination rather than about a source they may not have expected to find.
+
+The conformance suite verifies the no-op rule for backends that declare `self_op_supported` (a registration fact covered later in this guide).
+
+______________________________________________________________________
+
+## Step 12: Lifecycle methods
+
+```
+def check_health(self) -> None:
+    try:
+        self._client.ping()
+    except redis.AuthenticationError as exc:
+        raise PermissionDenied(
+            f"Redis authentication failed: {exc}",
+            backend=self.name,
+        ) from exc
+    except redis.RedisError as exc:
+        raise BackendUnavailable(
+            f"Redis is not reachable: {exc}",
+            backend=self.name,
+        ) from exc
+
+def close(self) -> None:
+    self._client.close()
+```
+
+`check_health()` should be the **cheapest possible read-only operation**. Redis `PING` is ideal. For S3 it's a `HEAD` on the bucket. For a database it's `SELECT 1`.
+
+One declarative flag rides along with `close()`: the `close_is_terminal: ClassVar[bool]` class attribute (default `False`, meaning the backend stays usable after `close()`). Declare `True` when use-after-close must fail — the close-posture conformance lane tests whichever posture you declare, so an undeclared terminal backend fails it.
+
+**If you declare `True`, the closed check must run ahead of your root checks.** A closed backend raises `BackendUnavailable` even when the path is also invalid — the closed state is the more fundamental error, and a cheap string-test root guard is exactly the kind that naturally gets written first. Both root pre-checks are affected, the file-shaped one and the write one, and they need separate attention: a backend can order the read guard correctly and still get the write guard wrong, which is how the ordering was last found broken here. The conformance lane has a cell for each.
+
+______________________________________________________________________
+
+## Step 13: Register and use
+
+### Direct instantiation
+
+```
+from remote_store import Store
+
+backend = RedisBackend(url="redis://localhost:6379/0", prefix="myapp:")
+store = Store(backend=backend)
+
+store.write("reports/q1.csv", b"revenue,100\n")
+data = store.read_bytes("reports/q1.csv")
+print(data)  # b'revenue,100\n'
+
+for info in store.list_files("reports"):
+    print(f"{info.name}: {info.size} bytes")
+```
+
+### Via Registry (YAML config)
+
+Register your backend type before creating a [`Registry`](https://docs.remotestore.dev/stable/reference/api/registry/index.md). YAML loading lives in the `remote_store.ext.yaml` extension and requires the `yaml` extra (`pip install "remote-store[yaml]"`):
+
+```
+from remote_store import Registry, register_backend
+from remote_store.ext.yaml import from_yaml  # needs: pip install "remote-store[yaml]"
+
+register_backend("redis", RedisBackend)
+
+config = from_yaml("stores.yaml")
+with Registry(config) as registry:  # closes instantiated backends on exit
+    store = registry.get_store("cache")
+    store.write("hello.txt", b"from-registry")
+    data = store.read_bytes("hello.txt")
+```
+
+```
+# stores.yaml
+backends:
+  redis-main:
+    type: redis
+    options:
+      url: "redis://localhost:6379/0"
+      prefix: "app:"
+
+stores:
+  cache:
+    backend: redis-main
+    root_path: "cache/v2"
+```
+
+The `options` dict is unpacked as `**kwargs` to your constructor. Parameter names in YAML must match your `__init__` signature exactly.
+
+One ownership note: stores from `registry.get_store()` do not own their backend, so `store.close()` is a no-op on them — the registry closes the backends it instantiated. Call `registry.close()` when done, or use `Registry` as a context manager (`with Registry(config) as registry:`).
+
+______________________________________________________________________
+
+## Step 14: Extensions work automatically
+
+Because your backend implements the `Backend` contract, every remote-store extension works out of the box:
+
+```
+from remote_store.ext.batch import batch_copy
+from remote_store.ext.cache import cache
+from remote_store.ext.observe import StoreEvent, observe
+
+events = []
+
+def my_logging_hook(event: StoreEvent) -> None:
+    events.append(event)
+
+# Observability — my_logging_hook fires after every operation
+# that goes through the observed wrapper
+observed = observe(store, on_any=my_logging_hook)
+observed.write("a.txt", b"alpha")
+observed.write("c.txt", b"gamma")
+
+# Caching (layered on the observed store: one pipeline, no siblings)
+fast = cache(observed, ttl=300)
+fast.read_bytes("a.txt")  # first touch — cache miss
+fast.read_bytes("a.txt")  # within the TTL — served from the cache
+
+# Batch operations
+results = batch_copy(observed, [("a.txt", "b.txt"), ("c.txt", "d.txt")])
+```
+
+Extensions that require specific capabilities will check at runtime. For example, `ext.glob.glob_files()` works with any `LIST`-capable backend — it doesn't need the `GLOB` capability.
+
+______________________________________________________________________
+
+## Partial-capability backends
+
+Not every backend supports every operation. The HTTP backend, for example, is read-only — this is the shipped `ReadOnlyHttpBackend`'s actual capability set (note there is no `LIST`: plain HTTP has no directory listing):
+
+```
+class _ReadOnlyBackend(Backend):  # type: ignore[abstract]
+    CAPABILITIES: ClassVar[CapabilitySet] = CapabilitySet(
+        {
+            Capability.READ,
+            Capability.METADATA,
+            Capability.LAZY_READ,
+        }
+    )
+
+    @property
+    def capabilities(self) -> CapabilitySet:
+        return self.CAPABILITIES
+```
+
+When a user calls `store.write()` on an HTTP-backed store, the `Store` layer raises `CapabilityNotSupported` before your backend code runs. You still need to implement the abstract methods (Python requires it), but they can raise `CapabilityNotSupported`:
+
+```
+def write(
+    self,
+    path: str,
+    content: WritableContent,
+    *,
+    overwrite: bool = False,
+    metadata: Mapping[str, str] | None = None,
+) -> WriteResult:
+    raise CapabilityNotSupported(
+        "HTTP backend is read-only",
+        capability="write",
+        backend=self.name,
+    )
+```
+
+______________________________________________________________________
+
+## Error mapping checklist
+
+Every backend-native exception must map to one of these:
+
+| remote-store error                                                                            | When to raise                                              |
+| --------------------------------------------------------------------------------------------- | ---------------------------------------------------------- |
+| [`NotFound`](https://docs.remotestore.dev/stable/reference/api/errors/index.md)               | File/folder doesn't exist (for operations that require it) |
+| [`AlreadyExists`](https://docs.remotestore.dev/stable/reference/api/errors/index.md)          | Target exists and `overwrite=False`                        |
+| [`PermissionDenied`](https://docs.remotestore.dev/stable/reference/api/errors/index.md)       | Auth failure, insufficient permissions                     |
+| [`InvalidPath`](https://docs.remotestore.dev/stable/reference/api/errors/index.md)            | Malformed path, null bytes, `..` traversal                 |
+| [`DirectoryNotEmpty`](https://docs.remotestore.dev/stable/reference/api/errors/index.md)      | Non-empty folder and `recursive=False`                     |
+| [`BackendUnavailable`](https://docs.remotestore.dev/stable/reference/api/errors/index.md)     | Network error, service down                                |
+| [`CapabilityNotSupported`](https://docs.remotestore.dev/stable/reference/api/errors/index.md) | Operation not supported by this backend                    |
+
+**Pattern:** catch the SDK's base exception class, classify by error code/type, and raise the appropriate remote-store error with `from exc`.
+
+______________________________________________________________________
+
+## Testing your backend
+
+remote-store ships a per-topic conformance suite under `tests/backends/conformance/` that validates any backend against the formal `BackendContract` specification. Backends contributed to the repo plug into this infrastructure and run through the full suite automatically. Standalone backends can either reuse this suite or write focused tests against the same categories.
+
+______________________________________________________________________
+
+### Conformance suite overview
+
+The suite lives in [`tests/backends/conformance/`](https://github.com/haalfi/remote-store/tree/master/tests/backends/conformance), split into per-topic files that share the same parameterized `backend` fixture — every registered backend runs the full suite automatically.
+
+| Topic file                                                                                                                                     | Coverage                                                                                                                              | Run with                                                          |
+| ---------------------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------- | ----------------------------------------------------------------- |
+| [`test_identity.py`](https://github.com/haalfi/remote-store/blob/master/tests/backends/conformance/test_identity.py)                           | Identity, capabilities, lifecycle, `resolve`, native path round-trip                                                                  | `pytest tests/backends/conformance/test_identity.py`              |
+| [`test_io.py`](https://github.com/haalfi/remote-store/blob/master/tests/backends/conformance/test_io.py)                                       | `exists`, `is_file`/`is_folder`, read, write, delete, `to_key` round-trip                                                             | `pytest tests/backends/conformance/test_io.py`                    |
+| [`test_listing.py`](https://github.com/haalfi/remote-store/blob/master/tests/backends/conformance/test_listing.py)                             | `list_files`/`list_folders`, `iter_children`, glob, completeness                                                                      | `pytest tests/backends/conformance/test_listing.py`               |
+| [`test_atomic.py`](https://github.com/haalfi/remote-store/blob/master/tests/backends/conformance/test_atomic.py)                               | `write_atomic`, `open_atomic` (SAW-*), `WriteResult` (WR-*), move/copy semantics                                                      | `pytest tests/backends/conformance/test_atomic.py`                |
+| [`test_metadata.py`](https://github.com/haalfi/remote-store/blob/master/tests/backends/conformance/test_metadata.py)                           | `get_file_info`/`get_folder_info`, `size`, `modified_at`, aggregates                                                                  | `pytest tests/backends/conformance/test_metadata.py`              |
+| [`test_streaming.py`](https://github.com/haalfi/remote-store/blob/master/tests/backends/conformance/test_streaming.py)                         | Streaming reads, `LAZY_READ` laziness, resource cleanup                                                                               | `pytest tests/backends/conformance/test_streaming.py`             |
+| [`test_errors.py`](https://github.com/haalfi/remote-store/blob/master/tests/backends/conformance/test_errors.py)                               | Typed-error fidelity across read/write/delete/move/copy paths                                                                         | `pytest tests/backends/conformance/test_errors.py`                |
+| [`test_check_health.py`](https://github.com/haalfi/remote-store/blob/master/tests/backends/conformance/test_check_health.py)                   | `check_health()` contract — error mapping never leaks native SDK exceptions                                                           | `pytest tests/backends/conformance/test_check_health.py`          |
+| [`test_health_probe_declared.py`](https://github.com/haalfi/remote-store/blob/master/tests/backends/conformance/test_health_probe_declared.py) | Structural: every backend overrides `check_health()` or declares an exemption (presence only; probe behavior is verified per-backend) | `pytest tests/backends/conformance/test_health_probe_declared.py` |
+| [`test_concurrency.py`](https://github.com/haalfi/remote-store/blob/master/tests/backends/conformance/test_concurrency.py)                     | Posture-gated concurrency lane — each fixture tested against its declared `concurrency` posture                                       | `pytest tests/backends/conformance/test_concurrency.py`           |
+| [`test_close_posture.py`](https://github.com/haalfi/remote-store/blob/master/tests/backends/conformance/test_close_posture.py)                 | Posture-gated `close()` lane — reusable vs. terminal after close                                                                      | `pytest tests/backends/conformance/test_close_posture.py`         |
+
+The directory also carries infrastructure lanes (sync-adapter conformance, large-payload guard, xfail guard, replayed examples) and the async suite under `aio/` — browse [the directory](https://github.com/haalfi/remote-store/tree/master/tests/backends/conformance) for the full inventory.
+
+Run the whole suite at once with `pytest tests/backends/conformance/`.
+
+**Extended (Dafny-derived) cases** — error fidelity, precondition ordering, depth filtering, move/copy edge semantics, resource cleanup — are not a separate file. They are individual tests marked [`@pytest.mark.extended_conformance`](https://github.com/haalfi/remote-store/tree/master/tests/backends/conformance) spread across the topic files above, so they run with the rest of the suite by default and can be selected on their own:
+
+```
+pytest -m extended_conformance
+```
+
+Async backends have their own extended sibling, [`test_async_extended.py`](https://github.com/haalfi/remote-store/blob/master/tests/backends/conformance/test_async_extended.py), which exercises the `AsyncBackend` contract (ASYNC- *mirroring BE-*).
+
+The conformance suite itself is validated by running it against a mathematically verified oracle compiled from the formal Dafny specification (`sdd/formal/MemoryBackend.dfy`). If the oracle passes a test, the test is known-correct. This means passing the conformance suite is a strong guarantee of correctness — not just "matches what existing backends happen to do." See [`sdd/formal/README.md`](https://github.com/haalfi/remote-store/blob/master/sdd/formal/README.md) § Compiled Oracle for details.
+
+______________________________________________________________________
+
+### Registering in the conformance fixture (contributing backends)
+
+If you are contributing a backend to remote-store, this is step 3 of [CONTRIBUTING.md § Adding a New Backend](https://docs.remotestore.dev/stable/explanation/contributing/#adding-a-new-backend). The test infrastructure is registry-driven. Four steps: declare facts in two TOML files, add one small factory module under [`tests/backends/fixtures/`](https://github.com/haalfi/remote-store/tree/master/tests/backends/fixtures), and classify your family in the by-name conformance lanes (step 4). The conformance suite then parametrizes every test over your fixture automatically — registration itself needs no conftest edits, though a backend that needs an external service still adds a server fixture (see the end of this section).
+
+The TOML and Python blocks below show test-infrastructure files, so they are hand-written fences rather than executable snippet regions (the CI drift gate validates the TOML values against the fixture loader instead).
+
+**1. Declare the backend family in `tests/backends/fixtures/backends.toml`:**
+
+```
+# tests/backends/fixtures/backends.toml
+[backend.redis]
+sources           = ["src/remote_store/backends/_redis.py"]
+transport         = "fs"
+concurrency       = "thread_safe"
+flat_namespace    = true          # true when the backend has no real directory entries
+self_op_supported = true          # move(p, p) / copy(p, p) is a safe no-op
+```
+
+`transport`, `concurrency`, and the fixture's `stage` / `kind` / `container` fields below are closed vocabularies; their members and semantics are documented authoritatively in the two TOML files' header comments, and the loader rejects unknown values. Three things to know here: `concurrency` is deliberately defaultless — a new family must state its thread-safety posture or the loader refuses to start; the values are declarations of fact, so establish them (is your client library actually thread-safe?) rather than copying the example's; and some backends have no exact member — Redis fits neither `transport` nor `container` precisely, so pick the nearest transport (`fs` here is that approximation, not a statement that Redis is a filesystem).
+
+**2. Declare the fixture in `tests/backends/fixtures/fixtures.toml`:**
+
+```
+# tests/backends/fixtures/fixtures.toml
+[fixture.redis]
+backend   = "redis"
+stage     = 2
+kind      = "real-local"
+container = "none"
+is_async  = false
+```
+
+Per-fixture overrides of `flat_namespace` / `self_op_supported` merge on top of the family defaults — that is how the Azurite emulator (flat) and live ADLS Gen2 (HNS) share one `azure` family yet disagree.
+
+Three of these fields deserve extra care — `stage` and `kind` drive collection, `container` is about CI provisioning:
+
+- **`stage` decides when your fixture participates.** Stage 1 fixtures run everywhere; stage 2–3 fixtures are dropped from parametrization unless the session's stage is high enough. The active stage is auto-detected (stage 2 when a Docker daemon is reachable, stage 1 otherwise) and can be forced with `--stage=N` or the `RS_TEST_STAGE` env var. A service-backed fixture like this one belongs in stage 2.
+- **`kind = "real-live"`** (live cloud) fixtures must also carry `pytest.mark.live` via the registration's `marks=` — the registry rejects a live fixture without it.
+- If CI cannot start your service via `container` (the enum has no member for it, as with Redis here), provision the service yourself and have the factory skip when it is absent — that is step 3's first obligation.
+
+**3. Add a factory module `tests/backends/fixtures/redis.py`:**
+
+The module name matches the fixture name by default (that is how it gets imported); a differently-named or shared module needs a `_MODULE_FOR` entry — see below. The factory is called fresh for **every test**, and the suite runs no cleanup unless you provide one. That gives it four obligations beyond constructing the backend:
+
+- **Skip when infrastructure is absent** — the optional dependency AND the service itself. Factories run at test setup, so `pytest.skip` there is how a fixture self-excludes; a missing reachability check turns every test into a `BackendUnavailable` failure on machines without the daemon.
+- **Provision the namespace it hands out** — create the bucket/database/ container the backend points at; the suite assumes writable storage.
+- **Isolate per call** — a unique prefix or bucket per invocation, or earlier tests' leftovers show up as baffling `AlreadyExists` / orphan-artifact failures that look like backend bugs.
+- **Provide `cleanup=`** to close the backend after each test.
+
+Keep backend/SDK imports *inside* the factory functions: `_load_all()` imports every factory module at conftest import time, so a module-level `import` of an optional dependency would break collection for the whole `tests/backends/` tree on machines without it.
+
+```
+import uuid
+
+import pytest
+
+from tests.backends.fixtures._loader import load_fixture
+from tests.backends.fixtures.registry import BackendFixture, register
+
+_meta = load_fixture("redis")
+_URL = "redis://localhost:6379/0"
+
+
+def _factory():
+    redis = pytest.importorskip("redis", reason="redis-py not installed")
+    try:
+        redis.Redis.from_url(_URL).ping()
+    except redis.RedisError:
+        pytest.skip("Redis server not reachable")
+
+    from remote_store.backends._redis import RedisBackend
+
+    # Unique prefix per call = per-test isolation. Redis needs no
+    # provisioning (keys spring into existence); a bucket-based backend
+    # would create its bucket here.
+    return RedisBackend(url=_URL, prefix=f"test-{uuid.uuid4().hex[:8]}:")
+
+
+def _capabilities() -> frozenset:
+    try:
+        from remote_store.backends._redis import RedisBackend
+
+        return frozenset(RedisBackend.CAPABILITIES)
+    except ImportError:
+        return frozenset()
+
+
+def _cleanup(backend) -> None:
+    backend.close()
+
+
+register(
+    BackendFixture(
+        factory=_factory,
+        capabilities=_capabilities(),
+        cleanup=_cleanup,
+        **_meta.to_kwargs(),
+    )
+)
+```
+
+`_load_all()` walks `fixtures.toml` and imports the factory module with the same name as each fixture — so a fixture whose module is named differently (or a second fixture sharing one module) needs an entry in the `_MODULE_FOR` map in `tests/backends/fixtures/__init__.py`, or collection dies with `ModuleNotFoundError`. The conformance conftest's `pytest_generate_tests` hook then parametrizes every test that takes a `backend` argument (or `async_backend` for async fixtures) over the registered fixtures:
+
+```
+pytest tests/backends/conformance/ -k redis --stage=2
+```
+
+Expect this first run to fail in the two `test_identity.py` classification lanes until step 4 below is done.
+
+**4. Classify your family in the by-name conformance lanes.** Two `test_identity.py` declaration sets (atomic-move and seekable) fail loudly for any unclassified family — the failure message names the exact edit. One lane does NOT prompt: `test_health_probe_declared.py` discovers backends from a hardcoded module import list, and a module missing from it is silently not checked — add your backend module there yourself.
+
+If your backend requires an external service (like S3, SFTP, or Azurite), add a session-scoped server fixture in `tests/conftest.py` (where `moto_server` / `sftp_server` / `azurite_server` live), publish its endpoint via `_populate_infra` in `tests/backends/conftest.py` plus a field on `InfraState` in `tests/backends/fixtures/_state.py`, and read `INFRA` from your factory at call time.
+
+______________________________________________________________________
+
+### Capability gating
+
+Backends may declare a subset of capabilities, and the suite skips what a backend cannot do — a read-only backend cleanly skips all write, move, copy, and delete tests without failures. Two mechanisms, in order of preference:
+
+**Class-level filtering** is the primary mechanism: test classes parametrize via `fixture_params(*caps)`, so a backend missing a capability never enters those tests at all.
+
+**Runtime fallback** is the `_require()` helper, for a single test inside a coarsely-filtered class that needs a stricter capability than its siblings:
+
+```
+def _require(backend: Backend, *caps: Capability) -> None:
+    for cap in caps:
+        if not backend.capabilities.supports(cap):
+            pytest.skip(f"Backend does not support {cap.name}")
+```
+
+Use the same runtime pattern in your own tests:
+
+```
+from remote_store import Capability
+import pytest
+
+def test_move_preserves_content(backend):
+    _require(backend, Capability.MOVE)
+    backend.write("src.txt", b"hello")
+    backend.move("src.txt", "dst.txt")
+    assert backend.read_bytes("dst.txt") == b"hello"
+```
+
+A backend declaring only `READ` and `LIST` never enters the `WRITE`, `MOVE`, `COPY`, and `DELETE` lanes at all — class-filtered tests are not generated for it — and any stricter test inside a coarser class self-skips. The suite still passes: absences and skips are not failures.
+
+______________________________________________________________________
+
+### Flat-namespace vs. hierarchical backends
+
+Backends fall into two models that affect a handful of conformance tests.
+
+**Hierarchical** backends (Local, SFTP, Memory) have real directory objects. Writing a file creates its parent directories; a path can be either a file *or* a directory, never both.
+
+**Flat-namespace** backends (S3, Azure, HTTP) have no real directory entries. Folders are virtual — inferred from key prefixes. A path `a/b/c` implies a prefix `a/b/` but no actual directory object exists.
+
+The conformance suite reads this from the per-backend `flat_namespace` flag declared in `tests/backends/fixtures/backends.toml`, with per-fixture overrides in `fixtures.toml` taking precedence (see the registration steps above for both files and the Azurite-vs-ADLS example). Tests that rely on real directory semantics call `_skip_flat_namespace()`, which reads the resolved flag from the per-fixture record attached by the conformance indirect fixture; no identity-set lookup is needed.
+
+Key behavioral differences that the conformance tests check:
+
+| Behavior                                                      | Hierarchical (Local, SFTP, Memory) | Flat-namespace (S3, Azure, SQL)                  |
+| ------------------------------------------------------------- | ---------------------------------- | ------------------------------------------------ |
+| Write to a path that is an existing directory                 | Raises `InvalidPath`               | Allowed — the write has no error to reclassify   |
+| Read / delete / stat / move-source on a path that is a folder | Raises `InvalidPath`               | Raises `InvalidPath` — derived on the error path |
+| `delete_folder` / `get_folder_info` on a path that is a file  | Raises `InvalidPath`               | Raises `InvalidPath` — derived on the error path |
+| `delete_folder(recursive=False)` on non-empty folder          | Raises `DirectoryNotEmpty`         | Raises `DirectoryNotEmpty`                       |
+| Explicit directory creation                                   | Required (mkdir semantics)         | Not needed; folders emerge from key prefixes     |
+| `is_folder(path)` for a prefix with no keys                   | `False`                            | `False`                                          |
+
+**Wrong-type errors are not a variation.** Rows two and three hold on every backend. A flat namespace cannot answer "is this a directory?" directly, so it derives the answer *after* the operation has already failed — one bounded prefix listing, or one HEAD — and converts the miss into `InvalidPath`. Do the same in your backend rather than letting a `NotFound` stand: the probe costs nothing on the success path, because a successful call never reaches it.
+
+**Fail-open belongs to that call site, not to the probe.** On the error path a probe that cannot answer may return "no", because the operation's own error is still there to stand. Do not build that swallow into the probe itself: the same HEAD or listing usually also serves as the plain existence check at the head of `delete`, `delete_folder` and the `move`/`copy` source, and there it is the *determinant* with no prior error to fall back on — swallowing invents a verdict, and a denied HEAD reaches the caller as "the object is absent". Keep the probe strict and wrap it at the error-path call site; the [Backend Adapter Contract](https://docs.remotestore.dev/stable/explanation/design/specs/003-backend-adapter-contract/index.md) states the rule and the reasoning behind it.
+
+What flat-namespace backends *are* exempt from is the write side — a write to a key that shadows a prefix succeeds, so there is no error to reclassify, and the same applies to a move/copy destination.
+
+If your backend is hierarchical (the common case), no action is needed — the full extended suite applies.
+
+______________________________________________________________________
+
+### Conformance checklist
+
+Before a backend is considered conformant, verify:
+
+| Level             | What                                                                                    | Command                                                                         |
+| ----------------- | --------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------- |
+| **Conformance**   | All `tests/backends/conformance/` tests pass or self-skip (declared capability missing) | `pytest tests/backends/conformance/ -k <fixture-name>`                          |
+| **Extended**      | All `@pytest.mark.extended_conformance` cases pass or self-skip                         | `pytest -m extended_conformance -k <fixture-name>`                              |
+| **Error mapping** | Every native exception maps to a `remote_store` error — nothing leaks                   | Error mapping checklist above                                                   |
+| **Repr safety**   | `repr(backend)` does not expose secrets                                                 | `pytest tests/backends/conformance/test_identity.py -k test_repr_masks_secrets` |
+
+Three pitfalls in reading these results:
+
+- **Check stage participation first.** A stage-2/3 fixture is silently dropped from parametrization when the session's stage is lower — and the default stage is 1 on machines without a reachable Docker daemon. Pass `--stage=2` (or set `RS_TEST_STAGE`) before suspecting your registration.
+- **The `-k` token is the fixture/family name** (underscores, e.g. `s3_boto3`), not the backend's `name` property — a hyphenated `name` like `"s3-boto3"` never matches any test id, so `-k` with it silently selects nothing.
+- **Green is only meaningful if your fixture actually ran.** Confirm your fixture id appears in the parametrized test ids (`pytest --collect-only -q ... | grep <fixture-name>`). A handful of passes with thousands deselected, or exit code 5 ("no tests ran"), means the fixture never participated — stage gating or a failed registration, not universal self-skipping.
+
+Skips are expected and acceptable when a backend doesn't declare the relevant capability. Failures (not skips) in either suite are blocking.
+
+______________________________________________________________________
+
+### Standalone backend testing
+
+> **Not contributing to the repo?** Skip the fixture registration above and write focused tests directly. The categories below mirror what the conformance suite verifies.
+
+If you are building a backend outside the remote-store repository, write focused tests covering the same categories the conformance suite verifies:
+
+#### Happy paths
+
+- Read/write round-trip
+- Overwrite behavior (`overwrite=True` and `overwrite=False`)
+- List files and folders (recursive and non-recursive)
+- Move and copy
+- Metadata accuracy (`size`, `modified_at`)
+
+#### Error paths
+
+- `read()` on missing file raises `NotFound`
+- `write()` on existing file with `overwrite=False` raises `AlreadyExists`
+- `delete(missing_ok=False)` on missing file raises `NotFound`
+- `delete_folder(recursive=False)` on non-empty folder raises `DirectoryNotEmpty`
+- Path naming a wrong type (file path to `get_folder_info`, directory path to `read`) raises `InvalidPath`
+- Backend unavailable raises `BackendUnavailable`
+
+#### Edge cases
+
+- Empty path (`""`) and root alias (`"."`) — root always exists and is always a folder, under both spellings, and on a store nothing has been written to yet
+- `is_file("")` always returns `False`; `exists("")` never raises — including when the SDK rejects a zero-length key (answer it yourself, before the call)
+- Deeply nested paths (`"a/b/c/d/e/file.txt"`)
+- Non-existent paths to `list_files` / `list_folders` yield nothing (no exception)
+- `repr(backend)` does not expose credentials or secrets
+- Concurrent access (if thread-safety matters)
+
+#### Example test structure
+
+```
+import pytest
+from remote_store import AlreadyExists, NotFound, Store
+
+@pytest.fixture
+def store():
+    backend = RedisBackend(url="redis://localhost:6379/15", prefix="test:")
+    backend._client.flushdb()  # Clean slate
+    return Store(backend=backend)
+
+def test_read_write_roundtrip(store):
+    store.write("hello.txt", b"world")
+    assert store.read_bytes("hello.txt") == b"world"
+
+def test_write_no_overwrite(store):
+    store.write("hello.txt", b"first")
+    with pytest.raises(AlreadyExists):
+        store.write("hello.txt", b"second")
+
+def test_read_missing(store):
+    with pytest.raises(NotFound):
+        store.read("nope.txt")
+
+def test_list_files(store):
+    store.write("a/1.txt", b"one")
+    store.write("a/2.txt", b"two")
+    store.write("b/3.txt", b"three")
+    files = list(store.list_files("a"))
+    assert len(files) == 2
+    names = {f.name for f in files}
+    assert names == {"1.txt", "2.txt"}
+
+def test_list_files_recursive(store):
+    store.write("a/b/deep.txt", b"deep")
+    store.write("a/top.txt", b"top")
+    files = list(store.list_files("a", recursive=True))
+    assert len(files) == 2
+
+def test_list_folders(store):
+    store.write("docs/readme.md", b"# Hello")
+    store.write("src/main.py", b"pass")
+    folders = {f.name for f in store.list_folders("")}
+    assert "docs" in folders
+    assert "src" in folders
+```
+
+______________________________________________________________________
+
+## Design decisions
+
+### When to declare `SEEKABLE_READ`
+
+Declare it only if `read()` **always** returns a seekable stream with zero overhead. `BytesIO` qualifies. Streams backed by network iterators don't.
+
+If your `read()` returns a non-seekable stream, don't worry — `Store` handles it. `read_seekable()` will spool to a temp file automatically. You can also override `read_seekable()` for an optimized path (like Azure's HTTP Range reader).
+
+### When to support `ATOMIC_WRITE`
+
+Support it if your backend can guarantee that readers never see partial content. Filesystem backends use temp-file-and-rename. Databases can use transactions. If your backend's writes are inherently atomic (single Redis `HSET`), you could declare it — but be honest about the guarantee. "Atomic at the key level" isn't the same as "atomic rename of a visible path."
+
+### Thread safety
+
+Backends may be called from multiple threads (e.g., `batch_copy` with concurrency). Use locking if your internal state is mutable. Redis clients are generally thread-safe, so our example doesn't need explicit locking.
+
+______________________________________________________________________
+
+## Quick reference
+
+### Abstract methods (must implement)
+
+| Member                                                  | Type                                                                                                 | Raises on error                                                                                                                                                                     |
+| ------------------------------------------------------- | ---------------------------------------------------------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `CAPABILITIES` (class attribute)                        | [`ClassVar[CapabilitySet]`](https://docs.remotestore.dev/stable/reference/api/capabilities/index.md) | —                                                                                                                                                                                   |
+| `name` (property)                                       | `str`                                                                                                | —                                                                                                                                                                                   |
+| `capabilities` (property)                               | [`CapabilitySet`](https://docs.remotestore.dev/stable/reference/api/capabilities/index.md)           | —                                                                                                                                                                                   |
+| `exists(path)`                                          | `bool`                                                                                               | Never raises [`NotFound`](https://docs.remotestore.dev/stable/reference/api/errors/index.md)                                                                                        |
+| `is_file(path)`                                         | `bool`                                                                                               | —                                                                                                                                                                                   |
+| `is_folder(path)`                                       | `bool`                                                                                               | —                                                                                                                                                                                   |
+| `read(path)`                                            | `BinaryIO`                                                                                           | [`NotFound`](https://docs.remotestore.dev/stable/reference/api/errors/index.md)                                                                                                     |
+| `read_bytes(path)`                                      | `bytes`                                                                                              | [`NotFound`](https://docs.remotestore.dev/stable/reference/api/errors/index.md)                                                                                                     |
+| `write(path, content, overwrite, metadata=None)`        | [`WriteResult`](https://docs.remotestore.dev/stable/reference/api/models/index.md)                   | [`AlreadyExists`](https://docs.remotestore.dev/stable/reference/api/errors/index.md)                                                                                                |
+| `write_atomic(path, content, overwrite, metadata=None)` | [`WriteResult`](https://docs.remotestore.dev/stable/reference/api/models/index.md)                   | [`AlreadyExists`](https://docs.remotestore.dev/stable/reference/api/errors/index.md), [`CapabilityNotSupported`](https://docs.remotestore.dev/stable/reference/api/errors/index.md) |
+| `open_atomic(path, overwrite)`                          | `ContextManager[BinaryIO]`                                                                           | [`AlreadyExists`](https://docs.remotestore.dev/stable/reference/api/errors/index.md), [`CapabilityNotSupported`](https://docs.remotestore.dev/stable/reference/api/errors/index.md) |
+| `delete(path, missing_ok)`                              | `None`                                                                                               | [`NotFound`](https://docs.remotestore.dev/stable/reference/api/errors/index.md)                                                                                                     |
+| `delete_folder(path, recursive, missing_ok)`            | `None`                                                                                               | [`NotFound`](https://docs.remotestore.dev/stable/reference/api/errors/index.md), [`DirectoryNotEmpty`](https://docs.remotestore.dev/stable/reference/api/errors/index.md)           |
+| `list_files(path, recursive, max_depth)`                | `Iterator[`[`FileInfo`](https://docs.remotestore.dev/stable/reference/api/models/index.md)`]`        | —                                                                                                                                                                                   |
+| `list_folders(path)`                                    | `Iterator[`[`FolderEntry`](https://docs.remotestore.dev/stable/reference/api/models/index.md)`]`     | —                                                                                                                                                                                   |
+| `get_file_info(path)`                                   | [`FileInfo`](https://docs.remotestore.dev/stable/reference/api/models/index.md)                      | [`NotFound`](https://docs.remotestore.dev/stable/reference/api/errors/index.md)                                                                                                     |
+| `get_folder_info(path)`                                 | [`FolderInfo`](https://docs.remotestore.dev/stable/reference/api/models/index.md)                    | [`NotFound`](https://docs.remotestore.dev/stable/reference/api/errors/index.md)                                                                                                     |
+| `move(src, dst, overwrite)`                             | `None`                                                                                               | [`NotFound`](https://docs.remotestore.dev/stable/reference/api/errors/index.md), [`AlreadyExists`](https://docs.remotestore.dev/stable/reference/api/errors/index.md)               |
+| `copy(src, dst, overwrite)`                             | `None`                                                                                               | [`NotFound`](https://docs.remotestore.dev/stable/reference/api/errors/index.md), [`AlreadyExists`](https://docs.remotestore.dev/stable/reference/api/errors/index.md)               |
+
+### Optional overrides
+
+| Method                | Default behavior                                                                                              |
+| --------------------- | ------------------------------------------------------------------------------------------------------------- |
+| `read_seekable(path)` | Spools non-seekable streams to temp file                                                                      |
+| `iter_children(path)` | Chains `list_files()` + `list_folders()`                                                                      |
+| `glob(pattern)`       | Raises `CapabilityNotSupported`                                                                               |
+| `to_key(native_path)` | Identity function                                                                                             |
+| `native_path(path)`   | Identity function                                                                                             |
+| `resolve(path)`       | Builds a `ResolutionPlan` from `name` and `native_path()`; no I/O. Override to add backend-specific `details` |
+| `check_health()`      | No-op                                                                                                         |
+| `close()`             | No-op                                                                                                         |
+| `unwrap(type_hint)`   | Raises `CapabilityNotSupported`                                                                               |
+
+______________________________________________________________________
+
+## See also
+
+- [Backend API reference](https://docs.remotestore.dev/stable/reference/api/backend/index.md) — full method documentation
+- [Error types API reference](https://docs.remotestore.dev/stable/reference/api/errors/index.md) — all error classes
+- [Backend Adapter Contract](https://docs.remotestore.dev/stable/explanation/design/specs/003-backend-adapter-contract/index.md) — formal spec
+- [Capabilities Matrix](https://docs.remotestore.dev/stable/reference/capabilities-matrix/index.md) — all backends and their capabilities
+- [Choosing a Backend](https://docs.remotestore.dev/stable/guides/choosing-a-backend/index.md) — decision guide for built-in backends
+- [Architecture Overview](https://docs.remotestore.dev/stable/explanation/architecture/index.md) — how Store, Backend, and extensions fit together

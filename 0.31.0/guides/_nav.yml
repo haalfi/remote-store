@@ -1,0 +1,23 @@
+# Exception: Backends and Extensions are primary entry points and come first
+# as sub-sections. Default rule: sub-sections first (primary entry points),
+# then individual files — core patterns first, then advanced, then meta.
+- Backends: backends/
+- Extensions:
+    - Overview: extensions.md
+    - Batch Operations: batch-operations.md
+    - Caching: cache.md
+    - Glob Pattern Matching: glob-pattern-matching.md
+    - Observability Hooks: observe.md
+    - Transfer Operations: transfer-operations.md
+    - PyArrow Adapter: pyarrow-adapter.md
+    - Parquet Datasets: parquet-datasets.md
+    - Dagster IO Manager: dagster.md
+    - Retry Policy: retry.md
+- Async Store: async.md
+- Async/Sync Bridges: async-sync-bridges.md
+- Write Integrity: write-integrity.md
+- Health Check: health-check.md
+- Data Lake Patterns: data-lake-patterns.md
+- Troubleshooting: troubleshooting.md
+- Choosing a Backend: choosing-a-backend.md
+- Build Your Own Backend: custom-backend-guide.md
