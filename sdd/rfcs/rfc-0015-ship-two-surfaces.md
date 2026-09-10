@@ -21,8 +21,9 @@ The corpus moves on every merge, so re-run rather than quote.
 because each fix pass writes new claims into the files the next round reads,
 and since ADR-0037 those files include the loop's own diary. Over the nineteen
 deliveries reviewed since the whole-file gate landed, the share of findings
-that sit on text a fix pass wrote runs from 3% in round 1 to 46% in round 2 and
-77% or more from round 3 on (Table 2). This RFC proposes that the deliverable
+that sit on text a fix pass wrote runs from 0% in round 1 to 46% in round 2 and
+77% or more from round 3 on, and the same shape holds when only findings the
+fixer confirmed as must-fix are counted (Tables 2 and 4). This RFC proposes that the deliverable
 and the loop's record become two surfaces with the PR as the record's only
 source of truth; that a fix may remove, measure, narrow or enumerate but never
 argue; that every review pass reads a worktree pinned at the certified commit;
@@ -46,7 +47,7 @@ comments give the round count where they differ, and the shape does not change.
 | Population | n | median | mean |
 |---|---|---|---|
 | Traces added since `24d9464` | 26 | 7 | 6.50 |
-| All other traces | 213 | 2 | 2.14 |
+| All other traces carrying the field | 213 | 2 | 2.14 |
 
 The 26 values, so the median is checkable: 1, 1, 2, 2, 2, 3, 3, 5, 6, 6, 7, 7,
 7, 7, 7, 7, 8, 8, 8, 8, 9, 9, 11, 11, 11, 13. The "before" population contains
@@ -55,43 +56,99 @@ the five deliveries that produced ADR-0033 through ADR-0037 (PRs #945, #949,
 `bk-348` 8), which sit at 6 to 10, so the split is between the loop as it now
 runs and everything before it, not between `/ship` and no `/ship`.
 
+Two more bounds sit on this table, beside the proxy bound above. **The field
+is not required by the schema, and traces without it are excluded**: the
+script prints them, and at `f6bd6d1` that is 61 of the 274 pre-split traces
+and none of the post-split ones, so `n=213` is the before-population that
+carries the field, not the before-population. **The split commit is also the
+commit from which the field's derivation had to be named**: `_schema.yml`
+§ `review_rounds` binds its derivation-comment clause "from BK-348 onward" and
+does not retrofit the corpus, and the field is a post-merge judgement. An
+author made to recover the commit list plausibly records a higher value than
+one who did not, so part of the step in Table 1 may be the rule changing what
+gets written down rather than the loop changing how long it runs. Neither
+bound moves the direction; both are why Table 1 is the opening figure and not
+the load-bearing one. Tables 2 and 3 do not depend on the field.
+
 **Table 2. Where the findings sit, by round index.** Sample: the 19 traces in
 Table 1's first row with `review_rounds` of five or more, mapped to their merge
 PRs by the `(#N)` suffix of `git log --format=%s 24d9464..HEAD`:
 #964 #965 #968 #971 #972 #973 #974 #976 #977 #978 #983 #986 #987 #989 #990 #991
 #992 #994 #996. Derivation: `python sdd/rfcs/rfc-0015-findings.py <those 19>`.
 For each finding (a review comment with no `in_reply_to_id`) the script blames
-the commented line at the head the reviewer saw and classifies the blamed
-commit against that head's own history: **original** if it is the
-implementation push, **pre-existing** if it is reachable from the merge-base
-with `master`, **loop-introduced** otherwise, which means a fix-pass commit.
-Rounds are review submissions in posting order.
+the commented line at the head the reviewer saw. The blamed commit is
+**pre-existing** if it is reachable from `origin/master`; otherwise its author
+date is compared with the submission time of the PR's first review that
+carried a finding: **original** if authored before that, **loop-introduced**
+if after, which means a fix-pass commit. Author dates survive a rebase and do
+not care how many commits the first push had; an earlier revision of the
+script equated "original" with a single first commit, which was false for 3 of
+the 19 PRs (#968 and #971 pushed three commits before review, #991 two) and
+moved four round-1 findings into the loop-introduced column. Rounds are review
+submissions in posting order.
 
 | round | original | loop-introduced | loop share of classified | unclassifiable |
 |---|---|---|---|---|
-| 1 | 121 | 4 | 3% | 2 |
+| 1 | 125 | 0 | 0% | 2 |
 | 2 | 50 | 43 | 46% | 2 |
 | 3 | 20 | 68 | 77% | 59 |
 | 4 | 2 | 27 | 93% | 34 |
 | 5 | 4 | 16 | 80% | 28 |
 | 6 | 2 | 11 | 85% | 18 |
 | 7 | 2 | 11 | 85% | 10 |
-| total | 201 | 180 | 47% | 160 |
+| 8 | 0 | 0 | — | 2 |
+| 9 | 0 | 0 | — | 3 |
+| 10 | 0 | 0 | — | 2 |
+| total | 205 | 176 | 46% | 160 |
 
-Three bounds travel with this table. **Pre-existing is zero throughout**, and
+Every column sums: 205 + 176 + 160 = 541 findings, which Table 3 reaches
+independently. Rounds 8 to 10 belong to one PR (#990) and carry file-level
+findings only.
+
+Four bounds travel with this table. **Pre-existing is zero throughout**, and
 that is the posting rule at work rather than a fact about untouched code:
 `/rvw-pr` anchors a line comment to a `+` line, so a finding about unchanged
 text is posted at file level and falls in the last column. **The last column
 grows with the round**: panels post merged findings as `subjectType: "FILE"`,
 so from round 3 to round 7 between 40% and 58% of each round is
-unclassifiable (that column against the row total), and the percentages from
-round 4 rest on under thirty classified findings each. The direction is unambiguous; the
-figures are not precise. **A submission is not always a round**: BUG-264's
-trace records eight rounds where the endpoint shows two submissions, so some
-rows merge rounds. None of the three bounds moves a round-1 finding into a
+unclassifiable (that column against the row total), rounds 8 to 10 are
+entirely so, and the percentages from round 4 rest on under thirty classified
+findings each. The direction is unambiguous; the figures are not precise.
+**A submission is not always a round**: BUG-264's trace records eight rounds
+where the endpoint shows two submissions, so some rows merge rounds. **A
+commit authored before round 1 but pushed after it would read as original**;
+the loop pushes before it spawns reviewers, so the case is not expected, and
+it is not measured. None of the four bounds moves a round-1 finding into a
 later row or a loop-introduced one into the original column.
 
-**Table 3. What the findings are about.** Same script, same sample:
+**Table 4. The same, counting must-fix findings only.** Severity is what the
+proposal's rules key on, so the script reads the fixer's first reply in each
+thread for its verdict: *must-fix* when it says "Must-fix", "Fixed in",
+"Confirmed", "Correct", "Taken", "Added" or "Annotated"; *filed* when it says
+"Filed as" or mints an ID; *refuted* on "refut", "not a defect", "declin",
+"rejected" or "stays"; *unknown* otherwise, including an unanswered thread.
+Over the sample: 359 must-fix, 1 filed, 8 refuted, 173 unknown. The unknown
+third is the heuristic's bound, and it is not spread evenly: #968's 50 findings
+are all unknown, as are most of #977's, #990's and #994's later rounds, where
+the fixer answered in review summaries rather than in the threads. Within the
+classified must-fix findings:
+
+| round | original | loop-introduced | loop share of classified | unclassifiable |
+|---|---|---|---|---|
+| 1 | 90 | 0 | 0% | 2 |
+| 2 | 46 | 29 | 39% | 1 |
+| 3 | 18 | 42 | 70% | 28 |
+| 4 | 2 | 19 | 90% | 16 |
+| 5 | 3 | 16 | 84% | 13 |
+| 6 | 2 | 11 | 85% | 7 |
+| 7 | 1 | 10 | 91% | 3 |
+
+Restricting to must-fix lowers round 2 by seven points and leaves rounds 3 to
+7 where they were, so the late rounds are not many filed nits around a few real
+defects: the fixer confirmed and fixed them, and they were on its own text.
+
+**Table 3. What the findings are about.** Same script, same sample, and
+unaffected by the origin classifier:
 92 submissions, **190 findings on `src/` or `tests/` files and 351 on
 everything else**, and **133 of the 351 sit on `sdd/traces/`, `sdd/BACKLOG.md`
 or `sdd/BACKLOG-DONE.md`**. A quarter of everything the loop found, it found
@@ -172,7 +229,7 @@ caught it. A measurement is a change to what the repo may claim, and nothing
 routed from the number to the clauses it bears on.
 
 **Its findings are mostly unclassifiable by the origin tag**, which is
-Table 2's third bound in its sharpest form: `python sdd/rfcs/rfc-0015-findings.py 997`
+Table 2's unclassifiable bound in its sharpest form: `python sdd/rfcs/rfc-0015-findings.py 997`
 at `3cd4acb` returns 4 submissions and 20 inline findings for nine rounds, ten
 of the twenty file-level, so the loop-introduced share can be read for rounds 1
 and 2 only (0% and 40%). Nine rounds of review left a record from which the
@@ -252,7 +309,9 @@ than the one where the defects are born.
 ## Proposal
 
 Six decisions. Each states the rule, the mechanism that enforces it, the
-evidence it rests on, and the observation that would reverse it.
+evidence it rests on, and the observation that would reverse it. Each reversal
+condition names something a reader can count in the PR record or in
+`ship-report`'s output (D4), so that it can be evaluated rather than argued.
 
 ### D1. Two surfaces: the deliverable, and the record whose source of truth is the PR
 
@@ -262,34 +321,53 @@ repo keeps of it is derived from the PR once, after the loop ends.
 
 **Mechanism.**
 
+- **The unit is the file, and the boundary is what the text is about, not
+  where it sits.** A *retrospective* is text whose subject is an earlier
+  version of the artifact it sits in: `Retrospective:`, *until round N*, *an
+  earlier revision said*, *corrected in round N*, *this figure was wrong four
+  times*. Text whose subject is the repository or the work is content, however
+  historical: ID-257's "a second instance" paragraph records a collision that
+  happened in the repo, not a previous draft of ID-257, and stays. That is the
+  distinction the phrase set encodes, and it is what lets the check run over
+  whole files without a paragraph parser.
 - The *deliverable surface* is code, tests, specs, docs, `CHANGELOG.md`, the
-  migration guide, and a register entry's *what shipped* and *found by*
-  paragraphs. It carries no retrospective: no `Retrospective:`, no *until
-  round N*, no *an earlier revision said*, no *corrected in round N*. A claim
-  found false is corrected or deleted; a claim found unmeasured is measured
-  or deleted. A derivation is not a retrospective and stays.
+  migration guide, and `sdd/BACKLOG*.md` in full. A register entry is
+  deliverable in every paragraph: what shipped, the mechanism, figures with
+  their derivations, what was deliberately not done, who found it. What leaves
+  it is the round-by-round account of getting there, which is the record's.
+  Whether the remaining paragraphs are too long is BK-365's question and not
+  this RFC's. A claim found false is corrected or deleted; a claim found
+  unmeasured is measured or deleted. A derivation is not a retrospective and
+  stays.
 - The *record* is the PR: commits, review comments, replies, CI. The trace's
   review block (`review_rounds`, findings per round, origin counts, per-file
   distribution) and the Step 5 report are derived from it by D4's script,
-  once, after the stop rule fires, and pasted verbatim. The trace's *reads*
-  are still logged as they happen; only the review fields move to the close.
-  BUG-265's annotate-versus-correct rule for traces is retired, because the
-  annotated half no longer lives in the trace.
+  once, after the stop rule fires, and pasted verbatim under one YAML key
+  (`review:`), so the trace's boundary is a key the check can see. The trace's
+  *reads* are still logged as they happen; only the review fields move to the
+  close. BUG-265's annotate-versus-correct rule for traces is retired, because
+  the annotated half no longer lives in the trace.
 - `CLAUDE.md` § Trace authoring is amended for the review fields only;
   `_schema.yml` § `review_rounds` replaces its hand-enumeration clause with
   the script's output block and names the script as the derivation.
 - A check, `scripts/check_no_retrospective.py`, greps the deliverable surface
-  for the marker phrases above and fails on a hit. Its bound is stated per
-  [`DRIFT-RULES.md` Rule 7](../DRIFT-RULES.md#miss-rate): it matches phrases,
-  not the diary written in other words, and it is on the mandatory path per
-  Rule 5 because the alternative is exactly the review-enforced rule that did
-  not hold. At `2a1bbfe` the phrase set hits 14 lines in five files.
+  for the marker phrases above and fails on a hit, naming file and line
+  ([`DRIFT-RULES.md` Rule 2](../DRIFT-RULES.md#localize)). It declares a
+  `Drift-gate::` block and its bound per
+  [Rule 7](../DRIFT-RULES.md#miss-rate): it matches phrases, not the diary
+  written in other words, and a retrospective that avoids the phrase set is a
+  reviewer's to catch. It sits on the mandatory path per Rule 5 because the
+  alternative is exactly the review-enforced rule that did not hold. At
+  `2a1bbfe` the phrase set hits 14 lines in five files.
 
 **Evidence.** Cause A; Table 3's 133 findings on the record; the five stale
 derivation comments; BK-365.
 
 **Reverse if** a defect's correction is lost that the in-file diary would
-have preserved, or the derived block proves as disputed as the hand one.
+have preserved, or `ship-report`'s per-file finding count shows the derived
+trace block drawing findings in more than one round per delivery, which is the
+rate the hand-written block drew (eleven stalenesses across four traces, at
+least one per delivery).
 
 ### D2. A fix removes, measures, narrows or enumerates; it never argues
 
@@ -337,8 +415,10 @@ shape.
 **Evidence.** Causes B and D; failures 1, 2, 3; BUG-265's three rationales and
 its `EPERM` round trip; BK-359's invented advice.
 
-**Reverse if** a delivery ships a defect that a written rationale would have
-prevented and the enumeration did not, across more than one delivery.
+**Reverse if** a `BUG-` filed after merge against a delivery run under this
+rule is closed by restoring a rationale the loop removed under shape (2) or
+(3), more than once. That is observable in the fix PR's diff; a counterfactual
+about what a rationale would have prevented is not, and is not the condition.
 
 ### D3. Every review pass reads a worktree pinned at the certified commit
 
@@ -349,10 +429,15 @@ prevented and the enumeration did not, across more than one delivery.
 - After each push, the orchestrator runs `git worktree add tmp/review/<sha>
   <sha>` and every pass of that round, solo or panel member, is told that its
   repository root is that path. Whole-file reads come from it; measuring
-  members run gates in it. `hatch run` creates the worktree's own environment,
-  measured at **31.5 s wall clock for environment creation plus the full
-  `lint` gate** on this container (`python -c` timer around
-  `subprocess.run(['hatch','run','lint'], cwd=<worktree>)`, one run).
+  members run gates in it. `hatch run` creates the worktree's own environment
+  on first use, once per worktree and so once per round, not per pass. The
+  repo has one hatch environment (`hatch env show` lists `default` alone), so
+  lint and the test gates share it and the creation cost is the same whichever
+  a member runs first. Measured on this container, one run each, `python -c`
+  timers around `subprocess.run(..., cwd=<fresh worktree>)`: **`hatch env
+  create` 25.6 s**; `hatch run lint` in another fresh worktree 31.5 s, so the
+  gate itself was under six seconds of that. Gate time after creation is the
+  gate's cost, not the worktree's, and is paid today.
 - The `HEAD` and `git status --porcelain` check moves to the worktree and
   stays as the residue check for a reviewer that wrote there. The main tree
   is never what is certified, so the fixer cannot dirty a certification and
@@ -367,8 +452,10 @@ prevented and the enumeration did not, across more than one delivery.
 constraint is "enforced by instruction, so a reviewer that ignores it
 invalidates the round rather than being stopped".
 
-**Reverse if** the worktree cost dominates a round, or a reviewer is found
-reading outside its worktree at a rate the residue check misses.
+**Reverse if** environment creation exceeds the round's shortest review pass
+(the per-pass durations `ship-report` reads from review submission times), or
+a reviewer is found reading outside its worktree at a rate the residue check
+misses.
 
 ### D4. Every figure about the loop is derived by one script after the loop ends
 
@@ -379,11 +466,26 @@ and guarded under `tests/scripts/`, reads the PR's comments (paged, per
 `/rvw-pr` Step 4's discipline) and `git log`, and emits: findings per
 submission; the per-file distribution, which replaces brief requirement 3's
 two-call recipe; the origin tag per finding (D5); the review-driven commit
-list and count; the set difference of backlog item IDs between the head and
-`origin/master`, so a rebase that drops a live item or a body that claims to
-close another branch's open item is visible (PR #997 did both, in rounds 5 and
-7, and no gate covers either); and CI's verdict on the head. Its output is the
-Step 5 report and the trace's review block, verbatim. Mid-loop, a brief quotes its output
+list and count; per-pass durations from review submission times; and CI's
+verdict on the head. Its output is the Step 5 report and the trace's review
+block, verbatim. The per-file count includes the trace, which is how D1's
+reversal condition is read.
+
+**The backlog ID-set check is a gate, not a report line.** A rebase that drops
+a live item, or a PR body that claims to close another branch's open item
+(PR #997 did both, in rounds 5 and 7, and no gate covers either) is two
+artifacts disagreeing, which is [`DRIFT-RULES.md`](../DRIFT-RULES.md#rules)'s
+subject, and that file says a report is not a reduced-obligation category. So
+it ships as `scripts/check_backlog_ids_vs_base.py`: the set difference of
+`PREFIX-NNN` item headers between the working tree and `origin/master`,
+failing on an ID that master has open and the head lacks, or that the head
+closes while master has it open on another branch's account, and naming the
+ID and the side (Rule 2). It runs in the PR validation gates `/pr` and
+`/fix-pr` already share, which fetch `origin/master` first (Rule 5: the
+mandatory path, at push time rather than at the close). Each of the three
+scripts this RFC names, `ship_report.py` included, declares the `Drift-gate::`
+block Rule 7 requires, so `gen_gate_inventory.py` populates their rows rather
+than passing a `ship_` prefix silently. Mid-loop, a brief quotes its output
 for the distribution and the origin counts; the orchestrator computes nothing
 by hand. BK-348 declined a script because "it guards nothing"; the hand
 enumerations since went stale eleven times across four traces (five, four,
@@ -393,7 +495,9 @@ round.
 **Evidence.** Cause A; ADR-0037's corollary that a figure refuted twice is
 replaced by the query that regenerates it.
 
-**Reverse if** the script's figures are disputed as often as the hand ones.
+**Reverse if** the script's own output draws findings in more than one round
+per delivery, which is the hand-written block's measured rate (cause A), read
+from the per-file count the script emits about itself.
 
 ### D5. Each finding is tagged by origin, and two self-audit rounds trigger retraction
 
@@ -410,30 +514,61 @@ corrects.
   file. 160 of the 541 findings in Table 2 were file-level and could not be
   classified, from round 3 they are 40% to 58% of every round, and PR #997's
   nine rounds left twenty inline findings, half of them file-level.
-- Stop-rule clause: if two consecutive rounds' must-fix findings are all
-  loop-introduced, the next fix pass is a *retraction pass*. Each affected
-  passage is restored to its last state that no round found false, and then,
-  if a finding still stands against it, closed by shape (2) or (3). This is
-  what BUG-264's round 4 and BK-359's round 5 did on the user's call; the rule
-  makes it the loop's.
+- Stop-rule clause: when two consecutive rounds each carry **at least two
+  classified must-fix findings of which at least 80% are loop-introduced**,
+  the next fix pass is a *retraction pass*. Each affected passage is restored
+  to its last state that no round found false, and then, if a finding still
+  stands against it, closed by shape (2) or (3). This is what BUG-264's round
+  4 and BK-359's round 5 did on the user's call; the rule makes it the loop's.
+  **The constants are chosen from a dry run, not asserted.** The script runs
+  three readings over the 19 sampled deliveries. "All classified must-fix
+  findings loop-introduced" fires in 2 PRs (#973 three times, #987 once) and
+  never on #996, because one original finding in a round of ten silences it.
+  "Unclassifiable counts as loop-introduced" fires in 5 PRs and 12 rounds, but
+  #991's four and #976's three are rounds posted entirely at file level, so
+  that reading fires on the posting artifact rather than on the loop. The 80%
+  share over at least two classified findings fires in 4 PRs and 8 rounds
+  (#973 four, #986 one, #987 one, #996 two) and in none of the file-level
+  rounds; it is the reading adopted. Unclassifiable findings are excluded from
+  the ratio, so under today's posting the trigger under-fires rather than
+  over-fires, and the `LINE` discipline above raises its reach.
 - BK-366 gets its data as a side effect. Every `BUG-` filed from a loop is
   born in a round with an origin tag, so a delivery reports which of its
   discoveries were caught on new code, caught on pre-existing code, or
   escaped, which is the separation that item says the repo cannot make.
 
-**Evidence.** Table 2; the two user-called retractions.
+**Evidence.** Tables 2 and 4; the dry run above; the two user-called
+retractions.
 
 **Reverse if** a retraction pass removes a load-bearing reason a later round
-has to restore, more than once.
+has to restore, more than once (a finding whose fix re-adds text the
+retraction removed, visible in the round's diff), or the trigger fires in a
+round whose classified must-fix findings are later refuted as a majority.
 
 ### D6. The exit gates read the deliverable surface
 
-The unprimed, whole-file and measuring gates are unchanged in kind. The
-whole-file pass reads deliverable files whole and reads derived blocks not at
-all: a derived block is verified by re-running the script, which a measuring
-member may do. The floor of two passes, the soft ceiling of five
-finding-rounds, the divergence check and the subject list all stay. The
-repeat-site check is retired because D2 absorbs its trigger.
+**Rule.** The unprimed, whole-file and measuring gates are unchanged in kind
+and read the deliverable surface; a derived block is verified by re-running
+its script, never by reading it.
+
+**Mechanism.** The whole-file brief names the deliverable files and excludes
+the trace's `review:` key; a measuring member may re-run `ship-report` and
+diff its output against the block. The floor of two passes, the soft ceiling
+of five finding-rounds, the divergence check and the subject list all stay.
+The repeat-site check is retired because D2 moves its trigger from two
+refutations to zero; its text in the skill is replaced by a pointer to D2's
+rule.
+
+**Evidence.** ADR-0037's gate found real defects (eight files on PR #956,
+three docstrings no diff reached on BUG-265); what it read was the problem,
+not that it read (Alternatives). The repeat-site check's two firings in the
+sample (BUG-265 round 4, BUG-275 round 2) each cost the two rounds that
+triggered them.
+
+**Reverse if** a whole-file pass finds a defect in a derived block that
+re-running the script does not reproduce, or a condition is argued and refuted
+twice in one delivery under D2, which would mean the retired check's trigger
+still has work.
 
 ### A round under this RFC
 
@@ -475,11 +610,20 @@ runtime behaviour, no published page other than this RFC's own.
   (triage, stop rule, worktree, report), `/rvw-pr` (worktree root, `LINE`
   discipline, the six-line prose form), `/fix-pr` (fix shape, mutation check,
   re-derived attributions), `CLAUDE.md` § Trace authoring, `_schema.yml`
-  § `review_rounds`, a new ADR, `scripts/ship_report.py` and
-  `scripts/check_no_retrospective.py` with hatch aliases and guards,
-  `sdd/GATE-INVENTORY.md` (generated).
-- **Cost:** 31.5 s per pass for the worktree environment, measured once above;
-  script work of size S; skill rewrites of size M.
+  § `review_rounds`, a new ADR, `scripts/ship_report.py`,
+  `scripts/check_no_retrospective.py` and
+  `scripts/check_backlog_ids_vs_base.py` with hatch aliases, guards and
+  `Drift-gate::` blocks, `sdd/GATE-INVENTORY.md` (generated).
+- **Cost:** 25.6 s of environment creation once per round, measured once
+  above (D3); script work of size S; skill rewrites of size M.
+- **Acceptance criterion, stated before the run.** Three deliveries run under
+  the rules, pooled, then `rfc-0015-findings.py` over them. Graduate to an ADR
+  if the loop-introduced share of classified must-fix findings from round 3 on
+  is below 50% (Table 4's pooled rounds 3 to 7: 98 of 124, 79%, summing its rows), the derived
+  trace block draws a finding in at most one round across the three, and the
+  retraction trigger fires at most once. Any of the three failing sends the
+  RFC back to Draft with the measured figures attached, not to the ADR with a
+  softened threshold. One delivery is one draw and is not the criterion.
 - **Risk:** a retraction pass could remove a reason principle 8 protects,
   which is why it restores to the last clean state rather than deleting.
   `LINE`-anchor discipline moves work onto the orchestrator's posting step.
@@ -487,8 +631,8 @@ runtime behaviour, no published page other than this RFC's own.
   `git fetch origin <sha>` supplied for every head in the sample.
 - **Backwards compatibility:** existing traces keep their hand-derived blocks;
   the schema clause dates the derived form from the ADR.
-- **Testing:** guards for both scripts; one delivery run under the rules
-  before the ADR is written, with Table 2 re-derived for it.
+- **Testing:** guards for the three scripts; the three-delivery run above
+  before the ADR is written.
 
 ## Open Questions
 

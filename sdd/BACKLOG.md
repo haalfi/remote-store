@@ -2569,9 +2569,10 @@ the commit that writes it lands, so cite the generator instead.
 - [ ] **BK-368 — The `/ship` loop reviews its own record past round 2, and nothing separates the two**
   spec: — · effort: L · audience: contributor.process
   Over the 19 deliveries reviewed since the whole-file gate merged, the share of
-  findings sitting on text a fix pass wrote runs **3% in round 1, 46% in
-  round 2, 77% or more from round 3**, and a quarter of all findings landed on
-  `sdd/traces/` or the two backlog files. Derivation:
+  findings sitting on text a fix pass wrote runs **0% in round 1, 46% in
+  round 2, 77% or more from round 3**, the same shape when only findings the
+  fixer confirmed as must-fix are counted, and a quarter of all findings landed
+  on `sdd/traces/` or the two backlog files. Derivation:
   `python sdd/rfcs/rfc-0015-findings.py` over the PRs its docstring lists, at
   `2a1bbfe`; bounds in the RFC's Table 2. Traces added since that merge sit at
   median 7 review rounds against 2 before (`rfc-0015-rounds.py 24d9464`).
