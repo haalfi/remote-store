@@ -2570,7 +2570,9 @@ the commit that writes it lands, so cite the generator instead.
   say why), or **accept** (the tags are exposure, not a defect).
   **Baseline to difference against**, measured at `1d43c1b` (the v0.32.0
   release base): 310 traces, 306 negative tags (263 `misleading`, 43 `unclear`),
-  `sdd/BACKLOG.md` top-ranked at 30 over 302 reads (9.9%). The previous two
+  `sdd/BACKLOG.md` top-ranked at 30 over 302 reads (9.9% as the report displays
+  it; compute the bar from 30/302, not from the rounded figure — ID-258 did the
+  latter and review caught it). The previous two
   baselines were 302 traces / 284 tags at `6cd170c` and 270 / 207 at `4076ed7`,
   with the same top row at 9.8% and 9.3%; ID-258's close note carries both
   differences and how each selected reference was dispositioned.

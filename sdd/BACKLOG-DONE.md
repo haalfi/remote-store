@@ -296,15 +296,20 @@ if evidence changes; these are retired.
     declared advisory: a tag on an item's own prescription measures that rule
     working. The file's growth stays BK-365's, open and not re-filed here.
   - `CONTRIBUTING.md`, 11 tags over 7 items — **defer**, and the only row with
-    new evidence worth a decision. All three new tags are on **§ Release**: one
-    from BUG-285 (which drift-lock baselines a floor change obliges) and two from
-    ID-018 on Phase 5, where the checklist and `.claude/skills/release/SKILL.md`
-    both said *verify* the autotick-bot PR when the correct instruction is
-    *amend* it — following either as written would have shipped v0.32.0 with
-    v0.31.0's `run_constraints`. All three were corrected in the PR that raised
-    them, so no line is left wrong. What is deferred is the **recurrence**: 7 of
-    the 11 tags on this file are on § Release, across four releases, and its
-    22.9% is the highest rate of any authority document in the ranking. Two open
+    new evidence worth a decision. Two of the three new tags are ID-018's, on
+    **§ Release** Phase 5, where the checklist and
+    `.claude/skills/release/SKILL.md` both said *verify* the autotick-bot PR when
+    the correct instruction is *amend* it — following either as written would
+    have shipped v0.32.0 with v0.31.0's `run_constraints`. The third is
+    BUG-285's, on **§ Dependency drift guard** (which drift-lock baselines a
+    floor change obliges), a different top-level section. All three were
+    corrected in the PR that raised them, so no line is left wrong. What is
+    deferred is the **recurrence**: enumerating every tagged step citing this
+    file by its `section` field, 6 of the 11 are on § Release, from four items
+    (BK-311, BK-357, ID-252 ×2, ID-018 ×2); three more are BK-310's on
+    § Adding a New Backend, and the remaining two are BUG-285's above and
+    BK-193's on the file as a whole. Its 22.9% is the highest rate of any
+    authority document in the ranking. Two open
     items already hold that surface — **ID-254** (the `[Unreleased]` stub's
     section marker) and **ID-255** (the stand-down note's false reason) — so a
     third item would duplicate rather than add. The test for ID-259: if § Release

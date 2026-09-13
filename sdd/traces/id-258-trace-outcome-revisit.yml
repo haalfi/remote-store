@@ -63,8 +63,10 @@ phases:
         section: "(every step citing a selected reference with an outcome set)"
         read_type: reference
         extract: >-
-          Walked phases[].steps[] across all 311 trace files for the five
-          references. A first pass read steps[] at the top level and returned
+          Walked phases[].steps[] across all 310 traces for the five
+          references — the glob is sdd/traces/[!_]*.yml, so _schema.yml is not
+          one of them; a first count said 311 by including it. A first pass
+          read steps[] at the top level and returned
           zero tags on every reference, which looked like a clean corpus rather
           than a wrong query — my own miss, caught only because the report's
           own totals disagreed. Steps are nested under phases[] per _schema.yml
