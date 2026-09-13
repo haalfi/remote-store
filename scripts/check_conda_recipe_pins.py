@@ -1,10 +1,11 @@
 """Gate: the conda recipe's ``run_constraints`` agree with pyproject's extras.
 
 ``packaging/conda-forge/recipe.yaml`` restates every optional dependency
-``pyproject.toml`` declares, because conda has no extras: the package installs
-whole, and a ``run_constraints`` entry is the only thing that keeps a user from
-pairing remote-store with a version of ``pyarrow`` or ``paramiko`` it does not
-work with. The recipe said so in a comment -- "keep this exhaustive ... the ones
+``pyproject.toml`` declares, because conda has no extras: there is one package
+rather than a family of opt-in ones, nothing optional is installed with it, and
+a ``run_constraints`` entry is the only thing that keeps a user who installs
+``pyarrow`` or ``paramiko`` alongside it from pairing remote-store with a
+version it does not work with. The recipe said so in a comment -- "keep this exhaustive ... the ones
 nobody enumerates are the ones that drift" -- and nothing enforced it.
 ``.github/workflows/conda-recipe.yml`` runs ``rattler-build --render-only``,
 which validates syntax and never reads ``pyproject.toml``.

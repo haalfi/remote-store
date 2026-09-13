@@ -598,6 +598,7 @@ source of truth for per-extra pins. For the exact upper-bound versions CI
 was last green against, see [Tested upper-bound versions](https://docs.remotestore.dev/stable/reference/tested-versions/).
 
 Extras are a pip concept. The package is also on conda-forge, where there are
-none and a backend's dependencies are installed alongside it; the
+none: `conda install -c conda-forge remote-store` installs the core package
+only, and you install a backend's dependencies alongside it by name. The
 [README's installation section](https://github.com/haalfi/remote-store#installation)
-covers that route.
+covers that route and shows the command.

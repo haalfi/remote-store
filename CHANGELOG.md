@@ -13,9 +13,11 @@ This project follows [Semantic Versioning](https://semver.org/). Pre-1.0, minor 
 
 - **conda-forge is a supported install channel** (ID-018):
   `conda install -c conda-forge remote-store` resolves, alongside the existing
-  PyPI route. **conda has no extras**, so a backend's optional dependencies
-  arrive with the package instead of being opted into, and the recipe's
-  `run_constraints` bound a version only if that package was installed too. A
+  PyPI route. **conda has no extras**, so that command installs the core package
+  only and a backend's dependencies are yours to name alongside it —
+  `conda install -c conda-forge remote-store azure-storage-file-datalake azure-identity aiohttp`
+  for Azure. Nothing optional is pulled in automatically; the recipe's
+  `run_constraints` only constrain the version of whichever ones you install. A
   feedstock trails its upstream release by design, so the channel can be a
   version behind PyPI and its constraints can predate `pyproject.toml`'s floors;
   the README's installation section carries that caveat, which the pip

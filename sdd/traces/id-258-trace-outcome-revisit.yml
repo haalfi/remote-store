@@ -17,8 +17,12 @@ expected_ripples:
 # Closed inside the v0.32.0 release PR rather than on a branch of its own, so
 # the review rounds are the release PR's. Derivation:
 # `git log --oneline origin/master..HEAD` on the release branch, minus the
-# release commit itself. Filled post-merge.
-review_rounds: 0
+# release commit itself. At the time of writing that is 7a6e82d (round-1
+# consistency fixes), e04bc1b (the class sweep those findings implied) and the
+# commit carrying this line (round-2 fixes), so 3 — counted including this
+# commit, per the schema. Stated now rather than deferred post-merge: the
+# trace ships with the work.
+review_rounds: 3
 phases:
   - id: orient
     name: Read the step and the ticket it closes

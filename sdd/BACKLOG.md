@@ -1881,9 +1881,9 @@ the recipe merged.
     `conda install -c conda-forge remote-store` resolves; anaconda.org shows
     0.30.0, uploaded 2026-09-13. So the promise in section 5's clause 3 is met
     for the first time, and the README now says so — with the caveat the pip
-    instructions do not need, that **conda has no extras**: a backend's
-    dependency is installed alongside the package, and `run_constraints` only
-    bound it if present.
+    instructions do not need, that **conda has no extras**: the install gives
+    the core package only, the user names a backend's dependencies alongside it,
+    and `run_constraints` constrain only the ones they install.
   - Next, in order: release v0.32.0; then **one** PR against the feedstock
     carrying the version, sha256 and this file's `run_constraints`. The
     `regro-cf-autotick-bot` opens a version-bump PR of its own once 0.32.0 is on
@@ -1912,15 +1912,16 @@ the recipe merged.
     staged-recipes review round raised it before merge, which is why the header's
     stale-floor list is the four that round did not touch. Closing this item waits
     on that feedstock PR.
-  - **This item ships `[~]` through the v0.32.0 release, knowingly.** Phase 0
-    asks for no open `[~]` item shipping in the release, and neither of its two
-    remedies fits: the item cannot complete, because its remaining work is the
-    feedstock PR that Phase 5 of *this* release prescribes and that needs the tag
-    to exist; and it cannot defer to `[ ]`, because the recipe, the pin gate and
-    the checklist steps are done and the channel is live, so `[ ]` would claim
-    less progress than exists. The gate is answered by saying so here rather than
-    by editing the marker to suit it. The item closes when the feedstock PR is
-    open, in a commit after the release.
+  - **This item ships `[~]` through the v0.32.0 release, knowingly.** Its
+    remaining work is the feedstock PR that Phase 5 of *this* release prescribes
+    and that needs the tag to exist, so it cannot complete; and it cannot defer
+    to `[ ]`, because the recipe, the pin gate and the checklist steps are done
+    and the channel is live, so `[ ]` would claim less progress than exists.
+    That is the third disposition [`CONTRIBUTING.md` § Release](../CONTRIBUTING.md#release)
+    Phase 0 now names, which this item is the first to use — the argument was
+    made here first and moved to the checklist in review, so the next release
+    meeting the same shape reads it rather than re-deriving it. The item closes
+    when the feedstock PR is open, in a commit after the release.
 
 - [ ] **ID-229 — Evaluate porting to httpx 1.0 (lift the `<1.0` cap)**
   spec: GR-033 · effort: M · audience: user.api
