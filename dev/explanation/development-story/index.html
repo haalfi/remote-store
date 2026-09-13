@@ -5674,6 +5674,17 @@
   
 </li>
         
+          <li class="md-nav__item">
+  <a href="#phase-46-the-stranger-who-read-the-pins-v0320" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Phase 46: The Stranger Who Read the Pins (v0.32.0)
+      
+    </span>
+  </a>
+  
+</li>
+        
       </ul>
     </nav>
   
@@ -11858,6 +11869,17 @@
   
 </li>
         
+          <li class="md-nav__item">
+  <a href="#phase-46-the-stranger-who-read-the-pins-v0320" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Phase 46: The Stranger Who Read the Pins (v0.32.0)
+      
+    </span>
+  </a>
+  
+</li>
+        
       </ul>
     </nav>
   
@@ -12526,6 +12548,12 @@
 <p><strong>The second asked a question this project had been answering ad hoc every time it came up: is the level of detail appropriate?</strong> The trigger was a pattern in the review loops. A change reaches stable code and tests in two to four rounds, and then the rounds keep going, all of them about prose, because a code finding runs out and a prose finding never does. The record went to the literature and came back with an answer that refuses the obvious fix. No word budget or readability score decides the question, because none of them can see the reader, and the reader is absent when the text is written. The only party checkable at writing time is the author, and the illusion of explanatory depth is a measured fact about authors: rate your understanding, try to write the explanation, rate it again, and the second rating drops to where an outside reader already was. So the rule that shipped is an author-side test, content rule 7: open a section with its core claim in at most three sentences, or return to the source, because if the sentences will not come the section is not yet understood. The record then demonstrated its own thesis by diverging under review for seventeen commits without once getting shorter, and closed itself to further prose passes.</p>
 <p><strong>The release itself is what those two ideas look like applied.</strong> Its through-line is one question asked of every backend: when the thing you are talking to is silent, absent or refusing, what exactly is the caller told? A user's report of an SFTP transfer that could hang forever became a bound on silence, then the decision to make that bound the default, and then a chain of related failures that reviewers found by staging each one and measuring what came out rather than reading what the code seemed to promise: blank error messages, the wrong exception type for a dropped connection, a fallback that destroyed both copies of a file. The same question asked about absence produced one contract for a missing bucket, container, table, root or drive across every backend, and a Graph clause that had to be adjudicated in an ADR because two deliberate rules disagreed. Every breaking change got its migration section, and the obligation to write one moved onto the PR making the break, with a gate behind it. The review loops themselves were the evidence for both records: one-line fixes that took seven rounds, every finding in the prose, and the measuring reviewer being the one who kept being right.</p>
 <p><strong>The lesson:</strong> once generating code is cheap, the work that remains is understanding the system well enough to decide what the code should do and to say so plainly. Tao's argument says that understanding has to be built while the work happens, not recovered afterwards, so the workflow must force it; the detail research says the plainness is not a courtesy to readers but the author's own test of whether they have it. Both are now written into how this repo works, and this release is the first one shaped by them.</p>
+<h3 id="phase-46-the-stranger-who-read-the-pins-v0320">Phase 46: The Stranger Who Read the Pins (v0.32.0)<a class="headerlink" href="#phase-46-the-stranger-who-read-the-pins-v0320" title="Permanent link">&para;</a></h3>
+<p>v0.32.0 is three merged PRs and it is almost entirely one class of defect: a declared dependency floor that was never true. The release exists because publishing to a second channel put the package in front of someone with no stake in it, and that turned out to be the only party who had ever checked.</p>
+<p><strong>Submitting to conda-forge is supposed to be a packaging chore.</strong> Because conda has no extras, the recipe has to restate every optional dependency as a <code>run_constraints</code> entry, so the submission is a transcription of <code>pyproject.toml</code>'s floors into another file. A reviewer on <code>conda-forge/staged-recipes</code> read that transcription against the API it constrains — which nothing in this repo had ever done — and found <code>pyarrow &gt;=12.0.0</code> where the <code>s3-pyarrow</code> extra needs <code>&gt;=14.0.0</code>, on one surface: a <code>tls_ca_file_path=</code> keyword pyarrow 13 rejects. Pulling that thread found five more. The <code>[sftp]</code> floor said <code>paramiko&gt;=3.0</code> while the backend passes <code>channel_timeout=</code>, which lands in 3.1.0, so a resolver could pick 3.0.0 and fail on the first connect — the exact failure an earlier fix had been filed to close, one minor narrower. The same extra declared <code>tenacity&gt;=4.0</code>, admitting five years of releases in three distinct states of broken, none of which the floor excluded. Three more packages were wrong across four extras: <code>sqlalchemy</code> and <code>urllib3</code> installed on Python 3.13 and died at import, and <code>dagster</code> declared <code>&gt;=1.9</code> when the symbol <code>remote_store.ext.dagster</code> imports first appears in 1.10.18, so it failed on every supported interpreter rather than only the newest. And <code>[azure]</code> never declared aiohttp at all, so a clean install of it could not build an async transport.</p>
+<p><strong>Every guard was green the whole time, and the reason is the same in each case.</strong> The version checks this repo had introspected the <em>installed</em> package, which in CI and in every developer environment is the newest release. They prove a keyword exists at or above the floor and say nothing about where the floor starts; no test read the declared specifier. The aiohttp gap survived for a subtler reason: the <code>dev</code> extra aggregates <code>s3-pyarrow</code>, whose aiobotocore pulls aiohttp in, so every environment that has ever run the suite had it by accident. A dependency declaration is an assertion about environments nobody builds, and the one thing that never happens in normal development is installing a single extra, alone, at the oldest version it claims to support.</p>
+<p><strong>So the corrections were measured rather than reasoned.</strong> Each floor was established by installing the candidate release into a clean environment on both the oldest and the newest supported Python and running the code against it — which is how tenacity's three separate failure modes were separated, and how two <code>pyarrow</code> floors that <em>looked</em> wrong were checked and deliberately left alone: pip refuses them outright on 3.13 rather than installing something broken, so raising them would exclude working setups to prevent an error pip already prevents. The mechanism that replaces the reviewer shipped alongside: a gate deriving the recipe's expected constraint set from <code>pyproject.toml</code> and failing on anything missing, stray or weaker, plus the pin assertions folded into one table. Neither closes the underlying gap, which now has its own item: nothing yet installs an extra at its declared floor and runs it.</p>
+<p><strong>The lesson:</strong> a claim nothing exercises is not a weak guarantee, it is a guess wearing the costume of one, and the longer it goes unchallenged the more it looks like knowledge. This project's gates were dense and its floors were fiction, because the gates all ran in the one environment where the floors do not matter. What broke the spell was not a better gate but a reader with a different vantage point and no investment in the answer — which is worth remembering, because you cannot schedule one, and the substitute is to go looking for the environments your tests refuse to build.</p>
 <h2 id="reproducing-this-workflow">Reproducing This Workflow<a class="headerlink" href="#reproducing-this-workflow" title="Permanent link">&para;</a></h2>
 <p>If you want to try this approach on your own project:</p>
 <ol>

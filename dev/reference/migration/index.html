@@ -11023,7 +11023,7 @@ supported Python.</p>
 <td><code>sftp</code></td>
 <td><code>tenacity&gt;=4.0</code></td>
 <td><code>tenacity&gt;=8.0.1</code></td>
-<td>the whole 4.x line cannot be imported on any supported Python; everything below 6.1.0 fails on Python 3.11+</td>
+<td>releases through 4.10.0 cannot be imported on any supported Python; 4.11.0-5.0.1 import but lack <code>wait_exponential(min=)</code>; everything below 6.1.0 fails on Python 3.11+</td>
 </tr>
 <tr>
 <td><code>sql</code>, <code>sql-query</code></td>
