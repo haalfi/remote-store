@@ -57,6 +57,12 @@ Install from [PyPI](https://pypi.org/project/remote-store/):
 pip install remote-store
 ```
 
+Or from [conda-forge](https://anaconda.org/conda-forge/remote-store):
+
+```bash
+conda install -c conda-forge remote-store
+```
+
 Backends that need extra dependencies use extras:
 
 ```bash
@@ -80,6 +86,12 @@ pip install "remote-store[yaml]"           # YAML config support
 pip install "remote-store[pydantic]"       # Pydantic BaseSettings config
 pip install "remote-store[toml]"           # TOML config on Python < 3.11
 ```
+
+**conda has no extras.** `conda install -c conda-forge remote-store` gives you
+the core package; install a backend's dependency alongside it
+(`conda install -c conda-forge s3fs`, `paramiko`, `azure-storage-file-datalake`,
+and so on). The conda recipe constrains those packages when they are present, so
+an unsupported version fails to solve rather than at runtime.
 
 ## Quick Start
 

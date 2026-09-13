@@ -1,0 +1,68 @@
+id: ID-018
+title: "Record the conda-forge channel as live, once it actually was"
+trigger: >-
+  staged-recipes#32401 merged, the feedstock bot built it, and
+  `conda install -c conda-forge remote-store` started resolving — while the
+  README still offered PyPI as the only install channel and the backlog still
+  said the section was blocked on a reviewer.
+source_items:
+  - ID-018
+audience:
+  - user.discoverability.human
+  - library.maintainer
+# Derivation, per the schema's review_rounds clause: `gh api
+# repos/haalfi/remote-store/pulls/<n>/commits` for this PR, counting commits
+# that exist because of review feedback — including the commit carrying this
+# line. None yet; this is the first push and the PR has had no review round.
+# Update it rather than re-read it if one lands.
+review_rounds: 0
+phases:
+  - id: verify
+    name: Confirm the channel before claiming it
+    steps:
+      - file: packaging/conda-forge/recipe.yaml
+        section: "(header)"
+        read_type: gate
+        extract: >-
+          The header records what the merged copy carries; the claim to check was
+          whether anything had been built from it. anaconda.org shows 0.30.0
+          uploaded 2026-09-13 and the feedstock repo exists, so the README line
+          is a statement of fact rather than of intent. Checked before writing
+          it: an install instruction for a channel that 404s is worse than none.
+      - file: sdd/BACKLOG.md
+        section: "5. A release cannot ship a surprise"
+        read_type: gate
+        extract: >-
+          The section said its closure was externally gated, which the merge
+          falsified. Rewritten: the channel is published and working, and what
+          remains — v0.32.0 plus a feedstock PR carrying the corrected
+          constraints — is ours, not a reviewer's.
+        outcome: misleading
+
+  - id: docs
+    name: Write it where a user looks
+    steps:
+      - file: README.md
+        section: "Installation"
+        read_type: reference
+        extract: >-
+          Inside the `--8<-- [start:getting-started]` markers, which
+          `docs-src/tutorial/getting-started.md` includes, so one edit serves the
+          README and the docs site.
+      - file: FEATURES.md
+        section: "install_extras (generated)"
+        read_type: verify
+        extract: >-
+          Deliberately not touched: the install list there sits between
+          BEGIN_GENERATED markers that `gen_features.py` owns, and it enumerates
+          pip extras — a concept conda does not have, so a conda line would be
+          false at that position even if the file were hand-editable.
+      - file: docs-src/guides/backends/
+        section: "(per-backend install lines)"
+        read_type: verify
+        extract: >-
+          Also not touched, for the same reason: every one is
+          `pip install "remote-store[<extra>]"`, and the conda equivalent is not
+          a translation of that line but a different shape — install the package,
+          then install the backend's dependency beside it. The README note says
+          so once rather than mistranslating it a dozen times.

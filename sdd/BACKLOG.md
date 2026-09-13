@@ -1613,12 +1613,16 @@ and the obligation to write one moved onto the PR making the break, where its
 author already looks (BUG-261, in [BACKLOG-DONE.md](BACKLOG-DONE.md)).
 
 Clause 3 is stated as *intend to offer* rather than *already advertised*
-deliberately: ID-018 creates a channel rather than repairing a dead one, so the
-narrower wording would be vacuously true while the item stays open.
-**This section's closure is externally gated.** ID-018 is `[~]` and blocked on a
-conda-forge reviewer, so no work in this repo can close section 5 — a real
-property of the section, not a defect in it, and stated so nobody reads the
-open item as neglect.
+deliberately: ID-018 created a channel rather than repairing a dead one, so the
+narrower wording would have been vacuously true while the item was unbuilt.
+**That clause is now half met and the section is no longer externally gated.**
+`staged-recipes#32401` merged, the feedstock exists, and
+`conda install -c conda-forge remote-store` resolves — so the channel is
+published and working, and the README says so. What remains is ours rather than
+a reviewer's: the channel serves 0.30.0 with the pre-sweep constraints until a
+feedstock PR carries v0.32.0 and the corrected set. The paragraph that stood here
+said no work in this repo could close section 5; that stopped being true the day
+the recipe merged.
 
 - [ ] **ID-250 — The drift smoke never type-checks, so a signature-only narrowing reaches PRs as a red gate**
   spec: — · effort: M · audience: infra.ci
@@ -1862,23 +1866,33 @@ open item as neglect.
     All three conventions are now absorbed here and `packaging/conda-forge/variants.yaml`
     supplies `python_min` to our own render, so this file is the submission
     rather than a draft of it and the next update is a verbatim copy-out.
-    **Unvalidated**: `rattler-build` is not available locally and
-    `.github/workflows/conda-recipe.yml` fires only on master or an open PR, so
-    the `--variant-config` wiring has never rendered. Watch that job on the PR.
+    The `--variant-config` wiring is **validated**: the `Conda Recipe` workflow
+    ran on PR #1004 (run 34755114178) and passed, so the flag spelling is right,
+    `python_min` resolves from `variants.yaml`, and the two-value
+    `tests.python_version` renders against `rattler-build-action@v0.2.39`.
   - **`staged-recipes#32401` is merged.** The reviewer merged before the
     corrected recipe could be posted, so what conda-forge received is the
     pre-sweep file: version 0.30.0 (two releases behind), the four stale floors,
     no `tomli` constraint and no `aiohttp`. None of it is dangerous — a
-    `run_constraint` binds only if the user installs that package too — but the
-    channel's first build will serve it.
-  - Next, in order: the conda-forge bot creates
-    `conda-forge/remote-store-feedstock` and its first build publishes 0.30.0;
-    release v0.32.0; then one PR against the **feedstock** carrying the version,
-    sha256 and this file's `run_constraints`. Submission is over — staged-recipes
-    is not the route for any further change.
-  - Blocked on the feedstock existing (checked: 404 as of this writing, and the
-    package is not yet on anaconda.org). When the channel serves a build: add
-    `conda install -c conda-forge remote-store` to README.
+    `run_constraint` binds only if the user installs that package too — but it is
+    what the channel serves.
+  - **The channel is live.** `conda-forge/remote-store-feedstock` exists and
+    `conda install -c conda-forge remote-store` resolves; anaconda.org shows
+    0.30.0, uploaded 2026-09-13. So the promise in section 5's clause 3 is met
+    for the first time, and the README now says so — with the caveat the pip
+    instructions do not need, that **conda has no extras**: a backend's
+    dependency is installed alongside the package, and `run_constraints` only
+    bound it if present.
+  - Next, in order: release v0.32.0; then **one** PR against the feedstock
+    carrying the version, sha256 and this file's `run_constraints`. The
+    `regro-cf-autotick-bot` opens a version-bump PR of its own once 0.32.0 is on
+    PyPI and touches `version` and `sha256` only, so pushing the constraints onto
+    that branch gets both into one review. Submission is over — staged-recipes is
+    not the route for any further change.
+  - **What the channel serves until then**, worth knowing rather than
+    rediscovering: 0.30.0, two releases behind, and the missing `tomli` entry
+    means the `toml` extra is the one genuinely unconstrained package for conda
+    users. Closing this item waits on that feedstock PR.
 
 - [ ] **ID-229 — Evaluate porting to httpx 1.0 (lift the `<1.0` cap)**
   spec: GR-033 · effort: M · audience: user.api
