@@ -32,14 +32,10 @@ and no more useful than the index it came from.
 in `pyproject.toml`.
 
 **Phase 5** — Agent assists with conda steps (sha256 fetch, recipe update, branch+PR).
-staged-recipes is finished: the recipe merged and `conda-forge/remote-store-feedstock`
-exists, so every further change is a PR against the feedstock. **The remaining step is
-not "verify the bot opened a version-bump PR" — it is amending that PR.** The
-`regro-cf-autotick-bot` rewrites `version` and `sha256` and nothing else, so its branch
-needs the `run_constraints` block from `packaging/conda-forge/recipe.yaml` pushed onto it
-before merge. Merging it untouched ships the new release with the previous release's
-constraints, which is exactly how a corrected dependency floor fails to reach conda users
-while every gate in this repo stays green.
+Work the checklist's conda-forge bullet as written; it owns the routes and the
+mechanics. The one failure worth naming here: a `regro-cf-autotick-bot` PR is to be
+**amended, not verified** — merged untouched it ships the new release with the previous
+release's constraints, and every gate in this repo stays green while it happens.
 
 ## Phase 4: Ship (Skill Agent)
 

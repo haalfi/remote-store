@@ -1893,15 +1893,25 @@ the recipe merged.
     `.claude/skills/release/SKILL.md` § Phase 5 both said the remaining step was
     to *verify* the bot PR; following either as written would have merged it
     untouched and shipped 0.32.0 with 0.31.0's constraints. Both now say amend.
-  - **Then delete the caveat this added to the README.** The install section
-    currently warns that the channel serves 0.30.0 and that its `tomli`,
-    `tenacity`, `sqlalchemy`, `urllib3` and `dagster` constraints predate the
-    0.32.0 corrections. Every clause of that is true today and none of it should
-    outlive the feedstock PR; it is written to be deleted, not maintained.
+  - **The README caveat is written to be kept, not deleted.** A first draft
+    named the versions (0.30.0 against PyPI's 0.31.0) and listed the stale
+    floors, which would have gone false at the 0.32.0 tag — before the feedstock
+    PR that was supposed to retire it — and publishes to docs.remotestore.dev and
+    PyPI through the `[start:getting-started]` snippet markers, which no gate
+    rewrites. It now says only that the channel lags PyPI and its constraints can
+    predate `pyproject.toml`'s floors. That stays true after the feedstock PR,
+    because a feedstock always trails a release, so no release-time deletion step
+    is owed and none was added to Phase 5.
   - **What the channel serves until then**, worth knowing rather than
-    rediscovering: 0.30.0, one release behind the published 0.31.0, and the missing `tomli` entry
-    means the `toml` extra is the one genuinely unconstrained package for conda
-    users. Closing this item waits on that feedstock PR.
+    rediscovering: 0.30.0, one release behind the published 0.31.0. Two packages
+    it constrains not at all — `tomli` and `aiohttp`, both absent from the merged
+    recipe's `run_constraints` per the header of
+    `packaging/conda-forge/recipe.yaml`. Two, not one: an earlier draft of this
+    bullet called `toml` the only unconstrained extra, which that same header
+    ("no `tomli`, no `aiohttp`") falsifies. `paramiko` is not a third — the
+    staged-recipes review round raised it before merge, which is why the header's
+    stale-floor list is the four that round did not touch. Closing this item waits
+    on that feedstock PR.
 
 - [ ] **ID-229 — Evaluate porting to httpx 1.0 (lift the `<1.0` cap)**
   spec: GR-033 · effort: M · audience: user.api

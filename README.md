@@ -63,6 +63,10 @@ Or from [conda-forge](https://anaconda.org/conda-forge/remote-store):
 conda install -c conda-forge remote-store
 ```
 
+The channel lags PyPI, and its dependency constraints can predate the floors in
+[`pyproject.toml`](https://github.com/haalfi/remote-store/blob/master/pyproject.toml).
+If you need the newest release, or the floors it declares, install from PyPI.
+
 Backends that need extra dependencies use extras:
 
 ```bash
@@ -89,20 +93,14 @@ pip install "remote-store[toml]"           # TOML config on Python < 3.11
 
 **conda has no extras.** `conda install -c conda-forge remote-store` installs the
 core package only; a backend's dependencies go alongside it, and an extra is
-often more than one package. Each extra's full set is its entry under
-`[project.optional-dependencies]` in `pyproject.toml` — `[azure]`, for example,
-is three:
+usually more than one package. Each extra's full set is its entry under
+`[project.optional-dependencies]` in
+[`pyproject.toml`](https://github.com/haalfi/remote-store/blob/master/pyproject.toml).
+`[azure]`, for example:
 
 ```bash
 conda install -c conda-forge remote-store azure-storage-file-datalake azure-identity aiohttp
 ```
-
-Two things to know while the channel catches up. It currently serves **0.30.0**,
-where PyPI has 0.31.0. And its version constraints predate the dependency-floor
-corrections shipping in 0.32.0: `tomli` is unconstrained there, and the
-`tenacity`, `sqlalchemy`, `urllib3` and `dagster` floors are low enough to admit
-a version that installs and then fails at import. Until the channel catches up,
-pin those yourself or install from PyPI.
 
 ## Quick Start
 
