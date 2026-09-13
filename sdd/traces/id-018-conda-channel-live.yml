@@ -1,0 +1,172 @@
+id: ID-018
+title: "Record the conda-forge channel as live, once it actually was"
+trigger: >-
+  staged-recipes#32401 merged, the feedstock bot built it, and
+  `conda install -c conda-forge remote-store` started resolving — while the
+  README still offered PyPI as the only install channel and the backlog still
+  said the section was blocked on a reviewer.
+source_items:
+  - ID-018
+audience:
+  - user.discoverability.human
+  - library.maintainer
+expected_ripples:
+  # Anticipated twice over, so not surprising: the `audience` field's derived
+  # rule in `_schema.yml` ("CHANGELOG entry required if any entry in `audience`
+  # starts with `user.`") fires on `user.discoverability.human`, and
+  # `sdd/CLAUDE-REFERENCE.md` § Detailed checklist carries a **CHANGELOG entry**
+  # row. Filed under `surprising_ripples` until review round 2 moved it.
+  - CHANGELOG.md
+surprising_ripples:
+  # No ripple-check row covers "the state of an external publishing channel
+  # changed", which is what makes these two worth the field.
+  - CONTRIBUTING.md
+  - .claude/skills/release/SKILL.md
+# Derivation, per the schema's review_rounds clause: `gh api
+# repos/haalfi/remote-store/pulls/1005/commits --jq '.[] | .sha[0:7] + "  " +
+# (.commit.message | split("\n")[0])'` returns 7d69f4a (implements, does not
+# count) and 60ccb12 (round 1). The commit carrying this line is round 2, so the
+# value is 2. Re-derive on every round rather than re-reading the number: the
+# stale spelling is the one that said 0 "because no round had happened yet".
+review_rounds: 2
+phases:
+  - id: verify
+    name: Confirm the channel before claiming it
+    steps:
+      - file: packaging/conda-forge/recipe.yaml
+        section: "(header)"
+        read_type: gate
+        extract: >-
+          The header records what the merged copy carries; the claim to check was
+          whether anything had been built from it. anaconda.org shows 0.30.0
+          uploaded 2026-09-13 and the feedstock repo exists, so the README line
+          is a statement of fact rather than of intent. Checked before writing
+          it: an install instruction for a channel that 404s is worse than none.
+      - file: sdd/BACKLOG.md
+        section: "5. A release cannot ship a surprise"
+        read_type: gate
+        extract: >-
+          The section said its closure was externally gated, which the merge
+          falsified. Rewritten: the channel is published and working, and what
+          remains — v0.32.0 plus a feedstock PR carrying the corrected
+          constraints — is ours, not a reviewer's.
+        outcome: misleading
+
+  - id: docs
+    name: Write it where a user looks
+    steps:
+      - file: README.md
+        section: "Installation"
+        read_type: reference
+        extract: >-
+          Inside the `--8<-- [start:getting-started]` markers, which
+          `docs-src/tutorial/getting-started.md` includes, so one edit serves the
+          README and the docs site.
+      - file: FEATURES.md
+        section: "install_extras (generated)"
+        read_type: verify
+        extract: >-
+          Deliberately not touched: the install list there sits between
+          BEGIN_GENERATED markers that `gen_features.py` owns, and it enumerates
+          pip extras — a concept conda does not have, so a conda line would be
+          false at that position even if the file were hand-editable.
+      - file: docs-src/guides/backends/
+        section: "(per-backend install lines)"
+        read_type: verify
+        extract: >-
+          Also not touched, for the same reason: every one is
+          `pip install "remote-store[<extra>]"`, and the conda equivalent is not
+          a translation of that line but a different shape — install the package,
+          then install the backend's dependency beside it. The README note says
+          so once rather than mistranslating it a dozen times.
+      - file: README.md
+        section: "Installation (conda note)"
+        read_type: verify
+        extract: >-
+          The first draft of that note promised the recipe makes an unsupported
+          version "fail to solve rather than at runtime", wrote the per-backend
+          install as one package "and so on", and gave no version. All three were
+          wrong about the recipe conda-forge actually serves: `[azure]` is three
+          packages and stopping at one reproduces BUG-286; `tomli` is
+          unconstrained there and four floors are too low; and the channel is a
+          release behind PyPI. Writing the note from `packaging/conda-forge/recipe.yaml`
+          rather than from the published recipe is the whole error, and this
+          PR's own backlog bullet said so 1,800 lines away.
+        outcome: misleading
+      - file: sdd/CONTENT-RULES.md
+        section: "Rules 1-3"
+        read_type: gate
+        extract: >-
+          The round-1 repair fixed the note's facts and inherited its shape: the
+          versions, the four-floor list and "is three" are a dated claim, an
+          exhaustive inline copy and a narrative count. Rule 1 is the binding
+          one — "where PyPI has 0.31.0" goes false at the 0.32.0 tag, which
+          precedes the feedstock PR the deletion was tied to, and the text
+          publishes to docs.remotestore.dev and PyPI through the snippet markers
+          with nothing rewriting it. Rewritten version-free ("the channel lags
+          PyPI; its constraints can predate pyproject.toml's floors"), which is
+          true after the feedstock PR too, and moved adjacent to the
+          `conda install` command it qualifies rather than 37 lines below it.
+          Rule 3's carve-out is why the same figures stay in the backlog bullet.
+        outcome: misleading
+
+  - id: verify_process
+    name: Sweep the release path
+    steps:
+      - file: CONTRIBUTING.md
+        section: "Release Phase 5"
+        read_type: gate
+        extract: >-
+          Two steps still ran on pre-merge conditions: one gated on
+          "until staged-recipes #32401 is merged", permanently satisfied and so
+          dead text to adjudicate mid-release, and one saying the remaining work
+          is to *verify* the bot opened a version-bump PR. The second is the
+          costly one — the bot rewrites version and sha256 only, so verifying and
+          merging ships the new release with the previous release's constraints.
+          Both rewritten to say amend.
+        outcome: misleading
+      - file: .claude/skills/release/SKILL.md
+        section: "Phase 5"
+        read_type: gate
+        extract: >-
+          Same claim, sharper: "once a feedstock exists, only the bot-PR
+          verification step remains". Following it at the 0.32.0 release would
+          have undone this whole line of work while every gate in the repo
+          stayed green.
+        outcome: misleading
+      - file: scripts/check_no_tracker_refs.py
+        section: "_EXTERNAL_PREFIXES"
+        read_type: verify
+        extract: >-
+          Swept the rest of the class (`rg 'staged-recipes|32401|add-remote-store'`):
+          every other hit is a historical record in sdd/, a docstring narrating
+          how the gate came to exist, or this allowlist entry, which is harmless
+          unused and still exercised by its own test. Only the two process files
+          carried a live pre-merge assumption.
+      - file: CONTRIBUTING.md
+        section: "Release Phase 5 (conda-forge step, round 2)"
+        read_type: gate
+        extract: >-
+          The amend step replaced a dead condition with a dependency on a third
+          party: it named the bot's PR as the only route, where the backlog had
+          just asserted the item is no longer externally gated. It also dropped
+          the push mechanics the step it replaced spelled out, and the bot
+          branches from its own fork, so "push onto that PR's branch" needs
+          maintainer-edit access nobody had checked. Now two routes with one
+          outcome — self-service always available, the bot PR as the shortcut —
+          plus the diff-the-two-copies check, which is the only thing that can
+          re-verify the recipe header's claim about the merged copy from outside
+          this repo.
+        outcome: misleading
+      - file: packaging/conda-forge/recipe.yaml
+        section: "(header)"
+        read_type: verify
+        extract: >-
+          Asked whether the header's stale-floor list is short a `paramiko`
+          entry. It is not: the staged-recipes review round raised `paramiko` and
+          `pyarrow` before merge, so the four listed are exactly the ones that
+          round did not touch. The header asserted the list with no derivation,
+          which is what made the question unanswerable without leaving the repo —
+          and leaving it is not available here, since the egress policy blocks
+          api.anaconda.org and GitHub access is scoped to this repo. Derivation
+          added inline; the feedstock diff moves to the release checklist.

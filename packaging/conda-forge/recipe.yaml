@@ -11,7 +11,11 @@
 #
 # What the merged recipe carries, and this file has since corrected: version
 # 0.30.0, `tenacity >=4.0`, `sqlalchemy >=2.0`, `urllib3 >=1.26.0`,
-# `dagster >=1.9`, no `tomli`, no `aiohttp`.
+# `dagster >=1.9`, no `tomli`, no `aiohttp`.  Derivation: the submitted copy is
+# this file at f6bd6d1d0 plus the staged-recipes review round, which raised
+# `paramiko` and `pyarrow` -- so those two are current there and the four floors
+# above are the ones that round did not touch.  Nothing here can re-read the
+# feedstock; the release checklist's conda-forge step diffs the two copies.
 #
 # `python_min` is deliberately NOT set here: conda-forge supplies it globally,
 # and hardcoding it would pin us to 3.10 after the ecosystem raises its

@@ -32,8 +32,10 @@ and no more useful than the index it came from.
 in `pyproject.toml`.
 
 **Phase 5** — Agent assists with conda steps (sha256 fetch, recipe update, branch+PR).
-Staged-recipes steps apply only while conda-forge/staged-recipes PR #32401 is open; once
-a feedstock exists, only the bot-PR verification step remains.
+Work the checklist's conda-forge bullet as written; it owns the routes and the
+mechanics. The one failure worth naming here: a `regro-cf-autotick-bot` PR is to be
+**amended, not verified** — merged untouched it ships the new release with the previous
+release's constraints, and every gate in this repo stays green while it happens.
 
 ## Phase 4: Ship (Skill Agent)
 

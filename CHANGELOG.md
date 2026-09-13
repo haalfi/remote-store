@@ -11,6 +11,7 @@ This project follows [Semantic Versioning](https://semver.org/). Pre-1.0, minor 
 - BUG-284: **Breaking** `[sftp]` floor corrected to `tenacity>=8.0.1`; the declared `>=4.0` admitted the whole 4.x line, which no supported Python can even import, and every release below 6.1.0. [Upgrade path](https://docs.remotestore.dev/stable/reference/migration/#v0310-to-v0320)
 - BUG-285: **Breaking** floors corrected to `sqlalchemy>=2.0.31` and `urllib3>=1.26.5`, which fail at import on Python 3.13 below those, and to `dagster>=1.10.18`, below which `remote_store.ext.dagster` cannot import. [Upgrade path](https://docs.remotestore.dev/stable/reference/migration/#v0310-to-v0320)
 - BUG-286: `[azure]` now installs `aiohttp`; without it `AsyncAzureBackend` raised "Unable to create async transport" on its first call, and only a co-installed `[s3]` hid it.
+- ID-018: conda-forge is a supported install channel — `conda install -c conda-forge remote-store`. conda has no extras, so a backend's dependencies install alongside the package.
 
 ## [0.31.0] - 2026-09-08
 
