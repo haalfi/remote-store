@@ -199,7 +199,7 @@ class TestDirectDepsFor:
     """
 
     def test_top_level_packages_extracted(self, drift_check):
-        # From pyproject.toml's [sftp] = ["paramiko>=3.0", "tenacity>=4.0"].
+        # From pyproject.toml's [sftp] = ["paramiko>=3.1", "tenacity>=8.0.1"].
         deps = drift_check._direct_deps_for("sftp")
         assert "paramiko" in deps
         assert "tenacity" in deps

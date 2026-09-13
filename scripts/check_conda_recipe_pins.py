@@ -53,8 +53,8 @@ Bounds (Rule 7)
   followed. Every extra they aggregate is enumerated on its own.
 * It compares two *declarations*. It does not check that either floor is
   **right** -- that a version actually carries the API the code uses. That is
-  what ``tests/scripts/test_pyproject_paramiko_floor.py`` does, per package, and
-  it does not generalise.
+  what ``tests/scripts/test_pyproject_pins.py`` does, per package, and it does
+  not generalise.
 * Version equality is exact after normalisation: ``>=12.0.0`` and ``>=12`` are
   different strings but the same ``SpecifierSet``, and compare equal.
 

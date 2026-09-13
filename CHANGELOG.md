@@ -8,6 +8,7 @@ This project follows [Semantic Versioning](https://semver.org/). Pre-1.0, minor 
 ## [Unreleased]
 
 - BUG-283: `[sftp]` floor corrected to `paramiko>=3.1`, where the `channel_timeout=` connect kwarg it uses actually starts; `paramiko==3.0.x` satisfied the old floor and failed at connect.
+- BUG-284: `[sftp]` floor corrected to `tenacity>=8.0.1`; the declared `>=4.0` admitted the whole 4.x line, which no supported Python can even import, and every release below 6.1.0.
 
 ## [0.31.0] - 2026-09-08
 

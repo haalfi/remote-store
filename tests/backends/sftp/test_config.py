@@ -98,7 +98,7 @@ class TestSFTPParamikoVersionSurface:
         everywhere it runs, so it proves the kwarg exists at or above the floor
         and says nothing about where the floor is. BUG-283 is what that blind
         spot cost: the floor sat at 3.0 while the kwarg starts at 3.1, and this
-        test was green throughout. ``tests/scripts/test_pyproject_paramiko_floor.py``
+        test was green throughout. ``tests/scripts/test_pyproject_pins.py``
         reads the declared specifier and holds the other end of the range.
         """
         import inspect

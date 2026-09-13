@@ -220,6 +220,39 @@ if evidence changes; these are retired.
 
 ## Unreleased
 
+- [x] **BUG-284 — The `[sftp]` extra's tenacity floor admitted five years of releases that cannot run the code**
+  spec: — · effort: S · audience: user.api, infra.test
+  `SFTPBackend._connect` builds `before_sleep_log(log, logging.WARNING)` and
+  `wait_exponential(multiplier=1, min=…, max=…)`
+  (`src/remote_store/backends/_sftp.py:1817-1851`). The extra declared
+  `tenacity>=4.0`, which predates both.
+  **Measured, not read**: the `_connect` construction was extracted verbatim and
+  run against each release in a clean venv, on Python 3.10 and 3.11 (the
+  package's `python_min` and the first Python that drops `asyncio.coroutine`).
+  Three independent failure modes, none of which the declared floor excluded:
+  - **≤ 4.10.0** — `tenacity/async.py` is a `SyntaxError` on any Python ≥ 3.7
+    (`async` became a keyword). Dead on every Python this package supports.
+  - **4.11.0 – 5.0.1** — imports, but `wait_exponential` has no `min=`
+    parameter; it lands in 5.0.2. `TypeError` at the first connect.
+  - **5.0.2 – 6.0.0** — works on 3.10; on 3.11+ `@asyncio.coroutine` is gone and
+    the package fails at import.
+  6.1.0 is the first release that works on every supported Python. The floor
+  went to **8.0.1**, the first release declaring `requires_python`, so pip guards
+  the range independently of this pin and the floor does not assert a range
+  nothing here has exercised; that margin is recorded in the `pyproject.toml`
+  comment rather than in the test, which asserts only the measured boundary.
+  No metadata protected anyone: `requires_python` is absent from every tenacity
+  release through 6.1.0, so pip will install 4.0.0 on Python 3.14 if asked.
+  **Same shape as BUG-283, wider**: a floor set once and never asserted, behind a
+  lazy import, so nothing failed until a user pinned. Both were found by reading
+  the conda recipe against the code it constrains rather than by any gate.
+  The three pin assertions this repo had accumulated (the httpx cap from
+  BUG-225, the paramiko floor, this one) are now one table in
+  `tests/scripts/test_pyproject_pins.py`, per
+  [`DRIFT-RULES.md` Rule 1](DRIFT-RULES.md#one-driver); the extras each row
+  applies to are derived rather than listed, which the superseded httpx module
+  hard-coded. Trace: `sdd/traces/bug-284-tenacity-floor.yml`.
+
 - [x] **BUG-283 — The `[sftp]` extra's paramiko floor sat one minor below the API the backend calls**
   spec: — · effort: S · audience: user.api, infra.test
   `SFTPBackend._connect` passes `channel_timeout=` to `paramiko.SSHClient.connect`
@@ -234,9 +267,10 @@ if evidence changes; these are retired.
   **Why every guard was green.** `TestSFTPParamikoVersionSurface` introspects the
   *installed* paramiko, which is the newest release in CI and in every dev
   environment. It proves the keyword exists at or above the floor and says
-  nothing about where the floor starts; no test read the declared specifier. The
-  new `tests/scripts/test_pyproject_paramiko_floor.py` holds that end, in the
-  shape `test_pyproject_httpx_cap.py` already established for a ceiling.
+  nothing about where the floor starts; no test read the declared specifier.
+  `tests/scripts/test_pyproject_pins.py` holds that end, in the shape the httpx
+  cap (BUG-225) had already established for a ceiling — the two shipped as
+  separate modules and BUG-284 folded them into that one table.
   Found by a conda-forge reviewer on `conda-forge/staged-recipes#32401`, reading
   the recipe against the API it constrains. Trace:
   `sdd/traces/bug-283-paramiko-floor.yml`.

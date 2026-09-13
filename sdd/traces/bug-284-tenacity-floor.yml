@@ -1,0 +1,102 @@
+id: BUG-284
+title: "The [sftp] extra's tenacity floor admitted five years of releases that cannot run the code"
+trigger: >-
+  BUG-283 corrected the paramiko floor in the same extra and left tenacity>=4.0
+  beside it — a 2017 floor on a dependency whose API surface nothing had ever
+  asserted. The question was whether the second pin in the same line had the
+  same defect.
+source_items:
+  - BUG-284
+  - BUG-283
+  - BUG-225
+audience:
+  - user.api
+  - infra.test
+expected_ripples:
+  - sdd/backlogid.json
+  - CHANGELOG.md
+  - packaging/conda-forge/recipe.yaml
+surprising_ripples:
+  - tests/scripts/test_drift_check.py
+# Derivation, per the schema's review_rounds clause: `git log --oneline
+# origin/master..HEAD` on this branch, counting commits that exist because of
+# review feedback — including the commit carrying this line. This work is the
+# second push on the branch and none of its commits answers a review of it.
+review_rounds: 0
+phases:
+  - id: orient
+    name: Orient
+    steps:
+      - file: src/remote_store/backends/_sftp.py
+        section: "_connect (tenacity import and retry construction)"
+        read_type: gate
+        extract: >-
+          The full API surface the floor has to cover: before_sleep_log, the
+          before_sleep= kwarg, wait_exponential(min=), wait_random, the stop |
+          stop and wait + wait compositions, reraise
+      - file: src/remote_store/_retry.py
+        section: "module docstring"
+        read_type: reference
+        extract: >-
+          ADR-0011 confines tenacity to the SFTP extra, so the blast radius is
+          one backend's connect path and nothing in core
+
+  - id: reproduce
+    name: Measure the boundary
+    steps:
+      - file: CLAUDE.md
+        section: "Principles 6 and 9"
+        read_type: gate
+        extract: >-
+          Run it rather than type-check it, and name the derivation before
+          writing the figure. A source scan of each release gave one answer
+          (before_sleep_log at 4.11.0, wait_exponential min= at 5.0.2); running
+          the construction in a clean venv gave a stricter one, because an
+          import-time failure the scan could not see rules out everything below
+          6.1.0 on Python 3.11+. The scan alone would have shipped 5.0.2 as the
+          floor and been wrong on the interpreter the suite runs on.
+      - file: pyproject.toml
+        section: "requires-python / python_min"
+        read_type: reference
+        extract: >-
+          3.10 is the weakest supported environment, so the matrix had to run
+          there too; it is where 5.0.2 through 6.0.0 pass and 3.11 rejects them
+
+  - id: tests
+    name: One driver for three pins
+    steps:
+      - file: sdd/DRIFT-RULES.md
+        section: "Rule 1 (one driver), Rule 3 (derived enumeration)"
+        read_type: gate
+        extract: >-
+          Three modules asserting pins the same way is the N-parallel-checks
+          shape Rule 1 rejects; the extras each row covers are derived from
+          pyproject rather than listed, which the httpx module had hard-coded
+      - file: tests/scripts/test_pyproject_httpx_cap.py
+        section: "(full)"
+        read_type: reference
+        extract: >-
+          The fixture and prereleases=True semantics to carry into the table;
+          this module and the paramiko one were then removed
+
+  - id: verify
+    name: Verify
+    steps:
+      - file: tests/scripts/test_drift_check.py
+        section: "TestDirectDepsFor"
+        read_type: verify
+        extract: >-
+          A comment quoting the [sftp] line verbatim. BUG-283 changed that line
+          and missed this copy, so the ripple sweep for a pin has to reach test
+          comments that transcribe it, not just the artifacts that declare it.
+        outcome: misleading
+      - file: sdd/research/research-retry-policy.md
+        section: "tenacity>=4.0 as an optional dependency"
+        read_type: verify
+        extract: >-
+          Also names the old floor. Left as written: a research doc is a
+          point-in-time snapshot that 000-process.md forbids retro-editing.
+      - file: scripts/check_conda_recipe_pins.py
+        section: "(gate run)"
+        read_type: verify
+        extract: "The BK-368 gate holds the recipe's tenacity entry to the new floor in the same commit"

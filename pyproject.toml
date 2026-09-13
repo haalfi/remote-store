@@ -69,13 +69,21 @@ s3-pyarrow = ["s3fs>=2024.2.0", "pyarrow>=14.0.0"]
 # paramiko: floor at >=3.1 (BUG-283, correcting BUG-204's >=3.0). The
 # `channel_timeout=` connect kwarg `_sftp.py` passes unconditionally landed in
 # paramiko 3.1.0, not 3.0.0 — see the upstream changelog entry quoted in
-# tests/scripts/test_pyproject_paramiko_floor.py, which guards the floor itself
+# tests/scripts/test_pyproject_pins.py, which guards the floor itself
 # (the installed-signature guard in tests/backends/sftp/test_config.py cannot).
 # Deliberately NO upper bound. paramiko 5 dropped ssh-rsa from defaults;
 # we address that via SFTPUtils.enable_ssh_rsa_compat() and the diagnostic
 # scan_host_algorithms() rather than capping the library for every consumer.
 # Full rationale: sdd/research/research-bk-198-paramiko-ssh-rsa-empirical.md § 5.
-sftp = ["paramiko>=3.1", "tenacity>=4.0"]
+# tenacity: floor at >=8.0.1 (BUG-284, correcting an original >=4.0). `_connect`
+# builds before_sleep_log(...) and wait_exponential(min=...); measured against
+# every release in a clean venv, the whole 4.x line is a SyntaxError on any
+# Python >= 3.7, min= lands in 5.0.2, and @asyncio.coroutine keeps everything
+# below 6.1.0 from importing on Python 3.11+. 6.1.0 is the technical minimum;
+# the floor sits at 8.0.1 because it is the first release to declare
+# requires_python, so pip guards the range independently of this pin, and
+# nothing here has ever exercised 6.x or 7.x.
+sftp = ["paramiko>=3.1", "tenacity>=8.0.1"]
 azure = ["azure-storage-file-datalake>=12.16.0", "azure-identity>=1.0.0"]
 # graph (ID-127, ADR-0021): direct REST over httpx + msal for token
 # acquisition; platformdirs resolves the MSAL token-cache path (loaded lazily
