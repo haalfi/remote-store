@@ -1,0 +1,133 @@
+# remote-store
+
+> Write file storage code once. Run it against local files, S3, SFTP, Azure, or OneDrive.
+
+Unified file-storage API for Python. Write storage code once and switch
+between Local, S3 (optionally via PyArrow), Azure (Blob & ADLS Gen2), SFTP,
+SQL databases, or Microsoft Graph (OneDrive/SharePoint) via configuration.
+
+A `Store` scopes every operation to a root path, so paths are relative and
+`store.child(prefix)` narrows the root. Backends implement storage-specific
+behavior; extensions (`remote_store.ext`) add optional capabilities; a native
+async API (`remote_store.aio`) mirrors the sync interface. Backends declare
+capabilities, so code checks support explicitly with `store.supports(...)`.
+The pages below carry the full detail and examples.
+
+## Source
+
+- [GitHub repository](https://github.com/haalfi/remote-store): source tree, issues, and discussions.
+- [README](https://raw.githubusercontent.com/haalfi/remote-store/master/README.md): project overview and quick start (raw Markdown).
+- [FEATURES](https://raw.githubusercontent.com/haalfi/remote-store/master/FEATURES.md): authoritative backend, extension, capability, and install-extras list (raw Markdown).
+- [PyPI](https://pypi.org/project/remote-store/): releases and `pip install remote-store[...]` extras.
+
+## API context (for coding agents)
+
+- [llms-api.txt](https://docs.remotestore.dev/stable/llms-api.txt): the
+  full public API surface as a code-shaped skeleton — every class and
+  function (backends, async, and extensions included) with its exact
+  signature, type annotations, and complete docstring, bodies elided.
+  The whole public surface in a single file for a coding agent's context.
+
+## Tutorial
+
+- [Tutorial](https://docs.remotestore.dev/stable/tutorial/index.md)
+- [Getting Started](https://docs.remotestore.dev/stable/tutorial/getting-started/index.md)
+
+## Guides
+
+- [Guides](https://docs.remotestore.dev/stable/guides/index.md)
+- [Async/Sync Bridges](https://docs.remotestore.dev/stable/guides/async-sync-bridges/index.md)
+- [Async Store](https://docs.remotestore.dev/stable/guides/async/index.md)
+- [Batch Operations](https://docs.remotestore.dev/stable/guides/batch-operations/index.md)
+- [Caching](https://docs.remotestore.dev/stable/guides/cache/index.md)
+- [Choosing a Backend](https://docs.remotestore.dev/stable/guides/choosing-a-backend/index.md)
+- [Build Your Own Backend](https://docs.remotestore.dev/stable/guides/custom-backend-guide/index.md)
+- [Dagster IO Manager](https://docs.remotestore.dev/stable/guides/dagster/index.md)
+- [Data Lake Patterns](https://docs.remotestore.dev/stable/guides/data-lake-patterns/index.md)
+- [Overview](https://docs.remotestore.dev/stable/guides/extensions/index.md)
+- [Glob Pattern Matching](https://docs.remotestore.dev/stable/guides/glob-pattern-matching/index.md)
+- [Health Check](https://docs.remotestore.dev/stable/guides/health-check/index.md)
+- [Observability Hooks](https://docs.remotestore.dev/stable/guides/observe/index.md)
+- [Parquet Datasets](https://docs.remotestore.dev/stable/guides/parquet-datasets/index.md)
+- [PyArrow Adapter](https://docs.remotestore.dev/stable/guides/pyarrow-adapter/index.md)
+- [Retry Policy](https://docs.remotestore.dev/stable/guides/retry/index.md)
+- [Transfer Operations](https://docs.remotestore.dev/stable/guides/transfer-operations/index.md)
+- [Troubleshooting](https://docs.remotestore.dev/stable/guides/troubleshooting/index.md)
+- [Write Integrity](https://docs.remotestore.dev/stable/guides/write-integrity/index.md)
+- [Backends](https://docs.remotestore.dev/stable/guides/backends/index.md)
+- [Azure HNS Setup](https://docs.remotestore.dev/stable/guides/backends/azure-hns-setup/index.md)
+- [Azure](https://docs.remotestore.dev/stable/guides/backends/azure/index.md)
+- [Graph Setup](https://docs.remotestore.dev/stable/guides/backends/graph-setup/index.md)
+- [Graph](https://docs.remotestore.dev/stable/guides/backends/graph/index.md)
+- [HTTP](https://docs.remotestore.dev/stable/guides/backends/http/index.md)
+- [Local](https://docs.remotestore.dev/stable/guides/backends/local/index.md)
+- [Memory](https://docs.remotestore.dev/stable/guides/backends/memory/index.md)
+- [S3-PyArrow](https://docs.remotestore.dev/stable/guides/backends/s3-pyarrow/index.md)
+- [S3](https://docs.remotestore.dev/stable/guides/backends/s3/index.md)
+- [SFTP](https://docs.remotestore.dev/stable/guides/backends/sftp/index.md)
+- [SQL Blob](https://docs.remotestore.dev/stable/guides/backends/sql-blob/index.md)
+- [SQL Query](https://docs.remotestore.dev/stable/guides/backends/sql-query/index.md)
+
+## Reference
+
+- [API](https://docs.remotestore.dev/stable/reference/api/index.md)
+- [AzureUtils](https://docs.remotestore.dev/stable/reference/api/azure-utils/index.md)
+- [Backend](https://docs.remotestore.dev/stable/reference/api/backend/index.md)
+- [Capabilities](https://docs.remotestore.dev/stable/reference/api/capabilities/index.md)
+- [Config](https://docs.remotestore.dev/stable/reference/api/config/index.md)
+- [Errors](https://docs.remotestore.dev/stable/reference/api/errors/index.md)
+- [Info](https://docs.remotestore.dev/stable/reference/api/info/index.md)
+- [Models](https://docs.remotestore.dev/stable/reference/api/models/index.md)
+- [ProxyStore](https://docs.remotestore.dev/stable/reference/api/proxy/index.md)
+- [Registry](https://docs.remotestore.dev/stable/reference/api/registry/index.md)
+- [SFTPUtils](https://docs.remotestore.dev/stable/reference/api/sftp-utils/index.md)
+- [Store](https://docs.remotestore.dev/stable/reference/api/store/index.md)
+- [Async](https://docs.remotestore.dev/stable/reference/api/aio/index.md)
+- [Adapters & types](https://docs.remotestore.dev/stable/reference/api/aio/adapters/index.md)
+- [AsyncBackend](https://docs.remotestore.dev/stable/reference/api/aio/backend/index.md)
+- [AsyncStore](https://docs.remotestore.dev/stable/reference/api/aio/store/index.md)
+- [Backends](https://docs.remotestore.dev/stable/reference/api/aio/backends/index.md)
+- [AsyncAzureBackend](https://docs.remotestore.dev/stable/reference/api/aio/backends/azure/index.md)
+- [GraphBackend](https://docs.remotestore.dev/stable/reference/api/aio/backends/graph/index.md)
+- [AsyncMemoryBackend](https://docs.remotestore.dev/stable/reference/api/aio/backends/memory/index.md)
+- [Extensions](https://docs.remotestore.dev/stable/reference/api/aio/extensions/index.md)
+- [aio.ext.write](https://docs.remotestore.dev/stable/reference/api/aio/extensions/write/index.md)
+- [Backends](https://docs.remotestore.dev/stable/reference/api/backends/index.md)
+- [AzureBackend](https://docs.remotestore.dev/stable/reference/api/backends/azure/index.md)
+- [ReadOnlyHttpBackend](https://docs.remotestore.dev/stable/reference/api/backends/http/index.md)
+- [LocalBackend](https://docs.remotestore.dev/stable/reference/api/backends/local/index.md)
+- [MemoryBackend](https://docs.remotestore.dev/stable/reference/api/backends/memory/index.md)
+- [S3PyArrowBackend](https://docs.remotestore.dev/stable/reference/api/backends/s3-pyarrow/index.md)
+- [S3Backend](https://docs.remotestore.dev/stable/reference/api/backends/s3/index.md)
+- [SFTPBackend](https://docs.remotestore.dev/stable/reference/api/backends/sftp/index.md)
+- [SQLBlobBackend](https://docs.remotestore.dev/stable/reference/api/backends/sql-blob/index.md)
+- [SQLQueryBackend](https://docs.remotestore.dev/stable/reference/api/backends/sql-query/index.md)
+- [Extensions](https://docs.remotestore.dev/stable/reference/api/extensions/index.md)
+- [ext.arrow](https://docs.remotestore.dev/stable/reference/api/extensions/arrow/index.md)
+- [ext.batch](https://docs.remotestore.dev/stable/reference/api/extensions/batch/index.md)
+- [ext.cache](https://docs.remotestore.dev/stable/reference/api/extensions/cache/index.md)
+- [ext.dagster](https://docs.remotestore.dev/stable/reference/api/extensions/dagster/index.md)
+- [ext.glob](https://docs.remotestore.dev/stable/reference/api/extensions/glob/index.md)
+- [ext.integrity](https://docs.remotestore.dev/stable/reference/api/extensions/integrity/index.md)
+- [ext.observe](https://docs.remotestore.dev/stable/reference/api/extensions/observe/index.md)
+- [ext.otel](https://docs.remotestore.dev/stable/reference/api/extensions/otel/index.md)
+- [ext.parquet](https://docs.remotestore.dev/stable/reference/api/extensions/parquet/index.md)
+- [ext.partition](https://docs.remotestore.dev/stable/reference/api/extensions/partition/index.md)
+- [ext.pydantic](https://docs.remotestore.dev/stable/reference/api/extensions/pydantic/index.md)
+- [ext.streams](https://docs.remotestore.dev/stable/reference/api/extensions/streams/index.md)
+- [ext.transfer](https://docs.remotestore.dev/stable/reference/api/extensions/transfer/index.md)
+- [ext.write](https://docs.remotestore.dev/stable/reference/api/extensions/write/index.md)
+- [ext.yaml](https://docs.remotestore.dev/stable/reference/api/extensions/yaml/index.md)
+- [Capabilities Matrix](https://docs.remotestore.dev/stable/reference/capabilities-matrix/index.md)
+- [Migration](https://docs.remotestore.dev/stable/reference/migration/index.md)
+- [Tested versions](https://docs.remotestore.dev/stable/reference/tested-versions/index.md)
+- [Features](https://docs.remotestore.dev/stable/reference/FEATURES/index.md)
+
+## Explanation
+
+- [Architecture Overview](https://docs.remotestore.dev/stable/explanation/architecture/index.md)
+- [Concurrency](https://docs.remotestore.dev/stable/explanation/concurrency/index.md)
+- [API Graph](https://docs.remotestore.dev/stable/explanation/graph-ir/index.md)
+- [Performance](https://docs.remotestore.dev/stable/explanation/performance/index.md)
+- [Security Model](https://docs.remotestore.dev/stable/explanation/security-model/index.md)
+
