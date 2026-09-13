@@ -14602,6 +14602,7 @@
 <li>BUG-284: <strong>Breaking</strong> <code>[sftp]</code> floor corrected to <code>tenacity&gt;=8.0.1</code>; the declared <code>&gt;=4.0</code> admitted the whole 4.x line, which no supported Python can even import, and every release below 6.1.0. <a href="https://docs.remotestore.dev/stable/reference/migration/#v0310-to-v0320">Upgrade path</a></li>
 <li>BUG-285: <strong>Breaking</strong> floors corrected to <code>sqlalchemy&gt;=2.0.31</code> and <code>urllib3&gt;=1.26.5</code>, which fail at import on Python 3.13 below those, and to <code>dagster&gt;=1.10.18</code>, below which <code>remote_store.ext.dagster</code> cannot import. <a href="https://docs.remotestore.dev/stable/reference/migration/#v0310-to-v0320">Upgrade path</a></li>
 <li>BUG-286: <code>[azure]</code> now installs <code>aiohttp</code>; without it <code>AsyncAzureBackend</code> raised "Unable to create async transport" on its first call, and only a co-installed <code>[s3]</code> hid it.</li>
+<li>ID-018: conda-forge is a supported install channel — <code>conda install -c conda-forge remote-store</code>. conda has no extras, so a backend's dependencies install alongside the package.</li>
 </ul>
 <h2 id="0310-2026-09-08">[0.31.0] - 2026-09-08<a class="headerlink" href="#0310-2026-09-08" title="Permanent link">&para;</a></h2>
 <h3 id="added">Added<a class="headerlink" href="#added" title="Permanent link">&para;</a></h3>
