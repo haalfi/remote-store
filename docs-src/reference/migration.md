@@ -6,6 +6,40 @@ Breaking changes and upgrade paths between `remote-store` versions.
 The core Store API is stable, but extensions may evolve. This page documents
 changes that require action when upgrading.
 
+## v0.31.0 to v0.32.0
+
+**Several optional-dependency floors were raised to the first release that actually works:**
+
+Each of these extras declared a minimum below the version carrying the API the
+backend calls. The bad versions installed cleanly and then failed — at import, or
+at the first operation — so the declared range promised something it could not
+deliver. Every floor below was established by installing that release into a
+clean environment and running the code against it, on both the oldest and newest
+supported Python.
+
+| Extra | Was | Now | What went wrong below the new floor |
+| --- | --- | --- | --- |
+| `sftp` | `paramiko>=3.0` | `paramiko>=3.1` | `channel_timeout=` starts in 3.1.0; 3.0.x raised `TypeError` on the first connect |
+| `sftp` | `tenacity>=4.0` | `tenacity>=8.0.1` | the whole 4.x line cannot be imported on any supported Python; everything below 6.1.0 fails on Python 3.11+ |
+| `sql`, `sql-query` | `sqlalchemy>=2.0` | `sqlalchemy>=2.0.31` | 2.0.30 and earlier fail at import on Python 3.13 |
+| `requests` | `urllib3>=1.26.0` | `urllib3>=1.26.5` | 1.26.4 and earlier fail at import on Python 3.13 |
+| `dagster` | `dagster>=1.9` | `dagster>=1.10.18` | `remote_store.ext.dagster` imports a symbol added in 1.10.18 |
+
+**If you do not pin these yourself, nothing changes** — your resolver already
+picked a working version, and a fresh install is unaffected. Environments that
+pin one of the packages above below its new floor will now fail to resolve
+instead of installing and breaking later. Raise the pin; no code change is needed.
+
+**The `azure` extra now installs `aiohttp`:**
+
+`AsyncAzureBackend` needs it to build an async transport, and the extra never
+declared it. Installing `remote-store[azure]` on its own produced an environment
+where the first async call raised
+`ImportError: Unable to create async transport. Please check aiohttp is installed.`
+Installations that also had an extra pulling `aiohttp` in — `s3` or `s3-pyarrow`,
+through `aiobotocore` — were unaffected, which is why this went unnoticed. No
+action is needed; the dependency now arrives with the extra.
+
 ## v0.30.0 to v0.31.0
 
 **SFTP reads and writes are now bounded by default:**
@@ -693,9 +727,15 @@ from construction and removes that failure class.
 
 **`[sftp]` extra now requires `paramiko>=3.0`:**
 
-The SFTP backend uses paramiko 3.0's `channel_timeout=` connect kwarg. Environments
+The SFTP backend uses the `channel_timeout=` connect kwarg. Environments
 pinned to `paramiko<3` must upgrade. `pip install "remote-store[sftp]"` resolves the
 correct version automatically; pinned `paramiko==2.x` will now conflict.
+
+This floor was one minor too low: the kwarg landed in paramiko 3.1.0, so
+`paramiko==3.0.x` satisfied the declared extra and still failed at connect with
+`TypeError: connect() got an unexpected keyword argument 'channel_timeout'`. It
+is corrected to `>=3.1` in v0.32.0 — see
+[v0.31.0 to v0.32.0](#v0310-to-v0320).
 
 **Azure HNS error types now match the canonical mapping:**
 

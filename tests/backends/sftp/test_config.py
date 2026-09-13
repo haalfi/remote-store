@@ -86,14 +86,20 @@ def sftp_backend(sftp_server: tuple[int, str]) -> Iterator[Backend]:
 
 # region: Dependency surface (BUG-204)
 class TestSFTPParamikoVersionSurface:
-    """BUG-204: production code relies on paramiko 3.0+ API (channel_timeout)."""
+    """BUG-204: production code relies on paramiko 3.1+ API (channel_timeout)."""
 
     pytestmark = pytest.mark.spec("BUG-204")
 
     def test_ssh_client_connect_accepts_channel_timeout(self) -> None:
         """SFTPBackend._connect passes channel_timeout=; guard that the installed
-        paramiko exposes the kwarg. Tightens the pyproject.toml lower bound to
-        catch a too-loose pin at import time rather than at runtime.
+        paramiko exposes the kwarg.
+
+        This reads the *installed* paramiko, which is the newest release
+        everywhere it runs, so it proves the kwarg exists at or above the floor
+        and says nothing about where the floor is. BUG-283 is what that blind
+        spot cost: the floor sat at 3.0 while the kwarg starts at 3.1, and this
+        test was green throughout. ``tests/scripts/test_pyproject_pins.py``
+        reads the declared specifier and holds the other end of the range.
         """
         import inspect
 
@@ -105,7 +111,7 @@ class TestSFTPParamikoVersionSurface:
         """``_open_sftp_bounded`` calls ``open_session(timeout=...)``.
 
         Same shape as the guard above, for the second kwarg the backend now
-        relies on. ``pyproject.toml`` pins ``paramiko>=3.0`` with, in its own
+        relies on. ``pyproject.toml`` pins ``paramiko>=3.1`` with, in its own
         words, "Deliberately NO upper bound", so each relied-on API earns a
         surface assertion that fails at test time rather than at a customer's
         runtime.

@@ -16,5 +16,8 @@ jobs:
       - uses: prefix-dev/rattler-build-action@v0.2.39
         with:
           recipe-path: packaging/conda-forge/recipe.yaml
-          build-args: --render-only
+          # `--variant-config` supplies `python_min`, which conda-forge provides
+          # globally and the recipe therefore does not define. Without it this
+          # render fails on an undefined variable; see variants.yaml.
+          build-args: --render-only --variant-config packaging/conda-forge/variants.yaml
           upload-artifact: false

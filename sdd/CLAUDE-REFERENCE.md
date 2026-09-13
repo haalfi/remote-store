@@ -48,7 +48,7 @@ Read this before starting. One line per trigger.
 | Store method                  | README Store API table + comparison count, `__init__.py` `__all__`, README examples table, `examples/`, spec, guides, CHANGELOG |
 | Public API (`__all__`)        | README Store API table, `reference/api/*.md` directive + index summary + `_nav.yml`, `examples/`, user guides; check `backends/__init__.py` *and* `aio/__init__.py` `__all__` too. `index.md` parity machine-verified by `gen-api-check` (ID-173): every public symbol needs an index row (or an entry on the small `_INDEX_EXEMPT` backend-companion allowlist) |
 | Extension                     | `__init__.py` exports (ADR-0013 rules), `pyproject` extras, README extensions table, `reference/api/extensions/*` + index + `_nav.yml`, guides, examples, CHANGELOG, BACKLOG |
-| Dependency                    | `pyproject` extras + pins, README install, docs prerequisites |
+| Dependency                    | `pyproject` extras + pins, `packaging/conda-forge/recipe.yaml` `run_constraints`, README install, docs prerequisites |
 | `CAPABILITIES` ClassVar       | `003-backend-adapter-contract.md` (BE-003), `test_capabilities.py`, `conformance/test_identity.py`, custom-backend guide, `examples/snippets/` |
 | `_GATING` dict                | `001-store-api.md` (STORE-gate entries), `test_store.py`, guides if a method's cap docs change, `store.md` admonitions (verified by `gen-api-check`, ID-170). Two independent constants: sync in `_store.py`, async in `aio/_async_store.py` (ID-194); both verified against their pages (`store.md`, `aio/store.md`) by `gen-api-check` (ID-172); keep both in step with their classes |
 | `_BACKEND_GATING` dict        | `003-backend-adapter-contract.md` (BE-027), `backend.md` admonitions (verified by `gen-api-check`, ID-171). Async counterpart `_ASYNC_BACKEND_GATING` (`gen_graph.py`, ASYNC-045a) → `aio/backend.md` `AsyncBackend` admonitions (verified by `gen-api-check`, ID-172) |
@@ -143,8 +143,11 @@ Read this at verify-end (after the diff is complete) and during PR review. Each 
 |                            | `reference/api/extensions/index.md` + `reference/api/extensions/_nav.yml`, |
 |                            | `docs-src/guides/`, `docs-src/` + `_nav.yml`,             |
 |                            | `examples/`, CHANGELOG, BACKLOG                           |
-| **Dependency**             | `pyproject.toml` extras + minimum pins, README install    |
-|                            | instructions, docs prerequisites                          |
+| **Dependency**             | `pyproject.toml` extras + minimum pins,                   |
+|                            | `packaging/conda-forge/recipe.yaml` `run_constraints`     |
+|                            | (conda has no extras — one pin per package, at the        |
+|                            | strictest floor; `check_conda_recipe_pins.py` gates it),  |
+|                            | README install instructions, docs prerequisites           |
 | **`CAPABILITIES` ClassVar** | `sdd/specs/003-backend-adapter-contract.md` (BE-003),    |
 | (added/changed on a backend | `tests/test_capabilities.py` (class-attr parametrize),   |
 | or ABC)                     | `tests/backends/conformance/test_identity.py` (subset invariant), |

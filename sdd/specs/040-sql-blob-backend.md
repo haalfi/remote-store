@@ -13,7 +13,7 @@ Shares a `_SQLAlchemyBaseBackend` abstract base with future `SQLQueryBackend`
 database-backed file storage (PostgreSQL, MySQL), embedded metadata+blob
 co-location, portable single-file archives.
 
-**Dependencies:** `sqlalchemy>=2.0` (optional extra: `sql`).
+**Dependencies:** `sqlalchemy>=2.0.31` (optional extra: `sql`).
 
 **Architecture:** Two-class design with shared base — see
 [ADR-0018](../adrs/0018-sqlalchemy-two-class-architecture.md).

@@ -1,0 +1,110 @@
+id: BUG-283
+title: "The [sftp] extra's paramiko floor sat one minor below the API the backend calls"
+trigger: >-
+  A conda-forge reviewer on staged-recipes#32401 asked for paramiko >=3.1,
+  citing channel_timeout. pyproject.toml declared >=3.0 and four artifacts
+  repeated that number, so either the reviewer or BUG-204 was wrong about
+  where the kwarg starts.
+source_items:
+  - BUG-283
+  - BUG-204
+audience:
+  - user.api
+  - infra.test
+co_shipped_items:
+  - BK-368
+expected_ripples:
+  - sdd/backlogid.json
+  - CHANGELOG.md
+  - docs-src/reference/migration.md
+surprising_ripples:
+  - packaging/conda-forge/recipe.yaml
+# Derivation, per the schema's review_rounds clause: `gh api
+# repos/haalfi/remote-store/pulls/1004/commits --jq '.[] | .sha[0:7] + "  " +
+# (.commit.message | split("\n")[0])'`, counting the commits that exist because
+# of review feedback on PR #1004 — including the commit carrying this line.
+# Those are `3f7ced8 fix: address PR #1004 review` and this round's fix commit:
+# value 2. Every trace on this branch first said 0, which the branch refuted the
+# moment 3f7ced8 landed; the field was re-read rather than re-derived.
+review_rounds: 2
+phases:
+  - id: orient
+    name: Orient
+    steps:
+      - file: pyproject.toml
+        section: "[project.optional-dependencies]"
+        read_type: gate
+        extract: "The declared floor, and whether the reviewer's 3.1 contradicts it"
+        outcome: misleading
+      - file: sdd/BACKLOG-DONE.md
+        section: "BUG-204"
+        read_type: reference
+        extract: >-
+          BUG-204's own body asserts the kwarg "was added in paramiko 3.0";
+          it is a historical record and was left as written, but the number is
+          the one that propagated into pyproject, CHANGELOG and migration.md
+        outcome: misleading
+      - file: src/remote_store/backends/_sftp.py
+        section: "_connect (channel_timeout=self._timeout)"
+        read_type: reference
+        extract: "The kwarg is passed unconditionally, so the floor is load-bearing on every connect"
+
+  - id: reproduce
+    name: Establish which side is right
+    steps:
+      - file: tests/backends/sftp/test_config.py
+        section: "TestSFTPParamikoVersionSurface"
+        read_type: verify
+        extract: >-
+          The only existing guard. It introspects the installed paramiko, so it
+          proves the kwarg exists at the top of the range and never that the
+          floor is where it starts — it was green throughout the defect.
+          The upstream changelog, not the repo, settled it: the entry sits under
+          3.1.0 (2023-03-10). Checked before writing the number, per principle 9.
+        outcome: misleading
+
+  - id: tests
+    name: Failing test first
+    steps:
+      - file: tests/scripts/test_pyproject_httpx_cap.py
+        section: "(full)"
+        read_type: reference
+        extract: >-
+          The established shape for asserting a pyproject specifier — BUG-225
+          built it for a ceiling; the floor needed the mirror of it
+      - file: CLAUDE.md
+        section: "Bug-fix protocol"
+        read_type: gate
+        extract: "Write the failing test and see it fail before the fix; it failed on the 3.0.0 case only"
+
+  - id: fix
+    name: Fix and sweep
+    steps:
+      - file: sdd/CLAUDE-REFERENCE.md
+        section: "Ripple-check / Dependency"
+        read_type: gate
+        extract: >-
+          The row named pyproject extras, README install and docs prerequisites
+          — not packaging/conda-forge/recipe.yaml, which restates every floor.
+          That omission is why the recipe carried >=3.0 too; the row now names
+          it, in both presentations.
+        outcome: misleading
+      - file: docs-src/reference/migration.md
+        section: "v0.24.1 to v0.25.0"
+        read_type: reference
+        extract: >-
+          Corrected the justification, not the history: v0.25.0 did set >=3.0,
+          and the section now says where the kwarg actually starts and what a
+          pinned 3.0.x must do
+
+  - id: verify
+    name: Verify
+    steps:
+      - file: sdd/CLAUDE-REFERENCE.md
+        section: "Ripple-check table / Bug fix"
+        read_type: verify
+        extract: "BACKLOG-DONE entry, CHANGELOG stub, failing test before fix, trace in the same PR"
+      - file: pyproject.toml
+        section: "[tool.hatch.envs.default.scripts]"
+        read_type: verify
+        extract: "hatch run lint and the touched test modules pass on the fixed tree"

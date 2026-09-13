@@ -1600,8 +1600,9 @@ give them a way to absorb.
 **Closes when:** every checker a diff can invalidate is reachable from a gate
 that diff actually triggers (BK-333); every extra's drift smoke exercises the
 packages it pins (BUG-250) and catches the drift that is visible only to a type
-checker (ID-250); **every install channel we intend to offer is
-published and working** (ID-018); every upstream that can break us on its
+checker (ID-250); a declared floor is something a mechanism has installed and
+run, rather than a claim nobody tests (BK-369); **every install channel we
+intend to offer is published and working** (ID-018); every upstream that can break us on its
 own schedule has a standing watch (ID-229, ID-225); the one deprecation that
 watch has caught is answered before the release that enforces it (BUG-281); the
 watch's issue survives a single-extra re-run (BUG-282) and its one legacy-sftp
@@ -1652,6 +1653,51 @@ open item as neglect.
   `infra/drift-locks/dagster.txt` already freezes the extra, and the annotation
   fix it shipped is valid against both supertype versions, so no upper bound was
   needed.
+
+- [ ] **BK-369 — Nothing ever installs an extra at its declared floor, so a floor is true until a user disproves it**
+  spec: — · effort: M · audience: infra.ci
+  Every environment that has run this suite resolves each extra to the **newest**
+  compatible release: `hatch` builds `dev` from scratch, CI does the same, and
+  `.github/workflows/drift-guard.yml` deliberately resolves `--upgrade --pre`.
+  So the upper end of every declared range is exercised continuously and the
+  **lower end is exercised by nobody**. A floor is a claim about what works, and
+  no mechanism has ever tested it.
+  **Measured, across four items.** BUG-283 (paramiko off by one minor), BUG-284
+  (tenacity off by two majors, admitting releases no supported Python can
+  import) and BUG-285 (sqlalchemy, urllib3 and dagster) were all found by hand,
+  by installing the floor and running the code. Five wrong floors in three
+  sweeps, none of which any gate could see, and two of them wrong for over a
+  year. BK-368's `check_conda_recipe_pins.py` holds the recipe to `pyproject.toml`
+  but takes both as given; `tests/scripts/test_pyproject_pins.py` asserts
+  boundaries a human measured once and does not re-derive them.
+  **The failure mode to target is narrower than "test the floors"**: a floor that
+  pip *refuses* (no wheel for the interpreter) is self-announcing, and pyarrow's
+  two floors are in that class and are fine. The damage comes from a release that
+  **installs and then breaks**, which is what all five were.
+  Fix shape is open, and the cheap option may not be the right one. A CI lane
+  resolving each extra at its minimums (`pip install --constraint` pinning every
+  floor) across the 3.10-3.14 matrix and running that extra's existing smoke
+  target would catch the whole class, but it doubles a matrix that is already
+  wide and most legs would never change. Running it on a schedule rather than
+  per-PR, like drift-guard, is likely the right trade — the thing it guards
+  changes only when a floor or an interpreter does. Reusing
+  `scripts/drift_smoke_map.py` gives the per-extra smoke target for free, so
+  whatever BUG-250 and ID-250 do to widen that map applies here too; those two
+  items are about the smoke reaching *more* at the top of the range, this one is
+  about pointing the same smoke at the bottom.
+  **Not** about adding rows to `test_pyproject_pins.py`: that file is a
+  regression guard for boundaries already found, and adding a row cannot find the
+  next one.
+  **A second, cheaper detection path already existed and nobody walked it.**
+  [RFC-0014](rfcs/rfc-0014-dagster-compute-log-manager.md) Open Question 2 asks
+  in writing to "confirm that `dagster>=1.9` exposes
+  `TruncatingCloudStorageComputeLogManager` … if the required surface only
+  stabilised later, either bump the floor or use a version-guarded import", and
+  marks it "to be resolved during the spec/implementation phase". It was not,
+  and BUG-285 reached the same answer independently a year later. An open RFC
+  question naming a specific risk is a far cheaper signal than a CI matrix, so
+  whatever this item builds, the sweep for unresolved Open Questions is worth
+  doing first and costs nothing.
 
 - [ ] **BUG-250 — `[graph]`'s drift smoke reaches one of the extra's four declared dependencies**
   spec: — · effort: S · audience: infra.ci
@@ -1799,7 +1845,39 @@ open item as neglect.
   - Done: [recipe](../packaging/conda-forge/recipe.yaml),
     [conda-recipe workflow](../.github/workflows/conda-recipe.yml),
     staged-recipes PR `conda-forge/staged-recipes#32401` (CI green).
-  - Blocked: waiting for conda-forge reviewer approval. When merged: add
+  - Review round applied: `paramiko` and `pyarrow` floors raised, and the
+    `run_constraints` reasoning corrected — the strictest floor across the
+    extras is the sound single pin, not the loosest. The reviewer found the
+    `pyarrow` gap by reading `pyproject.toml` against the recipe, which nothing
+    here did; BK-368 is the gate that now does. Following that thread found four
+    more wrong floors and a missing dependency (BUG-283 through BUG-286), all
+    shipping in v0.32.0.
+  - **The two copies had diverged, and the divergence cost a constraint.** The
+    submitted file was hand-edited away from this one: it picked up conda-forge
+    conventions this copy lacked (`${{ PYTHON }}`, a two-value
+    `tests.python_version`, `python_min` left to the global) and dropped
+    `tomli >=1.1.0` with the comment explaining it, leaving the `toml` extra
+    unconstrained for conda users. Nothing detects that — BK-368 gates this file
+    against `pyproject.toml`, not against what was submitted.
+    All three conventions are now absorbed here and `packaging/conda-forge/variants.yaml`
+    supplies `python_min` to our own render, so this file is the submission
+    rather than a draft of it and the next update is a verbatim copy-out.
+    **Unvalidated**: `rattler-build` is not available locally and
+    `.github/workflows/conda-recipe.yml` fires only on master or an open PR, so
+    the `--variant-config` wiring has never rendered. Watch that job on the PR.
+  - **`staged-recipes#32401` is merged.** The reviewer merged before the
+    corrected recipe could be posted, so what conda-forge received is the
+    pre-sweep file: version 0.30.0 (two releases behind), the four stale floors,
+    no `tomli` constraint and no `aiohttp`. None of it is dangerous — a
+    `run_constraint` binds only if the user installs that package too — but the
+    channel's first build will serve it.
+  - Next, in order: the conda-forge bot creates
+    `conda-forge/remote-store-feedstock` and its first build publishes 0.30.0;
+    release v0.32.0; then one PR against the **feedstock** carrying the version,
+    sha256 and this file's `run_constraints`. Submission is over — staged-recipes
+    is not the route for any further change.
+  - Blocked on the feedstock existing (checked: 404 as of this writing, and the
+    package is not yet on anaconda.org). When the channel serves a build: add
     `conda install -c conda-forge remote-store` to README.
 
 - [ ] **ID-229 — Evaluate porting to httpx 1.0 (lift the `<1.0` cap)**

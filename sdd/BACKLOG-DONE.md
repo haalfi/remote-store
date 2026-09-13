@@ -220,7 +220,169 @@ if evidence changes; these are retired.
 
 ## Unreleased
 
-*(none)*
+- [x] **BUG-286 — The `[azure]` extra never declared aiohttp, so its async backend could not build a transport**
+  spec: — · effort: S · audience: user.api, infra.test
+  `AsyncAzureBackend` drives `azure.storage.filedatalake.aio`
+  (`src/remote_store/aio/backends/_azure.py:373`). That transport needs aiohttp,
+  which `azure-core` declares only in its own `aio` extra, and
+  `[azure]` declared neither. A clean `pip install "remote-store[azure]"` gets no
+  aiohttp: the first async call raises
+  `ImportError: Unable to create async transport. Please check aiohttp is installed.`
+  **Reproduced** on a venv holding only `azure-storage-file-datalake` and
+  `azure-identity`; `infra/drift-locks/azure.txt` confirmed the resolution, with
+  no aiohttp in its 17 packages, counted from the file
+  (`git show origin/master:infra/drift-locks/azure.txt`, non-comment lines); the
+  8 this PR adds bring it to the 25 the refreshed lock holds. An earlier version
+  of this sentence said 21, which reconciles with neither.
+  `FEATURES.md` lists `AsyncAzureBackend` under
+  install extra `remote-store[azure]` and `docs-src/guides/async.md` tells async
+  users to install exactly that, so the extra promised a backend it could not run.
+  **Why no test caught it**: the `dev` extra aggregates `s3-pyarrow`, whose
+  aiobotocore pulls aiohttp, so every environment that has ever run the suite had
+  it by accident. This is the shape BUG-250 describes one layer up — an extra's
+  own dependency set never exercised alone.
+  Fixed by declaring `aiohttp>=3.0` in the extra. The number is azure-core's, from
+  its `aiohttp>=3.0; extra == "aio"` metadata; aiohttp is named directly rather
+  than through `azure-core[aio]` because conda has no extras and the recipe must
+  restate it as a plain `run_constraints` entry, which BK-368's gate requires.
+  Trace: `sdd/traces/bug-286-azure-aiohttp.yml`.
+
+- [x] **BUG-285 — Three more extras declared floors below the first release that works**
+  spec: — · effort: M · audience: user.api, infra.test
+  The sweep BUG-283 and BUG-284 implied, run over every remaining user-facing
+  dependency: each declared floor was installed into a clean venv on Python 3.10
+  and 3.13 and exercised against the API surface `src/` actually uses. Three were
+  wrong, and the failure they share is that the bad version **installs and then
+  breaks**, rather than being refused:
+  - **`sqlalchemy>=2.0` → `>=2.0.31`.** Everything through 2.0.30 ships a
+    universal wheel, installs on 3.13 and dies at import: 2.0.0-2.0.29 on
+    `Class SQLCoreOperations directly inherits TypingOnly but has additional
+    attributes {'__static_attributes__', '__firstlineno__'}`, 2.0.30 on
+    `Can't replace canonical symbol for '__firstlineno__'`. Both are 3.13's new
+    class attributes. All of 2.0.x is fine on 3.10.
+  - **`urllib3>=1.26.0` → `>=1.26.5`.** 1.26.0-1.26.4 raise
+    `ModuleNotFoundError: No module named 'urllib3.packages.six.moves'` on 3.13 —
+    the vendored six shim's meta-path importer, which the 3.12 line broke.
+  - **`dagster>=1.9` → `>=1.10.18`.** `ext/dagster.py` imports
+    `TruncatingCloudStorageComputeLogManager`, which first appears in 1.10.18;
+    every release from 1.9.0 to 1.10.17 installs and raises `ImportError` at
+    `import remote_store.ext.dagster`. Unlike the other two this was wrong on
+    every supported Python, not only the newest.
+  **Two floors were checked and left alone, and the distinction is the finding.**
+  `pyarrow>=12.0.0` (`arrow`, `sql-query`) and `pyarrow>=14.0.0` (`s3-pyarrow`)
+  have no cp313 wheel and fail to build from source there, so pip **refuses** them
+  with a clear resolver error rather than installing something broken; every
+  version those floors admit that can install, works. Raising them would exclude
+  working 3.10-3.12 setups to prevent an error pip already prevents.
+  `pyarrow>=14.0.0` is also exactly right rather than conservative: 13.0.0 rejects
+  the `tls_ca_file_path=` kwarg `_s3_pyarrow.py:578` passes, which is the
+  derivation the conda-forge reviewer who asked for `>=14` did not have.
+  Clean on both Pythons: `s3fs`, `azure-storage-file-datalake`, `azure-identity`,
+  `msal`, `msal-extensions`, `platformdirs`, `requests`, `opentelemetry-api`,
+  `tomli`, `pyyaml`, `pydantic-settings`.
+  **One declaration oddity, not filed as a defect**: the `pydantic` extra declares
+  `pydantic-settings>=2.0.0` while `ext/pydantic.py` imports only `pydantic`
+  (`SecretStr`, `BaseModel`, `model_dump`). It works, because pydantic-settings
+  depends on pydantic, but the extra never names the package it imports. The
+  docstring example does use `pydantic_settings.BaseSettings`, so the declaration
+  is defensible; recorded here so the next reader does not re-derive it.
+  Successor for the mechanism: **BK-369**, `[ ]` in `BACKLOG.md`.
+  Trace: `sdd/traces/bug-285-extra-floors-sweep.yml`.
+
+- [x] **BUG-284 — The `[sftp]` extra's tenacity floor admitted five years of releases that cannot run the code**
+  spec: — · effort: S · audience: user.api, infra.test
+  `SFTPBackend._connect` builds `before_sleep_log(log, logging.WARNING)` and
+  `wait_exponential(multiplier=1, min=…, max=…)`
+  (`src/remote_store/backends/_sftp.py:1817-1851`). The extra declared
+  `tenacity>=4.0`, which predates both.
+  **Measured, not read**: the `_connect` construction was extracted verbatim and
+  run against each release in a clean venv, on Python 3.10 and 3.11 (the
+  package's `python_min` and the first Python that drops `asyncio.coroutine`).
+  Three independent failure modes, none of which the declared floor excluded:
+  - **≤ 4.10.0** — `tenacity/async.py` is a `SyntaxError` on any Python ≥ 3.7
+    (`async` became a keyword). Dead on every Python this package supports.
+  - **4.11.0 – 5.0.1** — imports, but `wait_exponential` has no `min=`
+    parameter; it lands in 5.0.2. `TypeError` at the first connect.
+  - **5.0.2 – 6.0.0** — works on 3.10; on 3.11+ `@asyncio.coroutine` is gone and
+    the package fails at import.
+  6.1.0 is the first release that works on every supported Python. The floor
+  went to **8.0.1**, the first release declaring `requires_python`, so pip guards
+  the range independently of this pin and the floor does not assert a range
+  nothing here has exercised; that margin is recorded in the `pyproject.toml`
+  comment rather than in the test, which asserts only the measured boundary.
+  No metadata protected anyone: `requires_python` is absent from every tenacity
+  release through 6.1.0, so pip will install 4.0.0 on Python 3.14 if asked.
+  **Same shape as BUG-283, wider**: a floor set once and never asserted, behind a
+  lazy import, so nothing failed until a user pinned. Both were found by reading
+  the conda recipe against the code it constrains rather than by any gate.
+  The three pin assertions this repo had accumulated (the httpx cap from
+  BUG-225, the paramiko floor, this one) are now one table in
+  `tests/scripts/test_pyproject_pins.py`, per
+  [`DRIFT-RULES.md` Rule 1](DRIFT-RULES.md#one-driver); the extras each row
+  applies to are derived rather than listed, which the superseded httpx module
+  hard-coded. Trace: `sdd/traces/bug-284-tenacity-floor.yml`.
+
+- [x] **BUG-283 — The `[sftp]` extra's paramiko floor sat one minor below the API the backend calls**
+  spec: — · effort: S · audience: user.api, infra.test
+  `SFTPBackend._connect` passes `channel_timeout=` to `paramiko.SSHClient.connect`
+  (`src/remote_store/backends/_sftp.py:1869`). Paramiko's changelog puts that
+  keyword in **3.1.0** (2023-03-10), not 3.0.0: "Add an explicit
+  ``channel_timeout`` keyword argument to `paramiko.client.SSHClient.connect`".
+  BUG-204 lifted the floor from 2.2 and stopped at 3.0, so
+  `pip install "remote-store[sftp]"` resolved `paramiko==3.0.0` and then raised
+  `TypeError: connect() got an unexpected keyword argument 'channel_timeout'` on
+  the first connect — the exact failure BUG-204 was filed to close, one minor
+  narrower.
+  **Why every guard was green.** `TestSFTPParamikoVersionSurface` introspects the
+  *installed* paramiko, which is the newest release in CI and in every dev
+  environment. It proves the keyword exists at or above the floor and says
+  nothing about where the floor starts; no test read the declared specifier.
+  `tests/scripts/test_pyproject_pins.py` holds that end, in the shape the httpx
+  cap (BUG-225) had already established for a ceiling — the two shipped as
+  separate modules and BUG-284 folded them into that one table.
+  Found by a conda-forge reviewer on `conda-forge/staged-recipes#32401`, reading
+  the recipe against the API it constrains. Trace:
+  `sdd/traces/bug-283-paramiko-floor.yml`.
+
+- [x] **BK-368 — Nothing held the conda recipe's `run_constraints` to pyproject's extras**
+  spec: — · effort: S · audience: contributor.tooling, library.maintainer
+  `packaging/conda-forge/recipe.yaml` restates every optional dependency because
+  conda has no extras: the package installs whole, and a `run_constraints` entry
+  is the only thing keeping a user from pairing remote-store with a version it
+  does not work with. The file said "keep this exhaustive … the ones nobody
+  enumerates are the ones that drift" and nothing enforced it —
+  `.github/workflows/conda-recipe.yml` runs `rattler-build --render-only`, which
+  validates syntax and never opens `pyproject.toml`.
+  **It had drifted, and a reviewer is what caught it**: `pyarrow >=12.0.0`
+  against an `s3-pyarrow` extra needing `>=14.0.0` — one surface, the
+  `tls_ca_file_path=` kwarg, which pyarrow 13 rejects and 14 accepts. An earlier
+  version of this entry claimed a second surface, the Dagster Parquet
+  serializer, on the strength of a `pyarrow>=14.0` cell in
+  `docs-src/guides/dagster.md` that nothing derived; running that serializer's
+  whole surface against pyarrow 12.0.0 shows it works, so the guide cell was
+  wrong and this entry repeated it rather than checking. The recipe's own
+  comment argued for the **loosest** floor,
+  which is backwards: a `run_constraints` entry asserts compatibility, so the
+  strictest floor is the sound single pin. staged-recipes review happens once, so
+  that reviewer does not recur; `scripts/check_conda_recipe_pins.py` is what
+  replaces them, deriving the expected set from `pyproject.toml` and failing on a
+  missing, stray, or weaker entry. The **Dependency** ripple-check rows now name
+  the recipe, in both presentations — neither did, which is how the recipe went
+  un-swept on every floor change since it was written.
+  **Two wiring defects, both caught in review of the PR that added it.** It was
+  wired into `lint` alone, and CI's `lint` job is `CODE_PAT`-gated while neither
+  classifier matched `^packaging/` — so a recipe-only diff, the exact event this
+  gate exists for, ran only `rattler-build --render-only`. It is now in
+  `docs-gate` too and `^packaging/` is in `DOCS_PAT`; a pair straddling both
+  classifiers needs both wirings, which `gen_backlogid.py` documents one path
+  over. And `_collapse` silently rewrote four PEP 440 operators — folding `>`,
+  `==` and `~=` into `>=`, dropping `!=` and `===` — which would have made the
+  gate demand a weaker pin than declared; only `>=`, `<` and `<=` are accepted
+  now, anything else is reported, and the Bounds section says so.
+  The same gate also now compares the three spellings of the minimum Python
+  (`requires-python`, `variants.yaml`'s `python_min`, `ci.yml`'s `MIN_PYTHON`),
+  which had been left to a comment. Trace:
+  `sdd/traces/bk-368-conda-recipe-pin-gate.yml`.
 
 ## v0.31.0
 

@@ -11,7 +11,7 @@ into `dagster-aws` / `dagster-azure`. The `RemoteStoreComputeLogManager`
 persists op/step `stdout` / `stderr` to any remote-store backend.
 
 **Module:** `src/remote_store/ext/dagster.py`
-**Dependencies:** `dagster>=1.9` (optional extra)
+**Dependencies:** `dagster>=1.10.18` (optional extra)
 **Related:** [001-store-api.md](001-store-api.md) (Store API),
 research (`sdd/research/research-dagster-extension.md`),
 [RFC-0014](../rfcs/rfc-0014-dagster-compute-log-manager.md), ID-075, ID-208.

@@ -1,0 +1,175 @@
+id: BUG-285
+title: "Three more extras declared floors below the first release that works"
+trigger: >-
+  BUG-283 and BUG-284 each found a wrong floor in the same extra. Two defects in
+  the same line is a sampling result, not a coincidence, so the remaining
+  fifteen user-facing dependencies were swept the same way.
+source_items:
+  - BUG-285
+  - BUG-283
+  - BUG-284
+audience:
+  - user.api
+  - infra.test
+discovery_followups:
+  - BUG-286
+  - BK-369
+co_shipped_items:
+  - BUG-286
+expected_ripples:
+  - sdd/backlogid.json
+  - CHANGELOG.md
+  - packaging/conda-forge/recipe.yaml
+  - tests/scripts/test_pyproject_pins.py
+surprising_ripples:
+  - docs-src/reference/tested-versions.md
+  - infra/drift-locks/azure.txt
+  - sdd/specs/031-ext-dagster.md
+  - sdd/specs/040-sql-blob-backend.md
+  - sdd/specs/041-sql-query-backend.md
+  - docs-src/guides/backends/sql-blob.md
+  - docs-src/guides/backends/sql-query.md
+  - docs-src/guides/backends/sftp.md
+  - examples/medallion_dagster/pyproject.toml
+  - docs-src/guides/dagster.md
+# Derivation, per the schema's review_rounds clause: `gh api
+# repos/haalfi/remote-store/pulls/1004/commits --jq '.[] | .sha[0:7] + "  " +
+# (.commit.message | split("\n")[0])'`, counting the commits that exist because
+# of review feedback on PR #1004 — including the commit carrying this line.
+# Those are `3f7ced8 fix: address PR #1004 review` and this round's fix commit:
+# value 2. Every trace on this branch first said 0, which the branch refuted the
+# moment 3f7ced8 landed; the field was re-read rather than re-derived.
+review_rounds: 2
+phases:
+  - id: orient
+    name: Enumerate the claim space
+    steps:
+      - file: pyproject.toml
+        section: "[project.optional-dependencies]"
+        read_type: gate
+        extract: >-
+          Eighteen distinct packages across the user-facing extras, three already
+          settled (httpx, paramiko, tenacity), so fifteen to check. The first
+          draft of this step said thirteen, which its own arithmetic refutes and
+          the item's enumeration contradicts (3 wrong + 1 left + 11 clean = 15);
+          caught in review, and the same wrong figure had reached the PR body.
+      - file: src/remote_store/
+        section: "(import sites, via AST)"
+        read_type: reference
+        extract: >-
+          Per package, every import site including the lazy ones inside methods,
+          so each probe exercises what the library touches rather than a bare
+          `import <pkg>`
+
+  - id: reproduce
+    name: Install each floor and run it
+    steps:
+      - file: CLAUDE.md
+        section: "Principles 6 and 9"
+        read_type: gate
+        extract: >-
+          Each floor was installed into a clean venv on Python 3.10 and 3.13 and
+          the surface exercised, rather than reasoned about from changelogs. Two
+          first-round failures were probe artifacts and had to be isolated
+          before either could be called a finding: pyarrow died in pyarrow.lib
+          because pip put numpy 2.x beside a wheel built for 1.x, and
+          azure-identity's aio module failed for a missing aiohttp that turned
+          out to be a separate defect (BUG-286).
+      - file: pyproject.toml
+        section: "requires-python / classifiers"
+        read_type: gate
+        extract: >-
+          3.10 through 3.14, so a single floor has to hold at both ends; three of
+          the five defects found across this item and its predecessors are
+          visible only on the newest interpreter
+
+  - id: classify
+    name: Separate refuses-to-install from installs-then-breaks
+    steps:
+      - file: pyproject.toml
+        section: "arrow / sql-query / s3-pyarrow pyarrow pins"
+        read_type: verify
+        extract: >-
+          The distinction that decided the disposition. pyarrow 12 and 14 have no
+          cp313 wheel and fail to build, so pip refuses them with a resolver
+          error and every version those floors admit that can install works —
+          left alone. sqlalchemy, urllib3 and dagster install and then break,
+          which is the class a floor has to exclude. Raising the pyarrow floors
+          would have cost working 3.10-3.12 setups to prevent an error pip
+          already prevents, and the first draft of this item proposed exactly
+          that before the measurement was classified.
+      - file: src/remote_store/backends/_s3_pyarrow.py
+        section: "_pa_fs (tls_ca_file_path=)"
+        read_type: verify
+        extract: >-
+          pyarrow 13 rejects this kwarg and 14 accepts it, so the >=14.0.0 floor
+          is exactly right — the derivation the conda-forge reviewer who asked
+          for it did not state, and which the recipe now records
+
+  - id: fix
+    name: Fix and sweep
+    steps:
+      - file: tests/scripts/test_pyproject_pins.py
+        section: "_PINS"
+        read_type: gate
+        extract: >-
+          Three rows added, each naming the measurement it came from; the table
+          BUG-284 built absorbed them without a new module, which is what it was
+          folded together for
+      - file: scripts/check_conda_recipe_pins.py
+        section: "(gate run)"
+        read_type: verify
+        extract: >-
+          BK-368's gate named all four recipe disagreements — three floors plus
+          the new aiohttp entry — rather than leaving them to be noticed. It also
+          exposed that a requirement carrying an extras marker (`azure-core[aio]`)
+          has no conda spelling, which is why BUG-286 names aiohttp directly.
+        outcome: ok
+      - file: CONTRIBUTING.md
+        section: "Drift guard / refresh the baseline"
+        read_type: gate
+        extract: >-
+          `infra/drift-locks/azure.txt` refreshed because adding aiohttp genuinely
+          changes that resolution (17 packages -> 25, +8). The sql, sql-query,
+          requests and dagster baselines were left: their floors rose but the
+          resolution is unchanged, so a refresh would only rewrite the capture
+          header. The first capture was taken on this container's Python 3.11,
+          flipping the header off the 3.13 every other lock carries, and the
+          step justified that as "not a decision" rather than fixing it —
+          which is the problem, not the mitigation, since nothing compares
+          `python_baseline` against `python_run`. The review round re-captured
+          it under a real 3.13 interpreter; the same 25 packages came back, so
+          the `pyjwt` 2.13 -> 2.14 bump in the diff is genuine upstream drift
+          rather than an interpreter artifact.
+        outcome: misleading
+
+  - id: verify
+    name: Verify
+    steps:
+      - file: sdd/CLAUDE-REFERENCE.md
+        section: "Ripple-check / Dependency"
+        read_type: verify
+        extract: >-
+          Extending the row to name the recipe was treated as the whole ripple,
+          and the targets the row **already** named were never walked. Review
+          found seven sites still carrying superseded floors — three specs, three
+          backend guides (one of which hands users a `paramiko>=3.0,<5` pin line)
+          and the shipped medallion_dagster example. The same PR proved the
+          restatement class is real and left its larger instance standing.
+        outcome: misleading
+      - file: docs-src/guides/dagster.md
+        section: "serializer table"
+        read_type: verify
+        extract: >-
+          The recipe comment justified `pyarrow>=14.0.0` partly by this guide's
+          claim that the Parquet serializer needs >=14.0 — a figure the guide
+          never derived and this work copied without running. Running the
+          serializer's whole surface (`pa.Table.from_pandas`, `pq.write_table`,
+          `pq.read_table`) against pyarrow 12.0.0 shows it works, so the guide
+          cell was wrong and the comment repeated it. `tls_ca_file_path=` is the
+          floor's only derivation, which the BACKLOG-DONE entry had right.
+        outcome: misleading
+      - file: pyproject.toml
+        section: "[tool.hatch.envs.default.scripts]"
+        read_type: verify
+        extract: "hatch run all green before commit"

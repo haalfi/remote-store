@@ -66,13 +66,34 @@ Issues = "https://github.com/haalfi/remote-store/issues"
 # -- Backend extras (pip install remote-store[s3], etc.) --
 s3 = ["s3fs>=2024.2.0"]
 s3-pyarrow = ["s3fs>=2024.2.0", "pyarrow>=14.0.0"]
-# paramiko: floor at >=3.0 (BUG-204: channel_timeout API surface).
+# paramiko: floor at >=3.1 (BUG-283, correcting BUG-204's >=3.0). The
+# `channel_timeout=` connect kwarg `_sftp.py` passes unconditionally landed in
+# paramiko 3.1.0, not 3.0.0 — see the upstream changelog entry quoted in
+# tests/scripts/test_pyproject_pins.py, which guards the floor itself
+# (the installed-signature guard in tests/backends/sftp/test_config.py cannot).
 # Deliberately NO upper bound. paramiko 5 dropped ssh-rsa from defaults;
 # we address that via SFTPUtils.enable_ssh_rsa_compat() and the diagnostic
 # scan_host_algorithms() rather than capping the library for every consumer.
 # Full rationale: sdd/research/research-bk-198-paramiko-ssh-rsa-empirical.md § 5.
-sftp = ["paramiko>=3.0", "tenacity>=4.0"]
-azure = ["azure-storage-file-datalake>=12.16.0", "azure-identity>=1.0.0"]
+# tenacity: floor at >=8.0.1 (BUG-284, correcting an original >=4.0). `_connect`
+# builds before_sleep_log(...) and wait_exponential(min=...); measured against
+# every release in a clean venv, the whole 4.x line is a SyntaxError on any
+# Python >= 3.7, min= lands in 5.0.2, and @asyncio.coroutine keeps everything
+# below 6.1.0 from importing on Python 3.11+. 6.1.0 is the technical minimum;
+# the floor sits at 8.0.1 because it is the first release to declare
+# requires_python, so pip guards the range independently of this pin, and
+# nothing here has ever exercised 6.x or 7.x.
+sftp = ["paramiko>=3.1", "tenacity>=8.0.1"]
+# aiohttp (BUG-286): `AsyncAzureBackend` drives
+# `azure.storage.filedatalake.aio`, whose transport needs aiohttp, and the extra
+# declared nothing that pulls it — `azure.core.pipeline.transport` raised
+# "Unable to create async transport. Please check aiohttp is installed." at the
+# first async call. Nothing caught it because `dev` also installs `s3-pyarrow`,
+# whose aiobotocore drags aiohttp in. `>=3.0` is azure-core's own number, from
+# the `aiohttp>=3.0; extra == "aio"` line in its metadata; aiohttp is named
+# directly rather than via `azure-core[aio]` because conda has no extras and the
+# recipe has to restate this as a plain `run_constraints` entry.
+azure = ["azure-storage-file-datalake>=12.16.0", "azure-identity>=1.0.0", "aiohttp>=3.0"]
 # graph (ID-127, ADR-0021): direct REST over httpx + msal for token
 # acquisition; platformdirs resolves the MSAL token-cache path (loaded lazily
 # by GraphAuth only). msal-extensions (BK-291) makes the token-cache write
@@ -84,9 +105,17 @@ azure = ["azure-storage-file-datalake>=12.16.0", "azure-identity>=1.0.0"]
 # import at load. The PEP 440 exclusive bound excludes 1.0.dev*/rc*/GA while
 # keeping all 0.2x; lifting it to a real 1.0 port is ID-229.
 graph = ["httpx>=0.24.0,<1.0", "msal>=1.20.0", "msal-extensions>=1.3", "platformdirs>=3.0.0"]
-sql = ["sqlalchemy>=2.0"]
-sql-query = ["sqlalchemy>=2.0", "pyarrow>=12.0.0"]
-requests = ["requests>=2.25.0", "urllib3>=1.26.0"]
+# sqlalchemy: floor at >=2.0.31 (BUG-285, correcting >=2.0). Everything through
+# 2.0.30 installs on Python 3.13 — the wheel is universal — and then dies at
+# import on 3.13's new `__static_attributes__` / `__firstlineno__` class
+# attributes. 2.0.31 is the first release that knows about them. Measured per
+# release on 3.10 and 3.13; 3.10 is fine throughout, which is why it went unseen.
+sql = ["sqlalchemy>=2.0.31"]
+sql-query = ["sqlalchemy>=2.0.31", "pyarrow>=12.0.0"]
+# urllib3: floor at >=1.26.5 (BUG-285, correcting >=1.26.0). 1.26.0-1.26.4 import
+# their vendored six shim through a meta-path importer that stopped working in
+# the 3.12 line; on 3.13 they install and then raise ModuleNotFoundError.
+requests = ["requests>=2.25.0", "urllib3>=1.26.5"]
 # httpx <1.0 (BUG-225): same cap as the graph extra — the [httpx] HTTP adapter
 # uses httpx.AsyncClient, which the 1.0.dev* rewrite removes. Lift via ID-229.
 httpx = ["httpx>=0.24.0,<1.0"]
@@ -96,7 +125,14 @@ otel = ["opentelemetry-api>=1.28.0"]
 toml = ["tomli>=1.1.0; python_version < '3.11'"]
 yaml = ["pyyaml>=5.1"]
 pydantic = ["pydantic-settings>=2.0.0"]
-dagster = ["dagster>=1.9"]
+# dagster: floor at >=1.10.18 (BUG-285, correcting >=1.9). ext/dagster.py imports
+# TruncatingCloudStorageComputeLogManager, which first appears in 1.10.18; every
+# release from 1.9.0 to 1.10.17 installs and then raises ImportError at
+# `import remote_store.ext.dagster`. Unlike the others this was wrong on every
+# supported Python, not just the newest. 1.10.x does not build for 3.13+, where
+# pip resolves to 1.12+ on its own — so the floor states the API requirement and
+# leaves the interpreter bound to dagster's own metadata.
+dagster = ["dagster>=1.10.18"]
 
 # -- Mutation testing (dev/CI tooling, not a user-facing feature) --
 # Single source of truth for the pytest-gremlins pin: the hatch default env
@@ -230,7 +266,7 @@ env.GITHUB_ACTIONS.installer = { value = "pip", if = ["true"] }
 # full lint/typecheck/test gauntlet. CI runs this same target via `uvx hatch run
 # preflight` in the `lint` job (BK-269), so the script list is the single source.
 preflight = ["python scripts/gen_graph.py --check", "python scripts/check_api_docs.py", "python scripts/check_docstring_parity.py", "python scripts/gen_features.py --check", "python scripts/gen_graph_viz.py --check", "python scripts/gen_adr_digest.py --check", "python scripts/drift_check.py render-docs --check"]
-lint = ["ruff check src/ tests/ examples/ scripts/", "python scripts/check_test_assertions.py tests", "python scripts/check_mock_spec.py tests", "python scripts/check_test_placement.py tests", "python scripts/check_tla_no_emdash.py", "python scripts/check_formal_trace.py", "python scripts/check_capability_parity.py", "python scripts/check_spec_marks.py", "python scripts/check_docs_framework.py", "python scripts/gen_backlogid.py --check", "python scripts/check_rst_roles.py", "python scripts/check_infra_settings.py", "python scripts/check_no_tracker_refs.py", "python scripts/check_breaking_migration_link.py", "python scripts/check_ci_inventory.py", "python scripts/check_traces.py", "python scripts/check_readthedocs_python.py", "python scripts/check_backend_order.py", "python scripts/check_ripple_parity.py", "python scripts/check_changelog_unreleased.py", "python scripts/check_custom_backend_guide.py", "python scripts/check_ci_full_matrix.py", "python scripts/check_dafny_twin_parity.py", "python scripts/check_sdd_index.py", "python scripts/gen_gate_inventory.py --check"]
+lint = ["ruff check src/ tests/ examples/ scripts/", "python scripts/check_test_assertions.py tests", "python scripts/check_mock_spec.py tests", "python scripts/check_test_placement.py tests", "python scripts/check_tla_no_emdash.py", "python scripts/check_formal_trace.py", "python scripts/check_capability_parity.py", "python scripts/check_spec_marks.py", "python scripts/check_docs_framework.py", "python scripts/gen_backlogid.py --check", "python scripts/check_rst_roles.py", "python scripts/check_infra_settings.py", "python scripts/check_no_tracker_refs.py", "python scripts/check_breaking_migration_link.py", "python scripts/check_ci_inventory.py", "python scripts/check_traces.py", "python scripts/check_readthedocs_python.py", "python scripts/check_backend_order.py", "python scripts/check_conda_recipe_pins.py", "python scripts/check_ripple_parity.py", "python scripts/check_changelog_unreleased.py", "python scripts/check_custom_backend_guide.py", "python scripts/check_ci_full_matrix.py", "python scripts/check_dafny_twin_parity.py", "python scripts/check_sdd_index.py", "python scripts/gen_gate_inventory.py --check"]
 format = "ruff format src/ tests/ examples/ scripts/"
 format-check = "ruff format --check src/ tests/ examples/ scripts/"
 typecheck = "mypy src/ examples/"
@@ -357,6 +393,14 @@ check-backend-order = "python scripts/check_backend_order.py"
 # the docs gate invokes it directly rather than depending on the whole `lint`
 # bundle having run.
 check-ripple-parity = "python scripts/check_ripple_parity.py"
+# Standalone entry point for the conda-recipe pin gate, and the reason is the
+# sharpest instance of the pattern above: this gate exists to catch a hand-edit
+# weakening a `run_constraints` floor, and a `packaging/`-only diff matched
+# NEITHER classifier in `ci.yml` until `^packaging/` was added to DOCS_PAT
+# (BK-368, caught while reviewing the PR that introduced this gate).
+# Wired into `lint` (for the pyproject side) and `docs-gate` (for the recipe
+# side); either alone leaves one direction of the pair unreachable in CI.
+check-conda-recipe-pins = "python scripts/check_conda_recipe_pins.py"
 check-breaking-migration-link = "python scripts/check_breaking_migration_link.py"
 # Standalone entry point for the custom-backend-guide drift gate (BK-320), same
 # reason: the guide is a docs surface, so the docs gate invokes it directly.
@@ -402,7 +446,7 @@ docs = "mkdocs serve"
 docs-build = "mkdocs build --strict"
 # The full set of checks that validate a docs/spec change, as one entry point CI
 # invokes once. Composed by reference so each sub-target stays the single source.
-docs-gate = ["docs-check", "check-no-tracker-refs", "check-breaking-migration-link", "check-backend-order", "check-ripple-parity", "check-custom-backend-guide", "check-traces", "check-changelog-unreleased", "check-sdd-index", "gen-backlogid-check", "gen-gate-inventory-check", "check-links", "drift-docs-check", "docs-build"]
+docs-gate = ["docs-check", "check-no-tracker-refs", "check-breaking-migration-link", "check-backend-order", "check-ripple-parity", "check-conda-recipe-pins", "check-custom-backend-guide", "check-traces", "check-changelog-unreleased", "check-sdd-index", "gen-backlogid-check", "gen-gate-inventory-check", "check-links", "drift-docs-check", "docs-build"]
 pre-commit-install = "pre-commit install"
 # Requires Docker Desktop; not included in 'all' (CI uses setup-dafny-action natively)
 verify-formal = "bash scripts/dafny_verify.sh"

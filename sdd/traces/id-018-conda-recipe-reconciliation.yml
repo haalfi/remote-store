@@ -1,0 +1,111 @@
+id: ID-018
+title: "Make the repo's conda recipe the submission artifact, and retarget it at the feedstock"
+trigger: >-
+  A conda-forge reviewer's two pin suggestions on staged-recipes#32401 were
+  applied to the fork rather than to this repo, and comparing the two copies
+  showed they had diverged well past the pins. The reviewer then merged before a
+  corrected recipe could be posted, which moved the target from staged-recipes to
+  a feedstock that does not exist yet.
+source_items:
+  - ID-018
+  - BK-368
+audience:
+  - library.maintainer
+  - contributor.tooling
+  - infra.ci
+expected_ripples:
+  - .github/workflows/conda-recipe.yml
+surprising_ripples:
+  - packaging/conda-forge/variants.yaml
+# Derivation, per the schema's review_rounds clause: `gh api
+# repos/haalfi/remote-store/pulls/1004/commits --jq '.[] | .sha[0:7] + "  " +
+# (.commit.message | split("\n")[0])'`, counting the commits that exist because
+# of review feedback on PR #1004 — including the commit carrying this line.
+# Those are `3f7ced8 fix: address PR #1004 review` and this round's fix commit:
+# value 2. This trace said 0 on the grounds that the PR did not exist yet, and
+# then kept saying it after #1004 opened and two rounds landed. The conda-forge
+# review that started the work is on another repo's PR and is not counted here.
+review_rounds: 2
+phases:
+  - id: orient
+    name: Compare the two copies
+    steps:
+      - file: packaging/conda-forge/recipe.yaml
+        section: "(full)"
+        read_type: gate
+        extract: >-
+          Diffed against the file the maintainer pasted from the PR head. The
+          fork carried three conda-forge conventions this copy never had
+          (`${{ PYTHON }}`, a two-value `tests.python_version`, `python_min` left
+          to the global) and had lost `tomli >=1.1.0` with the comment explaining
+          it. A hand-edited copy is how a constraint disappears with nobody
+          noticing.
+        outcome: misleading
+      - file: sdd/BACKLOG.md
+        section: "ID-018"
+        read_type: reference
+        extract: >-
+          The item recorded the recipe as done and the PR as CI-green, which was
+          true and hid that the submitted artifact was no longer this one
+
+  - id: design
+    name: Decide where python_min lives
+    steps:
+      - file: .github/workflows/conda-recipe.yml
+        section: "rattler-build-action"
+        read_type: gate
+        extract: >-
+          The blocker to making the copies identical: this workflow renders the
+          recipe standalone, so it needs `python_min` from somewhere, while
+          conda-forge supplies it globally and hardcoding it in `context:` would
+          pin us to 3.10 after the ecosystem raises its minimum. Resolved with a
+          variant config passed via `--variant-config`, which keeps the artifact
+          unchanged.
+
+  - id: fix
+    name: Reconcile and retarget
+    steps:
+      - file: scripts/check_conda_recipe_pins.py
+        section: "(gate run)"
+        read_type: verify
+        extract: >-
+          BK-368's gate held the reconciled file to pyproject.toml through every
+          edit, including the four it named when the floors moved
+      - file: packaging/conda-forge/recipe.yaml
+        section: "header comment"
+        read_type: reference
+        extract: >-
+          Rewritten twice: first to say this file IS the submission rather than a
+          draft, then again when the merge landed, to name
+          conda-forge/remote-store-feedstock as the target. Records what the
+          merged copy actually carries so the next reader is not guessing.
+
+  - id: verify
+    name: Verify
+    steps:
+      - file: sdd/DRIFT-RULES.md
+        section: "Rule 6 (tolerated vs unnoticed)"
+        read_type: verify
+        extract: >-
+          The `--variant-config` wiring is unvalidated — rattler-build is not
+          installed locally and the workflow fires only on master or an open PR —
+          so the ID-018 body states that as a bound rather than implying the
+          change was tested
+      - file: sdd/BACKLOG.md
+        section: "ID-018"
+        read_type: verify
+        extract: >-
+          Body rewritten to what the item is really blocked on: the feedstock did
+          not exist when checked (404), the package is not on anaconda.org, and
+          the first build will serve the pre-sweep recipe
+      - file: packaging/conda-forge/variants.yaml
+        section: "python_min"
+        read_type: verify
+        extract: >-
+          The file shipped carrying "Keep the value equal to `requires-python`"
+          and nothing enforcing it — the same shape as the recipe comment BK-368
+          exists because of, one file over, in the PR that fixed the original.
+          Review caught it. `check_conda_recipe_pins.py` now compares all three
+          spellings of the floor (requires-python, variants.yaml, ci.yml's
+          MIN_PYTHON), so the comment states an enforced rule.
+        outcome: misleading

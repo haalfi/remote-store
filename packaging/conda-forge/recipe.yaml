@@ -1,13 +1,25 @@
 # conda-forge recipe for remote-store
 # v1 format (CEP-13 / rattler-build)
 #
-# Submission: copy this file to conda-forge/staged-recipes as
-#   recipes/remote-store/recipe.yaml
-# then open a PR against https://github.com/conda-forge/staged-recipes
+# Upstream source for `conda-forge/remote-store-feedstock`'s `recipe/`.
+# staged-recipes#32401 is merged, so submission is over: every further change
+# reaches conda-forge as a PR against the feedstock, and this file is what that
+# PR carries.  It is the source, not a draft -- the copy that went to
+# staged-recipes was hand-edited away from this one and silently lost the
+# `tomli` constraint, which is why edits land here first and are copied out,
+# never the reverse.
+#
+# What the merged recipe carries, and this file has since corrected: version
+# 0.30.0, `tenacity >=4.0`, `sqlalchemy >=2.0`, `urllib3 >=1.26.0`,
+# `dagster >=1.9`, no `tomli`, no `aiohttp`.
+#
+# `python_min` is deliberately NOT set here: conda-forge supplies it globally,
+# and hardcoding it would pin us to 3.10 after the ecosystem raises its
+# minimum.  `packaging/conda-forge/variants.yaml` supplies it for our own
+# `Conda Recipe` workflow, which renders this file standalone.
 
 context:
   version: "0.31.0"
-  python_min: "3.10"
 
 package:
   name: remote-store
@@ -19,7 +31,9 @@ source:
 
 build:
   noarch: python
-  script: python -m pip install . --no-deps --no-build-isolation -vv
+  # `${{ PYTHON }}`, not a bare `python`: conda-forge's convention, and what the
+  # submitted copy on staged-recipes#32401 already carries.
+  script: ${{ PYTHON }} -m pip install . --no-deps --no-build-isolation -vv
   number: 0
 
 requirements:
@@ -35,31 +49,50 @@ requirements:
     # installed automatically; each is version-constrained if the user installs
     # it alongside remote-store.  Keep this exhaustive: an extra whose floor is
     # absent here is silently unconstrained in conda, and the ones nobody
-    # enumerates are the ones that drift.
+    # enumerates are the ones that drift.  `hatch run lint` runs
+    # scripts/check_conda_recipe_pins.py, which derives the expected set from
+    # pyproject.toml and fails on a missing, extra, or weaker entry (BK-368).
     #
     # -- Backend extras --
     - s3fs >=2024.2.0
-    - paramiko >=3.0
-    - tenacity >=4.0
+    - paramiko >=3.1
+    - tenacity >=8.0.1
     # Three extras use pyarrow -- `arrow` / `sql-query` are >=12.0.0 and
     # `s3-pyarrow` is >=14.0.0 -- and conda allows one pin per package, not one
-    # per extra.  None carries a ceiling: BUG-232 verified the shared
-    # arrow/parquet/S3-PyArrow surface against pyarrow 25 and lifted the earlier
-    # `<25` cap on `arrow` / `sql-query`, so all three now agree on an unbounded
-    # `>=` and the loosest floor (>=12.0.0) is the correct single pin.
-    # pyproject.toml is the source of truth for per-extra ranges.
-    - pyarrow >=12.0.0
+    # per extra.  The **strictest** floor is the sound single pin, not the
+    # loosest: a run_constraint asserts "remote-store works with these versions
+    # of pyarrow", and >=12.0.0 asserts that for a S3-PyArrow surface that needs
+    # 14.  Under-constraining leaves a broken combination installable;
+    # over-constraining costs an `arrow`-only user pyarrow 12/13, both 2023
+    # builds well below what conda-forge ships.  Raised on review of
+    # conda-forge/staged-recipes#32401.
+    # The one surface needing 14 is `tls_ca_file_path=` on `S3FileSystem`,
+    # measured: pyarrow 13 rejects the kwarg, 14 accepts it.  An earlier version
+    # of this comment also claimed the Dagster Parquet serializer needed >=14.0,
+    # copying an undocumented figure from the Dagster guide; running that
+    # serializer's whole surface (`pa.Table.from_pandas`, `pq.write_table`,
+    # `pq.read_table`) against pyarrow 12.0.0 shows it does not, so the guide's
+    # cell was corrected rather than the floor.
+    # None carries a ceiling: BUG-232 verified the shared arrow/parquet/
+    # S3-PyArrow surface against pyarrow 25 and lifted the earlier `<25` cap on
+    # `arrow` / `sql-query`, so all three agree on an unbounded `>=`.
+    # pyproject.toml is the source of truth for per-extra ranges;
+    # scripts/check_conda_recipe_pins.py holds this file to it.
+    - pyarrow >=14.0.0
     - azure-storage-file-datalake >=12.16.0
     - azure-identity >=1.0.0
+    # The async Azure backend's transport; azure-core declares this floor in its
+    # own `aio` extra, which conda cannot express (BUG-286).
+    - aiohttp >=3.0
     - httpx >=0.24.0,<1.0
     - msal >=1.20.0
     - msal-extensions >=1.3
     - platformdirs >=3.0.0
-    - sqlalchemy >=2.0
+    - sqlalchemy >=2.0.31
     # The HTTP backend needs no dependency (stdlib `urllib`); `requests` and
     # `httpx` are optional pooled transports, so both get a floor.
     - requests >=2.25.0
-    - urllib3 >=1.26.0
+    - urllib3 >=1.26.5
     #
     # -- Extension extras --
     # `pyarrow` (the `arrow` extra) is pinned above, alongside the backend that
@@ -67,7 +100,7 @@ requirements:
     - opentelemetry-api >=1.28.0
     - pyyaml >=5.1
     - pydantic-settings >=2.0.0
-    - dagster >=1.9
+    - dagster >=1.10.18
     # `toml` is conditional in pyproject (`python_version < '3.11'`); conda has
     # no per-Python marker here, and an unconditional floor is harmless because
     # it binds only if tomli is actually installed.
@@ -82,7 +115,12 @@ tests:
         - remote_store.ext.glob
         - remote_store.ext.transfer
       pip_check: true
-      python_version: ${{ python_min }}.*
+      # Two entries, matching the submitted copy: the declared minimum, and
+      # whatever the default Python is, so a noarch package is exercised at both
+      # ends rather than only at the floor.
+      python_version:
+        - ${{ python_min }}.*
+        - "*"
 
 about:
   homepage: https://remotestore.dev

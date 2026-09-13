@@ -10,7 +10,7 @@ The SQL query backend is a read-only materializer that maps path keys to SQL que
 pip install remote-store[sql-query]
 ```
 
-Requires `sqlalchemy>=2.0` and `pyarrow>=12.0.0`.
+Requires `sqlalchemy>=2.0.31` and `pyarrow>=12.0.0`.
 
 ## Usage
 
