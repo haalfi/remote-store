@@ -18,12 +18,16 @@ expected_ripples:
   - sdd/GATE-INVENTORY.md
 surprising_ripples:
   - sdd/CLAUDE-REFERENCE.md
-# Derivation, per the schema's review_rounds clause: `git log --oneline
-# origin/master..HEAD` on this branch, counting commits that exist because of
-# review feedback — including the commit carrying this line. First push of the
-# work, so none is review-driven. Note the conda-forge review that started it is
-# review on a different repo's PR, not on this branch's.
-review_rounds: 0
+# Derivation, per the schema's review_rounds clause: `gh api
+# repos/haalfi/remote-store/pulls/1004/commits --jq '.[] | .sha[0:7] + "  " +
+# (.commit.message | split("\n")[0])'`, counting the commits that exist because
+# of review feedback on PR #1004 — including the commit carrying this line.
+# Those are `3f7ced8 fix: address PR #1004 review` and this round's fix commit:
+# value 2. Every trace on this branch first said 0, which the branch refuted the
+# moment 3f7ced8 landed; the field was re-read rather than re-derived. The
+# conda-forge review that started the work is on another repo's PR and is not
+# counted here.
+review_rounds: 2
 phases:
   - id: orient
     name: Orient

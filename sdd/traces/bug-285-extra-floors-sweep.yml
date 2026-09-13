@@ -32,11 +32,14 @@ surprising_ripples:
   - docs-src/guides/backends/sftp.md
   - examples/medallion_dagster/pyproject.toml
   - docs-src/guides/dagster.md
-# Derivation, per the schema's review_rounds clause: `git log --oneline
-# origin/master..HEAD` on this branch, counting commits that exist because of
-# review feedback — including the commit carrying this line. Third push of the
-# branch; no commit on it answers a review of this work.
-review_rounds: 0
+# Derivation, per the schema's review_rounds clause: `gh api
+# repos/haalfi/remote-store/pulls/1004/commits --jq '.[] | .sha[0:7] + "  " +
+# (.commit.message | split("\n")[0])'`, counting the commits that exist because
+# of review feedback on PR #1004 — including the commit carrying this line.
+# Those are `3f7ced8 fix: address PR #1004 review` and this round's fix commit:
+# value 2. Every trace on this branch first said 0, which the branch refuted the
+# moment 3f7ced8 landed; the field was re-read rather than re-derived.
+review_rounds: 2
 phases:
   - id: orient
     name: Enumerate the claim space
@@ -127,11 +130,18 @@ phases:
         read_type: gate
         extract: >-
           `infra/drift-locks/azure.txt` refreshed because adding aiohttp genuinely
-          changes that resolution (+8 packages). The sql, sql-query, requests and
-          dagster baselines were left: their floors rose but the resolution is
-          unchanged, so a refresh would only rewrite the capture header. The
-          header's `python:` line does flip 3.13 -> 3.11 here, which is this
-          container rather than a decision.
+          changes that resolution (17 packages -> 25, +8). The sql, sql-query,
+          requests and dagster baselines were left: their floors rose but the
+          resolution is unchanged, so a refresh would only rewrite the capture
+          header. The first capture was taken on this container's Python 3.11,
+          flipping the header off the 3.13 every other lock carries, and the
+          step justified that as "not a decision" rather than fixing it —
+          which is the problem, not the mitigation, since nothing compares
+          `python_baseline` against `python_run`. The review round re-captured
+          it under a real 3.13 interpreter; the same 25 packages came back, so
+          the `pyjwt` 2.13 -> 2.14 bump in the diff is genuine upstream drift
+          rather than an interpreter artifact.
+        outcome: misleading
 
   - id: verify
     name: Verify

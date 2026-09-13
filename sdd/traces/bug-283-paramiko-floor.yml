@@ -19,11 +19,14 @@ expected_ripples:
   - docs-src/reference/migration.md
 surprising_ripples:
   - packaging/conda-forge/recipe.yaml
-# Derivation, per the schema's review_rounds clause: `git log --oneline
-# origin/master..HEAD` on this branch, counting commits that exist because of
-# review feedback — including the commit carrying this line. The branch is the
-# first push of the work, so no commit on it is review-driven.
-review_rounds: 0
+# Derivation, per the schema's review_rounds clause: `gh api
+# repos/haalfi/remote-store/pulls/1004/commits --jq '.[] | .sha[0:7] + "  " +
+# (.commit.message | split("\n")[0])'`, counting the commits that exist because
+# of review feedback on PR #1004 — including the commit carrying this line.
+# Those are `3f7ced8 fix: address PR #1004 review` and this round's fix commit:
+# value 2. Every trace on this branch first said 0, which the branch refuted the
+# moment 3f7ced8 landed; the field was re-read rather than re-derived.
+review_rounds: 2
 phases:
   - id: orient
     name: Orient

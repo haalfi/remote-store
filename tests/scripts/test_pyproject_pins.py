@@ -56,6 +56,7 @@ except ImportError:  # pragma: no cover — py3.10 fallback
     import tomli as tomllib  # type: ignore[no-redef]
 
 from packaging.requirements import Requirement
+from packaging.utils import canonicalize_name
 
 ROOT = Path(__file__).resolve().parent.parent.parent
 
@@ -176,18 +177,37 @@ def extras() -> dict[str, list[Requirement]]:
 
 
 def _declaring(extras: dict[str, list[Requirement]], package: str) -> list[tuple[str, Requirement]]:
-    """(extra, requirement) for every extra declaring *package*. Derived, not listed."""
-    return [(name, req) for name, reqs in extras.items() for req in reqs if req.name == package]
+    """(extra, requirement) for every extra declaring *package*. Derived, not listed.
+
+    Names are canonicalised on both sides. PEP 503 makes `SQLAlchemy`, `PyYAML`
+    and `msal_extensions` valid spellings of packages already declared here, and
+    a raw `==` would return no match for an extra that used one — leaving both
+    boundary tests iterating over nothing and passing by vacuity, which is the
+    one failure mode a regression guard cannot afford. `check_conda_recipe_pins.py`
+    canonicalises for the same reason.
+    """
+    want = canonicalize_name(package)
+    return [(name, req) for name, reqs in extras.items() for req in reqs if canonicalize_name(req.name) == want]
 
 
 @pytest.mark.parametrize("req", _REQUIRED, ids=lambda r: f"{r.extra}:{r.package}")
 def test_extra_declares_its_required_package(req, extras):
     """Deleting the declaration must fail a test, not wait for a user to find it."""
     assert req.extra in extras, f"no {req.extra!r} extra to check"
-    declared = {r.name for r in extras[req.extra]}
-    assert req.package in declared, (
+    declared = {canonicalize_name(r.name) for r in extras[req.extra]}
+    assert canonicalize_name(req.package) in declared, (
         f"extra {req.extra!r} must declare {req.package!r} — {req.why}; declared: {sorted(declared)}"
     )
+
+
+@pytest.mark.parametrize(
+    ("spelling", "canonical"),
+    [("SQLAlchemy", "sqlalchemy"), ("PyYAML", "pyyaml"), ("msal_extensions", "msal-extensions")],
+)
+def test_declaring_matches_alternative_pep503_spellings(spelling, canonical):
+    """A future extra spelling a name differently must not make its rows vacuous."""
+    extras = {"made-up": [Requirement(f"{spelling}>=1.0")]}
+    assert _declaring(extras, canonical) != []
 
 
 @pytest.mark.parametrize("pin", _PINS, ids=lambda p: p.package)

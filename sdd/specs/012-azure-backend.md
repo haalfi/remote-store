@@ -6,7 +6,7 @@
 
 Unlike the S3 backends (which use `s3fs`, an fsspec wrapper), this backend uses the Azure SDK directly. The dual-client design exists because the DFS wire protocol (used by `azure-storage-file-datalake`) is not supported by Azurite or plain Blob Storage accounts — only the Blob API works everywhere. HNS-only features (atomic rename, real directories) use the DataLake SDK; all other operations use the Blob SDK. See [RFC-0001](../rfcs/rfc-0001-azure-backend.md) for the full rationale.
 
-**Dependencies:** `azure-storage-file-datalake`, `azure-identity` (optional, for `DefaultAzureCredential`)
+**Dependencies:** `azure-storage-file-datalake`, `azure-identity` (optional, for `DefaultAzureCredential`), `aiohttp` (required by `AsyncAzureBackend`: `azure.core` builds its async transport only when aiohttp is importable)
 **Optional extra:** `pip install "remote-store[azure]"`
 
 ---

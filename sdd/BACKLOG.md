@@ -1688,6 +1688,16 @@ open item as neglect.
   **Not** about adding rows to `test_pyproject_pins.py`: that file is a
   regression guard for boundaries already found, and adding a row cannot find the
   next one.
+  **A second, cheaper detection path already existed and nobody walked it.**
+  [RFC-0014](rfcs/rfc-0014-dagster-compute-log-manager.md) Open Question 2 asks
+  in writing to "confirm that `dagster>=1.9` exposes
+  `TruncatingCloudStorageComputeLogManager` … if the required surface only
+  stabilised later, either bump the floor or use a version-guarded import", and
+  marks it "to be resolved during the spec/implementation phase". It was not,
+  and BUG-285 reached the same answer independently a year later. An open RFC
+  question naming a specific risk is a far cheaper signal than a CI matrix, so
+  whatever this item builds, the sweep for unresolved Open Questions is worth
+  doing first and costs nothing.
 
 - [ ] **BUG-250 — `[graph]`'s drift smoke reaches one of the extra's four declared dependencies**
   spec: — · effort: S · audience: infra.ci

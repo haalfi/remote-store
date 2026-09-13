@@ -230,7 +230,11 @@ if evidence changes; these are retired.
   `ImportError: Unable to create async transport. Please check aiohttp is installed.`
   **Reproduced** on a venv holding only `azure-storage-file-datalake` and
   `azure-identity`; `infra/drift-locks/azure.txt` confirmed the resolution, with
-  no aiohttp in 21 packages. `FEATURES.md` lists `AsyncAzureBackend` under
+  no aiohttp in its 17 packages, counted from the file
+  (`git show origin/master:infra/drift-locks/azure.txt`, non-comment lines); the
+  8 this PR adds bring it to the 25 the refreshed lock holds. An earlier version
+  of this sentence said 21, which reconciles with neither.
+  `FEATURES.md` lists `AsyncAzureBackend` under
   install extra `remote-store[azure]` and `docs-src/guides/async.md` tells async
   users to install exactly that, so the extra promised a backend it could not run.
   **Why no test caught it**: the `dev` extra aggregates `s3-pyarrow`, whose

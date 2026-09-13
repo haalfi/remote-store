@@ -18,11 +18,14 @@ expected_ripples:
   - packaging/conda-forge/recipe.yaml
   - infra/drift-locks/azure.txt
   - docs-src/reference/tested-versions.md
-# Derivation, per the schema's review_rounds clause: `git log --oneline
-# origin/master..HEAD` on this branch, counting commits that exist because of
-# review feedback — including the commit carrying this line. None on this branch
-# is review-driven.
-review_rounds: 0
+# Derivation, per the schema's review_rounds clause: `gh api
+# repos/haalfi/remote-store/pulls/1004/commits --jq '.[] | .sha[0:7] + "  " +
+# (.commit.message | split("\n")[0])'`, counting the commits that exist because
+# of review feedback on PR #1004 — including the commit carrying this line.
+# Those are `3f7ced8 fix: address PR #1004 review` and this round's fix commit:
+# value 2. Every trace on this branch first said 0, which the branch refuted the
+# moment 3f7ced8 landed; the field was re-read rather than re-derived.
+review_rounds: 2
 phases:
   - id: reproduce
     name: Reproduce
@@ -37,7 +40,10 @@ phases:
         section: "(resolved set)"
         read_type: verify
         extract: >-
-          21 packages, no aiohttp. The committed baseline was itself the evidence
+          17 packages, no aiohttp (counted from the file, not recalled; the
+          first draft said 21, which reconciles with neither the +8 this PR adds
+          nor the 25 the refreshed lock holds). The committed baseline was
+          itself the evidence
           that the extra never pulled it, and nothing had read it that way.
         outcome: misleading
       - file: pyproject.toml

@@ -72,6 +72,16 @@ Bounds (Rule 7)
   ``>1.2`` -- inverting the authority rule above. No user-facing extra uses one
   today, so this fires on the day someone writes one rather than producing a
   confidently wrong expectation.
+* The collapse takes its floor and its ceiling **independently across extras**,
+  so they need not be compatible: ``s3-pyarrow`` at ``>=14`` beside an ``arrow``
+  capped ``<13`` yields ``>=14,<13``, which ``SpecifierSet`` accepts and no
+  version satisfies. That is reported as an irreconcilable disagreement between
+  the extras rather than as a recipe violation, because the recipe is not the
+  side that can be fixed.
+* The ``run_constraints`` block is read textually, so **YAML comment handling is
+  this parser's job**: a whole-line comment is skipped and a trailing one is
+  stripped at the first ``#``. A ``#`` inside a quoted version string would be
+  mis-stripped; no such spelling is valid in a conda constraint.
 
 The python_min pair
 ===================
@@ -95,10 +105,10 @@ Exit codes
 Drift-gate::
 
     kind:       pair
-    compares:   packaging/conda-forge/recipe.yaml run_constraints <-> pyproject.toml
+    compares:   packaging/conda-forge/recipe.yaml run_constraints ↔ pyproject.toml
         [project.optional-dependencies]; and packaging/conda-forge/variants.yaml python_min
-        <-> pyproject.toml requires-python <-> .github/workflows/ci.yml MIN_PYTHON
-    domain:     intent <-> realization
+        ↔ pyproject.toml requires-python ↔ .github/workflows/ci.yml MIN_PYTHON
+    domain:     intent ↔ realization
 """
 
 from __future__ import annotations
@@ -146,6 +156,15 @@ class UnsupportedSpecifier(Exception):
         super().__init__(f"{package}: {clause}")
         self.package = package
         self.clause = clause
+
+
+class IrreconcilableExtras(Exception):
+    """Two extras bound the same package so that nothing satisfies both."""
+
+    def __init__(self, package: str, collapsed: str) -> None:
+        super().__init__(f"{package}: {collapsed}")
+        self.package = package
+        self.collapsed = collapsed
 
 
 def _canonical(name: str) -> str:
@@ -199,12 +218,24 @@ def _collapse(specs: list[SpecifierSet], *, package: str = "?") -> SpecifierSet:
     upper = [c for c in clauses if c.operator in _UPPER_OPS]
 
     out: list[str] = []
+    floor: Version | None = None
+    ceiling: Version | None = None
     if lower:
         strictest = max(lower, key=lambda c: Version(c.version))
+        floor = Version(strictest.version)
         out.append(str(Specifier(f">={strictest.version}")))
     if upper:
         strictest = min(upper, key=lambda c: Version(c.version))
+        ceiling = Version(strictest.version)
         out.append(str(strictest))
+    # The bounds can come from *different* extras, and nothing requires them to
+    # be compatible: `s3-pyarrow` at >=14 beside an `arrow` capped <13 collapses
+    # to `>=14,<13`, which SpecifierSet accepts and no version satisfies. The
+    # gate would then name an impossible target and tell the author to edit the
+    # recipe to match it -- advice that cannot be followed, on a pair where the
+    # recipe is not the side that is wrong.
+    if floor is not None and ceiling is not None and floor >= ceiling:
+        raise IrreconcilableExtras(package, ",".join(out))
     return SpecifierSet(",".join(out))
 
 
@@ -236,7 +267,14 @@ def recipe_constraints(recipe: Path) -> dict[str, SpecifierSet]:
             break  # dedent ends the block
         m = _ENTRY_RE.match(line)
         if m:
-            out[_canonical(m["name"])] = SpecifierSet((m["spec"] or "").replace(" ", ""))
+            # Strip a trailing YAML comment before parsing. Reading the block
+            # textually makes comment syntax this parser's job, and this is the
+            # most comment-dense region of the recipe: without it
+            # `- pyarrow >=14.0.0  # shared` becomes `>=14.0.0#shared` and
+            # SpecifierSet raises InvalidSpecifier, so the gate dies with a
+            # traceback instead of reporting a recipe problem.
+            spec_text = (m["spec"] or "").split("#", 1)[0]
+            out[_canonical(m["name"])] = SpecifierSet(spec_text.replace(" ", ""))
     return out
 
 
@@ -263,8 +301,16 @@ def python_min_violations(repo_root: Path = _REPO_ROOT) -> list[Violation]:
 
     out: list[Violation] = []
 
+    # Anchored to the `python_min:` key, not "the first list item in the file".
+    # A variant config exists to hold several keys, so an unanchored search
+    # starts comparing a `numpy` or compiler pin against requires-python the
+    # moment one is added above this one — and passes while python_min is wrong.
     variants = (repo_root / _VARIANTS).read_text(encoding="utf-8")
-    found = re.search(r'^\s*-\s*["\']?(?P<v>\d+\.\d+)["\']?\s*$', variants, re.MULTILINE)
+    found = re.search(
+        r'^python_min:[^\S\n]*\n(?:[^\S\n]*#[^\n]*\n)*[^\S\n]*-[^\S\n]*["\']?(?P<v>\d+\.\d+)["\']?[^\S\n]*$',
+        variants,
+        re.MULTILINE,
+    )
     if found is None:
         out.append(Violation("python_min", f"{_VARIANTS} declares no python_min value"))
     elif found["v"] != want:
@@ -289,6 +335,15 @@ def collect_violations(repo_root: Path = _REPO_ROOT) -> list[Violation]:
                 exc.package,
                 f"pyproject clause {exc.clause!r} uses an operator this gate does not collapse "
                 f"(only >=, < and <= are understood); express it as those, or widen _collapse",
+            )
+        ]
+    except IrreconcilableExtras as exc:
+        return [
+            Violation(
+                exc.package,
+                f"the extras bound it to {exc.collapsed!r}, which no version satisfies — "
+                f"they disagree irreconcilably, so no recipe entry can be right; "
+                f"fix pyproject, not the recipe",
             )
         ]
     present = recipe_constraints(repo_root / _RECIPE)

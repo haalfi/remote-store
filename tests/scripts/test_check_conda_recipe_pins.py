@@ -172,6 +172,28 @@ class TestUnsupportedOperators:
         assert _mod.collect_violations(tree)  # a violation, not a traceback
 
 
+class TestIrreconcilableExtras:
+    """Floor and ceiling come from different extras and need not be compatible."""
+
+    def test_crossing_bounds_are_reported_not_demanded(self, tmp_path):
+        # s3-pyarrow keeps >=14.0.0; arrow gains a <13 cap. The collapse is
+        # `>=14.0.0,<13`, which SpecifierSet accepts and nothing satisfies.
+        tree = _tree(
+            tmp_path, pyproject=_PYPROJECT.replace('arrow = ["pyarrow>=12.0.0"]', 'arrow = ["pyarrow>=12.0.0,<13"]')
+        )
+        violations = _mod.collect_violations(tree)
+        assert [v.package for v in violations] == ["pyarrow"]
+        assert "no version satisfies" in violations[0].reason
+        assert "fix pyproject, not the recipe" in violations[0].reason
+
+    def test_touching_bounds_are_irreconcilable_too(self, tmp_path):
+        """`>=13,<13` is empty as surely as `>=14,<13`."""
+        tree = _tree(
+            tmp_path, pyproject=_PYPROJECT.replace('arrow = ["pyarrow>=12.0.0"]', 'arrow = ["pyarrow>=12.0.0,<14.0.0"]')
+        )
+        assert "no version satisfies" in _mod.collect_violations(tree)[0].reason
+
+
 class TestPythonMin:
     """requires-python governs; variants.yaml and ci.yml restate it."""
 
@@ -202,8 +224,39 @@ class TestPythonMin:
         tree = _tree(tmp_path, variants="python_min:\n")
         assert "declares no python_min" in _mod.python_min_violations(tree)[0].reason
 
+    def test_lookup_is_anchored_to_its_key(self, tmp_path):
+        """A variant config holds several keys; an unanchored search reads the wrong one.
+
+        With `numpy` listed above, an unanchored regex matches `1.26` and
+        compares *that* against requires-python — passing while python_min is
+        wrong, or failing while naming a value that is not python_min at all.
+        """
+        variants = 'numpy:\n  - "1.26"\npython_min:\n  - "3.10"\n'
+        assert _mod.python_min_violations(_tree(tmp_path, variants=variants)) == []
+
+    def test_anchored_lookup_still_sees_a_wrong_value_below_another_key(self, tmp_path):
+        variants = 'numpy:\n  - "1.26"\npython_min:\n  - "3.12"\n'
+        violations = _mod.python_min_violations(_tree(tmp_path, variants=variants))
+        assert [v.package for v in violations] == ["python_min"]
+        assert "'3.12'" in violations[0].reason
+
 
 class TestParsing:
+    def test_trailing_yaml_comment_is_stripped(self, tmp_path):
+        """Reading the block textually makes comment syntax this parser's job.
+
+        Without the strip, `>=14.0.0  # shared` becomes `>=14.0.0#shared` and
+        SpecifierSet raises InvalidSpecifier — an uncaught traceback out of
+        `lint` and `docs-gate` rather than a reported recipe problem. This is
+        the most comment-dense block in the recipe, so a trailing one is a
+        normal thing for the next editor to write.
+        """
+        recipe = _RECIPE.replace("- pyarrow >=14.0.0", "- pyarrow >=14.0.0  # three extras share this")
+        tree = _tree(tmp_path, recipe=recipe)
+        parsed = _mod.recipe_constraints(tree / "packaging" / "conda-forge" / "recipe.yaml")
+        assert str(parsed["pyarrow"]) == ">=14.0.0"
+        assert _mod.collect_violations(tree) == []
+
     def test_block_ends_at_dedent(self, tmp_path):
         """`tests:` follows the block; its entries must not be read as constraints."""
         parsed = _mod.recipe_constraints(_tree(tmp_path) / "packaging" / "conda-forge" / "recipe.yaml")

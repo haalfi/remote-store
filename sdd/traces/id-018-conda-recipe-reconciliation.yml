@@ -17,12 +17,15 @@ expected_ripples:
   - .github/workflows/conda-recipe.yml
 surprising_ripples:
   - packaging/conda-forge/variants.yaml
-# Derivation, per the schema's review_rounds clause: `git log --oneline
-# origin/master..HEAD` on this branch, counting commits that exist because of
-# review feedback on *this* PR — including the commit carrying this line. The PR
-# does not exist yet, so the count is 0. The conda-forge review that started the
-# work is review of a different repository's PR and is not counted here.
-review_rounds: 0
+# Derivation, per the schema's review_rounds clause: `gh api
+# repos/haalfi/remote-store/pulls/1004/commits --jq '.[] | .sha[0:7] + "  " +
+# (.commit.message | split("\n")[0])'`, counting the commits that exist because
+# of review feedback on PR #1004 — including the commit carrying this line.
+# Those are `3f7ced8 fix: address PR #1004 review` and this round's fix commit:
+# value 2. This trace said 0 on the grounds that the PR did not exist yet, and
+# then kept saying it after #1004 opened and two rounds landed. The conda-forge
+# review that started the work is on another repo's PR and is not counted here.
+review_rounds: 2
 phases:
   - id: orient
     name: Compare the two copies
