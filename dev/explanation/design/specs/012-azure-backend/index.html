@@ -11751,7 +11751,7 @@
 <h2 id="overview">Overview<a class="headerlink" href="#overview" title="Permanent link">&para;</a></h2>
 <p><code>AzureBackend</code> implements the <code>Backend</code> ABC for Azure Storage using a dual-client architecture: <code>azure-storage-blob</code> (BlobServiceClient) for non-HNS accounts and <code>azure-storage-file-datalake</code> (DataLakeServiceClient) for HNS-only features. It targets ADLS Gen2 (Hierarchical Namespace) accounts as the primary use case, while remaining fully functional against plain Blob Storage accounts without HNS.</p>
 <p>Unlike the S3 backends (which use <code>s3fs</code>, an fsspec wrapper), this backend uses the Azure SDK directly. The dual-client design exists because the DFS wire protocol (used by <code>azure-storage-file-datalake</code>) is not supported by Azurite or plain Blob Storage accounts — only the Blob API works everywhere. HNS-only features (atomic rename, real directories) use the DataLake SDK; all other operations use the Blob SDK. See <a href="../../rfcs/rfc-0001-azure-backend/">RFC-0001</a> for the full rationale.</p>
-<p><strong>Dependencies:</strong> <code>azure-storage-file-datalake</code>, <code>azure-identity</code> (optional, for <code>DefaultAzureCredential</code>)
+<p><strong>Dependencies:</strong> <code>azure-storage-file-datalake</code>, <code>azure-identity</code> (optional, for <code>DefaultAzureCredential</code>), <code>aiohttp</code> (required by <code>AsyncAzureBackend</code>: <code>azure.core</code> builds its async transport only when aiohttp is importable)
 <strong>Optional extra:</strong> <code>pip install "remote-store[azure]"</code></p>
 <hr />
 <h2 id="construction">Construction<a class="headerlink" href="#construction" title="Permanent link">&para;</a></h2>

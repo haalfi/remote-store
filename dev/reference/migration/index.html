@@ -4775,6 +4775,17 @@
     <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
       
         <li class="md-nav__item">
+  <a href="#v0310-to-v0320" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        v0.31.0 to v0.32.0
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
   <a href="#v0300-to-v0310" class="md-nav__link">
     <span class="md-ellipsis">
       
@@ -10784,6 +10795,17 @@
     <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
       
         <li class="md-nav__item">
+  <a href="#v0310-to-v0320" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        v0.31.0 to v0.32.0
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
   <a href="#v0300-to-v0310" class="md-nav__link">
     <span class="md-ellipsis">
       
@@ -10973,6 +10995,68 @@
 <p><code>remote-store</code> has been published on PyPI since v0.11.0 (first Beta release).
 The core Store API is stable, but extensions may evolve. This page documents
 changes that require action when upgrading.</p>
+<h2 id="v0310-to-v0320">v0.31.0 to v0.32.0<a class="headerlink" href="#v0310-to-v0320" title="Permanent link">&para;</a></h2>
+<p><strong>Several optional-dependency floors were raised to the first release that actually works:</strong></p>
+<p>Each of these extras declared a minimum below the version carrying the API the
+backend calls. The bad versions installed cleanly and then failed — at import, or
+at the first operation — so the declared range promised something it could not
+deliver. Every floor below was established by installing that release into a
+clean environment and running the code against it, on both the oldest and newest
+supported Python.</p>
+<table>
+<thead>
+<tr>
+<th>Extra</th>
+<th>Was</th>
+<th>Now</th>
+<th>What went wrong below the new floor</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>sftp</code></td>
+<td><code>paramiko&gt;=3.0</code></td>
+<td><code>paramiko&gt;=3.1</code></td>
+<td><code>channel_timeout=</code> starts in 3.1.0; 3.0.x raised <code>TypeError</code> on the first connect</td>
+</tr>
+<tr>
+<td><code>sftp</code></td>
+<td><code>tenacity&gt;=4.0</code></td>
+<td><code>tenacity&gt;=8.0.1</code></td>
+<td>the whole 4.x line cannot be imported on any supported Python; everything below 6.1.0 fails on Python 3.11+</td>
+</tr>
+<tr>
+<td><code>sql</code>, <code>sql-query</code></td>
+<td><code>sqlalchemy&gt;=2.0</code></td>
+<td><code>sqlalchemy&gt;=2.0.31</code></td>
+<td>2.0.30 and earlier fail at import on Python 3.13</td>
+</tr>
+<tr>
+<td><code>requests</code></td>
+<td><code>urllib3&gt;=1.26.0</code></td>
+<td><code>urllib3&gt;=1.26.5</code></td>
+<td>1.26.4 and earlier fail at import on Python 3.13</td>
+</tr>
+<tr>
+<td><code>dagster</code></td>
+<td><code>dagster&gt;=1.9</code></td>
+<td><code>dagster&gt;=1.10.18</code></td>
+<td><code>remote_store.ext.dagster</code> imports a symbol added in 1.10.18</td>
+</tr>
+</tbody>
+</table>
+<p><strong>If you do not pin these yourself, nothing changes</strong> — your resolver already
+picked a working version, and a fresh install is unaffected. Environments that
+pin one of the packages above below its new floor will now fail to resolve
+instead of installing and breaking later. Raise the pin; no code change is needed.</p>
+<p><strong>The <code>azure</code> extra now installs <code>aiohttp</code>:</strong></p>
+<p><code>AsyncAzureBackend</code> needs it to build an async transport, and the extra never
+declared it. Installing <code>remote-store[azure]</code> on its own produced an environment
+where the first async call raised
+<code>ImportError: Unable to create async transport. Please check aiohttp is installed.</code>
+Installations that also had an extra pulling <code>aiohttp</code> in — <code>s3</code> or <code>s3-pyarrow</code>,
+through <code>aiobotocore</code> — were unaffected, which is why this went unnoticed. No
+action is needed; the dependency now arrives with the extra.</p>
 <h2 id="v0300-to-v0310">v0.30.0 to v0.31.0<a class="headerlink" href="#v0300-to-v0310" title="Permanent link">&para;</a></h2>
 <p><strong>SFTP reads and writes are now bounded by default:</strong></p>
 <p>In v0.30.0, an SFTP read or write that stalled on an already-open channel had no
@@ -11722,9 +11806,14 @@ degrading an HNS account to flat semantics. A declared value is deterministic
 from construction and removes that failure class.</p>
 <h2 id="v0241-to-v0250">v0.24.1 to v0.25.0<a class="headerlink" href="#v0241-to-v0250" title="Permanent link">&para;</a></h2>
 <p><strong><code>[sftp]</code> extra now requires <code>paramiko&gt;=3.0</code>:</strong></p>
-<p>The SFTP backend uses paramiko 3.0's <code>channel_timeout=</code> connect kwarg. Environments
+<p>The SFTP backend uses the <code>channel_timeout=</code> connect kwarg. Environments
 pinned to <code>paramiko&lt;3</code> must upgrade. <code>pip install "remote-store[sftp]"</code> resolves the
 correct version automatically; pinned <code>paramiko==2.x</code> will now conflict.</p>
+<p>This floor was one minor too low: the kwarg landed in paramiko 3.1.0, so
+<code>paramiko==3.0.x</code> satisfied the declared extra and still failed at connect with
+<code>TypeError: connect() got an unexpected keyword argument 'channel_timeout'</code>. It
+is corrected to <code>&gt;=3.1</code> in v0.32.0 — see
+<a href="#v0310-to-v0320">v0.31.0 to v0.32.0</a>.</p>
 <p><strong>Azure HNS error types now match the canonical mapping:</strong></p>
 <p>On real ADLS Gen2 (Hierarchical Namespace) accounts, many <code>AzureBackend</code> and
 <code>AsyncAzureBackend</code> operations previously raised the wrong error type when the path

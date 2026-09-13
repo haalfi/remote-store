@@ -222,7 +222,7 @@ Pinning `paramiko<5` keeps the consumer on the empirically-verified compatible r
 | `paramiko<5` pin          | Future paramiko 5+ improvements (perf, protocol features, CVE fixes once 4.x EOLs) |
 | `enable_ssh_rsa_compat()` | Process-wide SHA-1 host-key acceptance only                                        |
 
-Either composes cleanly with the library's `[sftp]` floor of `paramiko>=3.0`. To pin the consumer must override at their own dependency layer (e.g. `requirements.txt` line `paramiko>=3.0,<5`).
+Either composes cleanly with the library's `[sftp]` floor of `paramiko>=3.1`. To pin the consumer must override at their own dependency layer (e.g. `requirements.txt` line `paramiko>=3.1,<5`).
 
 ## Connection Behaviour
 

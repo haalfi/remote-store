@@ -47,11 +47,11 @@ defs = Definitions(
 
 The `serializer` parameter controls how Python objects are converted to bytes for storage and back.
 
-| Name    | `serializer=`        | Extension  | Dependency      | Best for                                  |
-| ------- | -------------------- | ---------- | --------------- | ----------------------------------------- |
-| Pickle  | `"pickle"` (default) | `.pkl`     | stdlib          | Any picklable object                      |
-| JSON    | `"json"`             | `.json`    | stdlib          | JSON-serializable data                    |
-| Parquet | `"parquet"`          | `.parquet` | `pyarrow>=14.0` | DataFrames (pandas, polars), Arrow Tables |
+| Name    | `serializer=`        | Extension  | Dependency        | Best for                                  |
+| ------- | -------------------- | ---------- | ----------------- | ----------------------------------------- |
+| Pickle  | `"pickle"` (default) | `.pkl`     | stdlib            | Any picklable object                      |
+| JSON    | `"json"`             | `.json`    | stdlib            | JSON-serializable data                    |
+| Parquet | `"parquet"`          | `.parquet` | the `arrow` extra | DataFrames (pandas, polars), Arrow Tables |
 
 ### Pickle (default)
 

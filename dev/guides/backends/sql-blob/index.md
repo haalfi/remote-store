@@ -10,7 +10,7 @@ The SQL blob backend stores files as key-value rows in any SQLAlchemy-supported 
 pip install remote-store[sql]
 ```
 
-Requires `sqlalchemy>=2.0`.
+Requires `sqlalchemy>=2.0.31`.
 
 ## Usage
 

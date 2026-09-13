@@ -14,10 +14,11 @@ The table below is the projection of those lock files onto the top-level package
 
 ## `[azure]`
 
-*Captured 2026-09-07 on Python 3.13.*
+*Captured 2026-09-13 on Python 3.13.*
 
 | Package                       | Tested up to |
 | ----------------------------- | ------------ |
+| `aiohttp`                     | `3.14.3`     |
 | `azure-identity`              | `1.26.0b2`   |
 | `azure-storage-file-datalake` | `12.26.0b1`  |
 

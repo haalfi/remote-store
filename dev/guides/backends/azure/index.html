@@ -11573,7 +11573,9 @@
 <h2 id="installation">Installation<a class="headerlink" href="#installation" title="Permanent link">&para;</a></h2>
 <div class="highlight"><pre><span></span><code><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a>pip<span class="w"> </span>install<span class="w"> </span><span class="s2">"remote-store[azure]"</span>
 </code></pre></div>
-<p>This pulls in <code>azure-storage-file-datalake</code> and <code>azure-identity</code> (for <code>DefaultAzureCredential</code>).</p>
+<p>This pulls in <code>azure-storage-file-datalake</code>, <code>azure-identity</code> (for
+<code>DefaultAzureCredential</code>) and <code>aiohttp</code>, which the async backend needs to build
+its transport.</p>
 <h2 id="usage">Usage<a class="headerlink" href="#usage" title="Permanent link">&para;</a></h2>
 <div class="highlight"><pre><span></span><code><a id="__codelineno-1-1" name="__codelineno-1-1" href="#__codelineno-1-1"></a><span class="kn">from</span><span class="w"> </span><span class="nn">remote_store</span><span class="w"> </span><span class="kn">import</span> <span class="n">BackendConfig</span><span class="p">,</span> <span class="n">RegistryConfig</span><span class="p">,</span> <span class="n">Registry</span><span class="p">,</span> <span class="n">StoreProfile</span>
 <a id="__codelineno-1-2" name="__codelineno-1-2" href="#__codelineno-1-2"></a>

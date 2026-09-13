@@ -11894,7 +11894,7 @@ smoke targets in <code>scripts/drift_smoke_map.py</code> for any extra that drif
 and reconciles a single rolling GitHub issue. The workflow never edits
 <code>pyproject.toml</code> and never opens a pin-update PR — it is early warning,
 not automated remediation.</p>
-<p>When you deliberately bump a floor (e.g. <code>paramiko&gt;=3.0</code> after a
+<p>When you deliberately bump a floor (e.g. <code>paramiko&gt;=3.1</code> after a
 known-breaking upstream release), refresh the baseline in the same PR:</p>
 <div class="highlight"><pre><span></span><code><a id="__codelineno-10-1" name="__codelineno-10-1" href="#__codelineno-10-1"></a>hatch run drift-check refresh-baseline &lt;extra&gt;     # regenerate the lock
 <a id="__codelineno-10-2" name="__codelineno-10-2" href="#__codelineno-10-2"></a>hatch run drift-check render-docs                  # regenerate the docs page

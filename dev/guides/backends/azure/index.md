@@ -8,7 +8,7 @@ The Azure backend stores files in Azure Blob Storage and Azure Data Lake Storage
 pip install "remote-store[azure]"
 ```
 
-This pulls in `azure-storage-file-datalake` and `azure-identity` (for `DefaultAzureCredential`).
+This pulls in `azure-storage-file-datalake`, `azure-identity` (for `DefaultAzureCredential`) and `aiohttp`, which the async backend needs to build its transport.
 
 ## Usage
 
