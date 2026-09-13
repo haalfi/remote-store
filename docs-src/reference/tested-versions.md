@@ -15,10 +15,11 @@ _Captured 2026-09-07 on Python 3.13._
 
 ## `[azure]`
 
-_Captured 2026-09-07 on Python 3.13._
+_Captured 2026-09-13 on Python 3.11._
 
 | Package | Tested up to |
 |---|---|
+| `aiohttp` | `3.14.3` |
 | `azure-identity` | `1.26.0b2` |
 | `azure-storage-file-datalake` | `12.26.0b1` |
 

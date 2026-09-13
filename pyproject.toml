@@ -84,7 +84,16 @@ s3-pyarrow = ["s3fs>=2024.2.0", "pyarrow>=14.0.0"]
 # requires_python, so pip guards the range independently of this pin, and
 # nothing here has ever exercised 6.x or 7.x.
 sftp = ["paramiko>=3.1", "tenacity>=8.0.1"]
-azure = ["azure-storage-file-datalake>=12.16.0", "azure-identity>=1.0.0"]
+# aiohttp (BUG-286): `AsyncAzureBackend` drives
+# `azure.storage.filedatalake.aio`, whose transport needs aiohttp, and the extra
+# declared nothing that pulls it — `azure.core.pipeline.transport` raised
+# "Unable to create async transport. Please check aiohttp is installed." at the
+# first async call. Nothing caught it because `dev` also installs `s3-pyarrow`,
+# whose aiobotocore drags aiohttp in. `>=3.0` is azure-core's own number, from
+# the `aiohttp>=3.0; extra == "aio"` line in its metadata; aiohttp is named
+# directly rather than via `azure-core[aio]` because conda has no extras and the
+# recipe has to restate this as a plain `run_constraints` entry.
+azure = ["azure-storage-file-datalake>=12.16.0", "azure-identity>=1.0.0", "aiohttp>=3.0"]
 # graph (ID-127, ADR-0021): direct REST over httpx + msal for token
 # acquisition; platformdirs resolves the MSAL token-cache path (loaded lazily
 # by GraphAuth only). msal-extensions (BK-291) makes the token-cache write
@@ -96,9 +105,17 @@ azure = ["azure-storage-file-datalake>=12.16.0", "azure-identity>=1.0.0"]
 # import at load. The PEP 440 exclusive bound excludes 1.0.dev*/rc*/GA while
 # keeping all 0.2x; lifting it to a real 1.0 port is ID-229.
 graph = ["httpx>=0.24.0,<1.0", "msal>=1.20.0", "msal-extensions>=1.3", "platformdirs>=3.0.0"]
-sql = ["sqlalchemy>=2.0"]
-sql-query = ["sqlalchemy>=2.0", "pyarrow>=12.0.0"]
-requests = ["requests>=2.25.0", "urllib3>=1.26.0"]
+# sqlalchemy: floor at >=2.0.31 (BUG-285, correcting >=2.0). Everything through
+# 2.0.30 installs on Python 3.13 — the wheel is universal — and then dies at
+# import on 3.13's new `__static_attributes__` / `__firstlineno__` class
+# attributes. 2.0.31 is the first release that knows about them. Measured per
+# release on 3.10 and 3.13; 3.10 is fine throughout, which is why it went unseen.
+sql = ["sqlalchemy>=2.0.31"]
+sql-query = ["sqlalchemy>=2.0.31", "pyarrow>=12.0.0"]
+# urllib3: floor at >=1.26.5 (BUG-285, correcting >=1.26.0). 1.26.0-1.26.4 import
+# their vendored six shim through a meta-path importer that stopped working in
+# the 3.12 line; on 3.13 they install and then raise ModuleNotFoundError.
+requests = ["requests>=2.25.0", "urllib3>=1.26.5"]
 # httpx <1.0 (BUG-225): same cap as the graph extra — the [httpx] HTTP adapter
 # uses httpx.AsyncClient, which the 1.0.dev* rewrite removes. Lift via ID-229.
 httpx = ["httpx>=0.24.0,<1.0"]
@@ -108,7 +125,14 @@ otel = ["opentelemetry-api>=1.28.0"]
 toml = ["tomli>=1.1.0; python_version < '3.11'"]
 yaml = ["pyyaml>=5.1"]
 pydantic = ["pydantic-settings>=2.0.0"]
-dagster = ["dagster>=1.9"]
+# dagster: floor at >=1.10.18 (BUG-285, correcting >=1.9). ext/dagster.py imports
+# TruncatingCloudStorageComputeLogManager, which first appears in 1.10.18; every
+# release from 1.9.0 to 1.10.17 installs and then raises ImportError at
+# `import remote_store.ext.dagster`. Unlike the others this was wrong on every
+# supported Python, not just the newest. 1.10.x does not build for 3.13+, where
+# pip resolves to 1.12+ on its own — so the floor states the API requirement and
+# leaves the interpreter bound to dagster's own metadata.
+dagster = ["dagster>=1.10.18"]
 
 # -- Mutation testing (dev/CI tooling, not a user-facing feature) --
 # Single source of truth for the pytest-gremlins pin: the hatch default env

@@ -220,6 +220,71 @@ if evidence changes; these are retired.
 
 ## Unreleased
 
+- [x] **BUG-286 — The `[azure]` extra never declared aiohttp, so its async backend could not build a transport**
+  spec: — · effort: S · audience: user.api, infra.test
+  `AsyncAzureBackend` drives `azure.storage.filedatalake.aio`
+  (`src/remote_store/aio/backends/_azure.py:373`). That transport needs aiohttp,
+  which `azure-core` declares only in its own `aio` extra, and
+  `[azure]` declared neither. A clean `pip install "remote-store[azure]"` gets no
+  aiohttp: the first async call raises
+  `ImportError: Unable to create async transport. Please check aiohttp is installed.`
+  **Reproduced** on a venv holding only `azure-storage-file-datalake` and
+  `azure-identity`; `infra/drift-locks/azure.txt` confirmed the resolution, with
+  no aiohttp in 21 packages. `FEATURES.md` lists `AsyncAzureBackend` under
+  install extra `remote-store[azure]` and `docs-src/guides/async.md` tells async
+  users to install exactly that, so the extra promised a backend it could not run.
+  **Why no test caught it**: the `dev` extra aggregates `s3-pyarrow`, whose
+  aiobotocore pulls aiohttp, so every environment that has ever run the suite had
+  it by accident. This is the shape BUG-250 describes one layer up — an extra's
+  own dependency set never exercised alone.
+  Fixed by declaring `aiohttp>=3.0` in the extra. The number is azure-core's, from
+  its `aiohttp>=3.0; extra == "aio"` metadata; aiohttp is named directly rather
+  than through `azure-core[aio]` because conda has no extras and the recipe must
+  restate it as a plain `run_constraints` entry, which BK-368's gate requires.
+  Trace: `sdd/traces/bug-286-azure-aiohttp.yml`.
+
+- [x] **BUG-285 — Three more extras declared floors below the first release that works**
+  spec: — · effort: M · audience: user.api, infra.test
+  The sweep BUG-283 and BUG-284 implied, run over every remaining user-facing
+  dependency: each declared floor was installed into a clean venv on Python 3.10
+  and 3.13 and exercised against the API surface `src/` actually uses. Three were
+  wrong, and the failure they share is that the bad version **installs and then
+  breaks**, rather than being refused:
+  - **`sqlalchemy>=2.0` → `>=2.0.31`.** Everything through 2.0.30 ships a
+    universal wheel, installs on 3.13 and dies at import: 2.0.0-2.0.29 on
+    `Class SQLCoreOperations directly inherits TypingOnly but has additional
+    attributes {'__static_attributes__', '__firstlineno__'}`, 2.0.30 on
+    `Can't replace canonical symbol for '__firstlineno__'`. Both are 3.13's new
+    class attributes. All of 2.0.x is fine on 3.10.
+  - **`urllib3>=1.26.0` → `>=1.26.5`.** 1.26.0-1.26.4 raise
+    `ModuleNotFoundError: No module named 'urllib3.packages.six.moves'` on 3.13 —
+    the vendored six shim's meta-path importer, which the 3.12 line broke.
+  - **`dagster>=1.9` → `>=1.10.18`.** `ext/dagster.py` imports
+    `TruncatingCloudStorageComputeLogManager`, which first appears in 1.10.18;
+    every release from 1.9.0 to 1.10.17 installs and raises `ImportError` at
+    `import remote_store.ext.dagster`. Unlike the other two this was wrong on
+    every supported Python, not only the newest.
+  **Two floors were checked and left alone, and the distinction is the finding.**
+  `pyarrow>=12.0.0` (`arrow`, `sql-query`) and `pyarrow>=14.0.0` (`s3-pyarrow`)
+  have no cp313 wheel and fail to build from source there, so pip **refuses** them
+  with a clear resolver error rather than installing something broken; every
+  version those floors admit that can install, works. Raising them would exclude
+  working 3.10-3.12 setups to prevent an error pip already prevents.
+  `pyarrow>=14.0.0` is also exactly right rather than conservative: 13.0.0 rejects
+  the `tls_ca_file_path=` kwarg `_s3_pyarrow.py:578` passes, which is the
+  derivation the conda-forge reviewer who asked for `>=14` did not have.
+  Clean on both Pythons: `s3fs`, `azure-storage-file-datalake`, `azure-identity`,
+  `msal`, `msal-extensions`, `platformdirs`, `requests`, `opentelemetry-api`,
+  `tomli`, `pyyaml`, `pydantic-settings`.
+  **One declaration oddity, not filed as a defect**: the `pydantic` extra declares
+  `pydantic-settings>=2.0.0` while `ext/pydantic.py` imports only `pydantic`
+  (`SecretStr`, `BaseModel`, `model_dump`). It works, because pydantic-settings
+  depends on pydantic, but the extra never names the package it imports. The
+  docstring example does use `pydantic_settings.BaseSettings`, so the declaration
+  is defensible; recorded here so the next reader does not re-derive it.
+  Successor for the mechanism: **BK-369**, `[ ]` in `BACKLOG.md`.
+  Trace: `sdd/traces/bug-285-extra-floors-sweep.yml`.
+
 - [x] **BUG-284 — The `[sftp]` extra's tenacity floor admitted five years of releases that cannot run the code**
   spec: — · effort: S · audience: user.api, infra.test
   `SFTPBackend._connect` builds `before_sleep_log(log, logging.WARNING)` and

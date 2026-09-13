@@ -94,6 +94,42 @@ _PINS: tuple[Pin, ...] = (
         must_keep=("8.0.1", "9.1.2"),
         why="the connect retry needs before_sleep_log and wait_exponential(min=) (BUG-284)",
     ),
+    Pin(
+        package="sqlalchemy",
+        # Derivation: BUG-285 installed each 2.0.x into a clean venv on Python
+        # 3.10 and 3.13 and imported it. Every release through 2.0.30 installs on
+        # 3.13 (the wheel is universal) and then dies at import — 2.0.0-2.0.29 on
+        # `Class SQLCoreOperations directly inherits TypingOnly but has
+        # additional attributes {'__static_attributes__', '__firstlineno__'}`,
+        # 2.0.30 on `Can't replace canonical symbol for '__firstlineno__'`. Both
+        # are 3.13's new class attributes; 2.0.31 is the first release that knows
+        # about them. All of 2.0.x is fine on 3.10, which is why nothing here saw it.
+        must_reject=("2.0.0", "2.0.30"),
+        must_keep=("2.0.31", "2.1.0"),
+        why="SQLAlchemy below 2.0.31 fails at import on Python 3.13 (BUG-285)",
+    ),
+    Pin(
+        package="urllib3",
+        # Same derivation. 1.26.0-1.26.4 install on 3.13 and then raise
+        # `ModuleNotFoundError: No module named 'urllib3.packages.six.moves'` —
+        # the vendored six shim's meta-path importer, which stopped working in
+        # the 3.12 line. 1.26.5 is the first release that imports.
+        must_reject=("1.26.0", "1.26.4"),
+        must_keep=("1.26.5", "2.0.0"),
+        why="urllib3 below 1.26.5 fails at import on Python 3.13 (BUG-285)",
+    ),
+    Pin(
+        package="dagster",
+        # ext/dagster.py imports TruncatingCloudStorageComputeLogManager from
+        # dagster._core.storage.cloud_storage_compute_log_manager. Derivation:
+        # BUG-285 walked every 1.9.x and 1.10.x release; the symbol first appears
+        # in 1.10.18. Everything below installs on 3.10-3.12 and raises
+        # ImportError at `import remote_store.ext.dagster`. This one is not
+        # Python-dependent — the declared >=1.9 was wrong on every interpreter.
+        must_reject=("1.9.0", "1.10.17"),
+        must_keep=("1.10.18", "1.12.0"),
+        why="TruncatingCloudStorageComputeLogManager starts at dagster 1.10.18 (BUG-285)",
+    ),
 )
 
 

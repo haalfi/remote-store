@@ -1600,8 +1600,9 @@ give them a way to absorb.
 **Closes when:** every checker a diff can invalidate is reachable from a gate
 that diff actually triggers (BK-333); every extra's drift smoke exercises the
 packages it pins (BUG-250) and catches the drift that is visible only to a type
-checker (ID-250); **every install channel we intend to offer is
-published and working** (ID-018); every upstream that can break us on its
+checker (ID-250); a declared floor is something a mechanism has installed and
+run, rather than a claim nobody tests (BK-369); **every install channel we
+intend to offer is published and working** (ID-018); every upstream that can break us on its
 own schedule has a standing watch (ID-229, ID-225); the one deprecation that
 watch has caught is answered before the release that enforces it (BUG-281); the
 watch's issue survives a single-extra re-run (BUG-282) and its one legacy-sftp
@@ -1652,6 +1653,41 @@ open item as neglect.
   `infra/drift-locks/dagster.txt` already freezes the extra, and the annotation
   fix it shipped is valid against both supertype versions, so no upper bound was
   needed.
+
+- [ ] **BK-369 — Nothing ever installs an extra at its declared floor, so a floor is true until a user disproves it**
+  spec: — · effort: M · audience: infra.ci
+  Every environment that has run this suite resolves each extra to the **newest**
+  compatible release: `hatch` builds `dev` from scratch, CI does the same, and
+  `.github/workflows/drift-guard.yml` deliberately resolves `--upgrade --pre`.
+  So the upper end of every declared range is exercised continuously and the
+  **lower end is exercised by nobody**. A floor is a claim about what works, and
+  no mechanism has ever tested it.
+  **Measured, across four items.** BUG-283 (paramiko off by one minor), BUG-284
+  (tenacity off by two majors, admitting releases no supported Python can
+  import) and BUG-285 (sqlalchemy, urllib3 and dagster) were all found by hand,
+  by installing the floor and running the code. Five wrong floors in three
+  sweeps, none of which any gate could see, and two of them wrong for over a
+  year. BK-368's `check_conda_recipe_pins.py` holds the recipe to `pyproject.toml`
+  but takes both as given; `tests/scripts/test_pyproject_pins.py` asserts
+  boundaries a human measured once and does not re-derive them.
+  **The failure mode to target is narrower than "test the floors"**: a floor that
+  pip *refuses* (no wheel for the interpreter) is self-announcing, and pyarrow's
+  two floors are in that class and are fine. The damage comes from a release that
+  **installs and then breaks**, which is what all five were.
+  Fix shape is open, and the cheap option may not be the right one. A CI lane
+  resolving each extra at its minimums (`pip install --constraint` pinning every
+  floor) across the 3.10-3.14 matrix and running that extra's existing smoke
+  target would catch the whole class, but it doubles a matrix that is already
+  wide and most legs would never change. Running it on a schedule rather than
+  per-PR, like drift-guard, is likely the right trade — the thing it guards
+  changes only when a floor or an interpreter does. Reusing
+  `scripts/drift_smoke_map.py` gives the per-extra smoke target for free, so
+  whatever BUG-250 and ID-250 do to widen that map applies here too; those two
+  items are about the smoke reaching *more* at the top of the range, this one is
+  about pointing the same smoke at the bottom.
+  **Not** about adding rows to `test_pyproject_pins.py`: that file is a
+  regression guard for boundaries already found, and adding a row cannot find the
+  next one.
 
 - [ ] **BUG-250 — `[graph]`'s drift smoke reaches one of the extra's four declared dependencies**
   spec: — · effort: S · audience: infra.ci

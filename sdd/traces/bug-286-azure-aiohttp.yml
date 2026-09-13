@@ -1,0 +1,94 @@
+id: BUG-286
+title: "The [azure] extra never declared aiohttp, so its async backend could not build a transport"
+trigger: >-
+  While probing azure-identity at its declared floor during BUG-285's sweep, the
+  probe failed on a missing aiohttp rather than on anything version-related. The
+  floor was fine; the extra was not.
+source_items:
+  - BUG-286
+  - BUG-285
+audience:
+  - user.api
+  - infra.test
+co_shipped_items:
+  - BUG-285
+expected_ripples:
+  - sdd/backlogid.json
+  - CHANGELOG.md
+  - packaging/conda-forge/recipe.yaml
+  - infra/drift-locks/azure.txt
+  - docs-src/reference/tested-versions.md
+# Derivation, per the schema's review_rounds clause: `git log --oneline
+# origin/master..HEAD` on this branch, counting commits that exist because of
+# review feedback — including the commit carrying this line. None on this branch
+# is review-driven.
+review_rounds: 0
+phases:
+  - id: reproduce
+    name: Reproduce
+    steps:
+      - file: src/remote_store/aio/backends/_azure.py
+        section: "_service_client (azure.storage.filedatalake.aio)"
+        read_type: gate
+        extract: >-
+          The async backend builds its client from the aio subpackage, whose
+          transport azure-core supplies only when aiohttp is present
+      - file: infra/drift-locks/azure.txt
+        section: "(resolved set)"
+        read_type: verify
+        extract: >-
+          21 packages, no aiohttp. The committed baseline was itself the evidence
+          that the extra never pulled it, and nothing had read it that way.
+        outcome: misleading
+      - file: pyproject.toml
+        section: "[project.optional-dependencies] azure"
+        read_type: gate
+        extract: >-
+          Two entries, neither of which pulls aiohttp. Reproduced on a venv with
+          only those two: the first async call raises "Unable to create async
+          transport. Please check aiohttp is installed."
+
+  - id: classify
+    name: Establish the promise
+    steps:
+      - file: FEATURES.md
+        section: "Async backends / install extras"
+        read_type: gate
+        extract: >-
+          AsyncAzureBackend is listed under install extra remote-store[azure], so
+          the extra promises the async backend rather than the sync one only —
+          which makes this a defect rather than a documentation choice
+      - file: docs-src/guides/async.md
+        section: "(azure install line)"
+        read_type: verify
+        extract: "Tells async users to install exactly remote-store[azure]"
+      - file: sdd/BACKLOG.md
+        section: "BUG-250"
+        read_type: reference
+        extract: >-
+          Why no test saw it: `dev` aggregates s3-pyarrow, whose aiobotocore
+          pulls aiohttp, so every environment that has run the suite had it by
+          accident. Same shape as BUG-250 one layer up — an extra's own
+          dependency set is never exercised alone.
+
+  - id: fix
+    name: Fix
+    steps:
+      - file: scripts/check_conda_recipe_pins.py
+        section: "(gate run)"
+        read_type: gate
+        extract: >-
+          The first fix declared `azure-core[aio]`, delegating the floor to the
+          SDK that owns it. The gate rejected it: a requirement carrying an
+          extras marker has no conda spelling, and the recipe cannot restate it.
+          Declaring `aiohttp>=3.0` directly is what shipped, with azure-core's own
+          `aiohttp>=3.0; extra == "aio"` metadata cited as the source of the
+          number.
+        outcome: ok
+      - file: CONTRIBUTING.md
+        section: "Drift guard / refresh the baseline"
+        read_type: gate
+        extract: >-
+          The azure baseline genuinely changes here (+8 packages, the aiohttp
+          tree), unlike the floor-only bumps elsewhere in this branch, so it was
+          refreshed and the tested-versions page regenerated from it
