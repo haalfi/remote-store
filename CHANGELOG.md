@@ -7,11 +7,74 @@ This project follows [Semantic Versioning](https://semver.org/). Pre-1.0, minor 
 
 ## [Unreleased]
 
-- BUG-283: **Breaking** `[sftp]` floor corrected to `paramiko>=3.1`, where the `channel_timeout=` connect kwarg it uses actually starts; `paramiko==3.0.x` satisfied the old floor and failed at connect. [Upgrade path](https://docs.remotestore.dev/stable/reference/migration/#v0310-to-v0320)
-- BUG-284: **Breaking** `[sftp]` floor corrected to `tenacity>=8.0.1`; the declared `>=4.0` admitted the whole 4.x line, which no supported Python can even import, and every release below 6.1.0. [Upgrade path](https://docs.remotestore.dev/stable/reference/migration/#v0310-to-v0320)
-- BUG-285: **Breaking** floors corrected to `sqlalchemy>=2.0.31` and `urllib3>=1.26.5`, which fail at import on Python 3.13 below those, and to `dagster>=1.10.18`, below which `remote_store.ext.dagster` cannot import. [Upgrade path](https://docs.remotestore.dev/stable/reference/migration/#v0310-to-v0320)
-- BUG-286: `[azure]` now installs `aiohttp`; without it `AsyncAzureBackend` raised "Unable to create async transport" on its first call, and only a co-installed `[s3]` hid it.
-- ID-018: conda-forge is a supported install channel — `conda install -c conda-forge remote-store`. conda has no extras, so a backend's dependencies install alongside the package.
+## [0.32.0] - 2026-09-13
+
+### Added
+
+- **conda-forge is a supported install channel** (ID-018):
+  `conda install -c conda-forge remote-store` resolves, alongside the existing
+  PyPI route. **conda has no extras**, so a backend's optional dependencies
+  arrive with the package instead of being opted into, and the recipe's
+  `run_constraints` bound a version only if that package was installed too. A
+  feedstock trails its upstream release by design, so the channel can be a
+  version behind PyPI and its constraints can predate `pyproject.toml`'s floors;
+  the README's installation section carries that caveat, which the pip
+  instructions do not need.
+
+### Changed
+
+- **`[sftp]` requires `paramiko>=3.1`** (BUG-283, **Breaking**): the backend
+  passes `channel_timeout=` to `SSHClient.connect`, a keyword paramiko added in
+  3.1.0, so the previous `>=3.0` floor let a resolver pick 3.0.0 — which
+  installed cleanly and then raised
+  `TypeError: connect() got an unexpected keyword argument 'channel_timeout'` on
+  the first connect. No test read the declared floor; the version guard
+  introspected whichever paramiko was installed, which in CI is always the
+  newest. See the
+  [migration guide](https://docs.remotestore.dev/stable/reference/migration/#v0310-to-v0320).
+- **`[sftp]` requires `tenacity>=8.0.1`** (BUG-284, **Breaking**): the declared
+  `>=4.0` admitted five years of releases that cannot run the retry policy
+  `_connect` builds. Everything up to 4.10.0 is a `SyntaxError` on any Python
+  this package supports; 4.11.0 through 5.0.1 lack `wait_exponential(min=)`;
+  5.0.2 through 6.0.0 fail at import on Python 3.11+. 6.1.0 is the first release
+  that works everywhere, and the floor went to 8.0.1 — the first release
+  declaring `requires_python`, so pip guards the range independently of this
+  pin. See the
+  [migration guide](https://docs.remotestore.dev/stable/reference/migration/#v0310-to-v0320).
+- **`[sql]`, `[sql-query]`, `[requests]` and `[dagster]` floors corrected**
+  (BUG-285, **Breaking**): `sqlalchemy>=2.0.31` and `urllib3>=1.26.5` replace
+  floors whose admitted versions install on Python 3.13 and die at import, and
+  `dagster>=1.10.18` replaces `>=1.9`, below which
+  `import remote_store.ext.dagster` raises `ImportError` on every supported
+  Python. Each new floor was established by installing that release into a clean
+  environment and running the code against it, on both the oldest and newest
+  supported Python. The two `pyarrow` floors were checked and deliberately left
+  alone: pip refuses them outright on 3.13 rather than installing something
+  broken. See the
+  [migration guide](https://docs.remotestore.dev/stable/reference/migration/#v0310-to-v0320).
+
+### Fixed
+
+- **`[azure]` installs `aiohttp`** (BUG-286): `AsyncAzureBackend` drives
+  `azure.storage.filedatalake.aio`, whose transport needs aiohttp — which
+  `azure-core` declares only in its own `aio` extra, and `[azure]` declared
+  neither. A clean `pip install "remote-store[azure]"` therefore raised
+  `ImportError: Unable to create async transport. Please check aiohttp is installed.`
+  on the first async call. Installations that also had `[s3]` or `[s3-pyarrow]`
+  got aiohttp by accident through aiobotocore, which is why the suite never saw
+  it. No action is needed; the dependency now arrives with the extra.
+
+### Internal
+
+- **The conda recipe's `run_constraints` are held to `pyproject.toml`'s extras**
+  (BK-368): because conda has no extras, the recipe restates every optional
+  dependency, and nothing checked that it still matched — it had already drifted
+  one floor, found by a conda-forge reviewer rather than by any gate.
+  `scripts/check_conda_recipe_pins.py`, in `lint` and `docs-gate`, derives the
+  expected set from `pyproject.toml` and fails on a missing, stray or weaker
+  entry, and also compares the three spellings of the minimum Python. The
+  **Dependency** ripple-check rows now name the recipe, which is how it went
+  un-swept on every floor change since it was written.
 
 ## [0.31.0] - 2026-09-08
 

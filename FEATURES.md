@@ -1,5 +1,5 @@
 <!-- doc: dual dest=reference/FEATURES.md -->
-# Features — remote-store v0.31.0
+# Features — remote-store v0.32.0
 
 Authoritative snapshot of what remote-store delivers in this version.
 Updated each release. **This is the single reference for the package's feature surface.**
@@ -596,3 +596,8 @@ Each extra's version range — a floor always, plus a ceiling only where a
 known-incompatible major looms — is declared in `pyproject.toml`, the
 source of truth for per-extra pins. For the exact upper-bound versions CI
 was last green against, see [Tested upper-bound versions](https://docs.remotestore.dev/stable/reference/tested-versions/).
+
+Extras are a pip concept. The package is also on conda-forge, where there are
+none and a backend's dependencies are installed alongside it; the
+[README's installation section](https://github.com/haalfi/remote-store#installation)
+covers that route.
