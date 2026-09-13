@@ -73,16 +73,36 @@ if evidence changes; these are retired.
   release's Phase 1.
 
 - [x] **— Keeping the `**Breaking**` marker through CHANGELOG condensation** *(refused as BUG-261's third disposition; never had an ID)*
-  BUG-261's third disposition, and a real observation: the marker exists **only**
-  while a section is unreleased, because `CONTRIBUTING.md` § Release Phase 1
-  condenses `[Unreleased]` into `### Added` / `### Changed` prose and drops it
-  (Phase 2 renames the heading; the phase number here said 2 until ID-253
-  corrected it against the gate docstring and Phase 1's own bullet, both of which
-  already carried the distinction).
-  That is why 38 released sections carry one bold `**Breaking**` between them
-  (`rg -c '^## \[' CHANGELOG.md` returns 39, one of them `[Unreleased]`), and it
-  means nothing can audit breaking changes across history — only the current
-  window.
+  BUG-261's third disposition, and a real observation at the time: the marker
+  survived only while a section was unreleased, because `CONTRIBUTING.md`
+  § Release Phase 1 condenses `[Unreleased]` into `### Added` / `### Changed`
+  prose and the condensing dropped it (Phase 2 renames the heading; the phase
+  number here said 2 until ID-253 corrected it against the gate docstring and
+  Phase 1's own bullet, both of which already carried the distinction).
+  When this was refused, 38 released sections carried one bold `**Breaking**`
+  between them, and nothing could audit breaking changes across history — only
+  the current window.
+  **The practice has since changed, and this entry's premise with it.** The
+  v0.31.0 release carried its markers through condensing, and that release's
+  own PR treated a *dropped* one as a defect and restored it (ID-249's trace,
+  round 2, on the condensed BUG-259 entry). v0.32.0 followed, and this paragraph
+  counts its own release rather than the base it was drafted against. Splitting
+  `CHANGELOG.md` on `^## \[` at this commit gives 41 headings, and three released
+  sections carry entry markers: `[0.29.0]` one, `[0.31.0]` five and `[0.32.0]`
+  three — **9** in total. A raw `**Breaking**` count returns 10: `[0.31.0]` holds
+  one backticked *quotation*, inside BUG-261's own entry, which is not a marker on
+  an entry. Discount it, because what the figure is about is entries that kept
+  their marker. Per
+  [`CLAUDE.md` principle 5](../CLAUDE.md#principles) history outranks the
+  backlog, so this paragraph is the side corrected rather than the released
+  sections.
+  **The refusal itself still stands**, because what was refused is an
+  *obligation* to preserve the marker — a rule, and the gate or checklist line
+  that would carry it. None was built; condensing keeps markers because authors
+  now keep them, which is a convention, not a mechanism, and it can lapse on any
+  release without anything failing. The blast-radius argument below is why no
+  mechanism was added, and it is unaffected by the convention drifting toward
+  what the disposition wanted.
   **Refused on blast radius against demonstrated need.** Preserving the marker
   changes the shape of every released section and the by-hand condensing step
   that writes them — ID-253 later established that no release-skill step does,
@@ -220,6 +240,95 @@ if evidence changes; these are retired.
 
 ## Unreleased
 
+*(none)*
+
+## v0.32.0
+
+- [x] **ID-258 — Trace-outcome report revisit at the next release**
+  spec: — · effort: S · audience: contributor.process
+  Fired at the v0.32.0 release, Phase 0, as the second revisit of the trigger
+  ID-238 shipped. Successor: **ID-259**, `[ ]` in `BACKLOG.md`.
+  **Corpus at `1d43c1b`** (`hatch run report-trace-outcomes`): 310 traces, 4775
+  steps, 2410 carrying an explicit `outcome` (50.5%), 306 negative tags (263
+  `misleading`, 43 `unclear`) across 141 traces and 135 references. Against the
+  ID-249 baseline at `6cd170c` (302 traces, 284 tags) that is +8 traces and +22
+  tags, **every one of them `misleading`** — `unclear` is unmoved at 43 across
+  both readings. The window is the 3 PRs merged since v0.31.0 (#1001, #1004,
+  #1005), derived from `gh api repos/haalfi/remote-store/releases/generate-notes`
+  with `previous_tag_name=v0.31.0`; the interval is an order of magnitude shorter
+  than the 67-PR window ID-249 read, so nothing here is compared to it by rate.
+  **Selection, by ID-238's rule.** Top row `sdd/BACKLOG.md` at 30 over 302 reads,
+  so the bar is 1.5 × 30/302 = **14.90%** — computed from the ratio, not from the
+  report's rounded 9.9%, which yields 14.85% and is the recall path principle 9
+  exists to stop. Four rows clear it at `reads` ≥ 20 — `CONTRIBUTING.md` (22.9%, 48),
+  `src/remote_store/backends/_local.py` (30.4%, 23),
+  `sdd/specs/029-async-store-backend-api.md` (18.5%, 27) and
+  `tests/backends/fixtures/_cassettes.py` (15.0%, 20). **The last of those clears
+  the bar by 0.10pp** — 3/20 against 14.90% — so it is a marginal selection, not a
+  comfortable one, and the rounded bar would have kept it by 0.15pp instead. The
+  other three clear by 3.6pp or more. ID-259 inherits this threshold and should
+  read "four rows clear it" with that margin in view. The threshold was
+  re-checked against the full 132-row ranking rather than inherited: at 1.5× it
+  selects 4 rows plus the top, which is the size it was fitted for, so it is
+  kept. `_sftp.py` stays out at 11.9% over 143, as it did at the last revisit.
+  **The same five as ID-249, and that is itself the finding.** Differencing the
+  per-reference counts against the baseline, three of the five gained **no tag
+  at all** this interval: `_local.py` (7), spec 029 (5) and `_cassettes.py` (3)
+  are unchanged, so they were re-selected on standing totals over evidence
+  ID-249 already dispositioned. Only `CONTRIBUTING.md` (8 → 11) and
+  `sdd/BACKLOG.md` (29 → 30) carry new evidence. That is a property of an
+  absolute-count ranking read against a cumulative corpus, not a defect in the
+  report; ID-259 now carries the instruction to difference before dispositioning.
+  **Where the 22 new tags landed**, by walking the 8 traces added or changed
+  since `6cd170c`: spread across 17 references with no concentration —
+  `sdd/CLAUDE-REFERENCE.md` (3), `CONTRIBUTING.md` (3),
+  `packaging/conda-forge/recipe.yaml` (2), and fourteen references at 1 each. No
+  newcomer reaches the selector: `CLAUDE-REFERENCE.md` is rank 2 by total (21)
+  but 6.1% over 347 reads, well under the bar, which is the exposure-versus-rate
+  distinction the report's own preamble warns about.
+  **Dispositions.** Every tag on each selected reference was read, by walking
+  each trace's `phases[].steps[]` for the reference with an `outcome` set — the
+  aggregation the report's ranking is built from.
+  - `sdd/BACKLOG.md`, 30 tags over 27 items — **accept**, carry-over. The one new
+    tag is ID-018's, on section 5's clause 3 asserting its own closure was
+    externally gated, which the `staged-recipes#32401` merge falsified and the
+    same PR rewrote. The other 29 are unchanged and remain the class BK-343
+    declared advisory: a tag on an item's own prescription measures that rule
+    working. The file's growth stays BK-365's, open and not re-filed here.
+  - `CONTRIBUTING.md`, 11 tags over 7 items — **defer**, and the only row with
+    new evidence worth a decision. Two of the three new tags are ID-018's, on
+    **§ Release** Phase 5, where the checklist and
+    `.claude/skills/release/SKILL.md` both said *verify* the autotick-bot PR when
+    the correct instruction is *amend* it — following either as written would
+    have shipped v0.32.0 with v0.31.0's `run_constraints`. The third is
+    BUG-285's, on **§ Dependency drift guard** (which drift-lock baselines a
+    floor change obliges), a different top-level section. All three were
+    corrected in the PR that raised them, so no line is left wrong. What is
+    deferred is the **recurrence**: enumerating every tagged step citing this
+    file by its `section` field, 6 of the 11 are on § Release, from four items
+    (BK-311, BK-357, ID-252 ×2, ID-018 ×2); three more are BK-310's on
+    § Adding a New Backend, and the remaining two are BUG-285's above and
+    BK-193's on the file as a whole. Its 22.9% is the highest rate of any
+    authority document in the ranking. Two open
+    items already hold that surface — **ID-254** (the `[Unreleased]` stub's
+    section marker) and **ID-255** (the stand-down note's false reason) — so a
+    third item would duplicate rather than add. The test for ID-259: if § Release
+    produces new tags after those two close, the disposition becomes **act**.
+  - `src/remote_store/backends/_local.py`, 7 tags over 4 items — **accept**,
+    carry-over, unchanged since `6cd170c`. ID-249's reading stands: source tags
+    recording a defect the reader then fixed are exposure.
+  - `sdd/specs/029-async-store-backend-api.md`, 5 tags over 5 items —
+    **accept**, carry-over, unchanged.
+  - `tests/backends/fixtures/_cassettes.py`, 3 tags over 2 items — **accept**,
+    carry-over, unchanged.
+  **What the second difference shows.** The top row moved 9.8% → 9.9% on 7 more
+  reads across a 3-PR window, which is noise at this interval and is recorded
+  rather than interpreted — the same stance ID-249 took over a 67-PR one. The
+  substantive result is the selector's behaviour, not the rates: the ranking
+  answers "which references have accumulated the most tags", and a revisit needs
+  "which references failed a reader *since the last revisit*". Both readings are
+  now required of ID-259. Trace: `sdd/traces/id-258-trace-outcome-revisit.yml`.
+
 - [x] **BUG-286 — The `[azure]` extra never declared aiohttp, so its async backend could not build a transport**
   spec: — · effort: S · audience: user.api, infra.test
   `AsyncAzureBackend` drives `azure.storage.filedatalake.aio`
@@ -315,6 +424,18 @@ if evidence changes; these are retired.
   **Same shape as BUG-283, wider**: a floor set once and never asserted, behind a
   lazy import, so nothing failed until a user pinned. Both were found by reading
   the conda recipe against the code it constrains rather than by any gate.
+  **Two artifacts described this measurement wrongly and were corrected in the
+  v0.32.0 release PR.** `pyproject.toml`'s `sftp` comment said "the whole 4.x
+  line is a SyntaxError on any Python >= 3.7" and the migration guide's tenacity
+  row said the whole line "cannot be imported on any supported Python" — both
+  contradicting the boundary above, which this entry had right. Re-run on 3.10.20
+  and 3.11.15 by installing each release into a clean venv and importing it:
+  4.8.0 and 4.10.0 raise `SyntaxError`; **4.11.0, 4.12.0 and 5.0.1 import
+  cleanly on 3.10** and raise `TypeError` on `wait_exponential(min=)`; 5.0.2
+  upward take `min=`; and on 3.11 everything below 6.1.0 dies on
+  `asyncio.coroutine`. 4.11.0 renames `tenacity/async.py`, which is why the
+  SyntaxError stops there. The floor is unaffected — only the reason given for
+  it was wrong — and the two artifacts now state the measured boundary.
   The three pin assertions this repo had accumulated (the httpx cap from
   BUG-225, the paramiko floor, this one) are now one table in
   `tests/scripts/test_pyproject_pins.py`, per
@@ -389,7 +510,8 @@ if evidence changes; these are retired.
 - [x] **ID-249 — Trace-outcome report revisit at the next release**
   spec: — · effort: S · audience: contributor.process
   Fired at the v0.31.0 release, Phase 0, as the first revisit of the trigger
-  ID-238 shipped. Successor: **ID-258**, `[ ]` in `BACKLOG.md`.
+  ID-238 shipped. Successor: **ID-258**, since fired at v0.32.0 and entered
+  below; the live pin is whichever ID `BACKLOG.md` holds.
   **Corpus at `6cd170c`** (`hatch run report-trace-outcomes`): 302 traces, 4694
   steps, 284 negative tags (241 `misleading`, 43 `unclear`) across 134 traces
   and 127 references. Against the ID-238 baseline at `4076ed7` (270 traces, 207
@@ -3056,9 +3178,9 @@ if evidence changes; these are retired.
   than the whole report. Re-check when the ranking shifts rather than inheriting.
   **The ticket is pinned too.** ID-150 works because `formal/README.md` names the
   ID; "record a backlog entry" keeps the ticket and drops the pin. First revisit
-  was **ID-249**, filed `[ ]` in `BACKLOG.md` and since fired at v0.31.0 (its
-  entry above names ID-258 as the live pin), each revisit naming its successor
-  on close.
+  was **ID-249**, filed `[ ]` in `BACKLOG.md` and since fired at v0.31.0, each
+  revisit naming its successor on close (the chain's entries sit above; the live
+  pin is whichever ID `BACKLOG.md` holds).
   **This settles BK-330's [Rule 6](DRIFT-RULES.md#tolerated) register entry**,
   which named this item as its owner. The standing owner is now the **Phase 0
   checklist step**, not this closed item: an owner must be answerable the next

@@ -1,0 +1,122 @@
+id: ID-258
+title: "Trace-outcome report revisit at the next release"
+trigger: >-
+  The v0.32.0 release checklist reached Phase 0's trace-outcome step, which
+  reads the report and closes the open revisit ticket. ID-258 was that ticket,
+  the second since ID-238 anchored the review to the release.
+source_items:
+  - ID-258
+  - ID-249
+  - ID-238
+audience:
+  - contributor.process
+discovery_followups:
+  - ID-259
+expected_ripples:
+  - sdd/backlogid.json
+# Closed inside the v0.32.0 release PR rather than on a branch of its own, so
+# the review rounds are the release PR's. Derivation:
+# `git log --oneline origin/master..HEAD` on the release branch, minus the
+# release commit itself. At the time of writing that is 7a6e82d (round-1
+# consistency fixes), e04bc1b (the class sweep those findings implied) and the
+# commit carrying this line (round-2 fixes), so 3 — counted including this
+# commit, per the schema. Stated now rather than deferred post-merge: the
+# trace ships with the work.
+review_rounds: 3
+phases:
+  - id: orient
+    name: Read the step and the ticket it closes
+    steps:
+      - file: CONTRIBUTING.md
+        section: "Release / Phase 0: Pre-flight"
+        read_type: gate
+        extract: >-
+          Run the report, close the open revisit item against it, record the
+          corpus totals, the references selected and a per-reference decision.
+          A report and never a gate, so nothing here blocks the release
+      - file: sdd/BACKLOG.md
+        section: "(item) ID-258"
+        read_type: gate
+        extract: >-
+          The selection rule (top row plus rate >= 1.5x the top row's at reads
+          >= 20, flagged as fitted), the three dispositions, the 6cd170c
+          baseline to difference against, and the exit criterion of naming a
+          successor
+      - file: sdd/BACKLOG-DONE.md
+        section: "(item) ID-249"
+        read_type: reference
+        extract: >-
+          How the first difference was recorded and what each of the five
+          references was dispositioned to, which is what made the carry-over
+          visible when the same five came back
+  - id: measure
+    name: Run the report and read the tags
+    steps:
+      - file: scripts/report_trace_outcomes.py
+        section: "(generated report, full 132-row ranking at 1d43c1b)"
+        read_type: reference
+        extract: >-
+          310 traces, 306 negative tags; BACKLOG.md top at 30/302, bar
+          1.5 x 30/302 = 14.90%; four rows clear it at reads >= 20 — the same
+          four ID-249 selected, the last by 0.10pp. Re-checked the threshold
+          against the whole ranking rather than inheriting it; 1.5x still
+          selects the size it was fitted for. Review caught the bar first
+          written as 14.85%, which is 1.5x the report's *rounded* 9.9% — my
+          own miss, and the recall path principle 9 names
+      - file: sdd/traces/
+        section: "(every step citing a selected reference with an outcome set)"
+        read_type: reference
+        extract: >-
+          Walked phases[].steps[] across all 310 traces for the five
+          references — the glob is sdd/traces/[!_]*.yml, so _schema.yml is not
+          one of them; a first count said 311 by including it. A first pass
+          read steps[] at the top level and returned
+          zero tags on every reference, which looked like a clean corpus rather
+          than a wrong query — my own miss, caught only because the report's
+          own totals disagreed. Steps are nested under phases[] per _schema.yml
+      - file: sdd/traces/_schema.yml
+        section: "$defs/phase, $defs/step, outcome"
+        read_type: gate
+        extract: >-
+          The nesting the aggregation has to walk, and that absent outcome
+          ranks as ok — so the tagged fraction, not the tag count, is what
+          bounds any claim drawn from the ranking
+      - file: sdd/traces/
+        section: "(traces added or changed since 6cd170c)"
+        read_type: verify
+        extract: >-
+          Differencing the interval rather than reading the cumulative table
+          only: 22 new tags across 8 traces and 17 references, no concentration.
+          This is the read that showed three of the five selected references had
+          gained nothing, which the ranking alone cannot show
+  - id: implement
+    name: Close the ticket and open its successor
+    steps:
+      - file: sdd/BACKLOG.md
+        section: "How this file works / Completing work"
+        read_type: gate
+        extract: >-
+          Fully done moves to BACKLOG-DONE.md as [x] in the same commit, then
+          sweep every artifact asserting the item is tracked; the next free ID
+          comes from gen-backlogid --check, which reported ID=259
+      - file: sdd/BACKLOG.md
+        section: "6. The repo does not mislead the next person / Closes when"
+        read_type: verify
+        extract: >-
+          The clause names the open pin by ID; re-pointed at ID-259 and the
+          second firing recorded, count of clauses unchanged
+      - file: sdd/BACKLOG-DONE.md
+        section: "(items) ID-249 and ID-238"
+        read_type: verify
+        extract: >-
+          Both close notes asserted ID-258 was the live pin in present tense —
+          the exact pair ID-249's own round-2 review caught one release earlier.
+          Swept both this time before review, to the self-healing wording
+          ("whichever ID BACKLOG.md holds") the research doc already used
+      - file: sdd/research/research-spec-kit-comparison.md
+        section: "4.1 (the ticket is pinned)"
+        read_type: verify
+        extract: >-
+          Left unedited. Its ID-258 mention is past-tense narration of what
+          ID-249 named, and the sentence already defers to BACKLOG.md for the
+          live pin — the wording ID-249's sweep gave it, working as intended

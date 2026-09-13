@@ -1881,9 +1881,9 @@ the recipe merged.
     `conda install -c conda-forge remote-store` resolves; anaconda.org shows
     0.30.0, uploaded 2026-09-13. So the promise in section 5's clause 3 is met
     for the first time, and the README now says so — with the caveat the pip
-    instructions do not need, that **conda has no extras**: a backend's
-    dependency is installed alongside the package, and `run_constraints` only
-    bound it if present.
+    instructions do not need, that **conda has no extras**: the install gives
+    the core package only, the user names a backend's dependencies alongside it,
+    and `run_constraints` constrain only the ones they install.
   - Next, in order: release v0.32.0; then **one** PR against the feedstock
     carrying the version, sha256 and this file's `run_constraints`. The
     `regro-cf-autotick-bot` opens a version-bump PR of its own once 0.32.0 is on
@@ -1912,6 +1912,16 @@ the recipe merged.
     staged-recipes review round raised it before merge, which is why the header's
     stale-floor list is the four that round did not touch. Closing this item waits
     on that feedstock PR.
+  - **This item ships `[~]` through the v0.32.0 release, knowingly.** Its
+    remaining work is the feedstock PR that Phase 5 of *this* release prescribes
+    and that needs the tag to exist, so it cannot complete; and it cannot defer
+    to `[ ]`, because the recipe, the pin gate and the checklist steps are done
+    and the channel is live, so `[ ]` would claim less progress than exists.
+    That is the third disposition [`CONTRIBUTING.md` § Release](../CONTRIBUTING.md#release)
+    Phase 0 now names, which this item is the first to use — the argument was
+    made here first and moved to the checklist in review, so the next release
+    meeting the same shape reads it rather than re-deriving it. The item closes
+    when the feedstock PR is open, in a commit after the release.
 
 - [ ] **ID-229 — Evaluate porting to httpx 1.0 (lift the `<1.0` cap)**
   spec: GR-033 · effort: M · audience: user.api
@@ -1998,8 +2008,8 @@ the ripple-check's six measured blind spots are answered (BK-346); the
 hand-maintained inventories ID-245 names are generated — four bullets, of which
 the checker inventory has shipped; `check_formal_trace` proves
 assertion rather than citation (ID-207); both open revisit pins have fired
-and named successors (ID-150, ID-258 — the trace-outcome pin fired once
-already, as ID-249 at v0.31.0); the two backlog files are readable by the
+and named successors (ID-150, ID-259 — the trace-outcome pin has fired twice
+already, as ID-249 at v0.31.0 and ID-258 at v0.32.0); the two backlog files are readable by the
 person they are for, or the decision that their length is the right price is
 recorded (BK-365); the repo can say whether its own quality promise is
 holding rather than only asserting it (BK-366); and two sessions working in
@@ -2537,10 +2547,10 @@ the commit that writes it lands, so cite the generator instead.
   `gate.needs` list in `.github/workflows/ci.yml` and the caveat in
   `sdd/formal/README.md` is updated.
 
-- [ ] **ID-258 — Trace-outcome report revisit at the next release**
+- [ ] **ID-259 — Trace-outcome report revisit at the next release**
   spec: — · effort: S · audience: contributor.process
-  Second revisit ticket for the release-anchored trigger ID-238 shipped;
-  successor to [ID-249](BACKLOG-DONE.md), which fired at v0.31.0. Per
+  Third revisit ticket for the release-anchored trigger ID-238 shipped;
+  successor to [ID-258](BACKLOG-DONE.md), which fired at v0.32.0. Per
   [`CONTRIBUTING.md` § Release](../CONTRIBUTING.md#release) Phase 0, each release
   reads `hatch run report-trace-outcomes` and closes the open revisit ticket.
   This item is the pin that makes the ticket findable.
@@ -2559,12 +2569,21 @@ the commit that writes it lands, so cite the generator instead.
   `reads` ≥ 20 — a fitted threshold, re-check it rather than inherit it); and per
   selected reference one of **act** (file work against it), **defer** (leave it,
   say why), or **accept** (the tags are exposure, not a defect).
-  **Baseline to difference against**, measured at `6cd170c` (the v0.31.0
-  release base): 302 traces, 284 negative tags (241 `misleading`, 43 `unclear`),
-  `sdd/BACKLOG.md` top-ranked at 29 over 295 reads (9.8%). The previous
-  baseline, at `4076ed7`, was 270 traces and 207 tags with the same top row at
-  22 over 236 (9.3%); ID-249's close note carries what the first difference
-  showed and how each selected reference was dispositioned.
+  **Baseline to difference against**, measured at `1d43c1b` (the v0.32.0
+  release base): 310 traces, 306 negative tags (263 `misleading`, 43 `unclear`),
+  `sdd/BACKLOG.md` top-ranked at 30 over 302 reads (9.9% as the report displays
+  it; compute the bar from 30/302, not from the rounded figure — ID-258 did the
+  latter and review caught it). The previous two
+  baselines were 302 traces / 284 tags at `6cd170c` and 270 / 207 at `4076ed7`,
+  with the same top row at 9.8% and 9.3%; ID-258's close note carries both
+  differences and how each selected reference was dispositioned.
+  **Read the interval, not only the cumulative table.** ID-258 selected the same
+  five references as ID-249, and three of them had gained no tag at all in
+  between — an absolute-count ranking over a cumulative corpus re-selects on
+  standing totals, so a reference can be selected twice on the strength of
+  evidence already dispositioned. Difference the per-reference counts against the
+  baseline above before dispositioning, and say which selections are new
+  evidence and which are carry-over.
   **Exit criteria:** decision logged here, then the successor ticket opened and
   its ID named in this item's close note.
 
