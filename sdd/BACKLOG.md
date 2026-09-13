@@ -1839,7 +1839,20 @@ open item as neglect.
     `run_constraints` reasoning corrected — the strictest floor across the
     extras is the sound single pin, not the loosest. The reviewer found the
     `pyarrow` gap by reading `pyproject.toml` against the recipe, which nothing
-    here did; BK-368 is the gate that now does.
+    here did; BK-368 is the gate that now does. Following that thread found four
+    more wrong floors and a missing dependency (BUG-283 through BUG-286), all
+    shipping in v0.32.0.
+  - **The submitted recipe and this one have diverged**, beyond the pins: the
+    fork carries conda-forge conventions (`${{ PYTHON }}` in the build script, a
+    two-value `tests.python_version`, `python_min` left to the global) that this
+    copy has never had, and this copy is a version ahead. Nothing detects that —
+    BK-368 gates this file against `pyproject.toml` and stops there — so the next
+    copy-out silently reverts whatever the reviewer asked for. Reconcile before
+    the next submission; a second gate is the open question, and it cannot be
+    written until the two copies agree once.
+  - Next: merge the floor corrections, release v0.32.0, then update
+    `conda-forge/staged-recipes#32401` **once** with the new version, sha256 and
+    constraints, rather than pushing them piecemeal at the reviewer.
   - Blocked: waiting for conda-forge reviewer approval. When merged: add
     `conda install -c conda-forge remote-store` to README.
 
