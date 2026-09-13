@@ -85,10 +85,14 @@ if evidence changes; these are retired.
   **The practice has since changed, and this entry's premise with it.** The
   v0.31.0 release carried its markers through condensing, and that release's
   own PR treated a *dropped* one as a defect and restored it (ID-249's trace,
-  round 2, on the condensed BUG-259 entry). v0.32.0 followed. Splitting
-  `CHANGELOG.md` on `^## \[` and counting `**Breaking**` per section gives 40
-  headings, of which two released sections carry markers — `[0.29.0]` one and
-  `[0.31.0]` six, 7 in total. Per
+  round 2, on the condensed BUG-259 entry). v0.32.0 followed, and this paragraph
+  counts its own release rather than the base it was drafted against. Splitting
+  `CHANGELOG.md` on `^## \[` at this commit gives 41 headings, and three released
+  sections carry entry markers: `[0.29.0]` one, `[0.31.0]` five and `[0.32.0]`
+  three — **9** in total. A raw `**Breaking**` count returns 10: `[0.31.0]` holds
+  one backticked *quotation*, inside BUG-261's own entry, which is not a marker on
+  an entry. Discount it, because what the figure is about is entries that kept
+  their marker. Per
   [`CLAUDE.md` principle 5](../CLAUDE.md#principles) history outranks the
   backlog, so this paragraph is the side corrected rather than the released
   sections.
@@ -253,12 +257,17 @@ if evidence changes; these are retired.
   #1005), derived from `gh api repos/haalfi/remote-store/releases/generate-notes`
   with `previous_tag_name=v0.31.0`; the interval is an order of magnitude shorter
   than the 67-PR window ID-249 read, so nothing here is compared to it by rate.
-  **Selection, by ID-238's rule.** Top row `sdd/BACKLOG.md` at 30 over 302 reads
-  (9.9%), so the second selector's bar is 14.85%; four rows clear it at
-  `reads` ≥ 20 — `CONTRIBUTING.md` (22.9%, 48),
+  **Selection, by ID-238's rule.** Top row `sdd/BACKLOG.md` at 30 over 302 reads,
+  so the bar is 1.5 × 30/302 = **14.90%** — computed from the ratio, not from the
+  report's rounded 9.9%, which yields 14.85% and is the recall path principle 9
+  exists to stop. Four rows clear it at `reads` ≥ 20 — `CONTRIBUTING.md` (22.9%, 48),
   `src/remote_store/backends/_local.py` (30.4%, 23),
   `sdd/specs/029-async-store-backend-api.md` (18.5%, 27) and
-  `tests/backends/fixtures/_cassettes.py` (15.0%, 20). The threshold was
+  `tests/backends/fixtures/_cassettes.py` (15.0%, 20). **The last of those clears
+  the bar by 0.10pp** — 3/20 against 14.90% — so it is a marginal selection, not a
+  comfortable one, and the rounded bar would have kept it by 0.15pp instead. The
+  other three clear by 3.6pp or more. ID-259 inherits this threshold and should
+  read "four rows clear it" with that margin in view. The threshold was
   re-checked against the full 132-row ranking rather than inherited: at 1.5× it
   selects 4 rows plus the top, which is the size it was fitted for, so it is
   kept. `_sftp.py` stays out at 11.9% over 143, as it did at the last revisit.
@@ -410,6 +419,18 @@ if evidence changes; these are retired.
   **Same shape as BUG-283, wider**: a floor set once and never asserted, behind a
   lazy import, so nothing failed until a user pinned. Both were found by reading
   the conda recipe against the code it constrains rather than by any gate.
+  **Two artifacts described this measurement wrongly and were corrected in the
+  v0.32.0 release PR.** `pyproject.toml`'s `sftp` comment said "the whole 4.x
+  line is a SyntaxError on any Python >= 3.7" and the migration guide's tenacity
+  row said the whole line "cannot be imported on any supported Python" — both
+  contradicting the boundary above, which this entry had right. Re-run on 3.10.20
+  and 3.11.15 by installing each release into a clean venv and importing it:
+  4.8.0 and 4.10.0 raise `SyntaxError`; **4.11.0, 4.12.0 and 5.0.1 import
+  cleanly on 3.10** and raise `TypeError` on `wait_exponential(min=)`; 5.0.2
+  upward take `min=`; and on 3.11 everything below 6.1.0 dies on
+  `asyncio.coroutine`. 4.11.0 renames `tenacity/async.py`, which is why the
+  SyntaxError stops there. The floor is unaffected — only the reason given for
+  it was wrong — and the two artifacts now state the measured boundary.
   The three pin assertions this repo had accumulated (the httpx cap from
   BUG-225, the paramiko floor, this one) are now one table in
   `tests/scripts/test_pyproject_pins.py`, per

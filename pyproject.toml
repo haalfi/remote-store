@@ -76,13 +76,18 @@ s3-pyarrow = ["s3fs>=2024.2.0", "pyarrow>=14.0.0"]
 # scan_host_algorithms() rather than capping the library for every consumer.
 # Full rationale: sdd/research/research-bk-198-paramiko-ssh-rsa-empirical.md § 5.
 # tenacity: floor at >=8.0.1 (BUG-284, correcting an original >=4.0). `_connect`
-# builds before_sleep_log(...) and wait_exponential(min=...); measured against
-# every release in a clean venv, the whole 4.x line is a SyntaxError on any
-# Python >= 3.7, min= lands in 5.0.2, and @asyncio.coroutine keeps everything
-# below 6.1.0 from importing on Python 3.11+. 6.1.0 is the technical minimum;
-# the floor sits at 8.0.1 because it is the first release to declare
+# builds before_sleep_log(...) and wait_exponential(min=...); measured by
+# installing each release in a clean venv and importing it. Through 4.10.0 the
+# package is a SyntaxError on any Python >= 3.7 (`tenacity/async.py`); 4.11.0
+# renames that module, so 4.11.0 - 5.0.1 import on 3.10 and fail on
+# wait_exponential(min=), which lands in 5.0.2; @asyncio.coroutine then keeps
+# everything below 6.1.0 from importing on Python 3.11+. 6.1.0 is the technical
+# minimum; the floor sits at 8.0.1 because it is the first release to declare
 # requires_python, so pip guards the range independently of this pin, and
 # nothing here has ever exercised 6.x or 7.x.
+# This comment said "the whole 4.x line is a SyntaxError" until the v0.32.0
+# release PR re-ran the measurement: 4.11.0 and 4.12.0 import cleanly on 3.10.
+# The floor is unaffected — only the reason for it was wrong.
 sftp = ["paramiko>=3.1", "tenacity>=8.0.1"]
 # aiohttp (BUG-286): `AsyncAzureBackend` drives
 # `azure.storage.filedatalake.aio`, whose transport needs aiohttp, and the extra

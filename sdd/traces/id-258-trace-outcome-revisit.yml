@@ -52,10 +52,13 @@ phases:
         section: "(generated report, full 132-row ranking at 1d43c1b)"
         read_type: reference
         extract: >-
-          310 traces, 306 negative tags; BACKLOG.md top at 30/302 (9.9%), bar
-          14.85%; four rows clear it at reads >= 20 — the same four ID-249
-          selected. Re-checked the threshold against the whole ranking rather
-          than inheriting it; 1.5x still selects the size it was fitted for
+          310 traces, 306 negative tags; BACKLOG.md top at 30/302, bar
+          1.5 x 30/302 = 14.90%; four rows clear it at reads >= 20 — the same
+          four ID-249 selected, the last by 0.10pp. Re-checked the threshold
+          against the whole ranking rather than inheriting it; 1.5x still
+          selects the size it was fitted for. Review caught the bar first
+          written as 14.85%, which is 1.5x the report's *rounded* 9.9% — my
+          own miss, and the recall path principle 9 names
       - file: sdd/traces/
         section: "(every step citing a selected reference with an outcome set)"
         read_type: reference

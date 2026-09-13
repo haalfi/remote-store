@@ -20,7 +20,7 @@ supported Python.
 | Extra | Was | Now | What went wrong below the new floor |
 | --- | --- | --- | --- |
 | `sftp` | `paramiko>=3.0` | `paramiko>=3.1` | `channel_timeout=` starts in 3.1.0; 3.0.x raised `TypeError` on the first connect |
-| `sftp` | `tenacity>=4.0` | `tenacity>=8.0.1` | the whole 4.x line cannot be imported on any supported Python; everything below 6.1.0 fails on Python 3.11+ |
+| `sftp` | `tenacity>=4.0` | `tenacity>=8.0.1` | releases through 4.10.0 cannot be imported on any supported Python; 4.11.0-5.0.1 import but lack `wait_exponential(min=)`; everything below 6.1.0 fails on Python 3.11+ |
 | `sql`, `sql-query` | `sqlalchemy>=2.0` | `sqlalchemy>=2.0.31` | 2.0.30 and earlier fail at import on Python 3.13 |
 | `requests` | `urllib3>=1.26.0` | `urllib3>=1.26.5` | 1.26.4 and earlier fail at import on Python 3.13 |
 | `dagster` | `dagster>=1.9` | `dagster>=1.10.18` | `remote_store.ext.dagster` imports a symbol added in 1.10.18 |
