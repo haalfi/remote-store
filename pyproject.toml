@@ -393,6 +393,14 @@ check-backend-order = "python scripts/check_backend_order.py"
 # the docs gate invokes it directly rather than depending on the whole `lint`
 # bundle having run.
 check-ripple-parity = "python scripts/check_ripple_parity.py"
+# Standalone entry point for the conda-recipe pin gate, and the reason is the
+# sharpest instance of the pattern above: this gate exists to catch a hand-edit
+# weakening a `run_constraints` floor, and a `packaging/`-only diff matched
+# NEITHER classifier in `ci.yml` until `^packaging/` was added to DOCS_PAT
+# (BK-368, caught while reviewing the PR that introduced this gate).
+# Wired into `lint` (for the pyproject side) and `docs-gate` (for the recipe
+# side); either alone leaves one direction of the pair unreachable in CI.
+check-conda-recipe-pins = "python scripts/check_conda_recipe_pins.py"
 check-breaking-migration-link = "python scripts/check_breaking_migration_link.py"
 # Standalone entry point for the custom-backend-guide drift gate (BK-320), same
 # reason: the guide is a docs surface, so the docs gate invokes it directly.
@@ -438,7 +446,7 @@ docs = "mkdocs serve"
 docs-build = "mkdocs build --strict"
 # The full set of checks that validate a docs/spec change, as one entry point CI
 # invokes once. Composed by reference so each sub-target stays the single source.
-docs-gate = ["docs-check", "check-no-tracker-refs", "check-breaking-migration-link", "check-backend-order", "check-ripple-parity", "check-custom-backend-guide", "check-traces", "check-changelog-unreleased", "check-sdd-index", "gen-backlogid-check", "gen-gate-inventory-check", "check-links", "drift-docs-check", "docs-build"]
+docs-gate = ["docs-check", "check-no-tracker-refs", "check-breaking-migration-link", "check-backend-order", "check-ripple-parity", "check-conda-recipe-pins", "check-custom-backend-guide", "check-traces", "check-changelog-unreleased", "check-sdd-index", "gen-backlogid-check", "gen-gate-inventory-check", "check-links", "drift-docs-check", "docs-build"]
 pre-commit-install = "pre-commit install"
 # Requires Docker Desktop; not included in 'all' (CI uses setup-dafny-action natively)
 verify-formal = "bash scripts/dafny_verify.sh"

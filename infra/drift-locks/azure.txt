@@ -1,5 +1,5 @@
 # extra: azure
-# python: 3.11
+# python: 3.13
 # captured: 2026-09-13
 # Regenerate with: hatch run drift-check refresh-baseline azure
 

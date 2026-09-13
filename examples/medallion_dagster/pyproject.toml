@@ -11,7 +11,7 @@ description = "Medallion + Dagster showcase for remote-store"
 
 [project.optional-dependencies]
 run = [
-    "dagster>=1.9",
+    "dagster>=1.10.18",
     "dagster-webserver>=1.9",
     "polars>=0.20",
     "opentelemetry-sdk>=1.20",

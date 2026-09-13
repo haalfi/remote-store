@@ -95,3 +95,14 @@ phases:
           Body rewritten to what the item is really blocked on: the feedstock did
           not exist when checked (404), the package is not on anaconda.org, and
           the first build will serve the pre-sweep recipe
+      - file: packaging/conda-forge/variants.yaml
+        section: "python_min"
+        read_type: verify
+        extract: >-
+          The file shipped carrying "Keep the value equal to `requires-python`"
+          and nothing enforcing it — the same shape as the recipe comment BK-368
+          exists because of, one file over, in the PR that fixed the original.
+          Review caught it. `check_conda_recipe_pins.py` now compares all three
+          spellings of the floor (requires-python, variants.yaml, ci.yml's
+          MIN_PYTHON), so the comment states an enforced rule.
+        outcome: misleading

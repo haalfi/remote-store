@@ -15,7 +15,7 @@ on-demand materialization of views/reports, bridging SQL databases into the
 Store abstraction for downstream consumers who don't need to know the source is
 a database.
 
-**Dependencies:** `sqlalchemy>=2.0`, `pyarrow>=12.0.0` (optional extra:
+**Dependencies:** `sqlalchemy>=2.0.31`, `pyarrow>=12.0.0` (optional extra:
 `sql-query`).
 
 **Architecture:** Two-class design with shared base — see

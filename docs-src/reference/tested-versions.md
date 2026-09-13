@@ -15,7 +15,7 @@ _Captured 2026-09-07 on Python 3.13._
 
 ## `[azure]`
 
-_Captured 2026-09-13 on Python 3.11._
+_Captured 2026-09-13 on Python 3.13._
 
 | Package | Tested up to |
 |---|---|

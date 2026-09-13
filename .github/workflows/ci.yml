@@ -62,7 +62,15 @@ jobs:
           # `docs-gate`, which carries gen-gate-inventory-check, where `code`
           # gates fifteen. That is the narrow-output preference the ripple-check
           # states and the job budget the HOOKS_PAT comment below defends.
-          DOCS_PAT='^(docs-src|src)/|^mkdocs\.yml$|^README\.md$|^CHANGELOG\.md$|^sdd/|^scripts/(docs/|check_docs_framework\.py$)|^\.pre-commit-config\.yaml$|^\.github/workflows/ci\.yml$'
+          # ^packaging/ is here, not in CODE_PAT, for the narrow-output reason
+          # above and because of what it gates: `check_conda_recipe_pins.py`
+          # holds packaging/conda-forge/recipe.yaml to pyproject.toml, and a
+          # recipe-only diff matched neither classifier (BK-368). Its only
+          # other job is `Conda Recipe`, which is `rattler-build --render-only`
+          # — the very thing that gate's docstring says cannot see the drift. A
+          # pyproject.toml edit already reaches it through CODE_PAT; this is the
+          # other direction of the same pair.
+          DOCS_PAT='^(docs-src|src)/|^mkdocs\.yml$|^README\.md$|^CHANGELOG\.md$|^sdd/|^packaging/|^scripts/(docs/|check_docs_framework\.py$)|^\.pre-commit-config\.yaml$|^\.github/workflows/ci\.yml$'
           if echo "$FILES" | grep -qE "$CODE_PAT"; then echo "code=true" >> "$GITHUB_OUTPUT"
           else echo "code=false" >> "$GITHUB_OUTPUT"; fi
           if echo "$FILES" | grep -qE "$DOCS_PAT"; then echo "docs=true" >> "$GITHUB_OUTPUT"

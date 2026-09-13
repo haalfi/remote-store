@@ -3,7 +3,7 @@ title: "Three more extras declared floors below the first release that works"
 trigger: >-
   BUG-283 and BUG-284 each found a wrong floor in the same extra. Two defects in
   the same line is a sampling result, not a coincidence, so the remaining
-  thirteen user-facing dependencies were swept the same way.
+  fifteen user-facing dependencies were swept the same way.
 source_items:
   - BUG-285
   - BUG-283
@@ -24,6 +24,14 @@ expected_ripples:
 surprising_ripples:
   - docs-src/reference/tested-versions.md
   - infra/drift-locks/azure.txt
+  - sdd/specs/031-ext-dagster.md
+  - sdd/specs/040-sql-blob-backend.md
+  - sdd/specs/041-sql-query-backend.md
+  - docs-src/guides/backends/sql-blob.md
+  - docs-src/guides/backends/sql-query.md
+  - docs-src/guides/backends/sftp.md
+  - examples/medallion_dagster/pyproject.toml
+  - docs-src/guides/dagster.md
 # Derivation, per the schema's review_rounds clause: `git log --oneline
 # origin/master..HEAD` on this branch, counting commits that exist because of
 # review feedback — including the commit carrying this line. Third push of the
@@ -38,7 +46,10 @@ phases:
         read_type: gate
         extract: >-
           Eighteen distinct packages across the user-facing extras, three already
-          settled (httpx, paramiko, tenacity), so thirteen to check
+          settled (httpx, paramiko, tenacity), so fifteen to check. The first
+          draft of this step said thirteen, which its own arithmetic refutes and
+          the item's enumeration contradicts (3 wrong + 1 left + 11 clean = 15);
+          caught in review, and the same wrong figure had reached the PR body.
       - file: src/remote_store/
         section: "(import sites, via AST)"
         read_type: reference
@@ -129,9 +140,25 @@ phases:
         section: "Ripple-check / Dependency"
         read_type: verify
         extract: >-
-          The row BUG-283 extended to name the recipe carried this sweep; the
-          generated tested-versions page was the one ripple it still does not name
-        outcome: unclear
+          Extending the row to name the recipe was treated as the whole ripple,
+          and the targets the row **already** named were never walked. Review
+          found seven sites still carrying superseded floors — three specs, three
+          backend guides (one of which hands users a `paramiko>=3.0,<5` pin line)
+          and the shipped medallion_dagster example. The same PR proved the
+          restatement class is real and left its larger instance standing.
+        outcome: misleading
+      - file: docs-src/guides/dagster.md
+        section: "serializer table"
+        read_type: verify
+        extract: >-
+          The recipe comment justified `pyarrow>=14.0.0` partly by this guide's
+          claim that the Parquet serializer needs >=14.0 — a figure the guide
+          never derived and this work copied without running. Running the
+          serializer's whole surface (`pa.Table.from_pandas`, `pq.write_table`,
+          `pq.read_table`) against pyarrow 12.0.0 shows it works, so the guide
+          cell was wrong and the comment repeated it. `tls_ca_file_path=` is the
+          floor's only derivation, which the BACKLOG-DONE entry had right.
+        outcome: misleading
       - file: pyproject.toml
         section: "[tool.hatch.envs.default.scripts]"
         read_type: verify

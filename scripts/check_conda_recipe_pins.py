@@ -14,6 +14,13 @@ caught it: ``pyarrow`` sat at ``>=12.0.0`` while the ``s3-pyarrow`` extra needed
 ``>=14.0.0``. That review does not recur -- staged-recipes is a one-time
 submission -- so this gate is what replaces the reviewer (BK-368).
 
+Wired into ``hatch run lint`` **and** ``hatch run docs-gate``. Both, because the
+pair straddles CI's two classifiers: ``pyproject.toml`` is in ``CODE_PAT`` and
+the recipe is in ``DOCS_PAT``, so a gate in only one of them is unreachable for
+exactly half the diffs that can invalidate it -- and the recipe half is the one
+this gate was built for. ``scripts/gen_backlogid.py`` documents the
+mirror image of the same trap.
+
 Authority (Rule 4)
 ==================
 
@@ -57,18 +64,40 @@ Bounds (Rule 7)
   not generalise.
 * Version equality is exact after normalisation: ``>=12.0.0`` and ``>=12`` are
   different strings but the same ``SpecifierSet``, and compare equal.
+* **Only ``>=``, ``<`` and ``<=`` are understood.** Every other PEP 440
+  operator -- ``>``, ``==``, ``~=``, ``!=``, ``===`` and any wildcard such as
+  ``==1.2.*`` -- is **reported, not collapsed**. An earlier spelling folded them
+  into ``>=`` silently, which meant a pyproject ``pkg>1.2`` made this gate demand
+  the recipe carry the *weaker* ``>=1.2`` and fail it for carrying the correct
+  ``>1.2`` -- inverting the authority rule above. No user-facing extra uses one
+  today, so this fires on the day someone writes one rather than producing a
+  confidently wrong expectation.
+
+The python_min pair
+===================
+
+A second, smaller pair rides here rather than in its own script, because it has
+the same two files and the same wiring problem. ``recipe.yaml`` deliberately does
+**not** define ``python_min`` (conda-forge supplies it globally), so
+``packaging/conda-forge/variants.yaml`` supplies it for our own render. That
+value has to equal the floor of ``requires-python``, and ``ci.yml``'s
+``MIN_PYTHON`` has to equal it too. Nothing compared the three; a divergence
+leaves ``rattler-build --render-only`` green while rendering a recipe for an
+interpreter the package no longer supports.
 
 Exit codes
 ==========
 
-* ``0`` -- every user-facing dependency is constrained, at the strictest floor.
+* ``0`` -- every user-facing dependency is constrained, at the strictest floor,
+  and the three ``python_min`` spellings agree.
 * ``1`` -- one or more disagreements (one line each to stderr, plus remediation).
 
 Drift-gate::
 
     kind:       pair
     compares:   packaging/conda-forge/recipe.yaml run_constraints <-> pyproject.toml
-        [project.optional-dependencies]
+        [project.optional-dependencies]; and packaging/conda-forge/variants.yaml python_min
+        <-> pyproject.toml requires-python <-> .github/workflows/ci.yml MIN_PYTHON
     domain:     intent <-> realization
 """
 
@@ -96,13 +125,27 @@ from gen_features import _EXCLUDE_EXTRAS  # noqa: E402  — single source for th
 _REPO_ROOT = Path(__file__).resolve().parent.parent
 _RECIPE = Path("packaging/conda-forge/recipe.yaml")
 _PYPROJECT = Path("pyproject.toml")
+_VARIANTS = Path("packaging/conda-forge/variants.yaml")
+_CI = Path(".github/workflows/ci.yml")
 
 # A run_constraints entry: "- name >=1.2,<2".  Conda spells the separator with a
 # space and joins clauses with "," exactly as PEP 440 does.
 _ENTRY_RE = re.compile(r"^\s*-\s+(?P<name>[A-Za-z0-9][A-Za-z0-9._-]*)\s*(?P<spec>[<>=!~].*)?$")
 
-_LOWER_OPS = frozenset({">=", ">", "==", "~="})
+# The only operators this gate can collapse without changing what a pin means.
+# Everything else is reported -- see the Bounds section.
+_LOWER_OPS = frozenset({">="})
 _UPPER_OPS = frozenset({"<", "<="})
+_SUPPORTED_OPS = _LOWER_OPS | _UPPER_OPS
+
+
+class UnsupportedSpecifier(Exception):
+    """A pyproject clause this gate refuses to guess at. Carries the package."""
+
+    def __init__(self, package: str, clause: str) -> None:
+        super().__init__(f"{package}: {clause}")
+        self.package = package
+        self.clause = clause
 
 
 def _canonical(name: str) -> str:
@@ -141,11 +184,17 @@ def declared_constraints(pyproject: Path) -> dict[str, SpecifierSet]:
                 continue  # aggregate of other extras; each is enumerated already
             per_package.setdefault(_canonical(req.name), []).append(req.specifier)
 
-    return {name: _collapse(specs) for name, specs in per_package.items()}
+    return {name: _collapse(specs, package=name) for name, specs in per_package.items()}
 
 
-def _collapse(specs: list[SpecifierSet]) -> SpecifierSet:
+def _collapse(specs: list[SpecifierSet], *, package: str = "?") -> SpecifierSet:
     clauses = [c for spec in specs for c in spec]
+    for clause in clauses:
+        # Refuse rather than guess. Folding `>`, `==` or `~=` into `>=` changes
+        # what the pin means, and `!=` / `===` would vanish entirely -- making
+        # the gate demand a recipe entry that is wrong. See Bounds.
+        if clause.operator not in _SUPPORTED_OPS:
+            raise UnsupportedSpecifier(package, str(clause))
     lower = [c for c in clauses if c.operator in _LOWER_OPS]
     upper = [c for c in clauses if c.operator in _UPPER_OPS]
 
@@ -196,11 +245,55 @@ def recipe_constraints(recipe: Path) -> dict[str, SpecifierSet]:
 # --------------------------------------------------------------------------- #
 
 
-def collect_violations(repo_root: Path = _REPO_ROOT) -> list[Violation]:
-    declared = declared_constraints(repo_root / _PYPROJECT)
-    present = recipe_constraints(repo_root / _RECIPE)
+def python_min_violations(repo_root: Path = _REPO_ROOT) -> list[Violation]:
+    """The three spellings of the minimum Python must agree. See the docstring.
+
+    `requires-python` governs; `variants.yaml` and `ci.yml`'s `MIN_PYTHON`
+    restate it. Absence of either restatement is a violation too — a missing
+    `python_min` is what makes `rattler-build --render-only` fail on an
+    undefined variable, and a missing `MIN_PYTHON` would silently drop a matrix
+    leg.
+    """
+    data = tomllib.loads((repo_root / _PYPROJECT).read_text(encoding="utf-8"))
+    floor = SpecifierSet(data["project"]["requires-python"])
+    lower = [c for c in floor if c.operator in _LOWER_OPS]
+    if len(lower) != 1:
+        return [Violation("python_min", f"requires-python {str(floor)!r} has no single '>=' floor to compare against")]
+    want = lower[0].version
 
     out: list[Violation] = []
+
+    variants = (repo_root / _VARIANTS).read_text(encoding="utf-8")
+    found = re.search(r'^\s*-\s*["\']?(?P<v>\d+\.\d+)["\']?\s*$', variants, re.MULTILINE)
+    if found is None:
+        out.append(Violation("python_min", f"{_VARIANTS} declares no python_min value"))
+    elif found["v"] != want:
+        out.append(Violation("python_min", f"{_VARIANTS} says {found['v']!r}, requires-python floor is {want!r}"))
+
+    ci = (repo_root / _CI).read_text(encoding="utf-8")
+    ci_min = re.search(r'^\s*MIN_PYTHON:\s*["\']?(?P<v>\d+\.\d+)["\']?\s*$', ci, re.MULTILINE)
+    if ci_min is None:
+        out.append(Violation("python_min", f"{_CI} declares no MIN_PYTHON"))
+    elif ci_min["v"] != want:
+        out.append(Violation("python_min", f"{_CI} MIN_PYTHON is {ci_min['v']!r}, requires-python floor is {want!r}"))
+
+    return out
+
+
+def collect_violations(repo_root: Path = _REPO_ROOT) -> list[Violation]:
+    try:
+        declared = declared_constraints(repo_root / _PYPROJECT)
+    except UnsupportedSpecifier as exc:
+        return [
+            Violation(
+                exc.package,
+                f"pyproject clause {exc.clause!r} uses an operator this gate does not collapse "
+                f"(only >=, < and <= are understood); express it as those, or widen _collapse",
+            )
+        ]
+    present = recipe_constraints(repo_root / _RECIPE)
+
+    out: list[Violation] = python_min_violations(repo_root)
     for name in sorted(set(declared) | set(present)):
         want = declared.get(name)
         have = present.get(name)
@@ -233,7 +326,10 @@ def main(argv: list[str] | None = None) -> int:
 
     violations = collect_violations(args.repo_root)
     if not violations:
-        print("check_conda_recipe_pins: run_constraints agree with pyproject's extras.")
+        print(
+            "check_conda_recipe_pins: run_constraints agree with pyproject's extras; "
+            "python_min agrees in all three files."
+        )
         return 0
 
     for v in violations:

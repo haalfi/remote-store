@@ -322,8 +322,8 @@ tradeoff is freezing on paramiko 4.x while upstream moves on:
 | `enable_ssh_rsa_compat()` | Process-wide SHA-1 host-key acceptance only |
 
 Either composes cleanly with the library's `[sftp]` floor of
-`paramiko>=3.0`. To pin the consumer must override at their own dependency
-layer (e.g. `requirements.txt` line `paramiko>=3.0,<5`).
+`paramiko>=3.1`. To pin the consumer must override at their own dependency
+layer (e.g. `requirements.txt` line `paramiko>=3.1,<5`).
 
 ## Connection Behaviour
 

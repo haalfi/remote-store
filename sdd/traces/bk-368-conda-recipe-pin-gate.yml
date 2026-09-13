@@ -74,6 +74,29 @@ phases:
   - id: verify
     name: Verify
     steps:
+      - file: .github/workflows/ci.yml
+        section: "CODE_PAT / DOCS_PAT"
+        read_type: verify
+        extract: >-
+          The gate shipped wired into `lint` alone, and CI's `lint` job is
+          CODE_PAT-gated. Neither classifier matched `^packaging/`, so a
+          recipe-only diff — the exact event this gate was built for — ran only
+          `rattler-build --render-only`, which its own docstring says cannot see
+          the drift. Half the pair was unreachable. Caught in review;
+          `^packaging/` added to DOCS_PAT and the gate added to `docs-gate`.
+        outcome: misleading
+      - file: scripts/check_conda_recipe_pins.py
+        section: "_collapse / Bounds"
+        read_type: verify
+        extract: >-
+          `_collapse` folded `>`, `==` and `~=` into `>=` and dropped `!=` and
+          `===` entirely, so a pyproject `pkg>1.2` would have made the gate
+          demand the weaker `>=1.2` and fail the recipe for carrying the correct
+          pin — inverting the gate's own authority rule — while `==1.2.*` raised
+          InvalidVersion rather than a violation. The Bounds section said none of
+          it. Now only `>=`, `<` and `<=` are accepted and anything else is
+          reported.
+        outcome: misleading
       - file: sdd/DRIFT-RULES.md
         section: "Rule 7 (seed known discrepancies)"
         read_type: verify

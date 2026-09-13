@@ -16,6 +16,16 @@ Each row names the derivation its boundary came from — an upstream changelog
 entry or a recorded run — checked when the row was written rather than recalled
 (`CLAUDE.md` principle 9).
 
+Presence, not only boundaries
+=============================
+
+A floor is not the only way an extra fails its users. `[azure]` declared no
+`aiohttp` at all, so `AsyncAzureBackend` could not build a transport — a defect
+with no version boundary to assert (BUG-286). `_REQUIRED` covers that shape: a
+package an extra must declare, and the runtime failure if it does not. It is
+here rather than in its own module because the question a reader brings to this
+file — "what does an extra have to declare, and why" — is the same one.
+
 Bounds
 ======
 
@@ -24,6 +34,9 @@ Bounds
   declaring `requires_python`; 6.1.0 is where the API works. Lowering the floor
   to 6.1.0 would still pass this test, and the reason to hold 8.0.1 lives in the
   `pyproject.toml` comment, not here.
+* `_REQUIRED` asserts a package is **named**, not that it is importable at
+  runtime, and not that the extra is complete. It catches deletion of a
+  declaration; it cannot find the next missing one.
 * Boundaries are fixed strings. Nothing re-derives them at run time, so a *new*
   API the code starts calling needs a new row; this cannot notice one.
 * It reads declarations only. That the installed package behaves as its version
@@ -133,6 +146,28 @@ _PINS: tuple[Pin, ...] = (
 )
 
 
+@dataclass(frozen=True)
+class Required:
+    extra: str
+    package: str
+    why: str
+
+
+_REQUIRED: tuple[Required, ...] = (
+    Required(
+        extra="azure",
+        package="aiohttp",
+        # `AsyncAzureBackend` drives azure.storage.filedatalake.aio, whose
+        # transport azure-core builds only when aiohttp is importable. Measured
+        # in BUG-286: a venv with only azure-storage-file-datalake and
+        # azure-identity raises "Unable to create async transport. Please check
+        # aiohttp is installed." on the first async call. The suite never saw it
+        # because `dev` also installs s3-pyarrow, whose aiobotocore pulls it in.
+        why="AsyncAzureBackend cannot build an async transport without it (BUG-286)",
+    ),
+)
+
+
 @pytest.fixture(scope="module")
 def extras() -> dict[str, list[Requirement]]:
     """Every extra's parsed requirements, from `pyproject.toml`."""
@@ -143,6 +178,16 @@ def extras() -> dict[str, list[Requirement]]:
 def _declaring(extras: dict[str, list[Requirement]], package: str) -> list[tuple[str, Requirement]]:
     """(extra, requirement) for every extra declaring *package*. Derived, not listed."""
     return [(name, req) for name, reqs in extras.items() for req in reqs if req.name == package]
+
+
+@pytest.mark.parametrize("req", _REQUIRED, ids=lambda r: f"{r.extra}:{r.package}")
+def test_extra_declares_its_required_package(req, extras):
+    """Deleting the declaration must fail a test, not wait for a user to find it."""
+    assert req.extra in extras, f"no {req.extra!r} extra to check"
+    declared = {r.name for r in extras[req.extra]}
+    assert req.package in declared, (
+        f"extra {req.extra!r} must declare {req.package!r} — {req.why}; declared: {sorted(declared)}"
+    )
 
 
 @pytest.mark.parametrize("pin", _PINS, ids=lambda p: p.package)

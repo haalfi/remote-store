@@ -6,7 +6,12 @@
 # That leaves our own `Conda Recipe` workflow, which renders the recipe
 # standalone with no conda-forge pinning in scope, with an undefined variable.
 #
-# This file closes that gap without changing the artifact we submit. Keep the
-# value equal to `requires-python` in pyproject.toml.
+# This file closes that gap without changing the artifact we submit.
+#
+# The value must equal the floor of `requires-python` in pyproject.toml, and
+# `MIN_PYTHON` in .github/workflows/ci.yml must equal it too.
+# `scripts/check_conda_recipe_pins.py` compares all three, so this is an
+# enforced rule rather than a comment asking to be believed — a distinction
+# BK-368 exists because the recipe's own "keep this exhaustive" comment lacked.
 python_min:
   - "3.10"

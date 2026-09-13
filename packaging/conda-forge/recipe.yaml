@@ -64,10 +64,15 @@ requirements:
     # of pyarrow", and >=12.0.0 asserts that for a S3-PyArrow surface that needs
     # 14.  Under-constraining leaves a broken combination installable;
     # over-constraining costs an `arrow`-only user pyarrow 12/13, both 2023
-    # builds well below what conda-forge ships.  The Dagster Parquet serializer
-    # (docs-src/guides/dagster.md) needs >=14.0 too, so >=12.0.0 left two
-    # surfaces uncovered, not one.  Raised on review of
+    # builds well below what conda-forge ships.  Raised on review of
     # conda-forge/staged-recipes#32401.
+    # The one surface needing 14 is `tls_ca_file_path=` on `S3FileSystem`,
+    # measured: pyarrow 13 rejects the kwarg, 14 accepts it.  An earlier version
+    # of this comment also claimed the Dagster Parquet serializer needed >=14.0,
+    # copying an undocumented figure from the Dagster guide; running that
+    # serializer's whole surface (`pa.Table.from_pandas`, `pq.write_table`,
+    # `pq.read_table`) against pyarrow 12.0.0 shows it does not, so the guide's
+    # cell was corrected rather than the floor.
     # None carries a ceiling: BUG-232 verified the shared arrow/parquet/
     # S3-PyArrow surface against pyarrow 25 and lifted the earlier `<25` cap on
     # `arrow` / `sql-query`, so all three agree on an unbounded `>=`.

@@ -71,6 +71,21 @@ phases:
           accident. Same shape as BUG-250 one layer up — an extra's own
           dependency set is never exercised alone.
 
+  - id: tests
+    name: Regression test
+    steps:
+      - file: tests/scripts/test_pyproject_pins.py
+        section: "_REQUIRED"
+        read_type: gate
+        extract: >-
+          The fix first shipped with no test at all: deleting `aiohttp>=3.0` from
+          the extra failed nothing, and the PR still ticked "covered by tests".
+          Review caught it. A `Pin` row is the wrong shape — this is a presence
+          defect with no version boundary — so `_REQUIRED` was added beside the
+          boundary table, and the removal was re-run to watch it fail before
+          restoring the declaration.
+        outcome: misleading
+
   - id: fix
     name: Fix
     steps:

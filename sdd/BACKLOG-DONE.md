@@ -350,17 +350,35 @@ if evidence changes; these are retired.
   `.github/workflows/conda-recipe.yml` runs `rattler-build --render-only`, which
   validates syntax and never opens `pyproject.toml`.
   **It had drifted, and a reviewer is what caught it**: `pyarrow >=12.0.0`
-  against an `s3-pyarrow` extra needing `>=14.0.0`, plus the Dagster Parquet
-  serializer (`docs-src/guides/dagster.md`) at `>=14.0`. Two surfaces
-  installable broken. The recipe's own comment argued for the **loosest** floor,
+  against an `s3-pyarrow` extra needing `>=14.0.0` — one surface, the
+  `tls_ca_file_path=` kwarg, which pyarrow 13 rejects and 14 accepts. An earlier
+  version of this entry claimed a second surface, the Dagster Parquet
+  serializer, on the strength of a `pyarrow>=14.0` cell in
+  `docs-src/guides/dagster.md` that nothing derived; running that serializer's
+  whole surface against pyarrow 12.0.0 shows it works, so the guide cell was
+  wrong and this entry repeated it rather than checking. The recipe's own
+  comment argued for the **loosest** floor,
   which is backwards: a `run_constraints` entry asserts compatibility, so the
   strictest floor is the sound single pin. staged-recipes review happens once, so
-  that reviewer does not recur; `scripts/check_conda_recipe_pins.py` (in
-  `hatch run lint`) is what replaces them, deriving the expected set from
-  `pyproject.toml` and failing on a missing, stray, or weaker entry. The
-  **Dependency** ripple-check rows now name the recipe, in both presentations —
-  neither did, which is how the recipe went un-swept on every floor change since
-  it was written. Trace: `sdd/traces/bk-368-conda-recipe-pin-gate.yml`.
+  that reviewer does not recur; `scripts/check_conda_recipe_pins.py` is what
+  replaces them, deriving the expected set from `pyproject.toml` and failing on a
+  missing, stray, or weaker entry. The **Dependency** ripple-check rows now name
+  the recipe, in both presentations — neither did, which is how the recipe went
+  un-swept on every floor change since it was written.
+  **Two wiring defects, both caught in review of the PR that added it.** It was
+  wired into `lint` alone, and CI's `lint` job is `CODE_PAT`-gated while neither
+  classifier matched `^packaging/` — so a recipe-only diff, the exact event this
+  gate exists for, ran only `rattler-build --render-only`. It is now in
+  `docs-gate` too and `^packaging/` is in `DOCS_PAT`; a pair straddling both
+  classifiers needs both wirings, which `gen_backlogid.py` documents one path
+  over. And `_collapse` silently rewrote four PEP 440 operators — folding `>`,
+  `==` and `~=` into `>=`, dropping `!=` and `===` — which would have made the
+  gate demand a weaker pin than declared; only `>=`, `<` and `<=` are accepted
+  now, anything else is reported, and the Bounds section says so.
+  The same gate also now compares the three spellings of the minimum Python
+  (`requires-python`, `variants.yaml`'s `python_min`, `ci.yml`'s `MIN_PYTHON`),
+  which had been left to a comment. Trace:
+  `sdd/traces/bk-368-conda-recipe-pin-gate.yml`.
 
 ## v0.31.0
 
