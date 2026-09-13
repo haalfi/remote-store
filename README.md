@@ -87,11 +87,22 @@ pip install "remote-store[pydantic]"       # Pydantic BaseSettings config
 pip install "remote-store[toml]"           # TOML config on Python < 3.11
 ```
 
-**conda has no extras.** `conda install -c conda-forge remote-store` gives you
-the core package; install a backend's dependency alongside it
-(`conda install -c conda-forge s3fs`, `paramiko`, `azure-storage-file-datalake`,
-and so on). The conda recipe constrains those packages when they are present, so
-an unsupported version fails to solve rather than at runtime.
+**conda has no extras.** `conda install -c conda-forge remote-store` installs the
+core package only; a backend's dependencies go alongside it, and an extra is
+often more than one package. Each extra's full set is its entry under
+`[project.optional-dependencies]` in `pyproject.toml` — `[azure]`, for example,
+is three:
+
+```bash
+conda install -c conda-forge remote-store azure-storage-file-datalake azure-identity aiohttp
+```
+
+Two things to know while the channel catches up. It currently serves **0.30.0**,
+where PyPI has 0.31.0. And its version constraints predate the dependency-floor
+corrections shipping in 0.32.0: `tomli` is unconstrained there, and the
+`tenacity`, `sqlalchemy`, `urllib3` and `dagster` floors are low enough to admit
+a version that installs and then fails at import. Until the channel catches up,
+pin those yourself or install from PyPI.
 
 ## Quick Start
 

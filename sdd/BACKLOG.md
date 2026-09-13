@@ -1844,7 +1844,7 @@ the recipe merged.
   BK-329 because that PR touched no ADR, no TLA module and not the handbook.
 
 - [~] **ID-018 — conda-forge publishing**
-  spec: — · effort: — · audience: library.maintainer
+  spec: — · effort: — · audience: user.discoverability.human, library.maintainer
   Recipe, CI validation, release checklist steps all done.
   - Done: [recipe](../packaging/conda-forge/recipe.yaml),
     [conda-recipe workflow](../.github/workflows/conda-recipe.yml),
@@ -1872,7 +1872,8 @@ the recipe merged.
     `tests.python_version` renders against `rattler-build-action@v0.2.39`.
   - **`staged-recipes#32401` is merged.** The reviewer merged before the
     corrected recipe could be posted, so what conda-forge received is the
-    pre-sweep file: version 0.30.0 (two releases behind), the four stale floors,
+    pre-sweep file: version 0.30.0 (one release behind — `CHANGELOG.md`'s `## [`
+    headings make 0.31.0 the latest released, and 0.32.0 is unreleased), the four stale floors,
     no `tomli` constraint and no `aiohttp`. None of it is dangerous — a
     `run_constraint` binds only if the user installs that package too — but it is
     what the channel serves.
@@ -1888,9 +1889,17 @@ the recipe merged.
     `regro-cf-autotick-bot` opens a version-bump PR of its own once 0.32.0 is on
     PyPI and touches `version` and `sha256` only, so pushing the constraints onto
     that branch gets both into one review. Submission is over — staged-recipes is
-    not the route for any further change.
+    not the route for any further change. `CONTRIBUTING.md` § Release Phase 5 and
+    `.claude/skills/release/SKILL.md` § Phase 5 both said the remaining step was
+    to *verify* the bot PR; following either as written would have merged it
+    untouched and shipped 0.32.0 with 0.31.0's constraints. Both now say amend.
+  - **Then delete the caveat this added to the README.** The install section
+    currently warns that the channel serves 0.30.0 and that its `tomli`,
+    `tenacity`, `sqlalchemy`, `urllib3` and `dagster` constraints predate the
+    0.32.0 corrections. Every clause of that is true today and none of it should
+    outlive the feedstock PR; it is written to be deleted, not maintained.
   - **What the channel serves until then**, worth knowing rather than
-    rediscovering: 0.30.0, two releases behind, and the missing `tomli` entry
+    rediscovering: 0.30.0, one release behind the published 0.31.0, and the missing `tomli` entry
     means the `toml` extra is the one genuinely unconstrained package for conda
     users. Closing this item waits on that feedstock PR.
 

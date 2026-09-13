@@ -10,12 +10,18 @@ source_items:
 audience:
   - user.discoverability.human
   - library.maintainer
+surprising_ripples:
+  - CONTRIBUTING.md
+  - .claude/skills/release/SKILL.md
+  - CHANGELOG.md
 # Derivation, per the schema's review_rounds clause: `gh api
-# repos/haalfi/remote-store/pulls/<n>/commits` for this PR, counting commits
-# that exist because of review feedback — including the commit carrying this
-# line. None yet; this is the first push and the PR has had no review round.
-# Update it rather than re-read it if one lands.
-review_rounds: 0
+# repos/haalfi/remote-store/pulls/1005/commits --jq '.[] | .sha[0:7] + "  " +
+# (.commit.message | split("\n")[0])'`, counting the commits that exist because
+# of review feedback on PR #1005 — including the commit carrying this line. One
+# round has landed, so the value is 1. The first draft said 0 and said so on the
+# grounds that no round had happened yet, which is the spelling that went stale
+# on every trace in the previous PR; re-derive rather than re-read.
+review_rounds: 1
 phases:
   - id: verify
     name: Confirm the channel before claiming it
@@ -66,3 +72,51 @@ phases:
           a translation of that line but a different shape — install the package,
           then install the backend's dependency beside it. The README note says
           so once rather than mistranslating it a dozen times.
+      - file: README.md
+        section: "Installation (conda note)"
+        read_type: verify
+        extract: >-
+          The first draft of that note promised the recipe makes an unsupported
+          version "fail to solve rather than at runtime", wrote the per-backend
+          install as one package "and so on", and gave no version. All three were
+          wrong about the recipe conda-forge actually serves: `[azure]` is three
+          packages and stopping at one reproduces BUG-286; `tomli` is
+          unconstrained there and four floors are too low; and the channel is a
+          release behind PyPI. Writing the note from `packaging/conda-forge/recipe.yaml`
+          rather than from the published recipe is the whole error, and this
+          PR's own backlog bullet said so 1,800 lines away.
+        outcome: misleading
+
+  - id: verify_process
+    name: Sweep the release path
+    steps:
+      - file: CONTRIBUTING.md
+        section: "Release Phase 5"
+        read_type: gate
+        extract: >-
+          Two steps still ran on pre-merge conditions: one gated on
+          "until staged-recipes #32401 is merged", permanently satisfied and so
+          dead text to adjudicate mid-release, and one saying the remaining work
+          is to *verify* the bot opened a version-bump PR. The second is the
+          costly one — the bot rewrites version and sha256 only, so verifying and
+          merging ships the new release with the previous release's constraints.
+          Both rewritten to say amend.
+        outcome: misleading
+      - file: .claude/skills/release/SKILL.md
+        section: "Phase 5"
+        read_type: gate
+        extract: >-
+          Same claim, sharper: "once a feedstock exists, only the bot-PR
+          verification step remains". Following it at the 0.32.0 release would
+          have undone this whole line of work while every gate in the repo
+          stayed green.
+        outcome: misleading
+      - file: scripts/check_no_tracker_refs.py
+        section: "_EXTERNAL_PREFIXES"
+        read_type: verify
+        extract: >-
+          Swept the rest of the class (`rg 'staged-recipes|32401|add-remote-store'`):
+          every other hit is a historical record in sdd/, a docstring narrating
+          how the gate came to exist, or this allowlist entry, which is harmless
+          unused and still exercised by its own test. Only the two process files
+          carried a live pre-merge assumption.
