@@ -1884,7 +1884,13 @@ the recipe merged.
     instructions do not need, that **conda has no extras**: the install gives
     the core package only, the user names a backend's dependencies alongside it,
     and `run_constraints` constrain only the ones they install.
-  - Next, in order: release v0.32.0; then **one** PR against the feedstock
+  - **v0.32.0 shipped on 2026-09-13** and is on PyPI, so the first half of the
+    sequence below is done and only the feedstock PR remains. This repo's copy
+    of the recipe now carries version `0.32.0` and the sdist's real
+    `sha256` — `be46ad69…`, verified by downloading the 5,060,786-byte sdist
+    from `files.pythonhosted.org` and hashing it, not by copying the PyPI JSON
+    field alone — so the file is ready to copy out verbatim.
+  - Next, in order: ~~release v0.32.0~~; then **one** PR against the feedstock
     carrying the version, sha256 and this file's `run_constraints`. The
     `regro-cf-autotick-bot` opens a version-bump PR of its own once 0.32.0 is on
     PyPI and touches `version` and `sha256` only, so pushing the constraints onto
