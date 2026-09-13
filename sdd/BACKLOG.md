@@ -1855,10 +1855,19 @@ open item as neglect.
     **Unvalidated**: `rattler-build` is not available locally and
     `.github/workflows/conda-recipe.yml` fires only on master or an open PR, so
     the `--variant-config` wiring has never rendered. Watch that job on the PR.
-  - Next: merge the floor corrections, release v0.32.0, then update
-    `conda-forge/staged-recipes#32401` **once** with the new version, sha256 and
-    the copied-out recipe, rather than pushing them piecemeal at the reviewer.
-  - Blocked: waiting for conda-forge reviewer approval. When merged: add
+  - **`staged-recipes#32401` is merged.** The reviewer merged before the
+    corrected recipe could be posted, so what conda-forge received is the
+    pre-sweep file: version 0.30.0 (two releases behind), the four stale floors,
+    no `tomli` constraint and no `aiohttp`. None of it is dangerous — a
+    `run_constraint` binds only if the user installs that package too — but the
+    channel's first build will serve it.
+  - Next, in order: the conda-forge bot creates
+    `conda-forge/remote-store-feedstock` and its first build publishes 0.30.0;
+    release v0.32.0; then one PR against the **feedstock** carrying the version,
+    sha256 and this file's `run_constraints`. Submission is over — staged-recipes
+    is not the route for any further change.
+  - Blocked on the feedstock existing (checked: 404 as of this writing, and the
+    package is not yet on anaconda.org). When the channel serves a build: add
     `conda install -c conda-forge remote-store` to README.
 
 - [ ] **ID-229 — Evaluate porting to httpx 1.0 (lift the `<1.0` cap)**

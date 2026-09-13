@@ -1,11 +1,17 @@
 # conda-forge recipe for remote-store
 # v1 format (CEP-13 / rattler-build)
 #
-# Submission: copy this file to conda-forge/staged-recipes as
-#   recipes/remote-store/recipe.yaml, verbatim.  This file IS the submission,
-#   not a draft of it -- the copy on staged-recipes#32401 was hand-edited away
-#   from this one and silently lost the `tomli` constraint, so anything the
-#   reviewer asks for lands here first and is copied out, never the reverse.
+# Upstream source for `conda-forge/remote-store-feedstock`'s `recipe/`.
+# staged-recipes#32401 is merged, so submission is over: every further change
+# reaches conda-forge as a PR against the feedstock, and this file is what that
+# PR carries.  It is the source, not a draft -- the copy that went to
+# staged-recipes was hand-edited away from this one and silently lost the
+# `tomli` constraint, which is why edits land here first and are copied out,
+# never the reverse.
+#
+# What the merged recipe carries, and this file has since corrected: version
+# 0.30.0, `tenacity >=4.0`, `sqlalchemy >=2.0`, `urllib3 >=1.26.0`,
+# `dagster >=1.9`, no `tomli`, no `aiohttp`.
 #
 # `python_min` is deliberately NOT set here: conda-forge supplies it globally,
 # and hardcoding it would pin us to 3.10 after the ecosystem raises its
