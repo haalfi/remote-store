@@ -337,7 +337,11 @@ def render_docs() -> str:
         "records the last known-good resolution per extra in "
         "`infra/drift-locks/` and re-resolves weekly against the latest "
         "available versions (including pre-releases) to surface silent "
-        "transitive upgrades before they reach users.\n\n"
+        "transitive upgrades before they reach users. "
+        "Why the ranges are shaped that way, and what the guard does and "
+        "does not promise, is on "
+        "[Dependency and version policy]"
+        "(../explanation/dependency-policy.md).\n\n"
     )
     buf.write(
         "The table below is the projection of those lock files onto the "

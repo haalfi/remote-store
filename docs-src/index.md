@@ -94,6 +94,8 @@ Extras like `[s3]` or `[sftp]` bring in only the backend you need.
 Established libraries like `s3fs`, `paramiko`, and the Azure SDK do the
 real work: remote-store adapts, they execute.
 Backends delegate to the packages you'd pick yourself.
+See the [dependency and version policy](explanation/dependency-policy.md)
+for how those ranges are chosen and what stays stable across releases.
 
 ### Backend-native when possible
 

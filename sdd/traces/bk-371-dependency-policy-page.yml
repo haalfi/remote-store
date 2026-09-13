@@ -1,0 +1,192 @@
+id: BK-371
+title: "Publish the dependency and version policy as a user-facing page"
+trigger: >-
+  A user asked where the library explains its dependency management,
+  philosophy and measures to library users, and no single published artifact
+  did: the policy was split across seven places and the two load-bearing
+  halves (the reasoning behind version ranges, and the stability tiers) sat
+  in pyproject.toml comments and the contributor guide respectively.
+source_items:
+  - BK-371
+audience:
+  - user.site
+expected_ripples:
+  - sdd/backlogid.json
+  - docs-src/reference/tested-versions.md
+surprising_ripples:
+  # Not ripples of this diff, but of master moving under it: v0.32.0 plus
+  # BUG-283..286 landed while the branch was open, rotating both release
+  # windows and falsifying a claim the page had already made.
+  - CHANGELOG.md
+  - sdd/BACKLOG-DONE.md
+  - README.md
+# review_rounds is filled post-merge. Derivation to run then:
+# `git log --oneline origin/master..HEAD` minus the implementation commit,
+# counting the commit that carries this line.
+phases:
+  - id: orient
+    name: Orient — locate what already exists
+    steps:
+      - file: docs-src/reference/tested-versions.md
+        section: "(full)"
+        read_type: reference
+        extract: >-
+          The only user-facing statement of the range policy is its generated
+          one-paragraph preamble; the rest is per-extra version tables. Also
+          established the page is generated, so linking from it means editing
+          scripts/drift_check.py, not the .md
+      - file: CONTRIBUTING.md
+        section: "Dependency drift guard, Versioning"
+        read_type: reference
+        extract: >-
+          The substantive policy lives here — drift-guard mechanism, when-to-bump
+          table, stability tiers. Confirms the gap is placement, not absence
+      - file: pyproject.toml
+        section: "[project.optional-dependencies]"
+        read_type: reference
+        extract: >-
+          Floor-always / ceiling-by-exception convention plus the per-extra
+          rationale (paramiko deliberately uncapped, the single httpx ceiling).
+          This reasoning had no published home at all
+      - file: docs-src/index.md
+        section: "Design principles"
+        read_type: reference
+        extract: >-
+          Zero-dependencies-in-core and proven-libraries-underneath are stated
+          as teasers with nowhere to go next
+      - file: scripts/gen_pages.py
+        section: "module docstring"
+        read_type: verify
+        extract: >-
+          Confirm CONTRIBUTING.md is bridged onto the docs site, so the tiers
+          were reachable by users but filed under the contributor guide — the
+          distinction that made this a placement fix rather than a new fact
+  - id: classify
+    name: Classify — placement, structure, longevity
+    steps:
+      - file: sdd/AUTHORING.md
+        section: "Directory defaults, Where does my new file go?"
+        read_type: gate
+        extract: >-
+          docs-src/**/*.md defaults to docs-only, so the new page needs no
+          classification marker
+      - file: sdd/DOCUMENTATION.md
+        section: "1 (Diataxis placement), 2 (Content homes), Diataxis content drift prevention"
+        read_type: gate
+        extract: >-
+          "The reader wants to understand why" puts the page in explanation/;
+          the same table bars how-to instructions and install steps from it,
+          which is why the when-to-bump table stayed in CONTRIBUTING
+      - file: sdd/CONTENT-RULES.md
+        section: "Rules 2, 3, 4, 5"
+        read_type: gate
+        extract: >-
+          One copy per fact forces a move rather than a copy for the tiers
+          table; principle-over-enumeration and source-facts-stay-in-source
+          keep the page describing why ranges are shaped that way while
+          pyproject.toml stays authoritative for the ranges themselves
+      - file: sdd/CLAUDE-REFERENCE.md
+        section: "Pre-work index / Docs, Release & meta"
+        read_type: gate
+        extract: >-
+          Docs navigation row (per-section _nav.yml); Tracker ID in published
+          prose row — the pyproject rationale names backlog IDs and those must
+          not survive into the docs-src page; CHANGELOG entry and Backlog item
+          rows
+  - id: docs
+    name: Write and wire
+    steps:
+      - file: docs-src/explanation/security-model.md
+        section: "(full)"
+        read_type: reference
+        extract: >-
+          Nearest structural peer — an explanation page that states a policy and
+          defers to a repo-root file for the procedural half. Used for shape and
+          for the See-also convention
+      - file: docs-src/explanation/_nav.yml
+        section: "(full)"
+        read_type: reference
+        extract: >-
+          Ordering comment is literate; the new entry sits after Security Model
+          and before Contributing, and the comment was extended to say why
+      - file: scripts/drift_check.py
+        section: "render_docs"
+        read_type: gate
+        extract: >-
+          Its docstring states the template prose must stay free of tracker
+          references; the added link is a plain relative docs path for that
+          reason
+  - id: verify
+    name: Verify — ripples and gates
+    steps:
+      - file: sdd/CLAUDE-REFERENCE.md
+        section: "Detailed checklist / Docs navigation, CHANGELOG entry, Backlog item touched"
+        read_type: verify
+        extract: >-
+          Nav entry, one-line [Unreleased] stub within the prose budget, live
+          trace in the same PR
+      - file: scripts/check_changelog_unreleased.py
+        section: "module docstring, _MAX_ENTRY_CHARS"
+        read_type: verify
+        extract: >-
+          Stub shape is `- <ID>: <text>` with a prose budget; audience carries
+          user.site so the entry is required, not optional
+      - file: sdd/BACKLOG.md
+        section: "How this file works / Completing work, Assigning a new ID"
+        read_type: verify
+        extract: >-
+          Item ships closed, so it is authored directly into BACKLOG-DONE.md
+          § Unreleased; next free BK verified against sdd/backlogid.json and the
+          highest ID live in BACKLOG.md.
+          Retrospective: this item was renumbered twice, for two different
+          reasons, and neither was visible to any gate. BK-368 first — open PR
+          #1002 already held it on an unmerged branch, which is the ID-257
+          failure mode and was caught only because a PR-creation call happened
+          to list open PRs. Then BK-369, which was genuinely free when taken and
+          which master claimed for a different item in the five commits merged
+          while this branch sat open. `gen-backlogid --check` passed at every
+          step in both cases: it derives from `backlogid.json` and `BACKLOG.md`,
+          and neither sees an unmerged branch or an unfetched commit. Settled at
+          BK-371, above master's highest live BK.
+  - id: rebase
+    name: Rebase — master moved under the branch
+    steps:
+      - file: sdd/BACKLOG.md
+        section: "BK-369 (Nothing ever installs an extra at its declared floor)"
+        read_type: gate
+        extract: >-
+          Master merged BUG-283..286 and filed this item while the branch was
+          open. Its diagnosis falsified a sentence the page had already shipped:
+          the page told readers a floor is the known-good half and the range
+          above it the untested half, and the measured finding is the reverse —
+          every environment resolves to the newest release, so the top of the
+          range is exercised continuously and the floor by nothing. Five floors
+          were wrong, two for over a year. Rewrote the bullet, added a
+          "What a floor is worth" section, and added the guard's fourth limit.
+        outcome: ok
+      - file: pyproject.toml
+        section: "[project.optional-dependencies]"
+        read_type: verify
+        extract: >-
+          Re-checked every live claim the page makes against master's corrected
+          ranges. paramiko still uncapped with the same helper rationale (floor
+          3.0 -> 3.1), httpx <1.0 still the sole runtime ceiling, floor-always /
+          ceiling-by-exception unchanged. Only the floor-confidence claim needed
+          correcting; the central argument held.
+        outcome: ok
+      - file: sdd/CONDA-FORGE.md
+        section: "(full)"
+        read_type: reference
+        extract: >-
+          conda-forge became a supported channel in v0.32.0. Conda has no
+          extras, so the same promise is expressed as run_constraints that bound
+          rather than pull; added a short subsection saying so and deferring to
+          this runbook and the README caveat rather than restating them.
+      - file: sdd/CLAUDE-REFERENCE.md
+        section: "Pre-work index / Dependency"
+        read_type: verify
+        extract: >-
+          The row gained packaging/conda-forge/recipe.yaml run_constraints. This
+          diff changes no dependency range, only a comment, so the new ripple
+          does not attach — checked rather than assumed.
+        outcome: ok

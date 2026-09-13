@@ -68,6 +68,10 @@ Conda-Forge = "https://anaconda.org/conda-forge/remote-store"
 # weekly against the latest available transitive versions and diffs the
 # result against `infra/drift-locks/<extra>.txt`. Refresh a baseline after
 # a deliberate floor bump with `hatch run drift-check refresh-baseline <extra>`.
+# The user-facing statement of this policy — why a ceiling is the exception,
+# and what the guard does not promise — is published at
+# docs-src/explanation/dependency-policy.md. Changing the convention here
+# means changing that page too; it is what users hold us to.
 # -- Backend extras (pip install remote-store[s3], etc.) --
 s3 = ["s3fs>=2024.2.0"]
 s3-pyarrow = ["s3fs>=2024.2.0", "pyarrow>=14.0.0"]

@@ -19,7 +19,7 @@
   <a href="https://github.com/haalfi/remote-store/blob/master/LICENSE"><img src="https://img.shields.io/pypi/l/remote-store" alt="License"></a>
 </p>
 
-> **Beta.** The API is settling, but until 1.0, minor releases may include breaking changes. See the [changelog](https://github.com/haalfi/remote-store/blob/master/CHANGELOG.md) for what's new, and [open an issue](https://github.com/haalfi/remote-store/issues) if something breaks.
+> **Beta.** The API is settling, but until 1.0, minor releases may include breaking changes. See the [dependency and version policy](https://docs.remotestore.dev/stable/explanation/dependency-policy/) for what Beta promises and how dependency ranges are chosen, the [changelog](https://github.com/haalfi/remote-store/blob/master/CHANGELOG.md) for what's new, and [open an issue](https://github.com/haalfi/remote-store/issues) if something breaks.
 
 Most Python projects that deal with files eventually grow storage glue:
 small wrappers around local paths, S3 clients, SFTP connections, and cloud SDKs.
@@ -91,6 +91,10 @@ pip install "remote-store[yaml]"           # YAML config support
 pip install "remote-store[pydantic]"       # Pydantic BaseSettings config
 pip install "remote-store[toml]"           # TOML config on Python < 3.11
 ```
+
+Every extra declares a version floor; a ceiling is the exception. See the
+[dependency and version policy](https://docs.remotestore.dev/stable/explanation/dependency-policy/)
+for how those ranges are chosen, and what we do and do not verify about them.
 
 **conda has no extras.** `conda install -c conda-forge remote-store` installs the
 core package only; a backend's dependencies go alongside it, and an extra is

@@ -424,7 +424,13 @@ is authoritative.
 <a id="versioning"></a>
 ## Versioning
 
-This project follows [Semantic Versioning](https://semver.org/). Pre-1.0, minor bumps may contain breaking changes. The public API surface is everything in `remote_store.__init__.__all__`.
+This project follows [Semantic Versioning](https://semver.org/). Pre-1.0, minor bumps may contain breaking changes.
+
+What that promises a user — the stability tiers, the public API surface it
+covers, and why dependency ranges are shaped the way they are — is published
+at [`docs-src/explanation/dependency-policy.md`](docs-src/explanation/dependency-policy.md).
+This section covers the maintainer half: which change earns which bump, and
+how to make it.
 
 ### When to bump
 
@@ -438,11 +444,11 @@ This project follows [Semantic Versioning](https://semver.org/). Pre-1.0, minor 
 
 ### Stability tiers
 
-| Label | Meaning |
-|-------|---------|
-| **Alpha** (pre-0.11) | API may change freely between releases |
-| **Beta** (0.11+) | Core API (`Store`, `Registry`, `Backend`, models, errors) is stable. Breaking changes are documented in CHANGELOG and avoid gratuitous churn. Extensions (`ext.*`) may evolve more freely. |
-| **Stable** (1.0+) | Full SemVer: breaking changes require a major bump |
+The tier table moved to
+[`docs-src/explanation/dependency-policy.md` § Stability tiers](docs-src/explanation/dependency-policy.md#stability-tiers),
+which is where a user looks for it. It is authoritative there; this heading
+remains so existing references to `CONTRIBUTING.md § Stability tiers` still
+land somewhere useful.
 
 ### How to bump
 
