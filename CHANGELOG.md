@@ -7,6 +7,8 @@ This project follows [Semantic Versioning](https://semver.org/). Pre-1.0, minor 
 
 ## [Unreleased]
 
+- BUG-283: `[sftp]` floor corrected to `paramiko>=3.1`, where the `channel_timeout=` connect kwarg it uses actually starts; `paramiko==3.0.x` satisfied the old floor and failed at connect.
+
 ## [0.31.0] - 2026-09-08
 
 ### Added

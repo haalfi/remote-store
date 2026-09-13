@@ -1799,6 +1799,11 @@ open item as neglect.
   - Done: [recipe](../packaging/conda-forge/recipe.yaml),
     [conda-recipe workflow](../.github/workflows/conda-recipe.yml),
     staged-recipes PR `conda-forge/staged-recipes#32401` (CI green).
+  - Review round applied: `paramiko` and `pyarrow` floors raised, and the
+    `run_constraints` reasoning corrected — the strictest floor across the
+    extras is the sound single pin, not the loosest. The reviewer found the
+    `pyarrow` gap by reading `pyproject.toml` against the recipe, which nothing
+    here did; BK-368 is the gate that now does.
   - Blocked: waiting for conda-forge reviewer approval. When merged: add
     `conda install -c conda-forge remote-store` to README.
 

@@ -693,9 +693,15 @@ from construction and removes that failure class.
 
 **`[sftp]` extra now requires `paramiko>=3.0`:**
 
-The SFTP backend uses paramiko 3.0's `channel_timeout=` connect kwarg. Environments
+The SFTP backend uses the `channel_timeout=` connect kwarg. Environments
 pinned to `paramiko<3` must upgrade. `pip install "remote-store[sftp]"` resolves the
 correct version automatically; pinned `paramiko==2.x` will now conflict.
+
+This floor was one minor too low: the kwarg landed in paramiko 3.1.0, so
+`paramiko==3.0.x` satisfied the declared extra and still failed at connect with
+`TypeError: connect() got an unexpected keyword argument 'channel_timeout'`. The
+floor is `>=3.1` from the next release; a pinned `paramiko==3.0.x` must move to
+3.1 or later.
 
 **Azure HNS error types now match the canonical mapping:**
 

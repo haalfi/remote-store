@@ -220,7 +220,48 @@ if evidence changes; these are retired.
 
 ## Unreleased
 
-*(none)*
+- [x] **BUG-283 — The `[sftp]` extra's paramiko floor sat one minor below the API the backend calls**
+  spec: — · effort: S · audience: user.api, infra.test
+  `SFTPBackend._connect` passes `channel_timeout=` to `paramiko.SSHClient.connect`
+  (`src/remote_store/backends/_sftp.py:1869`). Paramiko's changelog puts that
+  keyword in **3.1.0** (2023-03-10), not 3.0.0: "Add an explicit
+  ``channel_timeout`` keyword argument to `paramiko.client.SSHClient.connect`".
+  BUG-204 lifted the floor from 2.2 and stopped at 3.0, so
+  `pip install "remote-store[sftp]"` resolved `paramiko==3.0.0` and then raised
+  `TypeError: connect() got an unexpected keyword argument 'channel_timeout'` on
+  the first connect — the exact failure BUG-204 was filed to close, one minor
+  narrower.
+  **Why every guard was green.** `TestSFTPParamikoVersionSurface` introspects the
+  *installed* paramiko, which is the newest release in CI and in every dev
+  environment. It proves the keyword exists at or above the floor and says
+  nothing about where the floor starts; no test read the declared specifier. The
+  new `tests/scripts/test_pyproject_paramiko_floor.py` holds that end, in the
+  shape `test_pyproject_httpx_cap.py` already established for a ceiling.
+  Found by a conda-forge reviewer on `conda-forge/staged-recipes#32401`, reading
+  the recipe against the API it constrains. Trace:
+  `sdd/traces/bug-283-paramiko-floor.yml`.
+
+- [x] **BK-368 — Nothing held the conda recipe's `run_constraints` to pyproject's extras**
+  spec: — · effort: S · audience: contributor.tooling, library.maintainer
+  `packaging/conda-forge/recipe.yaml` restates every optional dependency because
+  conda has no extras: the package installs whole, and a `run_constraints` entry
+  is the only thing keeping a user from pairing remote-store with a version it
+  does not work with. The file said "keep this exhaustive … the ones nobody
+  enumerates are the ones that drift" and nothing enforced it —
+  `.github/workflows/conda-recipe.yml` runs `rattler-build --render-only`, which
+  validates syntax and never opens `pyproject.toml`.
+  **It had drifted, and a reviewer is what caught it**: `pyarrow >=12.0.0`
+  against an `s3-pyarrow` extra needing `>=14.0.0`, plus the Dagster Parquet
+  serializer (`docs-src/guides/dagster.md`) at `>=14.0`. Two surfaces
+  installable broken. The recipe's own comment argued for the **loosest** floor,
+  which is backwards: a `run_constraints` entry asserts compatibility, so the
+  strictest floor is the sound single pin. staged-recipes review happens once, so
+  that reviewer does not recur; `scripts/check_conda_recipe_pins.py` (in
+  `hatch run lint`) is what replaces them, deriving the expected set from
+  `pyproject.toml` and failing on a missing, stray, or weaker entry. The
+  **Dependency** ripple-check rows now name the recipe, in both presentations —
+  neither did, which is how the recipe went un-swept on every floor change since
+  it was written. Trace: `sdd/traces/bk-368-conda-recipe-pin-gate.yml`.
 
 ## v0.31.0
 

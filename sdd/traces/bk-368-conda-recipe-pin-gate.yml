@@ -1,0 +1,95 @@
+id: BK-368
+title: "Nothing held the conda recipe's run_constraints to pyproject's extras"
+trigger: >-
+  A conda-forge reviewer on staged-recipes#32401 found pyarrow pinned at
+  >=12.0.0 while the s3-pyarrow extra needs >=14.0.0. The recipe's comment
+  claimed the loosest floor was correct and asked the reader to keep the list
+  exhaustive; no mechanism checked either claim.
+source_items:
+  - BK-368
+  - ID-018
+audience:
+  - contributor.tooling
+  - library.maintainer
+co_shipped_items:
+  - BUG-283
+expected_ripples:
+  - sdd/backlogid.json
+  - sdd/GATE-INVENTORY.md
+surprising_ripples:
+  - sdd/CLAUDE-REFERENCE.md
+# Derivation, per the schema's review_rounds clause: `git log --oneline
+# origin/master..HEAD` on this branch, counting commits that exist because of
+# review feedback — including the commit carrying this line. First push of the
+# work, so none is review-driven. Note the conda-forge review that started it is
+# review on a different repo's PR, not on this branch's.
+review_rounds: 0
+phases:
+  - id: orient
+    name: Orient
+    steps:
+      - file: packaging/conda-forge/recipe.yaml
+        section: "requirements.run_constraints"
+        read_type: gate
+        extract: >-
+          The comment argued the loosest floor (>=12.0.0) is the correct single
+          pin. It is backwards: a run_constraint asserts compatibility, so a
+          floor below what any shipped surface needs leaves a broken combination
+          installable. The strictest floor is the sound pin.
+        outcome: misleading
+      - file: pyproject.toml
+        section: "[project.optional-dependencies]"
+        read_type: gate
+        extract: "The authoritative per-extra ranges the recipe restates"
+      - file: .github/workflows/conda-recipe.yml
+        section: "(full)"
+        read_type: verify
+        extract: >-
+          rattler-build --render-only validates syntax and never opens
+          pyproject.toml, so nothing in CI could have caught the drift
+
+  - id: design
+    name: Design the gate
+    steps:
+      - file: sdd/DRIFT-RULES.md
+        section: "Rules 2, 3, 4, 5, 7"
+        read_type: gate
+        extract: >-
+          Derive the enumeration from pyproject (3), declare pyproject as the
+          governing side in writing (4), localize to the package (2), default
+          into lint (5), state the bounds and the Drift-gate:: block (7)
+      - file: scripts/check_backend_order.py
+        section: "(full)"
+        read_type: reference
+        extract: >-
+          The precedent for parsing recipe.yaml textually, and the docstring
+          shape a gate in this repo carries
+      - file: scripts/gen_features.py
+        section: "_EXCLUDE_EXTRAS"
+        read_type: reference
+        extract: >-
+          The dev/build extras are already enumerated once; import that constant
+          rather than restating which extras are user-facing
+
+  - id: verify
+    name: Verify
+    steps:
+      - file: sdd/DRIFT-RULES.md
+        section: "Rule 7 (seed known discrepancies)"
+        read_type: verify
+        extract: >-
+          tests/scripts/test_check_conda_recipe_pins.py seeds one case per
+          claimed failure mode — weaker floor, missing entry, stray entry,
+          dropped ceiling, marker-gated dependency — plus the real tree
+      - file: sdd/GATE-INVENTORY.md
+        section: "(generated)"
+        read_type: verify
+        extract: "gen_gate_inventory.py --check passes; the new mechanism appears with its declared pair"
+      - file: sdd/CLAUDE-REFERENCE.md
+        section: "Ripple-check / Dependency"
+        read_type: verify
+        extract: >-
+          Neither ripple presentation named the recipe, so a floor change swept
+          every artifact except the one that restates floors. Both now do; the
+          parity gate is unaffected because the trigger set is unchanged.
+        outcome: misleading

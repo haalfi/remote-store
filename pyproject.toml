@@ -66,12 +66,16 @@ Issues = "https://github.com/haalfi/remote-store/issues"
 # -- Backend extras (pip install remote-store[s3], etc.) --
 s3 = ["s3fs>=2024.2.0"]
 s3-pyarrow = ["s3fs>=2024.2.0", "pyarrow>=14.0.0"]
-# paramiko: floor at >=3.0 (BUG-204: channel_timeout API surface).
+# paramiko: floor at >=3.1 (BUG-283, correcting BUG-204's >=3.0). The
+# `channel_timeout=` connect kwarg `_sftp.py` passes unconditionally landed in
+# paramiko 3.1.0, not 3.0.0 — see the upstream changelog entry quoted in
+# tests/scripts/test_pyproject_paramiko_floor.py, which guards the floor itself
+# (the installed-signature guard in tests/backends/sftp/test_config.py cannot).
 # Deliberately NO upper bound. paramiko 5 dropped ssh-rsa from defaults;
 # we address that via SFTPUtils.enable_ssh_rsa_compat() and the diagnostic
 # scan_host_algorithms() rather than capping the library for every consumer.
 # Full rationale: sdd/research/research-bk-198-paramiko-ssh-rsa-empirical.md § 5.
-sftp = ["paramiko>=3.0", "tenacity>=4.0"]
+sftp = ["paramiko>=3.1", "tenacity>=4.0"]
 azure = ["azure-storage-file-datalake>=12.16.0", "azure-identity>=1.0.0"]
 # graph (ID-127, ADR-0021): direct REST over httpx + msal for token
 # acquisition; platformdirs resolves the MSAL token-cache path (loaded lazily
@@ -230,7 +234,7 @@ env.GITHUB_ACTIONS.installer = { value = "pip", if = ["true"] }
 # full lint/typecheck/test gauntlet. CI runs this same target via `uvx hatch run
 # preflight` in the `lint` job (BK-269), so the script list is the single source.
 preflight = ["python scripts/gen_graph.py --check", "python scripts/check_api_docs.py", "python scripts/check_docstring_parity.py", "python scripts/gen_features.py --check", "python scripts/gen_graph_viz.py --check", "python scripts/gen_adr_digest.py --check", "python scripts/drift_check.py render-docs --check"]
-lint = ["ruff check src/ tests/ examples/ scripts/", "python scripts/check_test_assertions.py tests", "python scripts/check_mock_spec.py tests", "python scripts/check_test_placement.py tests", "python scripts/check_tla_no_emdash.py", "python scripts/check_formal_trace.py", "python scripts/check_capability_parity.py", "python scripts/check_spec_marks.py", "python scripts/check_docs_framework.py", "python scripts/gen_backlogid.py --check", "python scripts/check_rst_roles.py", "python scripts/check_infra_settings.py", "python scripts/check_no_tracker_refs.py", "python scripts/check_breaking_migration_link.py", "python scripts/check_ci_inventory.py", "python scripts/check_traces.py", "python scripts/check_readthedocs_python.py", "python scripts/check_backend_order.py", "python scripts/check_ripple_parity.py", "python scripts/check_changelog_unreleased.py", "python scripts/check_custom_backend_guide.py", "python scripts/check_ci_full_matrix.py", "python scripts/check_dafny_twin_parity.py", "python scripts/check_sdd_index.py", "python scripts/gen_gate_inventory.py --check"]
+lint = ["ruff check src/ tests/ examples/ scripts/", "python scripts/check_test_assertions.py tests", "python scripts/check_mock_spec.py tests", "python scripts/check_test_placement.py tests", "python scripts/check_tla_no_emdash.py", "python scripts/check_formal_trace.py", "python scripts/check_capability_parity.py", "python scripts/check_spec_marks.py", "python scripts/check_docs_framework.py", "python scripts/gen_backlogid.py --check", "python scripts/check_rst_roles.py", "python scripts/check_infra_settings.py", "python scripts/check_no_tracker_refs.py", "python scripts/check_breaking_migration_link.py", "python scripts/check_ci_inventory.py", "python scripts/check_traces.py", "python scripts/check_readthedocs_python.py", "python scripts/check_backend_order.py", "python scripts/check_conda_recipe_pins.py", "python scripts/check_ripple_parity.py", "python scripts/check_changelog_unreleased.py", "python scripts/check_custom_backend_guide.py", "python scripts/check_ci_full_matrix.py", "python scripts/check_dafny_twin_parity.py", "python scripts/check_sdd_index.py", "python scripts/gen_gate_inventory.py --check"]
 format = "ruff format src/ tests/ examples/ scripts/"
 format-check = "ruff format --check src/ tests/ examples/ scripts/"
 typecheck = "mypy src/ examples/"

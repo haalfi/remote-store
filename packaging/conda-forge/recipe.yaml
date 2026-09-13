@@ -35,20 +35,31 @@ requirements:
     # installed automatically; each is version-constrained if the user installs
     # it alongside remote-store.  Keep this exhaustive: an extra whose floor is
     # absent here is silently unconstrained in conda, and the ones nobody
-    # enumerates are the ones that drift.
+    # enumerates are the ones that drift.  `hatch run lint` runs
+    # scripts/check_conda_recipe_pins.py, which derives the expected set from
+    # pyproject.toml and fails on a missing, extra, or weaker entry (BK-368).
     #
     # -- Backend extras --
     - s3fs >=2024.2.0
-    - paramiko >=3.0
+    - paramiko >=3.1
     - tenacity >=4.0
     # Three extras use pyarrow -- `arrow` / `sql-query` are >=12.0.0 and
     # `s3-pyarrow` is >=14.0.0 -- and conda allows one pin per package, not one
-    # per extra.  None carries a ceiling: BUG-232 verified the shared
-    # arrow/parquet/S3-PyArrow surface against pyarrow 25 and lifted the earlier
-    # `<25` cap on `arrow` / `sql-query`, so all three now agree on an unbounded
-    # `>=` and the loosest floor (>=12.0.0) is the correct single pin.
-    # pyproject.toml is the source of truth for per-extra ranges.
-    - pyarrow >=12.0.0
+    # per extra.  The **strictest** floor is the sound single pin, not the
+    # loosest: a run_constraint asserts "remote-store works with these versions
+    # of pyarrow", and >=12.0.0 asserts that for a S3-PyArrow surface that needs
+    # 14.  Under-constraining leaves a broken combination installable;
+    # over-constraining costs an `arrow`-only user pyarrow 12/13, both 2023
+    # builds well below what conda-forge ships.  The Dagster Parquet serializer
+    # (docs-src/guides/dagster.md) needs >=14.0 too, so >=12.0.0 left two
+    # surfaces uncovered, not one.  Raised on review of
+    # conda-forge/staged-recipes#32401.
+    # None carries a ceiling: BUG-232 verified the shared arrow/parquet/
+    # S3-PyArrow surface against pyarrow 25 and lifted the earlier `<25` cap on
+    # `arrow` / `sql-query`, so all three agree on an unbounded `>=`.
+    # pyproject.toml is the source of truth for per-extra ranges;
+    # scripts/check_conda_recipe_pins.py holds this file to it.
+    - pyarrow >=14.0.0
     - azure-storage-file-datalake >=12.16.0
     - azure-identity >=1.0.0
     - httpx >=0.24.0,<1.0

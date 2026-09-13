@@ -399,7 +399,7 @@ and reconciles a single rolling GitHub issue. The workflow never edits
 `pyproject.toml` and never opens a pin-update PR — it is early warning,
 not automated remediation.
 
-When you deliberately bump a floor (e.g. `paramiko>=3.0` after a
+When you deliberately bump a floor (e.g. `paramiko>=3.1` after a
 known-breaking upstream release), refresh the baseline in the same PR:
 
 ```
