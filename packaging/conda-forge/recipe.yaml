@@ -2,12 +2,18 @@
 # v1 format (CEP-13 / rattler-build)
 #
 # Submission: copy this file to conda-forge/staged-recipes as
-#   recipes/remote-store/recipe.yaml
-# then open a PR against https://github.com/conda-forge/staged-recipes
+#   recipes/remote-store/recipe.yaml, verbatim.  This file IS the submission,
+#   not a draft of it -- the copy on staged-recipes#32401 was hand-edited away
+#   from this one and silently lost the `tomli` constraint, so anything the
+#   reviewer asks for lands here first and is copied out, never the reverse.
+#
+# `python_min` is deliberately NOT set here: conda-forge supplies it globally,
+# and hardcoding it would pin us to 3.10 after the ecosystem raises its
+# minimum.  `packaging/conda-forge/variants.yaml` supplies it for our own
+# `Conda Recipe` workflow, which renders this file standalone.
 
 context:
   version: "0.31.0"
-  python_min: "3.10"
 
 package:
   name: remote-store
@@ -19,7 +25,9 @@ source:
 
 build:
   noarch: python
-  script: python -m pip install . --no-deps --no-build-isolation -vv
+  # `${{ PYTHON }}`, not a bare `python`: conda-forge's convention, and what the
+  # submitted copy on staged-recipes#32401 already carries.
+  script: ${{ PYTHON }} -m pip install . --no-deps --no-build-isolation -vv
   number: 0
 
 requirements:
@@ -96,7 +104,12 @@ tests:
         - remote_store.ext.glob
         - remote_store.ext.transfer
       pip_check: true
-      python_version: ${{ python_min }}.*
+      # Two entries, matching the submitted copy: the declared minimum, and
+      # whatever the default Python is, so a noarch package is exercised at both
+      # ends rather than only at the floor.
+      python_version:
+        - ${{ python_min }}.*
+        - "*"
 
 about:
   homepage: https://remotestore.dev

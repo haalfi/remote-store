@@ -1842,17 +1842,22 @@ open item as neglect.
     here did; BK-368 is the gate that now does. Following that thread found four
     more wrong floors and a missing dependency (BUG-283 through BUG-286), all
     shipping in v0.32.0.
-  - **The submitted recipe and this one have diverged**, beyond the pins: the
-    fork carries conda-forge conventions (`${{ PYTHON }}` in the build script, a
-    two-value `tests.python_version`, `python_min` left to the global) that this
-    copy has never had, and this copy is a version ahead. Nothing detects that —
-    BK-368 gates this file against `pyproject.toml` and stops there — so the next
-    copy-out silently reverts whatever the reviewer asked for. Reconcile before
-    the next submission; a second gate is the open question, and it cannot be
-    written until the two copies agree once.
+  - **The two copies had diverged, and the divergence cost a constraint.** The
+    submitted file was hand-edited away from this one: it picked up conda-forge
+    conventions this copy lacked (`${{ PYTHON }}`, a two-value
+    `tests.python_version`, `python_min` left to the global) and dropped
+    `tomli >=1.1.0` with the comment explaining it, leaving the `toml` extra
+    unconstrained for conda users. Nothing detects that — BK-368 gates this file
+    against `pyproject.toml`, not against what was submitted.
+    All three conventions are now absorbed here and `packaging/conda-forge/variants.yaml`
+    supplies `python_min` to our own render, so this file is the submission
+    rather than a draft of it and the next update is a verbatim copy-out.
+    **Unvalidated**: `rattler-build` is not available locally and
+    `.github/workflows/conda-recipe.yml` fires only on master or an open PR, so
+    the `--variant-config` wiring has never rendered. Watch that job on the PR.
   - Next: merge the floor corrections, release v0.32.0, then update
     `conda-forge/staged-recipes#32401` **once** with the new version, sha256 and
-    constraints, rather than pushing them piecemeal at the reviewer.
+    the copied-out recipe, rather than pushing them piecemeal at the reviewer.
   - Blocked: waiting for conda-forge reviewer approval. When merged: add
     `conda install -c conda-forge remote-store` to README.
 

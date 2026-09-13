@@ -1,0 +1,12 @@
+# Variant config for rendering recipe.yaml OUTSIDE conda-forge.
+#
+# conda-forge supplies `python_min` from its own global pinning, so the recipe
+# must not define it: hardcoding the value in `context:` would override the
+# global and keep us on 3.10 after conda-forge raises the ecosystem minimum.
+# That leaves our own `Conda Recipe` workflow, which renders the recipe
+# standalone with no conda-forge pinning in scope, with an undefined variable.
+#
+# This file closes that gap without changing the artifact we submit. Keep the
+# value equal to `requires-python` in pyproject.toml.
+python_min:
+  - "3.10"
