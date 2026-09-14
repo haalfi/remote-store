@@ -1919,14 +1919,21 @@ working, and quietly describing the library as something it is not.
   opt-in (**not** the narrowest option it first appears: a four-name `about`
   block never reaches a membership test while `_MIN_BACKENDS` is 6, so this
   needs the floor lifted too, which widens it to every enumeration the gate
-  currently ignores); or enable the `bot.` requirements feature in the feedstock's
-  `conda-forge.yml`, which conda-forge's own maintainer docs describe as able to
-  verify or update a Grayskull-compatible recipe's requirements — free, upstream,
-  and the only option needing no code here, but it is **experimental by their own
-  description**, covers `requirements` only, and so would not have caught the
-  `about` drift that produced this item. Evaluate it first anyway: if it holds the
-  pins, the remaining gap is small enough to change which of the other three is
-  worth building. Discovered by ID-018, which is now closed
+  currently ignores). **The upstream option is not one**, contrary to an earlier
+  draft of this bullet: conda-forge's maintainer guide describes a bot feature
+  that verifies or updates a Grayskull-compatible recipe's requirements, and that
+  draft listed it as free, needing no code here, and worth evaluating first.
+  Reading the schema rather than the prose settles it. `conda-smithy`'s
+  `conda-forge.yml` model delegates `bot` to the bot's own
+  `cf_tick_schema.json`, whose eight keys include no `requirements` and no
+  `requirement_types`; the feature is `bot.inspection`, an enum of `hint`,
+  `hint-all`, `hint-grayskull`, `update-all`, `update-grayskull` and `disabled`,
+  described as "Method for generating hints or updating recipe". It acts on the
+  recipe's **`requirements`** — and ours holds one entry, `python`. All 19
+  dependency floors live in `run_constraints`, which it does not touch, and the
+  `about` block is neither. `bot.run_deps_from_wheel` has the same scope. So the
+  option has nothing to act on here, and evaluating it first would spend the
+  effort for certain nothing. Discovered by ID-018, which is now closed
   ([BACKLOG-DONE.md](BACKLOG-DONE.md)) — this item outlived it, which is why it
   was filed separately rather than folded in.
 
