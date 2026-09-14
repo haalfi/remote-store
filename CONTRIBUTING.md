@@ -575,26 +575,12 @@ _Release template: title = version, description = "What's Changed" header whose 
 - [ ] Conda recipe: fetch sha256 from PyPI (`curl -s https://pypi.org/pypi/remote-store/X.Y.Z/json | python -c "import sys,json; d=json.load(sys.stdin); print([f['digests']['sha256'] for f in d['urls'] if f['filename'].endswith('.tar.gz')][0])"`) and update `source.sha256` in `packaging/conda-forge/recipe.yaml`
 - [ ] Commit `packaging/conda-forge/recipe.yaml` sha256 update in this repo via a branch and PR
 - [ ] conda-forge: get `version`, `sha256` **and the `run_constraints` block from
-      `packaging/conda-forge/recipe.yaml`** onto `conda-forge/remote-store-feedstock`.
-      Diff the feedstock's `recipe/recipe.yaml` against ours first — the two copies
-      diverged once and it silently cost both a constraint and the whole `about` block.
-      `regro-cf-autotick-bot` updates the `source` section and version only, so a bot PR
-      merged untouched ships the previous release's constraints with the new code, which
-      is how a corrected floor silently fails to reach conda users. Verifying the bot PR
-      exists is not the step; carrying the constraints is.
-      **Never push a branch to the feedstock itself, though a maintainer can.**
-      conda-forge publishes feedstock branches automatically, so a branch push uploads to
-      anaconda.org before anyone reviews it — and conda-forge packages are immutable, so a
-      bad upload cannot be edited or deleted, only marked broken. Set `build.number` to `0`
-      when the version changes and `+1` when it does not and only recipe metadata moves.
-      Whether the bot has fired shows on conda-forge's [version-update
-      status](https://conda-forge.org/status/#version_updates); it can take hours. Two safe
-      routes, per conda-forge's `docs/maintainer/updating_pkgs.md`:
-      - **Fork** the feedstock to your own account, branch there, PR from the fork. This is
-        conda-forge's documented default for every recipe update
-      - **Ride the bot's PR** when one is open, so version and constraints land in one
-        review: add its fork as a remote (`git remote add regro-cf-autotick-bot
-        https://github.com/regro-cf-autotick-bot/remote-store-feedstock.git`), fetch, check
-        out the PR's branch and push back to it. Maintainers can push there directly, so
-        this needs nothing enabled on the PR; `hub pr checkout <N>` sets the same remote up
+      `packaging/conda-forge/recipe.yaml`** onto `conda-forge/remote-store-feedstock`,
+      following [`sdd/CONDA-FORGE.md`](sdd/CONDA-FORGE.md), which owns the routes, the
+      rules and the walkthrough. Two things decide whether this step is done: the
+      constraints are in the PR (a `regro-cf-autotick-bot` PR merged untouched ships the
+      previous release's constraints with the new code), and the branch is **not** on the
+      feedstock itself (feedstock branches publish automatically, and conda-forge packages
+      are immutable). Whether the bot has fired shows on conda-forge's [version-update
+      status](https://conda-forge.org/status/#version_updates); it can take hours
 - [ ] Announce if applicable (tracking issues, users)

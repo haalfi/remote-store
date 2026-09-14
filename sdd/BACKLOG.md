@@ -1962,10 +1962,12 @@ the recipe merged.
   see because the copy lives in another repository. It went unnoticed from the
   submission (2026-09-13 merge) until the v0.32.0 copy-out diff, and only because
   a human pasted the file in.
-  Today's entire defence is one prose line in [`CONTRIBUTING.md` § Release
-  Phase 5](../CONTRIBUTING.md#release): diff the feedstock's copy against ours
-  before opening the PR. That is a checklist step, so it holds exactly as long as
-  the person working the checklist does it.
+  Today's entire defence is [`sdd/CONDA-FORGE.md`](CONDA-FORGE.md) Rule 3: diff
+  the feedstock's copy against ours before opening the PR. Writing the runbook
+  made that rule findable and stated why it exists, which is worth something —
+  but it is still a human step, so it holds exactly as long as the person doing
+  the release performs it. That is the gap this item closes, and the runbook
+  narrows it rather than closing it.
   Fix shape is open deliberately, and the choice is the work: fetch the
   feedstock's raw recipe in CI and diff it (catches everything, adds a network
   dependency and a cross-repo failure this repo cannot fix); or generate the
