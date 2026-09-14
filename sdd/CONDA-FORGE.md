@@ -54,12 +54,13 @@ Upstream sources, which govern where they disagree with this page:
    Comment `@conda-forge-admin, please rerender` on the PR; do not hand-edit a
    generated file. The observable is a `@conda-forge-admin` commit on the branch
    touching `README.md`.
-   This case is **ours, not upstream's**: conda-forge's own "when to rerender"
-   list covers build configuration — platform skips, `conda-forge.yml`, build
-   matrix, pinning — and does not mention `about`. The basis here is direct
-   observation at v0.32.0, where the rerender regenerated `README.md` with the
-   new summary and changed nothing else. Requesting one costs nothing either
-   way, and the PR template asks about it regardless.
+   This case is **ours, not upstream's**: conda-forge's
+   [rerender how-to](https://conda-forge.org/docs/how-to/basics/rerender/) lists
+   when a rerender is needed for the *build* — platform skips,
+   `conda-forge.yml`, build matrix, pinning — and does not mention `about`. The
+   basis here is direct observation at v0.32.0, where the rerender regenerated
+   `README.md` with the new summary and changed nothing else. Requesting one
+   costs nothing either way, and the PR template asks about it regardless.
 
 6. <a id="no-tracker-ids"></a>**No internal coordinate reaches the feedstock copy** — not only backlog
    IDs, but spec section IDs, ADR numbers and PR references, all of which point
