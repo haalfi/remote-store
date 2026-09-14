@@ -65,12 +65,25 @@ Upstream sources, which govern where they disagree with this page:
 6. <a id="no-tracker-ids"></a>**No internal coordinate reaches the feedstock copy** — not only backlog
    IDs, but spec section IDs, ADR numbers and PR references, all of which point
    somewhere a conda-forge reader cannot follow. Carry the claim in prose
-   instead. Check the far copy against the structural shape
-   `check_no_tracker_refs` uses (`_TRACKER_RE` in that script, plus its `spec
-   NNN` and `PR #NNN` forms), expecting no match; an enumerated prefix list is
-   the wrong instrument here, because it passes the next `BE-008` or `GR-033`
-   somebody cites. That gate cannot run this itself: it reads no YAML, and
-   `packaging/` is outside every root it scans.
+   instead. `check_no_tracker_refs` cannot run this itself — it reads no YAML,
+   and `packaging/` is outside every root it scans — so borrow its two halves,
+   the structural pattern **and** the filter that decides which hits count.
+   Reproducing the pattern alone would flag `UTF-8`, `ISO-8601` and `RFC-3986`;
+   an enumerated prefix list instead would pass the next `BE-008` or `GR-033`.
+   From this repo's root, against the feedstock checkout:
+
+   ```bash
+   python -c "
+   import sys; sys.path.insert(0, 'scripts')
+   from check_no_tracker_refs import _TRACKER_RE, _is_internal_tracker
+   t = open('<feedstock>/recipe/recipe.yaml').read()
+   print([m.group(0) for m in _TRACKER_RE.finditer(t)
+          if _is_internal_tracker(m.group(1), m.group(2))] or 'clean')
+   "
+   ```
+
+   Expect `clean`. `CEP-13` in the header block is a known false positive and
+   does not reach the copy, because Walkthrough step 3 replaces that block.
 
 7. <a id="what-the-gates-do-not-cover"></a>**Know what each mechanism proves.**
    - `check_conda_recipe_pins` compares **this repo's** recipe with
@@ -145,7 +158,7 @@ observable is the commit appearing on the bot's PR with its CI re-running.
    does not ship. Below `context:` the copy is verbatim except the comments
    [Rule 6](#no-tracker-ids) requires stripping.
 4. Diff the two copies ([Rule 3](#diff-the-copies)) and run
-   [Rule 6](#no-tracker-ids)'s grep on the far copy.
+   [Rule 6](#no-tracker-ids)'s command against the far copy, expecting `clean`.
 5. Commit from a local clone, not through the GitHub API, whose commits are
    unverified. Push to the fork, or to the bot's branch.
 6. Open the PR against `conda-forge/remote-store-feedstock` and fill the

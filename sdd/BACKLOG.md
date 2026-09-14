@@ -1928,12 +1928,20 @@ working, and quietly describing the library as something it is not.
   `cf_tick_schema.json`, whose eight keys include no `requirements` and no
   `requirement_types`; the feature is `bot.inspection`, an enum of `hint`,
   `hint-all`, `hint-grayskull`, `update-all`, `update-grayskull` and `disabled`,
-  described as "Method for generating hints or updating recipe". It acts on the
-  recipe's **`requirements`** — and ours holds one entry, `python`. All 19
-  dependency floors live in `run_constraints`, which it does not touch, and the
-  `about` block is neither. `bot.run_deps_from_wheel` has the same scope. So the
-  option has nothing to act on here, and evaluating it first would spend the
-  effort for certain nothing. Discovered by ID-018, which is now closed
+  described as "Method for generating hints or updating recipe". Schema read
+  2026-09-14 from
+  `https://raw.githubusercontent.com/conda-forge/conda-forge-bot/refs/heads/main/conda_forge_tick/cf_tick_schema.json`,
+  which is the `$ref` `conda-smithy`'s own model points `bot` at; both figures
+  above come from that file rather than from prose, and both will move if
+  upstream edits it.
+  It acts on the recipe's **`requirements`**, which here is four entries across
+  two sections — `run` holds only `python`, `host` holds `python`, `pip` and
+  `hatchling` — and Grayskull-based inspection reads `host` as well as `run`,
+  so that surface is not empty. It is simply not where anything drifts: all 19
+  dependency floors live in `run_constraints`, which inspection does not touch,
+  and the `about` block is neither. `bot.run_deps_from_wheel` has the same
+  scope. So the option cannot reach this item's gap, and evaluating it first
+  would spend the effort for certain nothing. Discovered by ID-018, which is now closed
   ([BACKLOG-DONE.md](BACKLOG-DONE.md)) — this item outlived it, which is why it
   was filed separately rather than folded in.
 

@@ -28,15 +28,19 @@ discovery_followups:
   # data; aggregators key on filename, so omitting it here read as though this
   # PR discovered nothing.
   - BK-370
-# Derivation, per the schema's review_rounds clause. Stated as a re-runnable
-# rule rather than a commit list, because a list goes stale on the next push
-# and this one already did twice: across the PRs this trace has shipped in,
-# count each commit whose subject is `fix: address PR #<n> review`, plus any
-# later commit made in response to a review round. #1005 contributed two;
-# #1009 has contributed `1dd5e57`, and the commit carrying this line is its
-# second round. The three commits between them (`9ba2b08`, `a7e95a4`,
-# `ead6011`) answered user requests rather than review, and do not count.
-review_rounds: 4
+# Derivation, per the schema's review_rounds clause. A re-runnable rule with a
+# single mechanical discriminator, because the two spellings before it both
+# went stale: a commit list on the next push, and then a rule whose second
+# clause turned on *intent* ("made in response to a review"), which nothing in
+# the repo records and no later reader can apply. Count commits whose subject
+# is `fix: address PR #<n> review`, across every PR this trace has shipped in:
+#   gh api repos/haalfi/remote-store/pulls/<n>/commits \
+#     --jq '[.[] | (.commit.message|split("\n")[0])
+#            | select(startswith("fix: address PR"))] | length'
+# #1005 returns 2 and #1009 returns 2 before this commit, which is a third on
+# #1009 and counts itself per the schema's "including the commit carrying the
+# line". 2 + 3 = 5.
+review_rounds: 5
 phases:
   - id: verify
     name: Confirm the channel before claiming it
