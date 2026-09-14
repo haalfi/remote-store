@@ -22,13 +22,25 @@ surprising_ripples:
   # changed", which is what makes these two worth the field.
   - CONTRIBUTING.md
   - .claude/skills/release/SKILL.md
-# Derivation, per the schema's review_rounds clause: `gh api
-# repos/haalfi/remote-store/pulls/1005/commits --jq '.[] | .sha[0:7] + "  " +
-# (.commit.message | split("\n")[0])'` returns 7d69f4a (implements, does not
-# count) and 60ccb12 (round 1). The commit carrying this line is round 2, so the
-# value is 2. Re-derive on every round rather than re-reading the number: the
-# stale spelling is the one that said 0 "because no round had happened yet".
-review_rounds: 2
+discovery_followups:
+  # Born during this trace's `close` phase — the v0.32.0 copy-out, which is the
+  # work this trace records. Also listed on the predecessor trace as cascade
+  # data; aggregators key on filename, so omitting it here read as though this
+  # PR discovered nothing.
+  - BK-370
+# Derivation, per the schema's review_rounds clause. A re-runnable rule with a
+# single mechanical discriminator, because the two spellings before it both
+# went stale: a commit list on the next push, and then a rule whose second
+# clause turned on *intent* ("made in response to a review"), which nothing in
+# the repo records and no later reader can apply. Count commits whose subject
+# is `fix: address PR #<n> review`, across every PR this trace has shipped in:
+#   gh api repos/haalfi/remote-store/pulls/<n>/commits \
+#     --jq '[.[] | (.commit.message|split("\n")[0])
+#            | select(startswith("fix: address PR"))] | length'
+# #1005 returns 2 and #1009 returns 2 before this commit, which is a third on
+# #1009 and counts itself per the schema's "including the commit carrying the
+# line". 2 + 3 = 5.
+review_rounds: 5
 phases:
   - id: verify
     name: Confirm the channel before claiming it
@@ -170,3 +182,80 @@ phases:
           and leaving it is not available here, since the egress policy blocks
           api.anaconda.org and GitHub access is scoped to this repo. Derivation
           added inline; the feedstock diff moves to the release checklist.
+
+  - id: close
+    name: Carry it out to the feedstock and close
+    steps:
+      - file: sdd/CONDA-FORGE.md
+        section: "(new)"
+        read_type: reference
+        extract: >-
+          Written while the knowledge was verified rather than recalled. Every
+          rule is something this thread paid for: two of them correct errors
+          this trace's own author shipped into `CONTRIBUTING.md` — "branch the
+          feedstock", which conda-forge discourages because branches publish
+          automatically and their packages are immutable, and an invented
+          "Allow edits by maintainers" requirement where the real mechanism is
+          adding the bot's fork as a remote. Both were caught by a human pasting
+          the upstream docs, not by any gate. Phase 5 shrank to the two
+          conditions that decide whether the step is done, plus a link.
+      - file: sdd/BACKLOG.md
+        section: "5. A release cannot ship a surprise"
+        read_type: gate
+        extract: >-
+          The install-channel clause — **fourth** in § 5's `Closes when`, counted
+          over its semicolons, not the third its own prose has long called it —
+          moves from half-met to met, and the paragraph explaining the
+          wait is replaced rather than amended — it had already been rewritten
+          once when the recipe merged, so this is the second time the same
+          paragraph went stale on an external event. BK-370 stays a separate
+          clause on purpose: a channel can be published, working, and describing
+          the library as something it is not.
+      - file: scripts/check_backend_order.py
+        section: "_MIN_BACKENDS"
+        read_type: verify
+        extract: >-
+          Review round 1 on PR #1009 refuted the reason three artifacts here gave
+          for this gate passing against the drifted recipe. Measured by importing
+          the module: `is_ordered(['Local','S3','SFTP','Azure'])` is **False**,
+          not True — SFTP outranks Azure. It passed because `_distinct` is 4
+          against `_MIN_BACKENDS` 6, so both scanners drop the segment as prose
+          before ordering is tested. The claim was written from the gate's
+          documented *purpose* rather than from running it, and it under-stated
+          the blind spot: every under-six enumeration is invisible, ordered or
+          not. Corrected in BK-370, BACKLOG-DONE and the runbook; it also moved
+          BK-370's `check_backend_order` fix shape — named rather than numbered,
+          since the list has since lost an entry — from "narrowest" to one
+          needing the floor lifted. No `outcome` tag: the script's own docstring states the floor
+          plainly, so this was the reader's miss and not the document's.
+      - file: packaging/conda-forge/recipe.yaml
+        section: "about (git history)"
+        read_type: verify
+        extract: >-
+          Chasing a wrong SHA the same review caught turned up a wrong story
+          under it. This entry had said the submitted copy was "hand-edited away
+          from this one", rewriting `about`. It was not: the recipe first appears
+          in `2f445717f` (2026-03-01) already reading "backends (Local, S3, SFTP,
+          Azure)", and `git log -S 'Azure, or OneDrive'` on the file returns one
+          commit, `01dd2f4f3` (2026-08-06). Our copy carried that wording for
+          five months; the submission predates the fix. A copy correct when taken
+          and never compared again — which is BK-370's shape, and a cleaner
+          argument for it than the hand-edit theory it replaces. No `outcome`
+          tag: `--diff-filter=A` on the default traversal reporting one of two
+          adds is git behaving as documented, not an artifact misleading anyone.
+      - file: sdd/research/research-v1-communication-plan.md
+        section: "(header metadata)"
+        read_type: verify
+        extract: >-
+          Found by the § Completing work sweep (`rg -n 'ID-018' -- sdd .claude
+          scripts docs-src tests *.md`, 25 hits on this head, all read — the
+          first draft said 22, counted before this PR's own text added four).
+          Its header asserted
+          ID-018 "is the last gating release task" — the present-tense claim the
+          sweep rule names explicitly, and the only one of the 25 in `research/`
+          that needed fixing. Left alone: the superseded RFC-0009's snapshot
+          (historical by its status header), the audit's finding row, the
+          `test_gen_backlogid` fixture (a synthetic string, not read from the
+          real file), and the body recommendation at line 330, which is what the
+          plan recommended then rather than a claim about now.
+        outcome: misleading

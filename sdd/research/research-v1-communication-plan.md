@@ -2,7 +2,7 @@
 
 **Date:** 2026-04-13
 **Status:** Research complete — ready for review and refinement
-**Backlog items:** ID-018 (conda-forge publishing) is the last gating release task; v1.0 announcement uses this plan
+**Backlog items:** ID-018 (conda-forge publishing) was the last gating release task when this was written and is now complete (`BACKLOG-DONE.md`); v1.0 announcement uses this plan
 
 ---
 
@@ -327,7 +327,7 @@ Track after launch to learn what resonates, not to optimise vanity:
 - **PyPI downloads** via pypistats — adoption signal, lagging indicator.
 - **Issue and discussion quality** — what people ask reveals messaging
   gaps; what they request reveals audience fit.
-- **Conda-forge installs** once ID-018 lands — separate adoption
+- **Conda-forge installs**, now that the channel is live — separate adoption
   channel, often institutional users.
 
 Vanity metrics (stars, thread upvotes) are directional only. Don't tune

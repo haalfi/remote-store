@@ -1602,7 +1602,9 @@ that diff actually triggers (BK-333); every extra's drift smoke exercises the
 packages it pins (BUG-250) and catches the drift that is visible only to a type
 checker (ID-250); a declared floor is something a mechanism has installed and
 run, rather than a claim nobody tests (BK-369); **every install channel we
-intend to offer is published and working** (ID-018); every upstream that can break us on its
+intend to offer is published and working** — **met** by ID-018, in
+[BACKLOG-DONE.md](BACKLOG-DONE.md) — and what that channel publishes about us is
+watched rather than hand-copied (BK-370); every upstream that can break us on its
 own schedule has a standing watch (ID-229, ID-225); the one deprecation that
 watch has caught is answered before the release that enforces it (BUG-281); the
 watch's issue survives a single-extra re-run (BUG-282) and its one legacy-sftp
@@ -1612,17 +1614,18 @@ carries a published upgrade path by the time it ships — **satisfied**: the fou
 and the obligation to write one moved onto the PR making the break, where its
 author already looks (BUG-261, in [BACKLOG-DONE.md](BACKLOG-DONE.md)).
 
-Clause 3 is stated as *intend to offer* rather than *already advertised*
+The install-channel clause — fourth in the list above, counted over its
+semicolons — is stated as *intend to offer* rather than *already advertised*
 deliberately: ID-018 created a channel rather than repairing a dead one, so the
 narrower wording would have been vacuously true while the item was unbuilt.
-**That clause is now half met and the section is no longer externally gated.**
-`staged-recipes#32401` merged, the feedstock exists, and
-`conda install -c conda-forge remote-store` resolves — so the channel is
-published and working, and the README says so. What remains is ours rather than
-a reviewer's: the channel serves 0.30.0 with the pre-sweep constraints until a
-feedstock PR carries v0.32.0 and the corrected set. The paragraph that stood here
-said no work in this repo could close section 5; that stopped being true the day
-the recipe merged.
+**That clause is met.** The feedstock PR merged, so the channel serves the
+current release with the constraints this repo declares, and the README points
+users at it. Two paragraphs stood here before: one saying no work in this repo
+could close section 5, and one saying the clause was half met and waiting on a
+feedstock PR. Both were true when written and neither is now.
+What the clause does **not** cover is BK-370's gap, which is why that item is a
+separate clause rather than a caveat on this one: a channel can be published,
+working, and quietly describing the library as something it is not.
 
 - [ ] **ID-250 — The drift smoke never type-checks, so a signature-only narrowing reaches PRs as a red gate**
   spec: — · effort: M · audience: infra.ci
@@ -1843,90 +1846,104 @@ the recipe merged.
   filter to treat `sdd/adrs/**` as lint-triggering. Filed rather than fixed in
   BK-329 because that PR touched no ADR, no TLA module and not the handbook.
 
-- [~] **ID-018 — conda-forge publishing**
-  spec: — · effort: — · audience: user.discoverability.human, library.maintainer
-  Recipe, CI validation, release checklist steps all done.
-  - Done: [recipe](../packaging/conda-forge/recipe.yaml),
-    [conda-recipe workflow](../.github/workflows/conda-recipe.yml),
-    staged-recipes PR `conda-forge/staged-recipes#32401` (CI green).
-  - Review round applied: `paramiko` and `pyarrow` floors raised, and the
-    `run_constraints` reasoning corrected — the strictest floor across the
-    extras is the sound single pin, not the loosest. The reviewer found the
-    `pyarrow` gap by reading `pyproject.toml` against the recipe, which nothing
-    here did; BK-368 is the gate that now does. Following that thread found four
-    more wrong floors and a missing dependency (BUG-283 through BUG-286), all
-    shipping in v0.32.0.
-  - **The two copies had diverged, and the divergence cost a constraint.** The
-    submitted file was hand-edited away from this one: it picked up conda-forge
-    conventions this copy lacked (`${{ PYTHON }}`, a two-value
-    `tests.python_version`, `python_min` left to the global) and dropped
-    `tomli >=1.1.0` with the comment explaining it, leaving the `toml` extra
-    unconstrained for conda users. Nothing detects that — BK-368 gates this file
-    against `pyproject.toml`, not against what was submitted.
-    All three conventions are now absorbed here and `packaging/conda-forge/variants.yaml`
-    supplies `python_min` to our own render, so this file is the submission
-    rather than a draft of it and the next update is a verbatim copy-out.
-    The `--variant-config` wiring is **validated**: the `Conda Recipe` workflow
-    ran on PR #1004 (run 34755114178) and passed, so the flag spelling is right,
-    `python_min` resolves from `variants.yaml`, and the two-value
-    `tests.python_version` renders against `rattler-build-action@v0.2.39`.
-  - **`staged-recipes#32401` is merged.** The reviewer merged before the
-    corrected recipe could be posted, so what conda-forge received is the
-    pre-sweep file: version 0.30.0 (one release behind — `CHANGELOG.md`'s `## [`
-    headings make 0.31.0 the latest released, and 0.32.0 is unreleased), the four stale floors,
-    no `tomli` constraint and no `aiohttp`. None of it is dangerous — a
-    `run_constraint` binds only if the user installs that package too — but it is
-    what the channel serves.
-  - **The channel is live.** `conda-forge/remote-store-feedstock` exists and
-    `conda install -c conda-forge remote-store` resolves; anaconda.org shows
-    0.30.0, uploaded 2026-09-13. So the promise in section 5's clause 3 is met
-    for the first time, and the README now says so — with the caveat the pip
-    instructions do not need, that **conda has no extras**: the install gives
-    the core package only, the user names a backend's dependencies alongside it,
-    and `run_constraints` constrain only the ones they install.
-  - **v0.32.0 shipped on 2026-09-13** and is on PyPI. This repo's copy of the
-    recipe now carries version `0.32.0` and the sdist's real `sha256` —
-    `be46ad69…`, verified by downloading the 5,060,786-byte sdist from
-    `files.pythonhosted.org` and hashing it, not by copying the PyPI JSON field
-    alone — so the file is ready to copy out verbatim.
-  - Next: **one** PR against the feedstock carrying the version, sha256 and
-    this file's `run_constraints`. The
-    `regro-cf-autotick-bot` opens a version-bump PR of its own once 0.32.0 is on
-    PyPI and touches `version` and `sha256` only, so pushing the constraints onto
-    that branch gets both into one review. Submission is over — staged-recipes is
-    not the route for any further change. `CONTRIBUTING.md` § Release Phase 5 and
-    `.claude/skills/release/SKILL.md` § Phase 5 both said the remaining step was
-    to *verify* the bot PR; following either as written would have merged it
-    untouched and shipped 0.32.0 with 0.31.0's constraints. Both now say amend.
-  - **The README caveat is written to be kept, not deleted.** A first draft
-    named the versions (0.30.0 against PyPI's 0.31.0) and listed the stale
-    floors, which would have gone false at the 0.32.0 tag — before the feedstock
-    PR that was supposed to retire it — and publishes to docs.remotestore.dev and
-    PyPI through the `[start:getting-started]` snippet markers, which no gate
-    rewrites. It now says only that the channel lags PyPI and its constraints can
-    predate `pyproject.toml`'s floors. That stays true after the feedstock PR,
-    because a feedstock always trails a release, so no release-time deletion step
-    is owed and none was added to Phase 5.
-  - **What the channel serves until then**, worth knowing rather than
-    rediscovering: 0.30.0, one release behind the published 0.31.0. Two packages
-    it constrains not at all — `tomli` and `aiohttp`, both absent from the merged
-    recipe's `run_constraints` per the header of
-    `packaging/conda-forge/recipe.yaml`. Two, not one: an earlier draft of this
-    bullet called `toml` the only unconstrained extra, which that same header
-    ("no `tomli`, no `aiohttp`") falsifies. `paramiko` is not a third — the
-    staged-recipes review round raised it before merge, which is why the header's
-    stale-floor list is the four that round did not touch. Closing this item waits
-    on that feedstock PR.
-  - **This item ships `[~]` through the v0.32.0 release, knowingly.** Its
-    remaining work is the feedstock PR that Phase 5 of *this* release prescribes
-    and that needs the tag to exist, so it cannot complete; and it cannot defer
-    to `[ ]`, because the recipe, the pin gate and the checklist steps are done
-    and the channel is live, so `[ ]` would claim less progress than exists.
-    That is the third disposition [`CONTRIBUTING.md` § Release](../CONTRIBUTING.md#release)
-    Phase 0 now names, which this item is the first to use — the argument was
-    made here first and moved to the checklist in review, so the next release
-    meeting the same shape reads it rather than re-deriving it. The item closes
-    when the feedstock PR is open, in a commit after the release.
+- [ ] **BK-370 — The published conda recipe is a mirror no mechanism watches**
+  spec: — · effort: M · audience: user.discoverability.human, infra.ci
+  `conda-forge/remote-store-feedstock`'s `recipe/recipe.yaml` is a copy of
+  `packaging/conda-forge/recipe.yaml`, and nothing compares the two. **Three**
+  gates look adjacent and none covers it, and none of the three is buggy — which
+  is the point: each is correct within a scope narrower than "what this project
+  publishes". Two of the three stop at this repo's edge and the recipe is
+  published one hop past it; the third stops short of published surfaces
+  **inside** the repo as well, so the gap is wider than the recipe alone.
+  - `check_conda_recipe_pins.py` holds **our** copy to `pyproject.toml`, not the
+    feedstock to ours.
+  - `check_backend_order.py` **never tests the drifted block at all**, which is
+    a wider blind spot than "proves order, not membership". Measured by importing
+    the module: `backends_in("Local, S3, SFTP, Azure")` gives those four, and
+    `is_ordered(...)` is **`False`** — SFTP outranks Azure in `_BACKENDS`. It
+    passed because `_distinct(found)` is 4 against `_MIN_BACKENDS` 6, so both
+    scanners discard the segment as prose before ordering is tested. So **any**
+    enumeration naming fewer than six distinct backends is invisible, ordered or
+    not — including our own `about` summary today. An earlier draft of this
+    bullet said it passed "because the enumeration is correctly ordered and
+    merely incomplete", which measures false and under-stated the gap.
+    Membership itself is a judgement [`CONTRIBUTING.md` § Adding a New
+    Backend](../CONTRIBUTING.md#adding-a-new-backend) deliberately declines to
+    make, since the API reference splits its tables and the README abridges on
+    purpose.
+  - `check_no_tracker_refs.py` enumerates three roots — `src/remote_store/`
+    Python docstrings, `docs-src/` Markdown, and exactly three repo-root files
+    (`scripts/check_no_tracker_refs.py:194-200`). `packaging/` is in none of
+    them and no scanner reads `.yaml`, so `BK-368`, `BUG-232` and `BUG-286` sit
+    in the recipe today with the gate green. Correct by its own terms — the
+    recipe is an internal file, where tracker IDs are as legitimate as in
+    `sdd/` — and wrong about where that file ends up. Two of the three were
+    caught by eye during the v0.32.0 copy-out, on their way to a public
+    third-party repo.
+    Its scope also stops short of published surfaces **inside** this repo, so
+    the recipe is not the only mirror it misses: eight `sdd/*.md` files carry a
+    `doc: dual` marker and render onto the docs site through the bridge, but no
+    physical `docs-src/explanation/design/*.md` exists for the gate's `docs-src`
+    rglob to find, and its docstring declares `sdd/**` out of scope as internal.
+    Derivation, applying the gate's own `_TRACKER_RE` rather than a
+    backlog-prefix grep — the distinction matters, since the structural pattern
+    also catches spec IDs and ADR numbers a prefix list misses: `CI-OPERATIONS.md`
+    publishes with 8 distinct matches and `TESTING.md` with 8, gate green.
+    Nothing is broken by that — but the fix shapes below are costed against the
+    narrower gap.
+  What the gap cost, measured rather than hypothesised: the live recipe's `about`
+  block was pre-BK-311, so the conda-forge package page told users remote-store
+  reaches four backends when it reaches eight, and omitted OneDrive — the exact
+  claim BK-311 swept the repo to fix, in the one mirror its `git grep` could not
+  see because the copy lives in another repository. **The copy was correct when
+  taken and never compared again**, which is this item's shape rather than a
+  hand-edit: our own recipe carried that wording from `2f445717f` (2026-03-01)
+  until `01dd2f4f3` (2026-08-06) fixed it, and the submitted copy predates the
+  fix. It went unnoticed until the v0.32.0 copy-out diff, and only because a
+  human pasted the file in.
+  Today's entire defence is [`sdd/CONDA-FORGE.md`](CONDA-FORGE.md) Rule 3: diff
+  the two copies before pushing to the branch the PR builds from. Writing the
+  runbook made that rule findable and stated why it exists, which is worth
+  something — but it is still a human step, so it holds exactly as long as the
+  person doing the release performs it. That is the gap this item closes, and the
+  runbook narrows it rather than closing it.
+  Fix shape is open deliberately, and the choice is the work: fetch the
+  feedstock's raw recipe in CI and diff it (catches everything, adds a network
+  dependency and a cross-repo failure this repo cannot fix); or generate the
+  feedstock copy from ours by script so the copy-out is mechanical rather than
+  manual (the v0.32.0 copy-out used such a generator with five edits each
+  asserted to apply exactly once, two of them stripping tracker IDs — **it was
+  not retained**, so that count is a report of what was run, not a figure a
+  reader can re-derive, and writing it is part of this option rather than a
+  starting point); extend `check_backend_order` with per-surface membership
+  opt-in (**not** the narrowest option it first appears: a four-name `about`
+  block never reaches a membership test while `_MIN_BACKENDS` is 6, so this
+  needs the floor lifted too, which widens it to every enumeration the gate
+  currently ignores). **The upstream option is not one**, contrary to an earlier
+  draft of this bullet: conda-forge's maintainer guide describes a bot feature
+  that verifies or updates a Grayskull-compatible recipe's requirements, and that
+  draft listed it as free, needing no code here, and worth evaluating first.
+  Reading the schema rather than the prose settles it. `conda-smithy`'s
+  `conda-forge.yml` model delegates `bot` to the bot's own
+  `cf_tick_schema.json`, whose eight keys include no `requirements` and no
+  `requirement_types`; the feature is `bot.inspection`, an enum of `hint`,
+  `hint-all`, `hint-grayskull`, `update-all`, `update-grayskull` and `disabled`,
+  described as "Method for generating hints or updating recipe". Schema read
+  2026-09-14 from
+  `https://raw.githubusercontent.com/conda-forge/conda-forge-bot/refs/heads/main/conda_forge_tick/cf_tick_schema.json`,
+  which is the `$ref` `conda-smithy`'s own model points `bot` at; both figures
+  above come from that file rather than from prose, and both will move if
+  upstream edits it.
+  It acts on the recipe's **`requirements`**, which here is four entries across
+  two sections — `run` holds only `python`, `host` holds `python`, `pip` and
+  `hatchling` — and Grayskull-based inspection reads `host` as well as `run`,
+  so that surface is not empty. It is simply not where anything drifts: all 19
+  dependency floors live in `run_constraints`, which inspection does not touch,
+  and the `about` block is neither. `bot.run_deps_from_wheel` has the same
+  scope. So the option cannot reach this item's gap, and evaluating it first
+  would spend the effort for certain nothing. Discovered by ID-018, which is now closed
+  ([BACKLOG-DONE.md](BACKLOG-DONE.md)) — this item outlived it, which is why it
+  was filed separately rather than folded in.
 
 - [ ] **ID-229 — Evaluate porting to httpx 1.0 (lift the `<1.0` cap)**
   spec: GR-033 · effort: M · audience: user.api

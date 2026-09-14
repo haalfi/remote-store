@@ -32,10 +32,11 @@ and no more useful than the index it came from.
 in `pyproject.toml`.
 
 **Phase 5** — Agent assists with conda steps (sha256 fetch, recipe update, branch+PR).
-Work the checklist's conda-forge bullet as written; it owns the routes and the
-mechanics. The one failure worth naming here: a `regro-cf-autotick-bot` PR is to be
-**amended, not verified** — merged untouched it ships the new release with the previous
-release's constraints, and every gate in this repo stays green while it happens.
+Work [`sdd/CONDA-FORGE.md`](../../../sdd/CONDA-FORGE.md) as written; it owns the routes,
+the rules and the walkthrough, and the checklist bullet links to it. The one failure
+worth naming here: the step is **not** done when the PR is open — it is done when
+`conda search -c conda-forge remote-store` lists the new version, because the upload
+happens after merge and can fail.
 
 ## Phase 4: Ship (Skill Agent)
 

@@ -34,7 +34,7 @@ Sections 1 and 2 alone must be sufficient to understand the document's purpose a
 
 ### Scope
 
-Applies to root-level process documents in `sdd/` ([`000-process.md`](sdd/000-process.md), [`AUTHORING.md`](sdd/AUTHORING.md), [`CI-OPERATIONS.md`](sdd/CI-OPERATIONS.md), [`DESIGN.md`](sdd/DESIGN.md), [`DOCUMENTATION.md`](sdd/DOCUMENTATION.md), [`DRIFT-RULES.md`](sdd/DRIFT-RULES.md), [`TESTING.md`](sdd/TESTING.md), [`CONTENT-RULES.md`](sdd/CONTENT-RULES.md), [`CLAUDE-REFERENCE.md`](sdd/CLAUDE-REFERENCE.md)). Does not apply to specs, ADRs, RFCs, research, audits, [`BACKLOG.md`](sdd/BACKLOG.md), [`README`](README.md), [`CHANGELOG`](CHANGELOG.md), [`DEVELOPMENT_STORY`](DEVELOPMENT_STORY.md), [`CLAUDE.md`](CLAUDE.md), or [`CONTRIBUTING.md`](CONTRIBUTING.md) (which follow their own formats).
+Applies to root-level process documents in `sdd/` ([`000-process.md`](sdd/000-process.md), [`AUTHORING.md`](sdd/AUTHORING.md), [`CI-OPERATIONS.md`](sdd/CI-OPERATIONS.md), [`CONDA-FORGE.md`](sdd/CONDA-FORGE.md), [`DESIGN.md`](sdd/DESIGN.md), [`DOCUMENTATION.md`](sdd/DOCUMENTATION.md), [`DRIFT-RULES.md`](sdd/DRIFT-RULES.md), [`TESTING.md`](sdd/TESTING.md), [`CONTENT-RULES.md`](sdd/CONTENT-RULES.md), [`CLAUDE-REFERENCE.md`](sdd/CLAUDE-REFERENCE.md)). Does not apply to specs, ADRs, RFCs, research, audits, [`BACKLOG.md`](sdd/BACKLOG.md), [`README`](README.md), [`CHANGELOG`](CHANGELOG.md), [`DEVELOPMENT_STORY`](DEVELOPMENT_STORY.md), [`CLAUDE.md`](CLAUDE.md), or [`CONTRIBUTING.md`](CONTRIBUTING.md) (which follow their own formats).
 
 ### Cross-check
 
@@ -575,17 +575,11 @@ _Release template: title = version, description = "What's Changed" header whose 
 - [ ] Conda recipe: fetch sha256 from PyPI (`curl -s https://pypi.org/pypi/remote-store/X.Y.Z/json | python -c "import sys,json; d=json.load(sys.stdin); print([f['digests']['sha256'] for f in d['urls'] if f['filename'].endswith('.tar.gz')][0])"`) and update `source.sha256` in `packaging/conda-forge/recipe.yaml`
 - [ ] Commit `packaging/conda-forge/recipe.yaml` sha256 update in this repo via a branch and PR
 - [ ] conda-forge: get `version`, `sha256` **and the `run_constraints` block from
-      `packaging/conda-forge/recipe.yaml`** onto `conda-forge/remote-store-feedstock`.
-      Diff the feedstock's `recipe/recipe.yaml` against ours first — the two copies
-      diverged once and the divergence silently dropped a constraint.
-      `regro-cf-autotick-bot` rewrites `version` and `sha256` only, so a bot PR merged
-      untouched ships the previous release's constraints with the new code, which is how
-      a corrected floor silently fails to reach conda users. Verifying the bot PR exists
-      is not the step; carrying the constraints is, by either route:
-      **self-service** — branch the feedstock from a local clone, apply all three, open a
-      PR (commit locally, not through the GitHub API, whose commits are unverified); or
-      **ride the bot**, pushing `run_constraints` onto its version-bump branch so both
-      land in one review. The bot branches from its own fork, so that shortcut needs
-      "Allow edits by maintainers" on its PR; without it, go self-service and close the
-      bot's PR
+      `packaging/conda-forge/recipe.yaml`** onto `conda-forge/remote-store-feedstock`,
+      following [`sdd/CONDA-FORGE.md`](sdd/CONDA-FORGE.md), which owns the routes, the
+      rules and the walkthrough. **Done when
+      `conda search -c conda-forge remote-store` lists the new version**, not when the PR
+      is open: the upload happens after merge and can fail. Whether the bot has fired
+      shows on conda-forge's [version-update
+      status](https://conda-forge.org/status/#version_updates); it can take hours
 - [ ] Announce if applicable (tracking issues, users)

@@ -11,6 +11,7 @@
 
 <p align="center">
   <a href="https://pypi.org/project/remote-store/"><img src="https://img.shields.io/pypi/v/remote-store" alt="PyPI version"></a>
+  <a href="https://anaconda.org/conda-forge/remote-store"><img src="https://img.shields.io/conda/vn/conda-forge/remote-store" alt="conda-forge version"></a>
   <a href="https://pypi.org/project/remote-store/"><img src="https://img.shields.io/pypi/pyversions/remote-store" alt="Python versions"></a>
   <a href="https://github.com/haalfi/remote-store/actions/workflows/ci.yml"><img src="https://github.com/haalfi/remote-store/actions/workflows/ci.yml/badge.svg" alt="CI"></a>
   <a href="https://codecov.io/gh/haalfi/remote-store"><img src="https://codecov.io/gh/haalfi/remote-store/branch/master/graph/badge.svg" alt="Coverage"></a>
@@ -101,6 +102,12 @@ usually more than one package. Each extra's full set is its entry under
 ```bash
 conda install -c conda-forge remote-store azure-storage-file-datalake azure-identity aiohttp
 ```
+
+Because those dependencies are resolved as a separate step, this is the case
+conda-forge's [channel-priority
+guidance](https://conda-forge.org/docs/user/introduction/) exists for: configure
+conda-forge as a channel with `channel_priority strict`, so the package and the
+backend libraries beside it come from one channel rather than a mix.
 
 ## Quick Start
 

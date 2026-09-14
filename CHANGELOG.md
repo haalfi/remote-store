@@ -7,6 +7,8 @@ This project follows [Semantic Versioning](https://semver.org/). Pre-1.0, minor 
 
 ## [Unreleased]
 
+- ID-018: The conda-forge channel serves 0.32.0 with the corrected dependency floors plus the `tomli` and `aiohttp` constraints; it had been publishing 0.30.0, whose `run_constraints` predated them.
+
 ## [0.32.0] - 2026-09-13
 
 ### Added
