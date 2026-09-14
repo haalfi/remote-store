@@ -129,7 +129,7 @@ jobs:
       - uses: actions/setup-python@v7
         with:
           python-version: ${{ needs.setup.outputs.primary }}
-      - uses: astral-sh/setup-uv@v10.0.1
+      - uses: astral-sh/setup-uv@v10.1.0
         with:
           enable-cache: false
       # actionlint: static lint for GitHub Actions workflows. Catches
@@ -175,7 +175,7 @@ jobs:
       - uses: actions/setup-python@v7
         with:
           python-version: ${{ matrix.python-version }}
-      - uses: astral-sh/setup-uv@v10.0.1
+      - uses: astral-sh/setup-uv@v10.1.0
         with:
           enable-cache: false
       - run: uv pip install -e ".[dev]"
@@ -258,7 +258,7 @@ jobs:
       - uses: actions/setup-python@v7
         with:
           python-version: ${{ matrix.python-version }}
-      - uses: astral-sh/setup-uv@v10.0.1
+      - uses: astral-sh/setup-uv@v10.1.0
         with:
           cache-suffix: ci-test-stage1-${{ matrix.python-version }}-${{ matrix.shard }}  # BK-230
       - run: uv pip install -e ".[dev]"
@@ -309,7 +309,7 @@ jobs:
       - uses: actions/setup-python@v7
         with:
           python-version: ${{ needs.setup.outputs.primary }}
-      - uses: astral-sh/setup-uv@v10.0.1
+      - uses: astral-sh/setup-uv@v10.1.0
         with:
           cache-suffix: ci-test-primary-${{ matrix.shard }}  # BK-230
       - run: uv pip install -e ".[dev]"
@@ -355,7 +355,7 @@ jobs:
       - uses: actions/setup-python@v7
         with:
           python-version: ${{ needs.setup.outputs.primary }}
-      - uses: astral-sh/setup-uv@v10.0.1
+      - uses: astral-sh/setup-uv@v10.1.0
         with:
           cache-suffix: ci-test-primary-sftp
       - run: uv pip install -e ".[dev]"
@@ -389,7 +389,7 @@ jobs:
       - uses: actions/setup-python@v7
         with:
           python-version: ${{ needs.setup.outputs.primary }}
-      - uses: astral-sh/setup-uv@v10.0.1
+      - uses: astral-sh/setup-uv@v10.1.0
         with:
           cache-suffix: ci-test-cassette-pii
       - run: uv pip install -e ".[dev]"
@@ -417,7 +417,7 @@ jobs:
       - uses: actions/setup-python@v7
         with:
           python-version: ${{ needs.setup.outputs.primary }}
-      - uses: astral-sh/setup-uv@v10.0.1
+      - uses: astral-sh/setup-uv@v10.1.0
         with:
           enable-cache: false
       - run: uv pip install coverage
@@ -462,7 +462,7 @@ jobs:
       - uses: actions/setup-python@v7
         with:
           python-version: ${{ needs.setup.outputs.primary }}
-      - uses: astral-sh/setup-uv@v10.0.1
+      - uses: astral-sh/setup-uv@v10.1.0
         with:
           enable-cache: false
       # The [mutate] extra carries pytest-gremlins (not in [dev]). Install it so
@@ -504,7 +504,7 @@ jobs:
       - uses: actions/setup-python@v7
         with:
           python-version: ${{ needs.setup.outputs.primary }}
-      - uses: astral-sh/setup-uv@v10.0.1
+      - uses: astral-sh/setup-uv@v10.1.0
         with:
           enable-cache: false
       - run: uv pip install -e ".[dev]"
@@ -529,7 +529,7 @@ jobs:
       - uses: actions/setup-python@v7
         with:
           python-version: ${{ needs.setup.outputs.primary }}
-      - uses: astral-sh/setup-uv@v10.0.1
+      - uses: astral-sh/setup-uv@v10.1.0
       - run: uv pip install -e ".[dev]"
       - name: Run OS-sensitive tests
         run: pytest -m "os_sensitive" --ignore=tests/e2e
@@ -543,7 +543,7 @@ jobs:
       - uses: actions/setup-python@v7
         with:
           python-version: ${{ needs.setup.outputs.primary }}
-      - uses: astral-sh/setup-uv@v10.0.1
+      - uses: astral-sh/setup-uv@v10.1.0
         with:
           enable-cache: false
       - run: uv pip install -e ".[dev]"
@@ -558,7 +558,7 @@ jobs:
       - uses: actions/setup-python@v7
         with:
           python-version: ${{ needs.setup.outputs.primary }}
-      - uses: astral-sh/setup-uv@v10.0.1
+      - uses: astral-sh/setup-uv@v10.1.0
         with:
           enable-cache: false
       - run: uv pip install -e ".[dev,arrow]"
@@ -592,7 +592,7 @@ jobs:
       - uses: actions/setup-python@v7
         with:
           python-version: ${{ needs.setup.outputs.primary }}
-      - uses: astral-sh/setup-uv@v10.0.1
+      - uses: astral-sh/setup-uv@v10.1.0
         with:
           cache-suffix: ci-e2e  # BK-230
       - run: uv pip install -e ".[dev]"
@@ -607,7 +607,7 @@ jobs:
       - uses: actions/setup-python@v7
         with:
           python-version: ${{ needs.setup.outputs.primary }}
-      - uses: astral-sh/setup-uv@v10.0.1
+      - uses: astral-sh/setup-uv@v10.1.0
         with:
           enable-cache: false
       # A docs-only PR skips the lint job (code==false), so the gate that validates
@@ -625,7 +625,7 @@ jobs:
       - uses: actions/setup-python@v7
         with:
           python-version: ${{ needs.setup.outputs.primary }}
-      - uses: astral-sh/setup-uv@v10.0.1
+      - uses: astral-sh/setup-uv@v10.1.0
         with:
           enable-cache: false
       - run: uv pip install build twine
