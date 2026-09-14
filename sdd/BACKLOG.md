@@ -1602,7 +1602,8 @@ that diff actually triggers (BK-333); every extra's drift smoke exercises the
 packages it pins (BUG-250) and catches the drift that is visible only to a type
 checker (ID-250); a declared floor is something a mechanism has installed and
 run, rather than a claim nobody tests (BK-369); **every install channel we
-intend to offer is published and working** (ID-018); every upstream that can break us on its
+intend to offer is published and working** (ID-018), and what that channel
+publishes about us is watched rather than hand-copied (BK-370); every upstream that can break us on its
 own schedule has a standing watch (ID-229, ID-225); the one deprecation that
 watch has caught is answered before the release that enforces it (BUG-281); the
 watch's issue survives a single-extra re-run (BUG-282) and its one legacy-sftp
@@ -1872,8 +1873,8 @@ the recipe merged.
     `tests.python_version` renders against `rattler-build-action@v0.2.39`.
   - **`staged-recipes#32401` is merged.** The reviewer merged before the
     corrected recipe could be posted, so what conda-forge received is the
-    pre-sweep file: version 0.30.0 (one release behind — `CHANGELOG.md`'s `## [`
-    headings make 0.31.0 the latest released, and 0.32.0 is unreleased), the four stale floors,
+    pre-sweep file: version 0.30.0 (two releases behind — `CHANGELOG.md`'s `## [`
+    headings make 0.32.0 the latest released, with 0.31.0 between), the four stale floors,
     no `tomli` constraint and no `aiohttp`. None of it is dangerous — a
     `run_constraint` binds only if the user installs that package too — but it is
     what the channel serves.
@@ -1907,16 +1908,30 @@ the recipe merged.
     predate `pyproject.toml`'s floors. That stays true after the feedstock PR,
     because a feedstock always trails a release, so no release-time deletion step
     is owed and none was added to Phase 5.
-  - **What the channel serves until then**, worth knowing rather than
-    rediscovering: 0.30.0, one release behind the published 0.31.0. Two packages
-    it constrains not at all — `tomli` and `aiohttp`, both absent from the merged
-    recipe's `run_constraints` per the header of
-    `packaging/conda-forge/recipe.yaml`. Two, not one: an earlier draft of this
-    bullet called `toml` the only unconstrained extra, which that same header
-    ("no `tomli`, no `aiohttp`") falsifies. `paramiko` is not a third — the
-    staged-recipes review round raised it before merge, which is why the header's
-    stale-floor list is the four that round did not touch. Closing this item waits
-    on that feedstock PR.
+  - **What the channel serves until then**, no longer inferred: the feedstock's
+    live `recipe/recipe.yaml` was read on 2026-09-14 and run through this repo's
+    own gate (`check_conda_recipe_pins.py --repo-root` against a shadow tree
+    carrying it), which reported **6 disagreements** — `aiohttp` and `tomli`
+    absent, `tenacity >=4.0`, `sqlalchemy >=2.0`, `urllib3 >=1.26.0`,
+    `dagster >=1.9` too low. That is the recipe header's claim one-for-one, and
+    `paramiko >=3.1` / `pyarrow >=14.0.0` are current there, so the header's
+    derivation held: the review round raised those two and the four stale floors
+    are the ones it did not touch. Version 0.30.0 — **two** releases behind the
+    published 0.32.0, not one; that figure was written when 0.31.0 was the latest
+    and went stale at the 0.32.0 tag, which is the failure mode the README caveat
+    was rewritten to avoid and this bullet reproduced. Closing this item waits on
+    that feedstock PR.
+  - **The divergence cost two things, not one.** Reading the live copy showed its
+    `about` block is pre-BK-311: summary "…S3, SFTP, **or Azure**" and a
+    description naming four backends, where every live mirror here says "…S3,
+    SFTP, Azure, **or OneDrive**" over eight (`git grep "Write file storage code
+    once"`, 9 live hits; the feedstock's wording survives only in
+    `sdd/research/research-v1-communication-plan.md`, the documented
+    historical-quote exemption). Our copy never carried it — the file was added
+    2026-08-06 in `01dd2f4f3` already saying "or OneDrive" — so the hand-edit that
+    produced the submission rewrote `about` as well as dropping `tomli`, and only
+    the `tomli` half was ever recorded. Followup: BK-370. The copy-out fixes both,
+    since it replaces the whole file.
   - **This item ships `[~]` through the v0.32.0 release, knowingly.** Its
     remaining work is the feedstock PR that Phase 5 of *this* release prescribes
     and that needs the tag to exist, so it cannot complete; and it cannot defer
@@ -1927,6 +1942,39 @@ the recipe merged.
     made here first and moved to the checklist in review, so the next release
     meeting the same shape reads it rather than re-deriving it. The item closes
     when the feedstock PR is open, in a commit after the release.
+
+- [ ] **BK-370 — The published conda recipe is a mirror no mechanism watches**
+  spec: — · effort: M · audience: user.discoverability.human, infra.ci
+  `conda-forge/remote-store-feedstock`'s `recipe/recipe.yaml` is a copy of
+  `packaging/conda-forge/recipe.yaml`, and nothing compares the two. Two gates
+  look adjacent and neither covers it: `check_conda_recipe_pins.py` holds **our**
+  copy to `pyproject.toml`, not the feedstock to ours, and `check_backend_order.py`
+  proves order rather than membership — run against the drifted live copy on
+  2026-09-14 it **passed**, because "Local, S3, SFTP, Azure" is correctly ordered
+  and merely incomplete. That is not a gate bug: [`CONTRIBUTING.md` § Adding a New
+  Backend](../CONTRIBUTING.md#adding-a-new-backend) states membership is a
+  judgement it deliberately declines to make, since the API reference splits its
+  tables and the README abridges on purpose.
+  What the gap cost, measured rather than hypothesised: the live recipe's `about`
+  block is pre-BK-311, so the conda-forge package page tells users remote-store
+  reaches four backends when it reaches eight, and omits OneDrive — the exact
+  claim BK-311 swept the repo to fix, in the one mirror its `git grep` could not
+  see because the copy lives in another repository. It went unnoticed from the
+  submission (2026-09-13 merge) until the v0.32.0 copy-out diff, and only because
+  a human pasted the file in.
+  Today's entire defence is one prose line in [`CONTRIBUTING.md` § Release
+  Phase 5](../CONTRIBUTING.md#release): diff the feedstock's copy against ours
+  before opening the PR. That is a checklist step, so it holds exactly as long as
+  the person working the checklist does it.
+  Fix shape is open deliberately, and the choice is the work: fetch the
+  feedstock's raw recipe in CI and diff it (catches everything, adds a network
+  dependency and a cross-repo failure this repo cannot fix); or generate the
+  feedstock copy from ours by script so the copy-out is mechanical rather than
+  manual (the v0.32.0 PR did this ad hoc — the generator and its three asserted
+  edits are the prototype); or extend `check_backend_order` with per-surface
+  membership opt-in (narrowest, and the one that needs the judgement CONTRIBUTING
+  declines). Discovered by ID-018; do not fold back into it — ID-018 closes when
+  the feedstock PR opens, and this outlives it.
 
 - [ ] **ID-229 — Evaluate porting to httpx 1.0 (lift the `<1.0` cap)**
   spec: GR-033 · effort: M · audience: user.api

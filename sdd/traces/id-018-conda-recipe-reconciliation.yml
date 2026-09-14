@@ -17,6 +17,13 @@ expected_ripples:
   - .github/workflows/conda-recipe.yml
 surprising_ripples:
   - packaging/conda-forge/variants.yaml
+discovery_followups:
+  # Born after this trace shipped, at the v0.32.0 copy-out: reading the live
+  # feedstock copy confirmed every pin this work predicted AND showed its
+  # `about` block is pre-BK-311, which no gate here can see. This trace's whole
+  # trigger is the two copies diverging; BK-370 is the absence of any mechanism
+  # that would have noticed.
+  - BK-370
 # Derivation, per the schema's review_rounds clause: `gh api
 # repos/haalfi/remote-store/pulls/1004/commits --jq '.[] | .sha[0:7] + "  " +
 # (.commit.message | split("\n")[0])'`, counting the commits that exist because
