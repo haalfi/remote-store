@@ -81,9 +81,12 @@ Upstream sources, which govern where they disagree with this page:
    - Nothing compares the two copies. That is [Rule 3](#diff-the-copies), and it
      is a human step.
 
-8. **Fill conda-forge's PR template.** It ships from their organisation defaults,
-   so it appears on the PR without living in the feedstock. Remove the checks it
-   says are irrelevant rather than leaving them unticked.
+8. **Fill [conda-forge's PR
+   template](https://github.com/conda-forge/.github/blob/main/.github/PULL_REQUEST_TEMPLATE.md).**
+   It ships from their organisation defaults, so it appears on the PR without
+   living in the feedstock — which is why looking for one in the feedstock finds
+   nothing. Remove the checks it says are irrelevant rather than leaving them
+   unticked.
 
 9. <a id="marking-broken"></a>**A bad published build is marked broken, never
    deleted.** Open a PR against
