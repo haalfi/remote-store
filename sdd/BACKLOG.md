@@ -1850,16 +1850,26 @@ working, and quietly describing the library as something it is not.
   `conda-forge/remote-store-feedstock`'s `recipe/recipe.yaml` is a copy of
   `packaging/conda-forge/recipe.yaml`, and nothing compares the two. **Three**
   gates look adjacent and none covers it, and none of the three is buggy — which
-  is the point: each is correct within a scope that stops at this repo's edge,
-  and the recipe is published one hop past it.
+  is the point: each is correct within a scope narrower than "what this project
+  publishes". Two of the three stop at this repo's edge and the recipe is
+  published one hop past it; the third stops short of published surfaces
+  **inside** the repo as well, so the gap is wider than the recipe alone.
   - `check_conda_recipe_pins.py` holds **our** copy to `pyproject.toml`, not the
     feedstock to ours.
-  - `check_backend_order.py` proves order rather than membership — run against
-    the drifted live copy on 2026-09-14 it **passed**, because "Local, S3, SFTP,
-    Azure" is correctly ordered and merely incomplete. [`CONTRIBUTING.md` §
-    Adding a New Backend](../CONTRIBUTING.md#adding-a-new-backend) states that
-    membership is a judgement it deliberately declines to make, since the API
-    reference splits its tables and the README abridges on purpose.
+  - `check_backend_order.py` **never tests the drifted block at all**, which is
+    a wider blind spot than "proves order, not membership". Measured by importing
+    the module: `backends_in("Local, S3, SFTP, Azure")` gives those four, and
+    `is_ordered(...)` is **`False`** — SFTP outranks Azure in `_BACKENDS`. It
+    passed because `_distinct(found)` is 4 against `_MIN_BACKENDS` 6, so both
+    scanners discard the segment as prose before ordering is tested. So **any**
+    enumeration naming fewer than six distinct backends is invisible, ordered or
+    not — including our own `about` summary today. An earlier draft of this
+    bullet said it passed "because the enumeration is correctly ordered and
+    merely incomplete", which measures false and under-stated the gap.
+    Membership itself is a judgement [`CONTRIBUTING.md` § Adding a New
+    Backend](../CONTRIBUTING.md#adding-a-new-backend) deliberately declines to
+    make, since the API reference splits its tables and the README abridges on
+    purpose.
   - `check_no_tracker_refs.py` enumerates three roots — `src/remote_store/`
     Python docstrings, `docs-src/` Markdown, and exactly three repo-root files
     (`scripts/check_no_tracker_refs.py:194-200`). `packaging/` is in none of
@@ -1869,29 +1879,43 @@ working, and quietly describing the library as something it is not.
     `sdd/` — and wrong about where that file ends up. Two of the three were
     caught by eye during the v0.32.0 copy-out, on their way to a public
     third-party repo.
+    Its scope also stops short of published surfaces **inside** this repo, so
+    the recipe is not the only mirror it misses: nine `sdd/*.md` files carry a
+    `doc: dual` marker and render onto the docs site through the bridge, but no
+    physical `docs-src/explanation/design/*.md` exists for the gate's `docs-src`
+    rglob to find, and its docstring declares `sdd/**` out of scope as internal.
+    Measured on this branch: `CI-OPERATIONS.md` publishes with 7 distinct tracker
+    IDs and `TESTING.md` with 3, gate green. Nothing is broken by that — but the
+    fix shapes below are costed against the narrower gap.
   What the gap cost, measured rather than hypothesised: the live recipe's `about`
-  block is pre-BK-311, so the conda-forge package page tells users remote-store
-  reaches four backends when it reaches eight, and omits OneDrive — the exact
+  block was pre-BK-311, so the conda-forge package page told users remote-store
+  reaches four backends when it reaches eight, and omitted OneDrive — the exact
   claim BK-311 swept the repo to fix, in the one mirror its `git grep` could not
-  see because the copy lives in another repository. It went unnoticed from the
-  submission (2026-09-13 merge) until the v0.32.0 copy-out diff, and only because
-  a human pasted the file in.
+  see because the copy lives in another repository. **The copy was correct when
+  taken and never compared again**, which is this item's shape rather than a
+  hand-edit: our own recipe carried that wording from `2f445717f` (2026-03-01)
+  until `01dd2f4f3` (2026-08-06) fixed it, and the submitted copy predates the
+  fix. It went unnoticed until the v0.32.0 copy-out diff, and only because a
+  human pasted the file in.
   Today's entire defence is [`sdd/CONDA-FORGE.md`](CONDA-FORGE.md) Rule 3: diff
-  the feedstock's copy against ours before opening the PR. Writing the runbook
-  made that rule findable and stated why it exists, which is worth something —
-  but it is still a human step, so it holds exactly as long as the person doing
-  the release performs it. That is the gap this item closes, and the runbook
-  narrows it rather than closing it.
+  the two copies before pushing to the branch the PR builds from. Writing the
+  runbook made that rule findable and stated why it exists, which is worth
+  something — but it is still a human step, so it holds exactly as long as the
+  person doing the release performs it. That is the gap this item closes, and the
+  runbook narrows it rather than closing it.
   Fix shape is open deliberately, and the choice is the work: fetch the
   feedstock's raw recipe in CI and diff it (catches everything, adds a network
   dependency and a cross-repo failure this repo cannot fix); or generate the
   feedstock copy from ours by script so the copy-out is mechanical rather than
-  manual (the v0.32.0 PR did this ad hoc — the generator and its **five**
-  asserted edits are the prototype, and it is the only option that would have
-  caught all three gaps above, since two of those five edits exist solely to
-  strip tracker IDs); extend `check_backend_order` with per-surface
-  membership opt-in (narrowest, and the one that needs the judgement CONTRIBUTING
-  declines); or enable the `bot.` requirements feature in the feedstock's
+  manual (the v0.32.0 copy-out used such a generator with five edits each
+  asserted to apply exactly once, two of them stripping tracker IDs — **it was
+  not retained**, so that count is a report of what was run, not a figure a
+  reader can re-derive, and writing it is part of this option rather than a
+  starting point); extend `check_backend_order` with per-surface membership
+  opt-in (**not** the narrowest option it first appears: a four-name `about`
+  block never reaches a membership test while `_MIN_BACKENDS` is 6, so this
+  needs the floor lifted too, which widens it to every enumeration the gate
+  currently ignores); or enable the `bot.` requirements feature in the feedstock's
   `conda-forge.yml`, which conda-forge's own maintainer docs describe as able to
   verify or update a Grayskull-compatible recipe's requirements — free, upstream,
   and the only option needing no code here, but it is **experimental by their own

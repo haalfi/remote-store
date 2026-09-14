@@ -327,7 +327,7 @@ Track after launch to learn what resonates, not to optimise vanity:
 - **PyPI downloads** via pypistats — adoption signal, lagging indicator.
 - **Issue and discussion quality** — what people ask reveals messaging
   gaps; what they request reveals audience fit.
-- **Conda-forge installs** once ID-018 lands — separate adoption
+- **Conda-forge installs**, now that the channel is live — separate adoption
   channel, often institutional users.
 
 Vanity metrics (stars, thread upvotes) are directional only. Don't tune

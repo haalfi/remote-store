@@ -9,13 +9,15 @@
 # `tomli` constraint, which is why edits land here first and are copied out,
 # never the reverse.
 #
-# What the merged recipe carries, and this file has since corrected: version
-# 0.30.0, `tenacity >=4.0`, `sqlalchemy >=2.0`, `urllib3 >=1.26.0`,
-# `dagster >=1.9`, no `tomli`, no `aiohttp`.  Derivation: the submitted copy is
-# this file at f6bd6d1d0 plus the staged-recipes review round, which raised
-# `paramiko` and `pyarrow` -- so those two are current there and the four floors
-# above are the ones that round did not touch.  Nothing here can re-read the
-# feedstock; the release checklist's conda-forge step diffs the two copies.
+# The feedstock now carries this file's contents: the v0.32.0 PR took version,
+# sha256, the corrected `run_constraints` and the refreshed `about` across, and
+# a diff of the two copies at that point showed no non-comment difference.
+# `build.number` is the exception -- conda-forge owns it, for rebuilds and
+# migrations this repo never sees, so the value here is not authoritative.
+#
+# Nothing in this repo can read the feedstock, and no gate compares the two.
+# `sdd/CONDA-FORGE.md` is the procedure, including which comments are stripped
+# on the way out and the diff that is the only thing catching drift.
 #
 # `python_min` is deliberately NOT set here: conda-forge supplies it globally,
 # and hardcoding it would pin us to 3.10 after the ecosystem raises its

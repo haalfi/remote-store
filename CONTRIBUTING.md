@@ -34,7 +34,7 @@ Sections 1 and 2 alone must be sufficient to understand the document's purpose a
 
 ### Scope
 
-Applies to root-level process documents in `sdd/` ([`000-process.md`](sdd/000-process.md), [`AUTHORING.md`](sdd/AUTHORING.md), [`CI-OPERATIONS.md`](sdd/CI-OPERATIONS.md), [`DESIGN.md`](sdd/DESIGN.md), [`DOCUMENTATION.md`](sdd/DOCUMENTATION.md), [`DRIFT-RULES.md`](sdd/DRIFT-RULES.md), [`TESTING.md`](sdd/TESTING.md), [`CONTENT-RULES.md`](sdd/CONTENT-RULES.md), [`CLAUDE-REFERENCE.md`](sdd/CLAUDE-REFERENCE.md)). Does not apply to specs, ADRs, RFCs, research, audits, [`BACKLOG.md`](sdd/BACKLOG.md), [`README`](README.md), [`CHANGELOG`](CHANGELOG.md), [`DEVELOPMENT_STORY`](DEVELOPMENT_STORY.md), [`CLAUDE.md`](CLAUDE.md), or [`CONTRIBUTING.md`](CONTRIBUTING.md) (which follow their own formats).
+Applies to root-level process documents in `sdd/` ([`000-process.md`](sdd/000-process.md), [`AUTHORING.md`](sdd/AUTHORING.md), [`CI-OPERATIONS.md`](sdd/CI-OPERATIONS.md), [`CONDA-FORGE.md`](sdd/CONDA-FORGE.md), [`DESIGN.md`](sdd/DESIGN.md), [`DOCUMENTATION.md`](sdd/DOCUMENTATION.md), [`DRIFT-RULES.md`](sdd/DRIFT-RULES.md), [`TESTING.md`](sdd/TESTING.md), [`CONTENT-RULES.md`](sdd/CONTENT-RULES.md), [`CLAUDE-REFERENCE.md`](sdd/CLAUDE-REFERENCE.md)). Does not apply to specs, ADRs, RFCs, research, audits, [`BACKLOG.md`](sdd/BACKLOG.md), [`README`](README.md), [`CHANGELOG`](CHANGELOG.md), [`DEVELOPMENT_STORY`](DEVELOPMENT_STORY.md), [`CLAUDE.md`](CLAUDE.md), or [`CONTRIBUTING.md`](CONTRIBUTING.md) (which follow their own formats).
 
 ### Cross-check
 
@@ -577,10 +577,9 @@ _Release template: title = version, description = "What's Changed" header whose 
 - [ ] conda-forge: get `version`, `sha256` **and the `run_constraints` block from
       `packaging/conda-forge/recipe.yaml`** onto `conda-forge/remote-store-feedstock`,
       following [`sdd/CONDA-FORGE.md`](sdd/CONDA-FORGE.md), which owns the routes, the
-      rules and the walkthrough. Two things decide whether this step is done: the
-      constraints are in the PR (a `regro-cf-autotick-bot` PR merged untouched ships the
-      previous release's constraints with the new code), and the branch is **not** on the
-      feedstock itself (feedstock branches publish automatically, and conda-forge packages
-      are immutable). Whether the bot has fired shows on conda-forge's [version-update
+      rules and the walkthrough — including the `sha256` fetch. **Done when
+      `conda search -c conda-forge remote-store` lists the new version**, not when the PR
+      is open: the upload happens after merge and can fail. Whether the bot has fired
+      shows on conda-forge's [version-update
       status](https://conda-forge.org/status/#version_updates); it can take hours
 - [ ] Announce if applicable (tracking issues, users)

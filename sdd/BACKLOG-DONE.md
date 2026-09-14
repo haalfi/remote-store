@@ -262,16 +262,28 @@ if evidence changes; these are retired.
   alone. BK-369 carries the underlying gap — a declared floor is still a claim
   nobody installs and runs.
   **The two copies diverged, and the divergence cost two things.** The file
-  submitted to staged-recipes was hand-edited away from this one: it dropped
-  `tomli >=1.1.0`, leaving the `toml` extra unconstrained for conda users, and it
-  rewrote `about` to a pre-BK-311 form advertising four backends where the
-  library has eight. Our copy never carried that wording — the recipe was added
-  2026-08-06 in `01dd2f4f3` already naming OneDrive — so the hand-edit introduced
-  it, and only the `tomli` half was noticed at the time. Nothing here could see
-  either: BK-368 holds this repo's recipe to `pyproject.toml`, not the feedstock
-  to this repo, and `check_backend_order` proves ordering rather than membership,
-  so it **passed** when run against the drifted live recipe. **BK-370** is that
-  gap, filed rather than fixed.
+  submitted to staged-recipes dropped `tomli >=1.1.0`, leaving the `toml` extra
+  unconstrained for conda users, and carried an `about` block advertising four
+  backends where the library has eight. The two have different causes, and an
+  earlier draft of this entry got the second one wrong. `tomli` was a hand-edit:
+  our copy had the constraint and the submitted one did not. The `about` block
+  was **not** — our copy carried that same four-backend wording from the day the
+  recipe was written until BK-311 fixed it. Derivation: the recipe first appears
+  in `2f445717f` (2026-03-01, this item's own commit) reading
+  "backends (Local, S3, SFTP, Azure)", and
+  `git log -S 'Azure, or OneDrive' -- packaging/conda-forge/recipe.yaml` returns
+  exactly one commit, `01dd2f4f3` (2026-08-06). So the submitted copy was taken
+  before that fix and never re-synced — a staler failure than a hand-edit, and a
+  cleaner argument for BK-370: a copy correct when taken and never compared
+  again. The earlier draft cited `01dd2f4f3` as the commit that *added* the file,
+  which is what `--diff-filter=A` reports on the default traversal but not what
+  `--all` shows.
+  Nothing here could see either divergence: BK-368 holds this repo's recipe to
+  `pyproject.toml` rather than the feedstock to this repo, and
+  `check_backend_order` **never tested the block at all** — `is_ordered` on those
+  four backends is `False`, but `_distinct` is 4 against `_MIN_BACKENDS` 6, so
+  both scanners discard it as prose first. **BK-370** is that gap, filed rather
+  than fixed.
   **Closed by the feedstock PR**, which carried version, `sha256`, the corrected
   `run_constraints` and the refreshed `about`, and whose rerender regenerated the
   feedstock's `README.md` — the generated file that carries the recipe's summary,

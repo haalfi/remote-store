@@ -1,118 +1,147 @@
 # Updating the conda-forge recipe
-<!-- doc: dual dest=explanation/design/conda-forge.md -->
+<!-- doc: repo-only -->
 
 ## Intent & Scope
 
-Scope: how a change to this project's packaging reaches conda-forge users, and
-the traps specific to that route.
+Scope: how a packaging change in this repo reaches conda-forge users, for
+whoever performs a release. Governed by [`CONTRIBUTING.md` § Authoritative
+Document Format](../CONTRIBUTING.md#authoritative-document-format).
 
-conda-forge serves `remote-store` from a **feedstock repository this project
-does not own**, whose recipe is a copy of `packaging/conda-forge/recipe.yaml`.
-Nothing in this repo can read that copy, and no gate compares the two. Every
-rule below exists because that gap has already cost something: one submission
-diverged by hand and silently dropped a dependency constraint and the whole
-`about` block, and neither was noticed until someone diffed the copies by eye.
+conda-forge serves `remote-store` from **`conda-forge/remote-store-feedstock`**,
+a repository this project does not own, whose `recipe/recipe.yaml` is a copy of
+`packaging/conda-forge/recipe.yaml`. Nothing here reads that copy and no gate
+compares the two, so every rule below is a step no mechanism performs.
 
-This is the authoritative procedure. [`CONTRIBUTING.md` §
-Release](../CONTRIBUTING.md#release) Phase 5 links here rather than restating it.
+[`CONTRIBUTING.md` § Release](../CONTRIBUTING.md#release) Phase 5 links here for
+the routes, the rules and the walkthrough. Why these rules exist, and what their
+absence already cost, is recorded in ID-018 and BK-370
+([`BACKLOG-DONE.md`](BACKLOG-DONE.md), [`BACKLOG.md`](BACKLOG.md)).
+
+Upstream sources, which govern where they disagree with this page:
+[maintainer guide](https://conda-forge.org/docs/maintainer/updating_pkgs/),
+[org CONTRIBUTING](https://github.com/conda-forge/.github/blob/main/CONTRIBUTING),
+[org PR template](https://github.com/conda-forge/.github/blob/main/.github/PULL_REQUEST_TEMPLATE.md).
 
 ## Rules
 
-1. <a id="upstream-is-the-source"></a>**The upstream copy is the source.**
-   Edit `packaging/conda-forge/recipe.yaml` first and copy it outward. Never
-   edit the feedstock's copy directly and never back-port from it. A
-   hand-edit on the far side is invisible to every check this repo runs.
+1. <a id="upstream-is-the-source"></a>**Edit `packaging/conda-forge/recipe.yaml`
+   first and copy it outward.** Never edit the feedstock's copy directly, and
+   never back-port from it. A hand-edit on the far side is invisible to every
+   check this repo runs.
 
-2. **Never push a branch to the feedstock.** Maintainers have push access, and
-   using it is the one irreversible mistake available here: conda-forge
-   publishes feedstock branches automatically, so a branch push uploads a
-   package before anyone reviews it — and conda-forge packages are immutable,
-   so a bad upload cannot be edited or deleted, only marked broken. Work from a
-   personal fork, or from the version-bump branch `regro-cf-autotick-bot`
-   opens.
+2. **Never push a branch to the feedstock**, though a maintainer can. conda-forge
+   publishes feedstock branches automatically, so a branch push uploads a package
+   before review — and conda-forge packages are immutable, so a bad upload cannot
+   be edited or deleted, only marked broken (see [Rule 9](#marking-broken)). Work
+   from a personal fork, or from the branch `regro-cf-autotick-bot` opens.
 
-3. **Diff the two copies before opening the PR.** This is the only thing that
-   catches drift; see [Rule 6](#what-the-gates-do-not-cover) for why neither
-   gate does. Every difference must be one you intended.
+3. <a id="diff-the-copies"></a>**Diff the two copies before pushing to the branch
+   the PR builds from** — on the fork route that is before the PR exists, on the
+   bot route it is not. Every difference must be a comment you changed
+   deliberately, or `build.number` ([Rule 4](#build-number)). Nothing else may
+   differ, and no gate checks this: see [Rule 7](#what-the-gates-do-not-cover).
 
-4. **Set the build number by what changed.** Reset it to zero when the version
-   changes; increment it by one when the version is unchanged and only recipe
-   metadata moves. A metadata-only fix shipped without the increment does not
-   reach users.
+4. <a id="build-number"></a>**`build.number` belongs to the feedstock.** It is
+   the one field the far copy owns and the one sanctioned non-comment difference,
+   because conda-forge increments it for rebuilds and migrations this repo never
+   sees. Set it there to `0` when the version changes, and `+1` when the version
+   is unchanged and only recipe metadata moves — a metadata-only fix shipped
+   without the increment does not reach users. Leave our copy's value alone.
 
-5. **Rerender whenever a rendered artifact's input changes.** The feedstock's
-   `README.md` is generated from the recipe and carries its summary and
+5. <a id="rerender"></a>**Rerender whenever a rendered artifact's input changes.** The feedstock's
+   `README.md` is generated from the recipe and carries its `about` summary and
    description, so an `about` edit leaves the two disagreeing until a rerender.
-   Request one by commenting `@conda-forge-admin, please rerender` on the PR;
-   do not hand-edit a generated file.
+   Comment `@conda-forge-admin, please rerender` on the PR; do not hand-edit a
+   generated file. The observable is a `@conda-forge-admin` commit on the branch
+   touching `README.md`.
 
-6. **No internal tracker ID reaches the feedstock copy.** IDs are meaningless
-   to a conda-forge reader and point at a tracker they cannot open. Carry the
-   claim in prose instead. `check_no_tracker_refs` does not enforce this: it
-   reads no YAML at all, and `packaging/` is outside every root it does scan.
+6. <a id="no-tracker-ids"></a>**No internal tracker ID reaches the feedstock copy.** They point at a tracker
+   a conda-forge reader cannot open. Carry the claim in prose instead. The check
+   is `rg -n '\b(BK|BUG|ID|AF|BL|ADR|RFC)-[0-9]+' recipe/recipe.yaml` on the far
+   copy, expected empty; `check_no_tracker_refs` cannot do it, because it reads
+   no YAML and `packaging/` is outside every root it scans.
 
-7. <a id="what-the-gates-do-not-cover"></a>**Know what the two gates prove.**
-   `check_conda_recipe_pins` holds *this repo's* recipe to `pyproject.toml`'s
-   extras — not the feedstock to this repo. `check_backend_order` proves
-   ordering, not membership, so a backend enumeration that is correctly ordered
-   and incomplete passes it. Anything outside those two is a human's to check.
+7. <a id="what-the-gates-do-not-cover"></a>**Know what each mechanism proves.**
+   - `check_conda_recipe_pins` compares **this repo's** recipe with
+     `pyproject.toml`; its full pair-set is the row in
+     [`GATE-INVENTORY.md`](GATE-INVENTORY.md). It never reads the feedstock.
+   - `check_backend_order` **ignores any enumeration naming fewer than six
+     distinct backends** (`_MIN_BACKENDS`): both scanners discard it as prose
+     before ordering is tested. A four-backend `about` block is invisible to it
+     whether ordered or not — and our own `about` summary is in that blind spot
+     today.
+   - `.github/workflows/conda-recipe.yml` runs `rattler-build --render-only` on
+     any PR touching `packaging/conda-forge/**`, so structural validity is
+     machine-checked before the recipe leaves this repo. It says nothing about
+     content.
+   - Nothing compares the two copies. That is [Rule 3](#diff-the-copies), and it
+     is a human step.
 
-8. **Fill conda-forge's PR template.** It ships from their organisation
-   defaults, so it appears on the PR without living in the feedstock. Remove
-   the checks it says are irrelevant rather than leaving them unticked.
+8. **Fill conda-forge's PR template.** It ships from their organisation defaults,
+   so it appears on the PR without living in the feedstock. Remove the checks it
+   says are irrelevant rather than leaving them unticked.
+
+9. <a id="marking-broken"></a>**A bad published build is marked broken, never
+   deleted.** Open a PR against
+   [`conda-forge/admin-requests`](https://github.com/conda-forge/admin-requests)
+   adding the appropriate `broken` request, then ship a corrected build with
+   `build.number` incremented. There is no other remedy.
 
 ## Guides
 
 ### Which route to use
 
 Both routes end in a PR against the feedstock from a branch this project
-controls; pick by whether the bot has already acted.
+controls; pick by what the bot has already done.
 
 | Situation | Route |
 |---|---|
 | No bot PR open | Fork the feedstock, branch, PR from the fork |
 | Bot PR already open | Push the recipe change onto the bot's branch, so version and constraints land in one review |
+| Bot has not fired and the release is waiting | Comment `@conda-forge-admin, please update version` on the feedstock, or take the fork route |
+| Bot fires after the fork route was taken | Keep the fork PR and close the bot's — two open PRs against a third-party repo is the thing to avoid |
 
 The bot updates the source section and version only. Merging its PR untouched
-therefore ships the new release carrying the previous release's constraints —
-which is how a corrected dependency floor silently fails to reach conda users
-while every gate in this repo stays green. Verifying the bot's PR exists is not
-the task; carrying the constraints is.
+ships the new release carrying the previous release's constraints.
 
-To push to the bot's branch, add its fork as a remote and push there — the bot
-branches from its own fork, and maintainers can write to it:
+**Pushing to the bot's branch.** The branch name is generated (e.g.
+`0.32.0_h<hash>`); read it off the bot's PR. Maintainers can write to the bot's
+fork, so no setting on the PR needs changing:
 
 ```bash
 git remote add regro-cf-autotick-bot \
   https://github.com/regro-cf-autotick-bot/remote-store-feedstock.git
 git fetch regro-cf-autotick-bot
+git push regro-cf-autotick-bot HEAD:<branch>
 ```
 
-`hub pr checkout <N>` sets up the same remote in one step.
+`gh pr checkout <N>` inside a feedstock clone sets the same remote up. The
+observable is the commit appearing on the bot's PR with its CI re-running.
 
 ### Walkthrough
 
-1. Update `packaging/conda-forge/recipe.yaml` in this repo and let `hatch run
-   lint` check it against `pyproject.toml`.
-2. Fork the feedstock to a personal account, or add the bot's remote per the
-   table above.
-3. Copy the recipe outward. The copy is verbatim below `context:`; only
-   comments differ, because some of them describe this repo's workflow or cite
-   a tracker and mean nothing on the far side.
-4. Diff the two copies. Confirm every difference is a comment you meant to
-   change.
-5. Commit to a branch, open the PR against the feedstock, and fill the
-   template.
-6. Comment `@conda-forge-admin, please rerender` when Rule 5 applies. Leave
-   "Allow edits by maintainers" enabled so the rerender can be pushed to the
-   branch.
-7. Merge once CI is green and the rerender has landed.
-
-### Keeping the copies from drifting
-
-Deriving the feedstock's file from this repo's by script, rather than by hand,
-turns the copy-out into something reproducible: the comment edits become a
-declared list, each asserted to apply exactly once, so a silently skipped edit
-fails loudly instead of shipping. Mechanising the comparison itself — rather
-than relying on Rule 3's human diff — is open work; the backlog carries the
-options and what each costs.
+1. Set `context.version` and `source.sha256` in
+   `packaging/conda-forge/recipe.yaml` and land that here via a PR — the
+   checklist's two preceding bullets carry the `sha256` command. `hatch run lint`
+   checks the pins and the `Conda Recipe` workflow renders it.
+2. Fork `conda-forge/remote-store-feedstock` to a personal account, or add the
+   bot's remote per the table above.
+3. Copy our recipe into the feedstock's **`recipe/recipe.yaml`**. Replace the
+   header comment block above `context:` — it describes this repo's workflow and
+   does not ship. Below `context:` the copy is verbatim except the comments
+   [Rule 6](#no-tracker-ids) requires stripping.
+4. Diff the two copies ([Rule 3](#diff-the-copies)) and run
+   [Rule 6](#no-tracker-ids)'s grep on the far copy.
+5. Commit from a local clone, not through the GitHub API, whose commits are
+   unverified. Push to the fork, or to the bot's branch.
+6. Open the PR against `conda-forge/remote-store-feedstock` and fill the
+   template. On the fork route, leave "Allow edits by maintainers" enabled so
+   maintainers and the rerender can push to your branch; on the bot route the PR
+   is not yours and there is nothing to set.
+7. Comment `@conda-forge-admin, please rerender` when [Rule 5](#rerender)
+   applies, and wait for its commit.
+8. Merge once feedstock CI is green and the rerender has landed. If CI is red,
+   it is this change's to fix — the recipe is the only thing the PR touches.
+9. **Confirm users can get it**: `conda search -c conda-forge remote-store`
+   lists the new version once the post-merge build uploads. Until that shows the
+   release, the channel has not received it, whatever the PR says.
