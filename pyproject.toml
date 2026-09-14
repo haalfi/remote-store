@@ -49,6 +49,11 @@ Documentation = "https://docs.remotestore.dev/"
 Repository = "https://github.com/haalfi/remote-store"
 Changelog = "https://github.com/haalfi/remote-store/blob/master/CHANGELOG.md"
 Issues = "https://github.com/haalfi/remote-store/issues"
+# The conda-forge channel, for PyPI visitors who would rather install with conda.
+# Short form deliberately: this string ships in every sdist and wheel and cannot
+# be corrected in already-published ones, and `/channels/.../packages/.../overview`
+# pins a UI tab where this does not.
+Conda-Forge = "https://anaconda.org/conda-forge/remote-store"
 
 [project.optional-dependencies]
 # Each extra below declares a floor; a ceiling is the exception. Among the
