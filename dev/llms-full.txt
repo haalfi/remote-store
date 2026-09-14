@@ -82,6 +82,8 @@ pip install "remote-store[toml]"           # TOML config on Python < 3.11
 conda install -c conda-forge remote-store azure-storage-file-datalake azure-identity aiohttp
 ```
 
+Because those dependencies are resolved as a separate step, this is the case conda-forge's [channel-priority guidance](https://conda-forge.org/docs/user/introduction/) exists for: configure conda-forge as a channel with `channel_priority strict`, so the package and the backend libraries beside it come from one channel rather than a mix.
+
 ## Quick Start
 
 The simplest way to use `remote-store` ([`examples/getting_started/quickstart.py`](https://github.com/haalfi/remote-store/blob/master/examples/getting_started/quickstart.py)):

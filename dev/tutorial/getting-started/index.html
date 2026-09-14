@@ -10973,6 +10973,11 @@ usually more than one package. Each extra's full set is its entry under
 <code>[azure]</code>, for example:</p>
 <div class="highlight"><pre><span></span><code><a id="__codelineno-4-1" name="__codelineno-4-1" href="#__codelineno-4-1"></a>conda<span class="w"> </span>install<span class="w"> </span>-c<span class="w"> </span>conda-forge<span class="w"> </span>remote-store<span class="w"> </span>azure-storage-file-datalake<span class="w"> </span>azure-identity<span class="w"> </span>aiohttp
 </code></pre></div>
+<p>Because those dependencies are resolved as a separate step, this is the case
+conda-forge's <a href="https://conda-forge.org/docs/user/introduction/">channel-priority
+guidance</a> exists for: configure
+conda-forge as a channel with <code>channel_priority strict</code>, so the package and the
+backend libraries beside it come from one channel rather than a mix.</p>
 <h2 id="quick-start">Quick Start<a class="headerlink" href="#quick-start" title="Permanent link">&para;</a></h2>
 <p>The simplest way to use <code>remote-store</code> (<a href="https://github.com/haalfi/remote-store/blob/master/examples/getting_started/quickstart.py"><code>examples/getting_started/quickstart.py</code></a>):</p>
 <div class="highlight"><pre><span></span><code><a id="__codelineno-5-1" name="__codelineno-5-1" href="#__codelineno-5-1"></a><span class="kn">from</span><span class="w"> </span><span class="nn">remote_store</span><span class="w"> </span><span class="kn">import</span> <span class="n">Store</span>
