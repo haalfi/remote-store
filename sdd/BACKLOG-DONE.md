@@ -240,7 +240,50 @@ if evidence changes; these are retired.
 
 ## Unreleased
 
-*(none)*
+- [x] **ID-018 — conda-forge publishing**
+  spec: — · effort: — · audience: user.discoverability.human, library.maintainer
+  `conda install -c conda-forge remote-store` works, and the channel serves the
+  current release with the constraints this repo declares. Shipped: the
+  [recipe](../packaging/conda-forge/recipe.yaml), the
+  [conda-recipe workflow](../.github/workflows/conda-recipe.yml) with
+  `packaging/conda-forge/variants.yaml` supplying `python_min` to our own render,
+  the README's install section, the release-checklist steps, and
+  [`sdd/CONDA-FORGE.md`](CONDA-FORGE.md), the runbook Phase 5 now links to.
+  **The reviewer's two pin suggestions were the valuable part, and not for the
+  pins.** They found a `pyarrow` gap by reading `pyproject.toml` against the
+  recipe — something nothing here did — which exposed that **no mechanism had
+  ever tested a dependency floor**. Following that thread by hand found five
+  wrong floors and one missing dependency (BUG-283 through BUG-286, all in
+  v0.32.0) and produced BK-368, the gate that now derives `run_constraints` from
+  the extras. The analytical distinction that made the sweep tractable:
+  a floor that **refuses to install** announces itself, where one that
+  **installs and then fails at import** does not, and only the second class is
+  what a floor must exclude. That is why two `pyarrow` floors were correctly left
+  alone. BK-369 carries the underlying gap — a declared floor is still a claim
+  nobody installs and runs.
+  **The two copies diverged, and the divergence cost two things.** The file
+  submitted to staged-recipes was hand-edited away from this one: it dropped
+  `tomli >=1.1.0`, leaving the `toml` extra unconstrained for conda users, and it
+  rewrote `about` to a pre-BK-311 form advertising four backends where the
+  library has eight. Our copy never carried that wording — the recipe was added
+  2026-08-06 in `01dd2f4f3` already naming OneDrive — so the hand-edit introduced
+  it, and only the `tomli` half was noticed at the time. Nothing here could see
+  either: BK-368 holds this repo's recipe to `pyproject.toml`, not the feedstock
+  to this repo, and `check_backend_order` proves ordering rather than membership,
+  so it **passed** when run against the drifted live recipe. **BK-370** is that
+  gap, filed rather than fixed.
+  **Closed by the feedstock PR**, which carried version, `sha256`, the corrected
+  `run_constraints` and the refreshed `about`, and whose rerender regenerated the
+  feedstock's `README.md` — the generated file that carries the recipe's summary,
+  and the reason a rerender was required rather than routine. Verified before
+  merge at branch head `8822e0b`: the pin gate agreed with `pyproject.toml`'s
+  extras, no internal tracker ID remained, and a diff against
+  `packaging/conda-forge/recipe.yaml` showed **zero non-comment differences** —
+  every remaining line differing is a comment, by design.
+  **What stays behind deliberately.** The README's conda caveat is written to be
+  kept, not deleted: it names no version and no floor list, only that the channel
+  lags PyPI and its constraints can predate `pyproject.toml`'s. A feedstock always
+  trails a release, so that stays true and no release-time deletion step is owed.
 
 ## v0.32.0
 

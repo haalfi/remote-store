@@ -2,7 +2,7 @@
 
 **Date:** 2026-04-13
 **Status:** Research complete — ready for review and refinement
-**Backlog items:** ID-018 (conda-forge publishing) is the last gating release task; v1.0 announcement uses this plan
+**Backlog items:** ID-018 (conda-forge publishing) was the last gating release task when this was written and is now complete (`BACKLOG-DONE.md`); v1.0 announcement uses this plan
 
 ---
 

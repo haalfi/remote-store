@@ -170,3 +170,44 @@ phases:
           and leaving it is not available here, since the egress policy blocks
           api.anaconda.org and GitHub access is scoped to this repo. Derivation
           added inline; the feedstock diff moves to the release checklist.
+
+  - id: close
+    name: Carry it out to the feedstock and close
+    steps:
+      - file: sdd/CONDA-FORGE.md
+        section: "(new)"
+        read_type: reference
+        extract: >-
+          Written while the knowledge was verified rather than recalled. Every
+          rule is something this thread paid for: two of them correct errors
+          this trace's own author shipped into `CONTRIBUTING.md` — "branch the
+          feedstock", which conda-forge discourages because branches publish
+          automatically and their packages are immutable, and an invented
+          "Allow edits by maintainers" requirement where the real mechanism is
+          adding the bot's fork as a remote. Both were caught by a human pasting
+          the upstream docs, not by any gate. Phase 5 shrank to the two
+          conditions that decide whether the step is done, plus a link.
+      - file: sdd/BACKLOG.md
+        section: "5. A release cannot ship a surprise"
+        read_type: gate
+        extract: >-
+          Clause 3 moves from half-met to met, and the paragraph explaining the
+          wait is replaced rather than amended — it had already been rewritten
+          once when the recipe merged, so this is the second time the same
+          paragraph went stale on an external event. BK-370 stays a separate
+          clause on purpose: a channel can be published, working, and describing
+          the library as something it is not.
+      - file: sdd/research/research-v1-communication-plan.md
+        section: "(header metadata)"
+        read_type: verify
+        extract: >-
+          Found by the § Completing work sweep (`rg -n 'ID-018' -- sdd .claude
+          scripts docs-src tests *.md`, 22 hits, all read). Its header asserted
+          ID-018 "is the last gating release task" — the present-tense claim the
+          sweep rule names explicitly, and the only one of the 22 in `research/`
+          that needed fixing. Left alone: the superseded RFC-0009's snapshot
+          (historical by its status header), the audit's finding row, the
+          `test_gen_backlogid` fixture (a synthetic string, not read from the
+          real file), and the body recommendation at line 330, which is what the
+          plan recommended then rather than a claim about now.
+        outcome: misleading
