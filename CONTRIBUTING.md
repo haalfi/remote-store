@@ -577,15 +577,24 @@ _Release template: title = version, description = "What's Changed" header whose 
 - [ ] conda-forge: get `version`, `sha256` **and the `run_constraints` block from
       `packaging/conda-forge/recipe.yaml`** onto `conda-forge/remote-store-feedstock`.
       Diff the feedstock's `recipe/recipe.yaml` against ours first — the two copies
-      diverged once and the divergence silently dropped a constraint.
-      `regro-cf-autotick-bot` rewrites `version` and `sha256` only, so a bot PR merged
-      untouched ships the previous release's constraints with the new code, which is how
-      a corrected floor silently fails to reach conda users. Verifying the bot PR exists
-      is not the step; carrying the constraints is, by either route:
-      **self-service** — branch the feedstock from a local clone, apply all three, open a
-      PR (commit locally, not through the GitHub API, whose commits are unverified); or
-      **ride the bot**, pushing `run_constraints` onto its version-bump branch so both
-      land in one review. The bot branches from its own fork, so that shortcut needs
-      "Allow edits by maintainers" on its PR; without it, go self-service and close the
-      bot's PR
+      diverged once and it silently cost both a constraint and the whole `about` block.
+      `regro-cf-autotick-bot` updates the `source` section and version only, so a bot PR
+      merged untouched ships the previous release's constraints with the new code, which
+      is how a corrected floor silently fails to reach conda users. Verifying the bot PR
+      exists is not the step; carrying the constraints is.
+      **Never push a branch to the feedstock itself, though a maintainer can.**
+      conda-forge publishes feedstock branches automatically, so a branch push uploads to
+      anaconda.org before anyone reviews it — and conda-forge packages are immutable, so a
+      bad upload cannot be edited or deleted, only marked broken. Set `build.number` to `0`
+      when the version changes and `+1` when it does not and only recipe metadata moves.
+      Whether the bot has fired shows on conda-forge's [version-update
+      status](https://conda-forge.org/status/#version_updates); it can take hours. Two safe
+      routes, per conda-forge's `docs/maintainer/updating_pkgs.md`:
+      - **Fork** the feedstock to your own account, branch there, PR from the fork. This is
+        conda-forge's documented default for every recipe update
+      - **Ride the bot's PR** when one is open, so version and constraints land in one
+        review: add its fork as a remote (`git remote add regro-cf-autotick-bot
+        https://github.com/regro-cf-autotick-bot/remote-store-feedstock.git`), fetch, check
+        out the PR's branch and push back to it. Maintainers can push there directly, so
+        this needs nothing enabled on the PR; `hub pr checkout <N>` sets the same remote up
 - [ ] Announce if applicable (tracking issues, users)

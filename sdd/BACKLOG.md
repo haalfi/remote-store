@@ -1971,10 +1971,17 @@ the recipe merged.
   dependency and a cross-repo failure this repo cannot fix); or generate the
   feedstock copy from ours by script so the copy-out is mechanical rather than
   manual (the v0.32.0 PR did this ad hoc — the generator and its three asserted
-  edits are the prototype); or extend `check_backend_order` with per-surface
+  edits are the prototype); extend `check_backend_order` with per-surface
   membership opt-in (narrowest, and the one that needs the judgement CONTRIBUTING
-  declines). Discovered by ID-018; do not fold back into it — ID-018 closes when
-  the feedstock PR opens, and this outlives it.
+  declines); or enable the `bot.` requirements feature in the feedstock's
+  `conda-forge.yml`, which conda-forge's own maintainer docs describe as able to
+  verify or update a Grayskull-compatible recipe's requirements — free, upstream,
+  and the only option needing no code here, but it is **experimental by their own
+  description**, covers `requirements` only, and so would not have caught the
+  `about` drift that produced this item. Evaluate it first anyway: if it holds the
+  pins, the remaining gap is small enough to change which of the other three is
+  worth building. Discovered by ID-018; do not fold back into it — ID-018 closes
+  when the feedstock PR opens, and this outlives it.
 
 - [ ] **ID-229 — Evaluate porting to httpx 1.0 (lift the `<1.0` cap)**
   spec: GR-033 · effort: M · audience: user.api
