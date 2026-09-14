@@ -49,7 +49,7 @@ Release](../CONTRIBUTING.md#release) Phase 5 links here rather than restating it
 6. **No internal tracker ID reaches the feedstock copy.** IDs are meaningless
    to a conda-forge reader and point at a tracker they cannot open. Carry the
    claim in prose instead. `check_no_tracker_refs` does not enforce this: it
-   scans Python docstrings and Markdown, never YAML.
+   reads no YAML at all, and `packaging/` is outside every root it does scan.
 
 7. <a id="what-the-gates-do-not-cover"></a>**Know what the two gates prove.**
    `check_conda_recipe_pins` holds *this repo's* recipe to `pyproject.toml`'s

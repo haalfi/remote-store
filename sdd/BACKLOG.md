@@ -1848,15 +1848,27 @@ working, and quietly describing the library as something it is not.
 - [ ] **BK-370 — The published conda recipe is a mirror no mechanism watches**
   spec: — · effort: M · audience: user.discoverability.human, infra.ci
   `conda-forge/remote-store-feedstock`'s `recipe/recipe.yaml` is a copy of
-  `packaging/conda-forge/recipe.yaml`, and nothing compares the two. Two gates
-  look adjacent and neither covers it: `check_conda_recipe_pins.py` holds **our**
-  copy to `pyproject.toml`, not the feedstock to ours, and `check_backend_order.py`
-  proves order rather than membership — run against the drifted live copy on
-  2026-09-14 it **passed**, because "Local, S3, SFTP, Azure" is correctly ordered
-  and merely incomplete. That is not a gate bug: [`CONTRIBUTING.md` § Adding a New
-  Backend](../CONTRIBUTING.md#adding-a-new-backend) states membership is a
-  judgement it deliberately declines to make, since the API reference splits its
-  tables and the README abridges on purpose.
+  `packaging/conda-forge/recipe.yaml`, and nothing compares the two. **Three**
+  gates look adjacent and none covers it, and none of the three is buggy — which
+  is the point: each is correct within a scope that stops at this repo's edge,
+  and the recipe is published one hop past it.
+  - `check_conda_recipe_pins.py` holds **our** copy to `pyproject.toml`, not the
+    feedstock to ours.
+  - `check_backend_order.py` proves order rather than membership — run against
+    the drifted live copy on 2026-09-14 it **passed**, because "Local, S3, SFTP,
+    Azure" is correctly ordered and merely incomplete. [`CONTRIBUTING.md` §
+    Adding a New Backend](../CONTRIBUTING.md#adding-a-new-backend) states that
+    membership is a judgement it deliberately declines to make, since the API
+    reference splits its tables and the README abridges on purpose.
+  - `check_no_tracker_refs.py` enumerates three roots — `src/remote_store/`
+    Python docstrings, `docs-src/` Markdown, and exactly three repo-root files
+    (`scripts/check_no_tracker_refs.py:194-200`). `packaging/` is in none of
+    them and no scanner reads `.yaml`, so `BK-368`, `BUG-232` and `BUG-286` sit
+    in the recipe today with the gate green. Correct by its own terms — the
+    recipe is an internal file, where tracker IDs are as legitimate as in
+    `sdd/` — and wrong about where that file ends up. Two of the three were
+    caught by eye during the v0.32.0 copy-out, on their way to a public
+    third-party repo.
   What the gap cost, measured rather than hypothesised: the live recipe's `about`
   block is pre-BK-311, so the conda-forge package page tells users remote-store
   reaches four backends when it reaches eight, and omits OneDrive — the exact
@@ -1874,8 +1886,10 @@ working, and quietly describing the library as something it is not.
   feedstock's raw recipe in CI and diff it (catches everything, adds a network
   dependency and a cross-repo failure this repo cannot fix); or generate the
   feedstock copy from ours by script so the copy-out is mechanical rather than
-  manual (the v0.32.0 PR did this ad hoc — the generator and its three asserted
-  edits are the prototype); extend `check_backend_order` with per-surface
+  manual (the v0.32.0 PR did this ad hoc — the generator and its **five**
+  asserted edits are the prototype, and it is the only option that would have
+  caught all three gaps above, since two of those five edits exist solely to
+  strip tracker IDs); extend `check_backend_order` with per-surface
   membership opt-in (narrowest, and the one that needs the judgement CONTRIBUTING
   declines); or enable the `bot.` requirements feature in the feedstock's
   `conda-forge.yml`, which conda-forge's own maintainer docs describe as able to
