@@ -11,6 +11,7 @@
 
 <p align="center">
   <a href="https://pypi.org/project/remote-store/"><img src="https://img.shields.io/pypi/v/remote-store" alt="PyPI version"></a>
+  <a href="https://anaconda.org/conda-forge/remote-store"><img src="https://img.shields.io/conda/vn/conda-forge/remote-store" alt="conda-forge version"></a>
   <a href="https://pypi.org/project/remote-store/"><img src="https://img.shields.io/pypi/pyversions/remote-store" alt="Python versions"></a>
   <a href="https://github.com/haalfi/remote-store/actions/workflows/ci.yml"><img src="https://github.com/haalfi/remote-store/actions/workflows/ci.yml/badge.svg" alt="CI"></a>
   <a href="https://codecov.io/gh/haalfi/remote-store"><img src="https://codecov.io/gh/haalfi/remote-store/branch/master/graph/badge.svg" alt="Coverage"></a>
