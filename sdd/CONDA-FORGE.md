@@ -48,12 +48,18 @@ Upstream sources, which govern where they disagree with this page:
    is unchanged and only recipe metadata moves — a metadata-only fix shipped
    without the increment does not reach users. Leave our copy's value alone.
 
-5. <a id="rerender"></a>**Rerender whenever a rendered artifact's input changes.** The feedstock's
+5. <a id="rerender"></a>**Rerender after an `about` change.** The feedstock's
    `README.md` is generated from the recipe and carries its `about` summary and
    description, so an `about` edit leaves the two disagreeing until a rerender.
    Comment `@conda-forge-admin, please rerender` on the PR; do not hand-edit a
    generated file. The observable is a `@conda-forge-admin` commit on the branch
    touching `README.md`.
+   This case is **ours, not upstream's**: conda-forge's own "when to rerender"
+   list covers build configuration — platform skips, `conda-forge.yml`, build
+   matrix, pinning — and does not mention `about`. The basis here is direct
+   observation at v0.32.0, where the rerender regenerated `README.md` with the
+   new summary and changed nothing else. Requesting one costs nothing either
+   way, and the PR template asks about it regardless.
 
 6. <a id="no-tracker-ids"></a>**No internal coordinate reaches the feedstock copy** — not only backlog
    IDs, but spec section IDs, ADR numbers and PR references, all of which point
