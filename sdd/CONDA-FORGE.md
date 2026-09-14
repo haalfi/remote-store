@@ -55,11 +55,15 @@ Upstream sources, which govern where they disagree with this page:
    generated file. The observable is a `@conda-forge-admin` commit on the branch
    touching `README.md`.
 
-6. <a id="no-tracker-ids"></a>**No internal tracker ID reaches the feedstock copy.** They point at a tracker
-   a conda-forge reader cannot open. Carry the claim in prose instead. The check
-   is `rg -n '\b(BK|BUG|ID|AF|BL|ADR|RFC)-[0-9]+' recipe/recipe.yaml` on the far
-   copy, expected empty; `check_no_tracker_refs` cannot do it, because it reads
-   no YAML and `packaging/` is outside every root it scans.
+6. <a id="no-tracker-ids"></a>**No internal coordinate reaches the feedstock copy** — not only backlog
+   IDs, but spec section IDs, ADR numbers and PR references, all of which point
+   somewhere a conda-forge reader cannot follow. Carry the claim in prose
+   instead. Check the far copy against the structural shape
+   `check_no_tracker_refs` uses (`_TRACKER_RE` in that script, plus its `spec
+   NNN` and `PR #NNN` forms), expecting no match; an enumerated prefix list is
+   the wrong instrument here, because it passes the next `BE-008` or `GR-033`
+   somebody cites. That gate cannot run this itself: it reads no YAML, and
+   `packaging/` is outside every root it scans.
 
 7. <a id="what-the-gates-do-not-cover"></a>**Know what each mechanism proves.**
    - `check_conda_recipe_pins` compares **this repo's** recipe with

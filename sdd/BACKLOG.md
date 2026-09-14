@@ -1614,7 +1614,8 @@ carries a published upgrade path by the time it ships — **satisfied**: the fou
 and the obligation to write one moved onto the PR making the break, where its
 author already looks (BUG-261, in [BACKLOG-DONE.md](BACKLOG-DONE.md)).
 
-Clause 3 is stated as *intend to offer* rather than *already advertised*
+The install-channel clause — fourth in the list above, counted over its
+semicolons — is stated as *intend to offer* rather than *already advertised*
 deliberately: ID-018 created a channel rather than repairing a dead one, so the
 narrower wording would have been vacuously true while the item was unbuilt.
 **That clause is met.** The feedstock PR merged, so the channel serves the
@@ -1880,13 +1881,16 @@ working, and quietly describing the library as something it is not.
     caught by eye during the v0.32.0 copy-out, on their way to a public
     third-party repo.
     Its scope also stops short of published surfaces **inside** this repo, so
-    the recipe is not the only mirror it misses: nine `sdd/*.md` files carry a
+    the recipe is not the only mirror it misses: eight `sdd/*.md` files carry a
     `doc: dual` marker and render onto the docs site through the bridge, but no
     physical `docs-src/explanation/design/*.md` exists for the gate's `docs-src`
     rglob to find, and its docstring declares `sdd/**` out of scope as internal.
-    Measured on this branch: `CI-OPERATIONS.md` publishes with 7 distinct tracker
-    IDs and `TESTING.md` with 3, gate green. Nothing is broken by that — but the
-    fix shapes below are costed against the narrower gap.
+    Derivation, applying the gate's own `_TRACKER_RE` rather than a
+    backlog-prefix grep — the distinction matters, since the structural pattern
+    also catches spec IDs and ADR numbers a prefix list misses: `CI-OPERATIONS.md`
+    publishes with 8 distinct matches and `TESTING.md` with 8, gate green.
+    Nothing is broken by that — but the fix shapes below are costed against the
+    narrower gap.
   What the gap cost, measured rather than hypothesised: the live recipe's `about`
   block was pre-BK-311, so the conda-forge package page told users remote-store
   reaches four backends when it reaches eight, and omitted OneDrive — the exact

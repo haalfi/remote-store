@@ -577,7 +577,7 @@ _Release template: title = version, description = "What's Changed" header whose 
 - [ ] conda-forge: get `version`, `sha256` **and the `run_constraints` block from
       `packaging/conda-forge/recipe.yaml`** onto `conda-forge/remote-store-feedstock`,
       following [`sdd/CONDA-FORGE.md`](sdd/CONDA-FORGE.md), which owns the routes, the
-      rules and the walkthrough — including the `sha256` fetch. **Done when
+      rules and the walkthrough. **Done when
       `conda search -c conda-forge remote-store` lists the new version**, not when the PR
       is open: the upload happens after merge and can fail. Whether the bot has fired
       shows on conda-forge's [version-update

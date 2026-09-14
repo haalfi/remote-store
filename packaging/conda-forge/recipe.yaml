@@ -9,11 +9,11 @@
 # `tomli` constraint, which is why edits land here first and are copied out,
 # never the reverse.
 #
-# The feedstock now carries this file's contents: the v0.32.0 PR took version,
-# sha256, the corrected `run_constraints` and the refreshed `about` across, and
-# a diff of the two copies at that point showed no non-comment difference.
-# `build.number` is the exception -- conda-forge owns it, for rebuilds and
-# migrations this repo never sees, so the value here is not authoritative.
+# `conda-forge/remote-store-feedstock`'s `recipe/recipe.yaml` is a copy of this
+# file, made by hand at each release, so the two are in step only between a
+# copy-out and the next edit here -- a release window always has them apart.
+# `build.number` is the sanctioned exception: conda-forge owns it, for rebuilds
+# and migrations this repo never sees, so the value here is not authoritative.
 #
 # Nothing in this repo can read the feedstock, and no gate compares the two.
 # `sdd/CONDA-FORGE.md` is the procedure, including which comments are stripped

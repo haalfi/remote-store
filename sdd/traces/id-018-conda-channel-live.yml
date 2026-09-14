@@ -28,15 +28,15 @@ discovery_followups:
   # data; aggregators key on filename, so omitting it here read as though this
   # PR discovered nothing.
   - BK-370
-# Derivation, per the schema's review_rounds clause. The trace now ships in
-# PR #1009, so the count is that PR's: `gh api
-# repos/haalfi/remote-store/pulls/1009/commits --jq '.[] | .sha[0:7] + "  " +
-# (.commit.message | split("\n")[0])'` returns five commits, of which c2564bb,
-# b7d4ba1, 6ae5ad1, 48ce95c and 9384b72 all predate any review on #1009; the
-# commit carrying this line incorporates round 1 there. #1005 contributed two
-# earlier rounds to this same trace, so the running total is 3. The stale
-# spelling is a count pinned to the PR the trace was first written for.
-review_rounds: 3
+# Derivation, per the schema's review_rounds clause. Stated as a re-runnable
+# rule rather than a commit list, because a list goes stale on the next push
+# and this one already did twice: across the PRs this trace has shipped in,
+# count each commit whose subject is `fix: address PR #<n> review`, plus any
+# later commit made in response to a review round. #1005 contributed two;
+# #1009 has contributed `1dd5e57`, and the commit carrying this line is its
+# second round. The three commits between them (`9ba2b08`, `a7e95a4`,
+# `ead6011`) answered user requests rather than review, and do not count.
+review_rounds: 4
 phases:
   - id: verify
     name: Confirm the channel before claiming it
@@ -221,8 +221,8 @@ phases:
           the blind spot: every under-six enumeration is invisible, ordered or
           not. Corrected in BK-370, BACKLOG-DONE and the runbook; it also moved
           BK-370's fourth fix shape from "narrowest" to one needing the floor
-          lifted.
-        outcome: misleading
+          lifted. No `outcome` tag: the script's own docstring states the floor
+          plainly, so this was the reader's miss and not the document's.
       - file: packaging/conda-forge/recipe.yaml
         section: "about (git history)"
         read_type: verify
@@ -235,8 +235,9 @@ phases:
           commit, `01dd2f4f3` (2026-08-06). Our copy carried that wording for
           five months; the submission predates the fix. A copy correct when taken
           and never compared again — which is BK-370's shape, and a cleaner
-          argument for it than the hand-edit theory it replaces.
-        outcome: misleading
+          argument for it than the hand-edit theory it replaces. No `outcome`
+          tag: `--diff-filter=A` on the default traversal reporting one of two
+          adds is git behaving as documented, not an artifact misleading anyone.
       - file: sdd/research/research-v1-communication-plan.md
         section: "(header metadata)"
         read_type: verify
@@ -246,7 +247,7 @@ phases:
           first draft said 22, counted before this PR's own text added four).
           Its header asserted
           ID-018 "is the last gating release task" — the present-tense claim the
-          sweep rule names explicitly, and the only one of the 22 in `research/`
+          sweep rule names explicitly, and the only one of the 25 in `research/`
           that needed fixing. Left alone: the superseded RFC-0009's snapshot
           (historical by its status header), the audit's finding row, the
           `test_gen_backlogid` fixture (a synthetic string, not read from the
