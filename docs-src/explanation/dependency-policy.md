@@ -62,14 +62,19 @@ answers:
   compatibility helper and a diagnostic that reports what a given server
   will accept. Users on modern servers are unaffected; users on legacy
   servers get a switch.
-- **The HTTP client carries the one runtime ceiling.** Its next major line
-  is a wholesale client-API rewrite that removes the types the Graph and
-  HTTP backends are built on, so an unbounded range would break the import
-  outright rather than degrade. Porting to it is tracked work; the cap lifts
-  when the port lands.
+- **The HTTP client is capped**, because its next major line is a wholesale
+  client-API rewrite that removes the types the Graph and HTTP backends are
+  built on: an unbounded range would break the import outright rather than
+  degrade. That is the shape a ceiling has to have to earn its place — a
+  published incompatibility, not a suspicion. Porting to the new line is
+  tracked work, and the cap lifts when the port lands.
 
 Development and documentation build extras sit outside this convention and
 may pin tooling directly. They never reach your environment.
+
+Which ranges currently carry a ceiling is not listed here, because a list
+kept by hand goes stale the moment one is added or lifted. Read them off
+`pyproject.toml`, linked below.
 
 The authoritative ranges, with the reasoning for each, are the comments on
 `[project.optional-dependencies]` in
@@ -78,19 +83,29 @@ The authoritative ranges, with the reasoning for each, are the comments on
 ## What the drift guard gives you
 
 Declaring a floor with no ceiling means transitive versions move underneath
-us between releases. Scheduled CI re-resolves every extra weekly against the
-latest available versions, pre-releases included, and diffs the result against
-a committed record of the last known-good resolution. Any extra that moved then
-has the real test suite run against the freshly resolved package set: the
-backend conformance suite where there is one, the extension's own tests
-otherwise. Findings land on a rolling issue in the repository.
+us between releases. Scheduled CI re-resolves the extras it covers weekly
+against the latest available versions, pre-releases included, and diffs the
+result against a committed record of the last known-good resolution. Any extra
+that moved then gets a **smoke run** against the freshly resolved package set:
+the backend conformance suite where the extra has one, and otherwise as little
+as importing the module the extra exists to enable. Findings land on a rolling
+issue in the repository.
 
 The versions those records hold, per extra, are published on
 [Tested versions](../reference/tested-versions.md). That page answers "what
 was CI last green against?" — not "what will work".
 
-Four limits worth being explicit about:
+Its limits are worth being explicit about:
 
+- **It does not cover every extra you can install.** An extra whose resolution
+  depends on the running interpreter is excluded from the guard, so it has no
+  committed record and no row on the Tested versions page. `pyproject.toml`'s
+  marker-gated entries are the ones to check for; being excluded is not a
+  statement that such an extra is unwatched by anything, only that this guard
+  is not what watches it.
+- **The smoke can be shallower than the extra.** Where an extra's target is an
+  import, a drift that breaks anything past module load passes. Widening that
+  reach is tracked work.
 - **It watches the top of the range only.** The guard resolves to the newest
   compatible release, as does every other environment that builds this
   project. So the upper end of every range is exercised continuously and the
@@ -107,31 +122,24 @@ Four limits worth being explicit about:
 
 ## What a floor is worth
 
-A floor is a claim that the named version works. Until recently nothing
-tested that claim, and it turned out to be wrong more often than anyone
-expected: a sweep across the declared minimums found **five floors naming a
-release that installs cleanly and then fails** — at import, or at the first
-call. Two of them had been wrong for over a year. The corrections shipped in
-0.32.0 and are listed in the
-[migration guide](../reference/migration.md).
+A floor is a claim that the named version works, and it is a measurement
+rather than a guarantee. Floors are established by hand — installing a
+candidate release and running the code against it — and a regression test
+then guards the boundary that measurement found. Where a sweep has corrected
+a floor, the change is a breaking one and appears in the
+[migration guide](../reference/migration.md) with the reason.
 
-Two things follow, and the second is the one to act on.
+**Nothing re-derives them.** No mechanism resolves an extra at its declared
+minimums and runs that extra's tests, so a floor that upstream invalidates
+stays as written until someone measures it again. Sweeps have found floors
+naming a release that installs cleanly and then fails — at import, or at the
+first call — including ones that had been wrong for a long time. Closing that
+gap is open, tracked work.
 
-The floors are now measured rather than assumed. Each one was established by
-installing that release into a clean environment and running the code against
-it, on the oldest and newest supported Python, and a regression test guards
-the boundaries that sweep found.
-
-But **nothing re-derives them**, and the class of failure is not closed: a
-future floor can go stale the same way, because the mechanism that would
-catch it — resolving each extra at its minimums and running that extra's
-tests — does not exist yet. It is an open, tracked gap rather than a solved
-problem.
-
-So if you pin near the bottom of a declared range, treat the floor as our
-best measurement rather than a tested guarantee, and prefer a version
-comfortably above it. Pinning near the top is the well-trodden path: that is
-where every environment we run resolves to.
+So if you pin near the bottom of a declared range, treat the floor as our best
+measurement rather than a tested guarantee, and prefer a version comfortably
+above it. Pinning near the top is the well-trodden path: that is where every
+environment we run resolves to.
 
 ## Stability tiers
 

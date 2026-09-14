@@ -327,8 +327,7 @@ if evidence changes; these are retired.
   [DOCUMENTATION Rule 1](DOCUMENTATION.md#diataxis-placement) bars how-to from an
   explanation page. The authoritative *ranges* stayed in `pyproject.toml` and the
   guard's *procedure* in `CONTRIBUTING.md`; the page links to both and states
-  what neither does — the four limits of the guard and the four things the
-  policy does not promise.
+  what neither does — the guard's limits, and what the policy does not promise.
   **The floor claim was falsified mid-branch and had to be rewritten.** The page
   first told readers that a floor marks the known-bad boundary and the range
   above it is the untested part. BUG-283..286 and BK-369 landed on master while

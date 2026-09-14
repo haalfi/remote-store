@@ -13,13 +13,18 @@ audience:
 expected_ripples:
   - sdd/backlogid.json
   - docs-src/reference/tested-versions.md
-surprising_ripples:
-  # Not ripples of this diff, but of master moving under it: v0.32.0 plus
-  # BUG-283..286 landed while the branch was open, rotating both release
-  # windows and falsifying a claim the page had already made.
   - CHANGELOG.md
   - sdd/BACKLOG-DONE.md
-  - README.md
+surprising_ripples:
+  # A new page under docs-src/explanation/ must also be added to mkdocs.yml's
+  # `llmstxt` `sections` list, which is hand-maintained page-by-page so the
+  # explanation/design/ subtree stays out of the bundle. Nothing derives that
+  # list from the nav and no gate compares them, so the page was in the site
+  # nav and absent from llms.txt / llms-full.txt — the bundle the README
+  # points AI agents at. Caught in review, not by the ripple-check, whose
+  # "Docs navigation" row names the per-section _nav.yml files and not this
+  # list.
+  - mkdocs.yml
 # review_rounds is filled post-merge. Derivation to run then:
 # `git log --oneline origin/master..HEAD` minus the implementation commit,
 # counting the commit that carries this line.
@@ -189,4 +194,73 @@ phases:
           The row gained packaging/conda-forge/recipe.yaml run_constraints. This
           diff changes no dependency range, only a comment, so the new ripple
           does not attach — checked rather than assumed.
+        outcome: ok
+  - id: fix
+    name: Fix — review round 1
+    steps:
+      - file: sdd/CONTENT-RULES.md
+        section: "Rules 1, 3, 4"
+        read_type: gate
+        extract: >-
+          Review found the page breaking three rules it had itself been written
+          to respect. § What a floor is worth was dated relative to its writing
+          ("until recently", "now measured", "not yet", "shipped in 0.32.0"),
+          carried exact counts Rule 3 puts in measured artefacts, and copied
+          migration.md's measurement-method sentence instead of linking it.
+          Rewritten to state the durable claim — a floor is a measurement, not
+          a guarantee; nothing re-derives it — with the counts and dates left
+          to the migration guide and BK-369. Same defect one section up: naming
+          the HTTP cap as "the one runtime ceiling" is a count that goes stale
+          on the next cap added or lifted, so the page now sends the reader to
+          pyproject.toml for the current set.
+        outcome: ok
+      - file: scripts/drift_smoke_map.py
+        section: "SMOKE_TARGETS, smoke_for"
+        read_type: verify
+        extract: >-
+          The page claimed a drifted extra gets "the real test suite ... the
+          extension's own tests otherwise". False: graph and otel route to
+          --import-only, and smoke_for's fallback for any unlisted extra is an
+          import of remote_store. Reworded to "smoke run", with import-only
+          named as the floor, and a limit added saying the smoke can be
+          shallower than the extra.
+        outcome: ok
+      - file: scripts/drift_check.py
+        section: "_EXCLUDED_EXTRAS"
+        read_type: verify
+        extract: >-
+          The page said the guard re-resolves "every extra" and excused only
+          dev/docs build extras as never reaching a user. But the exclusion set
+          also holds the marker-gated toml extra, which README's install list
+          offers to users. Two sentences shared that defect, not the one the
+          review named: fixed the drift-guard paragraph and added a coverage
+          limit, phrased by the property (resolution depends on the
+          interpreter) rather than by naming the extra, so it survives the set
+          changing.
+        outcome: ok
+      - file: mkdocs.yml
+        section: "plugins / llmstxt / sections / Explanation"
+        read_type: gate
+        extract: >-
+          A new explanation page must be added here by hand — the list is
+          page-by-page so explanation/design/ stays out of the bundle — and the
+          page was in the site nav but absent from llms.txt and llms-full.txt,
+          which the README points AI agents at. Added it, then swept the whole
+          class rather than the one line: compared both hand-listed sections
+          against the pages on disk, and the only other absentees are the two
+          section-landing index.md stubs the file's own comment omits
+          deliberately. No gate compares this list to the nav; recorded as the
+          trace's surprising ripple.
+        outcome: ok
+      - file: sdd/traces/_schema.yml
+        section: "surprising_ripples, expected_ripples"
+        read_type: gate
+        extract: >-
+          The three paths first filed as surprising ripples were not ripples of
+          this work at all: CHANGELOG.md and BACKLOG-DONE.md are named by
+          ripple-check rows this trace's own verify phase cites, and README.md
+          was a deliberate part of the diff. Aggregators cannot read the
+          comment that said so, so they would have counted three missing
+          ripple-check rows. Moved the two to expected_ripples, dropped
+          README.md, and left mkdocs.yml as the one genuine entry.
         outcome: ok

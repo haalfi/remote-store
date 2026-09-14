@@ -113,6 +113,7 @@ plugins:
         Explanation:
           - explanation/architecture.md
           - explanation/concurrency.md
+          - explanation/dependency-policy.md
           - explanation/graph-ir.md
           - explanation/performance.md
           - explanation/security-model.md
