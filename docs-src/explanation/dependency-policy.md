@@ -181,6 +181,14 @@ rolling issue. The recorded versions are published on
 [Tested versions](../reference/tested-versions.md), which answers "what was CI
 last green against?" and not "what will work".
 
+**How fast the tested zone moves is something you can read rather than guess.**
+The guard runs weekly, and each extra on that page carries the date its record
+was captured, so the gap between that date and today is how far your install
+may have drifted from anything we have exercised. No upgrade cadence is stated
+here, because none has been measured; [Rule 10](#rule-10) is the one timing
+obligation this policy places on you, and it says only that security fixes
+reach the latest release.
+
 Four limits bound that, and they are why [Rule 14](#rule-14) and
 [Rule 15](#rule-15) read as they do:
 

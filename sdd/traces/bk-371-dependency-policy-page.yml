@@ -389,3 +389,24 @@ phases:
           alignment: five of the page's dashes are required by the house style
           that the same pass removed the others for.
         outcome: ok
+      - file: .github/workflows/drift-guard.yml
+        section: "on.schedule"
+        read_type: verify
+        extract: >-
+          An external review asked for an upgrade cadence, a "expect to upgrade
+          every X months" rule of thumb. Refused as asked: no such figure has
+          been measured, so publishing one fabricates a commitment, which is
+          the CONTENT-RULES Rule 3 and principle 9 defect this page has already
+          been corrected for twice. The kernel of the ask is answerable from
+          facts the repo holds, so the watching section now says the guard runs
+          weekly (cron "0 7 * * 1") and that each extra on the Tested versions
+          page carries its capture date, letting a reader measure the staleness
+          themselves. Both checked against source before writing.
+          Retrospective: the same review named boto3 and azure-storage-blob as
+          packages a user would look up ranges for. Neither is a runtime
+          dependency here (boto3 is [bench]-only plus a parked PoC; the
+          backends use s3fs and azure-storage-file-datalake), and it cited
+          version 0.17.0 against a current 0.32.0 — so its specifics were
+          generalised rather than read. Its two structural findings survived
+          that check and are filed; its third did not.
+        outcome: ok
