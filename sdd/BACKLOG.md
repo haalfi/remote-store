@@ -1605,7 +1605,8 @@ run, rather than a claim nobody tests (BK-369); **every install channel we
 intend to offer is published and working** — **met** by ID-018, in
 [BACKLOG-DONE.md](BACKLOG-DONE.md) — and what that channel publishes about us is
 watched rather than hand-copied (BK-370); every upstream that can break us on its
-own schedule has a standing watch (ID-229, ID-225); the one deprecation that
+own schedule has a standing watch (ID-229, ID-225), and the support window we
+publish is exercised by decision rather than by inertia (BK-375); the one deprecation that
 watch has caught is answered before the release that enforces it (BUG-281); the
 watch's issue survives a single-extra re-run (BUG-282) and its one legacy-sftp
 authentication does not fail on runner load (BK-367); and every breaking change
@@ -1944,6 +1945,42 @@ working, and quietly describing the library as something it is not.
   would spend the effort for certain nothing. Discovered by ID-018, which is now closed
   ([BACKLOG-DONE.md](BACKLOG-DONE.md)) — this item outlived it, which is why it
   was filed separately rather than folded in.
+
+- [ ] **BK-375 — Two interpreters are past the support window we now publish, and nothing has decided whether to keep them**
+  spec: — · effort: M · audience: user.api
+  [Rule 8](../docs-src/explanation/dependency-policy.md#rule-8) of the published
+  dependency policy adopts [SPEC 0](https://scientific-python.org/specs/spec-0000/):
+  a Python version is supported **at least** 3 years after its initial release.
+  SPEC 0's own direction is the mirror of that — it recommends *dropping* at
+  that point, to bound the maintenance a project carries. On the day Rule 8
+  shipped, Python 3.10 and 3.11 were both past three years and 3.12 was close
+  to it, so the rule licensed dropping two interpreters the moment it was
+  published, and nothing decided either way.
+  **Nothing is wrong today, which is exactly why this needs an item.** Rule 8
+  promises a floor, not a ceiling, and says in terms that "we may support a
+  version longer than the minimum" — so supporting 3.10 breaches nothing. The
+  defect is that the position is held by inertia: `requires-python = ">=3.10"`
+  and the five interpreters in `ci.yml`'s `ALL_PYTHONS` (`["3.10", "3.11",
+  "3.12", "3.13", "3.14"]`, matched by five `Programming Language :: Python`
+  classifiers) stand because no one has revisited them, and a reader of the
+  backlog cannot tell that from a deliberate choice to be generous. This item
+  is the record that the question was asked.
+  **Decide it, do not default it.** The inputs are cheap to gather and none
+  exist yet: what the two oldest legs cost in CI wall-clock across `ci.yml` and
+  `ci-full.yml`; whether any declared floor exists only to keep 3.10 resolving
+  (the `tomli` marker-gated extra is the obvious candidate, since it is
+  `python_version < '3.11'` and would become dead on a 3.11 floor); and whether
+  any dependency has already dropped 3.10, which would make the support
+  notional. Weigh those against the users a drop would strand.
+  **Whatever is decided, it is a breaking change and takes its own PR.**
+  Raising `requires-python` moves the three spellings of the floor that
+  `check_conda_recipe_pins.py` keeps equal (`pyproject.toml`'s
+  `requires-python`, `packaging/conda-forge/variants.yaml`'s `python_min`,
+  `ci.yml`'s `MIN_PYTHON`) plus two it does not watch (the classifiers and
+  `ALL_PYTHONS`), and earns a `**Breaking**` changelog entry plus a migration
+  section, per the bump-table row BK-371 added. Deciding to *keep* them is the
+  cheaper outcome and still belongs here, written down, so the next release
+  does not re-open it from scratch.
 
 - [ ] **ID-229 — Evaluate porting to httpx 1.0 (lift the `<1.0` cap)**
   spec: GR-033 · effort: M · audience: user.api
