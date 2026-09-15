@@ -1753,8 +1753,9 @@ watched rather than hand-copied (BK-370); every upstream that can break us on it
 own schedule has a standing watch (ID-229, ID-225), and the support window we
 publish is exercised by decision rather than by inertia (BK-375); the one
 deprecation that watch has caught is answered before the release that enforces
-it (BUG-281); the
-watch's issue survives a single-extra re-run (BUG-282) and its one legacy-sftp
+it (BUG-281); the window the calendar puts on a published promise is derived
+rather than remembered at release time (BK-377); the watch's issue survives a
+single-extra re-run (BUG-282) and its one legacy-sftp
 authentication does not fail on runner load (BK-367); and every breaking change
 carries a published upgrade path by the time it ships — **satisfied**: the four
 `[Unreleased]` entries marked `**Breaking**` all have a `migration.md` section,
@@ -2086,6 +2087,49 @@ working, and quietly describing the library as something it is not.
   following the precedent `check_ripple_parity` documents, and widen CI's path
   filter to treat `sdd/adrs/**` as lint-triggering. Filed rather than fixed in
   BK-329 because that PR touched no ADR, no TLA module and not the handbook.
+
+- [ ] **BK-377 — The support windows we publish are the one promise whose breach is invisible until someone remembers to look**
+  spec: — · effort: M · audience: infra.ci
+  Every other promise in this repo has a mechanism. Rules 8 and 9 of the
+  [dependency policy](../docs-src/explanation/dependency-policy.md#rule-8) do
+  not, and `CONTRIBUTING.md`'s Phase 0 checklist says so in terms: *"Nothing
+  derives this — the published promise is the only record, which is why it is a
+  checklist line rather than a gate."* A checklist line is a person
+  remembering, and the promise it guards ages on the calendar rather than on a
+  diff, so the release that breaks it looks exactly like the release that does
+  not.
+  **The two rules mechanise differently, and that is the shape of the work.**
+  Rule 9 — a dependency version stays supported 2 years — fires on a floor
+  raise, which is a diff: compare each extra's specifiers against the previous
+  tag, and for a raised floor ask whether the newest version it newly excludes
+  is at least 2 years past its own release. Only that last input needs the
+  network. Rule 8 — a Python version is supported 3 years — fires on the
+  calendar with no diff at all, and needs each interpreter's initial release
+  date, which BK-373's derivation showed the repo holds nowhere.
+  **So this splits by home, not by rule.** The diff half belongs in the release
+  path, where the bump table already lives. The calendar half cannot: nothing
+  in `preflight` may reach the network, and a check that only fires when
+  someone cuts a release is no better than the checklist line it replaces for a
+  promise that comes due whether or not we ship.
+  **`drift-guard.yml` is the candidate home for the calendar half**, and the
+  fit is in its posture rather than its plumbing: it runs weekly, it already
+  resolves against PyPI (`pip install --upgrade --pre`, `drift_check.py:167`),
+  and its stated non-goals are exactly right for this — *"NEVER edits
+  pyproject.toml"*, *"NEVER auto-merges a pin / floor update"*, *"early
+  warning, not automated remediation"*. A window crossing is early warning by
+  construction: nothing is broken on the day it fires, which is why BK-375
+  exists.
+  **Do not let it decide.** The verdict is advisory, like the rest of
+  drift-guard. Crossing a window licenses a drop; it does not require one, and
+  a gate that reads Rule 8 as an obligation would invert the rule — which
+  promises a floor, not a ceiling.
+  **Depends on BK-373 for the calendar half**, which has to answer the same
+  missing-input question (hardcoded table vs upstream feed) to draw its chart.
+  Whichever lands first should own the dates; two copies of a release-date
+  table is the drift this repo files items about.
+  Serves the standing-watch clause above: a promise that comes due on a date
+  nobody is watching is an upstream that can break us on its own schedule,
+  with the calendar as the upstream.
 
 - [ ] **BK-370 — The published conda recipe is a mirror no mechanism watches**
   spec: — · effort: M · audience: user.discoverability.human, infra.ci
