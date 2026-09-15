@@ -85,6 +85,8 @@ from remote_store.ext.dagster import dagster_io_manager
 
 If the required dependency is not installed, importing the extension module raises a `ModuleNotFoundError` with installation instructions.
 
+Each extra declares a version floor, and a ceiling only where an upstream major is known to break. See the [dependency and version policy](https://docs.remotestore.dev/stable/explanation/dependency-policy/index.md) for why, and [tested versions](https://docs.remotestore.dev/stable/reference/tested-versions/index.md) for what CI was last green against.
+
 ## Extension Guarantees
 
 All extensions follow the same contract — see the [extension architecture](https://docs.remotestore.dev/stable/explanation/design/adrs/0008-extension-architecture/index.md) and [optional-extension export rules](https://docs.remotestore.dev/stable/explanation/design/adrs/0013-drop-optional-extension-reexports/index.md) ADRs for the rationale:

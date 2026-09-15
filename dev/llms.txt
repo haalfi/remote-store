@@ -127,6 +127,7 @@ The pages below carry the full detail and examples.
 
 - [Architecture Overview](https://docs.remotestore.dev/stable/explanation/architecture/index.md)
 - [Concurrency](https://docs.remotestore.dev/stable/explanation/concurrency/index.md)
+- [Dependency & Version Policy](https://docs.remotestore.dev/stable/explanation/dependency-policy/index.md)
 - [API Graph](https://docs.remotestore.dev/stable/explanation/graph-ir/index.md)
 - [Performance](https://docs.remotestore.dev/stable/explanation/performance/index.md)
 - [Security Model](https://docs.remotestore.dev/stable/explanation/security-model/index.md)

@@ -40,6 +40,8 @@ pip install "remote-store[pydantic]"       # Pydantic BaseSettings config
 pip install "remote-store[toml]"           # TOML config on Python < 3.11
 ```
 
+Every extra declares a version floor; a ceiling is the exception. See the [dependency and version policy](https://docs.remotestore.dev/stable/explanation/dependency-policy/) for how those ranges are chosen, and what we do and do not verify about them.
+
 **conda has no extras.** `conda install -c conda-forge remote-store` installs the core package only; a backend's dependencies go alongside it, and an extra is usually more than one package. Each extra's full set is its entry under `[project.optional-dependencies]` in [`pyproject.toml`](https://github.com/haalfi/remote-store/blob/master/pyproject.toml). `[azure]`, for example:
 
 ```

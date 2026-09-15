@@ -527,4 +527,5 @@ Pure-Python extensions (`ext.batch`, `ext.transfer`, `ext.glob`, `ext.observe`, 
 ## See also
 
 - [CHANGELOG](https://github.com/haalfi/remote-store/blob/master/CHANGELOG.md)
-- [Contributing](https://docs.remotestore.dev/stable/explanation/contributing/index.md) — stability tiers and versioning policy
+- [Dependency and version policy](https://docs.remotestore.dev/stable/explanation/dependency-policy/index.md) — stability tiers and what each one promises
+- [Contributing](https://docs.remotestore.dev/stable/explanation/contributing/index.md) — which change earns which version bump
