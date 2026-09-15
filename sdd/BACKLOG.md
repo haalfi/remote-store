@@ -1601,7 +1601,9 @@ give them a way to absorb.
 that diff actually triggers (BK-333); every extra's drift smoke exercises the
 packages it pins (BUG-250) and catches the drift that is visible only to a type
 checker (ID-250); a declared floor is something a mechanism has installed and
-run, rather than a claim nobody tests (BK-369); **every install channel we
+run, rather than a claim nobody tests (BK-369), and the declared *set* is
+something a mechanism has installed **alone**, rather than one the `dev`
+aggregate props up (BK-372); **every install channel we
 intend to offer is published and working** — **met** by ID-018, in
 [BACKLOG-DONE.md](BACKLOG-DONE.md) — and what that channel publishes about us is
 watched rather than hand-copied (BK-370); every upstream that can break us on its
@@ -1692,6 +1694,30 @@ working, and quietly describing the library as something it is not.
   whatever BUG-250 and ID-250 do to widen that map applies here too; those two
   items are about the smoke reaching *more* at the top of the range, this one is
   about pointing the same smoke at the bottom.
+  **Do not hand-build the constraint files: `uv` derives them.**
+  `uv pip install --resolution lowest-direct` takes the floors from
+  `pyproject.toml` itself, so the lane needs no second copy of every floor to
+  keep in step — which is what the sentence above would otherwise have built,
+  and what [`DRIFT-RULES.md` Rule 3](DRIFT-RULES.md#claim-space) says not to
+  build. The cost is already paid: `astral-sh/setup-uv` is in six workflows
+  (`rg -l 'setup-uv' .github/workflows` — ci, ci-full, docs, publish, mutation,
+  benchmark), most of which then run `uv pip install`, so this is a flag on a
+  command CI already runs, not a new toolchain.
+  **`lowest-direct`, not `lowest`.** `lowest` puts transitive packages at their
+  minimums too — floors this repo does not declare and cannot fix — which
+  generates noise against the failure mode named above. `lowest-direct` pins
+  exactly what we declare and leaves transitives newest, which is the claim
+  being tested.
+  **One trap.** Route it through `uv` directly, as those six workflows do, and
+  **not** through a `hatch` env: BK-269 recorded that hatch's own dependency
+  sync under the uv installer silently drops the env `features` on GitHub
+  runners, which is why `pyproject.toml` forces the pip installer in CI. That
+  bug is in hatch's sync, not in `uv pip install`.
+  Sourced from an external survey of Python dependency-testing practice the
+  maintainer brought in; it is the only part of that survey this repo did not
+  already do, and it sharpens this item's own prescription rather than adding a
+  requirement ([§ Item authority](#how-this-file-works) — re-derive a
+  prescription before implementing it).
   **Not** about adding rows to `test_pyproject_pins.py`: that file is a
   regression guard for boundaries already found, and adding a row cannot find the
   next one.
@@ -1705,6 +1731,76 @@ working, and quietly describing the library as something it is not.
   question naming a specific risk is a far cheaper signal than a CI matrix, so
   whatever this item builds, the sweep for unresolved Open Questions is worth
   doing first and costs nothing.
+
+- [ ] **BK-372 — No standing check installs an extra by itself, so an under-declared extra passes every gate**
+  spec: — · effort: M · audience: infra.ci
+  An extra is a promise that `pip install remote-store[<extra>]` gives you a
+  working backend. Nothing tests that promise on a schedule: CI installs an
+  aggregate, and `dev`'s first member names **thirteen extras at once**
+  (`s3-pyarrow`, `sftp`, `azure`, `otel`, `toml`, `yaml`, `pydantic`,
+  `dagster`, `sql`, `sql-query`, `requests`, `httpx`, `graph`), so an extra
+  that is missing a dependency still works — some *other* extra supplies it.
+  The declaration can be incomplete and every gate stays green.
+  **Two of the fourteen tracked extras are not even named there, and are
+  masked a second way.** `dev` omits `arrow` and `s3` — the set difference of
+  `drift_check.list_extras()` against the names in `dev`'s first member — yet
+  `s3-pyarrow` declares `["s3fs>=2024.2.0", "pyarrow>=14.0.0"]`, restating
+  both packages rather than referencing `remote-store[s3]`, so their packages
+  arrive while their declarations are never exercised. Masking by a duplicated
+  declaration is the same defect as masking by a transitive dependency and is
+  harder to see, because the two extras read as independent in
+  `pyproject.toml`. It compounds with BK-369's half: `[arrow]` declares
+  `pyarrow>=12.0.0` against `s3-pyarrow`'s `>=14.0.0`, so
+  `pip install remote-store[arrow]` alone resolves a range nothing has run.
+  **Derivation.** `rg -n 'pip install.*\.\[' .github/workflows` returns 18 hits.
+  Every one installs `.[dev]`, `.[dev,…]` or `.[docs]` except a single line:
+  `drift-guard.yml:183`, `pip install --pre -c "$CONSTRAINTS" ".[<extra>]"`.
+  So the isolated per-extra install exists exactly once in the repo.
+  **And that one line is gated on drift.** `drift-guard.yml:166-170` reads the
+  diff report and returns before reaching it unless that extra's resolution
+  moved:
+  `if [ "$STATUS" != "drift" ]; then echo "No drift / nothing to smoke"; exit 0; fi`.
+  Isolation is therefore a side effect of version movement, not a check that the
+  declaration is complete. An extra whose versions are stable is never installed
+  alone at all.
+  **Measured, not hypothetical.** BUG-286 is this class: `[azure]` never
+  declared `aiohttp`, `AsyncAzureBackend` needs it for its async transport, and
+  `remote-store[azure]` alone raised
+  `"Unable to create async transport. Please check aiohttp is installed."` at the
+  first async call. It survived because `dev` also installs `s3-pyarrow`, whose
+  `aiobotocore` drags `aiohttp` in — the masking is recorded in that extra's own
+  `pyproject.toml` comment. It was found by hand.
+  **Distinct from BK-369, and the two are complementary.** BK-369 asks whether
+  the *versions* we declare work; this asks whether the *set* we declare is
+  complete. BK-369's lane would in fact have caught BUG-286: its body describes
+  a per-extra isolated install running that extra's existing smoke target, and
+  `.[azure]` installed alone has no `aiohttp` whatever resolution strategy
+  picked its versions. The catch comes from the **isolation**, which both items
+  share; `--resolution lowest-direct` contributes nothing to it, because an
+  undeclared package has no floor to lower. So what separates the two is the
+  question each asks, not the detection power of the lane — which is the
+  stronger form of the same conclusion: both want per-extra isolated install
+  plus that extra's `drift_smoke_map.py` target, so whichever is built first
+  should carry the other, and should say which question it answers.
+  **Disposition open, and the cheap option is cheaper than it looks.**
+  Relaxing the `STATUS != drift` early-return so the smoke also runs on a clean
+  resolution is a one-condition change to an existing matrix job, and it is
+  close to the status quo: in run 34127228028 (2026-09-07), **12 of the 14
+  legs already paid the smoke** — only `check-otel` and `check-yaml` hit the
+  early return, at 0 s each — so the marginal cost is two more parallel legs,
+  against smoke steps of 25 s (`check-graph`, also `--import-only`) to 84 s
+  elsewhere in the same run. That run took 4m36s end to end, dominated by one
+  failing `check-sftp` leg at 2m26s, and the last five runs span 2m07s to
+  4m36s. **So the cost is not wall-clock, it is failure surface:** every leg
+  that runs a smoke is a leg that can go red, and BUG-282 records what one red
+  leg cost — the only safe re-run was the full matrix, which re-resolved every
+  extra and moved two packages between the two runs. Either way the verdict
+  should be *advisory*, like the rest of drift-guard.
+  **What it cannot catch.** An extra whose smoke target does not exercise the
+  path that needs the missing package — BUG-286 needed an *async* Azure call —
+  so this shares BUG-250's and ID-250's dependency on `drift_smoke_map.py`
+  reaching far enough. Isolation without reach is a green light for a
+  declaration nobody exercised.
 
 - [ ] **BUG-250 — `[graph]`'s drift smoke reaches one of the extra's four declared dependencies**
   spec: — · effort: S · audience: infra.ci
