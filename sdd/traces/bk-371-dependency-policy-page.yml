@@ -355,3 +355,37 @@ phases:
           Authoritative Document Format already uses for numbered constraints.
           Confirmed by re-running the gate, not by re-reading the regex.
         outcome: ok
+      - file: sdd/000-process.md
+        section: "Rules, Spec format"
+        read_type: gate
+        extract: >-
+          The maintainer read the rule headings as off-house-style, and the
+          measurement located the defect precisely rather than confirming the
+          obvious reading. Em-dash DENSITY was never the problem - the page sat
+          at 17.3 per 1000 words against DOCUMENTATION.md at 17.5,
+          security-model.md at 19.6 and architecture.md at 22.0. What was
+          unique to this page was the dash doing STRUCTURAL work: every other
+          authoritative doc separates a rule's number from its title with a
+          period or a colon (000-process "1. **No code without a spec**:",
+          AUTHORING "1. **File classification.**", DOCUMENTATION
+          "### 1. Diataxis placement", the audit template "### C-1. <Title>"),
+          and reserves the dash for a qualifier AFTER an identifier
+          (CI-OPERATIONS "### drift-guard.yml - transitive dependency drift",
+          spec 013 "### MEM-010: read() - Stream Type"). Headings became
+          "Rule N. Title". The Why / For-you labels moved from italic to bold
+          with a colon, matching the spec format's own field convention
+          (**Invariant:**, **Preconditions:**) rather than being invented here.
+        outcome: ok
+      - file: sdd/DOCUMENTATION.md
+        section: "6 (Typography), API page building blocks"
+        read_type: gate
+        extract: >-
+          Caught an overcorrection before it shipped. Having stripped dashes
+          from the prose, the See-also list went with them - but that list has
+          a documented template in this file reading
+          "- [Guide name](path) - one-line description", and security-model.md
+          follows it. Restored. The lesson the trace should carry is that the
+          instruction was "align with house style", and a blanket purge is not
+          alignment: five of the page's dashes are required by the house style
+          that the same pass removed the others for.
+        outcome: ok
