@@ -1606,8 +1606,9 @@ intend to offer is published and working** — **met** by ID-018, in
 [BACKLOG-DONE.md](BACKLOG-DONE.md) — and what that channel publishes about us is
 watched rather than hand-copied (BK-370); every upstream that can break us on its
 own schedule has a standing watch (ID-229, ID-225), and the support window we
-publish is exercised by decision rather than by inertia (BK-375); the one deprecation that
-watch has caught is answered before the release that enforces it (BUG-281); the
+publish is exercised by decision rather than by inertia (BK-375); the one
+deprecation that watch has caught is answered before the release that enforces
+it (BUG-281); the
 watch's issue survives a single-extra re-run (BUG-282) and its one legacy-sftp
 authentication does not fail on runner load (BK-367); and every breaking change
 carries a published upgrade path by the time it ships — **satisfied**: the four
@@ -1973,14 +1974,36 @@ working, and quietly describing the library as something it is not.
   any dependency has already dropped 3.10, which would make the support
   notional. Weigh those against the users a drop would strand.
   **Whatever is decided, it is a breaking change and takes its own PR.**
-  Raising `requires-python` moves the three spellings of the floor that
-  `check_conda_recipe_pins.py` keeps equal (`pyproject.toml`'s
-  `requires-python`, `packaging/conda-forge/variants.yaml`'s `python_min`,
-  `ci.yml`'s `MIN_PYTHON`) plus two it does not watch (the classifiers and
-  `ALL_PYTHONS`), and earns a `**Breaking**` changelog entry plus a migration
-  section, per the bump-table row BK-371 added. Deciding to *keep* them is the
-  cheaper outcome and still belongs here, written down, so the next release
-  does not re-open it from scratch.
+  Raising `requires-python` moves **six** spellings of the supported set, and
+  only four are watched. Three are held equal by
+  `check_conda_recipe_pins.py:297-325` (`pyproject.toml`'s `requires-python`,
+  `packaging/conda-forge/variants.yaml`'s `python_min`, `ci.yml`'s
+  `MIN_PYTHON`). A fourth, `ci-full.yml:73`'s `test-full` matrix, is held
+  against `ci.yml`'s `ALL_PYTHONS` by `check_ci_full_matrix.py` in
+  `hatch run lint`, so missing it fails a gate rather than shipping silently.
+  The last two are watched by nothing: the `Programming Language :: Python`
+  classifiers, and `README.md:34`'s "**Requires Python 3.10+.**" — prose, and
+  the first Python claim a reader meets. `sdd/adrs/0032-tiered-ci-gate-with-full-matrix-backstop.md`
+  names the interpreter set too, and being an ADR it is superseded rather than
+  edited ([`000-process.md` Rule 4](000-process.md#rules)) — a decision the PR
+  has to make rather than discover.
+  **The bump table does not yet say what this item needs it to say.**
+  `CONTRIBUTING.md:445` assigns dropping a Python version a **minor** bump and
+  stops there, while the dependency-floor row above it (L444) carries "treat
+  as **breaking**, row above", and the Phase 0 checklist at L494 requires the
+  `**Breaking**` marking and a migration section only "if this release raises
+  a **dependency** floor". So the obligation this item assumes is nowhere
+  written down. It should be: a user on 3.10 whose install stops resolving is
+  in the same position as one excluded by a floor raise. **Annotating row 445
+  and widening L494 to cover `requires-python` is part of this item's work**,
+  not a citation it can lean on — the rows landed in BK-371 and the asymmetry
+  landed with them.
+  Nothing catches an omission from that list either: the
+  [Detailed checklist](CLAUDE-REFERENCE.md#detailed-checklist) has a
+  **Dependency** row and a **Version number** row and none for the supported
+  interpreter set, which is why the enumeration has to be complete here.
+  Deciding to *keep* them is the cheaper outcome and still belongs here,
+  written down, so the next release does not re-open it from scratch.
 
 - [ ] **ID-229 — Evaluate porting to httpx 1.0 (lift the `<1.0` cap)**
   spec: GR-033 · effort: M · audience: user.api
