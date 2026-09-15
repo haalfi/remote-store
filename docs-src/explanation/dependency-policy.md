@@ -21,9 +21,14 @@ environment, you asked for.
 
 **Why:** the alternative is shipping an SSH client to someone who wanted S3.
 
-**For you:** an import fails at runtime when its extra is absent. The error
-names the extra to install; see the
-[extensions guide](../guides/extensions.md).
+**For you:** the failure is deferred to runtime rather than caught at install.
+What it looks like depends on where the missing package is reached: an
+extension names the extra to install, a storage backend reports the missing
+module itself, and a backend whose import is swallowed at registration
+surfaces later as an unknown backend type. The
+[troubleshooting guide](../guides/troubleshooting.md#importerror-for-optional-dependencies)
+maps each symptom to the extra that fixes it, and the
+[extensions guide](../guides/extensions.md) covers the extension case.
 
 <a id="rule-3"></a>
 ### Rule 3. Conda carries the same constraints, in the only form it has
@@ -90,10 +95,15 @@ reach your environment.
 Scientific Python ecosystem's time-based support policy. A shared schedule
 means your other dependencies drop versions on the same cadence we do.
 
-**For you:** the end of support for a version is computable in advance, from
-[SPEC 0's drop schedule](https://scientific-python.org/specs/spec-0000/) rather
-than from our release notes. We may support a version longer than the minimum;
-we will not support one for less.
+**For you:** which versions are supported *right now* is
+[`requires-python`](https://github.com/haalfi/remote-store/blob/master/pyproject.toml)
+and the `Programming Language :: Python` classifiers beside it, the same
+hand-off [Rule 7](#rule-7) makes for dependency ranges. This rule sets the
+floor under that: the earliest a version can be dropped is computable in
+advance from
+[SPEC 0's drop schedule](https://scientific-python.org/specs/spec-0000/)
+rather than from our release notes. We may support a version longer than the
+minimum; we will not support one for less.
 
 <a id="rule-9"></a>
 ### Rule 9. A supported dependency version stays supported at least 2 years
@@ -101,9 +111,10 @@ we will not support one for less.
 **Why:** the same SPEC 0 cadence, applied to the packages behind the extras.
 The window runs from that dependency's own initial release, not from ours.
 
-**For you:** raising a floor past that window is a breaking change and takes
-the path in [Rule 11](#rule-11). Within it, a floor can still rise in any
-release.
+**For you:** a floor may be raised in any release, including a patch, as long
+as every version it newly excludes is itself at least 2 years past its own
+release. Excluding a version younger than that is a breaking change and takes
+the path in [Rule 11](#rule-11).
 
 <a id="rule-10"></a>
 ### Rule 10. Security fixes go to the latest release only

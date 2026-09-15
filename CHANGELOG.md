@@ -8,7 +8,7 @@ This project follows [Semantic Versioning](https://semver.org/). Pre-1.0, minor 
 ## [Unreleased]
 
 - ID-018: The conda-forge channel serves 0.32.0 with the corrected dependency floors plus the `tomli` and `aiohttp` constraints; it had been publishing 0.30.0, whose `run_constraints` predated them.
-- BK-371: Publish the dependency and version policy as 15 citable clauses, adopting [SPEC 0](https://scientific-python.org/specs/spec-0000/)'s support windows — a Python version supported at least 3 years after release, a dependency version at least 2
+- BK-371: Publish the dependency and version policy as 15 citable rules, adopting [SPEC 0](https://scientific-python.org/specs/spec-0000/)'s support windows: a Python version is supported at least 3 years after its release, and a dependency version at least 2 years after its own.
 
 ## [0.32.0] - 2026-09-13
 

@@ -301,34 +301,44 @@ phases:
           rules are one subject here rather than two. Splitting into a
           Reference page was offered and declined.
         outcome: ok
-      - file: spec-0000/index.md (scientific-python/specs, fetched)
-        section: "Description, Core Project Endorsement, Drop Schedule"
+      - file: docs-src/explanation/dependency-policy.md
+        section: "Support windows"
         read_type: reference
         extract: >-
-          Read the source rather than working from the maintainer's summary of
-          it. Both recommendations are phrased as permission to DROP ("Support
-          for Python versions be dropped 3 years after their initial release"),
-          not as a guarantee to support, and endorsement explicitly does not
-          promise bug-fix releases for the period. DEP-8 and DEP-9 therefore
-          state the user-facing inversion — supported for AT LEAST that long —
-          which is the half a consumer can act on and the half this repo can
-          honour today. The drop schedule is auto-generated upstream and is
-          linked rather than copied, so no date is maintained here and
-          CONTENT-RULES Rule 3 is not re-broken by the fix for it.
-          Retrospective: SPEC 0 gives no definition of "core package
-          dependency", so DEP-9 had to name its own scope (a dependency version
-          supported at one of our releases) rather than borrow one.
+          Wrote Rules 8 and 9 from SPEC 0 itself (fetched from the
+          scientific-python/specs repository) rather than from the maintainer's
+          summary of it, and the reading changed the wording. Both of its
+          recommendations are phrased as permission to DROP — "Support for
+          Python versions be dropped 3 years after their initial release" — not
+          as a guarantee to support, and endorsement explicitly promises no
+          bug-fix releases for the period. So these rules state the user-facing
+          inversion, supported for AT LEAST that long, which is the half a
+          consumer can act on and the half this repo honours today. Its drop
+          schedule is auto-generated upstream and is linked rather than copied,
+          so no date is maintained here.
+          Retrospective: SPEC 0 defines no "core package dependency", so Rule 9
+          had to name its own scope rather than borrow one — and the first
+          wording of that scope was inverted, telling a reader that dropping an
+          out-of-window version was the breaking case. Caught in review, not by
+          writing it.
         outcome: unclear
       - file: CONTRIBUTING.md
         section: "Versioning, Release"
         read_type: verify
         extract: >-
-          DEP-8 and DEP-9 are new obligations on the maintainer, and nothing in
-          the release checklist yet asks whether a support window has expired.
-          Left unwired deliberately: this is a docs PR, and the alternative was
-          to ship a published promise and a process change in one diff.
-          Flagged for the maintainer instead.
-        outcome: ok
+          Rules 8 and 9 are new obligations on the maintainer, and neither the
+          When-to-bump table nor the release checklist knew they existed.
+          Left unwired at first, on the reasoning that a docs PR should not
+          also carry a process change, and flagged in this trace instead.
+          Retrospective: that was the wrong call and review said so. The
+          deferral left the page deferring to a table that had no row for the
+          thing it deferred, so the cross-reference was false the moment it
+          shipped, and CLAUDE.md principle 3 wants the repo describing reality
+          at every commit. Wired in the same PR: three rows in the bump table
+          (out-of-window floor rise, in-window floor rise, dropping a Python
+          version) and one release-checklist line, with the checklist line
+          stating that nothing derives it.
+        outcome: misleading
       - file: docs-src/explanation/dependency-policy.md
         section: "API compatibility"
         read_type: verify
@@ -409,4 +419,67 @@ phases:
           version 0.17.0 against a current 0.32.0 — so its specifics were
           generalised rather than read. Its two structural findings survived
           that check and are filed; its third did not.
+        outcome: ok
+  - id: fix_round_2
+    name: Fix — review round 2, read from a user's seat
+    steps:
+      - file: src/remote_store/backends/_s3.py
+        section: "_fs / _s3fs lazy import"
+        read_type: verify
+        extract: >-
+          Rule 2 claimed "the error names the extra to install". False for the
+          backends a reader of this page is most likely to want. Enumerated
+          rather than spot-checked: `rg -c 'pip install' src/remote_store`
+          returns 20 matches over 10 files, and every one lives in _config.py, ext/*,
+          _http_httpx.py, _http_requests.py or _sqlalchemy.py. The five extras
+          with no such message are s3, s3-pyarrow, azure, graph and sftp —
+          _s3.py:518,551 and _s3_pyarrow.py:519,601 import s3fs bare inside
+          methods, _sftp.py imports paramiko bare at fourteen sites,
+          _graph/http.py:23 imports httpx at module top, and _azure.py:14
+          imports azure.core at module top where _registry.py:45-51 swallows
+          the ImportError, so the backend is never registered and the user
+          meets "Unknown backend type 'azure'" from _registry.py:146 instead.
+          Rule 2 now describes the three shapes the failure takes and hands off
+          to the troubleshooting guide, which already documents the symptoms.
+        outcome: ok
+      - file: docs-src/explanation/dependency-policy.md
+        section: "Rule 9"
+        read_type: verify
+        extract: >-
+          The rule's own For-you clause inverted it: "raising a floor past that
+          window is a breaking change ... within it, a floor can still rise in
+          any release" told a reader that dropping an expired version was the
+          break and dropping a live one was free, the reverse of the title.
+          Restated in terms of the version being excluded rather than of "the
+          window", and the patch-release question the phrasing had left
+          implicit is now decided out loud: a floor may rise in any release
+          including a patch, provided every version it newly excludes is itself
+          2 years past its own release.
+        outcome: ok
+      - file: CONTRIBUTING.md
+        section: "When to bump, Release Phase 1"
+        read_type: gate
+        extract: >-
+          Closing the deferral recorded two steps up rather than filing it: the
+          bump table gained rows for an out-of-window floor rise, an in-window
+          one, and dropping a Python version, and Phase 1 gained a
+          support-window check that says plainly nothing derives it. The page
+          said the maintainer half lived in that table; until this it did not.
+        outcome: ok
+      - file: sdd/traces/_schema.yml
+        section: "step.file"
+        read_type: gate
+        extract: >-
+          A step had `file: spec-0000/index.md (scientific-python/specs,
+          fetched)`, which the schema forbids — repo-relative paths or guidance
+          placeholders only. check_traces.py runs the JSON schema, which has no
+          path check, so it passed the gate while breaking the contract, and
+          report-trace-outcomes would have ranked an upstream document nobody
+          here can improve alongside repo files that can be. Folded the SPEC 0
+          reading into the dependency-policy.md step it produced.
+          Swept the same file for the relabel this branch did earlier: three
+          DEP-8 / DEP-9 references survived into steps written before the
+          rename and are now Rule 8 / Rule 9. Two others are deliberate history
+          — the step recording why the DEP prefix was rejected, and the
+          BACKLOG-DONE sentence explaining it — and were left.
         outcome: ok

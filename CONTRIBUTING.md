@@ -440,7 +440,16 @@ how to make it.
 | Bug fix, internal refactor | **patch** (`0.0.X`) | Fix round-trip bug, update retry logic |
 | Breaking API change (pre-1.0) | **minor** (`0.X.0`) | Remove method, rename parameter |
 | Breaking API change (post-1.0) | **major** (`X.0.0`) | — |
+| Dependency floor raised, excluding only versions 2+ years past their own release | **patch** (`0.0.X`) | `sqlalchemy>=2.0` → `>=2.0.31` where 2.0.30 is older than 2 years |
+| Dependency floor raised, excluding a version younger than that | treat as **breaking**, row above | Raising a floor past a release still inside its support window |
+| Dropping a Python version | **minor** (`0.X.0`) | Raising `requires-python`, dropping a classifier |
 | CI, docs, metadata-only | **no bump** | Add classifier, update README |
+
+The three dependency and interpreter rows above are the maintainer side of
+[Rules 8 and 9](docs-src/explanation/dependency-policy.md#rule-8) on the
+published dependency policy. That page tells users a Python version is
+supported at least 3 years after its release and a dependency version at least
+2; these rows are where that promise is honoured or broken.
 
 ### Stability tiers
 
@@ -482,6 +491,7 @@ Documentation, examples, and metadata live in many places. Use these to keep the
 - [ ] No open `[~]` items shipping in this release in `sdd/BACKLOG.md` — complete and move to `BACKLOG-DONE.md`, or defer (`[ ]`). **One shape neither remedy covers, and a third disposition for it:** an item whose remaining work is a step of *this* release that can only run after the tag exists — updating a downstream package channel from the published artifact is the standing example — can neither be completed (the step has not happened) nor honestly deferred (the rest of it shipped). Ship that item `[~]`, and record in its body why neither remedy fits and what closes it. Deliberately narrow: an item that *could* be finished or deferred takes one of the first two, and "it is nearly done" is not this case
 - [ ] `hatch run report-trace-outcomes` read, and the open trace-outcome revisit item in [`sdd/BACKLOG.md`](sdd/BACKLOG.md) closed against it — that item names the successor which becomes the next release's ticket, and states what to record: the corpus totals (the report keeps no history, so that line is the baseline the following release differences against), the references selected, and a decision of act, defer, or accept for each. A report, never a gate: nothing here blocks the release, but the decision is written down rather than remembered
 - [ ] `[Unreleased]` section in CHANGELOG.md is non-empty
+- [ ] Support windows checked against [Rules 8 and 9](docs-src/explanation/dependency-policy.md#rule-8): if this release raises a dependency floor, every version it newly excludes is at least 2 years past its own release, or the entry is marked `**Breaking**` and carries a migration section. Nothing derives this — the published promise is the only record, which is why it is a checklist line rather than a gate
 - [ ] Decide bump level (patch / minor / major) per the table above
 
 ### Phase 1: Content freeze
