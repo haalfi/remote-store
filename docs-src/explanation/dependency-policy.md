@@ -1,189 +1,199 @@
 # Dependency and version policy
 
-What `remote-store` promises about the packages it pulls into your
+What `remote-store` commits to about the packages it pulls into your
 environment, and about the compatibility of its own API across releases.
-Two promises, one page, because they fail together: a library that widens
-your dependency tree without warning breaks you as surely as one that
-renames a method.
 
-## The core pulls in nothing
+Each rule below states an obligation, the reason it exists, and what it costs
+or buys you. Where a rule is not backed by a mechanism, it says so.
 
-`pip install remote-store` adds one package to your environment. Every
-backend and every integration lives behind an extra, so the dependency tree
-you end up with is the one you asked for: installing the S3 backend does not
-also bring in an SSH client, a database driver, or a telemetry SDK.
+## Installation
 
-This is a deliberate trade. It means an import can fail at runtime when the
-matching extra is absent, and the library spends code on making that failure
-say which extra to install rather than assuming everything is present. The
-[extensions guide](../guides/extensions.md) covers what that looks like when
-you hit it.
+<a id="rule-1"></a>
+### Rule 1 — The core package declares no runtime dependencies
 
-The backends themselves are thin. Where a mature library already does the
-work — the Azure SDK, an S3 filesystem layer, an SSH implementation —
-the backend adapts it rather than reimplementing it, so the code handling
-your bytes is code that a much larger community already exercises.
+*Why:* a storage abstraction should not decide your dependency tree.
 
-### Installing from conda works differently
+*For you:* `pip install remote-store` adds one package. Anything else in your
+environment, you asked for.
 
-Conda has no equivalent of extras. `conda install` brings in the core package
-alone, and a backend's dependencies are yours to name alongside it; the
-recipe's constraints do not pull anything in, they only bound the version of
-whatever you do install. The promise is the same one stated below, expressed
-in the only form the packaging format allows.
+<a id="rule-2"></a>
+### Rule 2 — Installing one extra never installs another's dependencies
 
-One consequence is worth knowing before you rely on it: a feedstock trails
-its upstream release, so the conda channel can be a release behind PyPI, and
-its constraints can predate the ranges described here. The
+*Why:* the alternative is shipping an SSH client to someone who wanted S3.
+
+*For you:* an import fails at runtime when its extra is absent. The error names
+the extra to install; see the [extensions guide](../guides/extensions.md).
+
+<a id="rule-3"></a>
+### Rule 3 — Conda carries the same constraints, in the only form it has
+
+*Why:* conda has no equivalent of extras, so the recipe restates each
+constraint as a plain bound.
+
+*For you:* `conda install` brings the core package only, and a backend's
+dependencies are yours to name alongside it — the recipe's constraints bound
+what you install and pull in nothing. A feedstock also trails its upstream
+release, so the channel can sit a release behind PyPI with constraints that
+predate the ranges here. The
 [README's installation section](https://github.com/haalfi/remote-store#installation)
-carries the practical version of this caveat.
+has the practical form.
 
-## How version ranges are chosen
+## Version ranges
 
-Every extra declares a **floor**. A **ceiling is the exception**, added only
-when a known-incompatible major release already exists and would break the
-import. We do not cap dependencies speculatively.
+<a id="rule-4"></a>
+### Rule 4 — Every extra declares a floor
 
-That asymmetry is the whole policy, and it is chosen against your interests
-in one direction on purpose. A speculative ceiling is invisible when it is
-right and expensive when it is wrong: it silently excludes `remote-store`
-from your resolution the moment an upstream project ships a major that would
-have worked fine, and you cannot override it without forking. A missing
-ceiling, by contrast, fails loudly and locally, and you can pin the package
-yourself.
+*Why:* a range with no lower bound lets a resolver pick a version that cannot
+work.
 
-So when an upstream major changes behaviour we rely on, the first question
-is whether we can absorb it rather than cap it. Two live cases show both
-answers:
+*For you:* a resolver refuses rather than installing a version we know fails.
 
-- **The SSH library is deliberately uncapped**, even though a major release
-  changed which host-key algorithms are enabled by default. Rather than
-  constrain the library for every consumer, the SFTP backend ships an opt-in
-  compatibility helper and a diagnostic that reports what a given server
-  will accept. Users on modern servers are unaffected; users on legacy
-  servers get a switch.
-- **The HTTP client is capped**, because its next major line is a wholesale
-  client-API rewrite that removes the types the Graph and HTTP backends are
-  built on: an unbounded range would break the import outright rather than
-  degrade. That is the shape a ceiling has to have to earn its place — a
-  published incompatibility, not a suspicion. Porting to the new line is
-  tracked work, and the cap lifts when the port lands.
+<a id="rule-5"></a>
+### Rule 5 — A ceiling is added only against a published, known break
 
-Development and documentation build extras sit outside this convention and
-may pin tooling directly. They never reach your environment.
+*Why:* a speculative ceiling is invisible when it is right and unfixable when
+it is wrong. It silently excludes `remote-store` from your resolution the
+moment an upstream ships a major that would have worked, and you cannot
+override it without forking. A missing ceiling fails loudly and locally.
 
-Which ranges currently carry a ceiling is not listed here, because a list
-kept by hand goes stale the moment one is added or lifted. Read them off
-`pyproject.toml`, linked below.
+*For you:* an upstream major can break you before we cap it. You can pin that
+package yourself; you could not un-pin ours.
 
-The authoritative ranges, with the reasoning for each, are the comments on
-`[project.optional-dependencies]` in
-[`pyproject.toml`](https://github.com/haalfi/remote-store/blob/master/pyproject.toml).
+<a id="rule-6"></a>
+### Rule 6 — An upstream break we can absorb is absorbed, not capped
 
-## What the drift guard gives you
+*Why:* a cap charges every user for a problem only some of them have.
 
-Declaring a floor with no ceiling means transitive versions move underneath
-us between releases. Scheduled CI re-resolves the extras it covers weekly
-against the latest available versions, pre-releases included, and diffs the
-result against a committed record of the last known-good resolution. Any extra
-that moved then gets a **smoke run** against the freshly resolved package set:
-the backend conformance suite where the extra has one, and otherwise as little
-as importing the module the extra exists to enable. Findings land on a rolling
-issue in the repository.
+*For you:* the SFTP backend is the worked example. A major release changed
+which host-key algorithms are enabled by default; rather than pin the library
+for everyone, the backend ships an opt-in compatibility helper and a diagnostic
+that reports what a given server accepts. Users on modern servers pay nothing.
 
-The versions those records hold, per extra, are published on
-[Tested versions](../reference/tested-versions.md). That page answers "what
-was CI last green against?" — not "what will work".
+<a id="rule-7"></a>
+### Rule 7 — The authoritative ranges are in `pyproject.toml`, not on this page
 
-Its limits are worth being explicit about:
+*Why:* a list kept by hand goes stale the moment a bound is added or lifted.
 
-- **It does not cover every extra you can install.** An extra whose resolution
-  depends on the running interpreter is excluded from the guard, so it has no
-  committed record and no row on the Tested versions page. `pyproject.toml`'s
-  marker-gated entries are the ones to check for; being excluded is not a
-  statement that such an extra is unwatched by anything, only that this guard
-  is not what watches it.
-- **The smoke can be shallower than the extra.** Where an extra's target is an
-  import, a drift that breaks anything past module load passes. Widening that
-  reach is tracked work.
-- **It watches the top of the range only.** The guard resolves to the newest
-  compatible release, as does every other environment that builds this
-  project. So the upper end of every range is exercised continuously and the
-  *floor* is exercised by nothing. See the next section for what that has
-  cost.
-- **It is early warning, not remediation.** The job never edits version
-  ranges and never opens a pin-update pull request. A maintainer reads the
-  finding and decides.
-- **It does not pin your install.** The committed resolutions are CI's
-  record. Nothing in the published package constrains your transitive tree
-  to them, and a reproducible deployment still needs your own lock file.
-- **It resolves on one platform and one Python version.** A resolution that
-  only occurs on another OS or interpreter is outside what the guard sees.
+*For you:* read the current set from
+[`pyproject.toml`](https://github.com/haalfi/remote-store/blob/master/pyproject.toml),
+where each range carries its reasoning. Development and documentation build
+extras sit outside this convention and may pin tooling directly; they never
+reach your environment.
 
-## What a floor is worth
+## Support windows
 
-A floor is a claim that the named version works, and it is a measurement
-rather than a guarantee. Floors are established by hand — installing a
-candidate release and running the code against it — and a regression test
-then guards the boundary that measurement found. Where a sweep has corrected
-a floor, the change is a breaking one and appears in the
-[migration guide](../reference/migration.md) with the reason.
+<a id="rule-8"></a>
+### Rule 8 — A Python version is supported at least 3 years after its release
 
-**Nothing re-derives them.** No mechanism resolves an extra at its declared
-minimums and runs that extra's tests, so a floor that upstream invalidates
-stays as written until someone measures it again. Sweeps have found floors
-naming a release that installs cleanly and then fails — at import, or at the
-first call — including ones that had been wrong for a long time. Closing that
-gap is open, tracked work.
+*Why:* [SPEC 0](https://scientific-python.org/specs/spec-0000/), the Scientific
+Python ecosystem's time-based support policy. A shared schedule means your
+other dependencies drop versions on the same cadence we do.
 
-So if you pin near the bottom of a declared range, treat the floor as our best
-measurement rather than a tested guarantee, and prefer a version comfortably
-above it. Pinning near the top is the well-trodden path: that is where every
-environment we run resolves to.
+*For you:* the end of support for a version is computable in advance, from
+[SPEC 0's drop schedule](https://scientific-python.org/specs/spec-0000/) rather
+than from our release notes. We may support a version longer than the minimum;
+we will not support one for less.
 
-## Stability tiers
+<a id="rule-9"></a>
+### Rule 9 — A supported dependency version stays supported at least 2 years
 
-The public API surface is everything exported from `remote_store` itself —
-`__all__` on the top-level package. Anything reachable only through a
-private module is internal and may change in any release.
+*Why:* the same SPEC 0 cadence, applied to the packages behind the extras. The
+window runs from that dependency's own initial release, not from ours.
+
+*For you:* raising a floor past that window is a breaking change and takes the
+path in [Rule 11](#rule-11). Within it, a floor can still rise in any release.
+
+<a id="rule-10"></a>
+### Rule 10 — Security fixes go to the latest release only
+
+*Why:* one maintained line is one that actually gets fixed.
+
+*For you:* staying current is the security posture. See
+[SECURITY.md](https://github.com/haalfi/remote-store/blob/master/SECURITY.md).
+
+<a id="stability-tiers"></a>
+## API compatibility
+
+The public API is everything exported from `remote_store` itself — `__all__` on
+the top-level package. Anything reachable only through a private module is
+internal and may change in any release.
 
 | Label | Meaning |
 |-------|---------|
 | **Alpha** (pre-0.11) | API may change freely between releases |
 | **Beta** (0.11+) | Core API (`Store`, `Registry`, `Backend`, models, errors) is stable. Breaking changes are documented in the changelog and avoid gratuitous churn. Extensions (`ext.*`) may evolve more freely. |
-| **Stable** (1.0+) | Full Semantic Versioning: breaking changes require a major bump |
+| **Stable** (1.0+) | Full [Semantic Versioning](https://semver.org/): breaking changes require a major bump |
 
-The version you installed places you in one of those rows. Below 1.0, the
-practical consequence is that a breaking change reaches you through a
-*minor* bump rather than a major one, because
-[Semantic Versioning](https://semver.org/) leaves pre-1.0 minors free to
-break: read minor bumps as you would read majors elsewhere. In exchange,
-every such change arrives with a changelog entry marked as breaking and a
-section in the [migration guide](../reference/migration.md) showing the
-before and after, written in the same change that makes the break rather
-than assembled at release time.
+<a id="rule-11"></a>
+### Rule 11 — A breaking change ships its upgrade path in the same change
 
-Extensions under `ext.*` are held to a looser promise than the core on
-purpose: they are where new ideas are tried, and freezing them early would
-buy stability in the part of the library least in need of it.
+*Why:* an upgrade path assembled at release time is written by someone who has
+forgotten the details.
 
-For which kind of change earns which bump, see
-[`CONTRIBUTING.md` § Versioning](../../CONTRIBUTING.md#versioning).
+*For you:* every break carries a changelog entry marked breaking and a section
+in the [migration guide](../reference/migration.md), both present by the time
+you can install it. A gate enforces the link between the two.
+
+<a id="rule-12"></a>
+### Rule 12 — Below 1.0, a breaking change arrives in a minor bump
+
+*Why:* Semantic Versioning leaves pre-1.0 minors free to break, and the table
+above says which tier a version falls in.
+
+*For you:* read our minor bumps the way you would read majors elsewhere.
 
 ## What this policy does not promise
 
-- **Reproducible resolution.** We publish ranges, not pins. Two installs a
-  month apart can differ. If you need them not to, lock on your side.
-- **Support for older releases.** Security fixes go to the latest release
-  only. See
-  [SECURITY.md](https://github.com/haalfi/remote-store/blob/master/SECURITY.md).
-- **A continuously verified floor.** The declared minimums were measured once
-  and are guarded against regression, but nothing re-derives them as upstreams
-  release. See [What a floor is worth](#what-a-floor-is-worth).
-- **That every version in a range has been tried.** A range is a statement of
-  what we believe works, bounded by what we measured at each end. The newest
-  releases are exercised continuously; everything between the ends is
-  inference.
+<a id="rule-13"></a>
+### Rule 13 — Not a reproducible resolution
+
+We publish ranges, not pins. Two installs a month apart can differ. If you need
+them not to, lock on your side.
+
+<a id="rule-14"></a>
+### Rule 14 — Not a continuously verified floor
+
+Floors are established by hand — installing a candidate release and running the
+code against it — and a regression test then guards that boundary. Nothing
+re-derives them, so a floor that upstream invalidates stays as written until
+someone measures it again. Sweeps have found floors naming a release that
+installs cleanly and then fails, including some wrong for a long time; the
+corrections appear in the [migration guide](../reference/migration.md). Closing
+that gap is open, tracked work.
+
+**If you pin near the bottom of a range, prefer a version comfortably above the
+floor.** The top of the range is where every environment we run resolves to.
+
+<a id="rule-15"></a>
+### Rule 15 — Not that every version in a range has been tried
+
+A range is bounded by what we measured at each end. Between the ends is
+inference.
+
+## How the ranges are watched
+
+Scheduled CI re-resolves the extras it covers weekly against the latest
+available versions, pre-releases included, diffs the result against a committed
+record, and runs a smoke target for any extra that moved. Findings land on a
+rolling issue. The recorded versions are published on
+[Tested versions](../reference/tested-versions.md), which answers "what was CI
+last green against?" and not "what will work".
+
+Four limits bound that, and they are why [Rule 14](#rule-14) and
+[Rule 15](#rule-15) read as they do:
+
+- **It does not cover every extra you can install.** An extra whose resolution
+  depends on the running interpreter is excluded, so it has no committed record
+  and no row on the Tested versions page. Being excluded is not a claim that
+  nothing watches it, only that this guard does not.
+- **The smoke can be shallower than the extra.** Where the target is an import,
+  a drift breaking anything past module load passes. Widening that reach is
+  tracked work.
+- **It watches the top of the range only**, because it resolves to the newest
+  compatible release, as does every environment that builds this project.
+- **It is early warning, not remediation**, and it resolves on one platform and
+  one Python version. The job never edits a range or opens a pin-update pull
+  request; a maintainer reads the finding and decides.
 
 ## See also
 
@@ -191,4 +201,4 @@ For which kind of change earns which bump, see
 - [Migration guide](../reference/migration.md) — what changed, release by release, and how to move
 - [Extensions](../guides/extensions.md) — how optional dependencies are gated at import
 - [Security model](security-model.md) — credentials, trust boundaries, and vulnerability reporting
-- [`CONTRIBUTING.md` § Versioning](../../CONTRIBUTING.md#versioning) — bump rules and the release checklist
+- [`CONTRIBUTING.md` § Versioning](../../CONTRIBUTING.md#versioning) — which change earns which bump

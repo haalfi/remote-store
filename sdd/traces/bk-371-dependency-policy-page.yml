@@ -264,3 +264,94 @@ phases:
           ripple-check rows. Moved the two to expected_ripples, dropped
           README.md, and left mkdocs.yml as the one genuine entry.
         outcome: ok
+  - id: restructure
+    name: Restructure — from explanation to policy
+    steps:
+      - file: docs-src/explanation/dependency-policy.md
+        section: "(full)"
+        read_type: verify
+        extract: >-
+          The maintainer read the shipped page as an explanation essay rather
+          than a policy, and the measurement agreed: eight narrative headings,
+          no citable unit, norms embedded mid-paragraph ahead of their own
+          justification, and no quantity anywhere in 1616 words. The repo's own
+          test for this is CONTRIBUTING's Authoritative Document Format
+          cross-check — "this would force different behavior in situation X" —
+          which most of the page failed.
+        outcome: misleading
+      - file: CONTRIBUTING.md
+        section: "Authoritative Document Format"
+        read_type: reference
+        extract: >-
+          The repo already owns the shape the complaint was asking for (Intent
+          and Scope, numbered Rules, optional Guides) but scopes it to sdd/
+          process docs and excludes rationale outright. Took the rules-first
+          ordering and the cross-check, not the rationale ban: a user-facing
+          policy that states a rule without its reason is the thing the
+          maintainer had already objected to elsewhere on this branch.
+      - file: sdd/DOCUMENTATION.md
+        section: "1 (Diataxis placement), Diataxis content drift prevention"
+        read_type: gate
+        extract: >-
+          Checked whether a rules-first policy still belongs in explanation/
+          before rewriting in place. The exclusion list for Explanation bars
+          how-to instructions, API signatures and install steps; a numbered
+          normative clause is none of those, and Rule 1's "pages that try to be
+          two things must be split" does not fire because the reasons and the
+          rules are one subject here rather than two. Splitting into a
+          Reference page was offered and declined.
+        outcome: ok
+      - file: spec-0000/index.md (scientific-python/specs, fetched)
+        section: "Description, Core Project Endorsement, Drop Schedule"
+        read_type: reference
+        extract: >-
+          Read the source rather than working from the maintainer's summary of
+          it. Both recommendations are phrased as permission to DROP ("Support
+          for Python versions be dropped 3 years after their initial release"),
+          not as a guarantee to support, and endorsement explicitly does not
+          promise bug-fix releases for the period. DEP-8 and DEP-9 therefore
+          state the user-facing inversion — supported for AT LEAST that long —
+          which is the half a consumer can act on and the half this repo can
+          honour today. The drop schedule is auto-generated upstream and is
+          linked rather than copied, so no date is maintained here and
+          CONTENT-RULES Rule 3 is not re-broken by the fix for it.
+          Retrospective: SPEC 0 gives no definition of "core package
+          dependency", so DEP-9 had to name its own scope (a dependency version
+          supported at one of our releases) rather than borrow one.
+        outcome: unclear
+      - file: CONTRIBUTING.md
+        section: "Versioning, Release"
+        read_type: verify
+        extract: >-
+          DEP-8 and DEP-9 are new obligations on the maintainer, and nothing in
+          the release checklist yet asks whether a support window has expired.
+          Left unwired deliberately: this is a docs PR, and the alternative was
+          to ship a published promise and a process change in one diff.
+          Flagged for the maintainer instead.
+        outcome: ok
+      - file: docs-src/explanation/dependency-policy.md
+        section: "API compatibility"
+        read_type: verify
+        extract: >-
+          Sweeping the restructure's own damage: renaming the "Stability tiers"
+          heading broke CONTRIBUTING.md's inbound link to #stability-tiers, the
+          anchor that exists precisely so the v0.11.0 CHANGELOG citation still
+          lands. Restored it as an explicit anchor on the new heading rather
+          than repointing the link. Found by re-running the inbound-reference
+          grep after the rewrite, not by the rewrite itself.
+        outcome: ok
+      - file: scripts/check_no_tracker_refs.py
+        section: "_TRACKER_RE"
+        read_type: gate
+        extract: >-
+          The clauses were first labelled DEP-1 through DEP-15 and the gate
+          rejected all 18 occurrences: _TRACKER_RE matches an uppercase prefix
+          followed by a hyphen and digits, so a policy prefix is
+          indistinguishable from a backlog or spec coordinate, and published
+          prose must carry neither. The gate is right rather than in the way —
+          a reader meeting that label on the docs site would go looking for a
+          spec that does not exist. Relabelled to "Rule N", which carries no
+          hyphen-digit pair and matches the vocabulary CONTRIBUTING's
+          Authoritative Document Format already uses for numbered constraints.
+          Confirmed by re-running the gate, not by re-reading the regex.
+        outcome: ok

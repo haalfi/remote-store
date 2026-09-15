@@ -334,15 +334,37 @@ if evidence changes; these are retired.
   this branch was open and established the reverse: every environment resolves
   to the newest release, so the top of each range is exercised continuously and
   the floor by nothing — five floors named a release that installs and then
-  fails, two of them wrong for over a year. The page now carries a
-  *What a floor is worth* section saying the floors are measured but not
-  re-derived, names the open gap, and advises pinning above the floor rather
-  than at it. Every other live claim was re-checked against master's corrected
-  `pyproject.toml` and held: paramiko still deliberately uncapped, `httpx<1.0`
-  still the sole runtime ceiling, floor-always / ceiling-by-exception unchanged.
-  A short subsection also covers conda, where the same promise is expressed as
-  `run_constraints` that bound rather than pull, deferring to
+  fails, two of them wrong for over a year. The page says the floors are
+  measured but not re-derived, names the open gap, and advises pinning above
+  the floor rather than at it. Every other live claim was re-checked against
+  master's corrected `pyproject.toml` and held: paramiko still deliberately
+  uncapped, `httpx<1.0` still the sole runtime ceiling, floor-always /
+  ceiling-by-exception unchanged. Conda is covered too, where the same promise
+  is expressed as `run_constraints` that bound rather than pull, deferring to
   [`CONDA-FORGE.md`](CONDA-FORGE.md) and the README caveat.
+  **It shipped as prose and was rewritten as a policy.** The first draft read
+  as an explanation essay: eight narrative headings, no citable unit, the norms
+  embedded mid-paragraph and followed by their justification, and no quantity
+  anywhere. It failed [CONTRIBUTING's Authoritative Document
+  Format](../CONTRIBUTING.md#authoritative-document-format) cross-check — *"this
+  would force different behavior in situation X"* — over most of its length.
+  Restructured after the maintainer pointed at
+  [SPEC 0](https://scientific-python.org/specs/spec-0000/) as the target shape:
+  fifteen numbered clauses, each an anchored normative sentence carrying its
+  reason and its consequence for the reader, with the watching mechanism and
+  the remaining prose demoted below them. They are labelled `Rule N`, not with
+  a prefix: `check_no_tracker_refs.py` reads `[A-Z]+-\d+` as a tracker
+  coordinate and rejects it in published prose, which is correct — a reader
+  meeting `DEP-8` on the docs site would go looking for a spec that does not
+  exist. The gate caught the first draft's labels.
+  **Two clauses are new commitments, not restatements.** Rules 8 and 9 adopt
+  SPEC 0's time-based windows — a Python version supported at least 3 years
+  after its initial release, a dependency version at least 2. They are stated
+  as *minimum support* rather than SPEC 0's own *drop-after* phrasing, which is
+  the user-facing inversion of the same rule and the reading the repo can honour
+  today; the drop schedule is linked rather than copied, so no date is
+  maintained here. What that licenses on the maintenance side is recorded in the
+  trace and was not acted on.
   Inbound links from `README.md` (banner and install section), `docs-src/index.md`,
   the generated `tested-versions.md` preamble (via `scripts/drift_check.py`),
   `docs-src/guides/extensions.md`, `docs-src/reference/migration.md` and
