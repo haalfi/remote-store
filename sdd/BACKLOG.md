@@ -1228,10 +1228,10 @@ resting on it rather than a pending one.
 copies an example, without opening an issue.
 
 **Closes when:** every published page and shipped example a user decides from is
-**true** (BK-339, BK-325, BK-364, ID-125), **reachable** (BK-327), and **walked
-end-to-end by a maintainer** (BK-332, and ID-199's authoring contract). Each
-clause names the items that move it, so closure is checkable rather than
-asserted.
+**true** (BK-339, BK-325, BK-364, ID-125), **reachable** (BK-327, BK-376), and
+**walked end-to-end by a maintainer** (BK-332, and ID-199's authoring
+contract). Each clause names the items that move it, so closure is checkable
+rather than asserted.
 
 This is the group that converts directly into support load not arriving. The
 rehearsal sits with the guides because it is the only mechanism that has ever
@@ -1386,6 +1386,42 @@ not the payoff.
   raising `nav.omitted_files` to WARNING covers the nav half only.
   An unstated bound on `docs-gate` being trusted past its range
   ([`DRIFT-RULES.md` Rule 7](DRIFT-RULES.md#miss-rate)).
+
+- [ ] **BK-376 — Two of `llms.txt`'s four sections are hand-listed, and three published pages are already missing from them**
+  spec: — · effort: S · audience: contributor.tooling
+  BK-327's defect one surface further out. `mkdocs.yml` gives the `llmstxt`
+  plugin a `sections:` map, and `Tutorial` and `Guides` are globs that maintain
+  themselves. `Reference` and `Explanation` are hand-listed page-by-page —
+  `Explanation` for a stated reason (an `explanation/*.md` fnmatch glob would
+  also pull the contributor-facing `explanation/design/` subtree), `Reference`
+  for none given. Nothing differences either list against `_nav.yml`, so a new
+  page is published, navigable, and silently absent from the bundle a coding
+  agent reads.
+  **Three pages are absent today**, from the built artifact rather than from
+  the config: `site/llms.txt` ends at line 133 with six `## Explanation`
+  entries, and `docs-src/explanation/_nav.yml` declares eight pages plus
+  `design/` — `contributing.md` and `development-story.md` have no entry.
+  `docs-src/reference/_nav.yml` declares six entries plus `api/`, and
+  `reference/changelog.md` has none. The changelog is the one that costs:
+  "what changed in 0.32.0" is a question agents ask, and the bundle that exists
+  to answer questions does not carry the answer.
+  **The gap is not knowing which of the three are decisions.** All three are
+  plausibly deliberate — two are project meta, the third is long and churns —
+  but `mkdocs.yml`'s comments explain only the `design/` exclusion and the
+  omitted section-landing stubs, so a reader cannot tell a choice from an
+  oversight. That is the defect, and it is the same one BK-327 names for the
+  nav: the omission is invisible either way.
+  **Fix shape follows BK-327's.** A check differencing each hand-listed
+  `sections:` entry against the corresponding `_nav.yml`, with an explicit
+  opt-out list in `mkdocs.yml` carrying a reason per excluded page — so the
+  three above become declared exclusions or become entries, and the next one
+  cannot be neither. Whether it lands as a G-08 sibling in
+  `check_docs_framework.py` or beside BK-327's is an implementation choice;
+  building both as one check is the likely economy, since both difference
+  emitted pages against `_nav.yml`.
+  **Measured, not hypothetical:** `explanation/dependency-policy.md` (BK-371)
+  had to be added to this list by hand, and was caught by reading the config
+  rather than by any gate.
 
 - [ ] **BK-332 — Schedule the custom-backend rehearsal**
   spec: — · effort: S to define, M per run · audience: contributor.process
