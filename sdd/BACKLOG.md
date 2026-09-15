@@ -1761,19 +1761,30 @@ working, and quietly describing the library as something it is not.
   `pyproject.toml` comment. It was found by hand.
   **Distinct from BK-369, and the two are complementary.** BK-369 asks whether
   the *versions* we declare work; this asks whether the *set* we declare is
-  complete. A lowest-direct lane installs what the extra names and would not
-  have caught BUG-286, because the missing package is named nowhere for a
-  resolver to floor. Both want the same shape — per-extra isolated install plus
-  that extra's `drift_smoke_map.py` target — so whichever is built first should
-  carry the other.
-  **Disposition open, and the cheap option is worth pricing first.** Relaxing
-  the `STATUS != drift` early-return so the smoke also runs on a clean
-  resolution is a one-condition change to an existing matrix job, but it makes
-  every weekly run pay the full smoke for all fourteen extras
-  (`drift_check.list_extras()`) rather than only the drifted ones, and
-  drift-guard's runtime is already the reason BK-367 exists.
-  A separate, less frequent job may price better. Either way the verdict should
-  be *advisory*, like the rest of drift-guard.
+  complete. BK-369's lane would in fact have caught BUG-286: its body describes
+  a per-extra isolated install running that extra's existing smoke target, and
+  `.[azure]` installed alone has no `aiohttp` whatever resolution strategy
+  picked its versions. The catch comes from the **isolation**, which both items
+  share; `--resolution lowest-direct` contributes nothing to it, because an
+  undeclared package has no floor to lower. So what separates the two is the
+  question each asks, not the detection power of the lane — which is the
+  stronger form of the same conclusion: both want per-extra isolated install
+  plus that extra's `drift_smoke_map.py` target, so whichever is built first
+  should carry the other, and should say which question it answers.
+  **Disposition open, and the cheap option is cheaper than it looks.**
+  Relaxing the `STATUS != drift` early-return so the smoke also runs on a clean
+  resolution is a one-condition change to an existing matrix job, and it is
+  close to the status quo: in run 34127228028 (2026-09-07), **12 of the 14
+  legs already paid the smoke** — only `check-otel` and `check-yaml` hit the
+  early return, at 0 s each — so the marginal cost is two more parallel legs,
+  against smoke steps of 25 s (`check-graph`, also `--import-only`) to 84 s
+  elsewhere in the same run. That run took 4m36s end to end, dominated by one
+  failing `check-sftp` leg at 2m26s, and the last five runs span 2m07s to
+  4m36s. **So the cost is not wall-clock, it is failure surface:** every leg
+  that runs a smoke is a leg that can go red, and BUG-282 records what one red
+  leg cost — the only safe re-run was the full matrix, which re-resolved every
+  extra and moved two packages between the two runs. Either way the verdict
+  should be *advisory*, like the rest of drift-guard.
   **What it cannot catch.** An extra whose smoke target does not exercise the
   path that needs the missing package — BUG-286 needed an *async* Azure call —
   so this shares BUG-250's and ID-250's dependency on `drift_smoke_map.py`
