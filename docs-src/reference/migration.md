@@ -14,8 +14,10 @@ Each of these extras declared a minimum below the version carrying the API the
 backend calls. The bad versions installed cleanly and then failed — at import, or
 at the first operation — so the declared range promised something it could not
 deliver. Every floor below was established by installing that release into a
-clean environment and running the code against it, on both the oldest and newest
-supported Python.
+clean environment and running the code against it, not by reading changelogs.
+The `sqlalchemy`, `urllib3` and `dagster` floors were checked on Python 3.10 and
+3.13; the `paramiko` and `tenacity` floors on the interpreters where their
+failures appear.
 
 | Extra | Was | Now | What went wrong below the new floor |
 | --- | --- | --- | --- |
