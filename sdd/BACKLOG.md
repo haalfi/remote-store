@@ -1741,6 +1741,17 @@ working, and quietly describing the library as something it is not.
   `dagster`, `sql`, `sql-query`, `requests`, `httpx`, `graph`), so an extra
   that is missing a dependency still works — some *other* extra supplies it.
   The declaration can be incomplete and every gate stays green.
+  **Two of the fourteen tracked extras are not even named there, and are
+  masked a second way.** `dev` omits `arrow` and `s3` — the set difference of
+  `drift_check.list_extras()` against the names in `dev`'s first member — yet
+  `s3-pyarrow` declares `["s3fs>=2024.2.0", "pyarrow>=14.0.0"]`, restating
+  both packages rather than referencing `remote-store[s3]`, so their packages
+  arrive while their declarations are never exercised. Masking by a duplicated
+  declaration is the same defect as masking by a transitive dependency and is
+  harder to see, because the two extras read as independent in
+  `pyproject.toml`. It compounds with BK-369's half: `[arrow]` declares
+  `pyarrow>=12.0.0` against `s3-pyarrow`'s `>=14.0.0`, so
+  `pip install remote-store[arrow]` alone resolves a range nothing has run.
   **Derivation.** `rg -n 'pip install.*\.\[' .github/workflows` returns 18 hits.
   Every one installs `.[dev]`, `.[dev,…]` or `.[docs]` except a single line:
   `drift-guard.yml:183`, `pip install --pre -c "$CONSTRAINTS" ".[<extra>]"`.
