@@ -1395,10 +1395,28 @@ whose consequence is a date the reader cannot see.
   `gen_adr_digest.py` and `drift_check.py render-docs` all run that way in
   `preflight` — so the deliverable is one more of those, not a diagram.
   **Two of the three inputs are already derivable; the third is the open
-  question.** The supported set is stated three times over
-  (`requires-python`, the `Programming Language :: Python` classifiers, and
-  `ci.yml`'s `ALL_PYTHONS`), and "today" is computed at render. What the repo
-  holds nowhere is each version's **initial release date**: `rg
+  question.** "Today" is computed at render. The supported **set** comes from
+  the `Programming Language :: Python` classifiers (`pyproject.toml:33-37`),
+  and that choice is this item's authority declaration, which
+  [`DRIFT-RULES.md` Rule 4](DRIFT-RULES.md#authority) requires be written down
+  before the check exists: the classifiers are what PyPI shows a user, so they
+  are the canonical statement of a *published* support claim, which is what
+  the chart draws. The other two candidates do not qualify.
+  `requires-python = ">=3.10"` is a floor with no ceiling — it cannot tell a
+  generator the top bar is 3.14, and the gate over it
+  (`check_conda_recipe_pins.py:290-325`, against `variants.yaml` and `ci.yml`'s
+  `MIN_PYTHON`) says nothing about the upper end. `ci.yml`'s `ALL_PYTHONS` does
+  state the set, but it is a CI matrix rather than a published promise.
+  **Nothing holds the classifiers against `ALL_PYTHONS`**, which is a second,
+  separable deliverable rather than part of this one:
+  `check_ci_full_matrix.py` compares `ALL_PYTHONS` to `ci-full.yml`'s matrix
+  and never reads `pyproject.toml`, and the only script that reads the
+  classifiers at all is `repo_stats.py`, which is in no gate. Naming all three
+  as co-equal would be exactly the shape
+  [Rule 3](DRIFT-RULES.md#claim-space) warns about — whichever the generator
+  picked would silently become authoritative and the others could drift under
+  it.
+  What the repo holds nowhere is each version's **initial release date**: `rg
   '2021-10|2022-10'` — the ISO prefixes of the two oldest supported releases —
   matches nothing anywhere in the tree.
   A hardcoded table is the obvious answer and is less rotten than it sounds —
@@ -1407,12 +1425,24 @@ whose consequence is a date the reader cannot see.
   touching `ci.yml` and the classifiers. Whether to instead derive it from an
   upstream feed is the decision to make; a network-fed generator cannot run in
   `preflight`.
-  **Render target is settled enough to not re-litigate.** Mermaid is already
-  enabled (`mkdocs.yml` registers a `mermaid` custom fence under
-  `pymdownx.superfences`) and already used in `docs-src/index.md`, and a
-  `gantt` block takes a `todayMarker`. Verify that the marker actually renders
-  under this Material version before building on it; if it does not, the
-  fallback is the committed-SVG route `docs-src/img/benchmarks/` already uses.
+  **Render target is Mermaid, and the choice is load-bearing rather than
+  cosmetic.** It is already enabled (`mkdocs.yml:151-155` registers a
+  `mermaid` custom fence under `pymdownx.superfences`) and already used in
+  `docs-src/index.md:19`, and a `gantt` block takes a `todayMarker` — which
+  mermaid.js draws **client-side**. So the committed Markdown carries no date
+  and a `--check` generator stays byte-stable, which is how the existing ones
+  behave: `drift_check.py:368` writes `_Captured {lock.captured}_`, a date
+  read out of the lock file, never `date.today()`.
+  **A committed SVG is therefore not a drop-in fallback**, though
+  `docs-src/img/benchmarks/` makes it look like one. It is rasterised at
+  generation time, so the marker freezes at commit and the page asserts a
+  false "today" every day after; and a `--check` generator emitting it would
+  disagree with a fresh render the next day and go red on every unrelated PR.
+  Verify `todayMarker` renders under this Material version *before* building
+  on it, and if it does not, the fallback needs a named choice: drop the
+  marker (and lose the thing that made SPEC 0's version land), move it to a
+  CSS or JS overlay outside the generated artefact, or exclude the artefact
+  from `--check`.
   **Scope is one chart, deliberately.** Rule 9 — the 2-year dependency window —
   would need an initial-release date per package across every extra, and
   BK-369 says nothing verifies those floors today, so plotting them would draw
