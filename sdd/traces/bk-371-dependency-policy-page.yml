@@ -1,0 +1,485 @@
+id: BK-371
+title: "Publish the dependency and version policy as a user-facing page"
+trigger: >-
+  A user asked where the library explains its dependency management,
+  philosophy and measures to library users, and no single published artifact
+  did: the policy was split across seven places and the two load-bearing
+  halves (the reasoning behind version ranges, and the stability tiers) sat
+  in pyproject.toml comments and the contributor guide respectively.
+source_items:
+  - BK-371
+audience:
+  - user.site
+expected_ripples:
+  - sdd/backlogid.json
+  - docs-src/reference/tested-versions.md
+  - CHANGELOG.md
+  - sdd/BACKLOG-DONE.md
+surprising_ripples:
+  # A new page under docs-src/explanation/ must also be added to mkdocs.yml's
+  # `llmstxt` `sections` list, which is hand-maintained page-by-page so the
+  # explanation/design/ subtree stays out of the bundle. Nothing derives that
+  # list from the nav and no gate compares them, so the page was in the site
+  # nav and absent from llms.txt / llms-full.txt — the bundle the README
+  # points AI agents at. Caught in review, not by the ripple-check, whose
+  # "Docs navigation" row names the per-section _nav.yml files and not this
+  # list.
+  - mkdocs.yml
+# review_rounds is filled post-merge. Derivation to run then:
+# `git log --oneline origin/master..HEAD` minus the implementation commit,
+# counting the commit that carries this line.
+phases:
+  - id: orient
+    name: Orient — locate what already exists
+    steps:
+      - file: docs-src/reference/tested-versions.md
+        section: "(full)"
+        read_type: reference
+        extract: >-
+          The only user-facing statement of the range policy is its generated
+          one-paragraph preamble; the rest is per-extra version tables. Also
+          established the page is generated, so linking from it means editing
+          scripts/drift_check.py, not the .md
+      - file: CONTRIBUTING.md
+        section: "Dependency drift guard, Versioning"
+        read_type: reference
+        extract: >-
+          The substantive policy lives here — drift-guard mechanism, when-to-bump
+          table, stability tiers. Confirms the gap is placement, not absence
+      - file: pyproject.toml
+        section: "[project.optional-dependencies]"
+        read_type: reference
+        extract: >-
+          Floor-always / ceiling-by-exception convention plus the per-extra
+          rationale (paramiko deliberately uncapped, the single httpx ceiling).
+          This reasoning had no published home at all
+      - file: docs-src/index.md
+        section: "Design principles"
+        read_type: reference
+        extract: >-
+          Zero-dependencies-in-core and proven-libraries-underneath are stated
+          as teasers with nowhere to go next
+      - file: scripts/gen_pages.py
+        section: "module docstring"
+        read_type: verify
+        extract: >-
+          Confirm CONTRIBUTING.md is bridged onto the docs site, so the tiers
+          were reachable by users but filed under the contributor guide — the
+          distinction that made this a placement fix rather than a new fact
+  - id: classify
+    name: Classify — placement, structure, longevity
+    steps:
+      - file: sdd/AUTHORING.md
+        section: "Directory defaults, Where does my new file go?"
+        read_type: gate
+        extract: >-
+          docs-src/**/*.md defaults to docs-only, so the new page needs no
+          classification marker
+      - file: sdd/DOCUMENTATION.md
+        section: "1 (Diataxis placement), 2 (Content homes), Diataxis content drift prevention"
+        read_type: gate
+        extract: >-
+          "The reader wants to understand why" puts the page in explanation/;
+          the same table bars how-to instructions and install steps from it,
+          which is why the when-to-bump table stayed in CONTRIBUTING
+      - file: sdd/CONTENT-RULES.md
+        section: "Rules 2, 3, 4, 5"
+        read_type: gate
+        extract: >-
+          One copy per fact forces a move rather than a copy for the tiers
+          table; principle-over-enumeration and source-facts-stay-in-source
+          keep the page describing why ranges are shaped that way while
+          pyproject.toml stays authoritative for the ranges themselves
+      - file: sdd/CLAUDE-REFERENCE.md
+        section: "Pre-work index / Docs, Release & meta"
+        read_type: gate
+        extract: >-
+          Docs navigation row (per-section _nav.yml); Tracker ID in published
+          prose row — the pyproject rationale names backlog IDs and those must
+          not survive into the docs-src page; CHANGELOG entry and Backlog item
+          rows
+  - id: docs
+    name: Write and wire
+    steps:
+      - file: docs-src/explanation/security-model.md
+        section: "(full)"
+        read_type: reference
+        extract: >-
+          Nearest structural peer — an explanation page that states a policy and
+          defers to a repo-root file for the procedural half. Used for shape and
+          for the See-also convention
+      - file: docs-src/explanation/_nav.yml
+        section: "(full)"
+        read_type: reference
+        extract: >-
+          Ordering comment is literate; the new entry sits after Security Model
+          and before Contributing, and the comment was extended to say why
+      - file: scripts/drift_check.py
+        section: "render_docs"
+        read_type: gate
+        extract: >-
+          Its docstring states the template prose must stay free of tracker
+          references; the added link is a plain relative docs path for that
+          reason
+  - id: verify
+    name: Verify — ripples and gates
+    steps:
+      - file: sdd/CLAUDE-REFERENCE.md
+        section: "Detailed checklist / Docs navigation, CHANGELOG entry, Backlog item touched"
+        read_type: verify
+        extract: >-
+          Nav entry, one-line [Unreleased] stub within the prose budget, live
+          trace in the same PR
+      - file: scripts/check_changelog_unreleased.py
+        section: "module docstring, _MAX_ENTRY_CHARS"
+        read_type: verify
+        extract: >-
+          Stub shape is `- <ID>: <text>` with a prose budget; audience carries
+          user.site so the entry is required, not optional
+      - file: sdd/BACKLOG.md
+        section: "How this file works / Completing work, Assigning a new ID"
+        read_type: verify
+        extract: >-
+          Item ships closed, so it is authored directly into BACKLOG-DONE.md
+          § Unreleased; next free BK verified against sdd/backlogid.json and the
+          highest ID live in BACKLOG.md.
+          Retrospective: this item was renumbered twice, for two different
+          reasons, and neither was visible to any gate. BK-368 first — open PR
+          #1002 already held it on an unmerged branch, which is the ID-257
+          failure mode and was caught only because a PR-creation call happened
+          to list open PRs. Then BK-369, which was genuinely free when taken and
+          which master claimed for a different item in the five commits merged
+          while this branch sat open. `gen-backlogid --check` passed at every
+          step in both cases: it derives from `backlogid.json` and `BACKLOG.md`,
+          and neither sees an unmerged branch or an unfetched commit. Settled at
+          BK-371, above master's highest live BK.
+  - id: rebase
+    name: Rebase — master moved under the branch
+    steps:
+      - file: sdd/BACKLOG.md
+        section: "BK-369 (Nothing ever installs an extra at its declared floor)"
+        read_type: gate
+        extract: >-
+          Master merged BUG-283..286 and filed this item while the branch was
+          open. Its diagnosis falsified a sentence the page had already shipped:
+          the page told readers a floor is the known-good half and the range
+          above it the untested half, and the measured finding is the reverse —
+          every environment resolves to the newest release, so the top of the
+          range is exercised continuously and the floor by nothing. Five floors
+          were wrong, two for over a year. Rewrote the bullet, added a
+          "What a floor is worth" section, and added the guard's fourth limit.
+        outcome: ok
+      - file: pyproject.toml
+        section: "[project.optional-dependencies]"
+        read_type: verify
+        extract: >-
+          Re-checked every live claim the page makes against master's corrected
+          ranges. paramiko still uncapped with the same helper rationale (floor
+          3.0 -> 3.1), httpx <1.0 still the sole runtime ceiling, floor-always /
+          ceiling-by-exception unchanged. Only the floor-confidence claim needed
+          correcting; the central argument held.
+        outcome: ok
+      - file: sdd/CONDA-FORGE.md
+        section: "(full)"
+        read_type: reference
+        extract: >-
+          conda-forge became a supported channel in v0.32.0. Conda has no
+          extras, so the same promise is expressed as run_constraints that bound
+          rather than pull; added a short subsection saying so and deferring to
+          this runbook and the README caveat rather than restating them.
+      - file: sdd/CLAUDE-REFERENCE.md
+        section: "Pre-work index / Dependency"
+        read_type: verify
+        extract: >-
+          The row gained packaging/conda-forge/recipe.yaml run_constraints. This
+          diff changes no dependency range, only a comment, so the new ripple
+          does not attach — checked rather than assumed.
+        outcome: ok
+  - id: fix
+    name: Fix — review round 1
+    steps:
+      - file: sdd/CONTENT-RULES.md
+        section: "Rules 1, 3, 4"
+        read_type: gate
+        extract: >-
+          Review found the page breaking three rules it had itself been written
+          to respect. § What a floor is worth was dated relative to its writing
+          ("until recently", "now measured", "not yet", "shipped in 0.32.0"),
+          carried exact counts Rule 3 puts in measured artefacts, and copied
+          migration.md's measurement-method sentence instead of linking it.
+          Rewritten to state the durable claim — a floor is a measurement, not
+          a guarantee; nothing re-derives it — with the counts and dates left
+          to the migration guide and BK-369. Same defect one section up: naming
+          the HTTP cap as "the one runtime ceiling" is a count that goes stale
+          on the next cap added or lifted, so the page now sends the reader to
+          pyproject.toml for the current set.
+        outcome: ok
+      - file: scripts/drift_smoke_map.py
+        section: "SMOKE_TARGETS, smoke_for"
+        read_type: verify
+        extract: >-
+          The page claimed a drifted extra gets "the real test suite ... the
+          extension's own tests otherwise". False: graph and otel route to
+          --import-only, and smoke_for's fallback for any unlisted extra is an
+          import of remote_store. Reworded to "smoke run", with import-only
+          named as the floor, and a limit added saying the smoke can be
+          shallower than the extra.
+        outcome: ok
+      - file: scripts/drift_check.py
+        section: "_EXCLUDED_EXTRAS"
+        read_type: verify
+        extract: >-
+          The page said the guard re-resolves "every extra" and excused only
+          dev/docs build extras as never reaching a user. But the exclusion set
+          also holds the marker-gated toml extra, which README's install list
+          offers to users. Two sentences shared that defect, not the one the
+          review named: fixed the drift-guard paragraph and added a coverage
+          limit, phrased by the property (resolution depends on the
+          interpreter) rather than by naming the extra, so it survives the set
+          changing.
+        outcome: ok
+      - file: mkdocs.yml
+        section: "plugins / llmstxt / sections / Explanation"
+        read_type: gate
+        extract: >-
+          A new explanation page must be added here by hand — the list is
+          page-by-page so explanation/design/ stays out of the bundle — and the
+          page was in the site nav but absent from llms.txt and llms-full.txt,
+          which the README points AI agents at. Added it, then swept the whole
+          class rather than the one line: compared both hand-listed sections
+          against the pages on disk, and the only other absentees are the two
+          section-landing index.md stubs the file's own comment omits
+          deliberately. No gate compares this list to the nav; recorded as the
+          trace's surprising ripple.
+        outcome: ok
+      - file: sdd/traces/_schema.yml
+        section: "surprising_ripples, expected_ripples"
+        read_type: gate
+        extract: >-
+          The three paths first filed as surprising ripples were not ripples of
+          this work at all: CHANGELOG.md and BACKLOG-DONE.md are named by
+          ripple-check rows this trace's own verify phase cites, and README.md
+          was a deliberate part of the diff. Aggregators cannot read the
+          comment that said so, so they would have counted three missing
+          ripple-check rows. Moved the two to expected_ripples, dropped
+          README.md, and left mkdocs.yml as the one genuine entry.
+        outcome: ok
+  - id: restructure
+    name: Restructure — from explanation to policy
+    steps:
+      - file: docs-src/explanation/dependency-policy.md
+        section: "(full)"
+        read_type: verify
+        extract: >-
+          The maintainer read the shipped page as an explanation essay rather
+          than a policy, and the measurement agreed: eight narrative headings,
+          no citable unit, norms embedded mid-paragraph ahead of their own
+          justification, and no quantity anywhere in 1616 words. The repo's own
+          test for this is CONTRIBUTING's Authoritative Document Format
+          cross-check — "this would force different behavior in situation X" —
+          which most of the page failed.
+        outcome: misleading
+      - file: CONTRIBUTING.md
+        section: "Authoritative Document Format"
+        read_type: reference
+        extract: >-
+          The repo already owns the shape the complaint was asking for (Intent
+          and Scope, numbered Rules, optional Guides) but scopes it to sdd/
+          process docs and excludes rationale outright. Took the rules-first
+          ordering and the cross-check, not the rationale ban: a user-facing
+          policy that states a rule without its reason is the thing the
+          maintainer had already objected to elsewhere on this branch.
+      - file: sdd/DOCUMENTATION.md
+        section: "1 (Diataxis placement), Diataxis content drift prevention"
+        read_type: gate
+        extract: >-
+          Checked whether a rules-first policy still belongs in explanation/
+          before rewriting in place. The exclusion list for Explanation bars
+          how-to instructions, API signatures and install steps; a numbered
+          normative clause is none of those, and Rule 1's "pages that try to be
+          two things must be split" does not fire because the reasons and the
+          rules are one subject here rather than two. Splitting into a
+          Reference page was offered and declined.
+        outcome: ok
+      - file: docs-src/explanation/dependency-policy.md
+        section: "Support windows"
+        read_type: reference
+        extract: >-
+          Wrote Rules 8 and 9 from SPEC 0 itself (fetched from the
+          scientific-python/specs repository) rather than from the maintainer's
+          summary of it, and the reading changed the wording. Both of its
+          recommendations are phrased as permission to DROP — "Support for
+          Python versions be dropped 3 years after their initial release" — not
+          as a guarantee to support, and endorsement explicitly promises no
+          bug-fix releases for the period. So these rules state the user-facing
+          inversion, supported for AT LEAST that long, which is the half a
+          consumer can act on and the half this repo honours today. Its drop
+          schedule is auto-generated upstream and is linked rather than copied,
+          so no date is maintained here.
+          Retrospective: SPEC 0 defines no "core package dependency", so Rule 9
+          had to name its own scope rather than borrow one — and the first
+          wording of that scope was inverted, telling a reader that dropping an
+          out-of-window version was the breaking case. Caught in review, not by
+          writing it.
+        outcome: unclear
+      - file: CONTRIBUTING.md
+        section: "Versioning, Release"
+        read_type: verify
+        extract: >-
+          Rules 8 and 9 are new obligations on the maintainer, and neither the
+          When-to-bump table nor the release checklist knew they existed.
+          Left unwired at first, on the reasoning that a docs PR should not
+          also carry a process change, and flagged in this trace instead.
+          Retrospective: that was the wrong call and review said so. The
+          deferral left the page deferring to a table that had no row for the
+          thing it deferred, so the cross-reference was false the moment it
+          shipped, and CLAUDE.md principle 3 wants the repo describing reality
+          at every commit. Wired in the same PR: three rows in the bump table
+          (out-of-window floor rise, in-window floor rise, dropping a Python
+          version) and one release-checklist line, with the checklist line
+          stating that nothing derives it.
+        outcome: misleading
+      - file: docs-src/explanation/dependency-policy.md
+        section: "API compatibility"
+        read_type: verify
+        extract: >-
+          Sweeping the restructure's own damage: renaming the "Stability tiers"
+          heading broke CONTRIBUTING.md's inbound link to #stability-tiers, the
+          anchor that exists precisely so the v0.11.0 CHANGELOG citation still
+          lands. Restored it as an explicit anchor on the new heading rather
+          than repointing the link. Found by re-running the inbound-reference
+          grep after the rewrite, not by the rewrite itself.
+        outcome: ok
+      - file: scripts/check_no_tracker_refs.py
+        section: "_TRACKER_RE"
+        read_type: gate
+        extract: >-
+          The clauses were first labelled DEP-1 through DEP-15 and the gate
+          rejected all 18 occurrences: _TRACKER_RE matches an uppercase prefix
+          followed by a hyphen and digits, so a policy prefix is
+          indistinguishable from a backlog or spec coordinate, and published
+          prose must carry neither. The gate is right rather than in the way —
+          a reader meeting that label on the docs site would go looking for a
+          spec that does not exist. Relabelled to "Rule N", which carries no
+          hyphen-digit pair and matches the vocabulary CONTRIBUTING's
+          Authoritative Document Format already uses for numbered constraints.
+          Confirmed by re-running the gate, not by re-reading the regex.
+        outcome: ok
+      - file: sdd/000-process.md
+        section: "Rules, Spec format"
+        read_type: gate
+        extract: >-
+          The maintainer read the rule headings as off-house-style, and the
+          measurement located the defect precisely rather than confirming the
+          obvious reading. Em-dash DENSITY was never the problem - the page sat
+          at 17.3 per 1000 words against DOCUMENTATION.md at 17.5,
+          security-model.md at 19.6 and architecture.md at 22.0. What was
+          unique to this page was the dash doing STRUCTURAL work: every other
+          authoritative doc separates a rule's number from its title with a
+          period or a colon (000-process "1. **No code without a spec**:",
+          AUTHORING "1. **File classification.**", DOCUMENTATION
+          "### 1. Diataxis placement", the audit template "### C-1. <Title>"),
+          and reserves the dash for a qualifier AFTER an identifier
+          (CI-OPERATIONS "### drift-guard.yml - transitive dependency drift",
+          spec 013 "### MEM-010: read() - Stream Type"). Headings became
+          "Rule N. Title". The Why / For-you labels moved from italic to bold
+          with a colon, matching the spec format's own field convention
+          (**Invariant:**, **Preconditions:**) rather than being invented here.
+        outcome: ok
+      - file: sdd/DOCUMENTATION.md
+        section: "6 (Typography), API page building blocks"
+        read_type: gate
+        extract: >-
+          Caught an overcorrection before it shipped. Having stripped dashes
+          from the prose, the See-also list went with them - but that list has
+          a documented template in this file reading
+          "- [Guide name](path) - one-line description", and security-model.md
+          follows it. Restored. The lesson the trace should carry is that the
+          instruction was "align with house style", and a blanket purge is not
+          alignment: five of the page's dashes are required by the house style
+          that the same pass removed the others for.
+        outcome: ok
+      - file: .github/workflows/drift-guard.yml
+        section: "on.schedule"
+        read_type: verify
+        extract: >-
+          An external review asked for an upgrade cadence, a "expect to upgrade
+          every X months" rule of thumb. Refused as asked: no such figure has
+          been measured, so publishing one fabricates a commitment, which is
+          the CONTENT-RULES Rule 3 and principle 9 defect this page has already
+          been corrected for twice. The kernel of the ask is answerable from
+          facts the repo holds, so the watching section now says the guard runs
+          weekly (cron "0 7 * * 1") and that each extra on the Tested versions
+          page carries its capture date, letting a reader measure the staleness
+          themselves. Both checked against source before writing.
+          Retrospective: the same review named boto3 and azure-storage-blob as
+          packages a user would look up ranges for. Neither is a runtime
+          dependency here (boto3 is [bench]-only plus a parked PoC; the
+          backends use s3fs and azure-storage-file-datalake), and it cited
+          version 0.17.0 against a current 0.32.0 — so its specifics were
+          generalised rather than read. Its two structural findings survived
+          that check and are filed; its third did not.
+        outcome: ok
+  - id: fix_round_2
+    name: Fix — review round 2, read from a user's seat
+    steps:
+      - file: src/remote_store/backends/_s3.py
+        section: "_fs / _s3fs lazy import"
+        read_type: verify
+        extract: >-
+          Rule 2 claimed "the error names the extra to install". False for the
+          backends a reader of this page is most likely to want. Enumerated
+          rather than spot-checked: `rg -c 'pip install' src/remote_store`
+          returns 20 matches over 10 files, and every one lives in _config.py, ext/*,
+          _http_httpx.py, _http_requests.py or _sqlalchemy.py. The five extras
+          with no such message are s3, s3-pyarrow, azure, graph and sftp —
+          _s3.py:518,551 and _s3_pyarrow.py:519,601 import s3fs bare inside
+          methods, _sftp.py imports paramiko bare at fourteen sites,
+          _graph/http.py:23 imports httpx at module top, and _azure.py:14
+          imports azure.core at module top where _registry.py:45-51 swallows
+          the ImportError, so the backend is never registered and the user
+          meets "Unknown backend type 'azure'" from _registry.py:146 instead.
+          Rule 2 now describes the three shapes the failure takes and hands off
+          to the troubleshooting guide, which already documents the symptoms.
+        outcome: ok
+      - file: docs-src/explanation/dependency-policy.md
+        section: "Rule 9"
+        read_type: verify
+        extract: >-
+          The rule's own For-you clause inverted it: "raising a floor past that
+          window is a breaking change ... within it, a floor can still rise in
+          any release" told a reader that dropping an expired version was the
+          break and dropping a live one was free, the reverse of the title.
+          Restated in terms of the version being excluded rather than of "the
+          window", and the patch-release question the phrasing had left
+          implicit is now decided out loud: a floor may rise in any release
+          including a patch, provided every version it newly excludes is itself
+          2 years past its own release.
+        outcome: ok
+      - file: CONTRIBUTING.md
+        section: "When to bump, Release Phase 1"
+        read_type: gate
+        extract: >-
+          Closing the deferral recorded two steps up rather than filing it: the
+          bump table gained rows for an out-of-window floor rise, an in-window
+          one, and dropping a Python version, and Phase 1 gained a
+          support-window check that says plainly nothing derives it. The page
+          said the maintainer half lived in that table; until this it did not.
+        outcome: ok
+      - file: sdd/traces/_schema.yml
+        section: "step.file"
+        read_type: gate
+        extract: >-
+          A step had `file: spec-0000/index.md (scientific-python/specs,
+          fetched)`, which the schema forbids — repo-relative paths or guidance
+          placeholders only. check_traces.py runs the JSON schema, which has no
+          path check, so it passed the gate while breaking the contract, and
+          report-trace-outcomes would have ranked an upstream document nobody
+          here can improve alongside repo files that can be. Folded the SPEC 0
+          reading into the dependency-policy.md step it produced.
+          Swept the same file for the relabel this branch did earlier: three
+          DEP-8 / DEP-9 references survived into steps written before the
+          rename and are now Rule 8 / Rule 9. Two others are deliberate history
+          — the step recording why the DEP prefix was rejected, and the
+          BACKLOG-DONE sentence explaining it — and were left.
+        outcome: ok

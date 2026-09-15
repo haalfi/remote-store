@@ -1,4 +1,5 @@
 # Architecture first (conceptual entry point), then runtime behaviour,
+# then the promises we make about releases and dependencies,
 # then project meta (Contributing, Development Story),
 # then Design artifacts sub-section (ADRs, specs, RFCs, audits, research).
 - Architecture Overview: architecture.md
@@ -6,6 +7,7 @@
 - Performance: performance.md
 - Concurrency: concurrency.md
 - Security Model: security-model.md
+- Dependency & Version Policy: dependency-policy.md
 - Contributing: contributing.md
 - Development Story: development-story.md
 - Design: design/

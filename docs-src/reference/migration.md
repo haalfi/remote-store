@@ -915,4 +915,5 @@ exported from `remote_store.__init__`.
 ## See also
 
 - [CHANGELOG](https://github.com/haalfi/remote-store/blob/master/CHANGELOG.md)
-- [Contributing](../../CONTRIBUTING.md) — stability tiers and versioning policy
+- [Dependency and version policy](../explanation/dependency-policy.md) — stability tiers and what each one promises
+- [Contributing](../../CONTRIBUTING.md) — which change earns which version bump

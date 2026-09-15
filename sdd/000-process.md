@@ -189,4 +189,6 @@ Five document categories live under `sdd/`. Each has a clear purpose and lifecyc
 
 ### Versioning
 
-See [CONTRIBUTING.md § Versioning](../CONTRIBUTING.md#versioning).
+Which change earns which bump: [CONTRIBUTING.md § Versioning](../CONTRIBUTING.md#versioning).
+What the resulting version promises a user (stability tiers, dependency
+ranges): [`docs-src/explanation/dependency-policy.md`](../docs-src/explanation/dependency-policy.md).

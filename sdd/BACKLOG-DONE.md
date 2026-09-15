@@ -297,6 +297,80 @@ if evidence changes; these are retired.
   lags PyPI and its constraints can predate `pyproject.toml`'s. A feedstock always
   trails a release, so that stays true and no release-time deletion step is owed.
 
+- [x] **BK-371 — Dependency management and version promises were stated in seven places, none of them a page a user would open**
+  spec: — · effort: S · audience: user.site
+  Asked where we explain our dependency philosophy to library users, the answer
+  was that no single artifact does. `rg -il 'dependenc'` over the published
+  surface found the policy split across `docs-src/reference/tested-versions.md`
+  (one generated paragraph, then the version tables), `docs-src/index.md`
+  § Design principles (two teaser sentences), `README.md` (the Beta banner, the
+  "zero runtime dependencies" line, and one Quality & Testing bullet),
+  `docs-src/reference/migration.md` (per-release breaks, handing off to
+  Contributing), `docs-src/guides/extensions.md` and
+  `docs-src/guides/troubleshooting.md` (extras mechanics, not policy), and
+  `SECURITY.md` (latest release only).
+  **Two gaps, both of them the load-bearing half.** The *reasoning* behind the
+  range policy — that a ceiling is the exception, that the SSH library is
+  uncapped on purpose because a helper serves users better than a cap, that the
+  one live ceiling guards against an upstream rewrite that removes the types a
+  backend is built on — existed only as comments in `pyproject.toml`, which no
+  user reads. And the **stability tiers**, which are a published promise rather
+  than a contributor procedure, lived in `CONTRIBUTING.md` § Versioning: on the
+  docs site, but filed under the contributor guide, reachable only via a
+  hand-off line at the foot of the migration guide.
+  **Shipped as `docs-src/explanation/dependency-policy.md`**, the Diátaxis
+  explanation page next to the security model. The tier table **moved** there
+  rather than being copied ([CONTENT-RULES Rule 4](CONTENT-RULES.md#rules));
+  `CONTRIBUTING.md` keeps its `### Stability tiers` heading as a pointer, so the
+  prose citation in `CHANGELOG.md`'s v0.11.0 entry still lands. When-to-bump
+  stayed in `CONTRIBUTING.md`: it is a maintainer action, and
+  [DOCUMENTATION Rule 1](DOCUMENTATION.md#diataxis-placement) bars how-to from an
+  explanation page. The authoritative *ranges* stayed in `pyproject.toml` and the
+  guard's *procedure* in `CONTRIBUTING.md`; the page links to both and states
+  what neither does — the guard's limits, and what the policy does not promise.
+  **The floor claim was falsified mid-branch and had to be rewritten.** The page
+  first told readers that a floor marks the known-bad boundary and the range
+  above it is the untested part. BUG-283..286 and BK-369 landed on master while
+  this branch was open and established the reverse: every environment resolves
+  to the newest release, so the top of each range is exercised continuously and
+  the floor by nothing — five floors named a release that installs and then
+  fails, two of them wrong for over a year. The page says the floors are
+  measured but not re-derived, names the open gap, and advises pinning above
+  the floor rather than at it. Every other live claim was re-checked against
+  master's corrected `pyproject.toml` and held: paramiko still deliberately
+  uncapped, `httpx<1.0` still the sole runtime ceiling, floor-always /
+  ceiling-by-exception unchanged. Conda is covered too, where the same promise
+  is expressed as `run_constraints` that bound rather than pull, deferring to
+  [`CONDA-FORGE.md`](CONDA-FORGE.md) and the README caveat.
+  **It shipped as prose and was rewritten as a policy.** The first draft read
+  as an explanation essay: eight narrative headings, no citable unit, the norms
+  embedded mid-paragraph and followed by their justification, and no quantity
+  anywhere. It failed [CONTRIBUTING's Authoritative Document
+  Format](../CONTRIBUTING.md#authoritative-document-format) cross-check — *"this
+  would force different behavior in situation X"* — over most of its length.
+  Restructured after the maintainer pointed at
+  [SPEC 0](https://scientific-python.org/specs/spec-0000/) as the target shape:
+  fifteen numbered clauses, each an anchored normative sentence carrying its
+  reason and its consequence for the reader, with the watching mechanism and
+  the remaining prose demoted below them. They are labelled `Rule N`, not with
+  a prefix: `check_no_tracker_refs.py` reads `[A-Z]+-\d+` as a tracker
+  coordinate and rejects it in published prose, which is correct — a reader
+  meeting `DEP-8` on the docs site would go looking for a spec that does not
+  exist. The gate caught the first draft's labels.
+  **Two clauses are new commitments, not restatements.** Rules 8 and 9 adopt
+  SPEC 0's time-based windows — a Python version supported at least 3 years
+  after its initial release, a dependency version at least 2. They are stated
+  as *minimum support* rather than SPEC 0's own *drop-after* phrasing, which is
+  the user-facing inversion of the same rule and the reading the repo can honour
+  today; the drop schedule is linked rather than copied, so no date is
+  maintained here. What that licenses on the maintenance side is recorded in the
+  trace and was not acted on.
+  Inbound links from `README.md` (banner and install section), `docs-src/index.md`,
+  the generated `tested-versions.md` preamble (via `scripts/drift_check.py`),
+  `docs-src/guides/extensions.md`, `docs-src/reference/migration.md` and
+  `sdd/000-process.md`; `pyproject.toml`'s policy comment now names the page it
+  is held to.
+
 ## v0.32.0
 
 - [x] **ID-258 — Trace-outcome report revisit at the next release**
