@@ -1228,16 +1228,21 @@ resting on it rather than a pending one.
 copies an example, without opening an issue.
 
 **Closes when:** every published page and shipped example a user decides from is
-**true** (BK-339, BK-325, BK-364, ID-125), **reachable** (BK-327), and **walked
-end-to-end by a maintainer** (BK-332, and ID-199's authoring contract). Each
-clause names the items that move it, so closure is checkable rather than
-asserted.
+**true** (BK-339, BK-325, BK-364, ID-125), **reachable** (BK-327), **legible —
+a rule the reader can act on without first computing it** (BK-373), and
+**walked end-to-end by a maintainer** (BK-332, and ID-199's authoring
+contract). Each clause names the items that move it, so closure is checkable
+rather than asserted.
 
 This is the group that converts directly into support load not arriving. The
 rehearsal sits with the guides because it is the only mechanism that has ever
 found their defects, and BK-327 sits here rather than with the gates because a
 page nobody can navigate to is a page nobody reads — the gate is the mechanism,
-not the payoff.
+not the payoff. The legibility clause is the same argument one step further in:
+a page reachable and true, whose rule the reader has to do arithmetic to apply,
+is one they apply wrongly or not at all. It is deliberately narrow — it is not
+a licence to file prose-polishing items, and BK-373 earns it by naming a rule
+whose consequence is a date the reader cannot see.
 
 - [ ] **BK-364 — `transfer-operations.md` documents partial files for `download` only, and the other direction is the one that can destroy data**
   spec: — · effort: S · audience: user.site
@@ -1367,6 +1372,51 @@ not the payoff.
   with `RemoteStoreIOManager`. Demonstrates the config-driven pattern.
   Examples get copied verbatim, so a stale one teaches a superseded pattern
   from a first-contact surface.
+
+- [ ] **BK-373 — The Python support window is a rule a reader has to compute, and a timeline would just show it**
+  spec: — · effort: M · audience: user.site
+  The rule this item draws is
+  [Rule 8](../docs-src/explanation/dependency-policy.md#rule-8) of the published
+  dependency policy: a Python version is supported for at least 3 years after
+  its initial release, adopting
+  [SPEC 0](https://scientific-python.org/specs/spec-0000/). As prose it asks the
+  reader to know five release dates, add three years to each, and compare
+  against today. SPEC 0 itself does not: its § Support Window renders a Gantt
+  chart, one bar per version from release to release+3y with a vertical marker
+  at today, and the argument lands without being read. The maintainer raised
+  this after seeing that page rendered, which is the evidence — the same claim
+  in two presentations, one of which had to be explained and one of which did
+  not.
+  **Not a fenced block someone hand-writes.** A timeline with dates on it is
+  exactly what [`CONTENT-RULES.md` Rule 1](CONTENT-RULES.md#six-month-test)
+  forbids in stable prose: it is wrong the day a version is added and silently
+  wrong every day after. This repo's answer to that is a generator plus a
+  `--check` gate — `gen_graph.py`, `gen_features.py`, `gen_graph_viz.py`,
+  `gen_adr_digest.py` and `drift_check.py render-docs` all run that way in
+  `preflight` — so the deliverable is one more of those, not a diagram.
+  **Two of the three inputs are already derivable; the third is the open
+  question.** The supported set is stated three times over
+  (`requires-python`, the `Programming Language :: Python` classifiers, and
+  `ci.yml`'s `ALL_PYTHONS`), and "today" is computed at render. What the repo
+  holds nowhere is each version's **initial release date**: `rg
+  '2021-10|2022-10'` — the ISO prefixes of the two oldest supported releases —
+  matches nothing anywhere in the tree.
+  A hardcoded table is the obvious answer and is less rotten than it sounds —
+  a past release date is immutable, so the table only grows, and it grows
+  exactly when an interpreter is added, which is already a deliberate act
+  touching `ci.yml` and the classifiers. Whether to instead derive it from an
+  upstream feed is the decision to make; a network-fed generator cannot run in
+  `preflight`.
+  **Render target is settled enough to not re-litigate.** Mermaid is already
+  enabled (`mkdocs.yml` registers a `mermaid` custom fence under
+  `pymdownx.superfences`) and already used in `docs-src/index.md`, and a
+  `gantt` block takes a `todayMarker`. Verify that the marker actually renders
+  under this Material version before building on it; if it does not, the
+  fallback is the committed-SVG route `docs-src/img/benchmarks/` already uses.
+  **Scope is one chart, deliberately.** Rule 9 — the 2-year dependency window —
+  would need an initial-release date per package across every extra, and
+  BK-369 says nothing verifies those floors today, so plotting them would draw
+  a confident picture over unchecked data. Revisit once BK-369's lane exists.
 
 - [ ] **BK-327 — Gate dual-doc nav reachability and index listing**
   spec: — · effort: S · audience: contributor.tooling
