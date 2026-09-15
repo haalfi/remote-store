@@ -1530,7 +1530,7 @@ whose consequence is a date the reader cannot see.
   An unstated bound on `docs-gate` being trusted past its range
   ([`DRIFT-RULES.md` Rule 7](DRIFT-RULES.md#miss-rate)).
 
-- [ ] **BK-376 — Two of `llms.txt`'s four sections are hand-listed, and three published pages are already missing from them**
+- [ ] **BK-376 — Two of the llmstxt `sections:` map's four entries are hand-listed, and three published pages are already missing from both outputs**
   spec: — · effort: S · audience: contributor.tooling
   BK-327's defect one surface further out. `mkdocs.yml` gives the `llmstxt`
   plugin a `sections:` map, and `Tutorial` and `Guides` are globs that maintain
@@ -1538,16 +1538,25 @@ whose consequence is a date the reader cannot see.
   `Explanation` for a stated reason (an `explanation/*.md` fnmatch glob would
   also pull the contributor-facing `explanation/design/` subtree), `Reference`
   for none given. Nothing differences either list against `_nav.yml`, so a new
-  page is published, navigable, and silently absent from the bundle a coding
-  agent reads.
-  **Three pages are absent today**, from the built artifact rather than from
-  the config: `site/llms.txt` ends at line 133 with six `## Explanation`
-  entries, and `docs-src/explanation/_nav.yml` declares eight pages plus
-  `design/` — `contributing.md` and `development-story.md` have no entry.
-  `docs-src/reference/_nav.yml` declares six entries plus `api/`, and
-  `reference/changelog.md` has none. The changelog is the one that costs:
-  "what changed in 0.32.0" is a question agents ask, and the bundle that exists
-  to answer questions does not carry the answer.
+  page is published, navigable, and silently absent from **both** bundles a
+  coding agent reads: `mkdocs.yml:61` sets `full_output: llms-full.txt` on the
+  same plugin instance that carries the map, so `llms.txt` loses the link and
+  `llms-full.txt` loses the page's entire text. `llms-api.txt` is **out of
+  scope** and stays that way: `scripts/docs/gen_llms_api.sh` builds it from
+  `src/` with `lx`, out of `.readthedocs.yaml`'s `post_build`, and never reads
+  `sections:`.
+  **Three pages are absent today.** `mkdocs.yml:113-119` lists six
+  `Explanation` pages while `docs-src/explanation/_nav.yml` declares eight plus
+  `design/`, so `contributing.md` and `development-story.md` have no entry.
+  `docs-src/reference/_nav.yml` declares five pages plus `api/`, and
+  `mkdocs.yml` hand-lists four of the five (`capabilities-matrix.md`,
+  `migration.md`, `tested-versions.md`, `FEATURES.md`), leaving
+  `reference/changelog.md` as the only omission — `api/` is covered by the
+  recursive `reference/api/*.md` glob the comment at `mkdocs.yml:92-96`
+  explains. The changelog is the one that costs, and it costs most in
+  `llms-full.txt`: "what changed in 0.32.0" is a question agents ask, and the
+  bundle that exists to carry the answer's *text* omits it, not merely the link
+  to it.
   **The gap is not knowing which of the three are decisions.** All three are
   plausibly deliberate — two are project meta, the third is long and churns —
   but `mkdocs.yml`'s comments explain only the `design/` exclusion and the
