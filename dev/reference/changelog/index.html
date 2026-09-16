@@ -14792,10 +14792,9 @@
   <code>dagster&gt;=1.10.18</code> replaces <code>&gt;=1.9</code>, below which
   <code>import remote_store.ext.dagster</code> raises <code>ImportError</code> on every supported
   Python. Each new floor was established by installing that release into a clean
-  environment and running the code against it, on both the oldest and newest
-  supported Python. The two <code>pyarrow</code> floors were checked and deliberately left
-  alone: pip refuses them outright on 3.13 rather than installing something
-  broken. See the
+  environment and running the code against it, on Python 3.10 and 3.13. The two
+  <code>pyarrow</code> floors were checked and deliberately left alone: pip refuses them
+  outright on 3.13 rather than installing something broken. See the
   <a href="https://docs.remotestore.dev/stable/reference/migration/#v0310-to-v0320">migration guide</a>.</li>
 </ul>
 <h3 id="fixed">Fixed<a class="headerlink" href="#fixed" title="Permanent link">&para;</a></h3>

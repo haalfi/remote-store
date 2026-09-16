@@ -20364,7 +20364,7 @@ Breaking changes and upgrade paths between `remote-store` versions.
 
 **Several optional-dependency floors were raised to the first release that actually works:**
 
-Each of these extras declared a minimum below the version carrying the API the backend calls. The bad versions installed cleanly and then failed — at import, or at the first operation — so the declared range promised something it could not deliver. Every floor below was established by installing that release into a clean environment and running the code against it, on both the oldest and newest supported Python.
+Each of these extras declared a minimum below the version carrying the API the backend calls. The bad versions installed cleanly and then failed — at import, or at the first operation — so the declared range promised something it could not deliver. Most of the floors below were established by installing that release into a clean environment and running the code against it: `sqlalchemy`, `urllib3` and `dagster` on Python 3.10 and 3.13, and `tenacity` on 3.10 and 3.11, the first Python that drops `asyncio.coroutine`. The `paramiko` floor is the exception — it was settled from paramiko's own changelog entry for 3.1.0.
 
 | Extra              | Was               | Now                  | What went wrong below the new floor                                                                                                                                     |
 | ------------------ | ----------------- | -------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------- |

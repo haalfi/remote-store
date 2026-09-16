@@ -11028,9 +11028,11 @@ changes that require action when upgrading.</p>
 <p>Each of these extras declared a minimum below the version carrying the API the
 backend calls. The bad versions installed cleanly and then failed — at import, or
 at the first operation — so the declared range promised something it could not
-deliver. Every floor below was established by installing that release into a
-clean environment and running the code against it, on both the oldest and newest
-supported Python.</p>
+deliver. Most of the floors below were established by installing that release
+into a clean environment and running the code against it: <code>sqlalchemy</code>,
+<code>urllib3</code> and <code>dagster</code> on Python 3.10 and 3.13, and <code>tenacity</code> on 3.10 and
+3.11, the first Python that drops <code>asyncio.coroutine</code>. The <code>paramiko</code> floor is
+the exception — it was settled from paramiko's own changelog entry for 3.1.0.</p>
 <table>
 <thead>
 <tr>
