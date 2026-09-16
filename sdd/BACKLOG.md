@@ -3132,8 +3132,10 @@ the commit that writes it lands, so cite the generator instead.
 - [ ] **BK-379 — Pilot RFC-0015's D2, D3 and its LINE-anchor rule on three deliveries, before the rest of it is built**
   spec: — · effort: M · audience: contributor.process
   [RFC-0015](rfcs/rfc-0015-ship-two-surfaces.md) is Draft with six decisions and
-  an acceptance criterion stated before the run. **Three of the six need no
-  script built**: D2 (fix shape, instrument-bound claims, the reader-harm form)
+  an acceptance criterion stated before the run. **The pilot takes D2 and D3
+  whole, D5's posting half, and D6's repeat-site half** — two decisions and two
+  halves, enumerated in this paragraph — because those are the parts that need
+  no script built: D2 (fix shape, instrument-bound claims, the reader-harm form)
   is prose in `/ship`'s triage table and `/fix-pr`'s Rules; D3 (a review
   worktree pinned at the certified commit) touches the spawn step and the tree
   check; D5's LINE-anchor posting rule touches `/rvw-pr` Step 4. **D5 is piloted
@@ -3154,13 +3156,16 @@ the commit that writes it lands, so cite the generator instead.
   below, then `/ship`, `/fix-pr`, `/rvw-pr` and `/orchestrate`; run three
   deliveries; re-derive Tables 2 and 4 over them.
   **Four corrections the RFC's criterion needs first**, because it was written
-  for six decisions and this pilots three:
+  for all six decisions and this pilots the four parts enumerated above:
   1. **Its clause 2 has no referent here.** "The derived trace block draws a
      finding in at most one round" presupposes a block D4 generates. This pilot
      reports clauses 1 and 3: the loop-introduced share of classified must-fix
      findings from round 3 on against the RFC's 78% baseline (Table 4 rows 3–7,
      77 of 99), and the D5 retraction trigger as a dry run, which
-     `rfc-0015-findings.py` already computes under three readings. Clause 2 is
+     `rfc-0015-findings.py` already computes under three readings. **Read that
+     share as correction 3 defines it**, over `original + loop-introduced` only
+     — the script's own `share` adds `pre-existing` to the denominator, which
+     the LINE rule newly populates and the baseline has at zero. Clause 2 is
      deferred with D4, not dropped.
   2. **A miss points at D1, not at Draft.** D1 targets the record surface: 133
      of 541 findings on `sdd/traces/` and the two backlog files, a quarter of
@@ -3182,11 +3187,34 @@ the commit that writes it lands, so cite the generator instead.
      with a baseline that *excluded* those findings rather than misattributing
      them. So: anchor to the finding's true line when that line falls inside a
      diff hunk, context lines included; keep `subjectType: "FILE"` otherwise;
-     never anchor to an unrelated line. A residue stays unclassifiable by
-     construction, since `line` must be a line the diff carries (`/rvw-pr`
-     Step 4, Comment rules) and ADR-0037's whole-file gate exists to find what
-     no hunk reaches. That is the RFC's own "though not by construction" hedge
-     on D5, and it leaves the RFC's Open Question 4 open.
+     never anchor to an unrelated line. This needs `/rvw-pr` Step 4's Comment
+     rules **amended**: they currently say "`line` must be a `+` line in the
+     diff", which excludes the context lines this rule anchors to, so the rule
+     is the pilot's change to that bullet and not a reading of it.
+     **And the share must then exclude `pre-existing`, or the rule deflates the
+     very figure it exists to serve.** A finding anchored to a context line
+     blames a commit reachable from `origin/master`, so `origin()` returns
+     `pre-existing` (`rfc-0015-findings.py:146-147`), and the script's share
+     puts that in the *denominator*: `cl = original + loop-introduced +
+     pre-existing`, `share = loop-introduced / cl` (`:257-260`, `mcl`/`mshare`
+     likewise). The 78% baseline has `pre-existing` at zero throughout — an
+     artifact of the old posting rule, which sent those findings to the
+     unclassifiable column (RFC-0015 Table 2's first bound) — so counting them
+     now would lower the pilot's share for a reason that has nothing to do with
+     D2 or D3. **The pilot's headline figure is therefore
+     `loop-introduced / (original + loop-introduced)`**, over the same two
+     categories the baseline's was, with the `pre-existing` count reported
+     beside it as the measure of what the LINE rule newly reached. The script
+     needs no change: its per-round cells already print `o`, `l`, `p` and `u`
+     separately. The D5 dry-run trigger carries the same distortion in the same
+     direction (`clean = mf-original + mf-pre-existing`, `:225`, feeding
+     `hot()` at `:229`), so it under-fires and is read as a floor. This is
+     correction 2's non-separability in the favourable direction, which is why
+     it is named rather than left to the report.
+     A residue stays unclassifiable whatever the rule, since GitHub takes a
+     `line` only inside a hunk and ADR-0037's whole-file gate exists to find
+     what no hunk reaches. That is the RFC's own "though not by construction"
+     hedge on D5, and it leaves the RFC's Open Question 4 open.
   4. **The one-measurer-per-panel cap stays up for the three deliveries.** D3
      lifts it for free, but lifting it changes panel composition and so moves
      finding counts independently of fix shape. Take the worktree isolation now,
@@ -3242,7 +3270,10 @@ the commit that writes it lands, so cite the generator instead.
   **Feeds BK-366**: the origin tag the RFC's D5 specifies gives each delivery
   the caught-versus-escaped split that item asks for.
   **Exit criteria:** RFC-0015 accepted or rejected with its open questions
-  answered; if accepted, an ADR amending ADR-0033/0034/0037, the skill
+  answered; if accepted, an ADR amending **ADR-0033/0034/0035/0037** — 0035
+  because D3 lifts its "Every panel carries one measuring member" Decision
+  bullet, which § Status's three-ADR list misses and BK-379's first exit
+  criterion corrects — the skill
   rewrites and the **three** scripts § Impact names shipped (`ship_report.py`,
   `check_no_retrospective.py`, `check_backlog_ids_vs_base.py`, whose guards
   § Testing calls "guards for the three scripts"), and Tables 2 and 4 re-derived
