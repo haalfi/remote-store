@@ -1418,7 +1418,7 @@ whose consequence is a date the reader cannot see.
   it.
   What the repo holds nowhere is each version's **initial release date**: `rg
   '2021-10|2022-10'` — the ISO prefixes of the two oldest supported releases —
-  matches nothing anywhere in the tree.
+  matches nothing but this sentence.
   A hardcoded table is the obvious answer and is less rotten than it sounds —
   a past release date is immutable, so the table only grows, and it grows
   exactly when an interpreter is added, which is already a deliberate act
