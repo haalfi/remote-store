@@ -1,0 +1,144 @@
+id: BK-379
+title: "Pilot RFC-0015's D2, D3 and its LINE-anchor rule on three deliveries, before the rest of it is built"
+trigger: >-
+  BK-379 filed four corrections to RFC-0015's acceptance criterion and named
+  amending the RFC as its first exit criterion, to land before any pilot
+  delivery runs. Until then the RFC asserted the criterion the corrections
+  overrule, and a reader of the RFC alone got the uncorrected one. This trace
+  covers that amendment only; the skill rewrites and the deliveries are later
+  exit criteria of the same item and will carry their own trace.
+source_items:
+  - BK-379
+  - BK-378
+audience:
+  - contributor.process
+expected_ripples:
+  - sdd/BACKLOG.md
+# Derivation, stated as the rule rather than as a transcribed list: run
+# `git log --format='%s' origin/master..HEAD` and count the subjects that
+# answer a review round. The commit that implements the amendment does not
+# count. Re-run before each push; the value is the count, including the commit
+# that carries this line.
+review_rounds: 0
+phases:
+  - id: orient
+    name: Orient
+    steps:
+      - file: sdd/BACKLOG.md
+        section: "BK-379"
+        read_type: gate
+        extract: >-
+          The four corrections, what each reaches (the criterion; D3's and
+          D5's mechanism text; both edit lists; § Status's ADR list), and the
+          scope stop: the amendment only, before the skill rewrites
+        outcome: ok
+      - file: sdd/BACKLOG.md
+        section: "How this file works / Item authority"
+        read_type: gate
+        extract: >-
+          A prescription is advisory and presumed stale; each correction was
+          checked against the RFC's current text before being written in
+        outcome: ok
+      - file: sdd/rfcs/rfc-0015-ship-two-surfaces.md
+        section: "(full)"
+        read_type: gate
+        extract: >-
+          Located every site a correction reaches: § Status's ADR list and
+          edit list, D3 mechanism bullet 3 (the cap "is lifted"), D5 mechanism
+          bullet 2 (LINE "whenever a line exists" and "reaches the whole
+          residue here") and its dry-run bullet, § Impact's artifact list and
+          acceptance criterion. Checked the criterion's 77 of 99 by summing
+          Table 4's rows 3 to 7 (34+17+10+8+8 loop-introduced, 16+1+2+2+1
+          original). No correction needed a decision re-argued; each is a
+          statement narrowed, qualified or added
+        outcome: ok
+      - file: sdd/adrs/0035-vary-method-not-model.md
+        section: "Decision"
+        read_type: gate
+        extract: >-
+          "Every panel carries one measuring member" is a Decision bullet with
+          its own reverse condition, which is why D3 lifting it makes ADR-0035
+          an amendment target § Status must name
+        outcome: ok
+      - file: .claude/skills/orchestrate/SKILL.md
+        section: "Step 3 (one measuring reviewer), the tmp/base recipe's second-copy note"
+        read_type: reference
+        extract: >-
+          Asserts that /rvw-pr's fixed path is safe because of /ship's one
+          measuring member per panel, and that neither rule protects the
+          other skill; that assertion is what D3 falsifies and why the skill
+          belongs on both edit lists
+        outcome: ok
+      - file: .claude/skills/rvw-pr/SKILL.md
+        section: "Step 4 / Comment rules"
+        read_type: reference
+        extract: >-
+          First bullet: "`line` must be a `+` line", attach an unchanged-line
+          finding to the nearest `+` line; second bullet: never anchor a
+          file-level finding to an unrelated line. The tension correction 3
+          settles, quoted into D5's amended bullet
+        outcome: ok
+      - file: sdd/rfcs/rfc-0015-findings.py
+        section: "origin(), the D5 dry run, the BY ROUND INDEX share"
+        read_type: verify
+        extract: >-
+          Opened before the RFC's new sentences named them: pre-existing at
+          146-147, clean = mf-original + mf-pre-existing at 225 feeding hot()
+          at 229, share denominator adding pre-existing at 257-260. The script
+          is unchanged since the RFC merged (`git log --oneline -- <path>`
+          returns one commit), so the references hold at master
+        outcome: ok
+      - file: sdd/000-process.md
+        section: "Document types"
+        read_type: gate
+        extract: >-
+          An RFC is kept as historical reference once decided; this one is
+          Draft and stays Draft, and the amendment is its owning item's first
+          exit criterion, so refining it is the documented path
+        outcome: ok
+      - file: sdd/CLAUDE-REFERENCE.md
+        section: "Pre-work index / Docs, Release & meta"
+        read_type: gate
+        extract: >-
+          No row for an RFC edit; "Backlog item touched" owes this trace, and
+          "Authority direction amended" skips sdd/rfcs as a record. The only
+          copies of the old three-ADR claim are inside BK-378 and BK-379
+          themselves (`rg 'three-ADR|0033, ADR-0034 and ADR-0037' sdd`), both
+          corrected here
+        outcome: ok
+  - id: implement
+    name: Amend the RFC
+    steps:
+      - file: sdd/rfcs/rfc-0015-ship-two-surfaces.md
+        section: "Status, D3 mechanism, D5 mechanism, Impact"
+        read_type: reference
+        extract: >-
+          Status: ADR-0035 with the bullet D3 lifts; /orchestrate on the edit
+          list; BK-379 named as the pilot. D3: the cap stays up for the pilot
+          and comes down once it reports. D5: the conservative LINE reading
+          and why the other one corrupts the metric; the whole-residue claim
+          narrowed to what the sample records; the dry run's pre-existing bias
+          named and read as a floor. Impact: /orchestrate with what changes
+          there; the criterion's share defined over original + loop-introduced
+          with pre-existing beside it; what the pilot decides (clauses 1 and
+          3, clause 2 deferred with D4, a clause-1 miss points at D1 and D4)
+        outcome: ok
+      - file: sdd/BACKLOG.md
+        section: "BK-379, BK-378"
+        read_type: verify
+        extract: >-
+          BK-379 marked in progress with its first exit criterion recorded as
+          met; BK-378's "§ Status's three-ADR list misses" and BK-379's
+          "§ Status names only ADR-0033, ADR-0034 and ADR-0037" would both be
+          false after the amendment and are reworded
+        outcome: ok
+  - id: verify
+    name: Verify
+    steps:
+      - file: sdd/CLAUDE-REFERENCE.md
+        section: "Detailed checklist / Backlog item touched, PR validation gates"
+        read_type: verify
+        extract: >-
+          Trace shipped in the same PR; `hatch run lint` and `hatch run
+          docs-gate` are the mechanical gate for a docs-only diff
+        outcome: ok

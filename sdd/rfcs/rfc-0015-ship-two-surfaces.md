@@ -4,12 +4,18 @@
 
 Draft. Tracked as BK-378. Minted as BK-367 and re-homed twice: ID-182's branch
 minted BK-367 in parallel, then ID-018's minted BK-368 and closed it before
-this PR merged. Both are ID-257's scenario, and the second is recorded there. If accepted it graduates to an ADR amending
+this PR merged. Both are ID-257's scenario, and the second is recorded there.
+BK-379 pilots D2, D3, D5's posting half and D6's repeat-site half before the
+rest is built; what that pilot can and cannot decide is stated with the
+acceptance criterion (§ Impact). If accepted it graduates to an ADR amending
 [ADR-0033](../adrs/0033-ship-convergence-driven-review.md),
-[ADR-0034](../adrs/0034-ship-panel-rounds-and-unprimed-exit.md) and
+[ADR-0034](../adrs/0034-ship-panel-rounds-and-unprimed-exit.md),
+[ADR-0035](../adrs/0035-vary-method-not-model.md), whose *Every panel carries
+one measuring member* Decision bullet D3 lifts, and
 [ADR-0037](../adrs/0037-whole-file-gate-and-derived-figures.md), and to
 rewrites of `.claude/skills/ship/SKILL.md`, `/rvw-pr`, `/fix-pr`,
-`sdd/traces/_schema.yml` § `review_rounds` and `CLAUDE.md` § Trace authoring.
+`/orchestrate`, `sdd/traces/_schema.yml` § `review_rounds` and `CLAUDE.md`
+§ Trace authoring.
 
 **Date:** 2026-09-07. Every repo figure below is pinned to `2a1bbfe` and names
 the command that produced it, with two named exceptions: the PR #997
@@ -464,6 +470,10 @@ about what a rationale would have prevented is not, and is not the condition.
 - Each measuring member measures the base branch in its own
   `tmp/review/<sha>/tmp/base` inside its worktree, so the *one measurer per
   panel* rule, whose only reason is the shared `tmp/base` path, is lifted.
+  **The pilot keeps the cap up**: BK-379's three deliveries take the worktree
+  and not the lift, because lifting it changes panel composition and moves
+  finding counts independently of fix shape, which is what the pilot
+  measures. The cap comes down once the pilot has reported.
 - Worktrees are removed at round close; a stale one is a failed precondition
   for the next round, as a dirty tree is today.
 
@@ -528,14 +538,23 @@ corrects.
 
 - Origin is the blame classification in `rfc-0015-findings.py`, run by
   `ship-report`: original, pre-existing, loop-introduced.
-- Posting discipline follows: a finding is posted with a `LINE` anchor
-  whenever a line exists, and `FILE` is reserved for a subject that is the
-  file. 160 of the 541 findings in Table 2 could not be classified, and the
+- Posting discipline follows, in its conservative reading: a finding is
+  anchored to its true line when that line falls inside a diff hunk, context
+  lines included, and stays `FILE` otherwise; it is never anchored to an
+  unrelated line. `/rvw-pr`'s comment rules today attach a finding on
+  unchanged text to the nearest `+` line, and `origin()` blames the line the
+  comment carries, so that reading would tag a finding on untouched text as
+  loop-introduced whenever a fix pass wrote the nearest `+` line, inflating
+  the share this RFC measures against a baseline that excluded such findings
+  rather than misattributing them. The `+`-line bullet is amended, not read
+  around. 160 of the 541 findings in Table 2 could not be classified, and the
   script separates the four causes it has: all 160 are file-level, and the
   `LEFT`-side, null-line and blame-failure counts are zero in this sample, so
-  the `LINE` discipline reaches the whole residue here, though not by
-  construction. From round 3 they are 40% to 58% of every round, and PR #997's
-  nine rounds left twenty inline findings, half of them file-level.
+  the discipline's reach here is bounded by 160 and not measured: it reaches
+  the findings whose true line sits inside a hunk, which the sample does not
+  record, and what no hunk reaches stays `FILE` (Open Question 4). From
+  round 3 they are 40% to 58% of every round, and PR #997's nine rounds left
+  twenty inline findings, half of them file-level.
 - Stop-rule clause: when two consecutive rounds each carry **at least two
   classified must-fix findings of which at least 80% are loop-introduced**,
   the next fix pass is a *retraction pass*. Each affected passage is restored
@@ -553,7 +572,13 @@ corrects.
   and 9 rounds (#973 four, #986 one, #996 four) and in none of the file-level
   rounds; it is the reading adopted. Unclassifiable findings are excluded from
   the ratio, so under today's posting the trigger under-fires rather than
-  over-fires, and the `LINE` discipline above raises its reach.
+  over-fires, and the `LINE` discipline above raises its reach. Under that
+  discipline a second bias runs the same direction: the dry run's clean count
+  is `mf-original + mf-pre-existing` (`rfc-0015-findings.py:225`, feeding
+  `hot()` at `:229`), and a finding anchored to a context line blames a commit
+  reachable from `origin/master` and is tagged pre-existing, a category the
+  baseline has at zero (Table 2's first bound). So the trigger under-fires
+  under the `LINE` discipline too, and its count is read as a floor.
 - BK-366 gets its data as a side effect. Every `BUG-` filed from a loop is
   born in a round with an origin tag, so a delivery reports which of its
   discoveries were caught on new code, caught on pre-existing code, or
@@ -631,7 +656,11 @@ runtime behaviour, no published page other than this RFC's own.
 - **Artifacts changed on acceptance:** `.claude/skills/ship/SKILL.md`
   (triage, stop rule, worktree, report), `/rvw-pr` (worktree root, `LINE`
   discipline, the six-line prose form), `/fix-pr` (fix shape, mutation check,
-  re-derived attributions), `CLAUDE.md` § Trace authoring, `_schema.yml`
+  re-derived attributions), `/orchestrate` (its `tmp/base` rule names
+  `/ship`'s one measuring member per panel as what keeps `/rvw-pr`'s fixed
+  path safe, and D3 lifts that cap; its own exactly-one rule stays, because
+  its reviewers read uncommitted work and there is no certified commit to pin
+  a worktree at; D2 is Open Question 1), `CLAUDE.md` § Trace authoring, `_schema.yml`
   § `review_rounds`, a new ADR, `scripts/ship_report.py`,
   `scripts/check_no_retrospective.py` and
   `scripts/check_backlog_ids_vs_base.py` with hatch aliases, guards and
@@ -640,12 +669,34 @@ runtime behaviour, no published page other than this RFC's own.
   above (D3); script work of size S; skill rewrites of size M.
 - **Acceptance criterion, stated before the run.** Three deliveries run under
   the rules, pooled, then `rfc-0015-findings.py` over them. Graduate to an ADR
-  if the loop-introduced share of classified must-fix findings from round 3 on
-  is below 50% (Table 4's pooled rounds 3 to 7: 77 of 99, 78%, summing its rows), the derived
-  trace block draws a finding in at most one round across the three, and the
-  retraction trigger fires at most once. Any of the three failing sends the
-  RFC back to Draft with the measured figures attached, not to the ADR with a
+  if (1) the loop-introduced share of classified must-fix findings from round
+  3 on is below 50% (Table 4's pooled rounds 3 to 7: 77 of 99, 78%, summing
+  its rows), (2) the derived trace block draws a finding in at most one round
+  across the three, and (3) the retraction trigger fires at most once. **The
+  share in clause 1 is `loop-introduced / (original + loop-introduced)`**,
+  the two categories the baseline was measured over, with the pre-existing
+  count reported beside it as the measure of what the `LINE` discipline newly
+  reached. The script's own `share` adds pre-existing to the denominator
+  (`rfc-0015-findings.py:257-260`), a category the baseline has at zero
+  throughout (Table 2's first bound) and D5's `LINE` discipline newly
+  populates, so counting it would lower the share for a reason that has
+  nothing to do with D2 or D3; the per-round cells print `o`, `l`, `p` and
+  `u` separately, so the figure is read from them and the script needs no
+  change. With every decision shipped, any of the three failing sends the RFC
+  back to Draft with the measured figures attached, not to the ADR with a
   softened threshold. One delivery is one draw and is not the criterion.
+- **What BK-379's pilot decides.** It runs D2, D3, D5's posting half and D6's
+  repeat-site half, without D1 and D4, and reports clauses 1 and 3 only.
+  Clause 2 has no referent until D4 generates the block it names; it is
+  deferred with D4, not dropped. Clause 3 is reported as a dry run, since the
+  retraction pass is not wired into the loop there, and is read as a floor
+  (D5). A clause-1 miss in the pilot does not send the RFC back to Draft: D1
+  targets the record surface, where a quarter of the sample's findings sit
+  (Table 3), and a share at or above 50% without it is equally consistent
+  with D2 and D3 being too weak alone and with the record surface carrying
+  the late rounds. The pilot cannot tell the two apart. A miss says build D1
+  and D4 and re-measure; only a miss with those shipped is the sentence
+  above.
 - **Risk:** a retraction pass could remove a reason principle 8 protects,
   which is why it restores to the last clean state rather than deleting.
   `LINE`-anchor discipline moves work onto the orchestrator's posting step.

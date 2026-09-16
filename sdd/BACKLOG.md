@@ -3129,7 +3129,7 @@ the commit that writes it lands, so cite the generator instead.
   long-lived PR should expect under the current scheme; the item moved to
   `BK-378`.
 
-- [ ] **BK-379 — Pilot RFC-0015's D2, D3 and its LINE-anchor rule on three deliveries, before the rest of it is built**
+- [~] **BK-379 — Pilot RFC-0015's D2, D3 and its LINE-anchor rule on three deliveries, before the rest of it is built**
   spec: — · effort: M · audience: contributor.process
   [RFC-0015](rfcs/rfc-0015-ship-two-surfaces.md) is Draft with six decisions and
   an acceptance criterion stated before the run. **The pilot takes D2 and D3
@@ -3238,14 +3238,14 @@ the commit that writes it lands, so cite the generator instead.
   after merge against a delivery run under the rule, which three deliveries do
   not supply. Not a reason to widen the pilot; a reason not to read a pass as
   having tested it.
-  **Exit criteria:** RFC-0015's § Status and § Impact edit lists and its
-  acceptance criterion amended with the four corrections above, **before the
-  deliveries run** — until that lands the RFC still asserts the criterion they
-  overrule, and a reader of the RFC alone gets the uncorrected one. That
-  amendment also adds **ADR-0035** to § Status's list of ADRs the RFC would
-  amend: "Every panel carries one measuring member" is one of that ADR's
-  Decision bullets, with its own reverse condition, and D3 lifts it, but
-  § Status names only ADR-0033, ADR-0034 and ADR-0037. Then the
+  **Exit criteria:** RFC-0015's § Status and § Impact edit lists, its
+  acceptance criterion and D3's and D5's mechanism text amended with the four
+  corrections above, **before the deliveries run** — met: the RFC carries
+  them and names this item as its pilot, so a reader of the RFC alone gets
+  the corrected criterion. That amendment also adds **ADR-0035** to
+  § Status's list of ADRs the RFC would amend: "Every panel carries one
+  measuring member" is one of that ADR's Decision bullets, with its own
+  reverse condition, and D3 lifts it. Then the
   four skills amended; three deliveries shipped under the rules; Tables 2 and 4
   re-derived over their PR numbers with `rfc-0015-findings.py`; the result
   reported against clauses 1 and 3 with the measured figures; and the
@@ -3272,8 +3272,8 @@ the commit that writes it lands, so cite the generator instead.
   **Exit criteria:** RFC-0015 accepted or rejected with its open questions
   answered; if accepted, an ADR amending **ADR-0033/0034/0035/0037** — 0035
   because D3 lifts its "Every panel carries one measuring member" Decision
-  bullet, which § Status's three-ADR list misses and BK-379's first exit
-  criterion corrects — the skill
+  bullet, which BK-379's first exit criterion added to § Status's ADR list —
+  the skill
   rewrites and the **three** scripts § Impact names shipped (`ship_report.py`,
   `check_no_retrospective.py`, `check_backlog_ids_vs_base.py`, whose guards
   § Testing calls "guards for the three scripts"), and Tables 2 and 4 re-derived
