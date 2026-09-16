@@ -1228,9 +1228,9 @@ resting on it rather than a pending one.
 copies an example, without opening an issue.
 
 **Closes when:** every published page and shipped example a user decides from is
-**true** (BK-339, BK-325, BK-364, ID-125, BK-374), **reachable** (BK-327),
-**legible — a rule the reader can act on without first computing it**
-(BK-373), and
+**true** (BK-339, BK-325, BK-364, ID-125, BK-374), **reachable** (BK-327,
+BK-376), **legible — a rule the reader can act on without first computing
+it** (BK-373), and
 **walked end-to-end by a maintainer** (BK-332, and ID-199's authoring
 contract). Each clause names the items that move it, so closure is checkable
 rather than asserted.
@@ -1530,6 +1530,55 @@ whose consequence is a date the reader cannot see.
   An unstated bound on `docs-gate` being trusted past its range
   ([`DRIFT-RULES.md` Rule 7](DRIFT-RULES.md#miss-rate)).
 
+- [ ] **BK-376 — Half the llmstxt `sections:` map is hand-listed, and three published pages are already missing from both outputs**
+  spec: — · effort: S · audience: contributor.tooling
+  BK-327's defect one surface further out. `mkdocs.yml` gives the `llmstxt`
+  plugin a `sections:` map whose four entries fall into three shapes:
+  `Tutorial` and `Guides` are globs that maintain themselves; `Explanation` is
+  hand-listed page-by-page, for a stated reason (an `explanation/*.md` fnmatch
+  glob would also pull the contributor-facing `explanation/design/` subtree);
+  and `Reference` is **mixed** — `reference/api/*.md` is a recursive glob, the
+  other four entries are hand-listed, and no reason is given for the split.
+  The hand-listed halves are where pages go missing.
+  Nothing differences those lists against `_nav.yml`, so a new
+  page is published, navigable, and silently absent from **both** bundles a
+  coding agent reads: `mkdocs.yml:61` sets `full_output: llms-full.txt` on the
+  same plugin instance that carries the map, so `llms.txt` loses the link and
+  `llms-full.txt` loses the page's entire text. `llms-api.txt` is **out of
+  scope** and stays that way: `scripts/docs/gen_llms_api.sh` builds it from
+  `src/` with `lx`, out of `.readthedocs.yaml`'s `post_build`, and never reads
+  `sections:`.
+  **Three pages are absent today.** `mkdocs.yml:113-119` lists six
+  `Explanation` pages while `docs-src/explanation/_nav.yml` declares eight plus
+  `design/`, so `contributing.md` and `development-story.md` have no entry.
+  `docs-src/reference/_nav.yml` declares five pages plus `api/`, and
+  `mkdocs.yml` hand-lists four of the five (`capabilities-matrix.md`,
+  `migration.md`, `tested-versions.md`, `FEATURES.md`), leaving
+  `reference/changelog.md` as the only omission — `api/` is covered by the
+  recursive `reference/api/*.md` glob the comment at `mkdocs.yml:92-96`
+  explains. The changelog is the one that costs, and it costs most in
+  `llms-full.txt`: "what changed in 0.32.0" is a question agents ask, and the
+  bundle that exists to carry the answer's *text* omits it, not merely the link
+  to it.
+  **The gap is not knowing which of the three are decisions.** All three are
+  plausibly deliberate — two are project meta, the third is long and churns —
+  but `mkdocs.yml`'s comments explain only the `design/` exclusion and the
+  omitted section-landing stubs, so a reader cannot tell a choice from an
+  oversight. That is the defect, and it is the same one BK-327 names for the
+  nav: the omission is invisible either way.
+  **Fix shape follows BK-327's.** A check differencing each hand-listed
+  `sections:` entry against the corresponding `_nav.yml`, with an explicit
+  opt-out list in `mkdocs.yml` carrying a reason per excluded page — so the
+  three above become declared exclusions or become entries, and the next one
+  cannot be neither. The open choice is **one check or two**: BK-327's fix
+  shape already claims G-08 in `check_docs_framework.py` (which today defines
+  G-01 through G-07), so this either folds into that same check or takes its
+  own ID beside it. Folding is the likely economy, since both difference
+  emitted pages against `_nav.yml`.
+  **Measured, not hypothetical:** `explanation/dependency-policy.md` (BK-371)
+  had to be added to this list by hand, and was caught by reading the config
+  rather than by any gate.
+
 - [ ] **BK-332 — Schedule the custom-backend rehearsal**
   spec: — · effort: S to define, M per run · audience: contributor.process
   "Build a backend against the guide, from scratch, without help" runs today
@@ -1753,8 +1802,9 @@ watched rather than hand-copied (BK-370); every upstream that can break us on it
 own schedule has a standing watch (ID-229, ID-225), and the support window we
 publish is exercised by decision rather than by inertia (BK-375); the one
 deprecation that watch has caught is answered before the release that enforces
-it (BUG-281); the
-watch's issue survives a single-extra re-run (BUG-282) and its one legacy-sftp
+it (BUG-281); the window the calendar puts on a published promise is derived
+rather than remembered at release time (BK-377); the watch's issue survives a
+single-extra re-run (BUG-282) and its one legacy-sftp
 authentication does not fail on runner load (BK-367); and every breaking change
 carries a published upgrade path by the time it ships — **satisfied**: the four
 `[Unreleased]` entries marked `**Breaking**` all have a `migration.md` section,
@@ -2086,6 +2136,61 @@ working, and quietly describing the library as something it is not.
   following the precedent `check_ripple_parity` documents, and widen CI's path
   filter to treat `sdd/adrs/**` as lint-triggering. Filed rather than fixed in
   BK-329 because that PR touched no ADR, no TLA module and not the handbook.
+
+- [ ] **BK-377 — The support windows we publish come due on a date, so no diff can carry the check**
+  spec: — · effort: M · audience: infra.ci
+  Rules 8 and 9 of the
+  [dependency policy](../docs-src/explanation/dependency-policy.md#rule-8) have
+  no mechanism behind them, and `CONTRIBUTING.md`'s Phase 0 checklist says so
+  in terms: *"Nothing
+  derives this — the published promise is the only record, which is why it is a
+  checklist line rather than a gate."* A checklist line is a person
+  remembering, and the promise it guards ages on the **calendar** rather than
+  on a diff, so the release that breaks it looks exactly like the release that
+  does not.
+  **That is what separates this from its neighbours, not the absence of a
+  mechanism.** BK-369 and BK-370 in this same section are also published
+  claims nothing watches — a declared floor no mechanism has installed, and a
+  recipe mirror nothing compares. Both have an event a gate could hang off: a
+  resolution, a publish. This one has none, because the thing that breaks it
+  is a date passing.
+  **The two rules mechanise differently, and that is the shape of the work.**
+  Rule 9 — a dependency version stays supported 2 years — fires on a floor
+  raise, which is a diff: compare each extra's specifiers against the previous
+  tag, and for a raised floor ask whether the newest version it newly excludes
+  is at least 2 years past its own release. Only that last input needs the
+  network. Rule 8 — a Python version is supported 3 years — fires on the
+  calendar with no diff at all, and needs each interpreter's initial release
+  date, which BK-373's derivation showed the repo holds nowhere.
+  **So this splits by home, not by rule.** The diff half belongs in the release
+  path, where the bump table already lives. The calendar half cannot: nothing
+  in `preflight` may reach the network, and a check that only fires when
+  someone cuts a release is no better than the checklist line it replaces for a
+  promise that comes due whether or not we ship.
+  **`drift-guard.yml` is the candidate home for the calendar half**, and the
+  fit is in its posture rather than its plumbing: it runs weekly, it already
+  resolves against PyPI (`pip install --upgrade --pre`, `drift_check.py:167`),
+  and its stated non-goals are exactly right for this — *"NEVER edits
+  pyproject.toml"*, *"NEVER auto-merges a pin / floor update"*, *"early
+  warning, not automated remediation"*. A window crossing is early warning by
+  construction: nothing is broken on the day it fires, which is why BK-375
+  exists.
+  **Do not let it decide.** The verdict is advisory, like the rest of
+  drift-guard. Crossing a window licenses a drop; it does not require one, and
+  a gate that reads Rule 8 as an obligation would invert the rule — which
+  promises a floor, not a ceiling.
+  **Shares an input with BK-373, and neither waits on the other.** Both need
+  each interpreter's initial release date, and both have to answer the same
+  question to get it (hardcoded table vs upstream feed). Whichever lands first
+  should own the dates; two copies of a release-date table is the drift this
+  repo files items about. Deliberately *not* a dependency: either item can
+  supply the table, so nothing here blocks on section 3 and § Ordering's
+  cross-section note is not owed.
+  **Why the clause is its own rather than folded into the standing-watch
+  one.** That clause is about upstreams that move on their own schedule, and
+  the calendar is an upstream only by analogy — it publishes nothing and can
+  be read offline. The new clause keeps the distinction the item rests on: a
+  watch answers *what changed*, and this answers *what came due*.
 
 - [ ] **BK-370 — The published conda recipe is a mirror no mechanism watches**
   spec: — · effort: M · audience: user.discoverability.human, infra.ci
