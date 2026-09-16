@@ -219,6 +219,140 @@ class TestDirectDepsFor:
             assert "<" not in dep
 
 
+class TestDirectRequirementsFor:
+    """``_direct_requirements_for`` keeps the specifier ``_direct_deps_for``
+    discards. The docs page publishes the declared range beside the resolved
+    version, and a package name alone cannot answer "what does this require at
+    minimum?" — which is the question the page was previously silent on.
+    """
+
+    def test_keeps_the_version_specifier(self, drift_check):
+        # From pyproject.toml's [sftp] = ["paramiko>=3.1", "tenacity>=8.0.1"].
+        reqs = drift_check._direct_requirements_for("sftp")
+        assert reqs["paramiko"] == ">=3.1"
+        assert reqs["tenacity"] == ">=8.0.1"
+
+    def test_keeps_a_ceiling_alongside_the_floor(self, drift_check):
+        # [graph] caps httpx: the ceiling is the rarer half of a range and the
+        # one a reader is most surprised by, so it must survive to the page.
+        assert drift_check._direct_requirements_for("graph")["httpx"] == ">=0.24.0,<1.0"
+
+    def test_keeps_the_environment_marker(self, drift_check):
+        # [toml] is marker-gated; the page renders the marker as the reason it
+        # carries no row, so the marker has to reach the caller intact.
+        assert drift_check._direct_requirements_for("toml")["tomli"] == ">=1.1.0; python_version < '3.11'"
+
+    def test_unions_a_package_declared_twice(self, drift_check):
+        # [dev] reaches pyarrow through both [s3-pyarrow] (>=14.0.0) and
+        # [arrow] (>=12.0.0). Keeping one silently would hide that the two
+        # declarations disagree.
+        pyarrow = drift_check._direct_requirements_for("dev")["pyarrow"]
+        assert ">=14.0.0" in pyarrow
+        assert ">=12.0.0" in pyarrow
+
+    def test_direct_deps_for_is_its_key_set(self, drift_check):
+        for extra in drift_check.list_extras():
+            assert drift_check._direct_deps_for(extra) == set(drift_check._direct_requirements_for(extra))
+
+
+class TestExcludedExtras:
+    """The excluded set is derived, not hand-kept — but only half of it is
+    derived from an artifact that governs it.
+    """
+
+    def test_aggregate_set_equals_the_install_docs_exclusions(self, drift_check):
+        # `gen_features._EXCLUDE_EXTRAS` answers a different question — which
+        # extras the README's install list omits — and the two sets have always
+        # been equal. Asserted rather than imported: that one is a presentation
+        # list, so importing it would let a docs decision silently shrink the
+        # drift matrix. This test is what makes a divergence loud instead.
+        import gen_features
+
+        assert drift_check._AGGREGATE_EXTRAS == gen_features._EXCLUDE_EXTRAS
+
+    def test_marker_gated_extras_are_derived(self, drift_check):
+        # Derived from the markers themselves, so a new marker-gated extra
+        # excludes itself rather than waiting for someone to list it.
+        assert drift_check._marker_gated_extras() == frozenset({"toml", "mutate"})
+
+    def test_union_is_what_the_guard_skips(self, drift_check):
+        assert drift_check.excluded_extras() == frozenset({"dev", "docs", "bench", "toml", "mutate"})
+
+
+class TestMinPython:
+    """The floor lane runs on the oldest supported interpreter, and the docs
+    page names it. Both read it from ``requires-python`` so the minimum is not
+    spelled a fourth time by hand.
+    """
+
+    def test_derives_the_lower_bound(self, drift_check):
+        assert drift_check.min_python() == "3.10"
+
+    def test_matches_the_lowest_python_classifier(self, drift_check):
+        # The classifiers are the other published statement of the same fact;
+        # a disagreement between them is the drift this derivation prevents.
+        classifiers = drift_check._load_pyproject()["project"]["classifiers"]
+        versions = sorted(
+            tuple(int(p) for p in c.rsplit(" ", 1)[1].split("."))
+            for c in classifiers
+            if c.startswith("Programming Language :: Python :: 3.")
+        )
+        assert drift_check.min_python() == ".".join(str(p) for p in versions[0])
+
+    def test_rejects_a_specifier_with_no_lower_bound(self, drift_check, monkeypatch):
+        monkeypatch.setattr(drift_check, "_load_pyproject", lambda: {"project": {"requires-python": "<4"}})
+        with pytest.raises(ValueError, match="lower bound"):
+            drift_check.min_python()
+
+
+class TestFloorReport:
+    """``floor_report`` projects a resolution onto what the extra declares."""
+
+    def test_projects_onto_declared_packages_only(self, drift_check):
+        resolved = {"paramiko": "3.1.0", "tenacity": "8.0.1", "bcrypt": "5.0.0", "pynacl": "1.6.2"}
+        report = drift_check.floor_report("sftp", resolved)
+        # bcrypt and pynacl are transitive: `lowest-direct` leaves them newest,
+        # so they are not a claim this lane makes.
+        assert report["floor"] == {"paramiko": "3.1.0", "tenacity": "8.0.1"}
+
+    def test_declares_its_lane_and_status(self, drift_check):
+        report = drift_check.floor_report("yaml", {"pyyaml": "5.1"})
+        assert report["lane"] == "floor"
+        assert report["status"] == "resolved"
+
+    def test_omits_a_declared_package_the_resolution_lacks(self, drift_check):
+        # Rather than inventing a version. A missing row is readable; a wrong
+        # one is not.
+        assert drift_check.floor_report("sftp", {"paramiko": "3.1.0"})["floor"] == {"paramiko": "3.1.0"}
+
+
+class TestSmokeReach:
+    """The page publishes how far each extra's smoke reaches, derived from the
+    one mapping the workflow dispatches on.
+    """
+
+    def test_import_only_targets_say_so(self, drift_check):
+        assert drift_check._smoke_reach("otel") == "import of `remote_store.ext.otel` only"
+
+    def test_pytest_targets_render_their_paths(self, drift_check):
+        assert drift_check._smoke_reach("yaml") == "`tests/ext/test_yaml.py`"
+
+    def test_selector_flags_never_reach_the_page(self, drift_check):
+        # drift_smoke_map's [s3] entry carries `-k s3 and not s3_pyarrow and not
+        # s3_boto3`, and [sftp]'s carries `-o addopts=`. Those are source facts
+        # about the harness; a published reference page is the wrong home for
+        # them, and the parked-PoC exclusion would read as a product statement.
+        for extra in ("s3", "sftp"):
+            reach = drift_check._smoke_reach(extra)
+            assert "-k" not in reach
+            assert "-o" not in reach
+            assert "addopts" not in reach
+
+    def test_every_tracked_extra_has_a_reach(self, drift_check):
+        for extra in drift_check.list_extras():
+            assert drift_check._smoke_reach(extra)
+
+
 class TestRenderDocsIdempotent:
     """`render_docs` must produce byte-identical output across days when
     inputs are unchanged. The `--check` wiring in preflight depends on
@@ -249,6 +383,54 @@ class TestRenderDocsIdempotent:
                 encoding="utf-8",
             )
         assert drift_check.render_docs() == drift_check.render_docs()
+
+
+class TestRenderDocsContent:
+    """What the page must say, beyond being stable. Each assertion below is a
+    question a reader brought to the page and could not previously answer.
+    """
+
+    def test_publishes_the_declared_range_beside_the_resolved_one(self, drift_check):
+        rendered = drift_check.render_docs()
+        assert "| Package | Declared | Tested up to |" in rendered
+        # The floor a resolver is actually held to, for an extra a user installs.
+        assert "`>=3.1`" in rendered
+
+    def test_names_the_interpreter_the_floor_lane_runs_on(self, drift_check):
+        assert f"Python {drift_check.min_python()}" in drift_check.render_docs()
+
+    def test_names_every_extra_it_does_not_cover(self, drift_check):
+        rendered = drift_check.render_docs()
+        assert "## Extras this page does not cover" in rendered
+        # `[toml]` is in the README's install list and has no row above, which
+        # reads as "nothing changed" rather than "never checked" unless the page
+        # says so where the row would have been.
+        uncovered = drift_check._marker_gated_extras() - drift_check._AGGREGATE_EXTRAS
+        for extra in uncovered:
+            assert f"`[{extra}]`" in rendered
+
+    def test_does_not_list_a_developer_aggregate_as_uncovered(self, drift_check):
+        # `dev`, `docs` and `bench` never reach a user's environment; naming
+        # them on a user-facing page would be noise, and it is the reason the
+        # two exclusion halves are kept apart rather than merged.
+        rendered = drift_check.render_docs().rsplit("## Extras this page does not cover", 1)[-1]
+        for aggregate in ("`[dev]`", "`[docs]`", "`[bench]`"):
+            assert aggregate not in rendered
+
+    def test_states_each_extras_smoke_reach(self, drift_check):
+        rendered = drift_check.render_docs()
+        assert "_Smoke:_" in rendered
+        # An import-only target is weaker evidence than a test suite, and the
+        # page is where a reader can see which one backs a given row.
+        assert "import of `remote_store.ext.otel` only" in rendered
+
+    def test_carries_no_tracker_reference(self, drift_check):
+        # The generated page is published; `check_no_tracker_refs.py` gates it,
+        # and a leak would surface as a lint failure on the output rather than
+        # on the template that caused it.
+        import re as _re
+
+        assert _re.search(r"\b[A-Z][A-Z0-9-]*-\d+\b", drift_check.render_docs()) is None
 
 
 class TestListExtras:

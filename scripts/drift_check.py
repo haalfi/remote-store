@@ -22,6 +22,13 @@ Subcommands:
                            JSON report on stdout. ``--emit-freeze PATH``
                            also writes the (single) resolved freeze so the
                            smoke and candidate baseline reuse it.
+* ``floor <extra>``     — resolve ``remote-store[<extra>]`` at the floor of
+                           every range it declares (``uv pip install
+                           --resolution lowest-direct``) and emit a JSON
+                           report. ``--emit-freeze PATH`` writes the resolved
+                           freeze for the smoke to pin against.
+* ``min-python``        — print the oldest interpreter ``requires-python``
+                           admits; the floor lane runs there.
 * ``refresh-baseline    — overwrite ``infra/drift-locks/<extra>.txt`` with
    <extra>``              a fresh resolution. Maintainer command.
 * ``render-docs``       — regenerate ``docs-src/reference/tested-versions.md``
@@ -29,7 +36,15 @@ Subcommands:
 
 The list of testable extras is derived from ``pyproject.toml``'s
 ``[project.optional-dependencies]`` table, minus the dev/build aggregates
-and the marker-gated ``toml`` extra.
+(``gen_features._EXCLUDE_EXTRAS``) and any extra whose requirements carry an
+environment marker, whose resolution depends on the running Python in a way
+that breaks the lock model.
+
+**There is no committed lock for the floor lane, deliberately.** The ``diff``
+lane needs one because "what did this resolve to last time" has no other home;
+a floor has one already — the specifier in ``pyproject.toml`` — and a committed
+floor lock would be a second copy of it to keep in step. So the floor lane
+resolves, smokes, and reports, and compares nothing.
 
 Drift-gate::
 
@@ -41,11 +56,40 @@ Drift-gate::
 
 Drift-gate::
 
+    kind:       report
+    entrypoint: floor
+    surfaces: the versions each extra's declared floors in pyproject.toml resolve to, and whether
+        that resolution installs; it compares nothing committed and exits 0 either way, so it
+        asserts nothing about what it finds
+    domain:     process
+
+Drift-gate::
+
     kind:       pair
     entrypoint: render-docs
-    compares: the lock files in infra/drift-locks/, over the extras derived from pyproject.toml
+    compares: the lock files in infra/drift-locks/ and the declared ranges in pyproject.toml's
+        optional-dependencies table, over the extras derived from the same table
         ↔ docs-src/reference/tested-versions.md
     domain:     process ↔ explanation
+
+What the ``floor`` lane does **not** reach, stated because a lane that
+installs a floor is easily read as one that verifies it:
+
+* **One interpreter.** It runs on the oldest ``requires-python`` admits, so a
+  floor that breaks only on a *newer* one is invisible to it. Two of the five
+  floor bugs found by hand were of exactly that shape — the sqlalchemy floor
+  (fine throughout on the oldest, broken on the newest) and the tenacity range
+  (its import failure starts one minor above the oldest).
+* **Transitives float.** ``lowest-direct`` lowers only what this project
+  declares, so a red leg can be a floor interacting with a *newest* transitive
+  rather than a wrong floor. That is not noise: it is how a floor stops working
+  without anyone editing it.
+* **Reach is the smoke's.** Each leg runs that extra's entry in
+  ``drift_smoke_map.py`` and no more, so an import-only target passes on a
+  floor that breaks past module load.
+* **The smoke installs pytest plugins beside the extra**, so a package the
+  extra failed to declare can arrive from one of them. An isolated leg is
+  evidence about the versions, weaker evidence about the set.
 """
 
 from __future__ import annotations
@@ -54,6 +98,7 @@ import argparse
 import datetime as _dt
 import io
 import json
+import os
 import re
 import subprocess
 import sys
@@ -68,15 +113,14 @@ except ImportError:  # pragma: no cover — Python <3.11 fallback
     import tomli as tomllib  # type: ignore[no-redef]
 
 
+sys.path.insert(0, str(Path(__file__).resolve().parent))
+
+import drift_smoke_map  # noqa: E402  — single source for each extra's smoke target
+
 ROOT = Path(__file__).resolve().parent.parent
 PYPROJECT = ROOT / "pyproject.toml"
 LOCK_DIR = ROOT / "infra" / "drift-locks"
 DOCS_PAGE = ROOT / "docs-src" / "reference" / "tested-versions.md"
-
-# Extras excluded from drift checking: developer-only aggregates (dev, docs,
-# bench, mutate) and marker-gated extras whose resolution depends on the running
-# Python version in a way that breaks the lock model (toml; mutate is both).
-_EXCLUDED_EXTRAS: frozenset[str] = frozenset({"dev", "docs", "bench", "toml", "mutate"})
 
 _LOCK_HEADER_RE = re.compile(
     r"^# extra: (?P<extra>[\w-]+)\s*\n"
@@ -105,11 +149,59 @@ def _load_pyproject() -> dict:
         return tomllib.load(f)
 
 
+def min_python() -> str:
+    """The oldest interpreter ``requires-python`` admits, as ``"X.Y"``.
+
+    The floor lane runs on this interpreter and the docs page names it, so
+    both derive it from the one place it is declared. ``check_conda_recipe_pins``
+    already holds three hand-written spellings of the minimum equal; a fourth
+    is what this avoids.
+    """
+    spec = _load_pyproject()["project"]["requires-python"]
+    match = re.search(r">=\s*(\d+)\.(\d+)", spec)
+    if not match:
+        raise ValueError(f"requires-python {spec!r} has no `>=X.Y` lower bound to derive a minimum from")
+    return f"{match.group(1)}.{match.group(2)}"
+
+
+def _marker_gated_extras() -> frozenset[str]:
+    """Extras with any requirement carrying an environment marker.
+
+    Such an extra resolves differently per interpreter, which breaks the
+    one-lock-per-extra model: the committed baseline would record whichever
+    Python the guard happened to run on. Derived rather than listed, so a new
+    marker-gated extra excludes itself.
+    """
+    extras = _load_pyproject()["project"]["optional-dependencies"]
+    return frozenset(name for name, reqs in extras.items() if any(";" in spec for spec in reqs))
+
+
+# The developer/build aggregates. `gen_features.py` keeps an equal set for a
+# different question — which extras to omit from the README's install list —
+# and `tests/scripts/test_drift_check.py` asserts the two stay equal. Deliberately
+# asserted rather than imported: that one is a presentation list, and importing it
+# would let a decision about what the install docs show silently shrink the drift
+# matrix, which `list_extras()` drives. An equality test fails loudly where an
+# import would go quiet.
+_AGGREGATE_EXTRAS: frozenset[str] = frozenset({"bench", "dev", "docs", "mutate"})
+
+
+def excluded_extras() -> frozenset[str]:
+    """Extras the drift guard does not track.
+
+    Two disjoint reasons, and the docs page names only the second: the
+    developer/build aggregates never reach a user's environment, and a
+    marker-gated extra resolves per interpreter.
+    """
+    return _AGGREGATE_EXTRAS | _marker_gated_extras()
+
+
 def list_extras() -> list[str]:
     """Return the sorted list of extras the drift guard tracks."""
     data = _load_pyproject()
     declared = list(data["project"]["optional-dependencies"].keys())
-    return sorted(e for e in declared if e not in _EXCLUDED_EXTRAS)
+    excluded = excluded_extras()
+    return sorted(e for e in declared if e not in excluded)
 
 
 def _parse_freeze(text: str) -> dict[str, str]:
@@ -183,6 +275,69 @@ def resolve_extra(extra: str) -> dict[str, str]:
     return _parse_freeze(result.stdout)
 
 
+def _uv(args: list[str], *, capture: bool = False) -> str:
+    """Run ``uv`` with the ambient target-selection variables stripped.
+
+    ``uv pip install`` with no explicit target honours ``UV_SYSTEM_PYTHON`` and
+    ``VIRTUAL_ENV``, and ``astral-sh/setup-uv`` is what lets other workflows run
+    a bare ``uv pip install`` against ``setup-python``'s interpreter with no
+    venv in sight. Inheriting that here would install the floor into the runner
+    Python — the same interpreter the smoke then uses — so the lane would report
+    green having tested nothing. Every call below also passes ``--python``
+    explicitly; this strips the variables that could override it.
+    """
+    env = {k: v for k, v in os.environ.items() if k not in ("UV_SYSTEM_PYTHON", "VIRTUAL_ENV", "CONDA_PREFIX")}
+    try:
+        result = subprocess.run(
+            ["uv", *args],
+            cwd=ROOT,
+            check=True,
+            env=env,
+            stdout=subprocess.PIPE if capture else subprocess.DEVNULL,
+            stderr=subprocess.PIPE,
+            text=True,
+        )
+    except subprocess.CalledProcessError as exc:
+        sys.stderr.write(exc.stderr or "")
+        raise
+    return result.stdout or ""
+
+
+def resolve_floor(extra: str) -> dict[str, str]:
+    """Install ``remote-store[<extra>]`` at its declared floors and freeze it.
+
+    ``--resolution lowest-direct`` takes the floors from ``pyproject.toml``
+    itself, so the lane needs no second copy of every floor to keep in step.
+    Deliberately not ``lowest``: that would put *transitive* packages at their
+    minimums too — floors this repo neither declares nor can fix — and the claim
+    under test is the one we declare.
+
+    The venv is built from the interpreter running this script, so the caller
+    chooses which Python the floors are resolved against by choosing how to
+    invoke the script.
+    """
+    with tempfile.TemporaryDirectory(prefix="floor-") as tmp:
+        venv_dir = Path(tmp) / "venv"
+        _uv(["venv", "--python", sys.executable, str(venv_dir)])
+        python = venv_dir / "bin" / "python"
+        if not python.exists():  # Windows fallback — not used in CI but harmless.
+            python = venv_dir / "Scripts" / "python.exe"
+        _uv(
+            [
+                "pip",
+                "install",
+                "--python",
+                str(python),
+                "--resolution",
+                "lowest-direct",
+                "--quiet",
+                f".[{extra}]",
+            ]
+        )
+        frozen = _uv(["pip", "freeze", "--python", str(python)], capture=True)
+    return _parse_freeze(frozen)
+
+
 def _lock_path(extra: str) -> Path:
     return LOCK_DIR / f"{extra}.txt"
 
@@ -231,33 +386,54 @@ def read_lock(extra: str) -> LockFile:
     )
 
 
-def _direct_deps_for(extra: str) -> set[str]:
-    """Top-level package names declared by an extra in ``pyproject.toml``.
+def _direct_requirements_for(extra: str) -> dict[str, str]:
+    """Top-level requirements an extra declares, as ``{name: specifier}``.
 
-    Used to project the lock (full transitive closure) down to the
-    user-meaningful packages for the "tested versions" doc page.
-    Recursively expands ``remote-store[<other>]`` references.
+    The specifier is everything the declaration carries after the package
+    name — the version range and any environment marker — because the
+    "tested versions" page publishes the *declared* range beside the
+    resolved one, and a name alone cannot answer "what does this require
+    at minimum?". Recursively expands ``remote-store[<other>]`` references;
+    a package reached twice keeps both specifiers, joined with ``,``, so a
+    duplicated declaration is visible rather than silently halved.
     """
     data = _load_pyproject()
     extras = data["project"]["optional-dependencies"]
-    seen: set[str] = set()
+    seen: dict[str, str] = {}
 
     def walk(name: str) -> None:
-        for spec in extras.get(name, []):
-            spec = spec.strip()
+        for raw in extras.get(name, []):
+            spec = raw.strip()
             m = re.match(r"remote-store\[([^\]]+)\]", spec)
             if m:
                 for child in m.group(1).split(","):
                     walk(child.strip())
                 continue
-            # Strip version spec, env-marker, extras. Conservative: take
-            # the package name only (before the first non-identifier char).
+            # Conservative: the package name is everything up to the first
+            # non-identifier character; the rest is the specifier.
             pkg = re.match(r"[A-Za-z0-9_.\-]+", spec)
-            if pkg:
-                seen.add(pkg.group(0).lower().replace("_", "-"))
+            if not pkg:
+                continue
+            key = pkg.group(0).lower().replace("_", "-")
+            specifier = spec[pkg.end() :].strip()
+            existing = seen.get(key)
+            if existing is None:
+                seen[key] = specifier
+            elif specifier and specifier not in existing.split(","):
+                seen[key] = f"{existing},{specifier}" if existing else specifier
 
     walk(extra)
     return seen
+
+
+def _direct_deps_for(extra: str) -> set[str]:
+    """Top-level package names declared by an extra in ``pyproject.toml``.
+
+    The key set of ``_direct_requirements_for``; used to project a
+    resolution (full transitive closure) down to the user-meaningful
+    packages.
+    """
+    return set(_direct_requirements_for(extra))
 
 
 def diff_extra(extra: str, resolved: dict[str, str] | None = None) -> dict:
@@ -314,6 +490,25 @@ def _is_prerelease(version: str) -> bool:
     return bool(re.search(r"(a|b|rc|dev|alpha|beta|pre)\d", version, re.IGNORECASE))
 
 
+def floor_report(extra: str, resolved: dict[str, str]) -> dict:
+    """Project a floor resolution onto the packages the extra declares.
+
+    There is nothing to diff against: the claim under test is what
+    ``pyproject.toml`` already says, so a committed floor lock would be a
+    second copy of it. The report therefore *surfaces* the versions the
+    floors resolved to rather than asserting anything about them — the smoke
+    that follows is what turns them into a verdict.
+    """
+    direct = _direct_requirements_for(extra)
+    return {
+        "extra": extra,
+        "lane": "floor",
+        "status": "resolved",
+        "python_run": f"{sys.version_info.major}.{sys.version_info.minor}",
+        "floor": {name: resolved[name] for name in sorted(direct) if name in resolved},
+    }
+
+
 def render_docs() -> str:
     """Render ``docs-src/reference/tested-versions.md`` from the lock files.
 
@@ -327,33 +522,39 @@ def render_docs() -> str:
 
     buf = io.StringIO()
     buf.write("<!-- generated by scripts/drift_check.py — do not edit by hand -->\n")
-    buf.write("# Tested upper-bound versions\n\n")
+    buf.write("# Tested versions\n\n")
     buf.write(
-        "Each `[<extra>]` declares its version range in `pyproject.toml` "
-        "(a floor always, plus a ceiling only where a known-incompatible "
-        "major looms — see the comment on `[project.optional-dependencies]` "
-        "there for the authoritative per-extra ranges). "
-        "The drift guard (`.github/workflows/drift-guard.yml`) "
-        "records the last known-good resolution per extra in "
-        "`infra/drift-locks/` and re-resolves weekly against the latest "
-        "available versions (including pre-releases) to surface silent "
-        "transitive upgrades before they reach users. "
-        "Why the ranges are shaped that way, and what the guard does and "
-        "does not promise, is on "
+        "Each `[<extra>]` below lists the range it declares and the versions "
+        "CI was last green against. **Declared** is the range a resolver is "
+        "held to — a floor always, plus a ceiling only where a "
+        "known-incompatible major looms. **Tested up to** is the exact version "
+        "pinned when that extra's resolution was last recorded. "
+        "Why the ranges are shaped that way, and what this page does and does "
+        "not promise, is on "
         "[Dependency and version policy]"
         "(../explanation/dependency-policy.md).\n\n"
     )
     buf.write(
-        "The table below is the projection of those lock files onto the "
-        'top-level packages each extra declares. "Tested up to" is the '
-        "exact version pinned in the lock at capture time — that is what "
-        "CI was last green against.\n\n"
+        "The drift guard (`.github/workflows/drift-guard.yml`) keeps both ends "
+        "of each range under a weekly check. It re-resolves every extra "
+        "against the latest available versions, pre-releases included, and "
+        "diffs the result against the record in `infra/drift-locks/` that the "
+        '"Tested up to" column is taken from. It also installs each extra at '
+        "the **floor** of every range above and runs that extra's smoke "
+        f"against it, on Python {min_python()} — the oldest interpreter this "
+        "package supports. Findings from either end land on a rolling issue "
+        "for a maintainer to read; neither end blocks a release on its own.\n\n"
+    )
+    buf.write(
+        "_Smoke_ names how far that check reaches for each extra. A smoke that "
+        "imports a module exercises less than one that runs a test suite, and "
+        "a version pair below is evidence only as far as its smoke goes.\n\n"
     )
 
     any_pending = False
     for extra in extras:
         lock = read_lock(extra)
-        direct = _direct_deps_for(extra)
+        declared = _direct_requirements_for(extra)
         buf.write(f"## `[{extra}]`\n\n")
         if lock.is_empty:
             any_pending = True
@@ -365,11 +566,12 @@ def render_docs() -> str:
                 f"`infra/drift-locks/{extra}.txt`._\n\n"
             )
             continue
-        buf.write(f"_Captured {lock.captured} on Python {lock.python}._\n\n")
-        buf.write("| Package | Tested up to |\n|---|---|\n")
-        for pkg in sorted(direct):
+        buf.write(f"_Captured {lock.captured} on Python {lock.python}._\n")
+        buf.write(f"_Smoke:_ {_smoke_reach(extra)}\n\n")
+        buf.write("| Package | Declared | Tested up to |\n|---|---|---|\n")
+        for pkg in sorted(declared):
             version = lock.packages.get(pkg, "—")
-            buf.write(f"| `{pkg}` | `{version}` |\n")
+            buf.write(f"| `{pkg}` | `{declared[pkg]}` | `{version}` |\n")
         buf.write("\n")
 
     if any_pending:
@@ -381,7 +583,39 @@ def render_docs() -> str:
             "`infra/drift-locks/<extra>.txt`._\n"
         )
 
+    uncovered = sorted(_marker_gated_extras() - _AGGREGATE_EXTRAS)
+    if uncovered:
+        buf.write("## Extras this page does not cover\n\n")
+        buf.write(
+            "These are installable and maintained like any other, and the "
+            "check above does not reach them: what each one resolves to "
+            "depends on the interpreter you install it on, so there is no "
+            "single resolution to record or to smoke. Read its range in "
+            "`pyproject.toml`.\n\n"
+        )
+        buf.write("| Extra | Why it has no row above |\n|---|---|\n")
+        for extra in uncovered:
+            reasons = sorted(
+                {spec.partition(";")[2].strip() for spec in _direct_requirements_for(extra).values() if ";" in spec}
+            )
+            buf.write(f"| `[{extra}]` | declared only for `{'`, `'.join(reasons)}` |\n")
+        buf.write("\n")
+
     return buf.getvalue()
+
+
+def _smoke_reach(extra: str) -> str:
+    """One line naming how far this extra's drift smoke reaches.
+
+    Derived from the single mapping the workflow dispatches on, so the page
+    cannot describe a target the run does not use.
+    """
+    argv = drift_smoke_map.smoke_for(extra)
+    if argv and argv[0] == "--import-only":
+        module = argv[1] if len(argv) > 1 else "remote_store"
+        return f"import of `{module}` only"
+    targets = [a for a in argv if "/" in a or a.endswith(".py")]
+    return ", ".join(f"`{t}`" for t in targets)
 
 
 # ---------------------------------------------------------------------------
@@ -467,6 +701,50 @@ def _cmd_diff(args: argparse.Namespace) -> int:
     return 0
 
 
+def _cmd_floor(args: argparse.Namespace) -> int:
+    # Same one-resolve-per-leg shape as ``_cmd_diff`` (ID-231): the freeze the
+    # report is computed from is the freeze the smoke pins against, so a green
+    # floor smoke is a statement about the versions this report names and not
+    # about a second resolution nobody recorded.
+    #
+    # A failed resolve is a synthetic ``status: error`` report rather than a
+    # crash, for the same reason ``diff`` does it: one extra's failure must not
+    # cost the other thirteen their rows on the rolling issue. Here it is also
+    # the *finding* — a floor that will not install is what this lane is for —
+    # so the reason text is the thing a maintainer reads.
+    resolved: dict[str, str] | None = None
+    try:
+        resolved = resolve_floor(args.extra)
+        report = floor_report(args.extra, resolved)
+    except Exception as exc:
+        if args.out is None:
+            raise
+        reason = f"{type(exc).__name__}: {exc}"
+        if isinstance(exc, subprocess.CalledProcessError) and exc.stderr:
+            reason = f"{reason}\n{exc.stderr.strip()}"
+        report = {
+            "extra": args.extra,
+            "lane": "floor",
+            "status": "error",
+            "reason": reason,
+            "python_run": f"{sys.version_info.major}.{sys.version_info.minor}",
+        }
+    if args.emit_freeze is not None and resolved is not None:
+        _atomic_write(Path(args.emit_freeze), _freeze_text(resolved))
+
+    payload = json.dumps(report, indent=2, sort_keys=True)
+    if args.out is None:
+        print(payload)
+        return 0
+    _atomic_write(Path(args.out), payload)
+    return 0
+
+
+def _cmd_min_python(_args: argparse.Namespace) -> int:
+    print(min_python())
+    return 0
+
+
 def _cmd_refresh(args: argparse.Namespace) -> int:
     targets = list_extras() if args.extra == "all" else [args.extra]
     for extra in targets:
@@ -526,6 +804,30 @@ def main(argv: list[str] | None = None) -> int:
         ),
     )
     p_diff.set_defaults(func=_cmd_diff)
+
+    p_floor = sub.add_parser("floor", help="Resolve one extra at its declared floors (JSON report).")
+    p_floor.add_argument("extra")
+    p_floor.add_argument(
+        "--out",
+        default=None,
+        help="Write the JSON report atomically to PATH instead of stdout.",
+    )
+    p_floor.add_argument(
+        "--emit-freeze",
+        default=None,
+        metavar="PATH",
+        help=(
+            "Also write the floor freeze (sorted name==version) atomically to "
+            "PATH. It is the smoke's pip constraints file, so the smoke runs "
+            "against exactly the resolution this report names."
+        ),
+    )
+    p_floor.set_defaults(func=_cmd_floor)
+
+    sub.add_parser(
+        "min-python",
+        help="Print the oldest interpreter requires-python admits.",
+    ).set_defaults(func=_cmd_min_python)
 
     p_refresh = sub.add_parser(
         "refresh-baseline",
