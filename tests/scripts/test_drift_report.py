@@ -93,6 +93,27 @@ class TestLoadReportsShapeSplit:
     def test_empty_dir_is_falsy(self, drift_report, tmp_path):
         assert not drift_report._load_reports(tmp_path)
 
+    def test_an_unreadable_file_is_named_and_skipped(self, drift_report, tmp_path):
+        # Measured on a real run: two single-file artefacts landed on one
+        # filename under `merge-multiple` and the concatenation aborted the
+        # whole report, losing every other extra's rows for a reason that had
+        # nothing to do with them.
+        _write(tmp_path, "good.json", _diff("s3"))
+        (tmp_path / "bad.json").write_text('{"extra": "yaml"}{"extra": "yaml"}', encoding="utf-8")
+        reports = drift_report._load_reports(tmp_path)
+        assert set(reports.diffs) == {"s3"}
+        assert reports.unreadable == ["bad.json"]
+
+    def test_a_json_file_with_no_extra_key_is_skipped(self, drift_report, tmp_path):
+        (tmp_path / "stray.json").write_text('{"hello": "world"}', encoding="utf-8")
+        assert drift_report._load_reports(tmp_path).unreadable == ["stray.json"]
+
+    def test_an_unreadable_file_alone_is_still_truthy(self, drift_report, tmp_path):
+        # Otherwise `main` reports "nothing to reconcile" and exits 0 on a run
+        # whose every upload was corrupt.
+        (tmp_path / "bad.json").write_text("not json", encoding="utf-8")
+        assert drift_report._load_reports(tmp_path)
+
 
 class TestHasSignal:
     """What holds the rolling issue open. A red smoke counts even on a clean
@@ -167,6 +188,13 @@ class TestHasSignal:
             drift_report, tmp_path, _diff("sql", "drift"), _smoke("sql", "newest", "fail", phase="smoke")
         )
         assert drift_report.has_signal(reports, {("sql", "newest"): ("BUG-281", "2026-12-31")}) is True
+
+    def test_an_unreadable_report_signals(self, drift_report, tmp_path):
+        # A missing row and a clean row look identical on the issue, so a
+        # report that silently lost one must hold the issue open.
+        _write(tmp_path, "good.json", _diff("s3"))
+        (tmp_path / "bad.json").write_text("not json", encoding="utf-8")
+        assert drift_report.has_signal(drift_report._load_reports(tmp_path), {}) is True
 
     def test_skipped_smoke_is_not_a_failure(self, drift_report, tmp_path):
         reports = self._reports(drift_report, tmp_path, _diff("s3"), _smoke("s3", "floor", "skipped"))

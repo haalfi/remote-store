@@ -40,7 +40,7 @@ import json
 import re
 import subprocess
 import sys
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 from pathlib import Path
 
 
@@ -55,9 +55,10 @@ class Reports:
     diffs: dict[str, dict]
     floors: dict[str, dict]
     smokes: dict[tuple[str, str], dict]
+    unreadable: list[str] = field(default_factory=list)
 
     def __bool__(self) -> bool:
-        return bool(self.diffs or self.floors or self.smokes)
+        return bool(self.diffs or self.floors or self.smokes or self.unreadable)
 
 
 def _load_reports(dir_: Path) -> Reports:
@@ -69,24 +70,37 @@ def _load_reports(dir_: Path) -> Reports:
     a ``smoke`` key makes it a smoke verdict, ``lane == "floor"`` a floor
     report, and anything else the newest-lane diff.
 
-    rglob (not glob): upload-artifact preserves the workspace-relative
-    directory prefix of `path:` inside the artefact, so the matrix uploads are
-    extracted one level deeper than a flat layout. rglob handles both shapes.
+    rglob (not glob): an artefact is rooted at the least common ancestor of the
+    files it was given, so a *single*-file upload lands that file at the
+    artefact root while a multi-file one keeps a directory prefix. rglob handles
+    both, and every filename this run produces is unique across lanes so that
+    ``merge-multiple`` has nothing to collide.
+
+    A file that will not parse is **named and skipped**, not raised. One
+    unreadable artefact used to abort the whole report, which loses every other
+    extra's rows for a reason that has nothing to do with them — the failure
+    ``_atomic_write`` exists to prevent, arriving from the other side.
     """
     diffs: dict[str, dict] = {}
     floors: dict[str, dict] = {}
     smokes: dict[tuple[str, str], dict] = {}
+    unreadable: list[str] = []
     for path in sorted(dir_.rglob("*.json")):
-        with path.open(encoding="utf-8") as f:
-            data = json.load(f)
-        extra = data["extra"]
+        try:
+            with path.open(encoding="utf-8") as f:
+                data = json.load(f)
+            extra = data["extra"]
+        except (json.JSONDecodeError, KeyError, OSError) as exc:
+            print(f"::warning::unreadable drift report {path}: {exc}", file=sys.stderr)
+            unreadable.append(path.name)
+            continue
         if "smoke" in data:
             smokes[(extra, data.get("lane", "newest"))] = data
         elif data.get("lane") == "floor":
             floors[extra] = data
         else:
             diffs[extra] = data
-    return Reports(diffs=diffs, floors=floors, smokes=smokes)
+    return Reports(diffs=diffs, floors=floors, smokes=smokes, unreadable=sorted(unreadable))
 
 
 def _render_isolation_findings(reports: Reports, register: dict[tuple[str, str], tuple[str, str]]) -> list[str]:
@@ -315,6 +329,8 @@ def has_signal(reports: Reports, register: dict[tuple[str, str], tuple[str, str]
     known = set(register or {})
     if any(r.get("status") in ("drift", "needs_refresh", "error") for r in reports.diffs.values()):
         return True
+    if reports.unreadable:
+        return True
     if any((e, "floor") not in known and r.get("status") == "error" for e, r in reports.floors.items()):
         return True
     return any(v.get("smoke") == "fail" and (extra, lane) not in known for (extra, lane), v in reports.smokes.items())
@@ -379,6 +395,22 @@ def _render_body(reports: Reports, run_url: str, register: dict[tuple[str, str],
                 for d in pre:
                     lines.append(f"| `{d['package']}` | `{d['baseline'] or '—'}` | `{d['resolved'] or '—'}` |")
                 lines.append("")
+
+    if reports.unreadable:
+        lines.append("## Unreadable reports")
+        lines.append("")
+        lines.append(
+            "These uploads could not be parsed and were skipped, so the rows "
+            "they would have contributed are missing from everything above. "
+            "The usual cause is two artefacts landing on one filename: an "
+            "artefact is rooted at the least common ancestor of its files, so "
+            "a single-file upload contributes that file at the artefact root "
+            "and `merge-multiple` has no directory to keep them apart."
+        )
+        lines.append("")
+        for name in reports.unreadable:
+            lines.append(f"- `{name}`")
+        lines.append("")
 
     errors = [e for e, r in diffs.items() if r.get("status") == "error"]
     if errors:
