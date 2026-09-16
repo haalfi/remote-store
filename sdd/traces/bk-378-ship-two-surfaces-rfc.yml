@@ -20,9 +20,10 @@ expected_ripples:
 # and a round-1 finding caught it: run `git log --format='%s' origin/master..HEAD`
 # and count the subjects that answer a review round — they say so ("address PR
 # #1002 round N"). The four commits before review implement the item and do
-# not count; nor does a commit that only re-homes the ID (twice, per ID-257). Re-run before each push; the value is the count, including the
-# commit that carries this line.
-review_rounds: 1
+# not count; nor does a commit that only re-homes the ID (twice, per ID-257).
+# Re-run before each push; the value is the count, including the commit that
+# carries this line.
+review_rounds: 2
 phases:
   - id: orient
     name: Orient
@@ -127,7 +128,8 @@ phases:
           Blame of each finding's line at the head the reviewer saw, against
           that head's own merge-base and first commit. 19 PRs, 541 findings:
           loop-introduced share by round 0%, 46%, 77%, 93%, 80%, 85%, 85%;
-          160 file-level findings unclassifiable. Sixteen reviewed heads were
+          160 findings unclassifiable, all file-level once round 2 made the
+          script count its four causes separately. Sixteen reviewed heads were
           absent from the PR refs (rebased away) and were fetched by SHA
         outcome: ok
       - file: sdd/rfcs/rfc-0015-rounds.py
@@ -177,6 +179,32 @@ phases:
           Round 1 found D4 burying a cross-artifact check inside a post-hoc
           report. The ID-set diff becomes a gate script in the shared PR
           validation gates, and all three scripts declare Drift-gate blocks
+        outcome: ok
+  - id: fix_2
+    name: Round-2 fix pass
+    steps:
+      - file: sdd/rfcs/rfc-0015-findings.py
+        section: "triage(), the unclassifiable causes, round ordering"
+        read_type: verify
+        extract: >-
+          Round 2 found the triage regex matching substrings ("incorrect" as
+          must-fix) and tested first, the unclassifiable count folding four
+          causes into one, and the round index taken from endpoint order. All
+          three fixed and re-run: must-fix 359 to 295, refuted 8 to 56, filed
+          1 to 10; every unclassifiable finding is file-level; no sampled PR's
+          endpoint order differed from submission order. Table 4 moved (round
+          3: 70% to 68%), D5's adopted reading now fires on 3 PRs and 9 rounds,
+          and the acceptance figure is 77 of 99
+        outcome: ok
+      - file: sdd/rfcs/rfc-0015-rounds.py
+        section: "population, --at"
+        read_type: verify
+        extract: >-
+          Round 2 found the docstring saying A while the code said AR, and AR
+          admitting a pre-split trace renamed after the split. The population
+          is A with renames followed, and --at <rev> reads a pinned tree, so
+          Table 1's 61-of-274 bound is now derived at 2a1bbfe like every other
+          figure rather than at f6bd6d1
         outcome: ok
   - id: design
     name: Design

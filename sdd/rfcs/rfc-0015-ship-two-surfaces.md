@@ -12,9 +12,13 @@ rewrites of `.claude/skills/ship/SKILL.md`, `/rvw-pr`, `/fix-pr`,
 `sdd/traces/_schema.yml` § `review_rounds` and `CLAUDE.md` § Trace authoring.
 
 **Date:** 2026-09-07. Every repo figure below is pinned to `2a1bbfe` and names
-the command that produced it; the two commands that are longer than a line are
-committed beside this file as `rfc-0015-findings.py` and `rfc-0015-rounds.py`.
-The corpus moves on every merge, so re-run rather than quote.
+the command that produced it, with two named exceptions: the PR #997
+postscript reads that PR's head `3cd4acb`, and the worktree timings are single
+runs on one container. The two commands that are longer than a line are
+committed beside this file as `rfc-0015-findings.py` and `rfc-0015-rounds.py`;
+the second takes `--at 2a1bbfe` so Table 1 can be re-derived at the pin
+rather than at whatever the working tree holds. The corpus moves on every
+merge, so re-run rather than quote.
 
 ## Summary
 
@@ -40,8 +44,9 @@ of everything before it, and the findings the added rounds produce sit on what
 the loop itself wrote. Three tables carry that, each with its derivation.
 
 **Table 1. `review_rounds` per trace, split at the whole-file gate's merge
-(`24d9464`).** Derivation: `python sdd/rfcs/rfc-0015-rounds.py 24d9464`, whose
-docstring states the population and the value rule. The field counts
+(`24d9464`).** Derivation: `python sdd/rfcs/rfc-0015-rounds.py 24d9464 --at
+2a1bbfe`, whose docstring states the population (traces first added since the
+split, renames followed), the value rule and the exclusion rule. The field counts
 review-driven commits, so it is a proxy for rounds; the traces' own derivation
 comments give the round count where they differ, and the shape does not change.
 
@@ -59,8 +64,8 @@ runs and everything before it, not between `/ship` and no `/ship`.
 
 Two more bounds sit on this table, beside the proxy bound above. **The field
 is not required by the schema, and traces without it are excluded**: the
-script prints them, and at `f6bd6d1` that is 61 of the 274 pre-split traces
-and none of the post-split ones, so `n=213` is the before-population that
+script prints them, and at `2a1bbfe` that is 61 of the 274 pre-split traces
+and none of the 26 post-split ones, so `n=213` is the before-population that
 carries the field, not the before-population. **The split commit is also the
 commit from which the field's derivation had to be named**: `_schema.yml`
 § `review_rounds` binds its derivation-comment clause "from BK-348 onward" and
@@ -114,7 +119,11 @@ grows with the round**: panels post merged findings as `subjectType: "FILE"`,
 so from round 3 to round 7 between 40% and 58% of each round is
 unclassifiable (that column against the row total), rounds 8 to 10 are
 entirely so, and the percentages from round 4 rest on under thirty classified
-findings each. The direction is unambiguous; the figures are not precise.
+findings each. The script counts four unclassifiable causes separately;
+in this sample all 160 are file-level and none is a `LEFT`-side, null-line or
+blame-failure finding. The comments endpoint's row order agreed with review
+submission order in every sampled PR, which the script now checks rather than
+assumes. The direction is unambiguous; the figures are not precise.
 **A submission is not always a round**: BUG-264's trace records eight rounds
 where the endpoint shows two submissions, so some rows merge rounds. **A
 commit authored before round 1 but pushed after it would read as original**;
@@ -124,29 +133,38 @@ later row or a loop-introduced one into the original column.
 
 **Table 4. The same, counting must-fix findings only.** Severity is what the
 proposal's rules key on, so the script reads the fixer's first reply in each
-thread for its verdict: *must-fix* when it says "Must-fix", "Fixed in",
-"Confirmed", "Correct", "Taken", "Added" or "Annotated"; *filed* when it says
-"Filed as" or mints an ID; *refuted* on "refut", "not a defect", "declin",
-"rejected" or "stays"; *unknown* otherwise, including an unanswered thread.
-Over the sample: 359 must-fix, 1 filed, 8 refuted, 173 unknown. The unknown
-third is the heuristic's bound, and it is not spread evenly: #968's 50 findings
-are all unknown, as are most of #977's, #990's and #994's later rounds, where
-the fixer answered in review summaries rather than in the threads. Within the
-classified must-fix findings:
+thread for its verdict. This repo's replies open with the verdict, so the
+opening word decides where it is present: "Must-fix" opens a *must-fix* reply
+whatever follows, "Filed as" a *filed* one, "Refuted", "Not a defect",
+"Declined", "Rejected" or "Decided" a *refuted* one. Otherwise the reply is
+searched with word boundaries, filed before refuted before must-fix
+("Filed as" or a minted ID; "refut", "not a defect", "declin", "rejected",
+"stays"; "Fixed in", "Confirmed", "Correct", "Taken", "Added", "Annotated");
+*unknown* otherwise, including an unanswered thread. Over the sample: 295
+must-fix, 10 filed, 56 refuted, 180 unknown. An earlier revision matched
+substrings and counted "incorrect" and "added to the backlog" as must-fix; it
+reported 1 filed and 8 refuted. The unknown third is the heuristic's bound, and
+it is not spread evenly: #968's 50 findings are all unknown, as are most of
+#977's, #990's and #994's later rounds, where the fixer answered in review
+summaries rather than in the threads. Within the classified must-fix findings:
 
 | round | original | loop-introduced | loop share of classified | unclassifiable |
 |---|---|---|---|---|
-| 1 | 90 | 0 | 0% | 2 |
-| 2 | 46 | 29 | 39% | 1 |
-| 3 | 18 | 42 | 70% | 28 |
-| 4 | 2 | 19 | 90% | 16 |
-| 5 | 3 | 16 | 84% | 13 |
-| 6 | 2 | 11 | 85% | 7 |
-| 7 | 1 | 10 | 91% | 3 |
+| 1 | 73 | 0 | 0% | 2 |
+| 2 | 39 | 23 | 37% | 1 |
+| 3 | 16 | 34 | 68% | 23 |
+| 4 | 1 | 17 | 94% | 14 |
+| 5 | 2 | 10 | 83% | 12 |
+| 6 | 2 | 8 | 80% | 6 |
+| 7 | 1 | 8 | 89% | 3 |
 
-Restricting to must-fix lowers round 2 by seven points and leaves rounds 3 to
-7 where they were, so the late rounds are not many filed nits around a few real
-defects: the fixer confirmed and fixed them, and they were on its own text.
+Restricting to must-fix lowers rounds 2 and 3 by nine points each and leaves
+rounds 4 to 7 within five points of Table 2, so the late rounds are not many
+filed nits around a few real defects: the fixer confirmed and fixed them, and
+they were on its own text. Round 3 carries more classified must-fix findings
+than rounds 4 to 7 together (50 against 49, summing the rows), so its 68% is
+the figure the conclusion leans on most, and it is below the 77% Table 2 gives
+for the same round.
 
 **Table 3. What the findings are about.** Same script, same sample, and
 unaffected by the origin classifier:
@@ -512,8 +530,11 @@ corrects.
   `ship-report`: original, pre-existing, loop-introduced.
 - Posting discipline follows: a finding is posted with a `LINE` anchor
   whenever a line exists, and `FILE` is reserved for a subject that is the
-  file. 160 of the 541 findings in Table 2 were file-level and could not be
-  classified, from round 3 they are 40% to 58% of every round, and PR #997's
+  file. 160 of the 541 findings in Table 2 could not be classified, and the
+  script separates the four causes it has: all 160 are file-level, and the
+  `LEFT`-side, null-line and blame-failure counts are zero in this sample, so
+  the `LINE` discipline reaches the whole residue here, though not by
+  construction. From round 3 they are 40% to 58% of every round, and PR #997's
   nine rounds left twenty inline findings, half of them file-level.
 - Stop-rule clause: when two consecutive rounds each carry **at least two
   classified must-fix findings of which at least 80% are loop-introduced**,
@@ -523,13 +544,13 @@ corrects.
   4 and BK-359's round 5 did on the user's call; the rule makes it the loop's.
   **The constants are chosen from a dry run, not asserted.** The script runs
   three readings over the 19 sampled deliveries. "All classified must-fix
-  findings loop-introduced" fires in 2 PRs (#973 three times, #987 once) and
-  never on #996, because one original finding in a round of ten silences it.
-  "Unclassifiable counts as loop-introduced" fires in 5 PRs and 12 rounds, but
-  #991's four and #976's three are rounds posted entirely at file level, so
-  that reading fires on the posting artifact rather than on the loop. The 80%
-  share over at least two classified findings fires in 4 PRs and 8 rounds
-  (#973 four, #986 one, #987 one, #996 two) and in none of the file-level
+  findings loop-introduced" fires in 2 PRs and 5 rounds (#973 four times,
+  #987 once) and never on #996, because one original finding in a round of
+  ten silences it. "Unclassifiable counts as loop-introduced" fires in 5 PRs
+  and 13 rounds, but #991's four and #976's three are rounds posted entirely
+  at file level, so that reading fires on the posting artifact rather than on
+  the loop. The 80% share over at least two classified findings fires in 3 PRs
+  and 9 rounds (#973 four, #986 one, #996 four) and in none of the file-level
   rounds; it is the reading adopted. Unclassifiable findings are excluded from
   the ratio, so under today's posting the trigger under-fires rather than
   over-fires, and the `LINE` discipline above raises its reach.
@@ -620,7 +641,7 @@ runtime behaviour, no published page other than this RFC's own.
 - **Acceptance criterion, stated before the run.** Three deliveries run under
   the rules, pooled, then `rfc-0015-findings.py` over them. Graduate to an ADR
   if the loop-introduced share of classified must-fix findings from round 3 on
-  is below 50% (Table 4's pooled rounds 3 to 7: 98 of 124, 79%, summing its rows), the derived
+  is below 50% (Table 4's pooled rounds 3 to 7: 77 of 99, 78%, summing its rows), the derived
   trace block draws a finding in at most one round across the three, and the
   retraction trigger fires at most once. Any of the three failing sends the
   RFC back to Draft with the measured figures attached, not to the ADR with a

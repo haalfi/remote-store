@@ -4,9 +4,12 @@
 For each PR number given, walk ``pulls/<N>/comments`` (``per_page=100``,
 paged until a short page). Rows with no ``in_reply_to_id`` are *findings*;
 rows with one are the fixer's *replies* to them (``/rvw-pr`` never reads or
-answers comments, so every reply in a thread is the fix pass speaking). Findings
-are grouped by ``pull_request_review_id`` in first-seen order, which is
-submission order; ``pulls/<N>/reviews`` supplies each submission's time.
+answers comments, so every reply in a thread is the fix pass speaking).
+Findings are grouped by ``pull_request_review_id``; ``pulls/<N>/reviews``
+supplies each submission's ``submitted_at`` and the groups are **sorted by
+it**, so the round index is submission order by construction, not by the
+order the comments endpoint happens to return rows. A review with no
+``submitted_at`` sorts last and is reported.
 
 Three classifications per finding:
 
@@ -21,25 +24,37 @@ Three classifications per finding:
   first review that carried a finding: earlier is ``original`` (written before
   any review began, whatever the number of commits in the first push), later
   is ``loop-introduced`` (a fix-pass commit). Author dates survive rebases,
-  which commit identity does not. A finding with ``subject_type == "file"``,
-  no ``original_line`` or ``side == "LEFT"`` has no blameable line and is
-  ``unclassifiable``; a head absent locally is fetched by SHA.
+  which commit identity does not. A finding has no blameable line, and is
+  counted under one of four separate ``unclassifiable-*`` causes, when its
+  ``subject_type`` is ``file``, when it was posted on the ``LEFT`` (base) side
+  of a deleted line, when ``original_line`` is null, or when ``git blame``
+  fails at that head; a head absent locally is fetched by SHA.
   Bound: a commit authored before round 1 but pushed after it would read as
   ``original``; this repo's loop pushes before spawning reviewers, so the case
   is not expected and is not measured here.
 * **Triage** (Table 4): the first reply in the finding's thread is read for the
-  fixer's verdict — ``must-fix`` when it says "Must-fix", "Fixed in",
-  "Confirmed", "Correct", "Taken", "Added" or "Annotated"; ``filed`` when it
-  says "Filed as" or mints an ID; ``refuted`` when it says "refut",
-  "not a defect", "declin", "rejected" or "stays"; ``unknown`` otherwise,
+  fixer's verdict. This repo's replies open with the verdict, so the opening
+  word decides where it is present: a reply that *starts* with "Must-fix" is
+  ``must-fix`` whatever follows (a must-fix reply often goes on to say what was
+  refuted), one that starts with "Filed as" is ``filed``, one that starts with
+  "Refuted", "Not a defect", "Declined", "Rejected" or "Decided" is
+  ``refuted``. Otherwise the whole reply is searched with word boundaries, in
+  the order filed, refuted, must-fix: ``\\bFiled as\\b`` or a minted ID;
+  ``\\brefut``, ``\\bnot a defect\\b``, ``\\bdeclin``, ``\\brejected\\b``,
+  ``\\bstays\\b``; then ``\\bFixed in\\b``, ``\\bConfirmed\\b``, ``\\bCorrect\\b``,
+  ``\\bTaken\\b``, ``\\bAdded\\b``, ``\\bAnnotated\\b``. ``unknown`` otherwise,
   including threads with no reply. A heuristic over free text, stated as one:
-  the counts it yields are bounded by the share it leaves ``unknown``.
+  under-classification shows up as ``unknown``; mis-classification does not,
+  and an earlier revision without word boundaries counted "incorrect" as
+  ``must-fix``.
 
 Also printed:
 
 * the share of sampled PRs whose first push (merge-base to the round-1 head,
   first-parent) had more than one commit — the bound on the single-commit
   premise an earlier revision of this script assumed;
+* per PR, whether the comments endpoint's row order disagreed with submission
+  order, so the sorting above is seen to matter or not;
 * a dry run of RFC-0015 D5's retraction trigger over the sample, under three
   readings. ``classified``: a round "fires" when it and the previous round each
   carry at least one classified must-fix finding and none of theirs is
@@ -69,9 +84,14 @@ from pathlib import Path
 REPO = "haalfi/remote-store"
 ROOT = Path(__file__).resolve().parents[2]
 
-_MUST_FIX = re.compile(r"Must-fix|Fixed in|Confirmed|Correct|Taken|Added|Annotated", re.I)
-_FILED = re.compile(r"Filed as|\b(?:BK|BUG|ID)-\d+ (?:now|filed|minted)", re.I)
-_REFUTED = re.compile(r"refut|not a defect|declin|rejected|\bstays\b", re.I)
+_OPEN_MUST_FIX = re.compile(r"^\s*\**Must-fix", re.I)
+_OPEN_FILED = re.compile(r"^\s*\**Filed as\b", re.I)
+_OPEN_REFUTED = re.compile(r"^\s*\**(?:Refut|Not a defect|Declin|Rejected|Decided)", re.I)
+_FILED = re.compile(r"\bFiled as\b|\b(?:BK|BUG|ID)-\d+\b.{0,20}\b(?:filed|minted)\b", re.I)
+_REFUTED = re.compile(r"\brefut|\bnot a defect\b|\bdeclin|\brejected\b|\bstays\b", re.I)
+_MUST_FIX = re.compile(r"\bFixed in\b|\bConfirmed\b|\bCorrect\b|\bTaken\b|\bAdded\b|\bAnnotated\b", re.I)
+
+UNCLASSIFIABLE = ("unclassifiable-file", "unclassifiable-left", "unclassifiable-noline", "unclassifiable-blame")
 
 
 def _git(*args: str, check: bool = True) -> subprocess.CompletedProcess[str]:
@@ -110,14 +130,18 @@ def ensure_commit(sha: str) -> None:
 
 
 def origin(r: dict, first_review_ts: int) -> str:
+    if r.get("subject_type") == "file":
+        return "unclassifiable-file"
+    if r.get("side") == "LEFT":
+        return "unclassifiable-left"
     line = r.get("original_line")
-    if r.get("subject_type") == "file" or line is None or r.get("side") == "LEFT":
-        return "unclassifiable"
+    if line is None:
+        return "unclassifiable-noline"
     head = r["original_commit_id"]
     ensure_commit(head)
     blame = _git("blame", "-l", "-L", f"{line},{line}", head, "--", r["path"], check=False)
     if blame.returncode != 0:
-        return "unclassifiable"
+        return "unclassifiable-blame"
     blamed = blame.stdout.split()[0].lstrip("^")
     if _git("merge-base", "--is-ancestor", blamed, "origin/master", check=False).returncode == 0:
         return "pre-existing"
@@ -128,12 +152,18 @@ def origin(r: dict, first_review_ts: int) -> str:
 def triage(reply: str | None) -> str:
     if reply is None:
         return "unknown"
-    if _MUST_FIX.search(reply):
+    if _OPEN_MUST_FIX.search(reply):
         return "must-fix"
+    if _OPEN_FILED.search(reply):
+        return "filed"
+    if _OPEN_REFUTED.search(reply):
+        return "refuted"
     if _FILED.search(reply):
         return "filed"
     if _REFUTED.search(reply):
         return "refuted"
+    if _MUST_FIX.search(reply):
+        return "must-fix"
     return "unknown"
 
 
@@ -141,6 +171,7 @@ def main(prs: list[int]) -> None:
     by_index: dict[int, Counter[str]] = {}
     grand: Counter[str] = Counter()
     multi_commit_first_push = 0
+    reordered: list[int] = []
     fired = {"classified": Counter(), "unclassifiable-as-loop": Counter(), "share>=80%,n>=2": Counter()}
     for pr in prs:
         comments = _gh(f"pulls/{pr}/comments")
@@ -149,10 +180,15 @@ def main(prs: list[int]) -> None:
         for c in sorted((c for c in comments if c.get("in_reply_to_id")), key=lambda c: c["created_at"]):
             first_reply.setdefault(c["in_reply_to_id"], c["body"])
         review_ts = {rv["id"]: _ts(rv["submitted_at"]) for rv in _gh(f"pulls/{pr}/reviews") if rv.get("submitted_at")}
-        rounds: OrderedDict[int, list[dict]] = OrderedDict()
+        seen: OrderedDict[int, list[dict]] = OrderedDict()
         for f in findings:
-            rounds.setdefault(f["pull_request_review_id"], []).append(f)
-        first_review_ts = min(review_ts[rid] for rid in rounds)
+            seen.setdefault(f["pull_request_review_id"], []).append(f)
+        unsubmitted = [rid for rid in seen if rid not in review_ts]
+        ordered = sorted(seen, key=lambda rid: review_ts.get(rid, float("inf")))
+        if ordered != list(seen):
+            reordered.append(pr)
+        rounds: OrderedDict[int, list[dict]] = OrderedDict((rid, seen[rid]) for rid in ordered)
+        first_review_ts = min(review_ts[rid] for rid in rounds if rid in review_ts)
         first_head = next(iter(rounds.values()))[0]["original_commit_id"]
         ensure_commit(first_head)
         base = _git("merge-base", "origin/master", first_head).stdout.strip()
@@ -169,9 +205,13 @@ def main(prs: list[int]) -> None:
                 c[artifact_class(f["path"])] += 1
                 c["record"] += is_record(f["path"])
                 c[o] += 1
+                if o.startswith("unclassifiable"):
+                    c["unclassifiable"] += 1
                 c[t] += 1
                 if t == "must-fix":
                     c[f"mf-{o}"] += 1
+                    if o.startswith("unclassifiable"):
+                        c["mf-unclassifiable"] += 1
             by_index.setdefault(i, Counter()).update(c)
             grand.update(c)
             cells.append(
@@ -179,7 +219,7 @@ def main(prs: list[int]) -> None:
                 f"p{c['pre-existing']} u{c['unclassifiable']} | mf o{c['mf-original']} l{c['mf-loop-introduced']} "
                 f"p{c['mf-pre-existing']} u{c['mf-unclassifiable']} | filed {c['filed']} refuted {c['refuted']} ?{c['unknown']}"
             )
-            # D5 dry run, two readings
+            # D5 dry run, three readings
             for reading in fired:
                 loop = c["mf-loop-introduced"] + (c["mf-unclassifiable"] if reading == "unclassifiable-as-loop" else 0)
                 clean = c["mf-original"] + c["mf-pre-existing"]
@@ -193,18 +233,22 @@ def main(prs: list[int]) -> None:
                     fired[reading][pr] += 1
                 prev[reading] = this
         grand["submissions"] += len(rounds)
+        note = f", {len(unsubmitted)} review(s) without submitted_at" if unsubmitted else ""
         print(
-            f"PR #{pr}: {len(rounds)} submissions, {len(findings)} findings, first push {first_push} commit(s) | "
+            f"PR #{pr}: {len(rounds)} submissions, {len(findings)} findings, first push {first_push} commit(s){note} | "
             + "  ".join(cells)
         )
     n = len(prs)
     print(
         f"TOTAL: {grand['submissions']} submissions; code {grand['code']}, prose {grand['prose']} "
         f"(record {grand['record']}); original {grand['original']}, loop-introduced {grand['loop-introduced']}, "
-        f"pre-existing {grand['pre-existing']}, unclassifiable {grand['unclassifiable']}; "
+        f"pre-existing {grand['pre-existing']}, unclassifiable {grand['unclassifiable']} "
+        f"(file {grand['unclassifiable-file']}, left {grand['unclassifiable-left']}, "
+        f"noline {grand['unclassifiable-noline']}, blame {grand['unclassifiable-blame']}); "
         f"triage must-fix {grand['must-fix']}, filed {grand['filed']}, refuted {grand['refuted']}, unknown {grand['unknown']}"
     )
     print(f"FIRST PUSH >1 COMMIT: {multi_commit_first_push} of {n} PRs")
+    print(f"ROUND ORDER: comments-endpoint order differed from submission order in {len(reordered)} PR(s) {reordered}")
     print(
         "BY ROUND INDEX: all findings original / loop-introduced / loop share | unclassifiable || must-fix only: o / l / share | u"
     )
