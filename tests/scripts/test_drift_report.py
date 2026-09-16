@@ -144,13 +144,29 @@ class TestHasSignal:
         reports = self._reports(
             drift_report, tmp_path, _diff("s3"), _floor("s3", "error"), _smoke("s3", "floor", "fail", phase="smoke")
         )
-        assert drift_report.has_signal(reports, {"s3": ("BUG-287", "2026-12-31")}) is False
+        assert drift_report.has_signal(reports, {("s3", "floor"): ("BUG-287", "2026-12-31")}) is False
 
     def test_registering_a_floor_does_not_silence_its_newest_lane(self, drift_report, tmp_path):
         # The register is about a known-bad *floor*. It must not also suppress
         # the newest lane for that extra, which is a different claim entirely.
         reports = self._reports(drift_report, tmp_path, _diff("s3"), _smoke("s3", "newest", "fail", phase="smoke"))
-        assert drift_report.has_signal(reports, {"s3": ("BUG-287", "2026-12-31")}) is True
+        assert drift_report.has_signal(reports, {("s3", "floor"): ("BUG-287", "2026-12-31")}) is True
+
+    def test_registered_newest_finding_does_not_signal(self, drift_report, tmp_path):
+        # The same argument as the floor case: a finding whose owner and
+        # rationale are committed is not news. Its leg still goes red — the
+        # register changes what the issue presents, never what CI does.
+        reports = self._reports(drift_report, tmp_path, _diff("sql"), _smoke("sql", "newest", "fail", phase="smoke"))
+        assert drift_report.has_signal(reports, {("sql", "newest"): ("BUG-281", "2026-12-31")}) is False
+
+    def test_registering_a_finding_never_suppresses_version_drift(self, drift_report, tmp_path):
+        # A row registers a verdict somebody owns, not the movement of a
+        # package. Drift is what the newest lane exists to report, so it must
+        # survive any registration.
+        reports = self._reports(
+            drift_report, tmp_path, _diff("sql", "drift"), _smoke("sql", "newest", "fail", phase="smoke")
+        )
+        assert drift_report.has_signal(reports, {("sql", "newest"): ("BUG-281", "2026-12-31")}) is True
 
     def test_skipped_smoke_is_not_a_failure(self, drift_report, tmp_path):
         reports = self._reports(drift_report, tmp_path, _diff("s3"), _smoke("s3", "floor", "skipped"))
@@ -201,9 +217,19 @@ class TestRenderBody:
             tmp_path,
             _floor("arrow"),
             _smoke("arrow", "floor", "fail", phase="smoke"),
-            register={"arrow": ("BUG-287", "2026-12-31")},
+            register={("arrow", "floor"): ("BUG-287", "2026-12-31")},
         )
         assert "_Known: owned by BUG-287, review by 2026-12-31._" in body
+
+    def test_registered_newest_finding_names_its_owner(self, drift_report, tmp_path):
+        body = self._body(
+            drift_report,
+            tmp_path,
+            _diff("azure"),
+            _smoke("azure", "newest", "fail", phase="import-extra"),
+            register={("azure", "newest"): ("BUG-281", "2026-12-31")},
+        )
+        assert "_Known: owned by BUG-281, review by 2026-12-31._" in body
 
     def test_newest_lane_import_failure_is_an_isolation_finding(self, drift_report, tmp_path):
         # The extra installed alone and could not stand up — which is invisible
@@ -242,34 +268,52 @@ class TestRenderBody:
         assert "## Floor lane" not in body
 
 
-class TestFloorRegister:
+class TestKnownFindings:
     """The register is what separates a finding somebody owns from a new one."""
 
     def test_parses_the_committed_register(self, drift_report):
-        register = drift_report.load_floor_register()
+        register = drift_report.load_known_findings()
         assert register, "the committed register should parse"
         for owner, review in register.values():
             assert owner
             assert review
 
-    def test_every_registered_extra_is_a_tracked_extra(self, drift_report):
-        # A row for an extra the guard does not track would silence nothing and
-        # go unnoticed, since no leg ever produces a verdict for it.
+    def test_every_registered_row_names_a_tracked_extra_and_a_real_lane(self, drift_report):
+        # A row for an extra the guard does not track, or a lane that does not
+        # exist, would silence nothing and go unnoticed: no leg ever produces a
+        # verdict it could match.
         sys.path.insert(0, str(SCRIPTS))
         from drift_check import list_extras
 
-        assert set(drift_report.load_floor_register()) <= set(list_extras())
+        tracked = set(list_extras())
+        for extra, lane in drift_report.load_known_findings():
+            assert extra in tracked, f"{extra} is not a tracked extra"
+            assert lane in ("newest", "floor"), f"{lane} is not a lane"
 
     def test_missing_register_is_not_an_error(self, drift_report, tmp_path):
-        assert drift_report.load_floor_register(tmp_path / "absent.md") == {}
+        assert drift_report.load_known_findings(tmp_path / "absent.md") == {}
 
     def test_ignores_the_header_row(self, drift_report, tmp_path):
         path = tmp_path / "register.md"
         path.write_text(
-            "| Extra | Owner | Rationale | Review by |\n|---|---|---|---|\n| `[s3]` | BUG-1 | why | 2026-12-31 |\n",
+            "| Extra | Lane | Owner | Rationale | Review by |\n"
+            "|---|---|---|---|---|\n"
+            "| `[s3]` | floor | BUG-1 | why | 2026-12-31 |\n",
             encoding="utf-8",
         )
-        assert drift_report.load_floor_register(path) == {"s3": ("BUG-1", "2026-12-31")}
+        assert drift_report.load_known_findings(path) == {("s3", "floor"): ("BUG-1", "2026-12-31")}
+
+    def test_keys_the_two_lanes_apart(self, drift_report, tmp_path):
+        # The lanes make different claims about the same extra, so a row for one
+        # must not answer for the other.
+        path = tmp_path / "register.md"
+        path.write_text(
+            "| `[s3]` | floor | BUG-1 | why | 2026-12-31 |\n| `[s3]` | newest | BUG-2 | why | 2027-01-31 |\n",
+            encoding="utf-8",
+        )
+        register = drift_report.load_known_findings(path)
+        assert register[("s3", "floor")][0] == "BUG-1"
+        assert register[("s3", "newest")][0] == "BUG-2"
 
 
 class TestDryRun:

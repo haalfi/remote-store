@@ -94,6 +94,9 @@ lacks `actions: write`; the MCP server's `actions_run_trigger` dispatches).
      - **Real regression** — a drifted dep actually broke backend/ext behaviour.
        This is a bug, not a baseline event: surface it, propose a backlog item
        (ask first), and leave the lock alone so the issue keeps flagging it.
+       If the bug is pre-existing rather than caused by the bump, add a row to
+       `infra/drift-locks/KNOWN-FINDINGS.md` under lane `newest` so the next run
+       reports it as known; the leg stays red either way.
      - **Smoke-harness gap** — the failure is the smoke env's fault, not the
        dependency's (e.g. a test needs an extra the smoke env doesn't install,
        so it errors with `ModuleNotFoundError` regardless of the bump; or pip
@@ -121,7 +124,7 @@ lacks `actions: write`; the MCP server's `actions_run_trigger` dispatches).
      [`CONTRIBUTING.md` § When to bump](../../../CONTRIBUTING.md#when-to-bump)
      — a raise excluding only releases 2+ years past their own release is a
      patch, anything younger is breaking and takes the migration path. Then add
-     or remove the row in `infra/drift-locks/FLOOR-REGISTER.md` to match.
+     or remove the row in `infra/drift-locks/KNOWN-FINDINGS.md` to match.
    - **`Floor does not install`** → same decision, one step earlier. Raise it,
      or record in the register why it stands.
    - **`Test plugins cannot coexist with the floor`** → a harness gap, not a
@@ -235,7 +238,11 @@ lacks `actions: write`; the MCP server's `actions_run_trigger` dispatches).
 - Per-extra gating is non-negotiable: green smoke is the licence to refresh.
 - A floor finding is never refreshed away. The floor lane writes no lock, so
   there is nothing to refresh — the only answers are raise the floor, fix the
-  harness, or record the decision in `infra/drift-locks/FLOOR-REGISTER.md`.
+  harness, or record the decision in `infra/drift-locks/KNOWN-FINDINGS.md`.
+- A finding that will recur until someone fixes it gets a row in that register,
+  in **either** lane. Without one it is reported as new every Monday, and a
+  reader who sees the same rows weekly stops reading them. A row changes what
+  the issue presents as news; it never changes whether a leg goes red.
 - This skill prepares the refresh (locks, docs, any harness fix) and stops at a
   pushed branch; the user opens the PR via `/pr`. It never edits
   `pyproject.toml` floors, never merges, and never closes the rolling issue by hand.

@@ -405,9 +405,10 @@ lowest-direct`, which takes the floors from `pyproject.toml` rather than from a
 second copy of them — on the oldest interpreter `requires-python` admits, and
 runs that extra's smoke against it. Its legs exit 0 whatever they find: a floor
 finding is a decision about a published range, so it belongs on the rolling
-issue beside its owner rather than in a red X. `infra/drift-locks/FLOOR-REGISTER.md`
-records the findings already owned, so a new one is distinguishable from a known
-one; delete a row there in the same change that raises the floor. A red floor
+issue beside its owner rather than in a red X. `infra/drift-locks/KNOWN-FINDINGS.md`
+records the findings either lane already reports and somebody owns, so a new one
+is distinguishable from a known one; delete a row there in the same change that
+lands the fix. A red floor
 leg means the floor is too low — raise it, following the bump table in
 [§ When to bump](#when-to-bump), which prices a floor raise by how old the
 releases it newly excludes are. The floor lane resolves but writes no lock:

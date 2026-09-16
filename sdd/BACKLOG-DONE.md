@@ -269,9 +269,12 @@ if evidence changes; these are retired.
   carries the declaration; the policy page carries the user-facing half.
   **No lock is committed for the floor lane**, because the claim already lives
   in `pyproject.toml` and a second copy is what `infra/drift-locks/` exists to
-  avoid, not to duplicate. `infra/drift-locks/FLOOR-REGISTER.md` is the
+  avoid, not to duplicate. `infra/drift-locks/KNOWN-FINDINGS.md` is the
   [Rule 6](DRIFT-RULES.md#tolerated) register that keeps a known-bad floor from
-  reading like a new one.
+  reading like a new one. **It covers both lanes**, keyed on extra *and* lane:
+  the first dry run found `[sql]`'s newest-lane smoke red on a pre-existing
+  SQLAlchemy deprecation (BUG-281), and a register scoped to floors would have
+  left that one recurring weekly as news — the same defect one lane over.
   The cheap first step the item named was taken: across the RFC corpus the one
   unresolved dependency-risk question was RFC-0014's OQ2, and its header now
   records that BUG-285 answered the floor half of it.

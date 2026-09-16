@@ -1797,7 +1797,7 @@ working, and quietly describing the library as something it is not.
   [`CONTRIBUTING.md` § When to bump](../CONTRIBUTING.md#when-to-bump): find the
   oldest pyarrow that imports against a current numpy, raise all three, refresh
   the recipe pins and the baselines, and delete the three rows from
-  `infra/drift-locks/FLOOR-REGISTER.md`. **Check whether a `numpy` bound is the
+  `infra/drift-locks/KNOWN-FINDINGS.md`. **Check whether a `numpy` bound is the
   better answer** before raising: the failure is an interaction, and
   `lowest-direct` leaves numpy newest deliberately, so a floor raise fixes the
   combination the lane tests while a bound fixes the one a user hits.
@@ -1817,7 +1817,7 @@ working, and quietly describing the library as something it is not.
   floor inherits the interpreters it was written for, and azure-core's has not
   moved since. The fix is to declare the oldest `aiohttp` that imports on the
   oldest interpreter we support, then delete the row from
-  `infra/drift-locks/FLOOR-REGISTER.md`.
+  `infra/drift-locks/KNOWN-FINDINGS.md`.
   **Not** a finding about `[azure]`'s declared *set*: the extra installs alone
   and the declaration is complete — BUG-286 fixed that half.
 

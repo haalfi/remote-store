@@ -39,6 +39,8 @@ surprising_ripples:
 discovery_followups:
   - BUG-287
   - BUG-288
+  # BUG-281 was already filed; what the run discovered is that the register
+  # needed to cover its lane too, not just the floor lane.
 # Derivation: the /ship loop's rounds on this branch, counted as they run.
 # Filled in at close rather than predicted.
 review_rounds: 0
@@ -159,3 +161,13 @@ phases:
           Its argument rested on the smoke running only on drift. Removing that
           early return falsified the paragraph, and nothing pointed from the
           workflow to it.
+      - file: infra/drift-locks/KNOWN-FINDINGS.md
+        section: "(full)"
+        read_type: verify
+        extract: >-
+          The first dry run on the branch showed the register was scoped one
+          lane too narrowly: `[sql]`'s newest-lane smoke is red on a
+          pre-existing deprecation, which without a row is reported as news
+          every week — the Rule 6 failure the register was built to prevent,
+          arriving in the lane it did not cover. Re-keyed on extra and lane.
+        outcome: unclear

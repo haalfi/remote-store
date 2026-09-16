@@ -29,7 +29,7 @@ name: Drift Guard
 #    be a floor meeting a new transitive rather than a wrong floor. And it
 #    reaches only as far as that extra's target in `scripts/drift_smoke_map.py`.
 #  - A floor leg is ADVISORY: it exits 0 whatever it finds, and the verdict is
-#    on the issue. `infra/drift-locks/FLOOR-REGISTER.md` is what separates a
+#    on the issue. `infra/drift-locks/KNOWN-FINDINGS.md` is what separates a
 #    floor finding somebody owns from a new one; an unregistered finding holds
 #    the issue open, a registered one does not.
 #
@@ -55,9 +55,11 @@ name: Drift Guard
 # report is computed from, what the smoke pins against, and what is uploaded as
 # the candidate baseline. The smoke installs both the extra and the test plugins
 # under `-c <freeze>`, so a shared transitive dep cannot be moved off the
-# candidate pin: a green smoke proves the committed pins were the ones tested. A
-# plugin that genuinely cannot coexist with the candidate set fails the install
-# loudly (red smoke) rather than going green against a mixed set.
+# candidate pin: a green smoke proves the committed pins were the ones tested.
+# What `-c` does NOT do is force a plugin to fail loudly — pip is free to
+# backtrack the plugin side onto an older release that fits, and at the floor it
+# backtracks much further. The verdict's `phase` is what separates a plugin the
+# resolver dragged backwards from a finding about the dependency.
 
 on:
   schedule:
@@ -391,7 +393,7 @@ jobs:
       #  - anything unresolved in either lane -> create/update the rolling issue.
       #  - all clear and an open issue exists -> comment "cleared" and close.
       #  - all clear and no issue exists -> no-op.
-      # A floor finding already in infra/drift-locks/FLOOR-REGISTER.md renders
+      # A floor finding already in infra/drift-locks/KNOWN-FINDINGS.md renders
       # but does not hold the issue open; see that file for why.
       - name: Update rolling drift issue
         if: ${{ github.event.inputs.dry_run != 'true' }}

@@ -16,7 +16,7 @@ tests already has a home — the specifier in `pyproject.toml`. A committed floo
 lock would be a second copy of that, to keep in step by hand, which is what this
 directory exists to avoid for the *resolved* set rather than to duplicate for
 the declared one. The floor lane's findings live on the rolling issue, and the
-ones already owned live in [`FLOOR-REGISTER.md`](FLOOR-REGISTER.md).
+ones already owned live in [`KNOWN-FINDINGS.md`](KNOWN-FINDINGS.md).
 
 ## File format
 

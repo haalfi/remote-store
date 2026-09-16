@@ -88,11 +88,13 @@ documented in [`CONTRIBUTING.md`](../CONTRIBUTING.md).
   carries the logs behind it.
 - **What goes red:** a newest-lane smoke failure fails its leg, which is the
   signal the `/drift` skill has always read. A **floor** leg never does: its
-  findings are advisory decisions about a published range, and four floors are
-  known-bad at any time, so a permanently red lane would be a filterable X that
-  Rule 1 says is not a channel to rely on. `infra/drift-locks/FLOOR-REGISTER.md`
-  is what separates an owned floor finding from a new one — an unregistered one
-  holds the issue open, a registered one renders and does not.
+  findings are advisory decisions about a published range, several are known-bad
+  at any time, and a permanently red lane would be a filterable X that Rule 1
+  says is not a channel to rely on. `infra/drift-locks/KNOWN-FINDINGS.md` is
+  what separates an owned finding from a new one, in either lane — an
+  unregistered one holds the issue open, a registered one renders and does not.
+  A registered *newest*-lane finding still fails its leg; the register changes
+  what the issue presents as news, never what CI does.
 - **How to act:** run the **`/drift` skill**. Refreshes are gated per extra on
   that extra's smoke verdict; the skill's steps 3–5 are authoritative on the
   gating, including how a major bump, a red smoke and a red floor are each

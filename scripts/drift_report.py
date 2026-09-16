@@ -89,7 +89,7 @@ def _load_reports(dir_: Path) -> Reports:
     return Reports(diffs=diffs, floors=floors, smokes=smokes)
 
 
-def _render_isolation_findings(reports: Reports) -> list[str]:
+def _render_isolation_findings(reports: Reports, register: dict[tuple[str, str], tuple[str, str]]) -> list[str]:
     """Extras that failed on the newest lane before the smoke ever ran.
 
     An extra is a promise that installing it alone gives you a working
@@ -119,6 +119,10 @@ def _render_isolation_findings(reports: Reports) -> list[str]:
         verdict = failures[extra]
         lines.append(f"**`[{extra}]`** — {verdict.get('phase')}")
         lines.append("")
+        if (extra, "newest") in register:
+            owner, review = register[(extra, "newest")]
+            lines.append(f"_Known: owned by {owner}, review by {review}._")
+            lines.append("")
         reason = verdict.get("reason")
         if reason:
             lines.append("```")
@@ -128,30 +132,38 @@ def _render_isolation_findings(reports: Reports) -> list[str]:
     return lines
 
 
-FLOOR_REGISTER = Path(__file__).resolve().parent.parent / "infra" / "drift-locks" / "FLOOR-REGISTER.md"
+KNOWN_FINDINGS = Path(__file__).resolve().parent.parent / "infra" / "drift-locks" / "KNOWN-FINDINGS.md"
 
-_REGISTER_ROW_RE = re.compile(r"^\|\s*`\[(?P<extra>[\w-]+)\]`\s*\|(?P<owner>[^|]*)\|[^|]*\|(?P<review>[^|]*)\|")
+_REGISTER_ROW_RE = re.compile(
+    r"^\|\s*`\[(?P<extra>[\w-]+)\]`\s*\|(?P<lane>[^|]*)\|(?P<owner>[^|]*)\|[^|]*\|(?P<review>[^|]*)\|"
+)
 
 
-def load_floor_register(path: Path = FLOOR_REGISTER) -> dict[str, tuple[str, str]]:
-    """``{extra: (owner, review_by)}`` from the committed floor register.
+def load_known_findings(path: Path = KNOWN_FINDINGS) -> dict[tuple[str, str], tuple[str, str]]:
+    """``{(extra, lane): (owner, review_by)}`` from the committed register.
 
-    A floor finding nobody has decided about and one somebody owns look
-    identical on a rolling issue, so after a few weeks both read as furniture.
-    The register is what separates them, and it is committed rather than
-    inferred so that removing a row is a reviewable act.
+    A finding nobody has decided about and one somebody owns look identical on
+    a rolling issue, so after a few weeks both read as furniture. The register
+    is what separates them, and it is committed rather than inferred so that
+    removing a row is a reviewable act.
+
+    Keyed on lane as well as extra because the two lanes make different claims
+    about the same extra: a known-bad floor says nothing about whether the
+    newest resolution still works, and registering one must not silence the
+    other.
     """
     if not path.exists():
         return {}
-    register: dict[str, tuple[str, str]] = {}
+    register: dict[tuple[str, str], tuple[str, str]] = {}
     for line in path.read_text(encoding="utf-8").splitlines():
         match = _REGISTER_ROW_RE.match(line.strip())
         if match:
-            register[match.group("extra")] = (match.group("owner").strip(), match.group("review").strip())
+            key = (match.group("extra"), match.group("lane").strip())
+            register[key] = (match.group("owner").strip(), match.group("review").strip())
     return register
 
 
-def _render_floor_lane(reports: Reports, register: dict[str, tuple[str, str]]) -> list[str]:
+def _render_floor_lane(reports: Reports, register: dict[tuple[str, str], tuple[str, str]]) -> list[str]:
     """The floor lane's findings, split by the phase that failed.
 
     The split is the whole value of the section: the three causes take three
@@ -173,7 +185,7 @@ def _render_floor_lane(reports: Reports, register: dict[str, tuple[str, str]]) -
         "Each extra installed at the floor of every range it declares, on the "
         "oldest supported interpreter, then smoked. Findings below are "
         "advisory: the legs exit 0 and no release is blocked on them. An extra "
-        "marked _known_ is in `infra/drift-locks/FLOOR-REGISTER.md` with an "
+        "marked _known_ is in `infra/drift-locks/KNOWN-FINDINGS.md` with an "
         "owner; one that is not is new since the register was last edited."
     )
     lines.append("")
@@ -221,15 +233,15 @@ def _floor_rows(
     reports: Reports,
     extras: list[str],
     floor_smoke: dict[str, dict],
-    register: dict[str, tuple[str, str]],
+    register: dict[tuple[str, str], tuple[str, str]],
 ) -> list[str]:
     lines: list[str] = []
     for extra in extras:
         report = reports.floors.get(extra, {})
         lines.append(f"**`[{extra}]`**")
         lines.append("")
-        if extra in register:
-            owner, review = register[extra]
+        if (extra, "floor") in register:
+            owner, review = register[(extra, "floor")]
             lines.append(f"_Known: owned by {owner}, review by {review}._")
             lines.append("")
         pins = report.get("floor") or {}
@@ -284,7 +296,7 @@ def _smoke_failures(reports: Reports, lane: str) -> dict[str, dict]:
     return {extra: v for (extra, ln), v in sorted(reports.smokes.items()) if ln == lane and v.get("smoke") == "fail"}
 
 
-def has_signal(reports: Reports, register: dict[str, tuple[str, str]] | None = None) -> bool:
+def has_signal(reports: Reports, register: dict[tuple[str, str], tuple[str, str]] | None = None) -> bool:
     """Whether this run has anything a maintainer has not already decided about.
 
     A red smoke counts even when the resolution itself is clean: the isolated
@@ -293,22 +305,22 @@ def has_signal(reports: Reports, register: dict[str, tuple[str, str]] | None = N
     predicate a red smoke reached only a red run, which the durable-TODO
     principle in ``sdd/CI-OPERATIONS.md`` says is not enough to rely on.
 
-    A floor finding already in the register does **not** count. Its owner and
-    its rationale are committed, so holding the issue open for it would make
-    every week's issue look identical and train the reader to skip it.
+    A finding already in the register does **not** count, in whichever lane it
+    was registered for. Its owner and its rationale are committed, so holding
+    the issue open for it would make every week's issue look identical and
+    train the reader to skip it. **Version drift is never suppressed** — a row
+    registers a *verdict* somebody owns, not the movement of a package, and the
+    movement is what the newest lane exists to report.
     """
     known = set(register or {})
     if any(r.get("status") in ("drift", "needs_refresh", "error") for r in reports.diffs.values()):
         return True
-    if any(e not in known and r.get("status") == "error" for e, r in reports.floors.items()):
+    if any((e, "floor") not in known and r.get("status") == "error" for e, r in reports.floors.items()):
         return True
-    return any(
-        v.get("smoke") == "fail" and not (lane == "floor" and extra in known)
-        for (extra, lane), v in reports.smokes.items()
-    )
+    return any(v.get("smoke") == "fail" and (extra, lane) not in known for (extra, lane), v in reports.smokes.items())
 
 
-def _render_body(reports: Reports, run_url: str, register: dict[str, tuple[str, str]] | None = None) -> str:
+def _render_body(reports: Reports, run_url: str, register: dict[tuple[str, str], tuple[str, str]] | None = None) -> str:
     lines: list[str] = []
     lines.append("Weekly drift check across every `[<extra>]` in `pyproject.toml`.")
     lines.append("")
@@ -383,7 +395,7 @@ def _render_body(reports: Reports, run_url: str, register: dict[str, tuple[str, 
             lines.append(f"- `[{extra}]` — `{r.get('reason', 'unknown')}`")
         lines.append("")
 
-    lines.extend(_render_isolation_findings(reports))
+    lines.extend(_render_isolation_findings(reports, register or {}))
     lines.extend(_render_floor_lane(reports, register or {}))
     lines.extend(_render_smoke_verdicts(reports))
 
@@ -447,10 +459,10 @@ def main(argv: list[str] | None = None) -> int:
     parser.add_argument("--run-url", required=True)
     parser.add_argument("--title", required=True)
     parser.add_argument(
-        "--floor-register",
+        "--known-findings",
         type=Path,
-        default=FLOOR_REGISTER,
-        help="Path to the floor-lane register (default: infra/drift-locks/FLOOR-REGISTER.md).",
+        default=KNOWN_FINDINGS,
+        help="Path to the known-findings register (default: infra/drift-locks/KNOWN-FINDINGS.md).",
     )
     parser.add_argument(
         "--dry-run",
@@ -467,7 +479,7 @@ def main(argv: list[str] | None = None) -> int:
         print("No drift reports found; nothing to reconcile.", file=sys.stderr)
         return 0
 
-    register = load_floor_register(args.floor_register)
+    register = load_known_findings(args.known_findings)
     body = _render_body(reports, args.run_url, register)
     if args.dry_run:
         # Before any `gh` call, so a dry run cannot reach the issue even to
