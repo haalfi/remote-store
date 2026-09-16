@@ -236,6 +236,7 @@ jobs:
       # considered — and a stub-baseline extra is precisely one that has never
       # been installed alone, so it is the last one to skip.
       - name: Smoke the candidate resolution
+        id: smoke-newest
         if: always()
         uses: ./.github/actions/drift-smoke
         with:
@@ -248,7 +249,7 @@ jobs:
         uses: actions/upload-artifact@v7
         with:
           name: drift-smoke-${{ matrix.extra }}-newest
-          path: drift-smokes/${{ matrix.extra }}-newest-smoke.json
+          path: ${{ steps.smoke-newest.outputs.verdict-path }}
           if-no-files-found: warn
 
       - name: Upload drift report and fresh resolution
@@ -349,6 +350,7 @@ jobs:
           cat "drift-floors/${{ matrix.extra }}-floor-resolve.json"
 
       - name: Smoke the floor resolution
+        id: smoke-floor
         if: always()
         uses: ./.github/actions/drift-smoke
         with:
@@ -377,7 +379,7 @@ jobs:
         uses: actions/upload-artifact@v7
         with:
           name: drift-smoke-${{ matrix.extra }}-floor
-          path: drift-smokes/${{ matrix.extra }}-floor-smoke.json
+          path: ${{ steps.smoke-floor.outputs.verdict-path }}
           if-no-files-found: warn
 
   report:
@@ -420,17 +422,23 @@ jobs:
       # How a branch sees what a run would write without writing it. The body
       # regenerates wholesale on every real run, so there is no way to preview
       # one against the live issue without overwriting it.
-      - name: Render the issue body into the job summary (dry run)
+      #
+      # Written to the STEP LOG as well as the job summary. The summary renders
+      # nicely and is unreadable through the API, so a dry run whose whole
+      # purpose is to be inspected has to reach the log too — this is how the
+      # first three dispatches of this lane were triaged.
+      - name: Render the issue body (dry run)
         if: ${{ github.event.inputs.dry_run == 'true' }}
         env:
           RUN_URL: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
         run: |
+          python scripts/drift_report.py drift-reports \
+            --repo "${{ github.repository }}" \
+            --run-url "$RUN_URL" \
+            --title "[drift-guard] Weekly transitive dependency drift" \
+            --dry-run | tee /tmp/drift-body.md
           {
             echo "## Rolling-issue body this run would write"
             echo
-            python scripts/drift_report.py drift-reports \
-              --repo "${{ github.repository }}" \
-              --run-url "$RUN_URL" \
-              --title "[drift-guard] Weekly transitive dependency drift" \
-              --dry-run
+            cat /tmp/drift-body.md
           } >> "$GITHUB_STEP_SUMMARY"
