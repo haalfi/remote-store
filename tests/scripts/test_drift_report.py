@@ -389,6 +389,29 @@ class TestIncompleteLegs:
         reports = self._reports(drift_report, tmp_path, _floor("s3", "error"), _smoke("s3", "floor", "skipped"))
         assert drift_report._incomplete_legs(reports) == []
 
+    def test_an_extra_that_reported_nothing_is_flagged(self, drift_report, tmp_path):
+        # The case the two halves cannot see between them: a leg that died
+        # before uploading anything contributes no key on either side, so
+        # comparing the sides finds it complete. Measured on the committed
+        # script before the fix: the body said "Both lanes clean" and the run
+        # closed the issue with the unchecked extra absent entirely.
+        reports = self._reports(drift_report, tmp_path, _diff("s3"), _smoke("s3", "newest", "pass"))
+        flagged = drift_report._incomplete_legs(reports, ["s3", "azure"])
+        assert any("`[azure]` reported nothing at all" in entry for entry in flagged)
+        assert not any("`[s3]`" in entry for entry in flagged)
+
+    def test_a_narrowed_dispatch_does_not_report_the_rest_as_lost(self, drift_report, tmp_path):
+        # `extra: s3` must not emit thirteen false rows. The expected set is the
+        # dispatched slice, not the whole table.
+        reports = self._reports(drift_report, tmp_path, _diff("s3"), _smoke("s3", "newest", "pass"))
+        assert drift_report._incomplete_legs(reports, ["s3"]) == []
+
+    def test_no_expected_set_falls_back_to_comparing_halves(self, drift_report, tmp_path):
+        # Called without the slice (an operator running it by hand), the
+        # half-against-half check still applies and nothing is invented.
+        reports = self._reports(drift_report, tmp_path, _diff("s3"), _smoke("s3", "newest", "pass"))
+        assert drift_report._incomplete_legs(reports) == []
+
     def test_an_incomplete_leg_signals_and_renders(self, drift_report, tmp_path):
         reports = self._reports(drift_report, tmp_path, _diff("s3"))
         assert drift_report.has_signal(reports, {}) is True
@@ -421,6 +444,30 @@ class TestSingleLaneRuns:
             _smoke("s3", "floor", "pass"),
         )
         assert "Both lanes clean" in drift_report._render_body(reports, "https://run", {})
+
+    def test_a_both_lane_clear_run_does_close_the_issue(self, drift_report, tmp_path, monkeypatch):
+        # The positive half. Measured: with the refusal hard-coded to `if True`
+        # the whole file still passed, so the guard was pinned only in the
+        # direction that refuses. Auto-close is contract, not incidental — the
+        # body footer states it, `CI-OPERATIONS.md` restates it, and `/drift`
+        # step 1 reads "no open issue" as "drift has cleared".
+        for name, payload in (
+            ("d.json", _diff("s3")),
+            ("f.json", _floor("s3")),
+            ("n.json", _smoke("s3", "newest", "pass")),
+            ("fs.json", _smoke("s3", "floor", "pass")),
+        ):
+            _write(tmp_path, name, payload)
+        calls = []
+        monkeypatch.setattr(drift_report, "_gh", lambda *a, **k: calls.append(a[:2]))
+        monkeypatch.setattr(drift_report, "_find_open_issue", lambda *a, **k: 42)
+        assert (
+            drift_report.main(
+                [str(tmp_path), "--repo", "haalfi/remote-store", "--run-url", "https://run", "--title", "t"]
+            )
+            == 0
+        )
+        assert calls == [("issue", "comment"), ("issue", "close")]
 
     def test_a_single_lane_run_never_closes_the_issue(self, drift_report, tmp_path, monkeypatch):
         # A floor-only dispatch whose findings are all registered reaches the

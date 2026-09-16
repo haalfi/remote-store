@@ -616,13 +616,24 @@ def _smoke_reach(extra: str) -> str:
 
     Derived from the single mapping the workflow dispatches on, so the page
     cannot describe a target the run does not use.
+
+    **Selection is reported, the selector is not.** Three extras point at
+    ``tests/backends/conformance/`` and each runs a disjoint ``-k`` slice of
+    it, so naming the paths alone would publish the same string for all three
+    and claim a whole-suite run that cannot happen — an extra is installed
+    alone, and no one extra can pass every backend's conformance. The `-k`
+    expression itself stays out: it carries harness facts (a parked proof of
+    concept excluded by name) that would read as product statements on a
+    published page. So the page says *that* a selection applies, never which.
     """
     argv = drift_smoke_map.smoke_for(extra)
     if argv and argv[0] == "--import-only":
         module = argv[1] if len(argv) > 1 else "remote_store"
         return f"import of `{module}` only"
-    targets = [a for a in argv if "/" in a or a.endswith(".py")]
-    return ", ".join(f"`{t}`" for t in targets)
+    targets = ", ".join(f"`{a}`" for a in argv if "/" in a or a.endswith(".py"))
+    if "-k" in argv:
+        return f"the `[{extra}]` selection from {targets}"
+    return targets
 
 
 # ---------------------------------------------------------------------------

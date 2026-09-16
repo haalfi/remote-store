@@ -15,8 +15,14 @@ description: Install one extra under a constraints file, probe its own imports, 
 # `phase` is the field triage reads. The four causes take four different
 # actions and are indistinguishable from a red X alone:
 #   install-extra   — the pinned set will not install.
-#   import-extra    — it installed and the extra's own declared packages do not
-#                     import. On the floor lane that is a wrong floor; on the
+#   import-extra    — it installed and a real module from one of the extra's own
+#                     declared distributions does not import. One module per
+#                     DISTRIBUTION, chosen to be a module with code rather than a
+#                     shared namespace root: `import azure` and
+#                     `import opentelemetry` both succeed while executing nothing,
+#                     so probing them would report `import ok` for a floor whose
+#                     azure-storage-file-datalake could not load at all.
+#                     On the floor lane a failure here is a wrong floor; on the
 #                     newest lane it is an incomplete declaration, which is the
 #                     only thing that catches an extra whose missing package is
 #                     supplied by some other extra in a shared environment.
@@ -48,22 +54,10 @@ inputs:
     required: false
     default: 'true'
 
-outputs:
-  verdict-path:
-    description: >-
-      Where the verdict JSON was written. The caller uploads THIS rather than
-      recomputing the path: the filename has to be unique across extra, lane
-      and kind (an artefact is rooted at the least common ancestor of its
-      files, so a single-file upload discards the directory), and two places
-      spelling that convention is how a run once uploaded no verdicts at all
-      while every leg reported success.
-    value: ${{ steps.smoke.outputs.verdict-path }}
-
 runs:
   using: composite
   steps:
     - name: Smoke ${{ inputs.extra }} (${{ inputs.lane }})
-      id: smoke
       shell: bash
       env:
         EXTRA: ${{ inputs.extra }}
@@ -72,8 +66,15 @@ runs:
         FAIL_ON_SMOKE: ${{ inputs.fail-on-smoke }}
       run: |
         mkdir -p drift-smokes
+        # The basename carries extra, lane and kind. An artefact is rooted
+        # at the least common ancestor of its files, so the caller uploads
+        # this DIRECTORY and the basename is all that keeps two uploads
+        # apart under `merge-multiple` — measured twice on this branch.
+        # Uploading the directory rather than a path this step reports also
+        # survives a failing smoke: a composite action's outputs are
+        # evaluated after it finishes, and an empty required input would
+        # hard-fail the upload exactly when there is a verdict worth having.
         VERDICT="drift-smokes/${EXTRA}-${LANE}-smoke.json"
-        echo "verdict-path=${VERDICT}" >> "$GITHUB_OUTPUT"
 
         record() {
           SMOKE="$1" PHASE="$2" REASON="${3:-}" VERDICT="$VERDICT" EXTRA="$EXTRA" LANE="$LANE" python - <<'PY'
@@ -125,74 +126,94 @@ runs:
           finish "$rc" install-extra
         fi
 
-        # Import every top-level module the extra's own declared packages ship,
-        # before anything else is installed. Module names are read from the
-        # installed distributions' metadata rather than mapped by hand, so a
-        # renamed import surface is picked up rather than curated.
+        # Import one REAL module per declared distribution, before anything
+        # else is installed. Names come from each distribution's own file list,
+        # so a renamed import surface is picked up rather than curated — and so
+        # the answer does not depend on the interpreter, which
+        # `packages_distributions()` does (3.10 reads `top_level.txt` only, and
+        # a hatchling-built wheel ships none).
         #
-        # A declared module that is not FINDABLE is skipped rather than failed,
-        # and the distinction is the whole reliability of this probe. Metadata
-        # names modules that need not be present: PyYAML declares `_yaml`, the
-        # optional libyaml accelerator, which an sdist build without libyaml
-        # simply does not produce; and azure-identity declares a top-level
-        # `images` that ships in no wheel at all. Both were measured here, and
-        # both would have failed a working install. What this lane is looking
-        # for is the opposite case — a module that IS present and raises when
-        # imported, which is precisely "installs and then breaks".
+        # "Real" is the load-bearing word. `import azure` and
+        # `import opentelemetry` succeed while executing no code from any
+        # distribution — they are namespace roots shared by every `azure-*` /
+        # `opentelemetry-*` package installed — so probing them would report
+        # `import ok` for a floor whose azure-storage-file-datalake could not
+        # load at all. A namespace has `spec.origin is None`; the probe walks
+        # past it to the shallowest public module that has one.
         # Redirected rather than piped into `tee`, and that is load-bearing: a
         # here-document after a pipe binds to the LAST command, so
         # `python - | tee "$LOG" <<'PY'` feeds the script text to `tee`, leaves
         # `python` reading an empty stdin, and returns 0 from a probe that never
         # ran. Measured. A verification step that cannot fail is worse than none.
         python - "$EXTRA" > "$LOG" 2>&1 <<'PY'
-        import importlib, importlib.util, sys
+        import importlib
+        import importlib.util
+        import sys
         from importlib.metadata import distribution
 
         sys.path.insert(0, "scripts")
         from drift_check import _direct_requirements_for
 
 
-        def top_levels(dist):
-            """Top-level module names a distribution ships.
+        def dotted_modules(dist):
+            """Every importable dotted module name a distribution's own files define.
 
-            Deliberately NOT `packages_distributions()`: on Python 3.10 that
-            reads `top_level.txt` only, and a wheel built by hatchling ships
-            none — so httpx, pydantic-settings and opentelemetry-api all
-            resolved to nothing and the probe reported a working install as a
-            failure. Measured on the runner at 3.10.21; 3.11 infers and does
-            not. The inference below is what 3.12 does, done here so the
-            answer does not depend on which interpreter the lane runs on —
-            which, for a lane whose whole subject is interpreter-specific
-            breakage, is not a dependency to leave in.
+            Read from the distribution's file list rather than from
+            `packages_distributions()` or `top_level.txt`. Two reasons, both measured:
+            on Python 3.10 `packages_distributions()` reads `top_level.txt` only, and a
+            hatchling-built wheel ships none; and a top-level name is the wrong unit
+            anyway for a PEP-420 namespace, where it belongs to no distribution in
+            particular.
             """
-            declared = dist.read_text("top_level.txt")
-            if declared:
-                return {line.strip() for line in declared.splitlines() if line.strip()}
-            return {
-                f.parts[0] if len(f.parts) > 1 else f.with_suffix("").name
-                for f in (dist.files or [])
-                if f.suffix == ".py"
-            }
+            names = set()
+            for path in dist.files or []:
+                if path.suffix != ".py":
+                    continue
+                parts = list(path.parts)
+                if parts[-1] == "__init__.py":
+                    parts = parts[:-1]
+                else:
+                    parts[-1] = parts[-1][: -len(".py")]
+                if parts and all(part.isidentifier() for part in parts):
+                    names.add(".".join(parts))
+            return names
 
 
-        modules = set()
-        for name in _direct_requirements_for(sys.argv[1]):
-            modules |= top_levels(distribution(name))
+        def first_real_module(names):
+            """The shallowest name that is a real module, not an empty namespace.
+
+            `import azure` and `import opentelemetry` both succeed while executing no
+            code from any distribution: they are namespace roots shared by every
+            `azure-*` / `opentelemetry-*` package installed. Probing one proves
+            nothing, and would have reported `import ok` for a floor whose
+            `azure-storage-file-datalake` could not load at all. A real module has a
+            spec with an origin; a namespace has `origin is None`.
+            """
+            # Public names first, then shallowest: a distribution's private
+            # accelerator (PyYAML's `_yaml`) imports fine and says less about the
+            # surface a user reaches than its public module does.
+            ordered = sorted(names, key=lambda n: (any(p.startswith("_") for p in n.split(".")), n.count("."), n))
+            for name in ordered:
+                try:
+                    spec = importlib.util.find_spec(name)
+                except (ImportError, ValueError, ModuleNotFoundError):
+                    continue
+                if spec is not None and spec.origin is not None:
+                    return name
+            return None
+
 
         probed = 0
-        for module in sorted(modules):
-            try:
-                found = importlib.util.find_spec(module) is not None
-            except (ImportError, ValueError):
-                found = False
-            if not found:
-                print(f"skip (declared, not installed): {module}")
+        for requirement in sorted(_direct_requirements_for(sys.argv[1])):
+            module = first_real_module(dotted_modules(distribution(requirement)))
+            if module is None:
+                print(f"skip (no importable module ships with {requirement})")
                 continue
             importlib.import_module(module)
             probed += 1
-            print(f"import ok: {module}")
+            print(f"import ok: {requirement} -> {module}")
         if not probed:
-            sys.exit(f"no installed top-level module found for {sorted(modules)}")
+            sys.exit(f"no importable module found for any of {sorted(_direct_requirements_for(sys.argv[1]))}")
         PY
         rc=$?
         cat "$LOG"

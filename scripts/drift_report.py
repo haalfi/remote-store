@@ -312,16 +312,27 @@ def _smoke_failures(reports: Reports, lane: str) -> dict[str, dict]:
     return {extra: v for (extra, ln), v in sorted(reports.smokes.items()) if ln == lane and v.get("smoke") == "fail"}
 
 
-def _incomplete_legs(reports: Reports) -> list[str]:
-    """Legs that produced a resolution but no smoke verdict, or the reverse.
+def _incomplete_legs(reports: Reports, expected: list[str] | None = None) -> list[str]:
+    """Legs that did not report everything they owe.
 
-    Every leg writes both, `skipped` included, so a missing half means a leg
-    died before uploading or two uploads landed on one filename — the second of
-    which happened twice while this lane was being built, and whose signature is
-    a row that is quietly absent rather than wrong. A missing row and a clean
-    row look identical on the issue, so this has to be said out loud.
+    Every leg writes a resolution and a smoke verdict, `skipped` included, so a
+    missing half means a leg died mid-way or two uploads landed on one filename
+    — the second of which happened twice while this lane was being built, and
+    whose signature is a row that is quietly absent rather than wrong.
+
+    ``expected`` closes the case the halves cannot see between them: a leg that
+    produced **nothing** contributes no key on either side, so comparing the
+    two sides finds it complete. The claim space has to come from the extras
+    the run was asked to cover — [`DRIFT-RULES.md` Rule 3](../sdd/DRIFT-RULES.md)
+    wants it derived from the canonical artefact, and the dispatched slice is
+    that artefact for a run that was deliberately narrowed. A missing row and a
+    clean row look identical on the issue, which is why this is said out loud
+    rather than inferred.
     """
     incomplete = []
+    covered = set(reports.diffs) | set(reports.floors) | {extra for extra, _ in reports.smokes}
+    for extra in sorted(set(expected or []) - covered):
+        incomplete.append(f"`[{extra}]` reported nothing at all — no resolution and no verdict, in either lane")
     for extra in sorted(reports.diffs):
         if (extra, "newest") not in reports.smokes:
             incomplete.append(f"`[{extra}]` newest: a diff report with no smoke verdict")
@@ -333,6 +344,21 @@ def _incomplete_legs(reports: Reports) -> list[str]:
         if extra not in source:
             incomplete.append(f"`[{extra}]` {lane}: a smoke verdict with no report")
     return incomplete
+
+
+def _parse_expected(raw: str) -> list[str]:
+    """The extras a run was asked to cover, as JSON or a comma-separated list.
+
+    The workflow already computes and validates this set in `setup`; it is
+    passed through verbatim rather than recomputed, so a dispatch narrowed to
+    one extra does not report the other thirteen as lost.
+    """
+    text = (raw or "").strip()
+    if not text:
+        return []
+    if text.startswith("["):
+        return [str(item) for item in json.loads(text)]
+    return [part.strip() for part in text.split(",") if part.strip()]
 
 
 def _lanes_present(reports: Reports) -> set[str]:
@@ -350,7 +376,11 @@ def _lanes_present(reports: Reports) -> set[str]:
     return lanes
 
 
-def has_signal(reports: Reports, register: dict[tuple[str, str], tuple[str, str]] | None = None) -> bool:
+def has_signal(
+    reports: Reports,
+    register: dict[tuple[str, str], tuple[str, str]] | None = None,
+    expected: list[str] | None = None,
+) -> bool:
     """Whether this run has anything a maintainer has not already decided about.
 
     A red smoke counts even when the resolution itself is clean: the isolated
@@ -369,14 +399,19 @@ def has_signal(reports: Reports, register: dict[tuple[str, str], tuple[str, str]
     known = set(register or {})
     if any(r.get("status") in ("drift", "needs_refresh", "error") for r in reports.diffs.values()):
         return True
-    if reports.unreadable or _incomplete_legs(reports):
+    if reports.unreadable or _incomplete_legs(reports, expected):
         return True
     if any((e, "floor") not in known and r.get("status") == "error" for e, r in reports.floors.items()):
         return True
     return any(v.get("smoke") == "fail" and (extra, lane) not in known for (extra, lane), v in reports.smokes.items())
 
 
-def _render_body(reports: Reports, run_url: str, register: dict[tuple[str, str], tuple[str, str]] | None = None) -> str:
+def _render_body(
+    reports: Reports,
+    run_url: str,
+    register: dict[tuple[str, str], tuple[str, str]] | None = None,
+    expected: list[str] | None = None,
+) -> str:
     lines: list[str] = []
     lines.append("Weekly drift check across every `[<extra>]` in `pyproject.toml`.")
     lines.append("")
@@ -436,7 +471,7 @@ def _render_body(reports: Reports, run_url: str, register: dict[tuple[str, str],
                     lines.append(f"| `{d['package']}` | `{d['baseline'] or '—'}` | `{d['resolved'] or '—'}` |")
                 lines.append("")
 
-    incomplete = _incomplete_legs(reports)
+    incomplete = _incomplete_legs(reports, expected)
     if incomplete:
         lines.append("## Incomplete legs")
         lines.append("")
@@ -552,6 +587,15 @@ def main(argv: list[str] | None = None) -> int:
     parser.add_argument("--run-url", required=True)
     parser.add_argument("--title", required=True)
     parser.add_argument(
+        "--expect-extras",
+        default="",
+        help=(
+            "JSON array or comma-separated list of the extras this run was asked "
+            "to cover. An extra named here that reported nothing at all is a lost "
+            "leg, which is otherwise indistinguishable from a clean one."
+        ),
+    )
+    parser.add_argument(
         "--known-findings",
         type=Path,
         default=KNOWN_FINDINGS,
@@ -573,14 +617,15 @@ def main(argv: list[str] | None = None) -> int:
         return 0
 
     register = load_known_findings(args.known_findings)
-    body = _render_body(reports, args.run_url, register)
+    expected = _parse_expected(args.expect_extras)
+    body = _render_body(reports, args.run_url, register, expected)
     if args.dry_run:
         # Before any `gh` call, so a dry run cannot reach the issue even to
         # read it: a dispatch from a branch must be observable without leaving
         # a trace on the rolling issue the scheduled runs own.
         print(body)
         print(
-            f"(dry run — would {'create/update' if has_signal(reports, register) else 'close'} "
+            f"(dry run — would {'create/update' if has_signal(reports, register, expected) else 'close'} "
             f"the issue titled {args.title!r})",
             file=sys.stderr,
         )
@@ -588,7 +633,7 @@ def main(argv: list[str] | None = None) -> int:
 
     existing = _find_open_issue(args.repo, args.title)
 
-    if has_signal(reports, register):
+    if has_signal(reports, register, expected):
         if existing is None:
             print(f"Creating new issue: {args.title}", file=sys.stderr)
             _gh(

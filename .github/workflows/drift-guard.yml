@@ -241,7 +241,6 @@ jobs:
       # considered — and a stub-baseline extra is precisely one that has never
       # been installed alone, so it is the last one to skip.
       - name: Smoke the candidate resolution
-        id: smoke-newest
         if: always()
         uses: ./.github/actions/drift-smoke
         with:
@@ -254,7 +253,7 @@ jobs:
         uses: actions/upload-artifact@v7
         with:
           name: drift-smoke-${{ matrix.extra }}-newest
-          path: ${{ steps.smoke-newest.outputs.verdict-path }}
+          path: drift-smokes/
           if-no-files-found: warn
 
       - name: Upload drift report and fresh resolution
@@ -262,7 +261,7 @@ jobs:
         uses: actions/upload-artifact@v7
         with:
           name: drift-${{ matrix.extra }}
-          path: drift-reports/${{ matrix.extra }}-newest-diff.json
+          path: drift-reports/
           if-no-files-found: warn
 
       # Upload the freeze the "Resolve and diff" step already emitted (the same
@@ -355,7 +354,6 @@ jobs:
           cat "drift-floors/${{ matrix.extra }}-floor-resolve.json"
 
       - name: Smoke the floor resolution
-        id: smoke-floor
         if: always()
         uses: ./.github/actions/drift-smoke
         with:
@@ -376,7 +374,7 @@ jobs:
         uses: actions/upload-artifact@v7
         with:
           name: drift-floor-${{ matrix.extra }}
-          path: drift-floors/${{ matrix.extra }}-floor-resolve.json
+          path: drift-floors/
           if-no-files-found: warn
 
       - name: Upload smoke verdict
@@ -384,11 +382,11 @@ jobs:
         uses: actions/upload-artifact@v7
         with:
           name: drift-smoke-${{ matrix.extra }}-floor
-          path: ${{ steps.smoke-floor.outputs.verdict-path }}
+          path: drift-smokes/
           if-no-files-found: warn
 
   report:
-    needs: [check, floor]
+    needs: [setup, check, floor]
     if: always()
     runs-on: ubuntu-latest
     steps:
@@ -397,9 +395,13 @@ jobs:
         with:
           python-version-file: .python-version
       # `pattern: drift-*` reaches the diff reports, the floor reports and both
-      # lanes' smoke verdicts, and keeps `candidate-baseline-*` out. Each kind
-      # lands in its own directory inside the artifact, so `merge-multiple` has
-      # no two files competing for one path.
+      # lanes' smoke verdicts, and keeps `candidate-baseline-*` out. What keeps
+      # `merge-multiple` from collapsing two of them is the BASENAME —
+      # `-newest-diff`, `-floor-resolve`, `-<lane>-smoke` — not the directory
+      # each was written to: an artefact is rooted at the least common ancestor
+      # of its files, so a single-file upload arrives with its directory
+      # discarded. Measured twice on this branch, once across lanes and once
+      # between a floor resolve and its own verdict.
       - uses: actions/download-artifact@v8
         with:
           path: drift-reports
@@ -422,6 +424,7 @@ jobs:
           python scripts/drift_report.py drift-reports \
             --repo "$REPO" \
             --run-url "$RUN_URL" \
+            --expect-extras '${{ needs.setup.outputs.extras }}' \
             --title "[drift-guard] Weekly transitive dependency drift"
 
       # How a branch sees what a run would write without writing it. The body
@@ -440,6 +443,7 @@ jobs:
           python scripts/drift_report.py drift-reports \
             --repo "${{ github.repository }}" \
             --run-url "$RUN_URL" \
+            --expect-extras '${{ needs.setup.outputs.extras }}' \
             --title "[drift-guard] Weekly transitive dependency drift" \
             --dry-run | tee /tmp/drift-body.md
           {

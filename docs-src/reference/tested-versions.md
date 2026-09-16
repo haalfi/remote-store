@@ -19,7 +19,7 @@ _Smoke:_ `tests/ext/test_arrow.py`, `tests/ext/test_parquet.py`
 ## `[azure]`
 
 _Captured 2026-09-13 on Python 3.13._
-_Smoke:_ `tests/backends/conformance/`
+_Smoke:_ the `[azure]` selection from `tests/backends/conformance/`
 
 | Package | Declared | Tested up to |
 |---|---|---|
@@ -88,7 +88,7 @@ _Smoke:_ `tests/backends/http/`
 ## `[s3]`
 
 _Captured 2026-09-07 on Python 3.13._
-_Smoke:_ `tests/backends/conformance/`
+_Smoke:_ the `[s3]` selection from `tests/backends/conformance/`
 
 | Package | Declared | Tested up to |
 |---|---|---|
@@ -97,7 +97,7 @@ _Smoke:_ `tests/backends/conformance/`
 ## `[s3-pyarrow]`
 
 _Captured 2026-09-07 on Python 3.13._
-_Smoke:_ `tests/backends/conformance/`
+_Smoke:_ the `[s3-pyarrow]` selection from `tests/backends/conformance/`
 
 | Package | Declared | Tested up to |
 |---|---|---|
@@ -107,7 +107,7 @@ _Smoke:_ `tests/backends/conformance/`
 ## `[sftp]`
 
 _Captured 2026-09-07 on Python 3.13._
-_Smoke:_ `tests/backends/conformance/`, `tests/e2e/test_sftp_legacy_recovery.py`, `tests/e2e/test_sftp_workflow.py`
+_Smoke:_ the `[sftp]` selection from `tests/backends/conformance/`, `tests/e2e/test_sftp_legacy_recovery.py`, `tests/e2e/test_sftp_workflow.py`
 
 | Package | Declared | Tested up to |
 |---|---|---|
@@ -117,7 +117,7 @@ _Smoke:_ `tests/backends/conformance/`, `tests/e2e/test_sftp_legacy_recovery.py`
 ## `[sql]`
 
 _Captured 2026-07-13 on Python 3.13._
-_Smoke:_ `tests/backends/sqlblob/`, `tests/backends/conformance/`
+_Smoke:_ the `[sql]` selection from `tests/backends/sqlblob/`, `tests/backends/conformance/`
 
 | Package | Declared | Tested up to |
 |---|---|---|
@@ -126,7 +126,7 @@ _Smoke:_ `tests/backends/sqlblob/`, `tests/backends/conformance/`
 ## `[sql-query]`
 
 _Captured 2026-09-07 on Python 3.13._
-_Smoke:_ `tests/backends/sqlquery/`, `tests/backends/conformance/`
+_Smoke:_ the `[sql-query]` selection from `tests/backends/sqlquery/`, `tests/backends/conformance/`
 
 | Package | Declared | Tested up to |
 |---|---|---|
