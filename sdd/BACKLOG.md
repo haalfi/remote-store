@@ -3129,20 +3129,30 @@ the commit that writes it lands, so cite the generator instead.
   long-lived PR should expect under the current scheme; the item moved to
   `BK-378`.
 
-- [ ] **BK-379 — Pilot RFC-0015's D2, D3 and its LINE-anchor rule on three deliveries, before D1, D4 and D5 are built**
+- [ ] **BK-379 — Pilot RFC-0015's D2, D3 and its LINE-anchor rule on three deliveries, before the rest of it is built**
   spec: — · effort: M · audience: contributor.process
   [RFC-0015](rfcs/rfc-0015-ship-two-surfaces.md) is Draft with six decisions and
   an acceptance criterion stated before the run. **Three of the six need no
   script built**: D2 (fix shape, instrument-bound claims, the reader-harm form)
   is prose in `/ship`'s triage table and `/fix-pr`'s Rules; D3 (a review
   worktree pinned at the certified commit) touches the spawn step and the tree
-  check; D5's LINE-anchor posting rule touches `/rvw-pr` Step 4. D1 and D4 need
+  check; D5's LINE-anchor posting rule touches `/rvw-pr` Step 4. **D5 is piloted
+  in that half only** — its retraction stop-rule clause is not wired into the
+  loop, and correction 1 reports the trigger as a dry run over the three
+  deliveries instead. D1 and D4 need
   three scripts built, aliased, guarded and given `Drift-gate::` blocks, and the
   measurement does not wait on them — `rfc-0015-findings.py` takes any PR number
   today, and `ship_report.py`'s output format is better designed after three
-  uses than before none. The RFC carries the evidence for all six and is not
-  restated here. **Scope:** amend `/ship`, `/fix-pr`, `/rvw-pr` and
-  `/orchestrate`; run three deliveries; re-derive Tables 2 and 4 over them.
+  uses than before none. **D6 splits across both halves**: its retirement of the
+  repeat-site check rides with D2, which moves that check's trigger from two
+  refutations to zero, and `/ship` still carries the check, so three deliveries
+  under D2 either retire it or do not and the pilot must say which. D6's other
+  half — the whole-file brief excluding the trace's `review:` key, and a
+  measuring member re-running `ship-report` — has nothing to read until D1 and
+  D4 exist, and defers with them. The RFC carries the evidence for all six and
+  is not restated here. **Scope:** amend RFC-0015 with the four corrections
+  below, then `/ship`, `/fix-pr`, `/rvw-pr` and `/orchestrate`; run three
+  deliveries; re-derive Tables 2 and 4 over them.
   **Four corrections the RFC's criterion needs first**, because it was written
   for six decisions and this pilots three:
   1. **Its clause 2 has no referent here.** "The derived trace block draws a
@@ -3152,9 +3162,11 @@ the commit that writes it lands, so cite the generator instead.
      77 of 99), and the D5 retraction trigger as a dry run, which
      `rfc-0015-findings.py` already computes under three readings. Clause 2 is
      deferred with D4, not dropped.
-  2. **A miss points at D1, not at Draft.** D1 targets the largest measured
-     bucket, 133 of 541 findings on `sdd/traces/` and the two backlog files
-     (Table 3), and is not in this pilot. So a share at or above 50% does not
+  2. **A miss points at D1, not at Draft.** D1 targets the record surface: 133
+     of 541 findings on `sdd/traces/` and the two backlog files, a quarter of
+     everything the loop found (Table 3, which measures three quantities over
+     the 541 and does not rank the record bucket first — 190 sit on `src/` or
+     `tests/`). It is not in this pilot. So a share at or above 50% does not
      falsify the RFC: it is equally consistent with D2 and D3 being too weak
      alone and with the record surface being what carries the late rounds, and
      the pilot cannot tell the two apart. Build D1 and D4 and re-measure; only a
@@ -3180,22 +3192,36 @@ the commit that writes it lands, so cite the generator instead.
      finding counts independently of fix shape. Take the worktree isolation now,
      lift the cap once the pilot has reported.
 
-  **`/orchestrate` is on the edit list and the RFC's Impact section omits it.**
-  `.claude/skills/orchestrate/SKILL.md` justifies its fixed `tmp/base` path
-  partly by "`/ship`'s one measuring member per panel", and
-  `.claude/skills/rvw-pr/SKILL.md` records that `/orchestrate` carries the same
-  three worktree commands; D3 moves that path under `tmp/review/<sha>/`, and
-  correction 4 only postpones the cap's removal. Whether `/orchestrate` also
-  takes D2 is the RFC's Open Question 1 — proposed yes there, to be settled
-  here.
+  **`/orchestrate` is on the edit list, and both of the RFC's edit lists omit
+  it** — § Status and § Impact alike, so fixing one leaves the other asserting
+  the opposite. The reason is not `/orchestrate`'s own `tmp/base` path: that
+  path is protected by its own exactly-one-measuring-reviewer rule, and D3 does
+  not reach it, because `/orchestrate`'s reviewers run against uncommitted work
+  and there is no certified commit to pin a worktree at. The reason is that
+  `.claude/skills/orchestrate/SKILL.md` asserts, as a fact about a *different*
+  skill, that `/rvw-pr`'s fixed path is safe because of "`/ship`'s one measuring
+  member per panel" — while saying in the same breath that "Neither rule
+  protects the other skill" — and pairs that with "Edit both when the commands
+  change" against `/rvw-pr`'s matching block. D3 lifts that cap, so the
+  assertion goes false; correction 4 only postpones when. Whether `/orchestrate`
+  also takes D2 is the RFC's Open Question 1, proposed yes there and to be
+  settled here.
   **D2's reversal condition cannot fire in this pilot**: it needs a `BUG-` filed
   after merge against a delivery run under the rule, which three deliveries do
   not supply. Not a reason to widen the pilot; a reason not to read a pass as
   having tested it.
-  **Exit criteria:** the four skills amended; three deliveries shipped under the
-  rules; Tables 2 and 4 re-derived over their PR numbers with
-  `rfc-0015-findings.py`; the result reported against clauses 1 and 3 with the
-  measured figures; and the disposition of D1, D4 and D5 recorded.
+  **Exit criteria:** RFC-0015's § Status and § Impact edit lists and its
+  acceptance criterion amended with the four corrections above, **before the
+  deliveries run** — until that lands the RFC still asserts the criterion they
+  overrule, and a reader of the RFC alone gets the uncorrected one. That
+  amendment also adds **ADR-0035** to § Status's list of ADRs the RFC would
+  amend: "Every panel carries one measuring member" is one of that ADR's
+  Decision bullets, with its own reverse condition, and D3 lifts it, but
+  § Status names only ADR-0033, ADR-0034 and ADR-0037. Then the
+  four skills amended; three deliveries shipped under the rules; Tables 2 and 4
+  re-derived over their PR numbers with `rfc-0015-findings.py`; the result
+  reported against clauses 1 and 3 with the measured figures; and the
+  disposition of D1, D4, D5 and D6's deferred half recorded.
 
 - [ ] **BK-378 — The `/ship` loop reviews its own record past round 2, and nothing separates the two**
   spec: — · effort: L · audience: contributor.process
@@ -3217,8 +3243,10 @@ the commit that writes it lands, so cite the generator instead.
   the caught-versus-escaped split that item asks for.
   **Exit criteria:** RFC-0015 accepted or rejected with its open questions
   answered; if accepted, an ADR amending ADR-0033/0034/0037, the skill
-  rewrites and the two scripts it names shipped, and Tables 2 and 4 re-derived
+  rewrites and the **three** scripts § Impact names shipped (`ship_report.py`,
+  `check_no_retrospective.py`, `check_backlog_ids_vs_base.py`, whose guards
+  § Testing calls "guards for the three scripts"), and Tables 2 and 4 re-derived
   over the **three** deliveries the RFC's acceptance criterion names, which also
   states that "One delivery is one draw and is not the criterion". **BK-379 runs
-  that pilot** for D2, D3 and the LINE-anchor rule, and reports which of D1, D4
-  and D5 this item still owes.
+  that pilot** for D2, D3 and the LINE-anchor rule, and reports which of D1, D4,
+  D5 and D6's deferred half this item still owes.
