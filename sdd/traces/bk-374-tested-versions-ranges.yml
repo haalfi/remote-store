@@ -28,6 +28,7 @@ surprising_ripples:
   # generator gate reaches.
   - FEATURES.md  # "Tested upper-bound versions" link text, outside the generated block
   - docs-src/explanation/dependency-policy.md  # Rule 7's reason for sending readers to pyproject.toml
+  - pyproject.toml  # its extras-table comment called the marker-gated `toml` a dev aggregate — the conflation this item exists to undo, in the file a contributor reads before declaring a new extra
 discovery_followups: []
 # Derivation, re-run before this line was rewritten: `gh api
 # repos/haalfi/remote-store/pulls/1018/reviews --jq 'length'` counts the review

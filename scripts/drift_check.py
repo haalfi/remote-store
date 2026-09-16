@@ -36,9 +36,10 @@ Subcommands:
 
 The list of testable extras is derived from ``pyproject.toml``'s
 ``[project.optional-dependencies]`` table, minus the dev/build aggregates
-(``gen_features._EXCLUDE_EXTRAS``) and any extra whose requirements carry an
-environment marker, whose resolution depends on the running Python in a way
-that breaks the lock model.
+(``_AGGREGATE_EXTRAS``, held equal to ``gen_features._EXCLUDE_EXTRAS`` by a
+test rather than imported from it — see the comment on that constant) and any
+extra whose requirements carry an environment marker, whose resolution depends
+on the running Python in a way that breaks the lock model.
 
 **There is no committed lock for the floor lane, deliberately.** The ``diff``
 lane needs one because "what did this resolve to last time" has no other home;
