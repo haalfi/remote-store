@@ -1228,16 +1228,22 @@ resting on it rather than a pending one.
 copies an example, without opening an issue.
 
 **Closes when:** every published page and shipped example a user decides from is
-**true** (BK-339, BK-325, BK-364, ID-125), **reachable** (BK-327), and **walked
-end-to-end by a maintainer** (BK-332, and ID-199's authoring contract). Each
-clause names the items that move it, so closure is checkable rather than
-asserted.
+**true** (BK-339, BK-325, BK-364, ID-125, BK-374), **reachable** (BK-327),
+**legible — a rule the reader can act on without first computing it**
+(BK-373), and
+**walked end-to-end by a maintainer** (BK-332, and ID-199's authoring
+contract). Each clause names the items that move it, so closure is checkable
+rather than asserted.
 
 This is the group that converts directly into support load not arriving. The
 rehearsal sits with the guides because it is the only mechanism that has ever
 found their defects, and BK-327 sits here rather than with the gates because a
 page nobody can navigate to is a page nobody reads — the gate is the mechanism,
-not the payoff.
+not the payoff. The legibility clause is the same argument one step further in:
+a page reachable and true, whose rule the reader has to do arithmetic to apply,
+is one they apply wrongly or not at all. It is deliberately narrow — it is not
+a licence to file prose-polishing items, and BK-373 earns it by naming a rule
+whose consequence is a date the reader cannot see.
 
 - [ ] **BK-364 — `transfer-operations.md` documents partial files for `download` only, and the other direction is the one that can destroy data**
   spec: — · effort: S · audience: user.site
@@ -1367,6 +1373,143 @@ not the payoff.
   with `RemoteStoreIOManager`. Demonstrates the config-driven pattern.
   Examples get copied verbatim, so a stale one teaches a superseded pattern
   from a first-contact surface.
+
+- [ ] **BK-373 — The Python support window is a rule a reader has to compute, and a timeline would just show it**
+  spec: — · effort: M · audience: user.site
+  The rule this item draws is
+  [Rule 8](../docs-src/explanation/dependency-policy.md#rule-8) of the published
+  dependency policy: a Python version is supported for at least 3 years after
+  its initial release, adopting
+  [SPEC 0](https://scientific-python.org/specs/spec-0000/). As prose it asks the
+  reader to know five release dates, add three years to each, and compare
+  against today. SPEC 0 itself does not: its § Support Window renders a Gantt
+  chart, one bar per version from release to release+3y with a vertical marker
+  at today, and the argument lands without being read. The maintainer raised
+  this after seeing that page rendered, which is the evidence — the same claim
+  in two presentations, one of which had to be explained and one of which did
+  not.
+  **Not a fenced block someone hand-writes.** A timeline with dates on it is
+  exactly what [`CONTENT-RULES.md` Rule 1](CONTENT-RULES.md#six-month-test)
+  forbids in stable prose: it is wrong the day a version is added and silently
+  wrong every day after. This repo's answer to that is a generator plus a
+  `--check` gate — `gen_graph.py`, `gen_features.py`, `gen_graph_viz.py`,
+  `gen_adr_digest.py` and `drift_check.py render-docs` all run that way in
+  `preflight` — so the deliverable is one more of those, not a diagram.
+  **Two of the three inputs are already derivable; the third is the open
+  question.** "Today" is computed at render. The supported **set** comes from
+  the `Programming Language :: Python` classifiers (`pyproject.toml:33-37`),
+  and that choice is this item's authority declaration, which
+  [`DRIFT-RULES.md` Rule 4](DRIFT-RULES.md#authority) requires be written down
+  before the check exists: the classifiers are what PyPI shows a user, so they
+  are the canonical statement of a *published* support claim, which is what
+  the chart draws. The other two candidates do not qualify.
+  `requires-python = ">=3.10"` is a floor with no ceiling — it cannot tell a
+  generator the top bar is 3.14, and the gate over it
+  (`check_conda_recipe_pins.py:290-325`, against `variants.yaml` and `ci.yml`'s
+  `MIN_PYTHON`) says nothing about the upper end. `ci.yml`'s `ALL_PYTHONS` does
+  state the set, but it is a CI matrix rather than a published promise.
+  **Nothing holds the classifiers against `ALL_PYTHONS`**, which is a second,
+  separable deliverable rather than part of this one:
+  `check_ci_full_matrix.py` compares `ALL_PYTHONS` to `ci-full.yml`'s matrix
+  and never reads `pyproject.toml`, and the only script that reads the
+  classifiers at all is `repo_stats.py`, which is in no gate. Naming all three
+  as co-equal would be exactly the shape
+  [Rule 3](DRIFT-RULES.md#claim-space) warns about — whichever the generator
+  picked would silently become authoritative and the others could drift under
+  it.
+  What the repo holds nowhere is each version's **initial release date**: `rg
+  '2021-10|2022-10'` — the ISO prefixes of the two oldest supported releases —
+  matches nothing but this sentence.
+  A hardcoded table is the obvious answer and is less rotten than it sounds —
+  a past release date is immutable, so the table only grows, and it grows
+  exactly when an interpreter is added, which is already a deliberate act
+  touching `ci.yml` and the classifiers. Whether to instead derive it from an
+  upstream feed is the decision to make; a network-fed generator cannot run in
+  `preflight`.
+  **Render target is Mermaid, and the choice is load-bearing rather than
+  cosmetic.** It is already enabled (`mkdocs.yml:151-155` registers a
+  `mermaid` custom fence under `pymdownx.superfences`) and already used in
+  `docs-src/index.md:19`, and a `gantt` block takes a `todayMarker` — which
+  mermaid.js draws **client-side**. So the committed Markdown carries no date
+  and a `--check` generator stays byte-stable, which is how the existing ones
+  behave: `drift_check.py:368` writes `_Captured {lock.captured}_`, a date
+  read out of the lock file, never `date.today()`.
+  **A committed SVG is therefore not a drop-in fallback**, though
+  `docs-src/img/benchmarks/` makes it look like one. It is rasterised at
+  generation time, so the marker freezes at commit and the page asserts a
+  false "today" every day after; and a `--check` generator emitting it would
+  disagree with a fresh render the next day and go red on every unrelated PR.
+  Verify `todayMarker` renders under this Material version *before* building
+  on it, and if it does not, the fallback needs a named choice: drop the
+  marker (and lose the thing that made SPEC 0's version land), move it to a
+  CSS or JS overlay outside the generated artefact, or exclude the artefact
+  from `--check`.
+  **Scope is one chart, deliberately.** Rule 9 — the 2-year dependency window —
+  would need an initial-release date per package across every extra, and
+  BK-369 says nothing verifies those floors today, so plotting them would draw
+  a confident picture over unchecked data. Revisit once BK-369's lane exists.
+
+- [ ] **BK-374 — The Tested-versions page answers a question next to the one a user brought, and is silent about the extras it skips**
+  spec: — · effort: S · audience: user.site
+  `docs-src/reference/tested-versions.md` is the page a user is sent to for
+  version information, and it publishes only *resolved* versions: per extra, a
+  "Tested up to" column holding whatever the last green resolution pinned. The
+  **declared** range — the floor the resolver is actually held to, and the rare
+  ceiling — appears nowhere on the docs site. A user asking "what does
+  `[sftp]` require at minimum?" has to open `pyproject.toml` on GitHub.
+  **That is not the contradiction it looks like.** The dependency-policy page's
+  Rule 7 deliberately sends readers to `pyproject.toml`, but its stated reason
+  is that *a list kept by hand goes stale*. A generated list does not, and this
+  page is already generated by `drift_check.py render-docs` behind a `--check`
+  gate — so publishing the ranges is consistent with Rule 7 rather than a
+  breach of it.
+  **Second gap, same page: the exclusions are disclosed a click away and
+  nowhere near the absent row.** The page renders a section per covered extra
+  and says nothing about the rest, so `[toml]` — a user-facing extra in the
+  README's install list at `README.md:92` — simply has no row, which reads as
+  "nothing changed" rather than "never checked". The disclosure does exist and
+  is better than it sounds: `dependency-policy.md:206-209` names the
+  consequence on this exact page — *"it has no committed record and no row on
+  the Tested versions page"* — and the generated header links straight to it
+  (`drift_check.py:341-344`). But it sits in a caveat list under Rule 15, on
+  the page a reader reached *from* Tested-versions, and it still names no
+  extra. So a reader cannot turn "some extras are excluded" into "`[toml]` is
+  one of them" without opening `drift_check.py`. Naming them in prose would be
+  the enumeration [`CONTENT-RULES.md` Rule 2](CONTENT-RULES.md#rules) forbids;
+  generated, on the page where the row is missing, it is not.
+  **The ranges half is derivable from what the generator already loads; the
+  exclusions half is not, and the `S` rests on both.** For the ranges,
+  `list_extras()` returns the covered set and `drift_smoke_map.SMOKE_TARGETS`
+  plus its `--import-only` fallback give the depth each is exercised at;
+  `_direct_deps_for()` walks the extras table already but returns names only,
+  discarding specifiers, so emitting ranges needs a sibling that keeps them —
+  a small addition, not a new data source.
+  **`_EXCLUDED_EXTRAS` is the wrong shape for the exclusions half.** It is one
+  flat frozenset (`drift_check.py:79`) of `dev`, `docs`, `bench`, `toml` and
+  `mutate`, and of those exactly one is user-facing. Emitting the remainder
+  verbatim would put four developer and build aggregates on a user-facing
+  reference page. The distinction the generator needs exists only in the prose
+  comment above the set (`drift_check.py:76-78`), and a comment is not a data
+  source — so this half needs a real if small structural change: split
+  `_EXCLUDED_EXTRAS` into two frozensets whose union is today's, or carry a
+  per-extra reason string. **Split rather than filter at render time**, so the
+  `--check` gate holds the split too, and because the page wants the reason
+  and the reasons differ: "excluded because its resolution is
+  interpreter-dependent" is a useful row, "excluded because it is a dev
+  aggregate" is noise. The `S` survives — a frozenset split is small — but it
+  buys a change to the script rather than a read of data already loaded, which
+  is what the estimate originally rested on.
+  **Do not adopt a "community-supported" tier.** The external review that
+  prompted this proposed splitting extras into CI-guarded and
+  community-supported. No such distinction exists here: every extra is
+  maintained the same way, and some are merely outside one guard. Publishing
+  the tier would invent a support model.
+  **A third suggestion from the same review was refused**, and is recorded so
+  it is not re-proposed: an "expect to upgrade every N months" rule of thumb.
+  No such figure has been measured, and publishing one fabricates a
+  commitment. What the policy page says instead — the guard runs weekly and
+  each extra carries its capture date, so staleness is readable — is the part
+  that has a derivation.
 
 - [ ] **BK-327 — Gate dual-doc nav reachability and index listing**
   spec: — · effort: S · audience: contributor.tooling
@@ -1601,12 +1744,16 @@ give them a way to absorb.
 that diff actually triggers (BK-333); every extra's drift smoke exercises the
 packages it pins (BUG-250) and catches the drift that is visible only to a type
 checker (ID-250); a declared floor is something a mechanism has installed and
-run, rather than a claim nobody tests (BK-369); **every install channel we
+run, rather than a claim nobody tests (BK-369), and the declared *set* is
+something a mechanism has installed **alone**, rather than one the `dev`
+aggregate props up (BK-372); **every install channel we
 intend to offer is published and working** — **met** by ID-018, in
 [BACKLOG-DONE.md](BACKLOG-DONE.md) — and what that channel publishes about us is
 watched rather than hand-copied (BK-370); every upstream that can break us on its
-own schedule has a standing watch (ID-229, ID-225); the one deprecation that
-watch has caught is answered before the release that enforces it (BUG-281); the
+own schedule has a standing watch (ID-229, ID-225), and the support window we
+publish is exercised by decision rather than by inertia (BK-375); the one
+deprecation that watch has caught is answered before the release that enforces
+it (BUG-281); the
 watch's issue survives a single-extra re-run (BUG-282) and its one legacy-sftp
 authentication does not fail on runner load (BK-367); and every breaking change
 carries a published upgrade path by the time it ships — **satisfied**: the four
@@ -1692,6 +1839,30 @@ working, and quietly describing the library as something it is not.
   whatever BUG-250 and ID-250 do to widen that map applies here too; those two
   items are about the smoke reaching *more* at the top of the range, this one is
   about pointing the same smoke at the bottom.
+  **Do not hand-build the constraint files: `uv` derives them.**
+  `uv pip install --resolution lowest-direct` takes the floors from
+  `pyproject.toml` itself, so the lane needs no second copy of every floor to
+  keep in step — which is what the sentence above would otherwise have built,
+  and what [`DRIFT-RULES.md` Rule 3](DRIFT-RULES.md#claim-space) says not to
+  build. The cost is already paid: `astral-sh/setup-uv` is in six workflows
+  (`rg -l 'setup-uv' .github/workflows` — ci, ci-full, docs, publish, mutation,
+  benchmark), most of which then run `uv pip install`, so this is a flag on a
+  command CI already runs, not a new toolchain.
+  **`lowest-direct`, not `lowest`.** `lowest` puts transitive packages at their
+  minimums too — floors this repo does not declare and cannot fix — which
+  generates noise against the failure mode named above. `lowest-direct` pins
+  exactly what we declare and leaves transitives newest, which is the claim
+  being tested.
+  **One trap.** Route it through `uv` directly, as those six workflows do, and
+  **not** through a `hatch` env: BK-269 recorded that hatch's own dependency
+  sync under the uv installer silently drops the env `features` on GitHub
+  runners, which is why `pyproject.toml` forces the pip installer in CI. That
+  bug is in hatch's sync, not in `uv pip install`.
+  Sourced from an external survey of Python dependency-testing practice the
+  maintainer brought in; it is the only part of that survey this repo did not
+  already do, and it sharpens this item's own prescription rather than adding a
+  requirement ([§ Item authority](#how-this-file-works) — re-derive a
+  prescription before implementing it).
   **Not** about adding rows to `test_pyproject_pins.py`: that file is a
   regression guard for boundaries already found, and adding a row cannot find the
   next one.
@@ -1705,6 +1876,76 @@ working, and quietly describing the library as something it is not.
   question naming a specific risk is a far cheaper signal than a CI matrix, so
   whatever this item builds, the sweep for unresolved Open Questions is worth
   doing first and costs nothing.
+
+- [ ] **BK-372 — No standing check installs an extra by itself, so an under-declared extra passes every gate**
+  spec: — · effort: M · audience: infra.ci
+  An extra is a promise that `pip install remote-store[<extra>]` gives you a
+  working backend. Nothing tests that promise on a schedule: CI installs an
+  aggregate, and `dev`'s first member names **thirteen extras at once**
+  (`s3-pyarrow`, `sftp`, `azure`, `otel`, `toml`, `yaml`, `pydantic`,
+  `dagster`, `sql`, `sql-query`, `requests`, `httpx`, `graph`), so an extra
+  that is missing a dependency still works — some *other* extra supplies it.
+  The declaration can be incomplete and every gate stays green.
+  **Two of the fourteen tracked extras are not even named there, and are
+  masked a second way.** `dev` omits `arrow` and `s3` — the set difference of
+  `drift_check.list_extras()` against the names in `dev`'s first member — yet
+  `s3-pyarrow` declares `["s3fs>=2024.2.0", "pyarrow>=14.0.0"]`, restating
+  both packages rather than referencing `remote-store[s3]`, so their packages
+  arrive while their declarations are never exercised. Masking by a duplicated
+  declaration is the same defect as masking by a transitive dependency and is
+  harder to see, because the two extras read as independent in
+  `pyproject.toml`. It compounds with BK-369's half: `[arrow]` declares
+  `pyarrow>=12.0.0` against `s3-pyarrow`'s `>=14.0.0`, so
+  `pip install remote-store[arrow]` alone resolves a range nothing has run.
+  **Derivation.** `rg -n 'pip install.*\.\[' .github/workflows` returns 18 hits.
+  Every one installs `.[dev]`, `.[dev,…]` or `.[docs]` except a single line:
+  `drift-guard.yml:183`, `pip install --pre -c "$CONSTRAINTS" ".[<extra>]"`.
+  So the isolated per-extra install exists exactly once in the repo.
+  **And that one line is gated on drift.** `drift-guard.yml:166-170` reads the
+  diff report and returns before reaching it unless that extra's resolution
+  moved:
+  `if [ "$STATUS" != "drift" ]; then echo "No drift / nothing to smoke"; exit 0; fi`.
+  Isolation is therefore a side effect of version movement, not a check that the
+  declaration is complete. An extra whose versions are stable is never installed
+  alone at all.
+  **Measured, not hypothetical.** BUG-286 is this class: `[azure]` never
+  declared `aiohttp`, `AsyncAzureBackend` needs it for its async transport, and
+  `remote-store[azure]` alone raised
+  `"Unable to create async transport. Please check aiohttp is installed."` at the
+  first async call. It survived because `dev` also installs `s3-pyarrow`, whose
+  `aiobotocore` drags `aiohttp` in — the masking is recorded in that extra's own
+  `pyproject.toml` comment. It was found by hand.
+  **Distinct from BK-369, and the two are complementary.** BK-369 asks whether
+  the *versions* we declare work; this asks whether the *set* we declare is
+  complete. BK-369's lane would in fact have caught BUG-286: its body describes
+  a per-extra isolated install running that extra's existing smoke target, and
+  `.[azure]` installed alone has no `aiohttp` whatever resolution strategy
+  picked its versions. The catch comes from the **isolation**, which both items
+  share; `--resolution lowest-direct` contributes nothing to it, because an
+  undeclared package has no floor to lower. So what separates the two is the
+  question each asks, not the detection power of the lane — which is the
+  stronger form of the same conclusion: both want per-extra isolated install
+  plus that extra's `drift_smoke_map.py` target, so whichever is built first
+  should carry the other, and should say which question it answers.
+  **Disposition open, and the cheap option is cheaper than it looks.**
+  Relaxing the `STATUS != drift` early-return so the smoke also runs on a clean
+  resolution is a one-condition change to an existing matrix job, and it is
+  close to the status quo: in run 34127228028 (2026-09-07), **12 of the 14
+  legs already paid the smoke** — only `check-otel` and `check-yaml` hit the
+  early return, at 0 s each — so the marginal cost is two more parallel legs,
+  against smoke steps of 25 s (`check-graph`, also `--import-only`) to 84 s
+  elsewhere in the same run. That run took 4m36s end to end, dominated by one
+  failing `check-sftp` leg at 2m26s, and the last five runs span 2m07s to
+  4m36s. **So the cost is not wall-clock, it is failure surface:** every leg
+  that runs a smoke is a leg that can go red, and BUG-282 records what one red
+  leg cost — the only safe re-run was the full matrix, which re-resolved every
+  extra and moved two packages between the two runs. Either way the verdict
+  should be *advisory*, like the rest of drift-guard.
+  **What it cannot catch.** An extra whose smoke target does not exercise the
+  path that needs the missing package — BUG-286 needed an *async* Azure call —
+  so this shares BUG-250's and ID-250's dependency on `drift_smoke_map.py`
+  reaching far enough. Isolation without reach is a green light for a
+  declaration nobody exercised.
 
 - [ ] **BUG-250 — `[graph]`'s drift smoke reaches one of the extra's four declared dependencies**
   spec: — · effort: S · audience: infra.ci
@@ -1944,6 +2185,64 @@ working, and quietly describing the library as something it is not.
   would spend the effort for certain nothing. Discovered by ID-018, which is now closed
   ([BACKLOG-DONE.md](BACKLOG-DONE.md)) — this item outlived it, which is why it
   was filed separately rather than folded in.
+
+- [ ] **BK-375 — Two interpreters are past the support window we now publish, and nothing has decided whether to keep them**
+  spec: — · effort: M · audience: user.api
+  [Rule 8](../docs-src/explanation/dependency-policy.md#rule-8) of the published
+  dependency policy adopts [SPEC 0](https://scientific-python.org/specs/spec-0000/):
+  a Python version is supported **at least** 3 years after its initial release.
+  SPEC 0's own direction is the mirror of that — it recommends *dropping* at
+  that point, to bound the maintenance a project carries. On the day Rule 8
+  shipped, Python 3.10 and 3.11 were both past three years and 3.12 was close
+  to it, so the rule licensed dropping two interpreters the moment it was
+  published, and nothing decided either way.
+  **Nothing is wrong today, which is exactly why this needs an item.** Rule 8
+  promises a floor, not a ceiling, and says in terms that "we may support a
+  version longer than the minimum" — so supporting 3.10 breaches nothing. The
+  defect is that the position is held by inertia: `requires-python = ">=3.10"`
+  and the five interpreters in `ci.yml`'s `ALL_PYTHONS` (`["3.10", "3.11",
+  "3.12", "3.13", "3.14"]`, matched by five `Programming Language :: Python`
+  classifiers) stand because no one has revisited them, and a reader of the
+  backlog cannot tell that from a deliberate choice to be generous. This item
+  is the record that the question was asked.
+  **Decide it, do not default it.** The inputs are cheap to gather and none
+  exist yet: what the two oldest legs cost in CI wall-clock across `ci.yml` and
+  `ci-full.yml`; whether any declared floor exists only to keep 3.10 resolving
+  (the `tomli` marker-gated extra is the obvious candidate, since it is
+  `python_version < '3.11'` and would become dead on a 3.11 floor); and whether
+  any dependency has already dropped 3.10, which would make the support
+  notional. Weigh those against the users a drop would strand.
+  **Whatever is decided, it is a breaking change and takes its own PR.**
+  Raising `requires-python` moves **six** spellings of the supported set, and
+  only four are watched. Three are held equal by
+  `check_conda_recipe_pins.py:297-325` (`pyproject.toml`'s `requires-python`,
+  `packaging/conda-forge/variants.yaml`'s `python_min`, `ci.yml`'s
+  `MIN_PYTHON`). A fourth, `ci-full.yml:73`'s `test-full` matrix, is held
+  against `ci.yml`'s `ALL_PYTHONS` by `check_ci_full_matrix.py` in
+  `hatch run lint`, so missing it fails a gate rather than shipping silently.
+  The last two are watched by nothing: the `Programming Language :: Python`
+  classifiers, and `README.md:34`'s "**Requires Python 3.10+.**" — prose, and
+  the first Python claim a reader meets. `sdd/adrs/0032-tiered-ci-gate-with-full-matrix-backstop.md`
+  names the interpreter set too, and being an ADR it is superseded rather than
+  edited ([`000-process.md` Rule 4](000-process.md#rules)) — a decision the PR
+  has to make rather than discover.
+  **The bump table does not yet say what this item needs it to say.**
+  `CONTRIBUTING.md:445` assigns dropping a Python version a **minor** bump and
+  stops there, while the dependency-floor row above it (L444) carries "treat
+  as **breaking**, row above", and the Phase 0 checklist at L494 requires the
+  `**Breaking**` marking and a migration section only "if this release raises
+  a **dependency** floor". So the obligation this item assumes is nowhere
+  written down. It should be: a user on 3.10 whose install stops resolving is
+  in the same position as one excluded by a floor raise. **Annotating row 445
+  and widening L494 to cover `requires-python` is part of this item's work**,
+  not a citation it can lean on — the rows landed in BK-371 and the asymmetry
+  landed with them.
+  Nothing catches an omission from that list either: the
+  [Detailed checklist](CLAUDE-REFERENCE.md#detailed-checklist) has a
+  **Dependency** row and a **Version number** row and none for the supported
+  interpreter set, which is why the enumeration has to be complete here.
+  Deciding to *keep* them is the cheaper outcome and still belongs here,
+  written down, so the next release does not re-open it from scratch.
 
 - [ ] **ID-229 — Evaluate porting to httpx 1.0 (lift the `<1.0` cap)**
   spec: GR-033 · effort: M · audience: user.api
