@@ -126,7 +126,12 @@ runs:
         # both would have failed a working install. What this lane is looking
         # for is the opposite case — a module that IS present and raises when
         # imported, which is precisely "installs and then breaks".
-        python - "$EXTRA" 2>&1 | tee "$LOG" <<'PY'
+        # Redirected rather than piped into `tee`, and that is load-bearing: a
+        # here-document after a pipe binds to the LAST command, so
+        # `python - | tee "$LOG" <<'PY'` feeds the script text to `tee`, leaves
+        # `python` reading an empty stdin, and returns 0 from a probe that never
+        # ran. Measured. A verification step that cannot fail is worse than none.
+        python - "$EXTRA" > "$LOG" 2>&1 <<'PY'
         import importlib, importlib.util, sys
         from importlib.metadata import packages_distributions
 
@@ -157,10 +162,18 @@ runs:
         if not probed:
             sys.exit(f"no installed top-level module found for any of {sorted(declared)}")
         PY
-        rc=${PIPESTATUS[0]}
+        rc=$?
+        cat "$LOG"
         if [ "$rc" -ne 0 ]; then
           record fail import-extra "$(tail -n 30 "$LOG")"
           finish "$rc" import-extra
+        fi
+        # The probe must have said something. A silent success is the shape the
+        # here-document bug above produced, and it would look identical to a
+        # clean run from the verdict alone.
+        if ! grep -q 'import ok:' "$LOG"; then
+          record fail import-extra "import probe produced no result for [$EXTRA]: $(tail -n 30 "$LOG")"
+          finish 1 import-extra
         fi
 
         # Test plugins under the SAME constraints file. A plugin's own

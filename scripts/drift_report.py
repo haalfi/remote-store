@@ -73,8 +73,10 @@ def _load_reports(dir_: Path) -> Reports:
     rglob (not glob): an artefact is rooted at the least common ancestor of the
     files it was given, so a *single*-file upload lands that file at the
     artefact root while a multi-file one keeps a directory prefix. rglob handles
-    both, and every filename this run produces is unique across lanes so that
-    ``merge-multiple`` has nothing to collide.
+    both — and every basename a run produces is unique across extra, lane *and*
+    kind, because with the directory discarded that basename is all
+    ``merge-multiple`` has to keep two uploads apart. ``_incomplete_legs``
+    is the backstop for the half of that failure which is silent.
 
     A file that will not parse is **named and skipped**, not raised. One
     unreadable artefact used to abort the whole report, which loses every other
@@ -310,6 +312,44 @@ def _smoke_failures(reports: Reports, lane: str) -> dict[str, dict]:
     return {extra: v for (extra, ln), v in sorted(reports.smokes.items()) if ln == lane and v.get("smoke") == "fail"}
 
 
+def _incomplete_legs(reports: Reports) -> list[str]:
+    """Legs that produced a resolution but no smoke verdict, or the reverse.
+
+    Every leg writes both, `skipped` included, so a missing half means a leg
+    died before uploading or two uploads landed on one filename — the second of
+    which happened twice while this lane was being built, and whose signature is
+    a row that is quietly absent rather than wrong. A missing row and a clean
+    row look identical on the issue, so this has to be said out loud.
+    """
+    incomplete = []
+    for extra in sorted(reports.diffs):
+        if (extra, "newest") not in reports.smokes:
+            incomplete.append(f"`[{extra}]` newest: a diff report with no smoke verdict")
+    for extra in sorted(reports.floors):
+        if (extra, "floor") not in reports.smokes:
+            incomplete.append(f"`[{extra}]` floor: a floor report with no smoke verdict")
+    for extra, lane in sorted(reports.smokes):
+        source = reports.diffs if lane == "newest" else reports.floors
+        if extra not in source:
+            incomplete.append(f"`[{extra}]` {lane}: a smoke verdict with no report")
+    return incomplete
+
+
+def _lanes_present(reports: Reports) -> set[str]:
+    """Which lanes this run actually produced reports for.
+
+    A dispatch can select one lane, and a body that does not say so reads as a
+    statement about both. Derived from the reports themselves rather than from
+    the dispatch input, so it stays true when a lane runs and produces nothing.
+    """
+    lanes = {lane for _, lane in reports.smokes}
+    if reports.diffs:
+        lanes.add("newest")
+    if reports.floors:
+        lanes.add("floor")
+    return lanes
+
+
 def has_signal(reports: Reports, register: dict[tuple[str, str], tuple[str, str]] | None = None) -> bool:
     """Whether this run has anything a maintainer has not already decided about.
 
@@ -329,7 +369,7 @@ def has_signal(reports: Reports, register: dict[tuple[str, str], tuple[str, str]
     known = set(register or {})
     if any(r.get("status") in ("drift", "needs_refresh", "error") for r in reports.diffs.values()):
         return True
-    if reports.unreadable:
+    if reports.unreadable or _incomplete_legs(reports):
         return True
     if any((e, "floor") not in known and r.get("status") == "error" for e, r in reports.floors.items()):
         return True
@@ -396,6 +436,22 @@ def _render_body(reports: Reports, run_url: str, register: dict[tuple[str, str],
                     lines.append(f"| `{d['package']}` | `{d['baseline'] or '—'}` | `{d['resolved'] or '—'}` |")
                 lines.append("")
 
+    incomplete = _incomplete_legs(reports)
+    if incomplete:
+        lines.append("## Incomplete legs")
+        lines.append("")
+        lines.append(
+            "Each leg writes both a report and a smoke verdict, `skipped` "
+            "included, so a missing half means the leg died before uploading or "
+            "two uploads landed on one filename. Rows these legs would have "
+            "contributed are absent from everything above — and an absent row "
+            "reads exactly like a clean one."
+        )
+        lines.append("")
+        for entry in incomplete:
+            lines.append(f"- {entry}")
+        lines.append("")
+
     if reports.unreadable:
         lines.append("## Unreadable reports")
         lines.append("")
@@ -440,7 +496,12 @@ def _render_body(reports: Reports, run_url: str, register: dict[tuple[str, str],
     if clear:
         lines.append("## Clear")
         lines.append("")
-        lines.append("Both lanes clean: " + ", ".join(f"`[{e}]`" for e in clear))
+        # Name the lanes that actually ran. A single-lane dispatch that claimed
+        # "both lanes clean" would report a check nobody performed, which is
+        # worse than reporting nothing.
+        ran = _lanes_present(reports)
+        scope = "Both lanes clean" if ran == {"newest", "floor"} else f"Clean ({', '.join(sorted(ran))} lane only)"
+        lines.append(f"{scope}: " + ", ".join(f"`[{e}]`" for e in clear))
         lines.append("")
 
     lines.append("---")
@@ -555,7 +616,20 @@ def main(argv: list[str] | None = None) -> int:
             )
         return 0
 
-    # All clear.
+    # All clear — but only a run that covered BOTH lanes may close the issue.
+    # A single-lane dispatch sees none of the other lane's findings, so closing
+    # on its say-so discards the scheduled run's state: the issue disappears and
+    # the findings that opened it are neither fixed nor recorded anywhere. The
+    # header's warning about a single-lane dispatch rewriting the body does not
+    # cover this, because the body is recoverable and a closed issue is not.
+    lanes = _lanes_present(reports)
+    if lanes != {"newest", "floor"}:
+        print(
+            f"All clear in {sorted(lanes)}, but this run did not cover both lanes; leaving the issue alone.",
+            file=sys.stderr,
+        )
+        return 0
+
     if existing is None:
         print("All extras clear; no open issue. No-op.", file=sys.stderr)
         return 0

@@ -216,13 +216,13 @@ jobs:
           # One resolve per leg: `--emit-freeze` writes the resolved set the
           # smoke pins against and the candidate-baseline upload reuses, so all
           # three (report, smoke, baseline) describe the same resolution (ID-231).
-          # The filename carries the lane, for the artefact-rooting reason the
-          # floor job's own resolve step spells out.
+          # The basename carries extra, lane and kind, for the artefact-rooting
+          # reason the floor job's own resolve step spells out.
           python scripts/drift_check.py diff "${{ matrix.extra }}" \
-            --out "drift-reports/${{ matrix.extra }}-newest.json" \
+            --out "drift-reports/${{ matrix.extra }}-newest-diff.json" \
             --emit-freeze "drift-candidates/${{ matrix.extra }}.txt"
           echo "=== diff report for ${{ matrix.extra }} ==="
-          cat "drift-reports/${{ matrix.extra }}-newest.json"
+          cat "drift-reports/${{ matrix.extra }}-newest-diff.json"
 
       # The smoke runs on every leg that produced a freeze, not only on drift.
       # The early return this replaces made the repo's ONLY isolated per-extra
@@ -248,7 +248,7 @@ jobs:
         uses: actions/upload-artifact@v7
         with:
           name: drift-smoke-${{ matrix.extra }}-newest
-          path: drift-smokes/${{ matrix.extra }}-newest.json
+          path: drift-smokes/${{ matrix.extra }}-newest-smoke.json
           if-no-files-found: warn
 
       - name: Upload drift report and fresh resolution
@@ -256,7 +256,7 @@ jobs:
         uses: actions/upload-artifact@v7
         with:
           name: drift-${{ matrix.extra }}
-          path: drift-reports/${{ matrix.extra }}-newest.json
+          path: drift-reports/${{ matrix.extra }}-newest-diff.json
           if-no-files-found: warn
 
       # Upload the freeze the "Resolve and diff" step already emitted (the same
@@ -334,17 +334,19 @@ jobs:
       - name: Resolve the declared floors
         run: |
           mkdir -p drift-floors drift-floor-freezes
-          # The filename carries the lane. An artefact is rooted at the least
-          # common ancestor of its files, so a single-file upload contributes
-          # that file at the artefact root and the directory name never reaches
-          # the report job — two lanes uploading `<extra>.json` would collide
-          # under `merge-multiple`, which is how the first dry run on this
-          # branch produced an unparseable report.
+          # The filename carries the extra, the lane AND the kind. An artefact
+          # is rooted at the least common ancestor of its files, so a
+          # single-file upload contributes that file at the artefact ROOT and
+          # the directory name never reaches the report job. Two uploads whose
+          # basenames match therefore collide under `merge-multiple` however
+          # different their directories are — measured twice on this branch,
+          # first across lanes and then between a floor resolve and its own
+          # smoke verdict. Uniqueness has to live in the basename.
           python scripts/drift_check.py floor "${{ matrix.extra }}" \
-            --out "drift-floors/${{ matrix.extra }}-floor.json" \
+            --out "drift-floors/${{ matrix.extra }}-floor-resolve.json" \
             --emit-freeze "drift-floor-freezes/${{ matrix.extra }}.txt"
           echo "=== floor report for ${{ matrix.extra }} ==="
-          cat "drift-floors/${{ matrix.extra }}-floor.json"
+          cat "drift-floors/${{ matrix.extra }}-floor-resolve.json"
 
       - name: Smoke the floor resolution
         if: always()
@@ -367,7 +369,7 @@ jobs:
         uses: actions/upload-artifact@v7
         with:
           name: drift-floor-${{ matrix.extra }}
-          path: drift-floors/${{ matrix.extra }}-floor.json
+          path: drift-floors/${{ matrix.extra }}-floor-resolve.json
           if-no-files-found: warn
 
       - name: Upload smoke verdict
@@ -375,7 +377,7 @@ jobs:
         uses: actions/upload-artifact@v7
         with:
           name: drift-smoke-${{ matrix.extra }}-floor
-          path: drift-smokes/${{ matrix.extra }}-floor.json
+          path: drift-smokes/${{ matrix.extra }}-floor-smoke.json
           if-no-files-found: warn
 
   report:

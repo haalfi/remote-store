@@ -29,8 +29,12 @@ surprising_ripples:
   - FEATURES.md  # "Tested upper-bound versions" link text, outside the generated block
   - docs-src/explanation/dependency-policy.md  # Rule 7's reason for sending readers to pyproject.toml
 discovery_followups: []
-# Derivation: the /ship loop's rounds on this branch, counted as they run.
-review_rounds: 0
+# Derivation, re-run before this line was rewritten: `gh api
+# repos/haalfi/remote-store/pulls/1018/reviews --jq 'length'` counts the review
+# rounds posted on this PR, which carries this item and BK-369 together. One at
+# the time of writing; updated at close rather than predicted, since a value
+# written ahead of the rounds is a guess wearing a figure's clothes.
+review_rounds: 1
 phases:
   - id: orient
     name: Orient

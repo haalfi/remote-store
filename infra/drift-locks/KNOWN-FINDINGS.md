@@ -17,6 +17,11 @@ lands the fix.
 A row is not permission to leave a finding unfixed. It records who owns the fix
 and when the decision is re-read.
 
+**A week whose only findings are registered closes the issue**, so those rows
+render nowhere that week — this file is where they live, and `Review by` is what
+stops a row outliving its reason. That is the intended trade: an issue that is
+open every Monday for the same five rows is one nobody opens.
+
 **Scope: what the run reports, not what CI does.** A `newest`-lane smoke failure
 still fails its job, registered or not — that is the posture that lane has
 always had, and the `/drift` skill reads it. A floor leg never fails its job.

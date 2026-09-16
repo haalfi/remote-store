@@ -11,6 +11,8 @@ venv and hits PyPI); the workflow's end-to-end run is its acceptance test.
 
 from __future__ import annotations
 
+import json
+import subprocess
 import sys
 from pathlib import Path
 
@@ -324,6 +326,97 @@ class TestFloorReport:
         # Rather than inventing a version. A missing row is readable; a wrong
         # one is not.
         assert drift_check.floor_report("sftp", {"paramiko": "3.1.0"})["floor"] == {"paramiko": "3.1.0"}
+
+
+class TestUvInvocation:
+    """``_uv`` and ``resolve_floor`` decide *which interpreter* the floors are
+    installed into. Getting that wrong is the one failure here that is green
+    and wrong rather than red, on a lane that runs weekly.
+    """
+
+    def test_strips_ambient_target_selection(self, drift_check, monkeypatch):
+        # `setup-uv` is what lets other workflows run a bare `uv pip install`
+        # against setup-python's interpreter with no venv in sight. Inheriting
+        # that would install the floor into the runner Python — the same one the
+        # smoke then uses — and the lane would pass having tested nothing.
+        seen = {}
+
+        def _fake_run(argv, **kwargs):
+            seen["env"] = kwargs["env"]
+            return subprocess.CompletedProcess(argv, 0, stdout="", stderr="")
+
+        monkeypatch.setenv("UV_SYSTEM_PYTHON", "1")
+        monkeypatch.setenv("VIRTUAL_ENV", "/somewhere/else")
+        monkeypatch.setattr(drift_check.subprocess, "run", _fake_run)
+        drift_check._uv(["pip", "freeze"])
+        assert "UV_SYSTEM_PYTHON" not in seen["env"]
+        assert "VIRTUAL_ENV" not in seen["env"]
+
+    def test_surfaces_stderr_on_failure(self, drift_check, monkeypatch, capsys):
+        # The stderr of a failed resolve IS the finding — it names the package
+        # and why it would not install.
+        def _fake_run(argv, **kwargs):
+            raise subprocess.CalledProcessError(1, argv, stderr="no wheel for aiohttp 3.0.0")
+
+        monkeypatch.setattr(drift_check.subprocess, "run", _fake_run)
+        with pytest.raises(subprocess.CalledProcessError):
+            drift_check._uv(["pip", "install", "."])
+        assert "no wheel for aiohttp 3.0.0" in capsys.readouterr().err
+
+    def test_resolve_floor_pins_the_interpreter_and_the_resolution(self, drift_check, monkeypatch):
+        calls: list[list[str]] = []
+
+        def _fake_uv(args, *, capture=False):
+            calls.append(args)
+            return "pyyaml==5.1\nremote-store @ file:///checkout\n" if capture else ""
+
+        monkeypatch.setattr(drift_check, "_uv", _fake_uv)
+        assert drift_check.resolve_floor("yaml") == {"pyyaml": "5.1"}
+
+        venv_call, install_call, freeze_call = calls
+        assert venv_call[:2] == ["venv", "--python"]
+        # `lowest-direct`, never `lowest`: transitives stay newest, because the
+        # claim under test is the one this project declares.
+        assert "--resolution" in install_call
+        assert install_call[install_call.index("--resolution") + 1] == "lowest-direct"
+        assert ".[yaml]" in install_call
+        # Every call names its target explicitly, so no ambient setting decides.
+        for call in (install_call, freeze_call):
+            assert "--python" in call
+
+
+class TestFloorCommand:
+    """``floor --out`` must not crash the leg: a resolve that fails IS the
+    finding, and it has to reach the report job as data.
+    """
+
+    def test_a_failed_resolve_becomes_a_report_not_a_crash(self, drift_check, monkeypatch, tmp_path):
+        def _boom(extra):
+            raise subprocess.CalledProcessError(1, ["uv"], stderr="no wheel for aiohttp 3.0.0")
+
+        monkeypatch.setattr(drift_check, "resolve_floor", _boom)
+        out = tmp_path / "azure.json"
+        assert drift_check.main(["floor", "azure", "--out", str(out)]) == 0
+
+        report = json.loads(out.read_text(encoding="utf-8"))
+        assert report["status"] == "error"
+        assert report["lane"] == "floor"
+        assert "no wheel for aiohttp 3.0.0" in report["reason"]
+
+    def test_no_freeze_is_written_when_the_resolve_failed(self, drift_check, monkeypatch, tmp_path):
+        # An empty constraints file would make the smoke run unpinned against a
+        # set nothing recorded; the composite action reads its absence as
+        # "skipped", which is the honest verdict.
+        monkeypatch.setattr(drift_check, "resolve_floor", lambda extra: (_ for _ in ()).throw(RuntimeError("nope")))
+        freeze = tmp_path / "azure.txt"
+        drift_check.main(["floor", "azure", "--out", str(tmp_path / "azure.json"), "--emit-freeze", str(freeze)])
+        assert not freeze.exists()
+
+    def test_a_resolve_error_without_out_still_raises(self, drift_check, monkeypatch):
+        # Interactively there is no report to write, so the error must surface.
+        monkeypatch.setattr(drift_check, "resolve_floor", lambda extra: (_ for _ in ()).throw(RuntimeError("nope")))
+        with pytest.raises(RuntimeError, match="nope"):
+            drift_check.main(["floor", "azure"])
 
 
 class TestSmokeReach:

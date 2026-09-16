@@ -163,7 +163,12 @@ class TestHasSignal:
         # would make every week's issue identical, which is how a reader learns
         # to skip it.
         reports = self._reports(
-            drift_report, tmp_path, _diff("s3"), _floor("s3", "error"), _smoke("s3", "floor", "fail", phase="smoke")
+            drift_report,
+            tmp_path,
+            _diff("s3"),
+            _smoke("s3", "newest", "pass"),
+            _floor("s3", "error"),
+            _smoke("s3", "floor", "fail", phase="smoke"),
         )
         assert drift_report.has_signal(reports, {("s3", "floor"): ("BUG-287", "2026-12-31")}) is False
 
@@ -197,7 +202,17 @@ class TestHasSignal:
         assert drift_report.has_signal(drift_report._load_reports(tmp_path), {}) is True
 
     def test_skipped_smoke_is_not_a_failure(self, drift_report, tmp_path):
-        reports = self._reports(drift_report, tmp_path, _diff("s3"), _smoke("s3", "floor", "skipped"))
+        # `skipped` means no resolution existed to pin against — reported, not
+        # lost. The floor report it belongs to is `error`, which signals on its
+        # own; here the question is only whether `skipped` adds one.
+        reports = self._reports(
+            drift_report,
+            tmp_path,
+            _diff("s3"),
+            _smoke("s3", "newest", "pass"),
+            _floor("s3"),
+            _smoke("s3", "floor", "skipped"),
+        )
         assert drift_report.has_signal(reports, {}) is False
 
 
@@ -342,6 +357,104 @@ class TestKnownFindings:
         register = drift_report.load_known_findings(path)
         assert register[("s3", "floor")][0] == "BUG-1"
         assert register[("s3", "newest")][0] == "BUG-2"
+
+
+class TestIncompleteLegs:
+    """Every leg writes a report and a verdict. A missing half means a leg died
+    before uploading, or two uploads landed on one basename — which happened
+    twice while this lane was being built, and whose signature is a row that is
+    quietly absent rather than wrong.
+    """
+
+    def _reports(self, drift_report, tmp_path, *payloads):
+        for i, payload in enumerate(payloads):
+            _write(tmp_path, f"{i}.json", payload)
+        return drift_report._load_reports(tmp_path)
+
+    def test_a_complete_pair_is_not_flagged(self, drift_report, tmp_path):
+        reports = self._reports(drift_report, tmp_path, _diff("s3"), _smoke("s3", "newest", "pass"))
+        assert drift_report._incomplete_legs(reports) == []
+
+    def test_a_report_with_no_verdict_is_flagged(self, drift_report, tmp_path):
+        reports = self._reports(drift_report, tmp_path, _floor("s3"))
+        assert any("floor report with no smoke verdict" in e for e in drift_report._incomplete_legs(reports))
+
+    def test_a_verdict_with_no_report_is_flagged(self, drift_report, tmp_path):
+        reports = self._reports(drift_report, tmp_path, _smoke("s3", "floor", "pass"))
+        assert any("smoke verdict with no report" in e for e in drift_report._incomplete_legs(reports))
+
+    def test_a_skipped_verdict_still_counts_as_present(self, drift_report, tmp_path):
+        # `skipped` is a verdict. Treating it as absent would flag every leg
+        # whose resolve failed, which is a reported state rather than a lost one.
+        reports = self._reports(drift_report, tmp_path, _floor("s3", "error"), _smoke("s3", "floor", "skipped"))
+        assert drift_report._incomplete_legs(reports) == []
+
+    def test_an_incomplete_leg_signals_and_renders(self, drift_report, tmp_path):
+        reports = self._reports(drift_report, tmp_path, _diff("s3"))
+        assert drift_report.has_signal(reports, {}) is True
+        assert "## Incomplete legs" in drift_report._render_body(reports, "https://run", {})
+
+
+class TestSingleLaneRuns:
+    """A dispatch can select one lane, and the report must not speak for the
+    other. The body is recoverable if it is wrong; a closed issue is not.
+    """
+
+    def _reports(self, drift_report, tmp_path, *payloads):
+        for i, payload in enumerate(payloads):
+            _write(tmp_path, f"{i}.json", payload)
+        return drift_report._load_reports(tmp_path)
+
+    def test_clear_names_the_lane_when_only_one_ran(self, drift_report, tmp_path):
+        reports = self._reports(drift_report, tmp_path, _diff("s3"), _smoke("s3", "newest", "pass"))
+        body = drift_report._render_body(reports, "https://run", {})
+        assert "newest lane only" in body
+        assert "Both lanes clean" not in body
+
+    def test_clear_says_both_when_both_ran(self, drift_report, tmp_path):
+        reports = self._reports(
+            drift_report,
+            tmp_path,
+            _diff("s3"),
+            _floor("s3"),
+            _smoke("s3", "newest", "pass"),
+            _smoke("s3", "floor", "pass"),
+        )
+        assert "Both lanes clean" in drift_report._render_body(reports, "https://run", {})
+
+    def test_a_single_lane_run_never_closes_the_issue(self, drift_report, tmp_path, monkeypatch):
+        # A floor-only dispatch whose findings are all registered reaches the
+        # all-clear branch. Closing there would discard the scheduled newest
+        # lane's open findings, which nothing else records.
+        _write(tmp_path, "f.json", _floor("arrow"))
+        _write(tmp_path, "s.json", _smoke("arrow", "floor", "fail", phase="smoke"))
+        calls = []
+        monkeypatch.setattr(drift_report, "_gh", lambda *a, **k: calls.append(a))
+        monkeypatch.setattr(drift_report, "_find_open_issue", lambda *a, **k: 42)
+        rc = drift_report.main(
+            [
+                str(tmp_path),
+                "--repo",
+                "haalfi/remote-store",
+                "--run-url",
+                "https://run",
+                "--title",
+                "t",
+                "--known-findings",
+                str(_register(tmp_path, ("arrow", "floor"))),
+            ]
+        )
+        assert rc == 0
+        assert calls == [], "a single-lane run must not comment or close"
+
+
+def _register(dir_: Path, *rows: tuple[str, str]) -> Path:
+    path = dir_ / "register.md"
+    path.write_text(
+        "".join(f"| `[{extra}]` | {lane} | BUG-1 | why | 2026-12-31 |\n" for extra, lane in rows),
+        encoding="utf-8",
+    )
+    return path
 
 
 class TestDryRun:

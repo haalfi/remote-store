@@ -295,6 +295,14 @@ if evidence changes; these are retired.
   survived, masked by `dev` pulling `s3-pyarrow`'s aiobotocore.
   A red smoke on a clean resolution now reaches the rolling issue rather than
   only a red run, which is what `CI-OPERATIONS.md` Rule 1 asks of a guard.
+  **One departure from the item, recorded because it is a decision and not an
+  oversight.** The item said the verdict "should be *advisory*, like the rest of
+  drift-guard". The floor lane is; the newest lane is **not** — a red smoke
+  there still fails its leg, which is the signal `/drift` step 3 has always
+  read, and the isolated install is a regression against a resolution CI
+  accepted rather than a standing decision about a published range. What the
+  item was protecting against — a permanently red lane nobody reads — is met by
+  `infra/drift-locks/KNOWN-FINDINGS.md` instead, which covers both lanes.
   **What it still cannot catch**, per the item: an extra whose smoke target
   does not exercise the path needing the missing package. Isolation without
   reach is a green light for a declaration nobody exercised (BUG-250, ID-250).
@@ -4928,8 +4936,11 @@ if evidence changes; these are retired.
   freeze that the report is computed from, the smoke pins against, and the
   candidate-baseline upload reuses. The smoke installs both the extra and the
   test plugins under `-c <freeze>`, so a shared dep cannot leave its candidate
-  pin; a plugin that genuinely cannot coexist fails the install loudly (red
-  smoke) instead of going green against a mixed set. `diff_extra` gained a
+  pin. The entry also claimed a plugin that cannot coexist fails the install
+  loudly instead of going green against a mixed set; **the second half was
+  wrong**, as BK-369's work measured — `-c` holds the candidate set, and pip is
+  free to backtrack the *plugin* onto an older release that fits. The pin
+  guarantee stands; the loud-failure corollary never did. `diff_extra` gained a
   `resolved=` parameter and `_cmd_diff` a `--emit-freeze` flag (both covered by
   `tests/scripts/test_drift_check.py::TestEmitFreeze`); the workflow's third
   resolve step is gone; and the caveats in `infra/drift-locks/README.md`,
