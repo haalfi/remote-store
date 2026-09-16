@@ -1530,14 +1530,17 @@ whose consequence is a date the reader cannot see.
   An unstated bound on `docs-gate` being trusted past its range
   ([`DRIFT-RULES.md` Rule 7](DRIFT-RULES.md#miss-rate)).
 
-- [ ] **BK-376 — Two of the llmstxt `sections:` map's four entries are hand-listed, and three published pages are already missing from both outputs**
+- [ ] **BK-376 — Half the llmstxt `sections:` map is hand-listed, and three published pages are already missing from both outputs**
   spec: — · effort: S · audience: contributor.tooling
   BK-327's defect one surface further out. `mkdocs.yml` gives the `llmstxt`
-  plugin a `sections:` map, and `Tutorial` and `Guides` are globs that maintain
-  themselves. `Reference` and `Explanation` are hand-listed page-by-page —
-  `Explanation` for a stated reason (an `explanation/*.md` fnmatch glob would
-  also pull the contributor-facing `explanation/design/` subtree), `Reference`
-  for none given. Nothing differences either list against `_nav.yml`, so a new
+  plugin a `sections:` map whose four entries fall into three shapes:
+  `Tutorial` and `Guides` are globs that maintain themselves; `Explanation` is
+  hand-listed page-by-page, for a stated reason (an `explanation/*.md` fnmatch
+  glob would also pull the contributor-facing `explanation/design/` subtree);
+  and `Reference` is **mixed** — `reference/api/*.md` is a recursive glob, the
+  other four entries are hand-listed, and no reason is given for the split.
+  The hand-listed halves are where pages go missing.
+  Nothing differences those lists against `_nav.yml`, so a new
   page is published, navigable, and silently absent from **both** bundles a
   coding agent reads: `mkdocs.yml:61` sets `full_output: llms-full.txt` on the
   same plugin instance that carries the map, so `llms.txt` loses the link and
@@ -1567,9 +1570,10 @@ whose consequence is a date the reader cannot see.
   `sections:` entry against the corresponding `_nav.yml`, with an explicit
   opt-out list in `mkdocs.yml` carrying a reason per excluded page — so the
   three above become declared exclusions or become entries, and the next one
-  cannot be neither. Whether it lands as a G-08 sibling in
-  `check_docs_framework.py` or beside BK-327's is an implementation choice;
-  building both as one check is the likely economy, since both difference
+  cannot be neither. The open choice is **one check or two**: BK-327's fix
+  shape already claims G-08 in `check_docs_framework.py` (which today defines
+  G-01 through G-07), so this either folds into that same check or takes its
+  own ID beside it. Folding is the likely economy, since both difference
   emitted pages against `_nav.yml`.
   **Measured, not hypothetical:** `explanation/dependency-policy.md` (BK-371)
   had to be added to this list by hand, and was caught by reading the config
@@ -2133,16 +2137,23 @@ working, and quietly describing the library as something it is not.
   filter to treat `sdd/adrs/**` as lint-triggering. Filed rather than fixed in
   BK-329 because that PR touched no ADR, no TLA module and not the handbook.
 
-- [ ] **BK-377 — The support windows we publish are the one promise whose breach is invisible until someone remembers to look**
+- [ ] **BK-377 — The support windows we publish come due on a date, so no diff can carry the check**
   spec: — · effort: M · audience: infra.ci
-  Every other promise in this repo has a mechanism. Rules 8 and 9 of the
-  [dependency policy](../docs-src/explanation/dependency-policy.md#rule-8) do
-  not, and `CONTRIBUTING.md`'s Phase 0 checklist says so in terms: *"Nothing
+  Rules 8 and 9 of the
+  [dependency policy](../docs-src/explanation/dependency-policy.md#rule-8) have
+  no mechanism behind them, and `CONTRIBUTING.md`'s Phase 0 checklist says so
+  in terms: *"Nothing
   derives this — the published promise is the only record, which is why it is a
   checklist line rather than a gate."* A checklist line is a person
-  remembering, and the promise it guards ages on the calendar rather than on a
-  diff, so the release that breaks it looks exactly like the release that does
-  not.
+  remembering, and the promise it guards ages on the **calendar** rather than
+  on a diff, so the release that breaks it looks exactly like the release that
+  does not.
+  **That is what separates this from its neighbours, not the absence of a
+  mechanism.** BK-369 and BK-370 in this same section are also published
+  claims nothing watches — a declared floor no mechanism has installed, and a
+  recipe mirror nothing compares. Both have an event a gate could hang off: a
+  resolution, a publish. This one has none, because the thing that breaks it
+  is a date passing.
   **The two rules mechanise differently, and that is the shape of the work.**
   Rule 9 — a dependency version stays supported 2 years — fires on a floor
   raise, which is a diff: compare each extra's specifiers against the previous
@@ -2168,13 +2179,18 @@ working, and quietly describing the library as something it is not.
   drift-guard. Crossing a window licenses a drop; it does not require one, and
   a gate that reads Rule 8 as an obligation would invert the rule — which
   promises a floor, not a ceiling.
-  **Depends on BK-373 for the calendar half**, which has to answer the same
-  missing-input question (hardcoded table vs upstream feed) to draw its chart.
-  Whichever lands first should own the dates; two copies of a release-date
-  table is the drift this repo files items about.
-  Serves the standing-watch clause above: a promise that comes due on a date
-  nobody is watching is an upstream that can break us on its own schedule,
-  with the calendar as the upstream.
+  **Shares an input with BK-373, and neither waits on the other.** Both need
+  each interpreter's initial release date, and both have to answer the same
+  question to get it (hardcoded table vs upstream feed). Whichever lands first
+  should own the dates; two copies of a release-date table is the drift this
+  repo files items about. Deliberately *not* a dependency: either item can
+  supply the table, so nothing here blocks on section 3 and § Ordering's
+  cross-section note is not owed.
+  **Why the clause is its own rather than folded into the standing-watch
+  one.** That clause is about upstreams that move on their own schedule, and
+  the calendar is an upstream only by analogy — it publishes nothing and can
+  be read offline. The new clause keeps the distinction the item rests on: a
+  watch answers *what changed*, and this answers *what came due*.
 
 - [ ] **BK-370 — The published conda recipe is a mirror no mechanism watches**
   spec: — · effort: M · audience: user.discoverability.human, infra.ci
