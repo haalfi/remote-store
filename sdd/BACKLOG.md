@@ -1750,8 +1750,10 @@ aggregate props up (BK-372); **every install channel we
 intend to offer is published and working** — **met** by ID-018, in
 [BACKLOG-DONE.md](BACKLOG-DONE.md) — and what that channel publishes about us is
 watched rather than hand-copied (BK-370); every upstream that can break us on its
-own schedule has a standing watch (ID-229, ID-225); the one deprecation that
-watch has caught is answered before the release that enforces it (BUG-281); the
+own schedule has a standing watch (ID-229, ID-225), and the support window we
+publish is exercised by decision rather than by inertia (BK-375); the one
+deprecation that watch has caught is answered before the release that enforces
+it (BUG-281); the
 watch's issue survives a single-extra re-run (BUG-282) and its one legacy-sftp
 authentication does not fail on runner load (BK-367); and every breaking change
 carries a published upgrade path by the time it ships — **satisfied**: the four
@@ -2183,6 +2185,64 @@ working, and quietly describing the library as something it is not.
   would spend the effort for certain nothing. Discovered by ID-018, which is now closed
   ([BACKLOG-DONE.md](BACKLOG-DONE.md)) — this item outlived it, which is why it
   was filed separately rather than folded in.
+
+- [ ] **BK-375 — Two interpreters are past the support window we now publish, and nothing has decided whether to keep them**
+  spec: — · effort: M · audience: user.api
+  [Rule 8](../docs-src/explanation/dependency-policy.md#rule-8) of the published
+  dependency policy adopts [SPEC 0](https://scientific-python.org/specs/spec-0000/):
+  a Python version is supported **at least** 3 years after its initial release.
+  SPEC 0's own direction is the mirror of that — it recommends *dropping* at
+  that point, to bound the maintenance a project carries. On the day Rule 8
+  shipped, Python 3.10 and 3.11 were both past three years and 3.12 was close
+  to it, so the rule licensed dropping two interpreters the moment it was
+  published, and nothing decided either way.
+  **Nothing is wrong today, which is exactly why this needs an item.** Rule 8
+  promises a floor, not a ceiling, and says in terms that "we may support a
+  version longer than the minimum" — so supporting 3.10 breaches nothing. The
+  defect is that the position is held by inertia: `requires-python = ">=3.10"`
+  and the five interpreters in `ci.yml`'s `ALL_PYTHONS` (`["3.10", "3.11",
+  "3.12", "3.13", "3.14"]`, matched by five `Programming Language :: Python`
+  classifiers) stand because no one has revisited them, and a reader of the
+  backlog cannot tell that from a deliberate choice to be generous. This item
+  is the record that the question was asked.
+  **Decide it, do not default it.** The inputs are cheap to gather and none
+  exist yet: what the two oldest legs cost in CI wall-clock across `ci.yml` and
+  `ci-full.yml`; whether any declared floor exists only to keep 3.10 resolving
+  (the `tomli` marker-gated extra is the obvious candidate, since it is
+  `python_version < '3.11'` and would become dead on a 3.11 floor); and whether
+  any dependency has already dropped 3.10, which would make the support
+  notional. Weigh those against the users a drop would strand.
+  **Whatever is decided, it is a breaking change and takes its own PR.**
+  Raising `requires-python` moves **six** spellings of the supported set, and
+  only four are watched. Three are held equal by
+  `check_conda_recipe_pins.py:297-325` (`pyproject.toml`'s `requires-python`,
+  `packaging/conda-forge/variants.yaml`'s `python_min`, `ci.yml`'s
+  `MIN_PYTHON`). A fourth, `ci-full.yml:73`'s `test-full` matrix, is held
+  against `ci.yml`'s `ALL_PYTHONS` by `check_ci_full_matrix.py` in
+  `hatch run lint`, so missing it fails a gate rather than shipping silently.
+  The last two are watched by nothing: the `Programming Language :: Python`
+  classifiers, and `README.md:34`'s "**Requires Python 3.10+.**" — prose, and
+  the first Python claim a reader meets. `sdd/adrs/0032-tiered-ci-gate-with-full-matrix-backstop.md`
+  names the interpreter set too, and being an ADR it is superseded rather than
+  edited ([`000-process.md` Rule 4](000-process.md#rules)) — a decision the PR
+  has to make rather than discover.
+  **The bump table does not yet say what this item needs it to say.**
+  `CONTRIBUTING.md:445` assigns dropping a Python version a **minor** bump and
+  stops there, while the dependency-floor row above it (L444) carries "treat
+  as **breaking**, row above", and the Phase 0 checklist at L494 requires the
+  `**Breaking**` marking and a migration section only "if this release raises
+  a **dependency** floor". So the obligation this item assumes is nowhere
+  written down. It should be: a user on 3.10 whose install stops resolving is
+  in the same position as one excluded by a floor raise. **Annotating row 445
+  and widening L494 to cover `requires-python` is part of this item's work**,
+  not a citation it can lean on — the rows landed in BK-371 and the asymmetry
+  landed with them.
+  Nothing catches an omission from that list either: the
+  [Detailed checklist](CLAUDE-REFERENCE.md#detailed-checklist) has a
+  **Dependency** row and a **Version number** row and none for the supported
+  interpreter set, which is why the enumeration has to be complete here.
+  Deciding to *keep* them is the cheaper outcome and still belongs here,
+  written down, so the next release does not re-open it from scratch.
 
 - [ ] **ID-229 — Evaluate porting to httpx 1.0 (lift the `<1.0` cap)**
   spec: GR-033 · effort: M · audience: user.api
