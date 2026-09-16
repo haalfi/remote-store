@@ -88,6 +88,12 @@ installs a floor is easily read as one that verifies it:
 * **Reach is the smoke's.** Each leg runs that extra's entry in
   ``drift_smoke_map.py`` and no more, so an import-only target passes on a
   floor that breaks past module load.
+* **The smoke is stricter than a user's runtime**, in the other direction: it
+  inherits this repo's ``filterwarnings = error``, so a floor whose combination
+  with current transitives merely *warns* fails the leg. That is deliberate — a
+  deprecation at the floor is a floor about to break — but it means a red leg
+  is not always something a user would see today, and the verdict's ``reason``
+  is what separates the two.
 * **The smoke installs pytest plugins beside the extra**, so a package the
   extra failed to declare can arrive from one of them. An isolated leg is
   evidence about the versions, weaker evidence about the set.

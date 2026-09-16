@@ -119,6 +119,14 @@ lacks `actions: write`; the MCP server's `actions_run_trigger` dispatches).
 
    **Floor lane.** A floor finding is never a lock event — no lock exists for
    that lane. It is a decision about a published range:
+   - **`Floor installs, then breaks`, and the reason is a *warning*** → the
+     smoke inherits `filterwarnings = error`, so a floor that only deprecates
+     against current transitives fails its leg while a user at those versions
+     sees nothing. Still a finding — a deprecation at the floor is a floor
+     about to break — but it is a candidate for raising rather than a break
+     today, and it is the one class where the reason text, not the phase,
+     decides. Do not quieten the lane: a floor smoke weaker than the suite it
+     borrows retires the signal early.
    - **`Floor installs, then breaks`** → the floor is too low. Propose raising
      it to the oldest release that works, priced by
      [`CONTRIBUTING.md` § When to bump](../../../CONTRIBUTING.md#when-to-bump)

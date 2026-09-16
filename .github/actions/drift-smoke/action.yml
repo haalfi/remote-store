@@ -146,22 +146,41 @@ runs:
         # ran. Measured. A verification step that cannot fail is worse than none.
         python - "$EXTRA" > "$LOG" 2>&1 <<'PY'
         import importlib, importlib.util, sys
-        from importlib.metadata import packages_distributions
+        from importlib.metadata import distribution
 
         sys.path.insert(0, "scripts")
         from drift_check import _direct_requirements_for
 
-        declared = {n.lower().replace("_", "-") for n in _direct_requirements_for(sys.argv[1])}
-        named = sorted(
-            {
-                module
-                for module, dists in packages_distributions().items()
-                for dist in dists
-                if dist.lower().replace("_", "-") in declared
+
+        def top_levels(dist):
+            """Top-level module names a distribution ships.
+
+            Deliberately NOT `packages_distributions()`: on Python 3.10 that
+            reads `top_level.txt` only, and a wheel built by hatchling ships
+            none — so httpx, pydantic-settings and opentelemetry-api all
+            resolved to nothing and the probe reported a working install as a
+            failure. Measured on the runner at 3.10.21; 3.11 infers and does
+            not. The inference below is what 3.12 does, done here so the
+            answer does not depend on which interpreter the lane runs on —
+            which, for a lane whose whole subject is interpreter-specific
+            breakage, is not a dependency to leave in.
+            """
+            declared = dist.read_text("top_level.txt")
+            if declared:
+                return {line.strip() for line in declared.splitlines() if line.strip()}
+            return {
+                f.parts[0] if len(f.parts) > 1 else f.with_suffix("").name
+                for f in (dist.files or [])
+                if f.suffix == ".py"
             }
-        )
+
+
+        modules = set()
+        for name in _direct_requirements_for(sys.argv[1]):
+            modules |= top_levels(distribution(name))
+
         probed = 0
-        for module in named:
+        for module in sorted(modules):
             try:
                 found = importlib.util.find_spec(module) is not None
             except (ImportError, ValueError):
@@ -173,7 +192,7 @@ runs:
             probed += 1
             print(f"import ok: {module}")
         if not probed:
-            sys.exit(f"no installed top-level module found for any of {sorted(declared)}")
+            sys.exit(f"no installed top-level module found for {sorted(modules)}")
         PY
         rc=$?
         cat "$LOG"

@@ -240,6 +240,11 @@ Four limits bound that, and they are why [Rule 14](#rule-14) and
   and breaks only on a newer interpreter is outside it; so is a floor that
   cannot be installed at all on a newer one, which announces itself to you at
   install time rather than silently.
+- **That check is stricter than your runtime, on purpose.** Our tests treat
+  warnings as errors, so a floor that still works but has started emitting
+  deprecation warnings fails it. You would see nothing at those versions yet;
+  we would rather find out a release early than a release late. It means a
+  floor being flagged is not the same as a floor being broken for you.
 - **It is early warning, not remediation**, and it resolves on one platform.
   The job never edits a range or opens a pin-update pull request; a maintainer
   reads the finding and decides.

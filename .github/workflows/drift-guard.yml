@@ -28,6 +28,11 @@ name: Drift Guard
 #    exactly that shape. It leaves transitive packages newest, so a red leg can
 #    be a floor meeting a new transitive rather than a wrong floor. And it
 #    reaches only as far as that extra's target in `scripts/drift_smoke_map.py`.
+#    And it is STRICTER than a user's runtime in one direction: the smoke
+#    inherits `filterwarnings = error`, so a floor that merely warns against
+#    current transitives fails its leg. Deliberate — a deprecation at the floor
+#    is a floor about to break — but a red leg is not always something a user
+#    sees today.
 #  - A floor leg is ADVISORY: it exits 0 whatever it finds, and the verdict is
 #    on the issue. `infra/drift-locks/KNOWN-FINDINGS.md` is what separates a
 #    floor finding somebody owns from a new one; an unregistered finding holds
