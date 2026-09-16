@@ -1,4 +1,4 @@
-id: BK-368
+id: BK-378
 title: "The /ship loop reviews its own record past round 2, and nothing separates the two"
 trigger: >-
   BUG-274's close report said that past round 3 the loop was largely auditing
@@ -8,7 +8,7 @@ trigger: >-
   The user asked for a design of the next /ship, founded on evidence rather
   than on the round count.
 source_items:
-  - BK-368
+  - BK-378
   - BK-365
   - BK-366
 audience:
@@ -19,8 +19,8 @@ expected_ripples:
 # list went stale between this branch's first and fourth commit ("one commit")
 # and a round-1 finding caught it: run `git log --format='%s' origin/master..HEAD`
 # and count the subjects that answer a review round — they say so ("address PR
-# #1002 round N"). The four BK-368 commits before review implement the item and
-# do not count. Re-run before each push; the value is the count, including the
+# #1002 round N"). The four commits before review implement the item and do
+# not count; nor does a commit that only re-homes the ID (twice, per ID-257). Re-run before each push; the value is the count, including the
 # commit that carries this line.
 review_rounds: 1
 phases:
