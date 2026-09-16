@@ -66,24 +66,41 @@ documented in [`CONTRIBUTING.md`](../CONTRIBUTING.md).
 
 ### `drift-guard.yml` — transitive dependency drift
 
-- **What it does:** re-resolves every `remote-store[<extra>]` against the latest
-  available transitive versions (including pre-releases), diffs against the
-  committed baselines in `infra/drift-locks/`, and runs the most-likely-to-break
-  smoke tests for any extra that drifted. It never edits `pyproject.toml` and
-  never auto-merges a floor/pin — it is early warning, not remediation.
+- **What it does:** watches **both ends** of every declared range, in two lanes.
+  The *newest* lane re-resolves every `remote-store[<extra>]` against the latest
+  available transitive versions (including pre-releases) and diffs against the
+  committed baselines in `infra/drift-locks/`. The *floor* lane installs each
+  extra at the floor of every range it declares (`uv pip install --resolution
+  lowest-direct`) on the oldest interpreter `requires-python` admits. Both lanes
+  install the extra **alone**, import its own declared packages, and run its
+  smoke target from `scripts/drift_smoke_map.py` — on every leg, not only on
+  drift, because the isolated install is the only thing that would catch an
+  extra failing to declare a package another extra supplies. It never edits
+  `pyproject.toml` and never auto-merges a floor/pin — early warning, not
+  remediation.
 - **When:** Monday 07:00 UTC, plus manual `workflow_dispatch` (optionally for a
-  single extra).
+  single extra, a single lane, or as a `dry_run` that renders the body into the
+  job summary and leaves the issue alone).
 - **Where the finding shows up:** a single **rolling `[drift-guard]` GitHub
-  Issue** — opened or updated when any extra drifts, commented "cleared" and
-  closed when all are clean. The per-extra **smoke verdict** lives in the linked
-  Actions run, not the issue body.
+  Issue** — opened or updated when anything is unresolved in either lane,
+  commented "cleared" and closed when both are clean. The per-extra **smoke
+  verdict is in the issue body**, per lane, with the phase that failed; the run
+  carries the logs behind it.
+- **What goes red:** a newest-lane smoke failure fails its leg, which is the
+  signal the `/drift` skill has always read. A **floor** leg never does: its
+  findings are advisory decisions about a published range, and four floors are
+  known-bad at any time, so a permanently red lane would be a filterable X that
+  Rule 1 says is not a channel to rely on. `infra/drift-locks/FLOOR-REGISTER.md`
+  is what separates an owned floor finding from a new one — an unregistered one
+  holds the issue open, a registered one renders and does not.
 - **How to act:** run the **`/drift` skill**. Refreshes are gated per extra on
-  that extra's smoke-job conclusion in the linked run; the skill's steps 3–5 are
-  authoritative on the gating, including how a major bump and a red smoke are
-  each handled. The skill prepares a pushed branch and stops; the maintainer
-  opens the PR. Note the gate's reach is per-extra and uneven — an extra whose
-  smoke cannot load the package that drifted returns a green verdict about
-  nothing (BUG-250).
+  that extra's smoke verdict; the skill's steps 3–5 are authoritative on the
+  gating, including how a major bump, a red smoke and a red floor are each
+  handled. The skill prepares a pushed branch and stops; the maintainer opens
+  the PR. Note the reach is per-extra and uneven — an extra whose smoke cannot
+  load the package that drifted returns a green verdict about nothing (BUG-250)
+  — and the floor lane runs on one interpreter, so a floor that breaks only on a
+  newer one is outside it.
 
 ### `mutation.yml` — mutation testing
 
@@ -99,9 +116,14 @@ documented in [`CONTRIBUTING.md`](../CONTRIBUTING.md).
   - **Harness / implementation failure** (the run itself broke: an import,
     config, or tooling error, a baseline test failure, a leg that recorded no
     outcome or no readable report): the run is **red** AND the single
-    **rolling `[mutation]` GitHub Issue** is opened or updated. This diverges
-    from drift-guard's never-red model on purpose: a broken weekly guard is a
-    real regression worth both a red X and a durable TODO.
+    **rolling `[mutation]` GitHub Issue** is opened or updated. This is the same
+    split drift-guard makes and for the same reason — a finding about a
+    dependency or a mutant is advisory and lives on the issue, while a guard
+    that broke is a real regression worth both a red X and a durable TODO. What
+    differs is where each guard draws the line: drift-guard's newest-lane smoke
+    failure is red because it is a regression against a resolution CI accepted,
+    and its floor lane is never red because a known-bad floor is a standing
+    decision rather than a new break.
   - **Surviving mutant** (a mutated line no test caught): **advisory only**.
     The run stays green and no issue is opened; counts appear in the
     run-summary table and the per-scope HTML report artifacts. The mutation

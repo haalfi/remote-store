@@ -394,10 +394,24 @@ where a known-incompatible major looms — see the comment on
 per-extra ranges. `.github/workflows/drift-guard.yml` runs weekly (Monday 07:00 UTC):
 it re-resolves each `remote-store[<extra>]` with `pip install --upgrade --pre`,
 diffs against the committed baselines in `infra/drift-locks/`, runs the
-smoke targets in `scripts/drift_smoke_map.py` for any extra that drifted,
+smoke targets in `scripts/drift_smoke_map.py` on every leg,
 and reconciles a single rolling GitHub issue. The workflow never edits
 `pyproject.toml` and never opens a pin-update PR — it is early warning,
 not automated remediation.
+
+A second lane watches the other end of each range. It installs every extra at
+the **floor** of every range it declares — `uv pip install --resolution
+lowest-direct`, which takes the floors from `pyproject.toml` rather than from a
+second copy of them — on the oldest interpreter `requires-python` admits, and
+runs that extra's smoke against it. Its legs exit 0 whatever they find: a floor
+finding is a decision about a published range, so it belongs on the rolling
+issue beside its owner rather than in a red X. `infra/drift-locks/FLOOR-REGISTER.md`
+records the findings already owned, so a new one is distinguishable from a known
+one; delete a row there in the same change that raises the floor. A red floor
+leg means the floor is too low — raise it, following the bump table in
+[§ When to bump](#when-to-bump), which prices a floor raise by how old the
+releases it newly excludes are. The floor lane resolves but writes no lock:
+`pyproject.toml` already holds the claim, so there is nothing to commit.
 
 When you deliberately bump a floor (e.g. `paramiko>=3.1` after a
 known-breaking upstream release), refresh the baseline in the same PR:

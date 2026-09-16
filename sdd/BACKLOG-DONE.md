@@ -240,6 +240,91 @@ if evidence changes; these are retired.
 
 ## Unreleased
 
+- [x] **BK-369 — Nothing ever installs an extra at its declared floor, so a floor is true until a user disproves it**
+  spec: — · effort: M · audience: infra.ci
+  A weekly floor lane in `.github/workflows/drift-guard.yml` installs each of
+  the 14 tracked extras at the floor of every range it declares — `uv pip
+  install --resolution lowest-direct`, which takes the floors from
+  `pyproject.toml` rather than from a second copy of them — on the oldest
+  interpreter `requires-python` admits, derived at run time rather than spelled
+  a fourth time. Each leg then imports the extra's own declared packages and
+  runs its `drift_smoke_map.py` target. Findings land on the rolling issue with
+  the phase that failed; the legs exit 0, because a floor finding is a decision
+  about a published range rather than a new break.
+  **The first run found four**, which is the item's whole thesis arriving on
+  schedule: `pyarrow>=12.0.0` / `>=14.0.0` across three extras and
+  `aiohttp>=3.0` in one, all installing cleanly and then failing to import
+  (BUG-287, BUG-288). Five wrong floors had been found by hand in three sweeps
+  before this; the lane found four more on its first attempt.
+  **It also falsified this item's own prescription.** The body said pyarrow's
+  two floors were in the self-announcing "pip refuses" class and were fine.
+  They refuse on the newest interpreter and install on the oldest, which is
+  where the lane runs — so they were in the target class the whole time. The
+  distinction the item drew was right; its application was not.
+  **Bounds, stated rather than implied** — the lane runs on one interpreter, so
+  a floor that breaks only on a newer one is invisible to it (two of the five
+  hand-found bugs were that shape); it leaves transitives newest, so a finding
+  can be a floor meeting a new transitive; and it reaches only as far as each
+  extra's smoke target, inheriting BUG-250 whole. `sdd/GATE-INVENTORY.md`
+  carries the declaration; the policy page carries the user-facing half.
+  **No lock is committed for the floor lane**, because the claim already lives
+  in `pyproject.toml` and a second copy is what `infra/drift-locks/` exists to
+  avoid, not to duplicate. `infra/drift-locks/FLOOR-REGISTER.md` is the
+  [Rule 6](DRIFT-RULES.md#tolerated) register that keeps a known-bad floor from
+  reading like a new one.
+  The cheap first step the item named was taken: across the RFC corpus the one
+  unresolved dependency-risk question was RFC-0014's OQ2, and its header now
+  records that BUG-285 answered the floor half of it.
+  Co-shipped with BK-372 and BK-374.
+  Trace: `sdd/traces/bk-369-floor-lane.yml`.
+
+- [x] **BK-372 — No standing check installs an extra by itself, so an under-declared extra passes every gate**
+  spec: — · effort: M · audience: infra.ci
+  The `STATUS != drift` early return is gone: both lanes now install each extra
+  **alone** on every leg and import its own declared packages before anything
+  else joins the environment, so isolation is a standing check rather than a
+  side effect of version movement. An extra whose versions are stable used to
+  be installed alone by nothing at all.
+  **The import probe is what gives the isolation teeth**, and it runs *before*
+  the smoke's pytest plugins: `moto`, `vcrpy` and `werkzeug` bring packages of
+  their own, and after they are installed an under-declared extra imports
+  perfectly well on somebody else's dependency — which is exactly how BUG-286
+  survived, masked by `dev` pulling `s3-pyarrow`'s aiobotocore.
+  A red smoke on a clean resolution now reaches the rolling issue rather than
+  only a red run, which is what `CI-OPERATIONS.md` Rule 1 asks of a guard.
+  **What it still cannot catch**, per the item: an extra whose smoke target
+  does not exercise the path needing the missing package. Isolation without
+  reach is a green light for a declaration nobody exercised (BUG-250, ID-250).
+  Shipped with BK-369; no separate trace — same lane, same PR.
+
+- [x] **BK-374 — The Tested-versions page answers a question next to the one a user brought, and is silent about the extras it skips**
+  spec: — · effort: S · audience: user.site
+  `docs-src/reference/tested-versions.md` now publishes the **declared** range
+  beside the resolved one, per package, and names each extra's smoke reach, so
+  a reader can see both what a resolver is held to and how much the row beside
+  it is worth. A closing section names the extras the page does not cover, with
+  the environment marker as the reason — today exactly `[toml]`, which is in
+  the README's install list and whose absent row previously read as "nothing
+  changed" rather than "never checked".
+  **The generator grew one function, not a data source**, as the item
+  predicted: `_direct_requirements_for` keeps the specifier `_direct_deps_for`
+  discarded, and the latter is now its key set.
+  **The exclusions half was done by derivation rather than by the split the
+  item prescribed**, and the deviation is deliberate. The marker-gated half is
+  derived from the markers themselves, so a new marker-gated extra excludes
+  itself; the dev/build half stays a local frozenset with a test asserting it
+  equals `gen_features._EXCLUDE_EXTRAS`. Importing that constant was the
+  obvious move and was rejected: it answers a *presentation* question — which
+  extras the README's install list omits — so importing it would let a docs
+  decision silently shrink the drift matrix, which `list_extras()` drives. An
+  equality test fails loudly where an import would go quiet.
+  **Selector flags never reach the page.** The smoke line renders paths only:
+  `drift_smoke_map`'s entries carry `-k` expressions and a parked-PoC exclusion,
+  which are facts about the harness rather than about the product.
+  The two refusals the item recorded stand: no "community-supported" tier, and
+  no upgrade-cadence rule of thumb.
+  Trace: `sdd/traces/bk-374-tested-versions-ranges.yml`.
+
 - [x] **ID-018 — conda-forge publishing**
   spec: — · effort: — · audience: user.discoverability.human, library.maintainer
   `conda install -c conda-forge remote-store` works, and the channel serves the
@@ -258,9 +343,13 @@ if evidence changes; these are retired.
   the extras. The analytical distinction that made the sweep tractable:
   a floor that **refuses to install** announces itself, where one that
   **installs and then fails at import** does not, and only the second class is
-  what a floor must exclude. That is why two `pyarrow` floors were correctly left
-  alone. BK-369 carries the underlying gap — a declared floor is still a claim
-  nobody installs and runs.
+  what a floor must exclude. That is why two `pyarrow` floors were left
+  alone — **a call BK-369's lane later measured as wrong** (BUG-287): they
+  refuse only on the *newest* interpreter, and on the oldest they install and
+  then fail to import, which puts them in the second class after all. The
+  distinction held; which side those two floors fell on did not. BK-369 closed
+  the underlying gap: a declared floor is now something a mechanism installs
+  and runs, weekly.
   **The two copies diverged, and the divergence cost two things.** The file
   submitted to staged-recipes dropped `tomli >=1.1.0`, leaving the `toml` extra
   unconstrained for conda users, and carried an `about` block advertising four
@@ -524,7 +613,9 @@ if evidence changes; these are retired.
   depends on pydantic, but the extra never names the package it imports. The
   docstring example does use `pydantic_settings.BaseSettings`, so the declaration
   is defensible; recorded here so the next reader does not re-derive it.
-  Successor for the mechanism: **BK-369**, `[ ]` in `BACKLOG.md`.
+  Successor for the mechanism: **BK-369**, below in this file — its floor lane
+  now installs every declared floor weekly, and its first run found four this
+  hand sweep did not (BUG-287, BUG-288).
   Trace: `sdd/traces/bug-285-extra-floors-sweep.yml`.
 
 - [x] **BUG-284 — The `[sftp]` extra's tenacity floor admitted five years of releases that cannot run the code**

@@ -1,15 +1,43 @@
 name: Drift Guard
 
-# ID-182: weekly scheduled re-resolution of every `remote-store[<extra>]`
-# against the latest available transitive versions (including pre-releases),
-# diffed against the committed baselines in `infra/drift-locks/`. On drift,
-# runs the most-likely-to-break smoke tests against deterministic fixtures
-# and opens (or updates) a single rolling GitHub issue.
+# ID-182: weekly scheduled check on BOTH ends of every declared dependency
+# range, per `remote-store[<extra>]`.
+#
+#  - The `check` (newest) lane re-resolves each extra against the latest
+#    available transitive versions, pre-releases included, diffs the result
+#    against the committed baselines in `infra/drift-locks/`, and smokes it.
+#  - The `floor` lane installs each extra at the FLOOR of every range it
+#    declares (`uv pip install --resolution lowest-direct`, which takes the
+#    floors from pyproject.toml rather than from a second copy of them) on the
+#    oldest interpreter `requires-python` admits, and runs the same smoke.
+#
+# Both lanes install each extra ALONE and import its own declared packages
+# before anything else joins the environment. That isolation is what makes an
+# under-declared extra visible: the aggregates every other job installs cover
+# for each other, so a missing dependency arrives from a neighbour.
+#
+# Findings from both lanes land on a single rolling GitHub issue.
 #
 # Explicit non-goals:
 #  - This workflow NEVER edits pyproject.toml.
 #  - This workflow NEVER auto-merges a pin / floor update.
 #  - The point is early warning, not automated remediation.
+#  - The floor lane is NOT a verification of the floors. It runs on ONE
+#    interpreter — the oldest — so a floor that breaks only on a newer one is
+#    invisible to it, and two of the five floor bugs found by hand were of
+#    exactly that shape. It leaves transitive packages newest, so a red leg can
+#    be a floor meeting a new transitive rather than a wrong floor. And it
+#    reaches only as far as that extra's target in `scripts/drift_smoke_map.py`.
+#  - A floor leg is ADVISORY: it exits 0 whatever it finds, and the verdict is
+#    on the issue. `infra/drift-locks/FLOOR-REGISTER.md` is what separates a
+#    floor finding somebody owns from a new one; an unregistered finding holds
+#    the issue open, a registered one does not.
+#
+# One sharp edge on `workflow_dispatch`: the report job regenerates the WHOLE
+# issue body from whatever reports the run produced, so a single-extra or
+# single-lane dispatch rewrites the body to that slice and drops every other
+# row. Use `dry_run: true` to see a body without writing one; for a real
+# re-run that must preserve the issue, dispatch `extra: all` and `lane: all`.
 #
 # This is one of the scheduled/automated CI guards; the cross-guard inventory
 # and the durable-TODO principle live in sdd/CI-OPERATIONS.md.
@@ -41,6 +69,17 @@ on:
         required: false
         default: "all"
         type: string
+      lane:
+        description: "Which lane to run"
+        required: false
+        default: "all"
+        type: choice
+        options: [all, newest, floor]
+      dry_run:
+        description: "Render the issue body into the job summary and leave the issue untouched"
+        required: false
+        default: false
+        type: boolean
 
 permissions:
   contents: read
@@ -60,11 +99,38 @@ jobs:
     runs-on: ubuntu-latest
     outputs:
       extras: ${{ steps.set-extras.outputs.extras }}
+      lane: ${{ steps.set-lane.outputs.lane }}
+      min_python: ${{ steps.set-lane.outputs.min_python }}
     steps:
       - uses: actions/checkout@v7
       - uses: actions/setup-python@v7
         with:
           python-version-file: .python-version
+
+      # The oldest supported interpreter is derived here, from
+      # `requires-python`, rather than written down a fourth time:
+      # `check_conda_recipe_pins.py` already holds three spellings of the
+      # minimum equal, and a hand-written fourth in this file would be the one
+      # nothing compares.
+      - id: set-lane
+        env:
+          # Same env-routing as the extras input below, and for the same
+          # reason: `lane` reaches an `if:` on two jobs, so it is validated
+          # against the closed set before it is echoed anywhere.
+          INPUT_LANE: ${{ github.event.inputs.lane }}
+          EVENT_NAME: ${{ github.event_name }}
+        run: |
+          lane="${INPUT_LANE:-all}"
+          if [ "$EVENT_NAME" = "schedule" ]; then
+            lane=all
+          fi
+          case "$lane" in
+            all|newest|floor) ;;
+            *) echo "::error::lane must be one of all|newest|floor, got '${lane}'"; exit 1 ;;
+          esac
+          echo "lane=${lane}" >> "$GITHUB_OUTPUT"
+          echo "min_python=$(python scripts/drift_check.py min-python)" >> "$GITHUB_OUTPUT"
+
       - id: set-extras
         env:
           # Route the user-supplied input through env, not direct template
@@ -94,6 +160,7 @@ jobs:
 
   check:
     needs: [setup]
+    if: needs.setup.outputs.lane != 'floor'
     name: check-${{ matrix.extra }}
     runs-on: ubuntu-latest
     strategy:
@@ -153,69 +220,32 @@ jobs:
           echo "=== diff report for ${{ matrix.extra }} ==="
           cat "drift-reports/${{ matrix.extra }}.json"
 
-      # If the diff reports drift (stable or pre-release), install the
-      # candidate resolution into the runner Python — pinned to the emitted
-      # freeze via `-c` — and run the smoke targets against it.
-      # Status "needs_refresh" (empty baseline) is reported but does not
-      # gate a smoke run — there is nothing to compare against yet.
-      # Gated on success() so a resolve-step failure surfaces as the
-      # original error rather than a confusing FileNotFoundError here.
-      - name: Install candidate resolution and run smokes (on drift)
-        if: success()
-        run: |
-          STATUS=$(python -c "import json; print(json.load(open('drift-reports/${{ matrix.extra }}.json'))['status'])")
-          if [ "$STATUS" != "drift" ]; then
-            echo "No drift / nothing to smoke — status=$STATUS"
-            exit 0
-          fi
-          CONSTRAINTS="drift-candidates/${{ matrix.extra }}.txt"
-          if [ ! -s "$CONSTRAINTS" ]; then
-            # status==drift implies the resolve succeeded and emitted a freeze;
-            # a missing/empty file would mean the smoke runs unpinned, so fail
-            # loudly rather than silently regressing to a mixed-set smoke.
-            echo "::error::candidate freeze $CONSTRAINTS is missing/empty; cannot pin the smoke to the baseline"
-            exit 1
-          fi
-          # Install the project + extra pinned to EXACTLY the candidate
-          # resolution (the set uploaded as the baseline). `-c` forbids pip
-          # from moving any package off its candidate pin, so this reproduces
-          # the freeze the report was computed from rather than re-resolving.
-          python -m pip install --pre -c "$CONSTRAINTS" ".[${{ matrix.extra }}]"
-          # Test plugins under the SAME constraints file (ID-231). A plugin's
-          # own (unshared) deps — werkzeug for moto, etc. — install freely, but
-          # a shared transitive dep (botocore, urllib3, cryptography, ...)
-          # cannot be moved off the candidate pin. If a plugin genuinely cannot
-          # coexist with the candidate set, pip fails here and the smoke goes
-          # red — the correct signal in practice — instead of silently going
-          # green against a mixed version set the committed lock never recorded.
-          # The list must cover every pytest plugin the smoke targets import:
-          # pytest-recording is hard-required by
-          # tests/backends/conformance/conftest.py (TEST-007), and
-          # pytest-httpserver is `importorskip`-ed by tests/backends/http/ —
-          # without it the http smoke would skip-everything (rc=0) and the
-          # rolling issue would silently report drift as "clear".
-          python -m pip install -c "$CONSTRAINTS" \
-            pytest pytest-asyncio pytest-xdist pytest-recording pytest-httpserver hypothesis 'moto[server,s3]'
-          TARGETS=$(python -c "
-          import shlex, sys
-          sys.path.insert(0, 'scripts')
-          from drift_smoke_map import smoke_for
-          argv = smoke_for('${{ matrix.extra }}')
-          if argv and argv[0] == '--import-only':
-              module = argv[1] if len(argv) > 1 else 'remote_store'
-              print(f'IMPORT_ONLY:{module}')
-          else:
-              print('PYTEST:' + ' '.join(shlex.quote(t) for t in argv))
-          ")
-          if [[ "$TARGETS" == IMPORT_ONLY:* ]]; then
-            MODULE="${TARGETS#IMPORT_ONLY:}"
-            python -c "import importlib; importlib.import_module('$MODULE'); print('import smoke passed for ${{ matrix.extra }}: $MODULE')"
-          else
-            # Serial run, no special plugin disables: pytest-cov and
-            # pytest-benchmark are not installed by the smoke setup, and
-            # pytest-xdist is harmless without `-n`.
-            eval pytest "${TARGETS#PYTEST:}"
-          fi
+      # The smoke runs on every leg that produced a freeze, not only on drift.
+      # The early return this replaces made the repo's ONLY isolated per-extra
+      # install a side effect of version movement, so an extra whose versions
+      # were stable was never installed alone at all — and an extra that is
+      # missing a dependency only fails when nothing else supplies it.
+      #
+      # `error` is the one status with no freeze to pin against; the composite
+      # action records that as `skipped`. `needs_refresh` DOES have one —
+      # `--emit-freeze` writes whenever the resolve succeeded, before status is
+      # considered — and a stub-baseline extra is precisely one that has never
+      # been installed alone, so it is the last one to skip.
+      - name: Smoke the candidate resolution
+        if: always()
+        uses: ./.github/actions/drift-smoke
+        with:
+          extra: ${{ matrix.extra }}
+          constraints: drift-candidates/${{ matrix.extra }}.txt
+          lane: newest
+
+      - name: Upload smoke verdict
+        if: always()
+        uses: actions/upload-artifact@v7
+        with:
+          name: drift-smoke-${{ matrix.extra }}-newest
+          path: drift-smokes/${{ matrix.extra }}-newest.json
+          if-no-files-found: warn
 
       - name: Upload drift report and fresh resolution
         if: always()
@@ -237,8 +267,109 @@ jobs:
           path: drift-candidates/${{ matrix.extra }}.txt
           if-no-files-found: warn
 
+  # The floor lane. A matrix job's id cannot be templated, so the id is `floor`
+  # and the per-extra name comes from `name:`.
+  floor:
+    needs: [setup]
+    if: needs.setup.outputs.lane != 'newest'
+    name: floor-${{ matrix.extra }}
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        extra: ${{ fromJson(needs.setup.outputs.extras) }}
+    steps:
+      - uses: actions/checkout@v7
+
+      # The OLDEST supported interpreter, derived in `setup` from
+      # `requires-python`. A floor is a claim about the whole supported range,
+      # and the oldest end is where a floor that is too low most often still
+      # resolves — but see the non-goals above for what one interpreter cannot
+      # see.
+      - uses: actions/setup-python@v7
+        with:
+          python-version: ${{ needs.setup.outputs.min_python }}
+
+      # `drift_check.py` reads pyproject.toml, and `tomllib` is stdlib only
+      # from 3.11. Every other job runs on the primary interpreter where the
+      # question does not arise; this one runs on the minimum, which is exactly
+      # the case the script's own docstring says needs `tomli`.
+      - name: Install the script's own dependency on older interpreters
+        run: python -m pip install --quiet "tomli; python_version < '3.11'"
+
+      - uses: astral-sh/setup-uv@v10.1.0
+        with:
+          enable-cache: false
+
+      # Same conditional as the newest lane: the floor smoke runs the same
+      # target, so it needs the same services.
+      - name: Start backends (if needed)
+        if: contains(fromJson('["s3","s3-pyarrow","azure","sftp"]'), matrix.extra)
+        uses: ./.github/actions/start-backends
+        with:
+          minio: ${{ contains(fromJson('["s3","s3-pyarrow"]'), matrix.extra) }}
+          azurite: ${{ matrix.extra == 'azure' }}
+          sftp: ${{ matrix.extra == 'sftp' }}
+
+      - name: Build legacy-sftp container (sftp only)
+        if: matrix.extra == 'sftp'
+        run: |
+          set -a
+          . infra/.env
+          set +a
+          docker compose -f infra/docker-compose.yml up -d legacy-sftp
+          for i in $(seq 1 30); do
+            nc -z 127.0.0.1 "${LEGACY_SFTP_HOST_PORT}" && break || sleep 1
+          done
+          nc -z 127.0.0.1 "${LEGACY_SFTP_HOST_PORT}" || { echo "::error::legacy-sftp failed to start on port ${LEGACY_SFTP_HOST_PORT}"; exit 1; }
+
+      # One resolve per leg, same shape as the diff lane: the freeze the report
+      # names is the freeze the smoke pins against. On failure the script writes
+      # a synthetic `status: error` report rather than exiting non-zero — here
+      # that is itself the finding, so it must reach the report job.
+      - name: Resolve the declared floors
+        run: |
+          mkdir -p drift-floors drift-floor-freezes
+          python scripts/drift_check.py floor "${{ matrix.extra }}" \
+            --out "drift-floors/${{ matrix.extra }}.json" \
+            --emit-freeze "drift-floor-freezes/${{ matrix.extra }}.txt"
+          echo "=== floor report for ${{ matrix.extra }} ==="
+          cat "drift-floors/${{ matrix.extra }}.json"
+
+      - name: Smoke the floor resolution
+        if: always()
+        uses: ./.github/actions/drift-smoke
+        with:
+          extra: ${{ matrix.extra }}
+          constraints: drift-floor-freezes/${{ matrix.extra }}.txt
+          lane: floor
+          # Advisory: the finding belongs on the rolling issue, where it has an
+          # owner and a rationale beside it, not in a red X that is filterable
+          # and says nothing about which floor or why.
+          fail-on-smoke: 'false'
+
+      # Both artifact names keep the `drift-` prefix the report job's
+      # `pattern: drift-*` download depends on. An artifact named anything else
+      # is simply never downloaded, and the lane would report nothing at all —
+      # silently, because an empty section renders as no section.
+      - name: Upload floor report
+        if: always()
+        uses: actions/upload-artifact@v7
+        with:
+          name: drift-floor-${{ matrix.extra }}
+          path: drift-floors/${{ matrix.extra }}.json
+          if-no-files-found: warn
+
+      - name: Upload smoke verdict
+        if: always()
+        uses: actions/upload-artifact@v7
+        with:
+          name: drift-smoke-${{ matrix.extra }}-floor
+          path: drift-smokes/${{ matrix.extra }}-floor.json
+          if-no-files-found: warn
+
   report:
-    needs: [check]
+    needs: [check, floor]
     if: always()
     runs-on: ubuntu-latest
     steps:
@@ -246,17 +377,24 @@ jobs:
       - uses: actions/setup-python@v7
         with:
           python-version-file: .python-version
+      # `pattern: drift-*` reaches the diff reports, the floor reports and both
+      # lanes' smoke verdicts, and keeps `candidate-baseline-*` out. Each kind
+      # lands in its own directory inside the artifact, so `merge-multiple` has
+      # no two files competing for one path.
       - uses: actions/download-artifact@v8
         with:
           path: drift-reports
           pattern: drift-*
           merge-multiple: true
 
-      # Compose the rolling-issue body from every per-extra report, then:
-      #  - drift or needs_refresh anywhere -> create/update the rolling issue.
+      # Compose the rolling-issue body from every report and verdict, then:
+      #  - anything unresolved in either lane -> create/update the rolling issue.
       #  - all clear and an open issue exists -> comment "cleared" and close.
       #  - all clear and no issue exists -> no-op.
+      # A floor finding already in infra/drift-locks/FLOOR-REGISTER.md renders
+      # but does not hold the issue open; see that file for why.
       - name: Update rolling drift issue
+        if: ${{ github.event.inputs.dry_run != 'true' }}
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           REPO: ${{ github.repository }}
@@ -266,3 +404,21 @@ jobs:
             --repo "$REPO" \
             --run-url "$RUN_URL" \
             --title "[drift-guard] Weekly transitive dependency drift"
+
+      # How a branch sees what a run would write without writing it. The body
+      # regenerates wholesale on every real run, so there is no way to preview
+      # one against the live issue without overwriting it.
+      - name: Render the issue body into the job summary (dry run)
+        if: ${{ github.event.inputs.dry_run == 'true' }}
+        env:
+          RUN_URL: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
+        run: |
+          {
+            echo "## Rolling-issue body this run would write"
+            echo
+            python scripts/drift_report.py drift-reports \
+              --repo "${{ github.repository }}" \
+              --run-url "$RUN_URL" \
+              --title "[drift-guard] Weekly transitive dependency drift" \
+              --dry-run
+          } >> "$GITHUB_STEP_SUMMARY"

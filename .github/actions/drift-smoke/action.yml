@@ -1,0 +1,217 @@
+name: Drift Smoke
+description: Install one extra under a constraints file, probe its own imports, and run its smoke target
+
+# Shared by both drift-guard lanes. The newest lane pins to the freshly
+# resolved candidate set; the floor lane pins to the resolution of every
+# declared floor. Same install shape, same probe, same smoke target, different
+# constraints file — which is the point: the two lanes differ in what they
+# install, never in what they then run.
+#
+# The verdict JSON is written by the step that smokes, not by a following step
+# reading `steps.<id>.outcome`. Both shapes work (composite steps do support
+# `id`, `if` and `continue-on-error`), but one step owns the exit code it is
+# reporting, so the recorded verdict and the job's colour cannot disagree.
+#
+# `phase` is the field triage reads. The four causes take four different
+# actions and are indistinguishable from a red X alone:
+#   install-extra   — the pinned set will not install.
+#   import-extra    — it installed and the extra's own declared packages do not
+#                     import. On the floor lane that is a wrong floor; on the
+#                     newest lane it is an incomplete declaration, which is the
+#                     only thing that catches an extra whose missing package is
+#                     supplied by some other extra in a shared environment.
+#   install-plugins — the extra installed and imported, and the smoke's own
+#                     pytest plugins could not join it under the same
+#                     constraints. A harness gap, not a dependency finding.
+#   smoke           — everything installed and the code failed against it.
+#
+# The probe runs BEFORE the plugins for that reason: `moto`, `vcrpy`, `werkzeug`
+# and friends drag in packages of their own, and after they are installed an
+# under-declared extra can import perfectly well on somebody else's dependency.
+
+inputs:
+  extra:
+    description: The extra to install and smoke (must already be validated against the known list)
+    required: true
+  constraints:
+    description: Path to the pip constraints file the install is pinned to
+    required: true
+  lane:
+    description: Which lane this verdict belongs to (newest or floor)
+    required: true
+  fail-on-smoke:
+    description: >-
+      Whether a red smoke should fail the job. The newest lane says true, keeping
+      the behaviour the triage skill has always read. The floor lane says false:
+      its findings are advisory and land on the rolling issue, and a lane that is
+      red every week for a reason already recorded teaches the reader to skip it.
+    required: false
+    default: 'true'
+
+runs:
+  using: composite
+  steps:
+    - name: Smoke ${{ inputs.extra }} (${{ inputs.lane }})
+      shell: bash
+      env:
+        EXTRA: ${{ inputs.extra }}
+        CONSTRAINTS: ${{ inputs.constraints }}
+        LANE: ${{ inputs.lane }}
+        FAIL_ON_SMOKE: ${{ inputs.fail-on-smoke }}
+      run: |
+        mkdir -p drift-smokes
+        VERDICT="drift-smokes/${EXTRA}-${LANE}.json"
+
+        record() {
+          SMOKE="$1" PHASE="$2" REASON="${3:-}" VERDICT="$VERDICT" EXTRA="$EXTRA" LANE="$LANE" python - <<'PY'
+        import json, os
+        payload = {"extra": os.environ["EXTRA"], "lane": os.environ["LANE"], "smoke": os.environ["SMOKE"]}
+        if os.environ.get("PHASE"):
+            payload["phase"] = os.environ["PHASE"]
+        if os.environ.get("REASON"):
+            # Bounded: this lands in a GitHub issue body shared with every other
+            # extra, and a full pytest log would push the rest of the report past
+            # the body limit.
+            payload["reason"] = os.environ["REASON"][-2000:]
+        with open(os.environ["VERDICT"], "w", encoding="utf-8") as f:
+            json.dump(payload, f, indent=2, sort_keys=True)
+        PY
+        }
+
+        # Exit with the recorded outcome, unless this lane is advisory.
+        finish() {
+          if [ "$1" -ne 0 ] && [ "$FAIL_ON_SMOKE" != "true" ]; then
+            echo "::warning::[$EXTRA] $LANE lane failed (phase $2); recorded as advisory"
+            exit 0
+          fi
+          exit "$1"
+        }
+
+        if [ ! -s "$CONSTRAINTS" ]; then
+          # No freeze means no resolution to pin to, so the smoke would run
+          # unpinned against a set nothing recorded. Skipping is the honest
+          # outcome and the verdict says so — a `skipped` row is not a pass.
+          echo "::notice::no constraints file at $CONSTRAINTS; nothing to smoke for [$EXTRA] ($LANE)"
+          record skipped "" "no resolution was emitted for this extra"
+          exit 0
+        fi
+
+        set +e
+        LOG=$(mktemp)
+
+        # Install the project + extra pinned to EXACTLY the recorded resolution.
+        # `-c` forbids pip from moving any package off its pin, so this
+        # reproduces the freeze the report was computed from rather than
+        # re-resolving. Note what `-c` does and does not buy: it holds the
+        # extra's own packages, and pip stays free to backtrack the plugin side
+        # below onto older releases that fit.
+        python -m pip install --pre -c "$CONSTRAINTS" ".[${EXTRA}]" 2>&1 | tee "$LOG"
+        rc=${PIPESTATUS[0]}
+        if [ "$rc" -ne 0 ]; then
+          record fail install-extra "$(tail -n 30 "$LOG")"
+          finish "$rc" install-extra
+        fi
+
+        # Import every top-level module the extra's own declared packages ship,
+        # before anything else is installed. Module names are read from the
+        # installed distributions' metadata rather than mapped by hand, so a
+        # renamed import surface is picked up rather than curated.
+        #
+        # A declared module that is not FINDABLE is skipped rather than failed,
+        # and the distinction is the whole reliability of this probe. Metadata
+        # names modules that need not be present: PyYAML declares `_yaml`, the
+        # optional libyaml accelerator, which an sdist build without libyaml
+        # simply does not produce; and azure-identity declares a top-level
+        # `images` that ships in no wheel at all. Both were measured here, and
+        # both would have failed a working install. What this lane is looking
+        # for is the opposite case — a module that IS present and raises when
+        # imported, which is precisely "installs and then breaks".
+        python - "$EXTRA" 2>&1 | tee "$LOG" <<'PY'
+        import importlib, importlib.util, sys
+        from importlib.metadata import packages_distributions
+
+        sys.path.insert(0, "scripts")
+        from drift_check import _direct_requirements_for
+
+        declared = {n.lower().replace("_", "-") for n in _direct_requirements_for(sys.argv[1])}
+        named = sorted(
+            {
+                module
+                for module, dists in packages_distributions().items()
+                for dist in dists
+                if dist.lower().replace("_", "-") in declared
+            }
+        )
+        probed = 0
+        for module in named:
+            try:
+                found = importlib.util.find_spec(module) is not None
+            except (ImportError, ValueError):
+                found = False
+            if not found:
+                print(f"skip (declared, not installed): {module}")
+                continue
+            importlib.import_module(module)
+            probed += 1
+            print(f"import ok: {module}")
+        if not probed:
+            sys.exit(f"no installed top-level module found for any of {sorted(declared)}")
+        PY
+        rc=${PIPESTATUS[0]}
+        if [ "$rc" -ne 0 ]; then
+          record fail import-extra "$(tail -n 30 "$LOG")"
+          finish "$rc" import-extra
+        fi
+
+        # Test plugins under the SAME constraints file. A plugin's own
+        # (unshared) deps — werkzeug for moto, etc. — install freely, and a
+        # shared transitive dep cannot be moved off the extra's pin; pip
+        # backtracks the plugin instead, which is why a failure here is recorded
+        # as a harness phase rather than as a finding about the dependency.
+        # The list must cover every pytest plugin the smoke targets import:
+        # pytest-recording is hard-required by
+        # tests/backends/conformance/conftest.py, and pytest-httpserver is
+        # `importorskip`-ed by tests/backends/http/ — without it the http smoke
+        # would skip-everything (rc=0) and the rolling issue would silently
+        # report drift as "clear".
+        python -m pip install -c "$CONSTRAINTS" \
+          pytest pytest-asyncio pytest-xdist pytest-recording pytest-httpserver hypothesis 'moto[server,s3]' 2>&1 | tee "$LOG"
+        rc=${PIPESTATUS[0]}
+        if [ "$rc" -ne 0 ]; then
+          record fail install-plugins "$(tail -n 30 "$LOG")"
+          finish "$rc" install-plugins
+        fi
+
+        TARGETS=$(python -c "
+        import shlex, sys
+        sys.path.insert(0, 'scripts')
+        from drift_smoke_map import smoke_for
+        argv = smoke_for('${EXTRA}')
+        if argv and argv[0] == '--import-only':
+            module = argv[1] if len(argv) > 1 else 'remote_store'
+            print(f'IMPORT_ONLY:{module}')
+        else:
+            print('PYTEST:' + ' '.join(shlex.quote(t) for t in argv))
+        ")
+        rc=$?
+        if [ "$rc" -ne 0 ]; then
+          record fail smoke "could not resolve a smoke target for [$EXTRA]"
+          finish "$rc" smoke
+        fi
+
+        if [[ "$TARGETS" == IMPORT_ONLY:* ]]; then
+          MODULE="${TARGETS#IMPORT_ONLY:}"
+          python -c "import importlib; importlib.import_module('$MODULE'); print('import smoke passed for ${EXTRA}: $MODULE')" 2>&1 | tee "$LOG"
+          rc=${PIPESTATUS[0]}
+        else
+          # Serial run, no special plugin disables: pytest-cov and
+          # pytest-benchmark are not installed by the smoke setup, and
+          # pytest-xdist is harmless without `-n`.
+          eval pytest "${TARGETS#PYTEST:}" 2>&1 | tee "$LOG"
+          rc=${PIPESTATUS[0]}
+        fi
+        if [ "$rc" -ne 0 ]; then
+          record fail smoke "$(tail -n 30 "$LOG")"
+          finish "$rc" smoke
+        fi
+        record pass "" ""
