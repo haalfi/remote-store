@@ -2441,7 +2441,7 @@ recorded (BK-365); the repo can say whether its own quality promise is
 holding rather than only asserting it (BK-366); two sessions working in
 parallel cannot mint the same backlog ID with every derivation telling both they
 are right (ID-257); and the review loop stops recording itself in the artifacts
-it reviews (BK-378).
+it reviews (BK-379's pilot decides what of RFC-0015 BK-378 ships).
 **Bounded to those fifteen deliberately** — count derived by enumerating the
 semicolon-separated clauses above, not carried forward. "No artifact asserts what
 no mechanism can check" is the promise and cannot be a closing condition: this section's own
@@ -3129,6 +3129,74 @@ the commit that writes it lands, so cite the generator instead.
   long-lived PR should expect under the current scheme; the item moved to
   `BK-378`.
 
+- [ ] **BK-379 — Pilot RFC-0015's D2, D3 and its LINE-anchor rule on three deliveries, before D1, D4 and D5 are built**
+  spec: — · effort: M · audience: contributor.process
+  [RFC-0015](rfcs/rfc-0015-ship-two-surfaces.md) is Draft with six decisions and
+  an acceptance criterion stated before the run. **Three of the six need no
+  script built**: D2 (fix shape, instrument-bound claims, the reader-harm form)
+  is prose in `/ship`'s triage table and `/fix-pr`'s Rules; D3 (a review
+  worktree pinned at the certified commit) touches the spawn step and the tree
+  check; D5's LINE-anchor posting rule touches `/rvw-pr` Step 4. D1 and D4 need
+  three scripts built, aliased, guarded and given `Drift-gate::` blocks, and the
+  measurement does not wait on them — `rfc-0015-findings.py` takes any PR number
+  today, and `ship_report.py`'s output format is better designed after three
+  uses than before none. The RFC carries the evidence for all six and is not
+  restated here. **Scope:** amend `/ship`, `/fix-pr`, `/rvw-pr` and
+  `/orchestrate`; run three deliveries; re-derive Tables 2 and 4 over them.
+  **Four corrections the RFC's criterion needs first**, because it was written
+  for six decisions and this pilots three:
+  1. **Its clause 2 has no referent here.** "The derived trace block draws a
+     finding in at most one round" presupposes a block D4 generates. This pilot
+     reports clauses 1 and 3: the loop-introduced share of classified must-fix
+     findings from round 3 on against the RFC's 78% baseline (Table 4 rows 3–7,
+     77 of 99), and the D5 retraction trigger as a dry run, which
+     `rfc-0015-findings.py` already computes under three readings. Clause 2 is
+     deferred with D4, not dropped.
+  2. **A miss points at D1, not at Draft.** D1 targets the largest measured
+     bucket, 133 of 541 findings on `sdd/traces/` and the two backlog files
+     (Table 3), and is not in this pilot. So a share at or above 50% does not
+     falsify the RFC: it is equally consistent with D2 and D3 being too weak
+     alone and with the record surface being what carries the late rounds, and
+     the pilot cannot tell the two apart. Build D1 and D4 and re-measure; only a
+     miss with those shipped sends the RFC back to Draft.
+  3. **The LINE rule takes the conservative reading**, or it corrupts the metric
+     it exists to serve. `/rvw-pr`'s Comment rules already pull two ways: attach
+     a finding on unchanged text to the nearest `+` line, then, one bullet
+     later, "do not anchor it to an unrelated one" — added to close BK-348's
+     diagnosis. D5 forces that tension to be settled, and settling it the wrong
+     way makes `origin()` blame the unrelated `+` line, which a fix pass wrote,
+     tagging the finding `loop-introduced` when its subject is untouched text.
+     That inflates the number the pilot must drive down and breaks comparison
+     with a baseline that *excluded* those findings rather than misattributing
+     them. So: anchor to the finding's true line when that line falls inside a
+     diff hunk, context lines included; keep `subjectType: "FILE"` otherwise;
+     never anchor to an unrelated line. A residue stays unclassifiable by
+     construction, since `line` must be a line the diff carries (`/rvw-pr`
+     Step 4, Comment rules) and ADR-0037's whole-file gate exists to find what
+     no hunk reaches. That is the RFC's own "though not by construction" hedge
+     on D5, and it leaves the RFC's Open Question 4 open.
+  4. **The one-measurer-per-panel cap stays up for the three deliveries.** D3
+     lifts it for free, but lifting it changes panel composition and so moves
+     finding counts independently of fix shape. Take the worktree isolation now,
+     lift the cap once the pilot has reported.
+
+  **`/orchestrate` is on the edit list and the RFC's Impact section omits it.**
+  `.claude/skills/orchestrate/SKILL.md` justifies its fixed `tmp/base` path
+  partly by "`/ship`'s one measuring member per panel", and
+  `.claude/skills/rvw-pr/SKILL.md` records that `/orchestrate` carries the same
+  three worktree commands; D3 moves that path under `tmp/review/<sha>/`, and
+  correction 4 only postpones the cap's removal. Whether `/orchestrate` also
+  takes D2 is the RFC's Open Question 1 — proposed yes there, to be settled
+  here.
+  **D2's reversal condition cannot fire in this pilot**: it needs a `BUG-` filed
+  after merge against a delivery run under the rule, which three deliveries do
+  not supply. Not a reason to widen the pilot; a reason not to read a pass as
+  having tested it.
+  **Exit criteria:** the four skills amended; three deliveries shipped under the
+  rules; Tables 2 and 4 re-derived over their PR numbers with
+  `rfc-0015-findings.py`; the result reported against clauses 1 and 3 with the
+  measured figures; and the disposition of D1, D4 and D5 recorded.
+
 - [ ] **BK-378 — The `/ship` loop reviews its own record past round 2, and nothing separates the two**
   spec: — · effort: L · audience: contributor.process
   Over the 19 deliveries reviewed since the whole-file gate merged, the share of
@@ -3149,5 +3217,8 @@ the commit that writes it lands, so cite the generator instead.
   the caught-versus-escaped split that item asks for.
   **Exit criteria:** RFC-0015 accepted or rejected with its open questions
   answered; if accepted, an ADR amending ADR-0033/0034/0037, the skill
-  rewrites and the two scripts it names shipped, and Table 2 re-derived for
-  one delivery run under the new rules.
+  rewrites and the two scripts it names shipped, and Tables 2 and 4 re-derived
+  over the **three** deliveries the RFC's acceptance criterion names, which also
+  states that "One delivery is one draw and is not the criterion". **BK-379 runs
+  that pilot** for D2, D3 and the LINE-anchor rule, and reports which of D1, D4
+  and D5 this item still owes.
