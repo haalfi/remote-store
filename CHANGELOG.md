@@ -52,10 +52,9 @@ This project follows [Semantic Versioning](https://semver.org/). Pre-1.0, minor 
   `dagster>=1.10.18` replaces `>=1.9`, below which
   `import remote_store.ext.dagster` raises `ImportError` on every supported
   Python. Each new floor was established by installing that release into a clean
-  environment and running the code against it, on both the oldest and newest
-  supported Python. The two `pyarrow` floors were checked and deliberately left
-  alone: pip refuses them outright on 3.13 rather than installing something
-  broken. See the
+  environment and running the code against it, on Python 3.10 and 3.13. The two
+  `pyarrow` floors were checked and deliberately left alone: pip refuses them
+  outright on 3.13 rather than installing something broken. See the
   [migration guide](https://docs.remotestore.dev/stable/reference/migration/#v0310-to-v0320).
 
 ### Fixed
