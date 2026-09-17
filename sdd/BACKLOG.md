@@ -3219,16 +3219,18 @@ the commit that writes it lands, so cite the generator instead.
      it is named rather than left to the report.
      A residue stays unclassifiable whatever the rule, since GitHub takes a
      `line` only inside a hunk and ADR-0037's whole-file gate exists to find
-     what no hunk reaches. That is the RFC's own "though not by construction"
-     hedge on D5, and it leaves the RFC's Open Question 4 open.
+     what no hunk reaches. That is the bound D5 states beside its residue —
+     the discipline's reach "is bounded by 160 and not measured" — and it
+     leaves the RFC's Open Question 4 open.
   4. **The one-measurer-per-panel cap stays up for the three deliveries.** D3
      lifts it for free, but lifting it changes panel composition and so moves
      finding counts independently of fix shape. Take the worktree isolation now,
      lift the cap once the pilot has reported.
 
-  **`/orchestrate` is on the edit list, and both of the RFC's edit lists omit
-  it** — § Status and § Impact alike, so fixing one leaves the other asserting
-  the opposite. The reason is not `/orchestrate`'s own `tmp/base` path: that
+  **`/orchestrate` is on the edit list, and on both of the RFC's edit lists**
+  — § Status and § Impact alike, because a list that carries it on one side
+  only leaves the other asserting the opposite. The reason is not
+  `/orchestrate`'s own `tmp/base` path: that
   path is protected by its own exactly-one-measuring-reviewer rule, and D3's
   mechanism does not run there, because `/orchestrate`'s reviewers run against
   uncommitted work with no per-round review worktree; whether per-reviewer

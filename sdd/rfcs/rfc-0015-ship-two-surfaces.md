@@ -122,7 +122,12 @@ findings only.
 Four bounds travel with this table. **Pre-existing is zero throughout**, and
 that is the posting rule at work rather than a fact about untouched code:
 `/rvw-pr` anchors a line comment to a `+` line, so a finding about unchanged
-text is posted at file level and falls in the last column. **The last column
+text is posted at file level and falls in the last column. So the *loop share
+of classified* column here equals `loop-introduced / (original +
+loop-introduced)`; under D5's `LINE` discipline the two part company, the
+script prints the latter as `share l/(o+l)` with pre-existing in its own
+column, and a table re-derived over the pilot carries that ratio under this
+heading, which is the acceptance criterion's clause 1 (§ Impact). **The last column
 grows with the round**: panels post merged findings as `subjectType: "FILE"`,
 so from round 3 to round 7 between 40% and 58% of each round is
 unclassifiable (that column against the row total), rounds 8 to 10 are
@@ -683,26 +688,32 @@ runtime behaviour, no published page other than this RFC's own.
   above (D3); script work of size S; skill rewrites of size M.
 - **Acceptance criterion, stated before the run.** Three deliveries run under
   the rules, pooled, then `rfc-0015-findings.py` over them. Graduate to an ADR
-  if (1) the loop-introduced share of classified must-fix findings from round
-  3 on is below 50% (Table 4's pooled rounds 3 to 7: 77 of 99, 78%, summing
-  its rows), (2) the derived trace block draws a finding in at most one round
-  across the three, and (3) the retraction trigger fires at most once. **The
-  share in clause 1 is `loop-introduced / (original + loop-introduced)`**,
-  the two categories the baseline was measured over. Pre-existing is a
-  category the baseline has at zero throughout (Table 2's first bound) and
-  D5's `LINE` discipline newly populates, so a denominator that counted it
-  would lower the share for a reason that has nothing to do with D2 or D3.
-  The pre-existing and unclassifiable counts are reported beside the share,
-  and they bound what the discipline newly reached rather than measure it.
-  Pre-existing is a floor: the other half of Table 2's residue, findings
-  panels posted as `FILE` by practice though a `+` line existed (Table 2's
-  second bound), anchors under the rule to lines that read as original or
-  loop-introduced and is not separated from the findings the baseline
-  classified. That half enters clause 1's numerator and denominator from a
-  population the 78% baseline excluded, which is the comparability bound in
-  the other direction, and the fall in the unclassifiable count against
-  Table 2's 40% to 58% per round is the only measure of its size.
-  `rfc-0015-findings.py` prints clause 1 as one line, `POOLED r>=3
+  if (1) the loop-introduced share of must-fix findings from round 3 on,
+  over `original + loop-introduced`, is below 50% (Table 4's pooled rounds 3
+  to 7: 77 of 99, 78%, summing its rows), (2) the derived trace block draws a
+  finding in at most one round across the three, and (3) the retraction
+  trigger fires at most once. **Clause 1's denominator is not *classified*
+  in the sense Tables 2 and 4 and clause 3's stop rule use**, which includes
+  pre-existing; it is the two categories the baseline was measured over.
+  Pre-existing is a category the baseline has at zero throughout (Table 2's
+  first bound) and D5's `LINE` discipline newly populates, so a denominator
+  that counted it would lower the share for a reason that has nothing to do
+  with D2 or D3; clause 3 keeps the full sense on purpose, which is the floor
+  bias D5 names. The pre-existing and unclassifiable counts are reported
+  beside the share, and they bound what the discipline newly reached rather
+  than measure it. Pre-existing is a floor: the other half of Table 2's
+  residue, findings panels posted as `FILE` by practice though a `+` line
+  existed (Table 2's second bound), anchors under the rule to lines that read
+  as original or loop-introduced and is not separated from the findings the
+  baseline classified. That half enters clause 1's numerator and denominator
+  from a population the 78% baseline excluded, which is the comparability
+  bound in the other direction, and the fall in the unclassifiable count
+  against Table 2's 40% to 58% per round is the only measure of its size.
+  Its sign is not measured. If that half resembles the classified findings of
+  its own round, which from round 3 are 77% to 93% loop-introduced (Table 2),
+  it raises the share, so the bias runs against passing; the per-round
+  unclassifiable count is what lets a reader see how much of the figure it
+  could account for. `rfc-0015-findings.py` prints clause 1 as one line, `POOLED r>=3
   must-fix`, over the PR numbers given, with `o`, `l`, `p` and `u` beside
   the share, and its `BY ROUND INDEX` share excludes pre-existing for the
   same reason; the per-finding classification is what Tables 2 to 4 rest

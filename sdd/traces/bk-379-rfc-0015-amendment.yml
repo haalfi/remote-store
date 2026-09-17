@@ -21,7 +21,7 @@ surprising_ripples:
 # answer a review round. The commit that implements the amendment does not
 # count. Re-run before each push; the value is the count, including the commit
 # that carries this line.
-review_rounds: 1
+review_rounds: 2
 phases:
   - id: orient
     name: Orient
@@ -192,6 +192,34 @@ phases:
           is a fixed path that per-reviewer names would remove. Narrowed to
           what holds (D3's mechanism does not run there) and the lift sent
           to Open Question 1; BK-379's own paragraph corrected to match
+        outcome: ok
+  - id: fix_2
+    name: Round-2 fix pass
+    steps:
+      - file: sdd/BACKLOG.md
+        section: "BK-379, the /orchestrate paragraph and correction 3's last sentence"
+        read_type: gate
+        extract: >-
+          Round 2 found two backlog sentences this PR's own RFC edits
+          falsified: "both of the RFC's edit lists omit it" (both now carry
+          it) and a quotation of the "though not by construction" hedge the
+          D5 amendment deleted. The round-1 sweep for this class covered the
+          ADR list and the script's denominator and missed these two;
+          `rg 'not by construction|edit lists omit' sdd` now returns nothing
+        outcome: ok
+      - file: sdd/rfcs/rfc-0015-ship-two-surfaces.md
+        section: "Table 2 bounds, § Impact clause 1"
+        read_type: gate
+        extract: >-
+          Round 2 found "classified" carrying two denominators: Tables 2 and
+          4 and D5's stop rule include pre-existing, clause 1 did not, and a
+          table re-derived over the pilot would fill the old heading with the
+          new ratio. Clause 1 now names its denominator and says it is not
+          that sense; Table 2's first bound says the column equals that ratio
+          here and carries it under the pilot. Round 2 also found the
+          +-line-half bias unsigned where the other two biases were signed:
+          its sign is stated as not measured, with the direction it takes if
+          that half resembles its round (against passing)
         outcome: ok
   - id: verify
     name: Verify
