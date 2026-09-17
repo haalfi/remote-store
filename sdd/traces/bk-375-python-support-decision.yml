@@ -1,0 +1,132 @@
+id: BK-375
+title: "Decide the Python support window rather than inheriting it, and record the decision"
+trigger: >-
+  Rule 8 of the published dependency policy promised support for at least 3 years
+  after a Python version's release, adopting SPEC 0. Read as SPEC 0 intends, that
+  licensed dropping 3.10 and 3.11 the day it shipped, and nothing had decided
+  either way: requires-python and the five classifiers stood because nobody had
+  revisited them, and a reader could not tell that from deliberate generosity.
+source_items:
+  - BK-375
+  - BK-371
+audience:
+  - user.api
+  - contributor.process
+co_shipped_items:
+  - BK-373
+  - BK-377
+discovery_followups:
+  - BK-380
+expected_ripples:
+  - sdd/backlogid.json
+  - sdd/adrs/DIGEST.md
+  - CHANGELOG.md
+surprising_ripples:
+  # Neither is in the ripple-check, and neither was anticipated by this item.
+  - sdd/CONTENT-RULES.md
+  - sdd/rfcs/rfc-0007-doc-cross-links.md
+# Derivation for the value below, per the schema's review_rounds clause:
+# `git log --oneline origin/master..HEAD` over this branch, counting only
+# commits that exist because a review round asked for them, INCLUDING the commit
+# carrying this line. Filled at the loop's close; 0 while the first push is the
+# only state that exists.
+review_rounds: 0
+phases:
+  - id: orient
+    name: Orient
+    steps:
+      - file: sdd/BACKLOG.md
+        section: "(item)"
+        read_type: gate
+        extract: "The three inputs to gather, and that the drop takes its own PR"
+        outcome: ok
+      - file: docs-src/explanation/dependency-policy.md
+        section: "Rule 8"
+        read_type: gate
+        extract: "What the published promise currently says, and that it is a floor not a ceiling"
+        outcome: misleading
+        # Not the page's fault as written, but it is where the wrong window was
+        # published: it adopted SPEC 0's three years as the promise, when the
+        # line that matters to a user is the one upstream draws. The item
+        # inherited that framing and so did the first plan built from it.
+      - file: sdd/CLAUDE-REFERENCE.md
+        section: "Ripple-check table / Pre-work index"
+        read_type: gate
+        extract: "No trigger for the supported interpreter set; this change adds one"
+        outcome: ok
+  - id: measure
+    name: Gather the inputs
+    steps:
+      - file: pyproject.toml
+        section: "classifiers, requires-python, optional-dependencies"
+        read_type: reference
+        extract: >-
+          The five supported versions, and toml's marker-gated tomli as the one
+          floor that exists only for 3.10
+        outcome: ok
+      - file: .github/workflows/ci.yml
+        section: "setup (ALL_PYTHONS, MIN_PYTHON)"
+        read_type: reference
+        extract: >-
+          Which jobs are per-interpreter, needed before any Actions-API figure
+          could be attributed to a leg. 3.10 carries the typecheck job as
+          MIN_PYTHON, so the two legs are not like-for-like
+        outcome: ok
+      - file: sdd/adrs/0032-tiered-ci-gate-with-full-matrix-backstop.md
+        section: "Decision"
+        read_type: reference
+        extract: >-
+          Names the interpreter set twice, and the 20-slot concurrency cap the
+          queue-contention hypothesis rests on. Not superseded here, because the
+          set does not change
+        outcome: ok
+  - id: design
+    name: Decide and record
+    steps:
+      - file: sdd/DRIFT-RULES.md
+        section: "Rule 4 (authority)"
+        read_type: gate
+        extract: >-
+          The authority declaration must sit in the document owning the pair.
+          Retrospectively: the item said the choice was its own declaration, and
+          a backlog item is not a durable home — it moves to BACKLOG-DONE.md,
+          which check_links denylists as historical. The declaration went beside
+          the classifiers in pyproject.toml instead
+        outcome: ok
+      - file: sdd/adrs/0038-absent-container-outranks-drive-identity.md
+        section: "(full)"
+        read_type: reference
+        extract: "ADR shape: Status table, Context, Decision, Consequences"
+        outcome: ok
+      - file: CLAUDE.md
+        section: "Principles"
+        read_type: gate
+        extract: >-
+          Principle 9: every figure names the derivation it came from, run before
+          the sentence is written. This is the phase that most needed it — the
+          CI figures and the release dates are the whole argument
+        outcome: ok
+  - id: verify
+    name: Verify
+    steps:
+      - file: sdd/CLAUDE-REFERENCE.md
+        section: "Ripple-check table / Detailed checklist"
+        read_type: verify
+        extract: "Pre-work index first, then the Detailed checklist, then check_ripple_parity"
+        outcome: ok
+      - file: CONTRIBUTING.md
+        section: "When to bump, Release Phase 0"
+        read_type: verify
+        extract: >-
+          The interpreter row and the Phase 0 line were this item's work rather
+          than citations. The line numbers in the item's body had moved, which is
+          why it says to re-derive them
+        outcome: unclear
+        # The item cited CONTRIBUTING.md:445 and L494; the rows were at 462-464
+        # and the Phase 0 line at 513 on master. Stale coordinates in a filed
+        # item cost a search each time they are read.
+      - file: sdd/BACKLOG.md
+        section: "5. A release cannot ship a surprise"
+        read_type: verify
+        extract: "Mark the inertia clause met, naming what met it"
+        outcome: ok

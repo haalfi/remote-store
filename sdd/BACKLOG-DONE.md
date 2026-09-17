@@ -240,6 +240,151 @@ if evidence changes; these are retired.
 
 ## Unreleased
 
+- [x] **BK-375 — Two interpreters are past the support window we now publish, and nothing has decided whether to keep them**
+  spec: — · effort: M · audience: user.api
+  **The window was the wrong one, and that is the decision.**
+  [ADR-0039](adrs/0039-support-tracks-upstream-security-fixes.md) records it: a
+  Python version is supported for as long as CPython ships security fixes for
+  it, which is five years after its release, with SPEC 0's three years named as
+  the ecosystem floor beneath. Rule 8 of the
+  [dependency policy](../docs-src/explanation/dependency-policy.md#rule-8) now
+  publishes that instead of the three-year promise BK-371 shipped. It is a
+  widening, so no user loses a version.
+  **Under the new window nothing is past it**, which inverts this item's title.
+  Measured from each version's release-schedule PEP (`x.y.0 final` line, fetched
+  from `raw.githubusercontent.com/python/peps`, because python.org was
+  unreachable from the environment this was gathered in): 3.10 ends 2026-10-04,
+  3.11 2027-10-24, 3.12 2028-10-02, 3.13 2029-10-07, 3.14 2030-10-07. On
+  2026-09-17 that left 3.10 seventeen days out and everything else between one
+  and four years.
+  **The inputs the item asked for, gathered.** No declared dependency has
+  dropped 3.10 — every floor's current release carries `requires_python` between
+  `>=3.7` and `>=3.10`, and `dagster`'s `<3.15` is the only upper bound — so the
+  support is not notional. `toml`'s marker-gated `tomli` is the one floor that
+  exists only for 3.10. And the two oldest legs cost 20.9% of `ci.yml`'s
+  job-minutes while never being its longest job, against 41.6% of
+  `ci-full.yml`'s where one of them always is. ADR-0039 carries every figure
+  with the query it came from, the four caveats that bound them, and the one
+  queue-contention effect recorded as an unmeasured hypothesis rather than a
+  finding.
+  **3.10's drop is BK-380, deliberately.** This item's own body said raising
+  `requires-python` moves the whole spelling set and takes its own change, so
+  the position on 3.10 is now a decision with a date rather than inertia, and
+  the weekly report will surface the crossing when it happens.
+  **The maintainer half landed with it**, which the item said was its work
+  rather than a citation it could lean on: `CONTRIBUTING.md`'s bump table now
+  prices dropping an interpreter as **breaking** with the migration obligation,
+  Phase 0's support-window line names the mechanisms instead of saying nothing
+  derives them, and the ripple-check gained a **Supported interpreter set** row
+  enumerating all seven spellings and saying which four are watched by nothing.
+  `ADR-0032` was left standing rather than superseded, because the set did not
+  change here — recorded as a decision, since the item flagged it as one the
+  change had to make.
+
+- [x] **BK-373 — The Python support window is a rule a reader has to compute, and a timeline would just show it**
+  spec: — · effort: M · audience: user.site
+  Rule 8 asked a reader to know five release dates, add the window to each and
+  compare against today. It now carries a Mermaid `gantt` chart instead: one bar
+  per supported version from its release to the end of its security support,
+  SPEC 0's three-year floor marked inside it as a milestone, and a vertical line
+  at today. `scripts/gen_python_support.py --check` generates it into
+  `docs-src/_data/python-support-window.mmd` from the
+  `Programming Language :: Python` classifiers plus the release dates in
+  `scripts/python_support.py`, and the page pulls it into a `mermaid` fence with
+  a `pymdownx.snippets` include. Wired into `preflight` and `docs-gate`.
+  **The artefact carries no date**, which is what lets a `--check` gate live in
+  `preflight`: the today line is Mermaid's own, drawn client-side, so the
+  committed file is byte-stable and an unrelated pull request cannot go red on
+  it the next morning. A rasterised image would have frozen the marker at
+  commit, which is why the item ruled one out.
+  **`todayMarker on` is not what turns the marker on**, and the item's
+  instruction to verify before relying on it paid for itself twice. Measured
+  against mermaid 11.17.2 in Chromium: `drawToday` returns early only on the
+  literal string `off`, the default already draws the line, and any other value
+  is applied to it as an inline CSS style — so `on` becomes `style="on"`, an
+  invalid declaration. The directive is omitted, which also keeps the line on
+  Mermaid's theme colour and so correct in dark mode.
+  **The second thing that verification caught would have shipped broken.** The
+  generated header opened with a bare `%%` line; mermaid strips comment text but
+  not a contentless marker, so it joined the next line and the parser answered
+  `Expecting 'gantt', got 'NL'`. The page rendered the source as plain text with
+  `mkdocs build --strict` green and `--check` green — neither can see it,
+  because no documentation build executes Mermaid and the artefact still matched
+  itself. `assert_renderable` is the floor that came out of it, pinned in both
+  directions.
+  **Verifying it needs a browser, not a build.** Material 9.7.7 fetches the
+  renderer from `unpkg.com/mermaid@11` at page-view time, so the recipe is:
+  build the site, serve it, load the page in Chromium with that request answered
+  from the registry tarball, and screenshot. Material injects the SVG into a
+  **closed** shadow root, so a pixel capture is the only readable check — and
+  that is also why the item's "CSS or JS overlay" fallback is not implementable
+  without overriding Material's component. Bound: this pins 11.17.2 while the
+  live page follows a floating tag nothing in this repo can pin.
+  **One hazard found on the way in, outside the item's scope but inside its
+  change.** `pymdownx.snippets` defaults `check_paths` to false, so a missing
+  include is dropped silently. Turning it on immediately found a real defect: an
+  illustrative `--8<-- "examples/quickstart.py"` in
+  `sdd/rfcs/rfc-0007-doc-cross-links.md` had been silently eaten on the
+  published page, its target having moved into a subdirectory. It is escaped
+  now, and 45 reachable includes were enumerated to establish it was the only
+  one.
+
+- [x] **BK-377 — The support windows we publish come due on a date, so no diff can carry the check**
+  spec: — · effort: M · audience: infra.ci
+  Both rules gained a mechanism, and they split by home the way the item said
+  they would.
+  **Rule 9 fires on a diff**, so `scripts/check_support_windows.py` sits in the
+  release path. It compares every user-facing extra's collapsed floors between
+  the previous tag and the working tree, and for each floor that moved it names
+  the newest release the raise newly excludes and how old that release is. Older
+  than two years is patch-eligible; younger is breaking and owes a
+  `**Breaking**` marker and a migration section. It localizes per package,
+  reuses `check_conda_recipe_pins.declared_constraints` rather than
+  reimplementing the collapse, and prints the day it computed on. **Not in any
+  gate, deliberately**: it fetches release dates from PyPI, and its docstring
+  carries that as its own reason rather than citing this item.
+  **Rule 8 fires on the calendar**, so it went to drift-guard's report job — no
+  network needed, but a window closes whether or not anybody ships. A **Support
+  windows** section on the rolling issue carries one row per supported
+  interpreter with its release date, its window end and the days either side,
+  rendered every run because how much time is *left* is the number a reader
+  cannot compute. Weekly is stated as the resolution the promise needs, with the
+  invalidating events named: a date passing, a new CPython final release, a
+  classifier edit.
+  **Neither decides.** A closed window licenses a drop and never requires one,
+  which the report, the workflow header, the runbook and the `/drift` skill all
+  say, because a gate reading Rule 8 as an obligation would invert a rule that
+  promises a floor.
+  **The register is its own file**, `infra/drift-locks/PYTHON-SUPPORT.md`, not a
+  second table in `KNOWN-FINDINGS.md`. Measured before the split: a four-column
+  loader written like the existing one matched all seven dependency rows plus
+  the header and the separator, inventing seven "interpreters" whose `Review by`
+  was a prose paragraph — which the new date comparison would then have choked
+  on. Separate files remove the collision class and the row shapes make it
+  unreachable even if they are ever merged.
+  **`Review by` is read by code now, in both registers, through one predicate.**
+  Past its date a row stops silencing and the finding is reported as new again
+  with its owner still named. `KNOWN-FINDINGS.md` used to record that as a
+  bound it did not enforce; the asymmetry was resolved rather than documented,
+  which is the one widening beyond these three items and is named as such. All
+  seven dependency rows are dated 2026-12-31, so nothing changes until then.
+  **Two hazards the item did not name, both found by reading the code it
+  touches.** `drift_report.main` returned early when no artefact was found, and
+  the calendar half comes from no artefact — so on exactly the run where the
+  matrix produced nothing, a crossing would have been unreachable. The state is
+  attached to `Reports` and joins its `__bool__`, which makes the guard correct
+  by construction. And a crossing is true on *every* run, so letting it into
+  `has_signal` unguarded would have turned every narrowed dispatch into the
+  body-destroying rewrite BUG-282 documents; it holds the issue only on an
+  unnarrowed run, with the extras claim space derived from
+  `drift_check.list_extras()` rather than restated.
+  **Exercised against the raise BUG-287 proposes, and the item's expected answer
+  turned out to be stale.** `pyarrow` 14.0.0 → 16 newly excludes 15.0.2,
+  uploaded 2024-03-18, which is 30 months old against a 2026-09-17 cutoff — so
+  that raise is **patch-eligible**, not breaking. It was breaking until
+  2026-03-18. A second case, `>=21`, excludes 20.0.0 (2025-04-27) and does
+  answer **Breaking**, so both branches were executed rather than one asserted.
+
 - [x] **BK-369 — Nothing ever installs an extra at its declared floor, so a floor is true until a user disproves it**
   spec: — · effort: M · audience: infra.ci, user.site
   A weekly floor lane in `.github/workflows/drift-guard.yml` installs each of
@@ -475,6 +620,12 @@ if evidence changes; these are retired.
   today; the drop schedule is linked rather than copied, so no date is
   maintained here. What that licenses on the maintenance side is recorded in the
   trace and was not acted on.
+  **Rule 8's window was replaced before this shipped**, by BK-375 in the same
+  unreleased cycle: the published promise is now CPython's own security-support
+  lifetime, with SPEC 0's three years named as the floor beneath it. Rule 9's
+  two-year dependency window is untouched. This paragraph records what this item
+  published; [ADR-0039](adrs/0039-support-tracks-upstream-security-fixes.md) is
+  the current statement.
   Inbound links from `README.md` (banner and install section), `docs-src/index.md`,
   the generated `tested-versions.md` preamble (via `scripts/drift_check.py`),
   `docs-src/guides/extensions.md`, `docs-src/reference/migration.md` and

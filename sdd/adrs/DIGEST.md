@@ -2,7 +2,7 @@
 
 <!-- doc: repo-only -->
 
-Compiled from 38 ADR(s) by `scripts/gen_adr_digest.py`. Do not edit by hand; run `hatch run gen-adr-digest`.
+Compiled from 39 ADR(s) by `scripts/gen_adr_digest.py`. Do not edit by hand; run `hatch run gen-adr-digest`.
 
 ## Accepted
 
@@ -1258,6 +1258,33 @@ listings — whether or not BE-021 names it.
 **The rule is published with its enumeration, not alone.** GR-031 carries a
 call-site-to-scope table, and `tests/backends/graph/aio/test_utils.py`
 derives the resolver's row from that module's own call sites rather than a list.
+
+### [ADR-0039](0039-support-tracks-upstream-security-fixes.md): A Python Version Is Supported While Upstream Still Fixes It
+
+**A Python version is supported for as long as CPython ships security fixes for
+it.** That is the promise Rule 8 now publishes, with SPEC 0's three-year window
+named as the ecosystem floor beneath it so a reader can see where ours sits
+relative to the schedule their other dependencies follow. Ours is the longer of
+the two, and the rule promises a floor rather than a ceiling: we may support a
+version past the end of its security support, and will not support one for less.
+
+**3.11, 3.12, 3.13 and 3.14 stay**, because none is near its window and no
+declared dependency has dropped even 3.10.
+
+**3.10 goes when upstream stops fixing it**, which the table above puts at
+2026-10-04. That drop is BK-380's, not this record's: raising `requires-python`
+moves every spelling of the supported set, is a breaking change, and takes its
+own change. Until it lands the position is this decision rather than inertia,
+which is the whole point of writing it down.
+
+**The window is derived, not remembered.** `scripts/python_support.py` holds the
+release dates and the arithmetic, the classifiers decide the set,
+`scripts/gen_python_support.py` draws the chart the policy page publishes, and
+`scripts/drift_report.py` reports each interpreter's standing on the weekly
+drift-guard issue. A crossing licenses a drop; it never requires one.
+
+**Revisit at the next minor release**, or when the weekly report shows a
+crossing, whichever comes first.
 
 ## Superseded
 

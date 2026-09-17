@@ -30,6 +30,7 @@ including what *Enforcement* does not mean — is the last section below.
 | `scripts/check_readthedocs_python.py` | .python-version ↔ .readthedocs.yaml's build.tools.python | process | `all`, `lint` | gating |
 | `scripts/check_ripple_parity.py` | the ripple-check Pre-work index ↔ the Detailed checklist, both in sdd/CLAUDE-REFERENCE.md | process | `all`, `check-ripple-parity`, `docs-gate`, `lint` | gating |
 | `scripts/check_spec_marks.py` | spec IDs declared in sdd/specs/ ↔ spec IDs cited by pytest.mark.spec markers under tests/ | intent ↔ verification | `all`, `ci.yml:verify-formal`, `lint` | gating |
+| `scripts/check_support_windows.py` | the declared dependency floors at a base git revision and in the working tree ↔ the PyPI upload dates of the releases each raised floor newly excludes, over the packages named by every user-facing extra | process | `check-support-windows` | advisory |
 | `scripts/check_traces.py` | every trace under sdd/traces/ ↔ the schema in sdd/traces/_schema.yml | process | `all`, `check-traces`, `docs-gate`, `lint` | gating |
 | `scripts/docs/check_links.py` | every Markdown link and context7 manifest path ↔ the on-disk files and built docs-site pages they name | explanation | `all`, `check-links`, `docs-gate` | gating |
 | `scripts/docs/check_links.py` | every Markdown link carrying a #fragment, off the historical denylist ↔ the explicit <a id> tags and heading slugs of the file it names | explanation | `all`, `check-links`, `docs-gate` | gating |
@@ -41,6 +42,7 @@ including what *Enforcement* does not mean — is the last section below.
 | `scripts/gen_gate_inventory.py` | the Drift-gate declarations under scripts/, and the wiring in every source _WIRING_SOURCES names ↔ sdd/GATE-INVENTORY.md | process | `all`, `docs-gate`, `gen-gate-inventory`, `gen-gate-inventory-check`, `lint` | gating |
 | `scripts/gen_graph.py` | the source tree under src/remote_store/, plus the version and optional-dependency tables in pyproject.toml ↔ docs-src/_data/graph/graph.json | realization | `all`, `gen-graph`, `gen-graph-check`, `preflight` | gating |
 | `scripts/gen_graph_viz.py` | docs-src/_data/graph/graph.json, plus the Repository URL in pyproject.toml that the page's source links are built from ↔ docs-src/explanation/graph_viz.html | realization ↔ explanation | `all`, `gen-graph-viz`, `gen-graph-viz-check`, `preflight` | gating |
+| `scripts/gen_python_support.py` | the Programming Language :: Python classifiers in pyproject.toml and the release dates in scripts/python_support.py ↔ the committed Mermaid gantt body in docs-src/_data/python-support-window.mmd that the dependency-policy page includes | process ↔ explanation | `all`, `docs-gate`, `gen-python-support`, `gen-python-support-check`, `preflight` | gating |
 
 ## Rule checks, no pair
 
@@ -73,7 +75,7 @@ a *Rule asserted* cell would claim a check that is not being made.
 | Mechanism | Surfaces | Domain | Runs in | Enforcement |
 |---|---|---|---|---|
 | `scripts/drift_check.py floor` | the versions each extra's declared floors in pyproject.toml resolve to, and whether that resolution installs; it compares nothing committed, and under --out (the way the workflow runs it) a failed resolve is a synthetic error report rather than a non-zero exit, so it asserts nothing about what it finds. Run by hand without --out it re-raises, because there is no report for the reason to land in | process | `drift-check`, `drift-guard.yml:floor` | scheduled |
-| `scripts/drift_report.py` | the current per-extra dependency state in both lanes — the newest resolution's drift against the committed baselines, the declared floors' resolution, and each lane's smoke verdict — as a rolling GitHub issue it opens, updates or closes; it acts on that state rather than asserting anything, and exits 0 either way | process | `drift-guard.yml:report` | scheduled |
+| `scripts/drift_report.py` | the current per-extra dependency state in both lanes — the newest resolution's drift against the committed baselines, the declared floors' resolution, and each lane's smoke verdict — plus each supported interpreter's standing against the security-support window Rule 8 publishes, as a rolling GitHub issue it opens, updates or closes; it acts on that state rather than asserting anything, and exits 0 either way | process | `drift-guard.yml:report` | scheduled |
 | `scripts/report_trace_outcomes.py` | which documents readers recorded as unclear or misleading, ranked by tag rate over reads across the trace corpus | process | `report-trace-outcomes` | advisory |
 
 ## What this inventory does not catch

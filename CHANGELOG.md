@@ -7,10 +7,13 @@ This project follows [Semantic Versioning](https://semver.org/). Pre-1.0, minor 
 
 ## [Unreleased]
 
+- BK-375: Python versions are now supported for as long as CPython ships security fixes for them, which is longer than the 3-year window previously published; 3.11 through 3.14 all stay, and 3.10's support ends when upstream's does on 2026-10-04.
+- BK-373: The [dependency policy](https://docs.remotestore.dev/stable/explanation/dependency-policy/) draws the Python support windows as a chart with a marker at today, so the rule no longer has to be computed from five release dates.
+- BK-377: Both published support windows are now derived rather than remembered: a release-time check dates every version a raised dependency floor excludes, and the weekly dependency guard reports how each interpreter stands against its window.
 - BK-374: The [Tested versions](https://docs.remotestore.dev/stable/reference/tested-versions/) page publishes each extra's declared range beside the version CI was last green against, states how deep its check goes, and names the extras it does not cover.
 - BK-369: Scheduled CI now installs each extra at the floor of every range it declares and runs its smoke there, on the oldest supported Python, so the dependency policy states what is checked weekly and on which interpreter rather than that nothing re-derives a floor.
 - ID-018: The conda-forge channel serves 0.32.0 with the corrected dependency floors plus the `tomli` and `aiohttp` constraints; it had been publishing 0.30.0, whose `run_constraints` predated them.
-- BK-371: Publish the dependency and version policy as 15 citable rules, adopting [SPEC 0](https://scientific-python.org/specs/spec-0000/)'s support windows: a Python version is supported at least 3 years after its release, and a dependency version at least 2 years after its own.
+- BK-371: Publish the dependency and version policy as 15 citable rules, including support windows for interpreters and dependency versions; a dependency version stays supported at least 2 years after its own release, and the interpreter window is the one BK-375 states above.
 
 ## [0.32.0] - 2026-09-13
 

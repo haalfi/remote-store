@@ -49,6 +49,7 @@ Read this before starting. One line per trigger.
 | Public API (`__all__`)        | README Store API table, `reference/api/*.md` directive + index summary + `_nav.yml`, `examples/`, user guides; check `backends/__init__.py` *and* `aio/__init__.py` `__all__` too. `index.md` parity machine-verified by `gen-api-check` (ID-173): every public symbol needs an index row (or an entry on the small `_INDEX_EXEMPT` backend-companion allowlist) |
 | Extension                     | `__init__.py` exports (ADR-0013 rules), `pyproject` extras, README extensions table, `reference/api/extensions/*` + index + `_nav.yml`, guides, examples, CHANGELOG, BACKLOG |
 | Dependency                    | `pyproject` extras + pins, `packaging/conda-forge/recipe.yaml` `run_constraints`, README install, docs prerequisites |
+| Supported interpreter set     | Seven spellings move together and four are watched by nothing. `pyproject.toml` `requires-python` **and** its `Programming Language :: Python` classifiers (the classifiers govern — ADR-0039); `packaging/conda-forge/variants.yaml` `python_min`; `ci.yml` `MIN_PYTHON` **and** `ALL_PYTHONS`; `ci-full.yml`'s `test-full` matrix; `README.md`'s "Requires Python 3.10+"; `scripts/python_support.py`'s `PYTHON_RELEASES` (add the release date in the same change as a classifier, or the generator refuses); ADR-0032, which names the set and is superseded rather than edited. Watched: three by `check_conda_recipe_pins.py`, the matrix by `check_ci_full_matrix.py` (which never reads `pyproject.toml`). Unwatched: the classifiers, the README prose, the ADR. A **drop** is breaking ([CONTRIBUTING § When to bump](../CONTRIBUTING.md#when-to-bump)) |
 | `CAPABILITIES` ClassVar       | `003-backend-adapter-contract.md` (BE-003), `test_capabilities.py`, `conformance/test_identity.py`, custom-backend guide, `examples/snippets/` |
 | `_GATING` dict                | `001-store-api.md` (STORE-gate entries), `test_store.py`, guides if a method's cap docs change, `store.md` admonitions (verified by `gen-api-check`, ID-170). Two independent constants: sync in `_store.py`, async in `aio/_async_store.py` (ID-194); both verified against their pages (`store.md`, `aio/store.md`) by `gen-api-check` (ID-172); keep both in step with their classes |
 | `_BACKEND_GATING` dict        | `003-backend-adapter-contract.md` (BE-027), `backend.md` admonitions (verified by `gen-api-check`, ID-171). Async counterpart `_ASYNC_BACKEND_GATING` (`gen_graph.py`, ASYNC-045a) → `aio/backend.md` `AsyncBackend` admonitions (verified by `gen-api-check`, ID-172) |
@@ -147,7 +148,38 @@ Read this at verify-end (after the diff is complete) and during PR review. Each 
 |                            | `packaging/conda-forge/recipe.yaml` `run_constraints`     |
 |                            | (conda has no extras — one pin per package, at the        |
 |                            | strictest floor; `check_conda_recipe_pins.py` gates it),  |
-|                            | README install instructions, docs prerequisites           |
+|                            | README install instructions, docs prerequisites.          |
+|                            | **Raising a floor** also owes Rule 9's 2-year test:       |
+|                            | `hatch run check-support-windows` derives it (PyPI, so    |
+|                            | not in any gate), and a raise excluding a release         |
+|                            | younger than 2 years is **Breaking** + a migration        |
+|                            | section                                                   |
+| **Supported interpreter set** | Seven spellings, and they move together:                |
+|                            | `pyproject.toml` `requires-python`; its                   |
+|                            | `Programming Language :: Python` classifiers, which       |
+|                            | **govern** the set (ADR-0039, declared in the comment     |
+|                            | above them);                                              |
+|                            | `packaging/conda-forge/variants.yaml` `python_min`;       |
+|                            | `ci.yml` `MIN_PYTHON`; `ci.yml` `ALL_PYTHONS`;            |
+|                            | `ci-full.yml`'s `test-full` matrix; `README.md`'s         |
+|                            | "**Requires Python 3.10+.**" prose.                       |
+|                            | Plus `scripts/python_support.py`'s `PYTHON_RELEASES` —     |
+|                            | adding a classifier without its release date makes        |
+|                            | `gen_python_support.py --check` refuse rather than         |
+|                            | silently shrink the published claim; and ADR-0032,        |
+|                            | which names the set and is superseded rather than         |
+|                            | edited ([000-process.md Rule 4](000-process.md#rules))   |
+|                            | **What watches what:** `check_conda_recipe_pins.py`       |
+|                            | holds `requires-python`, `python_min` and `MIN_PYTHON`    |
+|                            | equal; `check_ci_full_matrix.py` holds `ALL_PYTHONS`      |
+|                            | against `ci-full.yml` and never reads `pyproject.toml`.   |
+|                            | The classifiers, the README prose and the ADR are         |
+|                            | watched by **nothing**, and nothing holds `ALL_PYTHONS`   |
+|                            | against the classifiers — which is why this row           |
+|                            | enumerates rather than pointing at a gate                 |
+|                            | **Dropping** a version is **breaking**: `**Breaking**`    |
+|                            | on the CHANGELOG stub and a migration section, per        |
+|                            | [CONTRIBUTING § When to bump](../CONTRIBUTING.md#when-to-bump) |
 | **`CAPABILITIES` ClassVar** | `sdd/specs/003-backend-adapter-contract.md` (BE-003),    |
 | (added/changed on a backend | `tests/test_capabilities.py` (class-attr parametrize),   |
 | or ABC)                     | `tests/backends/conformance/test_identity.py` (subset invariant), |

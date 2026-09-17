@@ -38,7 +38,33 @@ name: Drift Guard
 #  - A floor leg is ADVISORY: it exits 0 whatever it finds, and the verdict is
 #    on the issue. `infra/drift-locks/KNOWN-FINDINGS.md` is what separates a
 #    floor finding somebody owns from a new one; an unregistered finding holds
-#    the issue open, a registered one does not.
+#    the issue open, a registered one does not. A row past its `Review by` stops
+#    silencing and the finding is reported as new again.
+#
+# THIRD THING THE REPORT JOB WATCHES, and it has no lane and no artefact:
+# the PYTHON SUPPORT WINDOWS the dependency policy's Rule 8 publishes. Every
+# supported interpreter's release date plus CPython's five-year security-support
+# lifetime, differenced against today, rendered as a "Support windows" section
+# on the same rolling issue.
+#  - It fires on the CALENDAR rather than on anything a run uploaded, which is
+#    why no diff can carry it and why the report job is its home. `preflight`
+#    could not be: this needs no network, but a window closes whether or not
+#    anybody ships.
+#  - Weekly is the RESOLUTION the promise needs, not a habit. What can invalidate
+#    the section is a date passing, a new CPython final release (each October) or
+#    a classifier edit. Nothing is broken on the day a window closes, so seven
+#    days of latency costs nothing; much longer and a release could ship past a
+#    window nobody had looked at.
+#  - ADVISORY, like the rest of this workflow. A closed window LICENSES a drop;
+#    it never requires one. A gate reading Rule 8 as an obligation would invert
+#    the rule, which promises a floor rather than a ceiling.
+#  - `infra/drift-locks/PYTHON-SUPPORT.md` is its register, separate from
+#    KNOWN-FINDINGS.md because the two are keyed differently. An interpreter past
+#    its window with no unexpired row there holds the issue open.
+#  - A crossing is true on EVERY run, so it holds the issue only on an
+#    unnarrowed one (every lane, every extra). Otherwise the sharp edge below
+#    would fire on every single-extra dispatch: an always-true signal would turn
+#    a run that should leave the issue alone into one that rewrites its body.
 #
 # One sharp edge on `workflow_dispatch`: the report job regenerates the WHOLE
 # issue body from whatever reports the run produced, so a single-extra or

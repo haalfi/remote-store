@@ -12,8 +12,10 @@ and the workflow's own run is their acceptance test.
 
 from __future__ import annotations
 
+import dataclasses
 import json
 import sys
+from datetime import date
 from pathlib import Path
 
 import pytest
@@ -769,5 +771,277 @@ class TestDryRun:
         assert "dry run" in out.err
 
     def test_empty_report_dir_is_a_no_op(self, drift_report, tmp_path, monkeypatch):
+        """Still true, and now for a narrower reason than it used to be.
+
+        The guard is `Reports.__bool__`, which the calendar state joined, so
+        "no artefacts" is a no-op only while no support window has also crossed.
+        `TestSupportWindowSignal` pins the other half.
+        """
         monkeypatch.setattr(drift_report, "_gh", lambda *a, **k: (_ for _ in ()).throw(AssertionError("called gh")))
         assert drift_report.main([str(tmp_path), "--repo", "r", "--run-url", "u", "--title", "t"]) == 0
+
+
+def _python_register(dir_: Path, *rows: tuple[str, str]) -> Path:
+    """The interpreter register, as `| `3.10` | owner | rationale | review |` rows.
+
+    A sibling of `_register` above, and deliberately a different file: the two
+    registers are keyed differently, and one loader per file is what keeps them
+    from reading each other's rows.
+    """
+    path = dir_ / "python-support.md"
+    path.write_text(
+        "| Interpreter | Owner | Rationale | Review by |\n|---|---|---|---|\n"
+        + "".join(f"| `{version}` | ADR-0039 | kept deliberately | {review} |\n" for version, review in rows),
+        encoding="utf-8",
+    )
+    return path
+
+
+class TestRegisterExpiry:
+    """`Review by` is read by code now, in both registers, through one predicate.
+
+    It used to be read by nothing, which `KNOWN-FINDINGS.md` recorded as a
+    hazard it did not enforce: a row past its date kept silencing its finding
+    until a person noticed.
+    """
+
+    def test_a_future_date_has_not_expired(self, drift_report):
+        assert drift_report.is_expired("2026-12-31", date(2026, 9, 17)) is False
+
+    def test_the_date_itself_has_not_expired(self, drift_report):
+        """A row is live through its review date; it lapses the day after.
+
+        Pinned on both sides of the boundary so the comparison cannot silently
+        become `<=`.
+        """
+        assert drift_report.is_expired("2026-09-17", date(2026, 9, 17)) is False
+        assert drift_report.is_expired("2026-09-16", date(2026, 9, 17)) is True
+
+    def test_an_unparseable_date_is_a_hard_failure(self, drift_report):
+        """Not a row that never expires, which is the hazard being removed."""
+        with pytest.raises(drift_report.RegisterDateError, match="not an ISO date"):
+            drift_report.is_expired("next minor release", date(2026, 9, 17))
+
+    def test_an_expired_dependency_row_stops_silencing_its_finding(self, drift_report, tmp_path):
+        """The behaviour change to the dependency register, in the direction
+        that matters: the finding comes back."""
+        _write(tmp_path, "s3.json", _diff("s3"))
+        _write(tmp_path, "s3-newest-smoke.json", _smoke("s3", "newest", "pass"))
+        _write(tmp_path, "s3-floor.json", _floor("s3", "error", reason="no wheel"))
+        _write(tmp_path, "s3-floor-smoke.json", _smoke("s3", "floor", "skipped"))
+        reports = drift_report._load_reports(tmp_path)
+        register = {("s3", "floor"): ("BUG-289", "2026-12-31")}
+        assert drift_report.has_signal(reports, register, today=date(2026, 9, 17)) is False
+        assert drift_report.has_signal(reports, register, today=date(2027, 1, 1)) is True
+
+    def test_silencing_drops_only_the_expired_rows(self, drift_report):
+        register = {("a", "floor"): ("X", "2026-12-31"), ("b", "floor"): ("Y", "2026-01-01")}
+        assert drift_report.silencing(register, date(2026, 9, 17)) == {("a", "floor")}
+
+
+class TestPythonSupportRegister:
+    """The interpreter register's loader, and its disjointness from the other one."""
+
+    def test_reads_version_owner_and_review_date(self, drift_report, tmp_path):
+        path = _python_register(tmp_path, ("3.10", "2026-12-31"))
+        assert drift_report.load_python_support_register(path) == {"3.10": ("ADR-0039", "2026-12-31")}
+
+    def test_the_header_and_separator_are_not_rows(self, drift_report, tmp_path):
+        """The measured failure mode of a loader written without a row shape:
+        a four-cell match takes the header and the `|---|` separator too."""
+        path = _python_register(tmp_path, ("3.10", "2026-12-31"))
+        assert set(drift_report.load_python_support_register(path)) == {"3.10"}
+
+    def test_a_missing_file_is_an_empty_register(self, drift_report, tmp_path):
+        assert drift_report.load_python_support_register(tmp_path / "absent.md") == {}
+
+    def test_the_two_loaders_do_not_read_each_others_committed_files(self, drift_report):
+        """The collision this file's split exists to prevent, asserted over the
+        real committed files rather than a fixture.
+
+        Measured before the split: a four-cell loader pointed at
+        `KNOWN-FINDINGS.md` matched all seven dependency rows plus the header
+        and separator, inventing seven "interpreters" whose `Review by` was a
+        prose paragraph — which `is_expired` would then reject.
+        """
+        assert drift_report.load_python_support_register(drift_report.KNOWN_FINDINGS) == {}
+        assert drift_report.load_known_findings(drift_report.PYTHON_SUPPORT_REGISTER) == {}
+
+    def test_the_committed_registers_carry_parseable_dates(self, drift_report):
+        """Every live row's date can be compared, in both files.
+
+        `is_expired` refuses an unparseable cell, so a row that cannot be dated
+        would crash the weekly run rather than silence quietly. This is the test
+        that keeps that refusal from being a landmine.
+        """
+        today = date(2026, 9, 17)
+        for register in (
+            drift_report.load_known_findings(),
+            drift_report.load_python_support_register(),
+        ):
+            for _key, (_owner, review) in register.items():
+                assert isinstance(drift_report.is_expired(review, today), bool)
+
+
+class TestSupportWindowState:
+    """The calendar half, over the committed classifiers and release dates."""
+
+    def test_every_supported_interpreter_gets_a_row(self, drift_report):
+        state = drift_report.support_window_state(date(2026, 9, 17))
+        assert [row.version for row in state.rows] == ["3.10", "3.11", "3.12", "3.13", "3.14"]
+
+    def test_nothing_is_past_its_window_today(self, drift_report):
+        """As of the day this shipped, 3.10 was the closest at 17 days out."""
+        state = drift_report.support_window_state(date(2026, 9, 17))
+        assert state.unregistered == ()
+        assert state.holds_issue is False
+
+    def test_a_crossing_with_no_row_holds_the_issue(self, drift_report):
+        state = drift_report.support_window_state(date(2026, 10, 6))
+        assert state.unregistered == ("3.10",)
+        assert state.holds_issue is True
+
+    def test_a_registered_crossing_does_not_hold_the_issue(self, drift_report, tmp_path):
+        register = drift_report.load_python_support_register(_python_register(tmp_path, ("3.10", "2027-06-30")))
+        state = drift_report.support_window_state(date(2026, 10, 6), register)
+        assert state.unregistered == ()
+        assert state.holds_issue is False
+
+    def test_an_expired_row_stops_silencing_the_crossing(self, drift_report, tmp_path):
+        """The interpreter register's whole point: the date is the mechanism."""
+        register = drift_report.load_python_support_register(_python_register(tmp_path, ("3.10", "2026-10-05")))
+        state = drift_report.support_window_state(date(2026, 10, 6), register)
+        assert state.unregistered == ("3.10",)
+        assert state.holds_issue is True
+
+    def test_a_narrowed_run_reports_the_crossing_without_holding_the_issue(self, drift_report):
+        """A crossing is true on every run, and a narrowed non-dry run rewrites
+        the whole body from its slice. So the crossing still renders — it just
+        cannot be what forces the rewrite."""
+        state = drift_report.support_window_state(date(2026, 10, 6), holds_issue=False)
+        assert state.unregistered == ("3.10",)
+        assert state.holds_issue is False
+
+
+class TestSupportWindowSignal:
+    """How the crossing reaches `has_signal`, `decide` and the body."""
+
+    def _clean(self, tmp_path):
+        _write(tmp_path, "s3.json", _diff("s3"))
+        _write(tmp_path, "s3-newest-smoke.json", _smoke("s3", "newest", "pass"))
+        _write(tmp_path, "s3-floor.json", _floor("s3"))
+        _write(tmp_path, "s3-floor-smoke.json", _smoke("s3", "floor", "pass"))
+
+    def test_an_unowned_crossing_is_a_signal_on_an_otherwise_clean_run(self, drift_report, tmp_path):
+        self._clean(tmp_path)
+        reports = dataclasses.replace(
+            drift_report._load_reports(tmp_path),
+            windows=drift_report.support_window_state(date(2026, 10, 6)),
+        )
+        assert drift_report.has_signal(reports, {}, today=date(2026, 10, 6)) is True
+        assert drift_report.decide(reports, {}, today=date(2026, 10, 6))[0] == "update"
+
+    def test_a_clean_run_with_no_crossing_still_closes(self, drift_report, tmp_path):
+        """The passing direction, so the clause above cannot be satisfied by a
+        predicate that simply always returns True."""
+        self._clean(tmp_path)
+        reports = dataclasses.replace(
+            drift_report._load_reports(tmp_path),
+            windows=drift_report.support_window_state(date(2026, 9, 17)),
+        )
+        assert drift_report.has_signal(reports, {}, today=date(2026, 9, 17)) is False
+        assert drift_report.decide(reports, {}, today=date(2026, 9, 17))[0] == "close"
+
+    def test_a_crossing_on_a_narrowed_run_does_not_force_an_update(self, drift_report, tmp_path):
+        self._clean(tmp_path)
+        reports = dataclasses.replace(
+            drift_report._load_reports(tmp_path),
+            windows=drift_report.support_window_state(date(2026, 10, 6), holds_issue=False),
+        )
+        assert drift_report.has_signal(reports, {}, today=date(2026, 10, 6)) is False
+
+    def test_an_empty_report_dir_with_a_crossing_still_opens_the_issue(self, drift_report, tmp_path, monkeypatch):
+        """The guard fix, pinned.
+
+        `main` returns early when `Reports` is falsy, and the calendar half comes
+        from no artefact. Before the state was attached to `Reports`, a run whose
+        download produced nothing could not report a crossing at all: no body,
+        no issue, exit 0 — the silent-close class this file was already hardened
+        against, arriving through the guard.
+        """
+        calls: list[tuple] = []
+        monkeypatch.setattr(drift_report, "_gh", lambda *a, **k: calls.append(a))
+        monkeypatch.setattr(drift_report, "_find_open_issue", lambda *a, **k: None)
+        monkeypatch.setattr(drift_report, "list_extras", lambda: ["s3"])
+        rc = drift_report.main(
+            [
+                str(tmp_path),
+                "--repo",
+                "haalfi/remote-store",
+                "--run-url",
+                "https://run",
+                "--title",
+                "t",
+                "--expect-extras",
+                "s3",
+                "--expect-lanes",
+                "newest,floor",
+                "--today",
+                "2026-10-06",
+            ]
+        )
+        assert rc == 0
+        assert calls, "a crossing with no artefacts must still reach the issue"
+        assert calls[0][:2] == ("issue", "create")
+
+
+class TestRenderSupportWindows:
+    """The section a maintainer reads."""
+
+    def test_renders_on_a_clean_week_too(self, drift_report):
+        """The number nobody can compute is how much time is left, so the rows
+        are worth printing even when nothing has crossed."""
+        lines = drift_report._render_support_windows(
+            drift_report.support_window_state(date(2026, 9, 17)), {}, date(2026, 9, 17)
+        )
+        body = "\n".join(lines)
+        assert "## Support windows" in body
+        assert "| `3.10` | 2021-10-04 | 2026-10-04 | 17 days left |" in body
+        assert "| `3.14` | 2025-10-07 | 2030-10-07 | 1481 days left |" in body
+
+    def test_marks_an_unregistered_crossing(self, drift_report):
+        lines = drift_report._render_support_windows(
+            drift_report.support_window_state(date(2026, 10, 6)), {}, date(2026, 10, 6)
+        )
+        body = "\n".join(lines)
+        assert "**2 days past, unregistered**" in body
+        assert "holds this issue open" in body
+
+    def test_names_the_owner_of_a_registered_crossing(self, drift_report, tmp_path):
+        register = drift_report.load_python_support_register(_python_register(tmp_path, ("3.10", "2027-06-30")))
+        lines = drift_report._render_support_windows(
+            drift_report.support_window_state(date(2026, 10, 6), register), register, date(2026, 10, 6)
+        )
+        body = "\n".join(lines)
+        assert "known, ADR-0039, review by 2027-06-30" in body
+        assert "none of them is holding this issue open" in body
+
+    def test_says_when_a_registered_rows_date_has_passed(self, drift_report, tmp_path):
+        register = drift_report.load_python_support_register(_python_register(tmp_path, ("3.10", "2026-10-05")))
+        lines = drift_report._render_support_windows(
+            drift_report.support_window_state(date(2026, 10, 6), register), register, date(2026, 10, 6)
+        )
+        body = "\n".join(lines)
+        assert "review date passed" in body
+        assert "holds this issue open" in body
+
+    def test_states_that_a_closed_window_does_not_require_a_drop(self, drift_report):
+        """The rule promises a floor, not a ceiling, and a report that reads as
+        an obligation would invert it."""
+        lines = drift_report._render_support_windows(
+            drift_report.support_window_state(date(2026, 9, 17)), {}, date(2026, 9, 17)
+        )
+        assert "licenses a drop; it never requires one" in "\n".join(lines)
+
+    def test_an_empty_state_renders_nothing(self, drift_report):
+        assert drift_report._render_support_windows(drift_report.SupportWindowState(), {}, date(2026, 9, 17)) == []

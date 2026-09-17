@@ -185,7 +185,7 @@ Current pattern:
 Minimal config, write, and read.
 
 \`\`\`python
---8<-- "examples/quickstart.py"
+;--8<-- "examples/quickstart.py"
 \`\`\`
 ```
 

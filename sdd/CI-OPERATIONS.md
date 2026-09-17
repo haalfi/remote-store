@@ -64,7 +64,7 @@ documented here by convention, not enforcement.
 contributor is present to read its result, so it sits outside this family and is
 documented in [`CONTRIBUTING.md`](../CONTRIBUTING.md).
 
-### `drift-guard.yml` — transitive dependency drift
+### `drift-guard.yml` — transitive dependency drift, and the support windows
 
 - **What it does:** watches **both ends** of every declared range, in two lanes.
   The *newest* lane re-resolves every `remote-store[<extra>]` against the latest
@@ -78,16 +78,34 @@ documented in [`CONTRIBUTING.md`](../CONTRIBUTING.md).
   extra failing to declare a package another extra supplies. It never edits
   `pyproject.toml` and never auto-merges a floor/pin — early warning, not
   remediation.
+  **And a third thing, with no lane and no artefact behind it:** the report job
+  renders each supported interpreter's standing against the support window
+  [Rule 8](../docs-src/explanation/dependency-policy.md#rule-8) publishes, from
+  the classifiers plus the release dates in `scripts/python_support.py`. That
+  half fires on the **calendar**, which is why it lives here rather than in a
+  gate: no diff can carry a date passing, and a check that only runs when
+  somebody cuts a release is no better than remembering for a promise that comes
+  due whether or not we ship.
 - **When:** Monday 07:00 UTC, plus manual `workflow_dispatch` (optionally for a
   single extra, a single lane, or as a `dry_run` that renders the body into the
   job summary and leaves the issue alone). A narrowed dispatch that is **not** a
   dry run re-renders the whole issue body from its slice and drops every other
   row (BUG-282); `/drift` step 3 is the path that says so at the point of use.
+  Weekly is the **resolution the promise needs** for the support-window half,
+  not a calendar habit: what invalidates that section is a date passing, a new
+  CPython final release (each October) or a classifier edit, and nothing is
+  broken on the day a window closes — so seven days of latency costs nothing,
+  while much longer and a release could ship past a window nobody had read.
 - **Where the finding shows up:** a single **rolling `[drift-guard]` GitHub
-  Issue** — opened or updated when anything is unresolved in either lane,
-  commented "cleared" and closed when both are clean. The per-extra **smoke
+  Issue** — opened or updated when anything is unresolved in either lane or an
+  interpreter has crossed its window unregistered, commented "cleared" and
+  closed when all of that is clear. The per-extra **smoke
   verdict is in the issue body**, per lane, with the phase that failed; the run
-  carries the logs behind it.
+  carries the logs behind it. The **Support windows** section carries one row
+  per supported interpreter — release date, when CPython's security support for
+  it ends, and days remaining or days past — and renders on a clean week too,
+  because how much time is *left* is the number a reader cannot compute from the
+  policy page's prose.
 - **What goes red:** a newest-lane smoke failure fails its leg, which is the
   signal the `/drift` skill has always read. A **floor** leg never does: its
   findings are advisory decisions about a published range, several are known-bad
@@ -100,6 +118,16 @@ documented in [`CONTRIBUTING.md`](../CONTRIBUTING.md).
   read.
   A registered *newest*-lane finding still fails its leg; the register changes
   what the issue presents as news, never what CI does.
+  **A row past its `Review by` stops silencing**, in both registers, so the
+  finding is reported as new again with its owner still named. That date used to
+  be read by nothing.
+  **A support-window crossing never goes red.** It holds the issue open when the
+  interpreter has no unexpired row in `infra/drift-locks/PYTHON-SUPPORT.md` — a
+  register separate from `KNOWN-FINDINGS.md` because the two are keyed
+  differently — and it does so only on an **unnarrowed** run, every lane and
+  every extra. A crossing is true on every run, so without that a single-extra
+  dispatch would be turned into the body-destroying rewrite the **When** bullet
+  warns about.
 - **How to act:** run the **`/drift` skill**. Refreshes are gated per extra on
   that extra's smoke verdict; the skill's steps 3–5 are authoritative on the
   gating, including how a major bump, a red smoke and a red floor are each
@@ -108,6 +136,12 @@ documented in [`CONTRIBUTING.md`](../CONTRIBUTING.md).
   load the package that drifted returns a green verdict about nothing (BUG-250)
   — and the floor lane runs on one interpreter, so a floor that breaks only on a
   newer one is outside it.
+  A **Support windows** row is not a refresh and the skill does not treat it as
+  one: it is a decision to take or re-affirm, and the skill's step 3 says which.
+  Rule 9's other half — whether a floor *raise* excludes a release still inside
+  its own two-year window — is not this guard's at all. It fires on a diff, so it
+  sits in the release path as `hatch run check-support-windows`, named from
+  [`CONTRIBUTING.md` Phase 0](../CONTRIBUTING.md#release).
 
 ### `mutation.yml` — mutation testing
 

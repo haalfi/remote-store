@@ -158,6 +158,15 @@ markdown_extensions:
   - pymdownx.snippets:
       base_path: ["."]
       dedent_subsections: true
+      # A missing `--8<--` target is a build failure, not a dropped line. The
+      # extension's default is False, and with it off the include vanishes
+      # silently: a renamed or lost snippet source ships the page with that
+      # content simply absent, and `mkdocs build --strict` stays green. The
+      # generated support-window chart is the case that forced this — its
+      # `--check` generator keeps the artefact's *contents* honest and nothing
+      # was keeping the *include* resolving — but every `examples/snippets/`
+      # include in the guides was exposed the same way.
+      check_paths: true
   - pymdownx.tabbed:
       alternate_style: true
   - toc:
