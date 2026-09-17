@@ -258,13 +258,21 @@ if evidence changes; these are retired.
   Five classes because the two Azure adapters carry their own copies of every
   body, and the Azure fix lands twice more inside each: the flat `list_blobs` and
   HNS `get_paths` branches raise differently and each catches its own exception.
-  **The new tolerance carries three bounds, and each is pinned by a cell that
-  fails without it** — measured by removing each in turn: the root (a non-root
-  prefix under an absent container keeps BE-021 § Reach's `NotFound`), the first
-  page (a 404 after a page has come back reports a deletion underneath the scan,
-  so it propagates; keyed on the page rather than on a counted file, because a
-  page of common prefixes or directory entries counts nothing), and the 404
-  itself (a denial still reaches the caller as `PermissionDenied`).
+  **The new tolerance carries three bounds**: the root (a non-root prefix under
+  an absent container keeps BE-021 § Reach's `NotFound`), the first page (a 404
+  after a page has come back reports a deletion underneath the scan, so it
+  propagates; keyed on the page rather than on a counted file, because a page of
+  common prefixes or directory entries counts nothing), and the 404 itself (a
+  denial still reaches the caller as `PermissionDenied`).
+  **Which of them a cell can falsify was measured by removing each in turn**, and
+  the answer is not uniform: the page bound fails a cell on all four sites, and
+  the root bound fails one on `S3Boto3Backend` only. On the two Azure arms
+  removing it leaves the suite green — the flat branch reaches the same error
+  class through its zero-count guard, and the HNS branch's directory probe raises
+  first for a non-root path, so the only state that reaches the catch without the
+  root is a filesystem vanishing between that probe and the first page. The
+  clause is kept on both, as the guard that makes the bound local rather than an
+  inference about code below it, and the code says so where it sits.
   **Where it is pinned.** No conformance fixture can remove a container, so the
   cells sit in the per-backend wire-stub homes beside their siblings:
   `tests/backends/s3/test_denied_probe.py` and

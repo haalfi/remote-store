@@ -1381,12 +1381,21 @@ class AzureBackend(Backend):
             # a different answer an unbounded catch would invent:
             #   root       -- a non-root prefix under an absent container is a
             #                 plain NotFound (BE-021 § Reach), and this method
-            #                 has no ``missing_ok`` to soften it. On the flat
-            #                 branch the zero-count guard below reaches that
-            #                 same class anyway, so there this clause saves the
-            #                 wrong-type probe rather than changing the answer;
-            #                 on the HNS branch, which has no such guard, it is
-            #                 the whole of it.
+            #                 has no ``missing_ok`` to soften it.
+            #                 **No cell falsifies this clause here, and that is
+            #                 measured rather than assumed**: removing it from
+            #                 both arms leaves the Azure suite green. On the flat
+            #                 branch the zero-count guard below reaches the same
+            #                 class anyway, so the clause saves the wrong-type
+            #                 probe rather than changing the answer; on the HNS
+            #                 branch the directory probe raises first for a
+            #                 non-root path, so the only state that reaches this
+            #                 catch without the root is a filesystem that
+            #                 vanishes between that probe and the first page. It
+            #                 is kept as the guard that makes the bound local
+            #                 rather than an inference about code below, and the
+            #                 boto3 twin, where it *is* reachable and pinned,
+            #                 carries the same clause for the same reason.
             #   first page -- a 404 after a page has come back reports a
             #                 deletion underneath the scan (BE-021's page
             #                 bound). Keyed on the page rather than on a counted

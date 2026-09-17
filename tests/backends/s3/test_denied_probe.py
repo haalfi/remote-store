@@ -688,10 +688,8 @@ class TestTheRootAnswersTheSameAgainstAnAbsentBucket:
     before this change, in both container states, so a fix that flipped the whole
     row rather than the two breaching cells is visible here.
 
-    **Stated bound.** On the two s3fs lanes ``is_file`` still reaches the wire,
-    so against a *denied* bucket it raises where the other two probes now answer
-    from the key. That asymmetry is not a breach of this row — the row is silent
-    about a denied container — and it is not changed here.
+    **A denied bucket is covered too**, by the sibling class below, because
+    deciding the root from the key means no request is issued to deny.
     """
 
     @pytest.mark.spec("BE-029", "BE-004", "BE-005", "BE-021")
@@ -789,4 +787,91 @@ class TestTheRootAnswersTheSameAgainstAnAbsentBucket:
         with _backend_at(dotted, endpoint) as backend:
             with pytest.raises(PermissionDenied) as exc_info:
                 backend.get_folder_info(root)
+            assert exc_info.value.backend == _BACKEND_NAMES[dotted]
+
+
+# The two probes the root decides from the key, and what each answers under a
+# denial. ``is_file`` is not one of them on the s3fs lanes — it still reaches the
+# wire — so it is asserted separately below rather than folded in here.
+_ROOT_KEY_DECIDED = {
+    "exists": lambda b, root: b.exists(root),
+    "is_folder": lambda b, root: b.is_folder(root),
+}
+
+
+class TestADeniedBucketDoesNotChangeTheRoot:
+    """Deciding the root from the key means there is no request to deny.
+
+    A probe that answers before issuing a request cannot report a denial, and for
+    the root that is the intended answer rather than a swallow: the root is a
+    folder by *definition*, so "you may not look" is not a fact about whether it
+    is one. The three lanes agree on this, and ``S3Boto3Backend`` — which decided
+    the root from the key before this change — is what says the answer is right
+    rather than merely uniform.
+
+    **This is the case the absent-bucket cells cannot see.** There, answering
+    from the key and answering from a 404 produce the same verdict, so a
+    short-circuit that was really a swallowed error would pass them. Under a
+    denial the two part company, which is why the assertion lives here.
+
+    The contrast is the point of the last cell: on a path *under* the root every
+    probe still fails closed, so the key-decided answer is bounded to the one
+    path whose answer the contract fixes.
+    """
+
+    @pytest.mark.spec("BE-029", "BE-004", "BE-005", "BE-021")
+    @pytest.mark.parametrize("dotted", _ROOT_PARAMS)
+    @pytest.mark.parametrize("root", ["", "."], ids=["empty", "dot"])
+    @pytest.mark.parametrize("op_name", sorted(_ROOT_KEY_DECIDED))
+    def test_the_key_decided_probes_answer_true(
+        self,
+        httpserver: HTTPServer,
+        dotted: str,
+        root: str,
+        op_name: str,
+    ) -> None:
+        endpoint = _serve_s3_stub(httpserver, object_denied=True, listing_denied=True)
+        with _backend_at(dotted, endpoint) as backend:
+            assert _ROOT_KEY_DECIDED[op_name](backend, root) is True
+
+    @pytest.mark.spec("BE-029", "BE-004", "BE-021")
+    @pytest.mark.parametrize("dotted", _ROOT_PARAMS)
+    @pytest.mark.parametrize("root", ["", "."], ids=["empty", "dot"])
+    def test_is_file_still_reaches_the_wire_on_the_s3fs_lanes(
+        self,
+        httpserver: HTTPServer,
+        dotted: str,
+        root: str,
+    ) -> None:
+        """A stated bound, pinned so the divergence is visible rather than found again.
+
+        ``is_file("")`` is not one of the cells this work changed: it answers
+        ``False`` correctly in both container states on all three lanes. It gets
+        there differently, though — ``S3Boto3Backend`` decides it from the key,
+        the s3fs lanes ask ``info`` — so under a denial the s3fs lanes raise
+        where boto3 answers. BE-029 is silent about a denied container, so
+        neither is a breach; the split is recorded here rather than closed.
+        """
+        endpoint = _serve_s3_stub(httpserver, object_denied=True, listing_denied=True)
+        with _backend_at(dotted, endpoint) as backend:
+            if dotted == _S3B3:
+                assert backend.is_file(root) is False
+            else:
+                with pytest.raises(PermissionDenied):
+                    backend.is_file(root)
+
+    @pytest.mark.spec("BE-029", "BE-004", "BE-005", "BE-021")
+    @pytest.mark.parametrize("dotted", _ROOT_PARAMS)
+    @pytest.mark.parametrize("op_name", sorted(_ROOT_KEY_DECIDED))
+    def test_a_path_under_the_root_still_fails_closed(
+        self,
+        httpserver: HTTPServer,
+        dotted: str,
+        op_name: str,
+    ) -> None:
+        """The bound on the clause above: only the root answers without asking."""
+        endpoint = _serve_s3_stub(httpserver, object_denied=True, listing_denied=True)
+        with _backend_at(dotted, endpoint) as backend:
+            with pytest.raises(PermissionDenied) as exc_info:
+                _ROOT_KEY_DECIDED[op_name](backend, _FOLDER)
             assert exc_info.value.backend == _BACKEND_NAMES[dotted]

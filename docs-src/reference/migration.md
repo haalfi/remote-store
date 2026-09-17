@@ -19,9 +19,23 @@ closed:
 |---|---|---|
 | `exists("")`, `is_folder("")` on `S3Backend`, `S3PyArrowBackend` | `False` | `True` |
 | `get_folder_info("")` on `S3Boto3Backend`, `AzureBackend`, `AsyncAzureBackend` | `NotFound` | `FolderInfo(file_count=0)` |
+| `Store.get_folder_info("", max_depth=N)` on `S3Backend`, `S3PyArrowBackend` | `NotFound` | `FolderInfo(file_count=0)` |
 
-Both spellings of the root — `""` and `"."` — are covered. Every other backend
-already answered this way, so nothing changes there.
+The third row follows from the first: the depth-limited aggregate is assembled at
+the `Store` layer and gates on `is_folder`, so it raised for the same reason the
+probe answered `False`.
+
+Both spellings of the root — `""` and `"."` — are covered. The other backends
+whose absent state is measured already answered this way, so nothing changes
+there; `GraphBackend`, `ReadOnlyHttpBackend` and `SQLQueryBackend` are not in
+that set, and the `GraphBackend` paragraph below says what it answers and why.
+
+**Against a bucket you are denied rather than one that is missing**, `exists("")`
+and `is_folder("")` on `S3Backend` and `S3PyArrowBackend` now answer `True`
+instead of `False` and `PermissionDenied` respectively. `S3Boto3Backend` already
+answered `True` for both, so this aligns the three lanes: the root is a folder by
+definition, and none of the three issues a request to say so. Every probe on a
+path *under* the root still reports a denial as `PermissionDenied`.
 
 **What to change.** Two `except` clauses stop firing:
 
@@ -46,11 +60,19 @@ definition. On [`GraphBackend`](api/aio/backends/graph.md) it still answers
 `False` for a deleted or misconfigured drive, deliberately, and the absent-drive
 section below builds on that.
 
-**A container deleted while an aggregate is running still raises.** The new
-answer is about a container that was already gone when the call began. If the
-first page of the listing comes back and the container disappears after it,
-`get_folder_info` raises `NotFound` rather than reporting a store you still have
-as empty.
+**A container deleted while an aggregate is running still raises on
+`S3Boto3Backend`, `AzureBackend` and `AsyncAzureBackend`.** The new answer is
+about a container that was already gone when the call began; on those three, a
+first page that comes back before the container disappears makes the 404 a
+deletion underneath the scan, and `get_folder_info` raises `NotFound` rather than
+reporting a store you still have as empty.
+
+**`S3Backend` and `S3PyArrowBackend` return a partial count there instead**, and
+that is unchanged by this release rather than introduced by it: their aggregate
+walks the prefix tree directory by directory and treats a vanished directory as
+one with nothing in it, so a bucket deleted mid-walk yields whatever it had
+counted. It is the same shape as their listings, which truncate where the other
+lanes raise.
 
 ## v0.31.0 to v0.32.0
 
@@ -481,9 +503,11 @@ for a drive that is deleted or misconfigured.** That is **by design** — the
 backend suppresses every `404` on a probe, and the absent-drive section below
 builds a detection recipe on exactly that answer. It is not going to change.
 
-In v0.31.0 four other backends also answered the first row differently once the
-container was gone; v0.33.0 closes that, and its own section describes what
-changed. The practical consequence is the one worth carrying away and it is
+In v0.31.0 two other backends — `S3Backend` and `S3PyArrowBackend` — also
+answered this row differently once the container was gone, and three more
+answered the `get_folder_info` row differently; v0.33.0 closes both, and its own
+section describes what changed. The practical consequence is the one worth
+carrying away and it is
 unchanged by the fix: **`exists("")` is not a portable "is my store there?"** —
 it answers `True` for a store whose container is missing, which is what the row
 means by a folder that always exists. See the absent-container section below for

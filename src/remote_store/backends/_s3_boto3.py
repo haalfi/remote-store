@@ -316,11 +316,12 @@ class S3Boto3Backend(Backend):
         """Return ``True`` if an object or prefix exists at *path*; never ``NotFound``.
 
         One HEAD, falling back to a one-key prefix listing. The root always
-        exists. An absent bucket answers ``False``: a bucket that does not exist
-        holds no path either, and this probe never raises for a missing path. A
-        *denied* bucket still raises — the listing is the determinant here, so it
-        fails closed rather than reporting "nothing there" for something you may
-        not see.
+        exists, decided from the key before either request, so it answers ``True``
+        whether the bucket is missing or denied. For every other path an absent
+        bucket answers ``False`` — a bucket that does not exist holds no path
+        either, and this probe never raises for a missing path — while a *denied*
+        bucket raises: the listing is the determinant there, so it fails closed
+        rather than reporting "nothing there" for something you may not see.
 
         Raises:
             PermissionDenied: If the credentials are rejected or lack access (403).
@@ -353,8 +354,9 @@ class S3Boto3Backend(Backend):
         """Return ``True`` if *path* is an existing virtual folder (a common prefix).
 
         A same-named object shadows the prefix (flat namespace), so a file returns
-        ``False``. The root is always a folder. An absent bucket answers
-        ``False``, on the same terms as ``exists``.
+        ``False``. The root is always a folder, decided from the key and so
+        answered for a denied bucket as well as a missing one. For every other
+        path an absent bucket answers ``False``, on the same terms as ``exists``.
 
         Raises:
             PermissionDenied: If the credentials are rejected or lack access (403).

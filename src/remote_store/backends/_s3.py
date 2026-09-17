@@ -137,10 +137,13 @@ class S3Backend(_S3Base):
 
         The root always exists, and that is decided from the key: ``s3fs.exists``
         on the bare bucket answers ``False`` once the bucket is gone, which is
-        "there is no root" — a distinction no caller can act on.
+        "there is no root" — a distinction no caller can act on. No request is
+        issued for it, so the root answers ``True`` for a bucket that is denied
+        as well as for one that is missing.
 
         Raises:
-            PermissionDenied: If the credentials lack access.
+            PermissionDenied: If the credentials lack access. Not for the store
+                root, which is answered without a request.
             BackendUnavailable: On a transport or service failure, or after ``close()``.
         """
         with self._s3fs_errors(path):
@@ -166,10 +169,11 @@ class S3Backend(_S3Base):
         """Return ``True`` if *path* is an existing virtual folder (a common prefix).
 
         The root is always a folder, decided from the key for the reason
-        ``exists`` gives.
+        ``exists`` gives, and answered without a request there too.
 
         Raises:
-            PermissionDenied: If the credentials lack access.
+            PermissionDenied: If the credentials lack access. Not for the store
+                root, which is answered without a request.
             BackendUnavailable: On a transport or service failure, or after ``close()``.
         """
         with self._s3fs_errors(path):
