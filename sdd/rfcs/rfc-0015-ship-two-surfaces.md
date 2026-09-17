@@ -443,9 +443,10 @@ shape.
 - A prose-quality finding that does not state reader, task, failure, harm,
   change and what must survive
   ([research § 9.4](../research/research-appropriate-level-of-detail.md))
-  is triaged *file as preference* and is never fixed in-loop. `/rvw-pr`'s
-  Consistency category adopts the six-line form; a false statement in prose is
-  a Bug or Spec finding and is closed by shape (2), (3) or (4) like any other.
+  is triaged *preference*: replied to as such, not filed as a backlog item,
+  and never fixed in-loop. `/rvw-pr`'s Consistency category adopts the
+  six-line form; a false statement in prose is a Bug or Spec finding and is
+  closed by shape (2), (3) or (4) like any other.
 
 **Evidence.** Causes B and D; failures 1, 2, 3; BUG-265's three rationales and
 its `EPERM` round trip; BK-359's invented advice.
@@ -474,7 +475,10 @@ about what a rationale would have prevented is not, and is not the condition.
   gate itself was under six seconds of that. Gate time after creation is the
   gate's cost, not the worktree's, and is paid today.
 - The `HEAD` and `git status --porcelain` check moves to the worktree and
-  stays as the residue check for a reviewer that wrote there. A detached
+  stays as the residue check for a reviewer that wrote there, with one
+  porcelain capture kept in the main tree beside it, required unchanged at
+  triage: a reviewer's default working directory is the main tree, and a
+  stray write there is what the next fix pass would commit. A detached
   worktree's `HEAD` cannot move on its own, so the other thing the old check
   caught, the branch advancing under a certifying reviewer, needs its own
   capture: at triage the branch's pushed head is fetched and required to still

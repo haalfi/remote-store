@@ -15,14 +15,13 @@ audience:
 expected_ripples:
   - sdd/BACKLOG.md
 surprising_ripples:
-  - sdd/rfcs/rfc-0015-ship-two-surfaces.md
   - sdd/CLAUDE-REFERENCE.md
 # Derivation, stated as the rule rather than as a transcribed list: run
 # `git log --format='%s' origin/master..HEAD` and count the subjects that
 # answer a review round. The commit that implements the amendments does not
 # count. Re-run before each push; the value is the count, including the commit
 # that carries this line.
-review_rounds: 4
+review_rounds: 5
 phases:
   - id: orient
     name: Orient
@@ -288,6 +287,30 @@ phases:
           /ship's File-it verdict: filing is now stated as that verdict, and
           a Must-fix takes shapes (1) to (4)
         outcome: unclear
+  - id: fix_5
+    name: Round-5 fix pass
+    steps:
+      - file: .claude/skills/ship/SKILL.md
+        section: "Reviewer permissions, the tree check; Triage table"
+        read_type: verify
+        extract: >-
+          Round 5 found the worktree-only check blind to a reviewer writing
+          the main tree, which the round-1 measurement makes an Agent's
+          default cwd; a main-tree porcelain capture is kept beside it,
+          unchanged at triage, and the RFC's D3 bullet and /rvw-pr's
+          watches-the-worktree sentence say the same. "File as preference"
+          named no verdict row; Preference is now the fourth row, with the
+          same spelling in /fix-pr, /orchestrate and the RFC
+        outcome: ok
+      - file: sdd/traces/_schema.yml
+        section: "surprising_ripples"
+        read_type: gate
+        extract: >-
+          Round 5 found the RFC listed as a surprising ripple though it was a
+          cited orient gate read and a planned edit; removed. The
+          CLAUDE-REFERENCE entry stays, since its I/O split edit was found by
+          round 3 and not by any cited read
+        outcome: ok
   - id: verify
     name: Verify
     steps:

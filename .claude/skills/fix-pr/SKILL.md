@@ -137,9 +137,10 @@ the shape:
 - **A `Consistency:` finding on prose that does not state reader, task,
   failure, harm, change and what must survive**
   ([research § 9.4](../../../sdd/research/research-appropriate-level-of-detail.md))
-  is triaged *file as preference* and is never fixed in-loop. A false
-  statement in prose is a `Bug:` or `Spec:` finding, needs no six lines, and
-  takes shape 2, 3 or 4 like any other must-fix.
+  is triaged *preference*: the reply says *preference, six lines absent*, no
+  backlog item is minted, and it is never fixed in-loop. A false statement in
+  prose is a `Bug:` or `Spec:` finding, needs no six lines, and takes shape 2,
+  3 or 4 like any other must-fix.
 
 ## Step 4: Resolve threads
 

@@ -356,8 +356,9 @@ Spawn reviewers per [Reviewer selection](#reviewer-selection). Each reviews
   in the six-line form of
   [research § 9.4](../../../sdd/research/research-appropriate-level-of-detail.md)
   — Reader, Task, Failure, Harm, Change, Preserve — since the fix step below
-  files such a finding without those lines as a preference (a false statement
-  in prose is a `Bug:` or `Spec:` finding and needs no six lines)
+  sets such a finding aside as a preference when those lines are missing, with
+  no fix and no backlog item (a false statement in prose is a `Bug:` or
+  `Spec:` finding and needs no six lines)
 - What it **ran** and what came back, if it is the measuring reviewer
 - "Clean — no issues" if nothing to report
 

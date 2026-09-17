@@ -174,8 +174,9 @@ this reasoning is the failure the sibling-sweep rule exists to catch.
   mid-round, PR #996's failure 4, which the old check could only detect after
   the fact, no longer dirties anything a reviewer sees.
 - **The check that covers the residue, and it binds every pass** — panel, solo,
-  and each of the closing gate's appended passes. It runs in the worktree, and
-  what it now catches is a reviewer that wrote there. Capture
+  and each of the closing gate's appended passes. It runs in the worktree,
+  where it catches a reviewer that wrote there, with one capture kept in the
+  main tree (below). Capture
   `git -C tmp/review/<sha> rev-parse HEAD` when reviewers spawn (the
   just-pushed, gate-green state, which is the premise that makes the check
   meaningful), then require an unchanged HEAD **and** a clean
@@ -186,8 +187,15 @@ this reasoning is the failure the sibling-sweep rule exists to catch.
   a certifying reviewer — needs its own capture: at triage, `git fetch origin
   <branch>` and require `git rev-parse origin/<branch>` still equal to `<sha>`.
   A push during the round means the passes certified a superseded commit;
-  re-run them against the new one. An appended pass is a reviewer whose
-  silence ends the loop; it is the last place to skip this, not the first.
+  re-run them against the new one. And keep one capture in the main tree:
+  `git status --porcelain` at spawn, required unchanged before triage. An
+  `Agent`'s Bash runs in the main tree on every call (measured, `/rvw-pr`
+  § Review root), so a member that drops the `-C` / `env -C` prefix and runs a
+  writing alias dirties the tree the next fix pass commits from while the
+  worktree check stays green. The main tree is idle during the round, since
+  the fix pass follows triage, so *unchanged* is the test there, not *clean*.
+  An appended pass is a reviewer whose silence ends the loop; it is the last
+  place to skip this, not the first.
 - **The worktree is removed at round close**: `git worktree remove
   tmp/review/<sha>`, then `git worktree prune` for the base worktree a
   measuring member may have left nested inside it. Measured on git 2.43.0:
@@ -504,6 +512,7 @@ worktree root only.
 | Must-fix | Wrong once merged: bad behaviour, a false statement in a durable artifact, a shipping gap. Fix in this PR. | Exactly one of shapes (1) to (4) below, named in the reply |
 | File-it | Real, but outside this PR's scope. Backlog item, cited in the reply. | Shape (5) |
 | Refute | Wrong or already handled. Reply with the evidence; do not fix. | — |
+| Preference | A `Consistency:` finding on prose that arrived without the six lines. Reply *preference, six lines absent*; no backlog item; never fixed in-loop. | — |
 
 **A fix removes, measures, narrows or enumerates; it never argues.** A must-fix
 finding is closed by exactly one of: **(1)** a behaviour change pinned by a test
@@ -515,9 +524,9 @@ fix pass owes what [`/fix-pr`](../fix-pr/SKILL.md) Step 3 lists under each
 shape: a reviewer's *why* answered by shape (3) or the no-reason sentence, a
 test added in a fix pass mutation-checked before push, a reviewer's figure
 re-derived rather than carried, a measured claim bounded by its instrument, and
-a `Consistency:` finding on prose without the six-line form triaged *file as
-preference* (a false statement in prose is a `Bug:` or `Spec:` finding and a
-Must-fix like any other). The evidence is
+a `Consistency:` finding on prose without the six-line form triaged
+*Preference*, the fourth row above (a false statement in prose is a `Bug:` or
+`Spec:` finding and a Must-fix like any other). The evidence is
 [RFC-0015 D2](../../../sdd/rfcs/rfc-0015-ship-two-surfaces.md): every one of the
 four failures it maps was the fixer writing something it had not run, and the
 measuring member catching it one round later.
@@ -730,8 +739,9 @@ Then stop. **`/ship` never merges.** It hands over a PR that is ready to be.
   that panel composition does not move finding counts while fix shape is what
   is measured.
 - No reviewer reads the working tree the fixer edits: every pass reads and runs
-  in the round's review worktree at the pushed commit, and the tree check runs
-  there.
+  in the round's review worktree at the pushed commit, the tree check runs
+  there, and one porcelain capture stays in the main tree for the write that
+  missed the prefix.
 - A fix takes exactly one of the five shapes and the reply names it. A
   rationale written on request is not a fix.
 - The main loop fixes and owns the sweep; delegate a fix only for depth inside one

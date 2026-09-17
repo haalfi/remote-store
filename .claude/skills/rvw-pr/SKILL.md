@@ -53,10 +53,11 @@ git, `env -C <path> hatch run <gate>` and `env -C <path> python ...` for the
 gates and the library. **Never `cd`.** An `Agent`'s Bash does not keep its working
 directory between calls — measured: a `cd` succeeded and the next `pwd` was
 the main tree, while `env -C` ran where it was told — so a `cd` would run
-every later gate in the main tree, silently, while the tree check watches the
-worktree. `env -C` is GNU coreutils (measured here on 9.4, Linux); on a host
-whose `env` lacks it, BSD `env` on macOS or a Windows shell, the same
-per-command spelling is
+every later gate in the main tree, silently, with the worktree check green;
+only `/ship`'s main-tree porcelain capture would see it, after the fact.
+`env -C` is GNU coreutils (measured here on 9.4, Linux); on a host whose `env`
+lacks it, BSD `env` on macOS or a Windows shell, the same per-command spelling
+is
 `python -c "import os, subprocess, sys; os.chdir(sys.argv[1]); raise SystemExit(subprocess.call(sys.argv[2:]))" <path> hatch run <gate>`
 (measured: it ran `pwd` in the target here), which is the allowlist's `python`
 and still never a `cd`. Local `Read`, `Grep` and `Glob` take paths under
@@ -140,9 +141,9 @@ gives; three harms qualify: a question the reader cannot answer, a decision
 they would get wrong, an action they cannot execute. A finding you cannot fill
 those lines for is a preference: do not post it. A false statement in prose is
 a `Bug:` or `Spec:` finding, not a `Consistency:` one, and needs no six lines.
-"This could be tighter" fills none of them, and the fix pass files a
-`Consistency:` finding that arrives without them as a preference rather than
-fixing it ([`/fix-pr`](../fix-pr/SKILL.md) Step 3).
+"This could be tighter" fills none of them, and the fix pass sets a
+`Consistency:` finding that arrives without them aside as a preference, with
+no fix and no backlog item ([`/fix-pr`](../fix-pr/SKILL.md) Step 3).
 
 **Drift-rules check (new or changed cross-artifact check or drift report):** Apply `sdd/DRIFT-RULES.md`. File findings under `Consistency:`.
 
