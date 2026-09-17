@@ -329,8 +329,9 @@ there. That outranks the canonical row BE-021 § Reach gives `get_folder_info`,
 which is why the tolerance below the root and the tolerance at it differ. Every
 other path answers `NotFound` as § Reach requires.
 
-Other backends do not all meet BE-029's root row against an absent container;
-that divergence is **BUG-254** and is not this backend's.
+Every other measured backend now answers the root row the same way against an
+absent container; [BE-021](003-backend-adapter-contract.md#be-021-error-mapping)
+carries the roster and the three classes that are not measured.
 
 ---
 

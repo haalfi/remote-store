@@ -1,0 +1,128 @@
+id: BUG-254
+title: "Five backend classes breach BE-029's root row against an absent container"
+trigger: >-
+  BE-029 states the store root's answers without qualifying them by whether the
+  container exists, and seven class-cells across five backend classes disagreed
+  once the bucket or container was gone — in two opposite directions. The
+  divergence was published in the migration guide as unfinished.
+source_items:
+  - BUG-254
+  - BUG-246
+  - BUG-261
+audience:
+  - user.api
+  - user.site
+expected_ripples:
+  - sdd/backlogid.json
+phases:
+  - id: orient
+    name: Orient
+    steps:
+      - file: sdd/BACKLOG.md
+        section: "BUG-254 (item)"
+        read_type: gate
+        extract: "The seven breaching class-cells, the two opposite causes, and the four published passages the close has to rewrite"
+      - file: sdd/CLAUDE-REFERENCE.md
+        section: "Ripple-check table / Pre-work index"
+        read_type: gate
+        extract: "Triggered rows before starting: Spec section, Backend, Store or Backend ABC, Bug fix, Backlog item touched, CHANGELOG entry, Breaking change"
+  - id: spec
+    name: Read the contract
+    steps:
+      - file: sdd/specs/003-backend-adapter-contract.md
+        section: "BE-029"
+        read_type: gate
+        extract: >-
+          The root row is unqualified by container existence; "the root exists by
+          definition, not by observation"; a backend whose root can vanish under
+          it decides root-ness from the key
+      - file: sdd/specs/003-backend-adapter-contract.md
+        section: "BE-021 / The root is decided by BE-029, not here"
+        read_type: gate
+        extract: >-
+          Where the absent-container clause meets the root row, BE-029 governs;
+          and the paragraph counting five breaching, five meeting, three
+          unmeasured, which this work has to re-derive rather than edit
+      - file: src/remote_store/backends/_s3_boto3.py
+        section: "exists, is_folder, get_folder_info"
+        read_type: reference
+        extract: >-
+          The compliant short-circuit shape the two s3fs lanes are missing, and
+          the get_folder_info body that is itself one of the three breaches
+  - id: reproduce
+    name: Reproduce before fixing
+    steps:
+      - file: tests/backends/s3/test_denied_probe.py
+        section: "TestAbsentBucketReadsAsAbsentPath, _serve_missing_bucket_stub"
+        read_type: reference
+        extract: >-
+          The absent-bucket wire stub and its three-lane parametrisation, so the
+          root cells sit beside their siblings rather than inventing a harness
+      - file: tests/backends/azure/_helpers.py
+        section: "serve_absent_container, serve_hns_absent_filesystem, MID_SCAN_BLIND_PAGES"
+        read_type: reference
+        extract: >-
+          The Azure stubs for both namespaces, and the blind-page map the page
+          bound needs; the map gained a get_folder_info key, the S3 file's
+          equivalent could not because its own test parametrises over it
+      - file: sdd/TESTING.md
+        section: "(full)"
+        read_type: gate
+        extract: >-
+          Assertion depth and mock discipline. Retrospective: the first version
+          of the fix carried two saw_page bounds no cell could falsify — they
+          were written from the listings' own reasoning and not tested until
+          this read sent me back for the mid-scan and non-root cells
+  - id: implement
+    name: Fix
+    steps:
+      - file: src/remote_store/backends/_flat_ns.py
+        section: "_children_or_absent_container"
+        read_type: reference
+        extract: >-
+          The existing "the container's 404 is an answer" shape, and the
+          docstring sentence the fix falsifies — that an absent bucket is a
+          plain NotFound for get_folder_info either way, now true of a non-root
+          prefix only
+      - file: src/remote_store/backends/_azure.py
+        section: "_listing_errors, list_files"
+        read_type: reference
+        extract: >-
+          The page-bound idiom (by_page plus a cursor) the aggregate had to
+          adopt, and why the HNS branch classifies rather than type-tests
+  - id: docs
+    name: Sweep the published surfaces
+    steps:
+      - file: docs-src/reference/migration.md
+        section: "v0.30.0 to v0.31.0"
+        read_type: gate
+        extract: >-
+          The four passages that existed only while the item was open, and the
+          two that look like them and are not this item's — the GraphBackend
+          bullet and the ping() redirects
+      - file: sdd/CLAUDE-REFERENCE.md
+        section: "Ripple-check table / Breaking change"
+        read_type: gate
+        extract: >-
+          A fix that breaks an except clause without earning the marker owes the
+          migration section alone
+  - id: verify
+    name: Verify
+    steps:
+      - file: sdd/CLAUDE-REFERENCE.md
+        section: "Ripple-check table / Detailed checklist"
+        read_type: verify
+        extract: "Bug fix, Backend, Store or Backend ABC, CHANGELOG entry, Backlog item touched"
+      - file: sdd/BACKLOG.md
+        section: "How this file works / Completing work"
+        read_type: gate
+        extract: >-
+          The unbounded ID sweep: read every hit, not only the ones that fail to
+          resolve. It found three present-tense assertions — section 1's
+          Closes-when clause, its four-disagreements count, and spec 040's
+          pointer at the divergence
+surprising_ripples:
+  - tests/backends/azure/test_config.py
+  - src/remote_store/backends/_s3_base.py
+  - src/remote_store/backends/_flat_ns.py
+  - sdd/specs/040-sql-blob-backend.md

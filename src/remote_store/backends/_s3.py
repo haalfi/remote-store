@@ -135,11 +135,17 @@ class S3Backend(_S3Base):
     def exists(self, path: str) -> bool:
         """Return ``True`` if an object or prefix exists at *path*; never ``NotFound``.
 
+        The root always exists, and that is decided from the key: ``s3fs.exists``
+        on the bare bucket answers ``False`` once the bucket is gone, which is
+        "there is no root" — a distinction no caller can act on.
+
         Raises:
             PermissionDenied: If the credentials lack access.
             BackendUnavailable: On a transport or service failure, or after ``close()``.
         """
         with self._s3fs_errors(path):
+            if is_root(path):
+                return True
             return bool(self._fs.exists(self._s3_path(path)))
 
     def is_file(self, path: str) -> bool:
@@ -159,11 +165,16 @@ class S3Backend(_S3Base):
     def is_folder(self, path: str) -> bool:
         """Return ``True`` if *path* is an existing virtual folder (a common prefix).
 
+        The root is always a folder, decided from the key for the reason
+        ``exists`` gives.
+
         Raises:
             PermissionDenied: If the credentials lack access.
             BackendUnavailable: On a transport or service failure, or after ``close()``.
         """
         with self._s3fs_errors(path):
+            if is_root(path):
+                return True
             try:
                 info = self._fs.info(self._s3_path(path))
                 return bool(info.get("type") == "directory")

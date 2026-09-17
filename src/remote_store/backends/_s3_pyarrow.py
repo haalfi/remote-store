@@ -193,7 +193,13 @@ class S3PyArrowBackend(_S3Base):
         return self._pa_path(path)
 
     def exists(self, path: str) -> bool:
+        # BE-029: the root exists by definition, not by observation. ``s3fs``
+        # answers ``False`` for the bare bucket once the bucket is gone, which
+        # reads "there is no root" -- the same wire answer the s3fs lane in
+        # ``_s3.py`` had to stop believing, and for the same reason.
         with self._s3fs_errors(path):
+            if is_root(path):
+                return True
             return bool(self._s3fs.exists(self._s3_path(path)))
 
     def is_file(self, path: str) -> bool:
@@ -206,6 +212,8 @@ class S3PyArrowBackend(_S3Base):
 
     def is_folder(self, path: str) -> bool:
         with self._s3fs_errors(path):
+            if is_root(path):
+                return True  # BE-029, decided from the key as in ``exists``
             try:
                 info = self._s3fs.info(self._s3_path(path))
                 return bool(info.get("type") == "directory")

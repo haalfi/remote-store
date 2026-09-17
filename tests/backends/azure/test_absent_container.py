@@ -250,6 +250,138 @@ class TestTheToleranceIsBoundedToTheFirstPage:
             instance.close()
 
 
+_ROOT_ROW = [
+    ("exists", lambda b, root: b.exists(root), True),
+    ("is_folder", lambda b, root: b.is_folder(root), True),
+    ("is_file", lambda b, root: b.is_file(root), False),
+]
+
+
+class TestTheRootAnswersTheSameAgainstAnAbsentContainer:
+    """BE-029's root row holds whether or not the container is there.
+
+    The row states the root's answers without qualifying them by the container's
+    existence, and BE-021 § "The root is decided by BE-029, not here" says BE-029
+    governs where the two meet. ``get_folder_info("")`` is the cell that did not:
+    the aggregate runs a listing whose ``ContainerNotFound`` reached the caller
+    as ``NotFound``, so a store whose container is gone reported a *missing path*
+    at the root rather than an empty store.
+
+    The three probes are the in-file control — they short-circuit from the key
+    already and answered the row before this change — so a fix that moved the
+    whole root rather than the aggregate is visible here.
+
+    Both branches carry their own cells because both carry their own listing
+    call: flat ``list_blobs`` and HNS ``get_paths``, each catching its own
+    exception (BE-014), which is a place the two namespaces can drift.
+    """
+
+    @pytest.mark.spec("BE-029", "BE-004", "BE-005", "BE-021")
+    @pytest.mark.parametrize("root", ["", "."], ids=["empty", "dot"])
+    @pytest.mark.parametrize(("op_name", "call", "expected"), _ROOT_ROW, ids=[n for n, _c, _e in _ROOT_ROW])
+    def test_root_probes_answer_the_row(
+        self,
+        backend: Any,
+        root: str,
+        op_name: str,
+        call,  # noqa: ANN001 -- parametrized callable
+        expected: bool,
+    ) -> None:
+        """Both spellings, because a backend testing ``if path`` sends ``"."`` down the other arm."""
+        assert call(backend, root) is expected, op_name
+
+    @pytest.mark.spec("BE-029", "BE-017", "BE-021")
+    @pytest.mark.parametrize("root", ["", "."], ids=["empty", "dot"])
+    def test_root_folder_info_aggregates_to_zero(self, backend: Any, root: str) -> None:
+        """An absent container is an empty store at the root, never a missing path.
+
+        The zero is asserted rather than only the absence of a raise: a backend
+        returning a ``FolderInfo`` carrying counts from somewhere else would
+        satisfy "does not raise" and report a store that is not there as one
+        holding something.
+        """
+        info = backend.get_folder_info(root)
+        assert info.file_count == 0
+        assert info.total_size == 0
+        assert info.modified_at is None
+
+    @pytest.mark.spec("BE-029", "BE-017", "BE-021")
+    @pytest.mark.parametrize("root", ["", "."], ids=["empty", "dot"])
+    def test_root_folder_info_aggregates_to_zero_on_hns(self, httpserver: HTTPServer, root: str) -> None:
+        """The ADLS Gen2 branch, executed rather than argued.
+
+        ``get_paths`` is a different call raising a different exception from the
+        flat ``list_blobs``, and the two branches have drifted before, so the
+        rule is asserted on each rather than on the one that happens to be the
+        default.
+        """
+        instance = _backend_at(serve_hns_absent_filesystem(httpserver), hns=True)
+        try:
+            info = instance.get_folder_info(root)
+        finally:
+            instance.close()
+        assert info.file_count == 0
+        assert info.total_size == 0
+        assert info.modified_at is None
+
+    @pytest.mark.spec("BE-029", "BE-021")
+    def test_a_container_deleted_mid_aggregate_raises(self, httpserver: HTTPServer) -> None:
+        """The root tolerance is bounded to the first page, like every listing's.
+
+        A 404 arriving after a page has come back reports a deletion underneath
+        the scan, not an absence, and returning a zero aggregate there would tell
+        a caller their store is empty when it was not. The stub's first page is
+        one the aggregate counts *nothing* from — it counts blobs and the page
+        holds a common prefix — so a bound keyed on a counted file rather than on
+        the page would pass this cell while being blind in ordinary use.
+        """
+        endpoint = serve_container_vanishing_mid_listing(httpserver, page_one=MID_SCAN_BLIND_PAGES["get_folder_info"])
+        instance = _backend_at(endpoint)
+        try:
+            with pytest.raises(NotFound):
+                instance.get_folder_info("")
+        finally:
+            instance.close()
+
+    @pytest.mark.spec("BE-029", "BE-021")
+    def test_a_filesystem_deleted_mid_aggregate_raises(self, httpserver: HTTPServer) -> None:
+        """The same bound on the HNS branch, whose page holds a directory entry."""
+        endpoint = serve_hns_filesystem_vanishing_mid_listing(
+            httpserver,
+            page_one=HNS_MID_SCAN_BLIND_PAGES["get_folder_info"],
+        )
+        instance = _backend_at(endpoint, hns=True)
+        try:
+            with pytest.raises(NotFound):
+                instance.get_folder_info("")
+        finally:
+            instance.close()
+
+    @pytest.mark.spec("BE-029", "BE-021")
+    @pytest.mark.parametrize("root", ["", "."], ids=["empty", "dot"])
+    def test_a_denied_container_is_not_an_absent_one_at_the_root(self, denied_backend: Any, root: str) -> None:
+        """The narrowness guard, on the one root cell that tolerates a 404 at all.
+
+        ``get_folder_info`` is the only cell in this row that reaches the wire at
+        the root, so it is the only one a widened catch can turn into "your store
+        is empty" for a container you merely may not see.
+        """
+        with pytest.raises(PermissionDenied) as exc_info:
+            denied_backend.get_folder_info(root)
+        assert exc_info.value.backend == "azure"
+
+    @pytest.mark.spec("BE-029", "BE-021")
+    @pytest.mark.parametrize("root", ["", "."], ids=["empty", "dot"])
+    def test_a_denied_filesystem_is_not_an_absent_one_at_the_root(self, httpserver: HTTPServer, root: str) -> None:
+        """The same guard on the HNS branch, which catches its own exception."""
+        instance = _backend_at(serve_hns_denied(httpserver), hns=True)
+        try:
+            with pytest.raises(PermissionDenied):
+                instance.get_folder_info(root)
+        finally:
+            instance.close()
+
+
 class TestTheHnsListingsAnswerTheSameWay:
     """The ADLS Gen2 branches, executed rather than argued.
 

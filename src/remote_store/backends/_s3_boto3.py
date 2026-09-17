@@ -632,11 +632,17 @@ class S3Boto3Backend(Backend):
         File count, total size, and latest modification time come from paging the
         whole prefix listing, so cost scales with the number of descendants.
 
+        The root aggregates whether or not the bucket is there: an absent bucket
+        is an empty store at the root, not a missing path.
+
         Raises:
-            NotFound: If no object exists under *path*.
+            NotFound: If no object exists under *path*. Not for the root, which
+                exists by definition.
             PermissionDenied: If the credentials are rejected or lack access (403).
             BackendUnavailable: On throttling, 5xx, or transport failure, or after ``close()``.
         """
+        from botocore.exceptions import ClientError  # type: ignore[import-untyped]
+
         with self._boto_errors(path):
             prefix = self._prefix_of(path)
             if not is_root(path) and not self._prefix_has_children(path):
@@ -645,15 +651,34 @@ class S3Boto3Backend(Backend):
             file_count = 0
             total_size = 0
             latest: Any = None
-            for page in self._paginate(prefix, delimiter=None):
-                for obj in page.get("Contents", []):
-                    if obj["Key"].endswith("/"):
-                        continue
-                    file_count += 1
-                    total_size += int(obj.get("Size", 0) or 0)
-                    modified = obj.get("LastModified")
-                    if modified is not None and (latest is None or modified > latest):
-                        latest = modified
+            saw_page = False
+            try:
+                for page in self._paginate(prefix, delimiter=None):
+                    saw_page = True
+                    for obj in page.get("Contents", []):
+                        if obj["Key"].endswith("/"):
+                            continue
+                        file_count += 1
+                        total_size += int(obj.get("Size", 0) or 0)
+                        modified = obj.get("LastModified")
+                        if modified is not None and (latest is None or modified > latest):
+                            latest = modified
+            except ClientError as exc:
+                # BE-029 outranks BE-021's NotFound row at the root, and only
+                # there. Bounded three ways, because each bound is a different
+                # answer this catch would otherwise invent:
+                #   root      -- a non-root prefix under an absent bucket is a
+                #                plain NotFound (BE-021 § Reach), and this
+                #                method has no ``missing_ok`` to soften it.
+                #   first page -- a 404 after a page has come back reports a
+                #                deletion underneath the scan, not an absence,
+                #                and must propagate (BE-021's page bound). Keyed
+                #                on the page rather than on a counted object: a
+                #                page of directory markers increments nothing.
+                #   404       -- a denial is not an answer about the store, so
+                #                it still reaches the caller as PermissionDenied.
+                if not (is_root(path) and not saw_page and self._is_404(exc)):
+                    raise
             return FolderInfo(
                 path=RemotePath.from_backend_path(path),
                 file_count=file_count,

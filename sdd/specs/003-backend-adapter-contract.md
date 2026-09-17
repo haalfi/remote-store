@@ -824,35 +824,43 @@ Stated here because this is where a reader looking for per-operation answers
 lands, and following it alone yields the wrong answer for one path in every
 operation it names.
 
-**Five of the thirteen concrete backends do not meet the root row against an
-absent container, and the list below does not record it.** Conformance's
-`TestBackendRootPath` runs the row against every backend with the container
-*present*, and all of them pass; the breaches are all in the absent state,
-which no conformance fixture reaches (BK-345 owns that gap). § Known
-divergences holds two live bullets, and neither is root-specific: both are of
-the first-page bound.
+**Ten of the thirteen concrete backends are measured against an absent
+container at the root and all ten meet the row; three are not measured.**
+Meeting it: `LocalBackend`, `SFTPBackend`, `MemoryBackend`,
+`AsyncMemoryBackend`, `SQLBlobBackend`, `S3Backend`, `S3PyArrowBackend`,
+`S3Boto3Backend`, `AzureBackend`, `AsyncAzureBackend`. Unmeasured:
+`GraphBackend`, `ReadOnlyHttpBackend`, `SQLQueryBackend`. Derivation of the
+thirteen: the classes declaring `CAPABILITIES`, excluding the two abstract
+bases and the sync adapter — enumerated by importing every module under
+`remote_store.backends` and `remote_store.aio.backends` and selecting classes
+with `CAPABILITIES` in their own `__dict__`.
 
-The root breaches are measured and tracked as **BUG-254**: `exists("")` and
-`is_folder("")` answer `False` on `S3Backend` and `S3PyArrowBackend`, and
-`get_folder_info("")` raises `NotFound` on `S3Boto3Backend`, `AzureBackend` and
-`AsyncAzureBackend` — five classes, seven class-cells (two operations on two
-classes, plus one on three), in two opposite directions. `SQLBlobBackend` is
-the one of the six flat-namespace classes BUG-254 measured that complies.
+**The measurement is per-backend, and that is a stated coverage bound rather
+than a gate.** Conformance's `TestBackendRootPath` runs the row against every
+LIST-capable backend, but with the container *present*; no conformance fixture
+removes one. The backends whose container can go absent under them therefore
+pin the absent state in their own homes:
+`tests/backends/s3/test_denied_probe.py` for the three S3 lanes,
+`tests/backends/azure/test_absent_container.py` and its `aio/` sibling for the
+two Azure classes, `tests/backends/local/test_absent_root.py` for the deleted
+root, `tests/backends/sqlblob/test_absent_table.py` for the dropped table. The
+remaining three — `SFTPBackend`, `MemoryBackend`, `AsyncMemoryBackend` — have
+no container distinct from an empty store (SFTP's `base_path` is created
+lazily, so an untouched store *is* the absent case), and the conformance
+cell's unseeded arm is that measurement.
+**A fourteenth backend is therefore exempt by default at the root exactly as it
+is for the absent-container clause**, which is the gap BK-345 owns; nothing
+here closes it.
 
-`LocalBackend`'s breach was whole-backend and included all three root cells:
-once its root directory was gone it answered *every* operation with
-`InvalidPath`. It has left the list below (BUG-247) and now meets the row,
-deciding the root from the key rather than from a stat. That leaves
-`GraphBackend`, `ReadOnlyHttpBackend` and `SQLQueryBackend` unmeasured for the
-root, and `SFTPBackend`, `MemoryBackend` and `AsyncMemoryBackend` meeting it
-alongside Local and `SQLBlobBackend` — five breaching, five meeting, three
-unmeasured, of the thirteen classes that declare `CAPABILITIES`, excluding the
-two abstract bases and the sync adapter.
+The three unmeasured classes are unmeasured for different reasons, and none is
+a divergence: `ReadOnlyHttpBackend` and `SQLQueryBackend` arrange no absent
+container through the `Backend` API at all, and `GraphBackend`'s
+absent-drive answers are its own (GR-031, [ADR-0038](../adrs/0038-absent-container-outranks-drive-identity.md)).
 
-These are absent from the list below because that list is organised by the
-absent-container *clause* and these are breaches of BE-029's root row; the
-pointer is here so a reader does not read that list as meaning the root is
-settled.
+The root is absent from § Known divergences below because that list is
+organised by the absent-container *clause* and the root is BE-029's; the
+pointer is here so a reader does not read that list as deciding the root
+either way.
 
 **The write-to-root rule is a different count and every class now meets it.**
 Of the same thirteen, **two** have no `WRITE` capability and are not bound

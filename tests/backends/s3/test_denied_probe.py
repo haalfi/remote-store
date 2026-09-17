@@ -576,6 +576,11 @@ _MID_SCAN_BLIND_SHAPES: dict[str, bytes] = {
     "iter_children": _TRUNCATED_PAGE_ONE,
     "glob": _TRUNCATED_PAGE_ONE_PREFIXES_ONLY,
 }
+# `get_folder_info` is not in that map because the class below iterates it as
+# its parametrisation, and the aggregate is not one of its listings. It pages
+# like one and counts keys only, so a page of common prefixes is the shape it
+# makes nothing of — the same shape, named here rather than shared.
+_AGGREGATE_BLIND_SHAPE = _TRUNCATED_PAGE_ONE_PREFIXES_ONLY
 
 
 class TestTheAbsentBucketToleranceIsBoundedToTheFirstPage:
@@ -637,3 +642,151 @@ class TestTheAbsentBucketToleranceIsBoundedToTheFirstPage:
         endpoint = _serve_bucket_vanishing_on_page_two(httpserver)
         with _backend_at(dotted, endpoint) as backend:
             assert list(backend.list_files("", recursive=True)) == []
+
+
+# BE-029's root row, which is not qualified by whether the container exists.
+# Value: the answer the row gives, so one parametrisation carries all three
+# probes and a backend that flipped only one of them cannot pass by silence.
+_ROOT_ROW: dict[str, tuple[Callable[[Backend, str], Any], bool]] = {
+    "exists": (lambda b, root: b.exists(root), True),
+    "is_folder": (lambda b, root: b.is_folder(root), True),
+    "is_file": (lambda b, root: b.is_file(root), False),
+}
+
+# A third backend list, for the reason the absent-bucket one gives about the
+# first: the root row is BE-029's, and neither per-backend spec has a clause of
+# its own about the root, so these cells carry the contract IDs rather than
+# inheriting S3-015's NotFound-mapping mark.
+_ROOT_PARAMS = [
+    pytest.param(_S3, id="s3"),
+    pytest.param(_S3PA, id="s3-pyarrow"),
+    pytest.param(_S3B3, id="s3-boto3"),
+]
+
+
+class TestTheRootAnswersTheSameAgainstAnAbsentBucket:
+    """BE-029's root row holds whether or not the bucket is there.
+
+    The row states the root's answers without qualifying them by the container's
+    existence, and BE-021 § "The root is decided by BE-029, not here" says BE-029
+    governs where the two meet: against an absent bucket the root of a compliant
+    backend answers as it would for an empty one.
+
+    Each lane is the other's control, and the two directions are opposite, which
+    is why one class parametrised over three lanes says more than three
+    per-backend cells would:
+
+    * ``S3Backend`` and ``S3PyArrowBackend`` sent the root probes to the wire and
+      read a missing bucket as "the root is not there" — ``exists("")`` and
+      ``is_folder("")`` answered ``False``, where ``S3Boto3Backend`` already
+      decided both from the key.
+    * ``S3Boto3Backend.get_folder_info("")`` raised ``NotFound``, because the
+      aggregate runs a prefix listing whose ``NoSuchBucket`` it did not tolerate
+      at the root — where the s3fs lanes already aggregated to zero.
+
+    ``is_file`` is the in-row control: it answered ``False`` on all three lanes
+    before this change, in both container states, so a fix that flipped the whole
+    row rather than the two breaching cells is visible here.
+
+    **Stated bound.** On the two s3fs lanes ``is_file`` still reaches the wire,
+    so against a *denied* bucket it raises where the other two probes now answer
+    from the key. That asymmetry is not a breach of this row — the row is silent
+    about a denied container — and it is not changed here.
+    """
+
+    @pytest.mark.spec("BE-029", "BE-004", "BE-005", "BE-021")
+    @pytest.mark.parametrize("dotted", _ROOT_PARAMS)
+    @pytest.mark.parametrize("root", ["", "."], ids=["empty", "dot"])
+    @pytest.mark.parametrize("op_name", sorted(_ROOT_ROW))
+    def test_root_probes_answer_the_row(
+        self,
+        httpserver: HTTPServer,
+        dotted: str,
+        root: str,
+        op_name: str,
+    ) -> None:
+        """Both spellings, because a backend testing ``if path`` sends ``"."`` down the other arm."""
+        call, expected = _ROOT_ROW[op_name]
+        endpoint = _serve_missing_bucket_stub(httpserver)
+        with _backend_at(dotted, endpoint) as backend:
+            assert call(backend, root) is expected
+
+    @pytest.mark.spec("BE-029", "BE-017", "BE-021")
+    @pytest.mark.parametrize("dotted", _ROOT_PARAMS)
+    @pytest.mark.parametrize("root", ["", "."], ids=["empty", "dot"])
+    def test_root_folder_info_aggregates_to_zero(
+        self,
+        httpserver: HTTPServer,
+        dotted: str,
+        root: str,
+    ) -> None:
+        """An absent bucket is an empty store at the root, never a missing path.
+
+        The aggregate's zero is asserted rather than only the absence of a raise:
+        a backend that returned a ``FolderInfo`` carrying counts from somewhere
+        else would satisfy "does not raise" and report a store that is not there
+        as one holding something.
+        """
+        endpoint = _serve_missing_bucket_stub(httpserver)
+        with _backend_at(dotted, endpoint) as backend:
+            info = backend.get_folder_info(root)
+        assert info.file_count == 0
+        assert info.total_size == 0
+        assert info.modified_at is None
+
+    @pytest.mark.spec("BE-029", "BE-021")
+    def test_a_bucket_deleted_mid_aggregate_raises(self, httpserver: HTTPServer) -> None:
+        """The root tolerance is bounded to the first page, like every listing's.
+
+        A 404 arriving after a page has come back reports a deletion underneath
+        the scan, not an absence, and a zero aggregate there would tell a caller
+        their store is empty when it was not. The stub's first page is one the
+        aggregate counts nothing from — it counts keys and the page holds a
+        common prefix — so a bound keyed on a counted file rather than on the
+        page would pass this cell while being blind in ordinary use.
+
+        Only the boto3 lane: the s3fs lanes reach an absent bucket through
+        ``ls``'s own ``FileNotFoundError``, which their aggregate already
+        absorbs per directory, and that truncation is the stated bound the cell
+        above this one pins rather than a behaviour this change touches.
+        """
+        endpoint = _serve_bucket_vanishing_on_page_two(httpserver, page_one=_AGGREGATE_BLIND_SHAPE)
+        with _backend_at(_S3B3, endpoint) as backend, pytest.raises(NotFound):
+            backend.get_folder_info("")
+
+    @pytest.mark.spec("BE-029", "BE-021")
+    def test_a_non_root_aggregate_is_not_covered_by_the_root_tolerance(self, httpserver: HTTPServer) -> None:
+        """The tolerance is the root's, and a non-root prefix keeps BE-021's NotFound row.
+
+        Reached through the one sequence where a non-root aggregate can meet the
+        bucket's 404 with no page in hand: the ``MaxKeys=1`` existence probe
+        answers first — so the bucket was there — and the bucket goes on the
+        aggregate's own first request. Without the root clause the catch would
+        report the folder as empty rather than as gone, which is the same
+        data-shaped error the page bound exists to prevent, one request earlier.
+        """
+        endpoint = _serve_bucket_vanishing_on_page_two(httpserver)
+        with _backend_at(_S3B3, endpoint) as backend, pytest.raises(NotFound):
+            backend.get_folder_info(_FOLDER)
+
+    @pytest.mark.spec("BE-029", "BE-021")
+    @pytest.mark.parametrize("dotted", _ROOT_PARAMS)
+    @pytest.mark.parametrize("root", ["", "."], ids=["empty", "dot"])
+    def test_a_denied_bucket_is_not_an_absent_one_at_the_root(
+        self,
+        httpserver: HTTPServer,
+        dotted: str,
+        root: str,
+    ) -> None:
+        """The narrowness guard for the aggregate, on the operation that gained a catch.
+
+        ``get_folder_info`` is the only root cell here that tolerates a 404 at
+        all, so it is the only one a widened catch can turn into "your store is
+        empty" for a bucket you merely may not see. The probes above cannot show
+        that: they answer from the key and never reach the wire at the root.
+        """
+        endpoint = _serve_s3_stub(httpserver, object_denied=True, listing_denied=True)
+        with _backend_at(dotted, endpoint) as backend:
+            with pytest.raises(PermissionDenied) as exc_info:
+                backend.get_folder_info(root)
+            assert exc_info.value.backend == _BACKEND_NAMES[dotted]

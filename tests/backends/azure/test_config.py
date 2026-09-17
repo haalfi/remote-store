@@ -987,7 +987,7 @@ class TestAzureRootPathNonHns:
         """
         backend = _make_backend()
         cc = MagicMock(spec=["list_blobs", "get_blob_client"])
-        cc.list_blobs.return_value = iter(())
+        cc.list_blobs.return_value = _Paged([])
         backend._cc_instance = cc
 
         info = backend.get_folder_info(root)
@@ -1008,7 +1008,7 @@ class TestAzureRootPathNonHns:
         bc = MagicMock(spec=BlobClient)
         bc.get_blob_properties.side_effect = ResourceNotFoundError("nope")
         cc = MagicMock(spec=["list_blobs", "get_blob_client"])
-        cc.list_blobs.return_value = iter(())
+        cc.list_blobs.return_value = _Paged([])
         cc.get_blob_client.return_value = bc
         backend._cc_instance = cc
 
@@ -1647,7 +1647,7 @@ class TestAzureHNSPaths:
         backend = self._make_hns_backend()
         dc = MagicMock(spec=DataLakeDirectoryClient)
         backend._fs_instance.get_directory_client.return_value = dc
-        backend._fs_instance.get_paths.return_value = []  # empty dir
+        backend._fs_instance.get_paths.return_value = _Paged([])  # empty dir
         info = backend.get_folder_info("my-dir")
         dc.get_directory_properties.assert_called_once()
         backend._fs_instance.get_paths.assert_called_once()
@@ -1671,7 +1671,7 @@ class TestAzureHNSPaths:
         file_b.is_directory = False
         file_b.content_length = 2
         file_b.last_modified = None
-        backend._fs_instance.get_paths.return_value = [file_a, dir_marker, file_b]
+        backend._fs_instance.get_paths.return_value = _Paged([file_a, dir_marker, file_b])
         info = backend.get_folder_info("mix")
         assert info.file_count == 2, "directory marker must not be counted as a file"
         assert info.total_size == 5
@@ -1896,7 +1896,7 @@ class TestAzureHNSPaths:
         regression independent of live SDK semantics.
         """
         backend = self._make_hns_backend()
-        backend._fs_instance.get_paths.return_value = []  # root is empty for this test
+        backend._fs_instance.get_paths.return_value = _Paged([])  # root is empty for this test
 
         info = backend.get_folder_info("")
 

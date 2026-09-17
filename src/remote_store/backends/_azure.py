@@ -1361,8 +1361,12 @@ class AzureBackend(Backend):
         paging the whole subtree listing, so cost scales with the number of
         descendants.
 
+        The root aggregates whether or not the container is there: an absent
+        container is an empty store at the root, not a missing path.
+
         Raises:
-            NotFound: If the folder does not exist.
+            NotFound: If the folder does not exist. Not for the root, which
+                exists by definition.
             InvalidPath: If *path* names a file, not a folder.
             PermissionDenied: If credentials are rejected or lack access (401/403).
             BackendUnavailable: On throttling (429), 5xx, or transport failure.
@@ -1372,6 +1376,27 @@ class AzureBackend(Backend):
             file_count = 0
             total_size = 0
             latest_modified: datetime | None = None
+            # BE-029 outranks BE-021's NotFound row at the root, and only there.
+            # Both branches below carry the same three bounds, each of which is
+            # a different answer an unbounded catch would invent:
+            #   root       -- a non-root prefix under an absent container is a
+            #                 plain NotFound (BE-021 § Reach), and this method
+            #                 has no ``missing_ok`` to soften it. On the flat
+            #                 branch the zero-count guard below reaches that
+            #                 same class anyway, so there this clause saves the
+            #                 wrong-type probe rather than changing the answer;
+            #                 on the HNS branch, which has no such guard, it is
+            #                 the whole of it.
+            #   first page -- a 404 after a page has come back reports a
+            #                 deletion underneath the scan (BE-021's page
+            #                 bound). Keyed on the page rather than on a counted
+            #                 blob: a page of directory entries counts nothing,
+            #                 which is why both loops page explicitly.
+            #   404        -- a denial is not an answer about the store.
+            # They are written per branch rather than shared because the two
+            # listings raise differently, which is the same reason
+            # ``_listing_errors`` says the HNS branches never reach it.
+            saw_page = False
 
             if self._hns:
                 # DFS get_paths exposes is_directory inline; list_blobs would
@@ -1388,31 +1413,50 @@ class AzureBackend(Backend):
                     dir_meta = getattr(dir_props, "metadata", None) or {}
                     if not dir_meta.get("hdi_isfolder"):
                         raise InvalidPath(f"Not a folder: {path}", path=path, backend=self.name)
-                for p in self._fs.get_paths(path=azure_path or "/", recursive=True):
-                    if getattr(p, "is_directory", False):
-                        continue
-                    file_count += 1
-                    # Mirror props_to_fileinfo (_azure_common.py:127) attribute order so
-                    # FolderInfo.total_size and FileInfo.size agree for the same path.
-                    size = getattr(p, "size", None) or getattr(p, "content_length", 0) or 0
-                    total_size += int(size)
-                    modified = getattr(p, "last_modified", None)
-                    if modified is not None:
-                        if modified.tzinfo is None:
-                            modified = modified.replace(tzinfo=timezone.utc)
-                        if latest_modified is None or modified > latest_modified:
-                            latest_modified = modified
+                try:
+                    for page in self._fs.get_paths(path=azure_path or "/", recursive=True).by_page():
+                        saw_page = True
+                        for p in page:
+                            if getattr(p, "is_directory", False):
+                                continue
+                            file_count += 1
+                            # Mirror props_to_fileinfo (_azure_common.py:127) attribute order so
+                            # FolderInfo.total_size and FileInfo.size agree for the same path.
+                            size = getattr(p, "size", None) or getattr(p, "content_length", 0) or 0
+                            total_size += int(size)
+                            modified = getattr(p, "last_modified", None)
+                            if modified is not None:
+                                if modified.tzinfo is None:
+                                    modified = modified.replace(tzinfo=timezone.utc)
+                                if latest_modified is None or modified > latest_modified:
+                                    latest_modified = modified
+                except Exception as exc:  # noqa: BLE001
+                    # Classified rather than type-tested, for the reason
+                    # ``list_files``' HNS branch gives: the DFS endpoint's
+                    # absent-filesystem shape is not reliably one SDK type.
+                    mapped = self._classify(exc, path)
+                    if not (isinstance(mapped, NotFound) and is_root(path) and not saw_page):
+                        raise mapped from None
             else:
                 prefix = (azure_path.rstrip("/") + "/") if azure_path else ""
-                for blob in self._cc.list_blobs(name_starts_with=prefix):
-                    file_count += 1
-                    total_size += blob.size or 0
-                    modified = blob.last_modified
-                    if modified is not None:
-                        if modified.tzinfo is None:  # pragma: no cover
-                            modified = modified.replace(tzinfo=timezone.utc)
-                        if latest_modified is None or modified > latest_modified:
-                            latest_modified = modified
+                try:
+                    for page in self._cc.list_blobs(name_starts_with=prefix).by_page():
+                        saw_page = True
+                        for blob in page:
+                            file_count += 1
+                            total_size += blob.size or 0
+                            modified = blob.last_modified
+                            if modified is not None:
+                                if modified.tzinfo is None:  # pragma: no cover
+                                    modified = modified.replace(tzinfo=timezone.utc)
+                                if latest_modified is None or modified > latest_modified:
+                                    latest_modified = modified
+                except ResourceNotFoundError:
+                    # Narrower than the HNS arm on purpose: ``list_blobs``
+                    # reports an absent prefix as an empty page, so the only 404
+                    # it raises is the container's.
+                    if not (is_root(path) and not saw_page):
+                        raise
                 # BE-029: the root exists by definition, not by observation. An
                 # empty container yields no blobs, which is "nothing has been
                 # written yet" and not "there is no root" -- a distinction no

@@ -240,6 +240,61 @@ if evidence changes; these are retired.
 
 ## Unreleased
 
+- [x] **BUG-254 — Five backend classes breach BE-029's root row against an absent container**
+  spec: BE-004, BE-021, BE-029 · effort: S · audience: user.api, user.site
+  BE-029 states the root's answers without qualifying them by whether the
+  container exists, and BE-021 § "The root is decided by BE-029, not here" defers
+  to it where the two meet. Seven class-cells across five classes disagreed once
+  the bucket or container was gone, in **two opposite directions**, which is why
+  one fix could not cover both: the s3fs lanes went to the wire for the root
+  probe and read a missing bucket as "the root is not there", while the direct
+  lanes short-circuited the probes and let `get_folder_info` reach a listing
+  whose 404 they did not tolerate at the root.
+  | Backend | Fixed cells |
+  | --- | --- |
+  | `S3Backend`, `S3PyArrowBackend` | `exists("")` and `is_folder("")`, now decided from the key |
+  | `S3Boto3Backend`, `AzureBackend`, `AsyncAzureBackend` | `get_folder_info("")`, now aggregating to zero |
+
+  Five classes because the two Azure adapters carry their own copies of every
+  body, and the Azure fix lands twice more inside each: the flat `list_blobs` and
+  HNS `get_paths` branches raise differently and each catches its own exception.
+  **The new tolerance carries three bounds, and each is pinned by a cell that
+  fails without it** — measured by removing each in turn: the root (a non-root
+  prefix under an absent container keeps BE-021 § Reach's `NotFound`), the first
+  page (a 404 after a page has come back reports a deletion underneath the scan,
+  so it propagates; keyed on the page rather than on a counted file, because a
+  page of common prefixes or directory entries counts nothing), and the 404
+  itself (a denial still reaches the caller as `PermissionDenied`).
+  **Where it is pinned.** No conformance fixture can remove a container, so the
+  cells sit in the per-backend wire-stub homes beside their siblings:
+  `tests/backends/s3/test_denied_probe.py` and
+  `tests/backends/azure/test_absent_container.py` with its `aio/` twin. 18 cells
+  failed before the fix and pass after, and the compliant lane in each file is
+  the control that says what the answer is: the boto3 lane for the probes, the
+  s3fs lanes for the aggregate. `is_file("")` is parametrised in as the in-row
+  control — it answered correctly throughout, and a fix that moved the whole row
+  rather than the seven cells would show there.
+  **What this does not close.** A fourteenth backend is still exempt by default,
+  because the absent-container state has no registry-driven gate — **BK-345**
+  owns that and stays open. Three classes are unmeasured at the root for reasons
+  BE-021 now names: `ReadOnlyHttpBackend` and `SQLQueryBackend` arrange no absent
+  container through the `Backend` API, and `GraphBackend`'s absent-drive answers
+  are its own (GR-031, ADR-0038). On the two s3fs lanes `is_file("")` still
+  reaches the wire, so against a *denied* bucket it raises where the other two
+  probes now answer from the key; BE-029 is silent about a denied container, so
+  that is a stated bound rather than a residue.
+  **Published surfaces swept.** The four passages in
+  `docs-src/reference/migration.md` § v0.30.0 to v0.31.0 that existed only while
+  this was open — the divergence bullets, the two-row table, the "treat both as
+  unfinished" advice and the redirects — now record what was true then and point
+  at the new § v0.32.0 to v0.33.0 section. The `GraphBackend` bullet is
+  deliberate and stayed; the `ping()` redirects are BUG-256's and stayed.
+  Two helper docstrings asserted that an absent bucket was "a plain `NotFound`
+  either way" for `get_folder_info`; both are narrowed to the non-root prefix.
+  **Filed on a wrong premise and corrected in the same PR that filed it:** the
+  first version said nothing decided the question and asked for a spec decision.
+  That was read off BE-021 § Reach alone, which decides operations and is silent
+  about the root; BE-029's table decides it and was not consulted.
 - [x] **BK-375 — Two interpreters are past the support window we now publish, and nothing has decided whether to keep them**
   spec: — · effort: M · audience: user.api
   **The window was the wrong one, and that is the decision.**
