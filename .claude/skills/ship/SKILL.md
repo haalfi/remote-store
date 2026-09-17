@@ -102,8 +102,9 @@ round history in the body.
 
 ## Step 4: Review loop
 
-The heart of this skill. Each round is: brief → review → triage → fix → gate →
-push → reply and resolve.
+The heart of this skill. Each round is: worktree at the pushed commit → brief →
+review → triage, with a fix shape per must-fix finding → fix in the main tree →
+gate → push → reply and resolve → worktree removed.
 
 ### Round composition
 
@@ -145,21 +146,44 @@ this reasoning is the failure the sibling-sweep rule exists to catch.
 - **The spawn path loses it.** A general `Agent` told to read
   `rvw-pr/SKILL.md` keeps its own full tool set, and no spawnable
   `subagent_type` closes the gap — the repo's agents declare no tool restriction
-  and the built-in read-only types keep `Bash`, which can mutate the shared
-  working tree. So panel members get the read-only and analyze-only constraints
-  **restated in every prompt**. Enforcement by instruction is weaker than the
-  frontmatter it stands in for, and that is the reason solo passes take the
-  direct route instead.
+  and the built-in read-only types keep `Bash`, which can mutate the review
+  worktree the round's passes share. So panel members get the read-only and
+  analyze-only constraints **restated in every prompt**. Enforcement by
+  instruction is weaker than the frontmatter it stands in for, and that is the
+  reason solo passes take the direct route instead.
+- **No reviewer reads the working tree the fixer edits.** After each push the
+  orchestrator adds a worktree at the pushed commit, and every pass of that
+  round — panel member, solo pass, each of the closing gate's appended passes —
+  is told that its repository root is that path:
+
+  ```bash
+  git worktree add tmp/review/<sha> <sha>
+  ```
+
+  Whole-file reads come from it and a measuring member runs the gates in it;
+  `hatch run` creates the worktree's own environment on first use, once per
+  worktree and so once per round, not per pass (25.6 s, measured once,
+  [RFC-0015 D3](../../../sdd/rfcs/rfc-0015-ship-two-surfaces.md)). A solo pass
+  gets the root as `/rvw-pr`'s `root=` flag; a panel member gets it in its
+  prompt (Running a round). The main tree is never what is certified, so the
+  fixer may work in it while reviewers run, and a fix pass started under a
+  certifying reviewer — PR #996's failure 4, which this check could only detect
+  after the fact — has nothing left to dirty.
 - **The check that covers the residue, and it binds every pass** — panel, solo,
-  and each of the closing gate's appended passes. Capture `git rev-parse HEAD`
-  when reviewers spawn (the just-pushed, gate-green state, which is the premise
-  that makes the check meaningful), then require an unchanged HEAD **and** a
-  clean `git status --porcelain` before triage. Dirtiness or a moved HEAD means
-  the reviewers did not see the state being certified: re-run the pass, do not
-  trust it. A tree already dirty at spawn is a failed precondition rather than
-  tampering — clean it and re-push before spawning, since the check cannot tell
-  the two apart. An appended pass is a reviewer whose silence ends the loop; it
-  is the last place to skip this, not the first.
+  and each of the closing gate's appended passes. It runs in the worktree, and
+  what it now catches is a reviewer that wrote there. Capture
+  `git -C tmp/review/<sha> rev-parse HEAD` when reviewers spawn (the
+  just-pushed, gate-green state, which is the premise that makes the check
+  meaningful), then require an unchanged HEAD **and** a clean
+  `git -C tmp/review/<sha> status --porcelain` before triage. Dirtiness or a
+  moved HEAD means the reviewers did not see the state being certified: re-run
+  the pass, do not trust it. An appended pass is a reviewer whose silence ends
+  the loop; it is the last place to skip this, not the first.
+- **The worktree is removed at round close** (`git worktree remove
+  tmp/review/<sha>`, `git worktree prune` on a stale entry), and one still
+  present when the next round spawns is a failed precondition, as a dirty tree
+  was before: remove it before spawning, since a reviewer pointed at a stale
+  root certifies the wrong commit.
 
 ### Running a round: panels and solo passes
 
@@ -167,10 +191,11 @@ Rounds 1 and 2 are always solo, so a reader who has not yet reached a panel need
 this section too — the solo mechanism, the solo-round posting rule and the
 argument order that binds both paths are all below.
 
-**Panels run in parallel against the same pushed state.** Each member is fresh
-and blind to the others: scoped members get briefs; the unprimed member's prompt
-carries only the PR number and the constraint boilerplate — being unprimed
-excludes areas, findings and history, not mode and tool constraints.
+**Panels run in parallel against the round's review worktree.** Each member is
+fresh and blind to the others: scoped members get briefs; the unprimed member's
+prompt carries only the PR number, the worktree root and the constraint
+boilerplate — being unprimed excludes areas, findings and history, not mode,
+root and tool constraints.
 
 **Members are analysts, not posters.** Every subagent shares the owner token and
 GitHub allows one pending review per user per PR, so concurrent members running
@@ -203,11 +228,12 @@ frontmatter instead of restating it as an instruction — see
 [Reviewer permissions](#reviewer-permissions) for what that is worth and why the
 tree check still binds.
 
-**Argument order is `<PR number> [mode flags] [brief]`** — `/rvw-pr 954 measuring
-<brief>`. That skill consumes leading `analyze-only` / `measuring` tokens as
-flags and treats only the remainder as reviewer context; without that parse the
-mode word would be read as a claim to verify. An unprimed pass gets the number
-alone.
+**Argument order is `<PR number> [mode flags] [root=<path>] [brief]`** —
+`/rvw-pr 954 measuring root=tmp/review/<sha> <brief>`. That skill consumes
+leading `analyze-only` / `measuring` tokens and a `root=` token as flags and
+treats only the remainder as reviewer context; without that parse the mode word
+would be read as a claim to verify. An unprimed pass gets the number and the
+root alone.
 
 **Panels spawn `Agent`s**, because `/rvw-pr` cannot form one. Each prompt
 instructs the member to read and execute `.claude/skills/rvw-pr/SKILL.md`, and
@@ -217,6 +243,9 @@ must carry what the spawn path does not supply:
   `$ARGUMENTS`; only slash invocation substitutes it. Without the number the
   agent falls through to that skill's ask-the-user branch, which a subagent
   cannot answer.
+- **The worktree root**, as `root=tmp/review/<sha>`. Without it the member
+  reads the main tree, which is the tree the fixer edits and the one thing the
+  round must not certify ([Reviewer permissions](#reviewer-permissions)).
 - **The word `analyze-only`**, which selects the mode above.
 - **For the measuring member, the word `measuring`**, which opens `rvw-pr`'s
   bounded execution set. Without it that skill permits `Bash` only for `gh`
@@ -237,7 +266,7 @@ was *not* told, independent of who or what reviews.
 **Only that one pass.** The close can append three, and the other two are
 *scoped*: a whole-file brief and a measuring brief are briefs, so **every scoped
 member — measuring, whole-file, reader — is never the unprimed one.** Handing an
-appended whole-file or measuring pass the PR number alone leaves it never told
+appended whole-file or measuring pass the PR number and root alone leaves it never told
 what it was appended to do, and the gate is discharged by a pass that could not
 have satisfied it — the same inert-obligation failure this file warns about for
 the `measuring` token, one gate later.
@@ -324,7 +353,9 @@ reported as unreproduced.
 **Its prompt must carry the word `measuring`**, which opens `rvw-pr`'s bounded
 command set — check-only gates, read-only `git`, `python` against the library.
 Without it the member can read the diff and nothing else. The obligation and the
-permission ship together or the obligation is inert.
+permission ship together or the obligation is inert. It runs that set in the
+round's review worktree, and measures the base branch in a `tmp/base` worktree
+under that root.
 
 **Measuring does not endanger the tree check.** Running the gate is safe; what
 would break it is regenerating a baseline or moving the checked-out revision, and
@@ -446,15 +477,31 @@ are not substitutes.
    the closing round add: weight toward what would be *wrong once merged*, away
    from stylistic refinement.
 
-An unprimed member's brief carries none of this — the PR number only.
+An unprimed member's brief carries none of this — the PR number and the
+worktree root only.
 
 ### Triage each finding
 
-| Verdict | Action |
-|---|---|
-| Must-fix | Wrong once merged: bad behaviour, a false statement in a durable artifact, a shipping gap. Fix in this PR. |
-| File-it | Real, but outside this PR's scope. Backlog item, cited in the reply. |
-| Refute | Wrong or already handled. Reply with the evidence; do not fix. |
+| Verdict | Action | Fix shape |
+|---|---|---|
+| Must-fix | Wrong once merged: bad behaviour, a false statement in a durable artifact, a shipping gap. Fix in this PR. | Exactly one of the five below, named in the reply |
+| File-it | Real, but outside this PR's scope. Backlog item, cited in the reply. | — |
+| Refute | Wrong or already handled. Reply with the evidence; do not fix. | — |
+
+**A fix removes, measures, narrows or enumerates; it never argues.** A must-fix
+finding is closed by exactly one of: **(1)** a behaviour change pinned by a test
+seen failing first; **(2)** deleting the false claim; **(3)** replacing the claim
+with its derivation — a command, a test name or an enumeration; **(4)** narrowing
+the claim to what was measured; **(5)** filing. *Write a rationale* is not a
+shape. The fix-shape column is required, and the fix pass owes what
+[`/fix-pr`](../fix-pr/SKILL.md) Step 3 lists under each shape: a reviewer's *why*
+answered by shape (3) or the no-reason sentence, a test added in a fix pass
+mutation-checked before push, a reviewer's figure re-derived rather than carried,
+a measured claim bounded by its instrument, and a prose finding without the
+six-line form triaged *file as preference*. The evidence is
+[RFC-0015 D2](../../../sdd/rfcs/rfc-0015-ship-two-surfaces.md): every one of the
+four failures it maps was the fixer writing something it had not run, and the
+measuring member catching it one round later.
 
 Refuting is a first-class outcome. Reviewers are wrong often enough that
 accepting every finding degrades the work, so verify before fixing.
@@ -462,11 +509,12 @@ accepting every finding degrades the work, so verify before fixing.
 ### Close each round
 
 `hatch run all` green → commit → push → **check CI** → reply to **every** thread
-and resolve it. Use [`/fix-pr`](../fix-pr/SKILL.md)'s comment-fetch and
-thread-resolve mechanics and its Rules — a fix pass here owes the finding's class
-and the sibling sweep of its own changes exactly as one run under that skill does.
-Never start the next round against unpushed code: the reviewer would target stale
-lines.
+and resolve it → remove the round's review worktree. Use
+[`/fix-pr`](../fix-pr/SKILL.md)'s comment-fetch and thread-resolve mechanics and
+its Rules — a fix pass here owes the finding's class, the sibling sweep of its own
+changes, the fix shape per must-fix reply and the mutation per added test exactly
+as one run under that skill does. Never start the next round against unpushed
+code: the reviewer would target stale lines.
 
 **The local gate does not stand in for CI, and cannot.** `hatch run all` is a
 Stage-1, no-Docker variant on one interpreter; the CI matrix runs Docker-gated
@@ -529,8 +577,8 @@ round that fixed nothing satisfies the fix-pass clause.
 A clean unprimed round 1 on a diff warranting no other lens still leaves the
 whole-file clause to discharge, plus the measuring clause when the diff asserts
 anything about existing behaviour. It can discharge neither itself: an unprimed
-pass gets the PR number alone, so it never carries a whole-file brief or the
-`measuring` token. Such a delivery closes on one appended pass, or two, never on
+pass gets the PR number and the root alone, so it never carries a whole-file
+brief or the `measuring` token. Such a delivery closes on one appended pass, or two, never on
 round 1.
 
 - **Floor: lens coverage, not a round count.** Every lens the diff *warrants* must
@@ -604,6 +652,13 @@ time. If the enumeration shows the condition cannot be stated without being
 circular or false — three criteria, three refutations — that is the answer. Drop
 the carve-out and make the subject comply.
 
+Under the fix-shape rule this check should never fire: a condition is closed by
+shape (3), an enumeration, the first time it is questioned, so its trigger has
+moved from two refutations to zero and the check is a detector for a fix pass
+that argued anyway. [RFC-0015 D6](../../../sdd/rfcs/rfc-0015-ship-two-surfaces.md)
+retires it on that ground; BK-379's three deliveries keep it and report whether
+it fired, which is what decides the retirement.
+
 **Divergence check:** if a round finds something *more severe* than the previous
 round **in code the fix passes changed**, the corrections are spawning worse
 defects than they fix. Stop and re-plan rather than keep patching. The qualifier
@@ -646,8 +701,16 @@ Then stop. **`/ship` never merges.** It hands over a PR that is ready to be.
 - Reviewers are picked by lens and method. **Never pin or prefer a model, and
   never by domain** — a persona staffs a lens, it does not select one.
 - Every panel carries **exactly one** member that runs something — one, because
-  `rvw-pr`'s base-branch recipe uses a fixed `tmp/base` path that two concurrent
-  measurers would collide on.
+  `rvw-pr`'s base-branch recipe uses a fixed `tmp/base` path, under the round's
+  review worktree, that two concurrent measurers would collide on. RFC-0015 D3
+  lifts this cap by per-member base paths; BK-379's pilot keeps it up so that
+  panel composition does not move finding counts while fix shape is what is
+  measured.
+- No reviewer reads the working tree the fixer edits: every pass reads and runs
+  in the round's review worktree at the pushed commit, and the tree check runs
+  there.
+- A fix takes exactly one of the five shapes and the reply names it. A
+  rationale written on request is not a fix.
 - The main loop fixes and owns the sweep; delegate a fix only for depth inside one
   file tree.
 - Findings that are real but out of scope get filed, not silently dropped.

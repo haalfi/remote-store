@@ -747,8 +747,10 @@ runtime behaviour, no published page other than this RFC's own.
 ## Open Questions
 
 1. Does `/orchestrate` take D2 and D5? Its rounds are capped (ADR-0020) and it
-   has no exit gate; BK-349 declined the whole-file mode there. Proposed: D2
-   yes, since it is a rule about fixes rather than loops; D5 no. And whether
+   has no exit gate; BK-349 declined the whole-file mode there. D2: settled
+   yes by BK-379's pilot, whose skill amendment names the five shapes at
+   `/orchestrate`'s fix step, since it is a rule about fixes rather than
+   loops. D5: proposed no. And whether
    its exactly-one measuring rule, whose reason is the same fixed `tmp/base`
    path, is lifted by per-reviewer base paths: D3's per-round worktree cannot
    supply that there, and nothing is proposed either way.

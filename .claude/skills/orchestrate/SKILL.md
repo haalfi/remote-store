@@ -175,7 +175,10 @@ one is in
    reader there would hand them a paragraph whose stated reason is false in this
    skill. Edit both when the commands change. A fixed path is safe on each side
    for its own reason: here, the exactly-one rule above; there, `/ship`'s one
-   measuring member per panel. Neither rule protects the other skill.
+   measuring member per panel, which BK-379's pilot keeps and
+   [RFC-0015 D3](../../../sdd/rfcs/rfc-0015-ship-two-surfaces.md) proposes to
+   replace with per-member base paths — whether this skill follows is that
+   RFC's Open Question 1. Neither rule protects the other skill.
 4. **Staff each lens.** A domain persona when the lens sits inside one domain
    and its foundation docs help; `general-purpose` otherwise — which is the
    normal case for a lens spanning domains or aimed at the surface no persona
@@ -365,9 +368,15 @@ orchestrator fixes directly.
 1. **The orchestrator fixes, and owns the sweep.** A fix changes a thing, and
    every other description of that thing is now suspect — the sweeps that pay
    are cross-file, so a domain-scoped fixer cannot perform them. Apply
-   [`/fix-pr`](../fix-pr/SKILL.md)'s Rules: the finding's class, not only the
-   lines it names; the sibling descriptions of your own changes; a fix to a
-   quantified claim scoped to the quantifier.
+   [`/fix-pr`](../fix-pr/SKILL.md)'s Step 3 and Rules: **a fix takes exactly
+   one of the five shapes** — a behaviour change pinned by a test seen failing
+   first, deleting the false claim, replacing it with its derivation, narrowing
+   it to what was measured, or filing — and never a rationale; the finding's
+   class, not only the lines it names; the sibling descriptions of your own
+   changes; a fix to a quantified claim scoped to the quantifier. The shape
+   rule is a rule about fixes, not loops, which is why it binds here as it does
+   under `/ship` ([RFC-0015](../../../sdd/rfcs/rfc-0015-ship-two-surfaces.md)
+   Open Question 1).
 2. **Delegate a fix only when it needs depth inside one file tree** — a backend
    invariant, a conformance fixture, an extension contract. Re-spawn that expert
    with the targeted task. The orchestrator still owns the sweep across
@@ -420,5 +429,7 @@ orchestrator fixes directly.
   all have a full tool set and the tree is the only copy of the work.
 - **The orchestrator fixes and owns the sweep.** Delegate a fix only for depth
   inside one file tree.
+- **A fix takes exactly one of `/fix-pr` Step 3's five shapes.** A reason a
+  reviewer asks for is answered by a derivation, never written.
 - **User breaks ties.** The orchestrator never overrides expert disagreements
   autonomously — it presents the conflict and asks.

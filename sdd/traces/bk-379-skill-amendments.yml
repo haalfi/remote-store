@@ -1,0 +1,152 @@
+id: BK-379
+title: "Pilot RFC-0015's D2, D3 and its LINE-anchor rule on three deliveries, before the rest of it is built"
+trigger: >-
+  PR #1019 landed BK-379's first exit criterion, the RFC-0015 amendment. The
+  item's next criterion is the four skill amendments that put D2, D3's
+  worktree half, D5's posting half and D6's repeat-site half into /ship,
+  /fix-pr, /rvw-pr and /orchestrate, so the three pilot deliveries can run
+  under them. The user chose one PR for all four skills and settled RFC-0015
+  Open Question 1 for D2: /orchestrate takes it.
+source_items:
+  - BK-379
+  - BK-378
+audience:
+  - contributor.process
+expected_ripples:
+  - sdd/BACKLOG.md
+# Derivation, stated as the rule rather than as a transcribed list: run
+# `git log --format='%s' origin/master..HEAD` and count the subjects that
+# answer a review round. The commit that implements the amendments does not
+# count. Re-run before each push; the value is the count, including the commit
+# that carries this line.
+review_rounds: 0
+phases:
+  - id: orient
+    name: Orient
+    steps:
+      - file: sdd/BACKLOG.md
+        section: "BK-379"
+        read_type: gate
+        extract: >-
+          Which parts the pilot takes and where each lands: D2 in /ship's
+          triage table and /fix-pr's Rules; D3's worktree in /ship's spawn
+          step and tree check, cap left up; D5's LINE rule in /rvw-pr Step
+          4's Comment rules, amended not read around; D6's repeat-site half
+          rides with D2 and the pilot must say whether the check fires
+        outcome: ok
+      - file: sdd/rfcs/rfc-0015-ship-two-surfaces.md
+        section: "D2, D3, D5, D6 mechanism; § Impact; Open Question 1"
+        read_type: gate
+        extract: >-
+          The five fix shapes and the D2 bullets a fix pass owes; D3's
+          per-round worktree, the check moving into it, removal at round
+          close; the conservative LINE reading; the six-line prose form;
+          the repeat-site check's trigger moving to zero. OQ1 proposed D2
+          yes for /orchestrate; the user settled it yes here
+        outcome: ok
+      - file: .claude/skills/ship/SKILL.md
+        section: "(full)"
+        read_type: gate
+        extract: >-
+          Sites: Reviewer permissions (the single home for the tree check,
+          so D3 lands there), Running a round (same pushed state), argument
+          order, Triage table, Close each round, Repeat-site check, Rules
+          (the exactly-one measuring bullet and its tmp/base reason)
+        outcome: ok
+      - file: .claude/skills/fix-pr/SKILL.md
+        section: "Step 3, Step 6, Rules"
+        read_type: gate
+        extract: >-
+          Step 3 says "make the fix" with no shape; Rules bind action claims
+          and sweeps but not the fix's form. D2's bullets land in Step 3 and
+          Rules; the shape and mutation go into the Step 6 report
+        outcome: ok
+      - file: .claude/skills/rvw-pr/SKILL.md
+        section: "Header block, argument parse, Step 1, Step 2, Step 4 Comment rules"
+        read_type: gate
+        extract: >-
+          Comment rules bullet 1 is the "+ line, attach to nearest" rule the
+          LINE reading replaces; the measuring block's tmp/base recipe and
+          Step 1's local reads need a root when /ship hands a review
+          worktree; Consistency gets the six-line form
+        outcome: ok
+      - file: .claude/skills/orchestrate/SKILL.md
+        section: "Reviewer selection item 3, Step 6, Rules"
+        read_type: gate
+        extract: >-
+          The second-copy note asserts /rvw-pr's fixed path is safe because
+          of /ship's cap; true while the pilot keeps the cap, and now says
+          what D3 proposes in its place. Step 6's orchestrator fix cites
+          /fix-pr's Rules, so D2 rides in by that citation and is named
+        outcome: ok
+      - file: sdd/research/research-appropriate-level-of-detail.md
+        section: "9.4"
+        read_type: reference
+        extract: >-
+          The six lines a prose finding states: reader, task, failure, harm,
+          change, preserve. Three harms qualify. Quoted into /rvw-pr Step 2
+          and /fix-pr's triage rule rather than paraphrased
+        outcome: ok
+      - file: sdd/CLAUDE-REFERENCE.md
+        section: "Pre-work index / Authority direction amended, Docs"
+        read_type: gate
+        extract: >-
+          Copies of the rules these skills change outside the four files:
+          `rg 'nearest .\+. line|repeat-site|one measuring member per
+          panel|exactly one member that runs|tmp/base'` hits ADRs (records,
+          never edited), BACKLOG-DONE (records) and BK-379's own body. No
+          test or script reads .claude/skills, so the gate for this diff is
+          lint plus docs-gate
+        outcome: ok
+  - id: implement
+    name: Amend the four skills
+    steps:
+      - file: .claude/skills/ship/SKILL.md
+        section: "Reviewer permissions, Running a round, Triage, Close each round, Repeat-site check, Rules"
+        read_type: reference
+        extract: >-
+          D3: per-round review worktree at the pushed commit, root handed to
+          every pass, tree check moved into it, removed at round close; the
+          cap stays up and says why. D2: fix-shape column and the five
+          shapes; reply names shape and mutation. D6: the repeat-site check
+          stays as a detector the fix-shape rule should leave silent, and a
+          firing is pilot evidence
+        outcome: ok
+      - file: .claude/skills/fix-pr/SKILL.md
+        section: "Step 3, Step 6, Rules"
+        read_type: reference
+        extract: >-
+          The five shapes; a why answered by shape 3 or the no-reason
+          sentence; mutation check before push; reviewer figures re-derived;
+          instrument-bound claims; a measurement swept like a fix; a prose
+          finding without the six lines filed as preference
+        outcome: ok
+      - file: .claude/skills/rvw-pr/SKILL.md
+        section: "Header, parse, Step 1, Step 2, Step 4 Comment rules"
+        read_type: reference
+        extract: >-
+          The conservative LINE rule replaces the +-line bullet; a root=
+          flag points reads and measuring at /ship's review worktree, with
+          tmp/base under it; Consistency prose findings carry the six lines
+          or are not posted
+        outcome: ok
+      - file: .claude/skills/orchestrate/SKILL.md
+        section: "Reviewer selection item 3, Step 6, Rules"
+        read_type: reference
+        extract: >-
+          Fix shapes named at the orchestrator's fix; the cross-skill
+          assertion now states the pilot's cap and D3's proposal
+        outcome: ok
+      - file: sdd/rfcs/rfc-0015-ship-two-surfaces.md
+        section: "Open Question 1"
+        read_type: verify
+        extract: "D2 for /orchestrate settled yes by the pilot; D5 and the cap question stay open"
+        outcome: ok
+  - id: verify
+    name: Verify
+    steps:
+      - file: sdd/CLAUDE-REFERENCE.md
+        section: "PR validation gates"
+        read_type: verify
+        extract: "Docs-only diff: hatch run lint and hatch run docs-gate; local-machine grep over the changed files"
+        outcome: ok

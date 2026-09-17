@@ -3157,8 +3157,8 @@ the commit that writes it lands, so cite the generator instead.
   protects the other skill" — and pairs that with "Edit both when the commands
   change" against `/rvw-pr`'s matching block. D3 lifts that cap, so the
   assertion goes false; correction 4 only postpones when. Whether `/orchestrate`
-  also takes D2 is the RFC's Open Question 1, proposed yes there and to be
-  settled here.
+  also takes D2 was the RFC's Open Question 1, proposed yes there and settled
+  yes here: its fix step names the five shapes.
   **D2's reversal condition cannot fire in this pilot**: it needs a `BUG-` filed
   after merge against a delivery run under the rule, which three deliveries do
   not supply. Not a reason to widen the pilot; a reason not to read a pass as
@@ -3171,8 +3171,13 @@ the commit that writes it lands, so cite the generator instead.
   § Status's list of ADRs the RFC would amend: that ADR's "Every panel
   carries one measuring member" Decision bullet states a floor and a one-seat
   trade, and D3 widens the trade to at least one seat, the floor and the
-  bullet's own reverse condition unchanged. Then the
-  four skills amended; three deliveries shipped under the rules; Tables 2 and 4
+  bullet's own reverse condition unchanged. Then the four skills amended —
+  met: D2's shapes in `/ship`'s triage table, `/fix-pr` Step 3 and Rules and
+  `/orchestrate`'s fix step; D3's per-round review worktree and the tree check
+  in it under `/ship` § Reviewer permissions, the cap kept; D5's LINE rule as
+  `/rvw-pr` Step 4's first Comment rule; the repeat-site check kept as a
+  detector the pilot reports on. Then three deliveries shipped under the
+  rules; Tables 2 and 4
   re-derived over their PR numbers with `rfc-0015-findings.py`; the result
   reported against clauses 1 and 3 with the measured figures; and the
   disposition of D1, D4, D5 and D6's deferred half recorded.
