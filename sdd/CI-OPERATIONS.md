@@ -80,7 +80,9 @@ documented in [`CONTRIBUTING.md`](../CONTRIBUTING.md).
   remediation.
 - **When:** Monday 07:00 UTC, plus manual `workflow_dispatch` (optionally for a
   single extra, a single lane, or as a `dry_run` that renders the body into the
-  job summary and leaves the issue alone).
+  job summary and leaves the issue alone). A narrowed dispatch that is **not** a
+  dry run re-renders the whole issue body from its slice and drops every other
+  row (BUG-282); `/drift` step 3 is the path that says so at the point of use.
 - **Where the finding shows up:** a single **rolling `[drift-guard]` GitHub
   Issue** — opened or updated when anything is unresolved in either lane,
   commented "cleared" and closed when both are clean. The per-extra **smoke
@@ -92,7 +94,10 @@ documented in [`CONTRIBUTING.md`](../CONTRIBUTING.md).
   at any time, and a permanently red lane would be a filterable X that Rule 1
   says is not a channel to rely on. `infra/drift-locks/KNOWN-FINDINGS.md` is
   what separates an owned finding from a new one, in either lane — an
-  unregistered one holds the issue open, a registered one renders and does not.
+  unregistered one holds the issue open, a registered one renders with its
+  owner and does not. On a week whose findings are *all* registered the issue
+  closes, so the rows render nowhere and the register itself is where they are
+  read.
   A registered *newest*-lane finding still fails its leg; the register changes
   what the issue presents as news, never what CI does.
 - **How to act:** run the **`/drift` skill**. Refreshes are gated per extra on

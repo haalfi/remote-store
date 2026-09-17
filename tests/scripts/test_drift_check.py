@@ -246,11 +246,19 @@ class TestDirectRequirementsFor:
 
     def test_unions_a_package_declared_twice(self, drift_check):
         # [dev] reaches pyarrow through both [s3-pyarrow] (>=14.0.0) and
-        # [arrow] (>=12.0.0). Keeping one silently would hide that the two
-        # declarations disagree.
+        # [sql-query] (>=12.0.0) — NOT [arrow], which [dev] does not aggregate.
+        # Keeping one silently would hide that the two declarations disagree.
         pyarrow = drift_check._direct_requirements_for("dev")["pyarrow"]
         assert ">=14.0.0" in pyarrow
         assert ">=12.0.0" in pyarrow
+
+    def test_a_package_declared_twice_identically_is_not_doubled(self, drift_check):
+        # [graph] and [httpx] declare the identical multi-clause range, and
+        # [dev] reaches both. Comparing a candidate against the accumulated
+        # string split on `,` could never match a declaration containing a
+        # comma, so this returned `>=0.24.0,<1.0,>=0.24.0,<1.0` — neither a
+        # visible duplicate nor a range.
+        assert drift_check._direct_requirements_for("dev")["httpx"] == ">=0.24.0,<1.0"
 
     def test_direct_deps_for_is_its_key_set(self, drift_check):
         for extra in drift_check.list_extras():

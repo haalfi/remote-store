@@ -9,18 +9,28 @@ is the failure [`sdd/DRIFT-RULES.md` Rule 6](../../sdd/DRIFT-RULES.md#tolerated)
 requires a register to prevent, on pain of the check being switched off instead.
 
 `scripts/drift_report.py` reads the table below, keyed on **extra and lane**. A
-row renders its finding as _known_ and stops it holding the rolling issue open;
-a finding with no row renders as new and does hold it open. Removing a row is
-therefore how a fix starts counting again — delete it in the same change that
-lands the fix.
+row renders its finding as _known_, naming its owner, and stops it holding the
+rolling issue open; a finding with no row renders as new and does hold it open.
+Removing a row is therefore how a fix starts counting again — delete it in the
+same change that lands the fix.
 
 A row is not permission to leave a finding unfixed. It records who owns the fix
 and when the decision is re-read.
 
-**A week whose only findings are registered closes the issue**, so those rows
-render nowhere that week — this file is where they live, and `Review by` is what
-stops a row outliving its reason. That is the intended trade: an issue that is
-open every Monday for the same five rows is one nobody opens.
+**A week whose only findings are registered closes the issue**, so on that week
+the rows render nowhere and this file is where they live. That is the intended
+trade: an issue that is open every Monday for the same five rows is one nobody
+opens.
+
+**Two bounds this file does not enforce, stated so they are not assumed.**
+`Review by` is read by no code: `drift_report.py` prints it beside the finding
+and nothing compares it against today, so a row past its date keeps silencing
+its finding until a person notices. Nor does anything check that a row's `Owner`
+is still open, so a row outliving the item it names silences that leg
+permanently. Both bite hardest in exactly the weeks the register works — every
+finding registered, the issue closed, and nobody reading these rows at all.
+Re-reading the table is a maintainer's act, and the date is a note to that
+maintainer rather than a mechanism.
 
 **Scope: what the run reports, not what CI does.** A `newest`-lane smoke failure
 still fails its job, registered or not — that is the posture that lane has

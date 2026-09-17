@@ -60,17 +60,20 @@ Drift-gate::
     kind:       report
     entrypoint: floor
     surfaces: the versions each extra's declared floors in pyproject.toml resolve to, and whether
-        that resolution installs; it compares nothing committed and exits 0 either way, so it
-        asserts nothing about what it finds
+        that resolution installs; it compares nothing committed, and under --out (the way the
+        workflow runs it) a failed resolve is a synthetic error report rather than a non-zero
+        exit, so it asserts nothing about what it finds. Run by hand without --out it re-raises,
+        because there is no report for the reason to land in
     domain:     process
 
 Drift-gate::
 
     kind:       pair
     entrypoint: render-docs
-    compares: the lock files in infra/drift-locks/ and the declared ranges in pyproject.toml's
-        optional-dependencies table, over the extras derived from the same table
-        ↔ docs-src/reference/tested-versions.md
+    compares: the lock files in infra/drift-locks/, the declared ranges in pyproject.toml's
+        optional-dependencies table, the minimum interpreter in its requires-python, and each
+        extra's smoke target in scripts/drift_smoke_map.py, over the extras derived from the
+        same table ↔ docs-src/reference/tested-versions.md
     domain:     process ↔ explanation
 
 What the ``floor`` lane does **not** reach, stated because a lane that
@@ -406,7 +409,15 @@ def _direct_requirements_for(extra: str) -> dict[str, str]:
     """
     data = _load_pyproject()
     extras = data["project"]["optional-dependencies"]
-    seen: dict[str, str] = {}
+    # One list of WHOLE declarations per package, joined at the end. Comparing a
+    # candidate against the accumulated string split on `,` cannot match a
+    # declaration that itself contains a comma, so two identical multi-clause
+    # ranges were concatenated instead of deduplicated: `[graph]` and `[httpx]`
+    # both declare `httpx>=0.24.0,<1.0`, and `[dev]` reaches both, which
+    # rendered `>=0.24.0,<1.0,>=0.24.0,<1.0`. That is neither of the two things
+    # the contract below offers — it is not visible as a duplicate and it is
+    # not a range. Measured on `_direct_requirements_for("dev")`.
+    seen: dict[str, list[str]] = {}
 
     def walk(name: str) -> None:
         for raw in extras.get(name, []):
@@ -423,14 +434,12 @@ def _direct_requirements_for(extra: str) -> dict[str, str]:
                 continue
             key = pkg.group(0).lower().replace("_", "-")
             specifier = spec[pkg.end() :].strip()
-            existing = seen.get(key)
-            if existing is None:
-                seen[key] = specifier
-            elif specifier and specifier not in existing.split(","):
-                seen[key] = f"{existing},{specifier}" if existing else specifier
+            declarations = seen.setdefault(key, [])
+            if specifier and specifier not in declarations:
+                declarations.append(specifier)
 
     walk(extra)
-    return seen
+    return {key: ",".join(declarations) for key, declarations in seen.items()}
 
 
 def _direct_deps_for(extra: str) -> set[str]:
@@ -617,11 +626,14 @@ def _smoke_reach(extra: str) -> str:
     Derived from the single mapping the workflow dispatches on, so the page
     cannot describe a target the run does not use.
 
-    **Selection is reported, the selector is not.** Three extras point at
-    ``tests/backends/conformance/`` and each runs a disjoint ``-k`` slice of
-    it, so naming the paths alone would publish the same string for all three
-    and claim a whole-suite run that cannot happen — an extra is installed
-    alone, and no one extra can pass every backend's conformance. The `-k`
+    **Selection is reported, the selector is not.** Six of the fourteen extras
+    dispatch a ``-k`` expression (every ``SMOKE_TARGETS`` entry naming
+    ``tests/backends/conformance/``: ``azure``, ``s3``, ``s3-pyarrow``,
+    ``sftp``, ``sql``, ``sql-query``), and naming the paths alone would claim a
+    whole-suite run that cannot happen — an extra is installed alone, and no
+    one extra can pass every backend's conformance. Three of the six share the
+    identical path list, so for those the paths alone would also publish one
+    string for three different runs. The `-k`
     expression itself stays out: it carries harness facts (a parked proof of
     concept excluded by name) that would read as product statements on a
     published page. So the page says *that* a selection applies, never which.

@@ -184,8 +184,11 @@ _BOUNDS: tuple[str, ...] = (
     "**A composite action under `.github/actions/` is not a wiring source.** "
     "`_WIRING_SOURCES` names `.github/workflows/`, so a `scripts/…py` path invoked "
     "from an action's own `run:` is invisible to *Runs in* however conventionally "
-    "it is named — a second shape of the escape above, and the reason the "
-    "`drift-smoke` action reaches both scripts by import rather than by path.",
+    "it is named — a second shape of the escape above. Note that the `drift-smoke` "
+    "action's imports are NOT a mitigation of this: an import and a path invocation "
+    "are equally invisible from there. It consumes return values in shell, which is "
+    "why it imports; the bound holds either way, and switching to a path invocation "
+    "would not make it worse.",
     "**A mechanism that is not a script invocation at all is out of range.** The "
     "conformance suite is the standing example: it drives every backend from one "
     "shared suite, the strongest cross-artifact check the repo has, and it is "

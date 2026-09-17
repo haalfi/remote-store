@@ -54,6 +54,14 @@ inputs:
     required: false
     default: 'true'
 
+# This action is under `.github/actions/`, which `gen_gate_inventory.py`'s
+# `_WIRING_SOURCES` does NOT name (it names `.github/workflows/`). So a
+# `scripts/*.py` invoked from here — by path or by import, equally — never
+# appears in `sdd/GATE-INVENTORY.md`'s *Runs in* column, and a reader of that
+# file cannot see that this action runs it. The bound is recorded in that
+# script's `_BOUNDS`; it is repeated here because this is the file whose edit
+# would silently widen it.
+
 runs:
   using: composite
   steps:

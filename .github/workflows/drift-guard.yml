@@ -107,6 +107,7 @@ jobs:
     outputs:
       extras: ${{ steps.set-extras.outputs.extras }}
       lane: ${{ steps.set-lane.outputs.lane }}
+      lanes: ${{ steps.set-lane.outputs.lanes }}
       min_python: ${{ steps.set-lane.outputs.min_python }}
     steps:
       - uses: actions/checkout@v7
@@ -136,6 +137,12 @@ jobs:
             *) echo "::error::lane must be one of all|newest|floor, got '${lane}'"; exit 1 ;;
           esac
           echo "lane=${lane}" >> "$GITHUB_OUTPUT"
+          # The report job's claim space is (extra, lane), so it needs the lanes
+          # as well as the extras: an extra that reports on one lane and loses
+          # the other is invisible to a per-extra check, and the body then calls
+          # it clean in a lane nobody ran.
+          if [ "$lane" = "all" ]; then lanes="newest,floor"; else lanes="$lane"; fi
+          echo "lanes=${lanes}" >> "$GITHUB_OUTPUT"
           echo "min_python=$(python scripts/drift_check.py min-python)" >> "$GITHUB_OUTPUT"
 
       - id: set-extras
@@ -184,6 +191,7 @@ jobs:
       # Start the docker-compose backends the smoke targets need.
       # The conditional matches scripts/drift_smoke_map.py::backends_needed.
       - name: Start backends (if needed)
+        id: backends
         if: contains(fromJson('["s3","s3-pyarrow","azure","sftp"]'), matrix.extra)
         uses: ./.github/actions/start-backends
         with:
@@ -192,6 +200,7 @@ jobs:
           sftp: ${{ matrix.extra == 'sftp' }}
 
       - name: Build legacy-sftp container (sftp only)
+        id: legacy-sftp
         if: matrix.extra == 'sftp'
         run: |
           set -a
@@ -240,8 +249,16 @@ jobs:
       # `--emit-freeze` writes whenever the resolve succeeded, before status is
       # considered — and a stub-baseline extra is precisely one that has never
       # been installed alone, so it is the last one to skip.
+      # `always()`, so a failed RESOLVE still reaches the smoke (the composite
+      # action records a missing constraints file as `skipped`) — but never a
+      # failed BACKEND. A docker failure leaves the extra installing and
+      # importing perfectly and pytest failing on connection-refused, which the
+      # action records as `smoke: fail, phase: smoke`: on the floor lane that
+      # lands in "Floor installs, then breaks", whose text tells a maintainer
+      # the floor is too low and wants raising. Publishing an infrastructure
+      # failure as a dependency finding is worse than publishing nothing.
       - name: Smoke the candidate resolution
-        if: always()
+        if: always() && steps.backends.outcome != 'failure' && steps.legacy-sftp.outcome != 'failure'
         uses: ./.github/actions/drift-smoke
         with:
           extra: ${{ matrix.extra }}
@@ -313,6 +330,7 @@ jobs:
       # Same conditional as the newest lane: the floor smoke runs the same
       # target, so it needs the same services.
       - name: Start backends (if needed)
+        id: backends
         if: contains(fromJson('["s3","s3-pyarrow","azure","sftp"]'), matrix.extra)
         uses: ./.github/actions/start-backends
         with:
@@ -321,6 +339,7 @@ jobs:
           sftp: ${{ matrix.extra == 'sftp' }}
 
       - name: Build legacy-sftp container (sftp only)
+        id: legacy-sftp
         if: matrix.extra == 'sftp'
         run: |
           set -a
@@ -353,8 +372,16 @@ jobs:
           echo "=== floor report for ${{ matrix.extra }} ==="
           cat "drift-floors/${{ matrix.extra }}-floor-resolve.json"
 
+      # `always()`, so a failed RESOLVE still reaches the smoke (the composite
+      # action records a missing constraints file as `skipped`) — but never a
+      # failed BACKEND. A docker failure leaves the extra installing and
+      # importing perfectly and pytest failing on connection-refused, which the
+      # action records as `smoke: fail, phase: smoke`: on the floor lane that
+      # lands in "Floor installs, then breaks", whose text tells a maintainer
+      # the floor is too low and wants raising. Publishing an infrastructure
+      # failure as a dependency finding is worse than publishing nothing.
       - name: Smoke the floor resolution
-        if: always()
+        if: always() && steps.backends.outcome != 'failure' && steps.legacy-sftp.outcome != 'failure'
         uses: ./.github/actions/drift-smoke
         with:
           extra: ${{ matrix.extra }}
@@ -425,6 +452,7 @@ jobs:
             --repo "$REPO" \
             --run-url "$RUN_URL" \
             --expect-extras '${{ needs.setup.outputs.extras }}' \
+            --expect-lanes '${{ needs.setup.outputs.lanes }}' \
             --title "[drift-guard] Weekly transitive dependency drift"
 
       # How a branch sees what a run would write without writing it. The body
@@ -437,6 +465,12 @@ jobs:
       # first three dispatches of this lane were triaged.
       - name: Render the issue body (dry run)
         if: ${{ github.event.inputs.dry_run == 'true' }}
+        # `shell: bash` for `-o pipefail`, which a workflow `run:` does NOT get
+        # by default (it runs under `bash -e {0}`). Without it the pipeline
+        # below takes `tee`'s exit status, a traceback from `drift_report.py`
+        # leaves the step green with an empty summary, and the one step whose
+        # entire purpose is to be read is the one that cannot fail.
+        shell: bash
         env:
           RUN_URL: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
         run: |
@@ -444,6 +478,7 @@ jobs:
             --repo "${{ github.repository }}" \
             --run-url "$RUN_URL" \
             --expect-extras '${{ needs.setup.outputs.extras }}' \
+            --expect-lanes '${{ needs.setup.outputs.lanes }}' \
             --title "[drift-guard] Weekly transitive dependency drift" \
             --dry-run | tee /tmp/drift-body.md
           {

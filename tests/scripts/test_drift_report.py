@@ -274,6 +274,49 @@ class TestRenderBody:
         )
         assert "_Known: owned by BUG-281, review by 2026-12-31._" in body
 
+    def test_a_registered_newest_smoke_failure_names_its_owner(self, drift_report, tmp_path):
+        # The phase the prose sections cannot reach. `_render_isolation_findings`
+        # takes the newest lane's install and import phases and `_render_floor_lane`
+        # takes the floor, so a registered newest-lane *smoke* failure — the one
+        # row the committed register actually carries, `[sql]`/BUG-281 — reached
+        # neither and rendered as a bare `fail (smoke)` with no owner, while
+        # three artifacts said a registered finding renders with one.
+        body = self._body(
+            drift_report,
+            tmp_path,
+            _diff("sql", "drift"),
+            _smoke("sql", "newest", "fail", phase="smoke"),
+            register={("sql", "newest"): ("BUG-281", "2026-12-31")},
+        )
+        assert "| `[sql]` | fail (smoke) — known, BUG-281 | — |" in body
+
+    def test_an_unregistered_smoke_failure_is_not_marked_known(self, drift_report, tmp_path):
+        # The other direction, and the one that matters: a new finding must not
+        # inherit the marker that tells a reader somebody already owns it.
+        body = self._body(
+            drift_report,
+            tmp_path,
+            _diff("sql", "drift"),
+            _smoke("sql", "newest", "fail", phase="smoke"),
+            register={},
+        )
+        assert "| `[sql]` | fail (smoke) | — |" in body
+
+    def test_a_report_without_status_costs_only_its_own_rows(self, drift_report, tmp_path):
+        # `_load_reports` tolerates a file that will not parse; a file that
+        # parses and is missing a key has to be tolerated on the same terms.
+        # It raised `KeyError: 'status'` one function later, which aborts the
+        # whole body and loses every other extra's rows — the failure the load
+        # was hardened against, arriving from the other side.
+        body = self._body(
+            drift_report,
+            tmp_path,
+            _diff("yaml"),
+            _smoke("yaml", "newest", "pass"),
+            {"extra": "broken"},
+        )
+        assert "`[yaml]`" in body
+
     def test_newest_lane_import_failure_is_an_isolation_finding(self, drift_report, tmp_path):
         # The extra installed alone and could not stand up — which is invisible
         # in any environment where another extra supplies what it forgot.
@@ -299,6 +342,10 @@ class TestRenderBody:
             tmp_path,
             _diff("s3"),
             _diff("yaml"),
+            _floor("s3"),
+            _floor("yaml"),
+            _smoke("s3", "newest", "pass"),
+            _smoke("yaml", "newest", "pass"),
             _smoke("s3", "floor", "fail", phase="smoke"),
             _smoke("yaml", "floor", "pass"),
         )
@@ -396,14 +443,66 @@ class TestIncompleteLegs:
         # script before the fix: the body said "Both lanes clean" and the run
         # closed the issue with the unchecked extra absent entirely.
         reports = self._reports(drift_report, tmp_path, _diff("s3"), _smoke("s3", "newest", "pass"))
-        flagged = drift_report._incomplete_legs(reports, ["s3", "azure"])
-        assert any("`[azure]` reported nothing at all" in entry for entry in flagged)
+        flagged = drift_report._incomplete_legs(reports, ["s3", "azure"], ["newest"])
+        assert any("`[azure]` newest: reported nothing at all" in entry for entry in flagged)
         assert not any("`[s3]`" in entry for entry in flagged)
+
+    def test_an_extra_that_lost_one_lane_is_flagged(self, drift_report, tmp_path):
+        # The narrower shape, and the one that survived the fix above: `[sql]`
+        # reports fully on the newest lane and loses its whole floor leg. Keyed
+        # on the extra alone it stays in `covered`, contributes no row, and the
+        # body then names it under `Clear`. Measured on the committed script
+        # before this fix: "Both lanes clean: `[arrow]`, `[sql]`, `[yaml]`",
+        # and the dry run would have closed the issue.
+        reports = self._reports(
+            drift_report,
+            tmp_path,
+            _diff("sql"),
+            _smoke("sql", "newest", "pass"),
+            _diff("yaml"),
+            _smoke("yaml", "newest", "pass"),
+            _floor("yaml"),
+            _smoke("yaml", "floor", "pass"),
+        )
+        flagged = drift_report._incomplete_legs(reports, ["sql", "yaml"])
+        assert any("`[sql]` floor: reported nothing at all" in entry for entry in flagged)
+        assert not any("`[yaml]`" in entry for entry in flagged)
+        assert drift_report.has_signal(reports, {}, ["sql", "yaml"]) is True
+
+    def test_an_extra_that_lost_one_lane_is_not_called_clear(self, drift_report, tmp_path):
+        # The half of the same defect a reader actually sees. An incomplete leg
+        # has to cost its extra the `Clear` line as well as earning a row:
+        # naming it clean is the sentence that gets believed.
+        reports = self._reports(
+            drift_report,
+            tmp_path,
+            _diff("sql"),
+            _smoke("sql", "newest", "pass"),
+        )
+        body = drift_report._render_body(reports, "https://run", {}, ["sql"])
+        assert "## Incomplete legs" in body
+        # `[sql]`'s newest diff is `ok`, so it would have been the whole Clear
+        # list; excluding it leaves no section at all.
+        assert "## Clear" not in body
+
+    def test_a_single_lane_dispatch_does_not_report_the_other_lane_as_lost(self, drift_report, tmp_path):
+        # `lane: newest` must not emit fourteen false floor rows. The lane half
+        # of the claim space comes from the dispatch, exactly as the extra half does.
+        reports = self._reports(drift_report, tmp_path, _diff("s3"), _smoke("s3", "newest", "pass"))
+        assert drift_report._incomplete_legs(reports, ["s3"], ["newest"]) == []
+        assert any("floor" in e for e in drift_report._incomplete_legs(reports, ["s3"]))
 
     def test_a_narrowed_dispatch_does_not_report_the_rest_as_lost(self, drift_report, tmp_path):
         # `extra: s3` must not emit thirteen false rows. The expected set is the
         # dispatched slice, not the whole table.
-        reports = self._reports(drift_report, tmp_path, _diff("s3"), _smoke("s3", "newest", "pass"))
+        reports = self._reports(
+            drift_report,
+            tmp_path,
+            _diff("s3"),
+            _smoke("s3", "newest", "pass"),
+            _floor("s3"),
+            _smoke("s3", "floor", "pass"),
+        )
         assert drift_report._incomplete_legs(reports, ["s3"]) == []
 
     def test_no_expected_set_falls_back_to_comparing_halves(self, drift_report, tmp_path):
@@ -529,6 +628,9 @@ class TestDryRun:
 
     def test_dry_run_prints_the_body_it_would_write(self, drift_report, tmp_path, monkeypatch, capsys):
         _write(tmp_path, "s3.json", _diff("s3"))
+        _write(tmp_path, "s3-newest-smoke.json", _smoke("s3", "newest", "pass"))
+        _write(tmp_path, "s3-floor.json", _floor("s3"))
+        _write(tmp_path, "s3-floor-smoke.json", _smoke("s3", "floor", "pass"))
         monkeypatch.setattr(drift_report, "_gh", lambda *a, **k: None)
         drift_report.main(
             [str(tmp_path), "--repo", "haalfi/remote-store", "--run-url", "https://run", "--title", "t", "--dry-run"]

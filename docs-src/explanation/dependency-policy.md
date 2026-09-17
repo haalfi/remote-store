@@ -205,10 +205,11 @@ inference.
 Scheduled CI watches both ends of every range it covers, weekly. It re-resolves
 each extra against the latest available versions, pre-releases included, and
 diffs the result against a committed record; and it installs each extra at the
-floor of every range it declares. Both ends then run that extra's smoke, with
-the extra installed **alone** — which is the only thing that would notice an
-extra failing to declare something another extra happens to supply. Findings
-land on a rolling issue. The recorded versions and the declared ranges are both
+floor of every range it declares. At both ends the extra is installed **alone**
+and its own declared packages are imported before anything else joins the
+environment — which is the only thing that would notice an extra failing to
+declare something another extra happens to supply. The extra's smoke then runs,
+alongside the test tooling it needs. Findings land on a rolling issue. The recorded versions and the declared ranges are both
 published on [Tested versions](../reference/tested-versions.md), which answers
 "what was CI last green against, and what is it held to?" and not "what will
 work".
@@ -221,7 +222,7 @@ here, because none has been measured; [Rule 10](#rule-10) is the one timing
 obligation this policy places on you, and it says only that security fixes
 reach the latest release.
 
-Four limits bound that, and they are why [Rule 14](#rule-14) and
+These limits bound that, and they are why [Rule 14](#rule-14) and
 [Rule 15](#rule-15) read as they do:
 
 - **It does not cover every extra you can install.** An extra whose resolution

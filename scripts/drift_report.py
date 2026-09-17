@@ -276,16 +276,25 @@ def _floor_rows(
     return lines
 
 
-def _render_smoke_verdicts(reports: Reports) -> list[str]:
+def _render_smoke_verdicts(reports: Reports, register: dict[tuple[str, str], tuple[str, str]]) -> list[str]:
     """One row per extra, one column per lane.
 
     The verdict used to live only in the run's job conclusions, so reading it
     meant leaving the issue. It is the thing that decides whether a drift is
     safe to accept, which makes the issue the wrong place for it to be absent.
+
+    **This table is where a registered finding renders, in every lane and
+    every phase.** The two prose sections above it are phase-scoped by
+    construction — ``_render_isolation_findings`` takes the newest lane's
+    install and import phases, ``_render_floor_lane`` takes the floor — so a
+    registered newest-lane *smoke* failure reached neither, and the one such
+    row the register actually carries (`[sql]`, a pytest failure) rendered as a
+    bare `fail (smoke)` with no owner. Three artifacts state that a registered
+    finding renders with its owner; before this it was true of some phases.
     """
     if not reports.smokes:
         return []
-    lanes = ["newest", "floor"]
+    lanes = list(LANES)
     extras = sorted({extra for extra, _ in reports.smokes})
     lines = ["## Smoke verdicts", ""]
     lines.append("| Extra | " + " | ".join(lane.capitalize() for lane in lanes) + " |")
@@ -299,10 +308,19 @@ def _render_smoke_verdicts(reports: Reports) -> list[str]:
                 continue
             smoke = verdict.get("smoke", "?")
             phase = verdict.get("phase")
-            cells.append(f"{smoke} ({phase})" if smoke == "fail" and phase else smoke)
+            cell = f"{smoke} ({phase})" if smoke == "fail" and phase else smoke
+            if smoke == "fail" and (extra, lane) in register:
+                cell += f" — known, {register[(extra, lane)][0]}"
+            cells.append(cell)
         lines.append(f"| `[{extra}]` | " + " | ".join(cells) + " |")
     lines.append("")
     lines.append("`skipped` means no resolution existed to pin the smoke to, not that it passed.")
+    lines.append("")
+    lines.append(
+        "A cell marked _known_ names the item that owns it in "
+        "`infra/drift-locks/KNOWN-FINDINGS.md`; one that is not is new since "
+        "the register was last edited."
+    )
     lines.append("")
     return lines
 
@@ -312,8 +330,15 @@ def _smoke_failures(reports: Reports, lane: str) -> dict[str, dict]:
     return {extra: v for (extra, ln), v in sorted(reports.smokes.items()) if ln == lane and v.get("smoke") == "fail"}
 
 
-def _incomplete_legs(reports: Reports, expected: list[str] | None = None) -> list[str]:
-    """Legs that did not report everything they owe.
+LANES = ("newest", "floor")
+
+
+def _incomplete_leg_rows(
+    reports: Reports,
+    expected: list[str] | None = None,
+    lanes: list[str] | None = None,
+) -> list[tuple[str, str]]:
+    """``(extra, sentence)`` per leg that did not report everything it owes.
 
     Every leg writes a resolution and a smoke verdict, `skipped` included, so a
     missing half means a leg died mid-way or two uploads landed on one filename
@@ -328,30 +353,52 @@ def _incomplete_legs(reports: Reports, expected: list[str] | None = None) -> lis
     that artefact for a run that was deliberately narrowed. A missing row and a
     clean row look identical on the issue, which is why this is said out loud
     rather than inferred.
+
+    **A leg is ``(extra, lane)``, and the claim space has to be too.** Keying
+    it on the extra alone hides the commonest shape of the failure it exists to
+    catch: one lane of one extra lost while the other lane reports for the same
+    extra. That extra stays in ``covered``, contributes no incomplete row, and
+    — because the other lane's rows are clean — is then named under `Clear` as
+    a lane nobody ran. Measured on a synthetic run: `[sql]` with its whole floor
+    leg absent rendered "Both lanes clean: `[arrow]`, `[sql]`, `[yaml]`" and the
+    dry run would have closed the issue.
     """
-    incomplete = []
-    covered = set(reports.diffs) | set(reports.floors) | {extra for extra, _ in reports.smokes}
-    for extra in sorted(set(expected or []) - covered):
-        incomplete.append(f"`[{extra}]` reported nothing at all — no resolution and no verdict, in either lane")
+    rows: list[tuple[str, str]] = []
+    lanes = list(lanes or LANES)
+    for extra in sorted(expected or []):
+        for lane in lanes:
+            source = reports.diffs if lane == "newest" else reports.floors
+            if extra not in source and (extra, lane) not in reports.smokes:
+                rows.append((extra, f"`[{extra}]` {lane}: reported nothing at all — no resolution and no verdict"))
     for extra in sorted(reports.diffs):
         if (extra, "newest") not in reports.smokes:
-            incomplete.append(f"`[{extra}]` newest: a diff report with no smoke verdict")
+            rows.append((extra, f"`[{extra}]` newest: a diff report with no smoke verdict"))
     for extra in sorted(reports.floors):
         if (extra, "floor") not in reports.smokes:
-            incomplete.append(f"`[{extra}]` floor: a floor report with no smoke verdict")
+            rows.append((extra, f"`[{extra}]` floor: a floor report with no smoke verdict"))
     for extra, lane in sorted(reports.smokes):
         source = reports.diffs if lane == "newest" else reports.floors
         if extra not in source:
-            incomplete.append(f"`[{extra}]` {lane}: a smoke verdict with no report")
-    return incomplete
+            rows.append((extra, f"`[{extra}]` {lane}: a smoke verdict with no report"))
+    return rows
+
+
+def _incomplete_legs(
+    reports: Reports,
+    expected: list[str] | None = None,
+    lanes: list[str] | None = None,
+) -> list[str]:
+    """The sentences ``_incomplete_leg_rows`` produces, without their extras."""
+    return [text for _, text in _incomplete_leg_rows(reports, expected, lanes)]
 
 
 def _parse_expected(raw: str) -> list[str]:
-    """The extras a run was asked to cover, as JSON or a comma-separated list.
+    """The extras or lanes a run was asked to cover, as JSON or a comma list.
 
-    The workflow already computes and validates this set in `setup`; it is
+    The workflow already computes and validates both sets in `setup`; they are
     passed through verbatim rather than recomputed, so a dispatch narrowed to
-    one extra does not report the other thirteen as lost.
+    one extra does not report the other thirteen as lost, and one narrowed to
+    one lane does not report the other lane's fourteen legs as lost either.
     """
     text = (raw or "").strip()
     if not text:
@@ -380,6 +427,7 @@ def has_signal(
     reports: Reports,
     register: dict[tuple[str, str], tuple[str, str]] | None = None,
     expected: list[str] | None = None,
+    lanes: list[str] | None = None,
 ) -> bool:
     """Whether this run has anything a maintainer has not already decided about.
 
@@ -399,7 +447,7 @@ def has_signal(
     known = set(register or {})
     if any(r.get("status") in ("drift", "needs_refresh", "error") for r in reports.diffs.values()):
         return True
-    if reports.unreadable or _incomplete_legs(reports, expected):
+    if reports.unreadable or _incomplete_legs(reports, expected, lanes):
         return True
     if any((e, "floor") not in known and r.get("status") == "error" for e, r in reports.floors.items()):
         return True
@@ -411,6 +459,7 @@ def _render_body(
     run_url: str,
     register: dict[tuple[str, str], tuple[str, str]] | None = None,
     expected: list[str] | None = None,
+    lanes: list[str] | None = None,
 ) -> str:
     lines: list[str] = []
     lines.append("Weekly drift check across every `[<extra>]` in `pyproject.toml`.")
@@ -418,8 +467,12 @@ def _render_body(
     lines.append(f"Last run: [{run_url}]({run_url})")
     lines.append("")
 
+    # `.get` throughout, for the reason `_load_reports` names: a report that
+    # parses but is missing a key must cost its own rows, never every other
+    # extra's. A `KeyError` here would abort the whole body one function after
+    # the load was hardened against exactly that.
     diffs = reports.diffs
-    needs_refresh = [e for e, r in diffs.items() if r["status"] == "needs_refresh"]
+    needs_refresh = [e for e, r in diffs.items() if r.get("status") == "needs_refresh"]
     if needs_refresh:
         lines.append("## Baselines awaiting first population")
         lines.append("")
@@ -438,7 +491,7 @@ def _render_body(
             lines.append(f"- `[{extra}]`")
         lines.append("")
 
-    drift_extras = [e for e, r in diffs.items() if r["status"] == "drift"]
+    drift_extras = [e for e, r in diffs.items() if r.get("status") == "drift"]
     if drift_extras:
         lines.append("## Drift detected")
         lines.append("")
@@ -471,7 +524,7 @@ def _render_body(
                     lines.append(f"| `{d['package']}` | `{d['baseline'] or '—'}` | `{d['resolved'] or '—'}` |")
                 lines.append("")
 
-    incomplete = _incomplete_legs(reports, expected)
+    incomplete = _incomplete_legs(reports, expected, lanes)
     if incomplete:
         lines.append("## Incomplete legs")
         lines.append("")
@@ -520,14 +573,22 @@ def _render_body(
 
     lines.extend(_render_isolation_findings(reports, register or {}))
     lines.extend(_render_floor_lane(reports, register or {}))
-    lines.extend(_render_smoke_verdicts(reports))
+    lines.extend(_render_smoke_verdicts(reports, register or {}))
 
     # Clear means clear in both lanes. An extra whose newest resolution is `ok`
     # while its floor will not install, or while either lane's smoke is red, is
     # not a clean extra — listing it here is what would let the finding pass.
+    # An extra with an incomplete leg is excluded for the same reason one lane
+    # down: the lane that did not report cannot be called clean, and this list
+    # is the sentence a reader takes away.
     floor_bad = set(reports.floors) - {e for e, r in reports.floors.items() if r.get("status") == "resolved"}
     smoke_bad = {e for (e, _), v in reports.smokes.items() if v.get("smoke") == "fail"}
-    clear = [e for e, r in diffs.items() if r["status"] == "ok" and e not in floor_bad and e not in smoke_bad]
+    lost = {extra for extra, _ in _incomplete_leg_rows(reports, expected, lanes)}
+    clear = [
+        e
+        for e, r in diffs.items()
+        if r.get("status") == "ok" and e not in floor_bad and e not in smoke_bad and e not in lost
+    ]
     if clear:
         lines.append("## Clear")
         lines.append("")
@@ -596,6 +657,16 @@ def main(argv: list[str] | None = None) -> int:
         ),
     )
     parser.add_argument(
+        "--expect-lanes",
+        default="",
+        help=(
+            "JSON array or comma-separated list of the lanes this run was asked "
+            "to cover (newest, floor). A leg is (extra, lane), so the claim space "
+            "needs both halves: without this an extra that reported on one lane "
+            "and lost the other reads as complete. Defaults to both lanes."
+        ),
+    )
+    parser.add_argument(
         "--known-findings",
         type=Path,
         default=KNOWN_FINDINGS,
@@ -618,14 +689,15 @@ def main(argv: list[str] | None = None) -> int:
 
     register = load_known_findings(args.known_findings)
     expected = _parse_expected(args.expect_extras)
-    body = _render_body(reports, args.run_url, register, expected)
+    lanes = _parse_expected(args.expect_lanes) or list(LANES)
+    body = _render_body(reports, args.run_url, register, expected, lanes)
     if args.dry_run:
         # Before any `gh` call, so a dry run cannot reach the issue even to
         # read it: a dispatch from a branch must be observable without leaving
         # a trace on the rolling issue the scheduled runs own.
         print(body)
         print(
-            f"(dry run — would {'create/update' if has_signal(reports, register, expected) else 'close'} "
+            f"(dry run — would {'create/update' if has_signal(reports, register, expected, lanes) else 'close'} "
             f"the issue titled {args.title!r})",
             file=sys.stderr,
         )
@@ -633,7 +705,7 @@ def main(argv: list[str] | None = None) -> int:
 
     existing = _find_open_issue(args.repo, args.title)
 
-    if has_signal(reports, register, expected):
+    if has_signal(reports, register, expected, lanes):
         if existing is None:
             print(f"Creating new issue: {args.title}", file=sys.stderr)
             _gh(

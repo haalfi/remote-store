@@ -30,12 +30,16 @@ surprising_ripples:
   - docs-src/explanation/dependency-policy.md  # Rule 7's reason for sending readers to pyproject.toml
   - pyproject.toml  # its extras-table comment called the marker-gated `toml` a dev aggregate — the conflation this item exists to undo, in the file a contributor reads before declaring a new extra
 discovery_followups: []
-# Derivation, re-run before this line was rewritten: `gh api
-# repos/haalfi/remote-store/pulls/1018/reviews --jq 'length'` counts the review
-# rounds posted on this PR, which carries this item and BK-369 together. One at
-# the time of writing; updated at close rather than predicted, since a value
-# written ahead of the rounds is a guess wearing a figure's clothes.
-review_rounds: 1
+# Derivation, re-run before this line was written: `git log --oneline
+# origin/master..HEAD`, counting the commits that exist because a review round
+# found something — the field's own definition, which warns that GitHub's
+# review-submission count measures a different thing. Four: `5e40e30` and
+# `f4bdf86` incorporate round 1, `333c14a` round 2, and the commit carrying this
+# line round 3. `dfadd1b`, `7c29405` and `6dc1fe6` implement and do not count;
+# `f214684`, `7cf36f6` and `713eff6` fix defects the branch's own CI dispatches
+# measured, which is not review feedback.
+# Same PR, so the same four: this item ships with BK-369.
+review_rounds: 4
 phases:
   - id: orient
     name: Orient

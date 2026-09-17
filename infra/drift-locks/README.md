@@ -157,16 +157,19 @@ moved between the two resolves lands in the new lock without ever being smoked �
 including packages absent from the issue body entirely, so nothing in the drift
 report flags them. **The next clean run does smoke it**, since the smoke now
 runs on every leg that produced a freeze rather than only on drift; what it does
-not do is *tell you* that it is the first run to have done so, because a clean
-resolution renders no rows. So the gap closes one week later, silently, and
+not do is *tell you* that it is the first run to have done so. The verdict table
+renders a row per extra per lane, `pass` included, but a row is a statement
+about the run, not about which pins that run was the first to exercise, and
+nothing tracks the difference. So the gap closes one week later, silently, and
 until then the committed pin is published as tested when it was not.
 
 **Pin such packages back to the run's snapshot** rather than only disclosing
 them. Disclosure in the PR description was the earlier mitigation and it is not
 enough: the unqualified claim still ships to the generated
 `docs-src/reference/tested-versions.md`, whose preamble tells readers "Tested up
-to" is "what CI was last green against", and by the non-self-healing property
-above it stays there indefinitely. Pinning back costs one more weekly cycle —
+to" is "what CI was last green against", and nothing withdraws it in the
+meantime: the claim ships the day the lock lands and the evidence arrives a week
+later, if a reader thinks to go looking. Pinning back costs one more weekly cycle —
 the next run flags those packages, smokes them, and they are accepted on
 evidence. Keep a higher pin only when you have evidence for it, and name the
 smoke that produced it in the PR.
