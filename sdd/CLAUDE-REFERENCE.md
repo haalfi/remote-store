@@ -407,7 +407,7 @@ reading as "the post failed" is what made pinning necessary.)
 
 | Direction | Tool |
 |-----------|------|
-| Read PR **content** (diff, changed files, body, state) | `gh` CLI (`gh pr view`, `gh pr diff`, `gh pr view --json …`) **when available**; fall back to MCP `pull_request_read` when `gh` is absent (e.g. claude.ai/code) |
+| Read PR **content** (diff, changed files, body, state) | `gh` CLI (`gh pr view`, `gh pr diff`, `gh pr view --json …`) **when available**; fall back to MCP `pull_request_read` when `gh` is absent (e.g. claude.ai/code). One local exception by design: a `/rvw-pr` pass handed a review root by `/ship` reads the diff from that worktree's git (`git -C <root> diff origin/master...HEAD`), because `gh pr diff` returns the PR's current head and the root is pinned at the commit being certified |
 | Read review **feedback with resolution state** (`isResolved`/`isOutdated`) | MCP dual-fetch (`get_review_comments` + `get_comments`), or `gh api graphql` `reviewThreads` — but **not** plain `gh` content reads (`gh pr view`/`gh pr diff`), which omit resolution state |
 | **Write** (post review, inline comments) | MCP (`pull_request_review_write`, `add_comment_to_pending_review`) |
 | Resolve/unresolve **threads** | MCP where available; `gh api graphql` mutation for the resolve gap |

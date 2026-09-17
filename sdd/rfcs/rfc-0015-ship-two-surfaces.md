@@ -121,10 +121,11 @@ findings only.
 
 Four bounds travel with this table. **Pre-existing is zero throughout**, and
 that is the posting rule at work rather than a fact about untouched code:
-`/rvw-pr` anchors a line comment to a `+` line, so a finding about unchanged
-text is posted at file level and falls in the last column. So the *loop share
-of classified* column here equals `loop-introduced / (original +
-loop-introduced)`; under D5's `LINE` discipline the two part company, the
+throughout the sample `/rvw-pr` anchored a line comment to a `+` line, so a
+finding about unchanged text was posted at file level and falls in the last
+column. So the *loop share of classified* column here equals
+`loop-introduced / (original + loop-introduced)`; under D5's `LINE`
+discipline the two part company, the
 script prints the latter as `share l/(o+l)` with pre-existing in its own
 column, and a table re-derived over the pilot carries that ratio under this
 heading, which is the acceptance criterion's clause 1 (§ Impact). **The last column
@@ -439,10 +440,14 @@ shape.
   is left true, which is principle 2 applied to a measurement rather than to a
   diff. PR #997's round-8 counter-example to SFTP-031 sat in a backlog item
   for a round because nothing asked this.
-- A prose finding that does not state reader, task, failure, harm, change and
-  what must survive ([research § 9.4](../research/research-appropriate-level-of-detail.md))
-  is triaged *file as preference* and is never fixed in-loop. `/rvw-pr`'s
-  Consistency category adopts the six-line form.
+- A prose-quality finding with no rule behind it that does not state reader,
+  task, failure, harm, change and what must survive
+  ([research § 9.4](../research/research-appropriate-level-of-detail.md))
+  is triaged *preference*: replied to as such, not filed as a backlog item,
+  and never fixed in-loop. `/rvw-pr`'s Consistency category adopts the
+  six-line form; a false statement in prose is a Bug or Spec finding, a
+  finding citing a CONTENT-RULES or DRIFT-RULES rule is a violation, and both
+  are closed by shape (2), (3) or (4) like any other.
 
 **Evidence.** Causes B and D; failures 1, 2, 3; BUG-265's three rationales and
 its `EPERM` round trip; BK-359's invented advice.
@@ -471,13 +476,19 @@ about what a rationale would have prevented is not, and is not the condition.
   gate itself was under six seconds of that. Gate time after creation is the
   gate's cost, not the worktree's, and is paid today.
 - The `HEAD` and `git status --porcelain` check moves to the worktree and
-  stays as the residue check for a reviewer that wrote there. The main tree
-  is never what is certified, so the fixer cannot dirty a certification and
-  failure 4 cannot occur.
-- Each measuring member measures the base branch in its own
-  `tmp/review/<sha>/tmp/base` inside its worktree, so the *exactly one
-  measurer per panel* cap is lifted. The cap is `/ship`'s, and the skill
-  gives it one reason: the fixed `tmp/base` path two concurrent measurers
+  stays as the residue check for a reviewer that wrote there, with one
+  porcelain capture kept in the main tree beside it, required unchanged at
+  triage: a reviewer's default working directory is the main tree, and a
+  stray write there is what the next fix pass would commit. A detached
+  worktree's `HEAD` cannot move on its own, so the other thing the old check
+  caught, the branch advancing under a certifying reviewer, needs its own
+  capture: at triage the branch's pushed head is fetched and required to still
+  equal the certified commit. The main tree is never what is certified, so the
+  fixer cannot dirty a certification and failure 4 cannot occur.
+- Each measuring member measures the base branch in a base path of its own
+  under the round's worktree, `tmp/review/<sha>/tmp/base-<member>`, so the
+  *exactly one measurer per panel* cap is lifted. The cap is `/ship`'s, and
+  the skill gives it one reason: the fixed `tmp/base` path two concurrent measurers
   would collide on (`.claude/skills/ship/SKILL.md` § Rules), which
   per-member paths remove. ADR-0035's *Every panel carries one measuring
   member* bullet says something else: a floor, which stays, and a
@@ -490,8 +501,13 @@ about what a rationale would have prevented is not, and is not the condition.
   and not the lift, because lifting it changes panel composition and moves
   finding counts independently of fix shape, which is what the pilot
   measures. The cap comes down once the pilot has reported.
-- Worktrees are removed at round close; a stale one is a failed precondition
-  for the next round, as a dirty tree is today.
+- Worktrees are removed at round close, with a `prune` for the base worktree a
+  measuring member left nested inside (measured on git 2.43.0: ignored
+  leftovers and the nested worktree do not block the removal, and the nested
+  entry becomes prunable). A leftover from an earlier round collides with
+  nothing, since the path carries its commit; it blocks only a pass re-spawned
+  for that same commit, and carries a hatch environment, so it is removed
+  before adding rather than treated as a wrong-commit hazard.
 
 **Evidence.** Cause C; failure 4; ADR-0035's own statement that the
 constraint is "enforced by instruction, so a reviewer that ignores it
@@ -557,14 +573,14 @@ corrects.
 - Posting discipline follows, in its conservative reading: a finding is
   anchored to its true line when that line falls inside a diff hunk, context
   lines included, and stays `FILE` otherwise; it is never anchored to an
-  unrelated line. `/rvw-pr`'s comment rules today attach a finding on
-  unchanged text to the nearest `+` line, and `origin()` blames the line the
-  comment carries, so that reading would tag a finding on untouched text as
-  loop-introduced whenever a fix pass wrote the nearest `+` line, inflating
-  the share this RFC measures against a baseline that excluded such findings
-  rather than misattributing them. The `+`-line bullet is amended, not read
-  around. 160 of the 541 findings in Table 2 could not be classified, and the
-  script separates the four causes it has: all 160 are file-level, and the
+  unrelated line. `/rvw-pr`'s comment rules, as BK-379 found them, attached a
+  finding on unchanged text to the nearest `+` line, and `origin()` blames the
+  line the comment carries, so that reading would tag a finding on untouched
+  text as loop-introduced whenever a fix pass wrote the nearest `+` line,
+  inflating the share this RFC measures against a baseline that excluded such
+  findings rather than misattributing them. The `+`-line bullet is amended,
+  not read around. 160 of the 541 findings in Table 2 could not be
+  classified, and the script separates the four causes it has: all 160 are file-level, and the
   `LEFT`-side, null-line and blame-failure counts are zero in this sample, so
   the discipline's reach here is bounded by 160 and not measured: it reaches
   the findings whose true line sits inside a hunk, which the sample does not
@@ -678,7 +694,9 @@ runtime behaviour, no published page other than this RFC's own.
   path safe, and D3 lifts that cap; D3's own mechanism does not run there,
   since its reviewers read uncommitted work and no per-round review worktree
   exists, so this RFC leaves its exactly-one rule as written, and whether
-  per-reviewer base paths lift it is Open Question 1 with D2), `CLAUDE.md`
+  per-reviewer base paths lift it is Open Question 1; D2's fix shapes at its
+  fix step and the six-line prose form in its reviewer contract, per that
+  question's settled half), `CLAUDE.md`
   § Trace authoring, `_schema.yml`
   § `review_rounds`, a new ADR, `scripts/ship_report.py`,
   `scripts/check_no_retrospective.py` and
@@ -747,8 +765,10 @@ runtime behaviour, no published page other than this RFC's own.
 ## Open Questions
 
 1. Does `/orchestrate` take D2 and D5? Its rounds are capped (ADR-0020) and it
-   has no exit gate; BK-349 declined the whole-file mode there. Proposed: D2
-   yes, since it is a rule about fixes rather than loops; D5 no. And whether
+   has no exit gate; BK-349 declined the whole-file mode there. D2: settled
+   yes by BK-379's pilot, whose skill amendment names the five shapes at
+   `/orchestrate`'s fix step, since it is a rule about fixes rather than
+   loops. D5: proposed no. And whether
    its exactly-one measuring rule, whose reason is the same fixed `tmp/base`
    path, is lifted by per-reviewer base paths: D3's per-round worktree cannot
    supply that there, and nothing is proposed either way.

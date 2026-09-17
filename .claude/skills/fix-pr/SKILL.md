@@ -98,6 +98,51 @@ For each actionable item note: file, line, category (Bug/Spec/Test/Consistency/R
 
 Read each file in full, make the fix, verify against relevant `sdd/` docs (specs, ADRs, audits, design docs) if the change touches a documented area.
 
+**A fix removes, measures, narrows or enumerates; it never argues.** Each
+must-fix finding is closed by exactly one of five shapes, and the reply names
+the shape:
+
+1. **A behaviour change pinned by a test seen failing first.**
+2. **Deleting the false claim.**
+3. **Replacing the claim with its derivation** — a command, a test name or an
+   enumeration.
+4. **Narrowing the claim to what was measured.**
+5. **Filing** — the File-it verdict: the finding is real, it closes outside
+   this PR, and the reply names the backlog ID. A finding fixed in this PR
+   takes one of shapes 1 to 4.
+
+*Write a rationale* is not a shape. What each shape owes, per
+[RFC-0015 D2](../../../sdd/rfcs/rfc-0015-ship-two-surfaces.md):
+
+- **A reviewer's *why* is answered by shape 3**, or by the sentence *no reason
+  is recorded; the behaviour is pinned by `<test>`*. This is
+  [`CONTENT-RULES.md` Rule 7](../../../sdd/CONTENT-RULES.md#kernsatz) applied
+  to the fix pass: if the three sentences will not come, return to the source,
+  and for a behaviour claim the source is running it. A condition a reviewer
+  questions is enumerated the first time, never argued a second.
+- **A test added in a fix pass is mutation-checked before push**: break the
+  behaviour it pins, see the assertion fail, and name the mutation and the
+  assertion that fired in the reply. A test seen passing has shown nothing
+  about its power.
+- **A reviewer's figure or attribution is a claim to re-derive, never a fact to
+  carry.** Run the derivation before writing the number down.
+- **A measured claim is bounded by its instrument, and says so.** A fact
+  established through injection — a patched method, a fake client, a forced
+  errno — is written as a fact about that injection unless a trigger a user can
+  produce is named beside it. Ask *could a user reach this?* of every claim
+  before publishing it; shape 4 is the fix when the answer is no.
+- **A new measurement is swept like a fix.** Before a measured fact is recorded
+  anywhere, list the artifacts that assert something about the same behaviour
+  and leave each one true.
+- **A `Consistency:` finding on prose that cites no rule and does not state
+  reader, task, failure, harm, change and what must survive**
+  ([research § 9.4](../../../sdd/research/research-appropriate-level-of-detail.md))
+  is triaged *preference*: the reply says *preference, six lines absent*, no
+  backlog item is minted, and it is never fixed in-loop. A false statement in
+  prose is a `Bug:` or `Spec:` finding, and a finding citing a `CONTENT-RULES`
+  or `DRIFT-RULES` rule is a violation; neither needs six lines, and each takes
+  shape 2, 3 or 4 like any other must-fix.
+
 ## Step 4: Resolve threads
 
 If gh available, batch-resolve fixed threads:
@@ -138,7 +183,8 @@ do not create a new trace here.
 ## Step 6: Commit and push
 
 Stage, commit (`fix: address PR #$ARGUMENTS review`), push. Report: comments
-fixed/resolved, skipped with reasons, per finding the class swept and per fix
+fixed/resolved, skipped with reasons, the fix shape per must-fix finding and
+the mutation per added test (Step 3), per finding the class swept and per fix
 the sibling descriptions swept — each with what it caught, because a sweep
 that found nothing reads exactly like one that never ran — the enumeration
 behind any fix to a quantified claim, and any changed surface the gate never
@@ -148,6 +194,9 @@ executed.
 
 - Do not merge, close, or approve the PR.
 - Fix what was asked — don't refactor surrounding code.
+- A fix takes exactly one of Step 3's five shapes and the reply names it. A
+  request for a reason is answered by the derivation or by the no-reason
+  sentence, never by writing one.
 - Fix the finding's class, not only the lines it names: a review names the
   instances it happened to see. Siblings share a failure mode, not a spelling,
   so for a rule spanning backends the question is which backends the tests

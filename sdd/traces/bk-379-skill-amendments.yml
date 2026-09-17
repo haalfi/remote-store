@@ -1,0 +1,335 @@
+id: BK-379
+title: "Pilot RFC-0015's D2, D3 and its LINE-anchor rule on three deliveries, before the rest of it is built"
+trigger: >-
+  PR #1019 landed BK-379's first exit criterion, the RFC-0015 amendment. The
+  item's next criterion is the four skill amendments that put D2, D3's
+  worktree half, D5's posting half and D6's repeat-site half into /ship,
+  /fix-pr, /rvw-pr and /orchestrate, so the three pilot deliveries can run
+  under them. The user chose one PR for all four skills and settled RFC-0015
+  Open Question 1 for D2: /orchestrate takes it.
+source_items:
+  - BK-379
+  - BK-378
+audience:
+  - contributor.process
+expected_ripples:
+  - sdd/BACKLOG.md
+surprising_ripples:
+  - sdd/CLAUDE-REFERENCE.md
+# Derivation, stated as the rule rather than as a transcribed list: run
+# `git log --format='%s' origin/master..HEAD` and count the subjects that
+# answer a review round. The commit that implements the amendments does not
+# count. Re-run before each push; the value is the count, including the commit
+# that carries this line.
+review_rounds: 6
+phases:
+  - id: orient
+    name: Orient
+    steps:
+      - file: sdd/BACKLOG.md
+        section: "BK-379"
+        read_type: gate
+        extract: >-
+          Which parts the pilot takes and where each lands: D2 in /ship's
+          triage table and /fix-pr's Rules; D3's worktree in /ship's spawn
+          step and tree check, cap left up; D5's LINE rule in /rvw-pr Step
+          4's Comment rules, amended not read around; D6's repeat-site half
+          rides with D2 and the pilot must say whether the check fires
+        outcome: ok
+      - file: sdd/rfcs/rfc-0015-ship-two-surfaces.md
+        section: "D2, D3, D5, D6 mechanism; § Impact; Open Question 1"
+        read_type: gate
+        extract: >-
+          The five fix shapes and the D2 bullets a fix pass owes; D3's
+          per-round worktree, the check moving into it, removal at round
+          close; the conservative LINE reading; the six-line prose form;
+          the repeat-site check's trigger moving to zero. OQ1 proposed D2
+          yes for /orchestrate; the user settled it yes here
+        outcome: ok
+      - file: .claude/skills/ship/SKILL.md
+        section: "(full)"
+        read_type: gate
+        extract: >-
+          Sites: Reviewer permissions (the single home for the tree check,
+          so D3 lands there), Running a round (same pushed state), argument
+          order, Triage table, Close each round, Repeat-site check, Rules
+          (the exactly-one measuring bullet and its tmp/base reason)
+        outcome: ok
+      - file: .claude/skills/fix-pr/SKILL.md
+        section: "Step 3, Step 6, Rules"
+        read_type: gate
+        extract: >-
+          Step 3 says "make the fix" with no shape; Rules bind action claims
+          and sweeps but not the fix's form. D2's bullets land in Step 3 and
+          Rules; the shape and mutation go into the Step 6 report
+        outcome: ok
+      - file: .claude/skills/rvw-pr/SKILL.md
+        section: "Header block, argument parse, Step 1, Step 2, Step 4 Comment rules"
+        read_type: gate
+        extract: >-
+          Comment rules bullet 1 is the "+ line, attach to nearest" rule the
+          LINE reading replaces; the measuring block's tmp/base recipe and
+          Step 1's local reads need a root when /ship hands a review
+          worktree; Consistency gets the six-line form
+        outcome: ok
+      - file: .claude/skills/orchestrate/SKILL.md
+        section: "Reviewer selection item 3, Step 6, Rules"
+        read_type: gate
+        extract: >-
+          The second-copy note asserts /rvw-pr's fixed path is safe because
+          of /ship's cap; true while the pilot keeps the cap, and now says
+          what D3 proposes in its place. Step 6's orchestrator fix cites
+          /fix-pr's Rules, so D2 rides in by that citation and is named
+        outcome: ok
+      - file: sdd/research/research-appropriate-level-of-detail.md
+        section: "9.4"
+        read_type: reference
+        extract: >-
+          The six lines a prose finding states: reader, task, failure, harm,
+          change, preserve. Three harms qualify. Quoted into /rvw-pr Step 2
+          and /fix-pr's triage rule rather than paraphrased
+        outcome: ok
+      - file: sdd/CLAUDE-REFERENCE.md
+        section: "Pre-work index / Authority direction amended, Docs"
+        read_type: gate
+        extract: >-
+          Copies of the rules these skills change outside the four files:
+          `rg 'nearest .\+. line|repeat-site|one measuring member per
+          panel|exactly one member that runs|tmp/base'` hits ADRs (records,
+          never edited), BACKLOG-DONE (records) and BK-379's own body. No
+          test or script reads .claude/skills, so the gate for this diff is
+          lint plus docs-gate
+        outcome: ok
+  - id: implement
+    name: Amend the four skills
+    steps:
+      - file: .claude/skills/ship/SKILL.md
+        section: "Reviewer permissions, Running a round, Triage, Close each round, Repeat-site check, Rules"
+        read_type: reference
+        extract: >-
+          D3: per-round review worktree at the pushed commit, root handed to
+          every pass, tree check moved into it, removed at round close; the
+          cap stays up and says why. D2: fix-shape column and the five
+          shapes; reply names shape and mutation. D6: the repeat-site check
+          stays as a detector the fix-shape rule should leave silent, and a
+          firing is pilot evidence
+        outcome: ok
+      - file: .claude/skills/fix-pr/SKILL.md
+        section: "Step 3, Step 6, Rules"
+        read_type: reference
+        extract: >-
+          The five shapes; a why answered by shape 3 or the no-reason
+          sentence; mutation check before push; reviewer figures re-derived;
+          instrument-bound claims; a measurement swept like a fix; a prose
+          finding without the six lines filed as preference
+        outcome: ok
+      - file: .claude/skills/rvw-pr/SKILL.md
+        section: "Header, parse, Step 1, Step 2, Step 4 Comment rules"
+        read_type: reference
+        extract: >-
+          The conservative LINE rule replaces the +-line bullet; a root=
+          flag points reads and measuring at /ship's review worktree, with
+          tmp/base under it; Consistency prose findings carry the six lines
+          or are not posted
+        outcome: ok
+      - file: .claude/skills/orchestrate/SKILL.md
+        section: "Reviewer selection item 3, Step 6, Rules"
+        read_type: reference
+        extract: >-
+          Fix shapes named at the orchestrator's fix; the cross-skill
+          assertion now states the pilot's cap and D3's proposal
+        outcome: ok
+      - file: sdd/rfcs/rfc-0015-ship-two-surfaces.md
+        section: "Open Question 1"
+        read_type: verify
+        extract: "D2 for /orchestrate settled yes by the pilot; D5 and the cap question stay open"
+        outcome: ok
+  - id: fix
+    name: Round-1 fix pass
+    steps:
+      - file: .claude/skills/rvw-pr/SKILL.md
+        section: "Review root, the measuring allowlist, Step 1, Comment rules"
+        read_type: verify
+        extract: >-
+          Round 1 found the `cd` recipe resting on a premise true of the main
+          session and false of an Agent thread. Measured by spawning one:
+          `cd` succeeded and the next `pwd` was the main tree; `env -C <path>
+          pwd` ran in the target. The root is now named per command (`git
+          -C`, `env -C`), the tmp/base recipe carries the prefix explicitly
+          (measured: added from inside a review worktree it landed under
+          it), the diff is read from the root since `gh pr diff` is unpinned,
+          and rule 1's side clause carves out deleted lines
+        outcome: ok
+      - file: .claude/skills/ship/SKILL.md
+        section: "Reviewer permissions, Rules, Step 5"
+        read_type: verify
+        extract: >-
+          Round 1 found the moved-HEAD detector lost (a detached worktree
+          cannot move) and the licence-to-fix reading; the branch head is now
+          re-checked at triage and the round order stated. The teardown claim
+          was measured rather than taken: on git 2.43.0 `worktree remove`
+          succeeds with `.coverage` and a nested tmp/base inside (the nested
+          entry becomes prunable) and refuses only a non-ignored untracked
+          file, so the leftover reasoning was corrected and the refusal claim
+          refuted. Step 5 now collects the fix shape, the mutation and the
+          repeat-site outcome the pilot decides on
+        outcome: ok
+      - file: sdd/rfcs/rfc-0015-ship-two-surfaces.md
+        section: "D3 mechanism, third bullet"
+        read_type: gate
+        extract: >-
+          Round 1 found the skills attributing per-member base paths to a D3
+          whose path was spelled per round. The bullet's "its own ... inside
+          its worktree" contradicted bullet 1's one-worktree-per-round; it
+          now spells `tmp/base-<member>` under the round's worktree, which is
+          the reading the cap lift needs
+        outcome: misleading
+      - file: .claude/skills/orchestrate/SKILL.md
+        section: "Step 6 reviewer contract"
+        read_type: verify
+        extract: >-
+          Round 1 found the widened Step 3 citation importing the six-line
+          triage rule into a skill whose reviewers never produced the lines.
+          Taking D2 whole, the reviewer contract now asks for them on prose
+          findings
+        outcome: ok
+  - id: fix_2
+    name: Round-2 fix pass
+    steps:
+      - file: .claude/skills/rvw-pr/SKILL.md
+        section: "Review root, the mode-gate sentence, teardown reason"
+        read_type: verify
+        extract: >-
+          Round 2 found the root gate worded for the argument parse only,
+          which an Agent reading the file cannot satisfy; it now reads like
+          the mode gates (prompt or flag) and the mode-gate sentence names
+          root= as the silent miss. The teardown reason is scoped to the
+          no-root case with the root case's own reason. The env -C bound is
+          stated: GNU coreutils 9.4 here; a python -c wrapper measured as
+          the portable spelling
+        outcome: ok
+      - file: sdd/rfcs/rfc-0015-ship-two-surfaces.md
+        section: "D3 mechanism bullets 2 and 4, § Impact /orchestrate"
+        read_type: gate
+        extract: >-
+          Round 2 found the round-1 fixes unswept into D3's neighbouring
+          bullets: the stale-worktree precondition the measurement refuted,
+          and the tree check without the branch-head capture a detached
+          worktree needs. Both restated as measured. § Impact's /orchestrate
+          entry now names D2's shapes and the six-line contract
+        outcome: ok
+      - file: .claude/skills/ship/SKILL.md
+        section: "The whole-file member"
+        read_type: verify
+        extract: >-
+          Round 2 found the section still steering findings to FILE for want
+          of a + line, against the amended Comment rule; restated in hunks
+          and pointed at that rule, since FILE there would deflate the share
+          D5's origin tag exists to measure
+        outcome: ok
+      - file: .claude/skills/fix-pr/SKILL.md
+        section: "Step 3, the why bullet"
+        read_type: verify
+        extract: "Round 2 found 'the three sentences' without its Rule 7 antecedent; the citation is restored"
+        outcome: ok
+  - id: fix_3
+    name: Round-3 fix pass
+    steps:
+      - file: .claude/skills/rvw-pr/SKILL.md
+        section: "Frontmatter comment, opening paragraph"
+        read_type: gate
+        extract: >-
+          Round 3 found the root-form diff read an obligation without a
+          permission for any pass that is not measuring: Bash was opened to
+          four uses and git diff sat only in the measuring set. The pinned
+          diff read is now the fifth use, in both copies the comment says
+          move together; /ship's measuring bullet, which restated the four,
+          now says content reads
+        outcome: ok
+      - file: sdd/CLAUDE-REFERENCE.md
+        section: "GitHub PR I/O split, content-read row"
+        read_type: gate
+        extract: >-
+          The row said gh or MCP for every content read and the fork is no
+          exception; the root form is a local content read by design and is
+          now the row's one stated exception, with its reason. A ripple the
+          table did not anticipate
+        outcome: ok
+      - file: .claude/skills/orchestrate/SKILL.md
+        section: "Step 6 item 1, Step 7 item 7, Rules"
+        read_type: verify
+        extract: >-
+          Round 3 found the shape rule adopted with nowhere to name the shape,
+          since Step 6 has no reply; the Step 7 report now collects the shape
+          per fix and the mutation per added test, and the rule says so
+        outcome: ok
+      - file: sdd/BACKLOG.md
+        section: "BK-379 correction 3"
+        read_type: verify
+        extract: >-
+          Round 3 found correction 3 still describing the +-line bullet in
+          the present tense while the exit criteria said the amendment
+          landed; now past tense with a pointer to the exit criteria, the
+          same sweep the RFC got in round 2
+        outcome: ok
+  - id: fix_4
+    name: Round-4 fix pass
+    steps:
+      - file: sdd/rfcs/rfc-0015-ship-two-surfaces.md
+        section: "D2 mechanism, six-line bullet and the five shapes"
+        read_type: gate
+        extract: >-
+          Round 4 found the file-as-preference bullet binding every prose
+          finding while /rvw-pr binds the six lines to Consistency findings
+          only, so a Bug or Spec finding on a false sentence read as a
+          preference; the RFC's next sentence gave the scope, and the bullet
+          plus its three skill copies now carry it. Shape (5) collided with
+          /ship's File-it verdict: filing is now stated as that verdict, and
+          a Must-fix takes shapes (1) to (4)
+        outcome: unclear
+  - id: fix_5
+    name: Round-5 fix pass
+    steps:
+      - file: .claude/skills/ship/SKILL.md
+        section: "Reviewer permissions, the tree check; Triage table"
+        read_type: verify
+        extract: >-
+          Round 5 found the worktree-only check blind to a reviewer writing
+          the main tree, which the round-1 measurement makes an Agent's
+          default cwd; a main-tree porcelain capture is kept beside it,
+          unchanged at triage, and the RFC's D3 bullet and /rvw-pr's
+          watches-the-worktree sentence say the same. "File as preference"
+          named no verdict row; Preference is now the fourth row, with the
+          same spelling in /fix-pr, /orchestrate and the RFC
+        outcome: ok
+      - file: sdd/traces/_schema.yml
+        section: "surprising_ripples"
+        read_type: gate
+        extract: >-
+          Round 5 found the RFC listed as a surprising ripple though it was a
+          cited orient gate read and a planned edit; removed. The
+          CLAUDE-REFERENCE entry stays, since its I/O split edit was found by
+          round 3 and not by any cited read
+        outcome: ok
+  - id: fix_6
+    name: Round-6 fix pass
+    steps:
+      - file: .claude/skills/ship/SKILL.md
+        section: "Triage table and paragraph"
+        read_type: verify
+        extract: >-
+          Round 6 found the paragraph still letting a Must-fix close by shape
+          (5) against the table's (1) to (4); the paragraph now says so. The
+          six-line gate caught rule-citing Consistency findings too; a
+          finding citing a CONTENT-RULES or DRIFT-RULES rule is a violation
+          and a Must-fix, stated in /rvw-pr, /fix-pr, /ship, /orchestrate and
+          the RFC
+        outcome: ok
+  - id: verify
+    name: Verify
+    steps:
+      - file: sdd/CLAUDE-REFERENCE.md
+        section: "PR validation gates"
+        read_type: verify
+        extract: "Docs-only diff: hatch run lint and hatch run docs-gate; local-machine grep over the changed files"
+        outcome: ok
