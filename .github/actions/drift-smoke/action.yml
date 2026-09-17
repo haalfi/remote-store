@@ -22,10 +22,13 @@ description: Install one extra under a constraints file, probe its own imports, 
 #                     `import opentelemetry` both succeed while executing nothing,
 #                     so probing them would report `import ok` for a floor whose
 #                     azure-storage-file-datalake could not load at all.
-#                     On the floor lane a failure here is a wrong floor; on the
-#                     newest lane it is an incomplete declaration, which is the
-#                     only thing that catches an extra whose missing package is
-#                     supplied by some other extra in a shared environment.
+#                     On the floor lane a failure here is a wrong floor. On
+#                     the newest lane it is EITHER an incomplete declaration —
+#                     the only thing that catches an extra whose missing package
+#                     is supplied by some other extra in a shared environment —
+#                     OR a declared package that stopped importing against a
+#                     transitive that moved. The phase cannot tell them apart;
+#                     the traceback can, and `/drift` step 3 says how.
 #   install-plugins — the extra installed and imported, and the smoke's own
 #                     pytest plugins could not join it under the same
 #                     constraints. A harness gap, not a dependency finding.
@@ -141,88 +144,16 @@ runs:
         # `packages_distributions()` does (3.10 reads `top_level.txt` only, and
         # a hatchling-built wheel ships none).
         #
-        # "Real" is the load-bearing word. `import azure` and
-        # `import opentelemetry` succeed while executing no code from any
-        # distribution — they are namespace roots shared by every `azure-*` /
-        # `opentelemetry-*` package installed — so probing them would report
-        # `import ok` for a floor whose azure-storage-file-datalake could not
-        # load at all. A namespace has `spec.origin is None`; the probe walks
-        # past it to the shallowest public module that has one.
-        # Redirected rather than piped into `tee`, and that is load-bearing: a
-        # here-document after a pipe binds to the LAST command, so
-        # `python - | tee "$LOG" <<'PY'` feeds the script text to `tee`, leaves
-        # `python` reading an empty stdin, and returns 0 from a probe that never
-        # ran. Measured. A verification step that cannot fail is worse than none.
-        python - "$EXTRA" > "$LOG" 2>&1 <<'PY'
-        import importlib
-        import importlib.util
-        import sys
-        from importlib.metadata import distribution
-
-        sys.path.insert(0, "scripts")
-        from drift_check import _direct_requirements_for
-
-
-        def dotted_modules(dist):
-            """Every importable dotted module name a distribution's own files define.
-
-            Read from the distribution's file list rather than from
-            `packages_distributions()` or `top_level.txt`. Two reasons, both measured:
-            on Python 3.10 `packages_distributions()` reads `top_level.txt` only, and a
-            hatchling-built wheel ships none; and a top-level name is the wrong unit
-            anyway for a PEP-420 namespace, where it belongs to no distribution in
-            particular.
-            """
-            names = set()
-            for path in dist.files or []:
-                if path.suffix != ".py":
-                    continue
-                parts = list(path.parts)
-                if parts[-1] == "__init__.py":
-                    parts = parts[:-1]
-                else:
-                    parts[-1] = parts[-1][: -len(".py")]
-                if parts and all(part.isidentifier() for part in parts):
-                    names.add(".".join(parts))
-            return names
-
-
-        def first_real_module(names):
-            """The shallowest name that is a real module, not an empty namespace.
-
-            `import azure` and `import opentelemetry` both succeed while executing no
-            code from any distribution: they are namespace roots shared by every
-            `azure-*` / `opentelemetry-*` package installed. Probing one proves
-            nothing, and would have reported `import ok` for a floor whose
-            `azure-storage-file-datalake` could not load at all. A real module has a
-            spec with an origin; a namespace has `origin is None`.
-            """
-            # Public names first, then shallowest: a distribution's private
-            # accelerator (PyYAML's `_yaml`) imports fine and says less about the
-            # surface a user reaches than its public module does.
-            ordered = sorted(names, key=lambda n: (any(p.startswith("_") for p in n.split(".")), n.count("."), n))
-            for name in ordered:
-                try:
-                    spec = importlib.util.find_spec(name)
-                except (ImportError, ValueError, ModuleNotFoundError):
-                    continue
-                if spec is not None and spec.origin is not None:
-                    return name
-            return None
-
-
-        probed = 0
-        for requirement in sorted(_direct_requirements_for(sys.argv[1])):
-            module = first_real_module(dotted_modules(distribution(requirement)))
-            if module is None:
-                print(f"skip (no importable module ships with {requirement})")
-                continue
-            importlib.import_module(module)
-            probed += 1
-            print(f"import ok: {requirement} -> {module}")
-        if not probed:
-            sys.exit(f"no importable module found for any of {sorted(_direct_requirements_for(sys.argv[1]))}")
-        PY
+        # `scripts/import_probe.py` rather than an inline here-document, and
+        # that is the point: its selection rules have edge cases (a namespace
+        # root executes nothing, a stub-only distribution ships no module, an
+        # optional accelerator may be absent) and they were wrong twice on this
+        # branch. `tests/scripts/test_import_probe.py` covers them. An inline
+        # script is reachable by no test, and the only thing standing between a
+        # broken probe and a green leg was the `grep` below.
+        #
+        # Redirected, not piped: `cmd | tee "$LOG"` would make `$?` `tee`'s.
+        python scripts/import_probe.py "$EXTRA" > "$LOG" 2>&1
         rc=$?
         cat "$LOG"
         if [ "$rc" -ne 0 ]; then

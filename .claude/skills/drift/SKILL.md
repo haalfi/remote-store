@@ -84,12 +84,18 @@ lacks `actions: write`; the MCP server's `actions_run_trigger` dispatches).
    - **pass** → smoke passed against the fresh resolution. Refreshable, if the
      target reaches the drifted package — see the reach caveat above.
    - **fail, phase `install-extra` or `import-extra`** → the extra could not
-     stand up **alone**. That is an under-declared extra, not a version
-     finding: the missing package is arriving from somewhere else in every
-     environment that has ever run the suite. Propose a `pyproject.toml`
-     declaration fix (ask first — never open a backlog item unilaterally); do
-     not refresh the lock, which would record a resolution that does not work
-     by itself.
+     stand up **alone**, and the phase does not say which of two reasons. Read
+     the traceback:
+     - **A module that is not declared anywhere** (`ModuleNotFoundError` for a
+       package absent from the extra's own list) → an under-declared extra, not
+       a version finding: it arrives from somewhere else in every environment
+       that has ever run the suite. Propose a `pyproject.toml` declaration fix
+       (ask first — never open a backlog item unilaterally); do not refresh the
+       lock, which would record a resolution that does not work by itself.
+     - **A declared package that fails to import against a newly resolved
+       transitive** (BUG-287's shape at the top of the range: `pyarrow` against
+       a `numpy` that moved) → a version finding, and one this lane exists to
+       report. Treat it as a red smoke: classify below, do not refresh.
    - **fail, phase `smoke`** → do NOT refresh yet. Fetch the failed step
      (`gh run view --repo haalfi/remote-store --job <jobId> --log-failed`) and
      classify:

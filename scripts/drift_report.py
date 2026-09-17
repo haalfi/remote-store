@@ -139,7 +139,15 @@ def _render_isolation_findings(reports: Reports, register: dict[tuple[str, str],
     dependency and every gate stays green. These rows are what that promise
     failing looks like — the extra installed and its own declared packages did
     not import, or it did not install at all, with nothing else in the
-    environment to supply what it forgot to declare.
+    environment to cover for it.
+
+    **Two causes reach this section and the phase does not separate them.** A
+    package the extra forgot to declare is the one isolation exists to catch.
+    But a package it *does* declare, failing to import against a transitive that
+    has just moved, lands here identically — BUG-287's shape arriving at the top
+    of the range rather than the bottom, and a version finding rather than a
+    declaration one. Only the traceback tells them apart, which is why the
+    reason text is rendered rather than summarised.
     """
     failures = {
         extra: v
@@ -151,9 +159,12 @@ def _render_isolation_findings(reports: Reports, register: dict[tuple[str, str],
     lines = ["## Isolated install failed", ""]
     lines.append(
         "These extras were installed **alone**, at the resolution recorded "
-        "above, and could not stand up on their own. A package one of them "
-        "needs but does not declare is invisible in any environment where "
-        "another extra happens to supply it."
+        "above, and could not stand up on their own. Two causes land here and "
+        "the phase does not separate them: a package one of them needs but does "
+        "not declare, which is invisible in any environment where another extra "
+        "happens to supply it; or a package it *does* declare that stopped "
+        "importing against a transitive that moved. The traceback below "
+        "separates them."
     )
     lines.append("")
     for extra in sorted(failures):
@@ -379,9 +390,12 @@ def _incomplete_leg_rows(
     """``(extra, sentence)`` per leg that did not report everything it owes.
 
     Every leg writes a resolution and a smoke verdict, `skipped` included, so a
-    missing half means a leg died mid-way or two uploads landed on one filename
-    — the second of which happened twice while this lane was being built, and
-    whose signature is a row that is quietly absent rather than wrong.
+    missing half means a leg died mid-way, two uploads landed on one filename,
+    or the smoke was skipped because its docker services never came up. The
+    second happened twice while this lane was being built, and the third is
+    deliberate — the workflow would rather lose a leg than publish an
+    infrastructure failure as a wrong floor. All three share a signature: a row
+    that is quietly absent rather than wrong.
 
     ``expected`` closes the case the halves cannot see between them: a leg that
     produced **nothing** contributes no key on either side, so comparing the
@@ -615,10 +629,14 @@ def _render_body(
         lines.append("")
         lines.append(
             "Each leg writes both a report and a smoke verdict, `skipped` "
-            "included, so a missing half means the leg died before uploading or "
-            "two uploads landed on one filename. Rows these legs would have "
-            "contributed are absent from everything above — and an absent row "
-            "reads exactly like a clean one."
+            "included, so a missing half has one of three causes: the leg died "
+            "before uploading, two uploads landed on one filename, or the "
+            "docker services the smoke needs did not come up — the workflow "
+            "skips the smoke in that case **on purpose**, because publishing a "
+            "connection-refused failure as a dependency finding would send a "
+            "maintainer to raise a floor that is fine. The run log says which. "
+            "Rows these legs would have contributed are absent from everything "
+            "above — and an absent row reads exactly like a clean one."
         )
         lines.append("")
         for entry in incomplete:
