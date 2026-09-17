@@ -21,7 +21,7 @@ surprising_ripples:
 # answer a review round. The commit that implements the amendments does not
 # count. Re-run before each push; the value is the count, including the commit
 # that carries this line.
-review_rounds: 5
+review_rounds: 6
 phases:
   - id: orient
     name: Orient
@@ -310,6 +310,20 @@ phases:
           cited orient gate read and a planned edit; removed. The
           CLAUDE-REFERENCE entry stays, since its I/O split edit was found by
           round 3 and not by any cited read
+        outcome: ok
+  - id: fix_6
+    name: Round-6 fix pass
+    steps:
+      - file: .claude/skills/ship/SKILL.md
+        section: "Triage table and paragraph"
+        read_type: verify
+        extract: >-
+          Round 6 found the paragraph still letting a Must-fix close by shape
+          (5) against the table's (1) to (4); the paragraph now says so. The
+          six-line gate caught rule-citing Consistency findings too; a
+          finding citing a CONTENT-RULES or DRIFT-RULES rule is a violation
+          and a Must-fix, stated in /rvw-pr, /fix-pr, /ship, /orchestrate and
+          the RFC
         outcome: ok
   - id: verify
     name: Verify

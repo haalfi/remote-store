@@ -358,7 +358,8 @@ Spawn reviewers per [Reviewer selection](#reviewer-selection). Each reviews
   — Reader, Task, Failure, Harm, Change, Preserve — since the fix step below
   sets such a finding aside as a preference when those lines are missing, with
   no fix and no backlog item (a false statement in prose is a `Bug:` or
-  `Spec:` finding and needs no six lines)
+  `Spec:` finding, a finding citing a `CONTENT-RULES` or `DRIFT-RULES` rule is
+  a violation, and neither needs six lines)
 - What it **ran** and what came back, if it is the measuring reviewer
 - "Clean — no issues" if nothing to report
 

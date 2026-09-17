@@ -134,13 +134,14 @@ the shape:
 - **A new measurement is swept like a fix.** Before a measured fact is recorded
   anywhere, list the artifacts that assert something about the same behaviour
   and leave each one true.
-- **A `Consistency:` finding on prose that does not state reader, task,
-  failure, harm, change and what must survive**
+- **A `Consistency:` finding on prose that cites no rule and does not state
+  reader, task, failure, harm, change and what must survive**
   ([research § 9.4](../../../sdd/research/research-appropriate-level-of-detail.md))
   is triaged *preference*: the reply says *preference, six lines absent*, no
   backlog item is minted, and it is never fixed in-loop. A false statement in
-  prose is a `Bug:` or `Spec:` finding, needs no six lines, and takes shape 2,
-  3 or 4 like any other must-fix.
+  prose is a `Bug:` or `Spec:` finding, and a finding citing a `CONTENT-RULES`
+  or `DRIFT-RULES` rule is a violation; neither needs six lines, and each takes
+  shape 2, 3 or 4 like any other must-fix.
 
 ## Step 4: Resolve threads
 
