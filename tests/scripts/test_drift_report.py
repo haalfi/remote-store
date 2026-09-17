@@ -1012,6 +1012,43 @@ class TestSupportWindowSignal:
         )
         assert drift_report.has_signal(reports, {}, today=date(2026, 10, 6)) is False
 
+    def test_a_narrowed_run_may_not_close_the_issue_over_an_unowned_crossing(self, drift_report, tmp_path):
+        """A narrowed run withholds the update; it must withhold the close too.
+
+        Reproduced on the case the `SupportWindowState` docstring names,
+        `extra: s3, lane: all`, with clean reports in both lanes and 3.10 one
+        day past its window: the run answered **close**, so the rolling issue
+        would disappear while an interpreter sat past its window with nobody
+        named. `holds_issue=False` is about not rewriting a body from a slice,
+        and this file's own lane guard already ranks the two outcomes -- "the
+        body is recoverable if it is wrong; a closed issue is not". Withholding
+        the update while permitting the close took the worse half of that trade.
+        `leave` takes neither: the body survives, and the next unnarrowed run
+        decides.
+        """
+        self._clean(tmp_path)
+        reports = dataclasses.replace(
+            drift_report._load_reports(tmp_path),
+            windows=drift_report.support_window_state(date(2026, 10, 6), holds_issue=False),
+        )
+        action, reason = drift_report.decide(reports, {}, ["s3"], today=date(2026, 10, 6))
+        assert action == "leave"
+        assert "3.10" in reason
+
+    def test_a_narrowed_run_with_a_registered_crossing_still_closes(self, drift_report, tmp_path):
+        """The other direction, so the clause above is not "narrowed never closes".
+
+        A crossing somebody owns is not an open question, so it does not stand
+        between an all-clear run and the close.
+        """
+        self._clean(tmp_path)
+        register = drift_report.load_python_support_register(_python_register(tmp_path, ("3.10", "2027-06-30")))
+        reports = dataclasses.replace(
+            drift_report._load_reports(tmp_path),
+            windows=drift_report.support_window_state(date(2026, 10, 6), register, holds_issue=False),
+        )
+        assert drift_report.decide(reports, {}, ["s3"], today=date(2026, 10, 6))[0] == "close"
+
     def test_a_narrowed_dispatch_with_no_artefacts_leaves_the_issue_alone(self, drift_report, tmp_path, monkeypatch):
         """The emptiness guard must key on `holds_issue`, not on `unregistered`.
 
@@ -1118,6 +1155,10 @@ class TestRenderSupportWindows:
         assert "2 days past, unregistered" in body
         assert "covered only part of the matrix" in body
         assert "` holds this issue open" not in body
+        # And it says the half that IS true of a narrowed run, since `decide`
+        # refuses to close over the crossing: a reader told only what the run
+        # will not do cannot distinguish that from the crossing having no effect.
+        assert "stop this run closing the issue" in body
 
     def test_names_the_owner_of_a_registered_crossing(self, drift_report, tmp_path):
         register = drift_report.load_python_support_register(_python_register(tmp_path, ("3.10", "2027-06-30")))

@@ -37,14 +37,19 @@ TODAY = date(2026, 9, 17)
 CUTOFF = date(2024, 9, 17)
 
 # Measured from pypi.org/pypi/pyarrow/json: earliest `upload_time_iso_8601`
-# over each release's non-yanked files.
+# over each release's non-yanked files. Re-derived 2026-09-17 over every file
+# of each release (29, 36, 36, 36, 55 and 43 respectively, none yanked in any):
+# `21.0.0` read `2025-07-16` until then, two days off an earliest stamp of
+# `2025-07-18T00:54:34.755518Z`. No assertion consumed that entry, which is how
+# a wrong figure survived in the table this module treats as its measured
+# record. The line above is a query to re-run, not a provenance note.
 PYARROW = {
     Version("13.0.0"): date(2023, 8, 23),
     Version("14.0.0"): date(2023, 11, 1),
     Version("15.0.2"): date(2024, 3, 18),
     Version("16.0.0"): date(2024, 4, 20),
     Version("20.0.0"): date(2025, 4, 27),
-    Version("21.0.0"): date(2025, 7, 16),
+    Version("21.0.0"): date(2025, 7, 18),
 }
 
 
@@ -128,12 +133,59 @@ class TestJudge:
         assert verdict.released == date(2024, 4, 20)
         assert verdict.breaking is False
 
+    def test_the_note_says_which_side_of_the_cutoff_the_release_falls_on(self, check_support_windows):
+        """The figure beside the verdict, in both directions.
+
+        It printed `(cutoff - released).days` with a sign and called it "days
+        relative to the cutoff", so a breaking release read as a negative
+        number and a patch-eligible one as a positive -- each the opposite of
+        how the sentence scans. Nothing asserted the note, which is why it
+        shipped that way for a round. A word cannot be read backwards, so the
+        word is what is pinned. Both counts derived against `CUTOFF`
+        (2024-09-17): 2025-04-27 is 222 days after it, 2023-08-23 is 391
+        before.
+        """
+        breaking = check_support_windows.judge(
+            _raise(check_support_windows, "pyarrow", "16.0.0", "21.0.0"),
+            {Version("16.0.0"): date(2024, 4, 20), Version("20.0.0"): date(2025, 4, 27)},
+            CUTOFF,
+        )
+        assert breaking.breaking is True
+        assert "222 days younger than the cutoff" in breaking.note
+
+        eligible = check_support_windows.judge(
+            _raise(check_support_windows, "pyarrow", "13.0.0", "14.0.0"),
+            {Version("13.0.0"): date(2023, 8, 23)},
+            CUTOFF,
+        )
+        assert eligible.breaking is False
+        assert "391 days older than the cutoff" in eligible.note
+
+    def test_an_undateable_newest_exclusion_is_undecided_rather_than_compliant(self, check_support_windows):
+        """The `judge` half of the dateless case, which `fetch_releases`'s test cannot reach.
+
+        The dates decide, and the newest release the raise strands is the one
+        they are read from. With that release undateable the answer is absent,
+        so reporting `breaking=False` would spend the check's credibility on a
+        release it never examined. The older release present here is the trap:
+        it is old enough to read as patch-eligible.
+        """
+        verdict = check_support_windows.judge(
+            check_support_windows.Raise("p", Version("1.0"), Version("3.0")),
+            {Version("1.0"): date(2020, 1, 1), Version("2.0"): None},
+            date(2024, 9, 17),
+        )
+        assert verdict.undecided is True
+        assert verdict.breaking is False
+        assert verdict.excluded == Version("2.0")
+        assert "cannot date 2.0" in verdict.note
+
     def test_the_old_floor_being_young_makes_the_raise_breaking(self, check_support_windows):
         """The other direction of the same case, so the date is what decides it
         rather than the old floor being special."""
         verdict = check_support_windows.judge(
             _raise(check_support_windows, "pyarrow", "20.0.0", "21.0.0"),
-            {Version("20.0.0"): date(2025, 4, 27), Version("21.0.0"): date(2025, 7, 16)},
+            PYARROW,
             CUTOFF,
         )
         assert verdict.excluded == Version("20.0.0")
@@ -283,6 +335,37 @@ class TestFetchReleases:
             ),
         )
         assert set(check_support_windows.fetch_releases("p")) == {Version("13.0.0")}
+
+    def test_a_release_with_files_but_no_timestamp_is_dateless_rather_than_absent(
+        self, monkeypatch, check_support_windows
+    ):
+        """The one skip that is defensive, so it must not read as a pass.
+
+        The other skips are justified by nobody being stranded: a version with
+        no files, or with every file yanked, is one no resolver could have
+        installed. A version with *live* files and no `upload_time_iso_8601`
+        is installable, so dropping it from the claim space hands `judge` the
+        next-oldest release and a raise over a recent version reads
+        **patch-eligible**. Measured across 728 versions of the five packages
+        this repository declares floors for (pyarrow, aiohttp, urllib3,
+        paramiko, s3fs): PyPI produced this shape zero times. Defensive, and
+        loud rather than silent, because a silent verification step is worse
+        than none.
+        """
+        self._stub(
+            monkeypatch,
+            check_support_windows,
+            self._payload(
+                {
+                    "1.0": [{"upload_time_iso_8601": "2024-01-01T00:00:00Z"}],
+                    "2.0": [{"filename": "p-2.0.tar.gz"}],
+                }
+            ),
+        )
+        assert check_support_windows.fetch_releases("p") == {
+            Version("1.0"): date(2024, 1, 1),
+            Version("2.0"): None,
+        }
 
     def test_an_unparseable_version_is_skipped(self, monkeypatch, check_support_windows):
         """It could not take part in a specifier comparison either way."""

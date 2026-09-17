@@ -2163,9 +2163,13 @@ working, and quietly describing the library as something it is not.
   `Programming Language :: Python` classifiers,
   `packaging/conda-forge/variants.yaml`'s `python_min`, `ci.yml`'s `MIN_PYTHON`
   and `ALL_PYTHONS`, `ci-full.yml`'s `test-full` matrix, and `README.md`'s
-  "**Requires Python 3.10+.**" prose. Three are held equal by
-  `check_conda_recipe_pins.py` and the matrix by `check_ci_full_matrix.py`; the
-  classifiers, the README prose and the ADR are watched by nothing.
+  "**Requires Python 3.10+.**" prose. **Five are watched:** `requires-python`,
+  `python_min` and `MIN_PYTHON` held equal by `check_conda_recipe_pins.py`;
+  `ALL_PYTHONS` and `ci-full.yml`'s `test-full` matrix held against each other
+  by `check_ci_full_matrix.py`, which never reads `pyproject.toml`. **Two are
+  not:** the classifiers — which govern the set — and the README prose. Nor does
+  anything hold `ALL_PYTHONS` against the classifiers, and ADR-0032 is a further
+  unwatched home, though not one of the seven.
   **Two things become dead rather than merely stale.**
   `toml = ["tomli>=1.1.0; python_version < '3.11'"]` exists only to keep 3.10
   resolving — `tomllib` is stdlib from 3.11 — so a 3.11 floor makes it a
@@ -2173,8 +2177,11 @@ working, and quietly describing the library as something it is not.
   marker-gated-extra exclusion, plus the Tested-versions page's "extras this
   page does not cover" section, both lose their one user-facing example; check
   whether either still earns its wording. `python_support.py`'s `PYTHON_RELEASES`
-  row for 3.10 **stays**: a past release date is immutable and the chart still
-  draws the bar for as long as the classifier does not.
+  row for 3.10 **stays**: a past release date is immutable, and the row is read
+  by version rather than iterated, so it simply goes unused. Dropping the
+  classifier is what stops the chart drawing 3.10's bar — `windows()` walks the
+  classifiers and looks each one up — so deleting the date row buys nothing and
+  would reintroduce `UnknownInterpreterError` if the classifier ever came back.
   **Breaking, with the obligations that follow.**
   [CONTRIBUTING § When to bump](../CONTRIBUTING.md#when-to-bump) prices dropping
   an interpreter as breaking: a `**Breaking**` CHANGELOG entry and a

@@ -66,6 +66,7 @@ import sys
 from dataclasses import dataclass, field
 from datetime import date
 from pathlib import Path
+from typing import TypeVar
 
 sys.path.insert(0, str(Path(__file__).resolve().parent))
 
@@ -90,12 +91,21 @@ class SupportWindowState:
     drops every other row (BUG-282). So a crossing counts as a signal only on an
     **unnarrowed** run — every lane and every extra. Without that, adding this
     signal would have turned every single-extra dispatch into a body-destroying
-    rewrite, because a crossing would force `update` where the run would
-    otherwise have left the issue alone.
+    rewrite.
 
     Both halves of "unnarrowed" are load-bearing and the lane half alone is not
     enough: `extra: s3, lane: all` passes a lanes-only test and is exactly the
     single-extra rewrite the warning is about.
+
+    **What a narrowed run would otherwise do is close the issue, not leave it
+    alone.** Measured on that same `extra: s3, lane: all` shape with both lanes
+    clean and 3.10 one day past its window: ``_lanes_present`` is complete, so
+    with no signal ``decide`` reached ``close``. Withholding the update alone
+    therefore bought the recoverable outcome by permitting the unrecoverable
+    one, which is the opposite of the ranking ``decide`` already states. So
+    ``decide`` refuses to close over an ``unregistered`` crossing as well, and
+    this flag means only "may this force an update", never "may this be
+    ignored".
     """
 
     rows: tuple[SupportWindow, ...] = ()
@@ -202,7 +212,7 @@ def _load_reports(dir_: Path) -> Reports:
     return Reports(diffs=diffs, floors=floors, smokes=smokes, unreadable=sorted(unreadable))
 
 
-def _known_note(register: dict, key, today: date) -> str | None:
+def _known_note(register: dict[tuple[str, str], tuple[str, str]], key: tuple[str, str], today: date) -> str | None:
     """The "somebody owns this" sentence for a finding, or ``None`` if nobody does.
 
     One home for the sentence, so the expiry it now reports cannot be shown in
@@ -276,6 +286,10 @@ def _render_isolation_findings(
             lines.append("")
     return lines
 
+
+# Either register's key type: `(extra, lane)` for the dependency table, a bare
+# version for the interpreter one. `silencing` is one rule over both.
+_RegisterKey = TypeVar("_RegisterKey")
 
 KNOWN_FINDINGS = Path(__file__).resolve().parent.parent / "infra" / "drift-locks" / "KNOWN-FINDINGS.md"
 
@@ -392,11 +406,13 @@ def is_expired(review_by: str, today: date) -> bool:
     return _review_date(review_by, where="a register row") < today
 
 
-def silencing(register: dict, today: date) -> set:
+def silencing(register: dict[_RegisterKey, tuple[str, str]], today: date) -> set[_RegisterKey]:
     """The register keys still entitled to present their finding as known.
 
     Expired rows are dropped here and nowhere else, so every caller that asks
-    "is this owned?" gets the same answer.
+    "is this owned?" gets the same answer. Generic in the key because the two
+    registers key differently -- ``(extra, lane)`` and a bare version -- while
+    the expiry rule over them is one rule.
     """
     return {key for key, (_owner, review) in register.items() if not is_expired(review, today)}
 
@@ -784,6 +800,20 @@ def decide(
     covered = _lanes_present(reports)
     if covered != set(LANES):
         return "leave", f"all clear in {sorted(covered)}, but this run did not cover both lanes"
+    # Same rule, applied to the other narrowing. `holds_issue=False` withholds
+    # the *update* on a narrowed run, because a narrowed update rewrites the
+    # body from its slice. It must withhold the *close* too, or the narrowing
+    # takes the worse half of the trade this function already states: the body
+    # is recoverable, a closed issue is not. Measured before this clause on
+    # `extra: s3, lane: all` with both lanes clean and 3.10 one day past its
+    # window -- the verdict was `close`, so the issue vanished while an
+    # interpreter sat past its window with nobody named. `leave` takes neither
+    # outcome and hands the decision to the next unnarrowed run.
+    if reports.windows.unregistered:
+        return "leave", (
+            f"all clear in both lanes, but {', '.join(reports.windows.unregistered)} "
+            "is past its support window with nobody named, and this run was too narrow to say so on the issue"
+        )
     return "close", "all clear in both lanes"
 
 
@@ -833,15 +863,20 @@ def _render_support_windows(
     lines.append("")
     if state.unregistered:
         # `holds_issue`, not `unregistered`, decides which sentence is true. On a
-        # narrowed dispatch a crossing renders but cannot hold the issue, and
-        # telling a reader otherwise would send them looking for an issue this
-        # run was never going to keep open -- the reading half of the same
-        # distinction `Reports.__bool__` gets wrong when it keys on
-        # `unregistered`.
+        # narrowed dispatch a crossing renders but cannot force the rewrite, and
+        # telling a reader it "holds this issue open" would send them looking for
+        # an issue this run was never going to reopen -- the reading half of the
+        # same distinction `Reports.__bool__` gets wrong when it keys on
+        # `unregistered`. It does still stop this run closing the issue
+        # (`decide`), so the narrowed sentence says both halves: a reader who is
+        # told only what the run will not do cannot tell that from "no effect".
         holds = (
             "holds this issue open"
             if state.holds_issue
-            else ("would hold this issue open on a full run; this one covered only part of the matrix, so it does not")
+            else (
+                "would hold this issue open on a full run; this one covered only part of the matrix, so it does not — "
+                "it does stop this run closing the issue"
+            )
         )
         lines.append(
             "An interpreter past its window with no row in "

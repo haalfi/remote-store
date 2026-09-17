@@ -9,9 +9,15 @@ That is not hypothetical. This file's first draft put a bare `%%` line in the
 header, the documentation build went green, `--check` went green, and the
 published page showed the Mermaid source as plain text. Measured against
 mermaid 11.17.2 in Chromium: `mermaid.parse` answered
-``Parse error on line 1: %%gantt ... Expecting 'gantt', got 'NL'``. Every other
-comment shape parsed. `assert_renderable` is the floor that came out of it, and
-the tests below are what keep it honest.
+``Parse error on line 1: %%gantt ... Expecting 'gantt', got 'NL'``.
+
+**The failure is positional, and the guard is deliberately broader than it.**
+The same bare marker inserted after `gantt` parses and loses no row; only the
+header position is fatal, because that is where the joined line still has to be
+the diagram type. `assert_renderable` refuses a bare marker anywhere anyway,
+since the header is the only place this generator emits comments. Every comment
+*carrying* text parsed at every position tried. `assert_renderable` is the floor
+that came out of it, and the tests below are what keep it honest.
 """
 
 from __future__ import annotations
@@ -124,6 +130,19 @@ class TestAssertRenderable:
         """The measured failure: mermaid joins a contentless `%%` to the next line."""
         with pytest.raises(gen.UnrenderableChartError, match="bare `%%`"):
             gen.assert_renderable("%% a header\n%%\ngantt\n    dateFormat YYYY-MM-DD\n")
+
+    def test_a_bare_marker_after_gantt_is_refused_too(self, gen):
+        """Stricter than the parser, on purpose, and pinned as such.
+
+        Measured: this shape *parses*, keeping all five sections and ten tasks.
+        The guard still refuses it, because the header is the only place this
+        generator emits a comment, so every bare marker it can actually produce
+        is the fatal one — and a guard that tracked the position would be
+        modelling a parser it explicitly is not. Pinned so a later reader does
+        not "fix" the guard to match the parser and lose the header case.
+        """
+        with pytest.raises(gen.UnrenderableChartError, match="line 3"):
+            gen.assert_renderable("%% a header\ngantt\n%%\n    section Python 3.10\n")
 
     def test_the_offending_line_is_named(self, gen):
         """DRIFT-RULES Rule 2: say which line, not that a line is wrong."""

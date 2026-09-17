@@ -55,6 +55,14 @@ Bounds, because an unstated one gets trusted past its range:
   The same reasoning covers a fully yanked release. What the check cannot do is
   tell you a version *was* skipped; it reports the answer it reached, not the
   candidates it discarded.
+* **A version with live files and no upload timestamp is UNDECIDED, not
+  skipped.** That justification does not extend to it: such a release is
+  installable, so leaving it out of the claim space would hand the test to an
+  older release and report **patch-eligible** for a raise that strands somebody.
+  Measured over the five packages this repository declares floors for — 728
+  versions of pyarrow, aiohttp, urllib3, paramiko and s3fs — PyPI produced this
+  shape zero times, so the branch is defensive. It is kept loud rather than
+  removed because the failure it prevents is a false pass.
 * **Only ``>=`` floors are compared.** The collapse this borrows refuses
   anything else rather than guessing, and reports the package it refused on.
 * **A package that appears for the first time is not a raise**, and neither is
@@ -184,18 +192,22 @@ def previous_tag() -> str:
     ).stdout.strip()
 
 
-def fetch_releases(name: str) -> dict[Version, date]:
-    """``{version: earliest upload date}`` for every dateable stable release.
+def fetch_releases(name: str) -> dict[Version, date | None]:
+    """``{version: earliest upload date}`` for every stable release, ``None`` when undateable.
 
     Skips pre-releases, fully yanked releases and versions with no files at
     all, per the bounds in the module docstring. A version string PyPI carries
     that ``packaging`` cannot parse is skipped too: it cannot take part in a
     specifier comparison either way.
+
+    A version with **live files and no upload timestamp** is kept with a
+    ``None`` date rather than skipped. It is installable, so dropping it would
+    silently hand ``judge`` an older release to test.
     """
     with urllib.request.urlopen(PYPI_JSON.format(name=name), timeout=60) as response:
         payload = json.load(response)
 
-    out: dict[Version, date] = {}
+    out: dict[Version, date | None] = {}
     for raw, files in payload["releases"].items():
         live = [f for f in files if not f.get("yanked")]
         if not live:
@@ -207,13 +219,11 @@ def fetch_releases(name: str) -> dict[Version, date]:
         if version.is_prerelease:
             continue
         stamps = [f["upload_time_iso_8601"] for f in live if f.get("upload_time_iso_8601")]
-        if not stamps:
-            continue
-        out[version] = date.fromisoformat(min(stamps)[:10])
+        out[version] = date.fromisoformat(min(stamps)[:10]) if stamps else None
     return out
 
 
-def judge(item: Raise, releases: dict[Version, date], cutoff: date) -> Verdict:
+def judge(item: Raise, releases: dict[Version, date | None], cutoff: date) -> Verdict:
     """Rule 9's answer for one raise, from the releases the raise newly excludes."""
     newly_excluded = [v for v in releases if item.old <= v < item.new]
     if not newly_excluded:
@@ -231,6 +241,19 @@ def judge(item: Raise, releases: dict[Version, date], cutoff: date) -> Verdict:
         )
     newest = max(newly_excluded)
     released = releases[newest]
+    if released is None:
+        # Undecided, not compliant. The newest release the raise strands is the
+        # one the answer depends on, so an undateable one is no answer at all.
+        return Verdict(
+            package=item.package,
+            old=item.old,
+            new=item.new,
+            excluded=newest,
+            released=None,
+            breaking=False,
+            undecided=True,
+            note=f"cannot date {newest}, the newest release the raise newly excludes",
+        )
     breaking = released > cutoff
     return Verdict(
         package=item.package,
@@ -239,7 +262,16 @@ def judge(item: Raise, releases: dict[Version, date], cutoff: date) -> Verdict:
         excluded=newest,
         released=released,
         breaking=breaking,
-        note=(f"{newest} was uploaded {released} ({(cutoff - released).days:+d} days relative to the cutoff)"),
+        # A word, not a sign. `(cutoff - released).days` is positive for a
+        # release OLDER than the cutoff, so "+606 days relative to the cutoff"
+        # read as 606 days past it while meaning 606 days before it -- and the
+        # breaking case printed a negative number, which reads as the safe one.
+        # The label beside it was the only thing keeping a reader right.
+        note=(
+            f"{newest} was uploaded {released}, "
+            f"{abs((cutoff - released).days)} days "
+            f"{'younger' if released > cutoff else 'older'} than the cutoff"
+        ),
     )
 
 

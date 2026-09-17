@@ -28,9 +28,11 @@ surprising_ripples:
   - infra/drift-locks/KNOWN-FINDINGS.md
   - .claude/skills/drift/SKILL.md
 # Derivation: `git log --oneline origin/master..HEAD`, counting only commits
-# that exist because a review round asked for them, including the commit
-# carrying this line. Filled at the loop's close.
-review_rounds: 0
+# that exist because a review round asked for them. 0950031f implements and
+# does not count; 41aec01b carries round 1's five findings and the commit
+# carrying this line carries round 2's five. Updated as each round lands, so
+# the value is current at every commit.
+review_rounds: 2
 phases:
   - id: orient
     name: Orient
@@ -125,4 +127,45 @@ phases:
         extract: >-
           Replace the "nothing derives this" clause with the two mechanisms and
           say which is advisory
+        outcome: ok
+      - file: scripts/check_support_windows.py
+        section: "fetch_releases, judge"
+        read_type: verify
+        extract: >-
+          A line-coverage audit over the four test modules (70% on this file)
+          pointed at the one skip the bounds paragraph did not justify: a
+          version with live files and no upload timestamp was dropped from the
+          claim space, so judge tested the next-oldest release and a raise over
+          a recent one would read patch-eligible. Measured against live PyPI
+          before treating it as real -- zero occurrences across 728 versions of
+          the five packages this repo declares floors for -- so the branch is
+          defensive, and it is now UNDECIDED rather than silent. Coverage is a
+          poor test oracle and a good map of untested branches
+        outcome: ok
+      - file: scripts/drift_report.py
+        section: "SupportWindowState, decide"
+        read_type: verify
+        extract: >-
+          Round 2 ran the case the SupportWindowState docstring names rather
+          than reading it, and the stated reason was false: on
+          `extra: s3, lane: all` with both lanes clean and 3.10 one day past
+          its window the run did not leave the issue alone, it CLOSED it.
+          Withholding the update alone therefore bought the recoverable
+          outcome (a body rewritten from a slice) by permitting the
+          unrecoverable one, inverting the ranking decide already states.
+          decide now refuses to close over an unowned crossing too. The
+          lesson is the method: the docstring's worked example was the thing
+          to execute, and no amount of reading it would have shown this
+        outcome: ok
+      - file: .github/workflows/drift-guard.yml
+        section: "report job, dry_run"
+        read_type: verify
+        extract: >-
+          Dispatched on the branch with dry_run=true (run 35275336909) rather
+          than trusting the unit tests: the rendered body carried the Support
+          windows section with all five interpreters, nothing past its window,
+          the register read as empty, and the verdict line matching decide().
+          The section is rendered by the same code path on a real run, so this
+          is the only check that the register file resolves from the workflow's
+          checkout rather than from a test fixture
         outcome: ok

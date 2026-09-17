@@ -139,10 +139,20 @@ def assert_renderable(text: str) -> None:
     11.17.2 by rendering the artefact in Chromium:
 
     * **a bare ``%%`` line.** Comment text is stripped and the contentless
-      marker is not, so the marker joins the next line: the parser sees
-      ``%%gantt`` and answers ``Expecting 'gantt', got 'NL'``. Every other
-      comment shape passed — before ``gantt``, after it, indented, several in a
-      row, carrying backticks, quotes or apostrophes. Only the empty one fails.
+      marker is not, so the marker joins the next line. **Measured, the failure
+      is positional**: a bare ``%%`` as the last header line makes the parser
+      see ``%%gantt`` and answer ``Expecting 'gantt', got 'NL'``, while the same
+      line inserted after ``gantt`` — before a ``section``, between tasks, or at
+      the end — parses and loses no row. Every comment *carrying text* passed at
+      every position tried, including indented, several in a row, and carrying
+      backticks, quotes or apostrophes.
+
+      **This guard is deliberately stricter than the parser**, refusing a bare
+      marker anywhere rather than only in the header. The generator emits
+      comments only in the header, so every bare marker it can produce is the
+      fatal one; a body comment is a shape it has no way to emit, and a guard
+      that tracked the position would be modelling a parser it is not trying to
+      be.
     * **a first non-comment line that is not ``gantt``.** The diagram type has
       to be the first thing the parser reaches.
 
@@ -153,8 +163,10 @@ def assert_renderable(text: str) -> None:
     for number, line in enumerate(text.splitlines(), start=1):
         if line.strip() == "%%":
             raise UnrenderableChartError(
-                f"line {number} is a bare `%%` comment marker; mermaid's gantt parser rejects the whole "
-                f"diagram over it (the marker joins the next line). Put text after every `%%`."
+                f"line {number} is a bare `%%` comment marker, which joins itself to the next line. "
+                f"In the header that is fatal — the parser reads `%%gantt` and answers "
+                f"`Expecting 'gantt', got 'NL'`. This check refuses it anywhere, because the header is "
+                f"the only place this generator emits comments. Put text after every `%%`."
             )
     body = [line for line in text.splitlines() if not line.lstrip().startswith("%%") and line.strip()]
     if not body or body[0].strip() != "gantt":
