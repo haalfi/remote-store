@@ -193,27 +193,31 @@ class TestWriteLockNoChurnOnNoOp:
         assert lock.packages == {"httpx": "0.28.0"}
 
 
-class TestDirectDepsFor:
-    """``_direct_deps_for`` walks `[project.optional-dependencies]` and
-    expands ``remote-store[<other>]`` references recursively. The docs
-    page uses its result to project full transitive locks down to the
-    top-level packages users actually care about.
+class TestDirectRequirementKeys:
+    """The key set of ``_direct_requirements_for`` is the projection every
+    caller uses: the docs page reduces a full transitive lock to it, and the
+    import probe walks it.
+
+    These were `_direct_deps_for`'s tests. That helper was `set(...)` over the
+    same call and lost its last production caller when `render_docs`, the floor
+    report and the import probe all moved to reading the requirements directly,
+    leaving a private function whose only consumer was this suite.
     """
 
     def test_top_level_packages_extracted(self, drift_check):
         # From pyproject.toml's [sftp] = ["paramiko>=3.1", "tenacity>=8.0.1"].
-        deps = drift_check._direct_deps_for("sftp")
+        deps = set(drift_check._direct_requirements_for("sftp"))
         assert "paramiko" in deps
         assert "tenacity" in deps
 
     def test_normalises_package_names(self, drift_check):
         # azure-storage-file-datalake / azure-identity are both declared.
-        deps = drift_check._direct_deps_for("azure")
+        deps = set(drift_check._direct_requirements_for("azure"))
         assert "azure-storage-file-datalake" in deps
         assert "azure-identity" in deps
 
     def test_strips_version_specifiers(self, drift_check):
-        deps = drift_check._direct_deps_for("sftp")
+        deps = set(drift_check._direct_requirements_for("sftp"))
         # Names only; no >= / == suffixes.
         for dep in deps:
             assert ">" not in dep
@@ -222,7 +226,7 @@ class TestDirectDepsFor:
 
 
 class TestDirectRequirementsFor:
-    """``_direct_requirements_for`` keeps the specifier ``_direct_deps_for``
+    """``_direct_requirements_for`` keeps the specifier its key set
     discards. The docs page publishes the declared range beside the resolved
     version, and a package name alone cannot answer "what does this require at
     minimum?" — which is the question the page was previously silent on.
@@ -260,9 +264,14 @@ class TestDirectRequirementsFor:
         # visible duplicate nor a range.
         assert drift_check._direct_requirements_for("dev")["httpx"] == ">=0.24.0,<1.0"
 
-    def test_direct_deps_for_is_its_key_set(self, drift_check):
+    def test_every_extra_yields_bare_names_as_keys(self, drift_check):
+        # The projection contract every caller relies on: keys are names, values
+        # carry the specifier. Previously spelled as `_direct_deps_for` equalling
+        # this set, which was true by construction once that helper was `set()`
+        # over this call.
         for extra in drift_check.list_extras():
-            assert drift_check._direct_deps_for(extra) == set(drift_check._direct_requirements_for(extra))
+            for name in drift_check._direct_requirements_for(extra):
+                assert not any(c in name for c in "<>=;"), (extra, name)
 
 
 class TestExcludedExtras:

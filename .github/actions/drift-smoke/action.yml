@@ -22,7 +22,10 @@ description: Install one extra under a constraints file, probe its own imports, 
 #                     `import opentelemetry` both succeed while executing nothing,
 #                     so probing them would report `import ok` for a floor whose
 #                     azure-storage-file-datalake could not load at all.
-#                     On the floor lane a failure here is a wrong floor. On
+#                     On the floor lane it is EITHER a wrong floor OR a
+#                     correct floor meeting a transitive that moved under it
+#                     (`lowest-direct` leaves transitives newest, and all three
+#                     registered pyarrow rows are that second shape). On
 #                     the newest lane it is EITHER an incomplete declaration —
 #                     the only thing that catches an extra whose missing package
 #                     is supplied by some other extra in a shared environment —
@@ -148,9 +151,9 @@ runs:
         # that is the point: its selection rules have edge cases (a namespace
         # root executes nothing, a stub-only distribution ships no module, an
         # optional accelerator may be absent) and they were wrong twice on this
-        # branch. `tests/scripts/test_import_probe.py` covers them. An inline
-        # script is reachable by no test, and the only thing standing between a
-        # broken probe and a green leg was the `grep` below.
+        # branch — once loudly, once silently, and the silent one is the reason
+        # this is a file. `tests/scripts/test_import_probe.py` covers them; an
+        # inline script is reachable by no test.
         #
         # Redirected, not piped: `cmd | tee "$LOG"` would make `$?` `tee`'s.
         python scripts/import_probe.py "$EXTRA" > "$LOG" 2>&1
@@ -160,9 +163,13 @@ runs:
           record fail import-extra "$(tail -n 30 "$LOG")"
           finish "$rc" import-extra
         fi
-        # The probe must have said something. A silent success is the shape the
-        # here-document bug above produced, and it would look identical to a
-        # clean run from the verdict alone.
+        # The probe must have said something. Defence in depth rather than a
+        # live path: `probe()` returns non-zero whenever it probed nothing, so
+        # rc 0 already implies at least one `import ok:` line — measured across
+        # 14 extras on two interpreters, no input reaches this branch. It stays
+        # because a future `probe()` that returns 0 without printing would look
+        # identical to a clean run from the verdict alone, and the string it
+        # greps for is pinned by a test.
         if ! grep -q 'import ok:' "$LOG"; then
           record fail import-extra "import probe produced no result for [$EXTRA]: $(tail -n 30 "$LOG")"
           finish 1 import-extra

@@ -12,9 +12,11 @@ import that raises, and the action records that as the ``import-extra`` phase.
 **It lives here rather than in the action's here-document so it can be tested.**
 The selection rules below were wrong twice on this branch — once reading
 ``top_level.txt`` on an interpreter that does not infer, once walking into a
-PEP-420 namespace root — and both times the only thing standing between a
-broken probe and a green leg was a ``grep`` for its output. Selection rules with
-edge cases belong where ``tests/scripts/`` can reach them.
+PEP-420 namespace root. The first went red and was found by the run; the second
+printed ``import ok`` for a distribution it never executed and went green, and
+nothing in the run could have caught it. A selection rule that picks a *working*
+module is invisible to any smoke test, which is why rules with edge cases belong
+where ``tests/scripts/`` can reach them.
 
 Note this file is invoked from a composite action, which
 ``gen_gate_inventory.py``'s ``_WIRING_SOURCES`` does not scan, so it would not

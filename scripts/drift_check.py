@@ -6,10 +6,13 @@ against a committed baseline in ``infra/drift-locks/``. The scheduled
 workflow that drives this lives at ``.github/workflows/drift-guard.yml``.
 
 The script depends only on the standard library on Python 3.11+
-(``tomllib`` is stdlib). On Python 3.10 the ``tomli`` package is required
-— ``[dev]`` brings it in for local development, and the workflow runs on
-Python 3.13 so CI is not affected. A standalone 3.10 invocation needs
-``pip install tomli`` first.
+(``tomllib`` is stdlib). On Python 3.10 the ``tomli`` package is required —
+``[dev]`` brings it in for local development, and a standalone 3.10 invocation
+needs ``pip install tomli`` first. **The floor lane is exactly that case in
+CI**: its jobs run on the oldest interpreter ``requires-python`` admits, so
+``.github/workflows/drift-guard.yml`` installs ``tomli; python_version <
+'3.11'`` before calling ``floor`` or ``min-python``. Every other job runs on the
+primary interpreter, where the question does not arise.
 
 Subcommands:
 
@@ -456,16 +459,6 @@ def _direct_requirements_for(extra: str) -> dict[str, str]:
 
     walk(extra)
     return {key: ",".join(declarations) for key, declarations in seen.items()}
-
-
-def _direct_deps_for(extra: str) -> set[str]:
-    """Top-level package names declared by an extra in ``pyproject.toml``.
-
-    The key set of ``_direct_requirements_for``; used to project a
-    resolution (full transitive closure) down to the user-meaningful
-    packages.
-    """
-    return set(_direct_requirements_for(extra))
 
 
 def diff_extra(extra: str, resolved: dict[str, str] | None = None) -> dict:

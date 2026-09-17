@@ -178,9 +178,9 @@ Scheduled CI installs each extra at the floor of every range it declares and
 runs that extra's smoke against it, on the oldest Python we support. Findings
 are advisory: they open a maintainer's issue, they do not block a release, and
 a floor can be published while a finding against it is open. What that lane
-does **not** see: a floor that breaks only on a *newer* interpreter — floor
-corrections we have made have been exactly that shape, and they are in the
-[migration guide](../reference/migration.md) — and anything past
+does **not** see: a floor that breaks only on a *newer* interpreter — two of
+the five floor corrections we have made were exactly that shape, and all five
+are in the [migration guide](../reference/migration.md) — and anything past
 the depth of the smoke, which the
 [Tested versions](../reference/tested-versions.md) page states per extra.
 

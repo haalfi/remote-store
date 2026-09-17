@@ -4,15 +4,19 @@ The probe is what gives the isolated install its teeth: it runs before the test
 plugins join the environment, so a package an extra forgot to declare has
 nothing to arrive from. Its **selection** rules are the part worth testing —
 which module of a distribution to import — because they were wrong twice on this
-branch and both times the leg stayed green:
+branch, and the two failed in opposite directions:
 
 * reading ``top_level.txt`` on Python 3.10, where a hatchling-built wheel ships
-  none, so three working installs reported as failures;
+  none, so three working installs reported as failures. **Loud.** The run went
+  red and that is how it was found (713eff6).
 * selecting a PEP-420 namespace root, whose import executes no code from any
   distribution, so a floor that could not load at all reported ``import ok``.
+  **Silent**, and the leg stayed green.
 
-Both are selection bugs with no behavioural signature in the run that hits them,
-which is exactly what a unit test is for and a smoke test is not.
+The second is what a unit test buys and a smoke test cannot: a selection rule
+that picks a *working* module has no behavioural signature in the run that hits
+it. The first would have been cheaper to find here too, but it was never
+invisible.
 """
 
 from __future__ import annotations
@@ -129,8 +133,13 @@ class TestFirstRealModule:
 class TestProbe:
     def test_every_tracked_extra_resolves_to_a_real_module(self, import_probe):
         # The end-to-end selection, against this environment's own installs.
-        # `[dev]` brings every tracked extra in, so each one's declared
-        # distributions are present here.
+        # What makes that safe is narrower than "[dev] brings every tracked extra
+        # in" — it does not: `dev` names 13 extras, omitting `[s3]` and `[arrow]`
+        # (and adding the untracked `[toml]`). Every tracked extra's
+        # DISTRIBUTIONS are still reachable from it, because `s3-pyarrow`
+        # declares both `s3fs` and `pyarrow`. If that coincidence ever breaks,
+        # this test fails wholesale with `probe()` returning 1, and the failure
+        # reads as a probe defect rather than the environment gap it is.
         from drift_check import list_extras
 
         extras = list_extras()

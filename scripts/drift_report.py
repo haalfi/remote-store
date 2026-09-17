@@ -248,7 +248,11 @@ def _render_floor_lane(reports: Reports, register: dict[tuple[str, str], tuple[s
         lines.append(
             "The declared floor admits a release that resolves cleanly and "
             "fails when the code runs against it. This is the class the lane "
-            "exists to find — the floor is too low and wants raising."
+            "exists to find. Usually the floor is too low and wants raising — "
+            "but `lowest-direct` leaves transitives newest, so it can equally "
+            "be a floor that was fine until something under it moved. The "
+            "reason text is what separates them, and the second shape is a "
+            "finding about the combination rather than about the floor."
         )
         lines.append("")
         lines.extend(_floor_rows(reports, broke, floor_smoke, register))

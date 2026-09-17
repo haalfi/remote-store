@@ -49,7 +49,7 @@ discovery_followups: []
 # which is not review feedback. The schema fills this field post-merge for
 # exactly this reason: a value written mid-loop is behind by however many rounds
 # come after it.
-# Same PR, so the same four: this item ships with BK-369.
+# Same PR, so the same six: this item ships with BK-369.
 review_rounds: 6
 phases:
   - id: orient

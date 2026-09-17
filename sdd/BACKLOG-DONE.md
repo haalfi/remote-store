@@ -241,7 +241,7 @@ if evidence changes; these are retired.
 ## Unreleased
 
 - [x] **BK-369 — Nothing ever installs an extra at its declared floor, so a floor is true until a user disproves it**
-  spec: — · effort: M · audience: infra.ci
+  spec: — · effort: M · audience: infra.ci, user.site
   A weekly floor lane in `.github/workflows/drift-guard.yml` installs each of
   the 14 tracked extras at the floor of every range it declares — `uv pip
   install --resolution lowest-direct`, which takes the floors from
