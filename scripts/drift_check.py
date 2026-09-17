@@ -81,9 +81,15 @@ installs a floor is easily read as one that verifies it:
 
 * **One interpreter.** It runs on the oldest ``requires-python`` admits, so a
   floor that breaks only on a *newer* one is invisible to it. Two of the five
-  floor bugs found by hand were of exactly that shape — the sqlalchemy floor
-  (fine throughout on the oldest, broken on the newest) and the tenacity range
-  (its import failure starts one minor above the oldest).
+  floor bugs found by hand were of exactly that shape: ``sqlalchemy>=2.0``
+  (all of 2.0.x installs and runs on 3.10; 2.0.0-2.0.30 die at import on 3.13)
+  and ``urllib3>=1.26.0`` (1.26.0-1.26.4 raise ``ModuleNotFoundError`` on 3.13
+  through their vendored six shim, and are fine on 3.10). The other three —
+  ``tenacity>=4.0``, ``dagster>=1.9``, ``paramiko>=3.0`` — fail at the declared
+  floor on *every* supported interpreter, so this lane catches them. Derived
+  from their entries in ``sdd/BACKLOG-DONE.md``, not recalled; tenacity is the
+  one most easily miscounted, because releases above its floor are that shape
+  while the floor itself is not, and ``lowest-direct`` installs the floor.
 * **Transitives float.** ``lowest-direct`` lowers only what this project
   declares, so a red leg can be a floor interacting with a *newest* transitive
   rather than a wrong floor. That is not noise: it is how a floor stops working
@@ -406,6 +412,16 @@ def _direct_requirements_for(extra: str) -> dict[str, str]:
     at minimum?". Recursively expands ``remote-store[<other>]`` references;
     a package reached twice keeps both specifiers, joined with ``,``, so a
     duplicated declaration is visible rather than silently halved.
+
+    **The unit of deduplication is the whole declaration, marker included.**
+    Two declarations of one package that differ only in their marker are
+    therefore kept as a pair and joined, which is a string no resolver would
+    accept (``dev``'s ``tomli`` is the live example). No tracked extra is in
+    that shape — it needs one extra to aggregate another that declares the same
+    package under a marker — and the published page only renders
+    ``list_extras()``, so this is a stated bound rather than a defect. Splitting
+    on the marker would need the callers to agree on which side wins, and none
+    of them has that question today.
     """
     data = _load_pyproject()
     extras = data["project"]["optional-dependencies"]

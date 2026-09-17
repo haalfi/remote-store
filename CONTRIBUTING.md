@@ -409,7 +409,7 @@ issue beside its owner rather than in a red X. `infra/drift-locks/KNOWN-FINDINGS
 records the findings either lane already reports and somebody owns, so a new one
 is distinguishable from a known one; delete a row there in the same change that
 lands the fix. The issue splits a floor finding three ways, and only one of
-them is about the floor: *installs, then breaks* means the floor is too low —
+them is *not* about the floor: *installs, then breaks* means the floor is too low —
 raise it, following the bump table in
 [§ When to bump](#when-to-bump), which prices a floor raise by how old the
 releases it newly excludes are; *does not install* is a decision owed on a

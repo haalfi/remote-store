@@ -178,8 +178,9 @@ Scheduled CI installs each extra at the floor of every range it declares and
 runs that extra's smoke against it, on the oldest Python we support. Findings
 are advisory: they open a maintainer's issue, they do not block a release, and
 a floor can be published while a finding against it is open. What that lane
-does **not** see: a floor that breaks only on a *newer* interpreter — two of
-the floor corrections we have made were exactly that shape — and anything past
+does **not** see: a floor that breaks only on a *newer* interpreter — floor
+corrections we have made have been exactly that shape, and they are in the
+[migration guide](../reference/migration.md) — and anything past
 the depth of the smoke, which the
 [Tested versions](../reference/tested-versions.md) page states per extra.
 
@@ -246,9 +247,11 @@ These limits bound that, and they are why [Rule 14](#rule-14) and
   deprecation warnings fails it. You would see nothing at those versions yet;
   we would rather find out a release early than a release late. It means a
   floor being flagged is not the same as a floor being broken for you.
-- **It is early warning, not remediation**, and it resolves on one platform.
-  The job never edits a range or opens a pin-update pull request; a maintainer
-  reads the finding and decides.
+- **It is early warning, not remediation**, and each end resolves on one
+  platform and one Python version — the newest end on the version we develop
+  against, the floor end on the oldest we support. The job never edits a range
+  or opens a pin-update pull request; a maintainer reads the finding and
+  decides.
 
 ## See also
 

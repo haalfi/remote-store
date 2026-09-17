@@ -2,8 +2,8 @@
 # Drift-guard baselines (ID-182)
 
 One file per extra in `pyproject.toml`'s `[project.optional-dependencies]`,
-excluding the developer aggregates (`dev`, `docs`, `bench`) and the
-marker-gated `toml` extra. Each file pins the full transitive resolution
+excluding the developer and build aggregates (`dev`, `docs`, `bench`,
+`mutate`) and the marker-gated extras (`toml`, and `mutate` again). Each file pins the full transitive resolution
 captured when `remote-store[<extra>]` was last known-good.
 
 `.github/workflows/drift-guard.yml` re-resolves each extra weekly with

@@ -61,13 +61,15 @@ Conda-Forge = "https://anaconda.org/conda-forge/remote-store"
 # pinning `httpx<1.0` (BUG-225 / ID-229) — see the per-extra comment for the
 # rationale; the pyarrow extras carry none, since BUG-232 verified the shared
 # arrow/parquet/S3-PyArrow surface against pyarrow 25 and lifted the earlier
-# `<25` cap. The guard excludes two disjoint sets, and conflating them is what
-# left `toml` looking like a dev aggregate: the developer/build aggregates
-# (`dev`, `docs`, `bench`, `mutate`) sit outside this convention and may pin
-# build tooling directly — e.g. `docs` caps `mkdocs<2` — while the marker-gated
-# extras (`toml`, and `mutate` again) are excluded because what they resolve to
-# depends on the running interpreter. `toml` is user-facing and is named as
-# uncovered on the published Tested versions page for exactly that reason. A scheduled drift guard
+# `<25` cap. The guard excludes extras for two disjoint REASONS — the sets
+# themselves overlap, and conflating the reasons is what left `toml` looking
+# like a dev aggregate. The developer/build aggregates (`dev`, `docs`, `bench`,
+# `mutate`) sit outside this convention and may pin build tooling directly —
+# e.g. `docs` caps `mkdocs<2` — while the marker-gated extras (`toml`, and
+# `mutate` again) are excluded because what they resolve to depends on the
+# running interpreter. `toml` is user-facing and is named as uncovered on the
+# published Tested versions page for exactly that reason.
+# A scheduled drift guard
 # (`.github/workflows/drift-guard.yml`, ID-182) re-resolves each extra
 # weekly against the latest available transitive versions and diffs the
 # result against `infra/drift-locks/<extra>.txt`. Refresh a baseline after

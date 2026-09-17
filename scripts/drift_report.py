@@ -12,13 +12,21 @@ by filename (several files per extra share the ``extra`` key):
 * a **smoke verdict** from the ``drift-smoke`` composite action (``smoke``),
   one per extra per lane.
 
-Logic:
+Logic, as ``decide`` implements it:
 
 * Any diff with ``status`` ``drift`` / ``needs_refresh`` / ``error``, any floor
-  that failed to resolve, or any red smoke in either lane
-  → create-or-update the issue.
+  that failed to resolve, any red smoke in either lane, any artefact that could
+  not be read or placed, or any leg that did not report both a resolution and a
+  verdict → create-or-update the issue.
+* **Except** a floor error or red smoke whose ``(extra, lane)`` is in
+  ``infra/drift-locks/KNOWN-FINDINGS.md``: somebody owns it, so it renders with
+  its owner and does not hold the issue open. Version drift is never suppressed
+  this way.
 * Everything clean in both lanes → comment "drift cleared" on the open issue
   (if any) and close it; no-op if no issue is open.
+* Everything clean but only **one** lane ran → leave the issue alone. A
+  single-lane dispatch has not seen what the other lane would have found, and a
+  closed issue is not recoverable the way a rewritten body is.
 
 ``--dry-run`` renders the body and touches no issue, so a dispatch from a
 branch is observable without writing to the issue the scheduled runs own.
@@ -78,10 +86,20 @@ def _load_reports(dir_: Path) -> Reports:
     ``merge-multiple`` has to keep two uploads apart. ``_incomplete_legs``
     is the backstop for the half of that failure which is silent.
 
-    A file that will not parse is **named and skipped**, not raised. One
-    unreadable artefact used to abort the whole report, which loses every other
-    extra's rows for a reason that has nothing to do with them — the failure
-    ``_atomic_write`` exists to prevent, arriving from the other side.
+    A file that will not parse, or that parses into something this script
+    cannot place, is **named and skipped**, not raised. One unusable artefact
+    used to abort the whole report, which loses every other extra's rows for a
+    reason that has nothing to do with them — the failure ``_atomic_write``
+    exists to prevent, arriving from the other side.
+
+    **Unusable is wider than unparseable, and the difference is a silent
+    close.** A resolution report without ``status`` parses and carries
+    ``extra``, so an earlier fix let it through — and then every section keyed
+    on ``status`` skipped it, ``_incomplete_legs`` saw both halves present, and
+    ``has_signal`` returned False. The run closed the rolling issue with that
+    extra's lane never reported on at all. Tolerating a bad artefact has to mean
+    *naming* it; tolerating it into silence is worse than the loud abort it
+    replaced, because the issue is this gate's only channel.
     """
     diffs: dict[str, dict] = {}
     floors: dict[str, dict] = {}
@@ -98,6 +116,13 @@ def _load_reports(dir_: Path) -> Reports:
             continue
         if "smoke" in data:
             smokes[(extra, data.get("lane", "newest"))] = data
+            continue
+        if "status" not in data:
+            # A resolution report with no `status` is unplaceable: every section
+            # below keys on it. Naming it here is what keeps it out of the
+            # silent-close path.
+            print(f"::warning::drift report {path} has no 'status'", file=sys.stderr)
+            unreadable.append(path.name)
         elif data.get("lane") == "floor":
             floors[extra] = data
         else:
@@ -276,7 +301,11 @@ def _floor_rows(
     return lines
 
 
-def _render_smoke_verdicts(reports: Reports, register: dict[tuple[str, str], tuple[str, str]]) -> list[str]:
+def _render_smoke_verdicts(
+    reports: Reports,
+    register: dict[tuple[str, str], tuple[str, str]],
+    lanes: list[str] | None = None,
+) -> list[str]:
     """One row per extra, one column per lane.
 
     The verdict used to live only in the run's job conclusions, so reading it
@@ -294,7 +323,13 @@ def _render_smoke_verdicts(reports: Reports, register: dict[tuple[str, str], tup
     """
     if not reports.smokes:
         return []
-    lanes = list(LANES)
+    # The lanes the run was dispatched for, not both by default. A `lane: floor`
+    # dispatch rendered a full `Newest` column of `—` for legs nobody ran, in
+    # the one section `/drift` sends a triager to first — and `—` is defined
+    # nowhere in the legend, so it read as a verdict rather than as an absence.
+    # `_lanes_present`'s own docstring states the principle: a body that does
+    # not say a lane was skipped reads as a statement about both.
+    lanes = list(lanes or LANES)
     extras = sorted({extra for extra, _ in reports.smokes})
     lines = ["## Smoke verdicts", ""]
     lines.append("| Extra | " + " | ".join(lane.capitalize() for lane in lanes) + " |")
@@ -314,6 +349,9 @@ def _render_smoke_verdicts(reports: Reports, register: dict[tuple[str, str], tup
             cells.append(cell)
         lines.append(f"| `[{extra}]` | " + " | ".join(cells) + " |")
     lines.append("")
+    if set(lanes) != set(LANES):
+        lines.append(f"This run covered the {', '.join(sorted(lanes))} lane only; the other lane was not dispatched.")
+        lines.append("")
     lines.append("`skipped` means no resolution existed to pin the smoke to, not that it passed.")
     lines.append("")
     lines.append(
@@ -454,6 +492,51 @@ def has_signal(
     return any(v.get("smoke") == "fail" and (extra, lane) not in known for (extra, lane), v in reports.smokes.items())
 
 
+def _drift_row(entry: dict) -> str:
+    """One `| package | baseline | resolved |` row, tolerant of a partial entry.
+
+    `.get` rather than subscripts for the reason `_load_reports` gives: a
+    malformed artefact costs its own rows, never the whole body. Measured before
+    this existed — a `stable_drift` entry missing `package` raised `KeyError`
+    out of `_render_body`, the step exited 1, and every other extra's rows went
+    with it, one function after the load was hardened against that exact class.
+    """
+    return f"| `{entry.get('package', '?')}` | `{entry.get('baseline') or '—'}` | `{entry.get('resolved') or '—'}` |"
+
+
+def decide(
+    reports: Reports,
+    register: dict[tuple[str, str], tuple[str, str]] | None = None,
+    expected: list[str] | None = None,
+    lanes: list[str] | None = None,
+) -> tuple[str, str]:
+    """What this run would do to the rolling issue, and the reason.
+
+    Returns ``("update" | "close" | "leave", reason)``.
+
+    **One decision, consulted by both paths.** The dry run and the real run used
+    to derive their verdict separately — the dry run from ``has_signal`` alone,
+    the real one from ``has_signal`` *and* the both-lanes guard below — so on a
+    single-lane dispatch the preview said "would close the issue" while the run
+    it previewed would have left the issue alone. Measured on an all-clean
+    newest-only run. A preview that disagrees with the thing it previews is
+    worse than no preview, and the only fix that stays fixed is having one
+    function for both to consult.
+    """
+    if has_signal(reports, register, expected, lanes):
+        return "update", "something in this run is unresolved"
+    # All clear — but only a run that covered BOTH lanes may close the issue.
+    # A single-lane dispatch sees none of the other lane's findings, so closing
+    # on its say-so discards the scheduled run's state: the issue disappears and
+    # the findings that opened it are neither fixed nor recorded anywhere. The
+    # header's warning about a single-lane dispatch rewriting the body does not
+    # cover this, because the body is recoverable and a closed issue is not.
+    covered = _lanes_present(reports)
+    if covered != set(LANES):
+        return "leave", f"all clear in {sorted(covered)}, but this run did not cover both lanes"
+    return "close", "all clear in both lanes"
+
+
 def _render_body(
     reports: Reports,
     run_url: str,
@@ -467,10 +550,12 @@ def _render_body(
     lines.append(f"Last run: [{run_url}]({run_url})")
     lines.append("")
 
-    # `.get` throughout, for the reason `_load_reports` names: a report that
-    # parses but is missing a key must cost its own rows, never every other
-    # extra's. A `KeyError` here would abort the whole body one function after
-    # the load was hardened against exactly that.
+    # `.get` for every field this function reads, for the reason
+    # `_load_reports` names: a report that parses but is missing a key must cost
+    # its own rows, never every other extra's. `status` itself is no longer
+    # among them — a report without one never reaches here, because
+    # `_load_reports` now names it unreadable rather than letting it through to
+    # be skipped by every section in silence.
     diffs = reports.diffs
     needs_refresh = [e for e, r in diffs.items() if r.get("status") == "needs_refresh"]
     if needs_refresh:
@@ -512,7 +597,7 @@ def _render_body(
                 lines.append("| Package | Baseline | Resolved |")
                 lines.append("|---|---|---|")
                 for d in stable:
-                    lines.append(f"| `{d['package']}` | `{d['baseline'] or '—'}` | `{d['resolved'] or '—'}` |")
+                    lines.append(_drift_row(d))
                 lines.append("")
             pre = r.get("prerelease_drift", [])
             if pre:
@@ -521,7 +606,7 @@ def _render_body(
                 lines.append("| Package | Baseline | Resolved |")
                 lines.append("|---|---|---|")
                 for d in pre:
-                    lines.append(f"| `{d['package']}` | `{d['baseline'] or '—'}` | `{d['resolved'] or '—'}` |")
+                    lines.append(_drift_row(d))
                 lines.append("")
 
     incomplete = _incomplete_legs(reports, expected, lanes)
@@ -544,8 +629,9 @@ def _render_body(
         lines.append("## Unreadable reports")
         lines.append("")
         lines.append(
-            "These uploads could not be parsed and were skipped, so the rows "
-            "they would have contributed are missing from everything above. "
+            "These uploads could not be parsed, or parsed into something with "
+            "no `status` to place it by, and were skipped — so the rows they "
+            "would have contributed are missing from everything above. "
             "The usual cause is two artefacts landing on one filename: an "
             "artefact is rooted at the least common ancestor of its files, so "
             "a single-file upload contributes that file at the artefact root "
@@ -573,7 +659,7 @@ def _render_body(
 
     lines.extend(_render_isolation_findings(reports, register or {}))
     lines.extend(_render_floor_lane(reports, register or {}))
-    lines.extend(_render_smoke_verdicts(reports, register or {}))
+    lines.extend(_render_smoke_verdicts(reports, register or {}, lanes))
 
     # Clear means clear in both lanes. An extra whose newest resolution is `ok`
     # while its floor will not install, or while either lane's smoke is red, is
@@ -696,16 +782,18 @@ def main(argv: list[str] | None = None) -> int:
         # read it: a dispatch from a branch must be observable without leaving
         # a trace on the rolling issue the scheduled runs own.
         print(body)
+        action, reason = decide(reports, register, expected, lanes)
+        would = {"update": "create/update", "close": "close", "leave": "leave alone"}[action]
         print(
-            f"(dry run — would {'create/update' if has_signal(reports, register, expected, lanes) else 'close'} "
-            f"the issue titled {args.title!r})",
+            f"(dry run — would {would} the issue titled {args.title!r}: {reason})",
             file=sys.stderr,
         )
         return 0
 
+    action, reason = decide(reports, register, expected, lanes)
     existing = _find_open_issue(args.repo, args.title)
 
-    if has_signal(reports, register, expected, lanes):
+    if action == "update":
         if existing is None:
             print(f"Creating new issue: {args.title}", file=sys.stderr)
             _gh(
@@ -733,18 +821,8 @@ def main(argv: list[str] | None = None) -> int:
             )
         return 0
 
-    # All clear — but only a run that covered BOTH lanes may close the issue.
-    # A single-lane dispatch sees none of the other lane's findings, so closing
-    # on its say-so discards the scheduled run's state: the issue disappears and
-    # the findings that opened it are neither fixed nor recorded anywhere. The
-    # header's warning about a single-lane dispatch rewriting the body does not
-    # cover this, because the body is recoverable and a closed issue is not.
-    lanes = _lanes_present(reports)
-    if lanes != {"newest", "floor"}:
-        print(
-            f"All clear in {sorted(lanes)}, but this run did not cover both lanes; leaving the issue alone.",
-            file=sys.stderr,
-        )
+    if action == "leave":
+        print(f"{reason.capitalize()}; leaving the issue alone.", file=sys.stderr)
         return 0
 
     if existing is None:

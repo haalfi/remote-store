@@ -263,7 +263,9 @@ if evidence changes; these are retired.
   distinction the item drew was right; its application was not.
   **Bounds, stated rather than implied** — the lane runs on one interpreter, so
   a floor that breaks only on a newer one is invisible to it (two of the five
-  hand-found bugs were that shape); it leaves transitives newest, so a finding
+  hand-found bugs were that shape — sqlalchemy and urllib3; the `drift_check.py`
+  docstring carries the derivation and why the other three are caught); it
+  leaves transitives newest, so a finding
   can be a floor meeting a new transitive; and it reaches only as far as each
   extra's smoke target, inheriting BUG-250 whole. `sdd/GATE-INVENTORY.md`
   carries the declaration; the policy page carries the user-facing half.
@@ -306,7 +308,15 @@ if evidence changes; these are retired.
   **What it still cannot catch**, per the item: an extra whose smoke target
   does not exercise the path needing the missing package. Isolation without
   reach is a green light for a declaration nobody exercised (BUG-250, ID-250).
-  Shipped with BK-369; no separate trace — same lane, same PR.
+  **Covered by BK-369's trace rather than one of its own**, as
+  `sdd/traces/_schema.yml`'s `co_shipped_items` provides for ("one PR roll-up
+  ships multiple related items so trace aggregators do not double-count shared
+  file reads"): `sdd/traces/bk-369-floor-lane.yml` names BK-372 in both
+  `source_items` and `co_shipped_items`, and the reads this item's work met are
+  the reads recorded there. Note this is *not* the CLAUDE.md § Trace authoring
+  carve-out, which covers only an item decided against or absorbed — BK-372 was
+  implemented, and the roll-up is what exempts it from a second trace, not the
+  fact that it shipped alongside something.
 
 - [x] **BK-374 — The Tested-versions page answers a question next to the one a user brought, and is silent about the extras it skips**
   spec: — · effort: S · audience: user.site

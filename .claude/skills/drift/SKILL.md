@@ -12,9 +12,11 @@ open the PR via `/pr`.
 **Authority (do not duplicate — read these):**
 - `sdd/CI-OPERATIONS.md` — the cross-guard handbook: where this guard sits in
   the scheduled/automated family and the durable-TODO principle it follows.
-- `.github/workflows/drift-guard.yml` header — refresh procedure + the three
+- `.github/workflows/drift-guard.yml` header — refresh procedure; the three
   hard non-goals (the workflow never edits `pyproject.toml`, never auto-merges
-  a floor/pin, never auto-remediates).
+  a floor/pin, never auto-remediates); and, in the same list, what the floor
+  lane does **not** verify and why its legs are advisory — the two a triage run
+  needs, because they are why a green `floor-<extra>` job says little.
 - `infra/drift-locks/README.md` § Refreshing — the canonical command pair.
 - `scripts/drift_check.py` module docstring — subcommand semantics.
 

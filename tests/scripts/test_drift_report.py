@@ -302,12 +302,14 @@ class TestRenderBody:
         )
         assert "| `[sql]` | fail (smoke) | — |" in body
 
-    def test_a_report_without_status_costs_only_its_own_rows(self, drift_report, tmp_path):
-        # `_load_reports` tolerates a file that will not parse; a file that
-        # parses and is missing a key has to be tolerated on the same terms.
-        # It raised `KeyError: 'status'` one function later, which aborts the
-        # whole body and loses every other extra's rows — the failure the load
-        # was hardened against, arriving from the other side.
+    def test_a_report_without_status_is_named_not_silently_dropped(self, drift_report, tmp_path):
+        # Three behaviours, and the middle one is what the first version of this
+        # test missed. It must not abort the body (it raised `KeyError: 'status'`
+        # one function after the load was hardened against that class); it must
+        # NAME the report it could not place; and naming it is what keeps the
+        # run out of the silent-close path. Asserting only that `[yaml]` still
+        # rendered passed on a version that dropped `[broken]` without a word
+        # and closed the issue.
         body = self._body(
             drift_report,
             tmp_path,
@@ -316,6 +318,20 @@ class TestRenderBody:
             {"extra": "broken"},
         )
         assert "`[yaml]`" in body
+        assert "## Unreadable reports" in body
+
+    def test_a_partial_drift_entry_costs_only_its_own_row(self, drift_report, tmp_path):
+        # Same class one level down: an entry inside `stable_drift` missing
+        # `package` raised out of `_render_body`, exited 1, and took every other
+        # extra's rows with it.
+        body = self._body(
+            drift_report,
+            tmp_path,
+            _diff("sql", "drift", stable_drift=[{"baseline": "1.0", "resolved": "2.0"}]),
+            _smoke("sql", "newest", "pass"),
+        )
+        assert "## Drift detected" in body
+        assert "| `?` | `1.0` | `2.0` |" in body
 
     def test_newest_lane_import_failure_is_an_isolation_finding(self, drift_report, tmp_path):
         # The extra installed alone and could not stand up — which is invisible
@@ -515,6 +531,119 @@ class TestIncompleteLegs:
         reports = self._reports(drift_report, tmp_path, _diff("s3"))
         assert drift_report.has_signal(reports, {}) is True
         assert "## Incomplete legs" in drift_report._render_body(reports, "https://run", {})
+
+
+class TestDecide:
+    """The one function both the dry run and the real run consult.
+
+    They derived their verdict separately until the closing gate measured them
+    disagreeing: on an all-clean single-lane dispatch the preview said "would
+    close" and the run it previewed left the issue alone.
+    """
+
+    def _reports(self, drift_report, tmp_path, *payloads):
+        for i, payload in enumerate(payloads):
+            _write(tmp_path, f"{i}.json", payload)
+        return drift_report._load_reports(tmp_path)
+
+    def test_both_lanes_clean_closes(self, drift_report, tmp_path):
+        reports = self._reports(
+            drift_report,
+            tmp_path,
+            _diff("s3"),
+            _smoke("s3", "newest", "pass"),
+            _floor("s3"),
+            _smoke("s3", "floor", "pass"),
+        )
+        assert drift_report.decide(reports, {}, ["s3"])[0] == "close"
+
+    def test_one_lane_clean_leaves_the_issue_alone(self, drift_report, tmp_path):
+        # The case the dry run used to preview as a close.
+        reports = self._reports(drift_report, tmp_path, _diff("s3"), _smoke("s3", "newest", "pass"))
+        action, reason = drift_report.decide(reports, {}, ["s3"], ["newest"])
+        assert action == "leave"
+        assert "did not cover both lanes" in reason
+
+    def test_a_finding_updates(self, drift_report, tmp_path):
+        reports = self._reports(drift_report, tmp_path, _diff("s3", "drift"), _smoke("s3", "newest", "pass"))
+        assert drift_report.decide(reports, {}, ["s3"])[0] == "update"
+
+
+class TestExpectLanesCli:
+    """`--expect-lanes` reaches `_parse_expected` through argparse, in the exact
+    spelling the workflow's `setup` job emits.
+
+    The lane half of the claim space is joined to the workflow by a string
+    literal (`lanes="newest,floor"`), and nothing under `tests/` reached it.
+    """
+
+    def _run(self, drift_report, tmp_path, monkeypatch, capsys, *args, payloads=()):
+        for i, payload in enumerate(payloads):
+            _write(tmp_path, f"{i}.json", payload)
+        calls = []
+        monkeypatch.setattr(drift_report, "_gh", lambda *a, **k: calls.append(a))
+        rc = drift_report.main(
+            [str(tmp_path), "--repo", "haalfi/remote-store", "--run-url", "https://run", "--title", "t", *args]
+        )
+        return rc, capsys.readouterr(), calls
+
+    def test_the_workflow_spelling_parses(self, drift_report):
+        # `setup` emits exactly this for a `lane: all` run.
+        assert drift_report._parse_expected("newest,floor") == ["newest", "floor"]
+        assert drift_report._parse_expected("floor") == ["floor"]
+        assert drift_report._parse_expected("") == []
+
+    def test_an_absent_flag_falls_back_to_both_lanes(self, drift_report, tmp_path, monkeypatch, capsys):
+        # An operator running it by hand must not have every floor leg reported
+        # as lost, nor have the fallback quietly narrow to one lane.
+        rc, out, _ = self._run(
+            drift_report,
+            tmp_path,
+            monkeypatch,
+            capsys,
+            "--dry-run",
+            payloads=(_diff("s3"), _smoke("s3", "newest", "pass"), _floor("s3"), _smoke("s3", "floor", "pass")),
+        )
+        assert rc == 0
+        assert "Incomplete legs" not in out.out
+
+    def test_a_narrowed_lane_reaches_the_decision(self, drift_report, tmp_path, monkeypatch, capsys):
+        # End to end through argparse: the preview must say `leave`, matching
+        # what the real path does, and must not report the floor lane as lost.
+        rc, out, calls = self._run(
+            drift_report,
+            tmp_path,
+            monkeypatch,
+            capsys,
+            "--dry-run",
+            "--expect-extras",
+            "s3",
+            "--expect-lanes",
+            "newest",
+            payloads=(_diff("s3"), _smoke("s3", "newest", "pass")),
+        )
+        assert rc == 0
+        assert calls == []
+        assert "Incomplete legs" not in out.out
+        assert "would leave alone" in out.err
+        assert "newest lane only" in out.out
+
+    def test_the_real_path_refuses_to_close_on_one_lane(self, drift_report, tmp_path, monkeypatch, capsys):
+        monkeypatch.setattr(drift_report, "_find_open_issue", lambda *a, **k: 42)
+        rc, out, calls = self._run(
+            drift_report,
+            tmp_path,
+            monkeypatch,
+            capsys,
+            "--expect-extras",
+            "s3",
+            "--expect-lanes",
+            "newest",
+            payloads=(_diff("s3"), _smoke("s3", "newest", "pass")),
+        )
+        assert rc == 0
+        assert calls == []
+        assert "leaving the issue alone" in out.err
 
 
 class TestSingleLaneRuns:

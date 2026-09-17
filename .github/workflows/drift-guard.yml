@@ -25,7 +25,9 @@ name: Drift Guard
 #  - The floor lane is NOT a verification of the floors. It runs on ONE
 #    interpreter — the oldest — so a floor that breaks only on a newer one is
 #    invisible to it, and two of the five floor bugs found by hand were of
-#    exactly that shape. It leaves transitive packages newest, so a red leg can
+#    exactly that shape (the sqlalchemy and urllib3 floors — see the
+#    `drift_check.py` docstring for the derivation and for why the other three
+#    are not). It leaves transitive packages newest, so a red leg can
 #    be a floor meeting a new transitive rather than a wrong floor. And it
 #    reaches only as far as that extra's target in `scripts/drift_smoke_map.py`.
 #    And it is STRICTER than a user's runtime in one direction: the smoke
@@ -108,6 +110,7 @@ jobs:
       extras: ${{ steps.set-extras.outputs.extras }}
       lane: ${{ steps.set-lane.outputs.lane }}
       lanes: ${{ steps.set-lane.outputs.lanes }}
+      backend_extras: ${{ steps.set-lane.outputs.backend_extras }}
       min_python: ${{ steps.set-lane.outputs.min_python }}
     steps:
       - uses: actions/checkout@v7
@@ -143,6 +146,23 @@ jobs:
           # it clean in a lane nobody ran.
           if [ "$lane" = "all" ]; then lanes="newest,floor"; else lanes="$lane"; fi
           echo "lanes=${lanes}" >> "$GITHUB_OUTPUT"
+          # The extras whose smoke needs docker services, derived from
+          # `drift_smoke_map.backends_needed` rather than restated. Both lanes
+          # gate their start-backends step on this, and the cost of a third
+          # hand-copy is not a stale comment: an extra added to the mapping and
+          # missed in a conditional installs and imports fine, then fails pytest
+          # on connection-refused, which the action records as
+          # `smoke: fail, phase: smoke` — landing under "Floor installs, then
+          # breaks", whose prose tells a maintainer to raise the floor. The
+          # `steps.backends.outcome != 'failure'` guard does not catch it: the
+          # step never ran, so it never failed. DRIFT-RULES Rule 3.
+          echo "backend_extras=$(python -c '
+          import json, sys
+          sys.path.insert(0, "scripts")
+          from drift_check import list_extras
+          from drift_smoke_map import backends_needed
+          print(json.dumps([e for e in list_extras() if backends_needed(e)]))
+          ')" >> "$GITHUB_OUTPUT"
           echo "min_python=$(python scripts/drift_check.py min-python)" >> "$GITHUB_OUTPUT"
 
       - id: set-extras
@@ -188,11 +208,12 @@ jobs:
         with:
           python-version-file: .python-version
 
-      # Start the docker-compose backends the smoke targets need.
-      # The conditional matches scripts/drift_smoke_map.py::backends_needed.
+      # Start the docker-compose backends the smoke targets need. The list is
+      # derived in `setup` from scripts/drift_smoke_map.py::backends_needed, so
+      # this conditional is not a second copy of that mapping.
       - name: Start backends (if needed)
         id: backends
-        if: contains(fromJson('["s3","s3-pyarrow","azure","sftp"]'), matrix.extra)
+        if: contains(fromJson(needs.setup.outputs.backend_extras), matrix.extra)
         uses: ./.github/actions/start-backends
         with:
           minio: ${{ contains(fromJson('["s3","s3-pyarrow"]'), matrix.extra) }}
@@ -223,7 +244,7 @@ jobs:
       # failure leaves no truncated JSON for `drift_report.py` to crash on.
       # On unrecoverable error the script writes a synthetic `status:error`
       # report rather than failing the step, so one extra's PyPI flake does
-      # not mask drift on the other twelve.
+      # not mask drift on the other thirteen.
       - name: Resolve and diff
         run: |
           mkdir -p drift-reports drift-candidates
@@ -327,11 +348,11 @@ jobs:
         with:
           enable-cache: false
 
-      # Same conditional as the newest lane: the floor smoke runs the same
+      # Same derived list as the newest lane: the floor smoke runs the same
       # target, so it needs the same services.
       - name: Start backends (if needed)
         id: backends
-        if: contains(fromJson('["s3","s3-pyarrow","azure","sftp"]'), matrix.extra)
+        if: contains(fromJson(needs.setup.outputs.backend_extras), matrix.extra)
         uses: ./.github/actions/start-backends
         with:
           minio: ${{ contains(fromJson('["s3","s3-pyarrow"]'), matrix.extra) }}

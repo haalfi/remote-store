@@ -19,8 +19,9 @@ and when the decision is re-read.
 
 **A week whose only findings are registered closes the issue**, so on that week
 the rows render nowhere and this file is where they live. That is the intended
-trade: an issue that is open every Monday for the same five rows is one nobody
-opens.
+trade: an issue that is open every Monday for the same seven rows is one nobody
+opens. (Seven is `load_known_findings()` over the table below, re-run when this
+sentence was last edited; it was five when the sentence was first written.)
 
 **Two bounds this file does not enforce, stated so they are not assumed.**
 `Review by` is read by no code: `drift_report.py` prints it beside the finding

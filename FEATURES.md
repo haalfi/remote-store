@@ -595,8 +595,10 @@ pip install remote-store[yaml]        # YAML config loading
 Each extra's version range — a floor always, plus a ceiling only where a
 known-incompatible major looms — is declared in `pyproject.toml`, the
 source of truth for per-extra pins. Both the declared range and the exact
-versions CI was last green against are published, per extra, on
-[Tested versions](https://docs.remotestore.dev/stable/reference/tested-versions/).
+versions CI was last green against are published on
+[Tested versions](https://docs.remotestore.dev/stable/reference/tested-versions/),
+per extra for the extras it covers — and it names the ones it does not, `[toml]`
+among them, whose resolution depends on the running interpreter.
 
 Extras are a pip concept. The package is also on conda-forge, where there are
 none: `conda install -c conda-forge remote-store` installs the core package
