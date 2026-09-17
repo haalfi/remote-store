@@ -3095,9 +3095,10 @@ the commit that writes it lands, so cite the generator instead.
      the pilot cannot tell the two apart. Build D1 and D4 and re-measure; only a
      miss with those shipped sends the RFC back to Draft.
   3. **The LINE rule takes the conservative reading**, or it corrupts the metric
-     it exists to serve. `/rvw-pr`'s Comment rules already pull two ways: attach
-     a finding on unchanged text to the nearest `+` line, then, one bullet
-     later, "do not anchor it to an unrelated one" — added to close BK-348's
+     it exists to serve. `/rvw-pr`'s Comment rules, as this item found them,
+     pulled two ways: attach a finding on unchanged text to the nearest `+`
+     line, then, one bullet later, "do not anchor it to an unrelated one" —
+     added to close BK-348's
      diagnosis. D5 forces that tension to be settled, and settling it the wrong
      way makes `origin()` blame the unrelated `+` line, which a fix pass wrote,
      tagging the finding `loop-introduced` when its subject is untouched text.
@@ -3105,10 +3106,11 @@ the commit that writes it lands, so cite the generator instead.
      with a baseline that *excluded* those findings rather than misattributing
      them. So: anchor to the finding's true line when that line falls inside a
      diff hunk, context lines included; keep `subjectType: "FILE"` otherwise;
-     never anchor to an unrelated line. This needs `/rvw-pr` Step 4's Comment
-     rules **amended**: they currently say "`line` must be a `+` line in the
-     diff", which excludes the context lines this rule anchors to, so the rule
-     is the pilot's change to that bullet and not a reading of it.
+     never anchor to an unrelated line. This needed `/rvw-pr` Step 4's Comment
+     rules **amended**: they said "`line` must be a `+` line in the diff",
+     which excluded the context lines this rule anchors to, so the rule is
+     the pilot's change to that bullet and not a reading of it; the amendment
+     landed with the skill rewrites (exit criteria below).
      **And the share must then exclude `pre-existing`, or the rule deflates the
      very figure it exists to serve.** A finding anchored to a context line
      blames a commit reachable from `origin/master`, so `origin()` returns

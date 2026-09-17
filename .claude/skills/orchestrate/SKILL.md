@@ -378,7 +378,9 @@ orchestrator fixes directly.
    class, not only the lines it names; the sibling descriptions of your own
    changes; a fix to a quantified claim scoped to the quantifier. Step 3's
    six-line triage bullet is satisfiable here because the reviewer contract
-   above asks for those lines on every prose finding. The shape rule is a rule
+   above asks for those lines on every prose finding. This step has no reply
+   to name the shape in, so the shape per fix, and the mutation per added
+   test, are named in the Step 7 report instead. The shape rule is a rule
    about fixes, not loops, which is why it binds here as it does under `/ship`
    ([RFC-0015](../../../sdd/rfcs/rfc-0015-ship-two-surfaces.md) Open
    Question 1).
@@ -408,7 +410,8 @@ orchestrator fixes directly.
 5. Stage all changes, commit with backlog ID prefix.
 6. Push feature branch (never master).
 7. Report: mode used, authoring experts spawned, **the lens and method of each
-   reviewer per round** and what the measuring one ran, the subject set with
+   reviewer per round** and what the measuring one ran, **the fix shape per
+   finding fixed and the mutation per added test** (Step 6), the subject set with
    each entry marked executed / read only / not reached, files changed,
    ripple-checks completed, validation status, deferred items (if any). A
    subject left `not reached` is a stated coverage bound, not an oversight —
@@ -434,7 +437,8 @@ orchestrator fixes directly.
   all have a full tool set and the tree is the only copy of the work.
 - **The orchestrator fixes and owns the sweep.** Delegate a fix only for depth
   inside one file tree.
-- **A fix takes exactly one of `/fix-pr` Step 3's five shapes.** A reason a
-  reviewer asks for is answered by a derivation, never written.
+- **A fix takes exactly one of `/fix-pr` Step 3's five shapes, and the Step 7
+  report names it.** A reason a reviewer asks for is answered by a derivation,
+  never written.
 - **User breaks ties.** The orchestrator never overrides expert disagreements
   autonomously — it presents the conflict and asks.

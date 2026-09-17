@@ -263,9 +263,9 @@ must carry what the spawn path does not supply:
   round must not certify ([Reviewer permissions](#reviewer-permissions)).
 - **The word `analyze-only`**, which selects the mode above.
 - **For the measuring member, the word `measuring`**, which opens `rvw-pr`'s
-  bounded execution set. Without it that skill permits `Bash` only for `gh`
-  PR-content reads and its own Step 4 count, and the member cannot run the thing
-  it exists to run. A solo measuring pass carries the word too.
+  bounded execution set. Without it that skill permits `Bash` only for its
+  content reads (`gh`, and the pinned diff under a root) and its own Step 4
+  count, and the member cannot run the thing it exists to run. A solo measuring pass carries the word too.
 - **The read-only constraint, restated**, per
   [Reviewer permissions](#reviewer-permissions).
 

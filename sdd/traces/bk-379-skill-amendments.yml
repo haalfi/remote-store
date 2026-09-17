@@ -16,12 +16,13 @@ expected_ripples:
   - sdd/BACKLOG.md
 surprising_ripples:
   - sdd/rfcs/rfc-0015-ship-two-surfaces.md
+  - sdd/CLAUDE-REFERENCE.md
 # Derivation, stated as the rule rather than as a transcribed list: run
 # `git log --format='%s' origin/master..HEAD` and count the subjects that
 # answer a review round. The commit that implements the amendments does not
 # count. Re-run before each push; the value is the count, including the commit
 # that carries this line.
-review_rounds: 2
+review_rounds: 3
 phases:
   - id: orient
     name: Orient
@@ -231,6 +232,46 @@ phases:
         section: "Step 3, the why bullet"
         read_type: verify
         extract: "Round 2 found 'the three sentences' without its Rule 7 antecedent; the citation is restored"
+        outcome: ok
+  - id: fix_3
+    name: Round-3 fix pass
+    steps:
+      - file: .claude/skills/rvw-pr/SKILL.md
+        section: "Frontmatter comment, opening paragraph"
+        read_type: gate
+        extract: >-
+          Round 3 found the root-form diff read an obligation without a
+          permission for any pass that is not measuring: Bash was opened to
+          four uses and git diff sat only in the measuring set. The pinned
+          diff read is now the fifth use, in both copies the comment says
+          move together; /ship's measuring bullet, which restated the four,
+          now says content reads
+        outcome: ok
+      - file: sdd/CLAUDE-REFERENCE.md
+        section: "GitHub PR I/O split, content-read row"
+        read_type: gate
+        extract: >-
+          The row said gh or MCP for every content read and the fork is no
+          exception; the root form is a local content read by design and is
+          now the row's one stated exception, with its reason. A ripple the
+          table did not anticipate
+        outcome: ok
+      - file: .claude/skills/orchestrate/SKILL.md
+        section: "Step 6 item 1, Step 7 item 7, Rules"
+        read_type: verify
+        extract: >-
+          Round 3 found the shape rule adopted with nowhere to name the shape,
+          since Step 6 has no reply; the Step 7 report now collects the shape
+          per fix and the mutation per added test, and the rule says so
+        outcome: ok
+      - file: sdd/BACKLOG.md
+        section: "BK-379 correction 3"
+        read_type: verify
+        extract: >-
+          Round 3 found correction 3 still describing the +-line bullet in
+          the present tense while the exit criteria said the amendment
+          landed; now past tense with a pointer to the exit criteria, the
+          same sweep the RFC got in round 2
         outcome: ok
   - id: verify
     name: Verify
