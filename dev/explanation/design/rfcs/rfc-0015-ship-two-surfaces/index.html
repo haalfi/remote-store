@@ -10799,12 +10799,20 @@
 <h2 id="status">Status<a class="headerlink" href="#status" title="Permanent link">&para;</a></h2>
 <p>Draft. Tracked as BK-378. Minted as BK-367 and re-homed twice: ID-182's branch
 minted BK-367 in parallel, then ID-018's minted BK-368 and closed it before
-this PR merged. Both are ID-257's scenario, and the second is recorded there. If accepted it graduates to an ADR amending
+this PR merged. Both are ID-257's scenario, and the second is recorded there.
+BK-379 pilots D2, D3's worktree half with the one-measurer cap left up, D5's
+posting half and D6's repeat-site half before the rest is built; what that
+pilot can and cannot decide is stated with the acceptance criterion
+(§ Impact). If accepted it graduates to an ADR amending
 <a href="../../adrs/0033-ship-convergence-driven-review/">ADR-0033</a>,
-<a href="../../adrs/0034-ship-panel-rounds-and-unprimed-exit/">ADR-0034</a> and
+<a href="../../adrs/0034-ship-panel-rounds-and-unprimed-exit/">ADR-0034</a>,
+<a href="../../adrs/0035-vary-method-not-model/">ADR-0035</a>, whose <em>one member per
+panel</em> trade D3 widens to at least one, the floor of a measuring member on
+every panel unchanged, and
 <a href="../../adrs/0037-whole-file-gate-and-derived-figures/">ADR-0037</a>, and to
 rewrites of <code>.claude/skills/ship/SKILL.md</code>, <code>/rvw-pr</code>, <code>/fix-pr</code>,
-<code>sdd/traces/_schema.yml</code> § <code>review_rounds</code> and <code>CLAUDE.md</code> § Trace authoring.</p>
+<code>/orchestrate</code>, <code>sdd/traces/_schema.yml</code> § <code>review_rounds</code> and <code>CLAUDE.md</code>
+§ Trace authoring.</p>
 <p><strong>Date:</strong> 2026-09-07. Every repo figure below is pinned to <code>2a1bbfe</code> and names
 the command that produced it, with two named exceptions: the PR #997
 postscript reads that PR's head <code>3cd4acb</code>, and the worktree timings are single
@@ -10992,7 +11000,12 @@ findings only.</p>
 <p>Four bounds travel with this table. <strong>Pre-existing is zero throughout</strong>, and
 that is the posting rule at work rather than a fact about untouched code:
 <code>/rvw-pr</code> anchors a line comment to a <code>+</code> line, so a finding about unchanged
-text is posted at file level and falls in the last column. <strong>The last column
+text is posted at file level and falls in the last column. So the <em>loop share
+of classified</em> column here equals <code>loop-introduced / (original +
+loop-introduced)</code>; under D5's <code>LINE</code> discipline the two part company, the
+script prints the latter as <code>share l/(o+l)</code> with pre-existing in its own
+column, and a table re-derived over the pilot carries that ratio under this
+heading, which is the acceptance criterion's clause 1 (§ Impact). <strong>The last column
 grows with the round</strong>: panels post merged findings as <code>subjectType: "FILE"</code>,
 so from round 3 to round 7 between 40% and 58% of each round is
 unclassifiable (that column against the row total), rounds 8 to 10 are
@@ -11363,8 +11376,21 @@ about what a rationale would have prevented is not, and is not the condition.</p
   is never what is certified, so the fixer cannot dirty a certification and
   failure 4 cannot occur.</li>
 <li>Each measuring member measures the base branch in its own
-  <code>tmp/review/&lt;sha&gt;/tmp/base</code> inside its worktree, so the <em>one measurer per
-  panel</em> rule, whose only reason is the shared <code>tmp/base</code> path, is lifted.</li>
+  <code>tmp/review/&lt;sha&gt;/tmp/base</code> inside its worktree, so the <em>exactly one
+  measurer per panel</em> cap is lifted. The cap is <code>/ship</code>'s, and the skill
+  gives it one reason: the fixed <code>tmp/base</code> path two concurrent measurers
+  would collide on (<code>.claude/skills/ship/SKILL.md</code> § Rules), which
+  per-member paths remove. ADR-0035's <em>Every panel carries one measuring
+  member</em> bullet says something else: a floor, which stays, and a
+  diversity-budget trade, one seat spent on method instead of identity,
+  which the lift widens to at least one seat rather than repeals. That
+  widening is what the graduating ADR amends in ADR-0035 (§ Status); the
+  bullet's own reverse condition, measuring members ceasing to find what
+  reading members miss, is not what D3 touches and stays as written.
+  <strong>The pilot keeps the cap up</strong>: BK-379's three deliveries take the worktree
+  and not the lift, because lifting it changes panel composition and moves
+  finding counts independently of fix shape, which is what the pilot
+  measures. The cap comes down once the pilot has reported.</li>
 <li>Worktrees are removed at round close; a stale one is a failed precondition
   for the next round, as a dirty tree is today.</li>
 </ul>
@@ -11419,14 +11445,23 @@ corrects.</p>
 <ul>
 <li>Origin is the blame classification in <code>rfc-0015-findings.py</code>, run by
   <code>ship-report</code>: original, pre-existing, loop-introduced.</li>
-<li>Posting discipline follows: a finding is posted with a <code>LINE</code> anchor
-  whenever a line exists, and <code>FILE</code> is reserved for a subject that is the
-  file. 160 of the 541 findings in Table 2 could not be classified, and the
+<li>Posting discipline follows, in its conservative reading: a finding is
+  anchored to its true line when that line falls inside a diff hunk, context
+  lines included, and stays <code>FILE</code> otherwise; it is never anchored to an
+  unrelated line. <code>/rvw-pr</code>'s comment rules today attach a finding on
+  unchanged text to the nearest <code>+</code> line, and <code>origin()</code> blames the line the
+  comment carries, so that reading would tag a finding on untouched text as
+  loop-introduced whenever a fix pass wrote the nearest <code>+</code> line, inflating
+  the share this RFC measures against a baseline that excluded such findings
+  rather than misattributing them. The <code>+</code>-line bullet is amended, not read
+  around. 160 of the 541 findings in Table 2 could not be classified, and the
   script separates the four causes it has: all 160 are file-level, and the
   <code>LEFT</code>-side, null-line and blame-failure counts are zero in this sample, so
-  the <code>LINE</code> discipline reaches the whole residue here, though not by
-  construction. From round 3 they are 40% to 58% of every round, and PR #997's
-  nine rounds left twenty inline findings, half of them file-level.</li>
+  the discipline's reach here is bounded by 160 and not measured: it reaches
+  the findings whose true line sits inside a hunk, which the sample does not
+  record, and what no hunk reaches stays <code>FILE</code> (Open Question 4). From
+  round 3 they are 40% to 58% of every round, and PR #997's nine rounds left
+  twenty inline findings, half of them file-level.</li>
 <li>Stop-rule clause: when two consecutive rounds each carry <strong>at least two
   classified must-fix findings of which at least 80% are loop-introduced</strong>,
   the next fix pass is a <em>retraction pass</em>. Each affected passage is restored
@@ -11444,7 +11479,14 @@ corrects.</p>
   and 9 rounds (#973 four, #986 one, #996 four) and in none of the file-level
   rounds; it is the reading adopted. Unclassifiable findings are excluded from
   the ratio, so under today's posting the trigger under-fires rather than
-  over-fires, and the <code>LINE</code> discipline above raises its reach.</li>
+  over-fires, and the <code>LINE</code> discipline above raises its reach. Under that
+  discipline a second bias runs the same direction: the dry run's clean count
+  is <code>mf-original + mf-pre-existing</code> (<code>clean</code>, feeding <code>hot()</code>, in
+  <code>rfc-0015-findings.py</code>'s D5 dry run), and a finding anchored to a context
+  line blames a commit reachable from <code>origin/master</code> and is tagged
+  pre-existing, a category the
+  baseline has at zero (Table 2's first bound). So the trigger under-fires
+  under the <code>LINE</code> discipline too, and its count is read as a floor.</li>
 <li>BK-366 gets its data as a side effect. Every <code>BUG-</code> filed from a loop is
   born in a round with an origin tag, so a delivery reports which of its
   discoveries were caught on new code, caught on pre-existing code, or
@@ -11512,7 +11554,13 @@ runtime behaviour, no published page other than this RFC's own.</p>
 <li><strong>Artifacts changed on acceptance:</strong> <code>.claude/skills/ship/SKILL.md</code>
   (triage, stop rule, worktree, report), <code>/rvw-pr</code> (worktree root, <code>LINE</code>
   discipline, the six-line prose form), <code>/fix-pr</code> (fix shape, mutation check,
-  re-derived attributions), <code>CLAUDE.md</code> § Trace authoring, <code>_schema.yml</code>
+  re-derived attributions), <code>/orchestrate</code> (its <code>tmp/base</code> rule names
+  <code>/ship</code>'s one measuring member per panel as what keeps <code>/rvw-pr</code>'s fixed
+  path safe, and D3 lifts that cap; D3's own mechanism does not run there,
+  since its reviewers read uncommitted work and no per-round review worktree
+  exists, so this RFC leaves its exactly-one rule as written, and whether
+  per-reviewer base paths lift it is Open Question 1 with D2), <code>CLAUDE.md</code>
+  § Trace authoring, <code>_schema.yml</code>
   § <code>review_rounds</code>, a new ADR, <code>scripts/ship_report.py</code>,
   <code>scripts/check_no_retrospective.py</code> and
   <code>scripts/check_backlog_ids_vs_base.py</code> with hatch aliases, guards and
@@ -11521,12 +11569,52 @@ runtime behaviour, no published page other than this RFC's own.</p>
   above (D3); script work of size S; skill rewrites of size M.</li>
 <li><strong>Acceptance criterion, stated before the run.</strong> Three deliveries run under
   the rules, pooled, then <code>rfc-0015-findings.py</code> over them. Graduate to an ADR
-  if the loop-introduced share of classified must-fix findings from round 3 on
-  is below 50% (Table 4's pooled rounds 3 to 7: 77 of 99, 78%, summing its rows), the derived
-  trace block draws a finding in at most one round across the three, and the
-  retraction trigger fires at most once. Any of the three failing sends the
-  RFC back to Draft with the measured figures attached, not to the ADR with a
+  if (1) the loop-introduced share of must-fix findings from round 3 on,
+  over <code>original + loop-introduced</code>, is below 50% (Table 4's pooled rounds 3
+  to 7: 77 of 99, 78%, summing its rows), (2) the derived trace block draws a
+  finding in at most one round across the three, and (3) the retraction
+  trigger fires at most once. <strong>Clause 1's denominator is not <em>classified</em>
+  in the sense Tables 2 and 4 and clause 3's stop rule use</strong>, which includes
+  pre-existing; it is the two categories the baseline was measured over.
+  Pre-existing is a category the baseline has at zero throughout (Table 2's
+  first bound) and D5's <code>LINE</code> discipline newly populates, so a denominator
+  that counted it would lower the share for a reason that has nothing to do
+  with D2 or D3; clause 3 keeps the full sense on purpose, which is the floor
+  bias D5 names. The pre-existing and unclassifiable counts are reported
+  beside the share, and they bound what the discipline newly reached rather
+  than measure it. Pre-existing is a floor: the other half of Table 2's
+  residue, findings panels posted as <code>FILE</code> by practice though a <code>+</code> line
+  existed (Table 2's second bound), anchors under the rule to lines that read
+  as original or loop-introduced and is not separated from the findings the
+  baseline classified. That half enters clause 1's numerator and denominator
+  from a population the 78% baseline excluded, which is the comparability
+  bound in the other direction, and the fall in the unclassifiable count
+  against Table 2's 40% to 58% per round is the only measure of its size.
+  Its sign is not measured. If that half resembles the classified findings of
+  its own round, which from round 3 are 77% to 93% loop-introduced (Table 2),
+  it raises the share, so the bias runs against passing; the per-round
+  unclassifiable count is what lets a reader see how much of the figure it
+  could account for. <code>rfc-0015-findings.py</code> prints clause 1 as one line, <code>POOLED r&gt;=3
+  must-fix</code>, over the PR numbers given, with <code>o</code>, <code>l</code>, <code>p</code> and <code>u</code> beside
+  the share, and its <code>BY ROUND INDEX</code> share excludes pre-existing for the
+  same reason; the per-finding classification is what Tables 2 to 4 rest
+  on, and the print change does not touch it. With every decision shipped,
+  any of the three failing sends the RFC
+  back to Draft with the measured figures attached, not to the ADR with a
   softened threshold. One delivery is one draw and is not the criterion.</li>
+<li><strong>What BK-379's pilot decides.</strong> It runs D2, D3's worktree half with the
+  one-measurer cap left up, D5's posting half and D6's repeat-site half,
+  without D1 and D4, and reports clauses 1 and 3 only.
+  Clause 2 has no referent until D4 generates the block it names; it is
+  deferred with D4, not dropped. Clause 3 is reported as a dry run, since the
+  retraction pass is not wired into the loop there, and is read as a floor
+  (D5). A clause-1 miss in the pilot does not send the RFC back to Draft: D1
+  targets the record surface, where a quarter of the sample's findings sit
+  (Table 3), and a share at or above 50% without it is equally consistent
+  with D2 and D3 being too weak alone and with the record surface carrying
+  the late rounds. The pilot cannot tell the two apart. A miss says build D1
+  and D4 and re-measure; only a miss with those shipped is the sentence
+  above.</li>
 <li><strong>Risk:</strong> a retraction pass could remove a reason principle 8 protects,
   which is why it restores to the last clean state rather than deleting.
   <code>LINE</code>-anchor discipline moves work onto the orchestrator's posting step.
@@ -11541,7 +11629,10 @@ runtime behaviour, no published page other than this RFC's own.</p>
 <ol>
 <li>Does <code>/orchestrate</code> take D2 and D5? Its rounds are capped (ADR-0020) and it
    has no exit gate; BK-349 declined the whole-file mode there. Proposed: D2
-   yes, since it is a rule about fixes rather than loops; D5 no.</li>
+   yes, since it is a rule about fixes rather than loops; D5 no. And whether
+   its exactly-one measuring rule, whose reason is the same fixed <code>tmp/base</code>
+   path, is lifted by per-reviewer base paths: D3's per-round worktree cannot
+   supply that there, and nothing is proposed either way.</li>
 <li>The <code>.claude/skills/</code> files carry loop history themselves ("measured on
    PR #956", "PR #958's round 1 returned 15 rows"). Under D1 that history is
    the ADRs' and is cited, not restated (principle 4); the sweep is BK-353's
