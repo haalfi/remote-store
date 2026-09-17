@@ -7,6 +7,8 @@ This project follows [Semantic Versioning](https://semver.org/). Pre-1.0, minor 
 
 ## [Unreleased]
 
+- BK-374: The [Tested versions](https://docs.remotestore.dev/stable/reference/tested-versions/) page publishes each extra's declared range beside the version CI was last green against, states how deep its check goes, and names the extras it does not cover.
+- BK-369: Scheduled CI now installs each extra at the floor of every range it declares and runs its smoke there, on the oldest supported Python, so the dependency policy states what is checked weekly and on which interpreter rather than that nothing re-derives a floor.
 - ID-018: The conda-forge channel serves 0.32.0 with the corrected dependency floors plus the `tomli` and `aiohttp` constraints; it had been publishing 0.30.0, whose `run_constraints` predated them.
 - BK-371: Publish the dependency and version policy as 15 citable rules, adopting [SPEC 0](https://scientific-python.org/specs/spec-0000/)'s support windows: a Python version is supported at least 3 years after its release, and a dependency version at least 2 years after its own.
 

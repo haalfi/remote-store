@@ -1,0 +1,134 @@
+id: BK-374
+title: "The Tested-versions page answers a question next to the one a user brought, and is silent about the extras it skips"
+trigger: >-
+  docs-src/reference/tested-versions.md is where a user is sent for version
+  information and published only resolved versions. The declared range — the
+  floor a resolver is actually held to — appeared nowhere on the docs site, and
+  an extra the guard skips had no row at all, which reads as "nothing changed"
+  rather than "never checked".
+source_items:
+  - BK-374
+  - BK-371
+audience:
+  - user.site
+  - contributor.tooling
+co_shipped_items:
+  - BK-369
+  - BK-372
+expected_ripples:
+  - docs-src/reference/tested-versions.md
+  - docs-src/explanation/dependency-policy.md
+  - sdd/BACKLOG.md
+  - sdd/BACKLOG-DONE.md
+  - sdd/backlogid.json
+  - CHANGELOG.md
+  - sdd/GATE-INVENTORY.md
+surprising_ripples:
+  # Both are hand-written prose that names the page's old shape and that no
+  # generator gate reaches.
+  - FEATURES.md  # "Tested upper-bound versions" link text, outside the generated block
+  - docs-src/explanation/dependency-policy.md  # Rule 7's reason for sending readers to pyproject.toml
+  - pyproject.toml  # its extras-table comment called the marker-gated `toml` a dev aggregate — the conflation this item exists to undo, in the file a contributor reads before declaring a new extra
+discovery_followups: []
+# Derivation, re-run before this line was written: `git log --oneline
+# origin/master..HEAD`, counting the commits that exist because a review round
+# found something — the field's own definition, which warns that GitHub's
+# review-submission count measures a different thing. Six, named rather than
+# counted, because the previous spelling said "the commit carrying this line"
+# and went stale the moment a review-driven commit landed that did not touch
+# this file:
+#   5e40e30, f4bdf86  round 1
+#   333c14a           round 2
+#   9a53b8e           round 3 (panel of four)
+#   4cdcdd0           the closing gate's three appended passes
+#   11be736           the maintainer's review
+# (A later commit that only records a SHA above, or that fixes something no
+# review found, is not a round and does not move this number.)
+# `dfadd1b`, `7c29405` and `6dc1fe6` implement and do not count; `f214684`,
+# `7cf36f6` and `713eff6` fix defects the branch's own CI dispatches measured,
+# which is not review feedback. The schema fills this field post-merge for
+# exactly this reason: a value written mid-loop is behind by however many rounds
+# come after it.
+# Same PR, so the same six: this item ships with BK-369.
+review_rounds: 6
+phases:
+  - id: orient
+    name: Orient
+    steps:
+      - file: sdd/BACKLOG.md
+        section: "(item) BK-374"
+        read_type: gate
+        extract: >-
+          Two halves with different costs: the ranges are derivable from what
+          the generator already loads, the exclusions need a structural change.
+          Two refusals to keep: no community-supported tier, no upgrade cadence.
+      - file: scripts/drift_check.py
+        section: "render_docs, _direct_deps_for"
+        read_type: gate
+        extract: >-
+          `_direct_deps_for` walks the extras table already and discards the
+          specifier, so publishing ranges needs a sibling that keeps it rather
+          than a new data source.
+      - file: docs-src/explanation/dependency-policy.md
+        section: "Rule 7, Rule 15, How the ranges are watched"
+        read_type: gate
+        extract: >-
+          Rule 7 sends readers to pyproject.toml because a hand-kept list goes
+          stale — a generated one does not, so publishing the ranges is
+          consistent with the rule rather than a breach. The rule's wording
+          still needed changing, because it read as "the ranges are not here".
+
+  - id: design
+    name: Decide the exclusions shape
+    steps:
+      - file: sdd/CONTENT-RULES.md
+        section: "Rule 2 (enumeration), Rule 5 (source facts)"
+        read_type: gate
+        extract: >-
+          Naming the excluded extras in prose would be the forbidden
+          enumeration; generated, on the page where the row is missing, it is
+          not. Rule 5 is why the smoke line renders paths only — the `-k`
+          expressions and the parked-PoC exclusion are facts about the harness.
+      - file: scripts/gen_features.py
+        section: "_EXCLUDE_EXTRAS"
+        read_type: reference
+        extract: >-
+          The item proposed splitting drift's own frozenset in two; the obvious
+          alternative was importing this one. Neither shipped: the marker-gated
+          half is derived from the markers, and this constant is asserted equal
+          rather than imported, because it answers which extras the README's
+          install list omits and would otherwise govern the drift matrix.
+        outcome: misleading
+      - file: scripts/drift_smoke_map.py
+        section: "SMOKE_TARGETS, smoke_for"
+        read_type: reference
+        extract: >-
+          The single mapping the workflow dispatches on, so the page cannot
+          describe a target the run does not use. Its entries carry pytest
+          flags, which is what decided paths-only rendering.
+
+  - id: verify
+    name: Ripple-check
+    steps:
+      - file: tests/scripts/test_drift_check.py
+        section: "TestRenderDocsIdempotent"
+        read_type: gate
+        extract: >-
+          The page is gated byte-for-byte under `--check` in preflight, so every
+          new element must come from a committed file. All four do: the declared
+          ranges and the markers from pyproject.toml, the minimum interpreter
+          from requires-python, the smoke reach from drift_smoke_map.
+      - file: scripts/check_no_tracker_refs.py
+        section: "(full)"
+        read_type: verify
+        extract: >-
+          The generated page is a published surface. The exclusion reasons are
+          taken from the marker string, never from the pyproject comment above
+          it — those comments are dense with tracker IDs.
+      - file: FEATURES.md
+        section: "install extras prose"
+        read_type: verify
+        extract: >-
+          Hand-written prose outside the generated block named the old page
+          title and called pyproject the place to read pins. `gen_features
+          --check` cannot see it, so nothing would have caught the staleness.

@@ -61,9 +61,15 @@ Conda-Forge = "https://anaconda.org/conda-forge/remote-store"
 # pinning `httpx<1.0` (BUG-225 / ID-229) — see the per-extra comment for the
 # rationale; the pyarrow extras carry none, since BUG-232 verified the shared
 # arrow/parquet/S3-PyArrow surface against pyarrow 25 and lifted the earlier
-# `<25` cap. The developer/build aggregates the guard excludes (`dev`, `docs`,
-# `bench`, `toml`, `mutate`) sit outside this convention and may pin build
-# tooling directly — e.g. `docs` caps `mkdocs<2`. A scheduled drift guard
+# `<25` cap. The guard excludes extras for two disjoint REASONS — the sets
+# themselves overlap, and conflating the reasons is what left `toml` looking
+# like a dev aggregate. The developer/build aggregates (`dev`, `docs`, `bench`,
+# `mutate`) sit outside this convention and may pin build tooling directly —
+# e.g. `docs` caps `mkdocs<2` — while the marker-gated extras (`toml`, and
+# `mutate` again) are excluded because what they resolve to depends on the
+# running interpreter. `toml` is user-facing and is named as uncovered on the
+# published Tested versions page for exactly that reason.
+# A scheduled drift guard
 # (`.github/workflows/drift-guard.yml`, ID-182) re-resolves each extra
 # weekly against the latest available transitive versions and diffs the
 # result against `infra/drift-locks/<extra>.txt`. Refresh a baseline after
@@ -384,7 +390,8 @@ check-docstring-parity = "python scripts/check_docstring_parity.py {args}"
 # lint alone would skip the .dfy-only PR this gate exists to catch. Needs no
 # Dafny toolchain. `--print-pins` regenerates DIVERGENT change tuples.
 check-dafny-twin-parity = "python scripts/check_dafny_twin_parity.py {args}"
-# ID-182 drift-guard helpers. `drift-check extras|resolve|diff|refresh-baseline|render-docs`
+# ID-182 drift-guard helpers.
+# `drift-check extras|resolve|diff|floor|min-python|refresh-baseline|render-docs`
 # — see scripts/drift_check.py docstring. The scheduled workflow uses the same script.
 drift-check = "python scripts/drift_check.py {args}"
 drift-docs-check = "python scripts/drift_check.py render-docs --check"

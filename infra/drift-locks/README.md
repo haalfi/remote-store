@@ -2,13 +2,21 @@
 # Drift-guard baselines (ID-182)
 
 One file per extra in `pyproject.toml`'s `[project.optional-dependencies]`,
-excluding the developer aggregates (`dev`, `docs`, `bench`) and the
-marker-gated `toml` extra. Each file pins the full transitive resolution
+excluding the developer and build aggregates (`dev`, `docs`, `bench`,
+`mutate`) and the marker-gated extras (`toml`, and `mutate` again). Each file pins the full transitive resolution
 captured when `remote-store[<extra>]` was last known-good.
 
 `.github/workflows/drift-guard.yml` re-resolves each extra weekly with
 `pip install --upgrade --pre`, diffs against the file here, and opens a
 single rolling issue if a package drifts.
+
+**The floor lane in that workflow writes nothing here, deliberately.** It
+installs each extra at the floor of every range it declares, and the claim it
+tests already has a home — the specifier in `pyproject.toml`. A committed floor
+lock would be a second copy of that, to keep in step by hand, which is what this
+directory exists to avoid for the *resolved* set rather than to duplicate for
+the declared one. The floor lane's findings live on the rolling issue, and the
+ones already owned live in [`KNOWN-FINDINGS.md`](KNOWN-FINDINGS.md).
 
 ## File format
 
@@ -129,9 +137,17 @@ deliberate change motivated the refresh (e.g. a floor bump).
 > **A green smoke means the committed pins were the ones tested.** The workflow
 > resolves each extra once and pins the smoke to that exact set with a pip
 > constraints file (`-c`), so the report, the smoke, and this candidate baseline
-> all describe the same resolution. A test plugin that cannot coexist with the
-> candidate set fails the install loudly (red smoke) rather than silently moving
-> a shared dependency off its pin.
+> all describe the same resolution. No package in the candidate set can be moved
+> off its pin to make a test plugin fit.
+>
+> **What `-c` holds is the candidate set, not the plugin set.** A plugin that
+> cannot coexist is free to be *backtracked* — pip picks an older `moto`,
+> `responses` or `vcrpy` that fits — rather than failing loudly. Measured: under
+> the `[requests]` floors, `responses` falls from 0.26.3 to 0.23.1. The
+> guarantee about the committed pins is unaffected; what is not guaranteed is
+> that the harness around them is current, and a red smoke can therefore be a
+> backtracked plugin rather than a dependency finding. The smoke verdict's
+> `phase` field is what separates the two.
 
 This guarantee is unconditional on the candidate-artifact and reconstruction
 paths, where the committed lock is byte-identical to the smoked freeze. On the
@@ -139,17 +155,21 @@ local-resolve path, `refresh-baseline` re-resolves with `--pre` at commit time,
 which can be later than the run that produced the drift report; a package that
 moved between the two resolves lands in the new lock without ever being smoked —
 including packages absent from the issue body entirely, so nothing in the drift
-report flags them. The gap does not self-heal: the workflow only smokes packages
-whose `status` is `drift` against the committed baseline, so once the later
-version becomes that baseline, a clean run reports `ok` and skips the smoke for
-it going forward.
+report flags them. **The next clean run does smoke it**, since the smoke now
+runs on every leg that produced a freeze rather than only on drift; what it does
+not do is *tell you* that it is the first run to have done so. The verdict table
+renders a row per extra per lane, `pass` included, but a row is a statement
+about the run, not about which pins that run was the first to exercise, and
+nothing tracks the difference. So the gap closes one week later, silently, and
+until then the committed pin is published as tested when it was not.
 
 **Pin such packages back to the run's snapshot** rather than only disclosing
 them. Disclosure in the PR description was the earlier mitigation and it is not
 enough: the unqualified claim still ships to the generated
 `docs-src/reference/tested-versions.md`, whose preamble tells readers "Tested up
-to" is "what CI was last green against", and by the non-self-healing property
-above it stays there indefinitely. Pinning back costs one more weekly cycle —
+to" is "what CI was last green against", and nothing withdraws it in the
+meantime: the claim ships the day the lock lands and the evidence arrives a week
+later, if a reader thinks to go looking. Pinning back costs one more weekly cycle —
 the next run flags those packages, smokes them, and they are accepted on
 evidence. Keep a higher pin only when you have evidence for it, and name the
 smoke that produced it in the PR.

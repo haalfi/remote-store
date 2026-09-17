@@ -11,6 +11,8 @@ venv and hits PyPI); the workflow's end-to-end run is its acceptance test.
 
 from __future__ import annotations
 
+import json
+import subprocess
 import sys
 from pathlib import Path
 
@@ -191,32 +193,274 @@ class TestWriteLockNoChurnOnNoOp:
         assert lock.packages == {"httpx": "0.28.0"}
 
 
-class TestDirectDepsFor:
-    """``_direct_deps_for`` walks `[project.optional-dependencies]` and
-    expands ``remote-store[<other>]`` references recursively. The docs
-    page uses its result to project full transitive locks down to the
-    top-level packages users actually care about.
+class TestDirectRequirementKeys:
+    """The key set of ``_direct_requirements_for`` is the projection every
+    caller uses: the docs page reduces a full transitive lock to it, and the
+    import probe walks it.
+
+    These were `_direct_deps_for`'s tests. That helper was `set(...)` over the
+    same call and lost its last production caller when `render_docs`, the floor
+    report and the import probe all moved to reading the requirements directly,
+    leaving a private function whose only consumer was this suite.
     """
 
     def test_top_level_packages_extracted(self, drift_check):
         # From pyproject.toml's [sftp] = ["paramiko>=3.1", "tenacity>=8.0.1"].
-        deps = drift_check._direct_deps_for("sftp")
+        deps = set(drift_check._direct_requirements_for("sftp"))
         assert "paramiko" in deps
         assert "tenacity" in deps
 
     def test_normalises_package_names(self, drift_check):
         # azure-storage-file-datalake / azure-identity are both declared.
-        deps = drift_check._direct_deps_for("azure")
+        deps = set(drift_check._direct_requirements_for("azure"))
         assert "azure-storage-file-datalake" in deps
         assert "azure-identity" in deps
 
     def test_strips_version_specifiers(self, drift_check):
-        deps = drift_check._direct_deps_for("sftp")
+        deps = set(drift_check._direct_requirements_for("sftp"))
         # Names only; no >= / == suffixes.
         for dep in deps:
             assert ">" not in dep
             assert "=" not in dep
             assert "<" not in dep
+
+
+class TestDirectRequirementsFor:
+    """``_direct_requirements_for`` keeps the specifier its key set
+    discards. The docs page publishes the declared range beside the resolved
+    version, and a package name alone cannot answer "what does this require at
+    minimum?" — which is the question the page was previously silent on.
+    """
+
+    def test_keeps_the_version_specifier(self, drift_check):
+        # From pyproject.toml's [sftp] = ["paramiko>=3.1", "tenacity>=8.0.1"].
+        reqs = drift_check._direct_requirements_for("sftp")
+        assert reqs["paramiko"] == ">=3.1"
+        assert reqs["tenacity"] == ">=8.0.1"
+
+    def test_keeps_a_ceiling_alongside_the_floor(self, drift_check):
+        # [graph] caps httpx: the ceiling is the rarer half of a range and the
+        # one a reader is most surprised by, so it must survive to the page.
+        assert drift_check._direct_requirements_for("graph")["httpx"] == ">=0.24.0,<1.0"
+
+    def test_keeps_the_environment_marker(self, drift_check):
+        # [toml] is marker-gated; the page renders the marker as the reason it
+        # carries no row, so the marker has to reach the caller intact.
+        assert drift_check._direct_requirements_for("toml")["tomli"] == ">=1.1.0; python_version < '3.11'"
+
+    def test_unions_a_package_declared_twice(self, drift_check):
+        # [dev] reaches pyarrow through both [s3-pyarrow] (>=14.0.0) and
+        # [sql-query] (>=12.0.0) — NOT [arrow], which [dev] does not aggregate.
+        # Keeping one silently would hide that the two declarations disagree.
+        pyarrow = drift_check._direct_requirements_for("dev")["pyarrow"]
+        assert ">=14.0.0" in pyarrow
+        assert ">=12.0.0" in pyarrow
+
+    def test_a_package_declared_twice_identically_is_not_doubled(self, drift_check):
+        # [graph] and [httpx] declare the identical multi-clause range, and
+        # [dev] reaches both. Comparing a candidate against the accumulated
+        # string split on `,` could never match a declaration containing a
+        # comma, so this returned `>=0.24.0,<1.0,>=0.24.0,<1.0` — neither a
+        # visible duplicate nor a range.
+        assert drift_check._direct_requirements_for("dev")["httpx"] == ">=0.24.0,<1.0"
+
+    def test_every_extra_yields_bare_names_as_keys(self, drift_check):
+        # The projection contract every caller relies on: keys are names, values
+        # carry the specifier. Previously spelled as `_direct_deps_for` equalling
+        # this set, which was true by construction once that helper was `set()`
+        # over this call.
+        for extra in drift_check.list_extras():
+            for name in drift_check._direct_requirements_for(extra):
+                assert not any(c in name for c in "<>=;"), (extra, name)
+
+
+class TestExcludedExtras:
+    """The excluded set is derived, not hand-kept — but only half of it is
+    derived from an artifact that governs it.
+    """
+
+    def test_aggregate_set_equals_the_install_docs_exclusions(self, drift_check):
+        # `gen_features._EXCLUDE_EXTRAS` answers a different question — which
+        # extras the README's install list omits — and the two sets have always
+        # been equal. Asserted rather than imported: that one is a presentation
+        # list, so importing it would let a docs decision silently shrink the
+        # drift matrix. This test is what makes a divergence loud instead.
+        import gen_features
+
+        assert drift_check._AGGREGATE_EXTRAS == gen_features._EXCLUDE_EXTRAS
+
+    def test_marker_gated_extras_are_derived(self, drift_check):
+        # Derived from the markers themselves, so a new marker-gated extra
+        # excludes itself rather than waiting for someone to list it.
+        assert drift_check._marker_gated_extras() == frozenset({"toml", "mutate"})
+
+    def test_union_is_what_the_guard_skips(self, drift_check):
+        assert drift_check.excluded_extras() == frozenset({"dev", "docs", "bench", "toml", "mutate"})
+
+
+class TestMinPython:
+    """The floor lane runs on the oldest supported interpreter, and the docs
+    page names it. Both read it from ``requires-python`` so the minimum is not
+    spelled a fourth time by hand.
+    """
+
+    def test_derives_the_lower_bound(self, drift_check):
+        assert drift_check.min_python() == "3.10"
+
+    def test_matches_the_lowest_python_classifier(self, drift_check):
+        # The classifiers are the other published statement of the same fact;
+        # a disagreement between them is the drift this derivation prevents.
+        classifiers = drift_check._load_pyproject()["project"]["classifiers"]
+        versions = sorted(
+            tuple(int(p) for p in c.rsplit(" ", 1)[1].split("."))
+            for c in classifiers
+            if c.startswith("Programming Language :: Python :: 3.")
+        )
+        assert drift_check.min_python() == ".".join(str(p) for p in versions[0])
+
+    def test_rejects_a_specifier_with_no_lower_bound(self, drift_check, monkeypatch):
+        monkeypatch.setattr(drift_check, "_load_pyproject", lambda: {"project": {"requires-python": "<4"}})
+        with pytest.raises(ValueError, match="lower bound"):
+            drift_check.min_python()
+
+
+class TestFloorReport:
+    """``floor_report`` projects a resolution onto what the extra declares."""
+
+    def test_projects_onto_declared_packages_only(self, drift_check):
+        resolved = {"paramiko": "3.1.0", "tenacity": "8.0.1", "bcrypt": "5.0.0", "pynacl": "1.6.2"}
+        report = drift_check.floor_report("sftp", resolved)
+        # bcrypt and pynacl are transitive: `lowest-direct` leaves them newest,
+        # so they are not a claim this lane makes.
+        assert report["floor"] == {"paramiko": "3.1.0", "tenacity": "8.0.1"}
+
+    def test_declares_its_lane_and_status(self, drift_check):
+        report = drift_check.floor_report("yaml", {"pyyaml": "5.1"})
+        assert report["lane"] == "floor"
+        assert report["status"] == "resolved"
+
+    def test_omits_a_declared_package_the_resolution_lacks(self, drift_check):
+        # Rather than inventing a version. A missing row is readable; a wrong
+        # one is not.
+        assert drift_check.floor_report("sftp", {"paramiko": "3.1.0"})["floor"] == {"paramiko": "3.1.0"}
+
+
+class TestUvInvocation:
+    """``_uv`` and ``resolve_floor`` decide *which interpreter* the floors are
+    installed into. Getting that wrong is the one failure here that is green
+    and wrong rather than red, on a lane that runs weekly.
+    """
+
+    def test_strips_ambient_target_selection(self, drift_check, monkeypatch):
+        # `setup-uv` is what lets other workflows run a bare `uv pip install`
+        # against setup-python's interpreter with no venv in sight. Inheriting
+        # that would install the floor into the runner Python — the same one the
+        # smoke then uses — and the lane would pass having tested nothing.
+        seen = {}
+
+        def _fake_run(argv, **kwargs):
+            seen["env"] = kwargs["env"]
+            return subprocess.CompletedProcess(argv, 0, stdout="", stderr="")
+
+        monkeypatch.setenv("UV_SYSTEM_PYTHON", "1")
+        monkeypatch.setenv("VIRTUAL_ENV", "/somewhere/else")
+        monkeypatch.setattr(drift_check.subprocess, "run", _fake_run)
+        drift_check._uv(["pip", "freeze"])
+        assert "UV_SYSTEM_PYTHON" not in seen["env"]
+        assert "VIRTUAL_ENV" not in seen["env"]
+
+    def test_surfaces_stderr_on_failure(self, drift_check, monkeypatch, capsys):
+        # The stderr of a failed resolve IS the finding — it names the package
+        # and why it would not install.
+        def _fake_run(argv, **kwargs):
+            raise subprocess.CalledProcessError(1, argv, stderr="no wheel for aiohttp 3.0.0")
+
+        monkeypatch.setattr(drift_check.subprocess, "run", _fake_run)
+        with pytest.raises(subprocess.CalledProcessError):
+            drift_check._uv(["pip", "install", "."])
+        assert "no wheel for aiohttp 3.0.0" in capsys.readouterr().err
+
+    def test_resolve_floor_pins_the_interpreter_and_the_resolution(self, drift_check, monkeypatch):
+        calls: list[list[str]] = []
+
+        def _fake_uv(args, *, capture=False):
+            calls.append(args)
+            return "pyyaml==5.1\nremote-store @ file:///checkout\n" if capture else ""
+
+        monkeypatch.setattr(drift_check, "_uv", _fake_uv)
+        assert drift_check.resolve_floor("yaml") == {"pyyaml": "5.1"}
+
+        venv_call, install_call, freeze_call = calls
+        assert venv_call[:2] == ["venv", "--python"]
+        # `lowest-direct`, never `lowest`: transitives stay newest, because the
+        # claim under test is the one this project declares.
+        assert "--resolution" in install_call
+        assert install_call[install_call.index("--resolution") + 1] == "lowest-direct"
+        assert ".[yaml]" in install_call
+        # Every call names its target explicitly, so no ambient setting decides.
+        for call in (install_call, freeze_call):
+            assert "--python" in call
+
+
+class TestFloorCommand:
+    """``floor --out`` must not crash the leg: a resolve that fails IS the
+    finding, and it has to reach the report job as data.
+    """
+
+    def test_a_failed_resolve_becomes_a_report_not_a_crash(self, drift_check, monkeypatch, tmp_path):
+        def _boom(extra):
+            raise subprocess.CalledProcessError(1, ["uv"], stderr="no wheel for aiohttp 3.0.0")
+
+        monkeypatch.setattr(drift_check, "resolve_floor", _boom)
+        out = tmp_path / "azure.json"
+        assert drift_check.main(["floor", "azure", "--out", str(out)]) == 0
+
+        report = json.loads(out.read_text(encoding="utf-8"))
+        assert report["status"] == "error"
+        assert report["lane"] == "floor"
+        assert "no wheel for aiohttp 3.0.0" in report["reason"]
+
+    def test_no_freeze_is_written_when_the_resolve_failed(self, drift_check, monkeypatch, tmp_path):
+        # An empty constraints file would make the smoke run unpinned against a
+        # set nothing recorded; the composite action reads its absence as
+        # "skipped", which is the honest verdict.
+        monkeypatch.setattr(drift_check, "resolve_floor", lambda extra: (_ for _ in ()).throw(RuntimeError("nope")))
+        freeze = tmp_path / "azure.txt"
+        drift_check.main(["floor", "azure", "--out", str(tmp_path / "azure.json"), "--emit-freeze", str(freeze)])
+        assert not freeze.exists()
+
+    def test_a_resolve_error_without_out_still_raises(self, drift_check, monkeypatch):
+        # Interactively there is no report to write, so the error must surface.
+        monkeypatch.setattr(drift_check, "resolve_floor", lambda extra: (_ for _ in ()).throw(RuntimeError("nope")))
+        with pytest.raises(RuntimeError, match="nope"):
+            drift_check.main(["floor", "azure"])
+
+
+class TestSmokeReach:
+    """The page publishes how far each extra's smoke reaches, derived from the
+    one mapping the workflow dispatches on.
+    """
+
+    def test_import_only_targets_say_so(self, drift_check):
+        assert drift_check._smoke_reach("otel") == "import of `remote_store.ext.otel` only"
+
+    def test_pytest_targets_render_their_paths(self, drift_check):
+        assert drift_check._smoke_reach("yaml") == "`tests/ext/test_yaml.py`"
+
+    def test_selector_flags_never_reach_the_page(self, drift_check):
+        # drift_smoke_map's [s3] entry carries `-k s3 and not s3_pyarrow and not
+        # s3_boto3`, and [sftp]'s carries `-o addopts=`. Those are source facts
+        # about the harness; a published reference page is the wrong home for
+        # them, and the parked-PoC exclusion would read as a product statement.
+        for extra in ("s3", "sftp"):
+            reach = drift_check._smoke_reach(extra)
+            assert "-k" not in reach
+            assert "-o" not in reach
+            assert "addopts" not in reach
+
+    def test_every_tracked_extra_has_a_reach(self, drift_check):
+        for extra in drift_check.list_extras():
+            assert drift_check._smoke_reach(extra)
 
 
 class TestRenderDocsIdempotent:
@@ -249,6 +493,54 @@ class TestRenderDocsIdempotent:
                 encoding="utf-8",
             )
         assert drift_check.render_docs() == drift_check.render_docs()
+
+
+class TestRenderDocsContent:
+    """What the page must say, beyond being stable. Each assertion below is a
+    question a reader brought to the page and could not previously answer.
+    """
+
+    def test_publishes_the_declared_range_beside_the_resolved_one(self, drift_check):
+        rendered = drift_check.render_docs()
+        assert "| Package | Declared | Tested up to |" in rendered
+        # The floor a resolver is actually held to, for an extra a user installs.
+        assert "`>=3.1`" in rendered
+
+    def test_names_the_interpreter_the_floor_lane_runs_on(self, drift_check):
+        assert f"Python {drift_check.min_python()}" in drift_check.render_docs()
+
+    def test_names_every_extra_it_does_not_cover(self, drift_check):
+        rendered = drift_check.render_docs()
+        assert "## Extras this page does not cover" in rendered
+        # `[toml]` is in the README's install list and has no row above, which
+        # reads as "nothing changed" rather than "never checked" unless the page
+        # says so where the row would have been.
+        uncovered = drift_check._marker_gated_extras() - drift_check._AGGREGATE_EXTRAS
+        for extra in uncovered:
+            assert f"`[{extra}]`" in rendered
+
+    def test_does_not_list_a_developer_aggregate_as_uncovered(self, drift_check):
+        # `dev`, `docs` and `bench` never reach a user's environment; naming
+        # them on a user-facing page would be noise, and it is the reason the
+        # two exclusion halves are kept apart rather than merged.
+        rendered = drift_check.render_docs().rsplit("## Extras this page does not cover", 1)[-1]
+        for aggregate in ("`[dev]`", "`[docs]`", "`[bench]`"):
+            assert aggregate not in rendered
+
+    def test_states_each_extras_smoke_reach(self, drift_check):
+        rendered = drift_check.render_docs()
+        assert "_Smoke:_" in rendered
+        # An import-only target is weaker evidence than a test suite, and the
+        # page is where a reader can see which one backs a given row.
+        assert "import of `remote_store.ext.otel` only" in rendered
+
+    def test_carries_no_tracker_reference(self, drift_check):
+        # The generated page is published; `check_no_tracker_refs.py` gates it,
+        # and a leak would surface as a lint failure on the output rather than
+        # on the template that caused it.
+        import re as _re
+
+        assert _re.search(r"\b[A-Z][A-Z0-9-]*-\d+\b", drift_check.render_docs()) is None
 
 
 class TestListExtras:

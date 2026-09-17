@@ -1,7 +1,10 @@
 """ID-182: extra -> smoke-test targets for the drift guard.
 
-When ``drift_check.py diff <extra>`` reports drift, the workflow runs the
-pytest selections below against the freshly-resolved package set. The
+The workflow runs the pytest selections below against the package set each
+lane resolved — on **every** leg of **both** lanes, not only when ``diff``
+reports drift. The early return that gated this on drift was what left an extra
+with stable versions never installed alone at all; the floor lane never calls
+``diff`` in the first place. The
 targets are chosen as the surface most likely to break when a transitive
 dependency moves under us — modeled on the ``infra/legacy-sftp`` e2e
 pattern that catches paramiko algorithm-clearance regressions (BK-198).

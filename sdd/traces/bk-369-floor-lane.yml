@@ -1,0 +1,196 @@
+id: BK-369
+title: "Nothing ever installs an extra at its declared floor, so a floor is true until a user disproves it"
+trigger: >-
+  Every environment that had ever run this suite resolved each extra to the
+  newest compatible release — hatch, CI, and drift-guard's deliberate
+  `--upgrade --pre`. The lower end of every declared range was exercised by
+  nobody, and five wrong floors had been found by hand in three sweeps
+  (BUG-283, BUG-284, BUG-285), two of them wrong for over a year.
+source_items:
+  - BK-369
+  - BK-372
+  - BUG-285
+audience:
+  - infra.ci
+  - user.site
+co_shipped_items:
+  - BK-372
+  - BK-374
+expected_ripples:
+  - sdd/BACKLOG.md
+  - sdd/BACKLOG-DONE.md
+  - sdd/backlogid.json
+  - sdd/GATE-INVENTORY.md
+  - sdd/CI-OPERATIONS.md
+  - CONTRIBUTING.md
+  - CHANGELOG.md
+  - docs-src/explanation/dependency-policy.md
+  - .claude/skills/drift/SKILL.md
+  - infra/drift-locks/README.md
+surprising_ripples:
+  # None of these are reachable by grepping the item IDs, which is what makes
+  # them worth recording: each is a sentence that became false because of what
+  # the change did, not because of what it renamed.
+  - infra/drift-locks/README.md  # its non-self-healing argument rested on the early return BK-372 removes
+  - sdd/CI-OPERATIONS.md  # the "drift-guard's never-red model" sentence, used as the mutation guard's contrast case
+  - scripts/gen_gate_inventory.py  # a _BOUNDS sentence naming where drift_smoke_map is imported from
+  - sdd/rfcs/rfc-0014-dagster-compute-log-manager.md  # OQ2's recorded resolution answered a different question than OQ2 asked
+  - FEATURES.md  # hand-written prose outside the generated block, naming the old page title
+discovery_followups:
+  - BUG-287
+  - BUG-288
+  - BUG-289
+  - BUG-290
+  # BUG-281 was already filed; what the run discovered is that the register
+  # needed to cover its lane too, not just the floor lane. BUG-287 and BUG-288
+  # came out of the lane's first dispatch, BUG-289 out of its fourth, and
+  # BUG-290 out of round 3's review — a workflow step that pipes into `tee`
+  # without `pipefail`, found here and then found live in `benchmark.yml`,
+  # where it swallows a regression gate.
+# Derivation, re-run before this line was written: `git log --oneline
+# origin/master..HEAD`, counting the commits that exist because a review round
+# found something — the field's own definition, which warns that GitHub's
+# review-submission count measures a different thing. Six, named rather than
+# counted, because the previous spelling said "the commit carrying this line"
+# and went stale the moment a review-driven commit landed that did not touch
+# this file:
+#   5e40e30, f4bdf86  round 1
+#   333c14a           round 2
+#   9a53b8e           round 3 (panel of four)
+#   4cdcdd0           the closing gate's three appended passes
+#   11be736           the maintainer's review
+# (A later commit that only records a SHA above, or that fixes something no
+# review found, is not a round and does not move this number.)
+# `dfadd1b`, `7c29405` and `6dc1fe6` implement and do not count; `f214684`,
+# `7cf36f6` and `713eff6` fix defects the branch's own CI dispatches measured,
+# which is not review feedback. The schema fills this field post-merge for
+# exactly this reason: a value written mid-loop is behind by however many rounds
+# come after it.
+review_rounds: 6
+phases:
+  - id: orient
+    name: Orient
+    steps:
+      - file: sdd/BACKLOG.md
+        section: "(item) BK-369, BK-372"
+        read_type: gate
+        extract: >-
+          Both items want the same lane — per-extra isolated install plus that
+          extra's drift_smoke_map target — and differ in the question each asks.
+          Whichever is built first carries the other and must say which question
+          it answers.
+      - file: scripts/drift_check.py
+        section: "resolve_extra, _cmd_diff, _EXCLUDED_EXTRAS, render_docs"
+        read_type: gate
+        extract: >-
+          The diff lane's shape to mirror: one resolve per leg feeding both the
+          report and the smoke's constraints file, `--out` writing atomically,
+          and a synthetic `status: error` report rather than a crash.
+      - file: .github/workflows/drift-guard.yml
+        section: "check job, report job"
+        read_type: gate
+        extract: >-
+          The `STATUS != drift` early return is the whole of BK-372, and the
+          report job downloads with `pattern: drift-*` — which decides what a
+          new artifact may be called.
+      - file: sdd/DRIFT-RULES.md
+        section: "Rules 3, 5, 6, 7, 9"
+        read_type: gate
+        extract: >-
+          A new drift report must derive its claim space, record why it is
+          advisory, register what it tolerates, and state its bound. Rule 6 was
+          the one this design nearly failed: four legs red every week with no
+          register is the case the rule says to switch the check off over.
+
+  - id: design
+    name: Design the lane
+    steps:
+      - file: sdd/BACKLOG.md
+        section: "How this file works / Item authority"
+        read_type: gate
+        extract: >-
+          Re-derive a prescription before implementing it. Two of this item's
+          survived unchecked and were wrong — see the verify phase.
+      - file: scripts/check_conda_recipe_pins.py
+        section: "from gen_features import _EXCLUDE_EXTRAS"
+        read_type: reference
+        extract: >-
+          The precedent for importing that constant rather than restating it.
+          Followed at first and then reversed: that set answers a presentation
+          question, so importing it would let a docs decision shrink the drift
+          matrix silently. Asserting equality in a test keeps the benefit and
+          fails loudly instead.
+        outcome: misleading
+      - file: scripts/gen_gate_inventory.py
+        section: "_KIND_FIELDS, _WIRING_SOURCES, _BOUNDS"
+        read_type: gate
+        extract: >-
+          `kind: report` with `surfaces:` is the honest declaration for a lane
+          that compares nothing committed. Also: `.github/workflows/` is a
+          wiring source and `.github/actions/` is not, so the composite action
+          must reach scripts by import rather than by path.
+
+  - id: implement
+    name: Build
+    steps:
+      - file: scripts/drift_check.py
+        section: "resolve_floor, floor_report, _cmd_floor, min_python"
+        read_type: reference
+        extract: >-
+          uv routed directly, never through a hatch env; every uv call passes
+          `--python` and drops UV_SYSTEM_PYTHON and VIRTUAL_ENV, because
+          inheriting setup-uv's ambient configuration would install the floor
+          into the runner Python and the lane would pass having tested nothing.
+      - file: .github/actions/drift-smoke/action.yml
+        section: "(full)"
+        read_type: reference
+        extract: >-
+          One step owns the exit code it reports, so the verdict and the job's
+          colour cannot disagree. The `phase` field is what makes a red leg
+          triageable without reading logs, and the import probe runs before the
+          pytest plugins so an under-declared extra cannot import on one of
+          their dependencies.
+      - file: scripts/drift_report.py
+        section: "_load_reports, _render_floor_lane, has_signal"
+        read_type: reference
+        extract: >-
+          Three shapes now arrive and all carry `extra`, so the split is on the
+          fields themselves; the old flat dict would have kept whichever file
+          sorted last and then raised KeyError on a verdict with no `status`.
+
+  - id: verify
+    name: Ripple-check and measure
+    steps:
+      - file: sdd/CLAUDE-REFERENCE.md
+        section: "Ripple-check / Dependency; New or changed cross-artifact check"
+        read_type: verify
+        extract: >-
+          The dependency row points at pyproject extras, the conda recipe and
+          the install docs; none moved here, because the lane reads the
+          declarations rather than changing them.
+      - file: sdd/BACKLOG.md
+        section: "(item) BK-369 — the pyarrow claim"
+        read_type: verify
+        extract: >-
+          The item said pyarrow's two floors were self-announcing refusals and
+          fine. Measured on the oldest supported interpreter they install and
+          then fail to import, which is the class the item exists to catch. The
+          prescription survived unchecked until the lane it prescribed ran.
+        outcome: misleading
+      - file: infra/drift-locks/README.md
+        section: "Either scenario / the non-self-healing paragraph"
+        read_type: verify
+        extract: >-
+          Its argument rested on the smoke running only on drift. Removing that
+          early return falsified the paragraph, and nothing pointed from the
+          workflow to it.
+      - file: infra/drift-locks/KNOWN-FINDINGS.md
+        section: "(full)"
+        read_type: verify
+        extract: >-
+          The first dry run on the branch showed the register was scoped one
+          lane too narrowly: `[sql]`'s newest-lane smoke is red on a
+          pre-existing deprecation, which without a row is reported as news
+          every week — the Rule 6 failure the register was built to prevent,
+          arriving in the lane it did not cover. Re-keyed on extra and lane.
+        outcome: unclear
