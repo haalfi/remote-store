@@ -121,10 +121,11 @@ findings only.
 
 Four bounds travel with this table. **Pre-existing is zero throughout**, and
 that is the posting rule at work rather than a fact about untouched code:
-`/rvw-pr` anchors a line comment to a `+` line, so a finding about unchanged
-text is posted at file level and falls in the last column. So the *loop share
-of classified* column here equals `loop-introduced / (original +
-loop-introduced)`; under D5's `LINE` discipline the two part company, the
+throughout the sample `/rvw-pr` anchored a line comment to a `+` line, so a
+finding about unchanged text was posted at file level and falls in the last
+column. So the *loop share of classified* column here equals
+`loop-introduced / (original + loop-introduced)`; under D5's `LINE`
+discipline the two part company, the
 script prints the latter as `share l/(o+l)` with pre-existing in its own
 column, and a table re-derived over the pilot carries that ratio under this
 heading, which is the acceptance criterion's clause 1 (§ Impact). **The last column
@@ -471,9 +472,12 @@ about what a rationale would have prevented is not, and is not the condition.
   gate itself was under six seconds of that. Gate time after creation is the
   gate's cost, not the worktree's, and is paid today.
 - The `HEAD` and `git status --porcelain` check moves to the worktree and
-  stays as the residue check for a reviewer that wrote there. The main tree
-  is never what is certified, so the fixer cannot dirty a certification and
-  failure 4 cannot occur.
+  stays as the residue check for a reviewer that wrote there. A detached
+  worktree's `HEAD` cannot move on its own, so the other thing the old check
+  caught, the branch advancing under a certifying reviewer, needs its own
+  capture: at triage the branch's pushed head is fetched and required to still
+  equal the certified commit. The main tree is never what is certified, so the
+  fixer cannot dirty a certification and failure 4 cannot occur.
 - Each measuring member measures the base branch in a base path of its own
   under the round's worktree, `tmp/review/<sha>/tmp/base-<member>`, so the
   *exactly one measurer per panel* cap is lifted. The cap is `/ship`'s, and
@@ -490,8 +494,13 @@ about what a rationale would have prevented is not, and is not the condition.
   and not the lift, because lifting it changes panel composition and moves
   finding counts independently of fix shape, which is what the pilot
   measures. The cap comes down once the pilot has reported.
-- Worktrees are removed at round close; a stale one is a failed precondition
-  for the next round, as a dirty tree is today.
+- Worktrees are removed at round close, with a `prune` for the base worktree a
+  measuring member left nested inside (measured on git 2.43.0: ignored
+  leftovers and the nested worktree do not block the removal, and the nested
+  entry becomes prunable). A leftover from an earlier round collides with
+  nothing, since the path carries its commit; it blocks only a pass re-spawned
+  for that same commit, and carries a hatch environment, so it is removed
+  before adding rather than treated as a wrong-commit hazard.
 
 **Evidence.** Cause C; failure 4; ADR-0035's own statement that the
 constraint is "enforced by instruction, so a reviewer that ignores it
@@ -557,14 +566,14 @@ corrects.
 - Posting discipline follows, in its conservative reading: a finding is
   anchored to its true line when that line falls inside a diff hunk, context
   lines included, and stays `FILE` otherwise; it is never anchored to an
-  unrelated line. `/rvw-pr`'s comment rules today attach a finding on
-  unchanged text to the nearest `+` line, and `origin()` blames the line the
-  comment carries, so that reading would tag a finding on untouched text as
-  loop-introduced whenever a fix pass wrote the nearest `+` line, inflating
-  the share this RFC measures against a baseline that excluded such findings
-  rather than misattributing them. The `+`-line bullet is amended, not read
-  around. 160 of the 541 findings in Table 2 could not be classified, and the
-  script separates the four causes it has: all 160 are file-level, and the
+  unrelated line. `/rvw-pr`'s comment rules, as BK-379 found them, attached a
+  finding on unchanged text to the nearest `+` line, and `origin()` blames the
+  line the comment carries, so that reading would tag a finding on untouched
+  text as loop-introduced whenever a fix pass wrote the nearest `+` line,
+  inflating the share this RFC measures against a baseline that excluded such
+  findings rather than misattributing them. The `+`-line bullet is amended,
+  not read around. 160 of the 541 findings in Table 2 could not be
+  classified, and the script separates the four causes it has: all 160 are file-level, and the
   `LEFT`-side, null-line and blame-failure counts are zero in this sample, so
   the discipline's reach here is bounded by 160 and not measured: it reaches
   the findings whose true line sits inside a hunk, which the sample does not
@@ -678,7 +687,9 @@ runtime behaviour, no published page other than this RFC's own.
   path safe, and D3 lifts that cap; D3's own mechanism does not run there,
   since its reviewers read uncommitted work and no per-round review worktree
   exists, so this RFC leaves its exactly-one rule as written, and whether
-  per-reviewer base paths lift it is Open Question 1 with D2), `CLAUDE.md`
+  per-reviewer base paths lift it is Open Question 1; D2's fix shapes at its
+  fix step and the six-line prose form in its reviewer contract, per that
+  question's settled half), `CLAUDE.md`
   § Trace authoring, `_schema.yml`
   § `review_rounds`, a new ADR, `scripts/ship_report.py`,
   `scripts/check_no_retrospective.py` and

@@ -113,10 +113,11 @@ the shape:
 [RFC-0015 D2](../../../sdd/rfcs/rfc-0015-ship-two-surfaces.md):
 
 - **A reviewer's *why* is answered by shape 3**, or by the sentence *no reason
-  is recorded; the behaviour is pinned by `<test>`*. If the three sentences
-  will not come, return to the source, and for a behaviour claim the source is
-  running it. A condition a reviewer questions is enumerated the first time,
-  never argued a second.
+  is recorded; the behaviour is pinned by `<test>`*. This is
+  [`CONTENT-RULES.md` Rule 7](../../../sdd/CONTENT-RULES.md#kernsatz) applied
+  to the fix pass: if the three sentences will not come, return to the source,
+  and for a behaviour claim the source is running it. A condition a reviewer
+  questions is enumerated the first time, never argued a second.
 - **A test added in a fix pass is mutation-checked before push**: break the
   behaviour it pins, see the assertion fail, and name the mutation and the
   assertion that fired in the reply. A test seen passing has shown nothing

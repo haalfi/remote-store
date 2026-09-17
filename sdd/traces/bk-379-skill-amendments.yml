@@ -21,7 +21,7 @@ surprising_ripples:
 # answer a review round. The commit that implements the amendments does not
 # count. Re-run before each push; the value is the count, including the commit
 # that carries this line.
-review_rounds: 1
+review_rounds: 2
 phases:
   - id: orient
     name: Orient
@@ -192,6 +192,45 @@ phases:
           triage rule into a skill whose reviewers never produced the lines.
           Taking D2 whole, the reviewer contract now asks for them on prose
           findings
+        outcome: ok
+  - id: fix_2
+    name: Round-2 fix pass
+    steps:
+      - file: .claude/skills/rvw-pr/SKILL.md
+        section: "Review root, the mode-gate sentence, teardown reason"
+        read_type: verify
+        extract: >-
+          Round 2 found the root gate worded for the argument parse only,
+          which an Agent reading the file cannot satisfy; it now reads like
+          the mode gates (prompt or flag) and the mode-gate sentence names
+          root= as the silent miss. The teardown reason is scoped to the
+          no-root case with the root case's own reason. The env -C bound is
+          stated: GNU coreutils 9.4 here; a python -c wrapper measured as
+          the portable spelling
+        outcome: ok
+      - file: sdd/rfcs/rfc-0015-ship-two-surfaces.md
+        section: "D3 mechanism bullets 2 and 4, § Impact /orchestrate"
+        read_type: gate
+        extract: >-
+          Round 2 found the round-1 fixes unswept into D3's neighbouring
+          bullets: the stale-worktree precondition the measurement refuted,
+          and the tree check without the branch-head capture a detached
+          worktree needs. Both restated as measured. § Impact's /orchestrate
+          entry now names D2's shapes and the six-line contract
+        outcome: ok
+      - file: .claude/skills/ship/SKILL.md
+        section: "The whole-file member"
+        read_type: verify
+        extract: >-
+          Round 2 found the section still steering findings to FILE for want
+          of a + line, against the amended Comment rule; restated in hunks
+          and pointed at that rule, since FILE there would deflate the share
+          D5's origin tag exists to measure
+        outcome: ok
+      - file: .claude/skills/fix-pr/SKILL.md
+        section: "Step 3, the why bullet"
+        read_type: verify
+        extract: "Round 2 found 'the three sentences' without its Rule 7 antecedent; the citation is restored"
         outcome: ok
   - id: verify
     name: Verify

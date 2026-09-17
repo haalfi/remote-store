@@ -13,7 +13,7 @@ allowed-tools: Read, Grep, Glob, Bash, mcp__MCP_DOCKER__pull_request_read, mcp__
 
 **Measuring pass.** If the invoking prompt says **measuring**, you reach your verdict by *executing*, not by reading, and Bash is opened to exactly this set:
 
-- **Allowed, by name — this is an allowlist, not a pattern.** The composite gates `hatch run all` / `lint` / `preflight` / `docs-gate` / `typecheck` / `test*`; read-only `git` (`log`, `show`, `diff`, `status`, `rev-parse`, `blame`, and `worktree add`/`remove`/`prune` under `tmp/`); and `python` exercising the library — each prefixed with `-C <root>` (git) or `env -C <root>` (everything else) when a `root=` flag names a review root (below), never a `cd`. Anything not on this list, do not run — "it looked read-only" is not a reason.
+- **Allowed, by name — this is an allowlist, not a pattern.** The composite gates `hatch run all` / `lint` / `preflight` / `docs-gate` / `typecheck` / `test*`; read-only `git` (`log`, `show`, `diff`, `status`, `rev-parse`, `blame`, and `worktree add`/`remove`/`prune` under `tmp/`); and `python` exercising the library — each prefixed with `-C <root>` (git) or `env -C <root>` (everything else, or its `python -c` equivalent where `env` lacks `-C`) when a review root is named (below), never a `cd`. Anything not on this list, do not run — "it looked read-only" is not a reason.
   **This bullet and the next two are the repo-wide safe set, not a `/rvw-pr` local rule.** They are facts about `pyproject.toml`, so [`/orchestrate`](../orchestrate/SKILL.md#reviewer-selection) binds its own measuring reviewer to them by reference even though that skill has no `measuring` keyword and no permission gate at all. Narrowing them is a change to both skills; the keyword above gates *when this file's reader may run things*, never *which commands are safe*.
 - **The alias name does not tell you whether it writes**, which is why the list above is enumerated rather than derived. Two counterexamples, both live in `pyproject.toml`: `drift-check` carries the `-check` suffix but takes free-form args and reaches `refresh-baseline` (overwrites the committed `infra/drift-locks/<extra>.txt`) and `render-docs` without `--check` (overwrites a tracked docs page); `format` takes no args at all and rewrites source. A suffix rule and an args-shape rule are each false against one of these.
 - **Write only under `tmp/`.** Not "only tracked files" — `/ship` requires a clean `git status --porcelain`, which reports an untracked file as `??` just as loudly. Exercising a *storage* library means writing files, so point every root, temp dir and worktree at the gitignored `tmp/` and the stated bound matches the enforced check. The bound binds under `/orchestrate` too, for a different reason stated there: its tree is uncommitted, so a stray write destroys the only copy rather than dirtying a pushed one. Same rule, two reasons — do not narrow it on the strength of either alone.
@@ -34,23 +34,33 @@ git worktree remove tmp/base
 ```
 
 If `worktree remove` fails on a stale entry, `git worktree prune` then retry.
-Tear down even when the measurement failed: one reviewer runs at a time, so a
-surviving `tmp/base` is what breaks the next round's `worktree add`.
+Tear down even when the measurement failed. Without a root, one reviewer runs
+at a time and a surviving `tmp/base` is what breaks the next round's
+`worktree add`; under a root the path carries its commit and the next round
+collides with nothing, but a leftover nested entry is what makes `/ship`'s
+round-close `worktree remove` need its following `prune`, and a pass
+re-spawned for the same commit would fail its own `worktree add` on it.
 [`/orchestrate`](../orchestrate/SKILL.md#reviewer-selection) carries the same
 three commands for a different reason — its reviewers run against *uncommitted*
 work, so moving the revision would destroy what is under review rather than
 invalidate a certified state. Edit both when the commands change.
 
-**Review root.** When the arguments carry `root=<path>` (`/ship` passes its
-round's review worktree, `tmp/review/<sha>`), that path is your repository
-root, and every command names it per call: `git -C <path> ...` for git,
-`env -C <path> hatch run <gate>` and `env -C <path> python ...` for the gates
-and the library. **Never `cd`.** An `Agent`'s Bash does not keep its working
+**Review root.** When the invoking prompt names a review root, or a `root=<path>`
+flag is parsed from the arguments (`/ship` passes its round's review worktree,
+`tmp/review/<sha>`, by whichever path spawned you), that path is your
+repository root, and every command names it per call: `git -C <path> ...` for
+git, `env -C <path> hatch run <gate>` and `env -C <path> python ...` for the
+gates and the library. **Never `cd`.** An `Agent`'s Bash does not keep its working
 directory between calls — measured: a `cd` succeeded and the next `pwd` was
 the main tree, while `env -C` ran where it was told — so a `cd` would run
 every later gate in the main tree, silently, while the tree check watches the
-worktree. Local `Read`, `Grep` and `Glob` take paths under `<path>`, and the
-diff comes from the root too (Step 1). The base-branch recipe takes the same
+worktree. `env -C` is GNU coreutils (measured here on 9.4, Linux); on a host
+whose `env` lacks it, BSD `env` on macOS or a Windows shell, the same
+per-command spelling is
+`python -c "import os, subprocess, sys; os.chdir(sys.argv[1]); raise SystemExit(subprocess.call(sys.argv[2:]))" <path> hatch run <gate>`
+(measured: it ran `pwd` in the target here), which is the allowlist's `python`
+and still never a `cd`. Local `Read`, `Grep` and `Glob` take paths under
+`<path>`, and the diff comes from the root too (Step 1). The base-branch recipe takes the same
 prefix on each of its commands, and lands at `<path>/tmp/base`, gitignored
 there as here (measured: added from inside a review worktree, it appeared at
 that path):
@@ -78,7 +88,7 @@ PR number, mode flags, and optional reviewer context are in `$ARGUMENTS`. Parse 
 2. **Then any leading mode flags**, consumed as flags and never as content: `analyze-only`, `measuring`, and `root=<path>` (the review root above). Keep consuming while the next token is one of those; all three may appear, in any order.
 3. **The remainder (if any) is user-supplied context** — either *claims* to evaluate (concerns, hypotheses) or a *brief* directing the review (areas, questions, a method). Step 2 treats the two differently and must not confuse them.
 
-**Step 2 must not treat a consumed mode flag as a user claim.** Getting this wrong is silent and expensive in both directions: a `measuring` flag mis-parsed as context produces a pass that reads instead of running — the inert obligation `/ship` depends on this skill to prevent — and it surfaces as a stray `User-flagged:` comment or a `Rejected user input: "measuring"` line rather than as an error. The mode gates below say "if the invoking prompt says X", which is satisfied by an `Agent` prompt *or* by a flag parsed here; slash invocation is the path `/ship` prefers for solo passes, so this is the common case, not the exotic one.
+**Step 2 must not treat a consumed mode flag as a user claim.** Getting this wrong is silent and expensive in both directions: a `measuring` flag mis-parsed as context produces a pass that reads instead of running — the inert obligation `/ship` depends on this skill to prevent — and it surfaces as a stray `User-flagged:` comment or a `Rejected user input: "measuring"` line rather than as an error. The mode gates below say "if the invoking prompt says X", which is satisfied by an `Agent` prompt *or* by a flag parsed here, and the review-root gate above reads the same way for `root=`: an `Agent` prompt naming the root satisfies it, since a member reading this file has no `$ARGUMENTS` to find the flag in, and a root missed by that member is the one silent miss here — it reads a plausible tree and certifies it. Slash invocation is the path `/ship` prefers for solo passes, so this is the common case, not the exotic one.
 
 **Analyze-only mode.** If the invoking prompt says **analyze-only**, you are one member of a parallel review panel and the caller owns all posting: execute Steps 0–3, **skip Step 4 entirely** — concurrent members share one owner token, and GitHub allows one pending review per user per PR, so a second poster cross-contaminates the first's pending review — and return Step 5's report **plus your consolidated findings** as your final message — per finding, everything Step 4 would need to post it: path, `subjectType` (`LINE` or `FILE`), line and side when `LINE` (`side: "LEFT"` with the base-branch line for deleted lines), category, body. Your Step 5 header reads `## PR #N Review — X findings returned (analyze-only)`, since nothing was posted and the posted-count header would be false. Every other rule — read-only, no fixing, no follow-ups — applies unchanged.
 

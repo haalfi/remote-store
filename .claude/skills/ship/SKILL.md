@@ -396,7 +396,7 @@ thing under review.** The other method axis, and the third exit gate
 Every reviewer already reads the changed files in full — `rvw-pr` Step 1 requires
 it — so what this brief changes is not *what is read* but *what is judged*: the
 file as it now stands has to be true, whether or not the untrue part sits in a
-`+` line.
+hunk.
 
 That is where a whole class of defect lives and diff-anchored rounds do not reach
 it. The shapes measured on PR #956, all siblings of an earlier fix and all
@@ -407,9 +407,11 @@ of each file: does its opening still describe what it now does, does every "the 
 above" still have its referent, and is each claim it makes about another file
 still true of that file?
 
-**A finding here is postable — do not drop it for want of a `+` line.** `rvw-pr`
-Step 4 takes `subjectType: "FILE"` with no `line` for exactly this, and its
-Comment rules say so.
+**A finding here is postable — do not drop it for want of a hunk.** `rvw-pr`
+Step 4's first Comment rule anchors it to its true line when that line sits
+inside a hunk, context lines included, which is what lets RFC-0015 D5's origin
+tag classify it; only a finding whose line no hunk reaches, or whose subject is
+the file itself, goes as `subjectType: "FILE"` with no `line`.
 
 It is not the measuring member either: a whole-file pass reads, and cannot see a
 false premise about behaviour that exists only on the base branch. The two gates
