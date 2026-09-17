@@ -276,7 +276,9 @@ if evidence changes; these are retired.
   prices dropping an interpreter as **breaking** with the migration obligation,
   Phase 0's support-window line names the mechanisms instead of saying nothing
   derives them, and the ripple-check gained a **Supported interpreter set** row
-  enumerating all seven spellings and saying which four are watched by nothing.
+  enumerating all seven spellings and saying which are watched: five are, and
+  the two that are not are the classifiers — which govern the set — and the
+  README prose.
   `ADR-0032` was left standing rather than superseded, because the set did not
   change here — recorded as a decision, since the item flagged it as one the
   change had to make.

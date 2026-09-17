@@ -49,7 +49,9 @@ Drift-gate::
         drift against the committed baselines, the declared floors' resolution, and each lane's
         smoke verdict — plus each supported interpreter's standing against the security-support
         window Rule 8 publishes, as a rolling GitHub issue it opens, updates or closes; it acts
-        on that state rather than asserting anything, and exits 0 either way
+        on that state rather than asserting anything, so nothing it FINDS makes it exit non-zero —
+        only a register row whose `Review by` is not an ISO date does, because a date that cannot be
+        compared would silence its finding forever
     domain:     process
 """
 
@@ -100,9 +102,6 @@ class SupportWindowState:
     unregistered: tuple[str, ...] = ()
     holds_issue: bool = False
 
-    def __bool__(self) -> bool:
-        return bool(self.rows)
-
 
 @dataclass(frozen=True)
 class Reports:
@@ -128,7 +127,18 @@ class Reports:
     windows: SupportWindowState = field(default_factory=SupportWindowState)
 
     def __bool__(self) -> bool:
-        return bool(self.diffs or self.floors or self.smokes or self.unreadable or self.windows.unregistered)
+        # `holds_issue`, **not** `unregistered`. A crossing is true on every run,
+        # so keying the guard on `unregistered` makes this object truthy on a
+        # narrowed dispatch too — and then `main` proceeds, `_incomplete_legs`
+        # reports the extras the slice did not cover as lost, and `decide`
+        # answers `update`, re-rendering the whole rolling issue from that
+        # slice. That is BUG-282, and a regression against the behaviour this
+        # guard had before the calendar signal existed. Measured on a
+        # one-extra-of-fourteen dispatch with an empty reports directory and a
+        # crossing: `holds_issue=False`, `unregistered=('3.10',)`, and the run
+        # created the issue. `test_a_narrowed_dispatch_with_no_artefacts_leaves_the_issue_alone`
+        # pins it.
+        return bool(self.diffs or self.floors or self.smokes or self.unreadable or self.windows.holds_issue)
 
 
 def _load_reports(dir_: Path) -> Reports:
@@ -294,7 +304,9 @@ def load_known_findings(path: Path = KNOWN_FINDINGS) -> dict[tuple[str, str], tu
         match = _REGISTER_ROW_RE.match(line.strip())
         if match:
             key = (match.group("extra"), match.group("lane").strip())
-            register[key] = (match.group("owner").strip(), match.group("review").strip())
+            review = match.group("review").strip()
+            _review_date(review, where=f"{path}, row `[{key[0]}]` / {key[1]}")
+            register[key] = (match.group("owner").strip(), review)
     return register
 
 
@@ -316,7 +328,28 @@ _PYTHON_REGISTER_ROW_RE = re.compile(
 
 
 class RegisterDateError(Exception):
-    """A register row's ``Review by`` is not a date this can compare."""
+    """A register row's ``Review by`` is not a date this can compare.
+
+    Raised by the **loaders**, not by ``is_expired``, and that placement is the
+    whole point: a loader knows the file it is reading and the row it is on, so
+    the message can name both. ``is_expired`` sees a bare string and could only
+    ever say which *value* was bad -- which, across two registers and eight-odd
+    rows, does not localize, and ``sdd/DRIFT-RULES.md``
+    [Rule 2](../sdd/DRIFT-RULES.md#localize) asks a mechanism to name the
+    element rather than the fact of a difference.
+    """
+
+
+def _review_date(value: str, *, where: str) -> date:
+    """``value`` as a date, or a ``RegisterDateError`` naming where it came from."""
+    try:
+        return date.fromisoformat(value)
+    except ValueError as exc:
+        raise RegisterDateError(
+            f"{where}: `Review by` is {value!r}, which is not an ISO date (YYYY-MM-DD). A row whose date "
+            f"cannot be compared would silence its finding forever, so this is a hard failure rather than "
+            f"a row that never expires."
+        ) from exc
 
 
 def load_python_support_register(path: Path = PYTHON_SUPPORT_REGISTER) -> dict[str, tuple[str, str]]:
@@ -332,7 +365,10 @@ def load_python_support_register(path: Path = PYTHON_SUPPORT_REGISTER) -> dict[s
     for line in path.read_text(encoding="utf-8").splitlines():
         match = _PYTHON_REGISTER_ROW_RE.match(line.strip())
         if match:
-            register[match.group("version")] = (match.group("owner").strip(), match.group("review").strip())
+            version = match.group("version")
+            review = match.group("review").strip()
+            _review_date(review, where=f"{path}, row `{version}`")
+            register[version] = (match.group("owner").strip(), review)
     return register
 
 
@@ -345,19 +381,15 @@ def is_expired(review_by: str, today: date) -> bool:
     finding until somebody noticed. Now the date is the mechanism in both files
     and there is one rule for the column rather than one per table.
 
+    Every caller reaches this with a value a loader already validated, so the
+    unparseable case is refused earlier and with the file and row named -- see
+    ``RegisterDateError``. The re-raise here is the backstop for a caller that
+    hands over a string from somewhere else.
+
     Raises:
-        RegisterDateError: If the cell is not an ISO date. A silencer with no end
-            date is the hazard this predicate exists to remove, so an
-            unparseable cell is a hard failure rather than a row that never
-            expires.
+        RegisterDateError: If the cell is not an ISO date.
     """
-    try:
-        return date.fromisoformat(review_by) < today
-    except ValueError as exc:
-        raise RegisterDateError(
-            f"`Review by` is {review_by!r}, which is not an ISO date (YYYY-MM-DD). A row whose date cannot be "
-            f"compared would silence its finding forever."
-        ) from exc
+    return _review_date(review_by, where="a register row") < today
 
 
 def silencing(register: dict, today: date) -> set:
@@ -800,9 +832,20 @@ def _render_support_windows(
         lines.append(f"| `{row.version}` | {row.released} | {row.ends} | {status} |")
     lines.append("")
     if state.unregistered:
+        # `holds_issue`, not `unregistered`, decides which sentence is true. On a
+        # narrowed dispatch a crossing renders but cannot hold the issue, and
+        # telling a reader otherwise would send them looking for an issue this
+        # run was never going to keep open -- the reading half of the same
+        # distinction `Reports.__bool__` gets wrong when it keys on
+        # `unregistered`.
+        holds = (
+            "holds this issue open"
+            if state.holds_issue
+            else ("would hold this issue open on a full run; this one covered only part of the matrix, so it does not")
+        )
         lines.append(
             "An interpreter past its window with no row in "
-            "`infra/drift-locks/PYTHON-SUPPORT.md` holds this issue open. Decide "
+            f"`infra/drift-locks/PYTHON-SUPPORT.md` {holds}. Decide "
             "it: drop the version, or add a row naming who owns keeping it and "
             "when that decision is re-read. A row whose `Review by` has passed "
             "stops silencing and reappears here."
@@ -1072,8 +1115,16 @@ def main(argv: list[str] | None = None) -> int:
     args = parser.parse_args(argv)
 
     today = date.fromisoformat(args.today) if args.today else date.today()
-    register = load_known_findings(args.known_findings)
-    python_register = load_python_support_register(args.python_support_register)
+    # A malformed `Review by` is a hard failure -- both register files say so,
+    # since a date that cannot be compared silences its finding forever -- but a
+    # hard failure is still a report rather than a traceback. The loaders name
+    # the file and the row.
+    try:
+        register = load_known_findings(args.known_findings)
+        python_register = load_python_support_register(args.python_support_register)
+    except RegisterDateError as exc:
+        print(f"::error::unusable register: {exc}", file=sys.stderr)
+        return 1
     expected = _parse_expected(args.expect_extras)
     lanes = _parse_expected(args.expect_lanes) or list(LANES)
 

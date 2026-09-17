@@ -822,6 +822,58 @@ class TestRegisterExpiry:
         with pytest.raises(drift_report.RegisterDateError, match="not an ISO date"):
             drift_report.is_expired("next minor release", date(2026, 9, 17))
 
+    def test_the_refusal_names_the_file_and_the_row(self, drift_report, tmp_path):
+        """DRIFT-RULES Rule 2: name the element, not the fact of a problem.
+
+        The validation lives in the loaders for exactly this reason — they know
+        the path and the key, where `is_expired` only ever sees a bare string.
+        With two registers and eight-odd rows between them, "`Review by` is
+        'next minor release'" does not tell a maintainer which row to open.
+        """
+        path = _python_register(tmp_path, ("3.10", "next minor release"))
+        with pytest.raises(drift_report.RegisterDateError) as excinfo:
+            drift_report.load_python_support_register(path)
+        message = str(excinfo.value)
+        assert "python-support.md" in message
+        assert "`3.10`" in message
+
+    def test_the_dependency_register_names_its_row_too(self, drift_report, tmp_path):
+        path = dir_ = tmp_path / "register.md"
+        dir_.write_text("| `[s3]` | floor | BUG-1 | why | whenever |\n", encoding="utf-8")
+        with pytest.raises(drift_report.RegisterDateError) as excinfo:
+            drift_report.load_known_findings(path)
+        message = str(excinfo.value)
+        assert "register.md" in message
+        assert "`[s3]` / floor" in message
+
+    def test_a_malformed_register_is_reported_rather_than_tracebacked(
+        self, drift_report, tmp_path, monkeypatch, capsys
+    ):
+        """A hard failure is still a report. The run exits 1 and touches no issue.
+
+        The `Drift-gate` declaration says so in these terms: nothing this script
+        *finds* makes it exit non-zero, and only an uncomparable register date
+        does.
+        """
+        monkeypatch.setattr(drift_report, "_gh", lambda *a, **k: (_ for _ in ()).throw(AssertionError("called gh")))
+        bad = _python_register(tmp_path, ("3.10", "next minor release"))
+        _write(tmp_path, "s3.json", _diff("s3"))
+        rc = drift_report.main(
+            [
+                str(tmp_path),
+                "--repo",
+                "r",
+                "--run-url",
+                "u",
+                "--title",
+                "t",
+                "--python-support-register",
+                str(bad),
+            ]
+        )
+        assert rc == 1
+        assert "unusable register" in capsys.readouterr().err
+
     def test_an_expired_dependency_row_stops_silencing_its_finding(self, drift_report, tmp_path):
         """The behaviour change to the dependency register, in the direction
         that matters: the finding comes back."""
@@ -960,6 +1012,42 @@ class TestSupportWindowSignal:
         )
         assert drift_report.has_signal(reports, {}, today=date(2026, 10, 6)) is False
 
+    def test_a_narrowed_dispatch_with_no_artefacts_leaves_the_issue_alone(self, drift_report, tmp_path, monkeypatch):
+        """The emptiness guard must key on `holds_issue`, not on `unregistered`.
+
+        Measured before the fix, on a narrowed dispatch (one extra of fourteen)
+        whose legs uploaded nothing, with a crossing present: `holds_issue` was
+        correctly False, but `Reports.__bool__` read `unregistered` and so came
+        back True, `main` did not return early, `_incomplete_legs` reported two
+        lost legs, and `decide` answered `update` -- re-rendering the whole
+        rolling issue from a one-extra slice. That is BUG-282, which the
+        workflow header warns about, and it is a regression against the
+        pre-change behaviour where the same run returned 0 untouched.
+        """
+        calls: list[tuple] = []
+        monkeypatch.setattr(drift_report, "_gh", lambda *a, **k: calls.append(a))
+        monkeypatch.setattr(drift_report, "_find_open_issue", lambda *a, **k: None)
+        monkeypatch.setattr(drift_report, "list_extras", lambda: ["s3", "arrow"])
+        rc = drift_report.main(
+            [
+                str(tmp_path),
+                "--repo",
+                "haalfi/remote-store",
+                "--run-url",
+                "https://run",
+                "--title",
+                "t",
+                "--expect-extras",
+                "s3",
+                "--expect-lanes",
+                "newest,floor",
+                "--today",
+                "2026-10-06",
+            ]
+        )
+        assert rc == 0
+        assert calls == [], "a narrowed dispatch with no artefacts must not rewrite the issue body"
+
     def test_an_empty_report_dir_with_a_crossing_still_opens_the_issue(self, drift_report, tmp_path, monkeypatch):
         """The guard fix, pinned.
 
@@ -1016,6 +1104,20 @@ class TestRenderSupportWindows:
         body = "\n".join(lines)
         assert "**2 days past, unregistered**" in body
         assert "holds this issue open" in body
+
+    def test_a_narrowed_run_does_not_claim_the_crossing_holds_the_issue(self, drift_report):
+        """The reading half of the `holds_issue` distinction.
+
+        Caught by the sibling sweep over the `Reports.__bool__` fix: the section
+        was keyed on `unregistered`, so a narrowed dispatch printed "holds this
+        issue open" for a crossing that could not hold it — sending a reader to
+        look for an issue the run was never going to keep open.
+        """
+        narrowed = drift_report.support_window_state(date(2026, 10, 6), holds_issue=False)
+        body = "\n".join(drift_report._render_support_windows(narrowed, {}, date(2026, 10, 6)))
+        assert "2 days past, unregistered" in body
+        assert "covered only part of the matrix" in body
+        assert "` holds this issue open" not in body
 
     def test_names_the_owner_of_a_registered_crossing(self, drift_report, tmp_path):
         register = drift_report.load_python_support_register(_python_register(tmp_path, ("3.10", "2027-06-30")))

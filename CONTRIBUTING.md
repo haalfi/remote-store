@@ -480,7 +480,8 @@ change that drops it — pre-1.0 that still lands in a minor bump, which is why
 this row points at the floor row rather than restating the level. It also moves
 every spelling of the supported set at once; the ripple-check's
 [**Supported interpreter set**](sdd/CLAUDE-REFERENCE.md#pre-work-index) row
-enumerates them, and four of them are watched by nothing.
+enumerates them and says which are watched: five are, and the two that are
+not are the classifiers and the README prose.
 
 <a id="authority-for-the-support-windows"></a>
 #### Which artefact governs each of the two support windows

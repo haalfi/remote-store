@@ -17,7 +17,6 @@ the tests below are what keep it honest.
 from __future__ import annotations
 
 import sys
-from datetime import date
 from pathlib import Path
 
 import pytest
@@ -67,7 +66,18 @@ class TestRenderedArtefact:
         Any of today's date in the artefact would turn every unrelated pull
         request red the next day. The today line is Mermaid's, drawn
         client-side, so it leaves no trace here.
+
+        **Asserted without reading the clock**, deliberately. An earlier
+        spelling added `date.today().isoformat() not in found`, which fails on
+        any day that is itself one of the window dates -- measured as 15 such
+        days, two of them `2026-10-02` and `2026-10-04`. A test that reddens CI
+        on 15 dates is the very hazard this test exists to rule out. The two
+        assertions below are the honest form: the set of dates in the artefact
+        is exactly the set derivable from the release table, so nothing is left
+        over for a clock to have supplied; and `render()` takes no `today`
+        argument, which makes the property structural rather than observed.
         """
+        import inspect
         import re
 
         import python_support
@@ -79,12 +89,8 @@ class TestRenderedArtefact:
             allowed.add(python_support.spec0_end(version).isoformat())
             allowed.add(python_support.support_end(version).isoformat())
         found = set(re.findall(r"\d{4}-\d{2}-\d{2}", text))
-        # Every ISO date in the artefact is a release date or one of its two
-        # window ends. Nothing is left over for `date.today()` to have supplied,
-        # which is the property that lets `--check` sit in `preflight` without
-        # going red on an unrelated pull request the next morning.
         assert found == allowed
-        assert date.today().isoformat() not in found
+        assert inspect.signature(gen.render).parameters == {}
 
     def test_no_todaymarker_directive(self, gen):
         """`todayMarker on` would be pushed into the line's inline CSS as `style="on"`.

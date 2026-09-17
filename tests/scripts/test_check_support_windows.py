@@ -110,15 +110,34 @@ class TestJudge:
         verdict = check_support_windows.judge(_raise(check_support_windows, "p", "1.0", "2.0"), releases, CUTOFF)
         assert verdict.breaking is True
 
-    def test_a_raise_over_empty_space_excludes_nothing(self, check_support_windows):
-        """No published release between the floors means no user is stranded."""
+    def test_the_old_floor_itself_is_newly_excluded(self, check_support_windows):
+        """Raising off a floor strands whoever was resolving to exactly that floor.
+
+        `judge`'s range is `old <= v < new`, so the old floor is in it. That is
+        the right answer, not an off-by-one: a user pinned at `16.0.0` cannot
+        satisfy `>=20.0.0`. Here it is patch-eligible only because `16.0.0`'s
+        own upload date predates the cutoff, which is what makes this case
+        worth pinning separately from the genuinely-excludes-nothing one below.
+        """
         verdict = check_support_windows.judge(
             _raise(check_support_windows, "pyarrow", "16.0.0", "20.0.0"),
             {Version("16.0.0"): date(2024, 4, 20), Version("20.0.0"): date(2025, 4, 27)},
             CUTOFF,
         )
         assert verdict.excluded == Version("16.0.0")
+        assert verdict.released == date(2024, 4, 20)
         assert verdict.breaking is False
+
+    def test_the_old_floor_being_young_makes_the_raise_breaking(self, check_support_windows):
+        """The other direction of the same case, so the date is what decides it
+        rather than the old floor being special."""
+        verdict = check_support_windows.judge(
+            _raise(check_support_windows, "pyarrow", "20.0.0", "21.0.0"),
+            {Version("20.0.0"): date(2025, 4, 27), Version("21.0.0"): date(2025, 7, 16)},
+            CUTOFF,
+        )
+        assert verdict.excluded == Version("20.0.0")
+        assert verdict.breaking is True
 
     def test_no_release_at_all_in_range_is_reported_not_judged(self, check_support_windows):
         verdict = check_support_windows.judge(
