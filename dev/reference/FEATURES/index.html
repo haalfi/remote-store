@@ -12859,8 +12859,11 @@ conformance suite as native backends.</p>
 
 <p>Each extra's version range — a floor always, plus a ceiling only where a
 known-incompatible major looms — is declared in <code>pyproject.toml</code>, the
-source of truth for per-extra pins. For the exact upper-bound versions CI
-was last green against, see <a href="https://docs.remotestore.dev/stable/reference/tested-versions/">Tested upper-bound versions</a>.</p>
+source of truth for per-extra pins. Both the declared range and the exact
+versions CI was last green against are published on
+<a href="https://docs.remotestore.dev/stable/reference/tested-versions/">Tested versions</a>,
+per extra for the extras it covers — and it names the ones it does not, <code>[toml]</code>
+among them, whose resolution depends on the running interpreter.</p>
 <p>Extras are a pip concept. The package is also on conda-forge, where there are
 none: <code>conda install -c conda-forge remote-store</code> installs the core package
 only, and you install a backend's dependencies alongside it by name. The

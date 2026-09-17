@@ -48,7 +48,7 @@ Each rule states an obligation, the reason it exists, and what it costs or buys 
 
 **Why:** a list kept by hand goes stale the moment a bound is added or lifted.
 
-**For you:** read the current set from [`pyproject.toml`](https://github.com/haalfi/remote-store/blob/master/pyproject.toml), where each range carries its reasoning. Development and documentation build extras sit outside this convention and may pin tooling directly; they never reach your environment.
+**For you:** the ranges are published on [Tested versions](https://docs.remotestore.dev/stable/reference/tested-versions/index.md), rendered from `pyproject.toml` by a generator a gate keeps in step — so that page cannot go stale the way a hand-kept one would, and this rule is about hand-keeping rather than about publishing. Read [`pyproject.toml`](https://github.com/haalfi/remote-store/blob/master/pyproject.toml) itself when you want the *reasoning*: each range carries the measurement behind it in a comment. Development and documentation build extras sit outside this convention and may pin tooling directly; they never reach your environment.
 
 ## Support windows
 
@@ -98,11 +98,15 @@ The public API is everything exported from `remote_store` itself, meaning `__all
 
 We publish ranges, not pins. Two installs a month apart can differ. If you need them not to, lock on your side.
 
-### Rule 14. Not a continuously verified floor
+### Rule 14. Not a verified floor, on every interpreter
 
-Floors are established by hand, by installing a candidate release and running the code against it, and a regression test then guards that boundary. Nothing re-derives them, so a floor that upstream invalidates stays as written until someone measures it again. Sweeps have found floors naming a release that installs cleanly and then fails, including some wrong for a long time; the corrections appear in the [migration guide](https://docs.remotestore.dev/stable/reference/migration/index.md). Closing that gap is open, tracked work.
+A floor is installed and exercised weekly, on one interpreter, as far as that extra's smoke reaches. That is narrower than "the floor works", and the gap is where the known failures have lived.
 
-**If you pin near the bottom of a range, prefer a version comfortably above the floor.** The top of the range is where every environment we run resolves to.
+Scheduled CI installs each extra at the floor of every range it declares and runs that extra's smoke against it, on the oldest Python we support. Findings are advisory: they open a maintainer's issue, they do not block a release, and a floor can be published while a finding against it is open. What that lane does **not** see: a floor that breaks only on a *newer* interpreter — two of the five floor corrections we have made were exactly that shape, and all five are in the [migration guide](https://docs.remotestore.dev/stable/reference/migration/index.md) — and anything past the depth of the smoke, which the [Tested versions](https://docs.remotestore.dev/stable/reference/tested-versions/index.md) page states per extra.
+
+Floors themselves are still established by hand, by installing a candidate release and running the code against it, and a regression test then guards the boundary. Sweeps have found floors naming a release that installs cleanly and then fails, including some wrong for a long time; the corrections appear in the [migration guide](https://docs.remotestore.dev/stable/reference/migration/index.md).
+
+**If you pin near the bottom of a range, prefer a version comfortably above the floor.** The top of the range is where every environment we run resolves to, and the bottom is checked once a week on one interpreter rather than continuously on all of them.
 
 ### Rule 15. Not that every version in a range has been tried
 
@@ -110,16 +114,17 @@ A range is bounded by what we measured at each end. Between the ends is inferenc
 
 ## How the ranges are watched
 
-Scheduled CI re-resolves the extras it covers weekly against the latest available versions, pre-releases included, diffs the result against a committed record, and runs a smoke target for any extra that moved. Findings land on a rolling issue. The recorded versions are published on [Tested versions](https://docs.remotestore.dev/stable/reference/tested-versions/index.md), which answers "what was CI last green against?" and not "what will work".
+Scheduled CI watches both ends of every range it covers, weekly. It re-resolves each extra against the latest available versions, pre-releases included, and diffs the result against a committed record; and it installs each extra at the floor of every range it declares. At both ends the extra is installed **alone** and its own declared packages are imported before anything else joins the environment — which is the only thing that would notice an extra failing to declare something another extra happens to supply. The extra's smoke then runs, alongside the test tooling it needs. Findings land on a rolling issue. The recorded versions and the declared ranges are both published on [Tested versions](https://docs.remotestore.dev/stable/reference/tested-versions/index.md), which answers "what was CI last green against, and what is it held to?" and not "what will work".
 
 **How fast the tested zone moves is something you can read rather than guess.** The guard runs weekly, and each extra on that page carries the date its record was captured, so the gap between that date and today is how far your install may have drifted from anything we have exercised. No upgrade cadence is stated here, because none has been measured; [Rule 10](#rule-10) is the one timing obligation this policy places on you, and it says only that security fixes reach the latest release.
 
-Four limits bound that, and they are why [Rule 14](#rule-14) and [Rule 15](#rule-15) read as they do:
+These limits bound that, and they are why [Rule 14](#rule-14) and [Rule 15](#rule-15) read as they do:
 
-- **It does not cover every extra you can install.** An extra whose resolution depends on the running interpreter is excluded, so it has no committed record and no row on the Tested versions page. Being excluded is not a claim that nothing watches it, only that this guard does not.
-- **The smoke can be shallower than the extra.** Where the target is an import, a drift breaking anything past module load passes. Widening that reach is tracked work.
-- **It watches the top of the range only**, because it resolves to the newest compatible release, as does every environment that builds this project.
-- **It is early warning, not remediation**, and it resolves on one platform and one Python version. The job never edits a range or opens a pin-update pull request; a maintainer reads the finding and decides.
+- **It does not cover every extra you can install.** An extra whose resolution depends on the running interpreter is excluded, so it has no committed record and no row on the Tested versions page. That page [names which ones](https://docs.remotestore.dev/stable/reference/tested-versions/index.md), so an absent row is readable rather than ambiguous. Being excluded is not a claim that nothing watches it, only that this guard does not.
+- **The smoke can be shallower than the extra.** Where the target is an import, a drift breaking anything past module load passes. The Tested versions page states the depth per extra, so how much a given row is worth is readable. Widening that reach is tracked work.
+- **The floor check is one interpreter wide.** It runs on the oldest Python we support, and leaves transitive packages at their newest — so it tests the floors we declare rather than a whole old environment. A floor that installs and breaks only on a newer interpreter is outside it; so is a floor that cannot be installed at all on a newer one, which announces itself to you at install time rather than silently.
+- **That check is stricter than your runtime, on purpose.** Our tests treat warnings as errors, so a floor that still works but has started emitting deprecation warnings fails it. You would see nothing at those versions yet; we would rather find out a release early than a release late. It means a floor being flagged is not the same as a floor being broken for you.
+- **It is early warning, not remediation**, and each end resolves on one platform and one Python version — the newest end on the version we develop against, the floor end on the oldest we support. The job never edits a range or opens a pin-update pull request; a maintainer reads the finding and decides.
 
 ## See also
 

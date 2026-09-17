@@ -11946,10 +11946,28 @@ where a known-incompatible major looms — see the comment on
 per-extra ranges. <code>.github/workflows/drift-guard.yml</code> runs weekly (Monday 07:00 UTC):
 it re-resolves each <code>remote-store[&lt;extra&gt;]</code> with <code>pip install --upgrade --pre</code>,
 diffs against the committed baselines in <code>infra/drift-locks/</code>, runs the
-smoke targets in <code>scripts/drift_smoke_map.py</code> for any extra that drifted,
+smoke targets in <code>scripts/drift_smoke_map.py</code> on every leg,
 and reconciles a single rolling GitHub issue. The workflow never edits
 <code>pyproject.toml</code> and never opens a pin-update PR — it is early warning,
 not automated remediation.</p>
+<p>A second lane watches the other end of each range. It installs every extra at
+the <strong>floor</strong> of every range it declares — <code>uv pip install --resolution
+lowest-direct</code>, which takes the floors from <code>pyproject.toml</code> rather than from a
+second copy of them — on the oldest interpreter <code>requires-python</code> admits, and
+runs that extra's smoke against it. Its legs exit 0 whatever they find: a floor
+finding is a decision about a published range, so it belongs on the rolling
+issue beside its owner rather than in a red X. <code>infra/drift-locks/KNOWN-FINDINGS.md</code>
+records the findings either lane already reports and somebody owns, so a new one
+is distinguishable from a known one; delete a row there in the same change that
+lands the fix. The issue splits a floor finding three ways, and only one of
+them is <em>not</em> about the floor: <em>installs, then breaks</em> means the floor is too low —
+raise it, following the bump table in
+<a href="#when-to-bump">§ When to bump</a>, which prices a floor raise by how old the
+releases it newly excludes are; <em>does not install</em> is a decision owed on a
+published range, raise it or record why it stands; <em>plugins cannot coexist</em> is
+a gap in the smoke's own tooling and says nothing about the floor. The floor
+lane resolves but writes no lock:
+<code>pyproject.toml</code> already holds the claim, so there is nothing to commit.</p>
 <p>When you deliberately bump a floor (e.g. <code>paramiko&gt;=3.1</code> after a
 known-breaking upstream release), refresh the baseline in the same PR:</p>
 <div class="highlight"><pre><span></span><code><a id="__codelineno-10-1" name="__codelineno-10-1" href="#__codelineno-10-1"></a>hatch run drift-check refresh-baseline &lt;extra&gt;     # regenerate the lock

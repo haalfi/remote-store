@@ -11234,7 +11234,12 @@ download URLs; OQ2 — the Dagster API was verified against the installed
 <code>dagster</code> (1.13.5) and the import paths corrected (notably
 <code>PollingComputeLogSubscriptionManager</code> and <code>IO_TYPE_EXTENSION</code> live in the
 <code>cloud_storage_compute_log_manager</code> / <code>local_compute_log_manager</code> modules,
-and <code>ConfigurableClass</code> in <code>dagster._serdes</code>); OQ3 — extended spec 031;
+and <code>ConfigurableClass</code> in <code>dagster._serdes</code>) — but the <em>floor</em> half of that
+question, whether <code>dagster&gt;=1.9</code> exposes the surface, was answered later and
+differently: BUG-285 measured every release from 1.9.0 and found
+<code>TruncatingCloudStorageComputeLogManager</code> first appears in 1.10.18, so the
+floor was raised there. Verifying against the installed version answers what
+the environment has, never what the declared range admits; OQ3 — extended spec 031;
 OQ4 — same <code>ext/dagster.py</code> module; OQ5 — <code>get_log_keys_for_log_key_prefix</code>
 implemented; OQ6 — <code>Secret</code>-wrapping added to the shared <code>_build_store</code>
 (DAG-033), which also fixes the v2 <code>DagsterStoreResource</code> /
