@@ -101,6 +101,19 @@ def probe(extra: str) -> int:
     failed: `types-paramiko` ships only stubs, and a data-only distribution
     ships none. A run where *nothing* was probed is a failure, because a probe
     that silently checks nothing looks identical to a clean one.
+
+    **One deliberate departure from the inlined version this replaces**, stated
+    because the commit that moved this code described itself as an extraction:
+    the inline probe called ``distribution()`` bare, so a requirement declared
+    but not installed propagated ``PackageNotFoundError`` and failed the leg.
+    Here it is skipped. After ``pip install .[extra]`` has already succeeded,
+    the only way a declared requirement is absent is an environment marker that
+    excludes this interpreter — the resolver was right not to install it, and
+    failing the leg would report a working install as broken, which is the
+    exact class of false negative this probe has produced twice. No tracked
+    extra carries a marker-gated requirement today (measured: none of the 14),
+    so the branch is unreachable from the workflow and is insurance rather than
+    live behaviour.
     """
     requirements = sorted(_direct_requirements_for(extra))
     probed = 0
