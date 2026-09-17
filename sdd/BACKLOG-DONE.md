@@ -265,19 +265,27 @@ if evidence changes; these are retired.
   common prefixes or directory entries counts nothing), and the 404 itself (a
   denial still reaches the caller as `PermissionDenied`).
   **Which of them a cell can falsify was measured by removing each in turn**, and
-  the answer is not uniform: the page bound fails a cell on all four sites, and
-  the root bound fails one on `S3Boto3Backend` only. On the two Azure arms
-  removing it leaves the suite green — the flat branch reaches the same error
-  class through its zero-count guard, and the HNS branch's directory probe raises
-  first for a non-root path, so the only state that reaches the catch without the
+  the answer is not uniform. There are **five** catch sites — one on
+  `S3Boto3Backend` and two on each Azure class, since each carries a flat and an
+  HNS arm. The page bound fails a cell at all five. The root bound fails one at
+  the boto3 site only, where the existence probe answers first and so leaves the
+  aggregate's own 404 reachable with no page in hand; removing it at the four
+  Azure arms leaves the suite green, because the flat arms reach the same error
+  class through their zero-count guard and the HNS arms' directory probe raises
+  first for a non-root path, so the only state reaching those catches without the
   root is a filesystem vanishing between that probe and the first page. The
-  clause is kept on both, as the guard that makes the bound local rather than an
-  inference about code below it, and the code says so where it sits.
+  clause is kept on all five, as the guard that makes the bound local rather than
+  an inference about code below it, and the code says so where it sits.
   **Where it is pinned.** No conformance fixture can remove a container, so the
   cells sit in the per-backend wire-stub homes beside their siblings:
   `tests/backends/s3/test_denied_probe.py` and
-  `tests/backends/azure/test_absent_container.py` with its `aio/` twin. 18 cells
-  failed before the fix and pass after, and the compliant lane in each file is
+  `tests/backends/azure/test_absent_container.py` with its `aio/` twin. The cells
+  that fail on the base source and pass on this one are recovered by
+  `git checkout origin/master -- src/remote_store`, then `pytest` over those
+  three files with `-k "Root or Denied or denied_bucket"`, then
+  `git checkout HEAD -- src/remote_store`; at the close that was **30**, and the
+  query is given rather than the number alone because two fix passes moved it.
+  The compliant lane in each file is
   the control that says what the answer is: the boto3 lane for the probes, the
   s3fs lanes for the aggregate. `is_file("")` is parametrised in as the in-row
   control — it answered correctly throughout, and a fix that moved the whole row

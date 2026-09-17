@@ -732,6 +732,33 @@ class TestTheRootAnswersTheSameAgainstAnAbsentBucket:
         assert info.total_size == 0
         assert info.modified_at is None
 
+    @pytest.mark.spec("BE-029", "BE-017", "STORE-002")
+    @pytest.mark.parametrize("dotted", _ROOT_PARAMS)
+    @pytest.mark.parametrize("root", ["", "."], ids=["empty", "dot"])
+    def test_the_depth_limited_store_aggregate_follows_the_probe(
+        self,
+        httpserver: HTTPServer,
+        dotted: str,
+        root: str,
+    ) -> None:
+        """The published row that is not the backend's own answer.
+
+        ``Store.get_folder_info(path, max_depth=N)`` does not delegate: it gates
+        on ``Backend.is_folder`` and aggregates through ``list_files`` itself
+        (``_store.py``). So the root probe carries this call with it, and the
+        migration guide publishes the pair as one change. Driven through
+        ``Store`` rather than through the backend because the backend is not
+        where the answer is decided.
+        """
+        from remote_store import Store
+
+        endpoint = _serve_missing_bucket_stub(httpserver)
+        with _backend_at(dotted, endpoint) as backend:
+            info = Store(backend).get_folder_info(root, max_depth=1)
+        assert info.file_count == 0
+        assert info.total_size == 0
+        assert info.modified_at is None
+
     @pytest.mark.spec("BE-029", "BE-021")
     def test_a_bucket_deleted_mid_aggregate_raises(self, httpserver: HTTPServer) -> None:
         """The root tolerance is bounded to the first page, like every listing's.
