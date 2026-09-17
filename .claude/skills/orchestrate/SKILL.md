@@ -177,8 +177,8 @@ one is in
    for its own reason: here, the exactly-one rule above; there, `/ship`'s one
    measuring member per panel, which BK-379's pilot keeps and
    [RFC-0015 D3](../../../sdd/rfcs/rfc-0015-ship-two-surfaces.md) proposes to
-   replace with per-member base paths — whether this skill follows is that
-   RFC's Open Question 1. Neither rule protects the other skill.
+   replace with a base path per measuring member — whether this skill follows
+   is that RFC's Open Question 1. Neither rule protects the other skill.
 4. **Staff each lens.** A domain persona when the lens sits inside one domain
    and its foundation docs help; `general-purpose` otherwise — which is the
    normal case for a lens spanning domains or aimed at the surface no persona
@@ -352,7 +352,10 @@ and wait.
 
 Spawn reviewers per [Reviewer selection](#reviewer-selection). Each reviews
 *the whole of the authoring output*, not only its own lens's files, and returns:
-- Issues found (with file, line, category)
+- Issues found (with file, line, category); a finding on prose in the six-line
+  form of [research § 9.4](../../../sdd/research/research-appropriate-level-of-detail.md)
+  — Reader, Task, Failure, Harm, Change, Preserve — since the fix step below
+  files a prose finding without those lines as a preference
 - What it **ran** and what came back, if it is the measuring reviewer
 - "Clean — no issues" if nothing to report
 
@@ -373,10 +376,12 @@ orchestrator fixes directly.
    first, deleting the false claim, replacing it with its derivation, narrowing
    it to what was measured, or filing — and never a rationale; the finding's
    class, not only the lines it names; the sibling descriptions of your own
-   changes; a fix to a quantified claim scoped to the quantifier. The shape
-   rule is a rule about fixes, not loops, which is why it binds here as it does
-   under `/ship` ([RFC-0015](../../../sdd/rfcs/rfc-0015-ship-two-surfaces.md)
-   Open Question 1).
+   changes; a fix to a quantified claim scoped to the quantifier. Step 3's
+   six-line triage bullet is satisfiable here because the reviewer contract
+   above asks for those lines on every prose finding. The shape rule is a rule
+   about fixes, not loops, which is why it binds here as it does under `/ship`
+   ([RFC-0015](../../../sdd/rfcs/rfc-0015-ship-two-surfaces.md) Open
+   Question 1).
 2. **Delegate a fix only when it needs depth inside one file tree** — a backend
    invariant, a conformance fixture, an extension contract. Re-spawn that expert
    with the targeted task. The orchestrator still owns the sweep across

@@ -165,10 +165,14 @@ this reasoning is the failure the sibling-sweep rule exists to catch.
   worktree and so once per round, not per pass (25.6 s, measured once,
   [RFC-0015 D3](../../../sdd/rfcs/rfc-0015-ship-two-surfaces.md)). A solo pass
   gets the root as `/rvw-pr`'s `root=` flag; a panel member gets it in its
-  prompt (Running a round). The main tree is never what is certified, so the
-  fixer may work in it while reviewers run, and a fix pass started under a
-  certifying reviewer — PR #996's failure 4, which this check could only detect
-  after the fact — has nothing left to dirty.
+  prompt (Running a round). What is certified is the pushed commit `<sha>`:
+  the files come from the worktree and the diff is pinned to it too
+  (`/rvw-pr` Step 1's root form), so nothing a reviewer reads can come from
+  the main tree. The round order is unchanged — the fix pass follows triage —
+  so this is not a licence to fix while reviewers run; it means the main tree
+  is no longer load-bearing for the certification, and an edit there
+  mid-round, PR #996's failure 4, which the old check could only detect after
+  the fact, no longer dirties anything a reviewer sees.
 - **The check that covers the residue, and it binds every pass** — panel, solo,
   and each of the closing gate's appended passes. It runs in the worktree, and
   what it now catches is a reviewer that wrote there. Capture
@@ -177,13 +181,24 @@ this reasoning is the failure the sibling-sweep rule exists to catch.
   meaningful), then require an unchanged HEAD **and** a clean
   `git -C tmp/review/<sha> status --porcelain` before triage. Dirtiness or a
   moved HEAD means the reviewers did not see the state being certified: re-run
-  the pass, do not trust it. An appended pass is a reviewer whose silence ends
-  the loop; it is the last place to skip this, not the first.
-- **The worktree is removed at round close** (`git worktree remove
-  tmp/review/<sha>`, `git worktree prune` on a stale entry), and one still
-  present when the next round spawns is a failed precondition, as a dirty tree
-  was before: remove it before spawning, since a reviewer pointed at a stale
-  root certifies the wrong commit.
+  the pass, do not trust it. The worktree's HEAD is detached and cannot move on
+  its own, so the other thing the old check caught — the branch advancing under
+  a certifying reviewer — needs its own capture: at triage, `git fetch origin
+  <branch>` and require `git rev-parse origin/<branch>` still equal to `<sha>`.
+  A push during the round means the passes certified a superseded commit;
+  re-run them against the new one. An appended pass is a reviewer whose
+  silence ends the loop; it is the last place to skip this, not the first.
+- **The worktree is removed at round close**: `git worktree remove
+  tmp/review/<sha>`, then `git worktree prune` for the base worktree a
+  measuring member may have left nested inside it. Measured on git 2.43.0:
+  ignored leftovers (`.coverage`, a nested `tmp/base`) do not block the
+  removal, and the nested entry becomes prunable; a non-ignored untracked file
+  does block it, and that is the dirtiness the tree check above already
+  refused to certify. A leftover from an earlier round collides with nothing,
+  since the path carries its commit, but a pass re-spawned for the same commit
+  fails its `worktree add` on the existing path and every leftover carries a
+  hatch environment: remove before adding, and treat a leftover as hygiene, not
+  as a wrong-commit hazard.
 
 ### Running a round: panels and solo passes
 
@@ -656,8 +671,9 @@ Under the fix-shape rule this check should never fire: a condition is closed by
 shape (3), an enumeration, the first time it is questioned, so its trigger has
 moved from two refutations to zero and the check is a detector for a fix pass
 that argued anyway. [RFC-0015 D6](../../../sdd/rfcs/rfc-0015-ship-two-surfaces.md)
-retires it on that ground; BK-379's three deliveries keep it and report whether
-it fired, which is what decides the retirement.
+retires it on that ground; BK-379's three deliveries keep it, and the Step 5
+report states whether it fired and on what condition, which is what decides the
+retirement.
 
 **Divergence check:** if a round finds something *more severe* than the previous
 round **in code the fix passes changed**, the corrections are spawning worse
@@ -676,9 +692,11 @@ neither substitutes for the other.
 2. CHANGELOG, BACKLOG/BACKLOG-DONE, and the trace, including `review_rounds`,
    `discovery_followups` and `surprising_ripples`.
 3. Report: rounds run, findings per round with their character, the **final
-   per-file distribution** from requirement 3's query, the class swept per
+   per-file distribution** from requirement 3's query, the fix shape per
+   must-fix finding and the mutation per added test, the class swept per
    must-fix finding and the sibling sweep per fix — each with what it caught —
-   what was filed rather than fixed, any surface the gate never executed, the
+   whether the repeat-site check fired and on what condition, or that it did
+   not, what was filed rather than fixed, any surface the gate never executed, the
    **final state of the Step 1 subject list** with each entry marked executed /
    read only / not reached, and **CI's verdict on the final push**. Every figure
    names its derivation
@@ -703,9 +721,10 @@ Then stop. **`/ship` never merges.** It hands over a PR that is ready to be.
 - Every panel carries **exactly one** member that runs something — one, because
   `rvw-pr`'s base-branch recipe uses a fixed `tmp/base` path, under the round's
   review worktree, that two concurrent measurers would collide on. RFC-0015 D3
-  lifts this cap by per-member base paths; BK-379's pilot keeps it up so that
-  panel composition does not move finding counts while fix shape is what is
-  measured.
+  lifts this cap by giving each measuring member a base path of its own under
+  the round's worktree (`tmp/base-<member>`); BK-379's pilot keeps it up so
+  that panel composition does not move finding counts while fix shape is what
+  is measured.
 - No reviewer reads the working tree the fixer edits: every pass reads and runs
   in the round's review worktree at the pushed commit, and the tree check runs
   there.

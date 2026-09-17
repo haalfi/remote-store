@@ -14,12 +14,14 @@ audience:
   - contributor.process
 expected_ripples:
   - sdd/BACKLOG.md
+surprising_ripples:
+  - sdd/rfcs/rfc-0015-ship-two-surfaces.md
 # Derivation, stated as the rule rather than as a transcribed list: run
 # `git log --format='%s' origin/master..HEAD` and count the subjects that
 # answer a review round. The commit that implements the amendments does not
 # count. Re-run before each push; the value is the count, including the commit
 # that carries this line.
-review_rounds: 0
+review_rounds: 1
 phases:
   - id: orient
     name: Orient
@@ -141,6 +143,55 @@ phases:
         section: "Open Question 1"
         read_type: verify
         extract: "D2 for /orchestrate settled yes by the pilot; D5 and the cap question stay open"
+        outcome: ok
+  - id: fix
+    name: Round-1 fix pass
+    steps:
+      - file: .claude/skills/rvw-pr/SKILL.md
+        section: "Review root, the measuring allowlist, Step 1, Comment rules"
+        read_type: verify
+        extract: >-
+          Round 1 found the `cd` recipe resting on a premise true of the main
+          session and false of an Agent thread. Measured by spawning one:
+          `cd` succeeded and the next `pwd` was the main tree; `env -C <path>
+          pwd` ran in the target. The root is now named per command (`git
+          -C`, `env -C`), the tmp/base recipe carries the prefix explicitly
+          (measured: added from inside a review worktree it landed under
+          it), the diff is read from the root since `gh pr diff` is unpinned,
+          and rule 1's side clause carves out deleted lines
+        outcome: ok
+      - file: .claude/skills/ship/SKILL.md
+        section: "Reviewer permissions, Rules, Step 5"
+        read_type: verify
+        extract: >-
+          Round 1 found the moved-HEAD detector lost (a detached worktree
+          cannot move) and the licence-to-fix reading; the branch head is now
+          re-checked at triage and the round order stated. The teardown claim
+          was measured rather than taken: on git 2.43.0 `worktree remove`
+          succeeds with `.coverage` and a nested tmp/base inside (the nested
+          entry becomes prunable) and refuses only a non-ignored untracked
+          file, so the leftover reasoning was corrected and the refusal claim
+          refuted. Step 5 now collects the fix shape, the mutation and the
+          repeat-site outcome the pilot decides on
+        outcome: ok
+      - file: sdd/rfcs/rfc-0015-ship-two-surfaces.md
+        section: "D3 mechanism, third bullet"
+        read_type: gate
+        extract: >-
+          Round 1 found the skills attributing per-member base paths to a D3
+          whose path was spelled per round. The bullet's "its own ... inside
+          its worktree" contradicted bullet 1's one-worktree-per-round; it
+          now spells `tmp/base-<member>` under the round's worktree, which is
+          the reading the cap lift needs
+        outcome: misleading
+      - file: .claude/skills/orchestrate/SKILL.md
+        section: "Step 6 reviewer contract"
+        read_type: verify
+        extract: >-
+          Round 1 found the widened Step 3 citation importing the six-line
+          triage rule into a skill whose reviewers never produced the lines.
+          Taking D2 whole, the reviewer contract now asks for them on prose
+          findings
         outcome: ok
   - id: verify
     name: Verify

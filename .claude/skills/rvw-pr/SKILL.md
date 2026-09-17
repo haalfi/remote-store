@@ -13,7 +13,7 @@ allowed-tools: Read, Grep, Glob, Bash, mcp__MCP_DOCKER__pull_request_read, mcp__
 
 **Measuring pass.** If the invoking prompt says **measuring**, you reach your verdict by *executing*, not by reading, and Bash is opened to exactly this set:
 
-- **Allowed, by name — this is an allowlist, not a pattern.** The composite gates `hatch run all` / `lint` / `preflight` / `docs-gate` / `typecheck` / `test*`; read-only `git` (`log`, `show`, `diff`, `status`, `rev-parse`, `blame`, and `worktree add`/`remove`/`prune` under `tmp/`); `python` exercising the library; and one `cd` into the review root when a `root=` flag names one (below). Anything not on this list, do not run — "it looked read-only" is not a reason.
+- **Allowed, by name — this is an allowlist, not a pattern.** The composite gates `hatch run all` / `lint` / `preflight` / `docs-gate` / `typecheck` / `test*`; read-only `git` (`log`, `show`, `diff`, `status`, `rev-parse`, `blame`, and `worktree add`/`remove`/`prune` under `tmp/`); and `python` exercising the library — each prefixed with `-C <root>` (git) or `env -C <root>` (everything else) when a `root=` flag names a review root (below), never a `cd`. Anything not on this list, do not run — "it looked read-only" is not a reason.
   **This bullet and the next two are the repo-wide safe set, not a `/rvw-pr` local rule.** They are facts about `pyproject.toml`, so [`/orchestrate`](../orchestrate/SKILL.md#reviewer-selection) binds its own measuring reviewer to them by reference even though that skill has no `measuring` keyword and no permission gate at all. Narrowing them is a change to both skills; the keyword above gates *when this file's reader may run things*, never *which commands are safe*.
 - **The alias name does not tell you whether it writes**, which is why the list above is enumerated rather than derived. Two counterexamples, both live in `pyproject.toml`: `drift-check` carries the `-check` suffix but takes free-form args and reaches `refresh-baseline` (overwrites the committed `infra/drift-locks/<extra>.txt`) and `render-docs` without `--check` (overwrites a tracked docs page); `format` takes no args at all and rewrites source. A suffix rule and an args-shape rule are each false against one of these.
 - **Write only under `tmp/`.** Not "only tracked files" — `/ship` requires a clean `git status --porcelain`, which reports an untracked file as `??` just as loudly. Exercising a *storage* library means writing files, so point every root, temp dir and worktree at the gitignored `tmp/` and the stated bound matches the enforced check. The bound binds under `/orchestrate` too, for a different reason stated there: its tree is uncommitted, so a stray write destroys the only copy rather than dirtying a pushed one. Same rule, two reasons — do not narrow it on the strength of either alone.
@@ -43,13 +43,28 @@ invalidate a certified state. Edit both when the commands change.
 
 **Review root.** When the arguments carry `root=<path>` (`/ship` passes its
 round's review worktree, `tmp/review/<sha>`), that path is your repository
-root: every local `Read`, `Grep` and `Glob` reads there, `git` takes
-`-C <path>`, and before the first gate or `python` call you `cd <path>` in a
-Bash call of its own, since the working directory persists between calls and
-`&&` is forbidden. The recipe above is then unchanged and lands at
-`<path>/tmp/base`, which is gitignored there as here. The root is the state
-`/ship` certifies; the main tree is the one its fixer edits while you run, and
-reading it certifies nothing.
+root, and every command names it per call: `git -C <path> ...` for git,
+`env -C <path> hatch run <gate>` and `env -C <path> python ...` for the gates
+and the library. **Never `cd`.** An `Agent`'s Bash does not keep its working
+directory between calls — measured: a `cd` succeeded and the next `pwd` was
+the main tree, while `env -C` ran where it was told — so a `cd` would run
+every later gate in the main tree, silently, while the tree check watches the
+worktree. Local `Read`, `Grep` and `Glob` take paths under `<path>`, and the
+diff comes from the root too (Step 1). The base-branch recipe takes the same
+prefix on each of its commands, and lands at `<path>/tmp/base`, gitignored
+there as here (measured: added from inside a review worktree, it appeared at
+that path):
+
+```bash
+git -C <path> worktree add tmp/base <base-ref>
+```
+```bash
+git -C <path> worktree remove tmp/base
+```
+
+Without a root, the three commands above stand as written. The root is the
+state `/ship` certifies; the main tree is the one its fixer edits, and reading
+it certifies nothing.
 
 **Running the gate is safe for `/ship`'s clean-tree check, and that was measured rather than assumed.** Two consecutive full `hatch run all` runs left `git status --porcelain` empty. **The invariant is that every output of `all` lands on a gitignored path** — not that its targets are check-only, which is false: `docs-build` writes the whole site, `examples` and `notebooks` execute scripts, `test-cov-s1` writes coverage data. Apply the gitignored-output test, not a check-only test, when asking whether a newly added `all` member is still safe to run here. This paragraph is the single home for that claim; `/ship` and ADR-0035 cite it rather than restating it.
 
@@ -83,7 +98,7 @@ Read the PR state via `gh pr view <resolved PR number> --repo haalfi/remote-stor
 
 Read PR **content** via `gh` CLI when available; fall back to MCP when `gh` is absent. Use MCP only for the write/post path (Step 4). This split is identical to the main session — see [`sdd/CLAUDE-REFERENCE.md` § GitHub PR I/O split](../../../sdd/CLAUDE-REFERENCE.md#github-pr-io-split). The fork is not an exception.
 
-Read the diff via `gh pr diff $ARGUMENTS --repo haalfi/remote-store` (fall back to `pull_request_read` when `gh` is unavailable). Read every changed file **in full** for surrounding context — from the review root when a `root=` flag names one, else from the local checkout via `Read`, or `gh pr view $ARGUMENTS --json files` / `get_file_contents` for the PR-head version.
+Read the diff via `gh pr diff $ARGUMENTS --repo haalfi/remote-store` (fall back to `pull_request_read` when `gh` is unavailable). **With a `root=` flag, read it from the root instead**: `git -C <path> diff origin/master...HEAD`, with `origin/master` as `/pr`'s freshness check last fetched it. `gh pr diff` returns the PR's *current* head, and the root is pinned at the commit `/ship` certifies; a push during the round would otherwise pair files at one commit with a diff at another. Read every changed file **in full** for surrounding context — from the review root when a `root=` flag names one, else from the local checkout via `Read`, or `gh pr view $ARGUMENTS --json files` / `get_file_contents` for the PR-head version.
 
 **Never fetch PR comments, reviews, or review threads.** This step reads diff and files only, and that restraint is load-bearing, not incidental: `/ship`'s unprimed reviewers — including the unprimed pass its close appends to certify the final state — stay unprimed precisely because this skill never reads the conversation. Widening Step 1 to the comment sources `/fix-pr` uses would silently turn every unprimed pass into a primed one while all other artifacts still claim otherwise.
 
@@ -198,7 +213,7 @@ intended, plus a public claim that posting had failed when it had not.
 **Never** use APPROVE or REQUEST_CHANGES (owner token can't APPROVE).
 
 **Comment rules:**
-- **Anchor a finding to its true line when that line falls inside a diff hunk, context lines included** (`subjectType: "LINE"`, `side: "RIGHT"`, the line number at the PR head); **keep `subjectType: "FILE"` otherwise; never anchor to an unrelated line.** GitHub takes a `line` only inside a hunk, so a finding on text no hunk reaches stays file-level and names its location in the body. The rule is conservative on purpose: [RFC-0015 D5](../../../sdd/rfcs/rfc-0015-ship-two-surfaces.md) tags each finding's origin by blaming the anchored line, so a finding on untouched text attached to the nearest `+` line — the rule this bullet replaces — would be blamed on whoever wrote that `+` line, usually a fix pass, and counted as a defect the loop introduced. A context-line anchor blames the commit that wrote the text, which is what the finding is about.
+- **Anchor a finding to its true line when that line falls inside a diff hunk, context lines included** (`subjectType: "LINE"`; `side: "RIGHT"` with the line number at the PR head for a line that exists there, or `side: "LEFT"` with the base-branch line number for a deleted line, per the bullet below); **keep `subjectType: "FILE"` otherwise; never anchor to an unrelated line.** GitHub takes a `line` only inside a hunk, so a finding on text no hunk reaches stays file-level and names its location in the body. The rule is conservative on purpose: [RFC-0015 D5](../../../sdd/rfcs/rfc-0015-ship-two-surfaces.md) tags each finding's origin by blaming the anchored line, so a finding on untouched text attached to the nearest `+` line — the rule this bullet replaces — would be blamed on whoever wrote that `+` line, usually a fix pass, and counted as a defect the loop introduced. A context-line anchor blames the commit that wrote the text, which is what the finding is about.
 - **A finding that belongs to the file rather than to any line is postable as-is**: `subjectType: "FILE"`, no `line`, no `side` (step 2 above). Use it for frontmatter falsified by the change, a broken antecedent, a claim about another file — anything whose subject is the file's current state, or whose line no hunk reaches. **Never drop such a finding for want of a hunk, and do not anchor it to an unrelated line**: read alone, this block used to name only a `+`-line constraint, and a reviewer working from it would conclude a file-level finding is unpostable. That is the diagnosis BK-348 recorded ([`sdd/BACKLOG-DONE.md`](../../../sdd/BACKLOG-DONE.md), BK-348, signal 2) — an inference from what the block said, not a measured attribution; what *was* measured is the defect class in [ADR-0037 § Context](../../../sdd/adrs/0037-whole-file-gate-and-derived-figures.md#context), which a whole-file pass found after five diff-anchored rounds. This bullet closes the reading, whatever share of that it explains.
 - Deleted lines: `side: "LEFT"` with base-branch line number
 - Tag with category: `Bug:` / `Spec:` / `Test:` / `Consistency:` / `Ripple:` / `Perf:` / `Security:`

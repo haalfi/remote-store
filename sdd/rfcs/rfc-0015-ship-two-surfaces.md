@@ -474,10 +474,10 @@ about what a rationale would have prevented is not, and is not the condition.
   stays as the residue check for a reviewer that wrote there. The main tree
   is never what is certified, so the fixer cannot dirty a certification and
   failure 4 cannot occur.
-- Each measuring member measures the base branch in its own
-  `tmp/review/<sha>/tmp/base` inside its worktree, so the *exactly one
-  measurer per panel* cap is lifted. The cap is `/ship`'s, and the skill
-  gives it one reason: the fixed `tmp/base` path two concurrent measurers
+- Each measuring member measures the base branch in a base path of its own
+  under the round's worktree, `tmp/review/<sha>/tmp/base-<member>`, so the
+  *exactly one measurer per panel* cap is lifted. The cap is `/ship`'s, and
+  the skill gives it one reason: the fixed `tmp/base` path two concurrent measurers
   would collide on (`.claude/skills/ship/SKILL.md` § Rules), which
   per-member paths remove. ADR-0035's *Every panel carries one measuring
   member* bullet says something else: a floor, which stays, and a
