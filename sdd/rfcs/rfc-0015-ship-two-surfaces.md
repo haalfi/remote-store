@@ -440,10 +440,12 @@ shape.
   is left true, which is principle 2 applied to a measurement rather than to a
   diff. PR #997's round-8 counter-example to SFTP-031 sat in a backlog item
   for a round because nothing asked this.
-- A prose finding that does not state reader, task, failure, harm, change and
-  what must survive ([research § 9.4](../research/research-appropriate-level-of-detail.md))
+- A prose-quality finding that does not state reader, task, failure, harm,
+  change and what must survive
+  ([research § 9.4](../research/research-appropriate-level-of-detail.md))
   is triaged *file as preference* and is never fixed in-loop. `/rvw-pr`'s
-  Consistency category adopts the six-line form.
+  Consistency category adopts the six-line form; a false statement in prose is
+  a Bug or Spec finding and is closed by shape (2), (3) or (4) like any other.
 
 **Evidence.** Causes B and D; failures 1, 2, 3; BUG-265's three rationales and
 its `EPERM` round trip; BK-359's invented advice.

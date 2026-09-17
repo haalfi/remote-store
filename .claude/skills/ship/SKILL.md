@@ -501,21 +501,23 @@ worktree root only.
 
 | Verdict | Action | Fix shape |
 |---|---|---|
-| Must-fix | Wrong once merged: bad behaviour, a false statement in a durable artifact, a shipping gap. Fix in this PR. | Exactly one of the five below, named in the reply |
-| File-it | Real, but outside this PR's scope. Backlog item, cited in the reply. | — |
+| Must-fix | Wrong once merged: bad behaviour, a false statement in a durable artifact, a shipping gap. Fix in this PR. | Exactly one of shapes (1) to (4) below, named in the reply |
+| File-it | Real, but outside this PR's scope. Backlog item, cited in the reply. | Shape (5) |
 | Refute | Wrong or already handled. Reply with the evidence; do not fix. | — |
 
 **A fix removes, measures, narrows or enumerates; it never argues.** A must-fix
 finding is closed by exactly one of: **(1)** a behaviour change pinned by a test
 seen failing first; **(2)** deleting the false claim; **(3)** replacing the claim
 with its derivation — a command, a test name or an enumeration; **(4)** narrowing
-the claim to what was measured; **(5)** filing. *Write a rationale* is not a
-shape. The fix-shape column is required, and the fix pass owes what
-[`/fix-pr`](../fix-pr/SKILL.md) Step 3 lists under each shape: a reviewer's *why*
-answered by shape (3) or the no-reason sentence, a test added in a fix pass
-mutation-checked before push, a reviewer's figure re-derived rather than carried,
-a measured claim bounded by its instrument, and a prose finding without the
-six-line form triaged *file as preference*. The evidence is
+the claim to what was measured; **(5)** filing, which is the File-it verdict.
+*Write a rationale* is not a shape. The fix-shape column is required, and the
+fix pass owes what [`/fix-pr`](../fix-pr/SKILL.md) Step 3 lists under each
+shape: a reviewer's *why* answered by shape (3) or the no-reason sentence, a
+test added in a fix pass mutation-checked before push, a reviewer's figure
+re-derived rather than carried, a measured claim bounded by its instrument, and
+a `Consistency:` finding on prose without the six-line form triaged *file as
+preference* (a false statement in prose is a `Bug:` or `Spec:` finding and a
+Must-fix like any other). The evidence is
 [RFC-0015 D2](../../../sdd/rfcs/rfc-0015-ship-two-surfaces.md): every one of the
 four failures it maps was the fixer writing something it had not run, and the
 measuring member catching it one round later.

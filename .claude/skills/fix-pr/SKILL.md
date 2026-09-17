@@ -107,7 +107,9 @@ the shape:
 3. **Replacing the claim with its derivation** — a command, a test name or an
    enumeration.
 4. **Narrowing the claim to what was measured.**
-5. **Filing.**
+5. **Filing** — the File-it verdict: the finding is real, it closes outside
+   this PR, and the reply names the backlog ID. A finding fixed in this PR
+   takes one of shapes 1 to 4.
 
 *Write a rationale* is not a shape. What each shape owes, per
 [RFC-0015 D2](../../../sdd/rfcs/rfc-0015-ship-two-surfaces.md):
@@ -132,9 +134,12 @@ the shape:
 - **A new measurement is swept like a fix.** Before a measured fact is recorded
   anywhere, list the artifacts that assert something about the same behaviour
   and leave each one true.
-- **A prose finding that does not state reader, task, failure, harm, change and
-  what must survive** ([research § 9.4](../../../sdd/research/research-appropriate-level-of-detail.md))
-  is triaged *file as preference* and is never fixed in-loop.
+- **A `Consistency:` finding on prose that does not state reader, task,
+  failure, harm, change and what must survive**
+  ([research § 9.4](../../../sdd/research/research-appropriate-level-of-detail.md))
+  is triaged *file as preference* and is never fixed in-loop. A false
+  statement in prose is a `Bug:` or `Spec:` finding, needs no six lines, and
+  takes shape 2, 3 or 4 like any other must-fix.
 
 ## Step 4: Resolve threads
 

@@ -138,9 +138,11 @@ A `Consistency:` finding on prose states six lines — **Reader**, **Task**,
 [research § 9.4](../../../sdd/research/research-appropriate-level-of-detail.md)
 gives; three harms qualify: a question the reader cannot answer, a decision
 they would get wrong, an action they cannot execute. A finding you cannot fill
-those lines for is a preference: do not post it. "This could be tighter" fills
-none of them, and the fix pass files anything that arrives without them as a
-preference rather than fixing it ([`/fix-pr`](../fix-pr/SKILL.md) Step 3).
+those lines for is a preference: do not post it. A false statement in prose is
+a `Bug:` or `Spec:` finding, not a `Consistency:` one, and needs no six lines.
+"This could be tighter" fills none of them, and the fix pass files a
+`Consistency:` finding that arrives without them as a preference rather than
+fixing it ([`/fix-pr`](../fix-pr/SKILL.md) Step 3).
 
 **Drift-rules check (new or changed cross-artifact check or drift report):** Apply `sdd/DRIFT-RULES.md`. File findings under `Consistency:`.
 

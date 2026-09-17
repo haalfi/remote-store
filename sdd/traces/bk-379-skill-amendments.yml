@@ -22,7 +22,7 @@ surprising_ripples:
 # answer a review round. The commit that implements the amendments does not
 # count. Re-run before each push; the value is the count, including the commit
 # that carries this line.
-review_rounds: 3
+review_rounds: 4
 phases:
   - id: orient
     name: Orient
@@ -273,6 +273,21 @@ phases:
           landed; now past tense with a pointer to the exit criteria, the
           same sweep the RFC got in round 2
         outcome: ok
+  - id: fix_4
+    name: Round-4 fix pass
+    steps:
+      - file: sdd/rfcs/rfc-0015-ship-two-surfaces.md
+        section: "D2 mechanism, six-line bullet and the five shapes"
+        read_type: gate
+        extract: >-
+          Round 4 found the file-as-preference bullet binding every prose
+          finding while /rvw-pr binds the six lines to Consistency findings
+          only, so a Bug or Spec finding on a false sentence read as a
+          preference; the RFC's next sentence gave the scope, and the bullet
+          plus its three skill copies now carry it. Shape (5) collided with
+          /ship's File-it verdict: filing is now stated as that verdict, and
+          a Must-fix takes shapes (1) to (4)
+        outcome: unclear
   - id: verify
     name: Verify
     steps:
