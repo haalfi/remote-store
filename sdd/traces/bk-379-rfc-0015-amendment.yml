@@ -14,12 +14,14 @@ audience:
   - contributor.process
 expected_ripples:
   - sdd/BACKLOG.md
+surprising_ripples:
+  - sdd/rfcs/rfc-0015-findings.py
 # Derivation, stated as the rule rather than as a transcribed list: run
 # `git log --format='%s' origin/master..HEAD` and count the subjects that
 # answer a review round. The commit that implements the amendment does not
 # count. Re-run before each push; the value is the count, including the commit
 # that carries this line.
-review_rounds: 0
+review_rounds: 1
 phases:
   - id: orient
     name: Orient
@@ -132,9 +134,81 @@ phases:
           "§ Status names only ADR-0033, ADR-0034 and ADR-0037" would both be
           false after the amendment and are reworded
         outcome: ok
+  - id: fix
+    name: Round-1 fix pass
+    steps:
+      - file: sdd/adrs/0035-vary-method-not-model.md
+        section: "Decision, second bullet"
+        read_type: gate
+        extract: >-
+          Round 1 found the amendment resting on D3's "whose only reason is
+          the shared tmp/base path", which is /ship's reason for its cap and
+          not this ADR's. Re-read: the bullet is a floor (every panel carries
+          a measuring member) plus a one-seat budget trade, with its own
+          reverse condition. D3 lifts the skill's cap and widens the trade;
+          the floor stays. The orient step above took "D3 lifts the bullet"
+          from BK-379 without separating the two
+        outcome: ok
+      - file: .claude/skills/ship/SKILL.md
+        section: "Rules (exactly one member that runs something)"
+        read_type: reference
+        extract: >-
+          The cap and its one stated reason, the fixed tmp/base path, cited
+          in D3 by section so the RFC no longer attributes that reason to the
+          ADR
+        outcome: ok
+      - file: sdd/rfcs/rfc-0015-ship-two-surfaces.md
+        section: "Table 2 bounds"
+        read_type: gate
+        extract: >-
+          Round 1 found the criterion calling pre-existing "the measure" of
+          what the LINE rule newly reached. The bounds name two residue
+          causes, and the second (findings posted FILE by practice though a
+          + line existed) anchors to lines that read as original or
+          loop-introduced, so pre-existing is a floor and the other half
+          enters clause 1 unseparated; the criterion now states that bound
+          in both directions
+        outcome: ok
+      - file: sdd/rfcs/rfc-0015-findings.py
+        section: "BY ROUND INDEX, the new POOLED line"
+        read_type: verify
+        extract: >-
+          Round 1 found "the script needs no change" leaving clause 1
+          hand-summed while BY ROUND INDEX printed a share over the
+          denominator the amendment ruled out. The user chose to change the
+          script here: shares over o+l only, pre-existing printed beside,
+          and one POOLED r>=3 must-fix line. Print-only; the classification
+          code is untouched. Run on PR #1019 before and after (7 findings,
+          all original, identical counts). The 19-PR re-run needed the
+          shallow clone unshallowed first; its result is recorded in the
+          step below
+        outcome: ok
+      - file: .claude/skills/orchestrate/SKILL.md
+        section: "Step 3, the exactly-one rule's reason"
+        read_type: gate
+        extract: >-
+          Round 1 found § Impact's reason for keeping /orchestrate's cap (no
+          certified commit) not reaching the conclusion, since the collision
+          is a fixed path that per-reviewer names would remove. Narrowed to
+          what holds (D3's mechanism does not run there) and the lift sent
+          to Open Question 1; BK-379's own paragraph corrected to match
+        outcome: ok
   - id: verify
     name: Verify
     steps:
+      - file: sdd/rfcs/rfc-0015-findings.py
+        section: "(full), run over the RFC's 19-PR sample"
+        read_type: verify
+        extract: >-
+          `python sdd/rfcs/rfc-0015-findings.py 964 ... 996` after the
+          changed print code, at master 1a84c04, once the shallow clone was
+          unshallowed (merge-base had failed on the first head). BY ROUND
+          INDEX reproduces Table 2 and Table 4 cell for cell, TOTAL gives
+          205 / 176 / 0 / 160 and 295 / 10 / 56 / 180, the three D5 readings
+          fire in 2, 5 and 3 PRs (5, 13 and 9 rounds) as D5 states, and the
+          new line reads POOLED 22 / 77 / 78% | 0 | 58, the 58 being Table
+          4's last column summed over rows 3 to 7
+        outcome: ok
       - file: sdd/CLAUDE-REFERENCE.md
         section: "Detailed checklist / Backlog item touched, PR validation gates"
         read_type: verify

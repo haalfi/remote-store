@@ -55,6 +55,15 @@ Also printed:
   premise an earlier revision of this script assumed;
 * per PR, whether the comments endpoint's row order disagreed with submission
   order, so the sorting above is seen to matter or not;
+* per round index, the loop-introduced share over ``original +
+  loop-introduced`` only, with ``pre-existing`` printed beside it rather than
+  in the denominator: the RFC's baseline has ``pre-existing`` at zero (its
+  posting rule sent findings on unchanged text to file level), and D5's
+  ``LINE`` discipline populates it, so a denominator that counted it would
+  lower the share for a reason unrelated to the fixes;
+* ``POOLED r>=3 must-fix``, RFC-0015's acceptance clause 1 as one line: the
+  must-fix findings of rounds 3 on, summed across the PRs given, with that
+  same share and the ``pre-existing`` and unclassifiable counts beside it;
 * a dry run of RFC-0015 D5's retraction trigger over the sample, under three
   readings. ``classified``: a round "fires" when it and the previous round each
   carry at least one classified must-fix finding and none of theirs is
@@ -167,6 +176,13 @@ def triage(reply: str | None) -> str:
     return "unknown"
 
 
+def _share_cells(c: Counter[str], prefix: str) -> str:
+    """``o / l / share | p | u`` for one counter, share over ``o + l`` only (see the docstring)."""
+    o, loop = c[f"{prefix}original"], c[f"{prefix}loop-introduced"]
+    share = f"{loop / (o + loop):.0%}" if o + loop else "-"
+    return f"{o} / {loop} / {share} | {c[f'{prefix}pre-existing']} | {c[f'{prefix}unclassifiable']}"
+
+
 def main(prs: list[int]) -> None:
     by_index: dict[int, Counter[str]] = {}
     grand: Counter[str] = Counter()
@@ -250,18 +266,17 @@ def main(prs: list[int]) -> None:
     print(f"FIRST PUSH >1 COMMIT: {multi_commit_first_push} of {n} PRs")
     print(f"ROUND ORDER: comments-endpoint order differed from submission order in {len(reordered)} PR(s) {reordered}")
     print(
-        "BY ROUND INDEX: all findings original / loop-introduced / loop share | unclassifiable || must-fix only: o / l / share | u"
+        "BY ROUND INDEX: all findings original / loop-introduced / share l/(o+l) | pre-existing | unclassifiable "
+        "|| must-fix only: o / l / share | p | u"
     )
     for i in sorted(by_index):
         c = by_index[i]
-        cl = c["original"] + c["loop-introduced"] + c["pre-existing"]
-        mcl = c["mf-original"] + c["mf-loop-introduced"] + c["mf-pre-existing"]
-        share = f"{c['loop-introduced'] / cl:.0%}" if cl else "-"
-        mshare = f"{c['mf-loop-introduced'] / mcl:.0%}" if mcl else "-"
-        print(
-            f"  r{i}: {c['original']} / {c['loop-introduced']} / {share} | {c['unclassifiable']} || "
-            f"{c['mf-original']} / {c['mf-loop-introduced']} / {mshare} | {c['mf-unclassifiable']}"
-        )
+        print(f"  r{i}: {_share_cells(c, '')} || {_share_cells(c, 'mf-')}")
+    pooled: Counter[str] = Counter()
+    for i, c in by_index.items():
+        if i >= 3:
+            pooled.update(c)
+    print(f"POOLED r>=3 must-fix (RFC-0015 acceptance clause 1): {_share_cells(pooled, 'mf-')}")
     for reading, counter in fired.items():
         print(
             f"D5 TRIGGER ({reading}): fires in {len(counter)} of {n} PRs, {sum(counter.values())} round(s) total: "
