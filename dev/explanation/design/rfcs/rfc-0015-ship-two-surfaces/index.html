@@ -10999,10 +10999,11 @@ independently. Rounds 8 to 10 belong to one PR (#990) and carry file-level
 findings only.</p>
 <p>Four bounds travel with this table. <strong>Pre-existing is zero throughout</strong>, and
 that is the posting rule at work rather than a fact about untouched code:
-<code>/rvw-pr</code> anchors a line comment to a <code>+</code> line, so a finding about unchanged
-text is posted at file level and falls in the last column. So the <em>loop share
-of classified</em> column here equals <code>loop-introduced / (original +
-loop-introduced)</code>; under D5's <code>LINE</code> discipline the two part company, the
+throughout the sample <code>/rvw-pr</code> anchored a line comment to a <code>+</code> line, so a
+finding about unchanged text was posted at file level and falls in the last
+column. So the <em>loop share of classified</em> column here equals
+<code>loop-introduced / (original + loop-introduced)</code>; under D5's <code>LINE</code>
+discipline the two part company, the
 script prints the latter as <code>share l/(o+l)</code> with pre-existing in its own
 column, and a table re-derived over the pilot carries that ratio under this
 heading, which is the acceptance criterion's clause 1 (§ Impact). <strong>The last column
@@ -11344,10 +11345,14 @@ shape.</p>
   is left true, which is principle 2 applied to a measurement rather than to a
   diff. PR #997's round-8 counter-example to SFTP-031 sat in a backlog item
   for a round because nothing asked this.</li>
-<li>A prose finding that does not state reader, task, failure, harm, change and
-  what must survive (<a href="../../research/research-appropriate-level-of-detail/">research § 9.4</a>)
-  is triaged <em>file as preference</em> and is never fixed in-loop. <code>/rvw-pr</code>'s
-  Consistency category adopts the six-line form.</li>
+<li>A prose-quality finding with no rule behind it that does not state reader,
+  task, failure, harm, change and what must survive
+  (<a href="../../research/research-appropriate-level-of-detail/">research § 9.4</a>)
+  is triaged <em>preference</em>: replied to as such, not filed as a backlog item,
+  and never fixed in-loop. <code>/rvw-pr</code>'s Consistency category adopts the
+  six-line form; a false statement in prose is a Bug or Spec finding, a
+  finding citing a CONTENT-RULES or DRIFT-RULES rule is a violation, and both
+  are closed by shape (2), (3) or (4) like any other.</li>
 </ul>
 <p><strong>Evidence.</strong> Causes B and D; failures 1, 2, 3; BUG-265's three rationales and
 its <code>EPERM</code> round trip; BK-359's invented advice.</p>
@@ -11372,13 +11377,19 @@ about what a rationale would have prevented is not, and is not the condition.</p
   gate itself was under six seconds of that. Gate time after creation is the
   gate's cost, not the worktree's, and is paid today.</li>
 <li>The <code>HEAD</code> and <code>git status --porcelain</code> check moves to the worktree and
-  stays as the residue check for a reviewer that wrote there. The main tree
-  is never what is certified, so the fixer cannot dirty a certification and
-  failure 4 cannot occur.</li>
-<li>Each measuring member measures the base branch in its own
-  <code>tmp/review/&lt;sha&gt;/tmp/base</code> inside its worktree, so the <em>exactly one
-  measurer per panel</em> cap is lifted. The cap is <code>/ship</code>'s, and the skill
-  gives it one reason: the fixed <code>tmp/base</code> path two concurrent measurers
+  stays as the residue check for a reviewer that wrote there, with one
+  porcelain capture kept in the main tree beside it, required unchanged at
+  triage: a reviewer's default working directory is the main tree, and a
+  stray write there is what the next fix pass would commit. A detached
+  worktree's <code>HEAD</code> cannot move on its own, so the other thing the old check
+  caught, the branch advancing under a certifying reviewer, needs its own
+  capture: at triage the branch's pushed head is fetched and required to still
+  equal the certified commit. The main tree is never what is certified, so the
+  fixer cannot dirty a certification and failure 4 cannot occur.</li>
+<li>Each measuring member measures the base branch in a base path of its own
+  under the round's worktree, <code>tmp/review/&lt;sha&gt;/tmp/base-&lt;member&gt;</code>, so the
+  <em>exactly one measurer per panel</em> cap is lifted. The cap is <code>/ship</code>'s, and
+  the skill gives it one reason: the fixed <code>tmp/base</code> path two concurrent measurers
   would collide on (<code>.claude/skills/ship/SKILL.md</code> § Rules), which
   per-member paths remove. ADR-0035's <em>Every panel carries one measuring
   member</em> bullet says something else: a floor, which stays, and a
@@ -11391,8 +11402,13 @@ about what a rationale would have prevented is not, and is not the condition.</p
   and not the lift, because lifting it changes panel composition and moves
   finding counts independently of fix shape, which is what the pilot
   measures. The cap comes down once the pilot has reported.</li>
-<li>Worktrees are removed at round close; a stale one is a failed precondition
-  for the next round, as a dirty tree is today.</li>
+<li>Worktrees are removed at round close, with a <code>prune</code> for the base worktree a
+  measuring member left nested inside (measured on git 2.43.0: ignored
+  leftovers and the nested worktree do not block the removal, and the nested
+  entry becomes prunable). A leftover from an earlier round collides with
+  nothing, since the path carries its commit; it blocks only a pass re-spawned
+  for that same commit, and carries a hatch environment, so it is removed
+  before adding rather than treated as a wrong-commit hazard.</li>
 </ul>
 <p><strong>Evidence.</strong> Cause C; failure 4; ADR-0035's own statement that the
 constraint is "enforced by instruction, so a reviewer that ignores it
@@ -11448,14 +11464,14 @@ corrects.</p>
 <li>Posting discipline follows, in its conservative reading: a finding is
   anchored to its true line when that line falls inside a diff hunk, context
   lines included, and stays <code>FILE</code> otherwise; it is never anchored to an
-  unrelated line. <code>/rvw-pr</code>'s comment rules today attach a finding on
-  unchanged text to the nearest <code>+</code> line, and <code>origin()</code> blames the line the
-  comment carries, so that reading would tag a finding on untouched text as
-  loop-introduced whenever a fix pass wrote the nearest <code>+</code> line, inflating
-  the share this RFC measures against a baseline that excluded such findings
-  rather than misattributing them. The <code>+</code>-line bullet is amended, not read
-  around. 160 of the 541 findings in Table 2 could not be classified, and the
-  script separates the four causes it has: all 160 are file-level, and the
+  unrelated line. <code>/rvw-pr</code>'s comment rules, as BK-379 found them, attached a
+  finding on unchanged text to the nearest <code>+</code> line, and <code>origin()</code> blames the
+  line the comment carries, so that reading would tag a finding on untouched
+  text as loop-introduced whenever a fix pass wrote the nearest <code>+</code> line,
+  inflating the share this RFC measures against a baseline that excluded such
+  findings rather than misattributing them. The <code>+</code>-line bullet is amended,
+  not read around. 160 of the 541 findings in Table 2 could not be
+  classified, and the script separates the four causes it has: all 160 are file-level, and the
   <code>LEFT</code>-side, null-line and blame-failure counts are zero in this sample, so
   the discipline's reach here is bounded by 160 and not measured: it reaches
   the findings whose true line sits inside a hunk, which the sample does not
@@ -11559,7 +11575,9 @@ runtime behaviour, no published page other than this RFC's own.</p>
   path safe, and D3 lifts that cap; D3's own mechanism does not run there,
   since its reviewers read uncommitted work and no per-round review worktree
   exists, so this RFC leaves its exactly-one rule as written, and whether
-  per-reviewer base paths lift it is Open Question 1 with D2), <code>CLAUDE.md</code>
+  per-reviewer base paths lift it is Open Question 1; D2's fix shapes at its
+  fix step and the six-line prose form in its reviewer contract, per that
+  question's settled half), <code>CLAUDE.md</code>
   § Trace authoring, <code>_schema.yml</code>
   § <code>review_rounds</code>, a new ADR, <code>scripts/ship_report.py</code>,
   <code>scripts/check_no_retrospective.py</code> and
@@ -11628,8 +11646,10 @@ runtime behaviour, no published page other than this RFC's own.</p>
 <h2 id="open-questions">Open Questions<a class="headerlink" href="#open-questions" title="Permanent link">&para;</a></h2>
 <ol>
 <li>Does <code>/orchestrate</code> take D2 and D5? Its rounds are capped (ADR-0020) and it
-   has no exit gate; BK-349 declined the whole-file mode there. Proposed: D2
-   yes, since it is a rule about fixes rather than loops; D5 no. And whether
+   has no exit gate; BK-349 declined the whole-file mode there. D2: settled
+   yes by BK-379's pilot, whose skill amendment names the five shapes at
+   <code>/orchestrate</code>'s fix step, since it is a rule about fixes rather than
+   loops. D5: proposed no. And whether
    its exactly-one measuring rule, whose reason is the same fixed <code>tmp/base</code>
    path, is lifted by per-reviewer base paths: D3's per-round worktree cannot
    supply that there, and nothing is proposed either way.</li>
