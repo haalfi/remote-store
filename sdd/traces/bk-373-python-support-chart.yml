@@ -1,0 +1,113 @@
+id: BK-373
+title: "Draw the Python support window the policy page states in prose"
+trigger: >-
+  Rule 8 asked a reader to know five Python release dates, add the window to
+  each, and compare against today before the rule said anything. SPEC 0's own
+  page renders a Gantt chart instead and the argument lands without being read.
+  The repo held no release dates anywhere, and a hand-written timeline would be
+  wrong the day a version was added.
+source_items:
+  - BK-373
+audience:
+  - user.site
+  - contributor.tooling
+co_shipped_items:
+  - BK-375
+  - BK-377
+expected_ripples:
+  - sdd/GATE-INVENTORY.md
+  - CHANGELOG.md
+surprising_ripples:
+  # The first two are the `check_paths: true` ripple: turning it on to stop a
+  # missing include vanishing silently immediately failed the build on a
+  # pre-existing stale include in an RFC, which had been eating a line on the
+  # published page. The third is CONTENT-RULES Rule 6, which said doc code
+  # blocks come from examples/snippets/ and had no room for a generated diagram.
+  - mkdocs.yml
+  - sdd/rfcs/rfc-0007-doc-cross-links.md
+  - sdd/CONTENT-RULES.md
+# Derivation: `git log --oneline origin/master..HEAD`, counting only commits
+# that exist because a review round asked for them. 0950031f implements and does
+# not count. 41aec01b carries round 1's five findings; e430ee7e round 2's five;
+# 3dc12cd7 round 3's twenty; 42bbefae the maintainer's own two review comments,
+# which count for the same reason a panel round does; 5f992e49 (with 971c73b8
+# and 68ed0a72) round 4's; c67cda8a the closing measuring pass's seven; and the
+# commit carrying this line a further reading round's three, which arrived after
+# that pass and so is its own round. Updated as each round lands, so the value
+# is current at every commit rather than filled at the close.
+review_rounds: 7
+phases:
+  - id: orient
+    name: Orient
+    steps:
+      - file: sdd/BACKLOG.md
+        section: "(item)"
+        read_type: gate
+        extract: >-
+          The three inputs, the generator-plus---check precedent, and the
+          instruction to verify todayMarker BEFORE building on it
+        outcome: ok
+      - file: mkdocs.yml
+        section: "markdown_extensions (superfences, snippets)"
+        read_type: gate
+        extract: >-
+          The mermaid custom fence, and snippets' base_path. Retrospectively the
+          load-bearing read of the whole item, for what it does NOT set:
+          check_paths defaults to false, so a missing include is dropped in
+          silence
+        outcome: ok
+      - file: scripts/drift_check.py
+        section: "render-docs, Drift-gate block"
+        read_type: reference
+        extract: >-
+          The generator-with---check precedent, including why its rendered date
+          comes out of a lock file rather than date.today()
+        outcome: ok
+      - file: scripts/check_docs_framework.py
+        section: "G-01"
+        read_type: gate
+        extract: >-
+          It walks docs_src.rglob("*.md"), which is what rules out a .md snippet
+          under docs-src/ and sends the artefact to a .mmd instead
+        outcome: ok
+  - id: implement
+    name: Generate and place
+    steps:
+      - file: scripts/gen_gate_inventory.py
+        section: "_VALID_FIELDS, _KIND_FIELDS, _VALID_DOMAINS, _MECHANISM_STEM_RE"
+        read_type: gate
+        extract: >-
+          The Drift-gate grammar, and that python_support.py's stem escapes the
+          backstop so its silence had to be stated as a decision
+        outcome: ok
+      - file: docs-src/explanation/performance.md
+        section: "(the comparative.md include)"
+        read_type: reference
+        extract: >-
+          The precedent for including a generated Markdown file from outside
+          docs_dir, which is what made an include preferable to an in-page
+          marker block
+        outcome: ok
+  - id: verify
+    name: Verify the chart renders
+    steps:
+      - file: docs-src/_data/python-support-window.mmd
+        section: "(full)"
+        read_type: verify
+        extract: >-
+          Rendered in Chromium against mermaid 11.17.2 served from the registry
+          tarball, because Material fetches it from unpkg at page-view time and
+          unpkg is egress-blocked here. First attempt showed the raw source: a
+          bare `%%` line in the header breaks the gantt parse, with the docs
+          build and `--check` both green. `todayMarker on` was wrong too — only
+          `off` suppresses, the default draws the line, and any other value is
+          applied as inline CSS
+        outcome: ok
+      - file: sdd/CONTENT-RULES.md
+        section: "Rule 6 (code examples sourced)"
+        read_type: verify
+        extract: >-
+          Rule 6 covered runnable code from examples/snippets/ and nothing else,
+          so a generated diagram at another path was outside it. Widened rather
+          than quietly inventing a second snippet home
+        outcome: unclear

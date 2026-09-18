@@ -1,0 +1,159 @@
+id: BK-375
+title: "Decide the Python support window rather than inheriting it, and record the decision"
+trigger: >-
+  Rule 8 of the published dependency policy promised support for at least 3 years
+  after a Python version's release, adopting SPEC 0. Read as SPEC 0 intends, that
+  licensed dropping 3.10 and 3.11 the day it shipped, and nothing had decided
+  either way: requires-python and the five classifiers stood because nobody had
+  revisited them, and a reader could not tell that from deliberate generosity.
+source_items:
+  - BK-375
+  - BK-371
+audience:
+  - user.api
+  - contributor.process
+co_shipped_items:
+  - BK-373
+  - BK-377
+discovery_followups:
+  - BK-380
+expected_ripples:
+  - sdd/backlogid.json
+  - sdd/adrs/DIGEST.md
+  - CHANGELOG.md
+surprising_ripples:
+  # The first two are in no ripple-check row and were not anticipated by this
+  # item. The last three came from the maintainer's own review: asked to hold the
+  # ADR to CONTENT-RULES Rules 1 and 2 -- principles, never a snapshot -- the
+  # same class turned out to sit in both registers and in CONTRIBUTING.md, so the
+  # comment on one file reached four.
+  - sdd/CONTENT-RULES.md
+  - sdd/rfcs/rfc-0007-doc-cross-links.md
+  - infra/drift-locks/PYTHON-SUPPORT.md
+  - infra/drift-locks/KNOWN-FINDINGS.md
+  - CONTRIBUTING.md
+# Derivation for the value below, per the schema's review_rounds clause:
+# `git log --oneline origin/master..HEAD` over this branch, counting only
+# commits that exist because a review round asked for them. 0950031f implements
+# and does not count. 41aec01b carries round 1's five findings; e430ee7e round
+# 2's five; 3dc12cd7 round 3's twenty; 42bbefae the maintainer's own two review
+# comments, which count for the same reason a panel round does; 5f992e49 (with
+# 971c73b8 and 68ed0a72) round 4's; c67cda8a the closing measuring pass's seven;
+# and the commit carrying this line a further reading round's three, which
+# arrived after that pass and so is its own round. Updated as each round lands,
+# so the value is current at every commit rather than filled at the close.
+review_rounds: 7
+phases:
+  - id: orient
+    name: Orient
+    steps:
+      - file: sdd/BACKLOG.md
+        section: "(item)"
+        read_type: gate
+        extract: "The three inputs to gather, and that the drop takes its own PR"
+        outcome: ok
+      - file: docs-src/explanation/dependency-policy.md
+        section: "Rule 8"
+        read_type: gate
+        extract: "What the published promise currently says, and that it is a floor not a ceiling"
+        outcome: misleading
+        # Not the page's fault as written, but it is where the wrong window was
+        # published: it adopted SPEC 0's three years as the promise, when the
+        # line that matters to a user is the one upstream draws. The item
+        # inherited that framing and so did the first plan built from it.
+      - file: sdd/CLAUDE-REFERENCE.md
+        section: "Ripple-check table / Pre-work index"
+        read_type: gate
+        extract: "No trigger for the supported interpreter set; this change adds one"
+        outcome: ok
+  - id: measure
+    name: Gather the inputs
+    steps:
+      - file: pyproject.toml
+        section: "classifiers, requires-python, optional-dependencies"
+        read_type: reference
+        extract: >-
+          The five supported versions, and toml's marker-gated tomli as the one
+          floor that exists only for 3.10
+        outcome: ok
+      - file: .github/workflows/ci.yml
+        section: "setup (ALL_PYTHONS, MIN_PYTHON)"
+        read_type: reference
+        extract: >-
+          Which jobs are per-interpreter, needed before any Actions-API figure
+          could be attributed to a leg. 3.10 carries the typecheck job as
+          MIN_PYTHON, so the two legs are not like-for-like
+        outcome: ok
+      - file: sdd/adrs/0032-tiered-ci-gate-with-full-matrix-backstop.md
+        section: "Decision"
+        read_type: reference
+        extract: >-
+          Names the interpreter set twice, and the 20-slot concurrency cap the
+          queue-contention hypothesis rests on. Not superseded here, because the
+          set does not change
+        outcome: ok
+  - id: design
+    name: Decide and record
+    steps:
+      - file: sdd/DRIFT-RULES.md
+        section: "Rule 4 (authority)"
+        read_type: gate
+        extract: >-
+          The authority declaration must sit in the document owning the pair.
+          Retrospectively: the item said the choice was its own declaration, and
+          a backlog item is not a durable home — it moves to BACKLOG-DONE.md,
+          which check_links denylists as historical. The declaration went beside
+          the classifiers in pyproject.toml instead
+        outcome: ok
+      - file: sdd/adrs/0038-absent-container-outranks-drive-identity.md
+        section: "(full)"
+        read_type: reference
+        extract: "ADR shape: Status table, Context, Decision, Consequences"
+        outcome: ok
+      - file: CLAUDE.md
+        section: "Principles"
+        read_type: gate
+        extract: >-
+          Principle 9: every figure names the derivation it came from, run before
+          the sentence is written. This is the phase that most needed it — the
+          CI figures and the release dates are the whole argument
+        outcome: ok
+  - id: verify
+    name: Verify
+    steps:
+      - file: sdd/CLAUDE-REFERENCE.md
+        section: "Ripple-check table / Detailed checklist"
+        read_type: verify
+        extract: "Pre-work index first, then the Detailed checklist, then check_ripple_parity"
+        outcome: ok
+      - file: sdd/CONTENT-RULES.md
+        section: "Rules 1 and 2"
+        read_type: gate
+        extract: >-
+          Read on the maintainer's instruction rather than at orient time, and it
+          should have been read at orient time: the ADR had been written with a
+          dated standing table and a snapshot paragraph opened the interpreter
+          register, both of which Rule 1's six-month test refuses. The ADR now
+          states the rule and carries no figure, with the measurements moved to
+          this item's BACKLOG-DONE entry -- a measurement is history and the
+          historical register is where going stale is the point. The lesson is
+          which gate applies to which artefact: a decision record is durable
+          prose and is bound by these rules, while the register that records what
+          the decision measured is not
+        outcome: ok
+      - file: CONTRIBUTING.md
+        section: "When to bump, Release Phase 0"
+        read_type: verify
+        extract: >-
+          The interpreter row and the Phase 0 line were this item's work rather
+          than citations. The line numbers in the item's body had moved, which is
+          why it says to re-derive them
+        outcome: unclear
+        # The item cited CONTRIBUTING.md:445 and L494; the rows were at 462-464
+        # and the Phase 0 line at 513 on master. Stale coordinates in a filed
+        # item cost a search each time they are read.
+      - file: sdd/BACKLOG.md
+        section: "5. A release cannot ship a surprise"
+        read_type: verify
+        extract: "Mark the inertia clause met, naming what met it"
+        outcome: ok

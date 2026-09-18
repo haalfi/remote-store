@@ -1233,7 +1233,10 @@ page by BK-374, in [BACKLOG-DONE.md](BACKLOG-DONE.md), which put the declared
 range beside the resolved one and named the extras the page does not cover),
 **reachable** (BK-327,
 BK-376), **legible — a rule the reader can act on without first computing
-it** (BK-373), and
+it** — **met** for the support window by BK-373, in
+[BACKLOG-DONE.md](BACKLOG-DONE.md), which replaced "add five years to each
+release date and compare against today" with a generated chart whose bars and
+today line say it without being read — and
 **walked end-to-end by a maintainer** (BK-332, and ID-199's authoring
 contract). Each clause names the items that move it, so closure is checkable
 rather than asserted.
@@ -1245,8 +1248,11 @@ page nobody can navigate to is a page nobody reads — the gate is the mechanism
 not the payoff. The legibility clause is the same argument one step further in:
 a page reachable and true, whose rule the reader has to do arithmetic to apply,
 is one they apply wrongly or not at all. It is deliberately narrow — it is not
-a licence to file prose-polishing items, and BK-373 earns it by naming a rule
-whose consequence is a date the reader cannot see.
+a licence to file prose-polishing items, and BK-373 earned it by naming a rule
+whose consequence is a date the reader could not see. **Met at the one rule that
+had that shape**, not at legibility in general: the clause stays open for the
+next rule that turns out to need computing, and closing it would take an
+argument that no such rule remains rather than the absence of a filed item.
 
 - [ ] **BK-364 — `transfer-operations.md` documents partial files for `download` only, and the other direction is the one that can destroy data**
   spec: — · effort: S · audience: user.site
@@ -1376,83 +1382,6 @@ whose consequence is a date the reader cannot see.
   with `RemoteStoreIOManager`. Demonstrates the config-driven pattern.
   Examples get copied verbatim, so a stale one teaches a superseded pattern
   from a first-contact surface.
-
-- [ ] **BK-373 — The Python support window is a rule a reader has to compute, and a timeline would just show it**
-  spec: — · effort: M · audience: user.site
-  The rule this item draws is
-  [Rule 8](../docs-src/explanation/dependency-policy.md#rule-8) of the published
-  dependency policy: a Python version is supported for at least 3 years after
-  its initial release, adopting
-  [SPEC 0](https://scientific-python.org/specs/spec-0000/). As prose it asks the
-  reader to know five release dates, add three years to each, and compare
-  against today. SPEC 0 itself does not: its § Support Window renders a Gantt
-  chart, one bar per version from release to release+3y with a vertical marker
-  at today, and the argument lands without being read. The maintainer raised
-  this after seeing that page rendered, which is the evidence — the same claim
-  in two presentations, one of which had to be explained and one of which did
-  not.
-  **Not a fenced block someone hand-writes.** A timeline with dates on it is
-  exactly what [`CONTENT-RULES.md` Rule 1](CONTENT-RULES.md#six-month-test)
-  forbids in stable prose: it is wrong the day a version is added and silently
-  wrong every day after. This repo's answer to that is a generator plus a
-  `--check` gate — `gen_graph.py`, `gen_features.py`, `gen_graph_viz.py`,
-  `gen_adr_digest.py` and `drift_check.py render-docs` all run that way in
-  `preflight` — so the deliverable is one more of those, not a diagram.
-  **Two of the three inputs are already derivable; the third is the open
-  question.** "Today" is computed at render. The supported **set** comes from
-  the `Programming Language :: Python` classifiers (`pyproject.toml:33-37`),
-  and that choice is this item's authority declaration, which
-  [`DRIFT-RULES.md` Rule 4](DRIFT-RULES.md#authority) requires be written down
-  before the check exists: the classifiers are what PyPI shows a user, so they
-  are the canonical statement of a *published* support claim, which is what
-  the chart draws. The other two candidates do not qualify.
-  `requires-python = ">=3.10"` is a floor with no ceiling — it cannot tell a
-  generator the top bar is 3.14, and the gate over it
-  (`check_conda_recipe_pins.py:290-325`, against `variants.yaml` and `ci.yml`'s
-  `MIN_PYTHON`) says nothing about the upper end. `ci.yml`'s `ALL_PYTHONS` does
-  state the set, but it is a CI matrix rather than a published promise.
-  **Nothing holds the classifiers against `ALL_PYTHONS`**, which is a second,
-  separable deliverable rather than part of this one:
-  `check_ci_full_matrix.py` compares `ALL_PYTHONS` to `ci-full.yml`'s matrix
-  and never reads `pyproject.toml`, and the only script that reads the
-  classifiers at all is `repo_stats.py`, which is in no gate. Naming all three
-  as co-equal would be exactly the shape
-  [Rule 3](DRIFT-RULES.md#claim-space) warns about — whichever the generator
-  picked would silently become authoritative and the others could drift under
-  it.
-  What the repo holds nowhere is each version's **initial release date**: `rg
-  '2021-10|2022-10'` — the ISO prefixes of the two oldest supported releases —
-  matches nothing but this sentence.
-  A hardcoded table is the obvious answer and is less rotten than it sounds —
-  a past release date is immutable, so the table only grows, and it grows
-  exactly when an interpreter is added, which is already a deliberate act
-  touching `ci.yml` and the classifiers. Whether to instead derive it from an
-  upstream feed is the decision to make; a network-fed generator cannot run in
-  `preflight`.
-  **Render target is Mermaid, and the choice is load-bearing rather than
-  cosmetic.** It is already enabled (`mkdocs.yml:151-155` registers a
-  `mermaid` custom fence under `pymdownx.superfences`) and already used in
-  `docs-src/index.md:19`, and a `gantt` block takes a `todayMarker` — which
-  mermaid.js draws **client-side**. So the committed Markdown carries no date
-  and a `--check` generator stays byte-stable, which is how the existing ones
-  behave: `drift_check.py:368` writes `_Captured {lock.captured}_`, a date
-  read out of the lock file, never `date.today()`.
-  **A committed SVG is therefore not a drop-in fallback**, though
-  `docs-src/img/benchmarks/` makes it look like one. It is rasterised at
-  generation time, so the marker freezes at commit and the page asserts a
-  false "today" every day after; and a `--check` generator emitting it would
-  disagree with a fresh render the next day and go red on every unrelated PR.
-  Verify `todayMarker` renders under this Material version *before* building
-  on it, and if it does not, the fallback needs a named choice: drop the
-  marker (and lose the thing that made SPEC 0's version land), move it to a
-  CSS or JS overlay outside the generated artefact, or exclude the artefact
-  from `--check`.
-  **Scope is one chart, deliberately.** Rule 9 — the 2-year dependency window —
-  would need an initial-release date per package across every extra, and the
-  floor lane BK-369 built installs those floors weekly without dating them, so
-  plotting the window would still draw a confident picture over data nothing
-  derives. What changed is the reason: it is now a missing *derivation* rather
-  than unchecked floors. BK-377 owns that derivation; revisit once it lands.
 
 - [ ] **BK-327 — Gate dual-doc nav reachability and index listing**
   spec: — · effort: S · audience: contributor.tooling
@@ -1751,10 +1680,18 @@ intend to offer is published and working** — **met** by ID-018, in
 [BACKLOG-DONE.md](BACKLOG-DONE.md) — and what that channel publishes about us is
 watched rather than hand-copied (BK-370); every upstream that can break us on its
 own schedule has a standing watch (ID-229, ID-225), and the support window we
-publish is exercised by decision rather than by inertia (BK-375); the one
+publish is exercised by decision rather than by inertia — **met** by BK-375, in
+[BACKLOG-DONE.md](BACKLOG-DONE.md), which tied the promise to CPython's own
+security-support lifetime as a rule in
+[ADR-0039](adrs/0039-support-tracks-upstream-security-fixes.md) and recorded the
+measured position on every supported interpreter in that entry, leaving 3.10's
+drop as BK-380 rather than as inertia; the one
 deprecation that watch has caught is answered before the release that enforces
 it (BUG-281); the window the calendar puts on a published promise is derived
-rather than remembered at release time (BK-377); the watch's issue survives a
+rather than remembered at release time — **met** by BK-377, in
+[BACKLOG-DONE.md](BACKLOG-DONE.md), which put Rule 9's floor-raise test in the
+release path and Rule 8's calendar in the weekly report, both localizing and
+both advisory; the watch's issue survives a
 single-extra re-run (BUG-282) and its one legacy-sftp
 authentication does not fail on runner load (BK-367); and every breaking change
 carries a published upgrade path by the time it ships — **satisfied**: the four
@@ -1832,6 +1769,36 @@ working, and quietly describing the library as something it is not.
   worth gating rather than fixing twice.
   **Not** the same as a step that pipes deliberately and tolerates failure:
   `benchmark.yml:111-113` ends each line with `|| true` and means it.
+
+- [ ] **BUG-291 — A single-extra dispatch can still close the rolling drift issue on one extra's evidence**
+  spec: — · effort: S · audience: infra.ci
+  `drift_report.decide` refuses to close on a run that did not cover both lanes,
+  and its comment gives the reason: *"a single-lane dispatch has not seen what
+  the other lane would have found, and a closed issue is not recoverable the way
+  a rewritten body is."* That argument is about **narrowing**, and the guard
+  implements only the lane half. `_lanes_present(reports) != set(LANES)` is
+  blind to the *extras* narrowing, so `extra: s3, lane: all` — a real
+  `workflow_dispatch` input combination — reaches the close with one extra's
+  reports and closes the issue, discarding the scheduled run's findings for the
+  other thirteen.
+  **Measured on both sides**, so it is pre-existing rather than introduced with
+  the support-window work: a one-extra, both-lane, all-clean run at
+  `origin/master` and at this item's filing head both print
+  `(dry run — would close the issue titled '[drift-guard]': all clear in both
+  lanes)`. BUG-282 covers the sibling hazard — that such a dispatch *rewrites*
+  the body from its slice — and this is the same narrowing reaching the other,
+  unrecoverable outcome.
+  **Why it stayed hidden:** `main` computes `unnarrowed = set(lanes) ==
+  set(LANES) and bool(expected) and set(expected) == set(list_extras())` and
+  hands it to the window state, but the close guard never sees it. So the issue's
+  survival of a narrowed dispatch currently depends on whether an interpreter
+  happens to be past its support window, which is an unrelated calendar fact.
+  **Scope when picked up:** give the close the same `unnarrowed` test the window
+  signal already uses, pin it in both directions (a full clean run still closes;
+  a one-extra clean run leaves), and reconcile the three layers that describe the
+  verdict — `drift-guard.yml`'s header and step comment, the drift-guard runbook
+  in `sdd/CI-OPERATIONS.md`, and `.claude/skills/drift/SKILL.md` — since all
+  three currently say "all clear and an open issue exists → close".
 
 - [ ] **BUG-287 — Three extras declare a `pyarrow` floor that installs and then cannot import**
   spec: — · effort: S · audience: user.api, infra.test
@@ -2053,61 +2020,6 @@ working, and quietly describing the library as something it is not.
   filter to treat `sdd/adrs/**` as lint-triggering. Filed rather than fixed in
   BK-329 because that PR touched no ADR, no TLA module and not the handbook.
 
-- [ ] **BK-377 — The support windows we publish come due on a date, so no diff can carry the check**
-  spec: — · effort: M · audience: infra.ci
-  Rules 8 and 9 of the
-  [dependency policy](../docs-src/explanation/dependency-policy.md#rule-8) have
-  no mechanism behind them, and `CONTRIBUTING.md`'s Phase 0 checklist says so
-  in terms: *"Nothing
-  derives this — the published promise is the only record, which is why it is a
-  checklist line rather than a gate."* A checklist line is a person
-  remembering, and the promise it guards ages on the **calendar** rather than
-  on a diff, so the release that breaks it looks exactly like the release that
-  does not.
-  **That is what separates this from its neighbours, not the absence of a
-  mechanism.** BK-370 in this same section is the other published claim
-  nothing watches — a recipe mirror nothing compares. It has an event a gate
-  could hang off: a publish. So did the declared floors, and BK-369's lane now
-  hangs off a resolution. This one has none, because the thing that breaks it
-  is a date passing.
-  **The two rules mechanise differently, and that is the shape of the work.**
-  Rule 9 — a dependency version stays supported 2 years — fires on a floor
-  raise, which is a diff: compare each extra's specifiers against the previous
-  tag, and for a raised floor ask whether the newest version it newly excludes
-  is at least 2 years past its own release. Only that last input needs the
-  network. Rule 8 — a Python version is supported 3 years — fires on the
-  calendar with no diff at all, and needs each interpreter's initial release
-  date, which BK-373's derivation showed the repo holds nowhere.
-  **So this splits by home, not by rule.** The diff half belongs in the release
-  path, where the bump table already lives. The calendar half cannot: nothing
-  in `preflight` may reach the network, and a check that only fires when
-  someone cuts a release is no better than the checklist line it replaces for a
-  promise that comes due whether or not we ship.
-  **`drift-guard.yml` is the candidate home for the calendar half**, and the
-  fit is in its posture rather than its plumbing: it runs weekly, it already
-  resolves against PyPI (`pip install --upgrade --pre`, `drift_check.py:167`),
-  and its stated non-goals are exactly right for this — *"NEVER edits
-  pyproject.toml"*, *"NEVER auto-merges a pin / floor update"*, *"early
-  warning, not automated remediation"*. A window crossing is early warning by
-  construction: nothing is broken on the day it fires, which is why BK-375
-  exists.
-  **Do not let it decide.** The verdict is advisory, like the rest of
-  drift-guard. Crossing a window licenses a drop; it does not require one, and
-  a gate that reads Rule 8 as an obligation would invert the rule — which
-  promises a floor, not a ceiling.
-  **Shares an input with BK-373, and neither waits on the other.** Both need
-  each interpreter's initial release date, and both have to answer the same
-  question to get it (hardcoded table vs upstream feed). Whichever lands first
-  should own the dates; two copies of a release-date table is the drift this
-  repo files items about. Deliberately *not* a dependency: either item can
-  supply the table, so nothing here blocks on section 3 and § Ordering's
-  cross-section note is not owed.
-  **Why the clause is its own rather than folded into the standing-watch
-  one.** That clause is about upstreams that move on their own schedule, and
-  the calendar is an upstream only by analogy — it publishes nothing and can
-  be read offline. The new clause keeps the distinction the item rests on: a
-  watch answers *what changed*, and this answers *what came due*.
-
 - [ ] **BK-370 — The published conda recipe is a mirror no mechanism watches**
   spec: — · effort: M · audience: user.discoverability.human, infra.ci
   `conda-forge/remote-store-feedstock`'s `recipe/recipe.yaml` is a copy of
@@ -2207,64 +2119,6 @@ working, and quietly describing the library as something it is not.
   ([BACKLOG-DONE.md](BACKLOG-DONE.md)) — this item outlived it, which is why it
   was filed separately rather than folded in.
 
-- [ ] **BK-375 — Two interpreters are past the support window we now publish, and nothing has decided whether to keep them**
-  spec: — · effort: M · audience: user.api
-  [Rule 8](../docs-src/explanation/dependency-policy.md#rule-8) of the published
-  dependency policy adopts [SPEC 0](https://scientific-python.org/specs/spec-0000/):
-  a Python version is supported **at least** 3 years after its initial release.
-  SPEC 0's own direction is the mirror of that — it recommends *dropping* at
-  that point, to bound the maintenance a project carries. On the day Rule 8
-  shipped, Python 3.10 and 3.11 were both past three years and 3.12 was close
-  to it, so the rule licensed dropping two interpreters the moment it was
-  published, and nothing decided either way.
-  **Nothing is wrong today, which is exactly why this needs an item.** Rule 8
-  promises a floor, not a ceiling, and says in terms that "we may support a
-  version longer than the minimum" — so supporting 3.10 breaches nothing. The
-  defect is that the position is held by inertia: `requires-python = ">=3.10"`
-  and the five interpreters in `ci.yml`'s `ALL_PYTHONS` (`["3.10", "3.11",
-  "3.12", "3.13", "3.14"]`, matched by five `Programming Language :: Python`
-  classifiers) stand because no one has revisited them, and a reader of the
-  backlog cannot tell that from a deliberate choice to be generous. This item
-  is the record that the question was asked.
-  **Decide it, do not default it.** The inputs are cheap to gather and none
-  exist yet: what the two oldest legs cost in CI wall-clock across `ci.yml` and
-  `ci-full.yml`; whether any declared floor exists only to keep 3.10 resolving
-  (the `tomli` marker-gated extra is the obvious candidate, since it is
-  `python_version < '3.11'` and would become dead on a 3.11 floor); and whether
-  any dependency has already dropped 3.10, which would make the support
-  notional. Weigh those against the users a drop would strand.
-  **Whatever is decided, it is a breaking change and takes its own PR.**
-  Raising `requires-python` moves **six** spellings of the supported set, and
-  only four are watched. Three are held equal by
-  `check_conda_recipe_pins.py:297-325` (`pyproject.toml`'s `requires-python`,
-  `packaging/conda-forge/variants.yaml`'s `python_min`, `ci.yml`'s
-  `MIN_PYTHON`). A fourth, `ci-full.yml:73`'s `test-full` matrix, is held
-  against `ci.yml`'s `ALL_PYTHONS` by `check_ci_full_matrix.py` in
-  `hatch run lint`, so missing it fails a gate rather than shipping silently.
-  The last two are watched by nothing: the `Programming Language :: Python`
-  classifiers, and `README.md:34`'s "**Requires Python 3.10+.**" — prose, and
-  the first Python claim a reader meets. `sdd/adrs/0032-tiered-ci-gate-with-full-matrix-backstop.md`
-  names the interpreter set too, and being an ADR it is superseded rather than
-  edited ([`000-process.md` Rule 4](000-process.md#rules)) — a decision the PR
-  has to make rather than discover.
-  **The bump table does not yet say what this item needs it to say.**
-  `CONTRIBUTING.md:445` assigns dropping a Python version a **minor** bump and
-  stops there, while the dependency-floor row above it (L444) carries "treat
-  as **breaking**, row above", and the Phase 0 checklist at L494 requires the
-  `**Breaking**` marking and a migration section only "if this release raises
-  a **dependency** floor". So the obligation this item assumes is nowhere
-  written down. It should be: a user on 3.10 whose install stops resolving is
-  in the same position as one excluded by a floor raise. **Annotating row 445
-  and widening L494 to cover `requires-python` is part of this item's work**,
-  not a citation it can lean on — the rows landed in BK-371 and the asymmetry
-  landed with them.
-  Nothing catches an omission from that list either: the
-  [Detailed checklist](CLAUDE-REFERENCE.md#detailed-checklist) has a
-  **Dependency** row and a **Version number** row and none for the supported
-  interpreter set, which is why the enumeration has to be complete here.
-  Deciding to *keep* them is the cheaper outcome and still belongs here,
-  written down, so the next release does not re-open it from scratch.
-
 - [ ] **ID-229 — Evaluate porting to httpx 1.0 (lift the `<1.0` cap)**
   spec: GR-033 · effort: M · audience: user.api
   BUG-225 capped the `graph` and `httpx` extras at `httpx>=0.24.0,<1.0`
@@ -2321,6 +2175,70 @@ working, and quietly describing the library as something it is not.
   reference, literate-nav order, BK-171 link rewrites, mike/RTD versioning); and
   fold in native `llms.txt` / `llms-full.txt` generation if Zensical ships it.
   Background: [research](research/research-llms-full-txt-tooling.md).
+
+- [ ] **BK-380 — Python 3.10 stops getting security fixes on 2026-10-04, and the drop is a breaking change of its own**
+  spec: — · effort: M · audience: user.api
+  [ADR-0039](adrs/0039-support-tracks-upstream-security-fixes.md) decided that a
+  Python version is supported for as long as CPython ships security fixes for
+  it, and Rule 8 of the
+  [dependency policy](../docs-src/explanation/dependency-policy.md#rule-8) now
+  publishes that. 3.10's security support ends **2026-10-04** — five years after
+  its 2021-10-04 release, per
+  [PEP 619](https://peps.python.org/pep-0619/)'s own schedule. So the decision
+  this item carries out was already taken; what is left is the work, and the
+  work is why it is not folded into the change that took it.
+  **It moves seven spellings of the supported set at once**, which is the whole
+  reason for a separate item. The ripple-check's
+  [Supported interpreter set](CLAUDE-REFERENCE.md#pre-work-index) row enumerates
+  them and says which are watched: `requires-python`, the
+  `Programming Language :: Python` classifiers,
+  `packaging/conda-forge/variants.yaml`'s `python_min`, `ci.yml`'s `MIN_PYTHON`
+  and `ALL_PYTHONS`, `ci-full.yml`'s `test-full` matrix, and `README.md`'s
+  "**Requires Python 3.10+.**" prose. **What watches which, with no total** —
+  the total has been wrong at every value it has been given: `requires-python`,
+  `python_min` and `MIN_PYTHON` are held equal to each other by
+  `check_conda_recipe_pins.py`; `ALL_PYTHONS` and `ci-full.yml`'s `test-full`
+  matrix against each other by `check_ci_full_matrix.py`, which never reads
+  `pyproject.toml`; the classifiers against the committed chart by
+  `gen_python_support.py --check`, so a classifier edit without a regenerate is
+  caught (measured: dropping one exits 1) though nothing holds them against
+  another spelling; and `README.md`'s prose by nothing, as with ADR-0032. **No
+  gate compares the three groups to each other**, which is the gap this item
+  has to close by hand.
+  **Two things become dead rather than merely stale.**
+  `toml = ["tomli>=1.1.0; python_version < '3.11'"]` exists only to keep 3.10
+  resolving — `tomllib` is stdlib from 3.11 — so a 3.11 floor makes it a
+  marker-gated extra that can never match. And `drift_check.py`'s
+  marker-gated-extra exclusion, plus the Tested-versions page's "extras this
+  page does not cover" section, both lose their one user-facing example; check
+  whether either still earns its wording. `python_support.py`'s `PYTHON_RELEASES`
+  row for 3.10 **stays**: a past release date is immutable, and the row is read
+  by version rather than iterated, so it simply goes unused. Dropping the
+  classifier is what stops the chart drawing 3.10's bar — `windows()` walks the
+  classifiers and looks each one up — so deleting the date row buys nothing and
+  would reintroduce `UnknownInterpreterError` if the classifier ever came back.
+  **Breaking, with the obligations that follow.**
+  [CONTRIBUTING § When to bump](../CONTRIBUTING.md#when-to-bump) prices dropping
+  an interpreter as breaking: a `**Breaking**` CHANGELOG entry and a
+  `## vPREV to vX.Y.Z` section in `docs-src/reference/migration.md`, both in this
+  change. Pre-1.0 that still lands in a minor bump.
+  **Supersede [ADR-0032](adrs/0032-tiered-ci-gate-with-full-matrix-backstop.md)
+  rather than editing it.** It names the interpreter set twice ("all five
+  supported interpreters (3.10-3.14)" and "Non-primary interpreters
+  (3.10/3.11/3.12/3.14)"), and an ADR is superseded rather than amended
+  ([`000-process.md` Rule 4](000-process.md#rules)). ADR-0039 left it standing
+  deliberately, because the set did not change there.
+  **What it buys, measured.** `ci-full.yml`'s `test-full (3.10)` was the longest
+  job in all three runs measured for BK-375, so dropping it takes a mean 0.92 min
+  off a 8.74 min run and 8.27 job-min with it; in `ci.yml` the leg is never on
+  the critical path, so the saving there is 5.94 job-min and about no wall-clock.
+  BK-375's entry in [`BACKLOG-DONE.md`](BACKLOG-DONE.md) carries the
+  derivations and the caveats; ADR-0039 states the rule and carries no figure.
+  **Do not wait for the weekly report to ask.** The drift-guard issue will
+  surface the crossing on the first Monday after 2026-10-04 and hold itself open
+  until this lands or a row in `infra/drift-locks/PYTHON-SUPPORT.md` records a
+  decision to keep 3.10 anyway — which would need a reason, since the new rule's
+  whole premise is that security support is the line.
 
 ---
 

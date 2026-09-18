@@ -1,0 +1,189 @@
+id: BK-377
+title: "Derive both published support windows instead of remembering them"
+trigger: >-
+  Rules 8 and 9 of the published dependency policy had no mechanism behind them,
+  and CONTRIBUTING.md's Phase 0 said so in terms. The promises age on the
+  calendar rather than on a diff, so the release that breaks one looks exactly
+  like the release that does not.
+source_items:
+  - BK-377
+  - BK-369
+audience:
+  - infra.ci
+  - contributor.process
+  - user.site
+co_shipped_items:
+  - BK-375
+  - BK-373
+discovery_followups:
+  - BK-380
+  # Found by round 3's measuring pass: `decide`'s close guard implements the
+  # lane half of "narrowed" only, so a one-extra all-clean dispatch still closes
+  # the issue on one extra's evidence. Measured identically on origin/master, so
+  # pre-existing rather than introduced here, and filed rather than widened into
+  # this change.
+  - BUG-291
+expected_ripples:
+  - sdd/GATE-INVENTORY.md
+  - CHANGELOG.md
+surprising_ripples:
+  # The register's home moved out of KNOWN-FINDINGS.md into a file of its own
+  # (measured collision), and resolving that file's Review-by asymmetry reached
+  # the runbook and the triage skill as well as the file itself.
+  - infra/drift-locks/PYTHON-SUPPORT.md
+  - infra/drift-locks/KNOWN-FINDINGS.md
+  - .claude/skills/drift/SKILL.md
+# Derivation: `git log --oneline origin/master..HEAD`, counting only commits
+# that exist because a review round asked for them. 0950031f implements and does
+# not count. 41aec01b carries round 1's five findings; e430ee7e round 2's five;
+# 3dc12cd7 round 3's twenty; 42bbefae the maintainer's own two review comments,
+# which count for the same reason a panel round does; 5f992e49 (with 971c73b8
+# and 68ed0a72) round 4's; c67cda8a the closing measuring pass's seven; and the
+# commit carrying this line a further reading round's three, which arrived after
+# that pass and so is its own round. Updated as each round lands, so the value
+# is current at every commit rather than filled at the close.
+review_rounds: 7
+phases:
+  - id: orient
+    name: Orient
+    steps:
+      - file: sdd/BACKLOG.md
+        section: "(item)"
+        read_type: gate
+        extract: >-
+          The split by home rather than by rule, and that neither check may
+          decide. Its expected answer for the Rule 9 exercise was stale, which
+          the extract below records
+        outcome: misleading
+        # The body states pyarrow 15.0.2 is younger than 24 months and the
+        # BUG-287 raise is therefore Breaking. Measured from PyPI: uploaded
+        # 2024-03-18, so 30 months old against a 2026-09-17 cutoff and
+        # patch-eligible. True when filed, and a test written from it would have
+        # pinned an answer the check will never give.
+      - file: sdd/DRIFT-RULES.md
+        section: "Rules 2, 3, 5, 6, 7, 9"
+        read_type: gate
+        extract: >-
+          Localize per package; derive the claim space; state why an advisory
+          check is not gating; a register with an owner; the Drift-gate block;
+          and the period from the events rather than the calendar
+        outcome: ok
+      - file: sdd/CI-OPERATIONS.md
+        section: "Rules, drift-guard.yml runbook"
+        read_type: gate
+        extract: >-
+          Rule 2's three layers — workflow header, runbook, triage skill — all
+          owed in the same change as the mechanism. Read here at the start and
+          discharged for the original mechanism, then MISSED for round 2's
+          behaviour change: `decide` gained a refusal to close over an unowned
+          crossing and none of the three layers was updated, so all three still
+          implied a narrowed crossing was inert. Round 3's whole-file pass found
+          five such sites. Reading the rule once at orient time is not what
+          discharges it; a behaviour change late in a loop triggers it again
+        outcome: ok
+  - id: implement
+    name: Wire both halves
+    steps:
+      - file: scripts/drift_report.py
+        section: "Reports, has_signal, decide, main"
+        read_type: gate
+        extract: >-
+          How the verdict composes today, and the two places a calendar signal
+          could be swallowed. `main` returns early when Reports is falsy, and
+          the calendar half comes from no artefact — so the state is attached to
+          Reports and joins its __bool__ rather than the guard being patched
+        outcome: ok
+      - file: infra/drift-locks/KNOWN-FINDINGS.md
+        section: "File format, the bounds paragraph"
+        read_type: gate
+        extract: >-
+          The loader pattern to reuse, and the row shape. Measured rather than
+          assumed: a four-column loader written the same way matched all seven
+          of this file's rows plus its header and separator, so the interpreter
+          register went into a file of its own
+        outcome: ok
+      - file: scripts/check_conda_recipe_pins.py
+        section: "declared_constraints, _collapse"
+        read_type: reference
+        extract: >-
+          The floor collapse across user-facing extras, imported rather than
+          reimplemented. It also supplies the answer to which floor Rule 9 is
+          about: the greatest lower bound, since that is what a user resolves
+          against
+        outcome: ok
+      - file: .github/workflows/drift-guard.yml
+        section: "header, report job"
+        read_type: gate
+        extract: >-
+          The narrowed-dispatch warning (BUG-282), which is why an always-true
+          calendar signal may hold the issue only on an unnarrowed run
+        outcome: ok
+  - id: verify
+    name: Verify
+    steps:
+      - file: tests/scripts/test_drift_report.py
+        section: "(full)"
+        read_type: reference
+        extract: >-
+          The established test shape — payload builders through _load_reports —
+          and the file's own precedent of pinning a guard in both directions
+        outcome: ok
+      - file: pyproject.toml
+        section: "optional-dependencies (the arrow extra)"
+        read_type: verify
+        extract: >-
+          Exercised the Rule 9 check against a real raise: pyarrow 14.0.0 -> 16
+          answered patch-eligible citing 15.0.2's 2024-03-18 upload, and
+          14.0.0 -> 21 answered Breaking citing 20.0.0's 2025-04-27. Both
+          branches run against live PyPI, exit codes 0 and 1
+        outcome: ok
+      - file: CONTRIBUTING.md
+        section: "Release Phase 0"
+        read_type: verify
+        extract: >-
+          Replace the "nothing derives this" clause with the two mechanisms and
+          say which is advisory
+        outcome: ok
+      - file: scripts/check_support_windows.py
+        section: "fetch_releases, judge"
+        read_type: verify
+        extract: >-
+          A line-coverage audit over the four test modules (70% on this file)
+          pointed at the one skip the bounds paragraph did not justify: a
+          version with live files and no upload timestamp was dropped from the
+          claim space, so judge tested the next-oldest release and a raise over
+          a recent one would read patch-eligible. Measured against live PyPI
+          before treating it as real -- zero occurrences. The first survey
+          covered five packages and called them "the packages this repo declares
+          floors for"; floors() returns 19, which round 3 caught, and the
+          widened survey (2617 registered versions) only strengthened the
+          result. The branch is defensive and now UNDECIDED rather than silent.
+          Coverage is a poor test oracle and a good map of untested branches
+        outcome: ok
+      - file: scripts/drift_report.py
+        section: "SupportWindowState, decide"
+        read_type: verify
+        extract: >-
+          Round 2 ran the case the SupportWindowState docstring names rather
+          than reading it, and the stated reason was false: on
+          `extra: s3, lane: all` with both lanes clean and 3.10 one day past
+          its window the run did not leave the issue alone, it CLOSED it.
+          Withholding the update alone therefore bought the recoverable
+          outcome (a body rewritten from a slice) by permitting the
+          unrecoverable one, inverting the ranking decide already states.
+          decide now refuses to close over an unowned crossing too. The
+          lesson is the method: the docstring's worked example was the thing
+          to execute, and no amount of reading it would have shown this
+        outcome: ok
+      - file: .github/workflows/drift-guard.yml
+        section: "report job, dry_run"
+        read_type: verify
+        extract: >-
+          Dispatched on the branch with dry_run=true (run 35275336909) rather
+          than trusting the unit tests: the rendered body carried the Support
+          windows section with all five interpreters, nothing past its window,
+          the register read as empty, and the verdict line matching decide().
+          The section is rendered by the same code path on a real run, so this
+          is the only check that the register file resolves from the workflow's
+          checkout rather than from a test fixture
+        outcome: ok

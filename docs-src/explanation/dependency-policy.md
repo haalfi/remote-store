@@ -93,21 +93,35 @@ convention and may pin tooling directly; they never reach your environment.
 ## Support windows
 
 <a id="rule-8"></a>
-### Rule 8. A Python version is supported at least 3 years after its release
+### Rule 8. A Python version is supported for as long as it gets security fixes
 
-**Why:** [SPEC 0](https://scientific-python.org/specs/spec-0000/), the
-Scientific Python ecosystem's time-based support policy. A shared schedule
-means your other dependencies drop versions on the same cadence we do.
+**Why:** the line worth drawing is the one upstream already draws. CPython
+publishes source-only security releases for five years after a version's first
+release, and a version still receiving them is one you can reasonably still be
+running. [SPEC 0](https://scientific-python.org/specs/spec-0000/), the
+Scientific Python ecosystem's time-based support policy, sets a shorter floor of
+three years; we name it because it is the schedule your *other* dependencies
+drop on, so you can see where ours sits relative to theirs. Ours is the longer
+of the two.
 
-**For you:** which versions are supported *right now* is
-[`requires-python`](https://github.com/haalfi/remote-store/blob/master/pyproject.toml)
-and the `Programming Language :: Python` classifiers beside it, the same
-hand-off [Rule 7](#rule-7) makes for dependency ranges. This rule sets the
-floor under that: the earliest a version can be dropped is computable in
-advance from
-[SPEC 0's drop schedule](https://scientific-python.org/specs/spec-0000/)
-rather than from our release notes. We may support a version longer than the
-minimum; we will not support one for less.
+**For you:** the chart is the rule. Each bar runs from a version's first release
+to the end of its security support, SPEC 0's three-year minimum is marked inside
+it, and the vertical line is today.
+
+```mermaid
+--8<-- "docs-src/_data/python-support-window.mmd"
+```
+
+Which versions are supported *right now* is the `Programming Language :: Python`
+classifiers in
+[`pyproject.toml`](https://github.com/haalfi/remote-store/blob/master/pyproject.toml),
+the same hand-off [Rule 7](#rule-7) makes for dependency ranges. The chart is
+drawn from those classifiers, so it cannot disagree with them. That makes the
+earliest a version can be dropped computable in advance rather than something
+you read out of our release notes, and the window is
+[watched weekly](#how-the-ranges-are-watched) so the date is reported rather
+than noticed. We may support a version past the end of its security support; we
+will not support one for less.
 
 <a id="rule-9"></a>
 ### Rule 9. A supported dependency version stays supported at least 2 years
@@ -119,6 +133,12 @@ The window runs from that dependency's own initial release, not from ours.
 as every version it newly excludes is itself at least 2 years past its own
 release. Excluding a version younger than that is a breaking change and takes
 the path in [Rule 11](#rule-11).
+
+A check at release time derives that test rather than leaving it to be
+remembered. It compares every extra's floors against the previous release's,
+and for each floor that moved it names the newest version the raise newly
+excludes and how old that version's own release is, so the answer is a
+measurement rather than a recollection.
 
 <a id="rule-10"></a>
 ### Rule 10. Security fixes go to the latest release only
@@ -214,6 +234,14 @@ alongside the test tooling it needs. Findings land on a rolling issue. The recor
 published on [Tested versions](../reference/tested-versions.md), which answers
 "what was CI last green against, and what is it held to?" and not "what will
 work".
+
+**The interpreter windows are watched on the same schedule, for a different
+reason.** A dependency range goes stale when an upstream publishes, which a
+re-resolution can detect. A support window closes when a date passes, and no
+diff can carry that. So the same weekly job reports, per supported version,
+when its security support ends and how far away that is. The verdict is
+advisory in the same way the rest of the guard is: a closed window means we
+*may* drop a version, never that we must.
 
 **How fast the tested zone moves is something you can read rather than guess.**
 The guard runs weekly, and each extra on that page carries the date its record

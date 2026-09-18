@@ -9,29 +9,46 @@ is the failure [`sdd/DRIFT-RULES.md` Rule 6](../../sdd/DRIFT-RULES.md#tolerated)
 requires a register to prevent, on pain of the check being switched off instead.
 
 `scripts/drift_report.py` reads the table below, keyed on **extra and lane**. A
-row renders its finding as _known_, naming its owner, and stops it holding the
-rolling issue open; a finding with no row renders as new and does hold it open.
-Removing a row is therefore how a fix starts counting again — delete it in the
-same change that lands the fix.
+row renders its finding as _known_, naming its owner, and — while its
+`Review by` has not passed — stops it holding the rolling issue open; a finding
+with no row renders as new and does hold it open. Removing a row is therefore
+how a fix starts counting again: delete it in the same change that lands the
+fix.
+
+**One table, and a sibling file.** This file is the register for *dependency*
+findings. Interpreters past their support window are registered in
+[`PYTHON-SUPPORT.md`](PYTHON-SUPPORT.md) instead, keyed on the interpreter, with
+its own loader. Separate files rather than a second table here: the two row
+shapes are different, and one loader per file is what keeps either from reading
+the other's rows.
 
 A row is not permission to leave a finding unfixed. It records who owns the fix
 and when the decision is re-read.
 
-**A week whose only findings are registered closes the issue**, so on that week
-the rows render nowhere and this file is where they live. That is the intended
+**A week whose findings are all registered, with no interpreter past its window
+unregistered, closes the issue** — so on that week the rows render nowhere and
+this file is where they live. That is the intended
 trade: an issue that is open every Monday for the same seven rows is one nobody
 opens. (Seven is `load_known_findings()` over the table below, re-run when this
 sentence was last edited; it was five when the sentence was first written.)
 
-**Two bounds this file does not enforce, stated so they are not assumed.**
-`Review by` is read by no code: `drift_report.py` prints it beside the finding
-and nothing compares it against today, so a row past its date keeps silencing
-its finding until a person notices. Nor does anything check that a row's `Owner`
-is still open, so a row outliving the item it names silences that leg
-permanently. Both bite hardest in exactly the weeks the register works — every
-finding registered, the issue closed, and nobody reading these rows at all.
-Re-reading the table is a maintainer's act, and the date is a note to that
-maintainer rather than a mechanism.
+<a id="review-by-is-enforced"></a>
+## `Review by` is read by code, and a row expires
+
+Past its date a row stops silencing its finding and the finding is reported as
+new again, with the row still naming its owner and saying the date has passed.
+So a row cannot outlive its decision quietly. One predicate in
+`drift_report.py` serves this file and
+[`PYTHON-SUPPORT.md`](PYTHON-SUPPORT.md#review-by-is-enforced), so there is one
+rule for the column rather than one per register. **A row whose date is not an
+ISO date is a hard failure**, not a row that never expires: a silencer with no
+end date is the hazard the enforcement removes.
+
+**One bound this file still does not enforce, stated so it is not assumed.**
+Nothing checks that a row's `Owner` is still open, so a row outliving the item it
+names silences that leg until its `Review by` arrives. It bites hardest in
+exactly the weeks the register works — every finding registered, the issue
+closed, and nobody reading these rows at all.
 
 **Scope: what the run reports, not what CI does.** A `newest`-lane smoke failure
 still fails its job, registered or not — that is the posture that lane has
@@ -40,9 +57,12 @@ What a row changes is only whether the finding is presented as news.
 
 ## File format
 
-One table, one row per extra and lane. `Lane` is `newest` or `floor`. `Owner` is
-the backlog item tracking the fix. `Review by` is when the row itself expires:
-past that date, re-read the rationale rather than the row.
+One table, one row per extra and lane. The first cell is the extra in
+backtick-wrapped brackets (`` `[arrow]` ``), which is the shape the loader keys
+on and what keeps it from matching the sibling register's rows. `Lane` is
+`newest` or `floor`. `Owner` is the backlog item tracking the fix. `Review by` is
+when the row expires, per the section above: past that date it stops silencing,
+so re-read the rationale rather than the row.
 
 | Extra | Lane | Owner | Rationale | Review by |
 |---|---|---|---|---|

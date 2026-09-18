@@ -47,11 +47,20 @@ framework](../CLAUDE.md#documentation-framework)): placement →
    Docs describe the pattern and link to the reference; they do not reproduce the
    values.
 
-6. <a id="code-examples-sourced"></a>**Code examples are sourced, not written.** [review-enforced]
-   Doc code blocks come from `examples/snippets/` via `pymdownx.snippets`
-   `--8<--` regions, so CI catches API drift. Hand-written fences are allowed
-   only when the snippet cannot execute in CI (e.g. needs real credentials);
-   note the reason inline.
+6. <a id="code-examples-sourced"></a>**A fenced block in published prose is generated or sourced, not typed.** [review-enforced]
+   Two homes, by what the block is. **Runnable code** comes from
+   `examples/snippets/` via `pymdownx.snippets` `--8<--` regions, so CI catches
+   API drift. A **generated non-code artefact** — a diagram whose content is
+   derived from the repository, such as the support-window chart on the
+   dependency-policy page — comes from a `gen_*` script with a `--check` gate,
+   and is committed under `docs-src/_data/` and included the same way; a
+   diagram with dates in it is a Rule 1 violation the moment it is typed by
+   hand. Hand-written fences are allowed only where neither applies: a snippet
+   that cannot execute in CI (e.g. it needs real credentials), or an
+   illustration of markup rather than a thing being described. Note the reason
+   inline. An illustration containing a literal `--8<--` must escape it with a
+   leading `;`, or `pymdownx.snippets` expands it — silently, until
+   `check_paths: true` made a missing target fail the build.
 
 7. <a id="kernsatz"></a>**Lead with the Kernsatz** — the core claim, stated first. [review-enforced]
    A new or substantially rewritten section in `sdd/`, `.claude/` or a root-level

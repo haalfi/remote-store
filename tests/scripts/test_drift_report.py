@@ -12,14 +12,29 @@ and the workflow's own run is their acceptance test.
 
 from __future__ import annotations
 
+import dataclasses
 import json
 import sys
+from datetime import date
 from pathlib import Path
 
 import pytest
 
 ROOT = Path(__file__).resolve().parent.parent.parent
 SCRIPTS = ROOT / "scripts"
+
+# Every time-dependent entry point in `drift_report` takes a `today`. Four of
+# them DEFAULT it to `date.today()`, and those are the ones a test can get wrong
+# by omission — the rest require it, so the mistake is impossible there.
+# `test_no_call_in_this_module_lets_today_default` below refuses an omission at
+# the four that default, because
+# measured: seven tests in this file went red on a shifted clock -- one from
+# 2026-10-05, when 3.10's window closes with the committed register empty, and
+# six more from 2027-01-01, when every `KNOWN-FINDINGS.md` row's `Review by`
+# expires at once. This day is chosen so both are false: nothing is past its
+# window and every register row is live, which is the state the assertions were
+# written against.
+TODAY = date(2026, 9, 17)
 
 
 @pytest.fixture(scope="module")
@@ -29,6 +44,20 @@ def drift_report():
     import drift_report
 
     return drift_report
+
+
+@pytest.fixture(scope="module")
+def python_support():
+    """The sibling module `drift_report` reads its interpreter dates from.
+
+    Same module object `drift_report` imported, so a `monkeypatch.delitem` on
+    `PYTHON_RELEASES` here is what `windows()` sees.
+    """
+    if str(SCRIPTS) not in sys.path:
+        sys.path.insert(0, str(SCRIPTS))
+    import python_support
+
+    return python_support
 
 
 def _write(dir_: Path, name: str, payload: dict) -> None:
@@ -136,15 +165,17 @@ class TestHasSignal:
             _smoke("s3", "newest", "pass"),
             _smoke("s3", "floor", "pass"),
         )
-        assert drift_report.has_signal(reports, {}) is False
+        assert drift_report.has_signal(reports, {}, today=TODAY) is False
 
     @pytest.mark.parametrize("status", ["drift", "needs_refresh", "error"])
     def test_diff_status_signals(self, drift_report, tmp_path, status):
-        assert drift_report.has_signal(self._reports(drift_report, tmp_path, _diff("s3", status)), {}) is True
+        assert (
+            drift_report.has_signal(self._reports(drift_report, tmp_path, _diff("s3", status)), {}, today=TODAY) is True
+        )
 
     def test_floor_resolve_error_signals(self, drift_report, tmp_path):
         reports = self._reports(drift_report, tmp_path, _diff("s3"), _floor("s3", "error", reason="no wheel"))
-        assert drift_report.has_signal(reports, {}) is True
+        assert drift_report.has_signal(reports, {}, today=TODAY) is True
 
     def test_newest_lane_smoke_failure_signals(self, drift_report, tmp_path):
         # A clean resolution whose isolated install then fails is precisely the
@@ -152,11 +183,11 @@ class TestHasSignal:
         reports = self._reports(
             drift_report, tmp_path, _diff("s3"), _smoke("s3", "newest", "fail", phase="import-extra")
         )
-        assert drift_report.has_signal(reports, {}) is True
+        assert drift_report.has_signal(reports, {}, today=TODAY) is True
 
     def test_floor_smoke_failure_signals(self, drift_report, tmp_path):
         reports = self._reports(drift_report, tmp_path, _diff("s3"), _smoke("s3", "floor", "fail", phase="smoke"))
-        assert drift_report.has_signal(reports, {}) is True
+        assert drift_report.has_signal(reports, {}, today=TODAY) is True
 
     def test_registered_floor_finding_does_not_signal(self, drift_report, tmp_path):
         # Its owner and rationale are committed. Holding the issue open for it
@@ -170,20 +201,20 @@ class TestHasSignal:
             _floor("s3", "error"),
             _smoke("s3", "floor", "fail", phase="smoke"),
         )
-        assert drift_report.has_signal(reports, {("s3", "floor"): ("BUG-287", "2026-12-31")}) is False
+        assert drift_report.has_signal(reports, {("s3", "floor"): ("BUG-287", "2026-12-31")}, today=TODAY) is False
 
     def test_registering_a_floor_does_not_silence_its_newest_lane(self, drift_report, tmp_path):
         # The register is about a known-bad *floor*. It must not also suppress
         # the newest lane for that extra, which is a different claim entirely.
         reports = self._reports(drift_report, tmp_path, _diff("s3"), _smoke("s3", "newest", "fail", phase="smoke"))
-        assert drift_report.has_signal(reports, {("s3", "floor"): ("BUG-287", "2026-12-31")}) is True
+        assert drift_report.has_signal(reports, {("s3", "floor"): ("BUG-287", "2026-12-31")}, today=TODAY) is True
 
     def test_registered_newest_finding_does_not_signal(self, drift_report, tmp_path):
         # The same argument as the floor case: a finding whose owner and
         # rationale are committed is not news. Its leg still goes red — the
         # register changes what the issue presents, never what CI does.
         reports = self._reports(drift_report, tmp_path, _diff("sql"), _smoke("sql", "newest", "fail", phase="smoke"))
-        assert drift_report.has_signal(reports, {("sql", "newest"): ("BUG-281", "2026-12-31")}) is False
+        assert drift_report.has_signal(reports, {("sql", "newest"): ("BUG-281", "2026-12-31")}, today=TODAY) is False
 
     def test_registering_a_finding_never_suppresses_version_drift(self, drift_report, tmp_path):
         # A row registers a verdict somebody owns, not the movement of a
@@ -192,14 +223,14 @@ class TestHasSignal:
         reports = self._reports(
             drift_report, tmp_path, _diff("sql", "drift"), _smoke("sql", "newest", "fail", phase="smoke")
         )
-        assert drift_report.has_signal(reports, {("sql", "newest"): ("BUG-281", "2026-12-31")}) is True
+        assert drift_report.has_signal(reports, {("sql", "newest"): ("BUG-281", "2026-12-31")}, today=TODAY) is True
 
     def test_an_unreadable_report_signals(self, drift_report, tmp_path):
         # A missing row and a clean row look identical on the issue, so a
         # report that silently lost one must hold the issue open.
         _write(tmp_path, "good.json", _diff("s3"))
         (tmp_path / "bad.json").write_text("not json", encoding="utf-8")
-        assert drift_report.has_signal(drift_report._load_reports(tmp_path), {}) is True
+        assert drift_report.has_signal(drift_report._load_reports(tmp_path), {}, today=TODAY) is True
 
     def test_skipped_smoke_is_not_a_failure(self, drift_report, tmp_path):
         # `skipped` means no resolution existed to pin against — reported, not
@@ -213,7 +244,7 @@ class TestHasSignal:
             _floor("s3"),
             _smoke("s3", "floor", "skipped"),
         )
-        assert drift_report.has_signal(reports, {}) is False
+        assert drift_report.has_signal(reports, {}, today=TODAY) is False
 
 
 class TestRenderBody:
@@ -224,7 +255,9 @@ class TestRenderBody:
     def _body(self, drift_report, tmp_path, *payloads, register=None):
         for i, payload in enumerate(payloads):
             _write(tmp_path, f"{i}.json", payload)
-        return drift_report._render_body(drift_report._load_reports(tmp_path), "https://run", register or {})
+        return drift_report._render_body(
+            drift_report._load_reports(tmp_path), "https://run", register or {}, today=TODAY
+        )
 
     def test_floor_smoke_failure_is_installs_then_breaks(self, drift_report, tmp_path):
         body = self._body(
@@ -483,7 +516,7 @@ class TestIncompleteLegs:
         flagged = drift_report._incomplete_legs(reports, ["sql", "yaml"])
         assert any("`[sql]` floor: reported nothing at all" in entry for entry in flagged)
         assert not any("`[yaml]`" in entry for entry in flagged)
-        assert drift_report.has_signal(reports, {}, ["sql", "yaml"]) is True
+        assert drift_report.has_signal(reports, {}, ["sql", "yaml"], today=TODAY) is True
 
     def test_an_extra_that_lost_one_lane_is_not_called_clear(self, drift_report, tmp_path):
         # The half of the same defect a reader actually sees. An incomplete leg
@@ -495,7 +528,7 @@ class TestIncompleteLegs:
             _diff("sql"),
             _smoke("sql", "newest", "pass"),
         )
-        body = drift_report._render_body(reports, "https://run", {}, ["sql"])
+        body = drift_report._render_body(reports, "https://run", {}, ["sql"], today=TODAY)
         assert "## Incomplete legs" in body
         # `[sql]`'s newest diff is `ok`, so it would have been the whole Clear
         # list; excluding it leaves no section at all.
@@ -529,8 +562,8 @@ class TestIncompleteLegs:
 
     def test_an_incomplete_leg_signals_and_renders(self, drift_report, tmp_path):
         reports = self._reports(drift_report, tmp_path, _diff("s3"))
-        assert drift_report.has_signal(reports, {}) is True
-        assert "## Incomplete legs" in drift_report._render_body(reports, "https://run", {})
+        assert drift_report.has_signal(reports, {}, today=TODAY) is True
+        assert "## Incomplete legs" in drift_report._render_body(reports, "https://run", {}, today=TODAY)
 
 
 class TestDecide:
@@ -555,18 +588,18 @@ class TestDecide:
             _floor("s3"),
             _smoke("s3", "floor", "pass"),
         )
-        assert drift_report.decide(reports, {}, ["s3"])[0] == "close"
+        assert drift_report.decide(reports, {}, ["s3"], today=TODAY)[0] == "close"
 
     def test_one_lane_clean_leaves_the_issue_alone(self, drift_report, tmp_path):
         # The case the dry run used to preview as a close.
         reports = self._reports(drift_report, tmp_path, _diff("s3"), _smoke("s3", "newest", "pass"))
-        action, reason = drift_report.decide(reports, {}, ["s3"], ["newest"])
+        action, reason = drift_report.decide(reports, {}, ["s3"], ["newest"], today=TODAY)
         assert action == "leave"
         assert "did not cover both lanes" in reason
 
     def test_a_finding_updates(self, drift_report, tmp_path):
         reports = self._reports(drift_report, tmp_path, _diff("s3", "drift"), _smoke("s3", "newest", "pass"))
-        assert drift_report.decide(reports, {}, ["s3"])[0] == "update"
+        assert drift_report.decide(reports, {}, ["s3"], today=TODAY)[0] == "update"
 
 
 class TestExpectLanesCli:
@@ -583,7 +616,18 @@ class TestExpectLanesCli:
         calls = []
         monkeypatch.setattr(drift_report, "_gh", lambda *a, **k: calls.append(a))
         rc = drift_report.main(
-            [str(tmp_path), "--repo", "haalfi/remote-store", "--run-url", "https://run", "--title", "t", *args]
+            [
+                str(tmp_path),
+                "--repo",
+                "haalfi/remote-store",
+                "--run-url",
+                "https://run",
+                "--title",
+                "t",
+                *args,
+                "--today",
+                str(TODAY),
+            ]
         )
         return rc, capsys.readouterr(), calls
 
@@ -658,7 +702,7 @@ class TestSingleLaneRuns:
 
     def test_clear_names_the_lane_when_only_one_ran(self, drift_report, tmp_path):
         reports = self._reports(drift_report, tmp_path, _diff("s3"), _smoke("s3", "newest", "pass"))
-        body = drift_report._render_body(reports, "https://run", {})
+        body = drift_report._render_body(reports, "https://run", {}, today=TODAY)
         assert "newest lane only" in body
         assert "Both lanes clean" not in body
 
@@ -671,7 +715,7 @@ class TestSingleLaneRuns:
             _smoke("s3", "newest", "pass"),
             _smoke("s3", "floor", "pass"),
         )
-        assert "Both lanes clean" in drift_report._render_body(reports, "https://run", {})
+        assert "Both lanes clean" in drift_report._render_body(reports, "https://run", {}, today=TODAY)
 
     def test_a_both_lane_clear_run_does_close_the_issue(self, drift_report, tmp_path, monkeypatch):
         # The positive half. Measured: with the refusal hard-coded to `if True`
@@ -691,7 +735,17 @@ class TestSingleLaneRuns:
         monkeypatch.setattr(drift_report, "_find_open_issue", lambda *a, **k: 42)
         assert (
             drift_report.main(
-                [str(tmp_path), "--repo", "haalfi/remote-store", "--run-url", "https://run", "--title", "t"]
+                [
+                    str(tmp_path),
+                    "--repo",
+                    "haalfi/remote-store",
+                    "--run-url",
+                    "https://run",
+                    "--title",
+                    "t",
+                    "--today",
+                    str(TODAY),
+                ]
             )
             == 0
         )
@@ -717,6 +771,8 @@ class TestSingleLaneRuns:
                 "t",
                 "--known-findings",
                 str(_register(tmp_path, ("arrow", "floor"))),
+                "--today",
+                str(TODAY),
             ]
         )
         assert rc == 0
@@ -750,7 +806,18 @@ class TestDryRun:
 
         monkeypatch.setattr(drift_report, "_gh", _explode)
         rc = drift_report.main(
-            [str(tmp_path), "--repo", "haalfi/remote-store", "--run-url", "https://run", "--title", "t", "--dry-run"]
+            [
+                str(tmp_path),
+                "--repo",
+                "haalfi/remote-store",
+                "--run-url",
+                "https://run",
+                "--title",
+                "t",
+                "--dry-run",
+                "--today",
+                str(TODAY),
+            ]
         )
         assert rc == 0
         assert "## Drift detected" in capsys.readouterr().out
@@ -762,12 +829,851 @@ class TestDryRun:
         _write(tmp_path, "s3-floor-smoke.json", _smoke("s3", "floor", "pass"))
         monkeypatch.setattr(drift_report, "_gh", lambda *a, **k: None)
         drift_report.main(
-            [str(tmp_path), "--repo", "haalfi/remote-store", "--run-url", "https://run", "--title", "t", "--dry-run"]
+            [
+                str(tmp_path),
+                "--repo",
+                "haalfi/remote-store",
+                "--run-url",
+                "https://run",
+                "--title",
+                "t",
+                "--dry-run",
+                "--today",
+                str(TODAY),
+            ]
         )
         out = capsys.readouterr()
         assert "## Clear" in out.out
         assert "dry run" in out.err
 
     def test_empty_report_dir_is_a_no_op(self, drift_report, tmp_path, monkeypatch):
+        """Still true, and now for a narrower reason than it used to be.
+
+        The guard is `Reports.__bool__`, which the calendar state joined, so
+        "no artefacts" is a no-op only while no support window has also crossed.
+        `TestSupportWindowSignal` pins the other half.
+        """
         monkeypatch.setattr(drift_report, "_gh", lambda *a, **k: (_ for _ in ()).throw(AssertionError("called gh")))
-        assert drift_report.main([str(tmp_path), "--repo", "r", "--run-url", "u", "--title", "t"]) == 0
+        assert (
+            drift_report.main([str(tmp_path), "--repo", "r", "--run-url", "u", "--title", "t", "--today", str(TODAY)])
+            == 0
+        )
+
+
+def _python_register(dir_: Path, *rows: tuple[str, str]) -> Path:
+    """The interpreter register, as `| `3.10` | owner | rationale | review |` rows.
+
+    A sibling of `_register` above, and deliberately a different file: the two
+    registers are keyed differently, and one loader per file is what keeps them
+    from reading each other's rows.
+    """
+    path = dir_ / "python-support.md"
+    path.write_text(
+        "| Interpreter | Owner | Rationale | Review by |\n|---|---|---|---|\n"
+        + "".join(f"| `{version}` | ADR-0039 | kept deliberately | {review} |\n" for version, review in rows),
+        encoding="utf-8",
+    )
+    return path
+
+
+class TestRegisterExpiry:
+    """`Review by` is read by code now, in both registers, through one predicate.
+
+    It used to be read by nothing, which `KNOWN-FINDINGS.md` recorded as a
+    hazard it did not enforce: a row past its date kept silencing its finding
+    until a person noticed.
+    """
+
+    def test_a_future_date_has_not_expired(self, drift_report):
+        assert drift_report.is_expired("2026-12-31", date(2026, 9, 17)) is False
+
+    def test_the_date_itself_has_not_expired(self, drift_report):
+        """A row is live through its review date; it lapses the day after.
+
+        Pinned on both sides of the boundary so the comparison cannot silently
+        become `<=`.
+        """
+        assert drift_report.is_expired("2026-09-17", date(2026, 9, 17)) is False
+        assert drift_report.is_expired("2026-09-16", date(2026, 9, 17)) is True
+
+    def test_an_unparseable_date_is_a_hard_failure(self, drift_report):
+        """Not a row that never expires, which is the hazard being removed."""
+        with pytest.raises(drift_report.RegisterDateError, match="not an ISO date"):
+            drift_report.is_expired("next minor release", date(2026, 9, 17))
+
+    def test_the_refusal_names_the_file_and_the_row(self, drift_report, tmp_path):
+        """DRIFT-RULES Rule 2: name the element, not the fact of a problem.
+
+        The validation lives in the loaders for exactly this reason — they know
+        the path and the key, where `is_expired` only ever sees a bare string.
+        "`Review by` is 'next minor release'" does not tell a maintainer which
+        row to open, whichever of the two files it came from — and the file it
+        came from is the first thing they need.
+        """
+        path = _python_register(tmp_path, ("3.10", "next minor release"))
+        with pytest.raises(drift_report.RegisterDateError) as excinfo:
+            drift_report.load_python_support_register(path)
+        message = str(excinfo.value)
+        assert "python-support.md" in message
+        assert "`3.10`" in message
+
+    def test_the_dependency_register_names_its_row_too(self, drift_report, tmp_path):
+        path = dir_ = tmp_path / "register.md"
+        dir_.write_text("| `[s3]` | floor | BUG-1 | why | whenever |\n", encoding="utf-8")
+        with pytest.raises(drift_report.RegisterDateError) as excinfo:
+            drift_report.load_known_findings(path)
+        message = str(excinfo.value)
+        assert "register.md" in message
+        assert "`[s3]` / floor" in message
+
+    def test_a_malformed_register_is_reported_rather_than_tracebacked(
+        self, drift_report, tmp_path, monkeypatch, capsys
+    ):
+        """A hard failure is still a report. The run exits 1 and touches no issue.
+
+        The `Drift-gate` declaration says so in these terms: nothing this script
+        *finds* makes it exit non-zero, and only an uncomparable register date
+        does.
+        """
+        monkeypatch.setattr(drift_report, "_gh", lambda *a, **k: (_ for _ in ()).throw(AssertionError("called gh")))
+        bad = _python_register(tmp_path, ("3.10", "next minor release"))
+        _write(tmp_path, "s3.json", _diff("s3"))
+        rc = drift_report.main(
+            [
+                str(tmp_path),
+                "--repo",
+                "r",
+                "--run-url",
+                "u",
+                "--title",
+                "t",
+                "--python-support-register",
+                str(bad),
+                "--today",
+                str(TODAY),
+            ]
+        )
+        assert rc == 1
+        assert "unusable register" in capsys.readouterr().err
+
+    def test_an_expired_dependency_row_stops_silencing_its_finding(self, drift_report, tmp_path):
+        """The behaviour change to the dependency register, in the direction
+        that matters: the finding comes back."""
+        _write(tmp_path, "s3.json", _diff("s3"))
+        _write(tmp_path, "s3-newest-smoke.json", _smoke("s3", "newest", "pass"))
+        _write(tmp_path, "s3-floor.json", _floor("s3", "error", reason="no wheel"))
+        _write(tmp_path, "s3-floor-smoke.json", _smoke("s3", "floor", "skipped"))
+        reports = drift_report._load_reports(tmp_path)
+        register = {("s3", "floor"): ("BUG-289", "2026-12-31")}
+        assert drift_report.has_signal(reports, register, today=date(2026, 9, 17)) is False
+        assert drift_report.has_signal(reports, register, today=date(2027, 1, 1)) is True
+
+    def test_silencing_drops_only_the_expired_rows(self, drift_report):
+        register = {("a", "floor"): ("X", "2026-12-31"), ("b", "floor"): ("Y", "2026-01-01")}
+        assert drift_report.silencing(register, date(2026, 9, 17)) == {("a", "floor")}
+
+
+class TestPythonSupportRegister:
+    """The interpreter register's loader, and its disjointness from the other one."""
+
+    def test_reads_version_owner_and_review_date(self, drift_report, tmp_path):
+        path = _python_register(tmp_path, ("3.10", "2026-12-31"))
+        assert drift_report.load_python_support_register(path) == {"3.10": ("ADR-0039", "2026-12-31")}
+
+    def test_the_header_and_separator_are_not_rows(self, drift_report, tmp_path):
+        """The measured failure mode of a loader written without a row shape:
+        a four-cell match takes the header and the `|---|` separator too."""
+        path = _python_register(tmp_path, ("3.10", "2026-12-31"))
+        assert set(drift_report.load_python_support_register(path)) == {"3.10"}
+
+    def test_a_missing_file_is_an_empty_register(self, drift_report, tmp_path):
+        assert drift_report.load_python_support_register(tmp_path / "absent.md") == {}
+
+    def test_the_two_loaders_do_not_read_each_others_rows(self, drift_report, tmp_path):
+        """The collision this file's split exists to prevent, in both directions.
+
+        Measured before the split: a four-cell loader pointed at
+        `KNOWN-FINDINGS.md` matched all seven dependency rows plus the header
+        and separator, inventing seven "interpreters" whose `Review by` was a
+        prose paragraph — which `is_expired` would then reject.
+
+        **Only one direction can use the committed files.** `PYTHON-SUPPORT.md`
+        ships with an empty table on purpose, so asserting the dependency loader
+        reads nothing from it passes for any row shape whatsoever, including a
+        loader that reads interpreter rows — the assertion was vacuous. That
+        direction takes a populated fixture instead, which is the state the
+        collision would actually occur in.
+        """
+        assert drift_report.load_python_support_register(drift_report.KNOWN_FINDINGS) == {}
+        populated = _python_register(tmp_path, ("3.10", "2026-12-31"), ("3.11", "2027-06-30"))
+        assert drift_report.load_python_support_register(populated) != {}, "the fixture must carry rows to be a test"
+        assert drift_report.load_known_findings(populated) == {}
+
+    def test_the_committed_registers_carry_parseable_dates(self, drift_report):
+        """Every live row's date can be compared, in both files.
+
+        `is_expired` refuses an unparseable cell, so a row that cannot be dated
+        would crash the weekly run rather than silence quietly. This is the test
+        that keeps that refusal from being a landmine.
+        """
+        today = date(2026, 9, 17)
+        for register in (
+            drift_report.load_known_findings(),
+            drift_report.load_python_support_register(),
+        ):
+            for _key, (_owner, review) in register.items():
+                assert isinstance(drift_report.is_expired(review, today), bool)
+
+
+class TestSupportWindowState:
+    """The calendar half, over the committed classifiers and release dates."""
+
+    def test_every_supported_interpreter_gets_a_row(self, drift_report):
+        state = drift_report.support_window_state(date(2026, 9, 17))
+        assert [row.version for row in state.rows] == ["3.10", "3.11", "3.12", "3.13", "3.14"]
+
+    def test_nothing_is_past_its_window_today(self, drift_report):
+        """As of the day this shipped, 3.10 was the closest at 17 days out."""
+        state = drift_report.support_window_state(date(2026, 9, 17))
+        assert state.unregistered == ()
+        assert state.holds_issue is False
+
+    def test_a_crossing_with_no_row_holds_the_issue(self, drift_report):
+        state = drift_report.support_window_state(date(2026, 10, 6))
+        assert state.unregistered == ("3.10",)
+        assert state.holds_issue is True
+
+    def test_a_registered_crossing_does_not_hold_the_issue(self, drift_report, tmp_path):
+        register = drift_report.load_python_support_register(_python_register(tmp_path, ("3.10", "2027-06-30")))
+        state = drift_report.support_window_state(date(2026, 10, 6), register)
+        assert state.unregistered == ()
+        assert state.holds_issue is False
+
+    def test_an_expired_row_stops_silencing_the_crossing(self, drift_report, tmp_path):
+        """The interpreter register's whole point: the date is the mechanism."""
+        register = drift_report.load_python_support_register(_python_register(tmp_path, ("3.10", "2026-10-05")))
+        state = drift_report.support_window_state(date(2026, 10, 6), register)
+        assert state.unregistered == ("3.10",)
+        assert state.holds_issue is True
+
+    def test_a_narrowed_run_reports_the_crossing_without_holding_the_issue(self, drift_report):
+        """A crossing is true on every run, and a narrowed non-dry run rewrites
+        the whole body from its slice. So the crossing still renders — it just
+        cannot be what forces the rewrite."""
+        state = drift_report.support_window_state(date(2026, 10, 6), holds_issue=False)
+        assert state.unregistered == ("3.10",)
+        assert state.holds_issue is False
+
+
+class TestSupportWindowSignal:
+    """How the crossing reaches `has_signal`, `decide` and the body."""
+
+    def _clean(self, tmp_path):
+        _write(tmp_path, "s3.json", _diff("s3"))
+        _write(tmp_path, "s3-newest-smoke.json", _smoke("s3", "newest", "pass"))
+        _write(tmp_path, "s3-floor.json", _floor("s3"))
+        _write(tmp_path, "s3-floor-smoke.json", _smoke("s3", "floor", "pass"))
+
+    def test_an_unowned_crossing_is_a_signal_on_an_otherwise_clean_run(self, drift_report, tmp_path):
+        self._clean(tmp_path)
+        reports = dataclasses.replace(
+            drift_report._load_reports(tmp_path),
+            windows=drift_report.support_window_state(date(2026, 10, 6)),
+        )
+        assert drift_report.has_signal(reports, {}, today=date(2026, 10, 6)) is True
+        assert drift_report.decide(reports, {}, today=date(2026, 10, 6))[0] == "update"
+
+    def test_a_clean_run_with_no_crossing_still_closes(self, drift_report, tmp_path):
+        """The passing direction, so the clause above cannot be satisfied by a
+        predicate that simply always returns True."""
+        self._clean(tmp_path)
+        reports = dataclasses.replace(
+            drift_report._load_reports(tmp_path),
+            windows=drift_report.support_window_state(date(2026, 9, 17)),
+        )
+        assert drift_report.has_signal(reports, {}, today=date(2026, 9, 17)) is False
+        assert drift_report.decide(reports, {}, today=date(2026, 9, 17))[0] == "close"
+
+    def test_a_crossing_on_a_narrowed_run_does_not_force_an_update(self, drift_report, tmp_path):
+        self._clean(tmp_path)
+        reports = dataclasses.replace(
+            drift_report._load_reports(tmp_path),
+            windows=drift_report.support_window_state(date(2026, 10, 6), holds_issue=False),
+        )
+        assert drift_report.has_signal(reports, {}, today=date(2026, 10, 6)) is False
+
+    def test_a_narrowed_run_may_not_close_the_issue_over_an_unowned_crossing(self, drift_report, tmp_path):
+        """A narrowed run withholds the update; it must withhold the close too.
+
+        Reproduced on the case the `SupportWindowState` docstring names,
+        `extra: s3, lane: all`, with clean reports in both lanes and 3.10 one
+        day past its window: the run answered **close**, so the rolling issue
+        would disappear while an interpreter sat past its window with nobody
+        named. `holds_issue=False` is about not rewriting a body from a slice,
+        and this file's own lane guard already ranks the two outcomes -- "the
+        body is recoverable if it is wrong; a closed issue is not". Withholding
+        the update while permitting the close took the worse half of that trade.
+        `leave` takes neither: the body survives, and the next unnarrowed run
+        decides.
+        """
+        self._clean(tmp_path)
+        reports = dataclasses.replace(
+            drift_report._load_reports(tmp_path),
+            windows=drift_report.support_window_state(date(2026, 10, 6), holds_issue=False),
+        )
+        action, reason = drift_report.decide(reports, {}, ["s3"], today=date(2026, 10, 6))
+        assert action == "leave"
+        assert "3.10" in reason
+
+    def test_a_narrowed_run_with_a_registered_crossing_still_closes(self, drift_report, tmp_path):
+        """The other direction, so the clause above is not "narrowed never closes".
+
+        A crossing somebody owns is not an open question, so it does not stand
+        between an all-clear run and the close.
+        """
+        self._clean(tmp_path)
+        register = drift_report.load_python_support_register(_python_register(tmp_path, ("3.10", "2027-06-30")))
+        reports = dataclasses.replace(
+            drift_report._load_reports(tmp_path),
+            windows=drift_report.support_window_state(date(2026, 10, 6), register, holds_issue=False),
+        )
+        assert drift_report.decide(reports, {}, ["s3"], today=date(2026, 10, 6))[0] == "close"
+
+    def test_a_narrowed_dispatch_with_no_artefacts_leaves_the_issue_alone(self, drift_report, tmp_path, monkeypatch):
+        """The emptiness guard must key on `holds_issue`, not on `unregistered`.
+
+        Measured before the fix, on a narrowed dispatch (one extra of fourteen)
+        whose legs uploaded nothing, with a crossing present: `holds_issue` was
+        correctly False, but `Reports.__bool__` read `unregistered` and so came
+        back True, `main` did not return early, `_incomplete_legs` reported two
+        lost legs, and `decide` answered `update` -- re-rendering the whole
+        rolling issue from a one-extra slice. That is BUG-282, which the
+        workflow header warns about, and it is a regression against the
+        pre-change behaviour where the same run returned 0 untouched.
+        """
+        calls: list[tuple] = []
+        monkeypatch.setattr(drift_report, "_gh", lambda *a, **k: calls.append(a))
+        monkeypatch.setattr(drift_report, "_find_open_issue", lambda *a, **k: None)
+        monkeypatch.setattr(drift_report, "list_extras", lambda: ["s3", "arrow"])
+        rc = drift_report.main(
+            [
+                str(tmp_path),
+                "--repo",
+                "haalfi/remote-store",
+                "--run-url",
+                "https://run",
+                "--title",
+                "t",
+                "--expect-extras",
+                "s3",
+                "--expect-lanes",
+                "newest,floor",
+                "--today",
+                "2026-10-06",
+            ]
+        )
+        assert rc == 0
+        assert calls == [], "a narrowed dispatch with no artefacts must not rewrite the issue body"
+
+    def test_the_emptiness_message_does_not_deny_a_crossing_it_computed(
+        self, drift_report, tmp_path, monkeypatch, capsys
+    ):
+        """The third reader of the `holds_issue` / `unregistered` distinction.
+
+        The two found in round 2 were `Reports.__bool__` and the rendered
+        section. This is the stderr line the same guard prints on the way out,
+        and it said "no support window crossed" on a run where
+        `unregistered == ('3.10',)` -- measured. It is the line a maintainer
+        reads in a `workflow_dispatch` step log precisely to learn what the run
+        saw, so denying the crossing sends them away from it. Nothing else
+        changes: the run still touches no issue and still exits 0.
+        """
+        monkeypatch.setattr(drift_report, "_gh", lambda *a, **k: pytest.fail("touched the issue"))
+        monkeypatch.setattr(drift_report, "_find_open_issue", lambda *a, **k: None)
+        monkeypatch.setattr(drift_report, "list_extras", lambda: ["s3", "arrow"])
+        rc = drift_report.main(
+            [
+                str(tmp_path),
+                "--repo",
+                "haalfi/remote-store",
+                "--run-url",
+                "https://run",
+                "--title",
+                "t",
+                "--expect-extras",
+                "s3",
+                "--expect-lanes",
+                "newest,floor",
+                "--today",
+                "2026-10-06",
+            ]
+        )
+        assert rc == 0
+        err = capsys.readouterr().err
+        assert "no support window crossed" not in err
+        assert "3.10" in err, "the message must name the crossing this run computed and withheld"
+
+    def test_the_emptiness_message_says_so_when_nothing_has_crossed(self, drift_report, tmp_path, monkeypatch, capsys):
+        """The other direction, so the clause above is not "always name a crossing".
+
+        On `TODAY` nothing is past its window, so the plain sentence is true and
+        must be the one printed. **This test asserted only the exit code until a
+        review pointed out that made it no control at all**: it passed against
+        any wording, including the inverse defect of naming a crossing on a run
+        where none had happened. A control that cannot fail does not bound the
+        clause it sits beside.
+        """
+        monkeypatch.setattr(drift_report, "_gh", lambda *a, **k: pytest.fail("touched the issue"))
+        monkeypatch.setattr(drift_report, "_find_open_issue", lambda *a, **k: None)
+        rc = drift_report.main([str(tmp_path), "--repo", "r", "--run-url", "u", "--title", "t", "--today", str(TODAY)])
+        assert rc == 0
+        err = capsys.readouterr().err
+        assert "no support window crossed" in err
+        assert "past its support window" not in err
+
+    def test_a_bad_today_is_reported_rather_than_tracebacked(self, drift_report, tmp_path, monkeypatch, capsys):
+        """The flag this change introduced, held to this file's own standard.
+
+        Ten lines above the register catch sits the comment "a hard failure is
+        still a report rather than a traceback"; the new flag then raised
+        `ValueError: Invalid isoformat string` out of `main`.
+        """
+        monkeypatch.setattr(drift_report, "_gh", lambda *a, **k: pytest.fail("touched the issue"))
+        rc = drift_report.main(
+            [str(tmp_path), "--repo", "r", "--run-url", "u", "--title", "t", "--today", "next Monday"]
+        )
+        assert rc == 1
+        assert "--today must be YYYY-MM-DD" in capsys.readouterr().err
+
+    def test_a_malformed_expect_extras_is_reported_rather_than_tracebacked(
+        self, drift_report, tmp_path, monkeypatch, capsys
+    ):
+        """The input a workflow expression supplies, so the one most likely to arrive broken.
+
+        `--expect-extras` and `--expect-lanes` are interpolated from another
+        job's outputs, not typed. Measured before this fix: a value opening `[`
+        that did not parse reached `main` as a `json.JSONDecodeError` traceback
+        from inside `_parse_expected`, which told an operator nothing about
+        which argument was wrong.
+        """
+        monkeypatch.setattr(drift_report, "_gh", lambda *a, **k: pytest.fail("touched the issue"))
+        rc = drift_report.main(
+            [
+                str(tmp_path),
+                "--repo",
+                "r",
+                "--run-url",
+                "u",
+                "--title",
+                "t",
+                "--today",
+                str(TODAY),
+                "--expect-extras",
+                "[bad",
+            ]
+        )
+        assert rc == 1
+        err = capsys.readouterr().err
+        assert "::error::" in err
+        assert "'[bad'" in err, "name the value that arrived, not just the failure"
+
+    def test_expect_extras_that_parses_to_a_non_list_is_refused(self, drift_report, tmp_path, monkeypatch, capsys):
+        """`[` is the JSON sniff, so valid JSON of the wrong shape gets that far."""
+        monkeypatch.setattr(drift_report, "_gh", lambda *a, **k: pytest.fail("touched the issue"))
+        rc = drift_report.main(
+            [
+                str(tmp_path),
+                "--repo",
+                "r",
+                "--run-url",
+                "u",
+                "--title",
+                "t",
+                "--today",
+                str(TODAY),
+                "--expect-lanes",
+                '["ok"',
+            ]
+        )
+        assert rc == 1
+        assert "::error::" in capsys.readouterr().err
+
+    def test_a_list_of_non_names_is_refused_rather_than_coerced(self, drift_report, tmp_path, monkeypatch, capsys):
+        """The check the `Raises:` clause promised and the code did not make.
+
+        Measured: `--expect-extras '[1,2]'` passed the container check, went
+        through `str()`, and rendered `[1]` and `[2]` as **fabricated incomplete
+        legs** on an otherwise clean run — then answered `create/update`, so a
+        scheduled run would have rewritten the rolling issue with them.
+        Coercion is the wrong instinct for an input a workflow expression
+        supplies: a `json.dumps` of the wrong object is as likely from a
+        template as a truncated string.
+        """
+        monkeypatch.setattr(drift_report, "_gh", lambda *a, **k: pytest.fail("touched the issue"))
+        rc = drift_report.main(
+            [
+                str(tmp_path),
+                "--repo",
+                "r",
+                "--run-url",
+                "u",
+                "--title",
+                "t",
+                "--today",
+                str(TODAY),
+                "--expect-extras",
+                "[1,2]",
+            ]
+        )
+        assert rc == 1
+        err = capsys.readouterr().err
+        assert "not a name" in err
+        assert "1" in err, "name the element that arrived"
+
+    def test_an_unknown_lane_is_refused(self, drift_report, tmp_path, monkeypatch, capsys):
+        """`LANES` is a closed two-element set, so an unknown lane cannot be interpreted.
+
+        Measured before this check: `--expect-lanes bogus` was accepted whole.
+        The body announced "This run covered the bogus lane only", printed a
+        `Bogus` verdict column, and `_incomplete_leg_rows` mapped the unknown
+        lane onto the floor lane — so a run missing every newest-lane report
+        read as complete. That is exactly the "misreport which legs ran" harm
+        the `Drift-gate` declaration gives as its reason to refuse an input.
+        """
+        monkeypatch.setattr(drift_report, "_gh", lambda *a, **k: pytest.fail("touched the issue"))
+        rc = drift_report.main(
+            [
+                str(tmp_path),
+                "--repo",
+                "r",
+                "--run-url",
+                "u",
+                "--title",
+                "t",
+                "--today",
+                str(TODAY),
+                "--expect-lanes",
+                "bogus",
+            ]
+        )
+        assert rc == 1
+        err = capsys.readouterr().err
+        assert "'bogus'" in err
+        assert "'floor', 'newest'" in err, "say what the closed set is"
+
+    def test_the_real_lanes_are_still_accepted(self, drift_report, tmp_path, monkeypatch):
+        """The other direction, so the clause above is not "lanes never parse"."""
+        monkeypatch.setattr(drift_report, "_gh", lambda *a, **k: pytest.fail("touched the issue"))
+        monkeypatch.setattr(drift_report, "_find_open_issue", lambda *a, **k: None)
+        for value in ("newest,floor", "newest", '["newest", "floor"]'):
+            rc = drift_report.main(
+                [
+                    str(tmp_path),
+                    "--repo",
+                    "r",
+                    "--run-url",
+                    "u",
+                    "--title",
+                    "t",
+                    "--today",
+                    str(TODAY),
+                    "--expect-lanes",
+                    value,
+                ]
+            )
+            assert rc == 0, f"{value!r} is a legitimate lane list"
+
+    def test_an_undated_classifier_is_reported_rather_than_tracebacked(
+        self, drift_report, python_support, tmp_path, monkeypatch, capsys
+    ):
+        """The second hard failure, which the `Drift-gate` text said did not exist.
+
+        `supported_versions` refuses a classifier with no `PYTHON_RELEASES`
+        row -- DRIFT-RULES Rule 3, since an unlisted classifier is what the
+        enumeration exists to catch. Measured before this fix:
+        `UnknownInterpreterError` propagated out of `main` as a traceback, so
+        the weekly run died instead of reporting. `preflight`'s
+        `gen_python_support.py --check` makes the state unreachable on master,
+        which is why it is a bound rather than a live bug -- but the same
+        argument that moved `RegisterDateError` to a reported failure applies
+        unchanged, and the declaration now names both.
+        """
+        monkeypatch.setattr(drift_report, "_gh", lambda *a, **k: pytest.fail("touched the issue"))
+        monkeypatch.setattr(drift_report, "_find_open_issue", lambda *a, **k: None)
+        monkeypatch.delitem(python_support.PYTHON_RELEASES, "3.14")
+        rc = drift_report.main([str(tmp_path), "--repo", "r", "--run-url", "u", "--title", "t", "--today", str(TODAY)])
+        assert rc == 1
+        err = capsys.readouterr().err
+        assert "::error::" in err
+        assert "3.14" in err, "DRIFT-RULES Rule 2: name the classifier, not the fact of a problem"
+
+    def test_an_empty_report_dir_with_a_crossing_still_opens_the_issue(self, drift_report, tmp_path, monkeypatch):
+        """The guard fix, pinned.
+
+        `main` returns early when `Reports` is falsy, and the calendar half comes
+        from no artefact. Before the state was attached to `Reports`, a run whose
+        download produced nothing could not report a crossing at all: no body,
+        no issue, exit 0 — the silent-close class this file was already hardened
+        against, arriving through the guard.
+        """
+        calls: list[tuple] = []
+        monkeypatch.setattr(drift_report, "_gh", lambda *a, **k: calls.append(a))
+        monkeypatch.setattr(drift_report, "_find_open_issue", lambda *a, **k: None)
+        monkeypatch.setattr(drift_report, "list_extras", lambda: ["s3"])
+        rc = drift_report.main(
+            [
+                str(tmp_path),
+                "--repo",
+                "haalfi/remote-store",
+                "--run-url",
+                "https://run",
+                "--title",
+                "t",
+                "--expect-extras",
+                "s3",
+                "--expect-lanes",
+                "newest,floor",
+                "--today",
+                "2026-10-06",
+            ]
+        )
+        assert rc == 0
+        assert calls, "a crossing with no artefacts must still reach the issue"
+        assert calls[0][:2] == ("issue", "create")
+
+
+class TestRenderSupportWindows:
+    """The section a maintainer reads."""
+
+    def test_renders_on_a_clean_week_too(self, drift_report):
+        """The number nobody can compute is how much time is left, so the rows
+        are worth printing even when nothing has crossed."""
+        lines = drift_report._render_support_windows(
+            drift_report.support_window_state(date(2026, 9, 17)), {}, date(2026, 9, 17)
+        )
+        body = "\n".join(lines)
+        assert "## Support windows" in body
+        assert "| `3.10` | 2021-10-04 | 2026-10-04 | 17 days left |" in body
+        assert "| `3.14` | 2025-10-07 | 2030-10-07 | 1481 days left |" in body
+
+    def test_marks_an_unregistered_crossing(self, drift_report):
+        lines = drift_report._render_support_windows(
+            drift_report.support_window_state(date(2026, 10, 6)), {}, date(2026, 10, 6)
+        )
+        body = "\n".join(lines)
+        assert "**2 days past, unregistered**" in body
+        assert "holds this issue open" in body
+
+    def test_a_narrowed_run_does_not_claim_the_crossing_holds_the_issue(self, drift_report):
+        """The reading half of the `holds_issue` distinction.
+
+        Caught by the sibling sweep over the `Reports.__bool__` fix: the section
+        was keyed on `unregistered`, so a narrowed dispatch printed "holds this
+        issue open" for a crossing that could not hold it — sending a reader to
+        look for an issue the run was never going to keep open.
+        """
+        narrowed = drift_report.support_window_state(date(2026, 10, 6), holds_issue=False)
+        body = "\n".join(drift_report._render_support_windows(narrowed, {}, date(2026, 10, 6)))
+        assert "2 days past, unregistered" in body
+        assert "covered only part of the matrix" in body
+        assert "` holds this issue open" not in body
+        # And it says the half that IS true of a narrowed run, since `decide`
+        # refuses to close over the crossing: a reader told only what the run
+        # will not do cannot distinguish that from the crossing having no effect.
+        assert "stop this run closing the issue" in body
+
+    def test_names_the_owner_of_a_registered_crossing(self, drift_report, tmp_path):
+        register = drift_report.load_python_support_register(_python_register(tmp_path, ("3.10", "2027-06-30")))
+        lines = drift_report._render_support_windows(
+            drift_report.support_window_state(date(2026, 10, 6), register), register, date(2026, 10, 6)
+        )
+        body = "\n".join(lines)
+        assert "known, ADR-0039, review by 2027-06-30" in body
+        assert "none of them is holding this issue open" in body
+
+    def test_says_when_a_registered_rows_date_has_passed(self, drift_report, tmp_path):
+        register = drift_report.load_python_support_register(_python_register(tmp_path, ("3.10", "2026-10-05")))
+        lines = drift_report._render_support_windows(
+            drift_report.support_window_state(date(2026, 10, 6), register), register, date(2026, 10, 6)
+        )
+        body = "\n".join(lines)
+        assert "review date passed" in body
+        assert "holds this issue open" in body
+
+    def test_states_that_a_closed_window_does_not_require_a_drop(self, drift_report):
+        """The rule promises a floor, not a ceiling, and a report that reads as
+        an obligation would invert it."""
+        lines = drift_report._render_support_windows(
+            drift_report.support_window_state(date(2026, 9, 17)), {}, date(2026, 9, 17)
+        )
+        assert "licenses a drop; it never requires one" in "\n".join(lines)
+
+    def test_an_empty_state_renders_nothing(self, drift_report):
+        assert drift_report._render_support_windows(drift_report.SupportWindowState(), {}, date(2026, 9, 17)) == []
+
+
+class TestThisModuleIsReproducible:
+    """A guard over this file's own source, not over `drift_report`.
+
+    Seven tests here went red on a shifted clock: one from 2026-10-05, when
+    3.10's window closes against a deliberately empty register, and six more
+    from 2027-01-01, when every `KNOWN-FINDINGS.md` row expires at once. Each
+    had let `today` default to `date.today()`, so each asserted the answer for
+    the day it happened to run. Nothing caught it because they were all green
+    on the day they were written, which is the property a test cannot have and
+    also be a test.
+
+    The fix was mechanical; this is what keeps it. Two earlier attempts at the
+    same class were caught by review rather than by a gate -- a clock-reading
+    assertion in `test_gen_python_support.py`, and these seven -- so the guard
+    is deliberately structural: it reads the source, because a test that runs
+    the code can only ever observe the current date.
+    """
+
+    # Every `drift_report` function whose `today` DEFAULTS, so omitting it
+    # silently asserts the day the test ran. Derived by reading each signature
+    # rather than recalled: `has_signal`, `decide`, `_render_body` and
+    # `_render_smoke_verdicts` default it; `support_window_state`, `is_expired`,
+    # `silencing`, `_known_note`, `_render_support_windows`,
+    # `_render_isolation_findings` and `_render_floor_lane` REQUIRE it, so they
+    # cannot be got wrong this way and need no policing. The first two were the
+    # only entries when this guard was written, which left the two renderers
+    # unguarded — and `_render_body` was already one of the seven offenders the
+    # class docstring describes, so the omission was not hypothetical.
+    TIME_DEPENDENT = {"has_signal", "decide", "_render_body", "_render_smoke_verdicts"}
+
+    def _calls(self):
+        import ast
+
+        tree = ast.parse(Path(__file__).read_text(encoding="utf-8"))
+        for node in ast.walk(tree):
+            if isinstance(node, ast.Call):
+                fn = node.func
+                name = fn.attr if isinstance(fn, ast.Attribute) else getattr(fn, "id", None)
+                yield name, node
+
+    def test_no_call_in_this_module_lets_today_default(self):
+        offenders = [
+            f"line {node.lineno}: {name}()"
+            for name, node in self._calls()
+            if name in self.TIME_DEPENDENT and "today" not in {kw.arg for kw in node.keywords}
+        ]
+        assert offenders == [], f"pass today=TODAY, or the assertion is about the day it ran: {offenders}"
+
+    def test_every_non_zero_exit_from_main_is_reported(self):
+        """The `Drift-gate` block's claim, pinned as a property rather than a count.
+
+        The declaration said "nothing it FINDS makes it exit non-zero" and then
+        listed what does. The list was wrong three times — as one entry, as two,
+        and as a class with `gh` named as the sole non-input escape — because
+        each round added a path without revisiting the sentence. So the sentence
+        stopped enumerating and this asserts the property instead.
+
+        **Two earlier versions of this guard were themselves unsound**, which is
+        the more useful lesson. The first scanned six source lines backwards and
+        passed a bare `return 1` whose window reached an unrelated branch's
+        print. The second required a report anywhere earlier in the same block —
+        and `main`'s top level contains one stderr print, so every statement
+        after it was pre-satisfied and the tail of `main` was unguarded. Each
+        narrowing was refuted by a state the narrowing did not consider, which
+        is the signal to stop narrowing and constrain the subject instead.
+
+        **So the rule is adjacency, and `main` complies with it:** a non-zero
+        exit is `print(..., file=sys.stderr)` immediately followed by the exit.
+        That is checkable without modelling control flow, and it covers `return`,
+        `sys.exit` and `raise SystemExit` alike — `return` alone made
+        `sys.exit(1)` invisible, and `sys.exit(main())` is this module's own
+        idiom, so that was not an exotic shape to miss.
+        """
+        import ast
+
+        source = Path(SCRIPTS / "drift_report.py").read_text(encoding="utf-8")
+        tree = ast.parse(source)
+        main = next(n for n in ast.walk(tree) if isinstance(n, ast.FunctionDef) and n.name == "main")
+
+        def is_stderr_report(stmt: ast.stmt) -> bool:
+            """`print(..., file=sys.stderr)` — the stream matters, not just `file=`."""
+            call = stmt.value if isinstance(stmt, ast.Expr) else None
+            if not isinstance(call, ast.Call) or getattr(call.func, "id", None) != "print":
+                return False
+            for kw in call.keywords:
+                if kw.arg == "file" and isinstance(kw.value, ast.Attribute) and kw.value.attr == "stderr":
+                    return True
+            return False
+
+        def exit_code(stmt: ast.stmt) -> object | None:
+            """The non-zero code this statement leaves the process with, or None.
+
+            `return <literal>`, `sys.exit(<literal>)` and `raise SystemExit(...)`
+            are one thing from a caller's point of view. A non-literal code
+            (`return rc`) is deliberately NOT treated as an exit: this guard
+            cannot evaluate it, and claiming to would be the third unsound
+            version. `main` uses literals, and this test is what keeps that true.
+            """
+            if isinstance(stmt, ast.Return) and isinstance(stmt.value, ast.Constant) and stmt.value.value:
+                return stmt.value.value
+            call = stmt.value if isinstance(stmt, ast.Expr) else None
+            if isinstance(stmt, ast.Raise):
+                call = stmt.exc
+            if isinstance(call, ast.Call):
+                name = getattr(call.func, "attr", None) or getattr(call.func, "id", None)
+                if name in {"exit", "SystemExit"} and call.args:
+                    arg = call.args[0]
+                    if isinstance(arg, ast.Constant) and arg.value:
+                        return arg.value
+            return None
+
+        # Nested functions are their own scope: a helper defined inside `main`
+        # returning 1 is not `main` exiting, and counting it produced a false
+        # positive that would have blocked a legitimate refactor.
+        nested = {
+            n for fn in ast.walk(main) if fn is not main and isinstance(fn, ast.FunctionDef) for n in ast.walk(fn)
+        }
+
+        exits, unreported = [], []
+        for node in ast.walk(main):
+            if node in nested:
+                continue
+            for attr in ("body", "orelse", "finalbody"):
+                block = getattr(node, attr, None)
+                if not isinstance(block, list):
+                    continue
+                for i, stmt in enumerate(block):
+                    if stmt in nested or exit_code(stmt) is None:
+                        continue
+                    exits.append(stmt.lineno)
+                    if i == 0 or not is_stderr_report(block[i - 1]):
+                        unreported.append(stmt.lineno)
+
+        # A FLOOR, not an equality. Derivation: the `return 1` statements inside
+        # `main` at the time of writing are four -- the `--today` parse, the
+        # register load, the undated classifier and the unusable expect-list --
+        # each preceded by its `::error::` print. Equality was the first
+        # spelling and it was wrong in a way the attack harness caught: adding a
+        # new, *correctly reported* exit made the count five and failed the
+        # test, so the check blocked exactly the change it exists to bless. The
+        # floor keeps what equality was for -- if a `return 1` becomes
+        # `return rc`, this guard cannot see it, the count drops to three and
+        # this line fires.
+        #
+        # Stated bound: an exit *added* with a non-literal code is invisible to
+        # this guard. Evaluating arbitrary expressions is what the two unsound
+        # earlier versions tried; the floor plus the adjacency rule is what can
+        # be checked soundly.
+        assert len(exits) >= 4, f"expected at least main's four non-zero exits, found {len(exits)} at {exits}"
+        assert unreported == [], (
+            f"a non-zero exit whose immediately preceding sibling is not a stderr report, at line(s) {unreported}"
+        )
+
+    def test_no_main_invocation_in_this_module_omits_today(self):
+        """`main` takes the day as `--today` inside its argv rather than a kwarg.
+
+        The one that went red first was a `main` call: an all-clear run that
+        stopped closing the issue once 3.10 crossed its window.
+        """
+        import ast
+
+        offenders = [
+            f"line {node.lineno}" for name, node in self._calls() if name == "main" and "--today" not in ast.dump(node)
+        ]
+        assert offenders == [], f"add '--today', str(TODAY) to the argv: {offenders}"

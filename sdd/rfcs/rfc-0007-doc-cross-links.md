@@ -178,14 +178,17 @@ all examples with links to their doc pages and a GitHub link to the
 notebooks folder. It is **exempt** — index pages are navigation, not
 content, and already link outward.
 
-Current pattern:
+Current pattern (the leading `;` is `pymdownx.snippets`' escape, stripped when
+this page renders, so the real pattern is `--8<--` with no semicolon; it is here
+because `check_paths: true` otherwise resolves the include and fails the build
+on a path that has since moved to `examples/getting_started/quickstart.py`):
 ```markdown
 # Quickstart
 
 Minimal config, write, and read.
 
 \`\`\`python
---8<-- "examples/quickstart.py"
+;--8<-- "examples/quickstart.py"
 \`\`\`
 ```
 

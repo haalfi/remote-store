@@ -72,9 +72,9 @@ lacks `actions: write`; the MCP server's `actions_run_trigger` dispatches).
 
 2. **Parse the body.** Extract: the drifted extras and their per-package
    `baseline → resolved` rows, the **Smoke verdicts** table, the **Floor lane**
-   and **Isolated install failed** sections if present, the **Clear** list, and
-   the **Last run** URL. The body is regenerated every run and auto-closes on
-   clear — never edit it.
+   and **Isolated install failed** sections if present, the **Support windows**
+   table, the **Clear** list, and the **Last run** URL. The body is regenerated
+   every run and auto-closes on clear — never edit it.
 
 3. **Classify each verdict (load-bearing).** Read the per-lane verdict and its
    `phase` from the body, not from job conclusions — a floor leg exits 0
@@ -145,9 +145,11 @@ lacks `actions: write`; the MCP server's `actions_run_trigger` dispatches).
      or record in the register why it stands.
    - **`Test plugins cannot coexist with the floor`** → a harness gap, not a
      finding about the floor. Fix the plugin list.
-   - **Marked `_Known_`** → it is in the register with an owner. Nothing to do
-     beyond checking the review date has not passed; if it has, re-read the
-     rationale rather than the row.
+   - **Marked `_Known_`** → it is in the register with an owner. The review date
+     is now read by code: past it the row stops silencing and the finding is
+     reported as new again, with the owner still named and "review date passed"
+     beside it. So a row saying that is the mechanism asking you to re-read the
+     rationale, not a row to extend on sight.
 
    **cancelled** → inconclusive (fail-fast neighbour or concurrency). Re-run
    before trusting it, as `workflow_dispatch` with `extra=all` and `lane=all`,
@@ -157,6 +159,42 @@ lacks `actions: write`; the MCP server's `actions_run_trigger` dispatches).
    single-leg re-run is acceptable only after you have saved the current body —
    or use `dry_run: true`, which renders the body into the job summary and
    leaves the issue untouched.
+
+   **Support windows.** Not a lane, not a refresh, and **never** something this
+   skill acts on by itself. A row here is a **decision to take or re-affirm**:
+
+   - **`N days left`** → nothing to do. The number is there so the next release
+     does not meet the date by surprise.
+   - **`N days past, unregistered`** → CPython has stopped shipping security
+     fixes for that interpreter and nobody has decided about it, so it is
+     holding the issue open. Two answers, and both are the maintainer's: **drop
+     the version**, which is a breaking change moving every spelling of the
+     supported set (the ripple-check's **Supported interpreter set** row
+     enumerates them and
+     [`CONTRIBUTING.md` § When to bump](../../../CONTRIBUTING.md#when-to-bump)
+     prices it); or **keep it and register the decision**, by adding a row to
+     `infra/drift-locks/PYTHON-SUPPORT.md` with an owner, a rationale and a
+     `Review by`. Propose and ask; never edit `pyproject.toml` or add a register
+     row unilaterally.
+   - **`known, <owner>, review by <date>`** → decided already. Read the item or
+     ADR the row names as its `Owner` — printed in that cell — for what was
+     decided and why, before re-opening it.
+     [ADR-0039](../../../sdd/adrs/0039-support-tracks-upstream-security-fixes.md)
+     is where the window itself comes from and takes no position on any
+     particular version, so it is not a substitute for the owner the row names.
+   - **`review date passed`** → the row has stopped silencing. Re-affirm the
+     decision or drop the version; extending the date without re-reading the
+     rationale is what the enforcement exists to prevent.
+
+   **A crossing licenses a drop; it never requires one.** Rule 8 promises a
+   floor, not a ceiling, so "the window closed" is not by itself a reason to
+   drop anything. And a crossing renders on every run while *forcing an update*
+   only on an unnarrowed one, so a narrowed dispatch showing an unregistered
+   crossing is not evidence the issue was going to be rewritten from that slice.
+   It **is** evidence the issue was going to stay open: a narrowed run may not
+   close over an unowned crossing either, so it answers `leave` and the next
+   scheduled run decides. Read a narrowed dispatch as "real and undecided",
+   never as "inert".
 
 4. **Triage the version bumps** for the green extras. Classify each
    `baseline → resolved` by semver: patch/minor and `rc → stable` are routine;
@@ -258,7 +296,12 @@ lacks `actions: write`; the MCP server's `actions_run_trigger` dispatches).
 - A finding that will recur until someone fixes it gets a row in that register,
   in **either** lane. Without one it is reported as new every Monday, and a
   reader who sees the same rows weekly stops reading them. A row changes what
-  the issue presents as news; it never changes whether a leg goes red.
+  the issue presents as news; it never changes whether a leg goes red. **A row
+  expires**: past its `Review by` it stops silencing, in both registers.
+- A **Support windows** row is never refreshed, never registered unilaterally,
+  and never acted on by this skill. It is the maintainer's decision — drop the
+  interpreter, or record why it stays — and this skill's job is to present it
+  with the options and the cost.
 - This skill prepares the refresh (locks, docs, any harness fix) and stops at a
   pushed branch; the user opens the PR via `/pr`. It never edits
   `pyproject.toml` floors, never merges, and never closes the rolling issue by hand.

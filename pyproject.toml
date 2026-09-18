@@ -25,6 +25,28 @@ keywords = [
   "sftp",
   "fsspec",
 ]
+# The `Programming Language :: Python :: X.Y` classifiers below are the
+# AUTHORITATIVE statement of which interpreters this project supports, and this
+# comment is where that is declared (sdd/DRIFT-RULES.md Rule 4 asks for the
+# declaration to sit beside the contract it arbitrates, not in the item that
+# proposed it). They are what PyPI shows a user, so they are the canonical form
+# of a *published* support claim.
+#
+# The other spellings of the set are derived or narrower, and none is co-equal:
+# `requires-python` above is a floor with no ceiling and cannot name the top of
+# the set; `ci.yml`'s `ALL_PYTHONS` is a test matrix rather than a promise;
+# `packaging/conda-forge/variants.yaml`'s `python_min` and `ci.yml`'s
+# `MIN_PYTHON` restate the floor (held equal to it by
+# `scripts/check_conda_recipe_pins.py`); `README.md`'s "Requires Python 3.10+"
+# is prose. Nothing yet holds `ALL_PYTHONS` against these classifiers, which is
+# tracked rather than assumed.
+#
+# `scripts/python_support.py` reads them, and holds each version's release date
+# and the support window derived from it. The user-facing statement is Rule 8 of
+# docs-src/explanation/dependency-policy.md, whose chart is generated from
+# these classifiers by `scripts/gen_python_support.py` and gated in `preflight`.
+# Adding a version here means adding its release date there in the same change;
+# the generator refuses rather than skipping an undated classifier.
 classifiers = [
   "Development Status :: 4 - Beta",
   "Intended Audience :: Developers",
@@ -281,11 +303,14 @@ env.GITHUB_ACTIONS.installer = { value = "pip", if = ["true"] }
 
 [tool.hatch.envs.default.scripts]
 # Fast artifact-drift checks (gen_graph, check_api_docs, gen_features,
-# gen_graph_viz, gen_adr_digest, drift_check render-docs). Surfacing them ahead
+# gen_graph_viz, gen_adr_digest, drift_check render-docs, gen_python_support).
+# Surfacing them ahead
 # of `lint` in `hatch run all` catches drift in seconds rather than after the
 # full lint/typecheck/test gauntlet. CI runs this same target via `uvx hatch run
 # preflight` in the `lint` job (BK-269), so the script list is the single source.
-preflight = ["python scripts/gen_graph.py --check", "python scripts/check_api_docs.py", "python scripts/check_docstring_parity.py", "python scripts/gen_features.py --check", "python scripts/gen_graph_viz.py --check", "python scripts/gen_adr_digest.py --check", "python scripts/drift_check.py render-docs --check"]
+# Every entry is offline by construction; `check-support-windows` below is the
+# one support-window mechanism that reaches PyPI and so is deliberately absent.
+preflight = ["python scripts/gen_graph.py --check", "python scripts/check_api_docs.py", "python scripts/check_docstring_parity.py", "python scripts/gen_features.py --check", "python scripts/gen_graph_viz.py --check", "python scripts/gen_adr_digest.py --check", "python scripts/drift_check.py render-docs --check", "python scripts/gen_python_support.py --check"]
 lint = ["ruff check src/ tests/ examples/ scripts/", "python scripts/check_test_assertions.py tests", "python scripts/check_mock_spec.py tests", "python scripts/check_test_placement.py tests", "python scripts/check_tla_no_emdash.py", "python scripts/check_formal_trace.py", "python scripts/check_capability_parity.py", "python scripts/check_spec_marks.py", "python scripts/check_docs_framework.py", "python scripts/gen_backlogid.py --check", "python scripts/check_rst_roles.py", "python scripts/check_infra_settings.py", "python scripts/check_no_tracker_refs.py", "python scripts/check_breaking_migration_link.py", "python scripts/check_ci_inventory.py", "python scripts/check_traces.py", "python scripts/check_readthedocs_python.py", "python scripts/check_backend_order.py", "python scripts/check_conda_recipe_pins.py", "python scripts/check_ripple_parity.py", "python scripts/check_changelog_unreleased.py", "python scripts/check_custom_backend_guide.py", "python scripts/check_ci_full_matrix.py", "python scripts/check_dafny_twin_parity.py", "python scripts/check_sdd_index.py", "python scripts/gen_gate_inventory.py --check"]
 format = "ruff format src/ tests/ examples/ scripts/"
 format-check = "ruff format --check src/ tests/ examples/ scripts/"
@@ -395,6 +420,25 @@ check-dafny-twin-parity = "python scripts/check_dafny_twin_parity.py {args}"
 # — see scripts/drift_check.py docstring. The scheduled workflow uses the same script.
 drift-check = "python scripts/drift_check.py {args}"
 drift-docs-check = "python scripts/drift_check.py render-docs --check"
+# BK-373 / BK-377: the support-window mechanisms, split by whether they touch
+# the network.
+#
+# `gen-python-support` draws the interpreter windows the dependency policy's
+# Rule 8 publishes, from the classifiers plus the release-date table in
+# `scripts/python_support.py`. Offline and byte-stable, so its `--check` joins
+# `preflight` and `docs-gate` the way `drift-check render-docs` does: the
+# generated artefact is under `docs-src/`, which matches DOCS_PAT and not
+# CODE_PAT, so a docs-only edit to it must still run the gate.
+#
+# `check-support-windows` derives Rule 9's 2-year test at release time and is
+# deliberately in NEITHER gate: it fetches each raised floor's release dates
+# from PyPI, and a gate a contributor runs offline cannot depend on that. It is
+# named from CONTRIBUTING.md's Phase 0 checklist instead. It takes no `--check`:
+# the bare invocation is already read-only, and its exit code is the verdict —
+# 0 when every raise is patch-eligible, 1 when one is breaking or undateable.
+gen-python-support = "python scripts/gen_python_support.py {args}"
+gen-python-support-check = "python scripts/gen_python_support.py --check"
+check-support-windows = "python scripts/check_support_windows.py {args}"
 check-test-placement = "python scripts/check_test_placement.py tests"
 check-test-quality = ["python scripts/check_test_assertions.py tests", "python scripts/check_mock_spec.py tests", "python scripts/check_test_placement.py tests"]
 # Mutation testing. Single shim that delegates to the manifest in
@@ -467,7 +511,7 @@ docs = "mkdocs serve"
 docs-build = "mkdocs build --strict"
 # The full set of checks that validate a docs/spec change, as one entry point CI
 # invokes once. Composed by reference so each sub-target stays the single source.
-docs-gate = ["docs-check", "check-no-tracker-refs", "check-breaking-migration-link", "check-backend-order", "check-ripple-parity", "check-conda-recipe-pins", "check-custom-backend-guide", "check-traces", "check-changelog-unreleased", "check-sdd-index", "gen-backlogid-check", "gen-gate-inventory-check", "check-links", "drift-docs-check", "docs-build"]
+docs-gate = ["docs-check", "check-no-tracker-refs", "check-breaking-migration-link", "check-backend-order", "check-ripple-parity", "check-conda-recipe-pins", "check-custom-backend-guide", "check-traces", "check-changelog-unreleased", "check-sdd-index", "gen-backlogid-check", "gen-gate-inventory-check", "check-links", "drift-docs-check", "gen-python-support-check", "docs-build"]
 pre-commit-install = "pre-commit install"
 # Requires Docker Desktop; not included in 'all' (CI uses setup-dafny-action natively)
 verify-formal = "bash scripts/dafny_verify.sh"
