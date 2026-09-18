@@ -70,8 +70,10 @@ def test_close_posture_outranks_root_rejection(backend: Backend, root: str) -> N
     implementer happened to write first, which is the undeclared-divergence
     shape this whole item exists to remove.
 
-    The plain-path sibling above does not reach this: ``exists()`` carries no
-    root pre-check, so the ordering only shows on a file-shaped op.
+    The plain-path sibling above does not reach this: it probes an ordinary key,
+    so it meets no root pre-check at all. The probes have one of their own, on
+    every backend that decides the root from the key, and the cell below covers
+    that third path.
     """
     _require(backend, Capability.READ)
     backend.close()
@@ -121,3 +123,53 @@ def test_close_posture_outranks_root_write_rejection(backend: Backend, root: str
         with pytest.raises(InvalidPath) as exc_info:
             backend.write(root, b"x")
         assert "is closed" not in str(exc_info.value)
+
+
+# The three probes BE-021 forbids from raising on an inaccessible path. They are
+# the third root pre-check, and the one with no cell until BUG-254: the two above
+# reach a file-shaped and a write-shaped guard, and neither routes through a
+# probe.
+_ROOT_PROBES = {
+    "exists": lambda b, root: b.exists(root),
+    "is_file": lambda b, root: b.is_file(root),
+    "is_folder": lambda b, root: b.is_folder(root),
+}
+
+
+@pytest.mark.spec("BE-020")
+@pytest.mark.spec("BE-029")
+@pytest.mark.parametrize("root", ["", "."], ids=["empty", "dot"])
+@pytest.mark.parametrize("op_name", sorted(_ROOT_PROBES))
+def test_close_posture_outranks_the_root_probes(backend: Backend, root: str, op_name: str) -> None:
+    """The same ordering on the probes, which answer the root from the key.
+
+    BE-029 makes the root's answers definitional, so a backend that decides them
+    from the string returns before touching the lazy client accessor that carries
+    the closed guard — and then a closed store answers ``True`` instead of
+    refusing. That is the ordering BE-020 says must not depend on which line the
+    implementer typed first, and the two cells above cannot reach it: one drives
+    ``read_bytes`` and the other ``write``, neither of which is a probe.
+
+    The gap was not hypothetical. Five classes answered the root probes after
+    ``close()`` — three of them before BUG-254 and two more because that item's
+    first fix pass put its short-circuit ahead of the guard, which every existing
+    cell here stayed green through.
+
+    Gated on LIST for the same reason ``TestBackendRootPath`` is: "the root is a
+    folder" presupposes a backend that has folders.
+    """
+    _require(backend, Capability.LIST)
+    backend.close()
+    if backend.close_is_terminal:
+        with pytest.raises(BackendUnavailable, match="is closed"):
+            _ROOT_PROBES[op_name](backend, root)
+    else:
+        # Reusable: it re-initialises rather than refusing, and BE-004 / BE-005
+        # forbid these three from raising for an inaccessible path, so the answer
+        # itself is not asserted here — only that it is not the terminal guard.
+        error: Exception | None = None
+        try:
+            _ROOT_PROBES[op_name](backend, root)
+        except Exception as exc:  # noqa: BLE001 -- any typed error is acceptable here
+            error = exc
+        assert "is closed" not in str(error)

@@ -568,9 +568,16 @@ class AzureBackend(Backend):
 
         Raises:
             PermissionDenied: If credentials are rejected or lack access (401/403).
-            BackendUnavailable: On throttling (429), 5xx, or transport failure.
+                Not for the store root, which is answered without a request.
+            BackendUnavailable: On throttling (429), 5xx, or transport failure, or
+                after ``close()`` — including for the store root, which the closed
+                guard outranks.
         """
         with self._errors(path):
+            # The closed guard outranks the root answer and so runs first; it
+            # normally rides on the lazy client accessors, which a key-decided
+            # answer never reaches.
+            self._raise_if_closed()
             azure_path = self._azure_path(path)
             if not azure_path:
                 return True
@@ -600,9 +607,13 @@ class AzureBackend(Backend):
 
         Raises:
             PermissionDenied: If credentials are rejected or lack access (401/403).
-            BackendUnavailable: On throttling (429), 5xx, or transport failure.
+                Not for the store root, which is answered without a request.
+            BackendUnavailable: On throttling (429), 5xx, or transport failure, or
+                after ``close()`` — including for the store root, which the closed
+                guard outranks.
         """
         with self._errors(path):
+            self._raise_if_closed()  # outranks the root answer; see ``exists``
             # BE-029: the root is a folder, never a blob, and the answer is
             # decidable from the string. It must be, on either namespace: both
             # spellings alias to an empty blob name, which the Blob SDK rejects
@@ -629,9 +640,13 @@ class AzureBackend(Backend):
 
         Raises:
             PermissionDenied: If credentials are rejected or lack access (401/403).
-            BackendUnavailable: On throttling (429), 5xx, or transport failure.
+                Not for the store root, which is answered without a request.
+            BackendUnavailable: On throttling (429), 5xx, or transport failure, or
+                after ``close()`` — including for the store root, which the closed
+                guard outranks.
         """
         with self._errors(path):
+            self._raise_if_closed()  # outranks the root answer; see ``exists``
             azure_path = self._azure_path(path)
             if not azure_path:
                 return True

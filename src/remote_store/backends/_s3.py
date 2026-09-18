@@ -144,9 +144,17 @@ class S3Backend(_S3Base):
         Raises:
             PermissionDenied: If the credentials lack access. Not for the store
                 root, which is answered without a request.
-            BackendUnavailable: On a transport or service failure, or after ``close()``.
+            BackendUnavailable: On a transport or service failure, or after ``close()``
+                — including for the store root, which the closed guard outranks.
         """
         with self._s3fs_errors(path):
+            # The closed guard outranks the root answer and so runs first: a
+            # closed backend refuses before it classifies the path. It normally
+            # rides on the ``_fs`` accessor, which a key-decided answer never
+            # reaches, so the root has to ask for it. Without this the answer
+            # depends on which guard was written first, which is the shape
+            # ``_reject_root_as_file`` was given its own ordering rule for.
+            self._raise_if_closed()
             if is_root(path):
                 return True
             return bool(self._fs.exists(self._s3_path(path)))
@@ -174,9 +182,11 @@ class S3Backend(_S3Base):
         Raises:
             PermissionDenied: If the credentials lack access. Not for the store
                 root, which is answered without a request.
-            BackendUnavailable: On a transport or service failure, or after ``close()``.
+            BackendUnavailable: On a transport or service failure, or after ``close()``
+                — including for the store root, which the closed guard outranks.
         """
         with self._s3fs_errors(path):
+            self._raise_if_closed()  # outranks the root answer; see ``exists``
             if is_root(path):
                 return True
             try:

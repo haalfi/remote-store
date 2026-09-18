@@ -198,6 +198,10 @@ class S3PyArrowBackend(_S3Base):
         # reads "there is no root" -- the same wire answer the s3fs lane in
         # ``_s3.py`` had to stop believing, and for the same reason.
         with self._s3fs_errors(path):
+            # The closed guard outranks the root answer and so runs first; it
+            # normally rides on the ``_s3fs`` accessor, which a key-decided
+            # answer never reaches. Same ordering as ``_s3.py``.
+            self._raise_if_closed()
             if is_root(path):
                 return True
             return bool(self._s3fs.exists(self._s3_path(path)))
@@ -212,6 +216,7 @@ class S3PyArrowBackend(_S3Base):
 
     def is_folder(self, path: str) -> bool:
         with self._s3fs_errors(path):
+            self._raise_if_closed()  # outranks the root answer; see ``exists``
             if is_root(path):
                 return True  # BE-029, decided from the key as in ``exists``
             try:

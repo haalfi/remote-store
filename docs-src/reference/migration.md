@@ -33,25 +33,46 @@ that set, and the `GraphBackend` paragraph below says what it answers and why.
 **Against a bucket you are denied rather than one that is missing**, `exists("")`
 and `is_folder("")` on `S3Backend` and `S3PyArrowBackend` now answer `True`
 instead of `False` and `PermissionDenied` respectively. `S3Boto3Backend` already
-answered `True` for both, so this aligns the three lanes: the root is a folder by
-definition, and none of the three issues a request to say so. Every probe on a
-path *under* the root still reports a denial as `PermissionDenied`.
+answered `True` for both, so the three lanes now agree on those two probes:
+neither issues a request at the root, and the root is a folder by definition.
+`is_file("")` is **not** in that set — it still reaches the wire on the two s3fs
+lanes and so still reports a denial as `PermissionDenied`, where
+`S3Boto3Backend` answers `False` from the key. That split is unchanged by this
+release. Every probe on a path *under* the root still reports a denial as
+`PermissionDenied` on all three.
 
-**What to change.** Two `except` clauses stop firing:
+**A closed backend still refuses at the root.** `close()` outranks every root
+answer, so after it these probes raise `BackendUnavailable` rather than
+answering — on all five classes, two of which did answer before this release.
+
+**What to change.** Two handlers stop firing.
+
+An `except NotFound` that detected a missing container:
 
 ```python
-# Used to detect a missing container on S3Boto3Backend / Azure. No longer raises.
+# On S3Boto3Backend, AzureBackend, AsyncAzureBackend. No longer raises.
 try:
     info = backend.get_folder_info("")
 except NotFound:
     ...            # dead branch from v0.33.0 — the root aggregates to zero instead
 ```
 
-and a branch keyed on `exists("")` being `False` on the two s3fs lanes now takes
-the other arm. [`Store.ping()`](api/store.md) — `Backend.check_health()` if you
-hold a backend directly — remains the operation whose job is to report an
-unreachable store; see the v0.30.0 to v0.31.0 section for which backends it
-answers on and which it does not.
+and an `except PermissionDenied` around a root probe on the two s3fs lanes:
+
+```python
+# On S3Backend / S3PyArrowBackend, against a bucket you cannot see.
+try:
+    ok = backend.is_folder("")
+except PermissionDenied:
+    ...            # dead branch from v0.33.0 — answers True from the key instead
+```
+
+A branch keyed on `exists("")` being `False` on those two lanes also now takes
+the other arm; that is a condition rather than a handler.
+[`Store.ping()`](api/store.md) — `Backend.check_health()` if you hold a backend
+directly — remains the operation whose job is to report an unreachable store;
+see the v0.30.0 to v0.31.0 section for which backends it answers on and which it
+does not.
 
 **`exists("")` is still not a portable "is my store there?"** — less so than
 before, in fact: it now answers `True` on every measured backend whether or not
@@ -504,14 +525,15 @@ backend suppresses every `404` on a probe, and the absent-drive section below
 builds a detection recipe on exactly that answer. It is not going to change.
 
 In v0.31.0 two other backends — `S3Backend` and `S3PyArrowBackend` — also
-answered this row differently once the container was gone, and three more
-answered the `get_folder_info` row differently; v0.33.0 closes both, and its own
-section describes what changed. The practical consequence is the one worth
-carrying away and it is
-unchanged by the fix: **`exists("")` is not a portable "is my store there?"** —
-it answers `True` for a store whose container is missing, which is what the row
-means by a folder that always exists. See the absent-container section below for
-what to call instead.
+answered this row differently once the container was gone, answering `False`
+where the table says `True`, and three more answered the `get_folder_info` row
+differently. v0.33.0 closes both; its own section describes what changed and is
+the one to read if you are upgrading past v0.32.0. The practical consequence
+holds either way and is the thing worth carrying away: **`exists("")` is not a
+portable "is my store there?"** — from v0.33.0 because it answers `True` for a
+store whose container is missing, and on 0.31.0 and 0.32.0 because the two
+backends above answer `False` where the rest answer `True`. See the
+absent-container section below for what to call instead.
 
 The last row changed behaviour rather than an error type. A write addressed at
 the root used to reach the storage system: on SFTP with no `base_path` it left
@@ -578,10 +600,12 @@ a deleted root, and `S3Boto3Backend`, `AzureBackend`, `AsyncAzureBackend` and
 | `exists("")`, `is_folder("")` on the store root | `True` — the root is a folder whether or not the container is |
 
 **The root had not caught up everywhere in v0.31.0.** Five backend classes
-answered the root differently once the container was gone — two directions, five
-classes, and `get_folder_info("")` was one of them. That is closed in v0.33.0;
-see its section for the answers you get now, and prefer it over this table if you
-are upgrading past v0.32.0.
+answered the root differently once the container was gone, in two opposite
+directions: two answered `exists("")` and `is_folder("")` as `False`, and three
+raised `NotFound` from `get_folder_info("")`. That is closed in v0.33.0. **For
+the root, prefer its section over the last row of this table** if you are
+upgrading past v0.32.0; the other rows are about paths under the container, are
+unchanged by that release, and this table is still their only home.
 
 **What to change.** An `except` clause that caught the old error to detect a
 store that is not there no longer fires. [`Store.ping()`](api/store.md) —

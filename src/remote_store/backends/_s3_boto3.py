@@ -325,10 +325,16 @@ class S3Boto3Backend(Backend):
 
         Raises:
             PermissionDenied: If the credentials are rejected or lack access (403).
+                Not for the store root, which is answered without a request.
             BackendUnavailable: On throttling, 5xx, or transport failure, or after
-                ``close()``.
+                ``close()`` — including for the store root, which the closed guard
+                outranks.
         """
         with self._boto_errors(path):
+            # The closed guard outranks the root answer and so runs first; it
+            # normally rides on the ``_client`` accessor, which a key-decided
+            # answer never reaches.
+            self._raise_if_closed()
             if is_root(path):
                 return True
             if self._head_or_none(path) is not None:
@@ -340,9 +346,13 @@ class S3Boto3Backend(Backend):
 
         Raises:
             PermissionDenied: If the credentials are rejected or lack access (403).
-            BackendUnavailable: On throttling, 5xx, or transport failure, or after ``close()``.
+                Not for the store root, which is answered without a request.
+            BackendUnavailable: On throttling, 5xx, or transport failure, or after
+                ``close()`` — including for the store root, which the closed guard
+                outranks.
         """
         with self._boto_errors(path):
+            self._raise_if_closed()  # outranks the root answer; see ``exists``
             # The root is a folder, never an object -- and HeadObject rejects a
             # zero-length Key at parameter validation, so this must short-circuit
             # rather than let the SDK turn a legitimate query into an error.
@@ -360,9 +370,13 @@ class S3Boto3Backend(Backend):
 
         Raises:
             PermissionDenied: If the credentials are rejected or lack access (403).
-            BackendUnavailable: On throttling, 5xx, or transport failure, or after ``close()``.
+                Not for the store root, which is answered without a request.
+            BackendUnavailable: On throttling, 5xx, or transport failure, or after
+                ``close()`` — including for the store root, which the closed guard
+                outranks.
         """
         with self._boto_errors(path):
+            self._raise_if_closed()  # outranks the root answer; see ``exists``
             if is_root(path):
                 return True
             if self._head_or_none(path) is not None:

@@ -106,6 +106,37 @@ phases:
         extract: >-
           A fix that breaks an except clause without earning the marker owes the
           migration section alone
+  - id: fix
+    name: Fix passes, under review
+    steps:
+      - file: sdd/specs/003-backend-adapter-contract.md
+        section: "BE-029 / BE-020 outranks this check"
+        read_type: gate
+        extract: >-
+          A backend with a root pre-check MUST run the closed guard ahead of it.
+          Retrospective: this was read in the orient phase and applied to the
+          write and file-shaped guards only; the probes got a short-circuit with
+          no closed guard, which regressed two classes and went unnoticed
+          because the clause names file- and write-shaped calls and the
+          conformance cells drive exactly those two. Round 3 found it three
+          ways at once
+      - file: tests/backends/conformance/test_close_posture.py
+        section: "test_close_posture_outranks_root_rejection"
+        read_type: reference
+        outcome: misleading
+        extract: >-
+          Its docstring said "``exists()`` carries no root pre-check, so the
+          ordering only shows on a file-shaped op" — true when written, and the
+          reason a reader concludes the probes need no cell. It is the sentence
+          that made the gap invisible, and this work falsified it
+      - file: src/remote_store/_store.py
+        section: "get_folder_info (max_depth branch)"
+        read_type: reference
+        extract: >-
+          The depth-limited aggregate is assembled at the Store layer and gates
+          on ``is_folder``, so a backend probe change carries a published
+          Store-level answer with it. Neither the ripple-check table nor the
+          item anticipated this path
   - id: verify
     name: Verify
     steps:
@@ -126,3 +157,11 @@ surprising_ripples:
   - src/remote_store/backends/_s3_base.py
   - src/remote_store/backends/_flat_ns.py
   - sdd/specs/040-sql-blob-backend.md
+  - tests/backends/conformance/test_close_posture.py
+  - tests/backends/conformance/aio/test_close_posture.py
+  - src/remote_store/_store.py
+# Derivation: `git log --oneline origin/master..HEAD` minus the implementing
+# commit. Re-run before the final push rather than carried; at the time of
+# writing that is b2de2da (implements, does not count) plus one commit per
+# review round, and the value below counts the commit carrying this line.
+review_rounds: 3
