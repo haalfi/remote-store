@@ -242,6 +242,107 @@ async def _drain_all(agen: Any) -> list[Any]:
     return [item async for item in agen]
 
 
+_ROOT_ROW = [
+    ("exists", lambda b, root: b.exists(root), True),
+    ("is_folder", lambda b, root: b.is_folder(root), True),
+    ("is_file", lambda b, root: b.is_file(root), False),
+]
+
+
+class TestTheRootAnswersTheSameAgainstAnAbsentContainer:
+    """BE-029's root row, async half.
+
+    See the sync sibling for the rule and for which cell breached it. This
+    adapter carries its own ``get_folder_info`` body — both branches of it — so a
+    sync-only suite proves nothing here, which is the reason every other class in
+    this file exists.
+    """
+
+    @pytest.mark.spec("BE-029", "BE-004", "BE-005", "BE-021", "ASYNC-012")
+    @pytest.mark.parametrize("root", ["", "."], ids=["empty", "dot"])
+    @pytest.mark.parametrize(("op_name", "call", "expected"), _ROOT_ROW, ids=[n for n, _c, _e in _ROOT_ROW])
+    async def test_root_probes_answer_the_row(
+        self,
+        backend: Any,
+        root: str,
+        op_name: str,
+        call,  # noqa: ANN001 -- parametrized callable
+        expected: bool,
+    ) -> None:
+        """The in-file control: these answered the row before the aggregate did."""
+        assert await call(backend, root) is expected, op_name
+
+    @pytest.mark.spec("BE-029", "BE-017", "BE-021")
+    @pytest.mark.parametrize("root", ["", "."], ids=["empty", "dot"])
+    async def test_root_folder_info_aggregates_to_zero(self, backend: Any, root: str) -> None:
+        """An absent container is an empty store at the root, never a missing path."""
+        info = await backend.get_folder_info(root)
+        assert info.file_count == 0
+        assert info.total_size == 0
+        assert info.modified_at is None
+
+    @pytest.mark.spec("BE-029", "BE-017", "BE-021")
+    @pytest.mark.parametrize("root", ["", "."], ids=["empty", "dot"])
+    async def test_root_folder_info_aggregates_to_zero_on_hns(self, httpserver: HTTPServer, root: str) -> None:
+        """The ADLS Gen2 branch, which raises a different exception from the flat one."""
+        instance = _backend_at(serve_hns_absent_filesystem(httpserver), hns=True)
+        try:
+            info = await instance.get_folder_info(root)
+        finally:
+            await instance.aclose()
+        assert info.file_count == 0
+        assert info.total_size == 0
+        assert info.modified_at is None
+
+    @pytest.mark.spec("BE-029", "BE-021")
+    async def test_a_container_deleted_mid_aggregate_raises(self, httpserver: HTTPServer) -> None:
+        """The root tolerance is bounded to the first page. See the sync sibling."""
+        endpoint = serve_container_vanishing_mid_listing(httpserver, page_one=MID_SCAN_BLIND_PAGES["get_folder_info"])
+        instance = _backend_at(endpoint)
+        try:
+            with pytest.raises(NotFound):
+                await instance.get_folder_info("")
+        finally:
+            await instance.aclose()
+
+    @pytest.mark.spec("BE-029", "BE-021")
+    async def test_a_filesystem_deleted_mid_aggregate_raises(self, httpserver: HTTPServer) -> None:
+        """The same bound on the HNS branch."""
+        endpoint = serve_hns_filesystem_vanishing_mid_listing(
+            httpserver,
+            page_one=HNS_MID_SCAN_BLIND_PAGES["get_folder_info"],
+        )
+        instance = _backend_at(endpoint, hns=True)
+        try:
+            with pytest.raises(NotFound):
+                await instance.get_folder_info("")
+        finally:
+            await instance.aclose()
+
+    @pytest.mark.spec("BE-029", "BE-021")
+    @pytest.mark.parametrize("root", ["", "."], ids=["empty", "dot"])
+    async def test_a_denied_container_is_not_an_absent_one_at_the_root(self, denied_backend: Any, root: str) -> None:
+        """The narrowness guard, on the one root cell that tolerates a 404 at all."""
+        with pytest.raises(PermissionDenied) as exc_info:
+            await denied_backend.get_folder_info(root)
+        assert exc_info.value.backend == "async-azure"
+
+    @pytest.mark.spec("BE-029", "BE-021")
+    @pytest.mark.parametrize("root", ["", "."], ids=["empty", "dot"])
+    async def test_a_denied_filesystem_is_not_an_absent_one_at_the_root(
+        self,
+        httpserver: HTTPServer,
+        root: str,
+    ) -> None:
+        """The same guard on the HNS branch, which catches its own exception."""
+        instance = _backend_at(serve_hns_denied(httpserver), hns=True)
+        try:
+            with pytest.raises(PermissionDenied):
+                await instance.get_folder_info(root)
+        finally:
+            await instance.aclose()
+
+
 class TestTheHnsListingsAnswerTheSameWay:
     """The ADLS Gen2 branches, async half, executed rather than argued.
 

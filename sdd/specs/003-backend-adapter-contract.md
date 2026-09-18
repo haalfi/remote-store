@@ -161,23 +161,56 @@ both: a backend that gets the order wrong is observable as exactly the wrong
 error class or a spurious success, which is what the cells below assert.
 
 **BE-020 outranks this check.** On a backend with `close_is_terminal = True`,
-a file-shaped **or write-shaped** call on the root *after* `close()` raises
-`BackendUnavailable`, not `InvalidPath`: BE-020 states its guarantee without
-exception, and a closed backend is the more fundamental error. A root pre-check
-is cheap and so naturally wants to run first — a backend that has one MUST still
-run the closed guard ahead of it, or the answer depends on which guard the
-implementer happened to write first.
+every operation in the table above except the addressing row raises
+`BackendUnavailable` *after* `close()` — not `InvalidPath` from a file- or
+write-shaped guard, not the row's definitional answer from a probe or aggregate,
+and not a class the operation's own error handling substituted. A closed backend
+is the more fundamental error, and a root pre-check is cheap and so naturally
+wants to run first: a backend that has one MUST still run the closed guard ahead
+of it, or the answer depends on which guard the implementer happened to write
+first.
 
-**Both pre-checks, and they need separate cells.** A backend that refuses the
-root on writes carries a second, differently-worded guard, and the read-shaped
-cell cannot reach it — `read_bytes` never touches a write guard. That is not
-hypothetical: `GraphBackend` ordered its write guard ahead of its closed check
-and answered a closed store with "cannot write to the drive root", which the read
-cell had passed for years. Pinned by
-`test_close_posture_outranks_root_rejection` (the file-shaped pre-check) and
-`test_close_posture_outranks_root_write_rejection` (the write-shaped one), both
-in `tests/backends/conformance/test_close_posture.py` and both with an `aio/`
-sibling.
+**The one carve-out is addressing, and it is named rather than derived.**
+`native_path(path)` / `resolve(path).native_path` — the table's addressing row —
+are pure key transformations that answer after `close()` exactly as they did
+before, because BE-025's round-trip identity has nothing to do with a live
+connection. (`to_key` is addressing's other half and is governed under § Round-trip
+consequence rather than by a row here; it takes the same carve-out.)
+
+**Do not restate that carve-out as "whatever reaches no client".** The
+key-decided root answers — `exists`, `is_file`, `is_folder`, `get_folder_info`
+— reach no client *either*, by construction: that is what deciding the root from
+the key means, and it is precisely why each of them has to call the closed guard
+explicitly rather than inherit it from a lazy accessor. A criterion phrased by
+mechanism exempts the operations this clause exists to bind, which is the reading
+that let five classes answer a closed store. The carve-out is the addressing row,
+by name, and nothing else.
+
+**Three pre-checks, and they need separate cells.** The rule reaches the root
+three ways, and no one cell reaches another's path:
+
+| Shape | What carries the pre-check | Conformance cell |
+|---|---|---|
+| File-shaped | `_reject_root_as_file` and its equivalents | `test_close_posture_outranks_root_rejection` |
+| Write-shaped | a second, differently-worded write guard | `test_close_posture_outranks_root_write_rejection` |
+| Probe and aggregate | the key-decided answer BE-029's table requires | `test_close_posture_outranks_the_root_probes` |
+
+All three live in `tests/backends/conformance/test_close_posture.py`, each with
+an `aio/` sibling. None is hypothetical. `GraphBackend` ordered its write guard
+ahead of its closed check and answered a closed store with "cannot write to the
+drive root", which the read cell had passed for years. The third row is BUG-254's:
+five classes answered the root probes after `close()` — three of them for as long
+as they had short-circuited the root from the key, and two more added in the
+course of that item — and the two cells above stayed green throughout, because
+neither drives a probe.
+
+**The third row's cell enumerates its operations rather than listing them.** A
+key-decided root answer can live in any operation the row governs, and patching
+the ones an author thought of is what produced the second half of that five: the
+probes were fixed from a reading of where the hazard was, and the next review
+round found the same defect in `get_folder_info`, reached through an exception
+handler that caught the guard's own error and re-classified it. An operation
+added to the row is added to the cell's parametrisation.
 
 **One predicate, both spellings.** `remote_store._path.is_root` is the shared
 test; `strip_root` is its normalising form. A backend that asks `if path`
@@ -824,35 +857,43 @@ Stated here because this is where a reader looking for per-operation answers
 lands, and following it alone yields the wrong answer for one path in every
 operation it names.
 
-**Five of the thirteen concrete backends do not meet the root row against an
-absent container, and the list below does not record it.** Conformance's
-`TestBackendRootPath` runs the row against every backend with the container
-*present*, and all of them pass; the breaches are all in the absent state,
-which no conformance fixture reaches (BK-345 owns that gap). § Known
-divergences holds two live bullets, and neither is root-specific: both are of
-the first-page bound.
+**Ten of the thirteen concrete backends are measured against an absent
+container at the root and all ten meet the row; three are not measured.**
+Meeting it: `LocalBackend`, `SFTPBackend`, `MemoryBackend`,
+`AsyncMemoryBackend`, `SQLBlobBackend`, `S3Backend`, `S3PyArrowBackend`,
+`S3Boto3Backend`, `AzureBackend`, `AsyncAzureBackend`. Unmeasured:
+`GraphBackend`, `ReadOnlyHttpBackend`, `SQLQueryBackend`. Derivation of the
+thirteen: the classes declaring `CAPABILITIES`, excluding the two abstract
+bases and the sync adapter — enumerated by importing every module under
+`remote_store.backends` and `remote_store.aio.backends` and selecting classes
+with `CAPABILITIES` in their own `__dict__`.
 
-The root breaches are measured and tracked as **BUG-254**: `exists("")` and
-`is_folder("")` answer `False` on `S3Backend` and `S3PyArrowBackend`, and
-`get_folder_info("")` raises `NotFound` on `S3Boto3Backend`, `AzureBackend` and
-`AsyncAzureBackend` — five classes, seven class-cells (two operations on two
-classes, plus one on three), in two opposite directions. `SQLBlobBackend` is
-the one of the six flat-namespace classes BUG-254 measured that complies.
+**The measurement is per-backend, and that is a stated coverage bound rather
+than a gate.** Conformance's `TestBackendRootPath` runs the row against every
+LIST-capable backend, but with the container *present*; no conformance fixture
+removes one. The backends whose container can go absent under them therefore
+pin the absent state in their own homes:
+`tests/backends/s3/test_denied_probe.py` for the three S3 lanes,
+`tests/backends/azure/test_absent_container.py` and its `aio/` sibling for the
+two Azure classes, `tests/backends/local/test_absent_root.py` for the deleted
+root, `tests/backends/sqlblob/test_absent_table.py` for the dropped table. The
+remaining three — `SFTPBackend`, `MemoryBackend`, `AsyncMemoryBackend` — have
+no container distinct from an empty store (SFTP's `base_path` is created
+lazily, so an untouched store *is* the absent case), and the conformance
+cell's unseeded arm is that measurement.
+**A fourteenth backend is therefore exempt by default at the root exactly as it
+is for the absent-container clause**, which is the gap BK-345 owns; nothing
+here closes it.
 
-`LocalBackend`'s breach was whole-backend and included all three root cells:
-once its root directory was gone it answered *every* operation with
-`InvalidPath`. It has left the list below (BUG-247) and now meets the row,
-deciding the root from the key rather than from a stat. That leaves
-`GraphBackend`, `ReadOnlyHttpBackend` and `SQLQueryBackend` unmeasured for the
-root, and `SFTPBackend`, `MemoryBackend` and `AsyncMemoryBackend` meeting it
-alongside Local and `SQLBlobBackend` — five breaching, five meeting, three
-unmeasured, of the thirteen classes that declare `CAPABILITIES`, excluding the
-two abstract bases and the sync adapter.
+The three unmeasured classes are unmeasured for different reasons, and none is
+a divergence: `ReadOnlyHttpBackend` and `SQLQueryBackend` arrange no absent
+container through the `Backend` API at all, and `GraphBackend`'s
+absent-drive answers are its own (GR-031, [ADR-0038](../adrs/0038-absent-container-outranks-drive-identity.md)).
 
-These are absent from the list below because that list is organised by the
-absent-container *clause* and these are breaches of BE-029's root row; the
-pointer is here so a reader does not read that list as meaning the root is
-settled.
+The root is absent from § Known divergences below because that list is
+organised by the absent-container *clause* and the root is BE-029's; the
+pointer is here so a reader does not read that list as deciding the root
+either way.
 
 **The write-to-root rule is a different count and every class now meets it.**
 Of the same thirteen, **two** have no `WRITE` capability and are not bound

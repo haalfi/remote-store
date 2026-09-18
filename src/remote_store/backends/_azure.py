@@ -560,17 +560,26 @@ class AzureBackend(Backend):
 
         Probes the blob first (one HEAD); if absent, probes for a folder (an HNS
         directory, or any blob under the ``path/`` prefix on flat accounts). The
-        root always exists. An absent *container* answers ``False`` — a container
-        that does not exist holds no path either, and this probe never raises for
-        a missing path. A *denied* container still raises: the prefix listing is
-        the determinant here, so it fails closed rather than reporting "nothing
-        there" for something you may not see.
+        root always exists, decided from the key before any request, so it answers
+        ``True`` whether the container is missing or denied. **For every other
+        path** an absent *container* answers ``False`` — a container that does not
+        exist holds no path either, and this probe never raises for a missing path
+        — while a *denied* container raises: the prefix listing is the determinant
+        there, so it fails closed rather than reporting "nothing there" for
+        something you may not see.
 
         Raises:
             PermissionDenied: If credentials are rejected or lack access (401/403).
-            BackendUnavailable: On throttling (429), 5xx, or transport failure.
+                Not for the store root, which is answered without a request.
+            BackendUnavailable: On throttling (429), 5xx, or transport failure, or
+                after ``close()`` — including for the store root, which the closed
+                guard outranks.
         """
         with self._errors(path):
+            # The closed guard outranks the root answer and so runs first; it
+            # normally rides on the lazy client accessors, which a key-decided
+            # answer never reaches.
+            self._raise_if_closed()
             azure_path = self._azure_path(path)
             if not azure_path:
                 return True
@@ -600,9 +609,13 @@ class AzureBackend(Backend):
 
         Raises:
             PermissionDenied: If credentials are rejected or lack access (401/403).
-            BackendUnavailable: On throttling (429), 5xx, or transport failure.
+                Not for the store root, which is answered without a request.
+            BackendUnavailable: On throttling (429), 5xx, or transport failure, or
+                after ``close()`` — including for the store root, which the closed
+                guard outranks.
         """
         with self._errors(path):
+            self._raise_if_closed()  # outranks the root answer; see ``exists``
             # BE-029: the root is a folder, never a blob, and the answer is
             # decidable from the string. It must be, on either namespace: both
             # spellings alias to an empty blob name, which the Blob SDK rejects
@@ -623,15 +636,20 @@ class AzureBackend(Backend):
     def is_folder(self, path: str) -> bool:
         """Return ``True`` if *path* is an existing folder (HNS directory or non-HNS prefix).
 
-        The root is always a folder. Costs one directory HEAD (HNS) or a
-        one-item prefix listing (flat). An absent container answers ``False``, on
-        the same terms as ``exists``.
+        The root is always a folder, decided from the key and so answered for a
+        denied container as well as a missing one. Costs one directory HEAD (HNS)
+        or a one-item prefix listing (flat) for every other path, where an absent
+        container answers ``False`` on the same terms as ``exists``.
 
         Raises:
             PermissionDenied: If credentials are rejected or lack access (401/403).
-            BackendUnavailable: On throttling (429), 5xx, or transport failure.
+                Not for the store root, which is answered without a request.
+            BackendUnavailable: On throttling (429), 5xx, or transport failure, or
+                after ``close()`` — including for the store root, which the closed
+                guard outranks.
         """
         with self._errors(path):
+            self._raise_if_closed()  # outranks the root answer; see ``exists``
             azure_path = self._azure_path(path)
             if not azure_path:
                 return True
@@ -1361,8 +1379,12 @@ class AzureBackend(Backend):
         paging the whole subtree listing, so cost scales with the number of
         descendants.
 
+        The root aggregates whether or not the container is there: an absent
+        container is an empty store at the root, not a missing path.
+
         Raises:
-            NotFound: If the folder does not exist.
+            NotFound: If the folder does not exist. Not for the root, which
+                exists by definition.
             InvalidPath: If *path* names a file, not a folder.
             PermissionDenied: If credentials are rejected or lack access (401/403).
             BackendUnavailable: On throttling (429), 5xx, or transport failure.
@@ -1372,6 +1394,28 @@ class AzureBackend(Backend):
             file_count = 0
             total_size = 0
             latest_modified: datetime | None = None
+            # BE-029 outranks BE-021's NotFound row at the root, and only there.
+            # Both branches below carry the same three bounds, each of which is
+            # a different answer an unbounded catch would invent:
+            #   root       -- a non-root prefix under an absent container is a
+            #                 plain NotFound (BE-021 § Reach), and this method
+            #                 has no ``missing_ok`` to soften it.
+            #                 It is kept as the guard that makes the bound
+            #                 local rather than an inference about the
+            #                 zero-count check below, and the boto3 twin
+            #                 carries the same clause. Which arms a cell can
+            #                 falsify is measured, and recorded once, in
+            #                 BUG-254's register entry.
+            #   first page -- a 404 after a page has come back reports a
+            #                 deletion underneath the scan (BE-021's page
+            #                 bound). Keyed on the page rather than on a counted
+            #                 blob: a page of directory entries counts nothing,
+            #                 which is why both loops page explicitly.
+            #   404        -- a denial is not an answer about the store.
+            # They are written per branch rather than shared because the two
+            # listings raise differently, which is the same reason
+            # ``_listing_errors`` says the HNS branches never reach it.
+            saw_page = False
 
             if self._hns:
                 # DFS get_paths exposes is_directory inline; list_blobs would
@@ -1388,31 +1432,59 @@ class AzureBackend(Backend):
                     dir_meta = getattr(dir_props, "metadata", None) or {}
                     if not dir_meta.get("hdi_isfolder"):
                         raise InvalidPath(f"Not a folder: {path}", path=path, backend=self.name)
-                for p in self._fs.get_paths(path=azure_path or "/", recursive=True):
-                    if getattr(p, "is_directory", False):
-                        continue
-                    file_count += 1
-                    # Mirror props_to_fileinfo (_azure_common.py:127) attribute order so
-                    # FolderInfo.total_size and FileInfo.size agree for the same path.
-                    size = getattr(p, "size", None) or getattr(p, "content_length", 0) or 0
-                    total_size += int(size)
-                    modified = getattr(p, "last_modified", None)
-                    if modified is not None:
-                        if modified.tzinfo is None:
-                            modified = modified.replace(tzinfo=timezone.utc)
-                        if latest_modified is None or modified > latest_modified:
-                            latest_modified = modified
+                try:
+                    for page in self._fs.get_paths(path=azure_path or "/", recursive=True).by_page():
+                        saw_page = True
+                        for p in page:
+                            if getattr(p, "is_directory", False):
+                                continue
+                            file_count += 1
+                            # Mirror props_to_fileinfo (_azure_common.py:127) attribute order so
+                            # FolderInfo.total_size and FileInfo.size agree for the same path.
+                            size = getattr(p, "size", None) or getattr(p, "content_length", 0) or 0
+                            total_size += int(size)
+                            modified = getattr(p, "last_modified", None)
+                            if modified is not None:
+                                if modified.tzinfo is None:
+                                    modified = modified.replace(tzinfo=timezone.utc)
+                                if latest_modified is None or modified > latest_modified:
+                                    latest_modified = modified
+                except RemoteStoreError:
+                    # Already typed by something below -- the closed guard on
+                    # ``_fs``, or a raise inside the loop. ``classify_azure_error``
+                    # has no pass-through arm, so anything reaching it is
+                    # re-typed to the base class: at the root the closed guard is
+                    # the first thing inside this try, and without this line a
+                    # closed store answered ``RemoteStoreError`` where BE-020 and
+                    # AZ-029 promise ``BackendUnavailable``.
+                    raise
+                except Exception as exc:  # noqa: BLE001
+                    # Classified rather than type-tested, for the reason
+                    # ``list_files``' HNS branch gives: the DFS endpoint's
+                    # absent-filesystem shape is not reliably one SDK type.
+                    mapped = self._classify(exc, path)
+                    if not (isinstance(mapped, NotFound) and is_root(path) and not saw_page):
+                        raise mapped from None
             else:
                 prefix = (azure_path.rstrip("/") + "/") if azure_path else ""
-                for blob in self._cc.list_blobs(name_starts_with=prefix):
-                    file_count += 1
-                    total_size += blob.size or 0
-                    modified = blob.last_modified
-                    if modified is not None:
-                        if modified.tzinfo is None:  # pragma: no cover
-                            modified = modified.replace(tzinfo=timezone.utc)
-                        if latest_modified is None or modified > latest_modified:
-                            latest_modified = modified
+                try:
+                    for page in self._cc.list_blobs(name_starts_with=prefix).by_page():
+                        saw_page = True
+                        for blob in page:
+                            file_count += 1
+                            total_size += blob.size or 0
+                            modified = blob.last_modified
+                            if modified is not None:
+                                if modified.tzinfo is None:  # pragma: no cover
+                                    modified = modified.replace(tzinfo=timezone.utc)
+                                if latest_modified is None or modified > latest_modified:
+                                    latest_modified = modified
+                except ResourceNotFoundError:
+                    # Narrower than the HNS arm on purpose: ``list_blobs``
+                    # reports an absent prefix as an empty page, so the only 404
+                    # it raises is the container's.
+                    if not (is_root(path) and not saw_page):
+                        raise
                 # BE-029: the root exists by definition, not by observation. An
                 # empty container yields no blobs, which is "nothing has been
                 # written yet" and not "there is no root" -- a distinction no

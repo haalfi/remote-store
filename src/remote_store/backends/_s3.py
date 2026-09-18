@@ -135,11 +135,28 @@ class S3Backend(_S3Base):
     def exists(self, path: str) -> bool:
         """Return ``True`` if an object or prefix exists at *path*; never ``NotFound``.
 
+        The root always exists, and that is decided from the key: ``s3fs.exists``
+        on the bare bucket answers ``False`` once the bucket is gone, which is
+        "there is no root" — a distinction no caller can act on. No request is
+        issued for it, so the root answers ``True`` for a bucket that is denied
+        as well as for one that is missing.
+
         Raises:
-            PermissionDenied: If the credentials lack access.
-            BackendUnavailable: On a transport or service failure, or after ``close()``.
+            PermissionDenied: If the credentials lack access. Not for the store
+                root, which is answered without a request.
+            BackendUnavailable: On a transport or service failure, or after ``close()``
+                — including for the store root, which the closed guard outranks.
         """
         with self._s3fs_errors(path):
+            # The closed guard outranks the root answer and so runs first: a
+            # closed backend refuses before it classifies the path. It normally
+            # rides on the ``_fs`` accessor, which a key-decided answer never
+            # reaches, so the root has to ask for it. Without this the answer
+            # depends on which guard was written first, which is the shape
+            # ``_reject_root_as_file`` was given its own ordering rule for.
+            self._raise_if_closed()
+            if is_root(path):
+                return True
             return bool(self._fs.exists(self._s3_path(path)))
 
     def is_file(self, path: str) -> bool:
@@ -159,11 +176,19 @@ class S3Backend(_S3Base):
     def is_folder(self, path: str) -> bool:
         """Return ``True`` if *path* is an existing virtual folder (a common prefix).
 
+        The root is always a folder, decided from the key for the reason
+        ``exists`` gives, and answered without a request there too.
+
         Raises:
-            PermissionDenied: If the credentials lack access.
-            BackendUnavailable: On a transport or service failure, or after ``close()``.
+            PermissionDenied: If the credentials lack access. Not for the store
+                root, which is answered without a request.
+            BackendUnavailable: On a transport or service failure, or after ``close()``
+                — including for the store root, which the closed guard outranks.
         """
         with self._s3fs_errors(path):
+            self._raise_if_closed()  # outranks the root answer; see ``exists``
+            if is_root(path):
+                return True
             try:
                 info = self._fs.info(self._s3_path(path))
                 return bool(info.get("type") == "directory")

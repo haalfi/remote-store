@@ -6,6 +6,99 @@ Breaking changes and upgrade paths between `remote-store` versions.
 The core Store API is stable, but extensions may evolve. This page documents
 changes that require action when upgrading.
 
+## v0.32.0 to v0.33.0
+
+**The store root answers the same on every backend whose container is gone:**
+
+The root is a folder that always exists, and that no longer depends on whether
+the bucket, container or table holding your data is still there. Five backend
+classes used to answer otherwise, in two opposite directions, and both are
+closed:
+
+| Call on the store root, container missing | Was | Now |
+|---|---|---|
+| `exists("")`, `is_folder("")` on `S3Backend`, `S3PyArrowBackend` | `False` | `True` |
+| `get_folder_info("")` on `S3Boto3Backend`, `AzureBackend`, `AsyncAzureBackend` | `NotFound` | `FolderInfo(file_count=0)` |
+| `Store.get_folder_info("", max_depth=N)` on `S3Backend`, `S3PyArrowBackend` | `NotFound` | `FolderInfo(file_count=0)` |
+
+The third row follows from the first: the depth-limited aggregate is assembled at
+the `Store` layer and gates on `is_folder`, so it raised for the same reason the
+probe answered `False`.
+
+Both spellings of the root — `""` and `"."` — are covered. The other backends
+whose absent state is measured already answered this way, so nothing changes
+there; `GraphBackend`, `ReadOnlyHttpBackend` and `SQLQueryBackend` are not in
+that set, and the `GraphBackend` paragraph below says what it answers and why.
+
+**Against a bucket you are denied rather than one that is missing**, `exists("")`
+and `is_folder("")` on `S3Backend` and `S3PyArrowBackend` now answer `True`
+instead of `False` and `PermissionDenied` respectively. `S3Boto3Backend` already
+answered `True` for both, so the three lanes now agree on those two probes:
+none of them issues a request at the root, and the root is a folder by
+definition.
+`is_file("")` is **not** in that set — it still reaches the wire on the two s3fs
+lanes and so still reports a denial as `PermissionDenied`, where
+`S3Boto3Backend` answers `False` from the key. That split is unchanged by this
+release. Every probe on a path *under* the root still reports a denial as
+`PermissionDenied` on all three.
+
+**A closed backend still refuses at the root.** `close()` outranks every root
+answer, so after it these probes raise `BackendUnavailable` rather than
+answering — on all five classes. Three of them answered before this release; the other
+two gained a key-decided root answer in the same release and the guard with it.
+
+**What to change.** Two handlers stop firing.
+
+An `except NotFound` that detected a missing container:
+
+```python
+# On S3Boto3Backend, AzureBackend, AsyncAzureBackend. No longer raises.
+try:
+    info = backend.get_folder_info("")
+except NotFound:
+    ...            # dead branch from v0.33.0 — the root aggregates to zero instead
+```
+
+and an `except PermissionDenied` around a root probe on the two s3fs lanes:
+
+```python
+# On S3Backend / S3PyArrowBackend, against a bucket you cannot see.
+try:
+    ok = backend.is_folder("")
+except PermissionDenied:
+    ...            # dead branch from v0.33.0 — answers True from the key instead
+```
+
+A branch keyed on `exists("")` being `False` on those two lanes also now takes
+the other arm; that is a condition rather than a handler.
+[`Store.ping()`](api/store.md) — `Backend.check_health()` if you hold a backend
+directly — remains the operation whose job is to report an unreachable store. Of
+the backends this section changes it answers on `S3Backend`, `S3Boto3Backend`,
+`AzureBackend` and `AsyncAzureBackend`, and **not** on `S3PyArrowBackend`, whose
+probe discards what comes back. The v0.30.0 to v0.31.0 section carries the rest
+of that list.
+
+**`exists("")` is still not a portable "is my store there?"** — less so than
+before, in fact: it now answers `True` on every measured backend whether or not
+the container exists, which is what the contract means by a root that exists by
+definition. On [`GraphBackend`](api/aio/backends/graph.md) it still answers
+`False` for a deleted or misconfigured drive, deliberately, and the absent-drive
+section below builds on that.
+
+**A container deleted while an aggregate is running still raises on
+`S3Boto3Backend`, `AzureBackend` and `AsyncAzureBackend`.** The new answer is
+about a container that was already gone when the call began; on those three, a
+first page that comes back before the container disappears makes the 404 a
+deletion underneath the scan, and `get_folder_info` raises `NotFound` rather than
+reporting a store you still have as empty.
+
+**`S3Backend` and `S3PyArrowBackend` return a partial count there instead**, and
+that is unchanged by this release rather than introduced by it: their aggregate
+walks the prefix tree directory by directory and treats a vanished directory as
+one with nothing in it, so a bucket deleted mid-walk yields whatever it had
+counted. It is the same shape as their listings, which truncate where the other
+lanes raise.
+
 ## v0.31.0 to v0.32.0
 
 **Several optional-dependency floors were raised to the first release that actually works:**
@@ -420,7 +513,7 @@ not describe it, and nothing about it changed.
 
 The table below describes a store whose bucket, container, drive or directory is
 **present**. What the root answers when it is *not* is the subject of a later
-section, and the first row does not survive that case on three backends.
+section.
 
 | Call on the store root | Answer from v0.31.0 |
 |------------------------|---------------------|
@@ -430,23 +523,21 @@ section, and the first row does not survive that case on three backends.
 | `read`, `get_file_info`, `delete` on the root | `InvalidPath` — the root is a folder, not a file |
 | `write`, `write_atomic`, `open_atomic` on the root | `InvalidPath`, decided from the key before any request is issued |
 
-**Three backends answer the first row differently once the container is
-missing**, and the guide says so rather than promising past them. Two of the
-three are unfinished; the third is deliberate:
+**On [`GraphBackend`](api/aio/backends/graph.md), `exists("")` answers `False`
+for a drive that is deleted or misconfigured.** That is **by design** — the
+backend suppresses every `404` on a probe, and the absent-drive section below
+builds a detection recipe on exactly that answer. It is not going to change.
 
-- On `S3Backend` and `S3PyArrowBackend`, `exists("")` and `is_folder("")` answer
-  **`False`** for a bucket that is not there. Those two go to the wire for the
-  root probe and read a missing bucket as "the root is not there". Unfinished:
-  expect it to change.
-- On [`GraphBackend`](api/aio/backends/graph.md), `exists("")` answers `False`
-  for a drive that is deleted or misconfigured. That one is **by design** — the
-  backend suppresses every `404` on a probe, and the absent-drive section below
-  builds a detection recipe on exactly that answer. It is not going to change.
-
-`get_folder_info("")` has its own gap, on a third set of backends, described in
-the absent-container section below. The practical consequence is the one worth
-carrying away: **`exists("")` is not a portable "is my store there?"**, and it
-is not being made into one. See that section for what to call instead.
+In v0.31.0 two other backends — `S3Backend` and `S3PyArrowBackend` — also
+answered this row differently once the container was gone, answering `False`
+where the table says `True`, and three more answered the `get_folder_info` row
+differently. v0.33.0 closes both; its own section describes what changed and is
+the one to read if you are upgrading past v0.32.0. The practical consequence
+holds either way and is the thing worth carrying away: **`exists("")` is not a
+portable "is my store there?"** — from v0.33.0 because it answers `True` for a
+store whose container is missing, and on 0.31.0 and 0.32.0 because the two
+backends above answer `False` where the rest answer `True`. See the
+absent-container section below for what to call instead.
 
 The last row changed behaviour rather than an error type. A write addressed at
 the root used to reach the storage system: on SFTP with no `base_path` it left
@@ -512,23 +603,19 @@ a deleted root, and `S3Boto3Backend`, `AzureBackend`, `AsyncAzureBackend` and
 | `list_files`, `list_folders`, `iter_children`, `glob` | empty |
 | `exists("")`, `is_folder("")` on the store root | `True` — the root is a folder whether or not the container is |
 
-**The root has not caught up everywhere, and the guide says so rather than
-promising it.** Against a container that is missing, the root should answer
-exactly as it does for an empty one. Three backends give the wrong answer, in
-two opposite directions:
+**The root had not caught up everywhere in v0.31.0.** Five backend classes
+answered the root differently once the container was gone, in two opposite
+directions. Only one of those is about a backend this section names: on
+`S3Boto3Backend`, `AzureBackend` and `AsyncAzureBackend`, `get_folder_info("")`
+raised `NotFound` — the **third** row of the table above, which no longer holds
+at the root for those three from v0.33.0. (The other direction, `exists("")` and
+`is_folder("")` answering `False`, was on `S3Backend` and `S3PyArrowBackend`,
+which this section does not cover; the last row above was already right for the
+five backends it does.)
 
-| Backend | What still diverges at the root |
-|---|---|
-| `S3Boto3Backend`, `AzureBackend`, `AsyncAzureBackend` | `get_folder_info("")` raises `NotFound` instead of aggregating to zero — the root probes are short-circuited, but `get_folder_info` is routed through a listing whose 404 is not tolerated there |
-| `S3Backend`, `S3PyArrowBackend` | `exists("")` and `is_folder("")` answer `False` instead of `True` — the root probe goes to the wire and reads a missing bucket as "the root is not there" |
-
-The `exists("")` row above holds for the backends this section names; the second
-row of the table is where that divergence sits, and those two backends are not in
-that list. Treat both as unfinished rather than as the contract: keep a
-`NotFound` handler if you aggregate the root of a store that may not exist, and
-do not use `exists("")` as a portable "is my store there?". What to use instead
-is below — and read its own list of exceptions rather than this section's,
-because they are not the same backends.
+**If you are upgrading past v0.32.0**, read the v0.32.0 to v0.33.0 section for
+what the root answers now. Every row above still holds for paths *under* the
+container, and this table is still their only home.
 
 **What to change.** An `except` clause that caught the old error to detect a
 store that is not there no longer fires. [`Store.ping()`](api/store.md) —
@@ -541,8 +628,9 @@ directory, which no other operation can see: the root answers as a folder by
 definition, so nothing else observes what is actually there.
 
 **`ping()` is not yet that check on three backends**, and this holds whether or
-not the backend is one the table above names — the paragraphs that redirected
-you here from the root probes point at this list, not at that one:
+not the backend is one the table above names. The root-probe paragraph that
+redirected you here points at this list — it is a different set of backends from
+the one this section's table names, so read it on its own terms:
 
 | Backend | Why `ping()` reports healthy anyway |
 |---|---|

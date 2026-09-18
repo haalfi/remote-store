@@ -199,8 +199,7 @@ be edited to point elsewhere.
 answers the same way on every backend, and the failure they catch says which
 failure it was.
 
-**Closes when:** the root of an absent container meets BE-029 on every
-backend (BUG-254); a listing does not truncate silently when its container is
+**Closes when:** a listing does not truncate silently when its container is
 deleted mid-scan (BUG-255) or when a folder vanishes part-way through a
 recursive walk (BUG-257); `ping()` does not report a vanished store as healthy
 (BUG-256); a constructor does not leak its driver's exception
@@ -208,9 +207,10 @@ recursive walk (BUG-257); `ping()` does not report a vanished store as healthy
 payload size (BUG-253); a listing does not leak its driver's exception on the
 one backend where it still does (BUG-280); a caller who meets a failure on **any** backend catches
 the type the docs promised and can tell *which* failure it was, rather than an
-empty message (BUG-276, which is now that clause's whole remainder — its
-Disposition is exactly whether the base-class fall-throughs should be classified
-or merely given a message); a connect that fails locally is not reported
+empty message (BUG-276 and BUG-291, the clause's two remaining halves: BUG-276 is
+whether the base-class fall-throughs should be classified or merely given a
+message, BUG-291 is a mapped error being re-mapped to something weaker on the way
+out); a connect that fails locally is not reported
 against the caller's path
 (BUG-273); and a newly
 registered backend cannot pass CI without meeting BE-004, BE-005 and BE-021
@@ -247,11 +247,17 @@ The last adapter answers the contract against an absent container,
 closed by BUG-247, and a write to the store root no longer occupies that root
 with a regular file, closed by BUG-259 — which also brought the five
 flat-namespace classes that reached their SDK with the root key to the same
-rule. The catches-the-promised-type half is met on SFTP's connect path, closed
+rule. **The read side of the root is met too**, closed by BUG-254: the ten
+backend classes whose absent state is measured all answer BE-029's row with the
+container gone, where five of them used to split it two ways. The three that
+are unmeasured are named in BE-021, and a fourteenth backend is still exempt by
+default, which is BK-345 below rather than a residue of this. The catches-the-promised-type half is met on SFTP's connect path, closed
 by BUG-265: a refused port and a DNS failure raise the `BackendUnavailable`
 fifteen docstrings and the health-check guide promise, where both raised the
-base class. That is one backend's connect arm, not the clause — BUG-276 carries
-the rest, and the two are the same promise met at different depths. It also
+base class. That is one backend's connect arm, not the clause — BUG-276 and
+BUG-291 carry the rest, and all three are the same promise met at different
+depths: an error with no message, an error re-typed to a weaker class, and an
+error of the wrong class outright. It also
 opened BUG-273: the same connect path still answers the wrong type when the
 connect is rejected locally — `PermissionDenied` blaming the caller's key on the
 `EACCES` shape, whose trigger is unknown, and — since BUG-275 gave the errno
@@ -295,13 +301,15 @@ both were pre-existing behaviour that a new sentence made answerable.
 **Four** further disagreements sit in this section and none of them is with the
 absent-container clause, which is why they are not in that count: BUG-253 is
 between two halves of one Graph operation; BUG-245 is a constructor leak, which
-BE-021 scopes to operations and so does not reach; BUG-254 is with **BE-029's
-root row**, which BE-021 § Reach now defers to rather than deciding, so the
-breach is of the row § Reach points at and not of the clause this count is about;
-and BUG-256 is about a health probe, which is off the roster BE-021 governs.
-BUG-259 (BE-029's root row on the write path) and BK-358 (the never-leak clause
-reached through the shared stream wrapper) were of this kind too and have both
-closed; each is named in the closures above rather than counted here. **No
+BE-021 scopes to operations and so does not reach; BUG-256 is about a health
+probe, which is off the roster BE-021 governs; and BUG-291 is with BE-020 and
+AZ-029 — a closed store reporting the base class where those promise
+`BackendUnavailable` — which is the never-leak invariant's mirror rather than the
+invariant itself.
+BUG-259 and BUG-254 (BE-029's root row, on the write path and on the read side)
+and BK-358 (the never-leak clause reached through the shared stream wrapper) were
+of this kind too and have all closed; each is named in the closures above rather
+than counted here. **No
 ordinal is given for them**, and that is a correction rather than a style choice:
 this sentence read "a sixth of this kind" against a list that has stood at five
 and at six within one release, so an ordinal over a list items keep leaving is
@@ -675,76 +683,46 @@ compliant the day before.
   Found by ID-252's closing review reading outside its own diff; shipped by
   BUG-261.
 
-- [ ] **BUG-254 — Five backend classes breach BE-029's root row against an absent container**
-  spec: BE-004, BE-021, BE-029 · effort: S · audience: user.api
-  BE-029 already decides this and is not qualified by whether the container
-  exists: the root is "a folder that always exists", `exists(root)` is `True`, and
-  `get_folder_info(root)` "aggregates the whole store (never `NotFound`)".
-  Measured against the absent-container stubs BUG-243 added and a dropped SQLite
-  table. **Bold cells breach that row; the others are what it requires** — the
-  table records both so the fix has its control:
-  | Backend | `get_folder_info("")` | `exists("")` | `is_folder("")` |
-  | --- | --- | --- | --- |
-  | S3, S3-PyArrow | `FolderInfo(file_count=0)` | **`False`** | **`False`** |
-  | S3-Boto3, Azure (sync and async) | **raises `NotFound`** | `True` | `True` |
-  | SQLBlob | `FolderInfo(file_count=0)` | `True` | `True` |
-
-  SQLBlob's row is what compliance looks like; BUG-246 brought it there.
-  **Seven class-cells breach**, across three columns and five classes — counted
-  by expanding each grouped row over its classes: the first row's two bold
-  columns across two classes is four, the second row's one bold column across
-  three classes is three.
-  Five classes because the two Azure adapters carry their own copies and each
-  needs its own fix, which is the frame BUG-246 and the CHANGELOG both use.
-  The breaches run in two opposite directions, which is why one fix will not cover both:
-  the s3fs lanes go to the wire for `exists("")` and report a missing bucket as
-  "the root is not there", while S3-Boto3 and Azure short-circuit `exists` but let
-  `get_folder_info` reach a listing whose 404 they do not tolerate at the root.
-  A caller cannot ask "is my store there?" portably: `exists("")` answers `True`
-  on three backends whose container is gone and `False` on two.
-  **Pre-existing.** BUG-246 changed neither the root short-circuits nor
-  `get_folder_info`'s root handling on any backend but SQLBlob, and did not touch
-  the s3fs lanes at all (`git diff origin/master...HEAD` over `_s3.py`,
-  `_s3_pyarrow.py`, and `_s3_boto3.py`'s `get_folder_info`). SQLBlob's row is the
-  one exception, and it is compliant rather than breaching: that change did
-  briefly introduce the `NotFound` breach there and then fixed it in the same PR,
-  with `tests/backends/sqlblob/test_absent_table.py` pinning both spellings of
-  the root. Re-measured on this branch against a dropped table
-  (`tmp/measure_254_sqlblob.py`): `get_folder_info` returns
-  `FolderInfo(file_count=0, total_size=0, modified_at=None)` and both probes
-  answer `True`, for `""` and `"."` alike.
-  No spec decision is needed first — BE-029 states the answer. What the fix owes
-  is the *reason* each backend misses it, since the two directions have different
-  causes, plus a conformance cell so a sixth backend cannot inherit either.
-  **This item now has a published-docs consequence, acquired in BUG-261, and it
-  covers both breaching columns rather than one.** `docs-src/reference/migration.md`
-  § v0.30.0 to v0.31.0 publishes the root row to users and therefore had to
-  publish its exceptions too. Four passages exist only while this item is open,
-  and closing it deletes or rewrites **all four** — a sweep that stops at the
-  first leaves the guide telling users a store is unfinished in a way it no
-  longer is:
-  1. The root section's "Three backends answer the first row differently"
-     paragraph — the `exists("")` / `is_folder("")` cells on `S3Backend` and
-     `S3PyArrowBackend`. Its third bullet is `GraphBackend` and is **not** this
-     item's: that answer is deliberate and stays.
-  2. The absent-container section's two-row divergence table. Row 1 is the
-     `get_folder_info("")` cells on `S3Boto3Backend`, `AzureBackend` and
-     `AsyncAzureBackend`; row 2 is the same `S3Backend` / `S3PyArrowBackend`
-     cells as (1).
-  3. The "Treat both as unfinished" paragraph under that table, including its
-     `NotFound`-handler advice.
-  4. The two redirects that only make sense while the divergence exists — one in
-     the root section, one under the divergence table — both saying `exists("")`
-     is not a portable "is my store there?".
-  Together these are the same **seven** class-cells this item counts, so the
-  guide and the item are now scoped alike. The first version of this note named
-  only the `get_folder_info` half and said the `exists` row "stays as written",
-  which was the fix-reaches-half-the-surfaces defect this note exists to prevent.
-  **Filed on a wrong premise and corrected in the same PR:** the first version of
-  this item said nothing decided the question and asked for a spec decision. That
-  was read off BE-021 § Reach alone, which decides operations and is silent about
-  the root; BE-029's table decides it and was not consulted. Recorded because the
-  same miss is available to the next reader of § Reach.
+- [ ] **BUG-291 — Sixteen Azure `except Exception` arms re-type an already-typed error, so a closed store reports the base class**
+  spec: BE-020, BE-021, AZ-029 · effort: S · audience: user.api
+  `classify_azure_error` has no `RemoteStoreError` pass-through arm: it falls
+  through every `isinstance` check to `return RemoteStoreError(str(exc), ...)`.
+  So any `except Exception` that routes through it **downgrades an error the
+  library already typed**, and the first thing inside several of those `try`
+  blocks is a lazy client accessor whose `_raise_if_closed()` raises
+  `BackendUnavailable`. Measured on BUG-254's branch before its own two sites
+  were fixed: `AzureBackend(hns=True).close()` then `get_folder_info("")`
+  returned `RemoteStoreError: Azure backend is closed` where the flat arm, whose
+  catch is narrowed to `ResourceNotFoundError`, returned `BackendUnavailable`.
+  Both Azure classes, sync and async.
+  **BUG-254 fixed its own two sites and this is the rest of the class.**
+  Derivation — an AST pass over the two Azure backend files selecting every bare
+  `except Exception` whose handler *calls* `_classify` or `classify_azure_error`,
+  then excluding the two `get_folder_info` arms BUG-254 closed and the two
+  `_errors` context managers, which are the mappers themselves and correctly
+  re-raise `RemoteStoreError` first. **Sixteen: seven sync, nine async.**
+  `_azure.py` in `delete`, `delete_folder`, `list_files`, `list_folders`,
+  `iter_children`, `detect_hns`, `adetect_hns`; and `aio/backends/_azure.py` in
+  `read`, `delete`, `delete_folder`, `list_files` (two arms), `list_folders`
+  (two), `iter_children` (two).
+  **The pass has to read the handler body rather than a window around it.** A
+  grep for the classifier name near an `except Exception` also matches
+  `_azure.py`'s `readinto`, whose handler re-raises `OSError(str(exc))` and only
+  *mentions* the classifier in a comment explaining that `_ErrorMappingStream`
+  does the classifying later. That site is not in the class and is not in the
+  sixteen — and that grep spelling is how this item was first filed at nine.
+  **Not every arm is reachable with a typed error in hand**, which is the work:
+  each one needs its own answer to "what already-typed error can arrive here",
+  and the listing arms are the ones whose `try` opens on a guarded accessor the
+  way `get_folder_info`'s did. The fix shape is `except RemoteStoreError: raise`
+  ahead of the broad arm, matching `_errors`; the question is which arms need it
+  and what pins each.
+  **Why the class is worth closing rather than the instances.** BE-021's
+  never-leak invariant is about native errors escaping; this is the mirror —
+  a mapped error being re-mapped to something weaker — and no gate sees it,
+  because the result is still a `RemoteStoreError`. It sits beside BUG-276,
+  which owns the other half of error-class fidelity on this surface (a mapped
+  error reaching the caller with an empty message).
 
 - [ ] **BUG-256 — `ping()` reports a healthy store on three backends whose container is gone**
   spec: PING-001 · effort: S · audience: user.api
@@ -2728,7 +2706,7 @@ the commit that writes it lands, so cite the generator instead.
   - **BE-021's divergence counts, and the artifacts that re-count against them.**
     The absent-container divergence set is stated as a bullet list in BE-021, as
     a class count in `sdd/BACKLOG.md` § 1, and again in the CHANGELOG, spec 040
-    and BUG-254 — in **four incompatible frames**: bullets, backend classes,
+    and BUG-254's register entry — in **four incompatible frames**: bullets, backend classes,
     operations, and helper call sites. Nothing derives any of them, and each
     frame is explained in prose that is itself a claim that can go stale.
     Measured cost: BUG-246 ran four numbered review rounds plus the closing

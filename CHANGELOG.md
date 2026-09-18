@@ -7,6 +7,7 @@ This project follows [Semantic Versioning](https://semver.org/). Pre-1.0, minor 
 
 ## [Unreleased]
 
+- BUG-254: **Breaking** — The store root now answers from the key on every measured backend, so `exists("")` and `is_folder("")` are `True` whether the container is missing or denied, `get_folder_info("")` aggregates to zero instead of raising `NotFound`, and a closed backend still refuses. [Migration guide](https://docs.remotestore.dev/stable/reference/migration/#v0320-to-v0330).
 - BK-375: Python versions are now supported for as long as CPython ships security fixes for them, which is longer than the 3-year window previously published; 3.11 through 3.14 all stay, and 3.10's support ends when upstream's does on 2026-10-04.
 - BK-373: The [dependency policy](https://docs.remotestore.dev/stable/explanation/dependency-policy/) draws the Python support windows as a chart with a marker at today, so the rule no longer has to be computed from five release dates.
 - BK-377: Both published support windows are now derived rather than remembered: a release-time check dates every version a raised dependency floor excludes, and the weekly dependency guard reports how each interpreter stands against its window.

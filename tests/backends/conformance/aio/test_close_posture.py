@@ -58,8 +58,9 @@ async def test_close_posture_outranks_root_rejection(async_backend: AsyncBackend
     reaches its closed guard through the lazy ``_client`` property before any
     root verdict exists.
 
-    The plain-path sibling above does not reach this: ``exists()`` carries no
-    root pre-check, so the ordering only shows on a file-shaped op.
+    The plain-path sibling above does not reach this: it probes an ordinary key,
+    so it meets no root pre-check at all. The probes have one of their own, and
+    the cell at the end of this file covers that third path.
 
     Where the terminal branch actually runs: ``azure_replay_async`` and
     ``graph_replay``, both Stage 1 and terminal, execute it with no cassette at
@@ -122,6 +123,54 @@ async def test_close_posture_outranks_root_write_rejection(async_backend: AsyncB
         error: Exception | None = None
         try:
             await async_backend.write(root, b"x")
+        except Exception as exc:  # noqa: BLE001 -- any typed error is acceptable here
+            error = exc
+        assert "is closed" not in str(error)
+
+
+# Every root-reaching read operation, enumerated rather than sampled. See the
+# sync sibling for why the axis is parametrised: the operations were patched from
+# a reading once and the next round found the one that reading missed.
+# Value: the call, and the extra capability beyond ``LIST``. See the sync sibling.
+_ROOT_PROBES = {
+    "exists": (lambda b, root: b.exists(root), None),
+    "is_file": (lambda b, root: b.is_file(root), None),
+    "is_folder": (lambda b, root: b.is_folder(root), None),
+    "get_folder_info": (lambda b, root: b.get_folder_info(root), Capability.METADATA),
+}
+
+
+@pytest.mark.spec("BE-020")
+@pytest.mark.spec("BE-029")
+@pytest.mark.parametrize("root", ["", "."], ids=["empty", "dot"])
+@pytest.mark.parametrize("op_name", sorted(_ROOT_PROBES))
+async def test_close_posture_outranks_the_root_probes(
+    async_backend: AsyncBackend,
+    root: str,
+    op_name: str,
+) -> None:
+    """Async twin of the sync cell of the same name: the probes' own root pre-check.
+
+    See the sync sibling for why this third path needed a cell of its own — the
+    two above drive ``read_bytes`` and ``write``, and neither a probe nor an
+    aggregate is either. On this lane ``AsyncAzureBackend`` is the class that
+    answered the root after ``aclose()``; it carries its own copy of every one of
+    these bodies, so the sync fix does not reach it and a sync-only cell would
+    not have caught it — which held for ``get_folder_info`` too, where the async
+    twin had the same downgraded error class as the sync one.
+    """
+    call, extra = _ROOT_PROBES[op_name]
+    _require(async_backend, Capability.LIST)
+    if extra is not None:
+        _require(async_backend, extra)
+    await async_backend.aclose()
+    if async_backend.close_is_terminal:
+        with pytest.raises(BackendUnavailable, match="is closed"):
+            await call(async_backend, root)
+    else:
+        error: Exception | None = None
+        try:
+            await call(async_backend, root)
         except Exception as exc:  # noqa: BLE001 -- any typed error is acceptable here
             error = exc
         assert "is closed" not in str(error)

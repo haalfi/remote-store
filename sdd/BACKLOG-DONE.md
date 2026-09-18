@@ -240,6 +240,93 @@ if evidence changes; these are retired.
 
 ## Unreleased
 
+- [x] **BUG-254 — Five backend classes breach BE-029's root row against an absent container**
+  spec: BE-004, BE-021, BE-029 · effort: S · audience: user.api, user.site
+  BE-029 states the root's answers without qualifying them by whether the
+  container exists, and BE-021 § "The root is decided by BE-029, not here" defers
+  to it where the two meet. Seven class-cells across five classes disagreed once
+  the bucket or container was gone, in **two opposite directions**, which is why
+  one fix could not cover both: the s3fs lanes went to the wire for the root
+  probe and read a missing bucket as "the root is not there", while the direct
+  lanes short-circuited the probes and let `get_folder_info` reach a listing
+  whose 404 they did not tolerate at the root.
+  | Backend | Fixed cells |
+  | --- | --- |
+  | `S3Backend`, `S3PyArrowBackend` | `exists("")` and `is_folder("")`, now decided from the key |
+  | `S3Boto3Backend`, `AzureBackend`, `AsyncAzureBackend` | `get_folder_info("")`, now aggregating to zero |
+  | all five | the closed-backend guard, now ahead of every key-decided root answer |
+
+  **The third row is the item's other half and was not in its diagnosis.** A root
+  answer decided from the key returns before the lazy client accessor that
+  carries the closed guard, so a closed store answered instead of refusing —
+  three classes had done so for as long as they had short-circuited the root, and
+  the first fix pass here added two more. Review found it twice: once on the
+  probes, and once on `get_folder_info`, where an `except Exception` added by that
+  same pass caught the guard's own `BackendUnavailable` and re-typed it to the
+  base class on both Azure classes. The second finding is why the fix enumerates
+  the operations rather than listing them.
+
+  Five classes because the two Azure adapters carry their own copies of every
+  body, and the Azure fix lands twice more inside each: the flat `list_blobs` and
+  HNS `get_paths` branches raise differently and each catches its own exception.
+  **The new tolerance carries three bounds**: the root (a non-root prefix under
+  an absent container keeps BE-021 § Reach's `NotFound`), the first page (a 404
+  after a page has come back reports a deletion underneath the scan, so it
+  propagates; keyed on the page rather than on a counted file, because a page of
+  common prefixes or directory entries counts nothing), and the 404 itself (a
+  denial still reaches the caller as `PermissionDenied`).
+  **Which of them a cell can falsify was measured by removing each in turn**, and
+  the answer is not uniform. There are **five** catch sites — one on
+  `S3Boto3Backend` and two on each Azure class, since each carries a flat and an
+  HNS arm. The page bound fails a cell at all five. The root bound fails one at
+  the boto3 site only, where the existence probe answers first and so leaves the
+  aggregate's own 404 reachable with no page in hand; removing it at the four
+  Azure arms leaves the suite green, because the flat arms reach the same error
+  class through their zero-count guard and the HNS arms' directory probe raises
+  first for a non-root path, so the only state reaching those catches without the
+  root is a filesystem vanishing between that probe and the first page. The
+  clause is kept on all five, as the guard that makes the bound local rather than
+  an inference about code below it, and the code says so where it sits.
+  **Where it is pinned.** No conformance fixture can remove a container, so the
+  cells sit in the per-backend wire-stub homes beside their siblings:
+  `tests/backends/s3/test_denied_probe.py` and
+  `tests/backends/azure/test_absent_container.py` with its `aio/` twin. **The
+  closed-guard half is the exception and sits in conformance**, because it needs
+  no container at all: `test_close_posture_outranks_the_root_probes`, in
+  `tests/backends/conformance/test_close_posture.py` and its `aio/` sibling,
+  parametrised over every root-reaching read operation and both spellings.
+  The absent-container cells
+  that fail on the base source and pass on this one are recovered by
+  `git checkout origin/master -- src/remote_store`, then `pytest` over those
+  three files with `-k "Root or Denied or denied_bucket"`, then
+  `git checkout HEAD -- src/remote_store`; at the close that was **30**, and the
+  query is given rather than the number alone because two fix passes moved it.
+  The compliant lane in each file is
+  the control that says what the answer is: the boto3 lane for the probes, the
+  s3fs lanes for the aggregate. `is_file("")` is parametrised in as the in-row
+  control — it answered correctly throughout, and a fix that moved the whole row
+  rather than the seven cells would show there.
+  **What this does not close.** A fourteenth backend is still exempt by default,
+  because the absent-container state has no registry-driven gate — **BK-345**
+  owns that and stays open. Three classes are unmeasured at the root for reasons
+  BE-021 now names: `ReadOnlyHttpBackend` and `SQLQueryBackend` arrange no absent
+  container through the `Backend` API, and `GraphBackend`'s absent-drive answers
+  are its own (GR-031, ADR-0038). On the two s3fs lanes `is_file("")` still
+  reaches the wire, so against a *denied* bucket it raises where the other two
+  probes now answer from the key; BE-029 is silent about a denied container, so
+  that is a stated bound rather than a residue.
+  **Published surfaces swept.** The four passages in
+  `docs-src/reference/migration.md` § v0.30.0 to v0.31.0 that existed only while
+  this was open — the divergence bullets, the two-row table, the "treat both as
+  unfinished" advice and the redirects — now record what was true then and point
+  at the new § v0.32.0 to v0.33.0 section. The `GraphBackend` bullet is
+  deliberate and stayed; the `ping()` redirects are BUG-256's and stayed.
+  Two helper docstrings asserted that an absent bucket was "a plain `NotFound`
+  either way" for `get_folder_info`; both are narrowed to the non-root prefix.
+  **Filed on a wrong premise and corrected in the same PR that filed it:** the
+  first version said nothing decided the question and asked for a spec decision.
+  That was read off BE-021 § Reach alone, which decides operations and is silent
+  about the root; BE-029's table decides it and was not consulted.
 - [x] **BK-375 — Two interpreters are past the support window we now publish, and nothing has decided whether to keep them**
   spec: — · effort: M · audience: user.api
   **The window was the wrong one, and that is the decision.**
@@ -2290,8 +2377,8 @@ if evidence changes; these are retired.
   every backend" phrasing and the first draft inherited it, which is
   [principle 5](../CLAUDE.md#principles) the wrong way round: the guide is where
   a user acts on it.
-  **Two open items bound what the guide is allowed to promise, and round 1 found
-  the guide promising past both.** **BUG-256** measures `check_health()`
+  **Two items then open bound what the guide was allowed to promise, and round 1
+  found the guide promising past both.** **BUG-256** measures `check_health()`
   returning cleanly on `SQLBlobBackend` against a dropped table, so naming
   `ping()` as *the* replacement was wrong on one of the five backends the
   absent-container section lists — and the draft then forbade the `write()`
@@ -2299,9 +2386,10 @@ if evidence changes; these are retired.
   first place. **BUG-254** measures `get_folder_info("")` raising `NotFound` on
   `S3Boto3Backend`, `AzureBackend` and `AsyncAzureBackend` against an absent
   container, three of those same five, so the root row promised a v0.31.0 answer
-  three of them do not give. The guide now states both bounds instead, which is
-  the option that keeps it true today; the two items carry the paragraphs their
-  closure deletes.
+  three of them did not give. The guide was made to state both bounds instead,
+  which was the option that kept it true then; each item carried the paragraphs
+  its closure would delete. BUG-254 has since closed and deleted its half, so the
+  guide states BUG-256's `ping()` bound alone.
   **Their enumerations moved, and both were repaired here.** BUG-256's "five
   documentation surfaces" is six with the new section, and BUG-254 acquired a
   published-docs consequence it did not carry. A fix scoped to a stale

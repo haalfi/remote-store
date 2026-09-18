@@ -153,15 +153,18 @@ def serve_container_vanishing_mid_listing(httpserver: HTTPServer, *, page_one: b
     return httpserver.url_for("/").rstrip("/")
 
 
-# Each listing paired with the page-one shape that yields it nothing — the pairs
-# an item-keyed bound is blind on. ``iter_children`` yields both kinds, so it has
-# no blind shape and takes the blob page as its control.
+# Each paged operation paired with the page-one shape that yields it nothing —
+# the pairs an item-keyed bound is blind on. ``iter_children`` yields both kinds,
+# so it has no blind shape and takes the blob page as its control.
+# ``get_folder_info`` is not a listing but pages like one, and counts blobs only,
+# so a page of common prefixes is the shape it makes nothing of.
 MID_SCAN_BLIND_PAGES: dict[str, bytes] = {
     "list_files": _ONE_PREFIX_THEN_MORE,
     "list_files-recursive": _ONE_PREFIX_THEN_MORE,
     "list_folders": _ONE_BLOB_THEN_MORE,
     "iter_children": _ONE_BLOB_THEN_MORE,
     "glob": _ONE_PREFIX_THEN_MORE,
+    "get_folder_info": _ONE_PREFIX_THEN_MORE,
 }
 
 
@@ -200,6 +203,9 @@ HNS_MID_SCAN_BLIND_PAGES: dict[str, bytes] = {
     "list_folders": _HNS_FILE_PAGE,
     "iter_children": _HNS_FILE_PAGE,
     "glob": _HNS_DIR_PAGE,
+    # ``get_folder_info`` skips directory entries, so a page of them is what it
+    # makes nothing of — the same reason as its flat twin above.
+    "get_folder_info": _HNS_DIR_PAGE,
 }
 
 

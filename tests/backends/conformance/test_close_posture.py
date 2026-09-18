@@ -29,6 +29,8 @@ from remote_store._errors import BackendUnavailable, InvalidPath
 from tests.backends.conformance._helpers import _require
 
 if TYPE_CHECKING:
+    from collections.abc import Callable
+
     from remote_store._backend import Backend
 
 _PROBE = "bk298-close-posture-probe.txt"
@@ -70,8 +72,10 @@ def test_close_posture_outranks_root_rejection(backend: Backend, root: str) -> N
     implementer happened to write first, which is the undeclared-divergence
     shape this whole item exists to remove.
 
-    The plain-path sibling above does not reach this: ``exists()`` carries no
-    root pre-check, so the ordering only shows on a file-shaped op.
+    The plain-path sibling above does not reach this: it probes an ordinary key,
+    so it meets no root pre-check at all. The probes have one of their own, on
+    every backend that decides the root from the key, and the cell below covers
+    that third path.
     """
     _require(backend, Capability.READ)
     backend.close()
@@ -121,3 +125,81 @@ def test_close_posture_outranks_root_write_rejection(backend: Backend, root: str
         with pytest.raises(InvalidPath) as exc_info:
             backend.write(root, b"x")
         assert "is closed" not in str(exc_info.value)
+
+
+# **Every root-reaching read operation, enumerated rather than sampled.** This is
+# the third root pre-check and the one with no cell until BUG-254: the two above
+# reach a file-shaped and a write-shaped guard, and neither routes through a
+# probe or an aggregate.
+#
+# The enumeration is deliberate and was not the first attempt. BUG-254 patched
+# the three probes from a reading of where the hazard was, and the next review
+# round found the same defect one operation over, in ``get_folder_info`` — a
+# state that reading had not considered. A third reading is not more likely to be
+# exhaustive than the first two, so the axis is parametrised instead: every
+# operation that can answer the root without a round trip belongs here, and a
+# future one is added to this dict rather than argued about.
+#
+# Value: the call, and the extra capability it needs beyond the ``LIST`` gate the
+# cell applies to all of them. ``get_folder_info`` is the folder-shaped member and
+# is gated on ``METADATA`` as well, which is what actually governs it
+# (``_capabilities.py``); the three probes are ungated beyond ``LIST``, because
+# BE-004 / BE-005 bind every backend that has them.
+_ROOT_PROBES: dict[str, tuple[Callable[[Backend, str], object], Capability | None]] = {
+    "exists": (lambda b, root: b.exists(root), None),
+    "is_file": (lambda b, root: b.is_file(root), None),
+    "is_folder": (lambda b, root: b.is_folder(root), None),
+    "get_folder_info": (lambda b, root: b.get_folder_info(root), Capability.METADATA),
+}
+
+
+@pytest.mark.spec("BE-020")
+@pytest.mark.spec("BE-029")
+@pytest.mark.parametrize("root", ["", "."], ids=["empty", "dot"])
+@pytest.mark.parametrize("op_name", sorted(_ROOT_PROBES))
+def test_close_posture_outranks_the_root_probes(backend: Backend, root: str, op_name: str) -> None:
+    """The same ordering on the probes, which answer the root from the key.
+
+    BE-029 makes the root's answers definitional, so a backend that decides them
+    from the string returns before touching the lazy client accessor that carries
+    the closed guard — and then a closed store answers ``True`` instead of
+    refusing. That is the ordering BE-020 says must not depend on which line the
+    implementer typed first, and the two cells above cannot reach it: one drives
+    ``read_bytes`` and the other ``write``, neither of which is a probe.
+
+    The gap was not hypothetical, and it was not found once. Five classes
+    answered the root probes after ``close()`` — three of them before BUG-254 and
+    two more because that item's first fix pass put its short-circuit ahead of
+    the guard. The round that fixed those three operations was followed by one
+    that found the same defect in ``get_folder_info``, reached a different way:
+    an ``except Exception`` catching the guard's own error and re-classifying it.
+    That is why the dict above enumerates the axis instead of listing the
+    operations someone thought of.
+
+    Gated on LIST for the same reason ``TestBackendRootPath`` is: "the root is a
+    folder" presupposes a backend that has folders, and BE-029 scopes itself to
+    the LIST declarers for exactly that reason. A backend that declares
+    ``METADATA`` without ``LIST`` is therefore out of scope here rather than
+    missed — it has no root to speak of. Each operation adds its own capability
+    on top of that gate.
+    """
+    call, extra = _ROOT_PROBES[op_name]
+    _require(backend, Capability.LIST)
+    if extra is not None:
+        _require(backend, extra)
+    backend.close()
+    if backend.close_is_terminal:
+        with pytest.raises(BackendUnavailable, match="is closed"):
+            call(backend, root)
+    else:
+        # Reusable: it re-initialises rather than refusing. The answer itself is
+        # not asserted — only that it is not the terminal guard. For the three
+        # probes BE-004 / BE-005 forbid a raise at all; ``get_folder_info`` may
+        # raise, and what it raises against a re-initialised store is the
+        # backend's business, not this cell's.
+        error: Exception | None = None
+        try:
+            call(backend, root)
+        except Exception as exc:  # noqa: BLE001 -- any typed error is acceptable here
+            error = exc
+        assert "is closed" not in str(error)

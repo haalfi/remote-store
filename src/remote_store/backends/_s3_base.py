@@ -260,8 +260,11 @@ class _S3Base(Backend):
 
         Only ``delete_folder`` routes through here. ``get_folder_info`` keeps the
         strict probe: it has no ``missing_ok``, so an absent bucket is a plain
-        ``NotFound`` for it either way, and nothing is gained by catching the
-        404 only to re-raise it.
+        ``NotFound`` for a **non-root** prefix either way, and nothing is gained
+        by catching the 404 only to re-raise it. It skips this probe at the root
+        (``not is_root(path) and ...``), where an absent bucket is an empty
+        store, and the s3fs lanes reach that answer through ``ls``'s own
+        ``FileNotFoundError`` rather than here.
         """
         from remote_store.backends._flat_ns import _children_or_absent_container
 
@@ -676,8 +679,14 @@ class _S3Base(Backend):
         and latest modification time are gathered by walking the whole subtree
         listing — cost scales with the number of descendants.
 
+        The root aggregates whether or not the bucket is there: an absent bucket
+        is an empty store at the root, not a missing path. It reaches
+        that answer through the per-directory ``FileNotFoundError`` the walk
+        below already absorbs, rather than through a guard of its own.
+
         Raises:
-            NotFound: If no object exists under *path*.
+            NotFound: If no object exists under *path*. Not for the root, which
+                exists by definition.
             PermissionDenied: If the credentials lack access.
             BackendUnavailable: On a transport or service failure.
         """

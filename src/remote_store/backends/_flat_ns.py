@@ -399,7 +399,11 @@ def _children_or_absent_container(
     container that does not exist holds no path either. That is not every folder
     probe in the codebase and must not be read as one: ``get_folder_info`` keeps
     the strict probe on the S3 lanes, deliberately, because it has no
-    ``missing_ok`` and an absent bucket is a plain ``NotFound`` for it either way.
+    ``missing_ok`` and an absent bucket is a plain ``NotFound`` for a **non-root**
+    prefix either way. The root is the exception and is not this helper's:
+    the root contract makes it an empty store rather than a missing path,
+    and each
+    ``get_folder_info`` decides that at its own listing.
     The tolerant deletes were the first callers and are why the wire-shape
     argument below is put in their terms; ``exists`` and ``is_folder`` reach this
     helper for the same reason, and answer ``False`` where they would otherwise

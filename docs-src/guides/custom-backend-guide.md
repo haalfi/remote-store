@@ -248,7 +248,12 @@ returns the stream as-is.
 **Contrast with existence checks:**
 
 - `get_file_info()` raises `NotFound` if missing.
-- `get_folder_info()` raises `NotFound` if the folder doesn't exist.
+- `get_folder_info()` raises `NotFound` if the folder doesn't exist — **except at
+  the store root**, which is a folder that always exists, so it aggregates to
+  zero rather than raising for a container that was already gone when the call
+  began. **Bound that tolerance to the first page**: a container that vanishes
+  *mid*-listing must still raise, or you report a store the user still has as
+  empty.
 - `exists()` never raises — returns `bool`.
 
 ---
@@ -330,14 +335,26 @@ meaning the backend stays usable after `close()`). Declare `True` when
 use-after-close must fail — the close-posture conformance lane tests
 whichever posture you declare, so an undeclared terminal backend fails it.
 
-**If you declare `True`, the closed check must run ahead of your root checks.**
-A closed backend raises `BackendUnavailable` even when the path is also
-invalid — the closed state is the more fundamental error, and a cheap
-string-test root guard is exactly the kind that naturally gets written first.
-Both root pre-checks are affected, the file-shaped one and the write one, and
-they need separate attention: a backend can order the read guard correctly and
-still get the write guard wrong, which is how the ordering was last found broken
-here. The conformance lane has a cell for each.
+**If you declare `True`, the closed check must run ahead of every root answer.**
+A closed backend raises `BackendUnavailable` even when the path is also invalid,
+and even where the root's answer is one you decide from the key without asking
+the storage system — the closed state is the more fundamental error, and a cheap
+string test is exactly the kind of guard that naturally gets written first.
+
+**Three root pre-checks are affected, and each needs separate attention**,
+because a backend can order one correctly and still get another wrong:
+
+| Shape | Where it sits | Conformance cell |
+|---|---|---|
+| File-shaped | your root rejection on `read`, `get_file_info`, `delete`, `move`/`copy` source | `test_close_posture_outranks_root_rejection` |
+| Write-shaped | the separate, differently-worded guard on `write`, `write_atomic`, `open_atomic` and the `move`/`copy` destination | `test_close_posture_outranks_root_write_rejection` |
+| Probe and aggregate | the key-decided root answers: `exists("")`, `is_file("")` and `is_folder("")` from Step 5, and `get_folder_info("")` from Step 10 | `test_close_posture_outranks_the_root_probes` |
+
+The third row is the one to watch if you took Steps 5 and 10's advice to answer
+the root yourself before the call. That answer returns before your lazy client
+accessor is ever touched, so the guard that normally rides on it never runs —
+which is how five backends in this repo came to answer a closed store instead of
+refusing it. Put the closed check ahead of the root test, not after it.
 
 ---
 
