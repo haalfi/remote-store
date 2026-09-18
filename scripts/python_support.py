@@ -92,11 +92,11 @@ PYTHON_RELEASES: dict[str, date] = {
 }
 
 # What we promise: support for as long as CPython ships security fixes for that
-# version. Every release-schedule PEP above states the same lifetime in the same
-# words — "security updates (source only) will be released until 5 years after
-# the release of x.y.0 final" — and gives the end only as a month
-# ("approximately October 2026" for 3.10), so the exact day is this arithmetic
-# rather than a second hand-kept column.
+# version. Every release-schedule PEP above states the same lifetime — "security
+# updates (source only) will be released until 5 years after the release of
+# x.y.0 final", with PEP 745 (3.14) spelling the number "five" — and gives the
+# end only as a month ("approximately October 2026" for 3.10), so the exact day
+# is this arithmetic rather than a second hand-kept column.
 SECURITY_SUPPORT_YEARS = 5
 
 # The ecosystem floor beneath that promise: SPEC 0's time-based support window,

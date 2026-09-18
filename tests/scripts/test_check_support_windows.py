@@ -4,15 +4,19 @@ The network half is stubbed at `fetch_releases`, because what needs pinning is
 the judgement rather than the HTTP: which releases a raise newly excludes, which
 of them is newest, and which side of the cutoff its upload date falls on.
 
-Both verdicts are exercised. A check whose **Breaking** branch never runs is an
-obligation with no evidence behind it, and that branch is the one carrying the
-migration obligation. The two cases use real measured dates so the tests and the
-documented exercise cannot drift apart:
+**All three verdicts are exercised**, because `Verdict.undecided` is a third
+outcome rather than a shade of the other two — `breaking=False` on its own reads
+as compliant, which is the false pass it exists to prevent. A check whose
+**Breaking** branch never runs is an obligation with no evidence behind it, and
+that branch is the one carrying the migration obligation. The two dated cases use
+real measured dates so the tests and the documented exercise cannot drift apart:
 
 * `pyarrow` 14.0.0 -> 16 newly excludes 15.0.2, uploaded 2024-03-18, which is
   older than a 2026-09-17 cutoff of 2024-09-17. Patch-eligible.
 * `pyarrow` 14.0.0 -> 21 newly excludes 20.0.0, uploaded 2025-04-27, which is
   younger. Breaking.
+* A newest exclusion PyPI cannot date, and a fetch that fails outright.
+  Undecided — reported and non-zero, never quietly compliant.
 
 Note the floors are the **collapsed** ones: `declared_constraints` takes the
 greatest lower bound across every user-facing extra, so `[arrow]`'s
@@ -243,9 +247,17 @@ class TestFloors:
 class TestFetchReleases:
     """The PyPI payload's shape, over a stubbed response.
 
-    Every skip here is a measured property of the real API, not a defensive
-    guess: `pyarrow 0.1.0` has an empty file list, `urllib3 2.0.0` is fully
-    yanked, and the drift guard resolves with `--pre` so pre-releases are real.
+    **Three of the four skips are measured properties of the real API**, not
+    defensive guesses: `pyarrow 0.1.0` has an empty file list, `urllib3 2.0.0`
+    is fully yanked, and the drift guard resolves with `--pre` so pre-releases
+    are real. An unparseable version string is the fourth and has no live
+    example either way.
+
+    The dateless case below is the one deliberate exception — surveyed at zero
+    occurrences and kept anyway, because what it prevents is a false pass
+    rather than a crash. Its own docstring says so; this class claim used to
+    say every skip was measured, which that test contradicted two screens
+    down.
     """
 
     def _payload(self, releases: dict) -> dict:
@@ -346,11 +358,11 @@ class TestFetchReleases:
         installed. A version with *live* files and no `upload_time_iso_8601`
         is installable, so dropping it from the claim space hands `judge` the
         next-oldest release and a raise over a recent version reads
-        **patch-eligible**. Measured across 728 versions of the five packages
-        this repository declares floors for (pyarrow, aiohttp, urllib3,
-        paramiko, s3fs): PyPI produced this shape zero times. Defensive, and
-        loud rather than silent, because a silent verification step is worse
-        than none.
+        **patch-eligible**. Surveyed over the whole claim space — all 19
+        packages `floors()` returns for the committed `pyproject.toml`, 2617
+        registered versions between them — PyPI produced this shape zero times.
+        Defensive, and loud rather than silent, because a silent verification
+        step is worse than none.
         """
         self._stub(
             monkeypatch,
@@ -487,3 +499,77 @@ class TestReport:
         )
         assert code == 0
         assert "note: boto3 floor went down" in capsys.readouterr().out
+
+
+class TestMainWiring:
+    """`main` end to end, over a stubbed `fetch_releases`.
+
+    Everything above tests a function; this tests that they are joined up. The
+    branch that matters is the network failure, because it is the **only**
+    producer of an `undecided` verdict in practice and the whole reason this
+    check is not gated. A regression turning a PyPI timeout into
+    `breaking=False, undecided=False` would report **patch-eligible** for a
+    raise nobody dated — the exact false pass the field exists to prevent, and
+    one a maintainer reading the exit code could not see.
+    """
+
+    def test_a_failed_fetch_is_undecided_and_exits_non_zero(self, check_support_windows, monkeypatch, capsys):
+        import urllib.error
+
+        def explode(name: str):
+            raise urllib.error.URLError("timed out")
+
+        monkeypatch.setattr(check_support_windows, "fetch_releases", explode)
+        monkeypatch.setattr(
+            check_support_windows,
+            "raised",
+            lambda base, head: [_raise(check_support_windows, "pyarrow", "14.0.0", "21")],
+        )
+        monkeypatch.setattr(check_support_windows, "floors", lambda path: {})
+        monkeypatch.setattr(check_support_windows, "read_pyproject_at", lambda rev, workdir: workdir / "pyproject.toml")
+
+        code = check_support_windows.main(["--base", "v0.32.0", "--today", "2026-09-17"])
+        out = capsys.readouterr().out
+        assert code == 1, "an undated raise must not report as compliant"
+        assert "UNDECIDED: pyarrow" in out
+        assert "could not read release dates from PyPI" in out
+        assert "timed out" in out, "DRIFT-RULES Rule 2: say what failed, not that something did"
+
+    def test_a_dated_fetch_reaches_the_verdict_through_main(self, check_support_windows, monkeypatch, capsys):
+        """The control, so the clause above is not "main always exits 1"."""
+        monkeypatch.setattr(check_support_windows, "fetch_releases", lambda name: PYARROW)
+        monkeypatch.setattr(
+            check_support_windows,
+            "raised",
+            lambda base, head: [_raise(check_support_windows, "pyarrow", "14.0.0", "16")],
+        )
+        monkeypatch.setattr(check_support_windows, "floors", lambda path: {})
+        monkeypatch.setattr(check_support_windows, "read_pyproject_at", lambda rev, workdir: workdir / "pyproject.toml")
+
+        code = check_support_windows.main(["--base", "v0.32.0", "--today", "2026-09-17"])
+        assert code == 0
+        assert "patch-eligible: pyarrow" in capsys.readouterr().out
+
+    def test_a_bad_today_is_reported_rather_than_tracebacked(self, check_support_windows, capsys):
+        """The flag this change introduced, held to the file's own standard.
+
+        Every other failure path here prints and returns 1; this one raised
+        `ValueError: Invalid isoformat string: 'next Monday'` out of `main`,
+        which names no remedy and no flag.
+        """
+        assert check_support_windows.main(["--base", "v0.32.0", "--today", "next Monday"]) == 1
+        assert "--today must be YYYY-MM-DD" in capsys.readouterr().err
+
+    def test_no_tag_to_compare_against_is_reported_rather_than_tracebacked(
+        self, check_support_windows, monkeypatch, capsys
+    ):
+        """`previous_tag` shells out to `git describe`, which fails in a shallow
+        clone — the state a fresh CI checkout is in until `git fetch --tags`."""
+        import subprocess
+
+        def no_tag() -> str:
+            raise subprocess.CalledProcessError(128, ["git", "describe"])
+
+        monkeypatch.setattr(check_support_windows, "previous_tag", no_tag)
+        assert check_support_windows.main(["--today", "2026-09-17"]) == 1
+        assert "git fetch --tags" in capsys.readouterr().err, "say the remedy, not just the failure"

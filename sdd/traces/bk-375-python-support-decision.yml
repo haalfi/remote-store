@@ -28,10 +28,10 @@ surprising_ripples:
 # Derivation for the value below, per the schema's review_rounds clause:
 # `git log --oneline origin/master..HEAD` over this branch, counting only
 # commits that exist because a review round asked for them. 0950031f implements
-# and does not count; 41aec01b carries round 1's five findings and the commit
-# carrying this line carries round 2's five. Updated as each round lands, so the
-# value is current at every commit.
-review_rounds: 2
+# and does not count; 41aec01b carries round 1's five findings, e430ee7e round
+# 2's five, and the commit carrying this line round 3's. Updated as each round
+# lands, so the value is current at every commit.
+review_rounds: 3
 phases:
   - id: orient
     name: Orient

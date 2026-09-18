@@ -59,10 +59,13 @@ Bounds, because an unstated one gets trusted past its range:
   skipped.** That justification does not extend to it: such a release is
   installable, so leaving it out of the claim space would hand the test to an
   older release and report **patch-eligible** for a raise that strands somebody.
-  Measured over the five packages this repository declares floors for — 728
-  versions of pyarrow, aiohttp, urllib3, paramiko and s3fs — PyPI produced this
-  shape zero times, so the branch is defensive. It is kept loud rather than
-  removed because the failure it prevents is a false pass.
+  Surveyed over the whole claim space — all **19** packages ``floors()`` returns
+  for the committed ``pyproject.toml``, 2617 registered versions between them,
+  of which 1991 are stable, non-yanked and dateable — PyPI produced this shape
+  **zero** times, so the branch is defensive. It is kept loud rather than
+  removed because the failure it prevents is a false pass. (An earlier count
+  said "the five packages this repository declares floors for"; five was a spot
+  check, and the widened survey only strengthens the result.)
 * **Only ``>=`` floors are compared.** The collapse this borrows refuses
   anything else rather than guessing, and reports the package it refused on.
 * **A package that appears for the first time is not a raise**, and neither is
@@ -333,7 +336,13 @@ def main(argv: list[str] | None = None) -> int:
     )
     args = parser.parse_args(argv)
 
-    today = date.fromisoformat(args.today) if args.today else date.today()
+    # Reported rather than tracebacked, like every other failure path here: the
+    # maintainer running this reads the exit code and the text, not a stack.
+    try:
+        today = date.fromisoformat(args.today) if args.today else date.today()
+    except ValueError:
+        print(f"--today must be YYYY-MM-DD, got {args.today!r}", file=sys.stderr)
+        return 1
     cutoff = dependency_cutoff(today)
     try:
         base = args.base or previous_tag()

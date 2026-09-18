@@ -377,9 +377,12 @@ if evidence changes; these are retired.
   attached to `Reports` and joins its `__bool__`, which makes the guard correct
   by construction. And a crossing is true on *every* run, so letting it into
   `has_signal` unguarded would have turned every narrowed dispatch into the
-  body-destroying rewrite BUG-282 documents; it holds the issue only on an
+  body-destroying rewrite BUG-282 documents; it forces the update only on an
   unnarrowed run, with the extras claim space derived from
-  `drift_check.list_extras()` rather than restated.
+  `drift_check.list_extras()` rather than restated. A narrowed run may not
+  **close** over an unowned crossing either — it answers `leave` — because
+  withholding only the update buys the recoverable outcome by permitting the
+  unrecoverable one.
   **Exercised against the raise BUG-287 proposes, and the item's expected answer
   turned out to be stale.** `pyarrow` 14.0.0 → 16 newly excludes 15.0.2,
   uploaded 2024-03-18, which is 30 months old against a 2026-09-17 cutoff — so

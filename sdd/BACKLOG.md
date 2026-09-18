@@ -1769,6 +1769,36 @@ working, and quietly describing the library as something it is not.
   **Not** the same as a step that pipes deliberately and tolerates failure:
   `benchmark.yml:111-113` ends each line with `|| true` and means it.
 
+- [ ] **BUG-291 — A single-extra dispatch can still close the rolling drift issue on one extra's evidence**
+  spec: — · effort: S · audience: infra.ci
+  `drift_report.decide` refuses to close on a run that did not cover both lanes,
+  and its comment gives the reason: *"a single-lane dispatch has not seen what
+  the other lane would have found, and a closed issue is not recoverable the way
+  a rewritten body is."* That argument is about **narrowing**, and the guard
+  implements only the lane half. `_lanes_present(reports) != set(LANES)` is
+  blind to the *extras* narrowing, so `extra: s3, lane: all` — a real
+  `workflow_dispatch` input combination — reaches the close with one extra's
+  reports and closes the issue, discarding the scheduled run's findings for the
+  other thirteen.
+  **Measured on both sides**, so it is pre-existing rather than introduced with
+  the support-window work: a one-extra, both-lane, all-clean run at
+  `origin/master` and at this item's filing head both print
+  `(dry run — would close the issue titled '[drift-guard]': all clear in both
+  lanes)`. BUG-282 covers the sibling hazard — that such a dispatch *rewrites*
+  the body from its slice — and this is the same narrowing reaching the other,
+  unrecoverable outcome.
+  **Why it stayed hidden:** `main` computes `unnarrowed = set(lanes) ==
+  set(LANES) and bool(expected) and set(expected) == set(list_extras())` and
+  hands it to the window state, but the close guard never sees it. So the issue's
+  survival of a narrowed dispatch currently depends on whether an interpreter
+  happens to be past its support window, which is an unrelated calendar fact.
+  **Scope when picked up:** give the close the same `unnarrowed` test the window
+  signal already uses, pin it in both directions (a full clean run still closes;
+  a one-extra clean run leaves), and reconcile the three layers that describe the
+  verdict — `drift-guard.yml`'s header and step comment, the drift-guard runbook
+  in `sdd/CI-OPERATIONS.md`, and `.claude/skills/drift/SKILL.md` — since all
+  three currently say "all clear and an open issue exists → close".
+
 - [ ] **BUG-287 — Three extras declare a `pyarrow` floor that installs and then cannot import**
   spec: — · effort: S · audience: user.api, infra.test
   `[arrow]` and `[sql-query]` declare `pyarrow>=12.0.0`, `[s3-pyarrow]`

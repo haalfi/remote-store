@@ -61,10 +61,15 @@ name: Drift Guard
 #  - `infra/drift-locks/PYTHON-SUPPORT.md` is its register, separate from
 #    KNOWN-FINDINGS.md because the two are keyed differently. An interpreter past
 #    its window with no unexpired row there holds the issue open.
-#  - A crossing is true on EVERY run, so it holds the issue only on an
+#  - A crossing is true on EVERY run, so it FORCES AN UPDATE only on an
 #    unnarrowed one (every lane, every extra). Otherwise the sharp edge below
 #    would fire on every single-extra dispatch: an always-true signal would turn
 #    a run that should leave the issue alone into one that rewrites its body.
+#  - It does still stop a narrowed run CLOSING the issue. Withholding the update
+#    while permitting the close would take the worse half of that trade, since a
+#    rewritten body is recoverable and a closed issue is not. So a narrowed run
+#    with an unowned crossing neither rewrites nor closes: it leaves the issue
+#    as it found it, and the next scheduled run decides.
 #
 # One sharp edge on `workflow_dispatch`: the report job regenerates the WHOLE
 # issue body from whatever reports the run produced, so a single-extra or
@@ -483,9 +488,14 @@ jobs:
           merge-multiple: true
 
       # Compose the rolling-issue body from every report and verdict, then:
-      #  - anything unresolved in either lane -> create/update the rolling issue.
+      #  - anything unresolved in either lane, or an interpreter past its support
+      #    window with nobody named (on an unnarrowed run) -> create/update.
       #  - all clear and an open issue exists -> comment "cleared" and close.
       #  - all clear and no issue exists -> no-op.
+      #  - all clear but this run did not cover both lanes, or an unowned
+      #    crossing it may not act on -> LEAVE the issue exactly as it is. The
+      #    calendar signal has no lane and no artefact, so it is not covered by
+      #    "in either lane" above; see the header.
       # A floor finding already in infra/drift-locks/KNOWN-FINDINGS.md renders
       # but does not hold the issue open; see that file for why.
       - name: Update rolling drift issue

@@ -113,9 +113,9 @@ documented in [`CONTRIBUTING.md`](../CONTRIBUTING.md).
   says is not a channel to rely on. `infra/drift-locks/KNOWN-FINDINGS.md` is
   what separates an owned finding from a new one, in either lane — an
   unregistered one holds the issue open, a registered one renders with its
-  owner and does not. On a week whose findings are *all* registered the issue
-  closes, so the rows render nowhere and the register itself is where they are
-  read.
+  owner and does not. On a week whose findings are *all* registered, **and no
+  interpreter is past its window unregistered**, the issue closes, so the rows
+  render nowhere and the register itself is where they are read.
   A registered *newest*-lane finding still fails its leg; the register changes
   what the issue presents as news, never what CI does.
   **A row past its `Review by` stops silencing**, in both registers, so the
@@ -124,10 +124,13 @@ documented in [`CONTRIBUTING.md`](../CONTRIBUTING.md).
   **A support-window crossing never goes red.** It holds the issue open when the
   interpreter has no unexpired row in `infra/drift-locks/PYTHON-SUPPORT.md` — a
   register separate from `KNOWN-FINDINGS.md` because the two are keyed
-  differently — and it does so only on an **unnarrowed** run, every lane and
-  every extra. A crossing is true on every run, so without that a single-extra
-  dispatch would be turned into the body-destroying rewrite the **When** bullet
-  warns about.
+  differently — and it *forces the update* only on an **unnarrowed** run, every
+  lane and every extra. A crossing is true on every run, so without that a
+  single-extra dispatch would be turned into the body-destroying rewrite the
+  **When** bullet warns about. A narrowed run still may not **close** over such
+  a crossing: it answers `leave`, because a rewritten body is recoverable and a
+  closed issue is not, so the narrowing withholds both and the next scheduled
+  run decides.
 - **How to act:** run the **`/drift` skill**. Refreshes are gated per extra on
   that extra's smoke verdict; the skill's steps 3–5 are authoritative on the
   gating, including how a major bump, a red smoke and a red floor are each

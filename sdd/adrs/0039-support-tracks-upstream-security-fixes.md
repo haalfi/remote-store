@@ -35,9 +35,10 @@ sentence was written.
 `devguide.python.org` were unreachable from the environment this was gathered
 in, so the source is each version's **release-schedule PEP**, fetched from
 `raw.githubusercontent.com/python/peps/main/peps/pep-0<n>.rst`. Every one of the
-five carries the same lifetime in the same words — "security updates (source
-only) will be released until 5 years after the release of x.y.0 final" — and
-gives the end as a month, so the exact day is `final + 5 years`:
+five carries the same lifetime — "security updates (source only) will be
+released until 5 years after the release of x.y.0 final", except PEP 745
+(3.14), which spells the number "five" — and gives the end as a month, so the
+exact day is `final + 5 years`:
 
 | Version | PEP | `x.y.0 final` | Security support ends | Standing on 2026-09-17 |
 |---|---|---|---|---|
@@ -108,8 +109,8 @@ version past the end of its security support, and will not support one for less.
 **3.11, 3.12, 3.13 and 3.14 stay**, because none is near its window and no
 declared dependency has dropped even 3.10.
 
-**3.10 goes when upstream stops fixing it**, which the table above puts at
-2026-10-04. That drop is BK-380's, not this record's: raising `requires-python`
+**3.10 goes when upstream stops fixing it**, which § The measured inputs puts at
+2026-10-04 (five years after its 2021-10-04 release, per PEP 619). That drop is BK-380's, not this record's: raising `requires-python`
 moves every spelling of the supported set, is a breaking change, and takes its
 own change. Until it lands the position is this decision rather than inertia,
 which is the whole point of writing it down.

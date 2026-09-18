@@ -1,9 +1,11 @@
 """Tests for scripts/python_support.py (BK-375).
 
-The module is arithmetic over two inputs, so the tests split the same way: what
-it reads out of the classifiers, and what it computes from a release date. Two
-things get pinned harder than the rest because they fail silently rather than
-loudly:
+The tests split by what each function answers: what the module reads out of the
+classifiers, what it computes from a release date, and — a third thing, keyed to
+neither — where `dependency_cutoff` puts Rule 9's line, which is about
+dependencies rather than interpreters and shares only the calendar arithmetic.
+Two things get pinned harder than the rest because they fail silently rather
+than loudly:
 
 * **the sort** — lexically, ``"3.9" > "3.10"``, so a lexical sort reverses the
   chart's rows the first time a single-digit minor is in the set. No current
@@ -154,13 +156,18 @@ class TestDependencyCutoff:
         assert python_support.dependency_cutoff(date(2026, 9, 17)) == date(2024, 9, 17)
         assert python_support.DEPENDENCY_WINDOW_MONTHS == 24
 
-    def test_a_release_on_the_cutoff_is_outside_its_window(self, python_support):
+    def test_a_release_older_than_the_cutoff_is_outside_its_window(self, python_support):
         """pyarrow 15.0.2 (2024-03-18) against today: outside, so patch-eligible.
 
         The measured case the release check is exercised on, pinned here so the
-        boundary and the check cannot drift apart.
+        boundary and the check cannot drift apart. **Not the boundary itself** —
+        this date is 183 days before the cutoff, and the name used to claim
+        otherwise, so a `<=` weakened to `<` would have left it green. The
+        equal-to-the-cutoff case is `judge`'s to decide and is pinned where that
+        decision lives, `test_check_support_windows.py`'s
+        `test_a_release_exactly_on_the_cutoff_is_outside_its_window`.
         """
-        assert date(2024, 3, 18) <= python_support.dependency_cutoff(date(2026, 9, 17))
+        assert date(2024, 3, 18) < python_support.dependency_cutoff(date(2026, 9, 17))
 
     def test_a_release_inside_the_window_is_after_the_cutoff(self, python_support):
         """pyarrow 20.0.0 (2025-04-27): inside, so excluding it is breaking."""

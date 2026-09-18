@@ -185,9 +185,13 @@ lacks `actions: write`; the MCP server's `actions_run_trigger` dispatches).
 
    **A crossing licenses a drop; it never requires one.** Rule 8 promises a
    floor, not a ceiling, so "the window closed" is not by itself a reason to
-   drop anything. And a crossing renders on every run while holding the issue
-   open only on an unnarrowed one, so a narrowed dispatch showing an
-   unregistered crossing is not evidence the issue was going to stay open.
+   drop anything. And a crossing renders on every run while *forcing an update*
+   only on an unnarrowed one, so a narrowed dispatch showing an unregistered
+   crossing is not evidence the issue was going to be rewritten from that slice.
+   It **is** evidence the issue was going to stay open: a narrowed run may not
+   close over an unowned crossing either, so it answers `leave` and the next
+   scheduled run decides. Read a narrowed dispatch as "real and undecided",
+   never as "inert".
 
 4. **Triage the version bumps** for the green extras. Classify each
    `baseline → resolved` by semver: patch/minor and `rc → stable` are routine;

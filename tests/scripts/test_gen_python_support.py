@@ -12,12 +12,14 @@ mermaid 11.17.2 in Chromium: `mermaid.parse` answered
 ``Parse error on line 1: %%gantt ... Expecting 'gantt', got 'NL'``.
 
 **The failure is positional, and the guard is deliberately broader than it.**
-The same bare marker inserted after `gantt` parses and loses no row; only the
-header position is fatal, because that is where the joined line still has to be
-the diagram type. `assert_renderable` refuses a bare marker anywhere anyway,
-since the header is the only place this generator emits comments. Every comment
-*carrying* text parsed at every position tried. `assert_renderable` is the floor
-that came out of it, and the tests below are what keep it honest.
+A bare marker is fatal *anywhere before* `gantt` — first header line, last, or
+mid-header, and even when the line it joins is another comment — because the
+joined line still has to be the diagram type. The same marker inserted *after*
+`gantt` parses and loses no row. Every comment *carrying* text parsed at every
+position tried. `assert_renderable` refuses a bare marker anywhere anyway, and
+also refuses `%%` plus a space, which parses: it is a floor under what this
+generator can emit, not a model of the parser. The tests below keep both the
+fatal case and the deliberate over-reach honest.
 """
 
 from __future__ import annotations
@@ -134,20 +136,50 @@ class TestAssertRenderable:
     def test_a_bare_marker_after_gantt_is_refused_too(self, gen):
         """Stricter than the parser, on purpose, and pinned as such.
 
-        Measured: this shape *parses*, keeping all five sections and ten tasks.
-        The guard still refuses it, because the header is the only place this
+        Measured, a bare marker after `gantt` parses: **the committed artefact**
+        with one inserted before a `section` renders to a byte-identical SVG,
+        all five sections and ten tasks intact. The four-line snippet below is
+        not that input and carries one section and no tasks — it is the minimum
+        that reaches the guard, and the earlier wording attached the artefact's
+        figure to it, which is the attribution error ADR-0037 is about.
+
+        The guard refuses it anyway, because the header is the only place this
         generator emits a comment, so every bare marker it can actually produce
-        is the fatal one — and a guard that tracked the position would be
-        modelling a parser it explicitly is not. Pinned so a later reader does
-        not "fix" the guard to match the parser and lose the header case.
+        is the fatal one. Pinned so a later reader does not "fix" the guard to
+        match the parser and lose the header case.
         """
         with pytest.raises(gen.UnrenderableChartError, match="line 3"):
             gen.assert_renderable("%% a header\ngantt\n%%\n    section Python 3.10\n")
+
+    def test_a_bare_marker_before_gantt_is_refused_wherever_it_sits(self, gen):
+        """The fatal case is not only the *last* header line.
+
+        Measured: a bare marker at any position before `gantt` produces the same
+        `Expecting 'gantt', got 'NL'`, including one whose following line is
+        another comment rather than `gantt` itself. An earlier wording here said
+        "the last header line", from which a reader would conclude an earlier
+        marker is harmless; it is not, and narrowing the guard on that reading
+        would lose every earlier header position.
+        """
+        with pytest.raises(gen.UnrenderableChartError, match="line 1"):
+            gen.assert_renderable("%%\n%% a header\ngantt\n    dateFormat YYYY-MM-DD\n")
 
     def test_the_offending_line_is_named(self, gen):
         """DRIFT-RULES Rule 2: say which line, not that a line is wrong."""
         with pytest.raises(gen.UnrenderableChartError, match="line 2"):
             gen.assert_renderable("%% a header\n%%\ngantt\n")
+
+    def test_the_wrong_diagram_type_is_named_with_its_line_too(self, gen):
+        """The `Raises:` clause promises a number, and this path gave none.
+
+        `assert_renderable` has two refusals and only the first carried a line
+        number; the second built its `body` with a filtering comprehension that
+        discarded them, so a contributor got `the first non-comment line must be
+        `gantt`, found 'flowchart TD'` with nothing to jump to. Rule 2 asks a
+        mechanism to name the element, and the docstring above claimed it did.
+        """
+        with pytest.raises(gen.UnrenderableChartError, match="line 2"):
+            gen.assert_renderable("%% a header\nflowchart TD\n    A --> B\n")
 
     def test_comments_carrying_text_are_allowed_anywhere(self, gen):
         """Measured: before `gantt`, after it, indented, repeated, all parse.
@@ -165,7 +197,13 @@ class TestAssertRenderable:
             gen.assert_renderable("%% a header\nflowchart TD\n    a --> b\n")
 
     def test_comment_only_text_is_refused(self, gen):
-        with pytest.raises(gen.UnrenderableChartError, match="<nothing>"):
+        """The one shape with no line to name, which must not invent one.
+
+        It used to report `found '<nothing>'`, a placeholder standing where a
+        line number and a line belong. Now it says the artefact has no
+        non-comment line, which is the actual condition.
+        """
+        with pytest.raises(gen.UnrenderableChartError, match="no non-comment line"):
             gen.assert_renderable("%% only a comment\n")
 
 

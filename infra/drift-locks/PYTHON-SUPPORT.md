@@ -9,8 +9,9 @@ indefinitely, and the maintainer stops reading it — the failure
 register to prevent, on pain of the check being switched off instead.
 
 `scripts/drift_report.py` reads the table below, keyed on **interpreter**. A row
-renders its crossing as _known_, naming its owner, and stops it holding the
-rolling issue open; a crossing with no row renders as new and does hold it open.
+renders its crossing as _known_, naming its owner, and — while its `Review by`
+has not passed — stops it holding the rolling issue open; a crossing with no row,
+or with an expired one, renders as new and does hold it open.
 Removing a row is therefore how a crossing starts counting again — delete it in
 the same change that drops the interpreter.
 
@@ -38,12 +39,17 @@ there is one rule for the column rather than one per table. **A row with an
 unparseable date is a hard failure**, not a row that never expires: a silencer
 with no end date is the hazard this section exists to remove.
 
-**Two bounds this file still does not enforce, stated so they are not assumed.**
-Nothing checks that a row's `Owner` is still open, so a row outliving the item
-it names silences that interpreter until its `Review by` arrives. And a
+**Three bounds this file still does not enforce, stated so they are not
+assumed.** Nothing checks that a row's `Owner` is still open, so a row outliving
+the item it names silences that interpreter until its `Review by` arrives. A
 registered crossing renders nowhere on a week whose findings are all registered,
 because that week closes the issue — that is the intended trade, and this file
-is where those rows live on such a week.
+is where those rows live on such a week. And **a row the loader's row shape does
+not match is skipped in silence**: a five-cell row, or a version cell without
+its backticks, simply has no effect and nothing says why. It fails in the safe
+direction — the crossing reappears as news rather than being wrongly silenced —
+but the symptom is a row that does nothing, so check a new row against the
+format below rather than against what looks reasonable.
 
 **Scope: what the run reports, not what CI does.** No CI job fails because an
 interpreter is past its window, registered or not. A row changes only whether

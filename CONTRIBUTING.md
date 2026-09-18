@@ -461,7 +461,7 @@ how to make it.
 | Breaking API change (post-1.0) | **major** (`X.0.0`) | — |
 | Dependency floor raised, excluding only versions 2+ years past their own release | **patch** (`0.0.X`) | `sqlalchemy>=2.0` → `>=2.0.31` where 2.0.30 is older than 2 years |
 | Dependency floor raised, excluding a version younger than that | treat as **breaking**, row above | Raising a floor past a release still inside its support window |
-| Dropping a Python version | treat as **breaking**, two rows above | Raising `requires-python`, dropping a classifier |
+| Dropping a Python version | treat as **breaking**, as the floor-raise row directly above | Raising `requires-python`, dropping a classifier |
 | CI, docs, metadata-only | **no bump** | Add classifier, update README |
 
 The three dependency and interpreter rows above are the maintainer side of

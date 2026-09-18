@@ -89,9 +89,10 @@ from python_support import (  # noqa: E402  — sibling module, imported the way
 ARTEFACT = Path(__file__).resolve().parent.parent / "docs-src" / "_data" / "python-support-window.mmd"
 
 # Every header line carries text after its `%%`, and a BARE `%%` line must
-# never appear. Measured against mermaid 11.17.2: its comment stripper removes
-# the text after a marker but leaves a contentless marker behind, so a `%%`
-# alone collapses onto the following line and the parser answers
+# never appear here. Measured against mermaid 11.17.2: its comment stripper
+# removes the text after a marker but leaves a contentless marker behind, so a
+# `%%` alone collapses onto the following line, and anywhere before `gantt`
+# that is fatal — the parser answers
 # `Parse error on line 1: %%gantt ... Expecting 'gantt', got 'NL'`. The page
 # then shows the raw source where the chart should be, and nothing catches it:
 # `mkdocs build --strict` passes because no documentation build executes
@@ -140,38 +141,59 @@ def assert_renderable(text: str) -> None:
 
     * **a bare ``%%`` line.** Comment text is stripped and the contentless
       marker is not, so the marker joins the next line. **Measured, the failure
-      is positional**: a bare ``%%`` as the last header line makes the parser
-      see ``%%gantt`` and answer ``Expecting 'gantt', got 'NL'``, while the same
-      line inserted after ``gantt`` — before a ``section``, between tasks, or at
-      the end — parses and loses no row. Every comment *carrying text* passed at
-      every position tried, including indented, several in a row, and carrying
-      backticks, quotes or apostrophes.
+      is positional**: a bare ``%%`` anywhere *before* ``gantt`` is fatal, with
+      the identical ``Parse error on line 1: %%gantt … Expecting 'gantt', got
+      'NL'`` — the first header line, the last, and mid-header all produce it,
+      and so does ``%%\\n%% text\\ngantt``, where the line the marker joins is
+      another comment. The same line inserted *after* ``gantt`` — before a
+      ``section``, between tasks, or at the end — parses and loses no row.
+      Every comment *carrying text* passed at every position tried, including
+      indented, several in a row, and carrying backticks, quotes or
+      apostrophes.
 
-      **This guard is deliberately stricter than the parser**, refusing a bare
-      marker anywhere rather than only in the header. The generator emits
-      comments only in the header, so every bare marker it can produce is the
-      fatal one; a body comment is a shape it has no way to emit, and a guard
-      that tracked the position would be modelling a parser it is not trying to
-      be.
+      **This guard is deliberately stricter than the parser**, twice over. It
+      refuses a bare marker after ``gantt``, where mermaid accepts one, because
+      the generator emits comments only in the header and so every marker it can
+      actually produce is the fatal kind. And ``line.strip() == "%%"`` refuses
+      ``%%`` followed by a space, which measurably parses. Both over-reaches are
+      deliberate: this is a floor under what the generator can emit, not a model
+      of the parser.
     * **a first non-comment line that is not ``gantt``.** The diagram type has
       to be the first thing the parser reaches.
 
     Raises:
         UnrenderableChartError: Naming the offending line and its number, per
-            DRIFT-RULES Rule 2.
+            DRIFT-RULES Rule 2. The one shape with no line to name — an artefact
+            of nothing but comments — says that instead of inventing one.
     """
     for number, line in enumerate(text.splitlines(), start=1):
         if line.strip() == "%%":
             raise UnrenderableChartError(
                 f"line {number} is a bare `%%` comment marker, which joins itself to the next line. "
-                f"In the header that is fatal — the parser reads `%%gantt` and answers "
-                f"`Expecting 'gantt', got 'NL'`. This check refuses it anywhere, because the header is "
-                f"the only place this generator emits comments. Put text after every `%%`."
+                f"Anywhere before `gantt` that is fatal — the parser reads `%%gantt` and answers "
+                f"`Expecting 'gantt', got 'NL'`. This check refuses it after `gantt` too, where mermaid "
+                f"accepts it, because the header is the only place this generator emits comments. "
+                f"Put text after every `%%`."
             )
-    body = [line for line in text.splitlines() if not line.lstrip().startswith("%%") and line.strip()]
-    if not body or body[0].strip() != "gantt":
-        found = body[0].strip() if body else "<nothing>"
-        raise UnrenderableChartError(f"the first non-comment line must be `gantt`, found {found!r}")
+    # Numbered, so this refusal can name its line like the one above: the
+    # earlier comprehension dropped the numbers and the `Raises:` clause
+    # promised them anyway (DRIFT-RULES Rule 2).
+    body = [
+        (number, line)
+        for number, line in enumerate(text.splitlines(), start=1)
+        if not line.lstrip().startswith("%%") and line.strip()
+    ]
+    if not body:
+        raise UnrenderableChartError(
+            "the artefact has no non-comment line, so there is no diagram type for mermaid to read; "
+            "it must begin `gantt` after the header comments"
+        )
+    if body[0][1].strip() != "gantt":
+        number, line = body[0]
+        raise UnrenderableChartError(
+            f"line {number} is the first non-comment line and must be `gantt`, found {line.strip()!r}. "
+            "The diagram type has to be the first thing the parser reaches."
+        )
 
 
 def generate() -> int:

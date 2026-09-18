@@ -24,15 +24,21 @@ Logic, as ``decide`` implements it:
   open. Version drift is never suppressed this way.
 * A supported interpreter **past its security-support window** with no unexpired
   row in ``infra/drift-locks/PYTHON-SUPPORT.md`` → create-or-update, but only on
-  a run that covered both lanes. That half of the watch fires on the calendar
+  an **unnarrowed** run: every lane *and* every extra, not the lane half alone
+  (``SupportWindowState`` says why). That half of the watch fires on the calendar
   rather than on anything a run uploaded, which is why it is attached to
   ``Reports`` before the emptiness guard and why a narrowed dispatch cannot let
   it rewrite the body.
-* Everything clean in both lanes → comment "drift cleared" on the open issue
-  (if any) and close it; no-op if no issue is open.
+* Everything clean in both lanes, and no unowned crossing → comment "drift
+  cleared" on the open issue (if any) and close it; no-op if no issue is open.
 * Everything clean but only **one** lane ran → leave the issue alone. A
   single-lane dispatch has not seen what the other lane would have found, and a
   closed issue is not recoverable the way a rewritten body is.
+* Everything clean, both lanes, but an **unowned crossing** a narrowed run may
+  not act on → leave the issue alone, for that same reason. Withholding the
+  update while permitting the close would take the worse half of the trade: the
+  body is recoverable, a closed issue is not. So a narrowed run neither rewrites
+  nor closes, and the next unnarrowed run decides.
 
 ``Review by`` is read by code in **both** registers, through one predicate: past
 its date a row stops silencing its finding and the finding reappears as new. It
@@ -49,9 +55,11 @@ Drift-gate::
         drift against the committed baselines, the declared floors' resolution, and each lane's
         smoke verdict — plus each supported interpreter's standing against the security-support
         window Rule 8 publishes, as a rolling GitHub issue it opens, updates or closes; it acts
-        on that state rather than asserting anything, so nothing it FINDS makes it exit non-zero —
-        only a register row whose `Review by` is not an ISO date does, because a date that cannot be
-        compared would silence its finding forever
+        on that state rather than asserting anything, so nothing it FINDS makes it exit non-zero.
+        Two inputs it cannot use do: a register row whose `Review by` is not an ISO date, because a
+        date that cannot be compared would silence its finding forever, and a `Programming Language
+        :: Python` classifier with no release date, because the window section is then uncomputable.
+        Both are reported rather than raised
     domain:     process
 """
 
@@ -71,7 +79,7 @@ from typing import TypeVar
 sys.path.insert(0, str(Path(__file__).resolve().parent))
 
 from drift_check import list_extras  # noqa: E402  — one driver for the extras claim space
-from python_support import SupportWindow, windows  # noqa: E402  — sibling module
+from python_support import SupportWindow, UnknownInterpreterError, windows  # noqa: E402  — sibling module
 
 
 @dataclass(frozen=True)
@@ -215,11 +223,21 @@ def _load_reports(dir_: Path) -> Reports:
 def _known_note(register: dict[tuple[str, str], tuple[str, str]], key: tuple[str, str], today: date) -> str | None:
     """The "somebody owns this" sentence for a finding, or ``None`` if nobody does.
 
-    One home for the sentence, so the expiry it now reports cannot be shown in
-    one section and omitted in another. A row past its ``Review by`` still names
-    its owner — dropping the mention would lose the only pointer a reader has —
-    but says the date has passed, which is the same fact ``has_signal`` acted on
+    One home **for the prose sections** — ``_render_isolation_findings`` and
+    ``_floor_rows`` both take it from here, so the expiry cannot be shown in one
+    and omitted in the other. A row past its ``Review by`` still names its
+    owner — dropping the mention would lose the only pointer a reader has — but
+    says the date has passed, which is the same fact ``has_signal`` acted on
     when it let the finding hold the issue open.
+
+    **It is not the only place that sentence is built**, and a reader adding a
+    detail here should know that. ``_render_smoke_verdicts`` builds an
+    owner-plus-expiry cell inline for the same ``(extra, lane)`` register,
+    because a table cell cannot carry a sentence, and
+    ``_render_support_windows`` builds a third for the *interpreter* register,
+    which is keyed differently. All three agree today because they were written
+    together; nothing makes them agree by construction, so a change here needs
+    the other two checked by hand.
     """
     if key not in register:
         return None
@@ -347,10 +365,15 @@ class RegisterDateError(Exception):
     Raised by the **loaders**, not by ``is_expired``, and that placement is the
     whole point: a loader knows the file it is reading and the row it is on, so
     the message can name both. ``is_expired`` sees a bare string and could only
-    ever say which *value* was bad -- which, across two registers and eight-odd
-    rows, does not localize, and ``sdd/DRIFT-RULES.md``
-    [Rule 2](../sdd/DRIFT-RULES.md#localize) asks a mechanism to name the
-    element rather than the fact of a difference.
+    ever say which *value* was bad, which does not localize, and
+    ``sdd/DRIFT-RULES.md`` [Rule 2](../sdd/DRIFT-RULES.md#localize) asks a
+    mechanism to name the element rather than the fact of a difference.
+
+    Scale, since the argument is about finding a row rather than about volume:
+    the two registers hold **7** rows between them today, all of them
+    ``KNOWN-FINDINGS.md``'s, because ``PYTHON-SUPPORT.md`` ships empty. So the
+    placement earns its keep on the interpreter register's first row rather
+    than on the current count, and an earlier "eight-odd rows" overstated it.
     """
 
 
@@ -800,15 +823,21 @@ def decide(
     covered = _lanes_present(reports)
     if covered != set(LANES):
         return "leave", f"all clear in {sorted(covered)}, but this run did not cover both lanes"
-    # Same rule, applied to the other narrowing. `holds_issue=False` withholds
-    # the *update* on a narrowed run, because a narrowed update rewrites the
-    # body from its slice. It must withhold the *close* too, or the narrowing
-    # takes the worse half of the trade this function already states: the body
-    # is recoverable, a closed issue is not. Measured before this clause on
+    # The same trade, applied to the calendar signal. `holds_issue=False`
+    # withholds the *update* on a narrowed run, because a narrowed update
+    # rewrites the body from its slice. It must withhold the *close* too, or the
+    # narrowing takes the worse half of what this function already states: the
+    # body is recoverable, a closed issue is not. Measured before this clause on
     # `extra: s3, lane: all` with both lanes clean and 3.10 one day past its
     # window -- the verdict was `close`, so the issue vanished while an
-    # interpreter sat past its window with nobody named. `leave` takes neither
-    # outcome and hands the decision to the next unnarrowed run.
+    # interpreter sat past its window with nobody named.
+    #
+    # **This covers the crossing, not the close in general.** The guard above is
+    # the lane half of "narrowed" only, so a one-extra all-clean run with no
+    # crossing still closes on one extra's evidence. That is pre-existing, filed
+    # as BUG-291, and deliberately not widened here: it changes when the issue
+    # auto-closes for every dispatch, which is its own change with its own
+    # tests.
     if reports.windows.unregistered:
         return "leave", (
             f"all clear in both lanes, but {', '.join(reports.windows.unregistered)} "
@@ -1149,7 +1178,14 @@ def main(argv: list[str] | None = None) -> int:
     )
     args = parser.parse_args(argv)
 
-    today = date.fromisoformat(args.today) if args.today else date.today()
+    # Reported, not tracebacked, for the same reason as the registers below: a
+    # flag this script introduced should not be the one failure path that says
+    # `Invalid isoformat string` with no remedy.
+    try:
+        today = date.fromisoformat(args.today) if args.today else date.today()
+    except ValueError:
+        print(f"::error::--today must be YYYY-MM-DD, got {args.today!r}", file=sys.stderr)
+        return 1
     # A malformed `Review by` is a hard failure -- both register files say so,
     # since a date that cannot be compared silences its finding forever -- but a
     # hard failure is still a report rather than a traceback. The loaders name
@@ -1176,12 +1212,34 @@ def main(argv: list[str] | None = None) -> int:
     # section still renders, it just does not rewrite the issue the scheduled
     # runs own.
     unnarrowed = set(lanes) == set(LANES) and bool(expected) and set(expected) == set(list_extras())
-    reports = dataclasses.replace(
-        _load_reports(args.reports_dir),
-        windows=support_window_state(today, python_register, holds_issue=unnarrowed),
-    )
+    try:
+        window_state = support_window_state(today, python_register, holds_issue=unnarrowed)
+    except UnknownInterpreterError as exc:
+        # The second hard failure, reported rather than tracebacked, for the
+        # same reason as the register above: a classifier with no release date
+        # makes the whole section uncomputable, and a traceback on the weekly
+        # run says less than the message `python_support` already writes.
+        # `preflight`'s `gen_python_support.py --check` refuses the same state,
+        # so reaching this means a commit bypassed it.
+        print(f"::error::undated interpreter classifier: {exc}", file=sys.stderr)
+        return 1
+    reports = dataclasses.replace(_load_reports(args.reports_dir), windows=window_state)
     if not reports:
-        print("No drift reports found and no support window crossed; nothing to reconcile.", file=sys.stderr)
+        # Say what this run saw, not what a run could see. `Reports.__bool__`
+        # keys on `holds_issue`, so a narrowed dispatch whose legs uploaded
+        # nothing is falsy even with an interpreter past its window -- and the
+        # old wording then denied a crossing this same run had just computed.
+        # This is the third reader of the `holds_issue` / `unregistered`
+        # distinction, after `__bool__` and the rendered section, and it is the
+        # line a maintainer reads in a dispatch's step log.
+        if reports.windows.unregistered:
+            print(
+                f"No drift reports found. {', '.join(reports.windows.unregistered)} is past its support window "
+                "with nobody named, but this run was too narrow to act on it; the next full run will.",
+                file=sys.stderr,
+            )
+        else:
+            print("No drift reports found and no support window crossed; nothing to reconcile.", file=sys.stderr)
         return 0
 
     body = _render_body(reports, args.run_url, register, expected, lanes, python_register, today)
