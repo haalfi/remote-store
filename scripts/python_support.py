@@ -242,11 +242,16 @@ def windows(today: date, pyproject: Path = PYPROJECT) -> list[SupportWindow]:
 
 
 def dependency_cutoff(today: date) -> date:
-    """The oldest upload date a floor raise may newly exclude without breaking.
+    """The newest upload date a floor raise may newly exclude and stay patch-eligible.
 
     Rule 9's 2-year window, expressed as the date it puts the boundary on: a
     release uploaded on or before this date is outside its support window, so
-    excluding it is patch-eligible.
+    excluding it is patch-eligible. Every earlier date is safe too, which is
+    why the boundary is the newest one and not the oldest.
+
+    The direction is pinned by `judge`, which reads it as `released > cutoff`
+    is breaking, and by
+    `test_check_support_windows.py::TestJudge::test_a_release_exactly_on_the_cutoff_is_outside_its_window`.
     """
     months = today.month - 1 - DEPENDENCY_WINDOW_MONTHS
     year = today.year + months // 12

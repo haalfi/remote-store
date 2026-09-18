@@ -501,6 +501,78 @@ class TestReport:
         assert "note: boto3 floor went down" in capsys.readouterr().out
 
 
+class TestGitPlumbing:
+    """The two functions that shell out to git, on their **passing** paths.
+
+    Everywhere else in this module both are monkeypatched away, so nothing
+    exercised `git show <rev>:pyproject.toml` writing a file
+    `declared_constraints` can parse, or `git describe` returning a revision
+    the subsequent `git show` accepts. A wrong revision spelling, a
+    `check=True` on a command that legitimately writes to stderr, or an
+    encoding issue in `write_text` would all pass the rest of this suite and
+    fail at the one moment the script runs — Phase 0 of a release, where it
+    reads as "the support-window check is broken" rather than as a verdict.
+    """
+
+    def test_reading_pyproject_at_head_yields_the_committed_floors(self, check_support_windows, tmp_path):
+        """`git show HEAD:pyproject.toml` parses, and agrees with the working tree.
+
+        The equality is the assertion with power; the two preceding ones keep
+        the test honest in a clone where it must be skipped. It is skipped
+        rather than failed when `pyproject.toml` is modified, because then
+        HEAD and the working tree differ by design and a failure would name no
+        defect.
+        """
+        import subprocess
+
+        at_head = check_support_windows.floors(check_support_windows.read_pyproject_at("HEAD", tmp_path))
+        assert at_head, "git show wrote something declared_constraints could not parse"
+        assert "pyarrow" in at_head, "a floor the repo has declared since before this check existed"
+
+        modified = subprocess.run(
+            ["git", "-C", str(ROOT), "diff", "--quiet", "HEAD", "--", "pyproject.toml"],
+            check=False,
+        ).returncode
+        if modified:
+            pytest.skip("pyproject.toml is modified, so HEAD and the working tree differ by design")
+        assert at_head == check_support_windows.floors(ROOT / "pyproject.toml")
+
+    def test_the_previous_tag_is_a_revision_git_show_accepts(self, check_support_windows, tmp_path):
+        """The composition `main` performs: `git describe`, then `git show <tag>:`.
+
+        Skipped rather than failed in a shallow clone with no tags — that state
+        is covered from the other side by
+        `test_no_tag_to_compare_against_is_reported_rather_than_tracebacked`,
+        so a skip here loses no coverage of the failure path.
+        """
+        import subprocess
+
+        try:
+            tag = check_support_windows.previous_tag()
+        except subprocess.CalledProcessError:
+            pytest.skip("no tag reachable from HEAD; this clone needs `git fetch --tags`")
+
+        assert tag, "git describe returned a blank revision"
+
+        # A *tag name*, not merely a revision git accepts. Dropping
+        # `--abbrev=0` yields `v0.32.0-15-g05f72142`, which `git show` resolves
+        # happily — to HEAD. The base would silently become HEAD, `raised`
+        # would compare HEAD against HEAD, and a release that did raise a floor
+        # would be reported as raising none. Measured: that mutation passes
+        # every other assertion in this class.
+        known = subprocess.run(
+            ["git", "-C", str(ROOT), "tag", "--list", tag],
+            check=True,
+            capture_output=True,
+            text=True,
+        ).stdout.strip()
+        assert known == tag, f"{tag!r} is not a tag name, so the base would not be the previous release"
+
+        assert check_support_windows.floors(check_support_windows.read_pyproject_at(tag, tmp_path)), (
+            f"git show {tag}:pyproject.toml did not yield a parseable base revision"
+        )
+
+
 class TestMainWiring:
     """`main` end to end, over a stubbed `fetch_releases`.
 

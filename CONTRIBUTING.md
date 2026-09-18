@@ -460,8 +460,8 @@ how to make it.
 | Breaking API change (pre-1.0) | **minor** (`0.X.0`) | Remove method, rename parameter |
 | Breaking API change (post-1.0) | **major** (`X.0.0`) | — |
 | Dependency floor raised, excluding only versions 2+ years past their own release | **patch** (`0.0.X`) | `sqlalchemy>=2.0` → `>=2.0.31` where 2.0.30 is older than 2 years |
-| Dependency floor raised, excluding a version younger than that | treat as **breaking**, row above | Raising a floor past a release still inside its support window |
-| Dropping a Python version | treat as **breaking**, as the floor-raise row directly above | Raising `requires-python`, dropping a classifier |
+| Dependency floor raised, excluding a version younger than that | **breaking** → **minor** (`0.X.0`) pre-1.0 | Raising a floor past a release still inside its support window |
+| Dropping a Python version | **breaking** → **minor** (`0.X.0`) pre-1.0 | Raising `requires-python`, dropping a classifier |
 | CI, docs, metadata-only | **no bump** | Add classifier, update README |
 
 The three dependency and interpreter rows above are the maintainer side of
@@ -476,8 +476,9 @@ for the same reason: a user on the interpreter being dropped, whose install
 stops resolving, is in exactly the position of one excluded by a floor raise. So it earns a `**Breaking**`
 CHANGELOG entry and a `## vPREV to vX.Y.Z` section in
 [`docs-src/reference/migration.md`](docs-src/reference/migration.md), both in the
-change that drops it — pre-1.0 that still lands in a minor bump, which is why
-this row points at the floor row rather than restating the level. It also moves
+change that drops it. Pre-1.0 the bump itself is **minor**, which both rows now
+state outright rather than delegating: what makes the change breaking is the
+obligation, not the version number it lands on. It also moves
 every spelling of the supported set at once; the ripple-check's
 [**Supported interpreter set**](sdd/CLAUDE-REFERENCE.md#pre-work-index) row
 enumerates them and says, per spelling, what watches it — and it is worth

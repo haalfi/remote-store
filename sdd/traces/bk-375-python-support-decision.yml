@@ -37,10 +37,12 @@ surprising_ripples:
 # commits that exist because a review round asked for them. 0950031f implements
 # and does not count. 41aec01b carries round 1's five findings; e430ee7e round
 # 2's five; 3dc12cd7 round 3's twenty; 42bbefae the maintainer's own two review
-# comments, which count for the same reason a panel round does; and the commit
-# carrying this line round 4's. Updated as each round lands, so the value is
-# current at every commit rather than filled at the close.
-review_rounds: 5
+# comments, which count for the same reason a panel round does; 5f992e49 (with
+# 971c73b8 and 68ed0a72) round 4's; c67cda8a the closing measuring pass's seven;
+# and the commit carrying this line a further reading round's three, which
+# arrived after that pass and so is its own round. Updated as each round lands,
+# so the value is current at every commit rather than filled at the close.
+review_rounds: 7
 phases:
   - id: orient
     name: Orient
