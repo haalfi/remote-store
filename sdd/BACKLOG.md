@@ -677,6 +677,41 @@ compliant the day before.
   Found by ID-252's closing review reading outside its own diff; shipped by
   BUG-261.
 
+- [ ] **BUG-291 — Nine Azure `except Exception` arms re-type an already-typed error, so a closed store reports the base class**
+  spec: BE-020, BE-021, AZ-029 · effort: S · audience: user.api
+  `classify_azure_error` has no `RemoteStoreError` pass-through arm: it falls
+  through every `isinstance` check to `return RemoteStoreError(str(exc), ...)`.
+  So any `except Exception` that routes through it **downgrades an error the
+  library already typed**, and the first thing inside several of those `try`
+  blocks is a lazy client accessor whose `_raise_if_closed()` raises
+  `BackendUnavailable`. Measured on BUG-254's branch before its own two sites
+  were fixed: `AzureBackend(hns=True).close()` then `get_folder_info("")`
+  returned `RemoteStoreError: Azure backend is closed` where the flat arm, whose
+  catch is narrowed to `ResourceNotFoundError`, returned `BackendUnavailable`.
+  Both Azure classes, sync and async.
+  **BUG-254 fixed its own two sites and this is the rest of the class.**
+  Derivation — every `except Exception` in the two Azure backend files whose
+  handler reaches `_classify` or `classify_azure_error`, excluding the two
+  `get_folder_info` arms BUG-254 closed and the two `_errors` context managers,
+  which are the mappers themselves and correctly re-raise `RemoteStoreError`
+  first:
+  `_azure.py` in `readinto`, `delete`, `delete_folder`, `list_files`,
+  `list_folders`, `iter_children`, `detect_hns`, `adetect_hns`; and
+  `aio/backends/_azure.py` in `read`, `delete`, `delete_folder`, `list_files`
+  (two arms), `list_folders` (two), `iter_children` (two).
+  **Not every arm is reachable with a typed error in hand**, which is the work:
+  each one needs its own answer to "what already-typed error can arrive here",
+  and the listing arms are the ones whose `try` opens on a guarded accessor the
+  way `get_folder_info`'s did. The fix shape is `except RemoteStoreError: raise`
+  ahead of the broad arm, matching `_errors`; the question is which arms need it
+  and what pins each.
+  **Why the class is worth closing rather than the instances.** BE-021's
+  never-leak invariant is about native errors escaping; this is the mirror —
+  a mapped error being re-mapped to something weaker — and no gate sees it,
+  because the result is still a `RemoteStoreError`. It sits beside BUG-276,
+  which owns the other half of error-class fidelity on this surface (a mapped
+  error reaching the caller with an empty message).
+
 - [ ] **BUG-256 — `ping()` reports a healthy store on three backends whose container is gone**
   spec: PING-001 · effort: S · audience: user.api
   PING-001's postconditions give `ping()` a `NotFound` for a "missing

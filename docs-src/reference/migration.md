@@ -34,7 +34,8 @@ that set, and the `GraphBackend` paragraph below says what it answers and why.
 and `is_folder("")` on `S3Backend` and `S3PyArrowBackend` now answer `True`
 instead of `False` and `PermissionDenied` respectively. `S3Boto3Backend` already
 answered `True` for both, so the three lanes now agree on those two probes:
-neither issues a request at the root, and the root is a folder by definition.
+none of them issues a request at the root, and the root is a folder by
+definition.
 `is_file("")` is **not** in that set — it still reaches the wire on the two s3fs
 lanes and so still reports a denial as `PermissionDenied`, where
 `S3Boto3Backend` answers `False` from the key. That split is unchanged by this
@@ -43,7 +44,8 @@ release. Every probe on a path *under* the root still reports a denial as
 
 **A closed backend still refuses at the root.** `close()` outranks every root
 answer, so after it these probes raise `BackendUnavailable` rather than
-answering — on all five classes, two of which did answer before this release.
+answering — on all five classes. Three of them answered before this release; the other
+two gained a key-decided root answer in the same release and the guard with it.
 
 **What to change.** Two handlers stop firing.
 

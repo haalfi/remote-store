@@ -161,23 +161,40 @@ both: a backend that gets the order wrong is observable as exactly the wrong
 error class or a spurious success, which is what the cells below assert.
 
 **BE-020 outranks this check.** On a backend with `close_is_terminal = True`,
-a file-shaped **or write-shaped** call on the root *after* `close()` raises
-`BackendUnavailable`, not `InvalidPath`: BE-020 states its guarantee without
-exception, and a closed backend is the more fundamental error. A root pre-check
-is cheap and so naturally wants to run first — a backend that has one MUST still
-run the closed guard ahead of it, or the answer depends on which guard the
-implementer happened to write first.
+**any** call on the root *after* `close()` raises `BackendUnavailable` — not
+`InvalidPath` from a file- or write-shaped guard, not the row's definitional
+answer from a probe, and not a class the operation's own error handling
+substituted: BE-020 states its guarantee without exception, and a closed backend
+is the more fundamental error. A root pre-check is cheap and so naturally wants
+to run first — a backend that has one MUST still run the closed guard ahead of
+it, or the answer depends on which guard the implementer happened to write
+first.
 
-**Both pre-checks, and they need separate cells.** A backend that refuses the
-root on writes carries a second, differently-worded guard, and the read-shaped
-cell cannot reach it — `read_bytes` never touches a write guard. That is not
-hypothetical: `GraphBackend` ordered its write guard ahead of its closed check
-and answered a closed store with "cannot write to the drive root", which the read
-cell had passed for years. Pinned by
-`test_close_posture_outranks_root_rejection` (the file-shaped pre-check) and
-`test_close_posture_outranks_root_write_rejection` (the write-shaped one), both
-in `tests/backends/conformance/test_close_posture.py` and both with an `aio/`
-sibling.
+**Three pre-checks, and they need separate cells.** The rule reaches the root
+three ways, and no one cell reaches another's path:
+
+| Shape | What carries the pre-check | Conformance cell |
+|---|---|---|
+| File-shaped | `_reject_root_as_file` and its equivalents | `test_close_posture_outranks_root_rejection` |
+| Write-shaped | a second, differently-worded write guard | `test_close_posture_outranks_root_write_rejection` |
+| Probe and aggregate | the key-decided answer BE-029's table requires | `test_close_posture_outranks_the_root_probes` |
+
+All three live in `tests/backends/conformance/test_close_posture.py`, each with
+an `aio/` sibling. None is hypothetical. `GraphBackend` ordered its write guard
+ahead of its closed check and answered a closed store with "cannot write to the
+drive root", which the read cell had passed for years. The third row is BUG-254's:
+five classes answered the root probes after `close()` — three of them for as long
+as they had short-circuited the root from the key, and two more added in the
+course of that item — and the two cells above stayed green throughout, because
+neither drives a probe.
+
+**The third row's cell enumerates its operations rather than listing them.** A
+key-decided root answer can live in any operation the row governs, and patching
+the ones an author thought of is what produced the second half of that five: the
+probes were fixed from a reading of where the hazard was, and the next review
+round found the same defect in `get_folder_info`, reached through an exception
+handler that caught the guard's own error and re-classified it. An operation
+added to the row is added to the cell's parametrisation.
 
 **One predicate, both spellings.** `remote_store._path.is_root` is the shared
 test; `strip_root` is its normalising form. A backend that asks `if path`

@@ -125,14 +125,26 @@ def test_close_posture_outranks_root_write_rejection(backend: Backend, root: str
         assert "is closed" not in str(exc_info.value)
 
 
-# The three probes BE-021 forbids from raising on an inaccessible path. They are
-# the third root pre-check, and the one with no cell until BUG-254: the two above
+# **Every root-reaching read operation, enumerated rather than sampled.** This is
+# the third root pre-check and the one with no cell until BUG-254: the two above
 # reach a file-shaped and a write-shaped guard, and neither routes through a
-# probe.
+# probe or an aggregate.
+#
+# The enumeration is deliberate and was not the first attempt. BUG-254 patched
+# the three probes from a reading of where the hazard was, and the next review
+# round found the same defect one operation over, in ``get_folder_info`` — a
+# state that reading had not considered. A third reading is not more likely to be
+# exhaustive than the first two, so the axis is parametrised instead: every
+# operation that can answer the root without a round trip belongs here, and a
+# future one is added to this dict rather than argued about.
+#
+# ``get_folder_info`` is the folder-shaped member and is gated separately below,
+# since a LIST-capable backend need not aggregate.
 _ROOT_PROBES = {
     "exists": lambda b, root: b.exists(root),
     "is_file": lambda b, root: b.is_file(root),
     "is_folder": lambda b, root: b.is_folder(root),
+    "get_folder_info": lambda b, root: b.get_folder_info(root),
 }
 
 
@@ -150,10 +162,14 @@ def test_close_posture_outranks_the_root_probes(backend: Backend, root: str, op_
     implementer typed first, and the two cells above cannot reach it: one drives
     ``read_bytes`` and the other ``write``, neither of which is a probe.
 
-    The gap was not hypothetical. Five classes answered the root probes after
-    ``close()`` — three of them before BUG-254 and two more because that item's
-    first fix pass put its short-circuit ahead of the guard, which every existing
-    cell here stayed green through.
+    The gap was not hypothetical, and it was not found once. Five classes
+    answered the root probes after ``close()`` — three of them before BUG-254 and
+    two more because that item's first fix pass put its short-circuit ahead of
+    the guard. The round that fixed those three operations was followed by one
+    that found the same defect in ``get_folder_info``, reached a different way:
+    an ``except Exception`` catching the guard's own error and re-classifying it.
+    That is why the dict above enumerates the axis instead of listing the
+    operations someone thought of.
 
     Gated on LIST for the same reason ``TestBackendRootPath`` is: "the root is a
     folder" presupposes a backend that has folders.

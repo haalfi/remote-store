@@ -1397,20 +1397,12 @@ class AzureBackend(Backend):
             #   root       -- a non-root prefix under an absent container is a
             #                 plain NotFound (BE-021 § Reach), and this method
             #                 has no ``missing_ok`` to soften it.
-            #                 **No cell falsifies this clause here, and that is
-            #                 measured rather than assumed**: removing it from
-            #                 both arms leaves the Azure suite green. On the flat
-            #                 branch the zero-count guard below reaches the same
-            #                 class anyway, so the clause saves the wrong-type
-            #                 probe rather than changing the answer; on the HNS
-            #                 branch the directory probe raises first for a
-            #                 non-root path, so the only state that reaches this
-            #                 catch without the root is a filesystem that
-            #                 vanishes between that probe and the first page. It
-            #                 is kept as the guard that makes the bound local
-            #                 rather than an inference about code below, and the
-            #                 boto3 twin, where it *is* reachable and pinned,
-            #                 carries the same clause for the same reason.
+            #                 It is kept as the guard that makes the bound
+            #                 local rather than an inference about the
+            #                 zero-count check below, and the boto3 twin
+            #                 carries the same clause. Which arms a cell can
+            #                 falsify is measured, and recorded once, in
+            #                 BUG-254's register entry.
             #   first page -- a 404 after a page has come back reports a
             #                 deletion underneath the scan (BE-021's page
             #                 bound). Keyed on the page rather than on a counted
@@ -1454,6 +1446,15 @@ class AzureBackend(Backend):
                                     modified = modified.replace(tzinfo=timezone.utc)
                                 if latest_modified is None or modified > latest_modified:
                                     latest_modified = modified
+                except RemoteStoreError:
+                    # Already typed by something below -- the closed guard on
+                    # ``_fs``, or a raise inside the loop. ``classify_azure_error``
+                    # has no pass-through arm, so anything reaching it is
+                    # re-typed to the base class: at the root the closed guard is
+                    # the first thing inside this try, and without this line a
+                    # closed store answered ``RemoteStoreError`` where BE-020 and
+                    # AZ-029 promise ``BackendUnavailable``.
+                    raise
                 except Exception as exc:  # noqa: BLE001
                     # Classified rather than type-tested, for the reason
                     # ``list_files``' HNS branch gives: the DFS endpoint's

@@ -12,6 +12,8 @@ source_items:
 audience:
   - user.api
   - user.site
+discovery_followups:
+  - BUG-291
 expected_ripples:
   - sdd/backlogid.json
 phases:
@@ -159,7 +161,6 @@ surprising_ripples:
   - sdd/specs/040-sql-blob-backend.md
   - tests/backends/conformance/test_close_posture.py
   - tests/backends/conformance/aio/test_close_posture.py
-  - src/remote_store/_store.py
 # Derivation: `git log --oneline origin/master..HEAD` minus the implementing
 # commit. Re-run before the final push rather than carried; at the time of
 # writing that is b2de2da (implements, does not count) plus one commit per

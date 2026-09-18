@@ -477,11 +477,13 @@ class AsyncAzureBackend(AsyncBackend):
     async def exists(self, path: str) -> bool:
         """Check if a file or folder exists.
 
-        An absent *container* answers ``False`` — a container that does not exist
-        holds no path either, and this probe never raises for a missing path. A
-        *denied* container still raises: the prefix listing is the determinant
-        here, so it fails closed rather than reporting "nothing there" for
-        something you may not see.
+        The root always exists, decided from the key before any request, so it
+        answers ``True`` whether the container is missing or denied. **For every
+        other path** an absent *container* answers ``False`` — a container that
+        does not exist holds no path either, and this probe never raises for a
+        missing path — while a *denied* container raises: the prefix listing is
+        the determinant there, so it fails closed rather than reporting "nothing
+        there" for something you may not see.
 
         Args:
             path: Backend-relative key, or ``""`` for the root.
@@ -545,7 +547,9 @@ class AsyncAzureBackend(AsyncBackend):
     async def is_folder(self, path: str) -> bool:
         """Return ``True`` if ``path`` is an existing folder.
 
-        An absent container answers ``False``, on the same terms as ``exists``.
+        The root is always a folder, decided from the key and so answered for a
+        denied container as well as a missing one. For every other path an absent
+        container answers ``False``, on the same terms as ``exists``.
 
         Args:
             path: Backend-relative key, or ``""`` for the root.
@@ -1303,6 +1307,12 @@ class AsyncAzureBackend(AsyncBackend):
                                     modified = modified.replace(tzinfo=timezone.utc)
                                 if latest_modified is None or modified > latest_modified:
                                     latest_modified = modified
+                except RemoteStoreError:
+                    # Already typed below -- the closed guard on ``_fs``, or a
+                    # raise inside the loop. See the sync twin for why the
+                    # pass-through has to be explicit: the classifier has no arm
+                    # for it and re-types everything to the base class.
+                    raise
                 except Exception as exc:  # noqa: BLE001
                     # Classified rather than type-tested, as this adapter's
                     # ``list_files`` HNS branch does, for the same reason.

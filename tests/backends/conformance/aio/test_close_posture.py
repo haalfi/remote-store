@@ -128,10 +128,14 @@ async def test_close_posture_outranks_root_write_rejection(async_backend: AsyncB
         assert "is closed" not in str(error)
 
 
+# Every root-reaching read operation, enumerated rather than sampled. See the
+# sync sibling for why the axis is parametrised: the operations were patched from
+# a reading once and the next round found the one that reading missed.
 _ROOT_PROBES = {
     "exists": lambda b, root: b.exists(root),
     "is_file": lambda b, root: b.is_file(root),
     "is_folder": lambda b, root: b.is_folder(root),
+    "get_folder_info": lambda b, root: b.get_folder_info(root),
 }
 
 
@@ -147,10 +151,12 @@ async def test_close_posture_outranks_the_root_probes(
     """Async twin of the sync cell of the same name: the probes' own root pre-check.
 
     See the sync sibling for why this third path needed a cell of its own — the
-    two above drive ``read_bytes`` and ``write``, and a probe is neither. On this
-    lane ``AsyncAzureBackend`` is the class that answered the root after
-    ``aclose()``; it carries its own copy of all three probe bodies, so the sync
-    fix does not reach it and a sync-only cell would not have caught it.
+    two above drive ``read_bytes`` and ``write``, and neither a probe nor an
+    aggregate is either. On this lane ``AsyncAzureBackend`` is the class that
+    answered the root after ``aclose()``; it carries its own copy of every one of
+    these bodies, so the sync fix does not reach it and a sync-only cell would
+    not have caught it — which held for ``get_folder_info`` too, where the async
+    twin had the same downgraded error class as the sync one.
     """
     _require(async_backend, Capability.LIST)
     await async_backend.aclose()

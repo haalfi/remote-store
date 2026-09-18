@@ -254,6 +254,17 @@ if evidence changes; these are retired.
   | --- | --- |
   | `S3Backend`, `S3PyArrowBackend` | `exists("")` and `is_folder("")`, now decided from the key |
   | `S3Boto3Backend`, `AzureBackend`, `AsyncAzureBackend` | `get_folder_info("")`, now aggregating to zero |
+  | all five | the closed-backend guard, now ahead of every key-decided root answer |
+
+  **The third row is the item's other half and was not in its diagnosis.** A root
+  answer decided from the key returns before the lazy client accessor that
+  carries the closed guard, so a closed store answered instead of refusing —
+  three classes had done so for as long as they had short-circuited the root, and
+  the first fix pass here added two more. Review found it twice: once on the
+  probes, and once on `get_folder_info`, where an `except Exception` added by that
+  same pass caught the guard's own `BackendUnavailable` and re-typed it to the
+  base class on both Azure classes. The second finding is why the fix enumerates
+  the operations rather than listing them.
 
   Five classes because the two Azure adapters carry their own copies of every
   body, and the Azure fix lands twice more inside each: the flat `list_blobs` and
@@ -279,7 +290,12 @@ if evidence changes; these are retired.
   **Where it is pinned.** No conformance fixture can remove a container, so the
   cells sit in the per-backend wire-stub homes beside their siblings:
   `tests/backends/s3/test_denied_probe.py` and
-  `tests/backends/azure/test_absent_container.py` with its `aio/` twin. The cells
+  `tests/backends/azure/test_absent_container.py` with its `aio/` twin. **The
+  closed-guard half is the exception and sits in conformance**, because it needs
+  no container at all: `test_close_posture_outranks_the_root_probes`, in
+  `tests/backends/conformance/test_close_posture.py` and its `aio/` sibling,
+  parametrised over every root-reaching read operation and both spellings.
+  The absent-container cells
   that fail on the base source and pass on this one are recovered by
   `git checkout origin/master -- src/remote_store`, then `pytest` over those
   three files with `-k "Root or Denied or denied_bucket"`, then
