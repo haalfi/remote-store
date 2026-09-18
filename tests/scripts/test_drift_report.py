@@ -1298,6 +1298,91 @@ class TestSupportWindowSignal:
         assert rc == 1
         assert "::error::" in capsys.readouterr().err
 
+    def test_a_list_of_non_names_is_refused_rather_than_coerced(self, drift_report, tmp_path, monkeypatch, capsys):
+        """The check the `Raises:` clause promised and the code did not make.
+
+        Measured: `--expect-extras '[1,2]'` passed the container check, went
+        through `str()`, and rendered `[1]` and `[2]` as **fabricated incomplete
+        legs** on an otherwise clean run — then answered `create/update`, so a
+        scheduled run would have rewritten the rolling issue with them.
+        Coercion is the wrong instinct for an input a workflow expression
+        supplies: a `json.dumps` of the wrong object is as likely from a
+        template as a truncated string.
+        """
+        monkeypatch.setattr(drift_report, "_gh", lambda *a, **k: pytest.fail("touched the issue"))
+        rc = drift_report.main(
+            [
+                str(tmp_path),
+                "--repo",
+                "r",
+                "--run-url",
+                "u",
+                "--title",
+                "t",
+                "--today",
+                str(TODAY),
+                "--expect-extras",
+                "[1,2]",
+            ]
+        )
+        assert rc == 1
+        err = capsys.readouterr().err
+        assert "not a name" in err
+        assert "1" in err, "name the element that arrived"
+
+    def test_an_unknown_lane_is_refused(self, drift_report, tmp_path, monkeypatch, capsys):
+        """`LANES` is a closed two-element set, so an unknown lane cannot be interpreted.
+
+        Measured before this check: `--expect-lanes bogus` was accepted whole.
+        The body announced "This run covered the bogus lane only", printed a
+        `Bogus` verdict column, and `_incomplete_leg_rows` mapped the unknown
+        lane onto the floor lane — so a run missing every newest-lane report
+        read as complete. That is exactly the "misreport which legs ran" harm
+        the `Drift-gate` declaration gives as its reason to refuse an input.
+        """
+        monkeypatch.setattr(drift_report, "_gh", lambda *a, **k: pytest.fail("touched the issue"))
+        rc = drift_report.main(
+            [
+                str(tmp_path),
+                "--repo",
+                "r",
+                "--run-url",
+                "u",
+                "--title",
+                "t",
+                "--today",
+                str(TODAY),
+                "--expect-lanes",
+                "bogus",
+            ]
+        )
+        assert rc == 1
+        err = capsys.readouterr().err
+        assert "'bogus'" in err
+        assert "'floor', 'newest'" in err, "say what the closed set is"
+
+    def test_the_real_lanes_are_still_accepted(self, drift_report, tmp_path, monkeypatch):
+        """The other direction, so the clause above is not "lanes never parse"."""
+        monkeypatch.setattr(drift_report, "_gh", lambda *a, **k: pytest.fail("touched the issue"))
+        monkeypatch.setattr(drift_report, "_find_open_issue", lambda *a, **k: None)
+        for value in ("newest,floor", "newest", '["newest", "floor"]'):
+            rc = drift_report.main(
+                [
+                    str(tmp_path),
+                    "--repo",
+                    "r",
+                    "--run-url",
+                    "u",
+                    "--title",
+                    "t",
+                    "--today",
+                    str(TODAY),
+                    "--expect-lanes",
+                    value,
+                ]
+            )
+            assert rc == 0, f"{value!r} is a legitimate lane list"
+
     def test_an_undated_classifier_is_reported_rather_than_tracebacked(
         self, drift_report, python_support, tmp_path, monkeypatch, capsys
     ):
@@ -1476,15 +1561,29 @@ class TestThisModuleIsReproducible:
         assert offenders == [], f"pass today=TODAY, or the assertion is about the day it ran: {offenders}"
 
     def test_every_non_zero_exit_from_main_is_reported(self):
-        """The `Drift-gate` block's claim, pinned as a class rather than a count.
+        """The `Drift-gate` block's claim, pinned as a property rather than a count.
 
-        It said "nothing it FINDS makes it exit non-zero" and then listed the
-        inputs that do. The list was wrong twice — first at one entry, then at
-        two — because each round added an exit path without revisiting the
-        sentence. Counting is the wrong instrument: this asserts the *property*
-        instead, that every `return <non-zero>` in `main` is preceded by a
-        report on stderr, so a fourth exit path cannot be silent and cannot
-        falsify the declaration either.
+        The declaration said "nothing it FINDS makes it exit non-zero" and then
+        listed what does. The list was wrong three times — as one entry, as two,
+        and as a class with `gh` named as the sole non-input escape — because
+        each round added a path without revisiting the sentence. So the sentence
+        stopped enumerating and this asserts the property instead.
+
+        **Two earlier versions of this guard were themselves unsound**, which is
+        the more useful lesson. The first scanned six source lines backwards and
+        passed a bare `return 1` whose window reached an unrelated branch's
+        print. The second required a report anywhere earlier in the same block —
+        and `main`'s top level contains one stderr print, so every statement
+        after it was pre-satisfied and the tail of `main` was unguarded. Each
+        narrowing was refuted by a state the narrowing did not consider, which
+        is the signal to stop narrowing and constrain the subject instead.
+
+        **So the rule is adjacency, and `main` complies with it:** a non-zero
+        exit is `print(..., file=sys.stderr)` immediately followed by the exit.
+        That is checkable without modelling control flow, and it covers `return`,
+        `sys.exit` and `raise SystemExit` alike — `return` alone made
+        `sys.exit(1)` invisible, and `sys.exit(main())` is this module's own
+        idiom, so that was not an exotic shape to miss.
         """
         import ast
 
@@ -1492,33 +1591,79 @@ class TestThisModuleIsReproducible:
         tree = ast.parse(source)
         main = next(n for n in ast.walk(tree) if isinstance(n, ast.FunctionDef) and n.name == "main")
 
-        def reports_to_stderr(stmt: ast.stmt) -> bool:
+        def is_stderr_report(stmt: ast.stmt) -> bool:
+            """`print(..., file=sys.stderr)` — the stream matters, not just `file=`."""
             call = stmt.value if isinstance(stmt, ast.Expr) else None
-            if not isinstance(call, ast.Call):
+            if not isinstance(call, ast.Call) or getattr(call.func, "id", None) != "print":
                 return False
-            name = call.func.id if isinstance(call.func, ast.Name) else None
-            return name == "print" and any(kw.arg == "file" for kw in call.keywords)
+            for kw in call.keywords:
+                if kw.arg == "file" and isinstance(kw.value, ast.Attribute) and kw.value.attr == "stderr":
+                    return True
+            return False
 
-        # Structural, not a line window: the report must be a SIBLING statement
-        # in the same block as the `return`. A first attempt scanned the six
-        # preceding source lines and passed a mutation that added a bare
-        # `return 1`, because the window reached back into an unrelated branch's
-        # print -- a guard that cannot fail is worse than none.
-        exits, unreported = 0, []
+        def exit_code(stmt: ast.stmt) -> object | None:
+            """The non-zero code this statement leaves the process with, or None.
+
+            `return <literal>`, `sys.exit(<literal>)` and `raise SystemExit(...)`
+            are one thing from a caller's point of view. A non-literal code
+            (`return rc`) is deliberately NOT treated as an exit: this guard
+            cannot evaluate it, and claiming to would be the third unsound
+            version. `main` uses literals, and this test is what keeps that true.
+            """
+            if isinstance(stmt, ast.Return) and isinstance(stmt.value, ast.Constant) and stmt.value.value:
+                return stmt.value.value
+            call = stmt.value if isinstance(stmt, ast.Expr) else None
+            if isinstance(stmt, ast.Raise):
+                call = stmt.exc
+            if isinstance(call, ast.Call):
+                name = getattr(call.func, "attr", None) or getattr(call.func, "id", None)
+                if name in {"exit", "SystemExit"} and call.args:
+                    arg = call.args[0]
+                    if isinstance(arg, ast.Constant) and arg.value:
+                        return arg.value
+            return None
+
+        # Nested functions are their own scope: a helper defined inside `main`
+        # returning 1 is not `main` exiting, and counting it produced a false
+        # positive that would have blocked a legitimate refactor.
+        nested = {
+            n for fn in ast.walk(main) if fn is not main and isinstance(fn, ast.FunctionDef) for n in ast.walk(fn)
+        }
+
+        exits, unreported = [], []
         for node in ast.walk(main):
-            body = getattr(node, "body", None)
-            for block in (body, getattr(node, "orelse", None), getattr(node, "finalbody", None)):
+            if node in nested:
+                continue
+            for attr in ("body", "orelse", "finalbody"):
+                block = getattr(node, attr, None)
                 if not isinstance(block, list):
                     continue
                 for i, stmt in enumerate(block):
-                    if not (isinstance(stmt, ast.Return) and isinstance(stmt.value, ast.Constant) and stmt.value.value):
+                    if stmt in nested or exit_code(stmt) is None:
                         continue
-                    exits += 1
-                    if not any(reports_to_stderr(earlier) for earlier in block[:i]):
+                    exits.append(stmt.lineno)
+                    if i == 0 or not is_stderr_report(block[i - 1]):
                         unreported.append(stmt.lineno)
 
-        assert exits >= 3, f"expected main's known non-zero exits to be found, saw {exits}"
-        assert unreported == [], f"a non-zero exit with no report in its own block, at line(s) {unreported}"
+        # A FLOOR, not an equality. Derivation: the `return 1` statements inside
+        # `main` at the time of writing are four -- the `--today` parse, the
+        # register load, the undated classifier and the unusable expect-list --
+        # each preceded by its `::error::` print. Equality was the first
+        # spelling and it was wrong in a way the attack harness caught: adding a
+        # new, *correctly reported* exit made the count five and failed the
+        # test, so the check blocked exactly the change it exists to bless. The
+        # floor keeps what equality was for -- if a `return 1` becomes
+        # `return rc`, this guard cannot see it, the count drops to three and
+        # this line fires.
+        #
+        # Stated bound: an exit *added* with a non-literal code is invisible to
+        # this guard. Evaluating arbitrary expressions is what the two unsound
+        # earlier versions tried; the floor plus the adjacency rule is what can
+        # be checked soundly.
+        assert len(exits) >= 4, f"expected at least main's four non-zero exits, found {len(exits)} at {exits}"
+        assert unreported == [], (
+            f"a non-zero exit whose immediately preceding sibling is not a stderr report, at line(s) {unreported}"
+        )
 
     def test_no_main_invocation_in_this_module_omits_today(self):
         """`main` takes the day as `--today` inside its argv rather than a kwarg.

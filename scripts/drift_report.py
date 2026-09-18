@@ -199,16 +199,33 @@ def _load_reports(dir_: Path) -> Reports:
     smokes: dict[tuple[str, str], dict] = {}
     unreadable: list[str] = []
     for path in sorted(dir_.rglob("*.json")):
+        # Every shape assumption this loop makes is checked HERE, in one place,
+        # rather than where each one is first used. The docstring above promises
+        # that a file which "parses into something this script cannot place" is
+        # named and skipped; it was false twice over, and both were measured:
+        # `[1, 2]` raised `TypeError: list indices must be integers` on
+        # `data["extra"]`, and `{"extra": ["s3"], …}` raised
+        # `TypeError: unhashable type: 'list'` two branches later, at
+        # `diffs[extra]`. Catching the first without the second is how the fix
+        # for a class becomes another instance of it: the assumptions are that
+        # the document is an object and that `extra` and `lane` are strings, so
+        # those are what this guard states.
         try:
             with path.open(encoding="utf-8") as f:
                 data = json.load(f)
+            if not isinstance(data, dict):
+                raise TypeError(f"expected a JSON object, got {type(data).__name__}")
             extra = data["extra"]
-        except (json.JSONDecodeError, KeyError, OSError) as exc:
+            lane = data.get("lane", "newest")
+            for field, value in (("extra", extra), ("lane", lane)):
+                if not isinstance(value, str):
+                    raise TypeError(f"{field!r} must be a string, got {type(value).__name__}")
+        except (json.JSONDecodeError, KeyError, OSError, TypeError) as exc:
             print(f"::warning::unreadable drift report {path}: {exc}", file=sys.stderr)
             unreadable.append(path.name)
             continue
         if "smoke" in data:
-            smokes[(extra, data.get("lane", "newest"))] = data
+            smokes[(extra, lane)] = data
             continue
         if "status" not in data:
             # A resolution report with no `status` is unplaceable: every section
@@ -216,7 +233,7 @@ def _load_reports(dir_: Path) -> Reports:
             # silent-close path.
             print(f"::warning::drift report {path} has no 'status'", file=sys.stderr)
             unreadable.append(path.name)
-        elif data.get("lane") == "floor":
+        elif lane == "floor":
             floors[extra] = data
         else:
             diffs[extra] = data
@@ -332,8 +349,16 @@ def load_known_findings(path: Path = KNOWN_FINDINGS) -> dict[tuple[str, str], tu
     newest resolution still works, and registering one must not silence the
     other.
     """
+    # `is_file`, not `exists`: a path that is a directory passes `exists()` and
+    # then raises `IsADirectoryError` out of `read_text`, which is an input this
+    # script cannot interpret arriving as a traceback. Absent stays an empty
+    # register -- neither register is required -- while a path that is there and
+    # unreadable is reported, because silently reading a typo as "no register"
+    # would un-silence every finding without saying why.
     if not path.exists():
         return {}
+    if not path.is_file():
+        raise UnusableInputError(f"{path} is not a file, so it cannot be read as a register")
     register: dict[tuple[str, str], tuple[str, str]] = {}
     for line in path.read_text(encoding="utf-8").splitlines():
         match = _REGISTER_ROW_RE.match(line.strip())
@@ -414,6 +439,8 @@ def load_python_support_register(path: Path = PYTHON_SUPPORT_REGISTER) -> dict[s
     """
     if not path.exists():
         return {}
+    if not path.is_file():  # same reason as the dependency loader above
+        raise UnusableInputError(f"{path} is not a file, so it cannot be read as a register")
     register: dict[str, tuple[str, str]] = {}
     for line in path.read_text(encoding="utf-8").splitlines():
         match = _PYTHON_REGISTER_ROW_RE.match(line.strip())
@@ -721,7 +748,7 @@ def _incomplete_legs(
     return [text for _, text in _incomplete_leg_rows(reports, expected, lanes)]
 
 
-def _parse_expected(raw: str) -> list[str]:
+def _parse_expected(raw: str, *, allowed: set[str] | None = None) -> list[str]:
     """The extras or lanes a run was asked to cover, as JSON or a comma list.
 
     The workflow already computes and validates both sets in `setup`; they are
@@ -729,11 +756,29 @@ def _parse_expected(raw: str) -> list[str]:
     one extra does not report the other thirteen as lost, and one narrowed to
     one lane does not report the other lane's fourteen legs as lost either.
 
+    Args:
+        raw: The flag's value, as JSON or a comma-separated list.
+        allowed: When given, the closed set every name must belong to. Passed for
+            lanes, whose vocabulary is ``LANES``; omitted for extras, whose set
+            is ``pyproject.toml``'s and is compared elsewhere.
+
     Raises:
-        UnusableInputError: If the value opens like JSON and does not parse, or
-            parses to something that is not a list of names. Naming the value is
-            the point — the caller is a workflow expression, so the operator
-            needs to see what arrived, not a decoder traceback.
+        UnusableInputError: If the value opens like JSON and does not parse, if
+            it is not a list, if any element is not a string, or if ``allowed``
+            is given and a name is outside it. Naming the value is the point —
+            the caller is a workflow expression, so the operator needs to see
+            what arrived rather than a decoder traceback or, worse, a rendered
+            issue built from it.
+
+            **Each of those four is a measured failure, not a precaution.** The
+            first revision checked nothing: `[bad` tracebacked. The second
+            checked the container only, and its own docstring claimed it checked
+            "a list of names" — so `--expect-extras '[1,2]'` was coerced through
+            `str()` and rewrote the rolling issue with `[1]` and `[2]` as
+            fabricated incomplete legs. And `--expect-lanes bogus` was accepted
+            whole: the body announced "This run covered the bogus lane only",
+            printed a `Bogus` verdict column, and `_incomplete_leg_rows` mapped
+            the unknown lane onto the floor lane, so the run read as complete.
     """
     text = (raw or "").strip()
     if not text:
@@ -745,8 +790,17 @@ def _parse_expected(raw: str) -> list[str]:
             raise UnusableInputError(f"{text!r} starts like JSON but does not parse: {exc}") from exc
         if not isinstance(items, list):
             raise UnusableInputError(f"{text!r} parsed to {type(items).__name__}, not a list of names")
-        return [str(item) for item in items]
-    return [part.strip() for part in text.split(",") if part.strip()]
+        for item in items:
+            if not isinstance(item, str):
+                raise UnusableInputError(f"{text!r} contains {item!r}, which is not a name")
+        names = list(items)
+    else:
+        names = [part.strip() for part in text.split(",") if part.strip()]
+    if allowed is not None:
+        unknown = [name for name in names if name not in allowed]
+        if unknown:
+            raise UnusableInputError(f"{', '.join(map(repr, unknown))} is not one of {sorted(allowed)}")
+    return names
 
 
 def _lanes_present(reports: Reports) -> set[str]:
@@ -1227,14 +1281,14 @@ def main(argv: list[str] | None = None) -> int:
     try:
         register = load_known_findings(args.known_findings)
         python_register = load_python_support_register(args.python_support_register)
-    except RegisterDateError as exc:
+    except (RegisterDateError, UnusableInputError) as exc:
         print(f"::error::unusable register: {exc}", file=sys.stderr)
         return 1
     # Same posture again, for the two arguments the workflow interpolates from
     # another job's outputs rather than a person typing them.
     try:
         expected = _parse_expected(args.expect_extras)
-        lanes = _parse_expected(args.expect_lanes) or list(LANES)
+        lanes = _parse_expected(args.expect_lanes, allowed=set(LANES)) or list(LANES)
     except UnusableInputError as exc:
         print(f"::error::unusable --expect-extras/--expect-lanes: {exc}", file=sys.stderr)
         return 1
