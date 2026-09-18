@@ -433,8 +433,9 @@ drift-docs-check = "python scripts/drift_check.py render-docs --check"
 # `check-support-windows` derives Rule 9's 2-year test at release time and is
 # deliberately in NEITHER gate: it fetches each raised floor's release dates
 # from PyPI, and a gate a contributor runs offline cannot depend on that. It is
-# named from CONTRIBUTING.md's Phase 0 checklist instead. `--check` there is a
-# read-only report; the exit code says whether every raise is patch-eligible.
+# named from CONTRIBUTING.md's Phase 0 checklist instead. It takes no `--check`:
+# the bare invocation is already read-only, and its exit code is the verdict —
+# 0 when every raise is patch-eligible, 1 when one is breaking or undateable.
 gen-python-support = "python scripts/gen_python_support.py {args}"
 gen-python-support-check = "python scripts/gen_python_support.py --check"
 check-support-windows = "python scripts/check_support_windows.py {args}"

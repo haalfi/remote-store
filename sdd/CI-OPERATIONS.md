@@ -141,9 +141,11 @@ documented in [`CONTRIBUTING.md`](../CONTRIBUTING.md).
   newer one is outside it.
   A **Support windows** row is not a refresh and the skill does not treat it as
   one: it is a decision to take or re-affirm, and the skill's step 3 says which.
-  Rule 9's other half — whether a floor *raise* excludes a release still inside
-  its own two-year window — is not this guard's at all. It fires on a diff, so it
-  sits in the release path as `hatch run check-support-windows`, named from
+  What this guard watches is **Rule 8's** window, the interpreter one. The other
+  published window — Rule 9's, whether a floor *raise* excludes a release still
+  inside its own two-year window — is not this guard's at all, in whole or in
+  part. It fires on a diff rather than on the calendar, so it sits in the release
+  path as `hatch run check-support-windows`, named from
   [`CONTRIBUTING.md` Phase 0](../CONTRIBUTING.md#release).
 
 ### `mutation.yml` — mutation testing

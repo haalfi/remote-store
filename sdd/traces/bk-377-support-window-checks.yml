@@ -35,10 +35,12 @@ surprising_ripples:
   - .claude/skills/drift/SKILL.md
 # Derivation: `git log --oneline origin/master..HEAD`, counting only commits
 # that exist because a review round asked for them. 0950031f implements and does
-# not count; 41aec01b carries round 1's five findings, e430ee7e round 2's five,
-# and the commit carrying this line round 3's. Updated as each round lands, so
-# the value is current at every commit.
-review_rounds: 3
+# not count. 41aec01b carries round 1's five findings; e430ee7e round 2's five;
+# 3dc12cd7 round 3's twenty; 42bbefae the maintainer's own two review comments,
+# which count for the same reason a panel round does; and the commit carrying
+# this line round 4's. Updated as each round lands, so the value is current at
+# every commit rather than filled at the close.
+review_rounds: 5
 phases:
   - id: orient
     name: Orient

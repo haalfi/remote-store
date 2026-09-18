@@ -26,7 +26,7 @@ them is one people are reasonably still running — so dropping a version upstre
 is still fixing strands users for our convenience. SPEC 0's window is a floor
 beneath the upstream one, not a schedule to follow to the letter.
 
-**This record decides the rule, never the roster.** No version, date or count
+**This record decides the rule, never the roster.** No version, date or figure
 appears below, deliberately: each would be a copy of something derived, and a
 copy goes stale while the rule does not
 ([`sdd/CONTENT-RULES.md`](../CONTENT-RULES.md#six-month-test) Rules 1 and 2).
@@ -73,9 +73,10 @@ the oldest legs are never the critical path, so it is job-minutes and almost no
 wall-clock, while in `ci-full.yml` an oldest leg is the longest job, so it sets
 that workflow's duration.
 
-[ADR-0032](0032-tiered-ci-gate-with-full-matrix-backstop.md) names the
-interpreter set twice and is **not** superseded here, because the set does not
-change. The change that drops an interpreter supersedes it.
+[ADR-0032](0032-tiered-ci-gate-with-full-matrix-backstop.md) enumerates the
+interpreter set and is **not** superseded here, because the set does not change.
+The change that drops an interpreter supersedes it, and BK-380 carries which of
+its passages need re-deriving.
 
 SPEC 0's window survives in one place and for one reason: the chart marks it, so
 a reader can see both windows at once. Nothing decides on it.

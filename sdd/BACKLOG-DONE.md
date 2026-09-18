@@ -250,12 +250,8 @@ if evidence changes; these are retired.
   [dependency policy](../docs-src/explanation/dependency-policy.md#rule-8) now
   publishes that instead of the three-year promise BK-371 shipped. It is a
   widening, so no user loses a version.
-  **Under the new window nothing is past it**, which inverts this item's title.
-  Measured from each version's release-schedule PEP (`x.y.0 final` line, fetched
-  from `raw.githubusercontent.com/python/peps`, because python.org was
-  unreachable from the environment this was gathered in): 3.10 ends 2026-10-04,
-  3.11 2027-10-24, 3.12 2028-10-02, 3.13 2029-10-07, 3.14 2030-10-07. On
-  2026-09-17 that left 3.10 seventeen days out and everything else between one
+  **Under the new window nothing was past it**, which inverts this item's title:
+  on 2026-09-17 that left 3.10 seventeen days out and everything else between one
   and four years.
   **The inputs the item asked for, gathered. ADR-0039 states the rule and
   deliberately carries no figure, so this entry is where they live** — a

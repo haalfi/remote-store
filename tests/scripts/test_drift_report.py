@@ -23,9 +23,11 @@ import pytest
 ROOT = Path(__file__).resolve().parent.parent.parent
 SCRIPTS = ROOT / "scripts"
 
-# Every time-dependent entry point in `drift_report` takes a `today`, defaulting
-# to `date.today()`. A test that lets it default asserts today's answer, and
-# `test_no_call_in_this_module_lets_today_default` below refuses one, because
+# Every time-dependent entry point in `drift_report` takes a `today`. Four of
+# them DEFAULT it to `date.today()`, and those are the ones a test can get wrong
+# by omission — the rest require it, so the mistake is impossible there.
+# `test_no_call_in_this_module_lets_today_default` below refuses an omission at
+# the four that default, because
 # measured: seven tests in this file went red on a shifted clock -- one from
 # 2026-10-05, when 3.10's window closes with the committed register empty, and
 # six more from 2027-01-01, when every `KNOWN-FINDINGS.md` row's `Review by`
@@ -1211,18 +1213,23 @@ class TestSupportWindowSignal:
         assert "no support window crossed" not in err
         assert "3.10" in err, "the message must name the crossing this run computed and withheld"
 
-    def test_the_emptiness_message_says_so_when_nothing_has_crossed(self, drift_report, tmp_path, monkeypatch):
+    def test_the_emptiness_message_says_so_when_nothing_has_crossed(self, drift_report, tmp_path, monkeypatch, capsys):
         """The other direction, so the clause above is not "always name a crossing".
 
-        On 2026-09-17 nothing is past its window, so there is genuinely nothing
-        to report and the plain sentence is true.
+        On `TODAY` nothing is past its window, so the plain sentence is true and
+        must be the one printed. **This test asserted only the exit code until a
+        review pointed out that made it no control at all**: it passed against
+        any wording, including the inverse defect of naming a crossing on a run
+        where none had happened. A control that cannot fail does not bound the
+        clause it sits beside.
         """
         monkeypatch.setattr(drift_report, "_gh", lambda *a, **k: pytest.fail("touched the issue"))
         monkeypatch.setattr(drift_report, "_find_open_issue", lambda *a, **k: None)
-        rc = drift_report.main(
-            [str(tmp_path), "--repo", "r", "--run-url", "u", "--title", "t", "--today", "2026-09-17"]
-        )
+        rc = drift_report.main([str(tmp_path), "--repo", "r", "--run-url", "u", "--title", "t", "--today", str(TODAY)])
         assert rc == 0
+        err = capsys.readouterr().err
+        assert "no support window crossed" in err
+        assert "past its support window" not in err
 
     def test_a_bad_today_is_reported_rather_than_tracebacked(self, drift_report, tmp_path, monkeypatch, capsys):
         """The flag this change introduced, held to this file's own standard.
@@ -1385,7 +1392,17 @@ class TestThisModuleIsReproducible:
     the code can only ever observe the current date.
     """
 
-    TIME_DEPENDENT = {"has_signal", "decide"}
+    # Every `drift_report` function whose `today` DEFAULTS, so omitting it
+    # silently asserts the day the test ran. Derived by reading each signature
+    # rather than recalled: `has_signal`, `decide`, `_render_body` and
+    # `_render_smoke_verdicts` default it; `support_window_state`, `is_expired`,
+    # `silencing`, `_known_note`, `_render_support_windows`,
+    # `_render_isolation_findings` and `_render_floor_lane` REQUIRE it, so they
+    # cannot be got wrong this way and need no policing. The first two were the
+    # only entries when this guard was written, which left the two renderers
+    # unguarded — and `_render_body` was already one of the seven offenders the
+    # class docstring describes, so the omission was not hypothetical.
+    TIME_DEPENDENT = {"has_signal", "decide", "_render_body", "_render_smoke_verdicts"}
 
     def _calls(self):
         import ast

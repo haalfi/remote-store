@@ -87,8 +87,9 @@ class SupportWindowState:
     """Where each supported interpreter stands, and which crossings nobody owns.
 
     ``rows`` is every supported interpreter, so the section renders on a clean
-    week too: "3.10 has 17 days left" is the thing a reader cannot compute from
-    the policy page's prose, which is the whole reason the chart exists, arriving
+    week too: how many days a version has *left* is the thing a reader cannot
+    compute from the policy page's prose, which is the whole reason the chart
+    exists, arriving
     on the issue instead.
 
     ``unregistered`` is the subset past its window with no live row in
@@ -369,11 +370,11 @@ class RegisterDateError(Exception):
     ``sdd/DRIFT-RULES.md`` [Rule 2](../sdd/DRIFT-RULES.md#localize) asks a
     mechanism to name the element rather than the fact of a difference.
 
-    Scale, since the argument is about finding a row rather than about volume:
-    the two registers hold **7** rows between them today, all of them
-    ``KNOWN-FINDINGS.md``'s, because ``PYTHON-SUPPORT.md`` ships empty. So the
-    placement earns its keep on the interpreter register's first row rather
-    than on the current count, and an earlier "eight-odd rows" overstated it.
+    The argument is about finding a row, not about how many there are: with two
+    files a bad value does not say which one to open, and that is true of the
+    first row as much as the hundredth. So no count appears here — an earlier
+    revision hedged one ("eight-odd rows") and was wrong about both the total
+    and its distribution.
     """
 
 
@@ -573,6 +574,7 @@ def _render_smoke_verdicts(
     reports: Reports,
     register: dict[tuple[str, str], tuple[str, str]],
     lanes: list[str] | None = None,
+    *,  # keyword-only for the same reason as `_render_body`
     today: date | None = None,
 ) -> list[str]:
     """One row per extra, one column per lane.
@@ -928,6 +930,11 @@ def _render_body(
     expected: list[str] | None = None,
     lanes: list[str] | None = None,
     python_register: dict[str, tuple[str, str]] | None = None,
+    # Keyword-only, like `has_signal` and `decide`, so the reproducibility guard
+    # in `tests/scripts/test_drift_report.py` can police it by looking for a
+    # `today=` keyword. A positional pass here would read as an omission to that
+    # guard, and an omission is the defect it exists to catch.
+    *,
     today: date | None = None,
 ) -> str:
     lines: list[str] = []
@@ -1049,7 +1056,7 @@ def _render_body(
 
     lines.extend(_render_isolation_findings(reports, register or {}, today or date.today()))
     lines.extend(_render_floor_lane(reports, register or {}, today or date.today()))
-    lines.extend(_render_smoke_verdicts(reports, register or {}, lanes, today or date.today()))
+    lines.extend(_render_smoke_verdicts(reports, register or {}, lanes, today=today or date.today()))
     lines.extend(_render_support_windows(reports.windows, python_register or {}, today or date.today()))
 
     # Clear means clear in both lanes. An extra whose newest resolution is `ok`
@@ -1242,7 +1249,7 @@ def main(argv: list[str] | None = None) -> int:
             print("No drift reports found and no support window crossed; nothing to reconcile.", file=sys.stderr)
         return 0
 
-    body = _render_body(reports, args.run_url, register, expected, lanes, python_register, today)
+    body = _render_body(reports, args.run_url, register, expected, lanes, python_register, today=today)
     if args.dry_run:
         # Before any `gh` call, so a dry run cannot reach the issue even to
         # read it: a dispatch from a branch must be observable without leaving

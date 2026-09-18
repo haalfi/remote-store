@@ -176,9 +176,12 @@ lacks `actions: write`; the MCP server's `actions_run_trigger` dispatches).
      `infra/drift-locks/PYTHON-SUPPORT.md` with an owner, a rationale and a
      `Review by`. Propose and ask; never edit `pyproject.toml` or add a register
      row unilaterally.
-   - **`known, <owner>, review by <date>`** → decided already. Read
+   - **`known, <owner>, review by <date>`** → decided already. Read the item or
+     ADR the row names as its `Owner` — printed in that cell — for what was
+     decided and why, before re-opening it.
      [ADR-0039](../../../sdd/adrs/0039-support-tracks-upstream-security-fixes.md)
-     for what was decided and why before re-opening it.
+     is where the window itself comes from and takes no position on any
+     particular version, so it is not a substitute for the owner the row names.
    - **`review date passed`** → the row has stopped silencing. Re-affirm the
      decision or drop the version; extending the date without re-reading the
      rationale is what the enforcement exists to prevent.

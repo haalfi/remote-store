@@ -22,16 +22,25 @@ expected_ripples:
   - sdd/adrs/DIGEST.md
   - CHANGELOG.md
 surprising_ripples:
-  # Neither is in the ripple-check, and neither was anticipated by this item.
+  # The first two are in no ripple-check row and were not anticipated by this
+  # item. The last three came from the maintainer's own review: asked to hold the
+  # ADR to CONTENT-RULES Rules 1 and 2 -- principles, never a snapshot -- the
+  # same class turned out to sit in both registers and in CONTRIBUTING.md, so the
+  # comment on one file reached four.
   - sdd/CONTENT-RULES.md
   - sdd/rfcs/rfc-0007-doc-cross-links.md
+  - infra/drift-locks/PYTHON-SUPPORT.md
+  - infra/drift-locks/KNOWN-FINDINGS.md
+  - CONTRIBUTING.md
 # Derivation for the value below, per the schema's review_rounds clause:
 # `git log --oneline origin/master..HEAD` over this branch, counting only
 # commits that exist because a review round asked for them. 0950031f implements
-# and does not count; 41aec01b carries round 1's five findings, e430ee7e round
-# 2's five, and the commit carrying this line round 3's. Updated as each round
-# lands, so the value is current at every commit.
-review_rounds: 3
+# and does not count. 41aec01b carries round 1's five findings; e430ee7e round
+# 2's five; 3dc12cd7 round 3's twenty; 42bbefae the maintainer's own two review
+# comments, which count for the same reason a panel round does; and the commit
+# carrying this line round 4's. Updated as each round lands, so the value is
+# current at every commit rather than filled at the close.
+review_rounds: 5
 phases:
   - id: orient
     name: Orient
@@ -114,6 +123,21 @@ phases:
         section: "Ripple-check table / Detailed checklist"
         read_type: verify
         extract: "Pre-work index first, then the Detailed checklist, then check_ripple_parity"
+        outcome: ok
+      - file: sdd/CONTENT-RULES.md
+        section: "Rules 1 and 2"
+        read_type: gate
+        extract: >-
+          Read on the maintainer's instruction rather than at orient time, and it
+          should have been read at orient time: the ADR had been written with a
+          dated standing table and a snapshot paragraph opened the interpreter
+          register, both of which Rule 1's six-month test refuses. The ADR now
+          states the rule and carries no figure, with the measurements moved to
+          this item's BACKLOG-DONE entry -- a measurement is history and the
+          historical register is where going stale is the point. The lesson is
+          which gate applies to which artefact: a decision record is durable
+          prose and is bound by these rules, while the register that records what
+          the decision measured is not
         outcome: ok
       - file: CONTRIBUTING.md
         section: "When to bump, Release Phase 0"
