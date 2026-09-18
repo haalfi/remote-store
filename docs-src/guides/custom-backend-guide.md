@@ -250,7 +250,10 @@ returns the stream as-is.
 - `get_file_info()` raises `NotFound` if missing.
 - `get_folder_info()` raises `NotFound` if the folder doesn't exist — **except at
   the store root**, which is a folder that always exists, so it aggregates to
-  zero rather than raising even when your container is gone.
+  zero rather than raising for a container that was already gone when the call
+  began. **Bound that tolerance to the first page**: a container that vanishes
+  *mid*-listing must still raise, or you report a store the user still has as
+  empty.
 - `exists()` never raises — returns `bool`.
 
 ---

@@ -159,6 +159,18 @@ phases:
         extract: >-
           get_folder_info is gated by METADATA, not LIST, so the conformance
           cell's own comment promising a separate gate had to become one
+      - file: docs-src/reference/migration.md
+        section: "v0.32.0 to v0.33.0 / mid-aggregate paragraphs"
+        read_type: verify
+        extract: >-
+          The tolerance's bound — "a container that was already gone when the
+          call began" — was written here in round 1 and not carried into the
+          custom-backend guide's Step 10 when round 6 added the root carve-out
+          there, which shipped an unqualified "even when your container is
+          gone" that the item's own TestTheToleranceIsBoundedToTheFirstPage
+          refutes. Caught by the closing measuring pass, not by a read: two
+          published surfaces stated the same behaviour and only one carried its
+          bound. The fix copies this file's wording into the guide
   - id: verify
     name: Verify
     steps:
@@ -190,4 +202,4 @@ surprising_ripples:
 # stale at four consecutive pushes here, each time by exactly that off-by-one,
 # which is the argument for deriving the field after the loop ends rather than
 # maintaining it during: RFC-0015 D4, not in this pilot.
-review_rounds: 6
+review_rounds: 7
