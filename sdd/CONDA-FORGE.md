@@ -9,13 +9,18 @@ Document Format](../CONTRIBUTING.md#authoritative-document-format).
 
 conda-forge serves `remote-store` from **`conda-forge/remote-store-feedstock`**,
 a repository this project does not own, whose `recipe/recipe.yaml` is a copy of
-`packaging/conda-forge/recipe.yaml`. Nothing here reads that copy and no gate
-compares the two, so every rule below is a step no mechanism performs.
+`packaging/conda-forge/recipe.yaml`. Two mechanisms now stand behind that copy:
+`scripts/gen_conda_feedstock.py` **produces** it, so the copy-out is one file
+rather than a hand edit, and `scripts/drift_feedstock.py` **fetches the
+published one weekly** and compares it against the generated copy this repo
+committed at the tag its version names. What remains below is what those two
+cannot do: choosing a route, opening the pull request, and everything the
+feedstock owns.
 
 [`CONTRIBUTING.md` § Release](../CONTRIBUTING.md#release) Phase 5 links here for
 the routes, the rules and the walkthrough. Why these rules exist, and what their
 absence already cost, is recorded in ID-018 and BK-370
-([`BACKLOG-DONE.md`](BACKLOG-DONE.md), [`BACKLOG.md`](BACKLOG.md)).
+([`BACKLOG-DONE.md`](BACKLOG-DONE.md)).
 
 Upstream sources, which govern where they disagree with this page:
 [maintainer guide](https://conda-forge.org/docs/maintainer/updating_pkgs/),
@@ -35,11 +40,26 @@ Upstream sources, which govern where they disagree with this page:
    be edited or deleted, only marked broken (see [Rule 9](#marking-broken)). Work
    from a personal fork, or from the branch `regro-cf-autotick-bot` opens.
 
-3. <a id="diff-the-copies"></a>**Diff the two copies before pushing to the branch
-   the PR builds from** — on the fork route that is before the PR exists, on the
-   bot route it is not. Every difference must be a comment you changed
-   deliberately, or `build.number` ([Rule 4](#build-number)). Nothing else may
-   differ, and no gate checks this: see [Rule 7](#what-the-gates-do-not-cover).
+3. <a id="diff-the-copies"></a>**Copy `packaging/conda-forge/feedstock/recipe.yaml`
+   across whole; never assemble the far copy by hand.** That file is generated
+   from our recipe and `hatch run lint` fails when it is stale, so it is already
+   what the feedstock should carry — the only edit on the far side is
+   `build.number` ([Rule 4](#build-number)). Before pushing to the branch the PR
+   builds from, check that is all that differs, against the file itself rather
+   than by eye:
+
+   ```bash
+   diff <feedstock-clone>/recipe/recipe.yaml packaging/conda-forge/feedstock/recipe.yaml
+   ```
+
+   Expect one hunk, `build.number`. Anything else means the copy was assembled
+   rather than copied.
+
+   **`drift_feedstock` does not answer this question**, because it reads the
+   feedstock's `main` branch: before the merge that is still the previous
+   release's file. It is what confirms the result afterwards
+   ([Walkthrough](#walkthrough) step 9), and what re-checks it every week. See
+   [Rule 7](#what-the-gates-do-not-cover) for what it does not reach.
 
 4. <a id="build-number"></a>**`build.number` belongs to the feedstock.** It is
    the one field the far copy owns and the one sanctioned non-comment difference,
@@ -62,28 +82,23 @@ Upstream sources, which govern where they disagree with this page:
    `README.md` with the new summary and changed nothing else. Requesting one
    costs nothing either way, and the PR template asks about it regardless.
 
-6. <a id="no-tracker-ids"></a>**No internal coordinate reaches the feedstock copy** — not only backlog
-   IDs, but spec section IDs, ADR numbers and PR references, all of which point
-   somewhere a conda-forge reader cannot follow. Carry the claim in prose
-   instead. `check_no_tracker_refs` cannot run this itself — it reads no YAML,
-   and `packaging/` is outside every root it scans — so borrow its two halves,
-   the structural pattern **and** the filter that decides which hits count.
-   Reproducing the pattern alone would flag `UTF-8`, `ISO-8601` and `RFC-3986`;
-   an enumerated prefix list instead would pass the next `BE-008` or `GR-033`.
-   From this repo's root, against the feedstock checkout:
+6. <a id="no-tracker-ids"></a>**No internal coordinate reaches the feedstock
+   copy**, and this is no longer your job. Backlog IDs, spec section IDs, ADR
+   numbers and PR references all point somewhere a conda-forge reader cannot
+   follow, so `check_no_tracker_refs` scans
+   `packaging/conda-forge/recipe.yaml` **below `context:`** and fails `hatch run
+   lint` on any of them. The claim stays in the recipe, in prose; the coordinate
+   goes, at the source, in the pull request that would have introduced it.
 
-   ```bash
-   python -c "
-   import sys; sys.path.insert(0, 'scripts')
-   from check_no_tracker_refs import _TRACKER_RE, _is_internal_tracker
-   t = open('<feedstock>/recipe/recipe.yaml').read()
-   print([m.group(0) for m in _TRACKER_RE.finditer(t)
-          if _is_internal_tracker(m.group(1), m.group(2))] or 'clean')
-   "
-   ```
+   The header block above `context:` is exempt because
+   [Rule 3](#diff-the-copies)'s generator replaces it. `CEP-13` is not a
+   coordinate at all: it names a Conda Enhancement Proposal, so it sits in that
+   gate's external-prefix set beside `PEP` and `ISO` and is free to appear
+   anywhere, including the shipped header — which is where it does appear.
 
-   Expect `clean`. `CEP-13` in the header block is a known false positive and
-   does not reach the copy, because Walkthrough step 3 replaces that block.
+   This inverts what this rule used to ask. Stripping by hand at copy-out time
+   meant the one artefact that leaves this repository was checked by the person
+   least able to check it, once, against a pattern reproduced from memory.
 
 7. <a id="what-the-gates-do-not-cover"></a>**Know what each mechanism proves.**
    - `check_conda_recipe_pins` compares **this repo's** recipe with
@@ -95,11 +110,26 @@ Upstream sources, which govern where they disagree with this page:
      whether ordered or not — and our own `about` summary is in that blind spot
      today.
    - `.github/workflows/conda-recipe.yml` runs `rattler-build --render-only` on
-     any PR touching `packaging/conda-forge/**`, so structural validity is
-     machine-checked before the recipe leaves this repo. It says nothing about
-     content.
-   - Nothing compares the two copies. That is [Rule 3](#diff-the-copies), and it
-     is a human step.
+     **both** recipes for any PR touching `packaging/conda-forge/**`, so
+     structural validity is machine-checked for the shipped copy as well as the
+     source. It says nothing about content.
+   - `gen_conda_feedstock` compares **this repo's two copies**:
+     `packaging/conda-forge/feedstock/recipe.yaml` against a fresh render of the
+     source. `hatch run lint` fails when they disagree, so the shipped file
+     cannot fall behind the recipe it is taken from. It never reads the
+     feedstock.
+   - `check_no_tracker_refs` holds the source recipe's body free of internal
+     coordinates ([Rule 6](#no-tracker-ids)), which is what makes those bytes
+     publishable without an edit.
+   - `drift_feedstock` compares **the published copy** against the generated one
+     this repo committed at the tag its `context.version` names, weekly, and
+     reports on the drift-guard rolling issue. Its own docstring owns the
+     vocabulary and the bounds; the ones worth knowing here are that
+     `build.number` and `source.sha256` are excluded and therefore unwatched,
+     that it reads one file on one branch and none of the feedstock's other
+     files, and that a version this repo published no generated copy for reports
+     `no-baseline` rather than a comparison — which is every tag cut before the
+     generator existed.
 
 8. **Fill [conda-forge's PR
    template](https://github.com/conda-forge/.github/blob/main/.github/PULL_REQUEST_TEMPLATE.md).**
@@ -153,12 +183,13 @@ observable is the commit appearing on the bot's PR with its CI re-running.
    checks the pins and the `Conda Recipe` workflow renders it.
 2. Fork `conda-forge/remote-store-feedstock` to a personal account, or add the
    bot's remote per the table above.
-3. Copy our recipe into the feedstock's **`recipe/recipe.yaml`**. Replace the
-   header comment block above `context:` — it describes this repo's workflow and
-   does not ship. Below `context:` the copy is verbatim except the comments
-   [Rule 6](#no-tracker-ids) requires stripping.
-4. Diff the two copies ([Rule 3](#diff-the-copies)) and run
-   [Rule 6](#no-tracker-ids)'s command against the far copy, expecting `clean`.
+3. Copy `packaging/conda-forge/feedstock/recipe.yaml` onto the feedstock's
+   **`recipe/recipe.yaml`**, whole. Nothing is stripped, replaced or reflowed:
+   the generator already did the one transformation there is, and `hatch run
+   lint` has already checked that file is current. Then set `build.number`
+   there ([Rule 4](#build-number)).
+4. Diff the far copy against ours ([Rule 3](#diff-the-copies)), expecting
+   `build.number` and nothing else.
 5. Commit from a local clone, not through the GitHub API, whose commits are
    unverified. Push to the fork, or to the bot's branch.
 6. Open the PR against `conda-forge/remote-store-feedstock` and fill the
@@ -172,3 +203,9 @@ observable is the commit appearing on the bot's PR with its CI re-running.
 9. **Confirm users can get it**: `conda search -c conda-forge remote-store`
    lists the new version once the post-merge build uploads. Until that shows the
    release, the channel has not received it, whatever the PR says.
+10. **Confirm the channel carries what we published**: once the PR is merged,
+    `python scripts/drift_feedstock.py` reads the feedstock's `main` and should
+    report `match`. This is the first moment it can — see
+    [Rule 3](#diff-the-copies) — and it is the same check that then runs weekly,
+    so a `drift` here is one you would otherwise meet on the rolling issue days
+    later, with the release already out.

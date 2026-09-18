@@ -73,7 +73,8 @@ lacks `actions: write`; the MCP server's `actions_run_trigger` dispatches).
 2. **Parse the body.** Extract: the drifted extras and their per-package
    `baseline → resolved` rows, the **Smoke verdicts** table, the **Floor lane**
    and **Isolated install failed** sections if present, the **Support windows**
-   table, the **Clear** list, and the **Last run** URL. The body is regenerated
+   table, the **Conda feedstock** verdict, the **Clear** list, and the
+   **Last run** URL. The body is regenerated
    every run and auto-closes on clear — never edit it.
 
 3. **Classify each verdict (load-bearing).** Read the per-lane verdict and its
@@ -185,6 +186,31 @@ lacks `actions: write`; the MCP server's `actions_run_trigger` dispatches).
    - **`review date passed`** → the row has stopped silencing. Re-affirm the
      decision or drop the version; extending the date without re-reading the
      rationale is what the enforcement exists to prevent.
+
+   **Conda feedstock.** Not a lane, not a refresh, and **never** acted on by
+   this skill. The row says whether the recipe conda-forge publishes still
+   matches the generated copy this repo committed at the tag its version names.
+
+   - **`match`, `ahead-of-tag`** → nothing to do. The second means the published
+     copy carries a change merged after that tag was cut, which is what a
+     release's own copy-out looks like.
+   - **`trailing`** → informational, always. A feedstock trails its upstream
+     release by design; the release checklist owns catching it up, and this row
+     never holds the issue open.
+   - **`no-baseline`, `unreachable`** → this run could not compare the two. Not
+     a finding, and not a clean bill either: they stop the issue closing and
+     nothing else. `no-baseline` on a version tagged before this watch existed
+     is expected and ends at the next copy-out.
+   - **`drift`, `missing`** → a real difference between what we published and
+     what the channel serves. **The remedy is a pull request against the
+     feedstock**, per [`sdd/CONDA-FORGE.md`](../../../sdd/CONDA-FORGE.md) —
+     copy `packaging/conda-forge/feedstock/recipe.yaml` across and, when the
+     version is unchanged, increment `build.number` there, or the metadata-only
+     fix does not reach users. **Never** fix it by editing this repo: our side
+     is the authority, so a change here would be inventing a difference rather
+     than resolving one. Propose and ask; this skill does not open that PR.
+   - **`error`** → the fault is on **our** side, not conda-forge's: usually a
+     tag that will not resolve. Read the run log rather than the feedstock.
 
    **A crossing licenses a drop; it never requires one.** Rule 8 promises a
    floor, not a ceiling, so "the window closed" is not by itself a reason to

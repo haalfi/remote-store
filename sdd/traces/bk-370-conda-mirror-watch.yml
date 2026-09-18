@@ -1,0 +1,197 @@
+id: BK-370
+title: The published conda recipe is a mirror no mechanism watches
+trigger: |
+  conda-forge/remote-store-feedstock's recipe/recipe.yaml was a hand-made copy
+  of packaging/conda-forge/recipe.yaml, and nothing compared the two. The whole
+  defence was a runbook rule asking a human to diff them at release time, which
+  holds exactly as long as the person doing the release performs it. The
+  measured cost was a published `about` block advertising four backends for
+  five months while the library reached eight.
+source_items:
+  - BK-370
+  - ID-018
+  - BK-368
+audience:
+  - user.discoverability.human
+  - infra.ci
+  - contributor.process
+
+phases:
+  - id: orient
+    name: Frame the item and the mechanisms it touches
+    steps:
+      - file: sdd/BACKLOG.md
+        section: BK-370 (item)
+        read_type: gate
+        extract: |
+          Take the fix shape and the costing of each option; two were taken
+          together, generate the copy and watch the published one. The item's
+          refutation of the conda-forge bot is derived from the bot's own
+          schema and saved evaluating an option that cannot reach
+          run_constraints at all.
+        outcome: ok
+      - file: sdd/CLAUDE-REFERENCE.md
+        section: Ripple-check / Pre-work index / Dependency
+        read_type: gate
+        extract: |
+          Note that the Dependency row named the recipe's run_constraints and
+          nothing beside it. Retrospect: the row had no slot for a second
+          generated file, which this change adds to both presentations.
+        outcome: ok
+      - file: sdd/DRIFT-RULES.md
+        section: Rules
+        read_type: gate
+        extract: |
+          Check the design against every rule. Rule 6 was the one that bit --
+          "a check with no such register will be switched off instead" is a
+          kill-switch, and the design said no register. Satisfied vacuously
+          rather than waived: no divergence is accepted, because a feedstock
+          difference is fixed by a feedstock PR. The case that would force a
+          register, an upstream migrator editing the recipe, is named in the
+          script's Bounds instead of built for.
+        outcome: ok
+      - file: scripts/drift_report.py
+        section: SupportWindowState, Reports.__bool__
+        read_type: reference
+        extract: |
+          Reuse the two measured failure modes rather than rediscovering them.
+          Both transferred whole: a signal computed from something other than
+          an uploaded artefact is true on every run, so it may force an update
+          only on an unnarrowed one; and it must ride on Reports before the
+          emptiness guard or a run whose download produced nothing discards it.
+        outcome: ok
+
+  - id: design
+    name: Re-derive the design against master
+    steps:
+      - file: packaging/conda-forge/recipe.yaml
+        section: (full)
+        read_type: reference
+        extract: |
+          Enumerate the internal coordinates the new gate must refuse.
+          Retrospect: the item named four and the gate's own _scan_lines
+          returns three -- BK-368, BUG-232, BUG-286. staged-recipes#32401 is
+          matched by none of the patterns (_PR_RE is `\bPR #\d+\b`, and the
+          recipe spells it conda-forge/staged-recipes#32401), and it is an
+          external reference a conda-forge reader can follow, which the live
+          feedstock keeps. Planning from the item's count alone would have
+          rewritten a comment that needed no rewriting.
+        outcome: ok
+      - file: CONTRIBUTING.md
+        section: Release / Phase 5
+        read_type: gate
+        extract: |
+          Establish when source.sha256 is known. It is fetched from PyPI after
+          the release and committed separately, so a tag structurally carries
+          the previous release's digest: afaa7668f landed one day after the
+          v0.32.0 tag and `git describe --tags --contains afaa7668f` finds no
+          tag holding it; v0.31.0 has the same shape 38 minutes after its tag.
+          Comparing the tag's sha256 would have produced a permanent false
+          `drift` at every release, so it is excluded alongside build.number.
+        outcome: ok
+      - file: sdd/BACKLOG-DONE.md
+        section: ID-018 (item)
+        read_type: reference
+        extract: |
+          Check what the last copy-out was actually verified against. "A diff
+          against packaging/conda-forge/recipe.yaml showed zero non-comment
+          differences" -- against master, which already carried the corrected
+          digest. That is what identified the sha256 mismatch as a
+          tag-versus-master artefact rather than a feedstock error, and turned
+          a suspected bug in the channel into a finding about the design.
+        outcome: ok
+      - file: scripts/gen_gate_inventory.py
+        section: _select / declaration parsing
+        read_type: reference
+        extract: |
+          Decide between one script with subcommands and two scripts. Once any
+          Drift-gate:: block on a module carries `entrypoint:`, argv selects
+          among them by whole-token match, so a `--check` flag beside a
+          `feedstock` subcommand would have matched no entrypoint and left the
+          generator with no inventory row, silently. Two scripts with one
+          undecorated block each removes the trap.
+        outcome: ok
+
+  - id: implement
+    name: Build the gate, the generator and the watch
+    steps:
+      - file: scripts/check_no_tracker_refs.py
+        section: Scope, _scan_lines
+        read_type: reference
+        extract: |
+          Reuse _scan_lines rather than re-deriving the patterns. It is pure
+          and already takes a line_offset, so the YAML path shares it without
+          touching the Markdown or Python paths. The header exemption is
+          bounded by the `context:` marker, and a recipe that has lost the
+          marker is scanned whole -- a silent full pass is the one outcome that
+          reports nothing while checking nothing.
+        outcome: ok
+      - file: sdd/CONDA-FORGE.md
+        section: Rules 3, 6 and 7, Walkthrough
+        read_type: gate
+        extract: |
+          Rewrite each rule into a statement of what the mechanisms now do.
+          Retrospect: Rule 6 told the reader to run a command against the
+          feedstock copy and "expect clean", and running it returns
+          ['CEP-13'] -- the replacement header repeats the v1-format line, so
+          the rule's own verification step failed against the copy it shipped.
+          Exempting the header block was not enough on its own; CEP joined
+          _EXTERNAL_PREFIXES, where a Conda Enhancement Proposal belongs beside
+          PEP and ISO.
+        outcome: misleading
+      - file: .github/workflows/drift-guard.yml
+        section: report job
+        read_type: reference
+        extract: |
+          Establish what the report job can actually resolve. Its checkout is a
+          bare actions/checkout@v7 -- shallow, no tags -- so
+          `git show v<version>:<path>` fails with "invalid object name".
+          Rather than deepening the clone, the watch reads the tag and the blob
+          through the GitHub API, which answers 404 separately for "no such
+          tag" and "no such file at this tag": a broken watch and normal
+          operation respectively, and folding them together is how a signal
+          goes dark without anybody noticing.
+        outcome: ok
+
+  - id: verify
+    name: Ripple-check and run the mechanisms against the live channel
+    steps:
+      - file: sdd/CLAUDE-REFERENCE.md
+        section: Ripple-check / Detailed checklist / Dependency
+        read_type: verify
+        extract: |
+          Confirm the generated copy is named beside run_constraints in both
+          presentations of the row, so the next dependency change regenerates
+          it rather than meeting a stale-copy gate failure.
+        outcome: ok
+      - file: packaging/conda-forge/feedstock/recipe.yaml
+        section: (full)
+        read_type: verify
+        extract: |
+          Diff the generated copy against the fetched live recipe. Four comment
+          hunks, zero non-comment differences, and source.sha256 agreeing --
+          which confirms the excluded-field reasoning from the other side.
+        outcome: ok
+      - file: scripts/drift_feedstock.py
+        section: compare
+        read_type: verify
+        extract: |
+          Run the watch against the live channel and read its verdict:
+          `no-baseline` for 0.32.0, trailing false. Retrospect: writing the
+          runbook around it surfaced a false claim in this change's own first
+          draft -- the watch reads the feedstock's main branch, so it cannot
+          verify an unmerged copy-out branch. The Walkthrough now diffs the two
+          files directly before the push and runs the watch after the merge.
+        outcome: ok
+
+expected_ripples:
+  - sdd/backlogid.json
+  - sdd/GATE-INVENTORY.md
+  - packaging/conda-forge/feedstock/recipe.yaml
+
+surprising_ripples:
+  - .github/workflows/conda-recipe.yml
+  - tests/scripts/test_check_no_tracker_refs.py
+
+discovery_followups: []
+co_shipped_items: []

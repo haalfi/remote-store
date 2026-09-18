@@ -1656,7 +1656,10 @@ break (BUG-287, BUG-288). That is the clause working, not a gap in it: the
 mechanism exists and reports; **every install channel we
 intend to offer is published and working** — **met** by ID-018, in
 [BACKLOG-DONE.md](BACKLOG-DONE.md) — and what that channel publishes about us is
-watched rather than hand-copied (BK-370); every upstream that can break us on its
+watched rather than hand-copied — **met** by BK-370, in
+[BACKLOG-DONE.md](BACKLOG-DONE.md), which generates the channel's copy from ours
+and compares the published one weekly against what was published for the version
+it carries; every upstream that can break us on its
 own schedule has a standing watch (ID-229, ID-225), and the support window we
 publish is exercised by decision rather than by inertia — **met** by BK-375, in
 [BACKLOG-DONE.md](BACKLOG-DONE.md), which tied the promise to CPython's own
@@ -1686,9 +1689,11 @@ current release with the constraints this repo declares, and the README points
 users at it. Two paragraphs stood here before: one saying no work in this repo
 could close section 5, and one saying the clause was half met and waiting on a
 feedstock PR. Both were true when written and neither is now.
-What the clause does **not** cover is BK-370's gap, which is why that item is a
-separate clause rather than a caveat on this one: a channel can be published,
-working, and quietly describing the library as something it is not.
+What that clause never covered is what BK-370's own clause did, which is why the
+two were stated separately: a channel can be published, working, and quietly
+describing the library as something it is not. Both are met now — the second by
+a generator and a weekly comparison rather than by a rule asking a person to
+diff two files at release time.
 
 - [ ] **BUG-289 — Two floors are clean for a user and red for the suite, because the suite rejects warnings**
   spec: — · effort: S · audience: user.api, infra.test
@@ -1997,105 +2002,6 @@ working, and quietly describing the library as something it is not.
   following the precedent `check_ripple_parity` documents, and widen CI's path
   filter to treat `sdd/adrs/**` as lint-triggering. Filed rather than fixed in
   BK-329 because that PR touched no ADR, no TLA module and not the handbook.
-
-- [ ] **BK-370 — The published conda recipe is a mirror no mechanism watches**
-  spec: — · effort: M · audience: user.discoverability.human, infra.ci
-  `conda-forge/remote-store-feedstock`'s `recipe/recipe.yaml` is a copy of
-  `packaging/conda-forge/recipe.yaml`, and nothing compares the two. **Three**
-  gates look adjacent and none covers it, and none of the three is buggy — which
-  is the point: each is correct within a scope narrower than "what this project
-  publishes". Two of the three stop at this repo's edge and the recipe is
-  published one hop past it; the third stops short of published surfaces
-  **inside** the repo as well, so the gap is wider than the recipe alone.
-  - `check_conda_recipe_pins.py` holds **our** copy to `pyproject.toml`, not the
-    feedstock to ours.
-  - `check_backend_order.py` **never tests the drifted block at all**, which is
-    a wider blind spot than "proves order, not membership". Measured by importing
-    the module: `backends_in("Local, S3, SFTP, Azure")` gives those four, and
-    `is_ordered(...)` is **`False`** — SFTP outranks Azure in `_BACKENDS`. It
-    passed because `_distinct(found)` is 4 against `_MIN_BACKENDS` 6, so both
-    scanners discard the segment as prose before ordering is tested. So **any**
-    enumeration naming fewer than six distinct backends is invisible, ordered or
-    not — including our own `about` summary today. An earlier draft of this
-    bullet said it passed "because the enumeration is correctly ordered and
-    merely incomplete", which measures false and under-stated the gap.
-    Membership itself is a judgement [`CONTRIBUTING.md` § Adding a New
-    Backend](../CONTRIBUTING.md#adding-a-new-backend) deliberately declines to
-    make, since the API reference splits its tables and the README abridges on
-    purpose.
-  - `check_no_tracker_refs.py` enumerates three roots — `src/remote_store/`
-    Python docstrings, `docs-src/` Markdown, and exactly three repo-root files
-    (`scripts/check_no_tracker_refs.py:194-200`). `packaging/` is in none of
-    them and no scanner reads `.yaml`, so `BK-368`, `BUG-232` and `BUG-286` sit
-    in the recipe today with the gate green. Correct by its own terms — the
-    recipe is an internal file, where tracker IDs are as legitimate as in
-    `sdd/` — and wrong about where that file ends up. Two of the three were
-    caught by eye during the v0.32.0 copy-out, on their way to a public
-    third-party repo.
-    Its scope also stops short of published surfaces **inside** this repo, so
-    the recipe is not the only mirror it misses: eight `sdd/*.md` files carry a
-    `doc: dual` marker and render onto the docs site through the bridge, but no
-    physical `docs-src/explanation/design/*.md` exists for the gate's `docs-src`
-    rglob to find, and its docstring declares `sdd/**` out of scope as internal.
-    Derivation, applying the gate's own `_TRACKER_RE` rather than a
-    backlog-prefix grep — the distinction matters, since the structural pattern
-    also catches spec IDs and ADR numbers a prefix list misses: `CI-OPERATIONS.md`
-    publishes with 8 distinct matches and `TESTING.md` with 8, gate green.
-    Nothing is broken by that — but the fix shapes below are costed against the
-    narrower gap.
-  What the gap cost, measured rather than hypothesised: the live recipe's `about`
-  block was pre-BK-311, so the conda-forge package page told users remote-store
-  reaches four backends when it reaches eight, and omitted OneDrive — the exact
-  claim BK-311 swept the repo to fix, in the one mirror its `git grep` could not
-  see because the copy lives in another repository. **The copy was correct when
-  taken and never compared again**, which is this item's shape rather than a
-  hand-edit: our own recipe carried that wording from `2f445717f` (2026-03-01)
-  until `01dd2f4f3` (2026-08-06) fixed it, and the submitted copy predates the
-  fix. It went unnoticed until the v0.32.0 copy-out diff, and only because a
-  human pasted the file in.
-  Today's entire defence is [`sdd/CONDA-FORGE.md`](CONDA-FORGE.md) Rule 3: diff
-  the two copies before pushing to the branch the PR builds from. Writing the
-  runbook made that rule findable and stated why it exists, which is worth
-  something — but it is still a human step, so it holds exactly as long as the
-  person doing the release performs it. That is the gap this item closes, and the
-  runbook narrows it rather than closing it.
-  Fix shape is open deliberately, and the choice is the work: fetch the
-  feedstock's raw recipe in CI and diff it (catches everything, adds a network
-  dependency and a cross-repo failure this repo cannot fix); or generate the
-  feedstock copy from ours by script so the copy-out is mechanical rather than
-  manual (the v0.32.0 copy-out used such a generator with five edits each
-  asserted to apply exactly once, two of them stripping tracker IDs — **it was
-  not retained**, so that count is a report of what was run, not a figure a
-  reader can re-derive, and writing it is part of this option rather than a
-  starting point); extend `check_backend_order` with per-surface membership
-  opt-in (**not** the narrowest option it first appears: a four-name `about`
-  block never reaches a membership test while `_MIN_BACKENDS` is 6, so this
-  needs the floor lifted too, which widens it to every enumeration the gate
-  currently ignores). **The upstream option is not one**, contrary to an earlier
-  draft of this bullet: conda-forge's maintainer guide describes a bot feature
-  that verifies or updates a Grayskull-compatible recipe's requirements, and that
-  draft listed it as free, needing no code here, and worth evaluating first.
-  Reading the schema rather than the prose settles it. `conda-smithy`'s
-  `conda-forge.yml` model delegates `bot` to the bot's own
-  `cf_tick_schema.json`, whose eight keys include no `requirements` and no
-  `requirement_types`; the feature is `bot.inspection`, an enum of `hint`,
-  `hint-all`, `hint-grayskull`, `update-all`, `update-grayskull` and `disabled`,
-  described as "Method for generating hints or updating recipe". Schema read
-  2026-09-14 from
-  `https://raw.githubusercontent.com/conda-forge/conda-forge-bot/refs/heads/main/conda_forge_tick/cf_tick_schema.json`,
-  which is the `$ref` `conda-smithy`'s own model points `bot` at; both figures
-  above come from that file rather than from prose, and both will move if
-  upstream edits it.
-  It acts on the recipe's **`requirements`**, which here is four entries across
-  two sections — `run` holds only `python`, `host` holds `python`, `pip` and
-  `hatchling` — and Grayskull-based inspection reads `host` as well as `run`,
-  so that surface is not empty. It is simply not where anything drifts: all 19
-  dependency floors live in `run_constraints`, which inspection does not touch,
-  and the `about` block is neither. `bot.run_deps_from_wheel` has the same
-  scope. So the option cannot reach this item's gap, and evaluating it first
-  would spend the effort for certain nothing. Discovered by ID-018, which is now closed
-  ([BACKLOG-DONE.md](BACKLOG-DONE.md)) — this item outlived it, which is why it
-  was filed separately rather than folded in.
 
 - [ ] **ID-229 — Evaluate porting to httpx 1.0 (lift the `<1.0` cap)**
   spec: GR-033 · effort: M · audience: user.api

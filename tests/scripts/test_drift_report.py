@@ -1677,3 +1677,196 @@ class TestThisModuleIsReproducible:
             f"line {node.lineno}" for name, node in self._calls() if name == "main" and "--today" not in ast.dump(node)
         ]
         assert offenders == [], f"add '--today', str(TODAY) to the argv: {offenders}"
+
+
+# ---------------------------------------------------------------------------
+# The published conda recipe
+# ---------------------------------------------------------------------------
+
+_SAMPLE_DIFF = """\
+-  - pyarrow >=14.0.0
++  - pyarrow >=12.0.0
+"""
+
+
+def _feedstock(status: str, **kw) -> dict:
+    return {
+        "status": status,
+        "remote_version": "0.32.0",
+        "newest_tag": "v0.32.0",
+        "trailing": False,
+        "reason": f"synthetic {status}",
+        "diff": "",
+        "keys": [],
+        **kw,
+    }
+
+
+def _all_clear(dir_: Path, extras: list[str]) -> None:
+    """One clean leg per extra per lane, so only the feedstock can decide."""
+    for extra in extras:
+        _write(dir_, f"{extra}-newest-diff.json", _diff(extra))
+        _write(dir_, f"{extra}-newest-smoke.json", _smoke(extra, "newest", "pass"))
+        _write(dir_, f"{extra}-floor-resolve.json", _floor(extra))
+        _write(dir_, f"{extra}-floor-smoke.json", _smoke(extra, "floor", "pass"))
+
+
+class TestFeedstockLoad:
+    def test_absent_flag_is_absent_status(self, drift_report):
+        assert drift_report.load_feedstock_report(None).status == "absent"
+
+    def test_a_report_round_trips(self, drift_report, tmp_path):
+        path = tmp_path / "f.json"
+        path.write_text(
+            json.dumps(_feedstock("drift", keys=["about.summary"], diff=_SAMPLE_DIFF)),
+            encoding="utf-8",
+        )
+        state = drift_report.load_feedstock_report(path)
+        assert state.status == "drift"
+        assert state.keys == ("about.summary",)
+        assert state.remote_version == "0.32.0"
+
+    @pytest.mark.parametrize(
+        ("case", "payload"),
+        [
+            ("missing file", None),
+            ("not json", "{{{"),
+            ("not an object", "[1, 2]"),
+            ("no status", '{"remote_version": "0.32.0"}'),
+            ("status is not a string", '{"status": ["drift"]}'),
+        ],
+    )
+    def test_an_unusable_report_is_refused_rather_than_skipped(self, drift_report, tmp_path, case, payload):
+        """The writer catches its own failures, so this file is never legitimately bad.
+
+        Skipping it would retire the whole signal while the issue kept closing
+        on "all clear" -- the silent-close shape ``_load_reports`` records for
+        artefacts, arriving through a different door.
+        """
+        path = tmp_path / "f.json"
+        if payload is not None:
+            path.write_text(payload, encoding="utf-8")
+        with pytest.raises(drift_report.UnusableInputError):
+            drift_report.load_feedstock_report(path)
+
+
+class TestFeedstockSignal:
+    def test_only_holding_statuses_are_a_signal(self, drift_report):
+        for status in ("drift", "missing", "error"):
+            state = drift_report.FeedstockState(status=status, holds_issue=True)
+            reports = drift_report.Reports(diffs={}, floors={}, smokes={}, feedstock=state)
+            assert drift_report.has_signal(reports, today=TODAY), status
+
+    def test_inconclusive_statuses_are_not_a_signal(self, drift_report):
+        for status in ("unreachable", "no-baseline", "match", "ahead-of-tag", "absent"):
+            state = drift_report.FeedstockState(status=status)
+            reports = drift_report.Reports(diffs={}, floors={}, smokes={}, feedstock=state)
+            assert not drift_report.has_signal(reports, today=TODAY), status
+
+    def test_bool_keys_on_holds_issue_not_on_the_raw_status(self, drift_report):
+        """BUG-282's shape arriving through the new signal.
+
+        A published-copy drift is true on every run, so a narrowed dispatch
+        whose legs uploaded nothing must stay falsy -- otherwise ``main``
+        proceeds, every uncovered extra is reported as a lost leg, and the
+        whole issue body is re-rendered from that slice.
+        """
+        narrowed = drift_report.Reports(
+            diffs={},
+            floors={},
+            smokes={},
+            feedstock=drift_report.FeedstockState(status="drift", holds_issue=False),
+        )
+        assert not narrowed
+        full = dataclasses.replace(
+            narrowed,
+            feedstock=drift_report.FeedstockState(status="drift", holds_issue=True),
+        )
+        assert full
+
+    @pytest.mark.parametrize("status", ["drift", "missing", "error", "unreachable", "no-baseline"])
+    def test_these_statuses_refuse_a_close(self, drift_report, tmp_path, status):
+        """Not knowing is not agreement.
+
+        ``holds_issue`` is False for all of these on a narrowed run, and for
+        the inconclusive pair on every run -- but closing would report a
+        comparison this run did not perform, and a closed issue is not
+        recoverable the way a rewritten body is.
+        """
+        _all_clear(tmp_path, ["s3"])
+        reports = dataclasses.replace(
+            drift_report._load_reports(tmp_path),
+            feedstock=drift_report.FeedstockState(status=status),
+        )
+        action, reason = drift_report.decide(reports, expected=["s3"], today=TODAY)
+        assert action == "leave", reason
+
+    @pytest.mark.parametrize("status", ["match", "ahead-of-tag", "absent"])
+    def test_these_statuses_permit_a_close(self, drift_report, tmp_path, status):
+        _all_clear(tmp_path, ["s3"])
+        reports = dataclasses.replace(
+            drift_report._load_reports(tmp_path),
+            feedstock=drift_report.FeedstockState(status=status),
+        )
+        action, reason = drift_report.decide(reports, expected=["s3"], today=TODAY)
+        assert action == "close", reason
+
+
+class TestFeedstockSection:
+    def _body(self, drift_report, tmp_path, state):
+        _all_clear(tmp_path, ["s3"])
+        reports = dataclasses.replace(drift_report._load_reports(tmp_path), feedstock=state)
+        return drift_report._render_body(reports, "http://run", expected=["s3"], today=TODAY)
+
+    @pytest.mark.parametrize(
+        "status",
+        ["match", "drift", "ahead-of-tag", "no-baseline", "missing", "unreachable", "error"],
+    )
+    def test_the_section_renders_on_every_verdict(self, drift_report, tmp_path, status):
+        """Including ``match``.
+
+        A section that appears only on a finding is indistinguishable from a
+        signal that stopped running, and this one depends on a network fetch
+        that can quietly start failing.
+        """
+        body = self._body(drift_report, tmp_path, drift_report.FeedstockState(status=status))
+        assert "## Conda feedstock" in body
+
+    def test_absent_renders_nothing(self, drift_report, tmp_path):
+        body = self._body(drift_report, tmp_path, drift_report.FeedstockState())
+        assert "## Conda feedstock" not in body
+
+    def test_a_drift_leads_with_its_keys(self, drift_report, tmp_path):
+        """DRIFT-RULES Rule 2: name the element, not the fact of a difference.
+
+        The recipe is mostly comments, so a line number is not what changed.
+        """
+        state = drift_report.FeedstockState(
+            status="drift",
+            keys=("requirements.run_constraints[pyarrow]", "about.summary"),
+            diff=_SAMPLE_DIFF,
+            holds_issue=True,
+        )
+        body = self._body(drift_report, tmp_path, state)
+        assert "`requirements.run_constraints[pyarrow]`" in body
+        assert "`about.summary`" in body
+        assert "pyarrow >=12.0.0" in body
+        assert "holds this issue open" in body
+
+    def test_a_narrowed_drift_says_both_halves(self, drift_report, tmp_path):
+        # A reader told only what the run will not do cannot tell that from
+        # "no effect" -- the wording rule the support-window section states.
+        state = drift_report.FeedstockState(status="drift", holds_issue=False)
+        body = self._body(drift_report, tmp_path, state)
+        assert "would hold this issue open on a full run" in body
+        assert "stop this run closing the issue" in body
+
+    def test_trailing_is_informational(self, drift_report, tmp_path):
+        state = drift_report.FeedstockState(status="match", trailing=True, newest_tag="v0.33.0")
+        body = self._body(drift_report, tmp_path, state)
+        assert "never holds this issue open" in body
+        assert "release checklist owns it" in body
+
+    def test_an_inconclusive_verdict_says_it_compared_nothing(self, drift_report, tmp_path):
+        body = self._body(drift_report, tmp_path, drift_report.FeedstockState(status="no-baseline"))
+        assert "not the same as finding them equal" in body

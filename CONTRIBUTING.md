@@ -642,13 +642,19 @@ _Release template: title = version, description = "What's Changed" header whose 
 - [ ] GitHub Pages: check version switcher shows new version as "latest"
 - [ ] ReadTheDocs: check https://docs.remotestore.dev/stable/ shows the new version (RTD automation rule activates tag-based builds; `stable` is the default version)
 - [ ] Conda recipe: fetch sha256 from PyPI (`curl -s https://pypi.org/pypi/remote-store/X.Y.Z/json | python -c "import sys,json; d=json.load(sys.stdin); print([f['digests']['sha256'] for f in d['urls'] if f['filename'].endswith('.tar.gz')][0])"`) and update `source.sha256` in `packaging/conda-forge/recipe.yaml`
-- [ ] Commit `packaging/conda-forge/recipe.yaml` sha256 update in this repo via a branch and PR
-- [ ] conda-forge: get `version`, `sha256` **and the `run_constraints` block from
-      `packaging/conda-forge/recipe.yaml`** onto `conda-forge/remote-store-feedstock`,
-      following [`sdd/CONDA-FORGE.md`](sdd/CONDA-FORGE.md), which owns the routes, the
-      rules and the walkthrough. **Done when
+- [ ] Commit the `packaging/conda-forge/recipe.yaml` sha256 update in this repo via a branch and PR.
+      `hatch run lint` regenerates nothing for you — run `hatch run gen-conda-feedstock` and commit
+      `packaging/conda-forge/feedstock/recipe.yaml` in the same PR, or the gate fails
+- [ ] conda-forge: copy **`packaging/conda-forge/feedstock/recipe.yaml`** — the generated file, whole —
+      onto `conda-forge/remote-store-feedstock`, following
+      [`sdd/CONDA-FORGE.md`](sdd/CONDA-FORGE.md), which owns the routes, the
+      rules and the walkthrough. Nothing is stripped or reassembled by hand any more;
+      `build.number` is the only edit on the far side. **Done when
       `conda search -c conda-forge remote-store` lists the new version**, not when the PR
       is open: the upload happens after merge and can fail. Whether the bot has fired
       shows on conda-forge's [version-update
       status](https://conda-forge.org/status/#version_updates); it can take hours
+- [ ] Once that PR is merged, `python scripts/drift_feedstock.py` reports `match`. It reads the
+      feedstock's `main`, so this is the first point at which it can — and it is the same
+      comparison the weekly drift guard then makes on its own
 - [ ] Announce if applicable (tracking issues, users)

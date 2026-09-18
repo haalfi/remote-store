@@ -24,6 +24,14 @@ In scope (every match is a violation):
 * ``README.md``, ``FEATURES.md``, ``CONTRIBUTING.md`` -- repo-root
   dual-classified pages that ship to both PyPI/GitHub and the docs
   site.
+* ``packaging/conda-forge/recipe.yaml``, **below** ``context:`` -- the
+  source `scripts/gen_conda_feedstock.py` copies onto
+  ``conda-forge/remote-store-feedstock``, a repository this project does
+  not own. The comment block **above** ``context:`` is exempt because the
+  generator replaces it; everything below it ships verbatim to a reader
+  who cannot follow an internal coordinate. This inverts what
+  ``sdd/CONDA-FORGE.md`` used to ask of a human at copy-out time: one
+  driver here rather than a strip step that re-derives this gate.
 
 Out of scope (the trackers are how those documents are addressed):
 
@@ -33,7 +41,9 @@ Out of scope (the trackers are how those documents are addressed):
 * ``DEVELOPMENT_STORY.md`` -- release-history narrative whose purpose
   is to retell work by ID.
 * ``CLAUDE.md``, ``AGENTS.md`` -- agent-harness files, not user-facing.
-* ``tests/``, ``.claude/``, ``infra/``, ``packaging/`` -- internal.
+* ``tests/``, ``.claude/``, ``infra/`` -- internal. So is the rest of
+  ``packaging/``: the conda recipe named above is the one file in it that
+  leaves this repository.
 * ``docs-src/_data/`` -- generated graph artefacts.
 * ``#`` comments inside ``.py`` files -- readers of the source are
   contributors, not users.
@@ -85,7 +95,8 @@ Drift-gate::
 
     kind:       rule
     rule: no internal tracker ID appears in a surface that reaches users (CONTENT-RULES Rules 1 and
-        5)
+        5) -- the docs site, the repo-root dual-classified pages, public docstrings, and the conda
+        recipe below `context:`, which is copied onto a repository this project does not own
     domain:     explanation
 """
 
@@ -139,6 +150,7 @@ _EXTERNAL_PREFIXES: frozenset[str] = frozenset(
         "SHA",  # hash families when written with a dash (SHA-256, SHA-512)
         "MD5",  # ditto, defensive
         "SSH",  # SSH protocol versions (SSH-2.0-OpenSSH_…)
+        "CEP",  # Conda Enhancement Proposals (CEP-13, the recipe v1 format)
     }
 )
 
@@ -198,6 +210,19 @@ _ROOT_MD_FILES: tuple[Path, ...] = (
     _REPO_ROOT / "FEATURES.md",
     _REPO_ROOT / "CONTRIBUTING.md",
 )
+
+# The one YAML file that leaves this repository. A path rather than a root:
+# widening this to a glob over ``packaging/`` would pull in `variants.yaml`
+# and the generated feedstock copy, and neither reaches a conda-forge reader
+# on its own -- the copy is byte-identical below ``context:`` by construction,
+# so scanning it would be a second check of the same bytes.
+_CONDA_RECIPE = _REPO_ROOT / "packaging" / "conda-forge" / "recipe.yaml"
+
+# Everything above this line is the generator's to replace, so an internal
+# coordinate there never ships. Matched at the start of a line: ``context:``
+# is a top-level YAML key, and the same word indented is a value inside some
+# other block.
+_RECIPE_BODY_MARKER = "context:"
 
 # Top-level directories inside docs-src/ to skip (generated artefacts).
 # Other generators emit into docs-src/ outside this set (notably
@@ -324,6 +349,39 @@ def _scan_markdown_file(path: Path) -> list[Violation]:
 
 
 # --------------------------------------------------------------------------- #
+# YAML scanner
+# --------------------------------------------------------------------------- #
+
+
+def _scan_conda_recipe(path: Path) -> list[Violation]:
+    """Scan the conda recipe from ``context:`` down.
+
+    Shares ``_scan_lines`` with the Markdown and Python paths rather than
+    re-deriving the patterns: the filter that decides which structural hits
+    count is the half a reimplementation gets wrong, and
+    ``sdd/CONDA-FORGE.md`` used to ask a human to reproduce both by hand.
+
+    ``line_offset`` keeps the reported line numbers those of the real file,
+    so a violation points at the recipe rather than at an offset into a
+    slice of it.
+
+    A recipe with no ``context:`` key is scanned **whole**. That is the safe
+    direction: the marker is how the exempt block is bounded, so a file that
+    has lost it has no established exemption, and a silent full pass would
+    be the one outcome that reports nothing while checking nothing.
+    """
+    try:
+        lines = path.read_text(encoding="utf-8").splitlines()
+    except (OSError, UnicodeDecodeError):
+        return []
+    start = next(
+        (i for i, line in enumerate(lines) if line.startswith(_RECIPE_BODY_MARKER)),
+        0,
+    )
+    return _scan_lines(lines[start:], path=path, line_offset=start)
+
+
+# --------------------------------------------------------------------------- #
 # File enumeration
 # --------------------------------------------------------------------------- #
 
@@ -375,6 +433,7 @@ def collect_violations(
     src_root: Path = _SRC_ROOT,
     docs_root: Path = _DOCS_ROOT,
     root_md_files: Iterable[Path] = _ROOT_MD_FILES,
+    conda_recipe: Path = _CONDA_RECIPE,
 ) -> list[Violation]:
     """Run all scanners; return a sorted list of violations."""
     out: list[Violation] = []
@@ -382,6 +441,8 @@ def collect_violations(
         out.extend(_scan_python_file(py))
     for md in _iter_markdown_files(root_md_files, docs_root):
         out.extend(_scan_markdown_file(md))
+    if conda_recipe.is_file():
+        out.extend(_scan_conda_recipe(conda_recipe))
     out.sort(key=lambda v: (str(v.path), v.line, v.match))
     return out
 
@@ -400,11 +461,23 @@ def main(argv: list[str] | None = None) -> int:
         default=_DOCS_ROOT,
         help="Markdown docs root (default: docs-src).",
     )
+    parser.add_argument(
+        "--conda-recipe",
+        type=Path,
+        default=_CONDA_RECIPE,
+        help=(
+            "The conda recipe to scan below `context:` "
+            "(default: packaging/conda-forge/recipe.yaml). Its own flag rather "
+            "than a third root, so a test pointing the other two at a temporary "
+            "directory does not silently start asserting on the real recipe."
+        ),
+    )
     args = parser.parse_args(argv)
 
     violations = collect_violations(
         src_root=args.src_root,
         docs_root=args.docs_root,
+        conda_recipe=args.conda_recipe,
     )
     if not violations:
         print("check_no_tracker_refs: no tracker IDs found in published surfaces.")

@@ -33,10 +33,17 @@ in `pyproject.toml`.
 
 **Phase 5** — Agent assists with conda steps (sha256 fetch, recipe update, branch+PR).
 Work [`sdd/CONDA-FORGE.md`](../../../sdd/CONDA-FORGE.md) as written; it owns the routes,
-the rules and the walkthrough, and the checklist bullet links to it. The one failure
-worth naming here: the step is **not** done when the PR is open — it is done when
+the rules and the walkthrough, and the checklist bullet links to it. Two failures worth
+naming here. The sha256 update is **two** files: edit `packaging/conda-forge/recipe.yaml`,
+then run `hatch run gen-conda-feedstock` and commit the regenerated
+`packaging/conda-forge/feedstock/recipe.yaml` alongside it, or `lint` fails on a stale
+copy. And the step is **not** done when the PR is open — it is done when
 `conda search -c conda-forge remote-store` lists the new version, because the upload
 happens after merge and can fail.
+
+The copy-out itself is now one `cp` of the generated file plus `build.number`: nothing is
+stripped by hand. `python scripts/drift_feedstock.py` confirms the result **after** the
+merge, never before — it reads the feedstock's `main`.
 
 ## Phase 4: Ship (Skill Agent)
 

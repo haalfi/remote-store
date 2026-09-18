@@ -11,13 +11,28 @@ on:
 jobs:
   validate:
     runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      # BOTH recipes, not just the source. `feedstock/recipe.yaml` is what a
+      # release copies onto `conda-forge/remote-store-feedstock`, so it is the
+      # one whose structural validity a conda-forge build actually depends on;
+      # rendering only the source would leave the shipped file unvalidated
+      # while the generator's `--check` proved only that the two agree. The
+      # action takes a single `recipe-path`, so this is a matrix rather than a
+      # second argument.
+      matrix:
+        recipe:
+          - packaging/conda-forge/recipe.yaml
+          - packaging/conda-forge/feedstock/recipe.yaml
+    name: render-${{ matrix.recipe }}
     steps:
       - uses: actions/checkout@v7
       - uses: prefix-dev/rattler-build-action@v0.2.39
         with:
-          recipe-path: packaging/conda-forge/recipe.yaml
+          recipe-path: ${{ matrix.recipe }}
           # `--variant-config` supplies `python_min`, which conda-forge provides
-          # globally and the recipe therefore does not define. Without it this
-          # render fails on an undefined variable; see variants.yaml.
+          # globally and neither recipe therefore defines. Without it this
+          # render fails on an undefined variable; see variants.yaml. The path
+          # is repo-relative, so it serves both matrix legs unchanged.
           build-args: --render-only --variant-config packaging/conda-forge/variants.yaml
           upload-artifact: false
