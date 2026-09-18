@@ -14,8 +14,6 @@ audience:
   - user.site
 discovery_followups:
   - BUG-291
-expected_ripples:
-  - sdd/backlogid.json
 phases:
   - id: orient
     name: Orient
@@ -107,7 +105,12 @@ phases:
         read_type: gate
         extract: >-
           A fix that breaks an except clause without earning the marker owes the
-          migration section alone
+          migration section alone. Retrospective: applied that way for four
+          rounds, then reversed on the user's call in round 5 — the section's own
+          What-to-change lists two dead handlers, a flipped condition and three
+          classes newly refusing at the root after close(), so the marker was
+          earned. Taking it also makes check_breaking_migration_link.py enforce
+          the entry-to-section link, which it cannot see on an unmarked entry
   - id: fix
     name: Fix passes, under review
     steps:
@@ -179,8 +182,12 @@ surprising_ripples:
   - tests/backends/conformance/test_close_posture.py
   - tests/backends/conformance/aio/test_close_posture.py
   - docs-src/guides/custom-backend-guide.md
-# Derivation: `git log --oneline origin/master..HEAD` minus the implementing
-# commit. Re-run before the final push rather than carried; at the time of
-# writing that is b2de2da (implements, does not count) plus one commit per
-# review round, and the value below counts the commit carrying this line.
-review_rounds: 4
+# Derivation: `git log --oneline origin/master..HEAD | wc -l`, minus one for the
+# implementing commit (the branch's first, "The store root meets BE-029 against an
+# absent container" — named by subject rather than SHA, which a rebase rewrites),
+# **plus one for the commit that carries this line** when it does not exist yet at
+# the moment the count is taken. Re-run at every push rather than carried. It went
+# stale at four consecutive pushes here, each time by exactly that off-by-one,
+# which is the argument for deriving the field after the loop ends rather than
+# maintaining it during: RFC-0015 D4, not in this pilot.
+review_rounds: 6

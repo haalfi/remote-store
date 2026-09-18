@@ -207,9 +207,10 @@ recursive walk (BUG-257); `ping()` does not report a vanished store as healthy
 payload size (BUG-253); a listing does not leak its driver's exception on the
 one backend where it still does (BUG-280); a caller who meets a failure on **any** backend catches
 the type the docs promised and can tell *which* failure it was, rather than an
-empty message (BUG-276, which is now that clause's whole remainder — its
-Disposition is exactly whether the base-class fall-throughs should be classified
-or merely given a message); a connect that fails locally is not reported
+empty message (BUG-276 and BUG-291, the clause's two remaining halves: BUG-276 is
+whether the base-class fall-throughs should be classified or merely given a
+message, BUG-291 is a mapped error being re-mapped to something weaker on the way
+out); a connect that fails locally is not reported
 against the caller's path
 (BUG-273); and a newly
 registered backend cannot pass CI without meeting BE-004, BE-005 and BE-021
@@ -253,8 +254,10 @@ are unmeasured are named in BE-021, and a fourteenth backend is still exempt by
 default, which is BK-345 below rather than a residue of this. The catches-the-promised-type half is met on SFTP's connect path, closed
 by BUG-265: a refused port and a DNS failure raise the `BackendUnavailable`
 fifteen docstrings and the health-check guide promise, where both raised the
-base class. That is one backend's connect arm, not the clause — BUG-276 carries
-the rest, and the two are the same promise met at different depths. It also
+base class. That is one backend's connect arm, not the clause — BUG-276 and
+BUG-291 carry the rest, and all three are the same promise met at different
+depths: an error with no message, an error re-typed to a weaker class, and an
+error of the wrong class outright. It also
 opened BUG-273: the same connect path still answers the wrong type when the
 connect is rejected locally — `PermissionDenied` blaming the caller's key on the
 `EACCES` shape, whose trigger is unknown, and — since BUG-275 gave the errno
@@ -295,11 +298,14 @@ listing was outside it; now the bound is part of the clause and missing it is a
 breach of it. Writing a rule into a clause enlarges what the clause governs, and
 the two items that changed side are the evidence — neither was a new defect, and
 both were pre-existing behaviour that a new sentence made answerable.
-**Three** further disagreements sit in this section and none of them is with the
+**Four** further disagreements sit in this section and none of them is with the
 absent-container clause, which is why they are not in that count: BUG-253 is
 between two halves of one Graph operation; BUG-245 is a constructor leak, which
-BE-021 scopes to operations and so does not reach; and BUG-256 is about a health
-probe, which is off the roster BE-021 governs.
+BE-021 scopes to operations and so does not reach; BUG-256 is about a health
+probe, which is off the roster BE-021 governs; and BUG-291 is with BE-020 and
+AZ-029 — a closed store reporting the base class where those promise
+`BackendUnavailable` — which is the never-leak invariant's mirror rather than the
+invariant itself.
 BUG-259 and BUG-254 (BE-029's root row, on the write path and on the read side)
 and BK-358 (the never-leak clause reached through the shared stream wrapper) were
 of this kind too and have all closed; each is named in the closures above rather

@@ -248,7 +248,9 @@ returns the stream as-is.
 **Contrast with existence checks:**
 
 - `get_file_info()` raises `NotFound` if missing.
-- `get_folder_info()` raises `NotFound` if the folder doesn't exist.
+- `get_folder_info()` raises `NotFound` if the folder doesn't exist — **except at
+  the store root**, which is a folder that always exists, so it aggregates to
+  zero rather than raising even when your container is gone.
 - `exists()` never raises — returns `bool`.
 
 ---
@@ -343,10 +345,10 @@ because a backend can order one correctly and still get another wrong:
 |---|---|---|
 | File-shaped | your root rejection on `read`, `get_file_info`, `delete`, `move`/`copy` source | `test_close_posture_outranks_root_rejection` |
 | Write-shaped | the separate, differently-worded guard on `write`, `write_atomic`, `open_atomic` and the `move`/`copy` destination | `test_close_posture_outranks_root_write_rejection` |
-| Probe and aggregate | the key-decided answers Step 5 tells you to give for `exists("")`, `is_file("")`, `is_folder("")` and `get_folder_info("")` | `test_close_posture_outranks_the_root_probes` |
+| Probe and aggregate | the key-decided root answers: `exists("")`, `is_file("")` and `is_folder("")` from Step 5, and `get_folder_info("")` from Step 10 | `test_close_posture_outranks_the_root_probes` |
 
-The third row is the one to watch if you followed Step 5's advice to answer the
-root yourself before the call. That answer returns before your lazy client
+The third row is the one to watch if you took Steps 5 and 10's advice to answer
+the root yourself before the call. That answer returns before your lazy client
 accessor is ever touched, so the guard that normally rides on it never runs —
 which is how five backends in this repo came to answer a closed store instead of
 refusing it. Put the closed check ahead of the root test, not after it.

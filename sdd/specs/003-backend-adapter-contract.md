@@ -161,7 +161,7 @@ both: a backend that gets the order wrong is observable as exactly the wrong
 error class or a spurious success, which is what the cells below assert.
 
 **BE-020 outranks this check.** On a backend with `close_is_terminal = True`,
-every call on the root that would otherwise reach the storage system raises
+every operation in the table above except the addressing row raises
 `BackendUnavailable` *after* `close()` — not `InvalidPath` from a file- or
 write-shaped guard, not the row's definitional answer from a probe or aggregate,
 and not a class the operation's own error handling substituted. A closed backend
@@ -170,11 +170,21 @@ wants to run first: a backend that has one MUST still run the closed guard ahead
 of it, or the answer depends on which guard the implementer happened to write
 first.
 
-**The bound is BE-020's own.** That section delivers the guarantee through the
-lazy client accessors, so an operation that reaches no client is outside it:
-`native_path`, `to_key` and `resolve` are pure key transformations, sit in the
-table above, and answer after `close()` exactly as they did before. Everything
-else in the table is in scope.
+**The one carve-out is addressing, and it is named rather than derived.**
+`native_path(path)` / `resolve(path).native_path` — the table's addressing row —
+are pure key transformations that answer after `close()` exactly as they did
+before, because BE-025's round-trip identity has nothing to do with a live
+connection. (`to_key` is addressing's other half and is governed under § Round-trip
+consequence rather than by a row here; it takes the same carve-out.)
+
+**Do not restate that carve-out as "whatever reaches no client".** The
+key-decided root answers — `exists`, `is_file`, `is_folder`, `get_folder_info`
+— reach no client *either*, by construction: that is what deciding the root from
+the key means, and it is precisely why each of them has to call the closed guard
+explicitly rather than inherit it from a lazy accessor. A criterion phrased by
+mechanism exempts the operations this clause exists to bind, which is the reading
+that let five classes answer a closed store. The carve-out is the addressing row,
+by name, and nothing else.
 
 **Three pre-checks, and they need separate cells.** The rule reaches the root
 three ways, and no one cell reaches another's path:
