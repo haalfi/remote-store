@@ -6586,6 +6586,34 @@
 
               
             
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../adrs/0039-support-tracks-upstream-security-fixes/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    0039: A Python Version Is Supported While Upstream Still Fixes It
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
           </ul>
         </nav>
       
@@ -10911,11 +10939,20 @@ framework</a>): placement →
    values.</p>
 </li>
 <li>
-<p><a id="code-examples-sourced"></a><strong>Code examples are sourced, not written.</strong> [review-enforced]
-   Doc code blocks come from <code>examples/snippets/</code> via <code>pymdownx.snippets</code>
-   <code>--8&lt;--</code> regions, so CI catches API drift. Hand-written fences are allowed
-   only when the snippet cannot execute in CI (e.g. needs real credentials);
-   note the reason inline.</p>
+<p><a id="code-examples-sourced"></a><strong>A fenced block in published prose is generated or sourced, not typed.</strong> [review-enforced]
+   Two homes, by what the block is. <strong>Runnable code</strong> comes from
+   <code>examples/snippets/</code> via <code>pymdownx.snippets</code> <code>--8&lt;--</code> regions, so CI catches
+   API drift. A <strong>generated non-code artefact</strong> — a diagram whose content is
+   derived from the repository, such as the support-window chart on the
+   dependency-policy page — comes from a <code>gen_*</code> script with a <code>--check</code> gate,
+   and is committed under <code>docs-src/_data/</code> and included the same way; a
+   diagram with dates in it is a Rule 1 violation the moment it is typed by
+   hand. Hand-written fences are allowed only where neither applies: a snippet
+   that cannot execute in CI (e.g. it needs real credentials), or an
+   illustration of markup rather than a thing being described. Note the reason
+   inline. An illustration containing a literal <code>--8&lt;--</code> must escape it with a
+   leading <code>;</code>, or <code>pymdownx.snippets</code> expands it — silently, until
+   <code>check_paths: true</code> made a missing target fail the build.</p>
 </li>
 <li>
 <p><a id="kernsatz"></a><strong>Lead with the Kernsatz</strong> — the core claim, stated first. [review-enforced]

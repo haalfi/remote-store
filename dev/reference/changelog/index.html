@@ -8540,6 +8540,34 @@
 
               
             
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../explanation/design/adrs/0039-support-tracks-upstream-security-fixes/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    0039: A Python Version Is Supported While Upstream Still Fixes It
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
           </ul>
         </nav>
       
@@ -14776,10 +14804,13 @@
 <p>This project follows <a href="https://semver.org/">Semantic Versioning</a>. Pre-1.0, minor bumps may contain breaking changes.</p>
 <h2 id="unreleased">[Unreleased]<a class="headerlink" href="#unreleased" title="Permanent link">&para;</a></h2>
 <ul>
+<li>BK-375: Python versions are now supported for as long as CPython ships security fixes for them, which is longer than the 3-year window previously published; 3.11 through 3.14 all stay, and 3.10's support ends when upstream's does on 2026-10-04.</li>
+<li>BK-373: The <a href="https://docs.remotestore.dev/stable/explanation/dependency-policy/">dependency policy</a> draws the Python support windows as a chart with a marker at today, so the rule no longer has to be computed from five release dates.</li>
+<li>BK-377: Both published support windows are now derived rather than remembered: a release-time check dates every version a raised dependency floor excludes, and the weekly dependency guard reports how each interpreter stands against its window.</li>
 <li>BK-374: The <a href="https://docs.remotestore.dev/stable/reference/tested-versions/">Tested versions</a> page publishes each extra's declared range beside the version CI was last green against, states how deep its check goes, and names the extras it does not cover.</li>
 <li>BK-369: Scheduled CI now installs each extra at the floor of every range it declares and runs its smoke there, on the oldest supported Python, so the dependency policy states what is checked weekly and on which interpreter rather than that nothing re-derives a floor.</li>
 <li>ID-018: The conda-forge channel serves 0.32.0 with the corrected dependency floors plus the <code>tomli</code> and <code>aiohttp</code> constraints; it had been publishing 0.30.0, whose <code>run_constraints</code> predated them.</li>
-<li>BK-371: Publish the dependency and version policy as 15 citable rules, adopting <a href="https://scientific-python.org/specs/spec-0000/">SPEC 0</a>'s support windows: a Python version is supported at least 3 years after its release, and a dependency version at least 2 years after its own.</li>
+<li>BK-371: Publish the dependency and version policy as 15 citable rules, including support windows for interpreters and dependency versions; a dependency version stays supported at least 2 years after its own release, and the interpreter window is the one BK-375 states above.</li>
 </ul>
 <h2 id="0320-2026-09-13">[0.32.0] - 2026-09-13<a class="headerlink" href="#0320-2026-09-13" title="Permanent link">&para;</a></h2>
 <h3 id="added">Added<a class="headerlink" href="#added" title="Permanent link">&para;</a></h3>

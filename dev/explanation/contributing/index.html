@@ -5393,6 +5393,23 @@
     </span>
   </a>
   
+    <nav class="md-nav" aria-label="When to bump">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#which-artefact-governs-each-of-the-two-support-windows" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Which artefact governs each of the two support windows
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
 </li>
         
           <li class="md-nav__item">
@@ -6959,6 +6976,34 @@
     
   
     0038: An Absent Container Reads as Absence, Except Where the Contract Is Silent
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../design/adrs/0039-support-tracks-upstream-security-fixes/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    0039: A Python Version Is Supported While Upstream Still Fixes It
   
 
     
@@ -11476,6 +11521,23 @@
     </span>
   </a>
   
+    <nav class="md-nav" aria-label="When to bump">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#which-artefact-governs-each-of-the-two-support-windows" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Which artefact governs each of the two support windows
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
 </li>
         
           <li class="md-nav__item">
@@ -12029,12 +12091,12 @@ how to make it.</p>
 </tr>
 <tr>
 <td>Dependency floor raised, excluding a version younger than that</td>
-<td>treat as <strong>breaking</strong>, row above</td>
+<td><strong>breaking</strong> → <strong>minor</strong> (<code>0.X.0</code>) pre-1.0</td>
 <td>Raising a floor past a release still inside its support window</td>
 </tr>
 <tr>
 <td>Dropping a Python version</td>
-<td><strong>minor</strong> (<code>0.X.0</code>)</td>
+<td><strong>breaking</strong> → <strong>minor</strong> (<code>0.X.0</code>) pre-1.0</td>
 <td>Raising <code>requires-python</code>, dropping a classifier</td>
 </tr>
 <tr>
@@ -12046,9 +12108,38 @@ how to make it.</p>
 </table>
 <p>The three dependency and interpreter rows above are the maintainer side of
 <a href="../dependency-policy/#rule-8">Rules 8 and 9</a> on the
-published dependency policy. That page tells users a Python version is
-supported at least 3 years after its release and a dependency version at least
-2; these rows are where that promise is honoured or broken.</p>
+published dependency policy. That page tells users a Python version is supported
+for as long as CPython ships security fixes for it, and a dependency version for
+at least 2 years after its own release; these rows are where that promise is
+honoured or broken.</p>
+<p><strong>Dropping an interpreter carries the same obligation as raising a floor</strong>, and
+for the same reason: a user on the interpreter being dropped, whose install
+stops resolving, is in exactly the position of one excluded by a floor raise. So it earns a <code>**Breaking**</code>
+CHANGELOG entry and a <code>## vPREV to vX.Y.Z</code> section in
+<a href="../../reference/migration/"><code>docs-src/reference/migration.md</code></a>, both in the
+change that drops it. Pre-1.0 the bump itself is <strong>minor</strong>, which both rows now
+state outright rather than delegating: what makes the change breaking is the
+obligation, not the version number it lands on. It also moves
+every spelling of the supported set at once; the ripple-check's
+<a href="https://github.com/haalfi/remote-store/blob/master/sdd/CLAUDE-REFERENCE.md#pre-work-index"><strong>Supported interpreter set</strong></a> row
+enumerates them and says, per spelling, what watches it — and it is worth
+reading rather than summarising here, since no gate compares the three groups
+to each other and <code>README.md</code>'s prose is watched by nothing at all.</p>
+<p><a id="authority-for-the-support-windows"></a></p>
+<h4 id="which-artefact-governs-each-of-the-two-support-windows">Which artefact governs each of the two support windows<a class="headerlink" href="#which-artefact-governs-each-of-the-two-support-windows" title="Permanent link">&para;</a></h4>
+<p><code>sdd/DRIFT-RULES.md</code> Rule 4 asks for this in writing, beside the contract it
+arbitrates:</p>
+<ul>
+<li><strong>The supported interpreter set</strong> is the <code>Programming Language :: Python</code>
+  classifiers in <code>pyproject.toml</code>, declared in the comment above them.
+  <code>requires-python</code> and <code>ci.yml</code>'s <code>ALL_PYTHONS</code> are narrower or derived, not
+  co-equal. <code>scripts/python_support.py</code> holds each version's release date, which
+  is the one hand-kept input.</li>
+<li><strong>Rule 9's two-year test</strong> is the declared floors in <code>pyproject.toml</code> against
+  PyPI's upload dates, and <code>pyproject.toml</code> governs: a floor is what a user
+  resolves against, and PyPI supplies only the date. <code>hatch run
+  check-support-windows</code> derives the answer — see Phase 0 below.</li>
+</ul>
 <h3 id="stability-tiers">Stability tiers<a class="headerlink" href="#stability-tiers" title="Permanent link">&para;</a></h3>
 <p>The tier table moved to
 <a href="../dependency-policy/#stability-tiers"><code>docs-src/explanation/dependency-policy.md</code> § Stability tiers</a>,
@@ -12080,7 +12171,10 @@ land somewhere useful.</p>
 <li>[ ] No open <code>[~]</code> items shipping in this release in <code>sdd/BACKLOG.md</code> — complete and move to <code>BACKLOG-DONE.md</code>, or defer (<code>[ ]</code>). <strong>One shape neither remedy covers, and a third disposition for it:</strong> an item whose remaining work is a step of <em>this</em> release that can only run after the tag exists — updating a downstream package channel from the published artifact is the standing example — can neither be completed (the step has not happened) nor honestly deferred (the rest of it shipped). Ship that item <code>[~]</code>, and record in its body why neither remedy fits and what closes it. Deliberately narrow: an item that <em>could</em> be finished or deferred takes one of the first two, and "it is nearly done" is not this case</li>
 <li>[ ] <code>hatch run report-trace-outcomes</code> read, and the open trace-outcome revisit item in <a href="https://github.com/haalfi/remote-store/blob/master/sdd/BACKLOG.md"><code>sdd/BACKLOG.md</code></a> closed against it — that item names the successor which becomes the next release's ticket, and states what to record: the corpus totals (the report keeps no history, so that line is the baseline the following release differences against), the references selected, and a decision of act, defer, or accept for each. A report, never a gate: nothing here blocks the release, but the decision is written down rather than remembered</li>
 <li>[ ] <code>[Unreleased]</code> section in CHANGELOG.md is non-empty</li>
-<li>[ ] Support windows checked against <a href="../dependency-policy/#rule-8">Rules 8 and 9</a>: if this release raises a dependency floor, every version it newly excludes is at least 2 years past its own release, or the entry is marked <code>**Breaking**</code> and carries a migration section. Nothing derives this — the published promise is the only record, which is why it is a checklist line rather than a gate</li>
+<li>[ ] Support windows checked against <a href="../dependency-policy/#rule-8">Rules 8 and 9</a>, which now have mechanisms behind them rather than this line's memory:</li>
+<li><strong>Rule 9, the dependency window:</strong> run <code>hatch run check-support-windows</code>. It compares every user-facing extra's floors against the previous tag's, and for each floor that moved it names the newest release the raise newly excludes and how old that release is. Exit 0 means every raise is patch-eligible; exit 1 means at least one excludes a version younger than 2 years — that entry is marked <code>**Breaking**</code> and carries a migration section — or that a raise could not be dated, which is investigated rather than assumed compliant. <strong>Not in any gate, deliberately:</strong> it fetches release dates from PyPI, so it cannot run offline or on every pull request. Read the date it prints alongside the verdict; the answer depends on the day it ran</li>
+<li><strong>Rule 8, the interpreter window:</strong> open the chart on the <a href="../dependency-policy/#rule-8">dependency policy page</a>. Each bar runs from a version's release to the end of its security support and the vertical line is today, both drawn when the page is viewed, so it is current whenever you look — which is why it rather than the issue is this step's surface. <strong>A crossing is surfaced on the rolling <code>[drift-guard]</code> issue</strong>, whose <strong>Support windows</strong> section carries the same rows with days remaining: a version past its window with no row in <code>infra/drift-locks/PYTHON-SUPPORT.md</code> holds that issue open, and is a decision this release either takes or registers. <strong>So a closed issue is itself the answer</strong> that nothing has crossed — the section is only written when the run has a body to write, so do not read a missing one as a missing check, or an old one as today's. <strong>Advisory either way:</strong> a closed window licenses a drop, it never requires one — nothing is broken on the day one closes</li>
+<li><strong><code>requires-python</code> is covered by the same obligation as a floor.</strong> If this release raises it or drops a classifier, the entry is marked <code>**Breaking**</code> and carries a migration section, per <a href="#when-to-bump">the interpreter row in the bump table above</a>. A user whose install stops resolving is in the same position whichever of the two moved</li>
 <li>[ ] Decide bump level (patch / minor / major) per the table above</li>
 </ul>
 <h3 id="phase-1-content-freeze">Phase 1: Content freeze<a class="headerlink" href="#phase-1-content-freeze" title="Permanent link">&para;</a></h3>

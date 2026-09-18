@@ -5251,10 +5251,10 @@
 </li>
         
           <li class="md-nav__item">
-  <a href="#drift-guardyml-transitive-dependency-drift" class="md-nav__link">
+  <a href="#drift-guardyml-transitive-dependency-drift-and-the-support-windows" class="md-nav__link">
     <span class="md-ellipsis">
       
-        drift-guard.yml — transitive dependency drift
+        drift-guard.yml — transitive dependency drift, and the support windows
       
     </span>
   </a>
@@ -6628,6 +6628,34 @@
     
   
     0038: An Absent Container Reads as Absence, Except Where the Contract Is Silent
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../adrs/0039-support-tracks-upstream-security-fixes/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    0039: A Python Version Is Supported While Upstream Still Fixes It
   
 
     
@@ -10860,10 +10888,10 @@
 </li>
         
           <li class="md-nav__item">
-  <a href="#drift-guardyml-transitive-dependency-drift" class="md-nav__link">
+  <a href="#drift-guardyml-transitive-dependency-drift-and-the-support-windows" class="md-nav__link">
     <span class="md-ellipsis">
       
-        drift-guard.yml — transitive dependency drift
+        drift-guard.yml — transitive dependency drift, and the support windows
       
     </span>
   </a>
@@ -11076,7 +11104,7 @@ documented here by convention, not enforcement.</p>
 <p><code>ci.yml</code> (push / PR) is the gating test matrix, not a maintenance guard: a
 contributor is present to read its result, so it sits outside this family and is
 documented in <a href="../../contributing/"><code>CONTRIBUTING.md</code></a>.</p>
-<h3 id="drift-guardyml-transitive-dependency-drift"><code>drift-guard.yml</code> — transitive dependency drift<a class="headerlink" href="#drift-guardyml-transitive-dependency-drift" title="Permanent link">&para;</a></h3>
+<h3 id="drift-guardyml-transitive-dependency-drift-and-the-support-windows"><code>drift-guard.yml</code> — transitive dependency drift, and the support windows<a class="headerlink" href="#drift-guardyml-transitive-dependency-drift-and-the-support-windows" title="Permanent link">&para;</a></h3>
 <ul>
 <li><strong>What it does:</strong> watches <strong>both ends</strong> of every declared range, in two lanes.
   The <em>newest</em> lane re-resolves every <code>remote-store[&lt;extra&gt;]</code> against the latest
@@ -11089,17 +11117,35 @@ documented in <a href="../../contributing/"><code>CONTRIBUTING.md</code></a>.</p
   drift, because the isolated install is the only thing that would catch an
   extra failing to declare a package another extra supplies. It never edits
   <code>pyproject.toml</code> and never auto-merges a floor/pin — early warning, not
-  remediation.</li>
+  remediation.
+  <strong>And a third thing, with no lane and no artefact behind it:</strong> the report job
+  renders each supported interpreter's standing against the support window
+  <a href="../../dependency-policy/#rule-8">Rule 8</a> publishes, from
+  the classifiers plus the release dates in <code>scripts/python_support.py</code>. That
+  half fires on the <strong>calendar</strong>, which is why it lives here rather than in a
+  gate: no diff can carry a date passing, and a check that only runs when
+  somebody cuts a release is no better than remembering for a promise that comes
+  due whether or not we ship.</li>
 <li><strong>When:</strong> Monday 07:00 UTC, plus manual <code>workflow_dispatch</code> (optionally for a
   single extra, a single lane, or as a <code>dry_run</code> that renders the body into the
   job summary and leaves the issue alone). A narrowed dispatch that is <strong>not</strong> a
   dry run re-renders the whole issue body from its slice and drops every other
-  row (BUG-282); <code>/drift</code> step 3 is the path that says so at the point of use.</li>
+  row (BUG-282); <code>/drift</code> step 3 is the path that says so at the point of use.
+  Weekly is the <strong>resolution the promise needs</strong> for the support-window half,
+  not a calendar habit: what invalidates that section is a date passing, a new
+  CPython final release (each October) or a classifier edit, and nothing is
+  broken on the day a window closes — so seven days of latency costs nothing,
+  while much longer and a release could ship past a window nobody had read.</li>
 <li><strong>Where the finding shows up:</strong> a single <strong>rolling <code>[drift-guard]</code> GitHub
-  Issue</strong> — opened or updated when anything is unresolved in either lane,
-  commented "cleared" and closed when both are clean. The per-extra <strong>smoke
+  Issue</strong> — opened or updated when anything is unresolved in either lane or an
+  interpreter has crossed its window unregistered, commented "cleared" and
+  closed when all of that is clear. The per-extra <strong>smoke
   verdict is in the issue body</strong>, per lane, with the phase that failed; the run
-  carries the logs behind it.</li>
+  carries the logs behind it. The <strong>Support windows</strong> section carries one row
+  per supported interpreter — release date, when CPython's security support for
+  it ends, and days remaining or days past — and renders on a clean week too,
+  because how much time is <em>left</em> is the number a reader cannot compute from the
+  policy page's prose.</li>
 <li><strong>What goes red:</strong> a newest-lane smoke failure fails its leg, which is the
   signal the <code>/drift</code> skill has always read. A <strong>floor</strong> leg never does: its
   findings are advisory decisions about a published range, several are known-bad
@@ -11107,11 +11153,24 @@ documented in <a href="../../contributing/"><code>CONTRIBUTING.md</code></a>.</p
   says is not a channel to rely on. <code>infra/drift-locks/KNOWN-FINDINGS.md</code> is
   what separates an owned finding from a new one, in either lane — an
   unregistered one holds the issue open, a registered one renders with its
-  owner and does not. On a week whose findings are <em>all</em> registered the issue
-  closes, so the rows render nowhere and the register itself is where they are
-  read.
+  owner and does not. On a week whose findings are <em>all</em> registered, <strong>and no
+  interpreter is past its window unregistered</strong>, the issue closes, so the rows
+  render nowhere and the register itself is where they are read.
   A registered <em>newest</em>-lane finding still fails its leg; the register changes
-  what the issue presents as news, never what CI does.</li>
+  what the issue presents as news, never what CI does.
+  <strong>A row past its <code>Review by</code> stops silencing</strong>, in both registers, so the
+  finding is reported as new again with its owner still named. That date used to
+  be read by nothing.
+  <strong>A support-window crossing never goes red.</strong> It holds the issue open when the
+  interpreter has no unexpired row in <code>infra/drift-locks/PYTHON-SUPPORT.md</code> — a
+  register separate from <code>KNOWN-FINDINGS.md</code> because the two are keyed
+  differently — and it <em>forces the update</em> only on an <strong>unnarrowed</strong> run, every
+  lane and every extra. A crossing is true on every run, so without that a
+  single-extra dispatch would be turned into the body-destroying rewrite the
+  <strong>When</strong> bullet warns about. A narrowed run still may not <strong>close</strong> over such
+  a crossing: it answers <code>leave</code>, because a rewritten body is recoverable and a
+  closed issue is not, so the narrowing withholds both and the next scheduled
+  run decides.</li>
 <li><strong>How to act:</strong> run the <strong><code>/drift</code> skill</strong>. Refreshes are gated per extra on
   that extra's smoke verdict; the skill's steps 3–5 are authoritative on the
   gating, including how a major bump, a red smoke and a red floor are each
@@ -11119,7 +11178,15 @@ documented in <a href="../../contributing/"><code>CONTRIBUTING.md</code></a>.</p
   the PR. Note the reach is per-extra and uneven — an extra whose smoke cannot
   load the package that drifted returns a green verdict about nothing (BUG-250)
   — and the floor lane runs on one interpreter, so a floor that breaks only on a
-  newer one is outside it.</li>
+  newer one is outside it.
+  A <strong>Support windows</strong> row is not a refresh and the skill does not treat it as
+  one: it is a decision to take or re-affirm, and the skill's step 3 says which.
+  What this guard watches is <strong>Rule 8's</strong> window, the interpreter one. The other
+  published window — Rule 9's, whether a floor <em>raise</em> excludes a release still
+  inside its own two-year window — is not this guard's at all, in whole or in
+  part. It fires on a diff rather than on the calendar, so it sits in the release
+  path as <code>hatch run check-support-windows</code>, named from
+  <a href="../../contributing/#release"><code>CONTRIBUTING.md</code> Phase 0</a>.</li>
 </ul>
 <h3 id="mutationyml-mutation-testing"><code>mutation.yml</code> — mutation testing<a class="headerlink" href="#mutationyml-mutation-testing" title="Permanent link">&para;</a></h3>
 <ul>
