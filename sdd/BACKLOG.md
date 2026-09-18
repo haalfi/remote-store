@@ -677,7 +677,7 @@ compliant the day before.
   Found by ID-252's closing review reading outside its own diff; shipped by
   BUG-261.
 
-- [ ] **BUG-291 — Nine Azure `except Exception` arms re-type an already-typed error, so a closed store reports the base class**
+- [ ] **BUG-291 — Sixteen Azure `except Exception` arms re-type an already-typed error, so a closed store reports the base class**
   spec: BE-020, BE-021, AZ-029 · effort: S · audience: user.api
   `classify_azure_error` has no `RemoteStoreError` pass-through arm: it falls
   through every `isinstance` check to `return RemoteStoreError(str(exc), ...)`.
@@ -690,15 +690,21 @@ compliant the day before.
   catch is narrowed to `ResourceNotFoundError`, returned `BackendUnavailable`.
   Both Azure classes, sync and async.
   **BUG-254 fixed its own two sites and this is the rest of the class.**
-  Derivation — every `except Exception` in the two Azure backend files whose
-  handler reaches `_classify` or `classify_azure_error`, excluding the two
-  `get_folder_info` arms BUG-254 closed and the two `_errors` context managers,
-  which are the mappers themselves and correctly re-raise `RemoteStoreError`
-  first:
-  `_azure.py` in `readinto`, `delete`, `delete_folder`, `list_files`,
-  `list_folders`, `iter_children`, `detect_hns`, `adetect_hns`; and
-  `aio/backends/_azure.py` in `read`, `delete`, `delete_folder`, `list_files`
-  (two arms), `list_folders` (two), `iter_children` (two).
+  Derivation — an AST pass over the two Azure backend files selecting every bare
+  `except Exception` whose handler *calls* `_classify` or `classify_azure_error`,
+  then excluding the two `get_folder_info` arms BUG-254 closed and the two
+  `_errors` context managers, which are the mappers themselves and correctly
+  re-raise `RemoteStoreError` first. **Sixteen: seven sync, nine async.**
+  `_azure.py` in `delete`, `delete_folder`, `list_files`, `list_folders`,
+  `iter_children`, `detect_hns`, `adetect_hns`; and `aio/backends/_azure.py` in
+  `read`, `delete`, `delete_folder`, `list_files` (two arms), `list_folders`
+  (two), `iter_children` (two).
+  **The pass has to read the handler body rather than a window around it.** A
+  grep for the classifier name near an `except Exception` also matches
+  `_azure.py`'s `readinto`, whose handler re-raises `OSError(str(exc))` and only
+  *mentions* the classifier in a comment explaining that `_ErrorMappingStream`
+  does the classifying later. That site is not in the class and is not in the
+  sixteen — and that grep spelling is how this item was first filed at nine.
   **Not every arm is reachable with a typed error in hand**, which is the work:
   each one needs its own answer to "what already-typed error can arrive here",
   and the listing arms are the ones whose `try` opens on a guarded accessor the

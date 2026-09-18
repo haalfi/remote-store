@@ -72,9 +72,11 @@ except PermissionDenied:
 A branch keyed on `exists("")` being `False` on those two lanes also now takes
 the other arm; that is a condition rather than a handler.
 [`Store.ping()`](api/store.md) — `Backend.check_health()` if you hold a backend
-directly — remains the operation whose job is to report an unreachable store;
-see the v0.30.0 to v0.31.0 section for which backends it answers on and which it
-does not.
+directly — remains the operation whose job is to report an unreachable store. Of
+the backends this section changes it answers on `S3Backend`, `S3Boto3Backend`,
+`AzureBackend` and `AsyncAzureBackend`, and **not** on `S3PyArrowBackend`, whose
+probe discards what comes back. The v0.30.0 to v0.31.0 section carries the rest
+of that list.
 
 **`exists("")` is still not a portable "is my store there?"** — less so than
 before, in fact: it now answers `True` on every measured backend whether or not
@@ -603,11 +605,17 @@ a deleted root, and `S3Boto3Backend`, `AzureBackend`, `AsyncAzureBackend` and
 
 **The root had not caught up everywhere in v0.31.0.** Five backend classes
 answered the root differently once the container was gone, in two opposite
-directions: two answered `exists("")` and `is_folder("")` as `False`, and three
-raised `NotFound` from `get_folder_info("")`. That is closed in v0.33.0. **For
-the root, prefer its section over the last row of this table** if you are
-upgrading past v0.32.0; the other rows are about paths under the container, are
-unchanged by that release, and this table is still their only home.
+directions. Only one of those is about a backend this section names: on
+`S3Boto3Backend`, `AzureBackend` and `AsyncAzureBackend`, `get_folder_info("")`
+raised `NotFound` — the **third** row of the table above, which no longer holds
+at the root for those three from v0.33.0. (The other direction, `exists("")` and
+`is_folder("")` answering `False`, was on `S3Backend` and `S3PyArrowBackend`,
+which this section does not cover; the last row above was already right for the
+five backends it does.)
+
+**If you are upgrading past v0.32.0**, read the v0.32.0 to v0.33.0 section for
+what the root answers now. Every row above still holds for paths *under* the
+container, and this table is still their only home.
 
 **What to change.** An `except` clause that caught the old error to detect a
 store that is not there no longer fires. [`Store.ping()`](api/store.md) —

@@ -131,11 +131,12 @@ async def test_close_posture_outranks_root_write_rejection(async_backend: AsyncB
 # Every root-reaching read operation, enumerated rather than sampled. See the
 # sync sibling for why the axis is parametrised: the operations were patched from
 # a reading once and the next round found the one that reading missed.
+# Value: the call, and the extra capability beyond ``LIST``. See the sync sibling.
 _ROOT_PROBES = {
-    "exists": lambda b, root: b.exists(root),
-    "is_file": lambda b, root: b.is_file(root),
-    "is_folder": lambda b, root: b.is_folder(root),
-    "get_folder_info": lambda b, root: b.get_folder_info(root),
+    "exists": (lambda b, root: b.exists(root), None),
+    "is_file": (lambda b, root: b.is_file(root), None),
+    "is_folder": (lambda b, root: b.is_folder(root), None),
+    "get_folder_info": (lambda b, root: b.get_folder_info(root), Capability.METADATA),
 }
 
 
@@ -158,15 +159,18 @@ async def test_close_posture_outranks_the_root_probes(
     not have caught it — which held for ``get_folder_info`` too, where the async
     twin had the same downgraded error class as the sync one.
     """
+    call, extra = _ROOT_PROBES[op_name]
     _require(async_backend, Capability.LIST)
+    if extra is not None:
+        _require(async_backend, extra)
     await async_backend.aclose()
     if async_backend.close_is_terminal:
         with pytest.raises(BackendUnavailable, match="is closed"):
-            await _ROOT_PROBES[op_name](async_backend, root)
+            await call(async_backend, root)
     else:
         error: Exception | None = None
         try:
-            await _ROOT_PROBES[op_name](async_backend, root)
+            await call(async_backend, root)
         except Exception as exc:  # noqa: BLE001 -- any typed error is acceptable here
             error = exc
         assert "is closed" not in str(error)

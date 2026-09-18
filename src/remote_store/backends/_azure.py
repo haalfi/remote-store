@@ -560,11 +560,13 @@ class AzureBackend(Backend):
 
         Probes the blob first (one HEAD); if absent, probes for a folder (an HNS
         directory, or any blob under the ``path/`` prefix on flat accounts). The
-        root always exists. An absent *container* answers ``False`` — a container
-        that does not exist holds no path either, and this probe never raises for
-        a missing path. A *denied* container still raises: the prefix listing is
-        the determinant here, so it fails closed rather than reporting "nothing
-        there" for something you may not see.
+        root always exists, decided from the key before any request, so it answers
+        ``True`` whether the container is missing or denied. **For every other
+        path** an absent *container* answers ``False`` — a container that does not
+        exist holds no path either, and this probe never raises for a missing path
+        — while a *denied* container raises: the prefix listing is the determinant
+        there, so it fails closed rather than reporting "nothing there" for
+        something you may not see.
 
         Raises:
             PermissionDenied: If credentials are rejected or lack access (401/403).
@@ -634,9 +636,10 @@ class AzureBackend(Backend):
     def is_folder(self, path: str) -> bool:
         """Return ``True`` if *path* is an existing folder (HNS directory or non-HNS prefix).
 
-        The root is always a folder. Costs one directory HEAD (HNS) or a
-        one-item prefix listing (flat). An absent container answers ``False``, on
-        the same terms as ``exists``.
+        The root is always a folder, decided from the key and so answered for a
+        denied container as well as a missing one. Costs one directory HEAD (HNS)
+        or a one-item prefix listing (flat) for every other path, where an absent
+        container answers ``False`` on the same terms as ``exists``.
 
         Raises:
             PermissionDenied: If credentials are rejected or lack access (401/403).

@@ -29,6 +29,8 @@ from remote_store._errors import BackendUnavailable, InvalidPath
 from tests.backends.conformance._helpers import _require
 
 if TYPE_CHECKING:
+    from collections.abc import Callable
+
     from remote_store._backend import Backend
 
 _PROBE = "bk298-close-posture-probe.txt"
@@ -138,13 +140,16 @@ def test_close_posture_outranks_root_write_rejection(backend: Backend, root: str
 # operation that can answer the root without a round trip belongs here, and a
 # future one is added to this dict rather than argued about.
 #
-# ``get_folder_info`` is the folder-shaped member and is gated separately below,
-# since a LIST-capable backend need not aggregate.
-_ROOT_PROBES = {
-    "exists": lambda b, root: b.exists(root),
-    "is_file": lambda b, root: b.is_file(root),
-    "is_folder": lambda b, root: b.is_folder(root),
-    "get_folder_info": lambda b, root: b.get_folder_info(root),
+# Value: the call, and the extra capability it needs beyond the ``LIST`` gate the
+# cell applies to all of them. ``get_folder_info`` is the folder-shaped member and
+# is gated on ``METADATA`` as well, which is what actually governs it
+# (``_capabilities.py``); the three probes are ungated beyond ``LIST``, because
+# BE-004 / BE-005 bind every backend that has them.
+_ROOT_PROBES: dict[str, tuple[Callable[[Backend, str], object], Capability | None]] = {
+    "exists": (lambda b, root: b.exists(root), None),
+    "is_file": (lambda b, root: b.is_file(root), None),
+    "is_folder": (lambda b, root: b.is_folder(root), None),
+    "get_folder_info": (lambda b, root: b.get_folder_info(root), Capability.METADATA),
 }
 
 
@@ -172,20 +177,29 @@ def test_close_posture_outranks_the_root_probes(backend: Backend, root: str, op_
     operations someone thought of.
 
     Gated on LIST for the same reason ``TestBackendRootPath`` is: "the root is a
-    folder" presupposes a backend that has folders.
+    folder" presupposes a backend that has folders, and BE-029 scopes itself to
+    the LIST declarers for exactly that reason. A backend that declares
+    ``METADATA`` without ``LIST`` is therefore out of scope here rather than
+    missed — it has no root to speak of. Each operation adds its own capability
+    on top of that gate.
     """
+    call, extra = _ROOT_PROBES[op_name]
     _require(backend, Capability.LIST)
+    if extra is not None:
+        _require(backend, extra)
     backend.close()
     if backend.close_is_terminal:
         with pytest.raises(BackendUnavailable, match="is closed"):
-            _ROOT_PROBES[op_name](backend, root)
+            call(backend, root)
     else:
-        # Reusable: it re-initialises rather than refusing, and BE-004 / BE-005
-        # forbid these three from raising for an inaccessible path, so the answer
-        # itself is not asserted here — only that it is not the terminal guard.
+        # Reusable: it re-initialises rather than refusing. The answer itself is
+        # not asserted — only that it is not the terminal guard. For the three
+        # probes BE-004 / BE-005 forbid a raise at all; ``get_folder_info`` may
+        # raise, and what it raises against a re-initialised store is the
+        # backend's business, not this cell's.
         error: Exception | None = None
         try:
-            _ROOT_PROBES[op_name](backend, root)
+            call(backend, root)
         except Exception as exc:  # noqa: BLE001 -- any typed error is acceptable here
             error = exc
         assert "is closed" not in str(error)

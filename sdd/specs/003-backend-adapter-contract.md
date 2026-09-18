@@ -161,14 +161,20 @@ both: a backend that gets the order wrong is observable as exactly the wrong
 error class or a spurious success, which is what the cells below assert.
 
 **BE-020 outranks this check.** On a backend with `close_is_terminal = True`,
-**any** call on the root *after* `close()` raises `BackendUnavailable` — not
-`InvalidPath` from a file- or write-shaped guard, not the row's definitional
-answer from a probe, and not a class the operation's own error handling
-substituted: BE-020 states its guarantee without exception, and a closed backend
-is the more fundamental error. A root pre-check is cheap and so naturally wants
-to run first — a backend that has one MUST still run the closed guard ahead of
-it, or the answer depends on which guard the implementer happened to write
+every call on the root that would otherwise reach the storage system raises
+`BackendUnavailable` *after* `close()` — not `InvalidPath` from a file- or
+write-shaped guard, not the row's definitional answer from a probe or aggregate,
+and not a class the operation's own error handling substituted. A closed backend
+is the more fundamental error, and a root pre-check is cheap and so naturally
+wants to run first: a backend that has one MUST still run the closed guard ahead
+of it, or the answer depends on which guard the implementer happened to write
 first.
+
+**The bound is BE-020's own.** That section delivers the guarantee through the
+lazy client accessors, so an operation that reaches no client is outside it:
+`native_path`, `to_key` and `resolve` are pure key transformations, sit in the
+table above, and answer after `close()` exactly as they did before. Everything
+else in the table is in scope.
 
 **Three pre-checks, and they need separate cells.** The rule reaches the root
 three ways, and no one cell reaches another's path:

@@ -139,6 +139,23 @@ phases:
           on ``is_folder``, so a backend probe change carries a published
           Store-level answer with it. Neither the ripple-check table nor the
           item anticipated this path
+      - file: docs-src/guides/custom-backend-guide.md
+        section: "Step 12"
+        read_type: verify
+        outcome: misleading
+        extract: >-
+          It teaches "Both root pre-checks — the file-shaped one and the write
+          one — and the conformance lane has a cell for each", while telling an
+          implementer four steps earlier to answer the root from the key. That
+          pairing is the hazard this item spent two rounds on, warned about by
+          the two guards that do not cover it. The ripple-check table reaches
+          this guide only through the CAPABILITIES row, which did not trigger
+      - file: src/remote_store/_capabilities.py
+        section: "METADATA"
+        read_type: reference
+        extract: >-
+          get_folder_info is gated by METADATA, not LIST, so the conformance
+          cell's own comment promising a separate gate had to become one
   - id: verify
     name: Verify
     steps:
@@ -161,8 +178,9 @@ surprising_ripples:
   - sdd/specs/040-sql-blob-backend.md
   - tests/backends/conformance/test_close_posture.py
   - tests/backends/conformance/aio/test_close_posture.py
+  - docs-src/guides/custom-backend-guide.md
 # Derivation: `git log --oneline origin/master..HEAD` minus the implementing
 # commit. Re-run before the final push rather than carried; at the time of
 # writing that is b2de2da (implements, does not count) plus one commit per
 # review round, and the value below counts the commit carrying this line.
-review_rounds: 3
+review_rounds: 4

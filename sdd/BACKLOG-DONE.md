@@ -2377,8 +2377,8 @@ if evidence changes; these are retired.
   every backend" phrasing and the first draft inherited it, which is
   [principle 5](../CLAUDE.md#principles) the wrong way round: the guide is where
   a user acts on it.
-  **Two open items bound what the guide is allowed to promise, and round 1 found
-  the guide promising past both.** **BUG-256** measures `check_health()`
+  **Two items then open bound what the guide was allowed to promise, and round 1
+  found the guide promising past both.** **BUG-256** measures `check_health()`
   returning cleanly on `SQLBlobBackend` against a dropped table, so naming
   `ping()` as *the* replacement was wrong on one of the five backends the
   absent-container section lists — and the draft then forbade the `write()`
@@ -2386,9 +2386,10 @@ if evidence changes; these are retired.
   first place. **BUG-254** measures `get_folder_info("")` raising `NotFound` on
   `S3Boto3Backend`, `AzureBackend` and `AsyncAzureBackend` against an absent
   container, three of those same five, so the root row promised a v0.31.0 answer
-  three of them do not give. The guide now states both bounds instead, which is
-  the option that keeps it true today; the two items carry the paragraphs their
-  closure deletes.
+  three of them did not give. The guide was made to state both bounds instead,
+  which was the option that kept it true then; each item carried the paragraphs
+  its closure would delete. BUG-254 has since closed and deleted its half, so the
+  guide states BUG-256's `ping()` bound alone.
   **Their enumerations moved, and both were repaired here.** BUG-256's "five
   documentation surfaces" is six with the new section, and BUG-254 acquired a
   published-docs consequence it did not carry. A fix scoped to a stale
