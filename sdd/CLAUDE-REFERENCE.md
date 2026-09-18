@@ -49,7 +49,7 @@ Read this before starting. One line per trigger.
 | Public API (`__all__`)        | README Store API table, `reference/api/*.md` directive + index summary + `_nav.yml`, `examples/`, user guides; check `backends/__init__.py` *and* `aio/__init__.py` `__all__` too. `index.md` parity machine-verified by `gen-api-check` (ID-173): every public symbol needs an index row (or an entry on the small `_INDEX_EXEMPT` backend-companion allowlist) |
 | Extension                     | `__init__.py` exports (ADR-0013 rules), `pyproject` extras, README extensions table, `reference/api/extensions/*` + index + `_nav.yml`, guides, examples, CHANGELOG, BACKLOG |
 | Dependency                    | `pyproject` extras + pins, `packaging/conda-forge/recipe.yaml` `run_constraints`, README install, docs prerequisites |
-| Supported interpreter set     | Seven spellings move together, and two of them are watched by nothing. `pyproject.toml` `requires-python` **and** its `Programming Language :: Python` classifiers (the classifiers govern — ADR-0039); `packaging/conda-forge/variants.yaml` `python_min`; `ci.yml` `MIN_PYTHON` **and** `ALL_PYTHONS`; `ci-full.yml`'s `test-full` matrix; `README.md`'s "Requires Python 3.10+" — those seven. **Two further homes, neither one of the seven:** `scripts/python_support.py`'s `PYTHON_RELEASES`, where *adding* a classifier owes a release date in the same change or the generator refuses, while a dropped version's row stays (a past date is immutable and nothing iterates it); and ADR-0032, which enumerates the set and is superseded rather than edited. Watched (five): `requires-python`, `python_min` and `MIN_PYTHON` held equal by `check_conda_recipe_pins.py`; `ALL_PYTHONS` and the `ci-full.yml` matrix held against each other by `check_ci_full_matrix.py`, which never reads `pyproject.toml`. **Watched by nothing (two): the classifiers — which govern — and the README prose.** Neither further home is watched either. A **drop** is breaking ([CONTRIBUTING § When to bump](../CONTRIBUTING.md#when-to-bump)) |
+| Supported interpreter set     | Seven spellings move together, and two of them are watched by nothing. `pyproject.toml` `requires-python` **and** its `Programming Language :: Python` classifiers (the classifiers govern — ADR-0039); `packaging/conda-forge/variants.yaml` `python_min`; `ci.yml` `MIN_PYTHON` **and** `ALL_PYTHONS`; `ci-full.yml`'s `test-full` matrix; `README.md`'s "Requires Python 3.10+" — those seven. **Two further homes, neither one of the seven:** `scripts/python_support.py`'s `PYTHON_RELEASES`, where *adding* a classifier owes a release date in the same change or the generator refuses, while a dropped version's row stays (a past date is immutable and nothing iterates it); and ADR-0032, which enumerates the set and is superseded rather than edited. **What watches what, per spelling** — stated without a count, because every count written here has been wrong: `requires-python`, `python_min` and `MIN_PYTHON` are held equal to each other by `check_conda_recipe_pins.py`; `ALL_PYTHONS` and the `ci-full.yml` matrix against each other by `check_ci_full_matrix.py`, which never reads `pyproject.toml`; the **classifiers** against the committed chart by `gen_python_support.py --check` (in `preflight` and `docs-gate`), so editing them without regenerating is caught, though nothing holds them against another spelling; and `README.md`'s prose by **nothing**, as with ADR-0032. No gate compares the three groups to each other. A **drop** is breaking ([CONTRIBUTING § When to bump](../CONTRIBUTING.md#when-to-bump)) |
 | `CAPABILITIES` ClassVar       | `003-backend-adapter-contract.md` (BE-003), `test_capabilities.py`, `conformance/test_identity.py`, custom-backend guide, `examples/snippets/` |
 | `_GATING` dict                | `001-store-api.md` (STORE-gate entries), `test_store.py`, guides if a method's cap docs change, `store.md` admonitions (verified by `gen-api-check`, ID-170). Two independent constants: sync in `_store.py`, async in `aio/_async_store.py` (ID-194); both verified against their pages (`store.md`, `aio/store.md`) by `gen-api-check` (ID-172); keep both in step with their classes |
 | `_BACKEND_GATING` dict        | `003-backend-adapter-contract.md` (BE-027), `backend.md` admonitions (verified by `gen-api-check`, ID-171). Async counterpart `_ASYNC_BACKEND_GATING` (`gen_graph.py`, ASYNC-045a) → `aio/backend.md` `AsyncBackend` admonitions (verified by `gen-api-check`, ID-172) |
@@ -169,14 +169,20 @@ Read this at verify-end (after the diff is complete) and during PR review. Each 
 |                            | silently shrink the published claim; and ADR-0032,        |
 |                            | which names the set and is superseded rather than         |
 |                            | edited ([000-process.md Rule 4](000-process.md#rules))   |
-|                            | **What watches what:** `check_conda_recipe_pins.py`       |
-|                            | holds `requires-python`, `python_min` and `MIN_PYTHON`    |
-|                            | equal; `check_ci_full_matrix.py` holds `ALL_PYTHONS`      |
-|                            | against `ci-full.yml` and never reads `pyproject.toml`.   |
-|                            | The classifiers, the README prose and the ADR are         |
-|                            | watched by **nothing**, and nothing holds `ALL_PYTHONS`   |
-|                            | against the classifiers — which is why this row           |
-|                            | enumerates rather than pointing at a gate                 |
+|                            | **What watches what, per spelling** — no count, because   |
+|                            | every count written here has been wrong: `requires-python`,|
+|                            | `python_min`, `MIN_PYTHON` → held equal to each other by  |
+|                            | `check_conda_recipe_pins.py`. `ALL_PYTHONS`, `ci-full.yml`'s|
+|                            | matrix → held against each other by                       |
+|                            | `check_ci_full_matrix.py`, which never reads              |
+|                            | `pyproject.toml`. The **classifiers** → held against the   |
+|                            | committed chart by `gen_python_support.py --check`, in     |
+|                            | `preflight` and `docs-gate`, so editing them without      |
+|                            | regenerating is caught (measured: dropping one exits 1);   |
+|                            | *not* held against any other spelling. `README.md`'s prose |
+|                            | → **nothing**. ADR-0032 → nothing. So no gate compares the |
+|                            | spellings to each other across those three groups, which   |
+|                            | is why this row enumerates rather than pointing at a gate  |
 |                            | **Dropping** a version is **breaking**: `**Breaking**`    |
 |                            | on the CHANGELOG stub and a migration section, per        |
 |                            | [CONTRIBUTING § When to bump](../CONTRIBUTING.md#when-to-bump) |

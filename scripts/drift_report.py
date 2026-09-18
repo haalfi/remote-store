@@ -56,10 +56,12 @@ Drift-gate::
         smoke verdict — plus each supported interpreter's standing against the security-support
         window Rule 8 publishes, as a rolling GitHub issue it opens, updates or closes; it acts
         on that state rather than asserting anything, so nothing it FINDS makes it exit non-zero.
-        Two inputs it cannot use do: a register row whose `Review by` is not an ISO date, because a
-        date that cannot be compared would silence its finding forever, and a `Programming Language
-        :: Python` classifier with no release date, because the window section is then uncomputable.
-        Both are reported rather than raised
+        What does is an input it cannot interpret — a `Review by`, a `--today`, an `--expect-extras`
+        — since guessing would silence a finding, drop the window section or misreport which legs
+        ran. Every one of them is reported rather than raised, which a test pins structurally rather
+        than by listing them. Stated as a class on purpose: earlier revisions of this block counted
+        the cases, and every count was falsified by the next input added. Beyond the inputs, a
+        failing `gh` call still exits non-zero as a traceback
     domain:     process
 """
 
@@ -358,6 +360,19 @@ PYTHON_SUPPORT_REGISTER = Path(__file__).resolve().parent.parent / "infra" / "dr
 _PYTHON_REGISTER_ROW_RE = re.compile(
     r"^\|\s*`(?P<version>\d+\.\d+)`\s*\|(?P<owner>[^|]*)\|[^|]*\|(?P<review>[^|]*)\|\s*$"
 )
+
+
+class UnusableInputError(Exception):
+    """An argument this script cannot interpret, so it reports instead of guessing.
+
+    Same posture as ``RegisterDateError`` and ``python_support``'s
+    ``UnknownInterpreterError``: a value that should be a list or a date and is
+    not would otherwise reach ``main`` as a traceback, and a traceback on the
+    weekly run says less than the sentence the raiser can write. The workflow
+    interpolates ``--expect-extras`` and ``--expect-lanes`` from another job's
+    outputs, so a malformed one is the failure most likely to arrive from a
+    template rather than from a person.
+    """
 
 
 class RegisterDateError(Exception):
@@ -713,12 +728,24 @@ def _parse_expected(raw: str) -> list[str]:
     passed through verbatim rather than recomputed, so a dispatch narrowed to
     one extra does not report the other thirteen as lost, and one narrowed to
     one lane does not report the other lane's fourteen legs as lost either.
+
+    Raises:
+        UnusableInputError: If the value opens like JSON and does not parse, or
+            parses to something that is not a list of names. Naming the value is
+            the point — the caller is a workflow expression, so the operator
+            needs to see what arrived, not a decoder traceback.
     """
     text = (raw or "").strip()
     if not text:
         return []
     if text.startswith("["):
-        return [str(item) for item in json.loads(text)]
+        try:
+            items = json.loads(text)
+        except json.JSONDecodeError as exc:
+            raise UnusableInputError(f"{text!r} starts like JSON but does not parse: {exc}") from exc
+        if not isinstance(items, list):
+            raise UnusableInputError(f"{text!r} parsed to {type(items).__name__}, not a list of names")
+        return [str(item) for item in items]
     return [part.strip() for part in text.split(",") if part.strip()]
 
 
@@ -1203,8 +1230,14 @@ def main(argv: list[str] | None = None) -> int:
     except RegisterDateError as exc:
         print(f"::error::unusable register: {exc}", file=sys.stderr)
         return 1
-    expected = _parse_expected(args.expect_extras)
-    lanes = _parse_expected(args.expect_lanes) or list(LANES)
+    # Same posture again, for the two arguments the workflow interpolates from
+    # another job's outputs rather than a person typing them.
+    try:
+        expected = _parse_expected(args.expect_extras)
+        lanes = _parse_expected(args.expect_lanes) or list(LANES)
+    except UnusableInputError as exc:
+        print(f"::error::unusable --expect-extras/--expect-lanes: {exc}", file=sys.stderr)
+        return 1
 
     # The calendar state is attached BEFORE the emptiness guard below, which is
     # the whole point of it living on `Reports`: a run whose download produced

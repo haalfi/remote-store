@@ -1245,6 +1245,59 @@ class TestSupportWindowSignal:
         assert rc == 1
         assert "--today must be YYYY-MM-DD" in capsys.readouterr().err
 
+    def test_a_malformed_expect_extras_is_reported_rather_than_tracebacked(
+        self, drift_report, tmp_path, monkeypatch, capsys
+    ):
+        """The input a workflow expression supplies, so the one most likely to arrive broken.
+
+        `--expect-extras` and `--expect-lanes` are interpolated from another
+        job's outputs, not typed. Measured before this fix: a value opening `[`
+        that did not parse reached `main` as a `json.JSONDecodeError` traceback
+        from inside `_parse_expected`, which told an operator nothing about
+        which argument was wrong.
+        """
+        monkeypatch.setattr(drift_report, "_gh", lambda *a, **k: pytest.fail("touched the issue"))
+        rc = drift_report.main(
+            [
+                str(tmp_path),
+                "--repo",
+                "r",
+                "--run-url",
+                "u",
+                "--title",
+                "t",
+                "--today",
+                str(TODAY),
+                "--expect-extras",
+                "[bad",
+            ]
+        )
+        assert rc == 1
+        err = capsys.readouterr().err
+        assert "::error::" in err
+        assert "'[bad'" in err, "name the value that arrived, not just the failure"
+
+    def test_expect_extras_that_parses_to_a_non_list_is_refused(self, drift_report, tmp_path, monkeypatch, capsys):
+        """`[` is the JSON sniff, so valid JSON of the wrong shape gets that far."""
+        monkeypatch.setattr(drift_report, "_gh", lambda *a, **k: pytest.fail("touched the issue"))
+        rc = drift_report.main(
+            [
+                str(tmp_path),
+                "--repo",
+                "r",
+                "--run-url",
+                "u",
+                "--title",
+                "t",
+                "--today",
+                str(TODAY),
+                "--expect-lanes",
+                '["ok"',
+            ]
+        )
+        assert rc == 1
+        assert "::error::" in capsys.readouterr().err
+
     def test_an_undated_classifier_is_reported_rather_than_tracebacked(
         self, drift_report, python_support, tmp_path, monkeypatch, capsys
     ):
@@ -1421,6 +1474,51 @@ class TestThisModuleIsReproducible:
             if name in self.TIME_DEPENDENT and "today" not in {kw.arg for kw in node.keywords}
         ]
         assert offenders == [], f"pass today=TODAY, or the assertion is about the day it ran: {offenders}"
+
+    def test_every_non_zero_exit_from_main_is_reported(self):
+        """The `Drift-gate` block's claim, pinned as a class rather than a count.
+
+        It said "nothing it FINDS makes it exit non-zero" and then listed the
+        inputs that do. The list was wrong twice — first at one entry, then at
+        two — because each round added an exit path without revisiting the
+        sentence. Counting is the wrong instrument: this asserts the *property*
+        instead, that every `return <non-zero>` in `main` is preceded by a
+        report on stderr, so a fourth exit path cannot be silent and cannot
+        falsify the declaration either.
+        """
+        import ast
+
+        source = Path(SCRIPTS / "drift_report.py").read_text(encoding="utf-8")
+        tree = ast.parse(source)
+        main = next(n for n in ast.walk(tree) if isinstance(n, ast.FunctionDef) and n.name == "main")
+
+        def reports_to_stderr(stmt: ast.stmt) -> bool:
+            call = stmt.value if isinstance(stmt, ast.Expr) else None
+            if not isinstance(call, ast.Call):
+                return False
+            name = call.func.id if isinstance(call.func, ast.Name) else None
+            return name == "print" and any(kw.arg == "file" for kw in call.keywords)
+
+        # Structural, not a line window: the report must be a SIBLING statement
+        # in the same block as the `return`. A first attempt scanned the six
+        # preceding source lines and passed a mutation that added a bare
+        # `return 1`, because the window reached back into an unrelated branch's
+        # print -- a guard that cannot fail is worse than none.
+        exits, unreported = 0, []
+        for node in ast.walk(main):
+            body = getattr(node, "body", None)
+            for block in (body, getattr(node, "orelse", None), getattr(node, "finalbody", None)):
+                if not isinstance(block, list):
+                    continue
+                for i, stmt in enumerate(block):
+                    if not (isinstance(stmt, ast.Return) and isinstance(stmt.value, ast.Constant) and stmt.value.value):
+                        continue
+                    exits += 1
+                    if not any(reports_to_stderr(earlier) for earlier in block[:i]):
+                        unreported.append(stmt.lineno)
+
+        assert exits >= 3, f"expected main's known non-zero exits to be found, saw {exits}"
+        assert unreported == [], f"a non-zero exit with no report in its own block, at line(s) {unreported}"
 
     def test_no_main_invocation_in_this_module_omits_today(self):
         """`main` takes the day as `--today` inside its argv rather than a kwarg.

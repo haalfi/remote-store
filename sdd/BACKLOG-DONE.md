@@ -310,9 +310,12 @@ if evidence changes; these are retired.
   prices dropping an interpreter as **breaking** with the migration obligation,
   Phase 0's support-window line names the mechanisms instead of saying nothing
   derives them, and the ripple-check gained a **Supported interpreter set** row
-  enumerating all seven spellings and saying which are watched: five are, and
-  the two that are not are the classifiers — which govern the set — and the
-  README prose.
+  enumerating all seven spellings and saying, per spelling, what watches it.
+  That cell was written as a count three times and was wrong every time — four,
+  then five-and-two, then six-and-one — because `gen_python_support.py --check`,
+  which this same change added, watches the classifiers by holding them against
+  the committed chart. It now maps each spelling to its watcher and states no
+  total; `README.md`'s prose is the one watched by nothing.
   `ADR-0032` was left standing rather than superseded, because the set did not
   change here — recorded as a decision, since the item flagged it as one the
   change had to make.

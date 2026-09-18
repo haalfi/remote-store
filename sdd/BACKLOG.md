@@ -2194,13 +2194,17 @@ working, and quietly describing the library as something it is not.
   `Programming Language :: Python` classifiers,
   `packaging/conda-forge/variants.yaml`'s `python_min`, `ci.yml`'s `MIN_PYTHON`
   and `ALL_PYTHONS`, `ci-full.yml`'s `test-full` matrix, and `README.md`'s
-  "**Requires Python 3.10+.**" prose. **Five are watched:** `requires-python`,
-  `python_min` and `MIN_PYTHON` held equal by `check_conda_recipe_pins.py`;
-  `ALL_PYTHONS` and `ci-full.yml`'s `test-full` matrix held against each other
-  by `check_ci_full_matrix.py`, which never reads `pyproject.toml`. **Two are
-  not:** the classifiers — which govern the set — and the README prose. Nor does
-  anything hold `ALL_PYTHONS` against the classifiers, and ADR-0032 is a further
-  unwatched home, though not one of the seven.
+  "**Requires Python 3.10+.**" prose. **What watches which, with no total** —
+  the total has been wrong at every value it has been given: `requires-python`,
+  `python_min` and `MIN_PYTHON` are held equal to each other by
+  `check_conda_recipe_pins.py`; `ALL_PYTHONS` and `ci-full.yml`'s `test-full`
+  matrix against each other by `check_ci_full_matrix.py`, which never reads
+  `pyproject.toml`; the classifiers against the committed chart by
+  `gen_python_support.py --check`, so a classifier edit without a regenerate is
+  caught (measured: dropping one exits 1) though nothing holds them against
+  another spelling; and `README.md`'s prose by nothing, as with ADR-0032. **No
+  gate compares the three groups to each other**, which is the gap this item
+  has to close by hand.
   **Two things become dead rather than merely stale.**
   `toml = ["tomli>=1.1.0; python_version < '3.11'"]` exists only to keep 3.10
   resolving — `tomllib` is stdlib from 3.11 — so a 3.11 floor makes it a
