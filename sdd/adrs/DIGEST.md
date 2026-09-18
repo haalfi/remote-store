@@ -1262,19 +1262,17 @@ derives the resolver's row from that module's own call sites rather than a list.
 ### [ADR-0039](0039-support-tracks-upstream-security-fixes.md): A Python Version Is Supported While Upstream Still Fixes It
 
 **A Python version is supported for as long as CPython ships security fixes for
-it.** That is the promise Rule 8 now publishes, with SPEC 0's three-year window
-named as the ecosystem floor beneath it so a reader can see where ours sits
-relative to the schedule their other dependencies follow. Ours is the longer of
-the two, and the rule promises a floor rather than a ceiling: we may support a
-version past the end of its security support, and will not support one for less.
+it.** That is the promise Rule 8 now publishes, with SPEC 0's window named as
+the ecosystem floor beneath it so a reader can see where ours sits relative to
+the schedule their other dependencies follow. Ours is the longer of the two, and
+the rule promises a floor rather than a ceiling: we may support a version past
+the end of its security support, and will not support one for less.
 
-**3.11, 3.12, 3.13 and 3.14 stay**, because none is near its window and no
-declared dependency has dropped even 3.10.
-
-**3.10 goes when upstream stops fixing it**, which § The measured inputs puts at
-2026-10-04 (five years after its 2021-10-04 release, per PEP 619). That drop is BK-380's, not this record's: raising `requires-python`
-moves every spelling of the supported set, is a breaking change, and takes its
-own change. Until it lands the position is this decision rather than inertia,
+**A version goes when upstream stops fixing it, and dropping it is its own
+change.** Raising `requires-python` moves every spelling of the supported set at
+once and is a breaking change, so the roster is the classifiers' to state and
+each window's end is arithmetic over a release date. Until a drop lands, the
+versions still supported are supported by this decision rather than by inertia,
 which is the whole point of writing it down.
 
 **The window is derived, not remembered.** `scripts/python_support.py` holds the

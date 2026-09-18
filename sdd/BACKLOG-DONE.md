@@ -257,16 +257,54 @@ if evidence changes; these are retired.
   3.11 2027-10-24, 3.12 2028-10-02, 3.13 2029-10-07, 3.14 2030-10-07. On
   2026-09-17 that left 3.10 seventeen days out and everything else between one
   and four years.
-  **The inputs the item asked for, gathered.** No declared dependency has
-  dropped 3.10 — every floor's current release carries `requires_python` between
-  `>=3.7` and `>=3.10`, and `dagster`'s `<3.15` is the only upper bound — so the
-  support is not notional. `toml`'s marker-gated `tomli` is the one floor that
-  exists only for 3.10. And the two oldest legs cost 20.9% of `ci.yml`'s
-  job-minutes while never being its longest job, against 41.6% of
-  `ci-full.yml`'s where one of them always is. ADR-0039 carries every figure
-  with the query it came from, the four caveats that bound them, and the one
-  queue-contention effect recorded as an unmeasured hypothesis rather than a
-  finding.
+  **The inputs the item asked for, gathered. ADR-0039 states the rule and
+  deliberately carries no figure, so this entry is where they live** — a
+  measurement is history and belongs in the historical register, where going
+  stale is the point rather than a defect.
+  *Interpreter dates*, from each version's release-schedule PEP (`x.y.0 final`
+  line, fetched from `raw.githubusercontent.com/python/peps/main/peps/`, because
+  python.org and devguide.python.org were both unreachable from the environment
+  this was gathered in). Every PEP states the same lifetime — "security updates
+  (source only) will be released until 5 years after the release of x.y.0
+  final", except PEP 745, which spells the number "five" — and gives the end
+  only as a month, so the day is `final + 5 years`:
+  3.10 / PEP 619 / 2021-10-04 / ends 2026-10-04; 3.11 / 664 / 2022-10-24 /
+  2027-10-24; 3.12 / 693 / 2023-10-02 / 2028-10-02; 3.13 / 719 / 2024-10-07 /
+  2029-10-07; 3.14 / 745 / 2025-10-07 / 2030-10-07. Under the three-year reading
+  3.10 and 3.11 were both past and 3.12 was fifteen days out.
+  *No declared dependency has dropped 3.10*, gathered 2026-09-16 from PyPI's
+  JSON API over every direct dependency of every user-facing extra: every
+  floor's current release carries `requires_python` between `>=3.7` and
+  `>=3.10`, and `dagster`'s `<3.15` is the only upper bound — so the support is
+  not notional. `toml`'s marker-gated `tomli>=1.1.0; python_version < '3.11'` is
+  the one floor that exists only for 3.10.
+  *CI cost of the two oldest legs*, from the Actions API
+  (`/runs/{id}/jobs?filter=latest`), duration as `completed_at − started_at`,
+  skipped jobs excluded, legs read from `ci.yml`'s `setup` job and
+  `.python-version`: 3.10 is three jobs (it carries `typecheck` as
+  `MIN_PYTHON`, so the two legs are not like-for-like) and 3.11 is two.
+  `ci.yml` over runs 35254023596, 35011027743 and 34848524875: 5.94 and 4.92 min
+  of a 52.02 job-min run, 20.9%. `ci-full.yml` over 35266446011, 35254023571 and
+  35203315474: 8.27 and 7.43 min of 37.78 job-min, 41.6%. These are
+  runner-occupancy job-minutes, not contributor wait, since both matrices fan out
+  in parallel: in `ci.yml` the legs are never the longest job (`test-primary` is,
+  3.80–3.95 min against the slowest 3.10 job's 2.57–2.80), while in `ci-full.yml`
+  a 3.10 or 3.11 job is the longest in all three runs, so dropping 3.10 takes
+  about 0.92 min off an 8.74 min mean and `test-full (3.14)` at ~7.4 min becomes
+  the bound.
+  *Four caveats the figures carry rather than shed:* billable minutes are
+  unavailable on a public repository (`get_workflow_run_usage` returns
+  `total_ms: 0` per job, so only a per-run `run_duration_ms` exists and it cannot
+  be apportioned); two of the three newest `master` pushes were docs-only with
+  the matrix skipped, so the `ci.yml` runs used are two to three days older than
+  the newest; caches were warm in all eight runs; and `test-full (3.10)` ranges
+  7.15–9.18 min under runner contention, so its mean is not a property of the
+  interpreter.
+  *One effect is unmeasured* and recorded as a hypothesis rather than a finding:
+  on a `master` push both workflows fire together, 29 concurrent jobs against the
+  20-slot cap ADR-0032 works under, and critical-path jobs queued 2.87–2.98 min
+  in the contended run against 0.32–1.23 min in an uncontended one. Freeing seven
+  slots would shorten that wait; by how much would need a trial run.
   **3.10's drop is BK-380, deliberately.** This item's own body said raising
   `requires-python` moves the whole spelling set and takes its own change, so
   the position on 3.10 is now a decision with a date rather than inertia, and

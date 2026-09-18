@@ -44,12 +44,6 @@ rule for the column rather than one per register. **A row whose date is not an
 ISO date is a hard failure**, not a row that never expires: a silencer with no
 end date is the hazard the enforcement removes.
 
-This is a change. Until the interpreter register was built, nothing compared
-these dates against today, and this section was a paragraph saying so as a bound
-the file did not enforce. Every row below is dated `2026-12-31`, so nothing
-changes until then; from 2027-01-01 an unfixed finding reappears rather than
-waiting to be noticed.
-
 **One bound this file still does not enforce, stated so it is not assumed.**
 Nothing checks that a row's `Owner` is still open, so a row outliving the item it
 names silences that leg until its `Review by` arrives. It bites hardest in

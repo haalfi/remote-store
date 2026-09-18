@@ -472,8 +472,8 @@ at least 2 years after its own release; these rows are where that promise is
 honoured or broken.
 
 **Dropping an interpreter carries the same obligation as raising a floor**, and
-for the same reason: a user on 3.10 whose install stops resolving is in exactly
-the position of one excluded by a floor raise. So it earns a `**Breaking**`
+for the same reason: a user on the interpreter being dropped, whose install
+stops resolving, is in exactly the position of one excluded by a floor raise. So it earns a `**Breaking**`
 CHANGELOG entry and a `## vPREV to vX.Y.Z` section in
 [`docs-src/reference/migration.md`](docs-src/reference/migration.md), both in the
 change that drops it — pre-1.0 that still lands in a minor bump, which is why

@@ -67,9 +67,10 @@ the version stays. `Review by` is when the row expires, per the section above.
 | Interpreter | Owner | Rationale | Review by |
 |---|---|---|---|
 
-**The table is empty, and that is the current state rather than a stub.**
-Derivation: `python_support.windows(date.today())` over the committed
-classifiers — on 2026-09-17 no supported interpreter was past its window (3.10
-was the closest, 17 days out, ending 2026-10-04). 3.10's drop is BK-380; the
-weekly run will report the crossing when it happens, which is the mechanism
-working rather than a gap in this file.
+**An empty table is a valid state, not a stub.** A row exists only to say that
+somebody has decided to keep an interpreter past its window; with no such
+decision outstanding there is nothing to write down, and the weekly run reports
+a crossing whether or not this file has ever held a row. Where each interpreter
+currently stands is derived, never recorded here: `scripts/python_support.py`
+holds the release dates, and the **Support windows** section of the rolling
+`[drift-guard]` issue reports the standing.

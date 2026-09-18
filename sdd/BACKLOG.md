@@ -1682,9 +1682,10 @@ watched rather than hand-copied (BK-370); every upstream that can break us on it
 own schedule has a standing watch (ID-229, ID-225), and the support window we
 publish is exercised by decision rather than by inertia — **met** by BK-375, in
 [BACKLOG-DONE.md](BACKLOG-DONE.md), which tied the promise to CPython's own
-security-support lifetime and recorded the position on every supported
-interpreter in [ADR-0039](adrs/0039-support-tracks-upstream-security-fixes.md),
-leaving 3.10's drop as BK-380 rather than as inertia; the one
+security-support lifetime as a rule in
+[ADR-0039](adrs/0039-support-tracks-upstream-security-fixes.md) and recorded the
+measured position on every supported interpreter in that entry, leaving 3.10's
+drop as BK-380 rather than as inertia; the one
 deprecation that watch has caught is answered before the release that enforces
 it (BUG-281); the window the calendar puts on a published promise is derived
 rather than remembered at release time — **met** by BK-377, in
@@ -2224,10 +2225,11 @@ working, and quietly describing the library as something it is not.
   ([`000-process.md` Rule 4](000-process.md#rules)). ADR-0039 left it standing
   deliberately, because the set did not change there.
   **What it buys, measured.** `ci-full.yml`'s `test-full (3.10)` was the longest
-  job in all three runs ADR-0039 measured, so dropping it takes a mean 0.92 min
+  job in all three runs measured for BK-375, so dropping it takes a mean 0.92 min
   off a 8.74 min run and 8.27 job-min with it; in `ci.yml` the leg is never on
   the critical path, so the saving there is 5.94 job-min and about no wall-clock.
-  ADR-0039 carries the derivations and the caveats.
+  BK-375's entry in [`BACKLOG-DONE.md`](BACKLOG-DONE.md) carries the
+  derivations and the caveats; ADR-0039 states the rule and carries no figure.
   **Do not wait for the weekly report to ask.** The drift-guard issue will
   surface the crossing on the first Monday after 2026-10-04 and hold itself open
   until this lands or a row in `infra/drift-locks/PYTHON-SUPPORT.md` records a
