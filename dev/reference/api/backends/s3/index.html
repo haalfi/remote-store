@@ -11306,6 +11306,11 @@ short-circuit.</p>
     <div class="doc doc-contents ">
 
         <p>Return <code>True</code> if an object or prefix exists at <em>path</em>; never <code>NotFound</code>.</p>
+<p>The root always exists, and that is decided from the key: <code>s3fs.exists</code>
+on the bare bucket answers <code>False</code> once the bucket is gone, which is
+"there is no root" — a distinction no caller can act on. No request is
+issued for it, so the root answers <code>True</code> for a bucket that is denied
+as well as for one that is missing.</p>
 
 
 <p><span class="doc-section-title">Raises:</span></p>
@@ -11314,14 +11319,16 @@ short-circuit.</p>
               <code><a class="autorefs autorefs-internal" title="            PermissionDenied (remote_store._errors.PermissionDenied)" href="../../errors/#remote_store.PermissionDenied">PermissionDenied</a></code>
             –
           <div class="doc-md-description">
-            <p>If the credentials lack access.</p>
+            <p>If the credentials lack access. Not for the store
+root, which is answered without a request.</p>
           </div>
         </li>
         <li class="doc-section-item field-body">
               <code><a class="autorefs autorefs-internal" title="            BackendUnavailable (remote_store._errors.BackendUnavailable)" href="../../errors/#remote_store.BackendUnavailable">BackendUnavailable</a></code>
             –
           <div class="doc-md-description">
-            <p>On a transport or service failure, or after <code>close()</code>.</p>
+            <p>On a transport or service failure, or after <code>close()</code>
+— including for the store root, which the closed guard outranks.</p>
           </div>
         </li>
     </ul>
@@ -11384,6 +11391,8 @@ short-circuit.</p>
     <div class="doc doc-contents ">
 
         <p>Return <code>True</code> if <em>path</em> is an existing virtual folder (a common prefix).</p>
+<p>The root is always a folder, decided from the key for the reason
+<code>exists</code> gives, and answered without a request there too.</p>
 
 
 <p><span class="doc-section-title">Raises:</span></p>
@@ -11392,14 +11401,16 @@ short-circuit.</p>
               <code><a class="autorefs autorefs-internal" title="            PermissionDenied (remote_store._errors.PermissionDenied)" href="../../errors/#remote_store.PermissionDenied">PermissionDenied</a></code>
             –
           <div class="doc-md-description">
-            <p>If the credentials lack access.</p>
+            <p>If the credentials lack access. Not for the store
+root, which is answered without a request.</p>
           </div>
         </li>
         <li class="doc-section-item field-body">
               <code><a class="autorefs autorefs-internal" title="            BackendUnavailable (remote_store._errors.BackendUnavailable)" href="../../errors/#remote_store.BackendUnavailable">BackendUnavailable</a></code>
             –
           <div class="doc-md-description">
-            <p>On a transport or service failure, or after <code>close()</code>.</p>
+            <p>On a transport or service failure, or after <code>close()</code>
+— including for the store root, which the closed guard outranks.</p>
           </div>
         </li>
     </ul>

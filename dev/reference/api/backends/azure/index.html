@@ -11599,11 +11599,13 @@ short-circuit.</p>
         <p>Return <code>True</code> if a blob or folder exists at <em>path</em>; never <code>NotFound</code>.</p>
 <p>Probes the blob first (one HEAD); if absent, probes for a folder (an HNS
 directory, or any blob under the <code>path/</code> prefix on flat accounts). The
-root always exists. An absent <em>container</em> answers <code>False</code> — a container
-that does not exist holds no path either, and this probe never raises for
-a missing path. A <em>denied</em> container still raises: the prefix listing is
-the determinant here, so it fails closed rather than reporting "nothing
-there" for something you may not see.</p>
+root always exists, decided from the key before any request, so it answers
+<code>True</code> whether the container is missing or denied. <strong>For every other
+path</strong> an absent <em>container</em> answers <code>False</code> — a container that does not
+exist holds no path either, and this probe never raises for a missing path
+— while a <em>denied</em> container raises: the prefix listing is the determinant
+there, so it fails closed rather than reporting "nothing there" for
+something you may not see.</p>
 
 
 <p><span class="doc-section-title">Raises:</span></p>
@@ -11612,14 +11614,17 @@ there" for something you may not see.</p>
               <code><a class="autorefs autorefs-internal" title="            PermissionDenied (remote_store._errors.PermissionDenied)" href="../../errors/#remote_store.PermissionDenied">PermissionDenied</a></code>
             –
           <div class="doc-md-description">
-            <p>If credentials are rejected or lack access (401/403).</p>
+            <p>If credentials are rejected or lack access (401/403).
+Not for the store root, which is answered without a request.</p>
           </div>
         </li>
         <li class="doc-section-item field-body">
               <code><a class="autorefs autorefs-internal" title="            BackendUnavailable (remote_store._errors.BackendUnavailable)" href="../../errors/#remote_store.BackendUnavailable">BackendUnavailable</a></code>
             –
           <div class="doc-md-description">
-            <p>On throttling (429), 5xx, or transport failure.</p>
+            <p>On throttling (429), 5xx, or transport failure, or
+after <code>close()</code> — including for the store root, which the closed
+guard outranks.</p>
           </div>
         </li>
     </ul>
@@ -11654,14 +11659,17 @@ without a round trip. Otherwise one HEAD; a missing blob or an
               <code><a class="autorefs autorefs-internal" title="            PermissionDenied (remote_store._errors.PermissionDenied)" href="../../errors/#remote_store.PermissionDenied">PermissionDenied</a></code>
             –
           <div class="doc-md-description">
-            <p>If credentials are rejected or lack access (401/403).</p>
+            <p>If credentials are rejected or lack access (401/403).
+Not for the store root, which is answered without a request.</p>
           </div>
         </li>
         <li class="doc-section-item field-body">
               <code><a class="autorefs autorefs-internal" title="            BackendUnavailable (remote_store._errors.BackendUnavailable)" href="../../errors/#remote_store.BackendUnavailable">BackendUnavailable</a></code>
             –
           <div class="doc-md-description">
-            <p>On throttling (429), 5xx, or transport failure.</p>
+            <p>On throttling (429), 5xx, or transport failure, or
+after <code>close()</code> — including for the store root, which the closed
+guard outranks.</p>
           </div>
         </li>
     </ul>
@@ -11685,9 +11693,10 @@ without a round trip. Otherwise one HEAD; a missing blob or an
     <div class="doc doc-contents ">
 
         <p>Return <code>True</code> if <em>path</em> is an existing folder (HNS directory or non-HNS prefix).</p>
-<p>The root is always a folder. Costs one directory HEAD (HNS) or a
-one-item prefix listing (flat). An absent container answers <code>False</code>, on
-the same terms as <code>exists</code>.</p>
+<p>The root is always a folder, decided from the key and so answered for a
+denied container as well as a missing one. Costs one directory HEAD (HNS)
+or a one-item prefix listing (flat) for every other path, where an absent
+container answers <code>False</code> on the same terms as <code>exists</code>.</p>
 
 
 <p><span class="doc-section-title">Raises:</span></p>
@@ -11696,14 +11705,17 @@ the same terms as <code>exists</code>.</p>
               <code><a class="autorefs autorefs-internal" title="            PermissionDenied (remote_store._errors.PermissionDenied)" href="../../errors/#remote_store.PermissionDenied">PermissionDenied</a></code>
             –
           <div class="doc-md-description">
-            <p>If credentials are rejected or lack access (401/403).</p>
+            <p>If credentials are rejected or lack access (401/403).
+Not for the store root, which is answered without a request.</p>
           </div>
         </li>
         <li class="doc-section-item field-body">
               <code><a class="autorefs autorefs-internal" title="            BackendUnavailable (remote_store._errors.BackendUnavailable)" href="../../errors/#remote_store.BackendUnavailable">BackendUnavailable</a></code>
             –
           <div class="doc-md-description">
-            <p>On throttling (429), 5xx, or transport failure.</p>
+            <p>On throttling (429), 5xx, or transport failure, or
+after <code>close()</code> — including for the store root, which the closed
+guard outranks.</p>
           </div>
         </li>
     </ul>
@@ -12541,6 +12553,8 @@ yields nothing here too.</p>
 <p>File count, total size, and latest modification time are gathered by
 paging the whole subtree listing, so cost scales with the number of
 descendants.</p>
+<p>The root aggregates whether or not the container is there: an absent
+container is an empty store at the root, not a missing path.</p>
 
 
 <p><span class="doc-section-title">Raises:</span></p>
@@ -12549,7 +12563,8 @@ descendants.</p>
               <code><a class="autorefs autorefs-internal" title="            NotFound (remote_store._errors.NotFound)" href="../../errors/#remote_store.NotFound">NotFound</a></code>
             –
           <div class="doc-md-description">
-            <p>If the folder does not exist.</p>
+            <p>If the folder does not exist. Not for the root, which
+exists by definition.</p>
           </div>
         </li>
         <li class="doc-section-item field-body">

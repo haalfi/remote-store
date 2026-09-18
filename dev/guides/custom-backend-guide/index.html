@@ -12242,7 +12242,12 @@ returns the stream as-is.</p>
 <p><strong>Contrast with existence checks:</strong></p>
 <ul>
 <li><code>get_file_info()</code> raises <code>NotFound</code> if missing.</li>
-<li><code>get_folder_info()</code> raises <code>NotFound</code> if the folder doesn't exist.</li>
+<li><code>get_folder_info()</code> raises <code>NotFound</code> if the folder doesn't exist — <strong>except at
+  the store root</strong>, which is a folder that always exists, so it aggregates to
+  zero rather than raising for a container that was already gone when the call
+  began. <strong>Bound that tolerance to the first page</strong>: a container that vanishes
+  <em>mid</em>-listing must still raise, or you report a store the user still has as
+  empty.</li>
 <li><code>exists()</code> never raises — returns <code>bool</code>.</li>
 </ul>
 <hr />
@@ -12392,14 +12397,44 @@ it's <code>SELECT 1</code>.</p>
 meaning the backend stays usable after <code>close()</code>). Declare <code>True</code> when
 use-after-close must fail — the close-posture conformance lane tests
 whichever posture you declare, so an undeclared terminal backend fails it.</p>
-<p><strong>If you declare <code>True</code>, the closed check must run ahead of your root checks.</strong>
-A closed backend raises <code>BackendUnavailable</code> even when the path is also
-invalid — the closed state is the more fundamental error, and a cheap
-string-test root guard is exactly the kind that naturally gets written first.
-Both root pre-checks are affected, the file-shaped one and the write one, and
-they need separate attention: a backend can order the read guard correctly and
-still get the write guard wrong, which is how the ordering was last found broken
-here. The conformance lane has a cell for each.</p>
+<p><strong>If you declare <code>True</code>, the closed check must run ahead of every root answer.</strong>
+A closed backend raises <code>BackendUnavailable</code> even when the path is also invalid,
+and even where the root's answer is one you decide from the key without asking
+the storage system — the closed state is the more fundamental error, and a cheap
+string test is exactly the kind of guard that naturally gets written first.</p>
+<p><strong>Three root pre-checks are affected, and each needs separate attention</strong>,
+because a backend can order one correctly and still get another wrong:</p>
+<table>
+<thead>
+<tr>
+<th>Shape</th>
+<th>Where it sits</th>
+<th>Conformance cell</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>File-shaped</td>
+<td>your root rejection on <code>read</code>, <code>get_file_info</code>, <code>delete</code>, <code>move</code>/<code>copy</code> source</td>
+<td><code>test_close_posture_outranks_root_rejection</code></td>
+</tr>
+<tr>
+<td>Write-shaped</td>
+<td>the separate, differently-worded guard on <code>write</code>, <code>write_atomic</code>, <code>open_atomic</code> and the <code>move</code>/<code>copy</code> destination</td>
+<td><code>test_close_posture_outranks_root_write_rejection</code></td>
+</tr>
+<tr>
+<td>Probe and aggregate</td>
+<td>the key-decided root answers: <code>exists("")</code>, <code>is_file("")</code> and <code>is_folder("")</code> from Step 5, and <code>get_folder_info("")</code> from Step 10</td>
+<td><code>test_close_posture_outranks_the_root_probes</code></td>
+</tr>
+</tbody>
+</table>
+<p>The third row is the one to watch if you took Steps 5 and 10's advice to answer
+the root yourself before the call. That answer returns before your lazy client
+accessor is ever touched, so the guard that normally rides on it never runs —
+which is how five backends in this repo came to answer a closed store instead of
+refusing it. Put the closed check ahead of the root test, not after it.</p>
 <hr />
 <h2 id="step-13-register-and-use">Step 13: Register and use<a class="headerlink" href="#step-13-register-and-use" title="Permanent link">&para;</a></h2>
 <h3 id="direct-instantiation">Direct instantiation<a class="headerlink" href="#direct-instantiation" title="Permanent link">&para;</a></h3>

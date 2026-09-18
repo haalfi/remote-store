@@ -11825,11 +11825,13 @@ Default <code>False</code>.</p>
     <div class="doc doc-contents ">
 
         <p>Check if a file or folder exists.</p>
-<p>An absent <em>container</em> answers <code>False</code> — a container that does not exist
-holds no path either, and this probe never raises for a missing path. A
-<em>denied</em> container still raises: the prefix listing is the determinant
-here, so it fails closed rather than reporting "nothing there" for
-something you may not see.</p>
+<p>The root always exists, decided from the key before any request, so it
+answers <code>True</code> whether the container is missing or denied. <strong>For every
+other path</strong> an absent <em>container</em> answers <code>False</code> — a container that
+does not exist holds no path either, and this probe never raises for a
+missing path — while a <em>denied</em> container raises: the prefix listing is
+the determinant there, so it fails closed rather than reporting "nothing
+there" for something you may not see.</p>
 
 
 <p><span class="doc-section-title">Parameters:</span></p>
@@ -11929,7 +11931,9 @@ which is a folder and answers <code>False</code> without a round trip.</p>
     <div class="doc doc-contents ">
 
         <p>Return <code>True</code> if <code>path</code> is an existing folder.</p>
-<p>An absent container answers <code>False</code>, on the same terms as <code>exists</code>.</p>
+<p>The root is always a folder, decided from the key and so answered for a
+denied container as well as a missing one. For every other path an absent
+container answers <code>False</code>, on the same terms as <code>exists</code>.</p>
 
 
 <p><span class="doc-section-title">Parameters:</span></p>
@@ -12981,6 +12985,8 @@ yields nothing here too.</p>
           </div>
         </li>
     </ul>
+        <p>The root aggregates whether or not the container is there: an absent
+container is an empty store at the root, not a missing path.</p>
 
 
 <p><span class="doc-section-title">Raises:</span></p>
@@ -12989,7 +12995,8 @@ yields nothing here too.</p>
               <code><a class="autorefs autorefs-internal" title="            NotFound (remote_store._errors.NotFound)" href="../../../errors/#remote_store.NotFound">NotFound</a></code>
             –
           <div class="doc-md-description">
-            <p>If the folder does not exist.</p>
+            <p>If the folder does not exist. Not for the root, which
+exists by definition.</p>
           </div>
         </li>
         <li class="doc-section-item field-body">

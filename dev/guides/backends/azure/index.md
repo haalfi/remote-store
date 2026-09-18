@@ -347,12 +347,12 @@ exists(path: str) -> bool
 
 Return `True` if a blob or folder exists at *path*; never `NotFound`.
 
-Probes the blob first (one HEAD); if absent, probes for a folder (an HNS directory, or any blob under the `path/` prefix on flat accounts). The root always exists. An absent *container* answers `False` — a container that does not exist holds no path either, and this probe never raises for a missing path. A *denied* container still raises: the prefix listing is the determinant here, so it fails closed rather than reporting "nothing there" for something you may not see.
+Probes the blob first (one HEAD); if absent, probes for a folder (an HNS directory, or any blob under the `path/` prefix on flat accounts). The root always exists, decided from the key before any request, so it answers `True` whether the container is missing or denied. **For every other path** an absent *container* answers `False` — a container that does not exist holds no path either, and this probe never raises for a missing path — while a *denied* container raises: the prefix listing is the determinant there, so it fails closed rather than reporting "nothing there" for something you may not see.
 
 Raises:
 
-- `PermissionDenied` – If credentials are rejected or lack access (401/403).
-- `BackendUnavailable` – On throttling (429), 5xx, or transport failure.
+- `PermissionDenied` – If credentials are rejected or lack access (401/403). Not for the store root, which is answered without a request.
+- `BackendUnavailable` – On throttling (429), 5xx, or transport failure, or after close() — including for the store root, which the closed guard outranks.
 
 ### is_file
 
@@ -366,8 +366,8 @@ The root is a folder under both spellings, so it answers `False` without a round
 
 Raises:
 
-- `PermissionDenied` – If credentials are rejected or lack access (401/403).
-- `BackendUnavailable` – On throttling (429), 5xx, or transport failure.
+- `PermissionDenied` – If credentials are rejected or lack access (401/403). Not for the store root, which is answered without a request.
+- `BackendUnavailable` – On throttling (429), 5xx, or transport failure, or after close() — including for the store root, which the closed guard outranks.
 
 ### is_folder
 
@@ -377,12 +377,12 @@ is_folder(path: str) -> bool
 
 Return `True` if *path* is an existing folder (HNS directory or non-HNS prefix).
 
-The root is always a folder. Costs one directory HEAD (HNS) or a one-item prefix listing (flat). An absent container answers `False`, on the same terms as `exists`.
+The root is always a folder, decided from the key and so answered for a denied container as well as a missing one. Costs one directory HEAD (HNS) or a one-item prefix listing (flat) for every other path, where an absent container answers `False` on the same terms as `exists`.
 
 Raises:
 
-- `PermissionDenied` – If credentials are rejected or lack access (401/403).
-- `BackendUnavailable` – On throttling (429), 5xx, or transport failure.
+- `PermissionDenied` – If credentials are rejected or lack access (401/403). Not for the store root, which is answered without a request.
+- `BackendUnavailable` – On throttling (429), 5xx, or transport failure, or after close() — including for the store root, which the closed guard outranks.
 
 ### read
 
@@ -641,9 +641,11 @@ Return aggregate metadata for the folder at *path*.
 
 File count, total size, and latest modification time are gathered by paging the whole subtree listing, so cost scales with the number of descendants.
 
+The root aggregates whether or not the container is there: an absent container is an empty store at the root, not a missing path.
+
 Raises:
 
-- `NotFound` – If the folder does not exist.
+- `NotFound` – If the folder does not exist. Not for the root, which exists by definition.
 - `InvalidPath` – If path names a file, not a folder.
 - `PermissionDenied` – If credentials are rejected or lack access (401/403).
 - `BackendUnavailable` – On throttling (429), 5xx, or transport failure.
