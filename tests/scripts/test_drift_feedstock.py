@@ -100,6 +100,20 @@ class TestNormalization:
         masked = watch.mask_excluded(BODY)
         assert len(masked.splitlines()) == len(BODY.splitlines())
 
+    @pytest.mark.parametrize("spelling", ["number : 7", "number:\t7", "number   :   7"])
+    def test_an_owned_field_is_masked_however_it_is_spaced(self, watch, spelling):
+        """The published file is not ours to keep tidy -- the same rule as `_VERSION_RE`.
+
+        A `build.number` the far side wrote as `number : 7` would otherwise go
+        unmasked and report as drift, on the one field conda-forge is
+        explicitly entitled to change.
+        """
+        assert watch.comparable(RECIPE) == watch.comparable(RECIPE.replace("number: 0", spelling))
+
+    def test_masking_does_not_reach_a_different_key(self, watch):
+        """Tolerating spacing must not widen which keys are excluded."""
+        assert watch.comparable(RECIPE) != watch.comparable(RECIPE.replace("noarch: python", "noarch: generic"))
+
     def test_a_real_change_is_not_excluded(self, watch):
         assert watch.comparable(RECIPE) != watch.comparable(RECIPE.replace("eight backends", "four backends"))
 
@@ -138,6 +152,31 @@ class TestVersionParsing:
 
     def test_a_recipe_with_no_context_version_reads_as_none(self, watch):
         assert watch.remote_version("package:\n  name: x\n") is None
+
+    @pytest.mark.parametrize(
+        ("shape", "text"),
+        [
+            ("blank line", 'context:\n\n  version: "0.32.0"\n'),
+            ("column-0 comment", 'context:\n# a migrator touched this\n  version: "0.32.0"\n'),
+            ("indented comment", 'context:\n  # set at release\n  version: "0.32.0"\n'),
+            ("another key first", 'context:\n  name: remote-store\n  version: "0.32.0"\n'),
+            ("trailing spaces", 'context:   \n  version: "0.32.0"\n'),
+        ],
+    )
+    def test_the_version_survives_reformatting_of_the_block(self, watch, shape, text):
+        """The published file is not ours to keep tidy.
+
+        A conda-forge migrator, a rerender or a maintainer can reformat the
+        block, and failing to read the version reports `error` -- which five
+        artefacts define as a fault on **our** side. That inverts the split the
+        status taxonomy exists for, so the parse has to tolerate anything YAML
+        does.
+        """
+        assert watch.remote_version(text) == "0.32.0", shape
+
+    def test_a_version_outside_the_context_block_is_still_not_read(self, watch):
+        """Tolerating layout must not widen what counts as the version."""
+        assert watch.remote_version('package:\n  version: "9.9.9"\ncontext:\n  other: 1\n') is None
 
     def test_a_version_elsewhere_is_not_the_context_one(self, watch):
         """``package.version`` is a template reference, not the source of truth."""

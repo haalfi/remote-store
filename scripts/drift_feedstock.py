@@ -41,18 +41,28 @@ folding "the tag does not resolve" into "the network is down" would let a broken
 watch look exactly like normal operation, forever, because only one of them is
 something this repo can fix.
 
-============== ============================================= ==============
-Status         Meaning                                       Holds the issue
-============== ============================================= ==============
-``match``      Identical below the header                    no
-``drift``      Any other difference from the tag's copy      **yes**
-``ahead-of``   Differs from the tag but matches ``master``   no
-``-tag``
-``no-baseline`` The tag carries no generated copy            no
-``missing``    404 on the published recipe                   **yes**
-``unreachable`` The fetch failed                             no
-``error``      Something here is broken                      **yes**
-============== ============================================= ==============
+**Two questions, not one.** "May this force the rolling issue open?" and "may
+this let the run close it?" have different answers, and collapsing them is how a
+verdict that compared nothing comes to read as a clean bill. Only the two
+``CLEAR`` statuses permit a close; everything else blocks it, including the two
+that force nothing, because **not knowing is not agreement**.
+
+=============== ============================================= ======== =======
+Status          Meaning                                       Forces   Permits
+                                                              update   close
+=============== ============================================= ======== =======
+``match``       Identical below the header                    no       yes
+``ahead-of-tag`` Differs from the tag, matches ``master``     no       yes
+``drift``       Any other difference from the tag's copy      **yes**  no
+``missing``     404 on the published recipe                   **yes**  no
+``error``       Something on THIS side is broken              **yes**  no
+``no-baseline`` The tag carries no generated copy             no       no
+``unreachable`` The fetch failed                              no       no
+=============== ============================================= ======== =======
+
+``HOLDS``, ``INCONCLUSIVE`` and ``CLEAR`` above are that table in code, and
+``drift_report.py`` imports them rather than restating them, so the two cannot
+disagree. A status outside ``STATUSES`` is treated there as an ``error``.
 
 ``ahead-of-tag`` exists because the release procedure puts a gap between the tag
 and the copy-out: ``CONTRIBUTING.md`` Phase 5 fetches ``source.sha256`` from
@@ -60,13 +70,20 @@ PyPI after the tag and lands it separately, and anything else merged in that
 window is carried out with it. Without this status such a copy-out would read as
 drift for a whole release cycle.
 
-``no-baseline`` is where this watch is **inert**, and the bound is worth stating
-plainly: a feedstock pinned to a tag cut before this mechanism existed has no
-committed copy to compare against and never will, so it reports ``no-baseline``
-every week. The current feedstock is at 0.32.0, so the next copy-out puts a tag
-with a committed copy in place and ends the inert window; a feedstock left
-behind for longer than that shows up as ``trailing`` instead, which the release
-checklist owns.
+``no-baseline`` is where this watch **compares nothing**, and the bound is worth
+stating plainly: a feedstock pinned to a tag cut before this mechanism existed
+has no committed copy to compare against and never will, so it reports
+``no-baseline`` every week. The current feedstock is at 0.32.0, so the next
+copy-out puts a tag with a committed copy in place and ends that window; a
+feedstock left behind for longer shows up as ``trailing`` instead, which the
+release checklist owns.
+
+It is not inert on the rolling issue, and the difference matters to whoever is
+reading one: it renders a section every week and it **stops the issue
+auto-closing**, so until the next copy-out an otherwise-clean week leaves the
+issue as it found it rather than closing it. That is the intended trade -- a
+body is recoverable and a closed issue is not -- but it is a live behaviour
+change, not a dormant one.
 
 Bounds (DRIFT-RULES Rule 7)
 ===========================
@@ -133,15 +150,49 @@ REPO = "haalfi/remote-store"
 
 BODY_MARKER = "context:"
 
+# The status vocabulary, and its classification, in ONE place. `drift_report.py`
+# imports these rather than restating them: it holds three readers of this set
+# (two predicates and a summary table), and three hand-maintained copies of a
+# vocabulary whose producer is this module is the parallel artefact
+# `sdd/DRIFT-RULES.md` Rule 3 forbids. Measured before they were derived: a
+# status this file could emit but `drift_report` did not classify read as
+# "the copies agree" and let the run close the rolling issue.
+HOLDS: frozenset[str] = frozenset({"drift", "missing", "error"})
+"""A finding. Forces an issue update on an unnarrowed run, and blocks a close."""
+
+INCONCLUSIVE: frozenset[str] = frozenset({"unreachable", "no-baseline"})
+"""No comparison was made. Forces nothing -- but blocks a close, because not knowing is not agreement."""
+
+CLEAR: frozenset[str] = frozenset({"match", "ahead-of-tag"})
+"""The published copy is what this repo published for its version. The only verdicts that permit a close."""
+
+STATUSES: frozenset[str] = HOLDS | INCONCLUSIVE | CLEAR
+
 # `context:` block, then a `version:` key under it. Read textually rather than
 # with a YAML parser for the reason `check_conda_recipe_pins.py` gives about the
 # same file: the recipe carries `${{ }}` templating, and one key is all that is
 # needed.
-_VERSION_RE = re.compile(r"^context:\s*$\n(?:^[ \t]+.*$\n)*?^[ \t]+version:\s*[\"']?([^\"'\s]+)", re.MULTILINE)
+#
+# The intervening lines are deliberately permissive. THE PUBLISHED FILE IS NOT
+# OURS TO KEEP TIDY: a conda-forge migrator, a rerender or a maintainer may put
+# a blank line or a column-0 comment inside the block, and an earlier spelling
+# that required every intervening line to be indented then read the version as
+# absent -- reporting `error`, which this script and four other artefacts define
+# as a fault on OUR side. That inverts the very split the taxonomy exists for.
+# So anything but a new TOP-LEVEL key may intervene: indented lines, blank
+# lines, and comments at any indent.
+_VERSION_RE = re.compile(
+    r"^context:[ \t]*$\n(?:^(?:[ \t].*|[ \t]*|#.*)$\n)*?^[ \t]+version:[ \t]*[\"']?([^\"'\s]+)",
+    re.MULTILINE,
+)
 
-# The two fields the far copy may legitimately differ on. Matched on the key so
-# the value is irrelevant; see the module docstring for why each is here.
-_EXCLUDED_KEYS = ("number:", "sha256:")
+# The two fields the far copy may legitimately differ on; see the module
+# docstring for why each is here. Matched as a key with optional space before
+# the colon, for the same reason `_VERSION_RE` tolerates reformatting: the
+# published file is not ours to keep tidy, and `number : 0` would otherwise go
+# unmasked and report as drift.
+_EXCLUDED_KEYS = ("number", "sha256")
+_EXCLUDED_RE = re.compile(rf"^(?P<indent>[ \t]*)(?P<key>{'|'.join(_EXCLUDED_KEYS)})[ \t]*:")
 
 _TIMEOUT_SECONDS = 30
 
@@ -201,11 +252,9 @@ def mask_excluded(text: str) -> str:
     """
     out = []
     for line in text.splitlines(keepends=True):
-        stripped = line.strip()
-        if any(stripped.startswith(key) for key in _EXCLUDED_KEYS):
-            indent = line[: len(line) - len(line.lstrip())]
-            key = stripped.split(":", 1)[0]
-            out.append(f"{indent}{key}: <excluded>\n")
+        match = _EXCLUDED_RE.match(line)
+        if match:
+            out.append(f"{match.group('indent')}{match.group('key')}: <excluded>\n")
         else:
             out.append(line)
     return "".join(out)

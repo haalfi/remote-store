@@ -92,11 +92,16 @@ class TestRender:
     def test_the_header_carries_no_date_or_commit(self, gen):
         """The output has to be byte-stable across commits.
 
-        Anything varying per commit would make ``--check`` fail on every one of
-        them, which retires the gate by making it noise.
+        Anything varying per commit makes ``--check`` fail on every one of
+        them, which retires the gate by making it noise. Asserted against the
+        header's **content**: an earlier version of this test compared
+        ``render(SOURCE)`` to itself, which is true of any pure function and so
+        could not fail.
         """
-        assert gen.render(SOURCE) == gen.render(SOURCE)
-        assert "202" not in gen.SHIPPED_HEADER  # no ISO year
+        import re
+
+        assert not re.search(r"\b(19|20)\d{2}-\d{2}-\d{2}\b", gen.SHIPPED_HEADER), "an ISO date"
+        assert not re.search(r"\b[0-9a-f]{7,40}\b", gen.SHIPPED_HEADER), "a commit sha"
 
 
 class TestCheck:
@@ -155,9 +160,16 @@ class TestCommittedCopy:
     def test_it_carries_no_internal_coordinate(self):
         """What the whole inversion is for: the shipped bytes are publishable.
 
-        Asserted with the tracker gate's own patterns rather than a prefix
-        list, because reproducing the pattern without its external-code filter
-        would flag ``CEP-13`` and pass the next spec prefix.
+        Asserted with ``_scan_lines`` -- the gate's whole scanner -- rather than
+        ``_TRACKER_RE`` alone. The pattern is one of three the gate applies, and
+        an earlier version of this test used it by itself: ``PR #1023`` and
+        ``spec 003`` were measured invisible to that assertion and visible to
+        the gate, in the one part of this file the gate never sees.
+
+        That part is the point. ``check_no_tracker_refs`` scans the **source**
+        recipe below ``context:``; everything below ``context:`` here is those
+        same bytes, but ``SHIPPED_HEADER`` is written in this module and reaches
+        conda-forge without passing the gate at all. This is what covers it.
         """
         if str(SCRIPTS) not in sys.path:
             sys.path.insert(0, str(SCRIPTS))
@@ -165,9 +177,28 @@ class TestCommittedCopy:
         import gen_conda_feedstock as gen
 
         text = gen.GENERATED.read_text(encoding="utf-8")
-        hits = [
-            match.group(0)
-            for match in tracker._TRACKER_RE.finditer(text)
-            if tracker._is_internal_tracker(match.group(1), match.group(2))
-        ]
-        assert hits == []
+        found = tracker._scan_lines(text.splitlines(), path=gen.GENERATED)
+        assert [v.match for v in found] == []
+
+    def test_the_shipped_header_is_held_to_the_gate_it_never_passes(self, gen):
+        """The header specifically, not merely the file that mostly repeats the source."""
+        if str(SCRIPTS) not in sys.path:
+            sys.path.insert(0, str(SCRIPTS))
+        import check_no_tracker_refs as tracker
+
+        found = tracker._scan_lines(gen.SHIPPED_HEADER.splitlines(), path=gen.GENERATED)
+        assert [v.match for v in found] == []
+
+    @pytest.mark.parametrize("leak", ["see PR #1023", "tracked as BK-370", "spec 003 covers it"])
+    def test_that_assertion_can_fail(self, gen, leak):
+        """Mutation guard: the scanner catches what the narrower one missed.
+
+        Two of the three forms here are invisible to ``_TRACKER_RE`` alone, so
+        this is what stops the assertion above silently weakening again.
+        """
+        if str(SCRIPTS) not in sys.path:
+            sys.path.insert(0, str(SCRIPTS))
+        import check_no_tracker_refs as tracker
+
+        found = tracker._scan_lines([f"# {leak}"], path=gen.GENERATED)
+        assert [v.match for v in found] != []

@@ -1755,23 +1755,64 @@ class TestFeedstockLoad:
         assert state.status == "error"
         assert str(path) in state.reason
 
-    def test_an_unusable_report_still_holds_the_issue(self, drift_report, tmp_path):
-        """Tolerating it must not mean tolerating it into silence."""
-        path = tmp_path / "f.json"
-        path.write_text("{{{", encoding="utf-8")
-        state = dataclasses.replace(drift_report.load_feedstock_report(path), holds_issue=True)
-        reports = drift_report.Reports(diffs={}, floors={}, smokes={}, feedstock=state)
-        assert drift_report.has_signal(reports, today=TODAY)
+    def test_an_unusable_report_still_holds_the_issue(self, drift_report, tmp_path, capsys):
+        """Tolerating it must not mean tolerating it into silence.
 
-    def test_an_unusable_report_does_not_cost_the_other_signals(self, drift_report, tmp_path):
+        Driven through ``main`` on an otherwise-clean unnarrowed run, so
+        ``holds_issue`` is the value ``main`` computes rather than one this test
+        sets. Setting it by hand would pin ``has_signal`` and leave the field's
+        own derivation -- the narrowing rule -- untested under this name.
+        """
+        reports_dir = tmp_path / "reports"
+        extras = drift_report.list_extras()
+        for extra in extras:
+            _write(reports_dir, f"{extra}-newest-diff.json", _diff(extra))
+            _write(reports_dir, f"{extra}-newest-smoke.json", _smoke(extra, "newest", "pass"))
+            _write(reports_dir, f"{extra}-floor-resolve.json", _floor(extra))
+            _write(reports_dir, f"{extra}-floor-smoke.json", _smoke(extra, "floor", "pass"))
+        broken = tmp_path / "f.json"
+        broken.write_text("{{{", encoding="utf-8")
+        rc = drift_report.main(
+            [
+                str(reports_dir),
+                "--repo",
+                "x/y",
+                "--run-url",
+                "http://run",
+                "--title",
+                "t",
+                "--expect-extras",
+                json.dumps(extras),
+                "--expect-lanes",
+                "newest,floor",
+                "--feedstock-report",
+                str(broken),
+                "--today",
+                str(TODAY),
+                "--dry-run",
+            ]
+        )
+        captured = capsys.readouterr()
+        assert rc == 0
+        # Everything else is clean, so only the unreadable report can be doing this.
+        assert "would create/update" in captured.err
+        assert "holds this issue open" in captured.out
+
+    def test_an_unusable_report_does_not_cost_the_other_signals(self, drift_report, tmp_path, capsys):
         """The blast radius, pinned.
 
         A drifted extra must still reach the issue when the feedstock report is
         unreadable -- that is the whole reason this is a status rather than an
-        exit.
+        exit. The rows are asserted **in the body**: ``rc == 0`` alone would
+        pass for a run that silently dropped them, which is the failure this
+        test is named for (`sdd/TESTING.md` Rule 1 -- "no crash" is not a test).
         """
         reports_dir = tmp_path / "reports"
-        _write(reports_dir, "s3-newest-diff.json", _diff("s3", status="drift"))
+        _write(
+            reports_dir,
+            "s3-newest-diff.json",
+            _diff("s3", status="drift", stable_drift=[{"package": "s3fs", "baseline": "1.0", "resolved": "2.0"}]),
+        )
         _write(reports_dir, "s3-newest-smoke.json", _smoke("s3", "newest", "pass"))
         broken = tmp_path / "f.json"
         broken.write_text("{{{", encoding="utf-8")
@@ -1795,7 +1836,56 @@ class TestFeedstockLoad:
                 "--dry-run",
             ]
         )
+        body = capsys.readouterr().out
         assert rc == 0
+        assert "## Drift detected" in body
+        assert "`s3fs`" in body
+        assert "`2.0`" in body
+        # ...and the broken input named beside them rather than instead of them.
+        assert "## Conda feedstock" in body
+
+
+class TestFeedstockVocabulary:
+    """The status set is one vocabulary, and it lives where it is produced.
+
+    ``drift_report`` held three copies of it -- two frozensets and a summary
+    table -- against a producer that this module's own docstring says "owns the
+    vocabulary". Nothing compared them, which is the parallel-artefact shape
+    ``sdd/DRIFT-RULES.md`` Rule 3 forbids one layer up.
+    """
+
+    def test_every_status_the_watch_emits_is_classified(self, drift_report):
+        """Derived from the producer, not restated here (DRIFT-RULES Rule 3)."""
+        if str(SCRIPTS) not in sys.path:
+            sys.path.insert(0, str(SCRIPTS))
+        import drift_feedstock
+
+        classified = drift_report.FEEDSTOCK_HOLDS | drift_report.FEEDSTOCK_INCONCLUSIVE | drift_report.FEEDSTOCK_CLEAR
+        assert classified == drift_feedstock.STATUSES
+
+    def test_every_status_renders_a_summary(self, drift_report):
+        if str(SCRIPTS) not in sys.path:
+            sys.path.insert(0, str(SCRIPTS))
+        import drift_feedstock
+
+        assert set(drift_report._FEEDSTOCK_SUMMARY) >= drift_feedstock.STATUSES
+
+    @pytest.mark.parametrize("status", ["partial", "ok", "DRIFT", "", "no_baseline"])
+    def test_an_unrecognised_status_fails_closed(self, drift_report, tmp_path, status):
+        """A status nobody classified must not read as "the copies agree".
+
+        Measured before this: ``'partial'``, ``'ok'``, ``'DRIFT'`` and ``''``
+        every one gave ``blocks_close`` False, so a typo in the producer -- or a
+        status added there and not here -- would let the run close the rolling
+        issue while the published recipe disagreed with us. Failing open is the
+        one direction this signal must never take.
+        """
+        path = tmp_path / "f.json"
+        path.write_text(json.dumps({"status": status}), encoding="utf-8")
+        state = drift_report.load_feedstock_report(path)
+        assert state.status == "error"
+        assert repr(status) in state.reason
+        assert state.blocks_close
 
 
 class TestFeedstockSignal:

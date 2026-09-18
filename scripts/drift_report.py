@@ -88,6 +88,7 @@ from typing import TypeVar
 
 sys.path.insert(0, str(Path(__file__).resolve().parent))
 
+import drift_feedstock as feedstock_statuses  # noqa: E402  — one driver for the feedstock status vocabulary
 from drift_check import list_extras  # noqa: E402  — one driver for the extras claim space
 from python_support import SupportWindow, UnknownInterpreterError, windows  # noqa: E402  — sibling module
 
@@ -132,14 +133,22 @@ class SupportWindowState:
     holds_issue: bool = False
 
 
-# What the feedstock watch's statuses mean to this script. Two sets, because
-# "may this force an update" and "may this licence a close" are different
-# questions -- the same distinction `SupportWindowState.holds_issue` draws.
-FEEDSTOCK_HOLDS: frozenset[str] = frozenset({"drift", "missing", "error"})
-# Not findings, and not evidence of agreement either: this run does not know.
-# `decide` refuses to close over them for the reason it already states about a
-# window crossing -- a rewritten body is recoverable, a closed issue is not.
-FEEDSTOCK_INCONCLUSIVE: frozenset[str] = frozenset({"unreachable", "no-baseline"})
+# What the feedstock watch's statuses mean to this script -- IMPORTED, not
+# restated. `drift_feedstock` emits them and owns the vocabulary, and this
+# module has three readers of it (the two predicates below and
+# `_FEEDSTOCK_SUMMARY`), so a local copy would be three things to keep in step
+# with a fourth. DRIFT-RULES Rule 3: derive the claim space from the canonical
+# artefact.
+#
+# Two sets, because "may this force an update" and "may this licence a close"
+# are different questions -- the same distinction `SupportWindowState.holds_issue`
+# draws. `FEEDSTOCK_INCONCLUSIVE` holds the verdicts that are not findings and
+# not evidence of agreement either: `decide` refuses to close over them for the
+# reason it already states about a window crossing, that a rewritten body is
+# recoverable and a closed issue is not.
+FEEDSTOCK_HOLDS = feedstock_statuses.HOLDS
+FEEDSTOCK_INCONCLUSIVE = feedstock_statuses.INCONCLUSIVE
+FEEDSTOCK_CLEAR = feedstock_statuses.CLEAR
 
 
 @dataclass(frozen=True)
@@ -205,6 +214,21 @@ def load_feedstock_report(path: Path | None) -> FeedstockState:
         return FeedstockState(
             status="error",
             reason=f"{path} carries no string `status`, so the step that writes it did not finish",
+        )
+    # An unrecognised status FAILS CLOSED. Measured before this guard existed:
+    # `'partial'`, `'ok'`, `'DRIFT'` and `''` each left `blocks_close` False, so
+    # a typo in the producer -- or a status added there and not classified
+    # here -- read as "the copies agree" and let the run close the rolling
+    # issue while the published recipe disagreed with us. Failing open is the
+    # one direction this signal must never take, and the set is imported from
+    # the producer so the two cannot drift apart silently.
+    if data["status"] not in feedstock_statuses.STATUSES:
+        return FeedstockState(
+            status="error",
+            reason=(
+                f"{path} reports status {data['status']!r}, which is not one of "
+                f"{sorted(feedstock_statuses.STATUSES)}; treated as a failure rather than as agreement"
+            ),
         )
     keys = data.get("keys") or []
     return FeedstockState(

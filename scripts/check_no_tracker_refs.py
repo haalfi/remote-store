@@ -211,11 +211,14 @@ _ROOT_MD_FILES: tuple[Path, ...] = (
     _REPO_ROOT / "CONTRIBUTING.md",
 )
 
-# The one YAML file that leaves this repository. A path rather than a root:
-# widening this to a glob over ``packaging/`` would pull in `variants.yaml`
-# and the generated feedstock copy, and neither reaches a conda-forge reader
-# on its own -- the copy is byte-identical below ``context:`` by construction,
-# so scanning it would be a second check of the same bytes.
+# The SOURCE of the one file that leaves this repository. A path rather than a
+# root: widening this to a glob over ``packaging/`` would pull in
+# `variants.yaml`, which never leaves, and the generated feedstock copy, which
+# does -- but every byte of that copy below ``context:`` is this file's, so
+# scanning it here would be a second check of the same bytes. What the copy adds
+# is its own generated header, which this gate never sees and which
+# ``tests/scripts/test_gen_conda_feedstock.py`` holds to these same patterns
+# instead.
 _CONDA_RECIPE = _REPO_ROOT / "packaging" / "conda-forge" / "recipe.yaml"
 
 # Everything above this line is the generator's to replace, so an internal
