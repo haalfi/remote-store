@@ -606,7 +606,7 @@ release forward, and nothing checks it mechanically.
 - [ ] Update `date-released` in `CITATION.cff` to today (bump-my-version only updates `version:`, not this field)
 - [ ] Tagline consistent across every mirror: `git grep "Write file storage code once"` — check them all, do not work from a remembered list; the copies nobody lists are the copies that go stale. Historical quotes in `sdd/research/` are the one exemption
 - [ ] Keywords consistent: `pyproject.toml` = `CITATION.cff`
-- [ ] Conda recipe: update `context.version` in `packaging/conda-forge/recipe.yaml` to X.Y.Z
+- [ ] Conda recipe: update `context.version` in `packaging/conda-forge/recipe.yaml` to X.Y.Z, **then `hatch run gen-conda-feedstock`** — the recipe is not in `[[tool.bumpversion.files]]`, so this edit is by hand, and the generated `packaging/conda-forge/feedstock/recipe.yaml` beside it does not regenerate itself. Phase 3's `hatch run all` gates on its freshness, so skipping it fails the next phase
 - [ ] `bump-my-version bump patch|minor|major --allow-dirty` (modifies the files listed in `[[tool.bumpversion.files]]` in `pyproject.toml` — does NOT commit or tag; `--allow-dirty` is required because the Phase 1/2 edits above are still uncommitted)
 - [ ] `hatch run gen-graph` (stamps `source_version` + `snapshot` in `docs-src/_data/graph/graph.json` from the bumped version)
 - [ ] `hatch run gen-features` (regenerates mechanical sections of `FEATURES.md` from updated `graph.json`)
@@ -620,7 +620,7 @@ release forward, and nothing checks it mechanically.
 - [ ] `mkdocs build --strict` passes
 - [ ] `hatch build && hatch run twine check dist/*` — package builds cleanly (not `python -m build`: `build` is not in the hatch env)
 - [ ] `pip install dist/*.whl && python -c "import remote_store; print(remote_store.__version__)"` — version matches
-- [ ] Conda recipe: version in `packaging/conda-forge/recipe.yaml` matches release version
+- [ ] Conda recipe: version in `packaging/conda-forge/recipe.yaml` matches release version, and `packaging/conda-forge/feedstock/recipe.yaml` carries it too (`hatch run all` fails on a stale copy, so a green Phase 3 already proves the second)
 
 ### Phase 4: Ship
 

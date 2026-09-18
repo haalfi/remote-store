@@ -7,7 +7,7 @@ This project follows [Semantic Versioning](https://semver.org/). Pre-1.0, minor 
 
 ## [Unreleased]
 
-- BK-370: The recipe conda-forge builds `remote-store` from is now generated from this repository's own, and the published copy is fetched weekly and compared against what was published for the version the channel is on — so the package page can no longer go on describing an older release than the one it serves.
+- BK-370: The recipe conda-forge builds `remote-store` from is now generated rather than copied by hand, and the published copy is checked weekly against what this project published for the version the channel serves, so a channel describing an older release is reported rather than waiting to be noticed.
 
 - BUG-254: **Breaking** — The store root now answers from the key on every measured backend, so `exists("")` and `is_folder("")` are `True` whether the container is missing or denied, `get_folder_info("")` aggregates to zero instead of raising `NotFound`, and a closed backend still refuses. [Migration guide](https://docs.remotestore.dev/stable/reference/migration/#v0320-to-v0330).
 - BK-375: Python versions are now supported for as long as CPython ships security fixes for them, which is longer than the 3-year window previously published; 3.11 through 3.14 all stay, and 3.10's support ends when upstream's does on 2026-10-04.

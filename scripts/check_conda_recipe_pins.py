@@ -366,7 +366,8 @@ _REMEDIATION = (
     "pyproject.toml governs. Edit packaging/conda-forge/recipe.yaml's run_constraints to match: "
     "one entry per package any user-facing extra declares, carrying the strictest floor across "
     "those extras (conda allows one pin per package, and a weaker floor asserts a compatibility "
-    "the strictest surface does not have)."
+    "the strictest surface does not have). Then run `hatch run gen-conda-feedstock`: the shipped "
+    "copy beside it is generated, and this gate's sibling fails on a stale one."
 )
 
 

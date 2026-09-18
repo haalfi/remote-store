@@ -178,9 +178,11 @@ observable is the commit appearing on the bot's PR with its CI re-running.
 ### Walkthrough
 
 1. Set `context.version` and `source.sha256` in
-   `packaging/conda-forge/recipe.yaml` and land that here via a PR — the
-   checklist's two preceding bullets carry the `sha256` command. `hatch run lint`
-   checks the pins and the `Conda Recipe` workflow renders it.
+   `packaging/conda-forge/recipe.yaml`, run `hatch run gen-conda-feedstock`, and
+   land **both** files here via a PR — the checklist's two preceding bullets
+   carry the `sha256` command. Every edit to the recipe is a two-file edit now:
+   `hatch run lint` fails on a stale generated copy, as well as checking the
+   pins, and the `Conda Recipe` workflow renders both.
 2. Fork `conda-forge/remote-store-feedstock` to a personal account, or add the
    bot's remote per the table above.
 3. Copy `packaging/conda-forge/feedstock/recipe.yaml` onto the feedstock's

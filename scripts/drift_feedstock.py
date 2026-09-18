@@ -114,6 +114,7 @@ from __future__ import annotations
 import argparse
 import dataclasses
 import difflib
+import http.client
 import json
 import re
 import subprocess
@@ -143,6 +144,11 @@ _VERSION_RE = re.compile(r"^context:\s*$\n(?:^[ \t]+.*$\n)*?^[ \t]+version:\s*[\
 _EXCLUDED_KEYS = ("number:", "sha256:")
 
 _TIMEOUT_SECONDS = 30
+
+# `_gh`'s synthetic exit code for "the process never launched". 127 is the
+# shell's own convention for command-not-found, and no `gh` invocation returns
+# it, so it cannot collide with a real answer.
+_GH_DID_NOT_RUN = 127
 
 
 @dataclass(frozen=True)
@@ -324,28 +330,82 @@ def fetch_remote(url: str = FEEDSTOCK_URL) -> str:
         if exc.code == 404:
             raise RemoteMissingError(f"{url} returned 404") from exc
         raise RemoteUnreachableError(f"{url} returned HTTP {exc.code}") from exc
-    except (urllib.error.URLError, OSError, UnicodeDecodeError) as exc:
+    # `http.client.HTTPException` is deliberately in this list and is **not**
+    # covered by `OSError`: `IncompleteRead` is raised while reading the body,
+    # after the request itself succeeded, so a truncated response would
+    # otherwise escape as a traceback.
+    except (urllib.error.URLError, http.client.HTTPException, OSError, UnicodeDecodeError) as exc:
         raise RemoteUnreachableError(f"{url}: {exc}") from exc
 
 
 def _gh(*args: str) -> subprocess.CompletedProcess:
-    return subprocess.run(["gh", *args], capture_output=True, text=True, check=False)
+    """Run ``gh``, treating a failure to launch it as a failed call.
+
+    ``check=False`` suppresses a non-zero **exit**, not a failure to **exec**:
+    with no ``gh`` on PATH this raises ``FileNotFoundError``, which is an
+    ``OSError`` and would escape ``compare()`` -- whose contract is that it
+    never raises, out of a workflow step that runs before the issue update.
+    Measured: without this guard, ``compare()`` raised
+    ``FileNotFoundError: [Errno 2] ... 'gh'`` from ``tag_exists``.
+
+    A synthetic non-zero result rather than a re-raise, because every caller
+    already has to handle "the call failed" and none of them can do anything
+    different about the reason.
+    """
+    try:
+        return subprocess.run(["gh", *args], capture_output=True, text=True, check=False)
+    except OSError as exc:
+        return subprocess.CompletedProcess(args=["gh", *args], returncode=_GH_DID_NOT_RUN, stdout="", stderr=str(exc))
 
 
-def tag_exists(tag: str, repo: str = REPO) -> bool:
-    """Whether ``tag`` resolves in ``repo``.
+def tag_exists(tag: str, repo: str = REPO) -> bool | None:
+    """Whether ``tag`` resolves in ``repo``; ``None`` if the question could not be asked.
 
     Asked **before** the file is fetched, and that order is the point: the
     contents endpoint answers 404 both for a tag that does not exist and for a
     file absent at a tag that does, and those are a broken watch and normal
     operation respectively.
+
+    The third answer matters for the same reason (Rule 2: localize). ``gh``
+    exits non-zero both for "no such tag" and for "the call never ran", and
+    reporting the second as the first tells a maintainer the feedstock names a
+    version this project never released -- sending them to the wrong repository
+    entirely. ``_gh``'s synthetic 127 is what separates them.
     """
-    return _gh("api", f"repos/{repo}/git/ref/tags/{tag}").returncode == 0
+    result = _gh("api", f"repos/{repo}/git/ref/tags/{tag}")
+    if result.returncode == _GH_DID_NOT_RUN:
+        return None
+    return result.returncode == 0
+
+
+class LookupFailedError(Exception):
+    """A ``gh`` call did not run at all, so its question is unanswered.
+
+    Distinct from a call that ran and said "no": ``tag_exists`` and
+    ``baseline_at`` both have a legitimate negative answer, and reporting a
+    broken tool as that answer sends a maintainer to conda-forge for a fault
+    that is here.
+    """
 
 
 def baseline_at(tag: str, repo: str = REPO, path: str = BASELINE_PATH) -> str | None:
-    """The generated copy committed at ``tag``, or ``None`` if there is none."""
+    """The generated copy committed at ``tag``, or ``None`` if there is none.
+
+    Raises:
+        LookupFailedError: If the ``gh`` call did not run. Caught by
+            ``compare``, which reports it as an ``error`` rather than as the
+            ``no-baseline`` a genuine 404 means — the sibling of the split
+            ``tag_exists`` makes, and for the same reason.
+
+    Bound: a 404 and any *other* HTTP failure both read as ``None`` here, so a
+    transient API error reports ``no-baseline``. That is the safe direction —
+    ``no-baseline`` neither holds the issue open nor lets the run close it, so
+    the week's verdict is "leave it alone" and the next run decides — but it is
+    a real limit, not a claim that the file is absent.
+    """
     result = _gh("api", "-H", "Accept: application/vnd.github.raw", f"repos/{repo}/contents/{path}?ref={tag}")
+    if result.returncode == _GH_DID_NOT_RUN:
+        raise LookupFailedError(f"the `gh` call for {path} at {tag} did not run: {result.stderr.strip()}")
     return result.stdout if result.returncode == 0 else None
 
 
@@ -402,7 +462,19 @@ def compare(
     latest = newest_tag(repo)
     trailing = bool(latest) and latest != tag
 
-    if not tag_exists(tag, repo):
+    resolved = tag_exists(tag, repo)
+    if resolved is None:
+        return Comparison(
+            status="error",
+            remote_version=version,
+            newest_tag=latest,
+            trailing=trailing,
+            reason=(
+                f"could not ask whether {tag} exists: the `gh` call did not run. Nothing was compared, and "
+                "this says nothing about the feedstock -- look at this workflow, not at conda-forge"
+            ),
+        )
+    if not resolved:
         return Comparison(
             status="error",
             remote_version=version,
@@ -415,7 +487,16 @@ def compare(
             ),
         )
 
-    baseline = baseline_at(tag, repo)
+    try:
+        baseline = baseline_at(tag, repo)
+    except LookupFailedError as exc:
+        return Comparison(
+            status="error",
+            remote_version=version,
+            newest_tag=latest,
+            trailing=trailing,
+            reason=f"{exc}. Nothing was compared, and this says nothing about the feedstock",
+        )
     if baseline is None:
         return Comparison(
             status="no-baseline",

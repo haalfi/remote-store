@@ -529,10 +529,19 @@ jobs:
       # the same input the real run acts on — the "one function for both to
       # consult" rule `decide` states, applied to what they consult.
       #
-      # The script never exits non-zero on a finding: a fetch failure, a
-      # missing tag and a real difference are all statuses in its JSON. So this
-      # step going red means the step itself broke, which is worth a red job.
+      # The script never exits non-zero on a finding: a fetch failure, a missing
+      # tag and a real difference are all statuses in its JSON.
+      #
+      # `continue-on-error` for the case that is left. Without it, this step
+      # dying takes the whole report with it — the two steps below carry no
+      # `always()`, so that week's diffs, floor results and smoke verdicts
+      # would never reach the issue for a reason that has nothing to do with
+      # them. That is the failure `_load_reports` was hardened against, one
+      # input over. `drift_report.py` reads an absent or unreadable report as
+      # an `error` status, which renders on the issue and holds it open, so
+      # this is tolerated *loudly* rather than skipped.
       - name: Compare the published conda recipe
+        continue-on-error: true
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |

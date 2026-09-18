@@ -1736,18 +1736,66 @@ class TestFeedstockLoad:
             ("status is not a string", '{"status": ["drift"]}'),
         ],
     )
-    def test_an_unusable_report_is_refused_rather_than_skipped(self, drift_report, tmp_path, case, payload):
-        """The writer catches its own failures, so this file is never legitimately bad.
+    def test_an_unusable_report_is_named_rather_than_skipped_or_raised(self, drift_report, tmp_path, case, payload):
+        """Named, not skipped -- and not fatal either.
 
-        Skipping it would retire the whole signal while the issue kept closing
-        on "all clear" -- the silent-close shape ``_load_reports`` records for
-        artefacts, arriving through a different door.
+        Skipping would retire the signal while the issue kept closing on "all
+        clear", the silent-close shape ``_load_reports`` records for artefacts.
+        Raising costs more than it buys: this is read before the issue update,
+        so one broken step would take that week's diffs, floor results and
+        smoke verdicts down with it, for a reason that has nothing to do with
+        them -- the failure ``_load_reports`` was hardened against, arriving
+        from the other side. So it becomes an ``error``, which holds the issue
+        open and says why.
         """
         path = tmp_path / "f.json"
         if payload is not None:
             path.write_text(payload, encoding="utf-8")
-        with pytest.raises(drift_report.UnusableInputError):
-            drift_report.load_feedstock_report(path)
+        state = drift_report.load_feedstock_report(path)
+        assert state.status == "error"
+        assert str(path) in state.reason
+
+    def test_an_unusable_report_still_holds_the_issue(self, drift_report, tmp_path):
+        """Tolerating it must not mean tolerating it into silence."""
+        path = tmp_path / "f.json"
+        path.write_text("{{{", encoding="utf-8")
+        state = dataclasses.replace(drift_report.load_feedstock_report(path), holds_issue=True)
+        reports = drift_report.Reports(diffs={}, floors={}, smokes={}, feedstock=state)
+        assert drift_report.has_signal(reports, today=TODAY)
+
+    def test_an_unusable_report_does_not_cost_the_other_signals(self, drift_report, tmp_path):
+        """The blast radius, pinned.
+
+        A drifted extra must still reach the issue when the feedstock report is
+        unreadable -- that is the whole reason this is a status rather than an
+        exit.
+        """
+        reports_dir = tmp_path / "reports"
+        _write(reports_dir, "s3-newest-diff.json", _diff("s3", status="drift"))
+        _write(reports_dir, "s3-newest-smoke.json", _smoke("s3", "newest", "pass"))
+        broken = tmp_path / "f.json"
+        broken.write_text("{{{", encoding="utf-8")
+        rc = drift_report.main(
+            [
+                str(reports_dir),
+                "--repo",
+                "x/y",
+                "--run-url",
+                "http://run",
+                "--title",
+                "t",
+                "--expect-extras",
+                "s3",
+                "--expect-lanes",
+                "newest",
+                "--feedstock-report",
+                str(broken),
+                "--today",
+                str(TODAY),
+                "--dry-run",
+            ]
+        )
+        assert rc == 0
 
 
 class TestFeedstockSignal:

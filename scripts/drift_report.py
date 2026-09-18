@@ -179,26 +179,33 @@ class FeedstockState:
 def load_feedstock_report(path: Path | None) -> FeedstockState:
     """``drift_feedstock.py``'s JSON as state, or ``absent`` when none was asked for.
 
-    A path that was given and cannot be read is an **input this script cannot
-    interpret**, so it is reported and raised rather than skipped. That
-    placement is load-bearing: ``drift_feedstock.py`` catches its own failures
-    and writes a status for each, so the only way this file is missing or
-    malformed is that the step which writes it broke. Tolerating that into a
-    silent skip would let the whole signal disappear while the issue kept
-    closing on "all clear", which is the failure `_load_reports` records for
-    artefacts and the reason it names them instead.
+    A path that was given and cannot be read becomes an ``error`` **status**,
+    named in the rendered section and holding the issue open. Three options
+    were available and the other two are both worse:
 
-    Raises:
-        UnusableInputError: If *path* was given and is missing or unreadable.
+    * *Skip it.* The signal retires while the issue goes on closing on "all
+      clear" — the silent-close shape ``_load_reports`` records for artefacts.
+    * *Raise.* This is read before the issue is reconciled, so one broken step
+      takes that week's diffs, floor results and smoke verdicts down with it,
+      for a reason that has nothing to do with them. That is the failure
+      ``_load_reports`` was hardened against, arriving from the other side:
+      "one unusable artefact used to abort the whole report".
+
+    So the rule ``_load_reports`` states applies here unchanged — tolerating a
+    bad input has to mean *naming* it — and an `error` is exactly that: loud on
+    the issue, and costing only its own section.
     """
     if path is None:
         return FeedstockState()
     try:
         data = json.loads(path.read_text(encoding="utf-8"))
     except (OSError, json.JSONDecodeError) as exc:
-        raise UnusableInputError(f"{path} is not a readable feedstock report: {exc}") from exc
+        return FeedstockState(status="error", reason=f"{path} is not a readable feedstock report: {exc}")
     if not isinstance(data, dict) or not isinstance(data.get("status"), str):
-        raise UnusableInputError(f"{path} carries no string `status`, so there is no verdict to report")
+        return FeedstockState(
+            status="error",
+            reason=f"{path} carries no string `status`, so the step that writes it did not finish",
+        )
     keys = data.get("keys") or []
     return FeedstockState(
         status=data["status"],
@@ -1509,14 +1516,11 @@ def main(argv: list[str] | None = None) -> int:
     except (RegisterDateError, UnusableInputError) as exc:
         print(f"::error::unusable register: {exc}", file=sys.stderr)
         return 1
-    # Same posture, and the reason is in `load_feedstock_report`: the writer
-    # catches its own failures, so an unreadable file here means the step that
-    # writes it broke, and a silent skip would retire the whole signal.
-    try:
-        feedstock = load_feedstock_report(args.feedstock_report)
-    except UnusableInputError as exc:
-        print(f"::error::unusable feedstock report: {exc}", file=sys.stderr)
-        return 1
+    # NOT a hard failure, unlike the registers above, and `load_feedstock_report`
+    # carries the argument: this one is read before the issue is reconciled, so
+    # exiting here would cost every other signal its week on the issue. It
+    # becomes a reported `error` instead, which holds the issue open.
+    feedstock = load_feedstock_report(args.feedstock_report)
     # Same posture again, for the two arguments the workflow interpolates from
     # another job's outputs rather than a person typing them.
     try:

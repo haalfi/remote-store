@@ -8,6 +8,7 @@ produces rather than that a failure was noticed.
 
 from __future__ import annotations
 
+import http.client
 import json
 import sys
 from pathlib import Path
@@ -217,6 +218,89 @@ class TestStatuses:
 
         monkeypatch.setattr(watch.urllib.request, "urlopen", boom)
         assert watch.compare().status == "unreachable"
+
+    def test_a_truncated_response_body_is_unreachable(self, watch, monkeypatch):
+        """`http.client.HTTPException` is not an `OSError`.
+
+        `IncompleteRead` is raised while reading the body, after the request
+        succeeded, so the `OSError` arm does not cover it and it would escape
+        `compare()` as a traceback.
+        """
+
+        def truncated(*_a, **_k):
+            raise http.client.IncompleteRead(b"half a recipe")
+
+        monkeypatch.setattr(watch.urllib.request, "urlopen", truncated)
+        assert watch.compare().status == "unreachable"
+
+    def test_an_absent_gh_binary_does_not_escape(self, watch, monkeypatch):
+        """`check=False` suppresses a non-zero exit, not a failure to exec.
+
+        `tag_exists` runs inside `compare()` with no guard of its own, so a
+        `FileNotFoundError` from the exec would propagate out of a function
+        whose contract is that it never raises -- and out of a workflow step
+        that precedes the issue update.
+
+        Only the fetch is stubbed here, deliberately. Stubbing `tag_exists` as
+        the other status tests do would route around `_gh` entirely, and the
+        first version of this test did exactly that and passed against the
+        unfixed code.
+        """
+        monkeypatch.setattr(watch, "fetch_remote", lambda url=watch.FEEDSTOCK_URL: RECIPE)
+        real = watch.subprocess.run
+
+        def no_gh(args, **kw):
+            if args and args[0] == "gh":
+                raise FileNotFoundError(2, "No such file or directory: 'gh'")
+            return real(args, **kw)
+
+        monkeypatch.setattr(watch.subprocess, "run", no_gh)
+        result = watch.compare()
+        assert result.status == "error"
+        assert "did not run" in result.reason
+
+    def test_a_failed_blob_lookup_is_not_reported_as_no_baseline(self, watch, monkeypatch):
+        """The sibling of the `tag_exists` split, and the same conflation.
+
+        `baseline_at` returning `None` means "this tag carries no copy", which
+        is normal operation and holds nothing. A `gh` that never ran must not
+        borrow that answer.
+
+        Breaking `subprocess.run` for the *contents* call alone is what makes
+        the real `baseline_at` raise; an earlier version of this test stubbed
+        `baseline_at` itself and passed against the unfixed code.
+        """
+        monkeypatch.setattr(watch, "fetch_remote", lambda url=watch.FEEDSTOCK_URL: RECIPE)
+        monkeypatch.setattr(watch, "newest_tag", lambda *_a, **_k: "v0.32.0")
+        monkeypatch.setattr(watch, "tag_exists", lambda *_a, **_k: True)
+        real = watch.subprocess.run
+
+        def gh_dies_on_contents(args, **kw):
+            if args and args[0] == "gh" and any("contents" in str(a) for a in args):
+                raise FileNotFoundError(2, "No such file or directory: 'gh'")
+            return real(args, **kw)
+
+        monkeypatch.setattr(watch.subprocess, "run", gh_dies_on_contents)
+        result = watch.compare()
+        assert result.status == "error"
+        assert "says nothing about the feedstock" in result.reason
+
+    def test_a_tag_that_does_not_exist_reads_differently_from_a_broken_gh(self, watch, monkeypatch):
+        """DRIFT-RULES Rule 2: the two send a maintainer to different repositories.
+
+        `gh` exits non-zero for both, so without the split a broken workflow
+        reports that conda-forge is serving a version this project never
+        released.
+        """
+        monkeypatch.setattr(watch, "fetch_remote", lambda url=watch.FEEDSTOCK_URL: RECIPE)
+        monkeypatch.setattr(watch, "newest_tag", lambda *_a, **_k: "v0.32.0")
+        monkeypatch.setattr(watch, "tag_exists", lambda *_a, **_k: False)
+        absent_tag = watch.compare()
+        monkeypatch.setattr(watch, "tag_exists", lambda *_a, **_k: None)
+        broken_gh = watch.compare()
+        assert absent_tag.status == broken_gh.status == "error"
+        assert "no v0.32.0 tag" in absent_tag.reason
+        assert "look at this workflow, not at conda-forge" in broken_gh.reason
 
 
 class TestTrailing:

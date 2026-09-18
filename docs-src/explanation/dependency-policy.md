@@ -41,9 +41,10 @@ dependencies are yours to name alongside it. The recipe's constraints bound
 what you install; they pull in nothing. A feedstock also trails its upstream
 release, so the channel can sit a release behind PyPI with constraints that
 predate the ranges here. What the channel serves is compared weekly against what
-this project published for the version the channel is on, so the constraints you
-get there are the ones that shipped with that release rather than whatever was
-last edited. The
+this project published for the version the channel is on, and a difference is
+reported rather than corrected — the recipe lives in a repository this project
+does not own, so the comparison is a watch on that copy, not a guarantee about
+it. The
 [README's installation section](https://github.com/haalfi/remote-store#installation)
 has the practical form.
 

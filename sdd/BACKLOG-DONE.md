@@ -289,16 +289,17 @@ if evidence changes; these are retired.
   the channel is on 0.32.0, so the next copy-out installs a comparable tag, and
   a feedstock left behind longer surfaces as `trailing`, which the release
   checklist owns.
-  **Not closed here: the `check_backend_order` blind spot** the item's second
-  bullet measured. `_distinct` is 4 against `_MIN_BACKENDS` 6, so a
-  four-backend `about` block is discarded as prose before ordering is tested,
-  and our own summary sits in that blind spot today. What this item changes is
-  the *direction* of the exposure, not its size: the feedstock can no longer
-  drift from our recipe, but our recipe can still drift from the README, and
-  every enumeration naming fewer than six backends is still invisible. Left
-  here rather than given an ID because lifting the floor widens the gate to
-  every such enumeration in the repository, which is its own change with its
-  own blast radius.
+  **Not closed here, and split out as BK-381: the `check_backend_order` blind
+  spot** the item's second bullet measured. `_distinct` is 4 against
+  `_MIN_BACKENDS` 6, so a four-backend `about` block is discarded as prose
+  before ordering is tested, and our own summary sits in that blind spot today.
+  What this item changes is the *direction* of the exposure, not its size: the
+  feedstock can no longer drift from our recipe, but our recipe can still drift
+  from the README. An earlier draft of this entry retired that diagnosis here
+  rather than filing it, on the argument that lifting the floor widens the gate
+  to every enumeration at once — which is a reason the work is not small, not a
+  reason to lose it. [§ Completing work](BACKLOG.md) wants an ID for the
+  remaining half, so BK-381 carries the measurement and the fix shape.
 
 - [x] **BUG-254 — Five backend classes breach BE-029's root row against an absent container**
   spec: BE-004, BE-021, BE-029 · effort: S · audience: user.api, user.site

@@ -193,5 +193,8 @@ surprising_ripples:
   - .github/workflows/conda-recipe.yml
   - tests/scripts/test_check_no_tracker_refs.py
 
-discovery_followups: []
+discovery_followups:
+  - BK-381
+
 co_shipped_items: []
+review_rounds: 1
