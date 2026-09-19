@@ -326,9 +326,38 @@ class TestCondaRecipeScanner:
         assert rc == 1
         assert "cannot say the conda recipe is clean" in capsys.readouterr().err
 
-    def test_the_scanner_itself_still_tolerates_an_unreadable_file(self, tmp_path):
-        """The refusal lives at the enumeration, not in the scanner."""
-        assert _mod._scan_conda_recipe(tmp_path / "absent.yaml") == []
+    def test_a_recipe_that_cannot_be_read_is_refused_by_the_scanner_too(self, tmp_path):
+        """Not only an absent one, which ``is_file()`` already catches.
+
+        The enumeration's guard answers "is there a file here"; it cannot
+        answer "could its bytes be read". A recipe that exists and is not
+        valid UTF-8 passed that guard and then returned no violations, so the
+        gate printed "no tracker IDs found in published surfaces" over a file
+        it had not read -- the exact outcome the guard one level up exists to
+        prevent.
+        """
+        undecodable = tmp_path / "recipe.yaml"
+        undecodable.write_bytes(b"context:\n  version: \xff\xfe not utf-8\n")
+        with pytest.raises(_mod.MissingRecipeError):
+            _mod._scan_conda_recipe(undecodable)
+
+    def test_an_unreadable_recipe_reaches_main_as_a_refusal(self, tmp_path, capsys):
+        undecodable = tmp_path / "recipe.yaml"
+        undecodable.write_bytes(b"context:\n  version: \xff\xfe not utf-8\n")
+        src_empty = tmp_path / "_empty_src"
+        src_empty.mkdir()
+        rc = _mod.main(
+            [
+                "--src-root",
+                str(src_empty),
+                "--docs-root",
+                str(src_empty),
+                "--conda-recipe",
+                str(undecodable),
+            ]
+        )
+        assert rc == 1
+        assert "cannot say the conda recipe is clean" in capsys.readouterr().err
 
     def test_the_committed_recipe_is_clean(self):
         """Integration guard: the real recipe carries no coordinate below ``context:``."""
@@ -355,7 +384,8 @@ class TestMain:
         return [part for pair in args.items() for part in pair]
 
     def test_clean_subtrees_return_zero(self, tmp_path):
-        # Empty src + empty docs-src + no root MD files + no recipe → no findings.
+        # Empty src + empty docs-src + no root MD files + a clean stub recipe
+        # (`_args` writes one, because an absent recipe is its own refusal).
         assert _mod.main(self._args(tmp_path)) == 0
 
     def test_violation_returns_one(self, tmp_path, capsys):

@@ -177,32 +177,38 @@ class FeedstockState:
     reason: str = ""
     diff: str = ""
     keys: tuple[str, ...] = ()
+    fingerprint: str = ""
     holds_issue: bool = False
-    silenced: tuple[str, ...] = ()
+    accepted: tuple[str, str] | None = None
+    """``(owner, review_by)`` of the register row matching ``fingerprint``, if any.
+
+    Resolved in ``main`` and carried here rather than looked up at render time,
+    so the predicate below and the rendered prose cannot disagree about which
+    row applied.
+    """
 
     @property
-    def fully_silenced(self) -> bool:
-        """A ``drift`` whose *every* differing key is registered and unexpired.
+    def registered(self) -> bool:
+        """A ``drift`` whose published body is the exact one a live row accepts.
 
-        ``keys`` must be non-empty, and that guard is load-bearing rather than
-        defensive tidiness: ``set(()) - live`` is empty, so a ``drift`` that
-        arrived carrying no keys at all would otherwise read as
-        "every difference is accepted" and licence a close. Fail-open is the
-        one direction this signal must never take, and an empty ``keys`` on a
-        ``drift`` means the producer could not localize, not that there is
-        nothing to localize.
+        Content-keyed, so there is no partial case: the register either names
+        this file or it does not. ``keys`` is reporting only and takes no part
+        -- the key-path spelling this replaced dropped a difference that
+        localized to ``?``, which let one registered key plus one unregistered
+        comment edit close the rolling issue.
         """
-        return self.status == "drift" and bool(self.keys) and not set(self.keys) - set(self.silenced)
+        return self.status == "drift" and self.accepted is not None
 
     @property
     def blocks_close(self) -> bool:
         """Whether this run may close the rolling issue over this verdict.
 
-        A fully registered ``drift`` does not block: every difference in it is
-        one somebody owns, which is exactly what the register decides. One
-        unregistered key and it blocks again.
+        A registered ``drift`` does not block: the difference is one somebody
+        owns, which is exactly what the register decides. Any other verdict --
+        including a ``drift`` one edit further on, which has a different
+        fingerprint and therefore no row -- blocks again.
         """
-        if self.fully_silenced:
+        if self.registered:
             return False
         return self.status in FEEDSTOCK_HOLDS or self.status in FEEDSTOCK_INCONCLUSIVE
 
@@ -261,6 +267,7 @@ def load_feedstock_report(path: Path | None) -> FeedstockState:
         reason=str(data.get("reason") or ""),
         diff=str(data.get("diff") or ""),
         keys=tuple(str(k) for k in keys) if isinstance(keys, list) else (),
+        fingerprint=str(data.get("fingerprint") or ""),
     )
 
 
@@ -612,26 +619,40 @@ def load_python_support_register(path: Path = PYTHON_SUPPORT_REGISTER) -> dict[s
 
 FEEDSTOCK_REGISTER = Path(__file__).resolve().parent.parent / "infra" / "drift-locks" / "FEEDSTOCK-DIVERGENCE.md"
 
-# `| `extra.recipe-maintainers` | owner | rationale | 2026-12-31 |` — four cells,
-# the first a BACKTICKED YAML key path. Disjoint from both sibling row patterns:
-# `_REGISTER_ROW_RE` needs a bracketed `[extra]` first cell and five cells, and
-# `_PYTHON_REGISTER_ROW_RE` needs a bare `N.N` version. A key path contains a
-# dot or a bracket and never matches either, which is what keeps three loaders
+# `| `sha256:<64 hex>` | owner | rationale | 2026-12-31 |` — four cells, the
+# first a BACKTICKED fingerprint as `drift_feedstock.fingerprint` spells it.
+# Disjoint from both sibling row patterns, which is what keeps three loaders
 # from reading each other's rows — the collision the python register's own
-# comment records as measured.
+# comment records as measured. `_REGISTER_ROW_RE` needs a bracketed `[extra]`
+# first cell, `_PYTHON_REGISTER_ROW_RE` a bare `N.N`, and neither can begin
+# `sha256:`. `test_the_three_row_shapes_are_disjoint` drives one row of each
+# shape through all three loaders rather than leaving that argument in prose.
 _FEEDSTOCK_REGISTER_ROW_RE = re.compile(
-    r"^\|\s*`(?P<key>[A-Za-z_][\w.\[\]-]*)`\s*\|(?P<owner>[^|]*)\|[^|]*\|(?P<review>[^|]*)\|\s*$"
+    r"^\|\s*`(?P<key>sha256:[0-9a-f]{64})`\s*\|(?P<owner>[^|]*)\|[^|]*\|(?P<review>[^|]*)\|\s*$"
 )
 
 
 def load_feedstock_register(path: Path = FEEDSTOCK_REGISTER) -> dict[str, tuple[str, str]]:
-    """``{key_path: (owner, review_by)}`` from the accepted-divergence register.
+    """``{fingerprint: (owner, review_by)}`` from the accepted-divergence register.
 
-    Keyed on the YAML key path rather than on the extra or the interpreter the
-    other two registers use, because a feedstock divergence is a fact about one
-    field of one file. That granularity is the point: accepting an edited
-    `extra.recipe-maintainers` must not also silence a changed dependency floor
-    in the same comparison.
+    Keyed on the **content** of the published body rather than on the extra or
+    the interpreter the other two registers use, because unlike a finding about
+    a lane, a feedstock divergence is a fact about one *file*. Content is a
+    total key -- every possible published file has one -- so no divergence is
+    unregisterable, and a row accepts one file rather than granting a standing
+    permission: the next edit on the far side changes the fingerprint and the
+    row stops matching.
+
+    That replaced a YAML-key-path key with two measured defects, both recorded
+    with their derivations in the register's own *Why content and not the YAML
+    key*: 3 of the recipe's 62 key paths could not be written as a row at all,
+    and a difference ``differing_keys`` localized to ``?`` was dropped before
+    the registration check -- so one registered key plus one unregistered
+    column-0 comment edit closed the rolling issue.
+
+    Raises:
+        RegisterDateError: If a row's ``Review by`` is not an ISO date.
+        UnusableInputError: If ``path`` is not a file, or a row names no owner.
     """
     if not path.exists():
         return {}
@@ -642,9 +663,20 @@ def load_feedstock_register(path: Path = FEEDSTOCK_REGISTER) -> dict[str, tuple[
         match = _FEEDSTOCK_REGISTER_ROW_RE.match(line.strip())
         if match:
             key = match.group("key")
+            owner = match.group("owner").strip()
+            if not owner:
+                # Hard, for the same reason as the date below: a row whose
+                # shape is right and whose content is not would otherwise
+                # silence a divergence nobody is answerable for. The sibling
+                # registers both record an unenforced `Owner` as a live hazard.
+                raise UnusableInputError(
+                    f"{path}, row `{key}`: `Owner` is empty. A row that names nobody would silence a "
+                    f"divergence with no owner to re-read it, so this is a hard failure rather than an "
+                    f"anonymous silencer."
+                )
             review = match.group("review").strip()
             _review_date(review, where=f"{path}, row `{key}`")
-            register[key] = (match.group("owner").strip(), review)
+            register[key] = (owner, review)
     return register
 
 
@@ -1236,7 +1268,7 @@ _FEEDSTOCK_SUMMARY: dict[str, str] = {
 }
 
 
-def _render_feedstock(state: FeedstockState, register: dict[str, tuple[str, str]] | None = None) -> list[str]:
+def _render_feedstock(state: FeedstockState) -> list[str]:
     """What conda-forge publishes, against what this repo published for it.
 
     **Renders on every run that produces a body, not only on a finding**, for
@@ -1252,10 +1284,13 @@ def _render_feedstock(state: FeedstockState, register: dict[str, tuple[str, str]
     recipe is mostly comments — so a unified diff localizes to a line number
     while ``requirements.run_constraints[pyarrow]`` localizes to the thing a
     reader has to decide about. The diff rides underneath as detail.
+
+    Owner and review date come from ``state.accepted``, not from the register
+    passed alongside, so the prose cannot name a row other than the one the
+    predicate matched.
     """
     if state.status == "absent":
         return []
-    register = register or {}
     lines = ["## Conda feedstock", ""]
     version = f"`{state.remote_version}`" if state.remote_version else "an unreadable version"
     summary = _FEEDSTOCK_SUMMARY.get(state.status, f"reported `{state.status}`")
@@ -1269,23 +1304,16 @@ def _render_feedstock(state: FeedstockState, register: dict[str, tuple[str, str]
         lines.append(f"_{state.reason}._")
         lines.append("")
     if state.keys:
+        # Reporting only. These localize the difference for a reader; what the
+        # register keys on is the fingerprint below, which is why an imperfect
+        # key path here costs nothing.
         lines.append("Differing keys:")
         lines.append("")
-        for key in state.keys:
-            if key in state.silenced:
-                owner, review = register.get(key, ("?", "?"))
-                lines.append(f"- `{key}` — _known: owned by {owner}, review by {review}._")
-            else:
-                lines.append(f"- `{key}`")
+        lines.extend(f"- `{key}`" for key in state.keys)
         lines.append("")
-        if state.fully_silenced:
-            lines.append(
-                "Every difference above is registered in "
-                "`infra/drift-locks/FEEDSTOCK-DIVERGENCE.md`, so this holds nothing open. A row "
-                "whose `Review by` has passed stops silencing and the difference is reported as "
-                "new again."
-            )
-            lines.append("")
+    if state.status == "drift" and state.fingerprint:
+        lines.append(f"Published body: `{state.fingerprint}` — the key a register row carries.")
+        lines.append("")
     if state.diff:
         lines.append("```diff")
         lines.append(state.diff.strip("\n"))
@@ -1301,7 +1329,20 @@ def _render_feedstock(state: FeedstockState, register: dict[str, tuple[str, str]
             "the release checklist owns it."
         )
         lines.append("")
-    if state.status in FEEDSTOCK_HOLDS:
+    if state.registered:
+        # BEFORE the holding branch, not inside it. Keyed on the raw status,
+        # this verdict rendered the narrowed-run sentence directly under the
+        # sentence saying it holds nothing open — two paragraphs whose every
+        # clause was false of it.
+        owner, review = state.accepted
+        lines.append(
+            f"This exact published body is registered in `infra/drift-locks/FEEDSTOCK-DIVERGENCE.md` — "
+            f"_owned by {owner}, review by {review}_ — so it neither forces an update nor stops this run "
+            "closing the issue. Any further change on the far side, or that date passing, and it is "
+            "reported as new again."
+        )
+        lines.append("")
+    elif state.status in FEEDSTOCK_HOLDS:
         held = (
             "holds this issue open"
             if state.holds_issue
@@ -1328,7 +1369,6 @@ def _render_body(
     expected: list[str] | None = None,
     lanes: list[str] | None = None,
     python_register: dict[str, tuple[str, str]] | None = None,
-    feedstock_register: dict[str, tuple[str, str]] | None = None,
     # Keyword-only, like `has_signal` and `decide`, so the reproducibility guard
     # in `tests/scripts/test_drift_report.py` can police it by looking for a
     # `today=` keyword. A positional pass here would read as an omission to that
@@ -1457,7 +1497,7 @@ def _render_body(
     lines.extend(_render_floor_lane(reports, register or {}, today or date.today()))
     lines.extend(_render_smoke_verdicts(reports, register or {}, lanes, today=today or date.today()))
     lines.extend(_render_support_windows(reports.windows, python_register or {}, today or date.today()))
-    lines.extend(_render_feedstock(reports.feedstock, feedstock_register))
+    lines.extend(_render_feedstock(reports.feedstock))
 
     # Clear means clear in both lanes. An extra whose newest resolution is `ok`
     # while its floor will not install, or while either lane's smoke is red, is
@@ -1574,8 +1614,8 @@ def main(argv: list[str] | None = None) -> int:
         help=(
             "Path to the accepted-divergence register for the published conda recipe "
             "(default: infra/drift-locks/FEEDSTOCK-DIVERGENCE.md). A third file rather than a "
-            "third table, because it is keyed on a YAML key path and one loader per file is what "
-            "keeps three registers from reading each other's rows."
+            "third table, because it is keyed on the published body's fingerprint and one loader "
+            "per file is what keeps three registers from reading each other's rows."
         ),
     )
     parser.add_argument(
@@ -1664,20 +1704,21 @@ def main(argv: list[str] | None = None) -> int:
         # so reaching this means a commit bypassed it.
         print(f"::error::undated interpreter classifier: {exc}", file=sys.stderr)
         return 1
+    # The accepted-divergence register, read through the same expiry predicate
+    # as the other two (DRIFT-RULES Rule 6). A drift whose published body is
+    # the one a live row names is a difference somebody owns, so it neither
+    # forces an update nor blocks the close; any other body has no row and does
+    # both again. Resolved once, here, so `registered` and the rendered prose
+    # read the same row.
+    row = feedstock_register.get(feedstock.fingerprint)
+    accepted = row if row and feedstock.fingerprint in silencing(feedstock_register, today) else None
     # `unnarrowed` again, for the same reason and from the same variable: a
     # published-copy finding is true on every run, so only a full one may act
     # on it. `blocks_close` is independent of this and stays true either way.
-    # The accepted-divergence register, read through the same expiry predicate
-    # as the other two (DRIFT-RULES Rule 6). A drift every one of whose keys is
-    # registered and unexpired is a set of differences somebody owns, so it
-    # neither forces an update nor blocks the close; one unregistered key and
-    # it does both again.
-    feedstock = dataclasses.replace(
-        feedstock, silenced=tuple(sorted(silencing(feedstock_register, today) & set(feedstock.keys)))
-    )
+    feedstock = dataclasses.replace(feedstock, accepted=accepted)
     feedstock = dataclasses.replace(
         feedstock,
-        holds_issue=unnarrowed and feedstock.status in FEEDSTOCK_HOLDS and not feedstock.fully_silenced,
+        holds_issue=unnarrowed and feedstock.status in FEEDSTOCK_HOLDS and not feedstock.registered,
     )
     reports = dataclasses.replace(_load_reports(args.reports_dir), windows=window_state, feedstock=feedstock)
     if not reports:
@@ -1694,7 +1735,11 @@ def main(argv: list[str] | None = None) -> int:
         # run saw, and a log line denying it would be the same error one signal
         # over.
         withheld = list(reports.windows.unregistered)
-        if reports.feedstock.status in FEEDSTOCK_HOLDS:
+        if reports.feedstock.status in FEEDSTOCK_HOLDS and not reports.feedstock.registered:
+            # `registered`, not the raw status: a registered drift is withheld
+            # by its owner's decision and not by this run's width, and saying
+            # "too narrow to act on that" of it names the wrong reason on a
+            # narrowed run and is simply false on a full one.
             withheld.append(f"the published conda recipe is {reports.feedstock.status}")
         if withheld:
             print(
@@ -1710,9 +1755,7 @@ def main(argv: list[str] | None = None) -> int:
             )
         return 0
 
-    body = _render_body(
-        reports, args.run_url, register, expected, lanes, python_register, feedstock_register, today=today
-    )
+    body = _render_body(reports, args.run_url, register, expected, lanes, python_register, today=today)
     if args.dry_run:
         # Before any `gh` call, so a dry run cannot reach the issue even to
         # read it: a dispatch from a branch must be observable without leaving

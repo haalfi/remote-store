@@ -49,6 +49,20 @@ phases:
           difference is fixed by a feedstock PR. The case that would force a
           register, an upstream migrator editing the recipe, is named in the
           script's Bounds instead of built for.
+
+          Retrospect: the vacuity argument did not survive review, and the
+          defect in it is worth naming because it reads as sound. "Never
+          tolerated" is a policy, and Rule 6 asks about a repository this
+          project does not own -- where conda-forge's `please add user @X` flow
+          edits `extra.recipe-maintainers` without our consent and Rule 1
+          forbids the in-repo remedy. A policy that the other side has to obey
+          is not a reason a divergence cannot arise; it only names who would be
+          at fault. The register was built in round 3, and its first key (the
+          differing YAML key path) was itself replaced in round 4 by the
+          published body's fingerprint, after a measuring pass found a
+          difference localizing to `?` was dropped before the registration
+          check. Two rounds to reach a total key for a rule the design had
+          declared inapplicable.
         outcome: ok
       - file: scripts/drift_report.py
         section: SupportWindowState, Reports.__bool__
@@ -216,7 +230,7 @@ discovery_followups:
 
 co_shipped_items: []
 
-# Derivation: `git log --oneline origin/master..HEAD | wc -l` gives 4 on the
-# merged branch -- the implementation commit plus one fix-pass commit per
-# review round -- so the review-driven count is 3.
-review_rounds: 3
+# Derivation: `git log --oneline origin/master..HEAD` lists 5 commits -- the
+# implementation commit plus one fix-pass commit per review round -- so the
+# review-driven count is 4.
+review_rounds: 4

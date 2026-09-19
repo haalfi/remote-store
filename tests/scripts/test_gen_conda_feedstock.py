@@ -149,6 +149,50 @@ class TestCheck:
         assert self._run("--check", "--source", str(source), "--out", str(out)).returncode == 0
 
 
+class TestExitCodes:
+    """Every non-zero path, because the docstring enumerates them.
+
+    The Exit codes block said ``1`` meant "under ``--check``, the copy is
+    stale or absent", which was false of three of the four ways this script
+    exits 1: an unreadable source, a marker-less source and a failed write
+    are none of them ``--check`` and none of them a stale copy.
+    """
+
+    def _run(self, *args: str) -> subprocess.CompletedProcess:
+        return subprocess.run(
+            [sys.executable, str(SCRIPTS / "gen_conda_feedstock.py"), *args],
+            capture_output=True,
+            text=True,
+        )
+
+    def test_an_unreadable_source_exits_one_without_check(self, tmp_path):
+        result = self._run("--source", str(tmp_path / "absent.yaml"), "--out", str(tmp_path / "out.yaml"))
+        assert result.returncode == 1
+        assert "cannot read" in result.stderr
+
+    def test_a_marker_less_source_exits_one_without_check(self, tmp_path):
+        source = tmp_path / "recipe.yaml"
+        source.write_text("package:\n  name: x\n", encoding="utf-8")
+        result = self._run("--source", str(source), "--out", str(tmp_path / "out.yaml"))
+        assert result.returncode == 1
+        assert "context:" in result.stderr
+
+    def test_an_unwritable_destination_is_reported_not_tracebacked(self, tmp_path):
+        """A gate that dies with a traceback says less than the sentence it could write.
+
+        ``drift_feedstock.main`` already takes this posture for the same
+        failure; this script reached ``write_text`` unguarded.
+        """
+        source = tmp_path / "recipe.yaml"
+        source.write_text(SOURCE, encoding="utf-8")
+        blocker = tmp_path / "blocker"
+        blocker.write_text("not a directory\n", encoding="utf-8")
+        result = self._run("--source", str(source), "--out", str(blocker / "recipe.yaml"))
+        assert result.returncode == 1
+        assert "Traceback" not in result.stderr
+        assert "cannot write" in result.stderr
+
+
 class TestCommittedCopy:
     def test_it_agrees_with_the_source_below_context(self, gen):
         """The two committed files, compared directly rather than through the script."""

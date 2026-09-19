@@ -270,8 +270,20 @@ if evidence changes; these are retired.
     committed at the tag the published `context.version` names. `drift_report`
     gained a `FeedstockState` on `Reports` before the emptiness guard, a
     "Conda feedstock" section that renders on every run, and the same UNNARROWED
-    rule `SupportWindowState` uses. No register: a difference is fixed by a
-    feedstock pull request, never tolerated.
+    rule `SupportWindowState` uses.
+  - **`infra/drift-locks/FEEDSTOCK-DIVERGENCE.md`** is the DRIFT-RULES Rule 6
+    register, keyed on the sha256 of the published body rather than on a YAML
+    key path. The first shape of this work claimed Rule 6 was satisfied
+    vacuously — "a difference is fixed by a feedstock pull request, never
+    tolerated" — which is a policy this project cannot enforce on a repository
+    it does not own: conda-forge's `please add user @X` flow edits
+    `extra.recipe-maintainers`, Rule 1 forbids the in-repo remedy, and the
+    resulting permanent `drift` would hold the **shared** rolling issue open
+    forever. Content rather than key path because 3 of the recipe's 62 key
+    paths cannot be written as a row at all, and a difference `differing_keys`
+    localized to `?` was dropped before the registration check — one registered
+    key plus one unregistered column-0 comment edit closed the issue. It ships
+    empty.
   **Two measurements moved the design, and both were false premises in the
   original shape.** The comparison basis had to exclude `source.sha256` as well
   as `build.number`: `CONTRIBUTING.md` Phase 5 fetches the digest from PyPI

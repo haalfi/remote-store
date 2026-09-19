@@ -138,11 +138,13 @@ Upstream sources, which govern where they disagree with this page:
      `no-baseline` rather than a comparison — which is every tag cut before the
      generator existed.
    - `infra/drift-locks/FEEDSTOCK-DIVERGENCE.md` is where a difference nobody
-     intends to revert is recorded, keyed by YAML key path with an owner and a
-     `Review by`. It exists for the edits conda-forge can impose without our
-     consent — a migrator, or `@conda-forge-admin, please add user @X` touching
-     `extra.recipe-maintainers` — which [Rule 1](#upstream-is-the-source) leaves
-     no in-repo remedy for. It ships empty; a row is a decision, and an expired
+     intends to revert is recorded, keyed by the sha256 of the published body,
+     with an owner and a `Review by`. It exists for the edits conda-forge can
+     impose without our consent — a migrator, or
+     `@conda-forge-admin, please add user @X` touching `extra.recipe-maintainers`
+     — which [Rule 1](#upstream-is-the-source) leaves no in-repo remedy for. A
+     row accepts one published file, so the next edit on the far side reports the
+     whole difference as new. It ships empty; a row is a decision, and an expired
      one stops silencing.
 
 8. **Fill [conda-forge's PR

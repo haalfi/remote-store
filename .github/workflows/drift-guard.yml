@@ -100,13 +100,14 @@ name: Drift Guard
 #    availability is `unreachable`. Folding the two together would let a broken
 #    watch look exactly like normal operation, forever.
 #  - A difference nobody intends to revert is REGISTERED, in
-#    infra/drift-locks/FEEDSTOCK-DIVERGENCE.md, keyed by YAML key path. This is
-#    the one artefact pair here where a divergence can be imposed without our
-#    consent (a conda-forge migrator; the maintainer-list flow), and
-#    CONDA-FORGE.md Rule 1 forbids the in-repo remedy. Without a register such
-#    an edit would hold THIS SHARED ISSUE open forever and retire the dependency
-#    lanes' own "drift cleared" signal. A drift stops holding only when EVERY
-#    differing key is registered and unexpired.
+#    infra/drift-locks/FEEDSTOCK-DIVERGENCE.md, keyed by the sha256 of the
+#    published body. This is the one artefact pair here where a divergence can
+#    be imposed without our consent (a conda-forge migrator; the maintainer-list
+#    flow), and CONDA-FORGE.md Rule 1 forbids the in-repo remedy. Without a
+#    register such an edit would hold THIS SHARED ISSUE open forever and retire
+#    the dependency lanes' own "drift cleared" signal. A row accepts ONE
+#    published file: the next edit on the far side changes the fingerprint, so
+#    the whole difference is reported as new again.
 #
 # One sharp edge on `workflow_dispatch`: the report job regenerates the WHOLE
 # issue body from whatever reports the run produced, so a single-extra or

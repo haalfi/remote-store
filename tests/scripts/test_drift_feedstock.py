@@ -173,6 +173,91 @@ class TestNormalization:
         assert watch.compare().status == "match"
 
 
+class TestFingerprint:
+    """The register's key (DRIFT-RULES Rule 6), and the two properties it needs.
+
+    **Total**: every possible published body has one, so no divergence is
+    unregisterable and no key is unexpressible. **Exact**: it is the hash of the
+    body this watch actually compares, so a row accepts one published file and
+    stops matching the moment anything else on the far side changes.
+    """
+
+    def test_it_is_a_prefixed_sha256(self, watch):
+        """Self-describing at the point of use, which is a row in a Markdown table."""
+        assert re.fullmatch(r"sha256:[0-9a-f]{64}", watch.fingerprint(RECIPE))
+
+    def test_the_two_owned_fields_do_not_change_it(self, watch):
+        """Over ``comparable``, not over the raw bytes, and this is why.
+
+        conda-forge bumps ``build.number`` on every rerender -- including in the
+        very ``please add user @X`` commit the register exists for. A
+        fingerprint over the raw file would expire its own row in the same
+        commit that made the row necessary.
+        """
+        bumped = RECIPE.replace("number: 0", "number: 4").replace("sha256: aaaa", "sha256: bbbb")
+        assert watch.fingerprint(bumped) == watch.fingerprint(RECIPE)
+
+    def test_the_header_does_not_change_it(self, watch):
+        assert watch.fingerprint(RECIPE) == watch.fingerprint("# something else entirely\n" + BODY)
+
+    def test_crlf_does_not_change_it(self, watch):
+        assert watch.fingerprint(RECIPE.replace("\n", "\r\n")) == watch.fingerprint(RECIPE)
+
+    def test_any_further_edit_changes_it(self, watch):
+        """The property that replaced the key-path register's fail-open.
+
+        Keyed by key path, an accepted ``extra.recipe-maintainers`` edit plus an
+        unregistered column-0 comment edit closed the rolling issue: the comment
+        localized to ``?``, which ``differing_keys`` drops. Keyed by content,
+        the second edit changes the key and the row simply stops matching.
+        """
+        registered = RECIPE.replace("eight backends", "four backends")
+        plus_a_comment = registered.replace("# a comment", "# a comment, edited by hand")
+        assert watch.fingerprint(plus_a_comment) != watch.fingerprint(registered)
+
+    def test_compare_reports_the_published_bodys_fingerprint(self, watch, wire):
+        """The verdict carries the key, so a maintainer can cut a row from it."""
+        remote = RECIPE.replace("eight backends", "four backends")
+        wire(remote=remote)
+        result = watch.compare()
+        assert result.status == "drift"
+        assert result.fingerprint == watch.fingerprint(remote)
+
+    @pytest.mark.parametrize(
+        ("status", "kwargs"),
+        [
+            ("match", {}),
+            ("no-baseline", {"baseline": None}),
+            ("error", {"tag": False}),
+        ],
+    )
+    def test_every_verdict_that_fetched_a_body_reports_it(self, watch, wire, status, kwargs):
+        """Not only ``drift``.
+
+        A row is cut *after* a maintainer reads a verdict, and the verdict a
+        divergence first arrives in need not be the one they act on.
+        """
+        wire(**kwargs)
+        result = watch.compare()
+        assert result.status == status
+        assert result.fingerprint == watch.fingerprint(RECIPE)
+
+    @pytest.mark.parametrize(
+        ("status", "exc"),
+        [("unreachable", "RemoteUnreachableError"), ("missing", "RemoteMissingError")],
+    )
+    def test_a_verdict_that_fetched_nothing_reports_no_fingerprint(self, watch, wire, status, exc):
+        """``unreachable`` and ``missing`` have no body to fingerprint.
+
+        An empty string rather than a hash of nothing: no register row can
+        carry it, so neither verdict can be accepted by accident.
+        """
+        wire(remote_exc=getattr(watch, exc)("boom"))
+        result = watch.compare()
+        assert result.status == status
+        assert result.fingerprint == ""
+
+
 class TestLocalization:
     """DRIFT-RULES Rule 2: name the element, not the fact of a difference."""
 

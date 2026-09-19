@@ -1689,6 +1689,13 @@ _SAMPLE_DIFF = """\
 """
 
 
+# Two register keys, distinct and obviously synthetic. A real one is
+# `drift_feedstock.fingerprint()` over the published body; these only have to be
+# the right *shape*, which is what the loader keys on.
+_FP = "sha256:" + "a" * 64
+_FP_OTHER = "sha256:" + "b" * 64
+
+
 def _feedstock(status: str, **kw) -> dict:
     return {
         "status": status,
@@ -1698,6 +1705,7 @@ def _feedstock(status: str, **kw) -> dict:
         "reason": f"synthetic {status}",
         "diff": "",
         "keys": [],
+        "fingerprint": "",
         **kw,
     }
 
@@ -1958,11 +1966,22 @@ class TestFeedstockRegister:
     ``please add user @X`` flow editing ``extra.recipe-maintainers``. Without a
     register that edit holds the **shared** rolling issue open forever, which
     would retire the dependency lanes' own "drift cleared" signal.
+
+    Keyed on the published body's **fingerprint**. An earlier spelling keyed on
+    the YAML key path and had two measured defects a content key does not have:
+    3 of the recipe's 62 real key paths could not be written as a row at all,
+    and a difference that localized to ``?`` -- a column-0 comment -- was
+    dropped before the check, so one registered key plus one unregistered
+    comment edit closed the rolling issue. Both derivations are recorded in
+    ``infra/drift-locks/FEEDSTOCK-DIVERGENCE.md``.
     """
+
+    FP = _FP
+    OTHER = _FP_OTHER
 
     def _register(self, tmp_path, rows):
         path = tmp_path / "FEEDSTOCK-DIVERGENCE.md"
-        body = ["| Key path | Owner | Rationale | Review by |", "|---|---|---|---|"]
+        body = ["| Published body | Owner | Rationale | Review by |", "|---|---|---|---|"]
         body += [f"| `{key}` | {owner} | because | {review} |" for key, owner, review in rows]
         path.write_text("\n".join(body) + "\n", encoding="utf-8")
         return path
@@ -1972,64 +1991,83 @@ class TestFeedstockRegister:
         assert drift_report.load_feedstock_register() == {}
 
     def test_a_row_round_trips(self, drift_report, tmp_path):
-        path = self._register(tmp_path, [("extra.recipe-maintainers", "haalfi", "2026-12-31")])
-        assert drift_report.load_feedstock_register(path) == {"extra.recipe-maintainers": ("haalfi", "2026-12-31")}
+        path = self._register(tmp_path, [(self.FP, "haalfi", "2026-12-31")])
+        assert drift_report.load_feedstock_register(path) == {self.FP: ("haalfi", "2026-12-31")}
 
-    def test_a_key_path_with_a_bracket_loads(self, drift_report, tmp_path):
-        path = self._register(tmp_path, [("requirements.run_constraints[pyarrow]", "haalfi", "2026-12-31")])
-        assert "requirements.run_constraints[pyarrow]" in drift_report.load_feedstock_register(path)
+    @pytest.mark.parametrize(
+        "cell",
+        ["extra.recipe-maintainers", "sha256:" + "a" * 63, "sha256:" + "A" * 64, "a" * 64, "sha256:zz"],
+    )
+    def test_a_cell_that_is_not_a_fingerprint_is_not_a_row(self, drift_report, tmp_path, cell):
+        """The shape is the whole guard, so it is pinned rather than assumed.
 
-    def test_it_does_not_read_the_other_registers_rows(self, drift_report):
-        """Three loaders, three row shapes, provably disjoint.
-
-        The python register's own comment records the measured collision that
-        happens when two four-cell tables share a loader.
+        A row nothing matches is inert, which fails in the safe direction -- but
+        the symptom is a row that does nothing and says nothing, so the file
+        format section is what a new row is checked against.
         """
-        assert drift_report.load_feedstock_register(drift_report.KNOWN_FINDINGS) == {}
-        assert drift_report.load_feedstock_register(drift_report.PYTHON_SUPPORT_REGISTER) == {}
+        path = self._register(tmp_path, [(cell, "haalfi", "2026-12-31")])
+        assert drift_report.load_feedstock_register(path) == {}
+
+    def test_the_three_row_shapes_are_disjoint(self, drift_report, tmp_path):
+        """One file, one row of each shape, three loaders -- each reads only its own.
+
+        Pinned over a file carrying all three rather than by pointing each
+        loader at the committed registers: ``PYTHON-SUPPORT.md`` ships with no
+        rows, so half of that spelling could not have failed.
+        """
+        path = tmp_path / "mixed.md"
+        path.write_text(
+            "| `[arrow]` | floor | BUG-287 | because | 2026-12-31 |\n"
+            "| `3.10` | BUG-999 | because | 2026-12-31 |\n"
+            f"| `{self.FP}` | haalfi | because | 2026-12-31 |\n",
+            encoding="utf-8",
+        )
+        assert list(drift_report.load_known_findings(path)) == [("arrow", "floor")]
+        assert list(drift_report.load_python_support_register(path)) == ["3.10"]
+        assert list(drift_report.load_feedstock_register(path)) == [self.FP]
 
     def test_a_bad_review_date_is_refused_with_the_row_named(self, drift_report, tmp_path):
-        path = self._register(tmp_path, [("about.summary", "haalfi", "whenever")])
+        path = self._register(tmp_path, [(self.FP, "haalfi", "whenever")])
         with pytest.raises(drift_report.RegisterDateError) as exc:
             drift_report.load_feedstock_register(path)
-        assert "about.summary" in str(exc.value)
+        assert self.FP in str(exc.value)
 
-    def test_a_fully_registered_drift_holds_nothing(self, drift_report):
-        state = drift_report.FeedstockState(
-            status="drift", keys=("extra.recipe-maintainers",), silenced=("extra.recipe-maintainers",)
-        )
-        assert state.fully_silenced
+    def test_an_ownerless_row_is_refused_rather_than_silencing_anonymously(self, drift_report, tmp_path):
+        """A row exists to name who is answerable; one that names nobody is not a row.
+
+        A hard failure rather than a skip, for the same reason as the date
+        above: silently ignoring it leaves a row that looks like a decision and
+        has no effect, and the sibling registers record that as a live hazard.
+        """
+        path = self._register(tmp_path, [(self.FP, "   ", "2026-12-31")])
+        with pytest.raises(drift_report.UnusableInputError) as exc:
+            drift_report.load_feedstock_register(path)
+        assert self.FP in str(exc.value)
+
+    def test_a_registered_body_holds_nothing(self, drift_report):
+        state = drift_report.FeedstockState(status="drift", fingerprint=self.FP, accepted=("haalfi", "2026-12-31"))
+        assert state.registered
         assert not state.blocks_close
 
-    def test_one_unregistered_key_is_enough_to_hold(self, drift_report):
-        """A row silences its key and nothing else."""
-        state = drift_report.FeedstockState(
-            status="drift",
-            keys=("extra.recipe-maintainers", "requirements.run_constraints[pyarrow]"),
-            silenced=("extra.recipe-maintainers",),
-        )
-        assert not state.fully_silenced
-        assert state.blocks_close
-
-    def test_a_drift_with_no_keys_is_never_read_as_fully_registered(self, drift_report):
-        """Fail-open is the one direction this must not take.
-
-        ``set(()) - live`` is empty, so without the non-empty guard a drift
-        that arrived unlocalized would read as "every difference is accepted".
-        """
-        state = drift_report.FeedstockState(status="drift", keys=(), silenced=())
-        assert not state.fully_silenced
+    def test_an_unregistered_body_holds(self, drift_report):
+        state = drift_report.FeedstockState(status="drift", fingerprint=self.FP)
+        assert not state.registered
         assert state.blocks_close
 
     def test_the_register_only_reaches_drift(self, drift_report):
-        """``missing`` and ``error`` carry no keys and are nobody's to accept."""
-        for status in ("missing", "error"):
-            state = drift_report.FeedstockState(status=status, keys=(), silenced=())
-            assert not state.fully_silenced, status
+        """A verdict that compared nothing is nobody's to accept.
+
+        Every state here carries the same accepted row, so the status is the
+        only thing that differs -- an earlier spelling gave both states empty
+        keys as well, and could not have failed.
+        """
+        for status in ("missing", "error", "no-baseline", "unreachable"):
+            state = drift_report.FeedstockState(status=status, fingerprint=self.FP, accepted=("haalfi", "2026-12-31"))
+            assert not state.registered, status
             assert state.blocks_close, status
 
     def test_an_expired_row_stops_silencing(self, drift_report, tmp_path):
-        path = self._register(tmp_path, [("about.summary", "haalfi", "2020-01-01")])
+        path = self._register(tmp_path, [(self.FP, "haalfi", "2020-01-01")])
         register = drift_report.load_feedstock_register(path)
         assert drift_report.silencing(register, TODAY) == set()
 
@@ -2044,10 +2082,10 @@ class TestFeedstockRegister:
             _write(reports_dir, f"{extra}-floor-smoke.json", _smoke(extra, "floor", "pass"))
         report = tmp_path / "f.json"
         report.write_text(
-            json.dumps(_feedstock("drift", keys=["extra.recipe-maintainers"], diff=_SAMPLE_DIFF)),
+            json.dumps(_feedstock("drift", fingerprint=self.FP, keys=["extra.recipe-maintainers"], diff=_SAMPLE_DIFF)),
             encoding="utf-8",
         )
-        register = self._register(tmp_path, [("extra.recipe-maintainers", "haalfi", "2026-12-31")])
+        register = self._register(tmp_path, [(self.FP, "haalfi", "2026-12-31")])
         argv = [
             str(reports_dir),
             "--repo",
@@ -2073,6 +2111,63 @@ class TestFeedstockRegister:
         absent = str(tmp_path / "none.md")
         assert drift_report.main([*argv, "--today", str(TODAY), "--feedstock-register", absent]) == 0
         assert "would create/update" in capsys.readouterr().err
+
+        # Same run, a row for a DIFFERENT body: a row accepts one file, not a
+        # standing permission. This is the property the key-path spelling could
+        # not offer, because a second edit could leave its registered key intact.
+        other = self._register(tmp_path, [(self.OTHER, "haalfi", "2026-12-31")])
+        assert drift_report.main([*argv, "--today", str(TODAY), "--feedstock-register", str(other)]) == 0
+        assert "would create/update" in capsys.readouterr().err
+
+        # Same run, same row, past its `Review by`: the date is the mechanism.
+        # Driven through `main` rather than asserted on `silencing`, which pins
+        # the predicate and leaves its caller free to ignore it — measured:
+        # dropping the expiry check from `main` survived the predicate test.
+        expired = self._register(tmp_path, [(self.FP, "haalfi", "2020-01-01")])
+        assert drift_report.main([*argv, "--today", str(TODAY), "--feedstock-register", str(expired)]) == 0
+        assert "would create/update" in capsys.readouterr().err
+
+    def test_a_registered_drift_is_not_described_as_withheld_for_narrowness(
+        self, drift_report, tmp_path, monkeypatch, capsys
+    ):
+        """The empty-reports log line keys on registration, not on the raw status.
+
+        With no artefacts at all the run prints why it is doing nothing. Keyed
+        on ``status in FEEDSTOCK_HOLDS``, a registered drift was reported there
+        as "this run was too narrow to act on that" -- which names the wrong
+        reason on a full run and is simply false on any run.
+        """
+        monkeypatch.setattr(drift_report, "_gh", lambda *a, **k: (_ for _ in ()).throw(AssertionError("no gh")))
+        report = tmp_path / "f.json"
+        report.write_text(json.dumps(_feedstock("drift", fingerprint=self.FP, diff=_SAMPLE_DIFF)), encoding="utf-8")
+        register = self._register(tmp_path, [(self.FP, "haalfi", "2026-12-31")])
+        empty = tmp_path / "reports"
+        empty.mkdir()
+        assert (
+            drift_report.main(
+                [
+                    str(empty),
+                    "--repo",
+                    "x/y",
+                    "--run-url",
+                    "http://run",
+                    "--title",
+                    "t",
+                    "--expect-extras",
+                    json.dumps(drift_report.list_extras()),
+                    "--expect-lanes",
+                    "newest,floor",
+                    "--feedstock-report",
+                    str(report),
+                    "--feedstock-register",
+                    str(register),
+                    "--today",
+                    str(TODAY),
+                ]
+            )
+            == 0
+        )
+        assert "too narrow" not in capsys.readouterr().err
 
 
 class TestFeedstockNarrowing:
@@ -2195,3 +2290,25 @@ class TestFeedstockSection:
     def test_an_inconclusive_verdict_says_it_compared_nothing(self, drift_report, tmp_path):
         body = self._body(drift_report, tmp_path, drift_report.FeedstockState(status="no-baseline"))
         assert "not the same as finding them equal" in body
+
+    def test_a_registered_drift_names_its_owner_and_drops_the_holding_prose(self, drift_report, tmp_path):
+        """Two contradictory paragraphs, both of whose clauses were false.
+
+        Keyed on ``status in FEEDSTOCK_HOLDS``, a registered drift rendered the
+        narrowed-run sentence ("would hold this issue open on a full run ... it
+        does stop this run closing the issue") directly under the sentence
+        saying it holds nothing open. It does neither.
+        """
+        state = drift_report.FeedstockState(
+            status="drift", fingerprint=_FP, accepted=("haalfi", "2026-12-31"), diff=_SAMPLE_DIFF
+        )
+        body = self._body(drift_report, tmp_path, state)
+        assert "owned by haalfi" in body
+        assert "2026-12-31" in body
+        assert "hold this issue open" not in body
+        assert "stop this run closing the issue" not in body
+
+    def test_a_drift_publishes_the_fingerprint_a_row_would_carry(self, drift_report, tmp_path):
+        """A reader cutting a row should not have to re-derive the key by hand."""
+        state = drift_report.FeedstockState(status="drift", fingerprint=_FP, holds_issue=True)
+        assert _FP in self._body(drift_report, tmp_path, state)

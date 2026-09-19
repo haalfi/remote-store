@@ -116,7 +116,8 @@ documented in [`CONTRIBUTING.md`](../CONTRIBUTING.md).
   policy page's prose. The **Conda feedstock** section carries one verdict,
   rendered on every run including a clean one — it leads with the YAML key paths
   that differ and carries the diff underneath, because the recipe is mostly
-  comments and a line number is not what changed.
+  comments and a line number is not what changed, and a `drift` also prints the
+  published body's fingerprint, which is what a register row is keyed on.
 - **What goes red:** a newest-lane smoke failure fails its leg, which is the
   signal the `/drift` skill has always read. A **floor** leg never does: its
   findings are advisory decisions about a published range, several are known-bad
@@ -152,13 +153,14 @@ documented in [`CONTRIBUTING.md`](../CONTRIBUTING.md).
   is not agreement. Splitting our failures from the feedstock's is what stops a
   broken watch looking exactly like a healthy one.
   **A difference nobody intends to revert is registered**, in
-  `infra/drift-locks/FEEDSTOCK-DIVERGENCE.md`, keyed by YAML key path — a third
-  register because it is keyed differently again from the other two. A `drift`
-  stops holding the issue only when *every* differing key has an unexpired row,
-  so accepting a conda-forge-imposed `extra.recipe-maintainers` edit does not
-  also silence a changed dependency floor. Without it such an edit would hold
-  this **shared** issue open permanently and retire the dependency lanes' own
-  "drift cleared" signal.
+  `infra/drift-locks/FEEDSTOCK-DIVERGENCE.md`, keyed by the sha256 of the
+  published body — a third register because it is keyed differently again from
+  the other two. A row therefore accepts one published file rather than a field:
+  the next edit on the far side changes the fingerprint, so the whole difference
+  is reported as new and nothing can hide behind an already-accepted key.
+  Without the register a conda-forge-imposed `extra.recipe-maintainers` edit
+  would hold this **shared** issue open permanently and retire the dependency
+  lanes' own "drift cleared" signal.
 - **How to act:** run the **`/drift` skill**. Refreshes are gated per extra on
   that extra's smoke verdict; the skill's steps 3–5 are authoritative on the
   gating, including how a major bump, a red smoke and a red floor are each

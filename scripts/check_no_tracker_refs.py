@@ -385,11 +385,22 @@ def _scan_conda_recipe(path: Path) -> list[Violation]:
     direction: the marker is how the exempt block is bounded, so a file that
     has lost it has no established exemption, and a silent full pass would
     be the one outcome that reports nothing while checking nothing.
+
+    Raises:
+        MissingRecipeError: If the file cannot be read or decoded. **Not** the
+            empty list ``_scan_markdown_file`` returns: that posture is right
+            for one file among a tree, where the run still covers the rest,
+            and wrong for the single named file this gate's conda claim rests
+            on. ``collect_violations``'s ``is_file()`` answers "is there a file
+            here" and cannot answer "could its bytes be read", so a recipe that
+            existed and was not valid UTF-8 reported clean.
     """
     try:
         lines = path.read_text(encoding="utf-8").splitlines()
-    except (OSError, UnicodeDecodeError):
-        return []
+    except (OSError, UnicodeDecodeError) as exc:
+        raise MissingRecipeError(
+            f"{path} could not be read ({exc}), so this gate cannot say the conda recipe is clean"
+        ) from exc
     start = next(
         (i for i, line in enumerate(lines) if line.startswith(_RECIPE_BODY_MARKER)),
         0,

@@ -61,7 +61,10 @@ Exit codes
 ==========
 
 * ``0`` -- written, or (under ``--check``) the committed copy is current.
-* ``1`` -- under ``--check``, the committed copy is stale or absent.
+* ``1`` -- the source could not be read or carries no ``context:``; the output
+  could not be written; or, under ``--check``, the committed copy is stale or
+  absent. Only the last of those is a finding about the pair -- the rest are
+  this run failing, and each names itself on stderr.
 
 Drift-gate::
 
@@ -185,8 +188,15 @@ def main(argv: list[str] | None = None) -> int:
         )
         return 1
 
-    args.out.parent.mkdir(parents=True, exist_ok=True)
-    args.out.write_text(expected, encoding="utf-8")
+    try:
+        args.out.parent.mkdir(parents=True, exist_ok=True)
+        args.out.write_text(expected, encoding="utf-8")
+    except OSError as exc:
+        # Reported, not tracebacked, like the read above and like
+        # `drift_feedstock.main` for the same failure: a traceback out of a
+        # gate says less than the sentence the raiser can write.
+        print(f"cannot write {args.out}: {exc}", file=sys.stderr)
+        return 1
     print(f"Wrote {args.out.relative_to(_REPO_ROOT) if args.out.is_relative_to(_REPO_ROOT) else args.out}")
     return 0
 

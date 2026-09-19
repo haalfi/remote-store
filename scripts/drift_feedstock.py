@@ -79,9 +79,9 @@ Status            Meaning                                     Forces   Permits
 ``unreachable``   The fetch failed                            no       no
 ================= =========================================== ======== =======
 
-A ``drift`` whose every differing key is registered in
+A ``drift`` whose published body is the exact one registered in
 ``infra/drift-locks/FEEDSTOCK-DIVERGENCE.md`` is the one exception: it renders
-with its owners and behaves like the first two rows.
+with its owner and behaves like the first two rows.
 
 ``HOLDS``, ``INCONCLUSIVE`` and ``CLEAR`` above are that table in code, and
 ``drift_report.py`` imports them rather than restating them, so the two cannot
@@ -144,23 +144,47 @@ Bounds (DRIFT-RULES Rule 7)
 * **Line endings are normalised, so a CRLF publication is not a difference.**
   That is a deliberate blindness: if the feedstock's tooling converted the file
   wholesale, nothing here would say so.
+* **The published version is the first ``version:`` at any depth below
+  ``context:``.** Measured: a ``context:`` block carrying a nested
+  ``build.version`` above the real key reads as that nested value. Not a shape
+  conda-forge writes, and left permissive on purpose -- the regex's two earlier
+  tightenings each made a legitimate reformatting read as versionless and
+  report ``error``, blaming this repo for the far repository's layout. What
+  this permits fails loudly instead: an unresolvable tag, or a drift against
+  the wrong one, never a silent clean bill.
 * **The newest-tag lookup reads the first 100 tags**, which is one page. It is
   used only for the informational ``trailing`` row, so a repository with more
   tags than that loses the row rather than the comparison.
 * **A difference nobody will revert is registered, not tolerated silently.**
   ``infra/drift-locks/FEEDSTOCK-DIVERGENCE.md`` keys accepted divergences by
-  YAML key path, with an owner, a rationale and a ``Review by`` read by the
-  same predicate the other two registers use. A ``drift`` stops holding the
-  issue only when *every* differing key is registered and unexpired, so
-  accepting an edited ``extra.recipe-maintainers`` does not also silence a
-  changed dependency floor. It ships empty: nothing is accepted today.
+  ``fingerprint`` -- the sha256 of the published body in its ``comparable``
+  form -- with an owner, a rationale and a ``Review by`` read by the same
+  predicate the other two registers use. A row therefore accepts **one
+  published file**, not a standing permission: any further edit on the far side
+  changes the fingerprint and the row stops matching, so the difference is
+  reported as new. It ships empty: nothing is accepted today.
+
+  Over ``comparable`` rather than the raw bytes, because conda-forge bumps
+  ``build.number`` on every rerender -- including in the very
+  ``please add user @X`` commit the register exists for. A raw-byte fingerprint
+  would expire its own row in the commit that made it necessary.
 
   The register exists because the earlier "never tolerated, so Rule 6 is
   satisfied vacuously" argument was a policy this project cannot enforce on a
   repository it does not own. conda-forge's ``please add user @X`` flow edits
-  that very field, ``sdd/CONDA-FORGE.md`` Rule 1 forbids the in-repo remedy,
-  and a permanent ``drift`` would hold the **shared** rolling issue open
-  forever -- retiring the dependency lanes' own "drift cleared" signal.
+  ``extra.recipe-maintainers``, ``sdd/CONDA-FORGE.md`` Rule 1 forbids the
+  in-repo remedy, and a permanent ``drift`` would hold the **shared** rolling
+  issue open forever -- retiring the dependency lanes' own "drift cleared"
+  signal.
+
+  Keyed on content rather than on the YAML key path ``differing_keys`` reports,
+  because that reporting is allowed to be imperfect and a trust boundary is
+  not. Measured on the real recipe: 3 of its 62 key paths were unwritable as a
+  register row, and a difference that localized to ``?`` was dropped before the
+  registration check -- so one registered key plus one unregistered column-0
+  comment edit closed the rolling issue. Both derivations are in the register's
+  own *Why content and not the YAML key*. ``differing_keys`` stays, for the
+  finding's ``Differing keys`` list alone.
 
 Exit codes
 ==========
@@ -184,6 +208,7 @@ from __future__ import annotations
 import argparse
 import dataclasses
 import difflib
+import hashlib
 import http.client
 import json
 import re
@@ -279,6 +304,15 @@ class Comparison:
     reason: str = ""
     diff: str = ""
     keys: tuple[str, ...] = ()
+    fingerprint: str = ""
+    """The published body's ``fingerprint``, or ``""`` when nothing was fetched.
+
+    Carried on every verdict that read a body, not only on ``drift``: a row is
+    cut after a maintainer reads a verdict, and the verdict a divergence first
+    arrives in need not be the one they act on. Empty on ``unreachable`` and
+    ``missing``, which no register row can carry, so neither can be accepted by
+    accident.
+    """
 
     def as_dict(self) -> dict:
         return dataclasses.asdict(self)
@@ -341,6 +375,27 @@ def mask_excluded(text: str) -> str:
 def comparable(text: str) -> str:
     """The form two recipes are compared in: normalised, header dropped, owned fields masked."""
     return mask_excluded(body(normalize(text)))
+
+
+FINGERPRINT_PREFIX = "sha256:"
+
+
+def fingerprint(text: str) -> str:
+    """The published body's identity, as a register row keys on it (Rule 6).
+
+    Over ``comparable`` rather than over the raw file, and that is the whole
+    point of hashing a *derived* form: it is blind to exactly the differences
+    this watch already declines to report -- the header, line endings,
+    ``build.number``, ``source.sha256`` -- and sensitive to every difference it
+    does report. So a row survives the rerender that bumps ``build.number``
+    alongside the maintainer edit it accepts, and expires on the next
+    hand-edit.
+
+    The ``sha256:`` prefix is for the reader, not the loader: the key's only
+    appearance is a cell in a Markdown table, where a bare 64-hex token says
+    nothing about what it is a hash of.
+    """
+    return FINGERPRINT_PREFIX + hashlib.sha256(comparable(text).encode("utf-8")).hexdigest()
 
 
 # --------------------------------------------------------------------------- #
@@ -584,10 +639,15 @@ def compare(
     except RemoteUnreachableError as exc:
         return Comparison(status="unreachable", reason=str(exc))
 
+    # Computed once, here, and carried by every verdict below: from this point
+    # on a body exists, so there is always a key a register row could name.
+    digest = fingerprint(remote_text)
+
     version = remote_version(remote_text)
     if version is None:
         return Comparison(
             status="error",
+            fingerprint=digest,
             reason="the published recipe has no `context.version`, so there is no tag to compare it against",
         )
 
@@ -602,6 +662,7 @@ def compare(
             remote_version=version,
             newest_tag=latest,
             trailing=trailing,
+            fingerprint=digest,
             reason=(
                 f"could not ask whether {tag} exists: the `gh` call did not run. Nothing was compared, and "
                 "this says nothing about the feedstock -- look at this workflow, not at conda-forge"
@@ -613,6 +674,7 @@ def compare(
             remote_version=version,
             newest_tag=latest,
             trailing=trailing,
+            fingerprint=digest,
             reason=(
                 f"the published recipe names version {version}, which this repository has no {tag} tag for. "
                 "Either the feedstock is on a version that was never released here, or this checkout "
@@ -628,6 +690,7 @@ def compare(
             remote_version=version,
             newest_tag=latest,
             trailing=trailing,
+            fingerprint=digest,
             reason=f"{exc}. Nothing was compared, and this says nothing about the feedstock",
         )
     if baseline is None:
@@ -636,6 +699,7 @@ def compare(
             remote_version=version,
             newest_tag=latest,
             trailing=trailing,
+            fingerprint=digest,
             reason=(
                 f"{tag} carries no {BASELINE_PATH}, so this repo published no generated copy for that "
                 "version and there is nothing to compare. The next copy-out ends this"
@@ -649,6 +713,7 @@ def compare(
             remote_version=version,
             newest_tag=latest,
             trailing=trailing,
+            fingerprint=digest,
         )
 
     # The release procedure lands `source.sha256` -- and anything else merged in
@@ -664,6 +729,7 @@ def compare(
             remote_version=version,
             newest_tag=latest,
             trailing=trailing,
+            fingerprint=digest,
             reason=(
                 f"the published recipe differs from {tag} but matches this repo's current copy, so it "
                 f"carries a change merged after {tag} was cut"
@@ -676,6 +742,7 @@ def compare(
         remote_version=version,
         newest_tag=latest,
         trailing=trailing,
+        fingerprint=digest,
         reason=f"the published recipe differs from what this repo committed at {tag}",
         diff=unified(baseline_body, remote_body),
         keys=differing_keys(baseline_body, remote_body),
