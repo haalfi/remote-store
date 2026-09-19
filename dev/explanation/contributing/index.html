@@ -11763,7 +11763,7 @@ walkthrough of the <code>Backend</code> contract, error mapping, and capabilitie
 <li>Add user-facing guide in <code>docs-src/guides/backends/&lt;name&gt;.md</code> and add to <code>docs-src/guides/_nav.yml</code></li>
 <li>Update every backend enumeration — see <strong>Backend order</strong> below for how to find them all and what order they go in</li>
 <li>Add backend config example to <code>examples/configuration/configuration.py</code></li>
-<li>If the backend needs an extra, add it to <code>pyproject.toml</code> <code>[project.optional-dependencies]</code>, and add the same floor to <code>run_constraints</code> in <code>packaging/conda-forge/recipe.yaml</code></li>
+<li>If the backend needs an extra, add it to <code>pyproject.toml</code> <code>[project.optional-dependencies]</code>, and add the same floor to <code>run_constraints</code> in <code>packaging/conda-forge/recipe.yaml</code>, then <code>hatch run gen-conda-feedstock</code> (the shipped copy beside it is generated, and <code>lint</code> fails on a stale one)</li>
 </ol>
 <p><strong>Backend order (step 6).</strong> Every enumeration lists backends in one order:</p>
 <blockquote>
@@ -11814,7 +11814,7 @@ the forgotten copies are the ones that go stale.</p>
 <li>Add the page to <code>docs-src/guides/_nav.yml</code> (under the Extensions section)</li>
 <li>Add a runnable example in <code>examples/</code></li>
 <li>The example docs page is auto-generated at <code>tutorial/examples/&lt;slug&gt;.md</code> from the module docstring via <code>gen_pages.py</code> — no manual wrapper file needed</li>
-<li>If the extension needs an extra, add it to <code>pyproject.toml</code> <code>[project.optional-dependencies]</code>, and add the same floor to <code>run_constraints</code> in <code>packaging/conda-forge/recipe.yaml</code> — that block covers <em>every</em> extra, backend and extension alike, and a dependency missing from it is silently unconstrained for conda users</li>
+<li>If the extension needs an extra, add it to <code>pyproject.toml</code> <code>[project.optional-dependencies]</code>, and add the same floor to <code>run_constraints</code> in <code>packaging/conda-forge/recipe.yaml</code>, then <code>hatch run gen-conda-feedstock</code> (the shipped copy beside it is generated, and <code>lint</code> fails on a stale one) — that block covers <em>every</em> extra, backend and extension alike, and a dependency missing from it is silently unconstrained for conda users</li>
 <li>Update <code>CHANGELOG.md</code> and <code>sdd/BACKLOG.md</code> (or <code>sdd/BACKLOG-DONE.md</code>) in the same commit</li>
 </ol>
 <h3 id="export-patterns">Export patterns<a class="headerlink" href="#export-patterns" title="Permanent link">&para;</a></h3>
@@ -12230,7 +12230,7 @@ release forward, and nothing checks it mechanically.</p>
 <li>[ ] Update <code>date-released</code> in <code>CITATION.cff</code> to today (bump-my-version only updates <code>version:</code>, not this field)</li>
 <li>[ ] Tagline consistent across every mirror: <code>git grep "Write file storage code once"</code> — check them all, do not work from a remembered list; the copies nobody lists are the copies that go stale. Historical quotes in <code>sdd/research/</code> are the one exemption</li>
 <li>[ ] Keywords consistent: <code>pyproject.toml</code> = <code>CITATION.cff</code></li>
-<li>[ ] Conda recipe: update <code>context.version</code> in <code>packaging/conda-forge/recipe.yaml</code> to X.Y.Z</li>
+<li>[ ] Conda recipe: update <code>context.version</code> in <code>packaging/conda-forge/recipe.yaml</code> to X.Y.Z, <strong>then <code>hatch run gen-conda-feedstock</code></strong> — the recipe is not in <code>[[tool.bumpversion.files]]</code>, so this edit is by hand, and the generated <code>packaging/conda-forge/feedstock/recipe.yaml</code> beside it does not regenerate itself. Phase 3's <code>hatch run all</code> gates on its freshness, so skipping it fails the next phase</li>
 <li>[ ] <code>bump-my-version bump patch|minor|major --allow-dirty</code> (modifies the files listed in <code>[[tool.bumpversion.files]]</code> in <code>pyproject.toml</code> — does NOT commit or tag; <code>--allow-dirty</code> is required because the Phase 1/2 edits above are still uncommitted)</li>
 <li>[ ] <code>hatch run gen-graph</code> (stamps <code>source_version</code> + <code>snapshot</code> in <code>docs-src/_data/graph/graph.json</code> from the bumped version)</li>
 <li>[ ] <code>hatch run gen-features</code> (regenerates mechanical sections of <code>FEATURES.md</code> from updated <code>graph.json</code>)</li>
@@ -12244,7 +12244,7 @@ release forward, and nothing checks it mechanically.</p>
 <li>[ ] <code>mkdocs build --strict</code> passes</li>
 <li>[ ] <code>hatch build &amp;&amp; hatch run twine check dist/*</code> — package builds cleanly (not <code>python -m build</code>: <code>build</code> is not in the hatch env)</li>
 <li>[ ] <code>pip install dist/*.whl &amp;&amp; python -c "import remote_store; print(remote_store.__version__)"</code> — version matches</li>
-<li>[ ] Conda recipe: version in <code>packaging/conda-forge/recipe.yaml</code> matches release version</li>
+<li>[ ] Conda recipe: version in <code>packaging/conda-forge/recipe.yaml</code> matches release version, and <code>packaging/conda-forge/feedstock/recipe.yaml</code> carries it too (<code>hatch run all</code> fails on a stale copy, so a green Phase 3 already proves the second)</li>
 </ul>
 <h3 id="phase-4-ship">Phase 4: Ship<a class="headerlink" href="#phase-4-ship" title="Permanent link">&para;</a></h3>
 <p><em>Automated by skill agent (<code>/release</code>). User role: review and merge PR only.</em></p>
@@ -12264,15 +12264,21 @@ release forward, and nothing checks it mechanically.</p>
 <li>[ ] GitHub Pages: check version switcher shows new version as "latest"</li>
 <li>[ ] ReadTheDocs: check https://docs.remotestore.dev/stable/ shows the new version (RTD automation rule activates tag-based builds; <code>stable</code> is the default version)</li>
 <li>[ ] Conda recipe: fetch sha256 from PyPI (<code>curl -s https://pypi.org/pypi/remote-store/X.Y.Z/json | python -c "import sys,json; d=json.load(sys.stdin); print([f['digests']['sha256'] for f in d['urls'] if f['filename'].endswith('.tar.gz')][0])"</code>) and update <code>source.sha256</code> in <code>packaging/conda-forge/recipe.yaml</code></li>
-<li>[ ] Commit <code>packaging/conda-forge/recipe.yaml</code> sha256 update in this repo via a branch and PR</li>
-<li>[ ] conda-forge: get <code>version</code>, <code>sha256</code> <strong>and the <code>run_constraints</code> block from
-      <code>packaging/conda-forge/recipe.yaml</code></strong> onto <code>conda-forge/remote-store-feedstock</code>,
-      following <a href="https://github.com/haalfi/remote-store/blob/master/sdd/CONDA-FORGE.md"><code>sdd/CONDA-FORGE.md</code></a>, which owns the routes, the
-      rules and the walkthrough. <strong>Done when
+<li>[ ] Commit the <code>packaging/conda-forge/recipe.yaml</code> sha256 update in this repo via a branch and PR.
+      <code>hatch run lint</code> regenerates nothing for you — run <code>hatch run gen-conda-feedstock</code> and commit
+      <code>packaging/conda-forge/feedstock/recipe.yaml</code> in the same PR, or the gate fails</li>
+<li>[ ] conda-forge: copy <strong><code>packaging/conda-forge/feedstock/recipe.yaml</code></strong> — the generated file, whole —
+      onto <code>conda-forge/remote-store-feedstock</code>, following
+      <a href="https://github.com/haalfi/remote-store/blob/master/sdd/CONDA-FORGE.md"><code>sdd/CONDA-FORGE.md</code></a>, which owns the routes, the
+      rules and the walkthrough. Nothing is stripped or reassembled by hand any more;
+      <code>build.number</code> is the only edit on the far side. <strong>Done when
       <code>conda search -c conda-forge remote-store</code> lists the new version</strong>, not when the PR
       is open: the upload happens after merge and can fail. Whether the bot has fired
       shows on conda-forge's <a href="https://conda-forge.org/status/#version_updates">version-update
       status</a>; it can take hours</li>
+<li>[ ] Once that PR is merged, <code>python scripts/drift_feedstock.py</code> reports <code>match</code>. It reads the
+      feedstock's <code>main</code>, so this is the first point at which it can — and it is the same
+      comparison the weekly drift guard then makes on its own</li>
 <li>[ ] Announce if applicable (tracking issues, users)</li>
 </ul>
 
