@@ -1311,9 +1311,14 @@ def _render_feedstock(state: FeedstockState) -> list[str]:
     while ``requirements.run_constraints[pyarrow]`` localizes to the thing a
     reader has to decide about. The diff rides underneath as detail.
 
-    Owner and review date come from ``state.accepted``, not from the register
-    passed alongside, so the prose cannot name a row other than the one the
-    predicate matched.
+    Owner and review date come from ``state.accepted``, which ``main`` resolved,
+    rather than from the register — which this function no longer takes, so the
+    prose cannot name a row other than the one the predicate matched.
+
+    **The remedy is per status, and renders only where there is one.** It used
+    to ride in the lead paragraph on every verdict, which prescribed a feedstock
+    pull request on a registered drift — the thing the register decided against
+    — and on a verdict that compared nothing.
     """
     if state.status == "absent":
         return []
@@ -1325,10 +1330,6 @@ def _render_feedstock(state: FeedstockState) -> list[str]:
         "This is a report, never a gate: the file lives in a repository this project does not own, "
         "so nothing committed here changes what the channel serves."
     )
-    # The remedy used to ride in that paragraph, on every verdict. It is a
-    # per-status sentence below instead: prescribing a feedstock pull request
-    # on a registered drift is the thing the register decided against, and on a
-    # verdict that compared nothing there is nothing to remedy at all.
     lines.append("")
     if state.reason:
         lines.append(f"_{state.reason}._")
