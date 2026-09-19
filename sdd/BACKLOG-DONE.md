@@ -240,6 +240,47 @@ if evidence changes; these are retired.
 
 ## Unreleased
 
+- [x] **BK-379 — Pilot RFC-0015's D2, D3 and its LINE-anchor rule on three deliveries, before the rest of it is built**
+  spec: — · effort: M · audience: contributor.process
+  All three exit criteria met: RFC-0015 amended with the pilot's four
+  corrections (#1019), the four skills amended (#1020), and three deliveries
+  run under the rules and measured (PRs #1021, #1022, #1023 — the three opened
+  after #1020 merged, so no round in the sample ran under the old rules). The
+  measurement and its bounds live in
+  [RFC-0015 § Pilot result](rfcs/rfc-0015-ship-two-surfaces.md); this entry
+  carries what it decided.
+  **The headline is a miss by three points.** The loop-introduced share of
+  must-fix findings from round 3 on is **53%** (10 of 19) against the
+  criterion's below-50% bar and the 78% baseline, from
+  `python sdd/rfcs/rfc-0015-findings.py 1021 1022 1023` at `2bd34cc`. Three
+  things travel with it, and the first is the reason this is not a rejection:
+  the RFC's § Impact wrote down before the run that a clause-1 miss *without D1
+  and D4* is not falsifying, because 20% of the pilot's findings still sit on
+  the record surface D1 targets and nothing in this sample separates "D2 and D3
+  are too weak" from "the record surface carries the late rounds". Second, the
+  verdict is **one finding wide**: 19 classified findings carry it, one finding
+  is five points, and 9 of 19 would have passed. Third, the deliveries were no
+  shorter — `review_rounds` 7, 7 and 4 against a post-gate median of 7.
+  **Clause 3 passed and clause 2 was not askable.** The D5 retraction trigger
+  fires in 0 of 3 PRs under all three readings, inside the *at most once*
+  bound and read as a floor, since both of D5's biases under-fire. Clause 2
+  needs the derived block D4 generates and defers with it.
+  **Two things the pilot decided rather than measured against a bar.** D6's
+  retirement of `/ship`'s repeat-site check is **withdrawn**: the check fired in
+  two of the three deliveries, both run under the fix-shape rule that was meant
+  to make it redundant, which is D6's own reverse condition. And D3's cap lift
+  stays held, because a panel composition that moved between the pilot and the
+  re-measurement would be comparable with neither the baseline nor the 53%.
+  **What the amended rules did buy**, none of it the criterion but all of it
+  measured: the `LINE` discipline anchored 3 findings to unchanged text against
+  zero in the whole 541-finding baseline, and cut unclassifiable findings from
+  30% to 23% — with ten of the remaining sixteen in a single whole-file round,
+  so the residue is a round shape rather than a spread. Fix shapes were named
+  in 67 of 72 fix replies, and the triage heuristic's *unknown* column fell from
+  33% to 12%, because a reply that names its shape states its verdict where the
+  script reads it.
+  **Left to [BK-378](BACKLOG.md):** D1, D4, clause 2, D5's stop-rule clause,
+  D6's deferred half and D3's cap lift, each with the disposition above.
 - [x] **BK-370 — The published conda recipe is a mirror no mechanism watches**
   spec: — · effort: M · audience: user.discoverability.human, infra.ci
   Closed by both halves of the item's first two options: a generator that makes

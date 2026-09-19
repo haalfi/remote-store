@@ -2180,7 +2180,8 @@ recorded (BK-365); the repo can say whether its own quality promise is
 holding rather than only asserting it (BK-366); two sessions working in
 parallel cannot mint the same backlog ID with every derivation telling both they
 are right (ID-257); and the review loop stops recording itself in the artifacts
-it reviews (BK-379's pilot decides what of RFC-0015 BK-378 ships).
+it reviews (BK-378, whose pilot ran as BK-379 and reported which of RFC-0015's
+decisions it still owes).
 **Bounded to those fifteen deliberately** — count derived by enumerating the
 semicolon-separated clauses above, not carried forward. "No artifact asserts what
 no mechanism can check" is the promise and cannot be a closing condition: this section's own
@@ -2868,145 +2869,6 @@ the commit that writes it lands, so cite the generator instead.
   long-lived PR should expect under the current scheme; the item moved to
   `BK-378`.
 
-- [~] **BK-379 — Pilot RFC-0015's D2, D3 and its LINE-anchor rule on three deliveries, before the rest of it is built**
-  spec: — · effort: M · audience: contributor.process
-  [RFC-0015](rfcs/rfc-0015-ship-two-surfaces.md) is Draft with six decisions and
-  an acceptance criterion stated before the run. **The pilot takes D2 whole,
-  D3's worktree half, D5's posting half, and D6's repeat-site half** — one
-  decision and three halves, enumerated in this paragraph, D3's other half
-  being the cap lift correction 4 holds back — because those are the parts
-  that need no script built: D2 (fix shape, instrument-bound claims, the reader-harm form)
-  is prose in `/ship`'s triage table and `/fix-pr`'s Rules; D3 (a review
-  worktree pinned at the certified commit) touches the spawn step and the tree
-  check; D5's LINE-anchor posting rule touches `/rvw-pr` Step 4. **D5 is piloted
-  in that half only** — its retraction stop-rule clause is not wired into the
-  loop, and correction 1 reports the trigger as a dry run over the three
-  deliveries instead. D1 and D4 need
-  three scripts built, aliased, guarded and given `Drift-gate::` blocks, and the
-  measurement does not wait on them — `rfc-0015-findings.py` takes any PR number
-  today, and `ship_report.py`'s output format is better designed after three
-  uses than before none. **D6 splits across both halves**: its retirement of the
-  repeat-site check rides with D2, which moves that check's trigger from two
-  refutations to zero, and `/ship` still carries the check, so three deliveries
-  under D2 either retire it or do not and the pilot must say which. D6's other
-  half — the whole-file brief excluding the trace's `review:` key, and a
-  measuring member re-running `ship-report` — has nothing to read until D1 and
-  D4 exist, and defers with them. The RFC carries the evidence for all six and
-  is not restated here. **Scope:** amend RFC-0015 with the four corrections
-  below, then `/ship`, `/fix-pr`, `/rvw-pr` and `/orchestrate`; run three
-  deliveries; re-derive Tables 2 and 4 over them.
-  **Four corrections the RFC's criterion needs first**, because it was written
-  for all six decisions and this pilots the four parts enumerated above:
-  1. **Its clause 2 has no referent here.** "The derived trace block draws a
-     finding in at most one round" presupposes a block D4 generates. This pilot
-     reports clauses 1 and 3: the loop-introduced share of classified must-fix
-     findings from round 3 on against the RFC's 78% baseline (Table 4 rows 3–7,
-     77 of 99), and the D5 retraction trigger as a dry run, which
-     `rfc-0015-findings.py` already computes under three readings. **Read that
-     share as correction 3 defines it**, over `original + loop-introduced` only
-     — the script's `POOLED r>=3 must-fix` line prints it so, with
-     `pre-existing`, which the LINE rule newly populates and the baseline has
-     at zero, beside it rather than in the denominator. Clause 2 is
-     deferred with D4, not dropped.
-  2. **A miss points at D1, not at Draft.** D1 targets the record surface: 133
-     of 541 findings on `sdd/traces/` and the two backlog files, a quarter of
-     everything the loop found (Table 3, which measures three quantities over
-     the 541 and does not rank the record bucket first — 190 sit on `src/` or
-     `tests/`). It is not in this pilot. So a share at or above 50% does not
-     falsify the RFC: it is equally consistent with D2 and D3 being too weak
-     alone and with the record surface being what carries the late rounds, and
-     the pilot cannot tell the two apart. Build D1 and D4 and re-measure; only a
-     miss with those shipped sends the RFC back to Draft.
-  3. **The LINE rule takes the conservative reading**, or it corrupts the metric
-     it exists to serve. `/rvw-pr`'s Comment rules, as this item found them,
-     pulled two ways: attach a finding on unchanged text to the nearest `+`
-     line, then, one bullet later, "do not anchor it to an unrelated one" —
-     added to close BK-348's
-     diagnosis. D5 forces that tension to be settled, and settling it the wrong
-     way makes `origin()` blame the unrelated `+` line, which a fix pass wrote,
-     tagging the finding `loop-introduced` when its subject is untouched text.
-     That inflates the number the pilot must drive down and breaks comparison
-     with a baseline that *excluded* those findings rather than misattributing
-     them. So: anchor to the finding's true line when that line falls inside a
-     diff hunk, context lines included; keep `subjectType: "FILE"` otherwise;
-     never anchor to an unrelated line. This needed `/rvw-pr` Step 4's Comment
-     rules **amended**: they said "`line` must be a `+` line in the diff",
-     which excluded the context lines this rule anchors to, so the rule is
-     the pilot's change to that bullet and not a reading of it; the amendment
-     landed with the skill rewrites (exit criteria below).
-     **And the share must then exclude `pre-existing`, or the rule deflates the
-     very figure it exists to serve.** A finding anchored to a context line
-     blames a commit reachable from `origin/master`, so `origin()` returns
-     `pre-existing` (`rfc-0015-findings.py:155-156`), and the script's share,
-     as filed, put that in the *denominator* (`cl = original + loop-introduced
-     + pre-existing`, `share = loop-introduced / cl`, `mcl`/`mshare`
-     likewise). The 78% baseline has `pre-existing` at zero throughout — an
-     artifact of the old posting rule, which sent those findings to the
-     unclassifiable column (RFC-0015 Table 2's first bound) — so counting them
-     now would lower the pilot's share for a reason that has nothing to do with
-     D2 or D3. **The pilot's headline figure is therefore
-     `loop-introduced / (original + loop-introduced)`**, over the same two
-     categories the baseline's was, with the `pre-existing` count reported
-     beside it as a floor on what the LINE rule newly reached: the `+`-line
-     half of the residue, findings posted `FILE` by practice, enters `o` and
-     `l` unseparated, and the RFC states that bound beside the criterion. The
-     script prints the pooled figure as one line (`POOLED r>=3 must-fix`) and
-     its by-round share excludes `pre-existing`; both are print changes, and
-     the per-finding classification the tables rest on is untouched. The D5
-     dry-run trigger carries the same distortion in the same direction
-     (`clean = mf-original + mf-pre-existing`, `:241`, feeding `hot()` at
-     `:245`), so it under-fires and is read as a floor. This is
-     correction 2's non-separability in the favourable direction, which is why
-     it is named rather than left to the report.
-     A residue stays unclassifiable whatever the rule, since GitHub takes a
-     `line` only inside a hunk and ADR-0037's whole-file gate exists to find
-     what no hunk reaches. That is the bound D5 states beside its residue —
-     the discipline's reach "is bounded by 160 and not measured" — and it
-     leaves the RFC's Open Question 4 open.
-  4. **The one-measurer-per-panel cap stays up for the three deliveries.** D3
-     lifts it for free, but lifting it changes panel composition and so moves
-     finding counts independently of fix shape. Take the worktree isolation now,
-     lift the cap once the pilot has reported.
-
-  **`/orchestrate` is on the edit list, and on both of the RFC's edit lists**
-  — § Status and § Impact alike, because a list that carries it on one side
-  only leaves the other asserting the opposite. The reason is not
-  `/orchestrate`'s own `tmp/base` path: that
-  path is protected by its own exactly-one-measuring-reviewer rule, and D3's
-  mechanism does not run there, because `/orchestrate`'s reviewers run against
-  uncommitted work with no per-round review worktree; whether per-reviewer
-  base paths lift that rule is the RFC's Open Question 1. The reason is that
-  `.claude/skills/orchestrate/SKILL.md` asserts, as a fact about a *different*
-  skill, that `/rvw-pr`'s fixed path is safe because of "`/ship`'s one measuring
-  member per panel" — while saying in the same breath that "Neither rule
-  protects the other skill" — and pairs that with "Edit both when the commands
-  change" against `/rvw-pr`'s matching block. D3 lifts that cap, so the
-  assertion goes false; correction 4 only postpones when. Whether `/orchestrate`
-  also takes D2 was the RFC's Open Question 1, proposed yes there and settled
-  yes here: its fix step names the five shapes.
-  **D2's reversal condition cannot fire in this pilot**: it needs a `BUG-` filed
-  after merge against a delivery run under the rule, which three deliveries do
-  not supply. Not a reason to widen the pilot; a reason not to read a pass as
-  having tested it.
-  **Exit criteria:** RFC-0015's § Status and § Impact edit lists, its
-  acceptance criterion and D3's and D5's mechanism text amended with the four
-  corrections above, **before the deliveries run** — met: the RFC carries
-  them and names this item as its pilot, so a reader of the RFC alone gets
-  the corrected criterion. That amendment also adds **ADR-0035** to
-  § Status's list of ADRs the RFC would amend: that ADR's "Every panel
-  carries one measuring member" Decision bullet states a floor and a one-seat
-  trade, and D3 widens the trade to at least one seat, the floor and the
-  bullet's own reverse condition unchanged. Then the four skills amended —
-  met: D2's shapes in `/ship`'s triage table, `/fix-pr` Step 3 and Rules and
-  `/orchestrate`'s fix step; D3's per-round review worktree and the tree check
-  in it under `/ship` § Reviewer permissions, the cap kept; D5's LINE rule as
-  `/rvw-pr` Step 4's first Comment rule; the repeat-site check kept as a
-  detector the pilot reports on. Then three deliveries shipped under the
-  rules; Tables 2 and 4
-  re-derived over their PR numbers with `rfc-0015-findings.py`; the result
-  reported against clauses 1 and 3 with the measured figures; and the
-  disposition of D1, D4, D5 and D6's deferred half recorded.
-
 - [ ] **BK-378 — The `/ship` loop reviews its own record past round 2, and nothing separates the two**
   spec: — · effort: L · audience: contributor.process
   Over the 19 deliveries reviewed since the whole-file gate merged, the share of
@@ -3025,6 +2887,29 @@ the commit that writes it lands, so cite the generator instead.
   against them. The RFC is the diagnosis's home; this entry does not restate it.
   **Feeds BK-366**: the origin tag the RFC's D5 specifies gives each delivery
   the caught-versus-escaped split that item asks for.
+  **The pilot has run and reported** (BK-379, RFC-0015 § Pilot result). D2,
+  D3's worktree half and D5's posting half are in force in the four skills and
+  are not this item's to build. What the pilot left here:
+  - **D1 and D4**, neither piloted. The measured share of loop-introduced
+    must-fix findings from round 3 on fell from 78% to **53%** over PRs #1021,
+    #1022 and #1023 (`python sdd/rfcs/rfc-0015-findings.py 1021 1022 1023` at
+    `2bd34cc`), which misses the criterion's below-50% bar by three points on a
+    denominator of 19 findings where one finding is five points. The RFC's own
+    reading of that miss is to build these two and re-measure, because 20% of
+    the pilot's findings still sit on the record surface D1 targets.
+  - **Acceptance clause 2** — "the derived trace block draws a finding in at
+    most one round" — has no referent until D4's `ship_report.py` generates the
+    block, and is measured with it.
+  - **D5's stop-rule clause**, unwired in the pilot: its dry run fired zero
+    times under all three readings, so the constants ship unchanged with
+    `ship-report`.
+  - **D6's deferred half** (the whole-file brief excluding the trace's
+    `review:` key, a measuring member re-running `ship-report`). Its
+    repeat-site half is **decided against**: the check fired in two of the
+    three pilot deliveries, which is D6's own reverse condition, so the
+    retirement is withdrawn and `/ship` keeps the check.
+  - **D3's cap lift**, held up so panel composition does not move finding
+    counts between the pilot's figures and the re-measurement.
   **Exit criteria:** RFC-0015 accepted or rejected with its open questions
   answered; if accepted, an ADR amending **ADR-0033/0034/0035/0037** — 0035
   because D3 widens the one-seat trade in its "Every panel carries one
@@ -3032,7 +2917,6 @@ the commit that writes it lands, so cite the generator instead.
   rewrites and the **three** scripts § Impact names shipped (`ship_report.py`,
   `check_no_retrospective.py`, `check_backlog_ids_vs_base.py`, whose guards
   § Testing calls "guards for the three scripts"), and Tables 2 and 4 re-derived
-  over the **three** deliveries the RFC's acceptance criterion names, which also
-  states that "One delivery is one draw and is not the criterion". **BK-379 runs
-  that pilot** for D2, D3 and the LINE-anchor rule, and reports which of D1, D4,
-  D5 and D6's deferred half this item still owes.
+  over **three** further deliveries run with D1 and D4 shipped, per the RFC's
+  acceptance criterion, which also states that "One delivery is one draw and is
+  not the criterion".

@@ -175,10 +175,11 @@ one is in
    reader there would hand them a paragraph whose stated reason is false in this
    skill. Edit both when the commands change. A fixed path is safe on each side
    for its own reason: here, the exactly-one rule above; there, `/ship`'s one
-   measuring member per panel, which BK-379's pilot keeps and
+   measuring member per panel, which
    [RFC-0015 D3](../../../sdd/rfcs/rfc-0015-ship-two-surfaces.md) proposes to
-   replace with a base path per measuring member — whether this skill follows
-   is that RFC's Open Question 1. Neither rule protects the other skill.
+   replace with a base path per measuring member and which stays up there until
+   that RFC's final measurement — whether this skill follows is its Open
+   Question 1. Neither rule protects the other skill.
 4. **Staff each lens.** A domain persona when the lens sits inside one domain
    and its foundation docs help; `general-purpose` otherwise — which is the
    normal case for a lens spanning domains or aimed at the surface no persona
