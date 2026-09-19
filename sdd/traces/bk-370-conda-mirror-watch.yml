@@ -230,7 +230,12 @@ discovery_followups:
 
 co_shipped_items: []
 
-# Derivation: `git log --oneline origin/master..HEAD` lists 5 commits -- the
-# implementation commit plus one fix-pass commit per review round -- so the
-# review-driven count is 4.
+# Derivation: the review passes on PR #1023, counted from their summary
+# comments -- 2026-09-18 19:43, 2026-09-18 20:17, 2026-09-19 05:48 and
+# 2026-09-19 06:5x. Four.
+#
+# NOT the branch's commit count, which was the first derivation written here
+# and stopped holding: the close pass rendered the issue section in four states,
+# found three more defects, and produced commits with no review round behind
+# them. A proxy that a later commit can invalidate is not a derivation.
 review_rounds: 4
