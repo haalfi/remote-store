@@ -73,7 +73,8 @@ lacks `actions: write`; the MCP server's `actions_run_trigger` dispatches).
 2. **Parse the body.** Extract: the drifted extras and their per-package
    `baseline → resolved` rows, the **Smoke verdicts** table, the **Floor lane**
    and **Isolated install failed** sections if present, the **Support windows**
-   table, the **Clear** list, and the **Last run** URL. The body is regenerated
+   table, the **Conda feedstock** verdict, the **Clear** list, and the
+   **Last run** URL. The body is regenerated
    every run and auto-closes on clear — never edit it.
 
 3. **Classify each verdict (load-bearing).** Read the per-lane verdict and its
@@ -185,6 +186,65 @@ lacks `actions: write`; the MCP server's `actions_run_trigger` dispatches).
    - **`review date passed`** → the row has stopped silencing. Re-affirm the
      decision or drop the version; extending the date without re-reading the
      rationale is what the enforcement exists to prevent.
+
+   **Conda feedstock.** Not a lane, not a refresh, and never acted on
+   unilaterally by this skill — neither the feedstock pull request a difference
+   needs nor a row accepting one. The section says whether the recipe
+   conda-forge publishes still matches the generated copy this repo committed at
+   the tag its version names.
+
+   **The body prints prose, not a status token.** Read the verdict from the
+   first sentence: "carries exactly what this repo committed" is `match`,
+   "**differs from what this repo committed**" is `drift`, "carries a change
+   merged after that version was tagged" is `ahead-of-tag`, "names a version
+   this repo published no generated copy for" is `no-baseline`, "**could not be
+   found at the path this repo publishes to**" is `missing`, "could not be
+   fetched" is `unreachable`, and "**could not be checked, and the fault is on
+   this side**" is `error`.
+
+   **A "release behind" paragraph is not one of those verdicts.** It renders
+   *beside* whichever verdict applies, because trailing is an orthogonal fact
+   rather than a status: a channel a release behind can still carry exactly
+   what we published for the version it is on. Read the verdict sentence first
+   and the trailing paragraph second — acting on the trailing sentence alone
+   will tell you there is nothing to do on a run that is holding the issue
+   open. Catching the channel up is the release checklist's, never this skill's.
+
+   - **`match`, `ahead-of-tag`** → nothing to do. The second means the published
+     copy carries a change merged after that tag was cut, which is what a
+     release's own copy-out looks like.
+   - **A drift marked _registered_** → the published body is the exact one a row
+     in `infra/drift-locks/FEEDSTOCK-DIVERGENCE.md` accepts, because that
+     difference is one nobody intends to revert (a conda-forge migrator, or the
+     maintainer-list flow). It holds nothing open. Rows are keyed on the body's
+     fingerprint, so this marking disappears the moment anything else changes on
+     the far side — and a row whose `Review by` has passed stops silencing.
+     Both are the mechanism asking you to re-read the rationale, not a date to
+     extend on sight.
+   - **`no-baseline`, `unreachable`** → this run could not compare the two. Not
+     a finding, and not a clean bill either: they stop the issue closing and
+     nothing else. `no-baseline` on a version tagged before this watch existed
+     is expected and ends at the next copy-out.
+   - **`drift`** → the channel serves something other than what we published for
+     that version. **The remedy is a pull request against the feedstock**, per
+     [`sdd/CONDA-FORGE.md`](../../../sdd/CONDA-FORGE.md) — copy
+     `packaging/conda-forge/feedstock/recipe.yaml` across and, when the version
+     is unchanged, increment `build.number` there, or the metadata-only fix does
+     not reach users. Never *resolve* it by editing our recipe: our side is the
+     authority, so a change here would be inventing a difference rather than
+     resolving one. Registering it here is the other legitimate answer, and not
+     an exception to that: a row records that the difference stands, it does not
+     change what we publish. Propose and ask; this skill neither opens that PR
+     nor writes that row.
+   - **`missing`** → a 404 on the path we fetch, which is **two** different
+     findings and the section cannot tell them apart. Either the feedstock moved
+     or renamed `recipe/recipe.yaml`, which is a pull request there, or the URL
+     this repo fetches is stale, which is `FEEDSTOCK_URL` in
+     `scripts/drift_feedstock.py` and a fix *here*. Open the feedstock and look
+     before assuming the first — "never edit this repo" is the rule for a
+     `drift`, not for a watch pointed at the wrong place.
+   - **`error`** → the fault is on **our** side, not conda-forge's: usually a
+     tag that will not resolve. Read the run log rather than the feedstock.
 
    **A crossing licenses a drop; it never requires one.** Rule 8 promises a
    floor, not a ceiling, so "the window closed" is not by itself a reason to

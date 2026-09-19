@@ -40,7 +40,11 @@ constraint as a plain bound.
 dependencies are yours to name alongside it. The recipe's constraints bound
 what you install; they pull in nothing. A feedstock also trails its upstream
 release, so the channel can sit a release behind PyPI with constraints that
-predate the ranges here. The
+predate the ranges here. From the first release published with a generated
+recipe, what the channel serves is checked weekly against what this project
+published for the version the channel is on, and a difference is reported rather
+than corrected — the recipe lives in a repository this project does not own, so
+the check is a watch on that copy, not a guarantee about it. The
 [README's installation section](https://github.com/haalfi/remote-store#installation)
 has the practical form.
 
@@ -234,6 +238,14 @@ alongside the test tooling it needs. Findings land on a rolling issue. The recor
 published on [Tested versions](../reference/tested-versions.md), which answers
 "what was CI last green against, and what is it held to?" and not "what will
 work".
+
+**The conda channel's copy of these constraints is watched on the same schedule,
+for a third reason.** The recipe conda-forge builds from lives in a repository
+this project does not own, so a copy that was right when it was taken can go on
+being served long after the ranges here have moved. The same weekly job fetches
+it and compares it against what this project published for the version the
+channel is on — not against the current ranges, which the channel is not meant to
+have yet ([Rule 3](#rule-3)).
 
 **The interpreter windows are watched on the same schedule, for a different
 reason.** A dependency range goes stale when an upstream publishes, which a

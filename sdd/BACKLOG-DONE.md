@@ -240,6 +240,81 @@ if evidence changes; these are retired.
 
 ## Unreleased
 
+- [x] **BK-370 — The published conda recipe is a mirror no mechanism watches**
+  spec: — · effort: M · audience: user.discoverability.human, infra.ci
+  Closed by both halves of the item's first two options: a generator that makes
+  the copy-out mechanical, and a weekly comparison of the published copy against
+  what this repo committed for the version it names. The other two options stay
+  out — the conda-forge bot cannot reach `run_constraints` (the item refutes it
+  from the bot's own schema), and `check_backend_order` is below.
+  - **`scripts/gen_conda_feedstock.py`** replaces everything above `context:`
+    with a header written for a conda-forge reader and copies the rest byte for
+    byte into `packaging/conda-forge/feedstock/recipe.yaml`. `--check` runs in
+    `lint` **and** `docs-gate`, for the CODE_PAT/DOCS_PAT reason
+    `check_conda_recipe_pins.py` documents. `conda-recipe.yml` now renders both
+    files, so the shipped one is validated too.
+  - **The strip step is inverted into a gate.** `check_no_tracker_refs` now
+    scans the recipe below `context:`, so the coordinate is refused in the pull
+    request that would introduce it rather than removed by hand on the way out.
+    Three comments carried one — `BK-368`, `BUG-232`, `BUG-286` — derived by
+    running the gate's own `_scan_lines` over the body, **not four**: the fourth
+    the item named, `staged-recipes#32401`, is matched by none of its patterns
+    (`_PR_RE` is `\bPR #\d+\b`) and is an external reference a conda-forge
+    reader can follow, so it stays. `CEP` joined `_EXTERNAL_PREFIXES`; a Conda
+    Enhancement Proposal is a standard, and Rule 6's own command returned
+    `['CEP-13']` against the published copy, so the runbook's "expect `clean`"
+    was false as written.
+  - **`scripts/drift_feedstock.py`** fetches the published recipe weekly in
+    drift-guard's report job — no lane, no artefact, the posture the
+    support-window signal set — and compares it against the generated copy
+    committed at the tag the published `context.version` names. `drift_report`
+    gained a `FeedstockState` on `Reports` before the emptiness guard, a
+    "Conda feedstock" section that renders on every run, and the same UNNARROWED
+    rule `SupportWindowState` uses.
+  - **`infra/drift-locks/FEEDSTOCK-DIVERGENCE.md`** is the DRIFT-RULES Rule 6
+    register, keyed on the sha256 of the published body rather than on a YAML
+    key path. The first shape of this work claimed Rule 6 was satisfied
+    vacuously — "a difference is fixed by a feedstock pull request, never
+    tolerated" — which is a policy this project cannot enforce on a repository
+    it does not own: conda-forge's `please add user @X` flow edits
+    `extra.recipe-maintainers`, Rule 1 forbids the in-repo remedy, and the
+    resulting permanent `drift` would hold the **shared** rolling issue open
+    forever. Content rather than key path because 3 of the recipe's 62 key
+    paths cannot be written as a row at all, and a difference `differing_keys`
+    localized to `?` was dropped before the registration check — one registered
+    key plus one unregistered column-0 comment edit closed the issue. It ships
+    empty.
+  **Two measurements moved the design, and both were false premises in the
+  original shape.** The comparison basis had to exclude `source.sha256` as well
+  as `build.number`: `CONTRIBUTING.md` Phase 5 fetches the digest from PyPI
+  *after* the tag, so `afaa7668f` landed a day after `v0.32.0` and
+  `git describe --tags --contains afaa7668f` finds no tag holding it — a tag
+  structurally carries the previous release's digest, and comparing it would
+  have produced a permanent false `drift` at every release. And the fallback of
+  generating a baseline from a pre-generator tag's source was dropped for
+  `no-baseline`: diffing the live feedstock against `v0.32.0`'s source body
+  gives five comment hunks that are the hand copy-out's own edits, so that
+  fallback reconstructs a file nobody ever copied out.
+  **Bound, stated rather than left implicit:** `no-baseline` makes the watch
+  inert against a feedstock pinned to a tag cut before the generator existed,
+  which is the shape of this item's own incident. It is bounded on both sides —
+  the channel is on 0.32.0, so the next copy-out installs a comparable tag.
+  That is the **only** bound: an earlier draft of this entry claimed a second,
+  that a feedstock left behind longer "surfaces as `trailing`", which cannot
+  happen — `trailing` is an orthogonal field rather than an alternative status,
+  so such a feedstock reports `no-baseline` *and* `trailing: true` together.
+  **Not closed here, and split out as BK-381: the `check_backend_order` blind
+  spot** the item's second bullet measured. `_distinct` is 4 against
+  `_MIN_BACKENDS` 6, so a four-backend `about` block is discarded as prose
+  before ordering is tested, and our own summary sits in that blind spot today.
+  What this item changes is the *direction* of the exposure, not its size: the
+  feedstock can no longer drift from our recipe, but our recipe can still drift
+  from the README. An earlier draft of this entry retired that diagnosis here
+  rather than filing it, on the argument that lifting the floor widens the gate
+  to every enumeration at once — which is a reason the work is not small, not a
+  reason to lose it. [§ Completing work](BACKLOG.md) wants an ID for the
+  remaining half, so BK-381 carries the measurement and the fix shape.
+
 - [x] **BUG-254 — Five backend classes breach BE-029's root row against an absent container**
   spec: BE-004, BE-021, BE-029 · effort: S · audience: user.api, user.site
   BE-029 states the root's answers without qualifying them by whether the
@@ -666,8 +741,9 @@ if evidence changes; these are retired.
   `pyproject.toml` rather than the feedstock to this repo, and
   `check_backend_order` **never tested the block at all** — `is_ordered` on those
   four backends is `False`, but `_distinct` is 4 against `_MIN_BACKENDS` 6, so
-  both scanners discard it as prose first. **BK-370** is that gap, filed rather
-  than fixed.
+  both scanners discard it as prose first. BK-370 was filed for that gap and
+  closed the feedstock half of it; the enumeration blind spot itself is
+  **BK-381**.
   **Closed by the feedstock PR**, which carried version, `sha256`, the corrected
   `run_constraints` and the refreshed `about`, and whose rerender regenerated the
   feedstock's `README.md` — the generated file that carries the recipe's summary,

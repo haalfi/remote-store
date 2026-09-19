@@ -86,6 +86,14 @@ documented in [`CONTRIBUTING.md`](../CONTRIBUTING.md).
   gate: no diff can carry a date passing, and a check that only runs when
   somebody cuts a release is no better than remembering for a promise that comes
   due whether or not we ship.
+  **And a fourth, with no lane and no artefact either:** the report job fetches
+  the recipe `conda-forge/remote-store-feedstock` publishes and compares it
+  against the generated copy this repo committed at the **tag** its
+  `context.version` names — not against `master`, which would report every
+  legitimate floor change between releases as drift. `build.number` and
+  `source.sha256` are excluded: conda-forge owns the first, and the second is
+  fetched from PyPI after the tag is cut. It never edits the feedstock and never
+  opens a pull request there.
 - **When:** Monday 07:00 UTC, plus manual `workflow_dispatch` (optionally for a
   single extra, a single lane, or as a `dry_run` that renders the body into the
   job summary and leaves the issue alone). A narrowed dispatch that is **not** a
@@ -105,7 +113,11 @@ documented in [`CONTRIBUTING.md`](../CONTRIBUTING.md).
   per supported interpreter — release date, when CPython's security support for
   it ends, and days remaining or days past — and renders on a clean week too,
   because how much time is *left* is the number a reader cannot compute from the
-  policy page's prose.
+  policy page's prose. The **Conda feedstock** section carries one verdict,
+  rendered on every run including a clean one — it leads with the YAML key paths
+  that differ and carries the diff underneath, because the recipe is mostly
+  comments and a line number is not what changed, and a `drift` also prints the
+  published body's fingerprint, which is what a register row is keyed on.
 - **What goes red:** a newest-lane smoke failure fails its leg, which is the
   signal the `/drift` skill has always read. A **floor** leg never does: its
   findings are advisory decisions about a published range, several are known-bad
@@ -131,6 +143,24 @@ documented in [`CONTRIBUTING.md`](../CONTRIBUTING.md).
   a crossing: it answers `leave`, because a rewritten body is recoverable and a
   closed issue is not, so the narrowing withholds both and the next scheduled
   run decides.
+  **A feedstock finding never goes red either**, and more emphatically: the file
+  is in a repository this project does not own, so a red X would assert
+  something no contributor could act on. A `drift`, a `missing` (404 on the path
+  we publish to) or an `error` (a fault on **our** side, such as a tag that will
+  not resolve) holds the issue open on an unnarrowed run. An `unreachable` fetch
+  and a version we published no generated copy for (`no-baseline`) hold nothing
+  — but they do not let the run **close** the issue either, because not knowing
+  is not agreement. Splitting our failures from the feedstock's is what stops a
+  broken watch looking exactly like a healthy one.
+  **A difference nobody intends to revert is registered**, in
+  `infra/drift-locks/FEEDSTOCK-DIVERGENCE.md`, keyed by the sha256 of the
+  published body — a third register because it is keyed differently again from
+  the other two. A row therefore accepts one published file rather than a field:
+  the next edit on the far side changes the fingerprint, so the whole difference
+  is reported as new and nothing can hide behind an already-accepted key.
+  Without the register a conda-forge-imposed `extra.recipe-maintainers` edit
+  would hold this **shared** issue open permanently and retire the dependency
+  lanes' own "drift cleared" signal.
 - **How to act:** run the **`/drift` skill**. Refreshes are gated per extra on
   that extra's smoke verdict; the skill's steps 3–5 are authoritative on the
   gating, including how a major bump, a red smoke and a red floor are each

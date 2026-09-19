@@ -129,6 +129,9 @@ class TestPatterns:
             "MD5-128 hash",
             # SSH protocol version (false positive seen in real prose).
             'banner "SSH-2.0-OpenSSH_8.9p1"',
+            # Conda Enhancement Proposal -- the conda recipe's own format
+            # marker, which ships in the header the feedstock copy carries.
+            "v1 format (CEP-13 / rattler-build)",
         ],
     )
     def test_non_matches(self, snippet):
@@ -150,6 +153,7 @@ class TestPatterns:
             "SHA",
             "MD5",
             "SSH",
+            "CEP",
         }
         # frozenset equality is the cheapest form of "any addition fails the test".
         assert frozenset(exercised) == _mod._EXTERNAL_PREFIXES, (
@@ -259,10 +263,130 @@ class TestMarkdownScanner:
 # ---------------------------------------------------------------------------
 
 
+class TestCondaRecipeScanner:
+    """The one YAML file that leaves this repository.
+
+    ``packaging/conda-forge/recipe.yaml`` is copied onto
+    ``conda-forge/remote-store-feedstock``, where an internal coordinate
+    points somewhere the reader cannot follow. The block above
+    ``context:`` is exempt because ``gen_conda_feedstock.py`` replaces it.
+    """
+
+    def _write(self, tmp_path, text):
+        f = tmp_path / "recipe.yaml"
+        f.write_text(text, encoding="utf-8")
+        return f
+
+    def test_body_coordinate_is_flagged_at_its_real_line(self, tmp_path):
+        f = self._write(
+            tmp_path,
+            '# header\n#\ncontext:\n  version: "1.0"\nbuild:\n  # see BUG-998\n  number: 0\n',
+        )
+        out = _mod._scan_conda_recipe(f)
+        assert [(v.line, v.match) for v in out] == [(6, "BUG-998")]
+
+    def test_header_coordinate_is_exempt(self, tmp_path):
+        # The generator replaces everything above `context:`, so a coordinate
+        # there never reaches the feedstock.
+        f = self._write(tmp_path, '# tracked by BK-999\ncontext:\n  version: "1.0"\n')
+        assert _mod._scan_conda_recipe(f) == []
+
+    def test_cep_13_is_not_a_coordinate(self, tmp_path):
+        # The recipe's format marker survives into the shipped header, so it
+        # must not read as a tracker wherever it appears.
+        f = self._write(tmp_path, 'context:\n  version: "1.0"\n# v1 format (CEP-13)\n')
+        assert _mod._scan_conda_recipe(f) == []
+
+    def test_a_recipe_without_the_marker_is_scanned_whole(self, tmp_path):
+        # The marker is how the exemption is bounded. A file that has lost it
+        # has no established exempt block, and scanning nothing would report
+        # clean while checking nothing.
+        f = self._write(tmp_path, "# BK-999 above\npackage:\n  name: x\n")
+        assert [v.match for v in _mod._scan_conda_recipe(f)] == ["BK-999"]
+
+    def test_an_absent_recipe_is_refused_rather_than_passed(self, tmp_path, capsys):
+        """The success message names surfaces the run covered.
+
+        Returning 0 here would put "no tracker IDs found in published
+        surfaces" over a file that was never opened -- the unearned claim the
+        marker-less case is already careful to avoid.
+        """
+        src_empty = tmp_path / "_empty_src"
+        src_empty.mkdir()
+        rc = _mod.main(
+            [
+                "--src-root",
+                str(src_empty),
+                "--docs-root",
+                str(src_empty),
+                "--conda-recipe",
+                str(tmp_path / "absent.yaml"),
+            ]
+        )
+        assert rc == 1
+        assert "cannot say the conda recipe is clean" in capsys.readouterr().err
+
+    def test_a_recipe_that_cannot_be_read_is_refused_by_the_scanner_too(self, tmp_path):
+        """Not only an absent one, which ``is_file()`` already catches.
+
+        The enumeration's guard answers "is there a file here"; it cannot
+        answer "could its bytes be read". A recipe that exists and is not
+        valid UTF-8 passed that guard and then returned no violations, so the
+        gate printed "no tracker IDs found in published surfaces" over a file
+        it had not read -- the exact outcome the guard one level up exists to
+        prevent.
+        """
+        undecodable = tmp_path / "recipe.yaml"
+        undecodable.write_bytes(b"context:\n  version: \xff\xfe not utf-8\n")
+        with pytest.raises(_mod.MissingRecipeError):
+            _mod._scan_conda_recipe(undecodable)
+
+    def test_an_unreadable_recipe_reaches_main_as_a_refusal(self, tmp_path, capsys):
+        undecodable = tmp_path / "recipe.yaml"
+        undecodable.write_bytes(b"context:\n  version: \xff\xfe not utf-8\n")
+        src_empty = tmp_path / "_empty_src"
+        src_empty.mkdir()
+        rc = _mod.main(
+            [
+                "--src-root",
+                str(src_empty),
+                "--docs-root",
+                str(src_empty),
+                "--conda-recipe",
+                str(undecodable),
+            ]
+        )
+        assert rc == 1
+        assert "cannot say the conda recipe is clean" in capsys.readouterr().err
+
+    def test_the_committed_recipe_is_clean(self):
+        """Integration guard: the real recipe carries no coordinate below ``context:``."""
+        assert _mod._scan_conda_recipe(_mod._CONDA_RECIPE) == []
+
+
 class TestMain:
+    def _args(self, tmp_path, **over):
+        """Every root explicitly pinned away from the real tree.
+
+        Defaulting any of them would make an unrelated test assert on the
+        repository's own contents, which is the dependency this signature
+        exists to remove. The recipe is a real, clean stub rather than an
+        absent path, because an absent one is now a refusal in its own right.
+        """
+        stub = tmp_path / "stub-recipe.yaml"
+        stub.write_text('# header\ncontext:\n  version: "1.0"\n', encoding="utf-8")
+        args = {
+            "--src-root": str(tmp_path),
+            "--docs-root": str(tmp_path),
+            "--conda-recipe": str(stub),
+        }
+        args.update(over)
+        return [part for pair in args.items() for part in pair]
+
     def test_clean_subtrees_return_zero(self, tmp_path):
-        # Empty src + empty docs-src + no root MD files → no findings.
-        assert _mod.main(["--src-root", str(tmp_path), "--docs-root", str(tmp_path)]) == 0
+        # Empty src + empty docs-src + no root MD files + a clean stub recipe
+        # (`_args` writes one, because an absent recipe is its own refusal).
+        assert _mod.main(self._args(tmp_path)) == 0
 
     def test_violation_returns_one(self, tmp_path, capsys):
         bad = tmp_path / "page.md"
@@ -271,10 +395,25 @@ class TestMain:
         # use an empty src-root so the real source tree isn't scanned.
         src_empty = tmp_path / "_empty_src"
         src_empty.mkdir()
-        rc = _mod.main(["--src-root", str(src_empty), "--docs-root", str(tmp_path)])
+        rc = _mod.main(self._args(tmp_path, **{"--src-root": str(src_empty)}))
         assert rc == 1
         captured = capsys.readouterr()
         assert "ID-999" in captured.err
+
+    def test_the_recipe_reaches_main(self, tmp_path, capsys):
+        # The scanner is wired into the entry point, not merely importable.
+        recipe = tmp_path / "recipe.yaml"
+        recipe.write_text('context:\n  version: "1.0"\n# BUG-997\n', encoding="utf-8")
+        src_empty = tmp_path / "_empty_src"
+        src_empty.mkdir()
+        rc = _mod.main(
+            self._args(
+                tmp_path,
+                **{"--src-root": str(src_empty), "--docs-root": str(src_empty), "--conda-recipe": str(recipe)},
+            )
+        )
+        assert rc == 1
+        assert "BUG-997" in capsys.readouterr().err
 
     def test_real_repo_is_clean(self):
         """Integration guard: every shipped surface stays free of tracker IDs.

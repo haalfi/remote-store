@@ -311,7 +311,7 @@ env.GITHUB_ACTIONS.installer = { value = "pip", if = ["true"] }
 # Every entry is offline by construction; `check-support-windows` below is the
 # one support-window mechanism that reaches PyPI and so is deliberately absent.
 preflight = ["python scripts/gen_graph.py --check", "python scripts/check_api_docs.py", "python scripts/check_docstring_parity.py", "python scripts/gen_features.py --check", "python scripts/gen_graph_viz.py --check", "python scripts/gen_adr_digest.py --check", "python scripts/drift_check.py render-docs --check", "python scripts/gen_python_support.py --check"]
-lint = ["ruff check src/ tests/ examples/ scripts/", "python scripts/check_test_assertions.py tests", "python scripts/check_mock_spec.py tests", "python scripts/check_test_placement.py tests", "python scripts/check_tla_no_emdash.py", "python scripts/check_formal_trace.py", "python scripts/check_capability_parity.py", "python scripts/check_spec_marks.py", "python scripts/check_docs_framework.py", "python scripts/gen_backlogid.py --check", "python scripts/check_rst_roles.py", "python scripts/check_infra_settings.py", "python scripts/check_no_tracker_refs.py", "python scripts/check_breaking_migration_link.py", "python scripts/check_ci_inventory.py", "python scripts/check_traces.py", "python scripts/check_readthedocs_python.py", "python scripts/check_backend_order.py", "python scripts/check_conda_recipe_pins.py", "python scripts/check_ripple_parity.py", "python scripts/check_changelog_unreleased.py", "python scripts/check_custom_backend_guide.py", "python scripts/check_ci_full_matrix.py", "python scripts/check_dafny_twin_parity.py", "python scripts/check_sdd_index.py", "python scripts/gen_gate_inventory.py --check"]
+lint = ["ruff check src/ tests/ examples/ scripts/", "python scripts/check_test_assertions.py tests", "python scripts/check_mock_spec.py tests", "python scripts/check_test_placement.py tests", "python scripts/check_tla_no_emdash.py", "python scripts/check_formal_trace.py", "python scripts/check_capability_parity.py", "python scripts/check_spec_marks.py", "python scripts/check_docs_framework.py", "python scripts/gen_backlogid.py --check", "python scripts/check_rst_roles.py", "python scripts/check_infra_settings.py", "python scripts/check_no_tracker_refs.py", "python scripts/check_breaking_migration_link.py", "python scripts/check_ci_inventory.py", "python scripts/check_traces.py", "python scripts/check_readthedocs_python.py", "python scripts/check_backend_order.py", "python scripts/check_conda_recipe_pins.py", "python scripts/gen_conda_feedstock.py --check", "python scripts/check_ripple_parity.py", "python scripts/check_changelog_unreleased.py", "python scripts/check_custom_backend_guide.py", "python scripts/check_ci_full_matrix.py", "python scripts/check_dafny_twin_parity.py", "python scripts/check_sdd_index.py", "python scripts/gen_gate_inventory.py --check"]
 format = "ruff format src/ tests/ examples/ scripts/"
 format-check = "ruff format --check src/ tests/ examples/ scripts/"
 typecheck = "mypy src/ examples/"
@@ -466,6 +466,13 @@ check-ripple-parity = "python scripts/check_ripple_parity.py"
 # Wired into `lint` (for the pyproject side) and `docs-gate` (for the recipe
 # side); either alone leaves one direction of the pair unreachable in CI.
 check-conda-recipe-pins = "python scripts/check_conda_recipe_pins.py"
+# The feedstock copy generator, wired into `lint` and `docs-gate` for exactly
+# the reason above: the script is under `scripts/` (CODE_PAT) while its input
+# and output are under `packaging/`, which matches DOCS_PAT and not CODE_PAT.
+# A recipe-only edit runs `docs-gate` and no pytest; a change to the generator
+# itself runs `lint` and not `docs-gate`.
+gen-conda-feedstock = "python scripts/gen_conda_feedstock.py"
+gen-conda-feedstock-check = "python scripts/gen_conda_feedstock.py --check"
 check-breaking-migration-link = "python scripts/check_breaking_migration_link.py"
 # Standalone entry point for the custom-backend-guide drift gate (BK-320), same
 # reason: the guide is a docs surface, so the docs gate invokes it directly.
@@ -511,7 +518,7 @@ docs = "mkdocs serve"
 docs-build = "mkdocs build --strict"
 # The full set of checks that validate a docs/spec change, as one entry point CI
 # invokes once. Composed by reference so each sub-target stays the single source.
-docs-gate = ["docs-check", "check-no-tracker-refs", "check-breaking-migration-link", "check-backend-order", "check-ripple-parity", "check-conda-recipe-pins", "check-custom-backend-guide", "check-traces", "check-changelog-unreleased", "check-sdd-index", "gen-backlogid-check", "gen-gate-inventory-check", "check-links", "drift-docs-check", "gen-python-support-check", "docs-build"]
+docs-gate = ["docs-check", "check-no-tracker-refs", "check-breaking-migration-link", "check-backend-order", "check-ripple-parity", "check-conda-recipe-pins", "gen-conda-feedstock-check", "check-custom-backend-guide", "check-traces", "check-changelog-unreleased", "check-sdd-index", "gen-backlogid-check", "gen-gate-inventory-check", "check-links", "drift-docs-check", "gen-python-support-check", "docs-build"]
 pre-commit-install = "pre-commit install"
 # Requires Docker Desktop; not included in 'all' (CI uses setup-dafny-action natively)
 verify-formal = "bash scripts/dafny_verify.sh"

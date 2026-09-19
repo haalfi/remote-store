@@ -71,6 +71,44 @@ name: Drift Guard
 #    with an unowned crossing neither rewrites nor closes: it leaves the issue
 #    as it found it, and the next scheduled run decides.
 #
+# FOURTH THING THE REPORT JOB WATCHES, also with no lane and no artefact:
+# THE RECIPE CONDA-FORGE PUBLISHES. `scripts/drift_feedstock.py` fetches
+# `conda-forge/remote-store-feedstock`'s `recipe/recipe.yaml` and compares it
+# against the generated copy this repo committed at the tag its `context.version`
+# names. `scripts/gen_conda_feedstock.py` produces that copy, and `hatch run
+# lint` fails when it is stale, so the copy-out is mechanical and this watch
+# asks the one question the copy-out cannot: is the published file still what
+# was copied out?
+#  - The TAG, not master. Comparing against master would report every legitimate
+#    floor change between releases as drift — the feedstock is rightly carrying
+#    the previous release's constraints until the next copy-out.
+#  - `build.number` and `source.sha256` are EXCLUDED. conda-forge owns the
+#    first; the second is fetched from PyPI after the tag is cut, so a tag
+#    structurally carries the previous release's digest and the far copy is
+#    legitimately ahead on it.
+#  - ADVISORY, and more strongly so than the rest of this workflow: the file is
+#    in a repository this project does not own, so no PR here can fix a
+#    difference and a red X would assert something no contributor can act on.
+#    The remedy is a PR against the feedstock, per sdd/CONDA-FORGE.md. This
+#    workflow NEVER edits the feedstock and NEVER opens that PR.
+#  - NOT KNOWING IS NOT AGREEMENT. A fetch that failed, or a version this repo
+#    published no generated copy for, forces no update — but it does not let the
+#    run close the issue either, because closing would report a comparison
+#    nobody performed.
+#  - A failure of OUR OWN is never reported as the other repo's. A tag that will
+#    not resolve is an `error` that holds the issue open; only the feedstock's
+#    availability is `unreachable`. Folding the two together would let a broken
+#    watch look exactly like normal operation, forever.
+#  - A difference nobody intends to revert is REGISTERED, in
+#    infra/drift-locks/FEEDSTOCK-DIVERGENCE.md, keyed by the sha256 of the
+#    published body. This is the one artefact pair here where a divergence can
+#    be imposed without our consent (a conda-forge migrator; the maintainer-list
+#    flow), and CONDA-FORGE.md Rule 1 forbids the in-repo remedy. Without a
+#    register such an edit would hold THIS SHARED ISSUE open forever and retire
+#    the dependency lanes' own "drift cleared" signal. A row accepts ONE
+#    published file: the next edit on the far side changes the fingerprint, so
+#    the whole difference is reported as new again.
+#
 # One sharp edge on `workflow_dispatch`: the report job regenerates the WHOLE
 # issue body from whatever reports the run produced, so a single-extra or
 # single-lane dispatch rewrites the body to that slice and drops every other
@@ -487,6 +525,37 @@ jobs:
           pattern: drift-*
           merge-multiple: true
 
+      # The fourth thing, and like the third it has no lane and no artefact:
+      # fetch what conda-forge publishes and compare it against the generated
+      # copy this repo committed at the tag that version names.
+      #
+      # Written OUTSIDE drift-reports/ on purpose. That directory is rglobbed
+      # by `_load_reports`, which places a file by its `extra` key; this report
+      # has none, so it would be named unreadable and hold the issue open every
+      # week under a reason that has nothing to do with the feedstock.
+      #
+      # No `if:`, and before BOTH report steps below, so the dry run previews
+      # the same input the real run acts on — the "one function for both to
+      # consult" rule `decide` states, applied to what they consult.
+      #
+      # The script never exits non-zero on a finding: a fetch failure, a missing
+      # tag and a real difference are all statuses in its JSON.
+      #
+      # `continue-on-error` for the case that is left. Without it, this step
+      # dying takes the whole report with it — the two steps below carry no
+      # `always()`, so that week's diffs, floor results and smoke verdicts
+      # would never reach the issue for a reason that has nothing to do with
+      # them. That is the failure `_load_reports` was hardened against, one
+      # input over. `drift_report.py` reads an absent or unreadable report as
+      # an `error` status, which renders on the issue and holds it open, so
+      # this is tolerated *loudly* rather than skipped.
+      - name: Compare the published conda recipe
+        continue-on-error: true
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          python scripts/drift_feedstock.py --repo "${{ github.repository }}" --out feedstock-report.json
+
       # Compose the rolling-issue body from every report and verdict, then:
       #  - anything unresolved in either lane, or an interpreter past its support
       #    window with nobody named (on an unnarrowed run) -> create/update.
@@ -510,6 +579,8 @@ jobs:
             --run-url "$RUN_URL" \
             --expect-extras '${{ needs.setup.outputs.extras }}' \
             --expect-lanes '${{ needs.setup.outputs.lanes }}' \
+            --feedstock-report feedstock-report.json \
+            --feedstock-register infra/drift-locks/FEEDSTOCK-DIVERGENCE.md \
             --title "[drift-guard] Weekly transitive dependency drift"
 
       # How a branch sees what a run would write without writing it. The body
@@ -536,6 +607,8 @@ jobs:
             --run-url "$RUN_URL" \
             --expect-extras '${{ needs.setup.outputs.extras }}' \
             --expect-lanes '${{ needs.setup.outputs.lanes }}' \
+            --feedstock-report feedstock-report.json \
+            --feedstock-register infra/drift-locks/FEEDSTOCK-DIVERGENCE.md \
             --title "[drift-guard] Weekly transitive dependency drift" \
             --dry-run | tee /tmp/drift-body.md
           {

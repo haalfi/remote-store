@@ -91,7 +91,7 @@ walkthrough of the `Backend` contract, error mapping, and capabilities.
 5. Add user-facing guide in `docs-src/guides/backends/<name>.md` and add to `docs-src/guides/_nav.yml`
 6. Update every backend enumeration — see **Backend order** below for how to find them all and what order they go in
 7. Add backend config example to `examples/configuration/configuration.py`
-8. If the backend needs an extra, add it to `pyproject.toml` `[project.optional-dependencies]`, and add the same floor to `run_constraints` in `packaging/conda-forge/recipe.yaml`
+8. If the backend needs an extra, add it to `pyproject.toml` `[project.optional-dependencies]`, and add the same floor to `run_constraints` in `packaging/conda-forge/recipe.yaml`, then `hatch run gen-conda-feedstock` (the shipped copy beside it is generated, and `lint` fails on a stale one)
 
 **Backend order (step 6).** Every enumeration lists backends in one order:
 
@@ -149,7 +149,7 @@ Extensions live in `src/remote_store/ext/` and follow the contract in the [exten
 8. Add the page to `docs-src/guides/_nav.yml` (under the Extensions section)
 9. Add a runnable example in `examples/`
 10. The example docs page is auto-generated at `tutorial/examples/<slug>.md` from the module docstring via `gen_pages.py` — no manual wrapper file needed
-11. If the extension needs an extra, add it to `pyproject.toml` `[project.optional-dependencies]`, and add the same floor to `run_constraints` in `packaging/conda-forge/recipe.yaml` — that block covers *every* extra, backend and extension alike, and a dependency missing from it is silently unconstrained for conda users
+11. If the extension needs an extra, add it to `pyproject.toml` `[project.optional-dependencies]`, and add the same floor to `run_constraints` in `packaging/conda-forge/recipe.yaml`, then `hatch run gen-conda-feedstock` (the shipped copy beside it is generated, and `lint` fails on a stale one) — that block covers *every* extra, backend and extension alike, and a dependency missing from it is silently unconstrained for conda users
 12. Update `CHANGELOG.md` and `sdd/BACKLOG.md` (or `sdd/BACKLOG-DONE.md`) in the same commit
 
 ### Export patterns
@@ -606,7 +606,7 @@ release forward, and nothing checks it mechanically.
 - [ ] Update `date-released` in `CITATION.cff` to today (bump-my-version only updates `version:`, not this field)
 - [ ] Tagline consistent across every mirror: `git grep "Write file storage code once"` — check them all, do not work from a remembered list; the copies nobody lists are the copies that go stale. Historical quotes in `sdd/research/` are the one exemption
 - [ ] Keywords consistent: `pyproject.toml` = `CITATION.cff`
-- [ ] Conda recipe: update `context.version` in `packaging/conda-forge/recipe.yaml` to X.Y.Z
+- [ ] Conda recipe: update `context.version` in `packaging/conda-forge/recipe.yaml` to X.Y.Z, **then `hatch run gen-conda-feedstock`** — the recipe is not in `[[tool.bumpversion.files]]`, so this edit is by hand, and the generated `packaging/conda-forge/feedstock/recipe.yaml` beside it does not regenerate itself. Phase 3's `hatch run all` gates on its freshness, so skipping it fails the next phase
 - [ ] `bump-my-version bump patch|minor|major --allow-dirty` (modifies the files listed in `[[tool.bumpversion.files]]` in `pyproject.toml` — does NOT commit or tag; `--allow-dirty` is required because the Phase 1/2 edits above are still uncommitted)
 - [ ] `hatch run gen-graph` (stamps `source_version` + `snapshot` in `docs-src/_data/graph/graph.json` from the bumped version)
 - [ ] `hatch run gen-features` (regenerates mechanical sections of `FEATURES.md` from updated `graph.json`)
@@ -620,7 +620,7 @@ release forward, and nothing checks it mechanically.
 - [ ] `mkdocs build --strict` passes
 - [ ] `hatch build && hatch run twine check dist/*` — package builds cleanly (not `python -m build`: `build` is not in the hatch env)
 - [ ] `pip install dist/*.whl && python -c "import remote_store; print(remote_store.__version__)"` — version matches
-- [ ] Conda recipe: version in `packaging/conda-forge/recipe.yaml` matches release version
+- [ ] Conda recipe: version in `packaging/conda-forge/recipe.yaml` matches release version, and `packaging/conda-forge/feedstock/recipe.yaml` carries it too (`hatch run all` fails on a stale copy, so a green Phase 3 already proves the second)
 
 ### Phase 4: Ship
 
@@ -642,13 +642,19 @@ _Release template: title = version, description = "What's Changed" header whose 
 - [ ] GitHub Pages: check version switcher shows new version as "latest"
 - [ ] ReadTheDocs: check https://docs.remotestore.dev/stable/ shows the new version (RTD automation rule activates tag-based builds; `stable` is the default version)
 - [ ] Conda recipe: fetch sha256 from PyPI (`curl -s https://pypi.org/pypi/remote-store/X.Y.Z/json | python -c "import sys,json; d=json.load(sys.stdin); print([f['digests']['sha256'] for f in d['urls'] if f['filename'].endswith('.tar.gz')][0])"`) and update `source.sha256` in `packaging/conda-forge/recipe.yaml`
-- [ ] Commit `packaging/conda-forge/recipe.yaml` sha256 update in this repo via a branch and PR
-- [ ] conda-forge: get `version`, `sha256` **and the `run_constraints` block from
-      `packaging/conda-forge/recipe.yaml`** onto `conda-forge/remote-store-feedstock`,
-      following [`sdd/CONDA-FORGE.md`](sdd/CONDA-FORGE.md), which owns the routes, the
-      rules and the walkthrough. **Done when
+- [ ] Commit the `packaging/conda-forge/recipe.yaml` sha256 update in this repo via a branch and PR.
+      `hatch run lint` regenerates nothing for you — run `hatch run gen-conda-feedstock` and commit
+      `packaging/conda-forge/feedstock/recipe.yaml` in the same PR, or the gate fails
+- [ ] conda-forge: copy **`packaging/conda-forge/feedstock/recipe.yaml`** — the generated file, whole —
+      onto `conda-forge/remote-store-feedstock`, following
+      [`sdd/CONDA-FORGE.md`](sdd/CONDA-FORGE.md), which owns the routes, the
+      rules and the walkthrough. Nothing is stripped or reassembled by hand any more;
+      `build.number` is the only edit on the far side. **Done when
       `conda search -c conda-forge remote-store` lists the new version**, not when the PR
       is open: the upload happens after merge and can fail. Whether the bot has fired
       shows on conda-forge's [version-update
       status](https://conda-forge.org/status/#version_updates); it can take hours
+- [ ] Once that PR is merged, `python scripts/drift_feedstock.py` reports `match`. It reads the
+      feedstock's `main`, so this is the first point at which it can — and it is the same
+      comparison the weekly drift guard then makes on its own
 - [ ] Announce if applicable (tracking issues, users)

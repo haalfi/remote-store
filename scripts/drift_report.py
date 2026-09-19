@@ -29,6 +29,13 @@ Logic, as ``decide`` implements it:
   rather than on anything a run uploaded, which is why it is attached to
   ``Reports`` before the emptiness guard and why a narrowed dispatch cannot let
   it rewrite the body.
+* The **published conda recipe** disagreeing with the generated copy this repo
+  committed at the tag its version names → create-or-update, on the same
+  unnarrowed terms as the window crossing and for the same reason, since it too
+  comes from no artefact. ``scripts/drift_feedstock.py`` computes the verdict
+  and owns the vocabulary; a verdict that could not compare the two copies
+  (``unreachable``, ``no-baseline``) never forces an update **and** never
+  licences a close, because not knowing is not agreement.
 * Everything clean in both lanes, and no unowned crossing → comment "drift
   cleared" on the open issue (if any) and close it; no-op if no issue is open.
 * Everything clean but only **one** lane ran → leave the issue alone. A
@@ -54,7 +61,8 @@ Drift-gate::
     surfaces:   the current per-extra dependency state in both lanes — the newest resolution's
         drift against the committed baselines, the declared floors' resolution, and each lane's
         smoke verdict — plus each supported interpreter's standing against the security-support
-        window Rule 8 publishes, as a rolling GitHub issue it opens, updates or closes; it acts
+        window Rule 8 publishes and whether the conda-forge feedstock still publishes what this
+        repo committed for the version it names, as a rolling GitHub issue it opens, updates or closes; it acts
         on that state rather than asserting anything, so nothing it FINDS makes it exit non-zero.
         What does is an input it cannot interpret — a `Review by`, a `--today`, an `--expect-extras`
         — since guessing would silence a finding, drop the window section or misreport which legs
@@ -80,6 +88,7 @@ from typing import TypeVar
 
 sys.path.insert(0, str(Path(__file__).resolve().parent))
 
+import drift_feedstock as feedstock_statuses  # noqa: E402  — one driver for the feedstock status vocabulary
 from drift_check import list_extras  # noqa: E402  — one driver for the extras claim space
 from python_support import SupportWindow, UnknownInterpreterError, windows  # noqa: E402  — sibling module
 
@@ -124,6 +133,144 @@ class SupportWindowState:
     holds_issue: bool = False
 
 
+# What the feedstock watch's statuses mean to this script -- IMPORTED, not
+# restated. `drift_feedstock` emits them and owns the vocabulary, and this
+# module has three readers of it (the two predicates below and
+# `_FEEDSTOCK_SUMMARY`), so a local copy would be three things to keep in step
+# with a fourth. DRIFT-RULES Rule 3: derive the claim space from the canonical
+# artefact.
+#
+# Two sets, because "may this force an update" and "may this licence a close"
+# are different questions -- the same distinction `SupportWindowState.holds_issue`
+# draws. `FEEDSTOCK_INCONCLUSIVE` holds the verdicts that are not findings and
+# not evidence of agreement either: `decide` refuses to close over them for the
+# reason it already states about a window crossing, that a rewritten body is
+# recoverable and a closed issue is not.
+FEEDSTOCK_HOLDS = feedstock_statuses.HOLDS
+FEEDSTOCK_INCONCLUSIVE = feedstock_statuses.INCONCLUSIVE
+FEEDSTOCK_CLEAR = feedstock_statuses.CLEAR
+
+
+@dataclass(frozen=True)
+class FeedstockState:
+    """What the published conda recipe looks like, as ``drift_feedstock.py`` found it.
+
+    ``status`` is that script's verdict; its module docstring owns the
+    vocabulary and is not restated here. ``absent`` is this script's own
+    addition, for a run given no ``--feedstock-report`` at all, and renders
+    nothing.
+
+    ``holds_issue`` is **not** ``status in FEEDSTOCK_HOLDS``, for the reason
+    ``SupportWindowState`` spells out at length: the verdict comes from a fetch
+    and a tag rather than from anything a run uploaded, so it is true on every
+    run including a narrowed ``workflow_dispatch`` -- and a narrowed non-dry run
+    re-renders the whole issue body from its slice and drops every other row
+    (BUG-282). So it counts as a signal only on an **unnarrowed** run, every
+    lane and every extra. Keying the guard on the raw status would reintroduce
+    that bug through a second door.
+    """
+
+    status: str = "absent"
+    remote_version: str | None = None
+    newest_tag: str | None = None
+    trailing: bool = False
+    reason: str = ""
+    diff: str = ""
+    keys: tuple[str, ...] = ()
+    fingerprint: str = ""
+    holds_issue: bool = False
+    accepted: tuple[str, str] | None = None
+    """``(owner, review_by)`` of the register row matching ``fingerprint``, if any.
+
+    Resolved in ``main`` and carried here rather than looked up at render time,
+    so the predicate below and the rendered prose cannot disagree about which
+    row applied.
+    """
+
+    @property
+    def registered(self) -> bool:
+        """A ``drift`` whose published body is the exact one a live row accepts.
+
+        Content-keyed, so there is no partial case: the register either names
+        this file or it does not. ``keys`` is reporting only and takes no part
+        -- the key-path spelling this replaced dropped a difference that
+        localized to ``?``, which let one registered key plus one unregistered
+        comment edit close the rolling issue.
+        """
+        return self.status == "drift" and self.accepted is not None
+
+    @property
+    def blocks_close(self) -> bool:
+        """Whether this run may close the rolling issue over this verdict.
+
+        A registered ``drift`` does not block: the difference is one somebody
+        owns, which is exactly what the register decides. Any other verdict --
+        including a ``drift`` one edit further on, which has a different
+        fingerprint and therefore no row -- blocks again.
+        """
+        if self.registered:
+            return False
+        return self.status in FEEDSTOCK_HOLDS or self.status in FEEDSTOCK_INCONCLUSIVE
+
+
+def load_feedstock_report(path: Path | None) -> FeedstockState:
+    """``drift_feedstock.py``'s JSON as state, or ``absent`` when none was asked for.
+
+    A path that was given and cannot be read becomes an ``error`` **status**,
+    named in the rendered section and holding the issue open. Three options
+    were available and the other two are both worse:
+
+    * *Skip it.* The signal retires while the issue goes on closing on "all
+      clear" — the silent-close shape ``_load_reports`` records for artefacts.
+    * *Raise.* This is read before the issue is reconciled, so one broken step
+      takes that week's diffs, floor results and smoke verdicts down with it,
+      for a reason that has nothing to do with them. That is the failure
+      ``_load_reports`` was hardened against, arriving from the other side:
+      "one unusable artefact used to abort the whole report".
+
+    So the rule ``_load_reports`` states applies here unchanged — tolerating a
+    bad input has to mean *naming* it — and an `error` is exactly that: loud on
+    the issue, and costing only its own section.
+    """
+    if path is None:
+        return FeedstockState()
+    try:
+        data = json.loads(path.read_text(encoding="utf-8"))
+    except (OSError, json.JSONDecodeError) as exc:
+        return FeedstockState(status="error", reason=f"{path} is not a readable feedstock report: {exc}")
+    if not isinstance(data, dict) or not isinstance(data.get("status"), str):
+        return FeedstockState(
+            status="error",
+            reason=f"{path} carries no string `status`, so the step that writes it did not finish",
+        )
+    # An unrecognised status FAILS CLOSED. Measured before this guard existed:
+    # `'partial'`, `'ok'`, `'DRIFT'` and `''` each left `blocks_close` False, so
+    # a typo in the producer -- or a status added there and not classified
+    # here -- read as "the copies agree" and let the run close the rolling
+    # issue while the published recipe disagreed with us. Failing open is the
+    # one direction this signal must never take, and the set is imported from
+    # the producer so the two cannot drift apart silently.
+    if data["status"] not in feedstock_statuses.STATUSES:
+        return FeedstockState(
+            status="error",
+            reason=(
+                f"{path} reports status {data['status']!r}, which is not one of "
+                f"{sorted(feedstock_statuses.STATUSES)}; treated as a failure rather than as agreement"
+            ),
+        )
+    keys = data.get("keys") or []
+    return FeedstockState(
+        status=data["status"],
+        remote_version=data.get("remote_version"),
+        newest_tag=data.get("newest_tag"),
+        trailing=bool(data.get("trailing")),
+        reason=str(data.get("reason") or ""),
+        diff=str(data.get("diff") or ""),
+        keys=tuple(str(k) for k in keys) if isinstance(keys, list) else (),
+        fingerprint=str(data.get("fingerprint") or ""),
+    )
+
+
 @dataclass(frozen=True)
 class Reports:
     """Everything this run has to say, keyed for rendering.
@@ -139,6 +286,11 @@ class Reports:
     silent-close failure ``_load_reports`` was hardened against, arriving through
     the guard instead. Putting the state in the thing ``main`` tests makes the
     guard correct by construction rather than by remembering.
+
+    ``feedstock`` is here for exactly that reason and no other. It also comes
+    from no artefact — a fetch and a tag lookup in the report job itself — so a
+    run whose download produced nothing would otherwise compute a published-copy
+    drift and discard it at the same guard.
     """
 
     diffs: dict[str, dict]
@@ -146,6 +298,7 @@ class Reports:
     smokes: dict[tuple[str, str], dict]
     unreadable: list[str] = field(default_factory=list)
     windows: SupportWindowState = field(default_factory=SupportWindowState)
+    feedstock: FeedstockState = field(default_factory=FeedstockState)
 
     def __bool__(self) -> bool:
         # `holds_issue`, **not** `unregistered`. A crossing is true on every run,
@@ -159,7 +312,19 @@ class Reports:
         # crossing: `holds_issue=False`, `unregistered=('3.10',)`, and the run
         # created the issue. `test_a_narrowed_dispatch_with_no_artefacts_leaves_the_issue_alone`
         # pins it.
-        return bool(self.diffs or self.floors or self.smokes or self.unreadable or self.windows.holds_issue)
+        #
+        # `feedstock.holds_issue` joins on the same terms and for the same
+        # reason: a published-copy drift is true on every run regardless of the
+        # dispatched slice, so keying on its raw status would make a narrowed
+        # dispatch truthy and re-render the issue from that slice.
+        return bool(
+            self.diffs
+            or self.floors
+            or self.smokes
+            or self.unreadable
+            or self.windows.holds_issue
+            or self.feedstock.holds_issue
+        )
 
 
 def _load_reports(dir_: Path) -> Reports:
@@ -449,6 +614,69 @@ def load_python_support_register(path: Path = PYTHON_SUPPORT_REGISTER) -> dict[s
             review = match.group("review").strip()
             _review_date(review, where=f"{path}, row `{version}`")
             register[version] = (match.group("owner").strip(), review)
+    return register
+
+
+FEEDSTOCK_REGISTER = Path(__file__).resolve().parent.parent / "infra" / "drift-locks" / "FEEDSTOCK-DIVERGENCE.md"
+
+# `| `sha256:<64 hex>` | owner | rationale | 2026-12-31 |` — four cells, the
+# first a BACKTICKED fingerprint as `drift_feedstock.fingerprint` spells it.
+# Disjoint from both sibling row patterns, which is what keeps three loaders
+# from reading each other's rows — the collision the python register's own
+# comment records as measured. `_REGISTER_ROW_RE` needs a bracketed `[extra]`
+# first cell, `_PYTHON_REGISTER_ROW_RE` a bare `N.N`, and neither can begin
+# `sha256:`. `test_the_three_row_shapes_are_disjoint` drives one row of each
+# shape through all three loaders rather than leaving that argument in prose.
+_FEEDSTOCK_REGISTER_ROW_RE = re.compile(
+    r"^\|\s*`(?P<key>sha256:[0-9a-f]{64})`\s*\|(?P<owner>[^|]*)\|[^|]*\|(?P<review>[^|]*)\|\s*$"
+)
+
+
+def load_feedstock_register(path: Path = FEEDSTOCK_REGISTER) -> dict[str, tuple[str, str]]:
+    """``{fingerprint: (owner, review_by)}`` from the accepted-divergence register.
+
+    Keyed on the **content** of the published body rather than on the extra or
+    the interpreter the other two registers use, because unlike a finding about
+    a lane, a feedstock divergence is a fact about one *file*. Content is a
+    total key -- every possible published file has one -- so no divergence is
+    unregisterable, and a row accepts one file rather than granting a standing
+    permission: the next edit on the far side changes the fingerprint and the
+    row stops matching.
+
+    That replaced a YAML-key-path key with two measured defects, both recorded
+    with their derivations in the register's own *Why content and not the YAML
+    key*: 3 of the recipe's 62 key paths could not be written as a row at all,
+    and a difference ``differing_keys`` localized to ``?`` was dropped before
+    the registration check -- so one registered key plus one unregistered
+    column-0 comment edit closed the rolling issue.
+
+    Raises:
+        RegisterDateError: If a row's ``Review by`` is not an ISO date.
+        UnusableInputError: If ``path`` is not a file, or a row names no owner.
+    """
+    if not path.exists():
+        return {}
+    if not path.is_file():  # same reason as the two loaders above
+        raise UnusableInputError(f"{path} is not a file, so it cannot be read as a register")
+    register: dict[str, tuple[str, str]] = {}
+    for line in path.read_text(encoding="utf-8").splitlines():
+        match = _FEEDSTOCK_REGISTER_ROW_RE.match(line.strip())
+        if match:
+            key = match.group("key")
+            owner = match.group("owner").strip()
+            if not owner:
+                # Hard, for the same reason as the date below: a row whose
+                # shape is right and whose content is not would otherwise
+                # silence a divergence nobody is answerable for. The sibling
+                # registers both record an unenforced `Owner` as a live hazard.
+                raise UnusableInputError(
+                    f"{path}, row `{key}`: `Owner` is empty. A row that names nobody would silence a "
+                    f"divergence with no owner to re-read it, so this is a hard failure rather than an "
+                    f"anonymous silencer."
+                )
+            review = match.group("review").strip()
+            _review_date(review, where=f"{path}, row `{key}`")
+            register[key] = (owner, review)
     return register
 
 
@@ -848,6 +1076,13 @@ def has_signal(
 
     An unowned **support-window crossing** counts too, on the terms
     ``SupportWindowState.holds_issue`` sets.
+
+    So does a **published conda recipe** that disagrees with what this repo
+    committed for its version, on the same unnarrowed terms. Only the statuses
+    in ``FEEDSTOCK_HOLDS`` count: a fetch that failed and a version with no
+    committed copy are absences of evidence, and holding the issue open on them
+    would make every week's issue look identical for a reason nobody can act
+    on. They still stop this run *closing* the issue — that is ``decide``.
     """
     today = today or date.today()
     known = silencing(register or {}, today)
@@ -855,7 +1090,7 @@ def has_signal(
         return True
     if reports.unreadable or _incomplete_legs(reports, expected, lanes):
         return True
-    if reports.windows.holds_issue:
+    if reports.windows.holds_issue or reports.feedstock.holds_issue:
         return True
     if any((e, "floor") not in known and r.get("status") == "error" for e, r in reports.floors.items()):
         return True
@@ -925,6 +1160,24 @@ def decide(
         return "leave", (
             f"all clear in both lanes, but {', '.join(reports.windows.unregistered)} "
             "is past its support window with nobody named, and this run was too narrow to say so on the issue"
+        )
+    # The published conda recipe, on the same trade and one step further. Two
+    # groups of statuses reach here and both refuse the close, for different
+    # reasons. A `drift`, a `missing` or an `error` is a live finding a narrowed
+    # run may not act on, exactly like the crossing above. An `unreachable` or a
+    # `no-baseline` is not a finding at all — but it is not evidence of
+    # agreement either, and closing on it would read "the copies agree" from a
+    # run that never compared them. `match`, `ahead-of-tag` and `absent` are the
+    # only verdicts that licence a close.
+    if reports.feedstock.blocks_close:
+        why = (
+            "disagrees with what this repo committed for its version"
+            if reports.feedstock.status in FEEDSTOCK_HOLDS
+            else "could not be compared with what this repo committed for its version"
+        )
+        return "leave", (
+            f"all clear in both lanes, but the published conda recipe {why} "
+            f"(`{reports.feedstock.status}`), so this run cannot say the two agree"
         )
     return "close", "all clear in both lanes"
 
@@ -1000,6 +1253,142 @@ def _render_support_windows(
         lines.append("")
     if not state.unregistered and any(row.past for row in state.rows):
         lines.append("Every closed window above is registered, so none of them is holding this issue open.")
+        lines.append("")
+    return lines
+
+
+_FEEDSTOCK_SUMMARY: dict[str, str] = {
+    "match": "carries exactly what this repo committed for that version",
+    "drift": "**differs from what this repo committed for that version**",
+    "ahead-of-tag": "carries a change merged after that version was tagged",
+    "no-baseline": "names a version this repo published no generated copy for, so nothing was compared",
+    "missing": "**could not be found at the path this repo publishes to**",
+    "unreachable": "could not be fetched, so nothing was compared",
+    "error": "**could not be checked, and the fault is on this side**",
+}
+
+# Where a reader goes NEXT, per holding status. One sentence for all three was
+# wrong for two of them: an `error` names a fault on this side and was then
+# told to open a pull request against conda-forge, contradicting its own
+# summary line one paragraph up; and a `missing` is a 404 that means either the
+# feedstock moved the file or the URL this repo fetches is stale, which are
+# fixes in different repositories. Keyed on `FEEDSTOCK_HOLDS` and checked
+# against it, so a status added there without a remedy fails rather than
+# inheriting somebody else's. `sdd/CONDA-FORGE.md` and the `/drift` skill carry
+# the procedure; this names which repository it is in.
+_FEEDSTOCK_REMEDY: dict[str, str] = {
+    "drift": (
+        "Fix it with a pull request against the feedstock, per `sdd/CONDA-FORGE.md` — and bump "
+        "`build.number` there when the version is unchanged, or the metadata-only fix never reaches users."
+    ),
+    "missing": (
+        "That 404 is two different findings and this run cannot tell them apart: either the feedstock moved "
+        "or renamed `recipe/recipe.yaml`, which is a pull request there, or `FEEDSTOCK_URL` in "
+        "`scripts/drift_feedstock.py` is stale, which is a fix here. Open the feedstock and look before "
+        "assuming the first."
+    ),
+    "error": (
+        "The fault is on this side, so nothing about the feedstock follows from it — read this workflow's "
+        "run log rather than conda-forge."
+    ),
+}
+
+
+def _render_feedstock(state: FeedstockState) -> list[str]:
+    """What conda-forge publishes, against what this repo published for it.
+
+    **Renders on every run that produces a body, not only on a finding**, for
+    the reason ``_render_support_windows`` gives: a section that appears only
+    when something is wrong is indistinguishable from a signal that stopped
+    running, and this one depends on a network fetch that can quietly start
+    failing. (A run whose ``Reports`` is falsy renders no body at all and says
+    so in its step log instead — the same bound the windows section has.)
+
+    The finding leads with the **key paths** that differ, not the diff.
+    ``sdd/DRIFT-RULES.md`` [Rule 2](../sdd/DRIFT-RULES.md#localize) asks a
+    mechanism to name the element rather than the fact of a difference, and the
+    recipe is mostly comments — so a unified diff localizes to a line number
+    while ``requirements.run_constraints[pyarrow]`` localizes to the thing a
+    reader has to decide about. The diff rides underneath as detail.
+
+    Owner and review date come from ``state.accepted``, which ``main`` resolved,
+    rather than from the register — which this function no longer takes, so the
+    prose cannot name a row other than the one the predicate matched.
+
+    **The remedy is per status, and renders only where there is one.** It used
+    to ride in the lead paragraph on every verdict, which prescribed a feedstock
+    pull request on a registered drift — the thing the register decided against
+    — and on a verdict that compared nothing.
+    """
+    if state.status == "absent":
+        return []
+    lines = ["## Conda feedstock", ""]
+    version = f"`{state.remote_version}`" if state.remote_version else "an unreadable version"
+    summary = _FEEDSTOCK_SUMMARY.get(state.status, f"reported `{state.status}`")
+    lines.append(
+        f"The recipe `conda-forge/remote-store-feedstock` publishes is on {version} and {summary}. "
+        "This is a report, never a gate: the file lives in a repository this project does not own, "
+        "so nothing committed here changes what the channel serves."
+    )
+    lines.append("")
+    if state.reason:
+        lines.append(f"_{state.reason}._")
+        lines.append("")
+    if state.keys:
+        # Reporting only. These localize the difference for a reader; what the
+        # register keys on is the fingerprint below, which is why an imperfect
+        # key path here costs nothing.
+        lines.append("Differing keys:")
+        lines.append("")
+        lines.extend(f"- `{key}`" for key in state.keys)
+        lines.append("")
+    if state.status == "drift" and state.fingerprint:
+        lines.append(f"Published body: `{state.fingerprint}` — the key a register row carries.")
+        lines.append("")
+    if state.diff:
+        lines.append("```diff")
+        lines.append(state.diff.strip("\n"))
+        lines.append("```")
+        lines.append("")
+    if state.trailing and state.newest_tag:
+        # Informational on purpose. A feedstock trails its upstream release by
+        # design, and the release checklist owns getting it caught up; saying so
+        # here would duplicate that obligation in a place nobody performs it.
+        lines.append(
+            f"The newest tag here is `{state.newest_tag}`, so the channel is a release behind. "
+            "That is expected between a release and its copy-out, and it never holds this issue open — "
+            "the release checklist owns it."
+        )
+        lines.append("")
+    if state.registered:
+        # BEFORE the holding branch, not inside it. Keyed on the raw status,
+        # this verdict rendered the narrowed-run sentence directly under the
+        # sentence saying it holds nothing open — two paragraphs whose every
+        # clause was false of it.
+        owner, review = state.accepted
+        lines.append(
+            f"This exact published body is registered in `infra/drift-locks/FEEDSTOCK-DIVERGENCE.md` — "
+            f"_owned by {owner}, review by {review}_ — so it neither forces an update nor stops this run "
+            "closing the issue. Any further change on the far side, or that date passing, and it is "
+            "reported as new again."
+        )
+        lines.append("")
+    elif state.status in FEEDSTOCK_HOLDS:
+        held = (
+            "holds this issue open"
+            if state.holds_issue
+            else (
+                "would hold this issue open on a full run; this one covered only part of the matrix, so it does "
+                "not — it does stop this run closing the issue"
+            )
+        )
+        lines.append(f"This {held}. {_FEEDSTOCK_REMEDY[state.status]}")
+        lines.append("")
+    elif state.status in FEEDSTOCK_INCONCLUSIVE:
+        lines.append(
+            "This run could not compare the two copies, which is not the same as finding them equal — "
+            "so it does not hold this issue open and it does not let this run close it either."
+        )
         lines.append("")
     return lines
 
@@ -1139,6 +1528,7 @@ def _render_body(
     lines.extend(_render_floor_lane(reports, register or {}, today or date.today()))
     lines.extend(_render_smoke_verdicts(reports, register or {}, lanes, today=today or date.today()))
     lines.extend(_render_support_windows(reports.windows, python_register or {}, today or date.today()))
+    lines.extend(_render_feedstock(reports.feedstock))
 
     # Clear means clear in both lanes. An extra whose newest resolution is `ok`
     # while its floor will not install, or while either lane's smoke is red, is
@@ -1249,6 +1639,28 @@ def main(argv: list[str] | None = None) -> int:
         ),
     )
     parser.add_argument(
+        "--feedstock-register",
+        type=Path,
+        default=FEEDSTOCK_REGISTER,
+        help=(
+            "Path to the accepted-divergence register for the published conda recipe "
+            "(default: infra/drift-locks/FEEDSTOCK-DIVERGENCE.md). A third file rather than a "
+            "third table, because it is keyed on the published body's fingerprint and one loader "
+            "per file is what keeps three registers from reading each other's rows."
+        ),
+    )
+    parser.add_argument(
+        "--feedstock-report",
+        type=Path,
+        default=None,
+        help=(
+            "Path to scripts/drift_feedstock.py's JSON verdict on the published conda recipe. "
+            "Deliberately NOT inside the reports directory: that verdict carries no `extra`, so "
+            "`_load_reports` would name it unreadable and hold the issue open every week under a "
+            "wrong reason. Omitted, the section does not render."
+        ),
+    )
+    parser.add_argument(
         "--today",
         default=None,
         help=(
@@ -1281,9 +1693,15 @@ def main(argv: list[str] | None = None) -> int:
     try:
         register = load_known_findings(args.known_findings)
         python_register = load_python_support_register(args.python_support_register)
+        feedstock_register = load_feedstock_register(args.feedstock_register)
     except (RegisterDateError, UnusableInputError) as exc:
         print(f"::error::unusable register: {exc}", file=sys.stderr)
         return 1
+    # NOT a hard failure, unlike the registers above, and `load_feedstock_report`
+    # carries the argument: this one is read before the issue is reconciled, so
+    # exiting here would cost every other signal its week on the issue. It
+    # becomes a reported `error` instead, which holds the issue open.
+    feedstock = load_feedstock_report(args.feedstock_report)
     # Same posture again, for the two arguments the workflow interpolates from
     # another job's outputs rather than a person typing them.
     try:
@@ -1317,7 +1735,23 @@ def main(argv: list[str] | None = None) -> int:
         # so reaching this means a commit bypassed it.
         print(f"::error::undated interpreter classifier: {exc}", file=sys.stderr)
         return 1
-    reports = dataclasses.replace(_load_reports(args.reports_dir), windows=window_state)
+    # The accepted-divergence register, read through the same expiry predicate
+    # as the other two (DRIFT-RULES Rule 6). A drift whose published body is
+    # the one a live row names is a difference somebody owns, so it neither
+    # forces an update nor blocks the close; any other body has no row and does
+    # both again. Resolved once, here, so `registered` and the rendered prose
+    # read the same row.
+    row = feedstock_register.get(feedstock.fingerprint)
+    accepted = row if row and feedstock.fingerprint in silencing(feedstock_register, today) else None
+    # `unnarrowed` again, for the same reason and from the same variable: a
+    # published-copy finding is true on every run, so only a full one may act
+    # on it. `blocks_close` is independent of this and stays true either way.
+    feedstock = dataclasses.replace(feedstock, accepted=accepted)
+    feedstock = dataclasses.replace(
+        feedstock,
+        holds_issue=unnarrowed and feedstock.status in FEEDSTOCK_HOLDS and not feedstock.registered,
+    )
+    reports = dataclasses.replace(_load_reports(args.reports_dir), windows=window_state, feedstock=feedstock)
     if not reports:
         # Say what this run saw, not what a run could see. `Reports.__bool__`
         # keys on `holds_issue`, so a narrowed dispatch whose legs uploaded
@@ -1326,14 +1760,30 @@ def main(argv: list[str] | None = None) -> int:
         # This is the third reader of the `holds_issue` / `unregistered`
         # distinction, after `__bool__` and the rendered section, and it is the
         # line a maintainer reads in a dispatch's step log.
-        if reports.windows.unregistered:
+        #
+        # The feedstock verdict reads the same way and is named on the same
+        # terms: a `drift` a narrowed run may not act on is still a thing this
+        # run saw, and a log line denying it would be the same error one signal
+        # over.
+        withheld = list(reports.windows.unregistered)
+        if reports.feedstock.status in FEEDSTOCK_HOLDS and not reports.feedstock.registered:
+            # `registered`, not the raw status: a registered drift is withheld
+            # by its owner's decision and not by this run's width, and saying
+            # "too narrow to act on that" of it names the wrong reason on a
+            # narrowed run and is simply false on a full one.
+            withheld.append(f"the published conda recipe is {reports.feedstock.status}")
+        if withheld:
             print(
-                f"No drift reports found. {', '.join(reports.windows.unregistered)} is past its support window "
-                "with nobody named, but this run was too narrow to act on it; the next full run will.",
+                f"No drift reports found. {', '.join(withheld)} — but this run was too narrow to act on that; "
+                "the next full run will.",
                 file=sys.stderr,
             )
         else:
-            print("No drift reports found and no support window crossed; nothing to reconcile.", file=sys.stderr)
+            print(
+                "No drift reports found, no support window crossed and nothing to say about the published "
+                "conda recipe; nothing to reconcile.",
+                file=sys.stderr,
+            )
         return 0
 
     body = _render_body(reports, args.run_url, register, expected, lanes, python_register, today=today)

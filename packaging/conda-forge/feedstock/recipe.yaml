@@ -1,34 +1,22 @@
 # conda-forge recipe for remote-store
 # v1 format (CEP-13 / rattler-build)
 #
-# THE SOURCE for `conda-forge/remote-store-feedstock`'s `recipe/`.  Submission
-# is over: every further change reaches conda-forge as a PR against the
-# feedstock, and this file is what that PR carries.  It is the source, not a
-# draft -- the copy that went to staged-recipes#32401 was hand-edited away from
-# this one and silently lost the `tomli` constraint, which is why edits land
-# here first and are copied out, never the reverse.
+# GENERATED FILE.  Every change is made upstream, at
+# https://github.com/haalfi/remote-store/blob/master/packaging/conda-forge/recipe.yaml
+# and copied here by that repository's `scripts/gen_conda_feedstock.py`, which
+# replaces this header and carries everything below `context:` byte for byte.
+# Editing this copy directly puts it out of step with its source, where a gate
+# derives `run_constraints` from the project's own optional dependencies and
+# fails on a missing, extra or weaker entry.
 #
-# The copy is now GENERATED, not hand-made: `scripts/gen_conda_feedstock.py`
-# writes `packaging/conda-forge/feedstock/recipe.yaml` by replacing everything
-# above `context:` and copying the rest byte for byte, and `hatch run lint`
-# fails when that committed copy is stale.  So the copy-out is that one file,
-# and nothing below this block is edited on the way out.
+# `build.number` is the feedstock's own, and upstream leaves it alone:
+# conda-forge increments it for rebuilds and migrations. Every other value here
+# is upstream's, `source.sha256` included -- it is set there once the release is
+# on PyPI, and this file carries whatever it says.
 #
-# `build.number` is the sanctioned exception: conda-forge owns it, for rebuilds
-# and migrations this repo never sees, so the value here is not authoritative.
-# `source.sha256` is the other value the far copy can legitimately be ahead on,
-# because it is fetched from PyPI after the release tag is cut.
-#
-# `scripts/drift_feedstock.py` fetches the published recipe weekly and compares
-# it against the generated copy this repo committed at the tag its version
-# names; findings land on the drift-guard rolling issue.  `sdd/CONDA-FORGE.md`
-# is the procedure and states what that watch does not catch.
-#
-# `python_min` is deliberately NOT set here: conda-forge supplies it globally,
-# and hardcoding it would pin us to 3.10 after the ecosystem raises its
-# minimum.  `packaging/conda-forge/variants.yaml` supplies it for our own
-# `Conda Recipe` workflow, which renders this file standalone.
-
+# `python_min` is deliberately NOT set: conda-forge supplies it globally, and
+# hardcoding it would pin this package to one minimum after the ecosystem
+# raises its own.
 context:
   version: "0.32.0"
 
