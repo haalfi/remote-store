@@ -286,9 +286,11 @@ if evidence changes; these are retired.
   **Bound, stated rather than left implicit:** `no-baseline` makes the watch
   inert against a feedstock pinned to a tag cut before the generator existed,
   which is the shape of this item's own incident. It is bounded on both sides —
-  the channel is on 0.32.0, so the next copy-out installs a comparable tag, and
-  a feedstock left behind longer surfaces as `trailing`, which the release
-  checklist owns.
+  the channel is on 0.32.0, so the next copy-out installs a comparable tag.
+  That is the **only** bound: an earlier draft of this entry claimed a second,
+  that a feedstock left behind longer "surfaces as `trailing`", which cannot
+  happen — `trailing` is an orthogonal field rather than an alternative status,
+  so such a feedstock reports `no-baseline` *and* `trailing: true` together.
   **Not closed here, and split out as BK-381: the `check_backend_order` blind
   spot** the item's second bullet measured. `_distinct` is 4 against
   `_MIN_BACKENDS` 6, so a four-backend `about` block is discarded as prose
@@ -727,8 +729,9 @@ if evidence changes; these are retired.
   `pyproject.toml` rather than the feedstock to this repo, and
   `check_backend_order` **never tested the block at all** — `is_ordered` on those
   four backends is `False`, but `_distinct` is 4 against `_MIN_BACKENDS` 6, so
-  both scanners discard it as prose first. **BK-370** is that gap, filed rather
-  than fixed.
+  both scanners discard it as prose first. BK-370 was filed for that gap and
+  closed the feedstock half of it; the enumeration blind spot itself is
+  **BK-381**.
   **Closed by the feedstock PR**, which carried version, `sha256`, the corrected
   `run_constraints` and the refreshed `about`, and whose rerender regenerated the
   feedstock's `README.md` — the generated file that carries the recipe's summary,

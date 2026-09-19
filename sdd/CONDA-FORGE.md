@@ -52,13 +52,20 @@ Upstream sources, which govern where they disagree with this page:
    diff <feedstock-clone>/recipe/recipe.yaml packaging/conda-forge/feedstock/recipe.yaml
    ```
 
-   Expect one hunk, `build.number`. Anything else means the copy was assembled
-   rather than copied.
+   What to expect depends on the route, because both copies carry `number: 0`
+   and [Rule 4](#build-number) says what the far side's value should be:
+
+   | Route | Expected diff |
+   |---|---|
+   | Version changed (the [Walkthrough](#walkthrough)'s case) | **nothing** — the far side's `build.number` is `0`, and so is ours |
+   | Version unchanged, metadata only | one hunk, `build.number`, ours `0` against their `+1` |
+
+   Anything else means the copy was assembled rather than copied.
 
    **`drift_feedstock` does not answer this question**, because it reads the
    feedstock's `main` branch: before the merge that is still the previous
    release's file. It is what confirms the result afterwards
-   ([Walkthrough](#walkthrough) step 9), and what re-checks it every week. See
+   ([Walkthrough](#walkthrough) step 10), and what re-checks it every week. See
    [Rule 7](#what-the-gates-do-not-cover) for what it does not reach.
 
 4. <a id="build-number"></a>**`build.number` belongs to the feedstock.** It is
@@ -130,6 +137,13 @@ Upstream sources, which govern where they disagree with this page:
      files, and that a version this repo published no generated copy for reports
      `no-baseline` rather than a comparison — which is every tag cut before the
      generator existed.
+   - `infra/drift-locks/FEEDSTOCK-DIVERGENCE.md` is where a difference nobody
+     intends to revert is recorded, keyed by YAML key path with an owner and a
+     `Review by`. It exists for the edits conda-forge can impose without our
+     consent — a migrator, or `@conda-forge-admin, please add user @X` touching
+     `extra.recipe-maintainers` — which [Rule 1](#upstream-is-the-source) leaves
+     no in-repo remedy for. It ships empty; a row is a decision, and an expired
+     one stops silencing.
 
 8. **Fill [conda-forge's PR
    template](https://github.com/conda-forge/.github/blob/main/.github/PULL_REQUEST_TEMPLATE.md).**
@@ -189,9 +203,10 @@ observable is the commit appearing on the bot's PR with its CI re-running.
    **`recipe/recipe.yaml`**, whole. Nothing is stripped, replaced or reflowed:
    the generator already did the one transformation there is, and `hatch run
    lint` has already checked that file is current. Then set `build.number`
-   there ([Rule 4](#build-number)).
-4. Diff the far copy against ours ([Rule 3](#diff-the-copies)), expecting
-   `build.number` and nothing else.
+   there per [Rule 4](#build-number) — on this route the version has changed, so
+   the value is `0`, which is what the copy already carries: nothing to do.
+4. Diff the far copy against ours ([Rule 3](#diff-the-copies)). On this route
+   expect **no output**; a hunk here means something was edited by hand.
 5. Commit from a local clone, not through the GitHub API, whose commits are
    unverified. Push to the fork, or to the bot's branch.
 6. Open the PR against `conda-forge/remote-store-feedstock` and fill the

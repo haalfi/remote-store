@@ -151,6 +151,14 @@ documented in [`CONTRIBUTING.md`](../CONTRIBUTING.md).
   — but they do not let the run **close** the issue either, because not knowing
   is not agreement. Splitting our failures from the feedstock's is what stops a
   broken watch looking exactly like a healthy one.
+  **A difference nobody intends to revert is registered**, in
+  `infra/drift-locks/FEEDSTOCK-DIVERGENCE.md`, keyed by YAML key path — a third
+  register because it is keyed differently again from the other two. A `drift`
+  stops holding the issue only when *every* differing key has an unexpired row,
+  so accepting a conda-forge-imposed `extra.recipe-maintainers` edit does not
+  also silence a changed dependency floor. Without it such an edit would hold
+  this **shared** issue open permanently and retire the dependency lanes' own
+  "drift cleared" signal.
 - **How to act:** run the **`/drift` skill**. Refreshes are gated per extra on
   that extra's smoke verdict; the skill's steps 3–5 are authoritative on the
   gating, including how a major bump, a red smoke and a red floor are each

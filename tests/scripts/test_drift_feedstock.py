@@ -10,6 +10,7 @@ from __future__ import annotations
 
 import http.client
 import json
+import re
 import sys
 from pathlib import Path
 
@@ -77,6 +78,43 @@ def wire(monkeypatch, watch):
     return _wire
 
 
+class TestStatusTableMatchesTheConstants:
+    """DRIFT-RULES Rule 3, applied to this module's own docstring.
+
+    The commit that centralised this vocabulary removed three hand-maintained
+    copies from ``drift_report`` and imported them instead -- then left the
+    docstring's Statuses table sitting directly above the definitions,
+    asserting an equivalence ("are that table in code") that nothing checked.
+    A prose rendering for humans beside a frozenset for code is a legitimate
+    pair; an *unchecked* one is the parallel artefact the rule forbids.
+    """
+
+    def _table_rows(self, watch):
+        """Parse the RST table by its column gaps, which is what separates its cells."""
+        rows = {}
+        for line in watch.__doc__.splitlines():
+            if not line.startswith("``"):
+                continue
+            cells = re.split(r"\s{2,}", line.strip())
+            if len(cells) != 4:
+                continue
+            status = cells[0].strip("`")
+            rows[status] = (cells[2] != "no", cells[3] == "yes")
+        return rows
+
+    def test_the_table_names_exactly_the_statuses_the_code_defines(self, watch):
+        assert set(self._table_rows(watch)) == set(watch.STATUSES)
+
+    def test_each_row_agrees_with_its_frozenset(self, watch):
+        for status, (forces, permits_close) in self._table_rows(watch).items():
+            assert forces == (status in watch.HOLDS), f"{status}: `Forces update` column"
+            assert permits_close == (status in watch.CLEAR), f"{status}: `Permits close` column"
+
+    def test_the_parse_finds_every_row(self, watch):
+        """Guard on the guard: a table this regex silently stopped matching would pass vacuously."""
+        assert len(self._table_rows(watch)) == 7
+
+
 class TestNormalization:
     def test_the_header_is_never_compared(self, watch):
         assert watch.body(RECIPE) == BODY
@@ -116,6 +154,23 @@ class TestNormalization:
 
     def test_a_real_change_is_not_excluded(self, watch):
         assert watch.comparable(RECIPE) != watch.comparable(RECIPE.replace("eight backends", "four backends"))
+
+    def test_line_endings_are_not_a_difference(self, watch):
+        """A CRLF remote is the same recipe, not a drifted one.
+
+        Two ways this bites without normalisation, and the second only appears
+        once the first is fixed: the version parse misses the marker line, and
+        `mask_excluded` rewrites a masked line's terminator to `\\n` while
+        leaving its neighbours `\\r\\n`, so every line differs. Four sibling
+        generators in this repo normalise before comparing for the same reason.
+        """
+        crlf = RECIPE.replace("\n", "\r\n")
+        assert watch.comparable(crlf) == watch.comparable(RECIPE)
+
+    def test_a_crlf_remote_reports_match(self, watch, wire):
+        """End to end: line endings must not reach the verdict."""
+        wire(remote=RECIPE.replace("\n", "\r\n"))
+        assert watch.compare().status == "match"
 
 
 class TestLocalization:
@@ -161,6 +216,11 @@ class TestVersionParsing:
             ("indented comment", 'context:\n  # set at release\n  version: "0.32.0"\n'),
             ("another key first", 'context:\n  name: remote-store\n  version: "0.32.0"\n'),
             ("trailing spaces", 'context:   \n  version: "0.32.0"\n'),
+            # The two shapes that shipped green through two fix rounds, because
+            # every case above is LF and every one has a bare `context:` line.
+            ("crlf", 'context:\r\n  version: "0.32.0"\r\n'),
+            ("comment on the marker line", 'context:  # set by the bot\n  version: "0.32.0"\n'),
+            ("crlf and a marker comment", 'context: # bot\r\n  version: "0.32.0"\r\n'),
         ],
     )
     def test_the_version_survives_reformatting_of_the_block(self, watch, shape, text):
@@ -187,6 +247,41 @@ class TestVersionParsing:
     )
     def test_version_tuples(self, watch, tag, expected):
         assert watch._version_tuple(tag) == expected
+
+
+class TestNewestTag:
+    """The real body, which every status test stubs away.
+
+    `wire` replaces `newest_tag` wholesale, so its parsing and max-selection
+    never ran -- and "by version order rather than by push order" is the
+    load-bearing half of its docstring.
+    """
+
+    def _gh_returning(self, watch, monkeypatch, stdout, returncode=0):
+        import subprocess
+
+        def fake(args, **_kw):
+            return subprocess.CompletedProcess(args=args, returncode=returncode, stdout=stdout, stderr="")
+
+        monkeypatch.setattr(watch.subprocess, "run", fake)
+
+    def test_picks_by_version_order_not_push_order(self, watch, monkeypatch):
+        # `gh api .../tags` returns push order; v0.9.0 sorts above v0.10.0 as a
+        # string and below it as a version, so a lexical max would pick wrong.
+        self._gh_returning(watch, monkeypatch, "v0.9.0\nv0.32.0\nv0.10.0\nv0.31.0\n")
+        assert watch.newest_tag() == "v0.32.0"
+
+    def test_ignores_tags_that_are_not_versions(self, watch, monkeypatch):
+        self._gh_returning(watch, monkeypatch, "nightly\nv0.31.0\nrelease-candidate\nvX.Y\n")
+        assert watch.newest_tag() == "v0.31.0"
+
+    def test_a_failed_call_yields_none(self, watch, monkeypatch):
+        self._gh_returning(watch, monkeypatch, "", returncode=1)
+        assert watch.newest_tag() is None
+
+    def test_no_version_tags_yields_none(self, watch, monkeypatch):
+        self._gh_returning(watch, monkeypatch, "nightly\nmain\n")
+        assert watch.newest_tag() is None
 
 
 class TestStatuses:

@@ -9,9 +9,10 @@
 # derives `run_constraints` from the project's own optional dependencies and
 # fails on a missing, extra or weaker entry.
 #
-# Two values here are the feedstock's own, and upstream leaves them alone:
-# `build.number`, which conda-forge increments for rebuilds and migrations,
-# and `source.sha256`, which is known only once the release is on PyPI.
+# `build.number` is the feedstock's own, and upstream leaves it alone:
+# conda-forge increments it for rebuilds and migrations. Every other value here
+# is upstream's, `source.sha256` included -- it is set there once the release is
+# on PyPI, and this file carries whatever it says.
 #
 # `python_min` is deliberately NOT set: conda-forge supplies it globally, and
 # hardcoding it would pin this package to one minimum after the ecosystem

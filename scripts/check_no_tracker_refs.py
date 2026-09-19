@@ -42,8 +42,12 @@ Out of scope (the trackers are how those documents are addressed):
   is to retell work by ID.
 * ``CLAUDE.md``, ``AGENTS.md`` -- agent-harness files, not user-facing.
 * ``tests/``, ``.claude/``, ``infra/`` -- internal. So is the rest of
-  ``packaging/``: the conda recipe named above is the one file in it that
-  leaves this repository.
+  ``packaging/``, though not because nothing else there leaves: the generated
+  ``packaging/conda-forge/feedstock/recipe.yaml`` is the file that literally
+  ships. It is out of scope because every byte of it below ``context:`` is the
+  recipe above, so scanning it would re-check the same bytes; its own generated
+  header is held to these patterns by
+  ``tests/scripts/test_gen_conda_feedstock.py`` instead.
 * ``docs-src/_data/`` -- generated graph artefacts.
 * ``#`` comments inside ``.py`` files -- readers of the source are
   contributors, not users.
@@ -238,6 +242,15 @@ _DOCS_EXCLUDED_TOP_DIRS: frozenset[str] = frozenset({"_data"})
 # --------------------------------------------------------------------------- #
 # Data
 # --------------------------------------------------------------------------- #
+
+
+class MissingRecipeError(Exception):
+    """The conda recipe named on the command line could not be opened.
+
+    Reported rather than skipped: this gate prints "no tracker IDs found in
+    published surfaces" on success, and that sentence would otherwise cover a
+    file the run never read.
+    """
 
 
 @dataclass(frozen=True)
@@ -444,8 +457,18 @@ def collect_violations(
         out.extend(_scan_python_file(py))
     for md in _iter_markdown_files(root_md_files, docs_root):
         out.extend(_scan_markdown_file(md))
-    if conda_recipe.is_file():
-        out.extend(_scan_conda_recipe(conda_recipe))
+    # Raised, not skipped. The success message names the surfaces this run
+    # covered, so a recipe that could not be opened must not pass silently
+    # under it -- the same argument `_scan_conda_recipe` makes for scanning a
+    # marker-less file whole ("a silent full pass would be the one outcome that
+    # reports nothing while checking nothing"), applied one case earlier. The
+    # Python and Markdown roots differ deliberately: those are trees, where an
+    # empty one is a legitimate state a test relies on; this is a named file.
+    if not conda_recipe.is_file():
+        raise MissingRecipeError(
+            f"{conda_recipe} is not a readable file, so this gate cannot say the conda recipe is clean"
+        )
+    out.extend(_scan_conda_recipe(conda_recipe))
     out.sort(key=lambda v: (str(v.path), v.line, v.match))
     return out
 
@@ -477,11 +500,15 @@ def main(argv: list[str] | None = None) -> int:
     )
     args = parser.parse_args(argv)
 
-    violations = collect_violations(
-        src_root=args.src_root,
-        docs_root=args.docs_root,
-        conda_recipe=args.conda_recipe,
-    )
+    try:
+        violations = collect_violations(
+            src_root=args.src_root,
+            docs_root=args.docs_root,
+            conda_recipe=args.conda_recipe,
+        )
+    except MissingRecipeError as exc:
+        print(f"check_no_tracker_refs: {exc}", file=sys.stderr)
+        return 1
     if not violations:
         print("check_no_tracker_refs: no tracker IDs found in published surfaces.")
         return 0

@@ -304,7 +304,30 @@ class TestCondaRecipeScanner:
         f = self._write(tmp_path, "# BK-999 above\npackage:\n  name: x\n")
         assert [v.match for v in _mod._scan_conda_recipe(f)] == ["BK-999"]
 
-    def test_unreadable_recipe_is_a_silent_skip(self, tmp_path):
+    def test_an_absent_recipe_is_refused_rather_than_passed(self, tmp_path, capsys):
+        """The success message names surfaces the run covered.
+
+        Returning 0 here would put "no tracker IDs found in published
+        surfaces" over a file that was never opened -- the unearned claim the
+        marker-less case is already careful to avoid.
+        """
+        src_empty = tmp_path / "_empty_src"
+        src_empty.mkdir()
+        rc = _mod.main(
+            [
+                "--src-root",
+                str(src_empty),
+                "--docs-root",
+                str(src_empty),
+                "--conda-recipe",
+                str(tmp_path / "absent.yaml"),
+            ]
+        )
+        assert rc == 1
+        assert "cannot say the conda recipe is clean" in capsys.readouterr().err
+
+    def test_the_scanner_itself_still_tolerates_an_unreadable_file(self, tmp_path):
+        """The refusal lives at the enumeration, not in the scanner."""
         assert _mod._scan_conda_recipe(tmp_path / "absent.yaml") == []
 
     def test_the_committed_recipe_is_clean(self):
@@ -318,12 +341,15 @@ class TestMain:
 
         Defaulting any of them would make an unrelated test assert on the
         repository's own contents, which is the dependency this signature
-        exists to remove.
+        exists to remove. The recipe is a real, clean stub rather than an
+        absent path, because an absent one is now a refusal in its own right.
         """
+        stub = tmp_path / "stub-recipe.yaml"
+        stub.write_text('# header\ncontext:\n  version: "1.0"\n', encoding="utf-8")
         args = {
             "--src-root": str(tmp_path),
             "--docs-root": str(tmp_path),
-            "--conda-recipe": str(tmp_path / "absent.yaml"),
+            "--conda-recipe": str(stub),
         }
         args.update(over)
         return [part for pair in args.items() for part in pair]

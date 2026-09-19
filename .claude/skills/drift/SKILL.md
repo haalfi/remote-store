@@ -188,15 +188,36 @@ lacks `actions: write`; the MCP server's `actions_run_trigger` dispatches).
      rationale is what the enforcement exists to prevent.
 
    **Conda feedstock.** Not a lane, not a refresh, and **never** acted on by
-   this skill. The row says whether the recipe conda-forge publishes still
+   this skill. The section says whether the recipe conda-forge publishes still
    matches the generated copy this repo committed at the tag its version names.
+
+   **The body prints prose, not a status token.** Read the verdict from the
+   first sentence: "carries exactly what this repo committed" is `match`,
+   "**differs from what this repo committed**" is `drift`, "carries a change
+   merged after that version was tagged" is `ahead-of-tag`, "names a version
+   this repo published no generated copy for" is `no-baseline`, "**could not be
+   found at the path this repo publishes to**" is `missing`, "could not be
+   fetched" is `unreachable`, and "**could not be checked, and the fault is on
+   this side**" is `error`.
+
+   **A "release behind" paragraph is not one of those verdicts.** It renders
+   *beside* whichever verdict applies, because trailing is an orthogonal fact
+   rather than a status: a channel a release behind can still carry exactly
+   what we published for the version it is on. Read the verdict sentence first
+   and the trailing paragraph second — acting on the trailing sentence alone
+   will tell you there is nothing to do on a run that is holding the issue
+   open. Catching the channel up is the release checklist's, never this skill's.
 
    - **`match`, `ahead-of-tag`** → nothing to do. The second means the published
      copy carries a change merged after that tag was cut, which is what a
      release's own copy-out looks like.
-   - **`trailing`** → informational, always. A feedstock trails its upstream
-     release by design; the release checklist owns catching it up, and this row
-     never holds the issue open.
+   - **Differing keys marked _known_** → registered in
+     `infra/drift-locks/FEEDSTOCK-DIVERGENCE.md` with an owner, because that
+     difference is one nobody intends to revert (a conda-forge migrator, or the
+     maintainer-list flow). When *every* differing key is marked, the row holds
+     nothing open. A row whose `Review by` has passed stops silencing and the
+     difference reappears as new — that is the mechanism asking you to re-read
+     the rationale, not a date to extend on sight.
    - **`no-baseline`, `unreachable`** → this run could not compare the two. Not
      a finding, and not a clean bill either: they stop the issue closing and
      nothing else. `no-baseline` on a version tagged before this watch existed

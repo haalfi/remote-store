@@ -178,10 +178,32 @@ class FeedstockState:
     diff: str = ""
     keys: tuple[str, ...] = ()
     holds_issue: bool = False
+    silenced: tuple[str, ...] = ()
+
+    @property
+    def fully_silenced(self) -> bool:
+        """A ``drift`` whose *every* differing key is registered and unexpired.
+
+        ``keys`` must be non-empty, and that guard is load-bearing rather than
+        defensive tidiness: ``set(()) - live`` is empty, so a ``drift`` that
+        arrived carrying no keys at all would otherwise read as
+        "every difference is accepted" and licence a close. Fail-open is the
+        one direction this signal must never take, and an empty ``keys`` on a
+        ``drift`` means the producer could not localize, not that there is
+        nothing to localize.
+        """
+        return self.status == "drift" and bool(self.keys) and not set(self.keys) - set(self.silenced)
 
     @property
     def blocks_close(self) -> bool:
-        """Whether this run may close the rolling issue over this verdict."""
+        """Whether this run may close the rolling issue over this verdict.
+
+        A fully registered ``drift`` does not block: every difference in it is
+        one somebody owns, which is exactly what the register decides. One
+        unregistered key and it blocks again.
+        """
+        if self.fully_silenced:
+            return False
         return self.status in FEEDSTOCK_HOLDS or self.status in FEEDSTOCK_INCONCLUSIVE
 
 
@@ -585,6 +607,44 @@ def load_python_support_register(path: Path = PYTHON_SUPPORT_REGISTER) -> dict[s
             review = match.group("review").strip()
             _review_date(review, where=f"{path}, row `{version}`")
             register[version] = (match.group("owner").strip(), review)
+    return register
+
+
+FEEDSTOCK_REGISTER = Path(__file__).resolve().parent.parent / "infra" / "drift-locks" / "FEEDSTOCK-DIVERGENCE.md"
+
+# `| `extra.recipe-maintainers` | owner | rationale | 2026-12-31 |` — four cells,
+# the first a BACKTICKED YAML key path. Disjoint from both sibling row patterns:
+# `_REGISTER_ROW_RE` needs a bracketed `[extra]` first cell and five cells, and
+# `_PYTHON_REGISTER_ROW_RE` needs a bare `N.N` version. A key path contains a
+# dot or a bracket and never matches either, which is what keeps three loaders
+# from reading each other's rows — the collision the python register's own
+# comment records as measured.
+_FEEDSTOCK_REGISTER_ROW_RE = re.compile(
+    r"^\|\s*`(?P<key>[A-Za-z_][\w.\[\]-]*)`\s*\|(?P<owner>[^|]*)\|[^|]*\|(?P<review>[^|]*)\|\s*$"
+)
+
+
+def load_feedstock_register(path: Path = FEEDSTOCK_REGISTER) -> dict[str, tuple[str, str]]:
+    """``{key_path: (owner, review_by)}`` from the accepted-divergence register.
+
+    Keyed on the YAML key path rather than on the extra or the interpreter the
+    other two registers use, because a feedstock divergence is a fact about one
+    field of one file. That granularity is the point: accepting an edited
+    `extra.recipe-maintainers` must not also silence a changed dependency floor
+    in the same comparison.
+    """
+    if not path.exists():
+        return {}
+    if not path.is_file():  # same reason as the two loaders above
+        raise UnusableInputError(f"{path} is not a file, so it cannot be read as a register")
+    register: dict[str, tuple[str, str]] = {}
+    for line in path.read_text(encoding="utf-8").splitlines():
+        match = _FEEDSTOCK_REGISTER_ROW_RE.match(line.strip())
+        if match:
+            key = match.group("key")
+            review = match.group("review").strip()
+            _review_date(review, where=f"{path}, row `{key}`")
+            register[key] = (match.group("owner").strip(), review)
     return register
 
 
@@ -1176,7 +1236,7 @@ _FEEDSTOCK_SUMMARY: dict[str, str] = {
 }
 
 
-def _render_feedstock(state: FeedstockState) -> list[str]:
+def _render_feedstock(state: FeedstockState, register: dict[str, tuple[str, str]] | None = None) -> list[str]:
     """What conda-forge publishes, against what this repo published for it.
 
     **Renders on every run that produces a body, not only on a finding**, for
@@ -1195,6 +1255,7 @@ def _render_feedstock(state: FeedstockState) -> list[str]:
     """
     if state.status == "absent":
         return []
+    register = register or {}
     lines = ["## Conda feedstock", ""]
     version = f"`{state.remote_version}`" if state.remote_version else "an unreadable version"
     summary = _FEEDSTOCK_SUMMARY.get(state.status, f"reported `{state.status}`")
@@ -1211,8 +1272,20 @@ def _render_feedstock(state: FeedstockState) -> list[str]:
         lines.append("Differing keys:")
         lines.append("")
         for key in state.keys:
-            lines.append(f"- `{key}`")
+            if key in state.silenced:
+                owner, review = register.get(key, ("?", "?"))
+                lines.append(f"- `{key}` — _known: owned by {owner}, review by {review}._")
+            else:
+                lines.append(f"- `{key}`")
         lines.append("")
+        if state.fully_silenced:
+            lines.append(
+                "Every difference above is registered in "
+                "`infra/drift-locks/FEEDSTOCK-DIVERGENCE.md`, so this holds nothing open. A row "
+                "whose `Review by` has passed stops silencing and the difference is reported as "
+                "new again."
+            )
+            lines.append("")
     if state.diff:
         lines.append("```diff")
         lines.append(state.diff.strip("\n"))
@@ -1255,6 +1328,7 @@ def _render_body(
     expected: list[str] | None = None,
     lanes: list[str] | None = None,
     python_register: dict[str, tuple[str, str]] | None = None,
+    feedstock_register: dict[str, tuple[str, str]] | None = None,
     # Keyword-only, like `has_signal` and `decide`, so the reproducibility guard
     # in `tests/scripts/test_drift_report.py` can police it by looking for a
     # `today=` keyword. A positional pass here would read as an omission to that
@@ -1383,7 +1457,7 @@ def _render_body(
     lines.extend(_render_floor_lane(reports, register or {}, today or date.today()))
     lines.extend(_render_smoke_verdicts(reports, register or {}, lanes, today=today or date.today()))
     lines.extend(_render_support_windows(reports.windows, python_register or {}, today or date.today()))
-    lines.extend(_render_feedstock(reports.feedstock))
+    lines.extend(_render_feedstock(reports.feedstock, feedstock_register))
 
     # Clear means clear in both lanes. An extra whose newest resolution is `ok`
     # while its floor will not install, or while either lane's smoke is red, is
@@ -1494,6 +1568,17 @@ def main(argv: list[str] | None = None) -> int:
         ),
     )
     parser.add_argument(
+        "--feedstock-register",
+        type=Path,
+        default=FEEDSTOCK_REGISTER,
+        help=(
+            "Path to the accepted-divergence register for the published conda recipe "
+            "(default: infra/drift-locks/FEEDSTOCK-DIVERGENCE.md). A third file rather than a "
+            "third table, because it is keyed on a YAML key path and one loader per file is what "
+            "keeps three registers from reading each other's rows."
+        ),
+    )
+    parser.add_argument(
         "--feedstock-report",
         type=Path,
         default=None,
@@ -1537,6 +1622,7 @@ def main(argv: list[str] | None = None) -> int:
     try:
         register = load_known_findings(args.known_findings)
         python_register = load_python_support_register(args.python_support_register)
+        feedstock_register = load_feedstock_register(args.feedstock_register)
     except (RegisterDateError, UnusableInputError) as exc:
         print(f"::error::unusable register: {exc}", file=sys.stderr)
         return 1
@@ -1581,7 +1667,18 @@ def main(argv: list[str] | None = None) -> int:
     # `unnarrowed` again, for the same reason and from the same variable: a
     # published-copy finding is true on every run, so only a full one may act
     # on it. `blocks_close` is independent of this and stays true either way.
-    feedstock = dataclasses.replace(feedstock, holds_issue=unnarrowed and feedstock.status in FEEDSTOCK_HOLDS)
+    # The accepted-divergence register, read through the same expiry predicate
+    # as the other two (DRIFT-RULES Rule 6). A drift every one of whose keys is
+    # registered and unexpired is a set of differences somebody owns, so it
+    # neither forces an update nor blocks the close; one unregistered key and
+    # it does both again.
+    feedstock = dataclasses.replace(
+        feedstock, silenced=tuple(sorted(silencing(feedstock_register, today) & set(feedstock.keys)))
+    )
+    feedstock = dataclasses.replace(
+        feedstock,
+        holds_issue=unnarrowed and feedstock.status in FEEDSTOCK_HOLDS and not feedstock.fully_silenced,
+    )
     reports = dataclasses.replace(_load_reports(args.reports_dir), windows=window_state, feedstock=feedstock)
     if not reports:
         # Say what this run saw, not what a run could see. `Reports.__bool__`
@@ -1613,7 +1710,9 @@ def main(argv: list[str] | None = None) -> int:
             )
         return 0
 
-    body = _render_body(reports, args.run_url, register, expected, lanes, python_register, today=today)
+    body = _render_body(
+        reports, args.run_url, register, expected, lanes, python_register, feedstock_register, today=today
+    )
     if args.dry_run:
         # Before any `gh` call, so a dry run cannot reach the issue even to
         # read it: a dispatch from a branch must be observable without leaving

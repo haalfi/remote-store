@@ -173,6 +173,21 @@ phases:
           which confirms the excluded-field reasoning from the other side.
         outcome: ok
       - file: scripts/drift_feedstock.py
+        section: _VERSION_RE
+        read_type: verify
+        extract: |
+          Retrospective, and the most useful thing this trace records. A fix
+          pass widened this pattern to tolerate blank lines and column-0
+          comments inside the published `context:` block -- and in the same
+          edit swapped `\s` for `[ \t]` on the marker line, which silently
+          dropped CRLF. That is the *same* false-`error` class the widening
+          existed to remove, shipped green because all five new parametrized
+          cases were LF and all five had a bare `context:` line. A reading
+          review had seen the file twice by then; only an executing one found
+          it. The remedy was to normalise line endings once, in `comparable`
+          and `remote_version`, the way four sibling generators already do.
+        outcome: ok
+      - file: scripts/drift_feedstock.py
         section: compare
         read_type: verify
         extract: |
@@ -185,7 +200,10 @@ phases:
         outcome: ok
 
 expected_ripples:
-  - sdd/backlogid.json
+  # `sdd/backlogid.json` is deliberately absent: it stores the max ID per
+  # prefix, and BK-370 (370) is below the stored "BK": 377, so moving it to
+  # BACKLOG-DONE owes no regeneration. BK-381's arrival does not raise the max
+  # either, since the file already tracked 380.
   - sdd/GATE-INVENTORY.md
   - packaging/conda-forge/feedstock/recipe.yaml
 
@@ -197,4 +215,8 @@ discovery_followups:
   - BK-381
 
 co_shipped_items: []
-review_rounds: 1
+
+# Derivation: `git log --oneline origin/master..HEAD | wc -l` gives 4 on the
+# merged branch -- the implementation commit plus one fix-pass commit per
+# review round -- so the review-driven count is 3.
+review_rounds: 3

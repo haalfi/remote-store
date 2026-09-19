@@ -20,19 +20,20 @@ a release copies onto the feedstock. ``--check`` fails when it is stale.
 Authority (DRIFT-RULES Rule 4)
 ==============================
 
-``sdd/CONDA-FORGE.md`` `Rule 1 <../sdd/CONDA-FORGE.md>`_ declares it and is not
-restated here: **ours governs**. The feedstock copy is never edited directly
-and never back-ported from. This script is what makes that rule mechanical
-rather than remembered.
+``sdd/CONDA-FORGE.md`` Rule 1 declares it and is not restated here: **ours
+governs**. The feedstock copy is never edited directly and never back-ported
+from. This script is what makes that rule mechanical rather than remembered.
 
-Two values are the far copy's to own, and both are excluded from every
-comparison this repo makes:
+**One** value is the far copy's to own: ``build.number``, which conda-forge
+increments for rebuilds and migrations this repo never sees.
 
-* ``build.number`` -- conda-forge increments it for rebuilds and migrations
-  this repo never sees.
-* ``source.sha256`` -- fetched from PyPI **after** the release tag is cut
-  (``CONTRIBUTING.md`` Phase 5), so a tag structurally carries the previous
-  release's digest and the feedstock legitimately runs ahead on it.
+``source.sha256`` is **ours**, and is excluded from the weekly comparison for a
+different reason -- it is fetched from PyPI *after* the release tag is cut
+(``CONTRIBUTING.md`` Phase 5), so a tag structurally carries the previous
+release's digest and no comparison against a tag can judge it. Excluded from a
+comparison is not the same claim as owned by the far side, and the shipped
+header must not say the second: a reader told the incoming digest is not
+authoritative could preserve a stale one and build the wrong tarball.
 
 Wiring
 ======
@@ -103,9 +104,10 @@ SHIPPED_HEADER = """\
 # derives `run_constraints` from the project's own optional dependencies and
 # fails on a missing, extra or weaker entry.
 #
-# Two values here are the feedstock's own, and upstream leaves them alone:
-# `build.number`, which conda-forge increments for rebuilds and migrations,
-# and `source.sha256`, which is known only once the release is on PyPI.
+# `build.number` is the feedstock's own, and upstream leaves it alone:
+# conda-forge increments it for rebuilds and migrations. Every other value here
+# is upstream's, `source.sha256` included -- it is set there once the release is
+# on PyPI, and this file carries whatever it says.
 #
 # `python_min` is deliberately NOT set: conda-forge supplies it globally, and
 # hardcoding it would pin this package to one minimum after the ecosystem

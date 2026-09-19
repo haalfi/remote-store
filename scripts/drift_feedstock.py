@@ -15,6 +15,25 @@ the feedstock was rightly carrying none of them yet.
 Findings land on the drift-guard rolling issue via ``drift_report.py``. This
 script writes a JSON report and **never raises** -- see Statuses.
 
+Weekly, and why (DRIFT-RULES Rule 9)
+====================================
+
+The period is anchored to what can invalidate the claim, not to a calendar.
+Three events can: a **copy-out here**, which happens at a release and is checked
+at that moment by the release checklist rather than a week later; a **conda-forge
+rerender or migrator commit**, which lands on their schedule and without notice;
+and a **hand-edit on the far side**, which ``sdd/CONDA-FORGE.md`` Rule 1 forbids
+and which is therefore exactly what nothing else would catch.
+
+Only the last two fire between releases, and none of them is urgent: a wrong
+published recipe misinforms readers of the package page and constrains what a
+conda user can install, which is a correctness problem measured in weeks rather
+than a breakage measured in hours. Seven days is short enough that a divergence
+is found within one release cycle and long enough not to spend a run per day on
+an artefact that usually changes a few times a year. Daily would cost 7x for no
+detection this period misses; monthly could let a whole release ship and be
+superseded before anyone looked.
+
 Advisory, and why (DRIFT-RULES Rule 5)
 ======================================
 
@@ -47,36 +66,52 @@ verdict that compared nothing comes to read as a clean bill. Only the two
 ``CLEAR`` statuses permit a close; everything else blocks it, including the two
 that force nothing, because **not knowing is not agreement**.
 
-=============== ============================================= ======== =======
-Status          Meaning                                       Forces   Permits
+================= =========================================== ======== =======
+Status            Meaning                                     Forces   Permits
                                                               update   close
-=============== ============================================= ======== =======
-``match``       Identical below the header                    no       yes
-``ahead-of-tag`` Differs from the tag, matches ``master``     no       yes
-``drift``       Any other difference from the tag's copy      **yes**  no
-``missing``     404 on the published recipe                   **yes**  no
-``error``       Something on THIS side is broken              **yes**  no
-``no-baseline`` The tag carries no generated copy             no       no
-``unreachable`` The fetch failed                              no       no
-=============== ============================================= ======== =======
+================= =========================================== ======== =======
+``match``         Identical below the header                  no       yes
+``ahead-of-tag``  Differs from the tag, matches ``master``    no       yes
+``drift``         Any other difference from the tag's copy    **yes**  no
+``missing``       404 on the published recipe                 **yes**  no
+``error``         Something on THIS side is broken            **yes**  no
+``no-baseline``   The tag carries no generated copy           no       no
+``unreachable``   The fetch failed                            no       no
+================= =========================================== ======== =======
+
+A ``drift`` whose every differing key is registered in
+``infra/drift-locks/FEEDSTOCK-DIVERGENCE.md`` is the one exception: it renders
+with its owners and behaves like the first two rows.
 
 ``HOLDS``, ``INCONCLUSIVE`` and ``CLEAR`` above are that table in code, and
 ``drift_report.py`` imports them rather than restating them, so the two cannot
 disagree. A status outside ``STATUSES`` is treated there as an ``error``.
 
 ``ahead-of-tag`` exists because the release procedure puts a gap between the tag
-and the copy-out: ``CONTRIBUTING.md`` Phase 5 fetches ``source.sha256`` from
-PyPI after the tag and lands it separately, and anything else merged in that
-window is carried out with it. Without this status such a copy-out would read as
-drift for a whole release cycle.
+and the copy-out, and anything merged into the recipe in that window is carried
+out with the copy. **Not** ``source.sha256``, despite the shape of that story:
+the digest is masked before any comparison (below), so a sha256-only gap yields
+``match`` and never reaches this status. Only the other edits can produce it.
+
+It is a **deferral, not a cure**, and the bound belongs here rather than in a
+reader's surprise: ``compare`` has exactly two comparison points, the tag's copy
+and ``master``'s *current* one. A legitimately-ahead copy-out is recognised only
+while master's generated copy still equals the published one. The next unrelated
+recipe edit on master -- a floor bump, the commonest edit this file gets -- makes
+the published copy match neither side, and the run reports ``drift`` whose only
+remedy is to wait for the next release.
 
 ``no-baseline`` is where this watch **compares nothing**, and the bound is worth
 stating plainly: a feedstock pinned to a tag cut before this mechanism existed
 has no committed copy to compare against and never will, so it reports
 ``no-baseline`` every week. The current feedstock is at 0.32.0, so the next
-copy-out puts a tag with a committed copy in place and ends that window; a
-feedstock left behind for longer shows up as ``trailing`` instead, which the
-release checklist owns.
+copy-out puts a tag with a committed copy in place and ends that window.
+
+**That is the only bound.** An earlier revision claimed a second -- that a
+feedstock left behind longer "shows up as ``trailing`` instead" -- which cannot
+happen: ``trailing`` is not a status but an orthogonal field, so such a
+feedstock reports ``no-baseline`` **and** ``trailing: true`` together. If no
+copy-out happens, the window does not close on its own.
 
 It is not inert on the rolling issue, and the difference matters to whoever is
 reading one: it renders a section every week and it **stops the issue
@@ -95,19 +130,37 @@ Bounds (DRIFT-RULES Rule 7)
   conda-forge owns, and ``source.sha256``, which is fetched after the tag is
   cut. A wrong ``sha256`` fails the feedstock's own build immediately and
   loudly, so this weekly report is not the mechanism that would catch it.
-* **Comment-only differences are reported as drift.** The comparison is
-  byte-level below ``context:``, so a reflow counts. That is deliberate --
-  after ``gen_conda_feedstock.py`` the copy is byte-identical by construction,
-  so a comment difference means somebody hand-edited the far side, which
+* **Comment-only differences are reported as drift, below ``context:`` only.**
+  The comparison is byte-level there, so a reflow counts: after
+  ``gen_conda_feedstock.py`` the copy is byte-identical by construction, so a
+  comment difference means somebody hand-edited the far side, which
   ``sdd/CONDA-FORGE.md`` Rule 1 forbids.
+* **The shipped header is not compared at all, and is therefore unwatched.**
+  ``comparable`` drops everything above ``context:`` on *both* sides, so the
+  generated header -- including its own "GENERATED FILE … Editing this copy
+  directly puts it out of step with its source" notice -- can be rewritten or
+  deleted on the feedstock and this watch still reports ``match``. What holds
+  that text to anything is ``gen_conda_feedstock``'s tests, on this side only.
+* **Line endings are normalised, so a CRLF publication is not a difference.**
+  That is a deliberate blindness: if the feedstock's tooling converted the file
+  wholesale, nothing here would say so.
 * **The newest-tag lookup reads the first 100 tags**, which is one page. It is
   used only for the informational ``trailing`` row, so a repository with more
   tags than that loses the row rather than the comparison.
-* **No register.** A feedstock difference is fixed by a feedstock pull request,
-  never tolerated, so DRIFT-RULES Rule 6 has nothing to register rather than a
-  waiver. The one case that would need one is an upstream conda-forge
-  **migrator** editing the recipe in a way this project would not revert; if
-  that ever happens the answer is a register, not a widened exclusion.
+* **A difference nobody will revert is registered, not tolerated silently.**
+  ``infra/drift-locks/FEEDSTOCK-DIVERGENCE.md`` keys accepted divergences by
+  YAML key path, with an owner, a rationale and a ``Review by`` read by the
+  same predicate the other two registers use. A ``drift`` stops holding the
+  issue only when *every* differing key is registered and unexpired, so
+  accepting an edited ``extra.recipe-maintainers`` does not also silence a
+  changed dependency floor. It ships empty: nothing is accepted today.
+
+  The register exists because the earlier "never tolerated, so Rule 6 is
+  satisfied vacuously" argument was a policy this project cannot enforce on a
+  repository it does not own. conda-forge's ``please add user @X`` flow edits
+  that very field, ``sdd/CONDA-FORGE.md`` Rule 1 forbids the in-repo remedy,
+  and a permanent ``drift`` would hold the **shared** rolling issue open
+  forever -- retiring the dependency lanes' own "drift cleared" signal.
 
 Exit codes
 ==========
@@ -181,8 +234,14 @@ STATUSES: frozenset[str] = HOLDS | INCONCLUSIVE | CLEAR
 # as a fault on OUR side. That inverts the very split the taxonomy exists for.
 # So anything but a new TOP-LEVEL key may intervene: indented lines, blank
 # lines, and comments at any indent.
+#
+# The marker line may itself carry a trailing comment, for the same reason.
+# And line endings are normalised before this ever runs -- see `normalize`,
+# which is why the marker class is `[ \t]` rather than `\s`: `\s` would match
+# the `\r` of a CRLF file and hide the need for the normalisation everything
+# else depends on.
 _VERSION_RE = re.compile(
-    r"^context:[ \t]*$\n(?:^(?:[ \t].*|[ \t]*|#.*)$\n)*?^[ \t]+version:[ \t]*[\"']?([^\"'\s]+)",
+    r"^context:[ \t]*(?:#.*)?$\n(?:^(?:[ \t].*|[ \t]*|#.*)$\n)*?^[ \t]+version:[ \t]*[\"']?([^\"'\s]+)",
     re.MULTILINE,
 )
 
@@ -230,6 +289,25 @@ class Comparison:
 # --------------------------------------------------------------------------- #
 
 
+def normalize(text: str) -> str:
+    """Line endings, flattened to ``\\n``, before anything reads the text.
+
+    The published file is written by tooling this project does not control, so
+    its line endings are not a difference worth reporting. Two things break
+    without this, and the second only appears once the first is fixed: the
+    version parse misses a CRLF marker line and reports ``error`` -- blaming
+    this repo for the far repository's line endings -- and ``mask_excluded``
+    rewrites a masked line's terminator to ``\\n`` while leaving its neighbours
+    ``\\r\\n``, so every line then differs and the run reports ``drift``.
+
+    Four sibling generators in this repo (``gen_features``, ``drift_check``,
+    ``gen_graph``, ``gen_graph_viz``) normalise before comparing for the same
+    reason; this module did not, which is how a CRLF regression rode in on a
+    fix for the adjacent case.
+    """
+    return text.replace("\r\n", "\n").replace("\r", "\n")
+
+
 def body(text: str) -> str:
     """Everything from ``context:`` down, or the whole text if there is no marker.
 
@@ -261,8 +339,8 @@ def mask_excluded(text: str) -> str:
 
 
 def comparable(text: str) -> str:
-    """The form two recipes are compared in."""
-    return mask_excluded(body(text))
+    """The form two recipes are compared in: normalised, header dropped, owned fields masked."""
+    return mask_excluded(body(normalize(text)))
 
 
 # --------------------------------------------------------------------------- #
@@ -477,7 +555,13 @@ def _version_tuple(tag: str) -> tuple[int, ...] | None:
 
 
 def remote_version(text: str) -> str | None:
-    match = _VERSION_RE.search(text)
+    """The published recipe's ``context.version``, or ``None`` if it cannot be read.
+
+    Normalised first: a CRLF file is the same recipe, and reading it as
+    versionless would report ``error`` -- a fault on this side -- for the far
+    repository's line endings.
+    """
+    match = _VERSION_RE.search(normalize(text))
     return match.group(1) if match else None
 
 

@@ -91,7 +91,7 @@ walkthrough of the `Backend` contract, error mapping, and capabilities.
 5. Add user-facing guide in `docs-src/guides/backends/<name>.md` and add to `docs-src/guides/_nav.yml`
 6. Update every backend enumeration — see **Backend order** below for how to find them all and what order they go in
 7. Add backend config example to `examples/configuration/configuration.py`
-8. If the backend needs an extra, add it to `pyproject.toml` `[project.optional-dependencies]`, and add the same floor to `run_constraints` in `packaging/conda-forge/recipe.yaml`
+8. If the backend needs an extra, add it to `pyproject.toml` `[project.optional-dependencies]`, and add the same floor to `run_constraints` in `packaging/conda-forge/recipe.yaml`, then `hatch run gen-conda-feedstock` (the shipped copy beside it is generated, and `lint` fails on a stale one)
 
 **Backend order (step 6).** Every enumeration lists backends in one order:
 
@@ -149,7 +149,7 @@ Extensions live in `src/remote_store/ext/` and follow the contract in the [exten
 8. Add the page to `docs-src/guides/_nav.yml` (under the Extensions section)
 9. Add a runnable example in `examples/`
 10. The example docs page is auto-generated at `tutorial/examples/<slug>.md` from the module docstring via `gen_pages.py` — no manual wrapper file needed
-11. If the extension needs an extra, add it to `pyproject.toml` `[project.optional-dependencies]`, and add the same floor to `run_constraints` in `packaging/conda-forge/recipe.yaml` — that block covers *every* extra, backend and extension alike, and a dependency missing from it is silently unconstrained for conda users
+11. If the extension needs an extra, add it to `pyproject.toml` `[project.optional-dependencies]`, and add the same floor to `run_constraints` in `packaging/conda-forge/recipe.yaml`, then `hatch run gen-conda-feedstock` (the shipped copy beside it is generated, and `lint` fails on a stale one) — that block covers *every* extra, backend and extension alike, and a dependency missing from it is silently unconstrained for conda users
 12. Update `CHANGELOG.md` and `sdd/BACKLOG.md` (or `sdd/BACKLOG-DONE.md`) in the same commit
 
 ### Export patterns
