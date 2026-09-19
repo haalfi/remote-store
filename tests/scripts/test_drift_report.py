@@ -1878,6 +1878,18 @@ class TestFeedstockVocabulary:
 
         assert set(drift_report._FEEDSTOCK_SUMMARY) >= drift_feedstock.STATUSES
 
+    def test_every_holding_status_names_its_own_remedy(self, drift_report):
+        """One remedy for all three was wrong for two of them.
+
+        ``error`` says the fault is on **our** side and then, one paragraph
+        down, told the reader to open a pull request against conda-forge; a
+        ``missing`` is a 404 that may equally mean the URL *here* is stale.
+        Derived from ``FEEDSTOCK_HOLDS`` rather than listed, so a status added
+        to it without a remedy fails.
+        """
+        assert set(drift_report._FEEDSTOCK_REMEDY) == set(drift_report.FEEDSTOCK_HOLDS)
+        assert len(set(drift_report._FEEDSTOCK_REMEDY.values())) == len(drift_report.FEEDSTOCK_HOLDS)
+
     @pytest.mark.parametrize("status", ["partial", "ok", "DRIFT", "", "no_baseline"])
     def test_an_unrecognised_status_fails_closed(self, drift_report, tmp_path, status):
         """A status nobody classified must not read as "the copies agree".
@@ -2286,6 +2298,47 @@ class TestFeedstockSection:
         body = self._body(drift_report, tmp_path, state)
         assert "never holds this issue open" in body
         assert "release checklist owns it" in body
+
+    @pytest.mark.parametrize(
+        ("status", "expected", "forbidden"),
+        [
+            ("drift", "pull request against the feedstock", "look at this workflow"),
+            ("missing", "`FEEDSTOCK_URL`", "Fix it with a pull request"),
+            ("error", "this workflow", "pull request"),
+        ],
+    )
+    def test_each_holding_verdict_sends_the_reader_to_the_right_repository(
+        self, drift_report, tmp_path, status, expected, forbidden
+    ):
+        """An ``error`` told the reader to open a feedstock pull request.
+
+        Its own summary line says the fault is on this side, so the section
+        contradicted itself one paragraph later. A ``missing`` is a 404 that
+        means either the feedstock moved the file or the URL here is stale, and
+        only one of those is fixed over there.
+        """
+        state = drift_report.FeedstockState(status=status, fingerprint=_FP, holds_issue=True)
+        body = self._body(drift_report, tmp_path, state)
+        assert expected in body
+        assert forbidden not in body
+
+    def test_a_registered_drift_is_not_told_to_open_a_pull_request(self, drift_report, tmp_path):
+        """The lead paragraph used to prescribe a remedy on every verdict.
+
+        On a registered drift that instruction is exactly what the register
+        decided against, and on a verdict that compared nothing there is
+        nothing to remedy. The remedy now renders only where one applies.
+        """
+        state = drift_report.FeedstockState(
+            status="drift", fingerprint=_FP, accepted=("BK-999", "2027-06-30"), diff=_SAMPLE_DIFF
+        )
+        body = self._body(drift_report, tmp_path, state)
+        assert "pull request" not in body
+        assert "owned by BK-999" in body
+
+    def test_an_inconclusive_verdict_is_not_told_to_open_a_pull_request(self, drift_report, tmp_path):
+        body = self._body(drift_report, tmp_path, drift_report.FeedstockState(status="no-baseline"))
+        assert "pull request" not in body
 
     def test_an_inconclusive_verdict_says_it_compared_nothing(self, drift_report, tmp_path):
         body = self._body(drift_report, tmp_path, drift_report.FeedstockState(status="no-baseline"))

@@ -1267,6 +1267,32 @@ _FEEDSTOCK_SUMMARY: dict[str, str] = {
     "error": "**could not be checked, and the fault is on this side**",
 }
 
+# Where a reader goes NEXT, per holding status. One sentence for all three was
+# wrong for two of them: an `error` names a fault on this side and was then
+# told to open a pull request against conda-forge, contradicting its own
+# summary line one paragraph up; and a `missing` is a 404 that means either the
+# feedstock moved the file or the URL this repo fetches is stale, which are
+# fixes in different repositories. Keyed on `FEEDSTOCK_HOLDS` and checked
+# against it, so a status added there without a remedy fails rather than
+# inheriting somebody else's. `sdd/CONDA-FORGE.md` and the `/drift` skill carry
+# the procedure; this names which repository it is in.
+_FEEDSTOCK_REMEDY: dict[str, str] = {
+    "drift": (
+        "Fix it with a pull request against the feedstock, per `sdd/CONDA-FORGE.md` — and bump "
+        "`build.number` there when the version is unchanged, or the metadata-only fix never reaches users."
+    ),
+    "missing": (
+        "That 404 is two different findings and this run cannot tell them apart: either the feedstock moved "
+        "or renamed `recipe/recipe.yaml`, which is a pull request there, or `FEEDSTOCK_URL` in "
+        "`scripts/drift_feedstock.py` is stale, which is a fix here. Open the feedstock and look before "
+        "assuming the first."
+    ),
+    "error": (
+        "The fault is on this side, so nothing about the feedstock follows from it — read this workflow's "
+        "run log rather than conda-forge."
+    ),
+}
+
 
 def _render_feedstock(state: FeedstockState) -> list[str]:
     """What conda-forge publishes, against what this repo published for it.
@@ -1297,8 +1323,12 @@ def _render_feedstock(state: FeedstockState) -> list[str]:
     lines.append(
         f"The recipe `conda-forge/remote-store-feedstock` publishes is on {version} and {summary}. "
         "This is a report, never a gate: the file lives in a repository this project does not own, "
-        "so the remedy is a pull request there, per `sdd/CONDA-FORGE.md` — never an edit here."
+        "so nothing committed here changes what the channel serves."
     )
+    # The remedy used to ride in that paragraph, on every verdict. It is a
+    # per-status sentence below instead: prescribing a feedstock pull request
+    # on a registered drift is the thing the register decided against, and on a
+    # verdict that compared nothing there is nothing to remedy at all.
     lines.append("")
     if state.reason:
         lines.append(f"_{state.reason}._")
@@ -1351,7 +1381,7 @@ def _render_feedstock(state: FeedstockState) -> list[str]:
                 "not — it does stop this run closing the issue"
             )
         )
-        lines.append(f"This {held}. Fix it with a pull request against the feedstock: `sdd/CONDA-FORGE.md`.")
+        lines.append(f"This {held}. {_FEEDSTOCK_REMEDY[state.status]}")
         lines.append("")
     elif state.status in FEEDSTOCK_INCONCLUSIVE:
         lines.append(
