@@ -1,0 +1,157 @@
+id: BK-379
+title: "Pilot RFC-0015's D2, D3 and its LINE-anchor rule on three deliveries, before the rest of it is built"
+trigger: >-
+  PRs #1019 and #1020 met BK-379's first two exit criteria. Three deliveries
+  then shipped under the amended skills (#1021, #1022, #1023), which is the
+  third, leaving the measurement leg: Tables 2 and 4 re-derived over those PR
+  numbers, the result reported against acceptance clauses 1 and 3, and the
+  disposition of D1, D4, D5 and D6's deferred half recorded. The user chose to
+  measure, report and close in one PR, and to keep D3's one-measurer cap up
+  rather than lift it now that the pilot has reported.
+source_items:
+  - BK-379
+  - BK-378
+audience:
+  - contributor.process
+expected_ripples:
+  - sdd/BACKLOG.md
+  - sdd/BACKLOG-DONE.md
+  - sdd/backlogid.json
+# Derivation, stated as the rule rather than as a transcribed list: run
+# `git log --format='%s' origin/master..HEAD` and count the subjects that answer
+# a review round. The commit that implements the measurement and report does not
+# count. Re-run before each push; the value is the count, including the commit
+# that carries this line.
+review_rounds: 0
+phases:
+  - id: orient
+    name: Orient
+    steps:
+      - file: sdd/BACKLOG.md
+        section: "BK-379"
+        read_type: gate
+        extract: >-
+          The three exit criteria and the four corrections. Corrections 1 and 3
+          fix what clause 1 is read over — `loop-introduced / (original +
+          loop-introduced)`, with `pre-existing` reported beside it and not in
+          the denominator — and correction 2 states in advance that a miss
+          without D1 does not falsify the RFC
+        outcome: ok
+      - file: sdd/rfcs/rfc-0015-ship-two-surfaces.md
+        section: "§ Impact acceptance criterion; What BK-379's pilot decides; D3, D5, D6"
+        read_type: gate
+        extract: >-
+          Clause 1's bar (below 50% against the 78% baseline), clause 2's
+          referent (D4's derived block), clause 3's dry-run reading; D3's cap
+          sentence, D5's two under-fire biases, D6's retirement of the
+          repeat-site check and its reverse condition
+        outcome: ok
+      - file: sdd/rfcs/rfc-0015-findings.py
+        section: "(docstring)"
+        read_type: reference
+        extract: >-
+          What the script prints and how: findings are comments with no
+          `in_reply_to_id`, rounds are review submissions sorted by
+          `submitted_at`, origin is a blame at the head the reviewer saw, and
+          `POOLED r>=3 must-fix` is clause 1 as one line
+        outcome: ok
+      - file: sdd/traces/bk-379-skill-amendments.yml
+        section: "(full)"
+        read_type: gate
+        extract: >-
+          What the skills were amended to do, so the measurement is read against
+          the rules the deliveries actually ran under rather than the RFC's
+          proposal
+        outcome: ok
+  - id: measure
+    name: Measure the three deliveries
+    steps:
+      - file: sdd/rfcs/rfc-0015-findings.py
+        section: "(run)"
+        read_type: verify
+        extract: >-
+          `python sdd/rfcs/rfc-0015-findings.py 1021 1022 1023` at `2bd34cc`:
+          69 findings over 14 submissions; pooled r>=3 must-fix 9 original / 10
+          loop-introduced = **53%**, with pre-existing 2 and unclassifiable 9
+          beside it. The D5 trigger fires 0 of 3 under all three readings.
+          Clause 1 misses the below-50% bar by three points on a denominator of
+          19, where one finding is five points
+        outcome: ok
+      - file: sdd/traces/bug-254-absent-container-root-row.yml
+        section: "review_rounds; the D4 note"
+        read_type: verify
+        extract: >-
+          The sample is the right one: this delivery's own trace says its
+          `review_rounds` derivation is "RFC-0015 D4, not in this pilot", so it
+          ran under the pilot. Confirmed for all three from the PR timestamps
+          (`gh api repos/haalfi/remote-store/pulls/<N>`): all three opened after
+          #1020 merged at 19:42Z, so no round in the sample ran under the old
+          rules
+        outcome: ok
+      - file: sdd/rfcs/rfc-0015-ship-two-surfaces.md
+        section: "D6 mechanism and Reverse if"
+        read_type: verify
+        extract: >-
+          The repeat-site check fired in two of the three deliveries, which is
+          D6's own reverse condition. Derived from the fix replies
+          (`gh api repos/haalfi/remote-store/pulls/<N>/comments --paginate --jq
+          '.[] | select(.in_reply_to_id) | .body'` matched against
+          `repeat-site`): one reply each in #1021 and #1023, none in #1022, each
+          naming the check. The same bodies matched against
+          `shapes?\b[^.\n]{0,40}?\*{0,2}\([1-5]\)` give D2's adoption, 67 of 72
+        outcome: ok
+  - id: report
+    name: Report and close
+    steps:
+      - file: sdd/rfcs/rfc-0015-ship-two-surfaces.md
+        section: "§ Status, § Pilot result (new), D3, D6, Open Question 4"
+        read_type: reference
+        extract: >-
+          Tables 2 and 4 re-derived over the pilot; clause 1 reported with the
+          one-finding-wide bound and clause 3 as a floor; D6's retirement
+          withdrawn where it was proposed rather than only in the new section;
+          D3's cap reason restated as "until this RFC's final measurement",
+          which is the user's call and outlives the pilot because the
+          re-measurement needs the same panel composition
+        outcome: ok
+      - file: .claude/skills/ship/SKILL.md
+        section: "Repeat-site check; Rules (the exactly-one measuring bullet)"
+        read_type: reference
+        extract: >-
+          Both sentences said the pilot was still deciding. The repeat-site
+          paragraph now records the withdrawal and what fired it; the cap bullet
+          names the measurement it waits on rather than a closed item
+        outcome: ok
+      - file: .claude/skills/orchestrate/SKILL.md
+        section: "Reviewer selection item 3"
+        read_type: reference
+        extract: >-
+          Its cross-skill assertion cited "BK-379's pilot keeps" the cap, an
+          item that no longer exists; it names the measurement instead
+        outcome: ok
+      - file: sdd/BACKLOG.md
+        section: "How this file works / Completing work; section 6 Closes when; BK-378"
+        read_type: gate
+        extract: >-
+          Fully done goes to BACKLOG-DONE as `[x]` in the same commit, with the
+          unbounded ID sweep. BK-378 takes the pilot's leavings as a list with a
+          disposition each, and its exit criterion's "three deliveries" now
+          means three run with D1 and D4 shipped, not the three already
+          measured
+        outcome: ok
+  - id: verify
+    name: Verify
+    steps:
+      - file: sdd/BACKLOG.md
+        section: "BK-379 sweep"
+        read_type: verify
+        extract: >-
+          `rg -n 'BK-379' -- sdd .claude scripts docs-src tests *.md` read in
+          full: present-tense claims fixed in the RFC, `/ship` and
+          `/orchestrate`; past-tense narration left in `sdd/traces/**`
+        outcome: ok
+      - file: sdd/CLAUDE-REFERENCE.md
+        section: "PR validation gates"
+        read_type: verify
+        extract: "Docs-only diff: hatch run lint and hatch run docs-gate, plus gen-backlogid"
+        outcome: ok

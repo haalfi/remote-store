@@ -686,9 +686,11 @@ Under the fix-shape rule this check should never fire: a condition is closed by
 shape (3), an enumeration, the first time it is questioned, so its trigger has
 moved from two refutations to zero and the check is a detector for a fix pass
 that argued anyway. [RFC-0015 D6](../../../sdd/rfcs/rfc-0015-ship-two-surfaces.md)
-retires it on that ground; BK-379's three deliveries keep it, and the Step 5
-report states whether it fired and on what condition, which is what decides the
-retirement.
+proposed retiring it on that ground and **withdrew that on the evidence**: it
+fired in two of BK-379's three deliveries run under the fix-shape rule, once on
+what a closed backend answers at the root and once on a divergence register
+argued three times (RFC-0015 § Pilot result). The check stays, and the Step 5
+report keeps stating whether it fired and on what condition.
 
 **Divergence check:** if a round finds something *more severe* than the previous
 round **in code the fix passes changed**, the corrections are spawning worse
@@ -737,9 +739,9 @@ Then stop. **`/ship` never merges.** It hands over a PR that is ready to be.
   `rvw-pr`'s base-branch recipe uses a fixed `tmp/base` path, under the round's
   review worktree, that two concurrent measurers would collide on. RFC-0015 D3
   lifts this cap by giving each measuring member a base path of its own under
-  the round's worktree (`tmp/base-<member>`); BK-379's pilot keeps it up so
-  that panel composition does not move finding counts while fix shape is what
-  is measured.
+  the round's worktree (`tmp/base-<member>`); it stays up until that RFC's
+  final measurement, so that panel composition does not move finding counts
+  while fix shape is what is measured.
 - No reviewer reads the working tree the fixer edits: every pass reads and runs
   in the round's review worktree at the pushed commit, the tree check runs
   there, and one porcelain capture stays in the main tree for the write that
