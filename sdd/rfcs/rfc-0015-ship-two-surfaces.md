@@ -10,9 +10,10 @@ posting half and D6's repeat-site half before the rest is built; what that
 pilot can and cannot decide is stated with the acceptance criterion
 (§ Impact), and what it measured is § Pilot result. **The pilot missed
 clause 1 by three points and refuted D6's retirement of the repeat-site
-check**, so this RFC stays Draft with D1 and D4 unbuilt, which is what the
-criterion itself prescribes for a miss without them. If accepted it graduates
-to an ADR amending
+check.** This RFC is Draft because it has never been accepted, and D1 and D4
+are unbuilt; what the criterion prescribes for a miss without those two is to
+build them and re-measure, and it declines to let such a miss bear on status.
+If accepted it graduates to an ADR amending
 [ADR-0033](../adrs/0033-ship-convergence-driven-review.md),
 [ADR-0034](../adrs/0034-ship-panel-rounds-and-unprimed-exit.md),
 [ADR-0035](../adrs/0035-vary-method-not-model.md), whose *one member per
@@ -875,9 +876,11 @@ reply each in #1021 and #1023 and none in #1022, each naming the check. D6's
 own reverse condition is therefore met, the retirement is withdrawn there, and
 `/ship` keeps the check.
 
-**What the record surface still carries.** 14 of the 69 findings sit on
-`sdd/traces/` or the two backlog files — 20%, against the baseline's 133 of 541
-(25%) — with 16 on `src/` or `tests/` and 53 on everything else. Correction 2's
+**What the record surface still carries.** 16 findings sit on `src/` or
+`tests/` and 53 on everything else, and **14 of the 53** sit on `sdd/traces/`,
+`sdd/BACKLOG.md` or `sdd/BACKLOG-DONE.md` — the same nesting Table 3 states,
+since `record` is a subset of `prose` in the script rather than a third class.
+That is 20% of the 69 against the baseline's 133 of 541 (25%). Correction 2's
 non-separability holds exactly as filed: a share at or above 50% with D1
 unbuilt is equally consistent with D2 and D3 being too weak alone and with the
 record surface carrying the late rounds, and this sample cannot tell them

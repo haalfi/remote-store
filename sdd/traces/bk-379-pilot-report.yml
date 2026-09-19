@@ -22,7 +22,7 @@ expected_ripples:
 # a review round. The commit that implements the measurement and report does not
 # count. Re-run before each push; the value is the count, including the commit
 # that carries this line.
-review_rounds: 0
+review_rounds: 1
 phases:
   - id: orient
     name: Orient
@@ -138,6 +138,31 @@ phases:
           disposition each, and its exit criterion's "three deliveries" now
           means three run with D1 and D4 shipped, not the three already
           measured
+        outcome: ok
+  - id: fix
+    name: Round-1 fix pass
+    steps:
+      - file: sdd/rfcs/rfc-0015-findings.py
+        section: "artifact_class, is_record, the TOTAL print"
+        read_type: gate
+        extract: >-
+          Round 1 found § Pilot result reading `code`, `prose` and `record` as a
+          partition: 14 + 16 + 53 = 83 against a sample of 69. The script
+          classifies each finding `code` or `prose` and `record` is a **subset
+          of prose** (`artifact_class` at :128, `is_record` at :132, printed as
+          `code {n}, prose {n} (record {n})`), so 16 + 53 = 69 is the partition
+          and the 14 sits inside the 53. Restated in Table 3's nesting. Single
+          site: the PR body and the BACKLOG-DONE entry give the 20% share only
+        outcome: ok
+      - file: sdd/rfcs/rfc-0015-ship-two-surfaces.md
+        section: "§ Status; § Impact acceptance criterion"
+        read_type: verify
+        extract: >-
+          Round 1 found § Status attributing Draft to the clause-1 miss ("so
+          this RFC stays Draft"), which is the inference § Impact was written
+          in advance to forbid — a miss without D1 and D4 prescribes building
+          them and re-measuring and does not bear on status. The two facts are
+          now stated separately
         outcome: ok
   - id: verify
     name: Verify
