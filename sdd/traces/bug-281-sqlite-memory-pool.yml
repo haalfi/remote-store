@@ -1,0 +1,193 @@
+id: BUG-281
+title: "_SQLAlchemyBaseBackend leans on a pool selection SQLAlchemy 2.1.0rc1 deprecates"
+trigger: >-
+  drift-guard's rolling issue #943 had held `[sql]` at sqlalchemy==2.1.0b3 since
+  2026-07-13 because check-sql went red on a SADeprecationWarning under
+  filterwarnings = error. The hold was itself keeping the issue open: has_signal
+  tests version drift before the known-findings register, so the KNOWN-FINDINGS
+  row silenced the smoke and never the b3 -> rc2 row.
+source_items:
+  - BUG-281
+audience:
+  - user.api
+  - infra.ci
+expected_ripples:
+  - sdd/backlogid.json
+  - sdd/specs/040-sql-blob-backend.md
+  - infra/drift-locks/KNOWN-FINDINGS.md
+  # Line numbers only, for the two classes below the new helper. Caught by
+  # `gen_graph.py --check` in `hatch run all`, not by reading the diff, and
+  # graph_viz.html goes stale behind it in the same run.
+  - docs-src/_data/graph/graph.json
+  - docs-src/explanation/graph_viz.html
+  # The gate found both allowlist entries stale rather than the other way
+  # round: SQL-BLOB-071 had nothing to mark while it said only "no custom
+  # config", and SQL-BLOB-072's posture became decidable from the engine.
+  - scripts/check_spec_marks.py
+surprising_ripples:
+  # Neither the ripple-check's "Spec section" row nor the item anticipated
+  # these two. Both are prose asserting, in the present tense, that the
+  # committed register carries a `[sql]`/BUG-281 newest-lane row — true until
+  # this fix retired it, and reachable only by reading every BUG-281 hit rather
+  # than the ones that fail to resolve. Exactly the miss class BACKLOG.md
+  # § Completing work describes.
+  - scripts/drift_report.py
+  - tests/scripts/test_drift_report.py
+# review_rounds is counted over `git log --oneline origin/master..HEAD` for this
+# branch, including the commit carrying this line. Filled post-merge.
+review_rounds: 0
+phases:
+  - id: orient
+    name: Orient on what actually holds the issue open
+    steps:
+      - file: .github/workflows/drift-guard.yml
+        section: "(header)"
+        read_type: reference
+        extract: "Which watches can hold the rolling issue open, and which of them a lock refresh can clear"
+        outcome: ok
+      - file: scripts/drift_report.py
+        section: "has_signal, decide"
+        read_type: gate
+        extract: >-
+          Version drift is tested at has_signal's first clause, before the
+          register is consulted, so a registered finding never suppresses a
+          drift row. This is what made BUG-281's hold on sql.txt a permanent
+          open-issue condition rather than a deferral, and it is why fixing the
+          bug was the only route through.
+        outcome: ok
+      - file: infra/drift-locks/KNOWN-FINDINGS.md
+        section: "(table), Scope"
+        read_type: gate
+        extract: "The [sql]/newest row and the rule that a fix deletes its row in the same change"
+        outcome: ok
+  - id: reproduce
+    name: Reproduce before claiming anything
+    steps:
+      - file: sdd/BACKLOG.md
+        section: "(item) BUG-281"
+        read_type: gate
+        extract: >-
+          The two candidate fix shapes and the claim that letting the default
+          move to QueuePool "keeps 071". Tagged misleading: the item's deferred
+          consequence predicted an anonymous mode=memory database differing per
+          checkout, and a direct probe on 2.0.54 and 2.1.0rc2 showed a named
+          shared cache is process-global, identical before and after. The real
+          consequence is the opposite shape — cross-thread reads break, because
+          QueuePool hands one connection to every thread and pysqlite refuses
+          it off-thread. The "keeps 071" branch was therefore not a no-op, and
+          taking the item at its word would have shipped a silent break on
+          SQLAlchemy 2.2.
+        outcome: misleading
+      - file: src/remote_store/backends/_sqlalchemy.py
+        section: "_SQLAlchemyBaseBackend.__init__"
+        read_type: reference
+        extract: "sa.create_engine(url) with no pool named; both backends inherit it"
+        outcome: ok
+      - file: tests/backends/sqlblob/test_absent_table.py
+        section: "TestADiscardedInMemoryStoreReadsAsEmpty"
+        read_type: reference
+        extract: >-
+          The failing parametrisation, and its teardown comment about a
+          SingletonThreadPool connection collected at a GC point as an
+          unraisable against an unrelated test. Read prospectively for the
+          former; the latter is what diagnosed a ResourceWarning my own first
+          test draft introduced on 3.13, by reaching a per-thread pool from a
+          second thread.
+        outcome: ok
+  - id: tests
+    name: Failing test first
+    steps:
+      - file: tests/backends/sqlblob/test_config.py
+        section: "Engine lifecycle"
+        read_type: reference
+        extract: >-
+          Shape to match for a pool-level test. The first draft asserted
+          per-thread data isolation for sqlite:///:memory: through a worker
+          thread; it passed but orphaned that thread's connection, since no
+          thread can close another's on a SingletonThreadPool. Scoped back to
+          the pool class, which is what SQL-BLOB-072's posture is defined on
+          and what this repo actually contracts.
+        outcome: ok
+  - id: implement
+    name: Name the pool
+    steps:
+      - file: sdd/specs/040-sql-blob-backend.md
+        section: "SQL-BLOB-071, SQL-BLOB-072"
+        read_type: gate
+        extract: >-
+          071's "no custom pool configuration" is the clause the fix amends.
+          072's carve-out needed correcting on its own account: it generalised
+          per-thread isolation to "any engine configured with a per-thread
+          pool", which the probe showed false for mode=memory&cache=shared —
+          isolation comes from the database being anonymous, not from the pool.
+        outcome: misleading
+      - file: sdd/specs/041-sql-query-backend.md
+        section: "SQL-QUERY-092"
+        read_type: verify
+        extract: "Defers to SQL-BLOB-072 and names only :memory:, so the correction reaches it without an edit"
+        outcome: ok
+  - id: verify
+    name: Ripple-check and close
+    steps:
+      - file: sdd/CLAUDE-REFERENCE.md
+        section: "Pre-work index / Spec section"
+        read_type: verify
+        extract: "Spec change ripples to @pytest.mark.spec tests and the backlog"
+        outcome: ok
+      - file: tests/backends/fixtures/backends.toml
+        section: "backend.sqlblob, backend.sqlquery"
+        read_type: verify
+        extract: >-
+          Both declare concurrency = single_connection for the TESTED config,
+          which is sqlite:///:memory: — the spelling this fix leaves alone, so
+          the registry needs no change. Checked because the posture rows cite
+          the pool class the fix touches.
+        outcome: ok
+      - file: sdd/BACKLOG.md
+        section: "How this file works / Completing work"
+        read_type: gate
+        extract: >-
+          Move to BACKLOG-DONE, then sweep every BUG-281 hit by tense rather
+          than by directory. The sweep is what found the two surprising ripples;
+          both resolve fine as links and were wrong only as present-tense
+          claims, which is the defect the rule warns a link check cannot see.
+        outcome: ok
+      - file: infra/drift-locks/README.md
+        section: "Refreshing"
+        read_type: verify
+        extract: >-
+          Confirms sql.txt is NOT refreshed here: a lock records a resolution
+          the run smoked, so the refresh follows on the next drift run with
+          that run's evidence rather than being asserted from this branch.
+        outcome: ok
+      - file: sdd/TESTING.md
+        section: "Rules 2, 7, 8, 12"
+        read_type: gate
+        extract: >-
+          Read at the /pr qualitative gate, NOT before writing the tests, and
+          recorded here rather than in the tests phase because that is when it
+          happened — an earlier draft of this trace placed it as a tests-phase
+          gate it never was. Reading it late is what cost the rework: Rule 2
+          forbids isinstance as a sole assertion and two pool-class tests had
+          exactly that, one of them only because its cross-thread half was
+          removed to stop a ResourceWarning. Merged the shared-cache pair into
+          one test asserting pool class and off-thread read together, and gave
+          the other a roundtrip. Rule 8 then flagged the direct call into
+          _engine_kwargs; the unparseable case moved to a public assertion that
+          a bad URL still raises SQLAlchemy's own ArgumentError, which is the
+          contract the except clause exists for, leaving one non-SQLite case
+          that no public path can reach without a driver.
+        outcome: ok
+      - file: tests/backends/sqlblob/test_config.py
+        section: "TestInMemoryPoolSelection"
+        read_type: verify
+        extract: >-
+          Rewriting the repeated-key case as a public construction proved the
+          branch behind it unreachable: SQLAlchemy parses a duplicated query key
+          to a tuple and hands it to sqlite verbatim, which answers "no such
+          access mode", so such a URL has no working engine whatever pool is
+          chosen. The tuple normalisation in _engine_kwargs was dead code
+          defending an impossible input and was removed; the assumption is
+          pinned by a test instead. Nothing in the unit test calling the helper
+          directly could have shown this, because it never opened an engine.
+        outcome: ok

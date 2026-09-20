@@ -310,10 +310,12 @@ class TestRenderBody:
     def test_a_registered_newest_smoke_failure_names_its_owner(self, drift_report, tmp_path):
         # The phase the prose sections cannot reach. `_render_isolation_findings`
         # takes the newest lane's install and import phases and `_render_floor_lane`
-        # takes the floor, so a registered newest-lane *smoke* failure — the one
-        # row the committed register actually carries, `[sql]`/BUG-281 — reached
-        # neither and rendered as a bare `fail (smoke)` with no owner, while
-        # three artifacts said a registered finding renders with one.
+        # takes the floor, so a registered newest-lane *smoke* failure — then the
+        # one row the committed register carried, `[sql]`/BUG-281, retired when
+        # that fix landed — reached neither and rendered as a bare `fail (smoke)`
+        # with no owner, while three artifacts said a registered finding renders
+        # with one. The committed register carries no newest-lane row now, so
+        # this test is the only thing holding the phase open.
         body = self._body(
             drift_report,
             tmp_path,

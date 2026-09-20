@@ -250,7 +250,10 @@ _ALLOWLIST_DESIGN: frozenset[str] = frozenset(
         "MEM-DS-003",  # 013 — why bytearray over bytes (rationale)
         "MEM-DS-004",  # 013 — slots=True (rationale)
         "SQL-BLOB-070",  # 040 — blob size guidelines (Performance section)
-        "SQL-BLOB-071",  # 040 — connection pooling (SQLAlchemy default, no custom config)
+        # SQL-BLOB-071 was here while the clause said only "SQLAlchemy default,
+        # no custom config" — nothing to mark. BUG-281 gave it a named exception
+        # for `mode=memory` URLs, which is behaviour, and TestInMemoryPoolSelection
+        # marks it.
         "SQL-QUERY-090",  # 041 — query execution (full materialization; streaming deferred)
         "SQL-QUERY-091",  # 041 — serialization overhead (full copy; zero-copy/ADBC deferred)
         # Moved to ext.write (spec 046 EW-001..004) per ADR-0008. The spec-045
@@ -272,7 +275,11 @@ _ALLOWLIST_DESIGN: frozenset[str] = frozenset(
         # conformance fixture exercises them in the lane.
         "S3PA-028",  # 011 — S3PyArrowBackend thread_safe (Tier-3 live probe only)
         "HTTP-CONC-001",  # 032 — ReadOnlyHttpBackend single_connection on urllib (no WRITE -> not in carve-out)
-        "SQL-BLOB-072",  # 040 — SQLBlobBackend thread_safe (per-op pool); :memory: test fixture is single_connection
+        # SQL-BLOB-072 was here for the same reason as the four above — no
+        # conformance fixture reaches the posture. BUG-281 made its carve-out
+        # decidable from the engine instead: the clause now turns on which pool
+        # a URL resolves to, which TestInMemoryPoolSelection asserts directly,
+        # so the posture no longer rests only on prose.
         # BK-340 registered the sqlquery conformance fixture, so "no conformance
         # fixture" is no longer why this one is excused. The exemption still
         # holds, for HTTP-CONC-001's reason instead: the posture-gated lane is

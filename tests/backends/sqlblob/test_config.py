@@ -5,6 +5,7 @@ from __future__ import annotations
 import io
 import pathlib
 import threading
+import warnings
 from typing import TYPE_CHECKING
 
 if TYPE_CHECKING:
@@ -21,7 +22,7 @@ from remote_store._errors import (
     NotFound,
 )
 from remote_store._models import WriteResult
-from remote_store.backends._sqlalchemy import SQLBlobBackend
+from remote_store.backends._sqlalchemy import SQLBlobBackend, _engine_kwargs
 
 # ---------------------------------------------------------------------------
 # Fixtures
@@ -865,3 +866,156 @@ class TestMtimeOnlySchema:
         assert result.last_modified is not None
         assert result.metadata is None
         b.close()
+
+
+class TestInMemoryPoolSelection:
+    """Which pool each in-memory SQLite spelling gets, and what that means per thread.
+
+    SQL-BLOB-072's posture follows the engine's pool class, so the pool a URL
+    resolves to is contract rather than implementation detail. Two spellings
+    behave differently and that difference is the whole subject here:
+    ``sqlite:///:memory:`` gives each connection its *own* database, while a
+    named ``mode=memory&cache=shared`` URL names one process-global database
+    that every connection attaches to.
+
+    SQLAlchemy inferred ``SingletonThreadPool`` for the shared-cache form from
+    the ``mode=memory`` query string, and 2.1 deprecates that inference in
+    favour of ``QueuePool``. Taking ``QueuePool`` now requires
+    ``check_same_thread=False`` alongside it: the pool hands one connection to
+    every thread and pysqlite rejects that by default. Without the connect-arg
+    the spelling keeps working until SQLAlchemy moves it, then starts raising
+    ``ProgrammingError`` off-thread.
+    """
+
+    SHARED = "sqlite:///file:pooltest?mode=memory&cache=shared&uri=true"
+
+    @staticmethod
+    def _read_in_thread(backend: SQLBlobBackend, key: str) -> object:
+        """What another thread sees for ``key`` — the payload, or an exception name."""
+        seen: list[object] = []
+
+        def read() -> None:
+            try:
+                seen.append(backend.read_bytes(key))
+            except Exception as exc:  # noqa: BLE001 — the type is the assertion
+                seen.append(type(exc).__name__)
+
+        thread = threading.Thread(target=read)
+        thread.start()
+        thread.join()
+        return seen[0]
+
+    @pytest.mark.spec("SQL-BLOB-071")
+    def test_no_in_memory_spelling_warns_on_construction(self) -> None:
+        """The reported symptom: a caller running warnings as errors can construct all four.
+
+        Version-portable by construction. It asserts that nothing is warned
+        about, which holds on every SQLAlchemy release once the pool is named
+        explicitly, and fails on 2.1+ for the shared-cache spelling while the
+        pool is left to inference.
+        """
+        for url in (
+            "sqlite:///:memory:",
+            "sqlite://",
+            "sqlite:///file::memory:?uri=true",
+            self.SHARED,
+        ):
+            with warnings.catch_warnings(record=True) as caught:
+                warnings.simplefilter("always")
+                backend = SQLBlobBackend(url=url)
+            backend.close()
+            assert [str(w.message) for w in caught] == [], f"{url} warned on construction"
+
+    @pytest.mark.spec("SQL-BLOB-071")
+    @pytest.mark.spec("SQL-BLOB-072")
+    def test_shared_cache_url_is_pooled_and_readable_from_another_thread(self) -> None:
+        """The shared-cache spelling takes QueuePool, and stays readable off-thread.
+
+        One test rather than two because the pool class alone is not the claim:
+        ``QueuePool`` is what makes this URL `thread_safe` rather than a
+        carve-out, so the cross-thread read is what gives the class its meaning.
+        It also guards the regression a bare ``poolclass=QueuePool`` would
+        introduce — without ``check_same_thread=False`` the read raises
+        ``ProgrammingError`` instead of returning the payload.
+        """
+        backend = SQLBlobBackend(url=self.SHARED)
+        try:
+            assert isinstance(backend.unwrap(sa.Engine).pool, sa.pool.QueuePool)
+            backend.write("shared.txt", b"payload")
+            assert self._read_in_thread(backend, "shared.txt") == b"payload"
+        finally:
+            backend.close()
+
+    @pytest.mark.parametrize(
+        "url",
+        ["sqlite:///:memory:", "sqlite://", "sqlite:///file::memory:?uri=true"],
+        ids=["memory", "bare", "uri-anonymous"],
+    )
+    @pytest.mark.spec("SQL-BLOB-071")
+    @pytest.mark.spec("SQL-BLOB-072")
+    def test_other_in_memory_spellings_keep_their_inferred_pool(self, url: str) -> None:
+        """Only ``mode=memory`` is named explicitly; the other three are left alone.
+
+        ``:memory:`` and the bare URL keep the per-thread pool SQLAlchemy infers
+        from the database name, which is the inference SQL-BLOB-072's carve-out
+        is about and which 2.1 does not deprecate. The anonymous URI form
+        already resolves to ``QueuePool`` on its own.
+
+        The roundtrip is what keeps the pool assertion honest — an engine can
+        carry the right pool class and still be unusable, and these three are
+        the spellings the fix must not have disturbed. The *cross-thread* half
+        is deliberately not asserted here: whether a per-thread pool isolates is
+        SQLAlchemy's own behaviour, already exercised by
+        ``TestADiscardedInMemoryStoreReadsAsEmpty``, and reaching a
+        ``SingletonThreadPool`` from a second thread orphans that thread's
+        connection — no thread can close another's, so it lands later as an
+        unraisable ``ResourceWarning`` against an unrelated test.
+        """
+        expected = sa.pool.QueuePool if "uri=true" in url else sa.pool.SingletonThreadPool
+        backend = SQLBlobBackend(url=url)
+        try:
+            assert isinstance(backend.unwrap(sa.Engine).pool, expected)
+            backend.write("roundtrip.txt", b"payload")
+            assert backend.read_bytes("roundtrip.txt") == b"payload"
+        finally:
+            backend.close()
+
+    @pytest.mark.parametrize("url", ["garbage", ""], ids=["unparseable", "empty"])
+    @pytest.mark.spec("SQL-BLOB-071")
+    def test_a_malformed_url_still_reports_sqlalchemys_own_error(self, url: str) -> None:
+        """Naming the pool must not swallow a URL SQLAlchemy cannot parse.
+
+        Deciding whether to name the pool means parsing the URL first, and that
+        parse raises on a malformed one. Reporting *that* is `create_engine`'s
+        job, so a bad URL has to surface unchanged rather than being turned into
+        a silently unconfigured engine — or, worse, a different error from the
+        pool decision.
+        """
+        with pytest.raises(sa.exc.ArgumentError, match="Could not parse"):
+            SQLBlobBackend(url=url)
+
+    @pytest.mark.spec("SQL-BLOB-071")
+    def test_a_repeated_mode_key_is_rejected_by_sqlite_not_by_the_pool_choice(self) -> None:
+        """Pins the assumption that lets the pool decision compare a plain string.
+
+        SQLAlchemy parses a duplicated query key to a tuple, so a `== "memory"`
+        comparison does not match one — which would matter if such a URL could
+        ever open. It cannot: sqlite is handed the tuple verbatim and refuses
+        it. Recorded as a test because the alternative is normalising a shape
+        that has no working engine behind it, and nothing would have shown that
+        the extra branch was unreachable.
+        """
+        with pytest.raises(sa.exc.OperationalError, match="no such access mode"):
+            SQLBlobBackend(url="sqlite:///file:dup?mode=memory&mode=memory&cache=shared&uri=true")
+
+    @pytest.mark.spec("SQL-BLOB-071")
+    def test_a_non_sqlite_url_carrying_mode_memory_is_left_alone(self) -> None:
+        """`mode=memory` in a PostgreSQL query string is not ours to interpret.
+
+        # internal: no public observable — reaching this through the constructor
+        needs a PostgreSQL driver the test environment does not install, so the
+        only publicly reachable outcome is `ModuleNotFoundError` from the import,
+        which would pass whether or not the pool was named. Asserted against the
+        helper directly because the alternative is a test that cannot fail.
+        """
+        assert _engine_kwargs("postgresql://host/db?mode=memory") == {}

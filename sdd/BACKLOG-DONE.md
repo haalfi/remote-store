@@ -240,6 +240,38 @@ if evidence changes; these are retired.
 
 ## Unreleased
 
+- [x] **BUG-281 — `_SQLAlchemyBaseBackend` leans on a pool selection SQLAlchemy 2.1.0rc1 deprecates**
+  spec: SQL-BLOB-071, SQL-BLOB-072 · effort: S · audience: user.api, infra.ci
+  `_engine_kwargs()` now states `poolclass=QueuePool` and
+  `connect_args={"check_same_thread": False}` for a SQLite URL carrying
+  `mode=memory`, the one spelling whose pool SQLAlchemy inferred and 2.1
+  deprecates inferring. SQL-BLOB-071 gains the exception; the alternative —
+  letting the default move on its own — was rejected on the measurement below.
+  **The connect-arg is the finding.** Forcing `QueuePool` alone turns that URL
+  from working across threads into `ProgrammingError`: the pool hands one
+  connection to whichever thread checks it out and pysqlite refuses a connection
+  used off its creating thread. So SQLAlchemy 2.2's announced move would have
+  broken the spelling silently, and "keep 071 and let the default move" was not
+  the no-op the original diagnosis took it for. Measured on 2.0.54 and 2.1.0rc2
+  alike, four spellings each: `:memory:` and the bare URL take
+  `SingletonThreadPool` with `check_same_thread=True`, `file::memory:?uri=true`
+  already takes `QueuePool` with `check_same_thread=False`, and only
+  `mode=memory&cache=shared` warns.
+  **The deferred consequence as originally filed was wrong**, and SQL-BLOB-072
+  is corrected rather than merely amended. It predicted the database would
+  "differ per checkout rather than per thread"; a named shared cache is
+  process-global, so every connection attaches to one database whatever the
+  pool, and all four spellings behaved identically before and after. The
+  carve-out's claim that per-thread isolation "applies to any engine configured
+  with a per-thread pool" was therefore already false for that URL, independent
+  of the deprecation: what isolates is the database being anonymous, not the
+  pool class. `SQL-QUERY-092` defers to the corrected clause and names only
+  `:memory:`, so it needed no edit.
+  The `[sql]` newest-lane row leaves `infra/drift-locks/KNOWN-FINDINGS.md` with
+  this fix, per that file's rule. `infra/drift-locks/sql.txt` stays at
+  `sqlalchemy==2.1.0b3`: the refresh follows on the next drift run with that
+  run's smoke as its evidence, which is what held it.
+
 - [x] **BK-379 — Pilot RFC-0015's D2, D3 and its LINE-anchor rule on three deliveries, before the rest of it is built**
   spec: — · effort: M · audience: contributor.process
   All three exit criteria met: RFC-0015 amended with the pilot's four

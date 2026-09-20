@@ -60,6 +60,41 @@ def _set_sqlite_pragmas(dbapi_conn: Any, _connection_record: Any) -> None:
     cursor.close()
 
 
+def _engine_kwargs(url: str) -> dict[str, Any]:
+    """Name the pool for SQLite URLs whose pool SQLAlchemy would otherwise infer.
+
+    A ``mode=memory`` query string made SQLAlchemy select ``SingletonThreadPool``,
+    an inference SQLAlchemy 2.1 deprecates in favour of ``QueuePool``. Naming
+    ``QueuePool`` here adopts that destination now, so the warning never reaches
+    a caller running warnings as errors and the move does not change behaviour
+    under us later.
+
+    ``check_same_thread=False`` travels with it and is not optional. A pooled
+    connection is handed to whichever thread checks it out, and pysqlite refuses
+    a connection used off its creating thread by default -- so ``QueuePool``
+    alone would turn a URL that works across threads today into one that raises.
+    It is safe here because the pool serialises checkout: one thread holds a
+    given connection at a time.
+
+    Only that spelling is touched. ``sqlite:///:memory:`` keeps the per-thread
+    pool its own inference selects, and with it the isolation that gives each
+    thread its own in-memory database.
+    """
+    try:
+        parsed = sa.make_url(url)
+    except sa.exc.ArgumentError:
+        # Not a URL SQLAlchemy can parse; let create_engine raise its own error.
+        return {}
+    if parsed.get_backend_name() != "sqlite":
+        return {}
+    # A repeated key would parse to a tuple rather than a string, and is not
+    # normalised here: sqlite rejects such a URL outright ("no such access
+    # mode"), so it has no working engine to choose a pool for either way.
+    if parsed.query.get("mode") != "memory":
+        return {}
+    return {"poolclass": sa.pool.QueuePool, "connect_args": {"check_same_thread": False}}
+
+
 # ---------------------------------------------------------------------------
 # Base class (shared with future SQLQueryBackend)
 # ---------------------------------------------------------------------------
@@ -78,7 +113,7 @@ class _SQLAlchemyBaseBackend(Backend, abc.ABC):
             raise ValueError(msg)
 
         if url is not None:
-            self._engine = sa.create_engine(url)
+            self._engine = sa.create_engine(url, **_engine_kwargs(url))
             self._owns_engine = True
         else:
             assert engine is not None

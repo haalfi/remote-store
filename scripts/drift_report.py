@@ -858,9 +858,12 @@ def _render_smoke_verdicts(
     construction — ``_render_isolation_findings`` takes the newest lane's
     install and import phases, ``_render_floor_lane`` takes the floor — so a
     registered newest-lane *smoke* failure reached neither, and the one such
-    row the register actually carries (`[sql]`, a pytest failure) rendered as a
-    bare `fail (smoke)` with no owner. Three artifacts state that a registered
-    finding renders with its owner; before this it was true of some phases.
+    row the register carried at the time (`[sql]`, a pytest failure, retired
+    when BUG-281 was fixed) rendered as a bare `fail (smoke)` with no owner.
+    Three artifacts state that a registered finding renders with its owner;
+    before this it was true of some phases. The register holds no newest-lane
+    row today, which is why this path is covered by tests rather than by the
+    committed file.
     """
     if not reports.smokes:
         return []

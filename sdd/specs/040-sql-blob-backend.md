@@ -362,9 +362,16 @@ trailing slash prevents `"data"` from matching `"dataset/file.txt"`.
 
 ### SQL-BLOB-071: Connection Pooling
 
-**Invariant:** Uses SQLAlchemy's default connection pool. No custom pool
-configuration. Users can tune via engine kwargs when passing a pre-built
-engine.
+**Invariant:** Uses SQLAlchemy's default connection pool, with one named
+exception: a SQLite URL carrying `mode=memory` in its query string is created
+with `poolclass=QueuePool` and `connect_args={"check_same_thread": False}`.
+SQLAlchemy selected `SingletonThreadPool` for that spelling by inference and
+deprecates the inference in 2.1, so the pool is stated rather than inferred.
+`check_same_thread=False` is part of the same decision, not a separate one: a
+pooled connection is handed to whichever thread checks it out, and pysqlite
+refuses that by default, so `QueuePool` without it would stop the URL working
+across threads. No other URL is configured. Users can tune any of it via engine
+kwargs when passing a pre-built engine.
 
 ### SQL-BLOB-072: Concurrent-Use Posture { #sql-blob-072 }
 
@@ -379,13 +386,19 @@ this backend does not do that. Each blob write is atomic within its own
 transaction; there is no cross-operation transactionality.
 
 **Carve-out (per-thread-isolated engines):** the posture follows the engine's
-pool class, not the backend code. A `sqlite:///:memory:` URL — SQLAlchemy's
-default `SingletonThreadPool` — hands each thread its *own* in-memory database,
-so a shared instance is effectively `single_connection`: confine it to one
-thread, or give each thread its own backend. The same applies to any engine
-configured with a per-thread or single-connection pool. `QueuePool`-backed
-engines (PostgreSQL, MySQL, file-backed SQLite with a shared cache) are
-`thread_safe` as stated above.
+pool class and the database its URL names, not the backend code. A
+`sqlite:///:memory:` URL — SQLAlchemy's default `SingletonThreadPool` over an
+anonymous database — hands each thread its *own* in-memory database, so a
+shared instance is effectively `single_connection`: confine it to one thread,
+or give each thread its own backend.
+
+**A per-thread pool is not by itself isolating.** What isolates is the database
+being anonymous, so that each connection opens a fresh one. A URL naming a
+shared cache (`mode=memory&cache=shared`) opens one process-global database
+that every connection attaches to, whatever the pool, so threads sharing such
+an instance see each other's writes. Those URLs take `QueuePool` per
+SQL-BLOB-071 and are `thread_safe`, as are `QueuePool`-backed engines generally
+(PostgreSQL, MySQL, file-backed SQLite).
 
 **See also:** [003-backend-adapter-contract.md](003-backend-adapter-contract.md)
 (BE-028).

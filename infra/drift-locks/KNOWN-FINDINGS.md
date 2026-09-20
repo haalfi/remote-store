@@ -28,9 +28,10 @@ and when the decision is re-read.
 **A week whose findings are all registered, with no interpreter past its window
 unregistered, closes the issue** — so on that week the rows render nowhere and
 this file is where they live. That is the intended
-trade: an issue that is open every Monday for the same seven rows is one nobody
-opens. (Seven is `load_known_findings()` over the table below, re-run when this
-sentence was last edited; it was five when the sentence was first written.)
+trade: an issue that is open every Monday for the same six rows is one nobody
+opens. (Six is `load_known_findings()` over the table below, re-run when this
+sentence was last edited; it was five when the sentence was first written, and
+seven before BUG-281's fix retired the one `newest`-lane row.)
 
 <a id="review-by-is-enforced"></a>
 ## `Review by` is read by code, and a row expires
@@ -72,4 +73,3 @@ so re-read the rationale rather than the row.
 | `[azure]` | floor | BUG-288 | `aiohttp>=3.0` names a release that installs and cannot be imported on any interpreter this package supports (`cannot import name 'Mapping' from 'collections'`). The bound was taken from `azure-core`'s own metadata and never exercised. | 2026-12-31 |
 | `[sftp]` | floor | BUG-289 | `paramiko==3.1.0` reaches `algorithms.TripleDES`, which current `cryptography` answers with a deprecation warning; the suite rejects warnings, so collection fails. A user at that floor sees a warning, not a failure — the floor is a candidate for raising rather than broken today. | 2026-12-31 |
 | `[s3]` | floor | BUG-289 | `s3fs==2024.2.0` leaves unraisable exceptions in teardown against a current `aiobotocore`; pytest's unraisable plugin turns them into 16 errors. Same class as `[sftp]` above: warnings, not breakage. | 2026-12-31 |
-| `[sql]` | newest | BUG-281 | `_SQLAlchemyBaseBackend` lets SQLAlchemy pick the pool class from a `mode=memory` URL, which 2.1.0rc1 deprecates; the suite turns warnings into errors, so one `tests/backends/sqlblob/` case fails against the drifted resolution. Pre-existing and not a regression from any bump. | 2026-12-31 |
