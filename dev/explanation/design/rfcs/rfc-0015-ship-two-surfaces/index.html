@@ -10828,10 +10828,15 @@
 <p>Draft. Tracked as BK-378. Minted as BK-367 and re-homed twice: ID-182's branch
 minted BK-367 in parallel, then ID-018's minted BK-368 and closed it before
 this PR merged. Both are ID-257's scenario, and the second is recorded there.
-BK-379 pilots D2, D3's worktree half with the one-measurer cap left up, D5's
+BK-379 piloted D2, D3's worktree half with the one-measurer cap left up, D5's
 posting half and D6's repeat-site half before the rest is built; what that
 pilot can and cannot decide is stated with the acceptance criterion
-(§ Impact). If accepted it graduates to an ADR amending
+(§ Impact), and what it measured is § Pilot result. <strong>The pilot missed
+clause 1 by three points and refuted D6's retirement of the repeat-site
+check.</strong> This RFC is Draft because it has never been accepted, and D1 and D4
+are unbuilt; what the criterion prescribes for a miss without those two is to
+build them and re-measure, and it declines to let such a miss bear on status.
+If accepted it graduates to an ADR amending
 <a href="../../adrs/0033-ship-convergence-driven-review/">ADR-0033</a>,
 <a href="../../adrs/0034-ship-panel-rounds-and-unprimed-exit/">ADR-0034</a>,
 <a href="../../adrs/0035-vary-method-not-model/">ADR-0035</a>, whose <em>one member per
@@ -10842,9 +10847,10 @@ rewrites of <code>.claude/skills/ship/SKILL.md</code>, <code>/rvw-pr</code>, <co
 <code>/orchestrate</code>, <code>sdd/traces/_schema.yml</code> § <code>review_rounds</code> and <code>CLAUDE.md</code>
 § Trace authoring.</p>
 <p><strong>Date:</strong> 2026-09-07. Every repo figure below is pinned to <code>2a1bbfe</code> and names
-the command that produced it, with two named exceptions: the PR #997
-postscript reads that PR's head <code>3cd4acb</code>, and the worktree timings are single
-runs on one container. The two commands that are longer than a line are
+the command that produced it, with three named exceptions: the PR #997
+postscript reads that PR's head <code>3cd4acb</code>, the worktree timings are single
+runs on one container, and § Pilot result is pinned at <code>2bd34cc</code> and says so,
+because it measures deliveries that did not exist at the date above. The two commands that are longer than a line are
 committed beside this file as <code>rfc-0015-findings.py</code> and <code>rfc-0015-rounds.py</code>;
 the second takes <code>--at 2a1bbfe</code> so Table 1 can be re-derived at the pin
 rather than at whatever the working tree holds. The corpus moves on every
@@ -11426,10 +11432,14 @@ about what a rationale would have prevented is not, and is not the condition.</p
   widening is what the graduating ADR amends in ADR-0035 (§ Status); the
   bullet's own reverse condition, measuring members ceasing to find what
   reading members miss, is not what D3 touches and stays as written.
-  <strong>The pilot keeps the cap up</strong>: BK-379's three deliveries take the worktree
-  and not the lift, because lifting it changes panel composition and moves
-  finding counts independently of fix shape, which is what the pilot
-  measures. The cap comes down once the pilot has reported.</li>
+  <strong>The cap stays up until this RFC's final measurement</strong>: BK-379's three
+  deliveries took the worktree and not the lift, because lifting it changes
+  panel composition and moves finding counts independently of fix shape, which
+  is what the pilot measured. That reason outlived the pilot — § Pilot result
+  prescribes a re-measurement with D1 and D4 shipped, and a composition that
+  moved in between would be comparable with neither the 78% baseline nor the
+  pilot's 53%. The cap comes down with the graduating ADR, on BK-378's
+  account.</li>
 <li>Worktrees are removed at round close, with a <code>prune</code> for the base worktree a
   measuring member left nested inside (measured on git 2.43.0: ignored
   leftovers and the nested worktree do not block the removal, and the nested
@@ -11550,18 +11560,23 @@ its script, never by reading it.</p>
 the trace's <code>review:</code> key; a measuring member may re-run <code>ship-report</code> and
 diff its output against the block. The floor of two passes, the soft ceiling
 of five finding-rounds, the divergence check and the subject list all stay.
-The repeat-site check is retired because D2 moves its trigger from two
-refutations to zero; its text in the skill is replaced by a pointer to D2's
-rule.</p>
+<strong>The repeat-site check stays too, and this is a withdrawal.</strong> The decision as
+drafted retired it because D2 moves its trigger from two refutations to zero,
+which is this decision's reverse condition read forward; the pilot fired it
+twice in three deliveries run under D2 (§ Pilot result), so the check keeps
+its text in the skill and D2's rule is a second route to the same response
+rather than a replacement for the detector.</p>
 <p><strong>Evidence.</strong> ADR-0037's gate found real defects (eight files on PR #956,
 three docstrings no diff reached on BUG-265); what it read was the problem,
 not that it read (Alternatives). The repeat-site check's two firings in the
 sample (BUG-265 round 4, BUG-275 round 2) each cost the two rounds that
 triggered them.</p>
 <p><strong>Reverse if</strong> a whole-file pass finds a defect in a derived block that
-re-running the script does not reproduce, or a condition is argued and refuted
-twice in one delivery under D2, which would mean the retired check's trigger
-still has work.</p>
+re-running the script does not reproduce. The second condition — a condition
+argued and refuted twice in one delivery under D2, meaning the retired check's
+trigger still has work — <strong>fired in the pilot</strong>, and the retirement it
+governed is withdrawn above rather than left standing with its own reversal
+met.</p>
 <h3 id="a-round-under-this-rfc">A round under this RFC<a class="headerlink" href="#a-round-under-this-rfc" title="Permanent link">&para;</a></h3>
 <p>Push, worktree at the pushed commit, passes, <code>ship-report</code> for distribution
 and origin, triage with a fix shape per must-fix finding, fix in the main
@@ -11648,9 +11663,9 @@ runtime behaviour, no published page other than this RFC's own.</p>
   any of the three failing sends the RFC
   back to Draft with the measured figures attached, not to the ADR with a
   softened threshold. One delivery is one draw and is not the criterion.</li>
-<li><strong>What BK-379's pilot decides.</strong> It runs D2, D3's worktree half with the
-  one-measurer cap left up, D5's posting half and D6's repeat-site half,
-  without D1 and D4, and reports clauses 1 and 3 only.
+<li><strong>What BK-379's pilot decided</strong>, written before it ran. It took D2, D3's
+  worktree half with the one-measurer cap left up, D5's posting half and D6's
+  repeat-site half, without D1 and D4, and reported clauses 1 and 3 only.
   Clause 2 has no referent until D4 generates the block it names; it is
   deferred with D4, not dropped. Clause 3 is reported as a dry run, since the
   retraction pass is not wired into the loop there, and is read as a floor
@@ -11660,7 +11675,7 @@ runtime behaviour, no published page other than this RFC's own.</p>
   with D2 and D3 being too weak alone and with the record surface carrying
   the late rounds. The pilot cannot tell the two apart. A miss says build D1
   and D4 and re-measure; only a miss with those shipped is the sentence
-  above.</li>
+  above. <strong>It reported in § Pilot result</strong>, and that is the branch it took.</li>
 <li><strong>Risk:</strong> a retraction pass could remove a reason principle 8 protects,
   which is why it restores to the last clean state rather than deleting.
   <code>LINE</code>-anchor discipline moves work onto the orchestrator's posting step.
@@ -11670,6 +11685,242 @@ runtime behaviour, no published page other than this RFC's own.</p>
   the schema clause dates the derived form from the ADR.</li>
 <li><strong>Testing:</strong> guards for the three scripts; the three-delivery run above
   before the ADR is written.</li>
+</ul>
+<h2 id="pilot-result">Pilot result<a class="headerlink" href="#pilot-result" title="Permanent link">&para;</a></h2>
+<p>BK-379 ran D2, D3's worktree half, D5's posting half and D6's repeat-site half
+over three deliveries and measured them. <strong>The loop-introduced share of
+must-fix findings from round 3 on fell from 78% to 53%, which misses clause 1's
+bar of below 50% by three points, and the repeat-site check D6 proposed
+retiring fired twice.</strong> Clause 3 passed at zero firings and clause 2 has no
+referent without D4, so the branch § Impact prescribes for a clause-1 miss
+without D1 and D4 is the one taken: build them and re-measure.</p>
+<p><strong>Sample.</strong> PRs #1021 (BUG-254), #1022 (BK-375, BK-373, BK-377) and #1023
+(BK-370) — the three deliveries opened after the skill amendments merged
+(#1020, merged <code>2026-09-17T19:42Z</code>; the three opened at 20:38, 21:13 and
+<code>2026-09-18T19:34Z</code>, from <code>gh api repos/haalfi/remote-store/pulls/&lt;N&gt; --jq
+'{created_at, merged_at}'</code>), so no round in the sample ran under the old rules.
+Every figure below comes from <code>python sdd/rfcs/rfc-0015-findings.py 1021 1022
+1023</code> at <code>2bd34cc</code> unless it names another derivation. 69 findings over 14
+submissions. Their traces record <code>review_rounds</code> 7 for #1021, 7 in each of</p>
+<h1 id="1022s-three-and-4-for-1023-against-table-1s-post-gate-median-of-7-the-pilot-does-not-show-the-loop-getting-shorter-it">1022's three and 4 for #1023, against Table 1's post-gate median of 7: <strong>the pilot does not show the loop getting shorter</strong>, it<a class="headerlink" href="#1022s-three-and-4-for-1023-against-table-1s-post-gate-median-of-7-the-pilot-does-not-show-the-loop-getting-shorter-it" title="Permanent link">&para;</a></h1>
+<p>shows what the late rounds are about.</p>
+<p><strong>Table 2 re-derived over the pilot.</strong> Same classifier, same columns, with
+pre-existing given its own column because the <code>LINE</code> discipline populates it:</p>
+<table>
+<thead>
+<tr>
+<th>round</th>
+<th>original</th>
+<th>loop-introduced</th>
+<th>loop share of <code>o + l</code></th>
+<th>pre-existing</th>
+<th>unclassifiable</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>1</td>
+<td>13</td>
+<td>0</td>
+<td>0%</td>
+<td>1</td>
+<td>1</td>
+</tr>
+<tr>
+<td>2</td>
+<td>10</td>
+<td>3</td>
+<td>23%</td>
+<td>0</td>
+<td>0</td>
+</tr>
+<tr>
+<td>3</td>
+<td>6</td>
+<td>1</td>
+<td>14%</td>
+<td>2</td>
+<td>12</td>
+</tr>
+<tr>
+<td>4</td>
+<td>3</td>
+<td>3</td>
+<td>50%</td>
+<td>0</td>
+<td>3</td>
+</tr>
+<tr>
+<td>5</td>
+<td>3</td>
+<td>7</td>
+<td>70%</td>
+<td>0</td>
+<td>0</td>
+</tr>
+<tr>
+<td>6</td>
+<td>0</td>
+<td>1</td>
+<td>100%</td>
+<td>0</td>
+<td>0</td>
+</tr>
+<tr>
+<td>total</td>
+<td>35</td>
+<td>15</td>
+<td>30%</td>
+<td>3</td>
+<td>16</td>
+</tr>
+</tbody>
+</table>
+<p><strong>Table 4 re-derived, which is clause 1.</strong> Must-fix findings only:</p>
+<table>
+<thead>
+<tr>
+<th>round</th>
+<th>original</th>
+<th>loop-introduced</th>
+<th>loop share of <code>o + l</code></th>
+<th>pre-existing</th>
+<th>unclassifiable</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>1</td>
+<td>8</td>
+<td>0</td>
+<td>0%</td>
+<td>1</td>
+<td>1</td>
+</tr>
+<tr>
+<td>2</td>
+<td>8</td>
+<td>3</td>
+<td>27%</td>
+<td>0</td>
+<td>0</td>
+</tr>
+<tr>
+<td>3</td>
+<td>5</td>
+<td>1</td>
+<td>17%</td>
+<td>2</td>
+<td>6</td>
+</tr>
+<tr>
+<td>4</td>
+<td>2</td>
+<td>3</td>
+<td>60%</td>
+<td>0</td>
+<td>3</td>
+</tr>
+<tr>
+<td>5</td>
+<td>2</td>
+<td>5</td>
+<td>71%</td>
+<td>0</td>
+<td>0</td>
+</tr>
+<tr>
+<td>6</td>
+<td>0</td>
+<td>1</td>
+<td>100%</td>
+<td>0</td>
+<td>0</td>
+</tr>
+<tr>
+<td><strong>pooled 3 to 6</strong></td>
+<td><strong>9</strong></td>
+<td><strong>10</strong></td>
+<td><strong>53%</strong></td>
+<td><strong>2</strong></td>
+<td><strong>9</strong></td>
+</tr>
+</tbody>
+</table>
+<p>The pooled row is the script's <code>POOLED r&gt;=3 must-fix</code> line and the criterion's
+clause 1: 53% against the bar of below 50% and against the baseline's 78%
+(77 of 99). <strong>The verdict is one finding wide.</strong> Nineteen classified findings
+carry it, so one finding is five points and a single reclassification — 9 of
+19, 47% — passes it; the baseline's denominator is five times larger. Three
+deliveries are a small draw, which is what the criterion says about one and
+does not stop being true of three.</p>
+<p><strong>What D5's posting half reached.</strong> Pre-existing is 3 against zero throughout
+the baseline's 541, all three in #1021: the rule anchors findings on unchanged
+text, which is the thing it exists to do, and the 78% comparison excludes them
+for that reason. Unclassifiable is 16 of 69 (23%) against 160 of 541 (30%);
+from round 3 it is 12 of 21, 3 of 9, 0 of 10 and 0 of 1, against the baseline's
+40% to 58% of every round. Ten of that 12 are #1023's round 3, which posted all
+ten of its findings at file level, so the residue is still a whole-file round
+rather than a spread across rounds. All 16 are file-level and the <code>LEFT</code>-side,
+null-line and blame-failure counts are zero, as in the baseline, so Open
+Question 4 is untouched.</p>
+<p><strong>Triage classified more of the sample</strong>: 51 must-fix, 1 filed, 9 refuted, 8
+unknown over 69 (12% unknown), against 295, 10, 56 and 180 over 541 (33%). D2's
+reply rule puts the verdict and the fix shape in the thread, which is where the
+heuristic reads; the baseline's unknown third was fixers answering in review
+summaries instead.</p>
+<p><strong>D2 was adopted in practice.</strong> 67 of the 72 fix replies name a fix shape
+(#1021 35 of 38, #1022 13 of 15, #1023 19 of 19), citing (4) narrow the claim
+21 times, (1) a behaviour change pinned by a test 18, (3) replace the claim
+with its derivation 16, (2) delete the false claim 13 and (5) file it once.
+Derivation: the reply bodies from <code>gh api
+repos/haalfi/remote-store/pulls/&lt;N&gt;/comments --paginate --jq '.[] |
+select(.in_reply_to_id) | .body'</code>, matched against
+<code>shapes?\b[^.\n]{0,40}?\*{0,2}\([1-5]\)</code> — once per reply for the adoption
+count, every match for the histogram. Bound: the pattern reads what a reply
+<em>claims</em>, not whether the diff took that shape.</p>
+<p><strong>Clause 3, the retraction trigger, as a dry run.</strong> It fires in 0 of 3 PRs and
+0 rounds under all three readings, the adopted 80%-over-two included, which is
+inside the <em>at most once</em> bound and is read as a floor: both biases D5 names
+(unclassifiable findings excluded from the ratio, pre-existing ones counted as
+clean) under-fire rather than over-fire.</p>
+<p><strong>D6's repeat-site half is refuted.</strong> The check fired twice in three
+deliveries, both run under D2: #1021's <code>_azure.py</code> thread records "the second
+consecutive round to refute the same condition" — what a closed backend answers
+at the root — and closed it by enumerating the axis in a test rather than
+patching the operation the round found; #1023's feedstock-divergence thread
+records a condition "refuted three times" before a register replaced the
+argument. Derivation: the same reply bodies matched against <code>repeat-site</code>, one
+reply each in #1021 and #1023 and none in #1022, each naming the check. D6's
+own reverse condition is therefore met, the retirement is withdrawn there, and
+<code>/ship</code> keeps the check.</p>
+<p><strong>What the record surface still carries.</strong> 16 findings sit on <code>src/</code> or
+<code>tests/</code> and 53 on everything else, and <strong>14 of the 53</strong> sit on <code>sdd/traces/</code>,
+<code>sdd/BACKLOG.md</code> or <code>sdd/BACKLOG-DONE.md</code> — the same nesting Table 3 states,
+since <code>record</code> is a subset of <code>prose</code> in the script rather than a third class.
+That is 20% of the 69 against the baseline's 133 of 541 (25%). Correction 2's
+non-separability holds exactly as filed: a share at or above 50% with D1
+unbuilt is equally consistent with D2 and D3 being too weak alone and with the
+record surface carrying the late rounds, and this sample cannot tell them
+apart.</p>
+<p><strong>Dispositions.</strong></p>
+<ul>
+<li><strong>D1</strong> — not piloted; stays with BK-378. The clause-1 miss is the RFC's own
+  reason to build it, not evidence against the RFC.</li>
+<li><strong>D4</strong> — not piloted; stays with BK-378. Clause 2 keeps no referent until
+  <code>ship_report.py</code> exists, and every figure in this section was produced by a
+  hand-run script, which is D4's argument.</li>
+<li><strong>D5</strong> — the posting half is measured above and stays as written. The
+  stop-rule clause was never wired into the loop and the dry run gives no
+  firing to tune its constants against, so it ships with <code>ship-report</code> under
+  D4, constants unchanged.</li>
+<li><strong>D6</strong> — the repeat-site half is withdrawn above. Its deferred half (the
+  whole-file brief excluding the trace's <code>review:</code> key, and a measuring member
+  re-running <code>ship-report</code>) has nothing to read until D1 and D4 exist, and
+  defers with them.</li>
+<li><strong>D2, and D3's worktree half</strong> — in force in the four skills since #1020,
+  unchanged by this result; D3's cap lift waits for the re-measurement, for the
+  reason D3 now states.</li>
 </ul>
 <h2 id="open-questions">Open Questions<a class="headerlink" href="#open-questions" title="Permanent link">&para;</a></h2>
 <ol>
@@ -11689,7 +11940,9 @@ runtime behaviour, no published page other than this RFC's own.</p>
    answer offered, and it wants one delivery's evidence before it binds.</li>
 <li>Whether file-level findings can be given a line after the fact, since their
    bodies usually name one, or whether Table 2's last column is accepted as
-   the bound.</li>
+   the bound. The pilot leaves it where it found it: all 16 of its
+   unclassifiable findings are file-level, and ten of them are one whole-file
+   round (§ Pilot result).</li>
 <li>Where the mid-loop <code>ship-report</code> output lives. A PR comment from the
    orchestrator primes nobody, because reviewers never fetch comments.</li>
 <li>Whether the instrument-bound clause in D2 can be checked at all. A test
