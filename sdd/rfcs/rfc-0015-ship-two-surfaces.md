@@ -652,7 +652,16 @@ its script, never by reading it.
 
 **Mechanism.** The whole-file brief names the deliverable files and excludes
 the trace's `review:` key; a measuring member may re-run `ship-report` and
-diff its output against the block. The floor of two passes, the soft ceiling
+diff its output against the block.
+**That second half has a permission conflict, found while building D4 and
+unresolved here.** `/rvw-pr`'s measuring allowlist is by name and does not
+carry `ship-report`, and the script reads comment *bodies* where that skill's
+metadata carve-out is bounded to paths, review ids and counts — so a member
+running it would have read the conversation, which is what keeps unprimed
+passes unprimed. BK-378 narrowed `/ship` to *no reviewer runs `ship-report`*
+rather than widen the permission. Whoever takes this deferred half has to
+supply a reach that does not read feedback: a `--no-triage` mode, or a
+verification the orchestrator performs and the reviewer only reads. The floor of two passes, the soft ceiling
 of five finding-rounds, the divergence check and the subject list all stay.
 **The repeat-site check stays too, and this is a withdrawal.** The decision as
 drafted retired it because D2 moves its trigger from two refutations to zero,
