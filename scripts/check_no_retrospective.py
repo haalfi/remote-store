@@ -22,16 +22,37 @@ docs, ``CHANGELOG.md``, the migration guide, and ``sdd/BACKLOG*.md`` in full" �
 the migration guide is ``docs-src/reference/migration.md`` and needs no row of
 its own. ``examples/`` is included because it is a surface users read.
 
-Three trees are deliberately **out**:
+**What is off the surface, stated as the complement rather than a sample**,
+because a partial exclusion list reads as a complete one. Everything not matched
+by ``SURFACE`` is unscanned; the trees that a reader would expect to be scanned,
+and their reasons, are:
 
 * ``sdd/traces/`` is *the record*, which is where D1 sends the round-by-round
   account. At the time of writing it carried 143 matching lines across 44 files
   (the phrase set below over ``sdd/traces/*.yml``), every one of them correctly
   placed.
-* ``sdd/rfcs/`` and ``sdd/research/`` are records too, and RFC-0015 in particular
-  *defines* the phrase set, so including it would fail this check on the document
-  that specifies it.
-* ``scripts/`` is not on the surface D1 names.
+* ``sdd/rfcs/``, ``sdd/research/`` and ``sdd/audits/`` are records too, and
+  RFC-0015 in particular *defines* the phrase set, so including it would fail
+  this check on the document that specifies it.
+* ``sdd/adrs/`` is unscanned, and this is the exclusion most worth arguing:
+  an accepted ADR is never edited either way
+  ([`000-process.md` Rule 4](../sdd/000-process.md#rules)), so a hit there could
+  not be acted on without superseding the record. It carried no hits when this
+  was built.
+* **The top-level ``sdd/*.md`` authority docs** — ``DRIFT-RULES.md``,
+  ``CONTENT-RULES.md``, ``AUTHORING.md``, ``TESTING.md`` and their siblings —
+  are unscanned, and nothing about D1 argues they should be. They are the
+  deliverable in every sense; they are out only because § References' glob named
+  ``sdd/specs/*.md`` and ``sdd/BACKLOG*.md`` and stopped there, and widening the
+  surface would re-base the figure the RFC states. A retrospective in one of
+  them is a reviewer's to catch, like any other the phrase set does not reach.
+* **The repo-root dual-classified pages** — ``README.md``, ``FEATURES.md``,
+  ``CONTRIBUTING.md`` — likewise, for the same reason. Note that
+  ``check_no_tracker_refs.py`` answers a neighbouring "surface users read"
+  question and *does* include them, so the two gates draw that line differently
+  and on purpose: its subject is what reaches users, this one's is what D1's
+  glob names.
+* ``scripts/`` and ``.claude/`` are not on the surface D1 names.
 
 Self-exemption
 --------------

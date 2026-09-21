@@ -384,7 +384,12 @@ def trace_block(data: dict[str, Any]) -> str:
         lines.append(f"      findings: {entry['findings']}")
         lines.append(f"      origin: {{{', '.join(f'{k}: {v}' for k, v in entry['origin'].items())}}}")
         lines.append(f"      triage: {{{', '.join(f'{k}: {v}' for k, v in entry['triage'].items())}}}")
-        lines.append(f"      duration_hours: {entry['duration_hours']}")
+        # `null`, not Python's `None`: YAML reads a bare `None` as the *string*
+        # "None", which the schema's `[number, "null"]` rejects — so the nullable
+        # branch could never validate. Reachable through the `unsubmitted` path
+        # the module docstring says is reported rather than hidden.
+        duration = entry["duration_hours"]
+        lines.append(f"      duration_hours: {'null' if duration is None else duration}")
     lines.append("  by_file:")
     for path, count in data["per_file"].items():
         lines.append(f"    - path: {_q(path)}")

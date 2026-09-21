@@ -156,8 +156,14 @@ def compare(
     base_backlog: str,
     base_done: str,
     commit_ids: set[str],
+    base: str = DEFAULT_BASE,
 ) -> list[Disagreement]:
-    """Every way the head's ID set disagrees with the base's. Pure; the I/O is in main()."""
+    """Every way the head's ID set disagrees with the base's. Pure; the I/O is in main().
+
+    ``base`` is named in the messages rather than assumed: reporting a side the
+    run never read is the failure `DRIFT-RULES.md` Rule 2 is about, and under
+    ``--base`` the reads and the prose would otherwise disagree.
+    """
     head_open, head_closed = _ids(head_backlog, head_done)
     base_open, _base_closed = _ids(base_backlog, base_done)
 
@@ -169,7 +175,7 @@ def compare(
             Disagreement(
                 item_id,
                 "DROPPED",
-                f"{DEFAULT_BASE} has it open and the head has it nowhere. "
+                f"{base} has it open and the head has it nowhere. "
                 "A rebase or merge resolution lost a live item; restore it to sdd/BACKLOG.md.",
             )
         )
@@ -180,7 +186,7 @@ def compare(
             Disagreement(
                 item_id,
                 "POACHED",
-                f"the head closes it while {DEFAULT_BASE} has it open, and no commit on this "
+                f"the head closes it while {base} has it open, and no commit on this "
                 "branch names it. Close only what this branch did; if it did do the work, the "
                 "commit subject has to say so.",
             )
@@ -205,7 +211,7 @@ def main(argv: list[str] | None = None) -> int:
     head_backlog, head_done = ((ROOT / path).read_text(encoding="utf-8") for path in BACKLOG_FILES)
     base_backlog, base_done = (read_base(path, args.base) for path in BACKLOG_FILES)
 
-    problems = compare(head_backlog, head_done, base_backlog, base_done, branch_commit_ids(args.base))
+    problems = compare(head_backlog, head_done, base_backlog, base_done, branch_commit_ids(args.base), base=args.base)
     if not problems:
         print(f"Backlog ID sets agree with {args.base}.")
         return 0

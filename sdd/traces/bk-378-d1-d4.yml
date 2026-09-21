@@ -16,8 +16,6 @@ audience:
   - contributor.process
 discovery_followups:
   - BK-382
-co_shipped_items:
-  - BK-382
 expected_ripples:
   - pyproject.toml
   - sdd/GATE-INVENTORY.md
@@ -29,9 +27,12 @@ expected_ripples:
 surprising_ripples:
   # The ripple-check table has a row for "New or changed cross-artifact check or
   # drift report", which anticipated the three scripts. It has no row for
-  # "a trace field moves", and these two are what that would have caught.
+  # "a trace field moves", and the first two are what that would have caught.
+  # The third is a permission ripple review found: /ship gained a measuring-member
+  # obligation that /rvw-pr's by-name allowlist does not permit.
   - sdd/rfcs/rfc-0015-rounds.py
   - scripts/gen_gate_inventory.py
+  - .claude/skills/rvw-pr/SKILL.md
 phases:
   - id: orient
     name: Orient

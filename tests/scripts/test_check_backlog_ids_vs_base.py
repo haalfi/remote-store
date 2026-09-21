@@ -97,6 +97,13 @@ class TestDropped:
         assert "origin/master" in text
         assert "sdd/BACKLOG.md" in text
 
+    def test_a_dropped_message_names_the_base_actually_read(self) -> None:
+        (problem,) = _mod.compare(
+            _open_items(), _done_items(), _open_items("BUG-291"), _done_items(), set(), base="origin/release"
+        )
+        assert "origin/release" in problem.format()
+        assert "origin/master" not in problem.format()
+
     def test_an_id_the_head_moved_to_done_is_not_dropped(self) -> None:
         """Closing it is a different verdict from losing it, and may be legitimate."""
         problems = _mod.compare(_open_items(), _done_items("BK-101"), _open_items("BK-101"), _done_items(), {"BK-101"})
@@ -133,6 +140,18 @@ class TestPoached:
         text = problem.format()
         assert "ID-259" in text
         assert "no commit on this branch names it" in text
+
+    def test_the_message_names_the_base_actually_read(self) -> None:
+        """Rule 2: naming a side the run never read is the defect, not a cosmetic slip.
+
+        `main` honours `--base` in the reads, so a hardcoded `origin/master` in
+        the prose would send a reader to diff the wrong ref.
+        """
+        (problem,) = _mod.compare(
+            _open_items(), _done_items("BK-101"), _open_items("BK-101"), _done_items(), set(), base="origin/release"
+        )
+        assert "origin/release" in problem.format()
+        assert "origin/master" not in problem.format()
 
     def test_a_split_id_is_matched(self) -> None:
         """BK-167a — the trailing-letter form _schema.yml allows for split items."""
@@ -201,20 +220,47 @@ class TestReuse:
         assert "_HEADER_RE = " not in source
 
 
+def _base_ref_present() -> bool:
+    """Whether `origin/master` exists in this checkout."""
+    return _mod._git("rev-parse", "--verify", "--quiet", _mod.DEFAULT_BASE, check=False).returncode == 0
+
+
+#: CI's `tooling-tests` job runs `actions/checkout@v7` at its default depth-1,
+#: single-ref fetch, so `origin/master` does not exist there — the same premise
+#: this gate's own wiring comment gives for keeping it out of `lint`. A guard
+#: that reached the ref unguarded would fail every CI run of a suite that has
+#: nothing to do with it. Skip with the remedy named, the shape
+#: `test_check_support_windows.py` uses for a clone without tags.
+_needs_base = pytest.mark.skipif(
+    not _base_ref_present(),
+    reason=f"{_mod.DEFAULT_BASE} is not in this checkout; run `git fetch origin master`",
+)
+
+
 class TestGitReads:
     """The thin I/O layer, against the real repository."""
 
+    @_needs_base
     def test_read_base_returns_content_for_a_tracked_file(self) -> None:
         text = _mod.read_base("sdd/BACKLOG.md")
         assert text.startswith("#")
 
+    @_needs_base
     def test_read_base_returns_empty_for_an_absent_path(self) -> None:
-        """Empty rather than raising: a file that does not exist on the base has no IDs."""
+        """Empty rather than raising: a file that does not exist on the base has no IDs.
+
+        Marked too, although it passes without the ref: without it the empty
+        string comes from the *missing ref* rather than the missing path, so the
+        test would be green for the wrong reason — the fail-silently shape this
+        repo calls worse than no check.
+        """
         assert _mod.read_base("sdd/does-not-exist-on-master.md") == ""
 
+    @_needs_base
     def test_branch_commit_ids_returns_a_set(self) -> None:
         assert isinstance(_mod.branch_commit_ids(), set)
 
+    @_needs_base
     def test_main_runs_end_to_end_and_returns_a_verdict(self, capsys: pytest.CaptureFixture[str]) -> None:
         """Pins the I/O wiring — reads both files on both sides, reaches a verdict.
 

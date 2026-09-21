@@ -464,13 +464,18 @@ are not substitutes.
    member to run `ship-report` turns that member into one that has read the
    conversation.
 
-   **A scoped measuring member may run it to verify it**, and the stop rule
-   requires that whenever the script's measured claims change: it asserts a
-   paging discipline and a CI-verdict reduction, and those are behavioural
-   claims like any other. Such a member reads counts, review ids and paths —
-   never comment bodies — and is never the unprimed one. That is a carve-out
-   `/rvw-pr` Step 1 pins, without which this obligation would have no
-   permission.
+   **No reviewer runs `ship-report`, including a measuring member**, and that is
+   a narrowing from what the two-call recipe allowed. Two independent reasons,
+   either sufficient: `hatch run ship-report` is not on `/rvw-pr`'s by-name
+   measuring allowlist, which is an enumeration and not a pattern; and the
+   script reads comment **bodies**, where that skill's metadata carve-out is
+   bounded to paths, review ids and counts — so a member running it would have
+   read the conversation, which is the one thing the unprimed discipline cannot
+   survive. Its behavioural claims are pinned by its guards under
+   `tests/scripts/`, which every `hatch run all` executes, so nothing is
+   unverified by the narrowing; what is lost is a reviewer re-deriving the
+   figures independently, and that is RFC-0015 D6's deferred half to solve
+   (BK-382), not a gap to paper over by widening a permission.
 
 4. **Whether the verdict is reached by reading the diff, by reading each changed
    file whole, or by running**, and for a measuring member, what to run and

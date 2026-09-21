@@ -343,6 +343,47 @@ class TestTraceBlock:
         errors = sorted(validator.iter_errors(yaml.safe_load(_mod.trace_block(data))["review"]), key=str)
         assert errors == [], "\n".join(f"{list(e.absolute_path)}: {e.message}" for e in errors)
 
+    def test_a_null_duration_is_yaml_null_not_the_string_None(self, data: dict) -> None:
+        """Regression: a bare `None` reads back as the *string* "None".
+
+        The schema declares `duration_hours: [number, "null"]`, so the nullable
+        branch could never validate — and it is reachable: a review with no
+        `submitted_at` leaves the duration unset, which the module docstring says
+        is reported rather than hidden. The earlier tests all used real numbers,
+        so nothing exercised it.
+        """
+        import yaml
+
+        data["by_round"][0]["duration_hours"] = None
+        review = yaml.safe_load(_mod.trace_block(data))["review"]
+        assert review["by_round"][0]["duration_hours"] is None
+
+    def test_a_null_duration_still_validates_against_the_schema(self, data: dict) -> None:
+        import yaml
+        from jsonschema.validators import validator_for
+
+        data["by_round"][0]["duration_hours"] = None
+        schema_path = Path(__file__).resolve().parents[2] / "sdd" / "traces" / "_schema.yml"
+        schema = yaml.safe_load(schema_path.read_text(encoding="utf-8"))
+        validator = validator_for(schema)(schema["properties"]["review"])
+        errors = sorted(validator.iter_errors(yaml.safe_load(_mod.trace_block(data))["review"]), key=str)
+        assert errors == [], "\n".join(f"{list(e.absolute_path)}: {e.message}" for e in errors)
+
+    @pytest.mark.parametrize("verdict", ["GREEN", "RED", "PENDING", "NO CHECKS"])
+    def test_every_verdict_round_trips_as_a_string(self, data: dict, verdict: str) -> None:
+        """Sibling sweep of the null-duration class: every unquoted scalar the block emits.
+
+        `verdict` is the only other one, and `NO CHECKS` is the interesting
+        case — a plain scalar with a space, and near enough to YAML 1.1's
+        `NO` → False coercion to be worth pinning rather than reasoning about.
+        """
+        import yaml
+
+        data["ci"] = dict(data["ci"], verdict=verdict)
+        review = yaml.safe_load(_mod.trace_block(data))["review"]
+        assert review["ci"]["verdict"] == verdict
+        assert isinstance(review["ci"]["verdict"], str)
+
     def test_the_block_names_its_derivation(self, data: dict) -> None:
         """CLAUDE.md principle 9: the figures say what produced them."""
         block = _mod.trace_block(data)
@@ -392,6 +433,175 @@ class TestStep5Report:
 
     def test_the_report_embeds_the_trace_block(self, data: dict) -> None:
         assert _mod.trace_block(data).rstrip("\n") in _mod.step5_report(data)
+
+
+class TestRoundsWithFindings:
+    """The grouping the whole report rests on, stubbed the way TestPaging stubs."""
+
+    @staticmethod
+    def _stub(monkeypatch: pytest.MonkeyPatch, comments: list[dict], reviews: list[dict]) -> None:
+        def fake(path: str):
+            if path.endswith("/comments"):
+                return comments
+            if path.endswith("/reviews"):
+                return reviews
+            raise AssertionError(f"unexpected endpoint {path}")
+
+        monkeypatch.setattr(_mod.fnd, "_gh", fake)
+
+    @staticmethod
+    def _comment(cid: int, review_id: int, path: str, reply_to: int | None = None, body: str = ""):
+        return {
+            "id": cid,
+            "pull_request_review_id": review_id,
+            "path": path,
+            "in_reply_to_id": reply_to,
+            "created_at": f"2026-09-0{cid}T00:00:00Z",
+            "body": body,
+            "original_line": 1,
+            "original_commit_id": "a" * 40,
+        }
+
+    def test_replies_are_not_counted_as_findings(self, monkeypatch: pytest.MonkeyPatch) -> None:
+        """The measured regression the docstring names: the endpoint returns both.
+
+        An unfiltered tally reports the surface as more examined than it is, and
+        the inflation is loop-dependent — one row on one PR, a doubling on
+        another — so it cannot be corrected by a ratio afterwards.
+        """
+        comments = [
+            self._comment(1, 10, "a.py"),
+            self._comment(2, 10, "a.py", reply_to=1, body="Must-fix. Fixed in abc."),
+            self._comment(3, 10, "b.py"),
+        ]
+        self._stub(monkeypatch, comments, [{"id": 10, "submitted_at": "2026-09-01T10:00:00Z"}])
+        rounds, _ts, first_reply, _unsub = _mod.rounds_with_findings(1)
+        assert [len(group) for group in rounds.values()] == [2]
+        assert first_reply == {1: "Must-fix. Fixed in abc."}
+
+    def test_rounds_are_ordered_by_submission_time_not_row_order(self, monkeypatch: pytest.MonkeyPatch) -> None:
+        """Round index is submission order by construction, as the classifier defines it."""
+        comments = [self._comment(1, 20, "late.py"), self._comment(2, 10, "early.py")]
+        reviews = [
+            {"id": 20, "submitted_at": "2026-09-02T00:00:00Z"},
+            {"id": 10, "submitted_at": "2026-09-01T00:00:00Z"},
+        ]
+        self._stub(monkeypatch, comments, reviews)
+        rounds, _ts, _fr, _unsub = _mod.rounds_with_findings(1)
+        assert [group[0]["path"] for group in rounds.values()] == ["early.py", "late.py"]
+
+    def test_a_review_without_submitted_at_sorts_last_and_is_reported(self, monkeypatch: pytest.MonkeyPatch) -> None:
+        comments = [self._comment(1, 99, "no-stamp.py"), self._comment(2, 10, "stamped.py")]
+        reviews = [{"id": 10, "submitted_at": "2026-09-01T00:00:00Z"}, {"id": 99}]
+        self._stub(monkeypatch, comments, reviews)
+        rounds, _ts, _fr, unsubmitted = _mod.rounds_with_findings(1)
+        assert unsubmitted == [99]
+        assert [group[0]["path"] for group in rounds.values()] == ["stamped.py", "no-stamp.py"]
+
+    def test_only_the_first_reply_in_a_thread_is_the_verdict(self, monkeypatch: pytest.MonkeyPatch) -> None:
+        """`/rvw-pr` never answers comments, so the first reply is the fix pass speaking."""
+        comments = [
+            self._comment(1, 10, "a.py"),
+            self._comment(3, 10, "a.py", reply_to=1, body="second"),
+            self._comment(2, 10, "a.py", reply_to=1, body="first"),
+        ]
+        self._stub(monkeypatch, comments, [{"id": 10, "submitted_at": "2026-09-01T00:00:00Z"}])
+        _rounds, _ts, first_reply, _unsub = _mod.rounds_with_findings(1)
+        assert first_reply[1] == "first"
+
+
+class TestCollect:
+    """The whole assembly, with every network reach stubbed."""
+
+    @pytest.fixture
+    def stubbed(self, monkeypatch: pytest.MonkeyPatch):
+        meta = {
+            "title": "BK-378: a title",
+            "state": "open",
+            "merged_at": None,
+            "created_at": "2026-09-01T00:00:00Z",
+            "head": {"sha": "b" * 40},
+            "base": {"ref": "master"},
+        }
+        comments = [
+            {
+                "id": 1,
+                "pull_request_review_id": 10,
+                "path": "scripts/a.py",
+                "in_reply_to_id": None,
+                "created_at": "2026-09-01T09:00:00Z",
+                "original_line": 4,
+                "original_commit_id": "c" * 40,
+                "body": "",
+            },
+            {
+                "id": 2,
+                "pull_request_review_id": 10,
+                "path": "scripts/a.py",
+                "in_reply_to_id": 1,
+                "created_at": "2026-09-01T11:00:00Z",
+                "body": "Must-fix. Fixed in abc.",
+            },
+        ]
+        monkeypatch.setattr(_mod, "pr_meta", lambda pr: meta)
+        monkeypatch.setattr(_mod, "changed_files", lambda pr: ["scripts/a.py", "tests/scripts/test_a.py"])
+        monkeypatch.setattr(
+            _mod,
+            "ci_verdict",
+            lambda sha: {
+                "verdict": "GREEN",
+                "counts": {},
+                "failed": [],
+                "pending": [],
+                "total_runs": 0,
+                "distinct_names": 0,
+            },
+        )
+        monkeypatch.setattr(_mod, "review_driven_commits", lambda base, head, ts: [("d" * 40, 1, "fix: a round")])
+        monkeypatch.setattr(_mod.fnd, "ensure_commit", lambda sha: None)
+        monkeypatch.setattr(_mod.fnd, "origin", lambda row, ts: "loop-introduced")
+        monkeypatch.setattr(
+            _mod.fnd,
+            "_gh",
+            lambda path: (
+                comments if path.endswith("/comments") else [{"id": 10, "submitted_at": "2026-09-01T10:00:00Z"}]
+            ),
+        )
+        return meta
+
+    def test_it_assembles_the_figures_the_report_states(self, stubbed) -> None:
+        data = _mod.collect(1026)
+        assert data["submissions"] == 1
+        assert data["findings"] == 1
+        assert data["per_file"] == {"scripts/a.py": 1}
+        assert data["base_ref"] == "origin/master"
+        assert data["by_round"][0]["triage"] == {"must-fix": 1}
+        assert data["by_round"][0]["origin"] == {"loop-introduced": 1}
+
+    def test_untouched_is_the_changed_list_minus_the_finding_paths(self, stubbed) -> None:
+        data = _mod.collect(1026)
+        assert data["untouched_files"] == ["tests/scripts/test_a.py"]
+
+    def test_the_first_pass_duration_runs_from_the_prs_creation(self, stubbed) -> None:
+        """Created 00:00, submitted 10:00 — the first pass has no predecessor to measure from."""
+        assert _mod.collect(1026)["by_round"][0]["duration_hours"] == 10.0
+
+    def test_a_merged_pr_reports_merged_rather_than_its_state(self, stubbed, monkeypatch) -> None:
+        stubbed["merged_at"] = "2026-09-03T00:00:00Z"
+        assert _mod.collect(1026)["state"] == "merged"
+
+    def test_collect_output_renders_and_validates(self, stubbed) -> None:
+        """End to end: the assembled data survives both emitters and the schema."""
+        import yaml
+        from jsonschema.validators import validator_for
+
+        data = _mod.collect(1026)
+        schema_path = Path(__file__).resolve().parents[2] / "sdd" / "traces" / "_schema.yml"
+        schema = yaml.safe_load(schema_path.read_text(encoding="utf-8"))
+        validator = validator_for(schema)(schema["properties"]["review"])
+        errors = sorted(validator.iter_errors(yaml.safe_load(_mod.trace_block(data))["review"]), key=str)
+        assert errors == [], "\n".join(f"{list(e.absolute_path)}: {e.message}" for e in errors)
+        assert "## Per-file distribution" in _mod.step5_report(data)
 
 
 class TestPaging:
