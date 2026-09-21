@@ -312,11 +312,10 @@ BUG-259 and BUG-254 (BE-029's root row, on the write path and on the read side)
 and BK-358 (the never-leak clause reached through the shared stream wrapper) were
 of this kind too and have all closed; each is named in the closures above rather
 than counted here. **No
-ordinal is given for them**, and that is a correction rather than a style choice:
-this sentence read "a sixth of this kind" against a list that has stood at five
-and at six within one release, so an ordinal over a list items keep leaving is
-wrong from the next closure onward. The count above is derived from the entries
-that follow it; nothing else here is counted.
+ordinal is given for them**, and that is a rule rather than a style choice: this
+list has stood at five and at six within one release, so an ordinal over a list
+items keep leaving is wrong from the next closure onward. The count above is
+derived from the entries that follow it; nothing else here is counted.
 **Six classes** have left the list on the *empty-listing and NotFound* rows —
 counted as classes, which is the frame this paragraph opens in and not the bullet
 frame the sentence above it uses. `GraphBackend` went first — BUG-248 adjudicated
@@ -644,7 +643,7 @@ compliant the day before.
   code made right by prose inside a review fix pass. Its round 4 caught that and
   suspended the clause instead, which left the spec saying *undecided* while the
   guide `docs-src/guides/observe.md`, rewritten in the same PR, still published
-  the withdrawal as settled. Round 5 found that split. Both edits are reverted;
+  the withdrawal as settled — a split across two artifacts. Both edits are reverted;
   OBS-008 and the guide are back at their pre-BK-359 text, so the divergence is
   intact and undecided rather than half-resolved in two directions.
   **The decision owed** is one of two: either the library should report before
@@ -2255,8 +2254,8 @@ recorded (BK-365); the repo can say whether its own quality promise is
 holding rather than only asserting it (BK-366); two sessions working in
 parallel cannot mint the same backlog ID with every derivation telling both they
 are right (ID-257); and the review loop stops recording itself in the artifacts
-it reviews (BK-378, whose pilot ran as BK-379 and reported which of RFC-0015's
-decisions it still owes).
+it reviews (BK-382, after BK-379's pilot and BK-378's build of RFC-0015's D1
+and D4 left the re-measurement as the last thing it owes).
 **Bounded to those fifteen deliberately** — count derived by enumerating the
 semicolon-separated clauses above, not carried forward. "No artifact asserts what
 no mechanism can check" is the promise and cannot be a closing condition: this section's own
@@ -2944,54 +2943,38 @@ the commit that writes it lands, so cite the generator instead.
   long-lived PR should expect under the current scheme; the item moved to
   `BK-378`.
 
-- [ ] **BK-378 — The `/ship` loop reviews its own record past round 2, and nothing separates the two**
-  spec: — · effort: L · audience: contributor.process
-  Over the 19 deliveries reviewed since the whole-file gate merged, the share of
-  findings sitting on text a fix pass wrote runs **0% in round 1, 46% in
-  round 2, 77% or more from round 3**, the same shape when only findings the
-  fixer confirmed as must-fix are counted, and a quarter of all findings landed
-  on `sdd/traces/` or the two backlog files. Derivation:
-  `python sdd/rfcs/rfc-0015-findings.py` over the PRs its docstring lists, at
-  `2a1bbfe`; bounds in the RFC's Table 2. Traces added since that merge sit at
-  median 7 review rounds against 2 before (`rfc-0015-rounds.py 24d9464`).
-  **The diagnosis** is four structural causes — one file carries both the
-  deliverable and the loop's diary; a fix is an unconstrained authoring act;
-  one agent holds three roles on one tree; reviewers measure while the fixer
-  reasons — argued with evidence in
-  [RFC-0015](rfcs/rfc-0015-ship-two-surfaces.md), which proposes six decisions
-  against them. The RFC is the diagnosis's home; this entry does not restate it.
-  **Feeds BK-366**: the origin tag the RFC's D5 specifies gives each delivery
-  the caught-versus-escaped split that item asks for.
-  **The pilot has run and reported** (BK-379, RFC-0015 § Pilot result). D2,
-  D3's worktree half and D5's posting half are in force in the four skills and
-  are not this item's to build. What the pilot left here:
-  - **D1 and D4**, neither piloted. The measured share of loop-introduced
-    must-fix findings from round 3 on fell from 78% to **53%** over PRs #1021,
-    #1022 and #1023 (`python sdd/rfcs/rfc-0015-findings.py 1021 1022 1023` at
-    `2bd34cc`), which misses the criterion's below-50% bar by three points on a
-    denominator of 19 findings where one finding is five points. The RFC's own
-    reading of that miss is to build these two and re-measure, because 20% of
-    the pilot's findings still sit on the record surface D1 targets.
-  - **Acceptance clause 2** — "the derived trace block draws a finding in at
-    most one round" — has no referent until D4's `ship_report.py` generates the
-    block, and is measured with it.
-  - **D5's stop-rule clause**, unwired in the pilot: its dry run fired zero
-    times under all three readings, so the constants ship unchanged with
-    `ship-report`.
-  - **D6's deferred half** (the whole-file brief excluding the trace's
-    `review:` key, a measuring member re-running `ship-report`). Its
-    repeat-site half is **decided against**: the check fired in two of the
-    three pilot deliveries, which is D6's own reverse condition, so the
-    retirement is withdrawn and `/ship` keeps the check.
-  - **D3's cap lift**, held up so panel composition does not move finding
-    counts between the pilot's figures and the re-measurement.
+- [ ] **BK-382 — RFC-0015 is built but unmeasured: three deliveries decide whether it graduates**
+  spec: — · effort: M · audience: contributor.process
+  The open half of **BK-378**, which shipped D1 and D4 and is recorded in
+  `BACKLOG-DONE.md`. Every decision RFC-0015 proposes is now in force in the
+  skills — D2, D3's worktree half and D5's posting half since #1020, D1 and D4
+  with BK-378 — so the RFC has, for the first time, a state its acceptance
+  criterion can be read against. Nothing has read it yet.
+  **What is owed** is the criterion as § Impact wrote it: three deliveries run
+  under the rules, pooled, then `rfc-0015-findings.py` over them. Graduate if
+  (1) the loop-introduced share of must-fix findings from round 3 on is below
+  50%, (2) the derived trace block draws a finding in at most one round across
+  the three, and (3) the retraction trigger fires at most once. **One delivery is
+  one draw and is not the criterion.** With every decision shipped, any of the
+  three failing sends the RFC back to Draft with the measured figures attached,
+  not to the ADR with a softened threshold — the branch BK-379's miss was
+  explicitly *not* on, and this one is.
+  **Clause 2 is askable for the first time.** It had no referent until
+  `ship_report.py` generated the block it names; it is read from the per-file
+  count the script emits about the trace, against the hand-written block's
+  measured rate of eleven stalenesses across four traces.
+  **Three things stay held until the measurement, not because they are
+  undecided.** D3's cap lift — panel composition must not move finding counts
+  between BK-379's 53% and this sample. D5's stop-rule wiring — its dry run fired
+  zero times under all three readings, so the constants ship unchanged and there
+  is no firing to tune them against. D6's deferred half — the whole-file brief
+  excluding the trace's `review:` key, and a measuring member re-running
+  `ship-report`.
+  **The sample is the next three deliveries**, whichever they are. `BK-380`
+  (Python 3.10's security-fix end, dated 2026-10-04) is next in line and could be
+  the first of them.
   **Exit criteria:** RFC-0015 accepted or rejected with its open questions
-  answered; if accepted, an ADR amending **ADR-0033/0034/0035/0037** — 0035
-  because D3 widens the one-seat trade in its "Every panel carries one
-  measuring member" Decision bullet, the floor unchanged — the skill
-  rewrites and the **three** scripts § Impact names shipped (`ship_report.py`,
-  `check_no_retrospective.py`, `check_backlog_ids_vs_base.py`, whose guards
-  § Testing calls "guards for the three scripts"), and Tables 2 and 4 re-derived
-  over **three** further deliveries run with D1 and D4 shipped, per the RFC's
-  acceptance criterion, which also states that "One delivery is one draw and is
-  not the criterion".
+  answered — 1, 3, 4 and 6 remain; 5 was answered by BK-378 — and, if accepted,
+  an ADR amending **ADR-0033/0034/0035/0037**, 0035 because D3 widens the
+  one-seat trade in its "Every panel carries one measuring member" Decision
+  bullet, the floor unchanged.

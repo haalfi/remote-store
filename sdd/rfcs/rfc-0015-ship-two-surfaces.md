@@ -2,17 +2,20 @@
 
 ## Status
 
-Draft. Tracked as BK-378. Minted as BK-367 and re-homed twice: ID-182's branch
-minted BK-367 in parallel, then ID-018's minted BK-368 and closed it before
-this PR merged. Both are ID-257's scenario, and the second is recorded there.
+Draft. Tracked as **BK-382**; BK-378 built D1 and D4 and closed, and BK-379
+piloted the rest before them. Minted as BK-367 and re-homed twice: ID-182's
+branch minted BK-367 in parallel, then ID-018's minted BK-368 and closed it
+before this PR merged. Both are ID-257's scenario, and the second is recorded
+there.
 BK-379 piloted D2, D3's worktree half with the one-measurer cap left up, D5's
-posting half and D6's repeat-site half before the rest is built; what that
+posting half and D6's repeat-site half before the rest was built; what that
 pilot can and cannot decide is stated with the acceptance criterion
 (§ Impact), and what it measured is § Pilot result. **The pilot missed
 clause 1 by three points and refuted D6's retirement of the repeat-site
-check.** This RFC is Draft because it has never been accepted, and D1 and D4
-are unbuilt; what the criterion prescribes for a miss without those two is to
-build them and re-measure, and it declines to let such a miss bear on status.
+check.** What the criterion prescribes for a miss without D1 and D4 is to build
+them and re-measure, and it declines to let such a miss bear on status; BK-378
+built them, so **every decision here is now in force and none has been measured
+together**. This RFC is Draft because it has never been accepted.
 If accepted it graduates to an ADR amending
 [ADR-0033](../adrs/0033-ship-convergence-driven-review.md),
 [ADR-0034](../adrs/0034-ship-panel-rounds-and-unprimed-exit.md),
@@ -396,8 +399,14 @@ repo keeps of it is derived from the PR once, after the loop ends.
   [Rule 7](../DRIFT-RULES.md#miss-rate): it matches phrases, not the diary
   written in other words, and a retrospective that avoids the phrase set is a
   reviewer's to catch. It sits on the mandatory path per Rule 5 because the
-  alternative is exactly the review-enforced rule that did not hold. At
-  `2a1bbfe` the phrase set hits 14 lines in five files.
+  alternative is exactly the review-enforced rule that did not hold. The extent
+  is whatever `python scripts/check_no_retrospective.py` reports at the head
+  being read; stated as the command rather than a figure because the figure
+  moves with every register entry, and the one pinned here at `2a1bbfe` ("14
+  lines in five files") was already wrong in its file count by the time the
+  check was built (BK-378 measured 14 lines in **four** files at `e109686`).
+  **Built under BK-378**, with the surface widened to include `examples/` as a
+  surface users read.
 
 **Evidence.** Cause A; Table 3's 133 findings on the record; the five stale
 derivation comments; BK-365.
@@ -509,7 +518,7 @@ about what a rationale would have prevented is not, and is not the condition.
   is what the pilot measured. That reason outlived the pilot — § Pilot result
   prescribes a re-measurement with D1 and D4 shipped, and a composition that
   moved in between would be comparable with neither the 78% baseline nor the
-  pilot's 53%. The cap comes down with the graduating ADR, on BK-378's
+  pilot's 53%. The cap comes down with the graduating ADR, on BK-382's
   account.
 - Worktrees are removed at round close, with a `prune` for the base worktree a
   measuring member left nested inside (measured on git 2.43.0: ignored
@@ -888,22 +897,28 @@ apart.
 
 **Dispositions.**
 
-- **D1** — not piloted; stays with BK-378. The clause-1 miss is the RFC's own
-  reason to build it, not evidence against the RFC.
-- **D4** — not piloted; stays with BK-378. Clause 2 keeps no referent until
-  `ship_report.py` exists, and every figure in this section was produced by a
-  hand-run script, which is D4's argument.
+- **D1** — not piloted. The clause-1 miss is the RFC's own reason to build it,
+  not evidence against the RFC. **Built under BK-378**, which also answered
+  Open Question 5 and widened the deliverable surface to `examples/`.
+- **D4** — not piloted. Clause 2 kept no referent until `ship_report.py`
+  existed, and every figure in this section was produced by a hand-run script,
+  which is D4's argument. **Built under BK-378**; clause 2 is askable from the
+  next delivery on.
 - **D5** — the posting half is measured above and stays as written. The
   stop-rule clause was never wired into the loop and the dry run gives no
-  firing to tune its constants against, so it ships with `ship-report` under
-  D4, constants unchanged.
+  firing to tune its constants against, so the constants shipped unchanged
+  alongside `ship-report` and the wiring is still owed (BK-382).
 - **D6** — the repeat-site half is withdrawn above. Its deferred half (the
   whole-file brief excluding the trace's `review:` key, and a measuring member
-  re-running `ship-report`) has nothing to read until D1 and D4 exist, and
-  defers with them.
+  re-running `ship-report`) had nothing to read until D1 and D4 existed; it now
+  has, and is owed under BK-382.
 - **D2, and D3's worktree half** — in force in the four skills since #1020,
   unchanged by this result; D3's cap lift waits for the re-measurement, for the
   reason D3 now states.
+
+**This section reports the pilot and is not amended by the build.** BK-378
+shipped D1 and D4 and BK-382 carries the re-measurement; the RFC stays **Draft**
+until that sample is read against § Impact's three clauses.
 
 ## Open Questions
 
@@ -928,6 +943,13 @@ apart.
    round (§ Pilot result).
 5. Where the mid-loop `ship-report` output lives. A PR comment from the
    orchestrator primes nobody, because reviewers never fetch comments.
+   **Answered under BK-378: nowhere durable.** `--out tmp/ship-report-<PR>.md`
+   writes a scratch copy (`tmp/` is gitignored), the orchestrator quotes the
+   per-file distribution and origin counts into the brief, and reviewers read
+   the brief. The durable copy is the trace's `review:` block, written once at
+   the close. The PR-comment option was declined for the reason this question
+   already gives; a committed mid-loop artifact was declined because it would
+   put a generated file in the tree D3 pins as the certified commit.
 6. Whether the instrument-bound clause in D2 can be checked at all. A test
    that patches a method is recognisable (`monkeypatch`, `patch(`, a fake
    client class); a prose claim that generalises from it is not. The clause

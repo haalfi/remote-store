@@ -429,71 +429,48 @@ are not substitutes.
 
 1. **Areas as areas, not conclusions:** "verify or refute each independently."
 2. **What the previous fix pass changed**, so it gets reviewed.
-3. **What previous rounds have not examined** — computed, not recalled. Two reads
-   give it: the per-file comment distribution, and the changed-file set it is
-   subtracted from.
+3. **What previous rounds have not examined** — computed, not recalled:
 
    ```bash
-   gh api "repos/haalfi/remote-store/pulls/<N>/comments?per_page=100&page=1" --jq '.[] | [(if .in_reply_to_id then "reply" else "finding" end), .path] | @tsv'
-   ```
-   ```bash
-   gh api "repos/haalfi/remote-store/pulls/<N>/files?per_page=100&page=1" --jq '.[].filename'
+   hatch run ship-report <N> --out tmp/ship-report-<N>.md
    ```
 
-   Put the *named untouched files* in the brief, not the adjective "neglected".
-   This costs two calls and the alternative is an impression: on PR #956 the loop
-   ran four rounds with 16 of its 24 findings on one file and 8 of 12 files
-   carrying none, and nobody knew until an ad-hoc query while a brief was being
-   written. The round that query redistributed put three of its four findings on
-   two of those eight files
+   Quote its **Per-file distribution** section into the brief — the *named
+   untouched files*, not the adjective "neglected". The alternative is an
+   impression: on PR #956 the loop ran four rounds with 16 of its 24 findings on
+   one file and 8 of 12 files carrying none, and nobody knew until an ad-hoc
+   query while a brief was being written. The round that query redistributed put
+   three of its four findings on two of those eight files
    ([ADR-0037 § Context](../../../sdd/adrs/0037-whole-file-gate-and-derived-figures.md#context)).
 
-   **Why each part is shaped this way**, since every one fixed a regression a
-   round caught:
+   This replaces a two-call `gh api` recipe that each round ran by hand. Three
+   shaping decisions in it each fixed a measured regression — findings are rows
+   with no `in_reply_to_id`, *both* endpoints are paged, and untouched is the
+   changed-file list minus the **union** across every page, never minus page
+   one's. They now live in `scripts/ship_report.py`'s docstring, beside the code
+   that implements them, which is where a reason belongs once it stops being a
+   rule someone has to remember ([RFC-0015](../../../sdd/rfcs/rfc-0015-ship-two-surfaces.md) D4).
+   The orchestrator no longer re-derives them, and cannot get them subtly wrong.
 
-   **Count the `finding` rows only.** That endpoint returns your own replies
-   alongside findings, so an unfiltered tally reports the surface as more examined
-   than it is. **How much more depends on the loop, not the endpoint**, which is
-   why no ratio is stated: this loop replies to every thread so its replies
-   roughly track its findings — PR #958's round 1 returned 15 rows for 7 findings
-   — while PR #956 closed five rounds with 28 findings and one reply, its replies
-   going in review summaries. Same query, one row of inflation on one PR and a
-   doubling on the other. Filter, and the difference stops mattering.
+   **`tmp/` is gitignored, and nothing durable holds this until the close.**
+   That is RFC-0015 Open Question 5's answer: a PR comment would prime nobody,
+   because reviewers never fetch comments, and the durable copy is the trace's
+   `review:` block written once the loop ends.
 
-   **One row per comment, tagged rather than filtered in the query, and
-   deliberately un-grouped**, so the output length is still the *page* length and
-   [`/rvw-pr`](../rvw-pr/SKILL.md) Step 4's paging discipline applies unchanged —
-   a page returning exactly `per_page` rows means there is another. A `--jq`
-   dropping the replies would break that test, which is why they are tagged.
-   Group only after every page is in hand: a file with comments on two pages is
-   one entry, and the untouched set is the changed-file list minus the **union**
-   of `finding` paths, never minus page 1's.
+   **Running it is the orchestrator's job, done while writing the brief. Put the
+   *result* in the brief; never the command.** It reads PR *comments*, and
+   `/rvw-pr` Step 1 forbids a reviewer from fetching those — that prohibition is
+   the whole mechanism keeping unprimed passes unprimed, so a brief asking a
+   member to run `ship-report` turns that member into one that has read the
+   conversation.
 
-   **Both calls carry `page=1` because both must be walked.** The `files`
-   endpoint paginates on the same terms (measured: at `per_page=10` a 16-file PR
-   returns 10 rows then 6), and it is the **minuend** — a file missing from a
-   truncated changed-file list appears neither touched nor untouched and drops out
-   of the brief entirely. A truncated subtrahend over-reports neglect, which is
-   visible; a truncated minuend under-reports it, which is not. The cursor is in
-   the spelling for the reason `/rvw-pr` Step 4 gives for pinning its own walk: a
-   reader copies the command, not the prose around it.
-
-   **Computing the distribution is the orchestrator's job, done while writing the
-   brief. Put the *result* in the brief; never the query.** It reads PR
-   *comments*, and `/rvw-pr` Step 1 forbids a reviewer from fetching those — that
-   prohibition is the whole mechanism keeping unprimed passes unprimed, so a brief
-   asking a member to derive the distribution turns that member into one that has
-   read the conversation.
-
-   **Verifying the recipe is a different act and a scoped measuring member may do
-   it**, which the stop rule requires whenever this block's measured claims change:
-   it asserts the row count is the page length and that the `files` call pages,
-   and those are behavioural claims like any other. Such a member fetches counts,
-   review ids and paths — never comment bodies — and is never the unprimed one.
-   That is a carve-out `/rvw-pr` Step 1 pins, without which this obligation would
-   have no permission. Both halves were exercised on PR #958, and both members
-   disclosed the collision unprompted, which is how the missing permission was
-   found.
+   **A scoped measuring member may run it to verify it**, and the stop rule
+   requires that whenever the script's measured claims change: it asserts a
+   paging discipline and a CI-verdict reduction, and those are behavioural
+   claims like any other. Such a member reads counts, review ids and paths —
+   never comment bodies — and is never the unprimed one. That is a carve-out
+   `/rvw-pr` Step 1 pins, without which this obligation would have no
+   permission.
 
 4. **Whether the verdict is reached by reading the diff, by reading each changed
    file whole, or by running**, and for a measuring member, what to run and
@@ -706,19 +683,25 @@ neither substitutes for the other.
 ## Step 5: Close
 
 1. Ripple-check audit: [`sdd/CLAUDE-REFERENCE.md` § Detailed checklist](../../../sdd/CLAUDE-REFERENCE.md#detailed-checklist).
-2. CHANGELOG, BACKLOG/BACKLOG-DONE, and the trace, including `review_rounds`,
-   `discovery_followups` and `surprising_ripples`.
-3. Report: rounds run, findings per round with their character, the **final
-   per-file distribution** from requirement 3's query, the fix shape per
-   must-fix finding and the mutation per added test, the class swept per
-   must-fix finding and the sibling sweep per fix — each with what it caught —
-   whether the repeat-site check fired and on what condition, or that it did
-   not, what was filed rather than fixed, any surface the gate never executed, the
-   **final state of the Step 1 subject list** with each entry marked executed /
-   read only / not reached, and **CI's verdict on the final push**. Every figure
+2. CHANGELOG, BACKLOG/BACKLOG-DONE, and the trace — `discovery_followups` and
+   `surprising_ripples` by hand, and the **`review:` block pasted verbatim**
+   from `hatch run ship-report <N>`. Nothing in that block is hand-written or
+   hand-edited, `review_rounds` included
+   ([CLAUDE.md § Trace authoring](../../../CLAUDE.md#trace-authoring)).
+3. Report: run `hatch run ship-report <N>`. Its output **is** the Step 5 report
+   for everything derived from the PR — rounds run, findings per round, the
+   final per-file distribution, the origin tag per finding, the review-driven
+   commits and **CI's verdict on the final push**. Add by hand only what the PR
+   record does not hold: the fix shape per must-fix finding and the mutation per
+   added test, the class swept per must-fix finding and the sibling sweep per
+   fix — each with what it caught — whether the repeat-site check fired and on
+   what condition, or that it did not, what was filed rather than fixed, any
+   surface the gate never executed, and the **final state of the Step 1 subject
+   list** with each entry marked executed / read only / not reached. Every figure
    names its derivation
    ([CLAUDE.md principle 9](../../../CLAUDE.md#principles)); a report about a loop
-   cannot be the one artifact asserting its counts from memory.
+   cannot be the one artifact asserting its counts from memory, which is why the
+   derived half is a script's output rather than a recollection.
 
 Then stop. **`/ship` never merges.** It hands over a PR that is ready to be.
 

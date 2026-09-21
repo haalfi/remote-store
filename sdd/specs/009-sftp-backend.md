@@ -1349,14 +1349,14 @@ reach (SFTP-031) — on a target the operation's own directory guard has not alr
 rejected — `_raise_if_dir` for the promote path, and for `move` the eager
 destination `stat`, which fires before `posix_rename` is attempted at all.
 The two are **not** the same guard and `move` never calls `_raise_if_dir`;
-collapsing them is how an earlier revision of this sentence mis-assigned the
-two-bound cost recorded above. That condition, per operation, is the whole of
-the claim — a strictly larger set than "the server lacks the extension". **No example triggers are named here**, deliberately:
-naming them requires knowing what every guard between `posix_rename` and the
-fallback does, an earlier revision named three of which two were unreachable,
-and the two guards involved (`_raise_if_dir` here, the destination `stat` in
-`move`) are the kind of detail a reader should check in the code rather than
-trust from prose.
+collapsing them mis-assigns the two-bound cost recorded above. That condition,
+per operation, is the whole of the claim — a strictly larger set than "the
+server lacks the extension". **No example triggers are named here**,
+deliberately: naming them requires knowing what every guard between
+`posix_rename` and the fallback does, and a candidate that looks like a trigger
+is usually unreachable once those guards are traced. The two guards involved
+(`_raise_if_dir` here, the destination `stat` in `move`) are the kind of detail
+a reader should check in the code rather than trust from prose.
 
 **The path costs one bound, not two.** The exception the one-bound paragraph
 above records was this one: the displace ran as a `remove` under

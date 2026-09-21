@@ -183,6 +183,18 @@ _BOUNDS: tuple[str, ...] = (
     "moved into `scripts/import_probe.py`, which the action now runs by path; it "
     "is an instance of the bound below instead, and the sentence naming it here "
     "outlived the here-document it described.",
+    "**A gate a _skill_ runs is invisible, and reads as `advisory`.** "
+    "`_WIRING_SOURCES` names `pyproject.toml`, `.github/workflows/` and "
+    "`.pre-commit-config.yaml`; the shared PR validation gates in "
+    "`sdd/CLAUDE-REFERENCE.md`, which `/pr` and `/fix-pr` both run before a push, "
+    "are none of them. **`scripts/check_backlog_ids_vs_base.py` is the live "
+    "instance**: it is mandatory at PR time and its row says `advisory`, because "
+    "its only pyproject home is a bare alias. It is wired that way on purpose — it "
+    "compares against `origin/master` and so needs a fetched base ref, which a "
+    "bundle entry cannot guarantee and CI's checkout does not supply — so the "
+    "under-statement is the price of the wiring rather than a mistake in it. This "
+    "is the sharpest form of the bound below: *Enforcement is derived from wiring, "
+    "not exit codes*, and a home outside the three sources is no wiring at all.",
     "**A composite action under `.github/actions/` is not a wiring source.** "
     "`_WIRING_SOURCES` names `.github/workflows/`, so a `scripts/…py` path invoked "
     "from an action's own `run:` is invisible to *Runs in* however conventionally "

@@ -2491,9 +2491,9 @@ class TestSFTPUnreachableHostCostsOneConnect:
     #:
     #: Derived from ``dir(SFTPBackend)``, **not** ``vars()``: three public
     #: members are inherited from ``Backend`` and a ``vars()`` walk cannot see
-    #: them, which is how ``read_seekable`` — an operation that moved, since it
-    #: delegates to ``read()`` — was missing from an earlier revision of this
-    #: tuple. Of the 29 public names, excluded are: ``close``, ``native_path``,
+    #: them, so a ``vars()``-derived tuple silently omits ``read_seekable`` —
+    #: an operation that moved, since it delegates to ``read()``.
+    #: Of the 29 public names, excluded are: ``close``, ``native_path``,
     #: ``to_key``, ``resolve``, ``close_is_terminal`` (no request issued — path
     #: arithmetic, teardown, or a constant); ``capabilities``, ``CAPABILITIES``,
     #: ``name`` (metadata, not operations); ``glob``, which raises

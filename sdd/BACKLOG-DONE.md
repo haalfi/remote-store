@@ -240,6 +240,69 @@ if evidence changes; these are retired.
 
 ## Unreleased
 
+- [x] **BK-378 — The `/ship` loop reviews its own record past round 2, and nothing separates the two**
+  spec: — · effort: L · audience: contributor.process
+  **Split** per § Completing work: this entry is RFC-0015's **D1 and D4 built**;
+  the re-measurement, the accept/reject and the graduating ADR are **BK-382**.
+  BK-379's pilot missed acceptance clause 1 by three points with D1 and D4
+  unbuilt, and the RFC's § Impact prescribed in advance that such a miss means
+  build them and re-measure. This is that build. RFC-0015 stays **Draft**; a PR
+  that builds two of an RFC's decisions does not accept it.
+  **Three scripts, wired three different ways, and the differences carry the
+  reasoning.** `ship_report.py` derives every figure about a loop from the PR
+  after it closes — findings per submission, the per-file distribution, the
+  origin tag per finding, the review-driven commits, per-pass durations and CI's
+  verdict on the head — and emits both the `/ship` Step 5 report and the trace's
+  `review:` block. It **imports** `sdd/rfcs/rfc-0015-findings.py` rather than
+  restating it (by path: the filename is not a Python identifier), so the round
+  index and origin tags here are the ones RFC-0015's tables are measured with.
+  Verified against a PR whose figures were already known: `ship-report 1024` and
+  `rfc-0015-findings.py 1024` agree on 1 submission, 2 findings, `original 2`,
+  `must-fix 2`, and its derived `review_rounds` of 1 matches the value
+  `bk-379-pilot-report.yml` recorded by hand.
+  `check_no_retrospective.py` gates D1's surface and is in **both** `lint` and
+  `docs-gate`, because that surface spans `CODE_PAT` and `DOCS_PAT` and either
+  gate alone misses most of it. `check_backlog_ids_vs_base.py` is in **neither**,
+  deliberately: it reads `origin/master` and so needs a fetched base ref, which a
+  bundle cannot guarantee, so its home is the shared PR validation gates in
+  `CLAUDE-REFERENCE.md`. That makes `GATE-INVENTORY.md` render it `advisory`,
+  and a new bound in the generator says so — a gate a *skill* runs is a home the
+  inventory cannot see.
+  **The surface was cleaned, and the count was re-derived rather than carried.**
+  `python scripts/check_no_retrospective.py` at `e109686` reported **14 lines in
+  4 files** — `sdd/BACKLOG-DONE.md` ×10, `sdd/BACKLOG.md` ×2,
+  `sdd/specs/009-sftp-backend.md` ×1, `tests/backends/sftp/test_config.py` ×1 —
+  against the RFC's "14 lines in five files", which was pinned at `2a1bbfe` and
+  stale in the file count. Each site kept its durable claim and lost the clause
+  whose subject was an earlier draft of the text. 561 files scan clean.
+  **The check's own first run found its bound.** Reading the same four files by
+  hand turned up a fifteenth retrospective the phrase set cannot reach — *an
+  earlier revision named three of which two were unreachable*, which needs the
+  `of this` the set requires. It was cleaned too, and the miss is now the
+  docstring's stated bound and a test fixture rather than a live example, so the
+  bound cannot quietly become false in either direction.
+  **A ripple the ripple-check table did not anticipate.** Moving `review_rounds`
+  into the `review:` block indents it, and `rfc-0015-rounds.py` read it with a
+  line-start anchor — so every trace authored from here on would have dropped out
+  of RFC-0015 Table 1's population while the older corpus kept it, emptying
+  exactly the "after" side of a before-and-after comparison. The anchor now
+  tolerates leading whitespace (`[ \t]*`, not `\s*`, which crosses newlines under
+  `re.M`); over the 323-trace corpus both spellings match the same 261 traces,
+  and only the new one reads the block.
+  **The schema and the script are a drift gate, not a convention.** `review:` is
+  `additionalProperties: false`, so a field the emitter adds without a schema
+  property fails `check_traces.py`. It earned its keep immediately: the first
+  validation caught an all-digit short SHA (`3153683`) parsing back as an
+  *integer*, and every scalar the block emits now goes through a JSON-quoting
+  helper.
+  **Open Question 5 answered**: the mid-loop `ship-report` output lives in a
+  gitignored `tmp/ship-report-<PR>.md`, a brief quotes it, and the durable copy
+  is the `review:` block at the close. **Still held, deliberately**, and
+  BK-382's: D3's cap lift, D5's stop-rule wiring, D6's deferred half.
+  Guards: 110 tests across the three scripts
+  (`hatch run pytest tests/scripts/test_check_no_retrospective.py
+  tests/scripts/test_check_backlog_ids_vs_base.py tests/scripts/test_ship_report.py`).
+
 - [x] **BUG-281 — `_SQLAlchemyBaseBackend` leans on a pool selection SQLAlchemy 2.1.0rc1 deprecates**
   spec: SQL-BLOB-071, SQL-BLOB-072 · effort: S · audience: user.api, infra.ci
   `_engine_kwargs()` now **states** `poolclass=SingletonThreadPool` for a SQLite
@@ -332,8 +395,10 @@ if evidence changes; these are retired.
   in 67 of 72 fix replies, and the triage heuristic's *unknown* column fell from
   33% to 12%, because a reply that names its shape states its verdict where the
   script reads it.
-  **Left to [BK-378](BACKLOG.md):** D1, D4, clause 2, D5's stop-rule clause,
-  D6's deferred half and D3's cap lift, each with the disposition above.
+  **Left to BK-378:** D1, D4, clause 2, D5's stop-rule clause, D6's deferred
+  half and D3's cap lift, each with the disposition above. BK-378 has since
+  built D1 and D4 (entry above) and split; the rest is
+  [BK-382](BACKLOG.md).
 - [x] **BK-370 — The published conda recipe is a mirror no mechanism watches**
   spec: — · effort: M · audience: user.discoverability.human, infra.ci
   Closed by both halves of the item's first two options: a generator that makes
@@ -1030,8 +1095,7 @@ if evidence changes; these are retired.
   `azure-identity`; `infra/drift-locks/azure.txt` confirmed the resolution, with
   no aiohttp in its 17 packages, counted from the file
   (`git show origin/master:infra/drift-locks/azure.txt`, non-comment lines); the
-  8 this PR adds bring it to the 25 the refreshed lock holds. An earlier version
-  of this sentence said 21, which reconciles with neither.
+  8 this PR adds bring it to the 25 the refreshed lock holds.
   `FEATURES.md` lists `AsyncAzureBackend` under
   install extra `remote-store[azure]` and `docs-src/guides/async.md` tells async
   users to install exactly that, so the extra promised a backend it could not run.
@@ -1459,8 +1523,8 @@ if evidence changes; these are retired.
   back-reference it lacked. SFTP-010 is back in this field because it is where
   the filed item carried it and because the six widened guards are its
   staleness-and-reconnect machinery — **not** because the live-channel change
-  turns on its tier-2 wording, which an earlier revision of this paragraph
-  claimed and the paragraph below refutes. Measured: in that scenario the
+  turns on its tier-2 wording, which the measurement below refutes. Measured: in
+  that scenario the
   transport flag goes `False` and `_sftp` reconnects, which is tier 1; tier 2 is
   the drop that leaves the flag `True` with the channel dead, and it neither
   fires nor is depended on here.
@@ -1941,9 +2005,9 @@ if evidence changes; these are retired.
   deliberately omitted: resolution never reaches it. A refused connect keeps
   paramiko's own text, which names an address and a port a reader can act on —
   the *resolved* address, not the configured hostname, since paramiko builds
-  that message from the addresses it tried. Round 5 caught three copies of this
-  clause claiming it "names host and port"; it names enough, which is the
-  narrower claim, and the gap is why the DNS arm supplies its own.
+  that message from the addresses it tried. It names enough rather than "host
+  and port", which is the narrower claim, and the gap is why the DNS arm
+  supplies its own.
   **Not marked `**Breaking**`, and the migration section is owed anyway.**
   `BackendUnavailable` subclasses `RemoteStoreError`, so no `except` clause
   stops catching; what changes is which branch runs for a caller who lists both,
@@ -2154,10 +2218,10 @@ if evidence changes; these are retired.
   three other routes, so the fallback is keyed on an empty `str(exc)` rather than
   on the timeout type.
   **Shipped:** one `_unavailable` helper through which every `BackendUnavailable`
-  that `_map_exception` *constructs* now passes — not every one it *returns*, as
-  this line read until round 5: the mapping's first arm hands back a
+  that `_map_exception` *constructs* now passes — not every one it *returns*:
+  the mapping's first arm hands back a
   `BackendUnavailable` built elsewhere without re-entering the helper, so the
-  wider word was falsifiable on that arm while the suite stayed green. A stall
+  wider word is falsifiable on that arm while the suite stays green. A stall
   names the fault and the bound
   that fired (`SFTP channel stalled: no data within io_timeout=120.0s`), and
   names no bound under `io_timeout=None`, where the arm is still reachable via a
@@ -2417,8 +2481,8 @@ if evidence changes; these are retired.
   space measured on two backends — refuted four rounds running until the remedy
   stopped being "narrow it again" and became "delete it and name what was
   measured".
-  **The release window took three rounds to get right, and the two failed
-  attempts are the record worth keeping.** Round 5 found that Phase 1 condenses
+  **The release window took three attempts to get right, and the two rejected
+  ones are the record worth keeping.** Phase 1 condenses
   `[Unreleased]` *in place* while Phase 2 renames the heading, so between them
   the released shape lives under `[Unreleased]` — and there this gate reported
   every condensed line as a stray and every user-facing completed item as
@@ -2495,9 +2559,9 @@ if evidence changes; these are retired.
   renormalisation. The count was **five** on the first push; the S3 subsection
   is round 1's.
   **The softer half's candidate set was re-derived, not inherited — and the
-  item's three were six.** Round 1 caught the first draft taking BUG-247,
-  BUG-246 and BUG-243 verbatim from the item after having just re-derived the
-  marker count, which is the same drift caught the same way. Derivation:
+  item's three were six.** Taking BUG-247, BUG-246 and BUG-243 verbatim from the
+  item, having just re-derived the marker count, would have been the same drift
+  in the same place. Derivation:
   parsing `[Unreleased]` for `- <ID>: ` lines returns **19** entries, **4**
   carrying `**Breaking**`; classifying the remaining 15 against Phase 1's test —
   a behaviour change a caller must act on — yields **6**. The item named three:
@@ -2511,7 +2575,7 @@ if evidence changes; these are retired.
     already documenting without saying so: the root-write refusal and the
     `GraphBackend(base_path=".")` renormalisation, a stored configuration value
     whose meaning changed.
-  - **BUG-249** and **BUG-242**, which nothing in this PR covered until round 1:
+  - **BUG-249** and **BUG-242**, which the item did not name either:
     a raw `botocore.ClientError` from three `S3Boto3Backend` listings becoming a
     `RemoteStoreError`, and a 403 read as `NotFound` on `S3Backend` /
     `S3PyArrowBackend` becoming `PermissionDenied` — including
@@ -2628,8 +2692,8 @@ if evidence changes; these are retired.
   **six** new subsections are therefore written by what a caller observes, and
   per-entry accountability lives on the `sdd/` side — here and in the trace.
   The count is load-bearing rather than decorative here, since it names which
-  sections the constraint is claimed over; it said five until round 2, having
-  been written against the five-subsection draft.
+  sections the constraint is claimed over, and it is derived from the
+  subsections rather than carried from the draft that proposed them.
   Same file and same window as **ID-252**, which lints the `[Unreleased]`
   section's own integrity and never reads `migration.md`. That item has since
   closed; it and this gate now run side by side in `lint` and `docs-gate`, and
@@ -2733,16 +2797,17 @@ if evidence changes; these are retired.
   written — a checklist a reader trusts and that is one entry short is worse than
   no checklist, so it was replaced by a derivation, as the census had been one
   round earlier.
-  **Round 5 found seven more, again all in round 4's fixes**, and two of them
-  are the ones worth carrying forward. The first: round 4 had "corrected" the
+  **Seven more followed, again all in the previous pass's fixes**, and two of
+  them are the ones worth carrying forward. The first: a fix pass had
+  "corrected" the
   `io_timeout=0` rationale into a claim that `settimeout(0)` fails every
   operation "since it is a property of the channel and not of a direction",
   which is false. Measured against paramiko rather than argued, because the two
   passes disagreed — `BufferedPipe.read` and `Channel._wait_for_send_window`
   each raise only when the operation would have to block, so `settimeout(0)` is
   non-blocking mode and a send into an open window succeeds. The narrow claim in
-  the source comment, which round 4 had corrected *away from*, was the better of
-  the two. All four sites now state the reachable fact: every SFTP request waits
+  the source comment, which that pass had corrected *away from*, was the better
+  of the two. All four sites now state the reachable fact: every SFTP request waits
   on a reply, so every operation fails at once.
   The second: **the repeat-site check fired, one round later than it should
   have.** Two claim classes were refuted in rounds 3, 4 and 5 — an enumeration
@@ -3579,9 +3644,9 @@ if evidence changes; these are retired.
   round 1 grew the Reader lens by two paragraphs, and the rebase re-derivation
   that followed re-ran the corpus figures and not this one, so a fix for a stale
   derivation left a stale derivation two lines from where it explains the hazard.
-  Round 2 caught it structurally rather than by measuring — from the commit that
+  It was caught structurally rather than by measuring — from the commit that
   changed the file and a hand count calibrated against `/rvw-pr`'s unaffected
-  figure — and asked for a re-run rather than proposing a value.
+  figure — and the remedy asked for was a re-run rather than a proposed value.
   **The re-run answered 6,818 and that was wrong too, for a fourth reason.** It
   measured the file as it stood *before* the round-2 edit, and the same commit
   then rewrote the Reader lens and took it to **6,916** — the value now. Measured

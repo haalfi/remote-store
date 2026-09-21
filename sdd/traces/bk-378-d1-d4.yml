@@ -1,0 +1,213 @@
+id: BK-378
+title: "Build RFC-0015's D1 and D4: two surfaces, and every loop figure derived by one script"
+trigger: >-
+  BK-379's pilot reported (PR #1024) and missed RFC-0015 acceptance clause 1 by
+  three points — 53% against a below-50% bar, on a denominator of 19 where one
+  finding is five points. The RFC's § Impact wrote down before the pilot ran
+  that a clause-1 miss with D1 and D4 unbuilt prescribes building them and
+  re-measuring rather than rejecting, because 20% of the sample's findings still
+  sit on the record surface D1 targets. So the next slice is the build: three
+  scripts, D1's record move, and the one-time cleanup of the deliverable
+  surface. The user chose to split BK-378 at this boundary, to answer the RFC's
+  Open Question 5 in this PR, and to widen D1's surface to include `examples/`.
+source_items:
+  - BK-378
+audience:
+  - contributor.process
+discovery_followups:
+  - BK-382
+co_shipped_items:
+  - BK-382
+expected_ripples:
+  - pyproject.toml
+  - sdd/GATE-INVENTORY.md
+  - sdd/BACKLOG.md
+  - sdd/BACKLOG-DONE.md
+  - sdd/backlogid.json
+  - CLAUDE.md
+  - .claude/skills/ship/SKILL.md
+surprising_ripples:
+  # The ripple-check table has a row for "New or changed cross-artifact check or
+  # drift report", which anticipated the three scripts. It has no row for
+  # "a trace field moves", and these two are what that would have caught.
+  - sdd/rfcs/rfc-0015-rounds.py
+  - scripts/gen_gate_inventory.py
+phases:
+  - id: orient
+    name: Orient
+    steps:
+      - file: sdd/BACKLOG.md
+        section: "BK-378, the five-bullet post-pilot list"
+        read_type: gate
+        extract: >-
+          The scope boundary. D1 and D4 unpiloted; clause 2 has no referent
+          until D4 generates the block; D5's stop-rule constants ship unchanged;
+          D6's deferred half waits on D1 and D4; D3's cap lift held so panel
+          composition does not move between the pilot's figures and the
+          re-measurement
+        outcome: ok
+      - file: sdd/rfcs/rfc-0015-ship-two-surfaces.md
+        section: "D1 (§ 355), D4 (§ 531), § Impact, § Pilot result, § Open Questions, § References"
+        read_type: gate
+        extract: >-
+          D1's surface and phrase set, and its boundary — text about the repo or
+          the work is content however historical; text about an earlier version
+          of the artifact it sits in is not. D4's script contract and the
+          backlog ID-set gate. § References carries the phrase set verbatim and
+          the glob the 14-line figure was derived over
+        outcome: ok
+      - file: sdd/DRIFT-RULES.md
+        section: "Rules 2, 5 and 7"
+        read_type: gate
+        extract: >-
+          Localize (name file and line), prefer the mandatory path and state why
+          when a check is deliberately advisory, and declare the subject in a
+          machine-readable Drift-gate:: block with the bound stated
+        outcome: ok
+      - file: sdd/rfcs/rfc-0015-findings.py
+        section: "(docstring, origin, triage, _gh)"
+        read_type: reference
+        extract: >-
+          The classifier ship_report.py must reuse: findings are comments with
+          no in_reply_to_id, rounds are review submissions sorted by
+          submitted_at, origin is a blame at the head the reviewer saw against
+          the first review's submission time. Verified it imports cleanly with
+          no side effects — main() is behind a __main__ guard
+        outcome: ok
+      - file: sdd/traces/bk-379-pilot-report.yml
+        section: "(full)"
+        read_type: gate
+        extract: >-
+          What the pilot met, so it was not rediscovered. Its own
+          `review_rounds: 1` later became the independent check on
+          ship_report.py's derived value
+        outcome: ok
+      - file: sdd/BACKLOG.md
+        section: "How this file works / Completing work"
+        read_type: gate
+        extract: >-
+          Partially done → split: the done part goes to BACKLOG-DONE under its
+          original ID, a new ID opens here for the rest, both link. Plus the
+          unbounded, reviewer-enforced ID sweep
+        outcome: ok
+  - id: design
+    name: Design
+    steps:
+      - file: scripts/gen_python_support.py
+        section: "Drift-gate:: block; the sibling import"
+        read_type: reference
+        extract: >-
+          The declaration shape, and `sys.path.insert(0, parent)` then a plain
+          import — the pattern check_backlog_ids_vs_base.py uses to reuse
+          gen_backlogid.py's header grammar
+        outcome: ok
+      - file: scripts/gen_gate_inventory.py
+        section: "(docstring), _BOUNDS, _WIRING_SOURCES"
+        read_type: gate
+        extract: >-
+          Three kinds — pair, rule, report — and that `report` exists precisely
+          so a mechanism which measures does not render under a column promising
+          an assertion. _WIRING_SOURCES is pyproject, workflows and pre-commit,
+          which is what later made the skill-run gate read `advisory`
+        outcome: ok
+      - file: tests/scripts/test_check_changelog_unreleased.py
+        section: "_load(), the synthetic-input helpers"
+        read_type: reference
+        extract: >-
+          The house guard pattern: importlib.util.spec_from_file_location
+          against the script path, tmp_path-built inputs, functions called
+          directly rather than through subprocess
+        outcome: ok
+      - file: sdd/traces/_schema.yml
+        section: "review_rounds; additionalProperties: false; examples"
+        read_type: gate
+        extract: >-
+          The clause D1 replaces, and that check_traces.py validates the
+          schema's own `examples` block — so the example had to move with the
+          clause, not after it
+        outcome: ok
+  - id: build
+    name: Build
+    steps:
+      - file: scripts/check_no_retrospective.py
+        section: "(new)"
+        read_type: verify
+        extract: >-
+          Written first and run before any cleanup, per CLAUDE.md principle 6:
+          red on 14 lines in 4 files at `e109686`, matching the figure derived
+          while planning. Green at 561 files scanned after the cleanup
+        outcome: ok
+      - file: sdd/specs/009-sftp-backend.md
+        section: "the posix_rename fallback paragraph"
+        read_type: verify
+        extract: >-
+          Reading the flagged files by hand found a fifteenth retrospective the
+          phrase set cannot reach — "an earlier revision named three of which
+          two were unreachable", which needs the `of this` the set requires.
+          Cleaned, and the shape became the docstring's stated bound plus a test
+          fixture rather than a live example that this change would falsify
+        outcome: ok
+      - file: scripts/ship_report.py
+        section: "ci_verdict, _gh_wrapped"
+        read_type: verify
+        extract: >-
+          `fnd._gh` pages array-returning endpoints, but
+          `commits/<sha>/check-runs` answers `{total_count, check_runs}`, so
+          reusing it extended the list with the object's *keys* and raised
+          TypeError on the first live run. Needed a second reader for the
+          wrapped shape. Measured on `e109686`: 39 runs, 15 skipped, names
+          repeating — which is why the verdict reduces per name and reports
+          pending separately from green
+        outcome: misleading
+      - file: sdd/traces/_schema.yml
+        section: "review: (new key)"
+        read_type: verify
+        extract: >-
+          The schema/script pair earned its keep on the first validation:
+          `sha: 3153683` unquoted parses back as an *integer*, so check_traces
+          failed. Every scalar now goes through a JSON-quoting helper — `%r`
+          would not have fixed it, since YAML single quotes do not process the
+          backslash escapes Python's repr emits
+        outcome: ok
+      - file: sdd/rfcs/rfc-0015-rounds.py
+        section: "RX"
+        read_type: verify
+        extract: >-
+          Not anticipated by the ripple-check table. Moving review_rounds into
+          the review: block indents it, and `^review_rounds:` would have dropped
+          every trace authored from here on out of Table 1's population while
+          keeping the older corpus — emptying the "after" side of a
+          before-and-after comparison. Anchor widened to `[ \t]*`, not `\s*`,
+          which crosses newlines under re.M. Over 323 traces both spellings
+          match the same 261; only the new one reads the block
+        outcome: ok
+  - id: verify
+    name: Verify
+    steps:
+      - file: scripts/check_backlog_ids_vs_base.py
+        section: "(run against this branch)"
+        read_type: verify
+        extract: >-
+          Reported POACHED on BK-378 before the work was committed — correctly,
+          since the arbitrator is the branch's commit subjects and none existed
+          yet. Clean once the commit named the item, which is the gate working
+          on live data rather than on a fixture
+        outcome: ok
+      - file: sdd/rfcs/rfc-0015-findings.py
+        section: "(run on PR #1024)"
+        read_type: verify
+        extract: >-
+          Cross-check that the reuse is real: `ship-report 1024` and
+          `rfc-0015-findings.py 1024` agree on 1 submission, 2 findings,
+          original 2, must-fix 2; and the derived review_rounds of 1 matches
+          what bk-379-pilot-report.yml recorded by hand
+        outcome: ok
+      - file: sdd/CLAUDE-REFERENCE.md
+        section: "PR validation gates; Pre-work index"
+        read_type: verify
+        extract: >-
+          The shared gates section is the home both /pr and /fix-pr cite by
+          link, so wiring check_backlog_ids_vs_base there discharged both
+          skills without editing either. Mechanical gate for this diff is
+          `hatch run all` — it touches scripts/ and tests/
+        outcome: ok

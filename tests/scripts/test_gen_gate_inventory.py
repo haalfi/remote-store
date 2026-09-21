@@ -652,7 +652,7 @@ class TestRendering:
         every gate green, and only a whole-file reviewer noticed. This is the same
         pinned-baseline shape `check_formal_trace.py` uses for its known gaps.
         """
-        assert len(_mod._BOUNDS) == 14
+        assert len(_mod._BOUNDS) == 15
         assert len(set(_mod._BOUNDS)) == len(_mod._BOUNDS), "a duplicated bound renders twice"
 
 
