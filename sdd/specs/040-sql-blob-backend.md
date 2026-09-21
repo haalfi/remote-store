@@ -362,16 +362,29 @@ trailing slash prevents `"data"` from matching `"dataset/file.txt"`.
 
 ### SQL-BLOB-071: Connection Pooling
 
-**Invariant:** Uses SQLAlchemy's default connection pool, with one named
-exception: a SQLite URL carrying `mode=memory` in its query string is created
-with `poolclass=QueuePool` and `connect_args={"check_same_thread": False}`.
-SQLAlchemy selected `SingletonThreadPool` for that spelling by inference and
-deprecates the inference in 2.1, so the pool is stated rather than inferred.
-`check_same_thread=False` is part of the same decision, not a separate one: a
-pooled connection is handed to whichever thread checks it out, and pysqlite
-refuses that by default, so `QueuePool` without it would stop the URL working
-across threads. No other URL is configured. Users can tune any of it via engine
-kwargs when passing a pre-built engine.
+**Invariant:** Uses SQLAlchemy's default connection pool, except for a SQLite
+URL carrying `mode=memory` in its query string, whose pool is **stated rather
+than inferred**. SQLAlchemy selected `SingletonThreadPool` for that spelling by
+inference and deprecates the inference in 2.1; naming the pool is what retires
+the inference, whichever class is named, so the class follows the URL:
+
+| URL | `poolclass` | `connect_args` |
+|---|---|---|
+| `mode=memory` **with** `cache=shared` | `QueuePool` | `{"check_same_thread": False}` |
+| `mode=memory` **without** `cache=shared` | `SingletonThreadPool` | — |
+
+`cache=shared` is the discriminator, not `mode=memory`: it names one
+process-global database every connection attaches to, so `QueuePool` is correct
+there and `check_same_thread=False` belongs to the same decision — a pooled
+connection goes to whichever thread checks it out, and pysqlite refuses that by
+default. Without `cache=shared` each *connection* gets a private database, so
+`QueuePool` would hand a second concurrent checkout an empty one; the per-thread
+pool is kept for that reason and not because the inference was right.
+
+`sqlite:///:memory:` and the bare `sqlite://` are not configured at all — their
+pool is inferred from the database name rather than a query string, which is not
+deprecated. Users can tune any of it via engine kwargs when passing a pre-built
+engine.
 
 ### SQL-BLOB-072: Concurrent-Use Posture { #sql-blob-072 }
 
@@ -392,13 +405,28 @@ anonymous database — hands each thread its *own* in-memory database, so a
 shared instance is effectively `single_connection`: confine it to one thread,
 or give each thread its own backend.
 
-**A per-thread pool is not by itself isolating.** What isolates is the database
-being anonymous, so that each connection opens a fresh one. A URL naming a
-shared cache (`mode=memory&cache=shared`) opens one process-global database
-that every connection attaches to, whatever the pool, so threads sharing such
-an instance see each other's writes. Those URLs take `QueuePool` per
-SQL-BLOB-071 and are `thread_safe`, as are `QueuePool`-backed engines generally
-(PostgreSQL, MySQL, file-backed SQLite).
+**A per-thread pool is not by itself isolating, and `QueuePool` is not by itself
+`thread_safe`.** Both follow from one fact: what isolates is the database being
+**anonymous**, so that each connection opens a fresh one. The pool decides how
+many connections there are; the URL decides how many databases they reach. The
+posture is the pair, and for in-memory SQLite it is one of three:
+
+| Database the URL names | Pool | Posture |
+|---|---|---|
+| Anonymous (`:memory:`, `sqlite://`) | per-thread | `single_connection` — one database per thread |
+| Anonymous (`file::memory:?uri=true`, `mode=memory` without `cache=shared`) | pooled | **not safe to share** — one database per *connection* |
+| Shared cache (`mode=memory&cache=shared`) | `QueuePool` | `thread_safe` — one process-global database |
+
+The middle row is the one no pool class reveals: an anonymous database on a
+pooled engine gives each checkout its own store, so a thread's own earlier write
+can vanish when it is handed a different connection. SQL-BLOB-071 keeps
+`mode=memory` off that row by naming the per-thread pool for it; it does not
+reach `file::memory:?uri=true`, whose `QueuePool` is SQLAlchemy's own default —
+confine such an instance to one connection, or name a shared cache.
+
+`QueuePool`-backed engines over a *durable* database (PostgreSQL, MySQL,
+file-backed SQLite) are `thread_safe` as stated above: there the pool is the
+only question, because every connection reaches the same database.
 
 **See also:** [003-backend-adapter-contract.md](003-backend-adapter-contract.md)
 (BE-028).

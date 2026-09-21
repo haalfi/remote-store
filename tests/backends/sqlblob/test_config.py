@@ -869,25 +869,55 @@ class TestMtimeOnlySchema:
 
 
 class TestInMemoryPoolSelection:
-    """Which pool each in-memory SQLite spelling gets, and what that means per thread.
+    """Which pool each in-memory SQLite spelling gets, and which database it reaches.
 
-    SQL-BLOB-072's posture follows the engine's pool class, so the pool a URL
-    resolves to is contract rather than implementation detail. Two spellings
-    behave differently and that difference is the whole subject here:
-    ``sqlite:///:memory:`` gives each connection its *own* database, while a
-    named ``mode=memory&cache=shared`` URL names one process-global database
-    that every connection attaches to.
+    SQL-BLOB-072's posture is the pool class *and* the database the URL names,
+    so both are contract rather than implementation detail. **The discriminator
+    is ``cache=shared``, not ``mode=memory``**: an in-memory database is private
+    to its connection unless the URL names a shared cache, and only then does a
+    pooled engine reach one database from every connection.
 
-    SQLAlchemy inferred ``SingletonThreadPool`` for the shared-cache form from
-    the ``mode=memory`` query string, and 2.1 deprecates that inference in
-    favour of ``QueuePool``. Taking ``QueuePool`` now requires
-    ``check_same_thread=False`` alongside it: the pool hands one connection to
-    every thread and pysqlite rejects that by default. Without the connect-arg
-    the spelling keeps working until SQLAlchemy moves it, then starts raising
-    ``ProgrammingError`` off-thread.
+    SQLAlchemy inferred ``SingletonThreadPool`` from the ``mode=memory`` query
+    string and 2.1 deprecates that inference. Naming the pool is what retires
+    it, whichever class is named, so the two ``mode=memory`` spellings get
+    different classes for the same reason rather than the same class for
+    convenience:
+
+    - ``cache=shared`` takes ``QueuePool``, and ``check_same_thread=False``
+      belongs to that choice — the pool hands one connection to whichever thread
+      checks it out and pysqlite rejects that by default.
+    - Without ``cache=shared`` the per-thread pool is kept, because
+      ``QueuePool`` would give a second concurrent checkout a second, empty
+      database.
     """
 
     SHARED = "sqlite:///file:pooltest?mode=memory&cache=shared&uri=true"
+    ANONYMOUS = "sqlite:///file:pooltest2?mode=memory&uri=true"
+
+    @staticmethod
+    def _second_checkout_sees(backend: SQLBlobBackend) -> str:
+        """What a concurrently-held second connection observes of the first's write.
+
+        Database identity, not connection aliasing: the two checkouts are held
+        at once, so a pool that opens a second connection must open a second
+        database unless the URL names a shared one. ``sees 'one'`` therefore
+        means one database, and the error means two.
+        """
+        engine = backend.unwrap(sa.Engine)
+        first = engine.connect()
+        try:
+            first.execute(sa.text("CREATE TABLE probe (v TEXT)"))
+            first.execute(sa.text("INSERT INTO probe VALUES ('one')"))
+            first.commit()
+            second = engine.connect()
+            try:
+                return repr(second.execute(sa.text("SELECT v FROM probe")).scalar())
+            except Exception as exc:  # noqa: BLE001 — the type is the assertion
+                return type(exc).__name__
+            finally:
+                second.close()
+        finally:
+            first.close()
 
     @staticmethod
     def _read_in_thread(backend: SQLBlobBackend, key: str) -> object:
@@ -919,12 +949,56 @@ class TestInMemoryPoolSelection:
             "sqlite://",
             "sqlite:///file::memory:?uri=true",
             self.SHARED,
+            self.ANONYMOUS,
         ):
             with warnings.catch_warnings(record=True) as caught:
                 warnings.simplefilter("always")
                 backend = SQLBlobBackend(url=url)
             backend.close()
             assert [str(w.message) for w in caught] == [], f"{url} warned on construction"
+
+    @pytest.mark.spec("SQL-BLOB-071")
+    @pytest.mark.spec("SQL-BLOB-072")
+    def test_an_anonymous_mode_memory_url_keeps_one_database_per_thread(self) -> None:
+        """``mode=memory`` without ``cache=shared`` is private per connection, not shared.
+
+        ``cache=shared`` is what makes an in-memory database process-global;
+        ``mode=memory`` alone gives each *connection* its own. So this spelling
+        must keep a per-thread pool, where one thread holds one connection and
+        therefore one database — the grain SQL-BLOB-072's carve-out describes.
+
+        Putting it on ``QueuePool`` instead would hand a second concurrent
+        checkout a second, empty database, turning a deterministic per-thread
+        store into one where a thread's own earlier write can vanish. The pool
+        is still named rather than inferred, which is what silences the
+        deprecation; only the class differs from the shared-cache case.
+        """
+        backend = SQLBlobBackend(url=self.ANONYMOUS)
+        try:
+            assert isinstance(backend.unwrap(sa.Engine).pool, sa.pool.SingletonThreadPool)
+            assert self._second_checkout_sees(backend) == "'one'"
+        finally:
+            backend.close()
+
+    @pytest.mark.spec("SQL-BLOB-071")
+    def test_an_explicit_private_cache_is_treated_as_anonymous(self) -> None:
+        """``cache=shared`` is the discriminator, so any other value is anonymous.
+
+        Pins the predicate against the reading that it tests for the *presence*
+        of a `cache` key. ``cache=private`` is the spelling that separates the
+        two: it is as private as omitting `cache` entirely, so it must take the
+        per-thread pool, and it warns under inference exactly like the others —
+        measured, so naming the pool is what silences it here too.
+        """
+        with warnings.catch_warnings(record=True) as caught:
+            warnings.simplefilter("always")
+            backend = SQLBlobBackend(url="sqlite:///file:privcache?mode=memory&cache=private&uri=true")
+        try:
+            assert [str(w.message) for w in caught] == []
+            assert isinstance(backend.unwrap(sa.Engine).pool, sa.pool.SingletonThreadPool)
+            assert self._second_checkout_sees(backend) == "'one'"
+        finally:
+            backend.close()
 
     @pytest.mark.spec("SQL-BLOB-071")
     @pytest.mark.spec("SQL-BLOB-072")
@@ -941,6 +1015,9 @@ class TestInMemoryPoolSelection:
         backend = SQLBlobBackend(url=self.SHARED)
         try:
             assert isinstance(backend.unwrap(sa.Engine).pool, sa.pool.QueuePool)
+            # The counterpart of the anonymous case: a shared cache is named, so
+            # a second concurrent checkout attaches to the same database.
+            assert self._second_checkout_sees(backend) == "'one'"
             backend.write("shared.txt", b"payload")
             assert self._read_in_thread(backend, "shared.txt") == b"payload"
         finally:
@@ -959,7 +1036,10 @@ class TestInMemoryPoolSelection:
         ``:memory:`` and the bare URL keep the per-thread pool SQLAlchemy infers
         from the database name, which is the inference SQL-BLOB-072's carve-out
         is about and which 2.1 does not deprecate. The anonymous URI form
-        already resolves to ``QueuePool`` on its own.
+        already resolves to ``QueuePool`` on its own — asserted here as
+        *unchanged*, not as endorsed: it is an anonymous database on a pooled
+        engine, the row SQL-BLOB-072 marks not safe to share, and nothing in
+        this fix reaches it.
 
         The roundtrip is what keeps the pool assertion honest — an engine can
         carry the right pool class and still be unusable, and these three are

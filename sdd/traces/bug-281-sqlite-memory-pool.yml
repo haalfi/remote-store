@@ -33,9 +33,20 @@ surprising_ripples:
   # § Completing work describes.
   - scripts/drift_report.py
   - tests/scripts/test_drift_report.py
-# review_rounds is counted over `git log --oneline origin/master..HEAD` for this
-# branch, including the commit carrying this line. Filled post-merge.
-review_rounds: 0
+  # Round 1 of review found both. They restate the clause 040 corrects, and the
+  # "Spec section" row points at tests and the backlog, not at a sibling spec
+  # nor at the docs page rendering the same posture. 092 was read during the
+  # work and recorded as a pure deferral needing no edit; it is not — it
+  # restates the formulation verbatim, which is how it kept asserting that
+  # QueuePool implies thread_safe after that stopped being true. The read that
+  # got it wrong is tagged `misleading` in the implement phase below.
+  - sdd/specs/041-sql-query-backend.md
+  - docs-src/explanation/concurrency.md
+# `git log --oneline origin/master..HEAD` minus the implementation commit,
+# counted including the commit carrying this line. At the time of writing that
+# query returns 63ff4d7 alone (the implementation, not review-driven); the
+# `fix:` commit this line ships in is round 1, from PR #1025's four findings.
+review_rounds: 1
 phases:
   - id: orient
     name: Orient on what actually holds the issue open
@@ -124,8 +135,57 @@ phases:
       - file: sdd/specs/041-sql-query-backend.md
         section: "SQL-QUERY-092"
         read_type: verify
-        extract: "Defers to SQL-BLOB-072 and names only :memory:, so the correction reaches it without an edit"
+        extract: >-
+          Read as deferring to SQL-BLOB-072 and naming only :memory:, so the
+          correction was recorded as reaching it without an edit. Wrong, and
+          caught in review: the clause opens "as for SQL-BLOB-072" and then
+          restates the formulation verbatim, including the closing "QueuePool-
+          backed engines are thread_safe" that 040 had just stopped asserting.
+          The deferring sentence is what made the restatement look like a link.
+          Tagged misleading against the artifact, but the miss is the reader's:
+          the section was there to be read whole and the first clause was taken
+          for the section.
+        outcome: misleading
+  - id: fix
+    name: Round 1 — the predicate was one condition too wide
+    steps:
+      - file: src/remote_store/backends/_sqlalchemy.py
+        section: "_engine_kwargs"
+        read_type: gate
+        extract: >-
+          The review's thread: the predicate keyed on `mode=memory`, but every
+          measurement, test and spec sentence behind it was taken on
+          `mode=memory&cache=shared`. Re-measured before accepting, and it is a
+          regression rather than a posture gap — on 2.1.0rc2 a write on one
+          connection read from a second held concurrently went from `'one'`
+          under the inferred per-thread pool to `OperationalError` under the
+          QueuePool this PR named. `cache=shared` is what makes an in-memory
+          database process-global; `mode=memory` alone gives each connection a
+          private one, so the fix splits on `cache` and keeps the per-thread
+          pool for the anonymous form.
         outcome: ok
+      - file: src/remote_store/backends/_sqlalchemy.py
+        section: "_engine_kwargs (docstring)"
+        read_type: verify
+        extract: >-
+          The premise the first version got wrong, now stated: naming the pool
+          is what retires the deprecated inference, whichever class is named.
+          Measured — `poolclass=SingletonThreadPool` gives `warns=0` and leaves
+          the second checkout seeing `'one'`. So the deprecation never forced
+          QueuePool on the anonymous spelling, and the original docstring's
+          safety argument was about connection aliasing where the question was
+          database identity.
+        outcome: ok
+      - file: docs-src/explanation/concurrency.md
+        section: "footnote 3"
+        read_type: verify
+        extract: >-
+          The user-facing copy, rewritten rather than synced: it attributed the
+          isolation to SQLAlchemy's pool, which the correction removes, and it
+          is read by people who will not open a spec. Says which URL to spell
+          for a shared in-memory store and which to avoid sharing.
+        outcome: ok
+
   - id: verify
     name: Ripple-check and close
     steps:

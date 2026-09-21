@@ -25,7 +25,7 @@ No backend offers multi-operation transactionality — atomicity is per operatio
 
 ² One Graph instance is safe for concurrent coroutines on a **single** event loop, and never across loops — use one instance per loop. Driven from synchronous code through the async→sync bridge it is also safe for concurrent threads (unlike SFTP); see [Bridge asymmetry](#bridge-asymmetry) below.
 
-³ On a pooled RDBMS engine (PostgreSQL, MySQL) SQLBlob and SQLQuery are thread-safe. The `sqlite:///:memory:` configuration is the exception: SQLAlchemy gives each thread its own isolated in-memory database, so a shared instance behaves as single-connection — use one instance per thread.
+³ On a pooled engine over a durable database (PostgreSQL, MySQL, file-backed SQLite) SQLBlob and SQLQuery are thread-safe. **In-memory SQLite is the exception, and what decides it is the URL, not the pool:** an in-memory database is private unless the URL names a shared cache, so with `sqlite:///:memory:` (or `sqlite://`) each thread gets its own database and a shared instance behaves as single-connection — use one instance per thread. Spell the URL `file:name?mode=memory&cache=shared&uri=true` and every connection attaches to one database, which is thread-safe. Avoid sharing an instance built on an anonymous URI form such as `file::memory:?uri=true`: there each *connection* gets its own database, so even one thread can lose an earlier write.
 
 ### Bridge asymmetry
 

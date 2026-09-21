@@ -64,21 +64,27 @@ def _engine_kwargs(url: str) -> dict[str, Any]:
     """Name the pool for SQLite URLs whose pool SQLAlchemy would otherwise infer.
 
     A ``mode=memory`` query string made SQLAlchemy select ``SingletonThreadPool``,
-    an inference SQLAlchemy 2.1 deprecates in favour of ``QueuePool``. Naming
-    ``QueuePool`` here adopts that destination now, so the warning never reaches
-    a caller running warnings as errors and the move does not change behaviour
-    under us later.
+    an inference SQLAlchemy 2.1 deprecates. **Naming the pool is what silences
+    it**, whichever class is named, so the class is free to be the right one for
+    the URL rather than the one the deprecation happens to suggest.
 
-    ``check_same_thread=False`` travels with it and is not optional. A pooled
-    connection is handed to whichever thread checks it out, and pysqlite refuses
-    a connection used off its creating thread by default -- so ``QueuePool``
-    alone would turn a URL that works across threads today into one that raises.
-    It is safe here because the pool serialises checkout: one thread holds a
-    given connection at a time.
+    Which is right turns on ``cache=shared``, not on ``mode=memory``:
 
-    Only that spelling is touched. ``sqlite:///:memory:`` keeps the per-thread
-    pool its own inference selects, and with it the isolation that gives each
-    thread its own in-memory database.
+    - **With** it, the URL names one process-global database that every
+      connection attaches to, so ``QueuePool`` is correct and the backend is
+      genuinely usable from several threads. ``check_same_thread=False`` is part
+      of that choice, not a separate one: a pooled connection goes to whichever
+      thread checks it out, and pysqlite refuses a connection used off its
+      creating thread by default. The pool serialises checkout, so one thread
+      holds a given connection at a time.
+    - **Without** it, each *connection* gets its own private database.
+      ``QueuePool`` would hand a second concurrent checkout a second, empty
+      database and let a thread's own earlier write vanish, so the per-thread
+      pool is kept -- named rather than inferred, which is the whole fix.
+
+    ``sqlite:///:memory:`` and the bare URL are not touched at all: their pool
+    is inferred from the database name rather than from a query string, which
+    2.1 does not deprecate.
     """
     try:
         parsed = sa.make_url(url)
@@ -92,6 +98,8 @@ def _engine_kwargs(url: str) -> dict[str, Any]:
     # mode"), so it has no working engine to choose a pool for either way.
     if parsed.query.get("mode") != "memory":
         return {}
+    if parsed.query.get("cache") != "shared":
+        return {"poolclass": sa.pool.SingletonThreadPool}
     return {"poolclass": sa.pool.QueuePool, "connect_args": {"check_same_thread": False}}
 
 

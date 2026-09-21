@@ -242,31 +242,43 @@ if evidence changes; these are retired.
 
 - [x] **BUG-281 — `_SQLAlchemyBaseBackend` leans on a pool selection SQLAlchemy 2.1.0rc1 deprecates**
   spec: SQL-BLOB-071, SQL-BLOB-072 · effort: S · audience: user.api, infra.ci
-  `_engine_kwargs()` now states `poolclass=QueuePool` and
-  `connect_args={"check_same_thread": False}` for a SQLite URL carrying
-  `mode=memory`, the one spelling whose pool SQLAlchemy inferred and 2.1
-  deprecates inferring. SQL-BLOB-071 gains the exception; the alternative —
-  letting the default move on its own — was rejected on the measurement below.
-  **The connect-arg is the finding.** Forcing `QueuePool` alone turns that URL
-  from working across threads into `ProgrammingError`: the pool hands one
-  connection to whichever thread checks it out and pysqlite refuses a connection
-  used off its creating thread. So SQLAlchemy 2.2's announced move would have
-  broken the spelling silently, and "keep 071 and let the default move" was not
-  the no-op the original diagnosis took it for. Measured on 2.0.54 and 2.1.0rc2
-  alike, four spellings each: `:memory:` and the bare URL take
-  `SingletonThreadPool` with `check_same_thread=True`, `file::memory:?uri=true`
-  already takes `QueuePool` with `check_same_thread=False`, and only
-  `mode=memory&cache=shared` warns.
-  **The deferred consequence as originally filed was wrong**, and SQL-BLOB-072
-  is corrected rather than merely amended. It predicted the database would
-  "differ per checkout rather than per thread"; a named shared cache is
-  process-global, so every connection attaches to one database whatever the
-  pool, and all four spellings behaved identically before and after. The
-  carve-out's claim that per-thread isolation "applies to any engine configured
-  with a per-thread pool" was therefore already false for that URL, independent
-  of the deprecation: what isolates is the database being anonymous, not the
-  pool class. `SQL-QUERY-092` defers to the corrected clause and names only
-  `:memory:`, so it needed no edit.
+  `_engine_kwargs()` now **states** the pool for a SQLite URL carrying
+  `mode=memory` instead of letting SQLAlchemy infer it, which is what retires
+  the inference 2.1 deprecates. Naming the pool is the whole mechanism, so the
+  class follows the URL rather than the deprecation's suggestion:
+  `cache=shared` takes `QueuePool` with
+  `connect_args={"check_same_thread": False}`, and `mode=memory` without it
+  keeps `SingletonThreadPool`. SQL-BLOB-071 carries the pair as a table.
+  **`cache=shared` is the discriminator, not `mode=memory`** — and getting that
+  wrong was this item's own near-miss, caught in review after the first push.
+  An in-memory database is private to its connection unless the URL names a
+  shared cache, so putting the anonymous form on `QueuePool` hands a second
+  concurrent checkout a second, empty database: measured on 2.1.0rc2, a write on
+  one connection and a read on a second held at the same time went from
+  `'one'` to `OperationalError`. That is a regression, not a posture change, and
+  the deprecation does not force it — naming `SingletonThreadPool` silences the
+  warning just as well (measured: `warns=0`, second checkout still `'one'`).
+  **The connect-arg is the finding on the shared-cache half.** Forcing
+  `QueuePool` alone turns that URL from working across threads into
+  `ProgrammingError`: the pool hands one connection to whichever thread checks
+  it out and pysqlite refuses a connection used off its creating thread. So
+  SQLAlchemy 2.2's announced move would have broken the spelling silently, and
+  "keep 071 and let the default move" was not the no-op the original diagnosis
+  took it for. Measured on 2.0.54 and 2.1.0rc2 alike: `:memory:` and the bare
+  URL take `SingletonThreadPool` with `check_same_thread=True`,
+  `file::memory:?uri=true` already takes `QueuePool` with
+  `check_same_thread=False`, and **both** `mode=memory` spellings warn.
+  **The deferred consequence as originally filed was half right**, and
+  SQL-BLOB-072 is rewritten rather than merely amended. It predicted the
+  database would "differ per checkout rather than per thread". For a named
+  shared cache that is wrong — process-global, one database whatever the pool —
+  but for an anonymous in-memory database on a pooled engine it is exactly
+  right, and the first version of this fix would have created it. The carve-out
+  now enumerates three cases (anonymous + per-thread pool, anonymous + pooled,
+  shared cache), because neither the pool class nor the URL decides the posture
+  alone. `SQL-QUERY-092` restated the old formulation rather than deferring to
+  it, and is now a link; `docs-src/explanation/concurrency.md` footnote 3
+  carried the same attribution to SQLAlchemy's pool and is corrected.
   The `[sql]` newest-lane row leaves `infra/drift-locks/KNOWN-FINDINGS.md` with
   this fix, per that file's rule. `infra/drift-locks/sql.txt` stays at
   `sqlalchemy==2.1.0b3`: the refresh follows on the next drift run with that
