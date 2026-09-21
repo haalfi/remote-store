@@ -401,10 +401,10 @@ repo keeps of it is derived from the PR once, after the loop ends.
   reviewer's to catch. It sits on the mandatory path per Rule 5 because the
   alternative is exactly the review-enforced rule that did not hold. The extent
   is whatever `python scripts/check_no_retrospective.py` reports at the head
-  being read; stated as the command rather than a figure because the figure
-  moves with every register entry, and the one pinned here at `2a1bbfe` ("14
-  lines in five files") was already wrong in its file count by the time the
-  check was built (BK-378 measured 14 lines in **four** files at `e109686`).
+  being read, and it moves: 14 lines in five files at `2a1bbfe` (cause A's
+  figure, re-derived and confirmed), 14 lines in **four** at `e109686` when the
+  check was built, because `src/remote_store/backends/_sftp.py` lost its one hit
+  in between. Stated as the command rather than as a number for that reason.
   **Built under BK-378**, with the surface widened to include `examples/` as a
   surface users read.
 

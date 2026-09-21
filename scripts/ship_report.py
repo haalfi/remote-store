@@ -222,7 +222,7 @@ def rounds_with_findings(pr: int) -> tuple[OrderedDict[int, list[dict]], dict[in
 
 
 def review_driven_commits(base: str, head: str, first_review_ts: int | None) -> list[tuple[str, int, str]]:
-    """``(sha, author_ts, subject)`` for commits authored after the first review.
+    """``(sha, author_ts, subject)`` for commits authored at or after the first review.
 
     The schema's ``review_rounds`` means "commits that exist specifically
     because review feedback was incorporated". Author date is the discriminator
@@ -508,7 +508,7 @@ def step5_report(data: dict[str, Any]) -> str:
         "",
         "## Review-driven commits",
         "",
-        f"**{len(commits)}** — commits in `{data['base_ref']}..{data['head'][:7]}` authored after the "
+        f"**{len(commits)}** — commits in `{data['base_ref']}..{data['head'][:7]}` authored at or after the "
         "first review submission, the same boundary the origin tag uses for `loop-introduced`. "
         "This is the trace's `review_rounds` value.",
         "",

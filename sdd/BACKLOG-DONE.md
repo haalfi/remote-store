@@ -296,10 +296,14 @@ if evidence changes; these are retired.
   into the `review:` block indents it, and `rfc-0015-rounds.py` read it with a
   line-start anchor — so every trace authored from here on would have dropped out
   of RFC-0015 Table 1's population while the older corpus kept it, emptying
-  exactly the "after" side of a before-and-after comparison. The anchor now
-  tolerates leading whitespace (`[ \t]*`, not `\s*`, which crosses newlines under
-  `re.M`); over the 323-trace corpus both spellings match the same 261 traces,
-  and only the new one reads the block.
+  exactly the "after" side of a before-and-after comparison. The anchor is now
+  `^(?: {2})?review_rounds:` — the legacy top-level spelling or the emitter's
+  two-space one, and **nothing else**: a free indent was tried first and review
+  found it matching `review_rounds: 4` inside a folded block scalar at
+  `sdd/traces/bk-338-review-roster.yml:421`, which a trace with no top-level
+  field would have reported as its value. Over the 324-trace corpus the legacy
+  and current anchors return the identical value in all 324, and only the
+  current one reads the block.
   **The schema and the script are a drift gate, not a convention.** `review:` is
   `additionalProperties: false`, so a field the emitter adds without a schema
   property fails `check_traces.py`. It earned its keep immediately: the first
@@ -310,9 +314,11 @@ if evidence changes; these are retired.
   gitignored `tmp/ship-report-<PR>.md`, a brief quotes it, and the durable copy
   is the `review:` block at the close. **Still held, deliberately**, and
   BK-382's: D3's cap lift, D5's stop-rule wiring, D6's deferred half.
-  Guards: 110 tests across the three scripts
-  (`hatch run pytest tests/scripts/test_check_no_retrospective.py
-  tests/scripts/test_check_backlog_ids_vs_base.py tests/scripts/test_ship_report.py`).
+  Guards: **168** collected across the three scripts — ship_report 77,
+  check_no_retrospective 46, check_backlog_ids_vs_base 45 — from
+  `hatch run pytest tests/scripts/test_check_no_retrospective.py
+  tests/scripts/test_check_backlog_ids_vs_base.py tests/scripts/test_ship_report.py
+  --collect-only`.
 
 - [x] **BUG-281 — `_SQLAlchemyBaseBackend` leans on a pool selection SQLAlchemy 2.1.0rc1 deprecates**
   spec: SQL-BLOB-071, SQL-BLOB-072 · effort: S · audience: user.api, infra.ci

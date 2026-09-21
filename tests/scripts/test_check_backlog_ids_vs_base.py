@@ -171,16 +171,23 @@ class TestCommitIdGrammar:
             ("ID-182 drift-guard helpers", {"ID-182"}),
             ("AF-008: Add credential masking", {"AF-008"}),
             ("BL-011: something", {"BL-011"}),
-            # The shape that made every co-shipped branch report POACHED. Each of
-            # these is a real `origin/master` subject from the forty before this PR.
+            # The shape that made every co-shipped branch report POACHED. These
+            # are the three real `origin/master` subjects carrying it among the
+            # forty before this PR.
             ("BK-375, BK-373, BK-377: derive the published support windows", {"BK-375", "BK-373", "BK-377"}),
             ("BK-369, BK-372, BK-374: watch both ends of every declared range", {"BK-369", "BK-372", "BK-374"}),
             ("BK-376, BK-377: File the llmstxt sections gap", {"BK-376", "BK-377"}),
+            ("BK-375 BK-373: space-separated run", {"BK-375", "BK-373"}),
             # A range claims only what it spells: 284-286 carry no prefix, and
             # inventing them would make the gate trust a number nobody wrote.
             ("BUG-283..286: Correct five dependency floors", {"BUG-283"}),
-            # Only the run before the colon; a body mention is not a claim.
+            # Only the leading run; a body mention is not a claim. The colonless
+            # cases are the ones a `partition(":")` bound silently did not reach,
+            # and over-claiming here suppresses a POACHED report.
             ("BK-001: fix the BK-002 regression", {"BK-001"}),
+            ("BK-001 fix the BK-002 regression", {"BK-001"}),
+            ("ID-182 drift-guard helpers for BK-348", {"ID-182"}),
+            ("BK-378 (see BK-999)", {"BK-378"}),
         ],
     )
     def test_a_subject_claims_every_id_it_names(self, subject: str, expected: set[str]) -> None:
@@ -350,7 +357,9 @@ class TestGitReads:
     def test_a_multi_id_subject_claims_all_of_its_closes(self, repo) -> None:
         """The regression that made every co-shipped branch report POACHED.
 
-        Four of the forty commits before this PR used this subject shape.
+        Three of the forty commits before this PR used this subject shape
+        (`git log --format=%s origin/master~40..origin/master`, filtered by
+        subjects claiming more than one ID).
         """
         root, run, write = repo
         write("sdd/BACKLOG.md", _open_items())
@@ -372,7 +381,9 @@ class TestGitReads:
 
         `base_open` empty makes both disagreement sets empty by construction, so
         the gate printed "Backlog ID sets agree" and exited 0 — the same words
-        it uses for a real pass.
+        it uses for a real pass. Both files absent is a special case of the
+        rule the sibling tests pin: `sdd/BACKLOG.md` is the only file the
+        comparison reads from the base.
         """
         root, run, _write = repo
         run("rm", "-r", "-q", "sdd")
@@ -380,4 +391,67 @@ class TestGitReads:
         run("update-ref", "refs/remotes/origin/empty", "HEAD")
         run("reset", "-q", "--hard", "HEAD~1")
         assert _mod.main(["--base", "origin/empty", "--root", str(root)]) == 1
-        assert "carries neither" in capsys.readouterr().err
+        assert "carries no sdd/BACKLOG.md" in capsys.readouterr().err
+
+    def test_a_base_missing_only_backlog_md_is_refused(self, repo, capsys: pytest.CaptureFixture[str]) -> None:
+        """The vacuous case is `BACKLOG.md` absent, not both files absent.
+
+        `compare` reads only `base_open`, which comes from `sdd/BACKLOG.md`; the
+        base's done set is discarded. Requiring *both* to be missing widened the
+        guard past its own failure — measured, a base carrying only
+        `BACKLOG-DONE.md` reported "Backlog ID sets agree" having compared
+        nothing.
+        """
+        root, run, _write = repo
+        run("rm", "-q", "sdd/BACKLOG.md")
+        run("commit", "-q", "-m", "strip the open backlog")
+        run("update-ref", "refs/remotes/origin/donly", "HEAD")
+        run("reset", "-q", "--hard", "HEAD~1")
+        assert _mod.main(["--base", "origin/donly", "--root", str(root)]) == 1
+        assert "carries no sdd/BACKLOG.md" in capsys.readouterr().err
+
+    def test_a_base_missing_only_backlog_done_still_compares(self, repo, capsys: pytest.CaptureFixture[str]) -> None:
+        """The other direction must NOT be refused: `BACKLOG.md` is all it reads.
+
+        A ref predating `sdd/BACKLOG-DONE.md` is a legitimate base, and refusing
+        it would fail a real comparison rather than a vacuous one.
+        """
+        root, run, write = repo
+        run("rm", "-q", "sdd/BACKLOG-DONE.md")
+        run("commit", "-q", "-m", "strip the done backlog")
+        run("update-ref", "refs/remotes/origin/openly", "HEAD")
+        write("sdd/BACKLOG.md", _open_items("BK-100"))
+        write("sdd/BACKLOG-DONE.md", _done_items("BK-099"))
+        run("add", "-A")
+        run("commit", "-q", "-m", "BK-100: unrelated work")
+        assert _mod.main(["--base", "origin/openly", "--root", str(root)]) == 1
+        assert "DROPPED: BK-101" in capsys.readouterr().err
+
+    def test_a_head_missing_a_backlog_file_is_reported_not_raised(
+        self, repo, capsys: pytest.CaptureFixture[str]
+    ) -> None:
+        """A branch that lost a whole file is failure 1 at its largest.
+
+        The head side read unguarded and raised `FileNotFoundError`, so the gate
+        crashed on the extreme case of its own subject instead of naming it
+        (DRIFT-RULES Rule 2).
+        """
+        root, run, _write = repo
+        run("rm", "-q", "sdd/BACKLOG-DONE.md")
+        run("commit", "-q", "-m", "BK-100: drop the done file")
+        assert _mod.main(["--root", str(root)]) == 0
+        run("rm", "-q", "sdd/BACKLOG.md")
+        run("commit", "-q", "-m", "BK-100: drop the open file too")
+        assert _mod.main(["--root", str(root)]) == 1
+        err = capsys.readouterr().err
+        assert "DROPPED: BK-100" in err
+        assert "DROPPED: BK-101" in err
+
+    def test_print_subject_ids_lists_what_the_branch_claims(self, repo, capsys: pytest.CaptureFixture[str]) -> None:
+        """`/pr`'s trace gate reads this rather than re-spelling the grammar."""
+        root, run, write = repo
+        write("a.txt", "one\n")
+        run("add", "-A")
+        run("commit", "-q", "-m", "BK-375, BK-373: co-shipped")
+        assert _mod.main(["--print-subject-ids", "--root", str(root)]) == 0
+        assert capsys.readouterr().out.split() == ["BK-373", "BK-375"]

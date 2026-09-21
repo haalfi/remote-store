@@ -178,24 +178,28 @@ phases:
           the review: block indents it, and `^review_rounds:` would have dropped
           every trace authored from here on out of Table 1's population while
           keeping the older corpus — emptying the "after" side of a
-          before-and-after comparison. Anchor widened to `[ \t]*`, not `\s*`,
-          which crosses newlines under re.M. Over 323 traces both spellings
-          match the same 261; only the new one reads the block
+          before-and-after comparison. Widened to `[ \t]*` first; round 4 found
+          that also matches prose inside a folded scalar, so the anchor is
+          `^(?: {2})?review_rounds:` — the legacy spelling or the emitter's, and
+          nothing else. Over 324 traces the legacy and current anchors return
+          the identical value in all 324; only the current one reads the block
         outcome: ok
   - id: review
     name: Review rounds
     steps:
       - file: scripts/check_backlog_ids_vs_base.py
-        section: "_COMMIT_ID_RE / subject_ids"
+        section: "_ID_TOKEN / subject_ids"
         read_type: verify
         extract: >-
           Round 3's unprimed member found the gate false-positives on this
           repo's own convention: `BK-375, BK-373, BK-377: …` matches nothing,
           because the regex demanded `:` or whitespace straight after the
-          number. Four of the forty commits before this PR use that shape
-          (`git log --format=%s origin/master~40..origin/master`), so every
-          co-shipped branch would have had its legitimate closures reported
-          POACHED — on a gate mandatory at PR time
+          number. Three of the forty commits before this PR use that shape
+          (`git log --format=%s origin/master~40..origin/master`, filtered by
+          subjects claiming more than one ID), so every co-shipped branch would
+          have had its legitimate closures reported POACHED — on a gate
+          mandatory at PR time. The count was recorded as four until round 4's
+          measuring member re-ran the stated command against it
         outcome: ok
       - file: sdd/rfcs/rfc-0015-rounds.py
         section: "RX"

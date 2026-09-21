@@ -56,13 +56,21 @@ and their reasons, are:
 
 Self-exemption
 --------------
-``_EXEMPT`` holds this file and its guard. The guard lives at
-``tests/scripts/test_check_no_retrospective.py``, which matches ``tests/**/*.py``
-and so sits *inside* the surface, and it cannot test a phrase matcher without
-spelling the phrases. Exempting it is forced by that, not chosen — the same shape
-``gen_gate_inventory.py`` handles for its own ``Drift-gate::`` header, and for the
-same reason: a checker that reads its own definition of what to catch reports
-itself.
+``_EXEMPT`` holds two paths, and only one of them is forced.
+
+**The guard is forced.** ``tests/scripts/test_check_no_retrospective.py``
+matches ``tests/**/*.py`` and so sits *inside* the surface, and it cannot test a
+phrase matcher without spelling the phrases. That is the same shape
+``gen_gate_inventory.py`` handles for its own ``Drift-gate::`` header, and for
+the same reason: a checker that reads its own definition of what to catch
+reports itself.
+
+**This file's own entry is forward cover, not forced**, and saying otherwise
+invites the reader to conclude ``scripts/`` is scanned, which § What is off the
+surface denies. ``SURFACE`` has no ``scripts/`` glob, so ``iter_surface_files``
+never enumerates this file and the entry changes nothing today. It is kept
+against a future widening rather than deleted, because a surface that gained
+``scripts/`` would otherwise fail on the file defining the phrases.
 
 Bounds (DRIFT-RULES Rule 7)
 ---------------------------
@@ -147,7 +155,9 @@ PHRASES = (
 
 _RX = re.compile(PHRASES)
 
-# Forced, not chosen — see the module docstring. Repo-relative, POSIX spelling.
+# The guard is forced; this file's own entry is forward cover and is inert
+# while SURFACE has no scripts/ glob. See the module docstring, which says which
+# is which. Repo-relative, POSIX spelling.
 _EXEMPT = frozenset(
     {
         "scripts/check_no_retrospective.py",

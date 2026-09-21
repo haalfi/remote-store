@@ -243,11 +243,11 @@ properties:
     type: object
     additionalProperties: false
     required:
-      # All nine, because the emitter writes all nine unconditionally. With five
-      # optional, an emitter that *dropped* a field would validate everywhere and
-      # the "cannot diverge silently" claim below would be false in the direction
-      # that matters. `additionalProperties: false` catches a field added without
-      # a property; this catches one removed without one.
+      # All nine, because the emitter writes all nine unconditionally. Leave any
+      # of them optional and an emitter that *dropped* that field would validate
+      # everywhere, making the "cannot diverge silently" claim below false in
+      # the direction that matters. `additionalProperties: false` catches a
+      # field added without a property; this catches one removed without one.
       [derivation, review_rounds, submissions, findings, by_round, by_file, untouched_files,
        review_driven_commits, ci]
     description: |
@@ -282,12 +282,13 @@ properties:
         type: integer
         minimum: 0
         description: |
-          Commits in `<base>..<head>` authored after the first review
-          submission that carried a finding — the same boundary the origin
-          tag uses to call a line `loop-introduced`, so the two cannot
-          disagree about when the loop began. Author dates are the
-          discriminator because they survive a rebase; commit identity
-          does not.
+          Commits in `<base>..<head>` authored **at or after** the first
+          review submission that carried a finding — the same boundary the
+          origin tag uses to call a line `loop-introduced`, which splits on
+          `authored < first_review_ts`, so the tie belongs to the loop on
+          both sides and the two cannot disagree about when the loop began.
+          Author dates are the discriminator because they survive a rebase;
+          commit identity does not.
       submissions:
         type: integer
         minimum: 0
@@ -350,8 +351,9 @@ properties:
       ci:
         type: object
         additionalProperties: false
-        # `verdict` is the whole content of this key; without it `ci: {}`
-        # validates and an emitter that stopped writing the verdict passes.
+        # All three, as everywhere else in this block: the emitter writes them
+        # unconditionally. Without a `required:` at all, `ci: {}` validated and
+        # an emitter that stopped writing the verdict passed.
         required: [verdict, failed, pending]
         description: |
           CI's verdict on the final head. `pending` is reported separately
@@ -504,7 +506,7 @@ examples:
     # plausible one — a fake that resolves to nothing is worse than no
     # derivation, and the script writes the real ones.
     review:
-      derivation: "hatch run ship-report 1025"
+      derivation: "hatch run ship-report 1025 --trace-block-only"
       review_rounds: 1
       submissions: 1
       findings: 2

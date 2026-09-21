@@ -24,9 +24,13 @@ worktree). Two failures:
    open, and that **this branch's commits never name**. Closing an item you did
    the work for is the normal case and must not fail; the branch's own commit
    subjects are what separates the two, since
-   [`CLAUDE.md` § Backlog](../CLAUDE.md#backlog) makes the leading
-   ``PREFIX-NNN`` token of a commit subject the item it belongs to. That is the
-   same extraction ``/pr``'s trace gate runs, spelled the same way.
+   [`CLAUDE.md` § Backlog](../CLAUDE.md#backlog) makes the ``PREFIX-NNN``
+   tokens a commit subject opens with the items it belongs to. ``subject_ids``
+   reads the whole leading **run**, because the convention is a co-shipped list
+   (``BK-375, BK-373, BK-377: …``) and a leading-token-only reading false-fails
+   on it. ``/pr``'s trace gate reads the same subjects and is held to the same
+   grammar for the reason § Reuse gives; it under-enforced on that shape until
+   BK-378 aligned it.
 
 Authority (Rule 4)
 ------------------
@@ -110,6 +114,11 @@ BACKLOG_FILES = ("sdd/BACKLOG.md", "sdd/BACKLOG-DONE.md")
 # as POACHED. One token, one grammar.
 _ID_TOKEN = re.compile(r"\b(" + "|".join(_PREFIXES) + r")-(\d+[a-z]*)\b")
 
+# What may sit between two IDs of one co-shipped run: `BK-376, BK-377:` and
+# `BK-375 BK-373` both occur. Deliberately narrow — a word here ends the run,
+# which is what stops `ID-182 drift-guard helpers for BK-348` claiming BK-348.
+_RUN_SEPARATOR = re.compile(r"[,;/]?[ \t]+|[,;/]")
+
 
 def subject_ids(subject: str) -> set[str]:
     """Every item ID a commit subject claims.
@@ -120,22 +129,41 @@ def subject_ids(subject: str) -> set[str]:
     that shape, so reading only the leading token made every co-shipped branch
     report its legitimate closures as POACHED.
 
-    Two rules keep it from over-claiming:
+    Three rules keep it from over-claiming, and **over-claiming is the
+    dangerous direction**: ``commit_ids`` is only ever subtracted, so an extra
+    ID silently suppresses a POACHED report — the PR #997 failure this gate
+    exists for.
 
     * the subject must **start** with an ID token, so ``Merge branch 'master'
-      into bk-378`` and ``Fix the thing (BK-378)`` claim nothing; and
-    * only the text **before the first colon** is read, so
-      ``BK-001: fix the BK-002 regression`` claims `BK-001` alone.
+      into bk-378`` and ``Fix the thing (BK-378)`` claim nothing;
+    * only the **leading run of ID tokens** is read, so both
+      ``BK-001: fix the BK-002 regression`` and the colonless
+      ``ID-182 drift-guard helpers for BK-348`` claim their first ID alone; and
+    * a range shorthand claims only the IDs it spells in full.
+      ``BUG-283..286: …`` claims `BUG-283`, because `284` to `286` carry no
+      prefix and inventing them would make the gate trust a number nobody wrote.
 
-    Bound: a range shorthand claims only the IDs it spells in full.
-    ``BUG-283..286: …`` claims `BUG-283`, because `284` to `286` carry no
-    prefix and inventing them would make the gate trust a number nobody wrote.
+    The run is what the convention actually is — ``BK-375, BK-373, BK-377:`` —
+    so the scan stops at the first token that is not an ID or a separator
+    between two. Bounding it by ``partition(":")`` instead looked equivalent and
+    was not: a subject with no colon has no boundary, and the whole line was
+    read.
     """
     stripped = subject.strip()
     if not _ID_TOKEN.match(stripped):
         return set()
-    head = stripped.partition(":")[0]
-    return {f"{m.group(1)}-{m.group(2)}" for m in _ID_TOKEN.finditer(head)}
+    found: set[str] = set()
+    position = 0
+    while (match := _ID_TOKEN.match(stripped, position)) is not None:
+        found.add(f"{match.group(1)}-{match.group(2)}")
+        # Consume the separator between this ID and the next, if that is what
+        # follows. Anything else — a word, a colon, a bracket — ends the run.
+        position = match.end()
+        separator = _RUN_SEPARATOR.match(stripped, position)
+        if separator is None:
+            break
+        position = separator.end()
+    return found
 
 
 class Disagreement:
@@ -152,6 +180,15 @@ class Disagreement:
 
 def _git(*args: str, root: Path = ROOT, check: bool = True) -> subprocess.CompletedProcess[str]:
     return subprocess.run(["git", "-C", str(root), *args], check=check, capture_output=True, text=True)
+
+
+def _read_head(path: Path) -> str:
+    """The working tree's copy, or "" when the branch no longer has the file.
+
+    Symmetric with ``read_base``: a branch that lost a backlog file entirely is
+    failure 1 at its largest, and the gate has to report it rather than raise.
+    """
+    return path.read_text(encoding="utf-8") if path.is_file() else ""
 
 
 def read_base(path: str, base: str = DEFAULT_BASE, root: Path = ROOT) -> str:
@@ -230,8 +267,22 @@ def main(argv: list[str] | None = None, root: Path = ROOT) -> int:
     parser = argparse.ArgumentParser(description=__doc__.split("\n", 1)[0])
     parser.add_argument("--base", default=DEFAULT_BASE, help=f"base ref to compare against (default: {DEFAULT_BASE})")
     parser.add_argument("--root", type=Path, default=None, help=argparse.SUPPRESS)
+    parser.add_argument(
+        "--print-subject-ids",
+        action="store_true",
+        help="print the item IDs this branch's commit subjects claim, one per line, and exit. "
+        "`/pr`'s trace gate uses this so the subject grammar has one home.",
+    )
     args = parser.parse_args(argv)
     root = args.root or root
+
+    if args.print_subject_ids:
+        if _git("rev-parse", "--verify", "--quiet", args.base, root=root, check=False).returncode != 0:
+            print(f"ERROR: {args.base} is not a ref here. Run `git fetch origin master` first.", file=sys.stderr)
+            return 1
+        for item_id in sorted(branch_commit_ids(args.base, root=root)):
+            print(item_id)
+        return 0
 
     if _git("rev-parse", "--verify", "--quiet", args.base, root=root, check=False).returncode != 0:
         print(
@@ -241,19 +292,24 @@ def main(argv: list[str] | None = None, root: Path = ROOT) -> int:
         )
         return 1
 
-    head_backlog, head_done = ((root / path).read_text(encoding="utf-8") for path in BACKLOG_FILES)
+    # Tolerant on both sides. `read_base` already returns "" for a path absent
+    # at the ref; the head side read unguarded and raised `FileNotFoundError`
+    # on a branch that had lost a whole backlog file — the extreme instance of
+    # failure 1 above, so the gate crashed on the largest version of its own
+    # subject instead of reporting it (Rule 2 wants the element named).
+    head_backlog, head_done = (_read_head(root / path) for path in BACKLOG_FILES)
     base_backlog, base_done = (read_base(path, args.base, root=root) for path in BACKLOG_FILES)
 
-    # A ref that resolves but carries neither backlog file makes `base_open`
-    # empty, which makes both disagreement sets empty by construction — so the
-    # gate would report agreement having compared nothing, in the same
-    # reassuring words it uses for a real pass. That is a louder failure than
-    # the staleness the Bounds list already states, so it is refused rather
-    # than warned about.
-    if not base_backlog and not base_done:
+    # Keyed on `sdd/BACKLOG.md` alone, because that is the only file the
+    # comparison reads from the base: `compare` consults `base_open`, which
+    # `_ids` derives from it, and the base's done set is discarded. Requiring
+    # *both* to be absent widened the guard past its own failure — measured, a
+    # base carrying only BACKLOG-DONE.md reported "Backlog ID sets agree"
+    # having compared nothing, in the same words it uses for a real pass.
+    if not base_backlog:
         print(
-            f"ERROR: {args.base} carries neither {BACKLOG_FILES[0]} nor {BACKLOG_FILES[1]}, "
-            "so there is nothing to compare against. Check the ref.",
+            f"ERROR: {args.base} carries no {BACKLOG_FILES[0]}, so there are no open IDs to "
+            "compare against and any verdict would be vacuous. Check the ref.",
             file=sys.stderr,
         )
         return 1

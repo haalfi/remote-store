@@ -42,6 +42,35 @@ _CLASSIFIER = _REPO_ROOT / "sdd" / "rfcs" / "rfc-0015-findings.py"
 _ROUNDS = _REPO_ROOT / "sdd" / "rfcs" / "rfc-0015-rounds.py"
 
 
+def _schema_gaps(node: dict, path: str) -> list[str]:
+    """Every object below `node` that leaves a property optional, or is not closed.
+
+    Module-level rather than nested in its test so a synthetic schema can reach
+    the not-closed branch: the real schema closes every object, so that branch
+    is unreachable from it and a mutation deleting it survived.
+
+    The recursion runs for **every** object with `properties`, not only closed
+    ones. Descending only into closed objects left the same hole one layer down
+    — an object added without `additionalProperties: false` would be neither
+    reported nor entered, and its whole subtree invisible.
+    """
+    gaps: list[str] = []
+    if isinstance(node, dict):
+        props = node.get("properties")
+        if isinstance(props, dict):
+            if node.get("additionalProperties") is not False:
+                gaps.append(f"{path}: not closed (no additionalProperties: false)")
+            missing = set(props) - set(node.get("required") or [])
+            if missing:
+                gaps.append(f"{path}: optional {sorted(missing)}")
+            for name, child in props.items():
+                gaps += _schema_gaps(child, f"{path}.{name}")
+        items = node.get("items")
+        if isinstance(items, dict):
+            gaps += _schema_gaps(items, f"{path}[]")
+    return gaps
+
+
 def _load_rounds():
     """Import `rfc-0015-rounds.py`, whose filename is not a Python identifier.
 
@@ -350,18 +379,55 @@ class TestReviewDrivenCommits:
         assert [s for _sha, _at, s in _mod.review_driven_commits("origin/master", "HEAD", 200)] == ["at the boundary"]
 
     def test_the_boundary_agrees_with_the_classifiers_split(self, monkeypatch: pytest.MonkeyPatch) -> None:
-        """Stated as the pair rather than as two numbers, so it cannot drift apart.
+        """Calls the real `fnd.origin`, so the pair genuinely cannot drift apart.
 
-        Whatever `origin()` calls a line authored at time T, this function must
-        make the same call about a commit authored at T.
+        An earlier form re-spelled the classifier's expression
+        (`not (authored < first_review_ts)`) and called that "the pair". It was
+        not: sabotaging `fnd.origin` to return a constant left this test green
+        while the two diverged at every timestamp. The only coupling that holds
+        is invoking the function.
+
+        `origin()` blames a line at a commit, so its `_git` is stubbed to answer
+        the two calls it makes for a non-pre-existing line: `blame` naming a
+        commit, then `merge-base --is-ancestor` failing, then `show` giving the
+        author date.
         """
         first_review_ts = 200
+
+        def classify(authored: int) -> str:
+            def fake_git(*args: str, **kwargs):
+                class _R:
+                    returncode = 0
+                    stdout = ""
+
+                result = _R()
+                if args[0] == "blame":
+                    result.stdout = "cafebabe 1) a line\n"
+                elif args[0] == "merge-base":
+                    result.returncode = 1  # not reachable from master -> not pre-existing
+                elif args[0] == "show":
+                    result.stdout = f"{authored}\n"
+                return result
+
+            monkeypatch.setattr(_mod.fnd, "_git", fake_git)
+            monkeypatch.setattr(_mod.fnd, "ensure_commit", lambda sha: None)
+            row = {
+                "subject_type": "line",
+                "side": "RIGHT",
+                "original_line": 1,
+                "original_commit_id": "c" * 40,
+                "path": "a.py",
+            }
+            return _mod.fnd.origin(row, first_review_ts)
+
         for authored in (199, 200, 201):
+            origin_verdict = classify(authored)
             self._log(monkeypatch, [f"aaa\x00{authored}\x00subject"])
             counted = bool(_mod.review_driven_commits("origin/master", "HEAD", first_review_ts))
-            # The classifier's own expression, not a transcription of its result.
-            origin_says_loop = not (authored < first_review_ts)
-            assert counted is origin_says_loop, f"disagreement at authored={authored}"
+            assert counted is (origin_verdict == "loop-introduced"), (
+                f"authored={authored}: origin() says {origin_verdict!r}, review_driven_commits "
+                f"{'counted' if counted else 'skipped'} it"
+            )
 
 
 class TestTraceBlock:
@@ -401,7 +467,12 @@ class TestTraceBlock:
         assert rounds.RX.search("review_rounds: 4\n").group(1) == "4"
 
     def test_the_legacy_corpus_reads_identically_under_the_anchor(self) -> None:
-        """The amendment must not disturb any existing reading — 261 of 324 traces."""
+        """The amendment must not disturb any existing reading.
+
+        Asserted over whatever the corpus holds rather than against a pinned
+        total, so it cannot go stale on the next trace. (Measured while writing:
+        324 traces, 261 carrying the field.)
+        """
         import re as _re
 
         rounds = _load_rounds()
@@ -486,24 +557,31 @@ class TestTraceBlock:
 
         schema_path = Path(__file__).resolve().parents[2] / "sdd" / "traces" / "_schema.yml"
         schema = yaml.safe_load(schema_path.read_text(encoding="utf-8"))
+        assert _schema_gaps(schema["properties"]["review"], "review") == []
 
-        def walk(node: dict, path: str) -> list[str]:
-            """Every closed object that leaves one of its own properties optional."""
-            gaps: list[str] = []
-            if isinstance(node, dict):
-                props = node.get("properties")
-                if isinstance(props, dict) and node.get("additionalProperties") is False:
-                    missing = set(props) - set(node.get("required") or [])
-                    if missing:
-                        gaps.append(f"{path}: optional {sorted(missing)}")
-                    for name, child in props.items():
-                        gaps += walk(child, f"{path}.{name}")
-                items = node.get("items")
-                if isinstance(items, dict):
-                    gaps += walk(items, f"{path}[]")
-            return gaps
+    def test_the_walk_reports_an_object_that_is_not_closed(self) -> None:
+        """The walk's own guard, over a synthetic schema.
 
-        assert walk(schema["properties"]["review"], "review") == []
+        The real schema closes every object, so this branch is unreachable from
+        it — and a mutation deleting the branch survived a run against the live
+        schema alone. Without this, the next `ci`-shaped key added without
+        `additionalProperties: false` would be neither reported nor descended
+        into, and its whole subtree would be invisible.
+        """
+        open_object = {"properties": {"a": {"type": "string"}}, "required": ["a"]}
+        assert _schema_gaps(open_object, "x") == ["x: not closed (no additionalProperties: false)"]
+
+    def test_the_walk_descends_into_an_open_objects_subtree(self) -> None:
+        """Reporting is not enough — the subtree beneath an open object must still be read."""
+        nested = {
+            "properties": {
+                "inner": {"properties": {"b": {"type": "string"}}, "additionalProperties": False},
+            },
+            "required": ["inner"],
+        }
+        gaps = _schema_gaps(nested, "x")
+        assert "x: not closed (no additionalProperties: false)" in gaps
+        assert "x.inner: optional ['b']" in gaps
 
     @pytest.mark.parametrize(
         "dropped",

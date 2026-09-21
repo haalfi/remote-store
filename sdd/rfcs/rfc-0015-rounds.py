@@ -27,11 +27,14 @@ since the "after" side is the one that would empty.
 load-bearing: a *free* indent also matches prose inside a YAML folded block
 scalar, and the corpus already contains one —
 ``sdd/traces/bk-338-review-roster.yml:421`` reads
-``review_rounds: 4 and a per-round review phase…`` at a ten-space indent. That
-trace is safe today only because it still carries a top-level field earlier in
-the file; a BK-378-onward trace carries none, so the prose number would be the
-first match and this script would report it. A silent wrong integer feeding a
-median is worse than the loud exclusion the widening was meant to prevent.
+``review_rounds: 4 and a per-round review phase…`` at a ten-space indent. Under
+a free indent that trace was safe only because it still carries a top-level
+field earlier in the file, and a BK-378-onward trace carries none — so the prose
+number would have been the first match and this script would have reported it. A
+silent wrong integer feeding a median is worse than the loud exclusion the
+widening was meant to prevent. **Under the anchor as it stands the prose line
+cannot match at any indent**, so no trace depends on keeping a field it would
+otherwise need.
 
 Two spellings match, then: top level (the legacy corpus) and two spaces (the
 emitter). **Which one a mixed file reads is decided by position, not by depth** —

@@ -909,7 +909,7 @@ prose site to the signature, so that sweep is a reviewer's job.
 mitigation and the wrong one: it is a second derived artifact over the same
 fact, so it goes stale exactly as the prose does, and a checklist a reader
 trusts and that is one entry short is worse than no checklist, because it stops
-the search. This clause carried such a list twice and it was short both times.
+the search. A hand list of these sites has been short every time one was tried.
 Derive the set instead — `rg -n 'io_timeout' src docs-src sdd tests`, read the
 hits that state a value.
 
@@ -926,8 +926,8 @@ is narrower than it looks: the options table and the migration entry have to
 state values to do their jobs, and what is genuinely tolerated is the narrative
 restatements beside them. The cost is real and was paid inside this item's own
 review, twice: a derived figure in a test docstring went stale one commit after
-it was corrected, and a hand enumeration in this paragraph's place was
-incomplete when written.
+it was corrected, and a hand enumeration proved incomplete against the sites it
+claimed to cover.
 
 **It is armed before the SFTP session exists, not after.** `_connect` opens the
 channel, arms the bound, then invokes the `sftp` subsystem and constructs the
