@@ -21,6 +21,7 @@ failed on legitimate closure would be switched off within a day.
 from __future__ import annotations
 
 import importlib.util
+import subprocess
 import sys
 from pathlib import Path
 
@@ -155,8 +156,8 @@ class TestPoached:
 
     def test_a_split_id_is_matched(self) -> None:
         """BK-167a — the trailing-letter form _schema.yml allows for split items."""
-        assert _mod._COMMIT_ID_RE.match("BK-167a: do the first half") is not None
-        assert _mod._COMMIT_ID_RE.match("BK-167a do the first half") is not None
+        assert _mod.subject_ids("BK-167a: do the first half") == {"BK-167a"}
+        assert _mod.subject_ids("BK-167a do the first half") == {"BK-167a"}
 
 
 class TestCommitIdGrammar:
@@ -165,17 +166,25 @@ class TestCommitIdGrammar:
     @pytest.mark.parametrize(
         ("subject", "expected"),
         [
-            ("BK-378: Build RFC-0015's D1 and D4", "BK-378"),
-            ("BUG-254: The store root meets BE-029", "BUG-254"),
-            ("ID-182 drift-guard helpers", "ID-182"),
-            ("AF-008: Add credential masking", "AF-008"),
-            ("BL-011: something", "BL-011"),
+            ("BK-378: Build RFC-0015's D1 and D4", {"BK-378"}),
+            ("BUG-254: The store root meets BE-029", {"BUG-254"}),
+            ("ID-182 drift-guard helpers", {"ID-182"}),
+            ("AF-008: Add credential masking", {"AF-008"}),
+            ("BL-011: something", {"BL-011"}),
+            # The shape that made every co-shipped branch report POACHED. Each of
+            # these is a real `origin/master` subject from the forty before this PR.
+            ("BK-375, BK-373, BK-377: derive the published support windows", {"BK-375", "BK-373", "BK-377"}),
+            ("BK-369, BK-372, BK-374: watch both ends of every declared range", {"BK-369", "BK-372", "BK-374"}),
+            ("BK-376, BK-377: File the llmstxt sections gap", {"BK-376", "BK-377"}),
+            # A range claims only what it spells: 284-286 carry no prefix, and
+            # inventing them would make the gate trust a number nobody wrote.
+            ("BUG-283..286: Correct five dependency floors", {"BUG-283"}),
+            # Only the run before the colon; a body mention is not a claim.
+            ("BK-001: fix the BK-002 regression", {"BK-001"}),
         ],
     )
-    def test_leading_token_is_the_item(self, subject: str, expected: str) -> None:
-        match = _mod._COMMIT_ID_RE.match(subject)
-        assert match is not None
-        assert f"{match.group(1)}-{match.group(2)}" == expected
+    def test_a_subject_claims_every_id_it_names(self, subject: str, expected: set[str]) -> None:
+        assert _mod.subject_ids(subject) == expected
 
     @pytest.mark.parametrize(
         "subject",
@@ -185,14 +194,27 @@ class TestCommitIdGrammar:
             "BK378: missing the hyphen",
             "XX-001: not an allocated prefix",
             "BK-378Build: no separator",
+            "Release v0.32.0",
+            "Chore(deps): Bump actions/setup-java from 5 to 6",
         ],
     )
     def test_non_conforming_subjects_claim_nothing(self, subject: str) -> None:
-        assert _mod._COMMIT_ID_RE.match(subject) is None
+        assert _mod.subject_ids(subject) == set()
 
     def test_the_prefix_set_is_gen_backlogids(self) -> None:
         """Reused, not re-spelled — a second copy of the allocation set is drift."""
         assert set(_mod._PREFIXES) == {"BK", "BUG", "ID", "AF", "BL"}
+
+    def test_the_commit_grammar_and_the_header_grammar_agree_on_one_id(self) -> None:
+        """Set membership arbitrates, so the two must produce the same *string*.
+
+        A header yielding `BK-167ab` against a commit yielding `BK-167a` reads
+        as POACHED. The number was spelled `(\\d+[a-z]?)` here and
+        `(\\d+[a-z]*)` in the allocator until this was pinned.
+        """
+        header_ids = _mod._flatten(_mod._extract_ids("- [x] **BK-167ab — a twice-split item**\n", "x"))
+        assert header_ids == {"BK-167ab"}
+        assert _mod.subject_ids("BK-167ab: do the second half") == header_ids
 
 
 class TestReuse:
@@ -220,66 +242,142 @@ class TestReuse:
         assert "_HEADER_RE = " not in source
 
 
-def _base_ref_present() -> bool:
-    """Whether `origin/master` exists in this checkout."""
-    return _mod._git("rev-parse", "--verify", "--quiet", _mod.DEFAULT_BASE, check=False).returncode == 0
+@pytest.fixture
+def repo(tmp_path: Path):
+    """A real two-side git repo: a base ref, a head, and a working tree.
 
+    Replaces a `skipif` on `origin/master`. That mark skipped four of this
+    class's five tests in `tooling-tests` — the only CI job that runs
+    `tests/scripts/` — because it checks out at `actions/checkout@v7`'s default
+    depth and has no `origin/master`. So the success half of the gate's I/O
+    layer was never executed anywhere it mattered, and the 95% floor could not
+    notice: `pyproject.toml` measures `--cov=remote_store`, so nothing under
+    `scripts/` is counted at all.
 
-#: CI's `tooling-tests` job runs `actions/checkout@v7` at its default depth-1,
-#: single-ref fetch, so `origin/master` does not exist there — the same premise
-#: this gate's own wiring comment gives for keeping it out of `lint`. A guard
-#: that reached the ref unguarded would fail every CI run of a suite that has
-#: nothing to do with it. Skip with the remedy named, the shape
-#: `test_check_support_windows.py` uses for a clone without tags.
-_needs_base = pytest.mark.skipif(
-    not _base_ref_present(),
-    reason=f"{_mod.DEFAULT_BASE} is not in this checkout; run `git fetch origin master`",
-)
+    Building the repo instead of reaching for this repo's own history costs a
+    fixture and buys assertions that run everywhere and say something.
+    """
+
+    def run(*args: str) -> str:
+        return subprocess.run(["git", "-C", str(tmp_path), *args], check=True, capture_output=True, text=True).stdout
+
+    def write(rel: str, body: str) -> None:
+        path = tmp_path / rel
+        path.parent.mkdir(parents=True, exist_ok=True)
+        path.write_text(body, encoding="utf-8")
+
+    run("init", "-q", "-b", "main")
+    run("config", "user.email", "guard@example.invalid")
+    run("config", "user.name", "Guard")
+
+    write("sdd/BACKLOG.md", _open_items("BK-100", "BK-101"))
+    write("sdd/BACKLOG-DONE.md", _done_items("BK-099"))
+    run("add", "-A")
+    run("commit", "-q", "-m", "base state")
+    # A real remote-tracking ref, which is what `git show origin/master:<path>`
+    # and `git log origin/master..HEAD` resolve against.
+    run("update-ref", "refs/remotes/origin/master", "HEAD")
+    return tmp_path, run, write
 
 
 class TestGitReads:
-    """The thin I/O layer, against the real repository."""
+    """The I/O layer, against a synthetic repo — so it runs in CI, not around it."""
 
-    @_needs_base
-    def test_read_base_returns_content_for_a_tracked_file(self) -> None:
-        text = _mod.read_base("sdd/BACKLOG.md")
-        assert text.startswith("#")
+    def test_read_base_returns_content_for_a_tracked_file(self, repo) -> None:
+        root, _run, _write = repo
+        assert "BK-100" in _mod.read_base("sdd/BACKLOG.md", root=root)
 
-    @_needs_base
-    def test_read_base_returns_empty_for_an_absent_path(self) -> None:
-        """Empty rather than raising: a file that does not exist on the base has no IDs.
+    def test_read_base_returns_empty_for_an_absent_path(self, repo) -> None:
+        """Empty rather than raising: a file absent from the base carries no IDs.
 
-        Marked too, although it passes without the ref: without it the empty
-        string comes from the *missing ref* rather than the missing path, so the
-        test would be green for the wrong reason — the fail-silently shape this
-        repo calls worse than no check.
+        Meaningful only against a base that exists — otherwise the empty string
+        comes from the missing *ref* rather than the missing *path*, and the
+        test is green for the wrong reason.
         """
-        assert _mod.read_base("sdd/does-not-exist-on-master.md") == ""
+        root, _run, _write = repo
+        assert _mod.read_base("sdd/BACKLOG.md", root=root) != ""
+        assert _mod.read_base("sdd/nope.md", root=root) == ""
 
-    @_needs_base
-    def test_branch_commit_ids_returns_a_set(self) -> None:
-        assert isinstance(_mod.branch_commit_ids(), set)
+    def test_branch_commit_ids_reads_every_id_a_subject_claims(self, repo) -> None:
+        """Behavioural, not `isinstance`: the IDs, from real commit subjects."""
+        root, run, write = repo
+        write("a.txt", "one\n")
+        run("add", "-A")
+        run("commit", "-q", "-m", "BK-101: did the work")
+        write("b.txt", "two\n")
+        run("add", "-A")
+        run("commit", "-q", "-m", "BK-375, BK-373, BK-377: derive the windows")
+        write("c.txt", "three\n")
+        run("add", "-A")
+        run("commit", "-q", "-m", "Merge branch 'main' into bk-378")
+        assert _mod.branch_commit_ids(root=root) == {"BK-101", "BK-375", "BK-373", "BK-377"}
 
-    @_needs_base
-    def test_main_runs_end_to_end_and_returns_a_verdict(self, capsys: pytest.CaptureFixture[str]) -> None:
-        """Pins the I/O wiring — reads both files on both sides, reaches a verdict.
+    def test_a_clean_head_agrees_with_the_base(self, repo, capsys: pytest.CaptureFixture[str]) -> None:
+        root, _run, _write = repo
+        assert _mod.main(["--root", str(root)]) == 0
+        assert "agree with origin/master" in capsys.readouterr().out
 
-        Deliberately **not** "this branch is clean". That assertion would couple
-        the suite to transient commit state: a branch that has closed an item in
-        the working tree but not yet committed the commit naming it is POACHED
-        by this gate's own definition, which is correct behaviour and a state
-        every split legitimately passes through. `check_no_retrospective.py`'s
-        guard can assert repo cleanliness because its subject is committed
-        content; this one's subject includes `git log`, so the same shape would
-        make the suite red mid-work and teach people to ignore it. The gate runs
-        at push time, where that state cannot survive.
+    def test_a_dropped_item_fails_end_to_end(self, repo, capsys: pytest.CaptureFixture[str]) -> None:
+        """Through `main`, not `compare` — the reporting path is the part no test ran."""
+        root, run, write = repo
+        write("sdd/BACKLOG.md", _open_items("BK-100"))
+        run("add", "-A")
+        run("commit", "-q", "-m", "BK-100: unrelated work")
+        assert _mod.main(["--root", str(root)]) == 1
+        err = capsys.readouterr().err
+        assert "DROPPED: BK-101" in err
+        assert "origin/master has it open and the head has it nowhere" in err
+        assert "restore it to sdd/BACKLOG.md" in err
+
+    def test_a_poached_close_fails_end_to_end(self, repo, capsys: pytest.CaptureFixture[str]) -> None:
+        root, run, write = repo
+        write("sdd/BACKLOG.md", _open_items("BK-100"))
+        write("sdd/BACKLOG-DONE.md", _done_items("BK-099", "BK-101"))
+        run("add", "-A")
+        run("commit", "-q", "-m", "BK-100: unrelated work")
+        assert _mod.main(["--root", str(root)]) == 1
+        assert "POACHED: BK-101" in capsys.readouterr().err
+
+    def test_the_same_close_passes_when_a_commit_claims_it(self, repo, capsys: pytest.CaptureFixture[str]) -> None:
+        """The asymmetry that keeps the gate usable, proved end to end."""
+        root, run, write = repo
+        write("sdd/BACKLOG.md", _open_items("BK-100"))
+        write("sdd/BACKLOG-DONE.md", _done_items("BK-099", "BK-101"))
+        run("add", "-A")
+        run("commit", "-q", "-m", "BK-101: did the work")
+        assert _mod.main(["--root", str(root)]) == 0
+
+    def test_a_multi_id_subject_claims_all_of_its_closes(self, repo) -> None:
+        """The regression that made every co-shipped branch report POACHED.
+
+        Four of the forty commits before this PR used this subject shape.
         """
-        code = _mod.main([])
-        assert code in (0, 1)
-        out = capsys.readouterr()
-        assert ("agree with origin/master" in out.out) or ("disagreement(s) with origin/master" in out.err)
+        root, run, write = repo
+        write("sdd/BACKLOG.md", _open_items())
+        write("sdd/BACKLOG-DONE.md", _done_items("BK-099", "BK-100", "BK-101"))
+        run("add", "-A")
+        run("commit", "-q", "-m", "BK-100, BK-101: closed together")
+        assert _mod.main(["--root", str(root)]) == 0
 
-    def test_an_unknown_base_fails_loudly(self, capsys: pytest.CaptureFixture[str]) -> None:
-        """A stale or absent ref is the bound the docstring names; it must not pass silently."""
-        assert _mod.main(["--base", "origin/no-such-branch-xyz"]) == 1
+    def test_an_unknown_base_fails_loudly(self, repo, capsys: pytest.CaptureFixture[str]) -> None:
+        """A stale or absent ref is the bound the docstring names; never silent."""
+        root, _run, _write = repo
+        assert _mod.main(["--base", "origin/no-such-branch-xyz", "--root", str(root)]) == 1
         assert "is not a ref here" in capsys.readouterr().err
+
+    def test_a_base_without_backlog_files_is_refused_not_reported_clean(
+        self, repo, capsys: pytest.CaptureFixture[str]
+    ) -> None:
+        """A ref that resolves but carries no backlog made the gate pass having compared nothing.
+
+        `base_open` empty makes both disagreement sets empty by construction, so
+        the gate printed "Backlog ID sets agree" and exited 0 — the same words
+        it uses for a real pass.
+        """
+        root, run, _write = repo
+        run("rm", "-r", "-q", "sdd")
+        run("commit", "-q", "-m", "strip the backlog")
+        run("update-ref", "refs/remotes/origin/empty", "HEAD")
+        run("reset", "-q", "--hard", "HEAD~1")
+        assert _mod.main(["--base", "origin/empty", "--root", str(root)]) == 1
+        assert "carries neither" in capsys.readouterr().err

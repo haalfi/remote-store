@@ -50,11 +50,15 @@ Bounds (DRIFT-RULES Rule 7)
 * **It is only as current as ``origin/master``.** A stale ref compares against
   the wrong base, which is why its home is the PR validation gates, *after* the
   branch-freshness check has fetched. Run standalone without fetching and it
-  will happily report nothing.
+  will happily report nothing. A base that resolves but carries *neither*
+  backlog file is the same failure one step further along, and is refused
+  rather than reported as agreement — measured: before that guard,
+  ``--base <a ref without sdd/>`` printed "Backlog ID sets agree" and exited 0.
 * **Failure 2 keys on commit subjects**, so an item legitimately closed by a
-  commit whose subject does not lead with its ID reads as poached. That spelling
-  is a repo convention with its own reviewers; this gate makes breaking it
-  visible rather than silently trusting the diff.
+  commit whose subject does not name it reads as poached. ``subject_ids``
+  reads every ID in the run before the colon, which is this repo's co-shipped
+  spelling; what it cannot read is an ID no subject spells, including the tail
+  of a ``BUG-283..286`` range.
 * **It does not look at other open branches.** "Another branch's account" is
   inferred from ``origin/master`` plus this branch's commits, never by
   enumerating remote branches — that would need a network walk on a gate that is
@@ -99,10 +103,39 @@ from gen_backlogid import _PREFIXES, _extract_ids  # noqa: E402  — sibling mod
 DEFAULT_BASE = "origin/master"
 BACKLOG_FILES = ("sdd/BACKLOG.md", "sdd/BACKLOG-DONE.md")
 
-# The leading `PREFIX-NNN` token of a commit subject, optionally with the
-# trailing letter `_schema.yml` allows for split items (BK-167a). Same grammar
-# as /pr's trace gate; kept here as a constant so the guard can pin it.
-_COMMIT_ID_RE = re.compile(r"^(" + "|".join(_PREFIXES) + r")-(\d+[a-z]?)[:\s]")
+# One `PREFIX-NNN` token, with the trailing letter `_schema.yml` allows for
+# split items (BK-167a). The number is spelled `(\d+[a-z]*)` to match
+# `gen_backlogid._HEADER_RE` exactly: the arbitration below is set membership,
+# so a header yielding `BK-167ab` against a commit yielding `BK-167a` would read
+# as POACHED. One token, one grammar.
+_ID_TOKEN = re.compile(r"\b(" + "|".join(_PREFIXES) + r")-(\d+[a-z]*)\b")
+
+
+def subject_ids(subject: str) -> set[str]:
+    """Every item ID a commit subject claims.
+
+    **A subject may claim several**, and this repo's convention spells that as a
+    comma-separated run before the colon: ``BK-375, BK-373, BK-377: derive the
+    published support windows``. Four of the forty commits before this one used
+    that shape, so reading only the leading token made every co-shipped branch
+    report its legitimate closures as POACHED.
+
+    Two rules keep it from over-claiming:
+
+    * the subject must **start** with an ID token, so ``Merge branch 'master'
+      into bk-378`` and ``Fix the thing (BK-378)`` claim nothing; and
+    * only the text **before the first colon** is read, so
+      ``BK-001: fix the BK-002 regression`` claims `BK-001` alone.
+
+    Bound: a range shorthand claims only the IDs it spells in full.
+    ``BUG-283..286: …`` claims `BUG-283`, because `284` to `286` carry no
+    prefix and inventing them would make the gate trust a number nobody wrote.
+    """
+    stripped = subject.strip()
+    if not _ID_TOKEN.match(stripped):
+        return set()
+    head = stripped.partition(":")[0]
+    return {f"{m.group(1)}-{m.group(2)}" for m in _ID_TOKEN.finditer(head)}
 
 
 class Disagreement:
@@ -117,24 +150,22 @@ class Disagreement:
         return f"{self.kind}: {self.item_id} — {self.detail}"
 
 
-def _git(*args: str, check: bool = True) -> subprocess.CompletedProcess[str]:
-    return subprocess.run(["git", "-C", str(ROOT), *args], check=check, capture_output=True, text=True)
+def _git(*args: str, root: Path = ROOT, check: bool = True) -> subprocess.CompletedProcess[str]:
+    return subprocess.run(["git", "-C", str(root), *args], check=check, capture_output=True, text=True)
 
 
-def read_base(path: str, base: str = DEFAULT_BASE) -> str:
+def read_base(path: str, base: str = DEFAULT_BASE, root: Path = ROOT) -> str:
     """The file's content at ``base``; empty string when it does not exist there."""
-    done = _git("show", f"{base}:{path}", check=False)
+    done = _git("show", f"{base}:{path}", root=root, check=False)
     return done.stdout if done.returncode == 0 else ""
 
 
-def branch_commit_ids(base: str = DEFAULT_BASE) -> set[str]:
-    """Item IDs this branch's commit subjects name, as /pr's trace gate reads them."""
-    subjects = _git("log", "--format=%s", f"{base}..HEAD").stdout.splitlines()
+def branch_commit_ids(base: str = DEFAULT_BASE, root: Path = ROOT) -> set[str]:
+    """Every item ID this branch's commit subjects claim (see ``subject_ids``)."""
+    subjects = _git("log", "--format=%s", f"{base}..HEAD", root=root).stdout.splitlines()
     found: set[str] = set()
     for subject in subjects:
-        match = _COMMIT_ID_RE.match(subject.strip())
-        if match:
-            found.add(f"{match.group(1)}-{match.group(2)}")
+        found |= subject_ids(subject)
     return found
 
 
@@ -195,12 +226,14 @@ def compare(
     return out
 
 
-def main(argv: list[str] | None = None) -> int:
+def main(argv: list[str] | None = None, root: Path = ROOT) -> int:
     parser = argparse.ArgumentParser(description=__doc__.split("\n", 1)[0])
     parser.add_argument("--base", default=DEFAULT_BASE, help=f"base ref to compare against (default: {DEFAULT_BASE})")
+    parser.add_argument("--root", type=Path, default=None, help=argparse.SUPPRESS)
     args = parser.parse_args(argv)
+    root = args.root or root
 
-    if _git("rev-parse", "--verify", "--quiet", args.base, check=False).returncode != 0:
+    if _git("rev-parse", "--verify", "--quiet", args.base, root=root, check=False).returncode != 0:
         print(
             f"ERROR: {args.base} is not a ref here. Run `git fetch origin master` first — "
             "this gate's home is after the branch-freshness check for that reason.",
@@ -208,10 +241,26 @@ def main(argv: list[str] | None = None) -> int:
         )
         return 1
 
-    head_backlog, head_done = ((ROOT / path).read_text(encoding="utf-8") for path in BACKLOG_FILES)
-    base_backlog, base_done = (read_base(path, args.base) for path in BACKLOG_FILES)
+    head_backlog, head_done = ((root / path).read_text(encoding="utf-8") for path in BACKLOG_FILES)
+    base_backlog, base_done = (read_base(path, args.base, root=root) for path in BACKLOG_FILES)
 
-    problems = compare(head_backlog, head_done, base_backlog, base_done, branch_commit_ids(args.base), base=args.base)
+    # A ref that resolves but carries neither backlog file makes `base_open`
+    # empty, which makes both disagreement sets empty by construction — so the
+    # gate would report agreement having compared nothing, in the same
+    # reassuring words it uses for a real pass. That is a louder failure than
+    # the staleness the Bounds list already states, so it is refused rather
+    # than warned about.
+    if not base_backlog and not base_done:
+        print(
+            f"ERROR: {args.base} carries neither {BACKLOG_FILES[0]} nor {BACKLOG_FILES[1]}, "
+            "so there is nothing to compare against. Check the ref.",
+            file=sys.stderr,
+        )
+        return 1
+
+    problems = compare(
+        head_backlog, head_done, base_backlog, base_done, branch_commit_ids(args.base, root=root), base=args.base
+    )
     if not problems:
         print(f"Backlog ID sets agree with {args.base}.")
         return 0

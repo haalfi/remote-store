@@ -15,16 +15,28 @@ Value: the integer after ``review_rounds:`` in each file; a trailing comment
 is ignored. The field is not required by the schema, so a trace without it is
 excluded and **named in the output**; ``n`` is the count of traces carrying it.
 
-**The anchor tolerates leading whitespace, and must.** RFC-0015 D1 moved the
-field into the trace's ``review:`` block, where ``scripts/ship_report.py``
-writes it at a two-space indent; the original ``^review_rounds:`` matched only
-the top-level spelling, so every trace authored from BK-378 onward would have
-dropped silently out of this population while the older corpus kept it — the
-worst direction for a before-and-after comparison, since the "after" side is
-the one that would empty. ``[ \\t]*`` rather than ``\\s*``: under ``re.M`` a
-``\\s`` run crosses newlines and would let the anchor drift onto a previous
-line's content. The first match wins, so a trace carrying both spellings reads
-the top-level one.
+**The anchor admits exactly two indents, and neither more nor fewer.** RFC-0015
+D1 moved the field into the trace's ``review:`` block, where
+``scripts/ship_report.py`` writes it at a two-space indent; a bare
+``^review_rounds:`` matched only the top-level spelling, so every trace authored
+from BK-378 onward would have dropped silently out of this population while the
+older corpus kept it — the worst direction for a before-and-after comparison,
+since the "after" side is the one that would empty.
+
+``^(?: {2})?review_rounds:`` rather than ``^[ \\t]*``, and the difference is
+load-bearing: a *free* indent also matches prose inside a YAML folded block
+scalar, and the corpus already contains one —
+``sdd/traces/bk-338-review-roster.yml:421`` reads
+``review_rounds: 4 and a per-round review phase…`` at a ten-space indent. That
+trace is safe today only because it still carries a top-level field earlier in
+the file; a BK-378-onward trace carries none, so the prose number would be the
+first match and this script would report it. A silent wrong integer feeding a
+median is worse than the loud exclusion the widening was meant to prevent.
+
+Two spellings match, then: top level (the legacy corpus) and two spaces (the
+emitter). **Which one a mixed file reads is decided by position, not by depth** —
+``re.search`` returns the first match in the text, so a ``review:`` block placed
+above a top-level field reads the block. No trace carries both.
 
 ``--at <rev>`` reads the tree at that revision instead of the working tree
 (``git ls-tree`` for the population, ``git show rev:path`` for each file), so
@@ -48,7 +60,7 @@ import sys
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[2]
-RX = re.compile(r"^[ \t]*review_rounds:[ \t]*(\d+)", re.M)
+RX = re.compile(r"^(?: {2})?review_rounds:[ \t]*(\d+)", re.M)
 
 
 def _git(*args: str) -> str:

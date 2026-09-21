@@ -182,6 +182,67 @@ phases:
           which crosses newlines under re.M. Over 323 traces both spellings
           match the same 261; only the new one reads the block
         outcome: ok
+  - id: review
+    name: Review rounds
+    steps:
+      - file: scripts/check_backlog_ids_vs_base.py
+        section: "_COMMIT_ID_RE / subject_ids"
+        read_type: verify
+        extract: >-
+          Round 3's unprimed member found the gate false-positives on this
+          repo's own convention: `BK-375, BK-373, BK-377: …` matches nothing,
+          because the regex demanded `:` or whitespace straight after the
+          number. Four of the forty commits before this PR use that shape
+          (`git log --format=%s origin/master~40..origin/master`), so every
+          co-shipped branch would have had its legitimate closures reported
+          POACHED — on a gate mandatory at PR time
+        outcome: ok
+      - file: sdd/rfcs/rfc-0015-rounds.py
+        section: "RX"
+        read_type: verify
+        extract: >-
+          The measuring member found round 2's own fix defective: a free
+          `[ \t]*` indent also matches prose inside a YAML folded scalar, and
+          `sdd/traces/bk-338-review-roster.yml:421` already carries one. Safe
+          only while that trace keeps a top-level field; a BK-378-onward trace
+          has none, so the prose integer would win. Bounded to exactly two
+          spaces, which admits both real spellings and rejects the prose line
+        outcome: ok
+      - file: tests/scripts/test_check_backlog_ids_vs_base.py
+        section: "TestGitReads"
+        read_type: verify
+        extract: >-
+          The skipif added in round 1 disabled four of five I/O tests in
+          `tooling-tests`, the only CI job that runs tests/scripts/, and the
+          95% floor could not notice because `--cov=remote_store` excludes
+          scripts/ entirely. Root cause was no seam: ROOT bound at import. The
+          user chose the seam over patching the assertions, so read_base,
+          branch_commit_ids and main take a root and the class now runs against
+          a synthetic two-side repo with no skip at all
+        outcome: ok
+      - file: sdd/TESTING.md
+        section: "Rules 1 and 2"
+        read_type: gate
+        extract: >-
+          Round 2 found one test whose cases were chosen by reading the
+          implementation; that instance was fixed and the class was not. Round 3
+          found five more — an isinstance sole check, `code in (0, 1)`
+          exhausting a return type, a classifier-identity test comparing a
+          module against itself loaded from one path, a stderr test that never
+          read capsys, and a check-run fixture that could not express the shape
+          it existed to reduce
+        outcome: ok
+      - file: .claude/skills/rvw-pr/SKILL.md
+        section: "frontmatter; Step 1 metadata carve-out"
+        read_type: verify
+        extract: >-
+          The permission ripple, found in round 1 and closed in round 3: the
+          carve-out justified itself by /ship brief requirement 3 shipping a
+          comments-endpoint recipe, which this PR replaces. Narrowed to "a claim
+          about the comments endpoint" rather than retired, since a measuring
+          member may still be briefed on paging or counts
+        outcome: ok
+
   - id: verify
     name: Verify
     steps:

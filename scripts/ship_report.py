@@ -10,9 +10,10 @@ rather than composed.
 This script is the single producer of two artifacts:
 
 * the `/ship` **Step 5 report** — what the loop cost and what it found; and
-* the trace's **`review:` block** — the same numbers as YAML, pasted verbatim
-  under one key so `sdd/traces/_schema.yml` can name its derivation instead of
-  asking an author to enumerate commits by hand.
+* the trace's **`review:` block** — the same numbers as YAML, printed by
+  ``--trace-block-only`` and pasted verbatim *as* a top-level key (it already
+  opens with ``review:``), so `sdd/traces/_schema.yml` can name its derivation
+  instead of asking an author to enumerate commits by hand.
 
 Mid-loop it is run with ``--out tmp/ship-report-<PR>.md`` (``tmp/`` is
 gitignored) and a brief quotes the per-file distribution and the origin counts
@@ -52,11 +53,14 @@ What it adds
   **untouched is the changed-file list minus the union across all pages**, never
   minus page 1's.
 * **Review-driven commits**, as the schema's ``review_rounds`` means them:
-  commits in ``<base>..<head>`` whose **author date** is later than the first
+  commits in ``<base>..<head>`` whose **author date** is at or after the first
   review submission that carried a finding. That is the same boundary
-  ``origin()`` uses to call a line ``loop-introduced``, so the commit count and
-  the origin tags cannot disagree about when the loop started. Author dates
-  survive rebases; commit identity does not.
+  ``origin()`` uses to call a line ``loop-introduced`` — it splits on
+  ``authored < first_review_ts``, so the tie belongs to the loop on both sides
+  and the commit count and the origin tags cannot disagree about when the loop
+  started. The tie is the whole of the risk here, and it is pinned by
+  ``test_a_commit_at_the_boundary_is_review_driven``. Author dates survive
+  rebases; commit identity does not.
 * **Per-pass durations**, from consecutive ``submitted_at`` deltas, with the
   first pass measured from the PR's ``created_at``.
 * **CI's verdict on the head**. Measured on this repo: a merge commit carried
@@ -77,10 +81,15 @@ Bounds (DRIFT-RULES Rule 7)
 * **It inherits every bound the classifier states**, including that a finding
   with no blameable line is ``unclassifiable-*`` under one of four causes, and
   that triage is a heuristic over free text whose under-classification shows up
-  as ``unknown`` while mis-classification does not.
+  as ``unknown`` while mis-classification does not. **It adds a fifth cause of
+  its own**, ``unclassifiable-no-boundary``, for the case below; the four are
+  about a finding's line, the fifth is about the sample.
 * **A review with no ``submitted_at``** has no place in the order; the
   classifier sorts it last and this script reports the count rather than hiding
-  it.
+  it. If *no* review in the sample carries one there is no boundary to compare
+  author dates against, so every finding is tagged
+  ``unclassifiable-no-boundary`` and ``review_rounds`` is 0 — reported under
+  its own name rather than borrowed from a cause that means something else.
 * **Durations are wall-clock between submissions**, so a pass that waited on a
   human reads as a long pass. It measures the loop's elapsed time, not work.
 * **``review_rounds`` is a count of commits, not of review submissions.** The
@@ -141,6 +150,13 @@ fnd = _load_classifier()
 # on a measured merge commit were `skipped`.
 _CI_BAD = ("failure", "timed_out", "cancelled", "action_required", "startup_failure", "stale")
 _CI_PENDING = ("queued", "in_progress", "waiting", "pending", "requested")
+
+# A fifth cause, this script's own — the classifier defines four, all about a
+# finding's line. This one is about the *sample*: no review in it carries a
+# `submitted_at`, so there is no boundary to compare an author date against and
+# no finding in the PR can be tagged. Named separately so the trace block never
+# reports a blame failure that did not occur.
+UNCLASSIFIABLE_NO_BOUNDARY = "unclassifiable-no-boundary"
 
 
 def _gh_one(path: str) -> dict[str, Any]:
@@ -221,7 +237,11 @@ def review_driven_commits(base: str, head: str, first_review_ts: int | None) -> 
         if not line.strip():
             continue
         sha, at, subject = line.split("\x00", 2)
-        if int(at) > first_review_ts:
+        # `>=`, not `>`: `origin()` splits on `authored < first_review_ts`, so a
+        # commit authored in the same whole second as the first submission is
+        # `loop-introduced` there. `>` here made the two disagree at exactly
+        # that tie — which the docstrings claimed could not happen.
+        if int(at) >= first_review_ts:
             out.append((sha, int(at), subject))
     out.reverse()  # oldest first, the order a reader follows the loop in
     return out
@@ -291,7 +311,11 @@ def collect(pr: int) -> dict[str, Any]:
         origins: Counter[str] = Counter()
         triages: Counter[str] = Counter()
         for f in group:
-            tag = fnd.origin(f, first_review_ts) if first_review_ts is not None else "unclassifiable-noline"
+            # A distinct tag, not one of the classifier's four. `origin()`
+            # reserves `unclassifiable-noline` for a finding whose
+            # `original_line` is null; reporting a missing *boundary timestamp*
+            # under that name would claim a blame failure that never happened.
+            tag = fnd.origin(f, first_review_ts) if first_review_ts is not None else UNCLASSIFIABLE_NO_BOUNDARY
             verdict = fnd.triage(first_reply.get(f["id"]))
             origins[tag] += 1
             triages[verdict] += 1
@@ -368,7 +392,10 @@ def trace_block(data: dict[str, Any]) -> str:
     a findable indent so ``rfc-0015-rounds.py`` still reads it."""
     # Hoisted rather than nested in the f-string below: a same-quote nested
     # f-string needs PEP 701 (3.12), and this repo supports 3.10.
-    command = "hatch run ship-report {}".format(data["pr"])
+    # `--trace-block-only`, because `derivation` is declared "re-runnable as
+    # written" and the bare command prints the Markdown report instead. The one
+    # field whose whole job is to name its derivation cannot name the wrong one.
+    command = "hatch run ship-report {} --trace-block-only".format(data["pr"])
     lines = [
         "review:",
         f"  # Derived by `{command}` at head {data['head'][:7]}.",

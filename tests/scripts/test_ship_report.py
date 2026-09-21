@@ -4,18 +4,22 @@ RFC-0015 D4 makes this script the only producer of the `/ship` Step 5 report and
 the trace's ``review:`` block. Two things therefore have to hold, and they are
 what this suite is mostly about.
 
-**The classification must be the classifier's.** ``TestReuse`` pins that the
-module's ``origin``, ``triage`` and round ordering are
-``sdd/rfcs/rfc-0015-findings.py``'s function objects, not same-named local
-copies. Two implementations of "which round is this finding in" would eventually
-disagree, and RFC-0015's acceptance criterion is measured with one of them — so
-a name-only equality here would be exactly the weak assertion that lets the
-divergence in.
+**The classification must be the classifier's.** Two implementations of "which
+round is this finding in" would eventually disagree, and RFC-0015's acceptance
+criterion is measured with one of them. ``TestReuse`` pins the *path* and that
+this module defines no classifier of its own; the reuse itself is pinned
+**behaviourally** by ``TestCollect``, which stubs ``fnd.origin`` and asserts the
+tag flows through while ``fnd.triage`` runs unstubbed. A code-object comparison
+against a probe loaded from the same file proved nothing, and that is what stood
+here.
 
 **The CI verdict must not read `skipped` as failure or `pending` as green.**
-``TestCiVerdict`` runs the reducer over the shape actually measured on this
-repo: 39 runs on one commit, 15 of them ``skipped``, several names repeated.
-That shape is the reason the reducer exists, so it is the fixture.
+``test_the_measured_shape_reduces_correctly`` assembles the shape actually
+measured on this repo — 39 runs on one commit, 15 ``skipped``, four names
+repeated — because that shape is the reason the reducer exists. Stated because
+it is easy to describe a fixture and not build one: the surrounding tests use
+small focused fixtures, and none of them has repeated names *and* the skipped
+bulk together.
 
 Offline by construction: every ``gh`` reach is monkeypatched. The one thing
 these tests cannot cover is whether the REST endpoints still answer in the shape
@@ -32,8 +36,25 @@ from pathlib import Path
 
 import pytest
 
-_SCRIPT = Path(__file__).resolve().parents[2] / "scripts" / "ship_report.py"
-_CLASSIFIER = Path(__file__).resolve().parents[2] / "sdd" / "rfcs" / "rfc-0015-findings.py"
+_REPO_ROOT = Path(__file__).resolve().parents[2]
+_SCRIPT = _REPO_ROOT / "scripts" / "ship_report.py"
+_CLASSIFIER = _REPO_ROOT / "sdd" / "rfcs" / "rfc-0015-findings.py"
+_ROUNDS = _REPO_ROOT / "sdd" / "rfcs" / "rfc-0015-rounds.py"
+
+
+def _load_rounds():
+    """Import `rfc-0015-rounds.py`, whose filename is not a Python identifier.
+
+    The same `spec_from_file_location` route `ship_report` uses for the
+    classifier. Without it the anchor that reads this emitter's output is
+    pinned by nothing executable anywhere in the repo.
+    """
+    spec = importlib.util.spec_from_file_location("rfc0015_rounds", _ROUNDS)
+    assert spec is not None
+    assert spec.loader is not None
+    mod = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(mod)  # type: ignore[union-attr]
+    return mod
 
 
 def _load():
@@ -49,8 +70,29 @@ def _load():
 _mod = _load()
 
 
-def _run(name: str, conclusion: str | None, status: str = "completed", completed_at: str = "2026-09-01T00:00:00Z"):
-    return {"name": name, "conclusion": conclusion, "status": status, "completed_at": completed_at}
+def _run(
+    name: str,
+    conclusion: str | None,
+    status: str = "completed",
+    completed_at: str | None = "2026-09-01T00:00:00Z",
+    started_at: str = "2026-09-01T00:00:00Z",
+):
+    """One check-run row, in the shape the endpoint actually returns.
+
+    `started_at` is not decoration. GitHub sends `completed_at: null` with a
+    populated `started_at` while a run is `queued` or `in_progress`, and
+    `ci_verdict` reduces on `completed_at or started_at`. A helper that could
+    only emit `completed_at=""` made a running re-run sort *oldest* and lose the
+    latest-per-name reduction, when in reality it sorts newest and wins — so the
+    case the reducer exists for was not merely untested but unreachable.
+    """
+    return {
+        "name": name,
+        "conclusion": conclusion,
+        "status": status,
+        "completed_at": completed_at,
+        "started_at": started_at,
+    }
 
 
 @pytest.fixture
@@ -130,17 +172,20 @@ def data() -> dict:
 class TestReuse:
     """CLAUDE.md principle 4: the classifier is imported, never reimplemented."""
 
-    def test_origin_and_triage_are_the_classifiers_objects(self) -> None:
-        spec = importlib.util.spec_from_file_location("rfc0015_findings_probe", _CLASSIFIER)
-        assert spec is not None
-        assert spec.loader is not None
-        reference = importlib.util.module_from_spec(spec)
-        spec.loader.exec_module(reference)  # type: ignore[union-attr]
+    def test_the_classifier_is_loaded_from_the_rfcs_own_file(self) -> None:
+        """Pins the path, which is the only thing a path check can pin.
 
-        # Same source file, so the code objects must match byte for byte. A
-        # local copy would differ even if it were a perfect transcription today.
-        for name in ("origin", "triage", "artifact_class", "is_record"):
-            assert getattr(_mod.fnd, name).__code__.co_code == getattr(reference, name).__code__.co_code
+        An earlier form compared `_mod.fnd`'s code objects against a probe
+        loaded from the same path and called that proof of reuse — true by
+        construction, and it never looked at `_mod.origin`, which is what a
+        local copy would have been. The reuse is pinned *behaviourally* by
+        `TestCollect`, which stubs `fnd.origin` and asserts the tag flows
+        through while `fnd.triage` runs unstubbed.
+        """
+        assert _mod._CLASSIFIER == _CLASSIFIER
+        assert _mod._CLASSIFIER.is_file()
+        for name in ("origin", "triage", "artifact_class", "is_record", "_gh", "_ts", "_git", "ensure_commit"):
+            assert hasattr(_mod.fnd, name), f"{name} is not resolvable on the imported classifier"
 
     def test_the_module_defines_no_classifier_of_its_own(self) -> None:
         source = _SCRIPT.read_text(encoding="utf-8")
@@ -174,26 +219,55 @@ class TestCiVerdict:
 
     def test_a_running_matrix_is_pending_not_green(self, monkeypatch: pytest.MonkeyPatch) -> None:
         """/ship's own rule. Reporting this as green is how a loop closes on unread CI."""
-        runs = [_run("ok", "success"), _run("test", None, status="in_progress", completed_at="")]
+        runs = [_run("ok", "success"), _run("test", None, status="in_progress", completed_at=None)]
         monkeypatch.setattr(_mod, "_gh_wrapped", lambda *a, **k: runs)
         verdict = _mod.ci_verdict("deadbeef")
         assert verdict["verdict"] == "PENDING"
         assert verdict["pending"] == ["test"]
 
     def test_a_failure_outranks_a_pending(self, monkeypatch: pytest.MonkeyPatch) -> None:
-        runs = [_run("lint", "failure"), _run("test", None, status="queued", completed_at="")]
+        runs = [_run("lint", "failure"), _run("test", None, status="queued", completed_at=None)]
         monkeypatch.setattr(_mod, "_gh_wrapped", lambda *a, **k: runs)
         assert _mod.ci_verdict("deadbeef")["verdict"] == "RED"
 
-    def test_a_rerun_name_reduces_to_the_latest(self, monkeypatch: pytest.MonkeyPatch) -> None:
-        """Names repeat on a re-run; counting both would double-report an old failure."""
+    def test_a_failed_check_now_re_running_is_pending_not_red(self, monkeypatch: pytest.MonkeyPatch) -> None:
+        """The case the reducer exists for, and the one the old helper could not express.
+
+        A name that completed `failure`, then started again: the running row has
+        `completed_at: null` and a later `started_at`, so it is the latest and
+        the head is PENDING. Reading the stale failure instead would send the
+        loop into a fix pass for a check that is already re-running.
+        """
         runs = [
-            _run("test", "failure", completed_at="2026-09-01T00:00:00Z"),
-            _run("test", "success", completed_at="2026-09-02T00:00:00Z"),
+            _run("test", "failure", completed_at="2026-09-01T00:00:00Z", started_at="2026-09-01T00:00:00Z"),
+            _run("test", None, status="in_progress", completed_at=None, started_at="2026-09-02T00:00:00Z"),
         ]
         monkeypatch.setattr(_mod, "_gh_wrapped", lambda *a, **k: runs)
         verdict = _mod.ci_verdict("deadbeef")
+        assert verdict["verdict"] == "PENDING"
+        assert verdict["pending"] == ["test"]
+        assert verdict["failed"] == []
+
+    @pytest.mark.parametrize("newest_first", [False, True], ids=["oldest-first", "newest-first"])
+    def test_a_rerun_name_reduces_to_the_latest(self, monkeypatch: pytest.MonkeyPatch, newest_first: bool) -> None:
+        """Names repeat on a re-run; counting both would double-report an old failure.
+
+        Parametrised over both row orders deliberately. With the fixture only
+        oldest-first, an implementation that dropped the timestamp comparison
+        entirely (`latest[name] = run`, unconditionally) passed — and the
+        endpoint actually returns results `started_at` **descending**, so the
+        one ordering the old fixture used was the one that never occurs.
+        """
+        runs = [
+            _run("test", "failure", completed_at="2026-09-01T00:00:00Z", started_at="2026-09-01T00:00:00Z"),
+            _run("test", "success", completed_at="2026-09-02T00:00:00Z", started_at="2026-09-02T00:00:00Z"),
+        ]
+        if newest_first:
+            runs.reverse()
+        monkeypatch.setattr(_mod, "_gh_wrapped", lambda *a, **k: runs)
+        verdict = _mod.ci_verdict("deadbeef")
         assert verdict["verdict"] == "GREEN"
+        assert verdict["failed"] == []
         assert verdict["distinct_names"] == 1
         assert verdict["total_runs"] == 2
 
@@ -201,6 +275,29 @@ class TestCiVerdict:
         """Distinct from green: nothing ran, so nothing passed."""
         monkeypatch.setattr(_mod, "_gh_wrapped", lambda *a, **k: [])
         assert _mod.ci_verdict("deadbeef")["verdict"] == "NO CHECKS"
+
+    def test_the_measured_shape_reduces_correctly(self, monkeypatch: pytest.MonkeyPatch) -> None:
+        """The shape the reducer exists for, assembled rather than described.
+
+        Measured on this repo: 39 runs on one commit, 15 `skipped`, several
+        names repeated. The module docstring cited that shape as the reason for
+        the reducer and said "so it is the fixture" while no such fixture
+        existed — the nearest had 20 distinct names and no repetition.
+        """
+        runs = [_run(f"skipped-{i}", "skipped") for i in range(15)]
+        runs += [_run(f"ok-{i}", "success") for i in range(20)]
+        # Four names repeated, each an older row plus a newer one.
+        for i in range(4):
+            runs.append(
+                _run(f"ok-{i}", "failure", completed_at="2026-08-01T00:00:00Z", started_at="2026-08-01T00:00:00Z")
+            )
+        assert len(runs) == 39
+        monkeypatch.setattr(_mod, "_gh_wrapped", lambda *a, **k: runs)
+        verdict = _mod.ci_verdict("deadbeef")
+        assert verdict["total_runs"] == 39
+        assert verdict["distinct_names"] == 35
+        assert verdict["verdict"] == "GREEN", "the stale failures must lose the reduction"
+        assert verdict["counts"] == {"skipped": 15, "success": 20}
 
 
 class TestReviewDrivenCommits:
@@ -239,24 +336,84 @@ class TestReviewDrivenCommits:
         (_sha, _at, subject) = _mod.review_driven_commits("origin/master", "HEAD", 100)[0]
         assert subject == "fix: a\x00b subject"
 
-    def test_a_commit_exactly_at_the_boundary_is_not_review_driven(self, monkeypatch: pytest.MonkeyPatch) -> None:
-        """Strictly later, matching origin()'s `authored < first_review_ts` split."""
+    def test_a_commit_at_the_boundary_is_review_driven(self, monkeypatch: pytest.MonkeyPatch) -> None:
+        """The tie belongs to the loop, on both sides of the pair.
+
+        `origin()` splits on `authored < first_review_ts`, which selects
+        **original** — so at equality it returns `loop-introduced`. A `>` here
+        excluded the same commit from `review_rounds`, making the two disagree
+        at exactly the tie the docstrings said could not happen. This assertion
+        is the pair's only guard, and an earlier form of it pinned the wrong
+        side while its docstring claimed to rule the divergence out.
+        """
         self._log(monkeypatch, ["aaa\x00200\x00at the boundary"])
-        assert _mod.review_driven_commits("origin/master", "HEAD", 200) == []
+        assert [s for _sha, _at, s in _mod.review_driven_commits("origin/master", "HEAD", 200)] == ["at the boundary"]
+
+    def test_the_boundary_agrees_with_the_classifiers_split(self, monkeypatch: pytest.MonkeyPatch) -> None:
+        """Stated as the pair rather than as two numbers, so it cannot drift apart.
+
+        Whatever `origin()` calls a line authored at time T, this function must
+        make the same call about a commit authored at T.
+        """
+        first_review_ts = 200
+        for authored in (199, 200, 201):
+            self._log(monkeypatch, [f"aaa\x00{authored}\x00subject"])
+            counted = bool(_mod.review_driven_commits("origin/master", "HEAD", first_review_ts))
+            # The classifier's own expression, not a transcription of its result.
+            origin_says_loop = not (authored < first_review_ts)
+            assert counted is origin_says_loop, f"disagreement at authored={authored}"
 
 
 class TestTraceBlock:
     """The block is pasted verbatim, so its shape is the contract."""
 
     def test_review_rounds_stays_findable_by_the_rounds_script(self, data: dict) -> None:
-        """rfc-0015-rounds.py reads the field with a line-start anchor.
+        """Exercises the **real** anchor, not a transcription of it.
 
-        It is amended in this change to tolerate leading whitespace; this test
-        pins the other half — that the field is at a plain two-space indent and
-        not nested deeper, where no reasonable anchor would find it.
+        `rfc-0015-rounds.py` derives RFC-0015 Table 1's before/after populations
+        from this field. Asserting the emitter's literal spelling pinned only
+        one half of a two-file coupling: reverting the anchor would silently
+        empty the entire "after" side and leave the suite green, which is the
+        shape DRIFT-RULES Rule 8 is about. Importing it covers both halves with
+        one assertion.
         """
-        block = _mod.trace_block(data)
-        assert "\n  review_rounds: 1\n" in block
+        rounds = _load_rounds()
+        match = rounds.RX.search(_mod.trace_block(data))
+        assert match is not None, "the rounds script cannot find review_rounds in the emitted block"
+        assert int(match.group(1)) == 1
+
+    def test_the_anchor_ignores_prose_inside_a_folded_scalar(self, data: dict) -> None:
+        """The defect a free `[ \\t]*` indent introduced, and the reason it is bounded.
+
+        `sdd/traces/bk-338-review-roster.yml:421` carries
+        `review_rounds: 4 and a per-round review phase…` as prose at a ten-space
+        indent. A BK-378-onward trace has no top-level field, so under a free
+        indent that prose line would be the first match and the script would
+        report it — a silent wrong integer feeding a median, in place of the
+        loud exclusion the widening was meant to prevent.
+        """
+        rounds = _load_rounds()
+        prose = "          review_rounds: 4 and a per-round review phase, and a scan\n"
+        assert rounds.RX.search(prose) is None
+        # Both real spellings still read: the emitter's two-space indent, and
+        # the legacy corpus's top-level field.
+        assert rounds.RX.search("  review_rounds: 9\n").group(1) == "9"
+        assert rounds.RX.search("review_rounds: 4\n").group(1) == "4"
+
+    def test_the_legacy_corpus_reads_identically_under_the_anchor(self) -> None:
+        """The amendment must not disturb any existing reading — 261 of 324 traces."""
+        import re as _re
+
+        rounds = _load_rounds()
+        legacy = _re.compile(r"^review_rounds:\s*(\d+)", _re.M)
+        traces = sorted((_REPO_ROOT / "sdd" / "traces").glob("[!_]*.yml"))
+        assert traces, "no traces found; the corpus glob is wrong"
+        for path in traces:
+            text = path.read_text(encoding="utf-8")
+            old, new = legacy.search(text), rounds.RX.search(text)
+            assert (old is None) == (new is None), f"{path.name}: the anchors disagree on presence"
+            if old is not None:
+                assert old.group(1) == new.group(1), f"{path.name}: the anchors disagree on value"
 
     def test_review_rounds_is_the_commit_count(self, data: dict) -> None:
         data["review_driven_commits"] = [("a" * 40, 1, "one"), ("b" * 40, 2, "two")]
@@ -315,19 +472,38 @@ class TestTraceBlock:
         assert errors == [], "\n".join(f"{list(e.absolute_path)}: {e.message}" for e in errors)
 
     def test_the_schema_requires_every_field_the_emitter_writes(self) -> None:
-        """Closes the drift gate's other direction: a dropped field must fail.
+        """Closes the drift gate's other direction, at **every** depth.
 
         `additionalProperties: false` catches a field added without a property.
-        Nothing caught one removed, because five of the nine were optional — so
-        an emitter that silently stopped writing `by_file` would validate
-        everywhere.
+        Nothing caught one removed, because five of nine top-level fields were
+        optional. Asserting only the top level left the same hole one layer
+        down — `ci` had no `required:` at all, so `ci: {}` validated and an
+        emitter that stopped writing the verdict passed; `by_round` items
+        required two of their five. Both survived a mutation run against the
+        top-level-only form of this test, which is why it walks now.
         """
         import yaml
 
         schema_path = Path(__file__).resolve().parents[2] / "sdd" / "traces" / "_schema.yml"
         schema = yaml.safe_load(schema_path.read_text(encoding="utf-8"))
-        review_schema = schema["properties"]["review"]
-        assert set(review_schema["required"]) == set(review_schema["properties"])
+
+        def walk(node: dict, path: str) -> list[str]:
+            """Every closed object that leaves one of its own properties optional."""
+            gaps: list[str] = []
+            if isinstance(node, dict):
+                props = node.get("properties")
+                if isinstance(props, dict) and node.get("additionalProperties") is False:
+                    missing = set(props) - set(node.get("required") or [])
+                    if missing:
+                        gaps.append(f"{path}: optional {sorted(missing)}")
+                    for name, child in props.items():
+                        gaps += walk(child, f"{path}.{name}")
+                items = node.get("items")
+                if isinstance(items, dict):
+                    gaps += walk(items, f"{path}[]")
+            return gaps
+
+        assert walk(schema["properties"]["review"], "review") == []
 
     @pytest.mark.parametrize(
         "dropped",
@@ -436,11 +612,8 @@ class TestTraceBlock:
 
     @pytest.mark.parametrize("verdict", ["GREEN", "RED", "PENDING", "NO CHECKS"])
     def test_every_verdict_round_trips_as_a_string(self, data: dict, verdict: str) -> None:
-        """Sibling sweep of the null-duration class: every unquoted scalar the block emits.
-
-        `verdict` is the only other one, and `NO CHECKS` is the interesting
-        case — a plain scalar with a space, and near enough to YAML 1.1's
-        `NO` → False coercion to be worth pinning rather than reasoning about.
+        """`NO CHECKS` is the interesting case — a plain scalar with a space, and
+        near enough to YAML 1.1's `NO` → False coercion to pin rather than reason about.
         """
         import yaml
 
@@ -449,11 +622,45 @@ class TestTraceBlock:
         assert review["ci"]["verdict"] == verdict
         assert isinstance(review["ci"]["verdict"], str)
 
-    def test_the_block_names_its_derivation(self, data: dict) -> None:
-        """CLAUDE.md principle 9: the figures say what produced them."""
+    def test_the_origin_and_triage_mappings_round_trip_unquoted(self, data: dict) -> None:
+        """The other unquoted scalars, which a sweep claiming `verdict` was the only one missed.
+
+        Both keys and values of the flow mappings are interpolated straight from
+        the classifier's vocabulary. Nothing breaks today — the vocabulary is
+        fixed and YAML-safe — so this pins the enumeration rather than a bug,
+        which is what the earlier claim should have done.
+        """
+        import yaml
+
+        data["by_round"][0]["origin"] = {
+            "original": 2,
+            "loop-introduced": 1,
+            "pre-existing": 1,
+            "unclassifiable-file": 1,
+            _mod.UNCLASSIFIABLE_NO_BOUNDARY: 1,
+        }
+        data["by_round"][0]["triage"] = {"must-fix": 3, "filed": 1, "refuted": 1, "unknown": 1}
+        entry = yaml.safe_load(_mod.trace_block(data))["review"]["by_round"][0]
+        assert entry["origin"]["loop-introduced"] == 1
+        assert entry["origin"][_mod.UNCLASSIFIABLE_NO_BOUNDARY] == 1
+        assert entry["triage"]["must-fix"] == 3
+        assert all(isinstance(k, str) for k in entry["origin"])
+        assert all(isinstance(k, str) for k in entry["triage"])
+
+    def test_the_block_names_a_derivation_that_reproduces_it(self, data: dict) -> None:
+        """Principle 9, and the flag is the whole of it.
+
+        The schema declares `derivation` "re-runnable as written", and the bare
+        command prints the Markdown report rather than this block — so a
+        `derivation` without `--trace-block-only` names a command that produces
+        the wrong artifact, in the one field whose only job is to name the right
+        one.
+        """
+        import yaml
+
         block = _mod.trace_block(data)
-        assert "hatch run ship-report 1025" in block
         assert "Do not hand-edit" in block
+        assert yaml.safe_load(block)["review"]["derivation"] == "hatch run ship-report 1025 --trace-block-only"
 
 
 class TestStep5Report:
@@ -694,3 +901,120 @@ class TestPaging:
     def test_a_missing_key_yields_nothing_rather_than_raising(self, monkeypatch: pytest.MonkeyPatch) -> None:
         monkeypatch.setattr(_mod, "_gh_one", lambda path: {"total_count": 0})
         assert _mod._gh_wrapped("commits/x/check-runs", "check_runs") == []
+
+
+class TestChangedFiles:
+    """The minuend, whose truncation the module docstring calls invisible."""
+
+    def test_it_reads_the_filename_key_and_uses_every_page(self, monkeypatch: pytest.MonkeyPatch) -> None:
+        rows = [{"filename": f"f{i}.py", "status": "modified"} for i in range(150)]
+        monkeypatch.setattr(_mod.fnd, "_gh", lambda path: rows)
+        assert _mod.changed_files(1) == [f"f{i}.py" for i in range(150)]
+
+    def test_it_pages_through_the_shared_reader(self, monkeypatch: pytest.MonkeyPatch) -> None:
+        """Delegates to the classifier's paged walk rather than fetching page one.
+
+        A truncated changed-file list drops a file out of *both* the touched and
+        untouched sets, which is invisible — unlike a truncated finding list,
+        which merely over-reports neglect.
+        """
+        seen: list[str] = []
+
+        def fake(path: str):
+            seen.append(path)
+            return [{"filename": "a.py"}]
+
+        monkeypatch.setattr(_mod.fnd, "_gh", fake)
+        _mod.changed_files(1026)
+        assert seen == ["pulls/1026/files"]
+
+
+class TestMain:
+    """The entry point, offline — it needs no network double, only a stubbed `collect`."""
+
+    @pytest.fixture
+    def collected(self, monkeypatch: pytest.MonkeyPatch, data: dict):
+        monkeypatch.setattr(_mod, "collect", lambda pr: data)
+        return data
+
+    def test_the_default_prints_the_step_5_report(self, collected, capsys: pytest.CaptureFixture[str]) -> None:
+        assert _mod.main(["1025"]) == 0
+        out = capsys.readouterr().out
+        assert "## Per-file distribution" in out
+        assert out.startswith("# /ship report")
+
+    def test_trace_block_only_prints_the_block_and_nothing_else(
+        self, collected, capsys: pytest.CaptureFixture[str]
+    ) -> None:
+        assert _mod.main(["1025", "--trace-block-only"]) == 0
+        out = capsys.readouterr().out
+        assert out.startswith("review:")
+        assert "## Per-file distribution" not in out
+
+    def test_out_writes_the_file_and_creates_its_parent(
+        self, collected, tmp_path: Path, capsys: pytest.CaptureFixture[str]
+    ) -> None:
+        target = tmp_path / "nested" / "dir" / "ship-report-1025.md"
+        assert _mod.main(["1025", "--out", str(target)]) == 0
+        assert target.read_text(encoding="utf-8").startswith("# /ship report")
+        assert f"Written to {target}" in capsys.readouterr().err
+
+    def test_out_honours_trace_block_only(self, collected, tmp_path: Path) -> None:
+        target = tmp_path / "block.yml"
+        assert _mod.main(["1025", "--trace-block-only", "--out", str(target)]) == 0
+        assert target.read_text(encoding="utf-8").startswith("review:")
+
+
+class TestNoBoundary:
+    """The fifth cause: no review in the sample carries a `submitted_at`."""
+
+    def test_findings_are_tagged_under_their_own_cause(self, monkeypatch: pytest.MonkeyPatch) -> None:
+        """Not `unclassifiable-noline`, which means a null `original_line`.
+
+        Borrowing that name made the block claim a blame failure that never
+        happened, for every finding in the PR.
+        """
+        meta = {
+            "title": "t",
+            "state": "open",
+            "merged_at": None,
+            "created_at": "2026-09-01T00:00:00Z",
+            "head": {"sha": "b" * 40},
+            "base": {"ref": "master"},
+        }
+        comments = [
+            {
+                "id": 1,
+                "pull_request_review_id": 10,
+                "path": "scripts/a.py",
+                "in_reply_to_id": None,
+                "created_at": "2026-09-01T09:00:00Z",
+                "original_line": 4,
+                "original_commit_id": "c" * 40,
+                "body": "",
+            }
+        ]
+        monkeypatch.setattr(_mod, "pr_meta", lambda pr: meta)
+        monkeypatch.setattr(_mod, "changed_files", lambda pr: ["scripts/a.py"])
+        monkeypatch.setattr(
+            _mod,
+            "ci_verdict",
+            lambda sha: {
+                "verdict": "GREEN",
+                "counts": {},
+                "failed": [],
+                "pending": [],
+                "total_runs": 0,
+                "distinct_names": 0,
+            },
+        )
+        monkeypatch.setattr(_mod.fnd, "ensure_commit", lambda sha: None)
+        # No review carries `submitted_at`, so there is no boundary at all.
+        monkeypatch.setattr(_mod.fnd, "_gh", lambda path: comments if path.endswith("/comments") else [{"id": 10}])
+        data = _mod.collect(1)
+        assert data["unsubmitted_reviews"] == 1
+        assert data["by_round"][0]["origin"] == {_mod.UNCLASSIFIABLE_NO_BOUNDARY: 1}
+        assert data["review_driven_commits"] == []
+
+    def test_the_tag_is_not_one_of_the_classifiers_four(self) -> None:
+        assert _mod.UNCLASSIFIABLE_NO_BOUNDARY not in _mod.fnd.UNCLASSIFIABLE

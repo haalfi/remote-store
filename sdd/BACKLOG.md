@@ -2970,6 +2970,17 @@ the commit that writes it lands, so cite the generator instead.
   is no firing to tune them against. D6's deferred half — the whole-file brief
   excluding the trace's `review:` key, and a measuring member re-running
   `ship-report`.
+  **Two measured observations BK-378's review surfaced, for whoever takes
+  this.** First, **the repo's own tooling is unmeasured by the coverage gate**:
+  `pyproject.toml` scopes coverage to `--cov=remote_store`, and `ci.yml`'s
+  `tooling-tests` job states it runs without coverage, so no gap in any
+  `scripts/` gate can reach the 95% floor — those guards' whole value is that
+  job's pass/fail. Left alone deliberately: extending the scope would put every
+  existing script under a floor none was written against. Second, **D6's
+  deferred half has a permission problem**, recorded in the RFC under D6: a
+  measuring member cannot run `ship-report`, because it is not on `/rvw-pr`'s
+  by-name allowlist and it reads comment bodies, which that skill's carve-out
+  excludes. Independent re-derivation needs a mode that reads no feedback.
   **The sample is the next three deliveries**, whichever they are. `BK-380`
   (Python 3.10's security-fix end, dated 2026-10-04) is next in line and could be
   the first of them.

@@ -195,13 +195,25 @@ def scan(root: Path = ROOT, surface: tuple[str, ...] = SURFACE, exempt: frozense
     return hits
 
 
-def main(argv: list[str] | None = None) -> int:
-    parser = argparse.ArgumentParser(description=__doc__.split("\n", 1)[0])
-    parser.parse_args(argv)
+def scanned_count(root: Path = ROOT, surface: tuple[str, ...] = SURFACE, exempt: frozenset[str] = _EXEMPT) -> int:
+    """How many files ``scan`` actually reads — enumerated minus exempt.
 
-    hits = scan()
+    Separate from ``len(iter_surface_files())``, which counts the exempt files
+    too: a gate reporting a figure larger than what it looked at is the defect
+    this PR's own principle 9 is about.
+    """
+    return sum(1 for path in iter_surface_files(root, surface) if path.relative_to(root).as_posix() not in exempt)
+
+
+def main(argv: list[str] | None = None, root: Path = ROOT) -> int:
+    parser = argparse.ArgumentParser(description=__doc__.split("\n", 1)[0])
+    parser.add_argument("--root", type=Path, default=None, help=argparse.SUPPRESS)
+    args = parser.parse_args(argv)
+    root = args.root or root
+
+    hits = scan(root=root)
     if not hits:
-        print(f"No retrospectives on the deliverable surface ({len(iter_surface_files())} files scanned).")
+        print(f"No retrospectives on the deliverable surface ({scanned_count(root)} files scanned).")
         return 0
 
     files = len({hit.path for hit in hits})

@@ -305,7 +305,10 @@ properties:
         items:
           type: object
           additionalProperties: false
-          required: [round, findings]
+          # All five: the emitter writes every one for every entry, so an
+          # optional field here reopens the drop direction the top-level
+          # `required:` closes.
+          required: [round, findings, origin, triage, duration_hours]
           properties:
             round: {type: integer, minimum: 1}
             findings: {type: integer, minimum: 0}
@@ -347,6 +350,9 @@ properties:
       ci:
         type: object
         additionalProperties: false
+        # `verdict` is the whole content of this key; without it `ci: {}`
+        # validates and an emitter that stopped writing the verdict passes.
+        required: [verdict, failed, pending]
         description: |
           CI's verdict on the final head. `pending` is reported separately
           from `failed` because a still-running matrix is not a green one.

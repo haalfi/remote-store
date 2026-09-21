@@ -83,17 +83,19 @@ class TestPhraseSet:
         assert hits[0].text == line.strip()
 
     def test_phrase_set_is_the_rfc_spelling(self) -> None:
-        """The constant is the RFC's alternation, character for character.
+        """Compared against **the RFC**, not against a copy of it.
 
-        RFC-0015 states its figures over this exact set, so an edit here
-        re-bases every count that cites it. Pinned as a string rather than
-        described, because a paraphrase is what a reader would check against.
+        RFC-0015 § References states the alternation, and the RFC states its
+        figures over that exact set — so an edit on either side re-bases every
+        count that cites it. An earlier form of this test compared the script's
+        constant against a *third* hand-copy inside the test, which forced a
+        two-place edit and could not detect the one drift it named: the script
+        moving away from the RFC.
         """
-        assert _mod.PHRASES == (
-            r"Retrospective|Annotated after|annotated after|until round \d|"
-            r"an earlier revision of this|this (line|sentence|figure|step) (said|read|was)|"
-            r"corrected in round|Round \d (caught|found|corrected)"
-        )
+        rfc = (_REPO_ROOT / "sdd" / "rfcs" / "rfc-0015-ship-two-surfaces.md").read_text(encoding="utf-8")
+        spelt = [line for line in rfc.splitlines() if line.startswith("  `Retrospective|")]
+        assert len(spelt) == 1, f"expected one backticked phrase set in the RFC, found {len(spelt)}"
+        assert spelt[0].strip().strip("`") == _mod.PHRASES
 
 
 class TestLocalization:
@@ -122,14 +124,44 @@ class TestLocalization:
         assert [h.line for h in hits] == [3, 5, 7]
 
     def test_exit_code_and_stderr_on_a_hit(self, tmp_path: Path, capsys: pytest.CaptureFixture[str]) -> None:
-        """The gate fails loudly on stderr, and prints the remedy, not just the count."""
+        """The gate fails loudly on stderr, and prints the remedy, not just the count.
+
+        Through `main`, which is the part that was never executed: an earlier
+        form of this test named the exit code and stderr, requested `capsys`,
+        read neither, and asserted a `Hit.format()` string instead. `main` took
+        no root then, so the failure branch — the count line, the per-hit lines,
+        the RFC-0015 remedy paragraph, `return 1` — could not be reached at all.
+        """
         _write(tmp_path, "sdd/BACKLOG.md", "Round 2 caught it.\n")
-        hits = _mod.scan(root=tmp_path, surface=_ONE_GLOB, exempt=frozenset())
-        assert len(hits) == 1
-        # main() reads the real repo; assert the reporting shape through it once
-        # the tree is clean, which TestRepoIsClean below does. Here, the message
-        # body is what is pinned.
-        assert hits[0].format().startswith("sdd/BACKLOG.md:1:")
+        _write(tmp_path, "CHANGELOG.md", "clean\n")
+        assert _mod.main(["--root", str(tmp_path)]) == 1
+        captured = capsys.readouterr()
+        assert captured.out == ""
+        assert "Found 1 retrospective line(s) in 1 file(s):" in captured.err
+        assert "sdd/BACKLOG.md:1: Round 2 caught it." in captured.err
+        assert "RFC-0015 D1" in captured.err
+        assert "Keep the claim" in captured.err
+
+    def test_the_scanned_count_excludes_the_exempt_files(self, tmp_path: Path) -> None:
+        """The clean line reports what was read, not what was enumerated.
+
+        `len(iter_surface_files())` counts the exempt files too, so the gate
+        over-stated its own coverage by the size of the exemption — a figure in
+        its output that did not match what produced it.
+        """
+        _write(tmp_path, "sdd/BACKLOG.md", "clean\n")
+        _write(tmp_path, "CHANGELOG.md", "clean\n")
+        _write(tmp_path, "tests/scripts/test_check_no_retrospective.py", "phrases: Round 2 caught it.\n")
+        enumerated = len(_mod.iter_surface_files(tmp_path, _mod.SURFACE))
+        scanned = _mod.scanned_count(tmp_path, _mod.SURFACE, _mod._EXEMPT)
+        assert enumerated == 3
+        assert scanned == 2, "the exempt guard is enumerated but not read"
+
+    def test_the_clean_line_reports_the_scanned_count(self, tmp_path: Path, capsys: pytest.CaptureFixture[str]) -> None:
+        _write(tmp_path, "sdd/BACKLOG.md", "clean\n")
+        _write(tmp_path, "tests/scripts/test_check_no_retrospective.py", "Round 2 caught it.\n")
+        assert _mod.main(["--root", str(tmp_path)]) == 0
+        assert "(1 files scanned)" in capsys.readouterr().out
 
 
 class TestSurface:
