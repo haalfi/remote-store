@@ -275,12 +275,23 @@ if evidence changes; these are retired.
   against the RFC's "14 lines in five files", which was pinned at `2a1bbfe` and
   stale in the file count. Each site kept its durable claim and lost the clause
   whose subject was an earlier draft of the text. 561 files scan clean.
-  **The check's own first run found its bound.** Reading the same four files by
-  hand turned up a fifteenth retrospective the phrase set cannot reach — *an
-  earlier revision named three of which two were unreachable*, which needs the
-  `of this` the set requires. It was cleaned too, and the miss is now the
-  docstring's stated bound and a test fixture rather than a live example, so the
-  bound cannot quietly become false in either direction.
+  **The check's own construction measured its bound, and the residue is not
+  small.** Reading the flagged files by hand turned up retrospectives the phrase
+  set cannot reach, and a later review round found more again in
+  `sdd/specs/009-sftp-backend.md` — a file the two earlier passes had already
+  edited. They share a stem the set demands a different suffix for — its
+  "earlier revision" branch requires the words *of this*, so a sentence saying
+  what an earlier revision *attributed* slips past, and no branch reaches a
+  clause that says what it *used to carry*. (Spelled in description rather than
+  quoted, because this file is on the surface and a literal would be a hit —
+  which is how this entry first failed the gate.) Every one named was cleaned;
+  **no count of the residue
+  is recorded**, because each count written during this work was an
+  under-derivation within one round. The phrase set stays as RFC-0015
+  § References pins it, so the figure the RFC states stays comparable; widening
+  it is a judgement over 23 candidate hits (six patterns over the 563-file
+  surface), many of which are content rather than retrospective under D1's own
+  boundary, and is not this slice's call.
   **A ripple the ripple-check table did not anticipate.** Moving `review_rounds`
   into the `review:` block indents it, and `rfc-0015-rounds.py` read it with a
   line-start anchor — so every trace authored from here on would have dropped out

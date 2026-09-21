@@ -452,7 +452,7 @@ for any non-`ENOENT`, non-futile stat failure, permission errnos included
 (BK-316 L6 kept that deliberately, so a false "no file ancestor" only forgoes
 the `NotFound` upgrade). Reaching that walk takes a **conjunction a server does
 not normally produce**, and the clause is stated over it rather than over "an
-ancestor denial", which an earlier revision said and which is false: the
+ancestor denial", which is the wider reading and is false: the
 operation's own failure must be errno-less (`read_bytes` and `delete` consult
 `_has_file_ancestor` only when `code is None`), the target's classification stat
 must answer `ENOENT`, and an ancestor stat must answer the permission errno.
@@ -926,7 +926,7 @@ is narrower than it looks: the options table and the migration entry have to
 state values to do their jobs, and what is genuinely tolerated is the narrative
 restatements beside them. The cost is real and was paid inside this item's own
 review, twice: a derived figure in a test docstring went stale one commit after
-review corrected it, and the enumeration this paragraph used to carry was
+it was corrected, and a hand enumeration in this paragraph's place was
 incomplete when written.
 
 **It is armed before the SFTP session exists, not after.** `_connect` opens the
@@ -1033,7 +1033,7 @@ Read the Postconditions as scoped to the failures that surface; the exception
 list is not a footnote to them.
 
 The caller-visible wall clock for a stalled operation is one bound, not
-several. **The one exception this clause used to carry is closed** (BUG-270): the
+several. **The one exception to that is closed** (BUG-270): the
 fallback opened with a `remove` under `contextlib.suppress(OSError)`, so a
 silence beginning there was swallowed and the following `rename` re-entered the
 same channel — 4.00 s at a 2.0 s bound, reached directly by `move`, which has no
@@ -1057,9 +1057,8 @@ exception to test, asks the transport instead. Stated because the figure above
 cannot be read as covering the shape it could not raise.
 
 The two-route detail is kept because it is what the guard's placement turns on:
-an earlier revision attributed the 4.00 s to the promote path under the first
-antecedent, where it was 2.00 s, and a guard written from that reading would have
-gone in the wrong method.
+attributing the 4.00 s to the promote path under the first antecedent, where it
+is 2.00 s, sends a guard written from that reading into the wrong method.
 
 A failed operation re-enters the channel two ways — to classify the
 failure (`_raise_if_dir`, `_has_file_ancestor`) and to release resources — and

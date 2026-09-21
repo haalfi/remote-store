@@ -66,14 +66,19 @@ itself.
 
 Bounds (DRIFT-RULES Rule 7)
 ---------------------------
-* **It matches phrases, not a diary written in other words.** A retrospective
-  that avoids the phrase set is a reviewer's to catch, and the gap is not
-  hypothetical: this gate's own first run reported 14 lines, and a read of the
-  same files by hand found a fifteenth it could not see — *an earlier revision
-  named three of which two were unreachable*, in ``sdd/specs/009-sftp-backend.md``.
-  ``an earlier revision of this`` requires the ``of this``, so the set misses it.
-  That line was cleaned in the same change, which is why no live instance is
-  named here; the shape is pinned instead by ``TestStatedBound`` in the guard.
+* **It matches phrases, not a diary written in other words, and the residue is
+  not small.** A retrospective that avoids the phrase set is a reviewer's to
+  catch, and both halves of that were demonstrated while this gate was built:
+  the first run reported 14 lines, a hand read of the same files found more the
+  set cannot reach, and a later review round found more again in a file the
+  first two passes had already edited. The misses share a stem the set requires
+  the wrong suffix for — ``an earlier revision of this`` does not match *an
+  earlier revision attributed*, and nothing matches *this clause used to carry*.
+  **No count of the residue is given here**, deliberately: every count written
+  during this gate's construction was an under-derivation within one round, and
+  a total a reader cannot check is worth less than the rule. Measure it by
+  widening the pattern and reading the hits; the shapes are pinned by
+  ``TestStatedBound`` in the guard.
 * **It is line-oriented**, so a phrase split across a line break is missed. The
   phrase set was authored against this repo's wrapped prose, where the tested
   phrases are short enough to survive wrapping, but nothing enforces that.

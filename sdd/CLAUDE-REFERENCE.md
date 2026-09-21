@@ -523,8 +523,13 @@ trace step (`/pr` verifies a trace exists, `/fix-pr` updates it).
       docs / tracker / drift checks through `preflight` + `lint` + `check-links`,
       so the two paths stay equivalent on docs coverage despite composing
       different targets.
-- **Backlog ID-set gate.** `python scripts/check_backlog_ids_vs_base.py`
-  (`hatch run check-backlog-ids-vs-base`). Compares the `PREFIX-NNN` item
+- **Backlog ID-set gate.** `python scripts/check_backlog_ids_vs_base.py --base origin/<BASE>`
+  (`hatch run check-backlog-ids-vs-base --base origin/<BASE>`). **Pass the flag
+  even when `<BASE>` is `master`**: the script defaults to `origin/master`, so on
+  any other base an unflagged run compares against a ref the freshness check
+  above never fetched — it passes its own guard and reports on a stale ref, which
+  is the under-report this bullet cites as its reason for living here. Compares
+  the `PREFIX-NNN` item
   headers in `sdd/BACKLOG*.md` against `origin/<BASE>`'s, and fails on an ID the
   base has open that the head has nowhere (a rebase dropped a live item), or one
   the head closes that the base has open and no commit on this branch names

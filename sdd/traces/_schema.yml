@@ -242,21 +242,34 @@ properties:
   review:
     type: object
     additionalProperties: false
-    required: [derivation, review_rounds, submissions, findings]
+    required:
+      # All nine, because the emitter writes all nine unconditionally. With five
+      # optional, an emitter that *dropped* a field would validate everywhere and
+      # the "cannot diverge silently" claim below would be false in the direction
+      # that matters. `additionalProperties: false` catches a field added without
+      # a property; this catches one removed without one.
+      [derivation, review_rounds, submissions, findings, by_round, by_file, untouched_files,
+       review_driven_commits, ci]
     description: |
       The loop's own figures, derived from the PR after it closed and
       pasted verbatim (RFC-0015 D4, BK-378). **Produced by
-      `hatch run ship-report <PR>`; never hand-written and never
-      hand-edited.** That is the point of the key: it gives the boundary
+      `hatch run ship-report <PR> --trace-block-only`; never hand-written
+      and never hand-edited.** That is the point of the key: it gives the boundary
       between the deliverable and the record a name a check can see, so
       the trace's *reads* stay logged as they happen while everything
       about the review arrives in one block at the close.
 
       The authority runs one way: the script's output governs, and this
-      schema describes what the script emits. A field appearing in
-      `ship_report.py`'s block and not here fails `check_traces.py` —
-      `additionalProperties: false` makes the pair a drift gate rather
-      than a convention, so the two cannot diverge silently.
+      schema describes what the script emits. The pair is a drift gate
+      rather than a convention, and it closes in **both** directions —
+      `additionalProperties: false` fails a field the emitter adds
+      without a property here, and the all-nine `required:` list fails
+      one it drops. Either alone leaves the other direction silent.
+
+      **What it does not reach**, per DRIFT-RULES Rule 7: the field
+      *values*. A property declares a type, so an emitter that wrote a
+      correct-shaped wrong number passes. The figures are checked by the
+      script's own guards, not here.
 
       Traces predating BK-378 carry their hand-derived `review_rounds` at
       the top level and are not retrofitted.
@@ -478,8 +491,10 @@ examples:
       - sdd/backlogid.json
     # This example is what CLAUDE.md tells a new trace author to copy, so it
     # carries the `review:` block rather than a hand-counted `review_rounds`.
-    # Do not fill it in by hand: run `hatch run ship-report <PR>` at the close
-    # and paste its output. The placeholder SHA below is deliberately not a
+    # Do not fill it in by hand: run `hatch run ship-report <PR> --trace-block-only`
+    # at the close and paste its output as a top-level key (it already opens with
+    # `review:`; the bare command prints the Markdown report instead). The
+    # placeholder SHA below is deliberately not a
     # plausible one — a fake that resolves to nothing is worse than no
     # derivation, and the script writes the real ones.
     review:

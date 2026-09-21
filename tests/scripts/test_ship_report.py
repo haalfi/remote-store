@@ -280,14 +280,79 @@ class TestTraceBlock:
         assert review["ci"]["verdict"] == "GREEN"
 
     def test_empty_collections_stay_valid_yaml(self, data: dict) -> None:
+        """Every sequence key, not just the two that happened to have a guard.
+
+        An earlier form of this test covered `untouched_files` and
+        `review_driven_commits` — which were exactly the two the emitter
+        guarded — so it could not see that `by_round` and `by_file` serialised
+        as YAML *null*. A test written from the implementation tests the
+        implementation.
+        """
         import yaml
 
+        data["by_round"] = []
+        data["per_file"] = {}
         data["untouched_files"] = []
         data["review_driven_commits"] = []
         review = yaml.safe_load(_mod.trace_block(data))["review"]
-        assert review["untouched_files"] == []
-        assert review["review_driven_commits"] == []
+        for key in ("by_round", "by_file", "untouched_files", "review_driven_commits"):
+            assert review[key] == [], f"{key} is {review[key]!r}, not an empty list"
         assert review["review_rounds"] == 0
+
+    def test_an_all_empty_block_still_validates(self, data: dict) -> None:
+        """The ordinary shape of a PR whose review posted no inline findings."""
+        import yaml
+        from jsonschema.validators import validator_for
+
+        data["by_round"] = []
+        data["per_file"] = {}
+        data["untouched_files"] = []
+        data["review_driven_commits"] = []
+        schema_path = Path(__file__).resolve().parents[2] / "sdd" / "traces" / "_schema.yml"
+        schema = yaml.safe_load(schema_path.read_text(encoding="utf-8"))
+        validator = validator_for(schema)(schema["properties"]["review"])
+        errors = sorted(validator.iter_errors(yaml.safe_load(_mod.trace_block(data))["review"]), key=str)
+        assert errors == [], "\n".join(f"{list(e.absolute_path)}: {e.message}" for e in errors)
+
+    def test_the_schema_requires_every_field_the_emitter_writes(self) -> None:
+        """Closes the drift gate's other direction: a dropped field must fail.
+
+        `additionalProperties: false` catches a field added without a property.
+        Nothing caught one removed, because five of the nine were optional — so
+        an emitter that silently stopped writing `by_file` would validate
+        everywhere.
+        """
+        import yaml
+
+        schema_path = Path(__file__).resolve().parents[2] / "sdd" / "traces" / "_schema.yml"
+        schema = yaml.safe_load(schema_path.read_text(encoding="utf-8"))
+        review_schema = schema["properties"]["review"]
+        assert set(review_schema["required"]) == set(review_schema["properties"])
+
+    @pytest.mark.parametrize(
+        "dropped",
+        [
+            "derivation",
+            "review_rounds",
+            "submissions",
+            "findings",
+            "by_round",
+            "by_file",
+            "untouched_files",
+            "review_driven_commits",
+            "ci",
+        ],
+    )
+    def test_dropping_any_emitted_field_fails_the_schema(self, data: dict, dropped: str) -> None:
+        import yaml
+        from jsonschema.validators import validator_for
+
+        schema_path = Path(__file__).resolve().parents[2] / "sdd" / "traces" / "_schema.yml"
+        schema = yaml.safe_load(schema_path.read_text(encoding="utf-8"))
+        validator = validator_for(schema)(schema["properties"]["review"])
+        block = yaml.safe_load(_mod.trace_block(data))["review"]
+        del block[dropped]
+        assert list(validator.iter_errors(block)), f"dropping {dropped} validated"
 
     def test_a_subject_with_a_quote_survives_yaml(self, data: dict) -> None:
         import yaml

@@ -377,7 +377,11 @@ def trace_block(data: dict[str, Any]) -> str:
         f"  review_rounds: {len(data['review_driven_commits'])}",
         f"  submissions: {data['submissions']}",
         f"  findings: {data['findings']}",
-        "  by_round:",
+        # Every sequence key below emits `[]` when empty. A bare `by_round:`
+        # header with no items is YAML *null*, not an empty list, and the
+        # schema's `type: array` rejects it — reachable on any PR whose review
+        # posted no inline findings, which is the ordinary shape of a clean one.
+        "  by_round:" if data["by_round"] else "  by_round: []",
     ]
     for entry in data["by_round"]:
         lines.append(f"    - round: {entry['round']}")
@@ -390,7 +394,7 @@ def trace_block(data: dict[str, Any]) -> str:
         # the module docstring says is reported rather than hidden.
         duration = entry["duration_hours"]
         lines.append(f"      duration_hours: {'null' if duration is None else duration}")
-    lines.append("  by_file:")
+    lines.append("  by_file:" if data["per_file"] else "  by_file: []")
     for path, count in data["per_file"].items():
         lines.append(f"    - path: {_q(path)}")
         lines.append(f"      findings: {count}")

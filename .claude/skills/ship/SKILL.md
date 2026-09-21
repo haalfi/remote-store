@@ -690,8 +690,10 @@ neither substitutes for the other.
 1. Ripple-check audit: [`sdd/CLAUDE-REFERENCE.md` § Detailed checklist](../../../sdd/CLAUDE-REFERENCE.md#detailed-checklist).
 2. CHANGELOG, BACKLOG/BACKLOG-DONE, and the trace — `discovery_followups` and
    `surprising_ripples` by hand, and the **`review:` block pasted verbatim**
-   from `hatch run ship-report <N>`. Nothing in that block is hand-written or
-   hand-edited, `review_rounds` included
+   from `hatch run ship-report <N> --trace-block-only` (the bare command prints
+   the Markdown report of item 3 instead, and the block is pasted *as* the
+   top-level key, which it already opens with). Nothing in that block is
+   hand-written or hand-edited, `review_rounds` included
    ([CLAUDE.md § Trace authoring](../../../CLAUDE.md#trace-authoring)).
 3. Report: run `hatch run ship-report <N>`. Its output **is** the Step 5 report
    for everything derived from the PR — rounds run, findings per round, the

@@ -916,9 +916,12 @@ apart.
   unchanged by this result; D3's cap lift waits for the re-measurement, for the
   reason D3 now states.
 
-**This section reports the pilot and is not amended by the build.** BK-378
-shipped D1 and D4 and BK-382 carries the re-measurement; the RFC stays **Draft**
-until that sample is read against § Impact's three clauses.
+**The pilot's measurements above are not amended by the build; the dispositions
+are, and were.** BK-378 shipped D1 and D4, so the four bullets it changed now
+say what became of each decision rather than what was still owed. Every figure
+in this section remains the pilot's, read over PRs #1021 to #1023. BK-382
+carries the re-measurement, and the RFC stays **Draft** until that sample is
+read against § Impact's three clauses.
 
 ## Open Questions
 
