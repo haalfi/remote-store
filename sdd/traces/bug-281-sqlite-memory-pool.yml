@@ -43,10 +43,10 @@ surprising_ripples:
   - sdd/specs/041-sql-query-backend.md
   - docs-src/explanation/concurrency.md
 # `git log --oneline origin/master..HEAD` minus the implementation commit,
-# counted including the commit carrying this line. At the time of writing that
-# query returns 63ff4d7 alone (the implementation, not review-driven); the
-# `fix:` commit this line ships in is round 1, from PR #1025's four findings.
-review_rounds: 1
+# counted including the commit carrying this line. That query returns 63ff4d7
+# (the implementation, not review-driven) plus 0fb07e7 (round 1, four findings);
+# the `fix:` commit this line ships in is round 2, from four more.
+review_rounds: 2
 phases:
   - id: orient
     name: Orient on what actually holds the issue open
@@ -184,6 +184,53 @@ phases:
           isolation to SQLAlchemy's pool, which the correction removes, and it
           is read by people who will not open a spec. Says which URL to spell
           for a shared in-memory store and which to avoid sharing.
+        outcome: ok
+
+  - id: fix2
+    name: Round 2 — moving the pool at all was the mistake
+    steps:
+      - file: src/remote_store/backends/_sqlalchemy.py
+        section: "_maybe_check_no_file_ancestor"
+        read_type: gate
+        extract: >-
+          The reviewer's finding was explicitly unreproduced, so it was run
+          rather than accepted. It is real and worse than predicted: the walk
+          opens a fresh connect() per ancestor and move() calls it after an
+          uncommitted DELETE, so under QueuePool + shared cache the nested read
+          hits `database table is locked` — and `_head_one` fails open on
+          SQLAlchemyError, so the gate does not raise, it silently answers "no
+          ancestor" and the move succeeds. Reproduced through the public API:
+          move() onto an existing destination under a file ancestor returned
+          without raising, where the three other spellings raised InvalidPath.
+          This docstring was read as part of the diagnosis and is the one place
+          that already recorded the dependency; it had it right, which is how
+          the reviewer found the finding at all.
+        outcome: ok
+      - file: src/remote_store/backends/_sqlalchemy.py
+        section: "_engine_kwargs"
+        read_type: gate
+        extract: >-
+          Round 1 kept QueuePool for the shared-cache half on the belief that it
+          bought thread safety. Measured, it buys nothing: 8 threads x 25 writes
+          under a shared cache landed 17 of 200 on QueuePool and 40 of 200 on
+          SingletonThreadPool, the rest raising `database table is locked`,
+          because SQLite locks shared-cache databases at table level and does
+          not invoke the busy handler. So the pool split had no upside and two
+          downsides, and the predicate collapses: every `mode=memory` URL is
+          given the class it already had. The deprecation is about inference,
+          never about the class.
+        outcome: ok
+      - file: scripts/check_spec_marks.py
+        section: "BK-287 allowlist block"
+        read_type: verify
+        extract: >-
+          Round 1's removal of the SQL-BLOB-072 entry falsified three sentences
+          around it, including the justification for the entry that remains —
+          SQL-QUERY-092 was excused by analogy to the entry that had just been
+          deleted. Counted the block rather than adjusting the figure by eye:
+          three entries, not four. This is the defect class the trace's own
+          `surprising_ripples` note describes, arriving one level up: a removal
+          falsifies prose about the removal's neighbours.
         outcome: ok
 
   - id: verify

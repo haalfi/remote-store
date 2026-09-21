@@ -879,16 +879,13 @@ class TestInMemoryPoolSelection:
 
     SQLAlchemy inferred ``SingletonThreadPool`` from the ``mode=memory`` query
     string and 2.1 deprecates that inference. Naming the pool is what retires
-    it, whichever class is named, so the two ``mode=memory`` spellings get
-    different classes for the same reason rather than the same class for
-    convenience:
-
-    - ``cache=shared`` takes ``QueuePool``, and ``check_same_thread=False``
-      belongs to that choice — the pool hands one connection to whichever thread
-      checks it out and pysqlite rejects that by default.
-    - Without ``cache=shared`` the per-thread pool is kept, because
-      ``QueuePool`` would give a second concurrent checkout a second, empty
-      database.
+    it, whichever class is named, so every ``mode=memory`` spelling is given
+    the class it already had: the deprecation goes, the behaviour does not
+    move. ``QueuePool`` was measured against that and lost on three counts —
+    it empties the anonymous form's second checkout, it turns ``move``'s
+    nested ancestor read into a second lock holder under a shared cache, and
+    it buys no concurrency, because concurrent writers collide on the same
+    table lock either way.
     """
 
     SHARED = "sqlite:///file:pooltest?mode=memory&cache=shared&uri=true"
@@ -970,13 +967,44 @@ class TestInMemoryPoolSelection:
         Putting it on ``QueuePool`` instead would hand a second concurrent
         checkout a second, empty database, turning a deterministic per-thread
         store into one where a thread's own earlier write can vanish. The pool
-        is still named rather than inferred, which is what silences the
-        deprecation; only the class differs from the shared-cache case.
+        is named rather than inferred, which is what silences the deprecation;
+        the class is the one the URL already had.
         """
         backend = SQLBlobBackend(url=self.ANONYMOUS)
         try:
             assert isinstance(backend.unwrap(sa.Engine).pool, sa.pool.SingletonThreadPool)
             assert self._second_checkout_sees(backend) == "'one'"
+        finally:
+            backend.close()
+
+    @pytest.mark.spec("SQL-BLOB-071")
+    @pytest.mark.spec("SQL-BLOB-031")
+    def test_the_file_ancestor_gate_still_fires_on_a_shared_cache_url(self) -> None:
+        """The nested checkout ``move`` makes must not become a second lock holder.
+
+        ``_maybe_check_no_file_ancestor`` opens a fresh ``connect()`` per
+        ancestor, and ``move`` calls it *after* issuing an uncommitted ``DELETE``
+        on the outer transaction's connection. Under a per-thread pool that
+        nested checkout is the same DBAPI connection, so it reads inside the
+        outer transaction. A pooled engine makes it a second connection, and
+        shared-cache SQLite locks the table: the read raises
+        ``OperationalError``, which ``_head_one`` **fails open** on — so the gate
+        does not raise, it silently answers "no ancestor" and the move succeeds.
+
+        That silence is why this is asserted through ``move`` rather than on the
+        pool class. The one state the class's other probes never reach is an
+        *uncommitted* write held across the second checkout, which is the only
+        state the production path is ever in.
+        """
+        backend = SQLBlobBackend(url="sqlite:///file:ancestorgate?mode=memory&cache=shared&uri=true")
+        try:
+            backend.write("folder", b"i am a file")
+            backend.write("a.txt", b"payload")
+            backend.write("folder/b.txt", b"pre-existing destination")
+            backend._reject_write_under_file_ancestor = True  # noqa: SLF001 — seed first, then gate
+
+            with pytest.raises(InvalidPath, match="file ancestor"):
+                backend.move("a.txt", "folder/b.txt", overwrite=True)
         finally:
             backend.close()
 
@@ -1002,19 +1030,22 @@ class TestInMemoryPoolSelection:
 
     @pytest.mark.spec("SQL-BLOB-071")
     @pytest.mark.spec("SQL-BLOB-072")
-    def test_shared_cache_url_is_pooled_and_readable_from_another_thread(self) -> None:
-        """The shared-cache spelling takes QueuePool, and stays readable off-thread.
+    def test_shared_cache_url_keeps_its_pool_and_is_readable_from_another_thread(self) -> None:
+        """A shared cache reaches one database from every connection, per-thread pool and all.
 
-        One test rather than two because the pool class alone is not the claim:
-        ``QueuePool`` is what makes this URL `thread_safe` rather than a
-        carve-out, so the cross-thread read is what gives the class its meaning.
-        It also guards the regression a bare ``poolclass=QueuePool`` would
-        introduce — without ``check_same_thread=False`` the read raises
-        ``ProgrammingError`` instead of returning the payload.
+        The pool is stated rather than changed. What ``cache=shared`` buys is
+        *database identity*, not a pool class: each thread opens its own
+        connection and all of them attach to the one named database, so a
+        second concurrent checkout sees the first's write and a read off-thread
+        returns the payload.
+
+        Reads only. Concurrent *writers* collide on SQLite's shared-cache table
+        lock whichever pool is used — see SQL-BLOB-072, which states that limit
+        and the measurement behind it.
         """
         backend = SQLBlobBackend(url=self.SHARED)
         try:
-            assert isinstance(backend.unwrap(sa.Engine).pool, sa.pool.QueuePool)
+            assert isinstance(backend.unwrap(sa.Engine).pool, sa.pool.SingletonThreadPool)
             # The counterpart of the anonymous case: a shared cache is named, so
             # a second concurrent checkout attaches to the same database.
             assert self._second_checkout_sees(backend) == "'one'"
