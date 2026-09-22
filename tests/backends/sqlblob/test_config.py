@@ -893,12 +893,26 @@ class TestInMemoryPoolSelection:
 
     @staticmethod
     def _second_checkout_sees(backend: SQLBlobBackend) -> str:
-        """What a concurrently-held second connection observes of the first's write.
+        """What a second, concurrently-held checkout observes of the first's write.
 
-        Database identity, not connection aliasing: the two checkouts are held
-        at once, so a pool that opens a second connection must open a second
-        database unless the URL names a shared one. ``sees 'one'`` therefore
-        means one database, and the error means two.
+        **A second checkout is not always a second connection, and on the pool
+        these tests use it never is.** ``SingletonThreadPool`` returns the
+        thread's existing connection record whether or not it is already checked
+        out, so ``second`` is the *same* DBAPI connection as ``first`` — measured
+        ``True`` for ``:memory:``, the bare URL, ``cache=private`` and
+        ``cache=shared``
+        alike. ``'one'`` therefore reports aliasing and says nothing about which
+        database the URL names; the same value comes back for a private cache
+        and a shared one.
+
+        What the probe does discriminate is a pool that opens a *real* second
+        connection. Under ``QueuePool`` the checkouts are distinct (measured
+        ``False``), and an anonymous in-memory URL then gives the second one its
+        own empty database — which is the regression this guards, and why the
+        error branch is the informative half.
+
+        For database identity on a per-thread pool, cross a thread instead:
+        ``_read_in_thread`` gets a genuinely separate connection.
         """
         engine = backend.unwrap(sa.Engine)
         first = engine.connect()
@@ -918,7 +932,17 @@ class TestInMemoryPoolSelection:
 
     @staticmethod
     def _read_in_thread(backend: SQLBlobBackend, key: str) -> object:
-        """What another thread sees for ``key`` — the payload, or an exception name."""
+        """What another thread sees for ``key`` — the payload, or an exception name.
+
+        The worker closes its own connection before exiting. ``SingletonThreadPool``
+        keeps a thread's connection after that thread is gone, and a later
+        ``engine.dispose()`` then closes it from whichever thread disposes:
+        pysqlite refuses that (``SQLite objects created in a thread can only be
+        used in that same thread``), the pool logs it and moves on, and the
+        still-open connection surfaces at GC as ``PytestUnraisableExceptionWarning``
+        attributed to an unrelated test. ``detach()`` takes the connection out of
+        the pool so the enclosing ``close()`` closes it here instead.
+        """
         seen: list[object] = []
 
         def read() -> None:
@@ -926,6 +950,9 @@ class TestInMemoryPoolSelection:
                 seen.append(backend.read_bytes(key))
             except Exception as exc:  # noqa: BLE001 — the type is the assertion
                 seen.append(type(exc).__name__)
+            finally:
+                with backend.unwrap(sa.Engine).connect() as conn:
+                    conn.detach()
 
         thread = threading.Thread(target=read)
         thread.start()
@@ -934,12 +961,12 @@ class TestInMemoryPoolSelection:
 
     @pytest.mark.spec("SQL-BLOB-071")
     def test_no_in_memory_spelling_warns_on_construction(self) -> None:
-        """The reported symptom: a caller running warnings as errors can construct all four.
+        """The reported symptom: a caller running warnings as errors can construct every spelling below.
 
         Version-portable by construction. It asserts that nothing is warned
         about, which holds on every SQLAlchemy release once the pool is named
-        explicitly, and fails on 2.1+ for the shared-cache spelling while the
-        pool is left to inference.
+        explicitly, and fails on 2.1+ for both ``mode=memory`` spellings while
+        the pool is left to inference.
         """
         for url in (
             "sqlite:///:memory:",
@@ -969,6 +996,13 @@ class TestInMemoryPoolSelection:
         store into one where a thread's own earlier write can vanish. The pool
         is named rather than inferred, which is what silences the deprecation;
         the class is the one the URL already had.
+
+        The second assertion is the consequence of the first, and it is the half
+        that fires under mutation: while the pool stays per-thread the checkout
+        is aliased and the write is still there, and the moment it becomes
+        ``QueuePool`` the second checkout is a real connection onto an empty
+        database. It is a guard against the regression, not evidence about which
+        database this URL names — see ``_second_checkout_sees``.
         """
         backend = SQLBlobBackend(url=self.ANONYMOUS)
         try:
@@ -1017,6 +1051,11 @@ class TestInMemoryPoolSelection:
         two: it is as private as omitting `cache` entirely, so it must take the
         per-thread pool, and it warns under inference exactly like the others —
         measured, so naming the pool is what silences it here too.
+
+        The roundtrip keeps the pool assertion honest without claiming more than
+        it can: on a per-thread pool a second checkout is the same connection, so
+        it would answer identically for a shared cache and say nothing about
+        which database this URL names.
         """
         with warnings.catch_warnings(record=True) as caught:
             warnings.simplefilter("always")
@@ -1024,7 +1063,8 @@ class TestInMemoryPoolSelection:
         try:
             assert [str(w.message) for w in caught] == []
             assert isinstance(backend.unwrap(sa.Engine).pool, sa.pool.SingletonThreadPool)
-            assert self._second_checkout_sees(backend) == "'one'"
+            backend.write("priv.txt", b"payload")
+            assert backend.read_bytes("priv.txt") == b"payload"
         finally:
             backend.close()
 
@@ -1035,9 +1075,13 @@ class TestInMemoryPoolSelection:
 
         The pool is stated rather than changed. What ``cache=shared`` buys is
         *database identity*, not a pool class: each thread opens its own
-        connection and all of them attach to the one named database, so a
-        second concurrent checkout sees the first's write and a read off-thread
-        returns the payload.
+        connection and all of them attach to the one named database.
+
+        **The off-thread read is the whole assertion**, because on a per-thread
+        pool only a second thread gets a second connection. A second checkout on
+        *this* thread is the same connection whatever the URL names, so it would
+        return the payload for a private cache too and discriminate nothing —
+        which is why this test does not make that call.
 
         Reads only. Concurrent *writers* collide on SQLite's shared-cache table
         lock whichever pool is used — see SQL-BLOB-072, which states that limit
@@ -1046,9 +1090,6 @@ class TestInMemoryPoolSelection:
         backend = SQLBlobBackend(url=self.SHARED)
         try:
             assert isinstance(backend.unwrap(sa.Engine).pool, sa.pool.SingletonThreadPool)
-            # The counterpart of the anonymous case: a shared cache is named, so
-            # a second concurrent checkout attaches to the same database.
-            assert self._second_checkout_sees(backend) == "'one'"
             backend.write("shared.txt", b"payload")
             assert self._read_in_thread(backend, "shared.txt") == b"payload"
         finally:

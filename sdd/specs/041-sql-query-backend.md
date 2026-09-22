@@ -328,7 +328,7 @@ backend does not do that. Each operation runs in its own transaction; there is
 no cross-operation transactionality.
 
 **Carve-out (in-memory SQLite):** the posture is the pool class *and* the
-database the URL names, and the three cases are enumerated once, in
+database the URL names, and the cases are enumerated once, in
 [SQL-BLOB-072](040-sql-blob-backend.md#sql-blob-072) — not restated here, because
 a second copy is what let this clause keep saying `QueuePool` implies
 `thread_safe` after that stopped being true. It applies unchanged to

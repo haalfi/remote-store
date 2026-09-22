@@ -28,10 +28,11 @@ and when the decision is re-read.
 **A week whose findings are all registered, with no interpreter past its window
 unregistered, closes the issue** — so on that week the rows render nowhere and
 this file is where they live. That is the intended
-trade: an issue that is open every Monday for the same six rows is one nobody
-opens. (Six is `load_known_findings()` over the table below, re-run when this
-sentence was last edited; it was five when the sentence was first written, and
-seven before BUG-281's fix retired the one `newest`-lane row.)
+trade: an issue that is open every Monday for the same rows is one nobody opens.
+(No count here on purpose: the table below is the authority, and a numeral in
+this sentence is a second copy of it that goes stale on the next row added or
+retired — [`CONTENT-RULES.md` Rules 2 and 4](../../sdd/CONTENT-RULES.md#rules).
+It has read five, then seven, then six.)
 
 <a id="review-by-is-enforced"></a>
 ## `Review by` is read by code, and a row expires

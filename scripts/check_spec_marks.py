@@ -271,17 +271,19 @@ _ALLOWLIST_DESIGN: frozenset[str] = frozenset(
         # (GR-059) carry real marks. BK-289's posture-gated lane converted the
         # subset its conformance fixtures exercise — S3-028 (s3_moto), AZ-037
         # (azurite), SFTP-029 (sftp_inproc carve-out) — to real marks, so those
-        # are no longer allowlisted. The three below stay documentation-only: no
-        # conformance fixture exercises them in the lane. (Three is a count of
-        # the entries under this header, re-run when it is edited; it was four
-        # until BUG-281 de-allowlisted SQL-BLOB-072.)
+        # are no longer allowlisted. The entries below stay documentation-only:
+        # no conformance fixture exercises them in the lane. (Deliberately not
+        # counted — the list is right here, and a numeral in this comment is a
+        # second copy of it that goes stale whenever an entry is added or
+        # removed. It read "four" until BUG-281 removed SQL-BLOB-072, and the
+        # stale figure outlived the removal by a review round.)
         "S3PA-028",  # 011 — S3PyArrowBackend thread_safe (Tier-3 live probe only)
         "HTTP-CONC-001",  # 032 — ReadOnlyHttpBackend single_connection on urllib (no WRITE -> not in carve-out)
-        # SQL-BLOB-072 sat here until BUG-281, excused for the same reason as the
-        # two above. It is gone because the clause became decidable from the
-        # engine: it now turns on which pool a URL resolves to, which
-        # TestInMemoryPoolSelection asserts directly, so the posture no longer
-        # rests only on prose.
+        # SQL-BLOB-072 sat here until BUG-281, excused on the same
+        # no-fixture-reaches-it grounds as the entries above. It is gone because
+        # the clause became decidable from the engine: it now turns on which pool
+        # a URL resolves to, which TestInMemoryPoolSelection asserts directly, so
+        # the posture no longer rests only on prose.
         # SQL-QUERY-092 does not follow it out, and the reason is its own rather
         # than an analogy to the entry above. BK-340 registered the sqlquery
         # conformance fixture, so "no conformance fixture" is not why it is

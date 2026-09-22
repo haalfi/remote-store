@@ -411,7 +411,7 @@ or give each thread its own backend.
 `thread_safe`.** Both follow from one fact: what isolates is the database being
 **anonymous**, so that each connection opens a fresh one. The pool decides how
 many connections there are; the URL decides how many databases they reach. The
-posture is the pair, and for in-memory SQLite it is one of three:
+posture is the pair, and for in-memory SQLite it is one of the cases below:
 
 | Database the URL names | Pool | Posture |
 |---|---|---|
@@ -419,26 +419,34 @@ posture is the pair, and for in-memory SQLite it is one of three:
 | Anonymous (`file::memory:?uri=true`) | pooled | **not safe to share** — one database per *connection* |
 | Shared cache (`mode=memory&cache=shared`) | per-thread | one database, **concurrent readers only** |
 
-Row 2 is the one no pool class reveals: an anonymous database on a pooled engine
-gives each checkout its own store, so a thread's own earlier write can vanish
-when it is handed a different connection. SQL-BLOB-071 keeps `mode=memory` off
-that row by naming the per-thread pool for it; it does not reach
-`file::memory:?uri=true`, whose `QueuePool` is SQLAlchemy's own default — confine
-such an instance to one connection, or name a shared cache.
+**Anonymous-on-pooled** is the case no pool class reveals: each checkout gets its
+own store, so a thread's own earlier write can vanish when it is handed a
+different connection. SQL-BLOB-071 keeps `mode=memory` out of it by naming the
+per-thread pool; it does not reach `file::memory:?uri=true`, whose `QueuePool` is
+SQLAlchemy's own default — confine such an instance to one connection, or name a
+shared cache.
 
-**No in-memory spelling is `thread_safe` for writers, including row 3.** A shared
-cache gives every connection one database, which makes cross-thread *reads*
+**No in-memory spelling is `thread_safe` for writers, the shared cache
+included.** A shared cache gives every connection one database, which makes
+cross-thread *reads*
 work, but SQLite takes **table-level** locks in shared-cache mode and does not
 invoke the busy handler for them, so concurrent writers raise
 `database table is locked` rather than waiting. Measured on this backend, 8
-threads × 25 writes each: 40 of 200 writes landed, 160 raised — and moving the
-pool does not help, since the same run under `QueuePool` landed 17 of 200. Use
-one instance per thread, or a durable database, if threads must write.
+threads × 25 writes each: about 40 of 200 writes landed (two runs: 40 and 41;
+the split follows the scheduler) — and moving the pool does not help, since the
+same run under `QueuePool` landed 17 of 200. Use one instance per thread, or a
+durable database, if threads must write.
 
 `QueuePool`-backed engines over a *durable* database (PostgreSQL, MySQL,
-file-backed SQLite) are `thread_safe` as stated above: there the pool is the
-only question, because every connection reaches the same database and the
-database itself handles concurrent writers.
+file-backed SQLite) are `thread_safe` as stated above: every connection reaches
+the same database, so the pool is the only question. For file-backed SQLite that
+holds because writers **wait** instead of failing — WAL admits one writer at a
+time and pysqlite's default 5 s busy timeout blocks the rest, where shared-cache
+mode never invokes the busy handler at all. Measured on this backend: 200 of 200
+writes landed at 8 threads × 25, and 1600 of 1600 at 16 × 100, the slowest single
+write taking 0.74 s. The budget is a bound rather than a guarantee: contention
+heavy enough to exhaust it surfaces as `BackendUnavailable`, and SQL-BLOB-043
+sets no `busy_timeout` of its own.
 
 **See also:** [003-backend-adapter-contract.md](003-backend-adapter-contract.md)
 (BE-028).

@@ -1030,23 +1030,23 @@ compliant the day before.
 **Promise:** the same call returns the same right result on every backend, and
 no clause of the contract ships unexercised.
 
-**Closes when:** the nine defects and holes enumerated below are closed — four
-wrong answers (BUG-241's unescaped `LIKE` metacharacters, BUG-240's `max_depth`
-contradiction, BUG-251's cross-store cache collision, BUG-260's empty answer for
-a non-empty root) and five coverage holes measured in cells (ID-244's
-WRITE-gated classes, ID-242's four pragmas, ID-247's 30 root-path cells,
-ID-251's unfailable BE-029 clause, BK-382's never-reached overwrite path).
-Nine is a count of the `- [ ]` item headers between this heading and section 3's,
-re-run when this sentence is edited. **It read "six" until BK-382 was filed**,
-and the gap was not that item alone: BUG-260 and ID-251 had been added to the
-section without reaching this sentence, so the enumeration had been two short of
-its own list before anything here was touched.
+**Closes when:** every defect and hole **enumerated below** is closed — wrong
+answers, such as BUG-241's unescaped `LIKE` metacharacters and BUG-240's
+`max_depth` contradiction, and coverage holes measured in cells, such as
+ID-244's WRITE-gated classes and ID-247's root-path cells. The list itself is
+the closing condition; this sentence illustrates its two kinds rather than
+restating it, per [`CONTENT-RULES.md` Rules 2 and 4](CONTENT-RULES.md#rules).
+That is what the boundedness below requires — a list you can check — and a
+numeral is not part of it. The previous wording carried one, and it was wrong by
+two before anyone edited it: BUG-260 and ID-251 had joined the section without
+reaching the sentence that counted them.
 **Bounded deliberately.** "No clause ships unexercised" is the promise, not the
 closing condition: nothing derives the full set of unreachable clauses today,
 which is what ID-245's inventory in section 6 would supply. Until it does, this
-section closes on a counted list rather than on a claim nobody can check —
-saying otherwise would make the promise unfalsifiable, which is the failure this
-structure exists to remove.
+section closes on an **enumerated** list rather than on a claim nobody can
+check — saying otherwise would make the promise unfalsifiable, which is the
+failure this structure exists to remove. Enumerated, not counted: what makes it
+checkable is that every item is written down below, and a reader can walk them.
 
 A corrected clause nobody tests is the same defect one layer up, which is why
 the wrong-answer defects and the coverage holes are one promise. The wrong-answer

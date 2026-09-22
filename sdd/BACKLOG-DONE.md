@@ -251,9 +251,15 @@ if evidence changes; these are retired.
   **Two review rounds went into establishing that moving the pool is wrong**,
   and the item shipped one version of each mistake before the measurement.
   `QueuePool`, the class the deprecation message suggests, fails three ways:
-  - Without `cache=shared`, each *connection* opens a private database, so a
-    second concurrent checkout gets an empty one: a write on one connection read
-    from a second held at the same time went `'one'` → `OperationalError`.
+  - Without `cache=shared`, each *connection* opens a private database, so the
+    moment the pool hands out a real second one it is empty: a write followed by
+    a read on a concurrently-held second checkout went from returning the row to
+    `OperationalError`. Stated that way round deliberately — under the per-thread
+    pool the "second checkout" is the *same* DBAPI connection (measured: aliased
+    on every in-memory spelling), so the passing half reports aliasing and only
+    the `QueuePool` half, where the checkouts are genuinely distinct, is evidence
+    about database identity. A third review round caught the earlier wording,
+    which read the aliased result as proof of a shared database.
   - With `cache=shared`, the nested `connect()` that
     `_maybe_check_no_file_ancestor` performs inside `move`/`copy`'s **open write
     transaction** becomes a second connection, and shared-cache SQLite locks the

@@ -51,11 +51,12 @@ surprising_ripples:
   # got it wrong is tagged `misleading` in the implement phase below.
   - sdd/specs/041-sql-query-backend.md
   - docs-src/explanation/concurrency.md
-# `git log --oneline origin/master..HEAD` minus the implementation commit,
-# counted including the commit carrying this line. That query returns 63ff4d7
-# (the implementation, not review-driven) plus 0fb07e7 (round 1, four findings);
-# the `fix:` commit this line ships in is round 2, from four more.
-review_rounds: 2
+# `git log --oneline origin/master..HEAD` minus the implementation and filing
+# commits, counted including the commit carrying this line. That query returns
+# 63ff4d7 (implementation), 0fb07e7 (round 1), 8b5a076 (round 2), a4059ce
+# (filing BUG-292 and BK-382, not review-driven); the `fix:` commit this line
+# ships in is round 3.
+review_rounds: 3
 phases:
   - id: orient
     name: Orient on what actually holds the issue open
@@ -179,11 +180,14 @@ phases:
         extract: >-
           The premise the first version got wrong, now stated: naming the pool
           is what retires the deprecated inference, whichever class is named.
-          Measured — `poolclass=SingletonThreadPool` gives `warns=0` and leaves
-          the second checkout seeing `'one'`. So the deprecation never forced
-          QueuePool on the anonymous spelling, and the original docstring's
-          safety argument was about connection aliasing where the question was
-          database identity.
+          Measured — `poolclass=SingletonThreadPool` gives `warns=0` and the
+          store still reads back. So the deprecation never forced QueuePool on
+          the anonymous spelling, and the original docstring's safety argument
+          was about connection aliasing where the question was database
+          identity. Round 3 then found that this step's own evidence had the
+          same confusion one layer down: it cited "the second checkout seeing
+          `'one'`", and a second checkout on a per-thread pool is the same
+          connection, so that observation was aliasing too.
         outcome: ok
       - file: docs-src/explanation/concurrency.md
         section: "footnote 3"
@@ -240,6 +244,96 @@ phases:
           three entries, not four. This is the defect class the trace's own
           `surprising_ripples` note describes, arriving one level up: a removal
           falsifies prose about the removal's neighbours.
+        outcome: ok
+
+  - id: fix3
+    name: Round 3 — aliasing read as identity, counts as copies, a claim with no run
+    steps:
+      - file: tests/backends/sqlblob/test_config.py
+        section: "_second_checkout_sees"
+        read_type: gate
+        extract: >-
+          The helper's docstring claimed "database identity, not connection
+          aliasing". Measured, and it is the wrong way round for every engine
+          the helper is called on: SingletonThreadPool returns the thread's
+          existing connection record whether or not it is checked out, so the
+          "second" checkout is the same DBAPI connection — True on :memory:,
+          the bare URL, cache=private and cache=shared alike, False only under
+          QueuePool. So the passing half reported aliasing and the inference
+          drawn from it was invalid. The assertions still discriminate the
+          round-1 regression, because QueuePool does open a real second
+          connection; what was wrong was the explanation, which is what the
+          next reader reasons from. The redundant assertion on the shared-cache
+          test is removed — the off-thread read is what discriminates there —
+          and the private-cache one is replaced by a roundtrip.
+        outcome: ok
+      - file: sdd/CONTENT-RULES.md
+        section: "Rules 2, 3, 4"
+        read_type: gate
+        extract: >-
+          Read after the maintainer pointed out that the three stale counts this
+          PR touched are rule violations, not a convention preference. They are:
+          Rule 2 forbids reproducing an exhaustive list inline ("copies become
+          lies"), Rule 4 is one copy per fact, and Rule 3 adds counts-in-prose
+          for the two sites outside its sdd-records carve-out. Round 2's repairs
+          had named each figure's derivation, which satisfies principle 9 and
+          not Rules 2 or 4 — a documented copy is still a copy. The numerals are
+          deleted instead, along with positional references into an adjacent
+          table ("Row 2", "row 3"), which break the same way when a row moves.
+          Checked before deleting that the count was not load-bearing: BACKLOG
+          section 2 closes on a *bounded* list, and enumeration is what makes
+          that checkable, not a numeral.
+        outcome: ok
+      - file: sdd/specs/040-sql-blob-backend.md
+        section: "SQL-BLOB-072 (closing paragraph)"
+        read_type: gate
+        extract: >-
+          The one posture claim in this PR that named no derivation — file-backed
+          SQLite is thread_safe because "the database itself handles concurrent
+          writers" — and it had been broadened from "file-backed SQLite with a
+          shared cache" on the way into the user-facing page. Ran the same
+          8 x 25 harness against sqlite:///<tmp>/a.db: 200 of 200 landed, and
+          1600 of 1600 at 16 x 100, slowest single write 0.74 s. So the claim
+          holds, but not for the reason given: WAL admits one writer at a time
+          and the rest WAIT on pysqlite's default 5 s budget, where shared-cache
+          mode never invokes the busy handler at all. Waiting-vs-failing is the
+          whole distinction, and stating it also states the bound — enough
+          contention exhausts the budget and surfaces as BackendUnavailable. The
+          re-run of the shared-cache side landed 41, not the recorded 40, so that
+          figure is now given as a range rather than as a constant a future
+          reader would "correct".
+        outcome: ok
+      - file: docs-src/explanation/concurrency.md
+        section: "posture table rows, footnote 3"
+        read_type: gate
+        extract: >-
+          Round 1 rewrote the footnote and left the two table rows it annotates
+          saying "The SQLAlchemy engine pools connections" — the half of the pair
+          040 had just put in bold as insufficient, and true of the one row this
+          PR marks not safe to share. A reader who accepts a one-line Why cell
+          has no cue to open the footnote, so the correction had to reach the
+          cell. The footnote also enumerated three in-memory spellings out of
+          four, omitting the very one this PR moves, and keyed its avoid-sharing
+          sentence on "an anonymous URI form such as ..." — which readmits the
+          attribution error, since file:name?mode=memory&uri=true is an anonymous
+          URI form with the opposite posture. Keyed on the pool instead.
+        outcome: ok
+      - file: tests/backends/sqlblob/test_config.py
+        section: "_read_in_thread"
+        read_type: verify
+        extract: >-
+          Not a review finding — CI went red on a4059ce with a
+          PytestUnraisableExceptionWarning attributed to an unrelated sqlquery
+          test. Reproduced in ten lines: the worker thread's connection stays in
+          the SingletonThreadPool after that thread exits, backend.close() then
+          tries to close it from the main thread, pysqlite refuses cross-thread,
+          the pool logs and moves on, and the still-open connection surfaces at
+          the next GC point. This is the same hazard the tests phase recorded and
+          dodged by dropping the cross-thread half; round 3 put a cross-thread
+          read back as the load-bearing assertion and brought it with it. The
+          worker now detach()es its connection so the enclosing close() closes it
+          in the thread that opened it — verified in-thread ("Cannot operate on a
+          closed database") with sys.unraisablehook empty afterwards.
         outcome: ok
 
   - id: verify
