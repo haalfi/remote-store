@@ -207,9 +207,9 @@ recursive walk (BUG-257); `ping()` does not report a vanished store as healthy
 payload size (BUG-253); a listing does not leak its driver's exception on the
 one backend where it still does (BUG-280); a caller who meets a failure on **any** backend catches
 the type the docs promised and can tell *which* failure it was, rather than an
-empty message (BUG-276 and BUG-291, the clause's two remaining halves: BUG-276 is
+empty message (BUG-276 and BUG-293, the clause's two remaining halves: BUG-276 is
 whether the base-class fall-throughs should be classified or merely given a
-message, BUG-291 is a mapped error being re-mapped to something weaker on the way
+message, BUG-293 is a mapped error being re-mapped to something weaker on the way
 out); a connect that fails locally is not reported
 against the caller's path
 (BUG-273); a safety gate that cannot complete its probe says so instead of
@@ -257,7 +257,7 @@ default, which is BK-345 below rather than a residue of this. The catches-the-pr
 by BUG-265: a refused port and a DNS failure raise the `BackendUnavailable`
 fifteen docstrings and the health-check guide promise, where both raised the
 base class. That is one backend's connect arm, not the clause — BUG-276 and
-BUG-291 carry the rest, and all three are the same promise met at different
+BUG-293 carry the rest, and all three are the same promise met at different
 depths: an error with no message, an error re-typed to a weaker class, and an
 error of the wrong class outright. It also
 opened BUG-273: the same connect path still answers the wrong type when the
@@ -304,7 +304,7 @@ both were pre-existing behaviour that a new sentence made answerable.
 absent-container clause, which is why they are not in that count: BUG-253 is
 between two halves of one Graph operation; BUG-245 is a constructor leak, which
 BE-021 scopes to operations and so does not reach; BUG-256 is about a health
-probe, which is off the roster BE-021 governs; and BUG-291 is with BE-020 and
+probe, which is off the roster BE-021 governs; and BUG-293 is with BE-020 and
 AZ-029 — a closed store reporting the base class where those promise
 `BackendUnavailable` — which is the never-leak invariant's mirror rather than the
 invariant itself.
@@ -684,7 +684,7 @@ compliant the day before.
   Found by ID-252's closing review reading outside its own diff; shipped by
   BUG-261.
 
-- [ ] **BUG-291 — Sixteen Azure `except Exception` arms re-type an already-typed error, so a closed store reports the base class**
+- [ ] **BUG-293 — Sixteen Azure `except Exception` arms re-type an already-typed error, so a closed store reports the base class**
   spec: BE-020, BE-021, AZ-029 · effort: S · audience: user.api
   `classify_azure_error` has no `RemoteStoreError` pass-through arm: it falls
   through every `isinstance` check to `return RemoteStoreError(str(exc), ...)`.
@@ -2254,7 +2254,7 @@ recorded (BK-365); the repo can say whether its own quality promise is
 holding rather than only asserting it (BK-366); two sessions working in
 parallel cannot mint the same backlog ID with every derivation telling both they
 are right (ID-257); and the review loop stops recording itself in the artifacts
-it reviews (BK-382, after BK-379's pilot and BK-378's build of RFC-0015's D1
+it reviews (BK-383, after BK-379's pilot and BK-378's build of RFC-0015's D1
 and D4 left the re-measurement as the last thing it owes).
 **Bounded to those fifteen deliberately** — count derived by enumerating the
 semicolon-separated clauses above, not carried forward. "No artifact asserts what
@@ -2929,12 +2929,16 @@ the commit that writes it lands, so cite the generator instead.
   copies rather than inside one.
   **A second instance, and it narrows the check's reach.** ID-182's branch
   (#998) and BK-378's branch both minted `BK-367`, for unrelated items, from a
-  `master` whose next safe BK was 367 for each. This time the rebase reported
-  nothing: `gen-backlogid --check` compares open IDs against done ones, and two
-  *open* items sharing an ID pass it, so the duplicate was found by reading
-  `rg -n 'BK-367' sdd` after the rebase, not by a gate. Whatever mechanism
-  answers the open question above, the check's collision half needs to see
-  open-versus-open as well.
+  `master` whose next safe BK was 367 for each. The rebase reported nothing,
+  because `gen-backlogid --check` compared open IDs against done ones and two
+  *open* items sharing an ID passed it, so the duplicate was found by reading
+  `rg -n 'BK-367' sdd` after the rebase rather than by a gate.
+  **That half is now built and is no longer this item's**, under `BK-383`:
+  `_duplicate_ids` reports one ID carried by two open headers, and
+  `gen-backlogid --check` fails on it. What it does not do is prevent the
+  mint, which is the open question below and the whole of what remains here —
+  the gate catches the collision only once both branches have merged, and the
+  re-home still has to happen by hand.
   **A third instance, one week later, on the same branch.** Re-homed to
   `BK-368`, that branch waited on review while ID-018's work minted `BK-368`
   for the conda-recipe pin gate (#1009) and closed it in the same window. This
@@ -2943,7 +2947,7 @@ the commit that writes it lands, so cite the generator instead.
   long-lived PR should expect under the current scheme; the item moved to
   `BK-378`.
 
-- [ ] **BK-382 — RFC-0015 is built but unmeasured: three deliveries decide whether it graduates**
+- [ ] **BK-383 — RFC-0015 is built but unmeasured: three deliveries decide whether it graduates**
   spec: — · effort: M · audience: contributor.process
   The open half of **BK-378**, which shipped D1 and D4 and is recorded in
   `BACKLOG-DONE.md`. Every decision RFC-0015 proposes is now in force in the
@@ -2989,18 +2993,23 @@ the commit that writes it lands, so cite the generator instead.
   hand-derived, and re-deriving at the close is a convention nothing enforces.
   Whether that gap is worth a gate is this item's to decide — it is the same
   failure shape the RFC measured, one surface over.
-  **Two more the rebase of BK-378's own branch surfaced, both in the block's
-  handling rather than its content.** A rebase rewrites every SHA, so
-  `review_driven_commits` named objects no longer on the branch — the orphaning
-  D1's § 531 attributes to *hand-written* lists, which a derived list inherits
-  unchanged. D4 makes the list cheap to regenerate and nothing signals that a
-  regeneration is owed, so "derived" buys freedom from unnoticed drift, not from
-  drift; whether the RFC's wording should say so is this item's. And pasting the
-  block a second time rather than replacing it yields two top-level `review:`
-  keys, which `yaml.safe_load` resolves to the last — so `check_traces.py`
-  validates a trace carrying two blocks in silence. The paste-the-block workflow
-  is what makes that reachable, and a duplicate-key-rejecting loader is the
-  obvious fix; it is deliberately not in BK-378, whose scope was the build.
+  **Two block-handling defects are closed under BK-383's own delivery**, and
+  neither was about the block's content. A squash merge retires every SHA in
+  `review_driven_commits`, so the list is orphaned on arrival whoever wrote it —
+  D4 now says so, and the block carries `pr` as the handle that survives, from
+  which the squash commit resolves. And pasting the block a second time rather
+  than replacing it left two top-level `review:` keys that `yaml.safe_load`
+  resolved to the last; `check_traces.py` now refuses a duplicate key at any
+  depth. That check found a live instance the review workflow did not cause:
+  `BK-221-test-pbt-write-result-s3-azure-per-backend.yml` carried
+  `surprising_ripples` twice and had been validating with half of it discarded.
+  **When pooling BK-378's PR, use 5 rounds and 54 findings, not the block's 4
+  and 41.** Round 5 was the closing exit gates, run analyze-only; its 13
+  must-fix findings were relayed to the author and fixed without being posted,
+  so no comment endpoint carries them and `ship-report` cannot see them —
+  `sdd/traces/bk-378-d1-d4.yml` states this in a note above the block. Pooled at
+  4/41 that PR contributes a denominator understated by 13 of 54, which is 24%.
+  Treat the 13 as loop-introduced-detectable-only-at-the-close.
   **The sample is the next three deliveries**, whichever they are. `BK-380`
   (Python 3.10's security-fix end, dated 2026-10-04) is next in line and could be
   the first of them.

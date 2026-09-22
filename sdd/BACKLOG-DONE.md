@@ -243,7 +243,7 @@ if evidence changes; these are retired.
 - [x] **BK-378 — The `/ship` loop reviews its own record past round 2, and nothing separates the two**
   spec: — · effort: L · audience: contributor.process
   **Split** per § Completing work: this entry is RFC-0015's **D1 and D4 built**;
-  the re-measurement, the accept/reject and the graduating ADR are **BK-382**.
+  the re-measurement, the accept/reject and the graduating ADR are **BK-383**.
   BK-379's pilot missed acceptance clause 1 by three points with D1 and D4
   unbuilt, and the RFC's § Impact prescribed in advance that such a miss means
   build them and re-measure. This is that build. RFC-0015 stays **Draft**; a PR
@@ -317,7 +317,7 @@ if evidence changes; these are retired.
   **Open Question 5 answered**: the mid-loop `ship-report` output lives in a
   gitignored `tmp/ship-report-<PR>.md`, a brief quotes it, and the durable copy
   is the `review:` block at the close. **Still held, deliberately**, and
-  BK-382's: D3's cap lift, D5's stop-rule wiring, D6's deferred half.
+  BK-383's: D3's cap lift, D5's stop-rule wiring, D6's deferred half.
   Guards: **179** collected across the three scripts — ship_report 80,
   check_no_retrospective 46, check_backlog_ids_vs_base 53 — from
   `hatch run pytest tests/scripts/test_check_no_retrospective.py
@@ -419,7 +419,7 @@ if evidence changes; these are retired.
   **Left to BK-378:** D1, D4, clause 2, D5's stop-rule clause, D6's deferred
   half and D3's cap lift, each with the disposition above. BK-378 has since
   built D1 and D4 (entry above) and split; the rest is
-  [BK-382](BACKLOG.md).
+  [BK-383](BACKLOG.md).
 - [x] **BK-370 — The published conda recipe is a mirror no mechanism watches**
   spec: — · effort: M · audience: user.discoverability.human, infra.ci
   Closed by both halves of the item's first two options: a generator that makes

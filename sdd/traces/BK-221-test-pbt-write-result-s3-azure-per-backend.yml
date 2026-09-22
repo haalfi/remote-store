@@ -9,7 +9,8 @@ audience:
   - contributor.process
 expected_ripples:
   - sdd/backlogid.json
-surprising_ripples: []
+surprising_ripples:
+  - sdd/BACKLOG.md  # stray blank line introduced by the BK-221 section edit (review nit); removed in fix commit
 phases:
   - id: orient
     name: Orient
@@ -99,6 +100,4 @@ phases:
         extract: "test still uses test_coverage_gaps.py as the example grandfathered filename — no update needed; test_coverage_gaps.py remains in the allow-list"
 discovery_followups: []
 co_shipped_items: []
-surprising_ripples:
-  - sdd/BACKLOG.md  # stray blank line introduced by the BK-221 section edit (review nit); removed in fix commit
 review_rounds: 1

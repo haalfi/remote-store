@@ -213,6 +213,88 @@ class TestCheck:
         assert result == 1
         assert "gen-backlogid" in capsys.readouterr().out
 
+    def test_two_open_items_sharing_an_id_are_reported(self, tmp_path, monkeypatch, capsys):
+        """Two *open* headers with one ID must fail the check.
+
+        The real collision: BUG-281's branch and BK-378's each minted `BK-382`
+        from a master where 382 was free, and both merged. `_extract_ids`
+        returns sets, so the repeat collapsed before any comparison, and
+        `_check` only ever compared open against *done* — so a file carrying
+        the same ID twice printed "No ID collisions." This is ID-257's
+        open-versus-open half, which that item records as unreached by any gate.
+        """
+        duplicate_active = (
+            f"- [ ] **BK-382 {_EM} The file-ancestor gate ships unexercised**\n"
+            f"- [ ] **BK-177 {_EM} Parametrize self-op tests**\n"
+            f"- [ ] **BK-382 {_EM} RFC-0015 is built but unmeasured**\n"
+        )
+        done, active, id_file = self._setup(
+            tmp_path,
+            _DONE_BLOCK,
+            duplicate_active,
+            {"BK": 174, "BUG": 194, "ID": 176, "AF": 40, "BL": 10},
+        )
+        monkeypatch.setattr(_mod, "BACKLOG_DONE", done)
+        monkeypatch.setattr(_mod, "BACKLOG", active)
+        monkeypatch.setattr(_mod, "ID_FILE", id_file)
+        monkeypatch.setattr(_mod, "ROOT", tmp_path)
+
+        assert _mod._check() == 1
+        out = capsys.readouterr().out
+        assert "BK-382" in out
+        # The count, not just the ID: a reader has to know how many headers to
+        # go and find, and "2" is what separates this from the done-collision
+        # report above, which names an ID appearing once on each side.
+        assert "2" in out
+        assert "BK-177" not in out
+
+    def test_status_variants_of_one_id_collide(self, tmp_path, monkeypatch, capsys):
+        """`- [ ]` and `- [~]` are both open, so one ID across them is a duplicate.
+
+        `_check` reads open items with the status set `" ~"`, so a partially
+        done item and a fresh one sharing an ID is the same defect wearing a
+        different checkbox — and the likelier shape, since an item in flight is
+        what a concurrent branch collides with.
+        """
+        mixed_active = (
+            f"- [ ] **ID-018 {_EM} conda-forge publishing**\n- [~] **ID-018 {_EM} something else entirely**\n"
+        )
+        done, active, id_file = self._setup(
+            tmp_path,
+            _DONE_BLOCK,
+            mixed_active,
+            {"BK": 174, "BUG": 194, "ID": 176, "AF": 40, "BL": 10},
+        )
+        monkeypatch.setattr(_mod, "BACKLOG_DONE", done)
+        monkeypatch.setattr(_mod, "BACKLOG", active)
+        monkeypatch.setattr(_mod, "ID_FILE", id_file)
+        monkeypatch.setattr(_mod, "ROOT", tmp_path)
+
+        assert _mod._check() == 1
+        assert "ID-018" in capsys.readouterr().out
+
+    def test_suffix_variants_are_not_duplicates(self, tmp_path, monkeypatch):
+        """`BK-139a` and `BK-139b` are two items, not one appearing twice.
+
+        The split-item suffix is part of the ID (`_HEADER_RE` spells the number
+        `\\d+[a-z]*`), so the duplicate check keys on the whole token. Keying on
+        the numeric part would make every split item fail the gate that exists
+        to protect it.
+        """
+        split_active = f"- [ ] **BK-139a {_EM} First half**\n- [ ] **BK-139b {_EM} Second half**\n"
+        done, active, id_file = self._setup(
+            tmp_path,
+            _DONE_BLOCK,
+            split_active,
+            {"BK": 174, "BUG": 194, "ID": 176, "AF": 40, "BL": 10},
+        )
+        monkeypatch.setattr(_mod, "BACKLOG_DONE", done)
+        monkeypatch.setattr(_mod, "BACKLOG", active)
+        monkeypatch.setattr(_mod, "ID_FILE", id_file)
+        monkeypatch.setattr(_mod, "ROOT", tmp_path)
+
+        assert _mod._check() == 0
+
     def test_suffix_variant_not_false_positive(self, tmp_path, monkeypatch):
         # Suffixed IDs must not false-positive against each other: the fixture
         # puts BK-139d in the active file and BK-139b in the done file.

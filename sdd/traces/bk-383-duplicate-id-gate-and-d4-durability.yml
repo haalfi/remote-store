@@ -1,0 +1,137 @@
+id: BK-383
+title: "Close the three dedupe-hides-a-duplicate gaps, and say what a derived commit list resolves to"
+trigger: >-
+  BK-378 merged as e5fb4a8 (PR #1026) while BUG-281 merged as 8e35697, and both
+  branches had minted BK-382 from a master where 382 was free. Three gates
+  passed the resulting file. The same shape turned out to hold in two more
+  places: `yaml.safe_load` resolves a repeated trace key to the last silently,
+  and RFC-0015 D4's derived commit list attributes its orphaned SHAs to
+  hand-written lists when the cause is the repo's squash-merge convention. The
+  user chose the within-file duplicate check over ID-257's remote-aware minting,
+  the land-order convention for which item renumbers, and `pr` over a squash SHA
+  the block cannot know at paste time.
+source_items:
+  - BK-383
+  - ID-257
+audience:
+  - contributor.tooling
+  - contributor.process
+discovery_followups: []
+co_shipped_items: []
+expected_ripples:
+  - sdd/GATE-INVENTORY.md
+  - sdd/BACKLOG.md
+  - sdd/BACKLOG-DONE.md
+  - sdd/rfcs/rfc-0015-ship-two-surfaces.md
+  - sdd/traces/_schema.yml
+  - .claude/skills/ship/SKILL.md
+surprising_ripples:
+  # The ripple-check row for "New or changed cross-artifact check" anticipated
+  # the gate edits and the GATE-INVENTORY regeneration. Four it did not:
+  #
+  # 1. The new duplicate check found a SECOND live collision nobody had
+  #    reported — BUG-291, on two distinct open items from #1021 and #1022.
+  #    Fixing it was forced, not optional: a gate that red-lights master is not
+  #    shippable. Merge order, not PR number, decides which renumbers.
+  # 2. The strict loader failed an existing trace on its first run. BK-221's
+  #    carried `surprising_ripples` twice and had been validating with one
+  #    occurrence silently discarded — the defect, already costing data, three
+  #    years of corpus into the repo.
+  # 3. report_trace_outcomes.py had its own `yaml.safe_load`. Leaving it would
+  #    have let the gate and the report disagree about what parses, which is the
+  #    Rule 1 failure `_trace_corpus.py` exists to prevent.
+  # 4. ID-257's body asserted open-versus-open has no gate. True when written,
+  #    false once this shipped, so it had to move in the same commit.
+  - sdd/BACKLOG.md
+  - scripts/report_trace_outcomes.py
+  - sdd/traces/BK-221-test-pbt-write-result-s3-azure-per-backend.yml
+  - sdd/traces/bug-254-absent-container-root-row.yml
+phases:
+  - id: orient
+    name: Orient
+    steps:
+      - file: sdd/BACKLOG.md
+        section: "BK-382 (both headers), ID-257"
+        read_type: gate
+        extract: >-
+          Two distinct open items carrying one ID; ID-257 already reasons about
+          the minting collision and deliberately leaves the mechanism open,
+          naming open-versus-open as the half no gate sees.
+        outcome: ok
+      - file: sdd/rfcs/rfc-0015-ship-two-surfaces.md
+        section: "D1, D4, Impact, Pilot result"
+        read_type: gate
+        extract: >-
+          D4 makes ship_report.py the only producer of loop figures; its
+          reverse condition is read from the per-file count. D1 bounds the
+          record to the PR.
+        outcome: ok
+      - file: scripts/gen_backlogid.py
+        section: "_extract_ids, _check"
+        read_type: gate
+        extract: >-
+          `_extract_ids` returns dict[str, set[str]] so a repeat collapses
+          before comparison; `_check` only compares open against done.
+        outcome: ok
+      - file: tests/scripts/test_check_backlog_ids_vs_base.py
+        section: "test_this_module_defines_no_header_regex"
+        read_type: gate
+        extract: >-
+          A guard pins `_extract_ids` to its home module, so widening its
+          return type would rewrite a second gate. Decided a sibling function
+          instead.
+        outcome: ok
+  - id: implement
+    name: Implement
+    steps:
+      - file: scripts/_trace_corpus.py
+        section: "module docstring — Rule 1 / authority"
+        read_type: reference
+        extract: >-
+          Already the one driver for "what a trace is", and states the Rule 1
+          reason. That made it the home for the loader too, and named the
+          second consumer the glob has — which is how report_trace_outcomes.py
+          came to be switched in the same change.
+        outcome: ok
+      - file: scripts/check_traces.py
+        section: "collect_violations — the except (yaml.YAMLError, OSError, UnicodeDecodeError) arm"
+        read_type: reference
+        extract: >-
+          Both consumers already report a parse failure as a `(parse)`
+          violation and catch YAMLError specifically. Decided the loader must
+          raise ConstructorError rather than a bare ValueError, or it would
+          escape that arm and abort the gate with a traceback.
+        outcome: ok
+      - file: scripts/ship_report.py
+        section: "trace_block, _q, Bounds"
+        read_type: reference
+        extract: >-
+          `_q` exists because an all-digit short SHA re-reads as an integer;
+          `pr` is emitted bare because it is meant to be an integer, which the
+          new schema property requires.
+        outcome: ok
+  - id: verify
+    name: Verify
+    steps:
+      - file: sdd/CLAUDE-REFERENCE.md
+        section: "Ripple-check table / Pre-work index"
+        read_type: verify
+        extract: >-
+          Triggered rows: new or changed cross-artifact check (both gates),
+          tracker ID in published prose (sdd/** out of scope), test whose
+          subject is outside src/.
+        outcome: ok
+      - file: sdd/traces/_schema.yml
+        section: "review: required, pr, review_driven_commits"
+        read_type: verify
+        extract: >-
+          The all-nine required list becomes ten, so the one live trace with a
+          review block needed `pr: 1026` or it would fail its own schema.
+        outcome: ok
+      - file: sdd/DRIFT-RULES.md
+        section: "Rule 3 claim space, Rule 7 bounds"
+        read_type: verify
+        extract: >-
+          The widened claim space moves the Drift-gate `compares:` line;
+          GATE-INVENTORY.md is generated from it.
+        outcome: ok

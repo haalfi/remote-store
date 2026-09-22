@@ -475,7 +475,7 @@ are not substitutes.
    `tests/scripts/`, which every `hatch run all` executes, so nothing is
    unverified by the narrowing; what is lost is a reviewer re-deriving the
    figures independently, and that is RFC-0015 D6's deferred half to solve
-   (BK-382), not a gap to paper over by widening a permission.
+   (BK-383), not a gap to paper over by widening a permission.
 
 4. **Whether the verdict is reached by reading the diff, by reading each changed
    file whole, or by running**, and for a measuring member, what to run and

@@ -251,12 +251,12 @@ properties:
     type: object
     additionalProperties: false
     required:
-      # All nine, because the emitter writes all nine unconditionally. Leave any
+      # All ten, because the emitter writes all ten unconditionally. Leave any
       # of them optional and an emitter that *dropped* that field would validate
       # everywhere, making the "cannot diverge silently" claim below false in
       # the direction that matters. `additionalProperties: false` catches a
       # field added without a property; this catches one removed without one.
-      [derivation, review_rounds, submissions, findings, by_round, by_file, untouched_files,
+      [derivation, pr, review_rounds, submissions, findings, by_round, by_file, untouched_files,
        review_driven_commits, ci]
     description: |
       The loop's own figures, derived from the PR after it closed and
@@ -289,6 +289,22 @@ properties:
           The command that produced this block, re-runnable as written. A
           re-run after the paste commit lands returns `review_rounds + 1`;
           see that field and `scripts/ship_report.py`'s Bounds.
+      pr:
+        type: integer
+        minimum: 1
+        description: |
+          The pull request this block measures — **the only field here that
+          still resolves once the PR is merged.** Every `sha` in
+          `review_driven_commits` names a branch commit, and a squash merge
+          retires them all, so a reader who needs the commit that actually
+          landed resolves it from this number:
+          `gh pr view <N> --json mergeCommit`.
+
+          The squash SHA itself is deliberately not a field. The block is
+          pasted while the PR is still open, where GitHub's
+          `merge_commit_sha` is an ephemeral test-merge commit rather than the
+          eventual squash — a plausible hash that resolves to nothing, which
+          is the failure the `examples` block below already warns about.
       review_rounds:
         type: integer
         minimum: 0
@@ -353,7 +369,19 @@ properties:
         items: {type: string}
       review_driven_commits:
         type: array
-        description: The commits `review_rounds` counts, oldest first.
+        description: |
+          The commits `review_rounds` counts, oldest first.
+
+          **These SHAs are a mid-loop handle and stop resolving at the merge.**
+          They name commits on the PR branch, and this repo squash-merges, so
+          none of them reaches `master` — measured on the first trace shipped
+          under D4, where `git cat-file -e <sha>^{commit}` found 0 of 9 present
+          in a fresh clone. That is true of a *derived* list exactly as it was
+          of a hand-written one; what deriving removes is the content going
+          silently stale, not the SHAs dying. The durable handle is `pr`.
+
+          The `subject` line is what survives as content, and is why each entry
+          carries one rather than a SHA alone.
         items:
           type: object
           additionalProperties: false
@@ -520,6 +548,7 @@ examples:
     # derivation, and the script writes the real ones.
     review:
       derivation: "hatch run ship-report 1025 --trace-block-only"
+      pr: 1025
       review_rounds: 1
       submissions: 1
       findings: 2

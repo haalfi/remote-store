@@ -2,7 +2,7 @@
 
 ## Status
 
-Draft. Tracked as **BK-382**; BK-378 built D1 and D4 and closed, and BK-379
+Draft. Tracked as **BK-383**; BK-378 built D1 and D4 and closed, and BK-379
 piloted the rest before them. Minted as BK-367 and re-homed twice: ID-182's
 branch minted BK-367 in parallel, then ID-018's minted BK-368 and closed it
 before this PR merged. Both are ID-257's scenario, and the second is recorded
@@ -387,7 +387,12 @@ repo keeps of it is derived from the PR once, after the loop ends.
   once, after the stop rule fires, and pasted verbatim under one YAML key
   (`review:`), so the trace's boundary is a key the check can see. The trace's
   *reads* are still logged as they happen; only the review fields move to the
-  close. BUG-265's annotate-versus-correct rule for traces is retired, because
+  close. **Deriving the block removes the content drift, not the dead SHAs** —
+  a squash merge retires every commit the block names whether a hand or a
+  script wrote the list, which is why it also carries `pr` (see D4). The paste
+  is a *replacement*: a second paste leaves two top-level `review:` keys, which
+  YAML resolves to the last, so `check_traces.py` refuses a duplicate key
+  rather than validating the survivor. BUG-265's annotate-versus-correct rule for traces is retired, because
   the annotated half no longer lives in the trace.
 - `CLAUDE.md` § Trace authoring is amended for the review fields only;
   `_schema.yml` § `review_rounds` replaces its hand-enumeration clause with
@@ -518,7 +523,7 @@ about what a rationale would have prevented is not, and is not the condition.
   is what the pilot measured. That reason outlived the pilot — § Pilot result
   prescribes a re-measurement with D1 and D4 shipped, and a composition that
   moved in between would be comparable with neither the 78% baseline nor the
-  pilot's 53%. The cap comes down with the graduating ADR, on BK-382's
+  pilot's 53%. The cap comes down with the graduating ADR, on BK-383's
   account.
 - Worktrees are removed at round close, with a `prune` for the base worktree a
   measuring member left nested inside (measured on git 2.43.0: ignored
@@ -571,6 +576,26 @@ by hand. BK-348 declined a script because "it guards nothing"; the hand
 enumerations since went stale eleven times across four traces (five, four,
 one and one, the traces named under cause A), and every staleness was a
 round.
+
+**What deriving buys, and what it does not.** It buys a list that is cheap to
+regenerate and never silently wrong in *content*. It does not buy SHAs that
+resolve: `review_driven_commits` names commits on the PR branch, this repo
+squash-merges (`git log --format='%h parents=%p %s' -6 origin/master` is
+single-parent throughout, every subject carrying a `(#NNNN)`), and so **every
+trace shipped under D4 arrives on master carrying SHAs that do not resolve** —
+by construction, not by accident. Measured on the first such trace: `git
+cat-file -e <sha>^{commit}` over `sdd/traces/bk-378-d1-d4.yml`'s nine SHAs
+finds 0 of 9 present in a fresh clone, absent as objects rather than merely
+unreachable. The orphaning is a property of the merge convention, not of who
+wrote the list, so a derived list inherits it whole: deriving is not the
+remedy for it and nothing signals that a regeneration is owed. The durable
+handle is the PR number, which the block emits as `pr` beside the SHAs, and
+from which the
+squash commit is resolved at any later time (`gh pr view <N> --json
+mergeCommit`). The squash SHA is not emitted: the block is pasted while the PR
+is open, where `merge_commit_sha` is GitHub's ephemeral test-merge commit, and
+a plausible hash that resolves to nothing is the failure `_schema.yml` already
+names. During the loop the branch SHAs resolve, which is what they are for.
 
 **Evidence.** Cause A; ADR-0037's corollary that a figure refuted twice is
 replaced by the query that regenerates it.
@@ -916,11 +941,11 @@ apart.
 - **D5** — the posting half is measured above and stays as written. The
   stop-rule clause was never wired into the loop and the dry run gives no
   firing to tune its constants against, so the constants shipped unchanged
-  alongside `ship-report` and the wiring is still owed (BK-382).
+  alongside `ship-report` and the wiring is still owed (BK-383).
 - **D6** — the repeat-site half is withdrawn above. Its deferred half (the
   whole-file brief excluding the trace's `review:` key, and a measuring member
   re-running `ship-report`) had nothing to read until D1 and D4 existed; it now
-  has, and is owed under BK-382.
+  has, and is owed under BK-383.
 - **D2, and D3's worktree half** — in force in the four skills since #1020,
   unchanged by this result; D3's cap lift waits for the re-measurement, for the
   reason D3 now states.
@@ -928,7 +953,7 @@ apart.
 **The pilot's measurements above are not amended by the build; the dispositions
 are, and were.** BK-378 shipped D1 and D4, so the four bullets it changed now
 say what became of each decision rather than what was still owed. Every figure
-in this section remains the pilot's, read over PRs #1021 to #1023. BK-382
+in this section remains the pilot's, read over PRs #1021 to #1023. BK-383
 carries the re-measurement, and the RFC stays **Draft** until that sample is
 read against § Impact's three clauses.
 

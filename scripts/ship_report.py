@@ -96,6 +96,24 @@ Bounds (DRIFT-RULES Rule 7)
   two measure different things and this script prints both, because the trace
   schema's field means the first and a reader reaching for "how many reviews"
   wants the second.
+* **The squash merge retires every SHA in the list.** ``review_driven_commits``
+  names commits on the PR branch, and this repo squash-merges — ``git log
+  --format='%h parents=%p %s' -6 origin/master`` is single-parent throughout,
+  every subject carrying a ``(#NNNN)``. So the branch commits the block names
+  never land, and **every trace shipped under D4 arrives on master carrying
+  SHAs that do not resolve**, by construction rather than by accident. Measured
+  on the first such trace: ``git cat-file -e <sha>^{commit}`` over
+  ``sdd/traces/bk-378-d1-d4.yml``'s nine SHAs finds 0 of 9 present in a fresh
+  clone — absent as objects, which is stronger than unreachable.
+  What D4 buys is therefore a list that is **cheap to regenerate and never
+  silently wrong in content**, not one whose SHAs a later reader can check out.
+  The durable handle is ``pr``, emitted beside them: the squash commit is
+  resolved from it at any later time with ``gh pr view <N> --json mergeCommit``.
+  That SHA is deliberately **not** emitted here, because the block is pasted
+  while the PR is still open and ``merge_commit_sha`` on an open PR is
+  GitHub's ephemeral test-merge commit rather than the eventual squash —
+  writing it would put a plausible hash that resolves to nothing into a durable
+  artifact. During the loop the SHAs do resolve, which is what they are for.
 * **The count excludes the commit that carries it.** ``review_driven_commits``
   reads ``<base>..<head>`` at the moment of the run, and the commit that pastes
   this block into the trace does not exist yet — so re-running the stated
@@ -410,6 +428,10 @@ def trace_block(data: dict[str, Any]) -> str:
         f"  # Derived by `{command}` at head {data['head'][:7]}.",
         "  # Do not hand-edit: RFC-0015 D4 makes this script the only producer.",
         f"  derivation: {_q(command)}",
+        # First field with a value, because it is the only one that still
+        # resolves after the merge: every `sha` below names a branch commit the
+        # squash retires. See Bounds.
+        f"  pr: {data['pr']}",
         f"  review_rounds: {len(data['review_driven_commits'])}",
         f"  submissions: {data['submissions']}",
         f"  findings: {data['findings']}",

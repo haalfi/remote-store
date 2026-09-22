@@ -88,6 +88,59 @@ class TestValidation:
         assert len(violations) == 1
         assert "title" in violations[0].message
 
+
+class TestDuplicateKeys:
+    """A repeated mapping key is a violation, not a silent last-wins merge.
+
+    ``yaml.safe_load`` resolves a duplicate key to the last occurrence and says
+    nothing, so a trace carrying one validated while half its content was
+    discarded. Measured on the live corpus before this gate existed:
+    ``BK-221-test-pbt-write-result-s3-azure-per-backend.yml`` carried
+    ``surprising_ripples`` twice and the gate reported the corpus clean.
+
+    The reachable authoring path is RFC-0015 D4's paste-the-block workflow —
+    pasting the ``review:`` block a second time instead of replacing it yields
+    two top-level ``review:`` keys — but the defect is not specific to it, so
+    neither is the check.
+    """
+
+    def test_duplicate_top_level_key_is_reported(self, tmp_path):
+        schema = _write_schema(tmp_path)
+        traces = tmp_path / "traces"
+        _write_trace(traces, "dup.yml", 'id: "ID-1"\ntitle: "first"\ntitle: "second"\n')
+        violations = _mod.collect_violations(schema_path=schema, traces_dir=traces)
+        assert len(violations) == 1
+        assert violations[0].path == "(parse)"
+        assert "title" in violations[0].message
+
+    def test_duplicate_nested_key_is_reported(self, tmp_path):
+        """Nested, not only top-level: last-wins discards content at any depth."""
+        schema = tmp_path / "_schema.yml"
+        schema.write_text(
+            textwrap.dedent(
+                """
+                $schema: "https://json-schema.org/draft/2020-12/schema"
+                type: object
+                properties:
+                  outer:
+                    type: object
+                """
+            ),
+            encoding="utf-8",
+        )
+        traces = tmp_path / "traces"
+        _write_trace(traces, "dup.yml", "outer:\n  a: 1\n  a: 2\n")
+        violations = _mod.collect_violations(schema_path=schema, traces_dir=traces)
+        assert len(violations) == 1
+        assert violations[0].path == "(parse)"
+
+    def test_distinct_keys_still_parse(self, tmp_path):
+        """The guard must not fire on a mapping that merely repeats a *value*."""
+        schema = _write_schema(tmp_path)
+        traces = tmp_path / "traces"
+        _write_trace(traces, "ok.yml", 'id: "ID-1"\ntitle: "ID-1"\n')
+        assert _mod.collect_violations(schema_path=schema, traces_dir=traces) == []
+
     def test_additional_property_is_reported(self, tmp_path):
         # The schema's additionalProperties:false is the constraint that
         # caught the real-world top-level `notes` leak.

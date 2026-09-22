@@ -449,6 +449,38 @@ class TestTraceBlock:
         assert match is not None, "the rounds script cannot find review_rounds in the emitted block"
         assert int(match.group(1)) == 1
 
+    def test_the_block_names_the_pr_it_measures(self, data: dict) -> None:
+        """The one handle in the block that survives the merge.
+
+        Every `sha` in `review_driven_commits` names a branch commit, and this
+        repo squash-merges — `git log --format='%h parents=%p %s' -6
+        origin/master` is single-parent throughout with `(#NNNN)` subjects — so
+        those objects never reach `master`. Measured on the first trace shipped
+        under D4: `git cat-file -e <sha>^{commit}` over
+        `bk-378-d1-d4.yml`'s nine SHAs finds **0 of 9** present in a fresh
+        clone. `pr` is what a later reader resolves the squash commit from.
+        """
+        import yaml
+
+        block = yaml.safe_load(_mod.trace_block(data))["review"]
+        assert block["pr"] == data["pr"]
+
+    def test_the_block_does_not_emit_a_squash_sha(self, data: dict) -> None:
+        """Deliberately absent, and the absence is the point.
+
+        The block is pasted while the PR is still open, and GitHub's
+        `merge_commit_sha` on an open PR is an ephemeral *test-merge* commit,
+        not the eventual squash. Emitting it would put a plausible hash that
+        resolves to nothing into a durable artifact — the failure `_schema.yml`
+        already names ("a fake that resolves to nothing is worse than no
+        derivation"). The squash SHA is resolved from `pr` after the merge.
+        """
+        import yaml
+
+        block = yaml.safe_load(_mod.trace_block(data))["review"]
+        assert "squash_sha" not in block
+        assert "merge_commit_sha" not in block
+
     def test_the_anchor_ignores_prose_inside_a_folded_scalar(self, data: dict) -> None:
         """The defect a free `[ \\t]*` indent introduced, and the reason it is bounded.
 
@@ -775,6 +807,28 @@ class TestTraceBlock:
         review = schema["properties"]["review"]["properties"]
         assert "Excludes the commit that pastes this" in review["review_rounds"]["description"]
         assert "returns `review_rounds + 1`" in review["derivation"]["description"]
+
+    def test_both_homes_state_that_branch_shas_die_at_the_merge(self) -> None:
+        """The second bound stated twice, for the same reason as the first.
+
+        A squash merge retires every SHA in `review_driven_commits`, so the
+        list's durable half is `pr`. That is a bound on what the block's
+        content means, so DRIFT-RULES Rule 7 puts it in the script; it is also
+        the first thing a trace reader needs when a SHA fails to resolve, so it
+        is in the schema. A fix that moves one home and not the other leaves
+        the other promising a resolvability the pair does not have — which is
+        exactly what D4's original wording did, by attributing the orphaning to
+        hand-written lists alone.
+        """
+        import yaml
+
+        script = _SCRIPT.read_text(encoding="utf-8")
+        assert "squash merge retires every sha" in script.lower()
+
+        schema = yaml.safe_load(_SCHEMA.read_text(encoding="utf-8"))
+        review = schema["properties"]["review"]["properties"]
+        assert "squash" in review["review_driven_commits"]["description"].lower()
+        assert "pr" in review, "the durable handle must be a declared property"
 
 
 class TestStep5Report:
