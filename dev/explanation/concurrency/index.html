@@ -10990,19 +10990,19 @@
 <tr>
 <td><a href="../../guides/backends/sql-blob/">SQLBlob</a></td>
 <td>Thread-safe ³</td>
-<td>The SQLAlchemy engine pools connections.</td>
+<td>A pooled SQLAlchemy engine <strong>over a durable database</strong>. In-memory SQLite is the exception — see ³.</td>
 </tr>
 <tr>
 <td><a href="../../guides/backends/sql-query/">SQLQuery</a></td>
 <td>Thread-safe ³</td>
-<td>Same pooled engine (read-only).</td>
+<td>Same engine, same exception (read-only).</td>
 </tr>
 </tbody>
 </table>
 <p>No backend offers multi-operation transactionality — atomicity is per operation only, and ordering between concurrent callers is never guaranteed.</p>
 <p>¹ S3-PyArrow's per-instance thread-safety is expected but not yet pinned by a live concurrency probe; treat heavy concurrent sharing as to-be-confirmed.</p>
 <p>² One Graph instance is safe for concurrent coroutines on a <strong>single</strong> event loop, and never across loops — use one instance per loop. Driven from synchronous code through the async→sync bridge it is also safe for concurrent threads (unlike SFTP); see <a href="#bridge-asymmetry">Bridge asymmetry</a> below.</p>
-<p>³ On a pooled RDBMS engine (PostgreSQL, MySQL) SQLBlob and SQLQuery are thread-safe. The <code>sqlite:///:memory:</code> configuration is the exception: SQLAlchemy gives each thread its own isolated in-memory database, so a shared instance behaves as single-connection — use one instance per thread.</p>
+<p>³ On a pooled engine over a durable database (PostgreSQL, MySQL, file-backed SQLite) SQLBlob and SQLQuery are thread-safe. File-backed SQLite qualifies because its writers <strong>wait</strong> rather than fail: WAL admits one at a time and the rest block on pysqlite's default busy timeout. <strong>In-memory SQLite is the exception, and no spelling of it is safe for concurrent writers.</strong> With <code>sqlite:///:memory:</code>, <code>sqlite://</code>, or <code>file:name?mode=memory&amp;uri=true</code>, each <em>thread</em> gets its own database, so a shared instance behaves as single-connection — use one instance per thread. A shared cache (<code>file:name?mode=memory&amp;cache=shared&amp;uri=true</code>) does give every connection one database, which makes cross-thread <em>reads</em> work, but SQLite locks that database at table level and will not wait for the lock, so most concurrent writes fail outright with <code>database table is locked</code> rather than queueing. The one spelling to avoid sharing at all is <code>file::memory:?uri=true</code> — an anonymous database on a <em>pooled</em> engine, where each <strong>connection</strong> opens its own, so even a single thread can lose an earlier write when it is handed a different connection. If threads must write, give each its own instance or use a durable database. Each posture above was measured; the figures live with the <a href="https://github.com/haalfi/remote-store/blob/master/sdd/specs/040-sql-blob-backend.md#sql-blob-072">SQL blob backend specification</a>.</p>
 <h3 id="bridge-asymmetry">Bridge asymmetry<a class="headerlink" href="#bridge-asymmetry" title="Permanent link">&para;</a></h3>
 <p>remote-store has two adapters that cross the sync/async boundary, and they do <strong>not</strong> confer the same safety — the direction decides it:</p>
 <ul>

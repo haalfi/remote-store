@@ -11981,8 +11981,29 @@ trailing slash prevents <code>"data"</code> from matching <code>"dataset/file.tx
 </li>
 </ul>
 <h3 id="sql-blob-071-connection-pooling">SQL-BLOB-071: Connection Pooling<a class="headerlink" href="#sql-blob-071-connection-pooling" title="Permanent link">&para;</a></h3>
-<p><strong>Invariant:</strong> Uses SQLAlchemy's default connection pool. No custom pool
-configuration. Users can tune via engine kwargs when passing a pre-built
+<p><strong>Invariant:</strong> Uses SQLAlchemy's default connection pool, except for a SQLite
+URL carrying <code>mode=memory</code> in its query string, which is created with
+<code>poolclass=SingletonThreadPool</code> — the class SQLAlchemy already inferred for it,
+<strong>stated rather than inferred</strong>. SQLAlchemy deprecates that inference in 2.1,
+and naming the pool is what retires it, whichever class is named. So this
+changes what the engine is <em>told</em>, never which pool it gets.</p>
+<p><code>QueuePool</code> — the class the deprecation message suggests — was measured against
+that and is wrong here on three counts, none of which the pool class reveals on
+its own:</p>
+<ul>
+<li>Without <code>cache=shared</code>, each <em>connection</em> opens a private database, so a
+  second concurrent checkout gets an empty one and a thread's own earlier write
+  can vanish.</li>
+<li>With <code>cache=shared</code>, the nested <code>connect()</code> that the file-ancestor pre-check
+  performs inside <code>move</code>/<code>copy</code>'s open write transaction becomes a <em>second</em>
+  connection, and shared-cache SQLite locks the table. That read fails open, so
+  the gate stops rejecting instead of raising.</li>
+<li>It buys no concurrency in exchange: under a shared cache, concurrent writers
+  collide on that same table lock whichever pool is used (SQL-BLOB-072).</li>
+</ul>
+<p><code>sqlite:///:memory:</code> and the bare <code>sqlite://</code> are not configured at all — their
+pool is inferred from the database name rather than a query string, which is not
+deprecated. Users can tune any of it via engine kwargs when passing a pre-built
 engine.</p>
 <h3 id="sql-blob-072">SQL-BLOB-072: Concurrent-Use Posture<a class="headerlink" href="#sql-blob-072" title="Permanent link">&para;</a></h3>
 <p><strong>Invariant:</strong> <code>SQLBlobBackend</code> is <code>thread_safe</code> <strong>when backed by a
@@ -11995,13 +12016,74 @@ thread-safe — SQLAlchemy <code>Connection</code> objects are not concurrency-s
 this backend does not do that. Each blob write is atomic within its own
 transaction; there is no cross-operation transactionality.</p>
 <p><strong>Carve-out (per-thread-isolated engines):</strong> the posture follows the engine's
-pool class, not the backend code. A <code>sqlite:///:memory:</code> URL — SQLAlchemy's
-default <code>SingletonThreadPool</code> — hands each thread its <em>own</em> in-memory database,
-so a shared instance is effectively <code>single_connection</code>: confine it to one
-thread, or give each thread its own backend. The same applies to any engine
-configured with a per-thread or single-connection pool. <code>QueuePool</code>-backed
-engines (PostgreSQL, MySQL, file-backed SQLite with a shared cache) are
-<code>thread_safe</code> as stated above.</p>
+pool class and the database its URL names, not the backend code. A
+<code>sqlite:///:memory:</code> URL — SQLAlchemy's default <code>SingletonThreadPool</code> over an
+anonymous database — hands each thread its <em>own</em> in-memory database, so a
+shared instance is effectively <code>single_connection</code>: confine it to one thread,
+or give each thread its own backend.</p>
+<p><strong>A per-thread pool is not by itself isolating, and <code>QueuePool</code> is not by itself
+<code>thread_safe</code>.</strong> Both follow from one fact: what isolates is the database being
+<strong>anonymous</strong>, so that each connection opens a fresh one. The pool decides how
+many connections there are; the URL decides how many databases they reach. The
+posture is the pair, and for in-memory SQLite it is one of the cases below:</p>
+<table>
+<thead>
+<tr>
+<th>Database the URL names</th>
+<th>Pool</th>
+<th>Posture</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Anonymous (<code>:memory:</code>, <code>sqlite://</code>, <code>mode=memory</code> without <code>cache=shared</code>)</td>
+<td>per-thread</td>
+<td><code>single_connection</code> — one database per thread</td>
+</tr>
+<tr>
+<td>Anonymous (<code>file::memory:?uri=true</code>)</td>
+<td>pooled</td>
+<td><strong>not safe to share</strong> — one database per <em>connection</em></td>
+</tr>
+<tr>
+<td>Shared cache (<code>mode=memory&amp;cache=shared</code>)</td>
+<td>per-thread</td>
+<td>one database, <strong>concurrent readers only</strong></td>
+</tr>
+</tbody>
+</table>
+<p><strong>Anonymous-on-pooled</strong> is the case no pool class reveals: each checkout gets its
+own store, so a thread's own earlier write can vanish when it is handed a
+different connection. SQL-BLOB-071 keeps <code>mode=memory</code> out of it by naming the
+per-thread pool; it does not reach <code>file::memory:?uri=true</code>, whose <code>QueuePool</code> is
+SQLAlchemy's own default — confine such an instance to one connection, or name a
+shared cache.</p>
+<p>The file-ancestor pre-check (SQL-BLOB-031) is where that row bites first, because
+it is the one path holding two checkouts at once: the nested <code>connect()</code> reaches
+a second, empty database, finds no ancestors, and the gate passes silently.
+Measured — <code>move</code> onto a file ancestor returns on <code>file::memory:?uri=true</code> where
+every other in-memory spelling raises <code>InvalidPath</code>. BUG-292 carries the gate's
+silence; this row is why it has two distinct causes rather than one.</p>
+<p><strong>No in-memory spelling is <code>thread_safe</code> for writers, the shared cache
+included.</strong> A shared cache gives every connection one database, which makes
+cross-thread <em>reads</em>
+work, but SQLite takes <strong>table-level</strong> locks in shared-cache mode and does not
+invoke the busy handler for them, so concurrent writers raise
+<code>database table is locked</code> rather than waiting. Measured on this backend, 8
+threads × 25 writes each: about 40 of 200 writes landed (two runs: 40 and 41;
+the split follows the scheduler) — and moving the pool does not help, since the
+same run under <code>QueuePool</code> landed 17 of 200. Use one instance per thread, or a
+durable database, if threads must write.</p>
+<p><code>QueuePool</code>-backed engines over a <em>durable</em> database (PostgreSQL, MySQL,
+file-backed SQLite) are <code>thread_safe</code> as stated above: every connection reaches
+the same database, so the pool is the only question. For file-backed SQLite that
+holds because writers <strong>wait</strong> instead of failing — WAL admits one writer at a
+time and pysqlite's default 5 s busy timeout blocks the rest, where shared-cache
+mode never invokes the busy handler at all. Measured on this backend: 200 of 200
+writes landed at 8 threads × 25, and 1600 of 1600 at 16 × 100, the slowest single
+write taking 0.74 s. The budget is a bound rather than a guarantee: contention
+heavy enough to exhaust it surfaces as <code>BackendUnavailable</code>, and SQL-BLOB-043
+sets no <code>busy_timeout</code> of its own.</p>
 <p><strong>See also:</strong> <a href="../003-backend-adapter-contract/">003-backend-adapter-contract.md</a>
 (BE-028).</p>
 

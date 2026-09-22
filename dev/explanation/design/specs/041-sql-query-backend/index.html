@@ -12047,11 +12047,13 @@ completion; no <code>Connection</code> is held on the instance across operations
 built around a single shared <code>Connection</code> would not be thread-safe, but this
 backend does not do that. Each operation runs in its own transaction; there is
 no cross-operation transactionality.</p>
-<p><strong>Carve-out (per-thread-isolated engines):</strong> as for <a href="../040-sql-blob-backend/#sql-blob-072">SQL-BLOB-072</a> — the posture follows the engine's pool
-class. A <code>sqlite:///:memory:</code> URL (<code>SingletonThreadPool</code>) is effectively
-<code>single_connection</code> (one in-memory database per thread); confine the instance to
-one thread or give each thread its own. <code>QueuePool</code>-backed engines are
-<code>thread_safe</code>.</p>
+<p><strong>Carve-out (in-memory SQLite):</strong> the posture is the pool class <em>and</em> the
+database the URL names, and the cases are enumerated once, in
+<a href="../040-sql-blob-backend/#sql-blob-072">SQL-BLOB-072</a> — not restated here, because
+a second copy is what let this clause keep saying <code>QueuePool</code> implies
+<code>thread_safe</code> after that stopped being true. It applies unchanged to
+<code>SQLQueryBackend</code>, which inherits <code>_SQLAlchemyBaseBackend.__init__</code> and so gets
+the same pool for the same URL.</p>
 <p><strong>See also:</strong> <a href="../003-backend-adapter-contract/">003-backend-adapter-contract.md</a>
 (BE-028).</p>
 
