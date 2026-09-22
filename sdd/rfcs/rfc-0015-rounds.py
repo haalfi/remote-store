@@ -11,9 +11,35 @@ A trace added *before* ``<since>`` and renamed after it is not "added since"
 and stays in the "before" population. The "before" population is every other
 ``sdd/traces/[!_]*.yml``.
 
-Value: the integer after ``^review_rounds:`` in each file; a trailing comment
+Value: the integer after ``review_rounds:`` in each file; a trailing comment
 is ignored. The field is not required by the schema, so a trace without it is
 excluded and **named in the output**; ``n`` is the count of traces carrying it.
+
+**The anchor admits exactly two indents, and neither more nor fewer.** RFC-0015
+D1 moved the field into the trace's ``review:`` block, where
+``scripts/ship_report.py`` writes it at a two-space indent; a bare
+``^review_rounds:`` matched only the top-level spelling, so every trace authored
+from BK-378 onward would have dropped silently out of this population while the
+older corpus kept it — the worst direction for a before-and-after comparison,
+since the "after" side is the one that would empty.
+
+``^(?: {2})?review_rounds:`` rather than ``^[ \\t]*``, and the difference is
+load-bearing: a *free* indent also matches prose inside a YAML folded block
+scalar, and the corpus already contains one —
+``sdd/traces/bk-338-review-roster.yml:421`` reads
+``review_rounds: 4 and a per-round review phase…`` at a ten-space indent. Under
+a free indent that trace was safe only because it still carries a top-level
+field earlier in the file, and a BK-378-onward trace carries none — so the prose
+number would have been the first match and this script would have reported it. A
+silent wrong integer feeding a median is worse than the loud exclusion the
+widening was meant to prevent. **Under the anchor as it stands the prose line
+cannot match at any indent**, so no trace depends on keeping a field it would
+otherwise need.
+
+Two spellings match, then: top level (the legacy corpus) and two spaces (the
+emitter). **Which one a mixed file reads is decided by position, not by depth** —
+``re.search`` returns the first match in the text, so a ``review:`` block placed
+above a top-level field reads the block. No trace carries both.
 
 ``--at <rev>`` reads the tree at that revision instead of the working tree
 (``git ls-tree`` for the population, ``git show rev:path`` for each file), so
@@ -37,7 +63,7 @@ import sys
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[2]
-RX = re.compile(r"^review_rounds:\s*(\d+)", re.M)
+RX = re.compile(r"^(?: {2})?review_rounds:[ \t]*(\d+)", re.M)
 
 
 def _git(*args: str) -> str:

@@ -452,7 +452,7 @@ for any non-`ENOENT`, non-futile stat failure, permission errnos included
 (BK-316 L6 kept that deliberately, so a false "no file ancestor" only forgoes
 the `NotFound` upgrade). Reaching that walk takes a **conjunction a server does
 not normally produce**, and the clause is stated over it rather than over "an
-ancestor denial", which an earlier revision said and which is false: the
+ancestor denial", which is the wider reading and is false: the
 operation's own failure must be errno-less (`read_bytes` and `delete` consult
 `_has_file_ancestor` only when `code is None`), the target's classification stat
 must answer `ENOENT`, and an ancestor stat must answer the permission errno.
@@ -909,7 +909,7 @@ prose site to the signature, so that sweep is a reviewer's job.
 mitigation and the wrong one: it is a second derived artifact over the same
 fact, so it goes stale exactly as the prose does, and a checklist a reader
 trusts and that is one entry short is worse than no checklist, because it stops
-the search. This clause carried such a list twice and it was short both times.
+the search. A hand list of these sites has been short every time one was tried.
 Derive the set instead — `rg -n 'io_timeout' src docs-src sdd tests`, read the
 hits that state a value.
 
@@ -926,8 +926,8 @@ is narrower than it looks: the options table and the migration entry have to
 state values to do their jobs, and what is genuinely tolerated is the narrative
 restatements beside them. The cost is real and was paid inside this item's own
 review, twice: a derived figure in a test docstring went stale one commit after
-review corrected it, and the enumeration this paragraph used to carry was
-incomplete when written.
+it was corrected, and a hand enumeration proved incomplete against the sites it
+claimed to cover.
 
 **It is armed before the SFTP session exists, not after.** `_connect` opens the
 channel, arms the bound, then invokes the `sftp` subsystem and constructs the
@@ -1033,7 +1033,7 @@ Read the Postconditions as scoped to the failures that surface; the exception
 list is not a footnote to them.
 
 The caller-visible wall clock for a stalled operation is one bound, not
-several. **The one exception this clause used to carry is closed** (BUG-270): the
+several. **The one exception to that is closed** (BUG-270): the
 fallback opened with a `remove` under `contextlib.suppress(OSError)`, so a
 silence beginning there was swallowed and the following `rename` re-entered the
 same channel — 4.00 s at a 2.0 s bound, reached directly by `move`, which has no
@@ -1057,9 +1057,8 @@ exception to test, asks the transport instead. Stated because the figure above
 cannot be read as covering the shape it could not raise.
 
 The two-route detail is kept because it is what the guard's placement turns on:
-an earlier revision attributed the 4.00 s to the promote path under the first
-antecedent, where it was 2.00 s, and a guard written from that reading would have
-gone in the wrong method.
+attributing the 4.00 s to the promote path under the first antecedent, where it
+is 2.00 s, sends a guard written from that reading into the wrong method.
 
 A failed operation re-enters the channel two ways — to classify the
 failure (`_raise_if_dir`, `_has_file_ancestor`) and to release resources — and
@@ -1349,14 +1348,14 @@ reach (SFTP-031) — on a target the operation's own directory guard has not alr
 rejected — `_raise_if_dir` for the promote path, and for `move` the eager
 destination `stat`, which fires before `posix_rename` is attempted at all.
 The two are **not** the same guard and `move` never calls `_raise_if_dir`;
-collapsing them is how an earlier revision of this sentence mis-assigned the
-two-bound cost recorded above. That condition, per operation, is the whole of
-the claim — a strictly larger set than "the server lacks the extension". **No example triggers are named here**, deliberately:
-naming them requires knowing what every guard between `posix_rename` and the
-fallback does, an earlier revision named three of which two were unreachable,
-and the two guards involved (`_raise_if_dir` here, the destination `stat` in
-`move`) are the kind of detail a reader should check in the code rather than
-trust from prose.
+collapsing them mis-assigns the two-bound cost recorded above. That condition,
+per operation, is the whole of the claim — a strictly larger set than "the
+server lacks the extension". **No example triggers are named here**,
+deliberately: naming them requires knowing what every guard between
+`posix_rename` and the fallback does, and a candidate that looks like a trigger
+is usually unreachable once those guards are traced. The two guards involved
+(`_raise_if_dir` here, the destination `stat` in `move`) are the kind of detail
+a reader should check in the code rather than trust from prose.
 
 **The path costs one bound, not two.** The exception the one-bound paragraph
 above records was this one: the displace ran as a `remove` under

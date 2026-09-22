@@ -209,57 +209,172 @@ properties:
     description: |
       Count of review-driven iterations on the merged PR — commits that
       exist specifically because review feedback was incorporated.
-      Filled post-merge by the trace author's judgement; the assessment
-      is human (a `fix:`-prefixed commit is the easy case, but a commit
-      following the repo's `BK-NNN: ...` / `BUG-NNN: ...` convention can
-      also be review-driven and should be counted). Feedback received
-      before the PR was opened (e.g., reviewer notes during development)
-      counts the same as post-creation PR-review feedback if it produced
-      a commit on the branch. 0 means the first push merged without
-      revision; higher counts signal the trace under-modelled the actual
-      work surface.
+      0 means the first push merged without revision; higher counts
+      signal the trace under-modelled the actual work surface.
 
-      **Name the derivation the value was counted from, in a comment above
-      the field** (CLAUDE.md principle 9). This is a judgement over a
-      fixed list, so making the list recoverable is what makes the
-      judgement checkable. It has gone wrong repeatedly in one PR (#956),
-      including inside the paragraph correcting the previous error — a
-      total offers a later reader nothing to check it against.
+      **Superseded at the top level by `review:` below, from BK-378
+      onward.** A trace authored under RFC-0015 D4 carries this field
+      *inside* the `review:` block, where `scripts/ship_report.py` writes
+      it; the top-level field stays declared, and optional, because the
+      existing corpus uses it and is not retrofitted. Run
+      `rg '^review_rounds:' sdd/traces` for that corpus's extent.
 
-      **Naming the commits satisfies that; so does naming the query, and
-      on a long branch the query is better.** The transcribed list was the
-      original spelling and it fails in three measured ways, all on PR
-      #994: it cannot include the commit that carries it, so it is stale
-      on arrival; it goes stale again on the next push; and a rebase
-      orphans every SHA in it, leaving hashes that still resolve as
-      objects while matching nothing the stated query returns — worse than
-      a dangling SHA, because they verify. That branch corrected the field
-      four times before dropping the list for the rule
-      (`git log --oneline origin/master..HEAD` minus one). **A comment
-      giving a re-runnable derivation complies with this clause.** If it
-      states a value, that value is counted *including* the commit
-      carrying the line, which is the arithmetic three of those four
-      corrections got wrong.
-      **Binds traces authored from BK-348 onward.** The existing corpus
-      predates it and is not retrofitted: run
-      `rg '^review_rounds:' sdd/traces` for the extent. No gate enforces
-      this, and not because one is impossible — check_traces.py reads the
-      raw text before parsing, so a regex for a comment block above the
-      field would work. It is declined on cost: the clause's value is in
-      the authoring, a comment present but wrong passes any such regex,
-      and the review rounds that catch it are the ones that have. Recorded
-      here per DRIFT-RULES Rule 5, which asks for the reason rather than
-      silence. Where a deterministic
-      independent measurement is needed (e.g. for aggregator code), use
-      GitHub's review-submission count from
-      `gh pr view <N> --json reviews --jq '.reviews | length'` instead —
-      it counts a different thing (formal review events, not fix commits)
-      and is reported separately. The `--jq` filter must reach into
-      `.reviews`: the flag emits `{"reviews": [...]}`, so `| length` is
-      not a command at all and a bare `--jq 'length'` returns 1, the
-      object's key count. Corrected by BK-348's round 7 — a
+      **The derivation is the script, and that is the whole clause now.**
+      What stood here before was a rule for hand-counting: name the
+      commits, or better name the query, in a comment above the field.
+      It failed in four measured ways on one branch (PR #994) — a
+      transcribed list goes stale on the next push, and is orphaned by a
+      rebase into hashes that still resolve as objects while matching
+      nothing the stated query returns. A hand-written figure about the
+      loop is what D4 removes, so the remedy is no longer a better
+      convention for writing one.
+
+      **One member of that class survives, by construction.** A
+      transcribed list cannot include the commit that carries it, and
+      neither can a derived one: the script reads ``<base>..<head>`` before
+      the paste commit exists, so re-running the stated derivation
+      afterwards returns one more. The offset is fixed and stated in
+      ``scripts/ship_report.py``'s Bounds; what D4 removes is the drift,
+      not the offset. The block measures the loop up to the close.
+
+      Where a deterministic count of a *different* thing is wanted —
+      formal review-submission events rather than fix commits — the
+      `review:` block prints it as `submissions` beside this one, from the
+      same run. Reaching for `gh` directly instead needs care the block
+      avoids: `gh pr view <N> --json reviews` emits
+      `{"reviews": [...]}`, so a bare `--jq 'length'` returns 1, the
+      object's key count, and the filter has to reach into `.reviews`. A
       "deterministic independent measurement" that silently returns 1 is
       the fail-silently class this repo calls worse than none.
+
+  review:
+    type: object
+    additionalProperties: false
+    required:
+      # All nine, because the emitter writes all nine unconditionally. Leave any
+      # of them optional and an emitter that *dropped* that field would validate
+      # everywhere, making the "cannot diverge silently" claim below false in
+      # the direction that matters. `additionalProperties: false` catches a
+      # field added without a property; this catches one removed without one.
+      [derivation, review_rounds, submissions, findings, by_round, by_file, untouched_files,
+       review_driven_commits, ci]
+    description: |
+      The loop's own figures, derived from the PR after it closed and
+      pasted verbatim (RFC-0015 D4, BK-378). **Produced by
+      `hatch run ship-report <PR> --trace-block-only`; never hand-written
+      and never hand-edited.** That is the point of the key: it gives the boundary
+      between the deliverable and the record a name a check can see, so
+      the trace's *reads* stay logged as they happen while everything
+      about the review arrives in one block at the close.
+
+      The authority runs one way: the script's output governs, and this
+      schema describes what the script emits. The pair is a drift gate
+      rather than a convention, and it closes in **both** directions —
+      `additionalProperties: false` fails a field the emitter adds
+      without a property here, and the all-nine `required:` list fails
+      one it drops. Either alone leaves the other direction silent.
+
+      **What it does not reach**, per DRIFT-RULES Rule 7: the field
+      *values*. A property declares a type, so an emitter that wrote a
+      correct-shaped wrong number passes. The figures are checked by the
+      script's own guards, not here.
+
+      Traces predating BK-378 carry their hand-derived `review_rounds` at
+      the top level and are not retrofitted.
+    properties:
+      derivation:
+        type: string
+        minLength: 1
+        description: >-
+          The command that produced this block, re-runnable as written. A
+          re-run after the paste commit lands returns `review_rounds + 1`;
+          see that field and `scripts/ship_report.py`'s Bounds.
+      review_rounds:
+        type: integer
+        minimum: 0
+        description: |
+          Commits in `<base>..<head>` authored **at or after** the first
+          review submission that carried a finding — the same boundary the
+          origin tag uses to call a line `loop-introduced`, which splits on
+          `authored < first_review_ts`, so the tie belongs to the loop on
+          both sides and the two cannot disagree about when the loop began.
+          Author dates are the discriminator because they survive a rebase;
+          commit identity does not. **Excludes the commit that pastes this
+          block**, which does not exist when the script reads the range, so
+          a re-run afterwards returns one more.
+      submissions:
+        type: integer
+        minimum: 0
+        description: |
+          Formal review submissions carrying at least one finding. A
+          different measurement from `review_rounds` — review events, not
+          fix commits — and reported beside it rather than instead of it.
+      findings:
+        type: integer
+        minimum: 0
+        description: Findings across all submissions; comments with no `in_reply_to_id`.
+      by_round:
+        type: array
+        description: Per submission, in submission-time order — findings, origin and triage counts, elapsed hours.
+        items:
+          type: object
+          additionalProperties: false
+          # All five: the emitter writes every one for every entry, so an
+          # optional field here reopens the drop direction the top-level
+          # `required:` closes.
+          required: [round, findings, origin, triage, duration_hours]
+          properties:
+            round: {type: integer, minimum: 1}
+            findings: {type: integer, minimum: 0}
+            origin: {type: object, description: "Origin tag counts, per sdd/rfcs/rfc-0015-findings.py."}
+            triage: {type: object, description: "Triage verdict counts, per the same classifier."}
+            duration_hours:
+              type: [number, "null"]
+              description: |
+                Wall-clock from the previous submission, or from the PR's
+                creation for the first. Elapsed time, not work: a pass that
+                waited on a human reads as a long pass.
+      by_file:
+        type: array
+        description: |
+          Findings per file, descending. This is the distribution a brief
+          quotes to say which surface review has *not* reached; it replaced
+          a two-call recipe run by hand each round.
+        items:
+          type: object
+          additionalProperties: false
+          required: [path, findings]
+          properties:
+            path: {type: string, minLength: 1}
+            findings: {type: integer, minimum: 1}
+      untouched_files:
+        type: array
+        description: Changed files carrying no finding — the changed-file list minus the union of finding paths across every page.
+        items: {type: string}
+      review_driven_commits:
+        type: array
+        description: The commits `review_rounds` counts, oldest first.
+        items:
+          type: object
+          additionalProperties: false
+          required: [sha, subject]
+          properties:
+            sha: {type: string, minLength: 7}
+            subject: {type: string}
+      ci:
+        type: object
+        additionalProperties: false
+        # All three, as everywhere else in this block: the emitter writes them
+        # unconditionally. Without a `required:` at all, `ci: {}` validated and
+        # an emitter that stopped writing the verdict passed.
+        required: [verdict, failed, pending]
+        description: |
+          CI's verdict on the final head. `pending` is reported separately
+          from `failed` because a still-running matrix is not a green one.
+        properties:
+          verdict: {type: string, enum: [GREEN, RED, PENDING, "NO CHECKS"]}
+          failed: {type: integer, minimum: 0}
+          pending: {type: integer, minimum: 0}
 
   phases:
     type: array
@@ -395,14 +510,34 @@ examples:
       - BK-192
     expected_ripples:
       - sdd/backlogid.json
-    # Name the commits, per the review_rounds description above — this example
-    # is what CLAUDE.md tells a new trace author to copy, so it must comply with
-    # the clause it illustrates. Shape, with placeholders rather than invented
-    # SHAs: "<impl-sha> implements and does not count; <fix-sha> incorporates
-    # the round-1 review; value is 1." Replace both with real short SHAs from
-    # `git log --oneline origin/master..HEAD` — a plausible-looking SHA that
-    # resolves to nothing is worse than no derivation.
-    review_rounds: 1
+    # This example is what CLAUDE.md tells a new trace author to copy, so it
+    # carries the `review:` block rather than a hand-counted `review_rounds`.
+    # Do not fill it in by hand: run `hatch run ship-report <PR> --trace-block-only`
+    # at the close and paste its output as a top-level key (it already opens with
+    # `review:`; the bare command prints the Markdown report instead). The
+    # placeholder SHA below is deliberately not a
+    # plausible one — a fake that resolves to nothing is worse than no
+    # derivation, and the script writes the real ones.
+    review:
+      derivation: "hatch run ship-report 1025 --trace-block-only"
+      review_rounds: 1
+      submissions: 1
+      findings: 2
+      by_round:
+        - round: 1
+          findings: 2
+          origin: {original: 2}
+          triage: {must-fix: 2}
+          duration_hours: 0.52
+      by_file:
+        - path: src/remote_store/aio/_async_memory.py
+          findings: 2
+      untouched_files:
+        - tests/backends/memory/test_async_metadata.py
+      review_driven_commits:
+        - sha: "0000000"
+          subject: "BK-176: round-trip metadata in AsyncMemoryBackend"
+      ci: {verdict: GREEN, failed: 0, pending: 0}
     phases:
       - id: orient
         name: Orient

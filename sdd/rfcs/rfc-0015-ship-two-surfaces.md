@@ -2,17 +2,20 @@
 
 ## Status
 
-Draft. Tracked as BK-378. Minted as BK-367 and re-homed twice: ID-182's branch
-minted BK-367 in parallel, then ID-018's minted BK-368 and closed it before
-this PR merged. Both are ID-257's scenario, and the second is recorded there.
+Draft. Tracked as **BK-382**; BK-378 built D1 and D4 and closed, and BK-379
+piloted the rest before them. Minted as BK-367 and re-homed twice: ID-182's
+branch minted BK-367 in parallel, then ID-018's minted BK-368 and closed it
+before this PR merged. Both are ID-257's scenario, and the second is recorded
+there.
 BK-379 piloted D2, D3's worktree half with the one-measurer cap left up, D5's
-posting half and D6's repeat-site half before the rest is built; what that
+posting half and D6's repeat-site half before the rest was built; what that
 pilot can and cannot decide is stated with the acceptance criterion
 (§ Impact), and what it measured is § Pilot result. **The pilot missed
 clause 1 by three points and refuted D6's retirement of the repeat-site
-check.** This RFC is Draft because it has never been accepted, and D1 and D4
-are unbuilt; what the criterion prescribes for a miss without those two is to
-build them and re-measure, and it declines to let such a miss bear on status.
+check.** What the criterion prescribes for a miss without D1 and D4 is to build
+them and re-measure, and it declines to let such a miss bear on status; BK-378
+built them, so **every decision here is now in force and none has been measured
+together**. This RFC is Draft because it has never been accepted.
 If accepted it graduates to an ADR amending
 [ADR-0033](../adrs/0033-ship-convergence-driven-review.md),
 [ADR-0034](../adrs/0034-ship-panel-rounds-and-unprimed-exit.md),
@@ -396,8 +399,14 @@ repo keeps of it is derived from the PR once, after the loop ends.
   [Rule 7](../DRIFT-RULES.md#miss-rate): it matches phrases, not the diary
   written in other words, and a retrospective that avoids the phrase set is a
   reviewer's to catch. It sits on the mandatory path per Rule 5 because the
-  alternative is exactly the review-enforced rule that did not hold. At
-  `2a1bbfe` the phrase set hits 14 lines in five files.
+  alternative is exactly the review-enforced rule that did not hold. The extent
+  is whatever `python scripts/check_no_retrospective.py` reports at the head
+  being read, and it moves: 14 lines in five files at `2a1bbfe` (cause A's
+  figure, re-derived and confirmed), 14 lines in **four** at `e109686` when the
+  check was built, because `src/remote_store/backends/_sftp.py` lost its one hit
+  in between. Stated as the command rather than as a number for that reason.
+  **Built under BK-378**, with the surface widened to include `examples/` as a
+  surface users read.
 
 **Evidence.** Cause A; Table 3's 133 findings on the record; the five stale
 derivation comments; BK-365.
@@ -509,7 +518,7 @@ about what a rationale would have prevented is not, and is not the condition.
   is what the pilot measured. That reason outlived the pilot — § Pilot result
   prescribes a re-measurement with D1 and D4 shipped, and a composition that
   moved in between would be comparable with neither the 78% baseline nor the
-  pilot's 53%. The cap comes down with the graduating ADR, on BK-378's
+  pilot's 53%. The cap comes down with the graduating ADR, on BK-382's
   account.
 - Worktrees are removed at round close, with a `prune` for the base worktree a
   measuring member left nested inside (measured on git 2.43.0: ignored
@@ -643,7 +652,16 @@ its script, never by reading it.
 
 **Mechanism.** The whole-file brief names the deliverable files and excludes
 the trace's `review:` key; a measuring member may re-run `ship-report` and
-diff its output against the block. The floor of two passes, the soft ceiling
+diff its output against the block.
+**That second half has a permission conflict, found while building D4 and
+unresolved here.** `/rvw-pr`'s measuring allowlist is by name and does not
+carry `ship-report`, and the script reads comment *bodies* where that skill's
+metadata carve-out is bounded to paths, review ids and counts — so a member
+running it would have read the conversation, which is what keeps unprimed
+passes unprimed. BK-378 narrowed `/ship` to *no reviewer runs `ship-report`*
+rather than widen the permission. Whoever takes this deferred half has to
+supply a reach that does not read feedback: a `--no-triage` mode, or a
+verification the orchestrator performs and the reviewer only reads. The floor of two passes, the soft ceiling
 of five finding-rounds, the divergence check and the subject list all stay.
 **The repeat-site check stays too, and this is a withdrawal.** The decision as
 drafted retired it because D2 moves its trigger from two refutations to zero,
@@ -888,22 +906,31 @@ apart.
 
 **Dispositions.**
 
-- **D1** — not piloted; stays with BK-378. The clause-1 miss is the RFC's own
-  reason to build it, not evidence against the RFC.
-- **D4** — not piloted; stays with BK-378. Clause 2 keeps no referent until
-  `ship_report.py` exists, and every figure in this section was produced by a
-  hand-run script, which is D4's argument.
+- **D1** — not piloted. The clause-1 miss is the RFC's own reason to build it,
+  not evidence against the RFC. **Built under BK-378**, which also answered
+  Open Question 5 and widened the deliverable surface to `examples/`.
+- **D4** — not piloted. Clause 2 kept no referent until `ship_report.py`
+  existed, and every figure in this section was produced by a hand-run script,
+  which is D4's argument. **Built under BK-378**; clause 2 is askable from the
+  next delivery on.
 - **D5** — the posting half is measured above and stays as written. The
   stop-rule clause was never wired into the loop and the dry run gives no
-  firing to tune its constants against, so it ships with `ship-report` under
-  D4, constants unchanged.
+  firing to tune its constants against, so the constants shipped unchanged
+  alongside `ship-report` and the wiring is still owed (BK-382).
 - **D6** — the repeat-site half is withdrawn above. Its deferred half (the
   whole-file brief excluding the trace's `review:` key, and a measuring member
-  re-running `ship-report`) has nothing to read until D1 and D4 exist, and
-  defers with them.
+  re-running `ship-report`) had nothing to read until D1 and D4 existed; it now
+  has, and is owed under BK-382.
 - **D2, and D3's worktree half** — in force in the four skills since #1020,
   unchanged by this result; D3's cap lift waits for the re-measurement, for the
   reason D3 now states.
+
+**The pilot's measurements above are not amended by the build; the dispositions
+are, and were.** BK-378 shipped D1 and D4, so the four bullets it changed now
+say what became of each decision rather than what was still owed. Every figure
+in this section remains the pilot's, read over PRs #1021 to #1023. BK-382
+carries the re-measurement, and the RFC stays **Draft** until that sample is
+read against § Impact's three clauses.
 
 ## Open Questions
 
@@ -928,6 +955,13 @@ apart.
    round (§ Pilot result).
 5. Where the mid-loop `ship-report` output lives. A PR comment from the
    orchestrator primes nobody, because reviewers never fetch comments.
+   **Answered under BK-378: nowhere durable.** `--out tmp/ship-report-<PR>.md`
+   writes a scratch copy (`tmp/` is gitignored), the orchestrator quotes the
+   per-file distribution and origin counts into the brief, and reviewers read
+   the brief. The durable copy is the trace's `review:` block, written once at
+   the close. The PR-comment option was declined for the reason this question
+   already gives; a committed mid-loop artifact was declined because it would
+   put a generated file in the tree D3 pins as the certified commit.
 6. Whether the instrument-bound clause in D2 can be checked at all. A test
    that patches a method is recognisable (`monkeypatch`, `patch(`, a fake
    client class); a prose claim that generalises from it is not. The clause

@@ -1,0 +1,386 @@
+id: BK-378
+title: "Build RFC-0015's D1 and D4: two surfaces, and every loop figure derived by one script"
+trigger: >-
+  BK-379's pilot reported (PR #1024) and missed RFC-0015 acceptance clause 1 by
+  three points — 53% against a below-50% bar, on a denominator of 19 where one
+  finding is five points. The RFC's § Impact wrote down before the pilot ran
+  that a clause-1 miss with D1 and D4 unbuilt prescribes building them and
+  re-measuring rather than rejecting, because 20% of the sample's findings still
+  sit on the record surface D1 targets. So the next slice is the build: three
+  scripts, D1's record move, and the one-time cleanup of the deliverable
+  surface. The user chose to split BK-378 at this boundary, to answer the RFC's
+  Open Question 5 in this PR, and to widen D1's surface to include `examples/`.
+source_items:
+  - BK-378
+audience:
+  - contributor.process
+discovery_followups:
+  - BK-382
+expected_ripples:
+  - pyproject.toml
+  - sdd/GATE-INVENTORY.md
+  - sdd/BACKLOG.md
+  - sdd/BACKLOG-DONE.md
+  - sdd/backlogid.json
+  - CLAUDE.md
+  - .claude/skills/ship/SKILL.md
+surprising_ripples:
+  # The ripple-check table has a row for "New or changed cross-artifact check or
+  # drift report", which anticipated the three scripts. It has no row for
+  # "a trace field moves", and the first two are what that would have caught.
+  # The third is a permission ripple review found: /ship gained a measuring-member
+  # obligation that /rvw-pr's by-name allowlist does not permit.
+  - sdd/rfcs/rfc-0015-rounds.py
+  - scripts/gen_gate_inventory.py
+  - .claude/skills/rvw-pr/SKILL.md
+phases:
+  - id: orient
+    name: Orient
+    steps:
+      - file: sdd/BACKLOG.md
+        section: "BK-378, the five-bullet post-pilot list"
+        read_type: gate
+        extract: >-
+          The scope boundary. D1 and D4 unpiloted; clause 2 has no referent
+          until D4 generates the block; D5's stop-rule constants ship unchanged;
+          D6's deferred half waits on D1 and D4; D3's cap lift held so panel
+          composition does not move between the pilot's figures and the
+          re-measurement
+        outcome: ok
+      - file: sdd/rfcs/rfc-0015-ship-two-surfaces.md
+        section: "D1 (§ 355), D4 (§ 531), § Impact, § Pilot result, § Open Questions, § References"
+        read_type: gate
+        extract: >-
+          D1's surface and phrase set, and its boundary — text about the repo or
+          the work is content however historical; text about an earlier version
+          of the artifact it sits in is not. D4's script contract and the
+          backlog ID-set gate. § References carries the phrase set verbatim and
+          the glob the 14-line figure was derived over
+        outcome: ok
+      - file: sdd/DRIFT-RULES.md
+        section: "Rules 2, 5 and 7"
+        read_type: gate
+        extract: >-
+          Localize (name file and line), prefer the mandatory path and state why
+          when a check is deliberately advisory, and declare the subject in a
+          machine-readable Drift-gate:: block with the bound stated
+        outcome: ok
+      - file: sdd/rfcs/rfc-0015-findings.py
+        section: "(docstring, origin, triage, _gh)"
+        read_type: reference
+        extract: >-
+          The classifier ship_report.py must reuse: findings are comments with
+          no in_reply_to_id, rounds are review submissions sorted by
+          submitted_at, origin is a blame at the head the reviewer saw against
+          the first review's submission time. Verified it imports cleanly with
+          no side effects — main() is behind a __main__ guard
+        outcome: ok
+      - file: sdd/traces/bk-379-pilot-report.yml
+        section: "(full)"
+        read_type: gate
+        extract: >-
+          What the pilot met, so it was not rediscovered. Its own
+          `review_rounds: 1` later became the independent check on
+          ship_report.py's derived value
+        outcome: ok
+      - file: sdd/BACKLOG.md
+        section: "How this file works / Completing work"
+        read_type: gate
+        extract: >-
+          Partially done → split: the done part goes to BACKLOG-DONE under its
+          original ID, a new ID opens here for the rest, both link. Plus the
+          unbounded, reviewer-enforced ID sweep
+        outcome: ok
+  - id: design
+    name: Design
+    steps:
+      - file: scripts/gen_python_support.py
+        section: "Drift-gate:: block; the sibling import"
+        read_type: reference
+        extract: >-
+          The declaration shape, and `sys.path.insert(0, parent)` then a plain
+          import — the pattern check_backlog_ids_vs_base.py uses to reuse
+          gen_backlogid.py's header grammar
+        outcome: ok
+      - file: scripts/gen_gate_inventory.py
+        section: "(docstring), _BOUNDS, _WIRING_SOURCES"
+        read_type: gate
+        extract: >-
+          Three kinds — pair, rule, report — and that `report` exists precisely
+          so a mechanism which measures does not render under a column promising
+          an assertion. _WIRING_SOURCES is pyproject, workflows and pre-commit,
+          which is what later made the skill-run gate read `advisory`
+        outcome: ok
+      - file: tests/scripts/test_check_changelog_unreleased.py
+        section: "_load(), the synthetic-input helpers"
+        read_type: reference
+        extract: >-
+          The house guard pattern: importlib.util.spec_from_file_location
+          against the script path, tmp_path-built inputs, functions called
+          directly rather than through subprocess
+        outcome: ok
+      - file: sdd/traces/_schema.yml
+        section: "review_rounds; additionalProperties: false; examples"
+        read_type: gate
+        extract: >-
+          The clause D1 replaces, and that check_traces.py validates the
+          schema's own `examples` block — so the example had to move with the
+          clause, not after it
+        outcome: ok
+  - id: build
+    name: Build
+    steps:
+      - file: scripts/check_no_retrospective.py
+        section: "(new)"
+        read_type: verify
+        extract: >-
+          Written first and run before any cleanup, per CLAUDE.md principle 6:
+          red on 14 lines in 4 files at `e109686`, matching the figure derived
+          while planning. Green at 561 files scanned after the cleanup — the
+          surface as it stood at that commit; later guards grew it
+        outcome: ok
+      - file: sdd/specs/009-sftp-backend.md
+        section: "the posix_rename fallback paragraph"
+        read_type: verify
+        extract: >-
+          Reading the flagged files by hand found a fifteenth retrospective the
+          phrase set cannot reach — "an earlier revision named three of which
+          two were unreachable", which needs the `of this` the set requires.
+          Cleaned, and the shape became the docstring's stated bound plus a test
+          fixture rather than a live example that this change would falsify
+        outcome: ok
+      - file: scripts/ship_report.py
+        section: "ci_verdict, _gh_wrapped"
+        read_type: verify
+        extract: >-
+          `fnd._gh` pages array-returning endpoints, but
+          `commits/<sha>/check-runs` answers `{total_count, check_runs}`, so
+          reusing it extended the list with the object's *keys* and raised
+          TypeError on the first live run. Needed a second reader for the
+          wrapped shape. Measured on `e109686`: 39 runs, 15 skipped, names
+          repeating — which is why the verdict reduces per name and reports
+          pending separately from green
+        outcome: misleading
+      - file: sdd/traces/_schema.yml
+        section: "review: (new key)"
+        read_type: verify
+        extract: >-
+          The schema/script pair earned its keep on the first validation:
+          `sha: 3153683` unquoted parses back as an *integer*, so check_traces
+          failed. Every scalar now goes through a JSON-quoting helper — `%r`
+          would not have fixed it, since YAML single quotes do not process the
+          backslash escapes Python's repr emits
+        outcome: ok
+      - file: sdd/rfcs/rfc-0015-rounds.py
+        section: "RX"
+        read_type: verify
+        extract: >-
+          Not anticipated by the ripple-check table. Moving review_rounds into
+          the review: block indents it, and `^review_rounds:` would have dropped
+          every trace authored from here on out of Table 1's population while
+          keeping the older corpus — emptying the "after" side of a
+          before-and-after comparison. Widened to `[ \t]*` first; round 4 found
+          that also matches prose inside a folded scalar, so the anchor is
+          `^(?: {2})?review_rounds:` — the legacy spelling or the emitter's, and
+          nothing else. Over 324 traces the legacy and current anchors return
+          the identical value in all 324; only the current one reads the block
+        outcome: ok
+  - id: review
+    name: Review rounds
+    steps:
+      - file: scripts/check_backlog_ids_vs_base.py
+        section: "_ID_TOKEN / subject_ids"
+        read_type: verify
+        extract: >-
+          Round 3's unprimed member found the gate false-positives on this
+          repo's own convention: `BK-375, BK-373, BK-377: …` matches nothing,
+          because the regex demanded `:` or whitespace straight after the
+          number. Three of the forty commits before this PR use that shape
+          (`git log --format=%s origin/master~40..origin/master`, filtered by
+          subjects claiming more than one ID), so every co-shipped branch would
+          have had its legitimate closures reported POACHED — on a gate
+          mandatory at PR time. The count was recorded as four until round 4's
+          measuring member re-ran the stated command against it
+        outcome: ok
+      - file: sdd/rfcs/rfc-0015-rounds.py
+        section: "RX"
+        read_type: verify
+        extract: >-
+          The measuring member found round 2's own fix defective: a free
+          `[ \t]*` indent also matches prose inside a YAML folded scalar, and
+          `sdd/traces/bk-338-review-roster.yml:421` already carries one. Safe
+          only while that trace keeps a top-level field; a BK-378-onward trace
+          has none, so the prose integer would win. Bounded to exactly two
+          spaces, which admits both real spellings and rejects the prose line
+        outcome: ok
+      - file: tests/scripts/test_check_backlog_ids_vs_base.py
+        section: "TestGitReads"
+        read_type: verify
+        extract: >-
+          The skipif added in round 1 disabled four of five I/O tests in
+          `tooling-tests`, the only CI job that runs tests/scripts/, and the
+          95% floor could not notice because `--cov=remote_store` excludes
+          scripts/ entirely. Root cause was no seam: ROOT bound at import. The
+          user chose the seam over patching the assertions, so read_base,
+          branch_commit_ids and main take a root and the class now runs against
+          a synthetic two-side repo with no skip at all
+        outcome: ok
+      - file: sdd/TESTING.md
+        section: "Rules 1 and 2"
+        read_type: gate
+        extract: >-
+          Round 2 found one test whose cases were chosen by reading the
+          implementation; that instance was fixed and the class was not. Round 3
+          found five more — an isinstance sole check, `code in (0, 1)`
+          exhausting a return type, a classifier-identity test comparing a
+          module against itself loaded from one path, a stderr test that never
+          read capsys, and a check-run fixture that could not express the shape
+          it existed to reduce
+        outcome: ok
+      - file: .claude/skills/rvw-pr/SKILL.md
+        section: "frontmatter; Step 1 metadata carve-out"
+        read_type: verify
+        extract: >-
+          The permission ripple, found in round 1 and closed in round 3: the
+          carve-out justified itself by /ship brief requirement 3 shipping a
+          comments-endpoint recipe, which this PR replaces. Narrowed to "a claim
+          about the comments endpoint" rather than retired, since a measuring
+          member may still be briefed on paging or counts
+        outcome: ok
+
+  - id: verify
+    name: Verify
+    steps:
+      - file: scripts/check_backlog_ids_vs_base.py
+        section: "(run against this branch)"
+        read_type: verify
+        extract: >-
+          Reported POACHED on BK-378 before the work was committed — correctly,
+          since the arbitrator is the branch's commit subjects and none existed
+          yet. Clean once the commit named the item, which is the gate working
+          on live data rather than on a fixture
+        outcome: ok
+      - file: sdd/rfcs/rfc-0015-findings.py
+        section: "(run on PR #1024)"
+        read_type: verify
+        extract: >-
+          Cross-check that the reuse is real: `ship-report 1024` and
+          `rfc-0015-findings.py 1024` agree on 1 submission, 2 findings,
+          original 2, must-fix 2; and the derived review_rounds of 1 matches
+          what bk-379-pilot-report.yml recorded by hand
+        outcome: ok
+      - file: sdd/CLAUDE-REFERENCE.md
+        section: "PR validation gates; Pre-work index"
+        read_type: verify
+        extract: >-
+          The shared gates section is the home both /pr and /fix-pr cite by
+          link, and I took the link to mean adding a gate there discharges
+          both skills without editing either. It does not: each skill also
+          *enumerates* the gates inline, as three, and the closing gate found
+          both enumerations stale and /fix-pr running three of four. A link to
+          a list is not a substitute for the list when the citing file spells
+          the members out — the section gives no sign that it has inline
+          copies downstream. Mechanical gate for this diff is `hatch run all`
+          — it touches scripts/ and tests/
+        outcome: misleading
+
+# Bound on the block below, which is derived and not hand-edited.
+# The loop ran five rounds. Rounds 1-4 were posted reviews and are what the
+# script reads. Round 5 was the closing exit gates — an unprimed pass, a
+# whole-file pass and a measuring pass — run analyze-only; its 13 must-fix
+# findings were relayed to the author and fixed in ff324fe and bf19691, and
+# never posted, so no endpoint carries them. `submissions: 4` and
+# `findings: 41` are therefore the posted loop, not the whole loop; the two
+# commits above are in `review_driven_commits` because that figure comes from
+# git rather than from the comment endpoints. Whoever re-measures under BK-382
+# should read this PR as 5 rounds / 54 findings and count the 13 as
+# loop-introduced-detectable-only-at-the-close.
+review:
+  # Derived by `hatch run ship-report 1026 --trace-block-only` at head 815b345.
+  # Do not hand-edit: RFC-0015 D4 makes this script the only producer.
+  derivation: "hatch run ship-report 1026 --trace-block-only"
+  review_rounds: 9
+  submissions: 4
+  findings: 41
+  by_round:
+    - round: 1
+      findings: 7
+      origin: {original: 7}
+      triage: {must-fix: 7}
+      duration_hours: 0.12
+    - round: 2
+      findings: 6
+      origin: {original: 5, unclassifiable-file: 1}
+      triage: {must-fix: 6}
+      duration_hours: 0.42
+    - round: 3
+      findings: 14
+      origin: {loop-introduced: 1, original: 13}
+      triage: {must-fix: 14}
+      duration_hours: 11.68
+    - round: 4
+      findings: 14
+      origin: {loop-introduced: 8, original: 6}
+      triage: {must-fix: 14}
+      duration_hours: 0.62
+  by_file:
+    - path: "scripts/check_backlog_ids_vs_base.py"
+      findings: 8
+    - path: "scripts/ship_report.py"
+      findings: 7
+    - path: "tests/scripts/test_ship_report.py"
+      findings: 5
+    - path: "scripts/check_no_retrospective.py"
+      findings: 3
+    - path: "sdd/traces/_schema.yml"
+      findings: 3
+    - path: ".claude/skills/ship/SKILL.md"
+      findings: 2
+    - path: "sdd/rfcs/rfc-0015-ship-two-surfaces.md"
+      findings: 2
+    - path: "sdd/specs/009-sftp-backend.md"
+      findings: 2
+    - path: "sdd/traces/bk-378-d1-d4.yml"
+      findings: 2
+    - path: "tests/scripts/test_check_backlog_ids_vs_base.py"
+      findings: 2
+    - path: "CLAUDE.md"
+      findings: 1
+    - path: "sdd/BACKLOG-DONE.md"
+      findings: 1
+    - path: "sdd/CLAUDE-REFERENCE.md"
+      findings: 1
+    - path: "sdd/rfcs/rfc-0015-rounds.py"
+      findings: 1
+    - path: "tests/scripts/test_check_no_retrospective.py"
+      findings: 1
+  untouched_files:
+    - ".claude/skills/fix-pr/SKILL.md"
+    - ".claude/skills/pr/SKILL.md"
+    - ".claude/skills/rvw-pr/SKILL.md"
+    - "pyproject.toml"
+    - "scripts/gen_gate_inventory.py"
+    - "sdd/BACKLOG.md"
+    - "sdd/GATE-INVENTORY.md"
+    - "tests/backends/sftp/test_config.py"
+    - "tests/scripts/test_gen_gate_inventory.py"
+  review_driven_commits:
+    - sha: "2a174de"
+      subject: "BK-378: Address PR #1026 round 1"
+    - sha: "c4893b3"
+      subject: "BK-378: Address PR #1026 round 2"
+    - sha: "6fb788b"
+      subject: "BK-378: Sweep round 2's fix into RFC-0015 D6"
+    - sha: "be65f2e"
+      subject: "BK-378: Address PR #1026 round 3"
+    - sha: "b3b44ff"
+      subject: "BK-378: Address PR #1026 round 4"
+    - sha: "3e3914a"
+      subject: "BK-378: Address PR #1026 round 5 (closing exit gates)"
+    - sha: "07cf017"
+      subject: "BK-378: Re-derive the guard count after round 5's own fix pass"
+    - sha: "ea6291a"
+      subject: "BK-378: Close the loop \u2014 paste the derived review block into the trace"
+    - sha: "815b345"
+      subject: "BK-378: Re-derive the trace-corpus figure after the rebase onto master"
+  ci: {verdict: GREEN, failed: 0, pending: 0}

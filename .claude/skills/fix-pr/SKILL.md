@@ -162,8 +162,9 @@ Only resolve threads you fixed. No gh? Tell user to resolve manually.
 
 Run the shared [PR validation
 gates](../../../sdd/CLAUDE-REFERENCE.md#pr-validation-gates) — the mechanical gate,
-local-machine reference, and qualitative TESTING/CONTENT review — with `<BASE>` =
-`master`. Report violations and resolve any stop condition before committing.
+the backlog ID-set gate, local-machine reference, and qualitative TESTING/CONTENT
+review — with `<BASE>` = `master`. Report violations and resolve any stop
+condition before committing.
 
 **Trace update.** Find the trace already on this branch via
 `git diff origin/master...HEAD --name-only` — any `sdd/traces/*.yml`

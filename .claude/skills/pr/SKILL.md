@@ -21,15 +21,24 @@ Fall back to `gh` CLI for GraphQL-only flows like review-thread resolution.
 
 2. **Validation gates:** Run the shared [PR validation
    gates](../../../sdd/CLAUDE-REFERENCE.md#pr-validation-gates) — the mechanical
-   gate, local-machine reference, and qualitative TESTING/CONTENT review. Resolve
-   any stop condition before drafting the PR.
+   gate, the backlog ID-set gate, local-machine reference, and qualitative
+   TESTING/CONTENT review. Resolve any stop condition before drafting the PR.
 
-3. **Trace gate:** Extract backlog IDs from `git log origin/<BASE>..HEAD --format=%s`
-   using the pattern `^([A-Z]+-\d+[a-z]?)[:\s]` against each subject — the ID
-   is the leading `PREFIX-NNN` token, optionally followed by a single
-   lowercase letter for split items (e.g. `BK-167a`, allowed by
-   `sdd/traces/_schema.yml`), then `:` or whitespace (per [CLAUDE.md § Backlog](../../../CLAUDE.md#backlog),
-   commit subjects start with the item ID). For each unique ID, look up a
+3. **Trace gate:** Extract the backlog IDs this branch's commits claim with
+   `python scripts/check_backlog_ids_vs_base.py --print-subject-ids --base origin/<BASE>`,
+   which applies that file's `subject_ids()` to each subject of
+   `git log origin/<BASE>..HEAD`. **Pass `--base` even when `<BASE>` is `master`**:
+   it defaults to `origin/master`, so on any other base an unflagged run reads the
+   wrong commit range. **Do not re-spell the
+   grammar here.** A `^([A-Z]+-\d+[a-z]?)[:\s]` pattern stood in this step and
+   under-enforced silently: it reads only a leading token and requires `:` or
+   whitespace straight after the number, so a co-shipped subject like
+   `BK-375, BK-373, BK-377: …` matched **nothing** and all three items skipped
+   the trace requirement. Three such subjects sit in the forty commits before
+   BK-378 (`git log --format=%s origin/master~40..origin/master`, filtered by
+   `subject_ids` returning more than one ID). One grammar, one home
+   ([`DRIFT-RULES.md` Rule 1](../../../sdd/DRIFT-RULES.md#one-driver)).
+   For each unique ID, look up a
    matching trace **case-insensitively** — `find sdd/traces -iname '<id>-*.yml'` —
    because existing trace filenames mix lowercase and uppercase prefixes.
    If any ID has no match, stop and ask the user — [CLAUDE.md § Trace
