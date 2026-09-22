@@ -2989,6 +2989,18 @@ the commit that writes it lands, so cite the generator instead.
   hand-derived, and re-deriving at the close is a convention nothing enforces.
   Whether that gap is worth a gate is this item's to decide — it is the same
   failure shape the RFC measured, one surface over.
+  **Two more the rebase of BK-378's own branch surfaced, both in the block's
+  handling rather than its content.** A rebase rewrites every SHA, so
+  `review_driven_commits` named objects no longer on the branch — the orphaning
+  D1's § 531 attributes to *hand-written* lists, which a derived list inherits
+  unchanged. D4 makes the list cheap to regenerate and nothing signals that a
+  regeneration is owed, so "derived" buys freedom from unnoticed drift, not from
+  drift; whether the RFC's wording should say so is this item's. And pasting the
+  block a second time rather than replacing it yields two top-level `review:`
+  keys, which `yaml.safe_load` resolves to the last — so `check_traces.py`
+  validates a trace carrying two blocks in silence. The paste-the-block workflow
+  is what makes that reachable, and a duplicate-key-rejecting loader is the
+  obvious fix; it is deliberately not in BK-378, whose scope was the build.
   **The sample is the next three deliveries**, whichever they are. `BK-380`
   (Python 3.10's security-fix end, dated 2026-10-04) is next in line and could be
   the first of them.
