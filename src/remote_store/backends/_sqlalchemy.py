@@ -60,6 +60,51 @@ def _set_sqlite_pragmas(dbapi_conn: Any, _connection_record: Any) -> None:
     cursor.close()
 
 
+def _engine_kwargs(url: str) -> dict[str, Any]:
+    """Name the pool for SQLite URLs whose pool SQLAlchemy would otherwise infer.
+
+    A ``mode=memory`` query string made SQLAlchemy select ``SingletonThreadPool``,
+    an inference SQLAlchemy 2.1 deprecates. **Naming the pool is what retires the
+    inference**, whichever class is named, so this states the class the URL
+    already had rather than moving it.
+
+    Stating the same class is the whole change, and each alternative was
+    measured and rejected. ``QueuePool`` — what the deprecation message
+    suggests — changes three things for the worse and improves none:
+
+    - For a URL **without** ``cache=shared``, each *connection* opens its own
+      private database, so a second concurrent checkout gets an empty one and a
+      thread's own earlier write can vanish.
+    - For a URL **with** it, the nested ``connect()`` that
+      ``_maybe_check_no_file_ancestor`` performs inside ``move``/``copy``'s open
+      write transaction becomes a *second* connection, and shared-cache SQLite
+      locks the table. ``_head_one`` fails open, so the gate stops rejecting
+      rather than raising.
+    - It buys no concurrency either way: under shared cache, concurrent writers
+      collide on that same table lock whichever pool is used.
+
+    Three in-memory spellings are not touched at all. ``sqlite:///:memory:``
+    and the bare URL keep the per-thread pool inferred from the *database name*
+    rather than from a query string, which 2.1 does not deprecate.
+    ``file::memory:?uri=true`` keeps ``QueuePool``, SQLAlchemy's own default for
+    it — an anonymous database on a pooled engine, which is not safe to share
+    across threads and which this function deliberately leaves as it found it.
+    """
+    try:
+        parsed = sa.make_url(url)
+    except sa.exc.ArgumentError:
+        # Not a URL SQLAlchemy can parse; let create_engine raise its own error.
+        return {}
+    if parsed.get_backend_name() != "sqlite":
+        return {}
+    # A repeated key would parse to a tuple rather than a string, and is not
+    # normalised here: sqlite rejects such a URL outright ("no such access
+    # mode"), so it has no working engine to choose a pool for either way.
+    if parsed.query.get("mode") != "memory":
+        return {}
+    return {"poolclass": sa.pool.SingletonThreadPool}
+
+
 # ---------------------------------------------------------------------------
 # Base class (shared with future SQLQueryBackend)
 # ---------------------------------------------------------------------------
@@ -78,7 +123,7 @@ class _SQLAlchemyBaseBackend(Backend, abc.ABC):
             raise ValueError(msg)
 
         if url is not None:
-            self._engine = sa.create_engine(url)
+            self._engine = sa.create_engine(url, **_engine_kwargs(url))
             self._owns_engine = True
         else:
             assert engine is not None
@@ -338,12 +383,30 @@ class SQLBlobBackend(_SQLAlchemyBaseBackend):
         caller is already inside an outer ``_engine.begin()`` block; the
         walk does not share the outer transaction's ``Connection``
         wrapper, but **may share the underlying DBAPI connection
-        depending on pool class** — the default in-memory SQLite URL
-        uses ``SingletonThreadPool``, which returns the same DBAPI
-        connection per thread, so on that backend the walk runs inside
-        the outer transaction's read set. Network-attached SQL backends
-        (PostgreSQL with ``QueuePool``, MySQL, etc.) get a distinct
-        DBAPI connection. Either way the walk reads ancestor *keys*,
+        depending on pool class** — and, where it does not, on which
+        database that connection reaches, which the URL decides. Both
+        axes matter here, not the pool alone. Under
+        ``SingletonThreadPool`` — every ``mode=memory`` spelling, stated
+        explicitly rather than left to inference, plus ``:memory:`` and
+        the bare URL — the nested checkout is the same DBAPI connection,
+        so the walk runs inside the outer transaction's read set. That is
+        load-bearing for a **shared cache**, where a distinct connection
+        would read a table the outer transaction holds a write lock on and
+        get ``database table is locked``; ``_head_one`` fails open, so the
+        gate would silently stop rejecting rather than raise.
+
+        The two pooled cases differ, and only one is benign.
+        Network-attached SQL (PostgreSQL with ``QueuePool``, MySQL) and
+        file-backed SQLite get a distinct DBAPI connection onto the *same*
+        database, which handles it. An **anonymous in-memory** database on
+        ``QueuePool`` — ``file::memory:?uri=true``, SQLAlchemy's own
+        default for that spelling — gets a distinct connection onto a
+        distinct, *empty* one, so the walk finds no ancestors and this
+        gate is silently dead: measured, ``move`` onto a file ancestor
+        returns where every other in-memory spelling raises
+        ``InvalidPath``. That spelling is not safe to share in the first
+        place, and this gate's silence on it is tracked separately;
+        nothing here changes it. Either way the walk reads ancestor *keys*,
         never ``dst`` itself, so isolation-level differences (SQLite
         read-committed, PostgreSQL REPEATABLE READ) do not affect the
         gate's correctness. The cost is N+1 pool checkouts on top of N

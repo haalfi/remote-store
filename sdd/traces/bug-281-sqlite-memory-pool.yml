@@ -1,0 +1,439 @@
+id: BUG-281
+title: "_SQLAlchemyBaseBackend leans on a pool selection SQLAlchemy 2.1.0rc1 deprecates"
+trigger: >-
+  drift-guard's rolling issue #943 had held `[sql]` at sqlalchemy==2.1.0b3 since
+  2026-07-13 because check-sql went red on a SADeprecationWarning under
+  filterwarnings = error. The hold was itself keeping the issue open: has_signal
+  tests version drift before the known-findings register, so the KNOWN-FINDINGS
+  row silenced the smoke and never the b3 -> rc2 row.
+source_items:
+  - BUG-281
+audience:
+  - user.api
+  - infra.ci
+discovery_followups:
+  # Both born in round 2, from measuring one finding rather than accepting it.
+  # BUG-292 is the root cause the regression exposed: the ancestor walk reads any
+  # driver error as "no ancestor", which is why a table lock made a safety gate
+  # vanish instead of raise. BK-382 is the coverage hole that let the regression
+  # reach review at all — measured by adding a shared-cache fixture and running
+  # the conformance suite with the regression in: 58 passed, 0 failed.
+  - BUG-292
+  - BK-382
+expected_ripples:
+  - sdd/backlogid.json
+  - sdd/specs/040-sql-blob-backend.md
+  - infra/drift-locks/KNOWN-FINDINGS.md
+  # Line numbers only, for the two classes below the new helper. Caught by
+  # `gen_graph.py --check` in `hatch run all`, not by reading the diff, and
+  # graph_viz.html goes stale behind it in the same run.
+  - docs-src/_data/graph/graph.json
+  - docs-src/explanation/graph_viz.html
+  # The gate found both allowlist entries stale rather than the other way
+  # round: SQL-BLOB-071 had nothing to mark while it said only "no custom
+  # config", and SQL-BLOB-072's posture became decidable from the engine.
+  - scripts/check_spec_marks.py
+surprising_ripples:
+  # Neither the ripple-check's "Spec section" row nor the item anticipated
+  # these two. Both are prose asserting, in the present tense, that the
+  # committed register carries a `[sql]`/BUG-281 newest-lane row — true until
+  # this fix retired it, and reachable only by reading every BUG-281 hit rather
+  # than the ones that fail to resolve. Exactly the miss class BACKLOG.md
+  # § Completing work describes.
+  - scripts/drift_report.py
+  - tests/scripts/test_drift_report.py
+  # Round 1 of review found both. They restate the clause 040 corrects, and the
+  # "Spec section" row points at tests and the backlog, not at a sibling spec
+  # nor at the docs page rendering the same posture. 092 was read during the
+  # work and recorded as a pure deferral needing no edit; it is not — it
+  # restates the formulation verbatim, which is how it kept asserting that
+  # QueuePool implies thread_safe after that stopped being true. The read that
+  # got it wrong is tagged `misleading` in the implement phase below.
+  - sdd/specs/041-sql-query-backend.md
+  - docs-src/explanation/concurrency.md
+# `git log --oneline origin/master..HEAD` minus the implementation and filing
+# commits, counted including the commit carrying this line. That query returns
+# 63ff4d7 (implementation), 0fb07e7 (round 1), 8b5a076 (round 2), a4059ce
+# (filing BUG-292 and BK-382, not review-driven), a66aa1b (round 3); the `fix:`
+# commit this line ships in is round 4.
+review_rounds: 4
+phases:
+  - id: orient
+    name: Orient on what actually holds the issue open
+    steps:
+      - file: .github/workflows/drift-guard.yml
+        section: "(header)"
+        read_type: reference
+        extract: "Which watches can hold the rolling issue open, and which of them a lock refresh can clear"
+        outcome: ok
+      - file: scripts/drift_report.py
+        section: "has_signal, decide"
+        read_type: gate
+        extract: >-
+          Version drift is tested at has_signal's first clause, before the
+          register is consulted, so a registered finding never suppresses a
+          drift row. This is what made BUG-281's hold on sql.txt a permanent
+          open-issue condition rather than a deferral, and it is why fixing the
+          bug was the only route through.
+        outcome: ok
+      - file: infra/drift-locks/KNOWN-FINDINGS.md
+        section: "(table), Scope"
+        read_type: gate
+        extract: "The [sql]/newest row and the rule that a fix deletes its row in the same change"
+        outcome: ok
+  - id: reproduce
+    name: Reproduce before claiming anything
+    steps:
+      - file: sdd/BACKLOG.md
+        section: "(item) BUG-281"
+        read_type: gate
+        extract: >-
+          The two candidate fix shapes and the claim that letting the default
+          move to QueuePool "keeps 071". Tagged misleading: the item's deferred
+          consequence predicted an anonymous mode=memory database differing per
+          checkout, and a direct probe on 2.0.54 and 2.1.0rc2 showed a named
+          shared cache is process-global, identical before and after. The real
+          consequence is the opposite shape — cross-thread reads break, because
+          QueuePool hands one connection to every thread and pysqlite refuses
+          it off-thread. The "keeps 071" branch was therefore not a no-op, and
+          taking the item at its word would have shipped a silent break on
+          SQLAlchemy 2.2.
+        outcome: misleading
+      - file: src/remote_store/backends/_sqlalchemy.py
+        section: "_SQLAlchemyBaseBackend.__init__"
+        read_type: reference
+        extract: "sa.create_engine(url) with no pool named; both backends inherit it"
+        outcome: ok
+      - file: tests/backends/sqlblob/test_absent_table.py
+        section: "TestADiscardedInMemoryStoreReadsAsEmpty"
+        read_type: reference
+        extract: >-
+          The failing parametrisation, and its teardown comment about a
+          SingletonThreadPool connection collected at a GC point as an
+          unraisable against an unrelated test. Read prospectively for the
+          former; the latter is what diagnosed a ResourceWarning my own first
+          test draft introduced on 3.13, by reaching a per-thread pool from a
+          second thread.
+        outcome: ok
+  - id: tests
+    name: Failing test first
+    steps:
+      - file: tests/backends/sqlblob/test_config.py
+        section: "Engine lifecycle"
+        read_type: reference
+        extract: >-
+          Shape to match for a pool-level test. The first draft asserted
+          per-thread data isolation for sqlite:///:memory: through a worker
+          thread; it passed but orphaned that thread's connection, since no
+          thread can close another's on a SingletonThreadPool. Scoped back to
+          the pool class, which is what SQL-BLOB-072's posture is defined on
+          and what this repo actually contracts.
+        outcome: ok
+  - id: implement
+    name: Name the pool
+    steps:
+      - file: sdd/specs/040-sql-blob-backend.md
+        section: "SQL-BLOB-071, SQL-BLOB-072"
+        read_type: gate
+        extract: >-
+          071's "no custom pool configuration" is the clause the fix amends.
+          072's carve-out needed correcting on its own account: it generalised
+          per-thread isolation to "any engine configured with a per-thread
+          pool", which the probe showed false for mode=memory&cache=shared —
+          isolation comes from the database being anonymous, not from the pool.
+        outcome: misleading
+      - file: sdd/specs/041-sql-query-backend.md
+        section: "SQL-QUERY-092"
+        read_type: verify
+        extract: >-
+          Read as deferring to SQL-BLOB-072 and naming only :memory:, so the
+          correction was recorded as reaching it without an edit. Wrong, and
+          caught in review: the clause opens "as for SQL-BLOB-072" and then
+          restates the formulation verbatim, including the closing "QueuePool-
+          backed engines are thread_safe" that 040 had just stopped asserting.
+          The deferring sentence is what made the restatement look like a link.
+          Tagged misleading against the artifact, but the miss is the reader's:
+          the section was there to be read whole and the first clause was taken
+          for the section.
+        outcome: misleading
+  - id: fix
+    name: Round 1 — the predicate was one condition too wide
+    steps:
+      - file: src/remote_store/backends/_sqlalchemy.py
+        section: "_engine_kwargs"
+        read_type: gate
+        extract: >-
+          The review's thread: the predicate keyed on `mode=memory`, but every
+          measurement, test and spec sentence behind it was taken on
+          `mode=memory&cache=shared`. Re-measured before accepting, and it is a
+          regression rather than a posture gap — on 2.1.0rc2 a write on one
+          connection read from a second held concurrently went from `'one'`
+          under the inferred per-thread pool to `OperationalError` under the
+          QueuePool this PR named. `cache=shared` is what makes an in-memory
+          database process-global; `mode=memory` alone gives each connection a
+          private one, so the fix splits on `cache` and keeps the per-thread
+          pool for the anonymous form.
+        outcome: ok
+      - file: src/remote_store/backends/_sqlalchemy.py
+        section: "_engine_kwargs (docstring)"
+        read_type: verify
+        extract: >-
+          The premise the first version got wrong, now stated: naming the pool
+          is what retires the deprecated inference, whichever class is named.
+          Measured — `poolclass=SingletonThreadPool` gives `warns=0` and the
+          store still reads back. So the deprecation never forced QueuePool on
+          the anonymous spelling, and the original docstring's safety argument
+          was about connection aliasing where the question was database
+          identity. Round 3 then found that this step's own evidence had the
+          same confusion one layer down: it cited "the second checkout seeing
+          `'one'`", and a second checkout on a per-thread pool is the same
+          connection, so that observation was aliasing too.
+        outcome: ok
+      - file: docs-src/explanation/concurrency.md
+        section: "footnote 3"
+        read_type: verify
+        extract: >-
+          The user-facing copy, rewritten rather than synced: it attributed the
+          isolation to SQLAlchemy's pool, which the correction removes, and it
+          is read by people who will not open a spec. Says which URL to spell
+          for a shared in-memory store and which to avoid sharing.
+        outcome: ok
+
+  - id: fix2
+    name: Round 2 — moving the pool at all was the mistake
+    steps:
+      - file: src/remote_store/backends/_sqlalchemy.py
+        section: "_maybe_check_no_file_ancestor"
+        read_type: gate
+        extract: >-
+          The reviewer's finding was explicitly unreproduced, so it was run
+          rather than accepted. It is real and worse than predicted: the walk
+          opens a fresh connect() per ancestor and move() calls it after an
+          uncommitted DELETE, so under QueuePool + shared cache the nested read
+          hits `database table is locked` — and `_head_one` fails open on
+          SQLAlchemyError, so the gate does not raise, it silently answers "no
+          ancestor" and the move succeeds. Reproduced through the public API:
+          move() onto an existing destination under a file ancestor returned
+          without raising, where the three other spellings raised InvalidPath.
+          This docstring was read as part of the diagnosis and is the one place
+          that already recorded the dependency; it had it right, which is how
+          the reviewer found the finding at all.
+        outcome: ok
+      - file: src/remote_store/backends/_sqlalchemy.py
+        section: "_engine_kwargs"
+        read_type: gate
+        extract: >-
+          Round 1 kept QueuePool for the shared-cache half on the belief that it
+          bought thread safety. Measured, it buys nothing: 8 threads x 25 writes
+          under a shared cache landed 17 of 200 on QueuePool and 40 of 200 on
+          SingletonThreadPool, the rest raising `database table is locked`,
+          because SQLite locks shared-cache databases at table level and does
+          not invoke the busy handler. So the pool split had no upside and two
+          downsides, and the predicate collapses: every `mode=memory` URL is
+          given the class it already had. The deprecation is about inference,
+          never about the class.
+        outcome: ok
+      - file: scripts/check_spec_marks.py
+        section: "BK-287 allowlist block"
+        read_type: verify
+        extract: >-
+          Round 1's removal of the SQL-BLOB-072 entry falsified three sentences
+          around it, including the justification for the entry that remains —
+          SQL-QUERY-092 was excused by analogy to the entry that had just been
+          deleted. Counted the block rather than adjusting the figure by eye:
+          three entries, not four. This is the defect class the trace's own
+          `surprising_ripples` note describes, arriving one level up: a removal
+          falsifies prose about the removal's neighbours.
+        outcome: ok
+
+  - id: fix3
+    name: Round 3 — aliasing read as identity, counts as copies, a claim with no run
+    steps:
+      - file: tests/backends/sqlblob/test_config.py
+        section: "_second_checkout_sees"
+        read_type: gate
+        extract: >-
+          The helper's docstring claimed "database identity, not connection
+          aliasing". Measured, and it is the wrong way round for every engine
+          the helper is called on: SingletonThreadPool returns the thread's
+          existing connection record whether or not it is checked out, so the
+          "second" checkout is the same DBAPI connection — True on :memory:,
+          the bare URL, cache=private and cache=shared alike, False only under
+          QueuePool. So the passing half reported aliasing and the inference
+          drawn from it was invalid. The assertions still discriminate the
+          round-1 regression, because QueuePool does open a real second
+          connection; what was wrong was the explanation, which is what the
+          next reader reasons from. The redundant assertion on the shared-cache
+          test is removed — the off-thread read is what discriminates there —
+          and the private-cache one is replaced by a roundtrip.
+        outcome: ok
+      - file: sdd/CONTENT-RULES.md
+        section: "Rules 2, 3, 4"
+        read_type: gate
+        extract: >-
+          Read after the maintainer pointed out that the three stale counts this
+          PR touched are rule violations, not a convention preference. They are:
+          Rule 2 forbids reproducing an exhaustive list inline ("copies become
+          lies"), Rule 4 is one copy per fact, and Rule 3 adds counts-in-prose
+          for the two sites outside its sdd-records carve-out. Round 2's repairs
+          had named each figure's derivation, which satisfies principle 9 and
+          not Rules 2 or 4 — a documented copy is still a copy. The numerals are
+          deleted instead, along with positional references into an adjacent
+          table ("Row 2", "row 3"), which break the same way when a row moves.
+          Checked before deleting that the count was not load-bearing: BACKLOG
+          section 2 closes on a *bounded* list, and enumeration is what makes
+          that checkable, not a numeral.
+        outcome: ok
+      - file: sdd/specs/040-sql-blob-backend.md
+        section: "SQL-BLOB-072 (closing paragraph)"
+        read_type: gate
+        extract: >-
+          The one posture claim in this PR that named no derivation — file-backed
+          SQLite is thread_safe because "the database itself handles concurrent
+          writers" — and it had been broadened from "file-backed SQLite with a
+          shared cache" on the way into the user-facing page. Ran the same
+          8 x 25 harness against sqlite:///<tmp>/a.db: 200 of 200 landed, and
+          1600 of 1600 at 16 x 100, slowest single write 0.74 s. So the claim
+          holds, but not for the reason given: WAL admits one writer at a time
+          and the rest WAIT on pysqlite's default 5 s budget, where shared-cache
+          mode never invokes the busy handler at all. Waiting-vs-failing is the
+          whole distinction, and stating it also states the bound — enough
+          contention exhausts the budget and surfaces as BackendUnavailable. The
+          re-run of the shared-cache side landed 41, not the recorded 40, so that
+          figure is now given as a range rather than as a constant a future
+          reader would "correct".
+        outcome: ok
+      - file: docs-src/explanation/concurrency.md
+        section: "posture table rows, footnote 3"
+        read_type: gate
+        extract: >-
+          Round 1 rewrote the footnote and left the two table rows it annotates
+          saying "The SQLAlchemy engine pools connections" — the half of the pair
+          040 had just put in bold as insufficient, and true of the one row this
+          PR marks not safe to share. A reader who accepts a one-line Why cell
+          has no cue to open the footnote, so the correction had to reach the
+          cell. The footnote also enumerated three in-memory spellings out of
+          four, omitting the very one this PR moves, and keyed its avoid-sharing
+          sentence on "an anonymous URI form such as ..." — which readmits the
+          attribution error, since file:name?mode=memory&uri=true is an anonymous
+          URI form with the opposite posture. Keyed on the pool instead.
+        outcome: ok
+      - file: tests/backends/sqlblob/test_config.py
+        section: "_read_in_thread"
+        read_type: verify
+        extract: >-
+          Not a review finding — CI went red on a4059ce with a
+          PytestUnraisableExceptionWarning attributed to an unrelated sqlquery
+          test. Reproduced in ten lines: the worker thread's connection stays in
+          the SingletonThreadPool after that thread exits, backend.close() then
+          tries to close it from the main thread, pysqlite refuses cross-thread,
+          the pool logs and moves on, and the still-open connection surfaces at
+          the next GC point. This is the same hazard the tests phase recorded and
+          dodged by dropping the cross-thread half; round 3 put a cross-thread
+          read back as the load-bearing assertion and brought it with it. The
+          worker now detach()es its connection so the enclosing close() closes it
+          in the thread that opened it — verified in-thread ("Cannot operate on a
+          closed database") with sys.unraisablehook empty afterwards.
+        outcome: ok
+
+  - id: fix4
+    name: Round 4 — the docstring erased the third case
+    steps:
+      - file: src/remote_store/backends/_sqlalchemy.py
+        section: "_maybe_check_no_file_ancestor (docstring), _engine_kwargs (docstring)"
+        read_type: gate
+        extract: >-
+          Round 2 amended this docstring to say "every in-memory SQLite URL uses
+          SingletonThreadPool" — false, and falsified by this PR's own
+          test_other_in_memory_spellings_keep_their_inferred_pool[uri-anonymous]
+          plus SQL-BLOB-072's own pooled row. A regression introduced by the
+          amendment: the prior wording said "the default in-memory SQLite URL"
+          and was right. The two-case split it created erased the third case,
+          and the reviewer flagged a live consequence as explicitly
+          unreproduced. Ran it: on sqlite:///file::memory:?uri=true the nested
+          checkout reaches a distinct, EMPTY database, so move onto a file
+          ancestor returns where every other in-memory spelling raises
+          InvalidPath. The gate is silently dead there. Pre-existing, since the
+          spelling is untouched; recorded in SQL-BLOB-072 and added to BUG-292,
+          whose three proposed fix shapes all narrow or report *errors* and so
+          none of them reaches an instance where nothing raises.
+        outcome: ok
+      - file: sdd/CONTENT-RULES.md
+        section: "Rule 3"
+        read_type: gate
+        extract: >-
+          Rule 3's out-of-scope line names sdd/ records, backlog items, commit
+          messages and .claude/skills/ — not docs-src/. So the measured figures
+          round 3 put into concurrency.md footnote 3 are a violation, in the
+          same PR that deleted three counts elsewhere citing Rules 2 and 4. Read
+          the rule rather than reasoning from the earlier deletions, which is
+          what made the asymmetry visible: the spec is the figures' home and the
+          published page gets the category plus a link. The measurement itself
+          was right to run; putting it on a narrative page was not.
+        outcome: ok
+
+  - id: verify
+    name: Ripple-check and close
+    steps:
+      - file: sdd/CLAUDE-REFERENCE.md
+        section: "Pre-work index / Spec section"
+        read_type: verify
+        extract: "Spec change ripples to @pytest.mark.spec tests and the backlog"
+        outcome: ok
+      - file: tests/backends/fixtures/backends.toml
+        section: "backend.sqlblob, backend.sqlquery"
+        read_type: verify
+        extract: >-
+          Both declare concurrency = single_connection for the TESTED config,
+          which is sqlite:///:memory: — the spelling this fix leaves alone, so
+          the registry needs no change. Checked because the posture rows cite
+          the pool class the fix touches.
+        outcome: ok
+      - file: sdd/BACKLOG.md
+        section: "How this file works / Completing work"
+        read_type: gate
+        extract: >-
+          Move to BACKLOG-DONE, then sweep every BUG-281 hit by tense rather
+          than by directory. The sweep is what found the two surprising ripples;
+          both resolve fine as links and were wrong only as present-tense
+          claims, which is the defect the rule warns a link check cannot see.
+        outcome: ok
+      - file: infra/drift-locks/README.md
+        section: "Refreshing"
+        read_type: verify
+        extract: >-
+          Confirms sql.txt is NOT refreshed here: a lock records a resolution
+          the run smoked, so the refresh follows on the next drift run with
+          that run's evidence rather than being asserted from this branch.
+        outcome: ok
+      - file: sdd/TESTING.md
+        section: "Rules 2, 7, 8, 12"
+        read_type: gate
+        extract: >-
+          Read at the /pr qualitative gate, NOT before writing the tests, and
+          recorded here rather than in the tests phase because that is when it
+          happened — an earlier draft of this trace placed it as a tests-phase
+          gate it never was. Reading it late is what cost the rework: Rule 2
+          forbids isinstance as a sole assertion and two pool-class tests had
+          exactly that, one of them only because its cross-thread half was
+          removed to stop a ResourceWarning. Merged the shared-cache pair into
+          one test asserting pool class and off-thread read together, and gave
+          the other a roundtrip. Rule 8 then flagged the direct call into
+          _engine_kwargs; the unparseable case moved to a public assertion that
+          a bad URL still raises SQLAlchemy's own ArgumentError, which is the
+          contract the except clause exists for, leaving one non-SQLite case
+          that no public path can reach without a driver.
+        outcome: ok
+      - file: tests/backends/sqlblob/test_config.py
+        section: "TestInMemoryPoolSelection"
+        read_type: verify
+        extract: >-
+          Rewriting the repeated-key case as a public construction proved the
+          branch behind it unreachable: SQLAlchemy parses a duplicated query key
+          to a tuple and hands it to sqlite verbatim, which answers "no such
+          access mode", so such a URL has no working engine whatever pool is
+          chosen. The tuple normalisation in _engine_kwargs was dead code
+          defending an impossible input and was removed; the assumption is
+          pinned by a test instead. Nothing in the unit test calling the helper
+          directly could have shown this, because it never opened an engine.
+        outcome: ok

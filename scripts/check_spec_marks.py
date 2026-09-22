@@ -250,7 +250,10 @@ _ALLOWLIST_DESIGN: frozenset[str] = frozenset(
         "MEM-DS-003",  # 013 — why bytearray over bytes (rationale)
         "MEM-DS-004",  # 013 — slots=True (rationale)
         "SQL-BLOB-070",  # 040 — blob size guidelines (Performance section)
-        "SQL-BLOB-071",  # 040 — connection pooling (SQLAlchemy default, no custom config)
+        # SQL-BLOB-071 was here while the clause said only "SQLAlchemy default,
+        # no custom config" — nothing to mark. BUG-281 gave it a named exception
+        # for `mode=memory` URLs, which is behaviour, and TestInMemoryPoolSelection
+        # marks it.
         "SQL-QUERY-090",  # 041 — query execution (full materialization; streaming deferred)
         "SQL-QUERY-091",  # 041 — serialization overhead (full copy; zero-copy/ADBC deferred)
         # Moved to ext.write (spec 046 EW-001..004) per ADR-0008. The spec-045
@@ -268,18 +271,27 @@ _ALLOWLIST_DESIGN: frozenset[str] = frozenset(
         # (GR-059) carry real marks. BK-289's posture-gated lane converted the
         # subset its conformance fixtures exercise — S3-028 (s3_moto), AZ-037
         # (azurite), SFTP-029 (sftp_inproc carve-out) — to real marks, so those
-        # are no longer allowlisted. The four below stay documentation-only: no
-        # conformance fixture exercises them in the lane.
+        # are no longer allowlisted. The entries below stay documentation-only:
+        # no conformance fixture exercises them in the lane. (Deliberately not
+        # counted — the list is right here, and a numeral in this comment is a
+        # second copy of it that goes stale whenever an entry is added or
+        # removed. It read "four" until BUG-281 removed SQL-BLOB-072, and the
+        # stale figure outlived the removal by a review round.)
         "S3PA-028",  # 011 — S3PyArrowBackend thread_safe (Tier-3 live probe only)
         "HTTP-CONC-001",  # 032 — ReadOnlyHttpBackend single_connection on urllib (no WRITE -> not in carve-out)
-        "SQL-BLOB-072",  # 040 — SQLBlobBackend thread_safe (per-op pool); :memory: test fixture is single_connection
-        # BK-340 registered the sqlquery conformance fixture, so "no conformance
-        # fixture" is no longer why this one is excused. The exemption still
-        # holds, for HTTP-CONC-001's reason instead: the posture-gated lane is
-        # WRITE-gated (fixture_params_concurrent(Capability.WRITE, ...)), and
-        # SQLQueryBackend is read-only, so no carve-out cell reaches it. The
-        # spec/fixture posture split is the same one SQL-BLOB-072 carries above.
-        # (:memory: fixture is single_connection, as for SQL-BLOB-072.)
+        # SQL-BLOB-072 sat here until BUG-281, excused on the same
+        # no-fixture-reaches-it grounds as the entries above. It is gone because
+        # the clause became decidable from the engine: it now turns on which pool
+        # a URL resolves to, which TestInMemoryPoolSelection asserts directly, so
+        # the posture no longer rests only on prose.
+        # SQL-QUERY-092 does not follow it out, and the reason is its own rather
+        # than an analogy to the entry above. BK-340 registered the sqlquery
+        # conformance fixture, so "no conformance fixture" is not why it is
+        # excused; HTTP-CONC-001's reason is: the posture-gated lane is
+        # WRITE-gated (fixture_params_concurrent(Capability.WRITE, ...)) and
+        # SQLQueryBackend is read-only, so no carve-out cell reaches it. Spec 041
+        # now links to SQL-BLOB-072 rather than restating it, which is what keeps
+        # that clause's own text from needing a mark of its own.
         "SQL-QUERY-092",  # 041 — SQLQueryBackend thread_safe; no WRITE -> not in carve-out
     }
 )

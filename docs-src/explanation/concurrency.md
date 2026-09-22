@@ -16,8 +16,8 @@ Before the per-operation guarantees below, there is a more basic question: **is 
 | [Graph](../guides/backends/graph.md) | Thread-safe ² | Async-only: safe for concurrent coroutines on one event loop. |
 | [SFTP](../guides/backends/sftp.md) | Single-connection | One paramiko channel over one socket. **Remedy:** one instance per thread (or a native async SFTP client). |
 | [HTTP](../guides/backends/http.md) | Single-connection on `urllib` | Only the auto-detect *fallback* `urllib` opener (shared redirect counter) is unsafe; the `httpx` / `requests` transports — auto-selected ahead of it when installed — are thread-safe. **Remedy:** install and select `http_client='requests'` or `'httpx'`, or use one instance per thread. |
-| [SQLBlob](../guides/backends/sql-blob.md) | Thread-safe ³ | The SQLAlchemy engine pools connections. |
-| [SQLQuery](../guides/backends/sql-query.md) | Thread-safe ³ | Same pooled engine (read-only). |
+| [SQLBlob](../guides/backends/sql-blob.md) | Thread-safe ³ | A pooled SQLAlchemy engine **over a durable database**. In-memory SQLite is the exception — see ³. |
+| [SQLQuery](../guides/backends/sql-query.md) | Thread-safe ³ | Same engine, same exception (read-only). |
 
 No backend offers multi-operation transactionality — atomicity is per operation only, and ordering between concurrent callers is never guaranteed.
 
@@ -25,7 +25,7 @@ No backend offers multi-operation transactionality — atomicity is per operatio
 
 ² One Graph instance is safe for concurrent coroutines on a **single** event loop, and never across loops — use one instance per loop. Driven from synchronous code through the async→sync bridge it is also safe for concurrent threads (unlike SFTP); see [Bridge asymmetry](#bridge-asymmetry) below.
 
-³ On a pooled RDBMS engine (PostgreSQL, MySQL) SQLBlob and SQLQuery are thread-safe. The `sqlite:///:memory:` configuration is the exception: SQLAlchemy gives each thread its own isolated in-memory database, so a shared instance behaves as single-connection — use one instance per thread.
+³ On a pooled engine over a durable database (PostgreSQL, MySQL, file-backed SQLite) SQLBlob and SQLQuery are thread-safe. File-backed SQLite qualifies because its writers **wait** rather than fail: WAL admits one at a time and the rest block on pysqlite's default busy timeout. **In-memory SQLite is the exception, and no spelling of it is safe for concurrent writers.** With `sqlite:///:memory:`, `sqlite://`, or `file:name?mode=memory&uri=true`, each *thread* gets its own database, so a shared instance behaves as single-connection — use one instance per thread. A shared cache (`file:name?mode=memory&cache=shared&uri=true`) does give every connection one database, which makes cross-thread *reads* work, but SQLite locks that database at table level and will not wait for the lock, so most concurrent writes fail outright with `database table is locked` rather than queueing. The one spelling to avoid sharing at all is `file::memory:?uri=true` — an anonymous database on a *pooled* engine, where each **connection** opens its own, so even a single thread can lose an earlier write when it is handed a different connection. If threads must write, give each its own instance or use a durable database. Each posture above was measured; the figures live with the [SQL blob backend specification](https://github.com/haalfi/remote-store/blob/master/sdd/specs/040-sql-blob-backend.md#sql-blob-072).
 
 ### Bridge asymmetry
 

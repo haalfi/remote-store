@@ -240,6 +240,59 @@ if evidence changes; these are retired.
 
 ## Unreleased
 
+- [x] **BUG-281 — `_SQLAlchemyBaseBackend` leans on a pool selection SQLAlchemy 2.1.0rc1 deprecates**
+  spec: SQL-BLOB-071, SQL-BLOB-072 · effort: S · audience: user.api, infra.ci
+  `_engine_kwargs()` now **states** `poolclass=SingletonThreadPool` for a SQLite
+  URL carrying `mode=memory` — the class SQLAlchemy already inferred for it.
+  Naming the pool is what retires the inference 2.1 deprecates, whichever class
+  is named, so the fix changes what the engine is told and never which pool it
+  gets. Measured on 2.0.54 and 2.1.0rc2 alike: both `mode=memory` spellings warn
+  under inference and neither warns once the class is stated.
+  **Two review rounds went into establishing that moving the pool is wrong**,
+  and the item shipped one version of each mistake before the measurement.
+  `QueuePool`, the class the deprecation message suggests, fails three ways:
+  - Without `cache=shared`, each *connection* opens a private database, so the
+    moment the pool hands out a real second one it is empty: a write followed by
+    a read on a concurrently-held second checkout went from returning the row to
+    `OperationalError`. Stated that way round deliberately — under the per-thread
+    pool the "second checkout" is the *same* DBAPI connection (measured: aliased
+    on every in-memory spelling), so the passing half reports aliasing and only
+    the `QueuePool` half, where the checkouts are genuinely distinct, is evidence
+    about database identity. A third review round caught the earlier wording,
+    which read the aliased result as proof of a shared database.
+  - With `cache=shared`, the nested `connect()` that
+    `_maybe_check_no_file_ancestor` performs inside `move`/`copy`'s **open write
+    transaction** becomes a second connection, and shared-cache SQLite locks the
+    table. `_head_one` fails open on `SQLAlchemyError`, so the gate does not
+    raise — it silently answers "no ancestor" and the move succeeds. Reproduced
+    as `sqlite3.OperationalError: database table is locked:
+    remote_store_objects`, now pinned by
+    `test_the_file_ancestor_gate_still_fires_on_a_shared_cache_url`.
+  - It buys no concurrency in exchange. Under a shared cache, 8 threads × 25
+    writes landed 17 of 200 on `QueuePool` and 40 of 200 on
+    `SingletonThreadPool`; the rest raised `database table is locked`. SQLite
+    takes table-level locks in shared-cache mode and does not invoke the busy
+    handler for them, so writers do not wait.
+  **The deferred consequence as originally filed was half right**, and
+  SQL-BLOB-072 is rewritten rather than merely amended. It predicted the
+  database would "differ per checkout rather than per thread". For a named
+  shared cache that is wrong — process-global, one database whatever the pool —
+  but for an anonymous in-memory database on a pooled engine it is exactly
+  right, and the first version of this fix would have created it. The carve-out
+  now enumerates three cases (anonymous + per-thread pool, anonymous + pooled,
+  shared cache), because neither the pool class nor the URL decides the posture
+  alone — and it states plainly that **none** of them is `thread_safe` for
+  writers, with the 40-of-200 figure behind it. An earlier draft of this item
+  promoted the shared cache to `thread_safe`, which the concurrency measurement
+  above falsified. `SQL-QUERY-092` restated the old formulation rather than
+  deferring to it, and is now a link; `docs-src/explanation/concurrency.md`
+  footnote 3 carried the same attribution to SQLAlchemy's pool, and now carries
+  the writer limit too, since it is the page a user reads before choosing a URL.
+  The `[sql]` newest-lane row leaves `infra/drift-locks/KNOWN-FINDINGS.md` with
+  this fix, per that file's rule. `infra/drift-locks/sql.txt` stays at
+  `sqlalchemy==2.1.0b3`: the refresh follows on the next drift run with that
+  run's smoke as its evidence, which is what held it.
+
 - [x] **BK-379 — Pilot RFC-0015's D2, D3 and its LINE-anchor rule on three deliveries, before the rest of it is built**
   spec: — · effort: M · audience: contributor.process
   All three exit criteria met: RFC-0015 amended with the pilot's four
