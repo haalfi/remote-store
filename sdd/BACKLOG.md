@@ -212,7 +212,9 @@ whether the base-class fall-throughs should be classified or merely given a
 message, BUG-291 is a mapped error being re-mapped to something weaker on the way
 out); a connect that fails locally is not reported
 against the caller's path
-(BUG-273); and a newly
+(BUG-273); a safety gate that cannot complete its probe says so instead of
+answering "nothing here" (BUG-292 — the file-ancestor walk reads any driver
+error as permission to proceed, on all five flat-namespace backends); and a newly
 registered backend cannot pass CI without meeting BE-004, BE-005 and BE-021
 (BK-345). BK-359 is why the Promise above carries a third clause, added with it
 rather than left implicit: an error that is
@@ -974,6 +976,52 @@ compliant the day before.
   scope; `BACKLOG-DONE.md`'s BUG-275 entry records the measurement and says
   plainly that the two backends are not equivalent across the whole surface.
 
+- [ ] **BUG-292 — The file-ancestor gate fails open on every `SQLAlchemyError`, so it degrades to a no-op without a signal**
+  spec: BE-008, SQL-BLOB-031 · effort: M · audience: user.api, library.maintainer
+  `_head_one` in `_SQLAlchemyBaseBackend._maybe_check_no_file_ancestor`
+  (`src/remote_store/backends/_sqlalchemy.py`) wraps its probe in
+  `except (sa.exc.SQLAlchemyError, OSError): return False`. `False` means "no
+  ancestor here", so **any** database error the probe meets is read as permission
+  to proceed. The gate does not weaken, it disappears, and nothing says so — no
+  log line, no counter, no exception.
+  The fail-open is deliberate and documented: a transient probe error should not
+  roll back the caller's `move`/`copy` nor turn a best-effort gate into a hard
+  failure (`_flat_ns.py` § "Fail-open `head_one`"). What is undefended is the
+  distance between *transient* and *any*.
+  **Measured, not hypothesised.** BUG-281's second review round produced a live
+  instance: under a `mode=memory&cache=shared` URL on a pooled engine, the nested
+  `connect()` the walk opens inside `move`'s open write transaction read a table
+  the outer transaction held a write lock on and raised
+  `sqlite3.OperationalError: database table is locked: remote_store_objects`.
+  `_head_one` swallowed it and `move("a.txt", "folder/b.txt", overwrite=True)`
+  **succeeded** where it must raise `InvalidPath`, with `folder` a regular file.
+  That specific cause is closed — the pool no longer moves — but the cause was
+  incidental. A schema change, a pool exhaustion, a dropped connection or a
+  permission error would each produce the same silence, on any backend sharing
+  this walk.
+  Fix shape is open and is a contract decision rather than a patch, which is why
+  this is filed rather than fixed in BUG-281's PR. At least three are available
+  and they differ in what they promise: narrow the caught set so a lock error
+  propagates while a transient drop still fails open; keep the fail-open and emit
+  a `logging.warning` so the degradation is observable; or give the gate a strict
+  mode where a probe error raises. The second is the smallest and the first is
+  the one that matches what a reader takes "reject writes under a file ancestor"
+  to mean. Whichever lands, BE-008's promise needs a sentence on what the gate
+  does when it cannot see.
+  **Scope is the walk, not the SQL backend: five `_head_one` closures share the
+  shape**, one per flat-namespace implementation, each catching its own driver's
+  family plus `OSError` (`rg -n 'def _head_one' -A 22 src/remote_store`):
+  `_s3_base.py:161` and `_s3_boto3.py:1235` catch
+  `(ClientError, BotoCoreError, OSError)`, `_azure.py:324` and
+  `aio/_azure.py:185` catch `(AzureError, OSError)`, and `_sqlalchemy.py:421`
+  catches `(SQLAlchemyError, OSError)`. `_flat_ns.py` § "Fail-open `head_one`"
+  is the cross-backend contract all five cite, so it is the artifact the
+  decision lands in; a fix scoped to one closure leaves four saying otherwise.
+  The two Azure sites are the least exposed and show the available shape: they
+  take `ResourceNotFoundError` in its own arm before the broad one, so a genuine
+  404 is distinguishable from a failure. The S3 pair do not — a 403 arrives as a
+  `ClientError` like a 404 and is read as "no ancestor".
+
 ---
 
 <a id="correct-and-proven"></a>
@@ -982,11 +1030,17 @@ compliant the day before.
 **Promise:** the same call returns the same right result on every backend, and
 no clause of the contract ships unexercised.
 
-**Closes when:** the six defects and holes enumerated below are closed — three
+**Closes when:** the nine defects and holes enumerated below are closed — four
 wrong answers (BUG-241's unescaped `LIKE` metacharacters, BUG-240's `max_depth`
-contradiction, BUG-251's cross-store cache collision) and three coverage holes
-measured in cells (ID-244's WRITE-gated classes, ID-242's four pragmas,
-ID-247's 30 root-path cells).
+contradiction, BUG-251's cross-store cache collision, BUG-260's empty answer for
+a non-empty root) and five coverage holes measured in cells (ID-244's
+WRITE-gated classes, ID-242's four pragmas, ID-247's 30 root-path cells,
+ID-251's unfailable BE-029 clause, BK-382's never-reached overwrite path).
+Nine is a count of the `- [ ]` item headers between this heading and section 3's,
+re-run when this sentence is edited. **It read "six" until BK-382 was filed**,
+and the gap was not that item alone: BUG-260 and ID-251 had been added to the
+section without reaching this sentence, so the enumeration had been two short of
+its own list before anything here was touched.
 **Bounded deliberately.** "No clause ships unexercised" is the promise, not the
 closing condition: nothing derives the full set of unreachable clauses today,
 which is what ID-245's inventory in section 6 would supply. Until it does, this
@@ -1196,6 +1250,43 @@ resting on it rather than a pending one.
   graph cassettes, churning their volatile headers into an unreviewable diff
   against TEST-009. Any op that raises before issuing a request records nothing
   and keeps skipping — correct since ID-241, and visible in the Step-5 replay.
+
+- [ ] **BK-382 — The file-ancestor gate ships unexercised on the overwrite path, where the pre-check runs inside an open write transaction**
+  spec: BE-008 · effort: M · audience: infra.test
+  `test_destination_under_file_ancestor_raises_invalid_path` seeds a blocker and
+  a source and then moves onto `blocker.txt/dst.txt`, which **does not exist**.
+  So `dst_exists` is `False`, the `DELETE` branch never runs, and the ancestor
+  pre-check is never reached with an uncommitted write held open — the one state
+  the production path is in whenever `overwrite=True` meets an existing
+  destination. Every other cell that touches the gate has the same shape.
+  **Measured against a live regression, not reasoned about.** BUG-281's round 2
+  introduced a pool change that made this exact path silently stop rejecting. I
+  added a `sqlblob_shared_cache_strict` fixture and ran the whole conformance
+  suite against it with that regression reintroduced: **58 passed, 0 failed.**
+  The fixture alone catches nothing, because the suite never reaches the state.
+  Adding an overwrite-path variant does catch it, and discriminates: with the
+  regression in, `[move-sqlblob_shared_cache_strict]` and its `copy` twin fail
+  on `DID NOT RAISE InvalidPath`; with the pool correct, both pass.
+  **The obstacle is the seeding, and it is why this is an item.** Reaching the
+  state needs a destination that exists *under a file ancestor*, which means
+  writing the child first and the blocker second — legal only where a file and a
+  prefix may share a name. Run across the strict roster, that seeding raised on
+  five of the other fixtures: `memory`, `local`, `sftp_inproc`,
+  `sftp_chroot_inproc` and `dafny_oracle` all rejected the blocker write with
+  `InvalidPath` (hierarchical backends cannot have both), and `s3_moto_strict`
+  raised `AlreadyExists`. So the cell needs either a flat-NS gate the registry
+  does not currently express, or per-backend seeding — which is the thing
+  conformance tests exist to avoid, and the decision this item carries.
+  The `sqlblob_shared_cache_strict` fixture itself is cheap and independently
+  useful: 8 lines in `fixtures.toml`, a unique database name per `factory()` call
+  in `sqlblob.py`, and one entry in `_MODULE_FOR`. It lands in 10 existing
+  conformance cells with no new test code, and it is the only fixture that would
+  exercise a shared-cache in-memory database anywhere in the suite.
+  Scoped to the gate's *class*, not to SQLBlob: the same blind spot covers
+  `[s3]`, `[s3-boto3]`, `[s3-pyarrow]` and `[azure]`, whose strict fixtures run
+  the same cells. BUG-292 is the related decision one layer down — the walk fails
+  open on any driver error, which is *why* the regression was silent rather than
+  loud; if that closes first, this cell becomes a much stronger check.
 
 ---
 

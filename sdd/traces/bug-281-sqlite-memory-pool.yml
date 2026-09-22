@@ -11,6 +11,15 @@ source_items:
 audience:
   - user.api
   - infra.ci
+discovery_followups:
+  # Both born in round 2, from measuring one finding rather than accepting it.
+  # BUG-292 is the root cause the regression exposed: the ancestor walk reads any
+  # driver error as "no ancestor", which is why a table lock made a safety gate
+  # vanish instead of raise. BK-382 is the coverage hole that let the regression
+  # reach review at all — measured by adding a shared-cache fixture and running
+  # the conformance suite with the regression in: 58 passed, 0 failed.
+  - BUG-292
+  - BK-382
 expected_ripples:
   - sdd/backlogid.json
   - sdd/specs/040-sql-blob-backend.md
