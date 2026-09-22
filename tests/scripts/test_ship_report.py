@@ -468,24 +468,38 @@ class TestTraceBlock:
         assert rounds.RX.search("review_rounds: 4\n").group(1) == "4"
 
     def test_the_legacy_corpus_reads_identically_under_the_anchor(self) -> None:
-        """The amendment must not disturb any existing reading.
+        """The amendment must not disturb any existing reading, and must reach the new one.
 
+        Partitioned by whether a trace carries a `review:` block, because the
+        two halves owe opposite things: a legacy trace must read the same under
+        both anchors, and a D4 trace must read *only* under the new one — the
+        old anchor finding a D4 trace would mean the field had not moved.
         Asserted over whatever the corpus holds rather than against a pinned
-        total, so it cannot go stale on the next trace. (Measured while writing:
-        324 traces, 261 carrying the field.)
+        total, so it cannot go stale on the next trace.
         """
         import re as _re
+
+        import yaml
 
         rounds = _load_rounds()
         legacy = _re.compile(r"^review_rounds:\s*(\d+)", _re.M)
         traces = sorted((_REPO_ROOT / "sdd" / "traces").glob("[!_]*.yml"))
         assert traces, "no traces found; the corpus glob is wrong"
+        derived = 0
         for path in traces:
             text = path.read_text(encoding="utf-8")
             old, new = legacy.search(text), rounds.RX.search(text)
-            assert (old is None) == (new is None), f"{path.name}: the anchors disagree on presence"
-            if old is not None:
-                assert old.group(1) == new.group(1), f"{path.name}: the anchors disagree on value"
+            block = (yaml.safe_load(text) or {}).get("review")
+            if block is None:
+                assert (old is None) == (new is None), f"{path.name}: the anchors disagree on presence"
+                if old is not None:
+                    assert old.group(1) == new.group(1), f"{path.name}: the anchors disagree on value"
+                continue
+            derived += 1
+            assert old is None, f"{path.name}: the legacy anchor still reaches a moved field"
+            assert new is not None, f"{path.name}: the new anchor misses the block's field"
+            assert int(new.group(1)) == block["review_rounds"], f"{path.name}: anchor and block disagree"
+        assert derived, "no trace carries a review: block, so the new half asserted nothing"
 
     def test_review_rounds_is_the_commit_count(self, data: dict) -> None:
         data["review_driven_commits"] = [("a" * 40, 1, "one"), ("b" * 40, 2, "two")]

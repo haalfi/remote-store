@@ -274,7 +274,109 @@ phases:
         read_type: verify
         extract: >-
           The shared gates section is the home both /pr and /fix-pr cite by
-          link, so wiring check_backlog_ids_vs_base there discharged both
-          skills without editing either. Mechanical gate for this diff is
-          `hatch run all` — it touches scripts/ and tests/
-        outcome: ok
+          link, and I took the link to mean adding a gate there discharges
+          both skills without editing either. It does not: each skill also
+          *enumerates* the gates inline, as three, and the closing gate found
+          both enumerations stale and /fix-pr running three of four. A link to
+          a list is not a substitute for the list when the citing file spells
+          the members out — the section gives no sign that it has inline
+          copies downstream. Mechanical gate for this diff is `hatch run all`
+          — it touches scripts/ and tests/
+        outcome: misleading
+
+# Bound on the block below, which is derived and not hand-edited.
+# The loop ran five rounds. Rounds 1-4 were posted reviews and are what the
+# script reads. Round 5 was the closing exit gates — an unprimed pass, a
+# whole-file pass and a measuring pass — run analyze-only; its 13 must-fix
+# findings were relayed to the author and fixed in ff324fe and bf19691, and
+# never posted, so no endpoint carries them. `submissions: 4` and
+# `findings: 41` are therefore the posted loop, not the whole loop; the two
+# commits above are in `review_driven_commits` because that figure comes from
+# git rather than from the comment endpoints. Whoever re-measures under BK-382
+# should read this PR as 5 rounds / 54 findings and count the 13 as
+# loop-introduced-detectable-only-at-the-close.
+review:
+  # Derived by `hatch run ship-report 1026 --trace-block-only` at head bf19691.
+  # Do not hand-edit: RFC-0015 D4 makes this script the only producer.
+  derivation: "hatch run ship-report 1026 --trace-block-only"
+  review_rounds: 7
+  submissions: 4
+  findings: 41
+  by_round:
+    - round: 1
+      findings: 7
+      origin: {original: 7}
+      triage: {must-fix: 7}
+      duration_hours: 0.12
+    - round: 2
+      findings: 6
+      origin: {original: 5, unclassifiable-file: 1}
+      triage: {must-fix: 6}
+      duration_hours: 0.42
+    - round: 3
+      findings: 14
+      origin: {loop-introduced: 1, original: 13}
+      triage: {must-fix: 14}
+      duration_hours: 11.68
+    - round: 4
+      findings: 14
+      origin: {loop-introduced: 8, original: 6}
+      triage: {must-fix: 14}
+      duration_hours: 0.62
+  by_file:
+    - path: "scripts/check_backlog_ids_vs_base.py"
+      findings: 8
+    - path: "scripts/ship_report.py"
+      findings: 7
+    - path: "tests/scripts/test_ship_report.py"
+      findings: 5
+    - path: "scripts/check_no_retrospective.py"
+      findings: 3
+    - path: "sdd/traces/_schema.yml"
+      findings: 3
+    - path: ".claude/skills/ship/SKILL.md"
+      findings: 2
+    - path: "sdd/rfcs/rfc-0015-ship-two-surfaces.md"
+      findings: 2
+    - path: "sdd/specs/009-sftp-backend.md"
+      findings: 2
+    - path: "sdd/traces/bk-378-d1-d4.yml"
+      findings: 2
+    - path: "tests/scripts/test_check_backlog_ids_vs_base.py"
+      findings: 2
+    - path: "CLAUDE.md"
+      findings: 1
+    - path: "sdd/BACKLOG-DONE.md"
+      findings: 1
+    - path: "sdd/CLAUDE-REFERENCE.md"
+      findings: 1
+    - path: "sdd/rfcs/rfc-0015-rounds.py"
+      findings: 1
+    - path: "tests/scripts/test_check_no_retrospective.py"
+      findings: 1
+  untouched_files:
+    - ".claude/skills/fix-pr/SKILL.md"
+    - ".claude/skills/pr/SKILL.md"
+    - ".claude/skills/rvw-pr/SKILL.md"
+    - "pyproject.toml"
+    - "scripts/gen_gate_inventory.py"
+    - "sdd/BACKLOG.md"
+    - "sdd/GATE-INVENTORY.md"
+    - "tests/backends/sftp/test_config.py"
+    - "tests/scripts/test_gen_gate_inventory.py"
+  review_driven_commits:
+    - sha: "75bcf06"
+      subject: "BK-378: Address PR #1026 round 1"
+    - sha: "f0b9893"
+      subject: "BK-378: Address PR #1026 round 2"
+    - sha: "4652996"
+      subject: "BK-378: Sweep round 2's fix into RFC-0015 D6"
+    - sha: "af9da11"
+      subject: "BK-378: Address PR #1026 round 3"
+    - sha: "0ac38b5"
+      subject: "BK-378: Address PR #1026 round 4"
+    - sha: "ff324fe"
+      subject: "BK-378: Address PR #1026 round 5 (closing exit gates)"
+    - sha: "bf19691"
+      subject: "BK-378: Re-derive the guard count after round 5's own fix pass"
+  ci: {verdict: GREEN, failed: 0, pending: 0}
