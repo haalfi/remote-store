@@ -303,9 +303,11 @@ if evidence changes; these are retired.
   two-space one, and **nothing else**: a free indent was tried first and review
   found it matching `review_rounds: 4` inside a folded block scalar at
   `sdd/traces/bk-338-review-roster.yml:421`, which a trace with no top-level
-  field would have reported as its value. Over the 324-trace corpus the legacy
-  and current anchors return the identical value in all 324, and only the
-  current one reads the block.
+  field would have reported as its value. Over the 325-trace corpus, 262 carry
+  a top-level `review_rounds` and the two anchors return the identical value on
+  every one of them; the current anchor reads 263, the extra being this item's
+  own trace, which carries the field inside `review:` where only the current
+  anchor reaches it.
   **The schema and the script are a drift gate, not a convention.** `review:` is
   `additionalProperties: false`, so a field the emitter adds without a schema
   property fails `check_traces.py`. It earned its keep immediately: the first
