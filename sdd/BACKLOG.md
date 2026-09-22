@@ -999,6 +999,17 @@ compliant the day before.
   incidental. A schema change, a pool exhaustion, a dropped connection or a
   permission error would each produce the same silence, on any backend sharing
   this walk.
+  **A second cause reaches the same silence and no error-handling change fixes
+  it.** BUG-281's third review round measured `move("a.txt", "folder/b.txt",
+  overwrite=True)` returning instead of raising `InvalidPath` on
+  `sqlite:///file::memory:?uri=true` — an anonymous in-memory database on
+  `QueuePool`, where the walk's nested checkout is a distinct connection onto a
+  distinct, *empty* database (SQL-BLOB-072). Nothing raises there: `_head_one`
+  answers `False` correctly, about the wrong database. The walk is the one path
+  that holds two checkouts at once, which is why it is where that row bites
+  first. Untouched by BUG-281 and out of its scope, but it bounds this item's
+  fix shapes: all three above narrow or report *errors*, and none of them would
+  make this instance raise.
   Fix shape is open and is a contract decision rather than a patch, which is why
   this is filed rather than fixed in BUG-281's PR. At least three are available
   and they differ in what they promise: narrow the caught set so a lock error

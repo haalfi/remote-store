@@ -54,9 +54,9 @@ surprising_ripples:
 # `git log --oneline origin/master..HEAD` minus the implementation and filing
 # commits, counted including the commit carrying this line. That query returns
 # 63ff4d7 (implementation), 0fb07e7 (round 1), 8b5a076 (round 2), a4059ce
-# (filing BUG-292 and BK-382, not review-driven); the `fix:` commit this line
-# ships in is round 3.
-review_rounds: 3
+# (filing BUG-292 and BK-382, not review-driven), a66aa1b (round 3); the `fix:`
+# commit this line ships in is round 4.
+review_rounds: 4
 phases:
   - id: orient
     name: Orient on what actually holds the issue open
@@ -334,6 +334,42 @@ phases:
           worker now detach()es its connection so the enclosing close() closes it
           in the thread that opened it — verified in-thread ("Cannot operate on a
           closed database") with sys.unraisablehook empty afterwards.
+        outcome: ok
+
+  - id: fix4
+    name: Round 4 — the docstring erased the third case
+    steps:
+      - file: src/remote_store/backends/_sqlalchemy.py
+        section: "_maybe_check_no_file_ancestor (docstring), _engine_kwargs (docstring)"
+        read_type: gate
+        extract: >-
+          Round 2 amended this docstring to say "every in-memory SQLite URL uses
+          SingletonThreadPool" — false, and falsified by this PR's own
+          test_other_in_memory_spellings_keep_their_inferred_pool[uri-anonymous]
+          plus SQL-BLOB-072's own pooled row. A regression introduced by the
+          amendment: the prior wording said "the default in-memory SQLite URL"
+          and was right. The two-case split it created erased the third case,
+          and the reviewer flagged a live consequence as explicitly
+          unreproduced. Ran it: on sqlite:///file::memory:?uri=true the nested
+          checkout reaches a distinct, EMPTY database, so move onto a file
+          ancestor returns where every other in-memory spelling raises
+          InvalidPath. The gate is silently dead there. Pre-existing, since the
+          spelling is untouched; recorded in SQL-BLOB-072 and added to BUG-292,
+          whose three proposed fix shapes all narrow or report *errors* and so
+          none of them reaches an instance where nothing raises.
+        outcome: ok
+      - file: sdd/CONTENT-RULES.md
+        section: "Rule 3"
+        read_type: gate
+        extract: >-
+          Rule 3's out-of-scope line names sdd/ records, backlog items, commit
+          messages and .claude/skills/ — not docs-src/. So the measured figures
+          round 3 put into concurrency.md footnote 3 are a violation, in the
+          same PR that deleted three counts elsewhere citing Rules 2 and 4. Read
+          the rule rather than reasoning from the earlier deletions, which is
+          what made the asymmetry visible: the spec is the figures' home and the
+          published page gets the category plus a link. The measurement itself
+          was right to run; putting it on a narrative page was not.
         outcome: ok
 
   - id: verify

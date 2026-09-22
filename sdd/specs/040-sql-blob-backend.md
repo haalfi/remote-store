@@ -415,7 +415,7 @@ posture is the pair, and for in-memory SQLite it is one of the cases below:
 
 | Database the URL names | Pool | Posture |
 |---|---|---|
-| Anonymous (`:memory:`, `sqlite://`) | per-thread | `single_connection` — one database per thread |
+| Anonymous (`:memory:`, `sqlite://`, `mode=memory` without `cache=shared`) | per-thread | `single_connection` — one database per thread |
 | Anonymous (`file::memory:?uri=true`) | pooled | **not safe to share** — one database per *connection* |
 | Shared cache (`mode=memory&cache=shared`) | per-thread | one database, **concurrent readers only** |
 
@@ -425,6 +425,13 @@ different connection. SQL-BLOB-071 keeps `mode=memory` out of it by naming the
 per-thread pool; it does not reach `file::memory:?uri=true`, whose `QueuePool` is
 SQLAlchemy's own default — confine such an instance to one connection, or name a
 shared cache.
+
+The file-ancestor pre-check (SQL-BLOB-031) is where that row bites first, because
+it is the one path holding two checkouts at once: the nested `connect()` reaches
+a second, empty database, finds no ancestors, and the gate passes silently.
+Measured — `move` onto a file ancestor returns on `file::memory:?uri=true` where
+every other in-memory spelling raises `InvalidPath`. BUG-292 carries the gate's
+silence; this row is why it has two distinct causes rather than one.
 
 **No in-memory spelling is `thread_safe` for writers, the shared cache
 included.** A shared cache gives every connection one database, which makes
