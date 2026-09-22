@@ -40,6 +40,7 @@ _REPO_ROOT = Path(__file__).resolve().parents[2]
 _SCRIPT = _REPO_ROOT / "scripts" / "ship_report.py"
 _CLASSIFIER = _REPO_ROOT / "sdd" / "rfcs" / "rfc-0015-findings.py"
 _ROUNDS = _REPO_ROOT / "sdd" / "rfcs" / "rfc-0015-rounds.py"
+_SCHEMA = _REPO_ROOT / "sdd" / "traces" / "_schema.yml"
 
 
 def _schema_gaps(node: dict, path: str) -> list[str]:
@@ -739,6 +740,27 @@ class TestTraceBlock:
         block = _mod.trace_block(data)
         assert "Do not hand-edit" in block
         assert yaml.safe_load(block)["review"]["derivation"] == "hatch run ship-report 1025 --trace-block-only"
+
+    def test_both_homes_state_the_paste_commit_offset(self) -> None:
+        """The one hand-transcription failure D4 does *not* remove, stated twice.
+
+        `review_driven_commits` reads `<base>..<head>` before the commit that
+        pastes the block exists, so re-running `derivation` afterwards returns
+        one more. The schema described that as a failure D4 removes until the
+        closing gate read the two files against each other. It is a bound, so
+        DRIFT-RULES Rule 7 puts it in the script; it is also what a trace reader
+        needs, so it is in the schema — and a fix that drops either half leaves
+        the other claiming a precision the pair does not have.
+        """
+        import yaml
+
+        script = _SCRIPT.read_text(encoding="utf-8")
+        assert "The count excludes the commit that carries it." in script
+
+        schema = yaml.safe_load(_SCHEMA.read_text(encoding="utf-8"))
+        review = schema["properties"]["review"]["properties"]
+        assert "Excludes the commit that pastes this" in review["review_rounds"]["description"]
+        assert "returns `review_rounds + 1`" in review["derivation"]["description"]
 
 
 class TestStep5Report:

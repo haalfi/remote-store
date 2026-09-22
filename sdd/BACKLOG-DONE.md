@@ -274,7 +274,7 @@ if evidence changes; these are retired.
   `sdd/specs/009-sftp-backend.md` ×1, `tests/backends/sftp/test_config.py` ×1 —
   against the RFC's "14 lines in five files", which was pinned at `2a1bbfe` and
   stale in the file count. Each site kept its durable claim and lost the clause
-  whose subject was an earlier draft of the text. 561 files scan clean.
+  whose subject was an earlier draft of the text. 562 files scan clean.
   **The check's own construction measured its bound, and the residue is not
   small.** Reading the flagged files by hand turned up retrospectives the phrase
   set cannot reach, and a later review round found more again in
@@ -289,9 +289,11 @@ if evidence changes; these are retired.
   is recorded**, because each count written during this work was an
   under-derivation within one round. The phrase set stays as RFC-0015
   § References pins it, so the figure the RFC states stays comparable; widening
-  it is a judgement over 23 candidate hits (six patterns over the 563-file
-  surface), many of which are content rather than retrospective under D1's own
-  boundary, and is not this slice's call.
+  it is a judgement over 23 candidate hits (six patterns over the 563 files the
+  surface globs enumerate — one more than the 562 above, which is the scanned
+  count and excludes the gate's own exempt guard), many of which are content
+  rather than retrospective under D1's own boundary, and is not this slice's
+  call.
   **A ripple the ripple-check table did not anticipate.** Moving `review_rounds`
   into the `review:` block indents it, and `rfc-0015-rounds.py` read it with a
   line-start anchor — so every trace authored from here on would have dropped out
@@ -314,8 +316,8 @@ if evidence changes; these are retired.
   gitignored `tmp/ship-report-<PR>.md`, a brief quotes it, and the durable copy
   is the `review:` block at the close. **Still held, deliberately**, and
   BK-382's: D3's cap lift, D5's stop-rule wiring, D6's deferred half.
-  Guards: **168** collected across the three scripts — ship_report 77,
-  check_no_retrospective 46, check_backlog_ids_vs_base 45 — from
+  Guards: **178** collected across the three scripts — ship_report 79,
+  check_no_retrospective 46, check_backlog_ids_vs_base 53 — from
   `hatch run pytest tests/scripts/test_check_no_retrospective.py
   tests/scripts/test_check_backlog_ids_vs_base.py tests/scripts/test_ship_report.py
   --collect-only`.

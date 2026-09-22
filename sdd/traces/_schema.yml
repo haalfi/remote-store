@@ -223,11 +223,19 @@ properties:
       What stood here before was a rule for hand-counting: name the
       commits, or better name the query, in a comment above the field.
       It failed in four measured ways on one branch (PR #994) — a
-      transcribed list cannot include the commit that carries it, goes
-      stale on the next push, and is orphaned by a rebase into hashes that
-      still resolve as objects while matching nothing the stated query
-      returns. A hand-written figure about the loop is what D4 removes, so
-      the remedy is no longer a better convention for writing one.
+      transcribed list goes stale on the next push, and is orphaned by a
+      rebase into hashes that still resolve as objects while matching
+      nothing the stated query returns. A hand-written figure about the
+      loop is what D4 removes, so the remedy is no longer a better
+      convention for writing one.
+
+      **One member of that class survives, by construction.** A
+      transcribed list cannot include the commit that carries it, and
+      neither can a derived one: the script reads ``<base>..<head>`` before
+      the paste commit exists, so re-running the stated derivation
+      afterwards returns one more. The offset is fixed and stated in
+      ``scripts/ship_report.py``'s Bounds; what D4 removes is the drift,
+      not the offset. The block measures the loop up to the close.
 
       Where a deterministic count of a *different* thing is wanted —
       formal review-submission events rather than fix commits — the
@@ -277,7 +285,10 @@ properties:
       derivation:
         type: string
         minLength: 1
-        description: The command that produced this block, re-runnable as written.
+        description: >-
+          The command that produced this block, re-runnable as written. A
+          re-run after the paste commit lands returns `review_rounds + 1`;
+          see that field and `scripts/ship_report.py`'s Bounds.
       review_rounds:
         type: integer
         minimum: 0
@@ -288,7 +299,9 @@ properties:
           `authored < first_review_ts`, so the tie belongs to the loop on
           both sides and the two cannot disagree about when the loop began.
           Author dates are the discriminator because they survive a rebase;
-          commit identity does not.
+          commit identity does not. **Excludes the commit that pastes this
+          block**, which does not exist when the script reads the range, so
+          a re-run afterwards returns one more.
       submissions:
         type: integer
         minimum: 0

@@ -96,6 +96,15 @@ Bounds (DRIFT-RULES Rule 7)
   two measure different things and this script prints both, because the trace
   schema's field means the first and a reader reaching for "how many reviews"
   wants the second.
+* **The count excludes the commit that carries it.** ``review_driven_commits``
+  reads ``<base>..<head>`` at the moment of the run, and the commit that pastes
+  this block into the trace does not exist yet — so re-running the stated
+  ``derivation`` after that commit lands returns one more. This is the one
+  member of the hand-transcription failure class D4 does not remove: a script
+  cannot count a commit whose content is its own output. What D4 does remove is
+  the *drift* — the figure is re-derivable on demand and its offset is fixed and
+  stated here, where a hand-written list went wrong by an unknown amount. Treat
+  the block as measuring the loop up to the close, which is what it is for.
 
 Run with::
 

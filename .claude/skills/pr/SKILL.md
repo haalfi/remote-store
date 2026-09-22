@@ -21,12 +21,15 @@ Fall back to `gh` CLI for GraphQL-only flows like review-thread resolution.
 
 2. **Validation gates:** Run the shared [PR validation
    gates](../../../sdd/CLAUDE-REFERENCE.md#pr-validation-gates) — the mechanical
-   gate, local-machine reference, and qualitative TESTING/CONTENT review. Resolve
-   any stop condition before drafting the PR.
+   gate, the backlog ID-set gate, local-machine reference, and qualitative
+   TESTING/CONTENT review. Resolve any stop condition before drafting the PR.
 
-3. **Trace gate:** Extract backlog IDs from `git log origin/<BASE>..HEAD --format=%s`
-   with `python scripts/check_backlog_ids_vs_base.py --print-subject-ids`, which
-   applies that file's `subject_ids()` to each subject. **Do not re-spell the
+3. **Trace gate:** Extract the backlog IDs this branch's commits claim with
+   `python scripts/check_backlog_ids_vs_base.py --print-subject-ids --base origin/<BASE>`,
+   which applies that file's `subject_ids()` to each subject of
+   `git log origin/<BASE>..HEAD`. **Pass `--base` even when `<BASE>` is `master`**:
+   it defaults to `origin/master`, so on any other base an unflagged run reads the
+   wrong commit range. **Do not re-spell the
    grammar here.** A `^([A-Z]+-\d+[a-z]?)[:\s]` pattern stood in this step and
    under-enforced silently: it reads only a leading token and requires `:` or
    whitespace straight after the number, so a co-shipped subject like

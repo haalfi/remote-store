@@ -125,7 +125,7 @@ def subject_ids(subject: str) -> set[str]:
 
     **A subject may claim several**, and this repo's convention spells that as a
     comma-separated run before the colon: ``BK-375, BK-373, BK-377: derive the
-    published support windows``. Four of the forty commits before this one used
+    published support windows``. Three of the forty commits before this one used
     that shape, so reading only the leading token made every co-shipped branch
     report its legitimate closures as POACHED.
 

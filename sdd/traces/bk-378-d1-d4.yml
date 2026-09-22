@@ -136,7 +136,8 @@ phases:
         extract: >-
           Written first and run before any cleanup, per CLAUDE.md principle 6:
           red on 14 lines in 4 files at `e109686`, matching the figure derived
-          while planning. Green at 561 files scanned after the cleanup
+          while planning. Green at 561 files scanned after the cleanup — the
+          surface as it stood at that commit; later guards grew it
         outcome: ok
       - file: sdd/specs/009-sftp-backend.md
         section: "the posix_rename fallback paragraph"

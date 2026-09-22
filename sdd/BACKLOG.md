@@ -2981,11 +2981,20 @@ the commit that writes it lands, so cite the generator instead.
   measuring member cannot run `ship-report`, because it is not on `/rvw-pr`'s
   by-name allowlist and it reads comment bodies, which that skill's carve-out
   excludes. Independent re-derivation needs a mode that reads no feedback.
+  Third, **the figures D4 does not cover still went stale inside BK-378's own
+  loop**: the guard count and the scanned-surface count are about the work rather
+  than about the review, so `ship-report` does not emit them, and both were wrong
+  at the closing gate because a fix pass moved them after they were last derived.
+  D4 bounds the review block alone; the rest of a trace and a register entry stays
+  hand-derived, and re-deriving at the close is a convention nothing enforces.
+  Whether that gap is worth a gate is this item's to decide — it is the same
+  failure shape the RFC measured, one surface over.
   **The sample is the next three deliveries**, whichever they are. `BK-380`
   (Python 3.10's security-fix end, dated 2026-10-04) is next in line and could be
   the first of them.
   **Exit criteria:** RFC-0015 accepted or rejected with its open questions
-  answered — 1, 3, 4 and 6 remain; 5 was answered by BK-378 — and, if accepted,
+  answered — 1, 3, 4 and 6 remain; 5 was answered by BK-378; 2 is BK-353's line
+  of work and the RFC already declares it out of scope — and, if accepted,
   an ADR amending **ADR-0033/0034/0035/0037**, 0035 because D3 widens the
   one-seat trade in its "Every panel carries one measuring member" Decision
   bullet, the floor unchanged.
