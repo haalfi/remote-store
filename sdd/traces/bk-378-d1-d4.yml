@@ -296,10 +296,10 @@ phases:
 # should read this PR as 5 rounds / 54 findings and count the 13 as
 # loop-introduced-detectable-only-at-the-close.
 review:
-  # Derived by `hatch run ship-report 1026 --trace-block-only` at head bf19691.
+  # Derived by `hatch run ship-report 1026 --trace-block-only` at head 815b345.
   # Do not hand-edit: RFC-0015 D4 makes this script the only producer.
   derivation: "hatch run ship-report 1026 --trace-block-only"
-  review_rounds: 7
+  review_rounds: 9
   submissions: 4
   findings: 41
   by_round:
@@ -365,18 +365,22 @@ review:
     - "tests/backends/sftp/test_config.py"
     - "tests/scripts/test_gen_gate_inventory.py"
   review_driven_commits:
-    - sha: "75bcf06"
+    - sha: "2a174de"
       subject: "BK-378: Address PR #1026 round 1"
-    - sha: "f0b9893"
+    - sha: "c4893b3"
       subject: "BK-378: Address PR #1026 round 2"
-    - sha: "4652996"
+    - sha: "6fb788b"
       subject: "BK-378: Sweep round 2's fix into RFC-0015 D6"
-    - sha: "af9da11"
+    - sha: "be65f2e"
       subject: "BK-378: Address PR #1026 round 3"
-    - sha: "0ac38b5"
+    - sha: "b3b44ff"
       subject: "BK-378: Address PR #1026 round 4"
-    - sha: "ff324fe"
+    - sha: "3e3914a"
       subject: "BK-378: Address PR #1026 round 5 (closing exit gates)"
-    - sha: "bf19691"
+    - sha: "07cf017"
       subject: "BK-378: Re-derive the guard count after round 5's own fix pass"
+    - sha: "ea6291a"
+      subject: "BK-378: Close the loop \u2014 paste the derived review block into the trace"
+    - sha: "815b345"
+      subject: "BK-378: Re-derive the trace-corpus figure after the rebase onto master"
   ci: {verdict: GREEN, failed: 0, pending: 0}
