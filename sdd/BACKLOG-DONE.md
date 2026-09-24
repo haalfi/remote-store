@@ -318,7 +318,7 @@ if evidence changes; these are retired.
   gitignored `tmp/ship-report-<PR>.md`, a brief quotes it, and the durable copy
   is the `review:` block at the close. **Still held, deliberately**, and
   BK-383's: D3's cap lift, D5's stop-rule wiring, D6's deferred half.
-  Guards: **179** collected across the three scripts — ship_report 80,
+  Guards: **182** collected across the three scripts — ship_report 83,
   check_no_retrospective 46, check_backlog_ids_vs_base 53 — from
   `hatch run pytest tests/scripts/test_check_no_retrospective.py
   tests/scripts/test_check_backlog_ids_vs_base.py tests/scripts/test_ship_report.py

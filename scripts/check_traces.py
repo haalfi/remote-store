@@ -77,8 +77,8 @@ Drift-gate::
 Drift-gate::
 
     kind:       rule
-    rule: no trace under sdd/traces/, and not the schema itself, repeats a
-        mapping key at any depth
+    rule: no file this gate parses repeats a mapping key at any depth --- every
+        trace under sdd/traces/ and sdd/traces/_schema.yml itself
     domain:     process
 """
 

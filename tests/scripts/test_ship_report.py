@@ -478,8 +478,15 @@ class TestTraceBlock:
         import yaml
 
         block = yaml.safe_load(_mod.trace_block(data))["review"]
-        assert "squash_sha" not in block
-        assert "merge_commit_sha" not in block
+        # Keyed on the schema's declared property set, not on a list of names a
+        # new spelling would slip past: `additionalProperties: false` is what
+        # actually enforces this, so the guard asserts against the same set.
+        schema = yaml.safe_load(_SCHEMA.read_text(encoding="utf-8"))
+        declared = set(schema["properties"]["review"]["properties"])
+        assert set(block) == declared, "the emitter and the schema must agree on the whole field set"
+        assert not [name for name in declared if "sha" in name.lower()], (
+            "no field may name a commit hash the block cannot know at paste time"
+        )
 
     def test_the_anchor_ignores_prose_inside_a_folded_scalar(self, data: dict) -> None:
         """The defect a free `[ \\t]*` indent introduced, and the reason it is bounded.

@@ -579,14 +579,19 @@ round.
 
 **What deriving buys, and what it does not.** It buys a list that is cheap to
 regenerate and never silently wrong in *content*. It does not buy SHAs that
-resolve: `review_driven_commits` names commits on the PR branch, this repo
-squash-merges (`git log --format='%h parents=%p %s' -6 origin/master` is
-single-parent throughout, every subject carrying a `(#NNNN)`), and so **every
-trace shipped under D4 arrives on master carrying SHAs that do not resolve** —
-by construction, not by accident. Measured on the first such trace: `git
-cat-file -e <sha>^{commit}` over `sdd/traces/bk-378-d1-d4.yml`'s nine SHAs
-finds 0 of 9 present in a fresh clone, absent as objects rather than merely
-unreachable. The orphaning is a property of the merge convention, not of who
+resolve: `review_driven_commits` names commits on the PR branch, and this repo
+squash-merges in practice — `git log --format='%h %p' origin/master` returns 50
+commits, 49 single-parent and the 50th the root, so it carries no merge commit,
+and all 50 subjects end in `(#NNNN)`. So **every trace shipped under D4 arrives
+on master naming commits that are not on it**. Measured on the first such
+trace: of `sdd/traces/bk-378-d1-d4.yml`'s nine SHAs, `git merge-base
+--is-ancestor <sha> origin/master` succeeds for 0 of 9. Reachability is the
+test that reproduces; `git cat-file -e` reports whether the local clone has
+fetched the PR's refs, not whether the commit reached master. It is a
+convention rather than a setting: `allow_merge_commit` and
+`allow_rebase_merge` are both enabled, so what makes this true is how the repo
+is merged, and a change there is what would reverse it.
+The orphaning is a property of the merge convention, not of who
 wrote the list, so a derived list inherits it whole: deriving is not the
 remedy for it and nothing signals that a regeneration is owed. The durable
 handle is the PR number, which the block emits as `pr` beside the SHAs, and

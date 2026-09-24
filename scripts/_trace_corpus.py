@@ -90,6 +90,17 @@ class StrictTraceLoader(yaml.SafeLoader):
     """
 
     def construct_mapping(self, node: Any, deep: bool = False) -> dict[Any, Any]:
+        # Flatten first, for the same reason `SafeConstructor.construct_mapping`
+        # does it first: a merge key (`<<: *anchor`) is not a duplicate, it is an
+        # instruction to splice. Scanning `node.value` before flattening sees the
+        # literal `<<` and refuses a document `yaml.safe_load` accepts — measured,
+        # a two-key merge document parsed under `safe_load` and raised here, with
+        # an error naming `tag:yaml.org,2002:merge` rather than anything a reader
+        # could act on. Flattening is idempotent, so super()'s own call is a
+        # no-op. After it, a key the merge spliced in that the mapping also
+        # states literally is resolved by YAML's merge semantics, not a
+        # duplicate, and is correctly not reported.
+        self.flatten_mapping(node)
         seen: set[Any] = set()
         for key_node, _ in node.value:
             key = self.construct_object(key_node, deep=deep)

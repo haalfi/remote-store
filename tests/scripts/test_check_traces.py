@@ -16,6 +16,11 @@ from pathlib import Path
 import pytest
 
 _SCRIPT = Path(__file__).resolve().parents[2] / "scripts" / "check_traces.py"
+_SCRIPTS_DIR = _SCRIPT.parent
+if str(_SCRIPTS_DIR) not in sys.path:
+    sys.path.insert(0, str(_SCRIPTS_DIR))
+
+import _trace_corpus  # noqa: E402  — the shared loader both consumers use
 
 
 def _load():
@@ -87,105 +92,6 @@ class TestValidation:
         violations = _mod.collect_violations(schema_path=schema, traces_dir=traces)
         assert len(violations) == 1
         assert "title" in violations[0].message
-
-
-class TestDuplicateKeys:
-    """A repeated mapping key is a violation, not a silent last-wins merge.
-
-    ``yaml.safe_load`` resolves a duplicate key to the last occurrence and says
-    nothing, so a trace carrying one validated while half its content was
-    discarded. Measured on the live corpus before this gate existed:
-    ``BK-221-test-pbt-write-result-s3-azure-per-backend.yml`` carried
-    ``surprising_ripples`` twice and the gate reported the corpus clean.
-
-    The reachable authoring path is RFC-0015 D4's paste-the-block workflow —
-    pasting the ``review:`` block a second time instead of replacing it yields
-    two top-level ``review:`` keys — but the defect is not specific to it, so
-    neither is the check.
-    """
-
-    def test_duplicate_top_level_key_is_reported(self, tmp_path):
-        schema = _write_schema(tmp_path)
-        traces = tmp_path / "traces"
-        _write_trace(traces, "dup.yml", 'id: "ID-1"\ntitle: "first"\ntitle: "second"\n')
-        violations = _mod.collect_violations(schema_path=schema, traces_dir=traces)
-        assert len(violations) == 1
-        assert violations[0].path == "(parse)"
-        assert "title" in violations[0].message
-
-    def test_duplicate_nested_key_is_reported(self, tmp_path):
-        """Nested, not only top-level: last-wins discards content at any depth."""
-        schema = tmp_path / "_schema.yml"
-        schema.write_text(
-            textwrap.dedent(
-                """
-                $schema: "https://json-schema.org/draft/2020-12/schema"
-                type: object
-                properties:
-                  outer:
-                    type: object
-                """
-            ),
-            encoding="utf-8",
-        )
-        traces = tmp_path / "traces"
-        _write_trace(traces, "dup.yml", "outer:\n  a: 1\n  a: 2\n")
-        violations = _mod.collect_violations(schema_path=schema, traces_dir=traces)
-        assert len(violations) == 1
-        assert violations[0].path == "(parse)"
-
-    def test_an_unhashable_key_is_reported_not_raised(self, tmp_path):
-        """A complex key must not escape as `TypeError`.
-
-        PyYAML's own `construct_mapping` checks `isinstance(key, Hashable)`
-        before using the key and raises `ConstructorError` when it is not.
-        A duplicate-detector that tests membership first does the unhashable
-        lookup itself, and `TypeError` is not a `yaml.YAMLError` — so it
-        escapes the `except` arm both consumers report `(parse)` violations
-        from, and the gate aborts with a traceback instead. Measured before the
-        guard: `load_trace('? [a, b]\\n: value\\n')` raised `TypeError`.
-        """
-        schema = _write_schema(tmp_path)
-        traces = tmp_path / "traces"
-        _write_trace(traces, "complex.yml", "? [a, b]\n: value\n")
-        violations = _mod.collect_violations(schema_path=schema, traces_dir=traces)
-        assert violations, "an unhashable key must be reported, not raised"
-        assert violations[0].path == "(parse)"
-
-    def test_a_duplicate_key_in_the_schema_is_reported(self, tmp_path):
-        """The authority file is inside the guard, not outside it.
-
-        `_schema.yml` is the one YAML whose duplicate key disarms the gate for
-        the *whole* corpus: two `required:` keys under `properties.review`
-        leave a well-formed schema that `check_schema` passes, and every trace
-        then validates against constraints nobody wrote. Reported rather than
-        raised, symmetric with the malformed-schema path beside it.
-        """
-        schema = tmp_path / "_schema.yml"
-        schema.write_text(
-            textwrap.dedent(
-                """
-                $schema: "https://json-schema.org/draft/2020-12/schema"
-                type: object
-                required: [id]
-                required: [title]
-                """
-            ),
-            encoding="utf-8",
-        )
-        traces = tmp_path / "traces"
-        _write_trace(traces, "ok.yml", 'id: "ID-1"\n')
-        violations = _mod.collect_violations(schema_path=schema, traces_dir=traces)
-        assert len(violations) == 1
-        assert violations[0].path == "(schema)"
-        assert "required" in violations[0].message
-
-    def test_distinct_keys_still_parse(self, tmp_path):
-        """The guard must not fire on a mapping that merely repeats a *value*."""
-        schema = _write_schema(tmp_path)
-        traces = tmp_path / "traces"
-        _write_trace(traces, "ok.yml", 'id: "ID-1"\ntitle: "ID-1"\n')
-        assert _mod.collect_violations(schema_path=schema, traces_dir=traces) == []
 
     def test_additional_property_is_reported(self, tmp_path):
         # The schema's additionalProperties:false is the constraint that
@@ -288,6 +194,190 @@ class TestDuplicateKeys:
         assert len(violations) == 1
         assert "examples[0]" in violations[0].source
         assert "extra" in violations[0].message
+
+
+class TestDuplicateKeys:
+    """A repeated mapping key is a violation, not a silent last-wins merge.
+
+    ``yaml.safe_load`` resolves a duplicate key to the last occurrence and says
+    nothing, so a trace carrying one validated while half its content was
+    discarded. Measured on the live corpus before this gate existed:
+    ``BK-221-test-pbt-write-result-s3-azure-per-backend.yml`` carried
+    ``surprising_ripples`` twice and the gate reported the corpus clean.
+
+    The reachable authoring path is RFC-0015 D4's paste-the-block workflow —
+    pasting the ``review:`` block a second time instead of replacing it yields
+    two top-level ``review:`` keys — but the defect is not specific to it, so
+    neither is the check.
+    """
+
+    def test_duplicate_top_level_key_is_reported(self, tmp_path):
+        schema = _write_schema(tmp_path)
+        traces = tmp_path / "traces"
+        _write_trace(traces, "dup.yml", 'id: "ID-1"\ntitle: "first"\ntitle: "second"\n')
+        violations = _mod.collect_violations(schema_path=schema, traces_dir=traces)
+        assert len(violations) == 1
+        assert violations[0].path == "(parse)"
+        assert "title" in violations[0].message
+
+    def test_duplicate_nested_key_is_reported(self, tmp_path):
+        """Nested, not only top-level: last-wins discards content at any depth."""
+        schema = tmp_path / "_schema.yml"
+        schema.write_text(
+            textwrap.dedent(
+                """
+                $schema: "https://json-schema.org/draft/2020-12/schema"
+                type: object
+                properties:
+                  outer:
+                    type: object
+                """
+            ),
+            encoding="utf-8",
+        )
+        traces = tmp_path / "traces"
+        _write_trace(traces, "dup.yml", "outer:\n  a: 1\n  a: 2\n")
+        violations = _mod.collect_violations(schema_path=schema, traces_dir=traces)
+        assert len(violations) == 1
+        assert violations[0].path == "(parse)"
+
+    def test_an_unhashable_key_is_reported_not_raised(self, tmp_path):
+        """A complex key must not escape as `TypeError`.
+
+        PyYAML's own `construct_mapping` checks `isinstance(key, Hashable)`
+        before using the key and raises `ConstructorError` when it is not.
+        A duplicate-detector that tests membership first does the unhashable
+        lookup itself, and `TypeError` is not a `yaml.YAMLError` — so it
+        escapes the `except` arm both consumers report `(parse)` violations
+        from, and the gate aborts with a traceback instead. Measured before the
+        guard: `load_trace('? [a, b]\\n: value\\n')` raised `TypeError`.
+        """
+        schema = _write_schema(tmp_path)
+        traces = tmp_path / "traces"
+        _write_trace(traces, "complex.yml", "? [a, b]\n: value\n")
+        violations = _mod.collect_violations(schema_path=schema, traces_dir=traces)
+        assert violations, "an unhashable key must be reported, not raised"
+        assert violations[0].path == "(parse)"
+
+    def test_a_duplicate_key_in_the_schema_is_reported(self, tmp_path):
+        """The authority file is inside the guard, not outside it.
+
+        `_schema.yml` is the one YAML whose duplicate key disarms the gate for
+        the *whole* corpus: two `required:` keys under `properties.review`
+        leave a well-formed schema that `check_schema` passes, and every trace
+        then validates against constraints nobody wrote. Reported rather than
+        raised, symmetric with the malformed-schema path beside it.
+        """
+        schema = tmp_path / "_schema.yml"
+        schema.write_text(
+            textwrap.dedent(
+                """
+                $schema: "https://json-schema.org/draft/2020-12/schema"
+                type: object
+                required: [id]
+                required: [title]
+                """
+            ),
+            encoding="utf-8",
+        )
+        traces = tmp_path / "traces"
+        _write_trace(traces, "ok.yml", 'id: "ID-1"\n')
+        violations = _mod.collect_violations(schema_path=schema, traces_dir=traces)
+        assert len(violations) == 1
+        assert violations[0].path == "(schema)"
+        assert "required" in violations[0].message
+
+    def test_distinct_keys_still_parse(self, tmp_path):
+        """The guard must not fire on a mapping that merely repeats a *value*."""
+        schema = _write_schema(tmp_path)
+        traces = tmp_path / "traces"
+        _write_trace(traces, "ok.yml", 'id: "ID-1"\ntitle: "ID-1"\n')
+        assert _mod.collect_violations(schema_path=schema, traces_dir=traces) == []
+
+    @pytest.mark.parametrize("kind", ["missing", "undecodable"])
+    def test_an_unreadable_schema_is_a_violation_not_a_traceback(self, tmp_path, kind):
+        """The `OSError` and `UnicodeDecodeError` members of the new arm.
+
+        `load_schema` reads and parses, so its failures are not only
+        `YAMLError`: the path may not exist, and a bad rebase can leave the
+        file undecodable. Untested, the arm could be narrowed to
+        `except yaml.YAMLError` and every other test here would still pass —
+        while the gate aborted with a traceback on the two cases the trace loop
+        already handles for the same reasons.
+        """
+        schema = tmp_path / "_schema.yml"
+        if kind == "undecodable":
+            schema.write_bytes(b"\xff\xfe$schema: x\n")
+        traces = tmp_path / "traces"
+        _write_trace(traces, "ok.yml", 'id: "ID-1"\n')
+
+        violations = _mod.collect_violations(schema_path=schema, traces_dir=traces)
+        assert len(violations) == 1
+        assert violations[0].path == "(schema)"
+        assert violations[0].source.endswith("_schema.yml"), "the failing artifact must be named (Rule 2)"
+
+    def test_a_merge_key_is_not_a_duplicate(self, tmp_path):
+        """`<<` splices; it is not a repeated key, and must parse as `safe_load` does.
+
+        The strict loader is a *restriction* of `SafeLoader` to documents with
+        no repeated key, so anything `yaml.safe_load` accepts and that has no
+        duplicate must still parse. Scanning `node.value` before
+        `flatten_mapping` breaks that: the literal `<<` is seen as an ordinary
+        key, and a document `safe_load` expands is refused with an error naming
+        `tag:yaml.org,2002:merge`. `SafeConstructor.construct_mapping` flattens
+        first for this reason, so this loader does too.
+        """
+        import yaml as _yaml
+
+        schema = tmp_path / "_schema.yml"
+        schema.write_text(
+            textwrap.dedent(
+                """
+                $schema: "https://json-schema.org/draft/2020-12/schema"
+                type: object
+                """
+            ),
+            encoding="utf-8",
+        )
+        traces = tmp_path / "traces"
+        body = "base: &b\n  a: 1\nderived:\n  <<: *b\n  c: 2\n"
+        _write_trace(traces, "merge.yml", body)
+
+        assert _mod.collect_violations(schema_path=schema, traces_dir=traces) == []
+        # And the parse agrees with the loader it restricts, rather than merely
+        # not failing: a merge that silently dropped `a` would also pass above.
+        assert _trace_corpus.load_trace(body) == _yaml.safe_load(body)
+
+
+class TestOneLoader:
+    """Both trace consumers parse through the same function, and it is pinned.
+
+    `_trace_corpus`'s docstring makes this the load-bearing claim: "A consumer
+    reaching for `yaml.safe_load` directly opts back out of it silently, which
+    is why there is one function rather than a documented convention." Nothing
+    enforced it — reverting `report_trace_outcomes.py` to `yaml.safe_load` left
+    its whole suite green, and ruff removed the orphaned import without
+    complaint, so the revert was clean.
+
+    Asserted over the source rather than by parsing a fixture, for the reason
+    `test_check_backlog_ids_vs_base.py`'s `TestReuse` gives: the defect is a
+    second spelling of one rule, and only reading the text catches it before
+    the two disagree.
+    """
+
+    def test_neither_consumer_calls_safe_load_directly(self) -> None:
+        for name in ("check_traces.py", "report_trace_outcomes.py"):
+            source = (_SCRIPTS_DIR / name).read_text(encoding="utf-8")
+            body = source.split('"""', 2)[-1]  # skip the module docstring, which may discuss it
+            assert "yaml.safe_load" not in body, (
+                f"{name} parses trace YAML outside _trace_corpus.load_trace, "
+                "which silently restores the last-wins duplicate-key behaviour"
+            )
+
+    def test_both_consumers_import_the_shared_loader(self) -> None:
+        for name in ("check_traces.py", "report_trace_outcomes.py"):
+            source = (_SCRIPTS_DIR / name).read_text(encoding="utf-8")
+            assert "load_trace" in source, f"{name} no longer imports the shared loader"
 
 
 class TestMain:

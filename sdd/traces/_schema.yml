@@ -377,8 +377,11 @@ properties:
           **These SHAs are a mid-loop handle and stop resolving at the merge.**
           They name commits on the PR branch, and this repo squash-merges, so
           none of them reaches `master` — measured on the first trace shipped
-          under D4, where `git cat-file -e <sha>^{commit}` found 0 of 9 present
-          in a fresh clone. That is true of a *derived* list exactly as it was
+          under D4, where `git merge-base --is-ancestor <sha> origin/master`
+          succeeded for 0 of its 9. Reachability rather than `git cat-file -e`,
+          which answers whether *this clone* has fetched the PR's refs and so
+          reports the clone instead of the repository. That is true of a
+          *derived* list exactly as it was
           of a hand-written one; what deriving removes is the content going
           silently stale, not the SHAs dying. The durable handle is `pr`.
 

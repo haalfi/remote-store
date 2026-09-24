@@ -97,14 +97,19 @@ Bounds (DRIFT-RULES Rule 7)
   schema's field means the first and a reader reaching for "how many reviews"
   wants the second.
 * **The squash merge retires every SHA in the list.** ``review_driven_commits``
-  names commits on the PR branch, and this repo squash-merges — ``git log
-  --format='%h parents=%p %s' -6 origin/master`` is single-parent throughout,
-  every subject carrying a ``(#NNNN)``. So the branch commits the block names
-  never land, and **every trace shipped under D4 arrives on master carrying
-  SHAs that do not resolve**, by construction rather than by accident. Measured
-  on the first such trace: ``git cat-file -e <sha>^{commit}`` over
-  ``sdd/traces/bk-378-d1-d4.yml``'s nine SHAs finds 0 of 9 present in a fresh
-  clone — absent as objects, which is stronger than unreachable.
+  names commits on the PR branch, and this repo squash-merges in practice:
+  ``git log --format='%h %p' origin/master`` returns 50 commits, 49 with exactly
+  one parent and the 50th the root, so there is no merge commit on it at all,
+  and every one of the 50 subjects ends in ``(#NNNN)``. It is a convention, not
+  a setting — the repository has ``allow_merge_commit`` and
+  ``allow_rebase_merge`` enabled, so a future merge could land differently.
+  Under it, the branch commits the block names never land. Measured on the
+  first trace shipped under D4: of ``sdd/traces/bk-378-d1-d4.yml``'s nine SHAs,
+  ``git merge-base --is-ancestor <sha> origin/master`` succeeds for **0 of 9**.
+  Reachability, not object presence, is the reproducible test:
+  ``git cat-file -e`` answers whether the *local* object store happens to hold
+  the commit, which it does in any clone that has fetched the PR's refs and
+  does not in a fresh one, so it reports the clone rather than the repository.
   What D4 buys is therefore a list that is **cheap to regenerate and never
   silently wrong in content**, not one whose SHAs a later reader can check out.
   The durable handle is ``pr``, emitted beside them: the squash commit is
