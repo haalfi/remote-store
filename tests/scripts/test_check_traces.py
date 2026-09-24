@@ -197,7 +197,15 @@ class TestValidation:
 
 
 class TestDuplicateKeys:
-    """A repeated mapping key is a violation, not a silent last-wins merge.
+    """How the gate parses: the strict loader, and the arm that reports its failures.
+
+    Covers the duplicate-key rule below and the read-and-parse failures of
+    `load_schema`, which share one `except` arm and arrived together. A guard
+    about *what the schema says* belongs in `TestValidation`; a guard about
+    whether a file parses at all, or about what happens when it cannot, belongs
+    here.
+
+    A repeated mapping key is a violation, not a silent last-wins merge.
 
     ``yaml.safe_load`` resolves a duplicate key to the last occurrence and says
     nothing, so a trace carrying one validated while half its content was
@@ -374,11 +382,12 @@ class TestDuplicateKeys:
 
         The strict loader is a *restriction* of `SafeLoader` to documents with
         no repeated key, so anything `yaml.safe_load` accepts and that has no
-        duplicate must still parse. Scanning `node.value` before
-        `flatten_mapping` breaks that: the literal `<<` is seen as an ordinary
-        key, and a document `safe_load` expands is refused with an error naming
-        `tag:yaml.org,2002:merge`. `SafeConstructor.construct_mapping` flattens
-        first for this reason, so this loader does too.
+        duplicate must still parse. A scan that treats the literal `<<` as an
+        ordinary key breaks that, refusing a document `safe_load` expands with
+        an error naming `tag:yaml.org,2002:merge`. The loader skips that tag
+        instead, and leaves the splice to `SafeConstructor`; see
+        `StrictTraceLoader.construct_mapping`, which states why that order and
+        not the reverse.
         """
         import yaml as _yaml
 
@@ -418,19 +427,38 @@ class TestOneLoader:
     the two disagree.
     """
 
-    def test_neither_consumer_calls_safe_load_directly(self) -> None:
-        for name in ("check_traces.py", "report_trace_outcomes.py"):
-            source = (_SCRIPTS_DIR / name).read_text(encoding="utf-8")
+    @staticmethod
+    def _consumers() -> dict[str, str]:
+        """Every script that reads the trace corpus, derived rather than listed.
+
+        A hard-coded pair is the DRIFT-RULES Rule 3 shape this suite removes
+        elsewhere: a third consumer added later would reach for
+        `yaml.safe_load`, restore last-wins silently, and leave the guard
+        written to prevent exactly that still green.
+        """
+        found = {}
+        for path in sorted(_SCRIPTS_DIR.glob("*.py")):
+            source = path.read_text(encoding="utf-8")
+            if "_trace_corpus" in source and path.name != "_trace_corpus.py":
+                found[path.name] = source
+        assert found, "no trace-corpus consumers found; the derivation is wrong"
+        return found
+
+    def test_no_consumer_calls_safe_load_directly(self) -> None:
+        for name, source in self._consumers().items():
             body = source.split('"""', 2)[-1]  # skip the module docstring, which may discuss it
             assert "yaml.safe_load" not in body, (
                 f"{name} parses trace YAML outside _trace_corpus.load_trace, "
                 "which silently restores the last-wins duplicate-key behaviour"
             )
 
-    def test_both_consumers_import_the_shared_loader(self) -> None:
-        for name in ("check_traces.py", "report_trace_outcomes.py"):
-            source = (_SCRIPTS_DIR / name).read_text(encoding="utf-8")
-            assert "load_trace" in source, f"{name} no longer imports the shared loader"
+    def test_every_consumer_imports_the_shared_loader(self) -> None:
+        # Asserted over the body, not the whole file: `check_traces.py`'s module
+        # docstring names `load_trace` in prose, so a substring search over the
+        # whole file passes with both the import and the call deleted.
+        for name, source in self._consumers().items():
+            body = source.split('"""', 2)[-1]
+            assert "load_trace" in body, f"{name} no longer uses the shared loader"
 
 
 class TestMain:

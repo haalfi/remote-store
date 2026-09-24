@@ -255,9 +255,13 @@ if evidence changes; these are retired.
   "No ID collisions." on a `master` carrying two open `BK-382` headers.
   `_duplicate_ids` is a sibling function rather than a widening, because
   `check_backlog_ids_vs_base.py` imports `_extract_ids` for set arithmetic and
-  a guard pins that import. **Bound**: it catches the collision only once both
-  branches have merged; preventing the mint needs a view of unmerged branches,
-  which stays ID-257's open question.
+  a guard pins that import. **Two bounds**, both stated in the module docstring
+  and both deliberate. It catches the collision only once both branches have
+  merged; preventing the mint needs a view of unmerged branches, which stays
+  ID-257's open question. And it reads the open side only: widening it to
+  `BACKLOG-DONE.md` is one line, was run, and fails on four pairs already in
+  the register from before the ID discipline, inside released sections. That
+  gap is `BK-385`, filed with those four as its evidence.
   **The gate found a second live collision on its first run** — `BUG-291`, on
   two distinct open items from #1021 and #1022, which nothing had reported.
   Both duplicates were renumbered by merge order, the later-merged item moving:
@@ -280,11 +284,15 @@ if evidence changes; these are retired.
   emits `pr`, the handle that survives, from which the squash commit resolves
   after the merge; the squash SHA is not emitted, because at paste time the PR
   is open and `merge_commit_sha` is then an ephemeral test-merge commit.
-  Guards: **18** added, across three files collecting 134 — from
-  `git diff origin/master...HEAD -- tests/ | rg -c '^[+]    def test_'` and
+  Guards: **19** net new functions, across three files collecting 136. Net new
+  is added `def test_` names minus removed ones over
+  `git diff origin/master...HEAD -- tests/`, because a `+`-line count cannot
+  tell a new function from a changed signature — it reads 20 here, one of which
+  is a rewritten `parametrize`. The collected total is
   `hatch run pytest tests/scripts/test_gen_backlogid.py
   tests/scripts/test_check_traces.py tests/scripts/test_ship_report.py
-  --collect-only`. `sdd/GATE-INVENTORY.md` went 48 → 50 mechanisms: both gates
+  --collect-only`, and it is not the sum of the two: that same rewrite folded a
+  nine-way `parametrize` into one function. `sdd/GATE-INVENTORY.md` went 48 → 50 mechanisms: both gates
   gained a single-artifact `rule` block beside their existing `pair`.
 
 - [x] **BK-378 — The `/ship` loop reviews its own record past round 2, and nothing separates the two**
@@ -365,7 +373,7 @@ if evidence changes; these are retired.
   gitignored `tmp/ship-report-<PR>.md`, a brief quotes it, and the durable copy
   is the `review:` block at the close. **Still held, deliberately**, and
   BK-384's: D3's cap lift, D5's stop-rule wiring, D6's deferred half.
-  Guards: **182** collected across the three scripts — ship_report 83,
+  Guards: **174** collected across the three scripts — ship_report 75,
   check_no_retrospective 46, check_backlog_ids_vs_base 53 — from
   `hatch run pytest tests/scripts/test_check_no_retrospective.py
   tests/scripts/test_check_backlog_ids_vs_base.py tests/scripts/test_ship_report.py

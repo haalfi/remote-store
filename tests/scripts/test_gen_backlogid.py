@@ -306,6 +306,50 @@ class TestCheck:
         assert "BK-382" in out
         assert "BK-174" in out
 
+    def test_a_duplicate_in_the_done_register_is_not_reported(self, tmp_path, monkeypatch, capsys):
+        """The stated bound, pinned so it cannot drift silently either way.
+
+        `BACKLOG-DONE.md` collapses the same way and the path is reachable, but
+        the register already carries four such pairs from before the ID
+        discipline, and renumbering inside released sections would falsify the
+        release record. Out of scope by decision, not by oversight — BK-385
+        carries it. A future widening has to delete this test, which is the
+        point: the bound is not something a reader has to infer.
+        """
+        duplicate_done = (
+            f"- [x] **BK-500 {_EM} One branch closed this**\n"
+            f"- [x] **BK-500 {_EM} Another branch closed something else**\n"
+        )
+        done, active, id_file = self._setup(
+            tmp_path, duplicate_done, _ACTIVE_BLOCK, {"BK": 500, "BUG": 0, "ID": 0, "AF": 0, "BL": 0}
+        )
+        monkeypatch.setattr(_mod, "BACKLOG_DONE", done)
+        monkeypatch.setattr(_mod, "BACKLOG", active)
+        monkeypatch.setattr(_mod, "ID_FILE", id_file)
+        monkeypatch.setattr(_mod, "ROOT", tmp_path)
+
+        assert _mod._check() == 0
+        assert "duplicate" not in capsys.readouterr().out
+
+    def test_one_id_open_in_one_file_and_done_in_the_other_is_not_a_duplicate(self, tmp_path, monkeypatch):
+        """That is the *collision* case, which has its own report and its own message.
+
+        The duplicate rule is within-file and within-status; conflating the two
+        would give one defect two names and send the author to the wrong remedy
+        (renumber a concurrent mint, versus close or reopen one item).
+        """
+        done_text = f"- [x] **BK-174 {_EM} Done item**\n"
+        active_text = f"- [ ] **BK-200 {_EM} Unrelated open item**\n"
+        done, active, id_file = self._setup(
+            tmp_path, done_text, active_text, {"BK": 174, "BUG": 0, "ID": 0, "AF": 0, "BL": 0}
+        )
+        monkeypatch.setattr(_mod, "BACKLOG_DONE", done)
+        monkeypatch.setattr(_mod, "BACKLOG", active)
+        monkeypatch.setattr(_mod, "ID_FILE", id_file)
+        monkeypatch.setattr(_mod, "ROOT", tmp_path)
+
+        assert _mod._check() == 0
+
     def test_suffix_variants_are_not_duplicates(self, tmp_path, monkeypatch):
         """`BK-139a` and `BK-139b` are two items, not one appearing twice.
 

@@ -643,11 +643,9 @@ class TestTraceBlock:
     def test_dropping_any_emitted_field_fails_the_schema(self, data: dict) -> None:
         """Every field the emitter writes, derived from the block rather than listed.
 
-        This was a hand-maintained list of nine names, and adding `pr` left it
-        covering nine of ten — a parallel enumeration of a set with an
-        authoritative home, going stale one commit after the home changed,
-        which is DRIFT-RULES Rule 3's shape and this PR's own subject. Taking
-        the fields from the emitted block means the next one cannot slip past.
+        The fields are taken from the emitted block rather than listed, so a
+        field added to the emitter cannot slip past — a parallel enumeration of
+        a set with an authoritative home is DRIFT-RULES Rule 3's shape.
         """
         import yaml
         from jsonschema.validators import validator_for

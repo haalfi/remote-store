@@ -245,6 +245,7 @@ def main(argv: list[str] | None = None) -> int:
     print(
         f"\ncheck_traces: {len(violations)} violation(s). Each line above names the file to fix: "
         "a `(parse)` or `(schema)` path is a malformed or duplicate-keyed file, "
+        "an `examples[N]` source is the schema's own example block, and "
         "anything else is a trace disagreeing with sdd/traces/_schema.yml.",
         file=sys.stderr,
     )

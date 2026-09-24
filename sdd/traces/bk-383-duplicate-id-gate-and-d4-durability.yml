@@ -1,12 +1,14 @@
 id: BK-383
-title: "Close the three dedupe-hides-a-duplicate gaps, and say what a derived commit list resolves to"
+title: "Close the two dedupe-hides-a-duplicate gaps, and say what a derived commit list resolves to"
 trigger: >-
   BK-378 merged as e5fb4a8 (PR #1026) while BUG-281 merged as 8e35697, and both
   branches had minted BK-382 from a master where 382 was free. Three gates
-  passed the resulting file. The same shape turned out to hold in two more
-  places: `yaml.safe_load` resolves a repeated trace key to the last silently,
-  and RFC-0015 D4's derived commit list attributes its orphaned SHAs to
-  hand-written lists when the cause is the repo's squash-merge convention. The
+  passed the resulting file. The same shape turned out to hold in one more
+  place: `yaml.safe_load` resolves a repeated trace key to the last silently.
+  Reading for it also turned up a different defect, folded in because the same
+  reading found it: RFC-0015 D4's derived commit list attributes its orphaned
+  SHAs to hand-written lists when the cause is the repo's squash-merge
+  convention. The
   user chose the within-file duplicate check over ID-257's remote-aware minting,
   the land-order convention for which item renumbers, and `pr` over a squash SHA
   the block cannot know at paste time.
@@ -17,7 +19,11 @@ source_items:
 audience:
   - contributor.tooling
   - contributor.process
-discovery_followups: []
+discovery_followups:
+  # Born while widening the duplicate check on a review finding: the done
+  # register carries four pre-existing pairs, so the widening was reverted and
+  # the gap filed with them as evidence.
+  - BK-385
 co_shipped_items: []
 expected_ripples:
   - sdd/backlogid.json
@@ -26,25 +32,34 @@ expected_ripples:
   - sdd/BACKLOG-DONE.md
   - sdd/rfcs/rfc-0015-ship-two-surfaces.md
   - sdd/traces/_schema.yml
+  # The one live trace carrying a `review:` block, so making `pr` required
+  # reaches it. Anticipated, and recorded in the Verify phase below.
+  - sdd/traces/bk-378-d1-d4.yml
   - .claude/skills/ship/SKILL.md
 surprising_ripples:
   # The ripple-check row for "New or changed cross-artifact check" anticipated
-  # the gate edits and the GATE-INVENTORY regeneration. Four it did not:
+  # the gate edits and the GATE-INVENTORY regeneration. These three it did not,
+  # one note per path, in the order the paths are listed.
   #
-  # 1. The new duplicate check found a SECOND live collision nobody had
-  #    reported — BUG-291, on two distinct open items from #1021 and #1022.
-  #    Fixing it was forced, not optional: a gate that red-lights master is not
-  #    shippable. Merge order, not PR number, decides which renumbers.
-  # 2. The strict loader failed an existing trace on its first run. BK-221's
-  #    carried `surprising_ripples` twice and had been validating with one
-  #    occurrence silently discarded — the defect, already costing data, three
-  #    years of corpus into the repo.
-  # 3. report_trace_outcomes.py had its own `yaml.safe_load`. Leaving it would
+  # 1. report_trace_outcomes.py had its own `yaml.safe_load`. Leaving it would
   #    have let the gate and the report disagree about what parses, which is the
   #    Rule 1 failure `_trace_corpus.py` exists to prevent.
-  # 4. ID-257's body asserted open-versus-open has no gate. True when written,
-  #    false once this shipped, so it had to move in the same commit.
-  - sdd/BACKLOG.md
+  # 2. The strict loader failed an existing trace on its first run: BK-221's
+  #    carried `surprising_ripples` twice and had been validating with one
+  #    occurrence silently discarded. Which occurrence survives is arbitrary —
+  #    here the informative one happened to win, so nothing was lost, but
+  #    nothing said so either.
+  # 3. The new duplicate check found a SECOND live collision nobody had
+  #    reported — BUG-291, on two distinct open items from #1021 and #1022 —
+  #    and this trace is where the renumber's other half landed. Fixing it was
+  #    forced, not optional: a gate that red-lights master is not shippable.
+  #    Merge order, not PR number, decides which item renumbers.
+  #
+  # `sdd/BACKLOG.md` is not listed: it is in `expected_ripples` above, and a
+  # path cannot be both anticipated and unanticipated. Two things landed there
+  # that the table did not predict — BUG-291's renumber and ID-257's body
+  # losing the half this builds — and both are recorded in note 3 and in the
+  # BK-383 register entry rather than by double-listing the file.
   - scripts/report_trace_outcomes.py
   - sdd/traces/BK-221-test-pbt-write-result-s3-azure-per-backend.yml
   - sdd/traces/bug-254-absent-container-root-row.yml

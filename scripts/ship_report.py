@@ -439,11 +439,11 @@ def trace_block(data: dict[str, Any]) -> str:
     lines = [
         "review:",
         f"  # Derived by `{command}` at head {data['head'][:7]}.",
-        "  # Do not hand-edit: RFC-0015 D4 makes this script the only producer.",
+        "  # Do not hand-edit, except a newly required field per sdd/traces/_schema.yml",
+        "  # section review: RFC-0015 D4 makes this script the only producer.",
         f"  derivation: {_q(command)}",
-        # First field with a value, because it is the only one that still
-        # resolves after the merge: every `sha` below names a branch commit the
-        # squash retires. See Bounds.
+        # The only field here that still resolves after the merge: every `sha`
+        # below names a branch commit the squash retires. See Bounds.
         f"  pr: {data['pr']}",
         f"  review_rounds: {len(data['review_driven_commits'])}",
         f"  submissions: {data['submissions']}",

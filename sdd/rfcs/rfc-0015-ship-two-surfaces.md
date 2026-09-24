@@ -3,10 +3,12 @@
 ## Status
 
 Draft. Tracked as **BK-384**; BK-378 built D1 and D4 and closed, and BK-379
-piloted the rest before them. Minted as BK-367 and re-homed twice: ID-182's
-branch minted BK-367 in parallel, then ID-018's minted BK-368 and closed it
-before this PR merged. Both are ID-257's scenario, and the second is recorded
-there.
+piloted the rest before them. Minted as BK-367 and re-homed four times, every
+one of them ID-257's scenario: ID-182's branch minted BK-367 in parallel, then
+ID-018's minted BK-368 and closed it; BK-378's split minted BK-382, which
+BUG-281's branch had minted too; and BK-383's split left the re-measurement
+here while the delivery kept BK-383. The second and third are recorded under
+ID-257.
 BK-379 piloted D2, D3's worktree half with the one-measurer cap left up, D5's
 posting half and D6's repeat-site half before the rest was built; what that
 pilot can and cannot decide is stated with the acceptance criterion
@@ -580,17 +582,12 @@ round.
 **What deriving buys, and what it does not.** It buys a list that is cheap to
 regenerate and never silently wrong in *content*. It does not buy SHAs that
 resolve: `review_driven_commits` names commits on the PR branch, and this repo
-squash-merges in practice — `git log --format='%h %p' origin/master` returns 50
-commits, 49 single-parent and the 50th the root, so it carries no merge commit,
-and all 50 subjects end in `(#NNNN)`. So **every trace shipped under D4 arrives
-on master naming commits that are not on it**. Measured on the first such
-trace: of `sdd/traces/bk-378-d1-d4.yml`'s nine SHAs, `git merge-base
---is-ancestor <sha> origin/master` succeeds for 0 of 9. Reachability is the
-test that reproduces; `git cat-file -e` reports whether the local clone has
-fetched the PR's refs, not whether the commit reached master. It is a
-convention rather than a setting: `allow_merge_commit` and
-`allow_rebase_merge` are both enabled, so what makes this true is how the repo
-is merged, and a change there is what would reverse it.
+squash-merges in practice, so **every trace shipped under D4 arrives on master
+naming commits that are not on it**. The measurement, the instrument it has to
+be taken with, and the caveat that a shallow clone answers a different question
+all live in one place — `scripts/ship_report.py`'s Bounds, beside the code that
+emits the list — and are not restated here, because this decision is about what
+the figure *means* rather than what it is.
 The orphaning is a property of the merge convention, not of who
 wrote the list, so a derived list inherits it whole: deriving is not the
 remedy for it and nothing signals that a regeneration is owed. The durable

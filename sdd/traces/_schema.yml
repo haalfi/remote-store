@@ -235,9 +235,10 @@ properties:
       they name commits on the PR branch and this repo squash-merges, so
       a derived list is orphaned on arrival exactly as a transcribed one
       is. See ``review_driven_commits`` and ``pr`` in the `review:` block
-      below; `pr` is the handle that survives. Both offsets are fixed and stated in
-      ``scripts/ship_report.py``'s Bounds; what D4 removes is the drift,
-      not the offsets. The block measures the loop up to the close.
+      below; `pr` is the handle that survives. Both are stated in
+      ``scripts/ship_report.py``'s Bounds, which is their one home; what D4
+      removes is the drift, not either of them. The block measures the loop up
+      to the close.
 
       Where a deterministic count of a *different* thing is wanted —
       formal review-submission events rather than fix commits — the
@@ -288,8 +289,11 @@ properties:
       is the one sanctioned hand-edit.** Re-running the script instead would
       re-measure the loop at today's head rather than at the close it
       recorded — `pr` was added to `bk-378-d1-d4.yml` this way, and a
-      regeneration would have moved its `review_rounds` from 9 to 11, which
-      is the paste-commit offset, not a correction. Copy the new field's
+      regeneration would have moved its `review_rounds` from 9 to 11
+      (measured: `hatch run ship-report 1026 --trace-block-only`). That is
+      not a correction. It is larger than the paste-commit offset because
+      two commits landed after the close, and counting them would report a
+      loop that is not the one the trace records. Copy the new field's
       value from the block the script emits now; leave every field the
       original run measured alone, and mark the retrofit in a comment.
     properties:

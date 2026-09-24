@@ -302,7 +302,8 @@ review:
   # `pr` retrofitted by hand under BK-383, which made it required. Copied from
   # the script's current output; every other field is the original run's. A
   # regeneration would have re-measured at today's head and moved
-  # `review_rounds` 9 -> 11 (the paste-commit offset), so it was not re-run.
+  # `review_rounds` 9 -> 11 — two commits landed after this loop closed, so a
+  # re-run would report a different loop, not a corrected one. Not re-run.
   pr: 1026
   review_rounds: 9
   submissions: 4

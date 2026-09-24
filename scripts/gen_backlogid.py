@@ -24,6 +24,17 @@ Check mode (--check):
     preventing it needs a mint-time view of unmerged branches, which stays
     ID-257's open question.
 
+    **Bound: the open side only.** `BACKLOG-DONE.md` collapses the same way, and
+    the path is reachable — two branches mint one ID and each *closes* its item
+    before merging, so neither is ever open and nothing here sees it. It is
+    deliberately not checked, because the register already carries four such
+    pairs from before the ID discipline (`BK-001`, `BUG-001`, `BUG-144`, and
+    `BK-167b`, whose second header is the sanctioned `(partial)` split shape).
+    Renumbering items inside released sections would falsify the release
+    record, and a gate that needs an exemption list on its first run is
+    fighting its own subject. `BK-385` carries the decision with those four as
+    its evidence.
+
 Drift-gate::
 
     kind:       pair
@@ -34,8 +45,8 @@ Drift-gate::
 Drift-gate::
 
     kind:       rule
-    rule: every open item header in sdd/BACKLOG.md carries an ID no other open
-        item carries
+    rule: no ID appears on two open item headers in sdd/BACKLOG.md (the done
+        register is out of scope -- see the module docstring)
     domain:     process
 """
 

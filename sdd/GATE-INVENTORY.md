@@ -70,7 +70,7 @@ yield no row for them at all.
 | `scripts/check_traces.py` | no file this gate parses repeats a mapping key at any depth — every trace under sdd/traces/, and sdd/traces/_schema.yml itself | process | `all`, `check-traces`, `docs-gate`, `lint` | gating |
 | `scripts/docs/check_links.py` | both context7 manifests stay within Context7's per-field list and rule-length maxima, which it silently rejects a manifest for exceeding | explanation | `all`, `check-links`, `docs-gate` | gating |
 | `scripts/docs/check_links.py` | every <a id> anchor in any git-tracked Markdown file off the consumer denylist is unique within its file and adjacent to a heading, whether or not a link points into it | explanation | `all`, `check-links`, `docs-gate` | gating |
-| `scripts/gen_backlogid.py` | every open item header in sdd/BACKLOG.md carries an ID no other open item carries | process | `all`, `docs-gate`, `gen-backlogid`, `gen-backlogid-check`, `lint`, `pre-commit` | gating |
+| `scripts/gen_backlogid.py` | no ID appears on two open item headers in sdd/BACKLOG.md (the done register is out of scope -- see the module docstring) | process | `all`, `docs-gate`, `gen-backlogid`, `gen-backlogid-check`, `lint`, `pre-commit` | gating |
 
 ## Reports, no assertion
 
