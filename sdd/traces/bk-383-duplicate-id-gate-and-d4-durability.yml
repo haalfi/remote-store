@@ -61,6 +61,11 @@ surprising_ripples:
   # that the table did not predict — BUG-291's renumber and ID-257's body
   # losing the half this builds — and both are recorded in note 3 and in the
   # BK-383 register entry rather than by double-listing the file.
+  # 4. CLAUDE.md section Trace authoring stated the never-hand-edit rule
+  #    absolutely, and it is the authority /ship's Step 5 bullet cites — so
+  #    that bullet pointed readers at a document contradicting it. Found by
+  #    the closing round; the carve-out had reached two homes of three.
+  - CLAUDE.md
   - scripts/report_trace_outcomes.py
   - sdd/traces/BK-221-test-pbt-write-result-s3-azure-per-backend.yml
   - sdd/traces/bug-254-absent-container-root-row.yml
@@ -156,3 +161,184 @@ phases:
           check_changelog_unreleased.py already uses. GATE-INVENTORY.md is
           generated from the blocks, 48 -> 50 rows.
         outcome: ok
+
+# Bound on the block below, which is derived and pasted verbatim per D4.
+#
+# **The block's `submissions` and `by_round` do not describe this loop**, and the
+# reason is an instrument limitation worth carrying into BK-384's measurement.
+# GraphQL is blocked in these sessions, so `/rvw-pr`'s pending-review flow is
+# unavailable and each finding was posted through the REST comment endpoint —
+# which makes every comment its own review submission. The script therefore reads
+# 20 submissions where the loop ran **6 rounds**, and splits one round's findings
+# across as many "rounds" as it had comments.
+#
+# `findings: 36` is also short. Rounds 4, 5 and 6 were recorded as PR issue
+# comments (one consolidated record each, since their findings were already
+# fixed), and `ship_report.py` reads inline review comments only, so those three
+# rounds contribute nothing to the count.
+#
+# Whoever pools this PR should use **6 rounds and 89 findings** — 8, 11, 17, 25,
+# 17, 11 — not 20 and 36. `review_rounds: 7` is correct: it counts commits, not
+# comments.
+review:
+  # Derived by `hatch run ship-report 1027 --trace-block-only` at head 5a090e6.
+  # Do not hand-edit, except a newly required field per sdd/traces/_schema.yml
+  # section review: RFC-0015 D4 makes this script the only producer.
+  derivation: "hatch run ship-report 1027 --trace-block-only"
+  pr: 1027
+  review_rounds: 7
+  submissions: 20
+  findings: 36
+  by_round:
+    - round: 1
+      findings: 8
+      origin: {original: 5, unclassifiable-file: 3}
+      triage: {must-fix: 7, refuted: 1}
+      duration_hours: 0.13
+    - round: 2
+      findings: 2
+      origin: {loop-introduced: 1, unclassifiable-file: 1}
+      triage: {must-fix: 2}
+      duration_hours: 35.82
+    - round: 3
+      findings: 9
+      origin: {loop-introduced: 2, original: 5, pre-existing: 1, unclassifiable-file: 1}
+      triage: {must-fix: 9}
+      duration_hours: 0.07
+    - round: 4
+      findings: 1
+      origin: {loop-introduced: 1}
+      triage: {must-fix: 1}
+      duration_hours: 1.4
+    - round: 5
+      findings: 1
+      origin: {original: 1}
+      triage: {must-fix: 1}
+      duration_hours: 0.0
+    - round: 6
+      findings: 1
+      origin: {loop-introduced: 1}
+      triage: {must-fix: 1}
+      duration_hours: 0.0
+    - round: 7
+      findings: 1
+      origin: {loop-introduced: 1}
+      triage: {must-fix: 1}
+      duration_hours: 0.0
+    - round: 8
+      findings: 1
+      origin: {loop-introduced: 1}
+      triage: {must-fix: 1}
+      duration_hours: 0.0
+    - round: 9
+      findings: 1
+      origin: {unclassifiable-file: 1}
+      triage: {must-fix: 1}
+      duration_hours: 0.0
+    - round: 10
+      findings: 1
+      origin: {original: 1}
+      triage: {must-fix: 1}
+      duration_hours: 0.0
+    - round: 11
+      findings: 1
+      origin: {unclassifiable-file: 1}
+      triage: {must-fix: 1}
+      duration_hours: 0.0
+    - round: 12
+      findings: 1
+      origin: {loop-introduced: 1}
+      triage: {must-fix: 1}
+      duration_hours: 0.0
+    - round: 13
+      findings: 1
+      origin: {original: 1}
+      triage: {must-fix: 1}
+      duration_hours: 0.0
+    - round: 14
+      findings: 1
+      origin: {original: 1}
+      triage: {must-fix: 1}
+      duration_hours: 0.0
+    - round: 15
+      findings: 1
+      origin: {unclassifiable-file: 1}
+      triage: {must-fix: 1}
+      duration_hours: 0.0
+    - round: 16
+      findings: 1
+      origin: {loop-introduced: 1}
+      triage: {refuted: 1}
+      duration_hours: 0.0
+    - round: 17
+      findings: 1
+      origin: {loop-introduced: 1}
+      triage: {must-fix: 1}
+      duration_hours: 0.0
+    - round: 18
+      findings: 1
+      origin: {unclassifiable-file: 1}
+      triage: {must-fix: 1}
+      duration_hours: 0.0
+    - round: 19
+      findings: 1
+      origin: {original: 1}
+      triage: {refuted: 1}
+      duration_hours: 0.0
+    - round: 20
+      findings: 1
+      origin: {unclassifiable-blame: 1}
+      triage: {must-fix: 1}
+      duration_hours: 0.0
+  by_file:
+    - path: "scripts/_trace_corpus.py"
+      findings: 5
+    - path: "scripts/check_traces.py"
+      findings: 5
+    - path: "sdd/BACKLOG.md"
+      findings: 5
+    - path: "scripts/ship_report.py"
+      findings: 3
+    - path: "sdd/BACKLOG-DONE.md"
+      findings: 3
+    - path: "sdd/traces/_schema.yml"
+      findings: 3
+    - path: "tests/scripts/test_ship_report.py"
+      findings: 3
+    - path: "scripts/gen_backlogid.py"
+      findings: 2
+    - path: "tests/scripts/test_gen_backlogid.py"
+      findings: 2
+    - path: "scripts/report_trace_outcomes.py"
+      findings: 1
+    - path: "sdd/rfcs/rfc-0015-ship-two-surfaces.md"
+      findings: 1
+    - path: "sdd/traces/bk-378-d1-d4.yml"
+      findings: 1
+    - path: "sdd/traces/bk-383-duplicate-id-gate-and-d4-durability.yml"
+      findings: 1
+    - path: "tests/scripts/test_check_traces.py"
+      findings: 1
+  untouched_files:
+    - ".claude/skills/ship/SKILL.md"
+    - "CLAUDE.md"
+    - "sdd/GATE-INVENTORY.md"
+    - "sdd/backlogid.json"
+    - "sdd/traces/BK-221-test-pbt-write-result-s3-azure-per-backend.yml"
+    - "sdd/traces/bug-254-absent-container-root-row.yml"
+  review_driven_commits:
+    - sha: "7535f42"
+      subject: "BK-383: Address PR #1027 round 1"
+    - sha: "302e807"
+      subject: "BK-383: Address PR #1027 round 2 (measuring)"
+    - sha: "2999058"
+      subject: "BK-384: Split the delivery out of BK-383, and stop enumerating the backlog's gates"
+    - sha: "e7f4809"
+      subject: "BK-383: Address PR #1027 round 3 (panel: unprimed, measuring, whole-file)"
+    - sha: "f95a3e6"
+      subject: "BK-383: Address PR #1027 round 4 (closing gate), and single-home the repeated claims"
+    - sha: "582356d"
+      subject: "BK-383: Address PR #1027 round 5, and finish the single-homing"
+    - sha: "5a090e6"
+      subject: "BK-383: Address PR #1027 round 6"
+  ci: {verdict: PENDING, failed: 0, pending: 3}
