@@ -442,11 +442,11 @@ class TestOneLoader:
         written to prevent exactly that still green.
         """
         found = {}
-        # rglob, not glob: `scripts/docs/` already holds `check_links.py` and
-        # `gen_pages.py`, so a consumer one directory down is not
-        # hypothetical, and a non-recursive walk leaves the very hole this
-        # derivation exists to close. Measured: a consumer planted at
-        # `scripts/docs/` passed both guards under `glob`.
+        # rglob, not glob: `scripts/docs/` already holds five modules
+        # (`check_links.py`, `link.py`, `nav.py`, `render.py`, `scan.py`), so a
+        # consumer one directory down is not hypothetical, and a non-recursive
+        # walk leaves the very hole this derivation exists to close. Measured:
+        # a consumer planted at `scripts/docs/` passed both guards under `glob`.
         for path in sorted(_SCRIPTS_DIR.rglob("*.py")):
             if path.name == "_trace_corpus.py":
                 continue
@@ -461,12 +461,53 @@ class TestOneLoader:
         assert found, "no trace-corpus consumers found; the derivation is wrong"
         return found
 
-    def test_no_consumer_calls_safe_load_directly(self) -> None:
+    @staticmethod
+    def _unsafe_yaml_calls(source: str) -> list[str]:
+        """Calls that restore last-wins, found in the AST rather than in the text.
+
+        Three instruments were tried and the first two were wrong the same way —
+        they keyed on a *spelling* rather than on the thing. `"yaml.safe_load" in
+        source` missed `from yaml import safe_load`, `import yaml as y`, and
+        `yaml.load(..., Loader=SafeLoader)`; widening to the bare substring
+        `"safe_load"` then fired on `check_traces.py`'s own prose explaining why
+        the strict loader exists. Parsing the module answers the actual question —
+        is this call made — and no comment, docstring or import alias changes it.
+        """
+        import ast
+
+        try:
+            tree = ast.parse(source)
+        except SyntaxError:  # pragma: no cover — a broken script is lint's problem
+            return []
+
+        aliases = {"yaml"}
+        bare: set[str] = set()
+        for node in ast.walk(tree):
+            if isinstance(node, ast.Import):
+                aliases |= {a.asname or a.name for a in node.names if a.name == "yaml"}
+            elif isinstance(node, ast.ImportFrom) and node.module == "yaml":
+                bare |= {a.asname or a.name for a in node.names}
+
+        unsafe = {"safe_load", "safe_load_all", "load", "load_all"}
+        found: list[str] = []
+        for node in ast.walk(tree):
+            if not isinstance(node, ast.Call):
+                continue
+            func = node.func
+            if isinstance(func, ast.Attribute):
+                if isinstance(func.value, ast.Name) and func.value.id in aliases and func.attr in unsafe:
+                    found.append(f"{func.value.id}.{func.attr}")
+            elif isinstance(func, ast.Name) and func.id in bare and func.id in unsafe:
+                found.append(func.id)
+        return found
+
+    def test_no_consumer_parses_the_corpus_outside_the_shared_loader(self) -> None:
         for name, source in self._consumers().items():
-            body = source.split('"""', 2)[-1]  # skip the module docstring, which may discuss it
-            assert "yaml.safe_load" not in body, (
-                f"{name} parses trace YAML outside _trace_corpus.load_trace, "
-                "which silently restores the last-wins duplicate-key behaviour"
+            calls = self._unsafe_yaml_calls(source)
+            assert not calls, (
+                f"{name} parses YAML directly ({', '.join(sorted(set(calls)))}) instead of "
+                "_trace_corpus.load_trace, which silently restores the last-wins "
+                "duplicate-key behaviour"
             )
 
     def test_every_parsing_consumer_uses_the_shared_loader(self) -> None:

@@ -162,7 +162,9 @@ class TestCheck:
         assert result == 0
         out = capsys.readouterr().out
         assert "BK=178" in out
-        assert "No ID collisions." in out
+        # Both rules named on the clean path, not just the older one.
+        assert "No ID collisions" in out
+        assert "no ID on two open items" in out
 
     def test_collision_returns_one(self, tmp_path, monkeypatch, capsys):
         collision_active = f"- [ ] **BK-174 {_EM} Duplicate item**\n"

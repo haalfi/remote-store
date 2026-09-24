@@ -172,7 +172,10 @@ def _check() -> int:
     if duplicates or collisions:
         return 1
 
-    print("No ID collisions.")
+    # Both rules named, so a clean run says which ones passed. The duplicate
+    # rule is only reachable after two branches merge, so this line is the
+    # first evidence most authors will have that it exists at all.
+    print("No ID collisions, and no ID on two open items.")
     return 0
 
 

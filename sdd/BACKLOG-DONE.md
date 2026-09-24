@@ -282,21 +282,25 @@ if evidence changes; these are retired.
   repeated content.
   **RFC-0015 D4's derived commit list is orphaned on arrival.** D4 attributed
   that to *hand-written* lists; it is a property of the merge convention, so a
-  derived list inherits it whole. `git merge-base --is-ancestor <sha>
-  origin/master` succeeds for 0 of `bk-378-d1-d4.yml`'s 9 SHAs. The block now
+  derived list inherits it whole; the measurement and its instrument are in
+  `scripts/ship_report.py`'s Bounds, which is their one home. The block now
   emits `pr`, the handle that survives, from which the squash commit resolves
   after the merge; the squash SHA is not emitted, because at paste time the PR
   is open and `merge_commit_sha` is then an ephemeral test-merge commit.
-  Guards: **19** net new functions, across three files collecting 136. Net new
+  Guards, measured at this delivery's head: **19** net new functions, across
+  three files then collecting 136 — a measurement of this commit rather than
+  a standing claim, for the reason BK-378's entry below now gives. Net new
   is added `def test_` names minus removed ones over
   `git diff origin/master...HEAD -- tests/`, because a `+`-line count cannot
   tell a new function from a changed signature — it reads 20 here, one of which
   is a rewritten `parametrize`. The collected total is
   `hatch run pytest tests/scripts/test_gen_backlogid.py
   tests/scripts/test_check_traces.py tests/scripts/test_ship_report.py
-  --collect-only`. It is not the prior total plus 19: that same rewrite folded a
-  nine-way `parametrize` into one function, so eight collected cases went away
-  while the function count rose. `sdd/GATE-INVENTORY.md` went 48 → 50 mechanisms: both gates
+  --collect-only`, which returns 110 at `origin/master` and 136 here. The +26 is
+  not the +19: collected cases and function counts are different quantities in
+  both directions. Several new functions are themselves parametrized — the
+  loader's shape table contributes 15 cases from one `def` — while a rewrite
+  folded a nine-way `parametrize` back into one function, giving up 8. `sdd/GATE-INVENTORY.md` went 48 → 50 mechanisms: both gates
   gained a single-artifact `rule` block beside their existing `pair`.
 
 - [x] **BK-378 — The `/ship` loop reviews its own record past round 2, and nothing separates the two**
@@ -377,8 +381,12 @@ if evidence changes; these are retired.
   gitignored `tmp/ship-report-<PR>.md`, a brief quotes it, and the durable copy
   is the `review:` block at the close. **Still held, deliberately**, and
   BK-384's: D3's cap lift, D5's stop-rule wiring, D6's deferred half.
-  Guards: **174** collected across the three scripts — ship_report 75,
-  check_no_retrospective 46, check_backlog_ids_vs_base 53 — from
+  Guards at this delivery's head (`e5fb4a8`): **174** across the three
+  scripts — ship_report 75, check_no_retrospective 46,
+  check_backlog_ids_vs_base 53. A measurement of that commit, not a claim
+  about today: editing any of those three test files moves the total, and
+  nothing gates a figure sitting in a closed entry. Re-derive for the
+  current tree with
   `hatch run pytest tests/scripts/test_check_no_retrospective.py
   tests/scripts/test_check_backlog_ids_vs_base.py tests/scripts/test_ship_report.py
   --collect-only`.

@@ -52,7 +52,7 @@ surprising_ripples:
   # 3. The new duplicate check found a SECOND live collision nobody had
   #    reported — BUG-291, on two distinct open items from #1021 and #1022 —
   #    and bug-254-absent-container-root-row.yml is where that renumber's
-#    other half landed. Fixing it was
+  #    other half landed. Fixing it was
   #    forced, not optional: a gate that red-lights master is not shippable.
   #    Merge order, not PR number, decides which item renumbers.
   #

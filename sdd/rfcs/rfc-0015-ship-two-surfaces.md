@@ -3,13 +3,14 @@
 ## Status
 
 Draft. Tracked as **BK-384**; BK-378 built D1 and D4 and closed, and BK-379
-piloted the rest before them. Minted as BK-367 and re-homed four times. Three
-were ID-257's scenario, a parallel mint forcing the move: ID-182's branch
-minted BK-367, ID-018's minted BK-368 and closed it, and BUG-281's branch had
-minted the BK-382 that BK-378's split took. The first two are recorded under
-ID-257; the third is in BK-383's register entry. The fourth is not a
-collision at all — BK-383's split left the re-measurement here under a new ID
-while the delivery kept BK-383, which is § Completing work working as written.
+piloted the rest before them. Minted as BK-367 and re-homed five times — three
+collisions and two splits. The collisions are ID-257's scenario, a parallel
+mint forcing the move: ID-182's branch minted BK-367, ID-018's minted BK-368
+and closed it, and BUG-281's branch had minted the BK-382 that BK-378's split
+took. The first two are recorded under ID-257, the third in BK-383's register
+entry. The splits are § Completing work working as written and are not
+collisions: BK-378's left the re-measurement at BK-382, and BK-383's left it
+here at BK-384 while the delivery kept BK-383.
 BK-379 piloted D2, D3's worktree half with the one-measurer cap left up, D5's
 posting half and D6's repeat-site half before the rest was built; what that
 pilot can and cannot decide is stated with the acceptance criterion

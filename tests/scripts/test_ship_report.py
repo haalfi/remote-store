@@ -452,16 +452,11 @@ class TestTraceBlock:
     def test_the_block_names_the_pr_it_measures(self, data: dict) -> None:
         """The one handle in the block that survives the merge.
 
-        Every `sha` in `review_driven_commits` names a branch commit, and this
-        repo squash-merges, so those commits never reach `master`. Measured on
-        the first trace shipped under D4: of `bk-378-d1-d4.yml`'s nine SHAs,
-        `git merge-base --is-ancestor <sha> origin/master` succeeds for **0 of
-        9**. `pr` is what a later reader resolves the squash commit from.
-
-        Reachability, not `git cat-file -e`, matching the instrument
-        `scripts/ship_report.py`'s Bounds mandates — object presence answers
-        whether *this clone* has fetched the PR's refs, and returns 9 of 9 in
-        one that has.
+        Every `sha` in `review_driven_commits` names a branch commit, and a
+        squash merge retires all of them, so `pr` is what a later reader
+        resolves the landed commit from. The measurement behind that, and the
+        instrument it has to be taken with, are in `scripts/ship_report.py`'s
+        Bounds and are not repeated here.
         """
         import yaml
 
@@ -805,6 +800,13 @@ class TestTraceBlock:
         DRIFT-RULES Rule 7 puts it in the script; it is also what a trace reader
         needs, so it is in the schema — and a fix that drops either half leaves
         the other claiming a precision the pair does not have.
+
+        **Why this bound stays in two homes while the squash measurement was
+        collapsed to one** (see `test_the_squash_measurement_has_exactly_one_home`):
+        this one is a fixed structural constant, `+1`, with no measurement behind
+        it, so there is no figure that can independently go stale. The squash
+        claim carries counts derived from the repository, and those drifted apart.
+        Two homes are safe for a constant and unsafe for a measurement.
         """
         import yaml
 
@@ -826,11 +828,11 @@ class TestTraceBlock:
         one of them and not the other. Asserting a phrase in each home cannot
         catch that, because both phrases were present and both were false.
 
-        So the property is now *exclusivity*, which is checkable: the
-        measurement lives in `scripts/ship_report.py`'s Bounds, and nowhere
-        else may carry the numbers. `git merge-base --is-ancestor` is the
-        instrument, and `git cat-file -e` is the one it must not be taken with,
-        so the schema naming either would be restating rather than citing.
+        So the property is now *exclusivity*, and it is checked over **every
+        file that discusses the block**, not one pair. A guard that names
+        exclusivity and inspects a single description is the fail-silently
+        shape: this module and `BACKLOG-DONE.md` both restated the numbers one
+        commit after the diagnosis, and a one-pair check stayed green.
         """
         import yaml
 
@@ -841,14 +843,31 @@ class TestTraceBlock:
         schema = yaml.safe_load(_SCHEMA.read_text(encoding="utf-8"))
         review = schema["properties"]["review"]["properties"]
         description = review["review_driven_commits"]["description"]
-
         assert "squash" in description.lower(), "the schema still states what the SHAs mean"
         assert "ship_report.py" in description, "and cites where the measurement lives"
-        for restated in ("merge-base", "cat-file", "0 of"):
-            assert restated not in description, (
-                f"{restated!r} is the measurement's, not the schema's — cite Bounds instead of restating it"
-            )
         assert "pr" in review, "the durable handle must be a declared property"
+
+        # The instrument and the count belong to the one home. Everywhere else
+        # cites it. `_SCRIPT` is excluded because it *is* the home; this file is
+        # included because it restated the figure once already.
+        elsewhere = {
+            "sdd/traces/_schema.yml": _SCHEMA,
+            "sdd/rfcs/rfc-0015-ship-two-surfaces.md": _REPO_ROOT / "sdd" / "rfcs" / "rfc-0015-ship-two-surfaces.md",
+            "sdd/BACKLOG-DONE.md": _REPO_ROOT / "sdd" / "BACKLOG-DONE.md",
+            "tests/scripts/test_ship_report.py": Path(__file__).resolve(),
+        }
+        # Assembled rather than written out, so this list does not match itself
+        # when the scan reaches this file — which it must, since this module is
+        # one of the homes that restated the figure.
+        forbidden = ("merge-base --is-ancestor " + "<sha>", "cat-file -e " + "<sha>", "0 of " + "9")
+        for label, path in elsewhere.items():
+            text = path.read_text(encoding="utf-8")
+            for restated in forbidden:
+                assert restated not in text, (
+                    f"{label} restates the squash measurement ({restated!r}); "
+                    f"cite {_SCRIPT.name}'s Bounds instead. Two homes for one figure is how "
+                    "both came to carry the same wrong one."
+                )
 
 
 class TestStep5Report:
