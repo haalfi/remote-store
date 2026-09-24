@@ -178,7 +178,8 @@ signal that the diagnosis is not yet understood, not a reason to raise the cap.
 - **Testing:** R1–R4 each with a failing fixture seen red first, per
   `sdd/TESTING.md`.
 
-**Acceptance.** After migration, `rfc-0016-measure.py` reports the file under
+**Acceptance.** After the § 1 pilot, § 1 has **0** items over eight lines and its
+preamble is heading plus Promise. After the full migration, `rfc-0016-measure.py` reports the file under
 2,000 lines and **0** items over eight lines, and `--check` passes R1–R4 on the
 tree. Measured again after the next three merged deliveries that file an item: no
 item body exceeds the cap without failing the gate.
@@ -187,16 +188,19 @@ item body exceeds the cap without failing the gate.
 
 1. **The cap values.** Eight lines per item and three sentences per Promise are
    proposals. The acceptance run tests them; move them only on evidence.
-2. **`XS` and range values.** Ten items use `XS`, `S/M` or `XS/S`. Either the
-   legend gains them, or R1 rejects them and migration normalises.
-3. **Release Blockers.** It carries no Promise by design. R3 needs a stated
-   exemption, or the section gets a one-line Promise ("nothing ships until
-   empty").
-4. **`BACKLOG-DONE.md`.** BK-365 names both files. `BACKLOG-DONE.md` is read by
+2. **`BACKLOG-DONE.md`.** BK-365 names both files. `BACKLOG-DONE.md` is read by
    grep, not whole, so its length costs little context. Out of scope here;
    BK-365 keeps that half open.
-5. **Migration vehicle.** One PR for the whole file, or a pilot on § 1 (worst
-   case: 1,637 preamble words, max body 122 lines) before the rest.
+
+**Decided by the maintainer while drafting**, recorded so review does not
+re-open them without new evidence:
+
+- **Effort is strictly `S`/`M`/`L`.** R1 rejects anything else; migration maps
+  `XS` → `S` and a range to its upper bound (ten items use `XS`, `S/M` or `XS/S`).
+- **Release Blockers gets a one-line Promise**: "Nothing ships to PyPI until this
+  section is empty." Every section then has one shape and R3 needs no exemption.
+- **Migration pilots § 1 first**, the worst case (1,637 preamble words, max item
+  122 lines), measures it with the script, then converts the rest.
 
 ## References
 
