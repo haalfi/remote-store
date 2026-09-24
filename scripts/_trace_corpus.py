@@ -3,7 +3,7 @@
 ``sdd/traces/_schema.yml`` tells aggregators to glob
 ``"sdd/traces/[!_]*.yml"`` so that underscore-prefixed infrastructure
 files — the schema itself — are not read as traces. Two tools need that
-carve-out: ``check_traces.py`` (the PR-time schema validation gate) and
+carve-out: ``check_traces.py`` (the PR-time parse-and-schema gate) and
 ``report_trace_outcomes.py`` (the outcome report).
 
 It lives here rather than in either tool because

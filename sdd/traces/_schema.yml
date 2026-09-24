@@ -264,8 +264,9 @@ properties:
     description: |
       The loop's own figures, derived from the PR after it closed and
       pasted verbatim (RFC-0015 D4, BK-378). **Produced by
-      `hatch run ship-report <PR> --trace-block-only`; never hand-written
-      and never hand-edited.** That is the point of the key: it gives the boundary
+      `hatch run ship-report <PR> --trace-block-only`; never hand-written,
+      and hand-edited only for a newly required field, under the one
+      carve-out below.** That is the point of the key: it gives the boundary
       between the deliverable and the record a name a check can see, so
       the trace's *reads* stay logged as they happen while everything
       about the review arrives in one block at the close.
@@ -387,16 +388,16 @@ properties:
         description: |
           The commits `review_rounds` counts, oldest first.
 
-          **These SHAs are a mid-loop handle and stop resolving at the merge.**
-          They name commits on the PR branch, and this repo squash-merges, so
-          none of them reaches `master` — measured on the first trace shipped
-          under D4, where `git merge-base --is-ancestor <sha> origin/master`
-          succeeded for 0 of its 9. Reachability rather than `git cat-file -e`,
-          which answers whether *this clone* has fetched the PR's refs and so
-          reports the clone instead of the repository. That is true of a
-          *derived* list exactly as it was
-          of a hand-written one; what deriving removes is the content going
+          **These SHAs are a mid-loop handle: a squash merge retires every one
+          of them**, which is true of a *derived* list exactly as it was of a
+          hand-written one — what deriving removes is the content going
           silently stale, not the SHAs dying. The durable handle is `pr`.
+
+          The measurement behind that, the instrument it has to be taken with,
+          and why a shallow clone answers a different question are stated once,
+          in `scripts/ship_report.py`'s Bounds, and deliberately not repeated
+          here. Two homes carrying the same figure is how both came to carry
+          the same wrong one.
 
           The `subject` line is what survives as content, and is why each entry
           carries one rather than a SHA alone.

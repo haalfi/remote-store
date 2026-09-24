@@ -265,14 +265,17 @@ if evidence changes; these are retired.
   **The gate found a second live collision on its first run** — `BUG-291`, on
   two distinct open items from #1021 and #1022, which nothing had reported.
   Both duplicates were renumbered by merge order, the later-merged item moving:
-  `BK-382` → `BK-383` and `BUG-291` → `BUG-293`. Merge order rather than PR
+  `BK-382` → `BK-383`, which this entry's own split then left at `BK-384` for
+  the re-measurement, and `BUG-291` → `BUG-293`. Merge order rather than PR
   number, since `af44c26` (#1021) landed after `b71f317` (#1022).
   **`check_traces.py` could not see a repeated YAML key.** `yaml.safe_load`
-  resolves one to the last silently, so a trace validated while half its
-  content was discarded. **Already costing data**: 1 of 325 trace files was
-  affected — `BK-221-test-pbt-write-result-s3-azure-per-backend.yml` carried
-  `surprising_ripples` twice — found by the scan that built the check, not by
-  the check. `StrictTraceLoader` refuses a repeat at any depth, lives in
+  resolves one to the last silently, so a trace validated while an arbitrary
+  half of its content was discarded. **Live, and found by the scan that built
+  the check rather than by the check**: 1 of 325 trace files carried a
+  duplicate — `BK-221-test-pbt-write-result-s3-azure-per-backend.yml`, with
+  `surprising_ripples` twice. Nothing was lost there, because the informative
+  occurrence happened to be the one last-wins kept; which occurrence survives
+  is arbitrary, and nothing said so. `StrictTraceLoader` refuses a repeat at any depth, lives in
   `_trace_corpus.py` so the gate and `report_trace_outcomes.py` cannot disagree
   about what parses, and reads the schema the same way, since a duplicate key
   *there* disarms the gate for the whole corpus. **Bound**: repeated keys, not
@@ -291,8 +294,9 @@ if evidence changes; these are retired.
   is a rewritten `parametrize`. The collected total is
   `hatch run pytest tests/scripts/test_gen_backlogid.py
   tests/scripts/test_check_traces.py tests/scripts/test_ship_report.py
-  --collect-only`, and it is not the sum of the two: that same rewrite folded a
-  nine-way `parametrize` into one function. `sdd/GATE-INVENTORY.md` went 48 → 50 mechanisms: both gates
+  --collect-only`. It is not the prior total plus 19: that same rewrite folded a
+  nine-way `parametrize` into one function, so eight collected cases went away
+  while the function count rose. `sdd/GATE-INVENTORY.md` went 48 → 50 mechanisms: both gates
   gained a single-artifact `rule` block beside their existing `pair`.
 
 - [x] **BK-378 — The `/ship` loop reviews its own record past round 2, and nothing separates the two**

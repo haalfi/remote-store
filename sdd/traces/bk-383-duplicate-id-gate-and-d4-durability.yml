@@ -51,7 +51,8 @@ surprising_ripples:
   #    nothing said so either.
   # 3. The new duplicate check found a SECOND live collision nobody had
   #    reported — BUG-291, on two distinct open items from #1021 and #1022 —
-  #    and this trace is where the renumber's other half landed. Fixing it was
+  #    and bug-254-absent-container-root-row.yml is where that renumber's
+#    other half landed. Fixing it was
   #    forced, not optional: a gate that red-lights master is not shippable.
   #    Merge order, not PR number, decides which item renumbers.
   #
@@ -149,6 +150,9 @@ phases:
         section: "Rule 3 claim space, Rule 7 bounds"
         read_type: verify
         extract: >-
-          The widened claim space moves the Drift-gate `compares:` line;
-          GATE-INVENTORY.md is generated from it.
+          A single-artifact claim is a `rule`, not a widened `compares:` — each
+          gate keeps its `pair` block unchanged and gains a second
+          `Drift-gate:: kind: rule` beside it, which is the shape
+          check_changelog_unreleased.py already uses. GATE-INVENTORY.md is
+          generated from the blocks, 48 -> 50 rows.
         outcome: ok

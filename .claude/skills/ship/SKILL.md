@@ -693,7 +693,10 @@ neither substitutes for the other.
    from `hatch run ship-report <N> --trace-block-only` (the bare command prints
    the Markdown report of item 3 instead, and the block is pasted *as* the
    top-level key, which it already opens with). Nothing in that block is
-   hand-written or hand-edited, `review_rounds` included
+   hand-written, and nothing is hand-edited except a field the schema has
+   newly made required, under the carve-out
+   [`_schema.yml` § `review`](../../../sdd/traces/_schema.yml) states —
+   `review_rounds` included
    ([CLAUDE.md § Trace authoring](../../../CLAUDE.md#trace-authoring)).
 3. Report: run `hatch run ship-report <N>`. Its output **is** the Step 5 report
    for everything derived from the PR — rounds run, findings per round, the

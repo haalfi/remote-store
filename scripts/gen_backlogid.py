@@ -45,8 +45,8 @@ Drift-gate::
 Drift-gate::
 
     kind:       rule
-    rule: no ID appears on two open item headers in sdd/BACKLOG.md (the done
-        register is out of scope -- see the module docstring)
+    rule: no ID appears on two open item headers in sdd/BACKLOG.md — the done
+        register is out of scope, for the reason the module docstring gives
     domain:     process
 """
 

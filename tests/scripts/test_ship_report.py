@@ -816,26 +816,38 @@ class TestTraceBlock:
         assert "Excludes the commit that pastes this" in review["review_rounds"]["description"]
         assert "returns `review_rounds + 1`" in review["derivation"]["description"]
 
-    def test_both_homes_state_that_branch_shas_die_at_the_merge(self) -> None:
-        """The second bound stated twice, for the same reason as the first.
+    def test_the_squash_measurement_has_exactly_one_home(self) -> None:
+        """One home states the figure; the others cite it and do not restate it.
 
-        A squash merge retires every SHA in `review_driven_commits`, so the
-        list's durable half is `pr`. That is a bound on what the block's
-        content means, so DRIFT-RULES Rule 7 puts it in the script; it is also
-        the first thing a trace reader needs when a SHA fails to resolve, so it
-        is in the schema. A fix that moves one home and not the other leaves
-        the other promising a resolvability the pair does not have — which is
-        exactly what D4's original wording did, by attributing the orphaning to
-        hand-written lists alone.
+        This replaces a guard that pinned the claim in *two* homes on purpose.
+        That design was measured and failed: two homes carrying the same figure
+        is how both came to carry the same wrong one — a shallow-clone reading
+        shipped in the script and the RFC together, and a later fix corrected
+        one of them and not the other. Asserting a phrase in each home cannot
+        catch that, because both phrases were present and both were false.
+
+        So the property is now *exclusivity*, which is checkable: the
+        measurement lives in `scripts/ship_report.py`'s Bounds, and nowhere
+        else may carry the numbers. `git merge-base --is-ancestor` is the
+        instrument, and `git cat-file -e` is the one it must not be taken with,
+        so the schema naming either would be restating rather than citing.
         """
         import yaml
 
         script = _SCRIPT.read_text(encoding="utf-8")
-        assert "squash merge retires every sha" in script.lower()
+        assert "squash merge retires every sha" in script.lower(), "the one home must state the bound"
+        assert "merge-base --is-ancestor" in script, "the one home must name the instrument"
 
         schema = yaml.safe_load(_SCHEMA.read_text(encoding="utf-8"))
         review = schema["properties"]["review"]["properties"]
-        assert "squash" in review["review_driven_commits"]["description"].lower()
+        description = review["review_driven_commits"]["description"]
+
+        assert "squash" in description.lower(), "the schema still states what the SHAs mean"
+        assert "ship_report.py" in description, "and cites where the measurement lives"
+        for restated in ("merge-base", "cat-file", "0 of"):
+            assert restated not in description, (
+                f"{restated!r} is the measurement's, not the schema's — cite Bounds instead of restating it"
+            )
         assert "pr" in review, "the durable handle must be a declared property"
 
 

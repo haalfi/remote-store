@@ -246,7 +246,7 @@ class TestCheck:
         # The count, not just the ID: a reader has to know how many headers to
         # go and find, and "2" is what separates this from the done-collision
         # report above, which names an ID appearing once on each side.
-        assert "2" in out
+        assert "(2 headers)" in out
         assert "BK-177" not in out
 
     def test_status_variants_of_one_id_collide(self, tmp_path, monkeypatch, capsys):
@@ -331,15 +331,18 @@ class TestCheck:
         assert _mod._check() == 0
         assert "duplicate" not in capsys.readouterr().out
 
-    def test_one_id_open_in_one_file_and_done_in_the_other_is_not_a_duplicate(self, tmp_path, monkeypatch):
+    def test_one_id_open_in_one_file_and_done_in_the_other_is_a_collision(self, tmp_path, monkeypatch, capsys):
         """That is the *collision* case, which has its own report and its own message.
 
         The duplicate rule is within-file and within-status; conflating the two
         would give one defect two names and send the author to the wrong remedy
         (renumber a concurrent mint, versus close or reopen one item).
         """
+        # The SAME id on both sides. Two different ids would make the
+        # assertion vacuous: the file would hold neither a collision nor a
+        # duplicate, and pass against an implementation with no rule at all.
         done_text = f"- [x] **BK-174 {_EM} Done item**\n"
-        active_text = f"- [ ] **BK-200 {_EM} Unrelated open item**\n"
+        active_text = f"- [ ] **BK-174 {_EM} Same id, still open**\n"
         done, active, id_file = self._setup(
             tmp_path, done_text, active_text, {"BK": 174, "BUG": 0, "ID": 0, "AF": 0, "BL": 0}
         )
@@ -348,7 +351,10 @@ class TestCheck:
         monkeypatch.setattr(_mod, "ID_FILE", id_file)
         monkeypatch.setattr(_mod, "ROOT", tmp_path)
 
-        assert _mod._check() == 0
+        assert _mod._check() == 1
+        out = capsys.readouterr().out
+        assert "collision(s)" in out
+        assert "duplicate ID" not in out, "one defect must not be reported under both names"
 
     def test_suffix_variants_are_not_duplicates(self, tmp_path, monkeypatch):
         """`BK-139a` and `BK-139b` are two items, not one appearing twice.

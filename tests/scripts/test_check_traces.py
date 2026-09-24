@@ -429,7 +429,12 @@ class TestOneLoader:
 
     @staticmethod
     def _consumers() -> dict[str, str]:
-        """Every script that reads the trace corpus, derived rather than listed.
+        """Every script under `scripts/` that reads the trace corpus, derived rather than listed.
+
+        **Bound**: `scripts/` only. `sdd/rfcs/rfc-0015-rounds.py` also reads
+        the corpus and is outside it — it text-scans rather than parsing
+        YAML, so it cannot hit the last-wins defect today, but it is a live
+        counterexample to a broader reading of this docstring.
 
         A hard-coded pair is the DRIFT-RULES Rule 3 shape this suite removes
         elsewhere: a third consumer added later would reach for
@@ -437,9 +442,21 @@ class TestOneLoader:
         written to prevent exactly that still green.
         """
         found = {}
-        for path in sorted(_SCRIPTS_DIR.glob("*.py")):
+        # rglob, not glob: `scripts/docs/` already holds `check_links.py` and
+        # `gen_pages.py`, so a consumer one directory down is not
+        # hypothetical, and a non-recursive walk leaves the very hole this
+        # derivation exists to close. Measured: a consumer planted at
+        # `scripts/docs/` passed both guards under `glob`.
+        for path in sorted(_SCRIPTS_DIR.rglob("*.py")):
+            if path.name == "_trace_corpus.py":
+                continue
             source = path.read_text(encoding="utf-8")
-            if "_trace_corpus" in source and path.name != "_trace_corpus.py":
+            # Keyed on what makes a script a trace consumer — that it reads the
+            # corpus — not on whether it already imports the shared module. The
+            # failure this guards is a NEW consumer reaching for `yaml.safe_load`
+            # directly, and such a script contains no `_trace_corpus` reference,
+            # so a predicate keyed on that could never see it.
+            if "sdd/traces" in source or "iter_trace_files" in source or "TRACE_GLOB" in source:
                 found[path.name] = source
         assert found, "no trace-corpus consumers found; the derivation is wrong"
         return found
@@ -452,13 +469,23 @@ class TestOneLoader:
                 "which silently restores the last-wins duplicate-key behaviour"
             )
 
-    def test_every_consumer_imports_the_shared_loader(self) -> None:
-        # Asserted over the body, not the whole file: `check_traces.py`'s module
-        # docstring names `load_trace` in prose, so a substring search over the
-        # whole file passes with both the import and the call deleted.
-        for name, source in self._consumers().items():
+    def test_every_parsing_consumer_uses_the_shared_loader(self) -> None:
+        """Bound: the consumers that *parse* the corpus, not every reader of it.
+
+        Most scripts `_consumers` matches name `sdd/traces` as a path and never
+        parse a trace — `check_no_retrospective.py` scans it as text. Requiring
+        `load_trace` of those would demand an import they have no use for. The
+        `safe_load` prohibition above is the half that binds all of them, and
+        it is the half that catches a new consumer.
+        """
+        parsing = {n: src for n, src in self._consumers().items() if "yaml." in src or "load_trace" in src}
+        assert parsing, "no parsing consumers found; the derivation is wrong"
+        for name, source in parsing.items():
+            # Over the body, not the whole file: `check_traces.py`'s module
+            # docstring names `load_trace` in prose, so a whole-file search
+            # passes with both the import and the call deleted.
             body = source.split('"""', 2)[-1]
-            assert "load_trace" in body, f"{name} no longer uses the shared loader"
+            assert "load_trace" in body, f"{name} parses the corpus without the shared loader"
 
 
 class TestMain:

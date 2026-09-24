@@ -98,8 +98,10 @@ Bounds (DRIFT-RULES Rule 7)
   wants the second.
 * **The squash merge retires every SHA in the list.** ``review_driven_commits``
   names commits on the PR branch, and this repo squash-merges in practice: its
-  most recent merge commit is 976 commits back (``9c7ce58``, 2026-02-27), so the
-  last 976 are merge-free, and 941 of those 976 subjects end in ``(#NNNN)``.
+  most recent merge commit is ``9c7ce58`` (2026-02-27), and the **976 commits
+  that follow it** are merge-free, 941 of them with subjects ending
+  ``(#NNNN)``. ("Follow it" excludes the merge itself: it is at index 976
+  counting the tip as 0, so indices 0 to 975 are the run.)
   Derived with ``git log --format='%h|%p|%s' origin/master``, counting entries
   whose parent field holds more than one hash. **Run it in a full clone**:
   agent and CI containers clone at depth 50, where ``git log`` stops at the
