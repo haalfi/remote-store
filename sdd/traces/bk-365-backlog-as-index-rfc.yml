@@ -1,0 +1,74 @@
+id: BK-365
+title: "Draft RFC-0016: BACKLOG.md as an index, item detail in per-item dossiers"
+trigger: >-
+  A backlog-structure review measured sdd/BACKLOG.md at ~51k tokens and 3,013
+  lines, 83% of it item bodies, so no session reads it whole with one default
+  Read. The user named context cost as the concern, and chose per-item
+  dossiers, an ADR for the rules' rationale, an RFC first, removal of
+  `Closes when`, and gates for attribute vocabulary, item length and preamble
+  length.
+source_items:
+  - BK-365
+  - ID-235
+audience:
+  - contributor.process
+expected_ripples:
+  - sdd/BACKLOG.md
+  - sdd/rfcs/rfc-0016-backlog-as-index.md
+  - sdd/rfcs/rfc-0016-measure.py
+phases:
+  - id: orient
+    name: Orient
+    steps:
+      - file: sdd/BACKLOG.md
+        section: "How this file works; section preambles; BK-365; ID-235"
+        read_type: gate
+        extract: >-
+          The rules header mixes operational rules with their rationale.
+          `Closes when` carries closure narration and omits open items. BK-365
+          is the host and asks for research § 9.2's test before any proposal;
+          ID-235 is the home for structural lint.
+        outcome: ok
+      - file: sdd/000-process.md
+        section: "Backlog; Document types"
+        read_type: gate
+        extract: >-
+          BACKLOG.md is the single source for backlog structure; an RFC proposes,
+          an ADR records the decision.
+        outcome: ok
+      - file: sdd/CONTENT-RULES.md
+        section: "Rule 7 (Kernsatz)"
+        read_type: reference
+        extract: A section opens with its core claim in at most three sentences.
+        outcome: ok
+      - file: sdd/research/research-appropriate-level-of-detail.md
+        section: "Recommendations, § 4, § 9"
+        read_type: gate
+        extract: >-
+          § 9.1 puts no length rule beside Rule 7; § 9.2 allows cutting only what
+          the surviving text can recover, else move it. The proposed caps must be
+          argued as placement boundaries whose overflow moves, not as a brevity
+          target.
+        outcome: ok
+      - file: scripts/gen_backlogid.py
+        section: "(full)"
+        read_type: reference
+        extract: >-
+          The header regex is broader than the copy BACKLOG.md quotes, and IDs
+          are collected into sets.
+        outcome: ok
+  - id: author
+    name: Author
+    steps:
+      - file: sdd/templates/rfc-template.md
+        section: "(full)"
+        read_type: reference
+        extract: Section order for the RFC.
+        outcome: ok
+      - file: sdd/rfcs/rfc-0015-ship-two-surfaces.md
+        section: "Status"
+        read_type: reference
+        extract: >-
+          Precedent for a pinned date and a committed measurement script beside
+          the RFC.
+        outcome: ok
