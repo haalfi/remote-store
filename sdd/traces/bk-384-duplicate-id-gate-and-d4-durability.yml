@@ -1,4 +1,4 @@
-id: BK-383
+id: BK-384
 title: "Close the three dedupe-hides-a-duplicate gaps, and say what a derived commit list resolves to"
 trigger: >-
   BK-378 merged as e5fb4a8 (PR #1026) while BUG-281 merged as 8e35697, and both
@@ -11,7 +11,7 @@ trigger: >-
   the land-order convention for which item renumbers, and `pr` over a squash SHA
   the block cannot know at paste time.
 source_items:
-  - BK-383
+  - BK-384
   - ID-257
 audience:
   - contributor.tooling

@@ -54,10 +54,12 @@ describes** — an item may still designate future work that will need its own I
 as ID-199 and ID-140 do. **Splitting:** a section that outgrows itself becomes
 two promises, never loose items.
 
-**The admission test, granularity and splitting are not gated.** The only
-backlog check is `gen-backlogid --check`, which covers the ID floor and
-active/done collisions and nothing about placement, granularity or section
-membership. So all three are **review-enforced**, and that is a real weakness
+**The admission test, granularity and splitting are not gated.** The backlog's
+mechanical checks are the `gen_backlogid.py` and `check_backlog_ids_vs_base.py`
+rows in [`GATE-INVENTORY.md`](GATE-INVENTORY.md); none of them covers placement,
+granularity or section membership. Named by their rows rather than enumerated
+here, because the enumeration that stood in its place went stale twice over — it
+never mentioned the ID-set gate, and it predated the duplicate-open-ID rule. So all three are **review-enforced**, and that is a real weakness
 worth stating plainly rather than a citation: the diagnosis behind this
 structure is that topic groups decayed because nothing stopped unearned items
 accumulating, and conventions without a mechanism decay the same way. ID-235 in
@@ -2933,9 +2935,9 @@ the commit that writes it lands, so cite the generator instead.
   because `gen-backlogid --check` compared open IDs against done ones and two
   *open* items sharing an ID passed it, so the duplicate was found by reading
   `rg -n 'BK-367' sdd` after the rebase rather than by a gate.
-  **That half is now built and is no longer this item's**, under `BK-383`:
-  `_duplicate_ids` reports one ID carried by two open headers, and
-  `gen-backlogid --check` fails on it. What it does not do is prevent the
+  **That half is now built and is no longer this item's**, under
+  [`BK-384`](BACKLOG-DONE.md): `_duplicate_ids` reports one ID carried by two
+  open headers, and `gen-backlogid --check` fails on it. What it does not do is prevent the
   mint, which is the open question below and the whole of what remains here —
   the gate catches the collision only once both branches have merged, and the
   re-home still has to happen by hand.
@@ -2993,24 +2995,13 @@ the commit that writes it lands, so cite the generator instead.
   hand-derived, and re-deriving at the close is a convention nothing enforces.
   Whether that gap is worth a gate is this item's to decide — it is the same
   failure shape the RFC measured, one surface over.
-  **The duplicate-ID gate ID-257 hands over is built here.** `_duplicate_ids`
-  reports one ID carried by two *open* headers and `gen-backlogid --check`
-  fails on it, closing the half ID-257 names as unreached; that item keeps the
-  prevention question, which needs a mint-time view of unmerged branches and is
-  not attempted. The gate found `BUG-291` live on two distinct open items
-  besides the `BK-382` that prompted it, so both were renumbered by merge order
-  — the later-merged item moving — and `sdd/GATE-INVENTORY.md` gained the
-  `rule` row the widened claim space owes.
-  **Two block-handling defects are also closed under this delivery**, and
-  neither was about the block's content. A squash merge retires every SHA in
-  `review_driven_commits`, so the list is orphaned on arrival whoever wrote it —
-  D4 now says so, and the block carries `pr` as the handle that survives, from
-  which the squash commit resolves. And pasting the block a second time rather
-  than replacing it left two top-level `review:` keys that `yaml.safe_load`
-  resolved to the last; `check_traces.py` now refuses a duplicate key at any
-  depth. That check found a live instance the review workflow did not cause:
-  `BK-221-test-pbt-write-result-s3-azure-per-backend.yml` carried
-  `surprising_ripples` twice and had been validating with half of it discarded.
+  **The two block-handling defects BK-378's review recorded are shipped** under
+  [`BK-384`](BACKLOG-DONE.md), with the duplicate-ID gate ID-257 hands over:
+  D4 now states that a squash merge retires every SHA in
+  `review_driven_commits`, so the list is orphaned on arrival whoever wrote it,
+  and the block carries `pr` as the handle that survives; and `check_traces.py`
+  refuses the duplicate `review:` key that a second paste leaves behind. What
+  stays here is the measurement they were blocking, not the mechanism.
   **When pooling BK-378's PR, use 5 rounds and 54 findings, not the block's 4
   and 41.** Round 5 was the closing exit gates, run analyze-only; its 13
   must-fix findings were relayed to the author and fixed without being posted,

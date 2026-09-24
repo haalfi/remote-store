@@ -240,6 +240,52 @@ if evidence changes; these are retired.
 
 ## Unreleased
 
+- [x] **BK-384 — Three gates dedupe the duplicate they should report**
+  spec: — · effort: M · audience: contributor.tooling, contributor.process
+  **Split** per § Completing work: this entry is the delivery; the RFC-0015
+  re-measurement it was filed under stays open as
+  [BK-383](BACKLOG.md), and the minting half of
+  [ID-257](BACKLOG.md) is untouched.
+  One shape in three places — a dedupe that hides the duplicate it should
+  report.
+  **`gen-backlogid --check` could not see its own file.** `_extract_ids`
+  returns sets, so a repeated header collapsed before anything compared it, and
+  `_check` only ever compared open IDs against *done* ones. It printed
+  "No ID collisions." on a `master` carrying two open `BK-382` headers.
+  `_duplicate_ids` is a sibling function rather than a widening, because
+  `check_backlog_ids_vs_base.py` imports `_extract_ids` for set arithmetic and
+  a guard pins that import. **Bound**: it catches the collision only once both
+  branches have merged; preventing the mint needs a view of unmerged branches,
+  which stays ID-257's open question.
+  **The gate found a second live collision on its first run** — `BUG-291`, on
+  two distinct open items from #1021 and #1022, which nothing had reported.
+  Both duplicates were renumbered by merge order, the later-merged item moving:
+  `BK-382` → `BK-383` and `BUG-291` → `BUG-293`. Merge order rather than PR
+  number, since `af44c26` (#1021) landed after `b71f317` (#1022).
+  **`check_traces.py` could not see a repeated YAML key.** `yaml.safe_load`
+  resolves one to the last silently, so a trace validated while half its
+  content was discarded. **Already costing data**: 1 of 325 trace files was
+  affected — `BK-221-test-pbt-write-result-s3-azure-per-backend.yml` carried
+  `surprising_ripples` twice — found by the scan that built the check, not by
+  the check. `StrictTraceLoader` refuses a repeat at any depth, lives in
+  `_trace_corpus.py` so the gate and `report_trace_outcomes.py` cannot disagree
+  about what parses, and reads the schema the same way, since a duplicate key
+  *there* disarms the gate for the whole corpus. **Bound**: repeated keys, not
+  repeated content.
+  **RFC-0015 D4's derived commit list is orphaned on arrival.** D4 attributed
+  that to *hand-written* lists; it is a property of the merge convention, so a
+  derived list inherits it whole. `git merge-base --is-ancestor <sha>
+  origin/master` succeeds for 0 of `bk-378-d1-d4.yml`'s 9 SHAs. The block now
+  emits `pr`, the handle that survives, from which the squash commit resolves
+  after the merge; the squash SHA is not emitted, because at paste time the PR
+  is open and `merge_commit_sha` is then an ephemeral test-merge commit.
+  Guards: **12** added, across three files collecting 127 — from
+  `git diff origin/master...HEAD -- tests/ | rg -c '^+    def test_'` and
+  `hatch run pytest tests/scripts/test_gen_backlogid.py
+  tests/scripts/test_check_traces.py tests/scripts/test_ship_report.py
+  --collect-only`. `sdd/GATE-INVENTORY.md` went 48 → 50 mechanisms: both gates
+  gained a single-artifact `rule` block beside their existing `pair`.
+
 - [x] **BK-378 — The `/ship` loop reviews its own record past round 2, and nothing separates the two**
   spec: — · effort: L · audience: contributor.process
   **Split** per § Completing work: this entry is RFC-0015's **D1 and D4 built**;
