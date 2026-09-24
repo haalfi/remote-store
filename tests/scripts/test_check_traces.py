@@ -316,6 +316,59 @@ class TestDuplicateKeys:
         assert violations[0].path == "(schema)"
         assert violations[0].source.endswith("_schema.yml"), "the failing artifact must be named (Rule 2)"
 
+    # The invariant, as a table: `load_trace` equals `yaml.safe_load` for every
+    # document with no repeated *literal* key, and raises a `yaml.YAMLError` for
+    # every document that has one. Three loader attempts each passed the shapes
+    # they were written against and broke one they were not, so the shapes are
+    # enumerated rather than sampled — the repeat-site escalation in `/ship`.
+    # The four marked (regression) are the ones earlier attempts got wrong.
+    _SHAPES = [
+        ("plain", "a: 1\nb: 2\n", False),
+        ("duplicate_top_level", "a: 1\na: 2\n", True),
+        ("duplicate_nested", "o:\n  a: 1\n  a: 2\n", True),
+        ("duplicate_in_sequence_of_mappings", "- a: 1\n  a: 2\n", True),
+        ("merge_no_overlap", "base: &b\n  a: 1\nd:\n  <<: *b\n  c: 2\n", False),
+        ("merge_override", "base: &b\n  a: 1\nd:\n  <<: *b\n  a: 2\n", False),  # regression
+        ("merge_of_two_anchors", "x: &x\n  a: 1\ny: &y\n  b: 2\nd:\n  <<: [*x, *y]\n  c: 3\n", False),
+        ("merge_plus_real_duplicate", "base: &b\n  a: 1\nd:\n  <<: *b\n  c: 1\n  c: 2\n", True),
+        ("anchor_alias_no_merge", "a: &v 1\nb: *v\n", False),
+        ("unhashable_key", "? [a, b]\n: value\n", True),  # regression
+        ("map_tag_on_sequence", "x: !!map\n  - a\n", True),  # regression
+        ("set_tag_on_scalar", "x: !!set hello\n", True),  # regression
+        ("set_tag_proper", "x: !!set\n  ? a\n  ? b\n", False),
+        ("empty_mapping", "{}\n", False),
+        ("document_is_a_list", "- 1\n- 2\n", False),
+    ]
+
+    @pytest.mark.parametrize(("name", "doc", "must_refuse"), _SHAPES, ids=[s[0] for s in _SHAPES])
+    def test_the_loader_restricts_safe_load_and_nothing_more(self, name, doc, must_refuse):
+        """Refuse exactly the repeated-key documents, and agree with `safe_load` on the rest.
+
+        Both halves matter and each caught a real defect. Refusing too little
+        was the original bug; refusing too *much* — a merge override, a
+        `!!map` on a sequence — was introduced by the fixes for it, twice. The
+        `must_refuse` cases also assert the refusal is a `yaml.YAMLError`,
+        because a `TypeError` or `ValueError` escapes the arm both consumers
+        report `(parse)` violations from and aborts the gate with a traceback.
+        """
+        import yaml as _yaml
+
+        if must_refuse:
+            with pytest.raises(_yaml.YAMLError):
+                _trace_corpus.load_trace(doc)
+            return
+
+        try:
+            expected, expected_error = _yaml.safe_load(doc), None
+        except _yaml.YAMLError as exc:
+            expected, expected_error = None, type(exc)
+
+        if expected_error is not None:
+            with pytest.raises(expected_error):
+                _trace_corpus.load_trace(doc)
+        else:
+            assert _trace_corpus.load_trace(doc) == expected
+
     def test_a_merge_key_is_not_a_duplicate(self, tmp_path):
         """`<<` splices; it is not a repeated key, and must parse as `safe_load` does.
 

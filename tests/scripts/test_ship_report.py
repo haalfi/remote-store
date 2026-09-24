@@ -453,12 +453,15 @@ class TestTraceBlock:
         """The one handle in the block that survives the merge.
 
         Every `sha` in `review_driven_commits` names a branch commit, and this
-        repo squash-merges — `git log --format='%h parents=%p %s' -6
-        origin/master` is single-parent throughout with `(#NNNN)` subjects — so
-        those objects never reach `master`. Measured on the first trace shipped
-        under D4: `git cat-file -e <sha>^{commit}` over
-        `bk-378-d1-d4.yml`'s nine SHAs finds **0 of 9** present in a fresh
-        clone. `pr` is what a later reader resolves the squash commit from.
+        repo squash-merges, so those commits never reach `master`. Measured on
+        the first trace shipped under D4: of `bk-378-d1-d4.yml`'s nine SHAs,
+        `git merge-base --is-ancestor <sha> origin/master` succeeds for **0 of
+        9**. `pr` is what a later reader resolves the squash commit from.
+
+        Reachability, not `git cat-file -e`, matching the instrument
+        `scripts/ship_report.py`'s Bounds mandates — object presence answers
+        whether *this clone* has fetched the PR's refs, and returns 9 of 9 in
+        one that has.
         """
         import yaml
 
@@ -637,30 +640,30 @@ class TestTraceBlock:
         assert "x: not closed (no additionalProperties: false)" in gaps
         assert "x.inner: optional ['b']" in gaps
 
-    @pytest.mark.parametrize(
-        "dropped",
-        [
-            "derivation",
-            "review_rounds",
-            "submissions",
-            "findings",
-            "by_round",
-            "by_file",
-            "untouched_files",
-            "review_driven_commits",
-            "ci",
-        ],
-    )
-    def test_dropping_any_emitted_field_fails_the_schema(self, data: dict, dropped: str) -> None:
+    def test_dropping_any_emitted_field_fails_the_schema(self, data: dict) -> None:
+        """Every field the emitter writes, derived from the block rather than listed.
+
+        This was a hand-maintained list of nine names, and adding `pr` left it
+        covering nine of ten — a parallel enumeration of a set with an
+        authoritative home, going stale one commit after the home changed,
+        which is DRIFT-RULES Rule 3's shape and this PR's own subject. Taking
+        the fields from the emitted block means the next one cannot slip past.
+        """
         import yaml
         from jsonschema.validators import validator_for
 
         schema_path = Path(__file__).resolve().parents[2] / "sdd" / "traces" / "_schema.yml"
         schema = yaml.safe_load(schema_path.read_text(encoding="utf-8"))
         validator = validator_for(schema)(schema["properties"]["review"])
-        block = yaml.safe_load(_mod.trace_block(data))["review"]
-        del block[dropped]
-        assert list(validator.iter_errors(block)), f"dropping {dropped} validated"
+        emitted = yaml.safe_load(_mod.trace_block(data))["review"]
+
+        assert set(emitted) == set(schema["properties"]["review"]["required"]), (
+            "the emitter and the schema's required list must name the same fields"
+        )
+        for dropped in sorted(emitted):
+            block = dict(emitted)
+            del block[dropped]
+            assert list(validator.iter_errors(block)), f"dropping {dropped} validated"
 
     def test_a_subject_with_a_quote_survives_yaml(self, data: dict) -> None:
         import yaml

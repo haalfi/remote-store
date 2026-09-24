@@ -221,7 +221,8 @@ class TestCheck:
         returns sets, so the repeat collapsed before any comparison, and
         `_check` only ever compared open against *done* — so a file carrying
         the same ID twice printed "No ID collisions." This is ID-257's
-        open-versus-open half, which that item records as unreached by any gate.
+        open-versus-open half, which this change builds and that item now
+        hands over.
         """
         duplicate_active = (
             f"- [ ] **BK-382 {_EM} The file-ancestor gate ships unexercised**\n"

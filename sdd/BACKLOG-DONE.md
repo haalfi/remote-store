@@ -240,14 +240,15 @@ if evidence changes; these are retired.
 
 ## Unreleased
 
-- [x] **BK-384 — Three gates dedupe the duplicate they should report**
+- [x] **BK-383 — Two gates dedupe the duplicate they should report, and a derived commit list says what it resolves to**
   spec: — · effort: M · audience: contributor.tooling, contributor.process
   **Split** per § Completing work: this entry is the delivery; the RFC-0015
   re-measurement it was filed under stays open as
-  [BK-383](BACKLOG.md), and the minting half of
+  [BK-384](BACKLOG.md), and the minting half of
   [ID-257](BACKLOG.md) is untouched.
-  One shape in three places — a dedupe that hides the duplicate it should
-  report.
+  Two of the three are one shape — a dedupe that hides the duplicate it should
+  report. The third is the squash-merge orphaning, which is a different defect
+  and shipped with them because the same reading found it.
   **`gen-backlogid --check` could not see its own file.** `_extract_ids`
   returns sets, so a repeated header collapsed before anything compared it, and
   `_check` only ever compared open IDs against *done* ones. It printed
@@ -279,8 +280,8 @@ if evidence changes; these are retired.
   emits `pr`, the handle that survives, from which the squash commit resolves
   after the merge; the squash SHA is not emitted, because at paste time the PR
   is open and `merge_commit_sha` is then an ephemeral test-merge commit.
-  Guards: **12** added, across three files collecting 127 — from
-  `git diff origin/master...HEAD -- tests/ | rg -c '^+    def test_'` and
+  Guards: **18** added, across three files collecting 134 — from
+  `git diff origin/master...HEAD -- tests/ | rg -c '^[+]    def test_'` and
   `hatch run pytest tests/scripts/test_gen_backlogid.py
   tests/scripts/test_check_traces.py tests/scripts/test_ship_report.py
   --collect-only`. `sdd/GATE-INVENTORY.md` went 48 → 50 mechanisms: both gates
@@ -289,7 +290,7 @@ if evidence changes; these are retired.
 - [x] **BK-378 — The `/ship` loop reviews its own record past round 2, and nothing separates the two**
   spec: — · effort: L · audience: contributor.process
   **Split** per § Completing work: this entry is RFC-0015's **D1 and D4 built**;
-  the re-measurement, the accept/reject and the graduating ADR are **BK-383**.
+  the re-measurement, the accept/reject and the graduating ADR are **BK-384**.
   BK-379's pilot missed acceptance clause 1 by three points with D1 and D4
   unbuilt, and the RFC's § Impact prescribed in advance that such a miss means
   build them and re-measure. This is that build. RFC-0015 stays **Draft**; a PR
@@ -363,7 +364,7 @@ if evidence changes; these are retired.
   **Open Question 5 answered**: the mid-loop `ship-report` output lives in a
   gitignored `tmp/ship-report-<PR>.md`, a brief quotes it, and the durable copy
   is the `review:` block at the close. **Still held, deliberately**, and
-  BK-383's: D3's cap lift, D5's stop-rule wiring, D6's deferred half.
+  BK-384's: D3's cap lift, D5's stop-rule wiring, D6's deferred half.
   Guards: **182** collected across the three scripts — ship_report 83,
   check_no_retrospective 46, check_backlog_ids_vs_base 53 — from
   `hatch run pytest tests/scripts/test_check_no_retrospective.py
@@ -465,7 +466,7 @@ if evidence changes; these are retired.
   **Left to BK-378:** D1, D4, clause 2, D5's stop-rule clause, D6's deferred
   half and D3's cap lift, each with the disposition above. BK-378 has since
   built D1 and D4 (entry above) and split; the rest is
-  [BK-383](BACKLOG.md).
+  [BK-384](BACKLOG.md).
 - [x] **BK-370 — The published conda recipe is a mirror no mechanism watches**
   spec: — · effort: M · audience: user.discoverability.human, infra.ci
   Closed by both halves of the item's first two options: a generator that makes

@@ -1,4 +1,4 @@
-"""PR-time gate: every trace under ``sdd/traces/`` validates against the schema.
+"""PR-time gate: every trace under ``sdd/traces/`` parses cleanly and matches the schema.
 
 ``sdd/traces/_schema.yml`` is the single authority for the shape of an
 agent use-case trace: which fields are required, the id/pattern
@@ -77,8 +77,8 @@ Drift-gate::
 Drift-gate::
 
     kind:       rule
-    rule: no file this gate parses repeats a mapping key at any depth --- every
-        trace under sdd/traces/ and sdd/traces/_schema.yml itself
+    rule: no file this gate parses repeats a mapping key at any depth — every
+        trace under sdd/traces/, and sdd/traces/_schema.yml itself
     domain:     process
 """
 
@@ -237,14 +237,15 @@ def main(argv: list[str] | None = None) -> int:
 
     violations = collect_violations(schema_path=args.schema, traces_dir=args.traces_dir)
     if not violations:
-        print("check_traces: all traces validate against sdd/traces/_schema.yml.")
+        print("check_traces: all traces parse and validate against sdd/traces/_schema.yml.")
         return 0
 
     for v in violations:
         print(v.format(), file=sys.stderr)
     print(
-        f"\ncheck_traces: {len(violations)} schema violation(s) across sdd/traces/. "
-        "Fix the trace to match sdd/traces/_schema.yml.",
+        f"\ncheck_traces: {len(violations)} violation(s). Each line above names the file to fix: "
+        "a `(parse)` or `(schema)` path is a malformed or duplicate-keyed file, "
+        "anything else is a trace disagreeing with sdd/traces/_schema.yml.",
         file=sys.stderr,
     )
     return 1

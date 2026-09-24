@@ -234,8 +234,8 @@ properties:
       returns one more. Second, the SHAs stop resolving at the merge —
       they name commits on the PR branch and this repo squash-merges, so
       a derived list is orphaned on arrival exactly as a transcribed one
-      is. See ``review_driven_commits`` below, and ``pr`` above for the
-      handle that survives. Both offsets are fixed and stated in
+      is. See ``review_driven_commits`` and ``pr`` in the `review:` block
+      below; `pr` is the handle that survives. Both offsets are fixed and stated in
       ``scripts/ship_report.py``'s Bounds; what D4 removes is the drift,
       not the offsets. The block measures the loop up to the close.
 
@@ -273,7 +273,7 @@ properties:
       schema describes what the script emits. The pair is a drift gate
       rather than a convention, and it closes in **both** directions —
       `additionalProperties: false` fails a field the emitter adds
-      without a property here, and the all-nine `required:` list fails
+      without a property here, and the all-ten `required:` list fails
       one it drops. Either alone leaves the other direction silent.
 
       **What it does not reach**, per DRIFT-RULES Rule 7: the field
@@ -283,6 +283,15 @@ properties:
 
       Traces predating BK-378 carry their hand-derived `review_rounds` at
       the top level and are not retrofitted.
+
+      **Adding a required field retrofits existing blocks by hand, and that
+      is the one sanctioned hand-edit.** Re-running the script instead would
+      re-measure the loop at today's head rather than at the close it
+      recorded — `pr` was added to `bk-378-d1-d4.yml` this way, and a
+      regeneration would have moved its `review_rounds` from 9 to 11, which
+      is the paste-commit offset, not a correction. Copy the new field's
+      value from the block the script emits now; leave every field the
+      original run measured alone, and mark the retrofit in a comment.
     properties:
       derivation:
         type: string

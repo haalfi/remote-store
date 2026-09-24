@@ -54,12 +54,13 @@ describes** — an item may still designate future work that will need its own I
 as ID-199 and ID-140 do. **Splitting:** a section that outgrows itself becomes
 two promises, never loose items.
 
-**The admission test, granularity and splitting are not gated.** The backlog's
-mechanical checks are the `gen_backlogid.py` and `check_backlog_ids_vs_base.py`
-rows in [`GATE-INVENTORY.md`](GATE-INVENTORY.md); none of them covers placement,
-granularity or section membership. Named by their rows rather than enumerated
-here, because the enumeration that stood in its place went stale twice over — it
-never mentioned the ID-set gate, and it predated the duplicate-open-ID rule. So all three are **review-enforced**, and that is a real weakness
+**The admission test, granularity and splitting are not gated.** What does check
+these files mechanically is every row in [`GATE-INVENTORY.md`](GATE-INVENTORY.md)
+whose subject names `sdd/BACKLOG*.md`; none of them covers placement,
+granularity or section membership. Stated as a query rather than a list, because
+two successive fixed enumerations here each went stale within one change — the
+first omitted the ID-set gate and predated the duplicate-open-ID rule, the second
+omitted the CHANGELOG and retrospective checks that also read these files. So all three are **review-enforced**, and that is a real weakness
 worth stating plainly rather than a citation: the diagnosis behind this
 structure is that topic groups decayed because nothing stopped unearned items
 accumulating, and conventions without a mechanism decay the same way. ID-235 in
@@ -2256,7 +2257,7 @@ recorded (BK-365); the repo can say whether its own quality promise is
 holding rather than only asserting it (BK-366); two sessions working in
 parallel cannot mint the same backlog ID with every derivation telling both they
 are right (ID-257); and the review loop stops recording itself in the artifacts
-it reviews (BK-383, after BK-379's pilot and BK-378's build of RFC-0015's D1
+it reviews (BK-384, after BK-379's pilot and BK-378's build of RFC-0015's D1
 and D4 left the re-measurement as the last thing it owes).
 **Bounded to those fifteen deliberately** — count derived by enumerating the
 semicolon-separated clauses above, not carried forward. "No artifact asserts what
@@ -2936,7 +2937,7 @@ the commit that writes it lands, so cite the generator instead.
   *open* items sharing an ID passed it, so the duplicate was found by reading
   `rg -n 'BK-367' sdd` after the rebase rather than by a gate.
   **That half is now built and is no longer this item's**, under
-  [`BK-384`](BACKLOG-DONE.md): `_duplicate_ids` reports one ID carried by two
+  [`BK-383`](BACKLOG-DONE.md): `_duplicate_ids` reports one ID carried by two
   open headers, and `gen-backlogid --check` fails on it. What it does not do is prevent the
   mint, which is the open question below and the whole of what remains here —
   the gate catches the collision only once both branches have merged, and the
@@ -2949,7 +2950,7 @@ the commit that writes it lands, so cite the generator instead.
   long-lived PR should expect under the current scheme; the item moved to
   `BK-378`.
 
-- [ ] **BK-383 — RFC-0015 is built but unmeasured: three deliveries decide whether it graduates**
+- [ ] **BK-384 — RFC-0015 is built but unmeasured: three deliveries decide whether it graduates**
   spec: — · effort: M · audience: contributor.process
   The open half of **BK-378**, which shipped D1 and D4 and is recorded in
   `BACKLOG-DONE.md`. Every decision RFC-0015 proposes is now in force in the
@@ -2996,7 +2997,7 @@ the commit that writes it lands, so cite the generator instead.
   Whether that gap is worth a gate is this item's to decide — it is the same
   failure shape the RFC measured, one surface over.
   **The two block-handling defects BK-378's review recorded are shipped** under
-  [`BK-384`](BACKLOG-DONE.md), with the duplicate-ID gate ID-257 hands over:
+  [`BK-383`](BACKLOG-DONE.md), with the duplicate-ID gate ID-257 hands over:
   D4 now states that a squash merge retires every SHA in
   `review_driven_commits`, so the list is orphaned on arrival whoever wrote it,
   and the block carries `pr` as the handle that survives; and `check_traces.py`

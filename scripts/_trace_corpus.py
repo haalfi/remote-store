@@ -80,8 +80,8 @@ class StrictTraceLoader(yaml.SafeLoader):
 
     The reachable authoring path is RFC-0015 D4's paste-the-block workflow — a
     second paste rather than a replacement leaves two ``review:`` keys, and the
-    nine-field ``required:`` list cannot see it because the survivor has all
-    nine. The check is not scoped to that key, because the defect is not: the
+    ten-field ``required:`` list cannot see it because the survivor has all
+    ten. The check is not scoped to that key, because the defect is not: the
     BK-221 instance predates the block entirely.
 
     Every depth, not just the document root. A nested duplicate discards content
@@ -89,48 +89,66 @@ class StrictTraceLoader(yaml.SafeLoader):
     while making the rule harder to state.
     """
 
+    # PyYAML tags a merge key (`<<: *anchor`) with this, and it is not a key:
+    # it is an instruction to splice another mapping in. YAML resolves a literal
+    # key that restates a merged one as an *override*, so neither occurrence is
+    # a duplicate.
+    _MERGE_TAG = "tag:yaml.org,2002:merge"
+
     def construct_mapping(self, node: Any, deep: bool = False) -> dict[Any, Any]:
-        # Flatten first, for the same reason `SafeConstructor.construct_mapping`
-        # does it first: a merge key (`<<: *anchor`) is not a duplicate, it is an
-        # instruction to splice. Scanning `node.value` before flattening sees the
-        # literal `<<` and refuses a document `yaml.safe_load` accepts — measured,
-        # a two-key merge document parsed under `safe_load` and raised here, with
-        # an error naming `tag:yaml.org,2002:merge` rather than anything a reader
-        # could act on. Flattening is idempotent, so super()'s own call is a
-        # no-op. After it, a key the merge spliced in that the mapping also
-        # states literally is resolved by YAML's merge semantics, not a
-        # duplicate, and is correctly not reported.
-        self.flatten_mapping(node)
-        seen: set[Any] = set()
-        for key_node, _ in node.value:
-            key = self.construct_object(key_node, deep=deep)
-            # Hashability first, exactly as `BaseConstructor.construct_mapping`
-            # does it. Testing membership before this check performs the
-            # unhashable lookup itself and raises `TypeError` on a complex key
-            # (`? [a, b]`), which is not a YAMLError and so escapes the arm
-            # both consumers report `(parse)` violations from — the very
-            # traceback the ConstructorError choice below exists to avoid.
-            # Deferring to super() here would not help: the duplicate scan runs
-            # first by construction.
-            if not isinstance(key, Hashable):
-                raise yaml.constructor.ConstructorError(
-                    "while constructing a mapping",
-                    node.start_mark,
-                    f"found unhashable key of type {type(key).__name__}",
-                    key_node.start_mark,
-                )
-            if key in seen:
-                # ConstructorError, not a bare ValueError: it subclasses
-                # YAMLError, which is what both consumers already catch and
-                # report as a `(parse)` violation. A non-YAMLError would
-                # escape that handler and abort the gate with a traceback.
-                raise yaml.constructor.ConstructorError(
-                    "while constructing a mapping",
-                    node.start_mark,
-                    f"found duplicate key {key!r} — YAML keeps only the last, silently discarding the earlier one",
-                    key_node.start_mark,
-                )
-            seen.add(key)
+        """Refuse a repeated key, then defer to ``SafeConstructor`` for everything else.
+
+        **The scan runs before flattening and skips the merge tag**, rather than
+        flattening first and scanning the result. Two measured failures forced
+        that order, and both came from reasoning about ``flatten_mapping``'s
+        internals instead of leaving them alone:
+
+        * it **prepends** the spliced pairs (``node.value = merge + node.value``)
+          without resolving them against the literal ones, so a mapping that
+          merges an anchor and then overrides one of its keys carries that key
+          twice afterwards. Scanning the flattened value refused
+          ``{<<: *b, a: 2}`` over a base holding ``a``, which ``yaml.safe_load``
+          accepts and resolves to the override; and
+        * it unpacks ``node.value`` pairwise, so calling it on a node that is
+          not a ``MappingNode`` — ``x: !!map\n  - a`` — raised ``TypeError``,
+          which is not a ``YAMLError`` and so escaped the arm both consumers
+          report ``(parse)`` violations from.
+
+        Deferring to ``super()`` for the node-type guard, the flattening and the
+        construction leaves this override responsible for one question only:
+        does any literal key repeat?
+        """
+        if isinstance(node, yaml.nodes.MappingNode):
+            seen: set[Any] = set()
+            for key_node, _ in node.value:
+                if key_node.tag == self._MERGE_TAG:
+                    continue
+                key = self.construct_object(key_node, deep=deep)
+                # Hashability before the membership test, as
+                # ``BaseConstructor.construct_mapping`` does it: testing ``in``
+                # first performs the unhashable lookup itself and raises
+                # ``TypeError`` on a complex key (``? [a, b]``), escaping the
+                # same arm.
+                if not isinstance(key, Hashable):
+                    raise yaml.constructor.ConstructorError(
+                        "while constructing a mapping",
+                        node.start_mark,
+                        f"found unhashable key of type {type(key).__name__}",
+                        key_node.start_mark,
+                    )
+                if key in seen:
+                    # ConstructorError subclasses YAMLError, which is what both
+                    # consumers already catch and report as a ``(parse)``
+                    # violation. A bare ValueError would escape that handler.
+                    raise yaml.constructor.ConstructorError(
+                        "while constructing a mapping",
+                        node.start_mark,
+                        f"found duplicate key {key!r} — YAML keeps only the last, silently discarding the earlier one",
+                        key_node.start_mark,
+                    )
+                seen.add(key)
+        # A non-mapping node falls straight through: super() raises PyYAML's own
+        # ``ConstructorError``, which is the YAMLError the consumers expect.
         return super().construct_mapping(node, deep=deep)
 
 

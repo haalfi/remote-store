@@ -97,16 +97,23 @@ Bounds (DRIFT-RULES Rule 7)
   schema's field means the first and a reader reaching for "how many reviews"
   wants the second.
 * **The squash merge retires every SHA in the list.** ``review_driven_commits``
-  names commits on the PR branch, and this repo squash-merges in practice:
-  ``git log --format='%h %p' origin/master`` returns 50 commits, 49 with exactly
-  one parent and the 50th the root, so there is no merge commit on it at all,
-  and every one of the 50 subjects ends in ``(#NNNN)``. It is a convention, not
-  a setting — the repository has ``allow_merge_commit`` and
-  ``allow_rebase_merge`` enabled, so a future merge could land differently.
+  names commits on the PR branch, and this repo squash-merges in practice: its
+  most recent merge commit is 976 commits back (``9c7ce58``, 2026-02-27), so the
+  last 976 are merge-free, and 941 of those 976 subjects end in ``(#NNNN)``.
+  Derived with ``git log --format='%h|%p|%s' origin/master``, counting entries
+  whose parent field holds more than one hash. **Run it in a full clone**:
+  agent and CI containers clone at depth 50, where ``git log`` stops at the
+  graft and prints its boundary commit as parentless — a shallow run reports
+  "50 commits, no merges, one root", all three of which are artefacts of the
+  depth. ``git fetch --unshallow`` first.
+  It is a convention rather than a setting: ``allow_merge_commit`` and
+  ``allow_rebase_merge`` are both enabled (``gh api repos/{owner}/{repo} --jq
+  '.allow_merge_commit, .allow_rebase_merge'``), so how the repo is merged is
+  what makes this true and a change there is what would reverse it.
   Under it, the branch commits the block names never land. Measured on the
   first trace shipped under D4: of ``sdd/traces/bk-378-d1-d4.yml``'s nine SHAs,
   ``git merge-base --is-ancestor <sha> origin/master`` succeeds for **0 of 9**.
-  Reachability, not object presence, is the reproducible test:
+  Reachability, not object presence, is the test that reproduces:
   ``git cat-file -e`` answers whether the *local* object store happens to hold
   the commit, which it does in any clone that has fetched the PR's refs and
   does not in a fresh one, so it reports the clone rather than the repository.
@@ -122,9 +129,10 @@ Bounds (DRIFT-RULES Rule 7)
 * **The count excludes the commit that carries it.** ``review_driven_commits``
   reads ``<base>..<head>`` at the moment of the run, and the commit that pastes
   this block into the trace does not exist yet — so re-running the stated
-  ``derivation`` after that commit lands returns one more. This is the one
-  member of the hand-transcription failure class D4 does not remove: a script
-  cannot count a commit whose content is its own output. What D4 does remove is
+  ``derivation`` after that commit lands returns one more. This is the **second**
+  member of the hand-transcription failure class D4 does not remove, beside the
+  retired SHAs above: a script cannot count a commit whose content is its own
+  output. What D4 does remove is
   the *drift* — the figure is re-derivable on demand and its offset is fixed and
   stated here, where a hand-written list went wrong by an unknown amount. Treat
   the block as measuring the loop up to the close, which is what it is for.
