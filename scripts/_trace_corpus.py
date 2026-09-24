@@ -39,6 +39,7 @@ runnable script, matching ``_dafny_classorder.py``.
 
 from __future__ import annotations
 
+from collections.abc import Hashable
 from pathlib import Path
 from typing import TYPE_CHECKING, Any
 
@@ -92,6 +93,21 @@ class StrictTraceLoader(yaml.SafeLoader):
         seen: set[Any] = set()
         for key_node, _ in node.value:
             key = self.construct_object(key_node, deep=deep)
+            # Hashability first, exactly as `BaseConstructor.construct_mapping`
+            # does it. Testing membership before this check performs the
+            # unhashable lookup itself and raises `TypeError` on a complex key
+            # (`? [a, b]`), which is not a YAMLError and so escapes the arm
+            # both consumers report `(parse)` violations from — the very
+            # traceback the ConstructorError choice below exists to avoid.
+            # Deferring to super() here would not help: the duplicate scan runs
+            # first by construction.
+            if not isinstance(key, Hashable):
+                raise yaml.constructor.ConstructorError(
+                    "while constructing a mapping",
+                    node.start_mark,
+                    f"found unhashable key of type {type(key).__name__}",
+                    key_node.start_mark,
+                )
             if key in seen:
                 # ConstructorError, not a bare ValueError: it subclasses
                 # YAMLError, which is what both consumers already catch and

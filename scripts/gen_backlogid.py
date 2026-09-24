@@ -27,8 +27,15 @@ Check mode (--check):
 Drift-gate::
 
     kind:       pair
-    compares: the max ID per prefix in sdd/BACKLOG-DONE.md ↔ sdd/backlogid.json, the open IDs in
-        sdd/BACKLOG.md against both, and the open IDs in sdd/BACKLOG.md against each other
+    compares: the max ID per prefix in sdd/BACKLOG-DONE.md ↔ sdd/backlogid.json, and the open IDs in
+        sdd/BACKLOG.md against both
+    domain:     process
+
+Drift-gate::
+
+    kind:       rule
+    rule: every open item header in sdd/BACKLOG.md carries an ID no other open
+        item carries
     domain:     process
 """
 

@@ -273,6 +273,38 @@ class TestCheck:
         assert _mod._check() == 1
         assert "ID-018" in capsys.readouterr().out
 
+    def test_a_duplicate_and_a_collision_are_both_reported_in_one_run(self, tmp_path, monkeypatch, capsys):
+        """Neither failure short-circuits the other.
+
+        The two are independent, so an author who fixes a duplicate and is then
+        told about a collision pays two read-fix-rerun cycles for one read of
+        the file. Without this, an implementation that returned early inside
+        the duplicates block passes every other test here while producing
+        exactly that.
+        """
+        both_active = (
+            f"- [ ] **BK-382 {_EM} One open item**\n"
+            f"- [ ] **BK-382 {_EM} Another open item**\n"
+            f"- [ ] **BK-174 {_EM} Collides with a done item**\n"
+        )
+        done, active, id_file = self._setup(
+            tmp_path,
+            _DONE_BLOCK,
+            both_active,
+            {"BK": 174, "BUG": 194, "ID": 176, "AF": 40, "BL": 10},
+        )
+        monkeypatch.setattr(_mod, "BACKLOG_DONE", done)
+        monkeypatch.setattr(_mod, "BACKLOG", active)
+        monkeypatch.setattr(_mod, "ID_FILE", id_file)
+        monkeypatch.setattr(_mod, "ROOT", tmp_path)
+
+        assert _mod._check() == 1
+        out = capsys.readouterr().out
+        assert "duplicate ID" in out
+        assert "collision(s)" in out
+        assert "BK-382" in out
+        assert "BK-174" in out
+
     def test_suffix_variants_are_not_duplicates(self, tmp_path, monkeypatch):
         """`BK-139a` and `BK-139b` are two items, not one appearing twice.
 

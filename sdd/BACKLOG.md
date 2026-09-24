@@ -2974,7 +2974,7 @@ the commit that writes it lands, so cite the generator instead.
   is no firing to tune them against. D6's deferred half — the whole-file brief
   excluding the trace's `review:` key, and a measuring member re-running
   `ship-report`.
-  **Two measured observations BK-378's review surfaced, for whoever takes
+  **Three measured observations BK-378's review surfaced, for whoever takes
   this.** First, **the repo's own tooling is unmeasured by the coverage gate**:
   `pyproject.toml` scopes coverage to `--cov=remote_store`, and `ci.yml`'s
   `tooling-tests` job states it runs without coverage, so no gap in any
@@ -2993,7 +2993,15 @@ the commit that writes it lands, so cite the generator instead.
   hand-derived, and re-deriving at the close is a convention nothing enforces.
   Whether that gap is worth a gate is this item's to decide — it is the same
   failure shape the RFC measured, one surface over.
-  **Two block-handling defects are closed under BK-383's own delivery**, and
+  **The duplicate-ID gate ID-257 hands over is built here.** `_duplicate_ids`
+  reports one ID carried by two *open* headers and `gen-backlogid --check`
+  fails on it, closing the half ID-257 names as unreached; that item keeps the
+  prevention question, which needs a mint-time view of unmerged branches and is
+  not attempted. The gate found `BUG-291` live on two distinct open items
+  besides the `BK-382` that prompted it, so both were renumbered by merge order
+  — the later-merged item moving — and `sdd/GATE-INVENTORY.md` gained the
+  `rule` row the widened claim space owes.
+  **Two block-handling defects are also closed under this delivery**, and
   neither was about the block's content. A squash merge retires every SHA in
   `review_driven_commits`, so the list is orphaned on arrival whoever wrote it —
   D4 now says so, and the block carries `pr` as the handle that survives, from

@@ -222,20 +222,22 @@ properties:
       **The derivation is the script, and that is the whole clause now.**
       What stood here before was a rule for hand-counting: name the
       commits, or better name the query, in a comment above the field.
-      It failed in four measured ways on one branch (PR #994) — a
-      transcribed list goes stale on the next push, and is orphaned by a
-      rebase into hashes that still resolve as objects while matching
-      nothing the stated query returns. A hand-written figure about the
-      loop is what D4 removes, so the remedy is no longer a better
-      convention for writing one.
+      It failed in four measured ways on one branch (PR #994), the
+      governing one being that a transcribed list goes stale on the next
+      push. A hand-written figure about the loop is what D4 removes, so
+      the remedy is no longer a better convention for writing one.
 
-      **One member of that class survives, by construction.** A
-      transcribed list cannot include the commit that carries it, and
-      neither can a derived one: the script reads ``<base>..<head>`` before
-      the paste commit exists, so re-running the stated derivation
-      afterwards returns one more. The offset is fixed and stated in
+      **Two members of that class survive, by construction, and deriving
+      removes neither.** First, a list cannot include the commit that
+      carries it: the script reads ``<base>..<head>`` before the paste
+      commit exists, so re-running the stated derivation afterwards
+      returns one more. Second, the SHAs stop resolving at the merge —
+      they name commits on the PR branch and this repo squash-merges, so
+      a derived list is orphaned on arrival exactly as a transcribed one
+      is. See ``review_driven_commits`` below, and ``pr`` above for the
+      handle that survives. Both offsets are fixed and stated in
       ``scripts/ship_report.py``'s Bounds; what D4 removes is the drift,
-      not the offset. The block measures the loop up to the close.
+      not the offsets. The block measures the loop up to the close.
 
       Where a deterministic count of a *different* thing is wanted —
       formal review-submission events rather than fix commits — the

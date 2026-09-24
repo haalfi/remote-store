@@ -134,6 +134,52 @@ class TestDuplicateKeys:
         assert len(violations) == 1
         assert violations[0].path == "(parse)"
 
+    def test_an_unhashable_key_is_reported_not_raised(self, tmp_path):
+        """A complex key must not escape as `TypeError`.
+
+        PyYAML's own `construct_mapping` checks `isinstance(key, Hashable)`
+        before using the key and raises `ConstructorError` when it is not.
+        A duplicate-detector that tests membership first does the unhashable
+        lookup itself, and `TypeError` is not a `yaml.YAMLError` — so it
+        escapes the `except` arm both consumers report `(parse)` violations
+        from, and the gate aborts with a traceback instead. Measured before the
+        guard: `load_trace('? [a, b]\\n: value\\n')` raised `TypeError`.
+        """
+        schema = _write_schema(tmp_path)
+        traces = tmp_path / "traces"
+        _write_trace(traces, "complex.yml", "? [a, b]\n: value\n")
+        violations = _mod.collect_violations(schema_path=schema, traces_dir=traces)
+        assert violations, "an unhashable key must be reported, not raised"
+        assert violations[0].path == "(parse)"
+
+    def test_a_duplicate_key_in_the_schema_is_reported(self, tmp_path):
+        """The authority file is inside the guard, not outside it.
+
+        `_schema.yml` is the one YAML whose duplicate key disarms the gate for
+        the *whole* corpus: two `required:` keys under `properties.review`
+        leave a well-formed schema that `check_schema` passes, and every trace
+        then validates against constraints nobody wrote. Reported rather than
+        raised, symmetric with the malformed-schema path beside it.
+        """
+        schema = tmp_path / "_schema.yml"
+        schema.write_text(
+            textwrap.dedent(
+                """
+                $schema: "https://json-schema.org/draft/2020-12/schema"
+                type: object
+                required: [id]
+                required: [title]
+                """
+            ),
+            encoding="utf-8",
+        )
+        traces = tmp_path / "traces"
+        _write_trace(traces, "ok.yml", 'id: "ID-1"\n')
+        violations = _mod.collect_violations(schema_path=schema, traces_dir=traces)
+        assert len(violations) == 1
+        assert violations[0].path == "(schema)"
+        assert "required" in violations[0].message
+
     def test_distinct_keys_still_parse(self, tmp_path):
         """The guard must not fire on a mapping that merely repeats a *value*."""
         schema = _write_schema(tmp_path)
