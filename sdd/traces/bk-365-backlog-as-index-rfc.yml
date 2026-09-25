@@ -1,0 +1,185 @@
+id: BK-365
+title: "Draft RFC-0016: BACKLOG.md as an index, item detail in per-item dossiers"
+trigger: >-
+  A backlog-structure review measured sdd/BACKLOG.md at ~51k tokens and 3,013
+  lines, over 80% of it item bodies (82% once separator lines are charged to
+  the section they open), so no session reads it whole with one default
+  Read. The user named context cost as the concern, and chose per-item
+  dossiers, an ADR for the rules' rationale, an RFC first, removal of
+  `Closes when`, and gates for attribute vocabulary, item length and preamble
+  length.
+source_items:
+  - BK-365
+  - ID-235
+audience:
+  - contributor.process
+expected_ripples:
+  - sdd/BACKLOG.md
+  - sdd/rfcs/rfc-0016-backlog-as-index.md
+  - sdd/rfcs/rfc-0016-measure.py
+phases:
+  - id: orient
+    name: Orient
+    steps:
+      - file: sdd/BACKLOG.md
+        section: "How this file works; section preambles; BK-365; ID-235"
+        read_type: gate
+        extract: >-
+          The rules header mixes operational rules with their rationale.
+          `Closes when` carries closure narration and omits open items. BK-365
+          is the host and asks for research § 9.2's test before any proposal;
+          ID-235 is the home for structural lint.
+        outcome: ok
+      - file: sdd/000-process.md
+        section: "Backlog; Document types"
+        read_type: gate
+        extract: >-
+          BACKLOG.md is the single source for backlog structure; an RFC proposes,
+          an ADR records the decision.
+        outcome: ok
+      - file: sdd/CONTENT-RULES.md
+        section: "Rule 7 (Kernsatz)"
+        read_type: reference
+        extract: A section opens with its core claim in at most three sentences.
+        outcome: ok
+      - file: sdd/research/research-appropriate-level-of-detail.md
+        section: "Recommendations, § 4, § 9"
+        read_type: gate
+        extract: >-
+          § 9.1 puts no length rule beside Rule 7; § 9.2 allows cutting only what
+          the surviving text can recover, else move it. My miss: I first argued
+          the caps as "placement boundaries" and read § 9.2's recoverability as
+          recovery from other files. PR #1028's review refuted both (a count is a
+          text-level instrument per § 1; § 9.2's test is within the section), so
+          the RFC now records the caps as an open departure from § 9.1.
+        outcome: ok
+      - file: scripts/gen_backlogid.py
+        section: "(full)"
+        read_type: reference
+        extract: >-
+          The header regex is broader than the copy BACKLOG.md quotes, and IDs
+          are collected into sets.
+        outcome: ok
+  - id: author
+    name: Author
+    steps:
+      - file: sdd/templates/rfc-template.md
+        section: "(full)"
+        read_type: reference
+        extract: Section order for the RFC.
+        outcome: ok
+      - file: sdd/rfcs/rfc-0015-ship-two-surfaces.md
+        section: "Status"
+        read_type: reference
+        extract: >-
+          Precedent for a pinned date and a committed measurement script beside
+          the RFC.
+        outcome: ok
+      - file: sdd/AUTHORING.md
+        section: "Where does my new file go?; Classification markers; Directory defaults"
+        read_type: reference
+        extract: >-
+          A new sdd/backlog/*.md matches no directory default, so each dossier
+          needs an explicit repo-only marker, or AUTHORING gains a row. It says
+          nothing about issue trackers; round 1 caught my citing it for that.
+        outcome: ok
+      - file: .claude/hooks/backlog-status-brake.sh
+        section: "(full)"
+        read_type: reference
+        extract: >-
+          Keys on `[~] **PREFIX-NNN` in the edit's old and new strings, so an
+          index entry keeps working unchanged; the basis for Impact's
+          "unaffected".
+        outcome: ok
+      - file: sdd/traces/_schema.yml
+        section: "audience; required"
+        read_type: reference
+        extract: >-
+          The audience enum R1 checks against (contributor.process and
+          contributor.tooling, no bare contributor; infra.test present).
+        outcome: ok
+  - id: verify
+    name: Verify
+    steps:
+      - file: sdd/CLAUDE-REFERENCE.md
+        section: "Branch freshness check; PR validation gates; Ripple-check table / Bug fix, Backlog item touched"
+        read_type: verify
+        extract: >-
+          Gates for an sdd-only diff are lint + docs-gate plus the backlog
+          ID-set gate. The Bug fix and Backlog item touched rows, in both
+          presentations, point at sdd/BACKLOG.md; D2 moves reproduction and adds
+          a close-time link, so both rows are ripple targets. My first Impact
+          list named only the lookup row; round 2 caught it.
+        outcome: ok
+      - file: sdd/GATE-INVENTORY.md
+        section: "rows whose subject names sdd/BACKLOG*.md"
+        read_type: verify
+        extract: >-
+          What is mechanically gated today: gen_backlogid.py (ID floor,
+          collisions, one ID on two open items) and check_backlog_ids_vs_base.py.
+          Placement rules have no row, which scopes "Why it grew".
+        outcome: ok
+  - id: review
+    name: Review fixes
+    steps:
+      - file: sdd/DRIFT-RULES.md
+        section: "Rule 4 (authority)"
+        read_type: gate
+        extract: >-
+          Declare which side governs per artifact pair, before the check
+          exists, in the document that owns the pair. D1's index/dossier table
+          is that declaration; its home after acceptance is § Item authority.
+          I cited Rule 4 in round 1 from the reviewer's quote and opened it only
+          in round 2.
+        outcome: ok
+      - file: scripts/check_no_tracker_refs.py
+        section: "module docstring, Out of scope; failure message"
+        read_type: reference
+        extract: >-
+          "the trackers are how those documents are addressed" (line 36) and the
+          routing of coordinates into sdd/specs/ or sdd/BACKLOG-DONE.md
+          (lines 447-448): the grounds for rejecting an external tracker.
+        outcome: ok
+      - file: sdd/000-process.md
+        section: "Rule 6 (Bug fixes pipeline)"
+        read_type: reference
+        extract: >-
+          BACKLOG is the pipeline's first stop, and the reproduction the fixer
+          reads first moves to the dossier under D2, so Rule 6 is a ripple
+          target.
+        outcome: ok
+review:
+  # Derived by `hatch run ship-report 1028 --trace-block-only` at head 7a49789.
+  # Do not hand-edit, except a newly required field per sdd/traces/_schema.yml
+  # section review: RFC-0015 D4 makes this script the only producer.
+  derivation: "hatch run ship-report 1028 --trace-block-only"
+  pr: 1028
+  review_rounds: 2
+  submissions: 2
+  findings: 14
+  by_round:
+    - round: 1
+      findings: 10
+      origin: {original: 10}
+      triage: {must-fix: 9, refuted: 1}
+      duration_hours: 26.68
+    - round: 2
+      findings: 4
+      origin: {loop-introduced: 1, original: 2, unclassifiable-file: 1}
+      triage: {must-fix: 4}
+      duration_hours: 0.58
+  by_file:
+    - path: "sdd/rfcs/rfc-0016-backlog-as-index.md"
+      findings: 12
+    - path: "sdd/rfcs/rfc-0016-measure.py"
+      findings: 1
+    - path: "sdd/traces/bk-365-backlog-as-index-rfc.yml"
+      findings: 1
+  untouched_files:
+    - "sdd/BACKLOG.md"
+  review_driven_commits:
+    - sha: "04f9d37"
+      subject: "fix: address PR #1028 review"
+    - sha: "7a49789"
+      subject: "fix: address PR #1028 review"
+  ci: {verdict: GREEN, failed: 0, pending: 0}

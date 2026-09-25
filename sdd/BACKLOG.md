@@ -2835,8 +2835,11 @@ the commit that writes it lands, so cite the generator instead.
   **Exit criteria:** decision logged here, then the successor ticket opened and
   its ID named in this item's close note.
 
-- [ ] **BK-365 — Both backlog files grew past what a maintainer can read, and nothing measures it**
+- [~] **BK-365 — Both backlog files grew past what a maintainer can read, and nothing measures it**
   spec: — · effort: M · audience: contributor.process
+  **In progress: [RFC-0016](rfcs/rfc-0016-backlog-as-index.md) (Draft)** proposes
+  the `BACKLOG.md` half — an index with per-item dossiers — and leaves
+  `BACKLOG-DONE.md` open here.
   **`sdd/BACKLOG.md` is 20,097 words at `6cec225`.** That is the file a maintainer
   reads to decide what to work on, and it is now roughly eighty pages of prose. Two
   independent multipliers got it there over seven weeks (2026-07-18 → 2026-09-05):
