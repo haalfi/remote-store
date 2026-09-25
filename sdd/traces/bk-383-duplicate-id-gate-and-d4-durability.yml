@@ -24,7 +24,11 @@ discovery_followups:
   # register carries four pre-existing pairs, so the widening was reverted and
   # the gap filed with them as evidence.
   - BK-385
-co_shipped_items: []
+co_shipped_items:
+  # A CI failure this PR did not cause but had to fix: SQLAlchemy 2.1 deleted
+  # the mypy plugin pyproject configures, red-lighting typecheck here and on
+  # master. Diagnosed, reproduced and fixed under its own trace.
+  - BUG-294
 expected_ripples:
   - sdd/backlogid.json
   - sdd/GATE-INVENTORY.md

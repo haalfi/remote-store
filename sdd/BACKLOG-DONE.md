@@ -240,6 +240,38 @@ if evidence changes; these are retired.
 
 ## Unreleased
 
+- [x] **BUG-294 — A deleted mypy plugin the config still names turns every typecheck job red**
+  spec: — · effort: S · audience: contributor.tooling
+  `[tool.mypy]` carried `plugins = ["sqlalchemy.ext.mypy.plugin"]` while
+  `sql` declared `sqlalchemy>=2.0.31` with no upper bound. **SQLAlchemy 2.1.0
+  deletes `sqlalchemy.ext.mypy`**, so a fresh CI install resolved it and mypy
+  exited **2** — its startup code, before reading a source file — where the
+  exit for type errors is 1.
+  **Reproduced before the fix**, in a scratch venv holding SQLAlchemy 2.1.0 and
+  mypy 2.3.1 against a two-line config: `Error importing plugin
+  "sqlalchemy.ext.mypy.plugin": No module named 'sqlalchemy.ext.mypy'`, exit 2,
+  matching `typecheck (3.13)` on PR #1027 exactly. `importlib.util.find_spec`
+  confirms the module is absent from 2.1.0 and present in the 2.0.54 this
+  container had pinned, which is why `hatch run all` passed locally while CI
+  did not.
+  **Found on an unrelated PR and fixed there** because it red-lights `master`
+  on its next run, not only that branch: the failing command is
+  `mypy src/ examples/`, and #1027's diff touches neither path.
+  **The line is removed rather than the dependency pinned.** The plugin has
+  been redundant since SQLAlchemy 2.0, where PEP 681 `dataclass_transform`
+  gave `DeclarativeBase` and `mapped_column()` native inference; 2.1 deleting
+  it is the end of that migration. Pinning `sqlalchemy<2.1` would hold a major
+  dependency back to preserve something upstream has removed, which the
+  dependency policy BK-371 states would need its own justification.
+  `hatch run typecheck` passes without it: **Success: no issues found in 120
+  source files**.
+  **Guarded**: `TestMypyPlugins::test_every_configured_plugin_is_importable`
+  asserts every plugin `[tool.mypy]` names is importable in the environment
+  mypy will run in — the question mypy itself asks at startup. Mutation-checked
+  against a planted uninstallable plugin. Nothing checked this before, and the
+  local gate structurally could not: whether the plugin exists depends on what
+  the environment resolved, not on anything in a diff.
+
 - [x] **BK-383 — Two gates dedupe the duplicate they should report, and a derived commit list says what it resolves to**
   spec: — · effort: M · audience: contributor.tooling, contributor.process
   **Split** per § Completing work: this entry is the delivery; the RFC-0015

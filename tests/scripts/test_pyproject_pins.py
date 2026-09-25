@@ -234,3 +234,41 @@ def test_every_declaring_extra_keeps_the_supported_versions(pin, extras):
             assert req.specifier.contains(good, prereleases=True), (
                 f"extra {extra!r}: {pin.package} specifier {str(req.specifier)!r} must keep {good} — {pin.why}"
             )
+
+
+class TestMypyPlugins:
+    """Every plugin `[tool.mypy]` configures is importable in this environment.
+
+    A configured plugin that is not installed makes mypy exit **2** before it
+    reads a source file, so the failure looks nothing like a type error and the
+    message names the config rather than the code.
+
+    **Measured, not anticipated.** `plugins = ["sqlalchemy.ext.mypy.plugin"]`
+    stood here while `sql` declared `sqlalchemy>=2.0.31` with no upper bound.
+    SQLAlchemy 2.1.0 deleted `sqlalchemy.ext.mypy`; a fresh CI install resolved
+    it and `typecheck (3.13)` went red with
+    `Error importing plugin ... No module named 'sqlalchemy.ext.mypy'`, while a
+    container holding 2.0.54 passed. The local gate could not see it, because
+    the plugin's presence depends on what the environment resolved rather than
+    on anything in the diff.
+
+    This guard runs in the same environment mypy does, so it answers the
+    question mypy would have: is the plugin there?
+    """
+
+    @staticmethod
+    def _configured_plugins() -> list[str]:
+        data = tomllib.loads((ROOT / "pyproject.toml").read_text(encoding="utf-8"))
+        return list(data.get("tool", {}).get("mypy", {}).get("plugins", []))
+
+    def test_every_configured_plugin_is_importable(self) -> None:
+        import importlib.util
+
+        for plugin in self._configured_plugins():
+            # mypy accepts `pkg.mod` and `pkg.mod:func`; only the module part
+            # is imported.
+            module = plugin.split(":", 1)[0]
+            assert importlib.util.find_spec(module) is not None, (
+                f"[tool.mypy] plugins declares {plugin!r}, but {module!r} is not importable "
+                "in this environment. mypy exits 2 on that before checking any source."
+            )

@@ -1,0 +1,80 @@
+id: BUG-294
+title: "Remove the mypy plugin SQLAlchemy 2.1 deleted, which red-lights every typecheck job"
+trigger: >-
+  PR #1027's CI went red on `typecheck (3.13)` with mypy exit code 2 — the
+  startup code, not the exit 1 for type errors — while the same check was green
+  on master and the PR's diff touched no file under `src/` or `examples/`, which
+  are the whole argument to the failing command. The user chose to fix it in that
+  PR rather than file it, because the failure red-lights master on its next run
+  and is not specific to the branch.
+source_items:
+  - BUG-294
+audience:
+  - contributor.tooling
+discovery_followups: []
+co_shipped_items:
+  - BK-383
+expected_ripples:
+  - sdd/BACKLOG-DONE.md
+  - sdd/backlogid.json
+surprising_ripples:
+  # The ripple-check's Dependency row anticipates a changed pin reaching the
+  # conda recipe, the README and the docs prerequisites. None of those moved:
+  # the fix removes a mypy *plugin* line, and the dependency range is untouched.
+  # What it did reach was a test that self-skips while pyproject.toml is dirty
+  # (test_check_support_windows.py:537, "HEAD and the working tree differ by
+  # design"), which is correct behaviour and resolves on commit — noted because
+  # it changes the suite's skip count mid-work and would otherwise read as a
+  # regression.
+  - tests/scripts/test_pyproject_pins.py
+phases:
+  - id: orient
+    name: Orient
+    steps:
+      - file: .github/workflows/ci.yml
+        section: "typecheck job"
+        read_type: gate
+        extract: >-
+          Runs `uv pip install -e ".[dev]"` then `mypy src/ examples/`, so the
+          environment is resolved fresh on every run rather than from a lock.
+          That is what makes the failure invisible to a local gate.
+        outcome: ok
+      - file: pyproject.toml
+        section: "[tool.mypy] plugins, and the sql extra"
+        read_type: gate
+        extract: >-
+          `plugins = ["sqlalchemy.ext.mypy.plugin"]` against
+          `sql = ["sqlalchemy>=2.0.31"]` with no upper bound — a hard dependency
+          on a module from a range that does not guarantee it.
+        outcome: ok
+  - id: verify
+    name: Verify
+    steps:
+      - file: pyproject.toml
+        section: "[tool.mypy]"
+        read_type: verify
+        extract: >-
+          Reproduced before fixing, per principle 6: in a scratch venv with
+          SQLAlchemy 2.1.0 and mypy 2.3.1, a two-line config naming the plugin
+          gives `Error importing plugin "sqlalchemy.ext.mypy.plugin": No module
+          named 'sqlalchemy.ext.mypy'` and exit 2, matching CI. `find_spec`
+          reports the module absent in 2.1.0 and present in the 2.0.54 this
+          container had resolved.
+        outcome: ok
+      - file: tests/scripts/test_pyproject_pins.py
+        section: "TestMypyPlugins"
+        read_type: verify
+        extract: >-
+          The guard asks the question mypy asks at startup — is every configured
+          plugin importable here — so it runs in the same environment and catches
+          the case a diff-scoped check structurally cannot. Mutation-checked
+          against a planted uninstallable plugin.
+        outcome: ok
+      - file: sdd/CLAUDE-REFERENCE.md
+        section: "Ripple-check table / Dependency"
+        read_type: verify
+        extract: >-
+          Checked and not triggered: the row covers a changed pin reaching the
+          conda recipe, README install and docs prerequisites. The dependency
+          range is unchanged; only a mypy plugin line was removed.
+        outcome: ok

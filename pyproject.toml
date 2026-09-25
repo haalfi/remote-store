@@ -561,7 +561,13 @@ exclude = ["src/remote_store/backends/_s3_boto3.py"]
 [tool.mypy]
 strict = true
 namespace_packages = true
-plugins = ["sqlalchemy.ext.mypy.plugin"]
+# No sqlalchemy mypy plugin. SQLAlchemy 2.1.0 deleted `sqlalchemy.ext.mypy`, and
+# `sql = ["sqlalchemy>=2.0.31"]` has no upper bound, so a fresh CI install
+# resolved 2.1.0 and mypy exited 2 — a startup failure, before reading a source
+# file — while this container's pinned 2.0.54 still had the module and passed.
+# The plugin has been redundant since 2.0 anyway: PEP 681 `dataclass_transform`
+# gives `DeclarativeBase` and `mapped_column()` native inference. Verified by
+# running `mypy src/ examples/` with the line removed.
 # medallion_dagster/ is a self-contained dagster project — its modules use
 # sibling-relative imports (`from assets.bronze import ...`, `from stores import ...`)
 # that only resolve when dagster's launcher puts the directory on sys.path.
