@@ -148,3 +148,38 @@ phases:
           reads first moves to the dossier under D2, so Rule 6 is a ripple
           target.
         outcome: ok
+review:
+  # Derived by `hatch run ship-report 1028 --trace-block-only` at head 7a49789.
+  # Do not hand-edit, except a newly required field per sdd/traces/_schema.yml
+  # section review: RFC-0015 D4 makes this script the only producer.
+  derivation: "hatch run ship-report 1028 --trace-block-only"
+  pr: 1028
+  review_rounds: 2
+  submissions: 2
+  findings: 14
+  by_round:
+    - round: 1
+      findings: 10
+      origin: {original: 10}
+      triage: {must-fix: 9, refuted: 1}
+      duration_hours: 26.68
+    - round: 2
+      findings: 4
+      origin: {loop-introduced: 1, original: 2, unclassifiable-file: 1}
+      triage: {must-fix: 4}
+      duration_hours: 0.58
+  by_file:
+    - path: "sdd/rfcs/rfc-0016-backlog-as-index.md"
+      findings: 12
+    - path: "sdd/rfcs/rfc-0016-measure.py"
+      findings: 1
+    - path: "sdd/traces/bk-365-backlog-as-index-rfc.yml"
+      findings: 1
+  untouched_files:
+    - "sdd/BACKLOG.md"
+  review_driven_commits:
+    - sha: "04f9d37"
+      subject: "fix: address PR #1028 review"
+    - sha: "7a49789"
+      subject: "fix: address PR #1028 review"
+  ci: {verdict: GREEN, failed: 0, pending: 0}
