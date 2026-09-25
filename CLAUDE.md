@@ -42,6 +42,9 @@ the failing test, run it, see it fail** before implementing the fix.
   procedure, and active items. `sdd/BACKLOG-DONE.md` holds everything that left
   it: completed work, IDs absorbed into a surviving item, and items decided
   against. Only the first is "done" — read the section an entry sits under.
+- `BACKLOG.md` is an index: an item's detail lives in its dossier under
+  `sdd/backlog/`, read first by whoever works the item. Why:
+  [ADR-0040](sdd/adrs/0040-backlog-as-index.md).
 - Commit messages start with item ID when applicable (e.g., `AF-008: Add credential masking`).
 
 <a id="trace-authoring"></a>

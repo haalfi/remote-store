@@ -77,8 +77,8 @@ Read this before starting. One line per trigger.
 
 | Trigger                       | Ripples (at a glance) |
 |-------------------------------|-----------------------|
-| Bug fix                       | BACKLOG item, CHANGELOG stub under `[Unreleased]`, failing test **before** fix, spec if invariant contradicted |
-| Backlog item touched          | Live trace at `sdd/traces/<id>-<slug>.yml` ([CLAUDE.md § Trace authoring](../CLAUDE.md#trace-authoring)) — not owed for an item decided against or absorbed, which carry a `BACKLOG-DONE.md` register entry instead; schema at `sdd/traces/_schema.yml`; `audience` drives the CHANGELOG-required rule |
+| Bug fix                       | BACKLOG item (reproduction in its dossier, if it has one), CHANGELOG stub under `[Unreleased]`, failing test **before** fix, spec if invariant contradicted |
+| Backlog item touched          | Live trace at `sdd/traces/<id>-<slug>.yml` ([CLAUDE.md § Trace authoring](../CLAUDE.md#trace-authoring)), whose orient phase reads the item's dossier — not owed for an item decided against or absorbed, which carry a `BACKLOG-DONE.md` register entry instead; on close the `BACKLOG-DONE.md` entry links the dossier; schema at `sdd/traces/_schema.yml`; `audience` drives the CHANGELOG-required rule |
 | CHANGELOG entry               | One-line `- <ID>: <Title>` at top of `[Unreleased]`, one per ID, within the prose budget; `check_changelog_unreleased.py` gates those three plus `user.`-tagged completed-item coverage, and no more |
 | Breaking change               | `**Breaking**` on the CHANGELOG stub **and** a `## vPREV to vNEXT` section in `docs-src/reference/migration.md`, both in the PR making the break — the version pair is knowable before any release stamps it ([CONTRIBUTING § When to bump](../CONTRIBUTING.md#versioning)). A fix that breaks an `except` clause without earning the marker owes the **section alone**, so a section with no marker is expected, not a breach. `check_breaking_migration_link.py` enforces the marked half: the entry must link the section, and the anchor must be a heading the guide really has |
 | Version number                | `bump-my-version` (drives `pyproject` file list), then `hatch run gen-graph`; full checklist in [CONTRIBUTING § Phase 2](../CONTRIBUTING.md#phase-2) |
@@ -296,14 +296,18 @@ Read this at verify-end (after the diff is complete) and during PR review. Each 
 
 | Trigger                    | Also check / update                                       |
 |----------------------------|-----------------------------------------------------------|
-| **Bug fix**                | `sdd/BACKLOG.md` (item), `CHANGELOG.md` (stub line under  |
-|                            | `[Unreleased]`), failing test **before** the fix, spec if |
-|                            | the bug contradicts a spec invariant                      |
+| **Bug fix**                | `sdd/BACKLOG.md` (item; the reproduction lives in its     |
+|                            | dossier under `sdd/backlog/`, if it has one),             |
+|                            | `CHANGELOG.md` (stub line under `[Unreleased]`), failing  |
+|                            | test **before** the fix, spec if the bug contradicts a    |
+|                            | spec invariant                                            |
 | **Backlog item touched**   | Live trace at `sdd/traces/<id>-<slug>.yml` per [CLAUDE.md § Trace authoring](../CLAUDE.md#trace-authoring); an item decided against or absorbed owes a `BACKLOG-DONE.md` register entry, not a trace |
 |                            | (mandatory). Created/updated as work                      |
 |                            | proceeds (not retrospectively); ships in same PR; schema  |
 |                            | at `sdd/traces/_schema.yml`. `audience` priority-sorted   |
-|                            | drives the CHANGELOG-required rule.                       |
+|                            | drives the CHANGELOG-required rule. The item's dossier,   |
+|                            | if any, is an orient step; on close the `BACKLOG-DONE.md` |
+|                            | entry links it (its path never moves).                    |
 | **CHANGELOG entry**        | Add `- <ID>: <Title>` at the top of `[Unreleased]`.       |
 |                            | One line, no details, no sections. Three of those         |
 |                            | properties are gated by `check_changelog_unreleased.py`   |
@@ -409,7 +413,7 @@ Read this at verify-end (after the diff is complete) and during PR review. Each 
 | Propose a significant change             | Write an RFC in `sdd/rfcs/` (see [`sdd/templates/rfc-template.md`](templates/rfc-template.md)) |
 | Explore feasibility of an idea           | Write a research doc in `sdd/research/`              |
 | Record a new design decision             | Add an ADR in `sdd/adrs/`                            |
-| Log a bug or improvement idea            | Add to the `sdd/BACKLOG.md` section whose promise it serves — it is not filed if none does, and there is no holding area. See [§ How this file works](BACKLOG.md#how-this-file-works) |
+| Log a bug or improvement idea            | Add to the `sdd/BACKLOG.md` section whose promise it serves — it is not filed if none does, and there is no holding area. At most eight lines in the index; more goes in a dossier under `sdd/backlog/`. See [§ How this file works](BACKLOG.md#how-this-file-works) |
 | Document a user-facing change            | `CHANGELOG.md` — under `[Unreleased]` or version     |
 | Share a process insight or lesson learned | `DEVELOPMENT_STORY.md`                               |
 | Check or update code style conventions   | `sdd/DESIGN.md`                                      |

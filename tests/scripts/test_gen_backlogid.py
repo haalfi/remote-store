@@ -25,6 +25,8 @@ _PREFIXES = _mod._PREFIXES
 # ---------------------------------------------------------------------------
 
 _EM = "—"  # em dash used in backlog header format
+# R1: every open item carries this line directly under its header.
+_ATTR = "  spec: — · effort: S · audience: contributor.tooling"
 
 
 @pytest.mark.parametrize(
@@ -57,8 +59,11 @@ _DONE_BLOCK = f"""\
 
 _ACTIVE_BLOCK = f"""\
 - [ ] **BK-177 {_EM} Parametrize self-op tests**
+{_ATTR}
 - [~] **ID-018 {_EM} conda-forge publishing**
+{_ATTR}
 - [ ] **BUG-197 {_EM} read_bytes mishandles HNS**
+{_ATTR}
 """
 
 
@@ -167,7 +172,7 @@ class TestCheck:
         assert "no ID on two open items" in out
 
     def test_collision_returns_one(self, tmp_path, monkeypatch, capsys):
-        collision_active = f"- [ ] **BK-174 {_EM} Duplicate item**\n"
+        collision_active = f"- [ ] **BK-174 {_EM} Duplicate item**\n{_ATTR}\n"
         done, active, id_file = self._setup(
             tmp_path,
             _DONE_BLOCK,
@@ -227,9 +232,9 @@ class TestCheck:
         hands over.
         """
         duplicate_active = (
-            f"- [ ] **BK-382 {_EM} The file-ancestor gate ships unexercised**\n"
-            f"- [ ] **BK-177 {_EM} Parametrize self-op tests**\n"
-            f"- [ ] **BK-382 {_EM} RFC-0015 is built but unmeasured**\n"
+            f"- [ ] **BK-382 {_EM} The file-ancestor gate ships unexercised**\n{_ATTR}\n"
+            f"- [ ] **BK-177 {_EM} Parametrize self-op tests**\n{_ATTR}\n"
+            f"- [ ] **BK-382 {_EM} RFC-0015 is built but unmeasured**\n{_ATTR}\n"
         )
         done, active, id_file = self._setup(
             tmp_path,
@@ -260,7 +265,8 @@ class TestCheck:
         what a concurrent branch collides with.
         """
         mixed_active = (
-            f"- [ ] **ID-018 {_EM} conda-forge publishing**\n- [~] **ID-018 {_EM} something else entirely**\n"
+            f"- [ ] **ID-018 {_EM} conda-forge publishing**\n{_ATTR}\n"
+            f"- [~] **ID-018 {_EM} something else entirely**\n{_ATTR}\n"
         )
         done, active, id_file = self._setup(
             tmp_path,
@@ -286,9 +292,9 @@ class TestCheck:
         exactly that.
         """
         both_active = (
-            f"- [ ] **BK-382 {_EM} One open item**\n"
-            f"- [ ] **BK-382 {_EM} Another open item**\n"
-            f"- [ ] **BK-174 {_EM} Collides with a done item**\n"
+            f"- [ ] **BK-382 {_EM} One open item**\n{_ATTR}\n"
+            f"- [ ] **BK-382 {_EM} Another open item**\n{_ATTR}\n"
+            f"- [ ] **BK-174 {_EM} Collides with a done item**\n{_ATTR}\n"
         )
         done, active, id_file = self._setup(
             tmp_path,
@@ -344,7 +350,7 @@ class TestCheck:
         # assertion vacuous: the file would hold neither a collision nor a
         # duplicate, and pass against an implementation with no rule at all.
         done_text = f"- [x] **BK-174 {_EM} Done item**\n"
-        active_text = f"- [ ] **BK-174 {_EM} Same id, still open**\n"
+        active_text = f"- [ ] **BK-174 {_EM} Same id, still open**\n{_ATTR}\n"
         done, active, id_file = self._setup(
             tmp_path, done_text, active_text, {"BK": 174, "BUG": 0, "ID": 0, "AF": 0, "BL": 0}
         )
@@ -366,7 +372,7 @@ class TestCheck:
         the numeric part would make every split item fail the gate that exists
         to protect it.
         """
-        split_active = f"- [ ] **BK-139a {_EM} First half**\n- [ ] **BK-139b {_EM} Second half**\n"
+        split_active = f"- [ ] **BK-139a {_EM} First half**\n{_ATTR}\n- [ ] **BK-139b {_EM} Second half**\n{_ATTR}\n"
         done, active, id_file = self._setup(
             tmp_path,
             _DONE_BLOCK,
@@ -384,7 +390,7 @@ class TestCheck:
         # Suffixed IDs must not false-positive against each other: the fixture
         # puts BK-139d in the active file and BK-139b in the done file.
         done_text = f"- [x] **BK-139b {_EM} Done item**\n"
-        active_text = f"- [ ] **BK-139d {_EM} Active remainder**\n"
+        active_text = f"- [ ] **BK-139d {_EM} Active remainder**\n{_ATTR}\n"
         done, active, id_file = self._setup(
             tmp_path,
             done_text,
@@ -396,3 +402,75 @@ class TestCheck:
         monkeypatch.setattr(_mod, "ID_FILE", id_file)
         monkeypatch.setattr(_mod, "ROOT", tmp_path)
         assert _mod._check() == 0
+
+
+# ---------------------------------------------------------------------------
+# R1: attribute vocabulary (RFC-0016 D5, ADR-0040)
+# ---------------------------------------------------------------------------
+
+_CLEAN_JSON = {"BK": 174, "BUG": 194, "ID": 176, "AF": 40, "BL": 10}
+
+
+class TestAttributeVocabulary:
+    def _run(self, tmp_path, monkeypatch, active_text, done_text=_DONE_BLOCK):
+        done = tmp_path / "BACKLOG-DONE.md"
+        done.write_text(done_text, encoding="utf-8")
+        active = tmp_path / "BACKLOG.md"
+        active.write_text(active_text, encoding="utf-8")
+        id_file = tmp_path / "backlogid.json"
+        _write_json(id_file, _CLEAN_JSON)
+        monkeypatch.setattr(_mod, "BACKLOG_DONE", done)
+        monkeypatch.setattr(_mod, "BACKLOG", active)
+        monkeypatch.setattr(_mod, "ID_FILE", id_file)
+        monkeypatch.setattr(_mod, "ROOT", tmp_path)
+        return _mod._check()
+
+    def test_open_item_without_attribute_line_fails(self, tmp_path, monkeypatch, capsys):
+        """A missing line would otherwise let an item bypass the vocabulary check."""
+        active = f"- [ ] **BK-177 {_EM} No attributes**\n  Diagnosis starts here.\n"
+        assert self._run(tmp_path, monkeypatch, active) == 1
+        out = capsys.readouterr().out
+        assert "line 2: BK-177: no attribute line" in out
+
+    @pytest.mark.parametrize("effort", ["XS", "S/M", "XS/S", "S to define, M per run", "—"])
+    def test_effort_outside_legend_fails(self, tmp_path, monkeypatch, capsys, effort):
+        # The first four are values the tree carried when R1 landed; `—` is the
+        # legend's old "not applicable", which RFC-0016 did not keep for effort.
+        active = f"- [ ] **BK-177 {_EM} Title**\n  spec: — · effort: {effort} · audience: infra.ci\n"
+        assert self._run(tmp_path, monkeypatch, active) == 1
+        assert f"line 2: BK-177: effort {effort!r}" in capsys.readouterr().out
+
+    def test_audience_outside_schema_enum_fails(self, tmp_path, monkeypatch, capsys):
+        """`contributor` is the bare value ID-242 carried; the enum has only dotted forms."""
+        active = f"- [ ] **ID-242 {_EM} Title**\n  spec: — · effort: S · audience: user.api, contributor\n"
+        assert self._run(tmp_path, monkeypatch, active) == 1
+        out = capsys.readouterr().out
+        assert "line 2: ID-242: audience 'contributor'" in out
+        assert "audience 'user.api'" not in out
+
+    def test_every_schema_audience_and_multi_value_passes(self, tmp_path, monkeypatch):
+        """The enum is read from sdd/traces/_schema.yml, not copied here."""
+        enum = sorted(_mod._audience_enum())
+        assert "infra.test" in enum  # an empty parse must not pass vacuously
+        active = "".join(
+            f"- [ ] **BK-{200 + n} {_EM} T**\n  spec: — · effort: L · audience: {a}, {enum[0]}\n"
+            for n, a in enumerate(enum)
+        )
+        assert self._run(tmp_path, monkeypatch, active) == 0
+
+    def test_done_register_is_not_checked(self, tmp_path, monkeypatch):
+        """Bound: R1 covers open items; BACKLOG-DONE.md entries carry no attribute line."""
+        done = _DONE_BLOCK.replace("  body text here", "  effort: XS")
+        assert "effort: XS" in done
+        assert self._run(tmp_path, monkeypatch, _ACTIVE_BLOCK, done_text=done) == 0
+
+    def test_r1_is_reported_alongside_a_duplicate(self, tmp_path, monkeypatch, capsys):
+        """R1 does not short-circuit the ID rules, nor they it."""
+        active = (
+            f"- [ ] **BK-382 {_EM} One**\n{_ATTR}\n"
+            f"- [ ] **BK-382 {_EM} Two**\n  spec: — · effort: XS · audience: infra.ci\n"
+        )
+        assert self._run(tmp_path, monkeypatch, active) == 1
+        out = capsys.readouterr().out
+        assert "duplicate ID" in out
+        assert "effort 'XS'" in out

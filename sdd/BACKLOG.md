@@ -11,140 +11,76 @@ Items graduate through the SDD pipeline:
 <a id="how-this-file-works"></a>
 ## How this file works
 
+Operational rules only. Why each rule exists: [ADR-0040](adrs/0040-backlog-as-index.md).
+**Migration in progress:** a section not yet converted keeps its old shape (long
+bodies, `Closes when`) until it is; do not extend that shape in new edits.
+
 **Status legend:** `[ ]` pending · `[~]` in progress
 
-**Sections are promises, not topics.** Each section states one outcome and the
-condition under which it closes. Its items are mutually reinforcing: shipping
-half a section under-delivers its promise, which is why they sit together
-rather than under the subsystem they happen to touch.
+**Admission test.** A section is a heading and a **Promise** of at most three
+sentences. An item is filed under the promise it serves, or not at all: there is
+no holding area. A refused idea gets a
+[`BACKLOG-DONE.md` § Decided against](BACKLOG-DONE.md#decided-against) entry,
+with `—` for the ID. A section with no items is removed or re-argued with a new
+item. `## Release Blockers` is the one standing section: `BL-` items go there by
+prefix, and empty is its normal state.
 
-**Admission test.** An item that fits no section's promise has no demonstrated
-value and is not filed. There is no holding area — the previous Icebox was a
-slow deletion that charged review attention on every pass. Of its eight items,
-seven were removed and one (ID-125) was re-argued against a promise and kept, so
-abolishing the Icebox was a re-decision of each item rather than a bulk delete.
-**Two carve-outs.** `## Release Blockers` carries no promise by design: a
-blocker is urgent by prefix, not by outcome, and is filed there regardless.
-And a **refused** idea is recorded the same way a removed one is — a line in
-[`BACKLOG-DONE.md` § Decided against](BACKLOG-DONE.md#decided-against), with a
-`—` where the ID would be. The reasoning under § Completing work applies
-identically: the argument was had, so throwing it away means having it again.
+**Ordering.** Within a section, execution sequence: a dependency never sits
+below what needs it. Between sections, how directly the promise is felt. A
+dependency across sections is stated by ID inside the dependent item.
 
-**Ordering.** Within a section the order is execution sequence, so a dependency
-never sits below the thing that needs it. No section declares its own
-exception. **Between sections the order is how directly the promise is felt**,
-which is not the same as an audience split and is not claimed to be: sections
-3 and 4 both pay users, and section 5 holds two items tagged `user.*`. Read the
-promise, not the ordinal.
+**Granularity.** Fold work into one item when its fix surface *coincides* with
+the host's, or one pending decision resolves both; surfaces that merely
+*overlap* stay separate, each naming the other. A sub-bullet is not tracked and
+gets no ID for the work it describes. A section that outgrows itself splits into
+two promises.
 
-**Dependencies may cross sections, and the ordering rule does not reach them.**
-An item in section 1 can wait on one in section 2 — BK-345 does. A cross-section
-dependency is stated by ID inside the item that has it, **and named in the
-depending section's `Closes when`**, because nothing about position will show it.
+**Item scope** (new items, and all items in converted sections). At most eight
+content lines: header; the attribute line; a diagnosis of at most five lines, the
+observed problem and the open decision; an optional
+`Detail: [dossier](backlog/<id>-<slug>.md)` line.
+Blank lines, `---` and anchors do not count. No process steps; those live in
+`000-process.md` and the ripple-check.
 
-**Granularity.** Two tests fold work into one item: its fix surface
-*coincides* with the host's, **or** one pending decision resolves both. Surfaces
-that merely *overlap* stay separate, with each side naming the other and the
-co-ship recorded in the trace — BUG-249 and BUG-246, both now in
-[BACKLOG-DONE.md](BACKLOG-DONE.md), are that case. The decision
-test is why ID-218 sits inside ID-217 and ID-123 inside ID-121: those pairs touch
-disjoint paths and would be misfiled on the surface test alone.
-A sub-bullet is not itself tracked and does not get an ID **for the work it
-describes** — an item may still designate future work that will need its own ID,
-as ID-199 and ID-140 do. **Splitting:** a section that outgrows itself becomes
-two promises, never loose items.
+**Item attributes:** `spec: <IDs or —> · effort: S|M|L · audience: <values>`
+directly under the header. S < 1 day, M 1–3 days, L > 3 days, a range takes its upper
+bound; audience values from `sdd/traces/_schema.yml`'s enum.
 
-**The admission test, granularity and splitting are not gated.** What does check
-these files mechanically is every row in [`GATE-INVENTORY.md`](GATE-INVENTORY.md)
-whose subject names `sdd/BACKLOG*.md`; none of them covers placement,
-granularity or section membership. Stated as a query rather than a list, because a
-fixed enumeration here goes stale whenever a gate is added or its subject
-changes. So all three are **review-enforced**, and that is a real weakness
-worth stating plainly rather than a citation: the diagnosis behind this
-structure is that topic groups decayed because nothing stopped unearned items
-accumulating, and conventions without a mechanism decay the same way. ID-235 in
-section 6 is the host for whatever part of this becomes checkable.
-(No [`DRIFT-RULES.md`](DRIFT-RULES.md#rules) obligation is claimed here — that
-file scopes itself to changes that add a check, a drift report, a second
-description, or a period, and an authoring convention with no mechanism is none
-of those.)
+**Dossiers.** `sdd/backlog/<id>-<slug>.md`, marked `<!-- doc: repo-only -->`,
+only when an item needs more than eight lines. Converting an item moves its body
+there verbatim. The path never moves; a trace's orient phase reads it.
 
-**Item scope:** idea + decision-relevant constraints + open questions.
-Do not repeat process steps (those live in `sdd/000-process.md` and the
-ripple-check table).
+**Item authority.** Each kind of content is corrected where it lives. In an
+unconverted item all three sit in its body, under the same rules.
 
-**Item authority:** an item's **diagnosis** — the observed problem and the
-evidence for it — is durable, and is what the item is for. Any **prescription**
-it carries — a fix shape, a disposition, a line reference, a scope claim, a
-reproduction recipe — is advisory, and is presumed stale by the time it is
-implemented. Re-derive it against the code before acting, and correct the item
-body in the same commit ([principle 3](../CLAUDE.md#principles)). An item whose
-prescription survived unchecked is not evidence the prescription was right.
+| Kind | Lives in | Status | Corrected when re-derivation disagrees |
+|---|---|---|---|
+| Diagnosis: the observed problem | index | authoritative, current | in the index, same commit |
+| Evidence: what was measured, how | dossier | durable record, dated by its commit | a dated correction is added; the original is not rewritten |
+| Prescription: fix shape, disposition, line reference, scope claim, reproduction recipe | dossier | advisory, presumed stale | re-derive against the code before acting; correct it in the same commit |
 
-This is the same shape as [`CLAUDE.md` § Audits](../CLAUDE.md#audits) rule 3, for
-a different artifact pair — item body against implementation, rather than audit
-finding against implementation. That rule is not restated here and does not
-govern this pair; see it for the audit side.
-Measured failure modes behind this rule:
-[research § 3.2](research/research-spec-kit-comparison.md).
+Where a dossier restates the diagnosis and disagrees, the index wins and the
+dossier is corrected in the same commit. Agreement is review-enforced.
 
-**Item attributes:** each item carries a compact `spec: · effort: · audience:` line for quick scanning.
-Effort: S = <1 day · M = 1–3 days · L = >3 days. `—` = not applicable.
+**Completing work** (same commit as the change):
 
-**Completing work:**
+- Done → delete here; add to `BACKLOG-DONE.md` as `[x]`, linking its dossier
+  if it has one.
+- Partly done → ship the done part as `[x]` under its ID; give the rest a new ID
+  here; link both.
+- Absorbed → mark the host's sub-bullet `(was PREFIX-NNN, absorbed here)`, in
+  that literal form; add a § Absorbed entry naming the host.
+- Decided against → delete here; add a § Decided against entry carrying the
+  diagnosis, not only the verdict.
 
-- Fully done → delete from here, add to `BACKLOG-DONE.md` as `[x]`
-  (same commit as the code change).
-- Partially done → split: ship the done part to `BACKLOG-DONE.md` as `[x]`
-  under its original ID, create a new ID here for the remaining work, and
-  link both.
-- Absorbed → the work folds into another item under § Granularity above. Mark
-  the host's sub-bullet `(was PREFIX-NNN, absorbed here)`, record an entry in
-  `BACKLOG-DONE.md` § Absorbed naming the host, and run the same sweep as the
-  outcome below — absorption retires an ID, so it falsifies the same class of
-  sentence. In this file's own restructure it required repairs to two
-  `BACKLOG-DONE.md` entries and to `sdd/specs/044-graph-backend.md`. The entry
-  template and the tense rule below both apply unchanged.
-- Decided against → delete from here, record an entry in `BACKLOG-DONE.md`
-  § Decided against, then sweep the artifacts that assert the item is currently
-  tracked. The entry **must** take the header shape the other outcomes use,
-  because `gen_backlogid.py` matches it and a line that merely says the same
-  thing in prose is invisible to the generator, silently freeing the number for
-  reuse:
-
-  ```
-  - [x] **ID-NNN — Original title**
-    Why it was not worth doing, and where the diagnosis now lives.
-  ```
-
-  Em dash, not hyphen or en dash; `[x]`; ID inside `**`. Carry the diagnosis
-  across, not just the verdict — [§ Item authority](#how-this-file-works) makes
-  the diagnosis the durable half, and a verdict without it cannot be re-decided
-  without redoing the investigation.
-  **The sweep is unbounded and reviewer-enforced**, stated as a bound rather
-  than pretended away ([`DRIFT-RULES.md` Rule 7](DRIFT-RULES.md#miss-rate)).
-  Run `rg -n '<ID>' -- sdd .claude scripts docs-src tests *.md` and **read every
-  hit**, not only the ones that fail to resolve: the defect is an assertion
-  going stale, not a reference breaking, so a dangling-link check cannot find
-  it. BK-346 instance 6 measures the miss rate for exactly this task, including
-  hits missed by an author grepping the ID on purpose. Some sites name no ID at
-  all and no grep reaches them — `sdd/specs/004-path-model.md` forward-points to
-  a follow-up in prose — so budget a read of the specs the item touched.
-  **What to fix is decided by tense, not by directory.** Fix a present-tense
-  assertion that something is tracked wherever it lives, including an `Owner:`
-  field inside `sdd/research/**`. Leave past-tense narration of what was decided
-  at the time, which is most of `sdd/traces/**`, `sdd/research/**` and
-  `sdd/audits/**` — a recommendation a research doc made then is not a claim
-  about now, and `000-process.md` § Document types forbids rewriting it.
-  **Accepted ADRs are never edited either way**
-  ([`000-process.md` Rule 4](000-process.md#rules)): supersede if the decision
-  changed, otherwise let the citation stand and let the § Absorbed or
-  § Decided against entry be what makes it resolve.
-  **No trace is owed** for an item removed or absorbed without being
-  implemented. The rule and its reasoning live in
-  [`CLAUDE.md` § Trace authoring](../CLAUDE.md#trace-authoring), which is the
-  authoritative home and states the carve-out; it is named here only because
-  this is where a contributor closing an item is reading.
+Every entry takes the header shape `- [x] **PREFIX-NNN — Title**` (em dash,
+`[x]`, ID inside `**`), because
+[`gen_backlogid.py`](../scripts/gen_backlogid.py) counts headers only and a
+prose line frees the ID. After absorbing or deciding against, sweep
+`rg -n '<ID>' -- sdd .claude scripts docs-src tests *.md` and read every hit, plus
+the specs the item touched: fix present-tense claims that it is tracked, leave
+past-tense narration, never edit an Accepted ADR. No trace is owed
+([`CLAUDE.md` § Trace authoring](../CLAUDE.md#trace-authoring)).
 
 **ID prefixes:**
 
@@ -153,44 +89,22 @@ Effort: S = <1 day · M = 1–3 days · L = >3 days. `—` = not applicable.
 | `BL-NNN` | Release blocker — must resolve before next PyPI publish. Monotonic, not reset per release. |
 | `BK-NNN` | Committed backlog work, queued behind blockers. |
 | `BUG-NNN` | Confirmed defect with reproduction steps. |
-| `ID-NNN` | Evaluated enough to earn a section, not committed to. The open question is named in the body; what is unmade is the decision, not the value. (Was "idea — not evaluated"; the Icebox was where unevaluated ideas lived, and the admission test replaced it.) |
+| `ID-NNN` | Evaluated enough to earn a section, not committed to; the open decision is named in the body. |
 | `AF-NNN` | Audit finding (retired — use `BUG` or `BK` for new items). |
 
-**Assigning a new ID:** check `sdd/backlogid.json` (max per prefix from BACKLOG-DONE.md)
-and the highest ID already in this file, then take the next integer. Run
-`hatch run gen-backlogid` after moving items to BACKLOG-DONE.md to keep the JSON current.
-`hatch run lint` flags drift and collisions.
+**Assigning a new ID:** use the prefix's value on the "Next safe IDs" line of
+`hatch run gen-backlogid-check`. Run `hatch run gen-backlogid` after moving items
+to `BACKLOG-DONE.md`.
 
-**Retired IDs are not listed here**, deliberately: a hand-maintained
-"never reassign" list is the parallel artifact
-[`DRIFT-RULES.md` Rule 3](DRIFT-RULES.md#claim-space) tells us not to build, and it
-would have to stay right on a path nothing tests. Twenty-three IDs were retired
-by the restructure that produced this file's shape — fourteen **removed**, each
-with an entry in [`BACKLOG-DONE.md` § Decided against](BACKLOG-DONE.md#decided-against),
-and nine **absorbed** into a surviving item. Every absorbed ID is marked
-`(was <PREFIX-NNN>, absorbed here)` in the body that took it over — enumerate
-them with `rg -c '\(was [A-Z]+-[0-9]+, absorbed here\)' sdd/BACKLOG.md`, which
-returns 9 and is the only derivation this count has. Keep the marker in that
-literal form when absorbing anything else; a variant spelling is invisible to
-the enumeration and to any check built on it.
-Both classes also get a header in `BACKLOG-DONE.md`, so `gen_backlogid.py`
-counts them and `hatch run gen-backlogid` keeps `backlogid.json` right.
-**That is safe only as far as the entry shape is right**, which is why
-§ Completing work states it as a template: the generator matches
-`^- \[.\] \*\*PREFIX-NNN — ` and silently ignores anything else, so a
-well-meant prose line frees the number again. Making that mechanical rather
-than conventional is ID-235's structural pass, and until it lands this is a
-convention with a stated failure mode rather than a guarantee.
-Registering the absorbed nine is not bookkeeping for its own sake — a sub-bullet
-is not separately tracked, so without an entry their citations elsewhere in
-`sdd/` would resolve nowhere, including one inside an Accepted ADR that cannot
-be edited to point elsewhere.
+**What is gated:** the rows of [`GATE-INVENTORY.md`](GATE-INVENTORY.md) whose
+subject names `sdd/BACKLOG*.md`. The admission test, granularity and section
+membership are review-enforced.
 
 ---
 
 ## Release Blockers
 
-*(none)*
+**Promise:** nothing ships to PyPI until this section is empty.
 
 ---
 
@@ -218,11 +132,7 @@ against the caller's path
 answering "nothing here" (BUG-292 — the file-ancestor walk reads any driver
 error as permission to proceed, on all five flat-namespace backends); and a newly
 registered backend cannot pass CI without meeting BE-004, BE-005 and BE-021
-(BK-345). BK-359 is why the Promise above carries a third clause, added with it
-rather than left implicit: an error that is
-the right *type* on every backend but says nothing is predictable to a checker
-and not to the person reading their log, and this section is where that reader
-is served. **That clause is now met on every `BackendUnavailable` the library
+(BK-345). **The Promise's third clause (BK-359) is now met on every `BackendUnavailable` the library
 constructs** — BK-359 closed the backend whose stall BK-356 had just made the
 default failure surface, and BUG-264 closed Azure, the one other arm that could
 render blank. The remaining `BackendUnavailable(str(exc))` sites cannot: two sit
@@ -631,7 +541,7 @@ compliant the day before.
   → arm table and reaches neither row.
 
 - [ ] **BUG-267 — OBS-008 demands an `ERROR` level that nothing emits and nothing asserts**
-  spec: OBS-008 · effort: XS · audience: contributor.process
+  spec: OBS-008 · effort: S · audience: contributor.process
   OBS-008's Levels bullet read "ERROR (before re-raise)" as an invariant over
   "all library modules". No call site in `src/` logs at `error`, `exception`,
   `critical` or `fatal` — verified by grep across the package — and none of the
@@ -655,7 +565,7 @@ compliant the day before.
   inherited.
 
 - [ ] **BUG-263 — The migration guide promises a drive folder named `.` stays reachable as a key; no key spelling reaches it**
-  spec: GR-058 · effort: XS · audience: user.site
+  spec: GR-058 · effort: S · audience: user.site
   `docs-src/reference/migration.md` § *`GraphBackend(base_path=".")` now means
   the drive root* tells a caller whose drive holds a folder literally named `.`
   that it "stays reachable as an ordinary key under a `base_path` that is not
@@ -1060,8 +970,7 @@ check — saying otherwise would make the promise unfalsifiable, which is the
 failure this structure exists to remove. Enumerated, not counted: what makes it
 checkable is that every item is written down below, and a reader can walk them.
 
-A corrected clause nobody tests is the same defect one layer up, which is why
-the wrong-answer defects and the coverage holes are one promise. The wrong-answer
+The wrong-answer
 defects come first because a user can hit them today. **One item here is depended
 on from section 1**: BK-345 waits on ID-244's per-fixture seeding decision, so
 section 1 cannot close before it lands even though it sits here. ID-242 was a
@@ -1071,7 +980,7 @@ in conformance — the exact hole ID-242 exists to fill, now with a shipped clau
 resting on it rather than a pending one.
 
 - [ ] **BUG-251 — A shared `cache_backend=` serves one store's bytes for another's**
-  spec: RES-100 · effort: S/M · audience: user.api
+  spec: RES-100 · effort: M · audience: user.api
   `ext.cache` derives keys from `(operation, path)` with nothing identifying the
   store, so two `Store`s at different roots sharing one `cache_backend=` collide
   on any path they both hold, and the second reader gets the first store's
@@ -1111,7 +1020,7 @@ resting on it rather than a pending one.
   position and assert the probe does not confuse them.
 
 - [ ] **BUG-240 — ASYNC-014 and DEPTH-003 state opposite rules, and `GraphBackend` implements the async one**
-  spec: ASYNC-014, DEPTH-003 · effort: S/M · audience: user.api
+  spec: ASYNC-014, DEPTH-003 · effort: M · audience: user.api
   [ASYNC-014](specs/029-async-store-backend-api.md) says "`max_depth` limits
   traversal depth (when set, `recursive` is ignored)" **while citing DEPTH-003**,
   which states the opposite for the Backend ABC: `max_depth` applies only when
@@ -1176,7 +1085,7 @@ resting on it rather than a pending one.
   so decide the binding once for both shapes.
 
 - [ ] **ID-242 — Four `moto doesn't raise PermissionError` pragmas are coverage holes, not exemptions**
-  spec: — · effort: S · audience: contributor
+  spec: — · effort: S · audience: infra.test
   `_s3_base.py` 510/540/573 and `_s3_pyarrow.py:626` each carry
   `# pragma: no cover -- moto doesn't raise PermissionError`. The mappings are
   correct and the pragmas are accurate statements about the fixture, which is
@@ -1322,11 +1231,9 @@ today line say it without being read — and
 contract). Each clause names the items that move it, so closure is checkable
 rather than asserted.
 
-This is the group that converts directly into support load not arriving. The
-rehearsal sits with the guides because it is the only mechanism that has ever
-found their defects, and BK-327 sits here rather than with the gates because a
-page nobody can navigate to is a page nobody reads — the gate is the mechanism,
-not the payoff. The legibility clause is the same argument one step further in:
+The legibility clause takes the reachability argument (in
+[ADR-0040](adrs/0040-backlog-as-index.md#3-users-succeed-without-asking-us)) one
+step further in:
 a page reachable and true, whose rule the reader has to do arithmetic to apply,
 is one they apply wrongly or not at all. It is deliberately narrow — it is not
 a licence to file prose-polishing items, and BK-373 earned it by naming a rule
@@ -1533,7 +1440,8 @@ argument that no such rule remains rather than the absence of a filed item.
   rather than by any gate.
 
 - [ ] **BK-332 — Schedule the custom-backend rehearsal**
-  spec: — · effort: S to define, M per run · audience: contributor.process
+  spec: — · effort: M · audience: contributor.process
+  Effort splits: S to define the rehearsal, M per run.
   "Build a backend against the guide, from scratch, without help" runs today
   only as a side effect of guide PRs. Its output is a list of places the guide,
   the contract, or the conformance suite failed the builder — BK-324 and BK-325
@@ -1561,11 +1469,6 @@ ID-217); no security tradeoff is scoped wider than the backend that needs it
 That last clause was carried by two items; BK-357 closed one of them, removing a
 stalled `SEEK_END` seek's second `io_timeout` — and, more than a cost, the wrong
 answer it returned instead of failing.
-
-Each item here is something a user currently works around or eats. They are
-grouped because the decision in each is the same: build it, or say plainly and
-permanently that we will not — which is why "declined, recorded" closes an item
-here as legitimately as "built".
 
 - [ ] **ID-217 — Async-native extension surface (owner for the deferred async `ext.*`)**
   spec: GR-003 · effort: L · audience: user.api
@@ -1835,7 +1738,7 @@ diff two files at release time.
   BUG-287 / BUG-288, whose floors fail at `import` with no test involved.
 
 - [ ] **BUG-290 — A workflow `run:` step that pipes into `tee` cannot fail, and one of them is a gate**
-  spec: — · effort: XS · audience: infra.ci
+  spec: — · effort: S · audience: infra.ci
   A workflow `run:` with no `shell:` key runs under `bash -e {0}` — `-e` without
   `-o pipefail` — so a pipeline takes its LAST command's exit status. Any step
   spelled `python … | tee …` therefore reports `tee`'s success and swallows the
@@ -2271,9 +2174,7 @@ derivation. Items here comply with principle 9 by naming their counts' sources.
 on **ID-244** in section 2, which moves the surface it would measure.
 
 Lowest priority. Design and review rules for anything added here:
-[`DRIFT-RULES.md`](DRIFT-RULES.md#rules). The argument and gap ranking behind
-the programme:
-[research](research/research-inconsistency-detection-multi-artifact.md) § 9.
+[`DRIFT-RULES.md`](DRIFT-RULES.md#rules).
 
 **Measured qualification on that research doc's ranking**, recorded here
 because [`000-process.md` § Document types](000-process.md) makes a research doc
@@ -2324,6 +2225,8 @@ the commit that writes it lands, so cite the generator instead.
     every ID retired by either route appears exactly once across both files.
     That is what keeps the ID space safe by construction rather than by whoever
     last remembered to add an entry.
+    **ADR-0040 adds four shape rules to this pass**: R1 (attribute vocabulary)
+    shipped under BK-365; R2–R4 land with its § 1 pilot.
   - **Inbound citations resolve** (was ID-246, absorbed here). Specs cite
     backlog coordinates as provenance, and `check_no_tracker_refs.py` actively
     *pushes* IDs here — it fails a docstring or `docs-src/` page and tells the
@@ -2363,7 +2266,7 @@ the commit that writes it lands, so cite the generator instead.
   exactly the event the second pass exists to catch.
 
 - [ ] **ID-254 — The `[Unreleased]` stub's section marker means one thing on half the entries and nothing on the other half**
-  spec: — · effort: XS/S · audience: contributor.process
+  spec: — · effort: S · audience: contributor.process
   Twelve of the 25 entries under CHANGELOG `[Unreleased]` open with a bolded
   marker and thirteen open with none (`- <ID>: **<marker>** —` against
   `- <ID>: <text>`, tallied over the section as of this item's filing; re-tally
@@ -2404,7 +2307,7 @@ the commit that writes it lands, so cite the generator instead.
   scope.
 
 - [ ] **ID-255 — The stand-down note gives a reason that is false in the state the release checklist prescribes**
-  spec: — · effort: XS · audience: contributor.tooling
+  spec: — · effort: S · audience: contributor.tooling
   `_release_window_note` in `scripts/check_changelog_unreleased.py` prints: "The
   stray-line rule, the audience rule and the unknown-ID note all key on entries
   leading with an ID, **which condensed prose does not**, so all three stood
@@ -2438,7 +2341,7 @@ the commit that writes it lands, so cite the generator instead.
   and it declined to trade that property for a one-sentence message fix.
 
 - [ ] **BK-361 — Typography rules are asserted in `CLAUDE.md` and enforced by nobody**
-  spec: — · effort: S/M · audience: contributor.tooling
+  spec: — · effort: M · audience: contributor.tooling
   [`CLAUDE.md` § Response style](../CLAUDE.md#response-style) states four
   typography rules: em dashes used sparingly, never `--` as an em dash
   substitute, `—` as the table N/A value rather than `--` or `No`, and a closed
@@ -2540,7 +2443,7 @@ the commit that writes it lands, so cite the generator instead.
   The first is the only one that leaves both artefacts true.
 
 - [ ] **BK-346 — The ripple-check table answers questions adjacent to the ones asked**
-  spec: — · effort: S/M · audience: contributor.process
+  spec: — · effort: M · audience: contributor.process
   One class with **six** measured instances, not six items — counted from the
   numbered list below, which is the only derivation this figure has. Each is a
   reader who consulted the
@@ -2555,8 +2458,8 @@ the commit that writes it lands, so cite the generator instead.
   place: 5's is deleting the restating copies rather than adding a row, and 6's
   is that a gate over "an assertion went stale" is harder than it looks. So this
   is one class with one shared question and two members that may not answer it
-  the same way — and instance 5's choice sets the effort for the group, which is
-  why `effort:` is a range.
+  the same way — and instance 5's choice sets the effort for the group: S if it
+  goes one way, M the other, and `effort:` states the upper bound.
   1. **New test file** asks whether the file needs an `os_sensitive` mark and is
      silent on placement, so nothing routes an author to TEST-003 when adding
      one. `check_test_placement.py` enforces three other rules and not this one.
@@ -2620,7 +2523,7 @@ the commit that writes it lands, so cite the generator instead.
      than "grep the ID and read every hit".
 
 - [ ] **ID-207 — Push `check_formal_trace.py` past citation hygiene (steps 3 and 4 only)**
-  spec: — · effort: S/M · audience: contributor.tooling
+  spec: — · effort: M · audience: contributor.tooling
   ID-206 shipped `scripts/check_formal_trace.py`; a PR #663 review confirmed it
   certifies *citation hygiene at spec-ID granularity*, not clause-level
   enforcement. Two of the four hardening steps originally proposed are cheap,
@@ -2837,9 +2740,10 @@ the commit that writes it lands, so cite the generator instead.
 
 - [~] **BK-365 — Both backlog files grew past what a maintainer can read, and nothing measures it**
   spec: — · effort: M · audience: contributor.process
-  **In progress: [RFC-0016](rfcs/rfc-0016-backlog-as-index.md) (Draft)** proposes
-  the `BACKLOG.md` half — an index with per-item dossiers — and leaves
-  `BACKLOG-DONE.md` open here.
+  **In progress: [RFC-0016](rfcs/rfc-0016-backlog-as-index.md) is accepted as
+  [ADR-0040](adrs/0040-backlog-as-index.md)** for the `BACKLOG.md` half — an
+  index with per-item dossiers. Shipped: the rules header and R1. Open: the § 1
+  pilot with R2–R4, then the other sections; `BACKLOG-DONE.md` stays open here.
   **`sdd/BACKLOG.md` is 20,097 words at `6cec225`.** That is the file a maintainer
   reads to decide what to work on, and it is now roughly eighty pages of prose. Two
   independent multipliers got it there over seven weeks (2026-07-18 → 2026-09-05):
@@ -2910,8 +2814,8 @@ the commit that writes it lands, so cite the generator instead.
   one of the two items had to be retired and re-homed after the fact.
   **The gap is unmerged branches, not the floor.** `gen_backlogid.py`'s `--check`
   already takes `max(BACKLOG-DONE, BACKLOG open)` for its "Next safe IDs" line,
-  and [§ ID prefixes](#how-this-file-works) already tells an author to check
-  both — so the documented procedure is sound and was followed. What no
+  and [§ How this file works](#how-this-file-works) sends an author to that
+  line — so the documented procedure is sound and was followed. What no
   derivation reads is *another branch*, which is where a concurrently minted ID
   lives until it merges. An earlier account of this incident inside BUG-275's
   trace blamed the floor for reading `BACKLOG-DONE.md` only; that was wrong, and

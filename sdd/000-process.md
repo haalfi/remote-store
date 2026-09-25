@@ -15,7 +15,7 @@ Authoritative source for the Spec-Driven Development workflow, spec/ADR/RFC form
 5. **IDs are stable**: once assigned, a section ID never changes meaning. Deprecated sections are marked `[DEPRECATED]`, not removed.
 6. <a id="workflows"></a>**Workflows**:
    - **Features**: SPEC → TEST → IMPLEMENT → VALIDATE → DOCS. Operational items (CI, docs, pins) skip the spec step.
-   - **Bug fixes**: BACKLOG → CHANGELOG → failing TEST → FIX → COMMIT together. If the bug contradicts a spec invariant, update the spec.
+   - **Bug fixes**: BACKLOG → CHANGELOG → failing TEST → FIX → COMMIT together. If the bug contradicts a spec invariant, update the spec. The reproduction lives in the item's dossier where it has one ([§ Backlog](#backlog)).
 7. <a id="intent-attribution"></a>**Prose records the resolution; it does not win the argument**: when spec prose, a Dafny postcondition and a conformance test disagree, the decision is written into the prose — but prose carries no presumption of correctness against a verified postcondition or against a claim the conformance suite never asserted. See [§ Attribution inside the intent domain](#attribution-inside-the-intent-domain).
 
 ## Guides
@@ -123,8 +123,12 @@ everything that left it, in three classes: completed work, IDs **absorbed** into
 a surviving item whose work is still open, and items **decided against**. Only
 the first is done — read the section an entry sits under.
 
-`BACKLOG.md` is the single source of truth for ID prefixes, status conventions,
-completion workflow, and section structure. See its "How this file works" header.
+`BACKLOG.md` is an index: each item states its diagnosis in a few lines, and
+detail (evidence, reproduction, fix options) lives in a per-item dossier under
+`sdd/backlog/`. It is the single source of truth for ID prefixes, status
+conventions, completion workflow, item shape and section structure; see its
+"How this file works" header. The rationale is
+[ADR-0040](adrs/0040-backlog-as-index.md).
 
 <a id="feature-type-definition-of-done"></a>
 ### Feature-type Definition of Done

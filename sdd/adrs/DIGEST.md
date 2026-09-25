@@ -2,7 +2,7 @@
 
 <!-- doc: repo-only -->
 
-Compiled from 39 ADR(s) by `scripts/gen_adr_digest.py`. Do not edit by hand; run `hatch run gen-adr-digest`.
+Compiled from 40 ADR(s) by `scripts/gen_adr_digest.py`. Do not edit by hand; run `hatch run gen-adr-digest`.
 
 ## Accepted
 
@@ -1283,6 +1283,36 @@ drift-guard issue. A crossing licenses a drop; it never requires one.
 
 **Revisit at the next minor release**, or when the weekly report shows a
 crossing, whichever comes first.
+
+### [ADR-0040](0040-backlog-as-index.md): `BACKLOG.md` Is an Index, and Item Detail Lives in Dossiers
+
+- **`BACKLOG.md` is an index.** An item is at most eight content lines: header,
+  attribute line, a diagnosis of at most five lines (the observed problem and
+  the open decision), and an optional `Detail:` link. *Reverse if* the index
+  stops fitting one read at the size the caps predict.
+- **Detail lives in a per-item dossier**, `sdd/backlog/<id>-<slug>.md`, whose
+  path never moves. Migration **moves** a body into it verbatim and writes a new
+  diagnosis; it never cuts, so no rationale is lost to the cap.
+- **The index governs the diagnosis**; the dossier holds evidence (a dated
+  record) and prescription (advisory, presumed stale). The authority table lives
+  in [`BACKLOG.md` § Item authority](../BACKLOG.md#how-this-file-works), which
+  owns the pair ([`DRIFT-RULES.md` Rule 4](../DRIFT-RULES.md#rules)).
+- **A section is a heading and a Promise of at most three sentences.**
+  `Closes when` is removed; a section with no items is removed or re-argued.
+  `## Release Blockers` is the one standing section, filed by prefix.
+- **Gates hold the shape**, in `gen_backlogid.py --check`: R1 attribute
+  vocabulary, R2 the item cap, R3 section shape, R4 dossier link. R1 lands with
+  the mapping of the values it rejects; R2 and R3 land with the § 1 pilot,
+  **scoped to migrated sections**, so no gate runs red on an unconverted one.
+- **R2 and R3 depart from research
+  [§ 9.1](../research/research-appropriate-level-of-detail.md)**, which advises
+  no length rule beside Rule 7; a line or sentence count is the text-level
+  instrument its § 1 rules out, and this record does not dispute that. The
+  departure rests on what the research does not measure: this file's reader is a
+  bounded-context session loading it on every pick, file or close. **Two
+  bounds:** no other `sdd/` document, and overflow moves rather than being cut.
+  *Reverse if* the acceptance re-measurement shows the caps pushing load-bearing
+  diagnosis out of the index; a superseding record states that evidence.
 
 ## Superseded
 

@@ -127,7 +127,8 @@ Files not covered by the table require explicit markers. Common cases:
 - Top-level `sdd/*.md` process docs (AUTHORING, DESIGN, etc.) carry an
   explicit dual marker.
 - Internal `sdd/*.md` files (BACKLOG, CLAUDE-REFERENCE, etc.) carry an
-  explicit repo-only marker.
+  explicit repo-only marker. So does each backlog dossier,
+  `sdd/backlog/<id>-<slug>.md` ([ADR-0040](adrs/0040-backlog-as-index.md)).
 - Repo-root dual files (CHANGELOG, CONTRIBUTING, etc.) carry an explicit
   dual marker.
 - Repo-root repo-only files (CLAUDE, README, etc.) carry an explicit
