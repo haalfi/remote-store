@@ -2,7 +2,8 @@ id: BK-365
 title: "Draft RFC-0016: BACKLOG.md as an index, item detail in per-item dossiers"
 trigger: >-
   A backlog-structure review measured sdd/BACKLOG.md at ~51k tokens and 3,013
-  lines, 83% of it item bodies, so no session reads it whole with one default
+  lines, over 80% of it item bodies (82% once separator lines are charged to
+  the section they open), so no session reads it whole with one default
   Read. The user named context cost as the concern, and chose per-item
   dossiers, an ADR for the rules' rationale, an RFC first, removal of
   `Closes when`, and gates for attribute vocabulary, item length and preamble
@@ -46,9 +47,11 @@ phases:
         read_type: gate
         extract: >-
           § 9.1 puts no length rule beside Rule 7; § 9.2 allows cutting only what
-          the surviving text can recover, else move it. The proposed caps must be
-          argued as placement boundaries whose overflow moves, not as a brevity
-          target.
+          the surviving text can recover, else move it. My miss: I first argued
+          the caps as "placement boundaries" and read § 9.2's recoverability as
+          recovery from other files. PR #1028's review refuted both (a count is a
+          text-level instrument per § 1; § 9.2's test is within the section), so
+          the RFC now records the caps as an open departure from § 9.1.
         outcome: ok
       - file: scripts/gen_backlogid.py
         section: "(full)"
