@@ -204,7 +204,7 @@ import yaml
 
 sys.path.insert(0, str(Path(__file__).parent))
 
-from _trace_corpus import ROOT, TRACES_DIR, iter_trace_files  # noqa: E402
+from _trace_corpus import ROOT, TRACES_DIR, iter_trace_files, load_trace  # noqa: E402
 
 if TYPE_CHECKING:
     from collections.abc import Iterable
@@ -352,7 +352,7 @@ def collect_outcomes(
 
     for path in iter_trace_files(traces_dir):
         try:
-            document = yaml.safe_load(path.read_text(encoding="utf-8"))
+            document = load_trace(path.read_text(encoding="utf-8"))
         except (yaml.YAMLError, OSError, UnicodeDecodeError) as exc:
             # OSError and UnicodeDecodeError come from read_text, not from
             # the parser, and neither is a yaml.YAMLError: the glob admits

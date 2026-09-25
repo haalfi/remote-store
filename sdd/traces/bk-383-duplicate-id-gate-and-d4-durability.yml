@@ -1,0 +1,357 @@
+id: BK-383
+title: "Close the two dedupe-hides-a-duplicate gaps, and say what a derived commit list resolves to"
+trigger: >-
+  BK-378 merged as e5fb4a8 (PR #1026) while BUG-281 merged as 8e35697, and both
+  branches had minted BK-382 from a master where 382 was free. Three gates
+  passed the resulting file. The same shape turned out to hold in one more
+  place: `yaml.safe_load` resolves a repeated trace key to the last silently.
+  Reading for it also turned up a different defect, folded in because the same
+  reading found it: RFC-0015 D4's derived commit list attributes its orphaned
+  SHAs to hand-written lists when the cause is the repo's squash-merge
+  convention. The
+  user chose the within-file duplicate check over ID-257's remote-aware minting,
+  the land-order convention for which item renumbers, and `pr` over a squash SHA
+  the block cannot know at paste time.
+source_items:
+  - BK-383
+  - BK-384
+  - ID-257
+audience:
+  - contributor.tooling
+  - contributor.process
+discovery_followups:
+  # Born while widening the duplicate check on a review finding: the done
+  # register carries four pre-existing pairs, so the widening was reverted and
+  # the gap filed with them as evidence.
+  - BK-385
+co_shipped_items:
+  # A CI failure this PR did not cause but had to fix: SQLAlchemy 2.1 deleted
+  # the mypy plugin pyproject configures, red-lighting typecheck here and on
+  # master. Diagnosed, reproduced and fixed under its own trace.
+  - BUG-294
+expected_ripples:
+  - sdd/backlogid.json
+  - sdd/GATE-INVENTORY.md
+  - sdd/BACKLOG.md
+  - sdd/BACKLOG-DONE.md
+  - sdd/rfcs/rfc-0015-ship-two-surfaces.md
+  - sdd/traces/_schema.yml
+  # The one live trace carrying a `review:` block, so making `pr` required
+  # reaches it. Anticipated, and recorded in the Verify phase below.
+  - sdd/traces/bk-378-d1-d4.yml
+  - .claude/skills/ship/SKILL.md
+surprising_ripples:
+  # The ripple-check row for "New or changed cross-artifact check" anticipated
+  # the gate edits and the GATE-INVENTORY regeneration. These three it did not,
+  # one note per path, in the order the paths are listed.
+  #
+  # 1. report_trace_outcomes.py had its own `yaml.safe_load`. Leaving it would
+  #    have let the gate and the report disagree about what parses, which is the
+  #    Rule 1 failure `_trace_corpus.py` exists to prevent.
+  # 2. The strict loader failed an existing trace on its first run: BK-221's
+  #    carried `surprising_ripples` twice and had been validating with one
+  #    occurrence silently discarded. Which occurrence survives is arbitrary —
+  #    here the informative one happened to win, so nothing was lost, but
+  #    nothing said so either.
+  # 3. The new duplicate check found a SECOND live collision nobody had
+  #    reported — BUG-291, on two distinct open items from #1021 and #1022 —
+  #    and bug-254-absent-container-root-row.yml is where that renumber's
+  #    other half landed. Fixing it was
+  #    forced, not optional: a gate that red-lights master is not shippable.
+  #    Merge order, not PR number, decides which item renumbers.
+  #
+  # `sdd/BACKLOG.md` is not listed: it is in `expected_ripples` above, and a
+  # path cannot be both anticipated and unanticipated. Two things landed there
+  # that the table did not predict — BUG-291's renumber and ID-257's body
+  # losing the half this builds — and both are recorded in note 3 and in the
+  # BK-383 register entry rather than by double-listing the file.
+  # 4. CLAUDE.md section Trace authoring stated the never-hand-edit rule
+  #    absolutely, and it is the authority /ship's Step 5 bullet cites — so
+  #    that bullet pointed readers at a document contradicting it. Found by
+  #    the closing round; the carve-out had reached two homes of three.
+  - CLAUDE.md
+  - scripts/report_trace_outcomes.py
+  - sdd/traces/BK-221-test-pbt-write-result-s3-azure-per-backend.yml
+  - sdd/traces/bug-254-absent-container-root-row.yml
+phases:
+  - id: orient
+    name: Orient
+    steps:
+      - file: sdd/BACKLOG.md
+        section: "BK-382 (both headers), ID-257"
+        read_type: gate
+        extract: >-
+          Two distinct open items carrying one ID; ID-257 already reasons about
+          the minting collision and deliberately leaves the mechanism open,
+          naming open-versus-open as the half no gate sees.
+        outcome: ok
+      - file: sdd/rfcs/rfc-0015-ship-two-surfaces.md
+        section: "D1, D4, Impact, Pilot result"
+        read_type: gate
+        extract: >-
+          D4 makes ship_report.py the only producer of loop figures; its
+          reverse condition is read from the per-file count. D1 bounds the
+          record to the PR.
+        outcome: ok
+      - file: scripts/gen_backlogid.py
+        section: "_extract_ids, _check"
+        read_type: gate
+        extract: >-
+          `_extract_ids` returns dict[str, set[str]] so a repeat collapses
+          before comparison; `_check` only compares open against done.
+        outcome: ok
+      - file: tests/scripts/test_check_backlog_ids_vs_base.py
+        section: "test_this_module_defines_no_header_regex"
+        read_type: gate
+        extract: >-
+          A guard pins `_extract_ids` to its home module, so widening its
+          return type would rewrite a second gate. Decided a sibling function
+          instead.
+        outcome: ok
+  - id: implement
+    name: Implement
+    steps:
+      - file: scripts/_trace_corpus.py
+        section: "module docstring — Rule 1 / authority"
+        read_type: reference
+        extract: >-
+          Already the one driver for "what a trace is", and states the Rule 1
+          reason. That made it the home for the loader too, and named the
+          second consumer the glob has — which is how report_trace_outcomes.py
+          came to be switched in the same change.
+        outcome: ok
+      - file: scripts/check_traces.py
+        section: "collect_violations — the except (yaml.YAMLError, OSError, UnicodeDecodeError) arm"
+        read_type: reference
+        extract: >-
+          Both consumers already report a parse failure as a `(parse)`
+          violation and catch YAMLError specifically. Decided the loader must
+          raise ConstructorError rather than a bare ValueError, or it would
+          escape that arm and abort the gate with a traceback.
+        outcome: ok
+      - file: scripts/ship_report.py
+        section: "trace_block, _q, Bounds"
+        read_type: reference
+        extract: >-
+          `_q` exists because an all-digit short SHA re-reads as an integer;
+          `pr` is emitted bare because it is meant to be an integer, which the
+          new schema property requires.
+        outcome: ok
+  - id: verify
+    name: Verify
+    steps:
+      - file: sdd/CLAUDE-REFERENCE.md
+        section: "Ripple-check table / Pre-work index"
+        read_type: verify
+        extract: >-
+          Triggered rows: new or changed cross-artifact check (both gates),
+          tracker ID in published prose (sdd/** out of scope), test whose
+          subject is outside src/.
+        outcome: ok
+      - file: sdd/traces/_schema.yml
+        section: "review: required, pr, review_driven_commits"
+        read_type: verify
+        extract: >-
+          The all-nine required list becomes ten, so the one live trace with a
+          review block needed `pr: 1026` or it would fail its own schema.
+        outcome: ok
+      - file: sdd/DRIFT-RULES.md
+        section: "Rule 3 claim space, Rule 7 bounds"
+        read_type: verify
+        extract: >-
+          A single-artifact claim is a `rule`, not a widened `compares:` — each
+          gate keeps its `pair` block unchanged and gains a second
+          `Drift-gate:: kind: rule` beside it, which is the shape
+          check_changelog_unreleased.py already uses. GATE-INVENTORY.md is
+          generated from the blocks, 48 -> 50 rows.
+        outcome: ok
+
+# Bound on the block below, which is derived and pasted verbatim per D4.
+# Replaced, not appended, when the close moved: a second paste would leave two
+# top-level `review:` keys, which is the defect this PR fixes one surface over.
+#
+# **The block's `submissions` and `by_round` do not describe this loop**, and the
+# reason is an instrument limitation worth carrying into BK-384's measurement.
+# GraphQL is blocked in these sessions, so `/rvw-pr`'s pending-review flow is
+# unavailable and each finding was posted through the REST comment endpoint —
+# which makes every comment its own review submission. The script therefore reads
+# 20 submissions where the loop ran **6 rounds**, and splits one round's findings
+# across as many "rounds" as it had comments.
+#
+# `findings: 36` is also short. Rounds 4, 5 and 6 were recorded as PR issue
+# comments (one consolidated record each, since their findings were already
+# fixed), and `ship_report.py` reads inline review comments only, so those three
+# rounds contribute nothing to the count.
+#
+# Whoever pools this PR should use **6 rounds and 89 findings** — 8, 11, 17, 25,
+# 17, 11 — not 20 and 36. `review_rounds` counts commits rather than comments and
+# is correct as emitted.
+review:
+  # Derived by `hatch run ship-report 1027 --trace-block-only` at head a081f4d.
+  # Do not hand-edit, except a newly required field per sdd/traces/_schema.yml
+  # section review: RFC-0015 D4 makes this script the only producer.
+  derivation: "hatch run ship-report 1027 --trace-block-only"
+  pr: 1027
+  review_rounds: 9
+  submissions: 20
+  findings: 36
+  by_round:
+    - round: 1
+      findings: 8
+      origin: {original: 5, unclassifiable-file: 3}
+      triage: {must-fix: 7, refuted: 1}
+      duration_hours: 0.13
+    - round: 2
+      findings: 2
+      origin: {loop-introduced: 1, unclassifiable-file: 1}
+      triage: {must-fix: 2}
+      duration_hours: 35.82
+    - round: 3
+      findings: 9
+      origin: {loop-introduced: 2, original: 5, pre-existing: 1, unclassifiable-file: 1}
+      triage: {must-fix: 9}
+      duration_hours: 0.07
+    - round: 4
+      findings: 1
+      origin: {loop-introduced: 1}
+      triage: {must-fix: 1}
+      duration_hours: 1.4
+    - round: 5
+      findings: 1
+      origin: {original: 1}
+      triage: {must-fix: 1}
+      duration_hours: 0.0
+    - round: 6
+      findings: 1
+      origin: {loop-introduced: 1}
+      triage: {must-fix: 1}
+      duration_hours: 0.0
+    - round: 7
+      findings: 1
+      origin: {loop-introduced: 1}
+      triage: {must-fix: 1}
+      duration_hours: 0.0
+    - round: 8
+      findings: 1
+      origin: {loop-introduced: 1}
+      triage: {must-fix: 1}
+      duration_hours: 0.0
+    - round: 9
+      findings: 1
+      origin: {unclassifiable-file: 1}
+      triage: {must-fix: 1}
+      duration_hours: 0.0
+    - round: 10
+      findings: 1
+      origin: {original: 1}
+      triage: {must-fix: 1}
+      duration_hours: 0.0
+    - round: 11
+      findings: 1
+      origin: {unclassifiable-file: 1}
+      triage: {must-fix: 1}
+      duration_hours: 0.0
+    - round: 12
+      findings: 1
+      origin: {loop-introduced: 1}
+      triage: {must-fix: 1}
+      duration_hours: 0.0
+    - round: 13
+      findings: 1
+      origin: {original: 1}
+      triage: {must-fix: 1}
+      duration_hours: 0.0
+    - round: 14
+      findings: 1
+      origin: {original: 1}
+      triage: {must-fix: 1}
+      duration_hours: 0.0
+    - round: 15
+      findings: 1
+      origin: {unclassifiable-file: 1}
+      triage: {must-fix: 1}
+      duration_hours: 0.0
+    - round: 16
+      findings: 1
+      origin: {loop-introduced: 1}
+      triage: {refuted: 1}
+      duration_hours: 0.0
+    - round: 17
+      findings: 1
+      origin: {loop-introduced: 1}
+      triage: {must-fix: 1}
+      duration_hours: 0.0
+    - round: 18
+      findings: 1
+      origin: {unclassifiable-file: 1}
+      triage: {must-fix: 1}
+      duration_hours: 0.0
+    - round: 19
+      findings: 1
+      origin: {original: 1}
+      triage: {refuted: 1}
+      duration_hours: 0.0
+    - round: 20
+      findings: 1
+      origin: {unclassifiable-blame: 1}
+      triage: {must-fix: 1}
+      duration_hours: 0.0
+  by_file:
+    - path: "scripts/_trace_corpus.py"
+      findings: 5
+    - path: "scripts/check_traces.py"
+      findings: 5
+    - path: "sdd/BACKLOG.md"
+      findings: 5
+    - path: "scripts/ship_report.py"
+      findings: 3
+    - path: "sdd/BACKLOG-DONE.md"
+      findings: 3
+    - path: "sdd/traces/_schema.yml"
+      findings: 3
+    - path: "tests/scripts/test_ship_report.py"
+      findings: 3
+    - path: "scripts/gen_backlogid.py"
+      findings: 2
+    - path: "tests/scripts/test_gen_backlogid.py"
+      findings: 2
+    - path: "scripts/report_trace_outcomes.py"
+      findings: 1
+    - path: "sdd/rfcs/rfc-0015-ship-two-surfaces.md"
+      findings: 1
+    - path: "sdd/traces/bk-378-d1-d4.yml"
+      findings: 1
+    - path: "sdd/traces/bk-383-duplicate-id-gate-and-d4-durability.yml"
+      findings: 1
+    - path: "tests/scripts/test_check_traces.py"
+      findings: 1
+  untouched_files:
+    - ".claude/skills/ship/SKILL.md"
+    - "CLAUDE.md"
+    - "pyproject.toml"
+    - "sdd/GATE-INVENTORY.md"
+    - "sdd/backlogid.json"
+    - "sdd/traces/BK-221-test-pbt-write-result-s3-azure-per-backend.yml"
+    - "sdd/traces/bug-254-absent-container-root-row.yml"
+    - "sdd/traces/bug-294-mypy-plugin-deleted-upstream.yml"
+    - "tests/scripts/test_pyproject_pins.py"
+  review_driven_commits:
+    - sha: "7535f42"
+      subject: "BK-383: Address PR #1027 round 1"
+    - sha: "302e807"
+      subject: "BK-383: Address PR #1027 round 2 (measuring)"
+    - sha: "2999058"
+      subject: "BK-384: Split the delivery out of BK-383, and stop enumerating the backlog's gates"
+    - sha: "e7f4809"
+      subject: "BK-383: Address PR #1027 round 3 (panel: unprimed, measuring, whole-file)"
+    - sha: "f95a3e6"
+      subject: "BK-383: Address PR #1027 round 4 (closing gate), and single-home the repeated claims"
+    - sha: "582356d"
+      subject: "BK-383: Address PR #1027 round 5, and finish the single-homing"
+    - sha: "5a090e6"
+      subject: "BK-383: Address PR #1027 round 6"
+    - sha: "2cef10d"
+      subject: "BK-383: Close the loop \u2014 paste the derived review block, record CLAUDE.md's ripple"
+    - sha: "a081f4d"
+      subject: "BUG-294: Remove the mypy plugin SQLAlchemy 2.1 deleted"
+  ci: {verdict: GREEN, failed: 0, pending: 0}

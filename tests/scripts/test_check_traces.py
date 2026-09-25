@@ -16,6 +16,11 @@ from pathlib import Path
 import pytest
 
 _SCRIPT = Path(__file__).resolve().parents[2] / "scripts" / "check_traces.py"
+_SCRIPTS_DIR = _SCRIPT.parent
+if str(_SCRIPTS_DIR) not in sys.path:
+    sys.path.insert(0, str(_SCRIPTS_DIR))
+
+import _trace_corpus  # noqa: E402  — the shared loader both consumers use
 
 
 def _load():
@@ -189,6 +194,339 @@ class TestValidation:
         assert len(violations) == 1
         assert "examples[0]" in violations[0].source
         assert "extra" in violations[0].message
+
+
+class TestDuplicateKeys:
+    """How the gate parses: the strict loader, and the arm that reports its failures.
+
+    Covers the duplicate-key rule below and the read-and-parse failures of
+    `load_schema`, which share one `except` arm and arrived together. A guard
+    about *what the schema says* belongs in `TestValidation`; a guard about
+    whether a file parses at all, or about what happens when it cannot, belongs
+    here.
+
+    A repeated mapping key is a violation, not a silent last-wins merge.
+
+    ``yaml.safe_load`` resolves a duplicate key to the last occurrence and says
+    nothing, so a trace carrying one validated while half its content was
+    discarded. Measured on the live corpus before this gate existed:
+    ``BK-221-test-pbt-write-result-s3-azure-per-backend.yml`` carried
+    ``surprising_ripples`` twice and the gate reported the corpus clean.
+
+    The reachable authoring path is RFC-0015 D4's paste-the-block workflow —
+    pasting the ``review:`` block a second time instead of replacing it yields
+    two top-level ``review:`` keys — but the defect is not specific to it, so
+    neither is the check.
+    """
+
+    def test_duplicate_top_level_key_is_reported(self, tmp_path):
+        schema = _write_schema(tmp_path)
+        traces = tmp_path / "traces"
+        _write_trace(traces, "dup.yml", 'id: "ID-1"\ntitle: "first"\ntitle: "second"\n')
+        violations = _mod.collect_violations(schema_path=schema, traces_dir=traces)
+        assert len(violations) == 1
+        assert violations[0].path == "(parse)"
+        assert "title" in violations[0].message
+
+    def test_duplicate_nested_key_is_reported(self, tmp_path):
+        """Nested, not only top-level: last-wins discards content at any depth."""
+        schema = tmp_path / "_schema.yml"
+        schema.write_text(
+            textwrap.dedent(
+                """
+                $schema: "https://json-schema.org/draft/2020-12/schema"
+                type: object
+                properties:
+                  outer:
+                    type: object
+                """
+            ),
+            encoding="utf-8",
+        )
+        traces = tmp_path / "traces"
+        _write_trace(traces, "dup.yml", "outer:\n  a: 1\n  a: 2\n")
+        violations = _mod.collect_violations(schema_path=schema, traces_dir=traces)
+        assert len(violations) == 1
+        assert violations[0].path == "(parse)"
+
+    def test_an_unhashable_key_is_reported_not_raised(self, tmp_path):
+        """A complex key must not escape as `TypeError`.
+
+        PyYAML's own `construct_mapping` checks `isinstance(key, Hashable)`
+        before using the key and raises `ConstructorError` when it is not.
+        A duplicate-detector that tests membership first does the unhashable
+        lookup itself, and `TypeError` is not a `yaml.YAMLError` — so it
+        escapes the `except` arm both consumers report `(parse)` violations
+        from, and the gate aborts with a traceback instead. Measured before the
+        guard: `load_trace('? [a, b]\\n: value\\n')` raised `TypeError`.
+        """
+        schema = _write_schema(tmp_path)
+        traces = tmp_path / "traces"
+        _write_trace(traces, "complex.yml", "? [a, b]\n: value\n")
+        violations = _mod.collect_violations(schema_path=schema, traces_dir=traces)
+        assert violations, "an unhashable key must be reported, not raised"
+        assert violations[0].path == "(parse)"
+
+    def test_a_duplicate_key_in_the_schema_is_reported(self, tmp_path):
+        """The authority file is inside the guard, not outside it.
+
+        `_schema.yml` is the one YAML whose duplicate key disarms the gate for
+        the *whole* corpus: two `required:` keys under `properties.review`
+        leave a well-formed schema that `check_schema` passes, and every trace
+        then validates against constraints nobody wrote. Reported rather than
+        raised, symmetric with the malformed-schema path beside it.
+        """
+        schema = tmp_path / "_schema.yml"
+        schema.write_text(
+            textwrap.dedent(
+                """
+                $schema: "https://json-schema.org/draft/2020-12/schema"
+                type: object
+                required: [id]
+                required: [title]
+                """
+            ),
+            encoding="utf-8",
+        )
+        traces = tmp_path / "traces"
+        _write_trace(traces, "ok.yml", 'id: "ID-1"\n')
+        violations = _mod.collect_violations(schema_path=schema, traces_dir=traces)
+        assert len(violations) == 1
+        assert violations[0].path == "(schema)"
+        assert "required" in violations[0].message
+
+    def test_distinct_keys_still_parse(self, tmp_path):
+        """The guard must not fire on a mapping that merely repeats a *value*."""
+        schema = _write_schema(tmp_path)
+        traces = tmp_path / "traces"
+        _write_trace(traces, "ok.yml", 'id: "ID-1"\ntitle: "ID-1"\n')
+        assert _mod.collect_violations(schema_path=schema, traces_dir=traces) == []
+
+    @pytest.mark.parametrize("kind", ["missing", "undecodable"])
+    def test_an_unreadable_schema_is_a_violation_not_a_traceback(self, tmp_path, kind):
+        """The `OSError` and `UnicodeDecodeError` members of the new arm.
+
+        `load_schema` reads and parses, so its failures are not only
+        `YAMLError`: the path may not exist, and a bad rebase can leave the
+        file undecodable. Untested, the arm could be narrowed to
+        `except yaml.YAMLError` and every other test here would still pass —
+        while the gate aborted with a traceback on the two cases the trace loop
+        already handles for the same reasons.
+        """
+        schema = tmp_path / "_schema.yml"
+        if kind == "undecodable":
+            schema.write_bytes(b"\xff\xfe$schema: x\n")
+        traces = tmp_path / "traces"
+        _write_trace(traces, "ok.yml", 'id: "ID-1"\n')
+
+        violations = _mod.collect_violations(schema_path=schema, traces_dir=traces)
+        assert len(violations) == 1
+        assert violations[0].path == "(schema)"
+        assert violations[0].source.endswith("_schema.yml"), "the failing artifact must be named (Rule 2)"
+
+    # The invariant, as a table: `load_trace` equals `yaml.safe_load` for every
+    # document with no repeated *literal* key, and raises a `yaml.YAMLError` for
+    # every document that has one. Three loader attempts each passed the shapes
+    # they were written against and broke one they were not, so the shapes are
+    # enumerated rather than sampled — the repeat-site escalation in `/ship`.
+    # The four marked (regression) are the ones earlier attempts got wrong.
+    _SHAPES = [
+        ("plain", "a: 1\nb: 2\n", False),
+        ("duplicate_top_level", "a: 1\na: 2\n", True),
+        ("duplicate_nested", "o:\n  a: 1\n  a: 2\n", True),
+        ("duplicate_in_sequence_of_mappings", "- a: 1\n  a: 2\n", True),
+        ("merge_no_overlap", "base: &b\n  a: 1\nd:\n  <<: *b\n  c: 2\n", False),
+        ("merge_override", "base: &b\n  a: 1\nd:\n  <<: *b\n  a: 2\n", False),  # regression
+        ("merge_of_two_anchors", "x: &x\n  a: 1\ny: &y\n  b: 2\nd:\n  <<: [*x, *y]\n  c: 3\n", False),
+        ("merge_plus_real_duplicate", "base: &b\n  a: 1\nd:\n  <<: *b\n  c: 1\n  c: 2\n", True),
+        ("anchor_alias_no_merge", "a: &v 1\nb: *v\n", False),
+        ("unhashable_key", "? [a, b]\n: value\n", True),  # regression
+        ("map_tag_on_sequence", "x: !!map\n  - a\n", True),  # regression
+        ("set_tag_on_scalar", "x: !!set hello\n", True),  # regression
+        ("set_tag_proper", "x: !!set\n  ? a\n  ? b\n", False),
+        ("empty_mapping", "{}\n", False),
+        ("document_is_a_list", "- 1\n- 2\n", False),
+    ]
+
+    @pytest.mark.parametrize(("name", "doc", "must_refuse"), _SHAPES, ids=[s[0] for s in _SHAPES])
+    def test_the_loader_restricts_safe_load_and_nothing_more(self, name, doc, must_refuse):
+        """Refuse exactly the repeated-key documents, and agree with `safe_load` on the rest.
+
+        Both halves matter and each caught a real defect. Refusing too little
+        was the original bug; refusing too *much* — a merge override, a
+        `!!map` on a sequence — was introduced by the fixes for it, twice. The
+        `must_refuse` cases also assert the refusal is a `yaml.YAMLError`,
+        because a `TypeError` or `ValueError` escapes the arm both consumers
+        report `(parse)` violations from and aborts the gate with a traceback.
+        """
+        import yaml as _yaml
+
+        if must_refuse:
+            with pytest.raises(_yaml.YAMLError):
+                _trace_corpus.load_trace(doc)
+            return
+
+        try:
+            expected, expected_error = _yaml.safe_load(doc), None
+        except _yaml.YAMLError as exc:
+            expected, expected_error = None, type(exc)
+
+        if expected_error is not None:
+            with pytest.raises(expected_error):
+                _trace_corpus.load_trace(doc)
+        else:
+            assert _trace_corpus.load_trace(doc) == expected
+
+    def test_a_merge_key_is_not_a_duplicate(self, tmp_path):
+        """`<<` splices; it is not a repeated key, and must parse as `safe_load` does.
+
+        The strict loader is a *restriction* of `SafeLoader` to documents with
+        no repeated key, so anything `yaml.safe_load` accepts and that has no
+        duplicate must still parse. A scan that treats the literal `<<` as an
+        ordinary key breaks that, refusing a document `safe_load` expands with
+        an error naming `tag:yaml.org,2002:merge`. The loader skips that tag
+        instead, and leaves the splice to `SafeConstructor`; see
+        `StrictTraceLoader.construct_mapping`, which states why that order and
+        not the reverse.
+        """
+        import yaml as _yaml
+
+        schema = tmp_path / "_schema.yml"
+        schema.write_text(
+            textwrap.dedent(
+                """
+                $schema: "https://json-schema.org/draft/2020-12/schema"
+                type: object
+                """
+            ),
+            encoding="utf-8",
+        )
+        traces = tmp_path / "traces"
+        body = "base: &b\n  a: 1\nderived:\n  <<: *b\n  c: 2\n"
+        _write_trace(traces, "merge.yml", body)
+
+        assert _mod.collect_violations(schema_path=schema, traces_dir=traces) == []
+        # And the parse agrees with the loader it restricts, rather than merely
+        # not failing: a merge that silently dropped `a` would also pass above.
+        assert _trace_corpus.load_trace(body) == _yaml.safe_load(body)
+
+
+class TestOneLoader:
+    """Both trace consumers parse through the same function, and it is pinned.
+
+    `_trace_corpus`'s docstring makes this the load-bearing claim: "A consumer
+    reaching for `yaml.safe_load` directly opts back out of it silently, which
+    is why there is one function rather than a documented convention." Nothing
+    enforced it — reverting `report_trace_outcomes.py` to `yaml.safe_load` left
+    its whole suite green, and ruff removed the orphaned import without
+    complaint, so the revert was clean.
+
+    Asserted over the source rather than by parsing a fixture, for the reason
+    `test_check_backlog_ids_vs_base.py`'s `TestReuse` gives: the defect is a
+    second spelling of one rule, and only reading the text catches it before
+    the two disagree.
+    """
+
+    @staticmethod
+    def _consumers() -> dict[str, str]:
+        """Every script under `scripts/` that reads the trace corpus, derived rather than listed.
+
+        **Bound**: `scripts/` only. `sdd/rfcs/rfc-0015-rounds.py` also reads
+        the corpus and is outside it — it text-scans rather than parsing
+        YAML, so it cannot hit the last-wins defect today, but it is a live
+        counterexample to a broader reading of this docstring.
+
+        A hard-coded pair is the DRIFT-RULES Rule 3 shape this suite removes
+        elsewhere: a third consumer added later would reach for
+        `yaml.safe_load`, restore last-wins silently, and leave the guard
+        written to prevent exactly that still green.
+        """
+        found = {}
+        # rglob, not glob: `scripts/docs/` already holds five modules
+        # (`check_links.py`, `link.py`, `nav.py`, `render.py`, `scan.py`), so a
+        # consumer one directory down is not hypothetical, and a non-recursive
+        # walk leaves the very hole this derivation exists to close. Measured:
+        # a consumer planted at `scripts/docs/` passed both guards under `glob`.
+        for path in sorted(_SCRIPTS_DIR.rglob("*.py")):
+            if path.name == "_trace_corpus.py":
+                continue
+            source = path.read_text(encoding="utf-8")
+            # Keyed on what makes a script a trace consumer — that it reads the
+            # corpus — not on whether it already imports the shared module. The
+            # failure this guards is a NEW consumer reaching for `yaml.safe_load`
+            # directly, and such a script contains no `_trace_corpus` reference,
+            # so a predicate keyed on that could never see it.
+            if "sdd/traces" in source or "iter_trace_files" in source or "TRACE_GLOB" in source:
+                found[path.name] = source
+        assert found, "no trace-corpus consumers found; the derivation is wrong"
+        return found
+
+    @staticmethod
+    def _unsafe_yaml_calls(source: str) -> list[str]:
+        """Calls that restore last-wins, found in the AST rather than in the text.
+
+        Three instruments were tried and the first two were wrong the same way —
+        they keyed on a *spelling* rather than on the thing. `"yaml.safe_load" in
+        source` missed `from yaml import safe_load`, `import yaml as y`, and
+        `yaml.load(..., Loader=SafeLoader)`; widening to the bare substring
+        `"safe_load"` then fired on `check_traces.py`'s own prose explaining why
+        the strict loader exists. Parsing the module answers the actual question —
+        is this call made — and no comment, docstring or import alias changes it.
+        """
+        import ast
+
+        try:
+            tree = ast.parse(source)
+        except SyntaxError:  # pragma: no cover — a broken script is lint's problem
+            return []
+
+        aliases = {"yaml"}
+        bare: set[str] = set()
+        for node in ast.walk(tree):
+            if isinstance(node, ast.Import):
+                aliases |= {a.asname or a.name for a in node.names if a.name == "yaml"}
+            elif isinstance(node, ast.ImportFrom) and node.module == "yaml":
+                bare |= {a.asname or a.name for a in node.names}
+
+        unsafe = {"safe_load", "safe_load_all", "load", "load_all"}
+        found: list[str] = []
+        for node in ast.walk(tree):
+            if not isinstance(node, ast.Call):
+                continue
+            func = node.func
+            if isinstance(func, ast.Attribute):
+                if isinstance(func.value, ast.Name) and func.value.id in aliases and func.attr in unsafe:
+                    found.append(f"{func.value.id}.{func.attr}")
+            elif isinstance(func, ast.Name) and func.id in bare and func.id in unsafe:
+                found.append(func.id)
+        return found
+
+    def test_no_consumer_parses_the_corpus_outside_the_shared_loader(self) -> None:
+        for name, source in self._consumers().items():
+            calls = self._unsafe_yaml_calls(source)
+            assert not calls, (
+                f"{name} parses YAML directly ({', '.join(sorted(set(calls)))}) instead of "
+                "_trace_corpus.load_trace, which silently restores the last-wins "
+                "duplicate-key behaviour"
+            )
+
+    def test_every_parsing_consumer_uses_the_shared_loader(self) -> None:
+        """Bound: the consumers that *parse* the corpus, not every reader of it.
+
+        Most scripts `_consumers` matches name `sdd/traces` as a path and never
+        parse a trace — `check_no_retrospective.py` scans it as text. Requiring
+        `load_trace` of those would demand an import they have no use for. The
+        `safe_load` prohibition above is the half that binds all of them, and
+        it is the half that catches a new consumer.
+        """
+        parsing = {n: src for n, src in self._consumers().items() if "yaml." in src or "load_trace" in src}
+        assert parsing, "no parsing consumers found; the derivation is wrong"
+        for name, source in parsing.items():
+            # Over the body, not the whole file: `check_traces.py`'s module
+            # docstring names `load_trace` in prose, so a whole-file search
+            # passes with both the import and the call deleted.
+            body = source.split('"""', 2)[-1]
+            assert "load_trace" in body, f"{name} parses the corpus without the shared loader"
 
 
 class TestMain:

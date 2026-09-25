@@ -15,7 +15,7 @@ source_items:
 audience:
   - contributor.process
 discovery_followups:
-  - BK-382
+  - BK-384
 expected_ripples:
   - pyproject.toml
   - sdd/GATE-INVENTORY.md
@@ -284,7 +284,9 @@ phases:
           — it touches scripts/ and tests/
         outcome: misleading
 
-# Bound on the block below, which is derived and not hand-edited.
+# Bound on the block below. It is derived, and hand-edited only for `pr`,
+# which BK-383 made required after this loop closed — see the comment on
+# that field and the carve-out in sdd/traces/_schema.yml section review.
 # The loop ran five rounds. Rounds 1-4 were posted reviews and are what the
 # script reads. Round 5 was the closing exit gates — an unprimed pass, a
 # whole-file pass and a measuring pass — run analyze-only; its 13 must-fix
@@ -292,13 +294,19 @@ phases:
 # never posted, so no endpoint carries them. `submissions: 4` and
 # `findings: 41` are therefore the posted loop, not the whole loop; the two
 # commits above are in `review_driven_commits` because that figure comes from
-# git rather than from the comment endpoints. Whoever re-measures under BK-382
+# git rather than from the comment endpoints. Whoever re-measures under BK-384
 # should read this PR as 5 rounds / 54 findings and count the 13 as
 # loop-introduced-detectable-only-at-the-close.
 review:
   # Derived by `hatch run ship-report 1026 --trace-block-only` at head 815b345.
   # Do not hand-edit: RFC-0015 D4 makes this script the only producer.
   derivation: "hatch run ship-report 1026 --trace-block-only"
+  # `pr` retrofitted by hand under BK-383, which made it required. Copied from
+  # the script's current output; every other field is the original run's. A
+  # regeneration would have re-measured at today's head and moved
+  # `review_rounds` 9 -> 11 — two commits landed after this loop closed, so a
+  # re-run would report a different loop, not a corrected one. Not re-run.
+  pr: 1026
   review_rounds: 9
   submissions: 4
   findings: 41

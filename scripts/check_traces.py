@@ -1,4 +1,4 @@
-"""PR-time gate: every trace under ``sdd/traces/`` validates against the schema.
+"""PR-time gate: every trace under ``sdd/traces/`` parses cleanly and matches the schema.
 
 ``sdd/traces/_schema.yml`` is the single authority for the shape of an
 agent use-case trace: which fields are required, the id/pattern
@@ -29,6 +29,16 @@ schema declares. Two further self-checks run first:
   with the constraints would otherwise mislead authors who copy it as a
   template.
 
+**One rule, not only the pair.** Parsing goes through
+``_trace_corpus.load_trace``, which refuses a repeated mapping key at any depth
+instead of letting YAML keep the last silently. That is a rule about a single
+artifact rather than a comparison against the schema: the survivor of a
+last-wins merge is well-formed, so schema validation passes while half the
+content is gone. Measured — ``BK-221-test-pbt-write-result-s3-azure-per-backend.yml``
+carried ``surprising_ripples`` twice and this gate reported the corpus clean.
+The schema is read the same way, because a duplicate key *there* disarms the
+gate for the whole corpus rather than for one file.
+
 What this gate does NOT check
 -----------------------------
 Conventions the schema documents in prose but cannot express in JSON
@@ -37,6 +47,10 @@ id is the first ``source_items`` entry, that ``audience`` is sorted by
 priority, that an ``outcome`` tag honestly reflects how a read landed, or
 that the filename slug matches the title. The gate certifies structural
 conformance, not authoring honesty.
+
+The duplicate-key rule reaches repeated *keys*, not repeated *content*: two
+differently-named keys holding the same list, or one key whose list repeats an
+entry, are both well-formed and pass.
 
 Exit codes
 ==========
@@ -59,6 +73,13 @@ Drift-gate::
     kind:       pair
     compares:   every trace under sdd/traces/ ↔ the schema in sdd/traces/_schema.yml
     domain:     process
+
+Drift-gate::
+
+    kind:       rule
+    rule: no file this gate parses repeats a mapping key at any depth — every
+        trace under sdd/traces/, and sdd/traces/_schema.yml itself
+    domain:     process
 """
 
 from __future__ import annotations
@@ -74,7 +95,7 @@ from jsonschema.validators import validator_for
 
 sys.path.insert(0, str(Path(__file__).parent))
 
-from _trace_corpus import ROOT, TRACES_DIR, iter_trace_files  # noqa: E402
+from _trace_corpus import ROOT, TRACES_DIR, iter_trace_files, load_trace  # noqa: E402
 
 if TYPE_CHECKING:
     from collections.abc import Iterable
@@ -114,8 +135,18 @@ def _json_path(absolute_path: Iterable[Any]) -> str:
 
 
 def load_schema(schema_path: Path = SCHEMA_PATH) -> dict[str, Any]:
-    """Parse the trace schema YAML into a mapping."""
-    return yaml.safe_load(schema_path.read_text(encoding="utf-8"))
+    """Parse the trace schema YAML into a mapping, refusing duplicate keys.
+
+    The schema is read with the same strict loader as the traces, because it is
+    the one file here whose duplicate key disarms the gate for the *whole*
+    corpus rather than for one trace: two ``required:`` keys under
+    ``properties.review`` leave a schema that ``check_schema`` passes, and
+    every trace then validates against constraints nobody wrote. Measured
+    under ``safe_load``, a schema with two ``required:`` keys validated a
+    document against the survivor and reported the mismatch as an ordinary
+    ``(root)`` violation, which reads as the trace being wrong.
+    """
+    return load_trace(schema_path.read_text(encoding="utf-8"))
 
 
 def _validate_document(
@@ -141,27 +172,35 @@ def collect_violations(
     trace result meaningless), then the schema's ``examples`` block, then
     each trace file.
     """
-    schema = load_schema(schema_path)
+    rel = schema_path.relative_to(ROOT) if schema_path.is_relative_to(ROOT) else schema_path
+    try:
+        schema = load_schema(schema_path)
+    except (yaml.YAMLError, OSError, UnicodeDecodeError) as exc:
+        # Reported, not raised, symmetric with the check_schema arm below: an
+        # unreadable or duplicate-keyed schema is this gate's subject at its
+        # largest, so it prints a violation rather than aborting with a
+        # traceback. Same three exception types the trace loop catches, for the
+        # same reasons.
+        return [Violation(source=str(rel), path="(schema)", message=f"{type(exc).__name__}: {exc}")]
+
     validator_cls = validator_for(schema)
 
     try:
         validator_cls.check_schema(schema)
     except Exception as exc:  # noqa: BLE001 — surface any schema-validation failure
-        rel = schema_path.relative_to(ROOT) if schema_path.is_relative_to(ROOT) else schema_path
         return [Violation(source=str(rel), path="(schema)", message=f"schema is not valid: {exc}")]
 
     validator = validator_cls(schema)
     violations: list[Violation] = []
 
     # The schema's own examples are illustrative templates; keep them honest.
-    schema_rel = schema_path.relative_to(ROOT) if schema_path.is_relative_to(ROOT) else schema_path
     for idx, example in enumerate(schema.get("examples", [])):
-        violations.extend(_validate_document(validator, example, source=f"{schema_rel} examples[{idx}]"))
+        violations.extend(_validate_document(validator, example, source=f"{rel} examples[{idx}]"))
 
     for trace_path in iter_trace_files(traces_dir):
         rel = trace_path.relative_to(ROOT) if trace_path.is_relative_to(ROOT) else trace_path
         try:
-            document = yaml.safe_load(trace_path.read_text(encoding="utf-8"))
+            document = load_trace(trace_path.read_text(encoding="utf-8"))
         except (yaml.YAMLError, OSError, UnicodeDecodeError) as exc:
             # OSError and UnicodeDecodeError come from read_text, not the
             # parser, and neither is a yaml.YAMLError. The shared glob
@@ -198,14 +237,16 @@ def main(argv: list[str] | None = None) -> int:
 
     violations = collect_violations(schema_path=args.schema, traces_dir=args.traces_dir)
     if not violations:
-        print("check_traces: all traces validate against sdd/traces/_schema.yml.")
+        print("check_traces: all traces parse and validate against sdd/traces/_schema.yml.")
         return 0
 
     for v in violations:
         print(v.format(), file=sys.stderr)
     print(
-        f"\ncheck_traces: {len(violations)} schema violation(s) across sdd/traces/. "
-        "Fix the trace to match sdd/traces/_schema.yml.",
+        f"\ncheck_traces: {len(violations)} violation(s). Each line above names the file to fix: "
+        "a `(parse)` or `(schema)` path is a malformed or duplicate-keyed file, "
+        "an `examples[N]` source is the schema's own example block, and "
+        "anything else is a trace disagreeing with sdd/traces/_schema.yml.",
         file=sys.stderr,
     )
     return 1

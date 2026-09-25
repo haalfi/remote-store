@@ -449,6 +449,43 @@ class TestTraceBlock:
         assert match is not None, "the rounds script cannot find review_rounds in the emitted block"
         assert int(match.group(1)) == 1
 
+    def test_the_block_names_the_pr_it_measures(self, data: dict) -> None:
+        """The one handle in the block that survives the merge.
+
+        Every `sha` in `review_driven_commits` names a branch commit, and a
+        squash merge retires all of them, so `pr` is what a later reader
+        resolves the landed commit from. The measurement behind that, and the
+        instrument it has to be taken with, are in `scripts/ship_report.py`'s
+        Bounds and are not repeated here.
+        """
+        import yaml
+
+        block = yaml.safe_load(_mod.trace_block(data))["review"]
+        assert block["pr"] == data["pr"]
+
+    def test_the_block_does_not_emit_a_squash_sha(self, data: dict) -> None:
+        """Deliberately absent, and the absence is the point.
+
+        The block is pasted while the PR is still open, and GitHub's
+        `merge_commit_sha` on an open PR is an ephemeral *test-merge* commit,
+        not the eventual squash. Emitting it would put a plausible hash that
+        resolves to nothing into a durable artifact — the failure `_schema.yml`
+        already names ("a fake that resolves to nothing is worse than no
+        derivation"). The squash SHA is resolved from `pr` after the merge.
+        """
+        import yaml
+
+        block = yaml.safe_load(_mod.trace_block(data))["review"]
+        # Keyed on the schema's declared property set, not on a list of names a
+        # new spelling would slip past: `additionalProperties: false` is what
+        # actually enforces this, so the guard asserts against the same set.
+        schema = yaml.safe_load(_SCHEMA.read_text(encoding="utf-8"))
+        declared = set(schema["properties"]["review"]["properties"])
+        assert set(block) == declared, "the emitter and the schema must agree on the whole field set"
+        assert not [name for name in declared if "sha" in name.lower()], (
+            "no field may name a commit hash the block cannot know at paste time"
+        )
+
     def test_the_anchor_ignores_prose_inside_a_folded_scalar(self, data: dict) -> None:
         """The defect a free `[ \\t]*` indent introduced, and the reason it is bounded.
 
@@ -598,30 +635,28 @@ class TestTraceBlock:
         assert "x: not closed (no additionalProperties: false)" in gaps
         assert "x.inner: optional ['b']" in gaps
 
-    @pytest.mark.parametrize(
-        "dropped",
-        [
-            "derivation",
-            "review_rounds",
-            "submissions",
-            "findings",
-            "by_round",
-            "by_file",
-            "untouched_files",
-            "review_driven_commits",
-            "ci",
-        ],
-    )
-    def test_dropping_any_emitted_field_fails_the_schema(self, data: dict, dropped: str) -> None:
+    def test_dropping_any_emitted_field_fails_the_schema(self, data: dict) -> None:
+        """Every field the emitter writes, derived from the block rather than listed.
+
+        The fields are taken from the emitted block rather than listed, so a
+        field added to the emitter cannot slip past — a parallel enumeration of
+        a set with an authoritative home is DRIFT-RULES Rule 3's shape.
+        """
         import yaml
         from jsonschema.validators import validator_for
 
         schema_path = Path(__file__).resolve().parents[2] / "sdd" / "traces" / "_schema.yml"
         schema = yaml.safe_load(schema_path.read_text(encoding="utf-8"))
         validator = validator_for(schema)(schema["properties"]["review"])
-        block = yaml.safe_load(_mod.trace_block(data))["review"]
-        del block[dropped]
-        assert list(validator.iter_errors(block)), f"dropping {dropped} validated"
+        emitted = yaml.safe_load(_mod.trace_block(data))["review"]
+
+        assert set(emitted) == set(schema["properties"]["review"]["required"]), (
+            "the emitter and the schema's required list must name the same fields"
+        )
+        for dropped in sorted(emitted):
+            block = dict(emitted)
+            del block[dropped]
+            assert list(validator.iter_errors(block)), f"dropping {dropped} validated"
 
     def test_a_subject_with_a_quote_survives_yaml(self, data: dict) -> None:
         import yaml
@@ -765,6 +800,13 @@ class TestTraceBlock:
         DRIFT-RULES Rule 7 puts it in the script; it is also what a trace reader
         needs, so it is in the schema — and a fix that drops either half leaves
         the other claiming a precision the pair does not have.
+
+        **Why this bound stays in two homes while the squash measurement was
+        collapsed to one** (see `test_the_squash_measurement_has_exactly_one_home`):
+        this one is a fixed structural constant, `+1`, with no measurement behind
+        it, so there is no figure that can independently go stale. The squash
+        claim carries counts derived from the repository, and those drifted apart.
+        Two homes are safe for a constant and unsafe for a measurement.
         """
         import yaml
 
@@ -775,6 +817,57 @@ class TestTraceBlock:
         review = schema["properties"]["review"]["properties"]
         assert "Excludes the commit that pastes this" in review["review_rounds"]["description"]
         assert "returns `review_rounds + 1`" in review["derivation"]["description"]
+
+    def test_the_squash_measurement_has_exactly_one_home(self) -> None:
+        """One home states the figure; the others cite it and do not restate it.
+
+        This replaces a guard that pinned the claim in *two* homes on purpose.
+        That design was measured and failed: two homes carrying the same figure
+        is how both came to carry the same wrong one — a shallow-clone reading
+        shipped in the script and the RFC together, and a later fix corrected
+        one of them and not the other. Asserting a phrase in each home cannot
+        catch that, because both phrases were present and both were false.
+
+        So the property is now *exclusivity*, and it is checked over **every
+        file that discusses the block**, not one pair. A guard that names
+        exclusivity and inspects a single description is the fail-silently
+        shape: this module and `BACKLOG-DONE.md` both restated the numbers one
+        commit after the diagnosis, and a one-pair check stayed green.
+        """
+        import yaml
+
+        script = _SCRIPT.read_text(encoding="utf-8")
+        assert "squash merge retires every sha" in script.lower(), "the one home must state the bound"
+        assert "merge-base --is-ancestor" in script, "the one home must name the instrument"
+
+        schema = yaml.safe_load(_SCHEMA.read_text(encoding="utf-8"))
+        review = schema["properties"]["review"]["properties"]
+        description = review["review_driven_commits"]["description"]
+        assert "squash" in description.lower(), "the schema still states what the SHAs mean"
+        assert "ship_report.py" in description, "and cites where the measurement lives"
+        assert "pr" in review, "the durable handle must be a declared property"
+
+        # The instrument and the count belong to the one home. Everywhere else
+        # cites it. `_SCRIPT` is excluded because it *is* the home; this file is
+        # included because it restated the figure once already.
+        elsewhere = {
+            "sdd/traces/_schema.yml": _SCHEMA,
+            "sdd/rfcs/rfc-0015-ship-two-surfaces.md": _REPO_ROOT / "sdd" / "rfcs" / "rfc-0015-ship-two-surfaces.md",
+            "sdd/BACKLOG-DONE.md": _REPO_ROOT / "sdd" / "BACKLOG-DONE.md",
+            "tests/scripts/test_ship_report.py": Path(__file__).resolve(),
+        }
+        # Assembled rather than written out, so this list does not match itself
+        # when the scan reaches this file — which it must, since this module is
+        # one of the homes that restated the figure.
+        forbidden = ("merge-base --is-ancestor " + "<sha>", "cat-file -e " + "<sha>", "0 of " + "9")
+        for label, path in elsewhere.items():
+            text = path.read_text(encoding="utf-8")
+            for restated in forbidden:
+                assert restated not in text, (
+                    f"{label} restates the squash measurement ({restated!r}); "
+                    f"cite {_SCRIPT.name}'s Bounds instead. Two homes for one figure is how "
+                    "both came to carry the same wrong one."
+                )
 
 
 class TestStep5Report:

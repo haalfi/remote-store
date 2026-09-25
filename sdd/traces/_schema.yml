@@ -222,20 +222,23 @@ properties:
       **The derivation is the script, and that is the whole clause now.**
       What stood here before was a rule for hand-counting: name the
       commits, or better name the query, in a comment above the field.
-      It failed in four measured ways on one branch (PR #994) — a
-      transcribed list goes stale on the next push, and is orphaned by a
-      rebase into hashes that still resolve as objects while matching
-      nothing the stated query returns. A hand-written figure about the
-      loop is what D4 removes, so the remedy is no longer a better
-      convention for writing one.
+      It failed in four measured ways on one branch (PR #994), the
+      governing one being that a transcribed list goes stale on the next
+      push. A hand-written figure about the loop is what D4 removes, so
+      the remedy is no longer a better convention for writing one.
 
-      **One member of that class survives, by construction.** A
-      transcribed list cannot include the commit that carries it, and
-      neither can a derived one: the script reads ``<base>..<head>`` before
-      the paste commit exists, so re-running the stated derivation
-      afterwards returns one more. The offset is fixed and stated in
-      ``scripts/ship_report.py``'s Bounds; what D4 removes is the drift,
-      not the offset. The block measures the loop up to the close.
+      **Two members of that class survive, by construction, and deriving
+      removes neither.** First, a list cannot include the commit that
+      carries it: the script reads ``<base>..<head>`` before the paste
+      commit exists, so re-running the stated derivation afterwards
+      returns one more. Second, the SHAs stop resolving at the merge —
+      they name commits on the PR branch and this repo squash-merges, so
+      a derived list is orphaned on arrival exactly as a transcribed one
+      is. See ``review_driven_commits`` and ``pr`` in the `review:` block
+      below; `pr` is the handle that survives. Both are stated in
+      ``scripts/ship_report.py``'s Bounds, which is their one home; what D4
+      removes is the drift, not either of them. The block measures the loop up
+      to the close.
 
       Where a deterministic count of a *different* thing is wanted —
       formal review-submission events rather than fix commits — the
@@ -251,18 +254,19 @@ properties:
     type: object
     additionalProperties: false
     required:
-      # All nine, because the emitter writes all nine unconditionally. Leave any
+      # All ten, because the emitter writes all ten unconditionally. Leave any
       # of them optional and an emitter that *dropped* that field would validate
       # everywhere, making the "cannot diverge silently" claim below false in
       # the direction that matters. `additionalProperties: false` catches a
       # field added without a property; this catches one removed without one.
-      [derivation, review_rounds, submissions, findings, by_round, by_file, untouched_files,
+      [derivation, pr, review_rounds, submissions, findings, by_round, by_file, untouched_files,
        review_driven_commits, ci]
     description: |
       The loop's own figures, derived from the PR after it closed and
       pasted verbatim (RFC-0015 D4, BK-378). **Produced by
-      `hatch run ship-report <PR> --trace-block-only`; never hand-written
-      and never hand-edited.** That is the point of the key: it gives the boundary
+      `hatch run ship-report <PR> --trace-block-only`; never hand-written,
+      and hand-edited only for a newly required field, under the one
+      carve-out below.** That is the point of the key: it gives the boundary
       between the deliverable and the record a name a check can see, so
       the trace's *reads* stay logged as they happen while everything
       about the review arrives in one block at the close.
@@ -271,7 +275,7 @@ properties:
       schema describes what the script emits. The pair is a drift gate
       rather than a convention, and it closes in **both** directions —
       `additionalProperties: false` fails a field the emitter adds
-      without a property here, and the all-nine `required:` list fails
+      without a property here, and the all-ten `required:` list fails
       one it drops. Either alone leaves the other direction silent.
 
       **What it does not reach**, per DRIFT-RULES Rule 7: the field
@@ -281,6 +285,18 @@ properties:
 
       Traces predating BK-378 carry their hand-derived `review_rounds` at
       the top level and are not retrofitted.
+
+      **Adding a required field retrofits existing blocks by hand, and that
+      is the one sanctioned hand-edit.** Re-running the script instead would
+      re-measure the loop at today's head rather than at the close it
+      recorded — `pr` was added to `bk-378-d1-d4.yml` this way, and a
+      regeneration would have moved its `review_rounds` from 9 to 11
+      (measured: `hatch run ship-report 1026 --trace-block-only`). That is
+      not a correction. It is larger than the paste-commit offset because
+      two commits landed after the close, and counting them would report a
+      loop that is not the one the trace records. Copy the new field's
+      value from the block the script emits now; leave every field the
+      original run measured alone, and mark the retrofit in a comment.
     properties:
       derivation:
         type: string
@@ -289,6 +305,22 @@ properties:
           The command that produced this block, re-runnable as written. A
           re-run after the paste commit lands returns `review_rounds + 1`;
           see that field and `scripts/ship_report.py`'s Bounds.
+      pr:
+        type: integer
+        minimum: 1
+        description: |
+          The pull request this block measures — **the only field here that
+          still resolves once the PR is merged.** Every `sha` in
+          `review_driven_commits` names a branch commit, and a squash merge
+          retires them all, so a reader who needs the commit that actually
+          landed resolves it from this number:
+          `gh pr view <N> --json mergeCommit`.
+
+          The squash SHA itself is deliberately not a field. The block is
+          pasted while the PR is still open, where GitHub's
+          `merge_commit_sha` is an ephemeral test-merge commit rather than the
+          eventual squash — a plausible hash that resolves to nothing, which
+          is the failure the `examples` block below already warns about.
       review_rounds:
         type: integer
         minimum: 0
@@ -353,7 +385,22 @@ properties:
         items: {type: string}
       review_driven_commits:
         type: array
-        description: The commits `review_rounds` counts, oldest first.
+        description: |
+          The commits `review_rounds` counts, oldest first.
+
+          **These SHAs are a mid-loop handle: a squash merge retires every one
+          of them**, which is true of a *derived* list exactly as it was of a
+          hand-written one — what deriving removes is the content going
+          silently stale, not the SHAs dying. The durable handle is `pr`.
+
+          The measurement behind that, the instrument it has to be taken with,
+          and why a shallow clone answers a different question are stated once,
+          in `scripts/ship_report.py`'s Bounds, and deliberately not repeated
+          here. Two homes carrying the same figure is how both came to carry
+          the same wrong one.
+
+          The `subject` line is what survives as content, and is why each entry
+          carries one rather than a SHA alone.
         items:
           type: object
           additionalProperties: false
@@ -520,6 +567,7 @@ examples:
     # derivation, and the script writes the real ones.
     review:
       derivation: "hatch run ship-report 1025 --trace-block-only"
+      pr: 1025
       review_rounds: 1
       submissions: 1
       findings: 2

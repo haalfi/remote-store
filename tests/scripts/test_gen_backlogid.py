@@ -162,7 +162,9 @@ class TestCheck:
         assert result == 0
         out = capsys.readouterr().out
         assert "BK=178" in out
-        assert "No ID collisions." in out
+        # Both rules named on the clean path, not just the older one.
+        assert "No ID collisions" in out
+        assert "no ID on two open items" in out
 
     def test_collision_returns_one(self, tmp_path, monkeypatch, capsys):
         collision_active = f"- [ ] **BK-174 {_EM} Duplicate item**\n"
@@ -212,6 +214,171 @@ class TestCheck:
         result = _mod._check()
         assert result == 1
         assert "gen-backlogid" in capsys.readouterr().out
+
+    def test_two_open_items_sharing_an_id_are_reported(self, tmp_path, monkeypatch, capsys):
+        """Two *open* headers with one ID must fail the check.
+
+        The real collision: BUG-281's branch and BK-378's each minted `BK-382`
+        from a master where 382 was free, and both merged. `_extract_ids`
+        returns sets, so the repeat collapsed before any comparison, and
+        `_check` only ever compared open against *done* — so a file carrying
+        the same ID twice printed "No ID collisions." This is ID-257's
+        open-versus-open half, which this change builds and that item now
+        hands over.
+        """
+        duplicate_active = (
+            f"- [ ] **BK-382 {_EM} The file-ancestor gate ships unexercised**\n"
+            f"- [ ] **BK-177 {_EM} Parametrize self-op tests**\n"
+            f"- [ ] **BK-382 {_EM} RFC-0015 is built but unmeasured**\n"
+        )
+        done, active, id_file = self._setup(
+            tmp_path,
+            _DONE_BLOCK,
+            duplicate_active,
+            {"BK": 174, "BUG": 194, "ID": 176, "AF": 40, "BL": 10},
+        )
+        monkeypatch.setattr(_mod, "BACKLOG_DONE", done)
+        monkeypatch.setattr(_mod, "BACKLOG", active)
+        monkeypatch.setattr(_mod, "ID_FILE", id_file)
+        monkeypatch.setattr(_mod, "ROOT", tmp_path)
+
+        assert _mod._check() == 1
+        out = capsys.readouterr().out
+        assert "BK-382" in out
+        # The count, not just the ID: a reader has to know how many headers to
+        # go and find, and "2" is what separates this from the done-collision
+        # report above, which names an ID appearing once on each side.
+        assert "(2 headers)" in out
+        assert "BK-177" not in out
+
+    def test_status_variants_of_one_id_collide(self, tmp_path, monkeypatch, capsys):
+        """`- [ ]` and `- [~]` are both open, so one ID across them is a duplicate.
+
+        `_check` reads open items with the status set `" ~"`, so a partially
+        done item and a fresh one sharing an ID is the same defect wearing a
+        different checkbox — and the likelier shape, since an item in flight is
+        what a concurrent branch collides with.
+        """
+        mixed_active = (
+            f"- [ ] **ID-018 {_EM} conda-forge publishing**\n- [~] **ID-018 {_EM} something else entirely**\n"
+        )
+        done, active, id_file = self._setup(
+            tmp_path,
+            _DONE_BLOCK,
+            mixed_active,
+            {"BK": 174, "BUG": 194, "ID": 176, "AF": 40, "BL": 10},
+        )
+        monkeypatch.setattr(_mod, "BACKLOG_DONE", done)
+        monkeypatch.setattr(_mod, "BACKLOG", active)
+        monkeypatch.setattr(_mod, "ID_FILE", id_file)
+        monkeypatch.setattr(_mod, "ROOT", tmp_path)
+
+        assert _mod._check() == 1
+        assert "ID-018" in capsys.readouterr().out
+
+    def test_a_duplicate_and_a_collision_are_both_reported_in_one_run(self, tmp_path, monkeypatch, capsys):
+        """Neither failure short-circuits the other.
+
+        The two are independent, so an author who fixes a duplicate and is then
+        told about a collision pays two read-fix-rerun cycles for one read of
+        the file. Without this, an implementation that returned early inside
+        the duplicates block passes every other test here while producing
+        exactly that.
+        """
+        both_active = (
+            f"- [ ] **BK-382 {_EM} One open item**\n"
+            f"- [ ] **BK-382 {_EM} Another open item**\n"
+            f"- [ ] **BK-174 {_EM} Collides with a done item**\n"
+        )
+        done, active, id_file = self._setup(
+            tmp_path,
+            _DONE_BLOCK,
+            both_active,
+            {"BK": 174, "BUG": 194, "ID": 176, "AF": 40, "BL": 10},
+        )
+        monkeypatch.setattr(_mod, "BACKLOG_DONE", done)
+        monkeypatch.setattr(_mod, "BACKLOG", active)
+        monkeypatch.setattr(_mod, "ID_FILE", id_file)
+        monkeypatch.setattr(_mod, "ROOT", tmp_path)
+
+        assert _mod._check() == 1
+        out = capsys.readouterr().out
+        assert "duplicate ID" in out
+        assert "collision(s)" in out
+        assert "BK-382" in out
+        assert "BK-174" in out
+
+    def test_a_duplicate_in_the_done_register_is_not_reported(self, tmp_path, monkeypatch, capsys):
+        """The stated bound, pinned so it cannot drift silently either way.
+
+        `BACKLOG-DONE.md` collapses the same way and the path is reachable, but
+        the register already carries four such pairs from before the ID
+        discipline, and renumbering inside released sections would falsify the
+        release record. Out of scope by decision, not by oversight — BK-385
+        carries it. A future widening has to delete this test, which is the
+        point: the bound is not something a reader has to infer.
+        """
+        duplicate_done = (
+            f"- [x] **BK-500 {_EM} One branch closed this**\n"
+            f"- [x] **BK-500 {_EM} Another branch closed something else**\n"
+        )
+        done, active, id_file = self._setup(
+            tmp_path, duplicate_done, _ACTIVE_BLOCK, {"BK": 500, "BUG": 0, "ID": 0, "AF": 0, "BL": 0}
+        )
+        monkeypatch.setattr(_mod, "BACKLOG_DONE", done)
+        monkeypatch.setattr(_mod, "BACKLOG", active)
+        monkeypatch.setattr(_mod, "ID_FILE", id_file)
+        monkeypatch.setattr(_mod, "ROOT", tmp_path)
+
+        assert _mod._check() == 0
+        assert "duplicate" not in capsys.readouterr().out
+
+    def test_one_id_open_in_one_file_and_done_in_the_other_is_a_collision(self, tmp_path, monkeypatch, capsys):
+        """That is the *collision* case, which has its own report and its own message.
+
+        The duplicate rule is within-file and within-status; conflating the two
+        would give one defect two names and send the author to the wrong remedy
+        (renumber a concurrent mint, versus close or reopen one item).
+        """
+        # The SAME id on both sides. Two different ids would make the
+        # assertion vacuous: the file would hold neither a collision nor a
+        # duplicate, and pass against an implementation with no rule at all.
+        done_text = f"- [x] **BK-174 {_EM} Done item**\n"
+        active_text = f"- [ ] **BK-174 {_EM} Same id, still open**\n"
+        done, active, id_file = self._setup(
+            tmp_path, done_text, active_text, {"BK": 174, "BUG": 0, "ID": 0, "AF": 0, "BL": 0}
+        )
+        monkeypatch.setattr(_mod, "BACKLOG_DONE", done)
+        monkeypatch.setattr(_mod, "BACKLOG", active)
+        monkeypatch.setattr(_mod, "ID_FILE", id_file)
+        monkeypatch.setattr(_mod, "ROOT", tmp_path)
+
+        assert _mod._check() == 1
+        out = capsys.readouterr().out
+        assert "collision(s)" in out
+        assert "duplicate ID" not in out, "one defect must not be reported under both names"
+
+    def test_suffix_variants_are_not_duplicates(self, tmp_path, monkeypatch):
+        """`BK-139a` and `BK-139b` are two items, not one appearing twice.
+
+        The split-item suffix is part of the ID (`_HEADER_RE` spells the number
+        `\\d+[a-z]*`), so the duplicate check keys on the whole token. Keying on
+        the numeric part would make every split item fail the gate that exists
+        to protect it.
+        """
+        split_active = f"- [ ] **BK-139a {_EM} First half**\n- [ ] **BK-139b {_EM} Second half**\n"
+        done, active, id_file = self._setup(
+            tmp_path,
+            _DONE_BLOCK,
+            split_active,
+            {"BK": 174, "BUG": 194, "ID": 176, "AF": 40, "BL": 10},
+        )
+        monkeypatch.setattr(_mod, "BACKLOG_DONE", done)
+        monkeypatch.setattr(_mod, "BACKLOG", active)
+        monkeypatch.setattr(_mod, "ID_FILE", id_file)
+        monkeypatch.setattr(_mod, "ROOT", tmp_path)
+
+        assert _mod._check() == 0
 
     def test_suffix_variant_not_false_positive(self, tmp_path, monkeypatch):
         # Suffixed IDs must not false-positive against each other: the fixture

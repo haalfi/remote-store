@@ -240,10 +240,105 @@ if evidence changes; these are retired.
 
 ## Unreleased
 
+- [x] **BUG-294 — A deleted mypy plugin the config still names turns every typecheck job red**
+  spec: — · effort: S · audience: contributor.tooling
+  `[tool.mypy]` carried `plugins = ["sqlalchemy.ext.mypy.plugin"]` while
+  `sql` declared `sqlalchemy>=2.0.31` with no upper bound. **SQLAlchemy 2.1.0
+  deletes `sqlalchemy.ext.mypy`**, so a fresh CI install resolved it and mypy
+  exited **2** — its startup code, before reading a source file — where the
+  exit for type errors is 1.
+  **Reproduced before the fix**, in a scratch venv holding SQLAlchemy 2.1.0 and
+  mypy 2.3.1 against a two-line config: `Error importing plugin
+  "sqlalchemy.ext.mypy.plugin": No module named 'sqlalchemy.ext.mypy'`, exit 2,
+  matching `typecheck (3.13)` on PR #1027 exactly. `importlib.util.find_spec`
+  confirms the module is absent from 2.1.0 and present in the 2.0.54 this
+  container had pinned, which is why `hatch run all` passed locally while CI
+  did not.
+  **Found on an unrelated PR and fixed there** because it red-lights `master`
+  on its next run, not only that branch: the failing command is
+  `mypy src/ examples/`, and #1027's diff touches neither path.
+  **The line is removed rather than the dependency pinned.** The plugin has
+  been redundant since SQLAlchemy 2.0, where PEP 681 `dataclass_transform`
+  gave `DeclarativeBase` and `mapped_column()` native inference; 2.1 deleting
+  it is the end of that migration. Pinning `sqlalchemy<2.1` would hold a major
+  dependency back to preserve something upstream has removed, which the
+  dependency policy BK-371 states would need its own justification.
+  `hatch run typecheck` passes without it: **Success: no issues found in 120
+  source files**.
+  **Guarded**: `TestMypyPlugins::test_every_configured_plugin_is_importable`
+  asserts every plugin `[tool.mypy]` names is importable in the environment
+  mypy will run in — the question mypy itself asks at startup. Mutation-checked
+  against a planted uninstallable plugin. Nothing checked this before, and the
+  local gate structurally could not: whether the plugin exists depends on what
+  the environment resolved, not on anything in a diff.
+
+- [x] **BK-383 — Two gates dedupe the duplicate they should report, and a derived commit list says what it resolves to**
+  spec: — · effort: M · audience: contributor.tooling, contributor.process
+  **Split** per § Completing work: this entry is the delivery; the RFC-0015
+  re-measurement it was filed under stays open as
+  [BK-384](BACKLOG.md), and the minting half of
+  [ID-257](BACKLOG.md) is untouched.
+  Two of the three are one shape — a dedupe that hides the duplicate it should
+  report. The third is the squash-merge orphaning, which is a different defect
+  and shipped with them because the same reading found it.
+  **`gen-backlogid --check` could not see its own file.** `_extract_ids`
+  returns sets, so a repeated header collapsed before anything compared it, and
+  `_check` only ever compared open IDs against *done* ones. It printed
+  "No ID collisions." on a `master` carrying two open `BK-382` headers.
+  `_duplicate_ids` is a sibling function rather than a widening, because
+  `check_backlog_ids_vs_base.py` imports `_extract_ids` for set arithmetic and
+  a guard pins that import. **Two bounds**, both stated in the module docstring
+  and both deliberate. It catches the collision only once both branches have
+  merged; preventing the mint needs a view of unmerged branches, which stays
+  ID-257's open question. And it reads the open side only: widening it to
+  `BACKLOG-DONE.md` is one line, was run, and fails on four pairs already in
+  the register from before the ID discipline, inside released sections. That
+  gap is `BK-385`, filed with those four as its evidence.
+  **The gate found a second live collision on its first run** — `BUG-291`, on
+  two distinct open items from #1021 and #1022, which nothing had reported.
+  Both duplicates were renumbered by merge order, the later-merged item moving:
+  `BK-382` → `BK-383`, which this entry's own split then left at `BK-384` for
+  the re-measurement, and `BUG-291` → `BUG-293`. Merge order rather than PR
+  number, since `af44c26` (#1021) landed after `b71f317` (#1022).
+  **`check_traces.py` could not see a repeated YAML key.** `yaml.safe_load`
+  resolves one to the last silently, so a trace validated while an arbitrary
+  half of its content was discarded. **Live, and found by the scan that built
+  the check rather than by the check**: 1 of 325 trace files carried a
+  duplicate — `BK-221-test-pbt-write-result-s3-azure-per-backend.yml`, with
+  `surprising_ripples` twice. Nothing was lost there, because the informative
+  occurrence happened to be the one last-wins kept; which occurrence survives
+  is arbitrary, and nothing said so. `StrictTraceLoader` refuses a repeat at any depth, lives in
+  `_trace_corpus.py` so the gate and `report_trace_outcomes.py` cannot disagree
+  about what parses, and reads the schema the same way, since a duplicate key
+  *there* disarms the gate for the whole corpus. **Bound**: repeated keys, not
+  repeated content.
+  **RFC-0015 D4's derived commit list is orphaned on arrival.** D4 attributed
+  that to *hand-written* lists; it is a property of the merge convention, so a
+  derived list inherits it whole; the measurement and its instrument are in
+  `scripts/ship_report.py`'s Bounds, which is their one home. The block now
+  emits `pr`, the handle that survives, from which the squash commit resolves
+  after the merge; the squash SHA is not emitted, because at paste time the PR
+  is open and `merge_commit_sha` is then an ephemeral test-merge commit.
+  Guards, measured at this delivery's head: **19** net new functions, across
+  three files then collecting 136 — a measurement of this commit rather than
+  a standing claim, for the reason BK-378's entry below now gives. Net new
+  is added `def test_` names minus removed ones over
+  `git diff origin/master...HEAD -- tests/`, because a `+`-line count cannot
+  tell a new function from a changed signature — it reads 20 here, one of which
+  is a rewritten `parametrize`. The collected total is
+  `hatch run pytest tests/scripts/test_gen_backlogid.py
+  tests/scripts/test_check_traces.py tests/scripts/test_ship_report.py
+  --collect-only`, which returns 110 at `origin/master` and 136 here. The +26 is
+  not the +19: collected cases and function counts are different quantities in
+  both directions. Several new functions are themselves parametrized — the
+  loader's shape table contributes 15 cases from one `def` — while a rewrite
+  folded a nine-way `parametrize` back into one function, giving up 8. `sdd/GATE-INVENTORY.md` went 48 → 50 mechanisms: both gates
+  gained a single-artifact `rule` block beside their existing `pair`.
+
 - [x] **BK-378 — The `/ship` loop reviews its own record past round 2, and nothing separates the two**
   spec: — · effort: L · audience: contributor.process
   **Split** per § Completing work: this entry is RFC-0015's **D1 and D4 built**;
-  the re-measurement, the accept/reject and the graduating ADR are **BK-382**.
+  the re-measurement, the accept/reject and the graduating ADR are **BK-384**.
   BK-379's pilot missed acceptance clause 1 by three points with D1 and D4
   unbuilt, and the RFC's § Impact prescribed in advance that such a miss means
   build them and re-measure. This is that build. RFC-0015 stays **Draft**; a PR
@@ -317,9 +412,13 @@ if evidence changes; these are retired.
   **Open Question 5 answered**: the mid-loop `ship-report` output lives in a
   gitignored `tmp/ship-report-<PR>.md`, a brief quotes it, and the durable copy
   is the `review:` block at the close. **Still held, deliberately**, and
-  BK-382's: D3's cap lift, D5's stop-rule wiring, D6's deferred half.
-  Guards: **179** collected across the three scripts — ship_report 80,
-  check_no_retrospective 46, check_backlog_ids_vs_base 53 — from
+  BK-384's: D3's cap lift, D5's stop-rule wiring, D6's deferred half.
+  Guards at this delivery's head (`e5fb4a8`): **174** across the three
+  scripts — ship_report 75, check_no_retrospective 46,
+  check_backlog_ids_vs_base 53. A measurement of that commit, not a claim
+  about today: editing any of those three test files moves the total, and
+  nothing gates a figure sitting in a closed entry. Re-derive for the
+  current tree with
   `hatch run pytest tests/scripts/test_check_no_retrospective.py
   tests/scripts/test_check_backlog_ids_vs_base.py tests/scripts/test_ship_report.py
   --collect-only`.
@@ -419,7 +518,7 @@ if evidence changes; these are retired.
   **Left to BK-378:** D1, D4, clause 2, D5's stop-rule clause, D6's deferred
   half and D3's cap lift, each with the disposition above. BK-378 has since
   built D1 and D4 (entry above) and split; the rest is
-  [BK-382](BACKLOG.md).
+  [BK-384](BACKLOG.md).
 - [x] **BK-370 — The published conda recipe is a mirror no mechanism watches**
   spec: — · effort: M · audience: user.discoverability.human, infra.ci
   Closed by both halves of the item's first two options: a generator that makes
