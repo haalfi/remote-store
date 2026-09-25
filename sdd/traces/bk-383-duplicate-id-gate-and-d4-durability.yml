@@ -167,6 +167,8 @@ phases:
         outcome: ok
 
 # Bound on the block below, which is derived and pasted verbatim per D4.
+# Replaced, not appended, when the close moved: a second paste would leave two
+# top-level `review:` keys, which is the defect this PR fixes one surface over.
 #
 # **The block's `submissions` and `by_round` do not describe this loop**, and the
 # reason is an instrument limitation worth carrying into BK-384's measurement.
@@ -182,15 +184,15 @@ phases:
 # rounds contribute nothing to the count.
 #
 # Whoever pools this PR should use **6 rounds and 89 findings** — 8, 11, 17, 25,
-# 17, 11 — not 20 and 36. `review_rounds: 7` is correct: it counts commits, not
-# comments.
+# 17, 11 — not 20 and 36. `review_rounds` counts commits rather than comments and
+# is correct as emitted.
 review:
-  # Derived by `hatch run ship-report 1027 --trace-block-only` at head 5a090e6.
+  # Derived by `hatch run ship-report 1027 --trace-block-only` at head a081f4d.
   # Do not hand-edit, except a newly required field per sdd/traces/_schema.yml
   # section review: RFC-0015 D4 makes this script the only producer.
   derivation: "hatch run ship-report 1027 --trace-block-only"
   pr: 1027
-  review_rounds: 7
+  review_rounds: 9
   submissions: 20
   findings: 36
   by_round:
@@ -326,10 +328,13 @@ review:
   untouched_files:
     - ".claude/skills/ship/SKILL.md"
     - "CLAUDE.md"
+    - "pyproject.toml"
     - "sdd/GATE-INVENTORY.md"
     - "sdd/backlogid.json"
     - "sdd/traces/BK-221-test-pbt-write-result-s3-azure-per-backend.yml"
     - "sdd/traces/bug-254-absent-container-root-row.yml"
+    - "sdd/traces/bug-294-mypy-plugin-deleted-upstream.yml"
+    - "tests/scripts/test_pyproject_pins.py"
   review_driven_commits:
     - sha: "7535f42"
       subject: "BK-383: Address PR #1027 round 1"
@@ -345,4 +350,8 @@ review:
       subject: "BK-383: Address PR #1027 round 5, and finish the single-homing"
     - sha: "5a090e6"
       subject: "BK-383: Address PR #1027 round 6"
-  ci: {verdict: PENDING, failed: 0, pending: 3}
+    - sha: "2cef10d"
+      subject: "BK-383: Close the loop \u2014 paste the derived review block, record CLAUDE.md's ripple"
+    - sha: "a081f4d"
+      subject: "BUG-294: Remove the mypy plugin SQLAlchemy 2.1 deleted"
+  ci: {verdict: GREEN, failed: 0, pending: 0}
