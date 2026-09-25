@@ -196,8 +196,9 @@ Nothing moved: the preamble argues its `Closes when` clauses only.
 
 ### 6. The repo does not mislead the next person
 
-The argument and gap ranking behind the programme:
-[research](../research/research-inconsistency-detection-multi-artifact.md) § 9.
+Nothing moved. The preamble's research pointer anchors the research
+qualification beside it, which D3 routes to the dossier of the item it bounds,
+so both stay in the preamble until migration moves them together.
 
 ## Consequences
 

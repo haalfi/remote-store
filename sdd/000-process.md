@@ -123,9 +123,10 @@ everything that left it, in three classes: completed work, IDs **absorbed** into
 a surviving item whose work is still open, and items **decided against**. Only
 the first is done — read the section an entry sits under.
 
-`BACKLOG.md` is an index: each item states its diagnosis in a few lines, and
-detail (evidence, reproduction, fix options) lives in a per-item dossier under
-`sdd/backlog/`. It is the single source of truth for ID prefixes, status
+`BACKLOG.md` is becoming an index: a converted item states its diagnosis in a
+few lines, and its detail (evidence, reproduction, fix options) moves to a
+per-item dossier under `sdd/backlog/`. The migration is in progress: until an
+item is converted, its detail stays in its body. It is the single source of truth for ID prefixes, status
 conventions, completion workflow, item shape and section structure; see its
 "How this file works" header. The rationale is
 [ADR-0040](adrs/0040-backlog-as-index.md).

@@ -2174,7 +2174,9 @@ derivation. Items here comply with principle 9 by naming their counts' sources.
 on **ID-244** in section 2, which moves the surface it would measure.
 
 Lowest priority. Design and review rules for anything added here:
-[`DRIFT-RULES.md`](DRIFT-RULES.md#rules).
+[`DRIFT-RULES.md`](DRIFT-RULES.md#rules). The argument and gap ranking behind
+the programme:
+[research](research/research-inconsistency-detection-multi-artifact.md) § 9.
 
 **Measured qualification on that research doc's ranking**, recorded here
 because [`000-process.md` § Document types](000-process.md) makes a research doc
