@@ -16,7 +16,7 @@ The file changes on every merge: re-run rather than quote.
 
 `sdd/BACKLOG.md` is read by every session that picks, files or closes work, and
 at `e5fb4a8` it is ~51k tokens and 3,013 lines — longer than one default `Read`,
-so no session sees all of it. 83% of it is item bodies written as evidence
+so no session sees all of it. 82% of it is item bodies written as evidence
 dossiers. This RFC makes the file an **index**: rules of about forty lines, one
 Promise per section, and per item a header, an attribute line and a diagnosis of
 at most five lines. Everything else an item carries moves **verbatim** into a
@@ -80,12 +80,21 @@ decision (5), and an optional `Detail:` link (1). The blank line between items
 and a section's trailing `---` and anchor are not content lines; the script
 counts exactly this, and R2 uses the same delimitation.
 
-**The index diagnosis is authoritative** (`DRIFT-RULES.md` Rule 4, declared
-before R4 exists): § Item authority's "correct the item body" means the index
-entry. The dossier holds evidence, dated by its commit; where its prose restates
-the diagnosis and disagrees, the index wins and the dossier is corrected in the
-same commit. R4 checks only link and ID, so this pair is review-enforced, and
-that bound is stated with the rule.
+**Authority across index and dossier** (`DRIFT-RULES.md` Rule 4, declared
+before R4 exists; its home after acceptance is the rewritten § Item authority,
+the document that owns the pair). § Item authority's three kinds of content
+split across the two files, and each is corrected where it lives:
+
+| Kind | Lives in | Status | Corrected when re-derivation disagrees |
+|---|---|---|---|
+| Diagnosis claim: the observed problem | index | authoritative, current | in the index, same commit |
+| Evidence: what was measured, how | dossier | durable record, dated by its commit | a dated correction is added in the dossier; the original is not rewritten |
+| Prescription: fix shape, disposition, line reference, scope claim, reproduction recipe | dossier | advisory, presumed stale | in the dossier, same commit |
+
+Where dossier prose restates the diagnosis claim and disagrees, the index wins
+and the dossier is corrected in the same commit. R4 checks only link and ID, so
+agreement within this pair is review-enforced, and that bound is stated with the
+rule.
 
 Worked example — BUG-276, 81 content lines at `e5fb4a8`:
 
@@ -202,9 +211,15 @@ that is evidence against this departure, and the ADR records it as such.
 - **Context cost:** estimate, not a measurement — 67 items × (≤ 8 content lines
   + 1 blank separator) ≈ 600 lines, plus ~40 of rules and ~6 per section,
   ≈ 680 lines, one `Read`. The acceptance run below replaces this estimate with a figure.
-- **Ripples:** `CLAUDE.md` § Backlog; `000-process.md` § Backlog;
+- **Ripples:** `CLAUDE.md` § Backlog; `000-process.md` § Backlog and Rule 6's
+  bug-fix pipeline (where the reproduction now lives);
   `AUTHORING.md` § Directory defaults (new `sdd/backlog/*.md` → repo-only row);
   `CLAUDE-REFERENCE.md` lookup row "Log a bug or improvement idea";
+  `CLAUDE-REFERENCE.md` ripple-check rows **Bug fix** and **Backlog item
+  touched**, in both presentations (Pre-work index and Detailed checklist, held
+  in parity by `check_ripple_parity.py`): the dossier as where a bug's
+  reproduction lives, the dossier read as a trace orient step, and the
+  `BACKLOG-DONE.md` entry linking the dossier on close;
   `sdd/traces/_schema.yml` (dossier as an orient step, if stated there);
   `GATE-INVENTORY.md` (regenerated); `.claude/hooks/backlog-status-brake.sh`
   (unaffected; it keys on headers).

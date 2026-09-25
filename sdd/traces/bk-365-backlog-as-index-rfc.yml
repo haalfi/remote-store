@@ -75,3 +75,76 @@ phases:
           Precedent for a pinned date and a committed measurement script beside
           the RFC.
         outcome: ok
+      - file: sdd/AUTHORING.md
+        section: "Where does my new file go?; Classification markers; Directory defaults"
+        read_type: reference
+        extract: >-
+          A new sdd/backlog/*.md matches no directory default, so each dossier
+          needs an explicit repo-only marker, or AUTHORING gains a row. It says
+          nothing about issue trackers; round 1 caught my citing it for that.
+        outcome: ok
+      - file: .claude/hooks/backlog-status-brake.sh
+        section: "(full)"
+        read_type: reference
+        extract: >-
+          Keys on `[~] **PREFIX-NNN` in the edit's old and new strings, so an
+          index entry keeps working unchanged; the basis for Impact's
+          "unaffected".
+        outcome: ok
+      - file: sdd/traces/_schema.yml
+        section: "audience; required"
+        read_type: reference
+        extract: >-
+          The audience enum R1 checks against (contributor.process and
+          contributor.tooling, no bare contributor; infra.test present).
+        outcome: ok
+  - id: verify
+    name: Verify
+    steps:
+      - file: sdd/CLAUDE-REFERENCE.md
+        section: "Branch freshness check; PR validation gates; Ripple-check table / Bug fix, Backlog item touched"
+        read_type: verify
+        extract: >-
+          Gates for an sdd-only diff are lint + docs-gate plus the backlog
+          ID-set gate. The Bug fix and Backlog item touched rows, in both
+          presentations, point at sdd/BACKLOG.md; D2 moves reproduction and adds
+          a close-time link, so both rows are ripple targets. My first Impact
+          list named only the lookup row; round 2 caught it.
+        outcome: ok
+      - file: sdd/GATE-INVENTORY.md
+        section: "rows whose subject names sdd/BACKLOG*.md"
+        read_type: verify
+        extract: >-
+          What is mechanically gated today: gen_backlogid.py (ID floor,
+          collisions, one ID on two open items) and check_backlog_ids_vs_base.py.
+          Placement rules have no row, which scopes "Why it grew".
+        outcome: ok
+  - id: review
+    name: Review fixes
+    steps:
+      - file: sdd/DRIFT-RULES.md
+        section: "Rule 4 (authority)"
+        read_type: gate
+        extract: >-
+          Declare which side governs per artifact pair, before the check
+          exists, in the document that owns the pair. D1's index/dossier table
+          is that declaration; its home after acceptance is § Item authority.
+          I cited Rule 4 in round 1 from the reviewer's quote and opened it only
+          in round 2.
+        outcome: ok
+      - file: scripts/check_no_tracker_refs.py
+        section: "module docstring, Out of scope; failure message"
+        read_type: reference
+        extract: >-
+          "the trackers are how those documents are addressed" (line 36) and the
+          routing of coordinates into sdd/specs/ or sdd/BACKLOG-DONE.md
+          (lines 447-448): the grounds for rejecting an external tracker.
+        outcome: ok
+      - file: sdd/000-process.md
+        section: "Rule 6 (Bug fixes pipeline)"
+        read_type: reference
+        extract: >-
+          BACKLOG is the pipeline's first stop, and the reproduction the fixer
+          reads first moves to the dossier under D2, so Rule 6 is a ripple
+          target.
+        outcome: ok
