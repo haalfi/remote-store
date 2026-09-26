@@ -6484,6 +6484,34 @@
 
               
             
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../adrs/0040-backlog-as-index/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    0040: BACKLOG.md Is an Index, and Item Detail Lives in Dossiers
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
           </ul>
         </nav>
       
@@ -11051,11 +11079,14 @@
 
 <h1 id="rfc-0016-backlogmd-as-an-index-item-detail-in-dossiers">RFC-0016: <code>BACKLOG.md</code> as an index, item detail in dossiers<a class="headerlink" href="#rfc-0016-backlogmd-as-an-index-item-detail-in-dossiers" title="Permanent link">&para;</a></h1>
 <h2 id="status">Status<a class="headerlink" href="#status" title="Permanent link">&para;</a></h2>
-<p>Draft. Tracked as <strong>BK-365</strong>, whose exit criterion this answers for
-<code>sdd/BACKLOG.md</code>; <code>BACKLOG-DONE.md</code> is out of scope (§ Open Questions 2). If
-accepted it graduates to a new ADR carrying the structure's rationale (D4), and
-to rewrites of <code>sdd/BACKLOG.md</code> § How this file works, <code>000-process.md</code>
-§ Backlog, <code>AUTHORING.md</code> § Directory defaults and <code>CLAUDE.md</code> § Backlog.</p>
+<p>Accepted, 2026-09-25: graduated to
+<a href="../../adrs/0040-backlog-as-index/">ADR-0040</a>, which records the decision and the
+structure's rationale (D4). Tracked as <strong>BK-365</strong>, whose exit criterion this
+answers for <code>sdd/BACKLOG.md</code>; <code>BACKLOG-DONE.md</code> is out of scope (§ Open
+Questions 2). The acceptance delivery rewrote <code>sdd/BACKLOG.md</code> § How this file
+works and built R1 with its mapping; the § 1 pilot, R2–R4 and the rest of the
+migration follow it. R2 and R3 land with the pilot, scoped to migrated sections.
+The text below is the proposal as reviewed and is not updated further.</p>
 <p><strong>Date:</strong> 2026-09-24. Every figure below is pinned to <code>e5fb4a8</code> and comes from
 <code>python sdd/rfcs/rfc-0016-measure.py --at e5fb4a8</code>, committed beside this file.
 The file changes on every merge: re-run rather than quote.</p>

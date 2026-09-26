@@ -6625,6 +6625,34 @@
 
               
             
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../adrs/0040-backlog-as-index/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    0040: BACKLOG.md Is an Index, and Item Detail Lives in Dossiers
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
           </ul>
         </nav>
       
@@ -11116,7 +11144,8 @@ and default to repo-only.</p>
 <li>Top-level <code>sdd/*.md</code> process docs (AUTHORING, DESIGN, etc.) carry an
   explicit dual marker.</li>
 <li>Internal <code>sdd/*.md</code> files (BACKLOG, CLAUDE-REFERENCE, etc.) carry an
-  explicit repo-only marker.</li>
+  explicit repo-only marker. So does each backlog dossier,
+  <code>sdd/backlog/&lt;id&gt;-&lt;slug&gt;.md</code> (<a href="../adrs/0040-backlog-as-index/">ADR-0040</a>).</li>
 <li>Repo-root dual files (CHANGELOG, CONTRIBUTING, etc.) carry an explicit
   dual marker.</li>
 <li>Repo-root repo-only files (CLAUDE, README, etc.) carry an explicit

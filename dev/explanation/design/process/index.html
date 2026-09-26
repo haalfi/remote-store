@@ -6675,6 +6675,34 @@
 
               
             
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../adrs/0040-backlog-as-index/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    0040: BACKLOG.md Is an Index, and Item Detail Lives in Dossiers
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
           </ul>
         </nav>
       
@@ -11052,7 +11080,7 @@
 <li><strong>IDs are stable</strong>: once assigned, a section ID never changes meaning. Deprecated sections are marked <code>[DEPRECATED]</code>, not removed.</li>
 <li><a id="workflows"></a><strong>Workflows</strong>:</li>
 <li><strong>Features</strong>: SPEC → TEST → IMPLEMENT → VALIDATE → DOCS. Operational items (CI, docs, pins) skip the spec step.</li>
-<li><strong>Bug fixes</strong>: BACKLOG → CHANGELOG → failing TEST → FIX → COMMIT together. If the bug contradicts a spec invariant, update the spec.</li>
+<li><strong>Bug fixes</strong>: BACKLOG → CHANGELOG → failing TEST → FIX → COMMIT together. If the bug contradicts a spec invariant, update the spec. The reproduction lives in the item's dossier where it has one (<a href="#backlog">§ Backlog</a>).</li>
 <li><a id="intent-attribution"></a><strong>Prose records the resolution; it does not win the argument</strong>: when spec prose, a Dafny postcondition and a conformance test disagree, the decision is written into the prose — but prose carries no presumption of correctness against a verified postcondition or against a claim the conformance suite never asserted. See <a href="#attribution-inside-the-intent-domain">§ Attribution inside the intent domain</a>.</li>
 </ol>
 <h2 id="guides">Guides<a class="headerlink" href="#guides" title="Permanent link">&para;</a></h2>
@@ -11168,8 +11196,13 @@ is not filed at all if none fits. <a href="https://github.com/haalfi/remote-stor
 everything that left it, in three classes: completed work, IDs <strong>absorbed</strong> into
 a surviving item whose work is still open, and items <strong>decided against</strong>. Only
 the first is done — read the section an entry sits under.</p>
-<p><code>BACKLOG.md</code> is the single source of truth for ID prefixes, status conventions,
-completion workflow, and section structure. See its "How this file works" header.</p>
+<p><code>BACKLOG.md</code> is an index: an item states its diagnosis in a few lines, and
+detail that does not fit (evidence, reproduction, fix options) goes in a
+per-item dossier under <code>sdd/backlog/</code>. It is the single source of truth for ID
+prefixes, status conventions, completion workflow, item shape, section
+structure, and where an item's detail lives while the file is being converted;
+see its <a href="https://github.com/haalfi/remote-store/blob/master/sdd/BACKLOG.md#how-this-file-works">How this file works</a> header. The
+rationale is <a href="../adrs/0040-backlog-as-index/">ADR-0040</a>.</p>
 <p><a id="feature-type-definition-of-done"></a></p>
 <h3 id="feature-type-definition-of-done">Feature-type Definition of Done<a class="headerlink" href="#feature-type-definition-of-done" title="Permanent link">&para;</a></h3>
 <p>Rule 6 gives a feature's lifecycle order; the two checklists below give its
