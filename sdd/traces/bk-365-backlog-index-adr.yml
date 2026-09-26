@@ -148,3 +148,48 @@ phases:
           Keys a consumer on the string sdd/traces in a script, so any script
           reading the schema counts; the fix was to use the shared loader.
         outcome: ok
+review:
+  # Derived by `hatch run ship-report 1029 --trace-block-only` at head 640c028.
+  # Do not hand-edit, except a newly required field per sdd/traces/_schema.yml
+  # section review: RFC-0015 D4 makes this script the only producer.
+  derivation: "hatch run ship-report 1029 --trace-block-only"
+  pr: 1029
+  review_rounds: 2
+  submissions: 2
+  findings: 7
+  by_round:
+    - round: 1
+      findings: 3
+      origin: {original: 2, pre-existing: 1}
+      triage: {must-fix: 1, refuted: 2}
+      duration_hours: 0.23
+    - round: 2
+      findings: 4
+      origin: {original: 3, unclassifiable-file: 1}
+      triage: {must-fix: 2, refuted: 2}
+      duration_hours: 10.22
+  by_file:
+    - path: "sdd/BACKLOG.md"
+      findings: 4
+    - path: "CLAUDE.md"
+      findings: 2
+    - path: "sdd/000-process.md"
+      findings: 1
+  untouched_files:
+    - ".claude/skills/orchestrate/SKILL.md"
+    - ".pre-commit-config.yaml"
+    - "scripts/gen_backlogid.py"
+    - "sdd/AUTHORING.md"
+    - "sdd/CLAUDE-REFERENCE.md"
+    - "sdd/GATE-INVENTORY.md"
+    - "sdd/adrs/0040-backlog-as-index.md"
+    - "sdd/adrs/DIGEST.md"
+    - "sdd/rfcs/rfc-0016-backlog-as-index.md"
+    - "sdd/traces/bk-365-backlog-index-adr.yml"
+    - "tests/scripts/test_gen_backlogid.py"
+  review_driven_commits:
+    - sha: "6f4634d"
+      subject: "fix: address PR #1029 review"
+    - sha: "640c028"
+      subject: "fix: address PR #1029 review"
+  ci: {verdict: GREEN, failed: 0, pending: 0}
