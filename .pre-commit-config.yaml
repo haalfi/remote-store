@@ -23,5 +23,6 @@ repos:
         name: backlog ID index in sync
         language: python
         entry: python scripts/gen_backlogid.py --check
+        additional_dependencies: [pyyaml]  # R1 reads sdd/traces/_schema.yml
         pass_filenames: false
         always_run: true

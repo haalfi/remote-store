@@ -1,0 +1,150 @@
+id: BK-365
+title: "Accept RFC-0016 as ADR-0040: rules header rewrite, R1 with its mapping, and the RFC's ripples"
+trigger: >-
+  RFC-0016 merged as Draft (PR #1028). The maintainer asked for the next step:
+  the graduating ADR, the § How this file works rewrite with D1's authority
+  table, R1 in gen_backlogid.py --check landed with the effort/audience mapping,
+  and every ripple § Impact lists. Decided in interview before building: R2/R3
+  land with the § 1 pilot scoped to migrated sections; the ADR amends and
+  supersedes nothing; Promise rationale leaves the preambles in this PR rather
+  than being copied; R1 also fails a missing attribute line.
+source_items:
+  - BK-365
+  - ID-235
+audience:
+  - contributor.process
+  - contributor.tooling
+expected_ripples:
+  - sdd/adrs/DIGEST.md
+  - sdd/GATE-INVENTORY.md
+  - sdd/rfcs/rfc-0016-backlog-as-index.md
+  - CLAUDE.md
+  - sdd/000-process.md
+  - sdd/AUTHORING.md
+  - sdd/CLAUDE-REFERENCE.md
+surprising_ripples:
+  # R1 reads the audience enum with PyYAML; the pre-commit hook runs in an
+  # isolated env without it. Neither the RFC's Impact nor the ripple-check
+  # names hook environments for a script gaining an import.
+  - .pre-commit-config.yaml
+  # Restated the § Decided against rule as "one line", contradicting the
+  # template the rules header already required. Found by grepping for
+  # "How this file works" links, not by any ripple row.
+  - .claude/skills/orchestrate/SKILL.md
+phases:
+  - id: orient
+    name: Orient
+    steps:
+      - file: sdd/rfcs/rfc-0016-backlog-as-index.md
+        section: "(full)"
+        read_type: gate
+        extract: >-
+          D1–D5, the maintainer-decided mapping and Release Blockers Promise,
+          § Impact's ripple list, § Acceptance. Two clauses did not survive
+          contact: "the ADR records it as such" asks an Accepted ADR to be
+          edited, which 000-process Rule 4 forbids (the ADR now says a
+          superseding record states it); and § Impact's "AUTHORING.md
+          § Directory defaults (new row)" would describe a default scan.py
+          does not implement, so the dossier rule went into that section's
+          explicit-marker list instead, matching D2's marker.
+        outcome: unclear
+      - file: sdd/BACKLOG.md
+        section: "How this file works; section preambles; BK-365; ID-235"
+        read_type: gate
+        extract: >-
+          Which header text is rule and which is reason; which preamble
+          sentences argue the Promise (moved) versus Closes when clauses,
+          closure narration, ordering or research notes (left for migration).
+          § 5's preamble argues only its Closes when clauses.
+        outcome: ok
+      - file: sdd/traces/bk-365-backlog-as-index-rfc.yml
+        section: "(full)"
+        read_type: reference
+        extract: >-
+          Its review block is closed on PR #1028, so this delivery gets its own
+          trace rather than a second review block.
+        outcome: ok
+      - file: sdd/adrs/
+        section: "Status tables (Supersedes, Amends) of 0001–0039"
+        read_type: gate
+        extract: >-
+          No ADR decides backlog structure; a search for BACKLOG, Icebox and
+          Closes when finds only item citations. ADR-0040 amends nothing.
+        outcome: ok
+      - file: sdd/templates/adr-template.md
+        section: "(full)"
+        read_type: reference
+        extract: >-
+          The whole Decision section is lifted into DIGEST.md, so the moved
+          rationale and per-section Promise rationale go under later ## sections.
+        outcome: ok
+  - id: implement
+    name: Implement
+    steps:
+      - file: scripts/gen_backlogid.py
+        section: "(full)"
+        read_type: reference
+        extract: >-
+          R1 shares _HEADER_RE; a separate function keeps _extract_ids' set
+          return type, which check_backlog_ids_vs_base.py imports.
+        outcome: ok
+      - file: tests/scripts/test_gen_backlogid.py
+        section: "(full)"
+        read_type: reference
+        extract: >-
+          Every open-item fixture lacked an attribute line, so R1's
+          missing-line rule meant adding one to each. The ten new R1 tests
+          were run red first (nine on the missing rule, one on a stale-JSON
+          fixture error of mine, fixed before implementing).
+        outcome: ok
+      - file: sdd/rfcs/rfc-0016-measure.py
+        section: "attribute values R1 would reject"
+        read_type: gate
+        extract: >-
+          Run at the working tree: 12 attribute lines (11 effort, 1 audience),
+          the same 12 lines the new gate named before the mapping.
+        outcome: ok
+      - file: sdd/traces/_schema.yml
+        section: "audience"
+        read_type: reference
+        extract: >-
+          The enum R1 reads from the schema rather than copying it. My first cut
+          parsed it with yaml.safe_load; test_check_traces' one-loader guard
+          flagged gen_backlogid.py as a corpus consumer, so it now goes through
+          _trace_corpus.load_trace.
+        outcome: ok
+      - file: scripts/gen_gate_inventory.py
+        section: "Drift-gate block format"
+        read_type: reference
+        extract: >-
+          R1 declares a pair (schema governs); inventory regenerated.
+        outcome: ok
+      - file: scripts/docs/scan.py
+        section: "_classify_file"
+        read_type: reference
+        extract: >-
+          Directory defaults are code, not only the AUTHORING table, so a new
+          sdd/backlog/ row there would need a code change.
+        outcome: ok
+  - id: verify
+    name: Verify
+    steps:
+      - file: sdd/CLAUDE-REFERENCE.md
+        section: "Ripple-check table / Bug fix, Backlog item touched (both presentations); lookup row Log a bug"
+        read_type: verify
+        extract: >-
+          Edited both presentations by hand; check_ripple_parity.py checks
+          trigger names only, not cell content.
+        outcome: ok
+      - file: scripts/check_ripple_parity.py
+        section: "module docstring"
+        read_type: verify
+        extract: Trigger-name parity, so content agreement is on the author.
+        outcome: ok
+      - file: tests/scripts/test_check_traces.py
+        section: "TestOneLoader"
+        read_type: verify
+        extract: >-
+          Keys a consumer on the string sdd/traces in a script, so any script
+          reading the schema counts; the fix was to use the shared loader.
+        outcome: ok

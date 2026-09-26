@@ -8,8 +8,9 @@ Normal mode (no flag):
 Check mode (--check):
     Read-only. Verifies the JSON is current, then checks BACKLOG.md for
     collisions with done items **and for one ID carried by two open items**,
-    and prints next safe IDs per prefix.
-    Exit 0 = clean; 1 = stale JSON, collisions, or duplicates found.
+    checks each open item's attributes (R1, below), and prints next safe IDs
+    per prefix.
+    Exit 0 = clean; 1 = stale JSON, collisions, duplicates, or R1 violations.
     Wired into `hatch run lint` and `hatch run docs-gate` — the latter because
     `lint` is CODE_PAT-gated and so skipped for an `sdd/`-only change, which is
     exactly the change that bumps this file.
@@ -35,6 +36,15 @@ Check mode (--check):
     fighting its own subject. `BK-385` carries the decision with those four as
     its evidence.
 
+    **R1, attribute vocabulary** ([ADR-0040](../sdd/adrs/0040-backlog-as-index.md)).
+    Every open item's header is followed directly by its
+    ``spec: … · effort: … · audience: …`` line; ``effort`` is one of S/M/L and
+    each ``audience`` value is in ``sdd/traces/_schema.yml``'s enum, read from
+    the schema so the two vocabularies cannot drift. A missing line fails too,
+    or an item could evade the rule by omitting it. It checks vocabulary, not
+    whether a value is right for the item. R2–R4 (item cap, section shape,
+    dossier link) are ADR-0040's too and not built here yet.
+
 Drift-gate::
 
     kind:       pair
@@ -48,6 +58,13 @@ Drift-gate::
     rule: no ID appears on two open item headers in sdd/BACKLOG.md — the done
         register is out of scope, for the reason the module docstring gives
     domain:     process
+
+Drift-gate::
+
+    kind:       pair
+    compares: each open item's audience values in sdd/BACKLOG.md ↔ the audience
+        enum in sdd/traces/_schema.yml, which governs (R1; effort against S/M/L)
+    domain:     process
 """
 
 from __future__ import annotations
@@ -58,16 +75,22 @@ import sys
 from collections import Counter
 from pathlib import Path
 
+from _trace_corpus import load_trace
+
 ROOT = Path(__file__).resolve().parent.parent
 BACKLOG = ROOT / "sdd" / "BACKLOG.md"
 BACKLOG_DONE = ROOT / "sdd" / "BACKLOG-DONE.md"
 ID_FILE = ROOT / "sdd" / "backlogid.json"
+
+TRACE_SCHEMA = ROOT / "sdd" / "traces" / "_schema.yml"
 
 _PREFIXES = ("BK", "BUG", "ID", "AF", "BL")
 _HEADER_RE = re.compile(
     r"^- \[(.)\] \*\*(" + "|".join(_PREFIXES) + r")-(\d+[a-z]*)(?:\s+\([^)]+\))? —",
     re.MULTILINE,
 )
+_ATTR_RE = re.compile(r"^  spec: .+ · effort: (.+?) · audience: (.+)$")
+_EFFORTS = ("S", "M", "L")
 
 
 def _extract_ids(text: str, status_chars: str) -> dict[str, set[str]]:
@@ -101,6 +124,41 @@ def _duplicate_ids(text: str, status_chars: str) -> dict[str, int]:
         if status in status_chars:
             counts[f"{prefix}-{num}"] += 1
     return {item: n for item, n in counts.items() if n > 1}
+
+
+def _audience_enum() -> set[str]:
+    """The trace schema's audience enum: one vocabulary for traces and items."""
+    schema = load_trace(TRACE_SCHEMA.read_text(encoding="utf-8"))
+    return set(schema["properties"]["audience"]["items"]["enum"])
+
+
+def _attribute_violations(text: str, audiences: set[str]) -> list[str]:
+    """R1: each open item's next line is its attribute line, with legal values.
+
+    Open items only (``[ ]``/``[~]``); ``BACKLOG-DONE.md`` entries carry no
+    attribute line. A missing line is a violation, else it would bypass the rule.
+    """
+    lines = text.split("\n")
+    found: list[str] = []
+    for i, line in enumerate(lines):
+        m = _HEADER_RE.match(line)
+        if not m or m.group(1) not in " ~":
+            continue
+        item = f"{m.group(2)}-{m.group(3)}"
+        where = f"line {i + 2}: {item}"
+        attr = _ATTR_RE.match(lines[i + 1]) if i + 1 < len(lines) else None
+        if attr is None:
+            found.append(f"{where}: no attribute line (`  spec: … · effort: … · audience: …`)")
+            continue
+        effort, audience = attr.group(1), attr.group(2)
+        if effort not in _EFFORTS:
+            found.append(f"{where}: effort {effort!r} not in {'/'.join(_EFFORTS)}")
+        found.extend(
+            f"{where}: audience {a!r} not in {TRACE_SCHEMA.name}'s enum"
+            for a in (x.strip() for x in audience.split(","))
+            if a not in audiences
+        )
+    return found
 
 
 def _max_numeric(ids: set[str]) -> int:
@@ -145,6 +203,7 @@ def _check() -> int:
 
     collisions = sorted(item for p in _PREFIXES for item in active_ids[p] & done_ids[p])
     duplicates = _duplicate_ids(active_text, " ~")
+    attributes = _attribute_violations(active_text, _audience_enum())
 
     max_active = {p: _max_numeric(active_ids[p]) for p in _PREFIXES}
     next_ids = {p: max(actual_max[p], max_active[p]) + 1 for p in _PREFIXES}
@@ -169,13 +228,18 @@ def _check() -> int:
             print(f"  {c}")
         print("\nAssign a new ID to the active item (floor: sdd/backlogid.json).")
 
-    if duplicates or collisions:
+    if attributes:
+        print(f"\nFound {len(attributes)} attribute violation(s) in {BACKLOG.name} (R1, ADR-0040):")
+        for v in attributes:
+            print(f"  {v}")
+
+    if duplicates or collisions or attributes:
         return 1
 
-    # Both rules named, so a clean run says which ones passed. The duplicate
+    # Every rule named, so a clean run says which ones passed. The duplicate
     # rule is only reachable after two branches merge, so this line is the
     # first evidence most authors will have that it exists at all.
-    print("No ID collisions, and no ID on two open items.")
+    print("No ID collisions, no ID on two open items, and every open item's attributes in vocabulary.")
     return 0
 
 

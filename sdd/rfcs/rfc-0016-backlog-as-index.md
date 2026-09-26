@@ -2,11 +2,14 @@
 
 ## Status
 
-Draft. Tracked as **BK-365**, whose exit criterion this answers for
-`sdd/BACKLOG.md`; `BACKLOG-DONE.md` is out of scope (§ Open Questions 2). If
-accepted it graduates to a new ADR carrying the structure's rationale (D4), and
-to rewrites of `sdd/BACKLOG.md` § How this file works, `000-process.md`
-§ Backlog, `AUTHORING.md` § Directory defaults and `CLAUDE.md` § Backlog.
+Accepted, 2026-09-25: graduated to
+[ADR-0040](../adrs/0040-backlog-as-index.md), which records the decision and the
+structure's rationale (D4). Tracked as **BK-365**, whose exit criterion this
+answers for `sdd/BACKLOG.md`; `BACKLOG-DONE.md` is out of scope (§ Open
+Questions 2). The acceptance delivery rewrote `sdd/BACKLOG.md` § How this file
+works and built R1 with its mapping; the § 1 pilot, R2–R4 and the rest of the
+migration follow it. R2 and R3 land with the pilot, scoped to migrated sections.
+The text below is the proposal as reviewed and is not updated further.
 
 **Date:** 2026-09-24. Every figure below is pinned to `e5fb4a8` and comes from
 `python sdd/rfcs/rfc-0016-measure.py --at e5fb4a8`, committed beside this file.
