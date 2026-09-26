@@ -178,6 +178,8 @@ class TestSurface:
             "sdd/specs/009-sftp-backend.md",
             "sdd/BACKLOG.md",
             "sdd/BACKLOG-DONE.md",
+            # ADR-0040 moves item bodies here; D1's "sdd/BACKLOG*.md in full" follows them.
+            "sdd/backlog/bug-276-empty-base-class-message.md",
             "src/remote_store/_store.py",
             "tests/backends/sftp/test_config.py",
             "examples/getting_started/quickstart.py",

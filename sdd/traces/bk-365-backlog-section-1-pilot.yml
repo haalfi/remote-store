@@ -1,0 +1,130 @@
+id: BK-365
+title: "ADR-0040 § 1 pilot: 16 items to dossiers, R2–R4 in gen_backlogid.py --check"
+trigger: >-
+  The maintainer asked for the next BK-365 step after PR #1029: convert § 1 to
+  the index shape (D2/D3), build R2–R4, measure § Acceptance for § 1, and carry
+  every ripple. Decided in interview before building: R2/R3 skip a section
+  carrying an opt-out `<!-- backlog: unconverted -->` marker under its heading
+  (fail-closed, so a new section is gated from birth); diagnoses are "problem +
+  Open decision:" prose; check_no_retrospective.py's surface widens to
+  sdd/backlog/*.md; ship_report's triage bug is filed as BUG-295, not fixed.
+  Preamble routing: sentences bounding an open item go to its dossier; closure
+  narration and the counting paragraph are removed where any authoritative home
+  (BACKLOG-DONE entry, CHANGELOG, spec, published guide) states the fact, and the
+  section's narration of its own history goes, by maintainer decision.
+source_items:
+  - BK-365
+  - ID-235
+discovery_followups:
+  - BUG-295
+audience:
+  - contributor.process
+  - contributor.tooling
+expected_ripples:
+  - sdd/BACKLOG.md
+  - scripts/gen_backlogid.py
+  - tests/scripts/test_gen_backlogid.py
+  - sdd/GATE-INVENTORY.md
+surprising_ripples:
+  # Moving bodies out of sdd/BACKLOG.md takes them off RFC-0015 D1's
+  # deliverable surface, which names sdd/BACKLOG*.md "in full". Neither
+  # RFC-0016's § Impact nor the ripple-check names gates whose scope is a
+  # path glob the migration empties.
+  - scripts/check_no_retrospective.py
+  - tests/scripts/test_check_no_retrospective.py
+phases:
+  - id: orient
+    name: Orient
+    steps:
+      - file: sdd/adrs/0040-backlog-as-index.md
+        section: "(full)"
+        read_type: gate
+        extract: >-
+          D1–D5 as decided; R2/R3 scoped to migrated sections; § Section
+          Promises already holds § 1's Promise rationale (BK-359), so the
+          preamble had nothing else of that kind to move.
+        outcome: ok
+      - file: sdd/rfcs/rfc-0016-backlog-as-index.md
+        section: "D1–D3, D5, § Acceptance"
+        read_type: gate
+        extract: >-
+          D3 routes closure narration to the ADR when no DONE entry states it,
+          which an Accepted ADR cannot take; the maintainer widened the removal
+          test to any authoritative home instead. D1's worked example matches
+          the adopted diagnosis style.
+        outcome: unclear
+      - file: sdd/BACKLOG.md
+        section: "How this file works; § 1 preamble and items; BK-365; ID-235"
+        read_type: gate
+        extract: >-
+          36+ preamble sentences classified against the 16 open bodies and 17
+          BACKLOG-DONE entries (delegated read, every verdict with its quoted
+          evidence). BUG-257's body pointed at "§ 1's paragraph", which the
+          pilot removes; a dated correction in its dossier now resolves it.
+        outcome: ok
+      - file: sdd/traces/bk-365-backlog-index-adr.yml
+        section: "(full)"
+        read_type: reference
+        extract: >-
+          Its review block records triage refuted 4 of 7 on #1029; re-driving
+          the classifier on those replies showed every one opens "Fixed in"
+          and the four refuted ones contain "stays" (BUG-295).
+        outcome: ok
+  - id: implement
+    name: Implement
+    steps:
+      - file: scripts/gen_backlogid.py
+        section: "(full)"
+        read_type: reference
+        extract: >-
+          R2–R4 share _HEADER_RE and rfc-0016-measure.py's separator
+          delimitation, so the gate and the acceptance figure agree (both
+          reported 67 items over the cap before the pilot).
+        outcome: ok
+      - file: tests/scripts/test_gen_backlogid.py
+        section: "TestShape"
+        read_type: reference
+        extract: >-
+          16 tests written first: 12 red on the missing rules, 4 were the
+          must-pass controls (vacuous until the rules existed).
+        outcome: ok
+      - file: sdd/rfcs/rfc-0016-measure.py
+        section: "(full)"
+        read_type: gate
+        extract: >-
+          § 1 at 16 items, median/max 8/8, preamble 37 words. The unconverted
+          marker adds four words to each §§ 2–6 preamble figure.
+        outcome: ok
+      - file: scripts/check_no_retrospective.py
+        section: "SURFACE, module docstring"
+        read_type: reference
+        extract: >-
+          The surface is a glob list, so an item body moved to sdd/backlog/
+          silently left it; widened, 578 files scanned clean.
+        outcome: ok
+      - file: src/remote_store/backends/_azure.py
+        section: "except Exception arms calling classify_azure_error (and aio twin)"
+        read_type: verify
+        extract: >-
+          Re-deriving BUG-293's sixteen before writing its diagnosis: four arms
+          already re-raise RemoteStoreError first (pass-throughs from 165bd00,
+          before the item was filed). Twelve lack one; title and diagnosis
+          corrected in the index, dated correction in the dossier.
+        outcome: ok
+  - id: verify
+    name: Verify
+    steps:
+      - file: sdd/CLAUDE-REFERENCE.md
+        section: "Ripple-check: New or changed cross-artifact check; Backlog item touched (both presentations)"
+        read_type: verify
+        extract: >-
+          No row's content changes. DRIFT-RULES obligations met in the script
+          docstring: localized messages, R4's authority direction, bounds.
+        outcome: ok
+      - file: sdd/DRIFT-RULES.md
+        section: "Rules 2, 3, 4, 7"
+        read_type: verify
+        extract: >-
+          The migration note naming § 1 is a second description of the
+          marker's state; it defers to the marker in so many words.
+        outcome: ok

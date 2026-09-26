@@ -21,6 +21,10 @@ The surface
 docs, ``CHANGELOG.md``, the migration guide, and ``sdd/BACKLOG*.md`` in full" —
 the migration guide is ``docs-src/reference/migration.md`` and needs no row of
 its own. ``examples/`` is included because it is a surface users read.
+``sdd/backlog/*.md`` is included because ADR-0040 moves item bodies there
+verbatim: without it, "``sdd/BACKLOG*.md`` in full" would shrink by every body
+the migration moves. They are scanned like any other file on the surface,
+including what a dossier adds beyond the moved body (dated corrections).
 
 **What is off the surface, stated as the complement rather than a sample**,
 because a partial exclusion list reads as a complete one. Everything not matched
@@ -114,9 +118,9 @@ fail).
 Drift-gate::
 
     kind:       rule
-    rule: no file on the deliverable surface — code, tests, examples, specs, docs, CHANGELOG.md and
-        sdd/BACKLOG*.md — carries a retrospective, meaning text whose subject is an earlier version
-        of the artifact it sits in, as RFC-0015's phrase set spells it
+    rule: no file on the deliverable surface — code, tests, examples, specs, docs, CHANGELOG.md,
+        sdd/BACKLOG*.md and its dossiers under sdd/backlog/ — carries a retrospective, meaning text
+        whose subject is an earlier version of the artifact it sits in, as RFC-0015's phrase set spells it
     domain:     process
 """
 
@@ -136,6 +140,7 @@ SURFACE: tuple[str, ...] = (
     "CHANGELOG.md",
     "sdd/specs/*.md",
     "sdd/BACKLOG*.md",
+    "sdd/backlog/*.md",
     "src/**/*.py",
     "tests/**/*.py",
     "examples/**/*.py",
