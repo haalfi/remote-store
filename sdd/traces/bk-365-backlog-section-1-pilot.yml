@@ -128,3 +128,51 @@ phases:
           The migration note naming § 1 is a second description of the
           marker's state; it defers to the marker in so many words.
         outcome: ok
+review:
+  # Derived by `hatch run ship-report 1032 --trace-block-only` at head 7291d7c.
+  # Do not hand-edit, except a newly required field per sdd/traces/_schema.yml
+  # section review: RFC-0015 D4 makes this script the only producer.
+  derivation: "hatch run ship-report 1032 --trace-block-only"
+  pr: 1032
+  review_rounds: 1
+  submissions: 1
+  findings: 4
+  by_round:
+    - round: 1
+      findings: 4
+      origin: {original: 4}
+      triage: {must-fix: 4}
+      duration_hours: 0.5
+  by_file:
+    - path: "scripts/check_no_retrospective.py"
+      findings: 1
+    - path: "scripts/gen_backlogid.py"
+      findings: 1
+    - path: "sdd/backlog/bug-276-empty-base-class-message.md"
+      findings: 1
+    - path: "sdd/backlog/bug-293-azure-arms-retype-errors.md"
+      findings: 1
+  untouched_files:
+    - "sdd/BACKLOG.md"
+    - "sdd/GATE-INVENTORY.md"
+    - "sdd/backlog/bk-345-absent-container-conformance.md"
+    - "sdd/backlog/bug-245-sqlblob-no-such-table.md"
+    - "sdd/backlog/bug-253-graph-write-ancestor-by-size.md"
+    - "sdd/backlog/bug-255-s3fs-midlisting-truncation.md"
+    - "sdd/backlog/bug-256-ping-healthy-absent-container.md"
+    - "sdd/backlog/bug-257-graph-walk-first-page-bound.md"
+    - "sdd/backlog/bug-263-graph-dot-folder-guide.md"
+    - "sdd/backlog/bug-266-sftp-failure-to-arm-map.md"
+    - "sdd/backlog/bug-267-obs-008-error-level.md"
+    - "sdd/backlog/bug-269-observe-level-op-tables.md"
+    - "sdd/backlog/bug-273-local-connect-reject-type.md"
+    - "sdd/backlog/bug-279-unwrap-leaks-connect-error.md"
+    - "sdd/backlog/bug-280-local-listing-permission-leak.md"
+    - "sdd/backlog/bug-292-ancestor-gate-fails-open.md"
+    - "sdd/traces/bk-365-backlog-section-1-pilot.yml"
+    - "tests/scripts/test_check_no_retrospective.py"
+    - "tests/scripts/test_gen_backlogid.py"
+  review_driven_commits:
+    - sha: "7291d7c"
+      subject: "fix: address PR #1032 review"
+  ci: {verdict: GREEN, failed: 0, pending: 0}
