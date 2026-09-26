@@ -12,8 +12,11 @@ Items graduate through the SDD pipeline:
 ## How this file works
 
 Operational rules only. Why each rule exists: [ADR-0040](adrs/0040-backlog-as-index.md).
-**Migration in progress:** a section not yet converted keeps its old shape (long
-bodies, `Closes when`) until it is; do not extend that shape in new edits.
+**Migration in progress:** § 1 is converted. A section not yet converted carries
+`<!-- backlog: unconverted -->` on the line under its heading and keeps its old
+shape (long bodies, `Closes when`) until it is; do not extend that shape in new
+edits. Converting a section deletes the marker. The marker, not this note, is
+what the gate reads.
 
 **Status legend:** `[ ]` pending · `[~]` in progress
 
@@ -98,8 +101,8 @@ to `BACKLOG-DONE.md`.
 
 **What is gated:** the rows of [`GATE-INVENTORY.md`](GATE-INVENTORY.md) whose
 subject names `sdd/BACKLOG*.md`. The admission test, granularity, section
-membership and the item scope cap outside migrated sections (every section,
-until R2 lands) are review-enforced.
+membership, the item scope cap in unconverted sections, and agreement between
+an index entry and its dossier are review-enforced.
 
 ---
 
@@ -116,839 +119,155 @@ until R2 lands) are review-enforced.
 answers the same way on every backend, and the failure they catch says which
 failure it was.
 
-**Closes when:** a listing does not truncate silently when its container is
-deleted mid-scan (BUG-255) or when a folder vanishes part-way through a
-recursive walk (BUG-257); `ping()` does not report a vanished store as healthy
-(BUG-256); a constructor does not leak its driver's exception
-(BUG-245); one operation does not answer by
-payload size (BUG-253); a listing does not leak its driver's exception on the
-one backend where it still does (BUG-280); a caller who meets a failure on **any** backend catches
-the type the docs promised and can tell *which* failure it was, rather than an
-empty message (BUG-276 and BUG-293, the clause's two remaining halves: BUG-276 is
-whether the base-class fall-throughs should be classified or merely given a
-message, BUG-293 is a mapped error being re-mapped to something weaker on the way
-out); a connect that fails locally is not reported
-against the caller's path
-(BUG-273); a safety gate that cannot complete its probe says so instead of
-answering "nothing here" (BUG-292 — the file-ancestor walk reads any driver
-error as permission to proceed, on all five flat-namespace backends); and a newly
-registered backend cannot pass CI without meeting BE-004, BE-005 and BE-021
-(BK-345). **The Promise's third clause (BK-359) is now met on every `BackendUnavailable` the library
-constructs** — BK-359 closed the backend whose stall BK-356 had just made the
-default failure surface, and BUG-264 closed Azure, the one other arm that could
-render blank. The remaining `BackendUnavailable(str(exc))` sites cannot: two sit
-behind a keyword guard the empty string cannot satisfy, and the two botocore
-arms are fed by classes that always format. What is left of the clause is the
-**base class**, at five blank-reachable arms in four files — including two in the
-very `_map_exception` BK-359 rewrote, and one shared helper that puts all three
-S3 backends behind it — which is BUG-276, whose disposition is the open question.
-(Seven sites carry the construction; the item partitions them, because the guard
-above each decides whether it can render blank and two of them cannot.)
-A promise clause honoured on one arm of one backend was the shape this
-section exists to catch; that the count of arms outlived two items is why
-BUG-276 is not the tidy one-line follow-up its ancestor was first filed as.
-The spec contradiction is adjudicated — BUG-248, closed by
-[ADR-0038](adrs/0038-absent-container-outranks-drive-identity.md) — the
-never-leak invariant holds on the S3 listing path, closed by BUG-249 with
-BUG-246, and on SFTP's streamed-read path, closed by BK-358: a dropped
-connection reached a caller holding a `read()` stream as a raw
-`paramiko.SSHException` where the same drop on `read_bytes` mapped, and the
-shared stream wrapper now takes the shapes a backend's transport was measured to
-raise outside its base tuple (SIO-012). The two halves of the clause the item
-spanned are why it sat here rather than with the streaming work: a caller who
-catches one exception type is this section's promise verbatim, and the
-`read()`/`read_bytes` split meant the same fault answered two ways.
-The last adapter answers the contract against an absent container,
-closed by BUG-247, and a write to the store root no longer occupies that root
-with a regular file, closed by BUG-259 — which also brought the five
-flat-namespace classes that reached their SDK with the root key to the same
-rule. **The read side of the root is met too**, closed by BUG-254: the ten
-backend classes whose absent state is measured all answer BE-029's row with the
-container gone, where five of them used to split it two ways. The three that
-are unmeasured are named in BE-021, and a fourteenth backend is still exempt by
-default, which is BK-345 below rather than a residue of this. The catches-the-promised-type half is met on SFTP's connect path, closed
-by BUG-265: a refused port and a DNS failure raise the `BackendUnavailable`
-fifteen docstrings and the health-check guide promise, where both raised the
-base class. That is one backend's connect arm, not the clause — BUG-276 and
-BUG-293 carry the rest, and all three are the same promise met at different
-depths: an error with no message, an error re-typed to a weaker class, and an
-error of the wrong class outright. It also
-opened BUG-273: the same connect path still answers the wrong type when the
-connect is rejected locally — `PermissionDenied` blaming the caller's key on the
-`EACCES` shape, whose trigger is unknown, and — since BUG-275 gave the errno
-dispatch an `EPERM` arm — the same `PermissionDenied` on the `EPERM` one a
-netfilter `REJECT` does produce. Neither is `BackendUnavailable`, so it is the
-promised-type defect again, and the two halves now answer alike: one fix closes
-both, and the reproducible half is the one to build it against.
-**The what-it-leaves-behind clause is met and has left the list**, closed by
-BUG-272 with BUG-270 and BUG-277: the place where an operation *asked to
-preserve* the caller's file destroyed it was SFTP's rename fallback, which
-removed the destination before renaming onto it. It now displaces and restores,
-so the file the caller had is either back at its path or findable beside it under
-a `.~bak.` name — which is the guarantee, since putting it back is best-effort
-and a dead channel or a refusing server can stop it. **The narrower claim is the
-defensible one**: a non-atomic `write(..., overwrite=True)` still has an `empty`
-residue that destroys a pre-existing file, which SFTP-030 states as one of its
-consequences — that operation makes no such promise, which is exactly why
-`write_atomic` exists. BK-360's measurements added this clause and filed the two
-items that closed it; BUG-277 came out of their own review rather than those
-measurements, which is why three IDs close what two filed, and it is the shortest
-a clause has been open here.
-**One cross-section dependency remains**, per
-[§ How this file works](#how-this-file-works): BK-345 waits on **ID-244** in
-section 2 for the seeding hook, stated inside the item that carries it, so this
-section cannot close on its own items alone. BUG-249's denied half carried a
-second such dependency on **ID-242**; it shipped with the denied path asserted by
-the hand-written 403 probe that item names and by nothing in conformance, which
-is why ID-242 is still open and still worth doing.
-
-**Three backend classes** now disagree with **the absent-container clause** —
-`S3Backend` and `S3PyArrowBackend` (BUG-255), and `GraphBackend` (BUG-257) —
-counted from BE-021's § Known divergences list, which this section tracks bullet
-for bullet and which holds two bullets, the first naming two classes. BUG-255 and
-BUG-257 joined that list rather than the "further disagreements" below it when
-BUG-246 gave § Reach an explicit first-page bound: before that the clause said
-only what an absent container answers, so a container that vanished *during* a
-listing was outside it; now the bound is part of the clause and missing it is a
-breach of it. Writing a rule into a clause enlarges what the clause governs, and
-the two items that changed side are the evidence — neither was a new defect, and
-both were pre-existing behaviour that a new sentence made answerable.
-**Four** further disagreements sit in this section and none of them is with the
-absent-container clause, which is why they are not in that count: BUG-253 is
-between two halves of one Graph operation; BUG-245 is a constructor leak, which
-BE-021 scopes to operations and so does not reach; BUG-256 is about a health
-probe, which is off the roster BE-021 governs; and BUG-293 is with BE-020 and
-AZ-029 — a closed store reporting the base class where those promise
-`BackendUnavailable` — which is the never-leak invariant's mirror rather than the
-invariant itself.
-BUG-259 and BUG-254 (BE-029's root row, on the write path and on the read side)
-and BK-358 (the never-leak clause reached through the shared stream wrapper) were
-of this kind too and have all closed; each is named in the closures above rather
-than counted here. **No
-ordinal is given for them**, and that is a rule rather than a style choice: this
-list has stood at five and at six within one release, so an ordinal over a list
-items keep leaving is wrong from the next closure onward. The count above is
-derived from the entries that follow it; nothing else here is counted.
-**Six classes** have left the list on the *empty-listing and NotFound* rows —
-counted as classes, which is the frame this paragraph opens in and not the bullet
-frame the sentence above it uses. `GraphBackend` went first — BUG-248 adjudicated
-the spec contradiction behind it and brought the backend to the contract in the
-same change, which is why BK-345's exemption list, blocked on that adjudication,
-can now be written. `S3Boto3Backend`, `AzureBackend`, `AsyncAzureBackend` and
-`SQLBlobBackend` followed with BUG-246 and BUG-249. `LocalBackend` is the sixth
-and the last: BUG-247 stopped its containment check reporting an absent root as
-a path escape, which was the one case where the clause *misreported* rather than
-merely mistyped — an absent store answered as a malformed path, on the most-used
-backend. Graph is on both sides of this paragraph and that is not a bookkeeping
-error: it meets the rows it was brought to and misses the bound that arrived
-after, which is what a clause growing a new sentence does to a backend that was
-compliant the day before.
-
 - [ ] **BUG-276 — A mapped error still reaches the caller with an empty message through five base-class arms**
   spec: ERR-009, AZ-025 · effort: M · audience: user.api
-  **M, not S**, for the reason BUG-264 gave before the split: the arms need a
-  decision before a patch, and this item adds scope on top of that — five arms
-  across four files, a `_errors.py` change that moves what three S3 backends
-  report, and an unsettled placement question.
-  **AZ-025 is listed because this fix falsifies a clause there.** That spec
-  states as current behaviour that the Azure fall-through *can* render blank,
-  and `test_an_unmapped_exception_still_reaches_the_caller_blank` pins it. Both
-  go red when this lands, by design — they are the reminder to re-read the
-  clause, not collateral.
-  The remainder of BUG-264, which closed the `BackendUnavailable` half. ERR-009
-  is a claim about `str()` on *any* error, and the same construction spelled with
-  the base class stands at **7 sites in 5 files**:
-  `rg -n 'RemoteStoreError\(str\(exc\)' src/`. Line numbers are omitted; the
-  `rg` is the derivation.
-
-  **The construction is not the defect — the guard above each site is.** Five
-  sites can render blank and two cannot, each driven rather than read:
-
-  | Site | Driver | Result |
-  |---|---|---|
-  | `_azure_common` final fall-through | `RuntimeError()` | `RemoteStoreError('')` |
-  | `_s3_pyarrow` `OSError` arm | `OSError()` via `_pyarrow_errors` | `RemoteStoreError('')` |
-  | `_errors._classify_by_message` final arm | `RuntimeError()` | `RemoteStoreError('')` |
-  | `_sftp` errno fall-through | `OSError()` — **no args, no errno** | `RemoteStoreError('')` |
-  | `_sftp` final arm | `RuntimeError()` — non-`OSError`, non-paramiko | `RemoteStoreError('')` |
-  | `_azure_common` `HttpResponseError` arm | — | `"Operation returned an invalid status 'None'"` |
-  | `_s3_boto3` `ClientError` arm | — | `"An error occurred (Unknown) when calling…"` |
-
-  **The two SFTP arms need different drivers**, which is easy to miss: a bare
-  `OSError()` stops at the errno fall-through and never reaches the final arm,
-  and the final arm sits after the `paramiko.SSHException` check and carries
-  `# pragma: no cover`. **An errno-carrying `OSError` is not blank** —
-  `OSError(EIO, "")` formats `"[Errno 5] "` — so testing that arm with an errno
-  wrongly concludes it is already fine.
-
-  The last two rows are excluded from the work: `HttpResponseError.__init__`
-  substitutes for a falsy message, and `ClientError` always formats from a
-  template. Note that two of the five blank-reachable arms — `_errors.py`'s and
-  `_s3_pyarrow.py`'s, the pair the keyword guard sits above
-  (`rg -n 'name or service' src/`) — are the mirror image for
-  `BackendUnavailable`: that branch needs one of
-  `endpoint`/`connect`/`timeout`/`dns`/`name or service` and `""` has none, so
-  reading the guard concludes "safe" and running it finds the exit one line
-  below.
-
-  **What BUG-264 established, so it is not re-derived here.** Every
-  `BackendUnavailable` the library now constructs carries text: after that fix
-  `rg -n 'BackendUnavailable\(str\(exc\)' src/` returns **four** call sites
-  plus one docstring mention, and none of the four can render blank — two sit
-  behind the keyword guard above, and the two botocore arms are fed by classes
-  that always format. Every other backend prefixes literal text at every
-  construction. **The base class is the whole of what is left.**
-
-  **Which backends a caller meets it on**, counting observable `backend=` values
-  rather than modules, since that is what an `except` clause sees:
-  `azure`, `async-azure` (the twins share `classify_azure_error`), `sftp`, and
-  all three S3 backends. Driving `_classify_error(RuntimeError(), "delivery.csv")`:
-  `S3Backend` → `backend='s3'` and `S3PyArrowBackend` → `backend='s3-pyarrow'`
-  both inherit `_S3Base._classify_error`; `S3Boto3Backend` → `backend='s3-boto3'`
-  defines its own, whose final line calls the same helper. So `_s3_boto3`'s *own*
-  site is the unreachable `ClientError` one above and the backend still reaches a
-  blank, through `_errors.py`. **Six backend names, five arms, four files** —
-  the three counts differ and the item uses all three.
-
-  **Disposition — the decision is the work.** Either a blank `RemoteStoreError`
-  gets the synthesised fallback Azure's and SFTP's `BackendUnavailable` arms now
-  carry, or these fall-throughs are *classified* rather than passed through,
-  since each sits at the end of a dispatch that already failed to recognise the
-  exception. The second is the more invasive and the more interesting: an arm
-  that cannot name the failure may be admitting the dispatch above it is
-  incomplete. Decide once and apply to all five arms. The two unreachable sites
-  want no change — adding a fallback nothing can reach is invisible to the
-  coverage gate and reads later as a tested path.
-  **Fixing `_errors.py`'s arm changes what all three S3 backends report**, so it
-  needs its own test on the S3 side and not only where the arm lives.
-  **Placement is part of the decision:** `_errors.py`'s site is shared and the
-  other six are per-backend. BUG-264 put Azure's in `_azure_common` because both
-  twins classify through it; that is a precedent for the shape, not the
-  placement.
+  Seven `RemoteStoreError(str(exc))` sites in five files; five of them, driven
+  in the dossier, render `''` from a message-less exception, breaking ERR-009.
+  `_errors.py`'s arm is shared by all three S3 backends. Open decision:
+  synthesise a fallback message or classify the fall-through, for all five; the
+  fix deliberately falsifies AZ-025's blank-message clause and its pinning test.
+  Detail: [dossier](backlog/bug-276-empty-base-class-message.md)
 
 - [ ] **BUG-273 — A locally-rejected SFTP connect answers the wrong type, and neither permission errno can be claimed without connect-time context**
   spec: SFTP-021, SFTP-023 · effort: S · audience: user.api
-  BUG-265 gave `_map_exception` a connect-time arm for the unreachable-host
-  errnos and deliberately left **both** permission errnos out of it. This is
-  that exclusion, recorded rather than left for the next reader to re-derive.
-  **`EPERM` was tried and reverted inside BUG-265, which is the sharpest
-  evidence this item has.** A round of review found a firewall-rejected connect
-  answering the base `RemoteStoreError` and argued `EPERM` was free to claim,
-  because `_map_exception`'s errno dispatch had no `EPERM` arm. That premise was
-  true of the dispatch **as it then stood** and false of the module, and the
-  next round measured it:
-  `_raise_if_dir` re-raises **both** permission errnos on purpose
-  (`_sftp.py`, the classification-stat guard, and its docstring says why), from
-  a **working** channel, inside the caller's `_errors(path)` block. Driving the
-  exact shape `test_raise_if_dir_permission_stat_maps_permission_denied` uses:
-  `EPERM` gave `RemoteStoreError` before the change and
-  `BackendUnavailable("[Errno 1] Permission denied")` after it, **and with a
-  sentinel seeded the new arm cleared the cached client** — so a healthy
-  connection was discarded on a server-reported denial. **The grounds matter
-  and were first stated too strongly:** the published v0.29.1→v0.30.0 migration
-  row promising `PermissionDenied` for that stat was *already* not honoured for
-  `EPERM` before the change and is not honoured after it, which was BUG-275, not
-  this item. What claiming `EPERM` did was move that path from the base class to
-  `BackendUnavailable` plus a client reset — worse, and enough on its own.
-  Reverted; `test_the_permission_errnos_stay_out_of_the_connect_arm`
-  now pins the exclusion so a future widening fails loudly instead of silently
-  changing what a live channel reports.
-  **BUG-275 has since shipped and made this item simpler, not harder.** The
-  errno dispatch now has an `EPERM` arm, so **both** permission errnos answer
-  `PermissionDenied`, and a locally-rejected connect is answered identically for
-  each — `PermissionDenied` naming the caller's key, or a bare `Permission
-  denied: ` from `check_health`. The two halves this item used to carry
-  separately are now one shape, so one fix closes both; the `EPERM` half is no
-  longer "the base class" as the measurement above records.
-  **What did not change is the exclusion from `_is_unreachable`**, and its
-  evidence is now per errno. `EACCES` has a live-channel producer: paramiko's
-  `SFTPClient._convert_status` renders `SSH_FX_PERMISSION_DENIED` as
-  `IOError(EACCES)` (paramiko 5.0.0). **`EPERM` has none known** — that
-  *renderer* has no arm producing it, and no SFTP status code maps to it; not to
-  be confused with `_map_exception`'s errno dispatch, which SFTP-021 now gives
-  an `EPERM` arm — and what keeps it out is that claiming it would take
-  away the `PermissionDenied` SFTP-021 now guarantees and clear the cached client
-  with it.
-  **The trigger asymmetry is what remains of the two halves**: the `EPERM` shape
-  is reproducible (a netfilter `REJECT` on the `OUTPUT` chain), the `EACCES` one
-  is not, so the `EPERM` shape is the one to build the fix against and the
-  `EACCES` one comes along with it.
-  **The answer this item must change is pinned**, so closing it fails a test
-  rather than silently altering a published type:
-  `test_a_locally_rejected_connect_is_answered_as_a_denial` asserts today's
-  answer for both errnos, on a keyed operation and on `check_health`. Its two
-  parametrizations must go red together — them being alike is the property that
-  lets one fix reach both.
-  **The lesson for whoever picks this up:** "nothing else wants this errno" is a
-  claim about the whole module, not about one if-chain, and `rg -n 'EPERM' src/
-  docs-src/` is the derivation. Both errnos are one problem, not two.
-  **What was measured**, by monkeypatching `socket.socket.connect` to raise a
-  chosen errno and driving `paramiko.SSHClient.connect` on paramiko 5.0.0:
-  `EACCES` is re-raised unwrapped, exactly like `ENETUNREACH` / `ENETDOWN` /
-  `EHOSTDOWN` (`SSHClient.connect` captures only `ECONNREFUSED` and
-  `EHOSTUNREACH` into `NoValidConnectionsError`; its own docstring says so). It
-  therefore reaches the mapping as a plain `PermissionError` and takes the
-  `EACCES` arm. Measured per operation, since the two answers differ:
-  `read_bytes("delivery.csv")` and `exists("delivery.csv")` answer
-  `PermissionDenied("Permission denied: delivery.csv")`, while `check_health()`
-  — which runs under `_errors()` with no key — answers a bare
-  `PermissionDenied("Permission denied: ")`. That is BUG-265's own defect shape,
-  a caller following the health-check guide catching the wrong type, in two
-  flavours: on a keyed operation the message names a path as the subject of a
-  failure the path had no part in, and on the probe it dangles a colon with
-  nothing after it — the shape
-  `test_a_message_less_dns_failure_does_not_trail_an_empty_colon` exists to
-  prevent on the sibling arm.
-  **What was NOT measured, and it is the item's open question:** that any real
-  network produces `EACCES` on `connect()`. **No trigger is known**, and the
-  first work here is finding one. An earlier revision of this item offered
-  `iptables --reject-with icmp-admin-prohibited`; that is wrong and is recorded
-  here so it is not tried twice. It sends ICMP type 3 code 13, which Linux's
-  `icmp_err_convert` maps to `EHOSTUNREACH` — an errno BUG-265 already put in
-  `_is_unreachable`'s tuple, so following that recipe lands on the new arm and
-  shows nothing. A local `OUTPUT`-chain `REJECT` yields `EPERM`, also not
-  `EACCES`. `EPERM` **does** have that trigger, which is what made it tempting;
-  it is not a reason to claim it. If no `EACCES` trigger exists, that half is a
-  documentation item rather than a code one.
-  **What it costs a caller if left, and BUG-275 changed the answer.** It used to
-  be nothing observable: the `EACCES` half has no producer anyone has found, and
-  the `EPERM` half — which a netfilter `REJECT` on the `OUTPUT` chain does
-  produce — answered the base class, so no caller met the wrong *type*. Since
-  the errno dispatch gained its `EPERM` arm, that shape answers
-  `PermissionDenied` naming the caller's key, or a bare `Permission denied: `
-  from `check_health`. So the cost is **observable today, on the half a reader
-  can reproduce**: someone following the health-check guide's
-  `except BackendUnavailable` catches nothing and lands in a permissions handler
-  for a request that never left the machine. **That raises the priority and
-  leaves the diagnosis where it was.** The item also carries a measurement worth
-  keeping either way: the next person to consider widening `_is_unreachable`'s
-  tuple finds here why that breaks a working channel, instead of rediscovering
-  it the way BUG-265 did across two rounds.
-  **The shape also pays the connect budget twice, and the fix here is what would
-  end that too.** Measured by patching `_connect` to raise the errno and counting
-  invocations, at both `2a1bbfe` and this branch's head: `read_bytes` and
-  `delete` cost **two** connects, `read` / `exists` / `check_health` one, and
-  `ECONNREFUSED` costs one everywhere. `_probe_is_futile` does not claim a
-  permission errno, so the caller's guard declines and `_raise_if_dir` re-enters
-  the lazy `_sftp` property for a second full budget. **Pre-existing and
-  unchanged by BUG-275** — the counts are identical on both revisions, and only
-  the *type* moved — but it is the same waste BUG-274 closed for unreachable
-  hosts, and classifying at `_connect` (the disposition below) removes it by
-  construction rather than needing a second widening.
-  **Disposition:** not widening the tuple — that was tried and measured harmful,
-  above. The same errnos on a live operation genuinely are a denied path
-  (`test_eacces_maps_to_permission_denied` and
-  `test_the_two_permission_errnos_answer_alike_on_every_entry_point` pin
-  them), and `_map_exception` dispatches on the exception alone, so it cannot
-  tell a connect-time one from an operation-time one. The cheap shape is for the
-  lazy `_sftp` property to classify what `_connect` raises **before** the
-  caller's `_errors(path)` block sees it, which reaches both errnos at once and
-  is the only place the connect-time context exists.
-  **Found by BUG-265's round-3 measuring member**, which reported the `EACCES`
-  half as a `Possible: Bug:` with its trigger flagged unreproduced; the `EPERM`
-  half was found, fixed and reverted across its rounds 5 and 6.
+  A connect rejected on the local host (`EPERM` from an `OUTPUT`-chain `REJECT`;
+  `EACCES`, no known trigger) answers `PermissionDenied` naming the caller's
+  key, where the health-check guide promises `BackendUnavailable`.
+  `_map_exception` sees the errno, not that it arose at connect. Open decision:
+  classify in the lazy `_sftp` property; the `EACCES` half may be docs-only.
+  Detail: [dossier](backlog/bug-273-local-connect-reject-type.md)
 
 - [ ] **BUG-279 — `unwrap(SFTPClient)` leaks the raw paramiko or socket error when the connection cannot be established**
   spec: SFTP-024, SFTP-026 · effort: S · audience: user.api
-  SFTP-024's invariant is stated over "no paramiko, socket, or OS exception
-  raised *by the backend*" reaching callers. `unwrap` returns `self._sftp`
-  (`SFTP-026`), which evaluates the lazy property and so can run the whole
-  connect budget — and it is **not** wrapped in `_errors()`, so whatever
-  `_connect` raises escapes unmapped.
-  **Measured** against a backend that has never connected, one entry into
-  `_connect` per case:
-
-  | connect-time shape | raised |
-  |---|---|
-  | refused port | `paramiko.ssh_exception.NoValidConnectionsError` |
-  | DNS failure | `socket.gaierror` |
-  | connect timeout | `TimeoutError` |
-
-  Every other operation answers `BackendUnavailable` for all three.
-  **What it costs a caller:** someone following the health-check guide writes
-  `except BackendUnavailable` and gets none of these; an escape hatch that is
-  documented as returning the driver's client instead raises a driver exception
-  the error model promises never to surface.
-  **Disposition, and it is a real choice rather than a one-liner.** Either wrap
-  the property access in `_errors()` — which makes `unwrap` obey SFTP-024 at
-  the cost of the escape hatch no longer being transparent about *why* it could
-  not hand back a client — or amend SFTP-024 to carve `unwrap` out explicitly,
-  on the grounds that a caller reaching for the driver has opted into driver
-  errors. **The carve-out is the likelier answer** (the method's whole purpose
-  is driver access) but it is currently neither stated nor tested, so the
-  invariant reads as breached rather than bounded. Whichever way, SFTP-026 gains
-  a `Raises:` line, which it has never had.
-  **Pre-existing, not introduced by BUG-274** — that item only measured it,
-  while accounting for why `unwrap` is excluded from its operation enumeration.
-  **Found by BUG-274's round-5 unprimed reviewer.**
+  `unwrap()` evaluates the lazy `_sftp` property outside `_errors()`, so a
+  failed connect escapes as `NoValidConnectionsError`, `socket.gaierror` or
+  `TimeoutError` where every other operation answers `BackendUnavailable`,
+  breaching SFTP-024. Open decision: wrap it, or carve `unwrap` out of
+  SFTP-024 explicitly; either way SFTP-026 gains a `Raises:` line.
+  Detail: [dossier](backlog/bug-279-unwrap-leaks-connect-error.md)
 
 - [ ] **BUG-266 — No artifact maps an observable SFTP failure onto the arm that handles it, and four prose attempts were each refuted**
   spec: SFTP-023, SFTP-030 · effort: M · audience: user.site, library.maintainer
-  `_map_exception` dispatches on exception *type*, and SFTP-023 states the arms
-  that way — correctly, and pinned by tests. What no artifact states correctly is
-  the other direction: given a failure a reader can observe (a refused port, a
-  wedged daemon, a silent peer, a rejected credential, a DNS failure), which arm
-  does it reach and what does the caller get.
-  **Four attempts to summarise that in a sentence were each refuted by
-  measurement**, all during BK-359's review loop: "a failed probe logs once per
-  poll"; "two records per poll, three under `AUTO_ADD`"; "a failed probe writes
-  more than one record" (zero under `RetryPolicy.disabled()`); and "only a probe
-  that fails by timeout reaches the mapping" — refuted by a bad SSH banner, an
-  accept-then-hangup and an `AuthenticationException`, all three of which reach
-  `_unavailable` through the `SSHException` arm with one `op="error_mapping"`
-  record.
-  **The diagnosis is that the space has axes a sentence cannot carry**: the
-  observable failure, the mapping arm, the retry policy's `max_attempts`, and
-  the host-key policy. Each refuted attempt stated one cell of that product as
-  though it were the whole table.
-  **Disposition:** write it once as a parametrised test enumerating
-  observable-failure x arm, asserting the resulting type, message shape and
-  record count, then let the spec and the guides point at the test rather than
-  restate it. The harness exists — `_StallRelay` plus the in-process server
-  already drive stalls in both directions, and BK-359's review produced working
-  probes for a refused port, a DNS failure, a bad banner and an
-  accept-then-hangup. Sized M because the enumeration, not the assertion, is the
-  work.
-  **Filed by BK-359's round 4**, after that loop's repeat-site check fired:
-  three rounds refuting one condition means enumerate the space rather than
-  restate it a fourth time.
+  No artifact maps an observable SFTP failure (refused port, wedged daemon,
+  silent peer, bad credential, DNS) to the `_map_exception` arm it reaches and
+  what the caller gets; four one-sentence summaries were each refuted, because
+  the space has four axes. Open decision: which cells a parametrised
+  failure × arm test enumerates, so spec and guides cite it, not restate it.
+  Detail: [dossier](backlog/bug-266-sftp-failure-to-arm-map.md)
 
 - [ ] **BUG-269 — `observe.md`'s level and `op` tables are enumerations that were already false on master, and BK-359 adds to both**
   spec: OBS-008 · effort: S · audience: user.site
-  `docs-src/guides/observe.md` § *Logging levels used* and § *Structured `extra`
-  fields* are written as enumerations over the whole library — the section three
-  headings up names `remote_store.backends._local` as an example logger, so
-  backend records are in scope, not just `ext.observe`'s.
-  **Both were already false on master**, which is what keeps this out of
-  BK-359's scope rather than in it:
-  | Row | Says | Contradicted on master by |
-  | --- | --- | --- |
-  | `WARNING` | "Suppressed hook exceptions, fallback behaviour" | the `AUTO_ADD` host-key warning, `backends/_sftp.py:1828` — neither |
-  | `op` | "Operation name (`"read"`, `"write"`, ...)" | `op="connect"` (3 sites), `"download"`, `"upload"`, `"transfer"` — 5 non-operation values, counted by `git grep -n 'extra={"op"' origin/master -- src/` |
-  | `ERROR` | "Before re-raising backend errors" | nothing in `src/` logs at that level — **BUG-267**, filed separately |
-
-  BK-359 adds one more of each: an `op="error_mapping"` `WARNING` that is not a
-  suppressed hook exception and not an operation name. It is the third and sixth
-  instance respectively, not the first.
-  **Why it is filed and not fixed.** BK-359 rewrote these rows once; the rewrite
-  was reverted with the rest of its guide prose after four rounds found defects
-  in it, and this item is the paired record that revert owes — the same pairing
-  BUG-268 made for `troubleshooting.md`. Correcting the `op` row is not a fact
-  but a contract decision: whether `op` means "Store operation" (in which case
-  `connect`, `transfer` and `error_mapping` are misuses of the field) or
-  "operation or internal stage" (in which case the row is merely under-written).
-  That decision sits next to **BUG-267**'s, which is why both should be taken
-  together and neither inside a fix pass. **BUG-266** owns the observable-failure
-  → arm table and reaches neither row.
+  `observe.md`'s level and structured-`extra` tables claim to enumerate the
+  whole library and were already false on master; BK-359 adds a third and a
+  sixth counterexample. Open decision: whether `op` means "Store operation"
+  (so `connect`, `transfer`, `error_mapping` misuse it) or "operation or
+  internal stage"; take it with BUG-267's, not inside a fix pass.
+  Detail: [dossier](backlog/bug-269-observe-level-op-tables.md)
 
 - [ ] **BUG-267 — OBS-008 demands an `ERROR` level that nothing emits and nothing asserts**
   spec: OBS-008 · effort: S · audience: contributor.process
-  OBS-008's Levels bullet read "ERROR (before re-raise)" as an invariant over
-  "all library modules". No call site in `src/` logs at `error`, `exception`,
-  `critical` or `fatal` — verified by grep across the package — and none of the
-  four `@pytest.mark.spec("OBS-008")` tests in `tests/ext/test_observe.py`
-  asserts a level at all.
-  That is [`000-process.md` Rule 7](000-process.md#intent-attribution)'s
-  **Unenforced** row: prose demanded it, nothing enforced it, so the claim is
-  undecided and **nothing moves yet**.
-  **BK-359 twice tried to resolve it in passing and both attempts were wrong.**
-  It first deleted the clause and wrote current behaviour into the spec — the
-  code made right by prose inside a review fix pass. Its round 4 caught that and
-  suspended the clause instead, which left the spec saying *undecided* while the
-  guide `docs-src/guides/observe.md`, rewritten in the same PR, still published
-  the withdrawal as settled — a split across two artifacts. Both edits are reverted;
-  OBS-008 and the guide are back at their pre-BK-359 text, so the divergence is
-  intact and undecided rather than half-resolved in two directions.
-  **The decision owed** is one of two: either the library should report before
-  re-raising, and the deliverable is that call site plus the level assertion
-  Rule 2 wants; or it should not, and the clause is withdrawn on the ordinary
-  path with the reason recorded. Either way it is decided once rather than
-  inherited.
+  OBS-008 requires an `ERROR` record "before re-raise" in all library modules;
+  nothing in `src/` logs at `error` or above and no OBS-008 test asserts a
+  level, so the clause is undecided (000-process Rule 7, Unenforced). Open
+  decision: add the call site and its level assertion, or withdraw the clause
+  with the reason recorded; decide it with BUG-269.
+  Detail: [dossier](backlog/bug-267-obs-008-error-level.md)
 
 - [ ] **BUG-263 — The migration guide promises a drive folder named `.` stays reachable as a key; no key spelling reaches it**
   spec: GR-058 · effort: S · audience: user.site
-  `docs-src/reference/migration.md` § *`GraphBackend(base_path=".")` now means
-  the drive root* tells a caller whose drive holds a folder literally named `.`
-  that it "stays reachable as an ordinary key under a `base_path` that is not
-  itself a root spelling". It is not reachable under any `base_path`, because
-  the predicate that strips `.` from `base_path` is the same one that strips it
-  from every key: `GraphBackend._key_segments` delegates to
-  `_flat_ns._addressable_segments`, and `native_path` /
-  `_parent_ref_path` / the write and source guards all route through it.
-  Measured with `base_path="reports"`:
-  | key | addresses |
-  | --- | --- |
-  | `./x` | `/drives/D/root:/reports/x:` |
-  | `.` | `/drives/D/root:/reports:` |
-  | `x/./y` | `/drives/D/root:/reports/x/y:` |
+  The migration guide says a Graph drive folder named `.` stays reachable as a
+  key under a non-root `base_path`; no key spelling reaches it under any
+  `base_path`, because `_addressable_segments` strips `.` from keys and
+  `base_path` alike, and must. Open decision: the replacement sentence (it can
+  no longer be addressed; rename it before upgrading). The code stays.
+  Detail: [dossier](backlog/bug-263-graph-dot-folder-guide.md)
 
-  So the folder is unaddressable, not relocated — which is a strictly larger
-  break than the section describes, and the sentence sends a caller looking for
-  a workaround that does not exist.
-  **The fix is the sentence, not the code.** `_addressable_segments`' own
-  docstring records why the two predicates must stay identical (a draft that
-  widened one broke the `to_key(native_path(key)) == key` identity on 4 of 7
-  measured keys), so the guide should say the folder can no longer be addressed
-  and name what a caller does instead — rename it before upgrading.
-  The neighbouring claim, "Every other `base_path` value is unaffected", was
-  checked and **holds**: the only behavioural difference between the old `if s`
-  split and `if s and s != "."` is dot segments, and the preceding sentence
-  already covers those. Recorded so the next reader does not re-litigate it.
-  Found by ID-252's closing review reading outside its own diff; shipped by
-  BUG-261.
-
-- [ ] **BUG-293 — Sixteen Azure `except Exception` arms re-type an already-typed error, so a closed store reports the base class**
+- [ ] **BUG-293 — Twelve Azure `except Exception` arms re-type an already-typed error, so a closed store reports the base class**
   spec: BE-020, BE-021, AZ-029 · effort: S · audience: user.api
-  `classify_azure_error` has no `RemoteStoreError` pass-through arm: it falls
-  through every `isinstance` check to `return RemoteStoreError(str(exc), ...)`.
-  So any `except Exception` that routes through it **downgrades an error the
-  library already typed**, and the first thing inside several of those `try`
-  blocks is a lazy client accessor whose `_raise_if_closed()` raises
-  `BackendUnavailable`. Measured on BUG-254's branch before its own two sites
-  were fixed: `AzureBackend(hns=True).close()` then `get_folder_info("")`
-  returned `RemoteStoreError: Azure backend is closed` where the flat arm, whose
-  catch is narrowed to `ResourceNotFoundError`, returned `BackendUnavailable`.
-  Both Azure classes, sync and async.
-  **BUG-254 fixed its own two sites and this is the rest of the class.**
-  Derivation — an AST pass over the two Azure backend files selecting every bare
-  `except Exception` whose handler *calls* `_classify` or `classify_azure_error`,
-  then excluding the two `get_folder_info` arms BUG-254 closed and the two
-  `_errors` context managers, which are the mappers themselves and correctly
-  re-raise `RemoteStoreError` first. **Sixteen: seven sync, nine async.**
-  `_azure.py` in `delete`, `delete_folder`, `list_files`, `list_folders`,
-  `iter_children`, `detect_hns`, `adetect_hns`; and `aio/backends/_azure.py` in
-  `read`, `delete`, `delete_folder`, `list_files` (two arms), `list_folders`
-  (two), `iter_children` (two).
-  **The pass has to read the handler body rather than a window around it.** A
-  grep for the classifier name near an `except Exception` also matches
-  `_azure.py`'s `readinto`, whose handler re-raises `OSError(str(exc))` and only
-  *mentions* the classifier in a comment explaining that `_ErrorMappingStream`
-  does the classifying later. That site is not in the class and is not in the
-  sixteen — and that grep spelling is how this item was first filed at nine.
-  **Not every arm is reachable with a typed error in hand**, which is the work:
-  each one needs its own answer to "what already-typed error can arrive here",
-  and the listing arms are the ones whose `try` opens on a guarded accessor the
-  way `get_folder_info`'s did. The fix shape is `except RemoteStoreError: raise`
-  ahead of the broad arm, matching `_errors`; the question is which arms need it
-  and what pins each.
-  **Why the class is worth closing rather than the instances.** BE-021's
-  never-leak invariant is about native errors escaping; this is the mirror —
-  a mapped error being re-mapped to something weaker — and no gate sees it,
-  because the result is still a `RemoteStoreError`. It sits beside BUG-276,
-  which owns the other half of error-class fidelity on this surface (a mapped
-  error reaching the caller with an empty message).
+  `classify_azure_error` has no `RemoteStoreError` pass-through, so a broad
+  arm routed through it downgrades an error already typed: a closed store's
+  `BackendUnavailable` becomes `RemoteStoreError`. Twelve such arms lack a
+  pass-through, seven sync and five async (dossier: derivation and correction).
+  Open decision: which arms can receive a typed error, and what pins each.
+  Detail: [dossier](backlog/bug-293-azure-arms-retype-errors.md)
 
 - [ ] **BUG-256 — `ping()` reports a healthy store on three backends whose container is gone**
   spec: PING-001 · effort: S · audience: user.api
-  PING-001's postconditions give `ping()` a `NotFound` for a "missing
-  bucket/container/path". Measured against an absent container:
-  | Backend | `check_health()` |
-  | --- | --- |
-  | S3, S3-Boto3, Azure (sync and async), Local | raises `NotFound` |
-  | S3-PyArrow, SQLBlob, **SQLQuery** | returns cleanly |
-  | ReadOnlyHttp | raises `BackendUnavailable` — wrong type, not a missing raise |
-
-  Both SQL backends inherit the same bare `SELECT 1` on
-  `_SQLAlchemyBaseBackend`: it verifies connectivity and never looks at the table
-  or the queried relation, so a dropped table and a discarded in-memory store both
-  read as healthy. `SQLQueryBackend` overrides nothing, which is why naming only
-  `SQLBlobBackend` understates it. The `S3PyArrowBackend` probe misses it for the
-  same reason one layer out. `ReadOnlyHttpBackend` is a fourth case of a different
-  kind and is listed so a fix does not stop at the three.
-  **Six documentation surfaces promise the behaviour** and are part of this item
-  rather than of BUG-246, which measured the divergence but did not create it:
-  `Backend.check_health` and `AsyncBackend.check_health` docstrings,
-  `Store.ping()`, `AsyncStore.ping()`, `docs-src/guides/health-check.md`, and
-  `docs-src/reference/migration.md` § v0.30.0 to v0.31.0, whose
-  absent-container section sends a caller to `ping()` as the replacement for the
-  `except` clause this release stops firing. The sixth was **five** until BUG-261
-  added that section; it is counted here rather than left to the grep because the
-  figure is the derivation ([principle 9](../CLAUDE.md#principles)) and a fix
-  scoped to a stale enumeration reaches five of six surfaces. That section already
-  carries this item's bound in published prose — a table naming all three
-  backends measured above, `SQLBlobBackend` and `SQLQueryBackend` on the bare
-  `SELECT 1` and `S3PyArrowBackend` on a `get_file_info(bucket)` whose result
-  `check_health` discards (`_s3_pyarrow.py:188-190`), which is the same shape
-  stated without this file's shorthand, plus a statement that "is my store
-  there?" is unanswered on `S3PyArrowBackend` today —
-  so closing this item edits that table rather than discovering it. It stops at
-  the three: `ReadOnlyHttpBackend`'s wrong-type raise is not published anywhere,
-  because no migration section names that backend.
-  The caller this hurts is the one doing the obvious thing — using `ping()` at
-  startup to check the store is really there — and getting "yes" for a store that
-  is not. It is also the operation an absent-container caller is *sent* to by the
-  error-model docs, which is how this was found.
-  **Pre-existing**, and out of BE-021's reach: a health probe is off the roster
-  that clause governs, which is why the divergence lives under PING-001 rather
-  than in BE-021's list. Discovered while measuring BUG-246's migration advice,
-  which is why that advice sends callers to `write()` instead.
+  PING-001 promises `NotFound` for a missing container; `S3PyArrowBackend`,
+  `SQLBlobBackend` and `SQLQueryBackend` return cleanly (the SQL pair only runs
+  `SELECT 1`) and `ReadOnlyHttpBackend` raises the wrong type. Docstrings, the
+  health-check guide and the migration guide's table promise the behaviour.
+  Open decision: what each probe must touch to see its container.
+  Detail: [dossier](backlog/bug-256-ping-healthy-absent-container.md)
 
 - [ ] **BUG-255 — A container deleted mid-listing truncates the listing silently on the two s3fs lanes**
   spec: BE-021 · effort: M · audience: user.api
-  `ListObjectsV2` answers an absent prefix with `200 KeyCount=0`, so the only 404
-  a listing can raise is the container's — which is why reading that 404 as "the
-  container is absent, so it holds nothing" is safe on the *first* page. It is not
-  safe on the second: by then the listing has already yielded items, so the
-  container demonstrably existed, and a 404 means it was deleted underneath the
-  scan. Measured with a stub serving a valid first page carrying a
-  `NextContinuationToken` and `NoSuchBucket` on the second:
-  | Backend | `list_files("", recursive=True)` |
-  | --- | --- |
-  | S3, S3-PyArrow | yields 0 items, then returns cleanly |
-  | S3-Boto3, Azure, Async Azure | raises `NotFound` after the first page — fixed by BUG-246 |
-
-  Measured for `list_files` on a page of keys; re-measured for all five listings
-  on both page shapes (keys-only and prefixes-only) once the bound moved onto the
-  page, which is the parametrisation
-  `TestTheAbsentBucketToleranceIsBoundedToTheFirstPage` and its two Azure twins
-  now carry.
-  The two s3fs lanes report a *complete* listing that is not complete — the other
-  three rows are the control, and are what the fix looks like. The caller most hurt
-  is the one doing list-then-delete or list-then-sync: it sees a short list, treats
-  the absent entries as absent, and deletes or fails to copy data that was there.
-  **Pre-existing on the two s3fs lanes**, which is what makes this an item rather
-  than a BUG-249 residue: they truncated this way before that change and still do.
-  **The two s3fs lanes are what this item is left holding.** BUG-246
-  and BUG-249 briefly put `S3Boto3Backend` and both Azure adapters onto this
-  truncation — the boto3 lane by replacing a leaked `ClientError` with a
-  swallowed 404, the Azure adapters by adding a swallow where the flat lane
-  previously raised — and then bounded the tolerance to the first page on all
-  three. The bound is keyed on a **page** having come back, which is the second
-  thing that PR got wrong and had to re-measure: keyed on a yielded *item*, as it
-  first shipped, every listing stayed blind on the page shapes its own filter
-  empties, so a folders-only first page still truncated `list_files` and a
-  keys-only one still truncated `list_folders`. **Four** of the five listings per
-  lane were blind — `list_files`, `list_files-recursive`, `list_folders` and
-  `glob`, measured by putting the item-keyed source back under the current tests
-  and counting failures (12, across the three lanes); `iter_children` yields both
-  kinds and so has no blind page shape, which is why it is the control. The Azure
-  HNS branches carry the bound too, and are executed: an ADLS Gen2 `List Path`
-  wire stub reaches all ten of them without Docker, which retired the claim that
-  only the Docker-gated fixture could. SQLBlob is not affected (one `SELECT`, no
-  pages).
-  **A correction worth keeping**, because it cost a round: that PR first recorded
-  the Azure rows as pre-existing, on the strength of a base-versus-head
-  measurement that was broken — the base run set `PYTHONPATH` to a worktree root,
-  and this package lives under `src/`, so the import silently fell back to the
-  editable install and measured *head* twice. Re-run with `PYTHONPATH` pointing
-  at `<worktree>/src` and the module's `__file__` printed, the base revision
-  raises. The lesson is the repo's own: a verification that can fail silently is
-  worse than none.
-  The fix shape is settled and already implemented on the other three lanes: a
-  first-page bound — tolerate the container 404 only while nothing has been
-  yielded, and let a later one propagate. `_flat_ns._ListingCursor` is the shared
-  piece; `S3Boto3Backend._listing_errors` is the worked example. What remains is
-  applying it to `_S3Base`'s s3fs-backed listings and pinning it per lane, which
-  closes the divergence rather than opening one. Take the bound from the worked
-  example rather than from this paragraph's first sentence: it is keyed on a page
-  having come back, not on an item having been yielded.
+  `S3Backend` and `S3PyArrowBackend` swallow a container 404 on any listing
+  page, so a container deleted mid-scan yields a truncated listing that reads
+  as complete: the list-then-delete hazard. The other lanes bound the tolerance
+  to the first page (BE-021 § Reach). Open decision: none on shape; port that
+  bound from `S3Boto3Backend._listing_errors`, keyed on a page, not an item.
+  Detail: [dossier](backlog/bug-255-s3fs-midlisting-truncation.md)
 
 - [ ] **BUG-257 — `GraphBackend` restarts the first-page bound at every folder of a recursive walk**
   spec: BE-021 · effort: M · audience: user.api
-  BE-021 § Reach requires a container 404 arriving after a listing has received a
-  page to propagate rather than end the iteration. `GraphBackend` keys that bound
-  per **HTTP request** — `_iter_child_items` in
-  `src/remote_store/aio/backends/_graph/backend.py` sets its `started` flag
-  inside one request — while `_walk_files` issues one request per folder, so
-  every subfolder listing starts the bound over at `False`.
-  Measured with `respx` against the real backend: `list_files("", recursive=True)`
-  where the root `/children` returns `[a.txt, sub/]` and `sub`'s `/children`
-  returns 404 **returns `["a.txt"]` cleanly** — a truncated listing that reads as
-  complete. Reproduced with both `itemNotFound` and `resourceNotFound` bodies,
-  which matters because listings run at item scope where `graph_error_for` maps
-  any 404 to `NotFound`, so a genuinely deleted drive produces this.
-  The control passes: page 1 followed by a 404 on the `@odata.nextLink` **does**
-  raise `NotFound`, so the single-listing bound is correct and only the walk is
-  not.
-  **Pre-existing, and surfaced by a spec edit rather than by a code change.**
-  BUG-246 wrote the first-page bound into § Reach; before that no clause decided
-  the mid-scan case and this was undecided behaviour rather than a breach.
-  BUG-248 had brought Graph to the clause's other rows in the same section, which
-  is why it appears on both sides of § 1's paragraph.
-  The fix shape is `S3Boto3Backend.list_files`, where one `_listing_errors`
-  cursor wraps the whole breadth-first walk so a 404 on any sub-prefix
-  propagates: hoist the flag out of `_iter_child_items` and thread it through
-  `_walk_files`. **The fix lands once**, unlike the Azure case: `GraphBackend` is
-  a single class and sync access goes through `AsyncBackendSyncAdapter`
-  ([ADR-0025](adrs/0025-async-to-sync-backend-adapter.md)), not a second copy of
-  the walk. Only the *cells* need a sync lane.
+  `GraphBackend` keys BE-021 § Reach's first-page bound per HTTP request, and
+  `_walk_files` issues one request per folder, so a recursive `list_files`
+  whose subfolder 404s returns what it has as a complete listing. The
+  single-listing bound is correct. Open decision: none on shape; hoist the
+  flag out of `_iter_child_items` and thread it through the walk.
+  Detail: [dossier](backlog/bug-257-graph-walk-first-page-bound.md)
 
 - [ ] **BUG-245 — `SQLBlobBackend(create_table=False)` leaks `NoSuchTableError` from its constructor**
   spec: BE-021, SQL-BLOB-012 · effort: S · audience: user.api
-  Reflection is unguarded: `sa.Table(name, meta, autoload_with=engine)` against an
-  absent table raises `sqlalchemy.exc.NoSuchTableError`, which reaches the caller
-  unmapped. Every other backend's constructor rejects bad configuration with
-  `ValueError` (`validate_azure_params`, the S3 bucket check), so a caller
-  wrapping construction in `except (RemoteStoreError, ValueError)` catches
-  every backend but this one — and the escaping type is a SQLAlchemy import the
-  caller may not have.
-  Reproduction: `SQLBlobBackend(engine=sa.create_engine("sqlite:///:memory:"),
-  table_name="nope", create_table=False)`.
-  BE-021's "backend-native exceptions never leak" is scoped to operations, so
-  this is a gap in the contract as much as in the code: decide whether
-  construction is in scope for the mapping rule, then map it. Note the behaviour
-  itself is right — refusing to bind to an absent table is a sound thing to do,
-  and is pinned by `tests/backends/sqlblob/test_absent_table.py`; only the error
-  type is wrong.
+  `SQLBlobBackend(create_table=False)` against an absent table leaks
+  `sqlalchemy.exc.NoSuchTableError` from reflection, where every other
+  constructor rejects bad configuration with `ValueError`. Refusing is right;
+  the type is wrong. Open decision: whether BE-021's mapping rule, scoped to
+  operations today, covers construction.
+  Detail: [dossier](backlog/bug-245-sqlblob-no-such-table.md)
 
 - [ ] **BUG-253 — `GraphBackend.write` answers a file-ancestor path differently by payload size**
   spec: BE-008, GR-019 · effort: S · audience: user.api
-  `write("blocker.txt/child.bin", …)` raises `InvalidPath` when the body takes
-  the small `PUT /content` path and `NotFound` when it takes the upload session,
-  for the identical path against the identical store — the answer depends on
-  whether the payload crosses `_SMALL_FILE_MAX_SIZE` (4 MiB), which is not
-  something a caller reasons about.
-  Cause: `_write_small` runs `_raise_if_file_ancestor(path)` before classifying
-  its `404` (ID-209/ID-211), and the large path calls `upload_session(...)`
-  directly with no such walk, so `_create_upload_session`'s `404` goes straight
-  to the classifier. `write`'s own docstring promises `InvalidPath` "if the path
-  … descends through a file ancestor" without qualifying by size, so the large
-  path contradicts it.
-  Predates BUG-248 — that change aligned the two halves on the absent-drive axis
-  and left this one — and was found by its round-3 panel while checking both
-  write halves. The fix is presumably to hoist the ancestor walk to `write`, or
-  to run it on the session-creation `404` as the small path does; measure which
-  before choosing, since the walk costs a round trip on a path that has already
-  failed.
+  `GraphBackend.write("blocker.txt/child.bin", …)` raises `InvalidPath` below
+  the 4 MiB small-upload threshold and `NotFound` above it: only `_write_small`
+  runs the file-ancestor walk before classifying its 404, and `write`'s
+  docstring promises `InvalidPath` unqualified. Open decision: hoist the walk
+  into `write`, or run it on the session-creation 404; measure first.
+  Detail: [dossier](backlog/bug-253-graph-write-ancestor-by-size.md)
 
 - [ ] **BK-345 — BE-021's absent-container rule has no registry-driven gate, so a new backend is silently exempt**
   spec: BE-021 · effort: M · audience: infra.test
-  The rule binds every backend that can delete and whose container can be
-  absent, and it is verified by six hand-written per-backend suites
-  (`tests/backends/{s3,azure,azure/aio,sqlblob,sftp,local,graph/aio}/`).
-  `tests/backends/conformance/` gained nothing, so a seventh such backend
-  inherits no cell and passes CI without ever meeting the clause.
-  This is not hypothetical. `GraphBackend` went unexamined through six review
-  rounds of the change that wrote the rule (BUG-243) and turned out to contradict
-  it — BUG-248, since closed. A registry-driven cell would have failed on the
-  first run, and would also have shown the contradiction's real width: BUG-248
-  was filed as reaching two operations and measured at eleven.
-  The repo already has the shape for this: [`sdd/TESTING.md`](TESTING.md)
-  Rule 13 § "Declaring an exemption" — a self-pruning exemption list where
-  silence is not consent. The work is a conformance cell parametrised over the
-  backend registry, plus an explicit exemption entry for the four backends BE-021
-  names as out of scope (`MemoryBackend` and `AsyncMemoryBackend`, whose
-  container is an in-process dict; `SQLQueryBackend` and `ReadOnlyHttpBackend`,
-  which do not declare `DELETE`).
-  **Depends on ID-244 for the mechanism.** The other dependency, BUG-248 for the
-  exemption list, is discharged: `GraphBackend` meets the clause on every
-  operation BE-021 decides, so it is a plain cell rather than an exemption, and
-  the two *backend operations* that keep Graph's drive-identity escalation
-  (`write`, `check_health`) are outside what the clause states — as are its two
-  non-operation callers, drive-id resolution and the copy/move monitor poller,
-  which a per-backend conformance cell does not reach at all. See
-  [ADR-0038](adrs/0038-absent-container-outranks-drive-identity.md).
-  An absent container is not a state most conformance fixtures can reach: the S3
-  and Azure lanes need a stub that 404s at container level (BUG-243 built those),
-  SQLBlob needs a dropped table, Local needs its root deleted, and Graph needs a
-  respx route. That is the same per-fixture arrangement hook ID-244 has to decide
-  where to bind, so this item consumes that decision rather than making its own.
-  **Graph's lane cannot be a cassette**, and not by preference: cassettes are
-  recorded from live Graph, which answers a nonexistent drive with
-  `itemNotFound` (GR-031's verification note), so the drive-identity code has
-  never been recorded — `rg -l resourceNotFound tests/backends/cassettes/`
-  returns 0 files against 53 Graph cassettes carrying a `404`. The `graph_replay`
-  fixture therefore cannot reach the absent-container state at all, and a
-  hand-written cassette would fabricate a response the tier has never produced.
-  This is the item that makes the section's promise stay true for backend seven,
-  which is why it sits here and not with the coverage work.
+  BE-021's absent-container rule is verified only by hand-written per-backend
+  suites; `tests/backends/conformance/` has no cell for it, so a new backend
+  that can delete passes CI without meeting it, as `GraphBackend` did until
+  BUG-248. Open decision: none of its own; it consumes ID-244's seeding-hook
+  decision (§ 2), on which it depends.
+  Detail: [dossier](backlog/bk-345-absent-container-conformance.md)
 
 - [ ] **BUG-280 — `LocalBackend`'s three listing methods leak a raw `PermissionError`**
   spec: BE-021 · effort: S · audience: user.api
-  BE-021 is the never-leak invariant this breaches
-  ([003-backend-adapter-contract.md](specs/003-backend-adapter-contract.md)),
-  and the spec already records BUG-249 — the S3 twin, described further down
-  this entry — against it.
-  Reproduced by constructing a `LocalBackend` on any root holding one file,
-  patching `pathlib.Path.iterdir` to raise
-  `PermissionError(13, "Permission denied")`, and calling each method:
-
-  | call | answer |
-  |---|---|
-  | `list_files` | raw `PermissionError` |
-  | `list_folders` | raw `PermissionError` |
-  | `iter_children` | raw `PermissionError` |
-  | `read_bytes` | mapped (never reaches `iterdir`) |
-  | `delete` | mapped (never reaches `iterdir`) |
-
-  A caller catching `RemoteStoreError` around a listing gets nothing, and the
-  exception carries no `path` or `backend`. `LocalBackend` maps this correctly
-  everywhere else — it catches bare `except PermissionError:` at 14 sites, 11
-  raising `PermissionDenied` outright — so this is three unguarded methods, not a
-  design position.
-  **Exactly the shape of [BUG-249](BACKLOG-DONE.md)**, which fixed the same three
-  method names on `S3Boto3Backend` leaking a raw `botocore.ClientError`, and of
-  `TestSFTPBug146ListingEioRaises`, which pins the SFTP twin. The listing methods
-  are the repeat offender because they are generators whose body runs outside the
-  caller's `try`, which is the thing worth fixing once across backends rather
-  than a third time in isolation.
-  **Found by BUG-275's closing measuring member** while checking that PR's
-  narrowed cross-backend claim. That claim is about errno symmetry and survives
-  this — both errnos leak identically — so it was correctly out of that PR's
-  scope; `BACKLOG-DONE.md`'s BUG-275 entry records the measurement and says
-  plainly that the two backends are not equivalent across the whole surface.
+  `LocalBackend.list_files`, `list_folders` and `iter_children` leak a raw
+  `PermissionError` from `iterdir`, breaching BE-021's never-leak invariant,
+  while every other `LocalBackend` path maps it. It is the generator shape
+  BUG-249 fixed on `S3Boto3Backend`. Open decision: fix the three here, or the
+  listing-generator pattern once across backends.
+  Detail: [dossier](backlog/bug-280-local-listing-permission-leak.md)
 
 - [ ] **BUG-292 — The file-ancestor gate fails open on every `SQLAlchemyError`, so it degrades to a no-op without a signal**
   spec: BE-008, SQL-BLOB-031 · effort: M · audience: user.api, library.maintainer
-  `_head_one` in `_SQLAlchemyBaseBackend._maybe_check_no_file_ancestor`
-  (`src/remote_store/backends/_sqlalchemy.py`) wraps its probe in
-  `except (sa.exc.SQLAlchemyError, OSError): return False`. `False` means "no
-  ancestor here", so **any** database error the probe meets is read as permission
-  to proceed. The gate does not weaken, it disappears, and nothing says so — no
-  log line, no counter, no exception.
-  The fail-open is deliberate and documented: a transient probe error should not
-  roll back the caller's `move`/`copy` nor turn a best-effort gate into a hard
-  failure (`_flat_ns.py` § "Fail-open `head_one`"). What is undefended is the
-  distance between *transient* and *any*.
-  **Measured, not hypothesised.** BUG-281's second review round produced a live
-  instance: under a `mode=memory&cache=shared` URL on a pooled engine, the nested
-  `connect()` the walk opens inside `move`'s open write transaction read a table
-  the outer transaction held a write lock on and raised
-  `sqlite3.OperationalError: database table is locked: remote_store_objects`.
-  `_head_one` swallowed it and `move("a.txt", "folder/b.txt", overwrite=True)`
-  **succeeded** where it must raise `InvalidPath`, with `folder` a regular file.
-  That specific cause is closed — the pool no longer moves — but the cause was
-  incidental. A schema change, a pool exhaustion, a dropped connection or a
-  permission error would each produce the same silence, on any backend sharing
-  this walk.
-  **A second cause reaches the same silence and no error-handling change fixes
-  it.** BUG-281's third review round measured `move("a.txt", "folder/b.txt",
-  overwrite=True)` returning instead of raising `InvalidPath` on
-  `sqlite:///file::memory:?uri=true` — an anonymous in-memory database on
-  `QueuePool`, where the walk's nested checkout is a distinct connection onto a
-  distinct, *empty* database (SQL-BLOB-072). Nothing raises there: `_head_one`
-  answers `False` correctly, about the wrong database. The walk is the one path
-  that holds two checkouts at once, which is why it is where that row bites
-  first. Untouched by BUG-281 and out of its scope, but it bounds this item's
-  fix shapes: all three above narrow or report *errors*, and none of them would
-  make this instance raise.
-  Fix shape is open and is a contract decision rather than a patch, which is why
-  this is filed rather than fixed in BUG-281's PR. At least three are available
-  and they differ in what they promise: narrow the caught set so a lock error
-  propagates while a transient drop still fails open; keep the fail-open and emit
-  a `logging.warning` so the degradation is observable; or give the gate a strict
-  mode where a probe error raises. The second is the smallest and the first is
-  the one that matches what a reader takes "reject writes under a file ancestor"
-  to mean. Whichever lands, BE-008's promise needs a sentence on what the gate
-  does when it cannot see.
-  **Scope is the walk, not the SQL backend: five `_head_one` closures share the
-  shape**, one per flat-namespace implementation, each catching its own driver's
-  family plus `OSError` (`rg -n 'def _head_one' -A 22 src/remote_store`):
-  `_s3_base.py:161` and `_s3_boto3.py:1235` catch
-  `(ClientError, BotoCoreError, OSError)`, `_azure.py:324` and
-  `aio/_azure.py:185` catch `(AzureError, OSError)`, and `_sqlalchemy.py:421`
-  catches `(SQLAlchemyError, OSError)`. `_flat_ns.py` § "Fail-open `head_one`"
-  is the cross-backend contract all five cite, so it is the artifact the
-  decision lands in; a fix scoped to one closure leaves four saying otherwise.
-  The two Azure sites are the least exposed and show the available shape: they
-  take `ResourceNotFoundError` in its own arm before the broad one, so a genuine
-  404 is distinguishable from a failure. The S3 pair do not — a 403 arrives as a
-  `ClientError` like a 404 and is read as "no ancestor".
+  All five flat-namespace `_head_one` probes read any driver error (and
+  `OSError`) as "no ancestor", so the file-ancestor gate vanishes silently;
+  measured letting `move` succeed under a file ancestor. An anonymous in-memory
+  SQLite on `QueuePool` defeats it with no error at all. Open decision: narrow
+  the catch, warn, or add a strict mode; BE-008 must say which.
+  Detail: [dossier](backlog/bug-292-ancestor-gate-fails-open.md)
 
 ---
 
 <a id="correct-and-proven"></a>
 ## 2. Answers are correct, and the contract is proven
+<!-- backlog: unconverted -->
 
 **Promise:** the same call returns the same right result on every backend, and
 no clause of the contract ships unexercised.
@@ -1214,6 +533,7 @@ resting on it rather than a pending one.
 
 <a id="users-succeed-unaided"></a>
 ## 3. Users succeed without asking us
+<!-- backlog: unconverted -->
 
 **Promise:** a user gets set up, picks the right backend, writes their own, or
 copies an example, without opening an issue.
@@ -1458,6 +778,7 @@ argument that no such rule remains rather than the absence of a filed item.
 
 <a id="no-workarounds"></a>
 ## 4. Users stop working around us
+<!-- backlog: unconverted -->
 
 **Promise:** the library does the thing, instead of the user hand-rolling it
 or paying for our shortcut.
@@ -1642,6 +963,7 @@ answer it returned instead of failing.
 
 <a id="no-release-surprises"></a>
 ## 5. A release cannot ship a surprise
+<!-- backlog: unconverted -->
 
 **Promise:** nothing reaches a user that we did not test, publish, watch, or
 give them a way to absorb.
@@ -2129,6 +1451,7 @@ diff two files at release time.
 
 <a id="repo-does-not-mislead"></a>
 ## 6. The repo does not mislead the next person
+<!-- backlog: unconverted -->
 
 **Promise:** the artifacts maintainers coordinate through — this file, the
 ripple-check, the revisit pins, the generated inventories, the unreleased
@@ -2228,8 +1551,9 @@ the commit that writes it lands, so cite the generator instead.
     every ID retired by either route appears exactly once across both files.
     That is what keeps the ID space safe by construction rather than by whoever
     last remembered to add an entry.
-    **ADR-0040 adds four shape rules to this pass**: R1 (attribute vocabulary)
-    shipped under BK-365; R2–R4 land with its § 1 pilot.
+    **ADR-0040's four shape rules are in this pass**, all shipped under
+    BK-365: R1 (attribute vocabulary), R2 (item cap) and R3 (section shape)
+    on sections without the `unconverted` marker, R4 (dossier link) on all.
   - **Inbound citations resolve** (was ID-246, absorbed here). Specs cite
     backlog coordinates as provenance, and `check_no_tracker_refs.py` actively
     *pushes* IDs here — it fails a docstring or `docs-src/` page and tells the
@@ -2745,8 +2069,9 @@ the commit that writes it lands, so cite the generator instead.
   spec: — · effort: M · audience: contributor.process
   **In progress: [RFC-0016](rfcs/rfc-0016-backlog-as-index.md) is accepted as
   [ADR-0040](adrs/0040-backlog-as-index.md)** for the `BACKLOG.md` half — an
-  index with per-item dossiers. Shipped: the rules header and R1; what remains
-  is the exit criteria below.
+  index with per-item dossiers. Shipped: the rules header, R1–R4, and the § 1
+  pilot (16 items to `sdd/backlog/`, per `sdd/rfcs/rfc-0016-measure.py`); what
+  remains is the exit criteria below.
   **`sdd/BACKLOG.md` is 20,097 words at `6cec225`.** That is the file a maintainer
   reads to decide what to work on, and it is now roughly eighty pages of prose. Two
   independent multipliers got it there over seven weeks (2026-07-18 → 2026-09-05):
@@ -2777,8 +2102,8 @@ the commit that writes it lands, so cite the generator instead.
   [research](research/research-appropriate-level-of-detail.md) § 9.2 permits,
   and the caps are a recorded departure from its § 9.1. The question stays open
   for `BACKLOG-DONE.md`.
-  **Exit criteria:** the § 1 pilot with R2–R4 (R2/R3 scoped to migrated
-  sections), the remaining sections converted, and a recorded decision on the
+  **Exit criteria:** §§ 2–6 converted (each drops its `unconverted` marker, so
+  R2/R3 then gate it), and a recorded decision on the
   `BACKLOG-DONE.md` half with any mechanism's bound stated per
   [`DRIFT-RULES.md`](DRIFT-RULES.md#rules).
 
@@ -2893,6 +2218,14 @@ the commit that writes it lands, so cite the generator instead.
   by whichever mechanism is chosen and that choice recorded here; or the gap is
   accepted with its reason, and `gen_backlogid.py`'s stated bound is the durable
   record of it.
+
+- [ ] **BUG-295 — The review triage calls a fixed finding `refuted` when its fix reply contains "stays"**
+  spec: — · effort: S · audience: contributor.tooling
+  `rfc-0015-findings.triage`, which `ship_report.py` imports, tries the
+  body-wide `_REFUTED` (`stays`, `declin`, `refut`) before `_MUST_FIX`, so a
+  reply opening "Fixed in <sha>" that quotes "stays" is `refuted`: 4 of PR
+  #1029's 7, re-driven on its replies. BK-384 reads these counts. Open
+  decision: let an opening "Fixed in" win, or triage the first sentence only.
 
 - [ ] **BK-384 — RFC-0015 is built but unmeasured: three deliveries decide whether it graduates**
   spec: — · effort: M · audience: contributor.process
