@@ -41,7 +41,8 @@ plainly that the two backends are not equivalent across the whole surface.
 
 ## Moved from the § 1 preamble
 
-Verbatim from the section preamble the pilot removed; "this section" is § 1.
+Verbatim from the section preamble the pilot removed: one clause of its
+`Closes when` list, which read "§ 1 closes when … [this clause]".
 
 a listing does not leak its driver's exception on the
 one backend where it still does (BUG-280)

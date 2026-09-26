@@ -23,8 +23,8 @@ the migration guide is ``docs-src/reference/migration.md`` and needs no row of
 its own. ``examples/`` is included because it is a surface users read.
 ``sdd/backlog/*.md`` is included because ADR-0040 moves item bodies there
 verbatim: without it, "``sdd/BACKLOG*.md`` in full" would shrink by every body
-the migration moves. Those files pass here because the text passed in
-``BACKLOG.md``.
+the migration moves. They are scanned like any other file on the surface,
+including what a dossier adds beyond the moved body (dated corrections).
 
 **What is off the surface, stated as the complement rather than a sample**,
 because a partial exclusion list reads as a complete one. Everything not matched

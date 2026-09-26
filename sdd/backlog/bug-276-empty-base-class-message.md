@@ -89,6 +89,10 @@ placement.
 ## Moved from the § 1 preamble
 
 Verbatim from the section preamble the pilot removed; "this section" is § 1.
+In the first chunk "the clause" is the Promise's third clause (the failure says
+which failure it was). In the third, "That" is BUG-265's fix of SFTP's connect
+path (a refused port and a DNS failure now raise `BackendUnavailable`; its
+`BACKLOG-DONE.md` entry), the sentence the removed preamble put before it.
 
 What is left of the clause is the
 **base class**, at five blank-reachable arms in four files — including two in the

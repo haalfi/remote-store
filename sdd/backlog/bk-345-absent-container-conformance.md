@@ -48,7 +48,9 @@ which is why it sits here and not with the coverage work.
 
 ## Moved from the § 1 preamble
 
-Verbatim from the section preamble the pilot removed; "this section" is § 1.
+Verbatim from the section preamble the pilot removed: one clause of its
+`Closes when` list, which read "§ 1 closes when … [this clause]". BE-004 and
+BE-005 appear only here; the body above scopes the item to BE-021.
 
 a newly
 registered backend cannot pass CI without meeting BE-004, BE-005 and BE-021

@@ -49,12 +49,14 @@ error reaching the caller with an empty message).
 
 The count of sixteen above includes four arms that already re-raise
 `RemoteStoreError` ahead of the broad arm, so they cannot downgrade:
-`aio/backends/_azure.py`'s `read`, and the inner arms of its `list_files`,
-`list_folders` and `iter_children`. Their pass-through arms date from
-`165bd00` (BK-356, 2026-08-29), before this item was filed, so the count was
-high when written. **Twelve** arms lack one: the seven sync arms listed above,
-and the async `delete`, `delete_folder` and the outer arms of `list_files`,
-`list_folders` and `iter_children`. Derivation: the same AST pass, also
+`aio/backends/_azure.py`'s `read`, and the outer arms of its `list_files`,
+`list_folders` and `iter_children` (the `try` each listing opens with).
+Their pass-through arms date from `165bd00` (BK-356, 2026-08-29), before
+this item was filed, so the count was high when written. **Twelve** arms lack
+one: the seven sync arms listed above, and the async `delete`,
+`delete_folder` and the inner arms of `list_files`, `list_folders` and
+`iter_children` (the `try` around the HNS `get_paths` loop, under
+`if self._hns:  # pragma: no cover`). Derivation: the same AST pass, also
 printing each `try`'s sibling handlers; an arm whose `try` catches
 `RemoteStoreError` first is excluded. Found by the ADR-0040 § 1 pilot, which
 re-derived the figure before writing the index diagnosis.

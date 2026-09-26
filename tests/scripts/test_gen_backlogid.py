@@ -577,6 +577,15 @@ class TestShape:
         assert self._run(tmp_path, monkeypatch, _gated(three + " Fourth.", _item("BK-177", 1))) == 1
         assert "1. A: Promise has 4 sentences (cap 3)" in capsys.readouterr().out
 
+    def test_stated_bound_a_lowercase_or_digit_opener_is_not_counted(self, tmp_path, monkeypatch):
+        """R3's fail-open direction, pinned so the docstring cannot over-claim.
+
+        Four sentences, three of them opening with a lowercase identifier or a
+        digit, count as one. Widening the splitter to catch them deletes this test.
+        """
+        four = "**Promise:** one. s3fs lanes truncate. paramiko leaks. 404s propagate."
+        assert self._run(tmp_path, monkeypatch, _gated(four, _item("BK-177", 1))) == 0
+
     def test_a_preamble_that_is_not_a_promise_fails(self, tmp_path, monkeypatch, capsys):
         assert self._run(tmp_path, monkeypatch, _gated("Some notes.", _item("BK-177", 1))) == 1
         assert "1. A: preamble does not open with **Promise:**" in capsys.readouterr().out

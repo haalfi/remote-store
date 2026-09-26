@@ -54,8 +54,10 @@ Check mode (--check):
       ``Detail:`` line.
     * R3: the preamble is one ``**Promise:**`` paragraph of at most 3
       sentences. So ``Closes when`` fails it. Sentences are split on ``.!?``
-      before whitespace and a capital-ish opener; an abbreviation followed by
-      a capital over-counts, which fails loud rather than open.
+      before whitespace and a capital-ish opener. **Bound, both directions:**
+      an abbreviation before a capital over-counts (fails loud); a sentence
+      opening with a lowercase identifier or a digit (``s3fs``, ``404s``) is
+      not counted (fails open). Pinned by ``TestShape``'s stated-bound test.
     * R4: a ``Detail:`` line has the shape
       ``Detail: [dossier](backlog/<id>-<slug>.md)``, resolves from ``sdd/``,
       and the dossier's first ``# `` heading opens with the item's ID.
@@ -142,7 +144,8 @@ _DETAIL_RE = re.compile(r"^  Detail: \[dossier\]\((backlog/[^)\s]+\.md)\)$")
 _DOSSIER_ID_RE = re.compile(r"^# ([A-Z]+-\d+[a-z]*) —")
 _ITEM_CAP, _DIAGNOSIS_CAP, _PROMISE_CAP = 8, 5, 3
 # A sentence ends at . ! or ? (optionally closed by a backtick, bold or bracket)
-# followed by whitespace and a capital-ish opener; "e.g. this" does not split.
+# followed by whitespace and a capital-ish opener; "e.g. this" does not split,
+# and neither does a lowercase or digit opener (the docstring's fail-open bound).
 _SENTENCE_END_RE = re.compile(r"[.!?][`*)\"']*\s+(?=[A-Z`*(\[\"])")
 
 
