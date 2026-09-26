@@ -64,8 +64,7 @@ dossier is corrected in the same commit. Agreement is review-enforced.
 
 **Completing work** (same commit as the change):
 
-- Done → delete here; add to `BACKLOG-DONE.md` as `[x]`, linking its dossier
-  if it has one.
+- Done → delete here; add to `BACKLOG-DONE.md` as `[x]`.
 - Partly done → ship the done part as `[x]` under its ID; give the rest a new ID
   here; link both.
 - Absorbed → mark the host's sub-bullet `(was PREFIX-NNN, absorbed here)`, in
@@ -73,7 +72,8 @@ dossier is corrected in the same commit. Agreement is review-enforced.
 - Decided against → delete here; add a § Decided against entry carrying the
   diagnosis, not only the verdict.
 
-Every entry takes the header shape `- [x] **PREFIX-NNN — Title**` (em dash,
+Every entry, whatever the outcome, links the item's dossier if it has one; the
+dossier stays where it is. Every entry takes the header shape `- [x] **PREFIX-NNN — Title**` (em dash,
 `[x]`, ID inside `**`), because
 [`gen_backlogid.py`](../scripts/gen_backlogid.py) counts headers only and a
 prose line frees the ID. After absorbing or deciding against, sweep
@@ -97,8 +97,9 @@ past-tense narration, never edit an Accepted ADR. No trace is owed
 to `BACKLOG-DONE.md`.
 
 **What is gated:** the rows of [`GATE-INVENTORY.md`](GATE-INVENTORY.md) whose
-subject names `sdd/BACKLOG*.md`. The admission test, granularity and section
-membership are review-enforced.
+subject names `sdd/BACKLOG*.md`. The admission test, granularity, section
+membership and the item scope cap outside migrated sections (every section,
+until R2 lands) are review-enforced.
 
 ---
 
@@ -2744,8 +2745,8 @@ the commit that writes it lands, so cite the generator instead.
   spec: — · effort: M · audience: contributor.process
   **In progress: [RFC-0016](rfcs/rfc-0016-backlog-as-index.md) is accepted as
   [ADR-0040](adrs/0040-backlog-as-index.md)** for the `BACKLOG.md` half — an
-  index with per-item dossiers. Shipped: the rules header and R1. Open: the § 1
-  pilot with R2–R4, then the other sections; `BACKLOG-DONE.md` stays open here.
+  index with per-item dossiers. Shipped: the rules header and R1; what remains
+  is the exit criteria below.
   **`sdd/BACKLOG.md` is 20,097 words at `6cec225`.** That is the file a maintainer
   reads to decide what to work on, and it is now roughly eighty pages of prose. Two
   independent multipliers got it there over seven weeks (2026-07-18 → 2026-09-05):
@@ -2770,16 +2771,15 @@ the commit that writes it lands, so cite the generator instead.
   ([`CONTRIBUTING.md` § Release](../CONTRIBUTING.md#release)) renames
   `## Unreleased` to `## vX.Y.Z` without condensing, so nothing shortens an entry
   after it is written.
-  **The question to answer before any rule is written:** is a 290-word median a
-  defect, or the correct price of the derivations
-  [principle 9](../CLAUDE.md#principles) requires? The research record
-  ([research](research/research-appropriate-level-of-detail.md) § 9.2) supplies
-  the test that would decide it — rationale a reader can reconstruct from what
-  survives may be cut, rationale carrying a fact from elsewhere may not — and its
-  § 4 supplies the reason a word budget is the wrong instrument. Run that test
-  against a sample of entries and report before proposing anything.
-  **Exit criteria:** a recorded decision on whether entry length is a defect;
-  if it is, a mechanism named with its bound stated per
+  **Answered for `BACKLOG.md` by ADR-0040:** whether a 290-word median is a
+  defect or the price of [principle 9](../CLAUDE.md#principles)'s derivations.
+  Length moves to a dossier rather than being cut, which is what
+  [research](research/research-appropriate-level-of-detail.md) § 9.2 permits,
+  and the caps are a recorded departure from its § 9.1. The question stays open
+  for `BACKLOG-DONE.md`.
+  **Exit criteria:** the § 1 pilot with R2–R4 (R2/R3 scoped to migrated
+  sections), the remaining sections converted, and a recorded decision on the
+  `BACKLOG-DONE.md` half with any mechanism's bound stated per
   [`DRIFT-RULES.md`](DRIFT-RULES.md#rules).
 
 - [ ] **BK-366 — Bug share of shipped work rose 3% → 35% across five releases, undiagnosed**

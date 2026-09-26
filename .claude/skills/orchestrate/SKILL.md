@@ -410,7 +410,7 @@ orchestrator fixes directly.
    BACKLOG-DONE.md. Partially done → split: done part to BACKLOG-DONE.md as
    `[x]`, new ID in BACKLOG.md for remainder. Decided against → delete and
    record an entry, with its diagnosis, under BACKLOG-DONE.md § Decided
-   against. A dossier, if the item has one, stays put; the entry links it. Authoritative:
+   against. Every entry links the item's dossier, if it has one. Authoritative:
    [`sdd/BACKLOG.md` § How this file works](../../../sdd/BACKLOG.md#how-this-file-works).
 4. **Validate**: Run `hatch run all`. Fix failures (max 2 attempts — see Rules).
 5. Stage all changes, commit with backlog ID prefix.

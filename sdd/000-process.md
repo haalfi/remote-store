@@ -123,13 +123,13 @@ everything that left it, in three classes: completed work, IDs **absorbed** into
 a surviving item whose work is still open, and items **decided against**. Only
 the first is done — read the section an entry sits under.
 
-`BACKLOG.md` is becoming an index: a converted item states its diagnosis in a
-few lines, and its detail (evidence, reproduction, fix options) moves to a
-per-item dossier under `sdd/backlog/`. The migration is in progress: until an
-item is converted, its detail stays in its body. It is the single source of truth for ID prefixes, status
-conventions, completion workflow, item shape and section structure; see its
-"How this file works" header. The rationale is
-[ADR-0040](adrs/0040-backlog-as-index.md).
+`BACKLOG.md` is an index: an item states its diagnosis in a few lines, and
+detail that does not fit (evidence, reproduction, fix options) goes in a
+per-item dossier under `sdd/backlog/`. It is the single source of truth for ID
+prefixes, status conventions, completion workflow, item shape, section
+structure, and where an item's detail lives while the file is being converted;
+see its [How this file works](BACKLOG.md#how-this-file-works) header. The
+rationale is [ADR-0040](adrs/0040-backlog-as-index.md).
 
 <a id="feature-type-definition-of-done"></a>
 ### Feature-type Definition of Done
