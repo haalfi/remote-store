@@ -136,14 +136,14 @@ phases:
           marker's state; it defers to the marker in so many words.
         outcome: ok
 review:
-  # Derived by `hatch run ship-report 1032 --trace-block-only` at head f338427.
+  # Derived by `hatch run ship-report 1032 --trace-block-only` at head 6ffbd53.
   # Do not hand-edit, except a newly required field per sdd/traces/_schema.yml
   # section review: RFC-0015 D4 makes this script the only producer.
   derivation: "hatch run ship-report 1032 --trace-block-only"
   pr: 1032
-  review_rounds: 4
-  submissions: 3
-  findings: 8
+  review_rounds: 6
+  submissions: 4
+  findings: 10
   by_round:
     - round: 1
       findings: 4
@@ -160,13 +160,18 @@ review:
       origin: {pre-existing: 1}
       triage: {refuted: 1}
       duration_hours: 0.0
+    - round: 4
+      findings: 2
+      origin: {loop-introduced: 1, unclassifiable-file: 1}
+      triage: {must-fix: 2}
+      duration_hours: 0.3
   by_file:
     - path: "sdd/BACKLOG.md"
-      findings: 3
+      findings: 4
+    - path: "scripts/check_no_retrospective.py"
+      findings: 2
     - path: "sdd/backlog/bug-293-azure-arms-retype-errors.md"
       findings: 2
-    - path: "scripts/check_no_retrospective.py"
-      findings: 1
     - path: "scripts/gen_backlogid.py"
       findings: 1
     - path: "sdd/backlog/bug-276-empty-base-class-message.md"
@@ -198,5 +203,9 @@ review:
     - sha: "8532435"
       subject: "fix: address PR #1032 review"
     - sha: "f338427"
+      subject: "fix: address PR #1032 review"
+    - sha: "1bb3ebe"
+      subject: "BK-365: Refresh PR #1032's review block in its trace"
+    - sha: "6ffbd53"
       subject: "fix: address PR #1032 review"
   ci: {verdict: GREEN, failed: 0, pending: 0}
