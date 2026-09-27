@@ -60,7 +60,13 @@ Effort `L` reflects the parent scope; each individual guide is M-sized.
 
 ## Re-measured, 2026-09-27
 
-None of the seven guides exists. `rg --files docs-src/guides` lists none of
+None of the seven guides ships as its own page or sidebar, though part of
+guide 4's scope does ship elsewhere: SFTP stall handling is in
+`guides/backends/sftp.md` § "Bounding a stalled transfer" and
+`guides/troubleshooting.md` § "SFTP transfer stalls", so guide 4 starts from that material rather than duplicating it; keepalive and
+NAT-rebind staleness have no heading there
+(`rg -n -i "^#+ .*(timeout|hang|reliab|keepalive|stall)"` over both pages).
+`rg --files docs-src/guides` lists none of
 the six standalone target paths in the research doc's Tier-1 table (lines
 100-105: `backends/s3-compatible.md`, `large-object-tuning.md`,
 `local-dev-emulators.md`, `backends/sftp-reliability.md`,

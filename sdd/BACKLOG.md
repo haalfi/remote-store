@@ -397,10 +397,10 @@ copies an example, without opening an issue.
 - [ ] **ID-199 — Backend setup & configuration guides expansion**
   spec: — · effort: L · audience: user.site, library.maintainer
   Backend setup pain mined from repo signal and a public survey maps to seven
-  guides; none exists (the six standalone paths in research § 3 are absent
-  from `docs-src/guides/`, and `sql-blob.md` has no live-file or backup note).
-  Open decision: the Phase 3 access budget (research § 8 Q5); the guides it
-  does not gate are greenlit and take their own IDs when picked up (dossier).
+  guides; none ships as a page or sidebar (research § 3's six paths are
+  absent, `sql-blob.md` has no backup note), though guide 4's SFTP stall
+  material now sits in `sftp.md` and troubleshooting. Open decision: the
+  Phase 3 budget (research § 8 Q5); ungated guides are greenlit (dossier).
   Detail: [dossier](backlog/id-199-backend-setup-guides.md)
 
 - [ ] **ID-125 — Update medallion showcase to Dagster v2 resource pattern**

@@ -33,5 +33,11 @@ The asymmetry holds.
 finds the page's one residue bullet at line 112, for `download` only, while `upload`
 calls `store.write(...)` at `transfer.py:69` and `transfer` calls
 `dst_store.write(...)` at `:149`. No residue sentence for either helper exists
-on the page; the only remote-residue text in `docs-src/` is BK-360's SFTP
-material in `guides/backends/sftp.md`. Found by the ADR-0040 § 3 conversion.
+on the page. BK-360's remote-residue text, in `guides/backends/sftp.md` and
+`guides/troubleshooting.md` (lines 202-211), is SFTP-scoped and names neither
+helper: `rg -n "upload|transfer\(|ext\.transfer"` over those two pages finds
+only a store named `uploads` in a registry example. One more remote-residue
+sentence is not BK-360's: `troubleshooting.md:288`, § "DatasetIncomplete error", where a
+missing `_SUCCESS` marker means a partial dataset write. No search here was
+exhaustive over `docs-src/`, so whoever states the rule reconciles with these
+three sites and searches again. Found by the ADR-0040 § 3 conversion.

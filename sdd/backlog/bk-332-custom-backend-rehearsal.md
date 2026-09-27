@@ -21,8 +21,8 @@ that rehearsal has the best findings-per-unit-noise rests on that single run.
 ## Re-measured, 2026-09-27
 
 Still n = 1. `rg -n -i rehearsal sdd/traces sdd/BACKLOG-DONE.md` finds no
-recorded run; its one hit is the ADR-0040 § 3 conversion's own trace, which
-names the rehearsal's placement. The PR #932 run's record is
+recorded run; its only hits are in the ADR-0040 § 3 conversion's own trace,
+which names the rehearsal's placement and this search. The PR #932 run's record is
 `sdd/traces/bk-320-custom-backend-guide-refresh.yml`, and BK-324, one of its
 two findings, is done in `BACKLOG-DONE.md`. Found by the ADR-0040 § 3
 conversion.

@@ -102,15 +102,32 @@ phases:
           ungated surface remains. Recorded as "## Re-measured" in the dossier.
         outcome: ok
       - file: docs-src/guides/
-        section: "file list; backends/sql-blob.md"
+        section: "file list; backends/sql-blob.md; backends/sftp.md and troubleshooting.md headings"
         read_type: verify
         extract: >-
           ID-199: `rg --files docs-src/guides` lists none of the six
           standalone paths in the research Tier-1 table, and sql-blob.md has
-          no live-file or backup note. BK-332: `rg -n -i rehearsal sdd/traces
-          sdd/BACKLOG-DONE.md` finds no later run. Both recorded as
-          "## Re-measured" in their dossiers (review round 1 asked for the
-          derivations).
+          no live-file or backup note. Part of guide 4's scope (SFTP stalls)
+          already ships in sftp.md and troubleshooting.md, which review round
+          2 caught: a path test alone read as "none of it exists". Recorded as
+          "## Re-measured" in the dossier.
+        outcome: ok
+      - file: docs-src/guides/transfer-operations.md
+        section: "Error Handling (residue bullet, line 112); also ext/transfer.py"
+        read_type: verify
+        extract: >-
+          BK-364: one residue bullet, for `download` only; `upload` and
+          `transfer` call `store.write` / `dst_store.write` (transfer.py:69,
+          149). BK-360's SFTP residue text in sftp.md and troubleshooting.md
+          names neither helper. Recorded as "## Re-measured" in the dossier.
+        outcome: ok
+      - file: sdd/traces/bk-320-custom-backend-guide-refresh.yml
+        section: "(record of the PR #932 walkthrough)"
+        read_type: verify
+        extract: >-
+          BK-332: the one recorded rehearsal run; `rg -n -i rehearsal
+          sdd/traces sdd/BACKLOG-DONE.md` finds no later one (its hits are
+          this trace's own). Recorded as "## Re-measured" in the dossier.
         outcome: ok
   - id: verify
     name: Verify
