@@ -96,7 +96,7 @@ past-tense narration, never edit an Accepted ADR. No trace is owed
 
 | Prefix | Meaning |
 |--------|---------|
-| `BL-NNN` | Release blocker — must resolve before next PyPI publish. Monotonic, not reset per release. |
+| `BL-NNN` | Release blocker — must resolve before next PyPI publish; only for a defect whose shipping costs users more than delaying the release (a minor bug is a `BUG-` in its section). Monotonic, not reset per release. |
 | `BK-NNN` | Committed backlog work, queued behind blockers. |
 | `BUG-NNN` | Confirmed defect with reproduction steps. |
 | `ID-NNN` | Evaluated enough to earn a section, not committed to; the open decision is named in the body. |
@@ -115,7 +115,8 @@ an index entry and its dossier are review-enforced.
 
 ## Release Blockers
 
-**Promise:** nothing ships to PyPI until this section is empty.
+**Promise:** nothing ships to PyPI while an item here is open; a defect is filed
+here only when shipping it would cost users more than delaying the release.
 
 ---
 
