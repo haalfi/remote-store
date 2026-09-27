@@ -33,10 +33,12 @@ opt-in only, so there is no contract risk. Includes refreshing `§ 4` /
 ## Correction, 2026-09-27
 
 The backend list above omits `S3Boto3Backend`, and the file list names `_s3.py`
-where the shared S3 closure lives. `rg -n '_check_no_file_ancestor\(' src` finds
-the pre-check's `_head_one` closures in `_s3_base.py:165` (shared by
-`S3Backend` and `S3PyArrowBackend`), `_s3_boto3.py:1239`, `_azure.py:328` and
-`_sqlalchemy.py:440`, and the async sibling in `aio/backends/_azure.py:167`.
-`rg -n 'TTLCache|lru_cache|memo' src/remote_store/backends/_flat_ns.py` finds
-nothing, so neither optimisation has shipped. Found by the ADR-0040 § 4
+where the shared S3 closure lives. `rg -n 'def _head_one' src` finds the
+pre-check's closures at `_s3_base.py:153` (shared by `S3Backend` and
+`S3PyArrowBackend`), `_s3_boto3.py:1230`, `_azure.py:314`, `_sqlalchemy.py:423`
+and `aio/backends/_azure.py:177`. The sync four feed `_check_no_file_ancestor`;
+the async one feeds a separate walk, `_acheck_no_file_ancestor`
+(`_flat_ns.py:139`), so a memoisation placed in the sync walk alone misses
+async Azure. `rg -n 'TTLCache|lru_cache|memo' src/remote_store/backends/_flat_ns.py`
+finds nothing, so neither optimisation has shipped. Found by the ADR-0040 § 4
 conversion.

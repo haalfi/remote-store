@@ -76,18 +76,22 @@ Related: ID-136 (non-lazy **write** is by-design; this item is about
 
 ## Correction, 2026-09-27
 
-Two claims above no longer hold; the rest re-read true.
+Three statements above are corrected here.
 
-- "no other backend varies capabilities at runtime" is false, and not by
-  another backend: `SQLBlobBackend` itself computes `self._capabilities` per
-  instance in `__init__` (`_sqlalchemy.py:355-362`), dropping `USER_METADATA`
-  and `WRITE_RESULT_NATIVE` by which optional columns the table has, and its
-  `capabilities` property returns that (`:371-372`). A dialect-conditional
-  `LAZY_READ` extends an existing per-instance pattern rather than introducing
-  one. Derived with `rg -n '_capabilities' src/remote_store/backends/_sqlalchemy.py`
-  and `rg -n -A3 'def capabilities' src`, where every other concrete backend
-  returns its class-level `CAPABILITIES` and the two bridge adapters derive
-  theirs from the backend they wrap.
+- "Capability becomes **per-instance** … new pattern in this codebase" and
+  "the first such declaration in the repo that is not a flat per-backend fact"
+  are false because of this backend itself: `SQLBlobBackend` computes
+  `self._capabilities` per instance in `__init__` (`_sqlalchemy.py:355-362`),
+  dropping `USER_METADATA` and `WRITE_RESULT_NATIVE` by which optional columns
+  the table has, and its `capabilities` property returns that (`:371-372`);
+  `FEATURES.md:272` already publishes `sql-blob`'s `USER_METADATA` as
+  requiring a column. A dialect-conditional `LAZY_READ` extends that pattern
+  rather than introducing one. "No other backend varies capabilities at
+  runtime" still holds: `rg -n -A3 'def capabilities' src` shows every other
+  concrete backend returning its class-level `CAPABILITIES`, and the two
+  bridge adapters deriving theirs from the backend they wrap. Derived with
+  `rg -n '_capabilities' src/remote_store/backends/_sqlalchemy.py` and
+  `rg -n -i 'column' FEATURES.md`.
 - `tests/backends/sqlblob/test_config.py:148` is now the loop head; the
   `LAZY_READ` branch and its assertion are at `:149-150`
   (`rg -n 'LAZY_READ' tests/backends/sqlblob/test_config.py`).
