@@ -115,3 +115,36 @@ phases:
         extract: >-
           With the marker deleted R2/R3 gate § 2 and pass; no script change.
         outcome: ok
+review:
+  # Derived by `hatch run ship-report 1033 --trace-block-only` at head f0e5092.
+  # Do not hand-edit, except a newly required field per sdd/traces/_schema.yml
+  # section review: RFC-0015 D4 makes this script the only producer.
+  derivation: "hatch run ship-report 1033 --trace-block-only"
+  pr: 1033
+  review_rounds: 1
+  submissions: 1
+  findings: 2
+  by_round:
+    - round: 1
+      findings: 2
+      origin: {original: 2}
+      triage: {must-fix: 2}
+      duration_hours: 0.2
+  by_file:
+    - path: "sdd/BACKLOG.md"
+      findings: 2
+  untouched_files:
+    - "sdd/backlog/bk-382-ancestor-gate-overwrite-path.md"
+    - "sdd/backlog/bug-240-max-depth-spec-contradiction.md"
+    - "sdd/backlog/bug-241-sql-like-metacharacters.md"
+    - "sdd/backlog/bug-251-shared-cache-cross-store-bytes.md"
+    - "sdd/backlog/bug-260-sqlblob-dot-slash-root-listing.md"
+    - "sdd/backlog/id-242-moto-permission-pragmas.md"
+    - "sdd/backlog/id-244-write-gated-conformance-cells.md"
+    - "sdd/backlog/id-247-graph-root-path-cassettes.md"
+    - "sdd/backlog/id-251-root-write-cells-narrow-spellings.md"
+    - "sdd/traces/bk-365-backlog-section-2.yml"
+  review_driven_commits:
+    - sha: "f0e5092"
+      subject: "fix: address PR #1033 review"
+  ci: {verdict: GREEN, failed: 0, pending: 0}
