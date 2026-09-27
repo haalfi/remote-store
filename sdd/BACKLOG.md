@@ -12,7 +12,7 @@ Items graduate through the SDD pipeline:
 ## How this file works
 
 Operational rules only. Why each rule exists: [ADR-0040](adrs/0040-backlog-as-index.md).
-**Migration in progress:** §§ 1–2 are converted. A section not yet converted carries
+**Migration in progress:** §§ 1–3 are converted. A section not yet converted carries
 `<!-- backlog: unconverted -->` on the line under its heading and keeps its old
 shape (long bodies, `Closes when`) until it is; do not extend that shape in new
 edits. Converting a section deletes the marker. The marker, not this note, is
@@ -363,246 +363,81 @@ no clause of the contract ships unexercised.
 
 <a id="users-succeed-unaided"></a>
 ## 3. Users succeed without asking us
-<!-- backlog: unconverted -->
 
 **Promise:** a user gets set up, picks the right backend, writes their own, or
 copies an example, without opening an issue.
 
-**Closes when:** every published page and shipped example a user decides from is
-**true** (BK-339, BK-325, BK-364, ID-125 — and **met** for the Tested-versions
-page by BK-374, in [BACKLOG-DONE.md](BACKLOG-DONE.md), which put the declared
-range beside the resolved one and named the extras the page does not cover),
-**reachable** (BK-327,
-BK-376), **legible — a rule the reader can act on without first computing
-it** — **met** for the support window by BK-373, in
-[BACKLOG-DONE.md](BACKLOG-DONE.md), which replaced "add five years to each
-release date and compare against today" with a generated chart whose bars and
-today line say it without being read — and
-**walked end-to-end by a maintainer** (BK-332, and ID-199's authoring
-contract). Each clause names the items that move it, so closure is checkable
-rather than asserted.
-
-The legibility clause takes the reachability argument (in
-[ADR-0040](adrs/0040-backlog-as-index.md#3-users-succeed-without-asking-us)) one
-step further in:
-a page reachable and true, whose rule the reader has to do arithmetic to apply,
-is one they apply wrongly or not at all. It is deliberately narrow — it is not
-a licence to file prose-polishing items, and BK-373 earned it by naming a rule
-whose consequence is a date the reader could not see. **Met at the one rule that
-had that shape**, not at legibility in general: the clause stays open for the
-next rule that turns out to need computing, and closing it would take an
-argument that no such rule remains rather than the absence of a filed item.
-
 - [ ] **BK-364 — `transfer-operations.md` documents partial files for `download` only, and the other direction is the one that can destroy data**
   spec: — · effort: S · audience: user.site
-  § Error semantics carries one bullet on residue — *"Partial files on failed
-  download: if `download` fails mid-transfer a partial local file may remain …
-  When retrying, pass `overwrite=True`"* — and says nothing about `upload` or
-  `transfer`, which route through `store.write()` and so leave a partial file at
-  the **remote** destination on exactly the same fault. The asymmetry is
-  backwards: a partial local file is the caller's own disk and their own
-  `overwrite` flag, while a partial remote file may have replaced data they
-  cannot re-derive.
-  **Found by BK-360's review round 1, while checking whether that item's SFTP
-  rule rippled here.** It was left out of BK-360 deliberately: the SFTP rule is
-  measured for one backend, and this bullet is about a helper that works over
-  *any* `Store`, so stating it needs the residue question answered per backend
-  rather than borrowed from SFTP. That is the work — establish what
-  `upload`/`transfer` leave behind on the backends the helper is used with, then
-  state it once beside the `download` bullet.
-  BK-360 established the SFTP half and is the model: the governing fact there is
-  that a timeout reports a *lost reply*, so an operation reported as failed may
-  have been performed. Whether the flat-namespace backends share that shape is
-  the open question, not an assumption to carry over.
+  `transfer-operations.md` warns that a failed `download` can leave a partial
+  local file and says nothing about `upload` or `transfer`, which call
+  `store.write()` and so can leave a partial or replaced remote object;
+  re-read on the page and in `ext/transfer.py`. Open decision: none on
+  shape; the per-backend residue question is in the dossier.
+  Detail: [dossier](backlog/bk-364-transfer-partial-residue.md)
 
 - [ ] **BK-339 — Decide what replaces `store.md`'s hand-maintained Backend Behavior Matrix**
   spec: — · effort: M · audience: user.site
-  `docs-src/reference/api/store.md` § Backend Behavior Matrix hand-maintains five
-  behavioural rows across ten backends, and carries the line *"Verify against
-  actual code before relying on these in production"* — a reference page telling
-  readers not to trust it, which is the admission that it drifts. Users read this
-  table to choose a backend.
-  **One measured error, not a suspicion.** The `copy()` preserves metadata` row
-  says `—` for Memory, but `MemoryBackend.copy` constructs the destination with
-  `metadata=src_node.metadata` (`src/remote_store/backends/_memory.py`), so user
-  metadata survives a copy. The row is also **ambiguous in a way that hides the
-  error**: Local's cell reads "Yes (`copy2`)", which is filesystem metadata,
-  while Memory's concerns user metadata — one row conflating two different
-  properties, which is why a reader cannot tell a wrong cell from an
-  out-of-scope one. Fixing the cell without splitting the row re-hides it.
-  **The disposition is the work.** Rows divide three ways: derivable from
-  capability declarations (`Native glob()` duplicates the capabilities matrix's
-  GLOB row — the two currently agree, so this is duplication rather than
-  contradiction); genuinely useful user information available nowhere else
-  (`move()` atomicity, `write_atomic()` mechanism); and under-specified
-  (`list_files()` ordering, which the specs do not guarantee — publishing
-  per-backend orderings invites reliance on an unguaranteed property). Deleting
-  outright would remove real value; deriving needs declarations that do not exist
-  for the middle group.
-  **Check `capabilities-matrix.md` at the same time** — it is the neighbouring
-  ten-backend table and a candidate home for the derivable rows, but whether it
-  is generated or hand-maintained was not established.
+  `store.md`'s Backend Behavior Matrix hand-maintains five rows across ten
+  backends and tells readers to verify it against the code. Reproduced: its
+  `copy() preserves metadata` row says `—` for Memory, yet a Memory copy keeps
+  user metadata. Open decision: which rows to derive from capability
+  declarations, which to keep as prose, and which to drop.
+  Detail: [dossier](backlog/bk-339-store-behavior-matrix.md)
 
 - [ ] **BK-325 — Custom-backend guide: registry-integration and remaining contract-topic gaps**
   spec: — · effort: M · audience: user.site
-  Guide content the PR #932 walkthrough showed a real backend needed but
-  the guide never teaches:
-  - Registry integration: credential-named YAML options arrive wrapped in
-    `Secret` (constructors need `str | Secret` and `.reveal()`), and a
-    `retry:` block injects a `retry=` kwarg. Step 13 says only "names
-    must match". Reference shape: `S3Boto3Backend.__init__`.
-  - Stream-time error mapping for `LAZY_READ` backends: the cardinal rule
-    covers call time only; lazy streams surface native errors during
-    `read()` and `test_streaming.py` enforces no-leak there.
-  - The file-ancestor lane: `rejects_write_under_file_ancestor`,
-    `strict_only` fixtures, and their `_MODULE_FOR` wiring are
-    undocumented; skipping them silently drops ~25 conformance cells.
-  - Small fixes: error-mapping checklist lacks a base-`RemoteStoreError`
-    fallback row; `from exc` guidance omits the deliberate `from None`
-    pattern; the `SEEKABLE_READ` note contradicts shipped range-readers.
+  The custom-backend guide does not teach `Secret`-wrapped credentials, the
+  injected `retry=` kwarg, stream-time error mapping for `LAZY_READ`, or the
+  `strict_only` file-ancestor fixtures, and owes three smaller fixes; re-read,
+  `_MODULE_FOR` is now taught (dossier correction). Open decision: none on
+  shape; the gap list and reference shapes are in the dossier.
+  Detail: [dossier](backlog/bk-325-custom-backend-guide-gaps.md)
 
 - [ ] **ID-199 — Backend setup & configuration guides expansion**
   spec: — · effort: L · audience: user.site, library.maintainer
-  Expand the backend-related guide set in `docs-src/guides/` based on user
-  pain mined from two sources: in-repo signal (traces, BACKLOG, CHANGELOG,
-  PRs) and an external survey of GitHub issues across `boto3`/`s3fs`/
-  `azure-storage-blob`/`paramiko`/`fsspec`, Stack Overflow, Reddit, and
-  vendor forums. Seven candidate guides identified; full pain mapping,
-  scope boundaries, sequencing, and code-side flags are in
-  [research](research/research-backend-setup-guides.md). The two existing
-  guides (`azure-hns-setup.md`, `sftp.md`) are the proof-of-value pattern.
-
-  **Authoring contract (binding — see research § 2.2):** every guide
-  under this initiative must be self-validated (maintainer-walked
-  end-to-end against a real target), practicable (copy-pasteable steps),
-  proven (dogfood trace or artifact in the PR), down to the point
-  (recipe + outcome + caveat, no marketing), and link only reliable
-  external references (vendor docs, RFCs, library docs — not Stack
-  Overflow, Reddit, blogs, or GitHub-issue threads). Candidates that
-  cannot meet the contract are deferred or scope-reduced, never
-  weakened to fit.
-
-  **Tier-1 standalone guides (per-guide PR + dedicated backlog ID when
-  each is picked up):**
-  1. S3-compatible providers cookbook — greenlit; AWS S3 + MinIO + R2 + B2 tested scope
-  2. Large-object & streaming tuning — **split-ship**: SFTP half greenlit; S3 5 GB cliff deferred until AWS dogfood budget
-  3. Local-dev emulators — greenlit; already dogfooded via CI
-  4. SFTP reliability — greenlit
-  5. Azure keyless auth & private endpoints — **conditional** on Azure subscription with elevated RBAC + vNet rights
-  6. Credential & secret rotation — greenlit per-backend; Azure half tied to #5
-  7. SQLite operational notes — greenlit; sidebar in `sql-blob.md`
-
-  **Tier-2 sidebars** for `s3.md`, `sftp.md`, `azure.md`,
-  `azure-hns-setup.md` — see research doc § 4. Fold into adjacent
-  Tier-1 PRs where scope overlaps.
-
-  **Out of scope (Tier-3):** AWS root-email governance, MinIO operator
-  UX, `s3fs-fuse` FUSE-only concerns, generic DB pool tuning,
-  hypothetical Azure-Blob-like self-hosts. Redirect to vendor docs.
-
-  **Three code-side flags surfaced** (NOT guide work) — see research doc
-  § 6: `s3fs` typed-error mapping fidelity; `S3Backend`
-  `use_listings_cache` default; third S3 lane (`s3-boto3` direct)
-  viability. Tracked as **ID-200 / ID-201 / ID-202** — all complete;
-  see [BACKLOG-DONE.md](BACKLOG-DONE.md) (ID-201's disposition shipped
-  as BK-257).
-
-  **Sequencing (dogfood-cost ordered, see research § 7):**
-  Phase 1 (zero new setup) = §3.3 + §3.7 + §3.4;
-  Phase 2 (free-tier accounts) = §3.1 + §3.6 non-Azure halves + §3.2 SFTP half;
-  Phase 3 (budgeted dogfood — gated on the access decision in research § 8 Q5) = §3.2 S3 half + §3.5 + §3.6 Azure half;
-  Tier-2 sidebars mop up alongside Phase 1/2.
-
-  Effort `L` reflects the parent scope; each individual guide is M-sized.
+  Backend setup pain mined from repo signal and a public survey maps to seven
+  guides; none ships as a page or sidebar (research § 3's six paths are
+  absent, `sql-blob.md` has no backup note), though guide 4's SFTP stall
+  material now sits in `sftp.md` and troubleshooting. Open decision: the
+  Phase 3 budget (research § 8 Q5); ungated guides are greenlit (dossier).
+  Detail: [dossier](backlog/id-199-backend-setup-guides.md)
 
 - [ ] **ID-125 — Update medallion showcase to Dagster v2 resource pattern**
   spec: — · effort: S · audience: user.api
-  Replace `dagster_io_manager(store)` calls in `examples/medallion_dagster/`
-  with `RemoteStoreIOManager`. Demonstrates the config-driven pattern.
-  Examples get copied verbatim, so a stale one teaches a superseded pattern
-  from a first-contact surface.
+  The medallion example wires silver and gold with two `dagster_io_manager`
+  calls; the item called that superseded, but `dagster.md` recommends v1
+  when a Store already exists, as it does here, and v2 would drop the
+  `otel_observe` wrapping. Open decision: show v2 beside v1, or decide
+  against.
+  Detail: [dossier](backlog/id-125-medallion-dagster-v2.md)
 
 - [ ] **BK-327 — Gate dual-doc nav reachability and index listing**
   spec: — · effort: S · audience: contributor.tooling
-  A `<!-- doc: dual dest=explanation/design/*.md -->` marker publishes a page that
-  neither the docs-site nav nor the section index page lists, and nothing catches
-  either omission — so a published page a user cannot navigate to is a page they
-  never read. `mkdocs.yml` sets only `validation: links: not_found: warn`, so
-  `nav.omitted_files` stays at its INFO default and `--strict` cannot promote it;
-  `scripts/docs/nav.py` builds `SUMMARY.md` *from* `_nav.yml` and never diffs it
-  against the pages `gen_pages.py` emitted; the `_index.tmpl` Documents list is
-  hand-written and unchecked. So `hatch run docs-gate` goes green on a page that is
-  unreachable, unlisted, or both. Each surface had a live instance repaired by hand
-  in PR #938: `drift-rules` was absent from both, `ci-operations` was in `_nav.yml`
-  and absent from `_index.tmpl`.
-  Fix shape: a G-08 in `scripts/check_docs_framework.py` differencing emitted dual
-  `dest` paths against both `_nav.yml` and the `_index.tmpl` Documents list;
-  raising `nav.omitted_files` to WARNING covers the nav half only.
-  An unstated bound on `docs-gate` being trusted past its range
-  ([`DRIFT-RULES.md` Rule 7](DRIFT-RULES.md#miss-rate)).
+  A dual-published design page can be missing from the docs nav and the
+  design index, and `docs-gate` passes: nothing differences emitted `dest`
+  paths against `_nav.yml` or `_index.tmpl`. PR #938 fixed two by hand;
+  re-checked, all eight dual pages are listed today. Open decision: none on
+  shape; the fix shape is in the dossier.
+  Detail: [dossier](backlog/bk-327-dual-doc-nav-reachability.md)
 
-- [ ] **BK-376 — Half the llmstxt `sections:` map is hand-listed, and three published pages are already missing from both outputs**
+- [ ] **BK-376 — Half the llmstxt `sections:` map is hand-listed, and four published pages are already missing from both outputs**
   spec: — · effort: S · audience: contributor.tooling
-  BK-327's defect one surface further out. `mkdocs.yml` gives the `llmstxt`
-  plugin a `sections:` map whose four entries fall into three shapes:
-  `Tutorial` and `Guides` are globs that maintain themselves; `Explanation` is
-  hand-listed page-by-page, for a stated reason (an `explanation/*.md` fnmatch
-  glob would also pull the contributor-facing `explanation/design/` subtree);
-  and `Reference` is **mixed** — `reference/api/*.md` is a recursive glob, the
-  other four entries are hand-listed, and no reason is given for the split.
-  The hand-listed halves are where pages go missing.
-  Nothing differences those lists against `_nav.yml`, so a new
-  page is published, navigable, and silently absent from **both** bundles a
-  coding agent reads: `mkdocs.yml:61` sets `full_output: llms-full.txt` on the
-  same plugin instance that carries the map, so `llms.txt` loses the link and
-  `llms-full.txt` loses the page's entire text. `llms-api.txt` is **out of
-  scope** and stays that way: `scripts/docs/gen_llms_api.sh` builds it from
-  `src/` with `lx`, out of `.readthedocs.yaml`'s `post_build`, and never reads
-  `sections:`.
-  **Three pages are absent today.** `mkdocs.yml:113-119` lists six
-  `Explanation` pages while `docs-src/explanation/_nav.yml` declares eight plus
-  `design/`, so `contributing.md` and `development-story.md` have no entry.
-  `docs-src/reference/_nav.yml` declares five pages plus `api/`, and
-  `mkdocs.yml` hand-lists four of the five (`capabilities-matrix.md`,
-  `migration.md`, `tested-versions.md`, `FEATURES.md`), leaving
-  `reference/changelog.md` as the only omission — `api/` is covered by the
-  recursive `reference/api/*.md` glob the comment at `mkdocs.yml:92-96`
-  explains. The changelog is the one that costs, and it costs most in
-  `llms-full.txt`: "what changed in 0.32.0" is a question agents ask, and the
-  bundle that exists to carry the answer's *text* omits it, not merely the link
-  to it.
-  **The gap is not knowing which of the three are decisions.** All three are
-  plausibly deliberate — two are project meta, the third is long and churns —
-  but `mkdocs.yml`'s comments explain only the `design/` exclusion and the
-  omitted section-landing stubs, so a reader cannot tell a choice from an
-  oversight. That is the defect, and it is the same one BK-327 names for the
-  nav: the omission is invisible either way.
-  **Fix shape follows BK-327's.** A check differencing each hand-listed
-  `sections:` entry against the corresponding `_nav.yml`, with an explicit
-  opt-out list in `mkdocs.yml` carrying a reason per excluded page — so the
-  three above become declared exclusions or become entries, and the next one
-  cannot be neither. The open choice is **one check or two**: BK-327's fix
-  shape already claims G-08 in `check_docs_framework.py` (which today defines
-  G-01 through G-07), so this either folds into that same check or takes its
-  own ID beside it. Folding is the likely economy, since both difference
-  emitted pages against `_nav.yml`.
-  **Measured, not hypothetical:** `explanation/dependency-policy.md` (BK-371)
-  had to be added to this list by hand, and was caught by reading the config
-  rather than by any gate.
+  The llmstxt `sections:` map hand-lists Explanation and half of Reference,
+  and nothing checks it against `_nav.yml`. Re-measured, `index.md`,
+  `reference/changelog.md`, `explanation/contributing.md` and
+  `development-story.md` match no pattern and no comment says why, so both
+  bundles omit them. Open decision: one check with BK-327's G-08, or two.
+  Detail: [dossier](backlog/bk-376-llmstxt-sections-hand-listed.md)
 
 - [ ] **BK-332 — Schedule the custom-backend rehearsal**
   spec: — · effort: M · audience: contributor.process
-  Effort splits: S to define the rehearsal, M per run.
-  "Build a backend against the guide, from scratch, without help" runs today
-  only as a side effect of guide PRs. Its output is a list of places the guide,
-  the contract, or the conformance suite failed the builder — BK-324 and BK-325
-  are one run's findings (PR #932), which is the argument for scheduling it
-  rather than running it by accident.
-  **Cadence:** once per minor release, or after any change to the `Backend` ABC
-  or the conformance suite, whichever comes first — the two events that can
-  invalidate the guide, per [`DRIFT-RULES.md` Rule 9](DRIFT-RULES.md#period).
-  **Evidence level, stated because the ranking flatters it:** n = 1. The claim
-  that rehearsal has the best findings-per-unit-noise rests on that single run.
+  Building a backend from the guide, unaided, has run once, as a side effect
+  of PR #932, and found BK-324 and BK-325; nothing schedules it, and
+  `rg -i rehearsal` over `sdd/traces/` and `BACKLOG-DONE.md` finds no later
+  run. Open decision: none on shape; the proposed cadence, its effort split
+  and its n = 1 caveat are in the dossier.
+  Detail: [dossier](backlog/bk-332-custom-backend-rehearsal.md)
 
 ---
 
@@ -1900,7 +1735,7 @@ the commit that writes it lands, so cite the generator instead.
   **In progress: [RFC-0016](rfcs/rfc-0016-backlog-as-index.md) is accepted as
   [ADR-0040](adrs/0040-backlog-as-index.md)** for the `BACKLOG.md` half — an
   index with per-item dossiers. Shipped: the rules header, R1–R4, the § 1
-  pilot (16 items to `sdd/backlog/`) and § 2 (9 items), per
+  pilot (16 items to `sdd/backlog/`), § 2 (9 items) and § 3 (8 items), per
   `sdd/rfcs/rfc-0016-measure.py`; what remains is the exit criteria below.
   **`sdd/BACKLOG.md` is 20,097 words at `6cec225`.** That is the file a maintainer
   reads to decide what to work on, and it is now roughly eighty pages of prose. Two
@@ -1932,7 +1767,7 @@ the commit that writes it lands, so cite the generator instead.
   [research](research/research-appropriate-level-of-detail.md) § 9.2 permits,
   and the caps are a recorded departure from its § 9.1. The question stays open
   for `BACKLOG-DONE.md`.
-  **Exit criteria:** §§ 3–6 converted (each drops its `unconverted` marker, so
+  **Exit criteria:** §§ 4–6 converted (each drops its `unconverted` marker, so
   R2/R3 then gate it), and a recorded decision on the
   `BACKLOG-DONE.md` half with any mechanism's bound stated per
   [`DRIFT-RULES.md`](DRIFT-RULES.md#rules).

@@ -1,0 +1,188 @@
+id: BK-365
+title: "ADR-0040 § 3 conversion: 8 items to dossiers, preamble to heading plus Promise"
+trigger: >-
+  The maintainer asked for the next BK-365 step after PR #1033: convert the
+  lowest-numbered section still carrying the unconverted marker (§ 3), one
+  section per PR, following §§ 1–2. Decided in interview before building: the
+  diagnosis style as drafted for BK-364, BK-376 and ID-125; ID-125, whose
+  "superseded pattern" premise the Dagster guide contradicts, stays in § 3
+  with its index corrected and the keep-or-decide-against choice named as its
+  open decision, not decided here; the preamble's legibility clause, including
+  its "not a licence to file prose-polishing items" bound, leaves with
+  `Closes when` rather than widening the Promise. The Promise is unchanged.
+source_items:
+  - BK-365
+audience:
+  - contributor.process
+expected_ripples:
+  - sdd/BACKLOG.md
+  - sdd/backlog/
+surprising_ripples: []
+phases:
+  - id: orient
+    name: Orient
+    steps:
+      - file: sdd/BACKLOG.md
+        section: "How this file works (Migration in progress, Item scope, Dossiers, Item authority, Ordering); § 3 preamble and items; BK-365"
+        read_type: gate
+        extract: >-
+          A delegated read split the preamble into eleven sentences or clauses
+          (the `Closes when` list split by clause) with file:line evidence for
+          each: six removed because an item body, a BACKLOG-DONE entry
+          (BK-373, BK-374) or ADR-0040 § 3 states the fact, five as `Closes
+          when` commentary (the legibility bound by maintainer decision). None bounds an open item, so no dossier gets a
+          "Moved from the § 3 preamble" heading; no ordering note or
+          cross-section dependency; no item body cites the preamble. The
+          current order already puts BK-327 above BK-376, which follows it.
+        outcome: ok
+      - file: sdd/traces/bk-365-backlog-section-2.yml
+        section: "(full); also the § 1 pilot trace and the bk-345, id-247, bug-241 dossiers"
+        read_type: reference
+        extract: >-
+          Reused § 2's intro line with "§ 3 conversion", its dated
+          "## Correction" shape, and its diagnosis style.
+        outcome: ok
+      - file: sdd/adrs/0040-backlog-as-index.md
+        section: "Section Promises § 3"
+        read_type: gate
+        extract: >-
+          Holds § 3's Promise rationale (reachability, the rehearsal's
+          placement), so no preamble sentence had to move there.
+        outcome: ok
+  - id: implement
+    name: Implement
+    steps:
+      - file: docs-src/guides/dagster.md
+        section: "Dagster-config-driven Store (v2), lines 165-170"
+        read_type: verify
+        extract: >-
+          Re-deriving ID-125: the guide recommends v1 when a Store already
+          exists, and the example's `stores.py:50-53` builds its Stores
+          (wrapped in `otel_observe`) before `definitions.py:35-36` passes
+          them to `dagster_io_manager`. The "superseded" premise does not
+          hold; index corrected, dated correction in the dossier.
+        outcome: ok
+      - file: mkdocs.yml
+        section: "llmstxt plugin, sections: map (97-119)"
+        read_type: verify
+        extract: >-
+          Re-deriving BK-376: a scratch script fnmatched the map's patterns
+          against the published page set, built as every `docs-src/**/*.md`
+          plus `scripts/docs/scan.py`'s dual-file dests, scanned sdd pages,
+          `_index.tmpl` index pages and example pages (325 pages). Six
+          non-design pages are unmatched, two of them the declared
+          section-landing stubs. `index.md` is a fourth undeclared absentee
+          beside the three the item named. Title and diagnosis corrected.
+        outcome: ok
+      - file: tests/backends/conformance/
+        section: "strict fixtures, --collect-only"
+        read_type: verify
+        extract: >-
+          BK-325's "~25 cells": `pytest tests/backends/conformance
+          --collect-only -q -k "s3_moto_strict or sqlblob_strict or
+          azurite_async_strict" --stage=3` collects 70 (26 + 26 + 18), a
+          sample of three of the seven `_strict` fixtures in
+          `fixtures.toml`. `_MODULE_FOR` is now taught in the guide
+          (lines 599-601, 671-675); dated correction in the dossier.
+        outcome: ok
+      - file: src/remote_store/backends/_memory.py
+        section: "copy"
+        read_type: verify
+        extract: >-
+          BK-339 reproduced: a Memory copy of a file written with
+          metadata={"owner": "alice"} keeps it, while store.md's matrix says
+          `—`.
+        outcome: ok
+      - file: docs-src/explanation/design/_nav.yml
+        section: "(full); also _index.tmpl's Documents list"
+        read_type: verify
+        extract: >-
+          BK-327: `rg -n '^<!-- doc: dual dest=explanation/design/' sdd`
+          finds eight line-2 markers, all listed in both files today; the
+          ungated surface remains. Recorded as "## Re-measured" in the dossier.
+        outcome: ok
+      - file: docs-src/guides/
+        section: "file list; backends/sql-blob.md; backends/sftp.md and troubleshooting.md headings"
+        read_type: verify
+        extract: >-
+          ID-199: `rg --files docs-src/guides` lists none of the six
+          standalone paths in the research Tier-1 table, and sql-blob.md has
+          no live-file or backup note. Part of guide 4's scope (SFTP stalls)
+          already ships in sftp.md and troubleshooting.md, which review round
+          2 caught: a path test alone read as "none of it exists". Recorded as
+          "## Re-measured" in the dossier.
+        outcome: ok
+      - file: docs-src/guides/transfer-operations.md
+        section: "Error Handling (residue bullet, line 112); also ext/transfer.py"
+        read_type: verify
+        extract: >-
+          BK-364: one residue bullet, for `download` only; `upload` and
+          `transfer` call `store.write` / `dst_store.write` (transfer.py:69,
+          149). BK-360's SFTP residue text in sftp.md and troubleshooting.md
+          names neither helper. Recorded as "## Re-measured" in the dossier.
+        outcome: ok
+      - file: sdd/traces/bk-320-custom-backend-guide-refresh.yml
+        section: "(record of the PR #932 walkthrough)"
+        read_type: verify
+        extract: >-
+          BK-332: the one recorded rehearsal run; `rg -n -i rehearsal
+          sdd/traces sdd/BACKLOG-DONE.md` finds no later one (its hits are
+          this trace's own). Recorded as "## Re-measured" in the dossier.
+        outcome: ok
+  - id: verify
+    name: Verify
+    steps:
+      - file: sdd/rfcs/rfc-0016-measure.py
+        section: "(full)"
+        read_type: gate
+        extract: "§ 3 at 8 items, median/max 8/8, preamble 31 words."
+        outcome: ok
+      - file: scripts/gen_backlogid.py
+        section: "--check (R1–R4)"
+        read_type: gate
+        extract: >-
+          With the marker deleted R2/R3 gate § 3 and pass; no script change.
+        outcome: ok
+review:
+  # Derived by `hatch run ship-report 1036 --trace-block-only` at head bcb0e15.
+  # Do not hand-edit, except a newly required field per sdd/traces/_schema.yml
+  # section review: RFC-0015 D4 makes this script the only producer.
+  derivation: "hatch run ship-report 1036 --trace-block-only"
+  pr: 1036
+  review_rounds: 2
+  submissions: 2
+  findings: 8
+  by_round:
+    - round: 1
+      findings: 4
+      origin: {original: 4}
+      triage: {must-fix: 4}
+      duration_hours: 0.21
+    - round: 2
+      findings: 4
+      origin: {loop-introduced: 3, original: 1}
+      triage: {must-fix: 4}
+      duration_hours: 0.12
+  by_file:
+    - path: "sdd/BACKLOG.md"
+      findings: 3
+    - path: "sdd/traces/bk-365-backlog-section-3.yml"
+      findings: 2
+    - path: "sdd/backlog/bk-325-custom-backend-guide-gaps.md"
+      findings: 1
+    - path: "sdd/backlog/bk-332-custom-backend-rehearsal.md"
+      findings: 1
+    - path: "sdd/backlog/bk-364-transfer-partial-residue.md"
+      findings: 1
+  untouched_files:
+    - "sdd/backlog/bk-327-dual-doc-nav-reachability.md"
+    - "sdd/backlog/bk-339-store-behavior-matrix.md"
+    - "sdd/backlog/bk-376-llmstxt-sections-hand-listed.md"
+    - "sdd/backlog/id-125-medallion-dagster-v2.md"
+    - "sdd/backlog/id-199-backend-setup-guides.md"
+  review_driven_commits:
+    - sha: "90ef5ff"
+      subject: "fix: address PR #1036 review"
+    - sha: "bcb0e15"
+      subject: "fix: address PR #1036 review"
+  ci: {verdict: GREEN, failed: 0, pending: 0}
