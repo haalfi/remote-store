@@ -12,6 +12,13 @@ trigger: >-
   narration and the counting paragraph are removed where any authoritative home
   (BACKLOG-DONE entry, CHANGELOG, spec, published guide) states the fact, and the
   section's narration of its own history goes, by maintainer decision.
+  Decided in review (maintainer comment on the Release Blockers Promise: minor
+  bugs are acceptable depending on impact): the release gate stays hard and
+  admission narrows instead. An item earns `BL-` only when shipping it
+  unresolved costs users more than delaying the release; a minor bug stays a
+  `BUG-` in its section. Chosen over a per-release waiver, which would make
+  "empty" stop meaning "releasable". ADR-0040's "filed by prefix" still holds:
+  impact decides the prefix, the prefix decides the section.
 source_items:
   - BK-365
   - ID-235

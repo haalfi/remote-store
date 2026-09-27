@@ -48,8 +48,11 @@ and their reasons, are:
   are unscanned, and nothing about D1 argues they should be. They are the
   deliverable in every sense; they are out only because § References' glob named
   ``sdd/specs/*.md`` and ``sdd/BACKLOG*.md`` and stopped there, and widening the
-  surface would re-base the figure the RFC states. A retrospective in one of
-  them is a reviewer's to catch, like any other the phrase set does not reach.
+  surface to new text would re-base the figure the RFC states. The
+  ``sdd/backlog/*.md`` addition is not that precedent: it follows text the glob
+  already covered when it moved out of ``BACKLOG.md``, which these docs never
+  were. A retrospective in one of them is a reviewer's to catch, like any other
+  the phrase set does not reach.
 * **The repo-root dual-classified pages** — ``README.md``, ``FEATURES.md``,
   ``CONTRIBUTING.md`` — likewise, for the same reason. Note that
   ``check_no_tracker_refs.py`` answers a neighbouring "surface users read"
@@ -134,8 +137,9 @@ from pathlib import Path
 ROOT = Path(__file__).resolve().parent.parent
 
 # The deliverable surface, per RFC-0015 D1 and the glob its § References pins.
-# `examples/` is the one addition: it is a surface users read, and D1's "code"
-# reaches it. Order is the order hits are reported in.
+# Two additions: `examples/`, a surface users read that D1's "code" reaches, and
+# `sdd/backlog/*.md`, where ADR-0040 moves the `sdd/BACKLOG*.md` item bodies D1
+# names "in full". Order is the order hits are reported in.
 SURFACE: tuple[str, ...] = (
     "CHANGELOG.md",
     "sdd/specs/*.md",
