@@ -118,43 +118,12 @@ phases:
         section: "HOOKS_PAT, tooling-tests"
         read_type: verify
         extract: >-
-          `^sdd/rfcs/[^/]+\.py$` added to the narrow `hooks` output, not
-          CODE_PAT, for the job-budget reason stated beside it. Checked with
-          Python `re` against the two RFC-0015 scripts (match), the RFC's .md
-          and a nested path (no match).
+          `^sdd/rfcs/rfc-0015-(findings|rounds)\.py$` added to the narrow
+          `hooks` output, not CODE_PAT, for the job-budget reason stated
+          beside it. First shipped as `^sdd/rfcs/[^/]+\.py$`; review round 2
+          found that it also matched the untested `rfc-0016-measure.py`, so it
+          was narrowed to the two scripts `tests/` references (Grep over
+          `tests/`). Checked with Python `re` against every `sdd/rfcs/*.py`:
+          the two RFC-0015 scripts match, `rfc-0016-measure.py` and the RFC's
+          .md do not.
         outcome: ok
-review:
-  # Derived by `hatch run ship-report 1034 --trace-block-only` at head d0841c6.
-  # Do not hand-edit, except a newly required field per sdd/traces/_schema.yml
-  # section review: RFC-0015 D4 makes this script the only producer.
-  derivation: "hatch run ship-report 1034 --trace-block-only"
-  pr: 1034
-  review_rounds: 2
-  submissions: 1
-  findings: 2
-  by_round:
-    - round: 1
-      findings: 2
-      origin: {original: 1, unclassifiable-file: 1}
-      triage: {must-fix: 2}
-      duration_hours: 0.28
-  by_file:
-    - path: "sdd/BACKLOG.md"
-      findings: 1
-    - path: "sdd/traces/bug-295-triage-stays.yml"
-      findings: 1
-  untouched_files:
-    - ".github/workflows/ci.yml"
-    - "sdd/BACKLOG-DONE.md"
-    - "sdd/CLAUDE-REFERENCE.md"
-    - "sdd/backlogid.json"
-    - "sdd/rfcs/rfc-0015-findings.py"
-    - "sdd/rfcs/rfc-0015-ship-two-surfaces.md"
-    - "tests/scripts/fixtures/rfc_0015_first_replies.json"
-    - "tests/scripts/test_rfc_0015_findings.py"
-  review_driven_commits:
-    - sha: "2ad72cd"
-      subject: "fix: address PR #1034 review"
-    - sha: "d0841c6"
-      subject: "BUG-295: Add the derived review block to the trace at the close"
-  ci: {verdict: GREEN, failed: 0, pending: 0}

@@ -498,12 +498,13 @@ trace step (`/pr` verifies a trace exists, `/fix-pr` updates it).
   `git diff origin/<BASE>...HEAD --name-only`, then run the matching target. Fix
   failures, re-run until clean.
     - **Touches `src/`, `tests/`, `examples/`, `scripts/`, `.claude/hooks/`,
-      `sdd/rfcs/*.py`, `pyproject.toml`, or `.python-version`** → run
-      `hatch run all`, the full pre-PR superset (its constituent scripts are the
-      source of truth in `pyproject.toml`). `sdd/rfcs/*.py` rides with
-      `.claude/hooks/` below: RFC-0015's classifier scripts are pinned by
-      `tests/scripts/` and gated in CI by the same `hooks` output. All but
-      `.claude/hooks/` and `sdd/rfcs/*.py` are the test-bearing and
+      `sdd/rfcs/rfc-0015-{findings,rounds}.py`, `pyproject.toml`, or
+      `.python-version`** → run `hatch run all`, the full pre-PR superset (its
+      constituent scripts are the source of truth in `pyproject.toml`). The two
+      RFC-0015 scripts ride with `.claude/hooks/` below: they are pinned by
+      `tests/scripts/` and gated in CI by the same `hooks` output. Other
+      `sdd/rfcs/*.py` have no test and are not listed. All but
+      `.claude/hooks/` and the RFC-0015 scripts are the test-bearing and
       interpreter-defining members of CI's `CODE_PAT`;
       `scripts/` is among them because its guards live under `tests/scripts/`, which
       only the suite runs (a `scripts/`-only diff must still run it).
