@@ -1,0 +1,106 @@
+id: BK-365
+title: "ADR-0040 § 3 conversion: 8 items to dossiers, preamble to heading plus Promise"
+trigger: >-
+  The maintainer asked for the next BK-365 step after PR #1033: convert the
+  lowest-numbered section still carrying the unconverted marker (§ 3), one
+  section per PR, following §§ 1–2. Decided in interview before building: the
+  diagnosis style as drafted for BK-364, BK-376 and ID-125; ID-125, whose
+  "superseded pattern" premise the Dagster guide contradicts, stays in § 3
+  with its index corrected and the keep-or-decide-against choice named as its
+  open decision, not decided here; the preamble's legibility clause, including
+  its "not a licence to file prose-polishing items" bound, leaves with
+  `Closes when` rather than widening the Promise. The Promise is unchanged.
+source_items:
+  - BK-365
+audience:
+  - contributor.process
+expected_ripples:
+  - sdd/BACKLOG.md
+  - sdd/backlog/
+surprising_ripples: []
+phases:
+  - id: orient
+    name: Orient
+    steps:
+      - file: sdd/BACKLOG.md
+        section: "How this file works (Migration in progress, Item scope, Dossiers, Item authority, Ordering); § 3 preamble and items; BK-365"
+        read_type: gate
+        extract: >-
+          A delegated read split the preamble into eleven sentences or clauses
+          (the `Closes when` list split by clause) with file:line evidence for
+          each: six removed because an item body, a BACKLOG-DONE entry
+          (BK-373, BK-374) or ADR-0040 § 3 states the fact, five as `Closes
+          when` commentary (the legibility bound by maintainer decision). None bounds an open item, so no dossier gets a
+          "Moved from the § 3 preamble" heading; no ordering note or
+          cross-section dependency; no item body cites the preamble. The
+          current order already puts BK-327 above BK-376, which follows it.
+        outcome: ok
+      - file: sdd/traces/bk-365-backlog-section-2.yml
+        section: "(full); also the § 1 pilot trace and the bk-345, id-247, bug-241 dossiers"
+        read_type: reference
+        extract: >-
+          Reused § 2's intro line with "§ 3 conversion", its dated
+          "## Correction" shape, and its diagnosis style.
+        outcome: ok
+      - file: sdd/adrs/0040-backlog-as-index.md
+        section: "Section Promises § 3"
+        read_type: gate
+        extract: >-
+          Holds § 3's Promise rationale (reachability, the rehearsal's
+          placement), so no preamble sentence had to move there.
+        outcome: ok
+  - id: implement
+    name: Implement
+    steps:
+      - file: docs-src/guides/dagster.md
+        section: "Dagster-config-driven Store (v2), lines 165-170"
+        read_type: verify
+        extract: >-
+          Re-deriving ID-125: the guide recommends v1 when a Store already
+          exists, and the example's `stores.py:50-53` builds its Stores
+          (wrapped in `otel_observe`) before `definitions.py:35-36` passes
+          them to `dagster_io_manager`. The "superseded" premise does not
+          hold; index corrected, dated correction in the dossier.
+        outcome: ok
+      - file: mkdocs.yml
+        section: "llmstxt plugin, sections: map (97-119)"
+        read_type: verify
+        extract: >-
+          Re-deriving BK-376 by fnmatching all 325 published pages against the
+          map: six non-design pages unmatched, two of them the declared
+          section-landing stubs. `index.md` is a fourth undeclared absentee
+          beside the three the item named. Title and diagnosis corrected.
+        outcome: ok
+      - file: tests/backends/conformance/
+        section: "strict fixtures, --collect-only"
+        read_type: verify
+        extract: >-
+          BK-325's "~25 cells": `pytest tests/backends/conformance
+          --collect-only -q -k "s3_moto_strict or sqlblob_strict or
+          azurite_async_strict" --stage=3` collects 70, 26 per sync strict
+          fixture and 18 async. `_MODULE_FOR` is now taught in the guide
+          (lines 599-601, 671-675); dated correction in the dossier.
+        outcome: ok
+      - file: src/remote_store/backends/_memory.py
+        section: "copy"
+        read_type: verify
+        extract: >-
+          BK-339 reproduced: a Memory copy of a file written with
+          metadata={"owner": "alice"} keeps it, while store.md's matrix says
+          `—`. BK-327: all eight dual design pages are listed in both
+          `_nav.yml` and `_index.tmpl` today; the ungated surface remains.
+        outcome: ok
+  - id: verify
+    name: Verify
+    steps:
+      - file: sdd/rfcs/rfc-0016-measure.py
+        section: "(full)"
+        read_type: gate
+        extract: "§ 3 at 8 items, median/max 8/8, preamble 31 words."
+        outcome: ok
+      - file: scripts/gen_backlogid.py
+        section: "--check (R1–R4)"
+        read_type: gate
+        extract: >-
+          With the marker deleted R2/R3 gate § 3 and pass; no script change.
+        outcome: ok
