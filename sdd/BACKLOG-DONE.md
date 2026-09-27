@@ -24,6 +24,7 @@ Folded into a surviving `BACKLOG.md` item as a sub-bullet carrying its evidence.
 **The work is open, not done** — follow the host. The ID is retired because a
 sub-bullet is not an ID.
 
+- [x] **BUG-241 — `SQLBlobBackend` builds prefix `LIKE` patterns without escaping `_` and `%`, so listings and folder deletes reach sibling keys** → **BL-011**. Dossier: [BUG-241](backlog/bug-241-sql-like-metacharacters.md).
 - [x] **BK-347 — A diff outside CI's `CODE_PAT` is routed away from the ADR drift gate** → **BK-333**
 - [x] **BK-337 — Widening an authority doc's scope reaches no row that finds its restating copies** → **BK-346**, instance 5
 - [x] **BK-334 — No ripple-check row covers adding a `hatch` script alias** → **BK-346**, instance 4
