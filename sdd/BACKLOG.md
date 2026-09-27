@@ -291,11 +291,11 @@ no clause of the contract ships unexercised.
 
 - [ ] **BUG-241 — `SQLBlobBackend` builds prefix `LIKE` patterns without escaping `_` and `%`, so listings and folder deletes reach sibling keys**
   spec: — · effort: S · audience: user.api
-  Nine `key.like(prefix + "%")` sites in `_sqlalchemy.py` leave `_` and `%`
-  unescaped, so a key holding either matches siblings: re-measured,
+  Nine unescaped prefix `LIKE` sites in `_sqlalchemy.py` (`key + "/%"`,
+  `prefix + "%"`) let `_` and `%` match siblings: re-measured,
   `list_files("a_b")` returns `axb/y.txt` and `delete_folder("a_b",
-  recursive=True)` deletes it. Open decision: none on shape; the dossier's
-  correction widens the scope past the probe the body describes.
+  recursive=True)` deletes it. Open decision: whether the data loss makes it a
+  `BL-` (pending); none on fix shape.
   Detail: [dossier](backlog/bug-241-sql-like-metacharacters.md)
 
 - [ ] **BUG-240 — ASYNC-014 and DEPTH-003 state opposite rules, and `GraphBackend` implements the async one**
