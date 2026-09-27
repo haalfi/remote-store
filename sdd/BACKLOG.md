@@ -2049,14 +2049,6 @@ the commit that writes it lands, so cite the generator instead.
   accepted with its reason, and `gen_backlogid.py`'s stated bound is the durable
   record of it.
 
-- [ ] **BUG-295 — The review triage calls a fixed finding `refuted` when its fix reply contains "stays"**
-  spec: — · effort: S · audience: contributor.tooling
-  `rfc-0015-findings.triage`, which `ship_report.py` imports, tries the
-  body-wide `_REFUTED` (`stays`, `declin`, `refut`) before `_MUST_FIX`, so a
-  reply opening "Fixed in <sha>" that quotes "stays" is `refuted`: 4 of PR
-  #1029's 7, re-driven on its replies. BK-384 reads these counts. Open
-  decision: let an opening "Fixed in" win, or triage the first sentence only.
-
 - [ ] **BK-384 — RFC-0015 is built but unmeasured: three deliveries decide whether it graduates**
   spec: — · effort: M · audience: contributor.process
   The open half of **BK-378**, which shipped D1 and D4 and is recorded in

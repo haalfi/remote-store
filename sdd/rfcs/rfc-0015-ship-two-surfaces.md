@@ -15,11 +15,19 @@ BK-379 piloted D2, D3's worktree half with the one-measurer cap left up, D5's
 posting half and D6's repeat-site half before the rest was built; what that
 pilot can and cannot decide is stated with the acceptance criterion
 (§ Impact), and what it measured is § Pilot result. **The pilot missed
-clause 1 by three points and refuted D6's retirement of the repeat-site
+clause 1 by seven points and refuted D6's retirement of the repeat-site
 check.** What the criterion prescribes for a miss without D1 and D4 is to build
 them and re-measure, and it declines to let such a miss bear on status; BK-378
 built them, so **every decision here is now in force and none has been measured
 together**. This RFC is Draft because it has never been accepted.
+**Re-based 2026-09-27 under BUG-295.** The triage heuristic read "stays" as a
+refutation and did not let an opening "Fixed in" decide, so fix replies were
+counted `refuted`; every triage-derived figure here is re-derived with the
+fixed classifier (baseline triage 295/10/56/180 and clause-1 baseline 77 of 99,
+78%, are now 311/10/38/182 and 80 of 105, 76%; the pilot's 51/1/9/8 and 10 of
+19, 53%, are now 56/1/4/8 and 12 of 21, 57%). Records dated before this
+(BK-379's and BK-378's `BACKLOG-DONE.md` entries and traces) keep the old
+figures.
 If accepted it graduates to an ADR amending
 [ADR-0033](../adrs/0033-ship-convergence-driven-review.md),
 [ADR-0034](../adrs/0034-ship-panel-rounds-and-unprimed-exit.md),
@@ -161,37 +169,39 @@ later row or a loop-introduced one into the original column.
 **Table 4. The same, counting must-fix findings only.** Severity is what the
 proposal's rules key on, so the script reads the fixer's first reply in each
 thread for its verdict. This repo's replies open with the verdict, so the
-opening word decides where it is present: "Must-fix" opens a *must-fix* reply
-whatever follows, "Filed as" a *filed* one, "Refuted", "Not a defect",
-"Declined", "Rejected" or "Decided" a *refuted* one. Otherwise the reply is
-searched with word boundaries, filed before refuted before must-fix
-("Filed as" or a minted ID; "refut", "not a defect", "declin", "rejected",
-"stays"; "Fixed in", "Confirmed", "Correct", "Taken", "Added", "Annotated");
-*unknown* otherwise, including an unanswered thread. Over the sample: 295
-must-fix, 10 filed, 56 refuted, 180 unknown. An earlier revision matched
+opening word decides where it is present: "Must-fix" or "Fixed in" opens a
+*must-fix* reply whatever follows, "Filed as" a *filed* one, "Refuted", "Not a
+defect", "Declined", "Rejected" or "Decided" a *refuted* one. Otherwise the
+reply is searched with word boundaries, filed before refuted before must-fix
+("Filed as" or a minted ID; "refut", "not a defect", "declin", "rejected";
+"Fixed in", "Confirmed", "Correct", "Taken", "Added", "Annotated");
+*unknown* otherwise, including an unanswered thread. Over the sample: 311
+must-fix, 10 filed, 38 refuted, 182 unknown. An earlier revision matched
 substrings and counted "incorrect" and "added to the backlog" as must-fix; it
-reported 1 filed and 8 refuted. The unknown third is the heuristic's bound, and
+reported 1 filed and 8 refuted. A later one searched "stays" as a refutation
+and so counted fix replies saying what stays unchanged as refuted; it reported
+295, 10, 56 and 180 (BUG-295). The unknown third is the heuristic's bound, and
 it is not spread evenly: #968's 50 findings are all unknown, as are most of
 #977's, #990's and #994's later rounds, where the fixer answered in review
 summaries rather than in the threads. Within the classified must-fix findings:
 
 | round | original | loop-introduced | loop share of classified | unclassifiable |
 |---|---|---|---|---|
-| 1 | 73 | 0 | 0% | 2 |
+| 1 | 80 | 0 | 0% | 2 |
 | 2 | 39 | 23 | 37% | 1 |
-| 3 | 16 | 34 | 68% | 23 |
-| 4 | 1 | 17 | 94% | 14 |
-| 5 | 2 | 10 | 83% | 12 |
-| 6 | 2 | 8 | 80% | 6 |
+| 3 | 18 | 34 | 65% | 24 |
+| 4 | 2 | 17 | 89% | 15 |
+| 5 | 2 | 12 | 86% | 13 |
+| 6 | 2 | 9 | 82% | 6 |
 | 7 | 1 | 8 | 89% | 3 |
 
-Restricting to must-fix lowers rounds 2 and 3 by nine points each and leaves
-rounds 4 to 7 within five points of Table 2, so the late rounds are not many
-filed nits around a few real defects: the fixer confirmed and fixed them, and
-they were on its own text. Round 3 carries more classified must-fix findings
-than rounds 4 to 7 together (50 against 49, summing the rows), so its 68% is
-the figure the conclusion leans on most, and it is below the 77% Table 2 gives
-for the same round.
+Restricting to must-fix lowers round 2 by nine points and round 3 by twelve,
+and leaves rounds 4 to 7 within six points of Table 2, so the late rounds are
+not many filed nits around a few real defects: the fixer confirmed and fixed
+them, and they were on its own text. Round 3 carries almost as many classified
+must-fix findings as rounds 4 to 7 together (52 against 53, summing the rows),
+so its 65% weighs as much in the conclusion as the late rounds do, and it is
+below the 77% Table 2 gives for the same round.
 
 **Table 3. What the findings are about.** Same script, same sample, and
 unaffected by the origin classifier:
@@ -526,8 +536,8 @@ about what a rationale would have prevented is not, and is not the condition.
   panel composition and moves finding counts independently of fix shape, which
   is what the pilot measured. That reason outlived the pilot — § Pilot result
   prescribes a re-measurement with D1 and D4 shipped, and a composition that
-  moved in between would be comparable with neither the 78% baseline nor the
-  pilot's 53%. The cap comes down with the graduating ADR, on BK-384's
+  moved in between would be comparable with neither the 76% baseline nor the
+  pilot's 57%. The cap comes down with the graduating ADR, on BK-384's
   account.
 - Worktrees are removed at round close, with a `prune` for the base worktree a
   measuring member left nested inside (measured on git 2.43.0: ignored
@@ -643,10 +653,10 @@ corrects.
   4 and BK-359's round 5 did on the user's call; the rule makes it the loop's.
   **The constants are chosen from a dry run, not asserted.** The script runs
   three readings over the 19 sampled deliveries. "All classified must-fix
-  findings loop-introduced" fires in 2 PRs and 5 rounds (#973 four times,
+  findings loop-introduced" fires in 2 PRs and 4 rounds (#973 three times,
   #987 once) and never on #996, because one original finding in a round of
   ten silences it. "Unclassifiable counts as loop-introduced" fires in 5 PRs
-  and 13 rounds, but #991's four and #976's three are rounds posted entirely
+  and 12 rounds, but #991's four and #976's three are rounds posted entirely
   at file level, so that reading fires on the posting artifact rather than on
   the loop. The 80% share over at least two classified findings fires in 3 PRs
   and 9 rounds (#973 four, #986 one, #996 four) and in none of the file-level
@@ -770,7 +780,7 @@ runtime behaviour, no published page other than this RFC's own.
   the rules, pooled, then `rfc-0015-findings.py` over them. Graduate to an ADR
   if (1) the loop-introduced share of must-fix findings from round 3 on,
   over `original + loop-introduced`, is below 50% (Table 4's pooled rounds 3
-  to 7: 77 of 99, 78%, summing its rows), (2) the derived trace block draws a
+  to 7: 80 of 105, 76%, summing its rows), (2) the derived trace block draws a
   finding in at most one round across the three, and (3) the retraction
   trigger fires at most once. **Clause 1's denominator is not *classified*
   in the sense Tables 2 and 4 and clause 3's stop rule use**, which includes
@@ -786,7 +796,7 @@ runtime behaviour, no published page other than this RFC's own.
   existed (Table 2's second bound), anchors under the rule to lines that read
   as original or loop-introduced and is not separated from the findings the
   baseline classified. That half enters clause 1's numerator and denominator
-  from a population the 78% baseline excluded, which is the comparability
+  from a population the 76% baseline excluded, which is the comparability
   bound in the other direction, and the fall in the unclassifiable count
   against Table 2's 40% to 58% per round is the only measure of its size.
   Its sign is not measured. If that half resembles the classified findings of
@@ -828,8 +838,8 @@ runtime behaviour, no published page other than this RFC's own.
 
 BK-379 ran D2, D3's worktree half, D5's posting half and D6's repeat-site half
 over three deliveries and measured them. **The loop-introduced share of
-must-fix findings from round 3 on fell from 78% to 53%, which misses clause 1's
-bar of below 50% by three points, and the repeat-site check D6 proposed
+must-fix findings from round 3 on fell from 76% to 57%, which misses clause 1's
+bar of below 50% by seven points, and the repeat-site check D6 proposed
 retiring fired twice.** Clause 3 passed at zero firings and clause 2 has no
 referent without D4, so the branch § Impact prescribes for a clause-1 miss
 without D1 and D4 is the one taken: build them and re-measure.
@@ -840,7 +850,9 @@ without D1 and D4 is the one taken: build them and re-measure.
 `2026-09-18T19:34Z`, from `gh api repos/haalfi/remote-store/pulls/<N> --jq
 '{created_at, merged_at}'`), so no round in the sample ran under the old rules.
 Every figure below comes from `python sdd/rfcs/rfc-0015-findings.py 1021 1022
-1023` at `2bd34cc` unless it names another derivation. 69 findings over 14
+1023` at `2bd34cc` unless it names another derivation; the triage-derived ones
+(Table 4 and the triage counts) are re-derived with the classifier as fixed by
+BUG-295. 69 findings over 14
 submissions. Their traces record `review_rounds` 7 for #1021, 7 in each of
 #1022's three and 4 for #1023, against Table 1's post-gate median of 7: **the pilot does not show the loop getting shorter**, it
 shows what the late rounds are about.
@@ -862,25 +874,26 @@ pre-existing given its own column because the `LINE` discipline populates it:
 
 | round | original | loop-introduced | loop share of `o + l` | pre-existing | unclassifiable |
 |---|---|---|---|---|---|
-| 1 | 8 | 0 | 0% | 1 | 1 |
+| 1 | 11 | 0 | 0% | 1 | 1 |
 | 2 | 8 | 3 | 27% | 0 | 0 |
 | 3 | 5 | 1 | 17% | 2 | 6 |
 | 4 | 2 | 3 | 60% | 0 | 3 |
-| 5 | 2 | 5 | 71% | 0 | 0 |
+| 5 | 2 | 7 | 78% | 0 | 0 |
 | 6 | 0 | 1 | 100% | 0 | 0 |
-| **pooled 3 to 6** | **9** | **10** | **53%** | **2** | **9** |
+| **pooled 3 to 6** | **9** | **12** | **57%** | **2** | **9** |
 
 The pooled row is the script's `POOLED r>=3 must-fix` line and the criterion's
-clause 1: 53% against the bar of below 50% and against the baseline's 78%
-(77 of 99). **The verdict is one finding wide.** Nineteen classified findings
-carry it, so one finding is five points and a single reclassification — 9 of
-19, 47% — passes it; the baseline's denominator is five times larger. Three
+clause 1: 57% against the bar of below 50% and against the baseline's 76%
+(80 of 105). **The verdict is two findings wide.** Twenty-one classified
+findings carry it, so one finding is about five points and two
+reclassifications — 10 of 21, 48% — pass it; the baseline's denominator is five
+times larger. Three
 deliveries are a small draw, which is what the criterion says about one and
 does not stop being true of three.
 
 **What D5's posting half reached.** Pre-existing is 3 against zero throughout
 the baseline's 541, all three in #1021: the rule anchors findings on unchanged
-text, which is the thing it exists to do, and the 78% comparison excludes them
+text, which is the thing it exists to do, and the 76% comparison excludes them
 for that reason. Unclassifiable is 16 of 69 (23%) against 160 of 541 (30%);
 from round 3 it is 12 of 21, 3 of 9, 0 of 10 and 0 of 1, against the baseline's
 40% to 58% of every round. Ten of that 12 are #1023's round 3, which posted all
@@ -889,8 +902,8 @@ rather than a spread across rounds. All 16 are file-level and the `LEFT`-side,
 null-line and blame-failure counts are zero, as in the baseline, so Open
 Question 4 is untouched.
 
-**Triage classified more of the sample**: 51 must-fix, 1 filed, 9 refuted, 8
-unknown over 69 (12% unknown), against 295, 10, 56 and 180 over 541 (33%). D2's
+**Triage classified more of the sample**: 56 must-fix, 1 filed, 4 refuted, 8
+unknown over 69 (12% unknown), against 311, 10, 38 and 182 over 541 (34%). D2's
 reply rule puts the verdict and the fix shape in the thread, which is where the
 heuristic reads; the baseline's unknown third was fixers answering in review
 summaries instead.

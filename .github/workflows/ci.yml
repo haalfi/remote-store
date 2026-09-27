@@ -97,8 +97,10 @@ jobs:
           # .claude/ with a test. If a tested artifact is ever added elsewhere in
           # that tree — a prompt in settings.json, a script under skills/ — widen
           # this pattern with it, or the guard will not run on the edits most
-          # likely to break it.
-          HOOKS_PAT='^\.claude/hooks/|^\.github/workflows/ci\.yml$'
+          # likely to break it. `sdd/rfcs/*.py` is here on that rule: RFC-0015's
+          # classifier scripts are imported by scripts/ship_report.py and pinned
+          # by tests/scripts/, and tooling-tests is their only consumer.
+          HOOKS_PAT='^\.claude/hooks/|^sdd/rfcs/[^/]+\.py$|^\.github/workflows/ci\.yml$'
           if echo "$FILES" | grep -qE "$HOOKS_PAT"; then echo "hooks=true" >> "$GITHUB_OUTPUT"
           else echo "hooks=false" >> "$GITHUB_OUTPUT"; fi
       - name: Resolve Python versions
@@ -451,8 +453,9 @@ jobs:
   # test-cross-platform runs `pytest -m os_sensitive`, selecting by marker
   # rather than directory, and several tests/scripts/ modules are marked and do
   # run there. test_claude_hooks.py deliberately is not — see its docstring.
-  # Gated on `hooks` as well as `code` so a .claude/hooks/-only edit still runs
-  # the suite that pins those hooks, without making it a full-fan-out trigger.
+  # Gated on `hooks` as well as `code` so a .claude/hooks/-only or
+  # sdd/rfcs/*.py-only edit still runs the suite that pins them, without making
+  # it a full-fan-out trigger.
   tooling-tests:
     needs: [setup]
     if: needs.setup.outputs.code == 'true' || needs.setup.outputs.hooks == 'true'
