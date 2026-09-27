@@ -1,0 +1,156 @@
+id: BK-365
+title: "ADR-0040 § 4 conversion: 5 items to dossiers, preamble to heading plus Promise"
+trigger: >-
+  The maintainer's final-session brief for BK-365: convert §§ 4, 5 and 6 one
+  section per PR, then record the BACKLOG-DONE.md decision and close. This is
+  the § 4 PR. Decided in interview before building: the diagnosis style as
+  drafted for ID-217, ID-181 and BK-242; every non-Promise preamble clause
+  removed (four `Closes when` clauses restate their item bodies, and the
+  BK-357 sentence is history whose facts BACKLOG-DONE.md and CHANGELOG hold).
+  The Promise is unchanged.
+source_items:
+  - BK-365
+audience:
+  - contributor.process
+expected_ripples:
+  - sdd/BACKLOG.md
+  - sdd/backlog/
+surprising_ripples: []
+phases:
+  - id: orient
+    name: Orient
+    steps:
+      - file: sdd/BACKLOG.md
+        section: "How this file works (Migration in progress, Item scope, Dossiers, Item authority, Ordering); § 4 preamble and items; BK-365"
+        read_type: gate
+        extract: >-
+          A delegated read split the preamble into five clauses with file:line
+          evidence: four `Closes when` clauses whose bound the named item body
+          already states, and the BK-357 sentence, whose facts sit in
+          BACKLOG-DONE.md's BK-357 entry and CHANGELOG. None bounds an open item
+          beyond its body, so no dossier gets a "Moved from the § 4 preamble"
+          heading; no ordering note or cross-section dependency (ID-121's
+          BUG-251 link is already inside the item); no inbound link to
+          `#no-workarounds` besides its definition.
+        outcome: ok
+      - file: sdd/traces/bk-365-backlog-section-3.yml
+        section: "(full); also the bk-327, bk-345 dossiers"
+        read_type: reference
+        extract: >-
+          Reused § 3's intro line with "§ 4 conversion", its dated
+          "## Correction" and "## Re-measured" shapes, and its diagnosis style.
+          The rewritten tmp/ checker reproduced all eight § 3 moves as OK
+          against 7e0fd13f8 before it was trusted on § 4.
+        outcome: ok
+      - file: sdd/adrs/0040-backlog-as-index.md
+        section: "Section Promises § 4"
+        read_type: gate
+        extract: >-
+          Holds § 4's build-or-decline rationale, which the removed "recorded
+          decision" clause restated.
+        outcome: ok
+  - id: implement
+    name: Implement
+    steps:
+      - file: src/remote_store/backends/_sqlalchemy.py
+        section: "__init__ capability computation (355-362), capabilities (371-372)"
+        read_type: verify
+        extract: >-
+          Re-deriving ID-140: its "new pattern" and "first such declaration"
+          claims are false because SQLBlobBackend itself sets
+          `self._capabilities` per instance from its optional columns, which
+          FEATURES.md:272 publishes. "No other backend varies" holds: `rg -n
+          -A3 'def capabilities' src` shows every other concrete backend
+          returning class-level CAPABILITIES. Review round 1 caught the first
+          draft calling that last clause false. Dated correction in the
+          dossier, with the test_config.py line shift.
+        outcome: ok
+      - file: src/remote_store/backends/_flat_ns.py
+        section: "_check_no_file_ancestor; its call sites across src/"
+        read_type: verify
+        extract: >-
+          BK-242: `rg -n 'def _head_one' src` finds the closures in
+          _s3_base.py, _s3_boto3.py, _azure.py, _sqlalchemy.py and async
+          _azure.py, the last feeding the separate `_acheck_no_file_ancestor`
+          walk, which GraphBackend also calls outside the opt-in; the body's
+          list omits S3Boto3Backend. Neither optimisation in _flat_ns.py or the
+          five closure files. Review round 1 caught the first draft citing call
+          sites as closures via a substring-matching regex; round 2 caught the
+          Graph caller and a "not shipped" search scoped to the one file that
+          could not hold either optimisation. Dated correction in the dossier.
+        outcome: ok
+      - file: sdd/specs/044-graph-backend.md
+        section: "GR-003, GLOB bullet (94-99)"
+        read_type: verify
+        extract: >-
+          ID-217: the quoted "lands as a separate backlog item" now reads
+          "(tracked as ID-217, …)"; `ls` of aio/ext/ still shows write.py
+          only, and ext/cache.py has no bridged-backend warning. Dated
+          correction in the dossier.
+        outcome: ok
+      - file: src/remote_store/backends/_sftp.py
+        section: "SFTPUtils.enable_ssh_rsa_compat docstring"
+        read_type: verify
+        extract: >-
+          ID-181: four class attributes patched, a process-global warning in
+          the docstring, a no-op below paramiko 5.0; the `paramiko>=3.1` pin
+          has no ceiling. Recorded as "## Re-measured" in the dossier.
+        outcome: ok
+      - file: src/remote_store/_store.py
+        section: "resolve"
+        read_type: verify
+        extract: >-
+          ID-121: `rg -l CompositeStore src` finds nothing; resolve() ships;
+          the research anchor resolves. Recorded as "## Re-measured".
+        outcome: ok
+  - id: verify
+    name: Verify
+    steps:
+      - file: sdd/rfcs/rfc-0016-measure.py
+        section: "(full)"
+        read_type: gate
+        extract: "§ 4 at 5 items, median/max 8/8, preamble 27 words."
+        outcome: ok
+      - file: scripts/gen_backlogid.py
+        section: "--check (R1–R4)"
+        read_type: gate
+        extract: >-
+          With the marker deleted R2/R3 gate § 4; no script change.
+        outcome: ok
+review:
+  # Derived by `hatch run ship-report 1037 --trace-block-only` at head 7d2e141.
+  # Do not hand-edit, except a newly required field per sdd/traces/_schema.yml
+  # section review: RFC-0015 D4 makes this script the only producer.
+  derivation: "hatch run ship-report 1037 --trace-block-only"
+  pr: 1037
+  review_rounds: 2
+  submissions: 2
+  findings: 4
+  by_round:
+    - round: 1
+      findings: 2
+      origin: {original: 2}
+      triage: {must-fix: 2}
+      duration_hours: 0.04
+    - round: 2
+      findings: 2
+      origin: {loop-introduced: 1, original: 1}
+      triage: {must-fix: 2}
+      duration_hours: 0.08
+  by_file:
+    - path: "sdd/backlog/bk-242-flat-ns-ancestor-precheck-perf.md"
+      findings: 3
+    - path: "sdd/backlog/id-140-sqlblob-lazy-reads.md"
+      findings: 1
+  untouched_files:
+    - "sdd/BACKLOG.md"
+    - "sdd/backlog/id-121-composite-store.md"
+    - "sdd/backlog/id-181-per-backend-ssh-rsa-opt-in.md"
+    - "sdd/backlog/id-217-async-native-ext-surface.md"
+    - "sdd/traces/bk-365-backlog-section-4.yml"
+  review_driven_commits:
+    - sha: "b45f4a3"
+      subject: "fix: address PR #1037 review"
+    - sha: "7d2e141"
+      subject: "fix: address PR #1037 review"
+  ci: {verdict: GREEN, failed: 0, pending: 0}

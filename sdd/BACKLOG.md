@@ -12,7 +12,7 @@ Items graduate through the SDD pipeline:
 ## How this file works
 
 Operational rules only. Why each rule exists: [ADR-0040](adrs/0040-backlog-as-index.md).
-**Migration in progress:** §§ 1–3 are converted. A section not yet converted carries
+**Migration in progress:** §§ 1–4 are converted. A section not yet converted carries
 `<!-- backlog: unconverted -->` on the line under its heading and keeps its old
 shape (long bodies, `Closes when`) until it is; do not extend that shape in new
 edits. Converting a section deletes the marker. The marker, not this note, is
@@ -443,186 +443,54 @@ copies an example, without opening an issue.
 
 <a id="no-workarounds"></a>
 ## 4. Users stop working around us
-<!-- backlog: unconverted -->
 
 **Promise:** the library does the thing, instead of the user hand-rolling it
 or paying for our shortcut.
 
-**Closes when:** no shipped capability declaration is more pessimistic than what
-the backend can actually do (ID-140, ID-217); no capability a user cannot
-cheaply build themselves is left unbuilt without a recorded decision (ID-121,
-ID-217); no security tradeoff is scoped wider than the backend that needs it
-(ID-181); and no cost we know how to remove is left on the caller (BK-242).
-That last clause was carried by two items; BK-357 closed one of them, removing a
-stalled `SEEK_END` seek's second `io_timeout` — and, more than a cost, the wrong
-answer it returned instead of failing.
-
 - [ ] **ID-217 — Async-native extension surface (owner for the deferred async `ext.*`)**
   spec: GR-003 · effort: L · audience: user.api
-  `src/remote_store/aio/ext/` ships only `write.py` (`write_with_hash`); there is
-  no async equivalent of `ext.glob`, `ext.observe`, `ext.otel`, or `ext.integrity`
-  (audit-016 M6). A native `AsyncStore` consumer — the natural audience for an
-  async-native backend such as Graph — reaches the full `ext.*` surface only by
-  dropping to `AsyncBackendSyncAdapter` (ADR-0025), which forfeits the async
-  streaming the backend exists to provide. GR-003 calls this out for `GLOB`
-  specifically: async callers compose pattern matching over `list_files`
-  themselves "until an async equivalent of `ext.glob` lands as a separate backlog
-  item" — this is that item, and it owns the surface as a whole.
-  **Decision pending:** build per-extension async equivalents (glob first, as the
-  smallest and the one a spec promises), or formally decline the ecosystem and
-  document the sync-adapter route as the supported path. Declining is a
-  legitimate close; either outcome removes an open promise from a shipped spec.
-  - **`ext.cache` warning on a bridged backend** (was ID-218, absorbed here).
-    `CachedStore` with an unset `max_content_size` materialises whatever the
-    wrapped backend yields (`ext/cache.py`). Over a sync REST backend that is
-    merely inconvenient; over an async-native backend reached through
-    `AsyncBackendSyncAdapter` it silently defeats the streaming the user chose
-    the backend for. ADR-0025 § Risks flags this and promises the cache
-    extension "should learn to warn when wrapped over a bridged backend
-    (tracked separately)"; this bullet is that owner. Scope: emit a warning (or
-    require an explicit `max_content_size`) when `cache()` wraps a `Store` whose
-    backend is an `AsyncBackendSyncAdapter` and `max_content_size` is unset.
-    It is the same root cause — extensions do not understand async backends —
-    so it resolves with the decision above rather than beside it. ADR-0025's
-    sentence still reads "(tracked as ID-218)" and is Accepted, so it is not
-    edited; `BACKLOG-DONE.md` § Absorbed is what makes that citation resolve.
+  `aio/ext/` ships only `write.py` against fifteen sync `ext/` modules
+  (`ls`), so an `AsyncStore` caller reaches `ext.glob`, `ext.cache` and the
+  rest only through `AsyncBackendSyncAdapter`, forfeiting async streaming;
+  GR-003 names this item as the async `ext.glob` owner. Open decision: build
+  per-extension equivalents (glob first) or decline and document the adapter.
+  Detail: [dossier](backlog/id-217-async-native-ext-surface.md)
 
 - [ ] **ID-140 — SQLBlob lazy reads for SQLite & PostgreSQL**
   spec: SQL-BLOB-003, SQL-BLOB-020 · effort: L · audience: user.api
-  The current blanket claim that `SQLBlobBackend` cannot do lazy reads is too
-  strong (see spec 040 SQL-BLOB-020, `_sqlalchemy.py:47` excluding
-  `Capability.LAZY_READ`), so users materialise large blobs they need not.
-  Both primary dialects have a path to honest `LAZY_READ`; MySQL does not. This
-  item captures the direction — **no implementation yet**.
-
-  **SQLite (Py 3.11+):** `sqlite3.Connection.blobopen(table, col, rowid)`
-  returns a seekable, chunked `Blob` handle. Reachable through SQLAlchemy via
-  `sa_conn.connection.driver_connection`. Requires a `SELECT rowid FROM t
-  WHERE key = :key` lookup first, and only works when the user-supplied table
-  has an implicit rowid (i.e. not `WITHOUT ROWID`). Genuine streaming.
-
-  **PostgreSQL (`bytea`, our current schema):** no native blob handle API.
-  Pseudo-stream via repeated `SELECT substring(data FROM :off FOR :len) FROM
-  t WHERE key = :k`. Client memory stays bounded (satisfies LAZY_READ
-  semantics per spec 006 line 70-73), but each chunk is a round trip, and on
-  compressed TOAST (`EXTENDED`, the default) the server must decompress per
-  call. `ALTER COLUMN data SET STORAGE EXTERNAL` makes substring cheap at
-  the cost of disk space — caller-controlled tradeoff.
-
-  **PostgreSQL Large Objects (`lo_*`):** genuine streaming via
-  `psycopg.connection.lobject()`, but requires an `oid` column and manual
-  lifecycle (`lo_unlink` on delete/overwrite/move, otherwise we leak).
-  Different storage model — belongs in a separate backend variant
-  (e.g. `sql-largeobject`), not a retrofit to `SQLBlobBackend`.
-
-  **MySQL:** no streaming story. Same `SUBSTRING()` pseudo-stream is
-  possible but out of scope here (not a primary target).
-
-  **Constraints & gotchas:**
-  - `requires-python = ">=3.10"` (`pyproject.toml:11`) stays. SQLite
-    `blobopen` is 3.11+ → runtime check, fall back to current eager path on
-    3.10.
-  - Capability becomes **per-instance, dialect-conditional** — new pattern
-    in this codebase; no other backend varies capabilities at runtime.
-    Consider whether `Capability` set should be computed in `__init__` and
-    cached, and how `store.supports()` interacts with it.
-  - Connection lifetime: streaming handle must keep the DBAPI connection
-    checked out until the returned `BinaryIO.close()`. Needs a wrapper that
-    owns both.
-  - Custom tables (`create_table=False`): rowid may not exist; substring
-    path is schema-agnostic and works as a universal fallback.
-
-  **Ripple checks the ripple-check table does not carry.** Process steps are
-  omitted per [§ Item scope](#how-this-file-works); these three are not process
-  steps, and each would be missed by a reader following the table alone:
-  - `FEATURES.md`'s capability matrix is the authoritative capability surface
-    per [`CLAUDE.md` § Feature reference](../CLAUDE.md#feature-reference), and
-    this item's whole subject is making a `Capability` declaration
-    dialect-conditional — the first such declaration in the repo that is not a
-    flat per-backend fact.
-  - `tests/backends/sqlblob/test_config.py:148` asserts LAZY_READ is **not**
-    declared, so it must split into dialect-conditional assertions rather than
-    simply flip.
-  - Verification shape: a large blob (e.g. 50 MiB) read in 4 KiB chunks with
-    bounded RSS. Content and chunking assertions alone pass against an eager
-    read, which is the same hole ID-244 records for SIO-009.
-
-  **Open decisions for whoever picks this up:**
-  1. SQLite-only first, or SQLite + PG `bytea` substring together?
-  2. Declare `LAZY_READ` for PG substring path given the per-chunk
-     round-trip cost, or reserve LAZY_READ for "true" lazy and add a
-     separate `CHUNKED_READ` quality flag?
-  3. PG Large Objects as a follow-up backend — separate idea, own ID.
-
-  Related: ID-136 (non-lazy **write** is by-design; this item is about
-  **reads** only — writes remain eager).
+  `SQLBlobBackend` withholds `LAZY_READ` on every dialect (re-read:
+  `_ALL_CAPABILITIES` in `_sqlalchemy.py`), so a large blob is materialised in
+  full, although SQLite's `blobopen` and PostgreSQL's `substring` both allow
+  bounded reads. Open decision: SQLite first or with PostgreSQL, and whether
+  a read costing one round trip per chunk may declare `LAZY_READ`.
+  Detail: [dossier](backlog/id-140-sqlblob-lazy-reads.md)
 
 - [ ] **ID-181 — Per-backend `ssh-rsa` opt-in via `paramiko.Transport` subclass**
   spec: SFTP-007 · effort: M · audience: user.api
-  `SFTPUtils.enable_ssh_rsa_compat()` mutates paramiko's class attributes
-  so every `Transport` instance in the process accepts SHA-1 host keys
-  thereafter. For single-server use cases this is fine and documented as
-  a security tradeoff. For processes that talk to a mix of modern and
-  legacy SFTP backends (e.g. a Dagster job, a multi-tenant pipeline),
-  the shim leaks SHA-1 acceptance into every other transport, so one legacy
-  server weakens every other connection in the process.
-  Sketch: `BackendConfig(type="sftp", options={..., "allow_legacy_ssh_rsa": True})`
-  constructs a `Transport` subclass whose instance-level `_preferred_keys`
-  / `_preferred_pubkeys` include `ssh-rsa`, leaving `paramiko.Transport`
-  class attrs untouched. `Transport._key_info` and `RSAKey.HASHES` are
-  read at class scope so they still need a module-level patch — but
-  those are algorithm-name → impl lookup tables, not security policy.
+  `SFTPUtils.enable_ssh_rsa_compat()` patches four paramiko class attributes,
+  so SHA-1 acceptance meant for one legacy server reaches every transport in
+  the process, as its docstring warns; it matters on paramiko ≥ 5, which the
+  unbounded `paramiko>=3.1` pin admits. Open decision: build the per-backend
+  opt-in sketched in the dossier, or decide against it.
+  Detail: [dossier](backlog/id-181-per-backend-ssh-rsa-opt-in.md)
 
 - [ ] **BK-242 — Flat-NS file-ancestor pre-check perf (SQLBlob IN-list, memoisation)**
   spec: — · effort: S · audience: user.api, library.maintainer
-  Two perf optimisations the ID-211 disposition (b) opt-in didn't ship:
-  - **SQLBlob `WHERE key IN (ancestors)`**: today `_head_one` issues one
-    `SELECT 1` per ancestor — N round trips for a depth-N path. The
-    research note (`sdd/research/research-id-211-flat-ns-file-ancestor-precheck.md`
-    § 5.4) already flagged this; a single `SELECT key FROM table WHERE
-    key IN (:ancestors)` collapses the walk to one RTT. On in-memory
-    SQLite the win is sub-ms; on PostgreSQL/MySQL over the network at
-    depth 6 it is 6 RTTs → 1 RTT (~10-50 ms each).
-  - **`head_one` memoisation**: bulk-write workloads (`a/b/c/file-{i}.bin`
-    for i in 1..N) re-HEAD the same `a`, `a/b`, `a/b/c` ancestors N
-    times. A bounded per-instance `TTLCache(maxsize=…, ttl=…)` on the
-    closure collapses O(N×D) HEADs to ~O(D) per distinct prefix without
-    changing the contract (the TTL accepts staleness within its window).
-    Applies to S3, S3PyArrow, Azure non-HNS, and SQLBlob.
-  Both ship behind the existing `reject_write_under_file_ancestor=True`
-  opt-in only, so there is no contract risk. Includes refreshing `§ 4` /
-  `§ 5.4` in the research note with measured before/after numbers. Touches
-  `src/remote_store/backends/_flat_ns.py`,
-  `src/remote_store/backends/_sqlalchemy.py`,
-  `src/remote_store/backends/_s3.py`,
-  `src/remote_store/backends/_s3_pyarrow.py`,
-  `src/remote_store/backends/_azure.py`,
-  `src/remote_store/aio/backends/_azure.py`.
+  The opt-in file-ancestor pre-check issues one probe per ancestor per write
+  (SQLBlob: one query, one connection each) and memoises nothing across a bulk write;
+  re-read, `S3Boto3Backend` runs it too, which the body's list omits (dossier
+  correction). Open decision: none on shape; both optimisations and the
+  research-note refresh are in the dossier.
+  Detail: [dossier](backlog/bk-242-flat-ns-ancestor-precheck-perf.md)
 
 - [ ] **ID-121 — CompositeStore (research complete)**
   spec: — · effort: L · audience: user.api
-  `CompositeStore(Store)` — core Store subclass (not extension) that composes
-  multiple stores into one. Deterministic fallthrough resolution for reads, union
-  LIST (deduplicated), writes to primary tier only. The one genuinely new
-  user-facing capability in this file, and one a user cannot cheaply build
-  themselves.
-  - [Research](research/research-sqlalchemy-backend.md#52-compositestore-id-120)
-    (anchor uses historical ID-120 from research doc; now ID-121 after swap)
-  - Depends on: unified `resolve()` → `ResolutionPlan` (ID-120) — **satisfied**:
-    `Store.resolve()` ships and returns a `ResolutionPlan` (see BACKLOG-DONE.md).
-    Remaining: at least two working backends to be useful; pairs well with
-    ID-119 (landed) — so both conditions are already met.
-  - Next: design as a separate spec — backend-agnostic, useful independently.
-  - **Cache-key derivation from `ResolutionPlan`** (was ID-123, absorbed here).
-    `ext.cache` should derive cache keys from `ResolutionPlan` fields instead of
-    ad-hoc `(operation, path)` tuples (RES-100, proposed in
-    [043](specs/043-resolution-plan.md)). Single-backend cache keys are already
-    correct *for the default per-store cache*, so this is only valuable once
-    composition exists. **The one case that was reachable today is now
-    BUG-251** in section 2: it reproduced, so it is a defect rather than a
-    motivating example, and it is filed where declining CompositeStore cannot
-    retire it. Keep it in view when designing here — identity-derived keys are
-    the wide fix for it, and this is where that scheme gets decided.
+  No `CompositeStore` exists (`rg -l CompositeStore src` finds nothing), so
+  fallthrough reads, union listings and primary-tier writes across stores are
+  left to the user; its prerequisites, `Store.resolve()` and a second working
+  backend, have shipped. It owns `ResolutionPlan`-derived cache keys, the wide
+  fix for BUG-251 (§ 2). Open decision: design it as its own spec, or decline.
+  Detail: [dossier](backlog/id-121-composite-store.md)
 
 ---
 
@@ -1735,8 +1603,9 @@ the commit that writes it lands, so cite the generator instead.
   **In progress: [RFC-0016](rfcs/rfc-0016-backlog-as-index.md) is accepted as
   [ADR-0040](adrs/0040-backlog-as-index.md)** for the `BACKLOG.md` half — an
   index with per-item dossiers. Shipped: the rules header, R1–R4, the § 1
-  pilot (16 items to `sdd/backlog/`), § 2 (9 items) and § 3 (8 items), per
-  `sdd/rfcs/rfc-0016-measure.py`; what remains is the exit criteria below.
+  pilot (16 items to `sdd/backlog/`), § 2 (9 items), § 3 (8 items) and § 4
+  (5 items), per `sdd/rfcs/rfc-0016-measure.py`; what remains is the exit
+  criteria below.
   **`sdd/BACKLOG.md` is 20,097 words at `6cec225`.** That is the file a maintainer
   reads to decide what to work on, and it is now roughly eighty pages of prose. Two
   independent multipliers got it there over seven weeks (2026-07-18 → 2026-09-05):
@@ -1767,7 +1636,7 @@ the commit that writes it lands, so cite the generator instead.
   [research](research/research-appropriate-level-of-detail.md) § 9.2 permits,
   and the caps are a recorded departure from its § 9.1. The question stays open
   for `BACKLOG-DONE.md`.
-  **Exit criteria:** §§ 4–6 converted (each drops its `unconverted` marker, so
+  **Exit criteria:** §§ 5–6 converted (each drops its `unconverted` marker, so
   R2/R3 then gate it), and a recorded decision on the
   `BACKLOG-DONE.md` half with any mechanism's bound stated per
   [`DRIFT-RULES.md`](DRIFT-RULES.md#rules).
