@@ -39,6 +39,11 @@ pre-check's closures at `_s3_base.py:153` (shared by `S3Backend` and
 and `aio/backends/_azure.py:177`. The sync four feed `_check_no_file_ancestor`;
 the async one feeds a separate walk, `_acheck_no_file_ancestor`
 (`_flat_ns.py:139`), so a memoisation placed in the sync walk alone misses
-async Azure. `rg -n 'TTLCache|lru_cache|memo' src/remote_store/backends/_flat_ns.py`
-finds nothing, so neither optimisation has shipped. Found by the ADR-0040 § 4
-conversion.
+async Azure. That async walk has a second caller outside the opt-in:
+`GraphBackend` runs it with `head_one=self._is_file_at`
+(`aio/backends/_graph/backend.py:566`), so a memoisation placed in the shared
+async walk, rather than on the closures, would change Graph's behaviour too.
+Callers enumerated with `rg -n 'check_no_file_ancestor\(' src`, which matches
+both walks and the `_maybe_` wrappers, read past. Neither optimisation has shipped:
+`rg -n '\.in_\(|TTLCache|lru_cache|functools.cache'` over `_flat_ns.py` and the
+five closure files above finds nothing. Found by the ADR-0040 § 4 conversion.
