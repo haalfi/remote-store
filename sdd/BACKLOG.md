@@ -12,7 +12,7 @@ Items graduate through the SDD pipeline:
 ## How this file works
 
 Operational rules only. Why each rule exists: [ADR-0040](adrs/0040-backlog-as-index.md).
-**Migration in progress:** § 1 is converted. A section not yet converted carries
+**Migration in progress:** §§ 1–2 are converted. A section not yet converted carries
 `<!-- backlog: unconverted -->` on the line under its heading and keeps its old
 shape (long bodies, `Closes when`) until it is; do not extend that shape in new
 edits. Converting a section deletes the marker. The marker, not this note, is
@@ -276,267 +276,88 @@ failure it was.
 
 <a id="correct-and-proven"></a>
 ## 2. Answers are correct, and the contract is proven
-<!-- backlog: unconverted -->
 
 **Promise:** the same call returns the same right result on every backend, and
 no clause of the contract ships unexercised.
 
-**Closes when:** every defect and hole **enumerated below** is closed — wrong
-answers, such as BUG-241's unescaped `LIKE` metacharacters and BUG-240's
-`max_depth` contradiction, and coverage holes measured in cells, such as
-ID-244's WRITE-gated classes and ID-247's root-path cells. The list itself is
-the closing condition; this sentence illustrates its two kinds rather than
-restating it, per [`CONTENT-RULES.md` Rules 2 and 4](CONTENT-RULES.md#rules).
-That is what the boundedness below requires — a list you can check — and a
-numeral is not part of it. The previous wording carried one, and it was wrong by
-two before anyone edited it: BUG-260 and ID-251 had joined the section without
-reaching the sentence that counted them.
-**Bounded deliberately.** "No clause ships unexercised" is the promise, not the
-closing condition: nothing derives the full set of unreachable clauses today,
-which is what ID-245's inventory in section 6 would supply. Until it does, this
-section closes on an **enumerated** list rather than on a claim nobody can
-check — saying otherwise would make the promise unfalsifiable, which is the
-failure this structure exists to remove. Enumerated, not counted: what makes it
-checkable is that every item is written down below, and a reader can walk them.
-
-The wrong-answer
-defects come first because a user can hit them today. **One item here is depended
-on from section 1**: BK-345 waits on ID-244's per-fixture seeding decision, so
-section 1 cannot close before it lands even though it sits here. ID-242 was a
-second such dependency, from BUG-249's denied path; that item shipped without it,
-leaving the denied listing asserted by one hand-written 403 probe and by nothing
-in conformance — the exact hole ID-242 exists to fill, now with a shipped clause
-resting on it rather than a pending one.
-
 - [ ] **BUG-251 — A shared `cache_backend=` serves one store's bytes for another's**
   spec: RES-100 · effort: M · audience: user.api
-  `ext.cache` derives keys from `(operation, path)` with nothing identifying the
-  store, so two `Store`s at different roots sharing one `cache_backend=` collide
-  on any path they both hold, and the second reader gets the first store's
-  content. Silent wrong data, not a wrong error type.
-  **Reproduced**, `hatch run python` against two `LocalBackend` roots each
-  holding a distinct `same.txt`, sharing one `MemoryCache`:
-  `store_a.read_bytes("same.txt")` → `b"FROM-STORE-A"`, then
-  `store_b.read_bytes("same.txt")` → `b"FROM-STORE-A"`. Not Graph-specific —
-  identical for two S3 buckets or two Azure containers.
-  Filed from audit-016 L8, which diagnosed it as an aside to ID-123's
-  key-derivation work. It is not an aside: it needs no `CompositeStore`, it is
-  reachable on shipped code, and leaving it inside an idea that may legitimately
-  close as "declined" would retire a data-correctness defect with it.
-  **Fix shape is open and belongs with ID-121's design**, which is where
-  identity-derived keys are being decided: the narrow fix is to mix the backend
-  identity into the key, the wide one is the `ResolutionPlan`-derived scheme
-  ID-121 carries. Opt-in surface, so no contract risk either way — but decide
-  whether an unkeyed shared cache should raise rather than silently collide.
-  **Test shape:** two stores at different roots, one shared cache, same relative
-  path, assert each reads its own bytes.
+  `ext.cache` keys entries on `(operation, path)` with nothing naming the
+  store, so two `Store`s sharing one `cache_backend=` return each other's bytes
+  for a path both hold; re-measured with two `LocalBackend` roots and one
+  `MemoryCache`. Silent wrong data. Open decision: key on backend identity,
+  adopt ID-121's derived keys, or refuse an unkeyed shared cache.
+  Detail: [dossier](backlog/bug-251-shared-cache-cross-store-bytes.md)
 
-- [ ] **BUG-241 — SQL prefix probes build `LIKE` patterns without escaping `_` and `%`**
+- [ ] **BUG-241 — `SQLBlobBackend` builds prefix `LIKE` patterns without escaping `_` and `%`, so listings and folder deletes reach sibling keys**
   spec: — · effort: S · audience: user.api
-  `SQLBlobBackend._reject_folder` builds `LIKE key + "/%"`, and every other
-  prefix probe in `_sqlalchemy.py` follows the same convention. In SQL `LIKE`,
-  `_` matches any single character and `%` matches any sequence, so a key
-  containing either over-matches: probing `a_b` also matches `axb/...`, and a
-  key containing `%` matches far more.
-  **Consequence:** the wrong-type probe can report a folder that does not
-  exist, turning a `NotFound` into an `InvalidPath` for a sibling key whose
-  name merely resembles the target. Underscores in object keys are common, so
-  this is a wrong answer on ordinary data rather than a wrong error type.
-  The convention is file-wide, so fixing one site without the rest would be the
-  inconsistency this section exists to remove. Fix them together with
-  `ESCAPE`, or a dialect-appropriate equivalent.
-  **Test shape:** seed sibling keys that differ only in a `LIKE` metacharacter
-  position and assert the probe does not confuse them.
+  Nine `key.like(prefix + "%")` sites in `_sqlalchemy.py` leave `_` and `%`
+  unescaped, so a key holding either matches siblings: re-measured,
+  `list_files("a_b")` returns `axb/y.txt` and `delete_folder("a_b",
+  recursive=True)` deletes it. Open decision: none on shape; the dossier's
+  correction widens the scope past the probe the body describes.
+  Detail: [dossier](backlog/bug-241-sql-like-metacharacters.md)
 
 - [ ] **BUG-240 — ASYNC-014 and DEPTH-003 state opposite rules, and `GraphBackend` implements the async one**
   spec: ASYNC-014, DEPTH-003 · effort: M · audience: user.api
-  [ASYNC-014](specs/029-async-store-backend-api.md) says "`max_depth` limits
-  traversal depth (when set, `recursive` is ignored)" **while citing DEPTH-003**,
-  which states the opposite for the Backend ABC: `max_depth` applies only when
-  `recursive=True`. `GraphBackend.list_files` follows ASYNC-014 and pins it at
-  `tests/backends/graph/aio/test_list.py:183` — `recursive=False, max_depth=2`
-  returns depth-2 files, where a sync backend returns immediate children only.
-  So identical arguments return different files depending on the backend.
-  **Both readings are asserted by a passing test, on different backends.** That
-  is the state Rule 7 calls a live disagreement rather than a defect in one side,
-  so which way it resolves is a decision, not a lookup.
-  **The split is inside the async lane, not between the lanes.**
-  `AsyncMemoryBackend` and `AsyncAzureBackend` implement DEPTH-003's reading;
-  `GraphBackend` implements ASYNC-014's — two async backends already disagree
-  with a third.
-  **Three artifacts assert the ASYNC-014 reading, not one.** ASYNC-014 itself,
-  `tests/backends/graph/aio/test_list.py:183`, and `GraphBackend.list_files`'s
-  own docstring — which BK-331 made *authoritative* for depth strategy by
-  replacing spec 037's per-backend table with a pointer to each backend's
-  docstring. So closing this means changing a doc BK-331 promoted to source of
-  truth.
-  **Why nothing caught it:** there is no async twin of
-  `test_list_files_non_recursive_ignores_max_depth`, so conformance never
-  cross-checks the two; and both `Store` and `AsyncStore` normalise `max_depth`
-  into `recursive` before delegating, so the divergence is invisible to every
-  caller above the ABC. Reachable only by a direct backend call.
-  **Whichever way it goes, the async conformance cell is part of the fix** —
-  without it the next divergence is equally invisible. Expect it to turn a
-  backend red on arrival; that is the item working, not a regression.
-
-- [ ] **ID-244 — A read-only backend cannot reach any WRITE-gated contract cell**
-  spec: — · effort: M · audience: infra.test
-  Sibling of [ID-241](BACKLOG-DONE.md) (shipped), and the same class: a rule
-  gated so no fixture ever runs it. Here the gate is the **seeding discipline** —
-  conformance cells that need data call `backend.write`, so they sit behind
-  `fixture_params(Capability.WRITE)`. Any contract that happens to live in such a
-  class is therefore unreachable for a read-only backend, *including contracts
-  that have nothing to do with writing*.
-  **Measured instance.** SIO-009 (laziness: a LAZY_READ backend must not return a
-  BytesIO-backed stream) lives in `TestStreamingConformance`, a WRITE-gated class.
-  `ReadOnlyHttpBackend` is the registry's **only read-only LAZY_READ declarer** —
-  streaming is the whole justification for its capability set, per
-  `tests/backends/http/test_config.py::test_capabilities_are_read_metadata_lazy` —
-  and it was structurally excluded from the only cells asserting that contract.
-  The two per-backend read tests did not compensate: both assert content and
-  chunking, which a pre-loaded `BytesIO` satisfies identically.
-  Pinned per-backend by BK-340 in `test_read_is_lazy_not_bytesio`; that is a patch
-  over a structural hole, exactly as `tests/backends/sqlquery/test_config.py`'s
-  root cells were before BK-340 registered a fixture.
-  **The same hole is why BK-340's own `sqlquery` fixture reaches only 77 cells.**
-  Its content-bearing surface — read, glob, listing with keys present — is
-  WRITE-gated end to end, so registering the fixture bought the
-  capability-independent contract and nothing else.
-  **This item owns the arrangement-hook decision for BK-345 too.** The fix is a
-  seeding indirection (a per-fixture `seed` hook the cells call instead of
-  `backend.write`), and *where it binds* is unmade — on the fixture, on the
-  helper, or as a capability-neutral rewrite of the affected classes. The answer
-  decides how much of the conformance suite changes, and a hook whose seeded
-  content cannot round-trip (SQLQueryBackend materialises result sets, so
-  `read(k)` never returns the bytes a seeder "wrote") constrains it further: the
-  hook must express *presence*, not content, or the cells that use it must not
-  assert content. BK-345 needs the same indirection to make a container absent,
-  so decide the binding once for both shapes.
-
-- [ ] **ID-242 — Four `moto doesn't raise PermissionError` pragmas are coverage holes, not exemptions**
-  spec: — · effort: S · audience: infra.test
-  `_s3_base.py` 510/540/573 and `_s3_pyarrow.py:626` each carry
-  `# pragma: no cover -- moto doesn't raise PermissionError`. The mappings are
-  correct and the pragmas are accurate statements about the fixture, which is
-  exactly the problem: **BUG-242 was a defect living behind the fifth instance
-  of this same pragma**, on the one branch that mattered, invisible to a suite
-  of 7976 passing tests.
-  A true "the fixture cannot reach this" is a coverage hole wearing an
-  exemption's clothes. It is indistinguishable from a real exemption at read
-  time, so it never gets revisited.
-  **Now cheap to close:** `tests/backends/s3/test_denied_probe.py` established a
-  `pytest-httpserver` harness that serves real 403s at Stage 1, no Docker and no
-  credentials. Each remaining pragma is a few params on that harness. Ship it
-  independently of ID-244 — nothing here waits on the seeding decision.
+  ASYNC-014 says a set `max_depth` overrides `recursive`, citing DEPTH-003,
+  which says `max_depth` applies only when `recursive=True`. `GraphBackend`,
+  its docstring and its test follow ASYNC-014; `AsyncMemoryBackend` and
+  `AsyncAzureBackend` follow DEPTH-003. `Store` normalises, so only a direct
+  backend call diverges. Open decision: which reading wins.
+  Detail: [dossier](backlog/bug-240-max-depth-spec-contradiction.md)
 
 - [ ] **BUG-260 — `SQLBlobBackend.list_files("./")` answers empty for a non-empty root**
   spec: BE-029, SQL-BLOB-010 · effort: S · audience: user.api
-  Measured on a root holding two files: `exists("./")` is `True`, `is_folder("./")`
-  is `True`, and `list_files("./", recursive=True)` returns **zero** entries —
-  where `""` and `"."` both return two. So the probes agree the folder is there
-  and the listing comes back empty, which is worse than either answering
-  consistently. `LocalBackend` and `MemoryBackend` answer `True / True / 2` under
-  all three spellings, so this is not the shared read-side behaviour.
-  The cause is the listing prefix: `is_root` recognises only `""` and `"."`, so
-  `"./"` falls through to the non-root branch and becomes the LIKE prefix
-  `'./%'`, which matches no stored key. The probes do not use that branch.
-  **Not fixed by widening `is_root`**, which has 52 call sites across 13 files
-  including `native_path` / `to_key` — BE-008's asymmetry paragraph explains why
-  that is a spec-amendment-class change rather than a local fix. The local fix is
-  in the prefix construction, and the general question — whether the read side
-  owes the wider predicate at all — is the one BE-008 currently answers "no" to
-  on the strength of the cost being an error class. This item is the
-  counterexample to that reasoning and should be read alongside it.
-  Found by the closing gate of BUG-259, which guarded the write side under the
-  wider predicate and left the read side stated but unmeasured.
+  On a root holding two files, `list_files("./", recursive=True)` returns
+  nothing while `exists` and `is_folder` answer `True` and `""` and `"."` list
+  both: `is_root` misses `"./"`, so the listing prefix becomes `'./%'`. Open
+  decision: fix the prefix locally, or revisit BE-008's read-side root
+  predicate, to which this item is the counterexample.
+  Detail: [dossier](backlog/bug-260-sqlblob-dot-slash-root-listing.md)
+
+- [ ] **ID-244 — A read-only backend cannot reach any WRITE-gated contract cell**
+  spec: — · effort: M · audience: infra.test
+  Conformance cells seed data through `backend.write`, so their classes are
+  gated on `Capability.WRITE` and a read-only backend reaches none of them,
+  write-related or not: `ReadOnlyHttpBackend` never runs SIO-009's laziness
+  cells. Open decision: where a per-fixture seeding hook binds (fixture,
+  helper, or capability-neutral classes); BK-345 (§ 1) consumes the answer.
+  Detail: [dossier](backlog/id-244-write-gated-conformance-cells.md)
+
+- [ ] **ID-242 — Four `moto doesn't raise PermissionError` pragmas are coverage holes, not exemptions**
+  spec: — · effort: S · audience: infra.test
+  Four `# pragma: no cover -- moto doesn't raise PermissionError` arms on the
+  s3fs lanes mark mappings no test reaches, and read as exemptions; BUG-242
+  was a defect behind a fifth. Open decision: none on shape; the harness that
+  reaches them, and corrected line numbers, are in the dossier.
+  Detail: [dossier](backlog/id-242-moto-permission-pragmas.md)
 
 - [ ] **ID-251 — BE-029's widest clause is one the conformance suite cannot fail on**
   spec: BE-029 · effort: M · audience: infra.test
-  BE-029 requires the write guard to refuse **every spelling that addresses the
-  root**, and says outright that a backend implementing it as `if is_root(path)`
-  is not conformant. The conformance cells cannot detect that: `_ROOT_WRITE_OPS`
-  and `_ROOT_WRITE_DST_OPS` are parametrised over `["", "."]` only, because they
-  also `assert is_root(exc.value.path)`. So a backend that reimplements the guard
-  narrowly ships green, and the only things holding the wider rule are
-  `tests/backends/test_flat_ns.py` (the shared helper in isolation) plus the
-  Local, SFTP and Graph per-backend modules — none of which a third-party backend
-  runs.
-  **Widening the parametrisation is not a one-liner**, which is why this is an
-  item rather than a follow-up commit. `assert exc.value.path == root` has to
-  replace the `is_root` assertion, and `DafnyOracleBackend` — registered with all
-  capabilities bar GLOB and LAZY_READ, so bound by these cells — passes `"./"`
-  through to the Dafny model unnormalised. Either the oracle normalises first or
-  the roster carries a documented carve-out for it; that choice is the work.
-  Found by the closing gate of BUG-259, which introduced the clause and the cells
-  in the same change and so had no round in which the gap was visible as a
-  regression.
+  BE-029 requires the write guard to refuse every spelling of the root, but
+  the conformance root-write cells run only `""` and `"."`, so a backend
+  guarding with `is_root(path)` passes. Open decision: when the cells widen,
+  normalise `"./"` in `DafnyOracleBackend` or carve it out of the roster.
+  Detail: [dossier](backlog/id-251-root-write-cells-narrow-spellings.md)
 
 - [ ] **ID-247 — Record the Graph root-path cassettes**
   spec: BE-029 · effort: S · audience: infra.test
-  **30** `TestBackendRootPath` cells still skip on `graph_replay` for want of a
-  recording — the "pinned nowhere" column of spec 003's BE-029 table. Graph is
-  the only HTTP family with **no emulator tier** (`graph_live` Stage 3 and
-  `graph_replay` Stage 1, nothing between), so those contracts are unexercised
-  against `GraphBackend` at every stage below a live account; Azure's equivalent
-  skips are covered by `azurite` at Stage 2.
-  The 30 is re-derived by `pytest -k TestBackendRootPath -rs`, summing the skip
-  reasons naming `cassettes/graph`. Twelve of the 30 are the rosters BUG-259
-  added — `test_write_to_root_is_refused_and_the_store_survives` at 2 ops × 2
-  overwrite modes × 2 root spellings, and
-  `test_root_as_move_or_copy_destination_is_refused` at 2 ops × 2 spellings —
-  both seeding through `write` and so skipping on the same terms, leaving **18**
-  that predate it. The item previously said 22, which the 30 does not reproduce
-  (18 + 12); the 22 is superseded rather than reconciled. Section 2's "Closes
-  when" cites this figure and was updated with it — a superseded number is only
-  harmless once nothing reads it, and checking that is part of superseding it.
-  **The old "14 of the 22 are Graph-only" split is not re-derived here** —
-  the new cells skip on the Azure replay lanes too, so the split did not simply
-  move with the total, and separating it needs a per-node comparison of the graph
-  and azure lanes rather than a count of skip reasons. Left for this item's own
-  work rather than guessed at.
-  `python scripts/record_cassettes.py --backend graph` needs `RS_TEST_LIVE_GRAPH=1`
-  plus `GRAPH_CLIENT_ID` / `GRAPH_TENANT_ID` / `GRAPH_DRIVE_ID` (device-code, so
-  interactive). Prefer `--node` per cell: a full run re-records all 119 existing
-  graph cassettes, churning their volatile headers into an unreviewable diff
-  against TEST-009. Any op that raises before issuing a request records nothing
-  and keeps skipping — correct since ID-241, and visible in the Step-5 replay.
+  30 `TestBackendRootPath` cells skip on `graph_replay` for want of a cassette
+  (`pytest tests/backends/conformance -k TestBackendRootPath -rs`), and Graph
+  has no emulator tier, so BE-029's root-path cells never run against
+  `GraphBackend` below a live account. Open decision: none on shape; the
+  recording procedure is in the dossier.
+  Detail: [dossier](backlog/id-247-graph-root-path-cassettes.md)
 
 - [ ] **BK-382 — The file-ancestor gate ships unexercised on the overwrite path, where the pre-check runs inside an open write transaction**
   spec: BE-008 · effort: M · audience: infra.test
-  `test_destination_under_file_ancestor_raises_invalid_path` seeds a blocker and
-  a source and then moves onto `blocker.txt/dst.txt`, which **does not exist**.
-  So `dst_exists` is `False`, the `DELETE` branch never runs, and the ancestor
-  pre-check is never reached with an uncommitted write held open — the one state
-  the production path is in whenever `overwrite=True` meets an existing
-  destination. Every other cell that touches the gate has the same shape.
-  **Measured against a live regression, not reasoned about.** BUG-281's round 2
-  introduced a pool change that made this exact path silently stop rejecting. I
-  added a `sqlblob_shared_cache_strict` fixture and ran the whole conformance
-  suite against it with that regression reintroduced: **58 passed, 0 failed.**
-  The fixture alone catches nothing, because the suite never reaches the state.
-  Adding an overwrite-path variant does catch it, and discriminates: with the
-  regression in, `[move-sqlblob_shared_cache_strict]` and its `copy` twin fail
-  on `DID NOT RAISE InvalidPath`; with the pool correct, both pass.
-  **The obstacle is the seeding, and it is why this is an item.** Reaching the
-  state needs a destination that exists *under a file ancestor*, which means
-  writing the child first and the blocker second — legal only where a file and a
-  prefix may share a name. Run across the strict roster, that seeding raised on
-  five of the other fixtures: `memory`, `local`, `sftp_inproc`,
-  `sftp_chroot_inproc` and `dafny_oracle` all rejected the blocker write with
-  `InvalidPath` (hierarchical backends cannot have both), and `s3_moto_strict`
-  raised `AlreadyExists`. So the cell needs either a flat-NS gate the registry
-  does not currently express, or per-backend seeding — which is the thing
-  conformance tests exist to avoid, and the decision this item carries.
-  The `sqlblob_shared_cache_strict` fixture itself is cheap and independently
-  useful: 8 lines in `fixtures.toml`, a unique database name per `factory()` call
-  in `sqlblob.py`, and one entry in `_MODULE_FOR`. It lands in 10 existing
-  conformance cells with no new test code, and it is the only fixture that would
-  exercise a shared-cache in-memory database anywhere in the suite.
-  Scoped to the gate's *class*, not to SQLBlob: the same blind spot covers
-  `[s3]`, `[s3-boto3]`, `[s3-pyarrow]` and `[azure]`, whose strict fixtures run
-  the same cells. BUG-292 is the related decision one layer down — the walk fails
-  open on any driver error, which is *why* the regression was silent rather than
-  loud; if that closes first, this cell becomes a much stronger check.
+  The move and copy cells for the file-ancestor gate, sync and async, target a
+  destination that does not exist, so the pre-check never runs inside the open
+  write transaction `overwrite=True` holds; a reintroduced pool regression
+  passed the whole suite. Open decision: a flat-namespace gate in the
+  registry, or per-backend seeding; hierarchical backends cannot hold the state.
+  Detail: [dossier](backlog/bk-382-ancestor-gate-overwrite-path.md)
 
 ---
 
@@ -2078,9 +1899,9 @@ the commit that writes it lands, so cite the generator instead.
   spec: — · effort: M · audience: contributor.process
   **In progress: [RFC-0016](rfcs/rfc-0016-backlog-as-index.md) is accepted as
   [ADR-0040](adrs/0040-backlog-as-index.md)** for the `BACKLOG.md` half — an
-  index with per-item dossiers. Shipped: the rules header, R1–R4, and the § 1
-  pilot (16 items to `sdd/backlog/`, per `sdd/rfcs/rfc-0016-measure.py`); what
-  remains is the exit criteria below.
+  index with per-item dossiers. Shipped: the rules header, R1–R4, the § 1
+  pilot (16 items to `sdd/backlog/`) and § 2 (9 items), per
+  `sdd/rfcs/rfc-0016-measure.py`; what remains is the exit criteria below.
   **`sdd/BACKLOG.md` is 20,097 words at `6cec225`.** That is the file a maintainer
   reads to decide what to work on, and it is now roughly eighty pages of prose. Two
   independent multipliers got it there over seven weeks (2026-07-18 → 2026-09-05):
@@ -2111,7 +1932,7 @@ the commit that writes it lands, so cite the generator instead.
   [research](research/research-appropriate-level-of-detail.md) § 9.2 permits,
   and the caps are a recorded departure from its § 9.1. The question stays open
   for `BACKLOG-DONE.md`.
-  **Exit criteria:** §§ 2–6 converted (each drops its `unconverted` marker, so
+  **Exit criteria:** §§ 3–6 converted (each drops its `unconverted` marker, so
   R2/R3 then gate it), and a recorded decision on the
   `BACKLOG-DONE.md` half with any mechanism's bound stated per
   [`DRIFT-RULES.md`](DRIFT-RULES.md#rules).

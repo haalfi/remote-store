@@ -1,0 +1,117 @@
+id: BK-365
+title: "ADR-0040 § 2 conversion: 9 items to dossiers, preamble to heading plus Promise"
+trigger: >-
+  The maintainer asked for the next BK-365 step after PR #1032: convert the
+  lowest-numbered section still carrying the unconverted marker (§ 2), one
+  section per PR, following the § 1 pilot. Decided in interview before
+  building: the diagnosis style as drafted for BUG-251, BUG-241 and BK-382
+  (problem, the re-measurement named in a clause, "Open decision:"); BUG-241's
+  newly measured data loss is corrected in § 2 and flagged as a possible BL-,
+  not promoted here; preamble sentence S5 (the ID-245 "bounded deliberately"
+  clause) is removed, not moved, because ID-245's body does not support its
+  claim; the ordering note becomes the order, moving BUG-260 into the
+  wrong-answer group. The Promise is unchanged.
+source_items:
+  - BK-365
+audience:
+  - contributor.process
+expected_ripples:
+  - sdd/BACKLOG.md
+  - sdd/backlog/
+surprising_ripples: []
+phases:
+  - id: orient
+    name: Orient
+    steps:
+      - file: sdd/BACKLOG.md
+        section: "How this file works (Migration in progress, Item scope, Dossiers, Item authority); § 2 preamble and items; BK-365"
+        read_type: gate
+        extract: >-
+          The migration note routes every preamble sentence; a delegated read
+          classified § 2's ten: seven were `Closes when` commentary or
+          self-history, S8 an ordering note that BUG-260 violated, S9 a
+          cross-section dependency BK-345 already states (index and dossier),
+          S10 a fact BUG-249's BACKLOG-DONE entry states verbatim. None bounds
+          an open item, so no dossier gets a "Moved from the § 2 preamble"
+          heading. ID-247's body still cited the § 2 `Closes when` figure,
+          which `8e35697` had already removed.
+        outcome: ok
+      - file: sdd/backlog/bk-345-absent-container-conformance.md
+        section: "(full); also bug-257, bug-280, bug-293, bug-276 dossiers"
+        read_type: reference
+        extract: >-
+          The worked shapes: intro line, verbatim chunk, "## Moved from the § 1
+          preamble", dated "## Correction". Reused the intro wording with "§ 2
+          conversion".
+        outcome: ok
+      - file: sdd/traces/bk-365-backlog-section-1-pilot.yml
+        section: "(full)"
+        read_type: reference
+        extract: >-
+          Pilot re-derived BUG-293's figure and found it wrong; the same
+          discipline here found BUG-241 understated. BUG-295 skews the review
+          triage, so fix replies avoid the word the classifier keys on.
+        outcome: ok
+      - file: sdd/adrs/0040-backlog-as-index.md
+        section: "Decision; Section Promises § 2"
+        read_type: gate
+        extract: >-
+          § 2's Promise rationale already lives in the ADR, so the preamble had
+          none left to move. D3's "move to the ADR" route not followed.
+        outcome: ok
+      - file: sdd/rfcs/rfc-0016-backlog-as-index.md
+        section: "D1–D3"
+        read_type: reference
+        extract: "Decision background only; the migration note replaces D3's route."
+        outcome: ok
+  - id: implement
+    name: Implement
+    steps:
+      - file: src/remote_store/backends/_sqlalchemy.py
+        section: "every `.like(` call"
+        read_type: verify
+        extract: >-
+          Re-deriving BUG-241 before writing its diagnosis: `rg -n '\.like\(' src`
+          finds eleven sites, nine unescaped, and one is `delete_folder`'s
+          DELETE. Reproduced on in-memory SQLite: `list_files("a_b")` returns
+          `axb/y.txt` and `delete_folder("a_b", recursive=True)` deletes it.
+          Index title and diagnosis corrected, dated correction in the dossier.
+        outcome: ok
+      - file: src/remote_store/backends/_s3_base.py
+        section: "moto PermissionError pragmas (and _s3_pyarrow.py)"
+        read_type: verify
+        extract: >-
+          ID-242's four pragmas re-derive at four; lines moved to 581/611/644
+          and 654. Dated correction in the dossier.
+        outcome: ok
+      - file: tests/backends/conformance/
+        section: "TestBackendRootPath, graph_replay skips"
+        read_type: verify
+        extract: >-
+          ID-247's 30 re-derives: `pytest tests/backends/conformance -k
+          TestBackendRootPath -rs` prints 30 skip lines naming cassettes/graph.
+        outcome: ok
+      - file: src/remote_store/ext/cache.py
+        section: "cache(), MemoryCache"
+        read_type: verify
+        extract: >-
+          BUG-251 reproduced: two LocalBackend stores sharing one MemoryCache
+          both read b"FROM-STORE-A". BUG-260 reproduced: "./" lists 0 of 2
+          files while exists/is_folder say True. BUG-240: AsyncMemoryBackend
+          applies max_depth only under recursive, GraphBackend's docstring and
+          test_list.py:183 pin the ASYNC-014 reading.
+        outcome: ok
+  - id: verify
+    name: Verify
+    steps:
+      - file: sdd/rfcs/rfc-0016-measure.py
+        section: "(full)"
+        read_type: gate
+        extract: "§ 2 at 9 items, median/max 8/8, preamble 33 words."
+        outcome: ok
+      - file: scripts/gen_backlogid.py
+        section: "--check (R1–R4)"
+        read_type: gate
+        extract: >-
+          With the marker deleted R2/R3 gate § 2 and pass; no script change.
+        outcome: ok
