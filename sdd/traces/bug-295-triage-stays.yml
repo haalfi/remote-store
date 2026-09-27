@@ -1,0 +1,174 @@
+id: BUG-295
+title: "Stop the review triage calling a fixed finding `refuted` when its fix reply says what stays"
+trigger: >-
+  BK-365's two PRs (#1029, #1032) had every first reply open "Fixed in", yet
+  `ship-report` counted 4 of #1029's 7 and 2 of #1032's 10 as `refuted`, each
+  containing "stays". BK-384's graduation test reads these triage counts.
+source_items:
+  - BUG-295
+audience:
+  - contributor.tooling
+discovery_followups: []
+co_shipped_items: []
+expected_ripples:
+  - sdd/rfcs/rfc-0015-findings.py
+  - sdd/rfcs/rfc-0015-ship-two-surfaces.md
+  - tests/scripts/test_rfc_0015_findings.py
+  - tests/scripts/fixtures/rfc_0015_first_replies.json
+  - sdd/BACKLOG.md
+  - sdd/BACKLOG-DONE.md
+  - sdd/backlogid.json
+  # Anticipated by the ripple-check's "Test whose subject is outside src/ or
+  # scripts/" row: the classifier lives under sdd/rfcs/, which neither CODE_PAT
+  # nor HOOKS_PAT matched, so an edit to it alone ran none of its guards.
+  - .github/workflows/ci.yml
+  - sdd/CLAUDE-REFERENCE.md
+surprising_ripples: []
+phases:
+  - id: orient
+    name: Orient
+    steps:
+      - file: sdd/BACKLOG.md
+        section: "How this file works; BUG-295; BK-384"
+        read_type: gate
+        extract: >-
+          BUG-295 names the defect and leaves the shape open (opening "Fixed in"
+          wins, or first sentence only). BK-384 pools the three post-BK-378
+          deliveries through the same classifier and cites the pilot's 53%.
+        outcome: ok
+      - file: sdd/rfcs/rfc-0015-findings.py
+        section: "triage() and the _OPEN_* / _FILED / _REFUTED / _MUST_FIX patterns"
+        read_type: reference
+        extract: >-
+          Opening verdicts are Must-fix, Filed as, and the refutation words;
+          "Fixed in" is only in the body-wide must-fix list, which runs after
+          the body-wide refuted list that carried `\bstays\b`.
+        outcome: ok
+      - file: sdd/rfcs/rfc-0015-ship-two-surfaces.md
+        section: "Status; Table 4; D5 dry run; Acceptance criterion; Pilot result"
+        read_type: reference
+        extract: >-
+          Draft, so 000-process Rule 4 (Accepted ADRs are immutable) does not
+          bind it. Triage-derived figures: Table 4 and its prose, the baseline
+          and pilot triage counts, clause 1's 78% baseline and 53% pilot, and
+          the D5 dry run's classified and unclassifiable-as-loop readings.
+        outcome: ok
+      - file: sdd/000-process.md
+        section: "Rule 4; Rule 6"
+        read_type: gate
+        extract: "Rule 4 binds Accepted ADRs only; Rule 6 is the failing-test-first pipeline."
+        outcome: ok
+  - id: implement
+    name: Implement
+    steps:
+      - file: sdd/rfcs/rfc-0015-findings.py
+        section: "triage() re-driven on the evidence"
+        read_type: verify
+        extract: >-
+          `gh api repos/haalfi/remote-store/pulls/<N>/comments`, first reply per
+          finding by created_at: all 17 on #1029 and #1032 open "Fixed in";
+          4 of 7 and 2 of 10 were `refuted`, each with "stays". Candidates
+          measured over the evidence, RFC-0015's 19-PR baseline and 3-PR pilot:
+          opening "Fixed in" wins (A) 17/17; drop "stays" (C) 17/17; first
+          sentence only (B) 16/17 and baseline unknown 180 to 218. The user
+          chose A+C.
+        outcome: ok
+      - file: tests/scripts/test_rfc_0015_findings.py
+        section: "TestTriageFixReplies, TestTriageStillRefutes"
+        read_type: verify
+        extract: >-
+          The 17 replies verbatim (JSON fixture, since the bodies overrun the
+          line limit as literals) plus #1022's "Confirmed and fixed … stays"
+          reply, which only the C half fixes. Seen red first: 8 failed (the six
+          "stays" replies, the #1022 reply, the opening-"Fixed in" precedence
+          case), then 24 passed after the fix.
+        outcome: ok
+      - file: sdd/rfcs/rfc-0015-findings.py
+        section: "every stays-only refutation in both samples"
+        read_type: verify
+        extract: >-
+          16 first replies across the baseline and pilot were `refuted` by
+          "stays" alone (tmp audit script: no opening verdict, no filed match,
+          no other refutation word). Each, read at its "stays", is a fix reply,
+          so dropping the word loses no refutation the samples held.
+        outcome: ok
+  - id: verify
+    name: Verify
+    steps:
+      - file: sdd/rfcs/rfc-0015-ship-two-surfaces.md
+        section: "re-based figures"
+        read_type: verify
+        extract: >-
+          The pre-fix script reproduced the RFC's own figures (baseline 295/10/
+          56/180, POOLED 22/77/78%; pilot 51/1/9/8, POOLED 9/10/53%), so the
+          delta is the fix alone. The fixed script gives baseline 311/10/38/182,
+          POOLED 25/80/76%, D5 classified 4 rounds and unclassifiable-as-loop
+          12; pilot 56/1/4/8, POOLED 9/12/57%. Needed `git fetch --unshallow`:
+          the container's clone had no merge-base with origin/master.
+        outcome: ok
+      - file: sdd/CLAUDE-REFERENCE.md
+        section: "Ripple-check / Bug fix row vs _schema.yml audience rule"
+        read_type: verify
+        extract: >-
+          The Bug fix row asks for a CHANGELOG stub unconditionally; the
+          schema's derived rule skips CHANGELOG for contributor.tooling. Took
+          the schema's rule, as BUG-294 did (no CHANGELOG line).
+        outcome: unclear
+      - file: .github/workflows/ci.yml
+        section: "HOOKS_PAT, tooling-tests"
+        read_type: verify
+        extract: >-
+          `^sdd/rfcs/rfc-0015-(findings|rounds)\.py$` added to the narrow
+          `hooks` output, not CODE_PAT, for the job-budget reason stated
+          beside it. First shipped as `^sdd/rfcs/[^/]+\.py$`; review round 2
+          found that it also matched the untested `rfc-0016-measure.py`, so it
+          was narrowed to the two scripts `tests/` references (Grep over
+          `tests/`). Checked with Python `re` against every `sdd/rfcs/*.py`:
+          the two RFC-0015 scripts match, `rfc-0016-measure.py` and the RFC's
+          .md do not.
+        outcome: ok
+review:
+  # Derived by `hatch run ship-report 1034 --trace-block-only` at head 5640073.
+  # Do not hand-edit, except a newly required field per sdd/traces/_schema.yml
+  # section review: RFC-0015 D4 makes this script the only producer.
+  derivation: "hatch run ship-report 1034 --trace-block-only"
+  pr: 1034
+  review_rounds: 4
+  submissions: 2
+  findings: 3
+  by_round:
+    - round: 1
+      findings: 2
+      origin: {original: 1, unclassifiable-file: 1}
+      triage: {must-fix: 2}
+      duration_hours: 0.28
+    - round: 2
+      findings: 1
+      origin: {original: 1}
+      triage: {must-fix: 1}
+      duration_hours: 7.76
+  by_file:
+    - path: ".github/workflows/ci.yml"
+      findings: 1
+    - path: "sdd/BACKLOG.md"
+      findings: 1
+    - path: "sdd/traces/bug-295-triage-stays.yml"
+      findings: 1
+  untouched_files:
+    - "sdd/BACKLOG-DONE.md"
+    - "sdd/CLAUDE-REFERENCE.md"
+    - "sdd/backlogid.json"
+    - "sdd/rfcs/rfc-0015-findings.py"
+    - "sdd/rfcs/rfc-0015-ship-two-surfaces.md"
+    - "tests/scripts/fixtures/rfc_0015_first_replies.json"
+    - "tests/scripts/test_rfc_0015_findings.py"
+  review_driven_commits:
+    - sha: "2ad72cd"
+      subject: "fix: address PR #1034 review"
+    - sha: "d0841c6"
+      subject: "BUG-295: Add the derived review block to the trace at the close"
+    - sha: "9c14ab9"
+      subject: "BUG-295: Re-derive the trace review block after the rebase"
+    - sha: "5640073"
+      subject: "fix: address PR #1034 review round 2"
+  ci: {verdict: GREEN, failed: 0, pending: 0}

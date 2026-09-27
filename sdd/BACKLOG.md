@@ -2049,14 +2049,6 @@ the commit that writes it lands, so cite the generator instead.
   accepted with its reason, and `gen_backlogid.py`'s stated bound is the durable
   record of it.
 
-- [ ] **BUG-295 — The review triage calls a fixed finding `refuted` when its fix reply contains "stays"**
-  spec: — · effort: S · audience: contributor.tooling
-  `rfc-0015-findings.triage`, which `ship_report.py` imports, tries the
-  body-wide `_REFUTED` (`stays`, `declin`, `refut`) before `_MUST_FIX`, so a
-  reply opening "Fixed in <sha>" that quotes "stays" is `refuted`: 4 of PR
-  #1029's 7, re-driven on its replies. BK-384 reads these counts. Open
-  decision: let an opening "Fixed in" win, or triage the first sentence only.
-
 - [ ] **BK-384 — RFC-0015 is built but unmeasured: three deliveries decide whether it graduates**
   spec: — · effort: M · audience: contributor.process
   The open half of **BK-378**, which shipped D1 and D4 and is recorded in
@@ -2079,7 +2071,8 @@ the commit that writes it lands, so cite the generator instead.
   measured rate of eleven stalenesses across four traces.
   **Three things stay held until the measurement, not because they are
   undecided.** D3's cap lift — panel composition must not move finding counts
-  between BK-379's 53% and this sample. D5's stop-rule wiring — its dry run fired
+  between BK-379's pilot share (RFC-0015 § Pilot result, re-based by BUG-295)
+  and this sample. D5's stop-rule wiring — its dry run fired
   zero times under all three readings, so the constants ship unchanged and there
   is no firing to tune them against. D6's deferred half — the whole-file brief
   excluding the trace's `review:` key, and a measuring member re-running

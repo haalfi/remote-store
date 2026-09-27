@@ -240,6 +240,33 @@ if evidence changes; these are retired.
 
 ## Unreleased
 
+- [x] **BUG-295 — The review triage calls a fixed finding `refuted` when its fix reply contains "stays"**
+  spec: — · effort: S · audience: contributor.tooling
+  `rfc-0015-findings.triage`, which `ship_report.py` imports, searched the
+  whole reply for `\bstays\b` as a refutation before it searched for
+  "Fixed in", so a fix reply saying what stays unchanged was `refuted`.
+  **Reproduced before the fix** on the fixer's first replies, re-driven from
+  `gh api repos/haalfi/remote-store/pulls/<N>/comments`: all 17 on #1029 and
+  #1032 open "Fixed in", and 4 of #1029's 7 and 2 of #1032's 10 came out
+  `refuted`, each containing "stays".
+  **Both halves shipped:** an opening "Fixed in" now decides `must-fix` like
+  the other opening verdicts, and "stays" left the body-wide refutation list.
+  Chosen over triaging the first sentence, which measured 16 of the 17 (its
+  sentence split fails on `§`) and raised the 19-PR baseline's `unknown` from
+  180 to 218. Dropping the word lost no refutation the samples
+  carried: 16 first replies in RFC-0015's baseline and pilot got `refuted` from
+  "stays" alone (no opening verdict, no filed match, no other refutation word),
+  and each, read at its "stays", is a fix reply saying what was left unchanged. `tests/scripts/test_rfc_0015_findings.py` pins the 17
+  replies verbatim and seen red first.
+  **RFC-0015 re-based in place** (Draft, so Rule 4 does not bind it), with a
+  dated note in § Status: clause-1 baseline 78% to 76% (80 of 105), pilot 53%
+  to 57% (12 of 21), a miss two findings wide rather than one. Figures from
+  `python sdd/rfcs/rfc-0015-findings.py` over each sample at this commit.
+  BK-384's body now points at § Pilot result for the pilot's share instead of
+  copying the pre-fix 53%.
+  The review blocks in the two `bk-365-*` traces record the skewed counts and
+  stay as dated records.
+
 - [x] **BUG-294 — A deleted mypy plugin the config still names turns every typecheck job red**
   spec: — · effort: S · audience: contributor.tooling
   `[tool.mypy]` carried `plugins = ["sqlalchemy.ext.mypy.plugin"]` while

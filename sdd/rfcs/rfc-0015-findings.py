@@ -34,19 +34,21 @@ Three classifications per finding:
   is not expected and is not measured here.
 * **Triage** (Table 4): the first reply in the finding's thread is read for the
   fixer's verdict. This repo's replies open with the verdict, so the opening
-  word decides where it is present: a reply that *starts* with "Must-fix" is
-  ``must-fix`` whatever follows (a must-fix reply often goes on to say what was
-  refuted), one that starts with "Filed as" is ``filed``, one that starts with
-  "Refuted", "Not a defect", "Declined", "Rejected" or "Decided" is
-  ``refuted``. Otherwise the whole reply is searched with word boundaries, in
-  the order filed, refuted, must-fix: ``\\bFiled as\\b`` or a minted ID;
-  ``\\brefut``, ``\\bnot a defect\\b``, ``\\bdeclin``, ``\\brejected\\b``,
-  ``\\bstays\\b``; then ``\\bFixed in\\b``, ``\\bConfirmed\\b``, ``\\bCorrect\\b``,
-  ``\\bTaken\\b``, ``\\bAdded\\b``, ``\\bAnnotated\\b``. ``unknown`` otherwise,
-  including threads with no reply. A heuristic over free text, stated as one:
-  under-classification shows up as ``unknown``; mis-classification does not,
-  and an earlier revision without word boundaries counted "incorrect" as
-  ``must-fix``.
+  word decides where it is present: a reply that *starts* with "Must-fix" or
+  "Fixed in" is ``must-fix`` whatever follows (a must-fix reply often goes on to
+  say what was refuted, or what stays), one that starts with "Filed as" is
+  ``filed``, one that starts with "Refuted", "Not a defect", "Declined",
+  "Rejected" or "Decided" is ``refuted``. Otherwise the whole reply is searched
+  with word boundaries, in the order filed, refuted, must-fix:
+  ``\\bFiled as\\b`` or a minted ID; ``\\brefut``, ``\\bnot a defect\\b``,
+  ``\\bdeclin``, ``\\brejected\\b``; then ``\\bFixed in\\b``, ``\\bConfirmed\\b``,
+  ``\\bCorrect\\b``, ``\\bTaken\\b``, ``\\bAdded\\b``, ``\\bAnnotated\\b``.
+  ``unknown`` otherwise, including threads with no reply. A heuristic over free
+  text, stated as one: under-classification shows up as ``unknown``;
+  mis-classification does not. An earlier revision without word boundaries
+  counted "incorrect" as ``must-fix``, and one that searched ``\\bstays\\b`` as a
+  refutation counted fix replies saying what stays unchanged as ``refuted``
+  (BUG-295).
 
 Also printed:
 
@@ -93,11 +95,11 @@ from pathlib import Path
 REPO = "haalfi/remote-store"
 ROOT = Path(__file__).resolve().parents[2]
 
-_OPEN_MUST_FIX = re.compile(r"^\s*\**Must-fix", re.I)
+_OPEN_MUST_FIX = re.compile(r"^\s*\**(?:Must-fix|Fixed in\b)", re.I)
 _OPEN_FILED = re.compile(r"^\s*\**Filed as\b", re.I)
 _OPEN_REFUTED = re.compile(r"^\s*\**(?:Refut|Not a defect|Declin|Rejected|Decided)", re.I)
 _FILED = re.compile(r"\bFiled as\b|\b(?:BK|BUG|ID)-\d+\b.{0,20}\b(?:filed|minted)\b", re.I)
-_REFUTED = re.compile(r"\brefut|\bnot a defect\b|\bdeclin|\brejected\b|\bstays\b", re.I)
+_REFUTED = re.compile(r"\brefut|\bnot a defect\b|\bdeclin|\brejected\b", re.I)
 _MUST_FIX = re.compile(r"\bFixed in\b|\bConfirmed\b|\bCorrect\b|\bTaken\b|\bAdded\b|\bAnnotated\b", re.I)
 
 UNCLASSIFIABLE = ("unclassifiable-file", "unclassifiable-left", "unclassifiable-noline", "unclassifiable-blame")
