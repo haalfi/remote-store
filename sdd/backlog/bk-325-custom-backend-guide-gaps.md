@@ -27,9 +27,11 @@ the guide never teaches:
 `_MODULE_FOR` is no longer undocumented: `docs-src/guides/custom-backend-guide.md`
 teaches it at lines 599-601 and 671-675. `rejects_write_under_file_ancestor`
 and `strict_only` still have no hit in the guide (`rg` over the page). The
-"~25 conformance cells" re-derives as a strict fixture's footprint:
+"~25 conformance cells" matches one strict fixture's footprint, sampled on
+three of the seven `_strict` fixtures in `tests/backends/fixtures/fixtures.toml`:
 `pytest tests/backends/conformance --collect-only -q -k "s3_moto_strict or
-sqlblob_strict or azurite_async_strict" --stage=3` collects 70, which is 26 for
-each of the two sync strict fixtures and 18 for the async one. How many of those
-a default fixture does not already run was not re-derived. Found by the
-ADR-0040 § 3 conversion.
+sqlblob_strict or azurite_async_strict" --stage=3` collects 70, which is 26 each
+for `s3_moto_strict` and `sqlblob_strict` and 18 for `azurite_async_strict`. The
+other four were not collected, and how many of a strict fixture's cells a
+default fixture does not already run was not re-derived. Found by the ADR-0040
+§ 3 conversion.

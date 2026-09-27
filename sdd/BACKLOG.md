@@ -371,9 +371,9 @@ copies an example, without opening an issue.
   spec: — · effort: S · audience: user.site
   `transfer-operations.md` warns that a failed `download` can leave a partial
   local file and says nothing about `upload` or `transfer`, which call
-  `store.write()` and can leave a partial or replaced remote object
-  (re-read: page lines 112-115, `ext/transfer.py:69,149`). Open decision:
-  none on shape; what each backend leaves behind is measured first (dossier).
+  `store.write()` and so can leave a partial or replaced remote object;
+  re-read on the page and in `ext/transfer.py`. Open decision: none on
+  shape; the per-backend residue question is in the dossier.
   Detail: [dossier](backlog/bk-364-transfer-partial-residue.md)
 
 - [ ] **BK-339 — Decide what replaces `store.md`'s hand-maintained Backend Behavior Matrix**
@@ -397,10 +397,10 @@ copies an example, without opening an issue.
 - [ ] **ID-199 — Backend setup & configuration guides expansion**
   spec: — · effort: L · audience: user.site, library.maintainer
   Backend setup pain mined from repo signal and a public survey maps to seven
-  guides that do not exist; re-checked, none of the seven is under
-  `docs-src/guides/`. Each must be maintainer-walked against a real target.
-  Open decision: which guides to commit to, and the Phase 3 access budget
-  (research § 8 Q5); tiers and sequencing are in the dossier.
+  guides; none exists (the six standalone paths in research § 3 are absent
+  from `docs-src/guides/`, and `sql-blob.md` has no live-file or backup note).
+  Open decision: the Phase 3 access budget (research § 8 Q5); the guides it
+  does not gate are greenlit and take their own IDs when picked up (dossier).
   Detail: [dossier](backlog/id-199-backend-setup-guides.md)
 
 - [ ] **ID-125 — Update medallion showcase to Dagster v2 resource pattern**
@@ -433,10 +433,10 @@ copies an example, without opening an issue.
 - [ ] **BK-332 — Schedule the custom-backend rehearsal**
   spec: — · effort: M · audience: contributor.process
   Building a backend from the guide, unaided, has run once, as a side effect
-  of PR #932, and found BK-324 and BK-325; nothing schedules it. Re-checked,
-  no later run is recorded under `sdd/traces/`. Open decision: none on shape;
-  the proposed cadence, its effort split and its n = 1 caveat are in the
-  dossier.
+  of PR #932, and found BK-324 and BK-325; nothing schedules it, and
+  `rg -i rehearsal` over `sdd/traces/` and `BACKLOG-DONE.md` finds no later
+  run. Open decision: none on shape; the proposed cadence, its effort split
+  and its n = 1 caveat are in the dossier.
   Detail: [dossier](backlog/bk-332-custom-backend-rehearsal.md)
 
 ---

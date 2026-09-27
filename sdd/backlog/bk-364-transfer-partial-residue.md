@@ -25,3 +25,13 @@ BK-360 established the SFTP half and is the model: the governing fact there is
 that a timeout reports a *lost reply*, so an operation reported as failed may
 have been performed. Whether the flat-namespace backends share that shape is
 the open question, not an assumption to carry over.
+
+## Re-measured, 2026-09-27
+
+The asymmetry holds.
+`rg -n "Partial files on failed|\.write\(" docs-src/guides/transfer-operations.md src/remote_store/ext/transfer.py`
+finds the page's one residue bullet at line 112, for `download` only, while `upload`
+calls `store.write(...)` at `transfer.py:69` and `transfer` calls
+`dst_store.write(...)` at `:149`. No residue sentence for either helper exists
+on the page; the only remote-residue text in `docs-src/` is BK-360's SFTP
+material in `guides/backends/sftp.md`. Found by the ADR-0040 § 3 conversion.

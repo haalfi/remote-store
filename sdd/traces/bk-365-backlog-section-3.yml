@@ -66,8 +66,11 @@ phases:
         section: "llmstxt plugin, sections: map (97-119)"
         read_type: verify
         extract: >-
-          Re-deriving BK-376 by fnmatching all 325 published pages against the
-          map: six non-design pages unmatched, two of them the declared
+          Re-deriving BK-376: a scratch script fnmatched the map's patterns
+          against the published page set, built as every `docs-src/**/*.md`
+          plus `scripts/docs/scan.py`'s dual-file dests, scanned sdd pages,
+          `_index.tmpl` index pages and example pages (325 pages). Six
+          non-design pages are unmatched, two of them the declared
           section-landing stubs. `index.md` is a fourth undeclared absentee
           beside the three the item named. Title and diagnosis corrected.
         outcome: ok
@@ -77,8 +80,9 @@ phases:
         extract: >-
           BK-325's "~25 cells": `pytest tests/backends/conformance
           --collect-only -q -k "s3_moto_strict or sqlblob_strict or
-          azurite_async_strict" --stage=3` collects 70, 26 per sync strict
-          fixture and 18 async. `_MODULE_FOR` is now taught in the guide
+          azurite_async_strict" --stage=3` collects 70 (26 + 26 + 18), a
+          sample of three of the seven `_strict` fixtures in
+          `fixtures.toml`. `_MODULE_FOR` is now taught in the guide
           (lines 599-601, 671-675); dated correction in the dossier.
         outcome: ok
       - file: src/remote_store/backends/_memory.py
@@ -87,8 +91,26 @@ phases:
         extract: >-
           BK-339 reproduced: a Memory copy of a file written with
           metadata={"owner": "alice"} keeps it, while store.md's matrix says
-          `—`. BK-327: all eight dual design pages are listed in both
-          `_nav.yml` and `_index.tmpl` today; the ungated surface remains.
+          `—`.
+        outcome: ok
+      - file: docs-src/explanation/design/_nav.yml
+        section: "(full); also _index.tmpl's Documents list"
+        read_type: verify
+        extract: >-
+          BK-327: `rg -n '^<!-- doc: dual dest=explanation/design/' sdd`
+          finds eight line-2 markers, all listed in both files today; the
+          ungated surface remains. Recorded as "## Re-measured" in the dossier.
+        outcome: ok
+      - file: docs-src/guides/
+        section: "file list; backends/sql-blob.md"
+        read_type: verify
+        extract: >-
+          ID-199: `rg --files docs-src/guides` lists none of the six
+          standalone paths in the research Tier-1 table, and sql-blob.md has
+          no live-file or backup note. BK-332: `rg -n -i rehearsal sdd/traces
+          sdd/BACKLOG-DONE.md` finds no later run. Both recorded as
+          "## Re-measured" in their dossiers (review round 1 asked for the
+          derivations).
         outcome: ok
   - id: verify
     name: Verify

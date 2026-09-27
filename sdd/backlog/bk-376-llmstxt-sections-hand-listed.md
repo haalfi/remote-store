@@ -57,8 +57,11 @@ rather than by any gate.
 
 Four pages, not three. Matching every published page against the
 `sections:` patterns (`mkdocs.yml:97-119`, fnmatch as the plugin expands them)
-leaves `index.md`, the home page, unmatched as well, and no comment in the
-plugin block names it: the `markdown_description` note (`mkdocs.yml:62-65`)
+leaves `index.md`, the home page, unmatched as well. The page set was every
+`docs-src/**/*.md` plus what `scripts/docs/scan.py` makes the build emit:
+dual-file dests, scanned `sdd/` pages, `_index.tmpl` index pages and example
+pages, 325 in all; six non-design pages match no pattern, two of them the
+stubs below. No comment in the plugin block names `index.md`: the `markdown_description` note (`mkdocs.yml:62-65`)
 covers the positioning blurb, and the stub note (`:108-112`) covers the
 section-landing `explanation/index.md` and `reference/index.md` only. The other
 three re-derive as stated. The index title changed with this correction. Found

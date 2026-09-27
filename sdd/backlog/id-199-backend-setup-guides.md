@@ -57,3 +57,18 @@ Phase 3 (budgeted dogfood — gated on the access decision in research § 8 Q5) 
 Tier-2 sidebars mop up alongside Phase 1/2.
 
 Effort `L` reflects the parent scope; each individual guide is M-sized.
+
+## Re-measured, 2026-09-27
+
+None of the seven guides exists. `rg --files docs-src/guides` lists none of
+the six standalone target paths in the research doc's Tier-1 table (lines
+100-105: `backends/s3-compatible.md`, `large-object-tuning.md`,
+`local-dev-emulators.md`, `backends/sftp-reliability.md`,
+`backends/azure-keyless-auth.md`, `credential-rotation.md`). Guide 7 is a
+sidebar in `docs-src/guides/backends/sql-blob.md`, whose "SQLite
+Optimizations" section covers WAL and `synchronous` only, and
+`rg -n -i "backup|live file|VACUUM INTO"` over that page finds nothing, so the
+"do not sync a live file" story research § 3.7 asks for is absent. "Greenlit"
+in the tier list is the research doc's verdict per guide; the item stays an
+`ID-` until a guide is picked up under its own ID. Found by the ADR-0040 § 3
+conversion.
