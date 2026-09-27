@@ -143,3 +143,46 @@ phases:
         extract: >-
           With the marker deleted R2/R3 gate § 3 and pass; no script change.
         outcome: ok
+review:
+  # Derived by `hatch run ship-report 1036 --trace-block-only` at head bcb0e15.
+  # Do not hand-edit, except a newly required field per sdd/traces/_schema.yml
+  # section review: RFC-0015 D4 makes this script the only producer.
+  derivation: "hatch run ship-report 1036 --trace-block-only"
+  pr: 1036
+  review_rounds: 2
+  submissions: 2
+  findings: 8
+  by_round:
+    - round: 1
+      findings: 4
+      origin: {original: 4}
+      triage: {must-fix: 4}
+      duration_hours: 0.21
+    - round: 2
+      findings: 4
+      origin: {loop-introduced: 3, original: 1}
+      triage: {must-fix: 4}
+      duration_hours: 0.12
+  by_file:
+    - path: "sdd/BACKLOG.md"
+      findings: 3
+    - path: "sdd/traces/bk-365-backlog-section-3.yml"
+      findings: 2
+    - path: "sdd/backlog/bk-325-custom-backend-guide-gaps.md"
+      findings: 1
+    - path: "sdd/backlog/bk-332-custom-backend-rehearsal.md"
+      findings: 1
+    - path: "sdd/backlog/bk-364-transfer-partial-residue.md"
+      findings: 1
+  untouched_files:
+    - "sdd/backlog/bk-327-dual-doc-nav-reachability.md"
+    - "sdd/backlog/bk-339-store-behavior-matrix.md"
+    - "sdd/backlog/bk-376-llmstxt-sections-hand-listed.md"
+    - "sdd/backlog/id-125-medallion-dagster-v2.md"
+    - "sdd/backlog/id-199-backend-setup-guides.md"
+  review_driven_commits:
+    - sha: "90ef5ff"
+      subject: "fix: address PR #1036 review"
+    - sha: "bcb0e15"
+      subject: "fix: address PR #1036 review"
+  ci: {verdict: GREEN, failed: 0, pending: 0}
