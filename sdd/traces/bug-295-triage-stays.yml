@@ -123,28 +123,3 @@ phases:
           Python `re` against the two RFC-0015 scripts (match), the RFC's .md
           and a nested path (no match).
         outcome: ok
-review:
-  # Derived by `hatch run ship-report 1034 --trace-block-only` at head 50b751f.
-  # Do not hand-edit, except a newly required field per sdd/traces/_schema.yml
-  # section review: RFC-0015 D4 makes this script the only producer.
-  derivation: "hatch run ship-report 1034 --trace-block-only"
-  pr: 1034
-  review_rounds: 0
-  submissions: 0
-  findings: 0
-  by_round: []
-  by_file: []
-  untouched_files:
-    - ".github/workflows/ci.yml"
-    - "sdd/BACKLOG-DONE.md"
-    - "sdd/BACKLOG.md"
-    - "sdd/CLAUDE-REFERENCE.md"
-    - "sdd/backlogid.json"
-    - "sdd/rfcs/rfc-0015-findings.py"
-    - "sdd/rfcs/rfc-0015-ship-two-surfaces.md"
-    - "sdd/traces/bug-295-triage-stays.yml"
-    - "tests/scripts/fixtures/rfc_0015_first_replies.json"
-    - "tests/scripts/test_rfc_0015_findings.py"
-  review_driven_commits:
-    []
-  ci: {verdict: GREEN, failed: 0, pending: 0}

@@ -262,7 +262,8 @@ if evidence changes; these are retired.
   dated note in § Status: clause-1 baseline 78% to 76% (80 of 105), pilot 53%
   to 57% (12 of 21), a miss two findings wide rather than one. Figures from
   `python sdd/rfcs/rfc-0015-findings.py` over each sample at this commit.
-  BK-384's body still cites the pilot's 53%, left for BK-384 to re-derive.
+  BK-384's body now points at § Pilot result for the pilot's share instead of
+  copying the pre-fix 53%.
   The review blocks in the two `bk-365-*` traces record the skewed counts and
   stay as dated records.
 

@@ -2071,7 +2071,8 @@ the commit that writes it lands, so cite the generator instead.
   measured rate of eleven stalenesses across four traces.
   **Three things stay held until the measurement, not because they are
   undecided.** D3's cap lift — panel composition must not move finding counts
-  between BK-379's 53% and this sample. D5's stop-rule wiring — its dry run fired
+  between BK-379's pilot share (RFC-0015 § Pilot result, re-based by BUG-295)
+  and this sample. D5's stop-rule wiring — its dry run fired
   zero times under all three readings, so the constants ship unchanged and there
   is no firing to tune them against. D6's deferred half — the whole-file brief
   excluding the trace's `review:` key, and a measuring member re-running
