@@ -16,7 +16,13 @@ Operational rules only. Why each rule exists: [ADR-0040](adrs/0040-backlog-as-in
 `<!-- backlog: unconverted -->` on the line under its heading and keeps its old
 shape (long bodies, `Closes when`) until it is; do not extend that shape in new
 edits. Converting a section deletes the marker. The marker, not this note, is
-what the gate reads.
+what the gate reads. Its preamble keeps only the Promise; every other sentence is
+routed, not cut: one that bounds an open item moves verbatim to that item's
+dossier under `## Moved from the § N preamble`, glossing any dangling reference
+in the intro line; one whose fact an authoritative home states (a
+`BACKLOG-DONE.md` entry, CHANGELOG, a spec, a published guide) is removed; the
+section narrating its own history is removed. Nothing goes to an Accepted ADR,
+which RFC-0016 D3 would otherwise ask for and `000-process.md` Rule 4 forbids.
 
 **Status legend:** `[ ]` pending · `[~]` in progress
 
@@ -51,7 +57,8 @@ bound; audience values from `sdd/traces/_schema.yml`'s enum.
 
 **Dossiers.** `sdd/backlog/<id>-<slug>.md`, marked `<!-- doc: repo-only -->`,
 only when an item needs more than eight lines. Converting an item moves its body
-there verbatim. The path never moves; a trace's orient phase reads it.
+there verbatim. The path never moves; a trace's orient phase reads it. Its H1 is
+`# <ID> — <index title>` and follows the index title when that changes.
 
 **Item authority.** Each kind of content is corrected where it lives. In an
 unconverted item all three sit in its body, under the same rules.
@@ -134,7 +141,7 @@ failure it was.
   `EACCES`, no known trigger) answers `PermissionDenied` naming the caller's
   key, where the health-check guide promises `BackendUnavailable`.
   `_map_exception` sees the errno, not that it arose at connect. Open decision:
-  classify in the lazy `_sftp` property; the `EACCES` half may be docs-only.
+  where connect-time context can classify it; the `EACCES` half may be docs-only.
   Detail: [dossier](backlog/bug-273-local-connect-reject-type.md)
 
 - [ ] **BUG-279 — `unwrap(SFTPClient)` leaks the raw paramiko or socket error when the connection cannot be established**
@@ -151,8 +158,8 @@ failure it was.
   No artifact maps an observable SFTP failure (refused port, wedged daemon,
   silent peer, bad credential, DNS) to the `_map_exception` arm it reaches and
   what the caller gets; four one-sentence summaries were each refuted, because
-  the space has four axes. Open decision: which cells a parametrised
-  failure × arm test enumerates, so spec and guides cite it, not restate it.
+  the space has four axes. Open decision: where that mapping lives and which
+  failure × arm cells it covers.
   Detail: [dossier](backlog/bug-266-sftp-failure-to-arm-map.md)
 
 - [ ] **BUG-269 — `observe.md`'s level and `op` tables are enumerations that were already false on master, and BK-359 adds to both**
@@ -178,8 +185,8 @@ failure it was.
   The migration guide says a Graph drive folder named `.` stays reachable as a
   key under a non-root `base_path`; no key spelling reaches it under any
   `base_path`, because `_addressable_segments` strips `.` from keys and
-  `base_path` alike, and must. Open decision: the replacement sentence (it can
-  no longer be addressed; rename it before upgrading). The code stays.
+  `base_path` alike, and must. Open decision: none on shape; the guide's
+  sentence is what changes, and the dossier drafts its replacement.
   Detail: [dossier](backlog/bug-263-graph-dot-folder-guide.md)
 
 - [ ] **BUG-293 — Twelve Azure `except Exception` arms re-type an already-typed error, so a closed store reports the base class**
@@ -205,8 +212,8 @@ failure it was.
   `S3Backend` and `S3PyArrowBackend` swallow a container 404 on any listing
   page, so a container deleted mid-scan yields a truncated listing that reads
   as complete: the list-then-delete hazard. The other lanes bound the tolerance
-  to the first page (BE-021 § Reach). Open decision: none on shape; port that
-  bound from `S3Boto3Backend._listing_errors`, keyed on a page, not an item.
+  to the first page (BE-021 § Reach). Open decision: none on shape; the fix
+  shape and its worked example are in the dossier.
   Detail: [dossier](backlog/bug-255-s3fs-midlisting-truncation.md)
 
 - [ ] **BUG-257 — `GraphBackend` restarts the first-page bound at every folder of a recursive walk**
@@ -214,8 +221,8 @@ failure it was.
   `GraphBackend` keys BE-021 § Reach's first-page bound per HTTP request, and
   `_walk_files` issues one request per folder, so a recursive `list_files`
   whose subfolder 404s returns what it has as a complete listing. The
-  single-listing bound is correct. Open decision: none on shape; hoist the
-  flag out of `_iter_child_items` and thread it through the walk.
+  single-listing bound is correct. Open decision: none on shape; the fix shape
+  is in the dossier.
   Detail: [dossier](backlog/bug-257-graph-walk-first-page-bound.md)
 
 - [ ] **BUG-245 — `SQLBlobBackend(create_table=False)` leaks `NoSuchTableError` from its constructor**

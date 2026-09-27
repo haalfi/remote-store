@@ -1,4 +1,4 @@
-# BUG-293 — Sixteen Azure `except Exception` arms re-type an already-typed error, so a closed store reports the base class
+# BUG-293 — Twelve Azure `except Exception` arms re-type an already-typed error, so a closed store reports the base class
 <!-- doc: repo-only -->
 
 Moved verbatim from [`BACKLOG.md` § 1](../BACKLOG.md#predictable-failure) by the ADR-0040 § 1
