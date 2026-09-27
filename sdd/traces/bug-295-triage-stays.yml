@@ -124,12 +124,12 @@ phases:
           and a nested path (no match).
         outcome: ok
 review:
-  # Derived by `hatch run ship-report 1034 --trace-block-only` at head 9cf0140.
+  # Derived by `hatch run ship-report 1034 --trace-block-only` at head d0841c6.
   # Do not hand-edit, except a newly required field per sdd/traces/_schema.yml
   # section review: RFC-0015 D4 makes this script the only producer.
   derivation: "hatch run ship-report 1034 --trace-block-only"
   pr: 1034
-  review_rounds: 1
+  review_rounds: 2
   submissions: 1
   findings: 2
   by_round:
@@ -153,6 +153,8 @@ review:
     - "tests/scripts/fixtures/rfc_0015_first_replies.json"
     - "tests/scripts/test_rfc_0015_findings.py"
   review_driven_commits:
-    - sha: "9cf0140"
+    - sha: "2ad72cd"
       subject: "fix: address PR #1034 review"
+    - sha: "d0841c6"
+      subject: "BUG-295: Add the derived review block to the trace at the close"
   ci: {verdict: GREEN, failed: 0, pending: 0}
