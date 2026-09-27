@@ -119,6 +119,15 @@ an index entry and its dossier are review-enforced.
 here only when shipping without it resolved would cost users more than delaying
 the release.
 
+- [ ] **BL-011 — `SQLBlobBackend.delete_folder` deletes sibling keys, and listings return them, because prefix `LIKE` patterns leave `_` and `%` unescaped**
+  spec: — · effort: S · audience: user.api
+  Nine unescaped prefix `LIKE` sites in `_sqlalchemy.py` (`key + "/%"`,
+  `prefix + "%"`) let `_` and `%` match siblings: `delete_folder("a_b",
+  recursive=True)` deletes `axb/y.txt`, and `list_files("a_b")` returns it.
+  Silent data loss on ordinary keys. Open decision: none on shape; the fix
+  scope and its evidence are in the dossier.
+  Detail: [dossier](backlog/bl-011-sql-like-sibling-deletion.md)
+
 ---
 
 <a id="predictable-failure"></a>
@@ -288,15 +297,6 @@ no clause of the contract ships unexercised.
   `MemoryCache`. Silent wrong data. Open decision: key on backend identity,
   adopt ID-121's derived keys, or refuse an unkeyed shared cache.
   Detail: [dossier](backlog/bug-251-shared-cache-cross-store-bytes.md)
-
-- [ ] **BUG-241 — `SQLBlobBackend` builds prefix `LIKE` patterns without escaping `_` and `%`, so listings and folder deletes reach sibling keys**
-  spec: — · effort: S · audience: user.api
-  Nine unescaped prefix `LIKE` sites in `_sqlalchemy.py` (`key + "/%"`,
-  `prefix + "%"`) let `_` and `%` match siblings: re-measured,
-  `list_files("a_b")` returns `axb/y.txt` and `delete_folder("a_b",
-  recursive=True)` deletes it. Open decision: whether the data loss makes it a
-  `BL-` (pending); none on fix shape.
-  Detail: [dossier](backlog/bug-241-sql-like-metacharacters.md)
 
 - [ ] **BUG-240 — ASYNC-014 and DEPTH-003 state opposite rules, and `GraphBackend` implements the async one**
   spec: ASYNC-014, DEPTH-003 · effort: M · audience: user.api

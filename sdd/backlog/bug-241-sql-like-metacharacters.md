@@ -41,3 +41,9 @@ So the consequence is wrong listings and data loss on ordinary keys, not only a
 wrong error type. Whether that meets the `BL-` bar is the maintainer's call.
 Found by the ADR-0040 § 2 conversion, which re-derived the item before writing
 its index diagnosis; the index title changed with it.
+
+## Absorbed, 2026-09-27
+
+Absorbed into [BL-011](bl-011-sql-like-sibling-deletion.md), a release
+blocker, by maintainer decision after the correction above. BL-011's index
+entry holds the current diagnosis.
