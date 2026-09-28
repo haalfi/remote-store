@@ -80,7 +80,7 @@ neither file holds a conflict marker (`rg -c '^(<{7}|={7}|>{7})'
 sdd/BACKLOG.md sdd/BACKLOG-DONE.md` prints nothing), and the § Absorbed
 register's ten entries name seven hosts,
 all seven open (`rg -c` over their headers in `BACKLOG.md` gives 7). So those
-rules would land green; "each retired ID appears once" would fail on BK-385's
-four pairs. Over the 50
+rules would land green; "headers unique across both files" would fail on
+BK-385's four pairs, which repeat inside `BACKLOG-DONE.md`. Over the 50
 spec files, 33 cite 206 backlog IDs, 102 distinct, 91 of them in
 `BACKLOG-DONE.md`, none dangling (the body's 166/80/28/69 is older). Found by the ADR-0040 § 6 conversion.

@@ -639,7 +639,7 @@ CHANGELOG the release body is built from — say what is actually true.
   spec: — · effort: S · audience: contributor.tooling
   The duplicate-ID gate checks open headers only, so a collision reaching
   `BACKLOG-DONE.md` stays unflagged for good; four duplicate pairs already
-  sit there (`_duplicate_ids` reproduces them), and ID-235's "exactly once"
+  sit there (`_duplicate_ids` reproduces them), and ID-235's header-uniqueness
   rule cannot land green until they are settled. Open decision: grandfather
   the four by ID, exempt the `(partial)` shape, or check `## Unreleased` only.
   Detail: [dossier](backlog/bk-385-done-register-duplicate-ids.md)
@@ -647,10 +647,10 @@ CHANGELOG the release body is built from — say what is actually true.
 - [ ] **ID-235 — Backlog-file integrity lint (structure and inbound tracker citations)**
   spec: — · effort: S · audience: contributor.tooling
   `gen_backlogid.py`'s R1–R4 cover open items only: nothing checks
-  `BACKLOG-DONE.md`'s status marks, absorbed-host references or conflict
-  markers, and no pass resolves inbound tracker citations. Re-derived, the
-  done-file rules would land green today and "exactly once" would not
-  (BK-385). Open decision: which rules to add, and what a dangling ID means.
+  `BACKLOG-DONE.md`'s status marks, absorbed hosts or conflict markers, and
+  no pass resolves inbound tracker citations. Re-derived, those three would
+  land green today, header uniqueness across both files would not (BK-385).
+  Open decision: which rules to add, and what a dangling ID means.
   Detail: [dossier](backlog/id-235-backlog-integrity-lint.md)
 
 - [ ] **ID-254 — The `[Unreleased]` stub's bold marker has no defined meaning beyond `**Breaking**`, and nobody owns section assignment**
