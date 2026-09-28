@@ -81,11 +81,12 @@ The sampling rule is stale. `rg -n '^  pr: 10[2-9][0-9]' sdd/traces/` finds
 derived review blocks for #1027, #1028, #1029, #1032, #1033, #1034, #1036,
 #1037 and #1038, all merged after BK-378's #1026, and this body names no rule
 for which count. Seven of the nine are BK-365 deliveries, and only #1032, the
-§ 1 pilot, reached round 3 (`review_rounds: 6`, with a loop-introduced
-must-fix finding in round 4); the other six add nothing to clause 1's
-denominator (`rg -n review_rounds sdd/traces/bk-365-*.yml`). Two instrument limits are missing:
-#1027's trace says to pool it as "6 rounds and 89 findings"
+§ 1 pilot, reached round 3: its block's `by_round` lists four rounds, round 4
+carrying a loop-introduced finding, while the other six list at most two
+(counted by loading each `sdd/traces/bk-365-*.yml` block). Read rounds from
+`by_round`, not `review_rounds`, which the schema defines as review-driven
+commits. One instrument limit is missing: #1027's trace says to pool it as
+"6 rounds and 89 findings"
 (`sdd/traces/bk-383-duplicate-id-gate-and-d4-durability.yml:186`), because some
-rounds were posted where `ship-report` does not read. And "the block's 4 and
-41" is `submissions: 4`, not rounds; the block reads `review_rounds: 9`
-(`sdd/traces/bk-378-d1-d4.yml:310-312`). Found by the ADR-0040 § 6 conversion.
+rounds were posted where `ship-report` does not read. Found by the ADR-0040 § 6
+conversion.
