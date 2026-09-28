@@ -89,6 +89,32 @@ new one.
 
 ## Proposal
 
+### The shape in one picture
+
+Today each class is the whole contract; the proposal puts the contract in one
+kernel and leaves each class a driver of wire primitives plus one classifier.
+
+```mermaid
+graph TB
+  subgraph today["Today: 13 classes, each carrying the whole contract"]
+    S1[Store] --> B1["LocalBackend<br/>guards, probes, classify"]
+    S1 --> B2["SFTPBackend<br/>guards, probes, classify, session"]
+    S1 --> B3["AzureBackend<br/>guards, probes, classify"]
+    S1 --> B4["… 10 more, each re-deriving the same clauses"]
+  end
+  subgraph proposed["Proposed: one kernel, thin drivers"]
+    S2[Store] --> K["DriverBackend, the kernel, once:<br/>root and closed guards from the key<br/>wrong-type probes on the error path<br/>absent-container tolerance per Op<br/>first-page listing bound<br/>choke point: classify, then path, backend, message"]
+    K --> D1["LocalDriver<br/>stat get put delete list_page probe close<br/>classify(exc, op, key)"]
+    K --> D2["SFTPDriver + Session<br/>same primitives"]
+    K --> D3["AzureDriver<br/>same primitives"]
+    K --> D4["… 7 more drivers"]
+  end
+```
+
+The kernel is generic over the driver, so the fourteen primitives and the
+classifier are all a new backend writes, and every clause in the kernel box
+is applied to it without being restated.
+
 ### D1. A `Driver` of wire primitives, with capabilities declared, not derived
 
 A driver maps one-to-one onto its wire protocol and carries no path, root,
@@ -223,6 +249,22 @@ by `rg -c '^    def [a-z]' _backend.py`). It owns, once:
   operations it names, and identity-scope calls (`write`, `probe`, drive-id
   resolution, the copy/move monitor) hand the driver an `Op` it may escalate,
   which is ADR-0038's ruling kept rather than overridden.
+
+One call through the kernel, `read` as the example; every other operation
+takes the same path with its own primitive and `Op`:
+
+```mermaid
+flowchart LR
+  call["read(path)"] --> guard["key guards<br/>root, closed<br/>no round trip"]
+  guard --> prim["driver.get(key)<br/>inside the choke point"]
+  prim -->|stream| wrap["stream wrapped once:<br/>every later read passes classify too"]
+  prim -->|native exception| cls["driver.classify(exc, op=read, key)"]
+  cls --> post["kernel post-processing:<br/>path and backend set,<br/>blank message synthesised,<br/>a typed RemoteStoreError passes through"]
+  post -->|NotFound| probe["error-path probe:<br/>stat or list_page(limit=1)<br/>wrong type becomes InvalidPath"]
+  post --> raise["typed error to the caller"]
+  probe --> raise
+  wrap --> caller["stream to the caller"]
+```
 
 **What `Backend` is afterwards.** `Backend` stays the abstract contract type
 every caller and every test names; the kernel is one concrete subclass.
