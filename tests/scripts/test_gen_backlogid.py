@@ -498,7 +498,10 @@ def _item(item_id: str, diagnosis_lines: int, detail: str | None = None) -> str:
 
 
 def _section(anchor: str, title: str, preamble: str, *items: str, marker: bool = False) -> str:
-    """`marker` puts ADR-0040's retired migration marker under the heading, which ADR-0041 ignores."""
+    """`marker` puts ADR-0040's retired migration marker under the heading.
+
+    Since ADR-0041 it exempts nothing: the gate reads it as preamble text, so R3 fails on it.
+    """
     marker_line = f"{_RETIRED_MARKER}\n" if marker else ""
     return f'<a id="{anchor}"></a>\n## {title}\n{marker_line}\n{preamble}\n\n' + "\n".join(items) + "\n---\n\n"
 
@@ -558,7 +561,7 @@ class TestShape:
 
     # -- R3 -----------------------------------------------------------------
 
-    def test_a_closes_when_paragraph_fails_a_migrated_section(self, tmp_path, monkeypatch, capsys):
+    def test_a_closes_when_paragraph_fails_a_section(self, tmp_path, monkeypatch, capsys):
         text = _gated("**Promise:** one.\n\n**Closes when:** x.", _item("BK-177", 1))
         assert self._run(tmp_path, monkeypatch, text) == 1
         assert "1. A: preamble has 2 paragraphs" in capsys.readouterr().out

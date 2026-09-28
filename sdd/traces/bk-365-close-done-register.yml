@@ -22,6 +22,7 @@ expected_ripples:
   - sdd/GATE-INVENTORY.md
 surprising_ripples:
   - CLAUDE.md
+  - CONTRIBUTING.md
   - sdd/000-process.md
   - sdd/rfcs/rfc-0015-ship-two-surfaces.md
   - sdd/backlog/id-235-backlog-integrity-lint.md
