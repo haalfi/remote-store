@@ -112,7 +112,14 @@ class TestParse:
         long = _mod.parse(_REGISTER, frozenset({"BK-011"}))["Unreleased"][1]
         assert (long.has_dossier, long.linked) == (True, False)
 
+    def test_link_written_another_way_reads_as_unlinked(self) -> None:
+        # A documented miss of the docstring's bound, pinned so it stays known.
+        text = "## v1\n\n- [x] **BK-3 — c** [d](../backlog/bk-3-c.md)\n"
+        entry = _mod.parse(text, frozenset({"BK-3"}))["v1"][0]
+        assert (entry.has_dossier, entry.linked) == (True, False)
+
     def test_dossier_ids_from_filenames(self, tmp_path: Path) -> None:
+        # A file renamed off the "<id>-" prefix is not seen (the other miss).
         for name in ("bk-011-thing.md", "id-259-other.md", "README.md", "bk-012-x.txt"):
             (tmp_path / name).write_text("", encoding="utf-8")
         assert _mod.dossier_ids(tmp_path) == frozenset({"BK-011", "ID-259"})

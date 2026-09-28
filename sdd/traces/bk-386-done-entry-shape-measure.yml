@@ -77,8 +77,9 @@ phases:
         extract: >-
           `hatch run report-done-length` at 8fa22d6 reproduces ADR-0041's
           Context figures (v0.32.0 403, v0.31.0 646, 599.5 for the 16
-          pre-rule Unreleased entries) and adds BK-365's close as the one
-          linked entry at 67 words; those rows are the dossier's baseline.
+          pre-rule Unreleased entries) and adds BK-365's close as Unreleased's
+          one dossier entry at 67 words (BUG-241 under Absorbed is the other
+          in the register); those rows are the dossier's baseline.
         outcome: ok
   - id: verify
     name: Verify

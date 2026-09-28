@@ -25,7 +25,8 @@ per entry:
 | v0.31.0 | 59 | 646 | 0 | — | 0 | 59 | 646 |
 | v0.30.0 | 20 | 235 | 0 | — | 0 | 20 | 235 |
 
-The one dossier entry is BK-365's close. The 16 without were written before
+Unreleased's one dossier entry is BK-365's close; the only other in the
+register is BUG-241's under Absorbed, which holds retired IDs, not releases. The 16 without were written before
 the rule, and none of their items has a dossier file under `sdd/backlog/`; they
 stay as they are, since ADR-0041 does not condense them.
 

@@ -45,8 +45,11 @@ State the bound, per [Rule 7](../sdd/DRIFT-RULES.md#miss-rate):
   into the without half. A link is ``](backlog/<id>-`` for the entry's own
   ID anywhere in the entry; a link written another way (``../backlog/``, an
   absolute URL) is not seen, so its entry reads as Unlinked.
-* **No miss rate is estimated.** Nothing is flagged, so there is no recall
-  to measure; the figure is only as good as the counting rule above.
+* **No miss rate is measured.** *Unlinked* is a per-entry flag, but the
+  register holds no unlinked dossier entry yet, so there is no real miss to
+  count. Its known misses are the two shapes above, each pinned by a seeded
+  test rather than estimated; the medians are only as good as the counting
+  rule.
 
 Drift-gate::
 
