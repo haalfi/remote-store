@@ -387,16 +387,16 @@ repo keeps of it is derived from the PR once, after the loop ends.
   distinction the phrase set encodes, and it is what lets the check run over
   whole files without a paragraph parser.
 - The *deliverable surface* is code, tests, specs, docs, `CHANGELOG.md`, the
-  migration guide, and `sdd/BACKLOG*.md` in full. A register entry is
-  deliverable in every paragraph: what shipped, the mechanism, figures with
-  their derivations, what was deliberately not done, who found it. What leaves
-  it is the round-by-round account of getting there, which is the record's.
-  Whether the remaining paragraphs are too long was BK-365's question, and
-  not this RFC's: ADR-0041 answered it by keeping an entry for an item with a
-  dossier short, its figures and derivations in the dossier. A claim found
-  false is corrected or deleted; a claim found unmeasured is measured or
-  deleted. A derivation is not a retrospective and
-  stays.
+  migration guide, `sdd/BACKLOG*.md` in full, and the `sdd/backlog/`
+  dossiers. A register entry and its dossier are deliverable in every
+  paragraph: what shipped, the mechanism, figures with their derivations, what
+  was deliberately not done, who found it. What leaves them is the
+  round-by-round account of getting there, which is the record's. Where that
+  content sits was BK-365's question, not this RFC's: ADR-0041 keeps an entry
+  for an item with a dossier short and puts the figures and derivations in the
+  dossier. A claim found false is corrected or deleted; a claim found
+  unmeasured is measured or deleted. A derivation is not a retrospective and
+  stays, in the dossier when there is one.
 - The *record* is the PR: commits, review comments, replies, CI. The trace's
   review block (`review_rounds`, findings per round, origin counts, per-file
   distribution) and the Step 5 report are derived from it by D4's script,
