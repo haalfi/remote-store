@@ -6703,6 +6703,34 @@
 
               
             
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../adrs/0041-done-register-links-dossiers/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    0041: A Done Entry Links Its Dossier Instead of Restating It, and the Migration Opt-Out Is Retired
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
           </ul>
         </nav>
       
@@ -11199,10 +11227,10 @@ the first is done — read the section an entry sits under.</p>
 <p><code>BACKLOG.md</code> is an index: an item states its diagnosis in a few lines, and
 detail that does not fit (evidence, reproduction, fix options) goes in a
 per-item dossier under <code>sdd/backlog/</code>. It is the single source of truth for ID
-prefixes, status conventions, completion workflow, item shape, section
-structure, and where an item's detail lives while the file is being converted;
-see its <a href="https://github.com/haalfi/remote-store/blob/master/sdd/BACKLOG.md#how-this-file-works">How this file works</a> header. The
-rationale is <a href="../adrs/0040-backlog-as-index/">ADR-0040</a>.</p>
+prefixes, status conventions, completion workflow, item shape and section
+structure; see its <a href="https://github.com/haalfi/remote-store/blob/master/sdd/BACKLOG.md#how-this-file-works">How this file works</a> header.
+The rationale is <a href="../adrs/0040-backlog-as-index/">ADR-0040</a>, amended for the done
+register by <a href="../adrs/0041-done-register-links-dossiers/">ADR-0041</a>.</p>
 <p><a id="feature-type-definition-of-done"></a></p>
 <h3 id="feature-type-definition-of-done">Feature-type Definition of Done<a class="headerlink" href="#feature-type-definition-of-done" title="Permanent link">&para;</a></h3>
 <p>Rule 6 gives a feature's lifecycle order; the two checklists below give its
