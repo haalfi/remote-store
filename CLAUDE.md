@@ -43,10 +43,10 @@ the failing test, run it, see it fail** before implementing the fix.
   it: completed work, IDs absorbed into a surviving item, and items decided
   against. Only the first is "done" — read the section an entry sits under.
 - `BACKLOG.md` is an index: detail that does not fit an item goes in its
-  dossier under `sdd/backlog/`, read first by whoever works the item. Where an
-  item's detail lives while the file is being converted:
+  dossier under `sdd/backlog/`, read first by whoever works the item. Rules:
   [§ How this file works](sdd/BACKLOG.md#how-this-file-works). Why:
-  [ADR-0040](sdd/adrs/0040-backlog-as-index.md).
+  [ADR-0040](sdd/adrs/0040-backlog-as-index.md), and for the done register
+  [ADR-0041](sdd/adrs/0041-done-register-links-dossiers.md).
 - Commit messages start with item ID when applicable (e.g., `AF-008: Add credential masking`).
 
 <a id="trace-authoring"></a>

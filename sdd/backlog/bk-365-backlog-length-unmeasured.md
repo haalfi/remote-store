@@ -62,3 +62,15 @@ entries, not 651. Current per-release medians of words per `BACKLOG-DONE.md`
 entry (words from each `- [x] **ID` header to the next header or heading):
 9.5 at v0.3.0, 235 at v0.30.0, 646 at v0.31.0, 403 at v0.32.0 (6 entries) and
 599.5 under Unreleased (16 entries). Found by the ADR-0040 § 6 conversion.
+
+## Closed, 2026-09-28
+
+The `BACKLOG-DONE.md` half is decided, with the maintainer, in
+[ADR-0041](../adrs/0041-done-register-links-dossiers.md): an entry for an item
+with a dossier is short and links it, released entries are not rewritten, and
+the shape is review-enforced with no length rule. The same record retires
+`gen_backlogid.py`'s migration opt-out, so R2 and R3 gate every section; the
+two retired-marker tests in `tests/scripts/test_gen_backlogid.py` were seen
+failing before the opt-out was removed. The rules header's migration note is
+gone. Register entry: `BACKLOG-DONE.md`, under the release that ships this
+close.

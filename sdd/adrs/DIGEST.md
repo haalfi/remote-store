@@ -2,7 +2,7 @@
 
 <!-- doc: repo-only -->
 
-Compiled from 40 ADR(s) by `scripts/gen_adr_digest.py`. Do not edit by hand; run `hatch run gen-adr-digest`.
+Compiled from 41 ADR(s) by `scripts/gen_adr_digest.py`. Do not edit by hand; run `hatch run gen-adr-digest`.
 
 ## Accepted
 
@@ -1304,6 +1304,9 @@ crossing, whichever comes first.
   vocabulary, R2 the item cap, R3 section shape, R4 dossier link. R1 lands with
   the mapping of the values it rejects; R2 and R3 land with the § 1 pilot,
   **scoped to migrated sections**, so no gate runs red on an unconverted one.
+  *Amended by [ADR-0041](0041-done-register-links-dossiers.md):* with every
+  section converted, the scope and its opt-out marker are retired; R2 and R3
+  run on every section.
 - **R2 and R3 depart from research
   [§ 9.1](../research/research-appropriate-level-of-detail.md)**, which advises
   no length rule beside Rule 7; a line or sentence count is the text-level
@@ -1313,6 +1316,34 @@ crossing, whichever comes first.
   bounds:** no other `sdd/` document, and overflow moves rather than being cut.
   *Reverse if* the acceptance re-measurement shows the caps pushing load-bearing
   diagnosis out of the index; a superseding record states that evidence.
+
+### [ADR-0041](0041-done-register-links-dossiers.md): A Done Entry Links Its Dossier Instead of Restating It, and the Migration Opt-Out Is Retired
+
+- **A done entry for an item with a dossier is short: what shipped and where,
+  then the dossier link.** Evidence, derivations and review history stay in the
+  dossier and the trace. The length that measured growth is duplication, and
+  moving it costs nothing because the dossier already holds it. *Reverse if* a
+  closed item's dossier proves insufficient to reconstruct what shipped, which
+  would show the entry carrying load the dossier does not.
+- **New completed entries only.** Released entries are not condensed: a rewrite
+  of about 123k words of dated record is a large, unreviewable diff for a file
+  read by lookup, and the old entries are the record their releases cite. The
+  retirement sweep's factual corrections still reach them, and § Absorbed and
+  § Decided against entries keep their own shape.
+- **No length rule.** The shape is review-enforced and has no word or line cap,
+  following [research § 9.1](../research/research-appropriate-level-of-detail.md)
+  (no length rule beside Rule 7). ADR-0040's departure from § 9.1 rested on a
+  reader who loads the file on every pick; this file has no such reader.
+  **Bound** ([`DRIFT-RULES.md` Rule 7](../DRIFT-RULES.md#miss-rate)): nothing
+  mechanical catches a long entry, so the rule holds only as far as review
+  reads the register diff.
+- **The migration opt-out is retired.** `gen_backlogid.py`'s R2 and R3 run on
+  every section, and the `<!-- backlog: unconverted -->` marker exempts nothing:
+  once no section needed it, it could only serve to escape the gate, which only
+  review would see. Pinned by `tests/scripts/test_gen_backlogid.py`'s two
+  retired-marker tests, written failing first.
+
+> amends ADR-0040 (clause).
 
 ## Superseded
 

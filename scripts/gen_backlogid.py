@@ -62,14 +62,10 @@ Check mode (--check):
       ``Detail: [dossier](backlog/<id>-<slug>.md)``, resolves from ``sdd/``,
       and the dossier's first ``# `` heading opens with the item's ID.
 
-    **Scope.** R2 and R3 skip a section whose heading line is directly
-    followed by ``<!-- backlog: unconverted -->``, ADR-0040's "scoped to
-    migrated sections". The marker opts *out*, so a new section is gated from
-    birth and conversion is one deleted line; the rules header's migration
-    note names converted sections for readers, but the marker is what this
-    reads. R4 runs on every section: a dangling link is wrong anywhere.
-    **Bounds:** the marker can be added to escape R2/R3, which only review
-    sees; R4 checks link and ID, not that index and dossier agree
+    **Scope.** R2, R3 and R4 run on every section. ADR-0040 scoped R2 and R3
+    to migrated sections through an opt-out marker; ADR-0041 retired it once
+    every section was converted, so no line can exempt a section.
+    **Bounds:** R4 checks link and ID, not that index and dossier agree
     (``BACKLOG.md`` § Item authority states that bound); a dossier no item
     links is not detected.
 
@@ -97,7 +93,7 @@ Drift-gate::
 Drift-gate::
 
     kind:       rule
-    rule: in each sdd/BACKLOG.md section without the unconverted marker, an item is at most
+    rule: in each sdd/BACKLOG.md section, an item is at most
         eight content lines with a diagnosis of at most five (R2), and the preamble is one
         Promise paragraph of at most three sentences (R3)
     domain:     process
@@ -139,7 +135,6 @@ _EFFORTS = ("S", "M", "L")
 # uses the same delimitation, so the gate and the acceptance figure agree.
 _SEP_RE = re.compile(r'^(\s*|---|<a id="[^"]+"></a>)$')
 _RULES_ANCHOR = '<a id="how-this-file-works"></a>'
-_UNCONVERTED = "<!-- backlog: unconverted -->"
 _DETAIL_RE = re.compile(r"^  Detail: \[dossier\]\((backlog/[^)\s]+\.md)\)$")
 _DOSSIER_ID_RE = re.compile(r"^# ([A-Z]+-\d+[a-z]*) —")
 _ITEM_CAP, _DIAGNOSIS_CAP, _PROMISE_CAP = 8, 5, 3
@@ -251,30 +246,22 @@ def _items(lines: list[str], start: int, end: int) -> list[tuple[str, int, int]]
 
 
 def _shape_violations(text: str, base: Path) -> tuple[list[str], list[str], list[str]]:
-    """R2 item cap, R3 section shape, R4 dossier link, as three lists.
-
-    R2 and R3 skip a section whose heading is directly followed by
-    ``_UNCONVERTED``: an opt-out, so a new section is gated from birth
-    (ADR-0040 scopes both to migrated sections). R4 runs on every section.
-    """
+    """R2 item cap, R3 section shape, R4 dossier link, as three lists, over every section (ADR-0041)."""
     lines = text.split("\n")
     caps: list[str] = []
     shapes: list[str] = []
     links: list[str] = []
     for title, h, end in _sections(lines):
         items = _items(lines, h + 1, end)
-        gated = h + 1 >= len(lines) or lines[h + 1] != _UNCONVERTED
-        if gated:
-            shapes.extend(_section_shape(title, lines[h + 1 : items[0][1] if items else end]))
+        shapes.extend(_section_shape(title, lines[h + 1 : items[0][1] if items else end]))
         for item, a, last in items:
             detail = _DETAIL_RE.match(lines[last]) is not None
-            if gated:
-                n = last - a + 1
-                diagnosis = n - 2 - detail
-                if n > _ITEM_CAP:
-                    caps.append(f"line {a + 1}: {item}: {n} content lines (cap {_ITEM_CAP})")
-                elif diagnosis > _DIAGNOSIS_CAP:
-                    caps.append(f"line {a + 1}: {item}: diagnosis {diagnosis} lines (cap {_DIAGNOSIS_CAP})")
+            n = last - a + 1
+            diagnosis = n - 2 - detail
+            if n > _ITEM_CAP:
+                caps.append(f"line {a + 1}: {item}: {n} content lines (cap {_ITEM_CAP})")
+            elif diagnosis > _DIAGNOSIS_CAP:
+                caps.append(f"line {a + 1}: {item}: diagnosis {diagnosis} lines (cap {_DIAGNOSIS_CAP})")
             for j in range(a + 1, last + 1):
                 if lines[j].startswith("  Detail:"):
                     links.extend(f"line {j + 1}: {item}: {v}" for v in _dossier_link(item, lines[j], base))
@@ -412,7 +399,7 @@ def _check() -> int:
     # first evidence most authors will have that it exists at all.
     print(
         "No ID collisions, no ID on two open items, every open item's attributes in vocabulary, "
-        "every migrated section and its items in shape, and every Detail: link resolving to its dossier."
+        "every section and its items in shape, and every Detail: link resolving to its dossier."
     )
     return 0
 

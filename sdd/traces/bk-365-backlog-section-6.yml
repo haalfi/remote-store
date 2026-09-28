@@ -33,10 +33,10 @@ phases:
           body (ID-207). Both ID-244 dependency sentences and the
           ID-207-before-ID-245 order note restate ID-245's own body ("Position:
           after ID-244"; "Its shape changes under ID-207"), and that order
-          already holds. Review round 3 found the one order this conversion
-          created: ID-235's re-derivation made its header-uniqueness rule wait
-          on BK-385's four duplicate pairs, so BK-385 moved above it and names
-          it (round 4 corrected which of ID-235's rules that is). "Shipped so far" and its four findings each have a
+          already holds. Review found the one order this conversion created:
+          ID-235's re-derivation made its header-uniqueness rule wait on
+          BK-385's four duplicate pairs, so BK-385 moved above it and names it.
+          "Shipped so far" and its four findings each have a
           BACKLOG-DONE.md or research home. Tagged misleading: the preamble's
           qualification miscasts BK-324 facet 4 as class A/C/D, and item
           bodies here supplied the eleven statements this PR corrects.
@@ -75,9 +75,8 @@ phases:
         extract: >-
           `rg -n '^  pr: 10(2[7-9]|[3-9][0-9])' sdd/traces/`, run before this
           trace gained its own block, found nine PRs after #1026 with derived
-          blocks; the first pattern used also matched #1026 itself (review
-          round 4). A subagent's "eleven" did not reproduce and did not reach
-          the index. BK-384 omits #1027's 6-round / 89-finding
+          blocks; the first pattern used also matched #1026 itself. A
+          subagent's "eleven" did not reproduce and did not reach the index. BK-384 omits #1027's 6-round / 89-finding
           pooling note.
         outcome: ok
       - file: sdd/formal/README.md
