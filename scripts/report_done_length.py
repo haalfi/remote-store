@@ -7,13 +7,16 @@ prints them: for each ``## `` section of ``sdd/BACKLOG-DONE.md``, the entry
 count and median words, over all entries and split into entries for an item
 with a dossier and entries without one. An item has a dossier when a file
 named ``<id>-*.md`` sits in the ``backlog/`` directory beside the register, or
-when its entry links one; *Unlinked* counts dossier entries that omit the link,
-which the rule requires.
+when its entry links its own; *Unlinked* counts dossier entries that omit the
+link, which the rule requires.
 
 An entry runs from its ``- [x] **ID`` header line to the next header or any
-``#`` heading; words are ``str.split()`` tokens. That is the derivation the
-figures in ADR-0041's Context were measured with, so the release reading
-compares like with like.
+``#`` heading; words are ``str.split()`` tokens. For release sections that is
+the derivation ADR-0041's Context was measured with, so the release reading
+compares like with like. One difference: a ``- [x] **—`` line, an entry that
+never had an ID, starts its own entry here, where that derivation folded it
+into the entry above. Only § Decided against holds such lines, so its figures
+differ from the ADR's and no release section's do.
 
 Run with::
 
