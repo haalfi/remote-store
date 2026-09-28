@@ -24,3 +24,16 @@ Shape: a bounded retry on the auth phase, or a wider `auth_timeout` for this
 probe, with the legacy `sshd` config in `infra/legacy-sftp/Dockerfile` checked
 for reverse-DNS or PAM delay that a runner could pay. Not a change to
 `SFTPUtils.enable_ssh_rsa_compat()`, which the run shows working.
+
+## Correction, 2026-09-28
+
+"The one test in CI that authenticates" holds on the newest lane only. Both
+drift-guard lanes build `legacy-sftp` (`rg -n legacy .github/workflows/drift-guard.yml`),
+and S1a (`test_S1a_bare_connect_succeeds_on_paramiko_lt5`) authenticates by a
+bare connect whenever paramiko < 5, which the floor lane installs (`>=3.1`);
+the newest lane pins `paramiko==5.0.0` (`infra/drift-locks/sftp.txt:10`), so
+S1a skips there. Today the floor lane reaches neither test, because BUG-289's
+warning ends collection first. `_try_connect`'s `auth_timeout=5` is still at
+`tests/e2e/test_sftp_legacy_recovery.py:73`, and `rg -ln --hidden
+'legacy-sftp|legacy_sftp' .github` finds only `drift-guard.yml`. The run IDs
+were not re-checked. Found by the ADR-0040 § 5 conversion.

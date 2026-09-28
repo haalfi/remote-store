@@ -30,3 +30,16 @@ the recipe pins and the baselines, and delete the three rows from
 better answer** before raising: the failure is an interaction, and
 `lowest-direct` leaves numpy newest deliberately, so a floor raise fixes the
 combination the lane tests while a bound fixes the one a user hits.
+
+## Re-measured, 2026-09-28
+
+The declarations hold (`rg -n 'pyarrow' pyproject.toml`): `sql-query` and
+`arrow` at `pyarrow>=12.0.0`, `s3-pyarrow` at `pyarrow>=14.0.0`;
+`rg -n numpy pyproject.toml` finds no numpy bound. `KNOWN-FINDINGS.md` carries
+the three BUG-287 rows. Both conda recipes pin `pyarrow >=14.0.0`
+(`rg -n pyarrow packaging/conda-forge/recipe.yaml
+packaging/conda-forge/feedstock/recipe.yaml`), so a raise touches both. BK-377's
+entry in `BACKLOG-DONE.md` (`:892-897`) exercised this item's raise and found
+`pyarrow` 14.0.0 → 16 patch-eligible rather than breaking, which updates the
+"migration obligations" framing. The import failure needs a floor install
+and was not re-run. Found by the ADR-0040 § 5 conversion.

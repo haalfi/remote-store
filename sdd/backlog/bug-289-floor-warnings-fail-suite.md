@@ -37,3 +37,17 @@ install-and-run measurement per candidate release that BUG-283 through
 BUG-285 used; neither number should be guessed from a changelog.
 **Not** a request to change `filterwarnings`, and not the same class as
 BUG-287 / BUG-288, whose floors fail at `import` with no test involved.
+
+## Re-measured, 2026-09-28
+
+Holds, with one bound. `pyproject.toml` declares `paramiko>=3.1` and
+`s3fs>=2024.2.0` (`rg -n 'paramiko|s3fs' pyproject.toml`); `paramiko==3.1.0`
+above is the version `lowest-direct` resolves. `filterwarnings` still opens with
+`"error"`, and `infra/drift-locks/KNOWN-FINDINGS.md` still carries both BUG-289
+rows (`rg -n 'BUG-289' infra/drift-locks/KNOWN-FINDINGS.md`). The quoted
+warning is reproduced word for word by `python -W error -c "from
+cryptography.hazmat.primitives.ciphers import algorithms; algorithms.TripleDES"`
+on cryptography 50.0.1, where the alias still only warns: the announced 48.0.0
+removal has not landed, which weakens "a year before the removal lands". The
+s3fs figures (1 failed, 272 passed, 16 errors) need a floor install and were
+not re-run. Found by the ADR-0040 § 5 conversion.

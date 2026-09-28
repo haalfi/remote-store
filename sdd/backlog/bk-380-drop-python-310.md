@@ -67,3 +67,16 @@ surface the crossing on the first Monday after 2026-10-04 and hold itself open
 until this lands or a row in `infra/drift-locks/PYTHON-SUPPORT.md` records a
 decision to keep 3.10 anyway — which would need a reason, since the new rule's
 whole premise is that security support is the line.
+
+## Correction, 2026-09-28
+
+"`test-full (3.10)` was the longest job in all three runs" overstates its
+source: BK-375's entry in `BACKLOG-DONE.md` says "a 3.10 or 3.11 job is the
+longest in all three runs" (`rg -n '3.10 or 3.11' sdd/BACKLOG-DONE.md`). The
+first ADR-0032 quote is near-verbatim; the ADR reads "on **all five** supported
+interpreters (3.10–3.14)". All seven spellings still name 3.10 (read at
+`pyproject.toml:11` and `:55-59`, `variants.yaml:16-17`, `ci.yml:109-110`,
+`ci-full.yml:73`, `README.md:34`). Not in the seven: the example project's
+`examples/medallion_dagster/pyproject.toml:9` and `README.md:21`. A 3.11 floor
+also makes the `mutate` extra's marker always true and retires the `tomli`
+fallback in `src/remote_store/_config.py`. Found by the ADR-0040 § 5 conversion.

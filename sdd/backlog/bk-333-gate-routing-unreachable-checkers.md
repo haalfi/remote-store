@@ -51,3 +51,17 @@ Fix shape: add each checker to `docs-gate` beside the two BK-329 wired,
 following the precedent `check_ripple_parity` documents, and widen CI's path
 filter to treat `sdd/adrs/**` as lint-triggering. Filed rather than fixed in
 BK-329 because that PR touched no ADR, no TLA module and not the handbook.
+
+## Correction, 2026-09-28
+
+The TLA bullet no longer holds as written: `ci.yml`'s `verify-tla` job, gated by
+`TLA_PAT` (`^sdd/formal/tla/…`, `:84`), runs `check_tla_no_emdash.py` (`:698`),
+but `gate`'s `needs` (`:723`) omits it, so a TLA-only change runs the check
+without being blocked by it (`rg -n 'check_tla_no_emdash|verify-tla:|TLA_PAT|needs:'
+.github/workflows/ci.yml`). Locally, both the TLA and the CI-inventory checks
+ride `lint` (`pyproject.toml:314`), which the no-code path runs, so only the
+ADR-digest gap exists on both routes; the other two are CI-only.
+`gen-adr-digest-check` is still composed nowhere (`rg -n --hidden
+'gen-adr-digest-check' --glob '!sdd/**' --glob '!CHANGELOG.md' .` finds only
+its definition), and `CLAUDE-REFERENCE.md` still says the two paths "stay
+equivalent on docs coverage". Found by the ADR-0040 § 5 conversion.

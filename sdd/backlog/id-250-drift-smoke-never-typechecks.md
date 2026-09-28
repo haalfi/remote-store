@@ -37,3 +37,14 @@ row before the PR, not a second gate that blocks one.
 `infra/drift-locks/dagster.txt` already freezes the extra, and the annotation
 fix it shipped is valid against both supertype versions, so no upper bound was
 needed.
+
+## Correction, 2026-09-28
+
+Two statements above are imprecise. `--upgrade --pre` is not in
+`drift-guard.yml`: it is in `scripts/drift_check.py:278`, which the workflow's
+newest lane runs, and a second, floor lane now resolves with
+`--resolution lowest-direct` (`rg -n 'upgrade|--pre' scripts/drift_check.py`).
+And `scripts/drift_smoke_map.py` maps each extra to a pytest target or an
+import module, not to a source path, so per-extra typing needs a map that does
+not exist yet. The central claim holds: `rg mypy .github/workflows/drift-guard.yml
+.github/actions/drift-smoke/action.yml` finds nothing. Found by the ADR-0040 § 5 conversion.

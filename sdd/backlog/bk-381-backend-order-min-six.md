@@ -24,3 +24,13 @@ opt-in rather than a constant change — and membership itself is a judgement
 deliberately declines to make, since the API reference splits its tables and
 the README abridges on purpose. Whatever lands has to say which surfaces are
 held to membership and which only to order.
+
+## Correction, 2026-09-28
+
+The conda recipe's `summary` names five backends in prose, not four: "local
+files, S3, SFTP, Azure, or OneDrive" (`packaging/conda-forge/recipe.yaml:138`).
+The detector finds four of them, because lowercase "local files" matches
+nothing: `backends_in(<that line>)` returns `['S3', 'SFTP', 'Azure', 'Graph']`,
+`is_ordered` returns `False`, and `_distinct` is 4 against `_MIN_BACKENDS` 6
+(run from `scripts/`). The quoted `"Local, S3, SFTP, Azure"` probe still
+reproduces the same verdict. Found by the ADR-0040 § 5 conversion.

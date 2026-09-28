@@ -29,3 +29,12 @@ confirm parity for the pieces we rely on (gen-files pages, mkdocstrings API
 reference, literate-nav order, BK-171 link rewrites, mike/RTD versioning); and
 fold in native `llms.txt` / `llms-full.txt` generation if Zensical ships it.
 Background: [research](../research/research-llms-full-txt-tooling.md).
+
+## Correction, 2026-09-28
+
+"Recorded nowhere else" is false: `mkdocs.yml:56-57` names the sunset at the
+Material-to-Zensical migration (ID-225), `pyproject.toml:206` tags the
+`mkdocs-llmstxt` pin with it, and the research doc linked above covers it
+(`rg -n 'ID-225' mkdocs.yml pyproject.toml`). The MkDocs 2.0 and ProperDocs
+warning is printed by every `mkdocs build --strict`, observed in this
+conversion's own `hatch run docs-gate`. Found by the ADR-0040 § 5 conversion.

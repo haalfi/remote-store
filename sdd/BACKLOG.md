@@ -12,7 +12,7 @@ Items graduate through the SDD pipeline:
 ## How this file works
 
 Operational rules only. Why each rule exists: [ADR-0040](adrs/0040-backlog-as-index.md).
-**Migration in progress:** §§ 1–4 are converted. A section not yet converted carries
+**Migration in progress:** §§ 1–5 are converted. A section not yet converted carries
 `<!-- backlog: unconverted -->` on the line under its heading and keeps its old
 shape (long bodies, `Closes when`) until it is; do not extend that shape in new
 edits. Converting a section deletes the marker. The marker, not this note, is
@@ -496,489 +496,135 @@ or paying for our shortcut.
 
 <a id="no-release-surprises"></a>
 ## 5. A release cannot ship a surprise
-<!-- backlog: unconverted -->
 
 **Promise:** nothing reaches a user that we did not test, publish, watch, or
 give them a way to absorb.
 
-**Closes when:** every checker a diff can invalidate is reachable from a gate
-that diff actually triggers (BK-333); every extra's drift smoke exercises the
-packages it pins (BUG-250) and catches the drift that is visible only to a type
-checker (ID-250); a declared floor is something a mechanism has installed and
-run, rather than a claim nobody tests, and the declared *set* is
-something a mechanism has installed **alone**, rather than one the `dev`
-aggregate props up — both **met** by BK-369 and BK-372, in
-[BACKLOG-DONE.md](BACKLOG-DONE.md): a weekly floor lane installs every extra at
-its declared floors on the oldest supported interpreter, and both lanes now
-install each extra alone and import its own declared packages on every leg
-rather than only when a version moved. **Met at the mechanism, not at the
-claim** — the floor lane runs on one interpreter and reaches only as far as
-each extra's smoke, and its first run found four floors that install and then
-break (BUG-287, BUG-288). That is the clause working, not a gap in it: the
-mechanism exists and reports; **every install channel we
-intend to offer is published and working** — **met** by ID-018, in
-[BACKLOG-DONE.md](BACKLOG-DONE.md) — and what that channel publishes about us is
-watched rather than hand-copied — **met** by BK-370, in
-[BACKLOG-DONE.md](BACKLOG-DONE.md), which generates the channel's copy from ours
-and compares the published one weekly against what was published for the version
-it carries; every upstream that can break us on its
-own schedule has a standing watch (ID-229, ID-225), and the support window we
-publish is exercised by decision rather than by inertia — **met** by BK-375, in
-[BACKLOG-DONE.md](BACKLOG-DONE.md), which tied the promise to CPython's own
-security-support lifetime as a rule in
-[ADR-0039](adrs/0039-support-tracks-upstream-security-fixes.md) and recorded the
-measured position on every supported interpreter in that entry, leaving 3.10's
-drop as BK-380 rather than as inertia; the one
-deprecation that watch has caught is answered before the release that enforces
-it — **met** by BUG-281, in [BACKLOG-DONE.md](BACKLOG-DONE.md), which stated the
-pool SQLAlchemy 2.1 stops inferring rather than waiting for 2.2 to move it; the
-window the calendar puts on a published promise is derived
-rather than remembered at release time — **met** by BK-377, in
-[BACKLOG-DONE.md](BACKLOG-DONE.md), which put Rule 9's floor-raise test in the
-release path and Rule 8's calendar in the weekly report, both localizing and
-both advisory; the watch's issue survives a
-single-extra re-run (BUG-282) and its one legacy-sftp
-authentication does not fail on runner load (BK-367); and every breaking change
-carries a published upgrade path by the time it ships — **satisfied**: the four
-`[Unreleased]` entries marked `**Breaking**` all have a `migration.md` section,
-and the obligation to write one moved onto the PR making the break, where its
-author already looks (BUG-261, in [BACKLOG-DONE.md](BACKLOG-DONE.md)).
-
-The install-channel clause — fourth in the list above, counted over its
-semicolons — is stated as *intend to offer* rather than *already advertised*
-deliberately: ID-018 created a channel rather than repairing a dead one, so the
-narrower wording would have been vacuously true while the item was unbuilt.
-**That clause is met.** The feedstock PR merged, so the channel serves the
-current release with the constraints this repo declares, and the README points
-users at it. Two paragraphs stood here before: one saying no work in this repo
-could close section 5, and one saying the clause was half met and waiting on a
-feedstock PR. Both were true when written and neither is now.
-What that clause never covered is what BK-370's own clause did, which is why the
-two were stated separately: a channel can be published, working, and quietly
-describing the library as something it is not. Both are met now — the second by
-a generator and a weekly comparison rather than by a rule asking a person to
-diff two files at release time.
-
 - [ ] **BUG-289 — Two floors are clean for a user and red for the suite, because the suite rejects warnings**
   spec: — · effort: S · audience: user.api, infra.test
-  The floor lane runs each extra's existing pytest target, and that target
-  inherits this repo's `filterwarnings = error`. Two floors therefore fail on
-  warnings rather than on breakage, which a user at the same versions would
-  never see as a failure:
-  - **`[sftp]`, `paramiko==3.1.0`.** `paramiko/pkey.py` reads
-    `algorithms.TripleDES`, which current `cryptography` answers with
-    `CryptographyDeprecationWarning: TripleDES has been moved to
-    cryptography.hazmat.decrepit.ciphers.algorithms.TripleDES and will be
-    removed … in 48.0.0`. Collection of `tests/e2e/conftest.py` dies on it.
-  - **`[s3]`, `s3fs==2024.2.0`.** 1 failed, 272 passed, 16 errors, every error
-    `exceptiongroup.ExceptionGroup: multiple unraisable exception warnings`
-    from pytest's unraisable plugin against the old aiobotocore session
-    teardown.
-  **Measured** by the floor lane's own fourth dry run on the oldest supported
-  interpreter; both are registered in `infra/drift-locks/KNOWN-FINDINGS.md` so
-  they read as known rather than new.
-  **The strictness is deliberate and is not the defect.** A floor whose
-  combination with current transitives emits deprecation warnings is a floor
-  about to break, and the lane holding it to the same bar as every other run of
-  those tests is what makes that visible early — which is the whole point of
-  watching the bottom of a range. Relaxing the warning policy for this lane
-  only would make the floor smoke weaker than the suite it borrows, and would
-  retire the signal a year before the removal lands.
-  **So the question this item answers is which floor to raise, not whether to
-  quieten the lane.** For `[sftp]`: the first paramiko that stopped reaching
-  the deprecated alias. For `[s3]`: the first `s3fs` whose teardown does not
-  leave unraisable exceptions under a current `aiobotocore`. Both need the same
-  install-and-run measurement per candidate release that BUG-283 through
-  BUG-285 used; neither number should be guessed from a changelog.
-  **Not** a request to change `filterwarnings`, and not the same class as
-  BUG-287 / BUG-288, whose floors fail at `import` with no test involved.
+  The floor lane runs each extra's pytest target under this repo's
+  `filterwarnings = error`, so `[sftp]` at paramiko 3.1 (a `TripleDES`
+  deprecation, its text re-read verbatim) and `[s3]` at s3fs 2024.2.0 fail on
+  warnings a user at those versions never sees. Open decision: which release
+  to raise each floor to, measured per candidate; the strictness is kept.
+  Detail: [dossier](backlog/bug-289-floor-warnings-fail-suite.md)
 
 - [ ] **BUG-290 — A workflow `run:` step that pipes into `tee` cannot fail, and one of them is a gate**
   spec: — · effort: S · audience: infra.ci
-  A workflow `run:` with no `shell:` key runs under `bash -e {0}` — `-e` without
-  `-o pipefail` — so a pipeline takes its LAST command's exit status. Any step
-  spelled `python … | tee …` therefore reports `tee`'s success and swallows the
-  script's failure.
-  **`benchmark.yml:105` is the live instance, and it is a gate**:
-  `python benchmarks/report.py --regression … | tee -a "$GITHUB_STEP_SUMMARY"`.
-  The comment above it says the check "fails only on a >2x blow-up (catches
-  gross/algorithmic regressions)"; as written it fails on nothing. A performance
-  regression, or a crash in `report.py`, leaves the step green.
-  **Found** by review of the same shape in `drift-guard.yml`'s dry-run step,
-  which was fixed in place by adding `shell: bash` (BK-369's PR). Derived from
-  `rg -n '\| tee' .github/workflows/ .github/actions/`: seven hits, of which two
-  are workflow `run:` steps (drift-guard's, now fixed, and this one) and five are
-  inside `.github/actions/drift-smoke/action.yml` — four pipelines and one
-  comment about them — where `shell: bash` is mandatory and already supplies
-  `-eo pipefail`. Those are not instances.
-  Fix is one line per step — `shell: bash`, which GitHub runs with `-eo
-  pipefail` — plus a check that no `run:` step pipes without it, if the class is
-  worth gating rather than fixing twice.
-  **Not** the same as a step that pipes deliberately and tolerates failure:
-  `benchmark.yml:111-113` ends each line with `|| true` and means it.
+  A workflow `run:` step with no `shell:` key runs `bash -e` without
+  `pipefail`, so `benchmark.yml`'s regression gate (`report.py --regression
+  … | tee`) stays green when `report.py` exits non-zero; re-read,
+  `benchmark.yml` still sets no `shell:`. Open decision: fix the one step, or
+  also gate every piped `run:` step.
+  Detail: [dossier](backlog/bug-290-workflow-tee-swallows-failure.md)
 
 - [ ] **BUG-291 — A single-extra dispatch can still close the rolling drift issue on one extra's evidence**
   spec: — · effort: S · audience: infra.ci
-  `drift_report.decide` refuses to close on a run that did not cover both lanes,
-  and its comment gives the reason: *"a single-lane dispatch has not seen what
-  the other lane would have found, and a closed issue is not recoverable the way
-  a rewritten body is."* That argument is about **narrowing**, and the guard
-  implements only the lane half. `_lanes_present(reports) != set(LANES)` is
-  blind to the *extras* narrowing, so `extra: s3, lane: all` — a real
-  `workflow_dispatch` input combination — reaches the close with one extra's
-  reports and closes the issue, discarding the scheduled run's findings for the
-  other thirteen.
-  **Measured on both sides**, so it is pre-existing rather than introduced with
-  the support-window work: a one-extra, both-lane, all-clean run at
-  `origin/master` and at this item's filing head both print
-  `(dry run — would close the issue titled '[drift-guard]': all clear in both
-  lanes)`. BUG-282 covers the sibling hazard — that such a dispatch *rewrites*
-  the body from its slice — and this is the same narrowing reaching the other,
-  unrecoverable outcome.
-  **Why it stayed hidden:** `main` computes `unnarrowed = set(lanes) ==
-  set(LANES) and bool(expected) and set(expected) == set(list_extras())` and
-  hands it to the window state, but the close guard never sees it. So the issue's
-  survival of a narrowed dispatch currently depends on whether an interpreter
-  happens to be past its support window, which is an unrelated calendar fact.
-  **Scope when picked up:** give the close the same `unnarrowed` test the window
-  signal already uses, pin it in both directions (a full clean run still closes;
-  a one-extra clean run leaves), and reconcile the three layers that describe the
-  verdict — `drift-guard.yml`'s header and step comment, the drift-guard runbook
-  in `sdd/CI-OPERATIONS.md`, and `.claude/skills/drift/SKILL.md` — since all
-  three currently say "all clear and an open issue exists → close".
+  `drift_report.decide` refuses to close after a one-lane run but not after
+  a one-extra run, so dispatching `extra: s3` closes the rolling issue on
+  one extra's evidence; reproduced through `decide`. `main` already computes
+  the unnarrowed test that `decide` never sees. Open decision: none on shape;
+  the fix and the test pinning today's close are in the dossier.
+  Detail: [dossier](backlog/bug-291-single-extra-dispatch-closes-issue.md)
 
 - [ ] **BUG-287 — Three extras declare a `pyarrow` floor that installs and then cannot import**
   spec: — · effort: S · audience: user.api, infra.test
   `[arrow]` and `[sql-query]` declare `pyarrow>=12.0.0`, `[s3-pyarrow]`
-  declares `pyarrow>=14.0.0`. At those floors, against a current `numpy`,
-  `import pyarrow` raises
-  `ImportError: numpy.core.multiarray failed to import` — numpy 2 support
-  lands in pyarrow 16. All three install cleanly first, which is the class a
-  floor must exclude and the one nothing announces.
-  **Measured**, on the oldest supported interpreter, by resolving each extra at
-  `--resolution lowest-direct` and importing: three collection errors for
-  `[arrow]`'s smoke, and the same import failure for the other two.
-  **This falsifies a claim in the item that motivated the lane.** BK-369's body
-  said *"a floor that pip refuses (no wheel for the interpreter) is
-  self-announcing, and pyarrow's two floors are in that class and are fine"*.
-  Both floors ship a `cp310-cp310-manylinux` wheel and install without
-  complaint; the refusal BUG-285 measured was on the *newest* interpreter,
-  where no wheel exists. On the oldest — where the lane runs — they are in the
-  target class, not the self-announcing one.
-  Fix is a floor raise, priced by
-  [`CONTRIBUTING.md` § When to bump](../CONTRIBUTING.md#when-to-bump): find the
-  oldest pyarrow that imports against a current numpy, raise all three, refresh
-  the recipe pins and the baselines, and delete the three rows from
-  `infra/drift-locks/KNOWN-FINDINGS.md`. **Check whether a `numpy` bound is the
-  better answer** before raising: the failure is an interaction, and
-  `lowest-direct` leaves numpy newest deliberately, so a floor raise fixes the
-  combination the lane tests while a bound fixes the one a user hits.
+  `pyarrow>=14.0.0` (re-read); at those floors `import pyarrow` fails against
+  a current `numpy` after a clean install, measured on the floor lane. Open
+  decision: raise the three floors, or bound `numpy`, which fixes the
+  combination a user hits rather than the one the lane tests.
+  Detail: [dossier](backlog/bug-287-pyarrow-floor-cannot-import.md)
 
 - [ ] **BUG-288 — `[azure]`'s `aiohttp` floor names a release no supported interpreter can import**
   spec: — · effort: S · audience: user.api, infra.test
-  `azure = [..., "aiohttp>=3.0"]`. `aiohttp==3.0.0` builds and installs from
-  sdist on the oldest supported interpreter and then raises
-  `ImportError: cannot import name 'Mapping' from 'collections'` — the 3.3
-  collections-ABC move, which predates every Python this package supports. The
-  floor therefore admits a range whose bottom cannot run anywhere.
-  **Measured** by resolving `[azure]` at `--resolution lowest-direct` on the
-  oldest supported interpreter and importing. The same shape as BUG-284's
-  tenacity floor: a bound copied from a plausible source and never exercised.
-  **Where the number came from**, per the comment above the declaration: it is
-  `azure-core`'s own `aiohttp>=3.0; extra == "aio"`. Inheriting an upstream's
-  floor inherits the interpreters it was written for, and azure-core's has not
-  moved since. The fix is to declare the oldest `aiohttp` that imports on the
-  oldest interpreter we support, then delete the row from
-  `infra/drift-locks/KNOWN-FINDINGS.md`.
-  **Not** a finding about `[azure]`'s declared *set*: the extra installs alone
-  and the declaration is complete — BUG-286 fixed that half.
+  `[azure]` declares `aiohttp>=3.0`, copied from azure-core's metadata, and
+  `aiohttp==3.0.0` installs on the oldest supported interpreter and then fails
+  to import, so the range's bottom runs nowhere; re-read, `pyproject.toml`
+  and both conda recipes still say `>=3.0`. Open decision: none on shape;
+  the floor to find and the files it touches are in the dossier.
+  Detail: [dossier](backlog/bug-288-aiohttp-floor-cannot-import.md)
 
 - [ ] **ID-250 — The drift smoke never type-checks, so a signature-only narrowing reaches PRs as a red gate**
   spec: — · effort: M · audience: infra.ci
-  `.github/workflows/drift-guard.yml` resolves every extra with
-  `--upgrade --pre`, diffs against the committed baselines and runs the smoke —
-  which is a pytest target or an `--import-only` module import, per
-  `scripts/drift_smoke_map.py`. It never runs `mypy`: `rg 'mypy'
-  .github/workflows/drift-guard.yml` returns nothing. So a dependency change that
-  is invisible at runtime and visible only to a type checker passes the smoke,
-  the rolling `[drift-guard]` issue reports the version bump with a green
-  verdict, and the first person to learn that it breaks us is whoever opens the
-  next PR.
-  **Measured, in BUG-258.** Dagster narrowed
-  `ComputeLogManager.get_log_keys_for_log_key_prefix` from
-  `Sequence[Sequence[str]]` to `Sequence[list[str]]`. Nothing raised, nothing
-  failed to import, no test changed behaviour — and every open PR's
-  `typecheck (3.13)` job went red against code no commit had touched. The version
-  drift itself was inside drift-guard's remit; the consequence was outside its
-  instrument.
-  This is the sibling of BUG-250 one layer up: that item is about the smoke
-  reaching the *packages* an extra pins, this one about the smoke reaching the
-  *properties* of them that we actually depend on. Both are the same failure —
-  a green verdict from an instrument that never looked.
-  Fix shape is open, and the cheap option may not be the right one. Adding
-  `mypy` to the smoke leg is small but types the whole tree against one drifted
-  extra, so a failure will not say which; typing only the extra's own module is
-  narrower but needs a map from extra to source path, which is
-  `drift_smoke_map.py`'s existing shape. Either way the verdict must be
-  *advisory* like the rest of drift-guard — the point is a triaged rolling-issue
-  row before the PR, not a second gate that blocks one.
-  **Not** about pinning `dagster`, which BUG-258 considered and rejected:
-  `infra/drift-locks/dagster.txt` already freezes the extra, and the annotation
-  fix it shipped is valid against both supertype versions, so no upper bound was
-  needed.
+  Nothing in the drift smoke runs `mypy` (`rg mypy` over `drift-guard.yml`
+  and its smoke action finds nothing), so a dependency change visible only to
+  a type checker, as in BUG-258's Dagster narrowing, first shows as a red
+  `typecheck` job on an unrelated PR. Open decision: type the whole tree per
+  drifted extra, or only the extra's own source, which needs a new map.
+  Detail: [dossier](backlog/id-250-drift-smoke-never-typechecks.md)
 
 - [ ] **BUG-250 — `[graph]`'s drift smoke reaches one of the extra's four declared dependencies**
   spec: — · effort: S · audience: infra.ci
-  `scripts/drift_smoke_map.py:79` routes `graph` to
-  `["--import-only", "remote_store.aio.backends._graph.http"]`. That module's only
-  third-party import is `httpx`; `_graph/auth.py` imports `msal`, `msal-extensions`
-  and `platformdirs` lazily inside the methods that need them (`auth.py:173`,
-  `auth.py:194`). Reproduction: import the module and diff `sys.modules` — `httpx`
-  loads, `cffi` / `cryptography` / `platformdirs` / `msal` / `msal_extensions` do not.
-  So `check-graph` can go green while every drifted package in
-  `infra/drift-locks/graph.txt` is unexercised, and a `cryptography` or `msal` major
-  rides that verdict into a refresh and into a user's install. Hit in the
-  2026-08-10 firing (trace finding #32): all three drifted packages were outside
-  the smoke's reach, and the accepted `cryptography` 49→50 major turned out to be
-  covered only incidentally, by `[azure]` and `[sftp]` smoking identical pins.
-  The import-only shape is deliberate (BUG-225) — it catches a graph-hostile `httpx`
-  without needing msal or a network. A fix must widen reach without regressing that:
-  import the lazy call sites behind a no-network path, or add a cassette-backed target.
-  Worth auditing the other `--import-only` entry (`otel`) for the same shape.
+  `[graph]`'s smoke imports `_graph.http`, which loads `httpx` alone
+  (reproduced by diffing `sys.modules`); `msal`, `msal-extensions` and
+  `platformdirs` load lazily, so drift in three of four declared packages
+  passes unexercised. Open decision: a no-network import of the lazy sites,
+  or a cassette-backed target; `otel` re-checked does not share the shape.
+  Detail: [dossier](backlog/bug-250-graph-drift-smoke-reach.md)
 
 - [ ] **BUG-282 — A single-extra drift-guard dispatch rewrites the rolling issue body to that extra alone**
   spec: — · effort: S · audience: infra.ci, library.maintainer
-  `scripts/drift_report.py` composes the issue body from whichever reports the
-  run produced (`_load_reports` at line 33, `_render_body` at line 46) and, when
-  any of them carries a signal, replaces the open issue's body wholesale with
-  `gh issue edit --body-file -` (lines 200 to 210). `drift-guard.yml` accepts a
-  single extra on `workflow_dispatch`, and that path emits one report. So a
-  dispatch with `extra=sftp` rewrites the rolling issue to an sftp-only body, and
-  the other extras' rows are gone until the next scheduled run.
-  Those rows are load-bearing: `infra/drift-locks/README.md` § Refreshing route 1
-  reconstructs each lock from them, and a sandboxed session has no other route
-  (trace finding #30). The 2026-09-07 firing hit this while deciding how to
-  re-run a red `check-sftp`: the only safe re-run was the full matrix, which
-  re-resolves every extra and moved two packages (aiobotocore, botocore in
-  `[s3]` / `[s3-pyarrow]`) between the scheduled run and the re-run.
-  `mutation.yml` already carves this out — `sdd/CI-OPERATIONS.md` § mutation:
-  "a single-scope dispatch never closes it or rewrites its body (its findings
-  land as comments)". drift-guard is the reference guard for the rolling-issue
-  pattern and lacks the same rule. Fix shape: on a partial matrix, comment the
-  per-extra result on the issue rather than editing the body, or merge the new
-  report into the existing body's other sections; either must keep the
-  "regenerated every run, auto-closes on clear" contract for the full matrix.
+  `drift_report.py` replaces the rolling issue's body with whatever the run
+  produced, so a single-extra `workflow_dispatch` rewrites it to that extra
+  and drops the rows a lock refresh reconstructs from; `drift-guard.yml`'s
+  own header warns of it (re-read). Open decision: comment on a partial run,
+  or merge its report into the existing body.
+  Detail: [dossier](backlog/bug-282-single-extra-dispatch-rewrites-body.md)
 
 - [ ] **BK-367 — The drift guard's only legacy-sftp authentication runs on a 5 s budget after a deliberately failed connection**
   spec: BK-198 · effort: S · audience: infra.ci
-  `tests/e2e/test_sftp_legacy_recovery.py::TestSFTPLegacyRecovery::test_S4_helper_recovers_after_clear`
-  is the one test in CI that authenticates against the `legacy-sftp` container:
-  S1b and S3 assert the key exchange *fails*, the BK-200 scan test reads the
-  banner only, and `ci.yml`'s `e2e` job never builds that container (its
-  `start-backends` step brings up the modern sftp service only), so S4 runs
-  solely in `drift-guard.yml`'s `[sftp]` smoke. `_try_connect` gives it
-  `auth_timeout=5` (line 73), and S4 issues it as the second connection to the
-  server, immediately after the first was refused at kex.
-  Measured: drift-guard run 34127228028 (`check-sftp` job 101758669627) failed S4
-  with `AuthenticationException: Authentication timeout` after the helper had
-  re-added ssh-rsa and the key exchange had succeeded; the same pins passed S4 in
-  run 33405694982 (2026-08-31) and in the re-run 34163916944 the same day. One
-  red weekly guard cost a full-matrix re-run (BUG-282 explains why it could not
-  be a single-extra one).
-  Shape: a bounded retry on the auth phase, or a wider `auth_timeout` for this
-  probe, with the legacy `sshd` config in `infra/legacy-sftp/Dockerfile` checked
-  for reverse-DNS or PAM delay that a runner could pay. Not a change to
-  `SFTPUtils.enable_ssh_rsa_compat()`, which the run shows working.
+  S4 in `test_sftp_legacy_recovery.py` authenticates to `legacy-sftp` with
+  `auth_timeout=5` right after a kex-refused connection, and one runner
+  failed it on auth timeout with pins that passed before and after; on the
+  newest lane it is the only test that authenticates there. Open decision: a
+  bounded auth retry, or a wider timeout after checking the container's sshd.
+  Detail: [dossier](backlog/bk-367-legacy-sftp-auth-timeout.md)
 
 - [ ] **BK-333 — Gate routing: checkers unreachable for the diffs that invalidate them**
   spec: — · effort: S · audience: contributor.tooling, infra.ci
-  Two classifiers decide which gates a diff runs, they disagree in both
-  directions, and between them three checkers are unreachable for exactly the
-  change that breaks them. `CODE_PAT` does not match `^sdd/`, so CI's `lint` job
-  (and `preflight` inside it) is skipped; `FORMAL_PAT` is `^sdd/(formal|specs)/`
-  **minus `sdd/formal/tla/`**, so the second-wiring escape hatch used for
-  `check_spec_marks`, `check_formal_trace`, `check_capability_parity` and
-  `check_dafny_twin_parity` does not reach these three; and `docs-gate` invokes
-  none of them:
-  - `gen_adr_digest.py --check` (in `preflight`) reads `sdd/adrs/`. Adding an ADR,
-    accepting a draft or recording a supersession is exactly what bumps the
-    **committed generated** `sdd/adrs/DIGEST.md` and can break supersession-graph
-    consistency, so staleness ships.
-  - `check_tla_no_emdash.py` reads `sdd/formal/tla/**/*.tla` — the one subtree
-    `FORMAL_PAT` deliberately excludes, so a TLA-only change skips the check
-    written for TLA files.
-  - `check_ci_inventory.py` compares `.github/workflows/` against
-    `sdd/CI-OPERATIONS.md`. The workflow side is covered (`CODE_PAT` matches
-    `^\.github/workflows/`); editing the handbook alone is not.
-  **The ADR digest half is measured, twice** (was BK-347, absorbed here). A
-  standalone `gen-adr-digest-check` alias exists in `pyproject.toml` and
-  **nothing composes it**, so the checker is one alias away from any gate that
-  wants it. Commit `dc10a23` (PR #956): `gate`, `docs` and `setup` ran, `lint`
-  skipped. Commit `26cf75b` (PR #958) adds an ADR *and* touches
-  `.claude/skills/`, `CLAUDE.md` and `sdd/traces/` — not an ADR-only diff by any
-  reading — and `lint` still skipped, with every test lane skipped alongside it.
-  So the CI trigger is not how narrow the diff is; it is that **no path in it
-  matches `CODE_PAT`**, which is true of most process deliveries. The local
-  classifier misses a different set: an ADR plus a `.claude/hooks/` edit is
-  outside `CODE_PAT` yet locally runs `all` → `preflight` → the check, while an
-  ADR plus a `.github/workflows/` edit is inside `CODE_PAT` yet routes to
-  `lint` + `docs-gate`, which compose it nowhere. **Scope any fix to both
-  classifiers, not to one name.**
-  **Consequence:** a hand-edited or stale `DIGEST.md` ships on the author's care
-  alone, and the `STALE:` failure lands on the *next* PR that happens to touch
-  code — the wrong PR to pay for it, and one whose author did not cause it.
-  **Two claims to fix or qualify, not just the routing.** The
-  [PR validation gates](CLAUDE-REFERENCE.md#pr-validation-gates) section says
-  "the two paths stay equivalent on docs coverage despite composing different
-  targets", which is false for this checker; and the Detailed checklist's **ADR**
-  row names `preflight` as the gate, which is accurate and is precisely why the
-  routing is wrong.
-  Fix shape: add each checker to `docs-gate` beside the two BK-329 wired,
-  following the precedent `check_ripple_parity` documents, and widen CI's path
-  filter to treat `sdd/adrs/**` as lint-triggering. Filed rather than fixed in
-  BK-329 because that PR touched no ADR, no TLA module and not the handbook.
+  Three checkers do not block the CI diffs that break them: the ADR
+  digest check rides only `preflight` and the CI-inventory check only
+  `lint`, both skipped when no path matches `CODE_PAT`, and `verify-tla`
+  runs the TLA check without `gate` needing it (re-derived; dossier
+  correction). Open decision: `docs-gate`, a wider `CODE_PAT`, or both.
+  Detail: [dossier](backlog/bk-333-gate-routing-unreachable-checkers.md)
 
 - [ ] **BK-381 — `check_backend_order` never tests an enumeration naming fewer than six backends**
   spec: — · effort: M · audience: user.discoverability.human, contributor.tooling
-  Both of the gate's scanners discard a segment as prose before ordering is
-  tested when `_distinct(found)` is below `_MIN_BACKENDS`, which is 6. So **any**
-  enumeration naming fewer than six distinct backends is invisible to it,
-  ordered or not — including our own conda recipe `about` summary, which names
-  four. Measured by importing the module: `backends_in("Local, S3, SFTP, Azure")`
-  returns those four and `is_ordered(...)` is **`False`**, yet the gate is green,
-  because `_distinct` is 4 against `_MIN_BACKENDS` 6.
-  Split from BK-370, which closed the other half of that exposure: the conda
-  feedstock can no longer drift from our recipe, because the copy is generated
-  and the published one is watched. **Our recipe can still drift from the
-  README**, and this is what would notice.
-  Fix shape is the item's cost: lifting `_MIN_BACKENDS` widens the gate to every
-  enumeration in the repository at once, so the work is a per-surface membership
-  opt-in rather than a constant change — and membership itself is a judgement
-  [`CONTRIBUTING.md` § Adding a New Backend](../CONTRIBUTING.md#adding-a-new-backend)
-  deliberately declines to make, since the API reference splits its tables and
-  the README abridges on purpose. Whatever lands has to say which surfaces are
-  held to membership and which only to order.
+  `check_backend_order` skips any enumeration naming fewer than six distinct
+  backends (`_MIN_BACKENDS = 6`), so the conda recipe's `summary`, out of
+  order with four detected, passes; reproduced by importing the module.
+  Lifting the constant reaches every enumeration at once. Open decision:
+  which surfaces are held to membership and which to order only.
+  Detail: [dossier](backlog/bk-381-backend-order-min-six.md)
 
 - [ ] **ID-229 — Evaluate porting to httpx 1.0 (lift the `<1.0` cap)**
   spec: GR-033 · effort: M · audience: user.api
-  BUG-225 capped the `graph` and `httpx` extras at `httpx>=0.24.0,<1.0`
-  after the drift guard's `--pre` re-resolution pulled `httpx==1.0.dev3`
-  and the async graph backend failed to import. That pre-release turned
-  out to be a **wholesale API rewrite**, not the exception-hierarchy
-  reorg the BUG-225 diagnosis first assumed: `1.0.dev3` drops
-  `httpx.AsyncClient`, `httpx.TransportError`, `httpx.DecodingError`,
-  `httpx.HTTPStatusError`, `Timeout`, `Limits` — essentially the entire
-  client surface the graph backend (`AsyncClient` in ~30 sites) and the
-  `[httpx]` HTTP adapter are built on. Coding around a single missing
-  symbol would only convert an honest import failure into a falsely-green
-  import that then explodes at runtime on `httpx.AsyncClient(...)`, so the
-  cap is the honest interim posture. The cap constrains every dependency
-  set a user resolves, so it needs a watch rather than silent drift.
-  **Upstream context:** the cap matches the maintainers' own guidance.
-  httpx 0.28.x is still a pre-1.0 line; the "1.0.dev" / "httpx2" threads
-  are about the project's next major API *direction*, not a released
-  stable 1.x series. In the late-2024 V1 discussion the maintainers said
-  httpx was not yet at a 1.0 SemVer release and recommended **pinning to
-  0.28 while reviewing deprecations** — which is exactly what `<1.0` does.
-  Ref: [encode/httpx#3344](https://github.com/encode/httpx/discussions/3344).
-  **When picked up:** real httpx 1.0 stable is out and pins install
-  cleanly against it. Diff the actual 1.0 public API against 0.28
-  (`AsyncClient`, `Response`, `Timeout`/`Limits`, the transport-error and
-  decoding-error bases, `respx` compatibility); decide port-vs-hold; if
-  porting, update `_graph/*.py` + the `[httpx]` backend, raise the cap,
-  and refresh the `graph` / `httpx` drift baselines.
-  **Why ID, not BK:** unevaluated migration against an upstream whose 1.0
-  shape is not yet stable. Mirrors the revisit discipline of ID-150.
+  `[graph]` and `[httpx]` cap `httpx<1.0` because `1.0.dev3` drops
+  `AsyncClient`, on 29 lines of the Graph backend (`rg -c`), and the error
+  types both backends catch. The cap holds every user's resolution below 1.0
+  until someone looks. Open decision: port or hold, once a stable httpx 1.0
+  exists.
+  Detail: [dossier](backlog/id-229-httpx-1-port.md)
 
 - [ ] **ID-225 — Evaluate migrating the docs stack from Material for MkDocs to Zensical**
   spec: — · effort: L · audience: user.site, library.maintainer, contributor.tooling
-  Our docs foundation is entering maintenance mode as its authors converge on a
-  successor. [Material for MkDocs is feature-frozen](https://squidfunk.github.io/mkdocs-material/blog/2025/11/05/zensical/)
-  (critical bug/security fixes for ~12 months, no new features), MkDocs 1.x is
-  itself being forked (a `properdocs` MkDocs-1.x continuation now surfaces as a
-  transitive docs dep, and a build-time banner warns MkDocs 2.0 will break all
-  plugins/themes), and `mkdocs-llmstxt` (adopted in ID-220) is in maintenance
-  mode for the same reason. The whole ecosystem is pointing at
-  [**Zensical**](https://github.com/zensical/zensical) — a new MIT static site
-  generator (Rust core, reads `mkdocs.yml` natively, with a migration path) built
-  by the Material team. Crucially, `mkdocstrings`' author is rebuilding
-  API-reference-from-docstrings *inside* Zensical — the exact capability our docs
-  depend on `mkdocstrings` for.
-  **Not prioritized:** Zensical is pre-1.0 and does **not** yet ship the
-  API-reference feature we require, so "not yet — revisit when Zensical reaches
-  API-reference parity" is a legitimate outcome. Kept visible here as the
-  **sunset trigger for the interim `mkdocs-llmstxt` adoption (ID-220)**, which is
-  recorded nowhere else: when the migration lands, the HTML→Markdown plugin is a
-  prime candidate for replacement by a native feature.
-  **Scope when picked up:** trial `zensical build` against our `mkdocs.yml`;
-  confirm parity for the pieces we rely on (gen-files pages, mkdocstrings API
-  reference, literate-nav order, BK-171 link rewrites, mike/RTD versioning); and
-  fold in native `llms.txt` / `llms-full.txt` generation if Zensical ships it.
-  Background: [research](research/research-llms-full-txt-tooling.md).
+  Material for MkDocs is feature-frozen and `mkdocs-llmstxt` is in
+  maintenance mode, while their successor, Zensical, lacks the API-reference
+  feature our docs need; `hatch run docs-gate` prints a MkDocs 2.0 warning
+  on every build. Open decision: trial `zensical build` now, or wait for
+  API-reference parity.
+  Detail: [dossier](backlog/id-225-zensical-migration.md)
 
 - [ ] **BK-380 — Python 3.10 stops getting security fixes on 2026-10-04, and the drop is a breaking change of its own**
   spec: — · effort: M · audience: user.api
-  [ADR-0039](adrs/0039-support-tracks-upstream-security-fixes.md) decided that a
-  Python version is supported for as long as CPython ships security fixes for
-  it, and Rule 8 of the
-  [dependency policy](../docs-src/explanation/dependency-policy.md#rule-8) now
-  publishes that. 3.10's security support ends **2026-10-04** — five years after
-  its 2021-10-04 release, per
-  [PEP 619](https://peps.python.org/pep-0619/)'s own schedule. So the decision
-  this item carries out was already taken; what is left is the work, and the
-  work is why it is not folded into the change that took it.
-  **It moves seven spellings of the supported set at once**, which is the whole
-  reason for a separate item. The ripple-check's
-  [Supported interpreter set](CLAUDE-REFERENCE.md#pre-work-index) row enumerates
-  them and says which are watched: `requires-python`, the
-  `Programming Language :: Python` classifiers,
-  `packaging/conda-forge/variants.yaml`'s `python_min`, `ci.yml`'s `MIN_PYTHON`
-  and `ALL_PYTHONS`, `ci-full.yml`'s `test-full` matrix, and `README.md`'s
-  "**Requires Python 3.10+.**" prose. **What watches which, with no total** —
-  the total has been wrong at every value it has been given: `requires-python`,
-  `python_min` and `MIN_PYTHON` are held equal to each other by
-  `check_conda_recipe_pins.py`; `ALL_PYTHONS` and `ci-full.yml`'s `test-full`
-  matrix against each other by `check_ci_full_matrix.py`, which never reads
-  `pyproject.toml`; the classifiers against the committed chart by
-  `gen_python_support.py --check`, so a classifier edit without a regenerate is
-  caught (measured: dropping one exits 1) though nothing holds them against
-  another spelling; and `README.md`'s prose by nothing, as with ADR-0032. **No
-  gate compares the three groups to each other**, which is the gap this item
-  has to close by hand.
-  **Two things become dead rather than merely stale.**
-  `toml = ["tomli>=1.1.0; python_version < '3.11'"]` exists only to keep 3.10
-  resolving — `tomllib` is stdlib from 3.11 — so a 3.11 floor makes it a
-  marker-gated extra that can never match. And `drift_check.py`'s
-  marker-gated-extra exclusion, plus the Tested-versions page's "extras this
-  page does not cover" section, both lose their one user-facing example; check
-  whether either still earns its wording. `python_support.py`'s `PYTHON_RELEASES`
-  row for 3.10 **stays**: a past release date is immutable, and the row is read
-  by version rather than iterated, so it simply goes unused. Dropping the
-  classifier is what stops the chart drawing 3.10's bar — `windows()` walks the
-  classifiers and looks each one up — so deleting the date row buys nothing and
-  would reintroduce `UnknownInterpreterError` if the classifier ever came back.
-  **Breaking, with the obligations that follow.**
-  [CONTRIBUTING § When to bump](../CONTRIBUTING.md#when-to-bump) prices dropping
-  an interpreter as breaking: a `**Breaking**` CHANGELOG entry and a
-  `## vPREV to vX.Y.Z` section in `docs-src/reference/migration.md`, both in this
-  change. Pre-1.0 that still lands in a minor bump.
-  **Supersede [ADR-0032](adrs/0032-tiered-ci-gate-with-full-matrix-backstop.md)
-  rather than editing it.** It names the interpreter set twice ("all five
-  supported interpreters (3.10-3.14)" and "Non-primary interpreters
-  (3.10/3.11/3.12/3.14)"), and an ADR is superseded rather than amended
-  ([`000-process.md` Rule 4](000-process.md#rules)). ADR-0039 left it standing
-  deliberately, because the set did not change there.
-  **What it buys, measured.** `ci-full.yml`'s `test-full (3.10)` was the longest
-  job in all three runs measured for BK-375, so dropping it takes a mean 0.92 min
-  off a 8.74 min run and 8.27 job-min with it; in `ci.yml` the leg is never on
-  the critical path, so the saving there is 5.94 job-min and about no wall-clock.
-  BK-375's entry in [`BACKLOG-DONE.md`](BACKLOG-DONE.md) carries the
-  derivations and the caveats; ADR-0039 states the rule and carries no figure.
-  **Do not wait for the weekly report to ask.** The drift-guard issue will
-  surface the crossing on the first Monday after 2026-10-04 and hold itself open
-  until this lands or a row in `infra/drift-locks/PYTHON-SUPPORT.md` records a
-  decision to keep 3.10 anyway — which would need a reason, since the new rule's
-  whole premise is that security support is the line.
+  CPython 3.10 loses security support on 2026-10-04, and ADR-0039 already
+  ties our support to that; dropping it moves seven spellings of the
+  supported set at once, no gate compares all of them, and it is breaking.
+  Re-read, all seven still say 3.10. Open decision: none on shape; the
+  ripple list and the measured CI saving are in the dossier.
+  Detail: [dossier](backlog/bk-380-drop-python-310.md)
 
 ---
 
@@ -1603,9 +1249,9 @@ the commit that writes it lands, so cite the generator instead.
   **In progress: [RFC-0016](rfcs/rfc-0016-backlog-as-index.md) is accepted as
   [ADR-0040](adrs/0040-backlog-as-index.md)** for the `BACKLOG.md` half — an
   index with per-item dossiers. Shipped: the rules header, R1–R4, the § 1
-  pilot (16 items to `sdd/backlog/`), § 2 (9 items), § 3 (8 items) and § 4
-  (5 items), per `sdd/rfcs/rfc-0016-measure.py`; what remains is the exit
-  criteria below.
+  pilot (16 items to `sdd/backlog/`), § 2 (9 items), § 3 (8 items), § 4
+  (5 items) and § 5 (14 items), per `sdd/rfcs/rfc-0016-measure.py`; what
+  remains is the exit criteria below.
   **`sdd/BACKLOG.md` is 20,097 words at `6cec225`.** That is the file a maintainer
   reads to decide what to work on, and it is now roughly eighty pages of prose. Two
   independent multipliers got it there over seven weeks (2026-07-18 → 2026-09-05):
@@ -1636,7 +1282,7 @@ the commit that writes it lands, so cite the generator instead.
   [research](research/research-appropriate-level-of-detail.md) § 9.2 permits,
   and the caps are a recorded departure from its § 9.1. The question stays open
   for `BACKLOG-DONE.md`.
-  **Exit criteria:** §§ 5–6 converted (each drops its `unconverted` marker, so
+  **Exit criteria:** § 6 converted (dropping its `unconverted` marker, so
   R2/R3 then gate it), and a recorded decision on the
   `BACKLOG-DONE.md` half with any mechanism's bound stated per
   [`DRIFT-RULES.md`](DRIFT-RULES.md#rules).

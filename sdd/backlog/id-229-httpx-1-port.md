@@ -34,3 +34,16 @@ porting, update `_graph/*.py` + the `[httpx]` backend, raise the cap,
 and refresh the `graph` / `httpx` drift baselines.
 **Why ID, not BK:** unevaluated migration against an upstream whose 1.0
 shape is not yet stable. Mirrors the revisit discipline of ID-150.
+
+## Correction, 2026-09-28
+
+"`AsyncClient` in ~30 sites" re-counts as 29 matching lines across five files
+of `src/remote_store/aio/backends/_graph` (`rg -c AsyncClient`), three of them
+constructor calls. The `[httpx]` adapter is not built on `AsyncClient`: it uses
+sync `httpx.Client` (`src/remote_store/backends/_http_httpx.py:83,86`) and, of
+the listed symbols, only `TransportError` and `HTTPStatusError`; nothing in
+`src/` uses httpx's `Timeout` or `Limits`. The comment at `pyproject.toml:161-162`
+saying the `[httpx]` adapter "uses httpx.AsyncClient" is false for the same
+reason and is recorded here rather than fixed in a docs-only PR. The cap holds
+at `pyproject.toml:149` and `:163`. Upstream claims were not re-checked
+offline. Found by the ADR-0040 § 5 conversion.

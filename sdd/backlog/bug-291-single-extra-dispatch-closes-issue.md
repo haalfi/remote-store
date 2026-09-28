@@ -33,3 +33,21 @@ a one-extra clean run leaves), and reconcile the three layers that describe the
 verdict — `drift-guard.yml`'s header and step comment, the drift-guard runbook
 in `sdd/CI-OPERATIONS.md`, and `.claude/skills/drift/SKILL.md` — since all
 three currently say "all clear and an open issue exists → close".
+
+## Correction, 2026-09-28
+
+The quoted reason is in `scripts/drift_report.py`'s module docstring
+(`:41-43`); the comment inside `decide` (`:1138-1143`) makes the same argument
+in other words. The guard reads `covered = _lanes_present(reports)` then
+`if covered != set(LANES)` (`:1144-1145`), not the one-line form quoted.
+`decide` now names this item at `:1156-1161`, and `unnarrowed` (`:1729`) also
+feeds the feedstock signal (`:1755`). A test pins today's close on a one-extra
+run: `tests/scripts/test_drift_report.py::…::test_a_narrowed_run_with_a_registered_crossing_still_closes`
+asserts `decide(reports, {}, ["s3"], …)[0] == "close"` and passes
+(`hatch run python -m pytest tests/scripts/test_drift_report.py -k
+test_a_narrowed_run_with_a_registered_crossing_still_closes`), so the fix
+changes that test rather than only adding one. Of the three layers, only
+`drift-guard.yml:562`'s step comment states the close rule in those words;
+`sdd/CI-OPERATIONS.md:107-110` and `.claude/skills/drift/SKILL.md:78` state it
+in substance, and the workflow header (`:112-116`) states only the rewrite
+hazard (`rg -n -i 'close|all clear|cleared'` over the three). Found by the ADR-0040 § 5 conversion.

@@ -27,3 +27,14 @@ pipefail` — plus a check that no `run:` step pipes without it, if the class is
 worth gating rather than fixing twice.
 **Not** the same as a step that pipes deliberately and tolerates failure:
 `benchmark.yml:111-113` ends each line with `|| true` and means it.
+
+## Re-measured, 2026-09-28
+
+Holds. `rg -n '\| tee' .github/workflows/ .github/actions/` still gives seven
+hits: `drift-guard.yml:613`, `benchmark.yml:105`, and five in
+`.github/actions/drift-smoke/action.yml` (four pipelines, one comment).
+`benchmark.yml:105` is the last line of a `run: |` block starting at `:102`,
+and `rg -n 'shell:' .github/workflows/benchmark.yml` finds nothing; no workflow
+sets a `defaults:` block. `benchmarks/report.py` has five non-zero exits, three
+`sys.exit(1)` and two `sys.exit(2)` (`rg -n 'sys.exit' benchmarks/report.py`),
+and the pipeline discards all of them. Found by the ADR-0040 § 5 conversion.

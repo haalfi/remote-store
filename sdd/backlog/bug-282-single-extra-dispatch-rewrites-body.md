@@ -26,3 +26,14 @@ pattern and lacks the same rule. Fix shape: on a partial matrix, comment the
 per-extra result on the issue rather than editing the body, or merge the new
 report into the existing body's other sections; either must keep the
 "regenerated every run, auto-closes on clear" contract for the full matrix.
+
+## Correction, 2026-09-28
+
+The line numbers moved: `_load_reports` is at `scripts/drift_report.py:330`,
+`_render_body` at `:1399`, and the `gh issue edit --body-file -` call at
+`:1824-1834` (`rg -n '^def ' scripts/drift_report.py`). A single-extra dispatch
+also takes a `lane` input (default `all`), so it emits one report per lane, not
+one. The behaviour holds: only the support-window and feedstock signals are
+gated on `unnarrowed` (`:1729`), and `drift-guard.yml:112-116` documents the
+rewrite as a known sharp edge. The `sdd/CI-OPERATIONS.md` mutation quote is at
+`:214-215`. Found by the ADR-0040 § 5 conversion.

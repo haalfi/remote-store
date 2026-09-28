@@ -22,3 +22,13 @@ oldest interpreter we support, then delete the row from
 `infra/drift-locks/KNOWN-FINDINGS.md`.
 **Not** a finding about `[azure]`'s declared *set*: the extra installs alone
 and the declaration is complete — BUG-286 fixed that half.
+
+## Re-measured, 2026-09-28
+
+Holds. `pyproject.toml` still declares `"aiohttp>=3.0"` in `azure` with the
+azure-core comment above it, and azure-core 1.41.0's metadata still reads
+`aiohttp>=3.0; extra == "aio"` (`importlib.metadata.requires('azure-core')`).
+Not named above: both conda recipes also pin `aiohttp >=3.0`
+(`rg -n aiohttp packaging/conda-forge/`), so a fix touches them too. The
+`aiohttp==3.0.0` import failure needs a floor install and was not re-run.
+Found by the ADR-0040 § 5 conversion.
