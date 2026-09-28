@@ -42,8 +42,9 @@ State the bound, per [Rule 7](../sdd/DRIFT-RULES.md#miss-rate):
   of the same length. Shape stays review's job.
 * **Dossiers are known by filename, links by text.** A dossier deleted or
   renamed off the ``<id>-`` prefix is not seen, so its unlinked entry falls
-  into the without half. A link is ``](backlog/`` anywhere in the entry, so
-  citing some other item's dossier marks the entry as linked.
+  into the without half. A link is ``](backlog/<id>-`` for the entry's own
+  ID anywhere in the entry; a link written another way (``../backlog/``, an
+  absolute URL) is not seen, so its entry reads as Unlinked.
 * **No miss rate is estimated.** Nothing is flagged, so there is no recall
   to measure; the figure is only as good as the counting rule above.
 
@@ -99,7 +100,7 @@ def dossier_ids(directory: Path) -> frozenset[str]:
 def parse(text: str, dossiers: frozenset[str] = frozenset()) -> dict[str, list[Entry]]:
     """Map each ``## `` section, in file order, to its entries.
 
-    *dossiers* holds the IDs known to have a dossier without linking it.
+    *dossiers* holds the IDs with a dossier file (see :func:`dossier_ids`).
 
     A heading that repeats gets its own key, suffixed ``(2)``, ``(3)``, ...
     """
@@ -111,7 +112,8 @@ def parse(text: str, dossiers: frozenset[str] = frozenset()) -> dict[str, list[E
     def close() -> None:
         if current is not None and section is not None:
             body = "\n".join(current)
-            linked = _LINK in body
+            # Only a link to the item's own dossier counts; citing a neighbour's does not.
+            linked = item_id != "—" and f"{_LINK}{item_id.lower()}-" in body
             sections[section].append(Entry(len(body.split()), linked or item_id in dossiers, linked))
 
     for line in text.split("\n"):

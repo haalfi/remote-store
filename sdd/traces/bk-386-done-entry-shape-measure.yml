@@ -68,7 +68,8 @@ phases:
           Neither changes a release section's figures. Review also found that
           splitting by link text would drop a long entry that omits its link
           from the dossier half; the split now also reads `sdd/backlog/`
-          filenames and reports such entries as Unlinked (0 today).
+          filenames and reports such entries as Unlinked (0 today). A link
+          counts only when it points at the entry's own `<id>-` dossier.
         outcome: ok
       - file: sdd/BACKLOG-DONE.md
         section: "per-release sections"

@@ -81,8 +81,19 @@ class TestParse:
         assert short.words == 7 + 3 + 2
 
     def test_absorbed_form_link_counts_as_dossier(self) -> None:
-        text = "## Absorbed\n\n- [x] **BUG-1 — t** → **BL-1**. Dossier: [BUG-1](backlog/b.md).\n"
+        text = "## Absorbed\n\n- [x] **BUG-1 — t** → **BL-1**. Dossier: [BUG-1](backlog/bug-1-t.md).\n"
         assert _mod.parse(text)["Absorbed"][0].has_dossier is True
+
+    def test_link_to_another_items_dossier_is_not_a_link(self) -> None:
+        # Citing a neighbour's dossier neither gives an item a dossier nor
+        # satisfies its own link; the second entry must read as Unlinked.
+        text = (
+            "## v1\n\n- [x] **BK-1 — a** cites [x](backlog/bk-2-b.md)\n"
+            "- [x] **BK-3 — c** cites [x](backlog/bk-2-b.md)\n"
+        )
+        plain, unlinked = _mod.parse(text, frozenset({"BK-3"}))["v1"]
+        assert (plain.has_dossier, plain.linked) == (False, False)
+        assert (unlinked.has_dossier, unlinked.linked) == (True, False)
 
     def test_id_less_entry_counts(self) -> None:
         # Decided-against entries that never had an ID carry a dash in its place.
