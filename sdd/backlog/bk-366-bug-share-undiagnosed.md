@@ -42,7 +42,8 @@ not 3% → 35%. Open `BUG-` items now number 25 of 68
 [Audit-021](../audits/audit-021-contract-placement.md) classifies every
 user-audience code defect from v0.28.0 to the current stub, open items
 included, with the register's finder column per entry (57 of 71 caught
-internally, 11 naming no finder, 2 user reports), and answers the reading
+internally, 11 naming no finder, 3 naming a user-facing trigger of which 2
+are user reports), and answers the reading
 question: detection improved, and for the contract and SFTP-lifecycle
 clusters what it detected was released behaviour found by audit rather than
 by users; the eight Graph burn-in defects were fixed before release. Its

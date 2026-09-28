@@ -31,11 +31,23 @@ re-applied per class (cluster A), 10 the SFTP session lifecycle (cluster B).
 The contract is written once in spec 003 and implemented per class, 204
 public-method bodies in the 12 sync backend modules alone, and nothing at the
 `Store` boundary enforces it. The prior remedies, more conformance cells and
-more spec text, were both applied and the class of bug did not shrink, because
-they cover the cross-product one cell at a time while the design keeps the
-product. Eight of the 71 (cluster C) were fixed before their backend's first
-release; on the 63 that reached a release the share of A and B is 45 of 63
-(71%).
+more spec text, were both applied by 2026-04, and cluster A's closed members
+by release since then, from the appendix's *Section* column, run Unreleased 1,
+v0.31.0 13, v0.30.0 2, v0.29.0 4, v0.28.0 2: not a flat or rising series but
+one spike, and 8 of the 13 in v0.31.0 are two review cascades (BUG-243 to
+246, 247, 248; BK-354 to 358, 359, 265, 275), which is the detection
+confound § H-1 item 3 states. What the series does support is that the class
+did not close: every release in the window has members. Eight of the 71
+(cluster C) were fixed before their backend's first release; on the 63 that
+reached a release the share of A and B is 45 of 63 (71%).
+
+**Items are not clauses.** This repo files one item per class per finder
+chain, which is what "the same clause is fixed N times" measures, so an item
+count falls under a single implementation by construction. Counted by the
+clause each item breached (a by-hand assignment, listed in § H-1), cluster
+A's 35 items sit on 11 clauses and cluster B's 10 on 3; the 63% is the item
+share, and 14 of 71 is the clause share. Both are given because the remedy
+changes the first and not the second.
 
 | Severity | Count | Description |
 |----------|-------|-------------|
@@ -61,18 +73,42 @@ was applied to is the appendix.
 
 ## 🔴 High
 
-### H-1. The contract is implemented 13 times, method by method, and enforced 0 times at the boundary — *confirmed*
+### H-1. The contract is implemented 13 times, method by method, and enforced 0 times at the boundary — *confirmed (code figures); partial (cluster assignment, by hand)*
 
 **Members, closed (22):** BUG-254, 275, 264, BK-358, BUG-265, BK-359, BUG-259,
 247, 246, 249, 248, 243, 242, BK-324, BK-316, BUG-231, BK-301, BUG-222, BK-266,
 BK-263, BK-306, BK-298. **Open (13):** BUG-276, 273, 279, 293, 256, 255, 257,
 245, 253, 280, 292, 240, 260.
 
-Every one is a clause the contract states once — the error-mapping rows and
-never-leak invariant (BE-021), the root rule (BE-029), the absent-container
-rule, the wrong-type rule, the first-page listing bound, the close posture
-(BE-020) — that one class failed to apply on one or more of its methods. Three
-properties of the cluster are measured rather than read:
+Every one is a clause the contract states once that one class failed to apply
+on one or more of its methods. Two shapes sit inside that definition and the
+finding's title names only the first: **where the classifier is invoked** (a
+method whose wire call was never wrapped, a guard never called, a root or
+container answer never decided) and **what the classifier maps** (a row
+missing or wrong inside a classifier every boundary passes through). The 35
+by clause, each a by-hand assignment:
+
+| Clause | Items | Shape |
+|---|---|---|
+| Never-leak invariant, BE-021 head: the wire call or stream is unwrapped | BUG-249, 280, 279, 245, BK-358 | invocation |
+| Mapping rows, BE-021 table: the classifier's content | BUG-222, 275, 264, 265, 276, 293, 273, BK-316, BK-266, BK-359, BK-263 | content |
+| Absent container and the determinant rule, BE-021 § Reach | BUG-243, 246, 248, 242, 255, 257, 256 | invocation |
+| Root, BE-029 | BUG-259, 247, 254, 260 | invocation |
+| Wrong-type rows on flat namespaces | BK-324 | invocation |
+| Close posture, BE-020 | BK-298 | invocation |
+| Resource release on close, S3-019 | BK-306 | driver resource |
+| Path normalisation before a self-op, AZ-014 | BK-301 | invocation |
+| Health probe, PING-011 | BUG-231 | driver resource |
+| File-ancestor gate, BE-008 | BUG-253, 292 | invocation |
+| `max_depth`, DEPTH-003 against ASYNC-014 | BUG-240 | spec contradiction |
+
+Eleven clauses, 35 items: 22 invocation-shaped, 11 content-shaped, 2 driver
+resource. The invocation shape is what a single boundary removes; the content
+shape passes through any boundary unchanged. RFC-0017 § What each cluster-A
+bug becomes carries the same split against its own design (18 kernel-owned,
+5 split, 10 driver-kept, 2 needing a decision), and that split, not the 63%,
+is what a disposition of the proposals turns on. Three properties of the
+cluster are measured rather than read:
 
 1. **The same clause is fixed N times.** 14 of cluster A's 35 entries name two
    or more backend classes in the appendix's backend column (BUG-254, 259, 246,
@@ -105,7 +141,7 @@ properties of the cluster are measured rather than read:
 
 | Figure | Value | Derivation |
 |---|---|---|
-| Concrete backend classes | 13 (12 shipped; `S3Boto3Backend` is the parked ID-202 PoC, excluded from the wheel) | classes declaring `CAPABILITIES` in their own `__dict__`, spec 003 BE-021's enumeration; `pyproject.toml` `[tool.hatch.build.targets.wheel] exclude` |
+| Concrete backend classes | 13 (12 shipped; `S3Boto3Backend` is the parked ID-202 PoC, excluded from the wheel) | `rg -n '^\s+CAPABILITIES\b' src/remote_store`: 16 lines, less the 2 ABC declarations with no value and `SyncBackendAdapter`, whose universal set is narrowed per instance from the wrapped backend (spec 003 BE-021 states the same exclusion as "the two abstract bases and the sync adapter"); `pyproject.toml` `[tool.hatch.build.targets.wheel] exclude` for the wheel |
 | Public-method bodies across sync backend modules | 204 | command (a) below |
 | `except` handlers in `src/` | 395 across 40 files | command (b) below |
 | `except` handlers, sync Azure against async Azure | 61 against 56 | command (b), `backends/_azure.py` and `aio/backends/_azure.py` |
@@ -116,7 +152,7 @@ properties of the cluster are measured rather than read:
 | Error-mapping definitions outside `ext/` | 25 across 11 modules, enumerated below | command (d) below |
 | `except` handlers in `Store` that touch backend I/O | 0 | `_store.py` carries 2: a `KeyError` on the gate table, a `UnicodeEncodeError` on key validation |
 | BE-021, the error-mapping clause | 496 lines | spec 003 lines 676 to 1172 |
-| Hand-maintained ABCs | 2 of 21 methods each | `_backend.py`, `aio/_async_backend.py` |
+| Hand-maintained ABCs | 2: the sync one carries the 21 names command (a) lists; the async one 19 of them (no `read_seekable`, no `open_atomic`, `aclose` for `close`), implemented by 3 of the 13 classes | command (a)'s name list against `rg -n 'def ' aio/_async_backend.py` |
 | Conformance test functions | 323 | `rg -c 'def test_' tests/backends/conformance` |
 
 ```text
@@ -182,9 +218,12 @@ bug-prevention research (2026-04-03) and the contract-completeness research
 was never built (`scripts/check_error_handling*` does not exist). The second
 prescribed tightened spec text, and BE-021 reached 496 lines. Cluster A still
 produced 35 defects in six releases. A test fails only on the cell it covers,
-and the research's own estimate of the product was ~1,890 cells at 7 backends
-and 18 methods; the same formula at today's 13 classes gives ~3,510. The
-design keeps the backend axis in the product, and the tests chase it. The
+and the contract-completeness research's own estimate of the product
+(`research-backend-contract-completeness.md` § 3: 18 methods × ~5 parameter
+combinations × 7 backends × ~3 state conditions) was ~1,890 cells; the same
+formula at today's 13 classes, treating the three async twins as classes
+although their surface is 19 names rather than 21, gives ~3,510. The design
+keeps the backend axis in the product, and the tests chase it. The
 unbuilt static check is the one prescription still open; it reaches the
 broad-arm shape (BUG-293, 276, 275, 264, 222, 242, BK-316 in cluster A) and
 not the missed-wrap or missed-guard shape (BUG-249, 280, 279, 259, 247, 246,
@@ -358,7 +397,7 @@ Dispositions are the user's; the design itself is argued in
 
 | Finding | Proposed shape | Effort |
 |---|---|---|
-| H-1, M-1 | One contract kernel implementing the public `Backend` surface over a thin per-backend `Driver` of about ten wire primitives plus one classifier; error mapping at a single choke point over calls, listing pages and streams. Migrate one class at a time behind the unchanged conformance suite, flat-namespace family first. | L |
+| H-1, M-1 | One contract kernel implementing the public `Backend` surface over a thin per-backend `Driver` of about a dozen wire primitives plus one operation-scoped classifier; error mapping at a single choke point over calls, listing pages and streams. Reaches the 22 invocation-shaped items and, through its message and attribute guarantee, part of the content-shaped ones; the RFC's own split is 18 kernel-owned, 5 split, 10 driver-kept, 2 needing a decision. Migrate one class at a time behind the unchanged conformance suite, flat-namespace family first. | L |
 | H-2 | A `Session` owning connect, retry budget, liveness and invalidation behind one `run(op)` entry; SFTP first, SQL and Graph after. | L |
 | M-2 | One S3 driver (the parked boto3 lane is the candidate ID-202 itself names) with s3fs and PyArrow lanes deprecated; Azure async-native with the existing sync adapter, as Graph already ships. | M each |
 | L-1 | None here; BK-369 and BK-368 own it. | — |
