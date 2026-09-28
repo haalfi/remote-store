@@ -1,0 +1,88 @@
+id: BK-386
+title: "File BK-386 and ship report-done-length, the reader for ADR-0041's done-entry shape"
+trigger: >-
+  ADR-0041 (merged in #1041) left its own evidence unscheduled: its Neutral
+  consequence says whether new entries follow the short shape shows only in
+  the next release section's median, and nothing schedules that measurement.
+  The maintainer chose an item anchored to the next release plus a committed,
+  tested, advisory reporter over a hand-run scratch script.
+source_items:
+  - BK-386
+audience:
+  - contributor.tooling
+  - contributor.process
+expected_ripples:
+  - sdd/BACKLOG.md
+  - sdd/backlog/
+  - scripts/
+  - tests/scripts/
+  - pyproject.toml
+  - sdd/GATE-INVENTORY.md
+surprising_ripples:
+  - CONTRIBUTING.md
+phases:
+  - id: orient
+    name: Orient
+    steps:
+      - file: sdd/adrs/0041-done-register-links-dossiers.md
+        section: "Decision; Consequences"
+        read_type: gate
+        extract: >-
+          No length rule and review enforcement are decided, so the reporter
+          must not grow a threshold; the Neutral consequence is the gap this
+          item closes. The ADR text is not edited.
+        outcome: ok
+      - file: sdd/backlog/id-259-trace-outcome-revisit.md
+        section: "(full)"
+        read_type: reference
+        extract: >-
+          The release-anchor pattern: a Phase 0 checklist line in the published
+          CONTRIBUTING.md that names no tracker ID, and the backlog item as the
+          pin that says which ticket is open.
+        outcome: ok
+      - file: scripts/report_trace_outcomes.py
+        section: "module docstring; Drift-gate block"
+        read_type: reference
+        extract: >-
+          Report shape: exit code independent of findings, Rule 5 reason and
+          Rule 7 bound in the docstring, `kind: report` so gen-gate-inventory
+          lists it as advisory.
+        outcome: ok
+      - file: sdd/DRIFT-RULES.md
+        section: "Rules 5 and 7"
+        read_type: gate
+        extract: "An advisory check says why it does not gate and states its bound."
+        outcome: ok
+  - id: implement
+    name: Implement
+    steps:
+      - file: tests/scripts/test_report_done_length.py
+        section: "(new)"
+        read_type: verify
+        extract: >-
+          Written first and seen failing at collection (the script did not
+          exist), then 10 passed. Word counts in the fixtures were hand-derived
+          with str.split() and two were corrected before the first run.
+        outcome: ok
+      - file: sdd/BACKLOG-DONE.md
+        section: "per-release sections"
+        read_type: verify
+        extract: >-
+          `hatch run report-done-length` at 8fa22d6 reproduces ADR-0041's
+          Context figures (v0.32.0 403, v0.31.0 646, 599.5 for the 16
+          pre-rule Unreleased entries) and adds BK-365's close as the one
+          linked entry at 67 words; those rows are the dossier's baseline.
+        outcome: ok
+  - id: verify
+    name: Verify
+    steps:
+      - file: scripts/gen_backlogid.py
+        section: "--check"
+        read_type: gate
+        extract: "R1–R4 pass with BK-386 in § 6; next safe BK is 387."
+        outcome: ok
+      - file: sdd/GATE-INVENTORY.md
+        section: "gen-gate-inventory"
+        read_type: gate
+        extract: "Regenerated; the new row reads `report-done-length` | advisory."
+        outcome: ok

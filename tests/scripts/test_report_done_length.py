@@ -1,0 +1,128 @@
+"""Unit tests for the done-register entry-length report.
+
+Hermetic ``tmp_path`` registers pin the counting rule (an entry runs from its
+``- [x] **ID`` header to the next header or heading) and the dossier split.
+One test runs against the live file and asserts structure only, never counts:
+the register grows on every merge.
+"""
+
+from __future__ import annotations
+
+import importlib.util
+import sys
+import textwrap
+from pathlib import Path
+
+import pytest
+
+# Writes registers to disk and reads them back as UTF-8, so the cross-platform
+# legs select it, as they do the sibling report's tests.
+pytestmark = pytest.mark.os_sensitive
+
+_ROOT = Path(__file__).resolve().parents[2]
+_SCRIPT = _ROOT / "scripts" / "report_done_length.py"
+
+
+def _load():
+    spec = importlib.util.spec_from_file_location("report_done_length", _SCRIPT)
+    assert spec is not None
+    assert spec.loader is not None
+    mod = importlib.util.module_from_spec(spec)
+    sys.modules.setdefault("report_done_length", mod)
+    spec.loader.exec_module(mod)
+    return mod
+
+
+_mod = _load()
+
+_REGISTER = textwrap.dedent(
+    """\
+    # Development Backlog — Done
+
+    Preamble prose with a [link](backlog/x.md) that is no entry.
+
+    ## Absorbed
+
+    - [x] **BK-001 — absorbed one** → **BK-002**
+
+    ## Unreleased
+
+    - [x] **BK-010 — short with dossier**
+      Shipped a thing.
+      Detail: [dossier](backlog/bk-010-thing.md)
+    - [x] **BK-011 — long without dossier**
+      one two three four five six seven eight nine ten
+    ### A sub-heading ends the entry
+    words here belong to no entry
+
+    ## v0.2.0
+
+    - [x] **ID-005 — alpha**
+    - [x] **ID-006 — beta gamma**
+    """
+)
+
+
+class TestParse:
+    def test_sections_keep_file_order_and_skip_sectionless_text(self) -> None:
+        sections = _mod.parse(_REGISTER)
+        assert list(sections) == ["Absorbed", "Unreleased", "v0.2.0"]
+
+    def test_entry_ends_at_any_heading_not_only_at_the_next_header(self) -> None:
+        long = _mod.parse(_REGISTER)["Unreleased"][1]
+        # Header is 7 str.split() tokens, body 10; the text under the ###
+        # heading is not counted.
+        assert long.words == 17
+        assert long.has_dossier is False
+
+    def test_dossier_link_anywhere_in_entry_marks_it(self) -> None:
+        short = _mod.parse(_REGISTER)["Unreleased"][0]
+        assert short.has_dossier is True
+        assert short.words == 7 + 3 + 2
+
+    def test_absorbed_form_link_counts_as_dossier(self) -> None:
+        text = "## Absorbed\n\n- [x] **BUG-1 — t** → **BL-1**. Dossier: [BUG-1](backlog/b.md).\n"
+        assert _mod.parse(text)["Absorbed"][0].has_dossier is True
+
+    def test_non_entry_bullet_does_not_start_an_entry(self) -> None:
+        text = "## v1\n\n- [ ] **BK-9 — open**\n- plain bullet\n"
+        assert _mod.parse(text)["v1"] == []
+
+
+class TestSummarize:
+    def test_split_medians_and_empty_half_is_none(self) -> None:
+        rows = {r.section: r for r in _mod.summarize(_mod.parse(_REGISTER))}
+        unrel = rows["Unreleased"]
+        assert (unrel.n, unrel.median) == (2, 14.5)
+        assert (unrel.n_dossier, unrel.median_dossier) == (1, 12.0)
+        assert (unrel.n_plain, unrel.median_plain) == (1, 17.0)
+        rel = rows["v0.2.0"]
+        assert (rel.n_dossier, rel.median_dossier) == (0, None)
+        assert rel.median == 5.5
+
+    def test_section_without_entries_is_omitted(self) -> None:
+        rows = _mod.summarize(_mod.parse("## Empty\n\nprose only\n## v1\n\n- [x] **A-1 — t**\n"))
+        assert [r.section for r in rows] == ["v1"]
+
+
+class TestMain:
+    def test_exit_code_is_zero_whatever_it_finds(self, tmp_path: Path, capsys: pytest.CaptureFixture[str]) -> None:
+        path = tmp_path / "BACKLOG-DONE.md"
+        path.write_text(_REGISTER, encoding="utf-8")
+        assert _mod.main([str(path)]) == 0
+        out = capsys.readouterr().out
+        assert "Unreleased" in out
+        assert "v0.2.0" in out
+        # An empty half renders as the table's N/A dash, not as 0.
+        assert "—" in out
+
+    def test_missing_file_exits_two(self, tmp_path: Path, capsys: pytest.CaptureFixture[str]) -> None:
+        assert _mod.main([str(tmp_path / "absent.md")]) == 2
+        assert "absent.md" in capsys.readouterr().err
+
+    def test_live_register_structure(self, capsys: pytest.CaptureFixture[str]) -> None:
+        assert _mod.main([]) == 0
+        out = capsys.readouterr().out
+        assert "Unreleased" in out
+        # Release sections are named vX.Y.Z; at least one has shipped.
+        assert "| v0." in out

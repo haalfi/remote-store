@@ -735,6 +735,15 @@ CHANGELOG the release body is built from — say what is actually true.
   and name the successor.
   Detail: [dossier](backlog/id-259-trace-outcome-revisit.md)
 
+- [ ] **BK-386 — ADR-0041's short done entry is unmeasured until the next release**
+  spec: — · effort: S · audience: contributor.process
+  ADR-0041 keeps a completed entry for an item with a dossier short, enforced
+  by review alone, so whether entries follow it shows only in the next release
+  section; `hatch run report-done-length` gives medians of 403 words at
+  v0.32.0 and 646 at v0.31.0, and 67 for the one linked entry. Open decision:
+  at the next release, keep the rule, gate it, or reverse it.
+  Detail: [dossier](backlog/bk-386-done-entry-shape-measure.md)
+
 - [ ] **BK-366 — Bug share of shipped work rose 3% → 35% across five releases, undiagnosed**
   spec: — · effort: M · audience: contributor.process
   The `BUG-` share of shipped items rose from 3% at v0.27.0 to 41% at
