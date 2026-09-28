@@ -40,6 +40,9 @@ the three BUG-287 rows. Both conda recipes pin `pyarrow >=14.0.0`
 (`rg -n pyarrow packaging/conda-forge/recipe.yaml
 packaging/conda-forge/feedstock/recipe.yaml`), so a raise touches both. BK-377's
 entry in `BACKLOG-DONE.md` (`:892-897`) exercised this item's raise and found
-`pyarrow` 14.0.0 → 16 patch-eligible rather than breaking, which updates the
-"migration obligations" framing. The import failure needs a floor install
+`pyarrow` 14.0.0 → 16 patch-eligible rather than breaking. That qualifies the
+body's "priced by `CONTRIBUTING.md` § When to bump" and the `[arrow]` row's
+"Raising it is a floor bump with its own migration obligations"
+(`infra/drift-locks/KNOWN-FINDINGS.md:71`), both written when that raise was
+breaking. The import failure needs a floor install
 and was not re-run. Found by the ADR-0040 § 5 conversion.
