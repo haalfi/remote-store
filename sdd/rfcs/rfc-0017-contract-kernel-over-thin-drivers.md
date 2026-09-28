@@ -380,8 +380,42 @@ demands nothing the verified contract does not. The kernel over the Memory
 driver therefore runs the suite the oracle has certified, which is why Memory
 migrates at D3 step 1, and no peer diff is a criterion anywhere in this RFC.
 The Dafny `MemoryBackend` is a refinement of the Dafny contract, not of the
-Python class, so there is no refinement target to move; what the formal layer
-could gain is Open Question 7.
+Python class, so there is no refinement target to move.
+
+**Extend the model to the clauses it lacks; do not retarget it at the
+kernel.** The formal layer is 3,826 lines across four files (`wc -l
+sdd/formal/*.dfy`): the contract is 1,242 lines with 41 declarations, and its
+`MemoryBackend` refinement alone is 1,885. Retargeting that refinement at
+"kernel over an abstract driver" would mean modelling wire failures and
+operation scopes as nondeterministic oracles, which is where the model would
+grow fastest and prove least: which paramiko shape means the connection died,
+or whether a Graph `404` is item- or identity-scoped, is exactly what no
+proof reaches, and under D1 it stays in the driver. What is worth extending
+is the set of clauses the model does not have, because that is where the
+kernel-owned items sit: of the ten under R1 in § What each cluster-A bug
+becomes, eight breach clauses the model omits (the root rule for BUG-259,
+247, 254, 260; the absent container for 246, 243; the never-leak invariant on
+listings for 249, 280), and only BK-324's wrong-type rows and BK-301's
+self-op are modelled today. Under the kernel each of those clauses is
+implemented once, which is the first time a postcondition for them would have
+a single implementation to hold to.
+
+| Clause | Model change | Effort | Recommendation |
+|---|---|---|---|
+| Root rule, BE-029: which spellings address the root, decided from the key | a pure predicate over the key, plus preconditions on the write-shaped operations | S | extend; the clause with the most items and the cheapest proof |
+| Close posture, BE-020 | a `closed` flag and a postcondition per operation | S | extend |
+| Absent container, BE-021 § Reach | the store state becomes optional and most postconditions gain a branch; the refinement follows | M | extend; it also gives BK-345, ID-244 and ID-251 the verified reference they lack |
+| First-page listing bound | pagination in the model | L | do not; the fake-driver test pins it more cheaply |
+| Error attributes and messages, ERR-* | strings | — | do not |
+
+The three extensions land in D8 step 1, before kernel code, because the
+kernel encodes one answer per clause and a Dafny postcondition is the
+sharpest statement of that answer; written after the kernel they would only
+ratify whatever it did. Two practicalities: `verify-formal` runs in CI only
+when `sdd/formal` or `sdd/specs` change (`ci.yml`'s `FORMAL_PAT`) and is a
+required job, and `check_dafny_twin_parity.py`, which holds 17 members in
+lockstep between the two models, needs the new members added on both sides.
+Open Question 7 asks whether this recommendation is accepted.
 
 ### D8. Lifecycle: accept the design, gate the deletions
 
@@ -592,12 +626,13 @@ it.
    the driver under D1. The wire-signal alternative reaches four of them at
    the cost of a primitive that must express every wire's vocabulary. Decide
    before acceptance.
-7. **Should the kernel's decision procedures get a Dafny module of their
-   own?** Root refusal, type-mismatch precedence, precondition order and the
-   first-page bound are the clauses D7 records as outside the model. A
-   module refined from `BackendContract.dfy`, as `DepthCounting.dfy` is for
-   DEPTH-001, would bring them under the same proof; whether the
-   `verify-formal` lane carries that is the formal layer's decision.
+7. **Is D7's extension of the model accepted?** D7 recommends extending
+   `BackendContract.dfy` and its refinement with the root rule, the close
+   posture and the absent container, in D8 step 1, and not modelling
+   pagination, messages, or the kernel-over-driver shape. The open part is
+   whether the formal layer takes the M-sized absent-container change on, and
+   whether the additions go into the existing contract or into a module
+   refined from it, as `DepthCounting.dfy` is for DEPTH-001.
 
 ## References
 
