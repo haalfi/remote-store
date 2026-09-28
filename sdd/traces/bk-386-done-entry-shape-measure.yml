@@ -94,3 +94,80 @@ phases:
         read_type: gate
         extract: "Regenerated; the new row reads `report-done-length` | advisory."
         outcome: ok
+review:
+  # Derived by `hatch run ship-report 1042 --trace-block-only` at head 39ee08f.
+  # Do not hand-edit, except a newly required field per sdd/traces/_schema.yml
+  # section review: RFC-0015 D4 makes this script the only producer.
+  derivation: "hatch run ship-report 1042 --trace-block-only"
+  pr: 1042
+  review_rounds: 8
+  submissions: 7
+  findings: 11
+  by_round:
+    - round: 1
+      findings: 2
+      origin: {original: 2}
+      triage: {must-fix: 2}
+      duration_hours: 0.04
+    - round: 2
+      findings: 2
+      origin: {original: 2}
+      triage: {must-fix: 2}
+      duration_hours: 0.07
+    - round: 3
+      findings: 1
+      origin: {original: 1}
+      triage: {must-fix: 1}
+      duration_hours: 0.05
+    - round: 4
+      findings: 1
+      origin: {original: 1}
+      triage: {must-fix: 1}
+      duration_hours: 0.07
+    - round: 5
+      findings: 2
+      origin: {loop-introduced: 2}
+      triage: {must-fix: 2}
+      duration_hours: 0.09
+    - round: 6
+      findings: 2
+      origin: {loop-introduced: 1, original: 1}
+      triage: {must-fix: 2}
+      duration_hours: 0.07
+    - round: 7
+      findings: 1
+      origin: {original: 1}
+      triage: {must-fix: 1}
+      duration_hours: 0.06
+  by_file:
+    - path: "scripts/report_done_length.py"
+      findings: 5
+    - path: "sdd/BACKLOG.md"
+      findings: 3
+    - path: "tests/scripts/test_report_done_length.py"
+      findings: 2
+    - path: "sdd/backlog/bk-386-done-entry-shape-measure.md"
+      findings: 1
+  untouched_files:
+    - "CONTRIBUTING.md"
+    - "pyproject.toml"
+    - "sdd/GATE-INVENTORY.md"
+    - "sdd/traces/bk-386-done-entry-shape-measure.yml"
+  review_driven_commits:
+    - sha: "129adf9"
+      subject: "fix: address PR #1042 review"
+    - sha: "f20089b"
+      subject: "fix: address PR #1042 review"
+    - sha: "261af19"
+      subject: "fix: address PR #1042 review"
+    - sha: "95be7be"
+      subject: "fix: address PR #1042 review"
+    - sha: "a959a2e"
+      subject: "fix: address PR #1042 review"
+    - sha: "2f9424a"
+      subject: "fix: address PR #1042 review"
+    - sha: "a4d04d5"
+      subject: "fix: address PR #1042 review"
+    - sha: "39ee08f"
+      subject: "fix: drop an RST role from report_done_length's parse docstring"
+  ci: {verdict: GREEN, failed: 0, pending: 0}
