@@ -1,0 +1,173 @@
+id: BK-386
+title: "File BK-386 and ship report-done-length, the reader for ADR-0041's done-entry shape"
+trigger: >-
+  ADR-0041 (merged in #1041) left its own evidence unscheduled: its Neutral
+  consequence says whether new entries follow the short shape shows only in
+  the next release section's median, and nothing schedules that measurement.
+  The maintainer chose an item anchored to the next release plus a committed,
+  tested, advisory reporter over a hand-run scratch script.
+source_items:
+  - BK-386
+audience:
+  - contributor.tooling
+  - contributor.process
+expected_ripples:
+  - sdd/BACKLOG.md
+  - sdd/backlog/
+  - scripts/
+  - tests/scripts/
+  - pyproject.toml
+  - sdd/GATE-INVENTORY.md
+surprising_ripples:
+  - CONTRIBUTING.md
+phases:
+  - id: orient
+    name: Orient
+    steps:
+      - file: sdd/adrs/0041-done-register-links-dossiers.md
+        section: "Decision; Consequences"
+        read_type: gate
+        extract: >-
+          No length rule and review enforcement are decided, so the reporter
+          must not grow a threshold; the Neutral consequence is the gap this
+          item closes. The ADR text is not edited.
+        outcome: ok
+      - file: sdd/backlog/id-259-trace-outcome-revisit.md
+        section: "(full)"
+        read_type: reference
+        extract: >-
+          The release-anchor pattern: a Phase 0 checklist line in the published
+          CONTRIBUTING.md that names no tracker ID, and the backlog item as the
+          pin that says which ticket is open.
+        outcome: ok
+      - file: scripts/report_trace_outcomes.py
+        section: "module docstring; Drift-gate block"
+        read_type: reference
+        extract: >-
+          Report shape: exit code independent of findings, Rule 5 reason and
+          Rule 7 bound in the docstring, `kind: report` so gen-gate-inventory
+          lists it as advisory.
+        outcome: ok
+      - file: sdd/DRIFT-RULES.md
+        section: "Rules 5 and 7"
+        read_type: gate
+        extract: "An advisory check says why it does not gate and states its bound."
+        outcome: ok
+  - id: implement
+    name: Implement
+    steps:
+      - file: tests/scripts/test_report_done_length.py
+        section: "(new)"
+        read_type: verify
+        extract: >-
+          Written first and seen failing at collection (the script did not
+          exist), then 10 passed. Word counts in the fixtures were hand-derived
+          with str.split() and two were corrected before the first run.
+          Review found two parser gaps, ID-less Decided-against entries dropped
+          and repeated `##` headings merged; both got a failing test first.
+          Neither changes a release section's figures. Review also found that
+          splitting by link text would drop a long entry that omits its link
+          from the dossier half; the split now also reads `sdd/backlog/`
+          filenames and reports such entries as Unlinked (0 today). A link
+          counts only when it points at the entry's own `<id>-` dossier.
+        outcome: ok
+      - file: sdd/BACKLOG-DONE.md
+        section: "per-release sections"
+        read_type: verify
+        extract: >-
+          `hatch run report-done-length` at 8fa22d6 reproduces ADR-0041's
+          Context figures (v0.32.0 403, v0.31.0 646, 599.5 for the 16
+          pre-rule Unreleased entries) and adds BK-365's close as Unreleased's
+          one dossier entry at 67 words (BUG-241 under Absorbed is the other
+          in the register); those rows are the dossier's baseline.
+        outcome: ok
+  - id: verify
+    name: Verify
+    steps:
+      - file: scripts/gen_backlogid.py
+        section: "--check"
+        read_type: gate
+        extract: "R1–R4 pass with BK-386 in § 6; next safe BK is 387."
+        outcome: ok
+      - file: sdd/GATE-INVENTORY.md
+        section: "gen-gate-inventory"
+        read_type: gate
+        extract: "Regenerated; the new row reads `report-done-length` | advisory."
+        outcome: ok
+review:
+  # Derived by `hatch run ship-report 1042 --trace-block-only` at head 39ee08f.
+  # Do not hand-edit, except a newly required field per sdd/traces/_schema.yml
+  # section review: RFC-0015 D4 makes this script the only producer.
+  derivation: "hatch run ship-report 1042 --trace-block-only"
+  pr: 1042
+  review_rounds: 8
+  submissions: 7
+  findings: 11
+  by_round:
+    - round: 1
+      findings: 2
+      origin: {original: 2}
+      triage: {must-fix: 2}
+      duration_hours: 0.04
+    - round: 2
+      findings: 2
+      origin: {original: 2}
+      triage: {must-fix: 2}
+      duration_hours: 0.07
+    - round: 3
+      findings: 1
+      origin: {original: 1}
+      triage: {must-fix: 1}
+      duration_hours: 0.05
+    - round: 4
+      findings: 1
+      origin: {original: 1}
+      triage: {must-fix: 1}
+      duration_hours: 0.07
+    - round: 5
+      findings: 2
+      origin: {loop-introduced: 2}
+      triage: {must-fix: 2}
+      duration_hours: 0.09
+    - round: 6
+      findings: 2
+      origin: {loop-introduced: 1, original: 1}
+      triage: {must-fix: 2}
+      duration_hours: 0.07
+    - round: 7
+      findings: 1
+      origin: {original: 1}
+      triage: {must-fix: 1}
+      duration_hours: 0.06
+  by_file:
+    - path: "scripts/report_done_length.py"
+      findings: 5
+    - path: "sdd/BACKLOG.md"
+      findings: 3
+    - path: "tests/scripts/test_report_done_length.py"
+      findings: 2
+    - path: "sdd/backlog/bk-386-done-entry-shape-measure.md"
+      findings: 1
+  untouched_files:
+    - "CONTRIBUTING.md"
+    - "pyproject.toml"
+    - "sdd/GATE-INVENTORY.md"
+    - "sdd/traces/bk-386-done-entry-shape-measure.yml"
+  review_driven_commits:
+    - sha: "129adf9"
+      subject: "fix: address PR #1042 review"
+    - sha: "f20089b"
+      subject: "fix: address PR #1042 review"
+    - sha: "261af19"
+      subject: "fix: address PR #1042 review"
+    - sha: "95be7be"
+      subject: "fix: address PR #1042 review"
+    - sha: "a959a2e"
+      subject: "fix: address PR #1042 review"
+    - sha: "2f9424a"
+      subject: "fix: address PR #1042 review"
+    - sha: "a4d04d5"
+      subject: "fix: address PR #1042 review"
+    - sha: "39ee08f"
+      subject: "fix: drop an RST role from report_done_length's parse docstring"
+  ci: {verdict: GREEN, failed: 0, pending: 0}
