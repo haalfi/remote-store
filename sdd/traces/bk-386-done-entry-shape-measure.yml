@@ -63,6 +63,9 @@ phases:
           Written first and seen failing at collection (the script did not
           exist), then 10 passed. Word counts in the fixtures were hand-derived
           with str.split() and two were corrected before the first run.
+          Review found two parser gaps, ID-less Decided-against entries dropped
+          and repeated `##` headings merged; both got a failing test first.
+          Neither changes a release section's figures.
         outcome: ok
       - file: sdd/BACKLOG-DONE.md
         section: "per-release sections"

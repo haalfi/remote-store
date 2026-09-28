@@ -59,7 +59,8 @@ from dataclasses import dataclass
 from pathlib import Path
 
 _DEFAULT = Path(__file__).resolve().parents[1] / "sdd" / "BACKLOG-DONE.md"
-_HEADER = re.compile(r"- \[x\] \*\*[A-Z]+-\d+")
+# An ID, or the dash an entry that never had one carries (Decided against).
+_HEADER = re.compile(r"- \[x\] \*\*(?:[A-Z]+-\d+|—)")
 _DOSSIER = "](backlog/"
 
 
@@ -81,7 +82,10 @@ class Row:
 
 
 def parse(text: str) -> dict[str, list[Entry]]:
-    """Map each ``## `` section, in file order, to its entries."""
+    """Map each ``## `` section, in file order, to its entries.
+
+    A heading that repeats gets its own key, suffixed ``(2)``, ``(3)``, ...
+    """
     sections: dict[str, list[Entry]] = {}
     section: str | None = None
     current: list[str] | None = None
@@ -96,8 +100,12 @@ def parse(text: str) -> dict[str, list[Entry]]:
             close()
             current = None
             if line.startswith("## "):
-                section = line[3:].strip()
-                sections.setdefault(section, [])
+                name = line[3:].strip()
+                section, k = name, 1
+                while section in sections:
+                    k += 1
+                    section = f"{name} ({k})"
+                sections[section] = []
         elif _HEADER.match(line):
             close()
             current = [line] if section is not None else None

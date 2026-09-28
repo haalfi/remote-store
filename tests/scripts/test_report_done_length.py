@@ -84,6 +84,17 @@ class TestParse:
         text = "## Absorbed\n\n- [x] **BUG-1 — t** → **BL-1**. Dossier: [BUG-1](backlog/b.md).\n"
         assert _mod.parse(text)["Absorbed"][0].has_dossier is True
 
+    def test_id_less_entry_counts(self) -> None:
+        # Decided-against entries that never had an ID carry a dash in its place.
+        text = "## Decided against\n\n- [x] **— never had an ID** *(refused)*\n  why\n"
+        assert _mod.parse(text)["Decided against"] == [_mod.Entry(9, False)]
+
+    def test_repeated_heading_gets_its_own_row(self) -> None:
+        text = "## Bug Fixes\n\n- [x] **A-1 — a**\n\n## v1\n\n## Bug Fixes\n\n- [x] **A-2 — b c**\n"
+        sections = _mod.parse(text)
+        assert list(sections) == ["Bug Fixes", "v1", "Bug Fixes (2)"]
+        assert [e.words for e in sections["Bug Fixes (2)"]] == [6]
+
     def test_non_entry_bullet_does_not_start_an_entry(self) -> None:
         text = "## v1\n\n- [ ] **BK-9 — open**\n- plain bullet\n"
         assert _mod.parse(text)["v1"] == []
