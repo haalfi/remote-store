@@ -43,7 +43,8 @@ The three rules
    ID-253 has since written that expansion step down, so the premise is no
    longer unbacked; it is still the wrong justification. The step takes only
    *what shipped* from this section and gets the prose from the item's
-   ``BACKLOG-DONE.md`` body and the migration guide, so a stub grown into a
+   ``BACKLOG-DONE.md`` entry (or the dossier it links) and the migration
+   guide, so a stub grown into a
    paragraph would be re-read for one line of it. A budget that rested on the
    expansion would have to move whenever the release procedure did, and this
    one does not.

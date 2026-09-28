@@ -24,8 +24,9 @@ See the checklist item for what the gate compares and why its output is discarde
 **Phase 1 (CHANGELOG condensing)** — Work the checklist bullet as written; it
 owns the procedure, the sources and the section order. The one failure worth
 naming here: **an entry written from the stub alone is a reworded stub, not the
-expansion.** Work each item's `sdd/BACKLOG-DONE.md` body as the checklist says
-and the difference is obvious; skip it and every entry comes out one line long
+expansion.** Work each item's `sdd/BACKLOG-DONE.md` entry, and the
+`sdd/backlog/` dossier it links when it has one, as the checklist says and the
+difference is obvious; skip it and every entry comes out one line long
 and no more useful than the index it came from.
 
 **Phase 2** — `bump-my-version` reads its target files from `[[tool.bumpversion.files]]`
