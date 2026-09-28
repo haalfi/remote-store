@@ -1,0 +1,100 @@
+id: BK-365
+title: "Close BK-365: ADR-0041 decides the BACKLOG-DONE.md half and retires the migration opt-out"
+trigger: >-
+  The maintainer's final-session brief for BK-365, after PR #1040 converted
+  § 6, the last section: decide the BACKLOG-DONE.md half, record it where the
+  repo's rules put it, decide the migration note and gen_backlogid.py's marker
+  handling, and close the item. Decided in interview: new entries for items
+  with a dossier are short and link it, released entries untouched,
+  review-enforced with no length rule; recorded as a new ADR-0041 amending
+  ADR-0040, since ADR-0040 is Accepted; the migration note and the opt-out are
+  both removed, the test written failing first.
+source_items:
+  - BK-365
+audience:
+  - contributor.process
+expected_ripples:
+  - sdd/BACKLOG.md
+  - sdd/BACKLOG-DONE.md
+  - sdd/adrs/
+  - scripts/gen_backlogid.py
+  - tests/scripts/test_gen_backlogid.py
+  - sdd/GATE-INVENTORY.md
+surprising_ripples:
+  - CLAUDE.md
+  - sdd/000-process.md
+  - sdd/rfcs/rfc-0015-ship-two-surfaces.md
+phases:
+  - id: orient
+    name: Orient
+    steps:
+      - file: sdd/backlog/bk-365-backlog-length-unmeasured.md
+        section: "(full), including the § 6 re-measure"
+        read_type: gate
+        extract: >-
+          The open half: whether BACKLOG-DONE.md's per-entry length is a defect
+          or the price of principle 9, with any mechanism's bound stated.
+        outcome: ok
+      - file: sdd/research/research-appropriate-level-of-detail.md
+        section: "§ 9.1, § 9.2"
+        read_type: reference
+        extract: >-
+          § 9.1 advises no length rule beside Rule 7, which is why the chosen
+          shape has no word or line cap; an early draft of the rules header
+          carried "at most three lines" and was cut before commit for that
+          reason. § 9.2's move-rather-than-delete is what the dossier link does.
+        outcome: ok
+      - file: sdd/000-process.md
+        section: "Rule 4; § Backlog"
+        read_type: gate
+        extract: >-
+          An Accepted ADR is superseded or amended by a new record, never
+          edited, so the decision is ADR-0041 with `Amends: ADR-0040`. § Backlog
+          also described "where an item's detail lives while the file is being
+          converted", which the close made stale.
+        outcome: ok
+  - id: implement
+    name: Implement
+    steps:
+      - file: sdd/BACKLOG-DONE.md
+        section: "per-release sections"
+        read_type: verify
+        extract: >-
+          Median words per entry re-derived by a scratch script (each
+          `- [x] **ID` header to the next header or heading, str.split()): 9.5
+          at v0.3.0, 145 at v0.25.0, 235 at v0.30.0, 646 at v0.31.0, 599.5
+          under Unreleased; 687 entries, 122,869 words of entry text. These are
+          the figures ADR-0041's Context cites.
+        outcome: ok
+      - file: tests/scripts/test_gen_backlogid.py
+        section: "TestShape retired-marker tests"
+        read_type: verify
+        extract: >-
+          The two opt-out tests were rewritten to expect a marked section to
+          fail and seen failing (exit 0 where 1 was expected) before the opt-out
+          left gen_backlogid.py. After removal the marker line is preamble text,
+          so R3 reports four paragraphs and no leading Promise; the test pins
+          both messages. Two tests that exercised the marker's scope were
+          deleted as moot.
+        outcome: ok
+      - file: CLAUDE.md
+        section: "§ Backlog"
+        read_type: verify
+        extract: >-
+          Pointed at the header for "where an item's detail lives while the
+          file is being converted"; the sweep for `being converted|unconverted`
+          (with --hidden for .claude/) found it and 000-process.md's twin.
+        outcome: ok
+  - id: verify
+    name: Verify
+    steps:
+      - file: scripts/gen_backlogid.py
+        section: "--check"
+        read_type: gate
+        extract: "R1–R4 over every section pass; GATE-INVENTORY.md regenerated."
+        outcome: ok
+      - file: sdd/adrs/DIGEST.md
+        section: "gen-adr-digest --check"
+        read_type: gate
+        extract: "41 ADRs, digest current, ADR-0041 below the Decision advisory budget."
+        outcome: ok

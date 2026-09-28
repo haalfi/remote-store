@@ -241,6 +241,14 @@ if evidence changes; these are retired.
 
 ## Unreleased
 
+- [x] **BK-365 — Both backlog files grew past what a maintainer can read, and nothing measures it**
+  spec: — · effort: M · audience: contributor.process
+  `BACKLOG.md` is an index with per-item dossiers under `sdd/backlog/`, every
+  section converted and gated by R1–R4 in `gen_backlogid.py`, the migration
+  opt-out retired (ADR-0040, ADR-0041). `BACKLOG-DONE.md` keeps its released
+  entries; new ones link their dossier instead of restating it (ADR-0041).
+  Detail: [dossier](backlog/bk-365-backlog-length-unmeasured.md)
+
 - [x] **BUG-295 — The review triage calls a fixed finding `refuted` when its fix reply contains "stays"**
   spec: — · effort: S · audience: contributor.tooling
   `rfc-0015-findings.triage`, which `ship_report.py` imports, searched the
@@ -1196,7 +1204,8 @@ if evidence changes; these are retired.
     externally gated, which the `staged-recipes#32401` merge falsified and the
     same PR rewrote. The other 29 are unchanged and remain the class BK-343
     declared advisory: a tag on an item's own prescription measures that rule
-    working. The file's growth stays BK-365's, open and not re-filed here.
+    working. The file's growth was BK-365's (since closed, ADR-0041), not
+    re-filed here.
   - `CONTRIBUTING.md`, 11 tags over 7 items — **defer**, and the only row with
     new evidence worth a decision. Two of the three new tags are ID-018's, on
     **§ Release** Phase 5, where the checklist and
@@ -1438,8 +1447,8 @@ if evidence changes; these are retired.
     prescription — a fix shape, a line reference, a count, a scope claim —
     refuted by the work that read it. That is the class BK-343 declared
     advisory, so a tag there measures the rule working rather than a document
-    failing; the stale-figure subset is principle 9's, and the file's growth is
-    BK-365's, both open and neither re-filed here.
+    failing; the stale-figure subset is principle 9's, and the file's growth was
+    BK-365's (since closed, ADR-0041), neither re-filed here.
   - `CONTRIBUTING.md`, 8 tags over 5 items: § Release and § Adding a New Backend
     account for seven: five were corrected in the PR that raised them (BK-310's
     three, BK-311, BK-357) and ID-252's two were filed as ID-253, which rewrote

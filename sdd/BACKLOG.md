@@ -11,18 +11,8 @@ Items graduate through the SDD pipeline:
 <a id="how-this-file-works"></a>
 ## How this file works
 
-Operational rules only. Why each rule exists: [ADR-0040](adrs/0040-backlog-as-index.md).
-**Migration in progress:** §§ 1–6 are converted. A section not yet converted carries
-`<!-- backlog: unconverted -->` on the line under its heading and keeps its old
-shape (long bodies, `Closes when`) until it is; do not extend that shape in new
-edits. Converting a section deletes the marker. The marker, not this note, is
-what the gate reads. Its preamble keeps only the Promise; every other sentence is
-routed, not cut: one that bounds an open item moves verbatim to that item's
-dossier under `## Moved from the § N preamble`, glossing any dangling reference
-in the intro line; one whose fact an authoritative home states (a
-`BACKLOG-DONE.md` entry, CHANGELOG, a spec, a published guide) is removed; the
-section narrating its own history is removed. Nothing goes to an Accepted ADR,
-which RFC-0016 D3 would otherwise ask for and `000-process.md` Rule 4 forbids.
+Operational rules only. Why each rule exists: [ADR-0040](adrs/0040-backlog-as-index.md),
+and for the done register [ADR-0041](adrs/0041-done-register-links-dossiers.md).
 
 **Status legend:** `[ ]` pending · `[~]` in progress
 
@@ -44,7 +34,7 @@ the host's, or one pending decision resolves both; surfaces that merely
 gets no ID for the work it describes. A section that outgrows itself splits into
 two promises.
 
-**Item scope** (new items, and all items in converted sections). At most eight
+**Item scope.** At most eight
 content lines: header; the attribute line; a diagnosis of at most five lines, the
 observed problem and the open decision; an optional
 `Detail: [dossier](backlog/<id>-<slug>.md)` line.
@@ -60,8 +50,7 @@ only when an item needs more than eight lines. Converting an item moves its body
 there verbatim. The path never moves; a trace's orient phase reads it. Its H1 is
 `# <ID> — <index title>` and follows the index title when that changes.
 
-**Item authority.** Each kind of content is corrected where it lives. In an
-unconverted item all three sit in its body, under the same rules.
+**Item authority.** Each kind of content is corrected where it lives.
 
 | Kind | Lives in | Status | Corrected when re-derivation disagrees |
 |---|---|---|---|
@@ -83,7 +72,9 @@ dossier is corrected in the same commit. Agreement is review-enforced.
   diagnosis, not only the verdict.
 
 Every entry, whatever the outcome, links the item's dossier if it has one; the
-dossier stays where it is. Every entry takes the header shape `- [x] **PREFIX-NNN — Title**` (em dash,
+dossier stays where it is. An item with a dossier gets a short entry: what
+shipped and where, then the link; its evidence and derivations stay in the
+dossier. Released entries are not rewritten. Every entry takes the header shape `- [x] **PREFIX-NNN — Title**` (em dash,
 `[x]`, ID inside `**`), because
 [`gen_backlogid.py`](../scripts/gen_backlogid.py) counts headers only and a
 prose line frees the ID. After absorbing or deciding against, sweep
@@ -108,8 +99,8 @@ to `BACKLOG-DONE.md`.
 
 **What is gated:** the rows of [`GATE-INVENTORY.md`](GATE-INVENTORY.md) whose
 subject names `sdd/BACKLOG*.md`. The admission test, granularity, section
-membership, the item scope cap in unconverted sections, and agreement between
-an index entry and its dossier are review-enforced.
+membership, agreement between an index entry and its dossier, and the short
+done entry are review-enforced.
 
 ---
 
@@ -742,15 +733,6 @@ CHANGELOG the release body is built from — say what is actually true.
   decision: at that release, act, defer or accept per selected reference,
   and name the successor.
   Detail: [dossier](backlog/id-259-trace-outcome-revisit.md)
-
-- [~] **BK-365 — Both backlog files grew past what a maintainer can read, and nothing measures it**
-  spec: — · effort: M · audience: contributor.process
-  `BACKLOG.md` outgrew one read, and ADR-0040's index shape answers it; all
-  six sections are converted. `BACKLOG-DONE.md` has no answer: per-release
-  median words per entry run from 9.5 at v0.3.0 to 646 at v0.31.0 and 599.5
-  under Unreleased (re-derived). Open decision: whether that length is a
-  defect or the price of principle 9, and any mechanism's bound.
-  Detail: [dossier](backlog/bk-365-backlog-length-unmeasured.md)
 
 - [ ] **BK-366 — Bug share of shipped work rose 3% → 35% across five releases, undiagnosed**
   spec: — · effort: M · audience: contributor.process

@@ -391,9 +391,11 @@ repo keeps of it is derived from the PR once, after the loop ends.
   deliverable in every paragraph: what shipped, the mechanism, figures with
   their derivations, what was deliberately not done, who found it. What leaves
   it is the round-by-round account of getting there, which is the record's.
-  Whether the remaining paragraphs are too long is BK-365's question and not
-  this RFC's. A claim found false is corrected or deleted; a claim found
-  unmeasured is measured or deleted. A derivation is not a retrospective and
+  Whether the remaining paragraphs are too long was BK-365's question, and
+  not this RFC's: ADR-0041 answered it by keeping an entry for an item with a
+  dossier short, its figures and derivations in the dossier. A claim found
+  false is corrected or deleted; a claim found unmeasured is measured or
+  deleted. A derivation is not a retrospective and
   stays.
 - The *record* is the PR: commits, review comments, replies, CI. The trace's
   review block (`review_rounds`, findings per round, origin counts, per-file

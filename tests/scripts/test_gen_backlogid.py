@@ -487,7 +487,7 @@ _RULES = (
     "Rules. Many sentences. Never gated. By R3. Or anything.\n\n"
     "**Status legend:** `[ ]` pending\n\n---\n\n"
 )
-_UNCONVERTED = "<!-- backlog: unconverted -->"
+_RETIRED_MARKER = "<!-- backlog: unconverted -->"
 _BLOCKERS = "## Release Blockers\n\n**Promise:** nothing ships to PyPI until this section is empty.\n\n---\n\n"
 
 
@@ -497,13 +497,14 @@ def _item(item_id: str, diagnosis_lines: int, detail: str | None = None) -> str:
     return f"- [ ] **{item_id} {_EM} Title**\n{_ATTR}\n{body}{tail}"
 
 
-def _section(anchor: str, title: str, preamble: str, *items: str, unconverted: bool = False) -> str:
-    marker = f"{_UNCONVERTED}\n" if unconverted else ""
-    return f'<a id="{anchor}"></a>\n## {title}\n{marker}\n{preamble}\n\n' + "\n".join(items) + "\n---\n\n"
+def _section(anchor: str, title: str, preamble: str, *items: str, marker: bool = False) -> str:
+    """`marker` puts ADR-0040's retired migration marker under the heading, which ADR-0041 ignores."""
+    marker_line = f"{_RETIRED_MARKER}\n" if marker else ""
+    return f'<a id="{anchor}"></a>\n## {title}\n{marker_line}\n{preamble}\n\n' + "\n".join(items) + "\n---\n\n"
 
 
 def _gated(preamble: str, *items: str) -> str:
-    """A rules header, Release Blockers and one migrated section."""
+    """A rules header, Release Blockers and one section."""
     return _RULES + _BLOCKERS + _section("a", "1. A", preamble, *items)
 
 
@@ -549,20 +550,11 @@ class TestShape:
         assert "BUG-273: diagnosis 6 lines (cap 5)" in out
         assert "content lines (cap 8)" not in out
 
-    def test_an_unconverted_section_is_not_capped(self, tmp_path, monkeypatch):
-        """Scope: R2 runs on migrated sections only (ADR-0040), so no gate is red on an old one."""
-        text = (
-            _RULES
-            + _BLOCKERS
-            + _section("a", "1. A", "**Promise:** one.\n\n**Closes when:** x.", _item("BUG-276", 40), unconverted=True)
-        )
-        assert self._run(tmp_path, monkeypatch, text) == 0
-
-    def test_the_marker_only_counts_directly_under_the_heading(self, tmp_path, monkeypatch, capsys):
-        """A marker buried in an item body must not exempt the section it sits in."""
-        buried = _item("BUG-276", 3) + f"  {_UNCONVERTED}\n"
-        assert self._run(tmp_path, monkeypatch, _gated("**Promise:** one.", buried + _item("BK-177", 9))) == 1
-        assert "BK-177: 11 content lines (cap 8)" in capsys.readouterr().out
+    def test_the_retired_migration_marker_exempts_nothing(self, tmp_path, monkeypatch, capsys):
+        """ADR-0041: with every section converted, the opt-out is gone, so a re-added marker gates."""
+        text = _RULES + _BLOCKERS + _section("a", "1. A", "**Promise:** one.", _item("BUG-276", 40), marker=True)
+        assert self._run(tmp_path, monkeypatch, text) == 1
+        assert "BUG-276: 42 content lines (cap 8)" in capsys.readouterr().out
 
     # -- R3 -----------------------------------------------------------------
 
@@ -594,10 +586,14 @@ class TestShape:
         """The standing section: empty is its normal state and it needs no exemption."""
         assert self._run(tmp_path, monkeypatch, _RULES + _BLOCKERS) == 0
 
-    def test_an_unconverted_section_keeps_its_long_preamble(self, tmp_path, monkeypatch):
+    def test_the_retired_migration_marker_does_not_spare_a_long_preamble(self, tmp_path, monkeypatch, capsys):
+        """The marker is now preamble text: it adds a paragraph and displaces the Promise."""
         long = "**Promise:** a. B. C. D.\n\n**Closes when:** e.\n\nNotes."
-        text = _RULES + _BLOCKERS + _section("a", "1. A", long, _item("BK-177", 1), unconverted=True)
-        assert self._run(tmp_path, monkeypatch, text) == 0
+        text = _RULES + _BLOCKERS + _section("a", "1. A", long, _item("BK-177", 1), marker=True)
+        assert self._run(tmp_path, monkeypatch, text) == 1
+        out = capsys.readouterr().out
+        assert "1. A: preamble has 4 paragraphs" in out
+        assert "1. A: preamble does not open with **Promise:**" in out
 
     # -- R4 -----------------------------------------------------------------
 
@@ -621,13 +617,6 @@ class TestShape:
         item = f"- [ ] **BUG-276 {_EM} Title**\n{_ATTR}\n  Diagnosis.\n  Detail: see the dossier\n"
         assert self._run(tmp_path, monkeypatch, _gated("**Promise:** one.", item)) == 1
         assert "BUG-276: Detail: line is not `Detail: [dossier](backlog/<id>-<slug>.md)`" in capsys.readouterr().out
-
-    def test_r4_runs_in_unconverted_sections_too(self, tmp_path, monkeypatch, capsys):
-        """R4 is not scoped: a dangling link is wrong in any section."""
-        item = _item("BUG-276", 20, "backlog/bug-276-x.md")
-        text = _RULES + _BLOCKERS + _section("a", "1. A", "**Closes when:** x.", item, unconverted=True)
-        assert self._run(tmp_path, monkeypatch, text) == 1
-        assert "BUG-276: Detail: backlog/bug-276-x.md does not resolve" in capsys.readouterr().out
 
     def test_shape_rules_do_not_short_circuit_r1(self, tmp_path, monkeypatch, capsys):
         bad_attr = f"- [ ] **BK-177 {_EM} T**\n  spec: — · effort: XS · audience: infra.ci\n"
