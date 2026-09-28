@@ -24,8 +24,8 @@ the price of [principle 9](../../CLAUDE.md#principles)'s derivations. Median
 words per completed entry, per `## ` release section (each `- [x] **ID` header
 to the next header or heading, counted with Python's `str.split()`, over the
 file at `7cc9f96`, the commit before the one that adds this record and BK-365's
-own entry): 9.5 at v0.3.0, 145 at v0.25.0, 235 at v0.30.0, 646 at v0.31.0 and
-599.5 under `Unreleased`. The file then held 687 such entries and 122,869 words
+own entry): 9.5 at v0.3.0, 145 at v0.25.0, 235 at v0.30.0, 646 at v0.31.0,
+403 at v0.32.0 (6 entries) and 599.5 under `Unreleased` (16 entries). The file then held 687 such entries and 122,869 words
 of entry text, 24 of the entries under § Absorbed and § Decided against. Re-run
 rather than quote: the file grows on every close.
 

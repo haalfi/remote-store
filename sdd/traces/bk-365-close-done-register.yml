@@ -62,10 +62,12 @@ phases:
         read_type: verify
         extract: >-
           Median words per entry re-derived by a scratch script (each
-          `- [x] **ID` header to the next header or heading, str.split()): 9.5
-          at v0.3.0, 145 at v0.25.0, 235 at v0.30.0, 646 at v0.31.0, 599.5
-          under Unreleased; 687 entries, 122,869 words of entry text. These are
-          the figures ADR-0041's Context cites.
+          `- [x] **ID` header to the next header or heading, str.split()) at
+          7cc9f96: 9.5 at v0.3.0, 145 at v0.25.0, 235 at v0.30.0, 646 at
+          v0.31.0, 403 at v0.32.0 (6 entries), 599.5 under Unreleased; 687
+          entries, 122,869 words of entry text. These are the figures ADR-0041's
+          Context cites; review round 1 moved the stated commit to 7cc9f96 and
+          round 4 added v0.32.0.
         outcome: ok
       - file: tests/scripts/test_gen_backlogid.py
         section: "TestShape retired-marker tests"

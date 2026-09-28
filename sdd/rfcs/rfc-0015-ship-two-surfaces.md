@@ -387,9 +387,8 @@ repo keeps of it is derived from the PR once, after the loop ends.
   distinction the phrase set encodes, and it is what lets the check run over
   whole files without a paragraph parser.
 - The *deliverable surface* is code, tests, specs, docs, `CHANGELOG.md`, the
-  migration guide, `sdd/BACKLOG*.md` in full, and the `sdd/backlog/`
-  dossiers. A register entry and its dossier are deliverable in every
-  paragraph: what shipped, the mechanism, figures with their derivations, what
+  migration guide, and `sdd/BACKLOG*.md` in full. A register entry, and the
+  dossier its item's body moved to, are deliverable in every paragraph: what shipped, the mechanism, figures with their derivations, what
   was deliberately not done, who found it. What leaves them is the
   round-by-round account of getting there, which is the record's. Where that
   content sits was BK-365's question, not this RFC's: ADR-0041 keeps an entry
