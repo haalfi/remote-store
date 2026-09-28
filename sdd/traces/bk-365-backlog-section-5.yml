@@ -1,0 +1,161 @@
+id: BK-365
+title: "ADR-0040 § 5 conversion: 14 items to dossiers, preamble to heading plus Promise"
+trigger: >-
+  The maintainer's final-session brief for BK-365, after PR #1037 (§ 4) merged:
+  convert § 5 in its own PR. Decided in interview before building: the
+  diagnosis style as drafted for BK-333, BUG-291 and BK-380; the one `Closes
+  when` clause that bounds an open item beyond its body ("every extra's drift
+  smoke exercises the packages it pins (BUG-250)") moves to BUG-250's dossier,
+  and every other preamble clause and sentence is removed; the false
+  `pyproject.toml` comment about the `[httpx]` adapter is recorded in ID-229's
+  dossier rather than fixed here. The Promise is unchanged.
+source_items:
+  - BK-365
+audience:
+  - contributor.process
+expected_ripples:
+  - sdd/BACKLOG.md
+  - sdd/backlog/
+surprising_ripples: []
+phases:
+  - id: orient
+    name: Orient
+    steps:
+      - file: sdd/BACKLOG.md
+        section: "How this file works; § 5 preamble and items; BK-365"
+        read_type: gate
+        extract: >-
+          A delegated read split the preamble into eleven `Closes when` clauses
+          (some split further) and seven second-paragraph sentences with
+          file:line evidence. One clause bounds BUG-250 beyond its
+          `[graph]`-only body, confirmed at BACKLOG-DONE.md:926 and :966,
+          where BK-369 and BK-372 treat BUG-250 as the general reach gap. The
+          rest restate item bodies, narrate a met clause whose fact
+          BACKLOG-DONE.md holds, or comment on the `Closes when` wording. No
+          ordering note, no cross-section dependency, no item body cites the
+          preamble.
+        outcome: ok
+      - file: sdd/traces/bk-365-backlog-section-4.yml
+        section: "(full); also the bk-345 dossier's Moved-from heading"
+        read_type: reference
+        extract: >-
+          Reused § 4's intro line, correction shapes and diagnosis style, and
+          § 1's gloss for a moved `Closes when` clause. § 4's review lesson
+          applied: a "not shipped" or "only" claim is searched where the thing
+          would live, not where it is convenient.
+        outcome: ok
+      - file: sdd/adrs/0040-backlog-as-index.md
+        section: "Section Promises § 5"
+        read_type: gate
+        extract: >-
+          "Nothing moved: the preamble argues its `Closes when` clauses only",
+          which stays true: the one moved clause is item scope, not Promise
+          rationale.
+        outcome: ok
+  - id: implement
+    name: Implement
+    steps:
+      - file: scripts/drift_report.py
+        section: "decide (1115-1185), main (1729), module docstring"
+        read_type: verify
+        extract: >-
+          BUG-291 and BUG-282, delegated and spot-checked: the one-extra close
+          is pinned by an existing passing test
+          (test_a_narrowed_run_with_a_registered_crossing_still_closes, run
+          locally), and BUG-282's line references moved to 330, 1399 and
+          1824-1834. Dated corrections in both dossiers.
+        outcome: ok
+      - file: .github/workflows/ci.yml
+        section: "TLA_PAT, verify-tla, gate needs"
+        read_type: verify
+        extract: >-
+          BK-333: `verify-tla` runs check_tla_no_emdash.py but `gate` does not
+          need it, so the TLA bullet's "skips the check" became "runs without
+          blocking". Index and dossier corrected.
+        outcome: ok
+      - file: scripts/check_backend_order.py
+        section: "_MIN_BACKENDS, backends_in, is_ordered"
+        read_type: verify
+        extract: >-
+          BK-381 reproduced on the recipe's actual `summary` line: four of five
+          prose backends detected, unordered, below the threshold of six.
+          The body's "names four" corrected in the dossier.
+        outcome: ok
+      - file: tests/e2e/test_sftp_legacy_recovery.py
+        section: "S1a skipif, S4, _try_connect; drift-guard.yml legacy builds"
+        read_type: verify
+        extract: >-
+          BK-367: both lanes build legacy-sftp, and S1a authenticates below
+          paramiko 5, so "the one test that authenticates" holds on the
+          newest lane only; the floor lane currently dies at collection first
+          (BUG-289). Dossier correction.
+        outcome: ok
+      - file: src/remote_store/backends/_http_httpx.py
+        section: "HttpxTransport client"
+        read_type: verify
+        extract: >-
+          ID-229: the `[httpx]` adapter uses sync `httpx.Client`, so both the
+          item and pyproject.toml:161-162 overstate its `AsyncClient`
+          dependence; the Graph count is 29 matching lines (`rg -c`). Recorded
+          in the dossier by maintainer decision.
+        outcome: ok
+      - file: sdd/BACKLOG-DONE.md
+        section: "BK-375 (757), BK-377 (892-897)"
+        read_type: verify
+        extract: >-
+          BK-380's "3.10 was the longest job" overstates "a 3.10 or 3.11 job";
+          BUG-287's raise to 16 is patch-eligible per BK-377. Dossier
+          corrections and re-measures.
+        outcome: ok
+  - id: verify
+    name: Verify
+    steps:
+      - file: sdd/rfcs/rfc-0016-measure.py
+        section: "(full)"
+        read_type: gate
+        extract: "§ 5 at 14 items, median/max 8/8, preamble 30 words."
+        outcome: ok
+      - file: scripts/gen_backlogid.py
+        section: "--check (R1–R4)"
+        read_type: gate
+        extract: >-
+          With the marker deleted R2/R3 gate § 5; no script change.
+        outcome: ok
+review:
+  # Derived by `hatch run ship-report 1038 --trace-block-only` at head fa45504.
+  # Do not hand-edit, except a newly required field per sdd/traces/_schema.yml
+  # section review: RFC-0015 D4 makes this script the only producer.
+  derivation: "hatch run ship-report 1038 --trace-block-only"
+  pr: 1038
+  review_rounds: 1
+  submissions: 1
+  findings: 1
+  by_round:
+    - round: 1
+      findings: 1
+      origin: {original: 1}
+      triage: {must-fix: 1}
+      duration_hours: 0.06
+  by_file:
+    - path: "sdd/backlog/bug-287-pyarrow-floor-cannot-import.md"
+      findings: 1
+  untouched_files:
+    - "sdd/BACKLOG.md"
+    - "sdd/backlog/bk-333-gate-routing-unreachable-checkers.md"
+    - "sdd/backlog/bk-367-legacy-sftp-auth-timeout.md"
+    - "sdd/backlog/bk-380-drop-python-310.md"
+    - "sdd/backlog/bk-381-backend-order-min-six.md"
+    - "sdd/backlog/bug-250-graph-drift-smoke-reach.md"
+    - "sdd/backlog/bug-282-single-extra-dispatch-rewrites-body.md"
+    - "sdd/backlog/bug-288-aiohttp-floor-cannot-import.md"
+    - "sdd/backlog/bug-289-floor-warnings-fail-suite.md"
+    - "sdd/backlog/bug-290-workflow-tee-swallows-failure.md"
+    - "sdd/backlog/bug-291-single-extra-dispatch-closes-issue.md"
+    - "sdd/backlog/id-225-zensical-migration.md"
+    - "sdd/backlog/id-229-httpx-1-port.md"
+    - "sdd/backlog/id-250-drift-smoke-never-typechecks.md"
+    - "sdd/traces/bk-365-backlog-section-5.yml"
+  review_driven_commits:
+    - sha: "fa45504"
+      subject: "fix: address PR #1038 review"
+  ci: {verdict: GREEN, failed: 0, pending: 0}
