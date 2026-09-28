@@ -72,4 +72,5 @@ the shape is review-enforced with no length rule. The same record retires
 `gen_backlogid.py`'s migration opt-out, so R2 and R3 gate every section; the
 two retired-marker tests in `tests/scripts/test_gen_backlogid.py` were seen
 failing before the opt-out was removed. The rules header's migration note is
-gone. Register entry: `BACKLOG-DONE.md` § Unreleased.
+gone. Register entry: `BACKLOG-DONE.md`, under the release that ships this
+close.

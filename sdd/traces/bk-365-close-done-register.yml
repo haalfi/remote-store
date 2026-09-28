@@ -58,8 +58,11 @@ phases:
         section: "Rule 4; § Backlog"
         read_type: gate
         extract: >-
-          An Accepted ADR is superseded or amended by a new record, never
-          edited, so the decision is ADR-0041 with `Amends: ADR-0040`. § Backlog
+          Rule 4 says to supersede an Accepted ADR, never edit it; the repo's
+          practice for a clause-level change is a new record with `Amends`
+          plus an inline `*Amended by*` note at the changed clause (ADR-0033,
+          0034, 0035 and others). So the decision is ADR-0041 with
+          `Amends: ADR-0040`, and ADR-0040 gains two such notes. § Backlog
           also described "where an item's detail lives while the file is being
           converted", which the close made stale.
         outcome: ok
