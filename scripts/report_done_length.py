@@ -106,7 +106,7 @@ def dossier_ids(directory: Path) -> frozenset[str]:
 def parse(text: str, dossiers: frozenset[str] = frozenset()) -> dict[str, list[Entry]]:
     """Map each ``## `` section, in file order, to its entries.
 
-    *dossiers* holds the IDs with a dossier file (see :func:`dossier_ids`).
+    *dossiers* holds the IDs with a dossier file (see ``dossier_ids``).
 
     A heading that repeats gets its own key, suffixed ``(2)``, ``(3)``, ...
     """
