@@ -14,31 +14,33 @@ item schedules it, and `scripts/report_done_length.py` produces the figure. The
 checklist line in [`CONTRIBUTING.md` § Release](../../CONTRIBUTING.md#release)
 Phase 0 makes it findable without naming this ID, the split ID-259 uses.
 
-**Baseline**, from `hatch run report-done-length` at `8fa22d6` (the merge of
-ADR-0041), median words per entry:
+**Baseline**, from `hatch run report-done-length` over the register at
+`8fa22d6` (the merge of ADR-0041), which this PR leaves unchanged; median words
+per entry:
 
-| Section | Entries | Median | With dossier | Median | Without | Median |
-| --- | ---: | ---: | ---: | ---: | ---: | ---: |
-| Unreleased | 17 | 558 | 1 | 67 | 16 | 599.5 |
-| v0.32.0 | 6 | 403 | 0 | — | 6 | 403 |
-| v0.31.0 | 59 | 646 | 0 | — | 59 | 646 |
-| v0.30.0 | 20 | 235 | 0 | — | 20 | 235 |
+| Section | Entries | Median | With dossier | Median | Unlinked | Without | Median |
+| --- | ---: | ---: | ---: | ---: | ---: | ---: | ---: |
+| Unreleased | 17 | 558 | 1 | 67 | 0 | 16 | 599.5 |
+| v0.32.0 | 6 | 403 | 0 | — | 0 | 6 | 403 |
+| v0.31.0 | 59 | 646 | 0 | — | 0 | 59 | 646 |
+| v0.30.0 | 20 | 235 | 0 | — | 0 | 20 | 235 |
 
-The one linked entry is BK-365's close. The 16 without a link were written
-before the rule and stay as they are, since ADR-0041 does not condense them.
+The one dossier entry is BK-365's close. The 16 without were written before
+the rule, and none of their items has a dossier file under `sdd/backlog/`; they
+stay as they are, since ADR-0041 does not condense them.
 
 **Read at the release, not before.** The figure that answers the question is
 the *With dossier* median of the section the release renames from
-`Unreleased`, set against its *Without* median and v0.32.0's. The overall median
-mixes pre-rule entries in, so it is not the figure to read.
+`Unreleased`, set against its *Without* median and v0.32.0's, together with
+its *Unlinked* count: dossier entries that omit the link the rule requires.
+The overall median mixes pre-rule entries in, so it is not the figure to read.
 
 **Record at the revisit:** the report's rows for the new release section and
-the previous one; the entries counted as linked, since the link is detected
-textually and a citation of another item's dossier also counts (the script's
-bound); and one of:
+the previous one; the entries counted as having a dossier, since dossiers are
+known by filename and links by text (the script's bound); and one of:
 
-- **keep**: linked entries are short without a gate, so review holds the rule;
-- **gate**: linked entries drift long, so propose a mechanism, with its bound
+- **keep**: dossier entries are short and linked without a gate, so review holds the rule;
+- **gate**: dossier entries drift long or unlinked, so propose a mechanism, with its bound
   stated per [DRIFT-RULES](../DRIFT-RULES.md#rules) and without a word cap,
   which ADR-0041 declined;
 - **reverse**: the short entry cost readers something the dossier did not

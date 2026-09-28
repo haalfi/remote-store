@@ -1,11 +1,14 @@
-"""Median words per ``BACKLOG-DONE.md`` entry, per section, split by dossier link.
+"""Median words per ``BACKLOG-DONE.md`` entry, per section, split by dossier.
 
 ADR-0041 keeps a completed entry for an item with a dossier short: what
 shipped and where, plus the link. The rule is review-enforced with no length
 cap, so whether new entries follow it shows only in the numbers. This script
 prints them: for each ``## `` section of ``sdd/BACKLOG-DONE.md``, the entry
-count and median words, over all entries and split into entries that link a
-dossier under ``sdd/backlog/`` and entries that do not.
+count and median words, over all entries and split into entries for an item
+with a dossier and entries without one. An item has a dossier when a file
+named ``<id>-*.md`` sits in the ``backlog/`` directory beside the register, or
+when its entry links one; *Unlinked* counts dossier entries that omit the link,
+which the rule requires.
 
 An entry runs from its ``- [x] **ID`` header line to the next header or any
 ``#`` heading; words are ``str.split()`` tokens. That is the derivation the
@@ -37,16 +40,18 @@ State the bound, per [Rule 7](../sdd/DRIFT-RULES.md#miss-rate):
 * **Length, not shape.** A short entry that omits where the work shipped, or
   a long one that restates its dossier, reads the same as a compliant entry
   of the same length. Shape stays review's job.
-* **A dossier link is detected textually** as ``](backlog/`` anywhere in the
-  entry, so a link to some other item's dossier marks the entry as linked.
+* **Dossiers are known by filename, links by text.** A dossier deleted or
+  renamed off the ``<id>-`` prefix is not seen, so its unlinked entry falls
+  into the without half. A link is ``](backlog/`` anywhere in the entry, so
+  citing some other item's dossier marks the entry as linked.
 * **No miss rate is estimated.** Nothing is flagged, so there is no recall
   to measure; the figure is only as good as the counting rule above.
 
 Drift-gate::
 
     kind:       report
-    surfaces:   median words per BACKLOG-DONE.md entry per section, split by whether the entry
-        links a dossier
+    surfaces:   median words per BACKLOG-DONE.md entry per section, split by whether the item
+        has a dossier, and dossier entries that omit the link
     domain:     process
 """
 
@@ -60,14 +65,16 @@ from pathlib import Path
 
 _DEFAULT = Path(__file__).resolve().parents[1] / "sdd" / "BACKLOG-DONE.md"
 # An ID, or the dash an entry that never had one carries (Decided against).
-_HEADER = re.compile(r"- \[x\] \*\*(?:[A-Z]+-\d+|—)")
-_DOSSIER = "](backlog/"
+_HEADER = re.compile(r"- \[x\] \*\*([A-Z]+-\d+|—)")
+_LINK = "](backlog/"
+_DOSSIER_FILE = re.compile(r"([a-z]+-\d+)-.*\.md")
 
 
 @dataclass(frozen=True)
 class Entry:
     words: int
     has_dossier: bool
+    linked: bool
 
 
 @dataclass(frozen=True)
@@ -77,23 +84,35 @@ class Row:
     median: float
     n_dossier: int
     median_dossier: float | None
+    n_unlinked: int
     n_plain: int
     median_plain: float | None
 
 
-def parse(text: str) -> dict[str, list[Entry]]:
+def dossier_ids(directory: Path) -> frozenset[str]:
+    """IDs with a ``<id>-*.md`` dossier in *directory*; empty if it is absent."""
+    if not directory.is_dir():
+        return frozenset()
+    return frozenset(m.group(1).upper() for f in directory.iterdir() if (m := _DOSSIER_FILE.fullmatch(f.name)))
+
+
+def parse(text: str, dossiers: frozenset[str] = frozenset()) -> dict[str, list[Entry]]:
     """Map each ``## `` section, in file order, to its entries.
+
+    *dossiers* holds the IDs known to have a dossier without linking it.
 
     A heading that repeats gets its own key, suffixed ``(2)``, ``(3)``, ...
     """
     sections: dict[str, list[Entry]] = {}
     section: str | None = None
     current: list[str] | None = None
+    item_id = ""
 
     def close() -> None:
         if current is not None and section is not None:
             body = "\n".join(current)
-            sections[section].append(Entry(len(body.split()), _DOSSIER in body))
+            linked = _LINK in body
+            sections[section].append(Entry(len(body.split()), linked or item_id in dossiers, linked))
 
     for line in text.split("\n"):
         if line.startswith("#"):
@@ -106,8 +125,9 @@ def parse(text: str) -> dict[str, list[Entry]]:
                     k += 1
                     section = f"{name} ({k})"
                 sections[section] = []
-        elif _HEADER.match(line):
+        elif m := _HEADER.match(line):
             close()
+            item_id = m.group(1)
             current = [line] if section is not None else None
         elif current is not None:
             current.append(line)
@@ -125,15 +145,16 @@ def summarize(sections: dict[str, list[Entry]]) -> list[Row]:
     for name, entries in sections.items():
         if not entries:
             continue
-        linked = [e.words for e in entries if e.has_dossier]
+        with_dossier = [e.words for e in entries if e.has_dossier]
         plain = [e.words for e in entries if not e.has_dossier]
         rows.append(
             Row(
                 section=name,
                 n=len(entries),
                 median=float(statistics.median(e.words for e in entries)),
-                n_dossier=len(linked),
-                median_dossier=_median(linked),
+                n_dossier=len(with_dossier),
+                median_dossier=_median(with_dossier),
+                n_unlinked=sum(1 for e in entries if e.has_dossier and not e.linked),
                 n_plain=len(plain),
                 median_plain=_median(plain),
             )
@@ -154,12 +175,12 @@ def main(argv: list[str] | None = None) -> int:
         print(f"report-done-length: cannot read {path}: {exc}", file=sys.stderr)
         return 2
     print(f"Words per entry in {path.name} (header to next header or heading, str.split()).\n")
-    print("| Section | Entries | Median | With dossier | Median | Without | Median |")
-    print("| --- | ---: | ---: | ---: | ---: | ---: | ---: |")
-    for r in summarize(parse(text)):
+    print("| Section | Entries | Median | With dossier | Median | Unlinked | Without | Median |")
+    print("| --- | ---: | ---: | ---: | ---: | ---: | ---: | ---: |")
+    for r in summarize(parse(text, dossier_ids(path.parent / "backlog"))):
         print(
             f"| {r.section} | {r.n} | {_fmt(r.median)} | {r.n_dossier} | {_fmt(r.median_dossier)}"
-            f" | {r.n_plain} | {_fmt(r.median_plain)} |"
+            f" | {r.n_unlinked} | {r.n_plain} | {_fmt(r.median_plain)} |"
         )
     return 0
 

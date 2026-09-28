@@ -65,7 +65,10 @@ phases:
           with str.split() and two were corrected before the first run.
           Review found two parser gaps, ID-less Decided-against entries dropped
           and repeated `##` headings merged; both got a failing test first.
-          Neither changes a release section's figures.
+          Neither changes a release section's figures. Review also found that
+          splitting by link text would drop a long entry that omits its link
+          from the dossier half; the split now also reads `sdd/backlog/`
+          filenames and reports such entries as Unlinked (0 today).
         outcome: ok
       - file: sdd/BACKLOG-DONE.md
         section: "per-release sections"

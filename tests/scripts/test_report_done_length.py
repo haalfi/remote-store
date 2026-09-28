@@ -87,13 +87,25 @@ class TestParse:
     def test_id_less_entry_counts(self) -> None:
         # Decided-against entries that never had an ID carry a dash in its place.
         text = "## Decided against\n\n- [x] **— never had an ID** *(refused)*\n  why\n"
-        assert _mod.parse(text)["Decided against"] == [_mod.Entry(9, False)]
+        assert _mod.parse(text)["Decided against"] == [_mod.Entry(9, False, False)]
 
     def test_repeated_heading_gets_its_own_row(self) -> None:
         text = "## Bug Fixes\n\n- [x] **A-1 — a**\n\n## v1\n\n## Bug Fixes\n\n- [x] **A-2 — b c**\n"
         sections = _mod.parse(text)
         assert list(sections) == ["Bug Fixes", "v1", "Bug Fixes (2)"]
         assert [e.words for e in sections["Bug Fixes (2)"]] == [6]
+
+    def test_dossier_file_without_link_counts_as_dossier_and_unlinked(self) -> None:
+        # The entry that breaks ADR-0041 worst (long, link omitted) must stay in
+        # the with-dossier figure, not fall into the without half.
+        long = _mod.parse(_REGISTER, frozenset({"BK-011"}))["Unreleased"][1]
+        assert (long.has_dossier, long.linked) == (True, False)
+
+    def test_dossier_ids_from_filenames(self, tmp_path: Path) -> None:
+        for name in ("bk-011-thing.md", "id-259-other.md", "README.md", "bk-012-x.txt"):
+            (tmp_path / name).write_text("", encoding="utf-8")
+        assert _mod.dossier_ids(tmp_path) == frozenset({"BK-011", "ID-259"})
+        assert _mod.dossier_ids(tmp_path / "absent") == frozenset()
 
     def test_non_entry_bullet_does_not_start_an_entry(self) -> None:
         text = "## v1\n\n- [ ] **BK-9 — open**\n- plain bullet\n"
@@ -105,7 +117,7 @@ class TestSummarize:
         rows = {r.section: r for r in _mod.summarize(_mod.parse(_REGISTER))}
         unrel = rows["Unreleased"]
         assert (unrel.n, unrel.median) == (2, 14.5)
-        assert (unrel.n_dossier, unrel.median_dossier) == (1, 12.0)
+        assert (unrel.n_dossier, unrel.median_dossier, unrel.n_unlinked) == (1, 12.0, 0)
         assert (unrel.n_plain, unrel.median_plain) == (1, 17.0)
         rel = rows["v0.2.0"]
         assert (rel.n_dossier, rel.median_dossier) == (0, None)
@@ -123,9 +135,20 @@ class TestMain:
         assert _mod.main([str(path)]) == 0
         out = capsys.readouterr().out
         # Exact rows pin the column order the release reading depends on:
-        # all, with dossier, without. An empty half renders as the N/A dash.
-        assert "| Unreleased | 2 | 14.5 | 1 | 12 | 1 | 17 |" in out
-        assert "| v0.2.0 | 2 | 5.5 | 0 | — | 2 | 5.5 |" in out
+        # all, with dossier, unlinked, without. An empty half renders as the
+        # N/A dash.
+        assert "| Unreleased | 2 | 14.5 | 1 | 12 | 0 | 1 | 17 |" in out
+        assert "| v0.2.0 | 2 | 5.5 | 0 | — | 0 | 2 | 5.5 |" in out
+
+    def test_sibling_dossier_dir_moves_an_unlinked_entry(
+        self, tmp_path: Path, capsys: pytest.CaptureFixture[str]
+    ) -> None:
+        path = tmp_path / "BACKLOG-DONE.md"
+        path.write_text(_REGISTER, encoding="utf-8")
+        (tmp_path / "backlog").mkdir()
+        (tmp_path / "backlog" / "bk-011-long.md").write_text("", encoding="utf-8")
+        assert _mod.main([str(path)]) == 0
+        assert "| Unreleased | 2 | 14.5 | 2 | 14.5 | 1 | 0 | — |" in capsys.readouterr().out
 
     def test_missing_file_exits_two(self, tmp_path: Path, capsys: pytest.CaptureFixture[str]) -> None:
         assert _mod.main([str(tmp_path / "absent.md")]) == 2
