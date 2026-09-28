@@ -80,8 +80,10 @@ bullet, the floor unchanged.
 The sampling rule is stale. `rg -n '^  pr: 10[2-9][0-9]' sdd/traces/` finds
 derived review blocks for #1027, #1028, #1029, #1032, #1033, #1034, #1036,
 #1037 and #1038, all merged after BK-378's #1026, and this body names no rule
-for which count; the BK-365 conversions never reached round 3, so they add
-nothing to clause 1's denominator. Two instrument limits are missing:
+for which count. Seven of the nine are BK-365 deliveries, and only #1032, the
+§ 1 pilot, reached round 3 (`review_rounds: 6`, with a loop-introduced
+must-fix finding in round 4); the other six add nothing to clause 1's
+denominator (`rg -n review_rounds sdd/traces/bk-365-*.yml`). Two instrument limits are missing:
 #1027's trace says to pool it as "6 rounds and 89 findings"
 (`sdd/traces/bk-383-duplicate-id-gate-and-d4-durability.yml:186`), because some
 rounds were posted where `ship-report` does not read. And "the block's 4 and

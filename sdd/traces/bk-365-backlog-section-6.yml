@@ -34,8 +34,10 @@ phases:
           ID-207-before-ID-245 order note restate ID-245's own body ("Position:
           after ID-244"; "Its shape changes under ID-207"), and the order
           already holds. "Shipped so far" and its four findings each have a
-          BACKLOG-DONE.md or research home.
-        outcome: ok
+          BACKLOG-DONE.md or research home. Tagged misleading: the preamble's
+          qualification miscasts BK-324 facet 4 as class A/C/D, and item
+          bodies here supplied the eleven statements this PR corrects.
+        outcome: misleading
       - file: sdd/adrs/0040-backlog-as-index.md
         section: "Section Promises § 6"
         read_type: gate
@@ -47,10 +49,11 @@ phases:
         section: "§ 1 class table (127), § 9 step 2 (982), 988"
         read_type: verify
         extract: >-
-          The moved qualification's "BK-324's four instances were class A/C/D"
-          conflicts with line 127, which places facet 4 in class E; recorded as
-          a dated correction beside the verbatim move rather than reconciled.
-        outcome: misleading
+          Correct where the moved qualification is not: line 127 places BK-324
+          facet 4 in class E, against the qualification's "class A/C/D";
+          recorded as a dated correction beside the verbatim move rather than
+          reconciled.
+        outcome: ok
   - id: implement
     name: Implement
     steps:
