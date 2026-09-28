@@ -1,0 +1,204 @@
+id: BK-365
+title: "ADR-0040 § 6 conversion: 16 items to dossiers, preamble to heading plus Promise"
+trigger: >-
+  The maintainer's final-session brief for BK-365, after PR #1038 (§ 5) merged:
+  convert § 6, the last unconverted section, in its own PR. Decided in
+  interview before building: the diagnosis style as drafted for BK-366, ID-150
+  and BK-384; the research § 9 pointer and the "Measured qualification"
+  paragraph move together to ID-207's dossier, as ADR-0040 § Section Promises
+  § 6 anticipated, and the rest of the preamble is removed; ID-254 is
+  retitled and kept open, its filed tally gone since v0.32.0; the research
+  doc's line-988 pointer is left as a snapshot. The Promise is unchanged.
+source_items:
+  - BK-365
+audience:
+  - contributor.process
+expected_ripples:
+  - sdd/BACKLOG.md
+  - sdd/backlog/
+surprising_ripples: []
+phases:
+  - id: orient
+    name: Orient
+    steps:
+      - file: sdd/BACKLOG.md
+        section: "How this file works; § 6 preamble and items; BK-365"
+        read_type: gate
+        extract: >-
+          § 6 runs to end of file, so the scratch generator and splice scripts
+          needed an EOF-safe section end; re-checked against two § 5 dossiers
+          first. A delegated read classified fifteen `Closes when` clauses and
+          nine further preamble passages with file:line evidence. Only the
+          research pointer and its qualification bound an open item beyond its
+          body (ID-207). Both ID-244 dependency sentences and the
+          ID-207-before-ID-245 order note restate ID-245's own body ("Position:
+          after ID-244"; "Its shape changes under ID-207"), and that order
+          already holds. Review round 3 found the one order this conversion
+          created: ID-235's re-derivation made its header-uniqueness rule wait
+          on BK-385's four duplicate pairs, so BK-385 moved above it and names
+          it (round 4 corrected which of ID-235's rules that is). "Shipped so far" and its four findings each have a
+          BACKLOG-DONE.md or research home. Tagged misleading: the preamble's
+          qualification miscasts BK-324 facet 4 as class A/C/D, and item
+          bodies here supplied the eleven statements this PR corrects.
+        outcome: misleading
+      - file: sdd/adrs/0040-backlog-as-index.md
+        section: "Section Promises § 6"
+        read_type: gate
+        extract: >-
+          Names the research qualification's destination (the dossier of the
+          item it bounds) and requires the pointer to move with it.
+        outcome: ok
+      - file: sdd/research/research-inconsistency-detection-multi-artifact.md
+        section: "§ 1 class table (127), § 9 step 2 (982), 988"
+        read_type: verify
+        extract: >-
+          Correct where the moved qualification is not: line 127 places BK-324
+          facet 4 in class E, against the qualification's "class A/C/D";
+          recorded as a dated correction beside the verbatim move rather than
+          reconciled.
+        outcome: ok
+  - id: implement
+    name: Implement
+    steps:
+      - file: sdd/BACKLOG-DONE.md
+        section: "per-release sections; BK-382/BUG-291 collision notes (315, 325-329)"
+        read_type: verify
+        extract: >-
+          BK-366's window re-derived by a scratch script: v0.25.0 was already
+          29/91, so 3% → 35% depends on starting at v0.27.0. BK-365's medians
+          re-derived (646 at v0.31.0). ID-257 undercounts collisions by two.
+          BK-385's four duplicate pairs reproduce through `_duplicate_ids`.
+        outcome: ok
+      - file: sdd/traces/
+        section: "derived review blocks after #1026; bk-383 pooling note (186)"
+        read_type: verify
+        extract: >-
+          `rg -n '^  pr: 10(2[7-9]|[3-9][0-9])' sdd/traces/`, run before this
+          trace gained its own block, found nine PRs after #1026 with derived
+          blocks; the first pattern used also matched #1026 itself (review
+          round 4). A subagent's "eleven" did not reproduce and did not reach
+          the index. BK-384 omits #1027's 6-round / 89-finding
+          pooling note.
+        outcome: ok
+      - file: sdd/formal/README.md
+        section: "Authoring rule 3 (187-197)"
+        read_type: verify
+        extract: >-
+          ID-150 narrows the rule's "every 10 spec amendments" to TLA-backed
+          sections and drops "on a production branch"; dated correction.
+        outcome: ok
+      - file: scripts/gen_backlogid.py
+        section: "_attribute_violations scope, _duplicate_ids"
+        read_type: verify
+        extract: >-
+          ID-235's "R1 on sections without the marker" is false (R1 scans the
+          whole file); `check_no_tracker_refs.py` never opens a backlog file.
+          Spec-citation figures re-derived by a scratch script: 206 over 33 of
+          50 specs, none dangling.
+        outcome: ok
+      - file: scripts/check_ripple_parity.py
+        section: "docstring 33-42"
+        read_type: verify
+        extract: >-
+          BK-346's "fails lint in either direction" holds only Pre-work →
+          Detailed; 9 of 54 scripts carry no pyproject alias.
+        outcome: ok
+      - file: CHANGELOG.md
+        section: "[Unreleased] (8-21)"
+        read_type: verify
+        extract: >-
+          ID-254: one marked entry of ten; retitled by maintainer decision, H1
+          follows.
+        outcome: ok
+  - id: verify
+    name: Verify
+    steps:
+      - file: sdd/rfcs/rfc-0016-measure.py
+        section: "(full)"
+        read_type: gate
+        extract: "§ 6 at 16 items, median/max 8/8; all 68 items within 8 content lines."
+        outcome: ok
+      - file: scripts/gen_backlogid.py
+        section: "--check (R1–R4)"
+        read_type: gate
+        extract: >-
+          No marker remains, so R2/R3 gate every section; no script change.
+          Whether to keep the marker opt-out is the closing PR's decision.
+        outcome: ok
+review:
+  # Derived by `hatch run ship-report 1040 --trace-block-only` at head 1053690.
+  # Do not hand-edit, except a newly required field per sdd/traces/_schema.yml
+  # section review: RFC-0015 D4 makes this script the only producer.
+  derivation: "hatch run ship-report 1040 --trace-block-only"
+  pr: 1040
+  review_rounds: 6
+  submissions: 6
+  findings: 9
+  by_round:
+    - round: 1
+      findings: 3
+      origin: {original: 3}
+      triage: {must-fix: 3}
+      duration_hours: 0.06
+    - round: 2
+      findings: 2
+      origin: {loop-introduced: 1, original: 1}
+      triage: {must-fix: 2}
+      duration_hours: 0.06
+    - round: 3
+      findings: 1
+      origin: {original: 1}
+      triage: {must-fix: 1}
+      duration_hours: 0.06
+    - round: 4
+      findings: 1
+      origin: {loop-introduced: 1}
+      triage: {must-fix: 1}
+      duration_hours: 0.05
+    - round: 5
+      findings: 1
+      origin: {pre-existing: 1}
+      triage: {unknown: 1}
+      duration_hours: 0.06
+    - round: 6
+      findings: 1
+      origin: {original: 1}
+      triage: {must-fix: 1}
+      duration_hours: 0.06
+  by_file:
+    - path: "sdd/BACKLOG.md"
+      findings: 4
+    - path: "sdd/backlog/bk-384-rfc-0015-graduation-measurement.md"
+      findings: 4
+    - path: "sdd/traces/bk-365-backlog-section-6.yml"
+      findings: 1
+  untouched_files:
+    - "sdd/backlog/bk-346-ripple-check-blind-spots.md"
+    - "sdd/backlog/bk-361-typography-rules-unenforced.md"
+    - "sdd/backlog/bk-362-repo-only-marker-docs-bridge.md"
+    - "sdd/backlog/bk-363-coordination-trace-demand.md"
+    - "sdd/backlog/bk-365-backlog-length-unmeasured.md"
+    - "sdd/backlog/bk-366-bug-share-undiagnosed.md"
+    - "sdd/backlog/bk-385-done-register-duplicate-ids.md"
+    - "sdd/backlog/id-150-verify-tla-revisit.md"
+    - "sdd/backlog/id-207-formal-trace-assertion.md"
+    - "sdd/backlog/id-235-backlog-integrity-lint.md"
+    - "sdd/backlog/id-245-derived-inventories.md"
+    - "sdd/backlog/id-254-unreleased-stub-marker.md"
+    - "sdd/backlog/id-255-stand-down-note-reason.md"
+    - "sdd/backlog/id-257-parallel-id-minting.md"
+    - "sdd/backlog/id-259-trace-outcome-revisit.md"
+  review_driven_commits:
+    - sha: "e0ab21c"
+      subject: "fix: address PR #1040 review"
+    - sha: "52088de"
+      subject: "fix: address PR #1040 review"
+    - sha: "6f85124"
+      subject: "fix: address PR #1040 review"
+    - sha: "6c9493b"
+      subject: "fix: address PR #1040 review"
+    - sha: "c26debd"
+      subject: "fix: address PR #1040 review"
+    - sha: "1053690"
+      subject: "fix: address PR #1040 review"
+  ci: {verdict: GREEN, failed: 0, pending: 0}
