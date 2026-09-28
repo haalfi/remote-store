@@ -1304,6 +1304,9 @@ crossing, whichever comes first.
   vocabulary, R2 the item cap, R3 section shape, R4 dossier link. R1 lands with
   the mapping of the values it rejects; R2 and R3 land with the § 1 pilot,
   **scoped to migrated sections**, so no gate runs red on an unconverted one.
+  *Amended by [ADR-0041](0041-done-register-links-dossiers.md):* with every
+  section converted, the scope and its opt-out marker are retired; R2 and R3
+  run on every section.
 - **R2 and R3 depart from research
   [§ 9.1](../research/research-appropriate-level-of-detail.md)**, which advises
   no length rule beside Rule 7; a line or sentence count is the text-level
