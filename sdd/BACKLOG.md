@@ -63,7 +63,10 @@ dossier is corrected in the same commit. Agreement is review-enforced.
 
 **Completing work** (same commit as the change):
 
-- Done → delete here; add to `BACKLOG-DONE.md` as `[x]`.
+- Done → delete here; add to `BACKLOG-DONE.md` as `[x]`. For an item with a
+  dossier the entry is short: what shipped and where, then the link; its
+  evidence and derivations stay in the dossier. Released entries are not
+  condensed.
 - Partly done → ship the done part as `[x]` under its ID; give the rest a new ID
   here; link both.
 - Absorbed → mark the host's sub-bullet `(was PREFIX-NNN, absorbed here)`, in
@@ -72,9 +75,7 @@ dossier is corrected in the same commit. Agreement is review-enforced.
   diagnosis, not only the verdict.
 
 Every entry, whatever the outcome, links the item's dossier if it has one; the
-dossier stays where it is. An item with a dossier gets a short entry: what
-shipped and where, then the link; its evidence and derivations stay in the
-dossier. Released entries are not rewritten. Every entry takes the header shape `- [x] **PREFIX-NNN — Title**` (em dash,
+dossier stays where it is. Every entry takes the header shape `- [x] **PREFIX-NNN — Title**` (em dash,
 `[x]`, ID inside `**`), because
 [`gen_backlogid.py`](../scripts/gen_backlogid.py) counts headers only and a
 prose line frees the ID. After absorbing or deciding against, sweep

@@ -23,9 +23,11 @@ ADR-0040 made `BACKLOG.md` an index with per-item dossiers and left
 the price of [principle 9](../../CLAUDE.md#principles)'s derivations. Median
 words per completed entry, per `## ` release section (each `- [x] **ID` header
 to the next header or heading, counted with Python's `str.split()`, over the
-file at this record's commit): 9.5 at v0.3.0, 145 at v0.25.0, 235 at v0.30.0,
-646 at v0.31.0 and 599.5 under `Unreleased`, over 687 entries and 122,869 words
-of entry text. Re-run rather than quote: the file grows on every close.
+file at `7cc9f96`, the commit before the one that adds this record and BK-365's
+own entry): 9.5 at v0.3.0, 145 at v0.25.0, 235 at v0.30.0, 646 at v0.31.0 and
+599.5 under `Unreleased`. The file then held 687 such entries and 122,869 words
+of entry text, 24 of the entries under § Absorbed and § Decided against. Re-run
+rather than quote: the file grows on every close.
 
 Two facts changed the question. First, since ADR-0040 every open item's
 evidence already sits in a dossier whose path never moves, and a done entry
@@ -42,9 +44,11 @@ reader ADR-0040's caps were argued for.
   moving it costs nothing because the dossier already holds it. *Reverse if* a
   closed item's dossier proves insufficient to reconstruct what shipped, which
   would show the entry carrying load the dossier does not.
-- **New entries only.** Released entries are not rewritten: a rewrite of about
-  123k words of dated record is a large, unreviewable diff for a file read by
-  lookup, and the old entries are the record their releases cite.
+- **New completed entries only.** Released entries are not condensed: a rewrite
+  of about 123k words of dated record is a large, unreviewable diff for a file
+  read by lookup, and the old entries are the record their releases cite. The
+  retirement sweep's factual corrections still reach them, and § Absorbed and
+  § Decided against entries keep their own shape.
 - **No length rule.** The shape is review-enforced and has no word or line cap,
   following [research § 9.1](../research/research-appropriate-level-of-detail.md)
   (no length rule beside Rule 7). ADR-0040's departure from § 9.1 rested on a
@@ -68,5 +72,5 @@ reader ADR-0040's caps were argued for.
   whatever review lets through; this record states that rather than claiming a
   gate.
 - **Neutral:** the register keeps its long released entries, so its total and
-  its older medians do not fall; a measurement after the next release shows
-  whether new entries follow the shape.
+  its older medians do not fall. Whether new entries follow the shape shows only
+  in the next release section's median, and nothing schedules that measurement.

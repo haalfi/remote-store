@@ -1322,9 +1322,11 @@ crossing, whichever comes first.
   moving it costs nothing because the dossier already holds it. *Reverse if* a
   closed item's dossier proves insufficient to reconstruct what shipped, which
   would show the entry carrying load the dossier does not.
-- **New entries only.** Released entries are not rewritten: a rewrite of about
-  123k words of dated record is a large, unreviewable diff for a file read by
-  lookup, and the old entries are the record their releases cite.
+- **New completed entries only.** Released entries are not condensed: a rewrite
+  of about 123k words of dated record is a large, unreviewable diff for a file
+  read by lookup, and the old entries are the record their releases cite. The
+  retirement sweep's factual corrections still reach them, and § Absorbed and
+  § Decided against entries keep their own shape.
 - **No length rule.** The shape is review-enforced and has no word or line cap,
   following [research § 9.1](../research/research-appropriate-level-of-detail.md)
   (no length rule beside Rule 7). ADR-0040's departure from § 9.1 rested on a

@@ -84,3 +84,12 @@ rules would land green; "headers unique across both files" would fail on
 BK-385's four pairs, which repeat inside `BACKLOG-DONE.md`. Over the 50
 spec files, 33 cite 206 backlog IDs, 102 distinct, 91 of them in
 `BACKLOG-DONE.md`, none dangling (the body's 166/80/28/69 is older). Found by the ADR-0040 § 6 conversion.
+
+## Correction, 2026-09-28 (BK-365 close)
+
+[ADR-0041](../adrs/0041-done-register-links-dossiers.md) retired the migration
+opt-out, so the body's "R2 (item cap) and R3 (section shape) on sections
+without the `unconverted` marker" and the correction above's "only R2 and R3
+skip a marked section" no longer hold: R1–R4 all run on every section, and the
+marker exempts nothing (`tests/scripts/test_gen_backlogid.py`'s two
+retired-marker tests pin it).
