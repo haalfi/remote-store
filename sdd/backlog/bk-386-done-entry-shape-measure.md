@@ -44,5 +44,7 @@ bound); and one of:
 - **reverse**: the short entry cost readers something the dossier did not
   give back, which takes a new ADR amending ADR-0041.
 
-**Exit criteria:** the decision is recorded here, the Phase 0 checklist line is
-removed or kept to match it, and any successor is named in the close note.
+**Exit criteria:** the decision is recorded here, and the Phase 0 checklist line
+either goes or gets a successor: if the line stays, open the item it will close
+at the following release and name it in the close note; otherwise remove it in
+the same change.

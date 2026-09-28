@@ -122,10 +122,10 @@ class TestMain:
         path.write_text(_REGISTER, encoding="utf-8")
         assert _mod.main([str(path)]) == 0
         out = capsys.readouterr().out
-        assert "Unreleased" in out
-        assert "v0.2.0" in out
-        # An empty half renders as the table's N/A dash, not as 0.
-        assert "—" in out
+        # Exact rows pin the column order the release reading depends on:
+        # all, with dossier, without. An empty half renders as the N/A dash.
+        assert "| Unreleased | 2 | 14.5 | 1 | 12 | 1 | 17 |" in out
+        assert "| v0.2.0 | 2 | 5.5 | 0 | — | 2 | 5.5 |" in out
 
     def test_missing_file_exits_two(self, tmp_path: Path, capsys: pytest.CaptureFixture[str]) -> None:
         assert _mod.main([str(tmp_path / "absent.md")]) == 2
