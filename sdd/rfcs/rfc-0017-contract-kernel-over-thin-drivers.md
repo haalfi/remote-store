@@ -22,9 +22,10 @@ Today every backend class implements the 21-method `Backend` surface by hand
 and, inside each method, re-derives the contract's cross-cutting clauses: root
 refusal, closed guard, wrong-type reclassification, absent-container tolerance,
 the first-page listing bound, the file-ancestor gate and error mapping. That is
-13 classes × 21 methods, and audit-021 attributes 45 of the 71 user-impacting
-defects of the last six releases (63%) to one clause missed on one method of
-one class. This RFC proposes that the surface be implemented **once**, in a
+13 classes × 21 methods, and audit-021 attributes 45 of the 71 user-audience
+defects of the last six releases (63%) to rules stated once and re-implemented
+per class: 35 a contract clause re-applied per class, 10 the SFTP session
+lifecycle. This RFC proposes that the surface be implemented **once**, in a
 kernel that is itself the `Backend`, over a per-backend `Driver` of about ten
 wire primitives, one `classify(exc)` function and one `container_absent(exc)`
 predicate. Error mapping then happens at a single choke point that wraps every
@@ -39,36 +40,46 @@ implementation instead of a hand-written sync/async pair.
 ### The bug population is the contract, re-implemented
 
 Audit-021 § H-1 carries the register and the figures; the two that decide the
-design are these. **The same clause is fixed N times:** 17 of 71 entries name
-two or more classes, and BUG-259 touched eleven classes on two halves of one
-rule. **The fix lands per method, so it is missed per method:** BUG-249 was
-three listing methods on one class left unwrapped "against fifteen methods
-that do wrap"; BUG-280 is the same shape on `LocalBackend`; BUG-293 is twelve
-`except` arms on one class; BUG-276 is seven sites in five files.
+design are these. **The same clause is fixed N times:** 14 of cluster A's 35
+entries name two or more classes, and BUG-259 changed eight classes on two
+halves of one rule that binds eleven. **The fix lands per method, so it is
+missed per method:** BUG-249 was three listing methods on one class left
+unwrapped "against fifteen methods that do wrap"; BUG-280 is the same shape on
+`LocalBackend`; BUG-293 is twelve `except` arms across the two Azure classes;
+BUG-276 is seven sites in five files.
 
-The eight shared guard helpers are called at 200 sites across 11 files, the
-source carries 395 `except` handlers, and `Store` catches nothing: the
-never-leak invariant of BE-021 is asserted 13 times inside backends and zero
-times at the boundary every call crosses. BE-021 itself is 496 lines of prose
-stating what one function should do.
+The eight shared guard helpers are called on 164 lines across 10 files and
+wrapped per class 22 times (audit-021 commands (e) and (g)), the source
+carries 395 `except` handlers, and `Store` catches nothing: the never-leak
+invariant of BE-021 is asserted 13 times inside backends and zero times at
+the boundary every call crosses. BE-021 itself is 496 lines of prose stating
+what one function should do.
 
-### The remedies already tried were tests and spec text, and they were tried in full
+### The remedies already tried were tests, static checks and spec text
 
 The bug-prevention research (2026-04-03) and the contract-completeness research
-(2026-04-05) diagnosed the same cross-product and prescribed extended
-conformance cells and tightened clauses. The conformance suite reached 323
-test functions and BE-021 its 496 lines; cluster A still produced 35 defects in
-six releases. A test fails only on the cell it covers, and the research's own
-estimate of the product was ~1,890 cells. Removing the backend axis from the
-product is the change that alters the count; covering the product does not.
+(2026-04-05) diagnosed the same cross-product. The first prescribed seven
+deliverables, of which six exist (`_safe_wrap`, the property-based tests, ruff
+`BLE`, the extended conformance cells, the `ResourceWarning` sites; audit-021
+§ H-1 names each one's location) and one, an AST check over broad `except`
+arms in the backends, was deferred and never built. The second prescribed
+tightened clauses, and BE-021 reached 496 lines; the conformance suite reached
+323 test functions. Cluster A still produced 35 defects in six releases. A
+test fails only on the cell it covers, and the research's own estimate of the
+product was ~1,890 cells at 7 backends and 18 methods, ~3,510 by the same
+formula at 13 classes. Removing the backend axis from the product is the
+change that alters the count; covering the product does not. The unbuilt
+static check is taken up under § Alternatives.
 
 ### The repo is already half way there
 
-`_flat_ns.py` (495 lines of guards applied by injection), `_S3Base`,
-`_ErrorMappingStream(mapper=...)`, `_safe_wrap` and `AsyncBackendSyncAdapter`
-were each introduced after a bug cluster, and each halved the next cluster on
-the classes it reached. None reaches all 13 classes and none owns the method
-bodies. This RFC finishes that move rather than starting a new one.
+`_S3Base` (RFC-0005, BK-011), `_flat_ns.py` (ID-211; 495 lines of guards
+applied by injection), `_safe_wrap` (BUG-159), `_ErrorMappingStream(mapper=...)`
+and `AsyncBackendSyncAdapter` (ADR-0025) each share one piece of the contract
+across some classes. None reaches all 13 and none owns the method bodies.
+RFC-0005 is the direct antecedent: it extracted `_S3Base` as deduplication and
+stopped at the S3 family. This RFC finishes that move rather than starting a
+new one.
 
 ## Proposal
 
@@ -114,8 +125,8 @@ It owns, once:
 - the wrong-type probes on the error path, the absent-container tolerance, and
   the first-page listing bound (BE-021), including its page-not-item rule;
 - the file-ancestor gate and its fail-open policy, decided once (BUG-292);
-- the `max_depth` reference algorithm, so sync and async cannot disagree
-  (BUG-240);
+- the `max_depth` reference algorithm, decided once (Open Question 4 names
+  BUG-240 as the contradiction to adjudicate before the kernel encodes it);
 - the temp-and-promote protocol for `write_atomic` and `open_atomic`, with the
   displace-and-restore fallback SFTP now carries alone;
 - error mapping at a single choke point: every driver call, every `list_page`
@@ -142,10 +153,13 @@ public face throughout; nothing above it changes.
 - **S3.** Promote the parked `S3Boto3Backend` (ID-202) as the S3 driver: it
   is standalone, boto3-only, and the lane spec 003 already cites as "the shape
   a fix takes" for the first-page bound. Deprecate `S3Backend` (s3fs) and
-  `S3PyArrowBackend`; `ext.arrow` gives PyArrow a filesystem over any `Store`,
-  which is the surface `S3PyArrowBackend` exists for. ID-202's own revisit
-  list names "the `_S3Base` refactor" as the Ship increment; the kernel is that
-  refactor.
+  `S3PyArrowBackend`. The PyArrow lane exists for data-path throughput: its
+  docstring reads "Uses PyArrow's C++ S3 filesystem for data-path operations
+  (higher throughput)" and RFC-0003 tuned that path, so retiring it is a
+  performance change for its users, stated under § Impact. `ext.arrow` keeps
+  the PyArrow *filesystem interface* over any `Store` but at Python-level
+  I/O, not the C++ path. ID-202's own revisit list names "the `_S3Base`
+  refactor" as the Ship increment; the kernel is that refactor.
 - **Azure.** Keep one async-native driver and serve sync callers through
   `AsyncBackendSyncAdapter` (ADR-0025), as `GraphBackend` already does. The
   hand-written sync class is retired.
@@ -172,24 +186,46 @@ async-native drivers first-class; the second is less machinery. Open Question 1.
 
 ### What each open cluster-A bug becomes
 
-Of the 13 open cluster-A items, 12 stop being possible rather than being
-fixed: BUG-276, 279, 280, 293, 245 (one classifier per driver, applied at one
-boundary); BUG-255, 257 (one listing loop owns the bound); BUG-256 (one
-`probe()` per driver, and the kernel decides what `ping` owes); BUG-260, 253,
-292 (root spelling, ancestor walk and fail-open decided once); BUG-240 (one
-`max_depth` algorithm). BUG-273 needs D5.
+Of the 13 open cluster-A items, 8 are ruled out by D1 and D2 as designed:
+BUG-276, 279, 280, 293 (one classifier per driver, applied at one boundary
+that every call, page and stream crosses); BUG-255, 257 (one listing loop
+owns the first-page bound); BUG-260 (root spelling decided once from the key);
+BUG-253 (the ancestor walk runs in the kernel before any `put`, whatever the
+payload size).
+
+The other 5 still need a decision or per-driver work, and the kernel only
+stops them recurring once that is done: BUG-240 (two specs disagree; Open
+Question 4); BUG-292 (BE-008 must choose narrow, warn or strict for the
+fail-open probe; the kernel then applies the choice once); BUG-256 (what each
+`probe()` must touch is per driver by D1, and a driver whose probe runs
+`SELECT 1` is not corrected by the kernel); BUG-245 (a constructor-time
+reflection leak, which D2's choke point does not cover unless construction is
+added to it; Open Question 5); BUG-273 (needs D5's connect-time context).
 
 ## Alternatives Considered
 
-- **More conformance cells, tighter spec text.** Tried in full (§ Motivation).
-  Covers the product one cell at a time; the product stays.
+- **More conformance cells, tighter spec text.** Tried (§ Motivation). Covers
+  the product one cell at a time; the product stays.
+- **The deferred static check** (`check_error_handling.py`, deliverable 6 of
+  the bug-prevention research): an AST pass flagging a broad `except` arm
+  that returns silently without inspecting `errno`, type or status. Cheap,
+  and worth building whether or not this RFC is accepted, since cluster A's
+  broad-arm members (BUG-293, 276, 275, 264, 222, 242, BK-316) are its
+  target. It does not reach the missed-wrap or missed-guard shape (BUG-249,
+  280, 279, 259, 247, 246, 243, 248, 254, 255, 257, 260, 253, BK-324), which
+  is the larger half of the cluster, because those are absences rather than
+  arms. Complementary, not a substitute.
+- **RFC-0005's route, extended.** Deduplicate per family (`_S3Base` was its
+  result). Removes copies within a family and leaves the per-class method
+  bodies, so a clause is still applied per family rather than once; the
+  prior art this RFC generalises.
 - **A last-resort mapper at the `Store` boundary only.** Closes the never-leak
   breaches (BUG-249, 280, 279, 245) and nothing else: root, absent-container,
   wrong-type and the listing bound are semantics, not mapping, and would still
   be implemented 13 times. Cheap, and worth doing first as a stop-gap if D3 is
   delayed; not a substitute.
 - **Mixins per clause.** Keeps the method bodies per class and adds a
-  resolution-order puzzle; the 200 call sites become 200 `super()` calls.
+  resolution-order puzzle; the 164 call lines become 164 `super()` calls.
   Rejected.
 - **Adopt fsspec's `AbstractFileSystem` as the kernel.** ADR-0003 already
   decided fsspec is an implementation detail, and its derived-method layer
@@ -210,24 +246,31 @@ boundary); BUG-255, 257 (one listing loop owns the bound); BUG-256 (one
   the migration guide owes a section. Breaking for users of `S3Backend`,
   `S3PyArrowBackend` and sync `AzureBackend` as class names once D4 lands;
   each keeps a deprecation cycle. `Store` callers see no change.
-- **Performance:** none intended; the kernel issues the same probes the
-  per-backend code issues today, and the S3 driver drops the s3fs layer.
+- **Performance:** the kernel issues the same probes the per-backend code
+  issues today, and the S3 driver drops the s3fs layer. Retiring
+  `S3PyArrowBackend` (D4) moves its users' reads from PyArrow's C++ S3
+  filesystem to the boto3 driver, which is a throughput change to measure,
+  not assume: `benchmarks/test_throughput.py` and
+  `benchmarks/bench_pyarrow_tier1.py` are the instruments, run against both
+  lanes before the deprecation is announced.
 - **Testing:** the kernel is tested once against a fake driver that can be
   told to raise any wire shape at any call, which is the cross-product the
   conformance suite could not reach (BK-345, ID-244, ID-251 become moot for
   the kernel and reduce to driver cells). The conformance suite is unchanged
   and gates every migration in D3.
 - **Effort:** kernel plus first three migrations L; D5 plus SFTP L; D4 M each.
-- **What is deleted:** the 200 guard call sites, most of the 395 `except` arms
-  outside classifiers, two S3 classes, one Azure class, and most of BE-021's
-  496 lines, which become the kernel's docstrings.
+- **What is deleted:** the 164 guard call lines and 22 per-class wrappers,
+  most of the 395 `except` arms outside classifiers, two S3 classes, one
+  Azure class, and most of BE-021's 496 lines, which become the kernel's
+  docstrings.
 
 **Acceptance criterion.** After D3 completes for the flat-namespace family,
-the three measurements in audit-021 § H-1 are re-run: guard call sites, `except`
-handlers outside `classify` functions, and `except` handlers in the kernel's
-choke point. The RFC is accepted if the first two fall by at least half on the
-migrated classes and the conformance suite passes unchanged for their
-fixtures; it returns to Draft otherwise.
+three measurements are re-run on the migrated classes: guard call lines
+excluding definitions (audit-021 command (g), so deleting a wrapper's `def`
+alone cannot move it), `except` handlers outside `classify` functions, and
+`except` handlers in the kernel's choke point. The RFC is accepted if the
+first two fall by at least half on the migrated classes and the conformance
+suite passes unchanged for their fixtures; it returns to Draft otherwise.
 
 ## Open Questions
 
@@ -243,6 +286,10 @@ fixtures; it returns to Draft otherwise.
 4. **Which spec contradictions the kernel must adjudicate first.** BUG-240 is
    one; the kernel encodes one answer per clause and cannot land on a clause
    the specs still dispute.
+5. **Does the choke point cover driver construction?** BUG-245 leaks from
+   `SQLBlobBackend`'s constructor, and BE-021's mapping rule is scoped to
+   operations today. Either D2 wraps `Driver.__init__` too, or construction
+   errors stay per driver and BUG-245 is fixed there.
 
 ## References
 
@@ -252,7 +299,11 @@ fixtures; it returns to Draft otherwise.
 - Related ADRs: [ADR-0001](../adrs/0001-architecture-store-registry-backends.md),
   [ADR-0003](../adrs/0003-fsspec-is-implementation-detail.md),
   [ADR-0025](../adrs/0025-async-to-sync-backend-adapter.md)
-- Related research: `sdd/research/research-bug-prevention-beyond-testing.md`,
+- Related RFCs: [RFC-0005](rfc-0005-code-deduplication.md) (the `_S3Base`
+  extraction this generalises), [RFC-0003](rfc-0003-s3-pyarrow-read-optimization.md)
+  (the C++ read path D4 retires)
+- Related research: `sdd/research/research-bug-prevention-beyond-testing.md`
+  (§ 4 deliverable 6, the unbuilt static check),
   `sdd/research/research-backend-contract-completeness.md`,
   `sdd/research/research-s3-boto3-poc.md` (ID-202)
 - Related backlog: BK-366 (bug share undiagnosed), BK-345, ID-244, ID-251
