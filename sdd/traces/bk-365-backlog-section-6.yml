@@ -32,8 +32,10 @@ phases:
           research pointer and its qualification bound an open item beyond its
           body (ID-207). Both ID-244 dependency sentences and the
           ID-207-before-ID-245 order note restate ID-245's own body ("Position:
-          after ID-244"; "Its shape changes under ID-207"), and the order
-          already holds. "Shipped so far" and its four findings each have a
+          after ID-244"; "Its shape changes under ID-207"), and that order
+          already holds. Review round 3 found the one order this conversion
+          created: ID-235's re-derivation made its "exactly once" rule wait on
+          BK-385's four duplicate pairs, so BK-385 moved above it and names it. "Shipped so far" and its four findings each have a
           BACKLOG-DONE.md or research home. Tagged misleading: the preamble's
           qualification miscasts BK-324 facet 4 as class A/C/D, and item
           bodies here supplied the eleven statements this PR corrects.
