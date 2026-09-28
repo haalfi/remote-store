@@ -134,6 +134,8 @@ class TestMain:
     def test_live_register_structure(self, capsys: pytest.CaptureFixture[str]) -> None:
         assert _mod.main([]) == 0
         out = capsys.readouterr().out
-        assert "Unreleased" in out
+        # Not "Unreleased": right after a release it holds no entry, and
+        # sections without entries are omitted.
+        assert "| Section | Entries | Median |" in out
         # Release sections are named vX.Y.Z; at least one has shipped.
         assert "| v0." in out
