@@ -23,12 +23,6 @@ in [RFC-0017](../rfcs/rfc-0017-contract-kernel-over-thin-drivers.md).
 
 ## Summary
 
-| Severity | Count | Description |
-|----------|-------|-------------|
-| High     | 2 | The backend contract is implemented once per class per method, and the SFTP session state machine is hand-rolled across its guards |
-| Medium   | 2 | A new backend pays the whole contract again; two services are implemented two or three times over |
-| Low      | 1 | Dependency floors, already covered by the floor lane and out of design scope |
-
 **The three-layer architecture is sound; the placement of the contract is
 not.** 71 user-impacting defects shipped or sit open across six releases, and
 45 of them (63%) are one clause of the `Backend` contract missed on one method
@@ -37,6 +31,12 @@ in 13 classes across 204 method bodies, and nothing at the `Store` boundary
 enforces it. The prior remedies, more conformance cells and more spec text,
 were both applied in full and the class of bug did not shrink, because they
 cover the cross-product one cell at a time while the design keeps the product.
+
+| Severity | Count | Description |
+|----------|-------|-------------|
+| High     | 2 | The backend contract is implemented once per class per method, and the SFTP session state machine is hand-rolled across its guards |
+| Medium   | 2 | A new backend pays the whole contract again; two services are implemented two or three times over |
+| Low      | 1 | Dependency floors, already covered by the floor lane and out of design scope |
 
 **The population, classified.** Filter: audience contains a `user.` value, the
 item changed code behaviour (docs-only claims and CI or test-only items
