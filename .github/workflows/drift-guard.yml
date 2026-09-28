@@ -413,7 +413,7 @@ jobs:
       - name: Install the script's own dependency on older interpreters
         run: python -m pip install --quiet "tomli; python_version < '3.11'"
 
-      - uses: astral-sh/setup-uv@v10.1.0
+      - uses: astral-sh/setup-uv@v10.2.0
         with:
           enable-cache: false
 
