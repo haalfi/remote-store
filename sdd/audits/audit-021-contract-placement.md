@@ -102,13 +102,13 @@ by clause, each a by-hand assignment:
 | File-ancestor gate, BE-008 | BUG-253, 292 | invocation |
 | `max_depth`, DEPTH-003 against ASYNC-014 | BUG-240 | spec contradiction |
 
-Eleven clauses, 35 items: 22 invocation-shaped, 11 content-shaped, 2 driver
-resource. The invocation shape is what a single boundary removes; the content
-shape passes through any boundary unchanged. RFC-0017 § What each cluster-A
-bug becomes carries the same split against its own design (18 kernel-owned,
-5 split, 10 driver-kept, 2 needing a decision), and that split, not the 63%,
-is what a disposition of the proposals turns on. Three properties of the
-cluster are measured rather than read:
+Eleven clauses, 35 items: 21 invocation-shaped, 11 content-shaped, 2 driver
+resource, 1 spec contradiction. The invocation shape is what a single boundary
+removes; the content shape passes through any boundary unchanged. RFC-0017
+§ What each cluster-A bug becomes assigns each of the 35 against its own
+design by explicit rules; that assignment, which the RFC owns and revises,
+rather than the 63%, is what a disposition of the proposals turns on. Three
+properties of the cluster are measured rather than read:
 
 1. **The same clause is fixed N times.** 14 of cluster A's 35 entries name two
    or more backend classes in the appendix's backend column (BUG-254, 259, 246,
@@ -151,7 +151,7 @@ cluster are measured rather than read:
 | of which call lines of the eight names | 164 across 10 files | (c) minus (e) minus (f); command (g) reproduces it directly |
 | Error-mapping definitions outside `ext/` | 25 across 11 modules, enumerated below | command (d) below |
 | `except` handlers in `Store` that touch backend I/O | 0 | `_store.py` carries 2: a `KeyError` on the gate table, a `UnicodeEncodeError` on key validation |
-| BE-021, the error-mapping clause | 496 lines | spec 003 lines 676 to 1172 |
+| BE-021, the error-mapping clause | 497 lines | spec 003 lines 676 to 1172 inclusive |
 | Hand-maintained ABCs | 2: the sync one carries the 21 names command (a) lists; the async one 19 of them (no `read_seekable`, no `open_atomic`, `aclose` for `close`), implemented by 3 of the 13 classes | command (a)'s name list against `rg -n 'def ' aio/_async_backend.py` |
 | Conformance test functions | 323 | `rg -c 'def test_' tests/backends/conformance` |
 
@@ -216,7 +216,7 @@ bug-prevention research (2026-04-03) and the contract-completeness research
 `ResourceWarning` sites in `src/`), and the seventh, an AST check over broad
 `except` arms in the backends, deferred "until items 1–5 prove insufficient",
 was never built (`scripts/check_error_handling*` does not exist). The second
-prescribed tightened spec text, and BE-021 reached 496 lines. Cluster A still
+prescribed tightened spec text, and BE-021 reached 497 lines. Cluster A still
 produced 35 defects in six releases. A test fails only on the cell it covers,
 and the contract-completeness research's own estimate of the product
 (`research-backend-contract-completeness.md` § 3: 18 methods × ~5 parameter
@@ -397,13 +397,13 @@ Dispositions are the user's; the design itself is argued in
 
 | Finding | Proposed shape | Effort |
 |---|---|---|
-| H-1, M-1 | One contract kernel implementing the public `Backend` surface over a thin per-backend `Driver` of about a dozen wire primitives plus one operation-scoped classifier; error mapping at a single choke point over calls, listing pages and streams. Reaches the 22 invocation-shaped items and, through its message and attribute guarantee, part of the content-shaped ones; the RFC's own split is 18 kernel-owned, 5 split, 10 driver-kept, 2 needing a decision. Migrate one class at a time behind the unchanged conformance suite, flat-namespace family first. | L |
-| H-2 | A `Session` owning connect, retry budget, liveness and invalidation behind one `run(op)` entry; SFTP first, SQL and Graph after. | L |
-| M-2 | One S3 driver (the parked boto3 lane is the candidate ID-202 itself names) with s3fs and PyArrow lanes deprecated; Azure async-native with the existing sync adapter, as Graph already ships. | M each |
+| H-1, M-1 | One contract kernel implementing the public `Backend` surface over a thin per-backend `Driver` with one operation-scoped classifier; error mapping at a single choke point over calls, listing pages and streams. Reaches the invocation-shaped items and, through its message and attribute guarantee, part of the content-shaped ones; which items it reaches under the RFC's design is the RFC's assignment, not this audit's. Migrate one class at a time with the conformance suite as oracle and its changed cells enumerated first. | L |
+| H-2 | A `Session` owning connect, the connect-retry budget, liveness and invalidation behind one `run(op)` entry; SFTP first, Graph second. | L |
+| M-2 | One S3 driver (the parked boto3 lane is the candidate ID-202 itself names, with ID-202's own Ship list as the precondition) with the s3fs and PyArrow lanes retired behind a gate; one Azure driver, with how sync callers reach it decided by the RFC's first open question. | M each |
 | L-1 | None here; BK-369 and BK-368 own it. | — |
 
 **What the proposals leave.** Clusters D and E, 18 of 71, plus the cluster-A
-items RFC-0017 lists as needing a decision or per-driver work rather than
-being ruled out by the kernel (5 of the 13 open ones, by its own list). No
+items RFC-0017 assigns to the driver or to a pending decision rather than to
+the kernel, by the rules it states and revises. No
 projection of a future count is made here: the residual is the enumeration,
 not a number.
