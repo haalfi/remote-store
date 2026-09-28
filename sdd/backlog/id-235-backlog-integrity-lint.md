@@ -75,7 +75,12 @@ sections: `_attribute_violations` runs over the whole active file
 of `BACKLOG` are prose (`rg -n BACKLOG scripts/check_no_tracker_refs.py`, lines
 38 and 448). Re-derived with a scratch script over the two files: all 687
 `BACKLOG-DONE.md` headers are `[x]`, 200 of its entries carry an attribute line
-(so `gen_backlogid.py`'s "entries carry no attribute line" is false too), and
-"each retired ID appears once" would fail on BK-385's four pairs. Over the 50
+(so `gen_backlogid.py`'s "entries carry no attribute line" is false too),
+neither file holds a conflict marker (`rg -c '^(<{7}|={7}|>{7})'
+sdd/BACKLOG.md sdd/BACKLOG-DONE.md` prints nothing), and the § Absorbed
+register's ten entries name seven hosts,
+all seven open (`rg -c` over their headers in `BACKLOG.md` gives 7). So those
+rules would land green; "each retired ID appears once" would fail on BK-385's
+four pairs. Over the 50
 spec files, 33 cite 206 backlog IDs, 102 distinct, 91 of them in
 `BACKLOG-DONE.md`, none dangling (the body's 166/80/28/69 is older). Found by the ADR-0040 § 6 conversion.
