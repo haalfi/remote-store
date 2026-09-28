@@ -77,10 +77,10 @@ bullet, the floor unchanged.
 
 ## Correction, 2026-09-28
 
-The sampling rule is stale. `rg -n '^  pr: 10[2-9][0-9]' sdd/traces/` finds
-derived review blocks for #1027, #1028, #1029, #1032, #1033, #1034, #1036,
-#1037 and #1038, all merged after BK-378's #1026, and this body names no rule
-for which count. Seven of the nine are BK-365 deliveries, and only #1032, the
+The sampling rule is stale. Before this conversion's own block was added,
+`rg -n '^  pr: 10(2[7-9]|[3-9][0-9])' sdd/traces/` found derived review
+blocks for #1027, #1028, #1029, #1032, #1033, #1034, #1036, #1037 and #1038,
+all merged after BK-378's #1026, and this body names no rule for which count. Seven of the nine are BK-365 deliveries, and only #1032, the
 § 1 pilot, reached round 3: its block's `by_round` lists four rounds, round 4
 carrying a loop-introduced finding, while the other six list at most two
 (counted by loading each `sdd/traces/bk-365-*.yml` block). Read rounds from

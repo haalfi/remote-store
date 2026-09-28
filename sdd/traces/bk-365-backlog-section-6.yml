@@ -72,9 +72,11 @@ phases:
         section: "derived review blocks after #1026; bk-383 pooling note (186)"
         read_type: verify
         extract: >-
-          `rg -n '^  pr: 10[2-9][0-9]' sdd/traces/` finds nine PRs after #1026
-          with derived blocks. A subagent's "eleven" did not reproduce and did
-          not reach the index. BK-384 omits #1027's 6-round / 89-finding
+          `rg -n '^  pr: 10(2[7-9]|[3-9][0-9])' sdd/traces/`, run before this
+          trace gained its own block, found nine PRs after #1026 with derived
+          blocks; the first pattern used also matched #1026 itself (review
+          round 4). A subagent's "eleven" did not reproduce and did not reach
+          the index. BK-384 omits #1027's 6-round / 89-finding
           pooling note.
         outcome: ok
       - file: sdd/formal/README.md
