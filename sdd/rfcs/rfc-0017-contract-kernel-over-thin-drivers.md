@@ -109,6 +109,7 @@ graph TB
     K --> D3["AzureDriver<br/>same primitives"]
     K --> D4["… 7 more drivers"]
   end
+  B4 ~~~ S2
 ```
 
 The kernel is generic over the driver, so the fourteen primitives and the
