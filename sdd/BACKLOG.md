@@ -12,7 +12,7 @@ Items graduate through the SDD pipeline:
 ## How this file works
 
 Operational rules only. Why each rule exists: [ADR-0040](adrs/0040-backlog-as-index.md).
-**Migration in progress:** §§ 1–5 are converted. A section not yet converted carries
+**Migration in progress:** §§ 1–6 are converted. A section not yet converted carries
 `<!-- backlog: unconverted -->` on the line under its heading and keeps its old
 shape (long bodies, `Closes when`) until it is; do not extend that shape in new
 edits. Converting a section deletes the marker. The marker, not this note, is
@@ -630,842 +630,151 @@ give them a way to absorb.
 
 <a id="repo-does-not-mislead"></a>
 ## 6. The repo does not mislead the next person
-<!-- backlog: unconverted -->
 
 **Promise:** the artifacts maintainers coordinate through — this file, the
 ripple-check, the revisit pins, the generated inventories, the unreleased
 CHANGELOG the release body is built from — say what is actually true.
 
-**Closes when:** the backlog files are structurally linted (ID-235); the
-`CLAUDE.md` typography rules that are mechanically checkable are checked
-(BK-361); the two mechanisms that claim more authority than the rule they route
-on are reconciled with it (BK-362, BK-363);
-CHANGELOG `[Unreleased]` is linted for duplicate entries, stub shape and the
-audience rule — **met** by ID-252 (`check_changelog_unreleased.py`), whose
-stated bound is that it keys on the ID at line start, so a single entry whose
-*content* went stale is still nobody's to catch; the
-CHANGELOG expansion step Phase 1 depends on is written down or dropped —
-**met** by ID-253, which wrote the step and gave the CHANGELOG section order its
-first home (`CONTRIBUTING.md` § CHANGELOG section order), leaving the step manual
-and the order ungated, both stated where they are written; the `[Unreleased]`
-stub's section marker means one thing or nothing (ID-254); the release-window
-stand-down's stated reason matches what actually switches the rules off
-(ID-255);
-the ripple-check's six measured blind spots are answered (BK-346); the
-hand-maintained inventories ID-245 names are generated — four bullets, of which
-the checker inventory has shipped; `check_formal_trace` proves
-assertion rather than citation (ID-207); both open revisit pins have fired
-and named successors (ID-150, ID-259 — the trace-outcome pin has fired twice
-already, as ID-249 at v0.31.0 and ID-258 at v0.32.0); the two backlog files are readable by the
-person they are for, or the decision that their length is the right price is
-recorded (BK-365); the repo can say whether its own quality promise is
-holding rather than only asserting it (BK-366); two sessions working in
-parallel cannot mint the same backlog ID with every derivation telling both they
-are right (ID-257); and the review loop stops recording itself in the artifacts
-it reviews (BK-384, after BK-379's pilot and BK-378's build of RFC-0015's D1
-and D4 left the re-measurement as the last thing it owes).
-**Bounded to those fifteen deliberately** — count derived by enumerating the
-semicolon-separated clauses above, not carried forward. "No artifact asserts what
-no mechanism can check" is the promise and cannot be a closing condition: this section's own
-preamble records that detecting the remaining class needs semantic comparison of
-prose, which research § 1 marks as having no general oracle. Nor is "no figure
-was counted by hand" the rule — [principle 9](../CLAUDE.md#principles) requires a
-figure to **name its derivation**, and counting a list below the sentence is a
-derivation. Items here comply with principle 9 by naming their counts' sources.
-**Cross-section dependencies**, per
-[§ How this file works](#how-this-file-works): ID-245's cassette inventory waits
-on **ID-244** in section 2, which moves the surface it would measure.
-
-Lowest priority. Design and review rules for anything added here:
-[`DRIFT-RULES.md`](DRIFT-RULES.md#rules). The argument and gap ranking behind
-the programme:
-[research](research/research-inconsistency-detection-multi-artifact.md) § 9.
-
-**Measured qualification on that research doc's ranking**, recorded here
-because [`000-process.md` § Document types](000-process.md) makes a research doc
-a point-in-time snapshot rather than a living one. It designates the
-canonical claim space — research § 9 step 2, which ID-207 used to carry — as
-the strategic item. That step builds an *omission detector*, research § 1 class
-E. BK-324's four instances were class A/C/D: one claim restated in several homes
-and updated in one. So step 2 is **not** what would have caught anything this
-programme has actually caught, which is why ID-207 below is scoped to steps 3
-and 4 and step 2 is gone. Detecting the rest needs semantic comparison of prose,
-which § 1 marks as having no general oracle. The mechanisms that did catch them
-were an author-side sibling sweep ([BK-336](BACKLOG-DONE.md)) and running the
-code rather than reading the diff ([BK-344](BACKLOG-DONE.md) and
-[BK-338](BACKLOG-DONE.md)) — neither in the research doc's ranking.
-
-**Order within this section:** ID-207 precedes ID-245 because ID-245's
-accountability-record bullet waits on it — step 3 changes what counts as a
-satisfied trace, which moves the matrix that bullet renders. ID-245's first
-bullet additionally waits on **ID-244 in section 2**, per the cross-section
-rule in [§ How this file works](#how-this-file-works).
-
-Shipped so far: step 1 as BK-328, step 5.1 as BK-329, step 4 as BK-331, step 3
-as BK-330 plus ID-238. Four findings from them apply to what follows: a
-documented gap statement is not a measured one; pinning what an exemption
-covers beats exempting the whole item; an authority rule is worth exactly the
-live disagreements it decides, so run a proposed one against them before
-believing it; and a hand-counted figure about a growing corpus is stale before
-the commit that writes it lands, so cite the generator instead.
-
 - [ ] **ID-235 — Backlog-file integrity lint (structure and inbound tracker citations)**
   spec: — · effort: S · audience: contributor.tooling
-  Two passes over the same artifact, in the same script family, sharing one
-  wiring trap. Home: extend `scripts/gen_backlogid.py` and
-  `scripts/check_no_tracker_refs.py`, both of which already parse the ID
-  pattern and already know both backlog files.
-  - **Structural integrity.** A string-anchored edit swallowed an entry header
-    in `BACKLOG-DONE.md` (PR #932), merging two items — and because
-    `gen_backlogid.py` derives IDs from headers, the stale JSON was masked too.
-    Lint the structure: every metadata line follows an entry header, headers
-    unique across both files, BACKLOG-DONE status `[x]` only.
-    **And no merge-conflict marker survives**: a rebase of BK-378's branch left
-    a `<<<<<<< HEAD` line above an item in this file, and `docs-gate` passed
-    twice with it there (neither `gen_backlogid.py` nor `mkdocs --strict` reads
-    the line). A `^(<{7}|={7}|>{7})` scan over both files is the cheapest rule
-    in this list and the one a rebase-heavy workflow needs most.
-    **Add the retirement sections to the structural rules**: every entry under
-    `BACKLOG-DONE.md` § Absorbed names a host that exists in `BACKLOG.md`, and
-    every ID retired by either route appears exactly once across both files.
-    That is what keeps the ID space safe by construction rather than by whoever
-    last remembered to add an entry.
-    **ADR-0040's four shape rules are in this pass**, all shipped under
-    BK-365: R1 (attribute vocabulary), R2 (item cap) and R3 (section shape)
-    on sections without the `unconverted` marker, R4 (dossier link) on all.
-  - **Inbound citations resolve** (was ID-246, absorbed here). Specs cite
-    backlog coordinates as provenance, and `check_no_tracker_refs.py` actively
-    *pushes* IDs here — it fails a docstring or `docs-src/` page and tells the
-    author to move the coordinate into `sdd/specs/` or `sdd/BACKLOG-DONE.md`,
-    listing `sdd/**` as out of scope because "the trackers are how those
-    documents are addressed". **Nothing checks that they resolve.** Measured
-    across all 50 specs: 166 citations, 80 distinct IDs, 28 files, **zero
-    dangling** — 69 resolve into `BACKLOG-DONE.md`, the rest here. The
-    invariant holds by discipline, not construction. Add a second, inverted
-    pass: every `PREFIX-NNN` under `sdd/` must appear as an item in either
-    backlog file, failing with the citing file and line
-    ([DRIFT-RULES Rule 2](DRIFT-RULES.md#localize): localize, don't merely fail).
-    Rule 3 makes it cheap — the claim space is *derived* from the citing
-    documents. Rule 4 needs a decision this does not presuppose: when a spec
-    cites an ID no backlog file carries, which side is wrong.
-    **Extend the walk to `.py` docstrings while building it.** A repo-relative
-    Markdown link written in a `scripts/*.py` docstring is validated by nothing
-    (`scripts/docs/check_links.py` walks git-tracked `.md` only) — 7 such links
-    into `sdd/DRIFT-RULES.md` anchors exist today, per
-    `rg -n '\.md#' scripts/report_trace_outcomes.py scripts/_trace_corpus.py`.
-    That was BK-335, retired because its own trigger ("the first time a rename
-    breaks one") is unobservable: a silent break is what nobody notices. The
-    marginal cost here is near zero once this pass walks non-`.md` files, and it
-    makes the trigger a check rather than an aspiration.
-  **Both passes key on an ID, and the measured misses do not carry one.**
-  Retiring 23 IDs in one change falsified three sites a grep-for-IDs pass cannot
-  reach: `sdd/specs/004-path-model.md` forward-pointed to "the follow-up" in
-  prose without naming it, `tests/scripts/test_gen_backlogid.py` justified a
-  fixture in a comment, and `DEVELOPMENT_STORY.md` described the file's tier
-  structure. All three were found by reading rather than grepping. Scope the
-  item honestly against that: an ID-keyed pass is worth building and will not
-  close the class, so state its miss rate rather than implying coverage
-  ([`DRIFT-RULES.md` Rule 7](DRIFT-RULES.md#miss-rate)).
-  **Note the wiring trap BK-333 documents:** a check reading `sdd/` must reach a
-  gate an `sdd/`-only change actually runs. This item is a live instance of its
-  own subject — the deletions that produced this file's current shape are
-  exactly the event the second pass exists to catch.
+  `gen_backlogid.py`'s R1–R4 cover open items only: nothing checks
+  `BACKLOG-DONE.md`'s status marks, absorbed-host references or conflict
+  markers, and no pass resolves inbound tracker citations. Re-derived, the
+  done-file rules would land green today and "exactly once" would not
+  (BK-385). Open decision: which rules to add, and what a dangling ID means.
+  Detail: [dossier](backlog/id-235-backlog-integrity-lint.md)
 
-- [ ] **ID-254 — The `[Unreleased]` stub's section marker means one thing on half the entries and nothing on the other half**
+- [ ] **ID-254 — The `[Unreleased]` stub's bold marker has no defined meaning beyond `**Breaking**`, and nobody owns section assignment**
   spec: — · effort: S · audience: contributor.process
-  Twelve of the 25 entries under CHANGELOG `[Unreleased]` open with a bolded
-  marker and thirteen open with none (`- <ID>: **<marker>** —` against
-  `- <ID>: <text>`, tallied over the section as of this item's filing; re-tally
-  rather than reading the split, which every merged PR moves). Four of the twelve are
-  `**Breaking**`, which is a real obligation the ripple-check's **Breaking
-  change** row states and `check_breaking_migration_link.py` half-enforces. The
-  other eight are decoration nobody wrote down: `**Fix**` (5), `**Docs**` (1),
-  `**Added**` (1), `**Change**` (1).
-  **Three of those four names are not section names.** The canonical names are
-  [`CONTRIBUTING.md` § CHANGELOG section order](../CONTRIBUTING.md#changelog-section-order),
-  which ID-253 gave its one home; against that list `**Fix**`, `**Change**` and
-  `**Docs**` each look like they name the section the entry will land in
-  (`Fixed`, `Changed`, `Documentation`) and each names something else. A reader
-  cannot tell whether the marker is a section assignment the author made or an
-  emphasis they chose, and the release step reassigns sections from the item
-  regardless — which is what ID-253 recorded the v0.30.0 release doing to eight
-  unmarked stubs.
-  **What it decides.** Either the marker becomes a section assignment the PR
-  author owes — spelled with the canonical names and gateable in
-  `check_changelog_unreleased.py` alongside the three rules already there, which
-  would move section assignment off the release manager and onto the author who
-  knows the change — or it stays free-form emphasis and says so, in which case
-  `**Breaking**` is documented as the one marker that means anything and the
-  other eight are normalised or dropped. **Do not split the difference**: a
-  marker that is a section name on some entries and a mood on others is the
-  state this item exists to leave.
-  **Section assignment is this item's either way.** ID-253 wrote the expansion
-  step's sources, its per-entry shape and the section order, but not the rule for
-  *which* section a given entry lands in — and that is the one decision the step
-  makes per entry. If the marker becomes an obligation, the author assigns and
-  the rule is the marker's definition; if it stays emphasis, the release manager
-  assigns and the rule has to be written for them. Either resolution owes it, so
-  it does not fall between the two.
-  **Not urgent, and the reason bounds it:** nothing downstream reads the
-  marker except the breaking-change gate, which keys on `**Breaking**` alone, so
-  the cost today is a reader's confusion rather than a wrong release. Found by
-  ID-253 while deriving the section order, and deliberately left out of its
-  scope.
+  The bold marker after an `[Unreleased]` entry's ID is a gated obligation
+  when it reads `**Breaking**` and undefined otherwise, and no rule says who
+  assigns an entry's section; re-tallied, 1 of 10 entries is marked, so the
+  mixed state the item was filed on is gone (dossier correction). Open
+  decision: marker as the author's section assignment, or emphasis only.
+  Detail: [dossier](backlog/id-254-unreleased-stub-marker.md)
 
 - [ ] **ID-255 — The stand-down note gives a reason that is false in the state the release checklist prescribes**
   spec: — · effort: S · audience: contributor.tooling
-  `_release_window_note` in `scripts/check_changelog_unreleased.py` prints: "The
-  stray-line rule, the audience rule and the unknown-ID note all key on entries
-  leading with an ID, **which condensed prose does not**, so all three stood
-  down." That reason is true at the *end* of Phase 1 and false at its
-  *beginning* — and the beginning is the state
-  [`CONTRIBUTING.md` § Release Phase 1](../CONTRIBUTING.md#release) mandates,
-  since it says to add the `###` groupings **before** condensing any bullet.
-  **Reproduce it:** put a bare `### Fixed` *inside* an untouched `[Unreleased]`,
-  above its entries — `parse_unreleased` scans forward from the `## [Unreleased]`
-  heading, so a grouping placed above that heading sets nothing and the symptom
-  never appears.
-  The note claims the entries do not lead with an ID, then reports "over the 25
-  line(s) that still parse as entries" — counting the ones that do.
-  What actually switches the three off is the `###` itself: `grouped` is a bare
-  `startswith("### ")` and `collect` branches on it alone, never on whether any
-  line still parses. The reason describes a *consequence* of finishing the
-  condense, not the *trigger*.
-  **What it decides.** Whether to state the trigger instead ("a `###` grouping,
-  not the absence of IDs, is what switches these off") or to state both. It is a
-  message-string change; no existing assertion pins the reason clause — the
-  tests key on `_STOOD_DOWN` and on the surviving-entry count, deliberately, per
-  the comment at that assertion — so whoever takes it should add one, or the
-  corrected reason is unpinned in exactly the way the wrong one was.
-  **A second half worth deciding at the same time**, being the same paragraph's
-  blind spot: the docstring's "The cost, stated in full" costs out uniqueness
-  and the prose budget but never costs out the **audience rule**, which is what
-  the groupings-first ordering trades away earliest.
-  **Filed rather than fixed by ID-253**, which found it: that PR's whole diff to
-  `scripts/check_changelog_unreleased.py` is inside the module docstring —
-  verified by AST, base and head byte-identical with the docstring stripped —
-  and it declined to trade that property for a one-sentence message fix.
+  `check_changelog_unreleased.py` says its rules stood down because the
+  prose no longer leads with IDs, while any `###` line under `[Unreleased]`
+  is the trigger, and it counts the lines that still do; reproduced on a
+  scratch copy with one `### Fixed` added. Open decision: state the trigger
+  alone, or the trigger and the consequence, pinned by a new assertion.
+  Detail: [dossier](backlog/id-255-stand-down-note-reason.md)
 
 - [ ] **BK-361 — Typography rules are asserted in `CLAUDE.md` and enforced by nobody**
   spec: — · effort: M · audience: contributor.tooling
-  [`CLAUDE.md` § Response style](../CLAUDE.md#response-style) states four
-  typography rules: em dashes used sparingly, never `--` as an em dash
-  substitute, `—` as the table N/A value rather than `--` or `No`, and a closed
-  list of contexts where `--` survives. Nothing checks any of them.
-  `scripts/check_tla_no_emdash.py` is the nearest thing and reads only
-  `sdd/formal/tla/**/*.tla`, so it reaches none of the prose the rules govern.
-  The promise this sits under is the one at stake: an authority doc asserting a
-  convention the corpus does not follow misleads the next person who reads it as
-  a description of the corpus.
-
-  **Measured over the 318 tracked `.md` files** (`git ls-files '*.md'`, scanned
-  with fenced blocks and HTML comments stripped and the rule's own exemption
-  list applied):
-  - **9 uses of `--` or `---` as an em dash, across 7 files.** Three are in
-    user-facing pages: `docs-src/guides/backends/sql-query.md`,
-    `docs-src/guides/glob-pattern-matching.md`, and
-    `docs-src/reference/api/backends/sql-query.md`.
-  - **73 table cells reading `No` or `no` where the rule requires `—`, across 17
-    files.** Twelve sit in three specs — `014-pyarrow-filesystem-adapter.md`,
-    `031-ext-dagster.md`, `045-write-result.md` — and those are capability
-    tables, the exact shape the rule names.
-  - **23 numeric ranges written `192--214`, across 4 files.** Left unclassified
-    on purpose: the exemption covers spaced spec-ID ranges, and whether an
-    unspaced line-number range is the same thing is a decision this item does
-    not pre-make.
-
-  **Two of the four rules are mechanical; two are not.** The `--` substitute and
-  the table N/A value have exact definitions. "Sparingly" has no threshold, and
-  measuring one first shows why inventing it would fail: per-file em dash density
-  across the 51 `sdd/research/` records over 500 words runs from 0.3 to 40.9 per
-  1000 words, a 136× spread over files nobody has called wrong. Scope a first
-  pass to the two absolute rules and leave density review-enforced.
-
-  **Constraints for whoever implements this.** A line-based scanner over-reports:
-  the scan above produced one false positive at `sdd/BACKLOG-DONE.md:3560`, where
-  a backtick span wraps two lines and hides a CLI flag from a per-line filter.
-  Multi-line backtick and comment handling is a requirement, not a refinement.
-  The exemption list is a closed set living in `CLAUDE.md`, so the check either
-  reads it there or restates it — the second is a second description and is what
-  [`DRIFT-RULES.md`](DRIFT-RULES.md#rules) governs, which applies here in full
-  because this adds a cross-artifact check. And note the wiring trap BK-333
-  documents: a checker reading `.md` under `sdd/` must reach a gate that an
-  `sdd/`-only diff actually triggers, which is the failure `check_tla_no_emdash`
-  already demonstrates.
-
-  **Open question:** whether the 73 cells and 9 substitutions are corrected in
-  the same change or baselined the way `check_formal_trace` baselines its two
-  known gaps. The corpus fix is the larger half of the effort, and it is the half
-  that decides whether the gate can land green.
+  `CLAUDE.md` § Response style states four typography rules and no checker
+  scans prose for them; re-counted over 399 tracked `.md` files, 9 `--` em
+  dashes sit in 7 files and 73 `No` table cells in 17. Only TLA files have
+  an em-dash check. Open decision: correct the existing hits first or
+  baseline them, which decides whether the gate lands green.
+  Detail: [dossier](backlog/bk-361-typography-rules-unenforced.md)
 
 - [ ] **BK-362 — A `repo-only` marker does not stop the docs bridge claiming the file**
   spec: — · effort: S · audience: contributor.tooling
-  [`AUTHORING.md`](AUTHORING.md#file-classification) Rule 1 says a per-file
-  marker overrides the directory default, and for classification it does. The nav
-  and the design index do not consult it: they are generated from the `glob` in
-  each `sdd_kinds` entry of [`docs-src/_path_rules.yml`](../docs-src/_path_rules.yml),
-  so a file matching `research-*.md` is claimed for the nav even when its marker
-  says `repo-only` and the bridge therefore emits no page.
-  **Measured, not predicted.** Adding a repo-only `research-*.md` produced four
-  strict-build failures — one `nav` reference and three links, from `SUMMARY.md`,
-  `explanation/design/index.md` and `explanation/design/research/index.md` —
-  each naming a page the bridge had correctly declined to emit. The file was
-  reverted; the tooling gap was not, which is why this item exists rather than a
-  paragraph in a merged PR description.
-  **The gate that should catch it does not.** `check_docs_framework.py` passes in
-  that state, reporting all seven of G-01..G-07 green, because classification is
-  in fact correct; only `docs-build --strict` aborts. So the fast checker is
-  wired and blind, which is the shape BK-333 documents for gate routing,
-  arriving here as a checker that runs and does not look.
-  **A precedented fix exists and is per-file.** `sdd/adrs/DIGEST.md` carries both
-  a `repo-only` marker and a `skip_stems` entry, and the pair is what works. That
-  is the disposition to weigh against: teach the generator to read markers, or
-  keep `skip_stems` and document the pairing where an author will meet it. The
-  second is cheaper and silently fails the next author who does not know.
+  `scripts/docs/scan.py`'s `_scan_kind` never reads a file's `doc:` marker,
+  so an `sdd/` page marked `repo-only` still reaches the site's nav and
+  index pages against AUTHORING Rule 1; reproduced with a probe file. Only
+  the skip-listed `adrs/DIGEST.md` carries it today. Open decision: none on
+  shape; the fix and its strict-build evidence are in the dossier.
+  Detail: [dossier](backlog/bk-362-repo-only-marker-docs-bridge.md)
 
 - [ ] **BK-363 — Two coordination artefacts demand a trace the authority does not owe**
   spec: — · effort: S · audience: contributor.process
-  [`CLAUDE.md` § Trace authoring](../CLAUDE.md#trace-authoring) owes a trace when
-  work *implements* an item or closes it by implementing it, and carves out an
-  item decided against, one absorbed, and a pure advisory annotation. Two
-  artefacts that route on the same rule are stricter than it.
-  - `.claude/skills/pr/SKILL.md` step 3 extracts `^([A-Z]+-\d+[a-z]?)[:\s]` from
-    every commit subject and stops when any ID lacks `sdd/traces/<id>-*.yml`,
-    with no exemption for an item that is *filed* rather than implemented. The
-    commit filing BK-361 is subject-prefixed `BK-361:` per
-    [§ Backlog](../CLAUDE.md#backlog), so the gate would block a PR the authority
-    says owes nothing.
-  - [`CLAUDE-REFERENCE.md`](CLAUDE-REFERENCE.md) "Backlog item touched" carries
-    the narrower form: it exempts only an item decided against or absorbed, and
-    omits both the filed-without-implementation case and the advisory annotation.
-  **Same promise as BK-361, opposite polarity.** BK-361 is an authority asserting
-  what no mechanism checks; this is a mechanism enforcing more than the authority
-  asserts. Both make a coordination artefact say something untrue, which is what
-  this section is for.
-  **What it does not decide.** Whether the fix is an exemption in the gate keyed
-  on the diff containing no implementation, a convention that a filing commit
-  carries no ID prefix — which would contradict § Backlog — or an accepted
-  divergence registered under [`DRIFT-RULES.md` Rule 6](DRIFT-RULES.md#tolerated).
-  The first is the only one that leaves both artefacts true.
+  `/pr`'s trace gate stops on every claimed ID with no trace, and both
+  ripple-check "Backlog item touched" rows owe one on filing, while
+  `CLAUDE.md` § Trace authoring owes none for filing or an advisory edit;
+  `/fix-pr` relies on the same gate (dossier correction). Open decision: a
+  gate exemption for a diff with no implementation, or a registered divergence.
+  Detail: [dossier](backlog/bk-363-coordination-trace-demand.md)
 
 - [ ] **BK-346 — The ripple-check table answers questions adjacent to the ones asked**
   spec: — · effort: M · audience: contributor.process
-  One class with **six** measured instances, not six items — counted from the
-  numbered list below, which is the only derivation this figure has. Each is a
-  reader who consulted the
-  [Pre-work index](CLAUDE-REFERENCE.md#pre-work-index), got an answer, and acted
-  on it — and the answer was to a neighbouring question. Any row change lands in
-  **both** presentations; `check_ripple_parity.py` enforces trigger-parity, so a
-  row added to one and not the other fails `lint`.
-  **The open question is the shape of the fix**, not whether there is a defect:
-  N rows, N widened rows, or a note about the table's granularity. That question
-  is shared by instances **1 to 4**, which want a row and differ only in trigger.
-  **Instances 5 and 6 each carry a second disposition of their own**, stated in
-  place: 5's is deleting the restating copies rather than adding a row, and 6's
-  is that a gate over "an assertion went stale" is harder than it looks. So this
-  is one class with one shared question and two members that may not answer it
-  the same way — and instance 5's choice sets the effort for the group: S if it
-  goes one way, M the other, and `effort:` states the upper bound.
-  1. **New test file** asks whether the file needs an `os_sensitive` mark and is
-     silent on placement, so nothing routes an author to TEST-003 when adding
-     one. `check_test_placement.py` enforces three other rules and not this one.
-     Two files landed mixing sync and async in one module; a round-1 reviewer
-     caught it.
-  2. **Public method signature** answers for signatures. A spec clause can change
-     what an operation *tolerates* without touching a signature, and then no row
-     points from the clause to the ABC docstrings that define it — four of them
-     said nothing about the new rule for seven rounds.
-  3. **CHANGELOG entry** says where a new entry goes and stops. It does not ask
-     whether an *unreleased sibling* entry has been invalidated by the new one.
-     One had been, by the same item, in the same section.
-  4. **Adding a `hatch` script alias** (was BK-334, absorbed here). No trigger covers adding an
-     entry to `pyproject.toml`'s `[tool.hatch.envs.default.scripts]`. That edit
-     decides whether a new `scripts/*.py` is reachable by anything — whether it
-     joins `lint` / `preflight` / `docs-gate` / `all`, or is deliberately left
-     out. It fires on every new script in `scripts/`, of which the repo has
-     dozens and every one carries an alias. BK-330 reasoned to the right answer
-     only via the adjacent cross-artifact row, which now covers drift reports and
-     still says nothing about a `gen_*` or a `bench-*`.
-  5. **Widening an authority doc's scope** (was BK-337, absorbed here). There is a row for a
-     **new** authoritative process doc, and one for an authority **direction**
-     amended. Neither fires on the commonest amendment: an existing doc's scope
-     or subject sentence widening, after which nothing finds the copies that
-     restate that scope. Measured target set at filing — six live restating
-     copies of one direction: `CLAUDE.md` § Drift checks, `sdd/CI-OPERATIONS.md`,
-     `sdd/CLAUDE-REFERENCE.md` in both ripple presentations,
-     `.claude/agents/sdd-expert.md` and `documentation-expert.md`, and
-     `.claude/skills/rvw-pr/SKILL.md` and `audit/SKILL.md`. PR #944 widened
-     `DRIFT-RULES.md`'s scope sentence and took four review rounds to find them
-     all, being one copy short in three of those rounds. `check_ripple_parity.py`
-     structurally cannot help — it enforces parity between the two ripple
-     presentations, not between them and copies scattered through `.claude/**`.
-     **This instance has a better second disposition:** delete the restatements
-     and let each reader link to the doc that states its own scope, as
-     `CLAUDE.md` § Drift checks already half-does. A row keeps N copies
-     synchronised; deletion removes the synchronisation problem. The obstacle is
-     that agent-facing files are read cold by a process that may not follow a
-     link, which is the reasoning BK-329 recorded when it accepted the copies.
-     **Choosing between the two is the first half of this item**, and it decides
-     the effort for the whole group.
-  6. **Closing a backlog item** (was ID-248, absorbed here). The **Backlog item touched** row
-     names the trace, the schema and the CHANGELOG-audience rule. It does not
-     name the **inbound** references: other items, section preambles, and
-     `BACKLOG-DONE.md` entries that cite the closing item by ID and assert
-     something about its state. Measured from closing ID-238 in one PR — four
-     instances, each carrying a claim the close falsified rather than a bare
-     cross-reference; two caught by the author's grep, **two more only by
-     review**, which is itself the measurement. The asserting kind is what makes
-     this more than link rot: [principle 3](../CLAUDE.md#principles) is violated
-     the moment the item closes, and the stale sentence reads as current. One
-     instance is a **distinct sub-shape**: not a stale assertion *about* the
-     closed item, but a live citation *of* it whose referent the close destroyed
-     — the rewrite into `BACKLOG-DONE.md` dropped the paragraph, so the ID
-     resolved and the sentence around it pointed at nothing. That sub-shape sits
-     between this row and ID-235's inbound-citation pass, because the ID keeps
-     resolving while the target is gone; **decide which owns it when either is
-     picked up.** Note a gate is harder than it looks: the defect is an assertion
-     going stale, not a reference dangling, so ID-235's mechanism does not reach
-     it, and the open question is whether the row can say anything more useful
-     than "grep the ID and read every hit".
+  Six ripple-check triggers ask a neighbouring question, for instance the
+  new-test-file row asks only about `os_sensitive`; re-read, none of the six
+  is answered, and the parity gate guarantees only Pre-work → Detailed, not
+  both ways (dossier correction). Open decision: per instance, widen the
+  row, add one, or point at the checker, which BK-329's reasoning bars.
+  Detail: [dossier](backlog/bk-346-ripple-check-blind-spots.md)
 
 - [ ] **ID-207 — Push `check_formal_trace.py` past citation hygiene (steps 3 and 4 only)**
   spec: — · effort: M · audience: contributor.tooling
-  ID-206 shipped `scripts/check_formal_trace.py`; a PR #663 review confirmed it
-  certifies *citation hygiene at spec-ID granularity*, not clause-level
-  enforcement. Two of the four hardening steps originally proposed are cheap,
-  have measured motivation, and are what remains of this item:
-  3. **Push T past citation.** A marker only cites an ID; it does not prove the
-     test asserts the clause, is enabled, or cites the *right* ID — a
-     wrong-but-real ID passes F2 and even satisfies F1. This is the
-     "citation ≠ assertion" half of what BK-324's four instances exhibited.
-  4. **Bar baseline growth mechanically.** `_BASELINE` shrink-only is a review
-     convention; a new violation can be parked by editing the frozenset. A
-     committed count or hash pinned by a separate check would make it mechanical.
-  **Steps 1 and 2 were dropped, on this item's own measurement.** Step 2 (clause
-  granularity instead of ID granularity) carries an L cost over roughly **2.5%**
-  of the claim space — the Dafny model reaches 26 of 933 declared sections and 94
-  tag sites of a corpus estimated near 3,600 clauses — and a design investigation
-  found it would have caught **none** of the four motivating instances. The
-  decisive case is review findings 1/3/4: BE-021's F1 was green for the entire
-  life of the divergence, because the tests existed, cited the right ID, and were
-  enabled, while carrying per-fixture skips and capability gates. Finer
-  identifiers make omission detection finer; they do not convert it into a
-  contradiction detector. It also needed an ADR before implementation, since
-  sub-IDs change the spec-ID grammar
-  ([`000-process.md` Rule 5](000-process.md#rules)) on which ~11,800 citations
-  across 518 files depend. Step 1 (derive D mechanically from contract `ensures`)
-  goes with it, being step 2's precondition.
-  **Do not re-file the dropped half without new evidence** — the measurement
-  above is the reason, and it is recorded here so the argument is not had twice.
+  `check_formal_trace.py` certifies citation, not assertion: a marker on a
+  skipped test or a wrong-but-real ID passes, and `_BASELINE` grows by
+  editing it; re-read, neither is built. The research-ranking qualification
+  that scoped it to these two steps is now in the dossier. Open decision:
+  none on shape; both steps and the dropped half's measurement are there.
+  Detail: [dossier](backlog/id-207-formal-trace-assertion.md)
 
 - [ ] **ID-245 — Derived inventories replacing hand-maintained ones**
   spec: — · effort: M · audience: infra.test, contributor.tooling
-  Four generated surfaces — three of them sharing one design decision, the
-  fourth independent — and the same
-  [`DRIFT-RULES.md`](DRIFT-RULES.md#rules) obligations on each: Rule 3 (the claim
-  space must be *derived*, and its granularity stated), Rule 4 (which of document
-  and generator governs), Rule 5 (gating or advisory, and why).
-  - **Spec 003's cassette-reachability table.**
-    [`003-backend-adapter-contract.md`](specs/003-backend-adapter-contract.md)
-    BE-029's coverage note tabulates, per backend, which root-path conformance
-    cells execute and which are pinned only in a per-backend home. Every figure
-    was counted by hand, against a corpus that grows, and ID-241 has already
-    rewritten it once for that reason. This is the direct instance of
-    [principle 9](../CLAUDE.md#principles) on a published spec. Fix shape: a
-    script that runs the conformance suite (or its collection plus the replay
-    guard's verdict) and emits, per replay fixture, which cells execute and which
-    skip for want of a cassette; spec 003 then cites the generator. Not derivable
-    from collection alone — whether a cell needs a cassette depends on whether
-    the backend issues a request, which only running it answers (ID-241).
-    **Position: after ID-244**, which changes which cells a read-only backend can
-    reach, so building this first would measure a surface about to move.
-  - **The characteristic-accountability record** (was ID-236, absorbed here),
-    research § 9 step 7.
-    `check_formal_trace.py` computes a spec-coverage matrix and discards it.
-    Render it at release time — every spec ID, its verification evidence (test
-    marker, Dafny tag, TLA+ invariant), its status — so "what was verified, and
-    by what" is answerable historically rather than only at HEAD. Its shape
-    changes under ID-207, so cost is unknown until that lands.
-  - [x] **The cross-artifact checker inventory** (was ID-237, absorbed here),
-    research § 9 step 8. **Shipped.** [`GATE-INVENTORY.md`](GATE-INVENTORY.md),
-    derived by `scripts/gen_gate_inventory.py` and gating via `--check` in both
-    `lint` and `docs-gate` (two homes because CODE_PAT skips `lint` for an
-    `sdd/`-only edit, which is exactly an edit to the generated file). Both
-    named complications were answered as scoped: single-artifact rule checks
-    carry `kind: rule` and render in their own section, alongside a third
-    `kind: report` for the mechanisms that measure rather than assert; read the
-    per-kind split off that file's section headings rather than from here, since
-    it moves whenever a mechanism is declared. The claim space is the wiring in
-    `pyproject.toml`, `.pre-commit-config.yaml`
-    plus `.github/workflows/` rather than a glob, which is what reaches
-    `scripts/docs/check_links.py`. Research § 4b's eleven-row table is annotated
-    as a dated measurement naming the generated file as its successor. Two
-    bounds worth carrying forward: a mechanism that is not a script invocation
-    is out of range (the conformance suite, § 4b's one row with no successor
-    entry), and the declarations' *content* is unverified — a gate rewritten to
-    compare something else, with its block left alone, renders a truthful-looking
-    wrong row. The full bound list is the generated file's last section.
-    **One measured lesson worth carrying to the remaining bullets**, since they
-    build the same shape: across six review passes the *code* converged after two
-    (the last four execution-based passes found no bug between them), while the
-    *narrative* around it — the generator's docstring, this entry, the research
-    annotation, the trace — kept producing defects at roughly the rate the fix
-    passes edited it. Every recurrence was a sentence describing code that a later
-    commit changed. Two remedies worked and are worth reusing rather than
-    rediscovering: name a thing once in code and render it (`_WIRING_SOURCES`,
-    `_BOUNDS`), and point at the derived artifact for any figure that moves rather
-    than restating it. One did not: correcting the prose in place, which is what
-    the first four passes did.
-  - **BE-021's divergence counts, and the artifacts that re-count against them.**
-    The absent-container divergence set is stated as a bullet list in BE-021, as
-    a class count in `sdd/BACKLOG.md` § 1, and again in the CHANGELOG, spec 040
-    and BUG-254's register entry — in **four incompatible frames**: bullets, backend classes,
-    operations, and helper call sites. Nothing derives any of them, and each
-    frame is explained in prose that is itself a claim that can go stale.
-    Measured cost: BUG-246 ran four numbered review rounds plus the closing
-    gates, and **11 of its round-4 findings were figures or scope sentences in
-    this set**, including one fixed by appending the right number beside the
-    wrong one and one corrected in the same commit that falsified it by adding an
-    item to the section being counted. Each fix pass added figures and produced a
-    fresh defect, and the closing audit found three more after round 4 had
-    declared the set clean: a `ping()` divergence titled "two backends" over a
-    table naming three, a root-breach cell count stated as six in two artifacts
-    where expanding the grouped rows gives seven, and a truncation item saying
-    "all three" of a set the same item had just reduced to two. Fix shape: one
-    authoritative divergence table that the other artifacts link to rather than
-    re-count against, and delete the meta-prose explaining which frame each
-    sentence uses — that prose was two of the eleven findings on its own.
-    **Position: independent of the other three**, and the only one of the four
-    with a measured defect rate behind it.
-    **Four qualifications from the session that closed BUG-246**, each amending
-    the fix shape above rather than restating it:
-    1. **The four frames are four different questions, so one flat table serves
-       none of them.** Bullets answer how many divergence entries exist; classes,
-       how many backends disagree; operations, how wide the breach is on one
-       backend; call sites, how much code implements the rule. The shape that
-       works is one row per (backend × operation) carrying the clause it
-       breaches, with every count derived by filtering it — never a second table.
-    2. **"Delete the meta-prose" is too blunt, and following it literally will
-       create a defect.** BE-021 counts move/copy as one operation in the roster
-       paragraph and as two in the SQLBlob divergence bullet, seventy lines
-       apart; the sentence saying so is the only thing stopping a future reader
-       "fixing" fourteen or twelve to match the other. Delete prose that explains
-       which frame a sentence uses; keep prose that explains why two frames
-       legitimately differ.
-    3. **A generator cannot produce the whole table.** "Pre-existing", "outside
-       the clause until BUG-246 wrote the bound", "the error type actively
-       misleads" are judgements. Realistic shape: generated columns for what each
-       backend answers, curated annotations for why — which means
-       [`DRIFT-RULES.md` Rule 4](DRIFT-RULES.md#authority) is answered **per
-       column, not per table**. Bullet 3 shipped that pattern; its per-column
-       authority table is the worked example. It also settles this bullet's
-       [Rule 5](DRIFT-RULES.md#mandatory-path) side: **advisory, not gating** —
-       a gate over a table containing judgements produces false failures, where
-       bullet 3 gates precisely because no column of it carries one.
-    4. **The set changes when the clause changes, not only when code changes** —
-       and this is the blocker. BUG-255 and BUG-257 entered § Known divergences
-       with no behaviour changing at all: writing the first-page bound into
-       § Reach enlarged what the clause governs. A generator keyed on backend
-       behaviour alone would have missed both. The input is code-behaviour ×
-       clause-text, and the clause-text half has no machine-readable form today.
-    **The surface to re-point**, counted at `959814e` with a case-sensitive
-    match on `absent container|absent-container`, one count per file, `sdd/` and
-    docs prose only: `sdd/specs/003` 15, `sdd/BACKLOG.md` 15,
-    `sdd/BACKLOG-DONE.md` 9, `sdd/specs/044` 5, `sdd/specs/040` 3,
-    `sdd/specs/029` 2, `sdd/specs/026` 2, `sdd/adrs/0038` 2,
-    `docs-src/guides/custom-backend-guide.md` 2, `CHANGELOG.md` 1. Traces and
-    the `src/`/`tests/` hits are excluded as records and as the behaviour itself.
-    Read the custom-backend guide first: it is the one artifact in that set that
-    never drifted, so it shows what a correctly placed statement of this clause
-    looks like.
-  **The shared question, now answered once by bullet 3:** a docstring
-  convention, not a curated mapping — a curated mapping is precisely the
-  parallel-artifact-that-drifts problem these exist to close. It shipped as the
-  `Drift-gate::` block that [`DRIFT-RULES.md` Rule 7](DRIFT-RULES.md#miss-rate)
-  now requires of every wired mechanism. The two unbuilt inventory bullets
-  inherit that decision rather than re-make it. The fourth bullet never shared
-  it: its answer is one table rather than a better-maintained several, and what
-  it takes from bullet 3 instead is the per-column authority pattern, since the
-  convention governs generated columns only and its curated ones need their
-  authority stated per column.
+  Three of four inventories are still hand-maintained: spec 003's
+  cassette-reachability table (after ID-244, § 2), the per-spec
+  accountability record (after ID-207), and BE-021's divergence counts,
+  stated in four frames that drift. The checker inventory has shipped. Open
+  decision: the divergence table's input, whose clause half has no form.
+  Detail: [dossier](backlog/id-245-derived-inventories.md)
 
 - [ ] **ID-150 — Revisit informational `verify-tla` CI status (2026-10-19)**
   spec: — · effort: S · audience: library.maintainer
-  First revisit ticket for the informational `verify-tla` job landed under
-  ID-147 on 2026-04-19. Per [`sdd/formal/README.md` § Authoring rules](formal/README.md#authoring-rules) (3),
-  the status is revisited every 6 months or every 10 spec amendments touching
-  TLA-backed sections (whichever first). At the revisit, record one of:
-  **promote** (check caught a real regression — add to the gate's `needs`),
-  **remove** (no catches, no active modules — drop the job), or **re-defer**
-  (still useful but no catch yet — open the next revisit ticket). A calendar
-  without a ticket is the same as no calendar, which is why this item exists.
-  **Exit criteria:** decision logged in the ticket's close note; if re-deferred,
-  the successor ticket is linked here; if promoted, `verify-tla` joins the
-  `gate.needs` list in `.github/workflows/ci.yml` and the caveat in
-  `sdd/formal/README.md` is updated.
+  `verify-tla` has been informational since 2026-04-19 and is due its first
+  revisit on 2026-10-19; the item narrows the README's cadence of 10 spec
+  amendments to TLA-backed sections and drops "on a production branch"
+  (dossier correction). No catch is recorded. Open decision: promote,
+  remove or re-defer, with a successor ticket.
+  Detail: [dossier](backlog/id-150-verify-tla-revisit.md)
 
 - [ ] **ID-259 — Trace-outcome report revisit at the next release**
   spec: — · effort: S · audience: contributor.process
-  Third revisit ticket for the release-anchored trigger ID-238 shipped;
-  successor to [ID-258](BACKLOG-DONE.md), which fired at v0.32.0. Per
-  [`CONTRIBUTING.md` § Release](../CONTRIBUTING.md#release) Phase 0, each release
-  reads `hatch run report-trace-outcomes` and closes the open revisit ticket.
-  This item is the pin that makes the ticket findable.
-  **The pin lives here, not in the checklist.** `CONTRIBUTING.md` is a published
-  surface, so [CONTENT-RULES Rules 1 and 5](CONTENT-RULES.md#rules) bar a tracker
-  ID from it (`check_no_tracker_refs` enforces this, and caught the first attempt).
-  The checklist therefore describes the behaviour and points here; this file is
-  the single place that says *which* ticket is open — the same split
-  `sdd/formal/README.md` uses to pin ID-150. **Separate from ID-150 for that
-  reason**: two published documents pin two different tickets, with different
-  triggers and different exit sets, and each mints its own successor. One merged
-  ticket would falsely close one trigger with the other.
-  **Record at the revisit:** the corpus totals (the baseline the following
-  release differences against — the report keeps no history); the references
-  selected (top-ranked row, plus any row with `rate` ≥ 1.5× the top row's at
-  `reads` ≥ 20 — a fitted threshold, re-check it rather than inherit it); and per
-  selected reference one of **act** (file work against it), **defer** (leave it,
-  say why), or **accept** (the tags are exposure, not a defect).
-  **Baseline to difference against**, measured at `1d43c1b` (the v0.32.0
-  release base): 310 traces, 306 negative tags (263 `misleading`, 43 `unclear`),
-  `sdd/BACKLOG.md` top-ranked at 30 over 302 reads (9.9% as the report displays
-  it; compute the bar from 30/302, not from the rounded figure — ID-258 did the
-  latter and review caught it). The previous two
-  baselines were 302 traces / 284 tags at `6cd170c` and 270 / 207 at `4076ed7`,
-  with the same top row at 9.8% and 9.3%; ID-258's close note carries both
-  differences and how each selected reference was dispositioned.
-  **Read the interval, not only the cumulative table.** ID-258 selected the same
-  five references as ID-249, and three of them had gained no tag at all in
-  between — an absolute-count ranking over a cumulative corpus re-selects on
-  standing totals, so a reference can be selected twice on the strength of
-  evidence already dispositioned. Difference the per-reference counts against the
-  baseline above before dispositioning, and say which selections are new
-  evidence and which are carry-over.
-  **Exit criteria:** decision logged here, then the successor ticket opened and
-  its ID named in this item's close note.
+  The release-anchored trace-outcome revisit fires at the next release, and
+  none has happened since v0.32.0 (no `v0.33.0` tag); today's report counts
+  335 traces and 331 negative tags against the recorded 310 and 306. Open
+  decision: at that release, act, defer or accept per selected reference,
+  and name the successor.
+  Detail: [dossier](backlog/id-259-trace-outcome-revisit.md)
 
 - [~] **BK-365 — Both backlog files grew past what a maintainer can read, and nothing measures it**
   spec: — · effort: M · audience: contributor.process
-  **In progress: [RFC-0016](rfcs/rfc-0016-backlog-as-index.md) is accepted as
-  [ADR-0040](adrs/0040-backlog-as-index.md)** for the `BACKLOG.md` half — an
-  index with per-item dossiers. Shipped: the rules header, R1–R4, the § 1
-  pilot (16 items to `sdd/backlog/`), § 2 (9 items), § 3 (8 items), § 4
-  (5 items) and § 5 (14 items), per `sdd/rfcs/rfc-0016-measure.py`; what
-  remains is the exit criteria below.
-  **`sdd/BACKLOG.md` is 20,097 words at `6cec225`.** That is the file a maintainer
-  reads to decide what to work on, and it is now roughly eighty pages of prose. Two
-  independent multipliers got it there over seven weeks (2026-07-18 → 2026-09-05):
-  the item count doubled, 28 → 57, and the median words per item doubled too,
-  145 → 290. Total 4,823 → 20,097 words — 4.2× against 12.7% growth in `src/`
-  over the same window. `BACKLOG-DONE.md` shows the same shape at 104,328 words
-  over 651 items, and its per-release medians run from **10 words per completed
-  item at v0.3.0 to 649 under `Unreleased`** — 65×, of which 2.8× arrived in the
-  current cycle alone (v0.30.0 sat at 234). **Pinned because both files change on
-  every merge**: re-derive rather than quote, and read the ratios, which are stable,
-  rather than the totals, which are not.
-  **Measured, not felt.** Derivation: for each entry, the words between its
-  `- [x] **ID-NNN` header and the next header or heading, over
-  `git show <sha>:sdd/BACKLOG.md` across the file's history; per-release figures
-  from `BACKLOG-DONE.md`'s own `## vX.Y.Z` sections. Both were run before this
-  entry was written.
-  **Why this is not simply Rule 7's job.**
-  [`CONTENT-RULES.md` Rule 7](CONTENT-RULES.md#kernsatz) binds `sdd/`, so it
-  formally reaches both files, but it tests whether a *section* opens with its
-  core claim and a backlog entry is not a section. Nothing tests whether an entry
-  has outgrown its next reader, and the release step
-  ([`CONTRIBUTING.md` § Release](../CONTRIBUTING.md#release)) renames
-  `## Unreleased` to `## vX.Y.Z` without condensing, so nothing shortens an entry
-  after it is written.
-  **Answered for `BACKLOG.md` by ADR-0040:** whether a 290-word median is a
-  defect or the price of [principle 9](../CLAUDE.md#principles)'s derivations.
-  Length moves to a dossier rather than being cut, which is what
-  [research](research/research-appropriate-level-of-detail.md) § 9.2 permits,
-  and the caps are a recorded departure from its § 9.1. The question stays open
-  for `BACKLOG-DONE.md`.
-  **Exit criteria:** § 6 converted (dropping its `unconverted` marker, so
-  R2/R3 then gate it), and a recorded decision on the
-  `BACKLOG-DONE.md` half with any mechanism's bound stated per
-  [`DRIFT-RULES.md`](DRIFT-RULES.md#rules).
+  `BACKLOG.md` outgrew one read, and ADR-0040's index shape answers it; all
+  six sections are converted. `BACKLOG-DONE.md` has no answer: per-release
+  median words per entry run from 9.5 at v0.3.0 to 646 at v0.31.0 and 599.5
+  under Unreleased (re-derived). Open decision: whether that length is a
+  defect or the price of principle 9, and any mechanism's bound.
+  Detail: [dossier](backlog/bk-365-backlog-length-unmeasured.md)
 
 - [ ] **BK-366 — Bug share of shipped work rose 3% → 35% across five releases, undiagnosed**
   spec: — · effort: M · audience: contributor.process
-  Counting `BUG-` against all items in each `BACKLOG-DONE.md` release section:
-  **v0.27.0 3%, v0.28.0 12%, v0.29.0 21%, v0.29.1 23%, v0.30.0 35%**, with
-  `Unreleased` at 33% (16 of 49). Over the same window open `BUG-` items in
-  `BACKLOG.md` went 1 → 22 while `src/` grew 12.7%, so a larger codebase does not
-  explain it and the queue is growing rather than being worked down.
-  **Two readings fit these numbers and they need opposite responses.** Detection
-  improved — this repo added gates steadily, and a gate finds defects that
-  previously shipped silently, which would make the trend good news. Or quality
-  degraded. Nothing measured here distinguishes them, and that is the finding:
-  **the repo cannot currently tell whether its central promise is holding.**
-  **What would separate them**, none of it needing new tooling: whether each open
-  `BUG-` escaped to a released version or was caught pre-merge; which gate or
-  review caught it; and whether the classes cluster on the surfaces that grew. A
-  rise concentrated in pre-merge catches on new code is detection working; a rise
-  in escapes to released behaviour is not.
-  **Derivation:** `BUG-` versus total entry headers per `## vX.Y.Z` section of
-  `BACKLOG-DONE.md`; open counts and `src/` line totals from `git show <sha>:`
-  across the same window. Run before this entry was written.
-  **Exit criteria:** each open `BUG-` classified escaped/caught with the catching
-  mechanism named, and a recorded answer to which reading the data supports.
+  The `BUG-` share of shipped items rose from 3% at v0.27.0 to 41% at
+  v0.31.0 (re-derived), but v0.25.0 was already 32%, so the trend depends
+  on where it starts; 25 of 68 open items are `BUG-`. Nothing separates
+  better detection from worse quality. Open decision: none on shape; the
+  escaped-or-caught classification is in the dossier.
+  Detail: [dossier](backlog/bk-366-bug-share-undiagnosed.md)
 
 - [ ] **ID-257 — Two sessions working in parallel mint the same backlog ID, and every derivation says both are right**
   spec: — · effort: S · audience: contributor.tooling
-  **Reproduced by having happened**: BUG-275's branch minted `BUG-278` for a
-  cross-backend divergence while a concurrent BUG-274 session minted `BUG-278`
-  for something else. Neither session was careless — at mint time `master`
-  carried no 278 in either backlog file, so both computed the same next integer
-  and both were correct about everything they could see. It surfaced only when
-  the second branch rebased and `gen-backlogid --check` reported the collision;
-  one of the two items had to be retired and re-homed after the fact.
-  **The gap is unmerged branches, not the floor.** `gen_backlogid.py`'s `--check`
-  already takes `max(BACKLOG-DONE, BACKLOG open)` for its "Next safe IDs" line,
-  and [§ How this file works](#how-this-file-works) sends an author to that
-  line — so the documented procedure is sound and was followed. What no
-  derivation reads is *another branch*, which is where a concurrently minted ID
-  lives until it merges. An earlier account of this incident inside BUG-275's
-  trace blamed the floor for reading `BACKLOG-DONE.md` only; that was wrong, and
-  opening the script is what showed it.
-  **One real inaccuracy to fix in passing**: the collision message prints
-  `(floor: sdd/backlogid.json)`, and that file *is* BACKLOG-DONE-only, so an
-  author who follows the pointer rather than the prose gets a number that may
-  already be taken.
-  **The open question is what mechanism**, which is why this is `ID-` and not
-  `BK-`. Cheapest is a check against the remote — `git ls-remote` plus the
-  backlog files on each open branch — which costs a network call on a gate that
-  is currently offline and pure. Alternatives worth pricing against it: minting
-  from a range reserved per session, deriving the ID from the branch, or
-  accepting collisions and making the *rebase* the enforcement point, which is
-  what caught this one and cost only a re-home.
-  **Filed here rather than as a `BUG-`** because nothing is defective: every
-  component behaved as specified, and it is the coordination between them that
-  has no owner. That is this section's promise — the artifacts maintainers
-  coordinate through say what is actually true — failing across two working
-  copies rather than inside one.
-  **A second instance, and it narrows the check's reach.** ID-182's branch
-  (#998) and BK-378's branch both minted `BK-367`, for unrelated items, from a
-  `master` whose next safe BK was 367 for each. The rebase reported nothing,
-  because `gen-backlogid --check` compared open IDs against done ones and two
-  *open* items sharing an ID passed it, so the duplicate was found by reading
-  `rg -n 'BK-367' sdd` after the rebase rather than by a gate.
-  **That half is now built and is no longer this item's**, under
-  [`BK-383`](BACKLOG-DONE.md): `_duplicate_ids` reports one ID carried by two
-  open headers, and `gen-backlogid --check` fails on it. What it does not do is prevent the
-  mint, which is the open question below and the whole of what remains here —
-  the gate catches the collision only once both branches have merged, and the
-  re-home still has to happen by hand.
-  **A third instance, one week later, on the same branch.** Re-homed to
-  `BK-368`, that branch waited on review while ID-018's work minted `BK-368`
-  for the conda-recipe pin gate (#1009) and closed it in the same window. This
-  one the gate did report, because the other item was done by the time the
-  branch rebased. Two collisions on one branch in nine days is the rate a
-  long-lived PR should expect under the current scheme; the item moved to
-  `BK-378`.
+  Two sessions minting in parallel take the same next ID, because
+  `gen_backlogid.py` reads only the local tree; the repo records at least
+  five such collisions where the body counts three (dossier correction).
+  BK-383 added the open-versus-open check. Open decision: how, or whether, a
+  mint can see unmerged branches.
+  Detail: [dossier](backlog/id-257-parallel-id-minting.md)
 
 - [ ] **BK-385 — The duplicate-ID gate cannot see the done register, where a collision would be permanent**
   spec: — · effort: S · audience: contributor.tooling
-  `_duplicate_ids` reports one ID on two **open** headers; `BACKLOG-DONE.md` is
-  not read, and `_extract_ids` collapses a repeat there exactly as it did on
-  the open side before `BK-383`.
-  **The path is reachable and is the ordinary shape, not an exotic one.** Two
-  branches mint one ID and each *closes* its item before merging — which is what
-  a `/ship` delivery does at the close. Neither ID is ever open, so the
-  open-versus-open rule sees nothing and the open-versus-done comparison sees
-  nothing either, and the register keeps two distinct completed items under one
-  ID with nothing reporting it. The open-side collision, by contrast, is loud
-  the moment either branch rebases.
-  **Why it was not simply widened under BK-383.** `_duplicate_ids` already takes
-  `status_chars`, so `_duplicate_ids(done_text, "x")` is the entire code change —
-  it was written, run, and reverted. Measured: it fails on **four** pairs already
-  in the register — `BK-001` (audit workflow / Azure backend), `BUG-001`,
-  `BUG-144`, and `BK-167b`, whose second header is the sanctioned `(partial)`
-  split shape rather than a collision at all. Derivation:
-  `python scripts/gen_backlogid.py --check` with that one line restored. The
-  first three are genuine ID reuse from before the discipline existed, inside
-  released sections; renumbering them would falsify the release record, and a
-  gate that ships with an exemption list on its first run is fighting its
-  subject.
-  **So the decision this item carries is what to do about the four**, and the
-  options are not equal. Grandfathering by ID has repo precedent (audit-014's
-  allow-list) and costs one entry per pair plus a justification. Exempting the
-  `(partial)` shape by rule is cleaner but reaches only `BK-167b`. Narrowing the
-  check to the `## Unreleased` section alone would catch every *future*
-  collision at the point it lands and leave released history untouched, which is
-  the option this item should price first — nothing in the register's older
-  sections can collide again.
-  **Exit criteria:** either the done register is checked, with the four resolved
-  by whichever mechanism is chosen and that choice recorded here; or the gap is
-  accepted with its reason, and `gen_backlogid.py`'s stated bound is the durable
-  record of it.
+  The duplicate-ID gate checks open headers only, so a collision reaching
+  `BACKLOG-DONE.md` stays unflagged for good; four duplicate pairs already
+  sit there (`_duplicate_ids` over the file reproduces `BK-001`, `BK-167b`,
+  `BUG-001` and `BUG-144`). Open decision: grandfather the four by ID,
+  exempt the `(partial)` shape, or check `## Unreleased` only.
+  Detail: [dossier](backlog/bk-385-done-register-duplicate-ids.md)
 
 - [ ] **BK-384 — RFC-0015 is built but unmeasured: three deliveries decide whether it graduates**
   spec: — · effort: M · audience: contributor.process
-  The open half of **BK-378**, which shipped D1 and D4 and is recorded in
-  `BACKLOG-DONE.md`. Every decision RFC-0015 proposes is now in force in the
-  skills — D2, D3's worktree half and D5's posting half since #1020, D1 and D4
-  with BK-378 — so the RFC has, for the first time, a state its acceptance
-  criterion can be read against. Nothing has read it yet.
-  **What is owed** is the criterion as § Impact wrote it: three deliveries run
-  under the rules, pooled, then `rfc-0015-findings.py` over them. Graduate if
-  (1) the loop-introduced share of must-fix findings from round 3 on is below
-  50%, (2) the derived trace block draws a finding in at most one round across
-  the three, and (3) the retraction trigger fires at most once. **One delivery is
-  one draw and is not the criterion.** With every decision shipped, any of the
-  three failing sends the RFC back to Draft with the measured figures attached,
-  not to the ADR with a softened threshold — the branch BK-379's miss was
-  explicitly *not* on, and this one is.
-  **Clause 2 is askable for the first time.** It had no referent until
-  `ship_report.py` generated the block it names; it is read from the per-file
-  count the script emits about the trace, against the hand-written block's
-  measured rate of eleven stalenesses across four traces.
-  **Three things stay held until the measurement, not because they are
-  undecided.** D3's cap lift — panel composition must not move finding counts
-  between BK-379's pilot share (RFC-0015 § Pilot result, re-based by BUG-295)
-  and this sample. D5's stop-rule wiring — its dry run fired
-  zero times under all three readings, so the constants ship unchanged and there
-  is no firing to tune them against. D6's deferred half — the whole-file brief
-  excluding the trace's `review:` key, and a measuring member re-running
-  `ship-report`.
-  **Three measured observations BK-378's review surfaced, for whoever takes
-  this.** First, **the repo's own tooling is unmeasured by the coverage gate**:
-  `pyproject.toml` scopes coverage to `--cov=remote_store`, and `ci.yml`'s
-  `tooling-tests` job states it runs without coverage, so no gap in any
-  `scripts/` gate can reach the 95% floor — those guards' whole value is that
-  job's pass/fail. Left alone deliberately: extending the scope would put every
-  existing script under a floor none was written against. Second, **D6's
-  deferred half has a permission problem**, recorded in the RFC under D6: a
-  measuring member cannot run `ship-report`, because it is not on `/rvw-pr`'s
-  by-name allowlist and it reads comment bodies, which that skill's carve-out
-  excludes. Independent re-derivation needs a mode that reads no feedback.
-  Third, **the figures D4 does not cover still went stale inside BK-378's own
-  loop**: the guard count and the scanned-surface count are about the work rather
-  than about the review, so `ship-report` does not emit them, and both were wrong
-  at the closing gate because a fix pass moved them after they were last derived.
-  D4 bounds the review block alone; the rest of a trace and a register entry stays
-  hand-derived, and re-deriving at the close is a convention nothing enforces.
-  Whether that gap is worth a gate is this item's to decide — it is the same
-  failure shape the RFC measured, one surface over.
-  **The two block-handling defects BK-378's review recorded are shipped** under
-  [`BK-383`](BACKLOG-DONE.md), with the duplicate-ID gate ID-257 hands over:
-  D4 now states that a squash merge retires every SHA in
-  `review_driven_commits`, so the list is orphaned on arrival whoever wrote it,
-  and the block carries `pr` as the handle that survives; and `check_traces.py`
-  refuses the duplicate `review:` key that a second paste leaves behind. What
-  stays here is the measurement they were blocking, not the mechanism.
-  **When pooling BK-378's PR, use 5 rounds and 54 findings, not the block's 4
-  and 41.** Round 5 was the closing exit gates, run analyze-only; its 13
-  must-fix findings were relayed to the author and fixed without being posted,
-  so no comment endpoint carries them and `ship-report` cannot see them —
-  `sdd/traces/bk-378-d1-d4.yml` states this in a note above the block. Pooled at
-  4/41 that PR contributes a denominator understated by 13 of 54, which is 24%.
-  Treat the 13 as loop-introduced-detectable-only-at-the-close.
-  **The sample is the next three deliveries**, whichever they are. `BK-380`
-  (Python 3.10's security-fix end, dated 2026-10-04) is next in line and could be
-  the first of them.
-  **Exit criteria:** RFC-0015 accepted or rejected with its open questions
-  answered — 1, 3, 4 and 6 remain; 5 was answered by BK-378; 2 is BK-353's line
-  of work and the RFC already declares it out of scope — and, if accepted,
-  an ADR amending **ADR-0033/0034/0035/0037**, 0035 because D3 widens the
-  one-seat trade in its "Every panel carries one measuring member" Decision
-  bullet, the floor unchanged.
+  Every RFC-0015 decision is in force, but its graduation criterion, three
+  deliveries pooled through `rfc-0015-findings.py`, has not been read; at
+  least nine traces carry a derived block for a PR after #1026, and the body
+  names no rule for which count (dossier correction). Open decision: which
+  deliveries form the sample, then graduate or return to Draft.
+  Detail: [dossier](backlog/bk-384-rfc-0015-graduation-measurement.md)

@@ -37,3 +37,12 @@ the groupings-first ordering trades away earliest.
 `scripts/check_changelog_unreleased.py` is inside the module docstring —
 verified by AST, base and head byte-identical with the docstring stripped —
 and it declined to trade that property for a one-sentence message fix.
+
+## Re-measured, 2026-09-28
+
+Holds. Reproduced on a scratch copy of `CHANGELOG.md` with `### Fixed` inserted
+under `## [Unreleased]`: `collect` returns no violation and the note, whose
+text is at `scripts/check_changelog_unreleased.py:667-674`, now counts "10
+line(s)", not 25. One narrowing: the module docstring (`:144-149`) does name the
+audience rule among what a stray `###` costs; what it does not price is the
+release-window trade, no audience check for the whole condense. Found by the ADR-0040 § 6 conversion.

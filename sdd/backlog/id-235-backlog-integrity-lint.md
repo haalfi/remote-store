@@ -65,3 +65,17 @@ close the class, so state its miss rate rather than implying coverage
 gate an `sdd/`-only change actually runs. This item is a live instance of its
 own subject — the deletions that produced this file's current shape are
 exactly the event the second pass exists to catch.
+
+## Correction, 2026-09-28
+
+Two statements about existing scripts are false. R1 is not scoped to converted
+sections: `_attribute_violations` runs over the whole active file
+(`scripts/gen_backlogid.py:366`); only R2 and R3 skip a marked section. And
+`check_no_tracker_refs.py` never opens either backlog file: its two mentions
+of `BACKLOG` are prose (`rg -n BACKLOG scripts/check_no_tracker_refs.py`, lines
+38 and 448). Re-derived with a scratch script over the two files: all 687
+`BACKLOG-DONE.md` headers are `[x]`, 200 of its entries carry an attribute line
+(so `gen_backlogid.py`'s "entries carry no attribute line" is false too), and
+"each retired ID appears once" would fail on BK-385's four pairs. Over the 50
+spec files, 33 cite 206 backlog IDs, 102 distinct, 91 of them in
+`BACKLOG-DONE.md`, none dangling (the body's 166/80/28/69 is older). Found by the ADR-0040 § 6 conversion.

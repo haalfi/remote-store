@@ -83,3 +83,17 @@ goes one way, M the other, and `effort:` states the upper bound.
    going stale, not a reference dangling, so ID-235's mechanism does not reach
    it, and the open question is whether the row can say anything more useful
    than "grep the ID and read every hit".
+
+## Correction, 2026-09-28
+
+None of the six is answered yet (read against `sdd/CLAUDE-REFERENCE.md`), but
+two statements are false. "A row added to one and not the other fails `lint`"
+holds in one direction only: `check_ripple_parity.py`'s docstring (lines 33-42)
+says a trigger added to the Detailed checklist alone passes unless it leads its
+section. And instance 4's "every one carries an alias" is false: 9 of the 54
+non-underscore `scripts/*.py` are never named in `pyproject.toml`
+(`drift_feedstock`, `drift_report`, `drift_smoke_map`, `gen_pages`,
+`gh_app_token`, `import_probe`, `mkdocs_hooks`, `mutation_report`,
+`repo_stats`; a scratch pass over `scripts/`), most reached from workflows or
+`mkdocs.yml` instead. Instance 6's row now also names the dossier orient step
+and register entry, and still no inbound references. Found by the ADR-0040 § 6 conversion.

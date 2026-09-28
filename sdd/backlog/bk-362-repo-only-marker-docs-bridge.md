@@ -28,3 +28,12 @@ a `repo-only` marker and a `skip_stems` entry, and the pair is what works. That
 is the disposition to weigh against: teach the generator to read markers, or
 keep `skip_stems` and document the pairing where an author will meet it. The
 second is cheaper and silently fails the next author who does not know.
+
+## Re-measured, 2026-09-28
+
+Holds. `scripts/docs/scan.py`'s `_scan_kind` consults only `skip_stems`, never
+the marker, while `_scan_kind_for_dual` honours `repo-only`; a probe file with
+the marker, fed through both, lands in the nav and index lists and in no dual
+page. Latent today: the one marked file under a scanned kind,
+`adrs/DIGEST.md`, is also in `skip_stems`. `scripts/check_sdd_index.py:47-51`
+now documents this item as a bound, which is not a fix. Found by the ADR-0040 § 6 conversion.

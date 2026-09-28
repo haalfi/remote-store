@@ -55,3 +55,15 @@ already demonstrates.
 the same change or baselined the way `check_formal_trace` baselines its two
 known gaps. The corpus fix is the larger half of the effort, and it is the half
 that decides whether the gate can land green.
+
+## Correction, 2026-09-28
+
+The corpus is 399 tracked `.md` files now (`git ls-files '*.md'`), not 318.
+Re-counted by a scratch pass over them (fences, HTML comments and inline code
+stripped; table separators, `--8<--` and spaced spec-ID ranges skipped): 9
+`--`/`---` em-dash uses in 7 files and 73 `No` table cells in 17 files, both
+as stated. "Nothing checks any of them" overstates: two generator tests pin
+`—` cells in generated tables (`tests/scripts/test_render_sdd_indexes.py`,
+`tests/scripts/test_gen_features.py`); no checker scans prose. The "23 numeric
+ranges" figure names no pattern and was not reproduced, and the
+`BACKLOG-DONE.md:3560` false positive has moved. Found by the ADR-0040 § 6 conversion.

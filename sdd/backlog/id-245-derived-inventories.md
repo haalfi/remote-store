@@ -134,3 +134,13 @@ it: its answer is one table rather than a better-maintained several, and what
 it takes from bullet 3 instead is the per-column authority pattern, since the
 convention governs generated columns only and its curated ones need their
 authority stated per column.
+
+## Re-measured, 2026-09-28
+
+Bullet 3 holds as shipped: `python scripts/gen_gate_inventory.py --check`
+reports the file up to date. The re-point surface has moved since `959814e`:
+`rg -c -s 'absent container|absent-container'` gives spec 003 at 23 (was 15),
+`sdd/BACKLOG.md` at 4 (was 15, most bodies now in dossiers) and
+`BACKLOG-DONE.md` at 17 (was 9), and the § 1 class count the fourth bullet
+names no longer exists in the index. Both dependencies stand: ID-244 is open
+in § 2, and ID-207 is open above this item. Found by the ADR-0040 § 6 conversion.

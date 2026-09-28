@@ -1,4 +1,4 @@
-# ID-254 — The `[Unreleased]` stub's section marker means one thing on half the entries and nothing on the other half
+# ID-254 — The `[Unreleased]` stub's bold marker has no defined meaning beyond `**Breaking**`, and nobody owns section assignment
 <!-- doc: repo-only -->
 
 Moved verbatim from [`BACKLOG.md` § 6](../BACKLOG.md#repo-does-not-mislead) by the ADR-0040 § 6
@@ -44,3 +44,13 @@ marker except the breaking-change gate, which keys on `**Breaking**` alone, so
 the cost today is a reader's confusion rather than a wrong release. Found by
 ID-253 while deriving the section order, and deliberately left out of its
 scope.
+
+## Correction, 2026-09-28
+
+The tally above predates v0.32.0. Re-tallied with `rg -n '^- [A-Z]+-[0-9]+[a-z]*: \*\*' CHANGELOG.md`
+over `[Unreleased]` (lines 8-21), 1 of its 10 entries carries a marker, and it
+is `**Breaking**` (BUG-254); none of `**Fix**`, `**Docs**`, `**Added**` or
+`**Change**` remains. The mixed state the old title described is gone, so the
+title now states the standing question: what the marker means beyond
+`**Breaking**`, and who assigns an entry's section. Retitled by maintainer
+decision. Found by the ADR-0040 § 6 conversion.

@@ -43,3 +43,13 @@ baseline above before dispositioning, and say which selections are new
 evidence and which are carry-over.
 **Exit criteria:** decision logged here, then the successor ticket opened and
 its ID named in this item's close note.
+
+## Correction, 2026-09-28
+
+"Two published documents pin two different tickets" is false: both pins sit in
+repo-only files, `sdd/formal/README.md` (ID-150) and `sdd/BACKLOG.md` (this
+item), while the published `CONTRIBUTING.md` pins none. The trigger has not
+fired: `git ls-remote --tags origin` shows no `v0.33.0`, and `pyproject.toml`
+reads `0.32.0`. For the difference at release, `hatch run report-trace-outcomes`
+today reports 335 traces and 331 negative tags (280 `misleading`, 51
+`unclear`), `sdd/BACKLOG.md` top at 33 over 342 reads. Found by the ADR-0040 § 6 conversion.

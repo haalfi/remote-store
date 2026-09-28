@@ -26,3 +26,13 @@ in escapes to released behaviour is not.
 across the same window. Run before this entry was written.
 **Exit criteria:** each open `BUG-` classified escaped/caught with the catching
 mechanism named, and a recorded answer to which reading the data supports.
+
+## Correction, 2026-09-28
+
+The trend depends on its window. `BUG-` headers against all `[x]` headers per
+section (scratch script over `BACKLOG-DONE.md`): v0.25.0 29/91 (32%), v0.26.0
+0/17, v0.27.0 1/37 (3%), v0.28.0 6/50, v0.29.0 4/19, v0.29.1 3/13, v0.30.0
+7/20 (35%), v0.31.0 24/59 (41%), v0.32.0 4/6, Unreleased 4/16. The five figures
+above reproduce, but starting two releases earlier the share moves 32% → 41%,
+not 3% → 35%. Open `BUG-` items now number 25 of 68
+(`rg -c '^- \[[ ~]\] \*\*BUG-' sdd/BACKLOG.md`). Found by the ADR-0040 § 6 conversion.

@@ -28,3 +28,15 @@ on the diff containing no implementation, a convention that a filing commit
 carries no ID prefix — which would contradict § Backlog — or an accepted
 divergence registered under [`DRIFT-RULES.md` Rule 6](../DRIFT-RULES.md#tolerated).
 The first is the only one that leaves both artefacts true.
+
+## Correction, 2026-09-28
+
+`/pr`'s step 3 no longer uses the quoted regex: `.claude/skills/pr/SKILL.md:27-46`
+runs `check_backlog_ids_vs_base.py --print-subject-ids` and quotes the old
+pattern only as the retired grammar. The demand holds and is wider: the gate
+stops on any claimed ID with no `find sdd/traces -iname '<id>-*.yml'` match,
+exempting nothing. The dependants are three, not two: both "Backlog item
+touched" rows of `sdd/CLAUDE-REFERENCE.md` and `.claude/skills/fix-pr/SKILL.md`,
+which relies on "The /pr trace gate guarantees it exists"
+(`git grep -n -i -E 'find sdd/traces|trace gate' -- .claude sdd/CLAUDE-REFERENCE.md`).
+Found by the ADR-0040 § 6 conversion.

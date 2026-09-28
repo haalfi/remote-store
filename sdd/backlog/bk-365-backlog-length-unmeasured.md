@@ -46,3 +46,19 @@ for `BACKLOG-DONE.md`.
 R2/R3 then gate it), and a recorded decision on the
 `BACKLOG-DONE.md` half with any mechanism's bound stated per
 [`DRIFT-RULES.md`](../DRIFT-RULES.md#rules).
+
+## Re-measured, 2026-09-28
+
+§ 6 is converted, so every section of `BACKLOG.md` is in the index shape
+(`python sdd/rfcs/rfc-0016-measure.py`: 68 items, none over 8 content lines);
+§ 2 holds 8 items today, since BUG-241 left it as BL-011. Two figures above are
+imprecise. The 20,097 words at `6cec225` is not reachable in this shallow clone;
+at `203c7caa8`, the commit that filed this item, the item text alone counts
+20,125 words over 57 items and the whole file 24,671 (a scratch script,
+`str.split()` over `git show 203c7caa8:sdd/BACKLOG.md`), so the figure is item
+text. And
+`git show 203c7caa8:sdd/BACKLOG-DONE.md | rg -c '^- \[x\] \*\*'` gives 659
+entries, not 651. Current per-release medians of words per `BACKLOG-DONE.md`
+entry (words from each `- [x] **ID` header to the next header or heading):
+9.5 at v0.3.0, 235 at v0.30.0, 646 at v0.31.0, 403 at v0.32.0 (6 entries) and
+599.5 under Unreleased (16 entries). Found by the ADR-0040 § 6 conversion.

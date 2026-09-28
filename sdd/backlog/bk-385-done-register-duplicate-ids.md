@@ -39,3 +39,10 @@ sections can collide again.
 by whichever mechanism is chosen and that choice recorded here; or the gap is
 accepted with its reason, and `gen_backlogid.py`'s stated bound is the durable
 record of it.
+
+## Re-measured, 2026-09-28
+
+Holds. From `scripts/`, `python -c "import gen_backlogid as g;
+print(sorted(g._duplicate_ids(g.BACKLOG_DONE.read_text(), 'x')))"` prints
+`['BK-001', 'BK-167b', 'BUG-001', 'BUG-144']`; none sits under `## Unreleased`,
+so narrowing the check to that section would land green today. Found by the ADR-0040 § 6 conversion.

@@ -56,3 +56,12 @@ one the gate did report, because the other item was done by the time the
 branch rebased. Two collisions on one branch in nine days is the rate a
 long-lived PR should expect under the current scheme; the item moved to
 `BK-378`.
+
+## Correction, 2026-09-28
+
+The instance count is low. Besides the three above, `BACKLOG-DONE.md` records
+two open `BK-382` headers reaching `master` and a second live collision on
+`BUG-291`, each re-homed (`rg -n 'BK-382|BUG-291' sdd/BACKLOG-DONE.md`, lines
+315 and 325-329), so the branch said to have collided twice collided a third
+time. The gap stands: `gen_backlogid.py` makes no git or network call, and the
+"(floor: sdd/backlogid.json)" wording still reads the done file only. Found by the ADR-0040 § 6 conversion.

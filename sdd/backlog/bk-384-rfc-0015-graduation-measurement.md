@@ -74,3 +74,16 @@ of work and the RFC already declares it out of scope — and, if accepted,
 an ADR amending **ADR-0033/0034/0035/0037**, 0035 because D3 widens the
 one-seat trade in its "Every panel carries one measuring member" Decision
 bullet, the floor unchanged.
+
+## Correction, 2026-09-28
+
+The sampling rule is stale. `rg -n '^  pr: 10[2-9][0-9]' sdd/traces/` finds
+derived review blocks for #1027, #1028, #1029, #1032, #1033, #1034, #1036,
+#1037 and #1038, all merged after BK-378's #1026, and this body names no rule
+for which count; the BK-365 conversions never reached round 3, so they add
+nothing to clause 1's denominator. Two instrument limits are missing:
+#1027's trace says to pool it as "6 rounds and 89 findings"
+(`sdd/traces/bk-383-duplicate-id-gate-and-d4-durability.yml:186`), because some
+rounds were posted where `ship-report` does not read. And "the block's 4 and
+41" is `submissions: 4`, not rounds; the block reads `review_rounds: 9`
+(`sdd/traces/bk-378-d1-d4.yml:310-312`). Found by the ADR-0040 § 6 conversion.

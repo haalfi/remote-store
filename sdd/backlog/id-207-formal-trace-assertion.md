@@ -33,3 +33,45 @@ across 518 files depend. Step 1 (derive D mechanically from contract `ensures`)
 goes with it, being step 2's precondition.
 **Do not re-file the dropped half without new evidence** — the measurement
 above is the reason, and it is recorded here so the argument is not had twice.
+
+## Moved from the § 6 preamble
+
+Verbatim from the section preamble the conversion removed, links re-based to
+this directory: its research pointer and the qualification that depends on it,
+moved together as [ADR-0040 § Section Promises](../adrs/0040-backlog-as-index.md)
+anticipated. Glosses: "that research doc" is
+`research-inconsistency-detection-multi-artifact.md`; "recorded here" meant the
+§ 6 preamble; "ID-207 below" is this item; "this programme" is § 6's
+cross-artifact consistency work; "§ 1" is that research doc's § 1.
+
+The argument and gap ranking behind
+the programme:
+[research](../research/research-inconsistency-detection-multi-artifact.md) § 9.
+
+**Measured qualification on that research doc's ranking**, recorded here
+because [`000-process.md` § Document types](../000-process.md) makes a research doc
+a point-in-time snapshot rather than a living one. It designates the
+canonical claim space — research § 9 step 2, which ID-207 used to carry — as
+the strategic item. That step builds an *omission detector*, research § 1 class
+E. BK-324's four instances were class A/C/D: one claim restated in several homes
+and updated in one. So step 2 is **not** what would have caught anything this
+programme has actually caught, which is why ID-207 below is scoped to steps 3
+and 4 and step 2 is gone. Detecting the rest needs semantic comparison of prose,
+which § 1 marks as having no general oracle. The mechanisms that did catch them
+were an author-side sibling sweep ([BK-336](../BACKLOG-DONE.md)) and running the
+code rather than reading the diff ([BK-344](../BACKLOG-DONE.md) and
+[BK-338](../BACKLOG-DONE.md)) — neither in the research doc's ranking.
+
+## Correction, 2026-09-28
+
+The moved qualification says "BK-324's four instances were class A/C/D", but
+the research doc's class table places BK-324 facet 4 in class E, silent
+omission (`research-inconsistency-detection-multi-artifact.md:127`, via
+`rg -n 'BK-324' sdd/research/research-inconsistency-detection-multi-artifact.md`),
+and its step 2 names facet 4 as what it closes (`:982`). The body above
+records the design investigation's result that step 2 would have caught none of
+the four; the two statements are left side by side rather than reconciled here.
+Figures above re-derived with `python scripts/check_formal_trace.py`: 938
+declared sections (the body says 933), 26 Dafny-tagged IDs and 94 tag sites
+unchanged. The "~11,800 citations across 518 files" names no derivation and
+was not reproduced. Found by the ADR-0040 § 6 conversion.
