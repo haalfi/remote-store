@@ -205,6 +205,16 @@ phases:
           had been used as the general probe clause (PING-002 and Memory's
           PING-008 are the step-1 ones).
         outcome: ok
+      - file: sdd/audits/audit-021-contract-placement.md
+        section: "Appendix, backend column of BUG-279, 265, 273"
+        read_type: verify
+        extract: >-
+          After the review close, the maintainer asked in review why only SFTP
+          and Graph own a `Session`, and chose every remote driver. The
+          appendix tags BUG-279, 265 and 273 `sftp`, so all 13 of D5's
+          defects are SFTP's, and the RFC says the other drivers' `Session`s
+          move no measured defect.
+        outcome: ok
 discovery_followups:
   - BK-388
   - BK-389

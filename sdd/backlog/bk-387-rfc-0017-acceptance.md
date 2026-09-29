@@ -74,7 +74,7 @@ minted; and, if OQ7 is "extend", a `BK-` item for the Dafny extensions minted.
 
 ## Correction (2026-09-29, at close)
 
-Four corrections to the prescription above:
+Five corrections to the prescription above:
 
 - **The ADR stays Proposed.** The maintainer made acceptance conditional on
   the first backend running on the new design. ADR-0042 is therefore Proposed,
@@ -94,6 +94,10 @@ Four corrections to the prescription above:
   acceptance" and "dependent on the ADR" above no longer hold. RFC-0017 D8
   step 2 now runs step 1 under the Proposed ADR, and its PR accepts it.
   BK-389 depends on BK-388, not on an accepted ADR.
+- **The session layer covers every remote driver**, not SFTP and Graph alone
+  as the summary above says. The maintainer widened it in review on PR
+  #1045. RFC-0017 D5 and ADR-0042 now state it, and BK-390 carries each
+  driver's `Session` into its spec at its step.
 
 Not done here: the re-homing of the open items § Impact names. The maintainer
 assigned it to BK-389 (its item 7). The decisions recorded on BUG-240, BUG-276

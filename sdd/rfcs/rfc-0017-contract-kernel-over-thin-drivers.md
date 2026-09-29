@@ -214,11 +214,11 @@ dropped-table detection is an inspector round trip (`_sqlalchemy.py` line
 (`_local.py` lines 215 and 244). SFTP's `_map_exception` is pure over the
 exception, its two connection predicates being static methods over `exc`;
 the I/O BUG-274 paid was the classification path around it re-evaluating
-the lazy `_sftp` accessor. For a D5 driver the kernel invokes `classify`
-inside `Session.run`, so a classifier that does touch the connection cannot
-re-enter the reconnecting accessor
-(BUG-274's and BUG-278's shape); for the others it runs in the choke point
-with no retry, per ADR-0011's per-backend retry, which stays the driver's.
+the lazy `_sftp` accessor. For a remote driver the kernel invokes `classify`
+inside `Session.run` (D5), so a classifier that does touch the connection
+cannot re-enter the reconnecting accessor
+(BUG-274's and BUG-278's shape); for Local and Memory, which have no
+`Session`, it runs in the choke point with no retry, per ADR-0011's per-backend retry, which stays the driver's.
 `ReadOnlyHttpBackend`'s driver raises an `HttpStatusError(status)` from its
 primitives, since its failures are status codes rather than exceptions.
 
@@ -328,11 +328,15 @@ disagree:
 | 3 | `SQLBlobBackend`, `SQLQueryBackend` | migrate |
 | 4 | `AsyncAzureBackend` | migrate: the Azure driver |
 | 5 | `LocalBackend` | migrate |
-| 6 | `SFTPBackend` | migrate, together with D5 |
+| 6 | `SFTPBackend` | migrate |
 | 7 | `GraphBackend` | migrate |
 | 8 | `ReadOnlyHttpBackend` | migrate |
 | in 2 | `S3Backend`, `S3PyArrowBackend` | retire, unmigrated, in the step-2 PR behind D8's gate; `_S3Base` goes with them |
 | in 4 | `AzureBackend` (sync) | replaced, unmigrated, by the sync driver generated from the step-4 async driver (Open Question 1), in the step-4 PR behind the same gate |
+
+Every remote driver migrates with its `Session` (D5): the protocol lands at
+step 2 with the first remote driver, and each later remote step (3, 4, 6, 7
+and 8) brings its own.
 
 **The suite is not "unchanged"; the cells that change are these, enumerated
 before step 1 and each settled before the step that changes it (Open
@@ -430,10 +434,12 @@ plus 3 × 19. The sync Azure driver generated from the async one (Open
 Question 1) is an eleventh driver: generated, except its stream-returning
 primitives (D6).
 
-### D5. A session layer for connection-oriented drivers
+### D5. A session layer for every remote driver
 
 A `Session` owns connect, the connect-retry budget, liveness, dead-client
-invalidation and one `run(op)` entry:
+invalidation and one `run(op)` entry, and every remote driver has one (decided
+at BK-387's close, widening the SFTP-and-Graph scope this section was filed
+with). Local and Memory hold no connection and have none:
 
 ```python
 class Session(Protocol):
@@ -448,12 +454,25 @@ budget (BUG-274, 278); the kernel evaluates nothing lazily outside `run`, so
 `classify` receives `connect_context()`, so a connect-time `EPERM` can be told
 from a server denial (BUG-273, 265). The budget it owns is the **connect**
 budget; per-operation retry stays the driver's, native, as ADR-0011 decides,
-and ADR-0011 is amended to state that split rather than superseded. SFTP is
-the first user and Graph (token single-flight, the copy/move monitor) the
-second. The SQL drivers are **not** users: a pool is not a session, and a
-dropped table is an absent container that `container_absent` already answers
-(BE-021, `_sqlalchemy.py`'s inspector check), not `BackendUnavailable`. D5
-reaches 13 of the 71: cluster B's 10 plus BUG-279, 265 and 273.
+and ADR-0011 is amended to state that split rather than superseded; a wire
+whose SDK does not separate connect from operation has no connect budget to
+move. What a `Session` holds follows the wire:
+
+- SFTP: the connection, its connect budget, liveness and invalidation;
+- Graph: the token (single-flight refresh) and the copy/move monitor;
+- the SQL drivers: the engine, whose pool sits inside the `Session`, which
+  invalidates a dead connection. A dropped table is still an absent container
+  that `container_absent` answers (BE-021, `_sqlalchemy.py`'s inspector
+  check), not a dead session and not `BackendUnavailable`;
+- S3 and Azure: the SDK client and its credential, the SDK's own pool and
+  retry inside it;
+- HTTP: the transport (today a `urllib` opener).
+
+D5 reaches 13 of the 71, all on SFTP: cluster B's 10 plus BUG-279, 265 and
+273 (audit-021's appendix rows tag each `sftp`). The other drivers'
+`Session`s move no measured defect; they give
+every remote driver the same lifecycle entry, so `unwrap`, `close` and
+connect-time classification have one path.
 
 ### D6. Sync and async
 

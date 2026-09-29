@@ -46,11 +46,13 @@ defects, and every figure with its derivation. This record decides it.
   `BinaryIO`, since the async ABC has no such methods and streams an iterator.
   Async-native drivers stay first-class. *Reverse if* the generated part needs
   hand edits, which would make it a second hand-maintained kernel.
-- **A session layer owns the connection lifecycle** (RFC-0017 D5). A
-  `Session` owns connect, the connect-retry budget, liveness and
-  dead-client invalidation behind one `run(op)` entry. SFTP and Graph are its
-  users; the SQL drivers are not. *Reverse if* SFTP's driver shows the
-  lifecycle cannot be separated from its operations.
+- **Every remote driver owns its connection lifecycle through a `Session`**
+  (RFC-0017 D5). The `Session` owns connect, the connect-retry budget where
+  the wire has one, liveness and dead-client invalidation behind one
+  `run(op)` entry, and the kernel runs every remote operation through it.
+  What it holds follows the wire: a connection, a token, an engine's pool, an
+  SDK client and its credential. Local and Memory have none. *Reverse if* a
+  remote driver's lifecycle cannot be separated from its operations.
 - **One driver per service; for S3 it is the boto3 one** (RFC-0017 D4).
   `S3Boto3Backend` becomes the single S3 driver, registered under `"s3"`,
   and s3fs and PyArrow's S3 filesystem stop being backend layers, so
@@ -92,8 +94,9 @@ process, and lives in RFC-0017 D3 and D8, not here.
   subclassing `Backend` directly stays valid and is no longer the documented
   route.
 - **[ADR-0011](0011-retry-per-backend-native.md)**, *retry is a transport
-  concern*: for connection-oriented drivers the **connect** budget moves to the
-  `Session` (RFC-0017 D5); per-operation retry stays each driver's native
+  concern*: for every remote driver whose wire separates connect from
+  operation, the **connect** budget moves to its `Session` (RFC-0017 D5);
+  per-operation retry stays each driver's native
   mechanism, as that record decides.
 - **[ADR-0012](0012-async-store-backend-api.md)**, *separate async types* and
   its dismissal of Option E: the types stay separate, and the dismissal is

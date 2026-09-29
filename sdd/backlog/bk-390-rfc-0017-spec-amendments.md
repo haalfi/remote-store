@@ -26,6 +26,7 @@ This item owns steps 2 to 8.
 | AZ- | the same, plus the generated sync driver | step 4 |
 | 026 | each driver's own health-check row against its `probe()`: PING-004 and PING-005 retire and an S3 driver row is added (step 2), a SQL row is added (step 3), PING-007 Azure (step 4), PING-003 Local (step 5), PING-006 SFTP (step 6), PING-011 Graph (step 7), an HTTP row is added (step 8) | that driver's step, 2 to 8 |
 | 009 | SFTP-010's connection tiers become D5's `Session` | step 6 |
+| each remote driver's own spec (S3B-, SQL-BLOB-, AZ-, 009, GR-, the HTTP spec) | its connection lifecycle stated as its `Session` (RFC-0017 D5: every remote driver has one) | that driver's step: 2, 3, 4, 6, 7, 8 |
 | 044 and GR- | GR-039 and `parents == "implicit"`; Graph's folder `modified_at` meeting the kernel's rule (RFC-0017 D3) | step 7 |
 
 **Exit criteria:** every row landed in its step's PR. Close this item with

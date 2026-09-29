@@ -24,11 +24,13 @@ Compiled from 42 ADR(s) by `scripts/gen_adr_digest.py`. Do not edit by hand; run
   `BinaryIO`, since the async ABC has no such methods and streams an iterator.
   Async-native drivers stay first-class. *Reverse if* the generated part needs
   hand edits, which would make it a second hand-maintained kernel.
-- **A session layer owns the connection lifecycle** (RFC-0017 D5). A
-  `Session` owns connect, the connect-retry budget, liveness and
-  dead-client invalidation behind one `run(op)` entry. SFTP and Graph are its
-  users; the SQL drivers are not. *Reverse if* SFTP's driver shows the
-  lifecycle cannot be separated from its operations.
+- **Every remote driver owns its connection lifecycle through a `Session`**
+  (RFC-0017 D5). The `Session` owns connect, the connect-retry budget where
+  the wire has one, liveness and dead-client invalidation behind one
+  `run(op)` entry, and the kernel runs every remote operation through it.
+  What it holds follows the wire: a connection, a token, an engine's pool, an
+  SDK client and its credential. Local and Memory have none. *Reverse if* a
+  remote driver's lifecycle cannot be separated from its operations.
 - **One driver per service; for S3 it is the boto3 one** (RFC-0017 D4).
   `S3Boto3Backend` becomes the single S3 driver, registered under `"s3"`,
   and s3fs and PyArrow's S3 filesystem stop being backend layers, so
