@@ -420,12 +420,29 @@ reaches 13 of the 71: cluster B's 10 plus BUG-279, 265 and 273.
 
 The kernel is one more sync/async pair, and the `Driver` protocol has an
 `AsyncDriver` mirror for the three async classes D3 migrates. Two options, to
-be decided before D3 starts: write the kernel once in async and generate the
-sync twin with `unasync` (the urllib3 and httpx approach), or write it sync
-and serve async drivers through `AsyncBackendSyncAdapter` with its thread hop.
-The first keeps async-native drivers first-class and is the reading D4's
-Azure bullet needs if the adapter route is taken; the second is less
-machinery. Open Question 1.
+be decided before D3 starts:
+
+1. Write the kernel once in async, `AsyncDriverBackend(AsyncBackend)` over
+   `AsyncDriver`, and generate the sync twin `DriverBackend(Backend)` with
+   `unasync` (the urllib3 and httpx approach). A sync caller of a driver that
+   exists only in async reaches it through `AsyncBackendSyncAdapter` over the
+   async kernel, which is what D4's adapter route means and why that route
+   exists only under this option: the adapter takes an `AsyncBackend`
+   (`_async_to_sync_adapter.py` line 74), and the async kernel is the one
+   D3 leaves.
+2. Write the kernel sync only, `DriverBackend(Backend)` over `Driver`, with
+   a per-primitive thread hop into the three `AsyncDriver`s (the hop
+   `AsyncBackendSyncAdapter` makes per operation today, moved to the driver
+   boundary), and serve the async surface spec 029 keeps through
+   `SyncBackendAdapter(AsyncBackend)` over the sync kernel. Async-native
+   drivers then pay two hops on the async surface and are no longer
+   first-class, and D4's adapter route is unavailable, so sync Azure
+   callers under this option get the generated-driver reading or the
+   hand-written class stays.
+
+The first keeps async-native drivers first-class and is the only reading
+under which D4's adapter route exists; the second is less machinery at the
+cost of the async surface. Open Question 1.
 
 ### D7. What the formal layer covers, and where the oracle stays
 
@@ -706,10 +723,12 @@ it.
 
 ## Open Questions
 
-1. **D6:** generated sync twin, or sync kernel with the adapter for async
-   drivers? And does the generation reach the Azure driver, which decides
-   whether sync `AzureBackend` is replaced or retired (D4)? Decide before
-   acceptance.
+1. **D6:** async kernel with a generated sync twin, or a sync-only kernel
+   with a driver-level hop and the async surface served by
+   `SyncBackendAdapter`? And, under the first, does the generation reach
+   the Azure driver or do sync Azure callers take the adapter route, which
+   decides whether sync `AzureBackend` is replaced or retired (D4)? Decide
+   before acceptance.
 2. **`Page` for wires without a page boundary.** BE-021 allows marking items
    as the service returns them; the kernel needs the driver to say which it
    does, or the divergence is stated per driver as today. BUG-257 waits on
