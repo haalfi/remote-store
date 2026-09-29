@@ -4,7 +4,7 @@ from __future__ import annotations
 
 import logging
 import re
-from datetime import datetime, timezone
+from datetime import timezone
 from typing import TYPE_CHECKING, Any
 
 from azure.core.exceptions import (
@@ -24,7 +24,7 @@ from remote_store._errors import (
     PermissionDenied,
     RemoteStoreError,
 )
-from remote_store._models import ContentDigest, FileInfo, WriteResult
+from remote_store._models import _UNKNOWN_MODIFIED_AT, ContentDigest, FileInfo, WriteResult
 from remote_store._path import RemotePath, is_root
 
 if TYPE_CHECKING:
@@ -272,7 +272,7 @@ def props_to_fileinfo(props: Any, path: str) -> FileInfo:
     if modified is not None and modified.tzinfo is None:
         modified = modified.replace(tzinfo=timezone.utc)  # pragma: no cover
     if modified is None:
-        modified = datetime.now(tz=timezone.utc)  # pragma: no cover
+        modified = _UNKNOWN_MODIFIED_AT
     # ETag: Azure returns it double-quoted (e.g. '"0x8D4BCC2E4835CD0"'); strip and lowercase.
     raw_etag = getattr(props, "etag", None)
     etag = raw_etag.strip('"').lower() if isinstance(raw_etag, str) else None

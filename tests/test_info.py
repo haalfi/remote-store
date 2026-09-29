@@ -161,10 +161,11 @@ class TestNormalizeModified:
         result = _normalize_modified(aware)
         assert result == aware
 
-    def test_none_returns_datetime(self) -> None:
-        from datetime import datetime
+    @pytest.mark.spec("FOLDERINFO-001")
+    def test_none_returns_unknown_time_sentinel(self) -> None:
+        # Not "now": an invented time would win folder aggregation (BUG-296).
+        from datetime import datetime, timezone
 
         from remote_store.backends._fileinfo import _normalize_modified
 
-        result = _normalize_modified(None)
-        assert isinstance(result, datetime)
+        assert _normalize_modified(None) == datetime.min.replace(tzinfo=timezone.utc)

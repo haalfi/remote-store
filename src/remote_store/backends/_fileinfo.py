@@ -4,6 +4,8 @@ from __future__ import annotations
 
 from datetime import datetime, timezone
 
+from remote_store._models import _UNKNOWN_MODIFIED_AT
+
 
 def _name_from_path(path: str) -> str:
     """Extract the file or folder name from a slash-delimited path."""
@@ -11,12 +13,12 @@ def _name_from_path(path: str) -> str:
 
 
 def _normalize_modified(value: str | datetime | None) -> datetime:
-    """Parse, make timezone-aware, or fall back to UTC now."""
+    """Parse, make timezone-aware, or fall back to the unknown-time sentinel."""
     if isinstance(value, str):
         value = datetime.fromisoformat(value)
     if value is not None and value.tzinfo is None:
         value = value.replace(tzinfo=timezone.utc)
-    return value or datetime.now(tz=timezone.utc)
+    return value or _UNKNOWN_MODIFIED_AT
 
 
 def _clean_etag(raw: str | None) -> str | None:

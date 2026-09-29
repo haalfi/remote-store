@@ -36,9 +36,11 @@ from remote_store import (
     PermissionDenied,
     RemoteStoreError,
 )
+from remote_store._models import _UNKNOWN_MODIFIED_AT
 
 if TYPE_CHECKING:
     from collections.abc import Callable
+    from datetime import datetime
 
     from remote_store._store import Store
 
@@ -58,6 +60,15 @@ _ERROR_MAP: list[tuple[type[RemoteStoreError], type[Exception]]] = [
     (CapabilityNotSupported, NotImplementedError),
     # DirectoryNotEmpty, BackendUnavailable, and base RemoteStoreError → OSError
 ]
+
+
+def _mtime(modified_at: datetime) -> datetime | None:
+    """Map the unknown-time sentinel to pyarrow's ``None``.
+
+    pyarrow stores ``mtime`` as int64 nanoseconds, so ``datetime.min`` would
+    silently wrap to a 1754 date.
+    """
+    return None if modified_at == _UNKNOWN_MODIFIED_AT else modified_at
 
 
 @contextlib.contextmanager
@@ -220,7 +231,7 @@ class StoreFileSystemHandler(pafs.FileSystemHandler):  # type: ignore[misc]
                             path,
                             type=pafs.FileType.File,
                             size=info.size,
-                            mtime=info.modified_at,
+                            mtime=_mtime(info.modified_at),
                         )
                     )
             except (FileNotFoundError, ValueError):
@@ -252,7 +263,7 @@ class StoreFileSystemHandler(pafs.FileSystemHandler):  # type: ignore[misc]
                             file_path,
                             type=pafs.FileType.File,
                             size=fi.size,
-                            mtime=fi.modified_at,
+                            mtime=_mtime(fi.modified_at),
                         )
                     )
 

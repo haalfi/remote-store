@@ -19,6 +19,14 @@ surprising_ripples:
   - src/remote_store/aio/backends/_graph/items.py
   - src/remote_store/aio/backends/_graph/backend.py
   - sdd/specs/044-graph-backend.md
+  # Review round 2: SFTP, Azure and the S3 family invented "now" for an unknown
+  # time; moving them to the sentinel widened ext.arrow's pyarrow overflow.
+  - src/remote_store/backends/_sftp.py
+  - src/remote_store/backends/_azure_common.py
+  - src/remote_store/backends/_fileinfo.py
+  - src/remote_store/ext/arrow.py
+  - sdd/specs/012-azure-backend.md
+  - sdd/specs/014-pyarrow-filesystem-adapter.md
 phases:
   - id: orient
     name: Orient
@@ -97,3 +105,54 @@ phases:
         read_type: verify
         extract: "BACKLOG moved to DONE, CHANGELOG stub, failing test before fix, spec 038 amended as the invariant was silent"
         outcome: ok
+  - id: review_graph
+    name: Review round 1, Graph's epoch fallback
+    steps:
+      - file: src/remote_store/aio/backends/_graph/items.py
+        section: "parse_graph_datetime, item_to_fileinfo, item_to_write_result"
+        read_type: reference
+        extract: "Epoch fallback fed FileInfo.modified_at and the Optional WriteResult.last_modified. My own miss: I read RFC-0017 D3's enumeration as the full list of unknown-time sources, but it enumerates folder cells, not per-file fallbacks"
+        outcome: ok
+      - file: src/remote_store/aio/backends/_graph/backend.py
+        section: "get_folder_info"
+        read_type: reference
+        extract: "The folder's own lastModifiedDateTime: unparseable gave the epoch; now None via parse_graph_datetime_or_none"
+        outcome: ok
+      - file: sdd/specs/044-graph-backend.md
+        section: "GR-013, GR-018, GR-019"
+        read_type: gate
+        extract: "Field maps were silent on a missing or unparseable time; amended to the sentinel (FileInfo) and None (WriteResult)"
+        outcome: unclear
+      - file: tests/backends/graph/aio/
+        section: "test_read TestParseGraphDatetime, test_write TestSmallWrite, test_list TestGetFolderInfo"
+        read_type: reference
+        extract: "Existing fallback pin asserted only tz-awareness. Seen red: 8 new/tightened tests failed, each 1970-01-01, including AsyncStore's depth path"
+        outcome: ok
+  - id: review_now_fallback
+    name: Review round 2, invented current time
+    steps:
+      - file: src/remote_store/backends/_sftp.py
+        section: "_stat_to_fileinfo"
+        read_type: reference
+        extract: "None st_mtime became datetime.now(); the backend's own folder aggregation reads raw st_mtime, so the plain call is unaffected"
+        outcome: ok
+      - file: src/remote_store/backends/_azure_common.py
+        section: "props_to_fileinfo"
+        read_type: reference
+        extract: "Shared by sync and async Azure; absent last_modified became now"
+        outcome: ok
+      - file: src/remote_store/backends/_fileinfo.py
+        section: "_normalize_modified"
+        read_type: reference
+        extract: "S3Boto3 and the s3fs/pyarrow S3 lanes; None became now. Seen red: 3 tightened pins across the three helpers, each returning now"
+        outcome: ok
+      - file: src/remote_store/ext/arrow.py
+        section: "get_file_info, get_file_info_selector"
+        read_type: reference
+        extract: "pyarrow stores mtime as int64 ns and wraps datetime.min to 1754-08-30 (measured with pafs.FileInfo); pre-existing for SQL/HTTP, widened by this fix. Mapped to mtime=None; 2 red first"
+        outcome: ok
+      - file: sdd/specs/014-pyarrow-filesystem-adapter.md
+        section: "PA-007, PA-008"
+        read_type: gate
+        extract: "Mapping said 'mtime from get_file_info' with no out-of-range case; amended"
+        outcome: unclear

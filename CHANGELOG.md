@@ -7,7 +7,7 @@ This project follows [Semantic Versioning](https://semver.org/). Pre-1.0, minor 
 
 ## [Unreleased]
 
-- BUG-296: `get_folder_info(path, max_depth=N)` now answers `modified_at=None`, like the plain call, when no file time is known (SQL backends, Graph), instead of `0001-01-01` or `1970-01-01`; Graph's `WriteResult.last_modified` and folder time are `None` for an unknown time, not the epoch.
+- BUG-296: An unknown file modification time is now `datetime.min` in UTC on every backend (SFTP, Azure and S3 used the current time, Graph the epoch), so `get_folder_info(max_depth=N)` answers `None` like the plain call instead of a made-up date; `ext.arrow` passes it as `mtime=None`.
 
 - BK-387: The plan to implement the backend contract once, in a shared kernel over thin per-backend drivers, has its design questions answered and is proposed as ADR-0042; nothing changes for users yet, and it is accepted with the first backend built on it.
 
