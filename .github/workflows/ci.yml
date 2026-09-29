@@ -661,6 +661,7 @@ jobs:
           dafny verify sdd/formal/MemoryBackend.dfy
           dafny verify sdd/formal/DepthCounting.dfy
           dafny verify sdd/formal/ResourceSafety.dfy
+          dafny verify sdd/formal/RootPath.dfy
       # Also runs in the lint job (CODE_PAT). Wired here too so a
       # BackendContract.dfy-only change (FORMAL_PAT, not CODE_PAT) still checks
       # Python ↔ Dafny capability parity. Stdlib-only; system python3 suffices.

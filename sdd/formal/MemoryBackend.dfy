@@ -5,13 +5,14 @@
 // verify it, the contract is satisfiable and internally consistent.
 //
 // NOTE: MemoryBackendMinimal at the bottom of this file mirrors every method
-// body of MemoryBackend with a narrower capability set.  Dafny has no
+// body of MemoryBackend with a narrower capability set and a terminal close
+// posture (BE-020, BK-388).  Dafny has no
 // class-to-class inheritance, so any postcondition or body change to
 // MemoryBackend must be manually reflected in MemoryBackendMinimal.
 // Verification alone does not enforce that: an edit that stays inside what the
 // contract underdetermines verifies clean on both classes.  The mirroring is
 // gated by scripts/check_dafny_twin_parity.py, which pins the two deliberate
-// divergences (the constructor's capability set, and Write's
+// divergences (the constructor's capability set and close posture, and Write's
 // CapWriteResultNative branch) and requires every other member to match.
 
 include "BackendContract.dfy"
@@ -24,12 +25,18 @@ class MemoryBackend extends Backend {
     ensures capabilities == {CapRead, CapWrite, CapDelete, CapList, CapMove, CapCopy,
                              CapAtomicWrite, CapAtomicMove, CapMetadata, CapSeekableRead,
                              CapWriteResultNative, CapUserMetadata}
+    ensures !closeIsTerminal
+    ensures !closed && containerPresent
     ensures Valid()
   {
     name := "memory";
     capabilities := {CapRead, CapWrite, CapDelete, CapList, CapMove, CapCopy,
                      CapAtomicWrite, CapAtomicMove, CapMetadata, CapSeekableRead,
                      CapWriteResultNative, CapUserMetadata};
+    // BE-020: the Python MemoryBackend's posture (close_is_terminal = False).
+    closeIsTerminal := false;
+    closed := false;
+    containerPresent := true;
     fs := map[Root := DirEntry];
     // ID-209: only key in the initial fs is Root ("."), whose slash-aligned
     // ancestor set is empty by Valid()'s `0 < i < |p| - 1` bound
@@ -41,9 +48,16 @@ class MemoryBackend extends Backend {
 
   method Exists(path: Path) returns (r: Result<bool>)
     requires WellFormedPath(path)
-    ensures r.Ok?
-    ensures r.value == (PathExists(fs, path) && AllAncestorsTraversable(fs, path))
+    requires Valid()
+    ensures !Live() ==> r == Err(BackendUnavailable(name))
+    ensures Live() ==> r.Ok?
+    ensures r.Ok? ==> r.value == (PathExists(fs, path) && AllAncestorsTraversable(fs, path))
+    ensures Live() && !containerPresent ==> r == Ok(path == Root)
   {
+    if !Live() {
+      r := Err(BackendUnavailable(name));
+      return;
+    }
     var path_exists := path in fs;
     var ancestors_ok := AncestorsTraversableCheck(path);
     r := Ok(path_exists && ancestors_ok);
@@ -51,9 +65,16 @@ class MemoryBackend extends Backend {
 
   method IsFileMethod(path: Path) returns (r: Result<bool>)
     requires WellFormedPath(path)
-    ensures r.Ok?
-    ensures r.value == (IsFile(fs, path) && AllAncestorsTraversable(fs, path))
+    requires Valid()
+    ensures !Live() ==> r == Err(BackendUnavailable(name))
+    ensures Live() ==> r.Ok?
+    ensures r.Ok? ==> r.value == (IsFile(fs, path) && AllAncestorsTraversable(fs, path))
+    ensures Live() && !containerPresent ==> r == Ok(false)
   {
+    if !Live() {
+      r := Err(BackendUnavailable(name));
+      return;
+    }
     var is_file := path in fs && fs[path].FileEntry?;
     var ancestors_ok := AncestorsTraversableCheck(path);
     r := Ok(is_file && ancestors_ok);
@@ -61,9 +82,16 @@ class MemoryBackend extends Backend {
 
   method IsFolderMethod(path: Path) returns (r: Result<bool>)
     requires WellFormedPath(path)
-    ensures r.Ok?
-    ensures r.value == (IsDir(fs, path) && AllAncestorsTraversable(fs, path))
+    requires Valid()
+    ensures !Live() ==> r == Err(BackendUnavailable(name))
+    ensures Live() ==> r.Ok?
+    ensures r.Ok? ==> r.value == (IsDir(fs, path) && AllAncestorsTraversable(fs, path))
+    ensures Live() && !containerPresent ==> r == Ok(path == Root)
   {
+    if !Live() {
+      r := Err(BackendUnavailable(name));
+      return;
+    }
     var is_dir := path in fs && fs[path].DirEntry?;
     var ancestors_ok := AncestorsTraversableCheck(path);
     r := Ok(is_dir && ancestors_ok);
@@ -102,13 +130,21 @@ class MemoryBackend extends Backend {
 
   method Read(path: Path) returns (r: Result<ReadStream>)
     requires WellFormedPath(path)
-    ensures IsDir(fs, path)       ==> r == Err(InvalidPath(path, name))
-    ensures !PathExists(fs, path) ==> r == Err(NotFound(path, name))
-    ensures IsFile(fs, path)      ==> r.Ok? && r.value.content == fs[path].content
+    requires Valid()
+    ensures !Live() ==> r == Err(BackendUnavailable(name))
+    ensures Live() && IsDir(fs, path)       ==> r == Err(InvalidPath(path, name))
+    ensures Live() && !PathExists(fs, path) ==> r == Err(NotFound(path, name))
+    ensures Live() && IsFile(fs, path)      ==> r.Ok? && r.value.content == fs[path].content
+    ensures Live() && !containerPresent ==>
+      r == Err(if path == Root then InvalidPath(path, name) else NotFound(path, name))
     // ID-188 / SIO-008: MemoryBackend declares CapSeekableRead, so the
     // seekable-true witness must hold on every successful read.
     ensures r.Ok? && CapSeekableRead in capabilities ==> r.value.seekable
   {
+    if !Live() {
+      r := Err(BackendUnavailable(name));
+      return;
+    }
     if path in fs {
       match fs[path]
       case FileEntry(content, _) =>
@@ -222,11 +258,17 @@ class MemoryBackend extends Backend {
     }
   }
 
-  method EnsureParents(path: Path)
+  // BK-388: {:isolate_assertions} because Valid()'s absent-container
+  // conjunct pushed the in-loop Valid() re-establishment past the time
+  // limit; each assertion verifies on its own (measured with
+  // --isolate-assertions before the attribute was added).
+  method {:isolate_assertions} EnsureParents(path: Path)
     requires WellFormedPath(path)
     requires Valid()
+    requires containerPresent
     requires AllAncestorsTraversable(fs, path)
     modifies this
+    ensures closed == old(closed) && containerPresent == old(containerPresent)
     ensures forall k | k in old(fs) :: k in fs && fs[k] == old(fs)[k]
     ensures forall i | 0 < i < |path| && path[i] == '/' ::
       path[..i] in fs && fs[path[..i]].DirEntry?
@@ -238,6 +280,7 @@ class MemoryBackend extends Backend {
     var i := 1;
     while i < |path|
       invariant 1 <= i <= |path|
+      invariant closed == old(closed) && containerPresent == old(containerPresent)
       invariant forall k | k in old(fs) :: k in fs && fs[k] == old(fs)[k]
       invariant forall k | k in fs && k !in old(fs) :: fs[k].DirEntry?
       // ID-209: the strengthened ensures, accumulated across the loop —
@@ -326,7 +369,10 @@ class MemoryBackend extends Backend {
     }
   }
 
-  method Write(
+  // BK-388: {:isolate_assertions} for the same reason as EnsureParents: the
+  // close and root clauses left the whole-method proof at the edge of the
+  // time limit (it timed out in a five-file run under load).
+  method {:isolate_assertions} Write(
     path: Path,
     content: seq<nat>,
     overwrite: bool,
@@ -337,7 +383,11 @@ class MemoryBackend extends Backend {
     requires Valid()
     modifies this
     ensures Valid()
-    ensures IsDir(old(fs), path)
+    ensures closed == old(closed)
+    ensures !old(Live()) ==> r == Err(BackendUnavailable(name))
+    ensures old(Live()) && AddressesRoot(path)
+      ==> r == Err(InvalidPath(path, name))
+    ensures old(Live()) && IsDir(old(fs), path)
       ==> r == Err(InvalidPath(path, name))
     // ID-209: new file-ancestor error path.  MemoryBackend's
     // AncestorsTraversableCheck is the live witness — without it,
@@ -347,19 +397,23 @@ class MemoryBackend extends Backend {
     // fs`, leaving fs in a state where the inserted FileEntry at path has
     // a file ancestor and Valid() no longer holds.  The early return
     // restores trait totality (Write rejects rather than corrupts).
-    ensures !AllAncestorsTraversable(old(fs), path)
+    ensures old(Live()) && !AllAncestorsTraversable(old(fs), path)
       ==> r == Err(InvalidPath(path, name))
-    ensures !IsDir(old(fs), path) && IsFile(old(fs), path) && !overwrite
+    ensures old(Live()) && !AddressesRoot(path) &&
+            !IsDir(old(fs), path) && IsFile(old(fs), path) && !overwrite
       ==> r == Err(AlreadyExists(path, name))
-    ensures !IsDir(old(fs), path) && (!IsFile(old(fs), path) || overwrite) &&
+    ensures old(Live()) && !AddressesRoot(path) &&
+            !IsDir(old(fs), path) && (!IsFile(old(fs), path) || overwrite) &&
             AllAncestorsTraversable(old(fs), path) &&
             HasUserMetadata(metadata) && CapUserMetadata !in capabilities
       ==> r == Err(CapabilityNotSupported(
             CapabilityName(CapUserMetadata), name))
-    ensures !IsDir(old(fs), path) && (!IsFile(old(fs), path) || overwrite) &&
+    ensures old(Live()) && !AddressesRoot(path) && old(containerPresent) &&
+            !IsDir(old(fs), path) && (!IsFile(old(fs), path) || overwrite) &&
             AllAncestorsTraversable(old(fs), path) &&
             (!HasUserMetadata(metadata) || CapUserMetadata in capabilities)
       ==> r.Ok?
+    ensures r.Ok? ==> containerPresent
     ensures r.Ok? ==>
       IsFile(fs, path) && fs[path].content == content
     ensures r.Ok? ==>
@@ -387,6 +441,15 @@ class MemoryBackend extends Backend {
       fs[path].info.etag == r.value.etag &&
       fs[path].info.last_modified == r.value.last_modified
   {
+    // BE-020 first, then BE-029 from the key, then the observed checks.
+    if !Live() {
+      r := Err(BackendUnavailable(name));
+      return;
+    }
+    if AddressesRoot(path) {
+      r := Err(InvalidPath(path, name));
+      return;
+    }
     if path in fs && fs[path].DirEntry? {
       assert IsDir(old(fs), path);
       r := Err(InvalidPath(path, name));
@@ -424,6 +487,10 @@ class MemoryBackend extends Backend {
       return;
     }
 
+    // BE-021 § Reach leaves a write against an absent container to the
+    // backend; this one recreates it.  fs is EmptyStore then, so Valid()
+    // holds with the flag set.
+    containerPresent := true;
     EnsureParents(path);
 
     // WR-012 / WR-013: store metadata verbatim when the gate was
@@ -489,16 +556,27 @@ class MemoryBackend extends Backend {
     requires Valid()
     modifies this
     ensures Valid()
-    ensures IsDir(old(fs), path)
+    ensures closed == old(closed)
+    ensures containerPresent == old(containerPresent)
+    ensures !old(Live()) ==> r == Err(BackendUnavailable(name))
+    ensures old(Live()) && IsDir(old(fs), path)
       ==> r == Err(InvalidPath(path, name))
-    ensures !PathExists(old(fs), path) && !missing_ok
+    ensures old(Live()) && !PathExists(old(fs), path) && !missing_ok
       ==> r == Err(NotFound(path, name))
-    ensures !PathExists(old(fs), path) && missing_ok
+    ensures old(Live()) && !PathExists(old(fs), path) && missing_ok
       ==> r.Ok?
-    ensures IsFile(old(fs), path) ==> r.Ok?
+    ensures old(Live()) && !old(containerPresent) ==>
+      r == (if path == Root then Err(InvalidPath(path, name))
+            else if missing_ok then Ok(())
+            else Err(NotFound(path, name)))
+    ensures old(Live()) && IsFile(old(fs), path) ==> r.Ok?
     ensures IsFile(old(fs), path) && r.Ok?
       ==> !PathExists(fs, path)
   {
+    if !Live() {
+      r := Err(BackendUnavailable(name));
+      return;
+    }
     if path in fs {
       match fs[path]
       case DirEntry =>
@@ -529,21 +607,42 @@ class MemoryBackend extends Backend {
     requires Valid()
     modifies this
     ensures Valid()
-    ensures IsFile(old(fs), path)
+    ensures closed == old(closed)
+    ensures containerPresent == old(containerPresent)
+    ensures !old(Live()) ==> r == Err(BackendUnavailable(name))
+    ensures old(Live()) && IsFile(old(fs), path)
       ==> r == Err(InvalidPath(path, name))
-    ensures !PathExists(old(fs), path) && !missing_ok
+    ensures old(Live()) && !PathExists(old(fs), path) && !missing_ok
       ==> r == Err(NotFound(path, name))
-    ensures !PathExists(old(fs), path) && missing_ok
+    ensures old(Live()) && !PathExists(old(fs), path) && missing_ok
       ==> r.Ok?
-    ensures IsDir(old(fs), path) && !recursive && HasChildren(old(fs), path)
+    ensures old(Live()) && !old(containerPresent) ==>
+      r == (if missing_ok then Ok(()) else Err(NotFound(path, name)))
+    ensures old(Live()) && IsDir(old(fs), path) && !recursive && HasChildren(old(fs), path)
       ==> r == Err(DirectoryNotEmpty(path, name))
-    ensures IsDir(old(fs), path) && (recursive || !HasChildren(old(fs), path))
+    ensures old(Live()) && old(containerPresent) &&
+            IsDir(old(fs), path) && (recursive || !HasChildren(old(fs), path))
       ==> r.Ok?
-    ensures IsDir(old(fs), path) && r.Ok?
+    ensures old(containerPresent) && IsDir(old(fs), path) && r.Ok?
       ==> !IsDir(fs, path)
-    ensures IsDir(old(fs), path) && recursive && r.Ok? ==>
+    ensures old(containerPresent) && IsDir(old(fs), path) && recursive && r.Ok? ==>
       forall p: Path | IsChildOf(p, path) :: !PathExists(fs, p)
   {
+    if !Live() {
+      r := Err(BackendUnavailable(name));
+      return;
+    }
+    // BE-021 § Reach: an absent container holds no folder to delete.
+    if !containerPresent {
+      assert fs == EmptyStore;
+      if missing_ok {
+        r := Ok(());
+      } else {
+        r := Err(NotFound(path, name));
+      }
+      return;
+    }
+
     // File path → InvalidPath (wrong type).
     if path in fs && fs[path].FileEntry? {
       assert IsFile(old(fs), path);
@@ -597,9 +696,12 @@ class MemoryBackend extends Backend {
   method ListFiles(path: Path, recursive: bool, max_depth: int)
     returns (r: Result<seq<FileInfo>>)
     requires WellFormedPath(path)
-    ensures r.Ok?
-    ensures !PathExists(fs, path) || !AllAncestorsTraversable(fs, path)
-      ==> r.value == []
+    requires Valid()
+    ensures !Live() ==> r == Err(BackendUnavailable(name))
+    ensures Live() ==> r.Ok?
+    ensures Live() && (!PathExists(fs, path) || !AllAncestorsTraversable(fs, path))
+      ==> r == Ok([])
+    ensures Live() && !containerPresent ==> r == Ok([])
     ensures r.Ok? ==>
       forall fi | fi in r.value :: IsFile(fs, fi.path) && IsChildOf(fi.path, path)
     ensures r.Ok? ==>
@@ -615,6 +717,15 @@ class MemoryBackend extends Backend {
          else true) ::
         exists fi | fi in r.value :: fi.path == p
   {
+    if !Live() {
+      r := Err(BackendUnavailable(name));
+      return;
+    }
+    // BE-021 § Reach: an absent container holds nothing to list.
+    if !containerPresent {
+      r := Ok([]);
+      return;
+    }
     var ancestors_ok := AncestorsTraversableCheck(path);
     if path !in fs || !ancestors_ok {
       r := Ok([]);
@@ -672,15 +783,27 @@ class MemoryBackend extends Backend {
   // ID-184: a non-traversable ancestor short-circuits to the empty listing.
   method ListFolders(path: Path) returns (r: Result<seq<FolderEntry>>)
     requires WellFormedPath(path)
-    ensures r.Ok?
-    ensures !PathExists(fs, path) || !AllAncestorsTraversable(fs, path)
-      ==> r.value == []
+    requires Valid()
+    ensures !Live() ==> r == Err(BackendUnavailable(name))
+    ensures Live() ==> r.Ok?
+    ensures Live() && (!PathExists(fs, path) || !AllAncestorsTraversable(fs, path))
+      ==> r == Ok([])
+    ensures Live() && !containerPresent ==> r == Ok([])
     ensures r.Ok? ==>
       forall fe | fe in r.value :: IsDir(fs, fe.path) && IsChildOf(fe.path, path)
     ensures r.Ok? && PathExists(fs, path) && AllAncestorsTraversable(fs, path) ==>
       forall p: Path | IsDir(fs, p) && IsChildOf(p, path) ::
         exists fe | fe in r.value :: fe.path == p
   {
+    if !Live() {
+      r := Err(BackendUnavailable(name));
+      return;
+    }
+    // BE-021 § Reach: an absent container holds nothing to list.
+    if !containerPresent {
+      r := Ok([]);
+      return;
+    }
     var ancestors_ok := AncestorsTraversableCheck(path);
     if path !in fs || !ancestors_ok {
       r := Ok([]);
@@ -717,10 +840,18 @@ class MemoryBackend extends Backend {
 
   method GetFileInfo(path: Path) returns (r: Result<FileInfo>)
     requires WellFormedPath(path)
-    ensures IsDir(fs, path)       ==> r == Err(InvalidPath(path, name))
-    ensures !PathExists(fs, path) ==> r == Err(NotFound(path, name))
-    ensures IsFile(fs, path)      ==> r.Ok? && r.value == fs[path].info
+    requires Valid()
+    ensures !Live() ==> r == Err(BackendUnavailable(name))
+    ensures Live() && IsDir(fs, path)       ==> r == Err(InvalidPath(path, name))
+    ensures Live() && !PathExists(fs, path) ==> r == Err(NotFound(path, name))
+    ensures Live() && IsFile(fs, path)      ==> r.Ok? && r.value == fs[path].info
+    ensures Live() && !containerPresent ==>
+      r == Err(if path == Root then InvalidPath(path, name) else NotFound(path, name))
   {
+    if !Live() {
+      r := Err(BackendUnavailable(name));
+      return;
+    }
     if path in fs {
       match fs[path]
       case FileEntry(_, info) =>
@@ -739,13 +870,23 @@ class MemoryBackend extends Backend {
   // Computes file_count and total_size by scanning the filesystem.
   method GetFolderInfo(path: Path) returns (r: Result<FolderInfo>)
     requires WellFormedPath(path)
-    ensures IsFile(fs, path)      ==> r == Err(InvalidPath(path, name))
-    ensures !PathExists(fs, path) ==> r == Err(NotFound(path, name))
-    ensures IsDir(fs, path)       ==>
+    requires Valid()
+    ensures !Live() ==> r == Err(BackendUnavailable(name))
+    ensures Live() && IsFile(fs, path)      ==> r == Err(InvalidPath(path, name))
+    ensures Live() && !PathExists(fs, path) ==> r == Err(NotFound(path, name))
+    ensures Live() && IsDir(fs, path)       ==>
       r.Ok? && r.value.path == path
       && r.value.file_count == |ChildFiles(fs, path)|
       && r.value.total_size == SumSizes(fs, ChildFiles(fs, path))
+    ensures Live() && !containerPresent ==>
+      if path == Root
+      then r.Ok? && r.value.path == Root && r.value.file_count == 0 && r.value.total_size == 0
+      else r == Err(NotFound(path, name))
   {
+    if !Live() {
+      r := Err(BackendUnavailable(name));
+      return;
+    }
     if path in fs {
       match fs[path]
       case DirEntry =>
@@ -781,6 +922,8 @@ class MemoryBackend extends Backend {
         }
         assert visited == fs.Keys;
         assert counted == ChildFiles(fs, path);
+        // BE-021 § Reach: EmptyStore holds no file, so the aggregate is empty.
+        EmptyStoreHoldsNoFile(path);
         r := Ok(FolderInfo(path, path, file_count, total_size));
       case FileEntry(_, _) =>
         assert IsFile(fs, path);
@@ -803,17 +946,30 @@ class MemoryBackend extends Backend {
     requires Valid()
     modifies this
     ensures Valid()
-    ensures IsDir(old(fs), src)
+    ensures closed == old(closed)
+    ensures containerPresent == old(containerPresent)
+    ensures !old(Live()) ==> r == Err(BackendUnavailable(name))
+    ensures old(Live()) && AddressesRoot(src)
       ==> r == Err(InvalidPath(src, name))
-    ensures !PathExists(old(fs), src)
+    ensures old(Live()) && !AddressesRoot(src) && AddressesRoot(dst)
+      ==> r == Err(InvalidPath(dst, name))
+    ensures old(Live()) && !AddressesRoot(src) && !AddressesRoot(dst) && !old(containerPresent)
       ==> r == Err(NotFound(src, name))
-    ensures IsFile(old(fs), src) && IsDir(old(fs), dst)
+    ensures old(Live()) && !AddressesRoot(src) && !AddressesRoot(dst) && IsDir(old(fs), src)
+      ==> r == Err(InvalidPath(src, name))
+    ensures old(Live()) && !AddressesRoot(src) && !AddressesRoot(dst) && !PathExists(old(fs), src)
+      ==> r == Err(NotFound(src, name))
+    ensures old(Live()) && !AddressesRoot(src) && !AddressesRoot(dst) &&
+            IsFile(old(fs), src) && IsDir(old(fs), dst)
       ==> r == Err(InvalidPath(dst, name))
-    ensures IsFile(old(fs), src) && !AllAncestorsTraversable(old(fs), dst)
+    ensures old(Live()) && !AddressesRoot(src) && !AddressesRoot(dst) &&
+            IsFile(old(fs), src) && !AllAncestorsTraversable(old(fs), dst)
       ==> r == Err(InvalidPath(dst, name))
-    ensures IsFile(old(fs), src) && IsFile(old(fs), dst) && !overwrite && src != dst
+    ensures old(Live()) && !AddressesRoot(src) && !AddressesRoot(dst) &&
+            IsFile(old(fs), src) && IsFile(old(fs), dst) && !overwrite && src != dst
       ==> r == Err(AlreadyExists(dst, name))
-    ensures IsFile(old(fs), src) && !IsDir(old(fs), dst) &&
+    ensures old(Live()) && !AddressesRoot(src) && !AddressesRoot(dst) &&
+            IsFile(old(fs), src) && !IsDir(old(fs), dst) &&
             AllAncestorsTraversable(old(fs), dst) &&
             (!IsFile(old(fs), dst) || overwrite || src == dst)
       ==> r.Ok?
@@ -826,6 +982,21 @@ class MemoryBackend extends Backend {
     ensures CapAtomicMove in capabilities ==> ObservableForAtomicMove(phase)
   {
     // Directory src → InvalidPath.
+    if !Live() {
+      r := Err(BackendUnavailable(name));
+      phase := Failed("initial", "backend is closed");
+      return;
+    }
+    if AddressesRoot(src) {
+      r := Err(InvalidPath(src, name));
+      phase := Failed("initial", "source is the store root");
+      return;
+    }
+    if AddressesRoot(dst) {
+      r := Err(InvalidPath(dst, name));
+      phase := Failed("initial", "destination is the store root");
+      return;
+    }
     if src in fs && fs[src].DirEntry? {
       assert IsDir(old(fs), src);
       r := Err(InvalidPath(src, name));
@@ -912,17 +1083,30 @@ class MemoryBackend extends Backend {
     requires Valid()
     modifies this
     ensures Valid()
-    ensures IsDir(old(fs), src)
+    ensures closed == old(closed)
+    ensures containerPresent == old(containerPresent)
+    ensures !old(Live()) ==> r == Err(BackendUnavailable(name))
+    ensures old(Live()) && AddressesRoot(src)
       ==> r == Err(InvalidPath(src, name))
-    ensures !PathExists(old(fs), src)
+    ensures old(Live()) && !AddressesRoot(src) && AddressesRoot(dst)
+      ==> r == Err(InvalidPath(dst, name))
+    ensures old(Live()) && !AddressesRoot(src) && !AddressesRoot(dst) && !old(containerPresent)
       ==> r == Err(NotFound(src, name))
-    ensures IsFile(old(fs), src) && IsDir(old(fs), dst)
+    ensures old(Live()) && !AddressesRoot(src) && !AddressesRoot(dst) && IsDir(old(fs), src)
+      ==> r == Err(InvalidPath(src, name))
+    ensures old(Live()) && !AddressesRoot(src) && !AddressesRoot(dst) && !PathExists(old(fs), src)
+      ==> r == Err(NotFound(src, name))
+    ensures old(Live()) && !AddressesRoot(src) && !AddressesRoot(dst) &&
+            IsFile(old(fs), src) && IsDir(old(fs), dst)
       ==> r == Err(InvalidPath(dst, name))
-    ensures IsFile(old(fs), src) && !AllAncestorsTraversable(old(fs), dst)
+    ensures old(Live()) && !AddressesRoot(src) && !AddressesRoot(dst) &&
+            IsFile(old(fs), src) && !AllAncestorsTraversable(old(fs), dst)
       ==> r == Err(InvalidPath(dst, name))
-    ensures IsFile(old(fs), src) && IsFile(old(fs), dst) && !overwrite && src != dst
+    ensures old(Live()) && !AddressesRoot(src) && !AddressesRoot(dst) &&
+            IsFile(old(fs), src) && IsFile(old(fs), dst) && !overwrite && src != dst
       ==> r == Err(AlreadyExists(dst, name))
-    ensures IsFile(old(fs), src) && !IsDir(old(fs), dst) &&
+    ensures old(Live()) && !AddressesRoot(src) && !AddressesRoot(dst) &&
+            IsFile(old(fs), src) && !IsDir(old(fs), dst) &&
             AllAncestorsTraversable(old(fs), dst) &&
             (!IsFile(old(fs), dst) || overwrite || src == dst)
       ==> r.Ok?
@@ -931,6 +1115,18 @@ class MemoryBackend extends Backend {
       fs[dst].content == old(fs)[src].content &&
       fs[dst].info.metadata == old(fs)[src].info.metadata
   {
+    if !Live() {
+      r := Err(BackendUnavailable(name));
+      return;
+    }
+    if AddressesRoot(src) {
+      r := Err(InvalidPath(src, name));
+      return;
+    }
+    if AddressesRoot(dst) {
+      r := Err(InvalidPath(dst, name));
+      return;
+    }
     // Directory src → InvalidPath.
     if src in fs && fs[src].DirEntry? {
       assert IsDir(old(fs), src);
@@ -1006,16 +1202,43 @@ class MemoryBackend extends Backend {
       r := Err(CapabilityNotSupported(CapabilityName(cap), name));
     }
   }
+
+  // BE-020: idempotent; only the flag moves.
+  method Close()
+    requires Valid()
+    modifies this
+    ensures Valid()
+    ensures closed
+    ensures fs == old(fs) && containerPresent == old(containerPresent)
+  {
+    closed := true;
+  }
+
+  // BE-021 § Reach: the environment removes the container.
+  method DropContainer()
+    requires Valid()
+    modifies this
+    ensures Valid()
+    ensures !containerPresent && fs == EmptyStore
+    ensures closed == old(closed)
+  {
+    containerPresent := false;
+    fs := EmptyStore;
+  }
 }
 
 // ---------------------------------------------------------------------------
 // MemoryBackendMinimal: satisfiability witness for the BasicSource /
-// CapabilityNotSupported branches.
+// CapabilityNotSupported / BackendUnavailable branches.
 //
 // Declares neither CapWriteResultNative nor CapUserMetadata.  That makes the
 // WR-010 CapabilityNotSupported gate live code (not dead code as in
 // MemoryBackend), and forces wr_source to BasicSource on every successful
 // write: witnessing the BasicSource postcondition branch.
+//
+// BK-388: also close-terminal (closeIsTerminal = true), so Close() followed by
+// any operation but RequireCapability reaches the BackendUnavailable branch
+// (BE-020), which is dead code in MemoryBackend.
 // ---------------------------------------------------------------------------
 
 class MemoryBackendMinimal extends Backend {
@@ -1025,11 +1248,18 @@ class MemoryBackendMinimal extends Backend {
     ensures name == "memory-minimal"
     ensures capabilities == {CapRead, CapWrite, CapDelete, CapList, CapMove, CapCopy,
                              CapAtomicWrite, CapAtomicMove, CapMetadata, CapSeekableRead}
+    ensures closeIsTerminal
+    ensures !closed && containerPresent
     ensures Valid()
   {
     name := "memory-minimal";
     capabilities := {CapRead, CapWrite, CapDelete, CapList, CapMove, CapCopy,
                      CapAtomicWrite, CapAtomicMove, CapMetadata, CapSeekableRead};
+    // BE-020: terminal, so this class is the live witness for every
+    // BackendUnavailable branch (dead code in MemoryBackend).
+    closeIsTerminal := true;
+    closed := false;
+    containerPresent := true;
     fs := map[Root := DirEntry];
   }
 
@@ -1102,9 +1332,16 @@ class MemoryBackendMinimal extends Backend {
 
   method Exists(path: Path) returns (r: Result<bool>)
     requires WellFormedPath(path)
-    ensures r.Ok?
-    ensures r.value == (PathExists(fs, path) && AllAncestorsTraversable(fs, path))
+    requires Valid()
+    ensures !Live() ==> r == Err(BackendUnavailable(name))
+    ensures Live() ==> r.Ok?
+    ensures r.Ok? ==> r.value == (PathExists(fs, path) && AllAncestorsTraversable(fs, path))
+    ensures Live() && !containerPresent ==> r == Ok(path == Root)
   {
+    if !Live() {
+      r := Err(BackendUnavailable(name));
+      return;
+    }
     var path_exists := path in fs;
     var ancestors_ok := AncestorsTraversableCheck(path);
     r := Ok(path_exists && ancestors_ok);
@@ -1112,9 +1349,16 @@ class MemoryBackendMinimal extends Backend {
 
   method IsFileMethod(path: Path) returns (r: Result<bool>)
     requires WellFormedPath(path)
-    ensures r.Ok?
-    ensures r.value == (IsFile(fs, path) && AllAncestorsTraversable(fs, path))
+    requires Valid()
+    ensures !Live() ==> r == Err(BackendUnavailable(name))
+    ensures Live() ==> r.Ok?
+    ensures r.Ok? ==> r.value == (IsFile(fs, path) && AllAncestorsTraversable(fs, path))
+    ensures Live() && !containerPresent ==> r == Ok(false)
   {
+    if !Live() {
+      r := Err(BackendUnavailable(name));
+      return;
+    }
     var is_file := path in fs && fs[path].FileEntry?;
     var ancestors_ok := AncestorsTraversableCheck(path);
     r := Ok(is_file && ancestors_ok);
@@ -1122,9 +1366,16 @@ class MemoryBackendMinimal extends Backend {
 
   method IsFolderMethod(path: Path) returns (r: Result<bool>)
     requires WellFormedPath(path)
-    ensures r.Ok?
-    ensures r.value == (IsDir(fs, path) && AllAncestorsTraversable(fs, path))
+    requires Valid()
+    ensures !Live() ==> r == Err(BackendUnavailable(name))
+    ensures Live() ==> r.Ok?
+    ensures r.Ok? ==> r.value == (IsDir(fs, path) && AllAncestorsTraversable(fs, path))
+    ensures Live() && !containerPresent ==> r == Ok(path == Root)
   {
+    if !Live() {
+      r := Err(BackendUnavailable(name));
+      return;
+    }
     var is_dir := path in fs && fs[path].DirEntry?;
     var ancestors_ok := AncestorsTraversableCheck(path);
     r := Ok(is_dir && ancestors_ok);
@@ -1157,13 +1408,21 @@ class MemoryBackendMinimal extends Backend {
 
   method Read(path: Path) returns (r: Result<ReadStream>)
     requires WellFormedPath(path)
-    ensures IsDir(fs, path)       ==> r == Err(InvalidPath(path, name))
-    ensures !PathExists(fs, path) ==> r == Err(NotFound(path, name))
-    ensures IsFile(fs, path)      ==> r.Ok? && r.value.content == fs[path].content
+    requires Valid()
+    ensures !Live() ==> r == Err(BackendUnavailable(name))
+    ensures Live() && IsDir(fs, path)       ==> r == Err(InvalidPath(path, name))
+    ensures Live() && !PathExists(fs, path) ==> r == Err(NotFound(path, name))
+    ensures Live() && IsFile(fs, path)      ==> r.Ok? && r.value.content == fs[path].content
+    ensures Live() && !containerPresent ==>
+      r == Err(if path == Root then InvalidPath(path, name) else NotFound(path, name))
     // ID-188 / SIO-008: MemoryBackendMinimal also declares CapSeekableRead,
     // so the same seekable-true witness must hold.
     ensures r.Ok? && CapSeekableRead in capabilities ==> r.value.seekable
   {
+    if !Live() {
+      r := Err(BackendUnavailable(name));
+      return;
+    }
     if path in fs {
       match fs[path]
       case FileEntry(content, _) =>
@@ -1180,11 +1439,17 @@ class MemoryBackendMinimal extends Backend {
     }
   }
 
-  method EnsureParents(path: Path)
+  // BK-388: {:isolate_assertions} because Valid()'s absent-container
+  // conjunct pushed the in-loop Valid() re-establishment past the time
+  // limit; each assertion verifies on its own (measured with
+  // --isolate-assertions before the attribute was added).
+  method {:isolate_assertions} EnsureParents(path: Path)
     requires WellFormedPath(path)
     requires Valid()
+    requires containerPresent
     requires AllAncestorsTraversable(fs, path)
     modifies this
+    ensures closed == old(closed) && containerPresent == old(containerPresent)
     ensures forall k | k in old(fs) :: k in fs && fs[k] == old(fs)[k]
     ensures forall i | 0 < i < |path| && path[i] == '/' ::
       path[..i] in fs && fs[path[..i]].DirEntry?
@@ -1195,6 +1460,7 @@ class MemoryBackendMinimal extends Backend {
     var i := 1;
     while i < |path|
       invariant 1 <= i <= |path|
+      invariant closed == old(closed) && containerPresent == old(containerPresent)
       invariant forall k | k in old(fs) :: k in fs && fs[k] == old(fs)[k]
       invariant forall k | k in fs && k !in old(fs) :: fs[k].DirEntry?
       invariant forall j | 0 < j < i && path[j] == '/' ::
@@ -1241,7 +1507,10 @@ class MemoryBackendMinimal extends Backend {
     }
   }
 
-  method Write(
+  // BK-388: {:isolate_assertions} for the same reason as EnsureParents: the
+  // close and root clauses left the whole-method proof at the edge of the
+  // time limit (it timed out in a five-file run under load).
+  method {:isolate_assertions} Write(
     path: Path,
     content: seq<nat>,
     overwrite: bool,
@@ -1252,21 +1521,29 @@ class MemoryBackendMinimal extends Backend {
     requires Valid()
     modifies this
     ensures Valid()
-    ensures IsDir(old(fs), path)
+    ensures closed == old(closed)
+    ensures !old(Live()) ==> r == Err(BackendUnavailable(name))
+    ensures old(Live()) && AddressesRoot(path)
       ==> r == Err(InvalidPath(path, name))
-    ensures !AllAncestorsTraversable(old(fs), path)
+    ensures old(Live()) && IsDir(old(fs), path)
       ==> r == Err(InvalidPath(path, name))
-    ensures !IsDir(old(fs), path) && IsFile(old(fs), path) && !overwrite
+    ensures old(Live()) && !AllAncestorsTraversable(old(fs), path)
+      ==> r == Err(InvalidPath(path, name))
+    ensures old(Live()) && !AddressesRoot(path) &&
+            !IsDir(old(fs), path) && IsFile(old(fs), path) && !overwrite
       ==> r == Err(AlreadyExists(path, name))
-    ensures !IsDir(old(fs), path) && (!IsFile(old(fs), path) || overwrite) &&
+    ensures old(Live()) && !AddressesRoot(path) &&
+            !IsDir(old(fs), path) && (!IsFile(old(fs), path) || overwrite) &&
             AllAncestorsTraversable(old(fs), path) &&
             HasUserMetadata(metadata) && CapUserMetadata !in capabilities
       ==> r == Err(CapabilityNotSupported(
             CapabilityName(CapUserMetadata), name))
-    ensures !IsDir(old(fs), path) && (!IsFile(old(fs), path) || overwrite) &&
+    ensures old(Live()) && !AddressesRoot(path) && old(containerPresent) &&
+            !IsDir(old(fs), path) && (!IsFile(old(fs), path) || overwrite) &&
             AllAncestorsTraversable(old(fs), path) &&
             (!HasUserMetadata(metadata) || CapUserMetadata in capabilities)
       ==> r.Ok?
+    ensures r.Ok? ==> containerPresent
     ensures r.Ok? ==>
       IsFile(fs, path) && fs[path].content == content
     ensures r.Ok? ==>
@@ -1294,6 +1571,15 @@ class MemoryBackendMinimal extends Backend {
       fs[path].info.etag == r.value.etag &&
       fs[path].info.last_modified == r.value.last_modified
   {
+    // BE-020 first, then BE-029 from the key, then the observed checks.
+    if !Live() {
+      r := Err(BackendUnavailable(name));
+      return;
+    }
+    if AddressesRoot(path) {
+      r := Err(InvalidPath(path, name));
+      return;
+    }
     if path in fs && fs[path].DirEntry? {
       assert IsDir(old(fs), path);
       r := Err(InvalidPath(path, name));
@@ -1329,6 +1615,10 @@ class MemoryBackendMinimal extends Backend {
       return;
     }
 
+    // BE-021 § Reach leaves a write against an absent container to the
+    // backend; this one recreates it.  fs is EmptyStore then, so Valid()
+    // holds with the flag set.
+    containerPresent := true;
     EnsureParents(path);
 
     // Reaching here implies !HasUserMetadata(metadata), so stored_metadata is None.
@@ -1372,16 +1662,27 @@ class MemoryBackendMinimal extends Backend {
     requires Valid()
     modifies this
     ensures Valid()
-    ensures IsDir(old(fs), path)
+    ensures closed == old(closed)
+    ensures containerPresent == old(containerPresent)
+    ensures !old(Live()) ==> r == Err(BackendUnavailable(name))
+    ensures old(Live()) && IsDir(old(fs), path)
       ==> r == Err(InvalidPath(path, name))
-    ensures !PathExists(old(fs), path) && !missing_ok
+    ensures old(Live()) && !PathExists(old(fs), path) && !missing_ok
       ==> r == Err(NotFound(path, name))
-    ensures !PathExists(old(fs), path) && missing_ok
+    ensures old(Live()) && !PathExists(old(fs), path) && missing_ok
       ==> r.Ok?
-    ensures IsFile(old(fs), path) ==> r.Ok?
+    ensures old(Live()) && !old(containerPresent) ==>
+      r == (if path == Root then Err(InvalidPath(path, name))
+            else if missing_ok then Ok(())
+            else Err(NotFound(path, name)))
+    ensures old(Live()) && IsFile(old(fs), path) ==> r.Ok?
     ensures IsFile(old(fs), path) && r.Ok?
       ==> !PathExists(fs, path)
   {
+    if !Live() {
+      r := Err(BackendUnavailable(name));
+      return;
+    }
     if path in fs {
       match fs[path]
       case DirEntry =>
@@ -1409,21 +1710,42 @@ class MemoryBackendMinimal extends Backend {
     requires Valid()
     modifies this
     ensures Valid()
-    ensures IsFile(old(fs), path)
+    ensures closed == old(closed)
+    ensures containerPresent == old(containerPresent)
+    ensures !old(Live()) ==> r == Err(BackendUnavailable(name))
+    ensures old(Live()) && IsFile(old(fs), path)
       ==> r == Err(InvalidPath(path, name))
-    ensures !PathExists(old(fs), path) && !missing_ok
+    ensures old(Live()) && !PathExists(old(fs), path) && !missing_ok
       ==> r == Err(NotFound(path, name))
-    ensures !PathExists(old(fs), path) && missing_ok
+    ensures old(Live()) && !PathExists(old(fs), path) && missing_ok
       ==> r.Ok?
-    ensures IsDir(old(fs), path) && !recursive && HasChildren(old(fs), path)
+    ensures old(Live()) && !old(containerPresent) ==>
+      r == (if missing_ok then Ok(()) else Err(NotFound(path, name)))
+    ensures old(Live()) && IsDir(old(fs), path) && !recursive && HasChildren(old(fs), path)
       ==> r == Err(DirectoryNotEmpty(path, name))
-    ensures IsDir(old(fs), path) && (recursive || !HasChildren(old(fs), path))
+    ensures old(Live()) && old(containerPresent) &&
+            IsDir(old(fs), path) && (recursive || !HasChildren(old(fs), path))
       ==> r.Ok?
-    ensures IsDir(old(fs), path) && r.Ok?
+    ensures old(containerPresent) && IsDir(old(fs), path) && r.Ok?
       ==> !IsDir(fs, path)
-    ensures IsDir(old(fs), path) && recursive && r.Ok? ==>
+    ensures old(containerPresent) && IsDir(old(fs), path) && recursive && r.Ok? ==>
       forall p: Path | IsChildOf(p, path) :: !PathExists(fs, p)
   {
+    if !Live() {
+      r := Err(BackendUnavailable(name));
+      return;
+    }
+    // BE-021 § Reach: an absent container holds no folder to delete.
+    if !containerPresent {
+      assert fs == EmptyStore;
+      if missing_ok {
+        r := Ok(());
+      } else {
+        r := Err(NotFound(path, name));
+      }
+      return;
+    }
+
     if path in fs && fs[path].FileEntry? {
       assert IsFile(old(fs), path);
       r := Err(InvalidPath(path, name));
@@ -1459,9 +1781,12 @@ class MemoryBackendMinimal extends Backend {
   method ListFiles(path: Path, recursive: bool, max_depth: int)
     returns (r: Result<seq<FileInfo>>)
     requires WellFormedPath(path)
-    ensures r.Ok?
-    ensures !PathExists(fs, path) || !AllAncestorsTraversable(fs, path)
-      ==> r.value == []
+    requires Valid()
+    ensures !Live() ==> r == Err(BackendUnavailable(name))
+    ensures Live() ==> r.Ok?
+    ensures Live() && (!PathExists(fs, path) || !AllAncestorsTraversable(fs, path))
+      ==> r == Ok([])
+    ensures Live() && !containerPresent ==> r == Ok([])
     ensures r.Ok? ==>
       forall fi | fi in r.value :: IsFile(fs, fi.path) && IsChildOf(fi.path, path)
     ensures r.Ok? ==>
@@ -1477,6 +1802,15 @@ class MemoryBackendMinimal extends Backend {
          else true) ::
         exists fi | fi in r.value :: fi.path == p
   {
+    if !Live() {
+      r := Err(BackendUnavailable(name));
+      return;
+    }
+    // BE-021 § Reach: an absent container holds nothing to list.
+    if !containerPresent {
+      r := Ok([]);
+      return;
+    }
     var ancestors_ok := AncestorsTraversableCheck(path);
     if path !in fs || !ancestors_ok {
       r := Ok([]);
@@ -1528,15 +1862,27 @@ class MemoryBackendMinimal extends Backend {
   // ID-184: a non-traversable ancestor short-circuits to the empty listing.
   method ListFolders(path: Path) returns (r: Result<seq<FolderEntry>>)
     requires WellFormedPath(path)
-    ensures r.Ok?
-    ensures !PathExists(fs, path) || !AllAncestorsTraversable(fs, path)
-      ==> r.value == []
+    requires Valid()
+    ensures !Live() ==> r == Err(BackendUnavailable(name))
+    ensures Live() ==> r.Ok?
+    ensures Live() && (!PathExists(fs, path) || !AllAncestorsTraversable(fs, path))
+      ==> r == Ok([])
+    ensures Live() && !containerPresent ==> r == Ok([])
     ensures r.Ok? ==>
       forall fe | fe in r.value :: IsDir(fs, fe.path) && IsChildOf(fe.path, path)
     ensures r.Ok? && PathExists(fs, path) && AllAncestorsTraversable(fs, path) ==>
       forall p: Path | IsDir(fs, p) && IsChildOf(p, path) ::
         exists fe | fe in r.value :: fe.path == p
   {
+    if !Live() {
+      r := Err(BackendUnavailable(name));
+      return;
+    }
+    // BE-021 § Reach: an absent container holds nothing to list.
+    if !containerPresent {
+      r := Ok([]);
+      return;
+    }
     var ancestors_ok := AncestorsTraversableCheck(path);
     if path !in fs || !ancestors_ok {
       r := Ok([]);
@@ -1569,10 +1915,18 @@ class MemoryBackendMinimal extends Backend {
 
   method GetFileInfo(path: Path) returns (r: Result<FileInfo>)
     requires WellFormedPath(path)
-    ensures IsDir(fs, path)       ==> r == Err(InvalidPath(path, name))
-    ensures !PathExists(fs, path) ==> r == Err(NotFound(path, name))
-    ensures IsFile(fs, path)      ==> r.Ok? && r.value == fs[path].info
+    requires Valid()
+    ensures !Live() ==> r == Err(BackendUnavailable(name))
+    ensures Live() && IsDir(fs, path)       ==> r == Err(InvalidPath(path, name))
+    ensures Live() && !PathExists(fs, path) ==> r == Err(NotFound(path, name))
+    ensures Live() && IsFile(fs, path)      ==> r.Ok? && r.value == fs[path].info
+    ensures Live() && !containerPresent ==>
+      r == Err(if path == Root then InvalidPath(path, name) else NotFound(path, name))
   {
+    if !Live() {
+      r := Err(BackendUnavailable(name));
+      return;
+    }
     if path in fs {
       match fs[path]
       case FileEntry(_, info) =>
@@ -1589,13 +1943,23 @@ class MemoryBackendMinimal extends Backend {
 
   method GetFolderInfo(path: Path) returns (r: Result<FolderInfo>)
     requires WellFormedPath(path)
-    ensures IsFile(fs, path)      ==> r == Err(InvalidPath(path, name))
-    ensures !PathExists(fs, path) ==> r == Err(NotFound(path, name))
-    ensures IsDir(fs, path)       ==>
+    requires Valid()
+    ensures !Live() ==> r == Err(BackendUnavailable(name))
+    ensures Live() && IsFile(fs, path)      ==> r == Err(InvalidPath(path, name))
+    ensures Live() && !PathExists(fs, path) ==> r == Err(NotFound(path, name))
+    ensures Live() && IsDir(fs, path)       ==>
       r.Ok? && r.value.path == path
       && r.value.file_count == |ChildFiles(fs, path)|
       && r.value.total_size == SumSizes(fs, ChildFiles(fs, path))
+    ensures Live() && !containerPresent ==>
+      if path == Root
+      then r.Ok? && r.value.path == Root && r.value.file_count == 0 && r.value.total_size == 0
+      else r == Err(NotFound(path, name))
   {
+    if !Live() {
+      r := Err(BackendUnavailable(name));
+      return;
+    }
     if path in fs {
       match fs[path]
       case DirEntry =>
@@ -1628,6 +1992,8 @@ class MemoryBackendMinimal extends Backend {
         }
         assert visited == fs.Keys;
         assert counted == ChildFiles(fs, path);
+        // BE-021 § Reach: EmptyStore holds no file, so the aggregate is empty.
+        EmptyStoreHoldsNoFile(path);
         r := Ok(FolderInfo(path, path, file_count, total_size));
       case FileEntry(_, _) =>
         assert IsFile(fs, path);
@@ -1649,17 +2015,30 @@ class MemoryBackendMinimal extends Backend {
     requires Valid()
     modifies this
     ensures Valid()
-    ensures IsDir(old(fs), src)
+    ensures closed == old(closed)
+    ensures containerPresent == old(containerPresent)
+    ensures !old(Live()) ==> r == Err(BackendUnavailable(name))
+    ensures old(Live()) && AddressesRoot(src)
       ==> r == Err(InvalidPath(src, name))
-    ensures !PathExists(old(fs), src)
+    ensures old(Live()) && !AddressesRoot(src) && AddressesRoot(dst)
+      ==> r == Err(InvalidPath(dst, name))
+    ensures old(Live()) && !AddressesRoot(src) && !AddressesRoot(dst) && !old(containerPresent)
       ==> r == Err(NotFound(src, name))
-    ensures IsFile(old(fs), src) && IsDir(old(fs), dst)
+    ensures old(Live()) && !AddressesRoot(src) && !AddressesRoot(dst) && IsDir(old(fs), src)
+      ==> r == Err(InvalidPath(src, name))
+    ensures old(Live()) && !AddressesRoot(src) && !AddressesRoot(dst) && !PathExists(old(fs), src)
+      ==> r == Err(NotFound(src, name))
+    ensures old(Live()) && !AddressesRoot(src) && !AddressesRoot(dst) &&
+            IsFile(old(fs), src) && IsDir(old(fs), dst)
       ==> r == Err(InvalidPath(dst, name))
-    ensures IsFile(old(fs), src) && !AllAncestorsTraversable(old(fs), dst)
+    ensures old(Live()) && !AddressesRoot(src) && !AddressesRoot(dst) &&
+            IsFile(old(fs), src) && !AllAncestorsTraversable(old(fs), dst)
       ==> r == Err(InvalidPath(dst, name))
-    ensures IsFile(old(fs), src) && IsFile(old(fs), dst) && !overwrite && src != dst
+    ensures old(Live()) && !AddressesRoot(src) && !AddressesRoot(dst) &&
+            IsFile(old(fs), src) && IsFile(old(fs), dst) && !overwrite && src != dst
       ==> r == Err(AlreadyExists(dst, name))
-    ensures IsFile(old(fs), src) && !IsDir(old(fs), dst) &&
+    ensures old(Live()) && !AddressesRoot(src) && !AddressesRoot(dst) &&
+            IsFile(old(fs), src) && !IsDir(old(fs), dst) &&
             AllAncestorsTraversable(old(fs), dst) &&
             (!IsFile(old(fs), dst) || overwrite || src == dst)
       ==> r.Ok?
@@ -1671,6 +2050,21 @@ class MemoryBackendMinimal extends Backend {
     ensures r.Ok? ==> phase == DeleteDone
     ensures CapAtomicMove in capabilities ==> ObservableForAtomicMove(phase)
   {
+    if !Live() {
+      r := Err(BackendUnavailable(name));
+      phase := Failed("initial", "backend is closed");
+      return;
+    }
+    if AddressesRoot(src) {
+      r := Err(InvalidPath(src, name));
+      phase := Failed("initial", "source is the store root");
+      return;
+    }
+    if AddressesRoot(dst) {
+      r := Err(InvalidPath(dst, name));
+      phase := Failed("initial", "destination is the store root");
+      return;
+    }
     if src in fs && fs[src].DirEntry? {
       assert IsDir(old(fs), src);
       r := Err(InvalidPath(src, name));
@@ -1742,17 +2136,30 @@ class MemoryBackendMinimal extends Backend {
     requires Valid()
     modifies this
     ensures Valid()
-    ensures IsDir(old(fs), src)
+    ensures closed == old(closed)
+    ensures containerPresent == old(containerPresent)
+    ensures !old(Live()) ==> r == Err(BackendUnavailable(name))
+    ensures old(Live()) && AddressesRoot(src)
       ==> r == Err(InvalidPath(src, name))
-    ensures !PathExists(old(fs), src)
+    ensures old(Live()) && !AddressesRoot(src) && AddressesRoot(dst)
+      ==> r == Err(InvalidPath(dst, name))
+    ensures old(Live()) && !AddressesRoot(src) && !AddressesRoot(dst) && !old(containerPresent)
       ==> r == Err(NotFound(src, name))
-    ensures IsFile(old(fs), src) && IsDir(old(fs), dst)
+    ensures old(Live()) && !AddressesRoot(src) && !AddressesRoot(dst) && IsDir(old(fs), src)
+      ==> r == Err(InvalidPath(src, name))
+    ensures old(Live()) && !AddressesRoot(src) && !AddressesRoot(dst) && !PathExists(old(fs), src)
+      ==> r == Err(NotFound(src, name))
+    ensures old(Live()) && !AddressesRoot(src) && !AddressesRoot(dst) &&
+            IsFile(old(fs), src) && IsDir(old(fs), dst)
       ==> r == Err(InvalidPath(dst, name))
-    ensures IsFile(old(fs), src) && !AllAncestorsTraversable(old(fs), dst)
+    ensures old(Live()) && !AddressesRoot(src) && !AddressesRoot(dst) &&
+            IsFile(old(fs), src) && !AllAncestorsTraversable(old(fs), dst)
       ==> r == Err(InvalidPath(dst, name))
-    ensures IsFile(old(fs), src) && IsFile(old(fs), dst) && !overwrite && src != dst
+    ensures old(Live()) && !AddressesRoot(src) && !AddressesRoot(dst) &&
+            IsFile(old(fs), src) && IsFile(old(fs), dst) && !overwrite && src != dst
       ==> r == Err(AlreadyExists(dst, name))
-    ensures IsFile(old(fs), src) && !IsDir(old(fs), dst) &&
+    ensures old(Live()) && !AddressesRoot(src) && !AddressesRoot(dst) &&
+            IsFile(old(fs), src) && !IsDir(old(fs), dst) &&
             AllAncestorsTraversable(old(fs), dst) &&
             (!IsFile(old(fs), dst) || overwrite || src == dst)
       ==> r.Ok?
@@ -1761,6 +2168,18 @@ class MemoryBackendMinimal extends Backend {
       fs[dst].content == old(fs)[src].content &&
       fs[dst].info.metadata == old(fs)[src].info.metadata
   {
+    if !Live() {
+      r := Err(BackendUnavailable(name));
+      return;
+    }
+    if AddressesRoot(src) {
+      r := Err(InvalidPath(src, name));
+      return;
+    }
+    if AddressesRoot(dst) {
+      r := Err(InvalidPath(dst, name));
+      return;
+    }
     if src in fs && fs[src].DirEntry? {
       assert IsDir(old(fs), src);
       r := Err(InvalidPath(src, name));
@@ -1821,6 +2240,29 @@ class MemoryBackendMinimal extends Backend {
     } else {
       r := Err(CapabilityNotSupported(CapabilityName(cap), name));
     }
+  }
+
+  // BE-020: idempotent; only the flag moves.
+  method Close()
+    requires Valid()
+    modifies this
+    ensures Valid()
+    ensures closed
+    ensures fs == old(fs) && containerPresent == old(containerPresent)
+  {
+    closed := true;
+  }
+
+  // BE-021 § Reach: the environment removes the container.
+  method DropContainer()
+    requires Valid()
+    modifies this
+    ensures Valid()
+    ensures !containerPresent && fs == EmptyStore
+    ensures closed == old(closed)
+  {
+    containerPresent := false;
+    fs := EmptyStore;
   }
 }
 

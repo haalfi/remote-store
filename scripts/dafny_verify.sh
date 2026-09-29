@@ -1,7 +1,7 @@
 #!/bin/bash
 # Verify Dafny formal specs locally via Docker (dotnet/sdk + dafny release).
 # Usage: bash scripts/dafny_verify.sh [file.dfy ...]
-# No args = verify all four spec files.
+# No args = verify every spec file listed below.
 #
 # Requires Docker Desktop running.  First run pulls the SDK image
 # and downloads the Dafny release with bundled Z3.
@@ -16,7 +16,7 @@ IMAGE=mcr.microsoft.com/dotnet/sdk:8.0
 REPO_ROOT="$(cd "$(dirname "$0")/.." && pwd)"
 
 if [ $# -eq 0 ]; then
-  FILES=(BackendContract.dfy MemoryBackend.dfy DepthCounting.dfy ResourceSafety.dfy)
+  FILES=(BackendContract.dfy MemoryBackend.dfy DepthCounting.dfy ResourceSafety.dfy RootPath.dfy)
 else
   FILES=("$@")
 fi

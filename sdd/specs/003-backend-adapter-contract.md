@@ -545,7 +545,7 @@ postcondition-chain coverage as `write`. See ID-151.
 **Invariant:** `delete(path, missing_ok=False)` removes a file.
 **Raises:** `NotFound` if the file is missing and `missing_ok=False`. `InvalidPath` if `path` names a directory, regardless of `missing_ok` — type errors are not silenced by missing-path tolerance (Dafny: `Delete: IsDir → InvalidPath` unconditionally). See BE-021.
 **Postconditions:** If `missing_ok=True`, no error for missing files.
-**Absent container:** A missing bucket, container or table counts as a missing file, so `missing_ok=True` returns cleanly and `missing_ok=False` raises `NotFound` — see [BE-021](#be-021-error-mapping) § "An absent container reads as an absent path" for the rule, its stated reach, and its cost model. It binds every backend in scope, with no carve-out. Outside the Dafny model's frame: `BackendContract.dfy` models the store as a map that always exists, so the absent-container case has no representation to verify against and is pinned in Python only (BUG-243).
+**Absent container:** A missing bucket, container or table counts as a missing file, so `missing_ok=True` returns cleanly and `missing_ok=False` raises `NotFound` — see [BE-021](#be-021-error-mapping) § "An absent container reads as an absent path" for the rule, its stated reach, and its cost model. It binds every backend in scope, with no carve-out. Modelled in `sdd/formal/BackendContract.dfy` since BK-388: `containerPresent` with `DropContainer`, and a `Delete` postcondition for the absent state, verified in `MemoryBackend.dfy`; the per-backend absent states are pinned in Python (BUG-243).
 
 ### BE-013: delete_folder()
 

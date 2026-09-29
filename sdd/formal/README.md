@@ -233,10 +233,11 @@ that must move — see [`000-process.md` Rule
 
 | File | What it models |
 |------|----------------|
-| `BackendContract.dfy` | Abstract backend trait — error model, capabilities, all operation pre/postconditions |
+| `BackendContract.dfy` | Abstract backend trait — error model, capabilities, all operation pre/postconditions, the `AddressesRoot` root predicate |
 | `MemoryBackend.dfy` | Reference refinement proving the contract is satisfiable; compiled to Python as the conformance oracle |
 | `DepthCounting.dfy` | Verified `DEPTH-001` algorithm and the four depth-filter properties |
 | `ResourceSafety.dfy` | Handle lifecycle, `_safe_wrap` invariant, move atomicity, connection lifecycle |
+| `RootPath.dfy` | What `AddressesRoot` accepts: every slash-and-dot root spelling, only `Root` among well-formed paths, not `\` (BE-029) |
 
 Live TLA+ modules live in `sdd/formal/tla/`. The frozen PoC modules
 remain in `sdd/research/tla-poc/` as the historical record of the
@@ -292,7 +293,8 @@ small, stable, and maintainable:
   eliminating per-method root guards.
 - **`MemoryBackend` / `MemoryBackendMinimal` parity.** Dafny has no
   class-to-class inheritance, so `MemoryBackendMinimal` duplicates every
-  method body of `MemoryBackend` with a narrower capability set.  Any
+  method body of `MemoryBackend` with a narrower capability set and a
+  terminal close posture.  Any
   postcondition or body change to `MemoryBackend` **must be manually
   mirrored** in `MemoryBackendMinimal`.
 
@@ -300,12 +302,13 @@ small, stable, and maintainable:
   edit only when it changes what that class can prove.  Weakening a
   postcondition the trait declares is caught; drift inside what the contract
   leaves open is not.  Changing the twin's `GetFolderInfo` folder-name field —
-  which no postcondition pins — verifies at *478 verified, 0 errors* while
+  which no postcondition pins — verifies with *0 errors* while
   changing the twin's behaviour for every folder, and proof-structure edits
   verify clean by construction.  That band is now gated by
   `scripts/check_dafny_twin_parity.py`, which compares the two classes member by
   member and pins the two deliberate divergences (the constructor's capability
-  set and `Write`'s `CapWriteResultNative` branch) rather than skipping them.
+  set and close posture, and `Write`'s `CapWriteResultNative` branch) rather
+  than skipping them.
   It needs no Dafny toolchain, and runs both in `hatch run lint` and in CI's
   `verify-formal` job — the latter because `lint` is skipped for a change
   confined to `sdd/`, which is precisely the shape of a one-sided edit here.
@@ -427,6 +430,22 @@ Each gap is now encoded as a machine-checkable pre/postcondition:
 | 6 | Acquire-then-wrap safety | SIO-001 | `ResourceSafety.dfy` |
 | 7 | `WriteResult` field mapping + capability round-trip | WR-001a, WR-004, WR-008, WR-012, WR-013 | `BackendContract.dfy` |
 | 8 | Seekable-read quality flag | SIO-008 | `BackendContract.dfy` |
+| 9 | Root rule on write-shaped operations | BE-029 | `BackendContract.dfy`, `RootPath.dfy` |
+| 10 | Close posture | BE-020 | `BackendContract.dfy` |
+| 11 | Absent container | BE-021 § Reach | `BackendContract.dfy` |
+
+Gaps 9 to 11 were added under BK-388, ahead of RFC-0017's kernel, which is
+written against them (RFC-0017 D7). The ranking they encode is the one
+BE-029 states: a closed terminal backend answers `BackendUnavailable` first,
+the key-decided root checks come next, and every observed check follows.
+`MemoryBackend` matches the Python class (non-terminal close, a container
+that is always present), so `MemoryBackendMinimal` witnesses the
+`BackendUnavailable` branches, and both classes carry a `DropContainer`
+method that models the environment removing the container. The root rule
+covers `write` and the `move`/`copy` source and destination; the other
+file-shaped operations reach the root through the `IsDir` clause, because
+`Root` is a `DirEntry` in every state the model reaches except after
+`delete_folder` of the root, which BE-029 leaves undefined.
 
 Gap 7 was added under ID-151 after root-cause analysis of the ID-146
 review. Review found ~24% of the 95 comments were shaped as per-operation

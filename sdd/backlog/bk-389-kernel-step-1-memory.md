@@ -63,6 +63,14 @@ that PR. That PR is RFC-0017 D3 step 1.
    leaves it, or is closed. Assigned here by the maintainer at BK-387's close.
 
 **Depends on** BK-388, whose postconditions the kernel is written against.
+As landed, the root rule is a postcondition ranked after the closed guard,
+not a precondition, so the kernel's order per operation is closed
+(`Live()`), then `AddressesRoot` on the key (`write`, the `move`/`copy`
+source then destination), then the driver. `AddressesRoot` is the
+slash-and-dot segment test, wider than `is_root`. Against an absent
+container a `write` under the root is left to the backend spec (the Dafny
+witness recreates the container), and `RequireCapability` answers after
+close. See `sdd/formal/README.md` gaps 9 to 11.
 
 **What it does not include.** Step 2 onward (RFC-0017 D3), and the spec
 amendments of later steps (BK-390).

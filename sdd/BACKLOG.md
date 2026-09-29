@@ -273,7 +273,7 @@ failure it was.
   narrow the catch so only a confirmed miss reads as "no ancestor"; BE-008 changes with the fix.
   Detail: [dossier](backlog/bug-292-ancestor-gate-fails-open.md)
 
-- [ ] **BK-388 — The Dafny model lacks the root rule, the close posture and the absent container that RFC-0017's kernel encodes**
+- [~] **BK-388 — The Dafny model lacks the root rule, the close posture and the absent container that RFC-0017's kernel encodes**
   spec: BE-029, BE-020, BE-021 · effort: M · audience: library.maintainer
   `BackendContract.dfy` models none of BE-029, BE-020 or BE-021 § Reach; the
   first and last sit behind 6 of RFC-0017's 10 kernel-owned items. ADR-0042 (Proposed)
