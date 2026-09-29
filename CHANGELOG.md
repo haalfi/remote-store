@@ -7,6 +7,8 @@ This project follows [Semantic Versioning](https://semver.org/). Pre-1.0, minor 
 
 ## [Unreleased]
 
+- BK-387: The plan to implement the backend contract once, in a shared kernel over thin per-backend drivers, has its design questions answered and is proposed as ADR-0042; nothing changes for users yet, and it is accepted with the first backend built on it.
+
 - BK-370: The recipe conda-forge builds `remote-store` from is now generated rather than copied by hand, and a weekly check reports when the published copy stops matching what this project published for that version — from the next release, the first with a generated copy to compare against.
 
 - BUG-281: A SQLite URL spelling an in-memory database with `mode=memory` now states the pool it already had instead of letting SQLAlchemy infer one, so `SQLBlobBackend` and `SQLQueryBackend` no longer warn under SQLAlchemy 2.1. Behaviour is unchanged; in-memory SQLite's concurrency limits are now documented.

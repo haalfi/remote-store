@@ -34,3 +34,18 @@ caller above the ABC. Reachable only by a direct backend call.
 **Whichever way it goes, the async conformance cell is part of the fix** —
 without it the next divergence is equally invisible. Expect it to turn a
 backend red on arrival; that is the item working, not a regression.
+
+## Decision (2026-09-29, BK-387)
+
+**DEPTH-003 wins.** Taken as RFC-0017's Open Question 4 answer: the kernel
+encodes the `max_depth` algorithm once at D3 step 1, and it cannot encode a
+clause the specs dispute. DEPTH-003's reading is the one
+`sdd/formal/BackendContract.dfy` verifies (`rg -n 'DEPTH-003'
+sdd/formal/BackendContract.dfy`: the `ListFiles` postcondition constrains
+`!recursive` to depth 0). ASYNC-014's wording is DEPTH-001's Store-level rule
+copied onto the backend. The fix therefore does four things:
+
+- amends ASYNC-014;
+- changes `GraphBackend.list_files` and its docstring;
+- changes the pin in `tests/backends/graph/aio/test_list.py`;
+- adds the async conformance cell named above.

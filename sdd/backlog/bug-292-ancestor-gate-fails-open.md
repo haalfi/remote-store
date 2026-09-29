@@ -60,3 +60,14 @@ The two Azure sites are the least exposed and show the available shape: they
 take `ResourceNotFoundError` in its own arm before the broad one, so a genuine
 404 is distinguishable from a failure. The S3 pair do not — a 403 arrives as a
 `ClientError` like a 404 and is read as "no ancestor".
+
+## Decision (2026-09-29, BK-387)
+
+**Narrow the catch.** Only a confirmed miss, a not-found answer from the probe,
+reads as "no ancestor"; any other probe error propagates, mapped. That is the
+reading of "reject writes under a file ancestor" named above. RFC-0017 D2
+moves the walk into the kernel, which then applies the rule once for every
+flat-namespace driver. BE-008 and `_flat_ns.py` § "Fail-open `head_one`"
+change with the fix. The anonymous in-memory SQLite instance stays out of this
+fix's reach, as the second cause above states; answering it belongs to
+SQL-BLOB-072.

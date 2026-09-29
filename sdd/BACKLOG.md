@@ -133,9 +133,9 @@ failure it was.
   spec: ERR-009, AZ-025 · effort: M · audience: user.api
   Seven `RemoteStoreError(str(exc))` sites in five files; five of them, driven
   in the dossier, render `''` from a message-less exception, breaking ERR-009.
-  `_errors.py`'s arm is shared by all three S3 backends. Open decision:
-  synthesise a fallback message or classify the fall-through, for all five; the
-  fix deliberately falsifies AZ-025's blank-message clause and its pinning test.
+  `_errors.py`'s arm is shared by all three S3 backends. Decided (BK-387):
+  synthesise a fallback message at all five, the RFC-0017 kernel's ERR-009
+  floor; the fix deliberately falsifies AZ-025's blank clause and its test.
   Detail: [dossier](backlog/bug-276-empty-base-class-message.md)
 
 - [ ] **BUG-273 — A locally-rejected SFTP connect answers the wrong type, and neither permission errno can be claimed without connect-time context**
@@ -269,11 +269,11 @@ failure it was.
   All five flat-namespace `_head_one` probes read any driver error (and
   `OSError`) as "no ancestor", so the file-ancestor gate vanishes silently;
   measured letting `move` succeed under a file ancestor. An anonymous in-memory
-  SQLite on `QueuePool` defeats it with no error at all. Open decision: narrow
-  the catch, warn, or add a strict mode; BE-008 must say which.
+  SQLite on `QueuePool` defeats it with no error at all. Decided (BK-387):
+  narrow the catch so only a confirmed miss reads as "no ancestor"; BE-008 says so.
   Detail: [dossier](backlog/bug-292-ancestor-gate-fails-open.md)
 
-- [ ] **BK-387 — RFC-0017 is Draft with four open questions gating acceptance, and no item owns answering them**
+- [~] **BK-387 — RFC-0017 is Draft with four open questions gating acceptance, and no item owns answering them**
   spec: BE-021, BE-029, BE-020 · effort: L · audience: library.maintainer, contributor.process
   Audit-021 attributes 45 of 71 user-audience defects to rules re-implemented
   per class, 35 contract clauses and 10 the SFTP session lifecycle; RFC-0017
@@ -281,6 +281,33 @@ failure it was.
   acceptance step (D8 step 1), but nothing owns it. Open decision: OQ1 (async
   or sync kernel), OQ4 (which contradictions first), OQ6 (`classify` or a wire signal), OQ7 (Dafny extensions).
   Detail: [dossier](backlog/bk-387-rfc-0017-acceptance.md)
+
+- [ ] **BK-388 — The Dafny model lacks the root rule, the close posture and the absent container that RFC-0017's kernel encodes**
+  spec: BE-029, BE-020, BE-021 · effort: M · audience: library.maintainer
+  `BackendContract.dfy` models none of BE-029, BE-020 or BE-021 § Reach, the
+  clauses behind 8 of RFC-0017's 10 kernel-owned items. ADR-0042 (Proposed)
+  extends it before kernel code, placed per RFC-0017's Open Question 7 answer,
+  gated by `verify-formal` and `check_dafny_twin_parity.py`. Open decision:
+  none on scope; the model shape of the absent-container branch is the work.
+  Detail: [dossier](backlog/bk-388-dafny-kernel-clauses.md)
+
+- [ ] **BK-389 — No backend runs on RFC-0017's kernel, so ADR-0042 stays Proposed**
+  spec: BE-021, BE-029, BE-020, ERR-001, ERR-009 · effort: L · audience: library.maintainer, user.api_docs, contributor.process
+  ADR-0042 is accepted only with the first backend on the new design: D3
+  step 1, the async kernel with its `unasync` sync twin over the two Memory
+  drivers. That PR also lands the spec 003/005 placement text, the
+  custom-backend guide as a driver, its check script and the homepage snippet.
+  Depends on BK-388. Open decision: none; RFC-0017 D1 to D7 fix the shape.
+  Detail: [dossier](backlog/bk-389-kernel-step-1-memory.md)
+
+- [ ] **BK-390 — RFC-0017's spec amendments beyond spec 003 and 005 have no owner once BK-387 closes**
+  spec: SIO-008, SEEK-004, SEEK-006, DEPTH-003, PING-011, SFTP-010, GR-039 · effort: M · audience: contributor.process
+  RFC-0017 § Impact lists amendments to specs 006, 007, 022, 008, 009, 026,
+  029, 036, 037, 044 and the per-backend specs, each true only once a D3 step
+  lands (s3fs clauses retire at step 2, SFTP-010's tiers become D5 at step 6).
+  Remainder of BK-387. Open decision: none; each lands in its step's PR, and
+  the dossier maps amendment to step.
+  Detail: [dossier](backlog/bk-390-rfc-0017-spec-amendments.md)
 
 ---
 
@@ -305,7 +332,7 @@ no clause of the contract ships unexercised.
   which says `max_depth` applies only when `recursive=True`. `GraphBackend`,
   its docstring and its test follow ASYNC-014; `AsyncMemoryBackend` and
   `AsyncAzureBackend` follow DEPTH-003. `Store` normalises, so only a direct
-  backend call diverges. Open decision: which reading wins.
+  backend call diverges. Decided (BK-387): DEPTH-003, the verified reading.
   Detail: [dossier](backlog/bug-240-max-depth-spec-contradiction.md)
 
 - [ ] **BUG-260 — `SQLBlobBackend.list_files("./")` answers empty for a non-empty root**

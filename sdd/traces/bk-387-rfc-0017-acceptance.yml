@@ -1,0 +1,154 @@
+id: BK-387
+title: "Accept RFC-0017 (contract kernel over thin drivers): answer OQ1, 4, 6, 7 and record the acceptance ADR"
+trigger: >-
+  Audit-021 attributed 45 of 71 user-audience defects to contract clauses
+  re-implemented per backend class; RFC-0017 proposes one kernel over thin
+  drivers and names its acceptance step (D8 step 1). BK-387 owns that step:
+  the four open questions, the acceptance ADR, the amendment set and the
+  benchmark band. The maintainer invoked /ship with the decisions routed
+  through plan-mode questions.
+source_items:
+  - BK-387
+audience:
+  - library.maintainer
+  - contributor.process
+expected_ripples:
+  - sdd/rfcs/rfc-0017-contract-kernel-over-thin-drivers.md
+  - sdd/adrs/
+  - sdd/adrs/DIGEST.md
+  - sdd/specs/003-backend-adapter-contract.md
+  - sdd/specs/005-error-model.md
+  - benchmarks/
+  - sdd/BACKLOG.md
+  - sdd/BACKLOG-DONE.md
+  - sdd/backlog/
+  - CHANGELOG.md
+phases:
+  - id: orient
+    name: Orient
+    steps:
+      - file: sdd/backlog/bk-387-rfc-0017-acceptance.md
+        section: "(full)"
+        read_type: gate
+        extract: >-
+          Owes D8 step 1 only: OQ1, 4, 6, 7 answered, the acceptance ADR, the
+          Impact amendment set drafted, the benchmark band, the three D3
+          prerequisite decisions annotated on BUG-276, 292, 240, and the step-1
+          item minted (plus a Dafny item if OQ7 extends).
+        outcome: ok
+      - file: sdd/rfcs/rfc-0017-contract-kernel-over-thin-drivers.md
+        section: "(full)"
+        read_type: gate
+        extract: >-
+          D6 frames OQ1 (async kernel with unasync twin vs sync kernel with a
+          driver hop); D4 ties sync Azure's fate to it. D7 recommends three
+          Dafny extensions before kernel code. Impact lists the amendment set;
+          several of its targets (spec 008's s3fs clauses, spec 009's tiers,
+          the custom-backend guide) describe code that does not exist until a
+          D3 step lands, which bears on what can be amended truthfully now.
+        outcome: ok
+      - file: sdd/audits/audit-021-contract-placement.md
+        section: "Summary; H-1; Appendix"
+        read_type: reference
+        extract: >-
+          Clause table: 11 clauses under cluster A, exactly one of them a spec
+          contradiction (BUG-240). The RFC's R1 to R6 assignment is the
+          measurement the answers are weighed against.
+        outcome: ok
+      - file: sdd/backlog/bug-240-max-depth-spec-contradiction.md
+        section: "(full)"
+        read_type: reference
+        extract: >-
+          ASYNC-014 copies DEPTH-001's Store-level wording onto the backend
+          while citing DEPTH-003; only GraphBackend follows it.
+        outcome: ok
+      - file: sdd/formal/BackendContract.dfy
+        section: "ListFiles postconditions"
+        read_type: verify
+        extract: >-
+          `rg -n 'DEPTH-003' sdd/formal/BackendContract.dfy`: the ListFiles
+          postcondition tagged DEPTH-003 constrains `!recursive` to depth 0,
+          so DEPTH-003's reading is the verified one.
+        outcome: ok
+      - file: sdd/backlog/bug-276-empty-base-class-message.md
+        section: "(full)"
+        read_type: reference
+        extract: "Two arms offered: synthesise a fallback message, or classify the fall-through."
+        outcome: ok
+      - file: sdd/backlog/bug-292-ancestor-gate-fails-open.md
+        section: "(full)"
+        read_type: reference
+        extract: >-
+          Three shapes: narrow the catch, warn, strict mode. None reaches the
+          anonymous in-memory SQLite instance, which answers correctly about
+          the wrong database.
+        outcome: ok
+      - file: benchmarks/results/run-of-record/clean.json
+        section: "(full)"
+        read_type: verify
+        extract: >-
+          Slimmed to `stats.mean` only; backends local, s3, s3-pyarrow, sftp,
+          azure (40 cells each), no s3-boto3. So the band cannot be applied
+          against the run of record; it has to be a paired run in the
+          retirement PR.
+        outcome: ok
+      - file: benchmarks/report.py
+        section: "_magnitude"
+        read_type: reference
+        extract: "Bands sub-ms / <10% / 10-50% / >50% describe a delta and disclaim acceptability."
+        outcome: ok
+      - file: sdd/backlog/bk-387-rfc-0017-acceptance.md
+        section: "What the item owes, item 5"
+        read_type: reference
+        extract: >-
+          The prescription drafts every § Impact amendment at acceptance, but
+          most of them (spec 008's s3fs clauses, SFTP-010's tiers, the guide as
+          a driver) describe code that exists only after a D3 step. Written now
+          they would break principle 3. The maintainer chose to land each one
+          with the step that makes it true.
+        outcome: misleading
+  - id: design
+    name: Design
+    steps:
+      - file: scripts/gen_adr_digest.py
+        section: "STATUSES"
+        read_type: gate
+        extract: >-
+          Proposed is a valid status, and an Amends edge on a Proposed ADR
+          passes the digest. That permits the maintainer's correction: ADR-0042
+          stays Proposed until BK-389 lands the first backend.
+        outcome: ok
+      - file: src/remote_store/_registry.py
+        section: "register_backend"
+        read_type: verify
+        extract: >-
+          `register_backend(type_name, cls: type[Backend])` at line 19. The
+          widening D4 named was needed only for the adapter route, which OQ1
+          rejected, so the RFC and the ADR drop it.
+        outcome: ok
+  - id: implement
+    name: Implement
+    steps:
+      - file: scripts/check_dafny_twin_parity.py
+        section: "(run)"
+        read_type: verify
+        extract: "Re-run at 0bf7fe6: 17 member(s) in lockstep, 2 declared divergence(s), unchanged from 8fa22d6."
+        outcome: ok
+      - file: benchmarks/bench_pyarrow_tier1.py
+        section: "statistics imports"
+        read_type: verify
+        extract: >-
+          Both standalone scripts compute `statistics.median`, so the band's
+          median rule is computable without changing them.
+        outcome: ok
+      - file: scripts/gen_backlogid.py
+        section: "--check"
+        read_type: gate
+        extract: >-
+          The first run failed R2: annotating BUG-292 and BUG-240 took each to
+          9 content lines. Shortened, it passes; next safe BK is 391.
+        outcome: ok
+discovery_followups:
+  - BK-388
+  - BK-389
+  - BK-390

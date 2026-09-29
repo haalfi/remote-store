@@ -2,7 +2,49 @@
 
 <!-- doc: repo-only -->
 
-Compiled from 41 ADR(s) by `scripts/gen_adr_digest.py`. Do not edit by hand; run `hatch run gen-adr-digest`.
+Compiled from 42 ADR(s) by `scripts/gen_adr_digest.py`. Do not edit by hand; run `hatch run gen-adr-digest`.
+
+## Proposed
+
+### [ADR-0042](0042-contract-kernel-over-thin-drivers.md): One Contract Kernel over Thin Drivers
+
+- **One kernel implements the `Backend` surface over a thin `Driver`.**
+  RFC-0017 D1 and D2: the driver supplies wire primitives, declared
+  capabilities and one classifier; the kernel owns the cross-cutting clauses
+  and one error-mapping choke point over every call, page and stream. `Backend` stays
+  the abstract contract type and direct subclassing keeps working. *Reverse if*
+  D8 step 4's re-audit finds kernel-owned items recurring at the rate
+  audit-021 measured per class, which would show the placement did not move
+  the defects.
+- **The kernel is written once in async and the sync twin is generated**
+  (RFC-0017 D6, first option; Open Question 1). `AsyncDriverBackend` is the
+  source and `unasync` generates `DriverBackend`, so async-native drivers stay
+  first-class. *Reverse if* the generated twin needs hand edits that the
+  generator cannot express, which would make it a second hand-maintained
+  kernel.
+- **Sync Azure callers get a generated sync driver.** The single async Azure
+  driver is the source; the hand-written sync `AzureBackend` is replaced at
+  D3 step 4 with its behaviour kept. The adapter route was rejected for what
+  it takes from sync callers (RFC-0017 § Impact). *Reverse if* the generation
+  cannot map the Azure SDK's sync and async surfaces.
+- **Classification stays inside each driver** (Open Question 6):
+  `classify(exc, op=..., key=...)`, invoked by the kernel at its choke point,
+  which then sets `path` and `backend` and guarantees a non-empty message. The
+  wire-signal alternative reaches four of the eight driver-kept items at the
+  cost of one primitive spanning every wire's vocabulary. *Reverse if* the D8
+  step 4 re-audit finds mapping-content defects recurring across drivers.
+- **Spec contradictions are adjudicated before the step that encodes them**
+  (Open Question 4). BUG-240 is the one audit-021 counts and is decided before
+  step 1: DEPTH-003's reading wins, the one `BackendContract.dfy` verifies.
+- **The formal model is extended before kernel code** (Open Question 7): the
+  root rule (BE-029), the close posture (BE-020) and the absent container
+  (BE-021 § Reach), placed as RFC-0017's Open Question 7 answer states.
+- **Migration is one class per PR behind the conformance suite**, and a
+  retiring class is deleted in the PR that registers its replacement (RFC-0017
+  D8 step 3), benchmarked against
+  [`acceptance-band.md`](../../benchmarks/results/acceptance-band.md).
+
+> amends ADR-0001, ADR-0011, ADR-0012, ADR-0025 (clause).
 
 ## Accepted
 

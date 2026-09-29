@@ -2,12 +2,14 @@
 
 ## Status
 
-Draft. Filed from [audit-021](../audits/audit-021-contract-placement.md) at
-the user's direction. Tracked by BK-387, which owns the acceptance step D8
-describes; the item was minted with the disposition of the audit's proposals
-rather than at filing, since `CLAUDE.md` § Audits leaves that disposition to
-the user. The lifecycle this RFC follows, and what it amends on acceptance,
-are in D8 and § Impact.
+Draft, decided. Filed from [audit-021](../audits/audit-021-contract-placement.md) at
+the user's direction. BK-387 carried D8 step 1: Open Questions 1, 4, 6 and 7
+are answered below, and the design is recorded in
+[ADR-0042](../adrs/0042-contract-kernel-over-thin-drivers.md), **Proposed**.
+The maintainer's condition is that the ADR and this RFC become Accepted
+together, in the PR that lands the first backend on this design (D3 step 1),
+not on the answers alone. The lifecycle, and where each amendment lands, are
+in D8 and § Impact.
 
 **Date:** 2026-09-28. Every figure below is pinned to `8fa22d6` and is either
 quoted from audit-021 with its derivation, or names its command here. The tree
@@ -330,7 +332,7 @@ disagree:
 | 7 | `GraphBackend` | migrate |
 | 8 | `ReadOnlyHttpBackend` | migrate |
 | in 2 | `S3Backend`, `S3PyArrowBackend` | retire, unmigrated, in the step-2 PR behind D8's gate; `_S3Base` goes with them |
-| in 4 | `AzureBackend` (sync) | retire, unmigrated, **conditional on Open Question 1**, in the step-4 PR behind the same gate |
+| in 4 | `AzureBackend` (sync) | replaced, unmigrated, by the sync driver generated from the step-4 async driver (Open Question 1), in the step-4 PR behind the same gate |
 
 **The suite is not "unchanged"; the cells that change are these, and they
 are settled before step 1.** AZ-025's blank-message clause and its pinning
@@ -338,7 +340,9 @@ test go red whichever arm BUG-276's decision takes (`sdd/BACKLOG.md`
 BUG-276: "the fix deliberately falsifies AZ-025's blank-message clause and
 its pinning test"; its dossier: "Both go red when this lands, by design");
 the BUG-240 and BUG-292 decisions change cells on the classes that
-follow the losing reading; Graph's `get_folder_info().modified_at` differs
+follow the losing reading (decided at BK-387: DEPTH-003 wins, so
+`GraphBackend`'s; the catch narrows, so the five flat-namespace `_head_one`
+probes'); Graph's `get_folder_info().modified_at` differs
 from S3 and SQL and the kernel picks one aggregation; and the conformance
 registry (`tests/backends/fixtures/registry.py`) registers drivers beside
 `Backend` instances, a driver fixture running through the kernel and a
@@ -383,21 +387,16 @@ step.
   PyArrow's C++ S3 filesystem for data-path operations (higher throughput)";
   RFC-0003 tuned that path), so retiring it is a performance change measured
   under § Impact before the gate opens.
-- **Azure.** Keep one driver, the async one, and decide under Open
-  Question 1 how sync callers reach it. If OQ1 chooses a generated sync
-  driver, the hand-written sync class is replaced by the generated one and
-  keeps its behaviour; if OQ1 chooses the adapter, sync Azure callers move to
-  `AsyncBackendSyncAdapter`, which takes an `AsyncBackend`, so this reading
-  also requires an async kernel (D6, first option), and it changes what they
-  get in the six ways § Impact lists. The retirement row in D3 is conditional
-  on that answer. `GraphBackend` is the precedent for the adapter reading
-  only in part: it is async-only and hand-wrapped by its users, not
-  registered for sync, so `type="azure"` in a registry config needs a
-  registered callable that wraps the async driver in the adapter.
-  `Registry` already invokes its table entry as `factory(**kwargs)`
-  (`_registry.py` line 154); what changes is `register_backend`'s parameter
-  type, `type[Backend]` today (line 19), widened to `Callable[..., Backend]`,
-  plus that one builtin registration.
+- **Azure.** Keep one driver, the async one. Sync callers reach it through a
+  sync driver generated from it by the same `unasync` step that generates the
+  sync kernel (Open Question 1), so the hand-written sync class is replaced by
+  the generated one and keeps its behaviour, its ranged `read_seekable`
+  included. The rejected alternative was the adapter route: sync Azure callers
+  moved to `AsyncBackendSyncAdapter`, losing what § Impact lists under
+  Performance, and `type="azure"` served by a registered callable wrapping the
+  async driver, which would have widened `register_backend`'s parameter from
+  `type[Backend]` (`_registry.py` line 19) to `Callable[..., Backend]`. The
+  chosen route needs neither.
 
 Concrete classes go from 13 to 10, and the driver surface to 10 drivers ×
 14 required primitives (plus the optional protocols each implements) instead
@@ -454,7 +453,9 @@ be decided before D3 starts:
 
 The first keeps async-native drivers first-class and is the only reading
 under which D4's adapter route exists; the second is less machinery at the
-cost of the async surface. Open Question 1.
+cost of the async surface. **Decided: the first** (Open Question 1), with the
+generation reaching the Azure driver as well as the kernel, so D4's adapter
+route is not taken.
 
 ### D7. What the formal layer covers, and where the oracle stays
 
@@ -514,7 +515,8 @@ a single implementation to hold to.
 | `write_atomic`, BE-010 and BE-011, which D2 makes kernel-owned over `put_is_atomic`, `open_write` and `rename` | a `WriteAtomic` method whose postcondition equals `write`'s, plus a two-state atomicity property over a wire the model does not have | M | do not; atomicity is a property of the driver's wire or of the temp-and-promote sequence, and § Testing pins the synthesis against the fake driver |
 | Error attributes and messages, ERR-* | strings | — | do not |
 
-The three extensions land in D8 step 1, before kernel code, because the
+The three extensions land before kernel code, in their own item ahead of D3
+step 1 (Open Question 7), because the
 kernel encodes one answer per clause and a Dafny postcondition is the
 sharpest statement of that answer; written after the kernel they would only
 ratify whatever it did. Two practicalities: `verify-formal` runs in CI only
@@ -522,22 +524,24 @@ when `sdd/formal` or `sdd/specs` change (`ci.yml`'s `FORMAL_PAT`) and is a
 required job, and `check_dafny_twin_parity.py`, which holds the two models'
 shared members in lockstep (its output at `8fa22d6`: "17 member(s) in
 lockstep, 2 declared divergence(s)", the 19 its own comment counts per
-class), needs the new members added on both sides. Open Question 7 asks
-whether this recommendation is accepted, and D8 step 1 lists it among the
-questions answered before acceptance.
+class), needs the new members added on both sides; re-run at `0bf7fe6`, the
+output is unchanged. Open Question 7 accepted this recommendation.
 
 ### D8. Lifecycle: accept the design, gate the deletions
 
 `CONTRIBUTING.md` § Spec-First Workflow runs Propose, Accept, Implement, in
 that order, and an RFC that deprecates and deletes classes before it is
-accepted inverts it. So:
+accepted inverts it. Acceptance here rides with the first implementing PR
+(step 2 below), which is additive; no class is deleted before it. So:
 
-1. **Accept** this RFC as an ADR once Open Questions 1, 4, 6 and 7 are
-   answered and the amendments listed under § Impact are drafted; nothing
-   under D3 starts before that. Acceptance is of the design, D1 to D7 plus
-   those answers; OQ7 is in the list because D7's extensions land in this
-   step.
-2. **Implement** D3 in order. Each migration PR is gated by the conformance
+1. **Decide and propose.** Open Questions 1, 4, 6 and 7 are answered and the
+   design, D1 to D7 plus those answers, is recorded as a Proposed ADR
+   ([ADR-0042](../adrs/0042-contract-kernel-over-thin-drivers.md)); OQ7 is in
+   the list because D7's extensions land before kernel code. Done by BK-387.
+2. **Implement** D3 in order. Step 1 runs under the Proposed ADR, and its PR,
+   the first backend on the new design, **accepts** ADR-0042 and this RFC:
+   the design is accepted once it has carried one backend through the suite,
+   not on the answers alone. Each migration PR is gated by the conformance
    suite with the enumerated cell changes and by the per-driver suite.
 3. **Retire** in the PR that lands the replacement, not on a date or a
    release count: the retiring class is deleted in the same PR that registers
@@ -545,15 +549,14 @@ accepted inverts it. So:
    passes the conformance suite with D3's enumerated cell changes and its
    per-driver suite, (b) the throughput and seekable-read benchmarks
    (`benchmarks/test_throughput.py`, `test_seekable.py`,
-   `bench_pyarrow_tier1.py`, `bench_azure_pyarrow.py`) show it within an
-   acceptance band that D8 step 1 sets once, as an obligation this RFC
-   creates (§ Impact): no benchmark artifact states one today,
-   `benchmarks/results/comparative.md` being a table of means and
-   `report.py`'s magnitude bands describing a delta's size while disclaiming
-   acceptability, and (c) for a class D4
-   retires unmigrated, every item of D4's promotion list for its replacement
-   is complete: the S3 list D4 states, in full and not restated here, and
-   for Azure the items of the route OQ1 chooses. The suite
+   `bench_pyarrow_tier1.py`, `bench_azure_pyarrow.py`) show it within the
+   acceptance band set once at D8 step 1,
+   [`benchmarks/results/acceptance-band.md`](../../benchmarks/results/acceptance-band.md),
+   and (c) for a class D4
+   retires or replaces unmigrated, every item of D4's promotion list for its
+   replacement is complete: the S3 list D4 states, in full and not restated
+   here, and for Azure the generated sync driver registered under
+   `type="azure"` with the hand-written class's public surface. The suite
    and the benchmarks cover none of the parity items, which is why (c) is a
    separate condition. The repo's policy
    applies unchanged (`docs-src/reference/migration.md`: "Pre-v1: removed
@@ -640,43 +643,43 @@ it.
   interface. `Backend` remains the abstract contract type; `DriverBackend` is
   the kernel. New public names: `Driver`, `AsyncDriver`, the nine
   `Supports*` protocols, `DriverBackend`, `Entry`, `Page`, `WriteHandle`,
-  `Op`, `Session`. `register_backend` widens its parameter type from
-  `type[Backend]` to `Callable[..., Backend]`, which `Registry`'s
-  `factory(**kwargs)` call already accepts, so a type string can be served
-  by an async driver through the adapter (D4, Azure). `ext.arrow` loses its
+  `Op`, `Session`. `ext.arrow` loses its
   Tier-1 native probe on S3 once the PyArrow lane, `S3PyArrowBackend`,
   retires (D4); the s3fs lane never served that probe.
 - **Backwards compatibility:** additive for existing `Backend` subclasses,
   which keep working and keep passing conformance; the custom-backend guide,
   its check script and the conformance registry move to drivers, and direct
   subclassing is deprecated as the documented route, so the migration guide
-  owes a section for backend authors. Breaking for users of `S3Backend`,
-  `S3PyArrowBackend` and sync `AzureBackend` as class names in the release
-  that carries D3 step 2 and step 4 respectively, and for
+  owes a section for backend authors. Breaking for users of `S3Backend` and
+  `S3PyArrowBackend` as class names in the release that carries D3 step 2,
+  and for sync `AzureBackend` as a class name at step 4 unless its generated
+  replacement keeps the name, and for
   `unwrap(s3fs.S3FileSystem)` callers at step 2. `Store` callers see no
   change in interface.
 - **Performance:** the kernel issues the same probes the per-backend code
   issues today (one `stat` or one `list_page(limit=1)` on the error path; the
   file-ancestor walk only when opted in; `ensure_parents` only for explicit
-  parents), and the S3 driver drops the s3fs layer. Two retirements change
+  parents), and the S3 driver drops the s3fs layer. Two replacements change
   data paths and are measured under D8's benchmark gate in the PR that
-  retires them:
+  lands them:
   - `S3PyArrowBackend`: reads move from PyArrow's C++ S3 filesystem to the
     boto3 driver.
-  - sync `AzureBackend`, if OQ1 takes the adapter route: the sync class never
-    declared `SEEKABLE_READ`, so what is lost is its `read_seekable` override
-    (`_AzureRangeReader`, one Range request per read), which the adapter
-    replaces with a spool; a call from a thread with a running event loop
-    raises `RuntimeError`, so sync `Store` over Azure stops working inside
-    notebooks and `pytest-asyncio` tests; `unwrap()` raises
-    `CapabilityNotSupported` by default; a caller-supplied sync `credential=`
-    is handed to the async SDK unchanged; `error.backend` carries the async
-    driver's name; and `type="azure"` needs the wrapping registration D4
-    names.
-    `open_atomic` is not on this list: flat and HNS `AzureBackend` already
-    spool and upload, so the adapter's synthesis matches. The `get_range`
-    and `open_write` primitives exist to give the first item back if OQ1
-    chooses a generated sync driver instead.
+  - sync `AzureBackend`: its replacement is generated from the async driver,
+    whose `get_range` keeps the ranged `read_seekable`
+    (`_AzureRangeReader`, one Range request per read) the class has today;
+    `open_atomic` stays the spool-and-upload the kernel synthesises without
+    `open_write`, which is what flat and HNS `AzureBackend` do today.
+
+  The rejected adapter route for sync Azure (Open Question 1) is kept here as
+  the reason it was rejected. The sync class never declared `SEEKABLE_READ`,
+  so what it would have lost is its `read_seekable` override, replaced by the
+  adapter's spool; a call from a thread with a running event loop raises
+  `RuntimeError`, so sync `Store` over Azure would stop working inside
+  notebooks and `pytest-asyncio` tests; `unwrap()` raises
+  `CapabilityNotSupported` by default; a caller-supplied sync `credential=`
+  is handed to the async SDK unchanged; `error.backend` carries the async
+  driver's name; and `type="azure"` needs the wrapping registration D4
+  describes.
 - **Risks:** a kernel defect is a regression on every migrated class at once.
   BUG-249 reached one class; its kernel equivalent reaches every driver. That
   is the price of applying a rule once, and it is bounded by D3 migrating one
@@ -697,10 +700,18 @@ it.
   since R1 makes the root rule the kernel's. The conformance suite gates
   every migration with the cell
   changes D3 enumerates.
-- **Amendments on acceptance** (D8 step 1), each an obligation this RFC
-  creates and none left to D3: a benchmark acceptance band for D8 step 3
-  (b), stated under `benchmarks/` beside the run of record, since none
-  exists today; an ADR amending
+- **Amendments**, each an obligation this RFC creates. Each lands where it
+  becomes true, since a spec or guide describes the code that exists
+  (`CLAUDE.md` principle 3). At D8 step 1 (BK-387): the benchmark acceptance
+  band,
+  [`benchmarks/results/acceptance-band.md`](../../benchmarks/results/acceptance-band.md),
+  and [ADR-0042](../adrs/0042-contract-kernel-over-thin-drivers.md),
+  Proposed, which carries the four ADR amendments. With D3 step 1 (BK-389),
+  which accepts that ADR: spec 003 and spec 005 below, the custom-backend
+  guide with its `partial-capabilities` region,
+  `check_custom_backend_guide.py`, and the landing page's snippet. With the
+  D3 step that makes each true (BK-390): specs 006 to 044 and the
+  per-backend specs below. The list, as drafted at filing: an ADR amending
   [ADR-0001](../adrs/0001-architecture-store-registry-backends.md) (the
   `Backend` layer splits in two), ADR-0011 (the connect budget moves to
   `Session`; per-operation retry stays native), ADR-0012 and ADR-0025 (the
@@ -744,8 +755,12 @@ it.
    with a driver-level hop and the async surface served by
    `SyncBackendAdapter`? And, under the first, does the generation reach
    the Azure driver or do sync Azure callers take the adapter route, which
-   decides whether sync `AzureBackend` is replaced or retired (D4)? Decide
-   before acceptance.
+   decides whether sync `AzureBackend` is replaced or retired (D4)?
+   **Answered (BK-387):** the async kernel, with `unasync` generating the sync
+   twin, and the generation also reaches the Azure driver: sync
+   `AzureBackend` is replaced at D3 step 4 by the generated sync driver, not
+   retired to the adapter. The adapter route's cost to sync callers, listed
+   under § Impact, decided it.
 2. **`Page` for wires without a page boundary.** BE-021 allows marking items
    as the service returns them; the kernel needs the driver to say which it
    does, or the divergence is stated per driver as today. BUG-257 waits on
@@ -757,15 +772,25 @@ it.
    carries.
 4. **Which spec contradictions the kernel must adjudicate first.** BUG-240 is
    one; the kernel encodes one answer per clause and cannot land on a clause
-   the specs still dispute.
+   the specs still dispute. **Answered (BK-387):** BUG-240 is the one
+   adjudicated before D3 step 1, where the kernel encodes the `max_depth`
+   algorithm. It is the only spec contradiction in audit-021's clause table,
+   and DEPTH-003's reading wins, the one `BackendContract.dfy` verifies (its
+   `ListFiles` postcondition tagged DEPTH-003). Every other decision D3 names
+   is taken before the step that encodes it. BUG-276's arm (synthesise) and
+   BUG-292's choice (narrow the catch) are recorded on those items now. Graph's
+   `get_folder_info().modified_at` aggregation is decided at step 7.
 5. **Does the choke point cover driver construction?** BUG-245 leaks from
    `SQLBlobBackend`'s constructor, and BE-021's mapping rule is scoped to
    operations today. Either D2 wraps `Driver.__init__` too, or construction
    errors stay per driver and BUG-245 is fixed there.
 6. **`classify` or a wire signal?** Eight of the 35 cluster-A items stay in
    the driver under D1. The wire-signal alternative reaches four of them at
-   the cost of a primitive that must express every wire's vocabulary. Decide
-   before acceptance.
+   the cost of a primitive that must express every wire's vocabulary.
+   **Answered (BK-387):** `classify(exc, op, key)` inside each driver, as D1
+   proposes. Four of eight is not worth a primitive spanning every wire.
+   ADR-0042 reverses this if D8 step 4's re-audit finds mapping-content
+   defects recurring across drivers.
 7. **Is D7's extension of the model accepted?** D7 recommends extending
    `BackendContract.dfy` and its refinement with the root rule, the close
    posture and the absent container, in D8 step 1, and not modelling
@@ -777,7 +802,12 @@ it.
    pure and could sit in an included lemma module of `DepthCounting.dfy`'s
    shape, which proves properties of the contract's `Depth` function without
    adding to the trait (`include "BackendContract.dfy"`, its line 18; no file
-   under `sdd/formal/` uses `refines`). Decide before acceptance.
+   under `sdd/formal/` uses `refines`). **Answered (BK-387):** all three are
+   extended, before kernel code, under BK-388. The close flag and the
+   absent-container branches go into `BackendContract.dfy` and
+   `MemoryBackend.dfy`. The root rule's pure predicate goes into an included
+   lemma module of `DepthCounting.dfy`'s shape, and its preconditions on the
+   write-shaped operations into the trait.
 
 ## References
 

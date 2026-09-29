@@ -71,3 +71,23 @@ accepted and the § Impact amendment set drafted, the benchmark band among
 them; RFC-0017's Status moved from Draft to Accepted (or returned to Draft
 with the reason, if an answer defeats the design); a `BK-` item for D3 step 1
 minted; and, if OQ7 is "extend", a `BK-` item for the Dafny extensions minted.
+
+## Correction (2026-09-29, at close)
+
+Three corrections to the prescription above:
+
+- **The ADR stays Proposed.** The maintainer made acceptance conditional on
+  the first backend running on the new design. ADR-0042 is therefore Proposed,
+  RFC-0017 stays Draft with its questions answered, and both become Accepted
+  in BK-389's PR (D3 step 1). RFC-0017 D8 was amended to match.
+- **The amendment set is split by where each amendment becomes true**
+  (`CLAUDE.md` principle 3). This item shipped the benchmark band and the ADR.
+  Spec 003, spec 005, the guide, its check script and the homepage snippet
+  moved to BK-389. The other specs went to BK-390, the remainder under
+  § Completing work's "partly done".
+- **Items minted:** BK-388 for the Dafny extensions, BK-389 for D3 step 1 and
+  BK-390 for the remainder.
+
+Not done here, and left as the paragraph above describes it: the re-homing of
+the open items § Impact names. The decisions recorded on BUG-240, BUG-276 and
+BUG-292 sit in those items' own dossiers.
