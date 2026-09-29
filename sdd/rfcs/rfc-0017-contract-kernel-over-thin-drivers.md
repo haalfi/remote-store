@@ -28,8 +28,10 @@ defects of the last six releases (63%) to rules stated once and re-implemented
 per class; measured against this design by the rules in § What each cluster-A
 bug becomes, the kernel owns 10 of those outright (14% of the 71), 6 are split
 with the driver, 8 stay in the driver, 6 wait on a decision, 2 disappear with
-a retired class, and 13 belong to D5's session layer. By clause rather than by
-item the share is 14 of 71. The 63% is the audit's diagnosis of the placement;
+a retired class, and 13 belong to D5's session layer. Counted by clause rather
+than by item, the 45 sit on 14 clauses (11 in cluster A, 3 in B); the audit
+derives no clause count for the other 26, so the 14 has no share. The 63% is
+the audit's diagnosis of the placement;
 the 14% is what this kernel alone removes, and the rest of the proposal (the
 session layer, one driver per service, the wire-signal question) is sized
 against the remainder. `Store`, `Registry`, the error hierarchy and
@@ -211,10 +213,12 @@ primitives, since its failures are status codes rather than exceptions.
 
 ### D2. One kernel is a `Backend`
 
-`DriverBackend(Backend)` implements the 21 I/O methods over a driver and
-forwards the other 7 public members (`name`, `capabilities`, `close`,
-`unwrap`, `native_path`, `to_key`, `resolve`; `Backend` has 28 public members
-by `rg -c '^    def [a-z]' _backend.py`). It owns, once:
+`DriverBackend(Backend)` implements the 21 methods audit-021 command (a)
+names (`close` and `check_health` among them) over a driver and forwards the
+other 6 public members (`name`, `capabilities`, `unwrap`, `native_path`,
+`to_key`, `resolve`). `Backend` has 27 public `def`s, lines 68 to 578 of
+`_backend.py` by `rg -n '^    def [a-z]' _backend.py`, whose 28th match is
+`_SeekableSpool.seekable` at line 44, above `class Backend`. It owns, once:
 
 - root refusal from the key (BE-029, both predicates as `_flat_ns` now states
   them), and the closed guard, in the order spec 003 fixes; these are

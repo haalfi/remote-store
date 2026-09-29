@@ -33,11 +33,13 @@ public-method bodies in the 12 sync backend modules alone, and nothing at the
 `Store` boundary enforces it. The prior remedies, more conformance cells and
 more spec text, were both applied by 2026-04, and cluster A's closed members
 by release since then, from the appendix's *Section* column, run Unreleased 1,
-v0.31.0 13, v0.30.0 2, v0.29.0 4, v0.28.0 2: not a flat or rising series but
-one spike, and 8 of the 13 in v0.31.0 are two review cascades (BUG-243 to
-246, 247, 248; BK-354 to 358, 359, 265, 275), which is the detection
-confound § H-1 item 3 states. What the series does support is that the class
-did not close: every release in the window has members. Eight of the 71
+v0.32.0 0, v0.31.0 13, v0.30.0 2, v0.29.1 0, v0.29.0 4, v0.28.0 2: not a flat
+or rising series but one spike, and 8 of the 13 in v0.31.0 are two review
+cascades (BUG-243 to 246, 247, 248; BK-354 to 358, 359, 265, 275), which is the
+detection confound § H-1 item 3 states. What the series does support is that
+the class did not close: four of the six releases and the Unreleased stub have
+cluster-A members, and the two releases with none (v0.32.0, v0.29.1) hold five
+entries, all cluster D. Eight of the 71
 (cluster C) were fixed before their backend's first release; on the 63 that
 reached a release the share of A and B is 45 of 63 (71%).
 
@@ -45,9 +47,11 @@ reached a release the share of A and B is 45 of 63 (71%).
 chain, which is what "the same clause is fixed N times" measures, so an item
 count falls under a single implementation by construction. Counted by the
 clause each item breached (a by-hand assignment, listed in § H-1), cluster
-A's 35 items sit on 11 clauses and cluster B's 10 on 3; the 63% is the item
-share, and 14 of 71 is the clause share. Both are given because the remedy
-changes the first and not the second.
+A's 35 items sit on 11 clauses and cluster B's 10 on 3: 45 items on 14
+clauses. The 63% is an item share; no clause share is stated, because clusters
+C, D and E were not counted by clause and 14 has no denominator without them.
+Both counts are given because the remedy changes the item count and not the
+clause count.
 
 | Severity | Count | Description |
 |----------|-------|-------------|
@@ -134,8 +138,9 @@ properties of the cluster are measured rather than read:
    answers "detection improved", but for clusters A and B what it detected was
    shipped behaviour, and the audits that found it have read three of the
    thirteen classes in depth. Cluster C is the exception: its eight were found
-   by audit-016 (2026-06-09) and the readiness review before v0.28.0 shipped
-   (2026-06-15), so no user met them.
+   before v0.28.0 shipped (2026-06-15), by the finders the appendix records
+   (one audit-016, two the release-readiness review and its rerun, four a
+   review or a live reproduction, one unrecorded), so no user met them.
 
 **Where the contract lives, measured at `8fa22d6`:**
 
@@ -149,7 +154,7 @@ properties of the cluster are measured rather than read:
 | of which definitions | 28 (6 in `_flat_ns`, 22 per-class wrappers) | command (e) below |
 | of which lines of a per-class wrapper the substring match caught (`_flat_children_or_absent_container`) | 8 (2 definitions, 6 calls) | command (f) below |
 | of which call lines of the eight names | 164 across 10 files | (c) minus (e) minus (f); command (g) reproduces it directly |
-| Error-mapping definitions outside `ext/` | 25 across 11 modules, enumerated below | command (d) below |
+| Error-mapping definitions outside `ext/` | 24 across 11 modules, enumerated below (command (d) matches 25 lines; one is not error mapping) | command (d) below |
 | `except` handlers in `Store` that touch backend I/O | 0 | `_store.py` carries 2: a `KeyError` on the gate table, a `UnicodeEncodeError` on key validation |
 | BE-021, the error-mapping clause | 497 lines | spec 003 lines 676 to 1172 inclusive |
 | Hand-maintained ABCs | 2: the sync one carries the 21 names command (a) lists; the async one 19 of them (no `read_seekable`, no `open_atomic`, `aclose` for `close`), implemented by 3 of the 13 classes | command (a)'s name list against `rg -n 'def ' aio/_async_backend.py` |
@@ -171,8 +176,8 @@ calls its `_flat_ns` twin), so distinct applications of a guard lie between
 142 and 164. The 22 wrappers exist because the shared helper has no home in
 the method bodies it guards.
 
-**The 25 error-mapping definitions command (d) matches, by class.** One entry
-is not error mapping and is excluded from the 25: `SFTPBackend._classify_existing_target`
+**The 24 error-mapping definitions among command (d)'s 25 matches, by class.**
+The excluded match is `SFTPBackend._classify_existing_target`, which
 classifies a stat result, not an exception. `LocalBackend` and `MemoryBackend`
 define none; `LocalBackend` maps inline across its 35 `except` arms, and
 `MemoryBackend` raises typed errors directly (0 `except` arms, command (b)).
@@ -227,7 +232,8 @@ keeps the backend axis in the product, and the tests chase it. The
 unbuilt static check is the one prescription still open; it reaches the
 broad-arm shape (BUG-293, 276, 275, 264, 222, 242, BK-316 in cluster A) and
 not the missed-wrap or missed-guard shape (BUG-249, 280, 279, 259, 247, 246,
-243, 248, 254, 255, 257, 260, 253, BK-324), which is the larger half.
+243, 248, 254, 255, 257, 260, 253, BK-324, BK-358), which is 15 of the 35
+against the broad-arm 7.
 
 ### H-2. The SFTP session state machine is re-derived at every guard — *confirmed*
 
@@ -254,8 +260,11 @@ lives in the session, not in the exception.
 
 `GraphBackend` shipped in v0.28.0 having re-derived lifecycle, retry, closed
 guard, monitor polling and auth offload, and got eight of them wrong before
-release, all found by audit-016 (2026-06-09) and the readiness review and fixed
-before the 2026-06-15 release; no user met them, which is why the Summary
+release, each fixed before the 2026-06-15 release (appendix *Released* column:
+`no` on all eight). The appendix's *Finder* column for the eight: audit-016
+(BK-259), the ID-127 release-readiness review (BUG-218) and its rerun (BK-296),
+a review or live reproduction (BK-290, 292, 294, BUG-219), and no finder
+recorded (BK-291). No user met them, which is why the Summary
 states the A and B share both with and without this cluster. Under H-1's
 design that is the expected price of a new backend: 21 methods, each owing
 every clause. BK-345 (open) names the same gap from the test side: "a new backend
