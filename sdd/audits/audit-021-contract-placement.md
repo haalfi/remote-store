@@ -231,9 +231,9 @@ although their surface is 19 names rather than 21, gives ~3,510. The design
 keeps the backend axis in the product, and the tests chase it. The
 unbuilt static check is the one prescription still open; it reaches the
 broad-arm shape (BUG-293, 276, 275, 264, 222, 242, BK-316 in cluster A) and
-not the missed-wrap or missed-guard shape (BUG-249, 280, 279, 259, 247, 246,
-243, 248, 254, 255, 257, 260, 253, BK-324, BK-358), which is 15 of the 35
-against the broad-arm 7.
+not the invocation shape, which the clause table above puts at 21 of the 35:
+20 once BUG-242, on both lists, is taken out, because those are absences
+rather than arms.
 
 ### H-2. The SFTP session state machine is re-derived at every guard — *confirmed*
 

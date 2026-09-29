@@ -331,7 +331,8 @@ step.
   is standalone, boto3-only, and the lane spec 003 already cites as "the shape
   a fix takes" for the first-page bound. It is today wheel-excluded,
   unregistered and conformance-tested on moto only, so promotion is a list,
-  not a rename, and every item is a precondition of the retirement gate:
+  not a rename, and every item is a precondition of the retirement gate (D8
+  step 3, condition (c)):
   ID-202 § 4a's Ship items (an `S3B-*` spec block replacing the borrowed
   `S3-015/016/018` marks; a SEEK-004 amendment dropping the lane from the
   passthrough list and an `S3B-*` axiom for its `read_seekable`; the
@@ -481,16 +482,23 @@ accepted inverts it. So:
    release count: the retiring class is deleted in the same PR that registers
    its replacement under the same type string, once (a) the replacement
    passes the conformance suite with D3's enumerated cell changes and its
-   per-driver suite, and (b) the throughput and seekable-read benchmarks
+   per-driver suite, (b) the throughput and seekable-read benchmarks
    (`benchmarks/test_throughput.py`, `test_seekable.py`,
    `bench_pyarrow_tier1.py`, `bench_azure_pyarrow.py`) show it within the
-   run-of-record noise band `comparative.md` states. The repo's policy
+   run-of-record noise band `comparative.md` states, and (c) for a class D4
+   retires unmigrated, every item of D4's promotion list for its replacement
+   is complete: the S3 list D4 states (spec block, SEEK-004 amendment,
+   ID-202 § 6 wiring, `client_options` parity, a MinIO or live lane, `name`
+   continuity), and for Azure the items of the route OQ1 chooses. The suite
+   and the benchmarks cover none of the parity items, which is why (c) is a
+   separate condition. The repo's policy
    applies unchanged (`docs-src/reference/migration.md`: "Pre-v1: removed
    without a deprecation cycle"): the class is gone in the next release, the
    migration guide names the replacement type string, and rollback is a
    revert of that PR.
 4. **Measure** after the last D3 step: a re-audit by audit-021's method over
-   the items filed since step 2 began, classified by a reviewer other than
+   the items filed since D8 step 2 began, at D3 step 1 (Memory), classified
+   by a reviewer other than
    the implementer. A kernel-owned item found there reopens a `BK-` item to
    decide whether the kernel or the driver is at fault; the audit is the
    RFC's success measurement, not a gate on any deletion.
@@ -526,10 +534,10 @@ it.
   that returns silently without inspecting `errno`, type or status. Cheap,
   and worth building whether or not this RFC is accepted, since cluster A's
   broad-arm members (BUG-293, 276, 275, 264, 222, 242, BK-316) are its
-  target. It does not reach the missed-wrap or missed-guard shape (BUG-249,
-  280, 279, 259, 247, 246, 243, 248, 254, 255, 257, 260, 253, BK-324, BK-358),
-  which is 15 of the 35, because those are absences rather than arms.
-  Complementary, not a substitute.
+  target. It does not reach the invocation shape, which audit-021's H-1
+  clause table puts at 21 of the 35 (20 once BUG-242, on both lists, is
+  taken out), because those are absences rather than arms. Complementary,
+  not a substitute.
 - **RFC-0005's route, extended.** Deduplicate per family (`_S3Base` was its
   result). Removes copies within a family and leaves the per-class method
   bodies, so a clause is still applied per family rather than once; the
