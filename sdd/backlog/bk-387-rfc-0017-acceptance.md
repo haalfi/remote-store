@@ -89,6 +89,6 @@ Three corrections to the prescription above:
 - **Items minted:** BK-388 for the Dafny extensions, BK-389 for D3 step 1 and
   BK-390 for the remainder.
 
-Not done here, and left as the paragraph above describes it: the re-homing of
-the open items § Impact names. The decisions recorded on BUG-240, BUG-276 and
-BUG-292 sit in those items' own dossiers.
+Not done here: the re-homing of the open items § Impact names. The maintainer
+assigned it to BK-389 (its item 7). The decisions recorded on BUG-240, BUG-276
+and BUG-292 sit in those items' own dossiers.

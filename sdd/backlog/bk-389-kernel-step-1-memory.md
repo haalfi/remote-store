@@ -36,6 +36,10 @@ that PR. That PR is RFC-0017 D3 step 1.
    need `Driver` to exist, which is why they are here and not in BK-387.
 6. ADR-0042's Status set to Accepted and RFC-0017's Status set to Accepted, in
    the same PR.
+7. The re-homing RFC-0017 § Impact names: each open item listed there
+   (BK-382, BK-242, BK-325, BK-332, BUG-266, ID-181, ID-140, BUG-287, 288,
+   289, ID-217, BK-339) gets the D3 step or item that absorbs, obsoletes or
+   leaves it, or is closed. Assigned here by the maintainer at BK-387's close.
 
 **Depends on** BK-388, whose postconditions the kernel is written against.
 

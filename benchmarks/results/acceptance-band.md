@@ -21,9 +21,12 @@ always inside the band.
   sides. Medians, not means: `pytest-benchmark` reports both, and the two
   standalone scripts already compute `statistics.median`.
 - **The benchmarks are the four RFC-0017 D8 names.**
-  `benchmarks/test_throughput.py` and `benchmarks/test_seekable.py` run over
-  the `bench_backend` fixture, so one run with both lanes selected
-  (`--backend <retiring>,<replacement>`) pairs every cell. The two standalone
+  `benchmarks/test_throughput.py` and `benchmarks/test_seekable.py` take one
+  run with both lanes selected (`--backend <retiring>,<replacement>`). A cell
+  there is a test measuring one of the two classes: every `bench_backend`
+  test, and the `bench_target` tests (`test_write_bytes`, `test_read_bytes`)
+  only at their remote-store target. Their raw-SDK and fsspec targets measure
+  neither class and are not cells. The two standalone
   scripts construct one class each, `bench_pyarrow_tier1.py` the retiring
   `S3PyArrowBackend` and `bench_azure_pyarrow.py` the retiring `AzureBackend`
   (`rg -n 'S3PyArrowBackend\(|AzureBackend\(' benchmarks/bench_*.py`). The

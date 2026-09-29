@@ -151,6 +151,15 @@ phases:
           The first run failed R2: annotating BUG-292 and BUG-240 took each to
           9 content lines. Shortened, it passes; next safe BK is 391.
         outcome: ok
+      - file: benchmarks/test_throughput.py
+        section: "bench_target tests"
+        read_type: verify
+        extract: >-
+          PR #1045 round 2 measured that `test_write_bytes` and
+          `test_read_bytes` take `bench_target`, so a two-lane run also
+          collects raw-SDK cells. The band now counts only the cells that
+          measure one of the two classes.
+        outcome: ok
 discovery_followups:
   - BK-388
   - BK-389

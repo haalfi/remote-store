@@ -736,8 +736,8 @@ it.
   "Store or Backend ABC"
   row reads "All backend implementations, conformance tests", and both are
   what D3 walks.
-- **Open backlog items this touches**, to be re-homed or closed with the
-  disposition: BK-382, BK-242 and BK-325 (file-ancestor gate and the guide),
+- **Open backlog items this touches**, to be re-homed or closed by BK-389
+  when D3 step 1 lands (the maintainer's assignment at BK-387's close): BK-382, BK-242 and BK-325 (file-ancestor gate and the guide),
   BK-332 (the rehearsal), BUG-266 and ID-181 (SFTP), ID-140 (SQLBlob lazy
   reads, a `get_range` for that driver), BUG-287, 288 and 289 (floors on
   extras D4 retires or adds), ID-217 (async `ext.*`), BK-339 (the behaviour

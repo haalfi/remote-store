@@ -273,15 +273,6 @@ failure it was.
   narrow the catch so only a confirmed miss reads as "no ancestor"; BE-008 says so.
   Detail: [dossier](backlog/bug-292-ancestor-gate-fails-open.md)
 
-- [~] **BK-387 — RFC-0017 is Draft with four open questions gating acceptance, and no item owns answering them**
-  spec: BE-021, BE-029, BE-020 · effort: L · audience: library.maintainer, contributor.process
-  Audit-021 attributes 45 of 71 user-audience defects to rules re-implemented
-  per class, 35 contract clauses and 10 the SFTP session lifecycle; RFC-0017
-  proposes one kernel over thin drivers plus a session layer. OQ1, 4, 6 and 7
-  are answered in the RFC and ADR-0042 is Proposed; BK-388 to BK-390 carry the
-  rest. Open decision: none.
-  Detail: [dossier](backlog/bk-387-rfc-0017-acceptance.md)
-
 - [ ] **BK-388 — The Dafny model lacks the root rule, the close posture and the absent container that RFC-0017's kernel encodes**
   spec: BE-029, BE-020, BE-021 · effort: M · audience: library.maintainer
   `BackendContract.dfy` models none of BE-029, BE-020 or BE-021 § Reach; the
