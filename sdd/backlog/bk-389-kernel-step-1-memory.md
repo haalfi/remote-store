@@ -27,8 +27,10 @@ that PR. That PR is RFC-0017 D3 step 1.
    - spec 037: the `max_depth` algorithm decided once, on DEPTH-003.
    - spec 029: the async surface and `AsyncDriver`.
    - specs 007 and 022, kernel half: `write_atomic` and temp-and-promote as
-     kernel behaviour over `put_is_atomic`, `open_write` and `rename`. Each
-     driver's own primitives are BK-390's, at that driver's step.
+     kernel behaviour over `put_is_atomic`, `open_write` and `rename`.
+   - the Memory drivers' own rows: their primitives under 007 and 022, and
+     `probe()` against PING-011 (spec 026). Every later driver's rows are
+     BK-390's, at that driver's step.
 5. The custom-backend guide rewritten as a driver, its `partial-capabilities`
    region included. `scripts/check_custom_backend_guide.py` is re-pointed from
    `Backend.__abstractmethods__` at `Driver`, and the landing page's snippet

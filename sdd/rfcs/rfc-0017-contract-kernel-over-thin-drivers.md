@@ -343,10 +343,17 @@ the BUG-240 and BUG-292 decisions change cells on the classes that
 follow the losing reading (decided at BK-387: DEPTH-003 wins, so
 `GraphBackend`'s; the catch narrows, so the five flat-namespace `_head_one`
 probes'); Graph's `get_folder_info().modified_at` differs
-from S3 and SQL, and the kernel picks one aggregation. Until step 7 decides
-Graph's case, the step-1 kernel aggregates the latest file modification
-time, which is what `MemoryBackend` computes today (`_memory.py`, the
-`latest` loop in `get_folder_info`); and the conformance
+from the rest, and the kernel fixes one aggregation at step 1: the latest
+file modification time under the prefix, recursively. That is what every
+other backend with folders computes today, read from each `get_folder_info`:
+`MemoryBackend` and `AsyncMemoryBackend` (the `latest` loop), `LocalBackend`
+(`latest_mtime` over `rglob`), `SFTPBackend` (`latest_modified`),
+`AsyncAzureBackend` (`latest_modified`), `S3Boto3Backend` (the maximum
+`LastModified`) and the SQL backends (`MAX(modified_at)`).
+`ReadOnlyHttpBackend` has no folders. `GraphBackend` answers the folder
+item's own `lastModifiedDateTime`, so its cell changes at step 7; what step 7
+decides is only how Graph meets the rule (the changed cell, or a
+`SupportsFolderStats` push-down computing the same value). And the conformance
 registry (`tests/backends/fixtures/registry.py`) registers drivers beside
 `Backend` instances, a driver fixture running through the kernel and a
 direct-subclass fixture staying runnable as today (`DafnyOracleBackend` is
@@ -715,7 +722,8 @@ and its answer keeps `classify`.
   and [ADR-0042](../adrs/0042-contract-kernel-over-thin-drivers.md),
   Proposed, which carries the four ADR amendments. With D3 step 1 (BK-389),
   which accepts that ADR: specs 003, 005, 029 and 037 below, the kernel half
-  of 007 and 022, the custom-backend guide with its `partial-capabilities`
+  of 007 and 022 and the Memory drivers' rows of 007, 022 and 026, the
+  custom-backend guide with its `partial-capabilities`
   region, `check_custom_backend_guide.py`, and the landing page's snippet.
   With the later D3 step that makes each true (BK-390): the rest of the specs
   below. The list, as drafted at filing: an ADR amending
@@ -787,8 +795,10 @@ and its answer keeps `classify`.
    the `max_depth` filter only under `recursive` (tagged DEPTH-003). Every
    other decision D3 names
    is taken before the step that encodes it. BUG-276's arm (synthesise) and
-   BUG-292's choice (narrow the catch) are recorded on those items now. Graph's
-   `get_folder_info().modified_at` aggregation is decided at step 7.
+   BUG-292's choice (narrow the catch) are recorded on those items now. The
+   folder `modified_at` aggregation is encoded, and so fixed, at step 1 as the
+   rule every folder-bearing backend but Graph already computes (D3). Step 7
+   decides only how Graph meets it.
 5. **Does the choke point cover driver construction?** BUG-245 leaks from
    `SQLBlobBackend`'s constructor, and BE-021's mapping rule is scoped to
    operations today. Either D2 wraps `Driver.__init__` too, or construction

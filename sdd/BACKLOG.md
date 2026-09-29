@@ -286,7 +286,7 @@ failure it was.
   spec: BE-021, BE-029, BE-020, ERR-001, ERR-009, DEPTH-003 · effort: L · audience: library.maintainer, user.api_docs, contributor.process
   ADR-0042 is accepted only with the first backend on the new design: D3
   step 1, the async kernel with its `unasync` sync twin over the two Memory
-  drivers. That PR also lands the step-1 spec amendments (003, 005, 029, 037), the
+  drivers. That PR also lands every step-1 spec amendment (dossier item 4), the
   custom-backend guide as a driver, its check script and the homepage snippet.
   Depends on BK-388. Open decision: none; RFC-0017 D1 to D7 fix the shape.
   Detail: [dossier](backlog/bk-389-kernel-step-1-memory.md)
@@ -294,7 +294,7 @@ failure it was.
 - [ ] **BK-390 — RFC-0017's spec amendments after D3 step 1 have no owner once BK-387 closes**
   spec: SIO-008, SEEK-004, SEEK-006, PING-011, SFTP-010, GR-039 · effort: M · audience: contributor.process
   RFC-0017 § Impact lists amendments to specs 006, 008, 009, 026, 036, 044,
-  the drivers' half of 007 and 022, and the per-backend specs, each true only
+  the later drivers' half of 007 and 022, and the per-backend specs, each true only
   once a later D3 step lands (s3fs clauses at step 2, SFTP-010 at step 6).
   Remainder of BK-387. Open decision: none; each lands in its step's PR, and
   the dossier maps amendment to step.

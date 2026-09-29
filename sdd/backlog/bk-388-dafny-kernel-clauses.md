@@ -33,6 +33,12 @@ lockstep, 2 declared divergence(s)"; new members are added on both sides.
 clause and a postcondition written afterwards would only ratify it (RFC-0017
 D7). It also gives BK-345 and ID-244 the verified reference they lack.
 
-**Exit criteria:** the three rows verified in both files, the twin-parity
-check green with the new members, and each new postcondition tagged with its
-`@spec` ID so `check_formal_trace.py` lists it.
+**Exit criteria**, per row of the table:
+
+- the close posture and the absent container verify in `BackendContract.dfy`
+  and `MemoryBackend.dfy`;
+- the root rule's lemma module verifies, and its preconditions on the trait
+  hold in `MemoryBackend.dfy`;
+- the twin-parity check is green with the new members;
+- each new postcondition carries its `@spec` tag, so `check_formal_trace.py`
+  lists it.

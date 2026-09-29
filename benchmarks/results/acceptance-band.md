@@ -40,6 +40,17 @@ always inside the band.
   the retiring PR and before its deletion commit, because that PR registers
   the replacement under the same type string and deletes the retiring
   class. The PR records that commit.
+- **The reference lane is the retiring class as users get it by default, on
+  a clean network.** Three lanes follow:
+  - `S3Backend`'s reference is `s3-nocache`, since `S3Backend`'s listing
+    cache is off by default; `conftest.py` states it and opts the `s3` lane
+    back on.
+  - `S3PyArrowBackend`'s reference is `s3-pyarrow`.
+  - `AzureBackend`'s reference is `azure`.
+
+  The `s3` (cache-on) lane and the `*-latency` lanes are out of scope: the
+  first measures an opt-in, the second a simulated network that neither
+  replacement has a lane for.
 - **The retiring class is compared at its best tier.** For S3 that is
   `S3PyArrowBackend` read through `bench_pyarrow_tier1.py`'s Tier 1, since
   the replacement loses that probe (RFC-0017 D4). The replacement is compared

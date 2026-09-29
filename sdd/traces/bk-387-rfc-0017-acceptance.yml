@@ -161,6 +161,20 @@ phases:
           collects raw-SDK cells. The band now counts only the cells that
           measure one of the two classes.
         outcome: ok
+      - file: src/remote_store/backends/_local.py
+        section: "get_folder_info, and its siblings in every backend"
+        read_type: verify
+        extract: >-
+          Repeat-site check on PR #1045: two conditions were refuted in two
+          consecutive rounds, the folder modified_at rule and ADR-0042's ADR-0012
+          amendment, so each was enumerated rather than re-argued.
+          `rg -n 'def get_folder_info' src/remote_store`, then each body read:
+          Memory (both), Local, SFTP, async Azure, S3 boto3 and SQL take the
+          latest file mtime recursively, Graph the folder item's own
+          timestamp, and HTTP has no folders. So the rule is fixed at step 1,
+          and step 7 only decides how Graph conforms. The ADR-0012 amendment
+          became a per-driver-kind table.
+        outcome: ok
 discovery_followups:
   - BK-388
   - BK-389

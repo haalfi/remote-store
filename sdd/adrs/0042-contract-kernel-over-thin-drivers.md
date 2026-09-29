@@ -20,8 +20,8 @@ unchanged.
 
 [Audit-021](../audits/audit-021-contract-placement.md) attributes 45 of the 71
 user-audience defects from v0.28.0 onward to rules stated once and implemented
-per backend class: 35 contract clauses re-applied per class, 10 the SFTP
-session lifecycle. The contract is implemented by 13 concrete classes and
+per backend class: 35 defects on 11 contract clauses re-applied per class,
+and 10 on the SFTP session lifecycle. The contract is implemented by 13 concrete classes and
 enforced zero times at the boundary every call crosses; the earlier remedies,
 more conformance cells and more spec text, did not close the class.
 [RFC-0017](../rfcs/rfc-0017-contract-kernel-over-thin-drivers.md) proposes the
@@ -79,10 +79,20 @@ defects, and every figure with its derivation. This record decides it.
   `Session` (RFC-0017 D5); per-operation retry stays each driver's native
   mechanism, as that record decides.
 - **[ADR-0012](0012-async-store-backend-api.md)**, *separate async types* and
-  its dismissal of async-first: the types stay separate, and the kernel behind
-  them is written async-first and its sync twin is generated as native sync
-  source. Of Option E's dismissal, only "async-first source" is reversed, and
-  only for the kernel: sync callers get no runtime wrapper over async code.
+  its dismissal of Option E: the types stay separate, and the dismissal is
+  narrowed rather than reversed. By driver kind, the sync surface is:
+  - **sync drivers** (Memory, Local, SFTP, the SQL pair, S3, HTTP; Memory
+    also keeps an async driver of its own, D3 step 1): served by the
+    sync kernel, which is generated as native sync source from the async
+    kernel;
+  - **async drivers with a generated sync twin** (Azure): served by that
+    twin through the sync kernel, with no runtime wrapper;
+  - **async-only drivers** (Graph): reached by sync callers through
+    `AsyncBackendSyncAdapter` over the async kernel, the runtime wrapper
+    ADR-0012's Option E describes, as they are today.
+
+  Async-first source is taken for the kernel and the Azure driver. Option E's
+  runtime wrapper stays where ADR-0025 already uses it.
 - **[ADR-0025](0025-async-to-sync-backend-adapter.md)**, *capability
   translation*: its "reverse if a native async seekable-read op is added" is
   triggered by the driver's `get_range` primitive. The adapter keeps serving

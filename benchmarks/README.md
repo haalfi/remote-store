@@ -292,9 +292,11 @@ The numbers and charts on the [performance guide](../docs-src/explanation/perfor
 are regenerated from a committed, diffable **run of record** —
 `benchmarks/results/run-of-record/{clean,rtt20,rtt50,rtt100}.json` — so the
 charts and `comparative.md` can be rebuilt from inputs in the repo (ID-230).
-It describes overhead and judges nothing; the one acceptability rule the suite
-carries, for deleting a backend class in favour of its replacement, is
-[`results/acceptance-band.md`](results/acceptance-band.md).
+It describes overhead and judges nothing. The rule for deleting a backend
+class in favour of its replacement is
+[`results/acceptance-band.md`](results/acceptance-band.md); the regression
+gate under § Continuous Benchmarking is a separate rule, against a stored
+baseline.
 
 **Producing a fresh run of record (the reproducible path).** Dispatch
 `benchmark.yml` with the **`run_of_record`** input checked. That job brings up
