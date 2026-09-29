@@ -6540,6 +6540,34 @@
 
               
             
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../adrs/0042-contract-kernel-over-thin-drivers/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    0042: One Contract Kernel over Thin Drivers
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
           </ul>
         </nav>
       
@@ -7892,10 +7920,10 @@
 </li>
         
           <li class="md-nav__item">
-  <a href="#d3-migration-one-class-at-a-time-with-the-suite-as-oracle" class="md-nav__link">
+  <a href="#d3-migration-one-step-at-a-time-with-the-suite-as-oracle" class="md-nav__link">
     <span class="md-ellipsis">
       
-        D3. Migration, one class at a time, with the suite as oracle
+        D3. Migration, one step at a time, with the suite as oracle
       
     </span>
   </a>
@@ -7914,10 +7942,10 @@
 </li>
         
           <li class="md-nav__item">
-  <a href="#d5-a-session-layer-for-connection-oriented-drivers" class="md-nav__link">
+  <a href="#d5-a-session-layer-for-every-remote-driver" class="md-nav__link">
     <span class="md-ellipsis">
       
-        D5. A session layer for connection-oriented drivers
+        D5. A session layer for every remote driver
       
     </span>
   </a>
@@ -11207,10 +11235,10 @@
 </li>
         
           <li class="md-nav__item">
-  <a href="#d3-migration-one-class-at-a-time-with-the-suite-as-oracle" class="md-nav__link">
+  <a href="#d3-migration-one-step-at-a-time-with-the-suite-as-oracle" class="md-nav__link">
     <span class="md-ellipsis">
       
-        D3. Migration, one class at a time, with the suite as oracle
+        D3. Migration, one step at a time, with the suite as oracle
       
     </span>
   </a>
@@ -11229,10 +11257,10 @@
 </li>
         
           <li class="md-nav__item">
-  <a href="#d5-a-session-layer-for-connection-oriented-drivers" class="md-nav__link">
+  <a href="#d5-a-session-layer-for-every-remote-driver" class="md-nav__link">
     <span class="md-ellipsis">
       
-        D5. A session layer for connection-oriented drivers
+        D5. A session layer for every remote driver
       
     </span>
   </a>
@@ -11351,12 +11379,14 @@
 
 <h1 id="rfc-0017-one-contract-kernel-over-thin-drivers">RFC-0017: One contract kernel over thin drivers<a class="headerlink" href="#rfc-0017-one-contract-kernel-over-thin-drivers" title="Permanent link">&para;</a></h1>
 <h2 id="status">Status<a class="headerlink" href="#status" title="Permanent link">&para;</a></h2>
-<p>Draft. Filed from <a href="../../audits/audit-021-contract-placement/">audit-021</a> at
-the user's direction. Tracked by BK-387, which owns the acceptance step D8
-describes; the item was minted with the disposition of the audit's proposals
-rather than at filing, since <code>CLAUDE.md</code> § Audits leaves that disposition to
-the user. The lifecycle this RFC follows, and what it amends on acceptance,
-are in D8 and § Impact.</p>
+<p>Draft, decided. Filed from <a href="../../audits/audit-021-contract-placement/">audit-021</a> at
+the user's direction. BK-387 carried D8 step 1: Open Questions 1, 4, 6 and 7
+are answered below, and the design is recorded in
+<a href="../../adrs/0042-contract-kernel-over-thin-drivers/">ADR-0042</a>, <strong>Proposed</strong>.
+The maintainer's condition is that the ADR and this RFC become Accepted
+together, in the PR that lands the first backend on this design (D3 step 1),
+not on the answers alone. The lifecycle, and where each amendment lands, are
+in D8 and § Impact.</p>
 <p><strong>Date:</strong> 2026-09-28. Every figure below is pinned to <code>8fa22d6</code> and is either
 quoted from audit-021 with its derivation, or names its command here. The tree
 moves on every merge: re-run rather than quote.</p>
@@ -11373,7 +11403,8 @@ cross-cutting clauses inside each method. Audit-021 attributes 45 of the 71
 user-audience defects of the last six releases (63%) to rules stated once and
 re-implemented per class; measured against this design by the rules in § What
 each cluster-A bug becomes, the kernel owns 10 of those outright (14% of the
-71), 6 are split with the driver, 8 stay in the driver, 6 wait on a decision,
+71), 6 are split with the driver, 8 stay in the driver, 6 waited on a
+decision at filing (three since decided, Open Question 4),
 2 disappear with a retired class, and 13 belong to D5's session layer. Counted
 by clause rather than by item, the 45 sit on 14 clauses (11 in cluster A, 3 in
 B); the audit derives no clause count for the other 26, so the 14 has no
@@ -11441,7 +11472,7 @@ kernel and leaves each class a driver of wire primitives plus one classifier.</p
     S2[Store] --&gt; K["DriverBackend, the kernel, once:&lt;br/&gt;root and closed guards from the key&lt;br/&gt;wrong-type probes on the error path&lt;br/&gt;absent-container tolerance per Op&lt;br/&gt;first-page listing bound&lt;br/&gt;choke point: classify, then path, backend, message"]
     K --&gt; D1["LocalDriver&lt;br/&gt;stat get put delete list_page probe close&lt;br/&gt;classify(exc, op, key)"]
     K --&gt; D2["SFTPDriver + Session&lt;br/&gt;same primitives"]
-    K --&gt; D3["AzureDriver&lt;br/&gt;same primitives"]
+    K --&gt; D3["AzureDriver + Session&lt;br/&gt;same primitives"]
     K --&gt; D4["… 7 more drivers"]
   end
   B4 ~~~ S2</code></pre>
@@ -11497,7 +11528,7 @@ optional member, so presence is a protocol, not a method):</p>
 <tr>
 <td><code>SupportsOpenWrite</code></td>
 <td><code>open_write(key, *, metadata) -&gt; WriteHandle</code> with <code>commit()</code> and <code>abort()</code></td>
-<td>serves <code>open_atomic</code> on a wire-side temporary (S3 multipart Complete/Abort, Local and SFTP temp files); without it, spools locally and <code>put</code>s at exit, which is ADR-0025's synthesis and what flat Azure does today</td>
+<td>serves <code>open_atomic</code> on a wire-side temporary (S3 multipart Complete/Abort, Local and SFTP temp files); without it, spools locally and hands the spool to <code>write_atomic</code> at exit, which is ADR-0025's synthesis (<code>_SpoolAndFlush</code>) and what <code>AzureBackend</code> does today in both namespaces: a plain upload on flat, where <code>put_is_atomic</code>, and temp upload plus <code>rename_file</code> on HNS</td>
 </tr>
 <tr>
 <td><code>SupportsAtomicMove</code></td>
@@ -11576,11 +11607,11 @@ dropped-table detection is an inspector round trip (<code>_sqlalchemy.py</code> 
 (<code>_local.py</code> lines 215 and 244). SFTP's <code>_map_exception</code> is pure over the
 exception, its two connection predicates being static methods over <code>exc</code>;
 the I/O BUG-274 paid was the classification path around it re-evaluating
-the lazy <code>_sftp</code> accessor. For a D5 driver the kernel invokes <code>classify</code>
-inside <code>Session.run</code>, so a classifier that does touch the connection cannot
-re-enter the reconnecting accessor
-(BUG-274's and BUG-278's shape); for the others it runs in the choke point
-with no retry, per ADR-0011's per-backend retry, which stays the driver's.
+the lazy <code>_sftp</code> accessor. For a remote driver the kernel invokes <code>classify</code>
+inside <code>Session.run</code> (D5), so a classifier that does touch the connection
+cannot re-enter the reconnecting accessor
+(BUG-274's and BUG-278's shape); for Local and Memory, which have no
+<code>Session</code>, it runs in the choke point with no retry, per ADR-0011's per-backend retry, which stays the driver's.
 <code>ReadOnlyHttpBackend</code>'s driver raises an <code>HttpStatusError(status)</code> from its
 primitives, since its failures are status codes rather than exceptions.</p>
 <h3 id="d2-one-kernel-is-a-backend">D2. One kernel is a <code>Backend</code><a class="headerlink" href="#d2-one-kernel-is-a-backend" title="Permanent link">&para;</a></h3>
@@ -11601,8 +11632,9 @@ other 6 public members (<code>name</code>, <code>capabilities</code>, <code>unwr
 <li>the file-ancestor pre-check as a kernel option with today's default: the
   opt-in <code>reject_write_under_file_ancestor</code> moves from each flat-namespace
   class to the kernel's constructor, default off, and the walk runs in the
-  kernel before any <code>put</code> when set. Its fail-open policy is BUG-292's open
-  decision and the kernel applies whichever BE-008 chooses;</li>
+  kernel before any <code>put</code> when set. Its probe-error policy is BUG-292's,
+  decided at BK-387: only a confirmed miss reads as "no ancestor", and any
+  other probe error, a transient one included, propagates mapped;</li>
 <li>the <code>max_depth</code> reference algorithm, decided once (Open Question 4 names
   BUG-240 as the contradiction to adjudicate before the kernel encodes it);</li>
 <li><code>write_atomic</code> as <code>put</code> where <code>put_is_atomic</code>, as <code>open_write</code> + <code>commit</code>
@@ -11618,12 +11650,9 @@ other 6 public members (<code>name</code>, <code>capabilities</code>, <code>unwr
   already typed passes through untouched (BUG-293); and the kernel
   post-processes what comes back, setting <code>path</code> and <code>backend</code> (ERR-001) and
   synthesising a message from the exception class when what comes back is
-  blank (ERR-009). That floor holds under either arm of BUG-276's open
-  decision: under "synthesise" it is the fix itself, and under "classify"
-  the driver's classifier returns a typed error carrying its own message and
-  the floor never fires. What the decision leaves open is which arm the five
-  base-class sites take, which is driver content, not whether the kernel
-  guarantees ERR-009;</li>
+  blank (ERR-009). That floor would hold under either arm of BUG-276's
+  decision; the arm decided at BK-387 is "synthesise", for which the floor
+  is the fix itself;</li>
 <li>the absent-container rule applied per operation scope, not per exception:
   the tolerant answers BE-021 § Reach decides are given only for the
   operations it names, and identity-scope calls (<code>write</code>, <code>probe</code>, drive-id
@@ -11661,7 +11690,7 @@ of adding a backend, and <code>_ReadOnlyBackend</code> in the guide's
 the shared part of the two SQL drivers; <code>AsyncBackendSyncAdapter(Backend)</code>
 and <code>SyncBackendAdapter(AsyncBackend)</code> stay direct subclasses, since each is
 the other runtime's face of a backend and not a backend of its own (D6
-decides whether the first also becomes the sync kernel over an async driver);
+decided that the sync kernel is generated, so the first does not become it);
 <code>DafnyOracleBackend</code> stays a direct subclass by design (D7); the fake in
 <code>tests/ext/test_arrow.py</code>, the two fakes in
 <code>tests/scripts/test_dafny_classorder.py</code> and the three doubles under
@@ -11669,9 +11698,10 @@ decides whether the first also becomes the sync kernel over an async driver);
 <code>examples/snippets/custom_backend_guide.py</code> is rewritten as a driver, and
 <code>scripts/check_custom_backend_guide.py</code> (BK-320), which gates the guide
 against <code>Backend.__abstractmethods__</code>, is re-pointed at <code>Driver</code>.</p>
-<h3 id="d3-migration-one-class-at-a-time-with-the-suite-as-oracle">D3. Migration, one class at a time, with the suite as oracle<a class="headerlink" href="#d3-migration-one-class-at-a-time-with-the-suite-as-oracle" title="Permanent link">&para;</a></h3>
-<p>The kernel lands beside the existing classes. A class that migrates becomes a
-driver in its own PR, green when the conformance suite passes for its fixture
+<h3 id="d3-migration-one-step-at-a-time-with-the-suite-as-oracle">D3. Migration, one step at a time, with the suite as oracle<a class="headerlink" href="#d3-migration-one-step-at-a-time-with-the-suite-as-oracle" title="Permanent link">&para;</a></h3>
+<p>The kernel lands beside the existing classes. Each step below migrates in its
+own PR (a step is one class, or a pair migrated together), green when the
+conformance suite passes for its fixtures
 with the cell changes enumerated below and no others. Not every class
 migrates; the fate of each of the 13 is fixed here so that D3 and D4 cannot
 disagree:</p>
@@ -11712,7 +11742,7 @@ disagree:</p>
 <tr>
 <td>6</td>
 <td><code>SFTPBackend</code></td>
-<td>migrate, together with D5</td>
+<td>migrate</td>
 </tr>
 <tr>
 <td>7</td>
@@ -11732,18 +11762,46 @@ disagree:</p>
 <tr>
 <td>in 4</td>
 <td><code>AzureBackend</code> (sync)</td>
-<td>retire, unmigrated, <strong>conditional on Open Question 1</strong>, in the step-4 PR behind the same gate</td>
+<td>replaced, unmigrated, by the sync driver generated from the step-4 async driver (Open Question 1), in the step-4 PR behind the same gate</td>
 </tr>
 </tbody>
 </table>
-<p><strong>The suite is not "unchanged"; the cells that change are these, and they
-are settled before step 1.</strong> AZ-025's blank-message clause and its pinning
-test go red whichever arm BUG-276's decision takes (<code>sdd/BACKLOG.md</code>
-BUG-276: "the fix deliberately falsifies AZ-025's blank-message clause and
-its pinning test"; its dossier: "Both go red when this lands, by design");
-the BUG-240 and BUG-292 decisions change cells on the classes that
-follow the losing reading; Graph's <code>get_folder_info().modified_at</code> differs
-from S3 and SQL and the kernel picks one aggregation; and the conformance
+<p>Every remote driver migrates with its <code>Session</code> (D5): the protocol lands at
+step 2 with the first remote driver, and each later remote step (3, 4, 6, 7
+and 8) brings its own.</p>
+<p><strong>The suite is not "unchanged"; the cells that change are these, enumerated
+before step 1 and each settled before the step that changes it (Open
+Question 4).</strong> AZ-025's blank-message clause and its pinning
+test go red with BUG-276's fix under the arm decided at BK-387, synthesise
+(its dossier: "Both go red when this lands, by design"); the BUG-240 and
+BUG-292 decisions change cells on the classes that
+follow the losing reading (decided at BK-387: DEPTH-003 wins, so
+<code>GraphBackend</code>'s; the catch narrows, so the five flat-namespace <code>_head_one</code>
+probes'). For folder <code>modified_at</code>, the kernel fixes one aggregation at
+step 1 (decided at BK-387): the latest known file modification time under
+the prefix, recursively, where a file whose time is the unknown sentinel
+(<code>datetime.min</code> in UTC) is skipped, and a folder with no known time answers
+<code>None</code>. Read from each <code>get_folder_info</code>, that leaves every backend's cell
+unchanged but Graph's:</p>
+<ul>
+<li>the latest time, recursively: <code>MemoryBackend</code> and <code>AsyncMemoryBackend</code>
+  (the <code>latest</code> loop), <code>LocalBackend</code> (<code>latest_mtime</code> over <code>rglob</code>),
+  <code>SFTPBackend</code> (<code>latest_modified</code>), <code>AsyncAzureBackend</code>
+  (<code>latest_modified</code>), sync <code>AzureBackend</code> (the latest <code>last_modified</code>, flat
+  and HNS, which its generated replacement keeps), <code>S3Boto3Backend</code> (the
+  maximum <code>LastModified</code>) and <code>SQLBlobBackend</code> (<code>MAX(modified_at)</code>);</li>
+<li><code>None</code>, because no file time is known: <code>SQLQueryBackend</code>, whose files
+  carry <code>_EPOCH_MIN</code>, and <code>SQLBlobBackend</code> over a table with no
+  <code>modified_at</code> column, whose files carry <code>datetime.min</code>;</li>
+<li>no folders: <code>ReadOnlyHttpBackend</code>;</li>
+<li>out of scope, being deleted unmigrated at step 2: <code>S3Backend</code> and
+  <code>S3PyArrowBackend</code> (the shared <code>_s3_base.py</code> <code>get_folder_info</code>);</li>
+<li>the folder item's own <code>lastModifiedDateTime</code>: <code>GraphBackend</code>, whose cell
+  changes at step 7. What step 7 decides is only how Graph meets the rule:
+  the changed cell, or a <code>SupportsFolderStats</code> push-down computing the same
+  value.</li>
+</ul>
+<p>And the conformance
 registry (<code>tests/backends/fixtures/registry.py</code>) registers drivers beside
 <code>Backend</code> instances, a driver fixture running through the kernel and a
 direct-subclass fixture staying runnable as today (<code>DafnyOracleBackend</code> is
@@ -11769,7 +11827,9 @@ step.</p>
   write-over-prefix divergence from the s3fs lane stated or closed;
   multipart copy for objects over 5 GB, since <code>copy_object</code> is single-part);
   ID-202 § 6's wiring (the <code>s3-boto3</code> extra, <code>_registry.py</code>, <code>_info</code>,
-  <code>__all__</code>, <code>FEATURES.md</code>, an async variant, a guide, a CHANGELOG entry);
+  <code>__all__</code>, <code>FEATURES.md</code>, a guide, a CHANGELOG entry; ID-202's async
+  variant is not on the list, since no async S3 class exists today and async
+  callers keep <code>SyncBackendAdapter</code>'s auto-wrap, decided at BK-387);
   option parity for what the s3fs lane forwards today through
   <code>client_options</code> (<code>anon</code>, <code>requester_pays</code>, <code>s3_additional_kwargs</code> for SSE,
   <code>profile</code>), which the boto3 lane does not honour; a MinIO or live lane
@@ -11786,28 +11846,28 @@ step.</p>
   PyArrow's C++ S3 filesystem for data-path operations (higher throughput)";
   RFC-0003 tuned that path), so retiring it is a performance change measured
   under § Impact before the gate opens.</li>
-<li><strong>Azure.</strong> Keep one driver, the async one, and decide under Open
-  Question 1 how sync callers reach it. If OQ1 chooses a generated sync
-  driver, the hand-written sync class is replaced by the generated one and
-  keeps its behaviour; if OQ1 chooses the adapter, sync Azure callers move to
-  <code>AsyncBackendSyncAdapter</code>, which takes an <code>AsyncBackend</code>, so this reading
-  also requires an async kernel (D6, first option), and it changes what they
-  get in the six ways § Impact lists. The retirement row in D3 is conditional
-  on that answer. <code>GraphBackend</code> is the precedent for the adapter reading
-  only in part: it is async-only and hand-wrapped by its users, not
-  registered for sync, so <code>type="azure"</code> in a registry config needs a
-  registered callable that wraps the async driver in the adapter.
-  <code>Registry</code> already invokes its table entry as <code>factory(**kwargs)</code>
-  (<code>_registry.py</code> line 154); what changes is <code>register_backend</code>'s parameter
-  type, <code>type[Backend]</code> today (line 19), widened to <code>Callable[..., Backend]</code>,
-  plus that one builtin registration.</li>
+<li><strong>Azure.</strong> Keep one driver, the async one. Sync callers reach it through a
+  sync driver generated from it by the same <code>unasync</code> step that generates the
+  sync kernel (Open Question 1), so the hand-written sync class is replaced by
+  the generated one and keeps its behaviour, its ranged <code>read_seekable</code>
+  included. The rejected alternative was the adapter route: sync Azure callers
+  moved to <code>AsyncBackendSyncAdapter</code>, losing what § Impact lists under
+  Performance, and <code>type="azure"</code> served by a registered callable wrapping the
+  async driver, which would have widened <code>register_backend</code>'s parameter from
+  <code>type[Backend]</code> (<code>_registry.py</code> line 19) to <code>Callable[..., Backend]</code>. The
+  chosen route needs neither.</li>
 </ul>
-<p>Concrete classes go from 13 to 10, and the driver surface to 10 drivers ×
-14 required primitives (plus the optional protocols each implements) instead
-of 10 classes × 21 methods plus 3 × 19.</p>
-<h3 id="d5-a-session-layer-for-connection-oriented-drivers">D5. A session layer for connection-oriented drivers<a class="headerlink" href="#d5-a-session-layer-for-connection-oriented-drivers" title="Permanent link">&para;</a></h3>
+<p>Hand-written concrete classes go from 13 to 10 (D3's migrating rows), and
+the hand-written driver surface to 10 drivers × 14 required primitives (plus
+the optional protocols each implements) instead of 10 classes × 21 methods
+plus 3 × 19. The sync Azure driver generated from the async one (Open
+Question 1) is an eleventh driver: generated, except its stream-returning
+primitives (D6).</p>
+<h3 id="d5-a-session-layer-for-every-remote-driver">D5. A session layer for every remote driver<a class="headerlink" href="#d5-a-session-layer-for-every-remote-driver" title="Permanent link">&para;</a></h3>
 <p>A <code>Session</code> owns connect, the connect-retry budget, liveness, dead-client
-invalidation and one <code>run(op)</code> entry:</p>
+invalidation and one <code>run(op)</code> entry, and every remote driver has one (decided
+at BK-387's close, widening the SFTP-and-Graph scope this section was filed
+with). Local and Memory hold no connection and have none:</p>
 <div class="highlight"><pre><span></span><code><a id="__codelineno-1-1" name="__codelineno-1-1" href="#__codelineno-1-1"></a><span class="k">class</span><span class="w"> </span><span class="nc">Session</span><span class="p">(</span><span class="n">Protocol</span><span class="p">):</span>
 <a id="__codelineno-1-2" name="__codelineno-1-2" href="#__codelineno-1-2"></a>    <span class="k">def</span><span class="w"> </span><span class="nf">run</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">op</span><span class="p">:</span> <span class="n">Callable</span><span class="p">[[</span><span class="n">Client</span><span class="p">],</span> <span class="n">R</span><span class="p">],</span> <span class="o">*</span><span class="p">,</span> <span class="n">key</span><span class="p">:</span> <span class="nb">str</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">R</span><span class="p">:</span> <span class="o">...</span>  <span class="c1"># connects if needed, once per budget</span>
 <a id="__codelineno-1-3" name="__codelineno-1-3" href="#__codelineno-1-3"></a>    <span class="k">def</span><span class="w"> </span><span class="nf">invalidate</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">exc</span><span class="p">:</span> <span class="ne">BaseException</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span> <span class="o">...</span>            <span class="c1"># drop the client; next run reconnects</span>
@@ -11819,12 +11879,26 @@ budget (BUG-274, 278); the kernel evaluates nothing lazily outside <code>run</co
 <code>classify</code> receives <code>connect_context()</code>, so a connect-time <code>EPERM</code> can be told
 from a server denial (BUG-273, 265). The budget it owns is the <strong>connect</strong>
 budget; per-operation retry stays the driver's, native, as ADR-0011 decides,
-and ADR-0011 is amended to state that split rather than superseded. SFTP is
-the first user and Graph (token single-flight, the copy/move monitor) the
-second. The SQL drivers are <strong>not</strong> users: a pool is not a session, and a
-dropped table is an absent container that <code>container_absent</code> already answers
-(BE-021, <code>_sqlalchemy.py</code>'s inspector check), not <code>BackendUnavailable</code>. D5
-reaches 13 of the 71: cluster B's 10 plus BUG-279, 265 and 273.</p>
+and ADR-0011 is amended to state that split rather than superseded; a wire
+whose SDK does not separate connect from operation has no connect budget to
+move. What a <code>Session</code> holds follows the wire:</p>
+<ul>
+<li>SFTP: the connection, its connect budget, liveness and invalidation;</li>
+<li>Graph: the token (single-flight refresh) and the copy/move monitor;</li>
+<li>the SQL drivers: the engine, whose pool sits inside the <code>Session</code>, which
+  invalidates a dead connection. A dropped table is still an absent container
+  that <code>container_absent</code> answers (BE-021, <code>_sqlalchemy.py</code>'s inspector
+  check), not a dead session and not <code>BackendUnavailable</code>;</li>
+<li>S3 and Azure: the SDK client and its credential, the SDK's own pool and
+  retry inside it;</li>
+<li>HTTP: its pluggable <code>HttpTransport</code> (httpx, requests or urllib, in that
+  order unless one is forced, per HTTP-TR-002).</li>
+</ul>
+<p>D5 reaches 13 of the 71, all on SFTP: cluster B's 10 plus BUG-279, 265 and
+273 (audit-021's appendix rows tag each <code>sftp</code>). The other drivers'
+<code>Session</code>s move no measured defect; they give
+every remote driver the same lifecycle entry, so <code>unwrap</code>, <code>close</code> and
+connect-time classification have one path.</p>
 <h3 id="d6-sync-and-async">D6. Sync and async<a class="headerlink" href="#d6-sync-and-async" title="Permanent link">&para;</a></h3>
 <p>The kernel is one more sync/async pair, and the <code>Driver</code> protocol has an
 <code>AsyncDriver</code> mirror for the three async classes D3 migrates. Two options, to
@@ -11850,7 +11924,18 @@ be decided before D3 starts:</p>
 </ol>
 <p>The first keeps async-native drivers first-class and is the only reading
 under which D4's adapter route exists; the second is less machinery at the
-cost of the async surface. Open Question 1.</p>
+cost of the async surface. <strong>Decided: the first</strong> (Open Question 1), with the
+generation reaching the Azure driver as well as the kernel, so D4's adapter
+route is not taken. <code>unasync</code> generates only what the two surfaces share. The
+sync surface has <code>read_seekable</code> and <code>open_atomic</code>, which <code>AsyncBackend</code> does
+not, and its <code>read</code> returns <code>BinaryIO</code> where the async one yields an
+<code>AsyncIterator[bytes]</code>. So a small hand-written sync layer supplies those for
+the kernel, over <code>get_range</code>, <code>open_write</code> and <code>get</code>. The generated Azure
+driver has the same gap one level down: its stream-returning primitives,
+<code>get</code> and <code>get_range</code>, return <code>BinaryIO</code> where the async driver streams an
+iterator, so they are hand-written too. The generated parts stay edit-free
+under a drift check (decided at BK-387's close, after review showed
+generation alone cannot produce them).</p>
 <h3 id="d7-what-the-formal-layer-covers-and-where-the-oracle-stays">D7. What the formal layer covers, and where the oracle stays<a class="headerlink" href="#d7-what-the-formal-layer-covers-and-where-the-oracle-stays" title="Permanent link">&para;</a></h3>
 <p><code>sdd/formal/BackendContract.dfy</code> states and verifies the precondition and
 type-mismatch clauses (BE-004 to BE-006, BE-008 and BE-012 to BE-019;
@@ -11944,7 +12029,8 @@ a single implementation to hold to.</p>
 </tr>
 </tbody>
 </table>
-<p>The three extensions land in D8 step 1, before kernel code, because the
+<p>The three extensions land before kernel code, in their own item ahead of D3
+step 1 (Open Question 7), because the
 kernel encodes one answer per clause and a Dafny postcondition is the
 sharpest statement of that answer; written after the kernel they would only
 ratify whatever it did. Two practicalities: <code>verify-formal</code> runs in CI only
@@ -11952,20 +12038,23 @@ when <code>sdd/formal</code> or <code>sdd/specs</code> change (<code>ci.yml</cod
 required job, and <code>check_dafny_twin_parity.py</code>, which holds the two models'
 shared members in lockstep (its output at <code>8fa22d6</code>: "17 member(s) in
 lockstep, 2 declared divergence(s)", the 19 its own comment counts per
-class), needs the new members added on both sides. Open Question 7 asks
-whether this recommendation is accepted, and D8 step 1 lists it among the
-questions answered before acceptance.</p>
+class), needs the new members added on both sides; re-run at <code>0bf7fe6</code>, the
+output is unchanged. Open Question 7 accepted this recommendation.</p>
 <h3 id="d8-lifecycle-accept-the-design-gate-the-deletions">D8. Lifecycle: accept the design, gate the deletions<a class="headerlink" href="#d8-lifecycle-accept-the-design-gate-the-deletions" title="Permanent link">&para;</a></h3>
 <p><code>CONTRIBUTING.md</code> § Spec-First Workflow runs Propose, Accept, Implement, in
 that order, and an RFC that deprecates and deletes classes before it is
-accepted inverts it. So:</p>
+accepted inverts it. Acceptance here rides with the first implementing PR
+(step 2 below), which is additive; no class is deleted before it. So:</p>
 <ol>
-<li><strong>Accept</strong> this RFC as an ADR once Open Questions 1, 4, 6 and 7 are
-   answered and the amendments listed under § Impact are drafted; nothing
-   under D3 starts before that. Acceptance is of the design, D1 to D7 plus
-   those answers; OQ7 is in the list because D7's extensions land in this
-   step.</li>
-<li><strong>Implement</strong> D3 in order. Each migration PR is gated by the conformance
+<li><strong>Decide and propose.</strong> Open Questions 1, 4, 6 and 7 are answered and the
+   design, D1, D2 and D4 to D7 plus those answers, is recorded as a Proposed
+   ADR (<a href="../../adrs/0042-contract-kernel-over-thin-drivers/">ADR-0042</a>). D3,
+   the migration order, is process and stays here. OQ7 is in the list because
+   D7's extensions land before kernel code. Done by BK-387.</li>
+<li><strong>Implement</strong> D3 in order. Step 1 runs under the Proposed ADR, and its PR,
+   the first backend on the new design, <strong>accepts</strong> ADR-0042 and this RFC:
+   the design is accepted once it has carried one backend through the suite,
+   not on the answers alone. Each migration PR is gated by the conformance
    suite with the enumerated cell changes and by the per-driver suite.</li>
 <li><strong>Retire</strong> in the PR that lands the replacement, not on a date or a
    release count: the retiring class is deleted in the same PR that registers
@@ -11973,15 +12062,16 @@ accepted inverts it. So:</p>
    passes the conformance suite with D3's enumerated cell changes and its
    per-driver suite, (b) the throughput and seekable-read benchmarks
    (<code>benchmarks/test_throughput.py</code>, <code>test_seekable.py</code>,
-   <code>bench_pyarrow_tier1.py</code>, <code>bench_azure_pyarrow.py</code>) show it within an
-   acceptance band that D8 step 1 sets once, as an obligation this RFC
-   creates (§ Impact): no benchmark artifact states one today,
-   <code>benchmarks/results/comparative.md</code> being a table of means and
-   <code>report.py</code>'s magnitude bands describing a delta's size while disclaiming
-   acceptability, and (c) for a class D4
-   retires unmigrated, every item of D4's promotion list for its replacement
-   is complete: the S3 list D4 states, in full and not restated here, and
-   for Azure the items of the route OQ1 chooses. The suite
+   <code>bench_pyarrow_tier1.py</code>, <code>bench_azure_pyarrow.py</code>) show it within the
+   acceptance band set once at D8 step 1,
+   <a href="https://github.com/haalfi/remote-store/blob/master/benchmarks/results/acceptance-band.md"><code>benchmarks/results/acceptance-band.md</code></a>,
+   and (c) for a class D4
+   retires or replaces unmigrated, every item of D4's promotion list for its
+   replacement is complete: the S3 list D4 states, in full and not restated
+   here, and for Azure the generated sync driver registered under
+   <code>type="azure"</code> with the hand-written class's public surface, its class
+   name excepted: whether the name is kept is the step-4 decision § Impact,
+   Backwards compatibility, names, and (c) holds either way. The suite
    and the benchmarks cover none of the parity items, which is why (c) is a
    separate condition. The repo's policy
    applies unchanged (<code>docs-src/reference/migration.md</code>: "Pre-v1: removed
@@ -12031,8 +12121,8 @@ by-hand reading of the register entries and is disputable item by item.</p>
 <td>8</td>
 </tr>
 <tr>
-<td><strong>R5 needs a decision first</strong>: the item carries an open decision in <code>BACKLOG.md</code> or depends on an open question here</td>
-<td>BUG-240 (OQ4), 292 (BE-008's fail-open choice), 276 (synthesise or classify at the five base-class sites; the kernel's ERR-009 floor holds under both, so the decision is the driver's arm content, as for BUG-264 in R3), 293 (which arms receive a typed error), 245 (construction; OQ5), 257 (page boundary; OQ2)</td>
+<td><strong>R5 needs a decision first</strong>: at filing, the item carried an open decision in <code>BACKLOG.md</code> or depended on an open question here. BUG-240, 292 and 276 were decided at BK-387 (Open Question 4) and keep this row as their at-filing assignment</td>
+<td>BUG-240 (OQ4; decided: DEPTH-003), 292 (BE-008's probe-error choice; decided: narrow the catch), 276 (synthesise or classify at the five base-class sites, decided: synthesise; the kernel's ERR-009 floor holds under both, so the decision is the driver's arm content, as for BUG-264 in R3), 293 (which arms receive a typed error), 245 (construction; OQ5), 257 (page boundary; OQ2)</td>
 <td>6</td>
 </tr>
 <tr>
@@ -12044,8 +12134,8 @@ by-hand reading of the register entries and is disputable item by item.</p>
 </table>
 <p>Ten of 35 is what the kernel alone removes; with D5's three and the two
 retirements, 15. The eight R4 items are the argument for the wire-signal
-alternative under § Alternatives, and Open Question 6 asks whether to take
-it.</p>
+alternative under § Alternatives; Open Question 6 asked whether to take it,
+and its answer keeps <code>classify</code>.</p>
 <h2 id="alternatives-considered">Alternatives Considered<a class="headerlink" href="#alternatives-considered" title="Permanent link">&para;</a></h2>
 <ul>
 <li><strong>More conformance cells, tighter spec text.</strong> Tried (§ Motivation). Covers
@@ -12072,7 +12162,7 @@ it.</p>
   vocabulary at once (S3 service codes, Azure <code>HttpResponseError</code> codes,
   Graph's scoped <code>404</code>, paramiko's shapes with no errno, SQLAlchemy dialect
   errors), which is the part of BE-021 that grew per backend for a reason.
-  Not chosen here; kept as Open Question 6.</li>
+  Not chosen; Open Question 6's answer keeps <code>classify</code>.</li>
 <li><strong>A last-resort mapper at the <code>Store</code> boundary only.</strong> Closes the never-leak
   breaches on operations (BUG-249, 280, BK-358) and nothing else: it cannot
   reach construction (BUG-245) or a lazy client evaluated outside the mapper
@@ -12094,55 +12184,57 @@ it.</p>
 <h2 id="impact">Impact<a class="headerlink" href="#impact" title="Permanent link">&para;</a></h2>
 <ul>
 <li><strong>Public API:</strong> <code>Store</code>, the error hierarchy and capabilities unchanged in
-  interface. <code>Backend</code> remains the abstract contract type; <code>DriverBackend</code> is
-  the kernel. New public names: <code>Driver</code>, <code>AsyncDriver</code>, the nine
-  <code>Supports*</code> protocols, <code>DriverBackend</code>, <code>Entry</code>, <code>Page</code>, <code>WriteHandle</code>,
-  <code>Op</code>, <code>Session</code>. <code>register_backend</code> widens its parameter type from
-  <code>type[Backend]</code> to <code>Callable[..., Backend]</code>, which <code>Registry</code>'s
-  <code>factory(**kwargs)</code> call already accepts, so a type string can be served
-  by an async driver through the adapter (D4, Azure). <code>ext.arrow</code> loses its
+  interface. <code>Backend</code> remains the abstract contract type; <code>DriverBackend</code> and
+  <code>AsyncDriverBackend</code> are the kernel's two runtimes (Open Question 1). New
+  public names: <code>Driver</code>, <code>AsyncDriver</code>, the nine <code>Supports*</code> protocols and
+  their async mirrors, <code>DriverBackend</code>, <code>AsyncDriverBackend</code>, <code>Entry</code>,
+  <code>Page</code>, <code>WriteHandle</code>, <code>Op</code>, <code>Session</code>. <code>ext.arrow</code> loses its
   Tier-1 native probe on S3 once the PyArrow lane, <code>S3PyArrowBackend</code>,
   retires (D4); the s3fs lane never served that probe.</li>
 <li><strong>Backwards compatibility:</strong> additive for existing <code>Backend</code> subclasses,
   which keep working and keep passing conformance; the custom-backend guide,
   its check script and the conformance registry move to drivers, and direct
   subclassing is deprecated as the documented route, so the migration guide
-  owes a section for backend authors. Breaking for users of <code>S3Backend</code>,
-  <code>S3PyArrowBackend</code> and sync <code>AzureBackend</code> as class names in the release
-  that carries D3 step 2 and step 4 respectively, and for
+  owes a section for backend authors. Breaking for users of <code>S3Backend</code> and
+  <code>S3PyArrowBackend</code> as class names in the release that carries D3 step 2,
+  and for sync <code>AzureBackend</code> as a class name at step 4 unless its generated
+  replacement keeps the name, and for
   <code>unwrap(s3fs.S3FileSystem)</code> callers at step 2. <code>Store</code> callers see no
   change in interface.</li>
 <li><strong>Performance:</strong> the kernel issues the same probes the per-backend code
   issues today (one <code>stat</code> or one <code>list_page(limit=1)</code> on the error path; the
   file-ancestor walk only when opted in; <code>ensure_parents</code> only for explicit
-  parents), and the S3 driver drops the s3fs layer. Two retirements change
+  parents), and the S3 driver drops the s3fs layer. Two replacements change
   data paths and are measured under D8's benchmark gate in the PR that
-  retires them:</li>
+  lands them:</li>
 <li><code>S3PyArrowBackend</code>: reads move from PyArrow's C++ S3 filesystem to the
     boto3 driver.</li>
-<li>sync <code>AzureBackend</code>, if OQ1 takes the adapter route: the sync class never
-    declared <code>SEEKABLE_READ</code>, so what is lost is its <code>read_seekable</code> override
-    (<code>_AzureRangeReader</code>, one Range request per read), which the adapter
-    replaces with a spool; a call from a thread with a running event loop
-    raises <code>RuntimeError</code>, so sync <code>Store</code> over Azure stops working inside
-    notebooks and <code>pytest-asyncio</code> tests; <code>unwrap()</code> raises
-    <code>CapabilityNotSupported</code> by default; a caller-supplied sync <code>credential=</code>
-    is handed to the async SDK unchanged; <code>error.backend</code> carries the async
-    driver's name; and <code>type="azure"</code> needs the wrapping registration D4
-    names.
-    <code>open_atomic</code> is not on this list: flat and HNS <code>AzureBackend</code> already
-    spool and upload, so the adapter's synthesis matches. The <code>get_range</code>
-    and <code>open_write</code> primitives exist to give the first item back if OQ1
-    chooses a generated sync driver instead.</li>
-<li><strong>Risks:</strong> a kernel defect is a regression on every migrated class at once.
+<li>sync <code>AzureBackend</code>: its replacement is generated from the async driver,
+    whose <code>get_range</code> keeps the ranged <code>read_seekable</code>
+    (<code>_AzureRangeReader</code>, one Range request per read) the class has today;
+    <code>open_atomic</code> stays the spool-and-upload the kernel synthesises without
+    <code>open_write</code>, which is what flat and HNS <code>AzureBackend</code> do today.</li>
+</ul>
+<p>The rejected adapter route for sync Azure (Open Question 1) is kept here as
+  the reason it was rejected. The sync class never declared <code>SEEKABLE_READ</code>,
+  so what it would have lost is its <code>read_seekable</code> override, replaced by the
+  adapter's spool; a call from a thread with a running event loop raises
+  <code>RuntimeError</code>, so sync <code>Store</code> over Azure would stop working inside
+  notebooks and <code>pytest-asyncio</code> tests; <code>unwrap()</code> raises
+  <code>CapabilityNotSupported</code> by default; a caller-supplied sync <code>credential=</code>
+  is handed to the async SDK unchanged; <code>error.backend</code> carries the async
+  driver's name; and <code>type="azure"</code> needs the wrapping registration D4
+  describes.
+- <strong>Risks:</strong> a kernel defect is a regression on every migrated class at once.
   BUG-249 reached one class; its kernel equivalent reaches every driver. That
   is the price of applying a rule once, and it is bounded by D3 migrating one
-  class per PR behind the suite, each PR revertable on its own; the formal
+  step per PR behind the suite (a step is one class, or a pair such as the
+  Memory or SQL drivers), each PR revertable on its own; the formal
   layer bounds only the clauses it models (D7). The second risk is the fake driver's reach: it exercises
   kernel × failure mode, not driver × wire semantics, so BUG-223's HNS probe,
   BK-316's non-OpenSSH shapes and S3's lack of a rename are driver defects
-  the kernel's test cannot see, and the per-driver suites keep them.</li>
-<li><strong>Testing:</strong> the kernel is tested once against a fake driver that can be
+  the kernel's test cannot see, and the per-driver suites keep them.
+- <strong>Testing:</strong> the kernel is tested once against a fake driver that can be
   told to raise any wire shape at any call, covering BE-021's type-mismatch
   roster and its § Reach roster separately, as spec 003 states them, plus the
   never-leak invariant on every operation, page and stream and the
@@ -12153,16 +12245,28 @@ it.</p>
   cells; ID-251's widened root spellings become fake-driver kernel cells,
   since R1 makes the root rule the kernel's. The conformance suite gates
   every migration with the cell
-  changes D3 enumerates.</li>
-<li><strong>Amendments on acceptance</strong> (D8 step 1), each an obligation this RFC
-  creates and none left to D3: a benchmark acceptance band for D8 step 3
-  (b), stated under <code>benchmarks/</code> beside the run of record, since none
-  exists today; an ADR amending
+  changes D3 enumerates.
+- <strong>Amendments</strong>, each an obligation this RFC creates. Each lands where it
+  becomes true, since a spec or guide describes the code that exists
+  (<code>CLAUDE.md</code> principle 3). At D8 step 1 (BK-387): the benchmark acceptance
+  band,
+  <a href="https://github.com/haalfi/remote-store/blob/master/benchmarks/results/acceptance-band.md"><code>benchmarks/results/acceptance-band.md</code></a>,
+  and <a href="../../adrs/0042-contract-kernel-over-thin-drivers/">ADR-0042</a>,
+  Proposed, which carries the four ADR amendments. With D3 step 1 (BK-389),
+  which accepts that ADR: specs 003, 005, 029 and 037 below, the kernel half
+  of 007 and 022, the Memory drivers' rows of 007 and 022, spec 026's PING-002
+  and PING-008, spec 003's BE-017 folder <code>modified_at</code> rule, the
+  custom-backend guide with its <code>partial-capabilities</code>
+  region, <code>check_custom_backend_guide.py</code>, and the landing page's snippet.
+  With the later D3 step that makes each true (BK-390): the rest of the specs
+  below. The list, as drafted at filing: an ADR amending
   <a href="../../adrs/0001-architecture-store-registry-backends/">ADR-0001</a> (the
   <code>Backend</code> layer splits in two), ADR-0011 (the connect budget moves to
-  <code>Session</code>; per-operation retry stays native), ADR-0012 and ADR-0025 (the
-  adapter's "reverse if a native async seekable-read op is added" is
-  triggered by <code>get_range</code>); spec 003 (BE-021 is <strong>restated</strong> as kernel and
+  <code>Session</code>; per-operation retry stays native), ADR-0012 and ADR-0025 (as
+  filed: the adapter's "reverse if a native async seekable-read op is added"
+  is triggered by <code>get_range</code>; corrected at BK-387's close: it is not, since
+  <code>get_range</code> is a driver primitive, and ADR-0042 amends ADR-0025's scope
+  instead); spec 003 (BE-021 is <strong>restated</strong> as kernel and
   driver obligations, its IDs kept, which the kernel's docstrings cite, since
   spec IDs are stable and specs are amended rather than deleted); spec 005
   (ERR-001's <code>path</code> and <code>backend</code> are set by the kernel); spec 006 (SIO-008
@@ -12170,10 +12274,12 @@ it.</p>
   temp-and-promote as kernel behaviour over <code>put_is_atomic</code>, <code>open_write</code>
   and <code>rename</code>); spec 008 (s3fs-specific clauses retire with the lane); spec
   009 (SFTP-010's connection tiers become D5); spec 026 (<code>probe()</code> against
-  PING-011); spec 029 (the async surface and <code>AsyncDriver</code>); spec 036
+  PING-011; corrected at BK-387's close: PING-011 is Graph's row, and the
+  general clause is PING-002, with each driver's own row at its step); spec 029 (the async surface and <code>AsyncDriver</code>); spec 036
   (SEEK-004 and SEEK-006 against <code>get_range</code>); spec 037 (the <code>max_depth</code>
   algorithm decided once); spec 044 (GR-039 and <code>parents == "implicit"</code>);
-  the per-backend specs (AZ-, S3-, S3PA-, GR-, SQL-BLOB-) wherever a clause
+  the per-backend specs (AZ-, S3-, S3PA-, GR-, SQL-BLOB-, and SQL-QUERY-,
+  added at BK-387's close) wherever a clause
   describes class behaviour the kernel now owns; the custom-backend guide,
   including its <code>partial-capabilities</code> region, and
   <code>check_custom_backend_guide.py</code>; the landing page's custom-backend snippet
@@ -12181,28 +12287,33 @@ it.</p>
   shows direct subclassing as the way to add a backend. The ripple-check's
   "Store or Backend ABC"
   row reads "All backend implementations, conformance tests", and both are
-  what D3 walks.</li>
-<li><strong>Open backlog items this touches</strong>, to be re-homed or closed with the
-  disposition: BK-382, BK-242 and BK-325 (file-ancestor gate and the guide),
+  what D3 walks.
+- <strong>Open backlog items this touches</strong>, to be re-homed or closed by BK-389
+  when D3 step 1 lands (the maintainer's assignment at BK-387's close): BK-382, BK-242 and BK-325 (file-ancestor gate and the guide),
   BK-332 (the rehearsal), BUG-266 and ID-181 (SFTP), ID-140 (SQLBlob lazy
   reads, a <code>get_range</code> for that driver), BUG-287, 288 and 289 (floors on
   extras D4 retires or adds), ID-217 (async <code>ext.*</code>), BK-339 (the behaviour
-  matrix).</li>
-<li><strong>Effort:</strong> kernel plus steps 1 to 3 of D3, L; D5 plus SFTP, L; each D4
-  promotion and retirement, M, the S3 one carrying ID-202's list.</li>
-<li><strong>What is deleted, measured after D3 by audit-021's commands (b) and (g)
+  matrix).
+- <strong>Effort:</strong> kernel plus steps 1 to 3 of D3, L, with D5's <code>Session</code>
+  protocol landing at step 2; SFTP with its <code>Session</code>, L; each D4
+  promotion and retirement, M, the S3 one carrying ID-202's list.
+- <strong>What is deleted, measured after D3 by audit-021's commands (b) and (g)
   and published as a description, not a criterion:</strong> the 164 guard call
   lines and 22 per-class wrappers, most of the 395 <code>except</code> arms outside
-  classifiers, two S3 classes, one Azure class.</li>
-</ul>
+  classifiers, two S3 classes, one Azure class.</p>
 <h2 id="open-questions">Open Questions<a class="headerlink" href="#open-questions" title="Permanent link">&para;</a></h2>
 <ol>
 <li><strong>D6:</strong> async kernel with a generated sync twin, or a sync-only kernel
    with a driver-level hop and the async surface served by
    <code>SyncBackendAdapter</code>? And, under the first, does the generation reach
    the Azure driver or do sync Azure callers take the adapter route, which
-   decides whether sync <code>AzureBackend</code> is replaced or retired (D4)? Decide
-   before acceptance.</li>
+   decides whether sync <code>AzureBackend</code> is replaced or retired (D4)?
+   <strong>Answered (BK-387):</strong> the async kernel, with <code>unasync</code> generating the sync
+   twin, and the generation also reaches the Azure driver: sync
+   <code>AzureBackend</code> is replaced at D3 step 4 by the generated sync driver, not
+   retired to the adapter. The adapter route's cost to sync callers, listed
+   under § Impact, decided it. The generation covers the surface the two
+   runtimes share, and a hand-written sync layer covers the rest (D6).</li>
 <li><strong><code>Page</code> for wires without a page boundary.</strong> BE-021 allows marking items
    as the service returns them; the kernel needs the driver to say which it
    does, or the divergence is stated per driver as today. BUG-257 waits on
@@ -12214,18 +12325,34 @@ it.</p>
    carries.</li>
 <li><strong>Which spec contradictions the kernel must adjudicate first.</strong> BUG-240 is
    one; the kernel encodes one answer per clause and cannot land on a clause
-   the specs still dispute.</li>
+   the specs still dispute. <strong>Answered (BK-387):</strong> BUG-240 is the one
+   adjudicated before D3 step 1, where the kernel encodes the <code>max_depth</code>
+   algorithm. It is the only spec contradiction in audit-021's clause table,
+   and DEPTH-003's reading wins, the one <code>BackendContract.dfy</code> verifies:
+   <code>ListFiles</code> constrains <code>!recursive</code> to depth 0 (tagged BE-014) and applies
+   the <code>max_depth</code> filter only under <code>recursive</code> (tagged DEPTH-003). Every
+   other decision D3 names
+   is taken before the step that encodes it. BUG-276's arm (synthesise) and
+   BUG-292's choice (narrow the catch) are recorded on those items now. The
+   folder <code>modified_at</code> aggregation is encoded, and so fixed, at step 1, as
+   the latest known file time with an unknown time skipped. D3 enumerates why
+   that leaves every backend's cell but Graph's unchanged. Step 7 decides only
+   how Graph meets it.</li>
 <li><strong>Does the choke point cover driver construction?</strong> BUG-245 leaks from
    <code>SQLBlobBackend</code>'s constructor, and BE-021's mapping rule is scoped to
    operations today. Either D2 wraps <code>Driver.__init__</code> too, or construction
    errors stay per driver and BUG-245 is fixed there.</li>
 <li><strong><code>classify</code> or a wire signal?</strong> Eight of the 35 cluster-A items stay in
    the driver under D1. The wire-signal alternative reaches four of them at
-   the cost of a primitive that must express every wire's vocabulary. Decide
-   before acceptance.</li>
+   the cost of a primitive that must express every wire's vocabulary.
+   <strong>Answered (BK-387):</strong> <code>classify(exc, op, key)</code> inside each driver, as D1
+   proposes. Four of eight is not worth a primitive spanning every wire.
+   ADR-0042 reverses this if D8 step 4's re-audit finds mapping-content
+   defects recurring across drivers.</li>
 <li><strong>Is D7's extension of the model accepted?</strong> D7 recommends extending
    <code>BackendContract.dfy</code> and its refinement with the root rule, the close
-   posture and the absent container, in D8 step 1, and not modelling
+   posture and the absent container before kernel code (at filing, "in D8
+   step 1"; now BK-388, ahead of D3 step 1), and not modelling
    pagination, messages, or the kernel-over-driver shape. The open part is
    whether the formal layer takes the M-sized absent-container change on, and
    where the additions live. The close flag and the absent-container branches
@@ -12234,7 +12361,17 @@ it.</p>
    pure and could sit in an included lemma module of <code>DepthCounting.dfy</code>'s
    shape, which proves properties of the contract's <code>Depth</code> function without
    adding to the trait (<code>include "BackendContract.dfy"</code>, its line 18; no file
-   under <code>sdd/formal/</code> uses <code>refines</code>). Decide before acceptance.</li>
+   under <code>sdd/formal/</code> uses <code>refines</code>). <strong>Answered (BK-387):</strong> all three are
+   extended, before kernel code, under BK-388. The close flag and the
+   absent-container branches go into <code>BackendContract.dfy</code> and
+   <code>MemoryBackend.dfy</code>. The root rule's pure predicate goes upstream of the
+   trait, in <code>BackendContract.dfy</code> or a file it includes (as it includes
+   <code>ResourceSafety.dfy</code>, its line 34), because the trait's write-shaped
+   operations name it in their preconditions. Lemmas about it go in a
+   downstream module of <code>DepthCounting.dfy</code>'s shape. A predicate placed only
+   downstream could not be named by the trait, since <code>DepthCounting.dfy</code>
+   includes <code>BackendContract.dfy</code> (its line 18) and not the reverse. Placement
+   corrected at BK-387's close, by the maintainer.</li>
 </ol>
 <h2 id="references">References<a class="headerlink" href="#references" title="Permanent link">&para;</a></h2>
 <ul>

@@ -8624,6 +8624,34 @@
 
               
             
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../explanation/design/adrs/0042-contract-kernel-over-thin-drivers/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    0042: One Contract Kernel over Thin Drivers
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
           </ul>
         </nav>
       
@@ -14944,6 +14972,9 @@
 <p>This project follows <a href="https://semver.org/">Semantic Versioning</a>. Pre-1.0, minor bumps may contain breaking changes.</p>
 <h2 id="unreleased">[Unreleased]<a class="headerlink" href="#unreleased" title="Permanent link">&para;</a></h2>
 <ul>
+<li>
+<p>BK-387: The plan to implement the backend contract once, in a shared kernel over thin per-backend drivers, has its design questions answered and is proposed as ADR-0042; nothing changes for users yet, and it is accepted with the first backend built on it.</p>
+</li>
 <li>
 <p>BK-370: The recipe conda-forge builds <code>remote-store</code> from is now generated rather than copied by hand, and a weekly check reports when the published copy stops matching what this project published for that version — from the next release, the first with a generated copy to compare against.</p>
 </li>

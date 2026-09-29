@@ -10,13 +10,13 @@
       
       
       
-        <link rel="canonical" href="https://docs.remotestore.dev/dev/explanation/design/audits/audit-019-azure-backend-review/">
+        <link rel="canonical" href="https://docs.remotestore.dev/dev/explanation/design/adrs/0042-contract-kernel-over-thin-drivers/">
       
       
-        <link rel="prev" href="../audit-018-ci-operations/">
+        <link rel="prev" href="../0041-done-register-links-dossiers/">
       
       
-        <link rel="next" href="../audit-020-sftp-roundtrips-correctness/">
+        <link rel="next" href="../../audits/">
       
       
         
@@ -27,7 +27,7 @@
     
     
       
-        <title>019: Azure backend (ID-219) expectation-driven review - remote-store</title>
+        <title>0042: One Contract Kernel over Thin Drivers - remote-store</title>
       
     
     
@@ -82,7 +82,7 @@
     <div data-md-component="skip">
       
         
-        <a href="#audit-019-azure-backend-id-219-expectation-driven-review" class="md-skip">
+        <a href="#adr-0042-one-contract-kernel-over-thin-drivers" class="md-skip">
           Skip to content
         </a>
       
@@ -121,7 +121,7 @@
         <div class="md-header__topic" data-md-component="header-topic">
           <span class="md-ellipsis">
             
-              019: Azure backend (ID-219) expectation-driven review
+              0042: One Contract Kernel over Thin Drivers
             
           </span>
         </div>
@@ -5339,6 +5339,8 @@
                 
   
   
+    
+  
   
   
     
@@ -5349,15 +5351,15 @@
       
     
     
-    <li class="md-nav__item md-nav__item--nested">
+    <li class="md-nav__item md-nav__item--active md-nav__item--nested">
       
         
         
-        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_5_9_9" >
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_5_9_9" checked>
         
           
           <div class="md-nav__link md-nav__container">
-            <a href="../../adrs/" class="md-nav__link ">
+            <a href="../" class="md-nav__link ">
               
   
   
@@ -5381,7 +5383,7 @@
             
           </div>
         
-        <nav class="md-nav" data-md-level="3" aria-labelledby="__nav_5_9_9_label" aria-expanded="false">
+        <nav class="md-nav" data-md-level="3" aria-labelledby="__nav_5_9_9_label" aria-expanded="true">
           <label class="md-nav__title" for="__nav_5_9_9">
             <span class="md-nav__icon md-icon"></span>
             
@@ -5399,7 +5401,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../adrs/0001-architecture-store-registry-backends/" class="md-nav__link">
+      <a href="../0001-architecture-store-registry-backends/" class="md-nav__link">
         
   
   
@@ -5427,7 +5429,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../adrs/0002-config-resolution-no-merge/" class="md-nav__link">
+      <a href="../0002-config-resolution-no-merge/" class="md-nav__link">
         
   
   
@@ -5455,7 +5457,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../adrs/0003-fsspec-is-implementation-detail/" class="md-nav__link">
+      <a href="../0003-fsspec-is-implementation-detail/" class="md-nav__link">
         
   
   
@@ -5483,7 +5485,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../adrs/0004-empty-path-semantics/" class="md-nav__link">
+      <a href="../0004-empty-path-semantics/" class="md-nav__link">
         
   
   
@@ -5511,7 +5513,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../adrs/0005-native-path-resolution/" class="md-nav__link">
+      <a href="../0005-native-path-resolution/" class="md-nav__link">
         
   
   
@@ -5539,7 +5541,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../adrs/0006-documentation-architecture/" class="md-nav__link">
+      <a href="../0006-documentation-architecture/" class="md-nav__link">
         
   
   
@@ -5567,7 +5569,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../adrs/0007-docs-src-literate-nav/" class="md-nav__link">
+      <a href="../0007-docs-src-literate-nav/" class="md-nav__link">
         
   
   
@@ -5595,7 +5597,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../adrs/0008-extension-architecture/" class="md-nav__link">
+      <a href="../0008-extension-architecture/" class="md-nav__link">
         
   
   
@@ -5623,7 +5625,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../adrs/0009-glob-three-tier-design/" class="md-nav__link">
+      <a href="../0009-glob-three-tier-design/" class="md-nav__link">
         
   
   
@@ -5651,7 +5653,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../adrs/0010-observe-proxy-pattern/" class="md-nav__link">
+      <a href="../0010-observe-proxy-pattern/" class="md-nav__link">
         
   
   
@@ -5679,7 +5681,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../adrs/0011-retry-per-backend-native/" class="md-nav__link">
+      <a href="../0011-retry-per-backend-native/" class="md-nav__link">
         
   
   
@@ -5707,7 +5709,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../adrs/0012-async-store-backend-api/" class="md-nav__link">
+      <a href="../0012-async-store-backend-api/" class="md-nav__link">
         
   
   
@@ -5735,7 +5737,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../adrs/0013-drop-optional-extension-reexports/" class="md-nav__link">
+      <a href="../0013-drop-optional-extension-reexports/" class="md-nav__link">
         
   
   
@@ -5763,7 +5765,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../adrs/0014-middleware-path-1-proxy-store-stream-wrappers/" class="md-nav__link">
+      <a href="../0014-middleware-path-1-proxy-store-stream-wrappers/" class="md-nav__link">
         
   
   
@@ -5791,7 +5793,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../adrs/0015-proxystore-publicly-documented/" class="md-nav__link">
+      <a href="../0015-proxystore-publicly-documented/" class="md-nav__link">
         
   
   
@@ -5819,7 +5821,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../adrs/0016-seekable-read-three-tier-design/" class="md-nav__link">
+      <a href="../0016-seekable-read-three-tier-design/" class="md-nav__link">
         
   
   
@@ -5847,7 +5849,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../adrs/0017-seekable-read-on-store-api/" class="md-nav__link">
+      <a href="../0017-seekable-read-on-store-api/" class="md-nav__link">
         
   
   
@@ -5875,7 +5877,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../adrs/0018-sqlalchemy-two-class-architecture/" class="md-nav__link">
+      <a href="../0018-sqlalchemy-two-class-architecture/" class="md-nav__link">
         
   
   
@@ -5903,7 +5905,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../adrs/0019-multi-agent-orchestration/" class="md-nav__link">
+      <a href="../0019-multi-agent-orchestration/" class="md-nav__link">
         
   
   
@@ -5931,7 +5933,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../adrs/0020-orchestrate-iterative-convergence/" class="md-nav__link">
+      <a href="../0020-orchestrate-iterative-convergence/" class="md-nav__link">
         
   
   
@@ -5959,7 +5961,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../adrs/0021-graph-sdk-choice/" class="md-nav__link">
+      <a href="../0021-graph-sdk-choice/" class="md-nav__link">
         
   
   
@@ -5987,7 +5989,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../adrs/0022-graph-auth-model/" class="md-nav__link">
+      <a href="../0022-graph-auth-model/" class="md-nav__link">
         
   
   
@@ -6015,7 +6017,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../adrs/0023-async-monitor-polling/" class="md-nav__link">
+      <a href="../0023-async-monitor-polling/" class="md-nav__link">
         
   
   
@@ -6043,7 +6045,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../adrs/0024-resource-locked-error/" class="md-nav__link">
+      <a href="../0024-resource-locked-error/" class="md-nav__link">
         
   
   
@@ -6071,7 +6073,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../adrs/0025-async-to-sync-backend-adapter/" class="md-nav__link">
+      <a href="../0025-async-to-sync-backend-adapter/" class="md-nav__link">
         
   
   
@@ -6099,7 +6101,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../adrs/0026-strict-gate-on-kwarg/" class="md-nav__link">
+      <a href="../0026-strict-gate-on-kwarg/" class="md-nav__link">
         
   
   
@@ -6127,7 +6129,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../adrs/0027-docs-bridge-single-mechanism/" class="md-nav__link">
+      <a href="../0027-docs-bridge-single-mechanism/" class="md-nav__link">
         
   
   
@@ -6155,7 +6157,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../adrs/0028-testing-architecture-kind-stage-replay/" class="md-nav__link">
+      <a href="../0028-testing-architecture-kind-stage-replay/" class="md-nav__link">
         
   
   
@@ -6183,7 +6185,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../adrs/0029-graph-transfer-blocking-io-offload/" class="md-nav__link">
+      <a href="../0029-graph-transfer-blocking-io-offload/" class="md-nav__link">
         
   
   
@@ -6211,7 +6213,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../adrs/0030-azure-hns-explicit-declaration/" class="md-nav__link">
+      <a href="../0030-azure-hns-explicit-declaration/" class="md-nav__link">
         
   
   
@@ -6239,7 +6241,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../adrs/0031-expert-personas-as-subagent-files/" class="md-nav__link">
+      <a href="../0031-expert-personas-as-subagent-files/" class="md-nav__link">
         
   
   
@@ -6267,7 +6269,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../adrs/0032-tiered-ci-gate-with-full-matrix-backstop/" class="md-nav__link">
+      <a href="../0032-tiered-ci-gate-with-full-matrix-backstop/" class="md-nav__link">
         
   
   
@@ -6295,7 +6297,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../adrs/0033-ship-convergence-driven-review/" class="md-nav__link">
+      <a href="../0033-ship-convergence-driven-review/" class="md-nav__link">
         
   
   
@@ -6323,7 +6325,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../adrs/0034-ship-panel-rounds-and-unprimed-exit/" class="md-nav__link">
+      <a href="../0034-ship-panel-rounds-and-unprimed-exit/" class="md-nav__link">
         
   
   
@@ -6351,7 +6353,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../adrs/0035-vary-method-not-model/" class="md-nav__link">
+      <a href="../0035-vary-method-not-model/" class="md-nav__link">
         
   
   
@@ -6379,7 +6381,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../adrs/0036-reviewers-by-subject-and-method/" class="md-nav__link">
+      <a href="../0036-reviewers-by-subject-and-method/" class="md-nav__link">
         
   
   
@@ -6407,7 +6409,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../adrs/0037-whole-file-gate-and-derived-figures/" class="md-nav__link">
+      <a href="../0037-whole-file-gate-and-derived-figures/" class="md-nav__link">
         
   
   
@@ -6435,7 +6437,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../adrs/0038-absent-container-outranks-drive-identity/" class="md-nav__link">
+      <a href="../0038-absent-container-outranks-drive-identity/" class="md-nav__link">
         
   
   
@@ -6463,7 +6465,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../adrs/0039-support-tracks-upstream-security-fixes/" class="md-nav__link">
+      <a href="../0039-support-tracks-upstream-security-fixes/" class="md-nav__link">
         
   
   
@@ -6491,7 +6493,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../adrs/0040-backlog-as-index/" class="md-nav__link">
+      <a href="../0040-backlog-as-index/" class="md-nav__link">
         
   
   
@@ -6519,7 +6521,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../adrs/0041-done-register-links-dossiers/" class="md-nav__link">
+      <a href="../0041-done-register-links-dossiers/" class="md-nav__link">
         
   
   
@@ -6527,605 +6529,6 @@
     
   
     0041: A Done Entry Links Its Dossier Instead of Restating It, and the Migration Opt-Out Is Retired
-  
-
-    
-  </span>
-  
-  
-
-      </a>
-    </li>
-  
-
-              
-            
-              
-                
-  
-  
-  
-  
-    <li class="md-nav__item">
-      <a href="../../adrs/0042-contract-kernel-over-thin-drivers/" class="md-nav__link">
-        
-  
-  
-  <span class="md-ellipsis">
-    
-  
-    0042: One Contract Kernel over Thin Drivers
-  
-
-    
-  </span>
-  
-  
-
-      </a>
-    </li>
-  
-
-              
-            
-          </ul>
-        </nav>
-      
-    </li>
-  
-
-              
-            
-              
-                
-  
-  
-    
-  
-  
-  
-    
-    
-    
-    
-      
-      
-    
-    
-    <li class="md-nav__item md-nav__item--active md-nav__item--nested">
-      
-        
-        
-        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_5_9_10" checked>
-        
-          
-          <div class="md-nav__link md-nav__container">
-            <a href="../" class="md-nav__link ">
-              
-  
-  
-  <span class="md-ellipsis">
-    
-  
-    Audits
-  
-
-    
-  </span>
-  
-  
-
-            </a>
-            
-              
-              <label class="md-nav__link " for="__nav_5_9_10" id="__nav_5_9_10_label" tabindex="0">
-                <span class="md-nav__icon md-icon"></span>
-              </label>
-            
-          </div>
-        
-        <nav class="md-nav" data-md-level="3" aria-labelledby="__nav_5_9_10_label" aria-expanded="true">
-          <label class="md-nav__title" for="__nav_5_9_10">
-            <span class="md-nav__icon md-icon"></span>
-            
-  
-    Audits
-  
-
-          </label>
-          <ul class="md-nav__list" data-md-scrollfix>
-            
-              
-                
-  
-  
-  
-  
-    <li class="md-nav__item">
-      <a href="../audit-001-adversarial-review/" class="md-nav__link">
-        
-  
-  
-  <span class="md-ellipsis">
-    
-  
-    001: Adversarial Review of v0.5.0
-  
-
-    
-  </span>
-  
-  
-
-      </a>
-    </li>
-  
-
-              
-            
-              
-                
-  
-  
-  
-  
-    <li class="md-nav__item">
-      <a href="../audit-002-design-compliance/" class="md-nav__link">
-        
-  
-  
-  <span class="md-ellipsis">
-    
-  
-    002: Design & Spec Compliance Review
-  
-
-    
-  </span>
-  
-  
-
-      </a>
-    </li>
-  
-
-              
-            
-              
-                
-  
-  
-  
-  
-    <li class="md-nav__item">
-      <a href="../audit-003-documentation/" class="md-nav__link">
-        
-  
-  
-  <span class="md-ellipsis">
-    
-  
-    003: Documentation Quality & Spec Compliance
-  
-
-    
-  </span>
-  
-  
-
-      </a>
-    </li>
-  
-
-              
-            
-              
-                
-  
-  
-  
-  
-    <li class="md-nav__item">
-      <a href="../audit-004-docs-structural-consistency/" class="md-nav__link">
-        
-  
-  
-  <span class="md-ellipsis">
-    
-  
-    004: Documentation Structural Consistency
-  
-
-    
-  </span>
-  
-  
-
-      </a>
-    </li>
-  
-
-              
-            
-              
-                
-  
-  
-  
-  
-    <li class="md-nav__item">
-      <a href="../audit-005-laziness-memory/" class="md-nav__link">
-        
-  
-  
-  <span class="md-ellipsis">
-    
-  
-    005: Laziness & Memory Efficiency
-  
-
-    
-  </span>
-  
-  
-
-      </a>
-    </li>
-  
-
-              
-            
-              
-                
-  
-  
-  
-  
-    <li class="md-nav__item">
-      <a href="../audit-006-docs-list-completeness/" class="md-nav__link">
-        
-  
-  
-  <span class="md-ellipsis">
-    
-  
-    006: Documentation List Completeness
-  
-
-    
-  </span>
-  
-  
-
-      </a>
-    </li>
-  
-
-              
-            
-              
-                
-  
-  
-  
-  
-    <li class="md-nav__item">
-      <a href="../audit-007-test-behavior-assertions/" class="md-nav__link">
-        
-  
-  
-  <span class="md-ellipsis">
-    
-  
-    007: Test Behavior Assertions
-  
-
-    
-  </span>
-  
-  
-
-      </a>
-    </li>
-  
-
-              
-            
-              
-                
-  
-  
-  
-  
-    <li class="md-nav__item">
-      <a href="../audit-008-package-bugs/" class="md-nav__link">
-        
-  
-  
-  <span class="md-ellipsis">
-    
-  
-    008: Package Bugs (User-Facing)
-  
-
-    
-  </span>
-  
-  
-
-      </a>
-    </li>
-  
-
-              
-            
-              
-                
-  
-  
-  
-  
-    <li class="md-nav__item">
-      <a href="../audit-009-backend-specifics-visibility/" class="md-nav__link">
-        
-  
-  
-  <span class="md-ellipsis">
-    
-  
-    009: Backend-Specifics Visibility in Reference
-  
-
-    
-  </span>
-  
-  
-
-      </a>
-    </li>
-  
-
-              
-            
-              
-                
-  
-  
-  
-  
-    <li class="md-nav__item">
-      <a href="../audit-010-ext-private-imports/" class="md-nav__link">
-        
-  
-  
-  <span class="md-ellipsis">
-    
-  
-    010: Audit 010: Extension Private Module Imports
-  
-
-    
-  </span>
-  
-  
-
-      </a>
-    </li>
-  
-
-              
-            
-              
-                
-  
-  
-  
-  
-    <li class="md-nav__item">
-      <a href="../audit-011-docs-v023-gaps/" class="md-nav__link">
-        
-  
-  
-  <span class="md-ellipsis">
-    
-  
-    011: Audit-011: Handwritten Docs, v0.23.0+ Gaps
-  
-
-    
-  </span>
-  
-  
-
-      </a>
-    </li>
-  
-
-              
-            
-              
-                
-  
-  
-  
-  
-    <li class="md-nav__item">
-      <a href="../audit-012-docs-structure/" class="md-nav__link">
-        
-  
-  
-  <span class="md-ellipsis">
-    
-  
-    012: Audit-012: Documentation Structure — Post-ID-174 Layout
-  
-
-    
-  </span>
-  
-  
-
-      </a>
-    </li>
-  
-
-              
-            
-              
-                
-  
-  
-  
-  
-    <li class="md-nav__item">
-      <a href="../audit-013-docstring-style/" class="md-nav__link">
-        
-  
-  
-  <span class="md-ellipsis">
-    
-  
-    013: Docstring Style Compliance
-  
-
-    
-  </span>
-  
-  
-
-      </a>
-    </li>
-  
-
-              
-            
-              
-                
-  
-  
-  
-  
-    <li class="md-nav__item">
-      <a href="../audit-014-grandfathered-tests-allow-list/" class="md-nav__link">
-        
-  
-  
-  <span class="md-ellipsis">
-    
-  
-    014: _BACKEND_AT_ROOT_GRANDFATHERED allow-list
-  
-
-    
-  </span>
-  
-  
-
-      </a>
-    </li>
-  
-
-              
-            
-              
-                
-  
-  
-  
-  
-    <li class="md-nav__item">
-      <a href="../audit-015-spec-traceability/" class="md-nav__link">
-        
-  
-  
-  <span class="md-ellipsis">
-    
-  
-    015: Spec-to-Test Traceability
-  
-
-    
-  </span>
-  
-  
-
-      </a>
-    </li>
-  
-
-              
-            
-              
-                
-  
-  
-  
-  
-    <li class="md-nav__item">
-      <a href="../audit-016-graph-backend-review/" class="md-nav__link">
-        
-  
-  
-  <span class="md-ellipsis">
-    
-  
-    016: Microsoft Graph Backend (ID-127) Review
-  
-
-    
-  </span>
-  
-  
-
-      </a>
-    </li>
-  
-
-              
-            
-              
-                
-  
-  
-  
-  
-    <li class="md-nav__item">
-      <a href="../audit-017-dev-process-gate-topology/" class="md-nav__link">
-        
-  
-  
-  <span class="md-ellipsis">
-    
-  
-    017: Dev-process gate topology (commit / push / lint / PR / CI in sync)
-  
-
-    
-  </span>
-  
-  
-
-      </a>
-    </li>
-  
-
-              
-            
-              
-                
-  
-  
-  
-  
-    <li class="md-nav__item">
-      <a href="../audit-018-ci-operations/" class="md-nav__link">
-        
-  
-  
-  <span class="md-ellipsis">
-    
-  
-    018: CI Operations: scheduled-guard notification surfaces
   
 
     
@@ -7162,7 +6565,7 @@
   <span class="md-ellipsis">
     
   
-    019: Azure backend (ID-219) expectation-driven review
+    0042: One Contract Kernel over Thin Drivers
   
 
     
@@ -7180,7 +6583,7 @@
   <span class="md-ellipsis">
     
   
-    019: Azure backend (ID-219) expectation-driven review
+    0042: One Contract Kernel over Thin Drivers
   
 
     
@@ -7206,10 +6609,10 @@
     <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
       
         <li class="md-nav__item">
-  <a href="#summary" class="md-nav__link">
+  <a href="#status" class="md-nav__link">
     <span class="md-ellipsis">
       
-        Summary
+        Status
       
     </span>
   </a>
@@ -7217,132 +6620,10 @@
 </li>
       
         <li class="md-nav__item">
-  <a href="#high" class="md-nav__link">
+  <a href="#context" class="md-nav__link">
     <span class="md-ellipsis">
       
-        🔴 High
-      
-    </span>
-  </a>
-  
-    <nav class="md-nav" aria-label="🔴 High">
-      <ul class="md-nav__list">
-        
-          <li class="md-nav__item">
-  <a href="#h1-closeaclose-close-a-caller-supplied-credential-ownership-defect" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        H1 — close()/aclose() close a caller-supplied credential (ownership defect)
-      
-    </span>
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#h2-error-classifier-drops-throttling-server-precondition-errors-to-a-bare-remotestoreerror" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        H2 — Error classifier drops throttling / server / precondition errors to a bare RemoteStoreError
-      
-    </span>
-  </a>
-  
-</li>
-        
-      </ul>
-    </nav>
-  
-</li>
-      
-        <li class="md-nav__item">
-  <a href="#medium" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        🟠 Medium
-      
-    </span>
-  </a>
-  
-    <nav class="md-nav" aria-label="🟠 Medium">
-      <ul class="md-nav__list">
-        
-          <li class="md-nav__item">
-  <a href="#m1-use-after-close-silently-re-initialises-az-029-blesses-the-exact-postcondition-that-was-graphs-bug-219" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        M1 — Use-after-close silently re-initialises; AZ-029 blesses the exact postcondition that was Graph's BUG-219
-      
-    </span>
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#m2-error_code-is-mandated-by-az-025-but-never-read-by-the-classifier" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        M2 — error_code is mandated by AZ-025 but never read by the classifier
-      
-    </span>
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#m3-the-guide-steers-analytics-users-into-an-in-ram-anti-pattern-and-the-asyncbridged-path-forfeits-azures-native-range-reader" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        M3 — The guide steers analytics users into an in-RAM anti-pattern, and the async/bridged path forfeits Azure's native range reader
-      
-    </span>
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#m4-hns-write_atomic-drops-digest-while-sibling-write-keeps-it-guides-digest-claim-is-half-true" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        M4 — HNS write_atomic drops digest while sibling write keeps it; guide's digest claim is half-true
-      
-    </span>
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#m5-sticky-silent-hns-misdetection-degrades-semantics-for-the-instance-lifetime" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        M5 — Sticky silent HNS misdetection degrades semantics for the instance lifetime
-      
-    </span>
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#m6-syncasync-docstring-and-guide-table-omissions" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        M6 — Sync/async docstring and guide-table omissions
-      
-    </span>
-  </a>
-  
-</li>
-        
-      </ul>
-    </nav>
-  
-</li>
-      
-        <li class="md-nav__item">
-  <a href="#low-nits" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        🟡 Low / Nits
+        Context
       
     </span>
   </a>
@@ -7350,10 +6631,10 @@
 </li>
       
         <li class="md-nav__item">
-  <a href="#verified-strengths-checked-not-rubber-stamped" class="md-nav__link">
+  <a href="#decision" class="md-nav__link">
     <span class="md-ellipsis">
       
-        Verified strengths (checked, not rubber-stamped)
+        Decision
       
     </span>
   </a>
@@ -7361,41 +6642,24 @@
 </li>
       
         <li class="md-nav__item">
-  <a href="#proposed-backlog-items" class="md-nav__link">
+  <a href="#amendments-on-acceptance" class="md-nav__link">
     <span class="md-ellipsis">
       
-        Proposed backlog items
-      
-    </span>
-  </a>
-  
-    <nav class="md-nav" aria-label="Proposed backlog items">
-      <ul class="md-nav__list">
-        
-          <li class="md-nav__item">
-  <a href="#new-items-proposed" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        New items (proposed)
+        Amendments on acceptance
       
     </span>
   </a>
   
 </li>
-        
-          <li class="md-nav__item">
-  <a href="#routing-note-companion-cloud-dx-pilot" class="md-nav__link">
+      
+        <li class="md-nav__item">
+  <a href="#consequences" class="md-nav__link">
     <span class="md-ellipsis">
       
-        Routing note — companion cloud DX pilot
+        Consequences
       
     </span>
   </a>
-  
-</li>
-        
-      </ul>
-    </nav>
   
 </li>
       
@@ -7408,6 +6672,71 @@
 
               
             
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    
+    
+    
+    
+      
+      
+    
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_5_9_10" >
+        
+          
+          <div class="md-nav__link md-nav__container">
+            <a href="../../audits/" class="md-nav__link ">
+              
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Audits
+  
+
+    
+  </span>
+  
+  
+
+            </a>
+            
+              
+              <label class="md-nav__link " for="__nav_5_9_10" id="__nav_5_9_10_label" tabindex="0">
+                <span class="md-nav__icon md-icon"></span>
+              </label>
+            
+          </div>
+        
+        <nav class="md-nav" data-md-level="3" aria-labelledby="__nav_5_9_10_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_5_9_10">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    Audits
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
               
                 
   
@@ -7415,7 +6744,539 @@
   
   
     <li class="md-nav__item">
-      <a href="../audit-020-sftp-roundtrips-correctness/" class="md-nav__link">
+      <a href="../../audits/audit-001-adversarial-review/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    001: Adversarial Review of v0.5.0
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../audits/audit-002-design-compliance/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    002: Design & Spec Compliance Review
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../audits/audit-003-documentation/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    003: Documentation Quality & Spec Compliance
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../audits/audit-004-docs-structural-consistency/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    004: Documentation Structural Consistency
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../audits/audit-005-laziness-memory/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    005: Laziness & Memory Efficiency
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../audits/audit-006-docs-list-completeness/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    006: Documentation List Completeness
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../audits/audit-007-test-behavior-assertions/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    007: Test Behavior Assertions
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../audits/audit-008-package-bugs/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    008: Package Bugs (User-Facing)
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../audits/audit-009-backend-specifics-visibility/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    009: Backend-Specifics Visibility in Reference
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../audits/audit-010-ext-private-imports/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    010: Audit 010: Extension Private Module Imports
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../audits/audit-011-docs-v023-gaps/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    011: Audit-011: Handwritten Docs, v0.23.0+ Gaps
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../audits/audit-012-docs-structure/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    012: Audit-012: Documentation Structure — Post-ID-174 Layout
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../audits/audit-013-docstring-style/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    013: Docstring Style Compliance
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../audits/audit-014-grandfathered-tests-allow-list/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    014: _BACKEND_AT_ROOT_GRANDFATHERED allow-list
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../audits/audit-015-spec-traceability/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    015: Spec-to-Test Traceability
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../audits/audit-016-graph-backend-review/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    016: Microsoft Graph Backend (ID-127) Review
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../audits/audit-017-dev-process-gate-topology/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    017: Dev-process gate topology (commit / push / lint / PR / CI in sync)
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../audits/audit-018-ci-operations/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    018: CI Operations: scheduled-guard notification surfaces
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../audits/audit-019-azure-backend-review/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    019: Azure backend (ID-219) expectation-driven review
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../audits/audit-020-sftp-roundtrips-correctness/" class="md-nav__link">
         
   
   
@@ -7443,7 +7304,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../audit-021-contract-placement/" class="md-nav__link">
+      <a href="../../audits/audit-021-contract-placement/" class="md-nav__link">
         
   
   
@@ -11069,10 +10930,10 @@
     <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
       
         <li class="md-nav__item">
-  <a href="#summary" class="md-nav__link">
+  <a href="#status" class="md-nav__link">
     <span class="md-ellipsis">
       
-        Summary
+        Status
       
     </span>
   </a>
@@ -11080,132 +10941,10 @@
 </li>
       
         <li class="md-nav__item">
-  <a href="#high" class="md-nav__link">
+  <a href="#context" class="md-nav__link">
     <span class="md-ellipsis">
       
-        🔴 High
-      
-    </span>
-  </a>
-  
-    <nav class="md-nav" aria-label="🔴 High">
-      <ul class="md-nav__list">
-        
-          <li class="md-nav__item">
-  <a href="#h1-closeaclose-close-a-caller-supplied-credential-ownership-defect" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        H1 — close()/aclose() close a caller-supplied credential (ownership defect)
-      
-    </span>
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#h2-error-classifier-drops-throttling-server-precondition-errors-to-a-bare-remotestoreerror" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        H2 — Error classifier drops throttling / server / precondition errors to a bare RemoteStoreError
-      
-    </span>
-  </a>
-  
-</li>
-        
-      </ul>
-    </nav>
-  
-</li>
-      
-        <li class="md-nav__item">
-  <a href="#medium" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        🟠 Medium
-      
-    </span>
-  </a>
-  
-    <nav class="md-nav" aria-label="🟠 Medium">
-      <ul class="md-nav__list">
-        
-          <li class="md-nav__item">
-  <a href="#m1-use-after-close-silently-re-initialises-az-029-blesses-the-exact-postcondition-that-was-graphs-bug-219" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        M1 — Use-after-close silently re-initialises; AZ-029 blesses the exact postcondition that was Graph's BUG-219
-      
-    </span>
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#m2-error_code-is-mandated-by-az-025-but-never-read-by-the-classifier" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        M2 — error_code is mandated by AZ-025 but never read by the classifier
-      
-    </span>
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#m3-the-guide-steers-analytics-users-into-an-in-ram-anti-pattern-and-the-asyncbridged-path-forfeits-azures-native-range-reader" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        M3 — The guide steers analytics users into an in-RAM anti-pattern, and the async/bridged path forfeits Azure's native range reader
-      
-    </span>
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#m4-hns-write_atomic-drops-digest-while-sibling-write-keeps-it-guides-digest-claim-is-half-true" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        M4 — HNS write_atomic drops digest while sibling write keeps it; guide's digest claim is half-true
-      
-    </span>
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#m5-sticky-silent-hns-misdetection-degrades-semantics-for-the-instance-lifetime" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        M5 — Sticky silent HNS misdetection degrades semantics for the instance lifetime
-      
-    </span>
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#m6-syncasync-docstring-and-guide-table-omissions" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        M6 — Sync/async docstring and guide-table omissions
-      
-    </span>
-  </a>
-  
-</li>
-        
-      </ul>
-    </nav>
-  
-</li>
-      
-        <li class="md-nav__item">
-  <a href="#low-nits" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        🟡 Low / Nits
+        Context
       
     </span>
   </a>
@@ -11213,10 +10952,10 @@
 </li>
       
         <li class="md-nav__item">
-  <a href="#verified-strengths-checked-not-rubber-stamped" class="md-nav__link">
+  <a href="#decision" class="md-nav__link">
     <span class="md-ellipsis">
       
-        Verified strengths (checked, not rubber-stamped)
+        Decision
       
     </span>
   </a>
@@ -11224,41 +10963,24 @@
 </li>
       
         <li class="md-nav__item">
-  <a href="#proposed-backlog-items" class="md-nav__link">
+  <a href="#amendments-on-acceptance" class="md-nav__link">
     <span class="md-ellipsis">
       
-        Proposed backlog items
-      
-    </span>
-  </a>
-  
-    <nav class="md-nav" aria-label="Proposed backlog items">
-      <ul class="md-nav__list">
-        
-          <li class="md-nav__item">
-  <a href="#new-items-proposed" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        New items (proposed)
+        Amendments on acceptance
       
     </span>
   </a>
   
 </li>
-        
-          <li class="md-nav__item">
-  <a href="#routing-note-companion-cloud-dx-pilot" class="md-nav__link">
+      
+        <li class="md-nav__item">
+  <a href="#consequences" class="md-nav__link">
     <span class="md-ellipsis">
       
-        Routing note — companion cloud DX pilot
+        Consequences
       
     </span>
   </a>
-  
-</li>
-        
-      </ul>
-    </nav>
   
 </li>
       
@@ -11279,360 +11001,145 @@
 
 
 
-<h1 id="audit-019-azure-backend-id-219-expectation-driven-review">Audit 019 — Azure backend (ID-219) expectation-driven review<a class="headerlink" href="#audit-019-azure-backend-id-219-expectation-driven-review" title="Permanent link">&para;</a></h1>
-<p><strong>Backlog item:</strong> ID-219 (apply the expectation-driven / DX review to the Azure
-backend; follow-ups proposed at the end).
-<strong>Date:</strong> 2026-06-16
-<strong>Scope:</strong> The Azure backend — sync <code>AzureBackend</code>
-(<code>src/remote_store/backends/_azure.py</code>), async <code>AsyncAzureBackend</code>
-(<code>src/remote_store/aio/backends/_azure.py</code>), the shared
-<code>src/remote_store/backends/_azure_common.py</code>, the <code>AsyncBackendSyncAdapter</code>
-bridge (<code>src/remote_store/_async_to_sync_adapter.py</code>), spec
-<code>sdd/specs/012-azure-backend.md</code> plus the cross-backend posture clauses (BE-028
-spec 003, ASYNC-094 spec 029), the user guides <code>docs-src/guides/backends/azure.md</code>
-and <code>azure-hns-setup.md</code>, and the test tiers (conformance + azurite Stage 2 +
-<code>azure_live</code> Stage 3 + the 303 committed cassettes + <code>tests/backends/azure/test_live_hns.py</code>).
-<strong>Method:</strong> the expectation-driven methodology
-(<a href="../../research/research-expectation-driven-review/">research-expectation-driven-review.md</a>),
-run as a <strong>lens-organized panel</strong> (the eight catalog lenses across five parallel
-agents, each seeded with the matching <a href="../audit-016-graph-backend-review/">audit-016</a>
-finding-class so the sweep re-points rather than rediscovers), followed by a
-<strong>bounded live battery</strong> against a real ADLS Gen2 (HNS) account (one fresh
-filesystem, KB payloads, ~25 ops, immediate teardown — cost discipline per the
-methodology §5). Every claim is verified against <strong>source</strong>, not against
-mocks/cassettes (a cassette encodes our assumed shape, not the service's). This is
-a <strong>report-only</strong> audit — nothing was modified. Dispositions in the proposals
-section are advisory; the user decides what becomes work.</p>
-<p><strong>Severity key:</strong> 🔴 High · 🟠 Medium · 🟡 Low / Nit.
-Each finding tag (H1, M3, L7…) is referenced by the proposals table at the end.</p>
-<hr />
-<h2 id="summary">Summary<a class="headerlink" href="#summary" title="Permanent link">&para;</a></h2>
-<p>The Azure backend is in materially better shape than Graph was at audit-016 on the
-two dimensions that dominated that review. Behavioural coverage is <strong>not</strong> absent:
-<code>tests/backends/cassettes/azure/</code> holds <strong>303</strong> committed cassettes (sync + async),
-and a dedicated live HNS suite (<code>test_live_hns.py</code>) exercises the <code>hdi_isfolder</code>
-directory guards, <code>write_atomic</code> etag normalisation, and root <code>get_folder_info</code>
-against a real account — so Graph's headline H2 does not recur. The guides are
-present-tense and their snippets run as written (Graph's M4/M5 do not recur). The
-sync and async twins are remarkably disciplined: identical capability sets, a
-single shared structured error classifier with <strong>no</strong> stdlib-exception leak (Graph
-M7 does not recur), byte-identical HNS file-ancestor machinery, and a
-<code>WriteResult.size</code> source that matches the spec (no Graph M1 divergence).</p>
-<p>The material risks are different and orthogonal to that quality:</p>
-<ol>
-<li><strong><code>close()</code>/<code>aclose()</code> close a caller-supplied credential</strong> (no ownership flag),
-   so a shared <code>DefaultAzureCredential</code> is torn down out from under the rest of the
-   user's application — a genuine, statically-certain defect (<strong>H1</strong>).</li>
-<li><strong>The error classifier silently drops throttling and server errors.</strong>
-   <code>classify_azure_error</code> types only 404/403/409; <strong>429, 5xx, 412, 401</strong> fall
-   through to a bare <code>RemoteStoreError</code>, so a caller backing off on
-   <code>BackendUnavailable</code> never catches a throttle — and Graph types exactly these as
-   <code>BackendUnavailable</code> (<strong>H2</strong>, cross-backend-inconsistent).</li>
-<li><strong>The use-after-close contract diverges from Graph by deliberate design.</strong>
-   <code>AsyncAzureBackend</code> has no <code>_closed</code> guard and AZ-029 <em>blesses</em> "re-initialise on
-   demand" — the exact postcondition that <em>was</em> Graph's BUG-219 (live-confirmed
-   here: <code>exists()</code> succeeded after <code>close()</code>). This is the cross-backend
-   concurrency-contract divergence the BUG-219 trace explicitly flagged for ID-219
-   (<strong>M1</strong>), and it now needs a posture decision.</li>
-</ol>
-<p>The remainder are spec-lags-code accuracy gaps, doc gaps (notably a guide that
-steers analytics users into an in-RAM anti-pattern), and small correctness edges.</p>
-<hr />
-<h2 id="high">🔴 High<a class="headerlink" href="#high" title="Permanent link">&para;</a></h2>
-<h3 id="h1-closeaclose-close-a-caller-supplied-credential-ownership-defect">H1 — <code>close()</code>/<code>aclose()</code> close a caller-supplied credential (ownership defect)<a class="headerlink" href="#h1-closeaclose-close-a-caller-supplied-credential-ownership-defect" title="Permanent link">&para;</a></h3>
-<p><strong>Files:</strong> <code>src/remote_store/backends/_azure_common.py:181-199</code> (<code>resolve_credential</code>);
-<code>src/remote_store/backends/_azure.py:1126-1132</code> (sync <code>close()</code>);
-<code>src/remote_store/aio/backends/_azure.py:1214-1220</code> (async <code>aclose()</code>).</p>
-<p><code>resolve_credential</code> returns an explicitly-passed <code>credential=</code> object <strong>unchanged</strong>
-(<code>cred = credential</code> at <code>_azure_common.py:181</code>; the <code>is None</code> branches only fire
-when the caller supplied nothing). <code>_get_credential</code> caches it into
-<code>self._resolved_credential</code>. Then <code>close()</code> does:</p>
-<div class="highlight"><pre><span></span><code><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a><span class="c1"># Close credential (e.g. DefaultAzureCredential holds transport sessions).</span>
-<a id="__codelineno-0-2" name="__codelineno-0-2" href="#__codelineno-0-2"></a><span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">_resolved_credential</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
-<a id="__codelineno-0-3" name="__codelineno-0-3" href="#__codelineno-0-3"></a>    <span class="n">close</span> <span class="o">=</span> <span class="nb">getattr</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_resolved_credential</span><span class="p">,</span> <span class="s2">"close"</span><span class="p">,</span> <span class="kc">None</span><span class="p">)</span>
-<a id="__codelineno-0-4" name="__codelineno-0-4" href="#__codelineno-0-4"></a>    <span class="k">if</span> <span class="n">close</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
-<a id="__codelineno-0-5" name="__codelineno-0-5" href="#__codelineno-0-5"></a>        <span class="k">with</span> <span class="n">contextlib</span><span class="o">.</span><span class="n">suppress</span><span class="p">(</span><span class="ne">Exception</span><span class="p">):</span>
-<a id="__codelineno-0-6" name="__codelineno-0-6" href="#__codelineno-0-6"></a>            <span class="n">close</span><span class="p">()</span>
-</code></pre></div>
-<p>There is <strong>no <code>created_credential</code> flag</strong> distinguishing a backend-auto-created
-<code>DefaultAzureCredential</code> from a caller-owned one. The comment says "auto-created"
-(<code>aio/_azure.py:1214</code>) but the code closes <em>whatever</em> is in <code>_resolved_credential</code>.</p>
-<p><strong>Consumer impact:</strong> the realistic pattern is a single shared
-<code>DefaultAzureCredential()</code> (or any <code>TokenCredential</code>) passed via <code>credential=</code> to
-several clients/backends. The first <code>close()</code> (or context-manager exit, or
-<code>__del__</code>) closes the user's credential — its transport sessions go away and every
-<em>other</em> client still holding it starts failing; a second backend sharing it
-double-closes. The backend should close only credentials it created. (Scope: the
-<code>credential=</code> object path. <code>account_key</code>/<code>sas_token</code> resolve to strings — <code>getattr(str, "close")</code>
-is <code>None</code>, harmless — and the <code>connection_string</code> path does not populate
-<code>_resolved_credential</code> at all, so those callers are unaffected.) Statically
-certain; the <code>credential=</code> branch in <code>_blob_service</code> is even <code># pragma: no cover</code>
-(<code>aio/_azure.py</code>), i.e. untested.</p>
-<h3 id="h2-error-classifier-drops-throttling-server-precondition-errors-to-a-bare-remotestoreerror">H2 — Error classifier drops throttling / server / precondition errors to a bare <code>RemoteStoreError</code><a class="headerlink" href="#h2-error-classifier-drops-throttling-server-precondition-errors-to-a-bare-remotestoreerror" title="Permanent link">&para;</a></h3>
-<p><strong>File:</strong> <code>src/remote_store/backends/_azure_common.py:104-113</code> (<code>classify_azure_error</code>).</p>
-<p>The classifier branches on <code>ResourceNotFoundError</code>/<code>ResourceExistsError</code>/
-<code>ClientAuthenticationError</code>/<code>ServiceRequestError</code>/<code>ServiceResponseError</code>, and for
-<code>HttpResponseError</code> only on status <strong>404/403/409</strong>. Every other status —
-<strong>429 (throttle), 500/503 (server), 412 (precondition), 401 (HTTP-shaped auth)</strong> —
-hits the fall-through:</p>
-<div class="highlight"><pre><span></span><code><a id="__codelineno-1-1" name="__codelineno-1-1" href="#__codelineno-1-1"></a><span class="k">return</span> <span class="n">RemoteStoreError</span><span class="p">(</span><span class="nb">str</span><span class="p">(</span><span class="n">exc</span><span class="p">),</span> <span class="n">path</span><span class="o">=</span><span class="n">path</span><span class="p">,</span> <span class="n">backend</span><span class="o">=</span><span class="n">backend_name</span><span class="p">)</span>  <span class="c1"># pragma: no cover</span>
-</code></pre></div>
-<p><strong>Consumer impact:</strong> a FastAPI app or data pipeline that catches
-<code>BackendUnavailable</code> to retry/back off under throttling <strong>will not catch it</strong> — a
-sustained 429 (after SDK retry exhaustion) arrives as <code>HttpResponseError(status=429)</code>,
-not <code>ServiceResponseError</code>, so it surfaces as the generic base error. Graph types
-"throttling, 5xx, or transport failure" consistently as <code>BackendUnavailable</code>
-(<code>aio/backends/_graph/backend.py</code>), so the same workload behaves differently across
-two backends — a cross-backend-inconsistency. AZ-025's mapping table
-(<code>sdd/specs/012-azure-backend.md</code>) has <strong>no row for 429/5xx</strong>, so the spec is silent
-here too. The <code># pragma: no cover</code> on both fall-through lines confirms no test ever
-exercises a real 429/5xx/412 shape — exactly the audit-016 "mocks ≠ service" hazard.
-The mapping gap is certain statically; <em>quantifying</em> how often each status arrives
-as <code>HttpResponseError</code> vs <code>ServiceResponseError</code> under real throttling needs a live
-load test (deliberately <strong>not</strong> run here — forcing throttling is high-volume, against
-the pay-per-use cost discipline).</p>
-<hr />
-<h2 id="medium">🟠 Medium<a class="headerlink" href="#medium" title="Permanent link">&para;</a></h2>
-<h3 id="m1-use-after-close-silently-re-initialises-az-029-blesses-the-exact-postcondition-that-was-graphs-bug-219">M1 — Use-after-close silently re-initialises; AZ-029 blesses the exact postcondition that was Graph's BUG-219<a class="headerlink" href="#m1-use-after-close-silently-re-initialises-az-029-blesses-the-exact-postcondition-that-was-graphs-bug-219" title="Permanent link">&para;</a></h3>
-<p><strong>Files:</strong> <code>aio/backends/_azure.py:1202-1220</code> (<code>aclose()</code>, no <code>_closed</code> guard) and the
-lazy properties <code>_blob_service</code>/<code>_cc</code>/<code>_datalake_service</code> (re-create on <code>is None</code>);
-sync <code>_azure.py:1115-1132</code> shares the gap; <code>sdd/specs/012-azure-backend.md:249-252</code>
-(AZ-029).</p>
-<p>Neither twin sets or checks a <code>_closed</code> flag. <code>aclose()</code> zeroes the cached client
-instances and <code>_resolved_credential</code>; the next operation hits a lazy property that
-<strong>re-creates</strong> the client (and <code>_get_credential</code> re-resolves a fresh credential), so
-the op silently succeeds against brand-new resources the caller has no handle to
-close. <strong>Live-confirmed:</strong> after <code>close()</code>, <code>exists("uac/x.txt")</code> returned <code>True</code>.
-AZ-029 explicitly sanctions this: "because lazy properties re-initialize on next
-use, the backend is technically reusable after <code>close()</code>. This is consistent with
-S3Backend's behavior." That is verbatim the "re-initialise on demand" postcondition
-that <em>was</em> the Graph bug — Graph's GR-051 was amended (BUG-219) to make the backend
-<strong>terminal</strong> (typed <code>BackendUnavailable</code> on use-after-close). The BUG-219 trace
-(<code>sdd/traces/bug-219-graph-aclose-guard.yml</code>) records this divergence as
-"deliberately flagged for the cross-backend concurrency-contract work
-(BK-287 / ID-219)". This audit is that surfacing.</p>
-<p><strong>Consumer impact:</strong> a user who closes a backend to release resources, then
-accidentally reuses it, gets a silent resource reopen (new aiohttp sessions / a new
-<code>DefaultAzureCredential</code>) instead of a clear error — a leak masquerading as success.
-This is a <strong>posture decision</strong>, not an obvious bug: align Azure (and S3) with
-Graph's terminal close, or bless the divergence and document it as the intended
-cross-backend contract. Classification: cross-backend-inconsistency / spec-gap.</p>
-<h3 id="m2-error_code-is-mandated-by-az-025-but-never-read-by-the-classifier">M2 — <code>error_code</code> is mandated by AZ-025 but never read by the classifier<a class="headerlink" href="#m2-error_code-is-mandated-by-az-025-but-never-read-by-the-classifier" title="Permanent link">&para;</a></h3>
-<p><strong>Files:</strong> <code>_azure_common.py:104-112</code>; <code>sdd/specs/012-azure-backend.md</code> (AZ-025 table,
-which enumerates <code>BlobNotFound</code>/<code>AuthorizationFailure</code>/<code>DirectoryIsNotEmpty</code>/…).</p>
-<p><code>classify_azure_error</code> keys solely on exception type and <code>status_code</code>; the only
-<code>error_code</code> ever consulted in the backend is the inline <code>DirectoryIsNotEmpty</code> check
-in <code>delete()</code> (<code>aio/_azure.py</code>). The error codes the AZ-025 table enumerates are
-never used by the shared classifier. Per principle 5 either the code under-reads
-(should consult <code>error_code</code>) or the spec over-promises; the two disagree.</p>
-<h3 id="m3-the-guide-steers-analytics-users-into-an-in-ram-anti-pattern-and-the-asyncbridged-path-forfeits-azures-native-range-reader">M3 — The guide steers analytics users into an in-RAM anti-pattern, and the async/bridged path forfeits Azure's native range reader<a class="headerlink" href="#m3-the-guide-steers-analytics-users-into-an-in-ram-anti-pattern-and-the-asyncbridged-path-forfeits-azures-native-range-reader" title="Permanent link">&para;</a></h3>
-<p><strong>Files:</strong> <code>docs-src/guides/backends/azure.md:135-144</code> (Streaming); sync
-<code>read_seekable</code> + <code>_AzureRangeReader</code> (<code>_azure.py:435-448, 109-171</code>); <code>AsyncStore</code>
-omits <code>read_seekable</code> (<code>aio/_async_store.py:16</code>); <code>AsyncBackendSyncAdapter</code> masks
-<code>SEEKABLE_READ</code> (<code>_async_to_sync_adapter.py</code>); <code>src/remote_store/aio/ext/</code> ships only
-<code>write.py</code>.</p>
-<p>For seekability the guide tells readers to <code>read_bytes()</code> then wrap in <code>io.BytesIO</code>
-— i.e. materialise the <strong>entire</strong> blob into memory — and never mentions
-<code>Store.read_seekable()</code>, the API Azure <em>optimised</em> with a true HTTP-Range reader
-(<code>_AzureRangeReader</code>, no spill). So a citizen dev following the guide loads a
-multi-GB blob into RAM rather than range-seeking the footer. Worse on the async
-side: an async-native Azure consumer has <strong>no</strong> <code>read_seekable</code> and no async
-<code>ext.arrow</code>/<code>parquet</code>, so to use them they must bridge to sync — and the bridge masks
-<code>SEEKABLE_READ</code>, falling back to spooling the whole file to <code>TMPDIR</code> before PyArrow
-can seek. This is the audit-016 L9/M6 phenomenon, but sharper for Azure (which
-forgoes an <em>existing</em> native optimisation). The sync-native path is a verified
-strength; the doc and the async/bridged paths are the gap. Classification: doc-gap
-(+ a candidate cross-backend shared item with Graph's L9/M6).</p>
-<h3 id="m4-hns-write_atomic-drops-digest-while-sibling-write-keeps-it-guides-digest-claim-is-half-true">M4 — HNS <code>write_atomic</code> drops <code>digest</code> while sibling <code>write</code> keeps it; guide's digest claim is half-true<a class="headerlink" href="#m4-hns-write_atomic-drops-digest-while-sibling-write-keeps-it-guides-digest-claim-is-half-true" title="Permanent link">&para;</a></h3>
-<p><strong>Files:</strong> HNS post-rename <code>props_dict</code> carries only <code>etag</code>/<code>last_modified</code>
-(<code>_azure.py:612-626</code>; <code>aio/_azure.py:673-686</code>), fed to
-<code>_build_azure_write_result</code> which reads <code>content_md5</code>/<code>version_id</code> from that dict
-(<code>_azure_common.py:212-214</code>); <code>docs-src/guides/backends/azure.md</code> (digest claim).</p>
-<p><strong>Live-confirmed on real HNS:</strong> <code>write_atomic</code> → <code>digest=None</code>; the sibling <code>write</code>
-on the same account → <code>digest=ContentDigest('md5', …)</code>. (<code>version_id</code> was <code>None</code> for
-both — versioning not enabled on the account — so the divergence is specifically
-<code>digest</code>.) The guide states <code>WriteResult.digest</code> is populated "when Azure echoes
-back Content-MD5 in the upload response" without noting that HNS <code>write_atomic</code> never
-echoes it (the committing rename's post-read does not re-expose Content-MD5). A user
-inspecting <code>WriteResult.digest</code> after <code>write_atomic</code> on HNS silently gets <code>None</code> even
-though the same payload via <code>write</code> yields a digest. Classification: doc-gap
-(behavior is by-design); a per-method inconsistency worth disclosing or closing.</p>
-<h3 id="m5-sticky-silent-hns-misdetection-degrades-semantics-for-the-instance-lifetime">M5 — Sticky silent HNS misdetection degrades semantics for the instance lifetime<a class="headerlink" href="#m5-sticky-silent-hns-misdetection-degrades-semantics-for-the-instance-lifetime" title="Permanent link">&para;</a></h3>
-<p><strong>Files:</strong> <code>_azure.py:1293-1305</code> (sync <code>_hns</code>); <code>aio/_azure.py:243-259</code>
-(<code>_ensure_hns</code>).</p>
-<p>The HNS probe (<code>get_account_information()</code>) is wrapped in <code>except Exception</code>, logs a
-warning, and caches <code>_hns_enabled = False</code> for the backend's lifetime. A <em>transient</em>
-failure on the first probe permanently routes an HNS account through flat-blob
-emulation — no atomic rename, no <code>hdi_isfolder</code> directory rejection — until <code>close()</code>,
-with no error surfaced. AZ-006 discloses the fail-open fallback but not the
-lifetime-stickiness. Classification: bug / unspecced behavior. (Forcing the transient
-blip needs live fault injection; the caching logic is statically certain.)</p>
-<h3 id="m6-syncasync-docstring-and-guide-table-omissions">M6 — Sync/async docstring and guide-table omissions<a class="headerlink" href="#m6-syncasync-docstring-and-guide-table-omissions" title="Permanent link">&para;</a></h3>
-<p><strong>Files:</strong> sync constructor docstring (<code>_azure.py:187-213</code>) omits <code>retry</code> (the param
-exists at <code>:229</code>); the async twin documents it (<code>aio/_azure.py:73</code>).
-<code>docs-src/guides/backends/azure.md:71-82</code> Options table omits both <code>retry</code> and
-<code>reject_write_under_file_ancestor</code>. Sync <code>check_health</code> (<code>_azure.py:305</code>) has no
-docstring while the async one documents its <code>Raises:</code> (<code>aio/_azure.py:265-272</code>); with
-<code>show_if_no_docstring: false</code>, the sync contract renders as nothing.</p>
-<p>A real, public kwarg is undocumented on the side a reader checks first, and the
-user-facing Options table reads as authoritative while missing two real options.
-Classification: doc-gap + cross-twin inconsistency.</p>
-<hr />
-<h2 id="low-nits">🟡 Low / Nits<a class="headerlink" href="#low-nits" title="Permanent link">&para;</a></h2>
-<ul>
-<li>
-<p><strong>L1 — Self-op short-circuit uses raw <code>src == dst</code>, but <code>azure_path</code> normalises.</strong>
-  <code>_azure.py:994</code> / <code>:1060</code> compare raw strings; <code>azure_path</code> collapses <code>/+</code> and
-  lstrips <code>/</code> (<code>_azure_common.py:74</code>). A direct-backend <code>move("a//b","a/b", overwrite=True)</code>
-  on a flat account is not seen as a self-op → copy-to-self then delete-source = the
-  file is gone. Unreachable via <code>Store</code> (<code>RemotePath</code> canonicalises and the Store
-  short-circuits first), so it bites only direct-backend callers and is invisible to
-  conformance. Graph L3 analog. Classification: bug (latent). Hit-likelihood: low.</p>
-</li>
-<li>
-<p><strong>L2 — <code>glob</code> classifies pattern-translation errors on async only.</strong> Async wraps
-  the whole body (incl. <code>pattern_to_regex</code>) in <code>classify_azure_error</code>
-  (<code>aio/_azure.py:944-954</code>); sync does not (<code>_azure.py:901-909</code>). A malformed-pattern
-  <code>re.error</code> leaks raw from sync but is re-wrapped as a generic <code>RemoteStoreError</code> by
-  async. Same op, two error types (sync's is arguably the more correct). </p>
-</li>
-<li>
-<p><strong>L3 — Async <code>ext.*</code> cliff is undocumented.</strong> A native <code>AsyncStore</code> Azure consumer
-  has no async <code>observe</code>/<code>otel</code>/<code>glob</code>/<code>cache</code>/<code>integrity</code>/<code>arrow</code>/<code>parquet</code>/<code>dagster</code>
-  (only <code>aio/ext/write.py</code> ships); reachable only by bridging to sync, forfeiting async
-  streaming. Audit-016 M6 analog; absent from <code>azure.md</code>.</p>
-</li>
-<li>
-<p><strong>L4 — ASYNC-094 cross-loop rule and the <code>_ensure_hns</code> thundering-herd are not
-  surfaced to consumers.</strong> The "one <code>AsyncStore</code> per event loop, never share across
-  loops" constraint (load-bearing for the FastAPI persona) lives only in the spec.
-  Two coroutines on one loop can both pass the <code>_hns_enabled is None</code> check and both
-  fire the account-info probe (<code>aio/_azure.py:243-259</code>) — idempotent (no correctness
-  bug), but a redundant round-trip the AZ-037/ASYNC-094 "race-free between awaits"
-  framing does not cover (the mutation straddles an await).</p>
-</li>
-<li>
-<p><strong>L5 — No connector-pool tuning guidance.</strong> A shared single-store FastAPI
-  deployment funnels all coroutines through one aiohttp connector; the guide gives no
-  guidance on tuning the pool via <code>client_options</code> for high concurrency. By-design;
-  benefits from a live high-concurrency characterisation.</p>
-</li>
-<li>
-<p><strong>L6 — <code>backend="azure"</code> vs <code>"async-azure"</code> drift.</strong> AZ-026 states mapped errors
-  carry <code>backend="azure"</code>, but the async classifier is invoked with
-  <code>backend_name="async-azure"</code>. Spec/code doc drift.</p>
-</li>
-<li>
-<p><strong>L7 — <code>write_atomic</code> streaming chunk-size bound differs across twins.</strong> Sync caps
-  every DFS <code>append_data</code> at <code>_AZURE_BLOCK_SIZE</code> (<code>_azure.py:591</code>); async appends one
-  call per producer chunk, unbounded (<code>aio/_azure.py:653</code>). Documented intentional, but
-  a real behavioral divergence for large async streaming uploads.</p>
-</li>
-<li>
-<p><strong>L8 — Streaming upload is not spooled.</strong> <code>write()</code> passes the async generator
-  straight to <code>upload_blob</code> (no spool-to-temp like Graph); whole-upload retry safety
-  for <code>AsyncIterable</code> content rests entirely on SDK block-level buffering. By-design /
-  cross-backend difference; relevant only under an injected mid-upload transport failure
-  (live-only to characterise).</p>
-</li>
-</ul>
-<hr />
-<h2 id="verified-strengths-checked-not-rubber-stamped">Verified strengths (checked, not rubber-stamped)<a class="headerlink" href="#verified-strengths-checked-not-rubber-stamped" title="Permanent link">&para;</a></h2>
-<ul>
-<li><strong>Twin parity is high.</strong> Identical capability sets (<code>{all} − {SEEKABLE_READ, ATOMIC_MOVE}</code>,
-  <code>_azure.py:51</code> ≡ <code>aio/_azure.py:49</code>); identical move/copy precondition ordering and
-  <code>hdi_isfolder</code> dst-probe logic; byte-identical HNS file-ancestor machinery
-  (<code>_azure.py:1334-1386</code> ≡ <code>aio/_azure.py:1317-1360</code>); identical delete error mapping.</li>
-<li><strong>One structured classifier, no stdlib leak.</strong> Every SDK exception routes through
-  <code>classify_azure_error</code> (<code>_azure_common.py:77</code>), keyed on type + status, never on
-  message strings; the missing-<code>azure-identity</code> case raises <code>BackendUnavailable</code>, not a
-  stdlib error. Graph M7 (stdlib <code>PermissionError</code> leak) does not recur.</li>
-<li><strong><code>WriteResult.size</code> matches spec.</strong> <code>len()</code> for bytes, a byte-counting passthrough
-  for streams, <code>source="native"</code> via the single <code>_build_azure_write_result</code>. No Graph
-  M1-style divergence.</li>
-<li><strong>No M4/M5 doc recurrence.</strong> Both guides are present-tense; every runnable block is
-  sync and API-accurate, and the guide agrees with <code>examples/backends/azure_backend.py</code>.
-  No throw-on-copy-paste.</li>
-<li><strong>HNS-only behaviour is genuinely live-covered.</strong> <code>test_live_hns.py</code> exercises
-  <code>hdi_isfolder</code> directory guards, <code>write_atomic</code> etag normalisation, <code>is_folder</code>/<code>is_file</code>,
-  root <code>get_folder_info</code>, and streaming <code>write_atomic</code> against a real account.
-  <strong>This audit's live battery additionally confirmed:</strong> HNS <code>move(overwrite=True)</code> is a
-  real atomic rename (src removed, dst holds src bytes); <code>overwrite=False</code> raises
-  <code>AlreadyExists</code> on an existing key; <code>write_atomic</code> size/etag/source are correct.</li>
-<li><strong>Bounded memory at volume.</strong> Listings (<code>list_files</code>/<code>list_folders</code>/<code>iter_children</code>)
-  and folder aggregation stream via SDK pagination; uploads stage in bounded ~1 MiB
-  blocks; async byte uploads avoid the materialize anti-pattern.</li>
-<li><strong>The bridge genuinely manufactures thread-safety.</strong> <code>AsyncBackendSyncAdapter</code>
-  serialises every sync caller onto one private daemon-thread loop, loop-confining the
-  async Azure client and satisfying ASYNC-094; no surprise under bridged concurrent load.</li>
-<li><strong>Sync <code>read_seekable</code> is efficient and reachable.</strong> The Store dispatches the
-  <code>_AzureRangeReader</code> override directly (independent of the masked <code>SEEKABLE_READ</code>),
-  so sync <code>ext.arrow</code>/<code>parquet</code> over Azure range-seek rather than spill.</li>
-</ul>
-<hr />
-<h2 id="proposed-backlog-items">Proposed backlog items<a class="headerlink" href="#proposed-backlog-items" title="Permanent link">&para;</a></h2>
-<p>Advisory groupings for the user to accept, split, or decline (per the Audits rule,
-this audit proposes; nothing is filed without sign-off). Routing follows the
-methodology §4 table.</p>
-<h3 id="new-items-proposed">New items (proposed)<a class="headerlink" href="#new-items-proposed" title="Permanent link">&para;</a></h3>
+<h1 id="adr-0042-one-contract-kernel-over-thin-drivers">ADR-0042: One Contract Kernel over Thin Drivers<a class="headerlink" href="#adr-0042-one-contract-kernel-over-thin-drivers" title="Permanent link">&para;</a></h1>
+<h2 id="status">Status<a class="headerlink" href="#status" title="Permanent link">&para;</a></h2>
 <table>
 <thead>
 <tr>
-<th>Group</th>
-<th>Findings</th>
-<th>Scope / files</th>
-<th>Route + suggested disposition</th>
+<th>Field</th>
+<th>Value</th>
 </tr>
 </thead>
 <tbody>
 <tr>
-<td><strong>G1 — Credential ownership + close posture</strong></td>
-<td><strong>H1, M1</strong></td>
-<td><code>_azure_common.py</code> (<code>resolve_credential</code> → track ownership), both <code>close()</code>/<code>aclose()</code>; AZ-029; conformance spine</td>
-<td><strong>H1 is a clear bug (High):</strong> add a <code>created_credential</code> flag so the backend closes only credentials it created; flip the <code># pragma: no cover</code> credential path into a real test. <strong>M1 is a posture decision (Medium):</strong> align Azure+S3 with Graph's terminal close (typed <code>BackendUnavailable</code>, an aclose-terminal <strong>conformance</strong> lane next to <code>test_concurrency.py</code>) <strong>or</strong> bless the divergence and state it as the intended cross-backend contract in AZ-029 / the BK-287 posture family. This is the cross-backend item the BUG-219 trace flagged for ID-219 — decide it here.</td>
+<td>Status</td>
+<td>Proposed</td>
 </tr>
 <tr>
-<td><strong>G2 — Error-mapping completeness</strong></td>
-<td><strong>H2, M2</strong></td>
-<td><code>classify_azure_error</code> (<code>_azure_common.py:104-113</code>); AZ-025 table</td>
-<td>Extend the classifier to type <strong>429/5xx → <code>BackendUnavailable</code></strong> (matching Graph) and decide <strong>412/401</strong> dispositions; reconcile AZ-025 (add the missing rows and/or read <code>error_code</code>). Add a deterministic test for each mapped status (the fall-through is currently <code># pragma: no cover</code>). A live throttle characterisation (which statuses arrive as <code>HttpResponseError</code> vs <code>ServiceResponseError</code>) is a <strong>live-tier</strong> follow-up, milestone-gated — not a per-PR gate.</td>
+<td>Supersedes</td>
+<td>—</td>
 </tr>
 <tr>
-<td><strong>G3 — Seekable-read DX + async ext cliff</strong></td>
-<td><strong>M3, L3, L5</strong></td>
-<td><code>docs-src/guides/backends/azure.md</code>; possibly a cross-backend explanation page shared with Graph L9/M6</td>
-<td>Replace the <code>read_bytes()</code>+<code>BytesIO</code> "seekability" advice with <code>Store.read_seekable()</code>; document the async-native <code>ext.*</code> cliff and the bridged-read <code>TMPDIR</code> spool; add connector-tuning guidance. Consider folding with the Graph L9/M6 item into one cross-backend doc note. <strong>Also the strongest candidate for the companion cloud DX pilot</strong> (the "does the documented story hold" narrative — see routing note below).</td>
+<td>Superseded by</td>
+<td>—</td>
 </tr>
 <tr>
-<td><strong>G4 — WriteResult digest accuracy on HNS</strong></td>
-<td><strong>M4</strong></td>
-<td><code>docs-src/guides/backends/azure.md</code>; optionally the HNS <code>write_atomic</code> path</td>
-<td>Document that HNS <code>write_atomic</code> returns <code>digest=None</code> (the sibling <code>write</code> populates it); or close the gap by populating <code>digest</code> from the post-rename properties when available. Low-risk; docs-first.</td>
-</tr>
-<tr>
-<td><strong>G5 — HNS-detection robustness</strong></td>
-<td><strong>M5</strong></td>
-<td><code>_azure.py:1293-1305</code>; <code>aio/_azure.py:243-259</code>; AZ-006</td>
-<td>Do not cache a <code>False</code> HNS result that came from a <em>transient</em> probe failure (distinguish "probed flat" from "probe errored"); spec the stickiness. Small, independent.</td>
-</tr>
-<tr>
-<td><strong>G6 — Doc/docstring parity + correctness edges</strong></td>
-<td><strong>M6, L1, L2, L4, L6, L7</strong></td>
-<td>both <code>_azure.py</code> docstrings; <code>azure.md</code> Options table; <code>_azure.py:994/:1060</code>; <code>glob</code>; AZ-026</td>
-<td>Add <code>retry</code> to the sync docstring and the guide Options table (+ <code>reject_write_under_file_ancestor</code>); give sync <code>check_health</code> a docstring; normalise paths before the self-op <code>src == dst</code> short-circuit (or document the direct-backend assumption); align sync/async <code>glob</code> error handling; surface the ASYNC-094 cross-loop rule in the guide; fix the <code>backend="azure"</code>/<code>"async-azure"</code> drift. Each is small and independent; split freely.</td>
+<td>Amends</td>
+<td>ADR-0001, ADR-0011, ADR-0012, ADR-0025</td>
 </tr>
 </tbody>
 </table>
-<p><strong>Priority ordering:</strong> G1-H1 (credential bug, security/reliability) → G2 (error
-mapping, high blast-radius under load) → G1-M1 (the cross-backend posture decision)
-→ G3 (consumer-facing DX, cheap) → G4/G5/G6 (docs + correctness edges).</p>
-<h3 id="routing-note-companion-cloud-dx-pilot">Routing note — companion cloud DX pilot<a class="headerlink" href="#routing-note-companion-cloud-dx-pilot" title="Permanent link">&para;</a></h3>
-<p>Per the ID-219 charter, the citizen-dev "does the documented story hold" narratives
-route to the <strong>companion black-box DX suite's cloud DX tier</strong> — the Azure successor
-to the completed Graph pilot (companion B-012 Iteration 3B), tracked in the companion
-repo, <strong>not</strong> here. The cleanest candidates are <strong>M3</strong> (the in-RAM anti-pattern a
-guide-following user actually hits) and <strong>M4</strong> (the <code>digest=None</code> surprise), both
-observable black-box through the public API with a consumer's own creds.</p>
+<p>Proposed by BK-387 with RFC-0017's Open Questions 1, 4, 6 and 7 answered by
+the maintainer. <strong>Accepted in the PR that lands the first backend on this
+design</strong> (RFC-0017 D3 step 1, the kernel over the Memory drivers), not before:
+the design is decided now and proven by its first migration. The amendments
+below take effect on acceptance; until then the four amended records stand
+unchanged.</p>
+<h2 id="context">Context<a class="headerlink" href="#context" title="Permanent link">&para;</a></h2>
+<p><a href="../../audits/audit-021-contract-placement/">Audit-021</a> attributes 45 of the 71
+user-audience defects from v0.28.0 onward to rules stated once and implemented
+per backend class: 35 defects on 11 contract clauses re-applied per class,
+and 10 on the SFTP session lifecycle. The contract is implemented by 13 concrete classes and
+enforced zero times at the boundary every call crosses; the earlier remedies,
+more conformance cells and more spec text, did not close the class.
+<a href="../../rfcs/rfc-0017-contract-kernel-over-thin-drivers/">RFC-0017</a> proposes the
+remedy and carries the design, its per-item assignment of the 35 cluster-A
+defects, and every figure with its derivation. This record decides it.</p>
+<h2 id="decision">Decision<a class="headerlink" href="#decision" title="Permanent link">&para;</a></h2>
+<p>Section references are to RFC-0017, which carries the rationale.</p>
+<ul>
+<li><strong>One kernel implements <code>Backend</code> over a thin <code>Driver</code></strong> (D1, D2). The
+  driver supplies wire primitives, declared capabilities and a classifier.
+  The kernel owns the cross-cutting clauses and one error-mapping choke
+  point. Direct <code>Backend</code> subclassing keeps working. <em>Reverse if</em>
+  kernel-owned defects recur at the per-class rate audit-021 measured.</li>
+<li><strong>The kernel is written once in async</strong> (D6, Open Question 1). <code>unasync</code>
+  generates the sync surface both runtimes share. A small hand-written sync
+  layer adds what async lacks: <code>read_seekable</code>, <code>open_atomic</code> and a <code>BinaryIO</code>
+  <code>read</code>. <em>Reverse if</em> the generated part needs hand edits.</li>
+<li><strong>Every remote driver owns its lifecycle through a <code>Session</code></strong> (D5). The
+  <code>Session</code> owns connect, connect retry where the wire separates connect from
+  operation, liveness and invalidation behind one
+  <code>run(op)</code>, and the kernel runs every remote operation through it. Local and
+  Memory have none. <em>Reverse if</em> a driver's lifecycle cannot be separated
+  from its operations.</li>
+<li><strong>One driver per service</strong> (D4). S3's is the boto3 driver, registered as
+  <code>"s3"</code>; s3fs and PyArrow's S3 filesystem stop being backend layers.
+  Azure's is async. Sync Azure callers get a sync driver generated from it,
+  with the stream primitives hand-written, and it replaces the sync
+  <code>AzureBackend</code>. <em>Reverse if</em> the boto3 driver cannot reach D4's option
+  parity, or the generation cannot map Azure's two SDK surfaces.</li>
+<li><strong>Classification stays in each driver</strong> (Open Question 6). The kernel calls
+  <code>classify(exc, op, key)</code> at its choke point, then sets <code>path</code> and
+  <code>backend</code> and guarantees a message. <em>Reverse if</em> mapping-content defects
+  recur across drivers.</li>
+<li><strong><code>max_depth</code> applies only when <code>recursive</code></strong> (Open Question 4). This is
+  DEPTH-003's reading, the one <code>BackendContract.dfy</code> verifies. ASYNC-014's
+  contrary wording (BUG-240) is not the contract.</li>
+<li><strong>The formal model covers the root rule, the close posture and the absent
+  container</strong> (Open Question 7). BE-029, BE-020 and BE-021 § Reach become
+  verified clauses before kernel code.</li>
+</ul>
+<p>The migration order, retirement gates and benchmarks are process, and they
+live in D3 and D8.</p>
+<h2 id="amendments-on-acceptance">Amendments on acceptance<a class="headerlink" href="#amendments-on-acceptance" title="Permanent link">&para;</a></h2>
+<ul>
+<li><strong><a href="../0001-architecture-store-registry-backends/">ADR-0001</a></strong>, <em>Backend
+  (ABC)</em>: the backend layer splits in two, the kernel implementing the
+  contract and the driver carrying the storage-specific wire. Its consequence
+  "adding a backend = implement the ABC" becomes "implement a <code>Driver</code>";
+  subclassing <code>Backend</code> directly stays valid and is no longer the documented
+  route.</li>
+<li><strong><a href="../0011-retry-per-backend-native/">ADR-0011</a></strong>, <em>retry is a transport
+  concern</em>: for every remote driver whose wire separates connect from
+  operation, the <strong>connect</strong> budget moves to its <code>Session</code> (RFC-0017 D5);
+  per-operation retry stays each driver's native
+  mechanism, as that record decides.</li>
+<li><strong><a href="../0012-async-store-backend-api/">ADR-0012</a></strong>, <em>separate async types</em> and
+  its dismissal of Option E: the types stay separate, and the dismissal is
+  narrowed rather than reversed. By driver kind, the sync surface is:</li>
+<li><strong>sync drivers</strong> (Memory, Local, SFTP, the SQL pair, S3, HTTP; Memory
+    also keeps an async driver of its own): served by the sync kernel, whose
+    shared surface is generated as native sync source from the async kernel
+    and whose sync-only surface is hand-written (the Decision above);</li>
+<li><strong>async drivers with a generated sync twin</strong> (Azure): served by that
+    twin, generated except for its stream-returning primitives, through the
+    sync kernel, with no runtime wrapper;</li>
+<li><strong>async-only drivers</strong> (Graph): reached by sync callers through
+    <code>AsyncBackendSyncAdapter</code> over the async kernel, the runtime wrapper
+    ADR-0012's Option E describes, as they are today.</li>
+</ul>
+<p>Async-first source is taken for the kernel and the Azure driver. Option E's
+  runtime wrapper stays where ADR-0025 already uses it.
+- <strong><a href="../0025-async-to-sync-backend-adapter/">ADR-0025</a></strong>, its scope: the
+  adapter stays the sync route for async-only backends (Graph), and is not the
+  route for Azure, which gets a generated sync driver. Its capability
+  translation is unchanged. The "reverse if a native async seekable-read op is
+  added" does not fire, because <code>get_range</code> is a driver primitive and the
+  async surface gains no seekable-read operation.</p>
+<h2 id="consequences">Consequences<a class="headerlink" href="#consequences" title="Permanent link">&para;</a></h2>
+<ul>
+<li><strong>Positive:</strong> each contract clause is implemented once, so a clause fixed is
+  fixed for every migrated class; RFC-0017 assigns 10 of cluster A's 35 items
+  to the kernel outright and 13 of the 71 to the session layer.</li>
+<li><strong>Positive:</strong> hand-written concrete classes go from 13 to 10 (the sync
+  Azure driver, generated but for its stream primitives, comes on top of
+  them), and adding a backend means
+  writing wire primitives and a classifier rather than 21 methods.</li>
+<li><strong>Negative:</strong> a kernel defect regresses every migrated class at once. The
+  formal model bounds it only for the clauses it covers; how migration
+  contains the rest is RFC-0017 D3's.</li>
+<li><strong>Negative:</strong> a code-generation step, with its committed output and a drift
+  check, becomes part of the build of the sync kernel and the sync Azure
+  driver.</li>
+<li><strong>Negative:</strong> users of <code>S3Backend</code> and <code>S3PyArrowBackend</code> by class name, and
+  <code>unwrap(s3fs.S3FileSystem)</code> callers, break at D3 step 2; <code>ext.arrow</code> loses
+  its Tier-1 native probe on S3 there. Users of sync <code>AzureBackend</code> by class
+  name break at D3 step 4 unless the generated replacement keeps the name,
+  which that step decides.</li>
+<li><strong>Neutral:</strong> <code>Store</code>, <code>Registry</code>, the error hierarchy and capabilities keep
+  their interfaces.</li>
+</ul>
 
 
 
@@ -11668,7 +11175,7 @@ observable black-box through the public API with a consumer's own creds.</p>
       <nav class="md-footer__inner md-grid" aria-label="Footer" >
         
           
-          <a href="../audit-018-ci-operations/" class="md-footer__link md-footer__link--prev" aria-label="Previous: 018: CI Operations: scheduled-guard notification surfaces">
+          <a href="../0041-done-register-links-dossiers/" class="md-footer__link md-footer__link--prev" aria-label="Previous: 0041: A Done Entry Links Its Dossier Instead of Restating It, and the Migration Opt-Out Is Retired">
             <div class="md-footer__button md-icon">
               
               <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M20 11v2H8l5.5 5.5-1.42 1.42L4.16 12l7.92-7.92L13.5 5.5 8 11z"/></svg>
@@ -11678,20 +11185,20 @@ observable black-box through the public API with a consumer's own creds.</p>
                 Previous
               </span>
               <div class="md-ellipsis">
-                018: CI Operations: scheduled-guard notification surfaces
+                0041: A Done Entry Links Its Dossier Instead of Restating It, and the Migration Opt-Out Is Retired
               </div>
             </div>
           </a>
         
         
           
-          <a href="../audit-020-sftp-roundtrips-correctness/" class="md-footer__link md-footer__link--next" aria-label="Next: 020: SFTP backend correctness (BK-313 / PR #910) round-trip-cut review">
+          <a href="../../audits/" class="md-footer__link md-footer__link--next" aria-label="Next: Audits">
             <div class="md-footer__title">
               <span class="md-footer__direction">
                 Next
               </span>
               <div class="md-ellipsis">
-                020: SFTP backend correctness (BK-313 / PR #910) round-trip-cut review
+                Audits
               </div>
             </div>
             <div class="md-footer__button md-icon">
