@@ -254,9 +254,13 @@ other 6 public members (`name`, `capabilities`, `unwrap`, `native_path`,
   through `driver.classify(exc, op=..., key=...)`; a `RemoteStoreError`
   already typed passes through untouched (BUG-293); and the kernel
   post-processes what comes back, setting `path` and `backend` (ERR-001) and
-  synthesising a message from the exception class when the driver returned a
-  blank one (ERR-009), which is the "synthesise" arm of BUG-276's open
-  decision and is applied only if that decision goes that way;
+  synthesising a message from the exception class when what comes back is
+  blank (ERR-009). That floor holds under either arm of BUG-276's open
+  decision: under "synthesise" it is the fix itself, and under "classify"
+  the driver's classifier returns a typed error carrying its own message and
+  the floor never fires. What the decision leaves open is which arm the five
+  base-class sites take, which is driver content, not whether the kernel
+  guarantees ERR-009;
 - the absent-container rule applied per operation scope, not per exception:
   the tolerant answers BE-021 § Reach decides are given only for the
   operations it names, and identity-scope calls (`write`, `probe`, drive-id
@@ -336,8 +340,12 @@ its pinning test"; its dossier: "Both go red when this lands, by design");
 the BUG-240 and BUG-292 decisions change cells on the classes that
 follow the losing reading; Graph's `get_folder_info().modified_at` differs
 from S3 and SQL and the kernel picks one aggregation; and the conformance
-registry (`tests/backends/fixtures/registry.py`) registers drivers rather than
-classes. The capability enum (CAP-001), the quality-flag rule (CAP-007) and
+registry (`tests/backends/fixtures/registry.py`) registers drivers beside
+`Backend` instances, a driver fixture running through the kernel and a
+direct-subclass fixture staying runnable as today (`DafnyOracleBackend` is
+`[fixture.dafny_oracle]` in `fixtures.toml`), which is what D2's
+"keep passing the conformance suite" and D7's oracle rest on. The capability
+enum (CAP-001), the quality-flag rule (CAP-007) and
 the declaration clause (SEEK-001) do not change, because D1 leaves
 capabilities declared. The three retiring classes are never migrated: each is deleted in
 the PR that lands its replacement (D8 step 3), so no release ships both, and
@@ -495,9 +503,9 @@ a single implementation to hold to.
 
 | Clause | Model change | Effort | Recommendation |
 |---|---|---|---|
-| Root rule, BE-029: which spellings address the root, decided from the key | a pure predicate over the key, plus preconditions on the write-shaped operations | S | extend; the clause with the most items and the cheapest proof |
+| Root rule, BE-029: which spellings address the root, decided from the key | a pure predicate over the key, plus preconditions on the write-shaped operations | S | extend; the clause with the most items and the cheapest proof, and the verified reference ID-251's `./` decision lacks |
 | Close posture, BE-020 | a `closed` flag and a postcondition per operation | S | extend |
-| Absent container, BE-021 § Reach | the store state becomes optional and most postconditions gain a branch; the refinement follows | M | extend; it also gives BK-345, ID-244 and ID-251 the verified reference they lack |
+| Absent container, BE-021 § Reach | the store state becomes optional and most postconditions gain a branch; the refinement follows | M | extend; it also gives BK-345 and, through the seeding hook BK-345 consumes, ID-244 the verified reference they lack |
 | First-page listing bound | pagination in the model | L | do not; the fake-driver test pins it more cheaply |
 | `write_atomic`, BE-010 and BE-011, which D2 makes kernel-owned over `put_is_atomic`, `open_write` and `rename` | a `WriteAtomic` method whose postcondition equals `write`'s, plus a two-state atomicity property over a wire the model does not have | M | do not; atomicity is a property of the driver's wire or of the temp-and-promote sequence, and § Testing pins the synthesis against the fake driver |
 | Error attributes and messages, ERR-* | strings | — | do not |
@@ -569,7 +577,7 @@ by-hand reading of the register entries and is disputable item by item.
 | **R2 removed by retirement**: only on the s3fs lanes, which D3 retires unmigrated | BUG-255 (mid-listing 404 swallowed on the s3fs lanes), 242 (403 read as absence on the s3fs lanes) | 2 |
 | **R3 split**: the invocation or the guarantee is the kernel's, the verdict or content is the driver's | BUG-264 (message guarantee kernel; arm content driver), BK-358 (stream catch set kernel via `stream_catch`; `BackendUnavailable` verdict driver), BK-359 (message and log record kernel; stall detection driver), BK-266 (self-op copy and the auth leak kernel; probe scope driver), BK-298 (use-after-close kernel; credential ownership driver), BUG-248 (BE-021 § Reach applied per `Op` by the kernel; the identity-scope verdict the driver's, per ADR-0038) | 6 |
 | **R4 driver-kept**: classifier content, probe content or resource logic | BUG-275 (errno arm), BK-316 (non-OpenSSH shapes), BUG-231 (a probe that touched nothing; `probe()` is now required but what it touches is the driver's), 222 (429/5xx/401 rows), BK-263 (credential in a message), BK-306 (session release on close), BUG-256 (what `probe()` touches), 253 (Graph's session-create 404 under a file ancestor, with `parents == "implicit"`) | 8 |
-| **R5 needs a decision first**: the item carries an open decision in `BACKLOG.md` or depends on an open question here | BUG-240 (OQ4), 292 (BE-008's fail-open choice), 276 (synthesise or classify; the kernel's message guarantee is the first arm), 293 (which arms receive a typed error), 245 (construction; OQ5), 257 (page boundary; OQ2) | 6 |
+| **R5 needs a decision first**: the item carries an open decision in `BACKLOG.md` or depends on an open question here | BUG-240 (OQ4), 292 (BE-008's fail-open choice), 276 (synthesise or classify at the five base-class sites; the kernel's ERR-009 floor holds under both, so the decision is the driver's arm content, as for BUG-264 in R3), 293 (which arms receive a typed error), 245 (construction; OQ5), 257 (page boundary; OQ2) | 6 |
 | **R6 session (D5)** | BUG-279 (`unwrap` outside the mapper), 265 (connect-time shapes), 273 (connect-time context) | 3 |
 
 Ten of 35 is what the kernel alone removes; with D5's three and the two
@@ -677,8 +685,10 @@ it.
   `write_atomic` and `move` syntheses over each combination of
   `put_is_atomic`, `open_write`, `rename` and `SupportsAtomicMove` the fake
   driver can present; the driver half
-  stays with the per-driver suites. BK-345, ID-244 and ID-251 reduce to
-  driver cells. The conformance suite gates every migration with the cell
+  stays with the per-driver suites. BK-345 and ID-244 reduce to driver
+  cells; ID-251's widened root spellings become fake-driver kernel cells,
+  since R1 makes the root rule the kernel's. The conformance suite gates
+  every migration with the cell
   changes D3 enumerates.
 - **Amendments on acceptance** (D8 step 1), each an obligation this RFC
   creates and none left to D3: a benchmark acceptance band for D8 step 3
