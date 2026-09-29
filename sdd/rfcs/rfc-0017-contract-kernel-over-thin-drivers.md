@@ -309,8 +309,8 @@ disagree:
 | 6 | `SFTPBackend` | migrate, together with D5 |
 | 7 | `GraphBackend` | migrate |
 | 8 | `ReadOnlyHttpBackend` | migrate |
-| after 2 | `S3Backend`, `S3PyArrowBackend` | retire, unmigrated, behind D8's deletion gate; `_S3Base` goes with them |
-| after 4 | `AzureBackend` (sync) | retire, unmigrated, **conditional on Open Question 1**, behind the same gate |
+| in 2 | `S3Backend`, `S3PyArrowBackend` | retire, unmigrated, in the step-2 PR behind D8's gate; `_S3Base` goes with them |
+| in 4 | `AzureBackend` (sync) | retire, unmigrated, **conditional on Open Question 1**, in the step-4 PR behind the same gate |
 
 **The suite is not "unchanged"; the cells that change are these, and they
 are settled before step 1.** AZ-025's blank-message clause and its pinning
@@ -320,10 +320,10 @@ follow the losing reading; Graph's `get_folder_info().modified_at` differs
 from S3 and SQL and the kernel picks one aggregation; and the conformance
 registry (`tests/backends/fixtures/registry.py`) registers drivers rather than
 classes. CAP-001 and SEEK-001 do not change, because D1 leaves capabilities
-declared. The three retiring classes stay hand-written `Backend` subclasses
-until their gate passes, coexist with the kernel for at least two releases,
-and are outside the graduation measurements. Nothing above `Backend` changes
-at any step.
+declared. The three retiring classes are never migrated: each is deleted in
+the PR that lands its replacement (D8 step 3), so no release ships both, and
+they are outside D8's measurement. Nothing above `Backend` changes at any
+step.
 
 ### D4. One driver per service
 
@@ -477,21 +477,23 @@ accepted inverts it. So:
    answers.
 2. **Implement** D3 in order. Each migration PR is gated by the conformance
    suite with the enumerated cell changes and by the per-driver suite.
-3. **Retire** on a gate per retiring class, not on a date: the class is
-   deleted only when (a) two releases have shipped with its replacement
-   registered under the same type string, (b) the throughput and seekable-read
-   benchmarks (`benchmarks/test_throughput.py`, `test_seekable.py`,
-   `bench_pyarrow_tier1.py`, `bench_azure_pyarrow.py`) show the replacement
-   within the run-of-record noise band `comparative.md` states, and (c) a
-   re-audit by audit-021's method over the migrated classes, classified by a
-   reviewer other than the implementer, finds no kernel-owned item filed
-   against them in the window. Until the gate passes the class stays in the
-   tree and registered, so rollback is re-pointing the type string, and a
-   miss reopens a `BK-` item to decide whether the kernel or the retirement
-   is at fault. "Deprecation" here means that state, since the repo has no
-   deprecation cycle (`docs-src/reference/migration.md`: "Pre-v1: removed
-   without a deprecation cycle"), and this RFC introduces one for these three
-   classes only.
+3. **Retire** in the PR that lands the replacement, not on a date or a
+   release count: the retiring class is deleted in the same PR that registers
+   its replacement under the same type string, once (a) the replacement
+   passes the conformance suite with D3's enumerated cell changes and its
+   per-driver suite, and (b) the throughput and seekable-read benchmarks
+   (`benchmarks/test_throughput.py`, `test_seekable.py`,
+   `bench_pyarrow_tier1.py`, `bench_azure_pyarrow.py`) show it within the
+   run-of-record noise band `comparative.md` states. The repo's policy
+   applies unchanged (`docs-src/reference/migration.md`: "Pre-v1: removed
+   without a deprecation cycle"): the class is gone in the next release, the
+   migration guide names the replacement type string, and rollback is a
+   revert of that PR.
+4. **Measure** after the last D3 step: a re-audit by audit-021's method over
+   the items filed since step 2 began, classified by a reviewer other than
+   the implementer. A kernel-owned item found there reopens a `BK-` item to
+   decide whether the kernel or the driver is at fault; the audit is the
+   RFC's success measurement, not a gate on any deletion.
 
 ### What each cluster-A bug becomes
 
@@ -574,14 +576,16 @@ it.
   its check script and the conformance registry move to drivers, and direct
   subclassing is deprecated as the documented route, so the migration guide
   owes a section for backend authors. Breaking for users of `S3Backend`,
-  `S3PyArrowBackend` and sync `AzureBackend` as class names once their D8
-  gate passes, and for `unwrap(s3fs.S3FileSystem)` callers at that point.
-  `Store` callers see no change in interface.
+  `S3PyArrowBackend` and sync `AzureBackend` as class names in the release
+  that carries D3 step 2 and step 4 respectively, and for
+  `unwrap(s3fs.S3FileSystem)` callers at step 2. `Store` callers see no
+  change in interface.
 - **Performance:** the kernel issues the same probes the per-backend code
   issues today (one `stat` or one `list_page(limit=1)` on the error path; the
   file-ancestor walk only when opted in; `ensure_parents` only for explicit
   parents), and the S3 driver drops the s3fs layer. Two retirements change
-  data paths and are measured under D8's gate before they are announced:
+  data paths and are measured under D8's benchmark gate in the PR that
+  retires them:
   - `S3PyArrowBackend`: reads move from PyArrow's C++ S3 filesystem to the
     boto3 driver.
   - sync `AzureBackend`, if OQ1 takes the adapter route: the sync class never
@@ -600,9 +604,8 @@ it.
 - **Risks:** a kernel defect is a regression on every migrated class at once.
   BUG-249 reached one class; its kernel equivalent reaches every driver. That
   is the price of applying a rule once, and it is bounded by D3 migrating one
-  class per PR behind the suite and by D8 keeping retiring classes in the
-  tree until their gate passes; the formal layer bounds only the clauses it
-  models (D7). The second risk is the fake driver's reach: it exercises
+  class per PR behind the suite, each PR revertable on its own; the formal
+  layer bounds only the clauses it models (D7). The second risk is the fake driver's reach: it exercises
   kernel × failure mode, not driver × wire semantics, so BUG-223's HNS probe,
   BK-316's non-OpenSSH shapes and S3's lack of a rename are driver defects
   the kernel's test cannot see, and the per-driver suites keep them.
