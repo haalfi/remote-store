@@ -3,11 +3,11 @@
 ## Status
 
 Draft. Filed from [audit-021](../audits/audit-021-contract-placement.md) at
-the user's direction. Deliberately untracked by a backlog item: `CLAUDE.md`
-§ Audits leaves the disposition of an audit's proposals to the user, and the
-item is minted with that disposition; RFC-0015 and RFC-0016 were tracked
-because their work had started. The lifecycle this RFC follows, and what it
-amends on acceptance, are in D8 and § Impact.
+the user's direction. Tracked by BK-387, which owns the acceptance step D8
+describes; the item was minted with the disposition of the audit's proposals
+rather than at filing, since `CLAUDE.md` § Audits leaves that disposition to
+the user. The lifecycle this RFC follows, and what it amends on acceptance,
+are in D8 and § Impact.
 
 **Date:** 2026-09-28. Every figure below is pinned to `8fa22d6` and is either
 quoted from audit-021 with its derivation, or names its command here. The tree

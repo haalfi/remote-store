@@ -273,6 +273,15 @@ failure it was.
   the catch, warn, or add a strict mode; BE-008 must say which.
   Detail: [dossier](backlog/bug-292-ancestor-gate-fails-open.md)
 
+- [ ] **BK-387 — RFC-0017 is Draft with four open questions gating acceptance, and no item owns answering them**
+  spec: BE-021, BE-029, BE-020 · effort: L · audience: library.maintainer, contributor.process
+  Audit-021 attributes 45 of 71 user-audience defects to rules re-implemented
+  per class, 35 contract clauses and 10 the SFTP session lifecycle; RFC-0017
+  proposes one kernel over thin drivers plus a session layer and states its
+  acceptance step (D8 step 1), but nothing owns it. Open decision: OQ1 (async
+  or sync kernel), OQ4 (which contradictions first), OQ6 (`classify` or a wire signal), OQ7 (Dafny extensions).
+  Detail: [dossier](backlog/bk-387-rfc-0017-acceptance.md)
+
 ---
 
 <a id="correct-and-proven"></a>
