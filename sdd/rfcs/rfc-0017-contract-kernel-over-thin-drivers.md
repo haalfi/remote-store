@@ -70,7 +70,7 @@ arms in the backends, was deferred and never built. The second prescribed
 tightened clauses, and BE-021 reached 497 lines; the conformance suite reached
 323 test functions. Cluster A still produced 35 defects in six releases, 13 of
 them closed in v0.31.0 alone (audit-021 § Summary carries the per-release
-series and its cascade confound). A test fails only on the cell it covers, and
+series and its review-chain confound). A test fails only on the cell it covers, and
 the contract-completeness research's own estimate of the product
 (`research-backend-contract-completeness.md` § 3) was ~1,890 cells at 7
 backends and 18 methods, ~3,510 by the same formula at 13 classes, treating
@@ -277,19 +277,22 @@ every caller and every test names; the kernel is one concrete subclass.
 Subclassing `Backend` directly stays valid and keeps passing the conformance
 suite; it is deprecated as the way to add a backend, not removed. The
 consequences for the in-tree subclasses that are not among the 13, enumerated
-by `rg '^class \w+\((Backend|AsyncBackend)\)' src tests examples` (the
-indented fake in `tests/test_info.py` is outside that regex and unaffected):
+by `rg '^class \w+\(.*\b(Backend|AsyncBackend)\b' src tests examples`: 21
+matches, of which 9 are concrete backends (the other 4 of the 13 subclass
+`_S3Base` or `_SQLAlchemyBaseBackend`) and these 12 are not (the indented
+fake in `tests/test_info.py` is outside that regex and unaffected):
 `_S3Base` retires with its two lanes (D4); `_SQLAlchemyBaseBackend` becomes
 the shared part of the two SQL drivers; `AsyncBackendSyncAdapter(Backend)`
 and `SyncBackendAdapter(AsyncBackend)` stay direct subclasses, since each is
 the other runtime's face of a backend and not a backend of its own (D6
 decides whether the first also becomes the sync kernel over an async driver);
 `DafnyOracleBackend` stays a direct subclass by design (D7); the fake in
-`tests/ext/test_arrow.py` and the doubles under `tests/aio/` stay as they
-are; `RedisBackend` in `examples/snippets/custom_backend_guide.py` is
-rewritten as a driver, and `scripts/check_custom_backend_guide.py` (BK-320),
-which gates the guide against `Backend.__abstractmethods__`, is re-pointed at
-`Driver`.
+`tests/ext/test_arrow.py`, the two fakes in
+`tests/scripts/test_dafny_classorder.py` and the three doubles under
+`tests/aio/` stay as they are; `RedisBackend` in
+`examples/snippets/custom_backend_guide.py` is rewritten as a driver, and
+`scripts/check_custom_backend_guide.py` (BK-320), which gates the guide
+against `Backend.__abstractmethods__`, is re-pointed at `Driver`.
 
 ### D3. Migration, one class at a time, with the suite as oracle
 
@@ -409,9 +412,11 @@ machinery. Open Question 1.
 
 `sdd/formal/BackendContract.dfy` states and verifies the precondition and
 type-mismatch clauses (BE-004 to BE-019, BE-021's canonical rows, CAP-004,
-the `WR-*` write-result clauses; the Dafny-tagged IDs `check_formal_trace.py`
-lists), `DepthCounting.dfy` the `max_depth` algorithm (DEPTH-001, DEPTH-003),
-and `ResourceSafety.dfy` acquire-then-wrap (SIO-001, SIO-008). It does **not**
+the `WR-*` write-result clauses, DEPTH-003's inclusive `max_depth` filter and
+SIO-008's seekability flag; the Dafny-tagged IDs `check_formal_trace.py`
+lists), `DepthCounting.dfy` the `max_depth` algorithm (DEPTH-001), and
+`ResourceSafety.dfy` acquire-then-wrap (SIO-001); the file per ID is where
+its `@spec` tag sits, by `rg -n '@spec (DEPTH|SIO)' sdd/formal`. It does **not**
 model the root rule (BE-029), the close posture (BE-020), the error
 attributes and messages (ERR-*), listing pages, or the absent container:
 spec 003 (line 548) records that the model "models the store as a map that
@@ -433,8 +438,8 @@ Python class, so there is no refinement target to move.
 
 **Extend the model to the clauses it lacks; do not retarget it at the
 kernel.** The formal layer is 3,826 lines across four files (`wc -l
-sdd/formal/*.dfy`): the contract is 1,242 lines with 41 declarations, and its
-`MemoryBackend` refinement alone is 1,885. Retargeting that refinement at
+sdd/formal/*.dfy`): the contract is 1,242 lines, and its `MemoryBackend`
+refinement alone is 1,885. Retargeting that refinement at
 "kernel over an abstract driver" would mean modelling wire failures and
 operation scopes as nondeterministic oracles, which is where the model would
 grow fastest and prove least: which paramiko shape means the connection died,
@@ -462,9 +467,12 @@ kernel encodes one answer per clause and a Dafny postcondition is the
 sharpest statement of that answer; written after the kernel they would only
 ratify whatever it did. Two practicalities: `verify-formal` runs in CI only
 when `sdd/formal` or `sdd/specs` change (`ci.yml`'s `FORMAL_PAT`) and is a
-required job, and `check_dafny_twin_parity.py`, which holds 17 members in
-lockstep between the two models, needs the new members added on both sides.
-Open Question 7 asks whether this recommendation is accepted.
+required job, and `check_dafny_twin_parity.py`, which holds the two models'
+shared members in lockstep (its output at `8fa22d6`: "17 member(s) in
+lockstep, 2 declared divergence(s)", the 19 its own comment counts per
+class), needs the new members added on both sides. Open Question 7 asks
+whether this recommendation is accepted, and D8 step 1 lists it among the
+questions answered before acceptance.
 
 ### D8. Lifecycle: accept the design, gate the deletions
 
@@ -472,10 +480,11 @@ Open Question 7 asks whether this recommendation is accepted.
 that order, and an RFC that deprecates and deletes classes before it is
 accepted inverts it. So:
 
-1. **Accept** this RFC as an ADR once Open Questions 1, 4 and 6 are answered
-   and the amendments listed under § Impact are drafted; nothing under D3
-   starts before that. Acceptance is of the design, D1 to D7 plus those
-   answers.
+1. **Accept** this RFC as an ADR once Open Questions 1, 4, 6 and 7 are
+   answered and the amendments listed under § Impact are drafted; nothing
+   under D3 starts before that. Acceptance is of the design, D1 to D7 plus
+   those answers; OQ7 is in the list because D7's extensions land in this
+   step.
 2. **Implement** D3 in order. Each migration PR is gated by the conformance
    suite with the enumerated cell changes and by the per-driver suite.
 3. **Retire** in the PR that lands the replacement, not on a date or a
@@ -691,7 +700,8 @@ it.
    pagination, messages, or the kernel-over-driver shape. The open part is
    whether the formal layer takes the M-sized absent-container change on, and
    whether the additions go into the existing contract or into a module
-   refined from it, as `DepthCounting.dfy` is for DEPTH-001.
+   refined from it, as `DepthCounting.dfy` is for DEPTH-001. Decide before
+   acceptance.
 
 ## References
 

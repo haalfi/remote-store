@@ -34,9 +34,12 @@ public-method bodies in the 12 sync backend modules alone, and nothing at the
 more spec text, were both applied by 2026-04, and cluster A's closed members
 by release since then, from the appendix's *Section* column, run Unreleased 1,
 v0.32.0 0, v0.31.0 13, v0.30.0 2, v0.29.1 0, v0.29.0 4, v0.28.0 2: not a flat
-or rising series but one spike, and 8 of the 13 in v0.31.0 are two review
-cascades (BUG-243 to 246, 247, 248; BK-354 to 358, 359, 265, 275), which is the
-detection confound § H-1 item 3 states. What the series does support is that
+or rising series but one spike, and 9 of the 13 in v0.31.0 sit on two review
+chains in the appendix's *Finder* column: BUG-243 and the three caught by it
+(BUG-246, 247, 248), and the five whose finder is the review or closing pass
+of an earlier item in one chain (BK-358 from BK-355, BK-359 from BK-356,
+BUG-264 and 265 from BK-359, BUG-275 from BUG-265), which is the detection confound
+§ H-1 item 3 states. What the series does support is that
 the class did not close: four of the six releases and the Unreleased stub have
 cluster-A members, and the two releases with none (v0.32.0, v0.29.1) hold five
 entries, all cluster D. Eight of the 71
