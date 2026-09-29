@@ -46,8 +46,8 @@ defects, and every figure with its derivation. This record decides it.
   `BinaryIO`, since the async ABC has no such methods and streams an iterator.
   Async-native drivers stay first-class. *Reverse if* the generated part needs
   hand edits, which would make it a second hand-maintained kernel.
-- **A session layer owns the connection lifecycle** (RFC-0017 D5, audit-021
-  H-2). A `Session` owns connect, the connect-retry budget, liveness and
+- **A session layer owns the connection lifecycle** (RFC-0017 D5). A
+  `Session` owns connect, the connect-retry budget, liveness and
   dead-client invalidation behind one `run(op)` entry. SFTP and Graph are its
   users; the SQL drivers are not. *Reverse if* SFTP's driver shows the
   lifecycle cannot be separated from its operations.
