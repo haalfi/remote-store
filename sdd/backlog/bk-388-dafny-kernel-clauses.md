@@ -9,6 +9,13 @@ was answered "extend all three"
 ([ADR-0042](../adrs/0042-contract-kernel-over-thin-drivers.md), Proposed).
 RFC-0017 D7 carries the reasoning and the table; not restated here.
 
+**Reach.** Of RFC-0017's 10 R1 (kernel-owned) items, D7 counts eight on clauses the
+model omits. This item covers six of them: the root rule for BUG-259, 247,
+254 and 260, and the absent container for BUG-246 and 243. The other two,
+BUG-249 and 280, breach the never-leak invariant on listings, which D7 leaves
+unmodelled, as it does the first-page bound. The close posture carries no R1
+item; it is in scope because the kernel encodes it.
+
 **What it owes, placed as the OQ7 answer states:**
 
 | Clause | Where | Shape (D7's table) |

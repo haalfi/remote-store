@@ -66,9 +66,12 @@ phases:
         section: "ListFiles postconditions"
         read_type: verify
         extract: >-
-          `rg -n 'DEPTH-003' sdd/formal/BackendContract.dfy`: the ListFiles
-          postcondition tagged DEPTH-003 constrains `!recursive` to depth 0,
-          so DEPTH-003's reading is the verified one.
+          `rg -n -A 2 'recursive=false|DEPTH-003' sdd/formal/BackendContract.dfy`:
+          ListFiles constrains `!recursive` to depth 0 (tagged BE-014) and
+          applies the max_depth filter only under `recursive` (tagged
+          DEPTH-003), so DEPTH-003's reading is the verified one. First
+          recorded with the depth-0 clause attributed to the DEPTH-003 tag;
+          PR #1045 round 1 corrected the attribution.
         outcome: ok
       - file: sdd/backlog/bug-276-empty-base-class-message.md
         section: "(full)"

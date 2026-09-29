@@ -277,34 +277,34 @@ failure it was.
   spec: BE-021, BE-029, BE-020 · effort: L · audience: library.maintainer, contributor.process
   Audit-021 attributes 45 of 71 user-audience defects to rules re-implemented
   per class, 35 contract clauses and 10 the SFTP session lifecycle; RFC-0017
-  proposes one kernel over thin drivers plus a session layer and states its
-  acceptance step (D8 step 1), but nothing owns it. Open decision: OQ1 (async
-  or sync kernel), OQ4 (which contradictions first), OQ6 (`classify` or a wire signal), OQ7 (Dafny extensions).
+  proposes one kernel over thin drivers plus a session layer. OQ1, 4, 6 and 7
+  are answered in the RFC and ADR-0042 is Proposed; BK-388 to BK-390 carry the
+  rest. Open decision: none.
   Detail: [dossier](backlog/bk-387-rfc-0017-acceptance.md)
 
 - [ ] **BK-388 — The Dafny model lacks the root rule, the close posture and the absent container that RFC-0017's kernel encodes**
   spec: BE-029, BE-020, BE-021 · effort: M · audience: library.maintainer
-  `BackendContract.dfy` models none of BE-029, BE-020 or BE-021 § Reach, the
-  clauses behind 8 of RFC-0017's 10 kernel-owned items. ADR-0042 (Proposed)
+  `BackendContract.dfy` models none of BE-029, BE-020 or BE-021 § Reach; the
+  first and last sit behind 6 of RFC-0017's 10 kernel-owned items. ADR-0042 (Proposed)
   extends it before kernel code, placed per RFC-0017's Open Question 7 answer,
   gated by `verify-formal` and `check_dafny_twin_parity.py`. Open decision:
   none on scope; the model shape of the absent-container branch is the work.
   Detail: [dossier](backlog/bk-388-dafny-kernel-clauses.md)
 
 - [ ] **BK-389 — No backend runs on RFC-0017's kernel, so ADR-0042 stays Proposed**
-  spec: BE-021, BE-029, BE-020, ERR-001, ERR-009 · effort: L · audience: library.maintainer, user.api_docs, contributor.process
+  spec: BE-021, BE-029, BE-020, ERR-001, ERR-009, DEPTH-003 · effort: L · audience: library.maintainer, user.api_docs, contributor.process
   ADR-0042 is accepted only with the first backend on the new design: D3
   step 1, the async kernel with its `unasync` sync twin over the two Memory
-  drivers. That PR also lands the spec 003/005 placement text, the
+  drivers. That PR also lands the step-1 spec amendments (003, 005, 029, 037), the
   custom-backend guide as a driver, its check script and the homepage snippet.
   Depends on BK-388. Open decision: none; RFC-0017 D1 to D7 fix the shape.
   Detail: [dossier](backlog/bk-389-kernel-step-1-memory.md)
 
-- [ ] **BK-390 — RFC-0017's spec amendments beyond spec 003 and 005 have no owner once BK-387 closes**
-  spec: SIO-008, SEEK-004, SEEK-006, DEPTH-003, PING-011, SFTP-010, GR-039 · effort: M · audience: contributor.process
-  RFC-0017 § Impact lists amendments to specs 006, 007, 022, 008, 009, 026,
-  029, 036, 037, 044 and the per-backend specs, each true only once a D3 step
-  lands (s3fs clauses retire at step 2, SFTP-010's tiers become D5 at step 6).
+- [ ] **BK-390 — RFC-0017's spec amendments after D3 step 1 have no owner once BK-387 closes**
+  spec: SIO-008, SEEK-004, SEEK-006, PING-011, SFTP-010, GR-039 · effort: M · audience: contributor.process
+  RFC-0017 § Impact lists amendments to specs 006, 008, 009, 026, 036, 044,
+  the drivers' half of 007 and 022, and the per-backend specs, each true only
+  once a later D3 step lands (s3fs clauses at step 2, SFTP-010 at step 6).
   Remainder of BK-387. Open decision: none; each lands in its step's PR, and
   the dossier maps amendment to step.
   Detail: [dossier](backlog/bk-390-rfc-0017-spec-amendments.md)

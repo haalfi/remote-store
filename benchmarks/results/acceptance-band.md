@@ -20,10 +20,19 @@ always inside the band.
   same runner against the same service, so hardware and service noise hit both
   sides. Medians, not means: `pytest-benchmark` reports both, and the two
   standalone scripts already compute `statistics.median`.
-- **The benchmarks are the four RFC-0017 D8 names:**
-  `benchmarks/test_throughput.py` and `benchmarks/test_seekable.py` (every
-  cell for both classes), `benchmarks/bench_pyarrow_tier1.py --s3` (the S3
-  retirement) and `benchmarks/bench_azure_pyarrow.py` (the Azure replacement).
+- **The benchmarks are the four RFC-0017 D8 names.**
+  `benchmarks/test_throughput.py` and `benchmarks/test_seekable.py` run over
+  the `bench_backend` fixture, so one run with both lanes selected
+  (`--backend <retiring>,<replacement>`) pairs every cell. The two standalone
+  scripts construct one class each, `bench_pyarrow_tier1.py` the retiring
+  `S3PyArrowBackend` and `bench_azure_pyarrow.py` the retiring `AzureBackend`
+  (`rg -n 'S3PyArrowBackend\(|AzureBackend\(' benchmarks/bench_*.py`). The
+  retiring PR therefore owes those two a backend parameter first, so both
+  classes run in one invocation.
+- **The retiring class is compared at its best tier.** For S3 that is
+  `S3PyArrowBackend` read through `bench_pyarrow_tier1.py`'s Tier 1, since
+  the replacement loses that probe (RFC-0017 D4). The replacement is compared
+  at the tier `ext.arrow` then serves it.
 - **One cell outside the band blocks the deletion.** The run is not repeated
   until it passes; a failing cell is either fixed in the replacement or
   reported to the maintainer, who decides whether the regression is accepted,

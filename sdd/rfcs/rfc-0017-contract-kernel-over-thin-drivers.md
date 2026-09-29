@@ -707,11 +707,11 @@ it.
   [`benchmarks/results/acceptance-band.md`](../../benchmarks/results/acceptance-band.md),
   and [ADR-0042](../adrs/0042-contract-kernel-over-thin-drivers.md),
   Proposed, which carries the four ADR amendments. With D3 step 1 (BK-389),
-  which accepts that ADR: spec 003 and spec 005 below, the custom-backend
-  guide with its `partial-capabilities` region,
-  `check_custom_backend_guide.py`, and the landing page's snippet. With the
-  D3 step that makes each true (BK-390): specs 006 to 044 and the
-  per-backend specs below. The list, as drafted at filing: an ADR amending
+  which accepts that ADR: specs 003, 005, 029 and 037 below, the kernel half
+  of 007 and 022, the custom-backend guide with its `partial-capabilities`
+  region, `check_custom_backend_guide.py`, and the landing page's snippet.
+  With the later D3 step that makes each true (BK-390): the rest of the specs
+  below. The list, as drafted at filing: an ADR amending
   [ADR-0001](../adrs/0001-architecture-store-registry-backends.md) (the
   `Backend` layer splits in two), ADR-0011 (the connect budget moves to
   `Session`; per-operation retry stays native), ADR-0012 and ADR-0025 (the
@@ -775,8 +775,10 @@ it.
    the specs still dispute. **Answered (BK-387):** BUG-240 is the one
    adjudicated before D3 step 1, where the kernel encodes the `max_depth`
    algorithm. It is the only spec contradiction in audit-021's clause table,
-   and DEPTH-003's reading wins, the one `BackendContract.dfy` verifies (its
-   `ListFiles` postcondition tagged DEPTH-003). Every other decision D3 names
+   and DEPTH-003's reading wins, the one `BackendContract.dfy` verifies:
+   `ListFiles` constrains `!recursive` to depth 0 (tagged BE-014) and applies
+   the `max_depth` filter only under `recursive` (tagged DEPTH-003). Every
+   other decision D3 names
    is taken before the step that encodes it. BUG-276's arm (synthesise) and
    BUG-292's choice (narrow the catch) are recorded on those items now. Graph's
    `get_folder_info().modified_at` aggregation is decided at step 7.

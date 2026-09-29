@@ -102,6 +102,8 @@ defects, and every figure with its derivation. This record decides it.
   driver.
 - **Negative:** users of `S3Backend` and `S3PyArrowBackend` by class name, and
   `unwrap(s3fs.S3FileSystem)` callers, break at D3 step 2; `ext.arrow` loses
-  its Tier-1 native probe on S3 there.
+  its Tier-1 native probe on S3 there. Users of sync `AzureBackend` by class
+  name break at D3 step 4 unless the generated replacement keeps the name,
+  which that step decides.
 - **Neutral:** `Store`, `Registry`, the error hierarchy and capabilities keep
   their interfaces.
