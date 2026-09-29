@@ -42,7 +42,8 @@ Section references are to RFC-0017, which carries the rationale.
   layer adds what async lacks: `read_seekable`, `open_atomic` and a `BinaryIO`
   `read`. *Reverse if* the generated part needs hand edits.
 - **Every remote driver owns its lifecycle through a `Session`** (D5). The
-  `Session` owns connect, connect retry, liveness and invalidation behind one
+  `Session` owns connect, connect retry where the wire separates connect from
+  operation, liveness and invalidation behind one
   `run(op)`, and the kernel runs every remote operation through it. Local and
   Memory have none. *Reverse if* a driver's lifecycle cannot be separated
   from its operations.

@@ -320,10 +320,10 @@ no clause of the contract ships unexercised.
 - [ ] **BUG-296 — `get_folder_info(max_depth=N)` reports `0001-01-01` where the plain call reports `None` for the same folder**
   spec: FOLDERINFO-001, BE-017 · effort: S · audience: user.api
   `Store.get_folder_info`'s depth path (`_store.py`, and `aio/_async_store.py`)
-  takes the max `modified_at` over `list_files` and skips only `None`, so the
-  `datetime.min` sentinel of `SQLQueryBackend` files wins: measured `None`
-  without `max_depth`, `0001-01-01 00:00:00+00:00` with `max_depth=5`. Open
-  decision: none; skip the sentinel as RFC-0017 D3's kernel rule does.
+  skips only `None`, so the `datetime.min` sentinel wins: measured on
+  `SQLQueryBackend` (`None` plain, `0001-01-01` at `max_depth=5`); read, not
+  run, on `SQLBlobBackend` without `modified_at` (`_sqlalchemy.py` 1114,
+  1390). Open decision: none; skip the sentinel as RFC-0017 D3's rule does.
 
 - [ ] **BUG-240 — ASYNC-014 and DEPTH-003 state opposite rules, and `GraphBackend` implements the async one**
   spec: ASYNC-014, DEPTH-003 · effort: M · audience: user.api

@@ -112,7 +112,7 @@ graph TB
     S2[Store] --> K["DriverBackend, the kernel, once:<br/>root and closed guards from the key<br/>wrong-type probes on the error path<br/>absent-container tolerance per Op<br/>first-page listing bound<br/>choke point: classify, then path, backend, message"]
     K --> D1["LocalDriver<br/>stat get put delete list_page probe close<br/>classify(exc, op, key)"]
     K --> D2["SFTPDriver + Session<br/>same primitives"]
-    K --> D3["AzureDriver<br/>same primitives"]
+    K --> D3["AzureDriver + Session<br/>same primitives"]
     K --> D4["… 7 more drivers"]
   end
   B4 ~~~ S2
@@ -466,7 +466,8 @@ move. What a `Session` holds follows the wire:
   check), not a dead session and not `BackendUnavailable`;
 - S3 and Azure: the SDK client and its credential, the SDK's own pool and
   retry inside it;
-- HTTP: the transport (today a `urllib` opener).
+- HTTP: its pluggable `HttpTransport` (httpx, requests or urllib, in that
+  order unless one is forced, per HTTP-TR-002).
 
 D5 reaches 13 of the 71, all on SFTP: cluster B's 10 plus BUG-279, 265 and
 273 (audit-021's appendix rows tag each `sftp`). The other drivers'
@@ -793,7 +794,8 @@ and its answer keeps `classify`.
   general clause is PING-002, with each driver's own row at its step); spec 029 (the async surface and `AsyncDriver`); spec 036
   (SEEK-004 and SEEK-006 against `get_range`); spec 037 (the `max_depth`
   algorithm decided once); spec 044 (GR-039 and `parents == "implicit"`);
-  the per-backend specs (AZ-, S3-, S3PA-, GR-, SQL-BLOB-) wherever a clause
+  the per-backend specs (AZ-, S3-, S3PA-, GR-, SQL-BLOB-, and SQL-QUERY-,
+  added at BK-387's close) wherever a clause
   describes class behaviour the kernel now owns; the custom-backend guide,
   including its `partial-capabilities` region, and
   `check_custom_backend_guide.py`; the landing page's custom-backend snippet
@@ -808,7 +810,8 @@ and its answer keeps `classify`.
   reads, a `get_range` for that driver), BUG-287, 288 and 289 (floors on
   extras D4 retires or adds), ID-217 (async `ext.*`), BK-339 (the behaviour
   matrix).
-- **Effort:** kernel plus steps 1 to 3 of D3, L; D5 plus SFTP, L; each D4
+- **Effort:** kernel plus steps 1 to 3 of D3, L, with D5's `Session`
+  protocol landing at step 2; SFTP with its `Session`, L; each D4
   promotion and retirement, M, the S3 one carrying ID-202's list.
 - **What is deleted, measured after D3 by audit-021's commands (b) and (g)
   and published as a description, not a criterion:** the 164 guard call
