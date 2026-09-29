@@ -15,6 +15,14 @@ filing, because `CLAUDE.md` § Audits leaves the disposition of an audit's
 proposals to the user; this item is that disposition, minted once the user
 chose to author the ADR.
 
+**Why § 1.** The item is filed under the promise the kernel's own items
+serve. Audit-021's appendix places the 13 open cluster-A items by section:
+11 in § 1 and 2 in § 2 (its *Section* column, filtered to `Cluster == A`
+and `open`), and RFC-0017's ten kernel-owned items (R1) are the root rule,
+the absent container and unwrapped listings, which are § 1's "absent or
+denied store answers the same way on every backend". The formal-layer
+extension (D7) serves § 2 and is the smaller part of the acceptance step.
+
 **What the item owes** is RFC-0017 D8 step 1, and nothing under D3. In the
 RFC's own words the step is: accept the RFC as an ADR once Open Questions 1, 4,
 6 and 7 are answered and the amendments listed under § Impact are drafted;
