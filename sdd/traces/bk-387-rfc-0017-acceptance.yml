@@ -210,3 +210,112 @@ discovery_followups:
   - BK-389
   - BK-390
   - BUG-296
+review:
+  # Derived by `hatch run ship-report 1045 --trace-block-only` at head 4bd9e22.
+  # Do not hand-edit, except a newly required field per sdd/traces/_schema.yml
+  # section review: RFC-0015 D4 makes this script the only producer.
+  derivation: "hatch run ship-report 1045 --trace-block-only"
+  pr: 1045
+  review_rounds: 8
+  submissions: 10
+  findings: 52
+  by_round:
+    - round: 1
+      findings: 7
+      origin: {original: 7}
+      triage: {must-fix: 7}
+      duration_hours: 0.06
+    - round: 2
+      findings: 2
+      origin: {loop-introduced: 2}
+      triage: {must-fix: 2}
+      duration_hours: 0.13
+    - round: 3
+      findings: 12
+      origin: {original: 6, unclassifiable-file: 6}
+      triage: {must-fix: 12}
+      duration_hours: 0.15
+    - round: 4
+      findings: 9
+      origin: {loop-introduced: 2, original: 4, unclassifiable-file: 3}
+      triage: {must-fix: 9}
+      duration_hours: 0.16
+    - round: 5
+      findings: 5
+      origin: {loop-introduced: 3, original: 1, pre-existing: 1}
+      triage: {must-fix: 5}
+      duration_hours: 0.17
+    - round: 6
+      findings: 1
+      origin: {unclassifiable-file: 1}
+      triage: {unknown: 1}
+      duration_hours: 0.19
+    - round: 7
+      findings: 5
+      origin: {loop-introduced: 1, original: 2, pre-existing: 1, unclassifiable-file: 1}
+      triage: {must-fix: 5}
+      duration_hours: 0.07
+    - round: 8
+      findings: 1
+      origin: {original: 1}
+      triage: {must-fix: 1}
+      duration_hours: 0.07
+    - round: 9
+      findings: 7
+      origin: {loop-introduced: 4, original: 2, pre-existing: 1}
+      triage: {must-fix: 7}
+      duration_hours: 0.12
+    - round: 10
+      findings: 3
+      origin: {original: 3}
+      triage: {must-fix: 3}
+      duration_hours: 0.2
+  by_file:
+    - path: "sdd/rfcs/rfc-0017-contract-kernel-over-thin-drivers.md"
+      findings: 14
+    - path: "sdd/adrs/0042-contract-kernel-over-thin-drivers.md"
+      findings: 9
+    - path: "benchmarks/results/acceptance-band.md"
+      findings: 8
+    - path: "sdd/BACKLOG.md"
+      findings: 4
+    - path: "sdd/backlog/bk-389-kernel-step-1-memory.md"
+      findings: 4
+    - path: "sdd/backlog/bk-390-rfc-0017-spec-amendments.md"
+      findings: 3
+    - path: "sdd/traces/bk-387-rfc-0017-acceptance.yml"
+      findings: 3
+    - path: "sdd/backlog/bk-387-rfc-0017-acceptance.md"
+      findings: 2
+    - path: "sdd/backlog/bug-240-max-depth-spec-contradiction.md"
+      findings: 2
+    - path: "benchmarks/README.md"
+      findings: 1
+    - path: "sdd/backlog/bk-388-dafny-kernel-clauses.md"
+      findings: 1
+    - path: "sdd/backlog/bug-292-ancestor-gate-fails-open.md"
+      findings: 1
+  untouched_files:
+    - "CHANGELOG.md"
+    - "sdd/BACKLOG-DONE.md"
+    - "sdd/adrs/DIGEST.md"
+    - "sdd/backlog/bug-276-empty-base-class-message.md"
+    - "sdd/backlogid.json"
+  review_driven_commits:
+    - sha: "2a5de48"
+      subject: "BK-387: Address PR #1045 review round 1"
+    - sha: "6146b68"
+      subject: "BK-387: Address PR #1045 review round 2"
+    - sha: "e98006b"
+      subject: "BK-387: Address PR #1045 review round 3"
+    - sha: "f324b9c"
+      subject: "BK-387: Address PR #1045 review round 4"
+    - sha: "5a26b22"
+      subject: "BK-387: Address PR #1045 review round 5"
+    - sha: "a34628c"
+      subject: "BK-387: Address PR #1045 closing-panel round 6, record D5, file BUG-296"
+    - sha: "53461a5"
+      subject: "BK-387: Address PR #1045 round 7 and the ADR process review"
+    - sha: "4bd9e22"
+      subject: "BK-387: Address PR #1045 round 8"
+  ci: {verdict: PENDING, failed: 0, pending: 2}
