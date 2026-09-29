@@ -1,0 +1,68 @@
+# BK-389 — No backend runs on RFC-0017's kernel, so ADR-0042 stays Proposed
+<!-- doc: repo-only -->
+
+The index entry holds the current diagnosis; this file is evidence and
+advisory prescription ([§ Item authority](../BACKLOG.md#how-this-file-works)).
+
+**Where this comes from.** Minted by BK-387. The maintainer's condition on
+[ADR-0042](../adrs/0042-contract-kernel-over-thin-drivers.md): it stays
+Proposed until the first backend runs on the new design, and it is accepted in
+that PR. That PR is RFC-0017 D3 step 1.
+
+**What it owes.**
+
+1. The kernel, written once as `AsyncDriverBackend` over `AsyncDriver`, with
+   the surface both runtimes share generated into `DriverBackend` by `unasync`
+   (Open Question 1). The generated file is committed with a drift check. A
+   small hand-written sync layer supplies `read_seekable`, `open_atomic` and
+   `read`'s `BinaryIO`, which the async surface lacks. The design is RFC-0017
+   D1, D2 and D6.
+2. `MemoryBackend` and `AsyncMemoryBackend` as drivers, gated by the
+   conformance suite with D3's enumerated cell changes, and a fake-driver
+   kernel suite per § Impact, Testing.
+3. The `max_depth` algorithm on DEPTH-003's reading (BUG-240's decision), and
+   the folder `modified_at` aggregation as RFC-0017 D3 fixes it: the latest
+   known file time, skipping the `datetime.min` UTC sentinel, and `None` when
+   no time is known.
+4. Spec amendments that become true here:
+   - spec 003: a BE-021 placement table assigning each obligation to kernel or
+     driver, IDs kept and prose kept, plus placement notes on BE-020 and
+     BE-029. A class not yet migrated discharges both halves.
+   - spec 005: ERR-001's `path` and `backend`, and ERR-009's floor, are set by
+     the kernel for a migrated class.
+   - spec 037: the `max_depth` algorithm decided once, on DEPTH-003.
+   - spec 003 BE-017: the folder `modified_at` rule above, sentinel and
+     `None` included, with a note that `GraphBackend` answers its folder
+     item's own time until step 7 migrates it (BK-390).
+   - spec 029: the async surface and `AsyncDriver`.
+   - specs 007 and 022, kernel half: `write_atomic` and temp-and-promote as
+     kernel behaviour over `put_is_atomic`, `open_write` and `rename`.
+   - spec 026: PING-002, because the kernel's `check_health()` runs the
+     driver's required `probe()` where the default was a no-op; and PING-008,
+     Memory's no-op row.
+   - the Memory drivers' own rows under 007 and 022. Every later driver's rows
+     are BK-390's, at that driver's step.
+5. The custom-backend guide rewritten as a driver, its `partial-capabilities`
+   region included. `scripts/check_custom_backend_guide.py` is re-pointed from
+   `Backend.__abstractmethods__` at `Driver`, and the landing page's snippet
+   (`docs-src/index.md`, `examples/snippets/homepage.py`) is updated. The
+   migration guide gains its section for backend authors, and the CHANGELOG
+   says direct `Backend` subclassing is no longer the documented route. Both
+   are obligations of RFC-0017 § Impact, Backwards compatibility. All of this
+   needs `Driver` to exist, which is why it is here and not in BK-387.
+6. ADR-0042's Status set to Accepted and RFC-0017's Status set to Accepted, in
+   the same PR. The four amendments then take effect, so the same PR adds the
+   repo's inline `*Amended by [ADR-0042](...)*` note at each amended clause
+   (`rg -n '\*Amended by' sdd/adrs` shows the convention): ADR-0001's
+   *Backend (ABC)*, ADR-0011's transport-concern bullet, ADR-0012's
+   Option E dismissal and ADR-0025's scope. It then regenerates
+   `sdd/adrs/DIGEST.md`.
+7. The re-homing RFC-0017 § Impact names: each open item listed there
+   (BK-382, BK-242, BK-325, BK-332, BUG-266, ID-181, ID-140, BUG-287, 288,
+   289, ID-217, BK-339) gets the D3 step or item that absorbs, obsoletes or
+   leaves it, or is closed. Assigned here by the maintainer at BK-387's close.
+
+**Depends on** BK-388, whose postconditions the kernel is written against.
+
+**What it does not include.** Step 2 onward (RFC-0017 D3), and the spec
+amendments of later steps (BK-390).

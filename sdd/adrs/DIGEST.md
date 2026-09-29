@@ -2,7 +2,50 @@
 
 <!-- doc: repo-only -->
 
-Compiled from 41 ADR(s) by `scripts/gen_adr_digest.py`. Do not edit by hand; run `hatch run gen-adr-digest`.
+Compiled from 42 ADR(s) by `scripts/gen_adr_digest.py`. Do not edit by hand; run `hatch run gen-adr-digest`.
+
+## Proposed
+
+### [ADR-0042](0042-contract-kernel-over-thin-drivers.md): One Contract Kernel over Thin Drivers
+
+Section references are to RFC-0017, which carries the rationale.
+
+- **One kernel implements `Backend` over a thin `Driver`** (D1, D2). The
+  driver supplies wire primitives, declared capabilities and a classifier.
+  The kernel owns the cross-cutting clauses and one error-mapping choke
+  point. Direct `Backend` subclassing keeps working. *Reverse if*
+  kernel-owned defects recur at the per-class rate audit-021 measured.
+- **The kernel is written once in async** (D6, Open Question 1). `unasync`
+  generates the sync surface both runtimes share. A small hand-written sync
+  layer adds what async lacks: `read_seekable`, `open_atomic` and a `BinaryIO`
+  `read`. *Reverse if* the generated part needs hand edits.
+- **Every remote driver owns its lifecycle through a `Session`** (D5). The
+  `Session` owns connect, connect retry where the wire separates connect from
+  operation, liveness and invalidation behind one
+  `run(op)`, and the kernel runs every remote operation through it. Local and
+  Memory have none. *Reverse if* a driver's lifecycle cannot be separated
+  from its operations.
+- **One driver per service** (D4). S3's is the boto3 driver, registered as
+  `"s3"`; s3fs and PyArrow's S3 filesystem stop being backend layers.
+  Azure's is async. Sync Azure callers get a sync driver generated from it,
+  with the stream primitives hand-written, and it replaces the sync
+  `AzureBackend`. *Reverse if* the boto3 driver cannot reach D4's option
+  parity, or the generation cannot map Azure's two SDK surfaces.
+- **Classification stays in each driver** (Open Question 6). The kernel calls
+  `classify(exc, op, key)` at its choke point, then sets `path` and
+  `backend` and guarantees a message. *Reverse if* mapping-content defects
+  recur across drivers.
+- **`max_depth` applies only when `recursive`** (Open Question 4). This is
+  DEPTH-003's reading, the one `BackendContract.dfy` verifies. ASYNC-014's
+  contrary wording (BUG-240) is not the contract.
+- **The formal model covers the root rule, the close posture and the absent
+  container** (Open Question 7). BE-029, BE-020 and BE-021 § Reach become
+  verified clauses before kernel code.
+
+The migration order, retirement gates and benchmarks are process, and they
+live in D3 and D8.
+
+> amends ADR-0001, ADR-0011, ADR-0012, ADR-0025 (clause).
 
 ## Accepted
 

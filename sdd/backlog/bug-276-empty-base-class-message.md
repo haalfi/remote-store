@@ -107,3 +107,13 @@ That is one backend's connect arm, not the clause — BUG-276 and
 BUG-293 carry the rest, and all three are the same promise met at different
 depths: an error with no message, an error re-typed to a weaker class, and an
 error of the wrong class outright.
+
+## Decision (2026-09-29, BK-387)
+
+**Synthesise.** All five blank-reachable arms get a fallback message built
+from the exception class. That is the guarantee RFC-0017's kernel gives at its
+choke point (the ERR-009 floor), so this per-site code is exactly what the
+kernel later replaces. Classifying the fall-through stays available as driver
+content, for any dispatch that proves incomplete. The two unreachable sites
+stay unchanged. AZ-025's blank-message clause and its pinning test are
+amended with the fix.

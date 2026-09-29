@@ -71,3 +71,34 @@ accepted and the § Impact amendment set drafted, the benchmark band among
 them; RFC-0017's Status moved from Draft to Accepted (or returned to Draft
 with the reason, if an answer defeats the design); a `BK-` item for D3 step 1
 minted; and, if OQ7 is "extend", a `BK-` item for the Dafny extensions minted.
+
+## Correction (2026-09-29, at close)
+
+Five corrections to the prescription above:
+
+- **The ADR stays Proposed.** The maintainer made acceptance conditional on
+  the first backend running on the new design. ADR-0042 is therefore Proposed,
+  RFC-0017 stays Draft with its questions answered, and both become Accepted
+  in BK-389's PR (D3 step 1). RFC-0017 D8 was amended to match.
+- **The amendment set is split by where each amendment becomes true**
+  (`CLAUDE.md` principle 3). This item shipped the benchmark band and the ADR.
+  Everything that becomes true at D3 step 1 moved to BK-389: specs 003, 005,
+  029 and 037, the kernel half of 007 and 022, the Memory drivers' rows of
+  007 and 022, spec 026's PING-002 and PING-008, spec 003's BE-017 folder
+  rule, the guide, its check script and the homepage snippet. The later
+  steps' amendments went to BK-390, the
+  remainder under § Completing work's "partly done".
+- **Items minted:** BK-388 for the Dafny extensions, BK-389 for D3 step 1 and
+  BK-390 for the remainder.
+- **D3 step 1 starts before acceptance.** "Nothing under D3 starts before
+  acceptance" and "dependent on the ADR" above no longer hold. RFC-0017 D8
+  step 2 now runs step 1 under the Proposed ADR, and its PR accepts it.
+  BK-389 depends on BK-388, not on an accepted ADR.
+- **The session layer covers every remote driver**, not SFTP and Graph alone
+  as the summary above says. The maintainer widened it in review on PR
+  #1045. RFC-0017 D5 and ADR-0042 now state it, and BK-390 carries each
+  driver's `Session` into its spec at its step.
+
+Not done here: the re-homing of the open items § Impact names. The maintainer
+assigned it to BK-389 (its item 7). The decisions recorded on BUG-240, BUG-276
+and BUG-292 sit in those items' own dossiers.

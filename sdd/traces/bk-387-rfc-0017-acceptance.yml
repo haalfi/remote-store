@@ -1,0 +1,356 @@
+id: BK-387
+title: "RFC-0017 D8 step 1: answer OQ1, 4, 6, 7 and propose ADR-0042 (accepted later, with D3 step 1)"
+trigger: >-
+  Audit-021 attributed 45 of 71 user-audience defects to contract clauses
+  re-implemented per backend class; RFC-0017 proposes one kernel over thin
+  drivers and names its acceptance step (D8 step 1). BK-387 owned that step:
+  the four open questions, the ADR, the amendment set and the benchmark
+  band. The maintainer invoked /ship with the decisions routed through
+  plan-mode questions, and at plan approval kept the ADR Proposed until the
+  first backend runs on the kernel, so acceptance moved to BK-389.
+source_items:
+  - BK-387
+audience:
+  - library.maintainer
+  - contributor.process
+expected_ripples:
+  - sdd/rfcs/rfc-0017-contract-kernel-over-thin-drivers.md
+  - sdd/adrs/
+  - sdd/adrs/DIGEST.md
+  - benchmarks/
+  - sdd/BACKLOG.md
+  - sdd/BACKLOG-DONE.md
+  - sdd/backlog/
+  - sdd/backlogid.json
+  - CHANGELOG.md
+phases:
+  - id: orient
+    name: Orient
+    steps:
+      - file: sdd/backlog/bk-387-rfc-0017-acceptance.md
+        section: "(full)"
+        read_type: gate
+        extract: >-
+          Owes D8 step 1 only: OQ1, 4, 6, 7 answered, the acceptance ADR, the
+          Impact amendment set drafted, the benchmark band, the three D3
+          prerequisite decisions annotated on BUG-276, 292, 240, and the step-1
+          item minted (plus a Dafny item if OQ7 extends).
+        outcome: ok
+      - file: sdd/rfcs/rfc-0017-contract-kernel-over-thin-drivers.md
+        section: "(full)"
+        read_type: gate
+        extract: >-
+          D6 frames OQ1 (async kernel with unasync twin vs sync kernel with a
+          driver hop); D4 ties sync Azure's fate to it. D7 recommends three
+          Dafny extensions before kernel code. Impact lists the amendment set;
+          several of its targets (spec 008's s3fs clauses, spec 009's tiers,
+          the custom-backend guide) describe code that does not exist until a
+          D3 step lands, which bears on what can be amended truthfully now.
+        outcome: ok
+      - file: sdd/audits/audit-021-contract-placement.md
+        section: "Summary; H-1; Appendix"
+        read_type: reference
+        extract: >-
+          Clause table: 11 clauses under cluster A, exactly one of them a spec
+          contradiction (BUG-240). The RFC's R1 to R6 assignment is the
+          measurement the answers are weighed against.
+        outcome: ok
+      - file: sdd/backlog/bug-240-max-depth-spec-contradiction.md
+        section: "(full)"
+        read_type: reference
+        extract: >-
+          ASYNC-014 copies DEPTH-001's Store-level wording onto the backend
+          while citing DEPTH-003; only GraphBackend follows it.
+        outcome: ok
+      - file: sdd/formal/BackendContract.dfy
+        section: "ListFiles postconditions"
+        read_type: verify
+        extract: >-
+          `rg -n -A 2 'recursive=false|DEPTH-003' sdd/formal/BackendContract.dfy`:
+          ListFiles constrains `!recursive` to depth 0 (tagged BE-014) and
+          applies the max_depth filter only under `recursive` (tagged
+          DEPTH-003), so DEPTH-003's reading is the verified one. First
+          recorded with the depth-0 clause attributed to the DEPTH-003 tag;
+          PR #1045 round 1 corrected the attribution.
+        outcome: ok
+      - file: sdd/backlog/bug-276-empty-base-class-message.md
+        section: "(full)"
+        read_type: reference
+        extract: "Two arms offered: synthesise a fallback message, or classify the fall-through."
+        outcome: ok
+      - file: sdd/backlog/bug-292-ancestor-gate-fails-open.md
+        section: "(full)"
+        read_type: reference
+        extract: >-
+          Three shapes: narrow the catch, warn, strict mode. None reaches the
+          anonymous in-memory SQLite instance, which answers correctly about
+          the wrong database.
+        outcome: ok
+      - file: benchmarks/results/run-of-record/clean.json
+        section: "(full)"
+        read_type: verify
+        extract: >-
+          Slimmed to `stats.mean` only; lanes local, s3, s3-pyarrow, sftp and
+          azure, no s3-boto3, per the lane-count command in
+          benchmarks/results/acceptance-band.md § Why not the run of record
+          (first recorded with an underived "40 cells each", true only of
+          `bench_backend`; PR #1045 round 8 corrected it). So the band cannot be applied
+          against the run of record; it has to be a paired run in the
+          retirement PR.
+        outcome: ok
+      - file: benchmarks/report.py
+        section: "_magnitude"
+        read_type: reference
+        extract: "Bands sub-ms / <10% / 10-50% / >50% describe a delta and disclaim acceptability."
+        outcome: ok
+      - file: sdd/backlog/bk-387-rfc-0017-acceptance.md
+        section: "What the item owes, item 5"
+        read_type: reference
+        extract: >-
+          The prescription drafts every § Impact amendment at acceptance, but
+          most of them (spec 008's s3fs clauses, SFTP-010's tiers, the guide as
+          a driver) describe code that exists only after a D3 step. Written now
+          they would break principle 3. The maintainer chose to land each one
+          with the step that makes it true.
+        outcome: misleading
+  - id: design
+    name: Design
+    steps:
+      - file: scripts/gen_adr_digest.py
+        section: "STATUSES"
+        read_type: gate
+        extract: >-
+          Proposed is a valid status, and an Amends edge on a Proposed ADR
+          passes the digest. That permits the maintainer's correction: ADR-0042
+          stays Proposed until BK-389 lands the first backend.
+        outcome: ok
+      - file: src/remote_store/_registry.py
+        section: "register_backend"
+        read_type: verify
+        extract: >-
+          `register_backend(type_name, cls: type[Backend])` at line 19. The
+          widening D4 named was needed only for the adapter route, which OQ1
+          rejected, so the RFC and the ADR drop it.
+        outcome: ok
+  - id: implement
+    name: Implement
+    steps:
+      - file: scripts/check_dafny_twin_parity.py
+        section: "(run)"
+        read_type: verify
+        extract: "Re-run at 0bf7fe6: 17 member(s) in lockstep, 2 declared divergence(s), unchanged from 8fa22d6."
+        outcome: ok
+      - file: benchmarks/bench_pyarrow_tier1.py
+        section: "statistics imports"
+        read_type: verify
+        extract: >-
+          Both standalone scripts compute `statistics.median`, so the band's
+          median rule is computable without changing them.
+        outcome: ok
+      - file: scripts/gen_backlogid.py
+        section: "--check"
+        read_type: gate
+        extract: >-
+          The first run failed R2: annotating BUG-292 and BUG-240 took each to
+          9 content lines. Shortened, it passes; next safe BK is 391.
+        outcome: ok
+      - file: benchmarks/test_throughput.py
+        section: "bench_target tests"
+        read_type: verify
+        extract: >-
+          PR #1045 round 2 measured that `test_write_bytes` and
+          `test_read_bytes` take `bench_target`, so a two-lane run also
+          collects raw-SDK cells. The band now counts only the cells that
+          measure one of the two classes.
+        outcome: ok
+      - file: src/remote_store/backends/_local.py
+        section: "get_folder_info, and its siblings in every backend"
+        read_type: verify
+        extract: >-
+          Repeat-site check on PR #1045: two conditions were refuted in two
+          consecutive rounds, the folder modified_at rule and ADR-0042's ADR-0012
+          amendment, so each was enumerated rather than re-argued.
+          `rg -n 'def get_folder_info' src/remote_store`, then each body read:
+          Memory (both), Local, SFTP, async Azure, S3 boto3 and SQLBlob take
+          the latest file mtime recursively, Graph the folder item's own
+          timestamp, and HTTP has no folders. The ADR-0012 amendment became a
+          per-driver-kind table. The enumeration missed SQLQueryBackend, which
+          answers None over files carrying the datetime.min sentinel; PR
+          #1045 round 5 measured it. The maintainer then chose a rule that
+          skips unknown times, which keeps that cell, so only Graph's changes.
+        outcome: ok
+      - file: sdd/rfcs/rfc-0017-contract-kernel-over-thin-drivers.md
+        section: "Open Question 7"
+        read_type: reference
+        extract: >-
+          PR #1045 round 5 found the OQ7 placement infeasible: DepthCounting.dfy
+          includes BackendContract.dfy (line 18), so trait preconditions cannot
+          name a predicate placed in a module of its shape. The maintainer moved
+          the predicate upstream (BackendContract.dfy includes
+          ResourceSafety.dfy the same way, line 34), with lemmas downstream.
+          The recommendation I put to the maintainer at plan time carried the
+          infeasible placement from RFC-0017's OQ7 text.
+        outcome: misleading
+      - file: src/remote_store/aio/_async_backend.py
+        section: "read, and the absent read_seekable / open_atomic"
+        read_type: verify
+        extract: >-
+          PR #1045's closing panel found OQ1's "generate the sync twin" could
+          not produce the sync surface alone: `AsyncBackend.read` yields an
+          AsyncIterator where `Backend.read` returns BinaryIO (line 104 against
+          `_backend.py` line 122), and the async ABC has no read_seekable or
+          open_atomic. The maintainer chose generation for the shared surface
+          plus a hand-written sync layer. The same panel measured that the
+          step-1 folder rule had no owner, and that PING-011, Graph's clause,
+          had been used as the general probe clause (PING-002 and Memory's
+          PING-008 are the step-1 ones).
+        outcome: ok
+      - file: sdd/audits/audit-021-contract-placement.md
+        section: "Appendix, backend column of BUG-279, 265, 273"
+        read_type: verify
+        extract: >-
+          After the review close, the maintainer asked in review why only SFTP
+          and Graph own a `Session`, and chose every remote driver. The
+          appendix tags BUG-279, 265 and 273 `sftp`, so all 13 of D5's
+          defects are SFTP's, and the RFC says the other drivers' `Session`s
+          move no measured defect.
+        outcome: ok
+discovery_followups:
+  - BK-388
+  - BK-389
+  - BK-390
+  - BUG-296
+review:
+  # Derived by `hatch run ship-report 1045 --trace-block-only` at head 9868ff2.
+  # Do not hand-edit, except a newly required field per sdd/traces/_schema.yml
+  # section review: RFC-0015 D4 makes this script the only producer.
+  derivation: "hatch run ship-report 1045 --trace-block-only"
+  pr: 1045
+  review_rounds: 13
+  submissions: 13
+  findings: 57
+  by_round:
+    - round: 1
+      findings: 7
+      origin: {original: 7}
+      triage: {must-fix: 7}
+      duration_hours: 0.06
+    - round: 2
+      findings: 2
+      origin: {loop-introduced: 2}
+      triage: {must-fix: 2}
+      duration_hours: 0.13
+    - round: 3
+      findings: 12
+      origin: {original: 6, unclassifiable-file: 6}
+      triage: {must-fix: 12}
+      duration_hours: 0.15
+    - round: 4
+      findings: 9
+      origin: {loop-introduced: 2, original: 4, unclassifiable-file: 3}
+      triage: {must-fix: 9}
+      duration_hours: 0.16
+    - round: 5
+      findings: 5
+      origin: {loop-introduced: 3, original: 1, pre-existing: 1}
+      triage: {must-fix: 5}
+      duration_hours: 0.17
+    - round: 6
+      findings: 1
+      origin: {unclassifiable-file: 1}
+      triage: {unknown: 1}
+      duration_hours: 0.19
+    - round: 7
+      findings: 5
+      origin: {loop-introduced: 1, original: 2, pre-existing: 1, unclassifiable-file: 1}
+      triage: {must-fix: 5}
+      duration_hours: 0.07
+    - round: 8
+      findings: 1
+      origin: {original: 1}
+      triage: {must-fix: 1}
+      duration_hours: 0.07
+    - round: 9
+      findings: 7
+      origin: {loop-introduced: 4, original: 2, pre-existing: 1}
+      triage: {must-fix: 7}
+      duration_hours: 0.12
+    - round: 10
+      findings: 3
+      origin: {original: 3}
+      triage: {must-fix: 3}
+      duration_hours: 0.2
+    - round: 11
+      findings: 1
+      origin: {loop-introduced: 1}
+      triage: {unknown: 1}
+      duration_hours: 0.27
+    - round: 12
+      findings: 1
+      origin: {loop-introduced: 1}
+      triage: {must-fix: 1}
+      duration_hours: 0.03
+    - round: 13
+      findings: 3
+      origin: {loop-introduced: 2, unclassifiable-file: 1}
+      triage: {must-fix: 3}
+      duration_hours: 0.23
+  by_file:
+    - path: "sdd/rfcs/rfc-0017-contract-kernel-over-thin-drivers.md"
+      findings: 16
+    - path: "sdd/adrs/0042-contract-kernel-over-thin-drivers.md"
+      findings: 11
+    - path: "benchmarks/results/acceptance-band.md"
+      findings: 8
+    - path: "sdd/BACKLOG.md"
+      findings: 4
+    - path: "sdd/backlog/bk-389-kernel-step-1-memory.md"
+      findings: 4
+    - path: "sdd/backlog/bk-390-rfc-0017-spec-amendments.md"
+      findings: 4
+    - path: "sdd/traces/bk-387-rfc-0017-acceptance.yml"
+      findings: 3
+    - path: "sdd/backlog/bk-387-rfc-0017-acceptance.md"
+      findings: 2
+    - path: "sdd/backlog/bug-240-max-depth-spec-contradiction.md"
+      findings: 2
+    - path: "benchmarks/README.md"
+      findings: 1
+    - path: "sdd/backlog/bk-388-dafny-kernel-clauses.md"
+      findings: 1
+    - path: "sdd/backlog/bug-292-ancestor-gate-fails-open.md"
+      findings: 1
+  untouched_files:
+    - "CHANGELOG.md"
+    - "sdd/BACKLOG-DONE.md"
+    - "sdd/adrs/DIGEST.md"
+    - "sdd/backlog/bug-276-empty-base-class-message.md"
+    - "sdd/backlogid.json"
+  review_driven_commits:
+    - sha: "2a5de48"
+      subject: "BK-387: Address PR #1045 review round 1"
+    - sha: "6146b68"
+      subject: "BK-387: Address PR #1045 review round 2"
+    - sha: "e98006b"
+      subject: "BK-387: Address PR #1045 review round 3"
+    - sha: "f324b9c"
+      subject: "BK-387: Address PR #1045 review round 4"
+    - sha: "5a26b22"
+      subject: "BK-387: Address PR #1045 review round 5"
+    - sha: "a34628c"
+      subject: "BK-387: Address PR #1045 closing-panel round 6, record D5, file BUG-296"
+    - sha: "53461a5"
+      subject: "BK-387: Address PR #1045 round 7 and the ADR process review"
+    - sha: "4bd9e22"
+      subject: "BK-387: Address PR #1045 round 8"
+    - sha: "e358bfd"
+      subject: "BK-387: Record the PR #1045 review block in the trace"
+    - sha: "0b54212"
+      subject: "BK-387: Drop the audit citation from ADR-0042's session bullet"
+    - sha: "11b1eeb"
+      subject: "BK-387: Give every remote driver a Session"
+    - sha: "5b901c6"
+      subject: "BK-387: Condense ADR-0042's Decision to its decisions"
+    - sha: "9868ff2"
+      subject: "BK-387: Address PR #1045 round 9"
+  ci: {verdict: PENDING, failed: 0, pending: 2}

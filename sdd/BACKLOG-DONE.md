@@ -241,6 +241,16 @@ if evidence changes; these are retired.
 
 ## Unreleased
 
+- [x] **BK-387 — RFC-0017 is Draft with four open questions gating acceptance, and no item owns answering them**
+  spec: BE-021, BE-029, BE-020 · effort: L · audience: library.maintainer, contributor.process
+  Partly done. RFC-0017's OQ1, 4, 6 and 7 are answered in the RFC, and the
+  design is ADR-0042, Proposed until BK-389 lands the first backend on it.
+  Also shipped: the retirement benchmark band
+  (`benchmarks/results/acceptance-band.md`) and the BUG-240, 276 and 292
+  decisions. The rest is BK-388 (Dafny extensions), BK-389 (D3 step 1, which
+  accepts the ADR) and BK-390 (later spec amendments).
+  Detail: [dossier](backlog/bk-387-rfc-0017-acceptance.md)
+
 - [x] **BK-365 — Both backlog files grew past what a maintainer can read, and nothing measures it**
   spec: — · effort: M · audience: contributor.process
   `BACKLOG.md` is an index with per-item dossiers under `sdd/backlog/`, every
