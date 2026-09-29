@@ -32,7 +32,11 @@
 //   preserves fs on error paths by construction (only mutates fs on
 //   the success path).  This means the frame condition is verified
 //   for the reference implementation but NOT enforced by the abstract
-//   contract. See gap coverage table in README.
+//   contract. See gap coverage table in README.  The exception (BK-388)
+//   is a frame keyed on the pre-state rather than on `r`: the closed
+//   guard (`!old(Live())`) and the BE-029 root refusals state
+//   `fs == old(fs)` directly, since those errors are decided before any
+//   effect.
 // - Happy-path postconditions use `ensures <preconditions> ==> r.Ok?`
 //   to mandate success when no error condition applies.
 
@@ -651,11 +655,19 @@ trait Backend {
     // BE-020 outranks everything below, the root rule included (BE-029).
     // @spec BE-020
     ensures !old(Live()) ==> r == Err(BackendUnavailable(name))
+    // BE-020: a closed terminal backend changes nothing.  Keyed on the
+    // pre-state, not on `r`, so it is expressible (see the header note).
+    // @spec BE-020
+    ensures !old(Live()) ==> fs == old(fs) && containerPresent == old(containerPresent)
     // BE-029: a write to the root is refused from the key, ahead of every
     // observed check, so it holds whether or not the container exists.
     // @spec BE-029
     ensures old(Live()) && AddressesRoot(path)
       ==> r == Err(InvalidPath(path, name))
+    // BE-029: "before anything is transferred" — the refusal has no effect.
+    // @spec BE-029
+    ensures old(Live()) && AddressesRoot(path)
+      ==> fs == old(fs) && containerPresent == old(containerPresent)
     // Gap 1 / BE-008: precondition order — type check first (directory
     // path → InvalidPath).
     // @spec BE-008
@@ -769,6 +781,8 @@ trait Backend {
     ensures containerPresent == old(containerPresent)
     // @spec BE-020
     ensures !old(Live()) ==> r == Err(BackendUnavailable(name))
+    // @spec BE-020
+    ensures !old(Live()) ==> fs == old(fs)
     // @spec BE-021
     ensures old(Live()) && IsDir(old(fs), path)
       ==> r == Err(InvalidPath(path, name))
@@ -805,6 +819,8 @@ trait Backend {
     ensures containerPresent == old(containerPresent)
     // @spec BE-020
     ensures !old(Live()) ==> r == Err(BackendUnavailable(name))
+    // @spec BE-020
+    ensures !old(Live()) ==> fs == old(fs)
     // File path → InvalidPath (wrong type, symmetric with Delete on dirs).
     // @spec BE-021
     ensures old(Live()) && IsFile(old(fs), path)
@@ -993,6 +1009,11 @@ trait Backend {
     ensures containerPresent == old(containerPresent)
     // @spec BE-020
     ensures !old(Live()) ==> r == Err(BackendUnavailable(name))
+    // @spec BE-020
+    ensures !old(Live()) ==> fs == old(fs)
+    // BE-029: either root refusal happens before anything is transferred.
+    // @spec BE-029
+    ensures old(Live()) && (AddressesRoot(src) || AddressesRoot(dst)) ==> fs == old(fs)
     // BE-029, key-decided and ranked ahead of every observed check: the
     // root as source is a file-shaped operation on a folder, and the root
     // as destination is a write to the root.  Source first, as in Python's
@@ -1105,6 +1126,10 @@ trait Backend {
     ensures containerPresent == old(containerPresent)
     // @spec BE-020
     ensures !old(Live()) ==> r == Err(BackendUnavailable(name))
+    // @spec BE-020
+    ensures !old(Live()) ==> fs == old(fs)
+    // @spec BE-029
+    ensures old(Live()) && (AddressesRoot(src) || AddressesRoot(dst)) ==> fs == old(fs)
     // BE-029, ranked as in Move.
     // @spec BE-029
     ensures old(Live()) && AddressesRoot(src)

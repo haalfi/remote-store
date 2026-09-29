@@ -888,7 +888,11 @@ and its answer keeps `classify`.
    downstream module of `DepthCounting.dfy`'s shape. A predicate placed only
    downstream could not be named by the trait, since `DepthCounting.dfy`
    includes `BackendContract.dfy` (its line 18) and not the reverse. Placement
-   corrected at BK-387's close, by the maintainer.
+   corrected at BK-387's close, by the maintainer. **Landed (BK-388):** the
+   trait names the predicate in postconditions rather than preconditions, so
+   that the closed guard can rank ahead of it as BE-029 requires; the
+   absent container is a flag tied to an empty store, not an optional store
+   (BK-388 dossier, § As landed).
 
 ## References
 

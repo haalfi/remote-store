@@ -21,6 +21,8 @@ expected_ripples:
   - sdd/BACKLOG.md
   - sdd/BACKLOG-DONE.md
   - sdd/backlog/bk-389-kernel-step-1-memory.md
+  - sdd/backlog/bk-388-dafny-kernel-clauses.md
+  - sdd/backlogid.json
 phases:
   - id: orient
     name: Orient
@@ -178,6 +180,18 @@ phases:
           "478 verified" count was narrowed to "0 errors" here, in the
           script docstring and in the README.
         outcome: ok
+      - file: sdd/formal/BackendContract.dfy
+        section: "Write, Delete, DeleteFolder, Move, Copy (PR #1047 round 1)"
+        read_type: verify
+        extract: >-
+          Round 1 found no frame on the closed path: a Write that dropped the
+          container before answering BackendUnavailable verified at a99af9f
+          (297 verified, 0 errors). Added `!old(Live()) ==> fs == old(fs)`
+          on the five mutators and, as the sibling BE-029's "no side
+          effect" owes, the same frame on the root refusals; the seeded
+          mutation now fails (2 errors), for both frames. Postcondition-only,
+          so a rebuild of module_.py was byte-identical.
+        outcome: ok
   - id: verify
     name: Verify
     steps:
@@ -208,3 +222,4 @@ surprising_ripples:
   - .github/workflows/ci.yml
   - scripts/dafny_verify.sh
   - tests/scripts/test_check_dafny_twin_parity.py
+  - sdd/rfcs/rfc-0017-contract-kernel-over-thin-drivers.md

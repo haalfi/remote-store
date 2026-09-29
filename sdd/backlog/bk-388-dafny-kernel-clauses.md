@@ -25,6 +25,17 @@ as the maintainer corrected it at BK-387's close):
 | Close posture, BE-020 | a `closed` flag and a postcondition per operation, in `BackendContract.dfy` and the `MemoryBackend.dfy` refinement | S |
 | Absent container, BE-021 § Reach | the store state becomes optional and the postconditions gain a branch, in both files | M |
 
+**As landed (BK-388's PR).** The root rule is a *postcondition*, not a
+precondition as the table's Root rule row prescribes: a precondition cannot
+rank the closed guard ahead of it, as BE-029 requires, and it would stop the
+contract certifying the oracle's `Write(".")` answer in the root-write
+conformance cells. It ranks after the closed guard and ahead of every
+observed check, and both refusals leave `fs` unchanged. The predicate sits
+in `BackendContract.dfy` §5c and its lemmas in `RootPath.dfy`. The absent
+container is a `containerPresent` flag that `Valid()` ties to `EmptyStore`,
+not an optional store. `sdd/formal/README.md` gaps 9 to 11 record the
+result.
+
 **Gates.** `verify-formal` (a required CI job that runs only when
 `sdd/formal` or `sdd/specs` change, `ci.yml`'s `FORMAL_PAT`) and
 `check_dafny_twin_parity.py`, whose output at `0bf7fe6` is "17 member(s) in

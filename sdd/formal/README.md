@@ -438,6 +438,9 @@ Gaps 9 to 11 were added under BK-388, ahead of RFC-0017's kernel, which is
 written against them (RFC-0017 D7). The ranking they encode is the one
 BE-029 states: a closed terminal backend answers `BackendUnavailable` first,
 the key-decided root checks come next, and every observed check follows.
+Both of the first two also state that nothing changed (`fs == old(fs)`):
+the one error-path frame the model carries, possible because it is keyed
+on the pre-state rather than on the result.
 `MemoryBackend` matches the Python class (non-terminal close, a container
 that is always present), so `MemoryBackendMinimal` witnesses the
 `BackendUnavailable` branches, and both classes carry a `DropContainer`
@@ -481,6 +484,8 @@ Error-path frame conditions (gaps 1–2: `fs == old(fs)` on error) are
 not machine-checked — the `r.Err?` discriminator taints method bodies
 as specification-only in Dafny, preventing compiled assignments and
 returns. `MemoryBackend` preserves the state by construction instead.
+Gaps 9 and 10 are the exception: their frames key on the pre-state
+(`!old(Live())`, `AddressesRoot`), not on `r`, and are verified.
 
 ### TLA+: the WR-018 bundling finding
 
