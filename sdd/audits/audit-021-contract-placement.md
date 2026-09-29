@@ -8,8 +8,9 @@ question is BK-366's, asked one level up: not whether the bug share rose, but
 whether the package's design produces the bugs.
 **Method:** Every `[x]` entry in `sdd/BACKLOG-DONE.md` lines 242 to 7931 (the
 seven sections Unreleased through v0.28.0) and every open header in
-`sdd/BACKLOG.md` was read and tabulated: 77 `BUG-` headers plus 30 `BK-`/`ID-`
-entries whose body describes a defect a user meets. The table was filtered to
+`sdd/BACKLOG.md` was read and tabulated: 77 `BUG-` headers (52 closed in that
+range, 25 open) plus 30 `BK-`, `ID-` and `BL-` entries whose body describes a
+defect a user meets, BL-011 among the 30. The table was filtered to
 entries with a `user.` audience that changed code behaviour, leaving 71, and
 each was assigned to a root-cause cluster by hand; membership is listed under
 each finding so the assignment can be disputed. Code figures were measured with

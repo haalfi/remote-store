@@ -130,7 +130,7 @@ class Driver(Protocol):
     name: str
     namespace: Literal["flat", "hierarchical"]
     parents: Literal["none", "implicit", "explicit"]  # HTTP none; Graph, Azure HNS implicit; Local, SFTP explicit
-    capabilities: CapabilitySet   # declared by the driver, as CAP-001 requires today; the kernel adds none
+    capabilities: CapabilitySet   # declared by the driver, as a backend's CAPABILITIES ClassVar is today (SEEK-001's shape); the kernel adds none
     put_is_atomic: bool           # S3, SQL, flat Azure True (write_atomic is put); Local, SFTP False
 
     def stat(self, key: str) -> Entry | None: ...        # file OR folder, kind on the Entry; None if absent
@@ -178,7 +178,9 @@ than derives.** Deriving a flag from a member's presence contradicts the
 capabilities as defined: `SEEKABLE_READ` means "`read()` always returns a
 seekable stream" (spec 006 SIO-008; `_capabilities.py` L75), which Memory and
 the SQL backends hold with no range primitive and Azure lacks with one; and
-CAP-001 requires `sftp` not to declare `ATOMIC_MOVE` although it has a rename.
+CAP-007 (spec 003 line 47) says a backend that implements move as
+copy-then-delete does not declare `ATOMIC_MOVE`, and `sftp` omits it
+(`_SFTP_CAPABILITIES`, `_sftp.py` line 48) although it has a rename.
 So the driver declares its `CapabilitySet` exactly as a backend does today,
 and at construction the kernel checks consistency in one direction only:
 `ATOMIC_MOVE` requires `SupportsAtomicMove`; `ATOMIC_WRITE` requires
@@ -328,8 +330,9 @@ says so); the BUG-240 and BUG-292 decisions change cells on the classes that
 follow the losing reading; Graph's `get_folder_info().modified_at` differs
 from S3 and SQL and the kernel picks one aggregation; and the conformance
 registry (`tests/backends/fixtures/registry.py`) registers drivers rather than
-classes. CAP-001 and SEEK-001 do not change, because D1 leaves capabilities
-declared. The three retiring classes are never migrated: each is deleted in
+classes. The capability enum (CAP-001), the quality-flag rule (CAP-007) and
+the declaration clause (SEEK-001) do not change, because D1 leaves
+capabilities declared. The three retiring classes are never migrated: each is deleted in
 the PR that lands its replacement (D8 step 3), so no release ships both, and
 they are outside D8's measurement. Nothing above `Backend` changes at any
 step.
@@ -355,8 +358,11 @@ step.
   beside moto; and continuity of `name == "s3"` for the registered type, so
   `error.backend` and the observe labels do not change. What does change and
   is stated: `unwrap(s3fs.S3FileSystem)` becomes `unwrap` of the boto3
-  client, and `ext.arrow`'s Tier-1 native PyArrow probe no longer fires on
-  S3, so `ext/` is not unchanged (§ Impact). The kernel subsumes the
+  client, and `ext.arrow`'s Tier-1 native PyArrow probe, which fires only on
+  `S3PyArrowBackend` (`unwrap(pyarrow.fs.FileSystem)`, `_s3_pyarrow.py` line
+  536; `S3Backend.unwrap` answers `s3fs.S3FileSystem` alone, `_s3.py` line
+  545), no longer fires on S3 once that lane retires, so `ext/` is not
+  unchanged (§ Impact). The kernel subsumes the
   `_S3Base` refactor ID-202 § 4 names, rather than being it.
   `S3PyArrowBackend` exists for data-path throughput (its docstring: "Uses
   PyArrow's C++ S3 filesystem for data-path operations (higher throughput)";
@@ -502,9 +508,8 @@ accepted inverts it. So:
    `bench_pyarrow_tier1.py`, `bench_azure_pyarrow.py`) show it within the
    run-of-record noise band `comparative.md` states, and (c) for a class D4
    retires unmigrated, every item of D4's promotion list for its replacement
-   is complete: the S3 list D4 states (spec block, SEEK-004 amendment,
-   ID-202 § 6 wiring, `client_options` parity, a MinIO or live lane, `name`
-   continuity), and for Azure the items of the route OQ1 chooses. The suite
+   is complete: the S3 list D4 states, in full and not restated here, and
+   for Azure the items of the route OQ1 chooses. The suite
    and the benchmarks cover none of the parity items, which is why (c) is a
    separate condition. The repo's policy
    applies unchanged (`docs-src/reference/migration.md`: "Pre-v1: removed
@@ -593,7 +598,8 @@ it.
   `Supports*` protocols, `DriverBackend`, `Entry`, `Page`, `WriteHandle`,
   `Op`, `Session`. `Registry` gains a factory path for a type string served
   by an async driver through the adapter (D4, Azure). `ext.arrow` loses its
-  Tier-1 native probe on S3 once the s3fs lane retires (D4).
+  Tier-1 native probe on S3 once the PyArrow lane, `S3PyArrowBackend`,
+  retires (D4); the s3fs lane never served that probe.
 - **Backwards compatibility:** additive for existing `Backend` subclasses,
   which keep working and keep passing conformance; the custom-backend guide,
   its check script and the conformance registry move to drivers, and direct
