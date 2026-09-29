@@ -30,60 +30,41 @@ defects, and every figure with its derivation. This record decides it.
 
 ## Decision
 
-- **One kernel implements the `Backend` surface over a thin `Driver`.**
-  RFC-0017 D1 and D2: the driver supplies wire primitives, declared
-  capabilities and one classifier; the kernel owns the cross-cutting clauses
-  and one error-mapping choke point over every call, page and stream. `Backend` stays
-  the abstract contract type and direct subclassing keeps working. *Reverse if*
-  D8 step 4's re-audit finds kernel-owned items recurring at the rate
-  audit-021 measured per class, which would show the placement did not move
-  the defects.
-- **The kernel is written once in async and the sync twin is generated**
-  (RFC-0017 D6, first option; Open Question 1). `AsyncDriverBackend` is the
-  source, and `unasync` generates what the two surfaces share. A small
-  hand-written sync layer supplies what they do not share: `read_seekable`
-  (over `get_range`), `open_atomic` (over `open_write`) and `read`'s
-  `BinaryIO`, since the async ABC has no such methods and streams an iterator.
-  Async-native drivers stay first-class. *Reverse if* the generated part needs
-  hand edits, which would make it a second hand-maintained kernel.
-- **Every remote driver owns its connection lifecycle through a `Session`**
-  (RFC-0017 D5). The `Session` owns connect, the connect-retry budget where
-  the wire has one, liveness and dead-client invalidation behind one
-  `run(op)` entry, and the kernel runs every remote operation through it.
-  What it holds follows the wire: a connection, a token, an engine's pool, an
-  SDK client and its credential. Local and Memory have none. *Reverse if* a
-  remote driver's lifecycle cannot be separated from its operations.
-- **One driver per service; for S3 it is the boto3 one** (RFC-0017 D4).
-  `S3Boto3Backend` becomes the single S3 driver, registered under `"s3"`,
-  and s3fs and PyArrow's S3 filesystem stop being backend layers, so
-  `S3Backend` and `S3PyArrowBackend` have no successor on the kernel. Async
-  S3 callers keep `SyncBackendAdapter`'s auto-wrap. *Reverse if* the boto3
-  driver cannot reach the option parity RFC-0017 D4 lists for what the s3fs
-  lane forwards today.
-- **Sync Azure callers get a generated sync driver.** The single async Azure
-  driver is the source; `unasync` generates the primitives the two SDKs
-  share, and the stream-returning ones (`get` and `get_range` returning
-  `BinaryIO` where the async driver streams an iterator) are hand-written. It
-  replaces the hand-written sync `AzureBackend`, with its behaviour kept. The
-  adapter route was rejected for what it takes from sync callers (RFC-0017
-  § Impact). *Reverse if* the generation cannot map the Azure SDK's sync and
-  async surfaces.
-- **Classification stays inside each driver** (Open Question 6):
-  `classify(exc, op=..., key=...)`, invoked by the kernel at its choke point,
-  which then sets `path` and `backend` and guarantees a non-empty message. The
-  wire-signal alternative reaches four of the eight driver-kept items at the
-  cost of one primitive spanning every wire's vocabulary. *Reverse if* the D8
-  step 4 re-audit finds mapping-content defects recurring across drivers.
-- **`max_depth` applies only when `recursive`** (Open Question 4): the kernel
-  encodes DEPTH-003's reading, the one `BackendContract.dfy` verifies, and
-  ASYNC-014's contrary wording (BUG-240) is not the contract.
-- **The formal model covers the root rule, the close posture and the absent
-  container** (Open Question 7): BE-029, BE-020 and BE-021 § Reach join the
-  verified clauses the kernel is written against, placed as RFC-0017's Open
-  Question 7 answer states.
+Section references are to RFC-0017, which carries the rationale.
 
-How the design is reached (migration order, retirement gates, benchmarks) is
-process, and lives in RFC-0017 D3 and D8, not here.
+- **One kernel implements `Backend` over a thin `Driver`** (D1, D2). The
+  driver supplies wire primitives, declared capabilities and a classifier.
+  The kernel owns the cross-cutting clauses and one error-mapping choke
+  point. Direct `Backend` subclassing keeps working. *Reverse if*
+  kernel-owned defects recur at the per-class rate audit-021 measured.
+- **The kernel is written once in async** (D6, Open Question 1). `unasync`
+  generates the sync surface both runtimes share. A small hand-written sync
+  layer adds what async lacks: `read_seekable`, `open_atomic` and a `BinaryIO`
+  `read`. *Reverse if* the generated part needs hand edits.
+- **Every remote driver owns its lifecycle through a `Session`** (D5). The
+  `Session` owns connect, connect retry, liveness and invalidation behind one
+  `run(op)`, and the kernel runs every remote operation through it. Local and
+  Memory have none. *Reverse if* a driver's lifecycle cannot be separated
+  from its operations.
+- **One driver per service** (D4). S3's is the boto3 driver, registered as
+  `"s3"`; s3fs and PyArrow's S3 filesystem stop being backend layers.
+  Azure's is async. Sync Azure callers get a sync driver generated from it,
+  with the stream primitives hand-written, and it replaces the sync
+  `AzureBackend`. *Reverse if* the boto3 driver cannot reach D4's option
+  parity, or the generation cannot map Azure's two SDK surfaces.
+- **Classification stays in each driver** (Open Question 6). The kernel calls
+  `classify(exc, op, key)` at its choke point, then sets `path` and
+  `backend` and guarantees a message. *Reverse if* mapping-content defects
+  recur across drivers.
+- **`max_depth` applies only when `recursive`** (Open Question 4). This is
+  DEPTH-003's reading, the one `BackendContract.dfy` verifies. ASYNC-014's
+  contrary wording (BUG-240) is not the contract.
+- **The formal model covers the root rule, the close posture and the absent
+  container** (Open Question 7). BE-029, BE-020 and BE-021 § Reach become
+  verified clauses before kernel code.
+
+The migration order, retirement gates and benchmarks are process, and they
+live in D3 and D8.
 
 ## Amendments on acceptance
 
