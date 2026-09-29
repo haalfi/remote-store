@@ -392,8 +392,12 @@ step.
   get in the six ways § Impact lists. The retirement row in D3 is conditional
   on that answer. `GraphBackend` is the precedent for the adapter reading
   only in part: it is async-only and hand-wrapped by its users, not
-  registered for sync, so `type="azure"` in a registry config needs a factory
-  that `Registry`'s `cls(**options)` construction does not have today.
+  registered for sync, so `type="azure"` in a registry config needs a
+  registered callable that wraps the async driver in the adapter.
+  `Registry` already invokes its table entry as `factory(**kwargs)`
+  (`_registry.py` line 154); what changes is `register_backend`'s parameter
+  type, `type[Backend]` today (line 19), widened to `Callable[..., Backend]`,
+  plus that one builtin registration.
 
 Concrete classes go from 13 to 10, and the driver surface to 10 drivers ×
 14 required primitives (plus the optional protocols each implements) instead
@@ -636,7 +640,9 @@ it.
   interface. `Backend` remains the abstract contract type; `DriverBackend` is
   the kernel. New public names: `Driver`, `AsyncDriver`, the nine
   `Supports*` protocols, `DriverBackend`, `Entry`, `Page`, `WriteHandle`,
-  `Op`, `Session`. `Registry` gains a factory path for a type string served
+  `Op`, `Session`. `register_backend` widens its parameter type from
+  `type[Backend]` to `Callable[..., Backend]`, which `Registry`'s
+  `factory(**kwargs)` call already accepts, so a type string can be served
   by an async driver through the adapter (D4, Azure). `ext.arrow` loses its
   Tier-1 native probe on S3 once the PyArrow lane, `S3PyArrowBackend`,
   retires (D4); the s3fs lane never served that probe.
@@ -665,7 +671,8 @@ it.
     notebooks and `pytest-asyncio` tests; `unwrap()` raises
     `CapabilityNotSupported` by default; a caller-supplied sync `credential=`
     is handed to the async SDK unchanged; `error.backend` carries the async
-    driver's name; and `type="azure"` needs the `Registry` factory above.
+    driver's name; and `type="azure"` needs the wrapping registration D4
+    names.
     `open_atomic` is not on this list: flat and HNS `AzureBackend` already
     spool and upload, so the adapter's synthesis matches. The `get_range`
     and `open_write` primitives exist to give the first item back if OQ1
