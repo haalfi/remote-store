@@ -535,6 +535,13 @@ verified clauses where they exist, and the bound that gives is narrower than
 a reader of "verified reference" would take it to be: the clauses behind most
 kernel-owned items in the split below are the ones outside the model.
 
+**Since BK-388** the model covers the root rule, the close posture and the
+absent container (`sdd/formal/README.md` gaps 9 to 11), and spec 003's
+sentence quoted above now says where they are modelled. The error
+attributes, messages and listing pages stay outside it, and so does the
+never-leak invariant on listings behind BUG-249 and 280. This paragraph and
+the next describe the model as it stood when the RFC was filed.
+
 `DafnyOracleBackend` stays a direct `Backend` subclass and is never migrated.
 It is not diffed against the kernel: `sdd/formal/README.md` (T) says "running
 the oracle as a peer backend to diff against would only test the oracle

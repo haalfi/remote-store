@@ -442,9 +442,11 @@ Both of the first two also state that nothing changed (`fs == old(fs)`):
 the one error-path frame the model carries, possible because it is keyed
 on the pre-state rather than on the result.
 `MemoryBackend` matches the Python class (non-terminal close, a container
-that is always present), so `MemoryBackendMinimal` witnesses the
-`BackendUnavailable` branches, and both classes carry a `DropContainer`
-method that models the environment removing the container. The root rule
+present from construction), so `MemoryBackendMinimal` witnesses the
+`BackendUnavailable` branches. Both classes carry a `DropContainer` method,
+which models the environment removing the container and is the only way
+either class reaches the absent state; the Python oracle adapter never
+calls it. The root rule
 covers `write` and the `move`/`copy` source and destination; the other
 file-shaped operations reach the root through the `IsDir` clause, because
 `Root` is a `DirEntry` in every state the model reaches except after
