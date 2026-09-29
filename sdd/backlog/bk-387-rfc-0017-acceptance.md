@@ -88,6 +88,10 @@ Three corrections to the prescription above:
   remainder under § Completing work's "partly done".
 - **Items minted:** BK-388 for the Dafny extensions, BK-389 for D3 step 1 and
   BK-390 for the remainder.
+- **D3 step 1 starts before acceptance.** "Nothing under D3 starts before
+  acceptance" and "dependent on the ADR" above no longer hold. RFC-0017 D8
+  step 2 now runs step 1 under the Proposed ADR, and its PR accepts it.
+  BK-389 depends on BK-388, not on an accepted ADR.
 
 Not done here: the re-homing of the open items § Impact names. The maintainer
 assigned it to BK-389 (its item 7). The decisions recorded on BUG-240, BUG-276

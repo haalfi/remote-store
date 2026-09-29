@@ -30,7 +30,8 @@ cross-cutting clauses inside each method. Audit-021 attributes 45 of the 71
 user-audience defects of the last six releases (63%) to rules stated once and
 re-implemented per class; measured against this design by the rules in § What
 each cluster-A bug becomes, the kernel owns 10 of those outright (14% of the
-71), 6 are split with the driver, 8 stay in the driver, 6 wait on a decision,
+71), 6 are split with the driver, 8 stay in the driver, 6 waited on a
+decision at filing (three since decided, Open Question 4),
 2 disappear with a retired class, and 13 belong to D5's session layer. Counted
 by clause rather than by item, the 45 sit on 14 clauses (11 in cluster A, 3 in
 B); the audit derives no clause count for the other 26, so the 14 has no
@@ -240,8 +241,9 @@ other 6 public members (`name`, `capabilities`, `unwrap`, `native_path`,
 - the file-ancestor pre-check as a kernel option with today's default: the
   opt-in `reject_write_under_file_ancestor` moves from each flat-namespace
   class to the kernel's constructor, default off, and the walk runs in the
-  kernel before any `put` when set. Its fail-open policy is BUG-292's open
-  decision and the kernel applies whichever BE-008 chooses;
+  kernel before any `put` when set. Its probe-error policy is BUG-292's,
+  decided at BK-387: only a confirmed miss reads as "no ancestor", and any
+  other probe error, a transient one included, propagates mapped;
 - the `max_depth` reference algorithm, decided once (Open Question 4 names
   BUG-240 as the contradiction to adjudicate before the kernel encodes it);
 - `write_atomic` as `put` where `put_is_atomic`, as `open_write` + `commit`
@@ -257,12 +259,9 @@ other 6 public members (`name`, `capabilities`, `unwrap`, `native_path`,
   already typed passes through untouched (BUG-293); and the kernel
   post-processes what comes back, setting `path` and `backend` (ERR-001) and
   synthesising a message from the exception class when what comes back is
-  blank (ERR-009). That floor holds under either arm of BUG-276's open
-  decision: under "synthesise" it is the fix itself, and under "classify"
-  the driver's classifier returns a typed error carrying its own message and
-  the floor never fires. What the decision leaves open is which arm the five
-  base-class sites take, which is driver content, not whether the kernel
-  guarantees ERR-009;
+  blank (ERR-009). That floor would hold under either arm of BUG-276's
+  decision; the arm decided at BK-387 is "synthesise", for which the floor
+  is the fix itself;
 - the absent-container rule applied per operation scope, not per exception:
   the tolerant answers BE-021 § Reach decides are given only for the
   operations it names, and identity-scope calls (`write`, `probe`, drive-id
@@ -304,7 +303,7 @@ of adding a backend, and `_ReadOnlyBackend` in the guide's
 the shared part of the two SQL drivers; `AsyncBackendSyncAdapter(Backend)`
 and `SyncBackendAdapter(AsyncBackend)` stay direct subclasses, since each is
 the other runtime's face of a backend and not a backend of its own (D6
-decides whether the first also becomes the sync kernel over an async driver);
+decided that the sync kernel is generated, so the first does not become it);
 `DafnyOracleBackend` stays a direct subclass by design (D7); the fake in
 `tests/ext/test_arrow.py`, the two fakes in
 `tests/scripts/test_dafny_classorder.py` and the three doubles under
@@ -334,8 +333,9 @@ disagree:
 | in 2 | `S3Backend`, `S3PyArrowBackend` | retire, unmigrated, in the step-2 PR behind D8's gate; `_S3Base` goes with them |
 | in 4 | `AzureBackend` (sync) | replaced, unmigrated, by the sync driver generated from the step-4 async driver (Open Question 1), in the step-4 PR behind the same gate |
 
-**The suite is not "unchanged"; the cells that change are these, and they
-are settled before step 1.** AZ-025's blank-message clause and its pinning
+**The suite is not "unchanged"; the cells that change are these, enumerated
+before step 1 and each settled before the step that changes it (Open
+Question 4).** AZ-025's blank-message clause and its pinning
 test go red whichever arm BUG-276's decision takes (`sdd/BACKLOG.md`
 BUG-276: "the fix deliberately falsifies AZ-025's blank-message clause and
 its pinning test"; its dossier: "Both go red when this lands, by design");
@@ -343,7 +343,10 @@ the BUG-240 and BUG-292 decisions change cells on the classes that
 follow the losing reading (decided at BK-387: DEPTH-003 wins, so
 `GraphBackend`'s; the catch narrows, so the five flat-namespace `_head_one`
 probes'); Graph's `get_folder_info().modified_at` differs
-from S3 and SQL and the kernel picks one aggregation; and the conformance
+from S3 and SQL, and the kernel picks one aggregation. Until step 7 decides
+Graph's case, the step-1 kernel aggregates the latest file modification
+time, which is what `MemoryBackend` computes today (`_memory.py`, the
+`latest` loop in `get_folder_info`); and the conformance
 registry (`tests/backends/fixtures/registry.py`) registers drivers beside
 `Backend` instances, a driver fixture running through the kernel and a
 direct-subclass fixture staying runnable as today (`DafnyOracleBackend` is
@@ -398,9 +401,11 @@ step.
   `type[Backend]` (`_registry.py` line 19) to `Callable[..., Backend]`. The
   chosen route needs neither.
 
-Concrete classes go from 13 to 10, and the driver surface to 10 drivers ×
-14 required primitives (plus the optional protocols each implements) instead
-of 10 classes × 21 methods plus 3 × 19.
+Hand-written concrete classes go from 13 to 10 (D3's migrating rows), and
+the hand-written driver surface to 10 drivers × 14 required primitives (plus
+the optional protocols each implements) instead of 10 classes × 21 methods
+plus 3 × 19. The sync Azure driver generated from the async one (Open
+Question 1) is an eleventh driver, and is not hand-written.
 
 ### D5. A session layer for connection-oriented drivers
 
@@ -556,7 +561,9 @@ accepted inverts it. Acceptance here rides with the first implementing PR
    retires or replaces unmigrated, every item of D4's promotion list for its
    replacement is complete: the S3 list D4 states, in full and not restated
    here, and for Azure the generated sync driver registered under
-   `type="azure"` with the hand-written class's public surface. The suite
+   `type="azure"` with the hand-written class's public surface, its class
+   name excepted: whether the name is kept is the step-4 decision § Impact,
+   Backwards compatibility, names, and (c) holds either way. The suite
    and the benchmarks cover none of the parity items, which is why (c) is a
    separate condition. The repo's policy
    applies unchanged (`docs-src/reference/migration.md`: "Pre-v1: removed
@@ -584,13 +591,13 @@ by-hand reading of the register entries and is disputable item by item.
 | **R2 removed by retirement**: only on the s3fs lanes, which D3 retires unmigrated | BUG-255 (mid-listing 404 swallowed on the s3fs lanes), 242 (403 read as absence on the s3fs lanes) | 2 |
 | **R3 split**: the invocation or the guarantee is the kernel's, the verdict or content is the driver's | BUG-264 (message guarantee kernel; arm content driver), BK-358 (stream catch set kernel via `stream_catch`; `BackendUnavailable` verdict driver), BK-359 (message and log record kernel; stall detection driver), BK-266 (self-op copy and the auth leak kernel; probe scope driver), BK-298 (use-after-close kernel; credential ownership driver), BUG-248 (BE-021 § Reach applied per `Op` by the kernel; the identity-scope verdict the driver's, per ADR-0038) | 6 |
 | **R4 driver-kept**: classifier content, probe content or resource logic | BUG-275 (errno arm), BK-316 (non-OpenSSH shapes), BUG-231 (a probe that touched nothing; `probe()` is now required but what it touches is the driver's), 222 (429/5xx/401 rows), BK-263 (credential in a message), BK-306 (session release on close), BUG-256 (what `probe()` touches), 253 (Graph's session-create 404 under a file ancestor, with `parents == "implicit"`) | 8 |
-| **R5 needs a decision first**: the item carries an open decision in `BACKLOG.md` or depends on an open question here | BUG-240 (OQ4), 292 (BE-008's fail-open choice), 276 (synthesise or classify at the five base-class sites; the kernel's ERR-009 floor holds under both, so the decision is the driver's arm content, as for BUG-264 in R3), 293 (which arms receive a typed error), 245 (construction; OQ5), 257 (page boundary; OQ2) | 6 |
+| **R5 needs a decision first**: at filing, the item carried an open decision in `BACKLOG.md` or depended on an open question here. BUG-240, 292 and 276 were decided at BK-387 (Open Question 4) and keep this row as their at-filing assignment | BUG-240 (OQ4; decided: DEPTH-003), 292 (BE-008's probe-error choice; decided: narrow the catch), 276 (synthesise or classify at the five base-class sites, decided: synthesise; the kernel's ERR-009 floor holds under both, so the decision is the driver's arm content, as for BUG-264 in R3), 293 (which arms receive a typed error), 245 (construction; OQ5), 257 (page boundary; OQ2) | 6 |
 | **R6 session (D5)** | BUG-279 (`unwrap` outside the mapper), 265 (connect-time shapes), 273 (connect-time context) | 3 |
 
 Ten of 35 is what the kernel alone removes; with D5's three and the two
 retirements, 15. The eight R4 items are the argument for the wire-signal
-alternative under § Alternatives, and Open Question 6 asks whether to take
-it.
+alternative under § Alternatives; Open Question 6 asked whether to take it,
+and its answer keeps `classify`.
 
 ## Alternatives Considered
 
@@ -618,7 +625,7 @@ it.
   vocabulary at once (S3 service codes, Azure `HttpResponseError` codes,
   Graph's scoped `404`, paramiko's shapes with no errno, SQLAlchemy dialect
   errors), which is the part of BE-021 that grew per backend for a reason.
-  Not chosen here; kept as Open Question 6.
+  Not chosen; Open Question 6's answer keeps `classify`.
 - **A last-resort mapper at the `Store` boundary only.** Closes the never-leak
   breaches on operations (BUG-249, 280, BK-358) and nothing else: it cannot
   reach construction (BUG-245) or a lazy client evaluated outside the mapper

@@ -32,8 +32,11 @@ that PR. That PR is RFC-0017 D3 step 1.
 5. The custom-backend guide rewritten as a driver, its `partial-capabilities`
    region included. `scripts/check_custom_backend_guide.py` is re-pointed from
    `Backend.__abstractmethods__` at `Driver`, and the landing page's snippet
-   (`docs-src/index.md`, `examples/snippets/homepage.py`) is updated. They
-   need `Driver` to exist, which is why they are here and not in BK-387.
+   (`docs-src/index.md`, `examples/snippets/homepage.py`) is updated. The
+   migration guide gains its section for backend authors, and the CHANGELOG
+   says direct `Backend` subclassing is no longer the documented route. Both
+   are obligations of RFC-0017 § Impact, Backwards compatibility. All of this
+   needs `Driver` to exist, which is why it is here and not in BK-387.
 6. ADR-0042's Status set to Accepted and RFC-0017's Status set to Accepted, in
    the same PR.
 7. The re-homing RFC-0017 § Impact names: each open item listed there

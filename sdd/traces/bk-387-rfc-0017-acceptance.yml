@@ -1,12 +1,13 @@
 id: BK-387
-title: "Accept RFC-0017 (contract kernel over thin drivers): answer OQ1, 4, 6, 7 and record the acceptance ADR"
+title: "RFC-0017 D8 step 1: answer OQ1, 4, 6, 7 and propose ADR-0042 (accepted later, with D3 step 1)"
 trigger: >-
   Audit-021 attributed 45 of 71 user-audience defects to contract clauses
   re-implemented per backend class; RFC-0017 proposes one kernel over thin
-  drivers and names its acceptance step (D8 step 1). BK-387 owns that step:
-  the four open questions, the acceptance ADR, the amendment set and the
-  benchmark band. The maintainer invoked /ship with the decisions routed
-  through plan-mode questions.
+  drivers and names its acceptance step (D8 step 1). BK-387 owned that step:
+  the four open questions, the ADR, the amendment set and the benchmark
+  band. The maintainer invoked /ship with the decisions routed through
+  plan-mode questions, and at plan approval kept the ADR Proposed until the
+  first backend runs on the kernel, so acceptance moved to BK-389.
 source_items:
   - BK-387
 audience:

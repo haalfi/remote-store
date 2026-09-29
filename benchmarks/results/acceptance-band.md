@@ -32,6 +32,14 @@ always inside the band.
   (`rg -n 'S3PyArrowBackend\(|AzureBackend\(' benchmarks/bench_*.py`). The
   retiring PR therefore owes those two a backend parameter first, so both
   classes run in one invocation.
+- **The retiring PR also owes a lane for a replacement that has none.** The
+  `azure` lane in `benchmarks/conftest.py` builds `AzureBackend`, so the
+  generated sync Azure driver needs its own `bench_backend` and
+  `bench_target` lane before step 4's run. `s3-boto3` already has one.
+- **The paired run is taken at a commit where both classes exist**, inside
+  the retiring PR and before its deletion commit, because that PR registers
+  the replacement under the same type string and deletes the retiring
+  class. The PR records that commit.
 - **The retiring class is compared at its best tier.** For S3 that is
   `S3PyArrowBackend` read through `bench_pyarrow_tier1.py`'s Tier 1, since
   the replacement loses that probe (RFC-0017 D4). The replacement is compared
@@ -54,10 +62,12 @@ is where acceptability is decided, for this one purpose.
 
 `run-of-record/` cannot be the reference. Its files are slimmed to
 `stats.mean` alone, with no dispersion, and `clean.json` carries no
-`s3-boto3` cells, the S3 replacement:
+`s3-boto3` lane, the S3 replacement, in either fixture. This command counts
+each cell's lane, `bench_backend` or `bench_target`'s first element; it
+prints only `local`, `s3`, `s3-pyarrow`, `sftp` and `azure`, and `{'mean'}`:
 
 ```bash
-python -c "import json,collections;d=json.load(open('benchmarks/results/run-of-record/clean.json'));print(collections.Counter(b['params'].get('bench_backend') for b in d['benchmarks']));print(set(k for b in d['benchmarks'] for k in b['stats']))"
+python -c "import json,collections;d=json.load(open('benchmarks/results/run-of-record/clean.json'));print(collections.Counter(b['params'].get('bench_backend') or b['params']['bench_target'][0] for b in d['benchmarks']));print(set(k for b in d['benchmarks'] for k in b['stats']))"
 ```
 
 It also runs on hardware a retirement PR does not share. The paired run

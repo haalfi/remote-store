@@ -270,7 +270,7 @@ failure it was.
   `OSError`) as "no ancestor", so the file-ancestor gate vanishes silently;
   measured letting `move` succeed under a file ancestor. An anonymous in-memory
   SQLite on `QueuePool` defeats it with no error at all. Decided (BK-387):
-  narrow the catch so only a confirmed miss reads as "no ancestor"; BE-008 says so.
+  narrow the catch so only a confirmed miss reads as "no ancestor"; BE-008 changes with the fix.
   Detail: [dossier](backlog/bug-292-ancestor-gate-fails-open.md)
 
 - [ ] **BK-388 — The Dafny model lacks the root rule, the close posture and the absent container that RFC-0017's kernel encodes**

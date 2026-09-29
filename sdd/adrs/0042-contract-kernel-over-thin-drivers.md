@@ -80,8 +80,9 @@ defects, and every figure with its derivation. This record decides it.
   mechanism, as that record decides.
 - **[ADR-0012](0012-async-store-backend-api.md)**, *separate async types* and
   its dismissal of async-first: the types stay separate, and the kernel behind
-  them is written async-first with the sync twin generated, which is Option E
-  applied to the kernel alone rather than to every backend.
+  them is written async-first and its sync twin is generated as native sync
+  source. Of Option E's dismissal, only "async-first source" is reversed, and
+  only for the kernel: sync callers get no runtime wrapper over async code.
 - **[ADR-0025](0025-async-to-sync-backend-adapter.md)**, *capability
   translation*: its "reverse if a native async seekable-read op is added" is
   triggered by the driver's `get_range` primitive. The adapter keeps serving
@@ -92,7 +93,8 @@ defects, and every figure with its derivation. This record decides it.
 - **Positive:** each contract clause is implemented once, so a clause fixed is
   fixed for every migrated class; RFC-0017 assigns 10 of cluster A's 35 items
   to the kernel outright and 13 of the 71 to the session layer.
-- **Positive:** concrete classes go from 13 to 10, and adding a backend means
+- **Positive:** hand-written concrete classes go from 13 to 10 (the sync
+  Azure driver is generated on top of them), and adding a backend means
   writing wire primitives and a classifier rather than 21 methods.
 - **Negative:** a kernel defect regresses every migrated class at once. It is
   bounded by migrating one class per revertable PR behind the suite, and by
