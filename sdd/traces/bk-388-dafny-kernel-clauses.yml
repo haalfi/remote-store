@@ -211,16 +211,22 @@ phases:
           root-destination carve-out and keep the model. New conformance
           cells `test_root_destination_outranks_a_missing_source` (sync and
           async): 56 passed, 8 skipped across lanes; seeded src-first order in
-          MemoryBackend.move turns the move cells red (2 failed).
+          MemoryBackend.move turns the sync memory move cells in test_io.py red
+          (2 failed, the only cells that run selected). Round 4's measuring
+          member ran the premise at base and head on every backend reachable
+          offline: all real ones answer InvalidPath(dst) at both; the Dafny
+          oracle alone answered NotFound(src) at base, and this PR's
+          regeneration moved it to the carved-out order.
         outcome: ok
       - file: sdd/rfcs/rfc-0017-contract-kernel-over-thin-drivers.md
         section: "Open Question 7, the ResourceSafety.dfy include line"
         read_type: verify
         extract: >-
-          Cited "its line 34"; this PR's header growth moved it (48 at
-          593f725, 50 after the round-3 fix pass, by `git grep -n '^include'`).
-          Replaced the number with that command.
-        outcome: misleading
+          Cited "its line 34", true when written; this PR's own header growth
+          moved it (48 at 593f725, 50 after the round-3 fix pass, by
+          `git grep -n '^include'`), and I did not sweep for it. Replaced the
+          number with that command. The miss is mine, not the RFC's.
+        outcome: ok
   - id: verify
     name: Verify
     steps:
@@ -229,7 +235,15 @@ phases:
         read_type: verify
         extract: >-
           At a99af9f (before the round-1 frames): 1647 verified, 0 errors.
-          The figure at the final head is recorded in the round-3 step below.
+        outcome: ok
+      - file: sdd/formal/
+        section: "dafny verify over the five .dfy files, default time limit"
+        read_type: verify
+        extract: >-
+          At 50b4071, whose sdd/formal is unchanged in every later commit of
+          the PR (`git diff 50b4071 --stat -- sdd/formal` empty): 1775
+          verified, 0 errors. The same count at 49db4c3, since rounds 2 to 4
+          changed only comments in the .dfy files.
         outcome: ok
       - file: sdd/formal/MemoryBackend.dfy
         section: "seven mutations, each on a scratch copy of sdd/formal"
@@ -254,3 +268,6 @@ surprising_ripples:
   - scripts/dafny_verify.sh
   - tests/scripts/test_check_dafny_twin_parity.py
   - sdd/rfcs/rfc-0017-contract-kernel-over-thin-drivers.md
+  - sdd/specs/029-async-store-backend-api.md
+  - tests/backends/conformance/test_io.py
+  - tests/backends/conformance/test_async_extended.py

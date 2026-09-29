@@ -172,8 +172,8 @@ class TestBackendRootPath:
     that has folders, and ``Capability.LIST`` is how a backend declares it
     does. Gating on WRITE instead was an accident of these cells needing a
     seeded file, and it silently excluded every read-only backend that *does*
-    enumerate — which is where the rule still needs to hold. The seeds are now
-    confined to the two cells that genuinely need one, behind ``_require``.
+    enumerate — which is where the rule still needs to hold. Seeds sit only in
+    the cells that genuinely need one, behind ``_require``.
     """
 
     @pytest.mark.spec("BE-029")

@@ -3,8 +3,8 @@
 
 ``sdd/formal/MemoryBackend.dfy`` declares two classes that refine the same
 ``Backend`` trait.  ``MemoryBackend`` is the reference model; ``MemoryBackendMinimal``
-is a satisfiability witness for the ``BasicSource`` / ``CapabilityNotSupported``
-branches, and it duplicates every member of the reference because **Dafny has no
+is a satisfiability witness for the ``BasicSource`` / ``CapabilityNotSupported`` /
+``BackendUnavailable`` branches, and it duplicates every member of the reference because **Dafny has no
 class-to-class inheritance**.
 
 What the verifier does and does not cover, measured rather than assumed.  Each

@@ -331,11 +331,12 @@ clause's opening paragraphs already forbid.
 **The `move`/`copy` destination is covered too**, and the rule is the same one:
 a destination that is the root is a write to the root, refused before the
 transport. It is stated rather than left to follow, because the argument that it
-follows is exactly what failed. On the hierarchical backends the destination is
-*already* refused by observation — with the container present the destination
-probe reports a directory, with it absent the source check fails first — and
-that reasoning does not survive the move to a flat namespace, where nothing is
-observed: measured, `move(src, ".")` on the direct-boto3 lane **returned cleanly
+follows is exactly what failed. On the hierarchical backends the destination was
+once refused by observation — with the container present the destination probe
+reports a directory; with it absent the source check fails first, which answers
+`NotFound(src)` and so breaches [BE-018](#be-018-move)'s root-destination
+carve-out — and that reasoning does not survive the move to a flat namespace,
+where nothing is observed: measured, `move(src, ".")` on the direct-boto3 lane **returned cleanly
 and deleted the source**, and the s3fs lane answered `AlreadyExists` for a
 destination that does not exist. A clause whose scope depends on a per-namespace
 reachability argument is a clause that is wrong on the namespace nobody checked.
@@ -357,7 +358,7 @@ what they do reach is measured rather than assumed:
 | Backend | Reached by the conformance cells | Pinned only in its per-backend home | Pinned nowhere |
 |---------|----------------------------------|--------------------------------------|----------------|
 | `SQLQueryBackend` — fixture `sqlquery` | the query rows on the empty store (`exists` / `is_folder` / `is_file`, both spellings); addressing (`native_path` / `resolve` agreeing on both spellings, `to_key` returning the canonical root key); and the **read half** of the file-shaped-operation row — `read`, `read_bytes`, `read_seekable`, `get_file_info`, both spellings | the populated-store rows (`get_folder_info` aggregating a non-empty store), because the conformance fixture registers an empty query mapping and the suite seeds through `write` (ID-244) | — |
-| Graph — fixture `graph_replay` | addressing, under the fixture's `base_path`: `native_path` / `resolve` agreeing on both spellings, `to_key` returning the canonical root key | in `tests/backends/graph/aio/test_backend.py`: every root spelling refused as a write target, as a `move`/`copy` destination and as a `move`/`copy` source, plus the closed-state ordering across both pre-checks, and the same addressing agreement with **no** `base_path` — the conformance fixture is always rooted under one, and the bare-root arm is where both defects this clause was written from lived | the query rows, and the five file-shaped operations other than the `move`/`copy` source. **Not** the write rows: those seed through `write`, so the conformance cells skip for want of a cassette, but the per-backend cells above pin the same guards — they refuse before a request exists, so they need no recording. The close-posture cell does not seed either, and the Graph lane executes it within conformance |
+| Graph — fixture `graph_replay` | addressing, under the fixture's `base_path`: `native_path` / `resolve` agreeing on both spellings, `to_key` returning the canonical root key; and a root `move`/`copy` destination refused ahead of a missing source (`test_root_destination_outranks_a_missing_source`, async, unseeded) | in `tests/backends/graph/aio/test_backend.py`: every root spelling refused as a write target, as a `move`/`copy` destination and as a `move`/`copy` source, plus the closed-state ordering across both pre-checks, and the same addressing agreement with **no** `base_path` — the conformance fixture is always rooted under one, and the bare-root arm is where both defects this clause was written from lived | the query rows, and the five file-shaped operations other than the `move`/`copy` source. **Not** the write rows: those seed through `write`, so the conformance cells skip for want of a cassette, but the per-backend cells above pin the same guards — they refuse before a request exists, so they need no recording. The close-posture cell does not seed either, and the Graph lane executes it within conformance |
 
 The file-shaped-operation row is seven operations (`_ROOT_FILE_OPS`): the four
 reads above plus `delete`, `move` and `copy`. `SQLQueryBackend` declares no
@@ -949,6 +950,8 @@ the split is per-cell rather than per-backend. Its lane skips both new rosters,
 because those seed through `write` and so need a cassette — hence the cells
 fencing its source and destination guards live in `tests/backends/graph/aio/`,
 where they need no recording since those guards refuse before a request exists.
+One destination cell does reach it within conformance: BE-018's
+root-destination carve-out cell, which seeds nothing (BK-388).
 Its **closed-guard ordering is pinned within conformance**, by the `aio/` twin of
 the close-posture cell: that one never seeds, so the Graph lane executes it, and
 it is the cell that caught the ordering breach in the first place. A cassette-less
