@@ -20,23 +20,24 @@ concrete `DriverBackend(Backend)` kernel over a per-backend `Driver` of
 fourteen required wire primitives and nine optional ones, with error mapping
 at a single choke point that invokes the driver's operation-scoped
 `classify(exc, op, key)` on every call, listing page and stream and
-guarantees the error's `path`, `backend` and a non-empty message. Today every
-backend class implements the surface by hand, 10 sync classes × 21 I/O
-methods plus 3 async classes × 19, and re-derives the contract's cross-cutting
-clauses inside each method. Audit-021 attributes 45 of the 71 user-audience
-defects of the last six releases (63%) to rules stated once and re-implemented
-per class; measured against this design by the rules in § What each cluster-A
-bug becomes, the kernel owns 10 of those outright (14% of the 71), 6 are split
-with the driver, 8 stay in the driver, 6 wait on a decision, 2 disappear with
-a retired class, and 13 belong to D5's session layer. Counted by clause rather
-than by item, the 45 sit on 14 clauses (11 in cluster A, 3 in B); the audit
-derives no clause count for the other 26, so the 14 has no share. The 63% is
-the audit's diagnosis of the placement;
-the 14% is what this kernel alone removes, and the rest of the proposal (the
-session layer, one driver per service, the wire-signal question) is sized
-against the remainder. `Store`, `Registry`, the error hierarchy and
-capabilities keep their interfaces; the conformance suite is the migration's
-oracle, with the cells that change enumerated before the first migration.
+guarantees the error's `path`, `backend` and a non-empty message.
+
+Today every backend class implements the surface by hand, 10 sync classes × 21
+I/O methods plus 3 async classes × 19, and re-derives the contract's
+cross-cutting clauses inside each method. Audit-021 attributes 45 of the 71
+user-audience defects of the last six releases (63%) to rules stated once and
+re-implemented per class; measured against this design by the rules in § What
+each cluster-A bug becomes, the kernel owns 10 of those outright (14% of the
+71), 6 are split with the driver, 8 stay in the driver, 6 wait on a decision,
+2 disappear with a retired class, and 13 belong to D5's session layer. Counted
+by clause rather than by item, the 45 sit on 14 clauses (11 in cluster A, 3 in
+B); the audit derives no clause count for the other 26, so the 14 has no
+share. The 63% is the audit's diagnosis of the placement; the 14% is what this
+kernel alone removes, and the rest of the proposal (the session layer, one
+driver per service, the wire-signal question) is sized against the remainder.
+`Store`, `Registry`, the error hierarchy and capabilities keep their
+interfaces; the conformance suite is the migration's oracle, with the cells
+that change enumerated before the first migration.
 
 ## Motivation
 
