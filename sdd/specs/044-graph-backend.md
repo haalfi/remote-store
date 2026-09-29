@@ -357,7 +357,9 @@ from the Graph `driveItem` body. Field mapping:
 - `driveItem.name` → `FileInfo.name`
 - `driveItem.size` → `FileInfo.size`
 - `driveItem.lastModifiedDateTime` (RFC 3339 string) → parsed to
-  `datetime` → `FileInfo.modified_at`
+  `datetime` → `FileInfo.modified_at`; missing or unparseable → the
+  unknown-time sentinel (`datetime.min` in UTC), which folder
+  aggregation skips (FOLDERINFO-001)
 - `driveItem.eTag` → `FileInfo.etag` (stripped of outer quotes and
   lowercased)
 - `driveItem.file.mimeType` → `FileInfo.content_type`
@@ -526,7 +528,9 @@ per ASYNC-021) with content size <= 4 MiB uses
 - The write is atomic at the service level.
 - The returned `WriteResult` carries `source="native"` (WR-004) with
   `etag`, `last_modified`, and `version_id` populated from the
-  `driveItem` body Graph returns in the `200 OK` response. `size` is
+  `driveItem` body Graph returns in the `200 OK` response
+  (`last_modified` is `None` when `lastModifiedDateTime` is missing or
+  unparseable). `size` is
   the byte count the backend wrote (WR-003) — authoritative even when
   the response body omits or under-reports `size` — and may therefore
   diverge from a later `get_file_info().size`, which reads
@@ -706,7 +710,8 @@ There is no separate `content_length` keyword on `AsyncBackend.write()`
 - The returned `WriteResult` carries `source="native"` (WR-004) with
   `etag`, `last_modified`, and (where present) `version_id`
   populated from the `driveItem` body Graph returns in the **final**
-  chunk's `201 Created` / `200 OK` response. `size` is the byte count
+  chunk's `201 Created` / `200 OK` response (`last_modified` as in
+  GR-018). `size` is the byte count
   the backend wrote (WR-003), not re-derived from the body — same rule
   and rationale as GR-018. `digest` is left `None`
   per GR-049. `metadata` echoes the caller's input mapping when one is

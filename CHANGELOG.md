@@ -7,7 +7,7 @@ This project follows [Semantic Versioning](https://semver.org/). Pre-1.0, minor 
 
 ## [Unreleased]
 
-- BUG-296: `get_folder_info(path, max_depth=N)` now answers `modified_at=None`, like the plain call, for a folder whose files have no known modification time (`SQLQueryBackend`, or `SQLBlobBackend` over a table without a `modified_at` column), instead of `0001-01-01`.
+- BUG-296: `get_folder_info(path, max_depth=N)` now answers `modified_at=None`, like the plain call, when no file time is known (SQL backends, Graph), instead of `0001-01-01` or `1970-01-01`; Graph's `WriteResult.last_modified` and folder time are `None` for an unknown time, not the epoch.
 
 - BK-387: The plan to implement the backend contract once, in a shared kernel over thin per-backend drivers, has its design questions answered and is proposed as ADR-0042; nothing changes for users yet, and it is accepted with the first backend built on it.
 

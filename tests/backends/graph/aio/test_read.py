@@ -9,7 +9,7 @@ stream (GR-015/017/055) lives in ``transfer.py`` and is covered by
 
 from __future__ import annotations
 
-from datetime import timezone
+from datetime import datetime, timezone
 from typing import TYPE_CHECKING
 
 import httpx
@@ -359,6 +359,6 @@ class TestParseGraphDatetime:
 
     @pytest.mark.spec("GR-013")
     @pytest.mark.parametrize("bad", ["", None, "not-a-date", 12345])
-    def test_fallback_is_tz_aware(self, bad: object) -> None:
-        dt = parse_graph_datetime(bad)
-        assert dt.tzinfo is not None
+    def test_fallback_is_unknown_time_sentinel(self, bad: object) -> None:
+        # The library-wide unknown-time value, so folder aggregation skips it.
+        assert parse_graph_datetime(bad) == datetime.min.replace(tzinfo=timezone.utc)

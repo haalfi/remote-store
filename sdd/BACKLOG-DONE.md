@@ -247,7 +247,12 @@ if evidence changes; these are retired.
   skip `None`, per RFC-0017 D3's rule, which FOLDERINFO-001 now states; BE-017's
   statement stays with BK-389. The sentinel has one definition,
   `_models._UNKNOWN_MODIFIED_AT`, which `_sqlalchemy.py` (replacing
-  `_EPOCH_MIN` and an inline copy) and `_http.py` import. **Reproduced before
+  `_EPOCH_MIN` and an inline copy), `_http.py` and Graph's `items.py` import.
+  Graph had a second sentinel, the Unix epoch (found in PR #1046's review):
+  its `FileInfo.modified_at` now takes the shared one, and its Optional
+  `WriteResult.last_modified` and own `FolderInfo.modified_at` take `None`
+  (GR-013, GR-018 amended); seen red first in `tests/backends/graph/aio/`
+  (8 failures, each `1970-01-01`). **Reproduced before
   the fix**, both halves: `tests/backends/sqlquery/test_folder_info_sentinel.py`
   and `tests/backends/sqlblob/test_folder_info_sentinel.py`, 8 of 10 red on
   sync and async `Store` (plain `None`, depth `0001-01-01`), turning the
