@@ -221,14 +221,14 @@ discovery_followups:
   - BK-390
   - BUG-296
 review:
-  # Derived by `hatch run ship-report 1045 --trace-block-only` at head 4bd9e22.
+  # Derived by `hatch run ship-report 1045 --trace-block-only` at head 9868ff2.
   # Do not hand-edit, except a newly required field per sdd/traces/_schema.yml
   # section review: RFC-0015 D4 makes this script the only producer.
   derivation: "hatch run ship-report 1045 --trace-block-only"
   pr: 1045
-  review_rounds: 8
-  submissions: 10
-  findings: 52
+  review_rounds: 13
+  submissions: 13
+  findings: 57
   by_round:
     - round: 1
       findings: 7
@@ -280,11 +280,26 @@ review:
       origin: {original: 3}
       triage: {must-fix: 3}
       duration_hours: 0.2
+    - round: 11
+      findings: 1
+      origin: {loop-introduced: 1}
+      triage: {unknown: 1}
+      duration_hours: 0.27
+    - round: 12
+      findings: 1
+      origin: {loop-introduced: 1}
+      triage: {must-fix: 1}
+      duration_hours: 0.03
+    - round: 13
+      findings: 3
+      origin: {loop-introduced: 2, unclassifiable-file: 1}
+      triage: {must-fix: 3}
+      duration_hours: 0.23
   by_file:
     - path: "sdd/rfcs/rfc-0017-contract-kernel-over-thin-drivers.md"
-      findings: 14
+      findings: 16
     - path: "sdd/adrs/0042-contract-kernel-over-thin-drivers.md"
-      findings: 9
+      findings: 11
     - path: "benchmarks/results/acceptance-band.md"
       findings: 8
     - path: "sdd/BACKLOG.md"
@@ -292,7 +307,7 @@ review:
     - path: "sdd/backlog/bk-389-kernel-step-1-memory.md"
       findings: 4
     - path: "sdd/backlog/bk-390-rfc-0017-spec-amendments.md"
-      findings: 3
+      findings: 4
     - path: "sdd/traces/bk-387-rfc-0017-acceptance.yml"
       findings: 3
     - path: "sdd/backlog/bk-387-rfc-0017-acceptance.md"
@@ -328,4 +343,14 @@ review:
       subject: "BK-387: Address PR #1045 round 7 and the ADR process review"
     - sha: "4bd9e22"
       subject: "BK-387: Address PR #1045 round 8"
+    - sha: "e358bfd"
+      subject: "BK-387: Record the PR #1045 review block in the trace"
+    - sha: "0b54212"
+      subject: "BK-387: Drop the audit citation from ADR-0042's session bullet"
+    - sha: "11b1eeb"
+      subject: "BK-387: Give every remote driver a Session"
+    - sha: "5b901c6"
+      subject: "BK-387: Condense ADR-0042's Decision to its decisions"
+    - sha: "9868ff2"
+      subject: "BK-387: Address PR #1045 round 9"
   ci: {verdict: PENDING, failed: 0, pending: 2}
