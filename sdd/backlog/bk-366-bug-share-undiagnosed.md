@@ -36,3 +36,17 @@ section (scratch script over `BACKLOG-DONE.md`): v0.25.0 29/91 (32%), v0.26.0
 above reproduce, but starting two releases earlier the share moves 32% → 41%,
 not 3% → 35%. Open `BUG-` items now number 25 of 68
 (`rg -c '^- \[[ ~]\] \*\*BUG-' sdd/BACKLOG.md`). Found by the ADR-0040 § 6 conversion.
+
+## Note, 2026-09-28
+
+[Audit-021](../audits/audit-021-contract-placement.md) classifies every
+user-audience code defect from v0.28.0 to the current stub, open items
+included, with the register's finder column per entry (57 of 71 caught
+internally, 11 naming no finder, 3 naming a user-facing trigger of which 2
+are user reports), and answers the reading
+question: detection improved, and for the contract and SFTP-lifecycle
+clusters what it detected was released behaviour found by audit rather than
+by users; the eight Graph burn-in defects were fixed before release. Its
+design conclusion is
+[RFC-0017](../rfcs/rfc-0017-contract-kernel-over-thin-drivers.md). Whether
+that meets this item's exit criteria is undecided here.
