@@ -565,7 +565,7 @@ a single implementation to hold to.
 
 | Clause | Model change | Effort | Recommendation |
 |---|---|---|---|
-| Root rule, BE-029: which spellings address the root, decided from the key | a pure predicate over the key, plus preconditions on the write-shaped operations | S | extend; the clause with the most items and the cheapest proof, and the verified reference ID-251's `./` decision lacks |
+| Root rule, BE-029: which spellings address the root, decided from the key | a pure predicate over the key, plus preconditions on the write-shaped operations (landed as postconditions; see Open Question 7) | S | extend; the clause with the most items and the cheapest proof, and the verified reference ID-251's `./` decision lacks |
 | Close posture, BE-020 | a `closed` flag and a postcondition per operation | S | extend |
 | Absent container, BE-021 § Reach | the store state becomes optional and most postconditions gain a branch; the refinement follows | M | extend; it also gives BK-345 and, through the seeding hook BK-345 consumes, ID-244 the verified reference they lack |
 | First-page listing bound | pagination in the model | L | do not; the fake-driver test pins it more cheaply |
