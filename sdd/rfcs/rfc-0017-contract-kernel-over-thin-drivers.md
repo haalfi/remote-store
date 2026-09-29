@@ -205,10 +205,14 @@ and would re-open BUG-248; the scope is therefore part of the primitive, and
 the driver, not the kernel, decides what an identity-scope failure means.
 
 **`classify` may perform I/O, and the kernel says where it runs.** SQL's
-dropped-table detection is an inspector round trip, SFTP classifies with a
-`stat`, Local on Windows maps `PermissionError` through `is_dir()`. For a D5
-driver the kernel invokes `classify` inside `Session.run`, so a classifier
-that touches the connection cannot re-enter the reconnecting accessor
+dropped-table detection is an inspector round trip (`_sqlalchemy.py` line
+798) and Local on Windows maps `PermissionError` through `is_dir()`
+(`_local.py` lines 215 and 244). SFTP's `_map_exception` is pure over the
+exception, its two connection predicates being static methods over `exc`;
+the I/O BUG-274 paid was the classification path around it re-evaluating
+the lazy `_sftp` accessor. For a D5 driver the kernel invokes `classify`
+inside `Session.run`, so a classifier that does touch the connection cannot
+re-enter the reconnecting accessor
 (BUG-274's and BUG-278's shape); for the others it runs in the choke point
 with no retry, per ADR-0011's per-backend retry, which stays the driver's.
 `ReadOnlyHttpBackend`'s driver raises an `HttpStatusError(status)` from its
@@ -505,8 +509,12 @@ accepted inverts it. So:
    passes the conformance suite with D3's enumerated cell changes and its
    per-driver suite, (b) the throughput and seekable-read benchmarks
    (`benchmarks/test_throughput.py`, `test_seekable.py`,
-   `bench_pyarrow_tier1.py`, `bench_azure_pyarrow.py`) show it within the
-   run-of-record noise band `comparative.md` states, and (c) for a class D4
+   `bench_pyarrow_tier1.py`, `bench_azure_pyarrow.py`) show it within an
+   acceptance band that D8 step 1 sets once, as an obligation this RFC
+   creates (§ Impact): no benchmark artifact states one today,
+   `benchmarks/results/comparative.md` being a table of means and
+   `report.py`'s magnitude bands describing a delta's size while disclaiming
+   acceptability, and (c) for a class D4
    retires unmigrated, every item of D4's promotion list for its replacement
    is complete: the S3 list D4 states, in full and not restated here, and
    for Azure the items of the route OQ1 chooses. The suite
@@ -646,7 +654,9 @@ it.
   driver cells. The conformance suite gates every migration with the cell
   changes D3 enumerates.
 - **Amendments on acceptance** (D8 step 1), each an obligation this RFC
-  creates and none left to D3: an ADR amending
+  creates and none left to D3: a benchmark acceptance band for D8 step 3
+  (b), stated under `benchmarks/` beside the run of record, since none
+  exists today; an ADR amending
   [ADR-0001](../adrs/0001-architecture-store-registry-backends.md) (the
   `Backend` layer splits in two), ADR-0011 (the connect budget moves to
   `Session`; per-operation retry stays native), ADR-0012 and ADR-0025 (the

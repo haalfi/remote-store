@@ -226,7 +226,7 @@ bug-prevention research (2026-04-03) and the contract-completeness research
 `BLE` in `pyproject.toml`'s `select`; the extended conformance cells; three
 `ResourceWarning` emitting sites in `src/`, the two Azure twins and SFTP, by
 `rg -n ResourceWarning src/remote_store` less its one docstring match), and
-the seventh, an AST check over broad
+deliverable 6 of its § 4 table, an AST check over broad
 `except` arms in the backends, deferred "until items 1–5 prove insufficient",
 was never built (`scripts/check_error_handling*` does not exist). The second
 prescribed tightened spec text, and BE-021 reached 497 lines. Cluster A still
