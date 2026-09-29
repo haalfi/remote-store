@@ -42,15 +42,16 @@ always inside the band.
   class. The PR records that commit.
 - **The reference lane is the retiring class as users get it by default, on
   a clean network.** Three lanes follow:
-  - `S3Backend`'s reference is `s3-nocache`, since `S3Backend`'s listing
-    cache is off by default; `conftest.py` states it and opts the `s3` lane
-    back on.
+  - `S3Backend`'s reference is `s3-nocache`, which is cache-off in both
+    fixtures; `S3Backend`'s listing cache is off by default
+    (`_DEFAULT_USE_LISTINGS_CACHE = False` in `_s3_base.py`).
   - `S3PyArrowBackend`'s reference is `s3-pyarrow`.
   - `AzureBackend`'s reference is `azure`.
 
-  The `s3` (cache-on) lane and the `*-latency` lanes are out of scope: the
-  first measures an opt-in, the second a simulated network that neither
-  replacement has a lane for.
+  The `s3` lane is not a second reference. In `bench_backend` it builds the
+  same cache-off `S3Backend`, and in `bench_target` it opts the cache back on
+  (`conftest.py`), an opt-in. The `*-latency` lanes are out of scope, being a
+  simulated network that neither replacement has a lane for.
 - **The retiring class is compared at its best tier.** For S3 that is
   `S3PyArrowBackend` read through `bench_pyarrow_tier1.py`'s Tier 1, since
   the replacement loses that probe (RFC-0017 D4). The replacement is compared

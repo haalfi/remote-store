@@ -16,11 +16,12 @@ BUG-249 and 280, breach the never-leak invariant on listings, which D7 leaves
 unmodelled, as it does the first-page bound. The close posture carries no R1
 item; it is in scope because the kernel encodes it.
 
-**What it owes, placed as the OQ7 answer states:**
+**What it owes, placed as the OQ7 answer states** (the root rule's placement
+as the maintainer corrected it at BK-387's close):
 
 | Clause | Where | Shape (D7's table) |
 |---|---|---|
-| Root rule, BE-029 | a pure predicate over the key in an included lemma module of `DepthCounting.dfy`'s shape (`include "BackendContract.dfy"`), with its preconditions on the trait's write-shaped operations | S |
+| Root rule, BE-029 | a pure predicate over the key upstream of the trait, in `BackendContract.dfy` or a file it includes the way it includes `ResourceSafety.dfy`, named by the trait's write-shaped preconditions; lemmas about it in a downstream module of `DepthCounting.dfy`'s shape (`include "BackendContract.dfy"`) | S |
 | Close posture, BE-020 | a `closed` flag and a postcondition per operation, in `BackendContract.dfy` and the `MemoryBackend.dfy` refinement | S |
 | Absent container, BE-021 § Reach | the store state becomes optional and the postconditions gain a branch, in both files | M |
 
@@ -37,8 +38,9 @@ D7). It also gives BK-345 and ID-244 the verified reference they lack.
 
 - the close posture and the absent container verify in `BackendContract.dfy`
   and `MemoryBackend.dfy`;
-- the root rule's lemma module verifies, and its preconditions on the trait
-  hold in `MemoryBackend.dfy`;
+- the root rule verifies in all three places: its predicate and the trait's
+  preconditions in `BackendContract.dfy` (or the file it includes), their
+  discharge in `MemoryBackend.dfy`, and the downstream lemma module;
 - the twin-parity check is green with the new members;
 - each new postcondition carries its `@spec` tag, so `check_formal_trace.py`
   lists it.

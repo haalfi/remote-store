@@ -336,24 +336,33 @@ disagree:
 **The suite is not "unchanged"; the cells that change are these, enumerated
 before step 1 and each settled before the step that changes it (Open
 Question 4).** AZ-025's blank-message clause and its pinning
-test go red whichever arm BUG-276's decision takes (`sdd/BACKLOG.md`
-BUG-276: "the fix deliberately falsifies AZ-025's blank-message clause and
-its pinning test"; its dossier: "Both go red when this lands, by design");
-the BUG-240 and BUG-292 decisions change cells on the classes that
+test go red with BUG-276's fix under the arm decided at BK-387, synthesise
+(its dossier: "Both go red when this lands, by design"); the BUG-240 and
+BUG-292 decisions change cells on the classes that
 follow the losing reading (decided at BK-387: DEPTH-003 wins, so
 `GraphBackend`'s; the catch narrows, so the five flat-namespace `_head_one`
-probes'); Graph's `get_folder_info().modified_at` differs
-from the rest, and the kernel fixes one aggregation at step 1: the latest
-file modification time under the prefix, recursively. That is what every
-other backend with folders computes today, read from each `get_folder_info`:
-`MemoryBackend` and `AsyncMemoryBackend` (the `latest` loop), `LocalBackend`
-(`latest_mtime` over `rglob`), `SFTPBackend` (`latest_modified`),
-`AsyncAzureBackend` (`latest_modified`), `S3Boto3Backend` (the maximum
-`LastModified`) and the SQL backends (`MAX(modified_at)`).
-`ReadOnlyHttpBackend` has no folders. `GraphBackend` answers the folder
-item's own `lastModifiedDateTime`, so its cell changes at step 7; what step 7
-decides is only how Graph meets the rule (the changed cell, or a
-`SupportsFolderStats` push-down computing the same value). And the conformance
+probes'). For folder `modified_at`, the kernel fixes one aggregation at
+step 1 (decided at BK-387): the latest known file modification time under
+the prefix, recursively, where a file whose time is the unknown sentinel
+(`datetime.min` in UTC) is skipped, and a folder with no known time answers
+`None`. Read from each `get_folder_info`, that leaves every backend's cell
+unchanged but Graph's:
+
+- the latest time, recursively: `MemoryBackend` and `AsyncMemoryBackend`
+  (the `latest` loop), `LocalBackend` (`latest_mtime` over `rglob`),
+  `SFTPBackend` (`latest_modified`), `AsyncAzureBackend`
+  (`latest_modified`), `S3Boto3Backend` (the maximum `LastModified`) and
+  `SQLBlobBackend` (`MAX(modified_at)`);
+- `None`, because no file time is known: `SQLQueryBackend`, whose files
+  carry `_EPOCH_MIN`, and `SQLBlobBackend` over a table with no
+  `modified_at` column, whose files carry `datetime.min`;
+- no folders: `ReadOnlyHttpBackend`;
+- the folder item's own `lastModifiedDateTime`: `GraphBackend`, whose cell
+  changes at step 7. What step 7 decides is only how Graph meets the rule:
+  the changed cell, or a `SupportsFolderStats` push-down computing the same
+  value.
+
+And the conformance
 registry (`tests/backends/fixtures/registry.py`) registers drivers beside
 `Backend` instances, a driver fixture running through the kernel and a
 direct-subclass fixture staying runnable as today (`DafnyOracleBackend` is
@@ -380,7 +389,9 @@ step.
   write-over-prefix divergence from the s3fs lane stated or closed;
   multipart copy for objects over 5 GB, since `copy_object` is single-part);
   ID-202 § 6's wiring (the `s3-boto3` extra, `_registry.py`, `_info`,
-  `__all__`, `FEATURES.md`, an async variant, a guide, a CHANGELOG entry);
+  `__all__`, `FEATURES.md`, a guide, a CHANGELOG entry; ID-202's async
+  variant is not on the list, since no async S3 class exists today and async
+  callers keep `SyncBackendAdapter`'s auto-wrap, decided at BK-387);
   option parity for what the s3fs lane forwards today through
   `client_options` (`anon`, `requester_pays`, `s3_additional_kwargs` for SSE,
   `profile`), which the boto3 lane does not honour; a MinIO or live lane
@@ -796,9 +807,10 @@ and its answer keeps `classify`.
    other decision D3 names
    is taken before the step that encodes it. BUG-276's arm (synthesise) and
    BUG-292's choice (narrow the catch) are recorded on those items now. The
-   folder `modified_at` aggregation is encoded, and so fixed, at step 1 as the
-   rule every folder-bearing backend but Graph already computes (D3). Step 7
-   decides only how Graph meets it.
+   folder `modified_at` aggregation is encoded, and so fixed, at step 1, as
+   the latest known file time with an unknown time skipped. D3 enumerates why
+   that leaves every backend's cell but Graph's unchanged. Step 7 decides only
+   how Graph meets it.
 5. **Does the choke point cover driver construction?** BUG-245 leaks from
    `SQLBlobBackend`'s constructor, and BE-021's mapping rule is scoped to
    operations today. Either D2 wraps `Driver.__init__` too, or construction
@@ -824,9 +836,14 @@ and its answer keeps `classify`.
    under `sdd/formal/` uses `refines`). **Answered (BK-387):** all three are
    extended, before kernel code, under BK-388. The close flag and the
    absent-container branches go into `BackendContract.dfy` and
-   `MemoryBackend.dfy`. The root rule's pure predicate goes into an included
-   lemma module of `DepthCounting.dfy`'s shape, and its preconditions on the
-   write-shaped operations into the trait.
+   `MemoryBackend.dfy`. The root rule's pure predicate goes upstream of the
+   trait, in `BackendContract.dfy` or a file it includes (as it includes
+   `ResourceSafety.dfy`, its line 34), because the trait's write-shaped
+   operations name it in their preconditions. Lemmas about it go in a
+   downstream module of `DepthCounting.dfy`'s shape. A predicate placed only
+   downstream could not be named by the trait, since `DepthCounting.dfy`
+   includes `BackendContract.dfy` (its line 18) and not the reverse. Placement
+   corrected at BK-387's close, by the maintainer.
 
 ## References
 

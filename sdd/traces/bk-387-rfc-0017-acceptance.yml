@@ -169,12 +169,26 @@ phases:
           consecutive rounds, the folder modified_at rule and ADR-0042's ADR-0012
           amendment, so each was enumerated rather than re-argued.
           `rg -n 'def get_folder_info' src/remote_store`, then each body read:
-          Memory (both), Local, SFTP, async Azure, S3 boto3 and SQL take the
-          latest file mtime recursively, Graph the folder item's own
-          timestamp, and HTTP has no folders. So the rule is fixed at step 1,
-          and step 7 only decides how Graph conforms. The ADR-0012 amendment
-          became a per-driver-kind table.
+          Memory (both), Local, SFTP, async Azure, S3 boto3 and SQLBlob take
+          the latest file mtime recursively, Graph the folder item's own
+          timestamp, and HTTP has no folders. The ADR-0012 amendment became a
+          per-driver-kind table. The enumeration missed SQLQueryBackend, which
+          answers None over files carrying the datetime.min sentinel; PR
+          #1045 round 5 measured it. The maintainer then chose a rule that
+          skips unknown times, which keeps that cell, so only Graph's changes.
         outcome: ok
+      - file: sdd/rfcs/rfc-0017-contract-kernel-over-thin-drivers.md
+        section: "Open Question 7"
+        read_type: reference
+        extract: >-
+          PR #1045 round 5 found the OQ7 placement infeasible: DepthCounting.dfy
+          includes BackendContract.dfy (line 18), so trait preconditions cannot
+          name a predicate placed in a module of its shape. The maintainer moved
+          the predicate upstream (BackendContract.dfy includes
+          ResourceSafety.dfy the same way, line 34), with lemmas downstream.
+          The recommendation I put to the maintainer at plan time carried the
+          infeasible placement from RFC-0017's OQ7 text.
+        outcome: misleading
 discovery_followups:
   - BK-388
   - BK-389
