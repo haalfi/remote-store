@@ -160,8 +160,8 @@ optional member, so presence is a protocol, not a method):
 |---|---|---|
 | `SupportsRangeRead` | `get_range(key, offset, length)` | serves `read_seekable` by ranged reads (Azure's `_AzureRangeReader`, the boto3 lane's `_S3RangeReader`); without it, spools over `get` as the ABC default does today |
 | `SupportsOpenWrite` | `open_write(key, *, metadata) -> WriteHandle` with `commit()` and `abort()` | serves `open_atomic` on a wire-side temporary (S3 multipart Complete/Abort, Local and SFTP temp files); without it, spools locally and `put`s at exit, which is ADR-0025's synthesis and what flat Azure does today |
-| `SupportsAtomicMove` | `move(src, dst, *, overwrite)` | forwarded whole; **required** when the driver declares `ATOMIC_MOVE` (SQLBlob's single transaction, Memory's single lock), so the kernel never sequences the checks of an atomic move |
-| `SupportsRename` | `rename(src, dst, *, replace: bool)` | `move` for drivers without an atomic move: `replace=True` where the wire replaces (`os.replace`), `replace=False` where it cannot, in which case the kernel runs the displace-and-restore fallback SFTP carries today, and only there |
+| `SupportsAtomicMove` | `move(src, dst, *, overwrite)` | forwarded whole, so the kernel never sequences the checks of an atomic move (SQLBlob's single transaction, Memory's single lock); one of the two ways to back a declared `ATOMIC_MOVE` |
+| `SupportsRename` | `rename(src, dst, *, replace: bool)` | `move` for drivers without `SupportsAtomicMove`: `replace=True` where the wire's rename replaces atomically (Local's `os.rename` within one root, which is why `LocalBackend` declares `ATOMIC_MOVE` today, `_local.py` lines 668 to 670), `replace=False` where it cannot, in which case the kernel runs the displace-and-restore fallback SFTP carries today, and only there |
 | `SupportsCopy` | `copy(src, dst)` | `copy`, and `move` as copy-then-delete when neither of the two above exists |
 | `SupportsDeleteTree` | `delete_tree(prefix)` | `delete_folder(recursive=True)` in one wire call (Graph's single DELETE, Azure HNS `delete_directory`, SQL's one transactional `DELETE … LIKE`, S3 `DeleteObjects` in batches of 1000); without it, list then delete |
 | `SupportsEnsureParents` | `ensure_parents(key)` | called before `put` when `parents == "explicit"`; SFTP's stat walk and Local's `mkdir -p` are their implementations. Never called for `implicit` (Graph, GR-039: no explicit `mkdir`; Azure HNS) or `none` |
@@ -183,7 +183,8 @@ copy-then-delete does not declare `ATOMIC_MOVE`, and `sftp` omits it
 (`_SFTP_CAPABILITIES`, `_sftp.py` line 48) although it has a rename.
 So the driver declares its `CapabilitySet` exactly as a backend does today,
 and at construction the kernel checks consistency in one direction only:
-`ATOMIC_MOVE` requires `SupportsAtomicMove`; `ATOMIC_WRITE` requires
+`ATOMIC_MOVE` requires `SupportsAtomicMove` or `SupportsRename` with
+`replace=True` (Local's case); `ATOMIC_WRITE` requires
 `put_is_atomic`, `SupportsOpenWrite`, or `SupportsRename` with `replace=True`
 for a temp-and-promote; `GLOB` requires `SupportsGlob`; `COPY` requires
 `SupportsCopy`. The kernel synthesises `move`, `open_atomic`, `read_seekable`
@@ -245,9 +246,9 @@ other 6 public members (`name`, `capabilities`, `unwrap`, `native_path`,
   where that exists, else as `put` to a temp key + `rename(replace=True)`;
   never a PUT + CopyObject + DELETE on a store whose PUT is already atomic
   (S3, SQL, flat Azure today all implement `write_atomic` as plain `write`);
-- `move` as D1's table states, so an `ATOMIC_MOVE` driver's move is never
-  sequenced by the kernel, and displace-and-restore runs only for a
-  `replace=False` rename;
+- `move` as D1's table states, so a `SupportsAtomicMove` driver's move is
+  never sequenced by the kernel, a `replace=True` rename is one wire call,
+  and displace-and-restore runs only for a `replace=False` rename;
 - error mapping at a single choke point: every driver call, every `list_page`
   iteration and every stream handed back by `get` or `get_range` passes
   through `driver.classify(exc, op=..., key=...)`; a `RemoteStoreError`
@@ -329,8 +330,10 @@ disagree:
 
 **The suite is not "unchanged"; the cells that change are these, and they
 are settled before step 1.** AZ-025's blank-message clause and its pinning
-test go red if BUG-276's decision is "synthesise" (`sdd/BACKLOG.md` BUG-276
-says so); the BUG-240 and BUG-292 decisions change cells on the classes that
+test go red whichever arm BUG-276's decision takes (`sdd/BACKLOG.md`
+BUG-276: "the fix deliberately falsifies AZ-025's blank-message clause and
+its pinning test"; its dossier: "Both go red when this lands, by design");
+the BUG-240 and BUG-292 decisions change cells on the classes that
 follow the losing reading; Graph's `get_folder_info().modified_at` differs
 from S3 and SQL and the kernel picks one aggregation; and the conformance
 registry (`tests/backends/fixtures/registry.py`) registers drivers rather than
@@ -427,10 +430,13 @@ machinery. Open Question 1.
 ### D7. What the formal layer covers, and where the oracle stays
 
 `sdd/formal/BackendContract.dfy` states and verifies the precondition and
-type-mismatch clauses (BE-004 to BE-019, BE-021's canonical rows, CAP-004,
-the `WR-*` write-result clauses, DEPTH-003's inclusive `max_depth` filter and
-SIO-008's seekability flag; the Dafny-tagged IDs `check_formal_trace.py`
-lists), `DepthCounting.dfy` the `max_depth` algorithm (DEPTH-001), and
+type-mismatch clauses (BE-004 to BE-006, BE-008 and BE-012 to BE-019;
+BE-021's canonical rows, CAP-004, the `WR-*` write-result clauses,
+DEPTH-003's inclusive `max_depth` filter and SIO-008's seekability flag: the
+Dafny-tagged IDs `check_formal_trace.py` lists, and by `rg -n '@spec BE-0'
+sdd/formal` BE-007, 009, 010 and 011 carry no tag, so `read_bytes`,
+intermediate directories and `write_atomic` are outside the model),
+`DepthCounting.dfy` the `max_depth` algorithm (DEPTH-001), and
 `ResourceSafety.dfy` acquire-then-wrap (SIO-001); the file per ID is where
 its `@spec` tag sits, by `rg -n '@spec (DEPTH|SIO)' sdd/formal`. It does **not**
 model the root rule (BE-029), the close posture (BE-020), the error
@@ -476,6 +482,7 @@ a single implementation to hold to.
 | Close posture, BE-020 | a `closed` flag and a postcondition per operation | S | extend |
 | Absent container, BE-021 § Reach | the store state becomes optional and most postconditions gain a branch; the refinement follows | M | extend; it also gives BK-345, ID-244 and ID-251 the verified reference they lack |
 | First-page listing bound | pagination in the model | L | do not; the fake-driver test pins it more cheaply |
+| `write_atomic`, BE-010 and BE-011, which D2 makes kernel-owned over `put_is_atomic`, `open_write` and `rename` | a `WriteAtomic` method whose postcondition equals `write`'s, plus a two-state atomicity property over a wire the model does not have | M | do not; atomicity is a property of the driver's wire or of the temp-and-promote sequence, and § Testing pins the synthesis against the fake driver |
 | Error attributes and messages, ERR-* | strings | — | do not |
 
 The three extensions land in D8 step 1, before kernel code, because the
@@ -649,7 +656,10 @@ it.
 - **Testing:** the kernel is tested once against a fake driver that can be
   told to raise any wire shape at any call, covering BE-021's type-mismatch
   roster and its § Reach roster separately, as spec 003 states them, plus the
-  never-leak invariant on every operation, page and stream; the driver half
+  never-leak invariant on every operation, page and stream and the
+  `write_atomic` and `move` syntheses over each combination of
+  `put_is_atomic`, `open_write`, `rename` and `SupportsAtomicMove` the fake
+  driver can present; the driver half
   stays with the per-driver suites. BK-345, ID-244 and ID-251 reduce to
   driver cells. The conformance suite gates every migration with the cell
   changes D3 enumerates.
