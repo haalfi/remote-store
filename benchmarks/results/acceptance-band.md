@@ -36,9 +36,11 @@ always inside the band.
     is the "Adapter Tier 1 (native)" row; the replacement side is the tier
     `ext.arrow` serves the replacement (the best-tier bullet below). Part 1, run on
     `LocalBackend`, and the "Adapter Tier 2 (forced)" row are not cells.
-  - `bench_azure_pyarrow.py`: one per sweep point at the 0 ms latency point
-    only, each of its T2 and T3 rows compared like for like. The 10, 30 and
-    50 ms points of `LATENCIES_MS` are a simulated network and are not cells.
+  - `bench_azure_pyarrow.py`: at the 0 ms latency point only, two cells per
+    sweep point, compared like for like. In Phases 1 and 2 they are the T2
+    and T3 rows; in Phase 3, the dataset scan with its own `[0, 10, 30]`
+    sweep, they are the `Loop` and `DS` rows. Every non-zero latency point is
+    a simulated network and is not a cell.
 - **The retiring PR also owes a lane for a replacement that has none.** The
   `azure` lane in `benchmarks/conftest.py` builds `AzureBackend`, so the
   generated sync Azure driver needs its own `bench_backend` and

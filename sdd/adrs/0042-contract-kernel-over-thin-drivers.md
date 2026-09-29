@@ -48,31 +48,33 @@ defects, and every figure with its derivation. This record decides it.
   hand edits, which would make it a second hand-maintained kernel.
 - **A session layer owns the connection lifecycle** (RFC-0017 D5, audit-021
   H-2). A `Session` owns connect, the connect-retry budget, liveness and
-  dead-client invalidation behind one `run(op)` entry. SFTP is its first user
-  (D3 step 6) and Graph its second (step 7); the SQL drivers are not users.
-  *Reverse if* SFTP's migration shows the lifecycle cannot be separated from
-  its operations.
+  dead-client invalidation behind one `run(op)` entry. SFTP and Graph are its
+  users; the SQL drivers are not. *Reverse if* SFTP's driver shows the
+  lifecycle cannot be separated from its operations.
 - **Sync Azure callers get a generated sync driver.** The single async Azure
-  driver is the source; the hand-written sync `AzureBackend` is replaced at
-  D3 step 4 with its behaviour kept. The adapter route was rejected for what
-  it takes from sync callers (RFC-0017 § Impact). *Reverse if* the generation
-  cannot map the Azure SDK's sync and async surfaces.
+  driver is the source; `unasync` generates the primitives the two SDKs
+  share, and the stream-returning ones (`get` and `get_range` returning
+  `BinaryIO` where the async driver streams an iterator) are hand-written. It
+  replaces the hand-written sync `AzureBackend`, with its behaviour kept. The
+  adapter route was rejected for what it takes from sync callers (RFC-0017
+  § Impact). *Reverse if* the generation cannot map the Azure SDK's sync and
+  async surfaces.
 - **Classification stays inside each driver** (Open Question 6):
   `classify(exc, op=..., key=...)`, invoked by the kernel at its choke point,
   which then sets `path` and `backend` and guarantees a non-empty message. The
   wire-signal alternative reaches four of the eight driver-kept items at the
   cost of one primitive spanning every wire's vocabulary. *Reverse if* the D8
   step 4 re-audit finds mapping-content defects recurring across drivers.
-- **Spec contradictions are adjudicated before the step that encodes them**
-  (Open Question 4). BUG-240 is the one audit-021 counts and is decided before
-  step 1: DEPTH-003's reading wins, the one `BackendContract.dfy` verifies.
-- **The formal model is extended before kernel code** (Open Question 7): the
-  root rule (BE-029), the close posture (BE-020) and the absent container
-  (BE-021 § Reach), placed as RFC-0017's Open Question 7 answer states.
-- **Migration is one class per PR behind the conformance suite**, and a
-  retiring class is deleted in the PR that registers its replacement (RFC-0017
-  D8 step 3), benchmarked against
-  [`acceptance-band.md`](../../benchmarks/results/acceptance-band.md).
+- **`max_depth` applies only when `recursive`** (Open Question 4): the kernel
+  encodes DEPTH-003's reading, the one `BackendContract.dfy` verifies, and
+  ASYNC-014's contrary wording (BUG-240) is not the contract.
+- **The formal model covers the root rule, the close posture and the absent
+  container** (Open Question 7): BE-029, BE-020 and BE-021 § Reach join the
+  verified clauses the kernel is written against, placed as RFC-0017's Open
+  Question 7 answer states.
+
+How the design is reached (migration order, retirement gates, benchmarks) is
+process, and lives in RFC-0017 D3 and D8, not here.
 
 ## Amendments on acceptance
 
@@ -90,11 +92,12 @@ defects, and every figure with its derivation. This record decides it.
   its dismissal of Option E: the types stay separate, and the dismissal is
   narrowed rather than reversed. By driver kind, the sync surface is:
   - **sync drivers** (Memory, Local, SFTP, the SQL pair, S3, HTTP; Memory
-    also keeps an async driver of its own, D3 step 1): served by the
-    sync kernel, which is generated as native sync source from the async
-    kernel;
+    also keeps an async driver of its own): served by the sync kernel, whose
+    shared surface is generated as native sync source from the async kernel
+    and whose sync-only surface is hand-written (the Decision above);
   - **async drivers with a generated sync twin** (Azure): served by that
-    twin through the sync kernel, with no runtime wrapper;
+    twin, generated except for its stream-returning primitives, through the
+    sync kernel, with no runtime wrapper;
   - **async-only drivers** (Graph): reached by sync callers through
     `AsyncBackendSyncAdapter` over the async kernel, the runtime wrapper
     ADR-0012's Option E describes, as they are today.
@@ -114,11 +117,12 @@ defects, and every figure with its derivation. This record decides it.
   fixed for every migrated class; RFC-0017 assigns 10 of cluster A's 35 items
   to the kernel outright and 13 of the 71 to the session layer.
 - **Positive:** hand-written concrete classes go from 13 to 10 (the sync
-  Azure driver is generated on top of them), and adding a backend means
+  Azure driver, generated but for its stream primitives, comes on top of
+  them), and adding a backend means
   writing wire primitives and a classifier rather than 21 methods.
-- **Negative:** a kernel defect regresses every migrated class at once. It is
-  bounded by migrating one class per revertable PR behind the suite, and by
-  the formal model only for the clauses it covers.
+- **Negative:** a kernel defect regresses every migrated class at once. The
+  formal model bounds it only for the clauses it covers; how migration
+  contains the rest is RFC-0017 D3's.
 - **Negative:** a code-generation step, with its committed output and a drift
   check, becomes part of the build of the sync kernel and the sync Azure
   driver.

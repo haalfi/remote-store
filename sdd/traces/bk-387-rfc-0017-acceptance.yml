@@ -17,12 +17,11 @@ expected_ripples:
   - sdd/rfcs/rfc-0017-contract-kernel-over-thin-drivers.md
   - sdd/adrs/
   - sdd/adrs/DIGEST.md
-  - sdd/specs/003-backend-adapter-contract.md
-  - sdd/specs/005-error-model.md
   - benchmarks/
   - sdd/BACKLOG.md
   - sdd/BACKLOG-DONE.md
   - sdd/backlog/
+  - sdd/backlogid.json
   - CHANGELOG.md
 phases:
   - id: orient

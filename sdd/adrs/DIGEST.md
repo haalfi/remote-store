@@ -26,31 +26,33 @@ Compiled from 42 ADR(s) by `scripts/gen_adr_digest.py`. Do not edit by hand; run
   hand edits, which would make it a second hand-maintained kernel.
 - **A session layer owns the connection lifecycle** (RFC-0017 D5, audit-021
   H-2). A `Session` owns connect, the connect-retry budget, liveness and
-  dead-client invalidation behind one `run(op)` entry. SFTP is its first user
-  (D3 step 6) and Graph its second (step 7); the SQL drivers are not users.
-  *Reverse if* SFTP's migration shows the lifecycle cannot be separated from
-  its operations.
+  dead-client invalidation behind one `run(op)` entry. SFTP and Graph are its
+  users; the SQL drivers are not. *Reverse if* SFTP's driver shows the
+  lifecycle cannot be separated from its operations.
 - **Sync Azure callers get a generated sync driver.** The single async Azure
-  driver is the source; the hand-written sync `AzureBackend` is replaced at
-  D3 step 4 with its behaviour kept. The adapter route was rejected for what
-  it takes from sync callers (RFC-0017 § Impact). *Reverse if* the generation
-  cannot map the Azure SDK's sync and async surfaces.
+  driver is the source; `unasync` generates the primitives the two SDKs
+  share, and the stream-returning ones (`get` and `get_range` returning
+  `BinaryIO` where the async driver streams an iterator) are hand-written. It
+  replaces the hand-written sync `AzureBackend`, with its behaviour kept. The
+  adapter route was rejected for what it takes from sync callers (RFC-0017
+  § Impact). *Reverse if* the generation cannot map the Azure SDK's sync and
+  async surfaces.
 - **Classification stays inside each driver** (Open Question 6):
   `classify(exc, op=..., key=...)`, invoked by the kernel at its choke point,
   which then sets `path` and `backend` and guarantees a non-empty message. The
   wire-signal alternative reaches four of the eight driver-kept items at the
   cost of one primitive spanning every wire's vocabulary. *Reverse if* the D8
   step 4 re-audit finds mapping-content defects recurring across drivers.
-- **Spec contradictions are adjudicated before the step that encodes them**
-  (Open Question 4). BUG-240 is the one audit-021 counts and is decided before
-  step 1: DEPTH-003's reading wins, the one `BackendContract.dfy` verifies.
-- **The formal model is extended before kernel code** (Open Question 7): the
-  root rule (BE-029), the close posture (BE-020) and the absent container
-  (BE-021 § Reach), placed as RFC-0017's Open Question 7 answer states.
-- **Migration is one class per PR behind the conformance suite**, and a
-  retiring class is deleted in the PR that registers its replacement (RFC-0017
-  D8 step 3), benchmarked against
-  [`acceptance-band.md`](../../benchmarks/results/acceptance-band.md).
+- **`max_depth` applies only when `recursive`** (Open Question 4): the kernel
+  encodes DEPTH-003's reading, the one `BackendContract.dfy` verifies, and
+  ASYNC-014's contrary wording (BUG-240) is not the contract.
+- **The formal model covers the root rule, the close posture and the absent
+  container** (Open Question 7): BE-029, BE-020 and BE-021 § Reach join the
+  verified clauses the kernel is written against, placed as RFC-0017's Open
+  Question 7 answer states.
+
+How the design is reached (migration order, retirement gates, benchmarks) is
+process, and lives in RFC-0017 D3 and D8, not here.
 
 > amends ADR-0001, ADR-0011, ADR-0012, ADR-0025 (clause).
 

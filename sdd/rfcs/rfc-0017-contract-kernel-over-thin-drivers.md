@@ -312,10 +312,11 @@ decided that the sync kernel is generated, so the first does not become it);
 `scripts/check_custom_backend_guide.py` (BK-320), which gates the guide
 against `Backend.__abstractmethods__`, is re-pointed at `Driver`.
 
-### D3. Migration, one class at a time, with the suite as oracle
+### D3. Migration, one step at a time, with the suite as oracle
 
-The kernel lands beside the existing classes. A class that migrates becomes a
-driver in its own PR, green when the conformance suite passes for its fixture
+The kernel lands beside the existing classes. Each step below migrates in its
+own PR (a step is one class, or a pair migrated together), green when the
+conformance suite passes for its fixtures
 with the cell changes enumerated below and no others. Not every class
 migrates; the fate of each of the 13 is fixed here so that D3 and D4 cannot
 disagree:
@@ -351,12 +352,15 @@ unchanged but Graph's:
 - the latest time, recursively: `MemoryBackend` and `AsyncMemoryBackend`
   (the `latest` loop), `LocalBackend` (`latest_mtime` over `rglob`),
   `SFTPBackend` (`latest_modified`), `AsyncAzureBackend`
-  (`latest_modified`), `S3Boto3Backend` (the maximum `LastModified`) and
-  `SQLBlobBackend` (`MAX(modified_at)`);
+  (`latest_modified`), sync `AzureBackend` (the latest `last_modified`, flat
+  and HNS, which its generated replacement keeps), `S3Boto3Backend` (the
+  maximum `LastModified`) and `SQLBlobBackend` (`MAX(modified_at)`);
 - `None`, because no file time is known: `SQLQueryBackend`, whose files
   carry `_EPOCH_MIN`, and `SQLBlobBackend` over a table with no
   `modified_at` column, whose files carry `datetime.min`;
 - no folders: `ReadOnlyHttpBackend`;
+- out of scope, being deleted unmigrated at step 2: `S3Backend` and
+  `S3PyArrowBackend` (the shared `_s3_base.py` `get_folder_info`);
 - the folder item's own `lastModifiedDateTime`: `GraphBackend`, whose cell
   changes at step 7. What step 7 decides is only how Graph meets the rule:
   the changed cell, or a `SupportsFolderStats` push-down computing the same
@@ -423,7 +427,8 @@ Hand-written concrete classes go from 13 to 10 (D3's migrating rows), and
 the hand-written driver surface to 10 drivers × 14 required primitives (plus
 the optional protocols each implements) instead of 10 classes × 21 methods
 plus 3 × 19. The sync Azure driver generated from the async one (Open
-Question 1) is an eleventh driver, and is not hand-written.
+Question 1) is an eleventh driver: generated, except its stream-returning
+primitives (D6).
 
 ### D5. A session layer for connection-oriented drivers
 
@@ -481,10 +486,13 @@ generation reaching the Azure driver as well as the kernel, so D4's adapter
 route is not taken. `unasync` generates only what the two surfaces share. The
 sync surface has `read_seekable` and `open_atomic`, which `AsyncBackend` does
 not, and its `read` returns `BinaryIO` where the async one yields an
-`AsyncIterator[bytes]`. So a small hand-written sync layer supplies those,
-for the kernel and the Azure driver alike, over `get_range`, `open_write` and
-`get`. The generated part stays edit-free under a drift check (decided at
-BK-387's close, after review showed generation alone cannot produce them).
+`AsyncIterator[bytes]`. So a small hand-written sync layer supplies those for
+the kernel, over `get_range`, `open_write` and `get`. The generated Azure
+driver has the same gap one level down: its stream-returning primitives,
+`get` and `get_range`, return `BinaryIO` where the async driver streams an
+iterator, so they are hand-written too. The generated parts stay edit-free
+under a drift check (decided at BK-387's close, after review showed
+generation alone cannot produce them).
 
 ### D7. What the formal layer covers, and where the oracle stays
 
@@ -671,10 +679,11 @@ and its answer keeps `classify`.
 ## Impact
 
 - **Public API:** `Store`, the error hierarchy and capabilities unchanged in
-  interface. `Backend` remains the abstract contract type; `DriverBackend` is
-  the kernel. New public names: `Driver`, `AsyncDriver`, the nine
-  `Supports*` protocols, `DriverBackend`, `Entry`, `Page`, `WriteHandle`,
-  `Op`, `Session`. `ext.arrow` loses its
+  interface. `Backend` remains the abstract contract type; `DriverBackend` and
+  `AsyncDriverBackend` are the kernel's two runtimes (Open Question 1). New
+  public names: `Driver`, `AsyncDriver`, the nine `Supports*` protocols and
+  their async mirrors, `DriverBackend`, `AsyncDriverBackend`, `Entry`,
+  `Page`, `WriteHandle`, `Op`, `Session`. `ext.arrow` loses its
   Tier-1 native probe on S3 once the PyArrow lane, `S3PyArrowBackend`,
   retires (D4); the s3fs lane never served that probe.
 - **Backwards compatibility:** additive for existing `Backend` subclasses,
@@ -714,7 +723,8 @@ and its answer keeps `classify`.
 - **Risks:** a kernel defect is a regression on every migrated class at once.
   BUG-249 reached one class; its kernel equivalent reaches every driver. That
   is the price of applying a rule once, and it is bounded by D3 migrating one
-  class per PR behind the suite, each PR revertable on its own; the formal
+  step per PR behind the suite (a step is one class, or a pair such as the
+  Memory or SQL drivers), each PR revertable on its own; the formal
   layer bounds only the clauses it models (D7). The second risk is the fake driver's reach: it exercises
   kernel × failure mode, not driver × wire semantics, so BUG-223's HNS probe,
   BK-316's non-OpenSSH shapes and S3's lack of a rename are driver defects

@@ -32,7 +32,8 @@ that PR. That PR is RFC-0017 D3 step 1.
      the kernel for a migrated class.
    - spec 037: the `max_depth` algorithm decided once, on DEPTH-003.
    - spec 003 BE-017: the folder `modified_at` rule above, sentinel and
-     `None` included.
+     `None` included, with a note that `GraphBackend` answers its folder
+     item's own time until step 7 migrates it (BK-390).
    - spec 029: the async surface and `AsyncDriver`.
    - specs 007 and 022, kernel half: `write_atomic` and temp-and-promote as
      kernel behaviour over `put_is_atomic`, `open_write` and `rename`.
@@ -50,7 +51,12 @@ that PR. That PR is RFC-0017 D3 step 1.
    are obligations of RFC-0017 § Impact, Backwards compatibility. All of this
    needs `Driver` to exist, which is why it is here and not in BK-387.
 6. ADR-0042's Status set to Accepted and RFC-0017's Status set to Accepted, in
-   the same PR.
+   the same PR. The four amendments then take effect, so the same PR adds the
+   repo's inline `*Amended by [ADR-0042](...)*` note at each amended clause
+   (`rg -n '\*Amended by' sdd/adrs` shows the convention): ADR-0001's
+   *Backend (ABC)*, ADR-0011's transport-concern bullet, ADR-0012's
+   Option E dismissal and ADR-0025's scope. It then regenerates
+   `sdd/adrs/DIGEST.md`.
 7. The re-homing RFC-0017 § Impact names: each open item listed there
    (BK-382, BK-242, BK-325, BK-332, BUG-266, ID-181, ID-140, BUG-287, 288,
    289, ID-217, BK-339) gets the D3 step or item that absorbs, obsoletes or
