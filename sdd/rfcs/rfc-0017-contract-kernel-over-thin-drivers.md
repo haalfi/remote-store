@@ -279,8 +279,14 @@ suite; it is deprecated as the way to add a backend, not removed. The
 consequences for the in-tree subclasses that are not among the 13, enumerated
 by `rg '^class \w+\(.*\b(Backend|AsyncBackend)\b' src tests examples`: 21
 matches, of which 9 are concrete backends (the other 4 of the 13 subclass
-`_S3Base` or `_SQLAlchemyBaseBackend`) and these 12 are not (the indented
-fake in `tests/test_info.py` is outside that regex and unaffected):
+`_S3Base` or `_SQLAlchemyBaseBackend`) and these 12 are not. The `^class`
+anchor misses five indented subclasses, by the same regex with `^\s+class`:
+three fakes that stay as they are (`tests/test_info.py`, a second one in
+`tests/ext/test_arrow.py`, a docstring example in
+`_async_to_sync_adapter.py`) and two published snippets that § Impact lists
+(`MyBackend` in `examples/snippets/homepage.py`, the landing page's example
+of adding a backend, and `_ReadOnlyBackend` in the guide's
+`partial-capabilities` region). The 12:
 `_S3Base` retires with its two lanes (D4); `_SQLAlchemyBaseBackend` becomes
 the shared part of the two SQL drivers; `AsyncBackendSyncAdapter(Backend)`
 and `SyncBackendAdapter(AsyncBackend)` stay direct subclasses, since each is
@@ -651,8 +657,12 @@ it.
   (SEEK-004 and SEEK-006 against `get_range`); spec 037 (the `max_depth`
   algorithm decided once); spec 044 (GR-039 and `parents == "implicit"`);
   the per-backend specs (AZ-, S3-, S3PA-, GR-, SQL-BLOB-) wherever a clause
-  describes class behaviour the kernel now owns; the custom-backend guide and
-  `check_custom_backend_guide.py`. The ripple-check's "Store or Backend ABC"
+  describes class behaviour the kernel now owns; the custom-backend guide,
+  including its `partial-capabilities` region, and
+  `check_custom_backend_guide.py`; the landing page's custom-backend snippet
+  (`docs-src/index.md` including `examples/snippets/homepage.py`), which
+  shows direct subclassing as the way to add a backend. The ripple-check's
+  "Store or Backend ABC"
   row reads "All backend implementations, conformance tests", and both are
   what D3 walks.
 - **Open backlog items this touches**, to be re-homed or closed with the
@@ -699,9 +709,13 @@ it.
    posture and the absent container, in D8 step 1, and not modelling
    pagination, messages, or the kernel-over-driver shape. The open part is
    whether the formal layer takes the M-sized absent-container change on, and
-   whether the additions go into the existing contract or into a module
-   refined from it, as `DepthCounting.dfy` is for DEPTH-001. Decide before
-   acceptance.
+   where the additions live. The close flag and the absent-container branches
+   are trait-level obligations and can only go into `BackendContract.dfy`
+   itself and its `MemoryBackend.dfy` refinement; the root predicate alone is
+   pure and could sit in an included lemma module of `DepthCounting.dfy`'s
+   shape, which proves properties of the contract's `Depth` function without
+   adding to the trait (`include "BackendContract.dfy"`, its line 18; no file
+   under `sdd/formal/` uses `refines`). Decide before acceptance.
 
 ## References
 

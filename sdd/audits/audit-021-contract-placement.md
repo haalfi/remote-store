@@ -104,7 +104,7 @@ by clause, each a by-hand assignment:
 | Wrong-type rows on flat namespaces | BK-324 | invocation |
 | Close posture, BE-020 | BK-298 | invocation |
 | Resource release on close, S3-019 | BK-306 | driver resource |
-| Path normalisation before a self-op, AZ-014 | BK-301 | invocation |
+| Path normalisation before a self-op, AZ-017 and AZ-018 | BK-301 | invocation |
 | Health probe, PING-011 | BUG-231 | driver resource |
 | File-ancestor gate, BE-008 | BUG-253, 292 | invocation |
 | `max_depth`, DEPTH-003 against ASYNC-014 | BUG-240 | spec contradiction |
@@ -125,8 +125,8 @@ properties of the cluster are measured rather than read:
    spec 003's own table for it records that "a class compliant on the writers
    was not thereby compliant on the destination".
 2. **The fix lands per method, so it is missed per method.** BUG-249: three
-   listing methods on one class were "the only methods on that class whose wire
-   call was not wrapped in its error mapper, against fifteen methods that do
+   listing methods on one class "were the only methods on the class calling
+   the wire without `_boto_errors` around it, against fifteen methods that do
    wrap". BUG-280 is the same shape on `LocalBackend`; BUG-279 is `unwrap`
    outside `_errors()`; BUG-293 is twelve `except` arms across the two Azure
    classes, seven sync and five async; BUG-276 is seven sites in five files.
@@ -139,8 +139,10 @@ properties of the cluster are measured rather than read:
    reports (BK-354 and BK-356, issue #970; BUG-254's divergence was published
    in the v0.31.0 migration guide, not reported). BK-366's question therefore
    answers "detection improved", but for clusters A and B what it detected was
-   shipped behaviour, and the audits that found it have read three of the
-   thirteen classes in depth. Cluster C is the exception: its eight were found
+   shipped behaviour, and the audits that found it have read four of the
+   thirteen classes in depth (`GraphBackend` by audit-016, `AzureBackend` and
+   `AsyncAzureBackend` by audit-019, `SFTPBackend` by audit-020, each audit's
+   own Scope line). Cluster C is the exception: its eight were found
    before v0.28.0 shipped (2026-06-15), by the finders the appendix records
    (one audit-016, two the release-readiness review and its rerun, four a
    review or a live reproduction, one unrecorded), so no user met them.
@@ -220,8 +222,10 @@ bug-prevention research (2026-04-03) and the contract-completeness research
 (2026-04-05) diagnosed the same cross-product, "methods × parameters × backends
 × failure modes". The first prescribed seven deliverables; six exist
 (`_safe_wrap` in `_stream.py`; the four `tests/test_pbt_*.py` files; ruff
-`BLE` in `pyproject.toml`'s `select`; the extended conformance cells; four
-`ResourceWarning` sites in `src/`), and the seventh, an AST check over broad
+`BLE` in `pyproject.toml`'s `select`; the extended conformance cells; three
+`ResourceWarning` emitting sites in `src/`, the two Azure twins and SFTP, by
+`rg -n ResourceWarning src/remote_store` less its one docstring match), and
+the seventh, an AST check over broad
 `except` arms in the backends, deferred "until items 1–5 prove insufficient",
 was never built (`scripts/check_error_handling*` does not exist). The second
 prescribed tightened spec text, and BE-021 reached 497 lines. Cluster A still
@@ -245,9 +249,11 @@ rather than arms.
 SFTP is the one shipped backend whose transport can die under it, and it
 hand-rolls connect, the retry budget, liveness, dead-client invalidation and
 the temp-and-promote fallback inside a 3,461-line module. BUG-274's own
-diagnosis is the shape: "the mid-operation re-entry guards asked only whether
-an established connection had dropped", at five guards, so an unreachable host
-paid the connect budget two to three times. Two open items in H-1 are this
+diagnosis is the shape: "The mid-operation re-entry guards asked
+`_is_connection_dead` alone, and that predicate answers `False` for every
+shape `_is_unreachable` claims", at "the six widened guards", so an
+unreachable host paid the connect budget two to three times. Two open items
+in H-1 are this
 cluster's residue — BUG-279 (`unwrap` evaluates the lazy client outside the
 mapper) and BUG-273 (connect-time context is not visible where the errno is
 classified) — and neither is fixable by a mapping arm, because the information
