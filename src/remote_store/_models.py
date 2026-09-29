@@ -9,15 +9,19 @@ from __future__ import annotations
 import dataclasses
 import re
 import typing
+from datetime import datetime, timezone
 from typing import TYPE_CHECKING, Literal
 
 if TYPE_CHECKING:
     from collections.abc import Mapping
-    from datetime import datetime
 
     from remote_store._path import RemotePath
 
 _HEX_RE = re.compile(r"^[0-9a-f]+$")
+
+# FileInfo.modified_at for a file whose time the backend cannot know. Folder
+# aggregation skips it: the latest *known* time, or None (RFC-0017 D3).
+_UNKNOWN_MODIFIED_AT = datetime.min.replace(tzinfo=timezone.utc)
 
 
 @typing.runtime_checkable
@@ -74,7 +78,8 @@ class FileInfo:
         path: Normalized remote path.
         name: File name (final path component).
         size: File size in bytes.
-        modified_at: Last modification time.
+        modified_at: Last modification time; ``datetime.min`` in UTC when
+            the backend cannot know it.
         digest: Verified content digest with known algorithm.
         etag: Opaque backend-provided tag for change detection.
         content_type: Optional MIME type.

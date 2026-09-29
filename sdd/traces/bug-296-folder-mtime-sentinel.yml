@@ -1,0 +1,94 @@
+id: BUG-296
+title: "`get_folder_info(max_depth=N)` reports `0001-01-01` where the plain call reports `None` for the same folder"
+trigger: "Store.get_folder_info's depth path skipped only None when taking the latest modified_at, so the datetime.min sentinel of SQLQueryBackend and a modified_at-less SQLBlobBackend won and the folder reported 0001-01-01, while the plain call answered None"
+source_items:
+  - BUG-296
+  - BK-387
+audience:
+  - user.api
+  - user.api_docs
+expected_ripples:
+  - sdd/backlogid.json
+  - docs-src/_data/graph/graph.json
+  - docs-src/explanation/graph_viz.html
+surprising_ripples:
+  - src/remote_store/backends/_http.py
+  - sdd/rfcs/rfc-0017-contract-kernel-over-thin-drivers.md
+phases:
+  - id: orient
+    name: Orient
+    steps:
+      - file: sdd/BACKLOG.md
+        section: "BUG-296"
+        read_type: gate
+        extract: "Diagnosis and sites; no dossier; open decision none, skip the sentinel per RFC-0017 D3"
+        outcome: ok
+      - file: sdd/rfcs/rfc-0017-contract-kernel-over-thin-drivers.md
+        section: "D3 (folder modified_at paragraph), Open Question 4, Amendments"
+        read_type: gate
+        extract: "Rule: latest known time, sentinel skipped, None when none known; BE-017's rule amendment is assigned to BK-389"
+        outcome: ok
+      - file: sdd/specs/038-nonrecursive-folder-info.md
+        section: "FOLDERINFO-001"
+        read_type: gate
+        extract: "The depth path traces here: Implementation paragraph says 'latest modified_at' with no sentinel rule"
+        outcome: ok
+      - file: sdd/specs/003-backend-adapter-contract.md
+        section: "BE-017"
+        read_type: reference
+        extract: "Backend contract; silent on folder modified_at, left to BK-389"
+        outcome: ok
+      - file: sdd/000-process.md
+        section: "Rules / Rule 6 (Workflows)"
+        read_type: gate
+        extract: "BACKLOG, CHANGELOG, failing TEST, FIX, commit together; update the spec if an invariant is contradicted"
+        outcome: ok
+      - file: sdd/CLAUDE-REFERENCE.md
+        section: "Pre-work index / Bug fix"
+        read_type: gate
+        extract: "BACKLOG item, CHANGELOG stub, failing test before fix, spec if invariant contradicted"
+        outcome: ok
+      - file: src/remote_store/_models.py
+        section: "FileInfo"
+        read_type: reference
+        extract: "Home for the shared sentinel constant (decision 1); datetime is TYPE_CHECKING-only there"
+        outcome: ok
+      - file: src/remote_store/backends/_http.py
+        section: "_build_file_info"
+        read_type: reference
+        extract: "Third inline copy of the sentinel, not named in the item; folded into the shared constant"
+        outcome: ok
+  - id: tests
+    name: Failing tests
+    steps:
+      - file: sdd/TESTING.md
+        section: "Test Subpackage Placement (rule B), Rules 6-7"
+        read_type: gate
+        extract: "Root tests may not import SQL backends, so the tests live under tests/backends/sqlquery and sqlblob; real in-memory/file SQLite over mocks"
+        outcome: ok
+      - file: tests/backends/sqlblob/test_config.py
+        section: "minimal_engine, TestExistingTable"
+        read_type: reference
+        extract: "How to build a table without modified_at; file-backed SQLite chosen because the async Store runs sync calls on worker threads"
+        outcome: ok
+      - file: tests/test_folder_info_depth.py
+        section: "FOLDERINFO-001"
+        read_type: reference
+        extract: "Existing depth tests only on MemoryBackend, which never carries the sentinel. Seen red: 8 of 10 new tests failed before the fix; the 2 mixed-time guards passed, since datetime.min never wins a max against a known time"
+        outcome: ok
+  - id: fix
+    name: Fix
+    steps:
+      - file: src/remote_store/_store.py
+        section: "Store.get_folder_info depth path"
+        read_type: reference
+        extract: "Skip the sentinel beside None; mirrored in aio/_async_store.py. The PostToolUse ruff hook stripped the new imports added before their use; re-added after"
+        outcome: ok
+  - id: verify
+    name: Verify
+    steps:
+      - file: sdd/CLAUDE-REFERENCE.md
+        section: "Detailed checklist / Bug fix"
+        read_type: verify
+        extract: "BACKLOG moved to DONE, CHANGELOG stub, failing test before fix, spec 038 amended as the invariant was silent"
+        outcome: ok

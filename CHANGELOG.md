@@ -7,6 +7,8 @@ This project follows [Semantic Versioning](https://semver.org/). Pre-1.0, minor 
 
 ## [Unreleased]
 
+- BUG-296: `get_folder_info(path, max_depth=N)` now answers `modified_at=None`, like the plain call, for a folder whose files have no known modification time (`SQLQueryBackend`, or `SQLBlobBackend` over a table without a `modified_at` column), instead of `0001-01-01`.
+
 - BK-387: The plan to implement the backend contract once, in a shared kernel over thin per-backend drivers, has its design questions answered and is proposed as ADR-0042; nothing changes for users yet, and it is accepted with the first backend built on it.
 
 - BK-370: The recipe conda-forge builds `remote-store` from is now generated rather than copied by hand, and a weekly check reports when the published copy stops matching what this project published for that version — from the next release, the first with a generated copy to compare against.

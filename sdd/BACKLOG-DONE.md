@@ -241,6 +241,20 @@ if evidence changes; these are retired.
 
 ## Unreleased
 
+- [x] **BUG-296 — `get_folder_info(max_depth=N)` reports `0001-01-01` where the plain call reports `None` for the same folder**
+  spec: FOLDERINFO-001, BE-017 · effort: S · audience: user.api
+  Both Store twins' depth paths now skip the unknown-time sentinel as they
+  skip `None`, per RFC-0017 D3's rule, which FOLDERINFO-001 now states; BE-017's
+  statement stays with BK-389. The sentinel has one definition,
+  `_models._UNKNOWN_MODIFIED_AT`, which `_sqlalchemy.py` (replacing
+  `_EPOCH_MIN` and an inline copy) and `_http.py` import. **Reproduced before
+  the fix**, both halves: `tests/backends/sqlquery/test_folder_info_sentinel.py`
+  and `tests/backends/sqlblob/test_folder_info_sentinel.py`, 8 of 10 red on
+  sync and async `Store` (plain `None`, depth `0001-01-01`), turning the
+  `SQLBlobBackend`-without-`modified_at` half from read into measured. The
+  other 2 guard a known time beside a NULL one and were green before, since
+  `datetime.min` never wins a max against a known time.
+
 - [x] **BK-387 — RFC-0017 is Draft with four open questions gating acceptance, and no item owns answering them**
   spec: BE-021, BE-029, BE-020 · effort: L · audience: library.maintainer, contributor.process
   Partly done. RFC-0017's OQ1, 4, 6 and 7 are answered in the RFC, and the
