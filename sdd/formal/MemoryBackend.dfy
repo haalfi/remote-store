@@ -508,8 +508,9 @@ class MemoryBackend extends Backend {
     // WR-001a / WR-004: MemoryBackend declares CapWriteResultNative,
     // so source is NativeSource and rich fields are populated from
     // the write response.  ``last_modified`` carries an opaque Some(_)
-    // witness when the capability is declared: the contract at
-    // BackendContract.dfy:404-412 only detects divergence between
+    // witness when the capability is declared: the contract's Write clause
+    // `r.Ok? && CapWriteResultNative in capabilities ==> ...` (WR-001a, the
+    // last postcondition of Write) only detects divergence between
     // WriteResult and FileInfo, so any consistent Some(_) value satisfies
     // the postcondition and also lets the Python oracle adapter surface
     // a non-None ``datetime`` on the declaring backend (ID-152).  When
@@ -988,7 +989,6 @@ class MemoryBackend extends Backend {
     ensures r.Ok? ==> phase == DeleteDone
     ensures CapAtomicMove in capabilities ==> ObservableForAtomicMove(phase)
   {
-    // Directory src → InvalidPath.
     if !Live() {
       r := Err(BackendUnavailable(name));
       phase := Failed("initial", "backend is closed");
@@ -1004,6 +1004,7 @@ class MemoryBackend extends Backend {
       phase := Failed("initial", "destination is the store root");
       return;
     }
+    // Directory src → InvalidPath.
     if src in fs && fs[src].DirEntry? {
       assert IsDir(old(fs), src);
       r := Err(InvalidPath(src, name));

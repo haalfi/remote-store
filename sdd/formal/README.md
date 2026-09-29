@@ -334,7 +334,9 @@ small, stable, and maintainable:
   would be ideal, but `r.Err?` taints method bodies as
   specification-only in Dafny, preventing compiled assignments and
   returns. `MemoryBackend` preserves `fs` on error paths by
-  construction instead.
+  construction instead. The exception is a frame keyed on the pre-state
+  rather than on `r`: the closed-guard and root-refusal frames of gaps 9
+  and 10 are stated and verified.
 
 <a id="compiled-oracle"></a>
 ### Compiled oracle as conformance gate
@@ -436,8 +438,10 @@ Each gap is now encoded as a machine-checkable pre/postcondition:
 
 Gaps 9 to 11 were added under BK-388, ahead of RFC-0017's kernel, which is
 written against them (RFC-0017 D7). The ranking they encode is the one
-BE-029 states: a closed terminal backend answers `BackendUnavailable` first,
-the key-decided root checks come next, and every observed check follows.
+spec 003 states: a closed terminal backend answers `BackendUnavailable` first
+(BE-029), the key-decided root checks come next, a root `move`/`copy`
+destination included (BE-018 § Precondition order), and every observed check
+follows.
 Both of the first two also state that nothing changed (`fs == old(fs)`):
 the one error-path frame the model carries, possible because it is keyed
 on the pre-state rather than on the result.

@@ -536,11 +536,13 @@ a reader of "verified reference" would take it to be: the clauses behind most
 kernel-owned items in the split below are the ones outside the model.
 
 **Since BK-388** the model covers the root rule, the close posture and the
-absent container (`sdd/formal/README.md` gaps 9 to 11), and spec 003's
-sentence quoted above now says where they are modelled. The error
-attributes, messages and listing pages stay outside it, and so does the
-never-leak invariant on listings behind BUG-249 and 280. This paragraph and
-the next describe the model as it stood when the RFC was filed.
+absent container (`sdd/formal/README.md` gaps 9 to 11), and the spec 003
+sentence quoted above now says where the absent container is modelled. The
+error attributes, messages, listing pages and the never-leak invariant on
+listings behind BUG-249 and 280 stay outside it. The paragraph above, and
+this section's figures below (the line counts, "modelled today", and the
+twin-parity member counts), describe the model as it stood when the RFC was
+filed; `sdd/formal/README.md` describes it now.
 
 `DafnyOracleBackend` stays a direct `Backend` subclass and is never migrated.
 It is not diffed against the kernel: `sdd/formal/README.md` (T) says "running
@@ -574,7 +576,7 @@ a single implementation to hold to.
 |---|---|---|---|
 | Root rule, BE-029: which spellings address the root, decided from the key | a pure predicate over the key, plus preconditions on the write-shaped operations (landed as postconditions; see Open Question 7) | S | extend; the clause with the most items and the cheapest proof, and the verified reference ID-251's `./` decision lacks |
 | Close posture, BE-020 | a `closed` flag and a postcondition per operation | S | extend |
-| Absent container, BE-021 § Reach | the store state becomes optional and most postconditions gain a branch; the refinement follows | M | extend; it also gives BK-345 and, through the seeding hook BK-345 consumes, ID-244 the verified reference they lack |
+| Absent container, BE-021 § Reach | the store state becomes optional and most postconditions gain a branch; the refinement follows (landed as a `containerPresent` flag that `Valid()` ties to an empty store; see Open Question 7) | M | extend; it also gives BK-345 and, through the seeding hook BK-345 consumes, ID-244 the verified reference they lack |
 | First-page listing bound | pagination in the model | L | do not; the fake-driver test pins it more cheaply |
 | `write_atomic`, BE-010 and BE-011, which D2 makes kernel-owned over `put_is_atomic`, `open_write` and `rename` | a `WriteAtomic` method whose postcondition equals `write`'s, plus a two-state atomicity property over a wire the model does not have | M | do not; atomicity is a property of the driver's wire or of the temp-and-promote sequence, and § Testing pins the synthesis against the fake driver |
 | Error attributes and messages, ERR-* | strings | — | do not |
@@ -890,7 +892,7 @@ and its answer keeps `classify`.
    absent-container branches go into `BackendContract.dfy` and
    `MemoryBackend.dfy`. The root rule's pure predicate goes upstream of the
    trait, in `BackendContract.dfy` or a file it includes (as it includes
-   `ResourceSafety.dfy`, its line 34), because the trait's write-shaped
+   `ResourceSafety.dfy`, `git grep -n '^include' -- sdd/formal/BackendContract.dfy`), because the trait's write-shaped
    operations name it in their preconditions. Lemmas about it go in a
    downstream module of `DepthCounting.dfy`'s shape. A predicate placed only
    downstream could not be named by the trait, since `DepthCounting.dfy`

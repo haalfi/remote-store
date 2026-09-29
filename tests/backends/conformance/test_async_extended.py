@@ -1533,6 +1533,20 @@ class TestBackendRootPath:
         assert await async_backend.read_bytes("rootdst/src.txt") == b"seed", f"{op} consumed its source"
         assert await async_backend.is_folder(root) is True
 
+    @pytest.mark.spec("BE-029")
+    @pytest.mark.spec("ASYNC-018")
+    @pytest.mark.spec("ASYNC-019")
+    @pytest.mark.parametrize("root", ["", "."], ids=["empty", "dot"])
+    @pytest.mark.parametrize(("op", "cap"), _ASYNC_ROOT_WRITE_DST_OPS)
+    async def test_root_destination_outranks_a_missing_source(
+        self, async_backend: AsyncBackend, root: str, op: str, cap: Capability
+    ) -> None:
+        """Async mirror of ``test_io.py``: a root ``dst`` outranks src-NotFound."""
+        _require(async_backend, cap, Capability.LIST)
+        with pytest.raises(InvalidPath) as exc:
+            await getattr(async_backend, op)("rootdst/missing.txt", root)
+        assert is_root(exc.value.path), f"error names {exc.value.path!r}, not the root"
+
 
 class TestAsyncBackendNativePath:
     """BE-025 / BE-029 addressing, on the async surface.

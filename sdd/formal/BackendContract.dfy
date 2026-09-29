@@ -15,9 +15,11 @@
 //   BE-020            Close posture (closed / closeIsTerminal, Live(), Close)
 //   BE-021 § Reach    Absent container (containerPresent, DropContainer)
 //
-// Ranking, per BE-029 "BE-020 outranks this check": a closed terminal backend
-// answers BackendUnavailable first; the key-decided root checks come next;
-// every observed check (fs lookups) comes after both.
+// Ranking: a closed terminal backend answers BackendUnavailable first (BE-029
+// "BE-020 outranks this check"); the key-decided root checks come next, a
+// root move/copy destination included (BE-018 § Precondition order carves it
+// out of src-NotFound's priority); every observed check (fs lookups) comes
+// after both.
 //
 // This module defines the *abstract* contract.  Concrete refinements
 // (MemoryBackend.dfy) prove that an implementation can satisfy every
@@ -447,12 +449,16 @@ lemma EmptyStoreHoldsNoFile(p: Path)
 // Precondition evaluation order (Gap 1 / BE-008) is encoded by the
 // implication chain in Write/Delete postconditions.  The first matching
 // condition determines the error:
-//   1. IsDir(old(fs), path) → InvalidPath   (type check FIRST)
+//   0. !Live() → BackendUnavailable, then AddressesRoot(path) → InvalidPath
+//      (BK-388; BE-020, BE-029)
+//   1. IsDir(old(fs), path) → InvalidPath   (first observed check)
 //   2. IsFile(old(fs), path) && !overwrite → AlreadyExists
 //   3. otherwise → success (r.Ok?)
-// These implications are exclusive by construction: IsDir and IsFile
-// are mutually exclusive (EntryPartition lemma), so at most one
-// error-path postcondition fires for any given pre-state.
+// Each later clause is guarded by the negation of the earlier ones, or
+// agrees with them where both fire: IsDir and IsFile are mutually exclusive
+// (EntryPartition lemma), and `Write(Root)` with Root a DirEntry fires both
+// the root clause and the IsDir clause with the same InvalidPath.  So no
+// pre-state has two error-path postconditions demanding different errors.
 
 trait Backend {
   const name: string
@@ -1016,8 +1022,9 @@ trait Backend {
     ensures old(Live()) && (AddressesRoot(src) || AddressesRoot(dst)) ==> fs == old(fs)
     // BE-029, key-decided and ranked ahead of every observed check: the
     // root as source is a file-shaped operation on a folder, and the root
-    // as destination is a write to the root.  Source first, as in Python's
-    // MemoryBackend.move.
+    // as destination is a write to the root.  Source first.  A root
+    // destination outranks src-NotFound: BE-018 § Precondition order carves
+    // it out of "src-NotFound outranks dst-side preconditions".
     // @spec BE-029
     ensures old(Live()) && AddressesRoot(src)
       ==> r == Err(InvalidPath(src, name))

@@ -349,6 +349,25 @@ class TestBackendRootPath:
         assert backend.read_bytes("rootdst/src.txt") == b"seed", f"{op} consumed its source"
         assert backend.is_folder(root) is True
 
+    @pytest.mark.spec("BE-029")
+    @pytest.mark.spec("BE-018")
+    @pytest.mark.spec("BE-019")
+    @pytest.mark.parametrize("root", ["", "."], ids=["empty", "dot"])
+    @pytest.mark.parametrize(("op", "cap"), _ROOT_WRITE_DST_OPS)
+    def test_root_destination_outranks_a_missing_source(
+        self, backend: Backend, root: str, op: str, cap: Capability
+    ) -> None:
+        """BE-018 § Precondition order: a root ``dst`` outranks src-NotFound.
+
+        Every other dst-side check yields to a missing source; this one is
+        decided from the key before any request, so it answers first. No seed,
+        so a lane that refuses before the transport runs it without a cassette.
+        """
+        _require(backend, cap)
+        with pytest.raises(InvalidPath) as exc:
+            getattr(backend, op)("rootdst/missing.txt", root)
+        assert is_root(exc.value.path), f"error names {exc.value.path!r}, not the root"
+
 
 @pytest.mark.parametrize("backend", fixture_params(Capability.WRITE), indirect=True)
 class TestBackendRead:
