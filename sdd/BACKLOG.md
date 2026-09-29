@@ -283,7 +283,7 @@ failure it was.
   Detail: [dossier](backlog/bk-388-dafny-kernel-clauses.md)
 
 - [ ] **BK-389 — No backend runs on RFC-0017's kernel, so ADR-0042 stays Proposed**
-  spec: BE-021, BE-029, BE-020, ERR-001, ERR-009, DEPTH-003 · effort: L · audience: library.maintainer, user.api_docs, contributor.process
+  spec: BE-021, BE-029, BE-020, BE-017, ERR-001, ERR-009, DEPTH-003, PING-002, PING-008 · effort: L · audience: library.maintainer, user.api_docs, contributor.process
   ADR-0042 is accepted only with the first backend on the new design: D3
   step 1, the async kernel with its `unasync` sync twin over the two Memory
   drivers. That PR also lands every step-1 spec amendment (dossier item 4), the
@@ -292,7 +292,7 @@ failure it was.
   Detail: [dossier](backlog/bk-389-kernel-step-1-memory.md)
 
 - [ ] **BK-390 — RFC-0017's spec amendments after D3 step 1 have no owner once BK-387 closes**
-  spec: SIO-008, SEEK-004, SEEK-006, PING-011, SFTP-010, GR-039 · effort: M · audience: contributor.process
+  spec: SIO-008, SEEK-004, SEEK-006, PING-003, PING-006, PING-007, PING-011, SFTP-010, GR-039 · effort: M · audience: contributor.process
   RFC-0017 § Impact lists amendments to specs 006, 008, 009, 026, 036, 044,
   the later drivers' half of 007 and 022, and the per-backend specs, each true only
   once a later D3 step lands (s3fs clauses at step 2, SFTP-010 at step 6).
@@ -316,6 +316,14 @@ no clause of the contract ships unexercised.
   `MemoryCache`. Silent wrong data. Open decision: key on backend identity,
   adopt ID-121's derived keys, or refuse an unkeyed shared cache.
   Detail: [dossier](backlog/bug-251-shared-cache-cross-store-bytes.md)
+
+- [ ] **BUG-296 — `get_folder_info(max_depth=N)` reports `0001-01-01` where the plain call reports `None` for the same folder**
+  spec: FOLDERINFO-001, BE-017 · effort: S · audience: user.api
+  `Store.get_folder_info`'s depth path (`_store.py`, and `aio/_async_store.py`)
+  takes the max `modified_at` over `list_files` and skips only `None`, so the
+  `datetime.min` sentinel of `SQLQueryBackend` files wins: measured `None`
+  without `max_depth`, `0001-01-01 00:00:00+00:00` with `max_depth=5`. Open
+  decision: none; skip the sentinel as RFC-0017 D3's kernel rule does.
 
 - [ ] **BUG-240 — ASYNC-014 and DEPTH-003 state opposite rules, and `GraphBackend` implements the async one**
   spec: ASYNC-014, DEPTH-003 · effort: M · audience: user.api

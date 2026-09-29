@@ -11,8 +11,8 @@ This file states the rule; it holds no results.
 
 **Every cell's replacement median is at most 10% or 1 ms slower than the
 retiring class's median, whichever allowance is larger.** A cell is one
-operation at one payload size (or one sweep point, for the two scripts below)
-on one backend pair. With `r` the retiring class's median and `n` the
+operation at one payload size on one backend pair (for the two standalone
+scripts, the rows named below). With `r` the retiring class's median and `n` the
 replacement's, a cell passes when `n - r <= max(0.10 * r, 1 ms)`. Faster is
 always inside the band.
 
@@ -26,12 +26,19 @@ always inside the band.
   there is a test measuring one of the two classes: every `bench_backend`
   test, and the `bench_target` tests (`test_write_bytes`, `test_read_bytes`)
   only at their remote-store target. Their raw-SDK and fsspec targets measure
-  neither class and are not cells. The two standalone
-  scripts construct one class each, `bench_pyarrow_tier1.py` the retiring
-  `S3PyArrowBackend` and `bench_azure_pyarrow.py` the retiring `AzureBackend`
-  (`rg -n 'S3PyArrowBackend\(|AzureBackend\(' benchmarks/bench_*.py`). The
+  neither class and are not cells. The two standalone scripts construct only
+  the retiring class under test, `bench_pyarrow_tier1.py` in its Part 2
+  (`S3PyArrowBackend`) and `bench_azure_pyarrow.py` throughout (`AzureBackend`),
+  per `rg -n 'S3PyArrowBackend\(|AzureBackend\(' benchmarks/bench_*.py`. The
   retiring PR therefore owes those two a backend parameter first, so both
-  classes run in one invocation.
+  classes run in one invocation. Their cells:
+  - `bench_pyarrow_tier1.py --s3`: one per size in Part 2. The retiring side
+    is the "Adapter Tier 1 (native)" row; the replacement side is the tier
+    `ext.arrow` serves the replacement (the best-tier bullet below). Part 1, run on
+    `LocalBackend`, and the "Adapter Tier 2 (forced)" row are not cells.
+  - `bench_azure_pyarrow.py`: one per sweep point at the 0 ms latency point
+    only, each of its T2 and T3 rows compared like for like. The 10, 30 and
+    50 ms points of `LATENCIES_MS` are a simulated network and are not cells.
 - **The retiring PR also owes a lane for a replacement that has none.** The
   `azure` lane in `benchmarks/conftest.py` builds `AzureBackend`, so the
   generated sync Azure driver needs its own `bench_backend` and

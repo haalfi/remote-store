@@ -478,7 +478,13 @@ The first keeps async-native drivers first-class and is the only reading
 under which D4's adapter route exists; the second is less machinery at the
 cost of the async surface. **Decided: the first** (Open Question 1), with the
 generation reaching the Azure driver as well as the kernel, so D4's adapter
-route is not taken.
+route is not taken. `unasync` generates only what the two surfaces share. The
+sync surface has `read_seekable` and `open_atomic`, which `AsyncBackend` does
+not, and its `read` returns `BinaryIO` where the async one yields an
+`AsyncIterator[bytes]`. So a small hand-written sync layer supplies those,
+for the kernel and the Azure driver alike, over `get_range`, `open_write` and
+`get`. The generated part stays edit-free under a drift check (decided at
+BK-387's close, after review showed generation alone cannot produce them).
 
 ### D7. What the formal layer covers, and where the oracle stays
 
@@ -733,16 +739,19 @@ and its answer keeps `classify`.
   and [ADR-0042](../adrs/0042-contract-kernel-over-thin-drivers.md),
   Proposed, which carries the four ADR amendments. With D3 step 1 (BK-389),
   which accepts that ADR: specs 003, 005, 029 and 037 below, the kernel half
-  of 007 and 022 and the Memory drivers' rows of 007, 022 and 026, the
+  of 007 and 022, the Memory drivers' rows of 007 and 022, spec 026's PING-002
+  and PING-008, spec 003's BE-017 folder `modified_at` rule, the
   custom-backend guide with its `partial-capabilities`
   region, `check_custom_backend_guide.py`, and the landing page's snippet.
   With the later D3 step that makes each true (BK-390): the rest of the specs
   below. The list, as drafted at filing: an ADR amending
   [ADR-0001](../adrs/0001-architecture-store-registry-backends.md) (the
   `Backend` layer splits in two), ADR-0011 (the connect budget moves to
-  `Session`; per-operation retry stays native), ADR-0012 and ADR-0025 (the
-  adapter's "reverse if a native async seekable-read op is added" is
-  triggered by `get_range`); spec 003 (BE-021 is **restated** as kernel and
+  `Session`; per-operation retry stays native), ADR-0012 and ADR-0025 (as
+  filed: the adapter's "reverse if a native async seekable-read op is added"
+  is triggered by `get_range`; corrected at BK-387's close: it is not, since
+  `get_range` is a driver primitive, and ADR-0042 amends ADR-0025's scope
+  instead); spec 003 (BE-021 is **restated** as kernel and
   driver obligations, its IDs kept, which the kernel's docstrings cite, since
   spec IDs are stable and specs are amended rather than deleted); spec 005
   (ERR-001's `path` and `backend` are set by the kernel); spec 006 (SIO-008
@@ -786,7 +795,8 @@ and its answer keeps `classify`.
    twin, and the generation also reaches the Azure driver: sync
    `AzureBackend` is replaced at D3 step 4 by the generated sync driver, not
    retired to the adapter. The adapter route's cost to sync callers, listed
-   under § Impact, decided it.
+   under § Impact, decided it. The generation covers the surface the two
+   runtimes share, and a hand-written sync layer covers the rest (D6).
 2. **`Page` for wires without a page boundary.** BE-021 allows marking items
    as the service returns them; the kernel needs the driver to say which it
    does, or the divergence is stated per driver as today. BUG-257 waits on
@@ -824,7 +834,8 @@ and its answer keeps `classify`.
    defects recurring across drivers.
 7. **Is D7's extension of the model accepted?** D7 recommends extending
    `BackendContract.dfy` and its refinement with the root rule, the close
-   posture and the absent container, in D8 step 1, and not modelling
+   posture and the absent container before kernel code (at filing, "in D8
+   step 1"; now BK-388, ahead of D3 step 1), and not modelling
    pagination, messages, or the kernel-over-driver shape. The open part is
    whether the formal layer takes the M-sized absent-container change on, and
    where the additions live. The close flag and the absent-container branches

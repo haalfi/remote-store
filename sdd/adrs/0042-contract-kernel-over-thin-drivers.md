@@ -40,10 +40,18 @@ defects, and every figure with its derivation. This record decides it.
   the defects.
 - **The kernel is written once in async and the sync twin is generated**
   (RFC-0017 D6, first option; Open Question 1). `AsyncDriverBackend` is the
-  source and `unasync` generates `DriverBackend`, so async-native drivers stay
-  first-class. *Reverse if* the generated twin needs hand edits that the
-  generator cannot express, which would make it a second hand-maintained
-  kernel.
+  source, and `unasync` generates what the two surfaces share. A small
+  hand-written sync layer supplies what they do not share: `read_seekable`
+  (over `get_range`), `open_atomic` (over `open_write`) and `read`'s
+  `BinaryIO`, since the async ABC has no such methods and streams an iterator.
+  Async-native drivers stay first-class. *Reverse if* the generated part needs
+  hand edits, which would make it a second hand-maintained kernel.
+- **A session layer owns the connection lifecycle** (RFC-0017 D5, audit-021
+  H-2). A `Session` owns connect, the connect-retry budget, liveness and
+  dead-client invalidation behind one `run(op)` entry. SFTP is its first user
+  (D3 step 6) and Graph its second (step 7); the SQL drivers are not users.
+  *Reverse if* SFTP's migration shows the lifecycle cannot be separated from
+  its operations.
 - **Sync Azure callers get a generated sync driver.** The single async Azure
   driver is the source; the hand-written sync `AzureBackend` is replaced at
   D3 step 4 with its behaviour kept. The adapter route was rejected for what
@@ -93,10 +101,12 @@ defects, and every figure with its derivation. This record decides it.
 
   Async-first source is taken for the kernel and the Azure driver. Option E's
   runtime wrapper stays where ADR-0025 already uses it.
-- **[ADR-0025](0025-async-to-sync-backend-adapter.md)**, *capability
-  translation*: its "reverse if a native async seekable-read op is added" is
-  triggered by the driver's `get_range` primitive. The adapter keeps serving
-  hand-wrapped async backends; it is not the sync route for Azure.
+- **[ADR-0025](0025-async-to-sync-backend-adapter.md)**, its scope: the
+  adapter stays the sync route for async-only backends (Graph), and is not the
+  route for Azure, which gets a generated sync driver. Its capability
+  translation is unchanged. The "reverse if a native async seekable-read op is
+  added" does not fire, because `get_range` is a driver primitive and the
+  async surface gains no seekable-read operation.
 
 ## Consequences
 

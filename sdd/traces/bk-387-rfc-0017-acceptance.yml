@@ -189,7 +189,22 @@ phases:
           The recommendation I put to the maintainer at plan time carried the
           infeasible placement from RFC-0017's OQ7 text.
         outcome: misleading
+      - file: src/remote_store/aio/_async_backend.py
+        section: "read, and the absent read_seekable / open_atomic"
+        read_type: verify
+        extract: >-
+          PR #1045's closing panel found OQ1's "generate the sync twin" could
+          not produce the sync surface alone: `AsyncBackend.read` yields an
+          AsyncIterator where `Backend.read` returns BinaryIO (line 104 against
+          `_backend.py` line 122), and the async ABC has no read_seekable or
+          open_atomic. The maintainer chose generation for the shared surface
+          plus a hand-written sync layer. The same panel measured that the
+          step-1 folder rule had no owner, and that PING-011, Graph's clause,
+          had been used as the general probe clause (PING-002 and Memory's
+          PING-008 are the step-1 ones).
+        outcome: ok
 discovery_followups:
   - BK-388
   - BK-389
   - BK-390
+  - BUG-296

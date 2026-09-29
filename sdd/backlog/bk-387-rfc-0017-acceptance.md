@@ -84,7 +84,9 @@ Four corrections to the prescription above:
   (`CLAUDE.md` principle 3). This item shipped the benchmark band and the ADR.
   Everything that becomes true at D3 step 1 moved to BK-389: specs 003, 005,
   029 and 037, the kernel half of 007 and 022, the Memory drivers' rows of
-  007, 022 and 026, the guide, its check script and the homepage snippet. The later steps' amendments went to BK-390, the
+  007 and 022, spec 026's PING-002 and PING-008, spec 003's BE-017 folder
+  rule, the guide, its check script and the homepage snippet. The later
+  steps' amendments went to BK-390, the
   remainder under § Completing work's "partly done".
 - **Items minted:** BK-388 for the Dafny extensions, BK-389 for D3 step 1 and
   BK-390 for the remainder.
