@@ -162,7 +162,7 @@ optional member, so presence is a protocol, not a method):
 | Protocol | Member | What the kernel does with it, and without it |
 |---|---|---|
 | `SupportsRangeRead` | `get_range(key, offset, length)` | serves `read_seekable` by ranged reads (Azure's `_AzureRangeReader`, the boto3 lane's `_S3RangeReader`); without it, spools over `get` as the ABC default does today |
-| `SupportsOpenWrite` | `open_write(key, *, metadata) -> WriteHandle` with `commit()` and `abort()` | serves `open_atomic` on a wire-side temporary (S3 multipart Complete/Abort, Local and SFTP temp files); without it, spools locally and `put`s at exit, which is ADR-0025's synthesis and what flat Azure does today |
+| `SupportsOpenWrite` | `open_write(key, *, metadata) -> WriteHandle` with `commit()` and `abort()` | serves `open_atomic` on a wire-side temporary (S3 multipart Complete/Abort, Local and SFTP temp files); without it, spools locally and hands the spool to `write_atomic` at exit, which is ADR-0025's synthesis (`_SpoolAndFlush`) and what `AzureBackend` does today in both namespaces: a plain upload on flat, where `put_is_atomic`, and temp upload plus `rename_file` on HNS |
 | `SupportsAtomicMove` | `move(src, dst, *, overwrite)` | forwarded whole, so the kernel never sequences the checks of an atomic move (SQLBlob's single transaction, Memory's single lock); one of the two ways to back a declared `ATOMIC_MOVE` |
 | `SupportsRename` | `rename(src, dst, *, replace: bool)` | `move` for drivers without `SupportsAtomicMove`: `replace=True` where the wire's rename replaces atomically (Local's `os.rename` within one root, which is why `LocalBackend` declares `ATOMIC_MOVE` today, `_local.py` lines 668 to 670), `replace=False` where it cannot, in which case the kernel runs the displace-and-restore fallback SFTP carries today, and only there |
 | `SupportsCopy` | `copy(src, dst)` | `copy`, and `move` as copy-then-delete when neither of the two above exists |
@@ -572,9 +572,10 @@ accepted inverts it. Acceptance here rides with the first implementing PR
 (step 2 below), which is additive; no class is deleted before it. So:
 
 1. **Decide and propose.** Open Questions 1, 4, 6 and 7 are answered and the
-   design, D1 to D7 plus those answers, is recorded as a Proposed ADR
-   ([ADR-0042](../adrs/0042-contract-kernel-over-thin-drivers.md)); OQ7 is in
-   the list because D7's extensions land before kernel code. Done by BK-387.
+   design, D1, D2 and D4 to D7 plus those answers, is recorded as a Proposed
+   ADR ([ADR-0042](../adrs/0042-contract-kernel-over-thin-drivers.md)). D3,
+   the migration order, is process and stays here. OQ7 is in the list because
+   D7's extensions land before kernel code. Done by BK-387.
 2. **Implement** D3 in order. Step 1 runs under the Proposed ADR, and its PR,
    the first backend on the new design, **accepts** ADR-0042 and this RFC:
    the design is accepted once it has carried one backend through the suite,
@@ -769,7 +770,8 @@ and its answer keeps `classify`.
   temp-and-promote as kernel behaviour over `put_is_atomic`, `open_write`
   and `rename`); spec 008 (s3fs-specific clauses retire with the lane); spec
   009 (SFTP-010's connection tiers become D5); spec 026 (`probe()` against
-  PING-011); spec 029 (the async surface and `AsyncDriver`); spec 036
+  PING-011; corrected at BK-387's close: PING-011 is Graph's row, and the
+  general clause is PING-002, with each driver's own row at its step); spec 029 (the async surface and `AsyncDriver`); spec 036
   (SEEK-004 and SEEK-006 against `get_range`); spec 037 (the `max_depth`
   algorithm decided once); spec 044 (GR-039 and `parents == "implicit"`);
   the per-backend specs (AZ-, S3-, S3PA-, GR-, SQL-BLOB-) wherever a clause

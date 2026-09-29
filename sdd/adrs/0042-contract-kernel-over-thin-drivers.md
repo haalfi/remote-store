@@ -51,6 +51,13 @@ defects, and every figure with its derivation. This record decides it.
   dead-client invalidation behind one `run(op)` entry. SFTP and Graph are its
   users; the SQL drivers are not. *Reverse if* SFTP's driver shows the
   lifecycle cannot be separated from its operations.
+- **One driver per service; for S3 it is the boto3 one** (RFC-0017 D4).
+  `S3Boto3Backend` becomes the single S3 driver, registered under `"s3"`,
+  and s3fs and PyArrow's S3 filesystem stop being backend layers, so
+  `S3Backend` and `S3PyArrowBackend` have no successor on the kernel. Async
+  S3 callers keep `SyncBackendAdapter`'s auto-wrap. *Reverse if* the boto3
+  driver cannot reach the option parity RFC-0017 D4 lists for what the s3fs
+  lane forwards today.
 - **Sync Azure callers get a generated sync driver.** The single async Azure
   driver is the source; `unasync` generates the primitives the two SDKs
   share, and the stream-returning ones (`get` and `get_range` returning

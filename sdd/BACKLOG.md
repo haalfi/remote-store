@@ -292,7 +292,7 @@ failure it was.
   Detail: [dossier](backlog/bk-389-kernel-step-1-memory.md)
 
 - [ ] **BK-390 — RFC-0017's spec amendments after D3 step 1 have no owner once BK-387 closes**
-  spec: SIO-008, SEEK-004, SEEK-006, PING-003, PING-006, PING-007, PING-011, SFTP-010, GR-039 · effort: M · audience: contributor.process
+  spec: SIO-008, SEEK-004, SEEK-006, PING-003, PING-004, PING-005, PING-006, PING-007, PING-011, SFTP-010, GR-039 · effort: M · audience: contributor.process
   RFC-0017 § Impact lists amendments to specs 006, 008, 009, 026, 036, 044,
   the later drivers' half of 007 and 022, and the per-backend specs, each true only
   once a later D3 step lands (s3fs clauses at step 2, SFTP-010 at step 6).

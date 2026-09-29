@@ -90,8 +90,11 @@ phases:
         section: "(full)"
         read_type: verify
         extract: >-
-          Slimmed to `stats.mean` only; backends local, s3, s3-pyarrow, sftp,
-          azure (40 cells each), no s3-boto3. So the band cannot be applied
+          Slimmed to `stats.mean` only; lanes local, s3, s3-pyarrow, sftp and
+          azure, no s3-boto3, per the lane-count command in
+          benchmarks/results/acceptance-band.md § Why not the run of record
+          (first recorded with an underived "40 cells each", true only of
+          `bench_backend`; PR #1045 round 8 corrected it). So the band cannot be applied
           against the run of record; it has to be a paired run in the
           retirement PR.
         outcome: ok
