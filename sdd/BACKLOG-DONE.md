@@ -242,12 +242,12 @@ if evidence changes; these are retired.
 ## Unreleased
 
 - [x] **BK-388 — The Dafny model lacks the root rule, the close posture and the absent container that RFC-0017's kernel encodes**
-  spec: BE-029, BE-020, BE-021 · effort: M · audience: library.maintainer
-  `BackendContract.dfy` models all three: `AddressesRoot` (BE-029) as
-  postconditions on `write` and the `move`/`copy` source and destination,
-  `closed`/`Live()`/`Close()` (BE-020) ranked ahead of them, and
-  `containerPresent`/`DropContainer()` (BE-021 § Reach). Both `MemoryBackend.dfy`
-  classes refine them, `RootPath.dfy` proves the predicate, and the oracle is regenerated.
+  spec: BE-029, BE-020, BE-021, BE-018, BE-019 · effort: M · audience: library.maintainer
+  `BackendContract.dfy` models `AddressesRoot` (BE-029) on `write` and the
+  `move`/`copy` source and destination, `Live()`/`Close()` (BE-020) ranked first,
+  and `containerPresent`/`DropContainer()` (BE-021 § Reach); both refinements,
+  `RootPath.dfy` and the regenerated oracle follow. BE-018/019 (and ASYNC-018/019)
+  gained a root-destination carve-out over src-NotFound, pinned by a conformance cell.
   Detail: [dossier](backlog/bk-388-dafny-kernel-clauses.md)
 
 - [x] **BK-387 — RFC-0017 is Draft with four open questions gating acceptance, and no item owns answering them**

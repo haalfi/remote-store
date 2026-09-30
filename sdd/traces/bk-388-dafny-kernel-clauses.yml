@@ -210,7 +210,10 @@ phases:
           amend BE-018 (and BE-019, ASYNC-018/019 by reference) with a
           root-destination carve-out and keep the model. New conformance
           cells `test_root_destination_outranks_a_missing_source` (sync and
-          async): 56 passed, 8 skipped across lanes; seeded src-first order in
+          async), at 50b4071 by `hatch run python -m pytest
+          tests/backends/conformance/test_io.py
+          tests/backends/conformance/test_async_extended.py -k
+          root_destination_outranks`: 56 passed, 8 skipped; seeded src-first order in
           MemoryBackend.move turns the sync memory move cells in test_io.py red
           (2 failed, the only cells that run selected). Round 4's measuring
           member ran the premise at base and head on every backend reachable
@@ -240,10 +243,12 @@ phases:
         section: "dafny verify over the five .dfy files, default time limit"
         read_type: verify
         extract: >-
-          At 50b4071, whose sdd/formal is unchanged in every later commit of
-          the PR (`git diff 50b4071 --stat -- sdd/formal` empty): 1775
-          verified, 0 errors. The same count at 49db4c3, since rounds 2 to 4
-          changed only comments in the .dfy files.
+          At 49db4c3 and 50b4071: 1775 verified, 0 errors (rounds 2 and 3
+          changed only comments in the .dfy files). At the round-5 fix commit,
+          the last to touch sdd/formal (`git log -1 --format=%h -S
+          RootSpellingCharacterisation -- sdd/formal/RootPath.dfy`): 1777
+          verified, 0 errors; the two new are RootSpellingCharacterisation
+          and its RootSpelling predicate.
         outcome: ok
       - file: sdd/formal/MemoryBackend.dfy
         section: "seven mutations, each on a scratch copy of sdd/formal"
@@ -259,9 +264,34 @@ phases:
         section: "-k dafny, plus tests/test_pbt_folder_info_aggregates.py"
         read_type: verify
         extract: >-
-          Regenerated oracle: 437 passed, 14 skipped in the conformance
-          selection; the folder-info PBT 3 passed. The oracle keeps
+          On a99af9f's tree, with the regenerated oracle: `hatch run python -m
+          pytest tests/backends/conformance tests/test_pbt_folder_info_aggregates.py
+          -k dafny` gave 437 passed, 14 skipped; the folder-info PBT alone, 3
+          passed. The selection grew at 50b4071 with the new root-destination
+          cells, so a re-run at head counts more. The oracle keeps
           MemoryBackend's non-terminal, container-present behaviour.
+        outcome: ok
+      - file: sdd/formal/RootPath.dfy
+        section: "RootSpellingCharacterisation (PR #1047 round 5)"
+        read_type: verify
+        extract: >-
+          Round 5 found "every slash-and-dot spelling" claimed where the lemma
+          proved six strings. Added the universal lemma (AddressesRoot holds
+          exactly on the RootSpelling keys) rather than narrowing the claim.
+          Dropping RootSpelling's '.'-follow condition makes it fail (5
+          verified, 1 error).
+        outcome: ok
+      - file: tests/backends/conformance/test_async_extended.py
+        section: "graph_replay root-path cells (PR #1047 round 5)"
+        read_type: verify
+        extract: >-
+          `-k "graph_replay and TestBackendRootPath"` at the round-4 head: 8
+          passed (move_src/copy_src and the root-destination cell, all
+          key-decided), 30 skipped for missing cassettes. With both of Graph's
+          `_require_writable_key(dst)` calls removed, the root-destination
+          cells skip (4 skipped), not fail: they measure the guard without
+          fencing it. Spec 003, graph_replay.py, fixtures.toml and the
+          per-backend Graph test now say so.
         outcome: ok
 surprising_ripples:
   - .github/workflows/ci.yml
@@ -271,3 +301,6 @@ surprising_ripples:
   - sdd/specs/029-async-store-backend-api.md
   - tests/backends/conformance/test_io.py
   - tests/backends/conformance/test_async_extended.py
+  - tests/backends/fixtures/graph_replay.py
+  - tests/backends/fixtures/fixtures.toml
+  - tests/backends/graph/aio/test_backend.py

@@ -237,7 +237,7 @@ that must move — see [`000-process.md` Rule
 | `MemoryBackend.dfy` | Reference refinement proving the contract is satisfiable; compiled to Python as the conformance oracle |
 | `DepthCounting.dfy` | Verified `DEPTH-001` algorithm and the four depth-filter properties |
 | `ResourceSafety.dfy` | Handle lifecycle, `_safe_wrap` invariant, move atomicity, connection lifecycle |
-| `RootPath.dfy` | What `AddressesRoot` accepts: every slash-and-dot root spelling, only `Root` among well-formed paths, not `\` (BE-029) |
+| `RootPath.dfy` | What `AddressesRoot` accepts: exactly the keys whose every `/`-segment is `""` or `"."` (`RootSpellingCharacterisation`), so the six BE-029 spellings; only `Root` among well-formed paths; not `\` (BE-029) |
 
 Live TLA+ modules live in `sdd/formal/tla/`. The frozen PoC modules
 remain in `sdd/research/tla-poc/` as the historical record of the

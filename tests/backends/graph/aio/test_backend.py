@@ -255,9 +255,12 @@ class TestAddressing:
         transport. A call that reached the network would fail this cell with a
         connection error instead, which is the discrimination it needs.
 
-        Conformance cannot supply this. Its destination cell seeds through
-        ``write``, so the Graph lane skips it for want of a cassette — measured,
-        the whole Graph suite passed with the destination guard reverted.
+        Conformance cannot supply this. Its seeded destination cell goes
+        through ``write``, so the Graph lane skips it for want of a cassette —
+        measured, the whole Graph suite passed with the destination guard
+        reverted. The unseeded root-destination-outranks cell does run there,
+        but with the guard reverted it reaches an unrecorded request and skips,
+        so it cannot fail either.
         """
         backend = _make()
         with pytest.raises(InvalidPath, match="drive root") as exc_info:
