@@ -2190,7 +2190,8 @@ class TestAzureETagAndDigest:
 
         assert fi.etag == "0x8d4bcc2e4835cd0"
 
-    @pytest.mark.spec("FOLDERINFO-001")
+    @pytest.mark.spec("AZ-023")
+    @pytest.mark.spec("MOD-002")
     def test_missing_last_modified_is_unknown_time_sentinel(self) -> None:
         """No last_modified maps to the unknown-time sentinel, not now."""
         from datetime import datetime, timezone

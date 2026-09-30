@@ -27,6 +27,11 @@ surprising_ripples:
   - src/remote_store/ext/arrow.py
   - sdd/specs/012-azure-backend.md
   - sdd/specs/014-pyarrow-filesystem-adapter.md
+  # Review round 3: the sentinel reached the Optional WriteResult.last_modified
+  # via head() and S3PyArrow's write(); CodeQL #88 needed an in-module use.
+  - src/remote_store/backends/_s3_pyarrow.py
+  - sdd/specs/001-store-api.md
+  - sdd/specs/045-write-result.md
 phases:
   - id: orient
     name: Orient
@@ -156,3 +161,26 @@ phases:
         read_type: gate
         extract: "Mapping said 'mtime from get_file_info' with no out-of-range case; amended"
         outcome: unclear
+  - id: review_optional_fields
+    name: Review round 3, sentinel in Optional fields and CodeQL #88
+    steps:
+      - file: sdd/specs/045-write-result.md
+        section: "WR-001, WR-008"
+        read_type: gate
+        extract: "last_modified is None when the response omits it; WR-008's field-rename row let head() copy the sentinel. Amended to map it to None"
+        outcome: unclear
+      - file: sdd/specs/001-store-api.md
+        section: "MOD-002"
+        read_type: gate
+        extract: "Required modified_at had no unknown-time rule, though the public FileInfo docstring now promised one; stated here as the clause the field-map pins trace to"
+        outcome: unclear
+      - file: src/remote_store/backends/_s3_pyarrow.py
+        section: "write"
+        read_type: reference
+        extract: "The one write path deriving last_modified from a FileInfo (3 of 14 last_modified= sites, rg). MinIO is unreachable locally, so its pin seeds both lazy clients with spec'd mocks; seen red with 0001-01-01"
+        outcome: ok
+      - file: .github/codeql/codeql-config.yml
+        section: "(full)"
+        read_type: reference
+        extract: "security-and-quality suite; py/unused-global-variable counts only in-module uses, so _config._SENSITIVE_KEYS passes and _UNKNOWN_MODIFIED_AT did not. The _known_modified_at helper gives it one"
+        outcome: ok

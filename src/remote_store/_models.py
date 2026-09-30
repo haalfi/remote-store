@@ -24,6 +24,15 @@ _HEX_RE = re.compile(r"^[0-9a-f]+$")
 _UNKNOWN_MODIFIED_AT = datetime.min.replace(tzinfo=timezone.utc)
 
 
+def _known_modified_at(value: datetime) -> datetime | None:
+    """Return *value*, or ``None`` when it is the unknown-time sentinel.
+
+    The one translation from ``FileInfo.modified_at`` to an Optional time:
+    folder aggregation, ``WriteResult.last_modified`` and pyarrow's ``mtime``.
+    """
+    return None if value == _UNKNOWN_MODIFIED_AT else value
+
+
 @typing.runtime_checkable
 class PathEntry(typing.Protocol):
     """Shared interface for listing results -- every entry has a name and path."""

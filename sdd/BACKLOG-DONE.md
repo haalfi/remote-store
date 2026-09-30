@@ -259,6 +259,12 @@ if evidence changes; these are retired.
   nanoseconds would otherwise wrap to 1754-08-30 (PA-007, PA-008 amended; 2
   red first). Enumeration: all 19 `FileInfo(` sites in `src/remote_store`
   (`rg "FileInfo\("`, pyarrow's excluded) take a real time or the sentinel.
+  Round 3: `_models._known_modified_at` is the one sentinel-to-`None` mapping
+  (Store twins' aggregation, both `head()`s, `ext.arrow`, and
+  `S3PyArrowBackend.write()`, the one write path that copied `FileInfo`'s
+  time into `WriteResult.last_modified`; 3 of the 14 `last_modified=` sites,
+  `rg "last_modified="`); MOD-002, WR-001 and WR-008 state it; 3 red first.
+  It also clears CodeQL #88 (unused global), which ignores cross-module use.
   **Reproduced before
   the fix**, both halves: `tests/backends/sqlquery/test_folder_info_sentinel.py`
   and `tests/backends/sqlblob/test_folder_info_sentinel.py`, 8 of 10 red on

@@ -161,7 +161,7 @@ class TestNormalizeModified:
         result = _normalize_modified(aware)
         assert result == aware
 
-    @pytest.mark.spec("FOLDERINFO-001")
+    @pytest.mark.spec("MOD-002")
     def test_none_returns_unknown_time_sentinel(self) -> None:
         # Not "now": an invented time would win folder aggregation (BUG-296).
         from datetime import datetime, timezone

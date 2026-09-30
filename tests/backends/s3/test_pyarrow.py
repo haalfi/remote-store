@@ -313,6 +313,35 @@ class TestS3PyArrowReadPath:
 
 
 # region: Resource Management (S3PA-021)
+class TestS3PyArrowWriteResult:
+    """WR-001: an unknown write time leaves the Optional last_modified None."""
+
+    @pytest.mark.spec("WR-001")
+    def test_last_modified_none_when_head_omits_it(self) -> None:
+        # Injection: a real HeadObject always carries LastModified; this pins the
+        # defensive path, where the sentinel must not reach WriteResult. No
+        # network: both lazy clients are seeded with spec'd mocks.
+        from unittest.mock import MagicMock
+
+        from pyarrow.fs import S3FileSystem as PyArrowS3
+        from s3fs import S3FileSystem
+
+        def _sync_call_s3_spec(method: str, *args: Any, **kwargs: Any) -> Any:
+            """Sync spec; see tests/backends/s3/test_ping.py for the 3.12+ drift."""
+
+        s3_mock = MagicMock(spec=S3FileSystem)
+        s3_mock.exists.return_value = False
+        s3_mock.call_s3 = MagicMock(spec=_sync_call_s3_spec, return_value={"ContentLength": 2, "ETag": '"e"'})
+        backend = S3PyArrowBackend(bucket="b")
+        backend._s3fs_instance = s3_mock
+        backend._pa_fs_instance = MagicMock(spec=PyArrowS3)
+
+        result = backend.write("no_lm.txt", b"hi")
+        assert result.size == 2
+        assert result.etag == "e"
+        assert result.last_modified is None
+
+
 class TestS3PyArrowLifecycle:
     """S3PA-021: PyArrow-specific unwrap. s3fs unwrap (S3PA-021) is covered by
     TestS3SharedUnwrap in test_shared.py. Close semantics live in
