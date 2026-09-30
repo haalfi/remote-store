@@ -326,12 +326,13 @@ class TestS3PyArrowWriteResult:
         from pyarrow.fs import S3FileSystem as PyArrowS3
         from s3fs import S3FileSystem
 
-        def _sync_call_s3_spec(method: str, *args: Any, **kwargs: Any) -> Any:
-            """Sync spec; see tests/backends/s3/test_ping.py for the 3.12+ drift."""
+        def _sync_spec(*args: Any, **kwargs: Any) -> Any:
+            """Sync spec for s3fs's sync-wrapped methods, which ``spec=S3FileSystem``
+            promotes to AsyncMock on 3.13+ (see tests/backends/s3/test_ping.py)."""
 
         s3_mock = MagicMock(spec=S3FileSystem)
-        s3_mock.exists.return_value = False
-        s3_mock.call_s3 = MagicMock(spec=_sync_call_s3_spec, return_value={"ContentLength": 2, "ETag": '"e"'})
+        s3_mock.exists = MagicMock(spec=_sync_spec, return_value=False)
+        s3_mock.call_s3 = MagicMock(spec=_sync_spec, return_value={"ContentLength": 2, "ETag": '"e"'})
         backend = S3PyArrowBackend(bucket="b")
         backend._s3fs_instance = s3_mock
         backend._pa_fs_instance = MagicMock(spec=PyArrowS3)

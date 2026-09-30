@@ -177,7 +177,7 @@ phases:
       - file: src/remote_store/backends/_s3_pyarrow.py
         section: "write"
         read_type: reference
-        extract: "The one write path deriving last_modified from a FileInfo (3 of 14 last_modified= sites, rg). MinIO is unreachable locally, so its pin seeds both lazy clients with spec'd mocks; seen red with 0001-01-01"
+        extract: "The one write path deriving last_modified from a FileInfo (3 of 14 last_modified= sites, rg). MinIO is unreachable locally, so its pin seeds both lazy clients with spec'd mocks; seen red with 0001-01-01. My own miss: I guarded call_s3 against the sync_wrapper-to-AsyncMock drift test_ping.py documents but not exists, so CI went red on 3.13+/3.14 (local was 3.11); reproduced and fixed in a ./tmp 3.13 venv"
         outcome: ok
       - file: .github/codeql/codeql-config.yml
         section: "(full)"
