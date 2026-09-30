@@ -293,6 +293,8 @@ phases:
           fencing it. Spec 003, graph_replay.py, fixtures.toml and the
           per-backend Graph test now say so.
         outcome: ok
+discovery_followups:
+  - BK-391
 surprising_ripples:
   - .github/workflows/ci.yml
   - scripts/dafny_verify.sh

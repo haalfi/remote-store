@@ -273,6 +273,14 @@ failure it was.
   narrow the catch so only a confirmed miss reads as "no ancestor"; BE-008 changes with the fix.
   Detail: [dossier](backlog/bug-292-ancestor-gate-fails-open.md)
 
+- [ ] **BK-391 — Five root-rule and Graph-lane statements still contradict what BK-388 measured**
+  spec: BE-029, BE-021, BE-018 · effort: S · audience: library.maintainer, infra.test
+  Found by PR #1047's closing panel, after the loop's agreed stop (threads carry detail):
+  spec 003's Graph row counts "five" file-shaped ops (async roster: four); BE-021's Graph
+  paragraph and a `graph/aio/test_backend.py` docstring blame seeding, not skip-not-fail;
+  `_local.py`, `_sftp.py` and a `test_io.py` docstring call the root-destination guard
+  message-only on a present container (measured: it changes the class). Open decision: none.
+
 - [ ] **BK-389 — No backend runs on RFC-0017's kernel, so ADR-0042 stays Proposed**
   spec: BE-021, BE-029, BE-020, BE-017, ERR-001, ERR-009, DEPTH-003, PING-002, PING-008 · effort: L · audience: library.maintainer, user.api_docs, contributor.process
   ADR-0042 is accepted only with the first backend on the new design: D3
