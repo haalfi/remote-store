@@ -11364,6 +11364,17 @@ walks the prefix tree directory by directory and treats a vanished directory as
 one with nothing in it, so a bucket deleted mid-walk yields whatever it had
 counted. It is the same shape as their listings, which truncate where the other
 lanes raise.</p>
+<p><strong><code>max_depth</code> is inert without <code>recursive=True</code> on <code>GraphBackend</code> too:</strong></p>
+<p>Calling <a href="../api/aio/backends/graph/"><code>GraphBackend</code></a>'s <code>list_files()</code>
+<strong>directly</strong> with <code>max_depth=</code> and <code>recursive=False</code> now yields the immediate
+children for every value of <code>max_depth</code>, identical to omitting it. It used to
+expand the traversal to <code>max_depth</code> levels instead, unlike every other async
+backend. The sync backends made the same change in v0.31.0.</p>
+<p><a href="../api/aio/store/"><code>AsyncStore.list_files()</code></a> is unaffected and needs no
+change: it normalises <code>max_depth</code> into <code>recursive</code> before delegating, so depth
+still takes full control there. Only code holding the backend and calling it
+without going through <code>AsyncStore</code> needs to pass <code>recursive=True</code> alongside
+<code>max_depth</code>.</p>
 <h2 id="v0310-to-v0320">v0.31.0 to v0.32.0<a class="headerlink" href="#v0310-to-v0320" title="Permanent link">&para;</a></h2>
 <p><strong>Several optional-dependency floors were raised to the first release that actually works:</strong></p>
 <p>Each of these extras declared a minimum below the version carrying the API the

@@ -367,7 +367,7 @@ Parameters:
 
 - **`path`** (`str`) – Backend-relative folder key, or "" for the root.
 - **`recursive`** (`bool`, default: `False` ) – If True, include files in all subdirectories.
-- **`max_depth`** (`int | None`, default: `None` ) – Optional maximum folder depth to traverse. Backends must honor the cutoff natively — the conformance suite asserts the depth boundary on the backend's own output (Store additionally applies client-side filtering for its callers). None (default) defers to recursive.
+- **`max_depth`** (`int | None`, default: `None` ) – Optional maximum folder depth to traverse. Backends must honor the cutoff natively — the conformance suite asserts the depth boundary on the backend's own output (Store additionally applies client-side filtering for its callers). None (default) defers to recursive. The bound applies only when recursive is True; with recursive=False the result is the immediate files for every value.
 
 Returns:
 

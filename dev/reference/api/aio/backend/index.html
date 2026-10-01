@@ -12827,7 +12827,10 @@ declare this capability.</p>
 must honor the cutoff natively -- the conformance suite
 asserts the depth boundary on the backend's own output
 (<code>AsyncStore</code> additionally applies client-side filtering
-for its callers).  <code>None</code> (default) defers to <em>recursive</em>.</p>
+for its callers).  <code>None</code> (default) defers to <em>recursive</em>.
+The bound applies only when <em>recursive</em> is <code>True</code>; with
+<code>recursive=False</code> the result is the immediate files for
+every value.</p>
           </div>
         </li>
     </ul>

@@ -471,7 +471,7 @@ list_files(
 
 List files under *path*.
 
-When `max_depth` is set it governs traversal depth and `recursive` is ignored; otherwise `recursive=True` walks the subtree unbounded and the default lists only immediate files. A missing or file path yields nothing.
+The default lists only immediate files, whatever `max_depth` says. `recursive=True` walks the `/children` tree, pruned natively at `max_depth` when set (inclusive) and unbounded otherwise. A missing or file path yields nothing.
 
 Raises:
 

@@ -5890,7 +5890,7 @@ list_files(
 
 List files under *path*.
 
-When `max_depth` is set it governs traversal depth and `recursive` is ignored; otherwise `recursive=True` walks the subtree unbounded and the default lists only immediate files. A missing or file path yields nothing.
+The default lists only immediate files, whatever `max_depth` says. `recursive=True` walks the `/children` tree, pruned natively at `max_depth` when set (inclusive) and unbounded otherwise. A missing or file path yields nothing.
 
 Raises:
 
@@ -9962,7 +9962,7 @@ Parameters:
 
 - **`path`** (`str`) – Backend-relative folder key, or "" for the root.
 - **`recursive`** (`bool`, default: `False` ) – If True, include files in all subdirectories.
-- **`max_depth`** (`int | None`, default: `None` ) – Optional maximum folder depth to traverse. Backends must honor the cutoff natively — the conformance suite asserts the depth boundary on the backend's own output (Store additionally applies client-side filtering for its callers). None (default) defers to recursive.
+- **`max_depth`** (`int | None`, default: `None` ) – Optional maximum folder depth to traverse. Backends must honor the cutoff natively — the conformance suite asserts the depth boundary on the backend's own output (Store additionally applies client-side filtering for its callers). None (default) defers to recursive. The bound applies only when recursive is True; with recursive=False the result is the immediate files for every value.
 
 Returns:
 
@@ -13156,7 +13156,7 @@ Parameters:
 
 - **`path`** (`str`) – Backend-relative folder key, or "" for the root.
 - **`recursive`** (`bool`, default: `False` ) – If True, include files in all subdirectories.
-- **`max_depth`** (`int | None`, default: `None` ) – Optional maximum folder depth to traverse. Backends must honor the cutoff natively -- the conformance suite asserts the depth boundary on the backend's own output (AsyncStore additionally applies client-side filtering for its callers). None (default) defers to recursive.
+- **`max_depth`** (`int | None`, default: `None` ) – Optional maximum folder depth to traverse. Backends must honor the cutoff natively -- the conformance suite asserts the depth boundary on the backend's own output (AsyncStore additionally applies client-side filtering for its callers). None (default) defers to recursive. The bound applies only when recursive is True; with recursive=False the result is the immediate files for every value.
 
 Returns:
 
@@ -20433,6 +20433,12 @@ A branch keyed on `exists("")` being `False` on those two lanes also now takes t
 **A container deleted while an aggregate is running still raises on `S3Boto3Backend`, `AzureBackend` and `AsyncAzureBackend`.** The new answer is about a container that was already gone when the call began; on those three, a first page that comes back before the container disappears makes the 404 a deletion underneath the scan, and `get_folder_info` raises `NotFound` rather than reporting a store you still have as empty.
 
 **`S3Backend` and `S3PyArrowBackend` return a partial count there instead**, and that is unchanged by this release rather than introduced by it: their aggregate walks the prefix tree directory by directory and treats a vanished directory as one with nothing in it, so a bucket deleted mid-walk yields whatever it had counted. It is the same shape as their listings, which truncate where the other lanes raise.
+
+**`max_depth` is inert without `recursive=True` on `GraphBackend` too:**
+
+Calling [`GraphBackend`](https://docs.remotestore.dev/stable/reference/api/aio/backends/graph/index.md)'s `list_files()` **directly** with `max_depth=` and `recursive=False` now yields the immediate children for every value of `max_depth`, identical to omitting it. It used to expand the traversal to `max_depth` levels instead, unlike every other async backend. The sync backends made the same change in v0.31.0.
+
+[`AsyncStore.list_files()`](https://docs.remotestore.dev/stable/reference/api/aio/store/index.md) is unaffected and needs no change: it normalises `max_depth` into `recursive` before delegating, so depth still takes full control there. Only code holding the backend and calling it without going through `AsyncStore` needs to pass `recursive=True` alongside `max_depth`.
 
 ## v0.31.0 to v0.32.0
 

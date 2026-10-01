@@ -13016,12 +13016,12 @@ nothing for non-existent paths, never raises <code>NotFound</code>.
 accepts <code>recursive</code> and <code>max_depth</code> (ASYNC-014) but no <code>pattern</code>;
 <code>AsyncBackend.list_folders</code> does not accept <code>max_depth</code> (ASYNC-015).
 Pattern-limited listing is composed at <code>AsyncStore</code> level (ASYNC-052).
-</em><em>Precedence (per ASYNC-014):</em>* when <code>max_depth</code> is set, <code>recursive</code>
-is ignored — <code>max_depth</code> governs traversal depth alone; <code>recursive=True</code>
-with <code>max_depth=None</code> means unbounded; <code>recursive=False</code> (the default)
-with <code>max_depth=None</code> yields only immediate children. The Graph backend
-honours this by short-circuiting the recursive <code>/children</code> walk at the
-configured depth (or after one level for the non-recursive default).</p>
+</em><em>Precedence (per ASYNC-014):</em>* <code>max_depth</code> applies only when
+<code>recursive=True</code>. <code>recursive=False</code> (the default) yields only immediate
+children for every <code>max_depth</code>; <code>recursive=True</code> walks unbounded when
+<code>max_depth=None</code> and to <code>max_depth</code> levels (inclusive) otherwise. The
+Graph backend honours this by short-circuiting the recursive <code>/children</code>
+walk at the configured depth, or after one level when non-recursive.</p>
 <h3 id="gr-015-range-download-via-microsoftgraphdownloadurl">GR-015: Range Download via <code>@microsoft.graph.downloadUrl</code><a class="headerlink" href="#gr-015-range-download-via-microsoftgraphdownloadurl" title="Permanent link">&para;</a></h3>
 <p><strong>Invariant:</strong> The backend uses an internal <code>_read_bytes(path, start,
 length)</code> helper for range reads: it issues <code>GET</code> with a <code>Range:

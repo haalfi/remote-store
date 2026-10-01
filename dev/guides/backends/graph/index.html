@@ -13178,9 +13178,10 @@ surfaced during iteration.</p>
     <div class="doc doc-contents ">
 
         <p>List files under <em>path</em>.</p>
-<p>When <code>max_depth</code> is set it governs traversal depth and <code>recursive</code> is
-ignored; otherwise <code>recursive=True</code> walks the subtree unbounded and the
-default lists only immediate files. A missing or file path yields nothing.</p>
+<p>The default lists only immediate files, whatever <code>max_depth</code> says.
+<code>recursive=True</code> walks the <code>/children</code> tree, pruned natively at
+<code>max_depth</code> when set (inclusive) and unbounded otherwise. A missing or
+file path yields nothing.</p>
 
 
 <p><span class="doc-section-title">Raises:</span></p>

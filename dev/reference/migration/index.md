@@ -54,6 +54,12 @@ A branch keyed on `exists("")` being `False` on those two lanes also now takes t
 
 **`S3Backend` and `S3PyArrowBackend` return a partial count there instead**, and that is unchanged by this release rather than introduced by it: their aggregate walks the prefix tree directory by directory and treats a vanished directory as one with nothing in it, so a bucket deleted mid-walk yields whatever it had counted. It is the same shape as their listings, which truncate where the other lanes raise.
 
+**`max_depth` is inert without `recursive=True` on `GraphBackend` too:**
+
+Calling [`GraphBackend`](https://docs.remotestore.dev/stable/reference/api/aio/backends/graph/index.md)'s `list_files()` **directly** with `max_depth=` and `recursive=False` now yields the immediate children for every value of `max_depth`, identical to omitting it. It used to expand the traversal to `max_depth` levels instead, unlike every other async backend. The sync backends made the same change in v0.31.0.
+
+[`AsyncStore.list_files()`](https://docs.remotestore.dev/stable/reference/api/aio/store/index.md) is unaffected and needs no change: it normalises `max_depth` into `recursive` before delegating, so depth still takes full control there. Only code holding the backend and calling it without going through `AsyncStore` needs to pass `recursive=True` alongside `max_depth`.
+
 ## v0.31.0 to v0.32.0
 
 **Several optional-dependency floors were raised to the first release that actually works:**
