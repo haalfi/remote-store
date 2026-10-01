@@ -21,7 +21,7 @@ from remote_store._errors import (
     _not_found,
     _permission_denied,
 )
-from remote_store._models import WriteResult
+from remote_store._models import WriteResult, _known_modified_at
 from remote_store._path import RemotePath, is_root
 from remote_store._stream import _ErrorMappingStream, _safe_wrap
 from remote_store.backends._s3_base import (
@@ -314,7 +314,7 @@ class S3PyArrowBackend(_S3Base):
             source="native",
             etag=head.etag,
             digest=head.digest,
-            last_modified=head.modified_at,
+            last_modified=_known_modified_at(head.modified_at),
         )
 
     def write_atomic(

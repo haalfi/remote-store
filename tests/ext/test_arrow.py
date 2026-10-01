@@ -2,8 +2,10 @@
 
 from __future__ import annotations
 
+import dataclasses
 import io
 import tempfile
+from datetime import datetime, timezone
 from typing import TYPE_CHECKING, Any
 
 import pytest
@@ -30,6 +32,8 @@ from remote_store.ext.arrow import StoreFileSystemHandler, _map_errors, _StoreSi
 
 if TYPE_CHECKING:
     from collections.abc import Iterator
+
+    from remote_store._models import FileInfo
 
 
 # ---------------------------------------------------------------------------
@@ -222,6 +226,39 @@ class TestGetFileInfo:
         finally:
             store.get_file_info = original_get_file_info  # type: ignore[assignment]
             store.is_folder = original_is_folder  # type: ignore[assignment]
+
+
+class _UnknownTimeBackend(MemoryBackend):
+    """MemoryBackend whose files report the unknown-time sentinel, as SQL/HTTP files do."""
+
+    _UNKNOWN = datetime.min.replace(tzinfo=timezone.utc)
+
+    def get_file_info(self, path: str) -> FileInfo:
+        return dataclasses.replace(super().get_file_info(path), modified_at=self._UNKNOWN)
+
+    def list_files(self, path: str, *, recursive: bool = False, max_depth: int | None = None) -> Iterator[FileInfo]:
+        for fi in super().list_files(path, recursive=recursive, max_depth=max_depth):
+            yield dataclasses.replace(fi, modified_at=self._UNKNOWN)
+
+
+class TestUnknownModifiedTime:
+    """An unknown file time reaches pyarrow as ``mtime=None``, not a wrapped 1754 date."""
+
+    @pytest.mark.spec("PA-007")
+    def test_get_file_info(self) -> None:
+        store = Store(backend=_UnknownTimeBackend())
+        store.write("a.txt", b"abc")
+        (info,) = pyarrow_fs(store).get_file_info(["a.txt"])
+        assert info.type == pafs.FileType.File
+        assert info.size == 3
+        assert info.mtime is None
+
+    @pytest.mark.spec("PA-008")
+    def test_get_file_info_selector(self) -> None:
+        store = Store(backend=_UnknownTimeBackend())
+        store.write("d/a.txt", b"abc")
+        infos = pyarrow_fs(store).get_file_info(pafs.FileSelector("d"))
+        assert [(i.path, i.mtime) for i in infos] == [("d/a.txt", None)]
 
 
 # ---------------------------------------------------------------------------

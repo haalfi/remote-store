@@ -28,6 +28,12 @@ max_depth=max_depth)`. No Backend ABC change. The aggregation builds a
 `FolderInfo` from the yielded `FileInfo` objects (count, total size, latest
 `modified_at`).
 
+**`modified_at`:** the latest *known* file time. A file whose `modified_at` is
+the unknown-time sentinel (`datetime.min` in UTC) is skipped, and a folder with
+no known time answers `None`, so the depth path agrees with the plain call on
+backends that cannot know file times (BUG-296; rule from
+[RFC-0017 D3](../rfcs/rfc-0017-contract-kernel-over-thin-drivers.md)).
+
 **Depth examples:**
 
 ```

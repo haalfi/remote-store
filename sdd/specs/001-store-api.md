@@ -115,6 +115,7 @@
 ### MOD-002: FileInfo Required Fields
 
 **Invariant:** `FileInfo` has required fields: `path` (`RemotePath`), `name` (`str`), `size` (`int`), `modified_at` (`datetime`).
+**Unknown time:** a backend that cannot know a file's modification time sets `modified_at` to the unknown-time sentinel, `datetime.min` in UTC, never an invented time such as "now". Consumers that expose an Optional time map it to `None`: folder aggregation (FOLDERINFO-001), `WriteResult.last_modified` (WR-001, WR-008) and `ext.arrow`'s `mtime` (PA-007).
 
 ### MOD-003: FileInfo Optional Fields
 

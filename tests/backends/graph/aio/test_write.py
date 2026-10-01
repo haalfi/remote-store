@@ -141,6 +141,17 @@ class TestSmallWrite:
         assert result.metadata is None
 
     @respx.mock
+    @pytest.mark.spec("GR-018")
+    @pytest.mark.parametrize("lmd", ["", "not-a-date"])
+    async def test_unknown_last_modified_is_none(self, lmd: str) -> None:
+        """A missing or unparseable lastModifiedDateTime leaves last_modified None."""
+        respx.put(_CONTENT_RE).mock(return_value=httpx.Response(201, json=_drive_item(size=4, lmd=lmd)))
+        async with _make() as backend:
+            result = await backend.write("a.txt", b"data")
+        assert result.size == 4
+        assert result.last_modified is None
+
+    @respx.mock
     @pytest.mark.spec("WR-004")
     async def test_version_id_from_sharepoint_publication(self) -> None:
         respx.put(_CONTENT_RE).mock(

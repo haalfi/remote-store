@@ -15,6 +15,7 @@ import respx
 
 from remote_store._errors import BackendUnavailable, InvalidPath, NotFound
 from remote_store._models import FileInfo, FolderEntry
+from remote_store.aio import AsyncStore
 from remote_store.aio.backends._graph.backend import GraphBackend
 
 _DRIVE = "b!driveid123"
@@ -252,6 +253,31 @@ class TestGetFolderInfo:
         assert info.file_count == 2
         assert info.total_size == 5
         assert info.modified_at is not None
+
+    @respx.mock
+    @pytest.mark.spec("ASYNC-017")
+    async def test_unparseable_folder_time_is_none(self) -> None:
+        respx.get(_meta_url("fi")).mock(
+            return_value=httpx.Response(200, json={"name": "fi", "folder": {}, "lastModifiedDateTime": "garbage"})
+        )
+        respx.get(_children_url("fi")).mock(return_value=_page([_file_child("a.txt", size=3)]))
+        async with _make() as backend:
+            info = await backend.get_folder_info("fi")
+        assert info.file_count == 1
+        assert info.modified_at is None
+
+    @respx.mock
+    @pytest.mark.spec("FOLDERINFO-001")
+    async def test_store_depth_path_skips_unknown_file_time(self) -> None:
+        """BUG-296 on Graph: a file with no lastModifiedDateTime gives no folder time."""
+        child = _file_child("a.txt", size=3)
+        del child["lastModifiedDateTime"]
+        respx.get(_meta_url("fi")).mock(return_value=httpx.Response(200, json={"name": "fi", "folder": {}}))
+        respx.get(_children_url("fi")).mock(return_value=_page([child]))
+        async with _make() as backend:
+            info = await AsyncStore(backend).get_folder_info("fi", max_depth=0)
+        assert info.file_count == 1
+        assert info.modified_at is None
 
     @respx.mock
     @pytest.mark.spec("ASYNC-017")

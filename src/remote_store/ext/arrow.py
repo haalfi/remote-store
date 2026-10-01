@@ -36,6 +36,7 @@ from remote_store import (
     PermissionDenied,
     RemoteStoreError,
 )
+from remote_store._models import _known_modified_at
 
 if TYPE_CHECKING:
     from collections.abc import Callable
@@ -220,7 +221,8 @@ class StoreFileSystemHandler(pafs.FileSystemHandler):  # type: ignore[misc]
                             path,
                             type=pafs.FileType.File,
                             size=info.size,
-                            mtime=info.modified_at,
+                            # Unknown time → None: pyarrow's int64 ns would wrap datetime.min to 1754.
+                            mtime=_known_modified_at(info.modified_at),
                         )
                     )
             except (FileNotFoundError, ValueError):
@@ -252,7 +254,7 @@ class StoreFileSystemHandler(pafs.FileSystemHandler):  # type: ignore[misc]
                             file_path,
                             type=pafs.FileType.File,
                             size=fi.size,
-                            mtime=fi.modified_at,
+                            mtime=_known_modified_at(fi.modified_at),  # see get_file_info
                         )
                     )
 
