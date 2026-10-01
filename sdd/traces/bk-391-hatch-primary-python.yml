@@ -1,0 +1,190 @@
+id: BK-391
+title: "`hatch run all` gates on whatever `python` is first on PATH, not the primary Python CI uses"
+trigger: "PR #1046 passed `hatch run all` locally and went red in CI on 3.13+/3.14: the local default hatch env had been built on 3.11 because hatch ignores .python-version and the env set no python"
+source_items:
+  - BK-391
+  - BUG-296
+audience:
+  - contributor.tooling
+  - contributor.process
+expected_ripples:
+  - sdd/GATE-INVENTORY.md
+  - sdd/backlogid.json
+surprising_ripples:
+  - sdd/CLAUDE-REFERENCE.md
+  - .claude/skills/drift/SKILL.md
+phases:
+  - id: orient
+    name: Orient
+    steps:
+      - file: .python-version
+        section: "(full)"
+        read_type: gate
+        extract: "Primary Python is 3.13"
+        outcome: ok
+      - file: pyproject.toml
+        section: "[tool.hatch.envs.default]"
+        read_type: gate
+        extract: "No python key; `hatch env show --json` confirms none, and .venv/bin/python -> /usr/bin/python3.11"
+        outcome: ok
+      - file: CONTRIBUTING.md
+        section: "Development Setup"
+        read_type: reference
+        extract: "Claimed local `hatch run all` reproduces what CI gates on; false where PATH python is not 3.13"
+        outcome: misleading
+      - file: .github/workflows/ci.yml
+        section: "setup, lint, docs jobs"
+        read_type: reference
+        extract: "lint and docs install the primary Python before `uvx hatch run`, so a 3.13 pin is compatible with CI"
+        outcome: ok
+  - id: design
+    name: Design
+    steps:
+      - file: sdd/DRIFT-RULES.md
+        section: "Rules 1-7"
+        read_type: gate
+        extract: "Star from one source (.python-version), pair gate with a Drift-gate:: block, stated bounds, mandatory path (preflight)"
+        outcome: ok
+      - file: scripts/check_readthedocs_python.py
+        section: "(full)"
+        read_type: reference
+        extract: "Precedent pair gate for the other literal copy of .python-version; mirrored shape and test"
+        outcome: ok
+      - file: scripts/python_support.py
+        section: "tomllib import"
+        read_type: reference
+        extract: "tomli fallback for the 3.10 floor"
+        outcome: ok
+  - id: review_fix
+    name: Review fixes
+    steps:
+      - file: .github/workflows/ci.yml
+        section: "test matrix (--ignore=tests/scripts), tooling-tests"
+        read_type: reference
+        extract: "tests/scripts/ runs only in tooling-tests on the primary Python, so a subprocess test's mismatch branch never runs in CI. My own miss: I claimed the matrix covered it without reading the workflow; main(running) now takes the version so both paths run in-process"
+        outcome: ok
+      - file: infra/drift-locks/README.md
+        section: "Refreshing"
+        read_type: reference
+        extract: "Locks resolve on .python-version: 14 carry `# python: 3.13`, so a primary bump is more than the two gated copies"
+        outcome: ok
+      - file: sdd/CLAUDE-REFERENCE.md
+        section: "Ripple-check table (both presentations)"
+        read_type: reference
+        extract: "No Primary Python row; only the supported interpreter set. Added one to both presentations; Grep for `3\\.13` outside historical records also found CONTRIBUTING's drift-lock refresh section naming the primary, which my CONTRIBUTING enumeration had missed"
+        outcome: misleading
+      - file: .claude/skills/drift/SKILL.md
+        section: "step 7, resolve locally"
+        read_type: reference
+        extract: "Told agents to bypass the hatch env because it might be 3.11; the pin removes that reason. Rewritten to drive on the primary via the env after `hatch run preflight`, with no literal version, so the ripple row no longer lists the skill"
+        outcome: misleading
+      - file: scripts/check_hatch_python.py
+        section: "main, check_interpreter message"
+        read_type: reference
+        extract: "My own miss: main reported both errors, so a wrong pin also printed the stale-env rebuild, which rebuilds onto the wrong pin. Check 2 now runs only once the pin is right; seen failing first via test_main_pin_mismatch_does_not_prescribe_a_rebuild"
+        outcome: ok
+  - id: verify
+    name: Verify
+    steps:
+      - file: sdd/CLAUDE-REFERENCE.md
+        section: "Detailed checklist / New or changed cross-artifact check or drift report"
+        read_type: verify
+        extract: "DRIFT-RULES applied; GATE-INVENTORY regenerated. Measured: pin alone left the existing 3.11 .venv on 3.11 until `hatch env remove default`, so the gate also checks the running interpreter; rebuilt env is 3.13.12; script fails under /usr/bin/python3.11 naming the remedy"
+        outcome: ok
+review:
+  # Derived by `hatch run ship-report 1048 --trace-block-only` at head 7f093d8.
+  # Do not hand-edit, except a newly required field per sdd/traces/_schema.yml
+  # section review: RFC-0015 D4 makes this script the only producer.
+  derivation: "hatch run ship-report 1048 --trace-block-only"
+  pr: 1048
+  review_rounds: 12
+  submissions: 9
+  findings: 12
+  by_round:
+    - round: 1
+      findings: 1
+      origin: {original: 1}
+      triage: {must-fix: 1}
+      duration_hours: 0.69
+    - round: 2
+      findings: 2
+      origin: {original: 1, unclassifiable-file: 1}
+      triage: {must-fix: 2}
+      duration_hours: 1.46
+    - round: 3
+      findings: 2
+      origin: {loop-introduced: 1, original: 1}
+      triage: {must-fix: 2}
+      duration_hours: 0.35
+    - round: 4
+      findings: 1
+      origin: {loop-introduced: 1}
+      triage: {must-fix: 1}
+      duration_hours: 0.23
+    - round: 5
+      findings: 1
+      origin: {loop-introduced: 1}
+      triage: {must-fix: 1}
+      duration_hours: 0.09
+    - round: 6
+      findings: 1
+      origin: {loop-introduced: 1}
+      triage: {must-fix: 1}
+      duration_hours: 0.11
+    - round: 7
+      findings: 1
+      origin: {loop-introduced: 1}
+      triage: {must-fix: 1}
+      duration_hours: 0.11
+    - round: 8
+      findings: 1
+      origin: {original: 1}
+      triage: {must-fix: 1}
+      duration_hours: 0.07
+    - round: 9
+      findings: 2
+      origin: {loop-introduced: 1, unclassifiable-file: 1}
+      triage: {must-fix: 2}
+      duration_hours: 0.08
+  by_file:
+    - path: "CONTRIBUTING.md"
+      findings: 4
+    - path: "scripts/check_hatch_python.py"
+      findings: 4
+    - path: "tests/scripts/test_check_hatch_python.py"
+      findings: 3
+    - path: "sdd/CLAUDE-REFERENCE.md"
+      findings: 1
+  untouched_files:
+    - ".claude/skills/drift/SKILL.md"
+    - "pyproject.toml"
+    - "sdd/BACKLOG-DONE.md"
+    - "sdd/GATE-INVENTORY.md"
+    - "sdd/backlogid.json"
+    - "sdd/traces/bk-391-hatch-primary-python.yml"
+  review_driven_commits:
+    - sha: "75fb647"
+      subject: "BK-391: Address PR #1048 review: test the gate's entry point end to end"
+    - sha: "73d5657"
+      subject: "Merge remote-tracking branch 'origin/master' into bk-391-hatch-primary-python"
+    - sha: "8c6396a"
+      subject: "BK-391: Address PR #1048 review: declare both checks in the Drift-gate block"
+    - sha: "06f8bf1"
+      subject: "BK-391: Address PR #1048 review: pin the mismatch path where CI runs it, correct the bump claim"
+    - sha: "293c10e"
+      subject: "BK-391: Address PR #1048 review: drop the count and version from CONTRIBUTING's bump note"
+    - sha: "6cdb028"
+      subject: "BK-391: Address PR #1048 review: add a Primary Python row to the ripple-check"
+    - sha: "2b9dede"
+      subject: "BK-391: Address PR #1048 review: drift skill drives local resolves on the pinned env"
+    - sha: "bf245cd"
+      subject: "BK-391: Name the README's refresh command in the drift skill"
+    - sha: "72df952"
+      subject: "BK-391: Address PR #1048 review: two gated copies, not three"
+    - sha: "db639e5"
+      subject: "BK-391: Address PR #1048 review: check the interpreter only once the pin is right"
+    - sha: "1f6e910"
+      subject: "BK-391: Address PR #1048 review: derive the pin-mismatch test's versions from the pin"
+    - sha: "7f093d8"
+      subject: "BK-391: Use an impossible interpreter in the off-primary main test"
+  ci: {verdict: GREEN, failed: 0, pending: 0}
