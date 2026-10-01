@@ -273,13 +273,13 @@ failure it was.
   narrow the catch so only a confirmed miss reads as "no ancestor"; BE-008 changes with the fix.
   Detail: [dossier](backlog/bug-292-ancestor-gate-fails-open.md)
 
-- [ ] **BK-392 — Seven root-rule and Graph-lane statements still contradict what BK-388 measured**
+- [ ] **BK-392 — Root-rule and Graph-lane statements contradict what BK-388 measured**
   spec: BE-029, BE-021, BE-018 · effort: S · audience: library.maintainer, infra.test
-  Seven sites, from PR #1047's closing panels (threads carry detail): (1) spec 003's Graph row
-  says "five" file-shaped ops (async roster: four); (2) BE-021's Graph paragraph and (3) a
-  `graph/aio/test_backend.py` docstring blame seeding, not skip-not-fail; (4) `_flat_ns.py`'s guard
-  docstring, (5) `_local.py`, (6) `_sftp.py` and (7) a `test_io.py` docstring call the root-dst
-  guard message-only on a present container (measured: it changes the class). Decision: none.
+  Spec 003's Graph row and Graph paragraph and a Graph test docstring misstate which root cells
+  the Graph lane runs; the root-destination guard's docstrings (`_flat_ns.py`, `_local.py`,
+  `_sftp.py`) say it only changes the message on a present container, but with a missing source
+  it changes the class; `test_io.py`'s seeded-cell variant is unmeasured. Decision: none.
+  Detail: [dossier](backlog/bk-392-root-rule-graph-lane-statements.md)
 
 - [ ] **BK-389 — No backend runs on RFC-0017's kernel, so ADR-0042 stays Proposed**
   spec: BE-021, BE-029, BE-020, BE-017, ERR-001, ERR-009, DEPTH-003, PING-002, PING-008 · effort: L · audience: library.maintainer, user.api_docs, contributor.process

@@ -902,10 +902,11 @@ and its answer keeps `classify`.
    that the closed guard can rank ahead of it as BE-029 requires; the
    absent container is a flag tied to an empty store, not an optional store
    (BK-388 dossier, § As landed). The trait's domain is well-formed paths,
-   on which the predicate holds for `Root` alone, so the every-spelling
-   obligation the kernel decides on raw keys is verified at a raw-key
-   entry, `RootPath.dfy` §5, which folds each spelling onto `Root` before
-   the trait.
+   on which the predicate holds for `Root` alone, so BE-029's every-spelling
+   obligation on `write` and the `move`/`copy` destination is verified at a
+   raw-key entry, `RootPath.dfy` §5, which folds each spelling onto `Root`
+   before the trait. The source stays on `is_root`; a wider source check in
+   the kernel is permitted, not verified.
 
 ## References
 

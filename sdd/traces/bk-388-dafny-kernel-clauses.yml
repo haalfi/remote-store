@@ -361,6 +361,23 @@ phases:
           WellFormedPath(dst) precondition, and accepting a raw-spelling
           source fails WellFormedNonRootIsNotRoot's precondition.
         outcome: ok
+      - file: sdd/rfcs/rfc-0017-contract-kernel-over-thin-drivers.md
+        section: "OQ7 Landed note (PR #1047 closing panel at 617d3d1)"
+        read_type: verify
+        extract: >-
+          In the 8d79257 sweep I read OQ7's "every-spelling obligation" as
+          meaning the write clause, and left it unscoped. A cold reader takes
+          it to cover the move/copy source, which the BK-389 dossier then
+          contradicts. It now names write and the destination. The same
+          round asked for BK-392's "measured: it changes the class" to carry
+          its derivation. A LocalBackend with the root present, moving or
+          copying a missing source to "", answers InvalidPath with the guard
+          and NotFound with the guard patched out; that and the per-site
+          reads now sit in BK-392's dossier. While writing it, two rows I
+          had from memory (2 and 3) and one claim I had filed (row 7, a
+          seeded cell) did not survive a read, so the dossier marks row 7 as
+          unmeasured.
+        outcome: ok
 discovery_followups:
   - BK-392
 surprising_ripples:
