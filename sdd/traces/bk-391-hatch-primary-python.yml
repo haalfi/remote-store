@@ -12,6 +12,7 @@ expected_ripples:
   - sdd/backlogid.json
 surprising_ripples:
   - sdd/CLAUDE-REFERENCE.md
+  - .claude/skills/drift/SKILL.md
 phases:
   - id: orient
     name: Orient
@@ -71,6 +72,11 @@ phases:
         section: "Ripple-check table (both presentations)"
         read_type: reference
         extract: "No Primary Python row; only the supported interpreter set. Added one to both presentations; Grep for `3\\.13` outside historical records also found CONTRIBUTING's drift-lock refresh section naming the primary, which my CONTRIBUTING enumeration had missed"
+        outcome: misleading
+      - file: .claude/skills/drift/SKILL.md
+        section: "step 7, resolve locally"
+        read_type: reference
+        extract: "Told agents to bypass the hatch env because it might be 3.11; the pin removes that reason. Rewritten to drive on the primary via the env after `hatch run preflight`, with no literal version, so the ripple row no longer lists the skill"
         outcome: misleading
   - id: verify
     name: Verify
