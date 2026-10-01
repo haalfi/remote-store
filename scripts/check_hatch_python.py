@@ -20,7 +20,7 @@ failure.
 Drift-gate::
 
     kind:       pair
-    compares:   .python-version ↔ pyproject.toml [tool.hatch.envs.default] python
+    compares:   .python-version ↔ pyproject.toml [tool.hatch.envs.default] python, and ↔ the running interpreter
     domain:     process
 """
 
