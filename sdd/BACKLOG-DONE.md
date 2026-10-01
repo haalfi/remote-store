@@ -241,6 +241,19 @@ if evidence changes; these are retired.
 
 ## Unreleased
 
+- [x] **BK-391 — `hatch run all` gates on whatever `python` is first on PATH, not the primary Python CI uses**
+  spec: — · effort: S · audience: contributor.tooling, contributor.process
+  hatch does not read `.python-version` (3.13), and the default env set no
+  `python`, so this container's `.venv` was built on 3.11
+  (`/usr/local/bin/python → python3.11`): PR #1046 passed `hatch run all`
+  locally and went red on 3.13+/3.14 CI with an AsyncMock drift a 3.13 run
+  reproduces. Now `[tool.hatch.envs.default] python = "3.13"`, held equal to
+  `.python-version` by `scripts/check_hatch_python.py` in `preflight`, which
+  also fails on the running interpreter: measured, hatch keeps an existing
+  env's 3.11 under a 3.13 pin until `hatch env remove default`, which the
+  error names. CONTRIBUTING's "reproduces what CI gates on" was false where
+  no pyenv/uv shim puts 3.13 first on PATH; rewritten.
+
 - [x] **BK-387 — RFC-0017 is Draft with four open questions gating acceptance, and no item owns answering them**
   spec: BE-021, BE-029, BE-020 · effort: L · audience: library.maintainer, contributor.process
   Partly done. RFC-0017's OQ1, 4, 6 and 7 are answered in the RFC, and the

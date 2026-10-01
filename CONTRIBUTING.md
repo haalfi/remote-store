@@ -200,11 +200,19 @@ External packages should use the naming convention `remote-store-<name>` and:
 ## Development Setup
 
 The repo pins its priority interpreter in `.python-version` (the version CI's
-coverage lane runs on), so `uv` and `pyenv` select it automatically and your
-local `hatch run all` reproduces what CI gates on. It is the single source for
-the priority Python across CI: workflows that need it read it (`setup-python`'s
-`python-version-file`, or `ci.yml`'s `setup` job for the matrix), so bumping the
-development version is a one-line edit there. (The full-matrix `ci-full.yml`
+coverage lane runs on). It is the single source for the priority Python across
+CI: workflows that need it read it (`setup-python`'s `python-version-file`, or
+`ci.yml`'s `setup` job for the matrix). Two files cannot read it and carry a
+literal copy, each held equal by a gate: `.readthedocs.yaml`
+(`scripts/check_readthedocs_python.py`) and the default hatch env's `python`
+in `pyproject.toml` (`scripts/check_hatch_python.py`). Bumping the development
+version is those three edits.
+
+hatch does not read `.python-version`, so the pin is what makes your local
+`hatch run all` gate on the same interpreter as CI; without it hatch builds
+`.venv` from the first `python` on PATH. An existing `.venv` keeps its
+interpreter when the pin changes: `hatch run preflight` then fails and names
+the remedy, `hatch env remove default`. (The full-matrix `ci-full.yml`
 backstop runs *every* supported interpreter, not the priority one, from a list
 kept equal to `ci.yml`'s `ALL_PYTHONS` by `scripts/check_ci_full_matrix.py`.)
 

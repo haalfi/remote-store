@@ -1,0 +1,62 @@
+id: BK-391
+title: "`hatch run all` gates on whatever `python` is first on PATH, not the primary Python CI uses"
+trigger: "PR #1046 passed `hatch run all` locally and went red in CI on 3.13+/3.14: the local default hatch env had been built on 3.11 because hatch ignores .python-version and the env set no python"
+source_items:
+  - BK-391
+  - BUG-296
+audience:
+  - contributor.tooling
+  - contributor.process
+expected_ripples:
+  - sdd/GATE-INVENTORY.md
+  - sdd/backlogid.json
+phases:
+  - id: orient
+    name: Orient
+    steps:
+      - file: .python-version
+        section: "(full)"
+        read_type: gate
+        extract: "Primary Python is 3.13"
+        outcome: ok
+      - file: pyproject.toml
+        section: "[tool.hatch.envs.default]"
+        read_type: gate
+        extract: "No python key; `hatch env show --json` confirms none, and .venv/bin/python -> /usr/bin/python3.11"
+        outcome: ok
+      - file: CONTRIBUTING.md
+        section: "Development Setup"
+        read_type: reference
+        extract: "Claimed local `hatch run all` reproduces what CI gates on; false where PATH python is not 3.13"
+        outcome: misleading
+      - file: .github/workflows/ci.yml
+        section: "setup, lint, docs jobs"
+        read_type: reference
+        extract: "lint and docs install the primary Python before `uvx hatch run`, so a 3.13 pin is compatible with CI"
+        outcome: ok
+  - id: design
+    name: Design
+    steps:
+      - file: sdd/DRIFT-RULES.md
+        section: "Rules 1-7"
+        read_type: gate
+        extract: "Star from one source (.python-version), pair gate with a Drift-gate:: block, stated bounds, mandatory path (preflight)"
+        outcome: ok
+      - file: scripts/check_readthedocs_python.py
+        section: "(full)"
+        read_type: reference
+        extract: "Precedent pair gate for the other literal copy of .python-version; mirrored shape and test"
+        outcome: ok
+      - file: scripts/python_support.py
+        section: "tomllib import"
+        read_type: reference
+        extract: "tomli fallback for the 3.10 floor"
+        outcome: ok
+  - id: verify
+    name: Verify
+    steps:
+      - file: sdd/CLAUDE-REFERENCE.md
+        section: "Detailed checklist / New or changed cross-artifact check or drift report"
+        read_type: verify
+        extract: "DRIFT-RULES applied; GATE-INVENTORY regenerated. Measured: pin alone left the existing 3.11 .venv on 3.11 until `hatch env remove default`, so the gate also checks the running interpreter; rebuilt env is 3.13.12; script fails under /usr/bin/python3.11 naming the remedy"
+        outcome: ok

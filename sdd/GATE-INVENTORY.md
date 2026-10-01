@@ -27,6 +27,7 @@ including what *Enforcement* does not mean — is the last section below.
 | `scripts/check_dafny_twin_parity.py` | the MemoryBackend and MemoryBackendMinimal twin classes in sdd/formal/ | intent-formalized | `all`, `check-dafny-twin-parity`, `ci.yml:verify-formal`, `lint` | gating |
 | `scripts/check_docstring_parity.py` | the sync API docstrings in src/remote_store/ ↔ their hand-mirrored twins in src/remote_store/aio/ | realization | `all`, `check-docstring-parity`, `preflight` | gating |
 | `scripts/check_formal_trace.py` | spec IDs declared in sdd/specs/ ↔ Dafny @spec tags in sdd/formal/ and conformance pytest.mark.spec markers | intent ↔ intent-formalized ↔ verification | `all`, `ci.yml:verify-formal`, `lint` | gating |
+| `scripts/check_hatch_python.py` | .python-version ↔ pyproject.toml [tool.hatch.envs.default] python | process | `all`, `preflight` | gating |
 | `scripts/check_infra_settings.py` | infra/.env ↔ infra/_settings.py, the compose file and the port and credential references in CI workflows | process | `all`, `lint` | gating |
 | `scripts/check_readthedocs_python.py` | .python-version ↔ .readthedocs.yaml's build.tools.python | process | `all`, `lint` | gating |
 | `scripts/check_ripple_parity.py` | the ripple-check Pre-work index ↔ the Detailed checklist, both in sdd/CLAUDE-REFERENCE.md | process | `all`, `check-ripple-parity`, `docs-gate`, `lint` | gating |
