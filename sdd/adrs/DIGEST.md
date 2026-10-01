@@ -36,8 +36,8 @@ Section references are to RFC-0017, which carries the rationale.
   `backend` and guarantees a message. *Reverse if* mapping-content defects
   recur across drivers.
 - **`max_depth` applies only when `recursive`** (Open Question 4). This is
-  DEPTH-003's reading, the one `BackendContract.dfy` verifies. ASYNC-014's
-  contrary wording (BUG-240) is not the contract.
+  DEPTH-003's reading, the one `BackendContract.dfy` verifies. ASYNC-014,
+  which stated the contrary, was amended to it (BUG-240).
 - **The formal model covers the root rule, the close posture and the absent
   container** (Open Question 7). BE-029, BE-020 and BE-021 § Reach become
   verified clauses before kernel code.

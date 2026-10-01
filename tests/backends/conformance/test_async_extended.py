@@ -568,6 +568,25 @@ class TestListFilesCompleteness:
             assert d <= max_depth, f"DEPTH-003 violation: {f.path} at depth {d} > max_depth={max_depth}"
 
     @pytest.mark.spec("ASYNC-014")
+    @pytest.mark.spec("DEPTH-003")
+    @pytest.mark.parametrize("max_depth", [0, 1, 2, 3])
+    async def test_list_files_non_recursive_ignores_max_depth(
+        self, async_backend: AsyncBackend, max_depth: int
+    ) -> None:
+        """``max_depth`` applies only when ``recursive=True``.
+
+        Async twin of the sync cell in ``test_listing.py``, whose docstring
+        carries the rationale (why the bound is inert here, why the cell is
+        parametrised past 0). Without it the two lanes are never cross-checked
+        on this combination: ``GraphBackend`` let the bound override
+        ``recursive=False`` while every other async backend ignored it.
+        """
+        _require(async_backend, Capability.LIST, Capability.WRITE)
+        await _seed(async_backend, self.DEPTH_TREE)
+        files = [f async for f in async_backend.list_files("pc", recursive=False, max_depth=max_depth)]
+        assert {f.name for f in files} == {"a.txt"}
+
+    @pytest.mark.spec("ASYNC-014")
     async def test_list_files_unlimited_depth(self, async_backend: AsyncBackend) -> None:
         """max_depth=None -> all files returned."""
         _require(async_backend, Capability.LIST, Capability.WRITE)

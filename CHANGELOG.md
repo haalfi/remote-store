@@ -7,6 +7,8 @@ This project follows [Semantic Versioning](https://semver.org/). Pre-1.0, minor 
 
 ## [Unreleased]
 
+- BUG-240: **Breaking** — `GraphBackend.list_files()` called directly with `recursive=False` and `max_depth` set now yields the immediate files, as every other backend does; `AsyncStore` is unaffected. [Migration guide](https://docs.remotestore.dev/stable/reference/migration/#v0320-to-v0330).
+
 - BUG-296: An unknown file modification time is now `datetime.min` in UTC on every backend (SFTP, Azure and S3 used the current time, Graph the epoch), so `get_folder_info(max_depth=N)` answers `None` like the plain call; `head()`, `WriteResult` and `ext.arrow` report it as `None`.
 
 - BK-387: The plan to implement the backend contract once, in a shared kernel over thin per-backend drivers, has its design questions answered and is proposed as ADR-0042; nothing changes for users yet, and it is accepted with the first backend built on it.

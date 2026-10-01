@@ -2,8 +2,8 @@
 
 respx stubs ``httpx.AsyncClient`` so the real ``GraphBackend`` / ``iter_pages`` /
 item-mapping code runs against canned ``/children`` collection responses
-(GR-014 listing, GR-016 pagination). Recursion + ``max_depth`` precedence
-(ASYNC-014) and the recursive folder-info aggregate (BE-017) are exercised
+(GR-014 listing, GR-016 pagination). Recursion + ``max_depth`` (ASYNC-014,
+DEPTH-003) and the recursive folder-info aggregate (BE-017) are exercised
 against a multi-level tree of mocked child endpoints.
 """
 
@@ -140,7 +140,7 @@ def _seed_depth_tree() -> None:
 
 
 class TestListFiles:
-    """GR-014 / ASYNC-014: recursion and inclusive max_depth precedence."""
+    """GR-014 / ASYNC-014: recursion, and an inclusive max_depth only under recursive."""
 
     @respx.mock
     @pytest.mark.spec("GR-014")
@@ -172,6 +172,7 @@ class TestListFiles:
 
     @respx.mock
     @pytest.mark.spec("ASYNC-014")
+    @pytest.mark.spec("DEPTH-003")
     @pytest.mark.parametrize(
         ("max_depth", "expected"),
         [
@@ -181,12 +182,23 @@ class TestListFiles:
             (3, {"a.txt", "b.txt", "c.txt", "d.txt", "e.txt"}),
         ],
     )
-    async def test_max_depth_inclusive(self, max_depth: int, expected: set[str]) -> None:
+    async def test_recursive_max_depth_inclusive(self, max_depth: int, expected: set[str]) -> None:
         _seed_depth_tree()
         async with _make() as backend:
-            # recursive=False is ignored once max_depth is set (ASYNC-014 precedence).
-            files = [f async for f in backend.list_files("pc", recursive=False, max_depth=max_depth)]
+            files = [f async for f in backend.list_files("pc", recursive=True, max_depth=max_depth)]
         assert {f.name for f in files} == expected
+
+    @respx.mock
+    @pytest.mark.spec("ASYNC-014")
+    @pytest.mark.spec("DEPTH-003")
+    @pytest.mark.parametrize("max_depth", [0, 1, 2, 3])
+    async def test_non_recursive_ignores_max_depth(self, max_depth: int) -> None:
+        # The bound applies only under recursive=True; without it the walk
+        # stops at the immediate children, as if max_depth were omitted.
+        _seed_depth_tree()
+        async with _make() as backend:
+            files = [f async for f in backend.list_files("pc", recursive=False, max_depth=max_depth)]
+        assert {f.name for f in files} == {"a.txt"}
 
 
 class TestPagination:

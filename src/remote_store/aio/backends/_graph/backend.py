@@ -907,9 +907,10 @@ class GraphBackend(AsyncBackend):
     ) -> AsyncIterator[FileInfo]:
         """List files under *path*.
 
-        When ``max_depth`` is set it governs traversal depth and ``recursive`` is
-        ignored; otherwise ``recursive=True`` walks the subtree unbounded and the
-        default lists only immediate files. A missing or file path yields nothing.
+        The default lists only immediate files, whatever ``max_depth`` says.
+        ``recursive=True`` walks the ``/children`` tree, pruned natively at
+        ``max_depth`` when set (inclusive) and unbounded otherwise. A missing or
+        file path yields nothing.
 
         Raises:
             PermissionDenied: If the token is rejected or lacks access
@@ -917,12 +918,7 @@ class GraphBackend(AsyncBackend):
             BackendUnavailable: On throttling, 5xx, or transport failure,
                 surfaced during iteration.
         """
-        if max_depth is not None:
-            limit: int | None = max_depth
-        elif recursive:
-            limit = None
-        else:
-            limit = 0
+        limit = max_depth if recursive else 0
         async for info in self._walk_files(path, 0, limit):
             yield info
 

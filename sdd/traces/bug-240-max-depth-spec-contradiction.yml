@@ -1,0 +1,99 @@
+id: BUG-240
+title: "ASYNC-014 and DEPTH-003 state opposite rules, and `GraphBackend` implements the async one"
+trigger: >-
+  ASYNC-014 said a set max_depth overrides recursive while citing DEPTH-003, which says max_depth
+  applies only when recursive=True. GraphBackend.list_files, its docstring and its respx pin followed
+  ASYNC-014; AsyncMemory and AsyncAzure followed DEPTH-003. BK-387 decided for DEPTH-003, and
+  RFC-0017 Open Question 4 required the contradiction settled before BK-389 encodes the algorithm.
+source_items:
+  - BUG-240
+  - BK-387
+audience:
+  - user.api
+  - user.api_docs
+  - infra.test
+discovery_followups:
+  - ID-260
+co_shipped_items:
+  - ID-251
+expected_ripples:
+  - sdd/backlogid.json
+  - sdd/adrs/DIGEST.md
+  - docs-src/reference/migration.md
+surprising_ripples:
+  - sdd/adrs/0042-contract-kernel-over-thin-drivers.md
+  - src/remote_store/_backend.py
+  - src/remote_store/aio/_async_backend.py
+phases:
+  - id: orient
+    name: Orient
+    steps:
+      - file: sdd/backlog/bug-240-max-depth-spec-contradiction.md
+        section: "(full)"
+        read_type: gate
+        extract: "Five changes; DEPTH-003 wins; expect the async cell to turn a backend red"
+        outcome: misleading
+      - file: sdd/specs/029-async-store-backend-api.md
+        section: "ASYNC-014"
+        read_type: gate
+        extract: "The losing wording to amend"
+      - file: sdd/specs/037-depth-limited-listing.md
+        section: "DEPTH-001, DEPTH-003"
+        read_type: gate
+        extract: "Backend-ABC rule: max_depth inert under recursive=False; Store normalises"
+      - file: sdd/specs/044-graph-backend.md
+        section: "GR-014"
+        read_type: gate
+        extract: "Precedence paragraph restating ASYNC-014's reading"
+      - file: sdd/formal/BackendContract.dfy
+        section: "ListFiles (BE-014, DEPTH-003)"
+        read_type: reference
+        extract: "Confirm the verified reading; nothing in sdd/formal cites ASYNC-014"
+      - file: sdd/CLAUDE-REFERENCE.md
+        section: "Pre-work index"
+        read_type: gate
+        extract: "Spec section, Backend ABC, ADR, Bug fix, Backlog item touched, CHANGELOG, Breaking change rows"
+      - file: tests/backends/conformance/test_listing.py
+        section: "test_list_files_non_recursive_ignores_max_depth"
+        read_type: reference
+        extract: "Sync twin and its placement beside the depth siblings"
+      - file: tests/backends/fixtures/_cassette_pytest.py
+        section: "install_missing_cassette_guard"
+        read_type: reference
+        extract: >-
+          Replay lanes skip a missing cassette and an unplayable request, so graph_replay can never show
+          this regression red; the dossier's 'turn a backend red on arrival' expectation does not hold
+          for the conformance cell, only for the respx pin
+  - id: reproduce
+    name: Reproduce
+    steps:
+      - file: tests/backends/graph/aio/test_list.py
+        section: "TestListFiles"
+        read_type: verify
+        extract: "Split the pin; recursive=False cells red at max_depth 1, 2, 3 before the fix"
+      - file: tests/backends/conformance/test_async_extended.py
+        section: "TestListFilesCompleteness"
+        read_type: verify
+        extract: "Async twin: 16 pass, 12 skip at --stage=3 (4 Azurite unreachable, 8 missing cassettes)"
+  - id: docs
+    name: Docs
+    steps:
+      - file: CHANGELOG.md
+        section: "[0.31.0] Changed (BK-324)"
+        read_type: reference
+        extract: "Precedent: the same change on sync backends shipped Breaking with a migration section"
+      - file: sdd/adrs/0042-contract-kernel-over-thin-drivers.md
+        section: "Decision (Open Question 4)"
+        read_type: verify
+        extract: "Present-tense 'contrary wording is not the contract' went stale; ADR is Proposed, so edited"
+      - file: sdd/BACKLOG.md
+        section: "How this file works / Completing work"
+        read_type: gate
+        extract: "Absorbed: literal host marker, Absorbed entry, sweep the ID"
+  - id: verify
+    name: Verify
+    steps:
+      - file: sdd/CLAUDE-REFERENCE.md
+        section: "Detailed checklist"
+        read_type: verify
+        extract: "Confirm ripples before committing"
