@@ -234,7 +234,7 @@ that must move — see [`000-process.md` Rule
 | File | What it models |
 |------|----------------|
 | `BackendContract.dfy` | Abstract backend trait — error model, capabilities, all operation pre/postconditions, the `AddressesRoot` root predicate |
-| `MemoryBackend.dfy` | Reference refinement proving the contract is satisfiable; compiled to Python as the conformance oracle |
+| `MemoryBackend.dfy` | Reference refinement proving the contract is satisfiable; compiled to Python as the conformance oracle, together with `RootPath.dfy`, which it includes |
 | `DepthCounting.dfy` | Verified `DEPTH-001` algorithm and the four depth-filter properties |
 | `ResourceSafety.dfy` | Handle lifecycle, `_safe_wrap` invariant, move atomicity, connection lifecycle |
 | `RootPath.dfy` | What `AddressesRoot` accepts: exactly the keys whose every `/`-segment is `""` or `"."` (`RootSpellingCharacterisation`), so the six BE-029 spellings; only `Root` among well-formed paths; not `\` (BE-029). BE-029's table derived from the trait for every refinement (`RootAnswersPerTable`), and the raw-key entry (`WriteKey`, `MoveKey`, `CopyKey`) that folds every root spelling of a write or `move`/`copy` destination onto `Root` |
@@ -297,6 +297,10 @@ small, stable, and maintainable:
   `DeleteFolder` refuses `Root` (MEM-014). Spellings such as `"./"` or
   `"/"` are outside the methods' `WellFormedPath` domain; the raw-key
   entry in `RootPath.dfy` §5 folds them onto `Root` before the trait.
+  `MemoryBackend.dfy` includes `RootPath.dfy` so that entry compiles into
+  the oracle, and the adapter sends every write key and `move`/`copy`
+  destination through it (ID-251). The oracle's refusal of those spellings
+  is therefore the verified one, and it names `Root`, not the raw key.
 - **`MemoryBackend` / `MemoryBackendMinimal` parity.** Dafny has no
   class-to-class inheritance, so `MemoryBackendMinimal` duplicates every
   method body of `MemoryBackend` with a narrower capability set and a
@@ -474,7 +478,9 @@ sentinel spelling only. BE-029 binds every spelling on the write clause, and
 `RootPath.dfy` §5 carries that: `WriteKey`, `MoveKey` and `CopyKey` take the
 raw write or `move`/`copy` destination key, fold every root spelling onto
 `Root`, and prove the refusal from the trait's postconditions. A non-root key
-must still be well-formed there. The `move`/`copy` source and the read side
+must still be well-formed there. Those three are the oracle adapter's entry
+for writes and `move`/`copy` destinations, so the conformance cells that run
+all six spellings reach the oracle through the verified fold. The `move`/`copy` source and the read side
 are not widened, because BE-029 decides them with `is_root`: the source must
 be well-formed, and `Root` is its one root spelling.
 

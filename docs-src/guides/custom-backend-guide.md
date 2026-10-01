@@ -275,16 +275,16 @@ returns the stream as-is.
   (Contract rule — this is the first precondition, ahead of the source-existence
   check below.) It used to be a `Store`-enforced convention that backends also
   guarded defensively; it is now a requirement, and the conformance suite holds
-  you to it for the two canonical spellings `""` and `"."`, so a backend that
-  leaves those to the layer above will fail.
+  you to it, so a backend that leaves the root to the layer above will fail.
 - **On the write end, decide "is this the root" on the key's addressable
   segments, not on `is_root`.** Drop empty and `"."` segments and refuse when
   nothing is left. `is_root` recognises only `""` and `"."`, so a guard written
   against it lets `"./"` through, and `"./"` addresses the same node. That is not
   a hypothetical: it is how a shipped backend came to leave its own container as
-  a regular file. **The conformance suite cannot catch this for you** — its cells
-  are parametrised over the two canonical spellings — so it is a rule you have to
-  hold yourself to, which is why it is stated here rather than left to the gate.
+  a regular file. The conformance suite's write and destination cells run
+  `""`, `"."`, `"./"`, `".//"`, `"./."` and `"/"`, so a guard written against
+  `is_root` fails them. The error must name the root, in the spelling you were
+  handed or a canonical one.
   The write end is the three writers plus the `move`/`copy` **destination**.
 - **The `move`/`copy` source is held to the narrower predicate, and that is
   deliberate.** The contract requires only `""` and `"."` there. The tutorial

@@ -241,6 +241,15 @@ if evidence changes; these are retired.
 
 ## Unreleased
 
+- [x] **ID-251 — BE-029's widest clause is one the conformance suite cannot fail on**
+  spec: BE-029 · effort: M · audience: infra.test
+  The root write and `move`/`copy` destination cells (sync and async) run all six
+  BE-029 spellings and assert the raised path names the root under any spelling
+  (`_names_the_root`); 62 of them go red under an `is_root`-narrowed shared guard.
+  The oracle reaches the four non-canonical spellings through `RootPath.dfy` §5,
+  now compiled into it, so its refusal is the verified one and names `"."`.
+  Detail: [dossier](backlog/id-251-root-write-cells-narrow-spellings.md)
+
 - [x] **BK-388 — The Dafny model lacks the root rule, the close posture and the absent container that RFC-0017's kernel encodes**
   spec: BE-029, BE-020, BE-021, BE-018, BE-019 · effort: M · audience: library.maintainer
   `BackendContract.dfy` models `AddressesRoot` (BE-029) on `write` and the

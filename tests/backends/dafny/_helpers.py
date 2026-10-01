@@ -12,6 +12,15 @@ Root path translation: the Python Backend ABC uses ``""`` for root, but
 Dafny's ``Path`` type requires non-empty strings.  The Dafny spec models
 root as ``"."`` (seeded as DirEntry in the constructor).  Translation
 happens once in ``_str_to_dafny`` — no per-method root guards needed.
+
+Write keys and ``move``/``copy`` destinations go through the verified
+raw-key entry (``WriteKey``, ``MoveKey``, ``CopyKey`` in ``RootPath.dfy``
+§5) rather than straight to the class.  That entry folds every root
+spelling (``"./"``, ``"/"``, …) onto Root before the trait, whose methods
+require a well-formed path, so the oracle's refusal of those spellings is
+the one the verifier proved, not an answer from outside the domain.  The
+refusal therefore names ``"."``.  This is routing to a verified method,
+not behaviour in the adapter.
 """
 
 from __future__ import annotations
@@ -52,6 +61,9 @@ if _DAFNY_PY_DIR not in sys.path:
 import _dafny  # noqa: E402
 import module_ as _dafny_module  # noqa: E402
 from module_ import Option_None, Option_Some  # noqa: E402
+
+_entry = _dafny_module.default__
+"""The verified raw-key entry for write keys and move/copy destinations (see module docstring)."""
 
 # ---------------------------------------------------------------------------
 # Type marshaling helpers
@@ -241,7 +253,9 @@ class DafnyOracleBackend(Backend):
     ) -> WriteResult:
         data = bytes(content) if isinstance(content, (bytes, bytearray, memoryview)) else content.read()
         dwr = _raise_if_err(
-            self._mb.Write(_str_to_dafny(path), _bytes_to_dafny(data), overwrite, _metadata_to_dafny(metadata))
+            _entry.WriteKey(
+                self._mb, _str_to_dafny(path), _bytes_to_dafny(data), overwrite, _metadata_to_dafny(metadata)
+            )
         )
         return _dafny_wr_to_python(path, dwr)
 
@@ -298,10 +312,10 @@ class DafnyOracleBackend(Backend):
         )
 
     def move(self, src: str, dst: str, *, overwrite: bool = False) -> None:
-        _raise_if_err(self._mb.Move(_str_to_dafny(src), _str_to_dafny(dst), overwrite))
+        _raise_if_err(_entry.MoveKey(self._mb, _str_to_dafny(src), _str_to_dafny(dst), overwrite))
 
     def copy(self, src: str, dst: str, *, overwrite: bool = False) -> None:
-        _raise_if_err(self._mb.Copy(_str_to_dafny(src), _str_to_dafny(dst), overwrite))
+        _raise_if_err(_entry.CopyKey(self._mb, _str_to_dafny(src), _str_to_dafny(dst), overwrite))
 
     def close(self) -> None:
         # BE-020: drives the model's Close(); MemoryBackend is non-terminal,

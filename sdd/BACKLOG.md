@@ -343,14 +343,6 @@ no clause of the contract ships unexercised.
   reaches them, and corrected line numbers, are in the dossier.
   Detail: [dossier](backlog/id-242-moto-permission-pragmas.md)
 
-- [ ] **ID-251 — BE-029's widest clause is one the conformance suite cannot fail on**
-  spec: BE-029 · effort: M · audience: infra.test
-  BE-029 requires the write guard to refuse every spelling of the root, but
-  the conformance root-write cells run only `""` and `"."`, so a backend
-  guarding with `is_root(path)` passes. Open decision: when the cells widen,
-  normalise `"./"` in `DafnyOracleBackend` or carve it out of the roster.
-  Detail: [dossier](backlog/id-251-root-write-cells-narrow-spellings.md)
-
 - [ ] **ID-247 — Record the Graph root-path cassettes**
   spec: BE-029 · effort: S · audience: infra.test
   30 `TestBackendRootPath` cells skip on `graph_replay` for want of a cassette

@@ -267,9 +267,11 @@ root and `is_root` does not recognise; measured against a `LocalBackend` whose
 root had been deleted, a guard written as `if is_root(path)` let `write("./")`
 leave the root a regular file and `open_atomic("./")` return cleanly having done
 it — the whole defect, one character from the spelling it caught. **So a backend
-implementing this clause as `if is_root(path)` is not conformant**, even though
-it passes the conformance cells below, which are parametrised over the two
-canonical spellings because they also assert `is_root` on the raised path.
+implementing this clause as `if is_root(path)` is not conformant**, and the
+conformance cells below fail it: the write and `move`/`copy` destination cells
+run all six spellings listed next, and require only that the raised path name
+the root under some spelling, since a backend may echo the raw key or fold it
+first (the verified oracle folds every spelling onto `"."`).
 
 Decide it instead on the key's addressable segments: drop empty and `"."`
 segments, and refuse when nothing is left. That covers `""`, `"."`, `"./"`,

@@ -840,6 +840,65 @@ class default__:
         pass
 
     @staticmethod
+    def RootAnswersPerTable(b):
+        e: Result = Result.default()()
+        d: Result = Result.default()()
+        f: Result = Result.default()()
+        rd: Result = Result.default()()
+        fi: Result = Result.default()()
+        gi: Result = Result.default()()
+        out0_: Result
+        out0_ = (b).Exists(default__.Root)
+        e = out0_
+        out1_: Result
+        out1_ = (b).IsFolderMethod(default__.Root)
+        d = out1_
+        out2_: Result
+        out2_ = (b).IsFileMethod(default__.Root)
+        f = out2_
+        out3_: Result
+        out3_ = (b).Read(default__.Root)
+        rd = out3_
+        out4_: Result
+        out4_ = (b).GetFileInfo(default__.Root)
+        fi = out4_
+        out5_: Result
+        out5_ = (b).GetFolderInfo(default__.Root)
+        gi = out5_
+        return e, d, f, rd, fi, gi
+
+    @staticmethod
+    def RootFold(key):
+        if default__.AddressesRoot(key):
+            return default__.Root
+        elif True:
+            return key
+
+    @staticmethod
+    def WriteKey(b, key, content, overwrite, metadata):
+        r: Result = Result.default()()
+        out0_: Result
+        out0_ = (b).Write(default__.RootFold(key), content, overwrite, metadata)
+        r = out0_
+        return r
+
+    @staticmethod
+    def MoveKey(b, src, dst, overwrite):
+        r: Result = Result.default()()
+        out0_: Result
+        out0_ = (b).Move(src, default__.RootFold(dst), overwrite)
+        r = out0_
+        return r
+
+    @staticmethod
+    def CopyKey(b, src, dst, overwrite):
+        r: Result = Result.default()()
+        out0_: Result
+        out0_ = (b).Copy(src, default__.RootFold(dst), overwrite)
+        r = out0_
+        return r
+
+    @staticmethod
     def BasicFileInfo(path, name, size):
         return FileInfo_FileInfo(path, name, size, Option_None(), Option_None(), Option_None(), Option_None())
 
@@ -1122,9 +1181,9 @@ class MemoryBackend(Backend):
         self._closed: bool = False
         self._containerPresent: bool = False
         self._fs: _dafny.Map = _dafny.Map({})
+        self._closeIsTerminal: bool = False
         self._name: _dafny.Seq = _dafny.SeqWithoutIsStrInference(map(_dafny.CodePoint, ""))
         self._capabilities: _dafny.Set = _dafny.Set({})
-        self._closeIsTerminal: bool = False
         pass
 
     def __dafnystr__(self) -> str:
@@ -1154,14 +1213,14 @@ class MemoryBackend(Backend):
         return Backend.Valid(self)
 
     @property
+    def closeIsTerminal(self):
+        return self._closeIsTerminal
+    @property
     def name(self):
         return self._name
     @property
     def capabilities(self):
         return self._capabilities
-    @property
-    def closeIsTerminal(self):
-        return self._closeIsTerminal
     def ctor__(self):
         (self)._name = _dafny.SeqWithoutIsStrInference(map(_dafny.CodePoint, "memory"))
         (self)._capabilities = _dafny.Set({Capability_CapRead(), Capability_CapWrite(), Capability_CapDelete(), Capability_CapList(), Capability_CapMove(), Capability_CapCopy(), Capability_CapAtomicWrite(), Capability_CapAtomicMove(), Capability_CapMetadata(), Capability_CapSeekableRead(), Capability_CapWriteResultNative(), Capability_CapUserMetadata()})
@@ -1663,9 +1722,9 @@ class MemoryBackendMinimal(Backend):
         self._closed: bool = False
         self._containerPresent: bool = False
         self._fs: _dafny.Map = _dafny.Map({})
+        self._closeIsTerminal: bool = False
         self._name: _dafny.Seq = _dafny.SeqWithoutIsStrInference(map(_dafny.CodePoint, ""))
         self._capabilities: _dafny.Set = _dafny.Set({})
-        self._closeIsTerminal: bool = False
         pass
 
     def __dafnystr__(self) -> str:
@@ -1695,14 +1754,14 @@ class MemoryBackendMinimal(Backend):
         return Backend.Valid(self)
 
     @property
+    def closeIsTerminal(self):
+        return self._closeIsTerminal
+    @property
     def name(self):
         return self._name
     @property
     def capabilities(self):
         return self._capabilities
-    @property
-    def closeIsTerminal(self):
-        return self._closeIsTerminal
     def ctor__(self):
         (self)._name = _dafny.SeqWithoutIsStrInference(map(_dafny.CodePoint, "memory-minimal"))
         (self)._capabilities = _dafny.Set({Capability_CapRead(), Capability_CapWrite(), Capability_CapDelete(), Capability_CapList(), Capability_CapMove(), Capability_CapCopy(), Capability_CapAtomicWrite(), Capability_CapAtomicMove(), Capability_CapMetadata(), Capability_CapSeekableRead()})

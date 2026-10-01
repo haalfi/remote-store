@@ -14,8 +14,14 @@
 // gated by scripts/check_dafny_twin_parity.py, which pins the two deliberate
 // divergences (the constructor's capability set and close posture, and Write's
 // CapWriteResultNative branch) and requires every other member to match.
+//
+// ID-251: RootPath.dfy is included so its §5 raw-key entry (WriteKey,
+// MoveKey, CopyKey) compiles into the Python oracle.  The oracle adapter
+// sends write keys and move/copy destinations through it, so every root
+// spelling reaches the trait folded onto Root, inside its verified domain.
 
 include "BackendContract.dfy"
+include "RootPath.dfy"
 
 class MemoryBackend extends Backend {
 
