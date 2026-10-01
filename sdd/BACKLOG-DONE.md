@@ -245,7 +245,8 @@ if evidence changes; these are retired.
   spec: BE-029 · effort: M · audience: infra.test
   The root write and `move`/`copy` destination cells (sync and async) run all six
   BE-029 spellings and assert the raised path names the root under any spelling
-  (`_names_the_root`); 62 of them go red under an `is_root`-narrowed shared guard.
+  (`_names_the_root`). With the shared guard narrowed to `is_root`, those cells on
+  the Stage-1 no-Docker lanes give 62 failed / 570 passed / 256 skipped (dossier).
   The oracle reaches the four non-canonical spellings through `RootPath.dfy` §5,
   now compiled into it, so its refusal is the verified one and names `"."`.
   Detail: [dossier](backlog/id-251-root-write-cells-narrow-spellings.md)

@@ -45,7 +45,12 @@ the cells accept any root spelling.
 **As landed:** `MemoryBackend.dfy` includes `RootPath.dfy`, so §5's `WriteKey`,
 `MoveKey` and `CopyKey` compile into the oracle, and the adapter routes write
 keys and destinations through them. Every root spelling now reaches the class
-folded onto Root, and the oracle names `"."`. Widened cells: 62 red with
-`_flat_ns._reject_root_as_write_target` narrowed to `is_root` in-session, none
-of them an `empty` or `dot` id. Not reached here (no Docker): the azurite,
-sftp_docker and MinIO lanes, which route through that shared guard.
+folded onto Root, and the oracle names `"."`. Widened cells, measured with
+`_flat_ns._reject_root_as_write_target` narrowed to `is_root` in-session and
+`pytest tests/backends/conformance/test_io.py tests/backends/conformance/test_async_extended.py
+-k "test_write_to_root_is_refused or test_root_as_move_or_copy_destination or
+test_root_destination_outranks"` on the Stage-1 no-Docker lanes: 62 failed /
+570 passed / 256 skipped (unmutated: 648 passed / 240 skipped), none failing
+with an `empty` or `dot` id. Not reached here (no Docker): the azurite,
+sftp_docker and MinIO lanes, which route through that shared guard. On the
+Azure replay lanes the mutation shows as skips, not failures (ID-261).

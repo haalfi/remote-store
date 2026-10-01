@@ -352,6 +352,22 @@ no clause of the contract ships unexercised.
   none on shape; the recording procedure is in the dossier.
   Detail: [dossier](backlog/id-247-graph-root-path-cassettes.md)
 
+- [ ] **ID-260 — BE-029's order is unobservable to conformance wherever a present root already answers correctly**
+  spec: BE-029 · effort: M · audience: infra.test
+  With key-decided root checks removed in-session (PR #1050 round 5), the file-shaped
+  root cells stay green on `local`/`local_async_adapted`, and every probe cell on
+  `local` and `s3_moto` stays green: a present root answers right by observation.
+  Only an absent container separates the orders, and no fixture arranges one (BK-345).
+  Open decision: per-backend pins, or an absent-root fixture shared with BK-345.
+
+- [ ] **ID-261 — On Azure replay lanes a regressed root-write guard skips instead of failing**
+  spec: BE-029 · effort: S · audience: infra.test
+  `test_root_destination_outranks_a_missing_source` passes on `azure_replay(_async)`
+  without HTTP; with `_reject_root_as_write_target` narrowed to `is_root` (PR #1050
+  round 5) its 16 non-canonical cells reach the SDK and skip "replay cassette missing".
+  Open decision: fail a key-decided cell that issues a request on replay, or record
+  cassettes for it.
+
 - [ ] **BK-382 — The file-ancestor gate ships unexercised on the overwrite path, where the pre-check runs inside an open write transaction**
   spec: BE-008 · effort: M · audience: infra.test
   The move and copy cells for the file-ancestor gate, sync and async, target a

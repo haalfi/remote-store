@@ -156,12 +156,12 @@ observation belongs in the health probe, which is off BE-021's roster and free
 to make it: `LocalBackend.check_health` tests `is_dir()`, not mere existence,
 for exactly this reason.
 
-**Conformance pins the outcome, not the order** — and for the file-shaped and
-probe rows does not need to pin both: a backend that gets the order wrong there
-is observable as exactly the wrong error class or a spurious success, which is
-what the cells below assert. The write clause below is the exception: a wrong
-order can still produce the right class while the container is present, and
-that clause states what the cells do not reach.
+**Conformance pins the outcome, not the order.** A wrong order is visible to
+the cells below only where the root's own answer is wrong, and a present root
+often answers correctly by observation, so the order is unpinned there on every
+row. It matters once the container is absent, which no conformance fixture
+arranges (ID-260, BK-345); the backends that can lose theirs pin it per
+backend.
 
 **BE-020 outranks this check.** On a backend with `close_is_terminal = True`,
 every operation in the table above except the addressing row raises

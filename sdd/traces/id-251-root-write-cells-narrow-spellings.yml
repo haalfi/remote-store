@@ -154,12 +154,28 @@ phases:
           only test_root_destination_outranks_a_missing_source; writer cells go
           red only on s3_moto, seeded destination cells on s3_moto and
           s3_boto3_moto. A present root directory refuses "./" by its own
-          is_dir check, naming the raw key. Not run under the mutation:
-          s3_pyarrow_moto (needs MinIO), the Docker lanes, and azure_replay
-          (these cells skip for want of a cassette). Spec 003 and the guide
-          state the principle and cite this step; the lane list stays here.
+          is_dir check, naming the raw key. Not run: s3_pyarrow_moto (needs
+          MinIO) and the Docker lanes. azure_replay and azure_replay_async pass
+          the 16 non-canonical outranks cells at baseline without HTTP; under
+          the mutation those 16 reach the SDK and skip "replay cassette
+          missing" (baseline 648 passed / 240 skipped; mutated 62 failed / 570
+          passed / 256 skipped). Filed as ID-261. Spec 003 states the
+          principle and cites this step; the guide states it without a
+          citation, being a published page.
         outcome: ok
-discovery_followups: []
+      - file: sdd/specs/003-backend-adapter-contract.md
+        section: "BE-029, Conformance pins the outcome, not the order"
+        read_type: verify
+        extract: >-
+          The pre-PR sentence said a wrong order is observable as the wrong
+          class. Round 5's measuring member refuted it on the file-shaped and
+          probe rows too: key-decided root checks removed, local's file-shaped
+          cells and local/s3_moto's probe cells stay green. Filed as ID-260;
+          the sentence now says the order is unpinned while the root is present.
+        outcome: misleading
+discovery_followups:
+  - ID-260
+  - ID-261
 surprising_ripples:
   - docs-src/guides/custom-backend-guide.md
   - tests/backends/test_flat_ns.py
