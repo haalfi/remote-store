@@ -72,9 +72,9 @@ def test_main_fails_off_the_primary(capsys):
     the primary Python (``tooling-tests``), where a subprocess never takes this path.
     """
     mod = _load()
-    assert mod.main((3, 11)) == 1
+    assert mod.main((2, 7)) == 1  # never a primary
     err = capsys.readouterr().err
-    assert f"error: running on Python 3.11, .python-version is {mod.read_primary()!r}" in err
+    assert f"error: running on Python 2.7, .python-version is {mod.read_primary()!r}" in err
     assert "hatch env remove default" in err
 
 
@@ -82,7 +82,7 @@ def test_main_pin_mismatch_does_not_prescribe_a_rebuild(capsys, monkeypatch):
     """A wrong pin is the fault to fix: rebuilding the env on it would change nothing."""
     mod = _load()
     major, minor = (int(p) for p in mod.read_pin().split(".")[:2])
-    primary = f"{major}.{minor + 1}"  # the pin is left behind; the env runs on the pin
+    primary = f"{major}.{minor + 1}"  # differs from any real pin; the env runs on the pin
     monkeypatch.setattr(mod, "read_primary", lambda: primary)
     assert mod.main((major, minor)) == 1
     err = capsys.readouterr().err
