@@ -250,10 +250,13 @@ phases:
           RootSpellingCharacterisation and its RootSpelling predicate. At
           f3c88a6, the c422a92 review fix (Valid() root conjunct, DeleteFolder
           root guards, RootPath.dfy §4 and §5): 1903 verified, 0 errors.
-          At the last commit to touch sdd/formal (`git log -1 --format=%h --
-          sdd/formal`): 1903 verified, 0 errors. The two closing-panel fixes
-          after f3c88a6 changed a Close() comment and the source scope of
-          RootPath.dfy's MoveKey/CopyKey, and the count did not move.
+          The closing-panel fixes after it, `git log --oneline
+          f3c88a6..862f841 -- sdd/formal` (8000412, 8d79257, 862f841),
+          changed a Close() comment, the source scope of RootPath.dfy's
+          MoveKey/CopyKey, and the Live() comment; each gave 1903 verified,
+          0 errors before its commit. The fix after 862f841 changed only the
+          MemoryBackendMinimal header comment and the README; 1903 verified,
+          0 errors on its tree before commit.
         outcome: ok
       - file: sdd/formal/MemoryBackend.dfy
         section: "seven mutations, each on a scratch copy of sdd/formal"
@@ -393,9 +396,11 @@ phases:
           BE-018's sentence was wrong, and it now says is_root. The panel also
           showed that the follow-up item had become a layer producing its own
           findings, and its deferral reason was false. The maintainer chose to
-          fix the sites here and drop the item, BK-392, before it was
-          allocated (backlogid.json still records BK 391), so that ID will be
-          reused and the earlier steps' "BK-392" and "BK-392's dossier" no
+          fix the sites here and drop the item, BK-392. It only ever lived in
+          this branch's BACKLOG.md (added in 617d3d1, removed in 3fbc51b:
+          `git log --oneline -S "BK-392 —" -- sdd/BACKLOG.md`) and never
+          reached master, so `gen_backlogid.py --check` offers 392 again: that ID will
+          be reused, and the earlier steps' "BK-392" and "BK-392's dossier" no
           longer resolve. The dossier's reads now live in the _flat_ns, _local
           and _sftp guard docstrings and in this step. Of its seven rows, two did not
           survive a read. Spec 003's Graph paragraph is true: its "both new

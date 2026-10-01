@@ -289,8 +289,10 @@ small, stable, and maintainable:
 - **`src == dst` as explicit no-op** in `Move`/`Copy`, with assertions
   proving each postcondition holds for the identity case.
 - **Root as `"."`.** The Dafny `Path` type requires non-empty strings;
-  the Python adapter translates `""` → `"."` once in `_str_to_dafny`,
-  eliminating per-method root guards.
+  the Python adapter translates `""` → `"."` once in `_str_to_dafny`.
+  That covers the two canonical spellings only: `"./"` or `"/"` reach the
+  model raw, so `Write`, `Move` and `Copy` refuse the root per method
+  through `AddressesRoot` (BE-029), and `DeleteFolder` refuses `Root`.
 - **`MemoryBackend` / `MemoryBackendMinimal` parity.** Dafny has no
   class-to-class inheritance, so `MemoryBackendMinimal` duplicates every
   method body of `MemoryBackend` with a narrower capability set and a

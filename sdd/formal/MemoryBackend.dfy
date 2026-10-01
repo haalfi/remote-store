@@ -1256,8 +1256,9 @@ class MemoryBackend extends Backend {
 // write: witnessing the BasicSource postcondition branch.
 //
 // BK-388: also close-terminal (closeIsTerminal = true), so Close() followed by
-// any operation but RequireCapability reaches the BackendUnavailable branch
-// (BE-020), which is dead code in MemoryBackend.
+// any operation that returns a Result, except RequireCapability, reaches the
+// BackendUnavailable branch (BE-020), which is dead code in MemoryBackend.
+// Close() and DropContainer() stay unguarded, as the trait's Live() says.
 // ---------------------------------------------------------------------------
 
 class MemoryBackendMinimal extends Backend {
