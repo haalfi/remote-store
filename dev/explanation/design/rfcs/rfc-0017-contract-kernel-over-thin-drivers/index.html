@@ -11955,6 +11955,14 @@ answers are "pinned in Python only". The kernel is written against the
 verified clauses where they exist, and the bound that gives is narrower than
 a reader of "verified reference" would take it to be: the clauses behind most
 kernel-owned items in the split below are the ones outside the model.</p>
+<p><strong>Since BK-388</strong> the model covers the root rule, the close posture and the
+absent container (<code>sdd/formal/README.md</code> gaps 9 to 11), and the spec 003
+sentence quoted above now says where the absent container is modelled. The
+error attributes, messages, listing pages and the never-leak invariant on
+listings behind BUG-249 and 280 stay outside it. The paragraph above, and
+this section's figures below (the line counts, "modelled today", and the
+twin-parity member counts), describe the model as it stood when the RFC was
+filed; <code>sdd/formal/README.md</code> describes it now.</p>
 <p><code>DafnyOracleBackend</code> stays a direct <code>Backend</code> subclass and is never migrated.
 It is not diffed against the kernel: <code>sdd/formal/README.md</code> (T) says "running
 the oracle as a peer backend to diff against would only test the oracle
@@ -11993,7 +12001,7 @@ a single implementation to hold to.</p>
 <tbody>
 <tr>
 <td>Root rule, BE-029: which spellings address the root, decided from the key</td>
-<td>a pure predicate over the key, plus preconditions on the write-shaped operations</td>
+<td>a pure predicate over the key, plus preconditions on the write-shaped operations (landed as postconditions; see Open Question 7)</td>
 <td>S</td>
 <td>extend; the clause with the most items and the cheapest proof, and the verified reference ID-251's <code>./</code> decision lacks</td>
 </tr>
@@ -12005,7 +12013,7 @@ a single implementation to hold to.</p>
 </tr>
 <tr>
 <td>Absent container, BE-021 § Reach</td>
-<td>the store state becomes optional and most postconditions gain a branch; the refinement follows</td>
+<td>the store state becomes optional and most postconditions gain a branch; the refinement follows (landed as a <code>containerPresent</code> flag that <code>Valid()</code> ties to an empty store; see Open Question 7)</td>
 <td>M</td>
 <td>extend; it also gives BK-345 and, through the seeding hook BK-345 consumes, ID-244 the verified reference they lack</td>
 </tr>
@@ -12366,12 +12374,21 @@ and its answer keeps <code>classify</code>.</p>
    absent-container branches go into <code>BackendContract.dfy</code> and
    <code>MemoryBackend.dfy</code>. The root rule's pure predicate goes upstream of the
    trait, in <code>BackendContract.dfy</code> or a file it includes (as it includes
-   <code>ResourceSafety.dfy</code>, its line 34), because the trait's write-shaped
+   <code>ResourceSafety.dfy</code>, <code>git grep -n '^include' -- sdd/formal/BackendContract.dfy</code>), because the trait's write-shaped
    operations name it in their preconditions. Lemmas about it go in a
    downstream module of <code>DepthCounting.dfy</code>'s shape. A predicate placed only
    downstream could not be named by the trait, since <code>DepthCounting.dfy</code>
    includes <code>BackendContract.dfy</code> (its line 18) and not the reverse. Placement
-   corrected at BK-387's close, by the maintainer.</li>
+   corrected at BK-387's close, by the maintainer. <strong>Landed (BK-388):</strong> the
+   trait names the predicate in postconditions rather than preconditions, so
+   that the closed guard can rank ahead of it as BE-029 requires; the
+   absent container is a flag tied to an empty store, not an optional store
+   (BK-388 dossier, § As landed). The trait's domain is well-formed paths,
+   on which the predicate holds for <code>Root</code> alone, so BE-029's every-spelling
+   obligation on <code>write</code> and the <code>move</code>/<code>copy</code> destination is verified at a
+   raw-key entry, <code>RootPath.dfy</code> §5, which folds each spelling onto <code>Root</code>
+   before the trait. The source stays on <code>is_root</code>; a wider source check in
+   the kernel is permitted, not verified.</li>
 </ol>
 <h2 id="references">References<a class="headerlink" href="#references" title="Permanent link">&para;</a></h2>
 <ul>
