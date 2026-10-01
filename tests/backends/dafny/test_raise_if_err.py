@@ -1,13 +1,15 @@
-"""Direct unit tests of ``_raise_if_err`` arms the oracle cannot reach.
+"""Direct unit tests of the oracle adapter's ``_raise_if_err`` and ``close()``.
 
 The Dafny ``MemoryBackend`` oracle never returns ``Error.ResourceLocked``
 (the in-memory filesystem has no lock condition), nor ``BackendUnavailable``
 (it is non-terminal: ``closeIsTerminal`` is false, so ``Live()`` never
 fails). The conformance suite that drives the oracle therefore never
 exercises those dispatch arms (ADR-0024, Consequences: "Ships as a coupled
-bundle"). These tests construct the Dafny ``Result_Err`` variant by hand
-and pump it through ``_raise_if_err`` to prove each arm maps to its runtime
-class, keeping the formal-oracle error surface complete.
+bundle"). The dispatch tests construct the Dafny ``Result_Err`` variant by
+hand and pump it through ``_raise_if_err`` to prove each arm maps to its
+runtime class, keeping the formal-oracle error surface complete. The
+``close()`` test pins that the adapter drives the model's ``Close()``
+rather than the ABC's no-op.
 """
 
 from __future__ import annotations

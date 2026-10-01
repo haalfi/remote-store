@@ -450,10 +450,11 @@ present from construction), so `MemoryBackendMinimal` witnesses the
 `BackendUnavailable` branches. Both classes carry a `DropContainer` method,
 which models the environment removing the container and is the only way
 either class reaches the absent state. The Python oracle adapter wraps
-`MemoryBackend` only: its `close()` drives `Close()`, but the class is
-non-terminal, and it never calls `DropContainer`, so the oracle lane reaches
-neither the `BackendUnavailable` nor the absent-container branches; of gaps
-9 to 11 it exercises the root rule alone. The root rule
+`MemoryBackend` only: its `close()` drives `Close()` and the conformance
+close-posture cells then probe it, so the lane runs the root rule and gap
+10's non-terminal half. The class is non-terminal and the adapter never calls
+`DropContainer`, so the lane reaches no `BackendUnavailable` branch and no
+absent-container branch. The root rule
 covers `write` and the `move`/`copy` source and destination; the other
 file-shaped operations reach the root through the `IsDir` clause, because
 `Valid()` keeps `Root` a `DirEntry` in every state. `DeleteFolder`'s clauses

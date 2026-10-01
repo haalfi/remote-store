@@ -1207,11 +1207,12 @@ trait Backend {
   // ====================================================================
   // close()  (BE-020, BK-388)
   // ====================================================================
-  // Idempotent and never fails: a second Close() is the same no-op.  The
-  // flag flips; whether that ends the instance is closeIsTerminal's call,
-  // through Live().  No frame on fs or containerPresent: BE-020 promises
-  // a non-terminal backend stays usable, not that its contents survive
-  // (an in-memory SQLite store is gone after close()).
+  // Never fails, and the flag stays set: whether that ends the instance is
+  // closeIsTerminal's call, through Live().  No frame on fs or
+  // containerPresent, on a first call or a repeated one: BE-020 promises a
+  // non-terminal backend stays usable, not that its contents survive (an
+  // in-memory SQLite store is gone after close()).  Both refinements keep
+  // fs, so they are idempotent; the trait does not promise it.
   method Close()
     requires Valid()
     modifies this

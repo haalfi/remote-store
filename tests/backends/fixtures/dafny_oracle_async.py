@@ -21,10 +21,10 @@ so the ``async_backend`` indirect fixture in
 ``tests/backends/conformance/conftest.py`` invokes neither
 ``fixture.aclose`` nor ``fixture.cleanup`` at parametrize teardown — and
 ``DafnyOracleBackend.close()`` is therefore never executed on the async
-leg. That is intentional: ``DafnyOracleBackend`` inherits the ``Backend``
-ABC's no-op close, so the sync ``dafny_oracle`` cleanup's BE-020
-idempotency-on-every-iteration exercise has nothing to assert here; BE-020
-stays certified by the sync ``dafny_oracle`` conformance cycle only.
+leg. That is intentional: ``DafnyOracleBackend.close()`` only sets the
+model's ``closed`` flag on a non-terminal backend and releases nothing, so
+there is no teardown obligation to discharge here; BE-020 stays exercised
+by the sync ``dafny_oracle`` conformance cycle only.
 Reaching into ``adapter._sync`` from a per-fixture hook would break
 encapsulation for no real teardown obligation.
 """

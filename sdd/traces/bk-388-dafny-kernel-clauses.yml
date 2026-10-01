@@ -244,11 +244,15 @@ phases:
         read_type: verify
         extract: >-
           At 49db4c3 and 50b4071: 1775 verified, 0 errors (rounds 2 and 3
-          changed only comments in the .dfy files). At the round-5 fix commit,
-          the last to touch sdd/formal (`git log -1 --format=%h -S
-          RootSpellingCharacterisation -- sdd/formal/RootPath.dfy`): 1777
-          verified, 0 errors; the two new are RootSpellingCharacterisation
-          and its RootSpelling predicate.
+          changed only comments in the .dfy files). At the round-5 fix commit
+          (`git log -1 --format=%h -S RootSpellingCharacterisation --
+          sdd/formal/RootPath.dfy`): 1777 verified, 0 errors; the two new are
+          RootSpellingCharacterisation and its RootSpelling predicate. At
+          f3c88a6, the c422a92 review fix (Valid() root conjunct, DeleteFolder
+          root guards, RootPath.dfy §4 and §5): 1903 verified, 0 errors.
+          At the last commit to touch sdd/formal (`git log -1 --format=%h --
+          sdd/formal`), the closing-panel fix, whose .dfy change is a comment
+          on Close(): 1903 verified, 0 errors.
         outcome: ok
       - file: sdd/formal/MemoryBackend.dfy
         section: "seven mutations, each on a scratch copy of sdd/formal"
@@ -319,6 +323,18 @@ phases:
           non-terminal MemoryBackend, so the lane still reaches no
           BackendUnavailable branch; the README says so.
         outcome: ok
+      - file: tests/backends/fixtures/dafny_oracle.py
+        section: "_cleanup docstring (PR #1047 closing panel at f3c88a6)"
+        read_type: verify
+        extract: >-
+          The close() override made three fixture docstrings false, because
+          they say DafnyOracleBackend inherits the ABC's no-op close. My sweep
+          of the c422a92 fix grepped only sdd/ and tests/backends/dafny, so it
+          missed them. The same override put the oracle's non-terminal close
+          path on the conformance lane, through the fixture cleanup and
+          test_close_posture.py. That made the README's "root rule alone",
+          written in the same fix, false as well.
+        outcome: ok
 discovery_followups:
   - BK-391
 surprising_ripples:
@@ -334,6 +350,9 @@ surprising_ripples:
   - tests/backends/graph/aio/test_backend.py
   - tests/backends/dafny/_helpers.py
   - tests/backends/dafny/test_raise_if_err.py
+  - tests/backends/fixtures/dafny_oracle.py
+  - tests/backends/fixtures/dafny_oracle_async.py
+  - tests/backends/fixtures/test_registry.py
 review:
   # Derived by `hatch run ship-report 1047 --trace-block-only` at head 44909e5.
   # Do not hand-edit, except a newly required field per sdd/traces/_schema.yml

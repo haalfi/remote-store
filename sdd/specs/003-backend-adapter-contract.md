@@ -680,7 +680,7 @@ drops metadata fails to verify. Verified in `MemoryBackend.dfy`. See BK-196.
 
 The use-after-close conformance lane (`tests/backends/conformance/test_close_posture.py` and its `aio/` sibling) gates on this attribute, asserting the terminal error for terminal backends and re-initialisation for the rest.
 **Rationale:** A terminal close turns a use-after-close (a likely bug) into a clear typed error instead of a silent resource reopen, while leaving stateless/cheap backends freely reusable.
-**Formal coverage:** since BK-388, `sdd/formal/BackendContract.dfy` models the posture as `closeIsTerminal`, `closed` and `Live()`, with an idempotent `Close()`. Every operation except `RequireCapability` answers `BackendUnavailable` when `!Live()`, ahead of every other clause and with `fs` unchanged; every other postcondition the other formal-coverage notes in this spec quote holds under `Live()`. `MemoryBackendMinimal` is the close-terminal witness in `MemoryBackend.dfy`.
+**Formal coverage:** since BK-388, `sdd/formal/BackendContract.dfy` models the posture as `closeIsTerminal`, `closed` and `Live()`, with a `Close()` that sets `closed` and promises nothing about the store's contents. Every operation except `RequireCapability` answers `BackendUnavailable` when `!Live()`, ahead of every other clause and with `fs` unchanged; every other postcondition the other formal-coverage notes in this spec quote holds under `Live()`. `MemoryBackendMinimal` is the close-terminal witness in `MemoryBackend.dfy`.
 
 ### BE-021: Error Mapping
 
