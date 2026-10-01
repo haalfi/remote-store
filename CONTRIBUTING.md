@@ -205,8 +205,13 @@ CI: workflows that need it read it (`setup-python`'s `python-version-file`, or
 `ci.yml`'s `setup` job for the matrix). Two files cannot read it and carry a
 literal copy, each held equal by a gate: `.readthedocs.yaml`
 (`scripts/check_readthedocs_python.py`) and the default hatch env's `python`
-in `pyproject.toml` (`scripts/check_hatch_python.py`). Bumping the development
-version is those three edits.
+in `pyproject.toml` (`scripts/check_hatch_python.py`). Those three are the
+gated copies, not the whole bump: the drift guard resolves on `.python-version`
+too, so the 14 locks under `infra/drift-locks/` stamped `# python: 3.13`
+(`rg -c "^# python: 3\.13" infra/drift-locks`) need a refresh per
+[`infra/drift-locks/README.md` § Refreshing](infra/drift-locks/README.md#refreshing),
+and that README and `.claude/skills/drift/SKILL.md` name 3.13 in prose. No gate
+checks those.
 
 hatch does not read `.python-version`, so the pin is what makes your local
 `hatch run all` gate on the same interpreter as CI; without it hatch builds

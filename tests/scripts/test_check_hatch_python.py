@@ -65,12 +65,32 @@ def test_interpreter_match_passes():
     assert mod.check_interpreter((3, 13), "3.13") is None
 
 
-def test_entry_point_gates_on_the_running_interpreter():
-    """End to end: ``__main__`` feeds the real interpreter and pin into the checks and exits non-zero.
+def test_main_fails_off_the_primary(capsys):
+    """``main`` runs both checks on the real pin and exits 1 with the remedy for a stale interpreter.
 
-    CI runs ``tests/scripts/`` on every supported Python, so the expected exit is
-    derived from the interpreter running this test: 0 on the primary, 1 with the
-    remedy elsewhere. Both paths are exercised across the matrix.
+    In-process with an injected version, because CI runs ``tests/scripts/`` only on
+    the primary Python (``tooling-tests``), where a subprocess never takes this path.
+    """
+    mod = _load()
+    assert mod.main((3, 11)) == 1
+    err = capsys.readouterr().err
+    assert f"error: running on Python 3.11, .python-version is {mod.read_primary()!r}" in err
+    assert "hatch env remove default" in err
+
+
+def test_main_passes_on_the_primary(capsys):
+    mod = _load()
+    major, minor = (int(p) for p in mod.read_primary().split(".")[:2])
+    assert mod.main((major, minor)) == 0
+    assert capsys.readouterr().err == ""
+
+
+def test_entry_point_gates_on_the_running_interpreter():
+    """End to end: ``__main__`` passes the real interpreter to ``main`` and exits with its code.
+
+    CI runs this only on the primary Python (``tooling-tests``), so there it pins the
+    exit-0 path; the mismatch path is pinned in-process by ``test_main_fails_off_the_primary``.
+    Run on another interpreter, it checks the exit-1 path end to end.
     """
     primary = _load().read_primary()
     on_primary = f"{sys.version_info[0]}.{sys.version_info[1]}" == ".".join(primary.split(".")[:2])

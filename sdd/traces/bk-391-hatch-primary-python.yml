@@ -52,6 +52,19 @@ phases:
         read_type: reference
         extract: "tomli fallback for the 3.10 floor"
         outcome: ok
+  - id: review_fix
+    name: Review fixes
+    steps:
+      - file: .github/workflows/ci.yml
+        section: "test matrix (--ignore=tests/scripts), tooling-tests"
+        read_type: reference
+        extract: "tests/scripts/ runs only in tooling-tests on the primary Python, so a subprocess test's mismatch branch never runs in CI. My own miss: I claimed the matrix covered it without reading the workflow; main(running) now takes the version so both paths run in-process"
+        outcome: ok
+      - file: infra/drift-locks/README.md
+        section: "Refreshing"
+        read_type: reference
+        extract: "Locks resolve on .python-version: 14 carry `# python: 3.13`, so a primary bump is more than the three gated copies"
+        outcome: ok
   - id: verify
     name: Verify
     steps:

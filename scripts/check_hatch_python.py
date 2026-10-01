@@ -12,7 +12,9 @@ major.minor:
    gates on the wrong Python.
 
 Wired into ``hatch run preflight`` (and so ``all``, and CI's ``lint`` job,
-which runs on the primary Python). Bounds: only the ``default`` env is
+which runs on the primary Python). Its tests run in CI only on the primary
+Python (``tooling-tests``), so the mismatch path is pinned through ``main``
+with an injected version. Bounds: only the ``default`` env is
 checked, not the ``hatch-test.*`` matrix envs; check 2 speaks only for the
 env that runs it; a malformed ``pyproject.toml`` raises, which is itself a
 failure.
@@ -76,10 +78,14 @@ def check_interpreter(running: tuple[int, int], primary: str) -> str | None:
     )
 
 
-if __name__ == "__main__":
+def main(running: tuple[int, int]) -> int:
+    """Run both checks for interpreter *running*; print each error to stderr and return the exit code."""
     primary = read_primary()
-    errors = [
-        e for e in (check_pin(read_pin(), primary), check_interpreter(sys.version_info[:2], primary)) if e is not None
-    ]
-    if errors:
-        sys.exit("\n".join(f"error: {e}" for e in errors))
+    errors = [e for e in (check_pin(read_pin(), primary), check_interpreter(running, primary)) if e is not None]
+    for e in errors:
+        print(f"error: {e}", file=sys.stderr)
+    return 1 if errors else 0
+
+
+if __name__ == "__main__":
+    sys.exit(main(sys.version_info[:2]))
