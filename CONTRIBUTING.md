@@ -205,8 +205,8 @@ CI: workflows that need it read it (`setup-python`'s `python-version-file`, or
 `ci.yml`'s `setup` job for the matrix). Two files cannot read it and carry a
 literal copy, each held equal by a gate: `.readthedocs.yaml`
 (`scripts/check_readthedocs_python.py`) and the default hatch env's `python`
-in `pyproject.toml` (`scripts/check_hatch_python.py`). Those three are the
-gated copies, not the whole bump: the drift locks resolve on `.python-version`
+in `pyproject.toml` (`scripts/check_hatch_python.py`). Those two gated
+copies are not the whole bump: the drift locks resolve on `.python-version`
 too, and some prose names the primary version. No gate checks those; the
 ripple-check's Primary Python row in
 [`sdd/CLAUDE-REFERENCE.md`](sdd/CLAUDE-REFERENCE.md#detailed-checklist)
