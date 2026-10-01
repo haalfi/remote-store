@@ -269,6 +269,9 @@ class AsyncBackend(abc.ABC):
                 asserts the depth boundary on the backend's own output
                 (``AsyncStore`` additionally applies client-side filtering
                 for its callers).  ``None`` (default) defers to *recursive*.
+                The bound applies only when *recursive* is ``True``; with
+                ``recursive=False`` the result is the immediate files for
+                every value.
 
         Returns:
             An async iterator of ``FileInfo`` objects.

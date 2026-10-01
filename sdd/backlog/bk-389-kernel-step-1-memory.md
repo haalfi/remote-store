@@ -20,6 +20,9 @@ that PR. That PR is RFC-0017 D3 step 1.
 2. `MemoryBackend` and `AsyncMemoryBackend` as drivers, gated by the
    conformance suite with D3's enumerated cell changes, and a fake-driver
    kernel suite per § Impact, Testing.
+   - (was ID-251, absorbed here) The suite runs BE-029's widened root
+     spellings as fake-driver kernel cells, and settles ID-251's open `"./"`
+     decision for `DafnyOracleBackend` (normalise, or carve out) there.
 3. The `max_depth` algorithm on DEPTH-003's reading (BUG-240's decision), and
    the folder `modified_at` aggregation as RFC-0017 D3 fixes it: the latest
    known file time, skipping the `datetime.min` UTC sentinel, and `None` when

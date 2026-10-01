@@ -91,7 +91,7 @@ Amended with research round 2 §2.4 items and Phase 2 spec.
 ### ASYNC-014: list_files()
 
 **Invariant:** `async def list_files(path, *, recursive=False, max_depth=None) -> AsyncIterator[FileInfo]`.
-**Postconditions:** Returns only files, not folders. If `recursive=True`, includes files in all subdirectories. `max_depth` limits traversal depth (when set, `recursive` is ignored).
+**Postconditions:** Returns only files, not folders. If `recursive=True`, includes files in all subdirectories. `max_depth` applies only when `recursive=True`, where it limits traversal depth (inclusive); with `recursive=False` it is inert for every value and the result is the immediate children, as DEPTH-003 states for the Backend ABC. `AsyncStore.list_files()` normalises `max_depth` into `recursive` before delegating, so depth takes full control there (DEPTH-001).
 **See also:** [BE-014](003-backend-adapter-contract.md), [037-depth-limited-listing.md](037-depth-limited-listing.md) (DEPTH-003).
 
 ### ASYNC-015: list_folders()

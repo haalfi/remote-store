@@ -275,11 +275,11 @@ failure it was.
 
 - [ ] **BK-389 — No backend runs on RFC-0017's kernel, so ADR-0042 stays Proposed**
   spec: BE-021, BE-029, BE-020, BE-017, ERR-001, ERR-009, DEPTH-003, PING-002, PING-008 · effort: L · audience: library.maintainer, user.api_docs, contributor.process
-  ADR-0042 is accepted only with the first backend on the new design: D3
-  step 1, the async kernel with its `unasync` sync twin over the two Memory
-  drivers. That PR also lands every step-1 spec amendment (dossier item 4), the
-  custom-backend guide as a driver, its check script and the homepage snippet.
-  Depends on BK-388. Open decision: none; RFC-0017 D1 to D7 fix the shape.
+  ADR-0042 is accepted only with the first backend on the new design: D3 step 1,
+  the async kernel with its `unasync` sync twin over the two Memory drivers, with
+  every step-1 spec amendment (dossier item 4), the custom-backend guide as a
+  driver, its check script and the homepage snippet. Depends on BK-388. Open decision:
+  ID-251's `"./"` oracle cell, normalise or carve out (item 2); D1 to D7 fix the rest.
   Detail: [dossier](backlog/bk-389-kernel-step-1-memory.md)
 
 - [ ] **BK-390 — RFC-0017's spec amendments after D3 step 1 have no owner once BK-387 closes**
@@ -308,15 +308,6 @@ no clause of the contract ships unexercised.
   adopt ID-121's derived keys, or refuse an unkeyed shared cache.
   Detail: [dossier](backlog/bug-251-shared-cache-cross-store-bytes.md)
 
-- [ ] **BUG-240 — ASYNC-014 and DEPTH-003 state opposite rules, and `GraphBackend` implements the async one**
-  spec: ASYNC-014, DEPTH-003 · effort: M · audience: user.api
-  ASYNC-014 says a set `max_depth` overrides `recursive`, citing DEPTH-003,
-  which says `max_depth` applies only when `recursive=True`. `GraphBackend`,
-  its docstring and its test follow ASYNC-014; `AsyncMemoryBackend` and
-  `AsyncAzureBackend` follow DEPTH-003. `Store` normalises, so only a direct
-  backend call diverges. Decided (BK-387): DEPTH-003, the verified reading.
-  Detail: [dossier](backlog/bug-240-max-depth-spec-contradiction.md)
-
 - [ ] **BUG-260 — `SQLBlobBackend.list_files("./")` answers empty for a non-empty root**
   spec: BE-029, SQL-BLOB-010 · effort: S · audience: user.api
   On a root holding two files, `list_files("./", recursive=True)` returns
@@ -343,14 +334,6 @@ no clause of the contract ships unexercised.
   reaches them, and corrected line numbers, are in the dossier.
   Detail: [dossier](backlog/id-242-moto-permission-pragmas.md)
 
-- [ ] **ID-251 — BE-029's widest clause is one the conformance suite cannot fail on**
-  spec: BE-029 · effort: M · audience: infra.test
-  BE-029 requires the write guard to refuse every spelling of the root, but
-  the conformance root-write cells run only `""` and `"."`, so a backend
-  guarding with `is_root(path)` passes. Open decision: when the cells widen,
-  normalise `"./"` in `DafnyOracleBackend` or carve it out of the roster.
-  Detail: [dossier](backlog/id-251-root-write-cells-narrow-spellings.md)
-
 - [ ] **ID-247 — Record the Graph root-path cassettes**
   spec: BE-029 · effort: S · audience: infra.test
   30 `TestBackendRootPath` cells skip on `graph_replay` for want of a cassette
@@ -359,6 +342,14 @@ no clause of the contract ships unexercised.
   live account; the 8 key-decided cells that issue no request do. Open decision:
   none on shape; the recording procedure is in the dossier.
   Detail: [dossier](backlog/id-247-graph-root-path-cassettes.md)
+
+- [ ] **ID-260 — The async non-recursive `max_depth` cell never runs on Graph or Azure replay**
+  spec: ASYNC-014, DEPTH-003 · effort: S · audience: infra.test
+  `test_list_files_non_recursive_ignores_max_depth` skips its 8 replay cells,
+  4 `graph_replay` and 4 `azure_replay_async`, for want of a cassette
+  (`pytest tests/backends/conformance/test_async_extended.py --stage=3 -rs -k non_recursive_ignores`),
+  so no conformance cell reaches `GraphBackend` on this rule. Recorded, they go red on a
+  regression to extra `/children` calls: replay skips only an absent cassette. Open decision: none.
 
 - [ ] **BK-382 — The file-ancestor gate ships unexercised on the overwrite path, where the pre-check runs inside an open write transaction**
   spec: BE-008 · effort: M · audience: infra.test

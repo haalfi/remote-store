@@ -24,6 +24,7 @@ Folded into a surviving `BACKLOG.md` item as a sub-bullet carrying its evidence.
 **The work is open, not done** — follow the host. The ID is retired because a
 sub-bullet is not an ID.
 
+- [x] **ID-251 — BE-029's widest clause is one the conformance suite cannot fail on** → **BK-389**, item 2: RFC-0017 § Impact, Testing makes the widened root spellings fake-driver kernel cells, and the open `"./"` oracle decision is settled there. Dossier: [ID-251](backlog/id-251-root-write-cells-narrow-spellings.md).
 - [x] **BUG-241 — `SQLBlobBackend` builds prefix `LIKE` patterns without escaping `_` and `%`, so listings and folder deletes reach sibling keys** → **BL-011**. Dossier: [BUG-241](backlog/bug-241-sql-like-metacharacters.md).
 - [x] **BK-347 — A diff outside CI's `CODE_PAT` is routed away from the ADR drift gate** → **BK-333**
 - [x] **BK-337 — Widening an authority doc's scope reaches no row that finds its restating copies** → **BK-346**, instance 5
@@ -240,6 +241,14 @@ if evidence changes; these are retired.
 ---
 
 ## Unreleased
+
+- [x] **BUG-240 — ASYNC-014 and DEPTH-003 state opposite rules, and `GraphBackend` implements the async one**
+  spec: ASYNC-014, DEPTH-003 · effort: M · audience: user.api
+  ASYNC-014 and GR-014's precedence paragraph now state DEPTH-003's reading,
+  and `GraphBackend.list_files` follows it: `recursive=False` yields the
+  immediate files for every `max_depth`. Pinned by the Graph respx test (3 of
+  4 red first) and a new async conformance twin; its replay cells are ID-260.
+  Detail: [dossier](backlog/bug-240-max-depth-spec-contradiction.md)
 
 - [x] **BK-388 — The Dafny model lacks the root rule, the close posture and the absent container that RFC-0017's kernel encodes**
   spec: BE-029, BE-020, BE-021, BE-018, BE-019 · effort: M · audience: library.maintainer
