@@ -362,7 +362,7 @@ phases:
           source fails WellFormedNonRootIsNotRoot's precondition.
         outcome: ok
 discovery_followups:
-  - BK-391
+  - BK-392
 surprising_ripples:
   - .github/workflows/ci.yml
   - scripts/dafny_verify.sh

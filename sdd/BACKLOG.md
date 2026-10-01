@@ -273,7 +273,7 @@ failure it was.
   narrow the catch so only a confirmed miss reads as "no ancestor"; BE-008 changes with the fix.
   Detail: [dossier](backlog/bug-292-ancestor-gate-fails-open.md)
 
-- [ ] **BK-391 — Seven root-rule and Graph-lane statements still contradict what BK-388 measured**
+- [ ] **BK-392 — Seven root-rule and Graph-lane statements still contradict what BK-388 measured**
   spec: BE-029, BE-021, BE-018 · effort: S · audience: library.maintainer, infra.test
   Seven sites, from PR #1047's closing panels (threads carry detail): (1) spec 003's Graph row
   says "five" file-shaped ops (async roster: four); (2) BE-021's Graph paragraph and (3) a
