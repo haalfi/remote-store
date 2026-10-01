@@ -898,6 +898,24 @@ class TestAsyncStoreHead:
         result = await async_store.head("nested/f.bin")
         assert result.path == RemotePath("nested/f.bin")
 
+    @pytest.mark.spec("WR-008")
+    async def test_head_unknown_modified_time_is_none(self) -> None:
+        """The unknown-time sentinel maps to last_modified=None, as in Store.head()."""
+        from datetime import datetime, timezone
+
+        class _UnknownTimeBackend(MemoryBackend):
+            def get_file_info(self, path: str) -> FileInfo:
+                fi = super().get_file_info(path)
+                return FileInfo(
+                    path=fi.path, name=fi.name, size=fi.size, modified_at=datetime.min.replace(tzinfo=timezone.utc)
+                )
+
+        store = AsyncStore(_UnknownTimeBackend())
+        await store.write("f.bin", b"abc")
+        result = await store.head("f.bin")
+        assert result.size == 3
+        assert result.last_modified is None
+
 
 class TestAsyncStoreMetadataGate:
     """WR-010/WR-011 async parity: metadata= validation and capability gate."""

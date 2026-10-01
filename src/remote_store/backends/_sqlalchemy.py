@@ -22,7 +22,7 @@ from remote_store._errors import (
     RemoteStoreError,
 )
 from remote_store._glob import extract_prefix, pattern_to_regex
-from remote_store._models import ContentDigest, FileInfo, FolderEntry, FolderInfo, WriteResult
+from remote_store._models import _UNKNOWN_MODIFIED_AT, ContentDigest, FileInfo, FolderEntry, FolderInfo, WriteResult
 from remote_store._path import RemotePath, is_root
 
 if TYPE_CHECKING:
@@ -1385,9 +1385,7 @@ class SQLBlobBackend(_SQLAlchemyBaseBackend):
         size = row[1] or 0
         modified_ts = row[2]
         modified_at = (
-            datetime.fromtimestamp(modified_ts, tz=timezone.utc)
-            if modified_ts is not None
-            else datetime.min.replace(tzinfo=timezone.utc)
+            datetime.fromtimestamp(modified_ts, tz=timezone.utc) if modified_ts is not None else _UNKNOWN_MODIFIED_AT
         )
 
         content_type: str | None = None
@@ -1487,8 +1485,6 @@ _SUPPORTED_FORMATS: dict[str, str] = {
     ".arrow": "arrow",
     ".ipc": "arrow",
 }
-
-_EPOCH_MIN = datetime.min.replace(tzinfo=timezone.utc)
 
 
 class SQLQueryBackend(_SQLAlchemyBaseBackend):
@@ -1833,7 +1829,7 @@ class SQLQueryBackend(_SQLAlchemyBaseBackend):
             path=rpath,
             name=rpath.name,
             size=0,
-            modified_at=_EPOCH_MIN,
+            modified_at=_UNKNOWN_MODIFIED_AT,
             extra={"materialized": False},
         )
 

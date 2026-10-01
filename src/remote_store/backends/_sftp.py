@@ -31,7 +31,7 @@ from remote_store._errors import (
     PermissionDenied,
     RemoteStoreError,
 )
-from remote_store._models import FileInfo, FolderEntry, FolderInfo, WriteResult
+from remote_store._models import _UNKNOWN_MODIFIED_AT, FileInfo, FolderEntry, FolderInfo, WriteResult
 from remote_store._path import RemotePath, is_root
 from remote_store._stream import _ErrorMappingStream
 
@@ -3397,10 +3397,7 @@ class SFTPBackend(Backend):
         name = path.rsplit("/", 1)[-1] if "/" in path else path
         size = attrs.st_size or 0
         mtime = attrs.st_mtime
-        if mtime is not None:
-            modified = datetime.fromtimestamp(mtime, tz=timezone.utc)
-        else:
-            modified = datetime.now(tz=timezone.utc)
+        modified = datetime.fromtimestamp(mtime, tz=timezone.utc) if mtime is not None else _UNKNOWN_MODIFIED_AT
         return FileInfo(
             path=RemotePath(path),
             name=name,

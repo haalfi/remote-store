@@ -930,6 +930,26 @@ class TestStoreHead:
         assert result.last_modified == ts
         assert result.metadata == {"k": "v"}
 
+    @pytest.mark.spec("WR-008")
+    def test_head_unknown_modified_time_is_none(self) -> None:
+        """The unknown-time sentinel maps to last_modified=None, the Optional field's 'unknown'."""
+        from datetime import datetime, timezone
+        from unittest.mock import MagicMock
+
+        info = FileInfo(
+            path=RemotePath("f.bin"),
+            name="f.bin",
+            size=7,
+            modified_at=datetime.min.replace(tzinfo=timezone.utc),
+        )
+        mock_backend = MagicMock(spec=Backend)
+        mock_backend.name = "mock"
+        mock_backend.capabilities = CapabilitySet(set(Capability))
+        mock_backend.get_file_info.return_value = info
+        result = Store(backend=mock_backend).head("f.bin")
+        assert result.size == 7
+        assert result.last_modified is None
+
 
 class TestMetadataGate:
     """WR-010, WR-011: metadata= validation and USER_METADATA capability gate."""

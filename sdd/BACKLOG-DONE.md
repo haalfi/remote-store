@@ -241,6 +241,38 @@ if evidence changes; these are retired.
 
 ## Unreleased
 
+- [x] **BUG-296 — `get_folder_info(max_depth=N)` reports `0001-01-01` where the plain call reports `None` for the same folder**
+  spec: FOLDERINFO-001, BE-017 · effort: S · audience: user.api
+  Both Store twins' depth paths now skip the unknown-time sentinel as they
+  skip `None`, per RFC-0017 D3's rule, which FOLDERINFO-001 now states; BE-017's
+  statement stays with BK-389. The sentinel has one definition,
+  `_models._UNKNOWN_MODIFIED_AT`, which `_sqlalchemy.py` (replacing
+  `_EPOCH_MIN` and an inline copy), `_http.py`, Graph's `items.py`,
+  `_sftp.py`, `_azure_common.py` and `_fileinfo.py` import.
+  PR #1046's review found other unknown-time values, each now the shared one:
+  Graph's Unix epoch (its Optional `WriteResult.last_modified` and own
+  `FolderInfo.modified_at` take `None` instead; GR-013, GR-018, GR-019
+  amended; 8 red first in `tests/backends/graph/aio/`, each `1970-01-01`), and
+  the current time on SFTP, Azure (sync and async, one helper) and the S3
+  family via `_normalize_modified` (AZ spec 012 amended; 3 red first, each
+  "now"). `ext.arrow` maps the sentinel to `mtime=None`, which pyarrow's int64
+  nanoseconds would otherwise wrap to 1754-08-30 (PA-007, PA-008 amended; 2
+  red first). Enumeration: all 19 `FileInfo(` sites in `src/remote_store`
+  (`rg "FileInfo\("`, pyarrow's excluded) take a real time or the sentinel.
+  Round 3: `_models._known_modified_at` is the one sentinel-to-`None` mapping
+  (Store twins' aggregation, both `head()`s, `ext.arrow`, and
+  `S3PyArrowBackend.write()`, the one write path that copied `FileInfo`'s
+  time into `WriteResult.last_modified`; 3 of the 14 `last_modified=` sites,
+  `rg "last_modified="`); MOD-002, WR-001 and WR-008 state it; 3 red first.
+  It also clears CodeQL #88 (unused global), which ignores cross-module use.
+  **Reproduced before
+  the fix**, both halves: `tests/backends/sqlquery/test_folder_info_sentinel.py`
+  and `tests/backends/sqlblob/test_folder_info_sentinel.py`, 8 of 10 red on
+  sync and async `Store` (plain `None`, depth `0001-01-01`), turning the
+  `SQLBlobBackend`-without-`modified_at` half from read into measured. The
+  other 2 guard a known time beside a NULL one and were green before, since
+  `datetime.min` never wins a max against a known time.
+
 - [x] **BK-387 — RFC-0017 is Draft with four open questions gating acceptance, and no item owns answering them**
   spec: BE-021, BE-029, BE-020 · effort: L · audience: library.maintainer, contributor.process
   Partly done. RFC-0017's OQ1, 4, 6 and 7 are answered in the RFC, and the

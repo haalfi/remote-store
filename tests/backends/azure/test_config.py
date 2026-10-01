@@ -2190,6 +2190,24 @@ class TestAzureETagAndDigest:
 
         assert fi.etag == "0x8d4bcc2e4835cd0"
 
+    @pytest.mark.spec("AZ-023")
+    @pytest.mark.spec("MOD-002")
+    def test_missing_last_modified_is_unknown_time_sentinel(self) -> None:
+        """No last_modified maps to the unknown-time sentinel, not now."""
+        from datetime import datetime, timezone
+
+        mock_props = MagicMock(spec=BlobProperties)
+        mock_props.etag = '"abc123"'
+        mock_props.content_settings = None
+        mock_props.last_modified = None
+        mock_props.size = 0
+        mock_props.content_length = 0
+
+        backend = _make_backend(container="c", account_name="fake", account_key=None)
+        fi = backend._props_to_fileinfo(mock_props, "test.txt")
+
+        assert fi.modified_at == datetime.min.replace(tzinfo=timezone.utc)
+
 
 # endregion
 

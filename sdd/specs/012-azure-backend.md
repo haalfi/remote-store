@@ -192,7 +192,7 @@ AzureBackend(
 - `path`: the store-relative key
 - `name`: filename component of the path
 - `size`: from `content_length` (or `size` for HNS path objects)
-- `modified_at`: from `last_modified` (UTC datetime)
+- `modified_at`: from `last_modified` (UTC datetime); absent → the unknown-time sentinel (`datetime.min` in UTC)
 - `etag`: see AZ-034
 - `digest`: see AZ-034
 

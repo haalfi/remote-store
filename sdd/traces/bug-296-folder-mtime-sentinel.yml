@@ -1,0 +1,270 @@
+id: BUG-296
+title: "`get_folder_info(max_depth=N)` reports `0001-01-01` where the plain call reports `None` for the same folder"
+trigger: "Store.get_folder_info's depth path skipped only None when taking the latest modified_at, so the datetime.min sentinel of SQLQueryBackend and a modified_at-less SQLBlobBackend won and the folder reported 0001-01-01, while the plain call answered None"
+source_items:
+  - BUG-296
+  - BK-387
+audience:
+  - user.api
+  - user.api_docs
+expected_ripples:
+  - sdd/backlogid.json
+  - docs-src/_data/graph/graph.json
+  - docs-src/explanation/graph_viz.html
+surprising_ripples:
+  - src/remote_store/backends/_http.py
+  - sdd/rfcs/rfc-0017-contract-kernel-over-thin-drivers.md
+  # Review-caught: Graph's epoch fallback was a second sentinel neither the
+  # item nor RFC-0017 D3's enumeration named (it lists only Graph's folder cell).
+  - src/remote_store/aio/backends/_graph/items.py
+  - src/remote_store/aio/backends/_graph/backend.py
+  - sdd/specs/044-graph-backend.md
+  # Review round 2: SFTP, Azure and the S3 family invented "now" for an unknown
+  # time; moving them to the sentinel widened ext.arrow's pyarrow overflow.
+  - src/remote_store/backends/_sftp.py
+  - src/remote_store/backends/_azure_common.py
+  - src/remote_store/backends/_fileinfo.py
+  - src/remote_store/ext/arrow.py
+  - sdd/specs/012-azure-backend.md
+  - sdd/specs/014-pyarrow-filesystem-adapter.md
+  # Review round 3: the sentinel reached the Optional WriteResult.last_modified
+  # via head() and S3PyArrow's write(); CodeQL #88 needed an in-module use.
+  - src/remote_store/backends/_s3_pyarrow.py
+  - sdd/specs/001-store-api.md
+  - sdd/specs/045-write-result.md
+phases:
+  - id: orient
+    name: Orient
+    steps:
+      - file: sdd/BACKLOG.md
+        section: "BUG-296"
+        read_type: gate
+        extract: "Diagnosis and sites; no dossier; open decision none, skip the sentinel per RFC-0017 D3"
+        outcome: ok
+      - file: sdd/rfcs/rfc-0017-contract-kernel-over-thin-drivers.md
+        section: "D3 (folder modified_at paragraph), Open Question 4, Amendments"
+        read_type: gate
+        extract: "Rule: latest known time, sentinel skipped, None when none known; BE-017's rule amendment is assigned to BK-389"
+        outcome: ok
+      - file: sdd/specs/038-nonrecursive-folder-info.md
+        section: "FOLDERINFO-001"
+        read_type: gate
+        extract: "The depth path traces here: Implementation paragraph says 'latest modified_at' with no sentinel rule"
+        outcome: ok
+      - file: sdd/specs/003-backend-adapter-contract.md
+        section: "BE-017"
+        read_type: reference
+        extract: "Backend contract; silent on folder modified_at, left to BK-389"
+        outcome: ok
+      - file: sdd/000-process.md
+        section: "Rules / Rule 6 (Workflows)"
+        read_type: gate
+        extract: "BACKLOG, CHANGELOG, failing TEST, FIX, commit together; update the spec if an invariant is contradicted"
+        outcome: ok
+      - file: sdd/CLAUDE-REFERENCE.md
+        section: "Pre-work index / Bug fix"
+        read_type: gate
+        extract: "BACKLOG item, CHANGELOG stub, failing test before fix, spec if invariant contradicted"
+        outcome: ok
+      - file: src/remote_store/_models.py
+        section: "FileInfo"
+        read_type: reference
+        extract: "Home for the shared sentinel constant (decision 1); datetime is TYPE_CHECKING-only there"
+        outcome: ok
+      - file: src/remote_store/backends/_http.py
+        section: "_build_file_info"
+        read_type: reference
+        extract: "Third inline copy of the sentinel, not named in the item; folded into the shared constant"
+        outcome: ok
+  - id: tests
+    name: Failing tests
+    steps:
+      - file: sdd/TESTING.md
+        section: "Test Subpackage Placement (rule B), Rules 6-7"
+        read_type: gate
+        extract: "Root tests may not import SQL backends, so the tests live under tests/backends/sqlquery and sqlblob; real in-memory/file SQLite over mocks"
+        outcome: ok
+      - file: tests/backends/sqlblob/test_config.py
+        section: "minimal_engine, TestExistingTable"
+        read_type: reference
+        extract: "How to build a table without modified_at; file-backed SQLite chosen because the async Store runs sync calls on worker threads"
+        outcome: ok
+      - file: tests/test_folder_info_depth.py
+        section: "FOLDERINFO-001"
+        read_type: reference
+        extract: "Existing depth tests only on MemoryBackend, which never carries the sentinel. Seen red: 8 of 10 new tests failed before the fix; the 2 mixed-time guards passed, since datetime.min never wins a max against a known time"
+        outcome: ok
+  - id: fix
+    name: Fix
+    steps:
+      - file: src/remote_store/_store.py
+        section: "Store.get_folder_info depth path"
+        read_type: reference
+        extract: "Skip the sentinel beside None; mirrored in aio/_async_store.py. The PostToolUse ruff hook stripped the new imports added before their use; re-added after"
+        outcome: ok
+  - id: verify
+    name: Verify
+    steps:
+      - file: sdd/CLAUDE-REFERENCE.md
+        section: "Detailed checklist / Bug fix"
+        read_type: verify
+        extract: "BACKLOG moved to DONE, CHANGELOG stub, failing test before fix, spec 038 amended as the invariant was silent"
+        outcome: ok
+  - id: review_graph
+    name: Review round 1, Graph's epoch fallback
+    steps:
+      - file: src/remote_store/aio/backends/_graph/items.py
+        section: "parse_graph_datetime, item_to_fileinfo, item_to_write_result"
+        read_type: reference
+        extract: "Epoch fallback fed FileInfo.modified_at and the Optional WriteResult.last_modified. My own miss: I read RFC-0017 D3's enumeration as the full list of unknown-time sources, but it enumerates folder cells, not per-file fallbacks"
+        outcome: ok
+      - file: src/remote_store/aio/backends/_graph/backend.py
+        section: "get_folder_info"
+        read_type: reference
+        extract: "The folder's own lastModifiedDateTime: unparseable gave the epoch; now None via parse_graph_datetime_or_none"
+        outcome: ok
+      - file: sdd/specs/044-graph-backend.md
+        section: "GR-013, GR-018, GR-019"
+        read_type: gate
+        extract: "Field maps were silent on a missing or unparseable time; amended to the sentinel (FileInfo) and None (WriteResult)"
+        outcome: unclear
+      - file: tests/backends/graph/aio/
+        section: "test_read TestParseGraphDatetime, test_write TestSmallWrite, test_list TestGetFolderInfo"
+        read_type: reference
+        extract: "Existing fallback pin asserted only tz-awareness. Seen red: 8 new/tightened tests failed, each 1970-01-01, including AsyncStore's depth path"
+        outcome: ok
+  - id: review_now_fallback
+    name: Review round 2, invented current time
+    steps:
+      - file: src/remote_store/backends/_sftp.py
+        section: "_stat_to_fileinfo"
+        read_type: reference
+        extract: "None st_mtime became datetime.now(); the backend's own folder aggregation reads raw st_mtime, so the plain call is unaffected"
+        outcome: ok
+      - file: src/remote_store/backends/_azure_common.py
+        section: "props_to_fileinfo"
+        read_type: reference
+        extract: "Shared by sync and async Azure; absent last_modified became now"
+        outcome: ok
+      - file: src/remote_store/backends/_fileinfo.py
+        section: "_normalize_modified"
+        read_type: reference
+        extract: "S3Boto3 and the s3fs/pyarrow S3 lanes; None became now. Seen red: 3 tightened pins across the three helpers, each returning now"
+        outcome: ok
+      - file: src/remote_store/ext/arrow.py
+        section: "get_file_info, get_file_info_selector"
+        read_type: reference
+        extract: "pyarrow stores mtime as int64 ns and wraps datetime.min to 1754-08-30 (measured with pafs.FileInfo); pre-existing for SQL/HTTP, widened by this fix. Mapped to mtime=None; 2 red first"
+        outcome: ok
+      - file: sdd/specs/014-pyarrow-filesystem-adapter.md
+        section: "PA-007, PA-008"
+        read_type: gate
+        extract: "Mapping said 'mtime from get_file_info' with no out-of-range case; amended"
+        outcome: unclear
+  - id: review_optional_fields
+    name: Review round 3, sentinel in Optional fields and CodeQL #88
+    steps:
+      - file: sdd/specs/045-write-result.md
+        section: "WR-001, WR-008"
+        read_type: gate
+        extract: "last_modified is None when the response omits it; WR-008's field-rename row let head() copy the sentinel. Amended to map it to None"
+        outcome: unclear
+      - file: sdd/specs/001-store-api.md
+        section: "MOD-002"
+        read_type: gate
+        extract: "Required modified_at had no unknown-time rule, though the public FileInfo docstring now promised one; stated here as the clause the field-map pins trace to"
+        outcome: unclear
+      - file: src/remote_store/backends/_s3_pyarrow.py
+        section: "write"
+        read_type: reference
+        extract: "The one write path deriving last_modified from a FileInfo (3 of 14 last_modified= sites, rg). MinIO is unreachable locally, so its pin seeds both lazy clients with spec'd mocks; seen red with 0001-01-01. My own miss: I guarded call_s3 against the sync_wrapper-to-AsyncMock drift test_ping.py documents but not exists, so CI went red on 3.13+/3.14 (local was 3.11); reproduced and fixed in a ./tmp 3.13 venv"
+        outcome: ok
+      - file: .github/codeql/codeql-config.yml
+        section: "(full)"
+        read_type: reference
+        extract: "security-and-quality suite; py/unused-global-variable counts only in-module uses, so _config._SENSITIVE_KEYS passes and _UNKNOWN_MODIFIED_AT did not. The _known_modified_at helper gives it one"
+        outcome: ok
+review:
+  # Derived by `hatch run ship-report 1046 --trace-block-only` at head 2cc0700.
+  # Do not hand-edit, except a newly required field per sdd/traces/_schema.yml
+  # section review: RFC-0015 D4 makes this script the only producer.
+  derivation: "hatch run ship-report 1046 --trace-block-only"
+  pr: 1046
+  review_rounds: 4
+  submissions: 4
+  findings: 6
+  by_round:
+    - round: 1
+      findings: 1
+      origin: {original: 1}
+      triage: {unknown: 1}
+      duration_hours: 0.02
+    - round: 2
+      findings: 1
+      origin: {original: 1}
+      triage: {must-fix: 1}
+      duration_hours: 0.01
+    - round: 3
+      findings: 2
+      origin: {loop-introduced: 1, original: 1}
+      triage: {must-fix: 2}
+      duration_hours: 0.39
+    - round: 4
+      findings: 2
+      origin: {loop-introduced: 1, pre-existing: 1}
+      triage: {must-fix: 2}
+      duration_hours: 1.07
+  by_file:
+    - path: "src/remote_store/_models.py"
+      findings: 3
+    - path: "sdd/traces/bug-296-folder-mtime-sentinel.yml"
+      findings: 1
+    - path: "src/remote_store/backends/_fileinfo.py"
+      findings: 1
+    - path: "tests/backends/azure/test_config.py"
+      findings: 1
+  untouched_files:
+    - "CHANGELOG.md"
+    - "docs-src/_data/graph/graph.json"
+    - "docs-src/explanation/graph_viz.html"
+    - "sdd/BACKLOG-DONE.md"
+    - "sdd/BACKLOG.md"
+    - "sdd/backlogid.json"
+    - "sdd/rfcs/rfc-0017-contract-kernel-over-thin-drivers.md"
+    - "sdd/specs/001-store-api.md"
+    - "sdd/specs/012-azure-backend.md"
+    - "sdd/specs/014-pyarrow-filesystem-adapter.md"
+    - "sdd/specs/038-nonrecursive-folder-info.md"
+    - "sdd/specs/044-graph-backend.md"
+    - "sdd/specs/045-write-result.md"
+    - "src/remote_store/_store.py"
+    - "src/remote_store/aio/_async_store.py"
+    - "src/remote_store/aio/backends/_graph/backend.py"
+    - "src/remote_store/aio/backends/_graph/items.py"
+    - "src/remote_store/backends/_azure_common.py"
+    - "src/remote_store/backends/_http.py"
+    - "src/remote_store/backends/_s3_pyarrow.py"
+    - "src/remote_store/backends/_sftp.py"
+    - "src/remote_store/backends/_sqlalchemy.py"
+    - "src/remote_store/ext/arrow.py"
+    - "tests/aio/test_async_store.py"
+    - "tests/backends/graph/aio/test_list.py"
+    - "tests/backends/graph/aio/test_read.py"
+    - "tests/backends/graph/aio/test_write.py"
+    - "tests/backends/s3/test_pyarrow.py"
+    - "tests/backends/sftp/test_config.py"
+    - "tests/backends/sqlblob/test_folder_info_sentinel.py"
+    - "tests/backends/sqlquery/test_folder_info_sentinel.py"
+    - "tests/ext/test_arrow.py"
+    - "tests/test_info.py"
+    - "tests/test_store.py"
+  review_driven_commits:
+    - sha: "ce11cee"
+      subject: "BUG-296: Address PR #1046 review round 1: Graph's epoch was a second sentinel"
+    - sha: "8f8bcfb"
+      subject: "BUG-296: Address PR #1046 review round 2: invented 'now' and ext.arrow overflow"
+    - sha: "9c42e3e"
+      subject: "BUG-296: Address PR #1046 review round 3 and CodeQL #88"
+    - sha: "2cc0700"
+      subject: "BUG-296: Keep the S3PyArrow write-result test sync on Python 3.13+"
+  ci: {verdict: GREEN, failed: 0, pending: 0}
