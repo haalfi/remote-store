@@ -365,7 +365,8 @@ the test itself has a bug and must be fixed.
 
 | File | Purpose |
 |------|---------|
-| `sdd/formal/MemoryBackend.dfy` | Source specification (verified) |
+| `sdd/formal/MemoryBackend.dfy` | Source specification (verified); the translation entry point |
+| `sdd/formal/BackendContract.dfy`, `sdd/formal/RootPath.dfy` | Included by `MemoryBackend.dfy`, so their non-ghost members compile into `module_.py` too: the trait and its compiled predicates, and `RootPath.dfy`'s §4 `RootAnswersPerTable` and §5 `RootFold` / `WriteKey` / `MoveKey` / `CopyKey` |
 | `sdd/formal/MemoryBackend-py/module_.py` | Compiled Python output |
 | `sdd/formal/MemoryBackend-py/_dafny/` | Dafny Python runtime |
 | `tests/backends/dafny/_helpers.py` | Adapter: compiled oracle → `Backend` ABC |
@@ -374,7 +375,9 @@ the test itself has a bug and must be fixed.
 invariants, ghost variables, postconditions) erase at compile time and
 produce no Python output — regeneration is not needed. Non-ghost changes
 (method bodies, datatype definitions, function implementations) do require
-regeneration. Run the Docker wrapper:
+regeneration, in any of the three source files above, not only
+`MemoryBackend.dfy`; no gate compares `module_.py` with its sources. Run the
+Docker wrapper:
 
 ```bash
 bash scripts/dafny_verify.sh MemoryBackend.dfy     # confirm spec

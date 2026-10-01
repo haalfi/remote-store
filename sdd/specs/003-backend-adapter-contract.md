@@ -267,11 +267,18 @@ root and `is_root` does not recognise; measured against a `LocalBackend` whose
 root had been deleted, a guard written as `if is_root(path)` let `write("./")`
 leave the root a regular file and `open_atomic("./")` return cleanly having done
 it — the whole defect, one character from the spelling it caught. **So a backend
-implementing this clause as `if is_root(path)` is not conformant**, and the
-conformance cells below fail it: the write and `move`/`copy` destination cells
-run all six spellings listed next, and require only that the raised path name
-the root under some spelling, since a backend may echo the raw key or fold it
-first (the verified oracle folds every spelling onto `"."`).
+implementing this clause as `if is_root(path)` is not conformant**. The write
+and `move`/`copy` destination cells below run all six spellings listed next,
+and require only that the raised path name the root under some spelling, since
+a backend may echo the raw key or fold it first (the verified oracle folds every
+spelling onto `"."`). How much of an `is_root` guard they catch depends on the
+namespace. With the shared guard narrowed to `is_root` in a test session, both
+S3 lanes fail the destination cells and the s3fs lane fails writer cells too.
+The hierarchical lanes fail only the root destination against a missing source: with the
+container present, their own directory check still refuses `"./"` naming the
+raw key. The absent-container write, where the narrow guard costs the
+container, is reached by no conformance fixture (BK-345), so it stays pinned
+per backend.
 
 Decide it instead on the key's addressable segments: drop empty and `"."`
 segments, and refuse when nothing is left. That covers `""`, `"."`, `"./"`,

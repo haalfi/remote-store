@@ -282,9 +282,14 @@ returns the stream as-is.
   against it lets `"./"` through, and `"./"` addresses the same node. That is not
   a hypothetical: it is how a shipped backend came to leave its own container as
   a regular file. The conformance suite's write and destination cells run
-  `""`, `"."`, `"./"`, `".//"`, `"./."` and `"/"`, so a guard written against
-  `is_root` fails them. The error must name the root, in the spelling you were
-  handed or a canonical one.
+  `""`, `"."`, `"./"`, `".//"`, `"./."` and `"/"`, and the error must name the
+  root in the spelling you were handed or a canonical one. **They catch a guard
+  written against `is_root` only in part.** On a flat namespace they fail it. On
+  a hierarchical store whose root directory exists, your own is-a-directory
+  check refuses `"./"` anyway, so only the root destination with a missing
+  source fails. The damaging case, a write while the root directory is absent,
+  is one no conformance fixture sets up, so on a hierarchical backend it is
+  still a rule you have to hold yourself to.
   The write end is the three writers plus the `move`/`copy` **destination**.
 - **The `move`/`copy` source is held to the narrower predicate, and that is
   deliberate.** The contract requires only `""` and `"."` there. The tutorial

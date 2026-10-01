@@ -141,7 +141,20 @@ phases:
       - file: docs-src/guides/custom-backend-guide.md
         section: "move/copy root bullets"
         read_type: verify
-        extract: "Said conformance cannot catch an is_root guard; now false, rewritten."
+        extract: >-
+          Said conformance cannot catch an is_root guard. First rewritten to say
+          the cells fail one, which review showed overclaims; the per-lane
+          breakdown below narrowed it.
+        outcome: ok
+      - file: src/remote_store/backends/_flat_ns.py
+        section: "_reject_root_as_write_target (mutated again, per-lane reading)"
+        read_type: verify
+        extract: >-
+          Of the 62 red cells, local, sftp_inproc and local_async_adapted fail
+          only test_root_destination_outranks_a_missing_source; writer cells go
+          red only on s3_moto, seeded destination cells on s3_moto and
+          s3_boto3_moto. A present root directory refuses "./" by its own
+          is_dir check, naming the raw key.
         outcome: ok
 discovery_followups: []
 surprising_ripples:

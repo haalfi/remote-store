@@ -7,7 +7,7 @@ This project follows [Semantic Versioning](https://semver.org/). Pre-1.0, minor 
 
 ## [Unreleased]
 
-- ID-251: The backend conformance suite now checks that a write or `move`/`copy` destination naming the store root is refused under every spelling (`"./"`, `"/"` and the rest), so a custom backend that recognises only `""` and `"."` fails it; the custom-backend guide says so.
+- ID-251: The backend conformance suite now checks that a write or `move`/`copy` destination naming the store root is refused under every spelling (`"./"`, `"/"` and the rest), not only `""` and `"."`; the custom-backend guide states which narrow guards that catches.
 
 - BUG-296: An unknown file modification time is now `datetime.min` in UTC on every backend (SFTP, Azure and S3 used the current time, Graph the epoch), so `get_folder_info(max_depth=N)` answers `None` like the plain call; `head()`, `WriteResult` and `ext.arrow` report it as `None`.
 

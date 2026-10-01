@@ -18,9 +18,10 @@
 //      for the spellings the trait's well-formed domain excludes.  The
 //      move/copy source stays on the canonical Root, as BE-029 decides it.
 //
-// ID-251: MemoryBackend.dfy includes this module, so §5 compiles into the
-// Python oracle and is the adapter's entry for writes and move/copy
-// destinations.  Its methods are compiled code, not proof scaffolding.
+// ID-251: MemoryBackend.dfy includes this module, so its non-ghost members
+// (§4's RootAnswersPerTable, §5's RootFold, WriteKey, MoveKey, CopyKey)
+// compile into the Python oracle.  §5 is the adapter's entry for writes and
+// move/copy destinations: a body change here needs module_.py regenerated.
 
 include "BackendContract.dfy"
 
