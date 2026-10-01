@@ -184,3 +184,87 @@ phases:
         read_type: reference
         extract: "security-and-quality suite; py/unused-global-variable counts only in-module uses, so _config._SENSITIVE_KEYS passes and _UNKNOWN_MODIFIED_AT did not. The _known_modified_at helper gives it one"
         outcome: ok
+review:
+  # Derived by `hatch run ship-report 1046 --trace-block-only` at head 2cc0700.
+  # Do not hand-edit, except a newly required field per sdd/traces/_schema.yml
+  # section review: RFC-0015 D4 makes this script the only producer.
+  derivation: "hatch run ship-report 1046 --trace-block-only"
+  pr: 1046
+  review_rounds: 4
+  submissions: 4
+  findings: 6
+  by_round:
+    - round: 1
+      findings: 1
+      origin: {original: 1}
+      triage: {unknown: 1}
+      duration_hours: 0.02
+    - round: 2
+      findings: 1
+      origin: {original: 1}
+      triage: {must-fix: 1}
+      duration_hours: 0.01
+    - round: 3
+      findings: 2
+      origin: {loop-introduced: 1, original: 1}
+      triage: {must-fix: 2}
+      duration_hours: 0.39
+    - round: 4
+      findings: 2
+      origin: {loop-introduced: 1, pre-existing: 1}
+      triage: {must-fix: 2}
+      duration_hours: 1.07
+  by_file:
+    - path: "src/remote_store/_models.py"
+      findings: 3
+    - path: "sdd/traces/bug-296-folder-mtime-sentinel.yml"
+      findings: 1
+    - path: "src/remote_store/backends/_fileinfo.py"
+      findings: 1
+    - path: "tests/backends/azure/test_config.py"
+      findings: 1
+  untouched_files:
+    - "CHANGELOG.md"
+    - "docs-src/_data/graph/graph.json"
+    - "docs-src/explanation/graph_viz.html"
+    - "sdd/BACKLOG-DONE.md"
+    - "sdd/BACKLOG.md"
+    - "sdd/backlogid.json"
+    - "sdd/rfcs/rfc-0017-contract-kernel-over-thin-drivers.md"
+    - "sdd/specs/001-store-api.md"
+    - "sdd/specs/012-azure-backend.md"
+    - "sdd/specs/014-pyarrow-filesystem-adapter.md"
+    - "sdd/specs/038-nonrecursive-folder-info.md"
+    - "sdd/specs/044-graph-backend.md"
+    - "sdd/specs/045-write-result.md"
+    - "src/remote_store/_store.py"
+    - "src/remote_store/aio/_async_store.py"
+    - "src/remote_store/aio/backends/_graph/backend.py"
+    - "src/remote_store/aio/backends/_graph/items.py"
+    - "src/remote_store/backends/_azure_common.py"
+    - "src/remote_store/backends/_http.py"
+    - "src/remote_store/backends/_s3_pyarrow.py"
+    - "src/remote_store/backends/_sftp.py"
+    - "src/remote_store/backends/_sqlalchemy.py"
+    - "src/remote_store/ext/arrow.py"
+    - "tests/aio/test_async_store.py"
+    - "tests/backends/graph/aio/test_list.py"
+    - "tests/backends/graph/aio/test_read.py"
+    - "tests/backends/graph/aio/test_write.py"
+    - "tests/backends/s3/test_pyarrow.py"
+    - "tests/backends/sftp/test_config.py"
+    - "tests/backends/sqlblob/test_folder_info_sentinel.py"
+    - "tests/backends/sqlquery/test_folder_info_sentinel.py"
+    - "tests/ext/test_arrow.py"
+    - "tests/test_info.py"
+    - "tests/test_store.py"
+  review_driven_commits:
+    - sha: "ce11cee"
+      subject: "BUG-296: Address PR #1046 review round 1: Graph's epoch was a second sentinel"
+    - sha: "8f8bcfb"
+      subject: "BUG-296: Address PR #1046 review round 2: invented 'now' and ext.arrow overflow"
+    - sha: "9c42e3e"
+      subject: "BUG-296: Address PR #1046 review round 3 and CodeQL #88"
+    - sha: "2cc0700"
+      subject: "BUG-296: Keep the S3PyArrow write-result test sync on Python 3.13+"
+  ci: {verdict: GREEN, failed: 0, pending: 0}
