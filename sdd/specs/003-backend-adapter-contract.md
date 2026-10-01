@@ -156,9 +156,12 @@ observation belongs in the health probe, which is off BE-021's roster and free
 to make it: `LocalBackend.check_health` tests `is_dir()`, not mere existence,
 for exactly this reason.
 
-**Conformance pins the outcome, not the order** — and does not need to pin
-both: a backend that gets the order wrong is observable as exactly the wrong
-error class or a spurious success, which is what the cells below assert.
+**Conformance pins the outcome, not the order** — and for the file-shaped and
+probe rows does not need to pin both: a backend that gets the order wrong there
+is observable as exactly the wrong error class or a spurious success, which is
+what the cells below assert. The write clause below is the exception: a wrong
+order can still produce the right class while the container is present, and
+that clause states what the cells do not reach.
 
 **BE-020 outranks this check.** On a backend with `close_is_terminal = True`,
 every operation in the table above except the addressing row raises
@@ -271,14 +274,14 @@ implementing this clause as `if is_root(path)` is not conformant**. The write
 and `move`/`copy` destination cells below run all six spellings listed next,
 and require only that the raised path name the root under some spelling, since
 a backend may echo the raw key or fold it first (the verified oracle folds every
-spelling onto `"."`). How much of an `is_root` guard they catch depends on the
-namespace. With the shared guard narrowed to `is_root` in a test session, both
-S3 lanes fail the destination cells and the s3fs lane fails writer cells too.
-The hierarchical lanes fail only the root destination against a missing source: with the
-container present, their own directory check still refuses `"./"` naming the
-raw key. The absent-container write, where the narrow guard costs the
-container, is reached by no conformance fixture (BK-345), so it stays pinned
-per backend.
+spelling onto `"."`). **They catch an `is_root` guard only where nothing
+behind the guard refuses the key.** Whether something does depends on the
+backend: a hierarchical store with its container present refuses `"./"` by its
+own directory check, so there only the root destination against a missing
+source sees the narrow guard, and a flat store's own key handling may or may
+not refuse it. The case the order exists for, the absent-container write, is
+reached by no conformance fixture (BK-345), so it is pinned per backend. The
+per-lane measurement is recorded in the ID-251 trace.
 
 Decide it instead on the key's addressable segments: drop empty and `"."`
 segments, and refuse when nothing is left. That covers `""`, `"."`, `"./"`,
