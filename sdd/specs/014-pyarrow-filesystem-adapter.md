@@ -240,7 +240,7 @@ objects, one per input path.
 
 | Condition | `pyarrow.fs.FileInfo` result |
 |---|---|
-| `store.is_file(path)` | `FileType.File`, size and mtime from `store.get_file_info(path)` |
+| `store.is_file(path)` | `FileType.File`, size and mtime from `store.get_file_info(path)`; the unknown-time sentinel (`datetime.min` in UTC) maps to `mtime=None`, since pyarrow's int64 nanoseconds would wrap it to 1754 |
 | `store.is_folder(path)` | `FileType.Directory`, size omitted |
 | Neither exists | `FileType.NotFound` |
 
@@ -270,7 +270,8 @@ selector.allow_not_found → if True, return [] for missing dir; else raise
 
 **Behavior:**
 1. List files via `store.list_files(base_dir, recursive=selector.recursive)`.
-   Each `FileInfo` maps to a `pyarrow.fs.FileInfo` with `FileType.File`.
+   Each `FileInfo` maps to a `pyarrow.fs.FileInfo` with `FileType.File`,
+   its mtime mapped as in PA-007.
    File paths are store-relative (as returned by `list_files`).
 2. If `selector.recursive` is `False`, list immediate subfolders via
    `store.list_folders(base_dir)`. `list_folders` returns bare folder **names**

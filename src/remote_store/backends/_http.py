@@ -10,7 +10,7 @@ import urllib.error
 import urllib.parse
 import urllib.request
 from collections.abc import Callable
-from datetime import datetime, timezone
+from datetime import timezone
 from email.utils import parsedate_to_datetime
 from typing import TYPE_CHECKING, BinaryIO, ClassVar, Protocol, TypeVar, cast, runtime_checkable
 
@@ -23,7 +23,7 @@ from remote_store._errors import (
     PermissionDenied,
     RemoteStoreError,
 )
-from remote_store._models import FileInfo, WriteResult
+from remote_store._models import _UNKNOWN_MODIFIED_AT, FileInfo, WriteResult
 from remote_store._path import RemotePath, is_root
 from remote_store._retry import RETRYABLE_STATUSES, apply_retry_after, budget_exhausted, equal_jitter_delay
 from remote_store._retry import parse_retry_after as _parse_retry_after
@@ -614,7 +614,7 @@ class ReadOnlyHttpBackend(Backend):
             size_str = headers.get("content-length", "")
             size = int(size_str) if size_str.isdigit() else 0
 
-        modified_at = datetime.min.replace(tzinfo=timezone.utc)
+        modified_at = _UNKNOWN_MODIFIED_AT
         last_modified = headers.get("last-modified")
         if last_modified:
             with contextlib.suppress(Exception):

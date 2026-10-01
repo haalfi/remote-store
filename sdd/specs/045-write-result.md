@@ -44,7 +44,8 @@ is expressed against it.
 - `version_id` (`str | None`) — backend-provided immutable version
   identifier; `None` when the backend does not version objects.
 - `last_modified` (`datetime | None`) — server timestamp from the
-  write response; `None` when the backend's write response omits it.
+  write response; `None` when the backend's write response omits it,
+  never the `FileInfo` unknown-time sentinel (MOD-002).
 - `metadata` (`Mapping[str, str] | None`) — echo of the user
   metadata that was stored (WR-012).
 
@@ -229,7 +230,7 @@ constructed from the `FileInfo` returned by `Store.get_file_info(path)`.
 | `size`              | `info.size`                                       |
 | `digest`            | `info.digest`                                     |
 | `etag`              | `info.etag`                                       |
-| `last_modified`     | `info.modified_at` (field rename)                 |
+| `last_modified`     | `info.modified_at` (field rename); the unknown-time sentinel maps to `None` (MOD-002) |
 | `metadata`          | `info.metadata`                                   |
 | `version_id`        | `None` (no corresponding `FileInfo` field in v1)  |
 | `source`            | `"sidecar"` (always, for `head()`-produced results) |

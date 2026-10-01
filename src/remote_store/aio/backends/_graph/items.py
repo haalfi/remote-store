@@ -12,7 +12,7 @@ from __future__ import annotations
 from datetime import datetime, timezone
 from typing import TYPE_CHECKING, Any
 
-from remote_store._models import FileInfo, WriteResult
+from remote_store._models import _UNKNOWN_MODIFIED_AT, FileInfo, WriteResult
 from remote_store._path import RemotePath
 from remote_store.backends._fileinfo import _clean_etag, _name_from_path
 
@@ -40,24 +40,34 @@ def download_url(item: Mapping[str, Any]) -> str | None:
     return url if isinstance(url, str) else None
 
 
-def parse_graph_datetime(value: object) -> datetime:
+def parse_graph_datetime_or_none(value: object) -> datetime | None:
     """Parse a Graph RFC 3339 timestamp into a timezone-aware ``datetime``.
 
     ``datetime.fromisoformat`` accepts the trailing ``Z`` only on Python 3.11+;
     the ``>=3.10`` floor needs it normalised to ``+00:00`` first. A missing or
-    unparseable value falls back to the UTC epoch so ``modified_at`` stays a
-    real ``datetime`` (Graph reliably returns the field, so this is defensive).
+    unparseable value returns ``None`` (Graph reliably returns the field, so
+    this is defensive).
     """
     if not isinstance(value, str) or not value:
-        return datetime.fromtimestamp(0, tz=timezone.utc)
+        return None
     normalized = f"{value[:-1]}+00:00" if value.endswith("Z") else value
     try:
         parsed = datetime.fromisoformat(normalized)
     except ValueError:
-        return datetime.fromtimestamp(0, tz=timezone.utc)
+        return None
     if parsed.tzinfo is None:
         parsed = parsed.replace(tzinfo=timezone.utc)
     return parsed
+
+
+def parse_graph_datetime(value: object) -> datetime:
+    """Like ``parse_graph_datetime_or_none``, for ``FileInfo.modified_at``.
+
+    An unknown time becomes the library-wide unknown-time sentinel, which
+    folder aggregation skips.
+    """
+    parsed = parse_graph_datetime_or_none(value)
+    return _UNKNOWN_MODIFIED_AT if parsed is None else parsed
 
 
 def item_to_fileinfo(item: Mapping[str, Any], key: str) -> FileInfo:
@@ -109,7 +119,7 @@ def item_to_write_result(
         source="native",
         etag=_clean_etag(item.get("eTag")),
         version_id=_version_id(item),
-        last_modified=parse_graph_datetime(item.get("lastModifiedDateTime")),
+        last_modified=parse_graph_datetime_or_none(item.get("lastModifiedDateTime")),
         metadata=metadata,
     )
 

@@ -316,14 +316,6 @@ no clause of the contract ships unexercised.
   adopt ID-121's derived keys, or refuse an unkeyed shared cache.
   Detail: [dossier](backlog/bug-251-shared-cache-cross-store-bytes.md)
 
-- [ ] **BUG-296 — `get_folder_info(max_depth=N)` reports `0001-01-01` where the plain call reports `None` for the same folder**
-  spec: FOLDERINFO-001, BE-017 · effort: S · audience: user.api
-  `Store.get_folder_info`'s depth path (`_store.py`, and `aio/_async_store.py`)
-  skips only `None`, so the `datetime.min` sentinel wins: measured on
-  `SQLQueryBackend` (`None` plain, `0001-01-01` at `max_depth=5`); read, not
-  run, on `SQLBlobBackend` without `modified_at` (`_sqlalchemy.py` 1114,
-  1390). Open decision: none; skip the sentinel as RFC-0017 D3's rule does.
-
 - [ ] **BUG-240 — ASYNC-014 and DEPTH-003 state opposite rules, and `GraphBackend` implements the async one**
   spec: ASYNC-014, DEPTH-003 · effort: M · audience: user.api
   ASYNC-014 says a set `max_depth` overrides `recursive`, citing DEPTH-003,

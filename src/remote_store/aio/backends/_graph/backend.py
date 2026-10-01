@@ -45,7 +45,7 @@ from remote_store.aio.backends._graph.items import (
     is_folder_item,
     item_to_fileinfo,
     item_to_write_result,
-    parse_graph_datetime,
+    parse_graph_datetime_or_none,
 )
 from remote_store.aio.backends._graph.monitor import poll_monitor
 from remote_store.aio.backends._graph.transfer import (
@@ -965,8 +965,7 @@ class GraphBackend(AsyncBackend):
         async for info in self._walk_files(path, 0, None):
             file_count += 1
             total_size += info.size
-        lmd = item.get("lastModifiedDateTime")
-        modified_at = parse_graph_datetime(lmd) if isinstance(lmd, str) and lmd else None
+        modified_at = parse_graph_datetime_or_none(item.get("lastModifiedDateTime"))
         return FolderInfo(
             path=RemotePath.from_backend_path(path),
             file_count=file_count,

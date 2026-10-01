@@ -10,7 +10,7 @@ from typing import TYPE_CHECKING, BinaryIO, TypeVar
 
 from remote_store._capabilities import Capability
 from remote_store._errors import InvalidPath, NotFound
-from remote_store._models import FolderEntry, FolderInfo, WriteResult
+from remote_store._models import FolderEntry, FolderInfo, WriteResult, _known_modified_at
 from remote_store._path import RemotePath
 
 _GATING: dict[str, Capability] = {
@@ -780,8 +780,10 @@ class Store:
         for fi in self.list_files(path, max_depth=max_depth):
             file_count += 1
             total_size += fi.size
-            if fi.modified_at is not None and (latest_modified is None or fi.modified_at > latest_modified):
-                latest_modified = fi.modified_at
+            # Latest known time: the unknown-time sentinel is skipped, like None.
+            mtime = _known_modified_at(fi.modified_at)
+            if mtime is not None and (latest_modified is None or mtime > latest_modified):
+                latest_modified = mtime
 
         rpath = RemotePath.from_backend_path(path) if path and path != "." else RemotePath.ROOT
         return FolderInfo(
@@ -821,7 +823,7 @@ class Store:
             source="sidecar",
             digest=rebased.digest,
             etag=rebased.etag,
-            last_modified=rebased.modified_at,
+            last_modified=_known_modified_at(rebased.modified_at),
             metadata=rebased.metadata,
         )
 
