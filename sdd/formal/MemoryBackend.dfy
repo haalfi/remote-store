@@ -616,26 +616,35 @@ class MemoryBackend extends Backend {
     ensures containerPresent == old(containerPresent)
     ensures !old(Live()) ==> r == Err(BackendUnavailable(name))
     ensures !old(Live()) ==> fs == old(fs)
+    // MEM-014: the refinement refuses the root, where the trait leaves
+    // it free; the Python MemoryBackend answers the same.
+    ensures old(Live()) && path == Root ==> r == Err(InvalidPath(path, name)) && fs == old(fs)
     ensures old(Live()) && IsFile(old(fs), path)
       ==> r == Err(InvalidPath(path, name))
     ensures old(Live()) && !PathExists(old(fs), path) && !missing_ok
       ==> r == Err(NotFound(path, name))
     ensures old(Live()) && !PathExists(old(fs), path) && missing_ok
       ==> r.Ok?
-    ensures old(Live()) && !old(containerPresent) ==>
+    ensures old(Live()) && path != Root && !old(containerPresent) ==>
       r == (if missing_ok then Ok(()) else Err(NotFound(path, name)))
-    ensures old(Live()) && IsDir(old(fs), path) && !recursive && HasChildren(old(fs), path)
+    ensures old(Live()) && path != Root &&
+            IsDir(old(fs), path) && !recursive && HasChildren(old(fs), path)
       ==> r == Err(DirectoryNotEmpty(path, name))
-    ensures old(Live()) && old(containerPresent) &&
+    ensures old(Live()) && path != Root && old(containerPresent) &&
             IsDir(old(fs), path) && (recursive || !HasChildren(old(fs), path))
       ==> r.Ok?
-    ensures old(containerPresent) && IsDir(old(fs), path) && r.Ok?
+    ensures path != Root && old(containerPresent) && IsDir(old(fs), path) && r.Ok?
       ==> !IsDir(fs, path)
-    ensures old(containerPresent) && IsDir(old(fs), path) && recursive && r.Ok? ==>
+    ensures path != Root && old(containerPresent) && IsDir(old(fs), path) && recursive && r.Ok? ==>
       forall p: Path | IsChildOf(p, path) :: !PathExists(fs, p)
   {
     if !Live() {
       r := Err(BackendUnavailable(name));
+      return;
+    }
+    // MEM-014: the root is refused, present container or absent.
+    if path == Root {
+      r := Err(InvalidPath(path, name));
       return;
     }
     // BE-021 § Reach: an absent container holds no folder to delete.
@@ -1728,26 +1737,35 @@ class MemoryBackendMinimal extends Backend {
     ensures containerPresent == old(containerPresent)
     ensures !old(Live()) ==> r == Err(BackendUnavailable(name))
     ensures !old(Live()) ==> fs == old(fs)
+    // MEM-014: the refinement refuses the root, where the trait leaves
+    // it free; the Python MemoryBackend answers the same.
+    ensures old(Live()) && path == Root ==> r == Err(InvalidPath(path, name)) && fs == old(fs)
     ensures old(Live()) && IsFile(old(fs), path)
       ==> r == Err(InvalidPath(path, name))
     ensures old(Live()) && !PathExists(old(fs), path) && !missing_ok
       ==> r == Err(NotFound(path, name))
     ensures old(Live()) && !PathExists(old(fs), path) && missing_ok
       ==> r.Ok?
-    ensures old(Live()) && !old(containerPresent) ==>
+    ensures old(Live()) && path != Root && !old(containerPresent) ==>
       r == (if missing_ok then Ok(()) else Err(NotFound(path, name)))
-    ensures old(Live()) && IsDir(old(fs), path) && !recursive && HasChildren(old(fs), path)
+    ensures old(Live()) && path != Root &&
+            IsDir(old(fs), path) && !recursive && HasChildren(old(fs), path)
       ==> r == Err(DirectoryNotEmpty(path, name))
-    ensures old(Live()) && old(containerPresent) &&
+    ensures old(Live()) && path != Root && old(containerPresent) &&
             IsDir(old(fs), path) && (recursive || !HasChildren(old(fs), path))
       ==> r.Ok?
-    ensures old(containerPresent) && IsDir(old(fs), path) && r.Ok?
+    ensures path != Root && old(containerPresent) && IsDir(old(fs), path) && r.Ok?
       ==> !IsDir(fs, path)
-    ensures old(containerPresent) && IsDir(old(fs), path) && recursive && r.Ok? ==>
+    ensures path != Root && old(containerPresent) && IsDir(old(fs), path) && recursive && r.Ok? ==>
       forall p: Path | IsChildOf(p, path) :: !PathExists(fs, p)
   {
     if !Live() {
       r := Err(BackendUnavailable(name));
+      return;
+    }
+    // MEM-014: the root is refused, present container or absent.
+    if path == Root {
+      r := Err(InvalidPath(path, name));
       return;
     }
     // BE-021 § Reach: an absent container holds no folder to delete.

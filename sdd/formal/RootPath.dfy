@@ -2,8 +2,8 @@
 //
 // BK-388: `AddressesRoot` lives upstream in BackendContract.dfy §5c, because
 // the trait's write-shaped postconditions name it.  This module proves what
-// the predicate accepts and rejects without adding to the trait, in the
-// shape of DepthCounting.dfy:
+// the predicate accepts and rejects, and what the trait then guarantees at
+// the root, without adding to the trait, in the shape of DepthCounting.dfy:
 //   1. Every slash-and-dot spelling of the root addresses it: the six BE-029
 //      names, and (RootSpellingCharacterisation) exactly the keys whose
 //      every '/'-segment is "" or ".", stated character by character.
@@ -11,6 +11,11 @@
 //   3. On the trait's domain (WellFormedPath) it holds for Root alone, so
 //      the trait's root clauses fire on exactly the one well-formed root.
 //   4. A backslash key does not address the root (BE-029's stated bound).
+//   5. On a live backend the root answers per BE-029's table, derived from
+//      the trait alone, so for every refinement.
+//   6-7. A raw-key entry for write, move and copy folds every root
+//      spelling onto Root and refuses it: BE-029's write clause for the
+//      spellings the trait's well-formed domain excludes.
 
 include "BackendContract.dfy"
 
@@ -137,4 +142,131 @@ lemma BackslashIsNotRoot()
 {
   assert "\\"[0] == '\\';
   assert "\\"[0] != '/' && "\\"[0] != '.';
+}
+
+// ---------------------------------------------------------------------------
+// §4  BE-029's table, derived from the trait
+// ---------------------------------------------------------------------------
+
+// Property 5: on any live backend, present container or absent, the root
+// answers as BE-029's table says.  A verified client of the trait, so every
+// answer is derived from the trait's postconditions and Valid(), for every
+// refinement.  It holds only because Valid() keeps Root a DirEntry.
+method RootAnswersPerTable(b: Backend)
+  returns (e: Result<bool>, d: Result<bool>, f: Result<bool>,
+           rd: Result<ReadStream>, fi: Result<FileInfo>, gi: Result<FolderInfo>)
+  requires b.Valid() && b.Live()
+  // @spec BE-029
+  ensures e == Ok(true)
+  ensures d == Ok(true)
+  ensures f == Ok(false)
+  ensures rd == Err(InvalidPath(Root, b.name))
+  ensures fi == Err(InvalidPath(Root, b.name))
+  ensures gi.Ok?
+{
+  e := b.Exists(Root);
+  d := b.IsFolderMethod(Root);
+  f := b.IsFileMethod(Root);
+  rd := b.Read(Root);
+  fi := b.GetFileInfo(Root);
+  gi := b.GetFolderInfo(Root);
+}
+
+// ---------------------------------------------------------------------------
+// §5  Raw-key entry: every spelling, not just the sentinel
+// ---------------------------------------------------------------------------
+// The trait takes well-formed Paths, and on that domain AddressesRoot is
+// `path == Root` (property 3), so the trait alone says nothing about "./"
+// or "/".  BE-029's write clause binds "every spelling that addresses it".
+// The entry methods below take the raw key a caller hands a backend, fold
+// every root spelling onto Root, and call the trait; their postconditions
+// state the refusal for the raw key.  Scope: the write clause (write and
+// the move/copy keys), the one clause BE-029 widens past `is_root`.  A
+// non-root key must still be well-formed, as at the trait.
+
+// The keys an entry accepts: any root spelling, or a well-formed path.
+ghost predicate EntryKey(key: string)
+{
+  AddressesRoot(key) || WellFormedPath(key)
+}
+
+// Fold every root spelling onto the sentinel; any other key is unchanged.
+function RootFold(key: string): Path
+  requires EntryKey(key)
+{
+  if AddressesRoot(key) then Root else key
+}
+
+// The fold lands on the trait's domain, keeps root-ness, and is the
+// identity on well-formed keys, so a canonical caller sees the trait itself.
+lemma RootFoldProperties(key: string)
+  requires EntryKey(key)
+  // @spec BE-029
+  ensures WellFormedPath(RootFold(key))
+  ensures AddressesRoot(RootFold(key)) <==> AddressesRoot(key)
+  ensures WellFormedPath(key) ==> RootFold(key) == key
+{
+  RootSentinelAddressesRoot();
+  if WellFormedPath(key) && key != Root {
+    WellFormedNonRootIsNotRoot(key);
+  }
+}
+
+// Property 6: a write to any root spelling is refused, with no effect.
+method WriteKey(
+  b: Backend, key: string, content: seq<nat>, overwrite: bool,
+  metadata: Option<map<string, string>>
+) returns (r: Result<WriteResult>)
+  requires EntryKey(key)
+  requires b.Valid()
+  modifies b
+  ensures b.Valid()
+  // @spec BE-020
+  ensures !old(b.Live()) ==> r == Err(BackendUnavailable(b.name))
+  // @spec BE-029
+  ensures old(b.Live()) && AddressesRoot(key)
+    ==> (r == Err(InvalidPath(Root, b.name))
+         && b.fs == old(b.fs) && b.containerPresent == old(b.containerPresent))
+{
+  RootFoldProperties(key);
+  r := b.Write(RootFold(key), content, overwrite, metadata);
+}
+
+// Property 7: a move whose source or destination is any root spelling is
+// refused, with no effect; a root destination outranks every observed
+// source check (BE-018 carve-out), so a missing source cannot answer first.
+method MoveKey(b: Backend, src: string, dst: string, overwrite: bool)
+  returns (r: Result<()>)
+  requires EntryKey(src) && EntryKey(dst)
+  requires b.Valid()
+  modifies b
+  ensures b.Valid()
+  // @spec BE-020
+  ensures !old(b.Live()) ==> r == Err(BackendUnavailable(b.name))
+  // @spec BE-029
+  ensures old(b.Live()) && (AddressesRoot(src) || AddressesRoot(dst))
+    ==> r == Err(InvalidPath(Root, b.name)) && b.fs == old(b.fs)
+{
+  RootFoldProperties(src);
+  RootFoldProperties(dst);
+  ghost var phase: MovePhase;
+  r, phase := b.Move(RootFold(src), RootFold(dst), overwrite);
+}
+
+// Property 7, for copy.
+method CopyKey(b: Backend, src: string, dst: string, overwrite: bool)
+  returns (r: Result<()>)
+  requires EntryKey(src) && EntryKey(dst)
+  requires b.Valid()
+  modifies b
+  ensures b.Valid()
+  // @spec BE-020
+  ensures !old(b.Live()) ==> r == Err(BackendUnavailable(b.name))
+  // @spec BE-029
+  ensures old(b.Live()) && (AddressesRoot(src) || AddressesRoot(dst))
+    ==> r == Err(InvalidPath(Root, b.name)) && b.fs == old(b.fs)
+{
+  RootFoldProperties(src);
+  RootFoldProperties(dst);
+  r := b.Copy(RootFold(src), RootFold(dst), overwrite);
 }

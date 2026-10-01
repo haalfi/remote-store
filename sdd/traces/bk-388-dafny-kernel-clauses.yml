@@ -293,6 +293,32 @@ phases:
           fencing it. Spec 003, graph_replay.py, fixtures.toml and the
           per-backend Graph test now say so.
         outcome: ok
+      - file: sdd/formal/BackendContract.dfy
+        section: "Valid(), DeleteFolder, Close (PR #1047 review at c422a92)"
+        read_type: verify
+        extract: >-
+          The c422a92 review found three model gaps the earlier rounds missed.
+          (1) Valid() had no root conjunct, so a mandated DeleteFolder(Root)
+          lost the root for good: on the compiled oracle, DeleteFolder(".",
+          True) answered Ok, and then Exists(".") answered Ok(False)
+          (tmp/probe_review_c422a92.py). RootPath.RootAnswersPerTable,
+          verified one ensures clause per variant file, failed on all 6 at
+          c422a92 and verifies after the fix. (2) The trait's well-formed
+          domain makes AddressesRoot just `== Root`. (3) Close() framed fs,
+          but in-memory SQLite loses its state on close
+          (test_close_posture.py:50). This was my own miss: a frame I had
+          read as harmless on the non-terminal side.
+        outcome: ok
+      - file: tests/backends/dafny/_helpers.py
+        section: "_raise_if_err, close() (PR #1047 review at c422a92)"
+        read_type: verify
+        extract: >-
+          BackendUnavailable was mapped to NotFound, and close() was the ABC
+          no-op. Both new tests in test_raise_if_err.py failed on the
+          unfixed adapter and pass after the fix. The oracle wraps only the
+          non-terminal MemoryBackend, so the lane still reaches no
+          BackendUnavailable branch; the README says so.
+        outcome: ok
 discovery_followups:
   - BK-391
 surprising_ripples:
@@ -306,6 +332,8 @@ surprising_ripples:
   - tests/backends/fixtures/graph_replay.py
   - tests/backends/fixtures/fixtures.toml
   - tests/backends/graph/aio/test_backend.py
+  - tests/backends/dafny/_helpers.py
+  - tests/backends/dafny/test_raise_if_err.py
 review:
   # Derived by `hatch run ship-report 1047 --trace-block-only` at head 44909e5.
   # Do not hand-edit, except a newly required field per sdd/traces/_schema.yml

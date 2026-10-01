@@ -70,7 +70,10 @@ source then destination), then the driver. `AddressesRoot` is the
 slash-and-dot segment test, wider than `is_root`. Against an absent
 container a `write` under the root is left to the backend spec (the Dafny
 witness recreates the container), and `RequireCapability` answers after
-close. See `sdd/formal/README.md` gaps 9 to 11.
+close. The kernel decides root-ness on raw keys; the obligation for every
+spelling is the raw-key entry in `RootPath.dfy` §5, not the trait alone.
+`close()` is not promised to keep the store's contents. See
+`sdd/formal/README.md` gaps 9 to 11.
 
 **What it does not include.** Step 2 onward (RFC-0017 D3), and the spec
 amendments of later steps (BK-390).

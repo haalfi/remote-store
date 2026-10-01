@@ -901,7 +901,11 @@ and its answer keeps `classify`.
    trait names the predicate in postconditions rather than preconditions, so
    that the closed guard can rank ahead of it as BE-029 requires; the
    absent container is a flag tied to an empty store, not an optional store
-   (BK-388 dossier, § As landed).
+   (BK-388 dossier, § As landed). The trait's domain is well-formed paths,
+   on which the predicate holds for `Root` alone, so the every-spelling
+   obligation the kernel decides on raw keys is verified at a raw-key
+   entry, `RootPath.dfy` §5, which folds each spelling onto `Root` before
+   the trait.
 
 ## References
 

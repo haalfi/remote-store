@@ -237,7 +237,7 @@ that must move — see [`000-process.md` Rule
 | `MemoryBackend.dfy` | Reference refinement proving the contract is satisfiable; compiled to Python as the conformance oracle |
 | `DepthCounting.dfy` | Verified `DEPTH-001` algorithm and the four depth-filter properties |
 | `ResourceSafety.dfy` | Handle lifecycle, `_safe_wrap` invariant, move atomicity, connection lifecycle |
-| `RootPath.dfy` | What `AddressesRoot` accepts: exactly the keys whose every `/`-segment is `""` or `"."` (`RootSpellingCharacterisation`), so the six BE-029 spellings; only `Root` among well-formed paths; not `\` (BE-029) |
+| `RootPath.dfy` | What `AddressesRoot` accepts: exactly the keys whose every `/`-segment is `""` or `"."` (`RootSpellingCharacterisation`), so the six BE-029 spellings; only `Root` among well-formed paths; not `\` (BE-029). BE-029's table derived from the trait for every refinement (`RootAnswersPerTable`), and the raw-key entry (`WriteKey`, `MoveKey`, `CopyKey`) that folds every root spelling onto `Root` |
 
 Live TLA+ modules live in `sdd/formal/tla/`. The frozen PoC modules
 remain in `sdd/research/tla-poc/` as the historical record of the
@@ -449,12 +449,25 @@ on the pre-state rather than on the result.
 present from construction), so `MemoryBackendMinimal` witnesses the
 `BackendUnavailable` branches. Both classes carry a `DropContainer` method,
 which models the environment removing the container and is the only way
-either class reaches the absent state; the Python oracle adapter never
-calls it. The root rule
+either class reaches the absent state. The Python oracle adapter wraps
+`MemoryBackend` only: its `close()` drives `Close()`, but the class is
+non-terminal, and it never calls `DropContainer`, so the oracle lane reaches
+neither the `BackendUnavailable` nor the absent-container branches; of gaps
+9 to 11 it exercises the root rule alone. The root rule
 covers `write` and the `move`/`copy` source and destination; the other
 file-shaped operations reach the root through the `IsDir` clause, because
-`Root` is a `DirEntry` in every state the model reaches except after
-`delete_folder` of the root, which BE-029 leaves undefined.
+`Valid()` keeps `Root` a `DirEntry` in every state. `DeleteFolder`'s clauses
+leave the root's own answer free, since BE-029 leaves `delete_folder("")`
+undefined, but not its survival; both refinements refuse it with
+`InvalidPath`, as the Python `MemoryBackend` does (MEM-014).
+
+The trait takes well-formed paths, and on that domain `AddressesRoot` holds
+for `Root` alone, so the trait by itself states the root rule for the
+sentinel spelling only. BE-029 binds every spelling on the write clause, and
+`RootPath.dfy` §5 carries that: `WriteKey`, `MoveKey` and `CopyKey` take the
+raw key, fold every root spelling onto `Root`, and prove the refusal from the
+trait's postconditions. A non-root key must still be well-formed there. The
+read side is not widened, because BE-029 decides it with `is_root`.
 
 Gap 7 was added under ID-151 after root-cause analysis of the ID-146
 review. Review found ~24% of the 95 comments were shaped as per-operation

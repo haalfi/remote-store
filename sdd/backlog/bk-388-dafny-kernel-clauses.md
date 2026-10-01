@@ -36,6 +36,13 @@ container is a `containerPresent` flag that `Valid()` ties to `EmptyStore`,
 not an optional store. `sdd/formal/README.md` gaps 9 to 11 record the
 result.
 
+PR review then closed three gaps in that first landing. First, `Valid()`
+keeps `Root` a `DirEntry`, because a `DeleteFolder(Root)` the trait mandated
+could otherwise remove it for good. Second, the trait's well-formed domain
+holds a single root spelling, so `RootPath.dfy` §5 adds a raw-key entry
+that folds every spelling onto `Root`. Third, `Close()` no longer frames
+`fs`, because BE-020 does not promise that contents survive a close.
+
 **Spec change it forced.** Review found the model refusing a root
 `move`/`copy` destination ahead of src-NotFound, which BE-018 § Precondition
 order forbade. Every backend measured already takes the model's order

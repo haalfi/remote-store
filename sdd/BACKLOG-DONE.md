@@ -245,8 +245,9 @@ if evidence changes; these are retired.
   spec: BE-029, BE-020, BE-021, BE-018, BE-019 · effort: M · audience: library.maintainer
   `BackendContract.dfy` models `AddressesRoot` (BE-029) on `write` and the
   `move`/`copy` source and destination, `Live()`/`Close()` (BE-020) ranked first,
-  and `containerPresent`/`DropContainer()` (BE-021 § Reach); both refinements,
-  `RootPath.dfy` and the regenerated oracle follow. BE-018/019 (and ASYNC-018/019)
+  and `containerPresent`/`DropContainer()` (BE-021 § Reach); `Valid()` keeps the
+  root a folder, and `RootPath.dfy` adds a raw-key entry for every root spelling;
+  both refinements and the regenerated oracle follow. BE-018/019 (and ASYNC-018/019)
   gained a root-destination carve-out over src-NotFound, pinned by a conformance cell.
   Detail: [dossier](backlog/bk-388-dafny-kernel-clauses.md)
 

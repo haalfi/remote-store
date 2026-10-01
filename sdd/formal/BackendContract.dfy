@@ -417,8 +417,10 @@ ghost function SumSizes(fs: Filesystem, keys: set<Path>): nat
 //
 // It is a pure predicate over the raw key, upstream of the trait, so the
 // write-shaped postconditions below can name it and decide the root before
-// any observation of fs.  Lemmas about it live in RootPath.dfy.  Compiled
-// (not ghost) so refinement bodies can run the same check the kernel runs.
+// any observation of fs.  The trait takes well-formed paths, on which it
+// holds for Root alone; RootPath.dfy §5 carries the rule to every raw
+// spelling, and proves what the predicate accepts.  Compiled (not ghost) so
+// refinement bodies can run the same check the kernel runs.
 // @spec BE-029
 predicate AddressesRoot(key: string)
 {
@@ -510,8 +512,11 @@ trait Backend {
   // ListFiles / ListFolders becomes a logical consequence of Valid()
   // rather than a defensive postcondition against an unreachable state.
   //
-  // BK-388 adds the absent-container conjunct: an absent container holds
-  // exactly EmptyStore.
+  // BK-388 adds two root conjuncts.  The root is a folder that always
+  // exists (BE-029), present container or absent, so no operation may
+  // remove it: DeleteFolder's clauses leave the root's answer free
+  // (BE-029 leaves delete_folder("") undefined) but not its survival.
+  // And an absent container holds exactly EmptyStore.
   //
   // Maintenance: declared as `requires Valid() ensures Valid()` on every
   // mutating method (Write, Delete, DeleteFolder, Move, Copy, Close,
@@ -531,6 +536,7 @@ trait Backend {
     (forall p :: p in fs ==>
       forall i: int | 0 < i < |p| - 1 && p[i] == '/' ::
         IsDir(fs, p[..i]))
+    && Root in fs && fs[Root].DirEntry?
     && (!containerPresent ==> fs == EmptyStore)
   }
 
@@ -837,28 +843,29 @@ trait Backend {
     // @spec BE-013
     ensures old(Live()) && !PathExists(old(fs), path) && missing_ok
       ==> r.Ok?
-    // BE-021 § Reach: an absent container is an absent folder.  The root
-    // is included here although BE-029 leaves delete_folder("") undefined;
-    // any answer satisfies that, and this one keeps the model total.
+    // BE-021 § Reach: an absent container is an absent folder.  BE-029
+    // leaves delete_folder("") undefined, so no clause here names the
+    // root's answer; Valid() still keeps the root afterwards.
     // @spec BE-021
-    ensures old(Live()) && !old(containerPresent) ==>
+    ensures old(Live()) && path != Root && !old(containerPresent) ==>
       r == (if missing_ok then Ok(()) else Err(NotFound(path, name)))
     // Non-empty directory with recursive=false → DirectoryNotEmpty.
     // @spec BE-013
-    ensures old(Live()) && IsDir(old(fs), path) && !recursive && HasChildren(old(fs), path)
+    ensures old(Live()) && path != Root &&
+            IsDir(old(fs), path) && !recursive && HasChildren(old(fs), path)
       ==> r == Err(DirectoryNotEmpty(path, name))
     // BE-013 happy path: empty dir or recursive → must succeed.
     // @spec BE-013
-    ensures old(Live()) && old(containerPresent) &&
+    ensures old(Live()) && path != Root && old(containerPresent) &&
             IsDir(old(fs), path) && (recursive || !HasChildren(old(fs), path))
       ==> r.Ok?
     // On success, directory entry is removed.
     // @spec BE-013
-    ensures old(containerPresent) && IsDir(old(fs), path) && r.Ok?
+    ensures path != Root && old(containerPresent) && IsDir(old(fs), path) && r.Ok?
       ==> !IsDir(fs, path)
     // Recursive delete removes all children too.
     // @spec BE-013
-    ensures old(containerPresent) && IsDir(old(fs), path) && recursive && r.Ok? ==>
+    ensures path != Root && old(containerPresent) && IsDir(old(fs), path) && recursive && r.Ok? ==>
       forall p: Path | IsChildOf(p, path) :: !PathExists(fs, p)
 
   // ====================================================================
@@ -1202,15 +1209,15 @@ trait Backend {
   // ====================================================================
   // Idempotent and never fails: a second Close() is the same no-op.  The
   // flag flips; whether that ends the instance is closeIsTerminal's call,
-  // through Live().  fs and the container are untouched.
+  // through Live().  No frame on fs or containerPresent: BE-020 promises
+  // a non-terminal backend stays usable, not that its contents survive
+  // (an in-memory SQLite store is gone after close()).
   method Close()
     requires Valid()
     modifies this
     ensures Valid()
     // @spec BE-020
     ensures closed
-    // @spec BE-020
-    ensures fs == old(fs) && containerPresent == old(containerPresent)
 
   // ====================================================================
   // Container removed underneath the backend  (BE-021 § Reach, BK-388)

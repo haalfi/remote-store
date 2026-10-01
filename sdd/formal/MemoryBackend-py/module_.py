@@ -784,7 +784,7 @@ class Backend:
             elif True:
                 return True
 
-        return (_dafny.quantifier((self.fs).keys.Elements, True, lambda0_)) and (not (not(self.containerPresent)) or ((self.fs) == (default__.EmptyStore)))
+        return (((_dafny.quantifier((self.fs).keys.Elements, True, lambda0_)) and ((default__.Root) in (self.fs))) and (((self.fs)[default__.Root]).is_DirEntry)) and (not (not(self.containerPresent)) or ((self.fs) == (default__.EmptyStore)))
 
     def Exists(self, path):
         pass
@@ -1351,6 +1351,9 @@ class MemoryBackend(Backend):
         if not((self).Live()):
             r = Result_Err(Error_BackendUnavailable((self).name))
             return r
+        if (path) == (default__.Root):
+            r = Result_Err(Error_InvalidPath(path, (self).name))
+            return r
         if not(self.containerPresent):
             if missing__ok:
                 r = Result_Ok(())
@@ -1883,6 +1886,9 @@ class MemoryBackendMinimal(Backend):
         r: Result = Result.default()()
         if not((self).Live()):
             r = Result_Err(Error_BackendUnavailable((self).name))
+            return r
+        if (path) == (default__.Root):
+            r = Result_Err(Error_InvalidPath(path, (self).name))
             return r
         if not(self.containerPresent):
             if missing__ok:
