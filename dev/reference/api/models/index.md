@@ -132,7 +132,7 @@ Attributes:
 - **`path`** (`RemotePath`) – Normalized remote path.
 - **`name`** (`str`) – File name (final path component).
 - **`size`** (`int`) – File size in bytes.
-- **`modified_at`** (`datetime`) – Last modification time.
+- **`modified_at`** (`datetime`) – Last modification time; datetime.min in UTC when the backend cannot know it.
 - **`digest`** (`ContentDigest | None`) – Verified content digest with known algorithm.
 - **`etag`** (`str | None`) – Opaque backend-provided tag for change detection.
 - **`content_type`** (`str | None`) – Optional MIME type.

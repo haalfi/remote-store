@@ -11791,7 +11791,7 @@ unchanged but Graph's:</p>
   and HNS, which its generated replacement keeps), <code>S3Boto3Backend</code> (the
   maximum <code>LastModified</code>) and <code>SQLBlobBackend</code> (<code>MAX(modified_at)</code>);</li>
 <li><code>None</code>, because no file time is known: <code>SQLQueryBackend</code>, whose files
-  carry <code>_EPOCH_MIN</code>, and <code>SQLBlobBackend</code> over a table with no
+  carry the sentinel (<code>_models._UNKNOWN_MODIFIED_AT</code> since BUG-296), and <code>SQLBlobBackend</code> over a table with no
   <code>modified_at</code> column, whose files carry <code>datetime.min</code>;</li>
 <li>no folders: <code>ReadOnlyHttpBackend</code>;</li>
 <li>out of scope, being deleted unmigrated at step 2: <code>S3Backend</code> and

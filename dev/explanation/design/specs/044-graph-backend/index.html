@@ -12978,7 +12978,9 @@ from the Graph <code>driveItem</code> body. Field mapping:
 - <code>driveItem.name</code> → <code>FileInfo.name</code>
 - <code>driveItem.size</code> → <code>FileInfo.size</code>
 - <code>driveItem.lastModifiedDateTime</code> (RFC 3339 string) → parsed to
-  <code>datetime</code> → <code>FileInfo.modified_at</code>
+  <code>datetime</code> → <code>FileInfo.modified_at</code>; missing or unparseable → the
+  unknown-time sentinel (<code>datetime.min</code> in UTC), which folder
+  aggregation skips (FOLDERINFO-001)
 - <code>driveItem.eTag</code> → <code>FileInfo.etag</code> (stripped of outer quotes and
   lowercased)
 - <code>driveItem.file.mimeType</code> → <code>FileInfo.content_type</code>
@@ -13134,7 +13136,9 @@ per ASYNC-021) with content size &lt;= 4 MiB uses
 - The write is atomic at the service level.
 - The returned <code>WriteResult</code> carries <code>source="native"</code> (WR-004) with
   <code>etag</code>, <code>last_modified</code>, and <code>version_id</code> populated from the
-  <code>driveItem</code> body Graph returns in the <code>200 OK</code> response. <code>size</code> is
+  <code>driveItem</code> body Graph returns in the <code>200 OK</code> response
+  (<code>last_modified</code> is <code>None</code> when <code>lastModifiedDateTime</code> is missing or
+  unparseable). <code>size</code> is
   the byte count the backend wrote (WR-003) — authoritative even when
   the response body omits or under-reports <code>size</code> — and may therefore
   diverge from a later <code>get_file_info().size</code>, which reads
@@ -13306,7 +13310,8 @@ is therefore binary:
 - The returned <code>WriteResult</code> carries <code>source="native"</code> (WR-004) with
   <code>etag</code>, <code>last_modified</code>, and (where present) <code>version_id</code>
   populated from the <code>driveItem</code> body Graph returns in the <strong>final</strong>
-  chunk's <code>201 Created</code> / <code>200 OK</code> response. <code>size</code> is the byte count
+  chunk's <code>201 Created</code> / <code>200 OK</code> response (<code>last_modified</code> as in
+  GR-018). <code>size</code> is the byte count
   the backend wrote (WR-003), not re-derived from the body — same rule
   and rationale as GR-018. <code>digest</code> is left <code>None</code>
   per GR-049. <code>metadata</code> echoes the caller's input mapping when one is

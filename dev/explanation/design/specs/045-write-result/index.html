@@ -11412,7 +11412,8 @@ is expressed against it.</p>
 <li><code>version_id</code> (<code>str | None</code>) — backend-provided immutable version
   identifier; <code>None</code> when the backend does not version objects.</li>
 <li><code>last_modified</code> (<code>datetime | None</code>) — server timestamp from the
-  write response; <code>None</code> when the backend's write response omits it.</li>
+  write response; <code>None</code> when the backend's write response omits it,
+  never the <code>FileInfo</code> unknown-time sentinel (MOD-002).</li>
 <li><code>metadata</code> (<code>Mapping[str, str] | None</code>) — echo of the user
   metadata that was stored (WR-012).</li>
 </ul>
@@ -11596,7 +11597,7 @@ constructed from the <code>FileInfo</code> returned by <code>Store.get_file_info
 </tr>
 <tr>
 <td><code>last_modified</code></td>
-<td><code>info.modified_at</code> (field rename)</td>
+<td><code>info.modified_at</code> (field rename); the unknown-time sentinel maps to <code>None</code> (MOD-002)</td>
 </tr>
 <tr>
 <td><code>metadata</code></td>

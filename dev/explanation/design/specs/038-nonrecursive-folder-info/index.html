@@ -10957,6 +10957,11 @@ raised — matching the backend-delegated behavior.</p>
 max_depth=max_depth)</code>. No Backend ABC change. The aggregation builds a
 <code>FolderInfo</code> from the yielded <code>FileInfo</code> objects (count, total size, latest
 <code>modified_at</code>).</p>
+<p><strong><code>modified_at</code>:</strong> the latest <em>known</em> file time. A file whose <code>modified_at</code> is
+the unknown-time sentinel (<code>datetime.min</code> in UTC) is skipped, and a folder with
+no known time answers <code>None</code>, so the depth path agrees with the plain call on
+backends that cannot know file times (BUG-296; rule from
+<a href="../../rfcs/rfc-0017-contract-kernel-over-thin-drivers/">RFC-0017 D3</a>).</p>
 <p><strong>Depth examples:</strong></p>
 <div class="highlight"><pre><span></span><code><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a>store.get_folder_info("data", max_depth=0)
 <a id="__codelineno-0-2" name="__codelineno-0-2" href="#__codelineno-0-2"></a># Aggregates: data/file_a.csv, data/file_b.csv

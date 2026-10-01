@@ -12429,7 +12429,7 @@ objects, one per input path.</p>
 <tbody>
 <tr>
 <td><code>store.is_file(path)</code></td>
-<td><code>FileType.File</code>, size and mtime from <code>store.get_file_info(path)</code></td>
+<td><code>FileType.File</code>, size and mtime from <code>store.get_file_info(path)</code>; the unknown-time sentinel (<code>datetime.min</code> in UTC) maps to <code>mtime=None</code>, since pyarrow's int64 nanoseconds would wrap it to 1754</td>
 </tr>
 <tr>
 <td><code>store.is_folder(path)</code></td>
@@ -12460,7 +12460,8 @@ a small number of known paths.</p>
 </code></pre></div>
 <p><strong>Behavior:</strong>
 1. List files via <code>store.list_files(base_dir, recursive=selector.recursive)</code>.
-   Each <code>FileInfo</code> maps to a <code>pyarrow.fs.FileInfo</code> with <code>FileType.File</code>.
+   Each <code>FileInfo</code> maps to a <code>pyarrow.fs.FileInfo</code> with <code>FileType.File</code>,
+   its mtime mapped as in PA-007.
    File paths are store-relative (as returned by <code>list_files</code>).
 2. If <code>selector.recursive</code> is <code>False</code>, list immediate subfolders via
    <code>store.list_folders(base_dir)</code>. <code>list_folders</code> returns bare folder <strong>names</strong>

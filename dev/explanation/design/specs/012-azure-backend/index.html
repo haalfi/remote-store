@@ -12156,7 +12156,7 @@
 - <code>path</code>: the store-relative key
 - <code>name</code>: filename component of the path
 - <code>size</code>: from <code>content_length</code> (or <code>size</code> for HNS path objects)
-- <code>modified_at</code>: from <code>last_modified</code> (UTC datetime)
+- <code>modified_at</code>: from <code>last_modified</code> (UTC datetime); absent → the unknown-time sentinel (<code>datetime.min</code> in UTC)
 - <code>etag</code>: see AZ-034
 - <code>digest</code>: see AZ-034</p>
 <p><strong>Note:</strong> <code>content_type</code> is not included in <code>FileInfo</code>.</p>
