@@ -32,7 +32,10 @@ plus `GRAPH_CLIENT_ID` / `GRAPH_TENANT_ID` / `GRAPH_DRIVE_ID` (device-code, so
 interactive). Prefer `--node` per cell: a full run re-records all 119 existing
 graph cassettes, churning their volatile headers into an unreviewable diff
 against TEST-009. Any op that raises before issuing a request records nothing
-and keeps skipping — correct since ID-241, and visible in the Step-5 replay.
+and needs nothing: since ID-241 such a cell runs on replay without a cassette.
+`pytest tests/backends/conformance -k "graph_replay and TestBackendRootPath"`
+passes 8 of them (the `move`/`copy` source cells and BK-388's root-destination
+cell), beside the 30 skips.
 
 ## Correction, 2026-09-27
 

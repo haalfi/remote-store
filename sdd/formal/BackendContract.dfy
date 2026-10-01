@@ -9,6 +9,18 @@
 //   Gap 5  BE-018      Move atomicity is backend-dependent
 //   Gap 6  SIO-001     Acquire-then-wrap resource safety
 //
+// BK-388 (RFC-0017 D7) adds the three clauses the kernel encodes:
+//
+//   BE-029            Root rule on the write-shaped operations (AddressesRoot, §5c)
+//   BE-020            Close posture (closed / closeIsTerminal, Live(), Close)
+//   BE-021 § Reach    Absent container (containerPresent, DropContainer)
+//
+// Ranking: a closed terminal backend answers BackendUnavailable first (BE-029
+// "BE-020 outranks this check"); the key-decided root checks come next, a
+// root move/copy destination included (BE-018 § Precondition order carves it
+// out of src-NotFound's priority); every observed check (fs lookups) comes
+// after both.
+//
 // This module defines the *abstract* contract.  Concrete refinements
 // (MemoryBackend.dfy) prove that an implementation can satisfy every
 // postcondition.
@@ -22,7 +34,11 @@
 //   preserves fs on error paths by construction (only mutates fs on
 //   the success path).  This means the frame condition is verified
 //   for the reference implementation but NOT enforced by the abstract
-//   contract. See gap coverage table in README.
+//   contract. See gap coverage table in README.  The exception (BK-388)
+//   is a frame keyed on the pre-state rather than on `r`: the closed
+//   guard (`!old(Live())`) and the BE-029 root refusals state
+//   `fs == old(fs)` directly, since those errors are decided before any
+//   effect.
 // - Happy-path postconditions use `ensures <preconditions> ==> r.Ok?`
 //   to mandate success when no error condition applies.
 
@@ -390,22 +406,92 @@ ghost function SumSizes(fs: Filesystem, keys: set<Path>): nat
 }
 
 // ---------------------------------------------------------------------------
+// §5c  Root rule  (BE-029, BK-388)
+// ---------------------------------------------------------------------------
+// AddressesRoot(key): the key has no addressable segment, i.e. every
+// '/'-delimited segment is "" or ".".  That covers every slash-and-dot
+// spelling of the root ("", ".", "./", ".//", "./.", "/"), which is wider
+// than the two canonical spellings `is_root` accepts, and stops there: "\"
+// is not the root (BE-029 § "The rule stops at the slash-and-dot
+// spellings").  Mirrors remote_store.backends._flat_ns._addressable_segments.
+//
+// It is a pure predicate over the raw key, upstream of the trait, so the
+// write-shaped postconditions below can name it and decide the root before
+// any observation of fs.  The trait takes well-formed paths, on which it
+// holds for Root alone; RootPath.dfy §5 carries the rule to every raw
+// spelling, and proves what the predicate accepts.  Compiled (not ghost) so
+// refinement bodies can run the same check the kernel runs.
+// @spec BE-029
+predicate AddressesRoot(key: string)
+{
+  if |key| == 0 then true
+  else if key[0] == '/' then AddressesRoot(key[1..])
+  else if key[0] == '.' && (|key| == 1 || key[1] == '/') then AddressesRoot(key[1..])
+  else false
+}
+
+// The store an absent container reads as (BE-021 § Reach, BE-029): nothing
+// but the root, which is a folder that always exists.
+const EmptyStore: Filesystem := map[Root := DirEntry]
+
+// EmptyStore holds no file, so every aggregate over it is empty.  Stated
+// once so refinements discharge the absent-container GetFolderInfo branch
+// by a call rather than by re-deriving it inside a large proof.
+lemma EmptyStoreHoldsNoFile(p: Path)
+  ensures ChildFiles(EmptyStore, p) == {}
+  ensures SumSizes(EmptyStore, {}) == 0
+{
+  assert forall k | k in EmptyStore :: k == Root && !EmptyStore[k].FileEntry?;
+  assert SetToSeq({}) == [];
+}
+
+// ---------------------------------------------------------------------------
 // §6  Backend contract  (abstract trait)
 // ---------------------------------------------------------------------------
 // Precondition evaluation order (Gap 1 / BE-008) is encoded by the
 // implication chain in Write/Delete postconditions.  The first matching
 // condition determines the error:
-//   1. IsDir(old(fs), path) → InvalidPath   (type check FIRST)
+//   0. !Live() → BackendUnavailable, then AddressesRoot(path) → InvalidPath
+//      (BK-388; BE-020, BE-029)
+//   1. IsDir(old(fs), path) → InvalidPath   (first observed check)
 //   2. IsFile(old(fs), path) && !overwrite → AlreadyExists
 //   3. otherwise → success (r.Ok?)
-// These implications are exclusive by construction: IsDir and IsFile
-// are mutually exclusive (EntryPartition lemma), so at most one
-// error-path postcondition fires for any given pre-state.
+// Each later clause is guarded by the negation of the earlier ones, or
+// agrees with them where both fire: IsDir and IsFile are mutually exclusive
+// (EntryPartition lemma), and `Write(Root)` with Root a DirEntry fires both
+// the root clause and the IsDir clause with the same InvalidPath.  So no
+// pre-state has two error-path postconditions demanding different errors.
 
 trait Backend {
   const name: string
   const capabilities: CapabilitySet
   var fs: Filesystem
+
+  // BE-020 close posture (BK-388).  `closeIsTerminal` is the Python
+  // `close_is_terminal` class attribute; `closed` flips at the start of
+  // Close().  A non-terminal backend stays Live() after Close().
+  const closeIsTerminal: bool
+  var closed: bool
+
+  // BE-021 § Reach (BK-388): whether the bucket / container / table holding
+  // the store exists.  Valid() ties its absence to EmptyStore, so an absent
+  // container reads as an absent path everywhere except the root, which
+  // answers as it would on an empty store (BE-029).
+  var containerPresent: bool
+
+  // BE-020: false exactly when a terminal backend has been closed.  Every
+  // operation that returns a Result, except RequireCapability, answers
+  // BackendUnavailable then, ahead of every other clause.  RequireCapability
+  // is exempt by name: it reads declared capability data, like BE-029's
+  // addressing row (which the model carries as the ghost functions
+  // NativePath / ToKey, not methods).  Close() returns nothing and stays
+  // callable after a terminal close; DropContainer() models the environment,
+  // not an operation, so neither is guarded.
+  predicate Live()
+    reads this
+  {
+    !(closed && closeIsTerminal)
+  }
 
   // ====================================================================
   // §6.0  Class invariant: fs well-formedness  (ID-209)
@@ -429,12 +515,19 @@ trait Backend {
   // ListFiles / ListFolders becomes a logical consequence of Valid()
   // rather than a defensive postcondition against an unreachable state.
   //
+  // BK-388 adds two root conjuncts.  The root is a folder that always
+  // exists (BE-029), present container or absent, so no operation may
+  // remove it: DeleteFolder's clauses leave the root's answer free
+  // (BE-029 leaves delete_folder("") undefined) but not its survival.
+  // And an absent container holds exactly EmptyStore.
+  //
   // Maintenance: declared as `requires Valid() ensures Valid()` on every
-  // mutating method (Write, Delete, DeleteFolder, Move, Copy).  Read-only
-  // methods (Exists, IsFileMethod, IsFolderMethod, Read, ListFiles,
-  // ListFolders, GetFileInfo, GetFolderInfo, RequireCapability) do not
-  // mutate fs, so they neither require nor must re-establish Valid() —
-  // their callers do.  Write is the load-bearing case: its new
+  // mutating method (Write, Delete, DeleteFolder, Move, Copy, Close,
+  // DropContainer).  Read-only methods (Exists, IsFileMethod,
+  // IsFolderMethod, Read, ListFiles, ListFolders, GetFileInfo,
+  // GetFolderInfo) do not mutate fs; since BK-388 they `require Valid()`,
+  // because their absent-container clauses read the EmptyStore conjunct.
+  // RequireCapability reads no state.  Write is the load-bearing case: its new
   // `!AllAncestorsTraversable(old(fs), path) ==> InvalidPath` clause is
   // exactly what prevents a successful Write from inserting a FileEntry
   // under a path whose ancestor is already a file, which is the only
@@ -443,9 +536,11 @@ trait Backend {
   predicate Valid()
     reads this
   {
-    forall p :: p in fs ==>
+    (forall p :: p in fs ==>
       forall i: int | 0 < i < |p| - 1 && p[i] == '/' ::
-        IsDir(fs, p[..i])
+        IsDir(fs, p[..i]))
+    && Root in fs && fs[Root].DirEntry?
+    && (!containerPresent ==> fs == EmptyStore)
   }
 
   // ValidImpliesAllAncestorsTraversable: a structural consequence used by
@@ -468,10 +563,16 @@ trait Backend {
   // Returns False for missing paths or paths with file-as-directory-component.
   method Exists(path: Path) returns (r: Result<bool>)
     requires WellFormedPath(path)
+    requires Valid()
+    // @spec BE-020
+    ensures !Live() ==> r == Err(BackendUnavailable(name))
     // @spec BE-004
-    ensures r.Ok?
+    ensures Live() ==> r.Ok?
     // @spec BE-004
-    ensures r.value == (PathExists(fs, path) && AllAncestorsTraversable(fs, path))
+    ensures r.Ok? ==> r.value == (PathExists(fs, path) && AllAncestorsTraversable(fs, path))
+    // BE-021 § Reach: against an absent container only the root exists.
+    // @spec BE-021
+    ensures Live() && !containerPresent ==> r == Ok(path == Root)
 
   // ====================================================================
   // is_file(path) → bool
@@ -480,10 +581,15 @@ trait Backend {
   // Returns False for missing paths or paths with file-as-directory-component.
   method IsFileMethod(path: Path) returns (r: Result<bool>)
     requires WellFormedPath(path)
+    requires Valid()
+    // @spec BE-020
+    ensures !Live() ==> r == Err(BackendUnavailable(name))
     // @spec BE-005
-    ensures r.Ok?
+    ensures Live() ==> r.Ok?
     // @spec BE-005
-    ensures r.value == (IsFile(fs, path) && AllAncestorsTraversable(fs, path))
+    ensures r.Ok? ==> r.value == (IsFile(fs, path) && AllAncestorsTraversable(fs, path))
+    // @spec BE-021
+    ensures Live() && !containerPresent ==> r == Ok(false)
 
   // ====================================================================
   // is_folder(path) → bool
@@ -492,10 +598,16 @@ trait Backend {
   // Returns False for missing paths or paths with file-as-directory-component.
   method IsFolderMethod(path: Path) returns (r: Result<bool>)
     requires WellFormedPath(path)
+    requires Valid()
+    // @spec BE-020
+    ensures !Live() ==> r == Err(BackendUnavailable(name))
     // @spec BE-005
-    ensures r.Ok?
+    ensures Live() ==> r.Ok?
     // @spec BE-005
-    ensures r.value == (IsDir(fs, path) && AllAncestorsTraversable(fs, path))
+    ensures r.Ok? ==> r.value == (IsDir(fs, path) && AllAncestorsTraversable(fs, path))
+    // BE-021 § Reach with BE-029: the root is still a folder.
+    // @spec BE-021
+    ensures Live() && !containerPresent ==> r == Ok(path == Root)
 
   // ====================================================================
   // read(path) → ReadStream  (no modifies: fs unchanged)
@@ -507,12 +619,19 @@ trait Backend {
   // to produce a seekable stream on every successful read.
   method Read(path: Path) returns (r: Result<ReadStream>)
     requires WellFormedPath(path)
+    requires Valid()
+    // @spec BE-020
+    ensures !Live() ==> r == Err(BackendUnavailable(name))
     // @spec BE-021
-    ensures IsDir(fs, path)       ==> r == Err(InvalidPath(path, name))
+    ensures Live() && IsDir(fs, path)       ==> r == Err(InvalidPath(path, name))
     // @spec BE-006
-    ensures !PathExists(fs, path) ==> r == Err(NotFound(path, name))
+    ensures Live() && !PathExists(fs, path) ==> r == Err(NotFound(path, name))
     // @spec BE-006
-    ensures IsFile(fs, path)      ==> r.Ok? && r.value.content == fs[path].content
+    ensures Live() && IsFile(fs, path)      ==> r.Ok? && r.value.content == fs[path].content
+    // BE-021 § Reach: NotFound, except the root, which is a folder (BE-029).
+    // @spec BE-021
+    ensures Live() && !containerPresent ==>
+      r == Err(if path == Root then InvalidPath(path, name) else NotFound(path, name))
     // @spec SIO-008
     ensures r.Ok? && CapSeekableRead in capabilities ==> r.value.seekable
 
@@ -547,10 +666,27 @@ trait Backend {
     requires Valid()
     modifies this
     ensures Valid()
+    ensures closed == old(closed)
+    // BE-020 outranks everything below, the root rule included (BE-029).
+    // @spec BE-020
+    ensures !old(Live()) ==> r == Err(BackendUnavailable(name))
+    // BE-020: a closed terminal backend changes nothing.  Keyed on the
+    // pre-state, not on `r`, so it is expressible (see the header note).
+    // @spec BE-020
+    ensures !old(Live()) ==> fs == old(fs) && containerPresent == old(containerPresent)
+    // BE-029: a write to the root is refused from the key, ahead of every
+    // observed check, so it holds whether or not the container exists.
+    // @spec BE-029
+    ensures old(Live()) && AddressesRoot(path)
+      ==> r == Err(InvalidPath(path, name))
+    // BE-029: "before anything is transferred" — the refusal has no effect.
+    // @spec BE-029
+    ensures old(Live()) && AddressesRoot(path)
+      ==> fs == old(fs) && containerPresent == old(containerPresent)
     // Gap 1 / BE-008: precondition order — type check first (directory
     // path → InvalidPath).
     // @spec BE-008
-    ensures IsDir(old(fs), path)
+    ensures old(Live()) && IsDir(old(fs), path)
       ==> r == Err(InvalidPath(path, name))
     // ID-209 / BE-008: precondition order — path-validity also covers a
     // file-ancestor in the path.  Mutually exclusive with IsDir / IsFile
@@ -562,30 +698,38 @@ trait Backend {
     // explicitly rather than EnsureParents'ing into a Valid()-breaking
     // state.
     // @spec BE-008
-    ensures !AllAncestorsTraversable(old(fs), path)
+    ensures old(Live()) && !AllAncestorsTraversable(old(fs), path)
       ==> r == Err(InvalidPath(path, name))
     // Gap 1 / BE-008: precondition order — overwrite conflict second.
     // @spec BE-008
-    ensures !IsDir(old(fs), path) && IsFile(old(fs), path) && !overwrite
+    ensures old(Live()) && !AddressesRoot(path) &&
+            !IsDir(old(fs), path) && IsFile(old(fs), path) && !overwrite
       ==> r == Err(AlreadyExists(path, name))
     // WR-010 strict gate: non-empty metadata on a backend without
     // CapUserMetadata → CapabilityNotSupported (pre-I/O).  ID-209 tightens
     // the guard with AllAncestorsTraversable so this clause stays
     // mutually exclusive with the new file-ancestor clause above.
     // @spec WR-010
-    ensures !IsDir(old(fs), path) && (!IsFile(old(fs), path) || overwrite) &&
+    ensures old(Live()) && !AddressesRoot(path) &&
+            !IsDir(old(fs), path) && (!IsFile(old(fs), path) || overwrite) &&
             AllAncestorsTraversable(old(fs), path) &&
             HasUserMetadata(metadata) && CapUserMetadata !in capabilities
       ==> r == Err(CapabilityNotSupported(
             CapabilityName(CapUserMetadata), name))
     // BE-008 happy path: no error condition → must succeed.  ID-209 adds
     // the AllAncestorsTraversable conjunct for the same reason as the
-    // WR-010 guard above.
+    // WR-010 guard above.  BK-388 adds old(containerPresent): what a write
+    // does against an absent container is a backend spec's to decide
+    // (BE-021 § Reach), except at the root, which the BE-029 clause decides.
     // @spec BE-008
-    ensures !IsDir(old(fs), path) && (!IsFile(old(fs), path) || overwrite) &&
+    ensures old(Live()) && !AddressesRoot(path) && old(containerPresent) &&
+            !IsDir(old(fs), path) && (!IsFile(old(fs), path) || overwrite) &&
             AllAncestorsTraversable(old(fs), path) &&
             (!HasUserMetadata(metadata) || CapUserMetadata in capabilities)
       ==> r.Ok?
+    // BE-021 § Reach: a successful write leaves the container present.
+    // @spec BE-021
+    ensures r.Ok? ==> containerPresent
     // BE-008: written content is stored verbatim on the success path.
     // @spec BE-008
     ensures r.Ok? ==>
@@ -648,18 +792,31 @@ trait Backend {
     requires Valid()
     modifies this
     ensures Valid()
+    ensures closed == old(closed)
+    ensures containerPresent == old(containerPresent)
+    // @spec BE-020
+    ensures !old(Live()) ==> r == Err(BackendUnavailable(name))
+    // @spec BE-020
+    ensures !old(Live()) ==> fs == old(fs)
     // @spec BE-021
-    ensures IsDir(old(fs), path)
+    ensures old(Live()) && IsDir(old(fs), path)
       ==> r == Err(InvalidPath(path, name))
     // @spec BE-012
-    ensures !PathExists(old(fs), path) && !missing_ok
+    ensures old(Live()) && !PathExists(old(fs), path) && !missing_ok
       ==> r == Err(NotFound(path, name))
     // @spec BE-012
-    ensures !PathExists(old(fs), path) && missing_ok
+    ensures old(Live()) && !PathExists(old(fs), path) && missing_ok
       ==> r.Ok?
+    // BE-021 § Reach: an absent container is an absent path, so missing_ok
+    // decides; the root stays a folder (BE-029's file-shaped row).
+    // @spec BE-021
+    ensures old(Live()) && !old(containerPresent) ==>
+      r == (if path == Root then Err(InvalidPath(path, name))
+            else if missing_ok then Ok(())
+            else Err(NotFound(path, name)))
     // BE-012 happy path: file exists → must succeed.
     // @spec BE-012
-    ensures IsFile(old(fs), path) ==> r.Ok?
+    ensures old(Live()) && IsFile(old(fs), path) ==> r.Ok?
     // @spec BE-012
     ensures IsFile(old(fs), path) && r.Ok?
       ==> !PathExists(fs, path)
@@ -673,31 +830,45 @@ trait Backend {
     requires Valid()
     modifies this
     ensures Valid()
+    ensures closed == old(closed)
+    ensures containerPresent == old(containerPresent)
+    // @spec BE-020
+    ensures !old(Live()) ==> r == Err(BackendUnavailable(name))
+    // @spec BE-020
+    ensures !old(Live()) ==> fs == old(fs)
     // File path → InvalidPath (wrong type, symmetric with Delete on dirs).
     // @spec BE-021
-    ensures IsFile(old(fs), path)
+    ensures old(Live()) && IsFile(old(fs), path)
       ==> r == Err(InvalidPath(path, name))
     // @spec BE-013
-    ensures !PathExists(old(fs), path) && !missing_ok
+    ensures old(Live()) && !PathExists(old(fs), path) && !missing_ok
       ==> r == Err(NotFound(path, name))
     // @spec BE-013
-    ensures !PathExists(old(fs), path) && missing_ok
+    ensures old(Live()) && !PathExists(old(fs), path) && missing_ok
       ==> r.Ok?
+    // BE-021 § Reach: an absent container is an absent folder.  BE-029
+    // leaves delete_folder("") undefined, so no clause here names the
+    // root's answer; Valid() still keeps the root afterwards.
+    // @spec BE-021
+    ensures old(Live()) && path != Root && !old(containerPresent) ==>
+      r == (if missing_ok then Ok(()) else Err(NotFound(path, name)))
     // Non-empty directory with recursive=false → DirectoryNotEmpty.
     // @spec BE-013
-    ensures IsDir(old(fs), path) && !recursive && HasChildren(old(fs), path)
+    ensures old(Live()) && path != Root &&
+            IsDir(old(fs), path) && !recursive && HasChildren(old(fs), path)
       ==> r == Err(DirectoryNotEmpty(path, name))
     // BE-013 happy path: empty dir or recursive → must succeed.
     // @spec BE-013
-    ensures IsDir(old(fs), path) && (recursive || !HasChildren(old(fs), path))
+    ensures old(Live()) && path != Root && old(containerPresent) &&
+            IsDir(old(fs), path) && (recursive || !HasChildren(old(fs), path))
       ==> r.Ok?
     // On success, directory entry is removed.
     // @spec BE-013
-    ensures IsDir(old(fs), path) && r.Ok?
+    ensures path != Root && old(containerPresent) && IsDir(old(fs), path) && r.Ok?
       ==> !IsDir(fs, path)
     // Recursive delete removes all children too.
     // @spec BE-013
-    ensures IsDir(old(fs), path) && recursive && r.Ok? ==>
+    ensures path != Root && old(containerPresent) && IsDir(old(fs), path) && recursive && r.Ok? ==>
       forall p: Path | IsChildOf(p, path) :: !PathExists(fs, p)
 
   // ====================================================================
@@ -713,14 +884,20 @@ trait Backend {
   method ListFiles(path: Path, recursive: bool, max_depth: int)
     returns (r: Result<seq<FileInfo>>)
     requires WellFormedPath(path)
+    requires Valid()
+    // @spec BE-020
+    ensures !Live() ==> r == Err(BackendUnavailable(name))
     // Gap 3 / BE-014: listing is total — never raises NotFound.
     // @spec BE-014
-    ensures r.Ok?
+    ensures Live() ==> r.Ok?
     // Gap 3 / BE-014 (ID-184): missing path OR a non-traversable ancestor
     // yields an empty result, never an error.
     // @spec BE-014
-    ensures !PathExists(fs, path) || !AllAncestorsTraversable(fs, path)
-      ==> r.value == []
+    ensures Live() && (!PathExists(fs, path) || !AllAncestorsTraversable(fs, path))
+      ==> r == Ok([])
+    // BE-021 § Reach: an absent container holds nothing, root included.
+    // @spec BE-021
+    ensures Live() && !containerPresent ==> r == Ok([])
     // All results are files that are children of path.
     // @spec BE-014
     ensures r.Ok? ==>
@@ -756,14 +933,20 @@ trait Backend {
   // ListFiles for the rationale.
   method ListFolders(path: Path) returns (r: Result<seq<FolderEntry>>)
     requires WellFormedPath(path)
+    requires Valid()
+    // @spec BE-020
+    ensures !Live() ==> r == Err(BackendUnavailable(name))
     // Gap 3 / BE-015: listing is total — never raises NotFound.
     // @spec BE-015
-    ensures r.Ok?
+    ensures Live() ==> r.Ok?
     // Gap 3 / BE-015 (ID-184): missing path OR a non-traversable ancestor
     // yields an empty result, never an error.
     // @spec BE-015
-    ensures !PathExists(fs, path) || !AllAncestorsTraversable(fs, path)
-      ==> r.value == []
+    ensures Live() && (!PathExists(fs, path) || !AllAncestorsTraversable(fs, path))
+      ==> r == Ok([])
+    // BE-021 § Reach: an absent container holds nothing, root included.
+    // @spec BE-021
+    ensures Live() && !containerPresent ==> r == Ok([])
     // All results are immediate child directories of path.
     // @spec BE-015
     ensures r.Ok? ==>
@@ -780,12 +963,19 @@ trait Backend {
   // ====================================================================
   method GetFileInfo(path: Path) returns (r: Result<FileInfo>)
     requires WellFormedPath(path)
+    requires Valid()
+    // @spec BE-020
+    ensures !Live() ==> r == Err(BackendUnavailable(name))
     // @spec BE-021
-    ensures IsDir(fs, path)       ==> r == Err(InvalidPath(path, name))
+    ensures Live() && IsDir(fs, path)       ==> r == Err(InvalidPath(path, name))
     // @spec BE-016
-    ensures !PathExists(fs, path) ==> r == Err(NotFound(path, name))
+    ensures Live() && !PathExists(fs, path) ==> r == Err(NotFound(path, name))
     // @spec BE-016
-    ensures IsFile(fs, path)      ==> r.Ok? && r.value == fs[path].info
+    ensures Live() && IsFile(fs, path)      ==> r.Ok? && r.value == fs[path].info
+    // BE-021 § Reach: NotFound, except the root, which is a folder (BE-029).
+    // @spec BE-021
+    ensures Live() && !containerPresent ==>
+      r == Err(if path == Root then InvalidPath(path, name) else NotFound(path, name))
 
   // ====================================================================
   // get_folder_info(path) → FolderInfo
@@ -793,15 +983,25 @@ trait Backend {
   // BE-017: symmetric with GetFileInfo: file path → InvalidPath.
   method GetFolderInfo(path: Path) returns (r: Result<FolderInfo>)
     requires WellFormedPath(path)
+    requires Valid()
+    // @spec BE-020
+    ensures !Live() ==> r == Err(BackendUnavailable(name))
     // @spec BE-021
-    ensures IsFile(fs, path)      ==> r == Err(InvalidPath(path, name))
+    ensures Live() && IsFile(fs, path)      ==> r == Err(InvalidPath(path, name))
     // @spec BE-017
-    ensures !PathExists(fs, path) ==> r == Err(NotFound(path, name))
+    ensures Live() && !PathExists(fs, path) ==> r == Err(NotFound(path, name))
     // @spec BE-017
-    ensures IsDir(fs, path)       ==>
+    ensures Live() && IsDir(fs, path)       ==>
       r.Ok? && r.value.path == path
       && r.value.file_count == |ChildFiles(fs, path)|
       && r.value.total_size == SumSizes(fs, ChildFiles(fs, path))
+    // BE-021 § Reach with BE-029: NotFound, except the root, which
+    // aggregates an empty store rather than raising.
+    // @spec BE-021
+    ensures Live() && !containerPresent ==>
+      if path == Root
+      then r.Ok? && r.value.path == Root && r.value.file_count == 0 && r.value.total_size == 0
+      else r == Err(NotFound(path, name))
 
   // ====================================================================
   // move(src, dst, overwrite)
@@ -821,15 +1021,40 @@ trait Backend {
     requires Valid()
     modifies this
     ensures Valid()
+    ensures closed == old(closed)
+    ensures containerPresent == old(containerPresent)
+    // @spec BE-020
+    ensures !old(Live()) ==> r == Err(BackendUnavailable(name))
+    // @spec BE-020
+    ensures !old(Live()) ==> fs == old(fs)
+    // BE-029: either root refusal happens before anything is transferred.
+    // @spec BE-029
+    ensures old(Live()) && (AddressesRoot(src) || AddressesRoot(dst)) ==> fs == old(fs)
+    // BE-029, key-decided and ranked ahead of every observed check: the
+    // root as source is a file-shaped operation on a folder, and the root
+    // as destination is a write to the root.  Source first.  A root
+    // destination outranks src-NotFound: BE-018 § Precondition order carves
+    // it out of "src-NotFound outranks dst-side preconditions".
+    // @spec BE-029
+    ensures old(Live()) && AddressesRoot(src)
+      ==> r == Err(InvalidPath(src, name))
+    // @spec BE-029
+    ensures old(Live()) && !AddressesRoot(src) && AddressesRoot(dst)
+      ==> r == Err(InvalidPath(dst, name))
+    // BE-021 § Reach: against an absent container the source is missing.
     // @spec BE-021
-    ensures IsDir(old(fs), src)
+    ensures old(Live()) && !AddressesRoot(src) && !AddressesRoot(dst) && !old(containerPresent)
+      ==> r == Err(NotFound(src, name))
+    // @spec BE-021
+    ensures old(Live()) && !AddressesRoot(src) && !AddressesRoot(dst) && IsDir(old(fs), src)
       ==> r == Err(InvalidPath(src, name))
     // @spec BE-018
-    ensures !PathExists(old(fs), src)
+    ensures old(Live()) && !AddressesRoot(src) && !AddressesRoot(dst) && !PathExists(old(fs), src)
       ==> r == Err(NotFound(src, name))
     // Directory destination → InvalidPath (can't overwrite dir with file).
     // @spec BE-021
-    ensures IsFile(old(fs), src) && IsDir(old(fs), dst)
+    ensures old(Live()) && !AddressesRoot(src) && !AddressesRoot(dst) &&
+            IsFile(old(fs), src) && IsDir(old(fs), dst)
       ==> r == Err(InvalidPath(dst, name))
     // ID-209 / BE-018: file-ancestor in dst → InvalidPath.  Symmetric with
     // Write's file-ancestor clause: a Move that inserts a FileEntry at dst
@@ -838,15 +1063,18 @@ trait Backend {
     // dst implies, via Valid(), that all ancestors of dst are
     // DirEntries).
     // @spec BE-018
-    ensures IsFile(old(fs), src) && !AllAncestorsTraversable(old(fs), dst)
+    ensures old(Live()) && !AddressesRoot(src) && !AddressesRoot(dst) &&
+            IsFile(old(fs), src) && !AllAncestorsTraversable(old(fs), dst)
       ==> r == Err(InvalidPath(dst, name))
     // @spec BE-018
-    ensures IsFile(old(fs), src) && IsFile(old(fs), dst) && !overwrite && src != dst
+    ensures old(Live()) && !AddressesRoot(src) && !AddressesRoot(dst) &&
+            IsFile(old(fs), src) && IsFile(old(fs), dst) && !overwrite && src != dst
       ==> r == Err(AlreadyExists(dst, name))
     // BE-018 happy path: file src, dst is not a dir, no overwrite conflict,
     // dst's ancestors are all traversable (ID-209 conjunct).
     // @spec BE-018
-    ensures IsFile(old(fs), src) && !IsDir(old(fs), dst) &&
+    ensures old(Live()) && !AddressesRoot(src) && !AddressesRoot(dst) &&
+            IsFile(old(fs), src) && !IsDir(old(fs), dst) &&
             AllAncestorsTraversable(old(fs), dst) &&
             (!IsFile(old(fs), dst) || overwrite || src == dst)
       ==> r.Ok?
@@ -911,28 +1139,51 @@ trait Backend {
     requires Valid()
     modifies this
     ensures Valid()
-    // @spec BE-021
-    ensures IsDir(old(fs), src)
+    ensures closed == old(closed)
+    ensures containerPresent == old(containerPresent)
+    // @spec BE-020
+    ensures !old(Live()) ==> r == Err(BackendUnavailable(name))
+    // @spec BE-020
+    ensures !old(Live()) ==> fs == old(fs)
+    // @spec BE-029
+    ensures old(Live()) && (AddressesRoot(src) || AddressesRoot(dst)) ==> fs == old(fs)
+    // BE-029, ranked as in Move.
+    // @spec BE-029
+    ensures old(Live()) && AddressesRoot(src)
       ==> r == Err(InvalidPath(src, name))
-    // @spec BE-019
-    ensures !PathExists(old(fs), src)
+    // @spec BE-029
+    ensures old(Live()) && !AddressesRoot(src) && AddressesRoot(dst)
+      ==> r == Err(InvalidPath(dst, name))
+    // BE-021 § Reach: against an absent container the source is missing.
+    // @spec BE-021
+    ensures old(Live()) && !AddressesRoot(src) && !AddressesRoot(dst) && !old(containerPresent)
       ==> r == Err(NotFound(src, name))
     // @spec BE-021
-    ensures IsFile(old(fs), src) && IsDir(old(fs), dst)
+    ensures old(Live()) && !AddressesRoot(src) && !AddressesRoot(dst) && IsDir(old(fs), src)
+      ==> r == Err(InvalidPath(src, name))
+    // @spec BE-019
+    ensures old(Live()) && !AddressesRoot(src) && !AddressesRoot(dst) && !PathExists(old(fs), src)
+      ==> r == Err(NotFound(src, name))
+    // @spec BE-021
+    ensures old(Live()) && !AddressesRoot(src) && !AddressesRoot(dst) &&
+            IsFile(old(fs), src) && IsDir(old(fs), dst)
       ==> r == Err(InvalidPath(dst, name))
     // ID-209 / BE-019: file-ancestor in dst → InvalidPath.  Symmetric with
     // Move's file-ancestor clause above and Write's file-ancestor clause,
     // for the same Valid()-preservation reason.
     // @spec BE-019
-    ensures IsFile(old(fs), src) && !AllAncestorsTraversable(old(fs), dst)
+    ensures old(Live()) && !AddressesRoot(src) && !AddressesRoot(dst) &&
+            IsFile(old(fs), src) && !AllAncestorsTraversable(old(fs), dst)
       ==> r == Err(InvalidPath(dst, name))
     // @spec BE-019
-    ensures IsFile(old(fs), src) && IsFile(old(fs), dst) && !overwrite && src != dst
+    ensures old(Live()) && !AddressesRoot(src) && !AddressesRoot(dst) &&
+            IsFile(old(fs), src) && IsFile(old(fs), dst) && !overwrite && src != dst
       ==> r == Err(AlreadyExists(dst, name))
     // BE-019 happy path.  ID-209 adds the AllAncestorsTraversable
     // conjunct for the same reason as Move's happy-path guard.
     // @spec BE-019
-    ensures IsFile(old(fs), src) && !IsDir(old(fs), dst) &&
+    ensures old(Live()) && !AddressesRoot(src) && !AddressesRoot(dst) &&
+            IsFile(old(fs), src) && !IsDir(old(fs), dst) &&
             AllAncestorsTraversable(old(fs), dst) &&
             (!IsFile(old(fs), dst) || overwrite || src == dst)
       ==> r.Ok?
@@ -955,6 +1206,37 @@ trait Backend {
     // @spec CAP-004
     ensures cap !in capabilities ==>
       r == Err(CapabilityNotSupported(CapabilityName(cap), name))
+
+  // ====================================================================
+  // close()  (BE-020, BK-388)
+  // ====================================================================
+  // Never fails, and the flag stays set: whether that ends the instance is
+  // closeIsTerminal's call, through Live().  No frame on fs or
+  // containerPresent, on a first call or a repeated one: BE-020 promises a
+  // non-terminal backend stays usable, not that its contents survive (an
+  // in-memory SQLite store is gone after close()).  Both refinements keep
+  // fs, so they are idempotent; the trait does not promise it.
+  method Close()
+    requires Valid()
+    modifies this
+    ensures Valid()
+    // @spec BE-020
+    ensures closed
+
+  // ====================================================================
+  // Container removed underneath the backend  (BE-021 § Reach, BK-388)
+  // ====================================================================
+  // Not a Backend operation: it models the environment deleting the
+  // bucket / container / table (or LocalBackend's root directory), which
+  // is how every absent-container state arises.  The postconditions above
+  // then state what each operation answers in that state.
+  method DropContainer()
+    requires Valid()
+    modifies this
+    ensures Valid()
+    // @spec BE-021
+    ensures !containerPresent && fs == EmptyStore
+    ensures closed == old(closed)
 }
 
 // ---------------------------------------------------------------------------

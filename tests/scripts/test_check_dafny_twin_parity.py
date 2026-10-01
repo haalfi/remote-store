@@ -475,8 +475,9 @@ TWIN = "MemoryBackendMinimal"
 # them too is defence in depth plus a far more localised message.
 IN_SCOPE: tuple[tuple[str, str, str], ...] = (
     (
-        # Verified silent: `dafny verify` reports 478 verified, 0 errors on this
-        # mutation. The contract pins FolderInfo's .path, .file_count and
+        # Verified silent: `dafny verify` reports 0 errors on this mutation
+        # (the verified count moves with every model change, so it is not
+        # quoted; last re-run under BK-388). The contract pins FolderInfo's .path, .file_count and
         # .total_size but not its second field, so the twin can return a
         # different folder name for every folder and stay provable. This is the
         # case that justifies the gate, not a synthetic one.
@@ -485,7 +486,7 @@ IN_SCOPE: tuple[tuple[str, str, str], ...] = (
         "        r := Ok(FolderInfo(path, Root, file_count, total_size));\n",
     ),
     (
-        # Also verified silent (478 verified, 0 errors): proof structure is
+        # Also verified silent (0 errors): proof structure is
         # invisible to the verifier by construction.
         "proof-hint-drift",
         "    var is_file := path in fs && fs[path].FileEntry?;\n",
@@ -493,7 +494,7 @@ IN_SCOPE: tuple[tuple[str, str, str], ...] = (
     ),
     (
         "dropped-postcondition",
-        "    ensures IsFile(old(fs), path) ==> r.Ok?\n",
+        "    ensures old(Live()) && IsFile(old(fs), path) ==> r.Ok?\n",
         "",
     ),
     (

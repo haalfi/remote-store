@@ -241,6 +241,16 @@ if evidence changes; these are retired.
 
 ## Unreleased
 
+- [x] **BK-388 — The Dafny model lacks the root rule, the close posture and the absent container that RFC-0017's kernel encodes**
+  spec: BE-029, BE-020, BE-021, BE-018, BE-019 · effort: M · audience: library.maintainer
+  `BackendContract.dfy` models `AddressesRoot` (BE-029) on `write` and the
+  `move`/`copy` source and destination, `Live()`/`Close()` (BE-020) ranked first,
+  and `containerPresent`/`DropContainer()` (BE-021 § Reach); `Valid()` keeps the
+  root a folder, and `RootPath.dfy` adds a raw-key entry for every root spelling on the write clause;
+  both refinements and the regenerated oracle follow. BE-018/019 (and ASYNC-018/019)
+  gained a root-destination carve-out over src-NotFound, pinned by a conformance cell.
+  Detail: [dossier](backlog/bk-388-dafny-kernel-clauses.md)
+
 - [x] **BK-391 — `hatch run all` gates on whatever `python` is first on PATH, not the primary Python CI uses**
   spec: — · effort: S · audience: contributor.tooling, contributor.process
   hatch does not read `.python-version` (3.13), and the default env set no

@@ -25,6 +25,35 @@ as the maintainer corrected it at BK-387's close):
 | Close posture, BE-020 | a `closed` flag and a postcondition per operation, in `BackendContract.dfy` and the `MemoryBackend.dfy` refinement | S |
 | Absent container, BE-021 § Reach | the store state becomes optional and the postconditions gain a branch, in both files | M |
 
+**As landed (BK-388's PR).** The root rule is a *postcondition*, not a
+precondition as the table's Root rule row prescribes: a precondition cannot
+rank the closed guard ahead of it, as BE-029 requires, and it would stop the
+contract certifying the oracle's `Write(".")` answer in the root-write
+conformance cells. It ranks after the closed guard and ahead of every
+observed check, and both refusals leave `fs` unchanged. The predicate sits
+in `BackendContract.dfy` §5c and its lemmas in `RootPath.dfy`. The absent
+container is a `containerPresent` flag that `Valid()` ties to `EmptyStore`,
+not an optional store. `sdd/formal/README.md` gaps 9 to 11 record the
+result.
+
+PR review then closed three gaps in that first landing. First, `Valid()`
+keeps `Root` a `DirEntry`, because a `DeleteFolder(Root)` the trait mandated
+could otherwise remove it for good. Second, the trait's well-formed domain
+holds a single root spelling, so `RootPath.dfy` §5 adds a raw-key entry
+that folds every spelling of a write or `move`/`copy` destination onto
+`Root`. Third, `Close()` no longer frames
+`fs`, because BE-020 does not promise that contents survive a close.
+
+**Spec change it forced.** Review found the model refusing a root
+`move`/`copy` destination ahead of src-NotFound, which BE-018 § Precondition
+order forbade. Every backend measured already takes the model's order
+(`MemoryBackend`, `AsyncMemoryBackend`, `LocalBackend` on both root spellings;
+`SFTPBackend` by its own test), so the maintainer amended BE-018 (BE-019 and
+ASYNC-018/019 by reference) with a root-destination carve-out rather than
+reorder the model, under `sdd/000-process.md` Rule 7. The conformance cell
+`test_root_destination_outranks_a_missing_source`, sync and async, pins it.
+The trace records the measurement.
+
 **Gates.** `verify-formal` (a required CI job that runs only when
 `sdd/formal` or `sdd/specs` change, `ci.yml`'s `FORMAL_PAT`) and
 `check_dafny_twin_parity.py`, whose output at `0bf7fe6` is "17 member(s) in

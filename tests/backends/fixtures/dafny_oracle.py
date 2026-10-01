@@ -27,10 +27,10 @@ def _factory() -> Backend:
 def _cleanup(backend: Backend) -> None:
     """Call ``backend.close()`` for parity with the other fixtures.
 
-    ``DafnyOracleBackend`` does not override ``close()``; it inherits the
-    ``Backend`` ABC default (a no-op). Wiring ``cleanup`` here exercises
-    BE-020's idempotency contract on every conformance iteration and
-    makes future overrides safe by construction.
+    ``DafnyOracleBackend.close()`` drives the model's ``Close()``, which
+    sets ``closed`` on the non-terminal ``MemoryBackend``. Wiring
+    ``cleanup`` here runs it on every conformance iteration, and keeps
+    ``TestFixtureCleanupContract`` satisfied for the override.
     """
     backend.close()
 

@@ -233,10 +233,11 @@ that must move — see [`000-process.md` Rule
 
 | File | What it models |
 |------|----------------|
-| `BackendContract.dfy` | Abstract backend trait — error model, capabilities, all operation pre/postconditions |
+| `BackendContract.dfy` | Abstract backend trait — error model, capabilities, all operation pre/postconditions, the `AddressesRoot` root predicate |
 | `MemoryBackend.dfy` | Reference refinement proving the contract is satisfiable; compiled to Python as the conformance oracle |
 | `DepthCounting.dfy` | Verified `DEPTH-001` algorithm and the four depth-filter properties |
 | `ResourceSafety.dfy` | Handle lifecycle, `_safe_wrap` invariant, move atomicity, connection lifecycle |
+| `RootPath.dfy` | What `AddressesRoot` accepts: exactly the keys whose every `/`-segment is `""` or `"."` (`RootSpellingCharacterisation`), so the six BE-029 spellings; only `Root` among well-formed paths; not `\` (BE-029). BE-029's table derived from the trait for every refinement (`RootAnswersPerTable`), and the raw-key entry (`WriteKey`, `MoveKey`, `CopyKey`) that folds every root spelling of a write or `move`/`copy` destination onto `Root` |
 
 Live TLA+ modules live in `sdd/formal/tla/`. The frozen PoC modules
 remain in `sdd/research/tla-poc/` as the historical record of the
@@ -288,11 +289,18 @@ small, stable, and maintainable:
 - **`src == dst` as explicit no-op** in `Move`/`Copy`, with assertions
   proving each postcondition holds for the identity case.
 - **Root as `"."`.** The Dafny `Path` type requires non-empty strings;
-  the Python adapter translates `""` → `"."` once in `_str_to_dafny`,
-  eliminating per-method root guards.
+  the Python adapter translates `""` → `"."` once in `_str_to_dafny`, so
+  the model sees one root spelling. The per-method root checks are not
+  there for other spellings: `Write`, `Move` and `Copy` check
+  `AddressesRoot` to rank the root refusal ahead of every observed check
+  on `Root` itself (BE-029, BE-018's root-destination carve-out), and
+  `DeleteFolder` refuses `Root` (MEM-014). Spellings such as `"./"` or
+  `"/"` are outside the methods' `WellFormedPath` domain; the raw-key
+  entry in `RootPath.dfy` §5 folds them onto `Root` before the trait.
 - **`MemoryBackend` / `MemoryBackendMinimal` parity.** Dafny has no
   class-to-class inheritance, so `MemoryBackendMinimal` duplicates every
-  method body of `MemoryBackend` with a narrower capability set.  Any
+  method body of `MemoryBackend` with a narrower capability set and a
+  terminal close posture.  Any
   postcondition or body change to `MemoryBackend` **must be manually
   mirrored** in `MemoryBackendMinimal`.
 
@@ -300,12 +308,13 @@ small, stable, and maintainable:
   edit only when it changes what that class can prove.  Weakening a
   postcondition the trait declares is caught; drift inside what the contract
   leaves open is not.  Changing the twin's `GetFolderInfo` folder-name field —
-  which no postcondition pins — verifies at *478 verified, 0 errors* while
+  which no postcondition pins — verifies with *0 errors* while
   changing the twin's behaviour for every folder, and proof-structure edits
   verify clean by construction.  That band is now gated by
   `scripts/check_dafny_twin_parity.py`, which compares the two classes member by
   member and pins the two deliberate divergences (the constructor's capability
-  set and `Write`'s `CapWriteResultNative` branch) rather than skipping them.
+  set and close posture, and `Write`'s `CapWriteResultNative` branch) rather
+  than skipping them.
   It needs no Dafny toolchain, and runs both in `hatch run lint` and in CI's
   `verify-formal` job — the latter because `lint` is skipped for a change
   confined to `sdd/`, which is precisely the shape of a one-sided edit here.
@@ -331,7 +340,9 @@ small, stable, and maintainable:
   would be ideal, but `r.Err?` taints method bodies as
   specification-only in Dafny, preventing compiled assignments and
   returns. `MemoryBackend` preserves `fs` on error paths by
-  construction instead.
+  construction instead. The exception is a frame keyed on the pre-state
+  rather than on `r`: the closed-guard and root-refusal frames of gaps 9
+  and 10 are stated and verified.
 
 <a id="compiled-oracle"></a>
 ### Compiled oracle as conformance gate
@@ -427,6 +438,45 @@ Each gap is now encoded as a machine-checkable pre/postcondition:
 | 6 | Acquire-then-wrap safety | SIO-001 | `ResourceSafety.dfy` |
 | 7 | `WriteResult` field mapping + capability round-trip | WR-001a, WR-004, WR-008, WR-012, WR-013 | `BackendContract.dfy` |
 | 8 | Seekable-read quality flag | SIO-008 | `BackendContract.dfy` |
+| 9 | Root rule on write-shaped operations | BE-029 | `BackendContract.dfy`, `RootPath.dfy` |
+| 10 | Close posture | BE-020 | `BackendContract.dfy` |
+| 11 | Absent container | BE-021 § Reach | `BackendContract.dfy` |
+
+Gaps 9 to 11 were added under BK-388, ahead of RFC-0017's kernel, which is
+written against them (RFC-0017 D7). The ranking they encode is the one
+spec 003 states: a closed terminal backend answers `BackendUnavailable` first
+(BE-029), the key-decided root checks come next, a root `move`/`copy`
+destination included (BE-018 § Precondition order), and every observed check
+follows.
+Both of the first two also state that nothing changed (`fs == old(fs)`):
+the one error-path frame the model carries, possible because it is keyed
+on the pre-state rather than on the result.
+`MemoryBackend` matches the Python class (non-terminal close, a container
+present from construction), so `MemoryBackendMinimal` witnesses the
+`BackendUnavailable` branches. Both classes carry a `DropContainer` method,
+which models the environment removing the container and is the only way
+either class reaches the absent state. The Python oracle adapter wraps
+`MemoryBackend` only: its `close()` drives `Close()` and the conformance
+close-posture cells then probe it, so the lane runs the root rule and gap
+10's non-terminal half. The class is non-terminal and the adapter never calls
+`DropContainer`, so the lane reaches no `BackendUnavailable` branch and no
+absent-container branch. The root rule
+covers `write` and the `move`/`copy` source and destination; the other
+file-shaped operations reach the root through the `IsDir` clause, because
+`Valid()` keeps `Root` a `DirEntry` in every state. `DeleteFolder`'s clauses
+leave the root's own answer free, since BE-029 leaves `delete_folder("")`
+undefined, but not its survival; both refinements refuse it with
+`InvalidPath`, as the Python `MemoryBackend` does (MEM-014).
+
+The trait takes well-formed paths, and on that domain `AddressesRoot` holds
+for `Root` alone, so the trait by itself states the root rule for the
+sentinel spelling only. BE-029 binds every spelling on the write clause, and
+`RootPath.dfy` §5 carries that: `WriteKey`, `MoveKey` and `CopyKey` take the
+raw write or `move`/`copy` destination key, fold every root spelling onto
+`Root`, and prove the refusal from the trait's postconditions. A non-root key
+must still be well-formed there. The `move`/`copy` source and the read side
+are not widened, because BE-029 decides them with `is_root`: the source must
+be well-formed, and `Root` is its one root spelling.
 
 Gap 7 was added under ID-151 after root-cause analysis of the ID-146
 review. Review found ~24% of the 95 comments were shaped as per-operation
@@ -462,6 +512,8 @@ Error-path frame conditions (gaps 1–2: `fs == old(fs)` on error) are
 not machine-checked — the `r.Err?` discriminator taints method bodies
 as specification-only in Dafny, preventing compiled assignments and
 returns. `MemoryBackend` preserves the state by construction instead.
+Gaps 9 and 10 are the exception: their frames key on the pre-state
+(`!old(Live())`, `AddressesRoot`), not on `r`, and are verified.
 
 ### TLA+: the WR-018 bundling finding
 

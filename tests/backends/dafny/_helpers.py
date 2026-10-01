@@ -27,6 +27,7 @@ from remote_store._backend import Backend
 from remote_store._capabilities import Capability, CapabilitySet
 from remote_store._errors import (
     AlreadyExists,
+    BackendUnavailable,
     CapabilityNotSupported,
     DirectoryNotEmpty,
     InvalidPath,
@@ -102,7 +103,7 @@ def _raise_if_err(result: object) -> object:
         if err.is_CapabilityNotSupported:
             raise CapabilityNotSupported(capability=_dafny_to_str(err.capability), backend=_BACKEND_NAME)
         if err.is_BackendUnavailable:
-            raise NotFound(message="Backend unavailable", backend=_BACKEND_NAME)
+            raise BackendUnavailable(f"{_BACKEND_NAME} backend is closed", backend=_BACKEND_NAME)
     return result.value  # type: ignore[union-attr]
 
 
@@ -301,6 +302,11 @@ class DafnyOracleBackend(Backend):
 
     def copy(self, src: str, dst: str, *, overwrite: bool = False) -> None:
         _raise_if_err(self._mb.Copy(_str_to_dafny(src), _str_to_dafny(dst), overwrite))
+
+    def close(self) -> None:
+        # BE-020: drives the model's Close(); MemoryBackend is non-terminal,
+        # so the oracle stays usable afterwards.
+        self._mb.Close()
 
     def __repr__(self) -> str:
         return "DafnyOracleBackend()"

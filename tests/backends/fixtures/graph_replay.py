@@ -10,12 +10,15 @@ shim (proven by ``test_httpx_streaming_replay.py``), so — unlike the Azure asy
 replay fixture — no ``AsyncioRequestsTransport`` is injected.
 
 The data-plane ops and their cassettes landed with GR-READ / GR-WRITE /
-GR-MUTATE, so most of this fixture's conformance surface executes. What is
-still inert is the root-path lane: no cassette has been recorded under those
+GR-MUTATE, so most of this fixture's conformance surface executes. Most of
+the root-path lane is still inert: no cassette has been recorded under those
 test names, and Graph resolves the root over HTTP before ruling on it, so the
-missing-cassette skip catches them. Its addressing and close-posture siblings
-answer from the key alone and need no cassette, which is why they run and the
-root-path cells do not (ID-241).
+missing-cassette skip catches them. The root-path cells Graph decides from the
+key alone run without one: the ``move``/``copy`` source row and the
+root-destination-outranks-a-missing-source cell, like the addressing and
+close-posture siblings (ID-241). On this lane those cells skip rather than fail
+if the key guard is removed, because the call then reaches an unrecorded
+request; the per-backend cells in ``tests/backends/graph/aio/`` are the fence.
 """
 
 from __future__ import annotations

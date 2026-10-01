@@ -273,15 +273,6 @@ failure it was.
   narrow the catch so only a confirmed miss reads as "no ancestor"; BE-008 changes with the fix.
   Detail: [dossier](backlog/bug-292-ancestor-gate-fails-open.md)
 
-- [ ] **BK-388 — The Dafny model lacks the root rule, the close posture and the absent container that RFC-0017's kernel encodes**
-  spec: BE-029, BE-020, BE-021 · effort: M · audience: library.maintainer
-  `BackendContract.dfy` models none of BE-029, BE-020 or BE-021 § Reach; the
-  first and last sit behind 6 of RFC-0017's 10 kernel-owned items. ADR-0042 (Proposed)
-  extends it before kernel code, placed per RFC-0017's Open Question 7 answer,
-  gated by `verify-formal` and `check_dafny_twin_parity.py`. Open decision:
-  none on scope; the model shape of the absent-container branch is the work.
-  Detail: [dossier](backlog/bk-388-dafny-kernel-clauses.md)
-
 - [ ] **BK-389 — No backend runs on RFC-0017's kernel, so ADR-0042 stays Proposed**
   spec: BE-021, BE-029, BE-020, BE-017, ERR-001, ERR-009, DEPTH-003, PING-002, PING-008 · effort: L · audience: library.maintainer, user.api_docs, contributor.process
   ADR-0042 is accepted only with the first backend on the new design: D3
@@ -364,9 +355,9 @@ no clause of the contract ships unexercised.
   spec: BE-029 · effort: S · audience: infra.test
   30 `TestBackendRootPath` cells skip on `graph_replay` for want of a cassette
   (`pytest tests/backends/conformance -k TestBackendRootPath -rs`), and Graph
-  has no emulator tier, so BE-029's root-path cells never run against
-  `GraphBackend` below a live account. Open decision: none on shape; the
-  recording procedure is in the dossier.
+  has no emulator tier, so those 30 never run against `GraphBackend` below a
+  live account; the 8 key-decided cells that issue no request do. Open decision:
+  none on shape; the recording procedure is in the dossier.
   Detail: [dossier](backlog/id-247-graph-root-path-cassettes.md)
 
 - [ ] **BK-382 — The file-ancestor gate ships unexercised on the overwrite path, where the pre-check runs inside an open write transaction**

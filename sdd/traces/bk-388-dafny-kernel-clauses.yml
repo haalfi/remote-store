@@ -1,0 +1,608 @@
+id: BK-388
+title: "Model BE-029's root rule, BE-020's close posture and BE-021's absent container in sdd/formal"
+trigger: >-
+  RFC-0017 OQ7 was answered "extend all three" (ADR-0042, Proposed), and BK-389's
+  kernel is written against these postconditions, so they land first (RFC-0017
+  D7). The maintainer invoked /ship with the placement, absent-container shape,
+  close posture and lemma module routed through plan-mode questions.
+source_items:
+  - BK-388
+audience:
+  - library.maintainer
+  - contributor.process
+  - infra.test
+  - infra.ci
+expected_ripples:
+  - sdd/formal/BackendContract.dfy
+  - sdd/formal/MemoryBackend.dfy
+  - sdd/formal/RootPath.dfy
+  - sdd/formal/MemoryBackend-py/module_.py
+  - sdd/formal/README.md
+  - scripts/check_dafny_twin_parity.py
+  - sdd/specs/003-backend-adapter-contract.md
+  - sdd/BACKLOG.md
+  - sdd/BACKLOG-DONE.md
+  - sdd/backlog/bk-389-kernel-step-1-memory.md
+  - sdd/backlog/bk-388-dafny-kernel-clauses.md
+  - sdd/backlogid.json
+phases:
+  - id: orient
+    name: Orient
+    steps:
+      - file: sdd/backlog/bk-388-dafny-kernel-clauses.md
+        section: "(full)"
+        read_type: gate
+        extract: >-
+          Three clauses with their placement: root predicate upstream of the
+          trait named by write-shaped preconditions, lemmas downstream; close
+          flag plus a postcondition per operation; optional store state with a
+          branch per postcondition. Exit: all verify, parity green, @spec tags.
+        outcome: ok
+      - file: sdd/rfcs/rfc-0017-contract-kernel-over-thin-drivers.md
+        section: "D7; Open Question 7"
+        read_type: gate
+        extract: >-
+          D7's table fixes the shapes (S, S, M) and the OQ7 answer fixes
+          placement. Neither says how the closed guard ranks against the root
+          rule, which BE-029 decides ("BE-020 outranks this check").
+        outcome: ok
+      - file: sdd/adrs/0042-contract-kernel-over-thin-drivers.md
+        section: "Decision, formal-model bullet"
+        read_type: reference
+        extract: "BE-029, BE-020 and BE-021 § Reach become verified clauses before kernel code."
+        outcome: ok
+      - file: sdd/specs/003-backend-adapter-contract.md
+        section: "BE-029; BE-020; BE-021 § An absent container reads as an absent path, § Reach"
+        read_type: gate
+        extract: >-
+          BE-029: root decided from the key on every slash-and-dot spelling
+          ("", ".", "./", ".//", "./.", "/"), not "\", for write, move/copy
+          destination; closed guard runs first; addressing exempt by name.
+          BE-020: terminal close flips a flag, later operations raise
+          BackendUnavailable. § Reach: per-operation answers against an absent
+          container, write left to backend specs except the root. Line 548
+          says the model has no absent-container representation, which this
+          item makes false.
+        outcome: ok
+      - file: sdd/formal/BackendContract.dfy
+        section: "(full)"
+        read_type: gate
+        extract: >-
+          Path is non-empty and WellFormedPath is assumed, so the only
+          well-formed root spelling is the sentinel ".". Read-only methods do
+          not require Valid(). Postconditions are implication chains, so a
+          closed guard has to rank first by guarding the rest.
+        outcome: ok
+      - file: sdd/formal/MemoryBackend.dfy
+        section: "(full)"
+        read_type: gate
+        extract: >-
+          Two classes mirrored member by member; MemoryBackendMinimal already
+          witnesses a branch dead in the reference (WR-010), which is the
+          pattern for a terminal-close witness.
+        outcome: ok
+      - file: sdd/formal/README.md
+        section: "Regenerating the compiled output; Verification practices"
+        read_type: gate
+        extract: >-
+          Non-ghost changes require regenerating MemoryBackend-py/module_.py;
+          the Docker wrapper pins Dafny 4.11.0, which matches the local
+          /usr/local/bin/dafny.
+        outcome: ok
+      - file: scripts/check_dafny_twin_parity.py
+        section: "(run)"
+        read_type: verify
+        extract: "At bdc956d: 17 member(s) in lockstep, 2 declared divergence(s)."
+        outcome: ok
+      - file: sdd/formal/
+        section: "dafny verify over the four .dfy files"
+        read_type: verify
+        extract: "At bdc956d: 556 verified, 0 errors."
+        outcome: ok
+      - file: scripts/check_formal_trace.py
+        section: "(run)"
+        read_type: verify
+        extract: >-
+          At bdc956d: 26 Dafny-tagged spec IDs, BE-021 with 9 tag sites,
+          BE-020 and BE-029 absent. Conformance already cites both, so tagging
+          them adds no F1 gap.
+        outcome: ok
+      - file: src/remote_store/backends/_flat_ns.py
+        section: "_addressable_segments"
+        read_type: reference
+        extract: "Drops empty and '.' segments; the root is the empty result. The Dafny predicate mirrors it."
+        outcome: ok
+      - file: sdd/CLAUDE-REFERENCE.md
+        section: "Ripple-check table, Pre-work index"
+        read_type: gate
+        extract: >-
+          Read late, after the model edits had started rather than before
+          them. Rows that apply: Spec section, Backlog item touched,
+          Local-machine reference, changed cross-artifact check (the
+          constructor re-pin), Test whose subject is outside src/.
+        outcome: ok
+  - id: design
+    name: Design
+    steps:
+      - file: sdd/backlog/bk-388-dafny-kernel-clauses.md
+        section: "What it owes, Root rule row"
+        read_type: reference
+        extract: >-
+          Says the write-shaped operations name the predicate in their
+          preconditions. A precondition cannot rank BE-020 ahead of BE-029
+          and withdraws the oracle's certification of the root-write cells,
+          which call Write("."). The maintainer chose a postcondition ranked
+          after the closed guard at plan time.
+        outcome: misleading
+      - file: src/remote_store/backends/_memory.py
+        section: "move"
+        read_type: verify
+        extract: >-
+          Python MemoryBackend.move rejects a root source, then a root
+          destination, "ahead of the source-existence check". The Dafny Move
+          and Copy clauses take the same order.
+        outcome: ok
+      - file: src/remote_store/backends/_s3.py
+        section: "close"
+        read_type: verify
+        extract: "Terminal close flips _closed and is documented idempotent, so Close() is idempotent in the model."
+        outcome: ok
+  - id: implement
+    name: Implement
+    steps:
+      - file: sdd/formal/MemoryBackend.dfy
+        section: "EnsureParents, Write"
+        read_type: verify
+        extract: >-
+          Valid()'s EmptyStore conjunct pushed EnsureParents past the time
+          limit even at 300 s; with --isolate-assertions every assertion
+          verified (113 verified, 0 errors). Write timed out in a five-file
+          run under load and verified isolated (294 verified, 0 errors).
+          Both carry {:isolate_assertions}, as Copy already did.
+          GetFolderInfo exceeded a 10 s limit that the base commit meets
+          (base: 478 verified, 0 errors at 10 s); a ghost lemma
+          EmptyStoreHoldsNoFile restored it.
+        outcome: ok
+      - file: scripts/_dafny_classorder.py
+        section: "(run on a native dafny build)"
+        read_type: verify
+        extract: >-
+          Native `dafny build -t py` (4.11.0, the pin) of the bdc956d sources
+          plus the class reorder reproduced the committed module_.py
+          byte-for-byte (`git diff --no-index` empty), so the Docker wrapper
+          is not needed to regenerate. The new build changes module_.py only.
+        outcome: ok
+      - file: tests/scripts/test_check_dafny_twin_parity.py
+        section: "IN_SCOPE corpus"
+        read_type: verify
+        extract: >-
+          The dropped-postcondition mutation anchors on Delete's happy-path
+          line, which this item rewrote; re-anchored. The two verified-silent
+          mutations were re-run: both still report 0 errors, so the quoted
+          "478 verified" count was narrowed to "0 errors" here, in the
+          script docstring and in the README.
+        outcome: ok
+      - file: sdd/formal/BackendContract.dfy
+        section: "Write, Delete, DeleteFolder, Move, Copy (PR #1047 round 1)"
+        read_type: verify
+        extract: >-
+          Round 1 found no frame on the closed path: a Write that dropped the
+          container before answering BackendUnavailable verified at a99af9f
+          (297 verified, 0 errors). Added `!old(Live()) ==> fs == old(fs)`
+          on the five mutators and, as the sibling BE-029's "no side
+          effect" owes, the same frame on the root refusals; the seeded
+          mutation now fails (2 errors), for both frames. Postcondition-only,
+          so a rebuild of module_.py was byte-identical.
+        outcome: ok
+      - file: sdd/specs/003-backend-adapter-contract.md
+        section: "BE-018 § Precondition order, BE-019 (PR #1047 round 3)"
+        read_type: gate
+        extract: >-
+          Round 3's whole-file member found the model refusing a root
+          move/copy destination ahead of src-NotFound, which BE-018 and
+          BE-019 forbid as a MUST. Sdd/000-process.md Rule 7 stop: asked the
+          maintainer. First answer: the model follows BE-018. Then measured
+          before committing it: MemoryBackend, AsyncMemoryBackend and
+          LocalBackend all raise InvalidPath(dst) for move/copy("missing.txt",
+          "" and "."), 12 of 12 calls (each op called once on a fresh instance
+          under `hatch run python`), and SFTP's per-backend test pins the
+          same order. Asked again with that evidence; the maintainer chose to
+          amend BE-018 (and BE-019, ASYNC-018/019 by reference) with a
+          root-destination carve-out and keep the model. New conformance
+          cells `test_root_destination_outranks_a_missing_source` (sync and
+          async), at 50b4071 by `hatch run python -m pytest
+          tests/backends/conformance/test_io.py
+          tests/backends/conformance/test_async_extended.py -k
+          root_destination_outranks`: 56 passed, 8 skipped; seeded src-first order in
+          MemoryBackend.move turns the sync memory move cells in test_io.py red
+          (2 failed, the only cells that run selected). Round 4's measuring
+          member ran the premise at base and head on every backend reachable
+          offline: all real ones answer InvalidPath(dst) at both; the Dafny
+          oracle alone answered NotFound(src) at base, and this PR's
+          regeneration moved it to the carved-out order.
+        outcome: ok
+      - file: sdd/rfcs/rfc-0017-contract-kernel-over-thin-drivers.md
+        section: "Open Question 7, the ResourceSafety.dfy include line"
+        read_type: verify
+        extract: >-
+          Cited "its line 34", true when written; this PR's own header growth
+          moved it (48 at 593f725, 50 after the round-3 fix pass, by
+          `git grep -n '^include'`), and I did not sweep for it. Replaced the
+          number with that command. The miss is mine, not the RFC's.
+        outcome: ok
+  - id: verify
+    name: Verify
+    steps:
+      - file: sdd/formal/
+        section: "dafny verify over the five .dfy files, --verification-time-limit 10"
+        read_type: verify
+        extract: >-
+          At a99af9f (before the round-1 frames): 1647 verified, 0 errors.
+        outcome: ok
+      - file: sdd/formal/
+        section: "dafny verify over the five .dfy files, default time limit"
+        read_type: verify
+        extract: >-
+          At 49db4c3 and 50b4071: 1775 verified, 0 errors (rounds 2 and 3
+          changed only comments in the .dfy files). At the round-5 fix commit
+          (`git log -1 --format=%h -S RootSpellingCharacterisation --
+          sdd/formal/RootPath.dfy`): 1777 verified, 0 errors; the two new are
+          RootSpellingCharacterisation and its RootSpelling predicate. At
+          f3c88a6, the c422a92 review fix (Valid() root conjunct, DeleteFolder
+          root guards, RootPath.dfy §4 and §5): 1903 verified, 0 errors.
+          The closing-panel fixes after it, `git log --oneline
+          f3c88a6..862f841 -- sdd/formal` (8000412, 8d79257, 862f841),
+          changed a Close() comment, the source scope of RootPath.dfy's
+          MoveKey/CopyKey, and the Live() comment; each gave 1903 verified,
+          0 errors before its commit. The fix after 862f841 changed only the
+          MemoryBackendMinimal header comment and the README; 1903 verified,
+          0 errors on its tree before commit.
+        outcome: ok
+      - file: sdd/formal/MemoryBackend.dfy
+        section: "seven mutations, each on a scratch copy of sdd/formal"
+        read_type: verify
+        extract: >-
+          Each fails dafny verify: close guard dropped from the terminal
+          twin's Exists; root check dropped from Write; absent early return
+          dropped from ListFiles; absent branch dropped from DeleteFolder;
+          Write not recreating the container; RootPath claiming ".." is the
+          root; the predicate folding "\". So each new clause binds.
+        outcome: ok
+      - file: tests/backends/conformance/
+        section: "-k dafny, plus tests/test_pbt_folder_info_aggregates.py"
+        read_type: verify
+        extract: >-
+          On a99af9f's tree, with the regenerated oracle: `hatch run python -m
+          pytest tests/backends/conformance tests/test_pbt_folder_info_aggregates.py
+          -k dafny` gave 437 passed, 14 skipped; the folder-info PBT alone, 3
+          passed. The selection grew at 50b4071 with the new root-destination
+          cells, so a re-run at head counts more. The oracle keeps
+          MemoryBackend's non-terminal, container-present behaviour.
+        outcome: ok
+      - file: sdd/formal/RootPath.dfy
+        section: "RootSpellingCharacterisation (PR #1047 round 5)"
+        read_type: verify
+        extract: >-
+          Round 5 found "every slash-and-dot spelling" claimed where the lemma
+          proved six strings. Added the universal lemma (AddressesRoot holds
+          exactly on the RootSpelling keys) rather than narrowing the claim.
+          Dropping RootSpelling's '.'-follow condition makes it fail (5
+          verified, 1 error).
+        outcome: ok
+      - file: tests/backends/conformance/test_async_extended.py
+        section: "graph_replay root-path cells (PR #1047 round 5)"
+        read_type: verify
+        extract: >-
+          `-k "graph_replay and TestBackendRootPath"` at the round-4 head: 8
+          passed (move_src/copy_src and the root-destination cell, all
+          key-decided), 30 skipped for missing cassettes. With both of Graph's
+          `_require_writable_key(dst)` calls removed, the root-destination
+          cells skip (4 skipped), not fail: they measure the guard without
+          fencing it. Spec 003, graph_replay.py, fixtures.toml and the
+          per-backend Graph test now say so.
+        outcome: ok
+      - file: sdd/formal/BackendContract.dfy
+        section: "Valid(), DeleteFolder, Close (PR #1047 review at c422a92)"
+        read_type: verify
+        extract: >-
+          The c422a92 review found three model gaps the earlier rounds missed.
+          (1) Valid() had no root conjunct, so a mandated DeleteFolder(Root)
+          lost the root for good: on the compiled oracle, DeleteFolder(".",
+          True) answered Ok, and then Exists(".") answered Ok(False)
+          (tmp/probe_review_c422a92.py). RootPath.RootAnswersPerTable,
+          verified one ensures clause per variant file, failed on all 6 at
+          c422a92 and verifies after the fix. (2) The trait's well-formed
+          domain makes AddressesRoot just `== Root`. (3) Close() framed fs,
+          but in-memory SQLite loses its state on close
+          (test_close_posture.py:50). This was my own miss: a frame I had
+          read as harmless on the non-terminal side.
+        outcome: ok
+      - file: tests/backends/dafny/_helpers.py
+        section: "_raise_if_err, close() (PR #1047 review at c422a92)"
+        read_type: verify
+        extract: >-
+          BackendUnavailable was mapped to NotFound, and close() was the ABC
+          no-op. Both new tests in test_raise_if_err.py failed on the
+          unfixed adapter and pass after the fix. The oracle wraps only the
+          non-terminal MemoryBackend, so the lane still reaches no
+          BackendUnavailable branch; the README says so.
+        outcome: ok
+      - file: tests/backends/fixtures/dafny_oracle.py
+        section: "_cleanup docstring (PR #1047 closing panel at f3c88a6)"
+        read_type: verify
+        extract: >-
+          The close() override made three fixture docstrings false, because
+          they say DafnyOracleBackend inherits the ABC's no-op close. My sweep
+          of the c422a92 fix grepped only sdd/ and tests/backends/dafny, so it
+          missed them. The same override put the oracle's non-terminal close
+          path on the conformance lane, through the fixture cleanup and
+          test_close_posture.py. That made the README's "root rule alone",
+          written in the same fix, false as well.
+        outcome: ok
+      - file: tests/backends/fixtures/dafny_oracle_async.py
+        section: "module docstring (PR #1047 closing panel at 8000412)"
+        read_type: verify
+        extract: >-
+          The 8000412 sweep fixed the async fixture's premise (no ABC no-op)
+          but left "close() is never executed on the async leg". I had read
+          only the sync close-posture file, so I missed
+          tests/backends/conformance/aio/test_close_posture.py, whose aclose()
+          reaches the override through SyncBackendAdapter. Its 13
+          dafny_oracle_async cells pass (`pytest .../aio/test_close_posture.py
+          -k dafny_oracle_async`).
+        outcome: ok
+      - file: sdd/formal/RootPath.dfy
+        section: "§5 MoveKey / CopyKey source (PR #1047 closing panel at 8000412)"
+        read_type: verify
+        extract: >-
+          The entry folded every root spelling on the move/copy source too,
+          under @spec BE-029. BE-029 requires only is_root there, and the
+          custom-backend guide calls the wider refusal "permitted … none is
+          required to". The maintainer chose to fold the destination only, so
+          the source now takes a well-formed Path. Two mutations fail
+          MoveKey: passing dst unfolded fails the trait's
+          WellFormedPath(dst) precondition, and accepting a raw-spelling
+          source fails WellFormedNonRootIsNotRoot's precondition.
+        outcome: ok
+      - file: sdd/rfcs/rfc-0017-contract-kernel-over-thin-drivers.md
+        section: "OQ7 Landed note (PR #1047 closing panel at 617d3d1)"
+        read_type: verify
+        extract: >-
+          In the 8d79257 sweep I read OQ7's "every-spelling obligation" as
+          meaning the write clause, and left it unscoped. A cold reader takes
+          it to cover the move/copy source, which the BK-389 dossier then
+          contradicts. It now names write and the destination. The same
+          round asked for BK-392's "measured: it changes the class" to carry
+          its derivation. A LocalBackend with the root present, moving or
+          copying a missing source to "", answers InvalidPath with the guard
+          and NotFound with the guard patched out; that and the per-site
+          reads now sit in BK-392's dossier. While writing it, two rows I
+          had from memory (2 and 3) and one claim I had filed (row 7, a
+          seeded cell) did not survive a read, so the dossier marks row 7 as
+          unmeasured.
+        outcome: ok
+      - file: sdd/specs/003-backend-adapter-contract.md
+        section: "BE-018 source predicate, and the follow-up's sites (PR #1047 closing panel at 0ac7e21)"
+        read_type: verify
+        extract: >-
+          The panel found BE-018's carve-out calling for a src that "addresses
+          the root", BE-029's wide predicate, where BE-008 requires only
+          is_root on the source. That is the second time the source predicate
+          was flagged (the first was RootPath.dfy's MoveKey in round 9), so I
+          enumerated every statement of it in the PR: the trait's
+          AddressesRoot(src) equals src == Root on its domain, the
+          refinements' raw-string check is a permitted stricter choice, and
+          RootPath.dfy, the README, BK-389 and RFC-0017 OQ7 say is_root. Only
+          BE-018's sentence was wrong, and it now says is_root. The panel also
+          showed that the follow-up item had become a layer producing its own
+          findings, and its deferral reason was false. The maintainer chose to
+          fix the sites here and drop the item, BK-392. It only ever lived in
+          this branch's BACKLOG.md (added in 617d3d1, removed in 3fbc51b:
+          `git log --oneline -S "BK-392 —" -- sdd/BACKLOG.md`) and never
+          reached master, so `gen_backlogid.py --check` offers 392 again: that ID will
+          be reused, and the earlier steps' "BK-392" and "BK-392's dossier" no
+          longer resolve. The dossier's reads now live in the _flat_ns, _local
+          and _sftp guard docstrings and in this step. Of its seven rows, two did not
+          survive a read. Spec 003's Graph paragraph is true: its "both new
+          rosters" are the two seeded write rosters, and the source cells
+          measure without fencing. And test_io.py's seeded cell holds on Local
+          (InvalidPath with or without the guard, per the measuring member).
+          Fixed: the Graph row's "five" (now four, from _ASYNC_ROOT_FILE_OPS),
+          the Graph test docstring, the _flat_ns, _local and _sftp guard
+          docstrings (the source's existence decides what the guard changes;
+          SFTP by code read, since move stats the source first), and two
+          ID-247 statements (8 passed, 30 skipped on
+          `pytest tests/backends/conformance -k "graph_replay and TestBackendRootPath"`).
+        outcome: ok
+discovery_followups: []
+surprising_ripples:
+  - .github/workflows/ci.yml
+  - scripts/dafny_verify.sh
+  - tests/scripts/test_check_dafny_twin_parity.py
+  - sdd/rfcs/rfc-0017-contract-kernel-over-thin-drivers.md
+  - sdd/specs/029-async-store-backend-api.md
+  - tests/backends/conformance/test_io.py
+  - tests/backends/conformance/test_async_extended.py
+  - tests/backends/fixtures/graph_replay.py
+  - tests/backends/fixtures/fixtures.toml
+  - tests/backends/graph/aio/test_backend.py
+  - tests/backends/dafny/_helpers.py
+  - tests/backends/dafny/test_raise_if_err.py
+  - tests/backends/fixtures/dafny_oracle.py
+  - tests/backends/fixtures/dafny_oracle_async.py
+  - tests/backends/fixtures/test_registry.py
+  - src/remote_store/backends/_flat_ns.py
+  - src/remote_store/backends/_local.py
+  - src/remote_store/backends/_sftp.py
+  - sdd/backlog/id-247-graph-root-path-cassettes.md
+review:
+  # Derived by `hatch run ship-report 1047 --trace-block-only` at head 4ad048a.
+  # Do not hand-edit, except a newly required field per sdd/traces/_schema.yml
+  # section review: RFC-0015 D4 makes this script the only producer.
+  derivation: "hatch run ship-report 1047 --trace-block-only"
+  pr: 1047
+  review_rounds: 19
+  submissions: 14
+  findings: 50
+  by_round:
+    - round: 1
+      findings: 2
+      origin: {original: 2}
+      triage: {must-fix: 2}
+      duration_hours: 0.08
+    - round: 2
+      findings: 1
+      origin: {unclassifiable-file: 1}
+      triage: {must-fix: 1}
+      duration_hours: 0.37
+    - round: 3
+      findings: 8
+      origin: {loop-introduced: 1, original: 1, unclassifiable-file: 6}
+      triage: {must-fix: 8}
+      duration_hours: 0.52
+    - round: 4
+      findings: 3
+      origin: {loop-introduced: 1, unclassifiable-file: 2}
+      triage: {must-fix: 3}
+      duration_hours: 0.51
+    - round: 5
+      findings: 5
+      origin: {loop-introduced: 1, unclassifiable-file: 4}
+      triage: {must-fix: 5}
+      duration_hours: 0.26
+    - round: 6
+      findings: 3
+      origin: {unclassifiable-file: 3}
+      triage: {filed: 3}
+      duration_hours: 8.11
+    - round: 7
+      findings: 4
+      origin: {original: 3, unclassifiable-file: 1}
+      triage: {must-fix: 4}
+      duration_hours: 1.22
+    - round: 8
+      findings: 5
+      origin: {loop-introduced: 5}
+      triage: {must-fix: 5}
+      duration_hours: 23.07
+    - round: 9
+      findings: 4
+      origin: {loop-introduced: 4}
+      triage: {must-fix: 4}
+      duration_hours: 1.37
+    - round: 10
+      findings: 2
+      origin: {loop-introduced: 2}
+      triage: {must-fix: 2}
+      duration_hours: 2.85
+    - round: 11
+      findings: 6
+      origin: {loop-introduced: 5, unclassifiable-file: 1}
+      triage: {must-fix: 5, unknown: 1}
+      duration_hours: 3.46
+    - round: 12
+      findings: 2
+      origin: {loop-introduced: 2}
+      triage: {must-fix: 2}
+      duration_hours: 0.71
+    - round: 13
+      findings: 4
+      origin: {loop-introduced: 2, original: 1, pre-existing: 1}
+      triage: {must-fix: 4}
+      duration_hours: 0.39
+    - round: 14
+      findings: 1
+      origin: {loop-introduced: 1}
+      triage: {unknown: 1}
+      duration_hours: 0.42
+  by_file:
+    - path: "sdd/traces/bk-388-dafny-kernel-clauses.yml"
+      findings: 8
+    - path: "sdd/specs/003-backend-adapter-contract.md"
+      findings: 7
+    - path: "sdd/formal/BackendContract.dfy"
+      findings: 6
+    - path: "sdd/backlog/bk-392-root-rule-graph-lane-statements.md"
+      findings: 5
+    - path: "sdd/formal/README.md"
+      findings: 5
+    - path: "sdd/rfcs/rfc-0017-contract-kernel-over-thin-drivers.md"
+      findings: 4
+    - path: "sdd/BACKLOG.md"
+      findings: 3
+    - path: "sdd/formal/MemoryBackend.dfy"
+      findings: 2
+    - path: "tests/backends/conformance/test_io.py"
+      findings: 2
+    - path: "sdd/BACKLOG-DONE.md"
+      findings: 1
+    - path: "sdd/formal/MemoryBackend-py/module_.py"
+      findings: 1
+    - path: "sdd/formal/RootPath.dfy"
+      findings: 1
+    - path: "tests/backends/conformance/test_async_extended.py"
+      findings: 1
+    - path: "tests/backends/dafny/_helpers.py"
+      findings: 1
+    - path: "tests/backends/dafny/test_raise_if_err.py"
+      findings: 1
+    - path: "tests/backends/fixtures/dafny_oracle_async.py"
+      findings: 1
+    - path: "tests/backends/graph/aio/test_backend.py"
+      findings: 1
+  untouched_files:
+    - ".github/workflows/ci.yml"
+    - "scripts/check_dafny_twin_parity.py"
+    - "scripts/dafny_verify.sh"
+    - "sdd/backlog/bk-388-dafny-kernel-clauses.md"
+    - "sdd/backlog/bk-389-kernel-step-1-memory.md"
+    - "sdd/backlog/id-247-graph-root-path-cassettes.md"
+    - "sdd/specs/029-async-store-backend-api.md"
+    - "src/remote_store/backends/_flat_ns.py"
+    - "src/remote_store/backends/_local.py"
+    - "src/remote_store/backends/_sftp.py"
+    - "tests/backends/fixtures/dafny_oracle.py"
+    - "tests/backends/fixtures/fixtures.toml"
+    - "tests/backends/fixtures/graph_replay.py"
+    - "tests/backends/fixtures/test_registry.py"
+    - "tests/scripts/test_check_dafny_twin_parity.py"
+  review_driven_commits:
+    - sha: "49db4c3"
+      subject: "BK-388: Address PR #1047 review round 1"
+    - sha: "8ceb9e9"
+      subject: "BK-388: Note the landed root-rule form on RFC-0017's D7 table row"
+    - sha: "593f725"
+      subject: "BK-388: Address PR #1047 review round 2"
+    - sha: "50b4071"
+      subject: "BK-388: Address PR #1047 review round 3"
+    - sha: "43cd3ce"
+      subject: "BK-388: Address PR #1047 review round 4"
+    - sha: "3f54b88"
+      subject: "BK-388: Address PR #1047 review round 5"
+    - sha: "44909e5"
+      subject: "BK-388: File the closing panel's prose findings as a follow-up item"
+    - sha: "c422a92"
+      subject: "BK-388: Record the PR #1047 review block in the trace"
+    - sha: "f3c88a6"
+      subject: "BK-388: Address PR #1047 review at c422a92"
+    - sha: "8000412"
+      subject: "BK-388: Address PR #1047 closing panel at f3c88a6"
+    - sha: "8d79257"
+      subject: "BK-388: Address PR #1047 closing panel at 8000412"
+    - sha: "ffc81c1"
+      subject: "Merge origin/master into bk-388-dafny-kernel-clauses"
+    - sha: "96f19c2"
+      subject: "Merge origin/master into bk-388-dafny-kernel-clauses"
+    - sha: "617d3d1"
+      subject: "BK-388: Renumber the follow-up item BK-391 to BK-392"
+    - sha: "0ac7e21"
+      subject: "BK-388: Address PR #1047 closing panel at 617d3d1"
+    - sha: "3fbc51b"
+      subject: "BK-388: Address PR #1047 closing panel at 0ac7e21"
+    - sha: "862f841"
+      subject: "BK-388: Address PR #1047 closing panel at 3fbc51b"
+    - sha: "bd10dc5"
+      subject: "BK-388: Address PR #1047 closing panel at 862f841"
+    - sha: "4ad048a"
+      subject: "BK-388: Address PR #1047 closing panel at bd10dc5"
+  ci: {verdict: GREEN, failed: 0, pending: 0}

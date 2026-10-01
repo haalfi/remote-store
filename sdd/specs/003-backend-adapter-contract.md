@@ -331,10 +331,12 @@ clause's opening paragraphs already forbid.
 **The `move`/`copy` destination is covered too**, and the rule is the same one:
 a destination that is the root is a write to the root, refused before the
 transport. It is stated rather than left to follow, because the argument that it
-follows is exactly what failed. On the hierarchical backends the destination is
-*already* refused by observation — with the container present the destination
-probe reports a directory, with it absent the source check fails first — and
-that reasoning does not survive the move to a flat namespace, where nothing is
+follows is exactly what failed. On the hierarchical backends the destination was
+once refused by observation: the destination probe reports a directory, but
+only once the source has been found. With a missing source the source check
+answers `NotFound(src)` first, whether or not the container is present, and so
+breaches [BE-018](#be-018-move)'s root-destination carve-out. And that
+reasoning does not survive the move to a flat namespace, where nothing is
 observed: measured, `move(src, ".")` on the direct-boto3 lane **returned cleanly
 and deleted the source**, and the s3fs lane answered `AlreadyExists` for a
 destination that does not exist. A clause whose scope depends on a per-namespace
@@ -357,7 +359,7 @@ what they do reach is measured rather than assumed:
 | Backend | Reached by the conformance cells | Pinned only in its per-backend home | Pinned nowhere |
 |---------|----------------------------------|--------------------------------------|----------------|
 | `SQLQueryBackend` — fixture `sqlquery` | the query rows on the empty store (`exists` / `is_folder` / `is_file`, both spellings); addressing (`native_path` / `resolve` agreeing on both spellings, `to_key` returning the canonical root key); and the **read half** of the file-shaped-operation row — `read`, `read_bytes`, `read_seekable`, `get_file_info`, both spellings | the populated-store rows (`get_folder_info` aggregating a non-empty store), because the conformance fixture registers an empty query mapping and the suite seeds through `write` (ID-244) | — |
-| Graph — fixture `graph_replay` | addressing, under the fixture's `base_path`: `native_path` / `resolve` agreeing on both spellings, `to_key` returning the canonical root key | in `tests/backends/graph/aio/test_backend.py`: every root spelling refused as a write target, as a `move`/`copy` destination and as a `move`/`copy` source, plus the closed-state ordering across both pre-checks, and the same addressing agreement with **no** `base_path` — the conformance fixture is always rooted under one, and the bare-root arm is where both defects this clause was written from lived | the query rows, and the five file-shaped operations other than the `move`/`copy` source. **Not** the write rows: those seed through `write`, so the conformance cells skip for want of a cassette, but the per-backend cells above pin the same guards — they refuse before a request exists, so they need no recording. The close-posture cell does not seed either, and the Graph lane executes it within conformance |
+| Graph — fixture `graph_replay` | addressing, under the fixture's `base_path`: `native_path` / `resolve` agreeing on both spellings, `to_key` returning the canonical root key; the `move`/`copy` source row; and a root `move`/`copy` destination refused ahead of a missing source (`test_root_destination_outranks_a_missing_source`, async, unseeded). Graph decides both from the key, so they need no cassette; with its guard removed each reaches an unrecorded request and skips instead of failing, so they measure the guard without fencing it | in `tests/backends/graph/aio/test_backend.py`: every root spelling refused as a write target, as a `move`/`copy` destination and as a `move`/`copy` source, plus the closed-state ordering across both pre-checks, and the same addressing agreement with **no** `base_path` — the conformance fixture is always rooted under one, and the bare-root arm is where both defects this clause was written from lived | the query rows, and the four file-shaped operations other than the `move`/`copy` source. **Not** the write rows: those seed through `write`, so the conformance cells skip for want of a cassette, but the per-backend cells above pin the same guards — they refuse before a request exists, so they need no recording. The close-posture cell does not seed either, and the Graph lane executes it within conformance |
 
 The file-shaped-operation row is seven operations (`_ROOT_FILE_OPS`): the four
 reads above plus `delete`, `move` and `copy`. `SQLQueryBackend` declares no
@@ -495,7 +497,9 @@ returns False so the data path proceeds; this is the documented contract
 for all backends, including SQLBlob.
 **Formal coverage:** `write()` is modelled in `sdd/formal/BackendContract.dfy`
 as `Write` with postconditions covering the precondition evaluation order
-(`IsDir → InvalidPath`, `!AllAncestorsTraversable → InvalidPath` (ID-209),
+(since BK-388 the closed guard `!Live() → BackendUnavailable` (BE-020) and the
+root refusal `AddressesRoot(path) → InvalidPath` (BE-029) first, then
+`IsDir → InvalidPath`, `!AllAncestorsTraversable → InvalidPath` (ID-209),
 `IsFile ∧ !overwrite → AlreadyExists`), the WR-010
 strict gate (`HasUserMetadata(metadata) ∧ CapUserMetadata !in capabilities →
 CapabilityNotSupported`, with empty-mapping carve-out encoded by
@@ -505,7 +509,8 @@ CapabilityNotSupported`, with empty-mapping carve-out encoded by
 round-trip (`fs[path].info.metadata` reflects what was stored). ID-209
 promotes well-formedness to a class invariant `predicate Valid()` on the
 `Backend` trait, with `requires Valid() ensures Valid()` on every mutating
-method (`Write`, `Delete`, `DeleteFolder`, `Move`, `Copy`); the file-ancestor
+method (`Write`, `Delete`, `DeleteFolder`, `Move`, `Copy`, and since BK-388
+`Close` and `DropContainer`; the read-only methods `require Valid()` too); the file-ancestor
 clause on Write is what closes the loophole that would let a successful
 write break `Valid()`. Move / Copy carry the same file-ancestor clause on
 their destination paths. Verified in `MemoryBackend.dfy`. Python backstop:
@@ -543,9 +548,9 @@ postcondition-chain coverage as `write`. See ID-151.
 ### BE-012: delete()
 
 **Invariant:** `delete(path, missing_ok=False)` removes a file.
-**Raises:** `NotFound` if the file is missing and `missing_ok=False`. `InvalidPath` if `path` names a directory, regardless of `missing_ok` — type errors are not silenced by missing-path tolerance (Dafny: `Delete: IsDir → InvalidPath` unconditionally). See BE-021.
+**Raises:** `NotFound` if the file is missing and `missing_ok=False`. `InvalidPath` if `path` names a directory, regardless of `missing_ok` — type errors are not silenced by missing-path tolerance (Dafny: `Delete: IsDir → InvalidPath` whatever `missing_ok` is). See BE-021.
 **Postconditions:** If `missing_ok=True`, no error for missing files.
-**Absent container:** A missing bucket, container or table counts as a missing file, so `missing_ok=True` returns cleanly and `missing_ok=False` raises `NotFound` — see [BE-021](#be-021-error-mapping) § "An absent container reads as an absent path" for the rule, its stated reach, and its cost model. It binds every backend in scope, with no carve-out. Outside the Dafny model's frame: `BackendContract.dfy` models the store as a map that always exists, so the absent-container case has no representation to verify against and is pinned in Python only (BUG-243).
+**Absent container:** A missing bucket, container or table counts as a missing file, so `missing_ok=True` returns cleanly and `missing_ok=False` raises `NotFound` — see [BE-021](#be-021-error-mapping) § "An absent container reads as an absent path" for the rule, its stated reach, and its cost model. It binds every backend in scope, with no carve-out. Modelled in `sdd/formal/BackendContract.dfy` since BK-388: `containerPresent` with `DropContainer`, and a `Delete` postcondition for the absent state, verified in `MemoryBackend.dfy`; the per-backend absent states are pinned in Python (BUG-243).
 
 ### BE-013: delete_folder()
 
@@ -566,7 +571,9 @@ over potentially absent paths without defensive guards.
 **Formal coverage:** `list_files()` is modelled in
 `sdd/formal/BackendContract.dfy` as `ListFiles`. The missing-path /
 non-traversable-ancestor early-return is pinned by
-`!PathExists(fs, path) || !AllAncestorsTraversable(fs, path) ==> r.value == []`;
+`Live() && (!PathExists(fs, path) || !AllAncestorsTraversable(fs, path)) ==> r == Ok([])`
+(the `Live()` guard is BE-020's, since BK-388, which also adds
+`Live() && !containerPresent ==> r == Ok([])` for BE-021 § Reach);
 the completeness postcondition's guard widened symmetrically from
 `PathExists(fs, path)` to `PathExists(fs, path) && AllAncestorsTraversable(fs, path)`,
 relaxing the implementer obligation in the same malformed-fs slice — both
@@ -601,7 +608,8 @@ in `MemoryBackend.dfy`. See ID-184, ID-209.
 **Raises:** `NotFound` if the path does not exist. `InvalidPath` if the path names a directory (Dafny: `GetFileInfo: IsDir → InvalidPath`). See BE-021.
 **Formal coverage:** `get_file_info()` is modelled in
 `sdd/formal/BackendContract.dfy` as `GetFileInfo` with postcondition
-`IsFile → r.Ok? ∧ r.value == fs[path].info`. The extended `FileInfo`
+`IsFile → r.Ok? ∧ r.value == fs[path].info` (under BE-020's `Live()`
+guard, see there). The extended `FileInfo`
 datatype carries the optional `digest`, `etag`, `last_modified`, and
 `metadata` fields (no `version_id` — only `WriteResult` does in v1), so
 the WR-013 round-trip (metadata survives `write → get_file_info`) and
@@ -614,13 +622,13 @@ discharged structurally. Verified in `MemoryBackend.dfy`. See ID-151.
 **Raises:** `NotFound` if the path does not exist. `InvalidPath` if the path names a file (wrong type — use `get_file_info` instead). See BE-021.
 **Flat-namespace backends are not exempt** (BK-324): when the prefix listing comes back empty they probe the exact key and raise `InvalidPath` rather than `NotFound`. See [BE-021](#be-021-error-mapping) for the shared error-path rule and its cost model.
 **Root:** `get_folder_info("")` aggregates over the whole store rather than raising — see BE-029.
-**Formal coverage:** `get_folder_info()` is modelled in `sdd/formal/BackendContract.dfy` as `GetFolderInfo` with postconditions `IsFile → InvalidPath`, `!PathExists → NotFound`, `IsDir → Ok`, `file_count == |ChildFiles(fs, path)|`, and `total_size == SumSizes(fs, ChildFiles(fs, path))`. Verified in `MemoryBackend.dfy`. Property-based aggregate coverage against the compiled Dafny oracle lives in `tests/test_pbt_folder_info_aggregates.py`. See ID-130, ID-134, ID-187.
+**Formal coverage:** `get_folder_info()` is modelled in `sdd/formal/BackendContract.dfy` as `GetFolderInfo` with postconditions `IsFile → InvalidPath`, `!PathExists → NotFound`, `IsDir → Ok`, `file_count == |ChildFiles(fs, path)|`, and `total_size == SumSizes(fs, ChildFiles(fs, path))`, each under BE-020's `Live()` guard; since BK-388 also an absent-container clause (BE-021 § Reach): the root aggregates to zero, any other path is `NotFound`. Verified in `MemoryBackend.dfy`. Property-based aggregate coverage against the compiled Dafny oracle lives in `tests/test_pbt_folder_info_aggregates.py`. See ID-130, ID-134, ID-187.
 
 ### BE-018: move()
 
 **Invariant:** `move(src, dst, overwrite=False)` renames/moves a file.
 **Raises:** `NotFound` if `src` does not exist. `InvalidPath` if `src` names a directory, if `dst` names an existing directory (cannot overwrite a directory with a file), or if an ancestor of `dst` exists as a regular file (file-as-directory-component on dst, ID-209 — flat-namespace backends opt in to the dst-side ancestor walk via the `reject_write_under_file_ancestor` kwarg, same shape as BE-008 / ID-211). `AlreadyExists` if `dst` names an existing file, `overwrite=False`, and `src != dst` — self-move on a file is a no-op (Dafny: `Move: src == dst → Ok`); self-move on a directory still raises `InvalidPath` per the precondition ordering in BE-008. See BE-021 and BE-008 for precondition evaluation order.
-**Precondition order:** `src`-NotFound takes priority over dst-side preconditions; specifically `move(missing_src, blocked_dst)` MUST raise `NotFound(src)` rather than `InvalidPath(dst)`. `LocalBackend.move` enforces this naturally (the `mkdir_parents` walk that catches the file-ancestor case runs after the src-exists check); flat-namespace backends running the ID-211 opt-in MUST defer the `_check_no_file_ancestor(dst)` walk until after the src-NotFound probe to match. Surfaced by the ID-211 review; pinned to remove the cross-backend ambiguity that existed under BE-018 alone.
+**Precondition order:** `src`-NotFound takes priority over dst-side preconditions; specifically `move(missing_src, blocked_dst)` MUST raise `NotFound(src)` rather than `InvalidPath(dst)`. `LocalBackend.move` enforces this naturally (the `mkdir_parents` walk that catches the file-ancestor case runs after the src-exists check); flat-namespace backends running the ID-211 opt-in MUST defer the `_check_no_file_ancestor(dst)` walk until after the src-NotFound probe to match. Surfaced by the ID-211 review; pinned to remove the cross-backend ambiguity that existed under BE-018 alone. **One dst-side check outranks src-NotFound: a `dst` that addresses the store root.** [BE-029](#be-029-root-path) decides it from the key before any request, so `move(missing_src, "")` MUST raise `InvalidPath(dst)`; a `src` that is the root is refused first, as `InvalidPath(src)`. "Is the root" there is `is_root`, the source end's floor: [BE-008](#be-008-write)'s two-predicate paragraph lets a backend refuse a wider source spelling first, and does not require it. That is the order the backends measured for it already take (`MemoryBackend`, `AsyncMemoryBackend` and `LocalBackend`, both root spellings, `move` and `copy`; `SFTPBackend`'s is pinned by `test_move_and_copy_destination_cannot_reach_the_corruption`), and the one `sdd/formal/BackendContract.dfy` verifies (BK-388).
 **Metadata:** `move()` preserves the source file's user metadata: after a
 successful move, `get_file_info(dst)` MUST return the same `metadata`
 mapping the source file carried before the move — the WR-013 user-metadata
@@ -644,7 +652,7 @@ drops metadata fails to verify. Verified in `MemoryBackend.dfy`. See BK-232.
 
 **Invariant:** `copy(src, dst, overwrite=False)` duplicates a file.
 **Raises:** `NotFound` if `src` does not exist. `InvalidPath` if `src` names a directory, if `dst` names an existing directory, or if an ancestor of `dst` exists as a regular file (file-as-directory-component on dst, ID-209 — flat-namespace backends opt in to the dst-side ancestor walk via the `reject_write_under_file_ancestor` kwarg, same shape as BE-008 / ID-211). `AlreadyExists` if `dst` names an existing file, `overwrite=False`, and `src != dst` — self-copy on a file is a no-op, not an error (Dafny: "Self-copy (src == dst) is a no-op, not AlreadyExists"); self-copy on a directory still raises `InvalidPath` per the precondition ordering in BE-008. See BE-021.
-**Precondition order:** Same as BE-018 — `src`-NotFound takes priority over dst-side preconditions, so `copy(missing_src, blocked_dst)` MUST raise `NotFound(src)` rather than `InvalidPath(dst)`.
+**Precondition order:** Same as BE-018 — `src`-NotFound takes priority over dst-side preconditions, so `copy(missing_src, blocked_dst)` MUST raise `NotFound(src)` rather than `InvalidPath(dst)`, except for a `dst` that addresses the store root, which BE-018 ranks ahead of it.
 **Metadata:** `copy()` preserves the source file's user metadata: after a
 successful copy, `get_file_info(dst)` MUST return the same `metadata`
 mapping as `get_file_info(src)` — the WR-013 user-metadata round-trip,
@@ -672,6 +680,7 @@ drops metadata fails to verify. Verified in `MemoryBackend.dfy`. See BK-196.
 
 The use-after-close conformance lane (`tests/backends/conformance/test_close_posture.py` and its `aio/` sibling) gates on this attribute, asserting the terminal error for terminal backends and re-initialisation for the rest.
 **Rationale:** A terminal close turns a use-after-close (a likely bug) into a clear typed error instead of a silent resource reopen, while leaving stateless/cheap backends freely reusable.
+**Formal coverage:** since BK-388, `sdd/formal/BackendContract.dfy` models the posture as `closeIsTerminal`, `closed` and `Live()`, with a `Close()` that sets `closed` and promises nothing about the store's contents. Every operation that returns a result, except `RequireCapability`, answers `BackendUnavailable` when `!Live()`, ahead of every other clause and with `fs` unchanged. `Close()` returns nothing and stays callable after a terminal close, and `DropContainer()` models the environment rather than an operation, so neither carries the guard; every other postcondition the other formal-coverage notes in this spec quote holds under `Live()`. `MemoryBackendMinimal` is the close-terminal witness in `MemoryBackend.dfy`.
 
 ### BE-021: Error Mapping
 
@@ -946,6 +955,10 @@ the split is per-cell rather than per-backend. Its lane skips both new rosters,
 because those seed through `write` and so need a cassette — hence the cells
 fencing its source and destination guards live in `tests/backends/graph/aio/`,
 where they need no recording since those guards refuse before a request exists.
+One destination cell does reach it within conformance: BE-018's
+root-destination carve-out cell, which seeds nothing (BK-388). It measures the
+guard without fencing it: with the guard removed the call reaches an
+unrecorded request and the cell skips, so the per-backend cells stay the fence.
 Its **closed-guard ordering is pinned within conformance**, by the `aio/` twin of
 the close-posture cell: that one never seeds, so the Graph lane executes it, and
 it is the cell that caught the ordering breach in the first place. A cassette-less

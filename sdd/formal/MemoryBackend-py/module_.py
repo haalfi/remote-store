@@ -755,6 +755,22 @@ class Backend:
     @fs.setter
     def fs(self, value):
         self._fs = value
+    @property
+    def closed(self):
+        return self._closed
+    @closed.setter
+    def closed(self, value):
+        self._closed = value
+    @property
+    def containerPresent(self):
+        return self._containerPresent
+    @containerPresent.setter
+    def containerPresent(self, value):
+        self._containerPresent = value
+    @staticmethod
+    def Live(self):
+        return not((self.closed) and ((self).closeIsTerminal))
+
     @staticmethod
     def Valid(self):
         def lambda0_(forall_var_0_):
@@ -768,7 +784,7 @@ class Backend:
             elif True:
                 return True
 
-        return _dafny.quantifier((self.fs).keys.Elements, True, lambda0_)
+        return (((_dafny.quantifier((self.fs).keys.Elements, True, lambda0_)) and ((default__.Root) in (self.fs))) and (((self.fs)[default__.Root]).is_DirEntry)) and (not (not(self.containerPresent)) or ((self.fs) == (default__.EmptyStore)))
 
     def Exists(self, path):
         pass
@@ -810,6 +826,12 @@ class Backend:
         pass
 
     def RequireCapability(self, cap):
+        pass
+
+    def Close(self):
+        pass
+
+    def DropContainer(self):
         pass
 
 
@@ -893,6 +915,24 @@ class default__:
             return not ((((0) < (d_0_i_)) and ((d_0_i_) < ((len(p)) - (1)))) and (((p)[d_0_i_]) == (_dafny.CodePoint('/')))) or ((not(default__.PathExists(fs, _dafny.SeqWithoutIsStrInference((p)[:d_0_i_:])))) or (default__.IsDir(fs, _dafny.SeqWithoutIsStrInference((p)[:d_0_i_:]))))
 
         return _dafny.quantifier(_dafny.IntegerRange((0) + (1), (len(p)) - (1)), True, lambda0_)
+
+    @staticmethod
+    def AddressesRoot(key):
+        while True:
+            with _dafny.label():
+                if (len(key)) == (0):
+                    return True
+                elif ((key)[0]) == (_dafny.CodePoint('/')):
+                    in0_ = _dafny.SeqWithoutIsStrInference((key)[1::])
+                    key = in0_
+                    raise _dafny.TailCall()
+                elif (((key)[0]) == (_dafny.CodePoint('.'))) and (((len(key)) == (1)) or (((key)[1]) == (_dafny.CodePoint('/')))):
+                    in1_ = _dafny.SeqWithoutIsStrInference((key)[1::])
+                    key = in1_
+                    raise _dafny.TailCall()
+                elif True:
+                    return False
+                break
 
     @staticmethod
     def CapabilityName(c):
@@ -1073,22 +1113,43 @@ class default__:
     @_dafny.classproperty
     def Root(instance):
         return _dafny.SeqWithoutIsStrInference(map(_dafny.CodePoint, "."))
+    @_dafny.classproperty
+    def EmptyStore(instance):
+        return _dafny.Map({default__.Root: Entry_DirEntry()})
 
 class MemoryBackend(Backend):
     def  __init__(self):
+        self._closed: bool = False
+        self._containerPresent: bool = False
         self._fs: _dafny.Map = _dafny.Map({})
         self._name: _dafny.Seq = _dafny.SeqWithoutIsStrInference(map(_dafny.CodePoint, ""))
         self._capabilities: _dafny.Set = _dafny.Set({})
+        self._closeIsTerminal: bool = False
         pass
 
     def __dafnystr__(self) -> str:
         return "_module.MemoryBackend"
+    @property
+    def closed(self):
+        return self._closed
+    @closed.setter
+    def closed(self, value):
+        self._closed = value
+    @property
+    def containerPresent(self):
+        return self._containerPresent
+    @containerPresent.setter
+    def containerPresent(self, value):
+        self._containerPresent = value
     @property
     def fs(self):
         return self._fs
     @fs.setter
     def fs(self, value):
         self._fs = value
+    def Live(self):
+        return Backend.Live(self)
+
     def Valid(self):
         return Backend.Valid(self)
 
@@ -1098,13 +1159,22 @@ class MemoryBackend(Backend):
     @property
     def capabilities(self):
         return self._capabilities
+    @property
+    def closeIsTerminal(self):
+        return self._closeIsTerminal
     def ctor__(self):
         (self)._name = _dafny.SeqWithoutIsStrInference(map(_dafny.CodePoint, "memory"))
         (self)._capabilities = _dafny.Set({Capability_CapRead(), Capability_CapWrite(), Capability_CapDelete(), Capability_CapList(), Capability_CapMove(), Capability_CapCopy(), Capability_CapAtomicWrite(), Capability_CapAtomicMove(), Capability_CapMetadata(), Capability_CapSeekableRead(), Capability_CapWriteResultNative(), Capability_CapUserMetadata()})
+        (self)._closeIsTerminal = False
+        (self).closed = False
+        (self).containerPresent = True
         (self).fs = _dafny.Map({default__.Root: Entry_DirEntry()})
 
     def Exists(self, path):
         r: Result = Result.default()()
+        if not((self).Live()):
+            r = Result_Err(Error_BackendUnavailable((self).name))
+            return r
         d_0_path__exists_: bool
         d_0_path__exists_ = (path) in (self.fs)
         d_1_ancestors__ok_: bool
@@ -1116,6 +1186,9 @@ class MemoryBackend(Backend):
 
     def IsFileMethod(self, path):
         r: Result = Result.default()()
+        if not((self).Live()):
+            r = Result_Err(Error_BackendUnavailable((self).name))
+            return r
         d_0_is__file_: bool
         d_0_is__file_ = ((path) in (self.fs)) and (((self.fs)[path]).is_FileEntry)
         d_1_ancestors__ok_: bool
@@ -1127,6 +1200,9 @@ class MemoryBackend(Backend):
 
     def IsFolderMethod(self, path):
         r: Result = Result.default()()
+        if not((self).Live()):
+            r = Result_Err(Error_BackendUnavailable((self).name))
+            return r
         d_0_is__dir_: bool
         d_0_is__dir_ = ((path) in (self.fs)) and (((self.fs)[path]).is_DirEntry)
         d_1_ancestors__ok_: bool
@@ -1159,6 +1235,9 @@ class MemoryBackend(Backend):
 
     def Read(self, path):
         r: Result = Result.default()()
+        if not((self).Live()):
+            r = Result_Err(Error_BackendUnavailable((self).name))
+            return r
         if (path) in (self.fs):
             source0_ = (self.fs)[path]
             with _dafny.label("match0"):
@@ -1189,6 +1268,12 @@ class MemoryBackend(Backend):
 
     def Write(self, path, content, overwrite, metadata):
         r: Result = Result.default()()
+        if not((self).Live()):
+            r = Result_Err(Error_BackendUnavailable((self).name))
+            return r
+        if default__.AddressesRoot(path):
+            r = Result_Err(Error_InvalidPath(path, (self).name))
+            return r
         if ((path) in (self.fs)) and (((self.fs)[path]).is_DirEntry):
             r = Result_Err(Error_InvalidPath(path, (self).name))
             return r
@@ -1205,6 +1290,7 @@ class MemoryBackend(Backend):
         if (default__.HasUserMetadata(metadata)) and ((Capability_CapUserMetadata()) not in ((self).capabilities)):
             r = Result_Err(Error_CapabilityNotSupported(default__.CapabilityName(Capability_CapUserMetadata()), (self).name))
             return r
+        (self).containerPresent = True
         (self).EnsureParents(path)
         d_1_stored__metadata_: Option
         if (default__.HasUserMetadata(metadata)) and ((Capability_CapUserMetadata()) in ((self).capabilities)):
@@ -1229,6 +1315,9 @@ class MemoryBackend(Backend):
 
     def Delete(self, path, missing__ok):
         r: Result = Result.default()()
+        if not((self).Live()):
+            r = Result_Err(Error_BackendUnavailable((self).name))
+            return r
         if (path) in (self.fs):
             source0_ = (self.fs)[path]
             with _dafny.label("match0"):
@@ -1259,6 +1348,18 @@ class MemoryBackend(Backend):
 
     def DeleteFolder(self, path, recursive, missing__ok):
         r: Result = Result.default()()
+        if not((self).Live()):
+            r = Result_Err(Error_BackendUnavailable((self).name))
+            return r
+        if (path) == (default__.Root):
+            r = Result_Err(Error_InvalidPath(path, (self).name))
+            return r
+        if not(self.containerPresent):
+            if missing__ok:
+                r = Result_Ok(())
+            elif True:
+                r = Result_Err(Error_NotFound(path, (self).name))
+            return r
         if ((path) in (self.fs)) and (((self.fs)[path]).is_FileEntry):
             r = Result_Err(Error_InvalidPath(path, (self).name))
             return r
@@ -1300,6 +1401,12 @@ class MemoryBackend(Backend):
 
     def ListFiles(self, path, recursive, max__depth):
         r: Result = Result.default()()
+        if not((self).Live()):
+            r = Result_Err(Error_BackendUnavailable((self).name))
+            return r
+        if not(self.containerPresent):
+            r = Result_Ok(_dafny.SeqWithoutIsStrInference([]))
+            return r
         d_0_ancestors__ok_: bool
         out0_: bool
         out0_ = (self).AncestorsTraversableCheck(path)
@@ -1342,6 +1449,12 @@ class MemoryBackend(Backend):
 
     def ListFolders(self, path):
         r: Result = Result.default()()
+        if not((self).Live()):
+            r = Result_Err(Error_BackendUnavailable((self).name))
+            return r
+        if not(self.containerPresent):
+            r = Result_Ok(_dafny.SeqWithoutIsStrInference([]))
+            return r
         d_0_ancestors__ok_: bool
         out0_: bool
         out0_ = (self).AncestorsTraversableCheck(path)
@@ -1374,6 +1487,9 @@ class MemoryBackend(Backend):
 
     def GetFileInfo(self, path):
         r: Result = Result.default()()
+        if not((self).Live()):
+            r = Result_Err(Error_BackendUnavailable((self).name))
+            return r
         if (path) in (self.fs):
             source0_ = (self.fs)[path]
             with _dafny.label("match0"):
@@ -1391,6 +1507,9 @@ class MemoryBackend(Backend):
 
     def GetFolderInfo(self, path):
         r: Result = Result.default()()
+        if not((self).Live()):
+            r = Result_Err(Error_BackendUnavailable((self).name))
+            return r
         if (path) in (self.fs):
             source0_ = (self.fs)[path]
             with _dafny.label("match0"):
@@ -1428,6 +1547,15 @@ class MemoryBackend(Backend):
 
     def Move(self, src, dst, overwrite):
         r: Result = Result.default()()
+        if not((self).Live()):
+            r = Result_Err(Error_BackendUnavailable((self).name))
+            return r
+        if default__.AddressesRoot(src):
+            r = Result_Err(Error_InvalidPath(src, (self).name))
+            return r
+        if default__.AddressesRoot(dst):
+            r = Result_Err(Error_InvalidPath(dst, (self).name))
+            return r
         if ((src) in (self.fs)) and (((self.fs)[src]).is_DirEntry):
             r = Result_Err(Error_InvalidPath(src, (self).name))
             return r
@@ -1474,6 +1602,15 @@ class MemoryBackend(Backend):
 
     def Copy(self, src, dst, overwrite):
         r: Result = Result.default()()
+        if not((self).Live()):
+            r = Result_Err(Error_BackendUnavailable((self).name))
+            return r
+        if default__.AddressesRoot(src):
+            r = Result_Err(Error_InvalidPath(src, (self).name))
+            return r
+        if default__.AddressesRoot(dst):
+            r = Result_Err(Error_InvalidPath(dst, (self).name))
+            return r
         if ((src) in (self.fs)) and (((self.fs)[src]).is_DirEntry):
             r = Result_Err(Error_InvalidPath(src, (self).name))
             return r
@@ -1513,22 +1650,47 @@ class MemoryBackend(Backend):
             r = Result_Err(Error_CapabilityNotSupported(default__.CapabilityName(cap), (self).name))
         return r
 
+    def Close(self):
+        (self).closed = True
+
+    def DropContainer(self):
+        (self).containerPresent = False
+        (self).fs = default__.EmptyStore
+
 
 class MemoryBackendMinimal(Backend):
     def  __init__(self):
+        self._closed: bool = False
+        self._containerPresent: bool = False
         self._fs: _dafny.Map = _dafny.Map({})
         self._name: _dafny.Seq = _dafny.SeqWithoutIsStrInference(map(_dafny.CodePoint, ""))
         self._capabilities: _dafny.Set = _dafny.Set({})
+        self._closeIsTerminal: bool = False
         pass
 
     def __dafnystr__(self) -> str:
         return "_module.MemoryBackendMinimal"
+    @property
+    def closed(self):
+        return self._closed
+    @closed.setter
+    def closed(self, value):
+        self._closed = value
+    @property
+    def containerPresent(self):
+        return self._containerPresent
+    @containerPresent.setter
+    def containerPresent(self, value):
+        self._containerPresent = value
     @property
     def fs(self):
         return self._fs
     @fs.setter
     def fs(self, value):
         self._fs = value
+    def Live(self):
+        return Backend.Live(self)
+
     def Valid(self):
         return Backend.Valid(self)
 
@@ -1538,13 +1700,22 @@ class MemoryBackendMinimal(Backend):
     @property
     def capabilities(self):
         return self._capabilities
+    @property
+    def closeIsTerminal(self):
+        return self._closeIsTerminal
     def ctor__(self):
         (self)._name = _dafny.SeqWithoutIsStrInference(map(_dafny.CodePoint, "memory-minimal"))
         (self)._capabilities = _dafny.Set({Capability_CapRead(), Capability_CapWrite(), Capability_CapDelete(), Capability_CapList(), Capability_CapMove(), Capability_CapCopy(), Capability_CapAtomicWrite(), Capability_CapAtomicMove(), Capability_CapMetadata(), Capability_CapSeekableRead()})
+        (self)._closeIsTerminal = True
+        (self).closed = False
+        (self).containerPresent = True
         (self).fs = _dafny.Map({default__.Root: Entry_DirEntry()})
 
     def Exists(self, path):
         r: Result = Result.default()()
+        if not((self).Live()):
+            r = Result_Err(Error_BackendUnavailable((self).name))
+            return r
         d_0_path__exists_: bool
         d_0_path__exists_ = (path) in (self.fs)
         d_1_ancestors__ok_: bool
@@ -1556,6 +1727,9 @@ class MemoryBackendMinimal(Backend):
 
     def IsFileMethod(self, path):
         r: Result = Result.default()()
+        if not((self).Live()):
+            r = Result_Err(Error_BackendUnavailable((self).name))
+            return r
         d_0_is__file_: bool
         d_0_is__file_ = ((path) in (self.fs)) and (((self.fs)[path]).is_FileEntry)
         d_1_ancestors__ok_: bool
@@ -1567,6 +1741,9 @@ class MemoryBackendMinimal(Backend):
 
     def IsFolderMethod(self, path):
         r: Result = Result.default()()
+        if not((self).Live()):
+            r = Result_Err(Error_BackendUnavailable((self).name))
+            return r
         d_0_is__dir_: bool
         d_0_is__dir_ = ((path) in (self.fs)) and (((self.fs)[path]).is_DirEntry)
         d_1_ancestors__ok_: bool
@@ -1599,6 +1776,9 @@ class MemoryBackendMinimal(Backend):
 
     def Read(self, path):
         r: Result = Result.default()()
+        if not((self).Live()):
+            r = Result_Err(Error_BackendUnavailable((self).name))
+            return r
         if (path) in (self.fs):
             source0_ = (self.fs)[path]
             with _dafny.label("match0"):
@@ -1629,6 +1809,12 @@ class MemoryBackendMinimal(Backend):
 
     def Write(self, path, content, overwrite, metadata):
         r: Result = Result.default()()
+        if not((self).Live()):
+            r = Result_Err(Error_BackendUnavailable((self).name))
+            return r
+        if default__.AddressesRoot(path):
+            r = Result_Err(Error_InvalidPath(path, (self).name))
+            return r
         if ((path) in (self.fs)) and (((self.fs)[path]).is_DirEntry):
             r = Result_Err(Error_InvalidPath(path, (self).name))
             return r
@@ -1645,6 +1831,7 @@ class MemoryBackendMinimal(Backend):
         if (default__.HasUserMetadata(metadata)) and ((Capability_CapUserMetadata()) not in ((self).capabilities)):
             r = Result_Err(Error_CapabilityNotSupported(default__.CapabilityName(Capability_CapUserMetadata()), (self).name))
             return r
+        (self).containerPresent = True
         (self).EnsureParents(path)
         d_1_stored__metadata_: Option
         if (default__.HasUserMetadata(metadata)) and ((Capability_CapUserMetadata()) in ((self).capabilities)):
@@ -1664,6 +1851,9 @@ class MemoryBackendMinimal(Backend):
 
     def Delete(self, path, missing__ok):
         r: Result = Result.default()()
+        if not((self).Live()):
+            r = Result_Err(Error_BackendUnavailable((self).name))
+            return r
         if (path) in (self.fs):
             source0_ = (self.fs)[path]
             with _dafny.label("match0"):
@@ -1694,6 +1884,18 @@ class MemoryBackendMinimal(Backend):
 
     def DeleteFolder(self, path, recursive, missing__ok):
         r: Result = Result.default()()
+        if not((self).Live()):
+            r = Result_Err(Error_BackendUnavailable((self).name))
+            return r
+        if (path) == (default__.Root):
+            r = Result_Err(Error_InvalidPath(path, (self).name))
+            return r
+        if not(self.containerPresent):
+            if missing__ok:
+                r = Result_Ok(())
+            elif True:
+                r = Result_Err(Error_NotFound(path, (self).name))
+            return r
         if ((path) in (self.fs)) and (((self.fs)[path]).is_FileEntry):
             r = Result_Err(Error_InvalidPath(path, (self).name))
             return r
@@ -1735,6 +1937,12 @@ class MemoryBackendMinimal(Backend):
 
     def ListFiles(self, path, recursive, max__depth):
         r: Result = Result.default()()
+        if not((self).Live()):
+            r = Result_Err(Error_BackendUnavailable((self).name))
+            return r
+        if not(self.containerPresent):
+            r = Result_Ok(_dafny.SeqWithoutIsStrInference([]))
+            return r
         d_0_ancestors__ok_: bool
         out0_: bool
         out0_ = (self).AncestorsTraversableCheck(path)
@@ -1777,6 +1985,12 @@ class MemoryBackendMinimal(Backend):
 
     def ListFolders(self, path):
         r: Result = Result.default()()
+        if not((self).Live()):
+            r = Result_Err(Error_BackendUnavailable((self).name))
+            return r
+        if not(self.containerPresent):
+            r = Result_Ok(_dafny.SeqWithoutIsStrInference([]))
+            return r
         d_0_ancestors__ok_: bool
         out0_: bool
         out0_ = (self).AncestorsTraversableCheck(path)
@@ -1809,6 +2023,9 @@ class MemoryBackendMinimal(Backend):
 
     def GetFileInfo(self, path):
         r: Result = Result.default()()
+        if not((self).Live()):
+            r = Result_Err(Error_BackendUnavailable((self).name))
+            return r
         if (path) in (self.fs):
             source0_ = (self.fs)[path]
             with _dafny.label("match0"):
@@ -1826,6 +2043,9 @@ class MemoryBackendMinimal(Backend):
 
     def GetFolderInfo(self, path):
         r: Result = Result.default()()
+        if not((self).Live()):
+            r = Result_Err(Error_BackendUnavailable((self).name))
+            return r
         if (path) in (self.fs):
             source0_ = (self.fs)[path]
             with _dafny.label("match0"):
@@ -1863,6 +2083,15 @@ class MemoryBackendMinimal(Backend):
 
     def Move(self, src, dst, overwrite):
         r: Result = Result.default()()
+        if not((self).Live()):
+            r = Result_Err(Error_BackendUnavailable((self).name))
+            return r
+        if default__.AddressesRoot(src):
+            r = Result_Err(Error_InvalidPath(src, (self).name))
+            return r
+        if default__.AddressesRoot(dst):
+            r = Result_Err(Error_InvalidPath(dst, (self).name))
+            return r
         if ((src) in (self.fs)) and (((self.fs)[src]).is_DirEntry):
             r = Result_Err(Error_InvalidPath(src, (self).name))
             return r
@@ -1909,6 +2138,15 @@ class MemoryBackendMinimal(Backend):
 
     def Copy(self, src, dst, overwrite):
         r: Result = Result.default()()
+        if not((self).Live()):
+            r = Result_Err(Error_BackendUnavailable((self).name))
+            return r
+        if default__.AddressesRoot(src):
+            r = Result_Err(Error_InvalidPath(src, (self).name))
+            return r
+        if default__.AddressesRoot(dst):
+            r = Result_Err(Error_InvalidPath(dst, (self).name))
+            return r
         if ((src) in (self.fs)) and (((self.fs)[src]).is_DirEntry):
             r = Result_Err(Error_InvalidPath(src, (self).name))
             return r
@@ -1947,5 +2185,12 @@ class MemoryBackendMinimal(Backend):
         elif True:
             r = Result_Err(Error_CapabilityNotSupported(default__.CapabilityName(cap), (self).name))
         return r
+
+    def Close(self):
+        (self).closed = True
+
+    def DropContainer(self):
+        (self).containerPresent = False
+        (self).fs = default__.EmptyStore
 
 

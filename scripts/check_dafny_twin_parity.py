@@ -3,8 +3,8 @@
 
 ``sdd/formal/MemoryBackend.dfy`` declares two classes that refine the same
 ``Backend`` trait.  ``MemoryBackend`` is the reference model; ``MemoryBackendMinimal``
-is a satisfiability witness for the ``BasicSource`` / ``CapabilityNotSupported``
-branches, and it duplicates every member of the reference because **Dafny has no
+is a satisfiability witness for the ``BasicSource`` / ``CapabilityNotSupported`` /
+``BackendUnavailable`` branches, and it duplicates every member of the reference because **Dafny has no
 class-to-class inheritance**.
 
 What the verifier does and does not cover, measured rather than assumed.  Each
@@ -12,7 +12,7 @@ class proves its own contract independently, so a one-sided edit is caught by
 ``dafny_verify.sh`` only when it changes what that class can prove.  Drift that
 stays inside what the contract underdetermines verifies clean: changing the
 value the twin's ``GetFolderInfo`` returns for the field no postcondition pins
-leaves ``dafny verify`` at *478 verified, 0 errors* while changing the twin's
+leaves ``dafny verify`` at *0 errors* while changing the twin's
 behaviour for every folder.  So does any change to proof structure.  That band -- provable
 either way, behaviourally different -- is what this gate covers, and it was
 caught only in review before the gate existed.  The complementary band
@@ -39,8 +39,8 @@ twin groups its lemmas differently.  Members that legitimately differ are not
 skipped -- their difference is **pinned**: ``DIVERGENT`` records the exact set
 of changed lines the twin is allowed to have, so the unchanged remainder of a
 divergent member stays under the gate.  Two members are pinned today (the
-constructor's name and capability set, and ``Write``'s ``CapWriteResultNative``
-branch).  The difference this makes is largest on ``Write``, much the biggest
+constructor's name, capability set and close posture, and ``Write``'s
+``CapWriteResultNative`` branch).  The difference this makes is largest on ``Write``, much the biggest
 member: a pin licenses a handful of lines and leaves the whole remainder of the
 member compared, where an allowlist would drop every line of it.  (Exact counts
 are deliberately not quoted here -- they change whenever ``Write`` is edited in
@@ -133,7 +133,7 @@ TWIN_CLASS = "MemoryBackendMinimal"
 
 # A parse yielding fewer members than this means the source shape moved out from
 # under the scanner; fail loudly rather than report a vacuous "parity".  The two
-# classes carry 19 members each at the time of writing, so this is a floor with
+# classes carry 21 members each at the time of writing, so this is a floor with
 # room for deliberate shrinkage, not a pin.
 MIN_MEMBERS = 12
 
@@ -166,22 +166,29 @@ class Divergence:
 DIVERGENT: dict[str, Divergence] = {
     "constructor": Divergence(
         reason=(
-            "The twin exists to witness the narrower capability set: it declares "
-            "neither CapWriteResultNative nor CapUserMetadata, and carries its own "
-            "name so error values are attributable. This difference is the reason "
-            "the class exists -- reconciling it would delete the witness."
+            "The twin exists to witness the branches the reference leaves dead: it "
+            "declares neither CapWriteResultNative nor CapUserMetadata, and it is "
+            "close-terminal where the reference matches Python's non-terminal "
+            "MemoryBackend (BE-020, BK-388), so every BackendUnavailable branch is "
+            "live code here. It carries its own name so error values are "
+            "attributable. This difference is the reason the class exists -- "
+            "reconciling it would delete the witness."
         ),
         changes=(
             '-ensures name == "memory"',
             '+ensures name == "memory-minimal"',
             "-CapAtomicWrite, CapAtomicMove, CapMetadata, CapSeekableRead,",
             "-CapWriteResultNative, CapUserMetadata}",
+            "-ensures !closeIsTerminal",
             "+CapAtomicWrite, CapAtomicMove, CapMetadata, CapSeekableRead}",
+            "+ensures closeIsTerminal",
             '-name := "memory";',
             '+name := "memory-minimal";',
             "-CapAtomicWrite, CapAtomicMove, CapMetadata, CapSeekableRead,",
             "-CapWriteResultNative, CapUserMetadata};",
+            "-closeIsTerminal := false;",
             "+CapAtomicWrite, CapAtomicMove, CapMetadata, CapSeekableRead};",
+            "+closeIsTerminal := true;",
         ),
     ),
     "Write": Divergence(
