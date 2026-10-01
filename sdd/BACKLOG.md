@@ -273,14 +273,6 @@ failure it was.
   narrow the catch so only a confirmed miss reads as "no ancestor"; BE-008 changes with the fix.
   Detail: [dossier](backlog/bug-292-ancestor-gate-fails-open.md)
 
-- [ ] **BK-392 — Root-rule and Graph-lane statements contradict what BK-388 measured**
-  spec: BE-029, BE-021, BE-018 · effort: S · audience: library.maintainer, infra.test
-  Spec 003's Graph row and Graph paragraph and a Graph test docstring misstate which root cells
-  the Graph lane runs; the root-destination guard's docstrings (`_flat_ns.py`, `_local.py`,
-  `_sftp.py`) say it only changes the message on a present container, but with a missing source
-  it changes the class; `test_io.py`'s seeded-cell variant is unmeasured. Decision: none.
-  Detail: [dossier](backlog/bk-392-root-rule-graph-lane-statements.md)
-
 - [ ] **BK-389 — No backend runs on RFC-0017's kernel, so ADR-0042 stays Proposed**
   spec: BE-021, BE-029, BE-020, BE-017, ERR-001, ERR-009, DEPTH-003, PING-002, PING-008 · effort: L · audience: library.maintainer, user.api_docs, contributor.process
   ADR-0042 is accepted only with the first backend on the new design: D3
@@ -363,9 +355,9 @@ no clause of the contract ships unexercised.
   spec: BE-029 · effort: S · audience: infra.test
   30 `TestBackendRootPath` cells skip on `graph_replay` for want of a cassette
   (`pytest tests/backends/conformance -k TestBackendRootPath -rs`), and Graph
-  has no emulator tier, so BE-029's root-path cells never run against
-  `GraphBackend` below a live account. Open decision: none on shape; the
-  recording procedure is in the dossier.
+  has no emulator tier, so those 30 never run against `GraphBackend` below a
+  live account; the 8 key-decided cells that issue no request do. Open decision:
+  none on shape; the recording procedure is in the dossier.
   Detail: [dossier](backlog/id-247-graph-root-path-cassettes.md)
 
 - [ ] **BK-382 — The file-ancestor gate ships unexercised on the overwrite path, where the pre-check runs inside an open write transaction**

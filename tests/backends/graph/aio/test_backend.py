@@ -200,15 +200,18 @@ class TestAddressing:
         ``base_path`` and this one is not, and the bare-root arm is where the
         defect was.
 
-        The root-*refusal* cells below are conformance-unreachable for a reason
-        worth stating precisely, because the obvious one is wrong: it is not
-        that refusing costs Graph a round trip — the guards refuse from the key
-        before a request exists, which is what lets those cells run with no
-        ``respx.mock`` at all. It is that the conformance cells **seed**
-        through ``write`` to set up, and *that* write needs a cassette. The
-        distinction decides what can be pinned where: the close-posture cell
-        never seeds, so the Graph lane executes it inside conformance and it is
-        where the closed-guard ordering breach was caught.
+        The root-*refusal* cells below are the fence, and conformance cannot be,
+        for a reason worth stating precisely, because the obvious one is wrong:
+        it is not that refusing costs Graph a round trip — the guards refuse
+        from the key before a request exists, which is what lets those cells run
+        with no ``respx.mock`` at all. The seeded conformance cells set up
+        through ``write``, and *that* write needs a cassette, so they skip. The
+        unseeded ones (the source cells and the root-destination carve-out
+        cell) do run on ``graph_replay``, but with the guard removed they reach
+        an unrecorded request and skip rather than fail, so they measure the
+        guard without fencing it. The close-posture cell never seeds, so the
+        Graph lane executes it inside conformance and it is where the
+        closed-guard ordering breach was caught.
         """
         backend = _make()
         assert backend.native_path(".") == backend.native_path("")

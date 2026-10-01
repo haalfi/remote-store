@@ -782,11 +782,14 @@ class LocalBackend(Backend):
         Five call sites: the three writers, plus the ``move``/``copy``
         destination. What the guard changes on the destination depends on the
         state, and the parenthetical that used to sit here was the counterexample
-        to its own conclusion. With the root present, ``dst_full.is_dir()`` fires
-        and the guard changes only the message. With the root **gone** — the
-        state this backend's guard exists for — the source check fires first and
-        the answer was ``NotFound``, so the guard changes the class and inverts
-        the precondition order. ``test_the_root_as_a_move_or_copy_destination_never_becomes_a_file``
+        to its own conclusion. With the root present and the source present,
+        ``dst_full.is_dir()`` fires and the guard changes only the message. With
+        the source **missing** — always so when the root is gone, the state this
+        backend's guard exists for — the source check fires first and the answer
+        was ``NotFound``, so the guard changes the class and inverts the
+        precondition order, as the contract requires: a root destination
+        outranks a missing source (measured on a present root too, with the guard patched out).
+        ``test_the_root_as_a_move_or_copy_destination_never_becomes_a_file``
         asserted ``(NotFound, InvalidPath)`` for that reason and now asserts
         ``InvalidPath`` alone.
         """

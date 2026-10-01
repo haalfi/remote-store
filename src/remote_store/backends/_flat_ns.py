@@ -258,8 +258,13 @@ def _reject_root_as_write_target(path: str, backend: str) -> None:
     four as a missing guard. The destination was at first guarded on the
     hierarchical backends' reasoning — container absent, so nothing exists
     beneath it and the source check fails first; container present, so the
-    destination probe reports a directory — which is true there and measured
-    both ways, and false elsewhere. Measured on the flat namespaces:
+    destination probe reports a directory. The second half holds only for a
+    source that exists: with a missing source the source check answers first on
+    a present container too, so without this guard ``LocalBackend`` answered
+    ``move("missing.txt", "")`` with ``NotFound`` (measured with the guard
+    patched out), where the contract requires ``InvalidPath``: a root
+    destination outranks a missing source. And the reasoning is false elsewhere. Measured on the flat
+    namespaces:
     ``move(src, ".")`` on the direct-boto3 lane **returned cleanly and deleted
     the source**, and the s3fs lane answered ``AlreadyExists`` for a destination
     that does not exist. A carve-out resting on one namespace's reachability

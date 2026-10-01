@@ -378,8 +378,34 @@ phases:
           seeded cell) did not survive a read, so the dossier marks row 7 as
           unmeasured.
         outcome: ok
-discovery_followups:
-  - BK-392
+      - file: sdd/specs/003-backend-adapter-contract.md
+        section: "BE-018 source predicate, and the follow-up's sites (PR #1047 closing panel at 0ac7e21)"
+        read_type: verify
+        extract: >-
+          The panel found BE-018's carve-out calling for a src that "addresses
+          the root", BE-029's wide predicate, where BE-008 requires only
+          is_root on the source. That is the second time the source predicate
+          was flagged (the first was RootPath.dfy's MoveKey in round 9), so I
+          enumerated every statement of it in the PR: the trait's
+          AddressesRoot(src) equals src == Root on its domain, the
+          refinements' raw-string check is a permitted stricter choice, and
+          RootPath.dfy, the README, BK-389 and RFC-0017 OQ7 say is_root. Only
+          BE-018's sentence was wrong, and it now says is_root. The panel also
+          showed that the follow-up item had become a layer producing its own
+          findings, and its deferral reason was false. The maintainer chose to
+          fix the sites here and drop the item. Of its seven rows, two did not
+          survive a read. Spec 003's Graph paragraph is true: its "both new
+          rosters" are the two seeded write rosters, and the source cells
+          measure without fencing. And test_io.py's seeded cell holds on Local
+          (InvalidPath with or without the guard, per the measuring member).
+          Fixed: the Graph row's "five" (now four, from _ASYNC_ROOT_FILE_OPS),
+          the Graph test docstring, the _flat_ns, _local and _sftp guard
+          docstrings (the source's existence decides what the guard changes;
+          SFTP by code read, since move stats the source first), and two
+          ID-247 statements (8 passed, 30 skipped on
+          `pytest tests/backends/conformance -k "graph_replay and TestBackendRootPath"`).
+        outcome: ok
+discovery_followups: []
 surprising_ripples:
   - .github/workflows/ci.yml
   - scripts/dafny_verify.sh
@@ -396,6 +422,10 @@ surprising_ripples:
   - tests/backends/fixtures/dafny_oracle.py
   - tests/backends/fixtures/dafny_oracle_async.py
   - tests/backends/fixtures/test_registry.py
+  - src/remote_store/backends/_flat_ns.py
+  - src/remote_store/backends/_local.py
+  - src/remote_store/backends/_sftp.py
+  - sdd/backlog/id-247-graph-root-path-cassettes.md
 review:
   # Derived by `hatch run ship-report 1047 --trace-block-only` at head 44909e5.
   # Do not hand-edit, except a newly required field per sdd/traces/_schema.yml
