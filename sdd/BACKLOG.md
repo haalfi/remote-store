@@ -275,11 +275,11 @@ failure it was.
 
 - [ ] **BK-389 — No backend runs on RFC-0017's kernel, so ADR-0042 stays Proposed**
   spec: BE-021, BE-029, BE-020, BE-017, ERR-001, ERR-009, DEPTH-003, PING-002, PING-008 · effort: L · audience: library.maintainer, user.api_docs, contributor.process
-  ADR-0042 is accepted only with the first backend on the new design: D3
-  step 1, the async kernel with its `unasync` sync twin over the two Memory
-  drivers. That PR also lands every step-1 spec amendment (dossier item 4), the
-  custom-backend guide as a driver, its check script and the homepage snippet.
-  Depends on BK-388. Open decision: none; RFC-0017 D1 to D7 fix the shape.
+  ADR-0042 is accepted only with the first backend on the new design: D3 step 1,
+  the async kernel with its `unasync` sync twin over the two Memory drivers, with
+  every step-1 spec amendment (dossier item 4), the custom-backend guide as a
+  driver, its check script and the homepage snippet. Depends on BK-388. Open decision:
+  ID-251's `"./"` oracle cell, normalise or carve out (item 2); D1 to D7 fix the rest.
   Detail: [dossier](backlog/bk-389-kernel-step-1-memory.md)
 
 - [ ] **BK-390 — RFC-0017's spec amendments after D3 step 1 have no owner once BK-387 closes**
@@ -347,9 +347,9 @@ no clause of the contract ships unexercised.
   spec: ASYNC-014, DEPTH-003 · effort: S · audience: infra.test
   `test_list_files_non_recursive_ignores_max_depth` skips its 8 replay cells,
   4 `graph_replay` and 4 `azure_replay_async`, for want of a cassette
-  (`pytest tests/backends/conformance/test_async_extended.py --stage=3 -rs -k non_recursive_ignores`).
-  Recorded, they pin the right answer only: replay skips an unplayable request,
-  so a Graph regressing to extra `/children` calls skips, not fails. Open decision: none.
+  (`pytest tests/backends/conformance/test_async_extended.py --stage=3 -rs -k non_recursive_ignores`),
+  so no conformance cell reaches `GraphBackend` on this rule. Recorded, they go red on a
+  regression to extra `/children` calls: replay skips only an absent cassette. Open decision: none.
 
 - [ ] **BK-382 — The file-ancestor gate ships unexercised on the overwrite path, where the pre-check runs inside an open write transaction**
   spec: BE-008 · effort: M · audience: infra.test

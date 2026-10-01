@@ -31,8 +31,10 @@ phases:
       - file: sdd/backlog/bug-240-max-depth-spec-contradiction.md
         section: "(full)"
         read_type: gate
-        extract: "Five changes; DEPTH-003 wins; expect the async cell to turn a backend red"
-        outcome: misleading
+        extract: >-
+          Five changes; DEPTH-003 wins; expect the async cell to turn a backend red. It cannot on
+          Graph while the replay cells have no cassette, which the dossier does not anticipate
+        outcome: unclear
       - file: sdd/specs/029-async-store-backend-api.md
         section: "ASYNC-014"
         read_type: gate
@@ -61,9 +63,10 @@ phases:
         section: "install_missing_cassette_guard"
         read_type: reference
         extract: >-
-          Replay lanes skip a missing cassette and an unplayable request, so graph_replay can never show
-          this regression red; the dossier's 'turn a backend red on arrival' expectation does not hold
-          for the conformance cell, only for the respx pin
+          Replay skips only an absent cassette (line 357); a present one that cannot serve a request
+          fails. So graph_replay shows this regression red once recorded, and not before. Misread at
+          first as skipping any unplayable request, which ID-260's first diagnosis repeated; the
+          closing measuring pass refuted it with test_missing_cassette_guard.py
   - id: reproduce
     name: Reproduce
     steps:
