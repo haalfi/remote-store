@@ -12023,11 +12023,22 @@ the forgotten copies are the ones that go stale.</p>
 </ul>
 <h2 id="development-setup">Development Setup<a class="headerlink" href="#development-setup" title="Permanent link">&para;</a></h2>
 <p>The repo pins its priority interpreter in <code>.python-version</code> (the version CI's
-coverage lane runs on), so <code>uv</code> and <code>pyenv</code> select it automatically and your
-local <code>hatch run all</code> reproduces what CI gates on. It is the single source for
-the priority Python across CI: workflows that need it read it (<code>setup-python</code>'s
-<code>python-version-file</code>, or <code>ci.yml</code>'s <code>setup</code> job for the matrix), so bumping the
-development version is a one-line edit there. (The full-matrix <code>ci-full.yml</code>
+coverage lane runs on). It is the single source for the priority Python across
+CI: workflows that need it read it (<code>setup-python</code>'s <code>python-version-file</code>, or
+<code>ci.yml</code>'s <code>setup</code> job for the matrix). Two files cannot read it and carry a
+literal copy, each held equal by a gate: <code>.readthedocs.yaml</code>
+(<code>scripts/check_readthedocs_python.py</code>) and the default hatch env's <code>python</code>
+in <code>pyproject.toml</code> (<code>scripts/check_hatch_python.py</code>). Those two gated
+copies are not the whole bump: the drift locks resolve on <code>.python-version</code>
+too, and some prose names the primary version. No gate checks those; the
+ripple-check's Primary Python row in
+<a href="https://github.com/haalfi/remote-store/blob/master/sdd/CLAUDE-REFERENCE.md#detailed-checklist"><code>sdd/CLAUDE-REFERENCE.md</code></a>
+enumerates them.</p>
+<p>hatch does not read <code>.python-version</code>, so the pin is what makes your local
+<code>hatch run all</code> gate on the same interpreter as CI; without it hatch builds
+<code>.venv</code> from the first <code>python</code> on PATH. An existing <code>.venv</code> keeps its
+interpreter when the pin changes: <code>hatch run preflight</code> then fails and names
+the remedy, <code>hatch env remove default</code>. (The full-matrix <code>ci-full.yml</code>
 backstop runs <em>every</em> supported interpreter, not the priority one, from a list
 kept equal to <code>ci.yml</code>'s <code>ALL_PYTHONS</code> by <code>scripts/check_ci_full_matrix.py</code>.)</p>
 <p>The default hatch env is configured with <code>path = ".venv"</code>, so <code>hatch run</code>
