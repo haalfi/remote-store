@@ -45,3 +45,13 @@ field with a clause carrying no figure, and the ADR-0040 § 2 conversion then
 removed the field. Nothing outside this item reads the figure. The 30 itself
 re-derives: `pytest tests/backends/conformance -k TestBackendRootPath -rs`
 prints 30 skip lines naming `cassettes/graph`.
+
+## Correction, 2026-10-01
+
+ID-251 widened the write and `move`/`copy` destination cells from two root
+spellings to six, so both figures moved. `pytest tests/backends/conformance -k
+"TestBackendRootPath and graph_replay" -rs` now reports 16 passed and 54
+skipped, every skip naming `cassettes/graph`. The 24 new skips are the writer
+cell (2 ops × 2 overwrite modes × 4 new spellings) and the seeded destination
+cell (2 ops × 4); the 8 new passes are the unseeded root-destination cell
+(2 ops × 4), which refuses before a request.

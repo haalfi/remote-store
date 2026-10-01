@@ -351,7 +351,8 @@ and the row above governs it.
 
 **Conformance:** `tests/backends/conformance/test_io.py::TestBackendRootPath`
 and its async sibling in `test_async_extended.py`, both gated on
-`Capability.LIST` and parametrised over both spellings; addressing is covered by
+`Capability.LIST` and parametrised over both spellings, except the write and
+`move`/`copy` destination cells, which run all six; addressing is covered by
 `test_identity.py::TestBackendNativePath` (sync) and
 `test_async_extended.py::TestAsyncBackendNativePath` (async).
 

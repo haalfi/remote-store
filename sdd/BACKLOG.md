@@ -345,10 +345,10 @@ no clause of the contract ships unexercised.
 
 - [ ] **ID-247 — Record the Graph root-path cassettes**
   spec: BE-029 · effort: S · audience: infra.test
-  30 `TestBackendRootPath` cells skip on `graph_replay` for want of a cassette
+  54 `TestBackendRootPath` cells skip on `graph_replay` for want of a cassette
   (`pytest tests/backends/conformance -k TestBackendRootPath -rs`), and Graph
-  has no emulator tier, so those 30 never run against `GraphBackend` below a
-  live account; the 8 key-decided cells that issue no request do. Open decision:
+  has no emulator tier, so those 54 never run against `GraphBackend` below a
+  live account; the 16 key-decided cells that issue no request do. Open decision:
   none on shape; the recording procedure is in the dossier.
   Detail: [dossier](backlog/id-247-graph-root-path-cassettes.md)
 
