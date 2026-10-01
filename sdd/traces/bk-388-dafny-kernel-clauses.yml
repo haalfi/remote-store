@@ -251,8 +251,9 @@ phases:
           f3c88a6, the c422a92 review fix (Valid() root conjunct, DeleteFolder
           root guards, RootPath.dfy §4 and §5): 1903 verified, 0 errors.
           At the last commit to touch sdd/formal (`git log -1 --format=%h --
-          sdd/formal`), the closing-panel fix, whose .dfy change is a comment
-          on Close(): 1903 verified, 0 errors.
+          sdd/formal`): 1903 verified, 0 errors. The two closing-panel fixes
+          after f3c88a6 changed a Close() comment and the source scope of
+          RootPath.dfy's MoveKey/CopyKey, and the count did not move.
         outcome: ok
       - file: sdd/formal/MemoryBackend.dfy
         section: "seven mutations, each on a scratch copy of sdd/formal"
@@ -334,6 +335,31 @@ phases:
           path on the conformance lane, through the fixture cleanup and
           test_close_posture.py. That made the README's "root rule alone",
           written in the same fix, false as well.
+        outcome: ok
+      - file: tests/backends/fixtures/dafny_oracle_async.py
+        section: "module docstring (PR #1047 closing panel at 8000412)"
+        read_type: verify
+        extract: >-
+          The 8000412 sweep fixed the async fixture's premise (no ABC no-op)
+          but left "close() is never executed on the async leg". I had read
+          only the sync close-posture file, so I missed
+          tests/backends/conformance/aio/test_close_posture.py, whose aclose()
+          reaches the override through SyncBackendAdapter. Its 13
+          dafny_oracle_async cells pass (`pytest .../aio/test_close_posture.py
+          -k dafny_oracle_async`).
+        outcome: ok
+      - file: sdd/formal/RootPath.dfy
+        section: "§5 MoveKey / CopyKey source (PR #1047 closing panel at 8000412)"
+        read_type: verify
+        extract: >-
+          The entry folded every root spelling on the move/copy source too,
+          under @spec BE-029. BE-029 requires only is_root there, and the
+          custom-backend guide calls the wider refusal "permitted … none is
+          required to". The maintainer chose to fold the destination only, so
+          the source now takes a well-formed Path. Two mutations fail
+          MoveKey: passing dst unfolded fails the trait's
+          WellFormedPath(dst) precondition, and accepting a raw-spelling
+          source fails WellFormedNonRootIsNotRoot's precondition.
         outcome: ok
 discovery_followups:
   - BK-391

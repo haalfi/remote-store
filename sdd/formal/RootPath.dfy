@@ -13,9 +13,10 @@
 //   4. A backslash key does not address the root (BE-029's stated bound).
 //   5. On a live backend the root answers per BE-029's table, derived from
 //      the trait alone, so for every refinement.
-//   6-7. A raw-key entry for write, move and copy folds every root
-//      spelling onto Root and refuses it: BE-029's write clause for the
-//      spellings the trait's well-formed domain excludes.
+//   6-7. A raw-key entry for write and the move/copy destination folds
+//      every root spelling onto Root and refuses it: BE-029's write clause
+//      for the spellings the trait's well-formed domain excludes.  The
+//      move/copy source stays on the canonical Root, as BE-029 decides it.
 
 include "BackendContract.dfy"
 
@@ -181,8 +182,10 @@ method RootAnswersPerTable(b: Backend)
 // The entry methods below take the raw key a caller hands a backend, fold
 // every root spelling onto Root, and call the trait; their postconditions
 // state the refusal for the raw key.  Scope: the write clause (write and
-// the move/copy keys), the one clause BE-029 widens past `is_root`.  A
-// non-root key must still be well-formed, as at the trait.
+// the move/copy destination), the one clause BE-029 widens past `is_root`.
+// The move/copy source is file-shaped and BE-029 decides it with `is_root`,
+// so it is not folded: it must be well-formed, and Root is its one root
+// spelling.  A non-root key must still be well-formed, as at the trait.
 
 // The keys an entry accepts: any root spelling, or a well-formed path.
 ghost predicate EntryKey(key: string)
@@ -232,41 +235,48 @@ method WriteKey(
   r := b.Write(RootFold(key), content, overwrite, metadata);
 }
 
-// Property 7: a move whose source or destination is any root spelling is
-// refused, with no effect; a root destination outranks every observed
-// source check (BE-018 carve-out), so a missing source cannot answer first.
-method MoveKey(b: Backend, src: string, dst: string, overwrite: bool)
+// Property 7: a move whose destination is any root spelling, or whose
+// source is the root, is refused with no effect; a root destination
+// outranks every observed source check (BE-018 carve-out), so a missing
+// source cannot answer first.
+method MoveKey(b: Backend, src: Path, dst: string, overwrite: bool)
   returns (r: Result<()>)
-  requires EntryKey(src) && EntryKey(dst)
+  requires WellFormedPath(src) && EntryKey(dst)
   requires b.Valid()
   modifies b
   ensures b.Valid()
   // @spec BE-020
   ensures !old(b.Live()) ==> r == Err(BackendUnavailable(b.name))
   // @spec BE-029
-  ensures old(b.Live()) && (AddressesRoot(src) || AddressesRoot(dst))
+  ensures old(b.Live()) && (src == Root || AddressesRoot(dst))
     ==> r == Err(InvalidPath(Root, b.name)) && b.fs == old(b.fs)
 {
-  RootFoldProperties(src);
   RootFoldProperties(dst);
+  if src != Root {
+    WellFormedNonRootIsNotRoot(src);
+  }
+  RootSentinelAddressesRoot();
   ghost var phase: MovePhase;
-  r, phase := b.Move(RootFold(src), RootFold(dst), overwrite);
+  r, phase := b.Move(src, RootFold(dst), overwrite);
 }
 
 // Property 7, for copy.
-method CopyKey(b: Backend, src: string, dst: string, overwrite: bool)
+method CopyKey(b: Backend, src: Path, dst: string, overwrite: bool)
   returns (r: Result<()>)
-  requires EntryKey(src) && EntryKey(dst)
+  requires WellFormedPath(src) && EntryKey(dst)
   requires b.Valid()
   modifies b
   ensures b.Valid()
   // @spec BE-020
   ensures !old(b.Live()) ==> r == Err(BackendUnavailable(b.name))
   // @spec BE-029
-  ensures old(b.Live()) && (AddressesRoot(src) || AddressesRoot(dst))
+  ensures old(b.Live()) && (src == Root || AddressesRoot(dst))
     ==> r == Err(InvalidPath(Root, b.name)) && b.fs == old(b.fs)
 {
-  RootFoldProperties(src);
   RootFoldProperties(dst);
-  r := b.Copy(RootFold(src), RootFold(dst), overwrite);
+  if src != Root {
+    WellFormedNonRootIsNotRoot(src);
+  }
+  RootSentinelAddressesRoot();
+  r := b.Copy(src, RootFold(dst), overwrite);
 }

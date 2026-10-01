@@ -65,9 +65,11 @@ that PR. That PR is RFC-0017 D3 step 1.
 **Depends on** BK-388, whose postconditions the kernel is written against.
 As landed, the root rule is a postcondition ranked after the closed guard,
 not a precondition, so the kernel's order per operation is closed
-(`Live()`), then `AddressesRoot` on the key (`write`, the `move`/`copy`
-source then destination), then the driver. `AddressesRoot` is the
-slash-and-dot segment test, wider than `is_root`. Against an absent
+(`Live()`), then the root check on the key (`write`, the `move`/`copy`
+source then destination), then the driver. On `write` and the destination
+the check is `AddressesRoot`, the slash-and-dot segment test, wider than
+`is_root`; on the source BE-029 requires only `is_root`, and the wider test
+is permitted, not verified. Against an absent
 container a `write` under the root is left to the backend spec (the Dafny
 witness recreates the container), and `RequireCapability` answers after
 close. The kernel decides root-ness on raw keys; the obligation for every

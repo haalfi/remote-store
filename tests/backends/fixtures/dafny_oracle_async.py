@@ -19,12 +19,12 @@ ID-210 backlog "Open question" for the bridged-first rationale.
 ``memory_async_adapted`` registration: this fixture wires no teardown hook,
 so the ``async_backend`` indirect fixture in
 ``tests/backends/conformance/conftest.py`` invokes neither
-``fixture.aclose`` nor ``fixture.cleanup`` at parametrize teardown — and
-``DafnyOracleBackend.close()`` is therefore never executed on the async
-leg. That is intentional: ``DafnyOracleBackend.close()`` only sets the
-model's ``closed`` flag on a non-terminal backend and releases nothing, so
-there is no teardown obligation to discharge here; BE-020 stays exercised
-by the sync ``dafny_oracle`` conformance cycle only.
+``fixture.aclose`` nor ``fixture.cleanup`` at parametrize teardown. That is
+intentional: ``DafnyOracleBackend.close()`` only sets the model's
+``closed`` flag on a non-terminal backend and releases nothing, so there is
+no teardown obligation to discharge here. BE-020 is still exercised on this
+leg: ``tests/backends/conformance/aio/test_close_posture.py`` calls
+``aclose()``, which the adapter runs as ``DafnyOracleBackend.close()``.
 Reaching into ``adapter._sync`` from a per-fixture hook would break
 encapsulation for no real teardown obligation.
 """

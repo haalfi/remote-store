@@ -237,7 +237,7 @@ that must move — see [`000-process.md` Rule
 | `MemoryBackend.dfy` | Reference refinement proving the contract is satisfiable; compiled to Python as the conformance oracle |
 | `DepthCounting.dfy` | Verified `DEPTH-001` algorithm and the four depth-filter properties |
 | `ResourceSafety.dfy` | Handle lifecycle, `_safe_wrap` invariant, move atomicity, connection lifecycle |
-| `RootPath.dfy` | What `AddressesRoot` accepts: exactly the keys whose every `/`-segment is `""` or `"."` (`RootSpellingCharacterisation`), so the six BE-029 spellings; only `Root` among well-formed paths; not `\` (BE-029). BE-029's table derived from the trait for every refinement (`RootAnswersPerTable`), and the raw-key entry (`WriteKey`, `MoveKey`, `CopyKey`) that folds every root spelling onto `Root` |
+| `RootPath.dfy` | What `AddressesRoot` accepts: exactly the keys whose every `/`-segment is `""` or `"."` (`RootSpellingCharacterisation`), so the six BE-029 spellings; only `Root` among well-formed paths; not `\` (BE-029). BE-029's table derived from the trait for every refinement (`RootAnswersPerTable`), and the raw-key entry (`WriteKey`, `MoveKey`, `CopyKey`) that folds every root spelling of a write or `move`/`copy` destination onto `Root` |
 
 Live TLA+ modules live in `sdd/formal/tla/`. The frozen PoC modules
 remain in `sdd/research/tla-poc/` as the historical record of the
@@ -466,9 +466,11 @@ The trait takes well-formed paths, and on that domain `AddressesRoot` holds
 for `Root` alone, so the trait by itself states the root rule for the
 sentinel spelling only. BE-029 binds every spelling on the write clause, and
 `RootPath.dfy` §5 carries that: `WriteKey`, `MoveKey` and `CopyKey` take the
-raw key, fold every root spelling onto `Root`, and prove the refusal from the
-trait's postconditions. A non-root key must still be well-formed there. The
-read side is not widened, because BE-029 decides it with `is_root`.
+raw write or `move`/`copy` destination key, fold every root spelling onto
+`Root`, and prove the refusal from the trait's postconditions. A non-root key
+must still be well-formed there. The `move`/`copy` source and the read side
+are not widened, because BE-029 decides them with `is_root`: the source must
+be well-formed, and `Root` is its one root spelling.
 
 Gap 7 was added under ID-151 after root-cause analysis of the ID-146
 review. Review found ~24% of the 95 comments were shaped as per-operation
