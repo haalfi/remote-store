@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import importlib.util
+import subprocess
 import sys
 from pathlib import Path
 
@@ -62,3 +63,22 @@ def test_interpreter_mismatch_names_remedy():
 def test_interpreter_match_passes():
     mod = _load()
     assert mod.check_interpreter((3, 13), "3.13") is None
+
+
+def test_entry_point_gates_on_the_running_interpreter():
+    """End to end: ``__main__`` feeds the real interpreter and pin into the checks and exits non-zero.
+
+    CI runs ``tests/scripts/`` on every supported Python, so the expected exit is
+    derived from the interpreter running this test: 0 on the primary, 1 with the
+    remedy elsewhere. Both paths are exercised across the matrix.
+    """
+    primary = _load().read_primary()
+    on_primary = f"{sys.version_info[0]}.{sys.version_info[1]}" == ".".join(primary.split(".")[:2])
+    result = subprocess.run([sys.executable, str(_SCRIPT)], capture_output=True, text=True, check=False)  # noqa: S603
+    if on_primary:
+        assert result.returncode == 0, result.stderr
+        assert result.stderr == ""
+    else:
+        assert result.returncode == 1
+        assert f"running on Python {sys.version_info[0]}.{sys.version_info[1]}" in result.stderr
+        assert "hatch env remove default" in result.stderr
