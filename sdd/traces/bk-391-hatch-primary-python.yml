@@ -10,6 +10,8 @@ audience:
 expected_ripples:
   - sdd/GATE-INVENTORY.md
   - sdd/backlogid.json
+surprising_ripples:
+  - sdd/CLAUDE-REFERENCE.md
 phases:
   - id: orient
     name: Orient
@@ -65,6 +67,11 @@ phases:
         read_type: reference
         extract: "Locks resolve on .python-version: 14 carry `# python: 3.13`, so a primary bump is more than the three gated copies"
         outcome: ok
+      - file: sdd/CLAUDE-REFERENCE.md
+        section: "Ripple-check table (both presentations)"
+        read_type: reference
+        extract: "No Primary Python row; only the supported interpreter set. Added one to both presentations; Grep for `3\\.13` outside historical records also found CONTRIBUTING's drift-lock refresh section naming the primary, which my CONTRIBUTING enumeration had missed"
+        outcome: misleading
   - id: verify
     name: Verify
     steps:

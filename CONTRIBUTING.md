@@ -206,12 +206,11 @@ CI: workflows that need it read it (`setup-python`'s `python-version-file`, or
 literal copy, each held equal by a gate: `.readthedocs.yaml`
 (`scripts/check_readthedocs_python.py`) and the default hatch env's `python`
 in `pyproject.toml` (`scripts/check_hatch_python.py`). Those three are the
-gated copies, not the whole bump: the drift guard resolves on `.python-version`
-too, so every lock under `infra/drift-locks/` (each records its interpreter in a
-`# python:` header) needs a refresh per
-[`infra/drift-locks/README.md` § Refreshing](infra/drift-locks/README.md#refreshing),
-and that README and `.claude/skills/drift/SKILL.md` name the primary version in
-prose. No gate checks those.
+gated copies, not the whole bump: the drift locks resolve on `.python-version`
+too, and some prose names the primary version. No gate checks those; the
+ripple-check's Primary Python row in
+[`sdd/CLAUDE-REFERENCE.md`](sdd/CLAUDE-REFERENCE.md#detailed-checklist)
+enumerates them.
 
 hatch does not read `.python-version`, so the pin is what makes your local
 `hatch run all` gate on the same interpreter as CI; without it hatch builds
