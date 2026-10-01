@@ -100,3 +100,42 @@ phases:
         section: "Detailed checklist"
         read_type: verify
         extract: "Confirm ripples before committing"
+review:
+  # Derived by `hatch run ship-report 1049 --trace-block-only` at head 1ec8413.
+  # Do not hand-edit, except a newly required field per sdd/traces/_schema.yml
+  # section review: RFC-0015 D4 makes this script the only producer.
+  derivation: "hatch run ship-report 1049 --trace-block-only"
+  pr: 1049
+  review_rounds: 1
+  submissions: 1
+  findings: 2
+  by_round:
+    - round: 1
+      findings: 2
+      origin: {original: 1, unclassifiable-file: 1}
+      triage: {must-fix: 2}
+      duration_hours: 0.12
+  by_file:
+    - path: "sdd/BACKLOG.md"
+      findings: 2
+  untouched_files:
+    - "CHANGELOG.md"
+    - "docs-src/_data/graph/graph.json"
+    - "docs-src/explanation/graph_viz.html"
+    - "docs-src/reference/migration.md"
+    - "sdd/BACKLOG-DONE.md"
+    - "sdd/adrs/0042-contract-kernel-over-thin-drivers.md"
+    - "sdd/adrs/DIGEST.md"
+    - "sdd/backlog/bk-389-kernel-step-1-memory.md"
+    - "sdd/specs/029-async-store-backend-api.md"
+    - "sdd/specs/044-graph-backend.md"
+    - "sdd/traces/bug-240-max-depth-spec-contradiction.yml"
+    - "src/remote_store/_backend.py"
+    - "src/remote_store/aio/_async_backend.py"
+    - "src/remote_store/aio/backends/_graph/backend.py"
+    - "tests/backends/conformance/test_async_extended.py"
+    - "tests/backends/graph/aio/test_list.py"
+  review_driven_commits:
+    - sha: "1ec8413"
+      subject: "BUG-240: Correct ID-260's replay mechanism and BK-389's open decision"
+  ci: {verdict: GREEN, failed: 0, pending: 0}
