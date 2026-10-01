@@ -9,7 +9,7 @@ major.minor:
 2. the interpreter running this script does too. hatch keeps an existing env's
    interpreter when the pin changes (measured: a 3.11 ``.venv`` stayed 3.11
    under a 3.13 pin until removed), so a stale env passes check 1 and still
-   gates on the wrong Python.
+   gates on the wrong Python. It runs only once check 1 passes.
 
 Wired into ``hatch run preflight`` (and so ``all``, and CI's ``lint`` job,
 which runs on the primary Python). Its tests run in CI only on the primary
@@ -74,17 +74,21 @@ def check_interpreter(running: tuple[int, int], primary: str) -> str | None:
         return None
     return (
         f"running on Python {running[0]}.{running[1]}, .python-version is {primary!r}: "
-        "the hatch env predates the pin; rebuild it with `hatch env remove default`"
+        "run this in the hatch env; if that env predates the pin, rebuild it with `hatch env remove default`"
     )
 
 
 def main(running: tuple[int, int]) -> int:
-    """Run both checks for interpreter *running*; print each error to stderr and return the exit code."""
+    """Run the checks for interpreter *running*; print the error to stderr and return the exit code.
+
+    Check 2 runs only once the pin is right: its remedy rebuilds the env on the
+    pin, which fixes nothing while the pin itself is wrong.
+    """
     primary = read_primary()
-    errors = [e for e in (check_pin(read_pin(), primary), check_interpreter(running, primary)) if e is not None]
-    for e in errors:
-        print(f"error: {e}", file=sys.stderr)
-    return 1 if errors else 0
+    error = check_pin(read_pin(), primary) or check_interpreter(running, primary)
+    if error is not None:
+        print(f"error: {error}", file=sys.stderr)
+    return 1 if error else 0
 
 
 if __name__ == "__main__":

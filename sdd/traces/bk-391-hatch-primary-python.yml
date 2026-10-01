@@ -78,6 +78,11 @@ phases:
         read_type: reference
         extract: "Told agents to bypass the hatch env because it might be 3.11; the pin removes that reason. Rewritten to drive on the primary via the env after `hatch run preflight`, with no literal version, so the ripple row no longer lists the skill"
         outcome: misleading
+      - file: scripts/check_hatch_python.py
+        section: "main, check_interpreter message"
+        read_type: reference
+        extract: "My own miss: main reported both errors, so a wrong pin also printed the stale-env rebuild, which rebuilds onto the wrong pin. Check 2 now runs only once the pin is right; seen failing first via test_main_pin_mismatch_does_not_prescribe_a_rebuild"
+        outcome: ok
   - id: verify
     name: Verify
     steps:

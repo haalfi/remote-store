@@ -78,6 +78,17 @@ def test_main_fails_off_the_primary(capsys):
     assert "hatch env remove default" in err
 
 
+def test_main_pin_mismatch_does_not_prescribe_a_rebuild(capsys, monkeypatch):
+    """A wrong pin is the fault to fix: rebuilding the env on it would change nothing."""
+    mod = _load()
+    monkeypatch.setattr(mod, "read_primary", lambda: "3.14")
+    assert mod.main((3, 13)) == 1
+    err = capsys.readouterr().err
+    assert "!= .python-version '3.14'" in err
+    assert "running on Python" not in err
+    assert "hatch env remove default" not in err
+
+
 def test_main_passes_on_the_primary(capsys):
     mod = _load()
     major, minor = (int(p) for p in mod.read_primary().split(".")[:2])
