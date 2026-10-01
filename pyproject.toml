@@ -287,6 +287,11 @@ dev = [
 [tool.hatch.envs.default]
 installer = "uv"
 path = ".venv"
+# Primary Python: a copy of .python-version (hatch cannot read that file), kept
+# equal to it by scripts/check_hatch_python.py. Without it hatch builds .venv
+# from whatever `python` is first on PATH, so `hatch run all` can gate on a
+# different interpreter than CI's primary lanes.
+python = "3.13"
 # `mutate` carries the pytest-gremlins pin (single source of truth); it is a
 # real optional-dependencies extra rather than an env-only `dependencies` entry
 # so the two mutation workflows can install the same pin via `.[mutate]`.
@@ -302,15 +307,16 @@ features = ["dev", "docs", "bench", "mutate"]
 env.GITHUB_ACTIONS.installer = { value = "pip", if = ["true"] }
 
 [tool.hatch.envs.default.scripts]
-# Fast artifact-drift checks (gen_graph, check_api_docs, gen_features,
-# gen_graph_viz, gen_adr_digest, drift_check render-docs, gen_python_support).
-# Surfacing them ahead
+# Fast artifact-drift checks (check_hatch_python first, so a gate on the wrong
+# interpreter stops before anything else; gen_graph, check_api_docs,
+# gen_features, gen_graph_viz, gen_adr_digest, drift_check render-docs,
+# gen_python_support). Surfacing them ahead
 # of `lint` in `hatch run all` catches drift in seconds rather than after the
 # full lint/typecheck/test gauntlet. CI runs this same target via `uvx hatch run
 # preflight` in the `lint` job (BK-269), so the script list is the single source.
 # Every entry is offline by construction; `check-support-windows` below is the
 # one support-window mechanism that reaches PyPI and so is deliberately absent.
-preflight = ["python scripts/gen_graph.py --check", "python scripts/check_api_docs.py", "python scripts/check_docstring_parity.py", "python scripts/gen_features.py --check", "python scripts/gen_graph_viz.py --check", "python scripts/gen_adr_digest.py --check", "python scripts/drift_check.py render-docs --check", "python scripts/gen_python_support.py --check"]
+preflight = ["python scripts/check_hatch_python.py", "python scripts/gen_graph.py --check", "python scripts/check_api_docs.py", "python scripts/check_docstring_parity.py", "python scripts/gen_features.py --check", "python scripts/gen_graph_viz.py --check", "python scripts/gen_adr_digest.py --check", "python scripts/drift_check.py render-docs --check", "python scripts/gen_python_support.py --check"]
 lint = ["ruff check src/ tests/ examples/ scripts/", "python scripts/check_test_assertions.py tests", "python scripts/check_mock_spec.py tests", "python scripts/check_test_placement.py tests", "python scripts/check_tla_no_emdash.py", "python scripts/check_formal_trace.py", "python scripts/check_capability_parity.py", "python scripts/check_spec_marks.py", "python scripts/check_docs_framework.py", "python scripts/gen_backlogid.py --check", "python scripts/check_rst_roles.py", "python scripts/check_infra_settings.py", "python scripts/check_no_tracker_refs.py", "python scripts/check_breaking_migration_link.py", "python scripts/check_ci_inventory.py", "python scripts/check_traces.py", "python scripts/check_readthedocs_python.py", "python scripts/check_backend_order.py", "python scripts/check_conda_recipe_pins.py", "python scripts/gen_conda_feedstock.py --check", "python scripts/check_ripple_parity.py", "python scripts/check_changelog_unreleased.py", "python scripts/check_custom_backend_guide.py", "python scripts/check_ci_full_matrix.py", "python scripts/check_dafny_twin_parity.py", "python scripts/check_sdd_index.py", "python scripts/gen_gate_inventory.py --check", "python scripts/check_no_retrospective.py"]
 format = "ruff format src/ tests/ examples/ scripts/"
 format-check = "ruff format --check src/ tests/ examples/ scripts/"

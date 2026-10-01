@@ -287,10 +287,14 @@ lacks `actions: write`; the MCP server's `actions_run_trigger` dispatches).
      extra has no rows to apply and would reconstruct to an empty lock. For those,
      the candidate artifact is the route that works — the workflow emits the
      freeze whenever the resolve succeeded, regardless of status.
-   - **If you do resolve locally, drive it with `python3.13` directly**, not the
-     hatch env: `write_lock` stamps `# python:` from the *running* interpreter, so
-     a 3.11 driver writes `# python: 3.11` over a 3.11 dependency set. Assert the
-     version before you start, and note the OS matters as much as the version.
+   - **If you do resolve locally, drive it on the primary (`.python-version`)**:
+     `write_lock` stamps `# python:` from the *running* interpreter, so any other
+     driver writes its own version over its own dependency set. Use
+     `hatch run drift-check refresh-baseline <extra>`, as the README does: the
+     hatch env is pinned to the primary, but an env built before the pin keeps
+     its old interpreter and `drift-check` does not notice. So run
+     `hatch run preflight` first; it fails on a stale env and names the rebuild,
+     `hatch env remove default`. The OS matters as much as the version.
 
    Either way, once the locks are written run `hatch run drift-check render-docs`.
 
