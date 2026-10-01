@@ -480,10 +480,13 @@ trait Backend {
   var containerPresent: bool
 
   // BE-020: false exactly when a terminal backend has been closed.  Every
-  // operation except RequireCapability answers BackendUnavailable then,
-  // ahead of every other clause.  RequireCapability is exempt by name: it
-  // reads declared capability data, like BE-029's addressing row (which the
-  // model carries as the ghost functions NativePath / ToKey, not methods).
+  // operation that returns a Result, except RequireCapability, answers
+  // BackendUnavailable then, ahead of every other clause.  RequireCapability
+  // is exempt by name: it reads declared capability data, like BE-029's
+  // addressing row (which the model carries as the ghost functions
+  // NativePath / ToKey, not methods).  Close() returns nothing and stays
+  // callable after a terminal close; DropContainer() models the environment,
+  // not an operation, so neither is guarded.
   predicate Live()
     reads this
   {

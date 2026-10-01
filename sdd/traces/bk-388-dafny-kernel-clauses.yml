@@ -393,7 +393,11 @@ phases:
           BE-018's sentence was wrong, and it now says is_root. The panel also
           showed that the follow-up item had become a layer producing its own
           findings, and its deferral reason was false. The maintainer chose to
-          fix the sites here and drop the item. Of its seven rows, two did not
+          fix the sites here and drop the item, BK-392, before it was
+          allocated (backlogid.json still records BK 391), so that ID will be
+          reused and the earlier steps' "BK-392" and "BK-392's dossier" no
+          longer resolve. The dossier's reads now live in the _flat_ns, _local
+          and _sftp guard docstrings and in this step. Of its seven rows, two did not
           survive a read. Spec 003's Graph paragraph is true: its "both new
           rosters" are the two seeded write rosters, and the source cells
           measure without fencing. And test_io.py's seeded cell holds on Local
