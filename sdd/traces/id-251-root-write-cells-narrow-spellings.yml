@@ -177,6 +177,8 @@ discovery_followups:
   - ID-260
   - ID-261
 surprising_ripples:
+  - sdd/backlog/id-247-graph-root-path-cassettes.md
+  - .github/workflows/ci.yml
   - docs-src/guides/custom-backend-guide.md
   - tests/backends/test_flat_ns.py
   - sdd/specs/003-backend-adapter-contract.md

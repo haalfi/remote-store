@@ -354,11 +354,12 @@ no clause of the contract ships unexercised.
 
 - [ ] **ID-260 — BE-029's order is unobservable to conformance wherever a present root already answers correctly**
   spec: BE-029 · effort: M · audience: infra.test
-  With key-decided root checks removed in-session (PR #1050 round 5), the file-shaped
-  root cells stay green on `local`/`local_async_adapted`, and every probe cell on
-  `local` and `s3_moto` stays green: a present root answers right by observation.
-  Only an absent container separates the orders, and no fixture arranges one (BK-345).
+  With key-decided root checks removed in-session, the file-shaped root cells stay
+  green on `local`/`local_async_adapted` and every probe cell on `local`, `s3_moto`
+  stays green: a present root answers right by observation (checks, selection and
+  counts in the dossier). Only an absent container separates the orders (BK-345).
   Open decision: per-backend pins, or an absent-root fixture shared with BK-345.
+  Detail: [dossier](backlog/id-260-root-order-unobservable.md)
 
 - [ ] **ID-261 — On Azure replay lanes a regressed root-write guard skips instead of failing**
   spec: BE-029 · effort: S · audience: infra.test

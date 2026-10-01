@@ -259,7 +259,8 @@ pinned version (see
 then `dafny verify sdd/formal/<file>.dfy`.
 
 CI runs the `verify-formal` job automatically when `sdd/formal/` or
-`sdd/specs/` files change.
+`sdd/specs/` files change; it also runs the compiled oracle's tests (see
+§ Compiled oracle as conformance gate).
 
 TLA+ (TLC): `bash scripts/tlc_check.sh` runs the Observer model
 (default target `sdd/formal/tla/MC3`) via a pinned Docker image — no
@@ -376,7 +377,11 @@ invariants, ghost variables, postconditions) erase at compile time and
 produce no Python output — regeneration is not needed. Non-ghost changes
 (method bodies, datatype definitions, function implementations) do require
 regeneration, in any of the three source files above, not only
-`MemoryBackend.dfy`; no gate compares `module_.py` with its sources. Run the
+`MemoryBackend.dfy`; no gate compares `module_.py` with its sources. What
+CI does run on an `sdd/formal/` change is the `verify-formal` job, which
+besides `dafny verify` runs `tests/backends/dafny` and the oracle's
+conformance lanes (`-k dafny`) against the committed `module_.py`, so a
+regenerated oracle is tested even when nothing outside `sdd/` changed. Run the
 Docker wrapper:
 
 ```bash
