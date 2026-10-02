@@ -374,3 +374,7 @@ phases:
         section: "delete_folder (lines 592 to 623); aio/backends/_azure.py delete_folder (lines 945 to 990), #1056 verification round"
         read_type: verify
         extract: "my evidence for steps 2 and 4 cited S3Backend and sync AzureBackend, which those steps retire or replace; the migrating classes check in the same order. The verification round also measured that the files-only recursive fallback for parents == none returned success for an absent key and a file, so it now probes first and lists once (maintainer's decision)"
+      - file: src/remote_store/backends/_sqlalchemy.py
+        section: "SQLBlobBackend.delete_folder (lines 967 to 978), #1056 second verification round"
+        read_type: verify
+        extract: "my stat-first none rule added a round trip and changed the file-and-prefix cell, and its recursive half was scoped away from S3, SQL and flat Azure, which all carry delete_tree; the none path was refuted in both verification rounds (repeat-site check), so it became a table in today's list-first order, delete_tree included, changing no cell (maintainer's decision)"
