@@ -1,0 +1,286 @@
+id: ID-263
+title: "Nothing checks that the compiled oracle matches the Dafny it is built from"
+trigger: >-
+  Filed during ID-251 (PR #1050): verify-formal's pytest step tests the committed
+  sdd/formal/MemoryBackend-py/module_.py, and a non-ghost edit to its Dafny
+  sources that was not regenerated passes `dafny verify`, so the step would test
+  stale compiled code with nothing comparing the two.
+source_items:
+  - ID-263
+audience:
+  - infra.ci
+  - infra.test
+expected_ripples:
+  - sdd/backlogid.json
+  - sdd/GATE-INVENTORY.md
+surprising_ripples:
+  # FORMAL_PAT matched sdd/ only, so the new check, _dafny_classorder.py (whose
+  # output is part of the compared tree) and dafny_translate.sh (the version pin)
+  # could each change without verify-formal running. No ripple-check row ties a
+  # gate's *inputs outside its subject directory* to the job filter.
+  - .github/workflows/ci.yml
+phases:
+  - id: orient
+    name: Read the item and the documented regeneration path
+    steps:
+      - file: sdd/BACKLOG.md
+        section: "ID-263"
+        read_type: gate
+        extract: "Open decision (verify-formal step vs pre-commit); the three named sources"
+        outcome: misleading
+        # Names three sources. MemoryBackend.dfy's include closure is four:
+        # BackendContract.dfy includes ResourceSafety.dfy. Measured: a build on
+        # a copy of the three failed with "file .../ResourceSafety.dfy not found".
+      - file: sdd/formal/README.md
+        section: "Compiled oracle as conformance gate"
+        read_type: gate
+        extract: "Files table, regeneration rule, the 'no gate compares' sentence to retire"
+        outcome: misleading
+        # Same three-file under-statement in the Files table.
+      - file: scripts/dafny_translate.sh
+        section: "(full)"
+        read_type: reference
+        extract: "The pin (DAFNY_VERSION, SHA-256), the exact `dafny build -t py` command, copy of all *.dfy"
+        outcome: ok
+      - file: scripts/_dafny_classorder.py
+        section: "(full)"
+        read_type: reference
+        extract: "reorder() is importable; reuse rather than re-implement"
+        outcome: ok
+      - file: .github/workflows/ci.yml
+        section: "setup filter step; verify-formal"
+        read_type: reference
+        extract: "verify-formal installs dafny 4.11.0; FORMAL_PAT excludes scripts/"
+        outcome: ok
+  - id: design
+    name: Design the gate and measure its premises
+    steps:
+      - file: sdd/DRIFT-RULES.md
+        section: "Rules"
+        read_type: gate
+        extract: "Rule 2 localize, Rule 3 derived source set, Rule 4 authority in README, Rule 5 gating, Rule 7 bounds + Drift-gate block"
+        outcome: ok
+      - file: sdd/CLAUDE-REFERENCE.md
+        section: "Pre-work index"
+        read_type: gate
+        extract: "New cross-artifact check row; test-outside-src row (guard lives under tests/scripts, subject under scripts/: CODE_PAT reaches it)"
+        outcome: ok
+      - file: scripts/check_dafny_twin_parity.py
+        section: "docstring"
+        read_type: reference
+        extract: "Docstring shape for a Dafny gate: authority, bounds, Drift-gate block"
+        outcome: ok
+      - file: scripts/gen_gate_inventory.py
+        section: "docstring; _VALID_DOMAINS"
+        read_type: reference
+        extract: "Drift-gate field format and the domain vocabulary"
+        outcome: ok
+      - file: scripts/dafny_translate.sh
+        section: "its build command, run natively with dafny 4.11.0 on a copy of sdd/formal/*.dfy"
+        read_type: reference
+        extract: >-
+          `dafny build -t py MemoryBackend.dfy --output:MemoryBackend` then
+          `_dafny_classorder.py`: `diff -rq -x __pycache__` against the committed
+          tree empty, 2 of 2 runs; `time` 84.0 s real. `dafny translate py
+          --no-verify` and `dafny build -t py --no-verify`: module_.py differs
+          (`_dafny.label("1")` vs `"0"`, three lines), so the gate must verify.
+        outcome: ok
+  - id: implement
+    name: Build the check, its guard and the wiring
+    steps:
+      - file: scripts/check_dafny_oracle_fresh.py
+        section: "(new)"
+        read_type: reference
+        extract: "Pin read, skew check, verified build, reorder, per-file diff"
+        outcome: ok
+      - file: tests/scripts/test_check_dafny_oracle_fresh.py
+        section: "(new)"
+        read_type: reference
+        extract: >-
+          64 cells (`pytest -q`: 64 passed), most against a fake dafny executable.
+          Mutation check (an uncommitted harness that applies one text
+          replacement to the script, runs this file, restores): 29 of 29
+          mutants caught. The mutants, each one rule removed or widened: no
+          reorder; pycache compared; no version check; version failure as
+          skew; version OSError unhandled; version decode strict; build exit
+          ignored; only-in-committed dropped; wrapper ignored; first of many
+          lines; source glob hardcoded; token grammar off; glob grammar off;
+          glob allows `**`; prefix binding; no braced binding; token allows
+          shell chars; split on any whitespace; words after redirect ignored;
+          any prefix before build; cp flags rejected; any cp flag; copy
+          trailing operand allowed; build slash required; dotfiles copied;
+          non-files skipped; wrapper decode unhandled; module decode
+          unhandled; build OSError unhandled. "non-files skipped" first
+          survived (the OSError handler also exits 2 naming the path), so the
+          cell now asserts the branch's own reason.
+          Round 1 found the build arguments and the source glob restated from
+          dafny_translate.sh (DRIFT-RULES Rule 3); both are now read from it.
+          Red before that fix, in two `pytest` runs: build_flags_come_from_the_wrapper,
+          wrapper_without_build_line_exits_2 and real_wrapper_build_line_parses,
+          then source_set_comes_from_the_wrapper, wrapper_without_source_copy_exits_2
+          and real_wrapper_source_copy_parses. Two mutants first survived
+          because one cell duplicated both wrapper lines and failed for the
+          wrong reason; split into one cell per line.
+          Round 2 found `$f`/`$stem` bound by prefix; `pytest -k
+          cannot_reproduce` before that fix ran 6 ids, 5 failed and `upper`
+          passed; the `unbalanced` id was added after the fix and was never
+          seen red. Round 3 refuted the same condition again (operators and
+          an escaped `\$f` passed, `${stem}` and `cp -p` were rejected), so the
+          repeat-site check fired: the parser became an allowlist grammar
+          (decided with the user), and the reject/accept grids replaced the
+          denylist cell; 21 cells failed before it (`pytest -rf`). The fix
+          pass's own sweep found Path.glob matching dotfiles that bash's `*`
+          skips; `test_dotfiles_are_not_copied` was red before that fix.
+          Round 4 found the grammar still too wide (words after `2>&1`,
+          operand-taking and recursive cp flags, `.` and `**` globs, a
+          directory or an unexecutable dafny crashing); the grammar narrowed
+          to `-p|-f|-v` flags and a `.dfy` glob, and 7 cells were red before
+          it (`pytest -rf`). Round 5, the ceiling, found the two docs this
+          work had made enumerate compiled members under-stating them again,
+          plus grammar edges a future wrapper edit could reach (Unicode
+          whitespace, any text before `/dafny`, a word after `/build/`, a
+          directory matching the glob) and decode errors exiting 1. The user
+          chose to fix all of it with one closing round: the docs now state
+          the rule instead of a list, the build line is anchored to its
+          `CMDS="$CMDS ... && (/opt/dafny/dafny` context, and 13 cells were red
+          before the fix (`pytest -rf`).
+        outcome: ok
+  - id: verify
+    name: See it fail first, on the real tree
+    steps:
+      - file: sdd/formal/MemoryBackend-py/module_.py
+        section: "RootFold"
+        read_type: verify
+        extract: >-
+          Hand-edit `return default__.Root` → `return key` (line 873): check exit 1,
+          diff names that line; reverted → exit 0. A first attempt via the Edit
+          tool was contaminated: the repo's PostToolUse formatter rewrote the whole
+          generated file, so the edit was redone with a one-line Python replace.
+        outcome: ok
+      - file: sdd/formal/RootPath.dfy
+        section: "RootFold body"
+        read_type: verify
+        extract: >-
+          `if AddressesRoot(key) then Root else key` → `if !AddressesRoot(key) then
+          key else Root`, untranslated: `dafny verify RootPath.dfy` 17 verified,
+          0 errors, while the check exits 1 naming the RootFold hunk. Regenerated
+          natively (build + reorder + copy): exit 0. Both edits reverted.
+        outcome: ok
+      - file: sdd/formal/README.md
+        section: "Compiled oracle: ghost-only changes need no regeneration"
+        read_type: verify
+        extract: >-
+          A closing-round reviewer asked whether a ghost-only edit shifts the loop
+          labels the gate compares. On a copy of sdd/formal/ (`--formal-dir`), a
+          redundant `invariant 1 <= i` added to MemoryBackend.dfy's loop at line
+          116: check exit 0; then an `assert 1 <= i;` in that loop body as well:
+          exit 0. The claim holds for these two seeds; other ghost shapes are
+          unmeasured.
+        outcome: ok
+      - file: scripts/check_dafny_oracle_fresh.py
+        section: "wrapper grammar"
+        read_type: verify
+        extract: >-
+          The closing round's measuring member found the grammar's claim wider
+          than its reach: only the build span and the cp span are read, so other
+          CMDS lines, the text after the build's pipe, echo bodies and what
+          precedes cp are unconstrained (the member's variant counts are in its
+          PR #1052 review comment). Rounds 2, 3, 4, 5 and this closing round all
+          found the wrapper-reading condition wider than claimed, so the user
+          chose to narrow the claim rather than extend the grammar: the
+          docstring states the two spans and a Bounds bullet names what is
+          unchecked and how it surfaces (exit-1 drift, never a stale pass). The
+          appended whole-file pass on that prose found it overstated in turn
+          (the pin line, decode and one-match count are read); narrowed again,
+          and the bound is now pinned by
+          `test_wrapper_steps_outside_the_two_spans_are_not_checked`.
+        outcome: ok
+review:
+  # Derived by `hatch run ship-report 1052 --trace-block-only` at head 87cdb12.
+  # Do not hand-edit, except a newly required field per sdd/traces/_schema.yml
+  # section review: RFC-0015 D4 makes this script the only producer.
+  derivation: "hatch run ship-report 1052 --trace-block-only"
+  pr: 1052
+  review_rounds: 9
+  submissions: 8
+  findings: 28
+  by_round:
+    - round: 1
+      findings: 1
+      origin: {original: 1}
+      triage: {must-fix: 1}
+      duration_hours: 0.04
+    - round: 2
+      findings: 1
+      origin: {original: 1}
+      triage: {must-fix: 1}
+      duration_hours: 0.46
+    - round: 3
+      findings: 5
+      origin: {loop-introduced: 3, original: 1, unclassifiable-file: 1}
+      triage: {must-fix: 5}
+      duration_hours: 0.63
+    - round: 4
+      findings: 7
+      origin: {loop-introduced: 5, original: 2}
+      triage: {must-fix: 7}
+      duration_hours: 0.48
+    - round: 5
+      findings: 7
+      origin: {loop-introduced: 7}
+      triage: {must-fix: 2, unknown: 5}
+      duration_hours: 1.38
+    - round: 6
+      findings: 2
+      origin: {loop-introduced: 1, original: 1}
+      triage: {must-fix: 2}
+      duration_hours: 0.66
+    - round: 7
+      findings: 3
+      origin: {loop-introduced: 3}
+      triage: {must-fix: 3}
+      duration_hours: 0.19
+    - round: 8
+      findings: 2
+      origin: {loop-introduced: 2}
+      triage: {must-fix: 2}
+      duration_hours: 0.3
+  by_file:
+    - path: "scripts/check_dafny_oracle_fresh.py"
+      findings: 15
+    - path: "sdd/formal/README.md"
+      findings: 4
+    - path: "sdd/traces/id-263-compiled-oracle-freshness-gate.yml"
+      findings: 4
+    - path: "tests/scripts/test_check_dafny_oracle_fresh.py"
+      findings: 3
+    - path: "pyproject.toml"
+      findings: 1
+    - path: "scripts/dafny_translate.sh"
+      findings: 1
+  untouched_files:
+    - ".github/workflows/ci.yml"
+    - "sdd/BACKLOG-DONE.md"
+    - "sdd/BACKLOG.md"
+    - "sdd/GATE-INVENTORY.md"
+    - "sdd/backlogid.json"
+  review_driven_commits:
+    - sha: "55bc79b"
+      subject: "ID-263: Read the build arguments and source glob from the wrapper"
+    - sha: "52dc77a"
+      subject: "ID-263: Bind wrapper variables by whole name; reject what the shell reads differently"
+    - sha: "cf0f4b0"
+      subject: "ID-263: Read the wrapper by an allowlist grammar; fix README claims"
+    - sha: "50888eb"
+      subject: "ID-263: Narrow the wrapper grammar; correct README and wrapper header"
+    - sha: "a904fa5"
+      subject: "ID-263: Anchor the build line; state the include rule instead of lists"
+    - sha: "80f5bd3"
+      subject: "Merge remote-tracking branch 'origin/master' into id-263-oracle-freshness-gate"
+    - sha: "0a22544"
+      subject: "ID-263: Narrow the grammar claim to the spans it reads; state the rest as a bound"
+    - sha: "a39f389"
+      subject: "ID-263: Narrow the unchecked-wrapper bound and pin it with a cell"
+    - sha: "87cdb12"
+      subject: "ID-263: Align the regex comment with the narrowed bound; guard the new cell's fixture"
+  ci: {verdict: GREEN, failed: 0, pending: 0}
