@@ -215,7 +215,10 @@ every case. RFC-0017 carries the same answers at the question each settles.
      present, one `list_page(key, delimiter="/", limit=1)`. The probe's
      answer replaces the driver's: absent `NotFound`, file `InvalidPath`,
      non-empty folder `DirectoryNotEmpty`, else the driver's error stands.
-     A typed `NotFound` is probed too, as RFC-0017 D2's flow does, because
+     A probe that itself raises answers nothing: the driver's refusal is
+     raised, with the probe's exception chained as its context, so a probe
+     never replaces a refusal it could not complete [maintainer's decision
+     in PR #1056's round 5]. A typed `NotFound` is probed too, as RFC-0017 D2's flow does, because
      Local's and SFTP's wires type a file as `NotFound`. `missing_ok`
      applies to the final `NotFound`. Only the probed answer can race, never
      the removal. The driver columns are what `rmdir` gives through the
@@ -254,18 +257,28 @@ every case. RFC-0017 carries the same answers at the question each settles.
      documents the race (a case-insensitive search for `race|TOCTOU` finds
      nothing in `_azure.py`, and spec 044's hits are GR-018's create race and
      the move race, none in GR-043), so the note is new at steps 4 and 7.
-   - **Who carries it.** Required when `parents == "explicit"`, checked at
-     construction. Optional when `implicit`: Graph and Azure HNS have folder
-     objects and carry it at steps 7 and 4. Never for `none`, which has no
-     folder objects.
-   - **Without it** (an `implicit` driver that omits it, every `none`
-     driver): `delete_folder(recursive=False)` removes nothing, since a
-     folder with no objects has nothing to remove, and answers from the
-     probes alone: `stat` a file `InvalidPath`; `list_page(key,
-     delimiter="/", limit=1)` non-empty `DirectoryNotEmpty`; else `NotFound`,
-     to which `missing_ok` applies. [Maintainer's decision in PR #1056's
-     round 4.] BK-389's fake-driver cells pin it; each later step lists the
-     cells where its driver answers differently today.
+   - **Who carries it: a rule on `parents`.** Required whenever the driver
+     has folder objects, `parents == "explicit"` or `"implicit"`, checked at
+     construction: Graph and Azure HNS carry it at steps 7 and 4. Never
+     called when `parents == "none"`, which has no folder objects; a driver
+     class that carries it for one mode and serves `none` in another (the
+     one Azure driver RFC-0017 D4 keeps for flat and HNS) is therefore fine.
+     [Maintainer's decision in PR #1056's round 5, replacing "optional when
+     `implicit`", under which a present empty folder answered `NotFound`.]
+   - **When `parents == "none"`:** `delete_folder(recursive=False)` removes
+     nothing, since a folder with no objects has nothing to remove, and
+     answers from the probes alone: `stat` a file `InvalidPath`;
+     `list_page(key, delimiter="/", limit=1)` non-empty `DirectoryNotEmpty`;
+     else `NotFound`, to which `missing_ok` applies. [Maintainer's decision
+     in PR #1056's round 4.] BK-389's fake-driver cells pin it; each later
+     step lists the cells where its driver answers differently today.
+     Measured in round 5 on SQLBlob (`sqlite://`): an empty prefix, a
+     non-empty prefix, a file and `f/x` keep today's answers; a key that is
+     both a file and a prefix answers `DirectoryNotEmpty` today and
+     `InvalidPath` under this rule, because `stat` runs first. S3
+     (`_s3.py` lines 423 to 444) and flat Azure (`_azure.py` lines 1159 to
+     1172) check in the same order as SQLBlob (read, not run), so steps 2,
+     3 and 4 list that cell.
    - `delete_folder(recursive=False)`: the kernel runs decision 6's pipeline,
      then calls `remove_folder` with no probe before it, so no check is split
      from the removal; it probes after a refusal as the table above states.
@@ -275,8 +288,9 @@ every case. RFC-0017 carries the same answers at the question each settles.
    - `delete_folder(recursive=True)` without `SupportsDeleteTree`: the kernel
      walks the subtree with `list_page(prefix, delimiter="/")`, so a folder
      holding no files still arrives as a common prefix, deletes the files,
-     then calls `remove_folder` on each folder, deepest first. This walk is
-     not decision 7's listing, which wants files only.
+     then, unless `parents == "none"`, calls `remove_folder` on each folder,
+     deepest first; when `parents == "none"` deleting the files is the whole
+     removal. This walk is not decision 7's listing, which wants files only.
 
    RFC-0017 D1's protocol table carries the row. Both Memory drivers
    implement it beside `SupportsDeleteTree` (BK-394's MEM-014 placement).
@@ -315,7 +329,7 @@ every case. RFC-0017 carries the same answers at the question each settles.
    follows SPEC → TEST → IMPLEMENT (`000-process.md` Rule 1). [Added after
    PR #1055 merged, from its closing-pass review; the maintainer moved the
    key clause here from BK-394. Numbered 8, after the original list's 1 to
-   7, so that the gap at 4 still marks the item that moved to BK-394.] Each
+   7, so that the gaps at 4 to 7 still mark the items that moved to BK-394.] Each
    is scoped to a class on the kernel, and no class is on it until BK-394:
    - the key rule of decision 6: its refusals, normalisation and root check
      on the canonical key, together with BK-395's answers for the

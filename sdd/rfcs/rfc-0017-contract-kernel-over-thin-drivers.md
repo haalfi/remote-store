@@ -13,8 +13,9 @@ in D8 and § Impact. BK-389's planning PR answered Open Questions 2 and 3,
 deferred 5 to D3 step 3 with the shape step 1 keeps open, added the close
 posture and `SupportsRemoveFolder` to D1 and key validation to D2, and split step 1 into a kernel PR (BK-389) and a Memory PR
 (BK-394), the second accepting; BK-389's dossier § Decisions carries them.
-`SupportsRemoveFolder` is a construction-time requirement for an
-explicit-parents driver, so the acceptance reader checks it with the rest.
+`SupportsRemoveFolder` is a construction-time requirement for any driver
+whose `parents` is `"explicit"` or `"implicit"`, so the acceptance reader
+checks it with the rest.
 
 **Date:** 2026-09-28. Every figure below is pinned to `8fa22d6` and is either
 quoted from audit-021 with its derivation, or names its command here. The tree
@@ -179,7 +180,7 @@ optional member, so presence is a protocol, not a method):
 | `SupportsEnsureParents` | `ensure_parents(key)` | called before `put` when `parents == "explicit"`; SFTP's stat walk and Local's `mkdir -p` are their implementations. Never called for `implicit` (Graph, GR-039: no explicit `mkdir`; Azure HNS) or `none` |
 | `SupportsFolderStats` | `folder_stats(prefix) -> (count, size, latest)` | `get_folder_info` push-down (SQL's aggregate query); without it, the kernel aggregates a listing |
 | `SupportsGlob` | `glob(pattern)` | native `GLOB`; without it the driver must not declare `GLOB` |
-| `SupportsRemoveFolder` (added at BK-389's planning; corrected after PR #1055 merged) | `remove_folder(key)`: remove an empty folder and refuse anything else without removing it, in one step where the wire has one (Memory's lock, `rmdir`) | required when `parents == "explicit"`, checked at construction; optional when `implicit` (Graph, Azure HNS); never for `none`. `delete_folder(recursive=False)` calls it with no probe before it; after any refusal but a typed `DirectoryNotEmpty`, D2's error-path probes run (`stat`, then, for a folder still present, `list_page(key, delimiter="/", limit=1)`), and `missing_ok` applies to the final `NotFound`. Without it, `delete_folder(recursive=False)` removes nothing and answers from those probes alone. The answer per key state and driver is BK-389's dossier, decision 8. `delete_folder(recursive=True)` without `SupportsDeleteTree` walks with `delimiter="/"`, deletes the files, then calls it on each folder, deepest first |
+| `SupportsRemoveFolder` (added at BK-389's planning; corrected after PR #1055 merged) | `remove_folder(key)`: remove an empty folder and refuse anything else without removing it, in one step where the wire has one (Memory's lock, `rmdir`) | required when `parents` is `"explicit"` or `"implicit"` (any driver with folder objects; Graph, Azure HNS), checked at construction; never called when `parents == "none"`. `delete_folder(recursive=False)` calls it with no probe before it; after any refusal but a typed `DirectoryNotEmpty`, D2's error-path probes run (`stat`, then, for a folder still present, `list_page(key, delimiter="/", limit=1)`); a probe that raises leaves the refusal standing, chained; `missing_ok` applies to the final `NotFound`. When `parents == "none"`, `delete_folder(recursive=False)` removes nothing and answers from those probes alone. The answer per key state and driver is BK-389's dossier, decision 8. `delete_folder(recursive=True)` without `SupportsDeleteTree` walks with `delimiter="/"`, deletes the files, then, unless `parents == "none"`, calls it on each folder, deepest first |
 
 Two more attributes the stream wrapper reads per driver, because
 `_ErrorMappingStream`'s caught set is per construction site today:
@@ -821,10 +822,12 @@ and its answer keeps `classify`.
   driver can present, and the `delete_folder` synthesis over
   `SupportsRemoveFolder` and `SupportsDeleteTree` (every row of decision 8's
   error-path table in BK-389's dossier: a typed `DirectoryNotEmpty` passed
-  through, any other refusal answered by the probes, `missing_ok` applied
-  to the final `NotFound`, deepest-first removal, and the
-  construction refusal of an explicit-parents driver without
-  `SupportsRemoveFolder`; added after PR #1055 merged); the driver half
+  through, any other refusal answered by the probes, a raising probe
+  leaving the refusal standing, `missing_ok` applied to the final
+  `NotFound`, the probes-only answer when `parents == "none"`,
+  deepest-first removal, and the construction refusal of an explicit- or
+  implicit-parents driver without `SupportsRemoveFolder`; added after PR
+  #1055 merged); the driver half
   stays with the per-driver suites. BK-345 and ID-244 reduce to driver
   cells (corrected at BK-389's planning: BK-345's kernel half, the
   absent-container answers per `Op`, became fake-driver kernel cells in
@@ -840,9 +843,13 @@ and its answer keeps `classify`.
   and [ADR-0042](../adrs/0042-contract-kernel-over-thin-drivers.md),
   Proposed, which carries the four ADR amendments. With D3 step 1's Memory PR
   (BK-394), which accepts that ADR (the kernel PR before it, BK-389, is
-  private and adds only the spec 003 clauses its kernel cells trace to: the
-  key rule, the root `delete_folder` refusal and `SupportsRemoveFolder`'s
-  sequences): specs 003, 005, 029 and 037 below, spec 013 (Memory's,
+  private and touches spec 003 only: it adds the clauses its kernel cells
+  trace to, the key rule, the root `delete_folder` refusal and
+  `SupportsRemoveFolder`'s sequences, and amends any spec 003 clause
+  BK-395's answers contradict, such as BE-025 or BE-008; BK-389's dossier,
+  item 8, is the authority for this split): specs 003, 005, 029 and 037
+  below, any clause outside spec 003 that BK-395's answers contradict
+  (PATH-002, NPR-021, NPR-004, RES-020), spec 013 (Memory's,
   as a kernel/driver placement per clause, which the list at filing omitted),
   the kernel half
   of 007 and 022, the Memory drivers' rows of 007 and 022, spec 026's PING-002

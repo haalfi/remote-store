@@ -11,10 +11,12 @@ lists the amendment set. A spec describes behaviour that exists
 it true, not at acceptance. Everything that becomes true at D3 step 1 goes
 with BK-394, the Memory half of step 1 split from BK-389 on 2026-10-02: specs
 003, 005, 013, 029 and 037, the kernel half of 007 and 022, and spec 026's
-PING-002 and PING-008 plus the Memory drivers' rows of 007 and 022. BK-389's
-kernel PR is private and amends spec 003 only with the clauses its kernel
-cells trace to (its dossier, item 8; corrected after PR #1055 merged, which
-said it amended no spec). This item owns steps 2 to 8.
+PING-002 and PING-008 plus the Memory drivers' rows of 007 and 022, and any
+clause outside spec 003 that BK-395's answers contradict. BK-389's kernel PR
+is private and touches spec 003 only: the clauses its kernel cells trace to,
+and any spec 003 clause BK-395's answers contradict (its dossier, item 8,
+the authority for the split; corrected after PR #1055 merged, which said it
+amended no spec). This item owns steps 2 to 8.
 
 **Amendment by step** (steps are RFC-0017 D3's table):
 

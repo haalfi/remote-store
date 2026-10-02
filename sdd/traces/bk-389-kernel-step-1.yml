@@ -362,3 +362,11 @@ phases:
         section: "delete_folder rmdir handler (lines 505 to 510), #1056 round 4"
         read_type: verify
         extract: "my table's Local column cited the read/delete handlers; delete_folder's own handler maps every non-ENOTEMPTY OSError to PermissionDenied, and with it the probe reproduces today's answers except a symlink to a non-empty directory"
+      - file: src/remote_store/backends/_sqlalchemy.py
+        section: "SQLBlobBackend.delete_folder(recursive=False), measured by #1056 round 5"
+        read_type: verify
+        extract: "the 'remove nothing, answer from probes' rule held for none drivers but answered NotFound for a present empty folder on an implicit driver without the protocol; the protocol became required for explicit and implicit parents and never called for none (maintainer's decision at the ceiling), and a raising probe leaves the refusal standing"
+      - file: tests/backends/memory/aio/test_basics.py
+        section: "test_delete_folder_empty_path_raises (lines 244 to 248)"
+        read_type: verify
+        extract: "my MEM-014 search could not find the async twin tagged ASYNC-013; a search for delete_folder(\"\") calls finds both"
