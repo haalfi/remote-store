@@ -683,6 +683,21 @@ jobs:
       # system python3 suffices.
       - name: Check Dafny twin parity
         run: python3 scripts/check_dafny_twin_parity.py
+      # The compiled oracle (sdd/formal/MemoryBackend-py/module_.py, built from
+      # MemoryBackend.dfy and the RootPath.dfy it includes) is exercised only by
+      # pytest, and the test jobs are CODE_PAT-gated, which excludes `sdd/`. So a
+      # regenerate-and-commit PR confined to sdd/formal/ would otherwise ship the
+      # new oracle with no test run against it (ID-251). Run the oracle's own
+      # tests and its conformance lanes here, where FORMAL_PAT reaches them.
+      - uses: actions/setup-python@v7
+        with:
+          python-version: ${{ needs.setup.outputs.primary }}
+      - uses: astral-sh/setup-uv@v10.2.0
+        with:
+          enable-cache: false
+      - run: uv pip install -e ".[dev]"
+      - name: Run the compiled oracle's tests and conformance lanes
+        run: pytest tests/backends/dafny tests/backends/conformance -k dafny -q
 
   # INFORMATIONAL: TLA+ model checks for the live informal layer under
   # sdd/formal/tla/. Not in the gate below by design — see

@@ -156,9 +156,12 @@ observation belongs in the health probe, which is off BE-021's roster and free
 to make it: `LocalBackend.check_health` tests `is_dir()`, not mere existence,
 for exactly this reason.
 
-**Conformance pins the outcome, not the order** — and does not need to pin
-both: a backend that gets the order wrong is observable as exactly the wrong
-error class or a spurious success, which is what the cells below assert.
+**Conformance pins the outcome, not the order.** A wrong order is visible to
+the cells below only where the root's own answer is wrong, and a present root
+often answers correctly by observation, so the order is unpinned there on every
+row. It matters once the container is absent, which no conformance fixture
+arranges (ID-261, BK-345); the backends that can lose theirs pin it per
+backend.
 
 **BE-020 outranks this check.** On a backend with `close_is_terminal = True`,
 every operation in the table above except the addressing row raises
@@ -267,9 +270,18 @@ root and `is_root` does not recognise; measured against a `LocalBackend` whose
 root had been deleted, a guard written as `if is_root(path)` let `write("./")`
 leave the root a regular file and `open_atomic("./")` return cleanly having done
 it — the whole defect, one character from the spelling it caught. **So a backend
-implementing this clause as `if is_root(path)` is not conformant**, even though
-it passes the conformance cells below, which are parametrised over the two
-canonical spellings because they also assert `is_root` on the raised path.
+implementing this clause as `if is_root(path)` is not conformant**. The write
+and `move`/`copy` destination cells below run all six spellings listed next,
+and require only that the raised path name the root under some spelling, since
+a backend may echo the raw key or fold it first (the verified oracle folds every
+spelling onto `"."`). **They catch an `is_root` guard only where nothing
+behind the guard refuses the key.** Whether something does depends on the
+backend: a hierarchical store with its container present refuses `"./"` by its
+own directory check, so there only the root destination against a missing
+source sees the narrow guard, and a flat store's own key handling may or may
+not refuse it. The case the order exists for, the absent-container write, is
+reached by no conformance fixture (BK-345), so it is pinned per backend. The
+per-lane measurement is recorded in the ID-251 trace.
 
 Decide it instead on the key's addressable segments: drop empty and `"."`
 segments, and refuse when nothing is left. That covers `""`, `"."`, `"./"`,
@@ -349,7 +361,8 @@ and the row above governs it.
 
 **Conformance:** `tests/backends/conformance/test_io.py::TestBackendRootPath`
 and its async sibling in `test_async_extended.py`, both gated on
-`Capability.LIST` and parametrised over both spellings; addressing is covered by
+`Capability.LIST` and parametrised over both spellings, except the write and
+`move`/`copy` destination cells, which run all six; addressing is covered by
 `test_identity.py::TestBackendNativePath` (sync) and
 `test_async_extended.py::TestAsyncBackendNativePath` (async).
 

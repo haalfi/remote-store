@@ -234,7 +234,7 @@ that must move — see [`000-process.md` Rule
 | File | What it models |
 |------|----------------|
 | `BackendContract.dfy` | Abstract backend trait — error model, capabilities, all operation pre/postconditions, the `AddressesRoot` root predicate |
-| `MemoryBackend.dfy` | Reference refinement proving the contract is satisfiable; compiled to Python as the conformance oracle |
+| `MemoryBackend.dfy` | Reference refinement proving the contract is satisfiable; compiled to Python as the conformance oracle, together with `RootPath.dfy`, which it includes |
 | `DepthCounting.dfy` | Verified `DEPTH-001` algorithm and the four depth-filter properties |
 | `ResourceSafety.dfy` | Handle lifecycle, `_safe_wrap` invariant, move atomicity, connection lifecycle |
 | `RootPath.dfy` | What `AddressesRoot` accepts: exactly the keys whose every `/`-segment is `""` or `"."` (`RootSpellingCharacterisation`), so the six BE-029 spellings; only `Root` among well-formed paths; not `\` (BE-029). BE-029's table derived from the trait for every refinement (`RootAnswersPerTable`), and the raw-key entry (`WriteKey`, `MoveKey`, `CopyKey`) that folds every root spelling of a write or `move`/`copy` destination onto `Root` |
@@ -259,7 +259,8 @@ pinned version (see
 then `dafny verify sdd/formal/<file>.dfy`.
 
 CI runs the `verify-formal` job automatically when `sdd/formal/` or
-`sdd/specs/` files change.
+`sdd/specs/` files change; it also runs the compiled oracle's tests (see
+§ Compiled oracle as conformance gate).
 
 TLA+ (TLC): `bash scripts/tlc_check.sh` runs the Observer model
 (default target `sdd/formal/tla/MC3`) via a pinned Docker image — no
@@ -297,6 +298,10 @@ small, stable, and maintainable:
   `DeleteFolder` refuses `Root` (MEM-014). Spellings such as `"./"` or
   `"/"` are outside the methods' `WellFormedPath` domain; the raw-key
   entry in `RootPath.dfy` §5 folds them onto `Root` before the trait.
+  `MemoryBackend.dfy` includes `RootPath.dfy` so that entry compiles into
+  the oracle, and the adapter sends every write key and `move`/`copy`
+  destination through it (ID-251). The oracle's refusal of those spellings
+  is therefore the verified one, and it names `Root`, not the raw key.
 - **`MemoryBackend` / `MemoryBackendMinimal` parity.** Dafny has no
   class-to-class inheritance, so `MemoryBackendMinimal` duplicates every
   method body of `MemoryBackend` with a narrower capability set and a
@@ -361,7 +366,8 @@ the test itself has a bug and must be fixed.
 
 | File | Purpose |
 |------|---------|
-| `sdd/formal/MemoryBackend.dfy` | Source specification (verified) |
+| `sdd/formal/MemoryBackend.dfy` | Source specification (verified); the translation entry point |
+| `sdd/formal/BackendContract.dfy`, `sdd/formal/RootPath.dfy` | Included by `MemoryBackend.dfy`, so their non-ghost members compile into `module_.py` too: the trait and its compiled predicates, and `RootPath.dfy`'s §4 `RootAnswersPerTable` and §5 `RootFold` / `WriteKey` / `MoveKey` / `CopyKey` |
 | `sdd/formal/MemoryBackend-py/module_.py` | Compiled Python output |
 | `sdd/formal/MemoryBackend-py/_dafny/` | Dafny Python runtime |
 | `tests/backends/dafny/_helpers.py` | Adapter: compiled oracle → `Backend` ABC |
@@ -370,7 +376,13 @@ the test itself has a bug and must be fixed.
 invariants, ghost variables, postconditions) erase at compile time and
 produce no Python output — regeneration is not needed. Non-ghost changes
 (method bodies, datatype definitions, function implementations) do require
-regeneration. Run the Docker wrapper:
+regeneration, in any of the three source files above, not only
+`MemoryBackend.dfy`; no gate compares `module_.py` with its sources (ID-263). What
+CI does run on an `sdd/formal/` change is the `verify-formal` job, which
+besides `dafny verify` runs `tests/backends/dafny` and the oracle's
+conformance lanes (`-k dafny`) against the committed `module_.py`, so a
+regenerated oracle is tested even when nothing outside `sdd/` changed. Run the
+Docker wrapper:
 
 ```bash
 bash scripts/dafny_verify.sh MemoryBackend.dfy     # confirm spec
@@ -393,11 +405,13 @@ python -c "import sys; sys.path.insert(0, 'sdd/formal/MemoryBackend-py'); import
 **Running the oracle tests:**
 
 ```bash
-pytest tests/backends/conformance/ -k "dafny-oracle" -v
+pytest tests/backends/dafny tests/backends/conformance -k dafny -q
 ```
 
-All tests should pass or self-skip (GLOB capability not declared).
-Any failure indicates a conformance suite bug.
+The same command `verify-formal` runs. All tests should pass or self-skip
+(an opt-in the fixture leaves off, a capability the oracle does not declare,
+or a cell aimed at non-declaring backends). A conformance failure indicates a
+conformance suite bug; a failure under `tests/backends/dafny` is the adapter's.
 
 ### Test conformance
 
@@ -474,7 +488,9 @@ sentinel spelling only. BE-029 binds every spelling on the write clause, and
 `RootPath.dfy` §5 carries that: `WriteKey`, `MoveKey` and `CopyKey` take the
 raw write or `move`/`copy` destination key, fold every root spelling onto
 `Root`, and prove the refusal from the trait's postconditions. A non-root key
-must still be well-formed there. The `move`/`copy` source and the read side
+must still be well-formed there. Those three are the oracle adapter's entry
+for writes and `move`/`copy` destinations, so the conformance cells that run
+all six spellings reach the oracle through the verified fold. The `move`/`copy` source and the read side
 are not widened, because BE-029 decides them with `is_root`: the source must
 be well-formed, and `Root` is its one root spelling.
 

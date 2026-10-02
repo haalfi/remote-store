@@ -1,0 +1,277 @@
+id: ID-251
+title: "BE-029's widest clause is one the conformance suite cannot fail on"
+trigger: >-
+  The root write and move/copy destination cells ran only "" and "." and
+  asserted is_root on the raised path, so a backend guarding with
+  is_root(path) shipped green. BK-388 had since made the oracle refuse "./"
+  on the raw string, uncertified. The maintainer invoked /ship with the
+  oracle strategy, the raised-path assertion and the dossier treatment routed
+  through plan-mode questions.
+source_items:
+  - ID-251
+  - BK-388
+audience:
+  - infra.test
+  - library.maintainer
+  - user.site
+  - infra.ci
+expected_ripples:
+  - sdd/BACKLOG.md
+  - sdd/BACKLOG-DONE.md
+  - sdd/backlog/id-251-root-write-cells-narrow-spellings.md
+  - CHANGELOG.md
+  - sdd/formal/MemoryBackend-py/module_.py
+  - sdd/formal/README.md
+phases:
+  - id: orient
+    name: Orient
+    steps:
+      - file: sdd/backlog/id-251-root-write-cells-narrow-spellings.md
+        section: "(full)"
+        read_type: gate
+        extract: >-
+          Prescribes `assert exc.value.path == root` and says the oracle passes
+          "./" to the model unnormalised. Both stale after BK-388: the model
+          refuses "./" on the raw string, and equality fails both oracle lanes
+          for "" (they name "."), measured below.
+        outcome: misleading
+      - file: sdd/specs/003-backend-adapter-contract.md
+        section: "BE-029, write clause; BE-008 precondition order"
+        read_type: gate
+        extract: >-
+          The write clause requires InvalidPath "naming the root" under every
+          spelling, and lists the six. Its own prose said the cells were narrow
+          because they assert is_root, so the spec ripples with the cells.
+        outcome: ok
+      - file: sdd/formal/README.md
+        section: "Root as \".\"; gaps 9-11"
+        read_type: gate
+        extract: >-
+          Root spellings other than "." are outside WellFormedPath; RootPath.dfy
+          §5 folds them before the trait. The oracle lane wraps MemoryBackend
+          only, so §5 was proved but not compiled.
+        outcome: ok
+      - file: sdd/formal/RootPath.dfy
+        section: "§5 WriteKey, MoveKey, CopyKey"
+        read_type: gate
+        extract: >-
+          RootFold is a compiled function and the three entries are compiled
+          methods over the trait, so including the module compiles them; the
+          folded error names Root.
+        outcome: ok
+      - file: tests/backends/dafny/_helpers.py
+        section: "_str_to_dafny; write, move, copy"
+        read_type: gate
+        extract: "Folds only \"\" to \".\"; write/move/copy call the class methods directly."
+        outcome: ok
+      - file: tests/backends/conformance/test_io.py
+        section: "TestBackendRootPath; _ROOT_WRITE_OPS, _ROOT_WRITE_DST_OPS"
+        read_type: gate
+        extract: >-
+          Three write-shaped cells (writers, destination, destination outranks
+          a missing source), each over ["", "."]. The async twins mirror them
+          minus open_atomic.
+        outcome: ok
+      - file: src/remote_store/backends/_flat_ns.py
+        section: "_reject_root_as_write_target"
+        read_type: verify
+        extract: >-
+          Raises path=path, the raw key; the Docker lanes this container cannot
+          run (azurite, sftp_docker, MinIO) reach the refusal through it.
+        outcome: ok
+      - file: sdd/BACKLOG.md
+        section: "How this file works, Item authority"
+        read_type: reference
+        extract: "Evidence gets a dated correction, not a rewrite; this settled decision 3."
+        outcome: ok
+  - id: design
+    name: Design
+    steps:
+      - file: "tmp/measure (throwaway harness over conformance fixtures)"
+        section: "6 spellings x write ops x overwrite modes, move/copy dst"
+        read_type: verify
+        extract: >-
+          852 rows on 14 Stage-1 lanes, sync and async: InvalidPath everywhere,
+          source survives every seeded move/copy; raw spelling named everywhere
+          except both oracle lanes for "" ("."). sqlquery has no WRITE;
+          s3_pyarrow_moto skips (needs MinIO); azure_replay_hns not collected.
+        outcome: ok
+      - file: scripts/_dafny_classorder.py
+        section: "(native dafny build of the base sources)"
+        read_type: verify
+        extract: >-
+          Native dafny 4.11.0 build plus the reorder reproduced the committed
+          module_.py byte-for-byte (diff -rq, __pycache__ excluded), so option
+          (a) needs no Docker.
+        outcome: ok
+  - id: implement
+    name: Implement
+    steps:
+      - file: tests/backends/conformance/_helpers.py
+        section: "_ROOT_WRITE_SPELLINGS, _names_the_root"
+        read_type: verify
+        extract: >-
+          The PostToolUse formatter removed the new imports from the two test
+          modules because they were added before their call sites; re-added.
+        outcome: ok
+      - file: src/remote_store/backends/_flat_ns.py
+        section: "_reject_root_as_write_target (mutated in-session, reverted)"
+        read_type: verify
+        extract: >-
+          Guard narrowed to is_root: 62 failed, 570 passed, 256 skipped over the
+          three widened cells, sync and async; no failing id is empty or dot.
+          Reverted; git diff src/ empty.
+        outcome: ok
+      - file: sdd/formal/MemoryBackend-py/module_.py
+        section: "(regenerated)"
+        read_type: verify
+        extract: >-
+          Adds default__.RootAnswersPerTable, RootFold, WriteKey, MoveKey,
+          CopyKey; also reorders the closeIsTerminal field and property
+          emission in both classes (inert). A second fresh translate was
+          byte-identical. All five .dfy files verify with 0 errors.
+        outcome: ok
+      - file: tests/backends/dafny/test_root_write_entry.py
+        section: "(new)"
+        read_type: verify
+        extract: >-
+          Pins the routing, which conformance cannot see: 16 cells, all red
+          with the adapter reverted to direct class calls (the raised path is
+          then the raw key), green restored.
+        outcome: ok
+      - file: docs-src/guides/custom-backend-guide.md
+        section: "move/copy root bullets"
+        read_type: verify
+        extract: >-
+          Said conformance cannot catch an is_root guard. First rewritten to say
+          the cells fail one, which review showed overclaims; the per-lane
+          breakdown below narrowed it.
+        outcome: ok
+      - file: src/remote_store/backends/_flat_ns.py
+        section: "_reject_root_as_write_target (mutated again, per-lane reading)"
+        read_type: verify
+        extract: >-
+          Of the 62 red cells, local, sftp_inproc and local_async_adapted fail
+          only test_root_destination_outranks_a_missing_source; writer cells go
+          red only on s3_moto, seeded destination cells on s3_moto and
+          s3_boto3_moto. A present root directory refuses "./" by its own
+          is_dir check, naming the raw key. Not run: s3_pyarrow_moto (needs
+          MinIO) and the Docker lanes. azure_replay and azure_replay_async pass
+          the 16 non-canonical outranks cells at baseline without HTTP; under
+          the mutation those 16 reach the SDK and skip "replay cassette
+          missing" (baseline 648 passed / 240 skipped; mutated 62 failed / 570
+          passed / 256 skipped). Filed as ID-262. Spec 003 states the
+          principle and cites this step; the guide states it without a
+          citation, being a published page.
+        outcome: ok
+      - file: sdd/specs/003-backend-adapter-contract.md
+        section: "BE-029, Conformance pins the outcome, not the order"
+        read_type: verify
+        extract: >-
+          The pre-PR sentence said a wrong order is observable as the wrong
+          class. Round 5's measuring member refuted it on the file-shaped and
+          probe rows too: key-decided root checks removed, local's file-shaped
+          cells and local/s3_moto's probe cells stay green. Filed as ID-261;
+          the sentence now says the order is unpinned while the root is present.
+        outcome: misleading
+discovery_followups:
+  - ID-261
+  - ID-262
+  - ID-263
+surprising_ripples:
+  - sdd/backlog/id-247-graph-root-path-cassettes.md
+  - .github/workflows/ci.yml
+  - docs-src/guides/custom-backend-guide.md
+  - tests/backends/test_flat_ns.py
+  - sdd/specs/003-backend-adapter-contract.md
+review:
+  # Derived by `hatch run ship-report 1050 --trace-block-only` at head 1f09ffd.
+  # Do not hand-edit, except a newly required field per sdd/traces/_schema.yml
+  # section review: RFC-0015 D4 makes this script the only producer.
+  derivation: "hatch run ship-report 1050 --trace-block-only"
+  pr: 1050
+  review_rounds: 7
+  submissions: 7
+  findings: 18
+  by_round:
+    - round: 1
+      findings: 2
+      origin: {pre-existing: 1, unclassifiable-file: 1}
+      triage: {must-fix: 2}
+      duration_hours: 0.05
+    - round: 2
+      findings: 3
+      origin: {original: 2, unclassifiable-file: 1}
+      triage: {must-fix: 3}
+      duration_hours: 0.47
+    - round: 3
+      findings: 4
+      origin: {loop-introduced: 3, unclassifiable-file: 1}
+      triage: {must-fix: 4}
+      duration_hours: 0.43
+    - round: 4
+      findings: 3
+      origin: {loop-introduced: 2, original: 1}
+      triage: {filed: 1, must-fix: 2}
+      duration_hours: 0.33
+    - round: 5
+      findings: 3
+      origin: {loop-introduced: 1, original: 1, unclassifiable-file: 1}
+      triage: {must-fix: 3}
+      duration_hours: 0.29
+    - round: 6
+      findings: 1
+      origin: {unclassifiable-file: 1}
+      triage: {must-fix: 1}
+      duration_hours: 10.56
+    - round: 7
+      findings: 2
+      origin: {loop-introduced: 1, original: 1}
+      triage: {filed: 1, must-fix: 1}
+      duration_hours: 0.3
+  by_file:
+    - path: "sdd/specs/003-backend-adapter-contract.md"
+      findings: 5
+    - path: "docs-src/guides/custom-backend-guide.md"
+      findings: 3
+    - path: "sdd/formal/README.md"
+      findings: 3
+    - path: "sdd/BACKLOG-DONE.md"
+      findings: 2
+    - path: "sdd/BACKLOG.md"
+      findings: 2
+    - path: "sdd/traces/id-251-root-write-cells-narrow-spellings.yml"
+      findings: 2
+    - path: "tests/backends/dafny/test_root_write_entry.py"
+      findings: 1
+  untouched_files:
+    - ".github/workflows/ci.yml"
+    - "CHANGELOG.md"
+    - "sdd/backlog/bk-389-kernel-step-1-memory.md"
+    - "sdd/backlog/id-247-graph-root-path-cassettes.md"
+    - "sdd/backlog/id-251-root-write-cells-narrow-spellings.md"
+    - "sdd/backlog/id-261-root-order-unobservable.md"
+    - "sdd/formal/MemoryBackend-py/module_.py"
+    - "sdd/formal/MemoryBackend.dfy"
+    - "sdd/formal/RootPath.dfy"
+    - "tests/backends/conformance/_helpers.py"
+    - "tests/backends/conformance/test_async_extended.py"
+    - "tests/backends/conformance/test_io.py"
+    - "tests/backends/dafny/_helpers.py"
+    - "tests/backends/test_flat_ns.py"
+  review_driven_commits:
+    - sha: "2afbd36"
+      subject: "ID-251: Narrow spec 003's Conformance line and re-derive ID-247's graph_replay counts"
+    - sha: "bd5aeb8"
+      subject: "ID-251: Bound what the widened cells catch of an is_root guard"
+    - sha: "baf2a05"
+      subject: "ID-251: State the is_root catch bound as a principle, not a lane list"
+    - sha: "01d205a"
+      subject: "ID-251: Withdraw BE-029's order-is-observable claim and file two coverage gaps"
+    - sha: "0157f30"
+      subject: "ID-251: Run the compiled oracle's tests from verify-formal"
+    - sha: "48e5bbd"
+      subject: "ID-251: Merge master; ID-251 done here, not absorbed"
+    - sha: "1f09ffd"
+      subject: "ID-251: File the oracle-vs-source gap as ID-263; align ID-251's audience"
+  ci: {verdict: PENDING, failed: 0, pending: 2}

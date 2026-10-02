@@ -24,7 +24,6 @@ Folded into a surviving `BACKLOG.md` item as a sub-bullet carrying its evidence.
 **The work is open, not done** — follow the host. The ID is retired because a
 sub-bullet is not an ID.
 
-- [x] **ID-251 — BE-029's widest clause is one the conformance suite cannot fail on** → **BK-389**, item 2: RFC-0017 § Impact, Testing makes the widened root spellings fake-driver kernel cells, and the open `"./"` oracle decision is settled there. Dossier: [ID-251](backlog/id-251-root-write-cells-narrow-spellings.md).
 - [x] **BUG-241 — `SQLBlobBackend` builds prefix `LIKE` patterns without escaping `_` and `%`, so listings and folder deletes reach sibling keys** → **BL-011**. Dossier: [BUG-241](backlog/bug-241-sql-like-metacharacters.md).
 - [x] **BK-347 — A diff outside CI's `CODE_PAT` is routed away from the ADR drift gate** → **BK-333**
 - [x] **BK-337 — Widening an authority doc's scope reaches no row that finds its restating copies** → **BK-346**, instance 5
@@ -241,6 +240,16 @@ if evidence changes; these are retired.
 ---
 
 ## Unreleased
+
+- [x] **ID-251 — BE-029's widest clause is one the conformance suite cannot fail on**
+  spec: BE-029 · effort: M · audience: infra.test, library.maintainer, user.site, infra.ci
+  The root write and `move`/`copy` destination cells (sync and async) run all six
+  BE-029 spellings and assert the raised path names the root under any spelling
+  (`_names_the_root`). With the shared guard narrowed to `is_root`, those cells on
+  the Stage-1 no-Docker lanes give 62 failed / 570 passed / 256 skipped (dossier).
+  The oracle reaches the four non-canonical spellings through `RootPath.dfy` §5,
+  now compiled into it, so its refusal is the verified one and names `"."`.
+  Detail: [dossier](backlog/id-251-root-write-cells-narrow-spellings.md)
 
 - [x] **BUG-240 — ASYNC-014 and DEPTH-003 state opposite rules, and `GraphBackend` implements the async one**
   spec: ASYNC-014, DEPTH-003 · effort: M · audience: user.api

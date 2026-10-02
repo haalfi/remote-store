@@ -17,6 +17,11 @@
 //      every root spelling onto Root and refuses it: BE-029's write clause
 //      for the spellings the trait's well-formed domain excludes.  The
 //      move/copy source stays on the canonical Root, as BE-029 decides it.
+//
+// ID-251: MemoryBackend.dfy includes this module, so its non-ghost members
+// (§4's RootAnswersPerTable, §5's RootFold, WriteKey, MoveKey, CopyKey)
+// compile into the Python oracle.  §5 is the adapter's entry for writes and
+// move/copy destinations: a body change here needs module_.py regenerated.
 
 include "BackendContract.dfy"
 

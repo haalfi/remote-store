@@ -16,7 +16,13 @@ import pytest
 from remote_store._capabilities import Capability
 from remote_store._errors import AlreadyExists, InvalidPath, NotFound
 from remote_store._path import is_root
-from tests.backends.conformance._helpers import _fixture_record, _require, _seed
+from tests.backends.conformance._helpers import (
+    _ROOT_WRITE_SPELLINGS,
+    _fixture_record,
+    _names_the_root,
+    _require,
+    _seed,
+)
 from tests.backends.fixtures import fixture_params
 
 if TYPE_CHECKING:
@@ -284,7 +290,7 @@ class TestBackendRootPath:
 
     @pytest.mark.spec("BE-029")
     @pytest.mark.spec("BE-008")
-    @pytest.mark.parametrize("root", ["", "."], ids=["empty", "dot"])
+    @pytest.mark.parametrize("root", _ROOT_WRITE_SPELLINGS)
     @pytest.mark.parametrize("overwrite", _OVERWRITE_MODES)
     @pytest.mark.parametrize(("op", "cap"), _ROOT_WRITE_OPS)
     def test_write_to_root_is_refused_and_the_store_survives(
@@ -312,18 +318,24 @@ class TestBackendRootPath:
 
         **Both overwrite modes**, because they reach the write by different
         routes and the clause binds both — see ``_OVERWRITE_MODES``.
+
+        **All six root spellings**, not the canonical pair: see
+        ``_ROOT_WRITE_SPELLINGS``. The raised path must name the root under
+        some spelling (``_names_the_root``), not necessarily the one passed.
+        The closing probe asks with ``""``, because the read side is bound
+        only for the canonical pair.
         """
         _require(backend, cap, Capability.WRITE, Capability.READ)
         backend.write("rootwrite/a.txt", b"seed")
         with pytest.raises(InvalidPath) as exc:
             _ROOT_WRITE_OP_CALLS[op](backend, root, overwrite)
-        assert is_root(exc.value.path), f"error names {exc.value.path!r}, not the root"
+        assert _names_the_root(exc.value.path), f"error names {exc.value.path!r}, not the root"
         assert backend.read_bytes("rootwrite/a.txt") == b"seed"
-        assert backend.is_folder(root) is True
+        assert backend.is_folder("") is True
 
     @pytest.mark.spec("BE-029")
     @pytest.mark.spec("BE-008")
-    @pytest.mark.parametrize("root", ["", "."], ids=["empty", "dot"])
+    @pytest.mark.parametrize("root", _ROOT_WRITE_SPELLINGS)
     @pytest.mark.parametrize(("op", "cap"), _ROOT_WRITE_DST_OPS)
     def test_root_as_move_or_copy_destination_is_refused(
         self, backend: Backend, root: str, op: str, cap: Capability
@@ -340,19 +352,22 @@ class TestBackendRootPath:
         Hence the third assertion. Asserting only the error class would pass on a
         backend that raised after moving the bytes, and asserting the source
         still exists is what separates a refusal from a silent data loss.
+
+        Over every root spelling and asserting the path names the root, for
+        the reasons the writer sibling gives.
         """
         _require(backend, cap, Capability.WRITE, Capability.READ)
         backend.write("rootdst/src.txt", b"seed")
         with pytest.raises(InvalidPath) as exc:
             getattr(backend, op)("rootdst/src.txt", root)
-        assert is_root(exc.value.path), f"error names {exc.value.path!r}, not the root"
+        assert _names_the_root(exc.value.path), f"error names {exc.value.path!r}, not the root"
         assert backend.read_bytes("rootdst/src.txt") == b"seed", f"{op} consumed its source"
-        assert backend.is_folder(root) is True
+        assert backend.is_folder("") is True
 
     @pytest.mark.spec("BE-029")
     @pytest.mark.spec("BE-018")
     @pytest.mark.spec("BE-019")
-    @pytest.mark.parametrize("root", ["", "."], ids=["empty", "dot"])
+    @pytest.mark.parametrize("root", _ROOT_WRITE_SPELLINGS)
     @pytest.mark.parametrize(("op", "cap"), _ROOT_WRITE_DST_OPS)
     def test_root_destination_outranks_a_missing_source(
         self, backend: Backend, root: str, op: str, cap: Capability
@@ -366,7 +381,7 @@ class TestBackendRootPath:
         _require(backend, cap)
         with pytest.raises(InvalidPath) as exc:
             getattr(backend, op)("rootdst/missing.txt", root)
-        assert is_root(exc.value.path), f"error names {exc.value.path!r}, not the root"
+        assert _names_the_root(exc.value.path), f"error names {exc.value.path!r}, not the root"
 
 
 @pytest.mark.parametrize("backend", fixture_params(Capability.WRITE), indirect=True)

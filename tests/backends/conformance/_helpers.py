@@ -80,6 +80,38 @@ def _require(backend: object, *caps: Capability) -> None:
             pytest.skip(f"Backend does not support {cap.name}")
 
 
+_ROOT_WRITE_SPELLINGS = [
+    pytest.param("", id="empty"),
+    pytest.param(".", id="dot"),
+    pytest.param("./", id="dot_slash"),
+    pytest.param(".//", id="dot_slash_slash"),
+    pytest.param("./.", id="dot_slash_dot"),
+    pytest.param("/", id="slash"),
+]
+"""Every spelling BE-029's write clause binds, for the write-shaped root cells.
+
+Wider than the ``["", "."]`` the read-side cells use, because the write clause
+is the one place BE-029 widens past ``is_root``: a guard written as
+``if is_root(path)`` refuses the first two and lets the other four through, so
+cells over the canonical pair alone cannot fail on it. The ``empty`` / ``dot``
+ids are the ones those cells used before widening, so recorded cassettes keep
+their names.
+"""
+
+
+def _names_the_root(path: str) -> bool:
+    """True when every ``/``-segment of *path* is ``""`` or ``"."``.
+
+    What BE-029 means by an error "naming the root": any root spelling, not one
+    canonical form. A backend may echo the raw key or fold it first (the
+    verified oracle folds every root spelling onto ``"."``), and both are
+    conformant. Stated independently of the shared ``_addressable_segments``
+    so the cells do not test a backend's predicate against itself; it is the
+    same set ``RootSpellingCharacterisation`` proves in ``RootPath.dfy``.
+    """
+    return all(segment in ("", ".") for segment in path.split("/"))
+
+
 def _seed(backend: object, files: dict[str, bytes]) -> None:
     """Write multiple files into the backend."""
     for path, data in files.items():

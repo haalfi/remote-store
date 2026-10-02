@@ -36,7 +36,13 @@ from remote_store._errors import (
 )
 from remote_store._models import FileInfo, FolderEntry, WriteResult
 from remote_store._path import is_root
-from tests.backends.conformance._helpers import _depth, _fixture_record, _skip_unless_large_write_distinct
+from tests.backends.conformance._helpers import (
+    _ROOT_WRITE_SPELLINGS,
+    _depth,
+    _fixture_record,
+    _names_the_root,
+    _skip_unless_large_write_distinct,
+)
 from tests.backends.conformance.test_atomic import _FIELD_CAPABILITY, _LARGE_WRITE_SIZE
 from tests.backends.fixtures import fixture_params
 
@@ -1512,7 +1518,7 @@ class TestBackendRootPath:
 
     @pytest.mark.spec("BE-029")
     @pytest.mark.spec("BE-008")
-    @pytest.mark.parametrize("root", ["", "."], ids=["empty", "dot"])
+    @pytest.mark.parametrize("root", _ROOT_WRITE_SPELLINGS)
     @pytest.mark.parametrize("overwrite", _ASYNC_OVERWRITE_MODES)
     @pytest.mark.parametrize(("op", "cap"), _ASYNC_ROOT_WRITE_OPS)
     async def test_write_to_root_is_refused_and_the_store_survives(
@@ -1522,19 +1528,20 @@ class TestBackendRootPath:
 
         The sync twin's docstring carries the reason the second assertion is the
         load-bearing one — a raise alone passes on a backend that has already
-        occupied its own container by the time it raises.
+        occupied its own container by the time it raises — and why the cell
+        runs all six root spellings and asserts only that the path names the root.
         """
         _require(async_backend, cap, Capability.LIST, Capability.WRITE, Capability.READ)
         await async_backend.write("rootwrite/a.txt", b"seed")
         with pytest.raises(InvalidPath) as exc:
             await _ASYNC_ROOT_WRITE_OP_CALLS[op](async_backend, root, overwrite)
-        assert is_root(exc.value.path), f"error names {exc.value.path!r}, not the root"
+        assert _names_the_root(exc.value.path), f"error names {exc.value.path!r}, not the root"
         assert await async_backend.read_bytes("rootwrite/a.txt") == b"seed"
-        assert await async_backend.is_folder(root) is True
+        assert await async_backend.is_folder("") is True
 
     @pytest.mark.spec("BE-029")
     @pytest.mark.spec("BE-008")
-    @pytest.mark.parametrize("root", ["", "."], ids=["empty", "dot"])
+    @pytest.mark.parametrize("root", _ROOT_WRITE_SPELLINGS)
     @pytest.mark.parametrize(("op", "cap"), _ASYNC_ROOT_WRITE_DST_OPS)
     async def test_root_as_move_or_copy_destination_is_refused(
         self, async_backend: AsyncBackend, root: str, op: str, cap: Capability
@@ -1548,14 +1555,14 @@ class TestBackendRootPath:
         await async_backend.write("rootdst/src.txt", b"seed")
         with pytest.raises(InvalidPath) as exc:
             await getattr(async_backend, op)("rootdst/src.txt", root)
-        assert is_root(exc.value.path), f"error names {exc.value.path!r}, not the root"
+        assert _names_the_root(exc.value.path), f"error names {exc.value.path!r}, not the root"
         assert await async_backend.read_bytes("rootdst/src.txt") == b"seed", f"{op} consumed its source"
-        assert await async_backend.is_folder(root) is True
+        assert await async_backend.is_folder("") is True
 
     @pytest.mark.spec("BE-029")
     @pytest.mark.spec("ASYNC-018")
     @pytest.mark.spec("ASYNC-019")
-    @pytest.mark.parametrize("root", ["", "."], ids=["empty", "dot"])
+    @pytest.mark.parametrize("root", _ROOT_WRITE_SPELLINGS)
     @pytest.mark.parametrize(("op", "cap"), _ASYNC_ROOT_WRITE_DST_OPS)
     async def test_root_destination_outranks_a_missing_source(
         self, async_backend: AsyncBackend, root: str, op: str, cap: Capability
@@ -1564,7 +1571,7 @@ class TestBackendRootPath:
         _require(async_backend, cap, Capability.LIST)
         with pytest.raises(InvalidPath) as exc:
             await getattr(async_backend, op)("rootdst/missing.txt", root)
-        assert is_root(exc.value.path), f"error names {exc.value.path!r}, not the root"
+        assert _names_the_root(exc.value.path), f"error names {exc.value.path!r}, not the root"
 
 
 class TestAsyncBackendNativePath:

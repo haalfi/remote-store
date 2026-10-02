@@ -279,7 +279,7 @@ failure it was.
   the async kernel with its `unasync` sync twin over the two Memory drivers, with
   every step-1 spec amendment (dossier item 4), the custom-backend guide as a
   driver, its check script and the homepage snippet. Depends on BK-388. Open decision:
-  ID-251's `"./"` oracle cell, normalise or carve out (item 2); D1 to D7 fix the rest.
+  none; RFC-0017 D1 to D7 fix the shape.
   Detail: [dossier](backlog/bk-389-kernel-step-1-memory.md)
 
 - [ ] **BK-390 — RFC-0017's spec amendments after D3 step 1 have no owner once BK-387 closes**
@@ -336,10 +336,10 @@ no clause of the contract ships unexercised.
 
 - [ ] **ID-247 — Record the Graph root-path cassettes**
   spec: BE-029 · effort: S · audience: infra.test
-  30 `TestBackendRootPath` cells skip on `graph_replay` for want of a cassette
+  54 `TestBackendRootPath` cells skip on `graph_replay` for want of a cassette
   (`pytest tests/backends/conformance -k TestBackendRootPath -rs`), and Graph
-  has no emulator tier, so those 30 never run against `GraphBackend` below a
-  live account; the 8 key-decided cells that issue no request do. Open decision:
+  has no emulator tier, so those 54 never run against `GraphBackend` below a
+  live account; the 16 key-decided cells that issue no request do. Open decision:
   none on shape; the recording procedure is in the dossier.
   Detail: [dossier](backlog/id-247-graph-root-path-cassettes.md)
 
@@ -350,6 +350,31 @@ no clause of the contract ships unexercised.
   (`pytest tests/backends/conformance/test_async_extended.py --stage=3 -rs -k non_recursive_ignores`),
   so no conformance cell reaches `GraphBackend` on this rule. Recorded, they go red on a
   regression to extra `/children` calls: replay skips only an absent cassette. Open decision: none.
+
+- [ ] **ID-261 — BE-029's order is unobservable to conformance wherever a present root already answers correctly**
+  spec: BE-029 · effort: M · audience: infra.test
+  With key-decided root checks removed in-session, the file-shaped root cells stay
+  green on `local`/`local_async_adapted` and every probe cell on `local`, `s3_moto`
+  stays green: a present root answers right by observation (checks, selection and
+  counts in the dossier). Only an absent container separates the orders (BK-345).
+  Open decision: per-backend pins, or an absent-root fixture shared with BK-345.
+  Detail: [dossier](backlog/id-261-root-order-unobservable.md)
+
+- [ ] **ID-262 — On Azure replay lanes a regressed root-write guard skips instead of failing**
+  spec: BE-029 · effort: S · audience: infra.test
+  `test_root_destination_outranks_a_missing_source` passes on `azure_replay(_async)`
+  without HTTP; with `_reject_root_as_write_target` narrowed to `is_root` (PR #1050
+  round 5) its 16 non-canonical cells reach the SDK and skip "replay cassette missing".
+  Open decision: fail a key-decided cell that issues a request on replay, or record
+  cassettes for it.
+
+- [ ] **ID-263 — Nothing checks that the compiled oracle matches the Dafny it is built from**
+  spec: — · effort: S · audience: infra.ci, infra.test
+  `module_.py` compiles from `MemoryBackend.dfy`, `BackendContract.dfy` and `RootPath.dfy`
+  (`sdd/formal/README.md` § Compiled oracle); a body edit there that is not regenerated
+  passes `dafny verify` while `verify-formal`'s pytest step tests the stale compiled code.
+  A native 4.11.0 translate plus `_dafny_classorder.py` reproduces the file byte for byte.
+  Open decision: a translate-and-diff step in `verify-formal`, or a pre-commit check.
 
 - [ ] **BK-382 — The file-ancestor gate ships unexercised on the overwrite path, where the pre-check runs inside an open write transaction**
   spec: BE-008 · effort: M · audience: infra.test

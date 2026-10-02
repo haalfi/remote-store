@@ -21,11 +21,11 @@ write-shaped call on every backend, so its *over-matching* half — the
 ordinary keys it must let through — is the half a backend suite cannot
 reach cheaply: a predicate matching one character too many would fail
 everywhere at once and be diagnosed as anything but a root check. Its
-under-matching half has a second reason to live here: the conformance cells
-are parametrised over the two canonical spellings only (they assert
-`is_root` on the raised path), so the wider spellings the contract requires
-are pinned by these cells and by three per-backend modules, and nowhere in
-conformance. See ID-251.
+under-matching half is held by conformance only in part: the root write cells
+run all six spellings (ID-251), but a hierarchical backend with its container
+present refuses `"./"` by its own directory check, so there only the
+missing-source destination cell sees a narrowed guard. Here it is pinned on
+the helper in isolation, whatever the namespace.
 """
 
 from __future__ import annotations
