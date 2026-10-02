@@ -82,8 +82,9 @@ Remote mode (--check --remote), ID-257:
     minus those at the merge-base with ``origin/master``, so an uncommitted
     mint counts — with ``origin/master`` and with what each other ``origin/*``
     branch gained since its merge-base with ``HEAD``, open or done. **A clash
-    is one ID under two titles.** One item keeps its title wherever it travels
-    (a merge, a squash merge, this session's own push from any checkout), so
+    is one ID under two headers**, compared as the text after the ``- [?] ``
+    checkbox. One item keeps that text wherever it travels (a merge, a squash
+    merge, this session's own push from any checkout, a close on one side), so
     it never reads as two; a rival mint names something else. Fails naming
     each clashing ID and the ref carrying it, and prints the next safe IDs
     across every pushed branch. A failed fetch fails loud rather than reporting
@@ -93,8 +94,9 @@ Remote mode (--check --remote), ID-257:
     at mint time that is the usual state of a parallel session, which is why a
     reservation and not this mode is the minting rule; a stale or abandoned
     branch still carrying an ID can report a clash nobody will merge; two mints
-    that happen to share a title read as one item; and an item retitled on one
-    side after the other side took it reads as two. Every ``Drift-gate::``
+    that happen to share header text read as one item; and an item whose header
+    changes on one side after the other side took it — retitled, or absorbed
+    and given its ``→ **HOST**`` — reads as two. Every ``Drift-gate::``
     block below carries an ``entrypoint:``, so the inventory gives the
     ``--check --remote`` block only the passthrough ``gen-backlogid`` alias as
     a home and derives it ``advisory``; without entrypoints it would inherit
@@ -145,7 +147,7 @@ Drift-gate::
 
     entrypoint: --check --remote
     kind:       pair
-    compares: the IDs this working tree minted ↔ the same IDs under other titles on origin/master
+    compares: the IDs this working tree minted ↔ the same IDs under other headers on origin/master
         and every other pushed origin branch
     domain:     process
 """
@@ -177,15 +179,6 @@ _ATTR_RE = re.compile(r"^  spec: .+ · effort: (.+?) · audience: (.+)$")
 _EFFORTS = ("S", "M", "L")
 # BK-385: the done register's released history starts at the first version heading.
 _RELEASED_RE = re.compile(r"^## v\d", re.MULTILINE)
-# ID-257: a header's title ends at the `**` closing its bold, followed by the
-# line end, a `(version)`, an absorbed entry's `→ **HOST**`, a `*(note)*` or
-# a trailing ` — note`. A backtick code span is consumed whole, so no `**`
-# inside one ends a title (two live titles carry `**kwargs`-like spans); a
-# backtick with no closing partner is an ordinary character. The two backtick
-# branches are exclusive, so the match stays linear: an alternation where a
-# backtick could take either branch measured 0.26 s on 30 backticks, doubling
-# per few more.
-_TITLE_END_RE = re.compile(r"((?:`[^`]*`|`(?![^`]*`)|[^`])*?)\*\*(?=\s*(?:$|\(|→|—|\*\())")
 
 # R2–R4. Separator lines are not content (RFC-0016 D1); rfc-0016-measure.py
 # uses the same delimitation, so the gate and the acceptance figure agree.
@@ -252,21 +245,21 @@ def _git(*args: str) -> subprocess.CompletedProcess[str]:
     return subprocess.run(["git", "-C", str(ROOT), *args], capture_output=True, text=True, check=False)
 
 
-def _titled(open_text: str, done_text: str) -> dict[str, str]:
-    """Every header ID in one tree's pair of backlog files, open or done, with its title.
+def _headed(open_text: str, done_text: str) -> dict[str, str]:
+    """Every header ID in one tree's pair of backlog files, open or done, with its header text.
 
-    The title is what makes an item *one* item across trees: a squash merge
-    carries it under the same ID and title with no shared commit, while a rival
-    mint of the same ID names something else.
+    The text after the ``- [?] `` checkbox is what makes an item *one* item
+    across trees: a squash merge carries it verbatim with no shared commit, and
+    one item's open and done headers differ only in the box, while a rival
+    mint of the same ID names something else. Nothing is parsed out of it:
+    three rounds of review each refuted a rule for where a title ends.
     """
     found: dict[str, str] = {}
     for text, status in ((open_text, " ~"), (done_text, "x")):
         for m in _HEADER_RE.finditer(text):
             if m.group(1) in status:
-                eol = text.find("\n", m.end())
-                rest = text[m.end() : eol if eol != -1 else None]
-                title = _TITLE_END_RE.match(rest)
-                found[f"{m.group(2)}-{m.group(3)}"] = (title.group(1) if title else rest).strip()
+                eol = text.find("\n", m.start())
+                found[f"{m.group(2)}-{m.group(3)}"] = text[m.start() + 6 : eol if eol != -1 else None].rstrip()
     return found
 
 
@@ -274,11 +267,11 @@ def _remote_view(remote: str = "origin", base: str = "master") -> tuple[dict[str
     """ID-257: this tree's new items against every pushed branch. Raises ``RuntimeError``.
 
     Returns ``(clashes, seen)``: each ID this tree minted that another ref
-    carries **under a different title**, with those refs, and every ID on the
-    base or any pushed branch. "Minted here" is the working tree minus the
-    merge-base with the base, so an uncommitted mint counts. Comparing titles
-    rather than commits is what keeps one item, reached by squash merge or a
-    push from another checkout, from reading as two.
+    carries **under different header text**, with those refs, and every ID on
+    the base or any pushed branch. "Minted here" is the working tree minus the
+    merge-base with the base, so an uncommitted mint counts. Comparing header
+    text rather than commits is what keeps one item, reached by squash merge
+    or a push from another checkout, from reading as two.
     """
     # An explicit refspec: a clone made with `--depth`/`--single-branch` would
     # otherwise fetch master alone, and every other branch would be unseen.
@@ -293,11 +286,11 @@ def _remote_view(remote: str = "origin", base: str = "master") -> tuple[dict[str
 
     def items_at(ref: str) -> dict[str, str]:
         open_text, done_text = (_git("show", f"{ref}:{p}").stdout for p in paths)
-        return _titled(open_text, done_text)
+        return _headed(open_text, done_text)
 
-    tree = _titled(BACKLOG.read_text(encoding="utf-8"), BACKLOG_DONE.read_text(encoding="utf-8"))
+    tree = _headed(BACKLOG.read_text(encoding="utf-8"), BACKLOG_DONE.read_text(encoding="utf-8"))
     forked = items_at(fork.stdout.strip())
-    mine = {item: title for item, title in tree.items() if item not in forked}
+    mine = {item: header for item, header in tree.items() if item not in forked}
     clashes: dict[str, list[str]] = defaultdict(list)
 
     def compare(ref: str, theirs: dict[str, str]) -> None:
@@ -317,7 +310,7 @@ def _remote_view(remote: str = "origin", base: str = "master") -> tuple[dict[str
         ref_items = items_at(ref)
         seen |= ref_items.keys()
         # What the ref gained since it diverged from HEAD and from the base, so
-        # an old item retitled on either side is not mistaken for a new mint.
+        # an old item whose header changed on either side is not mistaken for a new mint.
         shared = _git("merge-base", "HEAD", ref)
         old = items_at(shared.stdout.strip()).keys() if shared.returncode == 0 else set()
         compare(ref, {k: v for k, v in ref_items.items() if k not in base_items and k not in old})
@@ -545,7 +538,7 @@ def _check(remote: bool = False) -> int:
         print("\nRenumber the later-merged entry to the next safe ID above, and sweep every reference to it.")
 
     if clashes:
-        print(f"\nFound {len(clashes)} ID(s) this tree minted that a pushed ref carries under another title (ID-257):")
+        print(f"\nFound {len(clashes)} ID(s) this tree minted that a pushed ref carries under another header (ID-257):")
         for item, refs in sorted(clashes.items()):
             print(f"  {item} also minted on {', '.join(refs)}")
         print("\nRe-mint from the floor across pushed branches above, before either side merges.")
@@ -573,7 +566,7 @@ def _check(remote: bool = False) -> int:
     # first evidence most authors will have that they exist at all.
     print(
         "No ID collisions, no ID on two open items or on two done entries with one above released history, "
-        + ("no ID this tree minted under another title on a pushed branch, " if remote else "")
+        + ("no ID this tree minted under another header on a pushed branch, " if remote else "")
         + "every open item's attributes in vocabulary, "
         "every section and its items in shape, and every Detail: link resolving to its dossier."
     )

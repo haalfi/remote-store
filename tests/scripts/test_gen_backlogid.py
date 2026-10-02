@@ -600,8 +600,56 @@ class TestRemote:
         assert _mod._check(remote=True) == 1
         assert "ID-900 also minted on origin/" in capsys.readouterr().out
 
+    def test_identity_is_the_header_text_after_the_checkbox(self):
+        """No title is parsed out: three review rounds each refuted a rule for where one ends.
+
+        So whatever a title holds (`**` in backticks, double backticks, a stray
+        backtick) two different headers stay different, and one item's open and
+        done headers, which differ only in the box, stay equal.
+        """
+        open_text = (
+            f"- [ ] **ID-900 {_EM} Fix `**(x)` one**\n"
+            f"- [~] **ID-901 {_EM} Fix `` a **( `` get**\n"
+            f"- [ ] **ID-902 {_EM} Fix a ` stray**"
+        )
+        done_text = f"- [x] **ID-903 {_EM} Fix `**(x)` two** (v0.1.0)\n"
+        assert _mod._headed(open_text, done_text) == {
+            "ID-900": f"**ID-900 {_EM} Fix `**(x)` one**",
+            "ID-901": f"**ID-901 {_EM} Fix `` a **( `` get**",
+            "ID-902": f"**ID-902 {_EM} Fix a ` stray**",
+            "ID-903": f"**ID-903 {_EM} Fix `**(x)` two** (v0.1.0)",
+        }
+        closed = _mod._headed("", f"- [x] **ID-900 {_EM} Fix `**(x)` one**\n")
+        assert closed["ID-900"] == _mod._headed(open_text, "")["ID-900"]
+
+    @pytest.mark.parametrize("title", ["Fix `**(x)` one", "Fix `` a **( `` get", "Fix a ` stray"], ids=repr)
+    def test_rivals_differing_after_any_backtick_shape_clash(self, clones, title, capsys):
+        """Round 5's and round 6's false negatives, end to end."""
+        a, b = clones
+        for clone, suffix in ((a, "one"), (b, "two")):
+            backlog = clone / "sdd" / "BACKLOG.md"
+            item = _open_item("ID-900", f"{title} {suffix}")
+            backlog.write_text(backlog.read_text(encoding="utf-8") + item, encoding="utf-8")
+        _git(a, "checkout", "--quiet", "-B", "a-work")
+        _git(a, "commit", "--quiet", "-am", "ID-900: mint")
+        _git(a, "push", "--quiet", "origin", "a-work")
+        assert _mod._check(remote=True) == 1
+        assert "ID-900 also minted on origin/a-work" in capsys.readouterr().out
+
+    def test_one_item_closed_here_after_master_took_it_open_is_not_a_clash(self, clones, capsys):
+        a, b = clones
+        self._mint(b, "ID-900", "b-work")
+        self._land(a, "b-work", "squash")
+        backlog, done = b / "sdd" / "BACKLOG.md", b / "sdd" / "BACKLOG-DONE.md"
+        item = _open_item("ID-900", "Minted by b")
+        backlog.write_text(backlog.read_text(encoding="utf-8").replace(item, ""), encoding="utf-8")
+        done.write_text(done.read_text(encoding="utf-8") + f"- [x] **ID-900 {_EM} Minted by b**\n", encoding="utf-8")
+        _write_json(b / "sdd" / "backlogid.json", {**_CLEAN_JSON, "ID": 900})
+        assert _mod._check(remote=True) == 0
+        assert "also minted" not in capsys.readouterr().out
+
     def test_stated_bound_an_item_retitled_after_master_took_it_reads_as_two(self, clones, capsys):
-        """The docstring's retitle bound, pinned: loud, never silent."""
+        """The docstring's header-change bound, pinned for a retitle: loud, never silent."""
         a, b = clones
         self._mint(b, "ID-900", "b-work")
         self._land(a, "b-work", "squash")
@@ -609,43 +657,6 @@ class TestRemote:
         backlog.write_text(backlog.read_text(encoding="utf-8").replace("Minted by b", "Retitled"), encoding="utf-8")
         assert _mod._check(remote=True) == 1
         assert "ID-900 also minted on origin/master" in capsys.readouterr().out
-
-    def test_titles_are_read_to_the_closing_bold_not_the_first_double_star(self):
-        """Two live headers carry `**` inside backticks; a cut at the first one made rivals equal."""
-        get = f"- [ ] **ID-900 {_EM} Fix `**kwargs` in get**\n"
-        done = (
-            f"- [x] **ID-901 {_EM} Fix `**kwargs` in put** (v0.1.0)\n"
-            f"- [x] **ID-902 {_EM} Absorbed** → **ID-900**\n"
-            f"- [x] **ID-903 {_EM} Superseded** {_EM} by ID-900.\n"
-            f"- [x] **ID-904 {_EM} Last line, no newline**"
-        )
-        assert _mod._titled(get, done) == {
-            "ID-900": "Fix `**kwargs` in get",
-            "ID-901": "Fix `**kwargs` in put",
-            "ID-902": "Absorbed",
-            "ID-903": "Superseded",
-            "ID-904": "Last line, no newline",
-        }
-
-    # Where a title ends was refuted twice (rounds 4 and 5), each time by a
-    # `**` inside backticks followed by one of the terminators, so the space is
-    # enumerated: every terminator a header carries × every backticked `**`.
-    @pytest.mark.parametrize("suffix", ["", " (v0.1.0)", " → **ID-1**", f" {_EM} superseded", " *(refused)*"], ids=repr)
-    @pytest.mark.parametrize(
-        "code", ["`**kwargs`", "`**(x)`", f"`a **{_EM} b`", "`**→`", "`f(**`", "`**`", "`x **`"], ids=repr
-    )
-    def test_no_double_star_inside_backticks_ends_a_title(self, code, suffix):
-        title = f"Fix {code} in get"
-        assert _mod._titled(f"- [ ] **ID-900 {_EM} {title}**{suffix}\n", "") == {"ID-900": title}
-
-    def test_a_line_of_unclosed_backticks_parses_in_linear_time(self):
-        """An alternation where a backtick could open a span or stand alone backtracks exponentially.
-
-        Measured on that form: 0.26 s at 30 backticks. 60 would not finish, so a
-        regression shows up here as a hang rather than as a slow gate on a typo.
-        """
-        line = f"- [ ] **ID-900 {_EM} {'`a' * 60}\n"
-        assert _mod._titled(line, "") == {"ID-900": "`a" * 60}
 
     def test_another_clone_pushing_this_branch_name_is_still_seen(self, clones, capsys):
         """A name tells nothing about whose push it is; only the item does."""

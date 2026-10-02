@@ -248,7 +248,7 @@ if evidence changes; these are retired.
   `Next safe IDs` line says it is safe for this tree only. `gen-backlogid
   --check --remote` is the opt-in, networked view: it fails naming each ID this
   tree minted that `origin/master` or another pushed branch carries under a
-  different title, so one item reached by squash merge is not a clash. `lint`
+  different header, so one item reached by squash merge is not a clash. `lint`
   stays offline. Bound: an unpushed branch stays invisible. `TestRemote`
   enumerates how one item travels; the offline check passes a real clash.
   Detail: [dossier](backlog/id-257-parallel-id-minting.md)
