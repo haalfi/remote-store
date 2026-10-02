@@ -97,16 +97,23 @@ phases:
         section: "(new)"
         read_type: reference
         extract: >-
-          29 cells against a fake dafny executable (`pytest -q`: 29 passed).
-          tmp/id263/mutate.py applied 14 mutants (no reorder, pycache compared,
-          no version check, build exit ignored, only-in-committed dropped,
-          wrapper ignored, first of many build lines, source glob hardcoded,
-          first of many copy lines, unbound variable passed, prefix binding,
-          quotes allowed, copy glob unchecked, shlex error unhandled): 14 of 14
-          caught. Round 2 found `$f`/`$stem` bound by prefix (`$file` mangled
-          rather than rejected, escaped quotes kept, brace globs unexpanded),
-          which surfaced as exit 1 drift instead of exit 2; 5 of the 6 cells
-          for it were red before the fix.
+          44 cells against a fake dafny executable (`pytest -q`: 44 passed).
+          tmp/id263/mutate.py applied 17 mutants (no reorder, pycache compared,
+          no version check, version failure as skew, build exit ignored,
+          only-in-committed dropped, wrapper ignored, first of many lines,
+          source glob hardcoded, token grammar off, glob grammar off, prefix
+          binding, no braced binding, token allows shell chars, cp flags
+          rejected, dotfiles copied, build slash required): 17 of 17 caught.
+          Round 2 found `$f`/`$stem` bound by prefix; `pytest -k
+          cannot_reproduce` before that fix ran 6 ids, 5 failed and `upper`
+          passed; the `unbalanced` id was added after the fix and was never
+          seen red. Round 3 refuted the same condition again (operators and
+          an escaped `\$f` passed, `${stem}` and `cp -p` were rejected), so the
+          repeat-site check fired: the parser became an allowlist grammar
+          (decided with the user), and the reject/accept grids replaced the
+          denylist cell; 21 cells failed before it (`pytest -rf`). The fix
+          pass's own sweep found Path.glob matching dotfiles that bash's `*`
+          skips; `test_dotfiles_are_not_copied` was red before that fix.
           Review round 1 found the build arguments and the source glob restated
           from dafny_translate.sh (DRIFT-RULES Rule 3); both are now read from
           it, and the six cells pinning that were seen failing before the fix.

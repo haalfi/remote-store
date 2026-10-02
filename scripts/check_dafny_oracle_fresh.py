@@ -33,13 +33,18 @@ Rule 2):
 
   * a file whose bytes differ, with a unified diff of the first lines,
   * a file present only in the committed tree, or only in the rebuilt one,
-  * ``dafny --version`` disagreeing with the pin,
+  * ``dafny --version`` printing a version other than the pin,
   * a build that exits non-zero or writes no ``MemoryBackend-py/``.
 
-Exit 2: no ``dafny`` executable, no readable pin, or a wrapper this check cannot
-reproduce exactly: not exactly one source-copy line and one build line, or either
-carrying a shell variable other than ``$f`` / ``$stem``, quoting, or a brace
-expansion.  Those are setup errors, never reported as drift.
+Exit 2, setup errors never reported as drift: no ``dafny`` executable, or one
+whose ``--version`` exits non-zero (its output is printed); no readable pin; or
+a wrapper outside the grammar this check reads it by.  That grammar is an
+allowlist, not a shell parser, because the wrapper's text passes two shell
+levels: exactly one ``cp [-flags] /work/<glob> /build[/]`` line whose glob uses
+only ``[A-Za-z0-9_.*?[]-]``, and exactly one ``/dafny build ... 2>&1`` line whose
+whitespace-split tokens, after binding ``$f`` / ``${f}`` / ``$stem`` /
+``${stem}``, use only ``[A-Za-z0-9_./:=,+-]``.  The first token outside it is
+named.
 
 Bounds (Rule 7):
 
@@ -50,6 +55,9 @@ Bounds (Rule 7):
   * **Working tree, not the index.**  The committed side is read from disk, so
     locally an uncommitted regeneration reads as fresh.  ``__pycache__`` is
     ignored on both sides.
+  * **The wrapper grammar is narrower than bash.**  A spelling bash reads the
+    same way but the grammar does not list (a quoted argument, say) is exit 2,
+    never a silent pass; widen the grammar with a guard cell when one is needed.
   * **An include outside ``sdd/formal/`` is not copied.**  Dafny then fails to
     resolve it and the build-failure branch fires; it is loud, not silent.
   * **Runs where ``dafny`` is installed.**  CI's ``verify-formal`` job; not in
@@ -73,7 +81,6 @@ from __future__ import annotations
 import argparse
 import difflib
 import re
-import shlex
 import shutil
 import subprocess
 import sys
@@ -90,16 +97,22 @@ STEM = "MemoryBackend"
 OUT_DIR = f"{STEM}-py"
 DIFF_LINES = 40
 _PIN_RE = re.compile(r"^DAFNY_VERSION=(\S+)\s*$", re.MULTILINE)
-# The wrapper's one build invocation, e.g. `/opt/dafny/dafny build -t py $f --output:$stem 2>&1`.
+# Reading the wrapper is an allowlist grammar, not a shell parser: the text passes two shell levels
+# (the `CMDS="..."` assignment, then `bash -c`), so anything whose meaning depends on quoting,
+# expansion or an operator is rejected rather than interpreted. Exactly one match of each is required.
+# Build: `/dafny build <tokens> 2>&1`; tokens are whitespace-split.
 _BUILD_RE = re.compile(r"/dafny (build\b[^|\n]*?)\s+2>&1")
-# The wrapper's source copy into the build dir, e.g. `cp /work/*.dfy /build/`.
-_COPY_RE = re.compile(r"\bcp /work/(\S+) /build/")
-# `$f` / `$stem` as whole names only: `$file` or `$stem_out` must stay unbound and be rejected.
-_VAR_RE = re.compile(r"\$(f|stem)(?![A-Za-z0-9_])")
+# Copy: `cp [-flags] /work/<glob> /build[/]`; short flags do not change which files are copied.
+_COPY_RE = re.compile(r"\bcp((?:\s+-[A-Za-z]+)*)\s+/work/(\S+)\s+/build/?(?=[\s\"&;|)]|$)", re.MULTILINE)
+# `$f`, `${f}`, `$stem`, `${stem}` as whole names: `$file` or `$stem_out` stay unbound and are rejected.
+_VAR_RE = re.compile(r"\$(?:\{(f|stem)\}|(f|stem)(?![A-Za-z0-9_]))")
 _BINDINGS = {"f": ENTRY, "stem": STEM}
-# Left after binding, any of these means the wrapper's shell would read the text differently than this
-# check does (another variable, quoting bash strips twice and shlex once, brace expansion glob lacks).
-_UNREPRODUCIBLE = set("$\"'\\{}")
+_TOKEN_RE = re.compile(r"[A-Za-z0-9_./:=,+-]+")  # a build token after binding
+_GLOB_RE = re.compile(r"[A-Za-z0-9_.*?\[\]-]+")  # glob syntax bash and Path.glob read alike, dotfiles aside
+
+
+class WrapperError(ValueError):
+    """The wrapper says something this check cannot reproduce exactly (exit 2)."""
 
 
 def _read(path: Path) -> str | None:
@@ -115,32 +128,36 @@ def read_pin(translate_script: Path) -> str | None:
     return match.group(1) if match else None
 
 
-def read_source_glob(translate_script: Path) -> str | None:
-    """The glob the wrapper copies from ``sdd/formal/`` into its build dir; ``None`` unless exactly one."""
-    text = _read(translate_script)
-    matches = _COPY_RE.findall(text) if text is not None else []
-    if len(matches) != 1 or _UNREPRODUCIBLE & set(matches[0]):
-        return None
+def _single(regex: re.Pattern[str], translate_script: Path, shape: str) -> re.Match[str]:
+    text = _read(translate_script) or ""
+    matches = list(regex.finditer(text))
+    if len(matches) != 1:
+        raise WrapperError(f"{translate_script}: expected one `{shape}` line, found {len(matches)}")
     return matches[0]
 
 
-def read_build_args(translate_script: Path) -> list[str] | None:
+def read_source_glob(translate_script: Path) -> str:
+    """The glob the wrapper copies from ``sdd/formal/`` into its build dir."""
+    glob = _single(_COPY_RE, translate_script, "cp [-flags] /work/<glob> /build/").group(2)
+    if not _GLOB_RE.fullmatch(glob):
+        raise WrapperError(f"{translate_script}: copy glob `{glob}` is outside the grammar this check reproduces")
+    return glob
+
+
+def read_build_args(translate_script: Path) -> list[str]:
     """The wrapper's build arguments with its loop variables bound to the oracle.
 
     Read rather than restated, so a flag the wrapper gains reaches this check
-    (``sdd/DRIFT-RULES.md`` Rule 3).  ``None`` unless there is exactly one build
-    line and every shell variable in it is ``$f`` or ``$stem``.
+    (``sdd/DRIFT-RULES.md`` Rule 3).
     """
-    text = _read(translate_script)
-    matches = _BUILD_RE.findall(text) if text is not None else []
-    if len(matches) != 1:
-        return None
-    try:
-        tokens = shlex.split(matches[0])
-    except ValueError:
-        return None
-    args = [_VAR_RE.sub(lambda m: _BINDINGS[m.group(1)], tok) for tok in tokens]
-    return None if any(_UNREPRODUCIBLE & set(tok) for tok in args) else args
+    raw = _single(_BUILD_RE, translate_script, "dafny build ... 2>&1").group(1)
+    args = []
+    for tok in raw.split():
+        bound = _VAR_RE.sub(lambda m: _BINDINGS[m.group(1) or m.group(2)], tok)
+        if not _TOKEN_RE.fullmatch(bound):
+            raise WrapperError(f"{translate_script}: build token `{tok}` is outside the grammar this check reproduces")
+        args.append(bound)
+    return args
 
 
 def _files(tree: Path) -> dict[str, Path]:
@@ -189,16 +206,11 @@ def main(argv: list[str] | None = None) -> int:
     if pin is None:
         print(f"error: no DAFNY_VERSION= line in {args.translate_script}", file=sys.stderr)
         return 2
-    build_args = read_build_args(args.translate_script)
-    if build_args is None:
-        print(
-            f"error: no single `dafny build ... 2>&1` line using only $f/$stem in {args.translate_script}",
-            file=sys.stderr,
-        )
-        return 2
-    source_glob = read_source_glob(args.translate_script)
-    if source_glob is None:
-        print(f"error: no single `cp /work/<glob> /build/` line in {args.translate_script}", file=sys.stderr)
+    try:
+        build_args = read_build_args(args.translate_script)
+        source_glob = read_source_glob(args.translate_script)
+    except WrapperError as exc:
+        print(f"error: {exc}", file=sys.stderr)
         return 2
     dafny = shutil.which(args.dafny)
     if dafny is None:
@@ -210,8 +222,12 @@ def main(argv: list[str] | None = None) -> int:
         return 2
 
     version = subprocess.run([dafny, "--version"], capture_output=True, text=True, check=False)
+    if version.returncode != 0:
+        print(f"error: `{dafny} --version` exited {version.returncode}:", file=sys.stderr)
+        print((version.stdout + version.stderr).strip()[-2000:], file=sys.stderr)
+        return 2
     found = version.stdout.strip().split("+", 1)[0]
-    if version.returncode != 0 or found != pin:
+    if found != pin:
         print(
             f"FAIL: dafny on PATH is {found or '<unknown>'}, the pin in "
             f"{args.translate_script.name} is {pin}. Output is not comparable; nothing checked."
@@ -222,6 +238,8 @@ def main(argv: list[str] | None = None) -> int:
     with tempfile.TemporaryDirectory(prefix="oracle-fresh-") as tmp:
         work = Path(tmp)
         for src in sorted(args.formal_dir.glob(source_glob)):
+            if src.name.startswith(".") and not source_glob.startswith("."):
+                continue  # bash's glob skips a leading dot unless the pattern spells it; Path.glob does not
             shutil.copy2(src, work / src.name)
         build = subprocess.run([dafny, *build_args], cwd=work, capture_output=True, text=True, check=False)
         rebuilt = work / OUT_DIR

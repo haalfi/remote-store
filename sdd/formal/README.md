@@ -234,7 +234,7 @@ that must move — see [`000-process.md` Rule
 | File | What it models |
 |------|----------------|
 | `BackendContract.dfy` | Abstract backend trait — error model, capabilities, all operation pre/postconditions, the `AddressesRoot` root predicate |
-| `MemoryBackend.dfy` | Reference refinement proving the contract is satisfiable; compiled to Python as the conformance oracle, together with `RootPath.dfy`, which it includes |
+| `MemoryBackend.dfy` | Reference refinement proving the contract is satisfiable; compiled to Python as the conformance oracle, together with the files it includes (§ Compiled oracle lists them) |
 | `DepthCounting.dfy` | Verified `DEPTH-001` algorithm and the four depth-filter properties |
 | `ResourceSafety.dfy` | Handle lifecycle, `_safe_wrap` invariant, move atomicity, connection lifecycle |
 | `RootPath.dfy` | What `AddressesRoot` accepts: exactly the keys whose every `/`-segment is `""` or `"."` (`RootSpellingCharacterisation`), so the six BE-029 spellings; only `Root` among well-formed paths; not `\` (BE-029). BE-029's table derived from the trait for every refinement (`RootAnswersPerTable`), and the raw-key entry (`WriteKey`, `MoveKey`, `CopyKey`) that folds every root spelling of a write or `move`/`copy` destination onto `Root` |
@@ -258,9 +258,10 @@ pinned version (see
 [`sdd/CLAUDE-REFERENCE.md` § Local toolchain](../CLAUDE-REFERENCE.md#local-toolchain)),
 then `dafny verify sdd/formal/<file>.dfy`.
 
-CI runs the `verify-formal` job automatically when `sdd/formal/` or
-`sdd/specs/` files change; it also runs the compiled oracle's tests (see
-§ Compiled oracle as conformance gate).
+CI runs the `verify-formal` job automatically when a changed path matches
+`FORMAL_PAT` in `.github/workflows/ci.yml`; it also checks the compiled oracle
+against its sources and runs the oracle's tests (see § Compiled oracle as
+conformance gate).
 
 TLA+ (TLC): `bash scripts/tlc_check.sh` runs the Observer model
 (default target `sdd/formal/tla/MC3`) via a pinned Docker image — no
@@ -352,8 +353,9 @@ small, stable, and maintainable:
 <a id="compiled-oracle"></a>
 ### Compiled oracle as conformance gate
 
-The Dafny `MemoryBackend` is compiled to Python via `dafny translate
-py` and wrapped behind the `Backend` ABC as `DafnyOracleBackend`. The
+The Dafny `MemoryBackend` is compiled to Python by the `dafny build -t py`
+invocation in `scripts/dafny_translate.sh` and wrapped behind the `Backend` ABC
+as `DafnyOracleBackend`. The
 oracle runs through the full conformance test suite alongside real
 backends.
 

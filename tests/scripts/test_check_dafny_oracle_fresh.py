@@ -74,6 +74,9 @@ def env(tmp_path: Path, mod, monkeypatch):
             import json, os, shutil, sys
             from pathlib import Path
             if sys.argv[1:] == ["--version"]:
+                if os.environ.get("FAKE_DAFNY_VERSION_EXIT"):
+                    print("dotnet runtime missing", file=sys.stderr)
+                    sys.exit(int(os.environ["FAKE_DAFNY_VERSION_EXIT"]))
                 print(os.environ.get("FAKE_DAFNY_VERSION", "4.11.0+deadbeef"))
                 sys.exit(0)
             Path({str(log)!r}).write_text(json.dumps({{
@@ -87,7 +90,7 @@ def env(tmp_path: Path, mod, monkeypatch):
         )
     )
     fake.chmod(fake.stat().st_mode | stat.S_IXUSR)
-    for var in ("FAKE_DAFNY_VERSION", "FAKE_DAFNY_WRITE", "FAKE_DAFNY_EXIT"):
+    for var in ("FAKE_DAFNY_VERSION", "FAKE_DAFNY_VERSION_EXIT", "FAKE_DAFNY_WRITE", "FAKE_DAFNY_EXIT"):
         monkeypatch.delenv(var, raising=False)
 
     def run(*extra: str) -> int:
@@ -124,6 +127,12 @@ class TestFreshness:
         env["run"]()
         call = json.loads(env["log"].read_text())
         assert call["argv"] == ["build", "-t", "py", "--foo", "MemoryBackend.dfy", "--output:MemoryBackend"]
+
+    def test_dotfiles_are_not_copied(self, env):
+        """bash's `*` skips a leading dot and Path.glob's does not; the check follows bash."""
+        (env["formal"] / ".scratch.dfy").write_text("// editor backup\n")
+        env["run"]()
+        assert ".scratch.dfy" not in json.loads(env["log"].read_text())["cwd_files"]
 
     def test_source_set_comes_from_the_wrapper(self, env):
         """The files copied into the build are the wrapper's `cp /work/<glob>`, not a pattern restated here."""
@@ -201,7 +210,9 @@ class TestSetupErrors:
     def test_wrapper_without_source_copy_exits_2(self, env, capsys):
         env["translate"].write_text(WRAPPER.replace("cp /work/*.dfy /build/", "true"))
         assert env["run"]() == 2
-        assert "cp /work/" in capsys.readouterr().err
+        err = capsys.readouterr().err
+        assert "/work/<glob>" in err
+        assert "found 0" in err
 
     def test_wrapper_with_two_build_lines_exits_2(self, env):
         """Two invocations: which one produced the committed tree is not decidable from the text."""
@@ -214,25 +225,82 @@ class TestSetupErrors:
         env["translate"].write_text(WRAPPER + copy_line + "\n")
         assert env["run"]() == 2
 
+    # Outside the allowlist grammar: each is exit 2 naming the offending token, and dafny never runs.
     @pytest.mark.parametrize(
-        ("old", "new"),
+        ("old", "new", "named"),
         [
-            ("-t py $f", "-t py $EXTRA $f"),  # a variable the check cannot bind
-            ("-t py $f", "-t py $file"),  # shares the `$f` prefix
-            ("-t py $f", "-t py $flags $f"),
-            ("--output:$stem", "--output:$stem_out"),  # shares the `$stem` prefix
-            ("-t py $f", '-t py \\"$f\\"'),  # quoting bash removes twice, shlex once
-            ("cp /work/*.dfy", "cp /work/{A,B}.dfy"),  # brace expansion Path.glob lacks
-            ("-t py $f", "-t py 'x $f"),  # unbalanced quote: shlex raises
+            ("-t py $f", "-t py $EXTRA $f", "$EXTRA"),  # a variable the check cannot bind
+            ("-t py $f", "-t py $file", "$file"),  # shares the `$f` prefix
+            ("-t py $f", "-t py $flags $f", "$flags"),
+            ("--output:$stem", "--output:$stem_out", "$stem_out"),  # shares the `$stem` prefix
+            ("-t py $f", '-t py \\"$f\\"', '\\"'),  # quoting bash removes twice
+            ("-t py $f", "-t py 'x $f", "'x"),  # unbalanced quote
+            ("-t py $f", "-t py \\$f", "\\"),  # escaped: the wrapper's shell would not bind it
+            ("--output:$stem", "--output:$stem >/build/log", ">/build/log"),  # redirection
+            ("--output:$stem", "--output:$stem && true", "&&"),  # operator
+            ("--output:$stem", "--output:$stem ; true", ";"),
+            ("-t py $f", "-t py `echo` $f", "`echo`"),  # command substitution
+            ("-t py $f", "-t py $(echo) $f", "$(echo)"),
+            ("-t py $f", "-t py *.dfy", "*.dfy"),  # a glob bash expands in /build
+            ("cp /work/*.dfy", "cp /work/{A,B}.dfy", "{A,B}.dfy"),  # brace expansion Path.glob lacks
+            ("cp /work/*.dfy", "cp /work/'*.dfy'", "'*.dfy'"),
+            ("cp /work/*.dfy", "cp /work/$GLOB", "$GLOB"),
         ],
-        ids=["upper", "f-prefix", "f-prefix-2", "stem-prefix", "escaped-quotes", "brace-glob", "unbalanced"],
+        ids=[
+            "upper",
+            "f-prefix",
+            "f-prefix-2",
+            "stem-prefix",
+            "escaped-quotes",
+            "unbalanced",
+            "escaped-dollar",
+            "redirect",
+            "and-op",
+            "semicolon",
+            "backtick",
+            "dollar-paren",
+            "bare-glob",
+            "brace-glob",
+            "quoted-glob",
+            "glob-var",
+        ],
     )
-    def test_wrapper_line_the_check_cannot_reproduce_exits_2(self, env, old, new):
-        """Anything not bound exactly is a setup error, never a mangled argument that fails as drift."""
+    def test_wrapper_outside_the_grammar_exits_2(self, env, capsys, old, new, named):
+        """Anything not in the grammar is a setup error, never a mangled argument that fails as drift."""
         assert old in WRAPPER
         env["translate"].write_text(WRAPPER.replace(old, new))
         assert env["run"]() == 2
+        assert named in capsys.readouterr().err
         assert not env["log"].exists()
+
+    def test_dafny_that_cannot_run_exits_2_with_its_stderr(self, env, monkeypatch, capsys):
+        """A broken toolchain is a setup error, not version skew."""
+        monkeypatch.setenv("FAKE_DAFNY_VERSION_EXIT", "134")
+        assert env["run"]() == 2
+        err = capsys.readouterr().err
+        assert "exited 134" in err
+        assert "runtime missing" in err
+
+
+# Spellings the wrapper's shell reads identically: the check must build exactly what it builds.
+@pytest.mark.skipif(os.name == "nt", reason="fake dafny is a shebang script")
+@pytest.mark.parametrize(
+    ("old", "new"),
+    [
+        ("--output:$stem", "--output:${stem}"),
+        ("-t py $f", "-t py ${f}"),
+        ("cp /work/*.dfy /build/", "cp /work/*.dfy /build"),
+        ("cp /work/*.dfy", "cp -p /work/*.dfy"),
+    ],
+    ids=["braced-stem", "braced-f", "build-no-slash", "cp-flag"],
+)
+def test_equivalent_wrapper_spellings_build_the_same(env, old, new):
+    assert old in WRAPPER
+    env["translate"].write_text(WRAPPER.replace(old, new))
+    assert env["run"]() == 0
+    call = json.loads(env["log"].read_text())
+    assert call["argv"] == ["build", "-t", "py", "MemoryBackend.dfy", "--output:MemoryBackend"]
+    assert call["cwd_files"] == ["BackendContract.dfy", "MemoryBackend.dfy", "ResourceSafety.dfy", "RootPath.dfy"]
 
 
 def test_real_wrapper_carries_a_readable_pin(mod):
