@@ -73,3 +73,12 @@ D7). It also gives BK-345 and ID-244 the verified reference they lack.
 - the twin-parity check is green with the new members;
 - each new postcondition carries its `@spec` tag, so `check_formal_trace.py`
   lists it.
+
+## Correction (2026-10-02, BK-389 planning PR)
+
+The root rule's exit criterion above still reads "the trait's preconditions".
+As landed (§ As landed) they are postconditions ranked after the closed guard,
+and the criterion is read that way: its predicate and the trait's
+postconditions in `BackendContract.dfy` §5c, their discharge in
+`MemoryBackend.dfy`, and the lemmas in `RootPath.dfy`. Found by the read-only
+audit of master `9caef6b` that preceded BK-389's split.

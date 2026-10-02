@@ -1,0 +1,118 @@
+id: BK-389
+title: "RFC-0017 D3 step 1: the async kernel and its generated sync twin (planning, then the kernel PR)"
+trigger: >-
+  A read-only audit of master 9caef6b found BK-389 technically ready (BK-388
+  done, Memory conformance and the oracle green) but its plan open: RFC-0017
+  Open Questions 2, 3 and 5 unanswered, spec 013 assigned to no step, the
+  public identity of the Memory classes undecided, and BK-345, ID-244 and
+  ID-261 re-homed by no item. The maintainer chose to split the step into a
+  kernel PR and a Memory PR and to settle every decision before kernel code.
+source_items:
+  - BK-389
+  - BK-387
+  - BK-388
+  - BK-390
+audience:
+  - contributor.process
+  - library.maintainer
+discovery_followups:
+  - BK-394
+expected_ripples:
+  - sdd/backlogid.json
+  - sdd/BACKLOG-DONE.md
+surprising_ripples:
+  - sdd/specs/003-backend-adapter-contract.md
+  - sdd/backlog/bk-390-rfc-0017-spec-amendments.md
+phases:
+  - id: orient
+    name: Orient (planning PR)
+    steps:
+      - file: sdd/BACKLOG.md
+        section: "How this file works; BK-389, BK-345, ID-244, ID-261, BK-325, BK-332, BUG-257, BUG-245"
+        read_type: gate
+        extract: "item rules for partly done, absorbed and minted IDs; the index lines this PR corrects"
+      - file: sdd/backlog/bk-389-kernel-step-1-memory.md
+        section: "(full)"
+        read_type: gate
+        extract: "what step 1 owes; item 4 omits spec 013, item 6 ties acceptance to one PR"
+        outcome: unclear
+      - file: sdd/rfcs/rfc-0017-contract-kernel-over-thin-drivers.md
+        section: "D1, D2, D3, D6, D8, Impact, Open Questions 2, 3, 5"
+        read_type: gate
+        extract: "the open questions step 1 must answer or bound; D1 lists no close-posture attribute"
+        outcome: unclear
+      - file: sdd/adrs/0042-contract-kernel-over-thin-drivers.md
+        section: "Status, Decision, Amendments on acceptance"
+        read_type: reference
+        extract: "acceptance rides with the first backend on the design"
+      - file: sdd/backlog/bk-387-rfc-0017-acceptance.md
+        section: "What it does not include; Correction (2026-09-29)"
+        read_type: reference
+        extract: "BK-345, ID-244, ID-251 become kernel or driver cells at step 1; re-homing assigned to BK-389"
+      - file: sdd/backlog/bk-388-dafny-kernel-clauses.md
+        section: "As landed; Exit criteria"
+        read_type: reference
+        extract: "root rule landed as postconditions; exit criteria still say preconditions"
+        outcome: misleading
+      - file: sdd/specs/013-memory-backend.md
+        section: "MEM-001 to MEM-020"
+        read_type: reference
+        extract: "which MEM clauses describe behaviour the kernel takes over"
+      - file: sdd/specs/003-backend-adapter-contract.md
+        section: "BE-020 close posture; BE-021 Reach, page-boundary paragraph"
+        read_type: reference
+        extract: "close_is_terminal is per backend; the no-page-boundary divergence clause OQ2 rests on"
+      - file: sdd/formal/MemoryBackend.dfy
+        section: "closeIsTerminal"
+        read_type: reference
+        extract: "the model carries the close posture as a flag the RFC's Driver protocol lacks"
+      - file: sdd/backlog/bug-257-graph-walk-first-page-bound.md
+        section: "(full)"
+        read_type: reference
+        extract: "the bound restarts per request; the fix keys it per operation"
+      - file: sdd/backlog/bug-245-sqlblob-no-such-table.md
+        section: "(full)"
+        read_type: reference
+        extract: "construction is outside BE-021's operation scope"
+      - file: sdd/CLAUDE-REFERENCE.md
+        section: "Ripple-check > Pre-work index"
+        read_type: gate
+        extract: "Spec section and Store or Backend ABC rows; sdd/-only PR triggers BACKLOG and backlogid"
+  - id: reproduce
+    name: Re-derive the code audit
+    steps:
+      - file: src/remote_store/backends/_memory.py
+        section: "_split_path; get_folder_info; backend= literals"
+        read_type: verify
+        extract: "42 backend=\"memory\" literals; './' and './/' split to root; sentinel not skipped"
+      - file: src/remote_store/aio/backends/_memory.py
+        section: "_split_path; get_folder_info; backend= literals"
+        read_type: verify
+        extract: "40 backend=\"async-memory\" literals; same root and sentinel behaviour"
+      - file: src/remote_store/_path.py
+        section: "is_root"
+        read_type: verify
+        extract: "accepts '' and '.' only"
+      - file: src/remote_store/_backend.py
+        section: "read, read_seekable, open_atomic, check_health, close"
+        read_type: verify
+        extract: "sync-only members and no probe(); the surfaces unasync cannot map by token"
+      - file: src/remote_store/aio/_async_backend.py
+        section: "read, aclose, check_health"
+        read_type: verify
+        extract: "AsyncIterator read, aclose not close, no probe()"
+  - id: design
+    name: Interview and record the decisions
+    steps:
+      - file: sdd/backlog/bk-390-rfc-0017-spec-amendments.md
+        section: "Where this comes from; Amendment by step"
+        read_type: reference
+        extract: "the step-1 boundary named BK-389; moved to BK-394 at the split, spec 013 added"
+      - file: sdd/BACKLOG-DONE.md
+        section: "Absorbed"
+        read_type: reference
+        extract: "entry shape for ID-261 into BK-389 and BK-325 into BK-394"
+      - file: sdd/specs/003-backend-adapter-contract.md
+        section: "BE-029 Conformance pins the outcome, not the order"
+        read_type: verify
+        extract: "cites ID-261 in the present tense; re-pointed to BK-345 and BK-389 once ID-261 was absorbed"

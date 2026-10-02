@@ -228,18 +228,18 @@ failure it was.
   spec: BE-021 · effort: M · audience: user.api
   `GraphBackend` keys BE-021 § Reach's first-page bound per HTTP request, and
   `_walk_files` issues one request per folder, so a recursive `list_files`
-  whose subfolder 404s returns what it has as a complete listing. The
-  single-listing bound is correct. Open decision: none on shape; the fix shape
-  is in the dossier.
+  whose subfolder 404s returns what it has as a complete listing; the
+  single-listing bound is correct. Open decision: none; RFC-0017 Open Question
+  2 is decided (BK-389 dossier, decision 1) and agrees with the dossier's fix.
   Detail: [dossier](backlog/bug-257-graph-walk-first-page-bound.md)
 
 - [ ] **BUG-245 — `SQLBlobBackend(create_table=False)` leaks `NoSuchTableError` from its constructor**
   spec: BE-021, SQL-BLOB-012 · effort: S · audience: user.api
   `SQLBlobBackend(create_table=False)` against an absent table leaks
   `sqlalchemy.exc.NoSuchTableError` from reflection, where every other
-  constructor rejects bad configuration with `ValueError`. Refusing is right;
-  the type is wrong. Open decision: whether BE-021's mapping rule, scoped to
-  operations today, covers construction.
+  constructor rejects bad configuration with `ValueError`; refusing is right,
+  the type is wrong. Open decision: whether BE-021's mapping covers
+  construction (RFC-0017 Open Question 5, deferred to D3 step 3; BK-389 dossier).
   Detail: [dossier](backlog/bug-245-sqlblob-no-such-table.md)
 
 - [ ] **BUG-253 — `GraphBackend.write` answers a file-ancestor path differently by payload size**
@@ -250,15 +250,6 @@ failure it was.
   docstring promises `InvalidPath` unqualified. Open decision: hoist the walk
   into `write`, or run it on the session-creation 404; measure first.
   Detail: [dossier](backlog/bug-253-graph-write-ancestor-by-size.md)
-
-- [ ] **BK-345 — BE-021's absent-container rule has no registry-driven gate, so a new backend is silently exempt**
-  spec: BE-021 · effort: M · audience: infra.test
-  BE-021's absent-container rule is verified only by hand-written per-backend
-  suites; `tests/backends/conformance/` has no cell for it, so a new backend
-  that can delete passes CI without meeting it, as `GraphBackend` did until
-  BUG-248. Open decision: none of its own; it consumes ID-244's seeding-hook
-  decision (§ 2), on which it depends.
-  Detail: [dossier](backlog/bk-345-absent-container-conformance.md)
 
 - [ ] **BUG-280 — `LocalBackend`'s three listing methods leak a raw `PermissionError`**
   spec: BE-021 · effort: S · audience: user.api
@@ -278,14 +269,32 @@ failure it was.
   narrow the catch so only a confirmed miss reads as "no ancestor"; BE-008 changes with the fix.
   Detail: [dossier](backlog/bug-292-ancestor-gate-fails-open.md)
 
-- [ ] **BK-389 — No backend runs on RFC-0017's kernel, so ADR-0042 stays Proposed**
-  spec: BE-021, BE-029, BE-020, BE-017, ERR-001, ERR-009, DEPTH-003, PING-002, PING-008 · effort: L · audience: library.maintainer, user.api_docs, contributor.process
-  ADR-0042 is accepted only with the first backend on the new design: D3 step 1,
-  the async kernel with its `unasync` sync twin over the two Memory drivers, with
-  every step-1 spec amendment (dossier item 4), the custom-backend guide as a
-  driver, its check script and the homepage snippet. Depends on BK-388. Open decision:
-  none; RFC-0017 D1 to D7 fix the shape.
+- [ ] **BK-389 — RFC-0017's kernel does not exist, so no backend can migrate onto it**
+  spec: BE-017, BE-020, BE-021, BE-029, ERR-001, ERR-009, DEPTH-003, PING-002, AW-001, SAW-003 · effort: L · audience: library.maintainer, infra.test
+  D3 step 1's first PR: the async kernel and its `unasync` sync twin, private,
+  with a fake-driver suite, under the Proposed ADR-0042; BK-394 lands the Memory
+  drivers on it. Merges only after the v0.33.0 tag. Depends on BK-388. Open
+  decision: none; RFC-0017 Open Questions 2, 3 and 5, the close posture and the
+  kernel's privacy were decided in planning (dossier § Decisions).
   Detail: [dossier](backlog/bk-389-kernel-step-1-memory.md)
+
+- [ ] **BK-394 — No backend runs on RFC-0017's kernel, so ADR-0042 stays Proposed**
+  spec: BE-017, BE-020, BE-021, BE-029, ERR-001, ERR-009, DEPTH-003, ASYNC-001, AW-001, SAW-003, SAW-012, PING-002, PING-008, MEM-013, MEM-015, MEM-018, MEM-020 · effort: L · audience: library.maintainer, user.api_docs, contributor.process
+  ADR-0042 is accepted only with the first backend on the new design: the two
+  Memory drivers on BK-389's kernel, every step-1 spec amendment (specs 003,
+  005, 013, 026, 029, 037, the kernel half of 007 and 022), the guide as a
+  driver, its check script and the homepage snippet. After BK-389 and the
+  v0.33.0 tag. Open decision: none; Memory's public identity is in the dossier.
+  Detail: [dossier](backlog/bk-394-memory-drivers-accept-adr-0042.md)
+
+- [ ] **BK-345 — BE-021's absent-container rule has no registry-driven gate, so a new backend is silently exempt**
+  spec: BE-021 · effort: M · audience: infra.test
+  BE-021's absent-container rule is verified only by per-backend suites, so a
+  new backend that can delete passes CI without meeting it, as `GraphBackend`
+  did until BUG-248. Its kernel half lands in BK-389; what stays here is the
+  gate, as per-driver `container_absent` cells from D3 step 2. Open decision:
+  none of its own; depends on ID-244 (§ 2) for the seeding hook, and on BK-394.
+  Detail: [dossier](backlog/bk-345-absent-container-conformance.md)
 
 - [ ] **BK-390 — RFC-0017's spec amendments after D3 step 1 have no owner once BK-387 closes**
   spec: SIO-008, SEEK-004, SEEK-006, PING-003, PING-004, PING-005, PING-006, PING-007, PING-011, SFTP-010, GR-039 · effort: M · audience: contributor.process
@@ -325,10 +334,10 @@ no clause of the contract ships unexercised.
 - [ ] **ID-244 — A read-only backend cannot reach any WRITE-gated contract cell**
   spec: — · effort: M · audience: infra.test
   Conformance cells seed data through `backend.write`, so their classes are
-  gated on `Capability.WRITE` and a read-only backend reaches none of them,
-  write-related or not: `ReadOnlyHttpBackend` never runs SIO-009's laziness
-  cells. Open decision: where a per-fixture seeding hook binds (fixture,
-  helper, or capability-neutral classes); BK-345 (§ 1) consumes the answer.
+  gated on `Capability.WRITE` and a read-only backend reaches none of them:
+  `ReadOnlyHttpBackend` never runs SIO-009's laziness cells. Open decision:
+  where a per-fixture seeding hook binds (fixture, helper, or capability-neutral
+  classes); BK-345 (§ 1) consumes it, due before BK-394 (§ 1) changes the registry.
   Detail: [dossier](backlog/id-244-write-gated-conformance-cells.md)
 
 - [ ] **ID-242 — Four `moto doesn't raise PermissionError` pragmas are coverage holes, not exemptions**
@@ -458,8 +467,8 @@ copies an example, without opening an issue.
   Building a backend from the guide, unaided, has run once, as a side effect
   of PR #932, and found BK-324 and BK-325; nothing schedules it, and
   `rg -i rehearsal` over `sdd/traces/` and `BACKLOG-DONE.md` finds no later
-  run. Open decision: none on shape; the proposed cadence, its effort split
-  and its n = 1 caveat are in the dossier.
+  run. Runs after BK-394 (§ 1) rewrites the guide as a driver. Open decision:
+  none on shape; cadence, effort split and n = 1 caveat are in the dossier.
   Detail: [dossier](backlog/bk-332-custom-backend-rehearsal.md)
 
 ---
