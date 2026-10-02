@@ -328,7 +328,7 @@ if evidence changes; these are retired.
   spec: FOLDERINFO-001, BE-017 · effort: S · audience: user.api
   Both Store twins' depth paths now skip the unknown-time sentinel as they
   skip `None`, per RFC-0017 D3's rule, which FOLDERINFO-001 now states; BE-017's
-  statement stays with BK-389. The sentinel has one definition,
+  statement stays with BK-389 (BK-394 since BK-389's split). The sentinel has one definition,
   `_models._UNKNOWN_MODIFIED_AT`, which `_sqlalchemy.py` (replacing
   `_EPOCH_MIN` and an inline copy), `_http.py`, Graph's `items.py`,
   `_sftp.py`, `_azure_common.py` and `_fileinfo.py` import.
@@ -359,11 +359,13 @@ if evidence changes; these are retired.
 - [x] **BK-387 — RFC-0017 is Draft with four open questions gating acceptance, and no item owns answering them**
   spec: BE-021, BE-029, BE-020 · effort: L · audience: library.maintainer, contributor.process
   Partly done. RFC-0017's OQ1, 4, 6 and 7 are answered in the RFC, and the
-  design is ADR-0042, Proposed until BK-389 lands the first backend on it.
+  design is ADR-0042, Proposed until the first backend lands on it (BK-389,
+  BK-394 since BK-389's split).
   Also shipped: the retirement benchmark band
   (`benchmarks/results/acceptance-band.md`) and the BUG-240, 276 and 292
   decisions. The rest is BK-388 (Dafny extensions), BK-389 (D3 step 1, which
-  accepts the ADR) and BK-390 (later spec amendments).
+  accepts the ADR; since its split, the kernel, with BK-394 the Memory half
+  that accepts it) and BK-390 (later spec amendments).
   Detail: [dossier](backlog/bk-387-rfc-0017-acceptance.md)
 
 - [x] **BK-365 — Both backlog files grew past what a maintainer can read, and nothing measures it**

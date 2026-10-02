@@ -11,7 +11,7 @@ together, in the PR that lands the first backend on this design (D3 step 1),
 not on the answers alone. The lifecycle, and where each amendment lands, are
 in D8 and § Impact. BK-389's planning PR answered Open Questions 2 and 3,
 deferred 5 to D3 step 3 with the shape step 1 keeps open, added the close
-posture to D1, and split step 1 into a kernel PR (BK-389) and a Memory PR
+posture to D1 and key validation to D2, and split step 1 into a kernel PR (BK-389) and a Memory PR
 (BK-394), the second accepting; BK-389's dossier § Decisions carries them.
 
 **Date:** 2026-09-28. Every figure below is pinned to `8fa22d6` and is either
@@ -236,6 +236,11 @@ other 6 public members (`name`, `capabilities`, `unwrap`, `native_path`,
 `class Backend` (re-run when BK-380 deleted the `_SeekableSpool` helper that
 was a 28th match above it). It owns, once:
 
+- key validation and normalisation (added at BK-389's planning): an absolute
+  key, a `..` segment or a null byte is refused with `InvalidPath`, and empty
+  and `.` segments and a trailing slash are dropped by `RemotePath`'s rules,
+  after the root check on the raw key, so a driver only ever sees a canonical
+  key, as D1's driver, which "carries no path … logic", requires;
 - root refusal from the key (BE-029, both predicates as `_flat_ns` now states
   them), and the closed guard where the driver declares
   `close_is_terminal`, in the order spec 003 fixes; these are

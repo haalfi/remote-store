@@ -274,17 +274,17 @@ failure it was.
   D3 step 1's first PR: the async kernel and its `unasync` sync twin, private,
   with a fake-driver suite, under the Proposed ADR-0042; BK-394 lands the Memory
   drivers on it. Merges only after the v0.33.0 tag. Depends on BK-388. Open
-  decision: none; RFC-0017 Open Questions 2, 3 and 5, the close posture and the
-  kernel's privacy were decided in planning (dossier § Decisions).
+  decision: none; RFC-0017's open questions and the kernel-shape questions
+  planning raised are decided in the dossier's § Decisions.
   Detail: [dossier](backlog/bk-389-kernel-step-1-memory.md)
 
 - [ ] **BK-394 — No backend runs on RFC-0017's kernel, so ADR-0042 stays Proposed**
-  spec: BE-017, BE-020, BE-021, BE-029, ERR-001, ERR-009, DEPTH-003, ASYNC-001, AW-001, SAW-003, SAW-012, PING-002, PING-008, MEM-013, MEM-015, MEM-018, MEM-020 · effort: L · audience: library.maintainer, user.api_docs, contributor.process
+  spec: BE-017, BE-020, BE-021, BE-029, ERR-001, ERR-009, DEPTH-003, ASYNC-001, AW-001, SAW-003, SAW-012, PING-002, PING-008, MEM-DS-005, MEM-013, MEM-015, MEM-018, MEM-020 · effort: L · audience: library.maintainer, user.api_docs, contributor.process
   ADR-0042 is accepted only with the first backend on the new design: the two
   Memory drivers on BK-389's kernel, every step-1 spec amendment (specs 003,
-  005, 013, 026, 029, 037, the kernel half of 007 and 022), the guide as a
-  driver, its check script and the homepage snippet. After BK-389 and the
-  v0.33.0 tag. Open decision: none; Memory's public identity is in the dossier.
+  005, 013, 026, 029, 037, the kernel half of 007 and 022), and the guide as a
+  driver. After BK-389, the v0.33.0 tag and ID-244's decision (§ 2). Open
+  decision: none; Memory's identity and spec 013's placement are in the dossier.
   Detail: [dossier](backlog/bk-394-memory-drivers-accept-adr-0042.md)
 
 - [ ] **BK-345 — BE-021's absent-container rule has no registry-driven gate, so a new backend is silently exempt**

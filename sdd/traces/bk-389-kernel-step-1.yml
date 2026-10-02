@@ -116,3 +116,18 @@ phases:
         section: "BE-029 Conformance pins the outcome, not the order"
         read_type: verify
         extract: "cites ID-261 in the present tense; re-pointed to BK-345 and BK-389 once ID-261 was absorbed"
+  - id: fix
+    name: Review round 1 fix pass
+    steps:
+      - file: sdd/specs/013-memory-backend.md
+        section: "every ### MEM- heading"
+        read_type: verify
+        extract: "enumerate the 31 headings so the placement table covers each once; my first table missed MEM-004 and MEM-014"
+      - file: sdd/backlog/bk-345-absent-container-conformance.md
+        section: "(full)"
+        read_type: verify
+        extract: "the dossier still prescribed one registry cell after the index re-scoped it; dated correction added"
+      - file: sdd/BACKLOG-DONE.md
+        section: "BUG-296, BK-387 entries"
+        read_type: verify
+        extract: "two Unreleased entries named BK-389 for scope that moved to BK-394"

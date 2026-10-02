@@ -4,9 +4,11 @@
 The index entry holds the current diagnosis; this file is evidence and
 advisory prescription ([§ Item authority](../BACKLOG.md#how-this-file-works)).
 
-**Where this comes from.** Split from BK-389 on 2026-10-02 under
-[§ Completing work](../BACKLOG.md#how-this-file-works) "partly done", in the
-planning PR that settled step 1's open decisions. RFC-0017 D3 step 1 ships as
+**Where this comes from.** Split from BK-389 on 2026-10-02, in the planning
+PR that settled step 1's open decisions, while nothing of BK-389 had shipped.
+That is not yet [§ Completing work](../BACKLOG.md#how-this-file-works)'s
+"partly done", which needs a shipped part; it pre-mints the remainder that
+rule will name when BK-389's kernel PR closes BK-389 as `[x]`. RFC-0017 D3 step 1 ships as
 two PRs: BK-389 lands the kernel, private, under the Proposed
 [ADR-0042](../adrs/0042-contract-kernel-over-thin-drivers.md); this item lands
 the two Memory drivers on it and is **the PR that accepts ADR-0042 and
@@ -30,19 +32,22 @@ time.
    names beside them. Private internals (`_root`, `_traverse`, `_split_path`)
    move to the driver and were never promised.
 2. **This PR makes the kernel public.** It exports the names RFC-0017
-   § Impact, Public API lists, with the spec amendments below and the API
+   § Impact, Public API lists, except `Session`, which lands with the first
+   remote driver at step 2 (D5), with the spec amendments below and the API
    reference pages; BK-389 left them unexported.
 3. **Spec 013 is amended here,** with a kernel/driver placement per clause,
    IDs and prose kept, the pattern item 4 below prescribes for BE-021. Spec
    013 was assigned to no step before this split (`rg -n '013|MEM-'` over
-   RFC-0017 returned nothing). The placement:
+   RFC-0017 returned nothing). The placement covers every clause heading
+   `rg -n '^### MEM-' sdd/specs/013-memory-backend.md` lists, 31 of them
+   (MEM-016 and MEM-016b both match `MEM-016`), each in exactly one row:
 
    | Owner after this PR | Clauses |
    |---|---|
-   | kernel | MEM-013 (`write_atomic` as `put`, from `put_is_atomic = True`), MEM-015 (aggregation, now BE-017's rule: an unknown time skipped, `None` when none is known), MEM-018 (`close` through `close_is_terminal = False`), MEM-020 (the choke point; the driver raises nothing native, so `classify` is never reached), MEM-DS-005's root rows (the kernel's root check decides `""`, `"."` and the other spellings first) |
-   | driver | MEM-DS-001 to 004 and 006, MEM-010, MEM-011, MEM-012, MEM-016 (`SupportsAtomicMove`, one lock), MEM-016b (`SupportsCopy`), MEM-025, MEM-026, MEM-DS-005's remaining rows (`..`, null byte, absolute) |
-   | forwarded or declared | MEM-001 (constructor), MEM-002 (`name`), MEM-003 (capabilities, declared by the driver), MEM-005 (registration), MEM-017 (`to_key`), MEM-019 (`unwrap`) |
-   | unchanged | MEM-030 to 032 (testing), MEM-040 to 042 (performance) |
+   | kernel (5) | MEM-DS-005 (every row: the kernel validates and normalises the key, BK-389 decision 6, so the driver receives a canonical key), MEM-013 (`write_atomic` as `put`, from `put_is_atomic = True`), MEM-015 (aggregation, now BE-017's rule: an unknown time skipped, `None` when none is known), MEM-018 (`close` through `close_is_terminal = False`), MEM-020 (the choke point; the driver raises nothing native, so `classify` is never reached) |
+   | driver (13) | MEM-DS-001, MEM-DS-002, MEM-DS-003, MEM-DS-004, MEM-DS-006, MEM-010, MEM-011, MEM-012, MEM-014 (`SupportsDeleteTree`: the subtree walk keeps the counters under the one lock), MEM-016 (`SupportsAtomicMove`, one lock), MEM-016b (`SupportsCopy`), MEM-025, MEM-026 |
+   | forwarded or declared (7) | MEM-001 (constructor), MEM-002 (`name`), MEM-003 (capabilities, declared by the driver), MEM-004 (`repr` on the public class, reading the driver's counters), MEM-005 (registration), MEM-017 (`to_key`), MEM-019 (`unwrap`) |
+   | unchanged (6) | MEM-030, MEM-031, MEM-032 (testing), MEM-040, MEM-041, MEM-042 (performance) |
 
 ## What it owes
 

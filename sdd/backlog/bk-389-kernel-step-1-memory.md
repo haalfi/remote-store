@@ -10,9 +10,11 @@ maintainer's condition on
 Proposed until the first backend runs on the new design, and it is accepted in
 that PR.
 
-**Split (2026-10-02, planning PR).** Under
-[§ Completing work](../BACKLOG.md#how-this-file-works) "partly done", step 1
-ships as two PRs, in this order. This item keeps the **kernel PR**, which runs
+**Split (2026-10-02, planning PR).** Step 1 ships as two PRs, in this order.
+Nothing had shipped at the split, so it is not yet
+[§ Completing work](../BACKLOG.md#how-this-file-works)'s "partly done": the
+remainder is minted ahead of the close, and the kernel PR closes this item
+as `[x]` with BK-394 as that remainder. This item keeps the **kernel PR**, which runs
 under the Proposed ADR. **BK-394** ([dossier](bk-394-memory-drivers-accept-adr-0042.md))
 is the **Memory PR**: the two Memory drivers, every step-1 spec amendment, the
 guide, its check script and the homepage snippet, and ADR-0042 and RFC-0017
@@ -55,8 +57,19 @@ every case. RFC-0017 carries the same answers at the question each settles.
 5. **The kernel is private in this PR.** It lands in underscore modules,
    unexported from `__all__`, with no API reference page, guide or CHANGELOG
    entry. Its fake-driver suite traces to existing spec IDs. BK-394 exports
-   the public names RFC-0017 § Impact lists, together with the specs that
-   describe them.
+   the public names RFC-0017 § Impact lists, `Session` excepted (it lands at
+   step 2, D5), together with the specs that describe them.
+6. **Key validation and normalisation are the kernel's** (decided in round 1
+   of this planning PR's review, which found the Memory placement table
+   putting them in the driver against D1: a driver "carries no path, root,
+   type, closed or mapping logic").
+   Before any driver call the kernel rejects an absolute key, a `..` segment
+   and a null byte with `InvalidPath`, and drops empty and `.` segments and a
+   trailing slash, by `RemotePath`'s rules, so every driver receives a
+   canonical key. The root check runs on the raw key first, as the
+   **Depends on** paragraph below states, so `AddressesRoot` still sees every spelling. A later step whose
+   driver answers a non-canonical key differently today (a flat wire's
+   `a//b`, say) enumerates that cell change at its own step.
 
 ## What it owes
 
@@ -145,10 +158,10 @@ below is this, run with `hatch run python`: for each of `""`, `"."`, `"./"`,
   `is_root` accepts `""` and `"."` only (`_path.py` `_ROOT_SPELLINGS`);
   `MemoryBackend._split_path` and the async module's `_split_path` drop empty
   and `.` segments, so `"./"` and `".//"` also split to the root (measured,
-  the probe: `is_root` `False`, split `[]`). Once the kernel decides
-  root-ness, what it hands the driver for such a key is the kernel's to fix;
-  the read side follows BE-029, and the write side the `AddressesRoot`
-  entry above.
+  the probe: `is_root` `False`, split `[]`). Decision 6 settles what the
+  kernel hands the driver for such a key: the canonical form, after the root
+  check on the raw key (BE-029 on the read side, `AddressesRoot` on the
+  write side).
 - **Neither Memory class skips the unknown-time sentinel in
   `get_folder_info`.** A folder whose only file carries `datetime.min` in UTC
   answers that sentinel, sync and async, where the kernel's rule
