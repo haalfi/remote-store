@@ -64,6 +64,12 @@ class TestBackendListing:
         for f in files:
             assert isinstance(f, FileInfo)
 
+    @pytest.mark.spec("BE-014")
+    def test_list_files_excludes_lookalike_siblings(self, backend: Backend) -> None:
+        """``_`` in a folder name is a literal; the SQL ``LIKE`` reading listed ``lf_uXb``."""
+        _seed(backend, {"lf_u_b/a.txt": b"a", "lf_uXb/b.txt": b"b"})
+        assert {f.name for f in backend.list_files("lf_u_b", recursive=True)} == {"a.txt"}
+
     @pytest.mark.spec("BE-015")
     def test_list_folders(self, backend: Backend) -> None:
         _seed(backend, {"lfd/sub1/a.txt": b"a", "lfd/sub2/b.txt": b"b", "lfd/file.txt": b"f"})
