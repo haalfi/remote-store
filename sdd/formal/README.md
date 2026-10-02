@@ -234,7 +234,7 @@ that must move — see [`000-process.md` Rule
 | File | What it models |
 |------|----------------|
 | `BackendContract.dfy` | Abstract backend trait — error model, capabilities, all operation pre/postconditions, the `AddressesRoot` root predicate |
-| `MemoryBackend.dfy` | Reference refinement proving the contract is satisfiable; compiled to Python as the conformance oracle, together with `RootPath.dfy`, which it includes |
+| `MemoryBackend.dfy` | Reference refinement proving the contract is satisfiable; compiled to Python as the conformance oracle, together with the files it includes (§ Compiled oracle lists them) |
 | `DepthCounting.dfy` | Verified `DEPTH-001` algorithm and the four depth-filter properties |
 | `ResourceSafety.dfy` | Handle lifecycle, `_safe_wrap` invariant, move atomicity, connection lifecycle |
 | `RootPath.dfy` | What `AddressesRoot` accepts: exactly the keys whose every `/`-segment is `""` or `"."` (`RootSpellingCharacterisation`), so the six BE-029 spellings; only `Root` among well-formed paths; not `\` (BE-029). BE-029's table derived from the trait for every refinement (`RootAnswersPerTable`), and the raw-key entry (`WriteKey`, `MoveKey`, `CopyKey`) that folds every root spelling of a write or `move`/`copy` destination onto `Root` |
@@ -258,9 +258,11 @@ pinned version (see
 [`sdd/CLAUDE-REFERENCE.md` § Local toolchain](../CLAUDE-REFERENCE.md#local-toolchain)),
 then `dafny verify sdd/formal/<file>.dfy`.
 
-CI runs the `verify-formal` job automatically when `sdd/formal/` or
-`sdd/specs/` files change; it also runs the compiled oracle's tests (see
-§ Compiled oracle as conformance gate).
+CI runs the `verify-formal` job automatically when a changed path outside
+`sdd/formal/tla/` (which the filter step drops first) matches `FORMAL_PAT` in
+`.github/workflows/ci.yml`; it also checks the compiled oracle
+against its sources and runs the oracle's tests (see § Compiled oracle as
+conformance gate).
 
 TLA+ (TLC): `bash scripts/tlc_check.sh` runs the Observer model
 (default target `sdd/formal/tla/MC3`) via a pinned Docker image — no
@@ -352,8 +354,9 @@ small, stable, and maintainable:
 <a id="compiled-oracle"></a>
 ### Compiled oracle as conformance gate
 
-The Dafny `MemoryBackend` is compiled to Python via `dafny translate
-py` and wrapped behind the `Backend` ABC as `DafnyOracleBackend`. The
+The Dafny `MemoryBackend` is compiled to Python by the `dafny build -t py`
+invocation in `scripts/dafny_translate.sh` and wrapped behind the `Backend` ABC
+as `DafnyOracleBackend`. The
 oracle runs through the full conformance test suite alongside real
 backends.
 
@@ -367,7 +370,7 @@ the test itself has a bug and must be fixed.
 | File | Purpose |
 |------|---------|
 | `sdd/formal/MemoryBackend.dfy` | Source specification (verified); the translation entry point |
-| `sdd/formal/BackendContract.dfy`, `sdd/formal/RootPath.dfy` | Included by `MemoryBackend.dfy`, so their non-ghost members compile into `module_.py` too: the trait and its compiled predicates, and `RootPath.dfy`'s §4 `RootAnswersPerTable` and §5 `RootFold` / `WriteKey` / `MoveKey` / `CopyKey` |
+| `sdd/formal/BackendContract.dfy`, `sdd/formal/RootPath.dfy`, `sdd/formal/ResourceSafety.dfy` | Included by `MemoryBackend.dfy` (`ResourceSafety.dfy` through `BackendContract.dfy`), so every non-ghost member they declare (datatypes, functions, methods) compiles into `module_.py` too — for example `RootPath.dfy`'s §5 `RootFold` and `ResourceSafety.dfy`'s `SafeWrap` |
 | `sdd/formal/MemoryBackend-py/module_.py` | Compiled Python output |
 | `sdd/formal/MemoryBackend-py/_dafny/` | Dafny Python runtime |
 | `tests/backends/dafny/_helpers.py` | Adapter: compiled oracle → `Backend` ABC |
@@ -376,13 +379,16 @@ the test itself has a bug and must be fixed.
 invariants, ghost variables, postconditions) erase at compile time and
 produce no Python output — regeneration is not needed. Non-ghost changes
 (method bodies, datatype definitions, function implementations) do require
-regeneration, in any of the three source files above, not only
-`MemoryBackend.dfy`; no gate compares `module_.py` with its sources (ID-263). What
-CI does run on an `sdd/formal/` change is the `verify-formal` job, which
-besides `dafny verify` runs `tests/backends/dafny` and the oracle's
-conformance lanes (`-k dafny`) against the committed `module_.py`, so a
-regenerated oracle is tested even when nothing outside `sdd/` changed. Run the
-Docker wrapper:
+regeneration, in any of the source files above, not only
+`MemoryBackend.dfy`. The sources govern: `MemoryBackend-py/` is derived, and a
+difference is fixed by regenerating, never by editing the output.
+`scripts/check_dafny_oracle_fresh.py` holds that in CI's `verify-formal` job: it
+rebuilds the oracle with the pinned Dafny and fails, naming each differing file
+and line, when the committed tree is not what the sources compile to. Its
+docstring states what it does not catch. After it, the same job runs
+`tests/backends/dafny` and the oracle's conformance lanes (`-k dafny`) against
+the committed `module_.py`, so a regenerated oracle is tested even when nothing
+outside `sdd/` changed. Run the Docker wrapper:
 
 ```bash
 bash scripts/dafny_verify.sh MemoryBackend.dfy     # confirm spec
@@ -394,7 +400,9 @@ The translate wrapper uses the same Dafny release and SHA-256 pin as
 `scripts/_dafny_classorder.py` on the output so classes are emitted in
 importable order (ADT types → `Backend` → `default__` → `MemoryBackend` →
 `MemoryBackendMinimal`).
-No local Dafny toolchain required — Docker Desktop is enough.
+No local Dafny toolchain required — Docker Desktop is enough. With native Dafny
+at the pinned version on `PATH`, `hatch run check-dafny-oracle-fresh` runs the CI
+freshness check locally.
 
 Verify the regenerated module imports:
 
