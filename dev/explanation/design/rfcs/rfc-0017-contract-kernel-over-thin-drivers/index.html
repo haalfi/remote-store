@@ -11416,8 +11416,11 @@ together, in the PR that lands the first backend on this design (D3 step 1),
 not on the answers alone. The lifecycle, and where each amendment lands, are
 in D8 and § Impact. BK-389's planning PR answered Open Questions 2 and 3,
 deferred 5 to D3 step 3 with the shape step 1 keeps open, added the close
-posture to D1 and key validation to D2, and split step 1 into a kernel PR (BK-389) and a Memory PR
-(BK-394), the second accepting; BK-389's dossier § Decisions carries them.</p>
+posture and <code>SupportsRemoveFolder</code> to D1 and key validation to D2, and split step 1 into a kernel PR (BK-389) and a Memory PR
+(BK-394), the second accepting; BK-389's dossier § Decisions carries them.
+<code>SupportsRemoveFolder</code> is a construction-time requirement for any driver
+whose <code>parents</code> is <code>"explicit"</code> or <code>"implicit"</code>, so the acceptance reader
+checks it with the rest.</p>
 <p><strong>Date:</strong> 2026-09-28. Every figure below is pinned to <code>8fa22d6</code> and is either
 quoted from audit-021 with its derivation, or names its command here. The tree
 moves on every merge: re-run rather than quote.</p>
@@ -11601,9 +11604,9 @@ optional member, so presence is a protocol, not a method):</p>
 <td>native <code>GLOB</code>; without it the driver must not declare <code>GLOB</code></td>
 </tr>
 <tr>
-<td><code>SupportsRemoveFolder</code> (added at BK-389's planning)</td>
-<td><code>remove_folder(key)</code>: remove one empty folder</td>
-<td>required when <code>parents == "explicit"</code>, checked at construction. <code>delete_folder(recursive=False)</code> checks the folder with <code>stat</code>, refuses a non-empty one with <code>DirectoryNotEmpty</code> after <code>list_page(limit=1)</code>, then calls it. <code>delete_folder(recursive=True)</code> without <code>SupportsDeleteTree</code> lists and deletes the files, then calls it on each folder, deepest first. Never called for <code>implicit</code> or <code>none</code></td>
+<td><code>SupportsRemoveFolder</code> (added at BK-389's planning; corrected after PR #1055 merged)</td>
+<td><code>remove_folder(key)</code>: remove an empty folder and refuse anything else without removing it, in one step where the wire has one (Memory's lock, <code>rmdir</code>)</td>
+<td>required when <code>parents</code> is <code>"explicit"</code> or <code>"implicit"</code> (any driver with folder objects; Graph, Azure HNS), checked at construction; never called when <code>parents == "none"</code>. The kernel's <code>delete_folder</code> sequence around it (which refusals it probes, what <code>delete_tree</code> must refuse, the recursive and <code>parents == "none"</code> paths) is BK-396's to decide before BK-389's kernel PR; the candidate design and its measurements are in BK-396's dossier</td>
 </tr>
 </tbody>
 </table>
@@ -11666,9 +11669,10 @@ was a 28th match above it). It owns, once:</p>
 <li>key validation and normalisation (added at BK-389's planning): a key
   starting with <code>/</code>, a <code>..</code> segment or a null byte is refused with
   <code>InvalidPath</code>, and empty and <code>.</code> segments are dropped. The rule is taken
-  from spec 013's MEM-DS-005 table, not from <code>RemotePath</code>'s, and BK-394
-  states it as a spec 003 clause binding every migrated class, which
-  MEM-DS-005 then cites. It runs after the closed guard and before the root check, which
+  from spec 013's MEM-DS-005 table, not from <code>RemotePath</code>'s, and BK-389's
+  kernel PR states it as a spec 003 clause binding every class on the
+  kernel, which MEM-DS-005 cites from BK-394 on (moved from BK-394 after
+  PR #1055 merged). It runs after the closed guard and before the root check, which
   then runs on the canonical key: <code>""</code> is the root, the wide predicate on
   every side. So an operation's driver call only ever sees a canonical key,
   as D1's driver, which "carries no path … logic", requires. The rule
@@ -11683,7 +11687,9 @@ was a 28th match above it). It owns, once:</p>
   <code>close_is_terminal</code>, in the order spec 003 fixes; these are
   key-level checks and add no round trip;</li>
 <li>the wrong-type probes on the error path (one <code>stat</code> and one
-  <code>list_page(limit=1)</code>, the same probes the classes issue today), the
+  <code>list_page(limit=1)</code>, the same probes the classes issue today; for
+  <code>delete_folder</code> the sequence, and which refusals it probes, is BK-396's
+  to decide), the
   absent-container tolerance, and the first-page listing bound (BE-021),
   including its page-not-item rule;</li>
 <li>the file-ancestor pre-check as a kernel option with today's default: the
@@ -11724,7 +11730,7 @@ takes the same path with its own primitive and <code>Op</code>:</p>
   prim --&gt;|stream| wrap["stream wrapped once:&lt;br/&gt;every later read passes classify too"]
   prim --&gt;|native exception| cls["driver.classify(exc, op=read, key)"]
   cls --&gt; post["kernel post-processing:&lt;br/&gt;path and backend set,&lt;br/&gt;blank message synthesised,&lt;br/&gt;a typed RemoteStoreError passes through"]
-  post --&gt;|NotFound| probe["error-path probe:&lt;br/&gt;stat or list_page(limit=1)&lt;br/&gt;wrong type becomes InvalidPath"]
+  post --&gt;|"NotFound&lt;br/&gt;(delete_folder: BK-396)"| probe["error-path probe:&lt;br/&gt;stat or list_page(limit=1)&lt;br/&gt;wrong type becomes InvalidPath"]
   post --&gt; raise["typed error to the caller"]
   probe --&gt; raise
   wrap --&gt; caller["stream to the caller"]</code></pre>
@@ -11835,9 +11841,12 @@ its driver answers differently today, canonical keys included (Local's
 <code>delete_folder("")</code> removes the root directory today). Step 1's list, for Memory, is
 in BK-394's dossier. No conformance cell reaches those cells. Memory's are
 pinned by new cells in the step-1 PR. A later step's cell may already be
-pinned per backend with the opposite answer; Local's root <code>delete_folder</code> is,
-in <code>tests/backends/local/test_absent_root.py</code>. That step's PR inverts such a
-pin and records why. AZ-025's blank-message clause and its pinning
+pinned per backend with the opposite answer; that step's PR inverts such a
+pin and records why: Local's two absent-root root <code>delete_folder</code> tests in
+<code>tests/backends/local/test_absent_root.py</code> answer <code>None</code> and <code>NotFound</code>,
+and both become <code>InvalidPath</code>. Where none pins it, the step adds the cell:
+Local's root <code>delete_folder</code> on a present root has no test, since those
+tests remove the root first (corrected after PR #1055 merged). AZ-025's blank-message clause and its pinning
 test go red with BUG-276's fix under the arm decided at BK-387, synthesise
 (its dossier: "Both go red when this lands, by design"); the BUG-240 and
 BUG-292 decisions change cells on the classes that
@@ -12283,9 +12292,13 @@ and its answer keeps <code>classify</code>.</p>
   <code>unwrap(s3fs.S3FileSystem)</code> callers at step 2. <code>Store</code> callers see no
   change in interface.</li>
 <li><strong>Performance:</strong> the kernel issues the same probes the per-backend code
-  issues today (one <code>stat</code> or one <code>list_page(limit=1)</code> on the error path; the
-  file-ancestor walk only when opted in; <code>ensure_parents</code> only for explicit
-  parents), and the S3 driver drops the s3fs layer. Two replacements change
+  issues today (one <code>stat</code> or one <code>list_page(limit=1)</code> on the error path;
+  the file-ancestor walk only when opted in; <code>ensure_parents</code> only for
+  explicit parents), and the S3 driver drops the s3fs layer. One open
+  exception: <code>delete_folder</code>'s probes are BK-396's to decide. On Memory, which
+  issues no probe today, its candidate adds a <code>stat</code> after a refusal and a
+  listing after a non-recursive refusal of a present folder. Two
+  replacements change
   data paths and are measured under D8's benchmark gate in the PR that
   lands them:</li>
 <li><code>S3PyArrowBackend</code>: reads move from PyArrow's C++ S3 filesystem to the
@@ -12321,7 +12334,11 @@ and its answer keeps <code>classify</code>.</p>
   never-leak invariant on every operation, page and stream and the
   <code>write_atomic</code> and <code>move</code> syntheses over each combination of
   <code>put_is_atomic</code>, <code>open_write</code>, <code>rename</code> and <code>SupportsAtomicMove</code> the fake
-  driver can present; the driver half
+  driver can present, and the <code>delete_folder</code> synthesis over
+  <code>SupportsRemoveFolder</code> and <code>SupportsDeleteTree</code> (every cell BK-396
+  decides, and the construction refusal of an explicit- or
+  implicit-parents driver without <code>SupportsRemoveFolder</code>; added after PR
+  #1055 merged); the driver half
   stays with the per-driver suites. BK-345 and ID-244 reduce to driver
   cells (corrected at BK-389's planning: BK-345's kernel half, the
   absent-container answers per <code>Op</code>, became fake-driver kernel cells in
@@ -12337,7 +12354,13 @@ and its answer keeps <code>classify</code>.</p>
   and <a href="../../adrs/0042-contract-kernel-over-thin-drivers/">ADR-0042</a>,
   Proposed, which carries the four ADR amendments. With D3 step 1's Memory PR
   (BK-394), which accepts that ADR (the kernel PR before it, BK-389, is
-  private and amends nothing): specs 003, 005, 029 and 037 below, spec 013 (Memory's,
+  private and touches spec 003 only: it adds the clauses its kernel cells
+  trace to, the key rule, the root <code>delete_folder</code> refusal and
+  <code>SupportsRemoveFolder</code>'s <code>delete_folder</code> sequence as BK-396 decides it, and amends any spec 003 clause
+  BK-395's answers contradict, such as BE-025 or BE-008; BK-389's dossier,
+  item 8, is the authority for this split): specs 003, 005, 029 and 037
+  below, any clause outside spec 003 that BK-395's answers contradict
+  (PATH-002, NPR-021, NPR-004, RES-020), spec 013 (Memory's,
   as a kernel/driver placement per clause, which the list at filing omitted),
   the kernel half
   of 007 and 022, the Memory drivers' rows of 007 and 022, spec 026's PING-002
