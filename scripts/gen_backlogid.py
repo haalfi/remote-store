@@ -6,10 +6,13 @@ Normal mode (no flag):
     Run after moving items to BACKLOG-DONE.md: hatch run gen-backlogid.
 
 Check mode (--check):
-    Read-only. Verifies the JSON is current, then checks BACKLOG.md for
-    collisions with done items **and for one ID carried by two open items**,
-    checks each open item's attributes (R1) and the file's shape (R2–R4,
-    below), and prints next safe IDs per prefix.
+    Read-only and offline. Verifies the JSON is current, then checks BACKLOG.md
+    for collisions with done items **and for one ID carried by two open
+    items**, checks BACKLOG-DONE.md for one ID on two entries outside released
+    history, checks each open item's attributes (R1) and the file's shape
+    (R2–R4, below), and prints next safe IDs per prefix — safe **for this tree
+    only**; parallel sessions mint from a reservation instead
+    (``BACKLOG.md`` § How this file works).
     Exit 0 = clean; 1 = stale JSON, collisions, duplicates, or R1–R4 violations.
     Wired into `hatch run lint` and `hatch run docs-gate` — the latter because
     `lint` is CODE_PAT-gated and so skipped for an `sdd/`-only change, which is
@@ -21,20 +24,37 @@ Check mode (--check):
     master on two distinct open items (from `8e35697` and `e5fb4a8`) and this
     check printed "No ID collisions." ID-257 predicted the minting collision and
     records that its open-versus-open half had no gate; this is that gate. It
-    catches the collision **after** both branches merge and does not prevent it:
-    preventing it needs a mint-time view of unmerged branches, which stays
-    ID-257's open question.
+    catches the collision **after** both branches merge and does not prevent it;
+    ``--remote`` below is the opt-in view before the merge.
 
-    **Bound: the open side only.** `BACKLOG-DONE.md` collapses the same way, and
-    the path is reachable — two branches mint one ID and each *closes* its item
-    before merging, so neither is ever open and nothing here sees it. It is
-    deliberately not checked, because the register already carries four such
-    pairs from before the ID discipline (`BK-001`, `BUG-001`, `BUG-144`, and
-    `BK-167b`, whose second header is the sanctioned `(partial)` split shape).
-    Renumbering items inside released sections would falsify the release
-    record, and a gate that needs an exemption list on its first run is
-    fighting its own subject. `BK-385` carries the decision with those four as
-    its evidence.
+    **The done register (BK-385).** `BACKLOG-DONE.md` collapses the same way,
+    and the path is the ordinary one: two branches mint one ID and each
+    *closes* its item before merging, so neither is ever open. An ID on two
+    done headers fails when at least one header sits above the first
+    ``## v<digit>`` heading — `Absorbed`, `Decided against` and `Unreleased`,
+    where every close lands first. **Bound: a pair wholly inside released
+    history is not reported.** The register carries four such pairs from before
+    the ID discipline (`BK-001`, `BUG-001`, `BUG-144`, and `BK-167b`, whose
+    second header is the sanctioned `(partial)` split shape); renumbering inside
+    released sections would falsify the release record, so the release record
+    is their register (DRIFT-RULES Rule 6) and no exemption list exists. A new
+    pair cannot reach released history without first passing the live region,
+    unless the gate was bypassed. Pinned by ``TestCheck``'s stated-bound test.
+
+Remote mode (--check --remote), ID-257:
+    Opt-in, never in ``lint``: it needs the network, and the offline gate must
+    stay pure. Runs ``git fetch --prune origin``, then compares the IDs this
+    working tree minted (its headers minus those at the merge-base with
+    ``origin/master``, so an uncommitted mint counts) against ``origin/master``
+    and every other ``origin/*`` branch's new IDs, open or done. Fails naming
+    each shared ID and the ref carrying it, and prints the next safe IDs across
+    every pushed branch. A failed fetch fails loud rather than reporting
+    agreement. **Bounds:** a branch not yet pushed, or pushed to a fork, is
+    invisible — at mint time that is the usual state of a parallel session,
+    which is why a reservation and not this mode is the minting rule; a stale
+    or abandoned branch still carrying an ID can report a clash nobody will
+    merge; the ref ``origin/<this local branch's name>`` is skipped, so a push
+    under a different name reads as another session.
 
     **R1, attribute vocabulary** ([ADR-0040](../sdd/adrs/0040-backlog-as-index.md)).
     Every open item's header is followed directly by its
@@ -79,8 +99,15 @@ Drift-gate::
 Drift-gate::
 
     kind:       rule
-    rule: no ID appears on two open item headers in sdd/BACKLOG.md — the done
-        register is out of scope, for the reason the module docstring gives
+    rule: no ID appears on two open item headers in sdd/BACKLOG.md, nor on two done
+        headers in sdd/BACKLOG-DONE.md when one sits above released history
+    domain:     process
+
+Drift-gate::
+
+    kind:       pair
+    compares: the IDs this working tree minted ↔ the new IDs on origin/master and every
+        other pushed origin branch (--remote only, opt-in and networked)
     domain:     process
 
 Drift-gate::
@@ -110,8 +137,9 @@ from __future__ import annotations
 
 import json
 import re
+import subprocess
 import sys
-from collections import Counter
+from collections import Counter, defaultdict
 from pathlib import Path
 
 from _trace_corpus import load_trace
@@ -130,6 +158,8 @@ _HEADER_RE = re.compile(
 )
 _ATTR_RE = re.compile(r"^  spec: .+ · effort: (.+?) · audience: (.+)$")
 _EFFORTS = ("S", "M", "L")
+# BK-385: the done register's released history starts at the first version heading.
+_RELEASED_RE = re.compile(r"^## v\d", re.MULTILINE)
 
 # R2–R4. Separator lines are not content (RFC-0016 D1); rfc-0016-measure.py
 # uses the same delimitation, so the gate and the acceptance figure agree.
@@ -175,6 +205,77 @@ def _duplicate_ids(text: str, status_chars: str) -> dict[str, int]:
         if status in status_chars:
             counts[f"{prefix}-{num}"] += 1
     return {item: n for item, n in counts.items() if n > 1}
+
+
+def _done_duplicate_ids(done_text: str) -> dict[str, int]:
+    """BK-385: IDs on two or more done headers, at least one above released history.
+
+    Released history (from the first ``## v<digit>`` heading down) is frozen,
+    so a pair lying wholly inside it is tolerated: those are the pairs from
+    before the ID discipline. Every new close lands above that line first, so
+    one live header is enough to report the pair, including a new close that
+    reuses a released ID.
+    """
+    released = _RELEASED_RE.search(done_text)
+    live_text = done_text[: released.start()] if released else done_text
+    live = {item for ids in _extract_ids(live_text, "x").values() for item in ids}
+    return {item: n for item, n in _duplicate_ids(done_text, "x").items() if item in live}
+
+
+def _git(*args: str) -> subprocess.CompletedProcess[str]:
+    return subprocess.run(["git", "-C", str(ROOT), *args], capture_output=True, text=True, check=False)
+
+
+def _ids_in(open_text: str, done_text: str) -> set[str]:
+    """Every header ID in one tree's pair of backlog files, open or done."""
+    found: set[str] = set()
+    for text, status in ((open_text, " ~"), (done_text, "x")):
+        for ids in _extract_ids(text, status).values():
+            found |= ids
+    return found
+
+
+def _remote_view(remote: str = "origin", base: str = "master") -> tuple[dict[str, list[str]], set[str]]:
+    """ID-257: this tree's new IDs against every pushed branch. Raises ``RuntimeError``.
+
+    Returns ``(clashes, seen)``: each ID this tree minted that another ref also
+    carries, with those refs, and every ID on the base or any pushed branch.
+    "Minted here" is the working tree minus the merge-base with the base, so an
+    uncommitted mint counts, and an ID the base gained after this branch forked
+    is a clash named as the base.
+    """
+    fetch = _git("fetch", "--quiet", "--prune", remote)
+    if fetch.returncode:
+        raise RuntimeError(fetch.stderr.strip() or f"git fetch {remote} exited {fetch.returncode}")
+    base_ref = f"{remote}/{base}"
+    fork = _git("merge-base", "HEAD", base_ref)
+    if fork.returncode:
+        raise RuntimeError(f"no merge-base between HEAD and {base_ref}")
+    paths = [p.relative_to(ROOT).as_posix() for p in (BACKLOG, BACKLOG_DONE)]
+
+    def ids_at(ref: str) -> set[str]:
+        open_text, done_text = (_git("show", f"{ref}:{p}").stdout for p in paths)
+        return _ids_in(open_text, done_text)
+
+    mine = _ids_in(BACKLOG.read_text(encoding="utf-8"), BACKLOG_DONE.read_text(encoding="utf-8"))
+    mine -= ids_at(fork.stdout.strip())
+    base_ids = ids_at(base_ref)
+    clashes: dict[str, list[str]] = defaultdict(list)
+    for item in sorted(mine & base_ids):
+        clashes[item].append(base_ref)
+    current = _git("rev-parse", "--abbrev-ref", "HEAD").stdout.strip()
+    # `origin/HEAD` lists as bare `origin` under `refname:short`.
+    skip = {base_ref, f"{remote}/HEAD", remote, f"{remote}/{current}"}
+    refs = _git("for-each-ref", "--format=%(refname:short)", f"refs/remotes/{remote}").stdout.split()
+    seen = set(base_ids)
+    for ref in refs:
+        if ref in skip:
+            continue
+        theirs = ids_at(ref) - base_ids
+        seen |= theirs
+        for item in sorted(mine & theirs):
+            clashes[item].append(ref)
+    return dict(clashes), seen
 
 
 def _audience_enum() -> set[str]:
@@ -326,7 +427,7 @@ def _generate() -> int:
     return 0
 
 
-def _check() -> int:
+def _check(remote: bool = False) -> int:
     done_text = BACKLOG_DONE.read_text(encoding="utf-8")
     active_text = BACKLOG.read_text(encoding="utf-8")
 
@@ -350,13 +451,25 @@ def _check() -> int:
 
     collisions = sorted(item for p in _PREFIXES for item in active_ids[p] & done_ids[p])
     duplicates = _duplicate_ids(active_text, " ~")
+    done_duplicates = _done_duplicate_ids(done_text)
     attributes = _attribute_violations(active_text, _audience_enum())
     caps, shapes, links = _shape_violations(active_text, BACKLOG.parent)
 
     max_active = {p: _max_numeric(active_ids[p]) for p in _PREFIXES}
     next_ids = {p: max(actual_max[p], max_active[p]) + 1 for p in _PREFIXES}
     next_str = "  ".join(f"{p}={next_ids[p]}" for p in _PREFIXES)
-    print(f"Next safe IDs: {next_str}")
+    print(f"Next safe IDs (this tree only; parallel sessions mint from a reservation): {next_str}")
+
+    clashes: dict[str, list[str]] = {}
+    if remote:
+        try:
+            clashes, seen = _remote_view()
+        except RuntimeError as exc:
+            print(f"ERROR: --remote could not fetch origin or read its refs, so nothing was compared: {exc}")
+            return 1
+        by_prefix = {p: {item for item in seen if item.startswith(f"{p}-")} for p in _PREFIXES}
+        floor = {p: max(next_ids[p], _max_numeric(by_prefix[p]) + 1) for p in _PREFIXES}
+        print("Next safe IDs across pushed branches: " + "  ".join(f"{p}={floor[p]}" for p in _PREFIXES))
 
     # Both failures are reported before returning, rather than the first one
     # short-circuiting: an author who fixes a duplicate only to be told about a
@@ -374,7 +487,22 @@ def _check() -> int:
         print(f"\nFound {len(collisions)} collision(s) — same ID active and done:")
         for c in collisions:
             print(f"  {c}")
-        print("\nAssign a new ID to the active item (floor: sdd/backlogid.json).")
+        print("\nAssign a new ID to the active item (the next safe ID above).")
+
+    if done_duplicates:
+        print(
+            f"\nFound {len(done_duplicates)} duplicate ID(s) in {BACKLOG_DONE.name} — "
+            "one ID on two entries, at least one above released history (BK-385):"
+        )
+        for item, count in sorted(done_duplicates.items()):
+            print(f"  {item} ({count} headers)")
+        print("\nRenumber the later-merged entry to the next safe ID above, and sweep every reference to it.")
+
+    if clashes:
+        print(f"\nFound {len(clashes)} ID(s) this tree minted that a pushed ref also carries (ID-257):")
+        for item, refs in sorted(clashes.items()):
+            print(f"  {item} also minted on {', '.join(refs)}")
+        print("\nRe-mint from the floor across pushed branches above, before either side merges.")
 
     if attributes:
         print(f"\nFound {len(attributes)} attribute violation(s) in {BACKLOG.name} (R1, ADR-0040):")
@@ -391,22 +519,28 @@ def _check() -> int:
             for v in found:
                 print(f"  {v}")
 
-    if duplicates or collisions or attributes or caps or shapes or links:
+    if duplicates or done_duplicates or collisions or clashes or attributes or caps or shapes or links:
         return 1
 
     # Every rule named, so a clean run says which ones passed. The duplicate
-    # rule is only reachable after two branches merge, so this line is the
-    # first evidence most authors will have that it exists at all.
+    # rules are only reachable after two branches merge, so this line is the
+    # first evidence most authors will have that they exist at all.
     print(
-        "No ID collisions, no ID on two open items, every open item's attributes in vocabulary, "
+        "No ID collisions, no ID on two open items or on two unreleased done entries, "
+        + ("no ID shared with a pushed branch, " if remote else "")
+        + "every open item's attributes in vocabulary, "
         "every section and its items in shape, and every Detail: link resolving to its dossier."
     )
     return 0
 
 
 def main() -> int:
-    if "--check" in sys.argv[1:]:
-        return _check()
+    args = sys.argv[1:]
+    if "--remote" in args and "--check" not in args:
+        print("ERROR: --remote is a mode of --check: run gen_backlogid.py --check --remote")
+        return 1
+    if "--check" in args:
+        return _check(remote="--remote" in args)
     return _generate()
 
 

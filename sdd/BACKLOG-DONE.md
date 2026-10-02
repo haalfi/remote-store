@@ -241,6 +241,26 @@ if evidence changes; these are retired.
 
 ## Unreleased
 
+- [x] **ID-257 — Two sessions working in parallel mint the same backlog ID, and every derivation says both are right**
+  spec: — · effort: S · audience: contributor.tooling
+  Decided: reservation is the minting rule. `BACKLOG.md` § How this file works
+  now says parallel sessions mint only IDs their dispatcher reserved, and the
+  `Next safe IDs` line says it is safe for this tree only. `gen-backlogid
+  --check --remote` is the opt-in, networked view: it fails naming each ID this
+  tree minted that `origin/master` or another pushed branch also carries. `lint`
+  stays offline. Bound: an unpushed branch stays invisible. Two-clone test,
+  offline check passing on the same state.
+  Detail: [dossier](backlog/id-257-parallel-id-minting.md)
+
+- [x] **BK-385 — The duplicate-ID gate cannot see the done register, where a collision would be permanent**
+  spec: — · effort: S · audience: contributor.tooling
+  `gen-backlogid --check` now fails on one ID carried by two done headers when
+  at least one sits above the first `## v<digit>` heading (`Absorbed`, `Decided
+  against`, `Unreleased`). The four pre-discipline pairs lie wholly in released
+  history, so they pass by rule with no exemption list. Seen failing on a
+  constructed second `ID-251` under `## Unreleased`, which `master`'s script passes.
+  Detail: [dossier](backlog/bk-385-done-register-duplicate-ids.md)
+
 - [x] **ID-251 — BE-029's widest clause is one the conformance suite cannot fail on**
   spec: BE-029 · effort: M · audience: infra.test, library.maintainer, user.site, infra.ci
   The root write and `move`/`copy` destination cells (sync and async) run all six
@@ -396,7 +416,7 @@ if evidence changes; these are retired.
   **Split** per § Completing work: this entry is the delivery; the RFC-0015
   re-measurement it was filed under stays open as
   [BK-384](BACKLOG.md), and the minting half of
-  [ID-257](BACKLOG.md) is untouched.
+  [ID-257](BACKLOG-DONE.md) is untouched.
   Two of the three are one shape — a dedupe that hides the duplicate it should
   report. The third is the squash-merge orphaning, which is a different defect
   and shipped with them because the same reading found it.
@@ -1746,7 +1766,7 @@ if evidence changes; these are retired.
   **The ID collision is the lesson**: two sessions drawing from one floor mint
   the same number, and `gen_backlogid --check` is what caught it. An ID minted
   and retired inside one unmerged branch buys nothing a paragraph here does not.
-  **The coordination gap itself is now [ID-257](BACKLOG.md)**, which is where the
+  **The coordination gap itself is now [ID-257](BACKLOG-DONE.md)**, which is where the
   open question lives — what mechanism should own it — and which corrects the
   first account of this incident: the floor was not at fault, since `--check`
   already maxes over open items and the documented procedure says to check both.

@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import json
+import subprocess
 import sys
 from pathlib import Path
 
@@ -314,30 +315,76 @@ class TestCheck:
         assert "BK-382" in out
         assert "BK-174" in out
 
-    def test_a_duplicate_in_the_done_register_is_not_reported(self, tmp_path, monkeypatch, capsys):
-        """The stated bound, pinned so it cannot drift silently either way.
-
-        `BACKLOG-DONE.md` collapses the same way and the path is reachable, but
-        the register already carries four such pairs from before the ID
-        discipline, and renumbering inside released sections would falsify the
-        release record. Out of scope by decision, not by oversight — BK-385
-        carries it. A future widening has to delete this test, which is the
-        point: the bound is not something a reader has to infer.
-        """
-        duplicate_done = (
-            f"- [x] **BK-500 {_EM} One branch closed this**\n"
-            f"- [x] **BK-500 {_EM} Another branch closed something else**\n"
-        )
-        done, active, id_file = self._setup(
-            tmp_path, duplicate_done, _ACTIVE_BLOCK, {"BK": 500, "BUG": 0, "ID": 0, "AF": 0, "BL": 0}
-        )
+    def _run_done(self, tmp_path, monkeypatch, done_text, **maxima):
+        stored = {"BK": 0, "BUG": 0, "ID": 0, "AF": 0, "BL": 0} | maxima
+        done, active, id_file = self._setup(tmp_path, done_text, _ACTIVE_BLOCK, stored)
         monkeypatch.setattr(_mod, "BACKLOG_DONE", done)
         monkeypatch.setattr(_mod, "BACKLOG", active)
         monkeypatch.setattr(_mod, "ID_FILE", id_file)
         monkeypatch.setattr(_mod, "ROOT", tmp_path)
+        return _mod._check()
 
-        assert _mod._check() == 0
+    def test_two_closes_of_one_id_under_unreleased_are_reported(self, tmp_path, monkeypatch, capsys):
+        """BK-385: two branches mint one ID and each closes its item before merging.
+
+        Neither ID is ever open, so the open-side rules see nothing; without this
+        the register keeps two completed items under one ID for good.
+        """
+        done_text = (
+            "## Unreleased\n\n"
+            f"- [x] **BK-500 {_EM} One branch closed this**\n"
+            f"- [x] **BK-500 {_EM} Another branch closed something else**\n\n"
+            "## v0.1.0\n\n"
+            f"- [x] **BK-001 {_EM} Old item**\n"
+        )
+        assert self._run_done(tmp_path, monkeypatch, done_text, BK=500) == 1
+        out = capsys.readouterr().out
+        assert "BK-500 (2 headers)" in out
+        assert "BACKLOG-DONE.md" in out
+        assert "BK-001" not in out
+
+    def test_a_close_colliding_with_released_history_is_reported(self, tmp_path, monkeypatch, capsys):
+        """One header in the live region is enough: a new close reusing a released ID."""
+        done_text = (
+            "## Unreleased\n\n"
+            f"- [x] **BK-001 {_EM} New close reusing an old ID**\n\n"
+            "## v0.1.0\n\n"
+            f"- [x] **BK-001 {_EM} Old item**\n"
+        )
+        assert self._run_done(tmp_path, monkeypatch, done_text, BK=1) == 1
+        assert "BK-001 (2 headers)" in capsys.readouterr().out
+
+    def test_absorbed_and_decided_against_sections_are_live(self, tmp_path, monkeypatch, capsys):
+        """Everything above the first `## v<digit>` heading is live, not only `## Unreleased`."""
+        done_text = (
+            "## Absorbed\n\n"
+            f"- [x] **ID-900 {_EM} Absorbed into a host**\n\n"
+            "## Unreleased\n\n"
+            f"- [x] **ID-900 {_EM} Shipped under the same ID**\n"
+        )
+        assert self._run_done(tmp_path, monkeypatch, done_text, ID=900) == 1
+        assert "ID-900 (2 headers)" in capsys.readouterr().out
+
+    def test_stated_bound_a_pair_wholly_in_released_history_is_not_reported(self, tmp_path, monkeypatch, capsys):
+        """The bound, pinned: the four pre-discipline pairs live wholly below `## v…`.
+
+        Renumbering inside released sections would falsify the release record,
+        and no new pair can arrive there without first passing the live region.
+        Widening the rule to released history deletes this test.
+        """
+        done_text = (
+            "## Unreleased\n\n*(none)*\n\n"
+            "## v0.2.0\n\n"
+            f"- [x] **BK-001 {_EM} Audit workflow**\n\n"
+            "## v0.1.0\n\n"
+            f"- [x] **BK-001 {_EM} Azure backend**\n"
+        )
+        assert self._run_done(tmp_path, monkeypatch, done_text, BK=1) == 0
         assert "duplicate" not in capsys.readouterr().out
+
+    def test_split_suffixes_in_the_done_register_are_not_duplicates(self, tmp_path, monkeypatch):
+        done_text = f"## Unreleased\n\n- [x] **BK-139a {_EM} First**\n- [x] **BK-139b {_EM} Second**\n"
+        assert self._run_done(tmp_path, monkeypatch, done_text, BK=139) == 0
 
     def test_one_id_open_in_one_file_and_done_in_the_other_is_a_collision(self, tmp_path, monkeypatch, capsys):
         """That is the *collision* case, which has its own report and its own message.
@@ -402,6 +449,112 @@ class TestCheck:
         monkeypatch.setattr(_mod, "ID_FILE", id_file)
         monkeypatch.setattr(_mod, "ROOT", tmp_path)
         assert _mod._check() == 0
+
+
+# ---------------------------------------------------------------------------
+# --remote: a mint's view of pushed branches (ID-257)
+# ---------------------------------------------------------------------------
+
+
+def _git(cwd: Path, *args: str) -> str:
+    # Signing and identity pinned so the test does not inherit a host config.
+    cmd = ["git", "-c", "user.name=t", "-c", "user.email=t@example.invalid", "-c", "commit.gpgsign=false"]
+    return subprocess.run([*cmd, "-C", str(cwd), *args], check=True, capture_output=True, text=True).stdout
+
+
+def _open_item(item_id: str) -> str:
+    return f"- [ ] **{item_id} {_EM} Minted here**\n{_ATTR}\n"
+
+
+class TestRemote:
+    """Two clones of one bare remote, standing in for two parallel sessions.
+
+    Session A mints on a pushed branch; session B is the tree under check, so
+    the module's paths point into B. Nothing here touches the network: the
+    remote is a local bare repository.
+    """
+
+    @pytest.fixture
+    def clones(self, tmp_path, monkeypatch):
+        origin = tmp_path / "origin.git"
+        _git(tmp_path, "init", "--quiet", "--bare", "--initial-branch=master", str(origin))
+        seed = tmp_path / "seed"
+        _git(tmp_path, "clone", "--quiet", str(origin), str(seed))
+        (seed / "sdd").mkdir()
+        (seed / "sdd" / "BACKLOG-DONE.md").write_text(_DONE_BLOCK, encoding="utf-8")
+        (seed / "sdd" / "BACKLOG.md").write_text(_ACTIVE_BLOCK, encoding="utf-8")
+        _write_json(seed / "sdd" / "backlogid.json", _CLEAN_JSON)
+        _git(seed, "checkout", "--quiet", "-B", "master")
+        _git(seed, "add", "-A")
+        _git(seed, "commit", "--quiet", "-m", "seed")
+        _git(seed, "push", "--quiet", "origin", "master")
+        a, b = tmp_path / "a", tmp_path / "b"
+        for clone in (a, b):
+            _git(tmp_path, "clone", "--quiet", str(origin), str(clone))
+        _git(b, "checkout", "--quiet", "-b", "b-work")
+        monkeypatch.setattr(_mod, "ROOT", b)
+        monkeypatch.setattr(_mod, "BACKLOG", b / "sdd" / "BACKLOG.md")
+        monkeypatch.setattr(_mod, "BACKLOG_DONE", b / "sdd" / "BACKLOG-DONE.md")
+        monkeypatch.setattr(_mod, "ID_FILE", b / "sdd" / "backlogid.json")
+        return a, b
+
+    @staticmethod
+    def _mint(clone: Path, item_id: str, branch: str | None, push: bool = True) -> None:
+        """Add an open item; commit and push it on ``branch`` (``None``: leave it uncommitted)."""
+        backlog = clone / "sdd" / "BACKLOG.md"
+        backlog.write_text(backlog.read_text(encoding="utf-8") + _open_item(item_id), encoding="utf-8")
+        if branch is None:
+            return
+        _git(clone, "checkout", "--quiet", "-B", branch)
+        _git(clone, "commit", "--quiet", "-am", f"{item_id}: mint")
+        if push:
+            _git(clone, "push", "--quiet", "origin", branch)
+
+    def test_an_id_minted_on_another_pushed_branch_is_reported(self, clones, capsys):
+        """The ID-257 collision, before either branch merges: both sessions mint ID-900."""
+        a, b = clones
+        self._mint(a, "ID-900", "a-work")
+        self._mint(b, "ID-900", None)  # B has not even committed yet
+        assert _mod._check(remote=True) == 1
+        out = capsys.readouterr().out
+        assert "ID-900 also minted on origin/a-work" in out
+
+    def test_the_offline_check_cannot_see_it(self, clones, capsys):
+        """Same state without the flag: the local gate has no view of A and passes."""
+        a, b = clones
+        self._mint(a, "ID-900", "a-work")
+        self._mint(b, "ID-900", None)
+        assert _mod._check() == 0
+        assert "a-work" not in capsys.readouterr().out
+
+    def test_distinct_mints_pass_and_raise_the_floor(self, clones, capsys):
+        a, b = clones
+        self._mint(a, "ID-900", "a-work")
+        self._mint(b, "ID-901", None)
+        assert _mod._check(remote=True) == 0
+        out = capsys.readouterr().out
+        assert "Next safe IDs across pushed branches:" in out
+        assert "ID=902" in out
+
+    def test_this_branch_pushed_is_not_its_own_clash(self, clones, capsys):
+        _a, b = clones
+        self._mint(b, "ID-900", "b-work")
+        assert _mod._check(remote=True) == 0
+        assert "also minted" not in capsys.readouterr().out
+
+    def test_an_id_master_gained_after_this_branch_forked_is_reported(self, clones, capsys):
+        """A merged in the meantime: the clash is with master, not with a branch."""
+        a, b = clones
+        self._mint(a, "ID-900", "master")
+        self._mint(b, "ID-900", None)
+        assert _mod._check(remote=True) == 1
+        assert "ID-900 also minted on origin/master" in capsys.readouterr().out
+
+    def test_an_unreachable_remote_fails_loud(self, clones, tmp_path, capsys):
+        _a, b = clones
+        _git(b, "remote", "set-url", "origin", str(tmp_path / "gone.git"))
+        assert _mod._check(remote=True) == 1
+        assert "ERROR: --remote could not fetch origin" in capsys.readouterr().out
 
 
 # ---------------------------------------------------------------------------

@@ -84,6 +84,13 @@ the specs the item touched: fix present-tense claims that it is tracked, leave
 past-tense narration, never edit an Accepted ADR. No trace is owed
 ([`CLAUDE.md` § Trace authoring](../CLAUDE.md#trace-authoring)).
 
+**Minting.** A lone session takes the `Next safe IDs` line of
+`hatch run gen-backlogid-check`, which is safe for that tree only. Sessions run
+in parallel mint only IDs reserved for them up front by whoever dispatches them,
+one disjoint set each: an unpushed branch is invisible to every derivation.
+`hatch run gen-backlogid --check --remote` compares this tree's new IDs with
+every pushed branch; re-mint any it reports before either side merges.
+
 **ID prefixes:**
 
 | Prefix | Meaning |
@@ -661,21 +668,12 @@ give them a way to absorb.
 ripple-check, the revisit pins, the generated inventories, the unreleased
 CHANGELOG the release body is built from — say what is actually true.
 
-- [ ] **BK-385 — The duplicate-ID gate cannot see the done register, where a collision would be permanent**
-  spec: — · effort: S · audience: contributor.tooling
-  The duplicate-ID gate checks open headers only, so a collision reaching
-  `BACKLOG-DONE.md` stays unflagged for good; four duplicate pairs already
-  sit there (`_duplicate_ids` reproduces them), and ID-235's header-uniqueness
-  rule cannot land green until they are settled. Open decision: grandfather
-  the four by ID, exempt the `(partial)` shape, or check `## Unreleased` only.
-  Detail: [dossier](backlog/bk-385-done-register-duplicate-ids.md)
-
 - [ ] **ID-235 — Backlog-file integrity lint (structure and inbound tracker citations)**
   spec: — · effort: S · audience: contributor.tooling
   `gen_backlogid.py`'s R1–R4 cover open items only: nothing checks
   `BACKLOG-DONE.md`'s status marks, absorbed hosts or conflict markers, and
   no pass resolves inbound tracker citations. Re-derived, those three would
-  land green today, header uniqueness across both files would not (BK-385).
+  land green; header uniqueness would not, BK-385 gating it only above released history.
   Open decision: which rules to add, and what a dangling ID means.
   Detail: [dossier](backlog/id-235-backlog-integrity-lint.md)
 
@@ -786,15 +784,6 @@ CHANGELOG the release body is built from — say what is actually true.
   better detection from worse quality. Open decision: none on shape; the
   escaped-or-caught classification is in the dossier.
   Detail: [dossier](backlog/bk-366-bug-share-undiagnosed.md)
-
-- [ ] **ID-257 — Two sessions working in parallel mint the same backlog ID, and every derivation says both are right**
-  spec: — · effort: S · audience: contributor.tooling
-  Two sessions minting in parallel take the same next ID, because
-  `gen_backlogid.py` reads only the local tree; the repo records at least
-  five such collisions where the body counts three (dossier correction).
-  BK-383 added the open-versus-open check. Open decision: how, or whether, a
-  mint can see unmerged branches.
-  Detail: [dossier](backlog/id-257-parallel-id-minting.md)
 
 - [ ] **BK-384 — RFC-0015 is built but unmeasured: three deliveries decide whether it graduates**
   spec: — · effort: M · audience: contributor.process

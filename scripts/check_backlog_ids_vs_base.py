@@ -67,7 +67,8 @@ Bounds (DRIFT-RULES Rule 7)
   inferred from ``origin/master`` plus this branch's commits, never by
   enumerating remote branches — that would need a network walk on a gate that is
   otherwise offline. An item opened *and* closed entirely on a third branch,
-  never reaching master, is invisible here.
+  never reaching master, is invisible here. The opt-in networked view of
+  pushed branches is ``gen_backlogid.py --check --remote``.
 * **A head-open ID that master has done is not reported.** Re-opening a
   completed item is a real edit with a real author; nothing observed has needed
   it flagged, and ``gen_backlogid.py --check`` already fails on that exact

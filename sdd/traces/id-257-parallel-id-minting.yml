@@ -1,0 +1,113 @@
+id: ID-257
+title: "Parallel minting: reservation as the rule, an opt-in remote check, and the done register gated"
+trigger: >-
+  PR #1050 minted ID-260/ID-261 while #1049 had already merged its own ID-260;
+  the merge renumbered #1050's and its posted replies kept the old numbers.
+  Three sessions were dispatched in parallel with reserved IDs, which is the
+  process this change writes down. BK-385 is the same script's other blind
+  spot (a duplicate in the done register), co-shipped.
+source_items:
+  - ID-257
+  - BK-385
+audience:
+  - contributor.tooling
+discovery_followups: []
+co_shipped_items:
+  - BK-385
+expected_ripples:
+  - scripts/gen_backlogid.py
+  - tests/scripts/test_gen_backlogid.py
+  - sdd/GATE-INVENTORY.md
+  - sdd/BACKLOG.md
+  - sdd/BACKLOG-DONE.md
+  - sdd/backlog/id-257-parallel-id-minting.md
+  - sdd/backlog/bk-385-done-register-duplicate-ids.md
+surprising_ripples:
+  # 1. Its "does not look at other open branches" bound now has an opt-in
+  #    answer, and a bound that omits it would send a reader nowhere.
+  # 2. ID-235's index line cited BK-385 as why header uniqueness would not
+  #    land green; still true for released history, but the clause had to
+  #    say what BK-385 now gates.
+  - scripts/check_backlog_ids_vs_base.py
+  - sdd/backlog/id-235-backlog-integrity-lint.md
+phases:
+  - id: orient
+    name: Orient
+    steps:
+      - file: sdd/backlog/id-257-parallel-id-minting.md
+        section: "whole dossier, both corrections"
+        read_type: gate
+        extract: >-
+          Five recorded collisions; the gap is unmerged branches, not the floor.
+          Options priced: ls-remote check, per-session ranges, branch-derived
+          IDs, rebase as enforcement. The "(floor: sdd/backlogid.json)" pointer
+          is the one real inaccuracy.
+        outcome: ok
+      - file: sdd/backlog/bk-385-done-register-duplicate-ids.md
+        section: "whole dossier"
+        read_type: gate
+        extract: >-
+          Four pre-discipline pairs; options grandfather, exempt (partial), or
+          Unreleased only. Re-measured: all four sit wholly below the first
+          `## v` heading, so a live-region rule lands green with no list.
+        outcome: ok
+      - file: scripts/gen_backlogid.py
+        section: "_extract_ids, _duplicate_ids, _check, docstring bounds"
+        read_type: gate
+        extract: >-
+          `_duplicate_ids(text, "x")` is the whole BK-385 widening; the live
+          cut is the only new logic. No git call anywhere, so --remote adds the
+          module's first subprocess use.
+        outcome: ok
+      - file: scripts/check_backlog_ids_vs_base.py
+        section: "Bounds; read_base; import of _extract_ids"
+        read_type: reference
+        extract: >-
+          Already reads `git show <ref>:path`; a guard pins `_extract_ids` to
+          gen_backlogid, so the new code reuses it there rather than importing
+          this module back (which would be circular).
+        outcome: ok
+      - file: sdd/BACKLOG-DONE.md
+        section: "BK-383 entry"
+        read_type: reference
+        extract: >-
+          Open-vs-open check built as a sibling function; both bounds stated,
+          the done-register half handed to BK-385.
+        outcome: ok
+      - file: sdd/BACKLOG.md
+        section: "How this file works"
+        read_type: gate
+        extract: >-
+          No minting rule existed beyond the Completing-work header shape; the
+          new paragraph sits after Completing work.
+        outcome: ok
+  - id: implement
+    name: Implement
+    steps:
+      - file: sdd/DRIFT-RULES.md
+        section: "Rules 5, 6, 7"
+        read_type: gate
+        extract: >-
+          Rule 5: --remote is advisory-by-opt-in, reason stated (network on an
+          offline gate). Rule 6: the release record is the register for the
+          tolerated pairs. Rule 7: bounds and a Drift-gate block per subject.
+        outcome: ok
+      - file: CONTRIBUTING.md
+        section: "Release checklist, BACKLOG-DONE rename"
+        read_type: reference
+        extract: >-
+          Release renames `## Unreleased` to `## vX.Y.Z` in place and adds a
+          fresh one above, so the first version heading stays the live/released
+          boundary across releases.
+        outcome: ok
+  - id: verify
+    name: Verify
+    steps:
+      - file: sdd/CLAUDE-REFERENCE.md
+        section: "Pre-work index / Detailed checklist"
+        read_type: verify
+        extract: >-
+          Triggered: new or changed cross-artifact check (DRIFT-RULES,
+          GATE-INVENTORY regenerated), backlog item touched (trace, done
+          entries linking dossiers). Tracker IDs in sdd/** are out of scope.
+        outcome: ok
