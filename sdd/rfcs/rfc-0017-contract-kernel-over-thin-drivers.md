@@ -180,7 +180,7 @@ optional member, so presence is a protocol, not a method):
 | `SupportsEnsureParents` | `ensure_parents(key)` | called before `put` when `parents == "explicit"`; SFTP's stat walk and Local's `mkdir -p` are their implementations. Never called for `implicit` (Graph, GR-039: no explicit `mkdir`; Azure HNS) or `none` |
 | `SupportsFolderStats` | `folder_stats(prefix) -> (count, size, latest)` | `get_folder_info` push-down (SQL's aggregate query); without it, the kernel aggregates a listing |
 | `SupportsGlob` | `glob(pattern)` | native `GLOB`; without it the driver must not declare `GLOB` |
-| `SupportsRemoveFolder` (added at BK-389's planning; corrected after PR #1055 merged) | `remove_folder(key)`: remove an empty folder and refuse anything else without removing it, in one step where the wire has one (Memory's lock, `rmdir`) | required when `parents` is `"explicit"` or `"implicit"` (any driver with folder objects; Graph, Azure HNS), checked at construction; never called when `parents == "none"`. `delete_folder(recursive=False)` calls it with no probe before it; after any refusal but a typed `DirectoryNotEmpty`, D2's error-path probes run (`stat`, then, for a folder still present, `list_page(key, delimiter="/", limit=1)`); a probe that raises leaves the refusal standing, chained; `missing_ok` applies to the final `NotFound`. With folder objects, a `delete_tree` refusal gets the `stat` probe only (absent `NotFound`, file `InvalidPath`, else the refusal stands), since a recursive delete never answers `DirectoryNotEmpty`. `delete_folder(recursive=True)` without `SupportsDeleteTree`, with folder objects: walks with `delimiter="/"`, deletes the files, then calls it on each folder, deepest first, the last call answering an absent key or a file. When `parents == "none"`, recursive or not, with `delete_tree` or without: the kernel lists first and `stat`s only on an empty listing (a file `InvalidPath`, else `NotFound`), today's order on the flat classes; the listing fails closed and the `stat` after an empty listing fails open (BE-021), so a raising `stat` leaves `NotFound` standing. The answer per key state and driver is BK-389's dossier, decision 8 |
+| `SupportsRemoveFolder` (added at BK-389's planning; corrected after PR #1055 merged) | `remove_folder(key)`: remove an empty folder and refuse anything else without removing it, in one step where the wire has one (Memory's lock, `rmdir`) | required when `parents` is `"explicit"` or `"implicit"` (any driver with folder objects; Graph, Azure HNS), checked at construction; never called when `parents == "none"`. The kernel's `delete_folder` sequence around it (which refusals it probes, what `delete_tree` must refuse, the recursive and `parents == "none"` paths) is ID-264's to decide before BK-389's kernel PR; the candidate design and its measurements are in ID-264's dossier |
 
 Two more attributes the stream wrapper reads per driver, because
 `_ErrorMappingStream`'s caught set is per construction site today:
@@ -265,10 +265,8 @@ was a 28th match above it). It owns, once:
   key-level checks and add no round trip;
 - the wrong-type probes on the error path (one `stat` and one
   `list_page(limit=1)`, the same probes the classes issue today; for
-  `delete_folder`, recursive or not, they run under the rule D1's
-  `SupportsRemoveFolder` row states and BK-389's dossier, decision 8,
-  enumerates, which for a non-recursive refusal can also answer
-  `DirectoryNotEmpty`), the
+  `delete_folder` the sequence, and which refusals it probes, is ID-264's
+  to decide), the
   absent-container tolerance, and the first-page listing bound (BE-021),
   including its page-not-item rule;
 - the file-ancestor pre-check as a kernel option with today's default: the
@@ -311,7 +309,7 @@ flowchart LR
   prim -->|stream| wrap["stream wrapped once:<br/>every later read passes classify too"]
   prim -->|native exception| cls["driver.classify(exc, op=read, key)"]
   cls --> post["kernel post-processing:<br/>path and backend set,<br/>blank message synthesised,<br/>a typed RemoteStoreError passes through"]
-  post -->|"NotFound<br/>(delete_folder: see D1's<br/>SupportsRemoveFolder row)"| probe["error-path probe:<br/>stat or list_page(limit=1)<br/>wrong type becomes InvalidPath"]
+  post -->|"NotFound<br/>(delete_folder: ID-264)"| probe["error-path probe:<br/>stat or list_page(limit=1)<br/>wrong type becomes InvalidPath"]
   post --> raise["typed error to the caller"]
   probe --> raise
   wrap --> caller["stream to the caller"]
@@ -781,11 +779,10 @@ and its answer keeps `classify`.
 - **Performance:** the kernel issues the same probes the per-backend code
   issues today (one `stat` or one `list_page(limit=1)` on the error path;
   the file-ancestor walk only when opted in; `ensure_parents` only for
-  explicit parents), and the S3 driver drops the s3fs layer. One exception:
-  a refused `delete_folder` on a driver with folder objects runs D1's
-  `SupportsRemoveFolder` rule, which adds a `stat` where Memory issues none
-  today, recursive or not, and, for a non-recursive refusal on a present
-  folder, a listing. Two replacements change
+  explicit parents), and the S3 driver drops the s3fs layer. One open
+  exception: `delete_folder`'s probes are ID-264's to decide, and the
+  round trips it adds or saves against today are measured there. Two
+  replacements change
   data paths and are measured under D8's benchmark gate in the PR that
   lands them:
   - `S3PyArrowBackend`: reads move from PyArrow's C++ S3 filesystem to the
@@ -822,16 +819,8 @@ and its answer keeps `classify`.
   `write_atomic` and `move` syntheses over each combination of
   `put_is_atomic`, `open_write`, `rename` and `SupportsAtomicMove` the fake
   driver can present, and the `delete_folder` synthesis over
-  `SupportsRemoveFolder` and `SupportsDeleteTree` (every row of decision 8's
-  error-path table in BK-389's dossier: a typed `DirectoryNotEmpty` passed
-  through, any other refusal answered by the probes, a raising probe
-  leaving the refusal standing, `missing_ok` applied to the final
-  `NotFound`, deepest-first removal, every row of decision 8's
-  `parents == "none"` table, recursive and not, with and without
-  `delete_tree`, with BE-021's split there (a raising listing propagating,
-  a raising `stat` leaving `NotFound` standing), a refused `delete_tree`
-  answered by the `stat` probe alone, and the construction
-  refusal of an explicit- or
+  `SupportsRemoveFolder` and `SupportsDeleteTree` (every cell ID-264
+  decides, and the construction refusal of an explicit- or
   implicit-parents driver without `SupportsRemoveFolder`; added after PR
   #1055 merged); the driver half
   stays with the per-driver suites. BK-345 and ID-244 reduce to driver
@@ -851,7 +840,7 @@ and its answer keeps `classify`.
   (BK-394), which accepts that ADR (the kernel PR before it, BK-389, is
   private and touches spec 003 only: it adds the clauses its kernel cells
   trace to, the key rule, the root `delete_folder` refusal and
-  `SupportsRemoveFolder`'s sequences, and amends any spec 003 clause
+  `SupportsRemoveFolder`'s `delete_folder` sequence as ID-264 decides it, and amends any spec 003 clause
   BK-395's answers contradict, such as BE-025 or BE-008; BK-389's dossier,
   item 8, is the authority for this split): specs 003, 005, 029 and 037
   below, any clause outside spec 003 that BK-395's answers contradict

@@ -19,6 +19,7 @@ discovery_followups:
   - BK-394
   - BUG-299
   - BK-395
+  - ID-264
 expected_ripples:
   - sdd/BACKLOG-DONE.md
 surprising_ripples:
@@ -382,3 +383,7 @@ phases:
         section: "BE-021 probe table, fail-open and determinant paragraphs (lines 751 to 778), #1056 round 8"
         read_type: verify
         extract: "I wrote 'a raising probe propagates' on the none path without reading BE-021, which makes the stat after an empty listing fail-open; and I sent a delete_tree refusal through the full error-path table, whose listing arm answers DirectoryNotEmpty for any failed recursive delete. Both narrowed to the existing clauses"
+      - file: src/remote_store/aio/backends/_graph/backend.py
+        section: "delete_folder type check (lines 1331 to 1337), #1056 round 9"
+        read_type: verify
+        extract: "round 9 found delete_tree has no obligation to refuse a file, and Graph and HNS would delete one; with a new defect in decision 8's delete_folder sequence every round from 2 to 9, the maintainer split the sequence into ID-264 (candidate design, measurements and open findings in its dossier) and decision 8 keeps the protocol, its atomic removal and who carries it"
