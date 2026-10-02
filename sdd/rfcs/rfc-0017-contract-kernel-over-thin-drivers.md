@@ -153,7 +153,8 @@ class Driver(Protocol):
     def container_absent(self, exc: BaseException, *, op: Op) -> bool: ...
     def connection_dead(self, exc: BaseException) -> bool: ...
 
-    # interop, forwarded by the kernel unchanged (BE-022, BE-023, BE-025, resolve)
+    # interop, forwarded by the kernel (BE-022, BE-023, BE-025, resolve); since BK-389's
+    # planning, native_path and resolve receive the canonical key (BK-389 decision 6)
     def unwrap(self, type_hint: type[T]) -> T: ...
     def native_path(self, key: str) -> str: ...
     def to_key(self, native_path: str) -> str: ...
@@ -239,12 +240,16 @@ was a 28th match above it). It owns, once:
 
 - key validation and normalisation (added at BK-389's planning): a key
   starting with `/`, a `..` segment or a null byte is refused with
-  `InvalidPath`, and empty and `.` segments are dropped, by spec 013's
-  MEM-DS-005 table rather than `RemotePath`'s rules (which fold a leading `/`
-  and convert `\`; BK-389's dossier has the measurement), after the closed
-  guard and before the root check, which then runs on the canonical key
-  (`""` is the root, the wide predicate on every side), so a driver only ever sees a canonical
-  key, as D1's driver, which "carries no path … logic", requires;
+  `InvalidPath`, and empty and `.` segments are dropped. The rule is spec
+  013's MEM-DS-005 table, not `RemotePath`'s; spec 013 states where the two
+  differ. It runs after the closed guard and before the root check, which
+  then runs on the canonical key: `""` is the root, the wide predicate on
+  every side. So a driver only ever sees a canonical key, as D1's driver,
+  which "carries no path … logic", requires. It covers every member that
+  takes a key: `native_path` and `resolve` too, without the closed guard,
+  per BE-020's addressing carve-out. `to_key` is forwarded unchanged, since
+  its input is a native path. The member-by-key-class table, with its
+  measured Memory column, is BK-389's dossier, decision 6;
 - root refusal from the key (BE-029; at filing, both predicates as `_flat_ns`
   now states them; since BK-389's planning, decided on the canonical key,
   which gives the wide predicate on every side, the floor BE-029 sets for
@@ -357,7 +362,12 @@ and 8) brings its own.
 
 **The suite is not "unchanged"; the cells that change are these, enumerated
 before step 1 and each settled before the step that changes it (Open
-Question 4).** AZ-025's blank-message clause and its pinning
+Question 4).** Added at BK-389's planning: the kernel's key rule (BK-389
+dossier, decision 6) is one more enumerated change, stated once as a table of
+member by key class. Each step's PR lists that table's cells where its driver
+answers a non-canonical key differently today. Step 1's list, for Memory, is
+in BK-394's dossier. No conformance cell reaches those cells, so each is a
+direct-backend answer that its step's PR pins with a new cell. AZ-025's blank-message clause and its pinning
 test go red with BUG-276's fix under the arm decided at BK-387, synthesise
 (its dossier: "Both go red when this lands, by design"); the BUG-240 and
 BUG-292 decisions change cells on the classes that
@@ -788,7 +798,9 @@ and its answer keeps `classify`.
   `put_is_atomic`, `open_write`, `rename` and `SupportsAtomicMove` the fake
   driver can present; the driver half
   stays with the per-driver suites. BK-345 and ID-244 reduce to driver
-  cells; ID-251's widened root spellings become fake-driver kernel cells,
+  cells (corrected at BK-389's planning: BK-345's kernel half, the
+  absent-container answers per `Op`, became fake-driver kernel cells in
+  BK-389, and its driver cells start at step 2); ID-251's widened root spellings become fake-driver kernel cells,
   since R1 makes the root rule the kernel's. The conformance suite gates
   every migration with the cell
   changes D3 enumerates.

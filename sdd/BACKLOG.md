@@ -260,6 +260,14 @@ failure it was.
   listing-generator pattern once across backends.
   Detail: [dossier](backlog/bug-280-local-listing-permission-leak.md)
 
+- [ ] **BUG-299 — `LocalBackend.write` on a `..` key inside the root writes the file, then raises `InvalidPath`**
+  spec: BE-008 · effort: S · audience: user.api
+  `LocalBackend.write("a/../b.txt", b"x")` raises `InvalidPath`, yet `b.txt` is
+  written and `read_bytes` returns it (measured at master `9caef6b`, BK-389's
+  planning PR): `_resolve` accepts an in-root `..`, and the refusal comes after
+  the write, so a caller told it failed has changed the store. Open decision:
+  refuse before writing here, or leave it to RFC-0017 step 5's kernel key rule.
+
 - [ ] **BUG-292 — The file-ancestor gate fails open on every `SQLAlchemyError`, so it degrades to a no-op without a signal**
   spec: BE-008, SQL-BLOB-031 · effort: M · audience: user.api, library.maintainer
   All five flat-namespace `_head_one` probes read any driver error (and

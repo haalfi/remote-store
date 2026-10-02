@@ -29,8 +29,11 @@ time.
    against `Backend` and `AsyncBackend` unchanged, user subclasses keep
    working, `name` stays `"memory"` and `"async-memory"`, and MEM-004's
    `repr` is kept. `MemoryDriver` and `AsyncMemoryDriver` are new public
-   names beside them. Private internals (`_root`, `_traverse`, `_split_path`)
-   move to the driver and were never promised.
+   names beside them. Private internals (`_root`, `_traverse`) move to the
+   driver and were never promised. `_split_path` splits in two: its
+   refusals (null byte, leading `/`, `..`) and segment dropping are the
+   kernel's (BK-389 decision 6), and only the split of an already canonical
+   key into segments stays in the driver.
 2. **This PR makes the kernel public.** It exports the names RFC-0017
    § Impact, Public API lists, except `Session`, which lands with the first
    remote driver at step 2 (D5), with the spec amendments below and the API
@@ -47,18 +50,34 @@ time.
    | Owner after this PR | Clauses |
    |---|---|
    | kernel (4) | MEM-DS-005's validation table (every row: the kernel validates and normalises the key and decides the root on it, BK-389 decision 6, so the driver receives a canonical key), MEM-013 (`write_atomic` as `put`, from `put_is_atomic = True`), MEM-018 (`close` through `close_is_terminal = False`), MEM-020 (the choke point; the driver raises nothing native, so `classify` is never reached) |
-   | driver (15) | MEM-DS-001, MEM-DS-002, MEM-DS-003, MEM-DS-004, MEM-DS-005's `_traverse` primitive (O(d) over a canonical key), MEM-DS-006, MEM-010, MEM-011, MEM-012, MEM-014 (`SupportsDeleteTree`: the subtree walk keeps the counters under the one lock), MEM-015 (`SupportsFolderStats`: one walk under the one lock, so MEM-040's O(1) space holds, where a kernel aggregation over Memory's one-`Page` `list_page` would be O(subtree); MEM-025's snapshot holds either way, by decision 7; its `latest` follows BE-017's rule, an unknown time skipped and `None` when none is known), MEM-016 (`SupportsAtomicMove`, one lock), MEM-016b (`SupportsCopy`), MEM-025 (including its eager collect: the driver answers each `list_page` with one locked collect and no cursor, and the kernel asks for a recursive listing as one `delimiter=None` call, BK-389 decision 7, so it stays one snapshot), MEM-026 |
+   | driver (15) | MEM-DS-001, MEM-DS-002, MEM-DS-003, MEM-DS-004, MEM-DS-005's `_traverse` primitive (O(d) over a canonical key), MEM-DS-006, MEM-010, MEM-011, MEM-012, MEM-014 (`SupportsDeleteTree`: the subtree walk keeps the counters under the one lock; the root is refused by the kernel before `delete_tree` is called, BK-389 decision 6's table), MEM-015 (`SupportsFolderStats`: one walk under the one lock, so MEM-040's O(1) space holds, where a kernel aggregation over Memory's one-`Page` `list_page` would be O(subtree); MEM-025's snapshot holds either way, by decision 7; its `latest` follows BE-017's rule, an unknown time skipped and `None` when none is known), MEM-016 (`SupportsAtomicMove`, one lock), MEM-016b (`SupportsCopy`), MEM-025 (including its eager collect: the driver answers each `list_page` with one locked collect and no cursor, and the kernel asks for a recursive listing as one `delimiter=None` call, BK-389 decision 7, so it stays one snapshot), MEM-026 |
    | forwarded or declared (7) | MEM-001 (constructor), MEM-002 (`name`), MEM-003 (capabilities, declared by the driver), MEM-004 (`repr` on the public class, reading the driver's counters), MEM-005 (registration), MEM-017 (`to_key`), MEM-019 (`unwrap`) |
    | unchanged (6) | MEM-030, MEM-031, MEM-032 (testing), MEM-040, MEM-041, MEM-042 (performance) |
 
 ## What it owes
 
 Items 2 (the Memory half), 4, 5, 6 and 7 of BK-389's original list, moved
-verbatim; bracketed text is added at the split.
+verbatim. Text added at the split is either bracketed or a sub-bullet
+labelled **(was … , absorbed here)**, which is the absorption form
+§ Completing work requires.
 
 2. `MemoryBackend` and `AsyncMemoryBackend` as drivers, gated by the
    conformance suite with D3's enumerated cell changes[; the fake-driver
    kernel suite stayed with BK-389].
+   - [**Step 1's Memory cell changes**, beyond D3's list: the Δ cells of
+     BK-389 decision 6's table, both classes. `get_folder_info("./")`,
+     `(".//")` and `("./.")` answer the root `FolderInfo` where today they
+     raise `InvalidPath`. `native_path` and `resolve` answer for the
+     canonical key, or raise `InvalidPath` on a refused one, where today
+     they echo the raw key. No conformance cell reaches either (the
+     derivation is in that decision), so each is pinned by a new Memory
+     cell in this PR.]
+   - [`WriteResult.path` on a backslash key: sync `MemoryBackend.write("d\\f",
+     …)` stores the key `d\f` and returns a `WriteResult` whose `path` is
+     `RemotePath('d/f')`, because `RemotePath` converts the backslash
+     (measured at master `9caef6b`). Under decision 6 a backslash is an
+     ordinary key character, so the kernel's result path must name `d\f`
+     itself; this PR states how `WriteResult.path` renders such a key.]
 4. Spec amendments that become true here:
    - spec 003: a BE-021 placement table assigning each obligation to kernel or
      driver, IDs kept and prose kept, plus placement notes on BE-020 and

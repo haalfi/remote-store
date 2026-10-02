@@ -17,6 +17,7 @@ audience:
   - library.maintainer
 discovery_followups:
   - BK-394
+  - BUG-299
 expected_ripples:
   - sdd/BACKLOG-DONE.md
 surprising_ripples:
@@ -161,3 +162,22 @@ phases:
         read_type: verify
         extract: "claimed to mirror RemotePath normalisation, measured false; corrected in the spec"
         outcome: misleading
+  - id: replan_round4
+    name: Round 4 re-plan, key rule enumerated
+    steps:
+      - file: src/remote_store/backends/_memory.py
+        section: "every key-taking member, 17 keys"
+        read_type: verify
+        extract: "measure both Memory classes per member and key class; Δ cells are get_folder_info on './'-shaped roots and raw addressing answers; three prose rules had each been refuted, so the rule became a table"
+      - file: tests/backends/conformance/test_identity.py
+        section: "TestBackendNativePath, _RESOLVE_PATHS"
+        read_type: verify
+        extract: "addressing cells use canonical keys only, so normalising addressing changes no conformance cell"
+      - file: src/remote_store/backends/_local.py
+        section: "_resolve; write"
+        read_type: verify
+        extract: "_resolve accepts in-root '..' and NUL, so spec 013's 'mirrors LocalBackend' was also false; write('a/../b.txt') writes then raises, filed as BUG-299 (the reserved BUG-298 was also minted on PR #1054's branch; re-minted with the maintainer's approval)"
+      - file: sdd/specs/013-memory-backend.md
+        section: "MEM-DS-005"
+        read_type: verify
+        extract: "my round-3 correction kept the false LocalBackend half; rewritten from a three-way comparison"
