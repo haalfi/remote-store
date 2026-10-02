@@ -342,3 +342,11 @@ phases:
         section: "lines 310 to 342"
         read_type: verify
         extract: "both absent-root root delete_folder tests (None, NotFound) become InvalidPath under the table; my first fix hedged 'only where the table answers them differently'"
+      - file: src/remote_store/backends/_sftp.py
+        section: "delete_folder (lines 1340 to 1388), #1056 round 2"
+        read_type: verify
+        extract: "round 2 measured os.rmdir ENOTDIR for a file and for f/x and read SFTP v3's lossy status codes; my 'four answers in one wire step' held only for Memory, so the kernel's D2 error-path probes now type an untyped refusal (maintainer's decision)"
+      - file: sdd/specs/013-memory-backend.md
+        section: "MEM-014; MEM-DS-005 line 137"
+        read_type: verify
+        extract: "MEM-014 states no root rule and line 137 calls '' valid for folder operations; my placement named a 'MEM-014 root refusal' that exists only in _memory.py code"

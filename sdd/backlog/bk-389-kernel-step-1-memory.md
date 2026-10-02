@@ -200,15 +200,30 @@ every case. RFC-0017 carries the same answers at the question each settles.
    one-lock check-and-detach (MEM-026, `_memory.py` lines 316 to 336) into
    three driver calls, left the probe's `delimiter` open, and excluded the
    `implicit` drivers that remove an empty folder today.]
-   - **The driver answers atomically.** `remove_folder(key)` decides the
-     key's state and acts on it in one step, with one answer per state,
-     each through `classify`: an empty folder is removed; a non-empty folder
-     answers `DirectoryNotEmpty`; a file answers `InvalidPath`
-     (not-a-folder); an absent key answers `NotFound`. The step is one wire
-     step where the wire has one: Memory under its lock, which is where all
-     four checks and the detach run today (MEM-026), and Local's and SFTP's
-     `rmdir`. Where the wire has none, the driver checks and then removes,
-     and must document that race. `AzureBackend` on HNS
+   - **The removal is atomic; a refusal's answer may be probed.**
+     `remove_folder(key)` removes an empty folder and refuses anything else
+     without removing it, in one step: Memory under its lock, which is where
+     all four checks and the detach run today (MEM-026), and Local's and
+     SFTP's `rmdir`, which refuse a non-empty folder and a file natively. A
+     refusal `classify` types goes back as typed: Memory types all four
+     states (absent `NotFound`, file `InvalidPath`, non-empty
+     `DirectoryNotEmpty`), Local's `ENOENT` and `ENOTEMPTY` are typed. A
+     refusal it cannot type gets the kernel's wrong-type probes on the error
+     path, the ones RFC-0017 D2 already lists, after the failure: one `stat`
+     (absent `NotFound`, file `InvalidPath`), then, for a folder still
+     present, one `list_page(key, delimiter="/", limit=1)` (non-empty
+     `DirectoryNotEmpty`, else the driver's error stands). Two such
+     refusals, measured or read in round 2 of PR #1056's review: Local's
+     `os.rmdir` answers `ENOTDIR` both for a file and for a key under a file
+     (`f/x`, which `LocalBackend` and `MemoryBackend` answer `NotFound`
+     today, and still do through the `stat`); SFTP v3 reports a file like an
+     absent key and a non-empty folder as an errno-less failure (paramiko's
+     `_convert_status` and `convert_errno`, read, not run). Only the probed
+     answer can race, never the removal. [Maintainer's decision after that
+     round, replacing "the driver answers all four states, the kernel calls
+     nothing else", which neither `rmdir` can do.]
+   - **A wire with no one-step removal.** The driver checks and then
+     removes, and must document that race. `AzureBackend` on HNS
      (`get_paths(max_results=1)` then `delete_directory`, `_azure.py` lines
      1154 to 1157) and GR-043 check and then remove today, and neither
      documents the race (a case-insensitive search for `race|TOCTOU` finds
@@ -219,9 +234,11 @@ every case. RFC-0017 carries the same answers at the question each settles.
      objects and carry it at steps 7 and 4. Never for `none`, which has no
      folder objects.
    - `delete_folder(recursive=False)`: the kernel runs decision 6's pipeline,
-     then calls `remove_folder` and nothing else: no `stat` and no emptiness
-     probe, so no check the driver makes is split from its removal. The
-     kernel applies `missing_ok` to the driver's `NotFound`.
+     then calls `remove_folder` with no probe before it, so no check is split
+     from the removal; it probes only after an untyped refusal, as above.
+     The kernel applies `missing_ok` to `NotFound`, typed or probed. SFTP's
+     `stat`, `listdir`, `rmdir` sequence today (`_sftp.py` lines 1358 to
+     1388) becomes `rmdir` with this probe at step 6.
    - `delete_folder(recursive=True)` without `SupportsDeleteTree`: the kernel
      walks the subtree with `list_page(prefix, delimiter="/")`, so a folder
      holding no files still arrives as a common prefix, deletes the files,
