@@ -16,7 +16,8 @@ Nothing had shipped at the split, so it is not yet
 remainder is minted ahead of the close, and the kernel PR closes this item
 as `[x]` with BK-394 as that remainder. This item keeps the **kernel PR**, which runs
 under the Proposed ADR. **BK-394** ([dossier](bk-394-memory-drivers-accept-adr-0042.md))
-is the **Memory PR**: the two Memory drivers, every step-1 spec amendment, the
+is the **Memory PR**: the two Memory drivers, every step-1 spec amendment but
+the spec 003 clauses the kernel's cells trace to (item 4 below), the
 guide, its check script and the homepage snippet, and ADR-0042 and RFC-0017
 set to Accepted. "That PR" in the paragraph above is BK-394's. **Both PRs
 merge only after the v0.33.0 tag.** Items 2 (the Memory half), 4, 5, 6 and 7
@@ -57,7 +58,9 @@ every case. RFC-0017 carries the same answers at the question each settles.
    matching `MemoryBackend.dfy`'s `closeIsTerminal := false`.
 5. **The kernel is private in this PR.** It lands in underscore modules,
    unexported from `__all__`, with no API reference page, guide or CHANGELOG
-   entry. Its fake-driver suite traces to existing spec IDs. BK-394 exports
+   entry. Its fake-driver suite traces to existing spec IDs, and to the spec
+   003 clauses item 4 below adds for the cells no ID covers yet [corrected
+   after PR #1055 merged: as merged this said existing IDs only]. BK-394 exports
    the public names RFC-0017 § Impact lists, `Session` excepted (it lands at
    step 2, D5), together with the specs that describe them.
 6. **Key validation, normalisation and the root are the kernel's.** Round 1
@@ -125,12 +128,13 @@ every case. RFC-0017 carries the same answers at the question each settles.
    differently today, canonical keys included. For example,
    `LocalBackend.delete_folder("", recursive=True)` removes the root
    directory itself today. That was measured on a temp root in this PR's
-   verification round, and `"."` does the same. The table refuses it. The
-   answer is already pinned per backend in
-   `tests/backends/local/test_absent_root.py`
-   (`test_folder_shaped_operations_still_accept_the_root` and
-   `test_strict_delete_folder_on_the_root_answers_from_the_filesystem`), so
-   step 5 inverts those pins and records why. `SFTPBackend` likely answers
+   verification round, and `"."` does the same. The table refuses it. No
+   test pins that answer on a present root: the two root `delete_folder`
+   tests in `tests/backends/local/test_absent_root.py` run on its `backend`
+   fixture, which removes the root first, so they pin the absent-root cells
+   [corrected after PR #1055 merged: as merged this called the present-root
+   answer pinned]. Step 5 therefore adds a present-root cell, and changes
+   the absent-root pins only where the table answers them differently. `SFTPBackend` likely answers
    the same: its `_sftp_path` maps the root to `base_path` and its `_rmtree`
    ends in `rmdir` (read from `_sftp.py`, not run). A flat wire's `"d//f"` or
    `"./"` are further examples. This decision adds nothing else to D3's list.
@@ -157,8 +161,8 @@ every case. RFC-0017 carries the same answers at the question each settles.
 
    **Not `RemotePath`'s rules, nor `LocalBackend._resolve()`'s.** The
    refusals and normalisation are spec 013's MEM-DS-005 table, which both
-   Memory classes implement today, and BK-394 restates them as a spec 003
-   clause for every migrated class. A comparison at master `9caef6b` shows
+   Memory classes implement today, and this item's PR restates them as a
+   spec 003 clause (item 4 below; moved from BK-394 after PR #1055 merged). A comparison at master `9caef6b` shows
    where the other two rules differ from it:
    - `RemotePath` folds `"/a/b"` to `a/b`, converts the backslash in
      `"a\\b"` to `/`, and raises on every root spelling.
@@ -181,19 +185,37 @@ every case. RFC-0017 carries the same answers at the question each settles.
    `SupportsRemoveFolder`.** Decided after this planning PR's verification
    round, which found that D1 had no primitive for it. That leaves spec
    013's non-recursive `delete_folder`, and Local's and SFTP's later, with
-   nothing to call. The protocol has one member, `remove_folder(key)`, and is
-   required when `parents == "explicit"`, checked at construction.
-   - `delete_folder(recursive=False)`: the kernel checks the folder with
-     `stat`, raises `DirectoryNotEmpty` if `list_page(key, limit=1)` returns
-     anything, then calls `remove_folder`.
+   nothing to call. The protocol has one member, `remove_folder(key)`.
+   [Corrected after PR #1055 merged, from its closing-pass review; maintainer
+   decisions taken through the interview. As merged, the kernel checked
+   emptiness itself with `list_page(key, limit=1)`, which split Memory's
+   one-lock check-and-detach (MEM-026, `_memory.py` lines 316 to 336) into
+   three driver calls, left the probe's `delimiter` open, and excluded the
+   `implicit` drivers that remove an empty folder today.]
+   - **The driver refuses atomically.** `remove_folder(key)` removes the
+     folder only if it is empty, and otherwise fails with what `classify`
+     maps to `DirectoryNotEmpty`. It does so in one wire step where the wire
+     has one: Memory under its lock, Local's and SFTP's `rmdir`. Where the
+     wire has none, the driver checks and removes itself and documents the
+     race, as `AzureBackend` on HNS (`get_paths(max_results=1)` then
+     `delete_directory`, `_azure.py` lines 1154 to 1157) and GR-043 do
+     today.
+   - **Who carries it.** Required when `parents == "explicit"`, checked at
+     construction. Optional when `implicit`: Graph and Azure HNS have folder
+     objects and carry it at steps 7 and 4. Never for `none`, which has no
+     folder objects.
+   - `delete_folder(recursive=False)`: the kernel runs decision 6's pipeline,
+     answers `NotFound` or not-a-folder from `stat`, then calls
+     `remove_folder`. It makes no emptiness probe of its own.
    - `delete_folder(recursive=True)` without `SupportsDeleteTree`: the kernel
-     lists and deletes the files, then calls `remove_folder` on each folder,
-     deepest first.
-   - `implicit` and `none` drivers have no folder objects, so it is never
-     called for them.
+     walks the subtree with `list_page(prefix, delimiter="/")`, so a folder
+     holding no files still arrives as a common prefix, deletes the files,
+     then calls `remove_folder` on each folder, deepest first. This walk is
+     not decision 7's listing, which wants files only.
 
    RFC-0017 D1's protocol table carries the row. Both Memory drivers
    implement it beside `SupportsDeleteTree` (BK-394's MEM-014 placement).
+   Its kernel cells trace to the spec 003 clause item 4 below adds.
 
 ## What it owes
 
@@ -224,6 +246,17 @@ every case. RFC-0017 carries the same answers at the question each settles.
    no time is known. The kernel computes it over a listing; a driver with
    `SupportsFolderStats` must return the same value (BK-394's spec 013
    placement gives both Memory drivers one).
+4. Spec 003 clauses for the kernel cells no spec ID covers yet, so the suite
+   follows SPEC → TEST → IMPLEMENT (`000-process.md` Rule 1). [Added after
+   PR #1055 merged, from its closing-pass review; the maintainer moved the
+   key clause here from BK-394.] Each is scoped to a class on the kernel, and
+   no class is on it until BK-394:
+   - the key rule of decision 6: its refusals, normalisation and root check
+     on the canonical key;
+   - the root `delete_folder` refusal (`InvalidPath`), which BE-029 § Out of
+     scope leaves undefined;
+   - decision 8: `remove_folder`'s atomic refusal, who carries it, and the
+     kernel's `delete_folder` sequences.
 
 **Depends on** BK-388, whose postconditions the kernel is written against,
 and on BK-395, which decides the key rule's remainder (decision 6).

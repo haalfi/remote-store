@@ -280,8 +280,8 @@ failure it was.
 - [ ] **BK-389 — RFC-0017's kernel does not exist, so no backend can migrate onto it**
   spec: BE-017, BE-020, BE-021, BE-029, ERR-001, ERR-009, DEPTH-003, PING-002, AW-001, SAW-003 · effort: L · audience: library.maintainer, infra.test
   D3 step 1's first PR: the async kernel and its `unasync` sync twin, private,
-  with a fake-driver suite, under the Proposed ADR-0042; BK-394 lands the Memory
-  drivers on it. Merges only after the v0.33.0 tag. Depends on BK-388 and
+  with a fake-driver suite and the spec 003 clauses it traces to, under the
+  Proposed ADR-0042; BK-394 lands Memory on it. After the v0.33.0 tag. Needs BK-388 and
   BK-395. Open decision: none of its own; the rest are decided in the
   dossier's § Decisions, and the key rule's remainder is BK-395's.
   Detail: [dossier](backlog/bk-389-kernel-step-1-memory.md)
@@ -289,7 +289,7 @@ failure it was.
 - [ ] **BK-394 — No backend runs on RFC-0017's kernel, so ADR-0042 stays Proposed**
   spec: BE-017, BE-020, BE-021, BE-029, ERR-001, ERR-009, DEPTH-003, ASYNC-001, AW-001, SAW-003, SAW-012, PING-002, PING-008, MEM-DS-005, MEM-013, MEM-015, MEM-018, MEM-020 · effort: L · audience: library.maintainer, user.api_docs, contributor.process
   ADR-0042 is accepted only with the first backend on the new design: the two
-  Memory drivers on BK-389's kernel, every step-1 spec amendment (specs 003,
+  Memory drivers on BK-389's kernel, step 1's other spec amendments (specs 003,
   005, 013, 026, 029, 037, the kernel half of 007 and 022), and the guide as a
   driver. After BK-389, the v0.33.0 tag and ID-244's decision (§ 2). Open
   decision: none; Memory's identity and spec 013's placement are in the dossier.

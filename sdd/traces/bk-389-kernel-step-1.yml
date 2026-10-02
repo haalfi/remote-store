@@ -290,8 +290,8 @@ phases:
       - file: sdd/specs/004-path-model.md
         section: "PATH-002"
         read_type: verify
-        extract: "PATH-002 converts a backslash rather than refusing it; my BK-395 text claimed refusal matched it"
-        outcome: misleading
+        extract: "PATH-002 converts a backslash rather than refusing it; my BK-395 text claimed refusal matched it (my miss: PATH-002 states the conversion correctly)"
+        outcome: ok
       - file: tests/backends/local/test_absent_root.py
         section: "test_folder_shaped_operations_still_accept_the_root; test_strict_delete_folder_on_the_root_answers_from_the_filesystem"
         read_type: verify
@@ -311,3 +311,26 @@ phases:
         section: "lemma BackslashIsNotRoot"
         read_type: verify
         extract: "a backslash is not the root, so refusing it is a validation rule, not a root rule"
+  - id: post_merge_fix
+    name: Closing-pass findings fixed after PR #1055 merged
+    steps:
+      - file: sdd/traces/bk-389-kernel-step-1.yml
+        section: "verification"
+        read_type: verify
+        extract: "the session merged PR #1055 on a misread of 'watch both CI and merge' (meant: merge conflicts), against the maintainer's rule that Claude sessions never merge; six closing-pass threads (eight findings) were left unresolved on master, so a follow-up PR carries them"
+      - file: tests/backends/local/test_absent_root.py
+        section: "backend fixture (lines 86 to 93)"
+        read_type: verify
+        extract: "the fixture runs shutil.rmtree(root) first, so both root delete_folder tests pin the absent root; my verification extract above called the present-root answer pinned, which it is not"
+      - file: src/remote_store/backends/_memory.py
+        section: "delete_folder (lines 300 to 341)"
+        read_type: verify
+        extract: "emptiness check and detach run under one lock; the merged decision 8 split them into three kernel-sequenced driver calls, so remove_folder now refuses a non-empty folder itself (maintainer's decision)"
+      - file: src/remote_store/backends/_azure.py
+        section: "HNS delete_folder (lines 1154 to 1157)"
+        read_type: verify
+        extract: "an implicit-parents driver removes one empty folder today; SupportsRemoveFolder becomes optional for implicit, required for explicit, never for none (maintainer's decision)"
+      - file: sdd/specs/003-backend-adapter-contract.md
+        section: "BE-029 Out of scope"
+        read_type: verify
+        extract: "root delete_folder is undefined for backends, so the kernel's InvalidPath cell had no spec ID; the kernel PR now adds the spec 003 clauses its cells trace to (maintainer's decision)"
