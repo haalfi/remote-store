@@ -36,9 +36,10 @@ Rule 2):
   * ``dafny --version`` disagreeing with the pin,
   * a build that exits non-zero or writes no ``MemoryBackend-py/``.
 
-Exit 2: no ``dafny`` executable, no readable pin, no single source-copy line in
-the wrapper, or no single build line whose only shell variables are ``$f`` and
-``$stem``.
+Exit 2: no ``dafny`` executable, no readable pin, or a wrapper this check cannot
+reproduce exactly: not exactly one source-copy line and one build line, or either
+carrying a shell variable other than ``$f`` / ``$stem``, quoting, or a brace
+expansion.  Those are setup errors, never reported as drift.
 
 Bounds (Rule 7):
 
@@ -93,6 +94,12 @@ _PIN_RE = re.compile(r"^DAFNY_VERSION=(\S+)\s*$", re.MULTILINE)
 _BUILD_RE = re.compile(r"/dafny (build\b[^|\n]*?)\s+2>&1")
 # The wrapper's source copy into the build dir, e.g. `cp /work/*.dfy /build/`.
 _COPY_RE = re.compile(r"\bcp /work/(\S+) /build/")
+# `$f` / `$stem` as whole names only: `$file` or `$stem_out` must stay unbound and be rejected.
+_VAR_RE = re.compile(r"\$(f|stem)(?![A-Za-z0-9_])")
+_BINDINGS = {"f": ENTRY, "stem": STEM}
+# Left after binding, any of these means the wrapper's shell would read the text differently than this
+# check does (another variable, quoting bash strips twice and shlex once, brace expansion glob lacks).
+_UNREPRODUCIBLE = set("$\"'\\{}")
 
 
 def _read(path: Path) -> str | None:
@@ -112,7 +119,9 @@ def read_source_glob(translate_script: Path) -> str | None:
     """The glob the wrapper copies from ``sdd/formal/`` into its build dir; ``None`` unless exactly one."""
     text = _read(translate_script)
     matches = _COPY_RE.findall(text) if text is not None else []
-    return matches[0] if len(matches) == 1 else None
+    if len(matches) != 1 or _UNREPRODUCIBLE & set(matches[0]):
+        return None
+    return matches[0]
 
 
 def read_build_args(translate_script: Path) -> list[str] | None:
@@ -126,8 +135,12 @@ def read_build_args(translate_script: Path) -> list[str] | None:
     matches = _BUILD_RE.findall(text) if text is not None else []
     if len(matches) != 1:
         return None
-    args = [tok.replace("$stem", STEM).replace("$f", ENTRY) for tok in shlex.split(matches[0])]
-    return None if any("$" in tok for tok in args) else args
+    try:
+        tokens = shlex.split(matches[0])
+    except ValueError:
+        return None
+    args = [_VAR_RE.sub(lambda m: _BINDINGS[m.group(1)], tok) for tok in tokens]
+    return None if any(_UNREPRODUCIBLE & set(tok) for tok in args) else args
 
 
 def _files(tree: Path) -> dict[str, Path]:

@@ -214,10 +214,25 @@ class TestSetupErrors:
         env["translate"].write_text(WRAPPER + copy_line + "\n")
         assert env["run"]() == 2
 
-    def test_build_line_with_an_unbound_variable_exits_2(self, env):
-        """A variable the check cannot bind would reach dafny as a literal `$X`."""
-        env["translate"].write_text(WRAPPER.replace("-t py $f", "-t py $EXTRA $f"))
+    @pytest.mark.parametrize(
+        ("old", "new"),
+        [
+            ("-t py $f", "-t py $EXTRA $f"),  # a variable the check cannot bind
+            ("-t py $f", "-t py $file"),  # shares the `$f` prefix
+            ("-t py $f", "-t py $flags $f"),
+            ("--output:$stem", "--output:$stem_out"),  # shares the `$stem` prefix
+            ("-t py $f", '-t py \\"$f\\"'),  # quoting bash removes twice, shlex once
+            ("cp /work/*.dfy", "cp /work/{A,B}.dfy"),  # brace expansion Path.glob lacks
+            ("-t py $f", "-t py 'x $f"),  # unbalanced quote: shlex raises
+        ],
+        ids=["upper", "f-prefix", "f-prefix-2", "stem-prefix", "escaped-quotes", "brace-glob", "unbalanced"],
+    )
+    def test_wrapper_line_the_check_cannot_reproduce_exits_2(self, env, old, new):
+        """Anything not bound exactly is a setup error, never a mangled argument that fails as drift."""
+        assert old in WRAPPER
+        env["translate"].write_text(WRAPPER.replace(old, new))
         assert env["run"]() == 2
+        assert not env["log"].exists()
 
 
 def test_real_wrapper_carries_a_readable_pin(mod):
