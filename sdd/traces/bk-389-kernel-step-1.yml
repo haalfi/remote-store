@@ -300,3 +300,14 @@ phases:
         section: "D1 optional protocols"
         read_type: verify
         extract: "no primitive removes one empty folder on an explicit-parents driver; SupportsRemoveFolder added as decision 8"
+  - id: handoff
+    name: BUG-297 absorbed after the close, at the maintainer's request
+    steps:
+      - file: sdd/BACKLOG.md
+        section: "BUG-297"
+        read_type: reference
+        extract: "session A's direct write('\\\\') stores then raises on SQLBlob and Memory; absorbed into BK-395's backslash part, and decision 6 has the kernel build the result path before the driver commits"
+      - file: sdd/formal/RootPath.dfy
+        section: "lemma BackslashIsNotRoot"
+        read_type: verify
+        extract: "a backslash is not the root, so refusing it is a validation rule, not a root rule"

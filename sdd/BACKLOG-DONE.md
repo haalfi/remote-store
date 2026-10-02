@@ -24,6 +24,7 @@ Folded into a surviving `BACKLOG.md` item as a sub-bullet carrying its evidence.
 **The work is open, not done** — follow the host. The ID is retired because a
 sub-bullet is not an ID.
 
+- [x] **BUG-297 — A backend `write` of a key `RemotePath` rejects stores the row, then raises `InvalidPath`** → **BK-395**, its backslash-key part. Filed by BL-011 (PR #1054), absorbed in BK-389's planning PR (#1055) at the maintainer's request.
 - [x] **ID-261 — BE-029's order is unobservable to conformance wherever a present root already answers correctly** → **BK-389**, as fake-driver cells over an absent container. Dossier: [ID-261](backlog/id-261-root-order-unobservable.md).
 - [x] **BK-325 — Custom-backend guide: registry-integration and remaining contract-topic gaps** → **BK-394**, which rewrites the guide as a driver. Dossier: [BK-325](backlog/bk-325-custom-backend-guide-gaps.md).
 - [x] **BUG-241 — `SQLBlobBackend` builds prefix `LIKE` patterns without escaping `_` and `%`, so listings and folder deletes reach sibling keys** → **BL-011**. Dossier: [BUG-241](backlog/bug-241-sql-like-metacharacters.md).

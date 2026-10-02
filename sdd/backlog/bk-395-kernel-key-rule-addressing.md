@@ -37,6 +37,18 @@ depends on it: the kernel PR does not start until it closes.
      that key folds it to `d/f`: `WriteResult`, `FileInfo` (both classes),
      and listings, where `list_files` over `d/f` and `d\f` yields `d/f`
      twice. Measured by round 5's measuring reviewer.
+   - **(was BUG-297, absorbed here)** Called on the backend directly,
+     `write("\\")` stores the row on `SQLBlobBackend` and `MemoryBackend`,
+     then raises `InvalidPath` ("Path is empty after normalization") while
+     building `WriteResult(path=RemotePath(path))`, which folds `\` to `/`;
+     `exists("\\")` is then `True`. Measured at master `9caef6b` by the BL-011
+     session (PR #1054), on those two backends and that key only. `Store`
+     rejects the key first and stores nothing. Its open decision was: reject
+     `\` in path validation, or build the result before committing. Rejecting
+     it is a different rule from treating it as the root: `RootPath.dfy`'s
+     lemma `BackslashIsNotRoot` proves `"\\"` is not the root. BK-389's
+     decision 6 now has the kernel build the result path before the driver
+     commits; this item still owes the answer for the key itself.
 3. **`glob` patterns.** `glob` is one of the 21 members the kernel
    implements, and it reaches `SupportsGlob`. Nothing yet says whether a
    pattern's literal prefix gets the refusals and normalisation.

@@ -269,12 +269,12 @@ failure it was.
   Detail: [dossier](backlog/bug-292-ancestor-gate-fails-open.md)
 
 - [ ] **BK-395 — The kernel's key rule is undecided for addressing, backslash keys and `glob`**
-  spec: BE-025, NPR-021, NPR-004, RES-020, PATH-002 · effort: S · audience: library.maintainer, contributor.process
-  BK-389's decision 6 states the kernel's key rule for the operations only. Its
-  addressing column made `native_path` and `resolve` raise, against BE-025's
-  and NPR-021's totality, and its backslash row contradicted PATH-002. `glob`
-  had no place at all. Open decision: all three. The maintainer's preferred
-  answers and the measurements are in the dossier. BK-389 waits on it.
+  spec: BE-025, NPR-021, NPR-004, RES-020, PATH-002, BE-008, WR-001 · effort: S · audience: library.maintainer, contributor.process
+  BK-389's decision 6 covers the operations only. The kernel's answer for the
+  addressing members (BE-025, NPR-021: total), a backslash key (PATH-002 folds
+  one; a direct `write("\\")` stores the row, then raises) and `glob` is
+  undecided. Open decision: all three; the maintainer's preferred answers and
+  the measurements are in the dossier. BK-389 waits on it.
   Detail: [dossier](backlog/bk-395-kernel-key-rule-addressing.md)
 
 - [ ] **BK-389 — RFC-0017's kernel does not exist, so no backend can migrate onto it**
@@ -389,14 +389,6 @@ no clause of the contract ships unexercised.
   passed the whole suite. Open decision: a flat-namespace gate in the
   registry, or per-backend seeding; hierarchical backends cannot hold the state.
   Detail: [dossier](backlog/bk-382-ancestor-gate-overwrite-path.md)
-
-- [ ] **BUG-297 — A backend `write` of a key `RemotePath` rejects stores the row, then raises `InvalidPath`**
-  spec: BE-008, WR-001 · effort: S · audience: user.api
-  Called on the backend directly, `write("\\")` stores the row on `SQLBlobBackend` and
-  `MemoryBackend` (measured; others unmeasured), then raises building
-  `WriteResult(path=RemotePath(path))`, which folds `\` to `/`. `Store` rejects
-  the key first and stores nothing. Open decision: reject `\` in backend path
-  validation, or build the result before committing.
 
 - [ ] **BUG-298 — `glob("*.csv")` matches a key ending in a newline, because `pattern_to_regex` anchors with `$`**
   spec: GLOB-014, BE-024 · effort: S · audience: user.api

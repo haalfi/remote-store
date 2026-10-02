@@ -77,7 +77,10 @@ every case. RFC-0017 carries the same answers at the question each settles.
    dropped, so `//`, `/./` and a trailing `/` fold and every root spelling
    becomes `""`. (4) The root check on
    the canonical key, where `""` is the root. (5) The driver, with the
-   canonical key. For a key that passes (2), a canonical `""` is exactly
+   canonical key. For a write, the kernel builds the result's path from that
+   key before the driver commits, so no key the kernel accepts can fail
+   after the bytes land. That is the shape of BUG-299 and of BK-395's absorbed
+   BUG-297, which both write first and then raise. For a key that passes (2), a canonical `""` is exactly
    `AddressesRoot` of the raw key (`BackendContract.dfy` §5c: every segment
    `""` or `"."`). The `/`-led spellings it also accepts (`"/"`, `"/./"`) are
    refused at (2) with the same `InvalidPath`. So the write side and the
