@@ -370,7 +370,7 @@ the test itself has a bug and must be fixed.
 | File | Purpose |
 |------|---------|
 | `sdd/formal/MemoryBackend.dfy` | Source specification (verified); the translation entry point |
-| `sdd/formal/BackendContract.dfy`, `sdd/formal/RootPath.dfy`, `sdd/formal/ResourceSafety.dfy` | Included by `MemoryBackend.dfy` (`ResourceSafety.dfy` through `BackendContract.dfy`), so their non-ghost members compile into `module_.py` too: the trait and its compiled predicates; `RootPath.dfy`'s §4 `RootAnswersPerTable` and §5 `RootFold` / `WriteKey` / `MoveKey` / `CopyKey`; and `ResourceSafety.dfy`'s `HandleState` / `WrapPipeline` / `MovePhase` / `ConnectionState` datatypes with `SafeWrap`, `AtomicMove`, `CopyDeleteMove`, `Observe` and `SafeConnect` |
+| `sdd/formal/BackendContract.dfy`, `sdd/formal/RootPath.dfy`, `sdd/formal/ResourceSafety.dfy` | Included by `MemoryBackend.dfy` (`ResourceSafety.dfy` through `BackendContract.dfy`), so every non-ghost member they declare (datatypes, functions, methods) compiles into `module_.py` too — for example `RootPath.dfy`'s §5 `RootFold` and `ResourceSafety.dfy`'s `SafeWrap` |
 | `sdd/formal/MemoryBackend-py/module_.py` | Compiled Python output |
 | `sdd/formal/MemoryBackend-py/_dafny/` | Dafny Python runtime |
 | `tests/backends/dafny/_helpers.py` | Adapter: compiled oracle → `Backend` ABC |

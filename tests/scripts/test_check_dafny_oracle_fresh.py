@@ -77,6 +77,9 @@ def env(tmp_path: Path, mod, monkeypatch):
                 if os.environ.get("FAKE_DAFNY_VERSION_EXIT"):
                     print("dotnet runtime missing", file=sys.stderr)
                     sys.exit(int(os.environ["FAKE_DAFNY_VERSION_EXIT"]))
+                if os.environ.get("FAKE_DAFNY_VERSION_HEX"):
+                    sys.stdout.buffer.write(bytes.fromhex(os.environ["FAKE_DAFNY_VERSION_HEX"]))
+                    sys.exit(0)
                 print(os.environ.get("FAKE_DAFNY_VERSION", "4.11.0+deadbeef"))
                 sys.exit(0)
             Path({str(log)!r}).write_text(json.dumps({{
@@ -90,7 +93,13 @@ def env(tmp_path: Path, mod, monkeypatch):
         )
     )
     fake.chmod(fake.stat().st_mode | stat.S_IXUSR)
-    for var in ("FAKE_DAFNY_VERSION", "FAKE_DAFNY_VERSION_EXIT", "FAKE_DAFNY_WRITE", "FAKE_DAFNY_EXIT"):
+    for var in (
+        "FAKE_DAFNY_VERSION",
+        "FAKE_DAFNY_VERSION_EXIT",
+        "FAKE_DAFNY_VERSION_HEX",
+        "FAKE_DAFNY_WRITE",
+        "FAKE_DAFNY_EXIT",
+    ):
         monkeypatch.delenv(var, raising=False)
 
     def run(*extra: str) -> int:
@@ -128,11 +137,34 @@ class TestFreshness:
         call = json.loads(env["log"].read_text())
         assert call["argv"] == ["build", "-t", "py", "--foo", "MemoryBackend.dfy", "--output:MemoryBackend"]
 
-    def test_directories_matching_the_glob_are_skipped(self, env):
-        """bash's cp without -r skips a directory operand; the check must not crash on one."""
+    def test_directory_matching_the_glob_exits_2(self, env, capsys):
+        """The wrapper's cp exits 1 on a directory operand and aborts its chain; the check reports, not skips."""
         (env["formal"] / "notes.dfy").mkdir()
-        assert env["run"]() == 0
-        assert "notes.dfy" not in json.loads(env["log"].read_text())["cwd_files"]
+        assert env["run"]() == 2
+        err = capsys.readouterr().err
+        assert "notes.dfy" in err
+        assert "wrapper's cp would fail" in err
+        assert not env["log"].exists()
+
+    def test_rebuilt_module_that_is_not_utf8_is_a_build_failure(self, env, capsys):
+        (env["build_out"] / "module_.py").write_bytes(b"\xff\xfe not text\n")
+        assert env["run"]() == 1
+        assert "not UTF-8" in capsys.readouterr().out
+
+    def test_version_output_that_is_not_utf8_is_skew_not_a_traceback(self, env, monkeypatch, capsys):
+        monkeypatch.setenv("FAKE_DAFNY_VERSION_HEX", "ff342e31312e30")  # b"\xff4.11.0"
+        assert env["run"]() == 1
+        assert "nothing checked" in capsys.readouterr().out
+
+    def test_environment_error_while_building_exits_2(self, env, monkeypatch, mod, capsys):
+        """A copy that the OS refuses is a setup error, not a traceback read as drift."""
+
+        def refuse(src, dst, **_):
+            raise PermissionError(13, "Permission denied", str(src))
+
+        monkeypatch.setattr(mod.shutil, "copy2", refuse)
+        assert env["run"]() == 2
+        assert "Permission denied" in capsys.readouterr().err
 
     def test_dotfiles_are_not_copied(self, env):
         """bash's `*` skips a leading dot and Path.glob's does not; the check follows bash."""
@@ -226,6 +258,11 @@ class TestSetupErrors:
         env["translate"].write_text(WRAPPER + build_line + "\n")
         assert env["run"]() == 2
 
+    def test_wrapper_that_is_not_utf8_exits_2(self, env, capsys):
+        env["translate"].write_bytes(WRAPPER.encode() + "# café\n".encode("latin-1"))
+        assert env["run"]() == 2
+        assert "cannot read" in capsys.readouterr().err
+
     def test_wrapper_with_two_source_copies_exits_2(self, env):
         copy_line = next(line for line in WRAPPER.splitlines() if "cp /work/" in line)
         env["translate"].write_text(WRAPPER + copy_line + "\n")
@@ -256,6 +293,17 @@ class TestSetupErrors:
             ("cp /work/*.dfy", "cp -r /work/*", "cp [-p|-f|-v]"),  # recursion
             ("cp /work/*.dfy", "cp -S /work/*.dfy", "cp [-p|-f|-v]"),  # -S eats an operand
             ("--output:$stem 2>&1", "2>&1 --output:$stem", "dafny build"),  # words after the redirect
+            # Context before the build: only `echo '<literal>'` steps may precede `&& (/opt/dafny/dafny`.
+            ("&& (/opt/dafny/dafny", "&& (echo /opt/dafny/dafny", "dafny build"),  # never builds
+            ("(/opt/dafny/dafny", "(DAFNY_X=1 /opt/dafny/dafny", "dafny build"),  # env prefix
+            ("(/opt/dafny/dafny", "(timeout 5 /opt/dafny/dafny", "dafny build"),
+            ("&& (/opt/dafny/dafny", "&& cd sub && (/opt/dafny/dafny", "dafny build"),
+            ("CMDS=\"$CMDS && echo '==> Translating $f' && (", 'CMDS="$CMDS"\' && (', "dafny build"),
+            # Separators: bash splits on space and tab only; other whitespace stays in the word.
+            ("-t py $f", "-t py $f", "-t py"),
+            ("--output:$stem 2>&1", "--output:$stem\x0b2>&1", "dafny build"),
+            # Copy target: nothing may follow `/build[/]` but `&&`, `;`, `|`, `)`, `"` or the line end.
+            ("/build/ && cd", "/build/ extra/ && cd", "cp [-p|-f|-v]"),
         ],
         ids=[
             "upper",
@@ -279,6 +327,14 @@ class TestSetupErrors:
             "cp-recursive",
             "cp-flag-with-operand",
             "after-redirect",
+            "echo-prefix",
+            "env-prefix",
+            "timeout-prefix",
+            "cd-before",
+            "single-quoted-piece",
+            "nbsp-token",
+            "vtab-before-redirect",
+            "copy-extra-operand",
         ],
     )
     def test_wrapper_outside_the_grammar_exits_2(self, env, capsys, old, new, named):

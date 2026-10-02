@@ -97,9 +97,22 @@ phases:
         section: "(new)"
         read_type: reference
         extract: >-
-          51 cells against a fake dafny executable (`pytest -q`: 51 passed).
-          tmp/id263/mutate.py applied 22 mutants, each named in that file:
-          22 of 22 caught.
+          63 cells against a fake dafny executable (`pytest -q`: 63 passed).
+          Mutation check (an uncommitted harness that applies one text
+          replacement to the script, runs this file, restores): 29 of 29
+          mutants caught. The mutants, each one rule removed or widened: no
+          reorder; pycache compared; no version check; version failure as
+          skew; version OSError unhandled; version decode strict; build exit
+          ignored; only-in-committed dropped; wrapper ignored; first of many
+          lines; source glob hardcoded; token grammar off; glob grammar off;
+          glob allows `**`; prefix binding; no braced binding; token allows
+          shell chars; split on any whitespace; words after redirect ignored;
+          any prefix before build; cp flags rejected; any cp flag; copy
+          trailing operand allowed; build slash required; dotfiles copied;
+          non-files skipped; wrapper decode unhandled; module decode
+          unhandled; build OSError unhandled. "non-files skipped" first
+          survived (the OSError handler also exits 2 naming the path), so the
+          cell now asserts the branch's own reason.
           Round 1 found the build arguments and the source glob restated from
           dafny_translate.sh (DRIFT-RULES Rule 3); both are now read from it.
           Red before that fix, in two `pytest` runs: build_flags_come_from_the_wrapper,
@@ -122,7 +135,15 @@ phases:
           operand-taking and recursive cp flags, `.` and `**` globs, a
           directory or an unexecutable dafny crashing); the grammar narrowed
           to `-p|-f|-v` flags and a `.dfy` glob, and 7 cells were red before
-          it (`pytest -rf`).
+          it (`pytest -rf`). Round 5, the ceiling, found the two docs this
+          work had made enumerate compiled members under-stating them again,
+          plus grammar edges a future wrapper edit could reach (Unicode
+          whitespace, any text before `/dafny`, a word after `/build/`, a
+          directory matching the glob) and decode errors exiting 1. The user
+          chose to fix all of it with one closing round: the docs now state
+          the rule instead of a list, the build line is anchored to its
+          `CMDS="$CMDS ... && (/opt/dafny/dafny` context, and 13 cells were red
+          before the fix (`pytest -rf`).
         outcome: ok
   - id: verify
     name: See it fail first, on the real tree

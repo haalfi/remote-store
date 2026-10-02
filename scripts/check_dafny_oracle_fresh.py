@@ -34,24 +34,34 @@ Rule 2):
   * a file whose bytes differ, with a unified diff of the first lines,
   * a file present only in the committed tree, or only in the rebuilt one,
   * ``dafny --version`` printing a version other than the pin,
-  * a build that exits non-zero or writes no ``MemoryBackend-py/``.
+  * a build that exits non-zero, writes no ``MemoryBackend-py/``, or writes a
+    ``module_.py`` that is not UTF-8.
 
 Exit 2, setup errors never reported as drift: no ``dafny`` executable, or one
-whose ``--version`` cannot be run or exits non-zero (its output is printed); no
-readable pin; or
-a wrapper outside the grammar this check reads it by.  That grammar is an
-allowlist, not a shell parser, because the wrapper's text passes two shell
-levels: exactly one ``cp [-p|-f|-v]... /work/<glob> /build[/]`` line whose glob
-is ``[A-Za-z0-9_*?[]-]*.dfy`` without ``**``, and exactly one ``/dafny build ...
-2>&1`` line, followed only by a pipe, ``)``, ``"`` or the line end, whose
-whitespace-split tokens, after binding ``$f`` / ``${f}`` / ``$stem`` /
-``${stem}``, use only ``[A-Za-z0-9_./:=,+-]``.  The offending token, or the
-shape and how often it was found, is named.
+whose ``--version`` cannot be run or exits non-zero (its output is printed); a
+wrapper that cannot be read as UTF-8, has no pin, or falls outside the grammar
+below; a non-file (a directory, a dangling link) matching the wrapper's glob,
+on which the wrapper's ``cp`` would fail; or any other OS error while copying,
+building or comparing.
+
+The grammar is an allowlist, not a shell parser, because the wrapper's text
+passes two shell levels (the ``CMDS="..."`` assignment, then ``bash -c``):
+
+  * exactly one ``cp [-p|-f|-v]... /work/<glob> /build[/]`` line, followed only
+    by ``&&``, ``;``, ``|``, ``)``, ``"`` or the line end, whose glob is
+    ``[A-Za-z0-9_*?[]-]*.dfy`` without ``**``;
+  * exactly one ``CMDS="$CMDS`` line in which only ``&& echo '<literal>'`` steps
+    precede ``&& (/opt/dafny/dafny build <tokens> 2>&1 |``, whose tokens, split
+    on space and tab and after binding ``$f`` / ``${f}`` / ``$stem`` /
+    ``${stem}``, use only ``[A-Za-z0-9_./:=,+-]``.
+
+The offending token, or the shape and how often it was found, is named.
 
 Bounds (Rule 7):
 
   * **Only ``MemoryBackend.dfy``'s oracle.**  It is the one compiled artifact
-    committed; the proof-only files compile to nothing anything consumes.
+    committed; the other ``.dfy`` files have no oracle of their own, and those
+    ``MemoryBackend.dfy`` includes are covered through its build.
   * **Freshness, not correctness.**  A regenerated oracle that is wrong is
     the conformance suite's to catch, which ``verify-formal`` runs after this.
   * **Working tree, not the index.**  The committed side is read from disk, so
@@ -102,11 +112,17 @@ _PIN_RE = re.compile(r"^DAFNY_VERSION=(\S+)\s*$", re.MULTILINE)
 # Reading the wrapper is an allowlist grammar, not a shell parser: the text passes two shell levels
 # (the `CMDS="..."` assignment, then `bash -c`), so anything whose meaning depends on quoting,
 # expansion or an operator is rejected rather than interpreted. Exactly one match of each is required.
-# Build: `/dafny build <tokens> 2>&1` then only a pipe, `)`, `"` or end of line; bash would pass any
-# word after the redirect to dafny too. Tokens are whitespace-split.
-_BUILD_RE = re.compile(r"/dafny (build\b[^|\n]*?)\s+2>&1[ \t]*(?=[|)\"]|$)", re.MULTILINE)
-# Copy: `cp [-p|-f|-v]... /work/<glob> /build[/]`; those flags take no operand and never recurse.
-_COPY_RE = re.compile(r"\bcp((?:\s+-[pfv]+)*)\s+/work/(\S+)\s+/build/?(?=[\s\"&;|)]|$)", re.MULTILINE)
+# Build: a double-quoted `CMDS="$CMDS ...` line in which only `&& echo '<literal>'` steps precede
+# `&& (/opt/dafny/dafny build <tokens> 2>&1 |`. Anything else before the build (an env prefix, `cd`,
+# `timeout`, a single-quoted piece) or after the redirect changes what runs. Tokens split on space and
+# tab only, as bash does.
+_BUILD_RE = re.compile(
+    r"^[ \t]*CMDS=\"\$CMDS(?: && echo '[^'\n]*')* && \(/opt/dafny/dafny (build\b[^|\n]*?)[ \t]+2>&1[ \t]*\|",
+    re.MULTILINE,
+)
+# Copy: `cp [-p|-f|-v]... /work/<glob> /build[/]`, then only `&&`, `;`, `|`, `)`, `"` or the line end;
+# those flags take no operand and never recurse, and a further word would become cp's target.
+_COPY_RE = re.compile(r"\bcp((?:[ \t]+-[pfv]+)*)[ \t]+/work/(\S+)[ \t]+/build/?[ \t]*(?=&&|;|\||\)|\"|$)", re.MULTILINE)
 # `$f`, `${f}`, `$stem`, `${stem}` as whole names: `$file` or `$stem_out` stay unbound and are rejected.
 _VAR_RE = re.compile(r"\$(?:\{(f|stem)\}|(f|stem)(?![A-Za-z0-9_]))")
 _BINDINGS = {"f": ENTRY, "stem": STEM}
@@ -122,7 +138,7 @@ class WrapperError(ValueError):
 def _read(path: Path) -> str | None:
     try:
         return path.read_text(encoding="utf-8")
-    except OSError:
+    except (OSError, ValueError):  # ValueError: UnicodeDecodeError; main() reports it first
         return None
 
 
@@ -156,7 +172,7 @@ def read_build_args(translate_script: Path) -> list[str]:
     """
     raw = _single(_BUILD_RE, translate_script, "dafny build ... 2>&1").group(1)
     args = []
-    for tok in raw.split():
+    for tok in re.split(r"[ \t]+", raw.strip(" \t")):
         bound = _VAR_RE.sub(lambda m: _BINDINGS[m.group(1) or m.group(2)], tok)
         if not _TOKEN_RE.fullmatch(bound):
             raise WrapperError(f"{translate_script}: build token `{tok}` is outside the grammar this check reproduces")
@@ -206,6 +222,11 @@ def main(argv: list[str] | None = None) -> int:
     parser.add_argument("--dafny", default="dafny", help="Dafny executable (default: dafny on PATH)")
     args = parser.parse_args(argv)
 
+    try:
+        args.translate_script.read_text(encoding="utf-8")
+    except (OSError, UnicodeDecodeError) as exc:
+        print(f"error: cannot read {args.translate_script}: {exc}", file=sys.stderr)
+        return 2
     pin = read_pin(args.translate_script)
     if pin is None:
         print(f"error: no DAFNY_VERSION= line in {args.translate_script}", file=sys.stderr)
@@ -226,7 +247,9 @@ def main(argv: list[str] | None = None) -> int:
         return 2
 
     try:
-        version = subprocess.run([dafny, "--version"], capture_output=True, text=True, check=False)
+        version = subprocess.run(
+            [dafny, "--version"], capture_output=True, encoding="utf-8", errors="replace", check=False
+        )
     except OSError as exc:
         print(f"error: could not run `{dafny} --version`: {exc}", file=sys.stderr)
         return 2
@@ -242,28 +265,46 @@ def main(argv: list[str] | None = None) -> int:
         )
         return 1
 
+    # bash's `*` skips dotfiles (the grammar admits no leading dot); Path.glob does not.
+    sources = [src for src in sorted(args.formal_dir.glob(source_glob)) if not src.name.startswith(".")]
+    not_files = [src for src in sources if not src.is_file()]
+    if not_files:
+        # The wrapper's cp, without -r, exits 1 on these and aborts its `&&` chain: nothing to compare.
+        print(
+            f"error: {', '.join(str(p) for p in not_files)} match the wrapper's glob `{source_glob}` "
+            "but are not regular files, so the wrapper's cp would fail",
+            file=sys.stderr,
+        )
+        return 2
+
     committed = args.formal_dir / OUT_DIR
-    with tempfile.TemporaryDirectory(prefix="oracle-fresh-") as tmp:
-        work = Path(tmp)
-        for src in sorted(args.formal_dir.glob(source_glob)):
-            # bash's `*` skips dotfiles (the grammar admits no leading dot) and cp without -r skips
-            # directories; Path.glob yields both.
-            if src.name.startswith(".") or not src.is_file():
-                continue
-            shutil.copy2(src, work / src.name)
-        build = subprocess.run([dafny, *build_args], cwd=work, capture_output=True, text=True, check=False)
-        rebuilt = work / OUT_DIR
-        if build.returncode != 0 or not rebuilt.is_dir():
-            print(
-                f"FAIL: `dafny {' '.join(build_args)}` exited {build.returncode}"
-                + ("" if rebuilt.is_dir() else f" and wrote no {OUT_DIR}/")
+    try:
+        with tempfile.TemporaryDirectory(prefix="oracle-fresh-") as tmp:
+            work = Path(tmp)
+            for src in sources:
+                shutil.copy2(src, work / src.name)
+            build = subprocess.run(
+                [dafny, *build_args], cwd=work, capture_output=True, encoding="utf-8", errors="replace", check=False
             )
-            print((build.stdout + build.stderr).strip()[-4000:])
-            return 1
-        module = rebuilt / "module_.py"
-        if module.is_file():
-            module.write_text(reorder(module.read_text(encoding="utf-8")), encoding="utf-8")
-        report = compare_trees(committed, rebuilt)
+            rebuilt = work / OUT_DIR
+            if build.returncode != 0 or not rebuilt.is_dir():
+                print(
+                    f"FAIL: `dafny {' '.join(build_args)}` exited {build.returncode}"
+                    + ("" if rebuilt.is_dir() else f" and wrote no {OUT_DIR}/")
+                )
+                print((build.stdout + build.stderr).strip()[-4000:])
+                return 1
+            module = rebuilt / "module_.py"
+            if module.is_file():
+                try:
+                    module.write_text(reorder(module.read_text(encoding="utf-8")), encoding="utf-8")
+                except UnicodeDecodeError as exc:
+                    print(f"FAIL: the rebuilt {OUT_DIR}/module_.py is not UTF-8 ({exc}); the build is broken")
+                    return 1
+            report = compare_trees(committed, rebuilt)
+    except OSError as exc:
+        print(f"error: {exc}", file=sys.stderr)
+        return 2
 
     if report:
         print(f"FAIL: {committed} is not what its sources compile to ({len(report)} path(s)):")
