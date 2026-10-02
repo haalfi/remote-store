@@ -23,13 +23,16 @@ expected_ripples:
   - sdd/backlog/id-257-parallel-id-minting.md
   - sdd/backlog/bk-385-done-register-duplicate-ids.md
 surprising_ripples:
-  # 1. Its "does not look at other open branches" bound now has an opt-in
-  #    answer, and a bound that omits it would send a reader nowhere.
-  # 2. ID-235's index line cited BK-385 as why header uniqueness would not
-  #    land green; still true for released history, but the clause had to
-  #    say what BK-385 now gates.
+  # Its "does not look at other open branches" bound now has an opt-in
+  # answer, and a bound that omits it would send a reader nowhere.
+  #
+  # Not listed, because sdd/BACKLOG.md is already in expected_ripples: two
+  # edits there the table did not predict. ID-235's index line cited BK-385
+  # as why header uniqueness would not land green, and had to say what BK-385
+  # now gates. And the "Assigning a new ID" paragraph already named the
+  # next-safe line unconditionally, so the reservation rule went into it
+  # rather than into a second paragraph (round 1's sibling sweep).
   - scripts/check_backlog_ids_vs_base.py
-  - sdd/backlog/id-235-backlog-integrity-lint.md
 phases:
   - id: orient
     name: Orient
@@ -78,8 +81,9 @@ phases:
         section: "How this file works"
         read_type: gate
         extract: >-
-          No minting rule existed beyond the Completing-work header shape; the
-          new paragraph sits after Completing work.
+          "Assigning a new ID" sends every author to the next-safe line, with
+          no word on parallel sessions. Missed on first read, so a second
+          paragraph was added and merged back in round 1.
         outcome: ok
   - id: implement
     name: Implement
@@ -90,7 +94,10 @@ phases:
         extract: >-
           Rule 5: --remote is advisory-by-opt-in, reason stated (network on an
           offline gate). Rule 6: the release record is the register for the
-          tolerated pairs. Rule 7: bounds and a Drift-gate block per subject.
+          tolerated pairs. Rule 7: bounds stated in the docstring; the
+          done-register rule widens the existing `rule` block, and --remote
+          carries none, because the inventory gives every block on the script
+          the offline --check's homes and would list it as gating.
         outcome: ok
       - file: CONTRIBUTING.md
         section: "Release checklist, BACKLOG-DONE rename"

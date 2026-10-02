@@ -54,7 +54,10 @@ Remote mode (--check --remote), ID-257:
     which is why a reservation and not this mode is the minting rule; a stale
     or abandoned branch still carrying an ID can report a clash nobody will
     merge; the ref ``origin/<this local branch's name>`` is skipped, so a push
-    under a different name reads as another session.
+    under a different name reads as another session. It carries **no**
+    ``Drift-gate::`` block: no alias or hook passes ``--remote``, and
+    ``gen_gate_inventory.py`` gives every block on this script the homes of the
+    offline ``--check``, so a block here would be listed as gating in ``lint``.
 
     **R1, attribute vocabulary** ([ADR-0040](../sdd/adrs/0040-backlog-as-index.md)).
     Every open item's header is followed directly by its
@@ -101,13 +104,6 @@ Drift-gate::
     kind:       rule
     rule: no ID appears on two open item headers in sdd/BACKLOG.md, nor on two done
         headers in sdd/BACKLOG-DONE.md when one sits above released history
-    domain:     process
-
-Drift-gate::
-
-    kind:       pair
-    compares: the IDs this working tree minted ↔ the new IDs on origin/master and every
-        other pushed origin branch (--remote only, opt-in and networked)
     domain:     process
 
 Drift-gate::

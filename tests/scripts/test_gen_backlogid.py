@@ -527,14 +527,17 @@ class TestRemote:
         assert _mod._check() == 0
         assert "a-work" not in capsys.readouterr().out
 
-    def test_distinct_mints_pass_and_raise_the_floor(self, clones, capsys):
+    def test_distinct_mints_pass_and_a_higher_pushed_id_raises_the_floor(self, clones, capsys):
+        """A holds the higher ID, so only the cross-branch line can say 902."""
         a, b = clones
-        self._mint(a, "ID-900", "a-work")
-        self._mint(b, "ID-901", None)
+        self._mint(a, "ID-901", "a-work")
+        self._mint(b, "ID-900", None)
         assert _mod._check(remote=True) == 0
-        out = capsys.readouterr().out
-        assert "Next safe IDs across pushed branches:" in out
-        assert "ID=902" in out
+        lines = capsys.readouterr().out.splitlines()
+        local = next(line for line in lines if line.startswith("Next safe IDs (this tree only"))
+        across = next(line for line in lines if line.startswith("Next safe IDs across pushed branches:"))
+        assert "ID=901" in local
+        assert "ID=902" in across
 
     def test_this_branch_pushed_is_not_its_own_clash(self, clones, capsys):
         _a, b = clones

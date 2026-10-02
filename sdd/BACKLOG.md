@@ -84,13 +84,6 @@ the specs the item touched: fix present-tense claims that it is tracked, leave
 past-tense narration, never edit an Accepted ADR. No trace is owed
 ([`CLAUDE.md` § Trace authoring](../CLAUDE.md#trace-authoring)).
 
-**Minting.** A lone session takes the `Next safe IDs` line of
-`hatch run gen-backlogid-check`, which is safe for that tree only. Sessions run
-in parallel mint only IDs reserved for them up front by whoever dispatches them,
-one disjoint set each: an unpushed branch is invisible to every derivation.
-`hatch run gen-backlogid --check --remote` compares this tree's new IDs with
-every pushed branch; re-mint any it reports before either side merges.
-
 **ID prefixes:**
 
 | Prefix | Meaning |
@@ -101,9 +94,14 @@ every pushed branch; re-mint any it reports before either side merges.
 | `ID-NNN` | Evaluated enough to earn a section, not committed to; the open decision is named in the body. |
 | `AF-NNN` | Audit finding (retired — use `BUG` or `BK` for new items). |
 
-**Assigning a new ID:** use the prefix's value on the "Next safe IDs" line of
-`hatch run gen-backlogid-check`. Run `hatch run gen-backlogid` after moving items
-to `BACKLOG-DONE.md`.
+**Assigning a new ID:** a lone session uses the prefix's value on the
+"Next safe IDs" line of `hatch run gen-backlogid-check`, which is safe for that
+tree only. Sessions run in parallel mint only IDs reserved for them up front by
+whoever dispatches them, one disjoint set each: an unpushed branch is invisible
+to every derivation. `hatch run gen-backlogid --check --remote` compares this
+tree's new IDs with every pushed branch; re-mint any it reports before either
+side merges. Run `hatch run gen-backlogid` after moving items to
+`BACKLOG-DONE.md`.
 
 **What is gated:** the rows of [`GATE-INVENTORY.md`](GATE-INVENTORY.md) whose
 subject names `sdd/BACKLOG*.md`. The admission test, granularity, section
