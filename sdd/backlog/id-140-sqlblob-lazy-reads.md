@@ -99,3 +99,13 @@ Three statements above are corrected here.
 Still true: `_sqlalchemy.py:47` excludes `LAZY_READ` from `_ALL_CAPABILITIES`,
 and `pyproject.toml:11` reads `requires-python = ">=3.10"`. Found by the
 ADR-0040 § 4 conversion.
+
+## Correction, 2026-10-02
+
+BK-380 raised the floor to `requires-python = ">=3.11"` (`pyproject.toml:11`),
+so the first **Constraints & gotchas** bullet and the 2026-09-27 "Still true"
+line about `>=3.10` no longer hold. `sqlite3.Connection.blobopen` exists on
+every supported interpreter: `hasattr(sqlite3.Connection, 'blobopen')` printed
+`True` on 3.11.15 and `False` on 3.10.20. So no runtime check and no 3.10
+eager fallback are owed. The eager path survives only as the fallback for a
+table without a rowid, per the custom-tables bullet. Found by PR #1051's review.

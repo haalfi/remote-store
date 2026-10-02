@@ -38,8 +38,11 @@ keywords = [
 # `packaging/conda-forge/variants.yaml`'s `python_min` and `ci.yml`'s
 # `MIN_PYTHON` restate the floor (held equal to it by
 # `scripts/check_conda_recipe_pins.py`); `README.md`'s "Requires Python X.Y+"
-# is prose. Nothing yet holds `ALL_PYTHONS` against these classifiers, which is
-# tracked rather than assumed.
+# is prose. Only the lowest classifier is held against another spelling (the
+# `requires-python` floor, by a test); nothing holds `ALL_PYTHONS` against these
+# classifiers, a stated bound rather than tracked work. The full map of what
+# watches which spelling is the ripple-check's "Supported interpreter set" row
+# in sdd/CLAUDE-REFERENCE.md.
 #
 # `scripts/python_support.py` reads them, and holds each version's release date
 # and the support window derived from it. The user-facing statement is Rule 8 of

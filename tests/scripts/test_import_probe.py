@@ -173,8 +173,9 @@ class TestProbe:
         assert "import ok: real -> real" in out
 
     def test_a_marker_excluded_distribution_is_skipped(self, import_probe, monkeypatch, capsys):
-        # `tomli; python_version < "3.11"` is declared and correctly absent on a
-        # newer interpreter. The resolver was right; the probe must agree.
+        # A requirement such as `pkg; python_version < "3.11"` is declared and
+        # correctly absent on a newer interpreter. The resolver was right; the
+        # probe must agree.
         def _missing(name):
             raise import_probe.PackageNotFoundError(name)
 

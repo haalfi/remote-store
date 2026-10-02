@@ -508,13 +508,22 @@ class TestFromTomlFallbacks:
 
     @pytest.mark.spec("CFG-009")
     def test_needs_no_tomli_backport(self, tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
-        # `None` in sys.modules makes `import tomli` raise, so this fails if
-        # from_toml reaches for the backport rather than stdlib tomllib.
+        # A `tomli` that imports fine but fails when used: an unconditional
+        # backport import and a backport-first fallback both reach it, so only
+        # stdlib `tomllib` passes. (A `None` stub let the fallback shape pass.)
         import sys
+        import types
+
+        def _used(*_args: object, **_kwargs: object) -> None:
+            pytest.fail("from_toml used the tomli backport, not stdlib tomllib")
+
+        poisoned = types.ModuleType("tomli")
+        poisoned.load = _used  # type: ignore[attr-defined]
+        poisoned.loads = _used  # type: ignore[attr-defined]
+        monkeypatch.setitem(sys.modules, "tomli", poisoned)
 
         f = tmp_path / "config.toml"
         f.write_text('[backends.m]\ntype = "memory"\n\n[stores]\n')
-        monkeypatch.setitem(sys.modules, "tomli", None)
         assert RegistryConfig.from_toml(f).backends["m"].type == "memory"
 
     @pytest.mark.spec("CFG-008")

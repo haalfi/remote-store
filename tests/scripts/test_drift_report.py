@@ -1475,7 +1475,8 @@ class TestRenderSupportWindows:
         )
         body = "\n".join(lines)
         assert "## Support windows" in body
-        assert "| `3.11` | 2022-10-24 | 2027-10-24 | 402 days left |" in body
+        # The newest row is pinned by hand (a drop never removes it); the
+        # oldest is derived in the next test, so the next drop needs no edit.
         assert "| `3.14` | 2025-10-07 | 2030-10-07 | 1481 days left |" in body
 
     def test_counts_down_to_the_oldest_window_end(self, drift_report):

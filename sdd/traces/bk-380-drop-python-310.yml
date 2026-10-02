@@ -30,7 +30,6 @@ expected_ripples:
   - sdd/adrs/0043-tiered-ci-gate-derived-interpreter-set.md
   - sdd/adrs/0032-tiered-ci-gate-with-full-matrix-backstop.md
   - sdd/adrs/DIGEST.md
-  - sdd/backlogid.json
   - FEATURES.md
   - docs-src/reference/tested-versions.md
 surprising_ripples:
@@ -101,7 +100,7 @@ phases:
       - file: tests/scripts/test_drift_report.py
         section: "TestSupportWindowState, TestSupportWindowSignal, TestRenderSupportWindows"
         read_type: reference
-        extract: "13 tests named 3.10 and its 2026 dates by hand; re-derived from python_support so the next drop needs no edit"
+        extract: "13 tests named 3.10 and its 2026 dates by hand; re-derived from python_support. Round 3 found one literal left; with it removed, a simulated next drop (no 3.11 classifier, >=3.12) passes all 175 tests in this file. The roster pins in test_python_support (4), test_gen_python_support (6, two only want the chart regenerated) and test_drift_check's min_python (1) still fail that simulation, deliberately"
       - file: tests/scripts/test_gen_python_support.py
         section: "TestCheckReportsWhatChanged"
         read_type: reference
@@ -112,8 +111,12 @@ phases:
       - file: sdd/CLAUDE-REFERENCE.md
         section: "Detailed checklist / Supported interpreter set"
         read_type: verify
-        extract: "all seven checked by one rg over the seven files; no gate spans the three groups"
+        extract: "all seven checked by one rg over the five files that hold them; only the floor is held across groups (test_matches_the_lowest_python_classifier), so the rest was checked by hand"
       - file: sdd/CLAUDE-REFERENCE.md
         section: "Detailed checklist / Dependency"
         read_type: verify
         extract: "extra removed: recipe run_constraints, generated feedstock, README install list, FEATURES"
+      - file: packaging/conda-forge/recipe.yaml
+        section: "python_min comment (conda-forge global pinning)"
+        read_type: verify
+        extract: "the floor moved, so conda-forge-pinning-feedstock recipe/conda_build_config.yaml (main) was read on 2026-10-02: python_min '3.11' (not win-arm64 or riscv64), equal to our floor, so recipe.yaml owes no python_min of its own. Done during round 2 and recorded here in round 3, after two reviewers found no record of it"
