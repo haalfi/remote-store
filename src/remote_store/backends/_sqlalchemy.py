@@ -7,7 +7,7 @@ import contextlib
 import io
 import json
 import logging
-from datetime import datetime, timezone
+from datetime import UTC, datetime
 from typing import TYPE_CHECKING, Any, BinaryIO, ClassVar, Protocol, TypeVar, cast, runtime_checkable
 
 from remote_store._backend import Backend
@@ -682,7 +682,7 @@ class SQLBlobBackend(_SQLAlchemyBaseBackend):
             msg = f"Content size ({len(raw)} bytes) exceeds max_blob_size ({self._max_blob_size} bytes)"
             raise ValueError(msg)
 
-        now = datetime.now(timezone.utc).timestamp()
+        now = datetime.now(UTC).timestamp()
         meta_json = json.dumps(dict(metadata)) if metadata else None
 
         with self._map_errors(path), self._engine.begin() as conn:
@@ -707,7 +707,7 @@ class SQLBlobBackend(_SQLAlchemyBaseBackend):
 
         has_meta_col = "user_metadata" in self._optional_columns
         has_mtime_col = "modified_at" in self._optional_columns
-        last_modified = datetime.fromtimestamp(now, tz=timezone.utc) if has_mtime_col else None
+        last_modified = datetime.fromtimestamp(now, tz=UTC) if has_mtime_col else None
         return WriteResult(
             path=RemotePath(path),
             size=len(raw),
@@ -1131,7 +1131,7 @@ class SQLBlobBackend(_SQLAlchemyBaseBackend):
 
             modified_at: datetime | None = None
             if max_modified is not None:
-                modified_at = datetime.fromtimestamp(max_modified, tz=timezone.utc)
+                modified_at = datetime.fromtimestamp(max_modified, tz=UTC)
 
             info = FolderInfo(
                 path=RemotePath.from_backend_path(path),
@@ -1245,7 +1245,7 @@ class SQLBlobBackend(_SQLAlchemyBaseBackend):
                     raise NotFound(f"Source not found: {src}", path=src, backend=self.name)
             return
 
-        now = datetime.now(timezone.utc).timestamp()
+        now = datetime.now(UTC).timestamp()
 
         with (
             self._map_errors(src),
@@ -1384,9 +1384,7 @@ class SQLBlobBackend(_SQLAlchemyBaseBackend):
         key = row[0]
         size = row[1] or 0
         modified_ts = row[2]
-        modified_at = (
-            datetime.fromtimestamp(modified_ts, tz=timezone.utc) if modified_ts is not None else _UNKNOWN_MODIFIED_AT
-        )
+        modified_at = datetime.fromtimestamp(modified_ts, tz=UTC) if modified_ts is not None else _UNKNOWN_MODIFIED_AT
 
         content_type: str | None = None
         digest_obj: ContentDigest | None = None

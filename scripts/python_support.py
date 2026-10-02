@@ -43,15 +43,10 @@ Bounds:
 from __future__ import annotations
 
 import re
-import sys
+import tomllib
 from dataclasses import dataclass
 from datetime import date
 from pathlib import Path
-
-if sys.version_info >= (3, 11):
-    import tomllib
-else:  # pragma: no cover - exercised on the oldest supported interpreter only
-    import tomli as tomllib  # type: ignore[no-redef]
 
 __all__ = [
     "DEPENDENCY_WINDOW_MONTHS",

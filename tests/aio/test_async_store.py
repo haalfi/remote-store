@@ -9,6 +9,8 @@ import pytest
 if TYPE_CHECKING:
     from collections.abc import AsyncIterator
 
+from datetime import UTC
+
 from remote_store._capabilities import Capability
 from remote_store._errors import AlreadyExists, CapabilityNotSupported, InvalidPath, NotFound
 from remote_store._models import FileInfo, FolderEntry, WriteResult
@@ -901,14 +903,12 @@ class TestAsyncStoreHead:
     @pytest.mark.spec("WR-008")
     async def test_head_unknown_modified_time_is_none(self) -> None:
         """The unknown-time sentinel maps to last_modified=None, as in Store.head()."""
-        from datetime import datetime, timezone
+        from datetime import datetime
 
         class _UnknownTimeBackend(MemoryBackend):
             def get_file_info(self, path: str) -> FileInfo:
                 fi = super().get_file_info(path)
-                return FileInfo(
-                    path=fi.path, name=fi.name, size=fi.size, modified_at=datetime.min.replace(tzinfo=timezone.utc)
-                )
+                return FileInfo(path=fi.path, name=fi.name, size=fi.size, modified_at=datetime.min.replace(tzinfo=UTC))
 
         store = AsyncStore(_UnknownTimeBackend())
         await store.write("f.bin", b"abc")

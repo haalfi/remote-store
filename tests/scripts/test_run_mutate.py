@@ -101,8 +101,8 @@ class TestScopeCandidateDiscovery:
     ``_scope_has_no_mutation_candidates`` imports. Runs in CI via the
     ``tooling-tests`` job, which installs pytest-gremlins alongside ``.[dev]``
     for exactly this reason (ci.yml). Skips only where the plugin is genuinely
-    absent: bare introspection runners and the <3.11 matrix (it is marker-gated
-    to py>=3.11)."""
+    absent: bare introspection runners, and any environment installed without
+    ``.[mutate]``."""
 
     def test_glob_has_no_mutation_candidates(self):
         pytest.importorskip("pytest_gremlins")

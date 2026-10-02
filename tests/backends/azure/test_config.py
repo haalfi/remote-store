@@ -12,6 +12,7 @@ import io
 import logging
 import re
 import uuid
+from datetime import UTC
 from typing import TYPE_CHECKING, Any
 from unittest.mock import MagicMock, patch
 
@@ -2111,7 +2112,7 @@ class TestAzureETagAndDigest:
     def test_digest_from_content_md5(self) -> None:
         """Blob properties with Content-MD5 bytes yield ContentDigest('md5', hex)."""
         import hashlib
-        from datetime import datetime, timezone
+        from datetime import datetime
 
         from remote_store._models import ContentDigest
 
@@ -2124,7 +2125,7 @@ class TestAzureETagAndDigest:
         mock_props = MagicMock(spec=BlobProperties)
         mock_props.etag = '"abc123"'
         mock_props.content_settings = mock_settings
-        mock_props.last_modified = datetime(2024, 1, 1, tzinfo=timezone.utc)
+        mock_props.last_modified = datetime(2024, 1, 1, tzinfo=UTC)
         mock_props.size = len(content)
         mock_props.content_length = len(content)
 
@@ -2138,14 +2139,14 @@ class TestAzureETagAndDigest:
     @pytest.mark.spec("AZ-034")
     def test_digest_none_when_no_content_md5(self) -> None:
         """Blob properties without Content-MD5 yield digest=None."""
-        from datetime import datetime, timezone
+        from datetime import datetime
 
         mock_settings = MagicMock(spec=ContentSettings)
         mock_settings.content_md5 = None
         mock_props = MagicMock(spec=BlobProperties)
         mock_props.etag = '"abc123"'
         mock_props.content_settings = mock_settings
-        mock_props.last_modified = datetime(2024, 1, 1, tzinfo=timezone.utc)
+        mock_props.last_modified = datetime(2024, 1, 1, tzinfo=UTC)
         mock_props.size = 0
         mock_props.content_length = 0
 
@@ -2157,12 +2158,12 @@ class TestAzureETagAndDigest:
     @pytest.mark.spec("AZ-034")
     def test_digest_none_when_content_settings_absent(self) -> None:
         """Blob properties where content_settings is None yield digest=None."""
-        from datetime import datetime, timezone
+        from datetime import datetime
 
         mock_props = MagicMock(spec=BlobProperties)
         mock_props.etag = '"abc123"'
         mock_props.content_settings = None
-        mock_props.last_modified = datetime(2024, 1, 1, tzinfo=timezone.utc)
+        mock_props.last_modified = datetime(2024, 1, 1, tzinfo=UTC)
         mock_props.size = 0
         mock_props.content_length = 0
 
@@ -2174,14 +2175,14 @@ class TestAzureETagAndDigest:
     @pytest.mark.spec("AZ-034")
     def test_etag_stripped_and_lowercased(self) -> None:
         """Raw Azure ETag (double-quoted) is stripped and lowercased in FileInfo.etag."""
-        from datetime import datetime, timezone
+        from datetime import datetime
 
         mock_settings = MagicMock(spec=ContentSettings)
         mock_settings.content_md5 = None
         mock_props = MagicMock(spec=BlobProperties)
         mock_props.etag = '"0X8D4BCC2E4835CD0"'
         mock_props.content_settings = mock_settings
-        mock_props.last_modified = datetime(2024, 1, 1, tzinfo=timezone.utc)
+        mock_props.last_modified = datetime(2024, 1, 1, tzinfo=UTC)
         mock_props.size = 0
         mock_props.content_length = 0
 
@@ -2194,7 +2195,7 @@ class TestAzureETagAndDigest:
     @pytest.mark.spec("MOD-002")
     def test_missing_last_modified_is_unknown_time_sentinel(self) -> None:
         """No last_modified maps to the unknown-time sentinel, not now."""
-        from datetime import datetime, timezone
+        from datetime import datetime
 
         mock_props = MagicMock(spec=BlobProperties)
         mock_props.etag = '"abc123"'
@@ -2206,7 +2207,7 @@ class TestAzureETagAndDigest:
         backend = _make_backend(container="c", account_name="fake", account_key=None)
         fi = backend._props_to_fileinfo(mock_props, "test.txt")
 
-        assert fi.modified_at == datetime.min.replace(tzinfo=timezone.utc)
+        assert fi.modified_at == datetime.min.replace(tzinfo=UTC)
 
 
 # endregion

@@ -7,7 +7,7 @@ import inspect
 import logging
 import uuid
 from contextlib import asynccontextmanager
-from datetime import datetime, timezone
+from datetime import UTC, datetime
 from typing import TYPE_CHECKING, Any, ClassVar, TypeVar
 
 from azure.core.exceptions import HttpResponseError, ResourceNotFoundError
@@ -1304,7 +1304,7 @@ class AsyncAzureBackend(AsyncBackend):
                             modified = getattr(p, "last_modified", None)
                             if modified is not None:
                                 if modified.tzinfo is None:
-                                    modified = modified.replace(tzinfo=timezone.utc)
+                                    modified = modified.replace(tzinfo=UTC)
                                 if latest_modified is None or modified > latest_modified:
                                     latest_modified = modified
                 except RemoteStoreError:
@@ -1330,7 +1330,7 @@ class AsyncAzureBackend(AsyncBackend):
                             modified = blob.last_modified
                             if modified is not None:
                                 if modified.tzinfo is None:  # pragma: no cover
-                                    modified = modified.replace(tzinfo=timezone.utc)
+                                    modified = modified.replace(tzinfo=UTC)
                                 if latest_modified is None or modified > latest_modified:
                                     latest_modified = modified
                 except ResourceNotFoundError:

@@ -52,8 +52,9 @@ def _scope_has_no_mutation_candidates(scope) -> bool:
     Asks pytest-gremlins' own transformer (the same generation path the plugin
     runs in ``_generate_gremlins``), so the answer can never drift from what the
     plugin counts. Returns ``False`` on any uncertainty — the plugin not
-    installed (the bare ``--list-scopes`` introspection runner, or the <3.11
-    matrix), an unreadable target, or a transform error — so a synthesised
+    installed (the bare ``--list-scopes`` introspection runner, or any
+    environment without ``.[mutate]``), an unreadable target, or a transform
+    error — so a synthesised
     report is written only when "zero candidates" is positively confirmed.
     """
     try:

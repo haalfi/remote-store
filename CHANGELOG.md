@@ -7,6 +7,8 @@ This project follows [Semantic Versioning](https://semver.org/). Pre-1.0, minor 
 
 ## [Unreleased]
 
+- BK-380: **Breaking** — Python 3.10 is no longer supported, since CPython's security fixes for it end on 2026-10-04; the minimum is now 3.11. The `[toml]` extra is removed, because `RegistryConfig.from_toml()` uses the standard library on every supported Python. [Migration guide](https://docs.remotestore.dev/stable/reference/migration/#v0320-to-v0330).
+
 - ID-251: The backend conformance suite now checks that a write or `move`/`copy` destination naming the store root is refused under every spelling (`"./"`, `"/"` and the rest), not only `""` and `"."`; the custom-backend guide states which narrow guards that catches.
 
 - BUG-240: **Breaking** — `GraphBackend.list_files()` called directly with `recursive=False` and `max_depth` set now yields the immediate files, as every other backend does; `AsyncStore` is unaffected. [Migration guide](https://docs.remotestore.dev/stable/reference/migration/#v0320-to-v0330).

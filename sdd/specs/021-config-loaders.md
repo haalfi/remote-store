@@ -26,13 +26,11 @@ and returns a `RegistryConfig`.
   `pyproject.toml`, use `table=("tool", "remote-store")`.
 
 **Behavior:**
-1. Parse the file via `tomllib` (3.11+) or `tomli` (3.10 backport).
+1. Parse the file via the stdlib `tomllib`.
 2. If `table` is non-empty, traverse into the nested table.
 3. Delegate to `from_dict()` (inherits Secret wrapping, validation).
 
 **Raises:**
-- `ModuleNotFoundError` if `tomllib` is unavailable and `tomli` is not installed.
-  Message includes install instructions: `pip install 'remote-store[toml]'`.
 - `KeyError` if a `table` key is not found in the parsed data.
 - `FileNotFoundError` if `path` does not exist.
 - `tomllib.TOMLDecodeError` if the file is not valid TOML.
@@ -40,11 +38,11 @@ and returns a `RegistryConfig`.
 **Postconditions:** The returned `RegistryConfig` is identical to calling
 `from_dict()` on the parsed TOML dict (after table traversal).
 
-### CFG-009: TOML Dependency Shim
+### CFG-009: TOML Parser Dependency
 
-**Invariant:** On Python 3.11+, `from_toml()` uses the stdlib `tomllib` with
-zero runtime dependencies. On Python 3.10, the `tomli` backport is required
-(available via the `toml` optional extra).
+**Invariant:** `from_toml()` uses the stdlib `tomllib` on every supported
+interpreter, with zero runtime dependencies. There is no `toml` extra and no
+`tomli` fallback.
 
 ---
 
@@ -114,7 +112,6 @@ format-to-dict translators.
 ### CFG-014: Optional Extras
 
 **Invariant:** `pyproject.toml` declares optional extras:
-- `toml`: `["tomli>=1.1.0; python_version < '3.11'"]`
 - `yaml`: `["pyyaml>=5.1"]`
 - `pydantic`: `["pydantic-settings>=2.0.0"]`
 

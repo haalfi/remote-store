@@ -494,8 +494,8 @@ obligation, not the version number it lands on. It also moves
 every spelling of the supported set at once; the ripple-check's
 [**Supported interpreter set**](sdd/CLAUDE-REFERENCE.md#pre-work-index) row
 enumerates them and says, per spelling, what watches it — and it is worth
-reading rather than summarising here, since no gate compares the three groups
-to each other and `README.md`'s prose is watched by nothing at all.
+reading rather than summarising here, since no check compares the full set
+across its groups and `README.md`'s prose is watched by nothing at all.
 
 <a id="authority-for-the-support-windows"></a>
 #### Which artefact governs each of the two support windows

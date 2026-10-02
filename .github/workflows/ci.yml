@@ -106,8 +106,8 @@ jobs:
       - name: Resolve Python versions
         id: versions
         env:
-          ALL_PYTHONS: '["3.10", "3.11", "3.12", "3.13", "3.14"]'
-          MIN_PYTHON: "3.10"
+          ALL_PYTHONS: '["3.11", "3.12", "3.13", "3.14"]'
+          MIN_PYTHON: "3.11"
         run: |
           # Primary Python: single-sourced in .python-version (local uv/pyenv
           # read it too). ALL_PYTHONS / MIN_PYTHON below bound the matrix.
@@ -231,7 +231,7 @@ jobs:
   #     just forces a second scheduling wave.
   # So the per-PR gate no longer runs the live-backend suite on every interpreter.
   # Instead it splits work by TIER (see sdd stage model, tests/conftest.py):
-  #   * `test` — the four non-primary interpreters run the repo-only STAGE 1
+  #   * `test` — the non-primary interpreters run the repo-only STAGE 1
   #     suite (memory/local/moto/azure-replay/sftp-inproc): no Docker, sharded x2,
   #     exercising every Store/adapter code path so interpreter-specific breakage
   #     still blocks the PR.

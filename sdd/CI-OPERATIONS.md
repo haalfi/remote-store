@@ -304,13 +304,16 @@ documented in [`CONTRIBUTING.md`](../CONTRIBUTING.md).
 ### `ci-full.yml` — full live-backend matrix backstop (exception to Rule 1)
 
 - **What it does:** runs the complete two-pass live-Docker-backend suite (pass-1
-  `-n auto` + serial `sftp_docker`) on **every** supported interpreter (see
-  `FEATURES.md`). This is the pre-BK-319 per-interpreter guarantee. `ci.yml` (the
+  `-n auto` + serial `sftp_docker`) on **every** supported interpreter (the
+  `test-full` matrix, held equal to `ci.yml`'s `ALL_PYTHONS`; the roster itself
+  is governed by `pyproject.toml`'s classifiers). This is the pre-BK-319 per-interpreter guarantee. `ci.yml` (the
   per-PR gate) runs this full Stage-2 suite only on the **primary** interpreter;
-  the four non-primary interpreters run the repo-only **Stage 1** tier there so
+  the non-primary interpreters run the repo-only **Stage 1** tier there so
   the per-PR gate stays under five minutes within the account's concurrency cap.
-  The decision, the cap, the owner-approved tradeoff, and the reversal condition
-  live in [ADR-0032](adrs/0032-tiered-ci-gate-with-full-matrix-backstop.md);
+  The decision, the owner-approved tradeoff, and the reversal condition live in
+  [ADR-0043](adrs/0043-tiered-ci-gate-derived-interpreter-set.md); the cap and
+  the measurements behind the split, in the
+  [ADR-0032](adrs/0032-tiered-ci-gate-with-full-matrix-backstop.md) it superseded;
   `ci-full.yml` restores full-matrix coverage off the per-PR critical path.
 - **When:** every push to `master`, plus 03:00 UTC daily, plus
   `workflow_dispatch`.

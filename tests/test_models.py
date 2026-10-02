@@ -3,7 +3,7 @@
 from __future__ import annotations
 
 import dataclasses
-from datetime import datetime, timezone
+from datetime import UTC, datetime
 
 import pytest
 from hypothesis import given
@@ -12,7 +12,7 @@ from hypothesis import strategies as st
 from remote_store._models import ContentDigest, FileInfo, FolderEntry, FolderInfo, PathEntry, WriteResult
 from remote_store._path import RemotePath
 
-NOW = datetime(2024, 1, 1, tzinfo=timezone.utc)
+NOW = datetime(2024, 1, 1, tzinfo=UTC)
 
 
 @pytest.fixture

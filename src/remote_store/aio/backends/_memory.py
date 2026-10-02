@@ -4,7 +4,7 @@ from __future__ import annotations
 
 import asyncio
 import logging
-from datetime import datetime, timezone
+from datetime import UTC, datetime
 from typing import TYPE_CHECKING, Any, ClassVar, TypeVar
 
 from remote_store._capabilities import Capability, CapabilitySet
@@ -200,7 +200,7 @@ class AsyncMemoryBackend(AsyncBackend):
 
         async with self._lock:
             # Capture under the lock so modified_at reflects lock-acquisition order.
-            now = datetime.now(timezone.utc)
+            now = datetime.now(UTC)
             parent = self._ensure_parents(segments)
             leaf = segments[-1]
             existing = parent.children.get(leaf)
@@ -637,7 +637,7 @@ class AsyncMemoryBackend(AsyncBackend):
 
             new_entry = _FileEntry(
                 data=bytearray(src_node.data),
-                modified_at=datetime.now(timezone.utc),
+                modified_at=datetime.now(UTC),
                 content_type=src_node.content_type,
                 metadata=src_node.metadata,
             )

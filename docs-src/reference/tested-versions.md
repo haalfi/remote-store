@@ -3,7 +3,7 @@
 
 Each `[<extra>]` below lists the range it declares and the versions CI was last green against. **Declared** is the range a resolver is held to — a floor always, plus a ceiling only where a known-incompatible major looms. **Tested up to** is the exact version pinned when that extra's resolution was last recorded. Why the ranges are shaped that way, and what this page does and does not promise, is on [Dependency and version policy](../explanation/dependency-policy.md).
 
-The drift guard (`.github/workflows/drift-guard.yml`) keeps both ends of each range under a weekly check. It re-resolves every extra against the latest available versions, pre-releases included, and diffs the result against the record in `infra/drift-locks/` that the "Tested up to" column is taken from. It also installs each extra at the **floor** of every range above and runs that extra's smoke against it, on Python 3.10 — the oldest interpreter this package supports. Findings from either end land on a rolling issue for a maintainer to read; neither end blocks a release on its own.
+The drift guard (`.github/workflows/drift-guard.yml`) keeps both ends of each range under a weekly check. It re-resolves every extra against the latest available versions, pre-releases included, and diffs the result against the record in `infra/drift-locks/` that the "Tested up to" column is taken from. It also installs each extra at the **floor** of every range above and runs that extra's smoke against it, on Python 3.11 — the oldest interpreter this package supports. Findings from either end land on a rolling issue for a maintainer to read; neither end blocks a release on its own.
 
 _Smoke_ names how far that check reaches for each extra. A smoke that imports a module exercises less than one that runs a test suite, and a version pair below is evidence only as far as its smoke goes.
 
@@ -141,12 +141,4 @@ _Smoke:_ `tests/ext/test_yaml.py`
 | Package | Declared | Tested up to |
 |---|---|---|
 | `pyyaml` | `>=5.1` | `6.0.3` |
-
-## Extras this page does not cover
-
-These are installable and maintained like any other, and the check above does not reach them: what each one resolves to depends on the interpreter you install it on, so there is no single resolution to record or to smoke. Read its range in `pyproject.toml`.
-
-| Extra | Why it has no row above |
-|---|---|
-| `[toml]` | declared only for `python_version < '3.11'` |
 

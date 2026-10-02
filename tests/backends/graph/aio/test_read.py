@@ -9,7 +9,7 @@ stream (GR-015/017/055) lives in ``transfer.py`` and is covered by
 
 from __future__ import annotations
 
-from datetime import datetime, timezone
+from datetime import UTC, datetime
 from typing import TYPE_CHECKING
 
 import httpx
@@ -336,13 +336,13 @@ class TestPermissionDeniedPerMethod:
 
 
 class TestParseGraphDatetime:
-    """RFC 3339 parsing with the trailing-Z normalisation for the 3.10 floor."""
+    """RFC 3339 parsing of Graph timestamps, trailing ``Z`` included."""
 
     @pytest.mark.spec("GR-013")
     def test_trailing_z(self) -> None:
         dt = parse_graph_datetime("2024-01-15T10:30:00Z")
         assert dt.tzinfo is not None
-        assert dt.utcoffset() == timezone.utc.utcoffset(None)
+        assert dt.utcoffset() == UTC.utcoffset(None)
         assert (dt.year, dt.month, dt.day, dt.hour, dt.minute) == (2024, 1, 15, 10, 30)
 
     @pytest.mark.spec("GR-013")
@@ -355,10 +355,10 @@ class TestParseGraphDatetime:
         # A timestamp with neither Z nor an explicit offset is treated as UTC.
         dt = parse_graph_datetime("2024-01-15T10:30:00")
         assert dt.tzinfo is not None
-        assert dt.utcoffset() == timezone.utc.utcoffset(None)
+        assert dt.utcoffset() == UTC.utcoffset(None)
 
     @pytest.mark.spec("GR-013")
     @pytest.mark.parametrize("bad", ["", None, "not-a-date", 12345])
     def test_fallback_is_unknown_time_sentinel(self, bad: object) -> None:
         # The library-wide unknown-time value, so folder aggregation skips it.
-        assert parse_graph_datetime(bad) == datetime.min.replace(tzinfo=timezone.utc)
+        assert parse_graph_datetime(bad) == datetime.min.replace(tzinfo=UTC)

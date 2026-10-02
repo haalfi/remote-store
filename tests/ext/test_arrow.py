@@ -5,7 +5,7 @@ from __future__ import annotations
 import dataclasses
 import io
 import tempfile
-from datetime import datetime, timezone
+from datetime import UTC, datetime
 from typing import TYPE_CHECKING, Any
 
 import pytest
@@ -231,7 +231,7 @@ class TestGetFileInfo:
 class _UnknownTimeBackend(MemoryBackend):
     """MemoryBackend whose files report the unknown-time sentinel, as SQL/HTTP files do."""
 
-    _UNKNOWN = datetime.min.replace(tzinfo=timezone.utc)
+    _UNKNOWN = datetime.min.replace(tzinfo=UTC)
 
     def get_file_info(self, path: str) -> FileInfo:
         return dataclasses.replace(super().get_file_info(path), modified_at=self._UNKNOWN)

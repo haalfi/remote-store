@@ -18,7 +18,7 @@ Four remote-store extensions composing without conflict:
 
 ## Prerequisites
 
-- Python 3.10+
+- Python 3.11+
 - Network access to `data.geo.admin.ch` (Swiss open government data, no credentials)
 
 ## Setup

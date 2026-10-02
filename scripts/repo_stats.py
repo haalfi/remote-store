@@ -26,7 +26,7 @@ import time
 import urllib.error
 import urllib.request
 from dataclasses import dataclass, field
-from datetime import datetime, timezone
+from datetime import UTC, datetime
 from typing import Any
 
 try:
@@ -342,7 +342,7 @@ def fetch_downloads(pepy_token: str | None = None) -> DownloadStats:
             ver_all: dict[str, int] = {}
             # Per-version last-30d totals
             ver_30d: dict[str, int] = {}
-            today = datetime.now(timezone.utc).date()
+            today = datetime.now(UTC).date()
 
             for date_str, ver_counts in downloads.items():
                 if not isinstance(ver_counts, dict):
@@ -431,7 +431,7 @@ def print_report(
     dl: DownloadStats,
     rtd: RTDStats,
 ) -> None:
-    now = datetime.now(timezone.utc).strftime("%Y-%m-%d %H:%M UTC")
+    now = datetime.now(UTC).strftime("%Y-%m-%d %H:%M UTC")
     print(f"\nremote-store — Project Statistics  ({now})")
     print("=" * 60)
 
@@ -565,7 +565,7 @@ def to_dict(
     dl: DownloadStats,
     rtd: RTDStats,
 ) -> dict[str, Any]:
-    now = datetime.now(timezone.utc).isoformat()
+    now = datetime.now(UTC).isoformat()
     return {
         "generated_at": now,
         "github": {

@@ -34,17 +34,6 @@ T = TypeVar("T")
 _COPY_BUFSIZE = 256 * 1024
 
 
-class _SeekableSpool(tempfile.SpooledTemporaryFile):  # type: ignore[type-arg]
-    """SpooledTemporaryFile subclass that exposes ``seekable()``.
-
-    ``SpooledTemporaryFile`` gained ``seekable()`` in Python 3.11.
-    This subclass adds it for Python 3.10 compatibility.
-    """
-
-    def seekable(self) -> bool:
-        return True
-
-
 class Backend(abc.ABC):
     """Abstract base class for all storage backends.
 
@@ -178,8 +167,9 @@ class Backend(abc.ABC):
             raise
         if not seekable:
             # Not seekable — spool into a SpooledTemporaryFile; stream is
-            # always closed via the finally block regardless of outcome.
-            spool: BinaryIO = _SeekableSpool(max_size=8 * 1024 * 1024)  # type: ignore[assignment]
+            # always closed via the finally block regardless of outcome. No
+            # `with`: the spool is returned, and the caller owns its lifetime.
+            spool: BinaryIO = tempfile.SpooledTemporaryFile(max_size=8 * 1024 * 1024)  # type: ignore[assignment]  # noqa: SIM115
             try:
                 shutil.copyfileobj(stream, spool, _COPY_BUFSIZE)
             except BaseException:

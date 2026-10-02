@@ -2,7 +2,7 @@
 #
 # conda-forge supplies `python_min` from its own global pinning, so the recipe
 # must not define it: hardcoding the value in `context:` would override the
-# global and keep us on 3.10 after conda-forge raises the ecosystem minimum.
+# global and keep us on today's floor after conda-forge raises the ecosystem minimum.
 # That leaves our own `Conda Recipe` workflow, which renders the recipe
 # standalone with no conda-forge pinning in scope, with an undefined variable.
 #
@@ -14,4 +14,4 @@
 # enforced rule rather than a comment asking to be believed — a distinction
 # BK-368 exists because the recipe's own "keep this exhaustive" comment lacked.
 python_min:
-  - "3.10"
+  - "3.11"

@@ -217,7 +217,7 @@ _ALLOWLIST_DESIGN: frozenset[str] = frozenset(
         "GR-011",  # 044 — item-id addressing deferred to a future RFC (reserved slot, no behavior)
         # Optional-dependency / packaging declarations (pyproject extras).
         "PA-023",  # 014 — pyarrow optional extra declaration
-        "CFG-014",  # 021 — toml/yaml/pydantic optional extras declaration
+        "CFG-014",  # 021 — yaml/pydantic optional extras declaration
         # --- BK-252 disposition: audit-015 held rows reclassified type-(d) ---
         # Design principles / architectural constraints (no runtime behavior to mark).
         "GLOB-015",  # 018 — ext.glob: no backend coupling (public Store API only)
