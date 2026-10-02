@@ -545,6 +545,33 @@ class TestRemote:
         assert _mod._check(remote=True) == 0
         assert "also minted" not in capsys.readouterr().out
 
+    def test_a_detached_checkout_of_its_own_pushed_branch_is_not_a_clash(self, clones, capsys):
+        """A detached HEAD has no branch name to skip by; its pushed tip is HEAD's own history."""
+        _a, b = clones
+        self._mint(b, "ID-900", "b-work")
+        _git(b, "checkout", "--quiet", "--detach")
+        assert _mod._check(remote=True) == 0
+        assert "also minted" not in capsys.readouterr().out
+
+    def test_a_pushed_branch_already_merged_into_this_one_is_not_a_clash(self, clones, capsys):
+        """Its IDs reached this tree by merge, which the offline gates check; they are not a rival mint."""
+        a, b = clones
+        self._mint(a, "ID-900", "a-work")
+        _git(b, "fetch", "--quiet", "origin")
+        _git(b, "-c", "user.name=t", "merge", "--quiet", "--no-edit", "origin/a-work")
+        assert _mod._check(remote=True) == 0
+        assert "also minted" not in capsys.readouterr().out
+
+    def test_a_merged_in_branch_that_later_reached_master_is_not_a_clash(self, clones, capsys):
+        """Master's merge-base with HEAD moves to the merged tip, so its IDs are shared history."""
+        a, b = clones
+        self._mint(a, "ID-900", "a-work")
+        _git(b, "fetch", "--quiet", "origin")
+        _git(b, "merge", "--quiet", "--no-edit", "origin/a-work")
+        _git(a, "push", "--quiet", "origin", "a-work:master")
+        assert _mod._check(remote=True) == 0
+        assert "also minted" not in capsys.readouterr().out
+
     def test_an_id_master_gained_after_this_branch_forked_is_reported(self, clones, capsys):
         """A merged in the meantime: the clash is with master, not with a branch."""
         a, b = clones

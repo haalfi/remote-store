@@ -41,24 +41,6 @@ Check mode (--check):
     pair cannot reach released history without first passing the live region,
     unless the gate was bypassed. Pinned by ``TestCheck``'s stated-bound test.
 
-Remote mode (--check --remote), ID-257:
-    Opt-in, never in ``lint``: it needs the network, and the offline gate must
-    stay pure. Runs ``git fetch --prune origin``, then compares the IDs this
-    working tree minted (its headers minus those at the merge-base with
-    ``origin/master``, so an uncommitted mint counts) against ``origin/master``
-    and every other ``origin/*`` branch's new IDs, open or done. Fails naming
-    each shared ID and the ref carrying it, and prints the next safe IDs across
-    every pushed branch. A failed fetch fails loud rather than reporting
-    agreement. **Bounds:** a branch not yet pushed, or pushed to a fork, is
-    invisible — at mint time that is the usual state of a parallel session,
-    which is why a reservation and not this mode is the minting rule; a stale
-    or abandoned branch still carrying an ID can report a clash nobody will
-    merge; the ref ``origin/<this local branch's name>`` is skipped, so a push
-    under a different name reads as another session. It carries **no**
-    ``Drift-gate::`` block: no alias or hook passes ``--remote``, and
-    ``gen_gate_inventory.py`` gives every block on this script the homes of the
-    offline ``--check``, so a block here would be listed as gating in ``lint``.
-
     **R1, attribute vocabulary** ([ADR-0040](../sdd/adrs/0040-backlog-as-index.md)).
     Every open item's header is followed directly by its
     ``spec: … · effort: … · audience: …`` line; ``effort`` is one of S/M/L and
@@ -91,6 +73,28 @@ Remote mode (--check --remote), ID-257:
     **Bounds:** R4 checks link and ID, not that index and dossier agree
     (``BACKLOG.md`` § Item authority states that bound); a dossier no item
     links is not detected.
+
+Remote mode (--check --remote), ID-257:
+    Opt-in, never in ``lint``: it needs the network, and the offline gate must
+    stay pure. Runs ``git fetch --prune origin``, then compares the IDs this
+    working tree minted (its headers minus those at the merge-base with
+    ``origin/master``, so an uncommitted mint counts) against the IDs
+    ``origin/master`` gained since that merge-base and those each other
+    ``origin/*`` branch gained since *its* merge-base with ``HEAD``, open or
+    done. So a ref ``HEAD`` already contains — this session's own push seen
+    from a detached checkout, or a branch merged in — contributes nothing.
+    Fails naming each shared ID and the ref carrying it, and prints the next
+    safe IDs across every pushed branch. A failed fetch fails loud rather than
+    reporting agreement. **Bounds:** a branch not yet pushed, or pushed to a
+    fork, is invisible — at mint time that is the usual state of a parallel
+    session, which is why a reservation and not this mode is the minting rule;
+    a stale or abandoned branch still carrying an ID can report a clash nobody
+    will merge; this session's own push reads as another session once ``HEAD``
+    no longer contains it (amended or rebased) unless it is
+    ``origin/<this branch's name>``. It carries **no** ``Drift-gate::`` block: no alias or hook
+    passes ``--remote``, and ``gen_gate_inventory.py`` gives every block on
+    this script the homes of the offline ``--check``, so a block here would be
+    listed as gating in ``lint``.
 
 Drift-gate::
 
@@ -267,8 +271,13 @@ def _remote_view(remote: str = "origin", base: str = "master") -> tuple[dict[str
     for ref in refs:
         if ref in skip:
             continue
-        theirs = ids_at(ref) - base_ids
-        seen |= theirs
+        ref_ids = ids_at(ref)
+        seen |= ref_ids - base_ids
+        # What the ref minted since it diverged from HEAD: a ref HEAD already
+        # contains (this session's own push, seen from a detached checkout, or
+        # a branch merged in) contributes nothing.
+        shared = _git("merge-base", "HEAD", ref)
+        theirs = ref_ids - base_ids - (ids_at(shared.stdout.strip()) if shared.returncode == 0 else set())
         for item in sorted(mine & theirs):
             clashes[item].append(ref)
     return dict(clashes), seen
