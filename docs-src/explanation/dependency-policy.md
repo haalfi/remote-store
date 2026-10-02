@@ -266,12 +266,13 @@ reach the latest release.
 These limits bound that, and they are why [Rule 14](#rule-14) and
 [Rule 15](#rule-15) read as they do:
 
-- **It does not cover every extra you can install.** An extra whose resolution
-  depends on the running interpreter is excluded, so it has no committed record
-  and no row on the Tested versions page. That page
-  [names which ones](../reference/tested-versions.md), so an absent row is
-  readable rather than ambiguous. Being excluded is not a claim that nothing
-  watches it, only that this guard does not.
+- **It would not cover an extra whose resolution depends on the running
+  interpreter.** Such an extra has no single resolution to record, so it gets
+  no committed record and no row on the Tested versions page. None exists
+  today; if one is added, [that page](../reference/tested-versions.md) names it
+  in a section of its own, so an absent row stays readable rather than
+  ambiguous. Being excluded is not a claim that nothing watches it, only that
+  this guard does not.
 - **The smoke can be shallower than the extra.** Where the target is an import,
   a drift breaking anything past module load passes. The Tested versions page
   states the depth per extra, so how much a given row is worth is readable.

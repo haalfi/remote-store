@@ -248,10 +248,9 @@ TWINS: tuple[Twin, ...] = (
 def class_method_docstrings(source: str, classname: str) -> dict[str, str]:
     """Return ``{method_name: docstring}`` for direct methods of *classname*.
 
-    Scoped to the named class's own body -- the sync ``_backend.py`` /
-    ``_azure.py`` modules also define helper classes (``_SeekableSpool``,
-    ``_AzureRangeReader``, ...) whose methods must not leak into the twin
-    comparison.  Methods without a docstring are omitted (only shared
+    Scoped to the named class's own body -- a module may also define helper
+    classes (``_azure.py``'s ``_AzureRangeReader``, ...) whose methods must
+    not leak into the twin comparison.  Methods without a docstring are omitted (only shared
     *docstrings* are in scope).  Raw value (``clean=False``) so indentation
     differences would themselves count as drift.
     """

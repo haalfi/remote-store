@@ -7,6 +7,7 @@ All tests are skipped if dependencies are not installed.
 from __future__ import annotations
 
 import uuid
+from datetime import UTC
 from typing import TYPE_CHECKING
 from unittest.mock import patch
 
@@ -228,10 +229,10 @@ class TestS3ETagAndDigest:
     )
     def test_info_to_fileinfo_etag(self, info_dict: dict, expected_etag: str | None) -> None:
         """_info_to_fileinfo handles various ETag key forms correctly."""
-        from datetime import datetime, timezone
+        from datetime import datetime
 
         backend = object.__new__(S3Backend)
-        info_dict.setdefault("LastModified", datetime(2024, 1, 1, tzinfo=timezone.utc))
+        info_dict.setdefault("LastModified", datetime(2024, 1, 1, tzinfo=UTC))
         info_dict.setdefault("name", "bucket/file.txt")
         fi = backend._info_to_fileinfo(info_dict, "file.txt")
         assert fi.etag == expected_etag

@@ -11,6 +11,8 @@ from typing import TYPE_CHECKING
 if TYPE_CHECKING:
     from collections.abc import Iterator
 
+from datetime import UTC
+
 import pytest
 import sqlalchemy as sa
 
@@ -219,12 +221,12 @@ class TestExistingTable:
 
     def test_create_table_false_minimal_modified_at_fallback(self, minimal_engine: sa.Engine) -> None:
         """SQL-BLOB-012: missing modified_at -> datetime.min."""
-        from datetime import datetime, timezone
+        from datetime import datetime
 
         b = SQLBlobBackend(engine=minimal_engine, table_name="minimal", create_table=False)
         b.write("test.txt", b"hello")
         info = b.get_file_info("test.txt")
-        assert info.modified_at == datetime.min.replace(tzinfo=timezone.utc)
+        assert info.modified_at == datetime.min.replace(tzinfo=UTC)
         b.close()
 
     def test_create_table_false_missing_columns_raises(self) -> None:

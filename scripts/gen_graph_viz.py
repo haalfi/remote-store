@@ -59,12 +59,8 @@ import argparse
 import json
 import re
 import sys
+import tomllib
 from pathlib import Path
-
-try:
-    import tomllib
-except ModuleNotFoundError:  # Python < 3.11
-    import tomli as tomllib  # type: ignore[no-redef]
 
 ROOT = Path(__file__).resolve().parent.parent
 GRAPH = ROOT / "docs-src" / "_data" / "graph" / "graph.json"

@@ -467,10 +467,8 @@ class TestFromToml:
 
     @pytest.mark.spec("CFG-008")
     def test_from_toml_invalid_toml(self, tmp_path: Path) -> None:
-        try:
-            import tomllib
-        except ModuleNotFoundError:
-            import tomli as tomllib  # type: ignore[no-redef]
+        import tomllib
+
         bad = tmp_path / "bad.toml"
         bad.write_text("[invalid\n")
         with pytest.raises(tomllib.TOMLDecodeError):
@@ -501,36 +499,32 @@ def test_no_unknown_key_warning(data: dict[str, Any]) -> None:
 
 
 # ---------------------------------------------------------------------------
-# CFG-008 / CFG-009: from_toml() fallback paths
+# CFG-008 / CFG-009: from_toml() dependency and edge paths
 # ---------------------------------------------------------------------------
 
 
 class TestFromTomlFallbacks:
-    """Tests for optional-dependency fallback paths in from_toml()."""
+    """CFG-009 (stdlib only) and CFG-008 edge paths of from_toml()."""
 
     @pytest.mark.spec("CFG-009")
-    def test_tomli_fallback_when_tomllib_missing(self, tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
+    def test_needs_no_tomli_backport(self, tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
+        # A `tomli` that imports fine but fails when used: an unconditional
+        # backport import and a backport-first fallback both reach it, so only
+        # stdlib `tomllib` passes. (A `None` stub let the fallback shape pass.)
         import sys
+        import types
 
-        try:
-            import tomli  # noqa: F401
-        except ImportError:
-            pytest.skip("tomli not installed")
+        def _used(*_args: object, **_kwargs: object) -> None:
+            pytest.fail("from_toml used the tomli backport, not stdlib tomllib")
+
+        poisoned = types.ModuleType("tomli")
+        poisoned.load = _used  # type: ignore[attr-defined]
+        poisoned.loads = _used  # type: ignore[attr-defined]
+        monkeypatch.setitem(sys.modules, "tomli", poisoned)
+
         f = tmp_path / "config.toml"
         f.write_text('[backends.m]\ntype = "memory"\n\n[stores]\n')
-        monkeypatch.setitem(sys.modules, "tomllib", None)
         assert RegistryConfig.from_toml(f).backends["m"].type == "memory"
-
-    @pytest.mark.spec("CFG-009")
-    def test_no_toml_lib_raises(self, tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
-        import sys
-
-        f = tmp_path / "config.toml"
-        f.write_text('[backends.m]\ntype = "memory"\n\n[stores]\n')
-        monkeypatch.setitem(sys.modules, "tomllib", None)
-        monkeypatch.setitem(sys.modules, "tomli", None)
-        with pytest.raises(ModuleNotFoundError, match="tomli"):
-            RegistryConfig.from_toml(f)
 
     @pytest.mark.spec("CFG-008")
     def test_from_toml_non_dict_table_value(self, tmp_path: Path) -> None:

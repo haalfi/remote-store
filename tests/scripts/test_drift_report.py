@@ -15,7 +15,7 @@ from __future__ import annotations
 import dataclasses
 import json
 import sys
-from datetime import date
+from datetime import date, timedelta
 from pathlib import Path
 
 import pytest
@@ -35,6 +35,20 @@ SCRIPTS = ROOT / "scripts"
 # window and every register row is live, which is the state the assertions were
 # written against.
 TODAY = date(2026, 9, 17)
+
+# The crossing tests need an interpreter past its window, and they used to name
+# one by hand — which every drop of the oldest interpreter then broke (BK-380).
+# Derived from the committed classifiers instead: the oldest supported version,
+# a day just past its window, and register review dates either side of that day.
+if str(SCRIPTS) not in sys.path:
+    sys.path.insert(0, str(SCRIPTS))
+import python_support as _python_support  # noqa: E402
+
+OLDEST = _python_support.supported_versions()[0]
+WINDOW_END = _python_support.support_end(OLDEST)
+CROSSED = WINDOW_END + timedelta(days=2)
+REVIEW_PASSED = WINDOW_END + timedelta(days=1)
+REVIEW_LIVE = WINDOW_END + timedelta(days=269)
 
 
 @pytest.fixture(scope="module")
@@ -1032,38 +1046,42 @@ class TestSupportWindowState:
 
     def test_every_supported_interpreter_gets_a_row(self, drift_report):
         state = drift_report.support_window_state(date(2026, 9, 17))
-        assert [row.version for row in state.rows] == ["3.10", "3.11", "3.12", "3.13", "3.14"]
+        assert [row.version for row in state.rows] == _python_support.supported_versions()
 
     def test_nothing_is_past_its_window_today(self, drift_report):
-        """As of the day this shipped, 3.10 was the closest at 17 days out."""
+        """On `TODAY` no supported interpreter is past its window."""
         state = drift_report.support_window_state(date(2026, 9, 17))
         assert state.unregistered == ()
         assert state.holds_issue is False
 
     def test_a_crossing_with_no_row_holds_the_issue(self, drift_report):
-        state = drift_report.support_window_state(date(2026, 10, 6))
-        assert state.unregistered == ("3.10",)
+        state = drift_report.support_window_state(CROSSED)
+        assert state.unregistered == (OLDEST,)
         assert state.holds_issue is True
 
     def test_a_registered_crossing_does_not_hold_the_issue(self, drift_report, tmp_path):
-        register = drift_report.load_python_support_register(_python_register(tmp_path, ("3.10", "2027-06-30")))
-        state = drift_report.support_window_state(date(2026, 10, 6), register)
+        register = drift_report.load_python_support_register(
+            _python_register(tmp_path, (OLDEST, REVIEW_LIVE.isoformat()))
+        )
+        state = drift_report.support_window_state(CROSSED, register)
         assert state.unregistered == ()
         assert state.holds_issue is False
 
     def test_an_expired_row_stops_silencing_the_crossing(self, drift_report, tmp_path):
         """The interpreter register's whole point: the date is the mechanism."""
-        register = drift_report.load_python_support_register(_python_register(tmp_path, ("3.10", "2026-10-05")))
-        state = drift_report.support_window_state(date(2026, 10, 6), register)
-        assert state.unregistered == ("3.10",)
+        register = drift_report.load_python_support_register(
+            _python_register(tmp_path, (OLDEST, REVIEW_PASSED.isoformat()))
+        )
+        state = drift_report.support_window_state(CROSSED, register)
+        assert state.unregistered == (OLDEST,)
         assert state.holds_issue is True
 
     def test_a_narrowed_run_reports_the_crossing_without_holding_the_issue(self, drift_report):
         """A crossing is true on every run, and a narrowed non-dry run rewrites
         the whole body from its slice. So the crossing still renders — it just
         cannot be what forces the rewrite."""
-        state = drift_report.support_window_state(date(2026, 10, 6), holds_issue=False)
-        assert state.unregistered == ("3.10",)
+        state = drift_report.support_window_state(CROSSED, holds_issue=False)
+        assert state.unregistered == (OLDEST,)
         assert state.holds_issue is False
 
 
@@ -1080,10 +1098,10 @@ class TestSupportWindowSignal:
         self._clean(tmp_path)
         reports = dataclasses.replace(
             drift_report._load_reports(tmp_path),
-            windows=drift_report.support_window_state(date(2026, 10, 6)),
+            windows=drift_report.support_window_state(CROSSED),
         )
-        assert drift_report.has_signal(reports, {}, today=date(2026, 10, 6)) is True
-        assert drift_report.decide(reports, {}, today=date(2026, 10, 6))[0] == "update"
+        assert drift_report.has_signal(reports, {}, today=CROSSED) is True
+        assert drift_report.decide(reports, {}, today=CROSSED)[0] == "update"
 
     def test_a_clean_run_with_no_crossing_still_closes(self, drift_report, tmp_path):
         """The passing direction, so the clause above cannot be satisfied by a
@@ -1100,9 +1118,9 @@ class TestSupportWindowSignal:
         self._clean(tmp_path)
         reports = dataclasses.replace(
             drift_report._load_reports(tmp_path),
-            windows=drift_report.support_window_state(date(2026, 10, 6), holds_issue=False),
+            windows=drift_report.support_window_state(CROSSED, holds_issue=False),
         )
-        assert drift_report.has_signal(reports, {}, today=date(2026, 10, 6)) is False
+        assert drift_report.has_signal(reports, {}, today=CROSSED) is False
 
     def test_a_narrowed_run_may_not_close_the_issue_over_an_unowned_crossing(self, drift_report, tmp_path):
         """A narrowed run withholds the update; it must withhold the close too.
@@ -1121,11 +1139,11 @@ class TestSupportWindowSignal:
         self._clean(tmp_path)
         reports = dataclasses.replace(
             drift_report._load_reports(tmp_path),
-            windows=drift_report.support_window_state(date(2026, 10, 6), holds_issue=False),
+            windows=drift_report.support_window_state(CROSSED, holds_issue=False),
         )
-        action, reason = drift_report.decide(reports, {}, ["s3"], today=date(2026, 10, 6))
+        action, reason = drift_report.decide(reports, {}, ["s3"], today=CROSSED)
         assert action == "leave"
-        assert "3.10" in reason
+        assert OLDEST in reason
 
     def test_a_narrowed_run_with_a_registered_crossing_still_closes(self, drift_report, tmp_path):
         """The other direction, so the clause above is not "narrowed never closes".
@@ -1134,12 +1152,14 @@ class TestSupportWindowSignal:
         between an all-clear run and the close.
         """
         self._clean(tmp_path)
-        register = drift_report.load_python_support_register(_python_register(tmp_path, ("3.10", "2027-06-30")))
+        register = drift_report.load_python_support_register(
+            _python_register(tmp_path, (OLDEST, REVIEW_LIVE.isoformat()))
+        )
         reports = dataclasses.replace(
             drift_report._load_reports(tmp_path),
-            windows=drift_report.support_window_state(date(2026, 10, 6), register, holds_issue=False),
+            windows=drift_report.support_window_state(CROSSED, register, holds_issue=False),
         )
-        assert drift_report.decide(reports, {}, ["s3"], today=date(2026, 10, 6))[0] == "close"
+        assert drift_report.decide(reports, {}, ["s3"], today=CROSSED)[0] == "close"
 
     def test_a_narrowed_dispatch_with_no_artefacts_leaves_the_issue_alone(self, drift_report, tmp_path, monkeypatch):
         """The emptiness guard must key on `holds_issue`, not on `unregistered`.
@@ -1171,7 +1191,7 @@ class TestSupportWindowSignal:
                 "--expect-lanes",
                 "newest,floor",
                 "--today",
-                "2026-10-06",
+                CROSSED.isoformat(),
             ]
         )
         assert rc == 0
@@ -1207,13 +1227,13 @@ class TestSupportWindowSignal:
                 "--expect-lanes",
                 "newest,floor",
                 "--today",
-                "2026-10-06",
+                CROSSED.isoformat(),
             ]
         )
         assert rc == 0
         err = capsys.readouterr().err
         assert "no support window crossed" not in err
-        assert "3.10" in err, "the message must name the crossing this run computed and withheld"
+        assert OLDEST in err, "the message must name the crossing this run computed and withheld"
 
     def test_the_emptiness_message_says_so_when_nothing_has_crossed(self, drift_report, tmp_path, monkeypatch, capsys):
         """The other direction, so the clause above is not "always name a crossing".
@@ -1436,7 +1456,7 @@ class TestSupportWindowSignal:
                 "--expect-lanes",
                 "newest,floor",
                 "--today",
-                "2026-10-06",
+                CROSSED.isoformat(),
             ]
         )
         assert rc == 0
@@ -1455,13 +1475,18 @@ class TestRenderSupportWindows:
         )
         body = "\n".join(lines)
         assert "## Support windows" in body
-        assert "| `3.10` | 2021-10-04 | 2026-10-04 | 17 days left |" in body
+        # The newest row is pinned by hand (a drop never removes it); the
+        # oldest is derived in the next test, so the next drop needs no edit.
         assert "| `3.14` | 2025-10-07 | 2030-10-07 | 1481 days left |" in body
 
+    def test_counts_down_to_the_oldest_window_end(self, drift_report):
+        before = WINDOW_END - timedelta(days=17)
+        body = "\n".join(drift_report._render_support_windows(drift_report.support_window_state(before), {}, before))
+        released = _python_support.PYTHON_RELEASES[OLDEST]
+        assert f"| `{OLDEST}` | {released} | {WINDOW_END} | 17 days left |" in body
+
     def test_marks_an_unregistered_crossing(self, drift_report):
-        lines = drift_report._render_support_windows(
-            drift_report.support_window_state(date(2026, 10, 6)), {}, date(2026, 10, 6)
-        )
+        lines = drift_report._render_support_windows(drift_report.support_window_state(CROSSED), {}, CROSSED)
         body = "\n".join(lines)
         assert "**2 days past, unregistered**" in body
         assert "holds this issue open" in body
@@ -1474,8 +1499,8 @@ class TestRenderSupportWindows:
         issue open" for a crossing that could not hold it — sending a reader to
         look for an issue the run was never going to keep open.
         """
-        narrowed = drift_report.support_window_state(date(2026, 10, 6), holds_issue=False)
-        body = "\n".join(drift_report._render_support_windows(narrowed, {}, date(2026, 10, 6)))
+        narrowed = drift_report.support_window_state(CROSSED, holds_issue=False)
+        body = "\n".join(drift_report._render_support_windows(narrowed, {}, CROSSED))
         assert "2 days past, unregistered" in body
         assert "covered only part of the matrix" in body
         assert "` holds this issue open" not in body
@@ -1485,18 +1510,22 @@ class TestRenderSupportWindows:
         assert "stop this run closing the issue" in body
 
     def test_names_the_owner_of_a_registered_crossing(self, drift_report, tmp_path):
-        register = drift_report.load_python_support_register(_python_register(tmp_path, ("3.10", "2027-06-30")))
+        register = drift_report.load_python_support_register(
+            _python_register(tmp_path, (OLDEST, REVIEW_LIVE.isoformat()))
+        )
         lines = drift_report._render_support_windows(
-            drift_report.support_window_state(date(2026, 10, 6), register), register, date(2026, 10, 6)
+            drift_report.support_window_state(CROSSED, register), register, CROSSED
         )
         body = "\n".join(lines)
-        assert "known, ADR-0039, review by 2027-06-30" in body
+        assert f"known, ADR-0039, review by {REVIEW_LIVE}" in body
         assert "none of them is holding this issue open" in body
 
     def test_says_when_a_registered_rows_date_has_passed(self, drift_report, tmp_path):
-        register = drift_report.load_python_support_register(_python_register(tmp_path, ("3.10", "2026-10-05")))
+        register = drift_report.load_python_support_register(
+            _python_register(tmp_path, (OLDEST, REVIEW_PASSED.isoformat()))
+        )
         lines = drift_report._render_support_windows(
-            drift_report.support_window_state(date(2026, 10, 6), register), register, date(2026, 10, 6)
+            drift_report.support_window_state(CROSSED, register), register, CROSSED
         )
         body = "\n".join(lines)
         assert "review date passed" in body

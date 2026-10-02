@@ -1,5 +1,5 @@
 # BK-319 backstop. The per-PR CI (ci.yml) runs the full live-Docker-backend
-# Stage-2 suite only on the primary interpreter; the four non-primary
+# Stage-2 suite only on the primary interpreter; the non-primary
 # interpreters run the repo-only Stage-1 tier there to keep PR wall-clock under
 # 5 min on the 20-concurrent-job cap. This workflow restores the pre-optimization
 # guarantee — the FULL two-pass live-backend suite on EVERY supported
@@ -22,10 +22,11 @@ env:
   UV_LINK_MODE: copy
 
 # A burst of master merges (or schedule + push overlapping) must not stack
-# multiple 7-slot full matrices against the account's 20-job cap (ADR-0032) and
+# multiple full matrices (one slot per supported interpreter, plus
+# prepare-images and full-gate) against the account's 20-job cap (ADR-0032) and
 # starve in-flight PR `ci.yml` gates. Keep only the newest run per ref; the
 # superseding run covers the accumulated state, which is all the backstop needs
-# (per-commit granularity is not part of the ADR-0032 contract).
+# (per-commit granularity is not part of the ADR-0043 contract).
 concurrency:
   group: ci-full-${{ github.ref }}
   cancel-in-progress: true
@@ -70,7 +71,7 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        python-version: ["3.10", "3.11", "3.12", "3.13", "3.14"]
+        python-version: ["3.11", "3.12", "3.13", "3.14"]
     steps:
       - uses: actions/checkout@v7
       - name: Restore service-image cache

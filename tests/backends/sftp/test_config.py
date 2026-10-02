@@ -16,6 +16,7 @@ import sys
 import tempfile
 import uuid
 from contextlib import ExitStack
+from datetime import UTC
 from functools import partial
 from typing import TYPE_CHECKING, Any
 from unittest.mock import patch
@@ -1365,7 +1366,7 @@ class TestSFTPHelpers:
     @pytest.mark.spec("MOD-002")
     def test_stat_to_fileinfo_no_mtime(self) -> None:
         """_stat_to_fileinfo maps a None mtime to the unknown-time sentinel, not now."""
-        from datetime import datetime, timezone
+        from datetime import datetime
 
         class FakeAttrs:
             st_size = 42
@@ -1375,7 +1376,7 @@ class TestSFTPHelpers:
         fi = backend._stat_to_fileinfo("test.txt", FakeAttrs())
         assert fi.name == "test.txt"
         assert fi.size == 42
-        assert fi.modified_at == datetime.min.replace(tzinfo=timezone.utc)
+        assert fi.modified_at == datetime.min.replace(tzinfo=UTC)
 
     @pytest.mark.spec("BK-143")
     def test_ensure_known_hosts_file_creates_file(self) -> None:

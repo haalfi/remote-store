@@ -90,15 +90,11 @@ import itertools
 import re
 import shlex
 import sys
+import tomllib
 from dataclasses import dataclass
 from pathlib import Path
 
 import yaml
-
-try:
-    import tomllib
-except ImportError:  # pragma: no cover - Python 3.10 fallback
-    import tomli as tomllib  # type: ignore[no-redef]
 
 ROOT = Path(__file__).resolve().parent.parent
 OUTPUT = ROOT / "sdd" / "GATE-INVENTORY.md"

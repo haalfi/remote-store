@@ -9,7 +9,7 @@ raw JSON.
 
 from __future__ import annotations
 
-from datetime import datetime, timezone
+from datetime import UTC, datetime
 from typing import TYPE_CHECKING, Any
 
 from remote_store._models import _UNKNOWN_MODIFIED_AT, FileInfo, WriteResult
@@ -43,20 +43,18 @@ def download_url(item: Mapping[str, Any]) -> str | None:
 def parse_graph_datetime_or_none(value: object) -> datetime | None:
     """Parse a Graph RFC 3339 timestamp into a timezone-aware ``datetime``.
 
-    ``datetime.fromisoformat`` accepts the trailing ``Z`` only on Python 3.11+;
-    the ``>=3.10`` floor needs it normalised to ``+00:00`` first. A missing or
-    unparseable value returns ``None`` (Graph reliably returns the field, so
-    this is defensive).
+    ``datetime.fromisoformat`` accepts Graph's trailing ``Z`` directly. A
+    missing or unparseable value returns ``None`` (Graph reliably returns the
+    field, so this is defensive).
     """
     if not isinstance(value, str) or not value:
         return None
-    normalized = f"{value[:-1]}+00:00" if value.endswith("Z") else value
     try:
-        parsed = datetime.fromisoformat(normalized)
+        parsed = datetime.fromisoformat(value)
     except ValueError:
         return None
     if parsed.tzinfo is None:
-        parsed = parsed.replace(tzinfo=timezone.utc)
+        parsed = parsed.replace(tzinfo=UTC)
     return parsed
 
 

@@ -6,7 +6,7 @@
 [project]
 name = "medallion-dagster"
 version = "0.0.0"
-requires-python = ">=3.10"
+requires-python = ">=3.11"
 description = "Medallion + Dagster showcase for remote-store"
 
 [project.optional-dependencies]

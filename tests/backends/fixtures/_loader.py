@@ -23,24 +23,15 @@ Typical use sites:
   ``load_fixtures()`` to import every per-fixture module by name.
 * ``tests/conftest.py::pytest_addoption`` reads ``VALID_STAGES`` for the
   ``--stage`` option's ``choices``.
-
-Per house style (``scripts/gen_features.py:20-23``) the ``tomllib``/``tomli``
-import pattern follows the repo-wide convention so the loader runs on
-Python 3.10 (via ``tomli``) and 3.11+ (stdlib ``tomllib``) alike.
 """
 
 from __future__ import annotations
 
 import functools
+import tomllib
 from dataclasses import dataclass, field
 from pathlib import Path
 from typing import Any, Literal
-
-try:
-    import tomllib
-except ImportError:  # pragma: no cover -- python < 3.11
-    import tomli as tomllib  # type: ignore[no-redef]
-
 
 _HERE = Path(__file__).resolve().parent
 _BACKENDS_TOML = _HERE / "backends.toml"

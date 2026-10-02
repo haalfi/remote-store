@@ -12,6 +12,8 @@ if TYPE_CHECKING:
     from collections.abc import Callable, Iterator
     from pathlib import Path
 
+from datetime import UTC
+
 from remote_store._backend import Backend
 from remote_store._capabilities import Capability, CapabilitySet
 from remote_store._errors import (
@@ -900,7 +902,7 @@ class TestStoreHead:
     @pytest.mark.spec("WR-008")
     def test_head_maps_all_fields(self) -> None:
         """digest, etag, last_modified, metadata all forwarded from FileInfo."""
-        from datetime import datetime, timezone
+        from datetime import datetime
         from unittest.mock import MagicMock
 
         from remote_store._backend import Backend
@@ -909,7 +911,7 @@ class TestStoreHead:
         from remote_store._path import RemotePath
 
         digest = ContentDigest(algorithm="sha256", value="abc123")
-        ts = datetime(2024, 1, 1, tzinfo=timezone.utc)
+        ts = datetime(2024, 1, 1, tzinfo=UTC)
         info = FileInfo(
             path=RemotePath("data/f.bin"),
             name="f.bin",
@@ -933,14 +935,14 @@ class TestStoreHead:
     @pytest.mark.spec("WR-008")
     def test_head_unknown_modified_time_is_none(self) -> None:
         """The unknown-time sentinel maps to last_modified=None, the Optional field's 'unknown'."""
-        from datetime import datetime, timezone
+        from datetime import datetime
         from unittest.mock import MagicMock
 
         info = FileInfo(
             path=RemotePath("f.bin"),
             name="f.bin",
             size=7,
-            modified_at=datetime.min.replace(tzinfo=timezone.utc),
+            modified_at=datetime.min.replace(tzinfo=UTC),
         )
         mock_backend = MagicMock(spec=Backend)
         mock_backend.name = "mock"

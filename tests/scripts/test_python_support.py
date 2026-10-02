@@ -57,7 +57,7 @@ class TestSupportedVersions:
         table that had drifted behind the classifiers would only be caught by a
         gate nobody had run yet.
         """
-        assert python_support.supported_versions() == ["3.10", "3.11", "3.12", "3.13", "3.14"]
+        assert python_support.supported_versions() == ["3.11", "3.12", "3.13", "3.14"]
 
     def test_sorts_numerically_not_lexically(self, python_support, tmp_path):
         """``3.9`` sorts before ``3.10``; a string sort puts it after ``3.14``."""
@@ -126,27 +126,27 @@ class TestWindowArithmetic:
             del python_support.PYTHON_RELEASES["3.99"]
 
     def test_windows_are_oldest_first_and_carry_both_ends(self, python_support):
-        rows = python_support.windows(date(2026, 9, 17))
-        assert [r.version for r in rows] == ["3.10", "3.11", "3.12", "3.13", "3.14"]
-        assert rows[0].released == date(2021, 10, 4)
-        assert rows[0].spec0_ends == date(2024, 10, 4)
-        assert rows[0].ends == date(2026, 10, 4)
+        rows = python_support.windows(date(2027, 10, 7))
+        assert [r.version for r in rows] == ["3.11", "3.12", "3.13", "3.14"]
+        assert rows[0].released == date(2022, 10, 24)
+        assert rows[0].spec0_ends == date(2025, 10, 24)
+        assert rows[0].ends == date(2027, 10, 24)
 
     def test_days_remaining_is_signed_so_past_and_left_agree(self, python_support):
         """One field, not two that can disagree: negative means past."""
-        rows = {r.version: r for r in python_support.windows(date(2026, 9, 17))}
-        assert rows["3.10"].days_remaining == 17
-        assert rows["3.10"].past is False
+        rows = {r.version: r for r in python_support.windows(date(2027, 10, 7))}
+        assert rows["3.11"].days_remaining == 17
+        assert rows["3.11"].past is False
 
-        later = {r.version: r for r in python_support.windows(date(2026, 10, 5))}
-        assert later["3.10"].days_remaining == -1
-        assert later["3.10"].past is True
+        later = {r.version: r for r in python_support.windows(date(2027, 10, 25))}
+        assert later["3.11"].days_remaining == -1
+        assert later["3.11"].past is True
 
     def test_the_window_closes_the_day_after_it_ends(self, python_support):
         """On the end date itself support has not lapsed; the next day it has."""
-        on_the_day = {r.version: r for r in python_support.windows(date(2026, 10, 4))}
-        assert on_the_day["3.10"].days_remaining == 0
-        assert on_the_day["3.10"].past is False
+        on_the_day = {r.version: r for r in python_support.windows(date(2027, 10, 24))}
+        assert on_the_day["3.11"].days_remaining == 0
+        assert on_the_day["3.11"].past is False
 
 
 class TestDependencyCutoff:

@@ -52,11 +52,10 @@ Bounds (Rule 7)
 * Reads ``[project.optional-dependencies]`` only. ``[project.dependencies]``,
   the recipe's ``host`` / ``run`` sections, ``build``, ``tests`` and ``about``
   are outside the enumeration; so is the ``source`` sha256.
-* **Environment markers are dropped**, matching what the recipe already does for
-  ``tomli ... python_version < '3.11'``: conda has no per-Python marker at this
-  position, so a marker-gated dependency is required here unconditionally. A
-  marker that made a dependency genuinely inapplicable would therefore be
-  mis-required, and no such case exists today.
+* **Environment markers are dropped**: conda has no per-Python marker at this
+  position, so a marker-gated dependency would be required here
+  unconditionally. A marker that made a dependency genuinely inapplicable would
+  therefore be mis-required; no extra carries a marker today.
 * Self-referential requirements (``remote-store[...]``) are skipped, not
   followed. Every extra they aggregate is enumerated on its own.
 * It compares two *declarations*. It does not check that either floor is
@@ -117,13 +116,9 @@ from __future__ import annotations
 import argparse
 import re
 import sys
+import tomllib
 from dataclasses import dataclass
 from pathlib import Path
-
-try:
-    import tomllib
-except ImportError:  # pragma: no cover — py3.10 fallback
-    import tomli as tomllib  # type: ignore[no-redef]
 
 from packaging.requirements import Requirement
 from packaging.specifiers import Specifier, SpecifierSet

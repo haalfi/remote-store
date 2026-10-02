@@ -26,7 +26,7 @@ import dataclasses
 import hashlib
 import io
 import json
-from datetime import datetime, timezone
+from datetime import UTC, datetime
 from typing import TYPE_CHECKING
 
 from remote_store import AlreadyExists, Capability, CapabilityNotSupported, RemoteStoreError
@@ -368,7 +368,7 @@ class ParquetDatasetStore:
             row_count=table.num_rows,
             schema_hash=_schema_hash(table.schema),
             compression=self._compression,
-            created_at_utc=datetime.now(timezone.utc).isoformat(),
+            created_at_utc=datetime.now(UTC).isoformat(),
             run_id=run_id,
             metadata=metadata,
         )
