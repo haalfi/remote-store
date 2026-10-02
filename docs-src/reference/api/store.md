@@ -358,7 +358,7 @@ relying on these in production.
 | `move()` atomicity | Atomic (same FS) | Atomic | Copy+delete | Copy+delete | Copy+delete | Server-side, not atomic | Server-dependent | — | Atomic (SQL transaction) | — |
 | `copy()` preserves metadata | Yes (`copy2`) | — | Yes | Yes | Yes | — | — | — | Yes | — |
 | `write_atomic()` mechanism | temp+rename | Direct (atomic) | Direct PUT (atomic) | Direct PUT (atomic) | Direct PUT or temp+rename | Direct PUT / upload session (service-atomic) | temp+rename | — | Direct (atomic) | — |
-| Native `glob()` | Yes | — | Yes | Yes | Yes | — | — | — | Yes (SQL GLOB/LIKE) | Yes (in-memory) |
+| Native `glob()` | Yes | — | Yes | Yes | Yes | — | — | — | Yes (SQL prefix + regex) | Yes (in-memory) |
 | `list_files()` ordering | OS-dependent | Insertion order | Lexicographic | Lexicographic | Lexicographic | Service-dependent | OS-dependent | — | DB-dependent | Lexicographic |
 
 ¹ Graph is **async-only** — it has no sync `Store` wrapper. Its column describes

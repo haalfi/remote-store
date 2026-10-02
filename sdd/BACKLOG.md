@@ -116,15 +116,6 @@ done entry are review-enforced.
 here only when shipping without it resolved would cost users more than delaying
 the release.
 
-- [ ] **BL-011 — `SQLBlobBackend.delete_folder` deletes sibling keys, and listings return them, because prefix `LIKE` patterns leave `_` and `%` unescaped**
-  spec: — · effort: S · audience: user.api
-  Nine unescaped prefix `LIKE` sites in `_sqlalchemy.py` (`key + "/%"`,
-  `prefix + "%"`) let `_` and `%` match siblings: `delete_folder("a_b",
-  recursive=True)` deletes `axb/y.txt`, and `list_files("a_b")` returns it.
-  Silent data loss on ordinary keys. Open decision: none on shape; the fix
-  scope and its evidence are in the dossier.
-  Detail: [dossier](backlog/bl-011-sql-like-sibling-deletion.md)
-
 ---
 
 <a id="predictable-failure"></a>
@@ -381,6 +372,22 @@ no clause of the contract ships unexercised.
   passed the whole suite. Open decision: a flat-namespace gate in the
   registry, or per-backend seeding; hierarchical backends cannot hold the state.
   Detail: [dossier](backlog/bk-382-ancestor-gate-overwrite-path.md)
+
+- [ ] **BUG-297 — A backend `write` of a key `RemotePath` rejects stores the row, then raises `InvalidPath`**
+  spec: BE-008, WR-001 · effort: S · audience: user.api
+  Called on the backend directly, `write("\\")` stores the row on `SQLBlobBackend` and
+  `MemoryBackend` (measured; others unmeasured), then raises building
+  `WriteResult(path=RemotePath(path))`, which folds `\` to `/`. `Store` rejects
+  the key first and stores nothing. Open decision: reject `\` in backend path
+  validation, or build the result before committing.
+
+- [ ] **BUG-298 — `glob("*.csv")` matches a key ending in a newline, because `pattern_to_regex` anchors with `$`**
+  spec: GLOB-014, BE-024 · effort: S · audience: user.api
+  Python's `$` also matches before one final `\n`, so `pattern_to_regex("*.csv")`
+  accepts `"a.csv\n"`: `SQLBlobBackend.glob` and `ext.glob` over `MemoryBackend`
+  return it (measured); the S3, Azure and async Azure native globs share the
+  regex (read only). Open decision: anchor with `\Z` on every backend, or state
+  the newline rule in GLOB-014.
 
 ---
 

@@ -629,7 +629,7 @@ def test_concurrent_writes(tmp_path: object) -> None:
 
 
 # ---------------------------------------------------------------------------
-# Coverage: optional columns, digest, extra, glob_to_like
+# Coverage: optional columns, digest, extra
 # ---------------------------------------------------------------------------
 
 
@@ -693,40 +693,6 @@ class TestMinimalSchemaFolderInfo:
         assert info.total_size >= 0  # computed from length(data)
         assert info.modified_at is None
         b.close()
-
-
-class TestGlobToLike:
-    """Unit tests for the _glob_to_like static method."""
-
-    @pytest.mark.parametrize(
-        ("pattern", "expected"),
-        [
-            ("data/*.txt", "data/%.txt"),
-            ("file?.txt", "file_.txt"),
-            ("**/*.txt", "%/%.txt"),
-            ("*", None),
-            ("100%.txt", "100\\%.txt"),
-            ("file_name.txt", "file\\_name.txt"),
-            ("file[abc].txt", "file_.txt"),
-            ("path/to/file.txt", "path/to/file.txt"),
-        ],
-        ids=[
-            "simple_star",
-            "question_mark",
-            "double_star",
-            "bare_star_none",
-            "escape_percent",
-            "escape_underscore",
-            "char_class",
-            "literal_chars",
-        ],
-    )
-    def test_glob_to_like(self, pattern: str, expected: str | None) -> None:
-        assert SQLBlobBackend._glob_to_like(pattern) == expected
-
-    def test_unclosed_bracket(self) -> None:
-        result = SQLBlobBackend._glob_to_like("file[abc.txt")
-        assert "[" in result
 
 
 class TestHealthCheckFailure:

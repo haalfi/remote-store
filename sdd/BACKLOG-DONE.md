@@ -241,6 +241,16 @@ if evidence changes; these are retired.
 
 ## Unreleased
 
+- [x] **BL-011 — `SQLBlobBackend.delete_folder` deletes sibling keys, and listings return them, because prefix `LIKE` patterns leave `_` and `%` unescaped**
+  spec: SQL-BLOB-061, SQL-BLOB-010, SQL-BLOB-012, SQL-BLOB-025, SQL-BLOB-026, SQL-BLOB-027, SQL-BLOB-028, SQL-BLOB-030, SQL-BLOB-033 · effort: S · audience: user.api, user.api_docs
+  Every folder-prefix query in `_sqlalchemy.py` goes through one predicate,
+  `SQLBlobBackend._under`: escaped `LIKE ... ESCAPE '\'`, plus, on SQLite, whose
+  `LIKE` also folded case, an `=` that applies the key column's own collation. `glob()` narrows by literal prefix
+  and literal tail on every dialect; `_glob_to_like`, which dropped `**/` and
+  `[...]` matches, is gone. Pinned by `tests/backends/sqlblob/test_like_prefix.py` and two
+  `_`-sibling conformance cells.
+  Detail: [dossier](backlog/bl-011-sql-like-sibling-deletion.md)
+
 - [x] **ID-257 — Two sessions working in parallel mint the same backlog ID, and every derivation says both are right**
   spec: — · effort: S · audience: contributor.tooling
   Decided: reservation is the minting rule. `BACKLOG.md` § How this file works

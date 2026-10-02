@@ -1,0 +1,227 @@
+id: BL-011
+title: "`SQLBlobBackend.delete_folder` deletes sibling keys, and listings return them, because prefix `LIKE` patterns leave `_` and `%` unescaped"
+trigger: "SQLBlobBackend narrowed every folder-shaped query with an unescaped `key LIKE prefix || '%'`, so `_` and `%` in a key reached siblings: delete_folder('a_b', recursive=True) deleted axb/y.txt; on SQLite, LIKE's ASCII case folding did the same across letter case"
+source_items:
+  - BL-011
+  - BUG-241
+audience:
+  - user.api
+  - user.api_docs
+discovery_followups:
+  # Round 2's measuring reviewer saw write("\\") raise yet store the row;
+  # reproduced on SQLBlobBackend and MemoryBackend, unreachable through Store.
+  - BUG-297
+  # External review input (Perplexity, relayed by the maintainer) named the
+  # trailing-newline case. The newline match BUG-298 tracks predates this PR;
+  # what this PR introduced, and fixed in 40cc778, was round 1's suffix LIKE
+  # dropping that key.
+  - BUG-298
+expected_ripples:
+  - sdd/backlogid.json
+  - CHANGELOG.md
+  - sdd/BACKLOG.md
+  - sdd/BACKLOG-DONE.md
+  - sdd/specs/040-sql-blob-backend.md
+surprising_ripples:
+  # Neither the item nor the ripple-check named these: the guide and the Store
+  # reference both described glob as using SQLite GLOB, which the code avoids.
+  - docs-src/guides/backends/sql-blob.md
+  - docs-src/reference/api/store.md
+  - tests/backends/conformance/test_io.py
+  - tests/backends/conformance/test_listing.py
+phases:
+  - id: orient
+    name: Orient
+    steps:
+      - file: sdd/BACKLOG.md
+        section: "BL-011"
+        read_type: gate
+        extract: "Nine unescaped LIKE sites; open decision none; scope in the dossier"
+        outcome: ok
+      - file: sdd/backlog/bl-011-sql-like-sibling-deletion.md
+        section: "(full)"
+        read_type: gate
+        extract: "Why BL-; points at BUG-241's correction for sites and reproduction"
+        outcome: ok
+      - file: sdd/backlog/bug-241-sql-like-metacharacters.md
+        section: "Correction, 2026-09-27"
+        read_type: gate
+        extract: "Site list at lines 460-1116 and the reproduction. Scoped the defect to `_` and `%`; SQLite's case folding at the same sites and glob's non-SQLite branch were outside it, found only by re-running the reproduction with case and glob seeds"
+        outcome: unclear
+      - file: sdd/CLAUDE-REFERENCE.md
+        section: "Pre-work index / Bug fix, Spec section, Backlog item touched"
+        read_type: gate
+        extract: "BACKLOG, CHANGELOG stub, failing test first, spec if invariant contradicted, trace"
+        outcome: ok
+      - file: sdd/specs/040-sql-blob-backend.md
+        section: "SQL-BLOB-010, -025 to -033, -061"
+        read_type: gate
+        extract: "Pseudo-SQL wrote the unescaped LIKE into the spec; SQL-BLOB-061 stated the trailing-slash rule but not literal matching; line 103's 'index supporting prefix scans' measured false on SQLite (EXPLAIN QUERY PLAN: SCAN)"
+        outcome: misleading
+      - file: src/remote_store/backends/_sqlalchemy.py
+        section: "SQLBlobBackend probes, listings, delete_folder, glob, _glob_to_like; SQLQueryBackend"
+        read_type: reference
+        extract: "Nine sites confirmed with rg; SQLQueryBackend prefix-matches with str.startswith and is unaffected; no async SQL backend exists"
+        outcome: ok
+  - id: tests
+    name: Failing tests
+    steps:
+      - file: sdd/TESTING.md
+        section: "(full)"
+        read_type: gate
+        extract: "Spec-traced, real in-memory SQLite over mocks"
+        outcome: ok
+      - file: tests/backends/sqlblob/test_config.py
+        section: "TestGlob, test_prefix_matching_no_false_positives, TestGlobToLike"
+        read_type: reference
+        extract: "Existing SQL-BLOB-061 test covered only the trailing slash. Seen red: 24 of 37 new cells on base; the 4 backslash cells pass on base (no ESCAPE on SQLite means \\ is literal) and guard the escape once ESCAPE is added. My own miss: the first list_folders cell passed on base because its siblings never shared the prefix; rewritten and seen red"
+        outcome: ok
+      - file: tests/backends/conformance/test_io.py
+        section: "TestOperationalConsistency"
+        read_type: reference
+        extract: "Home of the `_`-sibling delete_folder cell; red only on sqlblob, green on the other local fixtures"
+        outcome: ok
+      - file: tests/backends/conformance/test_listing.py
+        section: "TestBackendListing"
+        read_type: reference
+        extract: "Home of the `_`-sibling list_files cell; red only on sqlblob, green on the other local fixtures"
+        outcome: ok
+  - id: fix
+    name: Fix
+    steps:
+      - file: src/remote_store/backends/_sqlalchemy.py
+        section: "_escape_like, SQLBlobBackend._under, glob"
+        read_type: reference
+        extract: "Mutation check showed the escape unpinned on SQLite (substr alone rejects `_`/`%` siblings), so a cell runs the non-SQLite branch; each mutant (no substr, no backslash escape, no escape) turns its cells red. My own miss: I ran that new cell only against the mutants, and hatch run all then failed it on the fix, because with substr off SQLite's LIKE folded the seeded case twin A_B in; the cell now removes the twin first"
+        outcome: ok
+  - id: review_round_1
+    name: Review round 1, index claim and glob narrowing
+    steps:
+      - file: sdd/specs/040-sql-blob-backend.md
+        section: "SQL-BLOB-010"
+        read_type: gate
+        extract: "My own miss: I measured EXPLAIN QUERY PLAN on a key-only SELECT and wrote it for every prefix query. Re-measured per shape: key-only reads scan the covering index, the rest scan the table"
+        outcome: ok
+      - file: src/remote_store/backends/_sqlalchemy.py
+        section: "glob, _glob_literal_suffix"
+        read_type: reference
+        extract: "Deleting _glob_to_like dropped server-side filtering of wildcard-leading patterns off SQLite. Restored with a literal-tail LIKE; pinned by enumerating 866 compilable patterns against 780 keys (0 misses); a mutant without the **/ slash rule misses 1616 pairs"
+        outcome: ok
+  - id: review_closing
+    name: Closing gate, column collation
+    steps:
+      - file: sdd/specs/040-sql-blob-backend.md
+        section: "SQL-BLOB-012, SQL-BLOB-061"
+        read_type: gate
+        extract: "SQL-BLOB-012 admits user tables, so a key column may declare COLLATE NOCASE. My own miss: substr(key, 1, n) = prefix compares BINARY (a function result has no collation), so on such a table is_folder('UP') went False while is_file('UP/X.TXT') stayed True; base agreed with itself. Measured on base and head; fixed with key = prefix || substr(key, n + 1), column on the left"
+        outcome: ok
+  - id: review_external
+    name: External review input, trailing newline
+    steps:
+      - file: src/remote_store/_glob.py
+        section: "pattern_to_regex"
+        read_type: reference
+        extract: "Anchors with `$`, which accepts one trailing newline: glob('*.csv') matched 'a.csv\\n' on base SQLBlob and on ext.glob over Memory, and the round-1 suffix LIKE dropped it on head. My own miss: the enumeration's key alphabet held no newline, and it checked a Python model of the clause rather than the SQL. Rewritten to run the real clause in SQLite over 1554 keys: 178 of 866 compilable patterns carry a tail and query, 4916 accepted pairs, 0 misses; the mutant without the newline branch misses 1148. My round-1 PR reply (on the glob perf thread) had stated '55,363 regex-matching pairs, 0 excluded', a total that counted tail-less patterns too; corrected on that thread"
+        outcome: ok
+      - file: sdd/specs/018-glob.md
+        section: "GLOB-014"
+        read_type: reference
+        extract: "Silent on a trailing newline, so whether glob should match it is filed as BUG-298 rather than decided here"
+        outcome: unclear
+  - id: review_round_5
+    name: Review round 5, SQL Server bracket and vacuous probes
+    steps:
+      - file: src/remote_store/backends/_sqlalchemy.py
+        section: "_escape_like"
+        read_type: reference
+        extract: "SQL Server reads `[...]` as a LIKE class; `[` now escaped (by maintainer decision), measured harmless on SQLite (`\\[` matches only a literal `[`), claims narrowed to SQLite-measured. My own miss twice over: the `a\\x` probe cells had no seeded key to reach, and once seeded the SQLite `=` clause still masked a broken escape (no_backslash mutant left them green); the probe now runs on the non-SQLite branch, where the mutant reddens it. Same miss as in the fix phase (the case twin A_B): I first put a case probe (aXb) on that branch, where SQLite's LIKE folds case"
+        outcome: ok
+  - id: review_round_6
+    name: Verification round, test hygiene and prose
+    steps:
+      - file: tests/backends/sqlblob/test_like_prefix.py
+        section: "module docstring, FOLDERS, test_prefix_follows_the_key_columns_collation"
+        read_type: reference
+        extract: "The `bracket` cells cannot fail on SQLite (no `[` class): no mutant reddens them and they pass on base, so they are labelled no-op guards and `test_escape_like` named as what pins `[`. The collation test now closes its engine in `finally`, since a leaked connection's ResourceWarning failed the next test. My own miss: SQL-BLOB-061 claimed a compile check that lived only in a gitignored script"
+        outcome: ok
+  - id: verify
+    name: Verify
+    steps:
+      - file: sdd/CLAUDE-REFERENCE.md
+        section: "Detailed checklist / Bug fix, Spec section"
+        read_type: verify
+        extract: "BACKLOG to DONE, CHANGELOG, failing tests before fix, spec 040 amended"
+        outcome: ok
+review:
+  # Derived by `hatch run ship-report 1054 --trace-block-only` at head 22e03f3.
+  # Do not hand-edit, except a newly required field per sdd/traces/_schema.yml
+  # section review: RFC-0015 D4 makes this script the only producer.
+  derivation: "hatch run ship-report 1054 --trace-block-only"
+  pr: 1054
+  review_rounds: 6
+  submissions: 5
+  findings: 15
+  by_round:
+    - round: 1
+      findings: 2
+      origin: {original: 1, pre-existing: 1}
+      triage: {must-fix: 2}
+      duration_hours: 0.05
+    - round: 2
+      findings: 4
+      origin: {original: 3, unclassifiable-file: 1}
+      triage: {must-fix: 4}
+      duration_hours: 0.47
+    - round: 3
+      findings: 1
+      origin: {pre-existing: 1}
+      triage: {must-fix: 1}
+      duration_hours: 0.42
+    - round: 4
+      findings: 4
+      origin: {loop-introduced: 2, original: 2}
+      triage: {must-fix: 4}
+      duration_hours: 0.13
+    - round: 5
+      findings: 4
+      origin: {loop-introduced: 4}
+      triage: {must-fix: 4}
+      duration_hours: 0.34
+  by_file:
+    - path: "sdd/traces/bl-011-sql-like-prefix-escaping.yml"
+      findings: 4
+    - path: "sdd/specs/040-sql-blob-backend.md"
+      findings: 3
+    - path: "src/remote_store/backends/_sqlalchemy.py"
+      findings: 3
+    - path: "tests/backends/sqlblob/test_like_prefix.py"
+      findings: 3
+    - path: "sdd/BACKLOG-DONE.md"
+      findings: 1
+    - path: "tests/backends/sqlblob/test_config.py"
+      findings: 1
+  untouched_files:
+    - "CHANGELOG.md"
+    - "docs-src/_data/graph/graph.json"
+    - "docs-src/explanation/graph_viz.html"
+    - "docs-src/guides/backends/sql-blob.md"
+    - "docs-src/reference/api/store.md"
+    - "sdd/BACKLOG.md"
+    - "sdd/backlog/bl-011-sql-like-sibling-deletion.md"
+    - "sdd/backlogid.json"
+    - "tests/backends/conformance/test_io.py"
+    - "tests/backends/conformance/test_listing.py"
+  review_driven_commits:
+    - sha: "6fd5a42"
+      subject: "BL-011: Address PR #1054 review round 1: index claim and glob suffix narrowing"
+    - sha: "e50eb17"
+      subject: "BL-011: File BUG-297, found by PR #1054 review round 2"
+    - sha: "cde95d1"
+      subject: "BL-011: Address PR #1054 closing gate: key column collation, stale referents"
+    - sha: "40cc778"
+      subject: "BL-011: Admit the trailing newline the glob regex accepts; centralize the LIKE escape"
+    - sha: "6cfe0e4"
+      subject: "BL-011: Address PR #1054 review round 5: escape [, scope literal-match claims, live probes"
+    - sha: "22e03f3"
+      subject: "BL-011: Address PR #1054 verification round: test hygiene and prose"
+  ci: {verdict: GREEN, failed: 0, pending: 0}

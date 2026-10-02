@@ -17,3 +17,23 @@ whose shipping unresolved costs users more than delaying the release.
 under sibling prefixes, with no error and no way to recover them short of a
 backup, and `_` in object keys is common. A delayed release costs time; this
 costs data.
+
+## Correction, 2026-10-02
+
+Escaping `_` and `%` was not the whole defect. Measured on base, same SQLite
+setup as BUG-241's correction (`tmp/bl011_repro.py`, `tmp/bl011_glob.py` in
+the implementing session):
+
+- **SQLite's `LIKE` folds ASCII case**, while its `=` does not.
+  `delete_folder("UP", recursive=True)` with no `UP/` folder deleted `Up/u.txt`
+  and `up/l.txt`; `is_folder("UP")` answered `True` while `is_file` stays exact.
+- **Glob's non-SQLite branch** (`_glob_to_like`) passed no `ESCAPE`, so it
+  relied on the dialect's default, and translated `**/` to `%/` and `[...]` to
+  `_`. Forced on SQLite: `**/*.csv` dropped root `a.csv`, `[]k]x` dropped
+  `kx`, and `a_b/*` returned nothing. The first two are under-matches on every
+  dialect that branch served, PostgreSQL included.
+
+Both were folded into BL-011 by maintainer decision. Shipped shape: one
+predicate, `SQLBlobBackend._under` (escaped `LIKE`, plus on SQLite an `=` that
+applies the key column's collation), and glob narrowing by literal prefix and
+literal tail on every dialect.
