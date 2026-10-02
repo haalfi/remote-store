@@ -21,6 +21,7 @@ failed on legitimate closure would be switched off within a day.
 from __future__ import annotations
 
 import importlib.util
+import locale
 import subprocess
 import sys
 from pathlib import Path
@@ -304,6 +305,18 @@ class TestGitReads:
         root, _run, _write = repo
         assert _mod.read_base("sdd/BACKLOG.md", root=root) != ""
         assert _mod.read_base("sdd/nope.md", root=root) == ""
+
+    def test_read_base_is_utf8_whatever_the_locale(self, repo, monkeypatch) -> None:
+        """On a cp1252 Windows locale the em dash decoded as mojibake and the base held no IDs.
+
+        The gate then refused the base as carrying no backlog file, which is
+        loud but names the wrong cause. Forcing the locale reproduces it on any host.
+        """
+        root, _run, _write = repo
+        monkeypatch.setattr(locale, "getencoding", lambda: "cp1252")
+        monkeypatch.setattr(locale, "getpreferredencoding", lambda do_setlocale=True: "cp1252")
+        base_open, _done = _mod._ids(_mod.read_base("sdd/BACKLOG.md", root=root), "")
+        assert base_open == {"BK-100", "BK-101"}
 
     def test_branch_commit_ids_reads_every_id_a_subject_claims(self, repo) -> None:
         """Behavioural, not `isinstance`: the IDs, from real commit subjects."""

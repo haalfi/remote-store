@@ -181,7 +181,11 @@ class Disagreement:
 
 
 def _git(*args: str, root: Path = ROOT, check: bool = True) -> subprocess.CompletedProcess[str]:
-    return subprocess.run(["git", "-C", str(root), *args], check=check, capture_output=True, text=True)
+    # UTF-8 explicitly: under a cp1252 locale (Windows without UTF-8 mode) the
+    # headers' em dash decoded as mojibake and the base read as holding no IDs.
+    return subprocess.run(
+        ["git", "-C", str(root), *args], check=check, capture_output=True, text=True, encoding="utf-8"
+    )
 
 
 def _read_head(path: Path) -> str:

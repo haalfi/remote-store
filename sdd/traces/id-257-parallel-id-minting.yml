@@ -24,7 +24,10 @@ expected_ripples:
   - sdd/backlog/bk-385-done-register-duplicate-ids.md
 surprising_ripples:
   # Its "does not look at other open branches" bound now has an opt-in
-  # answer, and a bound that omits it would send a reader nowhere.
+  # answer, and a bound that omits it would send a reader nowhere. Its `_git`
+  # also shared the locale-decoding defect the closing pass found in
+  # gen_backlogid's (cp1252 read every base as holding no IDs); fixed here on
+  # the owner's call rather than filed, with its own forced-cp1252 test.
   #
   # Not listed, because sdd/BACKLOG.md is already in expected_ripples: two
   # edits there the table did not predict. ID-235's index line cited BK-385
