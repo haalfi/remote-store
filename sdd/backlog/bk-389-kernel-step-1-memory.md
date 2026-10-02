@@ -63,10 +63,16 @@ every case. RFC-0017 carries the same answers at the question each settles.
    of this planning PR's review, which found the Memory placement table
    putting them in the driver against D1: a driver "carries no path, root,
    type, closed or mapping logic").
-   Before any driver call the kernel rejects an absolute key, a `..` segment
-   and a null byte with `InvalidPath`, and drops empty and `.` segments and a
-   trailing slash, by `RemotePath`'s rules, so every driver receives a
-   canonical key. The root check runs on the raw key first, as the
+   Before any driver call the kernel rejects a key starting with `/`, a `..`
+   segment and a null byte with `InvalidPath`, and drops empty and `.`
+   segments (so a trailing slash and `//` fold too), so every driver receives
+   a canonical key. The rule is spec 013's MEM-DS-005 table, which both Memory
+   classes implement today, and **not** `RemotePath`'s, which differs on two
+   inputs (measured at master `9caef6b`, `str(RemotePath(p))` against
+   `MemoryBackend._split_path(p)`): `RemotePath("/a/b")` folds to `a/b` where
+   Memory refuses it, and `RemotePath("a\\b")` converts the backslash to `/`
+   where Memory keeps `a\b` as one segment. A backslash stays an ordinary key
+   character. The root check runs on the raw key first, as the
    **Depends on** paragraph below states, so `AddressesRoot` still sees every spelling. A later step whose
    driver answers a non-canonical key differently today (a flat wire's
    `a//b`, say) enumerates that cell change at its own step.
@@ -97,7 +103,9 @@ every case. RFC-0017 carries the same answers at the question each settles.
 3. The `max_depth` algorithm on DEPTH-003's reading (BUG-240's decision), and
    the folder `modified_at` aggregation as RFC-0017 D3 fixes it: the latest
    known file time, skipping the `datetime.min` UTC sentinel, and `None` when
-   no time is known.
+   no time is known. The kernel computes it over a listing; a driver with
+   `SupportsFolderStats` must return the same value (BK-394's spec 013
+   placement gives both Memory drivers one).
 
 **Depends on** BK-388, whose postconditions the kernel is written against.
 As landed, the root rule is a postcondition ranked after the closed guard,

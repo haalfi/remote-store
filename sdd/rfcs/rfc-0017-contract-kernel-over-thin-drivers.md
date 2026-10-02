@@ -236,10 +236,12 @@ other 6 public members (`name`, `capabilities`, `unwrap`, `native_path`,
 `class Backend` (re-run when BK-380 deleted the `_SeekableSpool` helper that
 was a 28th match above it). It owns, once:
 
-- key validation and normalisation (added at BK-389's planning): an absolute
-  key, a `..` segment or a null byte is refused with `InvalidPath`, and empty
-  and `.` segments and a trailing slash are dropped by `RemotePath`'s rules,
-  after the root check on the raw key, so a driver only ever sees a canonical
+- key validation and normalisation (added at BK-389's planning): a key
+  starting with `/`, a `..` segment or a null byte is refused with
+  `InvalidPath`, and empty and `.` segments are dropped, by spec 013's
+  MEM-DS-005 table rather than `RemotePath`'s rules (which fold a leading `/`
+  and convert `\`; BK-389's dossier has the measurement), after the root
+  check on the raw key, so a driver only ever sees a canonical
   key, as D1's driver, which "carries no path … logic", requires;
 - root refusal from the key (BE-029, both predicates as `_flat_ns` now states
   them), and the closed guard where the driver declares

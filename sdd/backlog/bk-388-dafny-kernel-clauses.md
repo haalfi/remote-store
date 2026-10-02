@@ -78,7 +78,7 @@ D7). It also gives BK-345 and ID-244 the verified reference they lack.
 
 The root rule's exit criterion above still reads "the trait's preconditions".
 As landed (§ As landed) they are postconditions ranked after the closed guard,
-and the criterion is read that way: its predicate and the trait's
-postconditions in `BackendContract.dfy` §5c, their discharge in
+and the criterion is read that way: its predicate in `BackendContract.dfy`
+§5c and the trait's postconditions in its §6, their discharge in
 `MemoryBackend.dfy`, and the lemmas in `RootPath.dfy`. Found by the read-only
 audit of master `9caef6b` that preceded BK-389's split.

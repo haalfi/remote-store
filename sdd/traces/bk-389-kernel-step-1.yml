@@ -131,3 +131,18 @@ phases:
         section: "BUG-296, BK-387 entries"
         read_type: verify
         extract: "two Unreleased entries named BK-389 for scope that moved to BK-394"
+  - id: fix_round2
+    name: Review round 2 fix pass
+    steps:
+      - file: src/remote_store/_path.py
+        section: "RemotePath normalisation"
+        read_type: verify
+        extract: "RemotePath folds '/a/b' and converts '\\', so decision 6 cites MEM-DS-005, not RemotePath; my first wording named the wrong rule source"
+      - file: sdd/formal/BackendContract.dfy
+        section: "§5c Root rule; §6 Backend contract"
+        read_type: verify
+        extract: "the predicate is §5c, the trait's postconditions §6; BK-388's correction conflated them"
+      - file: sdd/specs/013-memory-backend.md
+        section: "MEM-015, MEM-025, MEM-040"
+        read_type: verify
+        extract: "a kernel aggregation over list_page breaks the single-lock snapshot and O(1) space; MEM-015 moves to SupportsFolderStats"
