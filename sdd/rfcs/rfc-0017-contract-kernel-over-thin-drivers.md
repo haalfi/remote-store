@@ -176,11 +176,11 @@ optional member, so presence is a protocol, not a method):
 | `SupportsAtomicMove` | `move(src, dst, *, overwrite)` | forwarded whole, so the kernel never sequences the checks of an atomic move (SQLBlob's single transaction, Memory's single lock); one of the two ways to back a declared `ATOMIC_MOVE` |
 | `SupportsRename` | `rename(src, dst, *, replace: bool)` | `move` for drivers without `SupportsAtomicMove`: `replace=True` where the wire's rename replaces atomically (Local's `os.rename` within one root, which is why `LocalBackend` declares `ATOMIC_MOVE` today, `_local.py` lines 668 to 670), `replace=False` where it cannot, in which case the kernel runs the displace-and-restore fallback SFTP carries today, and only there |
 | `SupportsCopy` | `copy(src, dst)` | `copy`, and `move` as copy-then-delete when neither of the two above exists |
-| `SupportsDeleteTree` | `delete_tree(prefix)` | `delete_folder(recursive=True)` in one wire call (Graph's single DELETE, Azure HNS `delete_directory`, SQL's one transactional `DELETE … LIKE`, S3 `DeleteObjects` in batches of 1000); without it, list then delete |
+| `SupportsDeleteTree` | `delete_tree(prefix)` | `delete_folder(recursive=True)` in one wire call (Graph's single DELETE, Azure HNS `delete_directory`, SQL's one transactional `DELETE … LIKE`, S3 `DeleteObjects` in batches of 1000); without it, list then delete. Where folder objects exist, `delete_tree` refuses a file or an absent key without removing anything, in one step where the wire has one; a wire whose tree delete also removes a file item (Graph, HNS, as read from their code and SDK, not run against a live wire) checks first and documents the race (BK-396's decision, BK-389's dossier, decision 8) |
 | `SupportsEnsureParents` | `ensure_parents(key)` | called before `put` when `parents == "explicit"`; SFTP's stat walk and Local's `mkdir -p` are their implementations. Never called for `implicit` (Graph, GR-039: no explicit `mkdir`; Azure HNS) or `none` |
 | `SupportsFolderStats` | `folder_stats(prefix) -> (count, size, latest)` | `get_folder_info` push-down (SQL's aggregate query); without it, the kernel aggregates a listing |
 | `SupportsGlob` | `glob(pattern)` | native `GLOB`; without it the driver must not declare `GLOB` |
-| `SupportsRemoveFolder` (added at BK-389's planning; corrected after PR #1055 merged) | `remove_folder(key)`: remove an empty folder and refuse anything else without removing it, in one step where the wire has one (Memory's lock, `rmdir`) | required when `parents` is `"explicit"` or `"implicit"` (any driver with folder objects; Graph, Azure HNS), checked at construction; never called when `parents == "none"`. The kernel's `delete_folder` sequence around it (which refusals it probes, what `delete_tree` must refuse, the recursive and `parents == "none"` paths) is BK-396's to decide before BK-389's kernel PR; the candidate design and its measurements are in BK-396's dossier |
+| `SupportsRemoveFolder` (added at BK-389's planning; corrected after PR #1055 merged) | `remove_folder(key)`: remove an empty folder and refuse anything else without removing it, in one step where the wire has one (Memory's lock, `rmdir`) | required when `parents` is `"explicit"` or `"implicit"` (any driver with folder objects; Graph, Azure HNS), checked at construction; never called when `parents == "none"`. The kernel's `delete_folder` sequence around it was decided in BK-396 and is stated, with its measured cells, in BK-389's dossier, decision 8: a refusal is probed only when it is a typed `NotFound` or untyped, a recursive delete without `SupportsDeleteTree` walks with `list_page` and calls `remove_folder` deepest first, and a driver's `stat` and `list_page` never present a symbolic link as a folder |
 
 Two more attributes the stream wrapper reads per driver, because
 `_ErrorMappingStream`'s caught set is per construction site today:
@@ -264,9 +264,10 @@ was a 28th match above it). It owns, once:
   `close_is_terminal`, in the order spec 003 fixes; these are
   key-level checks and add no round trip;
 - the wrong-type probes on the error path (one `stat` and one
-  `list_page(limit=1)`, the same probes the classes issue today; for
-  `delete_folder` the sequence, and which refusals it probes, is BK-396's
-  to decide), the
+  `list_page(limit=1)`, the same probes the classes issue today, run after
+  a `NotFound`; `delete_folder` also probes an untyped refusal, never one
+  typed `BackendUnavailable` or `PermissionDenied`, and its sequence,
+  decided in BK-396, is BK-389's dossier, decision 8), the
   absent-container tolerance, and the first-page listing bound (BE-021),
   including its page-not-item rule;
 - the file-ancestor pre-check as a kernel option with today's default: the
@@ -309,7 +310,7 @@ flowchart LR
   prim -->|stream| wrap["stream wrapped once:<br/>every later read passes classify too"]
   prim -->|native exception| cls["driver.classify(exc, op=read, key)"]
   cls --> post["kernel post-processing:<br/>path and backend set,<br/>blank message synthesised,<br/>a typed RemoteStoreError passes through"]
-  post -->|"NotFound<br/>(delete_folder: BK-396)"| probe["error-path probe:<br/>stat or list_page(limit=1)<br/>wrong type becomes InvalidPath"]
+  post -->|"NotFound<br/>(delete_folder: or untyped)"| probe["error-path probe:<br/>stat or list_page(limit=1)<br/>wrong type becomes InvalidPath"]
   post --> raise["typed error to the caller"]
   probe --> raise
   wrap --> caller["stream to the caller"]
@@ -383,7 +384,12 @@ pin and records why: Local's two absent-root root `delete_folder` tests in
 `tests/backends/local/test_absent_root.py` answer `None` and `NotFound`,
 and both become `InvalidPath`. Where none pins it, the step adds the cell:
 Local's root `delete_folder` on a present root has no test, since those
-tests remove the root first (corrected after PR #1055 merged). AZ-025's blank-message clause and its pinning
+tests remove the root first (corrected after PR #1055 merged). Added at
+BK-396: `delete_folder`'s sequence (BK-389's dossier, decision 8) changes
+cells at step 3 (SQLBlob's raising `stat` after an empty listing), step 5
+(Local's symbolic links) and step 6 (SFTP's recursive delete under a
+concurrent writer, untyped today), each enumerated there with its
+measurement. AZ-025's blank-message clause and its pinning
 test go red with BUG-276's fix under the arm decided at BK-387, synthesise
 (its dossier: "Both go red when this lands, by design"); the BUG-240 and
 BUG-292 decisions change cells on the classes that
@@ -779,10 +785,20 @@ and its answer keeps `classify`.
 - **Performance:** the kernel issues the same probes the per-backend code
   issues today (one `stat` or one `list_page(limit=1)` on the error path;
   the file-ancestor walk only when opted in; `ensure_parents` only for
-  explicit parents), and the S3 driver drops the s3fs layer. One open
-  exception: `delete_folder`'s probes are BK-396's to decide. On Memory, which
-  issues no probe today, its candidate adds a `stat` after a refusal and a
-  listing after a non-recursive refusal of a present folder. Two
+  explicit parents), and the S3 driver drops the s3fs layer.
+  `delete_folder`'s counts were measured per class against today
+  (`sdd/rfcs/rfc-0017-delete-folder-measure.py compare trips`, wire calls
+  for a call without `missing_ok`; BK-396). Memory takes one driver
+  primitive, under one lock, and a second, the `stat` probe, only after a
+  `NotFound` (an absent key, a key under a file). S3Boto3 and SQLBlob are
+  equal on every measured cell. Flat Azure's recursive delete lists once
+  where it lists twice today (4 calls to 3 for two files). SFTP drops the
+  check before the removal and pays the probe after a refusal: an empty
+  folder 3 calls to 1 (2 recursive), a non-empty folder refused 2 to 3,
+  the recursive two-file tree 7 to 6, and an absent key, a file or a key
+  under a file 1 to 2, or 1 to 3 recursive. Graph and HNS were read, not
+  run: the kernel adds a `stat` only after a `NotFound`, and the rest is
+  each driver's check-then-remove, the calls it issues today. Two
   replacements change
   data paths and are measured under D8's benchmark gate in the PR that
   lands them:
@@ -820,8 +836,10 @@ and its answer keeps `classify`.
   `write_atomic` and `move` syntheses over each combination of
   `put_is_atomic`, `open_write`, `rename` and `SupportsAtomicMove` the fake
   driver can present, and the `delete_folder` synthesis over
-  `SupportsRemoveFolder` and `SupportsDeleteTree` (every cell BK-396
-  decides, and the construction refusal of an explicit- or
+  `SupportsRemoveFolder` and `SupportsDeleteTree` (every cell of BK-389's
+  dossier, decision 8, as BK-396 decided it, with the walk's concurrent
+  deleter and writer, the non-state refusals that pass through unprobed,
+  and the construction refusal of an explicit- or
   implicit-parents driver without `SupportsRemoveFolder`; added after PR
   #1055 merged); the driver half
   stays with the per-driver suites. BK-345 and ID-244 reduce to driver
@@ -841,7 +859,7 @@ and its answer keeps `classify`.
   (BK-394), which accepts that ADR (the kernel PR before it, BK-389, is
   private and touches spec 003 only: it adds the clauses its kernel cells
   trace to, the key rule, the root `delete_folder` refusal and
-  `SupportsRemoveFolder`'s `delete_folder` sequence as BK-396 decides it, and amends any spec 003 clause
+  `SupportsRemoveFolder`'s `delete_folder` sequence as BK-396 decided it, and amends any spec 003 clause
   BK-395's answers contradict, such as BE-025 or BE-008; BK-389's dossier,
   item 8, is the authority for this split): specs 003, 005, 029 and 037
   below, any clause outside spec 003 that BK-395's answers contradict

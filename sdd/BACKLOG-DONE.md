@@ -244,6 +244,16 @@ if evidence changes; these are retired.
 
 ## Unreleased
 
+- [x] **BK-396 — The kernel's `delete_folder` sequence around `SupportsRemoveFolder` is undecided**
+  spec: BE-013, BE-021, MEM-014, MEM-026, GR-043 · effort: M · audience: library.maintainer, contributor.process
+  Decided, docs only: BK-389's decision 8 and RFC-0017's D1, D2 and § Impact
+  state the sequence. Only a typed `NotFound` or an untyped refusal is probed;
+  `delete_tree` refuses a file or an absent key; the walk tolerates `NotFound`
+  on the way; a recursive delete may answer `DirectoryNotEmpty` under a
+  concurrent writer; a symbolic link is never a folder; the `none` table holds.
+  Derivation: `sdd/rfcs/rfc-0017-delete-folder-measure.py`.
+  Detail: [dossier](backlog/bk-396-kernel-delete-folder-sequence.md)
+
 - [x] **BL-011 — `SQLBlobBackend.delete_folder` deletes sibling keys, and listings return them, because prefix `LIKE` patterns leave `_` and `%` unescaped**
   spec: SQL-BLOB-061, SQL-BLOB-010, SQL-BLOB-012, SQL-BLOB-025, SQL-BLOB-026, SQL-BLOB-027, SQL-BLOB-028, SQL-BLOB-030, SQL-BLOB-033 · effort: S · audience: user.api, user.api_docs
   Every folder-prefix query in `_sqlalchemy.py` goes through one predicate,
