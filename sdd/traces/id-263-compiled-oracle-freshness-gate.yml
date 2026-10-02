@@ -97,10 +97,16 @@ phases:
         section: "(new)"
         read_type: reference
         extract: >-
-          14 cells against a fake dafny executable (`pytest -q`: 14 passed).
-          tmp/id263/mutate.py applied 6 mutants (no reorder, pycache compared,
-          no version check, build exit ignored, --no-verify build,
-          only-in-committed dropped): 6 of 6 caught.
+          23 cells against a fake dafny executable (`pytest -q`: 23 passed).
+          tmp/id263/mutate.py applied 10 mutants (no reorder, pycache compared,
+          no version check, build exit ignored, only-in-committed dropped,
+          wrapper ignored, first of many build lines, source glob hardcoded,
+          first of many copy lines, unbound variable passed): 10 of 10 caught.
+          Review round 1 found the build arguments and the source glob restated
+          from dafny_translate.sh (DRIFT-RULES Rule 3); both are now read from
+          it, and the six cells pinning that were seen failing before the fix.
+          Two mutants first survived because one cell duplicated both wrapper
+          lines and failed for the wrong reason; split into one cell per line.
         outcome: ok
   - id: verify
     name: See it fail first, on the real tree

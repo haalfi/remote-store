@@ -25,6 +25,13 @@ SCRIPTS = ROOT / "scripts"
 
 # Classes out of importable order, as Dafny emits them; reorder() moves Backend first.
 RAW_MODULE = "import _dafny\n\nclass MemoryBackend(Backend):\n    pass\n\nclass Backend:\n    pass\n"
+# The pin and the build line, shaped as scripts/dafny_translate.sh writes them.
+WRAPPER = (
+    "#!/bin/bash\nDAFNY_VERSION=4.11.0\nDAFNY_SHA256=abc\n"
+    'CMDS="$CMDS && mkdir -p /build && cp /work/*.dfy /build/ && cd /build"\n'
+    "  CMDS=\"$CMDS && echo '==> Translating $f' && (/opt/dafny/dafny build -t py $f --output:$stem 2>&1"
+    " | grep -v 'Unable to start python3' || true)\"\n"
+)
 
 
 @pytest.fixture(scope="module")
@@ -44,7 +51,7 @@ def env(tmp_path: Path, mod, monkeypatch):
     for name in ("MemoryBackend.dfy", "BackendContract.dfy", "RootPath.dfy", "ResourceSafety.dfy"):
         (formal / name).write_text(f"// {name}\n")
     translate = tmp_path / "dafny_translate.sh"
-    translate.write_text("#!/bin/bash\nDAFNY_VERSION=4.11.0\nDAFNY_SHA256=abc\n")
+    translate.write_text(WRAPPER)
 
     build_out = tmp_path / "build_out"  # what the fake build writes, pre-reorder
     (build_out / "_dafny").mkdir(parents=True)
@@ -104,12 +111,25 @@ class TestFreshness:
         assert env["run"]() == 0
         assert "OK:" in capsys.readouterr().out
 
-    def test_build_command_matches_the_wrapper_and_sees_every_dfy(self, env):
-        """The verifying build, on all of sdd/formal/*.dfy, never --no-verify."""
+    def test_wrapper_build_command_runs_on_every_dfy(self, env):
+        """The wrapper's build, with $f/$stem bound to the oracle, on all of sdd/formal/*.dfy."""
         env["run"]()
         call = json.loads(env["log"].read_text())
         assert call["argv"] == ["build", "-t", "py", "MemoryBackend.dfy", "--output:MemoryBackend"]
         assert call["cwd_files"] == ["BackendContract.dfy", "MemoryBackend.dfy", "ResourceSafety.dfy", "RootPath.dfy"]
+
+    def test_build_flags_come_from_the_wrapper(self, env):
+        """A flag added to the wrapper's build reaches the check, so a regenerated tree stays fresh."""
+        env["translate"].write_text(WRAPPER.replace("build -t py $f", "build -t py --foo $f"))
+        env["run"]()
+        call = json.loads(env["log"].read_text())
+        assert call["argv"] == ["build", "-t", "py", "--foo", "MemoryBackend.dfy", "--output:MemoryBackend"]
+
+    def test_source_set_comes_from_the_wrapper(self, env):
+        """The files copied into the build are the wrapper's `cp /work/<glob>`, not a pattern restated here."""
+        env["translate"].write_text(WRAPPER.replace("cp /work/*.dfy", "cp /work/Memory*.dfy"))
+        env["run"]()
+        assert json.loads(env["log"].read_text())["cwd_files"] == ["MemoryBackend.dfy"]
 
     def test_hand_edited_module_fails_and_names_the_line(self, env, capsys):
         module = env["committed"] / "module_.py"
@@ -173,9 +193,50 @@ class TestSetupErrors:
         assert env["run"]() == 2
         assert "DAFNY_VERSION" in capsys.readouterr().err
 
+    def test_wrapper_without_build_line_exits_2(self, env, capsys):
+        env["translate"].write_text("#!/bin/bash\nDAFNY_VERSION=4.11.0\n")
+        assert env["run"]() == 2
+        assert "dafny build" in capsys.readouterr().err
+
+    def test_wrapper_without_source_copy_exits_2(self, env, capsys):
+        env["translate"].write_text(WRAPPER.replace("cp /work/*.dfy /build/", "true"))
+        assert env["run"]() == 2
+        assert "cp /work/" in capsys.readouterr().err
+
+    def test_wrapper_with_two_build_lines_exits_2(self, env):
+        """Two invocations: which one produced the committed tree is not decidable from the text."""
+        build_line = next(line for line in WRAPPER.splitlines() if "dafny build" in line)
+        env["translate"].write_text(WRAPPER + build_line + "\n")
+        assert env["run"]() == 2
+
+    def test_wrapper_with_two_source_copies_exits_2(self, env):
+        copy_line = next(line for line in WRAPPER.splitlines() if "cp /work/" in line)
+        env["translate"].write_text(WRAPPER + copy_line + "\n")
+        assert env["run"]() == 2
+
+    def test_build_line_with_an_unbound_variable_exits_2(self, env):
+        """A variable the check cannot bind would reach dafny as a literal `$X`."""
+        env["translate"].write_text(WRAPPER.replace("-t py $f", "-t py $EXTRA $f"))
+        assert env["run"]() == 2
+
 
 def test_real_wrapper_carries_a_readable_pin(mod):
     """Renaming the wrapper's DAFNY_VERSION= line would turn the CI step into a setup error."""
     pin = mod.read_pin(SCRIPTS / "dafny_translate.sh")
     assert pin is not None
     assert pin.count(".") == 2
+
+
+def test_real_wrapper_source_copy_parses(mod):
+    assert mod.read_source_glob(SCRIPTS / "dafny_translate.sh") == "*.dfy"
+
+
+def test_real_wrapper_build_line_parses(mod):
+    """Reshaping the wrapper's build line must keep it readable, or the CI step becomes a setup error."""
+    assert mod.read_build_args(SCRIPTS / "dafny_translate.sh") == [
+        "build",
+        "-t",
+        "py",
+        "MemoryBackend.dfy",
+        "--output:MemoryBackend",
+    ]

@@ -6,7 +6,8 @@ builds ``MemoryBackend.dfy`` (and the files it includes) to Python, then
 ``scripts/_dafny_classorder.py`` reorders ``module_.py``.  A non-ghost edit to
 any of those sources that is not regenerated passes ``dafny verify``, and every
 test that drives the oracle then exercises stale code.  This gate rebuilds the
-oracle the same way and compares it with the committed tree, file by file.
+oracle the same way, with the build arguments read from the wrapper rather than
+restated here, and compares it with the committed tree, file by file.
 
 Authority: the ``.dfy`` sources govern; ``MemoryBackend-py/`` is derived and is
 fixed by regenerating, never by hand-editing (declared in
@@ -15,8 +16,9 @@ fixed by regenerating, never by hand-editing (declared in
 is reported as skew and nothing is compared, since its output would differ for
 reasons unrelated to the sources.
 
-The source set is every ``sdd/formal/*.dfy``, copied as the wrapper copies it,
-rather than a list of what ``MemoryBackend.dfy`` includes: the include closure
+The source set is what the wrapper's ``cp /work/<glob> /build/`` copies from
+``sdd/formal/`` (today every ``*.dfy``), read from the wrapper rather than a list
+of what ``MemoryBackend.dfy`` includes: the include closure
 (``BackendContract.dfy``, ``RootPath.dfy``, and ``ResourceSafety.dfy`` through
 ``BackendContract.dfy``) is Dafny's to resolve, and a list here would be a
 second copy of it to go stale.
@@ -34,7 +36,9 @@ Rule 2):
   * ``dafny --version`` disagreeing with the pin,
   * a build that exits non-zero or writes no ``MemoryBackend-py/``.
 
-Exit 2: no ``dafny`` executable, or no readable pin.
+Exit 2: no ``dafny`` executable, no readable pin, no single source-copy line in
+the wrapper, or no single build line whose only shell variables are ``$f`` and
+``$stem``.
 
 Bounds (Rule 7):
 
@@ -68,6 +72,7 @@ from __future__ import annotations
 import argparse
 import difflib
 import re
+import shlex
 import shutil
 import subprocess
 import sys
@@ -82,18 +87,47 @@ from _dafny_classorder import reorder  # noqa: E402
 ENTRY = "MemoryBackend.dfy"
 STEM = "MemoryBackend"
 OUT_DIR = f"{STEM}-py"
-# The wrapper's own command (scripts/dafny_translate.sh), minus Docker.
-BUILD_ARGS = ("build", "-t", "py", ENTRY, f"--output:{STEM}")
 DIFF_LINES = 40
 _PIN_RE = re.compile(r"^DAFNY_VERSION=(\S+)\s*$", re.MULTILINE)
+# The wrapper's one build invocation, e.g. `/opt/dafny/dafny build -t py $f --output:$stem 2>&1`.
+_BUILD_RE = re.compile(r"/dafny (build\b[^|\n]*?)\s+2>&1")
+# The wrapper's source copy into the build dir, e.g. `cp /work/*.dfy /build/`.
+_COPY_RE = re.compile(r"\bcp /work/(\S+) /build/")
+
+
+def _read(path: Path) -> str | None:
+    try:
+        return path.read_text(encoding="utf-8")
+    except OSError:
+        return None
 
 
 def read_pin(translate_script: Path) -> str | None:
-    try:
-        match = _PIN_RE.search(translate_script.read_text(encoding="utf-8"))
-    except OSError:
-        return None
+    text = _read(translate_script)
+    match = _PIN_RE.search(text) if text is not None else None
     return match.group(1) if match else None
+
+
+def read_source_glob(translate_script: Path) -> str | None:
+    """The glob the wrapper copies from ``sdd/formal/`` into its build dir; ``None`` unless exactly one."""
+    text = _read(translate_script)
+    matches = _COPY_RE.findall(text) if text is not None else []
+    return matches[0] if len(matches) == 1 else None
+
+
+def read_build_args(translate_script: Path) -> list[str] | None:
+    """The wrapper's build arguments with its loop variables bound to the oracle.
+
+    Read rather than restated, so a flag the wrapper gains reaches this check
+    (``sdd/DRIFT-RULES.md`` Rule 3).  ``None`` unless there is exactly one build
+    line and every shell variable in it is ``$f`` or ``$stem``.
+    """
+    text = _read(translate_script)
+    matches = _BUILD_RE.findall(text) if text is not None else []
+    if len(matches) != 1:
+        return None
+    args = [tok.replace("$stem", STEM).replace("$f", ENTRY) for tok in shlex.split(matches[0])]
+    return None if any("$" in tok for tok in args) else args
 
 
 def _files(tree: Path) -> dict[str, Path]:
@@ -142,6 +176,17 @@ def main(argv: list[str] | None = None) -> int:
     if pin is None:
         print(f"error: no DAFNY_VERSION= line in {args.translate_script}", file=sys.stderr)
         return 2
+    build_args = read_build_args(args.translate_script)
+    if build_args is None:
+        print(
+            f"error: no single `dafny build ... 2>&1` line using only $f/$stem in {args.translate_script}",
+            file=sys.stderr,
+        )
+        return 2
+    source_glob = read_source_glob(args.translate_script)
+    if source_glob is None:
+        print(f"error: no single `cp /work/<glob> /build/` line in {args.translate_script}", file=sys.stderr)
+        return 2
     dafny = shutil.which(args.dafny)
     if dafny is None:
         print(
@@ -163,13 +208,13 @@ def main(argv: list[str] | None = None) -> int:
     committed = args.formal_dir / OUT_DIR
     with tempfile.TemporaryDirectory(prefix="oracle-fresh-") as tmp:
         work = Path(tmp)
-        for src in sorted(args.formal_dir.glob("*.dfy")):
+        for src in sorted(args.formal_dir.glob(source_glob)):
             shutil.copy2(src, work / src.name)
-        build = subprocess.run([dafny, *BUILD_ARGS], cwd=work, capture_output=True, text=True, check=False)
+        build = subprocess.run([dafny, *build_args], cwd=work, capture_output=True, text=True, check=False)
         rebuilt = work / OUT_DIR
         if build.returncode != 0 or not rebuilt.is_dir():
             print(
-                f"FAIL: `dafny {' '.join(BUILD_ARGS)}` exited {build.returncode}"
+                f"FAIL: `dafny {' '.join(build_args)}` exited {build.returncode}"
                 + ("" if rebuilt.is_dir() else f" and wrote no {OUT_DIR}/")
             )
             print((build.stdout + build.stderr).strip()[-4000:])
