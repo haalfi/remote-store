@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import json
+import locale
 import subprocess
 import sys
 from pathlib import Path
@@ -714,6 +715,20 @@ class TestRemote:
         monkeypatch.setattr(sys, "argv", ["gen_backlogid.py", *argv])
         assert _mod.main() == 0
         assert seen == [remote]
+
+    def test_git_output_is_read_as_utf8_whatever_the_locale(self, clones, monkeypatch, capsys):
+        """On a cp1252 Windows locale the header's em dash decoded as mojibake and no ref matched.
+
+        Every remote side then read as empty, so a rival mint passed silently.
+        Forcing the locale encoding here reproduces that on any host.
+        """
+        a, b = clones
+        monkeypatch.setattr(locale, "getencoding", lambda: "cp1252")
+        monkeypatch.setattr(locale, "getpreferredencoding", lambda do_setlocale=True: "cp1252")
+        self._mint(a, "ID-900", "a-work")
+        self._mint(b, "ID-900", None)
+        assert _mod._check(remote=True) == 1
+        assert "ID-900 also minted on origin/a-work" in capsys.readouterr().out
 
     def test_an_unreachable_remote_fails_loud(self, clones, tmp_path, capsys):
         _a, b = clones

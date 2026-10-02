@@ -74,8 +74,9 @@ minting in parallel, `git ls-remote --heads origin` listed three heads
 (`bk-377-support-window-gate`, `gh-pages`, `master`), none of them those sessions.
 A networked `lint` would have cost an offline gate and still missed that case.
 `--check --remote` fetches every `origin` branch and fails on any ID this tree
-minted that `origin/master` or a pushed branch carries under different header
-text (everything after the checkbox). Comparing headers, not commits, is what
+minted that `origin/master`, or a pushed branch where master does not already
+carry it, holds under different header text (everything after the checkbox).
+Comparing headers, not commits, is what
 keeps one item reached by squash merge (this repo's merge mode) from reading
 as two. Parsing a title out of the header was tried and dropped: review
 rounds 4, 5 and 6 each refuted a rule for where a title ends. `TestRemote` pins it on

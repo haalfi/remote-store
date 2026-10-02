@@ -150,8 +150,8 @@ Drift-gate::
 
     entrypoint: --check --remote
     kind:       pair
-    compares: the IDs this working tree minted ↔ the same IDs under other headers on origin/master
-        and every other pushed origin branch
+    compares: the IDs this working tree minted ↔ the same IDs under other headers on origin/master,
+        and on every other pushed origin branch where origin/master does not already carry them
     domain:     process
 """
 
@@ -245,7 +245,12 @@ def _done_duplicate_ids(done_text: str) -> dict[str, int]:
 
 
 def _git(*args: str) -> subprocess.CompletedProcess[str]:
-    return subprocess.run(["git", "-C", str(ROOT), *args], capture_output=True, text=True, check=False)
+    # UTF-8 explicitly: under a cp1252 locale (Windows without UTF-8 mode) the
+    # headers' em dash decoded as mojibake, no remote header matched, and a
+    # rival mint passed silently.
+    return subprocess.run(
+        ["git", "-C", str(ROOT), *args], capture_output=True, text=True, encoding="utf-8", check=False
+    )
 
 
 def _headed(open_text: str, done_text: str) -> dict[str, str]:
@@ -269,9 +274,10 @@ def _headed(open_text: str, done_text: str) -> dict[str, str]:
 def _remote_view(remote: str = "origin", base: str = "master") -> tuple[dict[str, list[str]], set[str]]:
     """ID-257: this tree's new items against every pushed branch. Raises ``RuntimeError``.
 
-    Returns ``(clashes, seen)``: each ID this tree minted that another ref
-    carries **under different header text**, with those refs, and every ID on
-    the base or any pushed branch. "Minted here" is the working tree minus the
+    Returns ``(clashes, seen)``: each ID this tree minted that the base, or a
+    branch where the base does not already carry that ID, holds **under
+    different header text**, with those refs, and every ID on the base or any
+    pushed branch. "Minted here" is the working tree minus the
     merge-base with the base, so an uncommitted mint counts. Comparing header
     text rather than commits is what keeps one item, reached by squash merge
     or a push from another checkout, from reading as two.
@@ -570,7 +576,12 @@ def _check(remote: bool = False) -> int:
     # first evidence most authors will have that they exist at all.
     print(
         "No ID collisions, no ID on two open items or on two done entries with one above released history, "
-        + ("no ID this tree minted under another header on a pushed branch, " if remote else "")
+        + (
+            "no ID this tree minted under another header on origin/master, or on a pushed branch "
+            "where master does not already carry it, "
+            if remote
+            else ""
+        )
         + "every open item's attributes in vocabulary, "
         "every section and its items in shape, and every Detail: link resolving to its dossier."
     )
