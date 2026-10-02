@@ -95,9 +95,10 @@ phases:
           Rule 5: --remote is advisory-by-opt-in, reason stated (network on an
           offline gate). Rule 6: the release record is the register for the
           tolerated pairs. Rule 7: bounds stated in the docstring; the
-          done-register rule widens the existing `rule` block, and --remote
-          carries none, because the inventory gives every block on the script
-          the offline --check's homes and would list it as gating.
+          done-register rule widens the existing `rule` block. --remote is
+          declared too: every block carries an `entrypoint:`, so the inventory
+          derives --check rows as gating and the --check --remote row as
+          advisory (gen-backlogid only), measured by regenerating.
         outcome: ok
       - file: CONTRIBUTING.md
         section: "Release checklist, BACKLOG-DONE rename"

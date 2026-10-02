@@ -79,3 +79,6 @@ title. Comparing titles, not commits, is what keeps one item reached by squash
 merge (this repo's merge mode) from reading as two. `TestRemote` pins it on
 two clones of a local bare remote. Its offline twin passes on the same state.
 The "(floor: sdd/backlogid.json)" pointer now reads "the next safe ID above".
+Correction to the second-instance paragraph: its "the open question below"
+points at the paragraph *above* it ("**The open question is what
+mechanism**"); this section answers it.

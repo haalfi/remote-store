@@ -610,6 +610,23 @@ class TestRemote:
         assert _mod._check(remote=True) == 1
         assert "ID-900 also minted on origin/master" in capsys.readouterr().out
 
+    def test_titles_are_read_to_the_closing_bold_not_the_first_double_star(self):
+        """Two live headers carry `**` inside backticks; a cut at the first one made rivals equal."""
+        get = f"- [ ] **ID-900 {_EM} Fix `**kwargs` in get**\n"
+        done = (
+            f"- [x] **ID-901 {_EM} Fix `**kwargs` in put** (v0.1.0)\n"
+            f"- [x] **ID-902 {_EM} Absorbed** → **ID-900**\n"
+            f"- [x] **ID-903 {_EM} Superseded** {_EM} by ID-900.\n"
+            f"- [x] **ID-904 {_EM} Last line, no newline**"
+        )
+        assert _mod._titled(get, done) == {
+            "ID-900": "Fix `**kwargs` in get",
+            "ID-901": "Fix `**kwargs` in put",
+            "ID-902": "Absorbed",
+            "ID-903": "Superseded",
+            "ID-904": "Last line, no newline",
+        }
+
     def test_another_clone_pushing_this_branch_name_is_still_seen(self, clones, capsys):
         """A name tells nothing about whose push it is; only the item does."""
         a, b = clones

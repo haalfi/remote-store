@@ -8,8 +8,8 @@ Normal mode (no flag):
 Check mode (--check):
     Read-only and offline. Verifies the JSON is current, then checks BACKLOG.md
     for collisions with done items **and for one ID carried by two open
-    items**, checks BACKLOG-DONE.md for one ID on two entries outside released
-    history, checks each open item's attributes (R1) and the file's shape
+    items**, checks BACKLOG-DONE.md for one ID on two entries with at least one
+    above released history, checks each open item's attributes (R1) and the file's shape
     (R2–R4, below), and prints next safe IDs per prefix — safe **for this tree
     only**; parallel sessions mint from a reservation instead
     (``BACKLOG.md`` § How this file works).
@@ -94,13 +94,15 @@ Remote mode (--check --remote), ID-257:
     reservation and not this mode is the minting rule; a stale or abandoned
     branch still carrying an ID can report a clash nobody will merge; two mints
     that happen to share a title read as one item; and an item retitled on one
-    side after the other side took it reads as two. It carries **no**
-    ``Drift-gate::`` block: no alias or hook passes ``--remote``, and
-    ``gen_gate_inventory.py`` gives every block on this script the homes of the
-    offline ``--check``, so a block here would be listed as gating in ``lint``.
+    side after the other side took it reads as two. Every ``Drift-gate::``
+    block below carries an ``entrypoint:``, so the inventory gives the
+    ``--check --remote`` block only the passthrough ``gen-backlogid`` alias as
+    a home and derives it ``advisory``; without entrypoints it would inherit
+    the offline ``--check``'s homes and read as gating in ``lint``.
 
 Drift-gate::
 
+    entrypoint: --check
     kind:       pair
     compares: the max ID per prefix in sdd/BACKLOG-DONE.md ↔ sdd/backlogid.json, and the open IDs in
         sdd/BACKLOG.md against both
@@ -108,6 +110,7 @@ Drift-gate::
 
 Drift-gate::
 
+    entrypoint: --check
     kind:       rule
     rule: no ID appears on two open item headers in sdd/BACKLOG.md, nor on two done
         headers in sdd/BACKLOG-DONE.md when one sits above released history
@@ -115,6 +118,7 @@ Drift-gate::
 
 Drift-gate::
 
+    entrypoint: --check
     kind:       pair
     compares: each open item's audience values in sdd/BACKLOG.md ↔ the audience
         enum in sdd/traces/_schema.yml, which governs (R1; effort against S/M/L)
@@ -122,6 +126,7 @@ Drift-gate::
 
 Drift-gate::
 
+    entrypoint: --check
     kind:       rule
     rule: in each sdd/BACKLOG.md section, an item is at most
         eight content lines with a diagnosis of at most five (R2), and the preamble is one
@@ -130,9 +135,18 @@ Drift-gate::
 
 Drift-gate::
 
+    entrypoint: --check
     kind:       pair
     compares: each open item's Detail link and ID in sdd/BACKLOG.md ↔ the dossier file under
         sdd/backlog/ and its header ID; the item governs (R4)
+    domain:     process
+
+Drift-gate::
+
+    entrypoint: --check --remote
+    kind:       pair
+    compares: the IDs this working tree minted ↔ the same IDs under other titles on origin/master
+        and every other pushed origin branch
     domain:     process
 """
 
@@ -163,6 +177,11 @@ _ATTR_RE = re.compile(r"^  spec: .+ · effort: (.+?) · audience: (.+)$")
 _EFFORTS = ("S", "M", "L")
 # BK-385: the done register's released history starts at the first version heading.
 _RELEASED_RE = re.compile(r"^## v\d", re.MULTILINE)
+# ID-257: a header's title ends at the `**` closing its bold, followed by the
+# line end, a `(version)`, an absorbed entry's `→ **HOST**`, a `*(note)*` or
+# a trailing ` — note`; never at a `**` inside backticks (`**kwargs`, `**/`),
+# which two titles carry.
+_TITLE_END_RE = re.compile(r"(.*?)\*\*(?=\s*(?:$|\(|→|—|\*\())")
 
 # R2–R4. Separator lines are not content (RFC-0016 D1); rfc-0016-measure.py
 # uses the same delimitation, so the gate and the acceptance figure agree.
@@ -242,7 +261,8 @@ def _titled(open_text: str, done_text: str) -> dict[str, str]:
             if m.group(1) in status:
                 eol = text.find("\n", m.end())
                 rest = text[m.end() : eol if eol != -1 else None]
-                found[f"{m.group(2)}-{m.group(3)}"] = rest.split("**", 1)[0].strip()
+                title = _TITLE_END_RE.match(rest)
+                found[f"{m.group(2)}-{m.group(3)}"] = (title.group(1) if title else rest).strip()
     return found
 
 
@@ -548,8 +568,8 @@ def _check(remote: bool = False) -> int:
     # rules are only reachable after two branches merge, so this line is the
     # first evidence most authors will have that they exist at all.
     print(
-        "No ID collisions, no ID on two open items or on two unreleased done entries, "
-        + ("no ID shared with a pushed branch, " if remote else "")
+        "No ID collisions, no ID on two open items or on two done entries with one above released history, "
+        + ("no ID this tree minted under another title on a pushed branch, " if remote else "")
         + "every open item's attributes in vocabulary, "
         "every section and its items in shape, and every Detail: link resolving to its dossier."
     )
