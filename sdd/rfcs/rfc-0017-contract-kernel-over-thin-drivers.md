@@ -22,7 +22,7 @@ moves on every merge: re-run rather than quote.
 
 This RFC proposes that the `Backend` surface be implemented **once**, in a
 concrete `DriverBackend(Backend)` kernel over a per-backend `Driver` of
-fourteen required wire primitives and nine optional ones, with error mapping
+fourteen required wire primitives and ten optional ones, with error mapping
 at a single choke point that invokes the driver's operation-scoped
 `classify(exc, op, key)` on every call, listing page and stream and
 guarantees the error's `path`, `backend` and a non-empty message.
@@ -161,7 +161,8 @@ class Driver(Protocol):
     def resolve(self, key: str) -> ResolutionPlan: ...
 ```
 
-Nine optional protocols, each a separate `runtime_checkable` `Protocol`
+Ten optional protocols (nine at filing; `SupportsRemoveFolder` added at
+BK-389's planning), each a separate `runtime_checkable` `Protocol`
 checked once at kernel construction (a `typing.Protocol` cannot express an
 optional member, so presence is a protocol, not a method):
 
@@ -176,6 +177,7 @@ optional member, so presence is a protocol, not a method):
 | `SupportsEnsureParents` | `ensure_parents(key)` | called before `put` when `parents == "explicit"`; SFTP's stat walk and Local's `mkdir -p` are their implementations. Never called for `implicit` (Graph, GR-039: no explicit `mkdir`; Azure HNS) or `none` |
 | `SupportsFolderStats` | `folder_stats(prefix) -> (count, size, latest)` | `get_folder_info` push-down (SQL's aggregate query); without it, the kernel aggregates a listing |
 | `SupportsGlob` | `glob(pattern)` | native `GLOB`; without it the driver must not declare `GLOB` |
+| `SupportsRemoveFolder` (added at BK-389's planning) | `remove_folder(key)`: remove one empty folder | required when `parents == "explicit"`, checked at construction. `delete_folder(recursive=False)` checks the folder with `stat`, refuses a non-empty one with `DirectoryNotEmpty` after `list_page(limit=1)`, then calls it. `delete_folder(recursive=True)` without `SupportsDeleteTree` lists and deletes the files, then calls it on each folder, deepest first. Never called for `implicit` or `none` |
 
 Two more attributes the stream wrapper reads per driver, because
 `_ErrorMappingStream`'s caught set is per construction site today:
@@ -240,9 +242,10 @@ was a 28th match above it). It owns, once:
 
 - key validation and normalisation (added at BK-389's planning): a key
   starting with `/`, a `..` segment or a null byte is refused with
-  `InvalidPath`, and empty and `.` segments are dropped. The rule is spec
-  013's MEM-DS-005 table, not `RemotePath`'s; spec 013 states where the two
-  differ. It runs after the closed guard and before the root check, which
+  `InvalidPath`, and empty and `.` segments are dropped. The rule is taken
+  from spec 013's MEM-DS-005 table, not from `RemotePath`'s, and BK-394
+  states it as a spec 003 clause binding every migrated class, which
+  MEM-DS-005 then cites. It runs after the closed guard and before the root check, which
   then runs on the canonical key: `""` is the root, the wide predicate on
   every side. So an operation's driver call only ever sees a canonical key,
   as D1's driver, which "carries no path … logic", requires. The rule
@@ -367,8 +370,11 @@ dossier, decision 6) is one more enumerated change, stated once as a table of
 operation by key class. Each step's PR lists every cell of that table where
 its driver answers differently today, canonical keys included (Local's
 `delete_folder("")` removes the root directory today). Step 1's list, for Memory, is
-in BK-394's dossier. No conformance cell reaches those cells, so each is a
-direct-backend answer that its step's PR pins with a new cell. AZ-025's blank-message clause and its pinning
+in BK-394's dossier. No conformance cell reaches those cells. Memory's are
+pinned by new cells in the step-1 PR. A later step's cell may already be
+pinned per backend with the opposite answer; Local's root `delete_folder` is,
+in `tests/backends/local/test_absent_root.py`. That step's PR inverts such a
+pin and records why. AZ-025's blank-message clause and its pinning
 test go red with BUG-276's fix under the arm decided at BK-387, synthesise
 (its dossier: "Both go red when this lands, by design"); the BUG-240 and
 BUG-292 decisions change cells on the classes that
@@ -743,7 +749,7 @@ and its answer keeps `classify`.
 - **Public API:** `Store`, the error hierarchy and capabilities unchanged in
   interface. `Backend` remains the abstract contract type; `DriverBackend` and
   `AsyncDriverBackend` are the kernel's two runtimes (Open Question 1). New
-  public names: `Driver`, `AsyncDriver`, the nine `Supports*` protocols and
+  public names: `Driver`, `AsyncDriver`, the ten `Supports*` protocols and
   their async mirrors, `DriverBackend`, `AsyncDriverBackend`, `Entry`,
   `Page`, `WriteHandle`, `Op`, `Session`; and each migrated backend's
   driver class beside its public backend class, from step 1's

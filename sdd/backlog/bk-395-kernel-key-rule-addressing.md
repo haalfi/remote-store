@@ -23,14 +23,16 @@ depends on it: the kernel PR does not start until it closes.
    - BE-020 carves addressing out of the closed guard.
    - `to_key`'s input is a native path, not a key.
    - Measured at master `9caef6b`, both Memory classes: `native_path` echoes
-     every raw key (`"./"`, `"d//f"`, `"/f"`, `"d/../f"`, `"f\0"`), and
+     `"./"`, `"d//f"`, `"/f"`, `"d/../f"` and `"f\0"` raw, while
+     `native_path(".")` already answers `""` (the default's `strip_root`), and
      `resolve(".")` gives `plan.key == "."`.
    - The withdrawn table made `native_path` and `resolve` raise on refused
      keys, and changed `resolve(".")`'s `plan.key` to `""`.
 2. **A key holding a backslash.**
-   - Memory stores `d\f` today, but PATH-002 and `BackendContract.dfy` §5a
-     (`WellFormedPath`) exclude a backslash, and spec 003 (BE-029) says such
-     a key "is not canonical".
+   - Memory stores `d\f` today. PATH-002 (spec 004) **converts** a backslash
+     to `/` in `RemotePath`, so `BackendContract.dfy` §5a's `WellFormedPath`,
+     `RemotePath`'s fixed point, contains none. Spec 003 (BE-029) says such a
+     key "is not canonical".
    - `RemotePath` cannot hold a backslash. So every path Memory returns for
      that key folds it to `d/f`: `WriteResult`, `FileInfo` (both classes),
      and listings, where `list_files` over `d/f` and `d\f` yields `d/f`
@@ -45,7 +47,10 @@ verified against the clauses above:**
 1. Addressing stays total. Root and non-canonical spellings are normalised;
    refused keys go to the driver raw, round-tripping as BE-025 says.
    `plan.key` stays the caller's key; only `native_path` is canonicalised.
-2. A backslash is refused with `InvalidPath`, matching PATH-002 and §5a.
+2. A backslash is refused with `InvalidPath`. That keeps such keys out of
+   the driver, as §5a's well-formed domain does. It diverges from PATH-002,
+   which folds a backslash rather than refusing it. Folding would make `d\f`
+   collide with `d/f` on a driver that stores both today, as Memory does.
    That is a step-1 Memory cell change, since Memory stores `d\f` today.
 3. A pattern's literal prefix, up to the first wildcard, goes through the
    pipeline. The wildcard part goes to `SupportsGlob` unchanged.

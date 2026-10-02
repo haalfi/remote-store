@@ -107,8 +107,10 @@ every case. RFC-0017 carries the same answers at the question each settles.
    `list_files(recursive=True)`, `get_folder_info`, `move` as source and as
    destination, `native_path` and `to_key`. The async class was run through the same set
    less `is_file`, `get_file_info` and `to_key`, and the two classes agree on
-   every shared cell. Every measured cell outside the Δ marks matches the
-   table. Round 5's measuring reviewer then ran `list_folders`, `iter_children`,
+   every shared cell. Every measured operation cell for a backslash-free key
+   outside the Δ marks matches the table. The `native_path` and `to_key`
+   cells and the `"d\\f"` cells are BK-395's evidence, not this table's.
+   Round 5's measuring reviewer then ran `list_folders`, `iter_children`,
    `read`, `read_seekable`, `write_atomic`, `open_atomic` and `copy` the same
    way and found no unmarked difference. **What the Δ cells reach:** no
    conformance cell, since the read-side root cells use only `""` and `"."`.
@@ -117,12 +119,18 @@ every case. RFC-0017 carries the same answers at the question each settles.
 
    **Later drivers.** RFC-0017 D3's enumerated cell changes now include this
    table. Each step's PR lists **every** cell of it where its driver answers
-   differently today, canonical keys included. For example, `LocalBackend`'s
-   `delete_folder("", recursive=True)` today runs `shutil.rmtree` on the root
-   directory (read from `_local.py`'s `delete_folder`, not run), where the
-   table refuses it. Its docstring says `SFTPBackend` answers that cell the
-   same way. A flat wire's `"d//f"` or `"./"` are further examples. This
-   decision adds nothing else to D3's list.
+   differently today, canonical keys included. For example,
+   `LocalBackend.delete_folder("", recursive=True)` removes the root
+   directory itself today. That was measured on a temp root in this PR's
+   verification round, and `"."` does the same. The table refuses it. The
+   answer is already pinned per backend in
+   `tests/backends/local/test_absent_root.py`
+   (`test_folder_shaped_operations_still_accept_the_root` and
+   `test_strict_delete_folder_on_the_root_answers_from_the_filesystem`), so
+   step 5 inverts those pins and records why. `SFTPBackend` likely answers
+   the same: its `_sftp_path` maps the root to `base_path` and its `_rmtree`
+   ends in `rmdir` (read from `_sftp.py`, not run). A flat wire's `"d//f"` or
+   `"./"` are further examples. This decision adds nothing else to D3's list.
 
    **Deferred to BK-395.** Three parts are decided before kernel code, in
    BK-395, not here:
@@ -130,22 +138,25 @@ every case. RFC-0017 carries the same answers at the question each settles.
      the refusals to the first two would make them raise, against BE-025's
      and NPR-021/NPR-004's totality. Normalising `resolve`'s key would change
      `resolve(".")`'s `plan.key`, against RES-020.
-   - A key holding a backslash. Memory stores it today, but PATH-002 and
-     `BackendContract.dfy` §5a exclude it from well-formed keys, and every
-     returned path folds it to `/`, because `RemotePath` cannot hold one.
+   - A key holding a backslash. Memory stores it today. But PATH-002
+     converts a backslash to `/` in `RemotePath`, so `BackendContract.dfy`
+     §5a's `WellFormedPath`, `RemotePath`'s fixed point, holds none, and spec
+     003 calls such a key not canonical. Every returned path folds it to `/`.
    - `glob` patterns.
 
    The maintainer recorded a preferred answer for each at the ceiling:
    addressing stays total, with refused keys passed through raw and
    `plan.key` kept as the caller's; a backslash is refused; and a pattern's
    literal prefix goes through the pipeline. BK-395 verifies each against the
-   clauses above before adopting it. Until then, the pipeline's step (3)
-   leaves a backslash untouched.
+   clauses above before adopting it. The pipeline has no answer for a
+   backslash key until BK-395 closes, and the kernel PR does not start
+   before then.
 
    **Not `RemotePath`'s rules, nor `LocalBackend._resolve()`'s.** The
    refusals and normalisation are spec 013's MEM-DS-005 table, which both
-   Memory classes implement today. Spec 013 now records, from the same
-   comparison at master `9caef6b`, where the other two differ from it:
+   Memory classes implement today, and BK-394 restates them as a spec 003
+   clause for every migrated class. A comparison at master `9caef6b` shows
+   where the other two rules differ from it:
    - `RemotePath` folds `"/a/b"` to `a/b`, converts the backslash in
      `"a\\b"` to `/`, and raises on every root spelling.
    - `_resolve` accepts a `..` that stays inside the root (`"a/../b"` to
@@ -163,6 +174,23 @@ every case. RFC-0017 carries the same answers at the question each settles.
    hierarchical remote driver may read below the depth; a depth hint to the
    driver is revisited when Local or SFTP migrates (steps 5, 6). Memory
    answers in one locked `Page`, which keeps spec 013's MEM-025 snapshot.
+8. **Removing one empty folder is an optional protocol,
+   `SupportsRemoveFolder`.** Decided after this planning PR's verification
+   round, which found that D1 had no primitive for it. That leaves spec
+   013's non-recursive `delete_folder`, and Local's and SFTP's later, with
+   nothing to call. The protocol has one member, `remove_folder(key)`, and is
+   required when `parents == "explicit"`, checked at construction.
+   - `delete_folder(recursive=False)`: the kernel checks the folder with
+     `stat`, raises `DirectoryNotEmpty` if `list_page(key, limit=1)` returns
+     anything, then calls `remove_folder`.
+   - `delete_folder(recursive=True)` without `SupportsDeleteTree`: the kernel
+     lists and deletes the files, then calls `remove_folder` on each folder,
+     deepest first.
+   - `implicit` and `none` drivers have no folder objects, so it is never
+     called for them.
+
+   RFC-0017 D1's protocol table carries the row. Both Memory drivers
+   implement it beside `SupportsDeleteTree` (BK-394's MEM-014 placement).
 
 ## What it owes
 
@@ -194,14 +222,16 @@ every case. RFC-0017 carries the same answers at the question each settles.
    `SupportsFolderStats` must return the same value (BK-394's spec 013
    placement gives both Memory drivers one).
 
-**Depends on** BK-388, whose postconditions the kernel is written against.
+**Depends on** BK-388, whose postconditions the kernel is written against,
+and on BK-395, which decides the key rule's remainder (decision 6).
 As landed, the root rule is a postcondition ranked after the closed guard,
 not a precondition, so the kernel's order per operation is closed
 (`Live()`), then the root check on the key (`write`, the `move`/`copy`
 source then destination), then the driver [superseded by decision 6's
 pipeline, which adds the refusals and normalisation and runs the root check
-on every member, not only these; what follows is the BK-388 obligation that
-pipeline discharges]. On `write` and the destination
+on every operation its table covers, not only these; the addressing members
+and `glob` are BK-395's; what follows is the BK-388 obligation that pipeline
+discharges]. On `write` and the destination
 the check is `AddressesRoot`, the slash-and-dot segment test, wider than
 `is_root`; on the source BE-029 requires only `is_root`, and the wider test
 is permitted, not verified. Against an absent

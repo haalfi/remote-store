@@ -201,3 +201,19 @@ phases:
         section: "delete_folder; write_atomic"
         read_type: verify
         extract: "delete_folder('') rmtrees the root today (read); write_atomic writes then raises on in-root '..' (run), so BUG-299 widened"
+  - id: verification
+    name: Verification round past the ceiling
+    steps:
+      - file: sdd/specs/004-path-model.md
+        section: "PATH-002"
+        read_type: verify
+        extract: "PATH-002 converts a backslash rather than refusing it; my BK-395 text claimed refusal matched it"
+        outcome: misleading
+      - file: tests/backends/local/test_absent_root.py
+        section: "test_folder_shaped_operations_still_accept_the_root; test_strict_delete_folder_on_the_root_answers_from_the_filesystem"
+        read_type: verify
+        extract: "Local's root delete_folder is already pinned per backend, so step 5 inverts pins rather than adding cells"
+      - file: sdd/rfcs/rfc-0017-contract-kernel-over-thin-drivers.md
+        section: "D1 optional protocols"
+        read_type: verify
+        extract: "no primitive removes one empty folder on an explicit-parents driver; SupportsRemoveFolder added as decision 8"
