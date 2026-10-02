@@ -127,8 +127,9 @@ class TestFreshness:
         assert "OK:" in capsys.readouterr().out
 
     def test_wrapper_steps_outside_the_two_spans_are_not_checked(self, env):
-        """The stated bound: an extra CMDS step or a tail after the build's pipe is accepted unread."""
+        """The stated bound: an extra CMDS step or a tail after the build's pipe is accepted unchecked."""
         extra = 'CMDS="$CMDS && cd /tmp"\n'
+        assert "|| true)" in WRAPPER
         tail = WRAPPER.replace("|| true)", "|| true) && rm -rf /build/x")
         env["translate"].write_text(tail + extra)
         assert env["run"]() == 0

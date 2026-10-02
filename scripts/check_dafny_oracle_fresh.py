@@ -125,8 +125,8 @@ DIFF_LINES = 40
 _PIN_RE = re.compile(r"^DAFNY_VERSION=(\S+)\s*$", re.MULTILINE)
 # Reading the wrapper is an allowlist grammar over two spans, not a shell parser: within the build
 # span and the cp span, anything whose meaning depends on quoting, expansion or an operator is
-# rejected rather than interpreted. Text outside them is not read (docstring, Bounds). Exactly one
-# match of each is required.
+# rejected rather than interpreted. Outside them only the pin line, the UTF-8 decode and the
+# exactly-one-match count are checked (docstring, Bounds).
 # Build: a double-quoted `CMDS="$CMDS ...` line in which only `&& echo '...'` steps precede
 # `&& (/opt/dafny/dafny build <tokens> 2>&1 |`. An env prefix, `cd`, `timeout` or a single-quoted
 # CMDS piece before the `(` does not match; nothing after the `|` is checked. Tokens split on space
