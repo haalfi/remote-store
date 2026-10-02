@@ -61,7 +61,6 @@ Parameters:
 
 Raises:
 
-- `ModuleNotFoundError` – If tomllib is unavailable and tomli is not installed.
 - `KeyError` – If a table key is not found, or if resolve_env_vars is True and a placeholder references an unset variable with no default.
 
 ## BackendConfig

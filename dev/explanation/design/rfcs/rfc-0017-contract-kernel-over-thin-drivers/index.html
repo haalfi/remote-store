@@ -6568,6 +6568,34 @@
 
               
             
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../adrs/0043-tiered-ci-gate-derived-interpreter-set/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    0043: Tiered per-PR CI gate, interpreter set by derivation
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
           </ul>
         </nav>
       
@@ -11618,9 +11646,10 @@ primitives, since its failures are status codes rather than exceptions.</p>
 <p><code>DriverBackend(Backend)</code> implements the 21 methods audit-021 command (a)
 names (<code>close</code> and <code>check_health</code> among them) over a driver and forwards the
 other 6 public members (<code>name</code>, <code>capabilities</code>, <code>unwrap</code>, <code>native_path</code>,
-<code>to_key</code>, <code>resolve</code>). <code>Backend</code> has 27 public <code>def</code>s, lines 68 to 578 of
-<code>_backend.py</code> by <code>rg -n '^    def [a-z]' _backend.py</code>, whose 28th match is
-<code>_SeekableSpool.seekable</code> at line 44, above <code>class Backend</code>. It owns, once:</p>
+<code>to_key</code>, <code>resolve</code>). <code>Backend</code> has 27 public <code>def</code>s, lines 57 to 571 of
+<code>_backend.py</code> by <code>rg -n '^    def [a-z]' _backend.py</code>, every match inside
+<code>class Backend</code> (re-run when BK-380 deleted the <code>_SeekableSpool</code> helper that
+was a 28th match above it). It owns, once:</p>
 <ul>
 <li>root refusal from the key (BE-029, both predicates as <code>_flat_ns</code> now states
   them), and the closed guard, in the order spec 003 fixes; these are

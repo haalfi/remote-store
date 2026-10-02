@@ -37,7 +37,6 @@ pip install "remote-store[arrow]"          # PyArrow filesystem adapter
 pip install "remote-store[otel]"           # OpenTelemetry instrumentation
 pip install "remote-store[yaml]"           # YAML config support
 pip install "remote-store[pydantic]"       # Pydantic BaseSettings config
-pip install "remote-store[toml]"           # TOML config on Python < 3.11
 ```
 
 Every extra declares a version floor; a ceiling is the exception. See the [dependency and version policy](https://docs.remotestore.dev/stable/explanation/dependency-policy/) for how those ranges are chosen, and what we do and do not verify about them.

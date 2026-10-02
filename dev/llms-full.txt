@@ -73,7 +73,6 @@ pip install "remote-store[arrow]"          # PyArrow filesystem adapter
 pip install "remote-store[otel]"           # OpenTelemetry instrumentation
 pip install "remote-store[yaml]"           # YAML config support
 pip install "remote-store[pydantic]"       # Pydantic BaseSettings config
-pip install "remote-store[toml]"           # TOML config on Python < 3.11
 ```
 
 Every extra declares a version floor; a ceiling is the exception. See the [dependency and version policy](https://docs.remotestore.dev/stable/explanation/dependency-policy/) for how those ranges are chosen, and what we do and do not verify about them.
@@ -945,7 +944,7 @@ from __future__ import annotations
 
 import contextlib
 import io
-from datetime import datetime, timezone
+from datetime import UTC, datetime
 from typing import TYPE_CHECKING, BinaryIO, ClassVar
 
 try:
@@ -1248,7 +1247,7 @@ def write(
             mapping={
                 "data": raw,
                 "size": str(len(raw)),
-                "modified_at": datetime.now(timezone.utc).isoformat(),
+                "modified_at": datetime.now(UTC).isoformat(),
             },
         )
     except (AlreadyExists, InvalidPath):
@@ -1556,7 +1555,7 @@ def copy(self, src: str, dst: str, *, overwrite: bool = False) -> None:
             )
 
         # Update modified_at for the copy
-        data[b"modified_at"] = datetime.now(timezone.utc).isoformat().encode()
+        data[b"modified_at"] = datetime.now(UTC).isoformat().encode()
         self._client.hset(self._key(dst), mapping=data)
     except (NotFound, AlreadyExists, InvalidPath):
         raise
@@ -10423,7 +10422,6 @@ Parameters:
 
 Raises:
 
-- `ModuleNotFoundError` – If tomllib is unavailable and tomli is not installed.
 - `KeyError` – If a table key is not found, or if resolve_env_vars is True and a placeholder references an unset variable with no default.
 
 ## BackendConfig
@@ -20386,6 +20384,14 @@ Breaking changes and upgrade paths between `remote-store` versions.
 
 ## v0.32.0 to v0.33.0
 
+**Python 3.10 is no longer supported:**
+
+CPython stops shipping security fixes for 3.10 on 2026-10-04, which is where this library's promise for it ends ([dependency policy, Rule 8](https://docs.remotestore.dev/stable/explanation/dependency-policy/#rule-8)). From v0.33.0 the package declares `requires-python >=3.11`.
+
+**On 3.10 nothing breaks in place.** pip and uv both skip a release whose `Requires-Python` excludes the running interpreter, so an unpinned `pip install remote-store` on 3.10 keeps resolving to v0.32.x. Pinning `remote-store==0.33.0` there fails at resolution instead of installing a release your interpreter cannot run. To get v0.33.0 and later, move to Python 3.11 or newer.
+
+**The `[toml]` extra is gone.** It installed the `tomli` backport on 3.10 only, and `RegistryConfig.from_toml()` now uses the standard library's `tomllib` on every supported interpreter, with no extra needed. Drop `[toml]` from your requirements. Leaving it in does not fail the install: pip warns that the package `does not provide the extra 'toml'`, uv that it does not have an extra named `toml`, and both install it.
+
 **The store root answers the same on every backend whose container is gone:**
 
 The root is a folder that always exists, and that no longer depends on whether the bucket, container or table holding your data is still there. Five backend classes used to answer otherwise, in two opposite directions, and both are closed:
@@ -20962,7 +20968,7 @@ Pure-Python extensions (`ext.batch`, `ext.transfer`, `ext.glob`, `ext.observe`, 
 
 Each `[<extra>]` below lists the range it declares and the versions CI was last green against. **Declared** is the range a resolver is held to — a floor always, plus a ceiling only where a known-incompatible major looms. **Tested up to** is the exact version pinned when that extra's resolution was last recorded. Why the ranges are shaped that way, and what this page does and does not promise, is on [Dependency and version policy](https://docs.remotestore.dev/stable/explanation/dependency-policy/index.md).
 
-The drift guard (`.github/workflows/drift-guard.yml`) keeps both ends of each range under a weekly check. It re-resolves every extra against the latest available versions, pre-releases included, and diffs the result against the record in `infra/drift-locks/` that the "Tested up to" column is taken from. It also installs each extra at the **floor** of every range above and runs that extra's smoke against it, on Python 3.10 — the oldest interpreter this package supports. Findings from either end land on a rolling issue for a maintainer to read; neither end blocks a release on its own.
+The drift guard (`.github/workflows/drift-guard.yml`) keeps both ends of each range under a weekly check. It re-resolves every extra against the latest available versions, pre-releases included, and diffs the result against the record in `infra/drift-locks/` that the "Tested up to" column is taken from. It also installs each extra at the **floor** of every range above and runs that extra's smoke against it, on Python 3.11 — the oldest interpreter this package supports. Findings from either end land on a rolling issue for a maintainer to read; neither end blocks a release on its own.
 
 *Smoke* names how far that check reaches for each extra. A smoke that imports a module exercises less than one that runs a test suite, and a version pair below is evidence only as far as its smoke goes.
 
@@ -21086,14 +21092,6 @@ The drift guard (`.github/workflows/drift-guard.yml`) keeps both ends of each ra
 | Package  | Declared | Tested up to |
 | -------- | -------- | ------------ |
 | `pyyaml` | `>=5.1`  | `6.0.3`      |
-
-## Extras this page does not cover
-
-These are installable and maintained like any other, and the check above does not reach them: what each one resolves to depends on the interpreter you install it on, so there is no single resolution to record or to smoke. Read its range in `pyproject.toml`.
-
-| Extra    | Why it has no row above                     |
-| -------- | ------------------------------------------- |
-| `[toml]` | declared only for `python_version < '3.11'` |
 
 # Features — remote-store v0.32.0
 
@@ -21571,11 +21569,10 @@ pip install remote-store[s3-pyarrow]  # S3 via PyArrow C++ filesystem
 pip install remote-store[sftp]        # SFTP via paramiko
 pip install remote-store[sql]         # SQL blob store via SQLAlchemy
 pip install remote-store[sql-query]   # SQL query store via SQLAlchemy + PyArrow
-pip install remote-store[toml]        # TOML config (stdlib on Python 3.11+)
 pip install remote-store[yaml]        # YAML config loading
 ```
 
-Each extra's version range — a floor always, plus a ceiling only where a known-incompatible major looms — is declared in `pyproject.toml`, the source of truth for per-extra pins. Both the declared range and the exact versions CI was last green against are published on [Tested versions](https://docs.remotestore.dev/stable/reference/tested-versions/), per extra for the extras it covers — and it names the ones it does not, `[toml]` among them, whose resolution depends on the running interpreter.
+Each extra's version range — a floor always, plus a ceiling only where a known-incompatible major looms — is declared in `pyproject.toml`, the source of truth for per-extra pins. Both the declared range and the exact versions CI was last green against are published on [Tested versions](https://docs.remotestore.dev/stable/reference/tested-versions/), per extra for the extras it covers — and it would name any it does not, which is an extra whose resolution depends on the running interpreter.
 
 Extras are a pip concept. The package is also on conda-forge, where there are none: `conda install -c conda-forge remote-store` installs the core package only, and you install a backend's dependencies alongside it by name. The [README's installation section](https://github.com/haalfi/remote-store#installation) covers that route and shows the command.
 # Explanation
@@ -21864,10 +21861,6 @@ gantt
     axisFormat %Y
     title Python versions supported, and until when
 
-    section Python 3.10
-    security fixes (5y) :sup310, 2021-10-04, 2026-10-04
-    SPEC 0 minimum (3y) :milestone, spec310, 2024-10-04, 0d
-
     section Python 3.11
     security fixes (5y) :sup311, 2022-10-24, 2027-10-24
     SPEC 0 minimum (3y) :milestone, spec311, 2025-10-24, 0d
@@ -21955,7 +21948,7 @@ Scheduled CI watches both ends of every range it covers, weekly. It re-resolves 
 
 These limits bound that, and they are why [Rule 14](#rule-14) and [Rule 15](#rule-15) read as they do:
 
-- **It does not cover every extra you can install.** An extra whose resolution depends on the running interpreter is excluded, so it has no committed record and no row on the Tested versions page. That page [names which ones](https://docs.remotestore.dev/stable/reference/tested-versions/index.md), so an absent row is readable rather than ambiguous. Being excluded is not a claim that nothing watches it, only that this guard does not.
+- **It would not cover an extra whose resolution depends on the running interpreter.** Such an extra has no single resolution to record, so it gets no committed record and no row on the Tested versions page. None exists today; if one is added, [that page](https://docs.remotestore.dev/stable/reference/tested-versions/index.md) names it in a section of its own, so an absent row stays readable rather than ambiguous. Being excluded is not a claim that nothing watches it, only that this guard does not.
 - **The smoke can be shallower than the extra.** Where the target is an import, a drift breaking anything past module load passes. The Tested versions page states the depth per extra, so how much a given row is worth is readable. Widening that reach is tracked work.
 - **The floor check is one interpreter wide.** It runs on the oldest Python we support, and leaves transitive packages at their newest — so it tests the floors we declare rather than a whole old environment. A floor that installs and breaks only on a newer interpreter is outside it; so is a floor that cannot be installed at all on a newer one, which announces itself to you at install time rather than silently.
 - **That check is stricter than your runtime, on purpose.** Our tests treat warnings as errors, so a floor that still works but has started emitting deprecation warnings fails it. You would see nothing at those versions yet; we would rather find out a release early than a release late. It means a floor being flagged is not the same as a floor being broken for you.

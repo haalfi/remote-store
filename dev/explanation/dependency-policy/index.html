@@ -6885,6 +6885,34 @@
 
               
             
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../design/adrs/0043-tiered-ci-gate-derived-interpreter-set/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    0043: Tiered per-PR CI gate, interpreter set by derivation
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
           </ul>
         </nav>
       
@@ -11529,10 +11557,6 @@ gantt
     axisFormat %Y
     title Python versions supported, and until when
 
-    section Python 3.10
-    security fixes (5y) :sup310, 2021-10-04, 2026-10-04
-    SPEC 0 minimum (3y) :milestone, spec310, 2024-10-04, 0d
-
     section Python 3.11
     security fixes (5y) :sup311, 2022-10-24, 2027-10-24
     SPEC 0 minimum (3y) :milestone, spec311, 2025-10-24, 0d
@@ -11684,12 +11708,13 @@ reach the latest release.</p>
 <p>These limits bound that, and they are why <a href="#rule-14">Rule 14</a> and
 <a href="#rule-15">Rule 15</a> read as they do:</p>
 <ul>
-<li><strong>It does not cover every extra you can install.</strong> An extra whose resolution
-  depends on the running interpreter is excluded, so it has no committed record
-  and no row on the Tested versions page. That page
-  <a href="../../reference/tested-versions/">names which ones</a>, so an absent row is
-  readable rather than ambiguous. Being excluded is not a claim that nothing
-  watches it, only that this guard does not.</li>
+<li><strong>It would not cover an extra whose resolution depends on the running
+  interpreter.</strong> Such an extra has no single resolution to record, so it gets
+  no committed record and no row on the Tested versions page. None exists
+  today; if one is added, <a href="../../reference/tested-versions/">that page</a> names it
+  in a section of its own, so an absent row stays readable rather than
+  ambiguous. Being excluded is not a claim that nothing watches it, only that
+  this guard does not.</li>
 <li><strong>The smoke can be shallower than the extra.</strong> Where the target is an import,
   a drift breaking anything past module load passes. The Tested versions page
   states the depth per extra, so how much a given row is worth is readable.

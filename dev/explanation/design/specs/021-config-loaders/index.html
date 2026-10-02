@@ -6568,6 +6568,34 @@
 
               
             
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../adrs/0043-tiered-ci-gate-derived-interpreter-set/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    0043: Tiered per-PR CI gate, interpreter set by derivation
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
           </ul>
         </nav>
       
@@ -10039,10 +10067,10 @@
 </li>
         
           <li class="md-nav__item">
-  <a href="#cfg-009-toml-dependency-shim" class="md-nav__link">
+  <a href="#cfg-009-toml-parser-dependency" class="md-nav__link">
     <span class="md-ellipsis">
       
-        CFG-009: TOML Dependency Shim
+        CFG-009: TOML Parser Dependency
       
     </span>
   </a>
@@ -11236,10 +11264,10 @@
 </li>
         
           <li class="md-nav__item">
-  <a href="#cfg-009-toml-dependency-shim" class="md-nav__link">
+  <a href="#cfg-009-toml-parser-dependency" class="md-nav__link">
     <span class="md-ellipsis">
       
-        CFG-009: TOML Dependency Shim
+        CFG-009: TOML Parser Dependency
       
     </span>
   </a>
@@ -11564,21 +11592,19 @@ and returns a <code>RegistryConfig</code>.</p>
 - <code>table: tuple[str, ...] = ()</code> — Dotted table path to extract. For
   <code>pyproject.toml</code>, use <code>table=("tool", "remote-store")</code>.</p>
 <p><strong>Behavior:</strong>
-1. Parse the file via <code>tomllib</code> (3.11+) or <code>tomli</code> (3.10 backport).
+1. Parse the file via the stdlib <code>tomllib</code>.
 2. If <code>table</code> is non-empty, traverse into the nested table.
 3. Delegate to <code>from_dict()</code> (inherits Secret wrapping, validation).</p>
 <p><strong>Raises:</strong>
-- <code>ModuleNotFoundError</code> if <code>tomllib</code> is unavailable and <code>tomli</code> is not installed.
-  Message includes install instructions: <code>pip install 'remote-store[toml]'</code>.
 - <code>KeyError</code> if a <code>table</code> key is not found in the parsed data.
 - <code>FileNotFoundError</code> if <code>path</code> does not exist.
 - <code>tomllib.TOMLDecodeError</code> if the file is not valid TOML.</p>
 <p><strong>Postconditions:</strong> The returned <code>RegistryConfig</code> is identical to calling
 <code>from_dict()</code> on the parsed TOML dict (after table traversal).</p>
-<h3 id="cfg-009-toml-dependency-shim">CFG-009: TOML Dependency Shim<a class="headerlink" href="#cfg-009-toml-dependency-shim" title="Permanent link">&para;</a></h3>
-<p><strong>Invariant:</strong> On Python 3.11+, <code>from_toml()</code> uses the stdlib <code>tomllib</code> with
-zero runtime dependencies. On Python 3.10, the <code>tomli</code> backport is required
-(available via the <code>toml</code> optional extra).</p>
+<h3 id="cfg-009-toml-parser-dependency">CFG-009: TOML Parser Dependency<a class="headerlink" href="#cfg-009-toml-parser-dependency" title="Permanent link">&para;</a></h3>
+<p><strong>Invariant:</strong> <code>from_toml()</code> uses the stdlib <code>tomllib</code> on every supported
+interpreter, with zero runtime dependencies. There is no <code>toml</code> extra and no
+<code>tomli</code> fallback.</p>
 <hr />
 <h2 id="yaml-loader">YAML Loader<a class="headerlink" href="#yaml-loader" title="Permanent link">&para;</a></h2>
 <h3 id="cfg-010-from_yaml">CFG-010: <code>from_yaml()</code><a class="headerlink" href="#cfg-010-from_yaml" title="Permanent link">&para;</a></h3>
@@ -11627,7 +11653,6 @@ validation happens in <code>from_dict()</code> — the loaders/adapters are pure
 format-to-dict translators.</p>
 <h3 id="cfg-014-optional-extras">CFG-014: Optional Extras<a class="headerlink" href="#cfg-014-optional-extras" title="Permanent link">&para;</a></h3>
 <p><strong>Invariant:</strong> <code>pyproject.toml</code> declares optional extras:
-- <code>toml</code>: <code>["tomli&gt;=1.1.0; python_version &lt; '3.11'"]</code>
 - <code>yaml</code>: <code>["pyyaml&gt;=5.1"]</code>
 - <code>pydantic</code>: <code>["pydantic-settings&gt;=2.0.0"]</code></p>
 <hr />

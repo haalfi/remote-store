@@ -6800,6 +6800,34 @@
 
               
             
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../explanation/design/adrs/0043-tiered-ci-gate-derived-interpreter-set/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    0043: Tiered per-PR CI gate, interpreter set by derivation
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
           </ul>
         </nav>
       
@@ -11270,6 +11298,23 @@
 The core Store API is stable, but extensions may evolve. This page documents
 changes that require action when upgrading.</p>
 <h2 id="v0320-to-v0330">v0.32.0 to v0.33.0<a class="headerlink" href="#v0320-to-v0330" title="Permanent link">&para;</a></h2>
+<p><strong>Python 3.10 is no longer supported:</strong></p>
+<p>CPython stops shipping security fixes for 3.10 on 2026-10-04, which is where
+this library's promise for it ends
+(<a href="../../explanation/dependency-policy/#rule-8">dependency policy, Rule 8</a>). From
+v0.33.0 the package declares <code>requires-python &gt;=3.11</code>.</p>
+<p><strong>On 3.10 nothing breaks in place.</strong> pip and uv both skip a release whose
+<code>Requires-Python</code> excludes the running interpreter, so an unpinned
+<code>pip install remote-store</code> on 3.10 keeps resolving to v0.32.x. Pinning
+<code>remote-store==0.33.0</code> there fails at resolution instead of installing a
+release your interpreter cannot run. To get v0.33.0 and later, move to Python
+3.11 or newer.</p>
+<p><strong>The <code>[toml]</code> extra is gone.</strong> It installed the <code>tomli</code> backport on 3.10 only,
+and <code>RegistryConfig.from_toml()</code> now uses the standard library's <code>tomllib</code> on
+every supported interpreter, with no extra needed. Drop <code>[toml]</code> from your
+requirements. Leaving it in does not fail the install: pip warns that the
+package <code>does not provide the extra 'toml'</code>, uv that it does not have an extra
+named <code>toml</code>, and both install it.</p>
 <p><strong>The store root answers the same on every backend whose container is gone:</strong></p>
 <p>The root is a folder that always exists, and that no longer depends on whether
 the bucket, container or table holding your data is still there. Five backend

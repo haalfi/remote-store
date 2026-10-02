@@ -33,7 +33,7 @@ from __future__ import annotations
 
 import contextlib
 import io
-from datetime import datetime, timezone
+from datetime import UTC, datetime
 from typing import TYPE_CHECKING, BinaryIO, ClassVar
 
 try:
@@ -336,7 +336,7 @@ def write(
             mapping={
                 "data": raw,
                 "size": str(len(raw)),
-                "modified_at": datetime.now(timezone.utc).isoformat(),
+                "modified_at": datetime.now(UTC).isoformat(),
             },
         )
     except (AlreadyExists, InvalidPath):
@@ -644,7 +644,7 @@ def copy(self, src: str, dst: str, *, overwrite: bool = False) -> None:
             )
 
         # Update modified_at for the copy
-        data[b"modified_at"] = datetime.now(timezone.utc).isoformat().encode()
+        data[b"modified_at"] = datetime.now(UTC).isoformat().encode()
         self._client.hset(self._key(dst), mapping=data)
     except (NotFound, AlreadyExists, InvalidPath):
         raise

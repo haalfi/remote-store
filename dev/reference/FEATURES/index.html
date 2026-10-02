@@ -6906,6 +6906,34 @@
 
               
             
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../explanation/design/adrs/0043-tiered-ci-gate-derived-interpreter-set/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    0043: Tiered per-PR CI gate, interpreter set by derivation
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
           </ul>
         </nav>
       
@@ -13048,8 +13076,7 @@ conformance suite as native backends.</p>
 <a id="__codelineno-1-11" name="__codelineno-1-11" href="#__codelineno-1-11"></a>pip install remote-store[sftp]        # SFTP via paramiko
 <a id="__codelineno-1-12" name="__codelineno-1-12" href="#__codelineno-1-12"></a>pip install remote-store[sql]         # SQL blob store via SQLAlchemy
 <a id="__codelineno-1-13" name="__codelineno-1-13" href="#__codelineno-1-13"></a>pip install remote-store[sql-query]   # SQL query store via SQLAlchemy + PyArrow
-<a id="__codelineno-1-14" name="__codelineno-1-14" href="#__codelineno-1-14"></a>pip install remote-store[toml]        # TOML config (stdlib on Python 3.11+)
-<a id="__codelineno-1-15" name="__codelineno-1-15" href="#__codelineno-1-15"></a>pip install remote-store[yaml]        # YAML config loading
+<a id="__codelineno-1-14" name="__codelineno-1-14" href="#__codelineno-1-14"></a>pip install remote-store[yaml]        # YAML config loading
 </code></pre></div>
 <!-- END_GENERATED:install_extras -->
 
@@ -13058,8 +13085,8 @@ known-incompatible major looms — is declared in <code>pyproject.toml</code>, t
 source of truth for per-extra pins. Both the declared range and the exact
 versions CI was last green against are published on
 <a href="https://docs.remotestore.dev/stable/reference/tested-versions/">Tested versions</a>,
-per extra for the extras it covers — and it names the ones it does not, <code>[toml]</code>
-among them, whose resolution depends on the running interpreter.</p>
+per extra for the extras it covers — and it would name any it does not, which
+is an extra whose resolution depends on the running interpreter.</p>
 <p>Extras are a pip concept. The package is also on conda-forge, where there are
 none: <code>conda install -c conda-forge remote-store</code> installs the core package
 only, and you install a backend's dependencies alongside it by name. The

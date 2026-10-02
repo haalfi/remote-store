@@ -253,6 +253,10 @@
          <lastmod>2026-10-02</lastmod>
     </url>
     <url>
+         <loc>https://docs.remotestore.dev/dev/explanation/design/adrs/0043-tiered-ci-gate-derived-interpreter-set/</loc>
+         <lastmod>2026-10-02</lastmod>
+    </url>
+    <url>
          <loc>https://docs.remotestore.dev/dev/explanation/design/audits/</loc>
          <lastmod>2026-10-02</lastmod>
     </url>

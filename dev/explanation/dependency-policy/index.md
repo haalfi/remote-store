@@ -70,10 +70,6 @@ gantt
     axisFormat %Y
     title Python versions supported, and until when
 
-    section Python 3.10
-    security fixes (5y) :sup310, 2021-10-04, 2026-10-04
-    SPEC 0 minimum (3y) :milestone, spec310, 2024-10-04, 0d
-
     section Python 3.11
     security fixes (5y) :sup311, 2022-10-24, 2027-10-24
     SPEC 0 minimum (3y) :milestone, spec311, 2025-10-24, 0d
@@ -161,7 +157,7 @@ Scheduled CI watches both ends of every range it covers, weekly. It re-resolves 
 
 These limits bound that, and they are why [Rule 14](#rule-14) and [Rule 15](#rule-15) read as they do:
 
-- **It does not cover every extra you can install.** An extra whose resolution depends on the running interpreter is excluded, so it has no committed record and no row on the Tested versions page. That page [names which ones](https://docs.remotestore.dev/stable/reference/tested-versions/index.md), so an absent row is readable rather than ambiguous. Being excluded is not a claim that nothing watches it, only that this guard does not.
+- **It would not cover an extra whose resolution depends on the running interpreter.** Such an extra has no single resolution to record, so it gets no committed record and no row on the Tested versions page. None exists today; if one is added, [that page](https://docs.remotestore.dev/stable/reference/tested-versions/index.md) names it in a section of its own, so an absent row stays readable rather than ambiguous. Being excluded is not a claim that nothing watches it, only that this guard does not.
 - **The smoke can be shallower than the extra.** Where the target is an import, a drift breaking anything past module load passes. The Tested versions page states the depth per extra, so how much a given row is worth is readable. Widening that reach is tracked work.
 - **The floor check is one interpreter wide.** It runs on the oldest Python we support, and leaves transitive packages at their newest — so it tests the floors we declare rather than a whole old environment. A floor that installs and breaks only on a newer interpreter is outside it; so is a floor that cannot be installed at all on a newer one, which announces itself to you at install time rather than silently.
 - **That check is stricter than your runtime, on purpose.** Our tests treat warnings as errors, so a floor that still works but has started emitting deprecation warnings fails it. You would see nothing at those versions yet; we would rather find out a release early than a release late. It means a floor being flagged is not the same as a floor being broken for you.

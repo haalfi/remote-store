@@ -6568,6 +6568,34 @@
 
               
             
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../adrs/0043-tiered-ci-gate-derived-interpreter-set/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    0043: Tiered per-PR CI gate, interpreter set by derivation
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
           </ul>
         </nav>
       
@@ -11490,7 +11518,7 @@ single backend's live conformance, e.g.:
 (<code>test-primary</code> / <code>test-primary-sftp</code>) and the non-primary interpreters
 run Stage 1 (<code>test</code>); the full Stage-2 suite on every supported
 interpreter runs in the scheduled/on-master <code>ci-full.yml</code> backstop. This
-tiering (BK-319, <a href="../../adrs/0032-tiered-ci-gate-with-full-matrix-backstop/">ADR-0032</a>)
+tiering (BK-319, <a href="../../adrs/0043-tiered-ci-gate-derived-interpreter-set/">ADR-0043</a>)
 keeps the per-PR gate under five minutes; the stage invariant itself is
 unchanged. A separate manually-triggered or scheduled job runs Stage 3.
 Per-backend cost guardrails for Stage 3 are out of scope for this spec.

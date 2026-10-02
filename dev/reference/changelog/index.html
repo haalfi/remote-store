@@ -8652,6 +8652,34 @@
 
               
             
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../explanation/design/adrs/0043-tiered-ci-gate-derived-interpreter-set/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    0043: Tiered per-PR CI gate, interpreter set by derivation
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
           </ul>
         </nav>
       
@@ -14972,6 +15000,9 @@
 <p>This project follows <a href="https://semver.org/">Semantic Versioning</a>. Pre-1.0, minor bumps may contain breaking changes.</p>
 <h2 id="unreleased">[Unreleased]<a class="headerlink" href="#unreleased" title="Permanent link">&para;</a></h2>
 <ul>
+<li>
+<p>BK-380: <strong>Breaking</strong> — Python 3.10 is no longer supported, since CPython's security fixes for it end on 2026-10-04; the minimum is now 3.11. The <code>[toml]</code> extra is removed, because <code>RegistryConfig.from_toml()</code> uses the standard library on every supported Python. <a href="https://docs.remotestore.dev/stable/reference/migration/#v0320-to-v0330">Migration guide</a>.</p>
+</li>
 <li>
 <p>ID-251: The backend conformance suite now checks that a write or <code>move</code>/<code>copy</code> destination naming the store root is refused under every spelling (<code>"./"</code>, <code>"/"</code> and the rest), not only <code>""</code> and <code>"."</code>; the custom-backend guide states which narrow guards that catches.</p>
 </li>

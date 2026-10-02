@@ -6753,6 +6753,34 @@
 
               
             
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../adrs/0043-tiered-ci-gate-derived-interpreter-set/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    0043: Tiered per-PR CI gate, interpreter set by derivation
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
           </ul>
         </nav>
       
@@ -11512,13 +11540,16 @@ documented in <a href="../../contributing/"><code>CONTRIBUTING.md</code></a>.</p
 <h3 id="ci-fullyml-full-live-backend-matrix-backstop-exception-to-rule-1"><code>ci-full.yml</code> — full live-backend matrix backstop (exception to Rule 1)<a class="headerlink" href="#ci-fullyml-full-live-backend-matrix-backstop-exception-to-rule-1" title="Permanent link">&para;</a></h3>
 <ul>
 <li><strong>What it does:</strong> runs the complete two-pass live-Docker-backend suite (pass-1
-  <code>-n auto</code> + serial <code>sftp_docker</code>) on <strong>every</strong> supported interpreter (see
-  <code>FEATURES.md</code>). This is the pre-BK-319 per-interpreter guarantee. <code>ci.yml</code> (the
+  <code>-n auto</code> + serial <code>sftp_docker</code>) on <strong>every</strong> supported interpreter (the
+  <code>test-full</code> matrix, held equal to <code>ci.yml</code>'s <code>ALL_PYTHONS</code>; the roster itself
+  is governed by <code>pyproject.toml</code>'s classifiers). This is the pre-BK-319 per-interpreter guarantee. <code>ci.yml</code> (the
   per-PR gate) runs this full Stage-2 suite only on the <strong>primary</strong> interpreter;
-  the four non-primary interpreters run the repo-only <strong>Stage 1</strong> tier there so
+  the non-primary interpreters run the repo-only <strong>Stage 1</strong> tier there so
   the per-PR gate stays under five minutes within the account's concurrency cap.
-  The decision, the cap, the owner-approved tradeoff, and the reversal condition
-  live in <a href="../adrs/0032-tiered-ci-gate-with-full-matrix-backstop/">ADR-0032</a>;
+  The decision, the owner-approved tradeoff, and the reversal condition live in
+  <a href="../adrs/0043-tiered-ci-gate-derived-interpreter-set/">ADR-0043</a>; the cap and
+  the measurements behind the split, in the
+  <a href="../adrs/0032-tiered-ci-gate-with-full-matrix-backstop/">ADR-0032</a> it superseded;
   <code>ci-full.yml</code> restores full-matrix coverage off the per-PR critical path.</li>
 <li><strong>When:</strong> every push to <code>master</code>, plus 03:00 UTC daily, plus
   <code>workflow_dispatch</code>.</li>
