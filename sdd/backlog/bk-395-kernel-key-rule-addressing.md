@@ -70,4 +70,6 @@ verified against the clauses above:**
 **Exit criteria:** each of the three is decided and added to BK-389's
 decision 6, as a column or row of its table, or as a stated exclusion with
 its reason. Each step-1 Memory cell it changes is listed in BK-394's item 2.
-Any clause it contradicts is amended in BK-394's spec list.
+Its answers, and any clause they contradict, are amended in BK-389's spec
+003 list, item 8 (moved there from BK-394's spec list in PR #1056's round
+3, since the kernel PR waits on this item and its cells need a spec ID).

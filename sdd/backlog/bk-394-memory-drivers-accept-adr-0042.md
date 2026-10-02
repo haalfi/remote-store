@@ -52,7 +52,7 @@ time.
 
    | Owner after this PR | Clauses |
    |---|---|
-   | kernel (5) | MEM-DS-005's validation table (every row: the kernel validates and normalises the key and decides the root on it, BK-389 decision 6, so the driver receives a canonical key), MEM-014's `recursive` dispatch (BK-389 decision 8: `remove_folder` or `delete_tree`, with `missing_ok` applied to `NotFound`; Memory types every refusal, so the error-path probes are never reached, nor the recursive fallback, since both drivers have `SupportsDeleteTree`. MEM-014 states no root rule: Memory's root `delete_folder` refusal exists only in code, `_memory.py` lines 312 to 314, and becomes the kernel's under BK-389 item 4's spec 003 clause), MEM-013 (`write_atomic` as `put`, from `put_is_atomic = True`), MEM-018 (`close` through `close_is_terminal = False`), MEM-020 (the choke point; the driver raises nothing native, so `classify` is never reached) |
+   | kernel (5) | MEM-DS-005's validation table (every row: the kernel validates and normalises the key and decides the root on it, BK-389 decision 6, so the driver receives a canonical key), MEM-014's `recursive` dispatch (BK-389 decision 8: `remove_folder` or `delete_tree`, with `missing_ok` applied to `NotFound`; Memory types every refusal, so the error-path probes are never reached, nor the recursive fallback, since both drivers have `SupportsDeleteTree`. MEM-014's prose states no root rule: Memory's root `delete_folder` refusal is in code, `_memory.py` lines 312 to 314, and in the formal layer citing MEM-014, and becomes the kernel's under BK-389 item 8's spec 003 clause), MEM-013 (`write_atomic` as `put`, from `put_is_atomic = True`), MEM-018 (`close` through `close_is_terminal = False`), MEM-020 (the choke point; the driver raises nothing native, so `classify` is never reached) |
    | driver (15) | MEM-DS-001, MEM-DS-002, MEM-DS-003, MEM-DS-004, MEM-DS-005's `_traverse` primitive (O(d) over a canonical key), MEM-DS-006, MEM-010, MEM-011, MEM-012, MEM-014's two primitives (`SupportsDeleteTree` for the recursive case: the subtree walk keeps the counters under the one lock; the root is refused by the kernel before `delete_tree` is called, BK-389 decision 6's table. `SupportsRemoveFolder` for the non-recursive case: the existence, type and emptiness checks and the detach under the one lock, as today, so MEM-026 holds, BK-389 decision 8), MEM-015 (`SupportsFolderStats`: one walk under the one lock, so MEM-040's O(1) space holds, where a kernel aggregation over Memory's one-`Page` `list_page` would be O(subtree); MEM-025's snapshot holds either way, by decision 7; its `latest` follows BE-017's rule, an unknown time skipped and `None` when none is known), MEM-016 (`SupportsAtomicMove`, one lock), MEM-016b (`SupportsCopy`), MEM-025 (including its eager collect: the driver answers each `list_page` with one locked collect and no cursor, and the kernel asks for a recursive listing as one `delimiter=None` call, BK-389 decision 7, so it stays one snapshot), MEM-026 |
    | forwarded or declared (7) | MEM-001 (constructor), MEM-002 (`name`), MEM-003 (capabilities, declared by the driver), MEM-004 (`repr` on the public class, reading the driver's counters), MEM-005 (registration), MEM-017 (`to_key`), MEM-019 (`unwrap`) |
    | unchanged (6) | MEM-030, MEM-031, MEM-032 (testing), MEM-040, MEM-041, MEM-042 (performance) |
@@ -98,12 +98,16 @@ labelled **(was … , absorbed here)**, which is the absorption form
      their authority. MEM-DS-005's `""` row (spec 013 line 137, "Valid for
      folder operations") is amended to except `delete_folder`, which
      answers `InvalidPath` as the code does today; added in PR #1056's
-     round 2.]
+     round 2. The formal layer cites MEM-014 for the root refusal:
+     `MemoryBackend.dfy`'s comments at lines 625, 651, 1747 and 1773, and
+     `sdd/formal/README.md` lines 300 and 491 (`rg -n 'MEM-014' sdd/formal`).
+     Each is re-cited to BK-389's spec 003 root clause in the same PR;
+     added in PR #1056's round 3.]
    - [spec 003's key-rule clause was planned here and moved to BK-389's
-     item 4 after PR #1055 merged, so the kernel's cells have a spec ID
-     before they are written. This PR applies it to the two Memory classes,
-     the first on the kernel. BK-395's answers for addressing, backslash
-     keys and `glob` join it once decided.]
+     item 8 after PR #1055 merged, so the kernel's cells have a spec ID
+     before they are written. BK-395's answers, and any clause they
+     contradict, land with it in BK-389's PR. This PR applies them to the
+     two Memory classes, the first on the kernel.]
    - [spec 003 BE-021 § Reach's page-boundary paragraph: under BK-389's
      decision 1 a migrated driver has no unmarked page, so the divergence it
      licenses applies only to a class not yet migrated.]

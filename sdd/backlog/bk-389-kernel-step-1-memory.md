@@ -17,7 +17,7 @@ remainder is minted ahead of the close, and the kernel PR closes this item
 as `[x]` with BK-394 as that remainder. This item keeps the **kernel PR**, which runs
 under the Proposed ADR. **BK-394** ([dossier](bk-394-memory-drivers-accept-adr-0042.md))
 is the **Memory PR**: the two Memory drivers, every step-1 spec amendment but
-the spec 003 clauses the kernel's cells trace to (item 4 below), the
+the spec 003 clauses the kernel's cells trace to (item 8 below), the
 guide, its check script and the homepage snippet, and ADR-0042 and RFC-0017
 set to Accepted. "That PR" in the paragraph above is BK-394's. **Both PRs
 merge only after the v0.33.0 tag.** Items 2 (the Memory half), 4, 5, 6 and 7
@@ -59,7 +59,7 @@ every case. RFC-0017 carries the same answers at the question each settles.
 5. **The kernel is private in this PR.** It lands in underscore modules,
    unexported from `__all__`, with no API reference page, guide or CHANGELOG
    entry. Its fake-driver suite traces to existing spec IDs, and to the spec
-   003 clauses item 4 below adds for the cells no ID covers yet [corrected
+   003 clauses item 8 below adds for the cells no ID covers yet [corrected
    after PR #1055 merged: as merged this said existing IDs only]. BK-394 exports
    the public names RFC-0017 § Impact lists, `Session` excepted (it lands at
    step 2, D5), together with the specs that describe them.
@@ -170,7 +170,7 @@ every case. RFC-0017 carries the same answers at the question each settles.
    **Not `RemotePath`'s rules, nor `LocalBackend._resolve()`'s.** The
    refusals and normalisation are spec 013's MEM-DS-005 table, which both
    Memory classes implement today, and this item's PR restates them as a
-   spec 003 clause (item 4 below; moved from BK-394 after PR #1055 merged). A comparison at master `9caef6b` shows
+   spec 003 clause (item 8 below; moved from BK-394 after PR #1055 merged). A comparison at master `9caef6b` shows
    where the other two rules differ from it:
    - `RemotePath` folds `"/a/b"` to `a/b`, converts the backslash in
      `"a\\b"` to `/`, and raises on every root spelling.
@@ -204,24 +204,41 @@ every case. RFC-0017 carries the same answers at the question each settles.
      `remove_folder(key)` removes an empty folder and refuses anything else
      without removing it, in one step: Memory under its lock, which is where
      all four checks and the detach run today (MEM-026), and Local's and
-     SFTP's `rmdir`, which refuse a non-empty folder and a file natively. A
-     refusal `classify` types goes back as typed: Memory types all four
-     states (absent `NotFound`, file `InvalidPath`, non-empty
-     `DirectoryNotEmpty`), Local's `ENOENT` and `ENOTEMPTY` are typed. A
-     refusal it cannot type gets the kernel's wrong-type probes on the error
-     path, the ones RFC-0017 D2 already lists, after the failure: one `stat`
-     (absent `NotFound`, file `InvalidPath`), then, for a folder still
-     present, one `list_page(key, delimiter="/", limit=1)` (non-empty
-     `DirectoryNotEmpty`, else the driver's error stands). Two such
-     refusals, measured or read in round 2 of PR #1056's review: Local's
-     `os.rmdir` answers `ENOTDIR` both for a file and for a key under a file
-     (`f/x`, which `LocalBackend` and `MemoryBackend` answer `NotFound`
-     today, and still do through the `stat`); SFTP v3 reports a file like an
-     absent key and a non-empty folder as an errno-less failure (paramiko's
-     `_convert_status` and `convert_errno`, read, not run). Only the probed
-     answer can race, never the removal. [Maintainer's decision after that
-     round, replacing "the driver answers all four states, the kernel calls
-     nothing else", which neither `rmdir` can do.]
+     SFTP's `rmdir`, which refuse a non-empty folder and a file natively
+     (measured for Local in PR #1056's round 3: `os.rmdir` removed no file,
+     non-empty directory or symlink).
+   - **The error path, enumerated.** [Rounds 1 to 3 of PR #1056's review
+     each refuted a prose statement of when the kernel probes, so the rule
+     is this table. The maintainer chose kernel-side probing after round 2.]
+     After any refusal **except a typed `DirectoryNotEmpty`**, the kernel
+     runs the error-path probes: one `stat`, then, for a folder still
+     present, one `list_page(key, delimiter="/", limit=1)`. The probe's
+     answer replaces the driver's: absent `NotFound`, file `InvalidPath`,
+     non-empty folder `DirectoryNotEmpty`, else the driver's error stands.
+     A typed `NotFound` is probed too, as RFC-0017 D2's flow does, because
+     Local's and SFTP's wires type a file as `NotFound`. `missing_ok`
+     applies to the final `NotFound`. Only the probed answer can race, never
+     the removal. The driver columns are what `rmdir` gives through today's
+     classifiers (`_local.py` maps `NotADirectoryError` to `NotFound` at
+     lines 203, 237 and 455; `_sftp.py` maps `FileNotFoundError` to
+     `NotFound` at line 3271); the last column is today's answer on every
+     driver, measured for Local and Memory in round 3, read for SFTP
+     (`_sftp.py` lines 1358 to 1388):
+
+     | Key state | Memory `remove_folder` | Local `rmdir` → `classify` | SFTP v3 `rmdir` → `classify` | Kernel | Answer |
+     |---|---|---|---|---|---|
+     | empty folder | removed | removed | removed | — | removed |
+     | folder holding files | `DirectoryNotEmpty` | `ENOTEMPTY` → `DirectoryNotEmpty` | errno-less failure, untyped | probe on SFTP only: `stat` folder, `list_page` non-empty | `DirectoryNotEmpty` |
+     | folder holding only an empty folder | `DirectoryNotEmpty` | `ENOTEMPTY` → `DirectoryNotEmpty` | errno-less failure, untyped | probe on SFTP only; `delimiter="/"` sees the subfolder | `DirectoryNotEmpty` |
+     | file `f` | `InvalidPath` | `ENOTDIR` → `NotFound` | `ENOENT` → `NotFound` | probe: `stat` file | `InvalidPath` |
+     | key under a file `f/x` | `NotFound` | `ENOTDIR` → `NotFound` | `ENOENT` → `NotFound` | probe: `stat` absent | `NotFound` |
+     | absent | `NotFound` | `ENOENT` → `NotFound` | `ENOENT` → `NotFound` | probe: `stat` absent | `NotFound` |
+
+     Not in the table, for step 5 to list: Local's symlink to a directory
+     answers `PermissionDenied` today (measured in round 3); under the
+     probe, `rmdir`'s `ENOTDIR` and a `stat` that reads a folder would let
+     the driver's `NotFound` stand. A permission-denied folder was not
+     measured (the container runs as uid 0).
    - **A wire with no one-step removal.** The driver checks and then
      removes, and must document that race. `AzureBackend` on HNS
      (`get_paths(max_results=1)` then `delete_directory`, `_azure.py` lines
@@ -235,8 +252,8 @@ every case. RFC-0017 carries the same answers at the question each settles.
      folder objects.
    - `delete_folder(recursive=False)`: the kernel runs decision 6's pipeline,
      then calls `remove_folder` with no probe before it, so no check is split
-     from the removal; it probes only after an untyped refusal, as above.
-     The kernel applies `missing_ok` to `NotFound`, typed or probed. SFTP's
+     from the removal; it probes after a refusal as the table above states.
+     SFTP's
      `stat`, `listdir`, `rmdir` sequence today (`_sftp.py` lines 1358 to
      1388) becomes `rmdir` with this probe at step 6.
    - `delete_folder(recursive=True)` without `SupportsDeleteTree`: the kernel
@@ -247,7 +264,7 @@ every case. RFC-0017 carries the same answers at the question each settles.
 
    RFC-0017 D1's protocol table carries the row. Both Memory drivers
    implement it beside `SupportsDeleteTree` (BK-394's MEM-014 placement).
-   Its kernel cells trace to the spec 003 clause item 4 below adds.
+   Its kernel cells trace to the spec 003 clause item 8 below adds.
 
 ## What it owes
 
@@ -278,17 +295,21 @@ every case. RFC-0017 carries the same answers at the question each settles.
    no time is known. The kernel computes it over a listing; a driver with
    `SupportsFolderStats` must return the same value (BK-394's spec 013
    placement gives both Memory drivers one).
-4. Spec 003 clauses for the kernel cells no spec ID covers yet, so the suite
+8. Spec 003 clauses for the kernel cells no spec ID covers yet, so the suite
    follows SPEC → TEST → IMPLEMENT (`000-process.md` Rule 1). [Added after
    PR #1055 merged, from its closing-pass review; the maintainer moved the
-   key clause here from BK-394.] Each is scoped to a class on the kernel, and
-   no class is on it until BK-394:
+   key clause here from BK-394. Numbered 8, after the original list's 1 to
+   7, so that the gap at 4 still marks the item that moved to BK-394.] Each
+   is scoped to a class on the kernel, and no class is on it until BK-394:
    - the key rule of decision 6: its refusals, normalisation and root check
-     on the canonical key;
+     on the canonical key, together with BK-395's answers for the
+     addressing members, backslash keys and `glob`, and any amendment of a
+     clause those answers contradict (this item's PR waits on BK-395, so
+     both land here, by the same reason);
    - the root `delete_folder` refusal (`InvalidPath`), which BE-029 § Out of
      scope leaves undefined;
    - decision 8: `remove_folder`'s atomic refusal, who carries it, and the
-     kernel's `delete_folder` sequences.
+     kernel's `delete_folder` sequences and error-path table.
 
 **Depends on** BK-388, whose postconditions the kernel is written against,
 and on BK-395, which decides the key rule's remainder (decision 6).

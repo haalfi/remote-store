@@ -349,4 +349,12 @@ phases:
       - file: sdd/specs/013-memory-backend.md
         section: "MEM-014; MEM-DS-005 line 137"
         read_type: verify
-        extract: "MEM-014 states no root rule and line 137 calls '' valid for folder operations; my placement named a 'MEM-014 root refusal' that exists only in _memory.py code"
+        extract: "MEM-014 states no root rule and line 137 calls '' valid for folder operations; my placement named a 'MEM-014 root refusal' the prose does not have"
+      - file: sdd/formal/MemoryBackend.dfy
+        section: "DeleteFolder root postcondition comments (lines 625, 651, 1747, 1773); sdd/formal/README.md lines 300, 491"
+        read_type: verify
+        extract: "round 3: the formal layer states the root refusal and cites MEM-014, so my round-2 'exists only in code' was false; BK-394 now owns the re-citation"
+      - file: src/remote_store/backends/_local.py
+        section: "NotADirectoryError -> NotFound (lines 203, 237, 455); _sftp.py FileNotFoundError -> NotFound (line 3271)"
+        read_type: verify
+        extract: "round 3: both wires type a file refusal as NotFound, so 'probe only an untyped refusal' let missing_ok silence a file; decision 8's condition was refuted three rounds running (repeat-site check), so the error path became a table over key state and driver"

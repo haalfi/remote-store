@@ -179,7 +179,7 @@ optional member, so presence is a protocol, not a method):
 | `SupportsEnsureParents` | `ensure_parents(key)` | called before `put` when `parents == "explicit"`; SFTP's stat walk and Local's `mkdir -p` are their implementations. Never called for `implicit` (Graph, GR-039: no explicit `mkdir`; Azure HNS) or `none` |
 | `SupportsFolderStats` | `folder_stats(prefix) -> (count, size, latest)` | `get_folder_info` push-down (SQL's aggregate query); without it, the kernel aggregates a listing |
 | `SupportsGlob` | `glob(pattern)` | native `GLOB`; without it the driver must not declare `GLOB` |
-| `SupportsRemoveFolder` (added at BK-389's planning; corrected after PR #1055 merged) | `remove_folder(key)`: remove an empty folder and refuse anything else without removing it, in one step where the wire has one (Memory's lock, `rmdir`) | required when `parents == "explicit"`, checked at construction; optional when `implicit` (Graph, Azure HNS); never for `none`. `delete_folder(recursive=False)` calls it with no probe before it; a refusal `classify` cannot type gets D2's error-path probes after it (`stat`, then `list_page(limit=1)`), and `missing_ok` applies to `NotFound`. `delete_folder(recursive=True)` without `SupportsDeleteTree` walks with `delimiter="/"`, deletes the files, then calls it on each folder, deepest first |
+| `SupportsRemoveFolder` (added at BK-389's planning; corrected after PR #1055 merged) | `remove_folder(key)`: remove an empty folder and refuse anything else without removing it, in one step where the wire has one (Memory's lock, `rmdir`) | required when `parents == "explicit"`, checked at construction; optional when `implicit` (Graph, Azure HNS); never for `none`. `delete_folder(recursive=False)` calls it with no probe before it; after any refusal but a typed `DirectoryNotEmpty`, D2's error-path probes run (`stat`, then `list_page(key, delimiter="/", limit=1)`), and `missing_ok` applies to the final `NotFound`. The answer per key state and driver is BK-389's dossier, decision 8. `delete_folder(recursive=True)` without `SupportsDeleteTree` walks with `delimiter="/"`, deletes the files, then calls it on each folder, deepest first |
 
 Two more attributes the stream wrapper reads per driver, because
 `_ErrorMappingStream`'s caught set is per construction site today:
@@ -245,9 +245,10 @@ was a 28th match above it). It owns, once:
 - key validation and normalisation (added at BK-389's planning): a key
   starting with `/`, a `..` segment or a null byte is refused with
   `InvalidPath`, and empty and `.` segments are dropped. The rule is taken
-  from spec 013's MEM-DS-005 table, not from `RemotePath`'s, and BK-394
-  states it as a spec 003 clause binding every migrated class, which
-  MEM-DS-005 then cites. It runs after the closed guard and before the root check, which
+  from spec 013's MEM-DS-005 table, not from `RemotePath`'s, and BK-389's
+  kernel PR states it as a spec 003 clause binding every class on the
+  kernel, which MEM-DS-005 cites from BK-394 on (moved from BK-394 after
+  PR #1055 merged). It runs after the closed guard and before the root check, which
   then runs on the canonical key: `""` is the root, the wide predicate on
   every side. So an operation's driver call only ever sees a canonical key,
   as D1's driver, which "carries no path … logic", requires. The rule
@@ -262,7 +263,10 @@ was a 28th match above it). It owns, once:
   `close_is_terminal`, in the order spec 003 fixes; these are
   key-level checks and add no round trip;
 - the wrong-type probes on the error path (one `stat` and one
-  `list_page(limit=1)`, the same probes the classes issue today), the
+  `list_page(limit=1)`, the same probes the classes issue today; for
+  `delete_folder(recursive=False)` both run in sequence after a
+  `remove_folder` refusal, the listing with `delimiter="/"`, and may
+  answer `DirectoryNotEmpty`, per BK-389's dossier, decision 8), the
   absent-container tolerance, and the first-page listing bound (BE-021),
   including its page-not-item rule;
 - the file-ancestor pre-check as a kernel option with today's default: the
@@ -305,7 +309,7 @@ flowchart LR
   prim -->|stream| wrap["stream wrapped once:<br/>every later read passes classify too"]
   prim -->|native exception| cls["driver.classify(exc, op=read, key)"]
   cls --> post["kernel post-processing:<br/>path and backend set,<br/>blank message synthesised,<br/>a typed RemoteStoreError passes through"]
-  post -->|NotFound| probe["error-path probe:<br/>stat or list_page(limit=1)<br/>wrong type becomes InvalidPath"]
+  post -->|NotFound| probe["error-path probe:<br/>stat or list_page(limit=1)<br/>wrong type becomes InvalidPath<br/>(delete_folder: see D1's SupportsRemoveFolder row)"]
   post --> raise["typed error to the caller"]
   probe --> raise
   wrap --> caller["stream to the caller"]
@@ -773,7 +777,8 @@ and its answer keeps `classify`.
   `unwrap(s3fs.S3FileSystem)` callers at step 2. `Store` callers see no
   change in interface.
 - **Performance:** the kernel issues the same probes the per-backend code
-  issues today (one `stat` or one `list_page(limit=1)` on the error path; the
+  issues today (one `stat` or one `list_page(limit=1)` on the error path,
+  both for a refused non-recursive `delete_folder`; the
   file-ancestor walk only when opted in; `ensure_parents` only for explicit
   parents), and the S3 driver drops the s3fs layer. Two replacements change
   data paths and are measured under D8's benchmark gate in the PR that
@@ -812,9 +817,10 @@ and its answer keeps `classify`.
   `write_atomic` and `move` syntheses over each combination of
   `put_is_atomic`, `open_write`, `rename` and `SupportsAtomicMove` the fake
   driver can present, and the `delete_folder` synthesis over
-  `SupportsRemoveFolder` and `SupportsDeleteTree` (a typed refusal passed
-  through, an untyped one answered by the error-path probes, `missing_ok`
-  applied to `NotFound`, deepest-first removal, and the
+  `SupportsRemoveFolder` and `SupportsDeleteTree` (every row of decision 8's
+  error-path table in BK-389's dossier: a typed `DirectoryNotEmpty` passed
+  through, any other refusal answered by the probes, `missing_ok` applied
+  to the final `NotFound`, deepest-first removal, and the
   construction refusal of an explicit-parents driver without
   `SupportsRemoveFolder`; added after PR #1055 merged); the driver half
   stays with the per-driver suites. BK-345 and ID-244 reduce to driver
