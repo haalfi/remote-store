@@ -152,3 +152,76 @@ phases:
         read_type: verify
         extract: "BACKLOG to DONE, CHANGELOG, failing tests before fix, spec 040 amended"
         outcome: ok
+review:
+  # Derived by `hatch run ship-report 1054 --trace-block-only` at head 22e03f3.
+  # Do not hand-edit, except a newly required field per sdd/traces/_schema.yml
+  # section review: RFC-0015 D4 makes this script the only producer.
+  derivation: "hatch run ship-report 1054 --trace-block-only"
+  pr: 1054
+  review_rounds: 6
+  submissions: 5
+  findings: 15
+  by_round:
+    - round: 1
+      findings: 2
+      origin: {original: 1, pre-existing: 1}
+      triage: {must-fix: 2}
+      duration_hours: 0.05
+    - round: 2
+      findings: 4
+      origin: {original: 3, unclassifiable-file: 1}
+      triage: {must-fix: 4}
+      duration_hours: 0.47
+    - round: 3
+      findings: 1
+      origin: {pre-existing: 1}
+      triage: {must-fix: 1}
+      duration_hours: 0.42
+    - round: 4
+      findings: 4
+      origin: {loop-introduced: 2, original: 2}
+      triage: {must-fix: 4}
+      duration_hours: 0.13
+    - round: 5
+      findings: 4
+      origin: {loop-introduced: 4}
+      triage: {must-fix: 4}
+      duration_hours: 0.34
+  by_file:
+    - path: "sdd/traces/bl-011-sql-like-prefix-escaping.yml"
+      findings: 4
+    - path: "sdd/specs/040-sql-blob-backend.md"
+      findings: 3
+    - path: "src/remote_store/backends/_sqlalchemy.py"
+      findings: 3
+    - path: "tests/backends/sqlblob/test_like_prefix.py"
+      findings: 3
+    - path: "sdd/BACKLOG-DONE.md"
+      findings: 1
+    - path: "tests/backends/sqlblob/test_config.py"
+      findings: 1
+  untouched_files:
+    - "CHANGELOG.md"
+    - "docs-src/_data/graph/graph.json"
+    - "docs-src/explanation/graph_viz.html"
+    - "docs-src/guides/backends/sql-blob.md"
+    - "docs-src/reference/api/store.md"
+    - "sdd/BACKLOG.md"
+    - "sdd/backlog/bl-011-sql-like-sibling-deletion.md"
+    - "sdd/backlogid.json"
+    - "tests/backends/conformance/test_io.py"
+    - "tests/backends/conformance/test_listing.py"
+  review_driven_commits:
+    - sha: "6fd5a42"
+      subject: "BL-011: Address PR #1054 review round 1: index claim and glob suffix narrowing"
+    - sha: "e50eb17"
+      subject: "BL-011: File BUG-297, found by PR #1054 review round 2"
+    - sha: "cde95d1"
+      subject: "BL-011: Address PR #1054 closing gate: key column collation, stale referents"
+    - sha: "40cc778"
+      subject: "BL-011: Admit the trailing newline the glob regex accepts; centralize the LIKE escape"
+    - sha: "6cfe0e4"
+      subject: "BL-011: Address PR #1054 review round 5: escape [, scope literal-match claims, live probes"
+    - sha: "22e03f3"
+      subject: "BL-011: Address PR #1054 verification round: test hygiene and prose"
+  ci: {verdict: GREEN, failed: 0, pending: 0}
