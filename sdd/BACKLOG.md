@@ -365,15 +365,6 @@ no clause of the contract ships unexercised.
   so no conformance cell reaches `GraphBackend` on this rule. Recorded, they go red on a
   regression to extra `/children` calls: replay skips only an absent cassette. Open decision: none.
 
-- [ ] **ID-261 — BE-029's order is unobservable to conformance wherever a present root already answers correctly**
-  spec: BE-029 · effort: M · audience: infra.test
-  With key-decided root checks removed in-session, the file-shaped root cells stay
-  green on `local`/`local_async_adapted` and every probe cell on `local`, `s3_moto`
-  stays green: a present root answers right by observation (checks, selection and
-  counts in the dossier). Only an absent container separates the orders (BK-345).
-  Open decision: per-backend pins, or an absent-root fixture shared with BK-345.
-  Detail: [dossier](backlog/id-261-root-order-unobservable.md)
-
 - [ ] **ID-262 — On Azure replay lanes a regressed root-write guard skips instead of failing**
   spec: BE-029 · effort: S · audience: infra.test
   `test_root_destination_outranks_a_missing_source` passes on `azure_replay(_async)`
@@ -416,15 +407,6 @@ copies an example, without opening an issue.
   user metadata. Open decision: which rows to derive from capability
   declarations, which to keep as prose, and which to drop.
   Detail: [dossier](backlog/bk-339-store-behavior-matrix.md)
-
-- [ ] **BK-325 — Custom-backend guide: registry-integration and remaining contract-topic gaps**
-  spec: — · effort: M · audience: user.site
-  The custom-backend guide does not teach `Secret`-wrapped credentials, the
-  injected `retry=` kwarg, stream-time error mapping for `LAZY_READ`, or the
-  `strict_only` file-ancestor fixtures, and owes three smaller fixes; re-read,
-  `_MODULE_FOR` is now taught (dossier correction). Open decision: none on
-  shape; the gap list and reference shapes are in the dossier.
-  Detail: [dossier](backlog/bk-325-custom-backend-guide-gaps.md)
 
 - [ ] **ID-199 — Backend setup & configuration guides expansion**
   spec: — · effort: L · audience: user.site, library.maintainer
