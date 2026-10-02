@@ -11984,8 +11984,8 @@ for exactly this reason.</p>
 the cells below only where the root's own answer is wrong, and a present root
 often answers correctly by observation, so the order is unpinned there on every
 row. It matters once the container is absent, which no conformance fixture
-arranges (ID-261, BK-345); the backends that can lose theirs pin it per
-backend.</p>
+arranges (tracked: BK-345, and BK-389's fake-driver cells for the kernel); the
+backends that can lose theirs pin it per backend.</p>
 <p><strong>BE-020 outranks this check.</strong> On a backend with <code>close_is_terminal = True</code>,
 every operation in the table above except the addressing row raises
 <code>BackendUnavailable</code> <em>after</em> <code>close()</code> — not <code>InvalidPath</code> from a file- or

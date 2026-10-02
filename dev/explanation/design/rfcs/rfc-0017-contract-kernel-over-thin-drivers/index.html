@@ -11414,14 +11414,17 @@ are answered below, and the design is recorded in
 The maintainer's condition is that the ADR and this RFC become Accepted
 together, in the PR that lands the first backend on this design (D3 step 1),
 not on the answers alone. The lifecycle, and where each amendment lands, are
-in D8 and § Impact.</p>
+in D8 and § Impact. BK-389's planning PR answered Open Questions 2 and 3,
+deferred 5 to D3 step 3 with the shape step 1 keeps open, added the close
+posture to D1 and key validation to D2, and split step 1 into a kernel PR (BK-389) and a Memory PR
+(BK-394), the second accepting; BK-389's dossier § Decisions carries them.</p>
 <p><strong>Date:</strong> 2026-09-28. Every figure below is pinned to <code>8fa22d6</code> and is either
 quoted from audit-021 with its derivation, or names its command here. The tree
 moves on every merge: re-run rather than quote.</p>
 <h2 id="summary">Summary<a class="headerlink" href="#summary" title="Permanent link">&para;</a></h2>
 <p>This RFC proposes that the <code>Backend</code> surface be implemented <strong>once</strong>, in a
 concrete <code>DriverBackend(Backend)</code> kernel over a per-backend <code>Driver</code> of
-fourteen required wire primitives and nine optional ones, with error mapping
+fourteen required wire primitives and ten optional ones, with error mapping
 at a single choke point that invokes the driver's operation-scoped
 <code>classify(exc, op, key)</code> on every call, listing page and stream and
 guarantees the error's <code>path</code>, <code>backend</code> and a non-empty message.</p>
@@ -11432,7 +11435,8 @@ user-audience defects of the last six releases (63%) to rules stated once and
 re-implemented per class; measured against this design by the rules in § What
 each cluster-A bug becomes, the kernel owns 10 of those outright (14% of the
 71), 6 are split with the driver, 8 stay in the driver, 6 waited on a
-decision at filing (three since decided, Open Question 4),
+decision at filing (four since decided, three under Open Question 4 and one
+under Open Question 2; one deferred to D3 step 3 under Open Question 5),
 2 disappear with a retired class, and 13 belong to D5's session layer. Counted
 by clause rather than by item, the 45 sit on 14 clauses (11 in cluster A, 3 in
 B); the audit derives no clause count for the other 26, so the 14 has no
@@ -11509,34 +11513,37 @@ classifier are all a new backend writes, and every clause in the kernel box
 is applied to it without being restated.</p>
 <h3 id="d1-a-driver-of-wire-primitives-with-capabilities-declared-not-derived">D1. A <code>Driver</code> of wire primitives, with capabilities declared, not derived<a class="headerlink" href="#d1-a-driver-of-wire-primitives-with-capabilities-declared-not-derived" title="Permanent link">&para;</a></h3>
 <p>A driver maps one-to-one onto its wire protocol and carries no path, root,
-type, closed or mapping logic. Fourteen required callables and five
-attributes:</p>
+type, closed or mapping logic. Fourteen required callables and six
+attributes (the sixth, <code>close_is_terminal</code>, added at BK-389's planning):</p>
 <div class="highlight"><pre><span></span><code><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a><span class="k">class</span><span class="w"> </span><span class="nc">Driver</span><span class="p">(</span><span class="n">Protocol</span><span class="p">):</span>
 <a id="__codelineno-0-2" name="__codelineno-0-2" href="#__codelineno-0-2"></a>    <span class="n">name</span><span class="p">:</span> <span class="nb">str</span>
 <a id="__codelineno-0-3" name="__codelineno-0-3" href="#__codelineno-0-3"></a>    <span class="n">namespace</span><span class="p">:</span> <span class="n">Literal</span><span class="p">[</span><span class="s2">"flat"</span><span class="p">,</span> <span class="s2">"hierarchical"</span><span class="p">]</span>
 <a id="__codelineno-0-4" name="__codelineno-0-4" href="#__codelineno-0-4"></a>    <span class="n">parents</span><span class="p">:</span> <span class="n">Literal</span><span class="p">[</span><span class="s2">"none"</span><span class="p">,</span> <span class="s2">"implicit"</span><span class="p">,</span> <span class="s2">"explicit"</span><span class="p">]</span>  <span class="c1"># HTTP none; Graph, Azure HNS implicit; Local, SFTP explicit</span>
 <a id="__codelineno-0-5" name="__codelineno-0-5" href="#__codelineno-0-5"></a>    <span class="n">capabilities</span><span class="p">:</span> <span class="n">CapabilitySet</span>   <span class="c1"># declared by the driver, as a backend's CAPABILITIES ClassVar is today (SEEK-001's shape); the kernel adds none</span>
 <a id="__codelineno-0-6" name="__codelineno-0-6" href="#__codelineno-0-6"></a>    <span class="n">put_is_atomic</span><span class="p">:</span> <span class="nb">bool</span>           <span class="c1"># S3, SQL, flat Azure True (write_atomic is put); Local, SFTP False</span>
-<a id="__codelineno-0-7" name="__codelineno-0-7" href="#__codelineno-0-7"></a>
-<a id="__codelineno-0-8" name="__codelineno-0-8" href="#__codelineno-0-8"></a>    <span class="k">def</span><span class="w"> </span><span class="nf">stat</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">key</span><span class="p">:</span> <span class="nb">str</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Entry</span> <span class="o">|</span> <span class="kc">None</span><span class="p">:</span> <span class="o">...</span>        <span class="c1"># file OR folder, kind on the Entry; None if absent</span>
-<a id="__codelineno-0-9" name="__codelineno-0-9" href="#__codelineno-0-9"></a>    <span class="k">def</span><span class="w"> </span><span class="nf">get</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">key</span><span class="p">:</span> <span class="nb">str</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">BinaryIO</span><span class="p">:</span> <span class="o">...</span>
-<a id="__codelineno-0-10" name="__codelineno-0-10" href="#__codelineno-0-10"></a>    <span class="k">def</span><span class="w"> </span><span class="nf">put</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">key</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="n">content</span><span class="p">,</span> <span class="o">*</span><span class="p">,</span> <span class="n">overwrite</span><span class="p">:</span> <span class="nb">bool</span><span class="p">,</span> <span class="n">metadata</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">WriteResult</span><span class="p">:</span> <span class="o">...</span>
-<a id="__codelineno-0-11" name="__codelineno-0-11" href="#__codelineno-0-11"></a>    <span class="k">def</span><span class="w"> </span><span class="nf">delete</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">key</span><span class="p">:</span> <span class="nb">str</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span> <span class="o">...</span>
-<a id="__codelineno-0-12" name="__codelineno-0-12" href="#__codelineno-0-12"></a>    <span class="k">def</span><span class="w"> </span><span class="nf">list_page</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">prefix</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="o">*</span><span class="p">,</span> <span class="n">delimiter</span><span class="p">:</span> <span class="nb">str</span> <span class="o">|</span> <span class="kc">None</span><span class="p">,</span> <span class="n">cursor</span><span class="p">,</span> <span class="n">limit</span><span class="p">:</span> <span class="nb">int</span> <span class="o">|</span> <span class="kc">None</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Page</span><span class="p">:</span> <span class="o">...</span>
-<a id="__codelineno-0-13" name="__codelineno-0-13" href="#__codelineno-0-13"></a>    <span class="k">def</span><span class="w"> </span><span class="nf">probe</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span> <span class="o">...</span>                         <span class="c1"># health; must touch the container</span>
-<a id="__codelineno-0-14" name="__codelineno-0-14" href="#__codelineno-0-14"></a>    <span class="k">def</span><span class="w"> </span><span class="nf">close</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span> <span class="o">...</span>
-<a id="__codelineno-0-15" name="__codelineno-0-15" href="#__codelineno-0-15"></a>
-<a id="__codelineno-0-16" name="__codelineno-0-16" href="#__codelineno-0-16"></a>    <span class="k">def</span><span class="w"> </span><span class="nf">classify</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">exc</span><span class="p">:</span> <span class="ne">Exception</span><span class="p">,</span> <span class="o">*</span><span class="p">,</span> <span class="n">op</span><span class="p">:</span> <span class="n">Op</span><span class="p">,</span> <span class="n">key</span><span class="p">:</span> <span class="nb">str</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">RemoteStoreError</span><span class="p">:</span> <span class="o">...</span>
-<a id="__codelineno-0-17" name="__codelineno-0-17" href="#__codelineno-0-17"></a>    <span class="k">def</span><span class="w"> </span><span class="nf">container_absent</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">exc</span><span class="p">:</span> <span class="ne">BaseException</span><span class="p">,</span> <span class="o">*</span><span class="p">,</span> <span class="n">op</span><span class="p">:</span> <span class="n">Op</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">bool</span><span class="p">:</span> <span class="o">...</span>
-<a id="__codelineno-0-18" name="__codelineno-0-18" href="#__codelineno-0-18"></a>    <span class="k">def</span><span class="w"> </span><span class="nf">connection_dead</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">exc</span><span class="p">:</span> <span class="ne">BaseException</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">bool</span><span class="p">:</span> <span class="o">...</span>
-<a id="__codelineno-0-19" name="__codelineno-0-19" href="#__codelineno-0-19"></a>
-<a id="__codelineno-0-20" name="__codelineno-0-20" href="#__codelineno-0-20"></a>    <span class="c1"># interop, forwarded by the kernel unchanged (BE-022, BE-023, BE-025, resolve)</span>
-<a id="__codelineno-0-21" name="__codelineno-0-21" href="#__codelineno-0-21"></a>    <span class="k">def</span><span class="w"> </span><span class="nf">unwrap</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">type_hint</span><span class="p">:</span> <span class="nb">type</span><span class="p">[</span><span class="n">T</span><span class="p">])</span> <span class="o">-&gt;</span> <span class="n">T</span><span class="p">:</span> <span class="o">...</span>
-<a id="__codelineno-0-22" name="__codelineno-0-22" href="#__codelineno-0-22"></a>    <span class="k">def</span><span class="w"> </span><span class="nf">native_path</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">key</span><span class="p">:</span> <span class="nb">str</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">str</span><span class="p">:</span> <span class="o">...</span>
-<a id="__codelineno-0-23" name="__codelineno-0-23" href="#__codelineno-0-23"></a>    <span class="k">def</span><span class="w"> </span><span class="nf">to_key</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">native_path</span><span class="p">:</span> <span class="nb">str</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">str</span><span class="p">:</span> <span class="o">...</span>
-<a id="__codelineno-0-24" name="__codelineno-0-24" href="#__codelineno-0-24"></a>    <span class="k">def</span><span class="w"> </span><span class="nf">resolve</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">key</span><span class="p">:</span> <span class="nb">str</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">ResolutionPlan</span><span class="p">:</span> <span class="o">...</span>
+<a id="__codelineno-0-7" name="__codelineno-0-7" href="#__codelineno-0-7"></a>    <span class="n">close_is_terminal</span><span class="p">:</span> <span class="nb">bool</span>       <span class="c1"># BE-020's posture; the kernel's closed guard runs only when True (Memory False)</span>
+<a id="__codelineno-0-8" name="__codelineno-0-8" href="#__codelineno-0-8"></a>
+<a id="__codelineno-0-9" name="__codelineno-0-9" href="#__codelineno-0-9"></a>    <span class="k">def</span><span class="w"> </span><span class="nf">stat</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">key</span><span class="p">:</span> <span class="nb">str</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Entry</span> <span class="o">|</span> <span class="kc">None</span><span class="p">:</span> <span class="o">...</span>        <span class="c1"># file OR folder, kind on the Entry; None if absent</span>
+<a id="__codelineno-0-10" name="__codelineno-0-10" href="#__codelineno-0-10"></a>    <span class="k">def</span><span class="w"> </span><span class="nf">get</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">key</span><span class="p">:</span> <span class="nb">str</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">BinaryIO</span><span class="p">:</span> <span class="o">...</span>
+<a id="__codelineno-0-11" name="__codelineno-0-11" href="#__codelineno-0-11"></a>    <span class="k">def</span><span class="w"> </span><span class="nf">put</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">key</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="n">content</span><span class="p">,</span> <span class="o">*</span><span class="p">,</span> <span class="n">overwrite</span><span class="p">:</span> <span class="nb">bool</span><span class="p">,</span> <span class="n">metadata</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">WriteResult</span><span class="p">:</span> <span class="o">...</span>
+<a id="__codelineno-0-12" name="__codelineno-0-12" href="#__codelineno-0-12"></a>    <span class="k">def</span><span class="w"> </span><span class="nf">delete</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">key</span><span class="p">:</span> <span class="nb">str</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span> <span class="o">...</span>
+<a id="__codelineno-0-13" name="__codelineno-0-13" href="#__codelineno-0-13"></a>    <span class="k">def</span><span class="w"> </span><span class="nf">list_page</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">prefix</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="o">*</span><span class="p">,</span> <span class="n">delimiter</span><span class="p">:</span> <span class="nb">str</span> <span class="o">|</span> <span class="kc">None</span><span class="p">,</span> <span class="n">cursor</span><span class="p">,</span> <span class="n">limit</span><span class="p">:</span> <span class="nb">int</span> <span class="o">|</span> <span class="kc">None</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Page</span><span class="p">:</span> <span class="o">...</span>
+<a id="__codelineno-0-14" name="__codelineno-0-14" href="#__codelineno-0-14"></a>    <span class="k">def</span><span class="w"> </span><span class="nf">probe</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span> <span class="o">...</span>                         <span class="c1"># health; must touch the container</span>
+<a id="__codelineno-0-15" name="__codelineno-0-15" href="#__codelineno-0-15"></a>    <span class="k">def</span><span class="w"> </span><span class="nf">close</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span> <span class="o">...</span>
+<a id="__codelineno-0-16" name="__codelineno-0-16" href="#__codelineno-0-16"></a>
+<a id="__codelineno-0-17" name="__codelineno-0-17" href="#__codelineno-0-17"></a>    <span class="k">def</span><span class="w"> </span><span class="nf">classify</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">exc</span><span class="p">:</span> <span class="ne">Exception</span><span class="p">,</span> <span class="o">*</span><span class="p">,</span> <span class="n">op</span><span class="p">:</span> <span class="n">Op</span><span class="p">,</span> <span class="n">key</span><span class="p">:</span> <span class="nb">str</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">RemoteStoreError</span><span class="p">:</span> <span class="o">...</span>
+<a id="__codelineno-0-18" name="__codelineno-0-18" href="#__codelineno-0-18"></a>    <span class="k">def</span><span class="w"> </span><span class="nf">container_absent</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">exc</span><span class="p">:</span> <span class="ne">BaseException</span><span class="p">,</span> <span class="o">*</span><span class="p">,</span> <span class="n">op</span><span class="p">:</span> <span class="n">Op</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">bool</span><span class="p">:</span> <span class="o">...</span>
+<a id="__codelineno-0-19" name="__codelineno-0-19" href="#__codelineno-0-19"></a>    <span class="k">def</span><span class="w"> </span><span class="nf">connection_dead</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">exc</span><span class="p">:</span> <span class="ne">BaseException</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">bool</span><span class="p">:</span> <span class="o">...</span>
+<a id="__codelineno-0-20" name="__codelineno-0-20" href="#__codelineno-0-20"></a>
+<a id="__codelineno-0-21" name="__codelineno-0-21" href="#__codelineno-0-21"></a>    <span class="c1"># interop, forwarded by the kernel (BE-022, BE-023, BE-025, resolve); how keys reach</span>
+<a id="__codelineno-0-22" name="__codelineno-0-22" href="#__codelineno-0-22"></a>    <span class="c1"># native_path, resolve and to_key is BK-395's to decide (BK-389 decision 6)</span>
+<a id="__codelineno-0-23" name="__codelineno-0-23" href="#__codelineno-0-23"></a>    <span class="k">def</span><span class="w"> </span><span class="nf">unwrap</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">type_hint</span><span class="p">:</span> <span class="nb">type</span><span class="p">[</span><span class="n">T</span><span class="p">])</span> <span class="o">-&gt;</span> <span class="n">T</span><span class="p">:</span> <span class="o">...</span>
+<a id="__codelineno-0-24" name="__codelineno-0-24" href="#__codelineno-0-24"></a>    <span class="k">def</span><span class="w"> </span><span class="nf">native_path</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">key</span><span class="p">:</span> <span class="nb">str</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">str</span><span class="p">:</span> <span class="o">...</span>
+<a id="__codelineno-0-25" name="__codelineno-0-25" href="#__codelineno-0-25"></a>    <span class="k">def</span><span class="w"> </span><span class="nf">to_key</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">native_path</span><span class="p">:</span> <span class="nb">str</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">str</span><span class="p">:</span> <span class="o">...</span>
+<a id="__codelineno-0-26" name="__codelineno-0-26" href="#__codelineno-0-26"></a>    <span class="k">def</span><span class="w"> </span><span class="nf">resolve</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">key</span><span class="p">:</span> <span class="nb">str</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">ResolutionPlan</span><span class="p">:</span> <span class="o">...</span>
 </code></pre></div>
-<p>Nine optional protocols, each a separate <code>runtime_checkable</code> <code>Protocol</code>
+<p>Ten optional protocols (nine at filing; <code>SupportsRemoveFolder</code> added at
+BK-389's planning), each a separate <code>runtime_checkable</code> <code>Protocol</code>
 checked once at kernel construction (a <code>typing.Protocol</code> cannot express an
 optional member, so presence is a protocol, not a method):</p>
 <table>
@@ -11592,6 +11599,11 @@ optional member, so presence is a protocol, not a method):</p>
 <td><code>SupportsGlob</code></td>
 <td><code>glob(pattern)</code></td>
 <td>native <code>GLOB</code>; without it the driver must not declare <code>GLOB</code></td>
+</tr>
+<tr>
+<td><code>SupportsRemoveFolder</code> (added at BK-389's planning)</td>
+<td><code>remove_folder(key)</code>: remove one empty folder</td>
+<td>required when <code>parents == "explicit"</code>, checked at construction. <code>delete_folder(recursive=False)</code> checks the folder with <code>stat</code>, refuses a non-empty one with <code>DirectoryNotEmpty</code> after <code>list_page(limit=1)</code>, then calls it. <code>delete_folder(recursive=True)</code> without <code>SupportsDeleteTree</code> lists and deletes the files, then calls it on each folder, deepest first. Never called for <code>implicit</code> or <code>none</code></td>
 </tr>
 </tbody>
 </table>
@@ -11651,8 +11663,24 @@ other 6 public members (<code>name</code>, <code>capabilities</code>, <code>unwr
 <code>class Backend</code> (re-run when BK-380 deleted the <code>_SeekableSpool</code> helper that
 was a 28th match above it). It owns, once:</p>
 <ul>
-<li>root refusal from the key (BE-029, both predicates as <code>_flat_ns</code> now states
-  them), and the closed guard, in the order spec 003 fixes; these are
+<li>key validation and normalisation (added at BK-389's planning): a key
+  starting with <code>/</code>, a <code>..</code> segment or a null byte is refused with
+  <code>InvalidPath</code>, and empty and <code>.</code> segments are dropped. The rule is taken
+  from spec 013's MEM-DS-005 table, not from <code>RemotePath</code>'s, and BK-394
+  states it as a spec 003 clause binding every migrated class, which
+  MEM-DS-005 then cites. It runs after the closed guard and before the root check, which
+  then runs on the canonical key: <code>""</code> is the root, the wide predicate on
+  every side. So an operation's driver call only ever sees a canonical key,
+  as D1's driver, which "carries no path … logic", requires. The rule
+  covers the operations; the addressing members, a key holding a backslash
+  and <code>glob</code> are BK-395's to decide against BE-025, NPR-021/NPR-004, RES-020
+  and PATH-002 before kernel code. The operation-by-key-class table, with
+  its measured Memory column, is BK-389's dossier, decision 6;</li>
+<li>root refusal from the key (BE-029; at filing, both predicates as <code>_flat_ns</code>
+  now states them; since BK-389's planning, decided on the canonical key,
+  which gives the wide predicate on every side, the floor BE-029 sets for
+  the write side and a permitted excess elsewhere), and the closed guard where the driver declares
+  <code>close_is_terminal</code>, in the order spec 003 fixes; these are
   key-level checks and add no round trip;</li>
 <li>the wrong-type probes on the error path (one <code>stat</code> and one
   <code>list_page(limit=1)</code>, the same probes the classes issue today), the
@@ -11800,7 +11828,16 @@ step 2 with the first remote driver, and each later remote step (3, 4, 6, 7
 and 8) brings its own.</p>
 <p><strong>The suite is not "unchanged"; the cells that change are these, enumerated
 before step 1 and each settled before the step that changes it (Open
-Question 4).</strong> AZ-025's blank-message clause and its pinning
+Question 4).</strong> Added at BK-389's planning: the kernel's key rule (BK-389
+dossier, decision 6) is one more enumerated change, stated once as a table of
+operation by key class. Each step's PR lists every cell of that table where
+its driver answers differently today, canonical keys included (Local's
+<code>delete_folder("")</code> removes the root directory today). Step 1's list, for Memory, is
+in BK-394's dossier. No conformance cell reaches those cells. Memory's are
+pinned by new cells in the step-1 PR. A later step's cell may already be
+pinned per backend with the opposite answer; Local's root <code>delete_folder</code> is,
+in <code>tests/backends/local/test_absent_root.py</code>. That step's PR inverts such a
+pin and records why. AZ-025's blank-message clause and its pinning
 test go red with BUG-276's fix under the arm decided at BK-387, synthesise
 (its dossier: "Both go red when this lands, by design"); the BUG-240 and
 BUG-292 decisions change cells on the classes that
@@ -12080,16 +12117,20 @@ output is unchanged. Open Question 7 accepted this recommendation.</p>
 <h3 id="d8-lifecycle-accept-the-design-gate-the-deletions">D8. Lifecycle: accept the design, gate the deletions<a class="headerlink" href="#d8-lifecycle-accept-the-design-gate-the-deletions" title="Permanent link">&para;</a></h3>
 <p><code>CONTRIBUTING.md</code> § Spec-First Workflow runs Propose, Accept, Implement, in
 that order, and an RFC that deprecates and deletes classes before it is
-accepted inverts it. Acceptance here rides with the first implementing PR
-(step 2 below), which is additive; no class is deleted before it. So:</p>
+accepted inverts it. Acceptance here rides with the PR that lands the first
+backend on the design (step 2 below: BK-394, the second of step 1's two PRs,
+after BK-389's private kernel), which is additive; no class is deleted before
+it. So:</p>
 <ol>
 <li><strong>Decide and propose.</strong> Open Questions 1, 4, 6 and 7 are answered and the
    design, D1, D2 and D4 to D7 plus those answers, is recorded as a Proposed
    ADR (<a href="../../adrs/0042-contract-kernel-over-thin-drivers/">ADR-0042</a>). D3,
    the migration order, is process and stays here. OQ7 is in the list because
    D7's extensions land before kernel code. Done by BK-387.</li>
-<li><strong>Implement</strong> D3 in order. Step 1 runs under the Proposed ADR, and its PR,
-   the first backend on the new design, <strong>accepts</strong> ADR-0042 and this RFC:
+<li><strong>Implement</strong> D3 in order. Step 1 runs under the Proposed ADR as two PRs,
+   the kernel, private (BK-389), then the Memory drivers (BK-394), both merged
+   after the v0.33.0 tag. The second, the first backend on the new design,
+   <strong>accepts</strong> ADR-0042 and this RFC:
    the design is accepted once it has carried one backend through the suite,
    not on the answers alone. Each migration PR is gated by the conformance
    suite with the enumerated cell changes and by the per-driver suite.</li>
@@ -12159,7 +12200,7 @@ by-hand reading of the register entries and is disputable item by item.</p>
 </tr>
 <tr>
 <td><strong>R5 needs a decision first</strong>: at filing, the item carried an open decision in <code>BACKLOG.md</code> or depended on an open question here. BUG-240, 292 and 276 were decided at BK-387 (Open Question 4) and keep this row as their at-filing assignment</td>
-<td>BUG-240 (OQ4; decided: DEPTH-003), 292 (BE-008's probe-error choice; decided: narrow the catch), 276 (synthesise or classify at the five base-class sites, decided: synthesise; the kernel's ERR-009 floor holds under both, so the decision is the driver's arm content, as for BUG-264 in R3), 293 (which arms receive a typed error), 245 (construction; OQ5), 257 (page boundary; OQ2)</td>
+<td>BUG-240 (OQ4; decided: DEPTH-003), 292 (BE-008's probe-error choice; decided: narrow the catch), 276 (synthesise or classify at the five base-class sites, decided: synthesise; the kernel's ERR-009 floor holds under both, so the decision is the driver's arm content, as for BUG-264 in R3), 293 (which arms receive a typed error), 245 (construction; OQ5, deferred at BK-389's planning to step 3), 257 (page boundary; OQ2, decided at BK-389's planning)</td>
 <td>6</td>
 </tr>
 <tr>
@@ -12223,9 +12264,12 @@ and its answer keeps <code>classify</code>.</p>
 <li><strong>Public API:</strong> <code>Store</code>, the error hierarchy and capabilities unchanged in
   interface. <code>Backend</code> remains the abstract contract type; <code>DriverBackend</code> and
   <code>AsyncDriverBackend</code> are the kernel's two runtimes (Open Question 1). New
-  public names: <code>Driver</code>, <code>AsyncDriver</code>, the nine <code>Supports*</code> protocols and
+  public names: <code>Driver</code>, <code>AsyncDriver</code>, the ten <code>Supports*</code> protocols and
   their async mirrors, <code>DriverBackend</code>, <code>AsyncDriverBackend</code>, <code>Entry</code>,
-  <code>Page</code>, <code>WriteHandle</code>, <code>Op</code>, <code>Session</code>. <code>ext.arrow</code> loses its
+  <code>Page</code>, <code>WriteHandle</code>, <code>Op</code>, <code>Session</code>; and each migrated backend's
+  driver class beside its public backend class, from step 1's
+  <code>MemoryDriver</code> and <code>AsyncMemoryDriver</code> on (added at BK-389's planning;
+  BK-394's dossier, decision 1). <code>ext.arrow</code> loses its
   Tier-1 native probe on S3 once the PyArrow lane, <code>S3PyArrowBackend</code>,
   retires (D4); the s3fs lane never served that probe.</li>
 <li><strong>Backwards compatibility:</strong> additive for existing <code>Backend</code> subclasses,
@@ -12279,7 +12323,9 @@ and its answer keeps <code>classify</code>.</p>
   <code>put_is_atomic</code>, <code>open_write</code>, <code>rename</code> and <code>SupportsAtomicMove</code> the fake
   driver can present; the driver half
   stays with the per-driver suites. BK-345 and ID-244 reduce to driver
-  cells; ID-251's widened root spellings become fake-driver kernel cells,
+  cells (corrected at BK-389's planning: BK-345's kernel half, the
+  absent-container answers per <code>Op</code>, became fake-driver kernel cells in
+  BK-389, and its driver cells start at step 2); ID-251's widened root spellings become fake-driver kernel cells,
   since R1 makes the root rule the kernel's. The conformance suite gates
   every migration with the cell
   changes D3 enumerates.
@@ -12289,8 +12335,11 @@ and its answer keeps <code>classify</code>.</p>
   band,
   <a href="https://github.com/haalfi/remote-store/blob/master/benchmarks/results/acceptance-band.md"><code>benchmarks/results/acceptance-band.md</code></a>,
   and <a href="../../adrs/0042-contract-kernel-over-thin-drivers/">ADR-0042</a>,
-  Proposed, which carries the four ADR amendments. With D3 step 1 (BK-389),
-  which accepts that ADR: specs 003, 005, 029 and 037 below, the kernel half
+  Proposed, which carries the four ADR amendments. With D3 step 1's Memory PR
+  (BK-394), which accepts that ADR (the kernel PR before it, BK-389, is
+  private and amends nothing): specs 003, 005, 029 and 037 below, spec 013 (Memory's,
+  as a kernel/driver placement per clause, which the list at filing omitted),
+  the kernel half
   of 007 and 022, the Memory drivers' rows of 007 and 022, spec 026's PING-002
   and PING-008, spec 003's BE-017 folder <code>modified_at</code> rule, the
   custom-backend guide with its <code>partial-capabilities</code>
@@ -12325,8 +12374,10 @@ and its answer keeps <code>classify</code>.</p>
   "Store or Backend ABC"
   row reads "All backend implementations, conformance tests", and both are
   what D3 walks.
-- <strong>Open backlog items this touches</strong>, to be re-homed or closed by BK-389
-  when D3 step 1 lands (the maintainer's assignment at BK-387's close): BK-382, BK-242 and BK-325 (file-ancestor gate and the guide),
+- <strong>Open backlog items this touches</strong>, to be re-homed or closed by BK-394
+  when D3 step 1 lands (the maintainer's assignment at BK-387's close, moved
+  to BK-394 at the split; BK-325 is already absorbed into it, and BK-332 runs
+  after it): BK-382, BK-242 and BK-325 (file-ancestor gate and the guide),
   BK-332 (the rehearsal), BUG-266 and ID-181 (SFTP), ID-140 (SQLBlob lazy
   reads, a <code>get_range</code> for that driver), BUG-287, 288 and 289 (floors on
   extras D4 retires or adds), ID-217 (async <code>ext.*</code>), BK-339 (the behaviour
@@ -12354,12 +12405,24 @@ and its answer keeps <code>classify</code>.</p>
 <li><strong><code>Page</code> for wires without a page boundary.</strong> BE-021 allows marking items
    as the service returns them; the kernel needs the driver to say which it
    does, or the divergence is stated per driver as today. BUG-257 waits on
-   this.</li>
+   this. <strong>Answered (BK-389 planning):</strong> neither. A <code>Page</code> is whatever one
+   <code>list_page</code> call returns; a driver whose wire has no boundary returns its
+   native unit as one <code>Page</code>, possibly empty. The kernel keys the first-page
+   bound on the first <code>Page</code> the <strong>operation</strong> receives, across every
+   <code>list_page</code> call of a walk, so the bound never restarts per request
+   (BUG-257's shape) and no flag is needed. Step 1's <code>Page</code> (entries, common
+   prefixes, next cursor) is final. A recursive listing is one
+   <code>list_page(prefix, delimiter=None)</code> request whatever the <code>namespace</code>; a
+   hierarchical driver walks behind the cursor, one <code>Page</code> per wire request,
+   and the kernel applies <code>max_depth</code> to the result (BK-389 dossier,
+   decision 7).</li>
 <li><strong><code>namespace</code> and <code>parents</code> as values or as two kernels.</strong> One kernel
    with flags keeps one choke point; two kernels keep the flat-namespace
    probes out of the hierarchical path. The flags are proposed; the split is
    the fallback if the branches outgrow the guards <code>_flat_ns</code> already
-   carries.</li>
+   carries. <strong>Answered (BK-389 planning):</strong> step 1 builds to the flags. Both
+   Memory drivers are <code>hierarchical</code> and <code>explicit</code>, so the fallback can be
+   judged no earlier than the first flat driver, at step 2.</li>
 <li><strong>Which spec contradictions the kernel must adjudicate first.</strong> BUG-240 is
    one; the kernel encodes one answer per clause and cannot land on a clause
    the specs still dispute. <strong>Answered (BK-387):</strong> BUG-240 is the one
@@ -12378,7 +12441,12 @@ and its answer keeps <code>classify</code>.</p>
 <li><strong>Does the choke point cover driver construction?</strong> BUG-245 leaks from
    <code>SQLBlobBackend</code>'s constructor, and BE-021's mapping rule is scoped to
    operations today. Either D2 wraps <code>Driver.__init__</code> too, or construction
-   errors stay per driver and BUG-245 is fixed there.</li>
+   errors stay per driver and BUG-245 is fixed there. <strong>Deferred (BK-389
+   planning) to D3 step 3</strong>, where BUG-245's driver migrates. The shape step 1
+   keeps open: the kernel's constructor takes a built driver,
+   <code>DriverBackend(driver, *, reject_write_under_file_ancestor=False)</code> and its
+   async twin, and each public class builds its driver in its own <code>__init__</code>.
+   Step 3 may add a wrapped-build form beside it, never instead of it.</li>
 <li><strong><code>classify</code> or a wire signal?</strong> Eight of the 35 cluster-A items stay in
    the driver under D1. The wire-signal alternative reaches four of them at
    the cost of a primitive that must express every wire's vocabulary.

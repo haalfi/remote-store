@@ -12042,8 +12042,10 @@ not rely on this since direct use is a supported pattern.</p>
 </tr>
 </tbody>
 </table>
-<p>This mirrors <code>LocalBackend._resolve()</code> semantics and <code>RemotePath</code> normalization
-rules. The validation is a simple segment check — no filesystem interaction.</p>
+<p>This table is its own rule. It is neither <code>RemotePath</code> normalization nor
+<code>LocalBackend._resolve()</code>; the rows where those differ are recorded in
+<a href="https://github.com/haalfi/remote-store/blob/master/sdd/backlog/bk-389-kernel-step-1-memory.md">BK-389's dossier</a>, decision 6.
+The validation is a simple segment check — no filesystem interaction.</p>
 <h3 id="mem-ds-006-folder-semantics">MEM-DS-006: Folder Semantics<a class="headerlink" href="#mem-ds-006-folder-semantics" title="Permanent link">&para;</a></h3>
 <p>Folders are <strong>explicit tree nodes</strong>, not virtual prefixes. This matches
 <code>LocalBackend</code> semantics:</p>
