@@ -241,6 +241,15 @@ if evidence changes; these are retired.
 
 ## Unreleased
 
+- [x] **ID-263 — Nothing checks that the compiled oracle matches the Dafny it is built from**
+  spec: — · effort: S · audience: infra.ci, infra.test
+  `scripts/check_dafny_oracle_fresh.py`, a gating step in CI's `verify-formal`,
+  rebuilds `MemoryBackend-py/` from every `sdd/formal/*.dfy` with the pinned Dafny
+  and the class reorder, and names each differing file and line. FORMAL_PAT now
+  reaches it, `_dafny_classorder.py` and `dafny_translate.sh`. The build verifies
+  because `--no-verify` renumbers loop labels; the source set includes
+  `ResourceSafety.dfy`, which the README had omitted.
+
 - [x] **ID-251 — BE-029's widest clause is one the conformance suite cannot fail on**
   spec: BE-029 · effort: M · audience: infra.test, library.maintainer, user.site, infra.ci
   The root write and `move`/`copy` destination cells (sync and async) run all six

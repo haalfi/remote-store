@@ -77,8 +77,10 @@ jobs:
           else echo "docs=false" >> "$GITHUB_OUTPUT"; fi
           # FORMAL_PAT gates the Dafny job. Exclude the TLA subtree so
           # TLA-only changes do not trigger Dafny — verify-formal and
-          # verify-tla are independent filters.
-          FORMAL_PAT='^sdd/(formal|specs)/|^\.github/workflows/ci\.yml$'
+          # verify-tla are independent filters. The three scripts produce or
+          # check the compiled oracle (ID-263): an edit to any of them changes
+          # what MemoryBackend-py/ must be, so it reaches verify-formal too.
+          FORMAL_PAT='^sdd/(formal|specs)/|^scripts/(check_dafny_oracle_fresh\.py|_dafny_classorder\.py|dafny_translate\.sh)$|^\.github/workflows/ci\.yml$'
           if echo "$FILES" | grep -v '^sdd/formal/tla/' | grep -qE "$FORMAL_PAT"; then echo "formal=true" >> "$GITHUB_OUTPUT"
           else echo "formal=false" >> "$GITHUB_OUTPUT"; fi
           TLA_PAT='^sdd/formal/tla/|^scripts/tlc(_check\.sh|\.Dockerfile)$|^\.github/workflows/ci\.yml$'
@@ -683,12 +685,17 @@ jobs:
       # system python3 suffices.
       - name: Check Dafny twin parity
         run: python3 scripts/check_dafny_twin_parity.py
-      # The compiled oracle (sdd/formal/MemoryBackend-py/module_.py, built from
-      # MemoryBackend.dfy and the RootPath.dfy it includes) is exercised only by
-      # pytest, and the test jobs are CODE_PAT-gated, which excludes `sdd/`. So a
-      # regenerate-and-commit PR confined to sdd/formal/ would otherwise ship the
-      # new oracle with no test run against it (ID-251). Run the oracle's own
-      # tests and its conformance lanes here, where FORMAL_PAT reaches them.
+      # The compiled oracle (sdd/formal/MemoryBackend-py/) is generated from
+      # MemoryBackend.dfy and its includes. Rebuild it with the dafny installed
+      # above and fail if the committed tree differs, so the tests below never
+      # run stale compiled code (ID-263). Stdlib-only; system python3 suffices.
+      - name: Check the compiled oracle matches its Dafny sources
+        run: python3 scripts/check_dafny_oracle_fresh.py
+      # The compiled oracle is exercised only by pytest, and the test jobs are
+      # CODE_PAT-gated, which excludes `sdd/`. So a regenerate-and-commit PR
+      # confined to sdd/formal/ would otherwise ship the new oracle with no test
+      # run against it (ID-251). Run the oracle's own tests and its conformance
+      # lanes here, where FORMAL_PAT reaches them.
       - uses: actions/setup-python@v7
         with:
           python-version: ${{ needs.setup.outputs.primary }}

@@ -421,6 +421,9 @@ check-docstring-parity = "python scripts/check_docstring_parity.py {args}"
 # lint alone would skip the .dfy-only PR this gate exists to catch. Needs no
 # Dafny toolchain. `--print-pins` regenerates DIVERGENT change tuples.
 check-dafny-twin-parity = "python scripts/check_dafny_twin_parity.py {args}"
+# ID-263. Needs native dafny at the pinned version, so not in `all`; CI runs it
+# in `verify-formal`. Without dafny: `bash scripts/dafny_translate.sh`, then git diff.
+check-dafny-oracle-fresh = "python scripts/check_dafny_oracle_fresh.py {args}"
 # ID-182 drift-guard helpers.
 # `drift-check extras|resolve|diff|floor|min-python|refresh-baseline|render-docs`
 # — see scripts/drift_check.py docstring. The scheduled workflow uses the same script.

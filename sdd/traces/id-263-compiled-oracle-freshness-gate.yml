@@ -1,0 +1,125 @@
+id: ID-263
+title: "Nothing checks that the compiled oracle matches the Dafny it is built from"
+trigger: >-
+  Filed during ID-251 (PR #1050): verify-formal's pytest step tests the committed
+  sdd/formal/MemoryBackend-py/module_.py, and a non-ghost edit to its Dafny
+  sources that was not regenerated passes `dafny verify`, so the step would test
+  stale compiled code with nothing comparing the two.
+source_items:
+  - ID-263
+audience:
+  - infra.ci
+  - infra.test
+expected_ripples:
+  - sdd/backlogid.json
+  - sdd/GATE-INVENTORY.md
+surprising_ripples:
+  # FORMAL_PAT matched sdd/ only, so the new check, _dafny_classorder.py (whose
+  # output is part of the compared tree) and dafny_translate.sh (the version pin)
+  # could each change without verify-formal running. No ripple-check row ties a
+  # gate's *inputs outside its subject directory* to the job filter.
+  - .github/workflows/ci.yml
+phases:
+  - id: orient
+    name: Read the item and the documented regeneration path
+    steps:
+      - file: sdd/BACKLOG.md
+        section: "ID-263"
+        read_type: gate
+        extract: "Open decision (verify-formal step vs pre-commit); the three named sources"
+        outcome: misleading
+        # Names three sources. MemoryBackend.dfy's include closure is four:
+        # BackendContract.dfy includes ResourceSafety.dfy. Measured: a build on
+        # a copy of the three failed with "file .../ResourceSafety.dfy not found".
+      - file: sdd/formal/README.md
+        section: "Compiled oracle as conformance gate"
+        read_type: gate
+        extract: "Files table, regeneration rule, the 'no gate compares' sentence to retire"
+        outcome: misleading
+        # Same three-file under-statement in the Files table.
+      - file: scripts/dafny_translate.sh
+        section: "(full)"
+        read_type: reference
+        extract: "The pin (DAFNY_VERSION, SHA-256), the exact `dafny build -t py` command, copy of all *.dfy"
+        outcome: ok
+      - file: scripts/_dafny_classorder.py
+        section: "(full)"
+        read_type: reference
+        extract: "reorder() is importable; reuse rather than re-implement"
+        outcome: ok
+      - file: .github/workflows/ci.yml
+        section: "setup filter step; verify-formal"
+        read_type: reference
+        extract: "verify-formal installs dafny 4.11.0; FORMAL_PAT excludes scripts/"
+        outcome: ok
+  - id: design
+    name: Design the gate and measure its premises
+    steps:
+      - file: sdd/DRIFT-RULES.md
+        section: "Rules"
+        read_type: gate
+        extract: "Rule 2 localize, Rule 3 derived source set, Rule 4 authority in README, Rule 5 gating, Rule 7 bounds + Drift-gate block"
+        outcome: ok
+      - file: sdd/CLAUDE-REFERENCE.md
+        section: "Pre-work index"
+        read_type: gate
+        extract: "New cross-artifact check row; test-outside-src row (guard lives under tests/scripts, subject under scripts/: CODE_PAT reaches it)"
+        outcome: ok
+      - file: scripts/check_dafny_twin_parity.py
+        section: "docstring"
+        read_type: reference
+        extract: "Docstring shape for a Dafny gate: authority, bounds, Drift-gate block"
+        outcome: ok
+      - file: scripts/gen_gate_inventory.py
+        section: "docstring; _VALID_DOMAINS"
+        read_type: reference
+        extract: "Drift-gate field format and the domain vocabulary"
+        outcome: ok
+      - file: scripts/dafny_translate.sh
+        section: "its build command, run natively with dafny 4.11.0 on a copy of sdd/formal/*.dfy"
+        read_type: reference
+        extract: >-
+          `dafny build -t py MemoryBackend.dfy --output:MemoryBackend` then
+          `_dafny_classorder.py`: `diff -rq -x __pycache__` against the committed
+          tree empty, 2 of 2 runs; `time` 84.0 s real. `dafny translate py
+          --no-verify` and `dafny build -t py --no-verify`: module_.py differs
+          (`_dafny.label("1")` vs `"0"`, three lines), so the gate must verify.
+        outcome: ok
+  - id: implement
+    name: Build the check, its guard and the wiring
+    steps:
+      - file: scripts/check_dafny_oracle_fresh.py
+        section: "(new)"
+        read_type: reference
+        extract: "Pin read, skew check, verified build, reorder, per-file diff"
+        outcome: ok
+      - file: tests/scripts/test_check_dafny_oracle_fresh.py
+        section: "(new)"
+        read_type: reference
+        extract: >-
+          14 cells against a fake dafny executable (`pytest -q`: 14 passed).
+          tmp/id263/mutate.py applied 6 mutants (no reorder, pycache compared,
+          no version check, build exit ignored, --no-verify build,
+          only-in-committed dropped): 6 of 6 caught.
+        outcome: ok
+  - id: verify
+    name: See it fail first, on the real tree
+    steps:
+      - file: sdd/formal/MemoryBackend-py/module_.py
+        section: "RootFold"
+        read_type: verify
+        extract: >-
+          Hand-edit `return default__.Root` → `return key` (line 873): check exit 1,
+          diff names that line; reverted → exit 0. A first attempt via the Edit
+          tool was contaminated: the repo's PostToolUse formatter rewrote the whole
+          generated file, so the edit was redone with a one-line Python replace.
+        outcome: ok
+      - file: sdd/formal/RootPath.dfy
+        section: "RootFold body"
+        read_type: verify
+        extract: >-
+          `if AddressesRoot(key) then Root else key` → `if !AddressesRoot(key) then
+          key else Root`, untranslated: `dafny verify RootPath.dfy` 17 verified,
+          0 errors, while the check exits 1 naming the RootFold hunk. Regenerated
+          natively (build + reorder + copy): exit 0. Both edits reverted.
+        outcome: ok
