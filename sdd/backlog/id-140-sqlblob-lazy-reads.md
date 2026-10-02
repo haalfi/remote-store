@@ -107,5 +107,6 @@ so the first **Constraints & gotchas** bullet and the 2026-09-27 "Still true"
 line about `>=3.10` no longer hold. `sqlite3.Connection.blobopen` exists on
 every supported interpreter: `hasattr(sqlite3.Connection, 'blobopen')` printed
 `True` on 3.11.15 and `False` on 3.10.20. So no runtime check and no 3.10
-eager fallback are owed. The eager path survives only as the fallback for a
-table without a rowid, per the custom-tables bullet. Found by PR #1051's review.
+eager fallback are owed. The other fallbacks (substring for a table without a
+rowid, per the custom-tables bullet, and whatever open decision 1 leaves
+eager) are unaffected. Found by PR #1051's review.

@@ -22,6 +22,9 @@ expected_ripples:
   - .github/workflows/ci.yml
   - .github/workflows/ci-full.yml
   - README.md
+  # Not among the seven, but named by the dossier's 2026-09-28 correction.
+  - examples/medallion_dagster/pyproject.toml
+  - examples/medallion_dagster/README.md
   - docs-src/_data/python-support-window.mmd
   - packaging/conda-forge/recipe.yaml
   - packaging/conda-forge/feedstock/recipe.yaml
