@@ -166,3 +166,27 @@ phases:
           0 errors, while the check exits 1 naming the RootFold hunk. Regenerated
           natively (build + reorder + copy): exit 0. Both edits reverted.
         outcome: ok
+      - file: sdd/formal/README.md
+        section: "Compiled oracle: ghost-only changes need no regeneration"
+        read_type: verify
+        extract: >-
+          A closing-round reviewer asked whether a ghost-only edit shifts the loop
+          labels the gate compares. On a copy of sdd/formal/ (`--formal-dir`), a
+          redundant `invariant 1 <= i` added to MemoryBackend.dfy's loop at line
+          116: check exit 0; then an `assert 1 <= i;` in that loop body as well:
+          exit 0. The claim holds for these two seeds; other ghost shapes are
+          unmeasured.
+        outcome: ok
+      - file: scripts/check_dafny_oracle_fresh.py
+        section: "wrapper grammar"
+        read_type: verify
+        extract: >-
+          The closing round's measuring member found the grammar's claim wider
+          than its reach: only the build span and the cp span are read, so other
+          CMDS lines, the text after the build's pipe, echo bodies and what
+          precedes cp are unconstrained. This was the fifth round on that one
+          condition, so the user chose to narrow the claim rather than extend the
+          grammar: the docstring now states the two spans and a Bounds bullet
+          names what is unread and how it surfaces (exit-1 drift, never a stale
+          pass). Prose only; no code change.
+        outcome: ok

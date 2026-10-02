@@ -1,12 +1,15 @@
 """Tests for scripts/check_dafny_oracle_fresh.py (ID-263).
 
-The real build needs dafny and takes over a minute, so every cell drives the
-script against a fake ``dafny`` executable: it answers ``--version`` and, for
-``build``, records its argv and working directory, then writes a fixture
-``MemoryBackend-py/``.  That exercises everything the script owns (pin
-handling, the source copy, the build command, the reorder, the comparison)
-and leaves Dafny's own output to the ``verify-formal`` run against the
-committed tree.
+The real build needs dafny and takes over a minute, so the cells that reach a
+build drive the script against a fake ``dafny`` executable: it answers
+``--version`` and, for ``build``, records its argv and working directory, then
+writes a fixture ``MemoryBackend-py/``.  That exercises everything the script
+owns (pin handling, the source copy, the build command, the reorder, the
+comparison) and leaves Dafny's own output to the ``verify-formal`` run against
+the committed tree.  Most setup-error cells exit 2 before any dafny runs, and
+the three ``test_real_wrapper_*`` cells parse the real ``scripts/dafny_translate.sh``,
+so reshaping it out of the grammar turns ``tooling-tests`` red before
+``verify-formal`` runs.
 """
 
 from __future__ import annotations
@@ -288,7 +291,11 @@ class TestSetupErrors:
             ("cp /work/*.dfy", "cp /work/{A,B}.dfy", "{A,B}.dfy"),  # brace expansion Path.glob lacks
             ("cp /work/*.dfy", "cp /work/'*.dfy'", "'*.dfy'"),
             ("cp /work/*.dfy", "cp /work/$GLOB", "$GLOB"),
-            ("cp /work/*.dfy", "cp /work/**.dfy", "**.dfy"),  # Path.glob raises; bash reads `*`
+            (
+                "cp /work/*.dfy",
+                "cp /work/**.dfy",
+                "**.dfy",
+            ),  # Path.glob reads `**` differently (raised on 3.11); bash reads `*`
             ("cp /work/*.dfy", "cp /work/.", "glob `.`"),  # whole-dir copy: not a .dfy glob
             ("cp /work/*.dfy", "cp -r /work/*", "cp [-p|-f|-v]"),  # recursion
             ("cp /work/*.dfy", "cp -S /work/*.dfy", "cp [-p|-f|-v]"),  # -S eats an operand

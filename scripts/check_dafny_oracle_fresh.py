@@ -44,13 +44,15 @@ below; a non-file (a directory, a dangling link) matching the wrapper's glob,
 on which the wrapper's ``cp`` would fail; or any other OS error while copying,
 building or comparing.
 
-The grammar is an allowlist, not a shell parser, because the wrapper's text
-passes two shell levels (the ``CMDS="..."`` assignment, then ``bash -c``):
+The grammar is an allowlist over two spans of the wrapper, not a shell parser
+(the text passes two shell levels: the ``CMDS="..."`` assignment, then
+``bash -c``).  It constrains only these spans; the rest of the wrapper is not
+read (see Bounds):
 
   * exactly one ``cp [-p|-f|-v]... /work/<glob> /build[/]`` line, followed only
     by ``&&``, ``;``, ``|``, ``)``, ``"`` or the line end, whose glob is
     ``[A-Za-z0-9_*?[]-]*.dfy`` without ``**``;
-  * exactly one ``CMDS="$CMDS`` line in which only ``&& echo '<literal>'`` steps
+  * exactly one ``CMDS="$CMDS`` line in which only ``&& echo '...'`` steps
     precede ``&& (/opt/dafny/dafny build <tokens> 2>&1 |``, whose tokens, split
     on space and tab and after binding ``$f`` / ``${f}`` / ``$stem`` /
     ``${stem}``, use only ``[A-Za-z0-9_./:=,+-]``.
@@ -67,9 +69,19 @@ Bounds (Rule 7):
   * **Working tree, not the index.**  The committed side is read from disk, so
     locally an uncommitted regeneration reads as fresh.  ``__pycache__`` is
     ignored on both sides.
-  * **The wrapper grammar is narrower than bash.**  A spelling bash reads the
-    same way but the grammar does not list (a quoted argument, say) is exit 2,
-    never a silent pass; widen the grammar with a guard cell when one is needed.
+  * **The wrapper grammar is narrower than bash inside its spans.**  A spelling
+    bash reads the same way but the grammar does not list (a quoted argument,
+    say) is exit 2, never a silent pass; widen the grammar with a guard cell
+    when one is needed.
+  * **Outside its spans the wrapper is not read.**  Other ``CMDS`` lines, the
+    text after the build's ``|``, the body of an ``echo '...'`` step (which the
+    outer double quotes still evaluate) and what precedes ``cp`` can change what
+    the wrapper produces (a post-build edit, a second build, a ``cd``) while
+    this check builds as before.  That never lets a stale oracle pass, since
+    the check rebuilds from the sources itself; it surfaces as exit-1 drift on
+    a fresh regeneration, which rerunning the wrapper cannot clear.  Measured
+    in this check's review by enumerating wrapper variants against ``main()``.
+    Keep such steps out of the wrapper, or extend the grammar to cover them.
   * **An include outside ``sdd/formal/`` is not copied.**  Dafny then fails to
     resolve it and the build-failure branch fires; it is loud, not silent.
   * **Runs where ``dafny`` is installed.**  CI's ``verify-formal`` job; not in
@@ -109,13 +121,13 @@ STEM = "MemoryBackend"
 OUT_DIR = f"{STEM}-py"
 DIFF_LINES = 40
 _PIN_RE = re.compile(r"^DAFNY_VERSION=(\S+)\s*$", re.MULTILINE)
-# Reading the wrapper is an allowlist grammar, not a shell parser: the text passes two shell levels
-# (the `CMDS="..."` assignment, then `bash -c`), so anything whose meaning depends on quoting,
-# expansion or an operator is rejected rather than interpreted. Exactly one match of each is required.
-# Build: a double-quoted `CMDS="$CMDS ...` line in which only `&& echo '<literal>'` steps precede
-# `&& (/opt/dafny/dafny build <tokens> 2>&1 |`. Anything else before the build (an env prefix, `cd`,
-# `timeout`, a single-quoted piece) or after the redirect changes what runs. Tokens split on space and
-# tab only, as bash does.
+# Reading the wrapper is an allowlist grammar over two spans, not a shell parser: within the build
+# span and the cp span, anything whose meaning depends on quoting, expansion or an operator is
+# rejected rather than interpreted. Text outside them is not read (docstring, Bounds). Exactly one
+# match of each is required.
+# Build: a double-quoted `CMDS="$CMDS ...` line in which only `&& echo '...'` steps precede
+# `&& (/opt/dafny/dafny build <tokens> 2>&1 |`. An env prefix, `cd`, `timeout` or a single-quoted
+# piece on that line does not match. Tokens split on space and tab only, as bash does.
 _BUILD_RE = re.compile(
     r"^[ \t]*CMDS=\"\$CMDS(?: && echo '[^'\n]*')* && \(/opt/dafny/dafny (build\b[^|\n]*?)[ \t]+2>&1[ \t]*\|",
     re.MULTILINE,
