@@ -195,3 +195,92 @@ phases:
           and the bound is now pinned by
           `test_wrapper_steps_outside_the_two_spans_are_not_checked`.
         outcome: ok
+review:
+  # Derived by `hatch run ship-report 1052 --trace-block-only` at head 87cdb12.
+  # Do not hand-edit, except a newly required field per sdd/traces/_schema.yml
+  # section review: RFC-0015 D4 makes this script the only producer.
+  derivation: "hatch run ship-report 1052 --trace-block-only"
+  pr: 1052
+  review_rounds: 9
+  submissions: 8
+  findings: 28
+  by_round:
+    - round: 1
+      findings: 1
+      origin: {original: 1}
+      triage: {must-fix: 1}
+      duration_hours: 0.04
+    - round: 2
+      findings: 1
+      origin: {original: 1}
+      triage: {must-fix: 1}
+      duration_hours: 0.46
+    - round: 3
+      findings: 5
+      origin: {loop-introduced: 3, original: 1, unclassifiable-file: 1}
+      triage: {must-fix: 5}
+      duration_hours: 0.63
+    - round: 4
+      findings: 7
+      origin: {loop-introduced: 5, original: 2}
+      triage: {must-fix: 7}
+      duration_hours: 0.48
+    - round: 5
+      findings: 7
+      origin: {loop-introduced: 7}
+      triage: {must-fix: 2, unknown: 5}
+      duration_hours: 1.38
+    - round: 6
+      findings: 2
+      origin: {loop-introduced: 1, original: 1}
+      triage: {must-fix: 2}
+      duration_hours: 0.66
+    - round: 7
+      findings: 3
+      origin: {loop-introduced: 3}
+      triage: {must-fix: 3}
+      duration_hours: 0.19
+    - round: 8
+      findings: 2
+      origin: {loop-introduced: 2}
+      triage: {must-fix: 2}
+      duration_hours: 0.3
+  by_file:
+    - path: "scripts/check_dafny_oracle_fresh.py"
+      findings: 15
+    - path: "sdd/formal/README.md"
+      findings: 4
+    - path: "sdd/traces/id-263-compiled-oracle-freshness-gate.yml"
+      findings: 4
+    - path: "tests/scripts/test_check_dafny_oracle_fresh.py"
+      findings: 3
+    - path: "pyproject.toml"
+      findings: 1
+    - path: "scripts/dafny_translate.sh"
+      findings: 1
+  untouched_files:
+    - ".github/workflows/ci.yml"
+    - "sdd/BACKLOG-DONE.md"
+    - "sdd/BACKLOG.md"
+    - "sdd/GATE-INVENTORY.md"
+    - "sdd/backlogid.json"
+  review_driven_commits:
+    - sha: "55bc79b"
+      subject: "ID-263: Read the build arguments and source glob from the wrapper"
+    - sha: "52dc77a"
+      subject: "ID-263: Bind wrapper variables by whole name; reject what the shell reads differently"
+    - sha: "cf0f4b0"
+      subject: "ID-263: Read the wrapper by an allowlist grammar; fix README claims"
+    - sha: "50888eb"
+      subject: "ID-263: Narrow the wrapper grammar; correct README and wrapper header"
+    - sha: "a904fa5"
+      subject: "ID-263: Anchor the build line; state the include rule instead of lists"
+    - sha: "80f5bd3"
+      subject: "Merge remote-tracking branch 'origin/master' into id-263-oracle-freshness-gate"
+    - sha: "0a22544"
+      subject: "ID-263: Narrow the grammar claim to the spans it reads; state the rest as a bound"
+    - sha: "a39f389"
+      subject: "ID-263: Narrow the unchecked-wrapper bound and pin it with a cell"
+    - sha: "87cdb12"
+      subject: "ID-263: Align the regex comment with the narrowed bound; guard the new cell's fixture"
+  ci: {verdict: GREEN, failed: 0, pending: 0}
