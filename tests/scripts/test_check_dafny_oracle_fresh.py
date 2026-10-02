@@ -25,7 +25,7 @@ SCRIPTS = ROOT / "scripts"
 
 # Classes out of importable order, as Dafny emits them; reorder() moves Backend first.
 RAW_MODULE = "import _dafny\n\nclass MemoryBackend(Backend):\n    pass\n\nclass Backend:\n    pass\n"
-# The pin and the build line, shaped as scripts/dafny_translate.sh writes them.
+# The pin, the source copy and the build line, shaped as scripts/dafny_translate.sh writes them.
 WRAPPER = (
     "#!/bin/bash\nDAFNY_VERSION=4.11.0\nDAFNY_SHA256=abc\n"
     'CMDS="$CMDS && mkdir -p /build && cp /work/*.dfy /build/ && cd /build"\n'
@@ -127,6 +127,12 @@ class TestFreshness:
         env["run"]()
         call = json.loads(env["log"].read_text())
         assert call["argv"] == ["build", "-t", "py", "--foo", "MemoryBackend.dfy", "--output:MemoryBackend"]
+
+    def test_directories_matching_the_glob_are_skipped(self, env):
+        """bash's cp without -r skips a directory operand; the check must not crash on one."""
+        (env["formal"] / "notes.dfy").mkdir()
+        assert env["run"]() == 0
+        assert "notes.dfy" not in json.loads(env["log"].read_text())["cwd_files"]
 
     def test_dotfiles_are_not_copied(self, env):
         """bash's `*` skips a leading dot and Path.glob's does not; the check follows bash."""
@@ -245,6 +251,11 @@ class TestSetupErrors:
             ("cp /work/*.dfy", "cp /work/{A,B}.dfy", "{A,B}.dfy"),  # brace expansion Path.glob lacks
             ("cp /work/*.dfy", "cp /work/'*.dfy'", "'*.dfy'"),
             ("cp /work/*.dfy", "cp /work/$GLOB", "$GLOB"),
+            ("cp /work/*.dfy", "cp /work/**.dfy", "**.dfy"),  # Path.glob raises; bash reads `*`
+            ("cp /work/*.dfy", "cp /work/.", "glob `.`"),  # whole-dir copy: not a .dfy glob
+            ("cp /work/*.dfy", "cp -r /work/*", "cp [-p|-f|-v]"),  # recursion
+            ("cp /work/*.dfy", "cp -S /work/*.dfy", "cp [-p|-f|-v]"),  # -S eats an operand
+            ("--output:$stem 2>&1", "2>&1 --output:$stem", "dafny build"),  # words after the redirect
         ],
         ids=[
             "upper",
@@ -263,6 +274,11 @@ class TestSetupErrors:
             "brace-glob",
             "quoted-glob",
             "glob-var",
+            "double-star",
+            "whole-dir",
+            "cp-recursive",
+            "cp-flag-with-operand",
+            "after-redirect",
         ],
     )
     def test_wrapper_outside_the_grammar_exits_2(self, env, capsys, old, new, named):
@@ -273,6 +289,16 @@ class TestSetupErrors:
         assert named in capsys.readouterr().err
         assert not env["log"].exists()
 
+    @pytest.mark.skipif(os.name == "nt", reason="exec-format errors are POSIX")
+    def test_dafny_that_cannot_be_executed_exits_2(self, env, tmp_path, capsys):
+        """An executable the OS refuses to run is a setup error, not a traceback that reads as drift."""
+        broken = tmp_path / "broken-dafny"
+        broken.write_bytes(b"\x00\x01not a program\n")
+        broken.chmod(broken.stat().st_mode | stat.S_IXUSR)
+        assert env["run"]("--dafny", str(broken)) == 2
+        assert "--version" in capsys.readouterr().err
+
+    @pytest.mark.skipif(os.name == "nt", reason="fake dafny is a shebang script")
     def test_dafny_that_cannot_run_exits_2_with_its_stderr(self, env, monkeypatch, capsys):
         """A broken toolchain is a setup error, not version skew."""
         monkeypatch.setenv("FAKE_DAFNY_VERSION_EXIT", "134")

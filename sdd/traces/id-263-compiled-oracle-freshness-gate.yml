@@ -97,13 +97,17 @@ phases:
         section: "(new)"
         read_type: reference
         extract: >-
-          44 cells against a fake dafny executable (`pytest -q`: 44 passed).
-          tmp/id263/mutate.py applied 17 mutants (no reorder, pycache compared,
-          no version check, version failure as skew, build exit ignored,
-          only-in-committed dropped, wrapper ignored, first of many lines,
-          source glob hardcoded, token grammar off, glob grammar off, prefix
-          binding, no braced binding, token allows shell chars, cp flags
-          rejected, dotfiles copied, build slash required): 17 of 17 caught.
+          51 cells against a fake dafny executable (`pytest -q`: 51 passed).
+          tmp/id263/mutate.py applied 22 mutants, each named in that file:
+          22 of 22 caught.
+          Round 1 found the build arguments and the source glob restated from
+          dafny_translate.sh (DRIFT-RULES Rule 3); both are now read from it.
+          Red before that fix, in two `pytest` runs: build_flags_come_from_the_wrapper,
+          wrapper_without_build_line_exits_2 and real_wrapper_build_line_parses,
+          then source_set_comes_from_the_wrapper, wrapper_without_source_copy_exits_2
+          and real_wrapper_source_copy_parses. Two mutants first survived
+          because one cell duplicated both wrapper lines and failed for the
+          wrong reason; split into one cell per line.
           Round 2 found `$f`/`$stem` bound by prefix; `pytest -k
           cannot_reproduce` before that fix ran 6 ids, 5 failed and `upper`
           passed; the `unbalanced` id was added after the fix and was never
@@ -114,11 +118,11 @@ phases:
           denylist cell; 21 cells failed before it (`pytest -rf`). The fix
           pass's own sweep found Path.glob matching dotfiles that bash's `*`
           skips; `test_dotfiles_are_not_copied` was red before that fix.
-          Review round 1 found the build arguments and the source glob restated
-          from dafny_translate.sh (DRIFT-RULES Rule 3); both are now read from
-          it, and the six cells pinning that were seen failing before the fix.
-          Two mutants first survived because one cell duplicated both wrapper
-          lines and failed for the wrong reason; split into one cell per line.
+          Round 4 found the grammar still too wide (words after `2>&1`,
+          operand-taking and recursive cp flags, `.` and `**` globs, a
+          directory or an unexecutable dafny crashing); the grammar narrowed
+          to `-p|-f|-v` flags and a `.dfy` glob, and 7 cells were red before
+          it (`pytest -rf`).
         outcome: ok
   - id: verify
     name: See it fail first, on the real tree

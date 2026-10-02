@@ -37,14 +37,16 @@ Rule 2):
   * a build that exits non-zero or writes no ``MemoryBackend-py/``.
 
 Exit 2, setup errors never reported as drift: no ``dafny`` executable, or one
-whose ``--version`` exits non-zero (its output is printed); no readable pin; or
+whose ``--version`` cannot be run or exits non-zero (its output is printed); no
+readable pin; or
 a wrapper outside the grammar this check reads it by.  That grammar is an
 allowlist, not a shell parser, because the wrapper's text passes two shell
-levels: exactly one ``cp [-flags] /work/<glob> /build[/]`` line whose glob uses
-only ``[A-Za-z0-9_.*?[]-]``, and exactly one ``/dafny build ... 2>&1`` line whose
+levels: exactly one ``cp [-p|-f|-v]... /work/<glob> /build[/]`` line whose glob
+is ``[A-Za-z0-9_*?[]-]*.dfy`` without ``**``, and exactly one ``/dafny build ...
+2>&1`` line, followed only by a pipe, ``)``, ``"`` or the line end, whose
 whitespace-split tokens, after binding ``$f`` / ``${f}`` / ``$stem`` /
-``${stem}``, use only ``[A-Za-z0-9_./:=,+-]``.  The first token outside it is
-named.
+``${stem}``, use only ``[A-Za-z0-9_./:=,+-]``.  The offending token, or the
+shape and how often it was found, is named.
 
 Bounds (Rule 7):
 
@@ -100,15 +102,17 @@ _PIN_RE = re.compile(r"^DAFNY_VERSION=(\S+)\s*$", re.MULTILINE)
 # Reading the wrapper is an allowlist grammar, not a shell parser: the text passes two shell levels
 # (the `CMDS="..."` assignment, then `bash -c`), so anything whose meaning depends on quoting,
 # expansion or an operator is rejected rather than interpreted. Exactly one match of each is required.
-# Build: `/dafny build <tokens> 2>&1`; tokens are whitespace-split.
-_BUILD_RE = re.compile(r"/dafny (build\b[^|\n]*?)\s+2>&1")
-# Copy: `cp [-flags] /work/<glob> /build[/]`; short flags do not change which files are copied.
-_COPY_RE = re.compile(r"\bcp((?:\s+-[A-Za-z]+)*)\s+/work/(\S+)\s+/build/?(?=[\s\"&;|)]|$)", re.MULTILINE)
+# Build: `/dafny build <tokens> 2>&1` then only a pipe, `)`, `"` or end of line; bash would pass any
+# word after the redirect to dafny too. Tokens are whitespace-split.
+_BUILD_RE = re.compile(r"/dafny (build\b[^|\n]*?)\s+2>&1[ \t]*(?=[|)\"]|$)", re.MULTILINE)
+# Copy: `cp [-p|-f|-v]... /work/<glob> /build[/]`; those flags take no operand and never recurse.
+_COPY_RE = re.compile(r"\bcp((?:\s+-[pfv]+)*)\s+/work/(\S+)\s+/build/?(?=[\s\"&;|)]|$)", re.MULTILINE)
 # `$f`, `${f}`, `$stem`, `${stem}` as whole names: `$file` or `$stem_out` stay unbound and are rejected.
 _VAR_RE = re.compile(r"\$(?:\{(f|stem)\}|(f|stem)(?![A-Za-z0-9_]))")
 _BINDINGS = {"f": ENTRY, "stem": STEM}
 _TOKEN_RE = re.compile(r"[A-Za-z0-9_./:=,+-]+")  # a build token after binding
-_GLOB_RE = re.compile(r"[A-Za-z0-9_.*?\[\]-]+")  # glob syntax bash and Path.glob read alike, dotfiles aside
+# A `.dfy` glob in one directory, without `**`: bash and Path.glob read it alike, dotfiles aside.
+_GLOB_RE = re.compile(r"(?!.*\*\*)[A-Za-z0-9_*?\[\]-]*\.dfy")
 
 
 class WrapperError(ValueError):
@@ -138,7 +142,7 @@ def _single(regex: re.Pattern[str], translate_script: Path, shape: str) -> re.Ma
 
 def read_source_glob(translate_script: Path) -> str:
     """The glob the wrapper copies from ``sdd/formal/`` into its build dir."""
-    glob = _single(_COPY_RE, translate_script, "cp [-flags] /work/<glob> /build/").group(2)
+    glob = _single(_COPY_RE, translate_script, "cp [-p|-f|-v] /work/<glob>.dfy /build/").group(2)
     if not _GLOB_RE.fullmatch(glob):
         raise WrapperError(f"{translate_script}: copy glob `{glob}` is outside the grammar this check reproduces")
     return glob
@@ -221,7 +225,11 @@ def main(argv: list[str] | None = None) -> int:
         )
         return 2
 
-    version = subprocess.run([dafny, "--version"], capture_output=True, text=True, check=False)
+    try:
+        version = subprocess.run([dafny, "--version"], capture_output=True, text=True, check=False)
+    except OSError as exc:
+        print(f"error: could not run `{dafny} --version`: {exc}", file=sys.stderr)
+        return 2
     if version.returncode != 0:
         print(f"error: `{dafny} --version` exited {version.returncode}:", file=sys.stderr)
         print((version.stdout + version.stderr).strip()[-2000:], file=sys.stderr)
@@ -238,8 +246,10 @@ def main(argv: list[str] | None = None) -> int:
     with tempfile.TemporaryDirectory(prefix="oracle-fresh-") as tmp:
         work = Path(tmp)
         for src in sorted(args.formal_dir.glob(source_glob)):
-            if src.name.startswith(".") and not source_glob.startswith("."):
-                continue  # bash's glob skips a leading dot unless the pattern spells it; Path.glob does not
+            # bash's `*` skips dotfiles (the grammar admits no leading dot) and cp without -r skips
+            # directories; Path.glob yields both.
+            if src.name.startswith(".") or not src.is_file():
+                continue
             shutil.copy2(src, work / src.name)
         build = subprocess.run([dafny, *build_args], cwd=work, capture_output=True, text=True, check=False)
         rebuilt = work / OUT_DIR

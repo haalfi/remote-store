@@ -258,8 +258,9 @@ pinned version (see
 [`sdd/CLAUDE-REFERENCE.md` § Local toolchain](../CLAUDE-REFERENCE.md#local-toolchain)),
 then `dafny verify sdd/formal/<file>.dfy`.
 
-CI runs the `verify-formal` job automatically when a changed path matches
-`FORMAL_PAT` in `.github/workflows/ci.yml`; it also checks the compiled oracle
+CI runs the `verify-formal` job automatically when a changed path outside
+`sdd/formal/tla/` (which the filter step drops first) matches `FORMAL_PAT` in
+`.github/workflows/ci.yml`; it also checks the compiled oracle
 against its sources and runs the oracle's tests (see § Compiled oracle as
 conformance gate).
 
@@ -369,7 +370,7 @@ the test itself has a bug and must be fixed.
 | File | Purpose |
 |------|---------|
 | `sdd/formal/MemoryBackend.dfy` | Source specification (verified); the translation entry point |
-| `sdd/formal/BackendContract.dfy`, `sdd/formal/RootPath.dfy`, `sdd/formal/ResourceSafety.dfy` | Included by `MemoryBackend.dfy` (`ResourceSafety.dfy` through `BackendContract.dfy`), so their non-ghost members compile into `module_.py` too: the trait and its compiled predicates, and `RootPath.dfy`'s §4 `RootAnswersPerTable` and §5 `RootFold` / `WriteKey` / `MoveKey` / `CopyKey` |
+| `sdd/formal/BackendContract.dfy`, `sdd/formal/RootPath.dfy`, `sdd/formal/ResourceSafety.dfy` | Included by `MemoryBackend.dfy` (`ResourceSafety.dfy` through `BackendContract.dfy`), so their non-ghost members compile into `module_.py` too: the trait and its compiled predicates; `RootPath.dfy`'s §4 `RootAnswersPerTable` and §5 `RootFold` / `WriteKey` / `MoveKey` / `CopyKey`; and `ResourceSafety.dfy`'s `HandleState` / `WrapPipeline` / `MovePhase` / `ConnectionState` datatypes with `SafeWrap`, `AtomicMove`, `CopyDeleteMove`, `Observe` and `SafeConnect` |
 | `sdd/formal/MemoryBackend-py/module_.py` | Compiled Python output |
 | `sdd/formal/MemoryBackend-py/_dafny/` | Dafny Python runtime |
 | `tests/backends/dafny/_helpers.py` | Adapter: compiled oracle → `Backend` ABC |

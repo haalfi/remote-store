@@ -8,9 +8,13 @@
 # reorder (see sdd/formal/README.md § Class-ordering fix) so module_.py is
 # importable as written.
 #
-# Proof-only files (DepthCounting.dfy, ResourceSafety.dfy, BackendContract.dfy)
-# compile to near-empty packages with no committed oracle downstream — pass
-# them explicitly if you want to inspect the output.
+# The other files (DepthCounting.dfy, ResourceSafety.dfy, BackendContract.dfy)
+# have no committed oracle of their own — pass them explicitly to inspect their
+# output.  BackendContract.dfy and ResourceSafety.dfy still compile into
+# MemoryBackend.dfy's oracle through its includes (sdd/formal/README.md
+# § Compiled oracle), and scripts/check_dafny_oracle_fresh.py reads this file's
+# `cp /work/...` and `dafny build` lines, so keep them in the grammar its
+# docstring states.
 #
 # Requires Docker Desktop running.  Uses the same SDK image and Dafny release
 # as scripts/dafny_verify.sh so the SHA256 pin stays in one place per release.
