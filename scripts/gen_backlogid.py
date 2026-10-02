@@ -98,8 +98,9 @@ Remote mode (--check --remote), ID-257:
     reservation and not this mode is the minting rule; a stale or abandoned
     branch still carrying an ID can report a clash nobody will merge; two mints
     that happen to share header text read as one item; and an item whose header
-    changes on one side after the other side took it — retitled, or absorbed
-    and given its ``→ **HOST**`` — reads as two. Every ``Drift-gate::``
+    changes after ``origin/master`` took it — retitled, or absorbed and given
+    its ``→ **HOST**`` — reads as two (against another branch, an ID already at
+    its merge-base with ``HEAD`` is shared history and is not compared). Every ``Drift-gate::``
     block below carries an ``entrypoint:``, so the inventory gives the
     ``--check --remote`` block only the passthrough ``gen-backlogid`` alias as
     a home and derives it ``advisory``; without entrypoints it would inherit
@@ -245,9 +246,10 @@ def _done_duplicate_ids(done_text: str) -> dict[str, int]:
 
 
 def _git(*args: str) -> subprocess.CompletedProcess[str]:
-    # UTF-8 explicitly: under a cp1252 locale (Windows without UTF-8 mode) the
-    # headers' em dash decoded as mojibake, no remote header matched, and a
-    # rival mint passed silently.
+    # UTF-8 explicitly, never the locale's code page (Windows without UTF-8
+    # mode uses cp1252). Under cp1252 a file of cp1252-defined bytes decodes as
+    # mojibake, no remote header matches and a rival mint passes silently; this
+    # repo's BACKLOG-DONE.md holds an undefined byte (0x90), so there it crashed.
     return subprocess.run(
         ["git", "-C", str(ROOT), *args], capture_output=True, text=True, encoding="utf-8", check=False
     )

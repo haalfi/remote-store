@@ -181,8 +181,11 @@ class Disagreement:
 
 
 def _git(*args: str, root: Path = ROOT, check: bool = True) -> subprocess.CompletedProcess[str]:
-    # UTF-8 explicitly: under a cp1252 locale (Windows without UTF-8 mode) the
-    # headers' em dash decoded as mojibake and the base read as holding no IDs.
+    # UTF-8 explicitly, never the locale's code page (Windows without UTF-8
+    # mode uses cp1252). Under cp1252 a base of cp1252-defined bytes decodes as
+    # mojibake holding no IDs, so the gate reports agreement having compared
+    # nothing; this repo's BACKLOG-DONE.md holds an undefined byte (0x90), so
+    # there the read crashed instead.
     return subprocess.run(
         ["git", "-C", str(root), *args], check=check, capture_output=True, text=True, encoding="utf-8"
     )

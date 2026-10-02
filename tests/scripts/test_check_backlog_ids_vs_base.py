@@ -309,8 +309,9 @@ class TestGitReads:
     def test_read_base_is_utf8_whatever_the_locale(self, repo, monkeypatch) -> None:
         """On a cp1252 Windows locale the em dash decoded as mojibake and the base held no IDs.
 
-        The gate then refused the base as carrying no backlog file, which is
-        loud but names the wrong cause. Forcing the locale reproduces it on any host.
+        Mojibake is not empty, so the "no backlog file" refusal never fired: on
+        this fixture the gate reported agreement having compared nothing.
+        Forcing the locale reproduces it on any host.
         """
         root, _run, _write = repo
         monkeypatch.setattr(locale, "getencoding", lambda: "cp1252")
