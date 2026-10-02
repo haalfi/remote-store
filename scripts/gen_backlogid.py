@@ -179,9 +179,13 @@ _EFFORTS = ("S", "M", "L")
 _RELEASED_RE = re.compile(r"^## v\d", re.MULTILINE)
 # ID-257: a header's title ends at the `**` closing its bold, followed by the
 # line end, a `(version)`, an absorbed entry's `→ **HOST**`, a `*(note)*` or
-# a trailing ` — note`; never at a `**` inside backticks (`**kwargs`, `**/`),
-# which two titles carry.
-_TITLE_END_RE = re.compile(r"(.*?)\*\*(?=\s*(?:$|\(|→|—|\*\())")
+# a trailing ` — note`. A backtick code span is consumed whole, so no `**`
+# inside one ends a title (two live titles carry `**kwargs`-like spans); a
+# backtick with no closing partner is an ordinary character. The two backtick
+# branches are exclusive, so the match stays linear: an alternation where a
+# backtick could take either branch measured 0.26 s on 30 backticks, doubling
+# per few more.
+_TITLE_END_RE = re.compile(r"((?:`[^`]*`|`(?![^`]*`)|[^`])*?)\*\*(?=\s*(?:$|\(|→|—|\*\())")
 
 # R2–R4. Separator lines are not content (RFC-0016 D1); rfc-0016-measure.py
 # uses the same delimitation, so the gate and the acceptance figure agree.

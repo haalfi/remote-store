@@ -627,6 +627,26 @@ class TestRemote:
             "ID-904": "Last line, no newline",
         }
 
+    # Where a title ends was refuted twice (rounds 4 and 5), each time by a
+    # `**` inside backticks followed by one of the terminators, so the space is
+    # enumerated: every terminator a header carries × every backticked `**`.
+    @pytest.mark.parametrize("suffix", ["", " (v0.1.0)", " → **ID-1**", f" {_EM} superseded", " *(refused)*"], ids=repr)
+    @pytest.mark.parametrize(
+        "code", ["`**kwargs`", "`**(x)`", f"`a **{_EM} b`", "`**→`", "`f(**`", "`**`", "`x **`"], ids=repr
+    )
+    def test_no_double_star_inside_backticks_ends_a_title(self, code, suffix):
+        title = f"Fix {code} in get"
+        assert _mod._titled(f"- [ ] **ID-900 {_EM} {title}**{suffix}\n", "") == {"ID-900": title}
+
+    def test_a_line_of_unclosed_backticks_parses_in_linear_time(self):
+        """An alternation where a backtick could open a span or stand alone backtracks exponentially.
+
+        Measured on that form: 0.26 s at 30 backticks. 60 would not finish, so a
+        regression shows up here as a hang rather than as a slow gate on a typo.
+        """
+        line = f"- [ ] **ID-900 {_EM} {'`a' * 60}\n"
+        assert _mod._titled(line, "") == {"ID-900": "`a" * 60}
+
     def test_another_clone_pushing_this_branch_name_is_still_seen(self, clones, capsys):
         """A name tells nothing about whose push it is; only the item does."""
         a, b = clones
