@@ -159,7 +159,7 @@ phases:
           the 16 non-canonical outranks cells at baseline without HTTP; under
           the mutation those 16 reach the SDK and skip "replay cassette
           missing" (baseline 648 passed / 240 skipped; mutated 62 failed / 570
-          passed / 256 skipped). Filed as ID-261. Spec 003 states the
+          passed / 256 skipped). Filed as ID-262. Spec 003 states the
           principle and cites this step; the guide states it without a
           citation, being a published page.
         outcome: ok
@@ -170,12 +170,12 @@ phases:
           The pre-PR sentence said a wrong order is observable as the wrong
           class. Round 5's measuring member refuted it on the file-shaped and
           probe rows too: key-decided root checks removed, local's file-shaped
-          cells and local/s3_moto's probe cells stay green. Filed as ID-260;
+          cells and local/s3_moto's probe cells stay green. Filed as ID-261;
           the sentence now says the order is unpinned while the root is present.
         outcome: misleading
 discovery_followups:
-  - ID-260
   - ID-261
+  - ID-262
 surprising_ripples:
   - sdd/backlog/id-247-graph-root-path-cassettes.md
   - .github/workflows/ci.yml

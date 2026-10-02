@@ -251,6 +251,14 @@ if evidence changes; these are retired.
   now compiled into it, so its refusal is the verified one and names `"."`.
   Detail: [dossier](backlog/id-251-root-write-cells-narrow-spellings.md)
 
+- [x] **BUG-240 — ASYNC-014 and DEPTH-003 state opposite rules, and `GraphBackend` implements the async one**
+  spec: ASYNC-014, DEPTH-003 · effort: M · audience: user.api
+  ASYNC-014 and GR-014's precedence paragraph now state DEPTH-003's reading,
+  and `GraphBackend.list_files` follows it: `recursive=False` yields the
+  immediate files for every `max_depth`. Pinned by the Graph respx test (3 of
+  4 red first) and a new async conformance twin; its replay cells are ID-260.
+  Detail: [dossier](backlog/bug-240-max-depth-spec-contradiction.md)
+
 - [x] **BK-388 — The Dafny model lacks the root rule, the close posture and the absent container that RFC-0017's kernel encodes**
   spec: BE-029, BE-020, BE-021, BE-018, BE-019 · effort: M · audience: library.maintainer
   `BackendContract.dfy` models `AddressesRoot` (BE-029) on `write` and the

@@ -160,7 +160,7 @@ for exactly this reason.
 the cells below only where the root's own answer is wrong, and a present root
 often answers correctly by observation, so the order is unpinned there on every
 row. It matters once the container is absent, which no conformance fixture
-arranges (ID-260, BK-345); the backends that can lose theirs pin it per
+arranges (ID-261, BK-345); the backends that can lose theirs pin it per
 backend.
 
 **BE-020 outranks this check.** On a backend with `close_is_terminal = True`,

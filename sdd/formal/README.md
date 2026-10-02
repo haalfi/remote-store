@@ -405,11 +405,13 @@ python -c "import sys; sys.path.insert(0, 'sdd/formal/MemoryBackend-py'); import
 **Running the oracle tests:**
 
 ```bash
-pytest tests/backends/conformance/ -k "dafny-oracle" -v
+pytest tests/backends/dafny tests/backends/conformance -k dafny -q
 ```
 
-All tests should pass or self-skip (GLOB capability not declared).
-Any failure indicates a conformance suite bug.
+The same command `verify-formal` runs. All tests should pass or self-skip
+(an opt-in the fixture leaves off, a capability the oracle does not declare,
+or a cell aimed at non-declaring backends). A conformance failure indicates a
+conformance suite bug; a failure under `tests/backends/dafny` is the adapter's.
 
 ### Test conformance
 

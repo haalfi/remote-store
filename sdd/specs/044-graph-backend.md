@@ -398,12 +398,12 @@ nothing for non-existent paths, never raises `NotFound`.
 accepts `recursive` and `max_depth` (ASYNC-014) but no `pattern`;
 `AsyncBackend.list_folders` does not accept `max_depth` (ASYNC-015).
 Pattern-limited listing is composed at `AsyncStore` level (ASYNC-052).
-**Precedence (per ASYNC-014):** when `max_depth` is set, `recursive`
-is ignored — `max_depth` governs traversal depth alone; `recursive=True`
-with `max_depth=None` means unbounded; `recursive=False` (the default)
-with `max_depth=None` yields only immediate children. The Graph backend
-honours this by short-circuiting the recursive `/children` walk at the
-configured depth (or after one level for the non-recursive default).
+**Precedence (per ASYNC-014):** `max_depth` applies only when
+`recursive=True`. `recursive=False` (the default) yields only immediate
+children for every `max_depth`; `recursive=True` walks unbounded when
+`max_depth=None` and to `max_depth` levels (inclusive) otherwise. The
+Graph backend honours this by short-circuiting the recursive `/children`
+walk at the configured depth, or after one level when non-recursive.
 
 ### GR-015: Range Download via `@microsoft.graph.downloadUrl`
 

@@ -1,4 +1,4 @@
-# ID-260 — BE-029's order is unobservable to conformance wherever a present root already answers correctly
+# ID-261 — BE-029's order is unobservable to conformance wherever a present root already answers correctly
 <!-- doc: repo-only -->
 
 The index entry holds the current diagnosis; this file is evidence and

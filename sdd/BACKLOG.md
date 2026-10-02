@@ -275,11 +275,11 @@ failure it was.
 
 - [ ] **BK-389 — No backend runs on RFC-0017's kernel, so ADR-0042 stays Proposed**
   spec: BE-021, BE-029, BE-020, BE-017, ERR-001, ERR-009, DEPTH-003, PING-002, PING-008 · effort: L · audience: library.maintainer, user.api_docs, contributor.process
-  ADR-0042 is accepted only with the first backend on the new design: D3
-  step 1, the async kernel with its `unasync` sync twin over the two Memory
-  drivers. That PR also lands every step-1 spec amendment (dossier item 4), the
-  custom-backend guide as a driver, its check script and the homepage snippet.
-  Depends on BK-388. Open decision: none; RFC-0017 D1 to D7 fix the shape.
+  ADR-0042 is accepted only with the first backend on the new design: D3 step 1,
+  the async kernel with its `unasync` sync twin over the two Memory drivers, with
+  every step-1 spec amendment (dossier item 4), the custom-backend guide as a
+  driver, its check script and the homepage snippet. Depends on BK-388. Open decision:
+  none; RFC-0017 D1 to D7 fix the shape.
   Detail: [dossier](backlog/bk-389-kernel-step-1-memory.md)
 
 - [ ] **BK-390 — RFC-0017's spec amendments after D3 step 1 have no owner once BK-387 closes**
@@ -307,15 +307,6 @@ no clause of the contract ships unexercised.
   `MemoryCache`. Silent wrong data. Open decision: key on backend identity,
   adopt ID-121's derived keys, or refuse an unkeyed shared cache.
   Detail: [dossier](backlog/bug-251-shared-cache-cross-store-bytes.md)
-
-- [ ] **BUG-240 — ASYNC-014 and DEPTH-003 state opposite rules, and `GraphBackend` implements the async one**
-  spec: ASYNC-014, DEPTH-003 · effort: M · audience: user.api
-  ASYNC-014 says a set `max_depth` overrides `recursive`, citing DEPTH-003,
-  which says `max_depth` applies only when `recursive=True`. `GraphBackend`,
-  its docstring and its test follow ASYNC-014; `AsyncMemoryBackend` and
-  `AsyncAzureBackend` follow DEPTH-003. `Store` normalises, so only a direct
-  backend call diverges. Decided (BK-387): DEPTH-003, the verified reading.
-  Detail: [dossier](backlog/bug-240-max-depth-spec-contradiction.md)
 
 - [ ] **BUG-260 — `SQLBlobBackend.list_files("./")` answers empty for a non-empty root**
   spec: BE-029, SQL-BLOB-010 · effort: S · audience: user.api
@@ -352,16 +343,24 @@ no clause of the contract ships unexercised.
   none on shape; the recording procedure is in the dossier.
   Detail: [dossier](backlog/id-247-graph-root-path-cassettes.md)
 
-- [ ] **ID-260 — BE-029's order is unobservable to conformance wherever a present root already answers correctly**
+- [ ] **ID-260 — The async non-recursive `max_depth` cell never runs on Graph or Azure replay**
+  spec: ASYNC-014, DEPTH-003 · effort: S · audience: infra.test
+  `test_list_files_non_recursive_ignores_max_depth` skips its 8 replay cells,
+  4 `graph_replay` and 4 `azure_replay_async`, for want of a cassette
+  (`pytest tests/backends/conformance/test_async_extended.py --stage=3 -rs -k non_recursive_ignores`),
+  so no conformance cell reaches `GraphBackend` on this rule. Recorded, they go red on a
+  regression to extra `/children` calls: replay skips only an absent cassette. Open decision: none.
+
+- [ ] **ID-261 — BE-029's order is unobservable to conformance wherever a present root already answers correctly**
   spec: BE-029 · effort: M · audience: infra.test
   With key-decided root checks removed in-session, the file-shaped root cells stay
   green on `local`/`local_async_adapted` and every probe cell on `local`, `s3_moto`
   stays green: a present root answers right by observation (checks, selection and
   counts in the dossier). Only an absent container separates the orders (BK-345).
   Open decision: per-backend pins, or an absent-root fixture shared with BK-345.
-  Detail: [dossier](backlog/id-260-root-order-unobservable.md)
+  Detail: [dossier](backlog/id-261-root-order-unobservable.md)
 
-- [ ] **ID-261 — On Azure replay lanes a regressed root-write guard skips instead of failing**
+- [ ] **ID-262 — On Azure replay lanes a regressed root-write guard skips instead of failing**
   spec: BE-029 · effort: S · audience: infra.test
   `test_root_destination_outranks_a_missing_source` passes on `azure_replay(_async)`
   without HTTP; with `_reject_root_as_write_target` narrowed to `is_root` (PR #1050
