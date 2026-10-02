@@ -386,10 +386,11 @@ and both become `InvalidPath`. Where none pins it, the step adds the cell:
 Local's root `delete_folder` on a present root has no test, since those
 tests remove the root first (corrected after PR #1055 merged). Added at
 BK-396: `delete_folder`'s sequence (BK-389's dossier, decision 8) changes
-cells at step 3 (SQLBlob's raising `stat` after an empty listing), step 5
-(Local's symbolic links) and step 6 (SFTP's recursive delete under a
-concurrent writer, untyped today), each enumerated there with its
-measurement. AZ-025's blank-message clause and its pinning
+cells at step 3 (SQLBlob's raising `stat` after an empty listing), step 4
+(flat Azure's recursive delete under a concurrent deleter), step 5 (Local's
+symbolic links) and step 6 (SFTP's recursive delete under a concurrent
+writer, untyped today, and its answer when the probe's `stat` drops the
+channel), each enumerated there with its measurement. AZ-025's blank-message clause and its pinning
 test go red with BUG-276's fix under the arm decided at BK-387, synthesise
 (its dossier: "Both go red when this lands, by design"); the BUG-240 and
 BUG-292 decisions change cells on the classes that

@@ -66,7 +66,8 @@ Testing agree.
 
 ## Outcome (2026-10-02)
 
-All five items are decided, plus one finding the measurement surfaced, each
+All five items are decided, plus one finding the measurement surfaced and
+two that review surfaced (items 7 and 8 below), each
 by the maintainer through the interview with the measured cells in front of
 them. The sequence now lives in
 [BK-389's decision 8](bk-389-kernel-step-1-memory.md#decisions-planning-pr-2026-10-02),
@@ -122,6 +123,20 @@ model covers their wire.
    non-recursive cells reproduce (`compare local`, `Lt P0`), but its
    recursive walk through `sn` also deleted `tn/a`, which the paragraph
    does not show. Under the decided rule every link cell is `InvalidPath`.
+
+PR #1057's round 1 found two cases the six left open, and the maintainer
+decided both on measured cells (`compare extra`):
+
+7. **A probe that raises leaves the refusal standing, and `missing_ok`
+   applies to a `NotFound` one** (BE-021's fail-open rule, as the `none`
+   path already applied it). As first written, the refusal was raised even
+   under `missing_ok=True`, against BE-013. Raising the probe's own error
+   instead would have kept SFTP's 8 cells, which answer
+   `BackendUnavailable` today, but contradicted BE-021.
+8. **A `parents == "none"` recursive delete without `SupportsDeleteTree`
+   tolerates a `NotFound` on a listed file**, as the walk does. Today flat
+   Azure answers `NotFound` under a concurrent deleter, even with
+   `missing_ok=True`, and leaves the rest of the prefix in place.
 
 ## Candidate design
 

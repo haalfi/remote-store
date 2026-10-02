@@ -229,7 +229,12 @@ every case. RFC-0017 carries the same answers at the question each settles.
        is absent `NotFound` (to which `missing_ok` applies), file
        `InvalidPath`, non-empty folder `DirectoryNotEmpty`, and otherwise
        the driver's refusal stands. A probe that raises answers nothing:
-       the refusal is raised with the probe's exception chained. Every
+       the refusal stands, with the probe's exception chained, and
+       `missing_ok` applies to it when it is a `NotFound`. That is BE-021's
+       fail-open rule, which the `parents == "none"` path below also
+       follows; on SFTP a file under `missing_ok` then returns quietly
+       when the probe cannot run. [Added in PR #1057's round 1, the
+       maintainer's decision.] Every
        other typed refusal passes through unprobed, since a
        `BackendUnavailable` or a `PermissionDenied` says nothing about the
        key. Measured on 30 injected non-state faults (`PermissionDenied` on
@@ -261,8 +266,10 @@ every case. RFC-0017 carries the same answers at the question each settles.
        folder holding no files still arrives as a common prefix. Then the
        files are deleted and `remove_folder` runs deepest first, `key`
        last. On the way, a `NotFound` from `delete` or `remove_folder` is
-       tolerated (the entry is already gone), and any other refusal gets
-       the probes for its own key. Only the last call, on `key`, applies
+       tolerated (the entry is already gone), and any other refusal from
+       either gets the probes for its own key: a file swapped for a
+       non-empty directory mid-walk answers `DirectoryNotEmpty`
+       (`compare extra`). Only the last call, on `key`, applies
        `missing_ok`.
      - *A recursive delete may answer `DirectoryNotEmpty`*, on a walk,
        when a writer adds under the tree mid-walk. BE-013 lists it only for
@@ -281,7 +288,9 @@ every case. RFC-0017 carries the same answers at the question each settles.
        `list_page(key, delimiter="/", limit=1)` for a non-recursive call.
        For a recursive one it is `list_page(key, delimiter=None, limit=1)`
        before `delete_tree`, or, without `SupportsDeleteTree`, one paged
-       `list_page(key, delimiter=None)` whose files the kernel deletes.
+       `list_page(key, delimiter=None)` whose files the kernel deletes,
+       tolerating a `NotFound` on a listed file as the walk does [added in
+       PR #1057's round 1, the maintainer's decision].
        After an empty listing, `stat`: a file answers `InvalidPath`,
        anything else `NotFound`, to which `missing_ok` applies. Per BE-021,
        the listing is the determinant and fails closed, and the `stat`
@@ -318,11 +327,19 @@ every case. RFC-0017 carries the same answers at the question each settles.
        kernel answers `InvalidPath` for all three, × `recursive` ×
        `missing_ok`. A link to a file keeps `InvalidPath`. Not measured: a
        permission-denied folder (the container runs as uid 0).
+     - Step 4, flat Azure: 2 cells, a concurrent deleter on a recursive
+       delete (`d/a` deleted by another client just before the backend
+       deletes it, `missing_ok` either way). Today it answers `NotFound`
+       and leaves `d/b`; the kernel tolerates the `NotFound` and empties
+       the prefix.
      - Step 6, SFTP: none of 24 base cells. Under a concurrent writer the
        recursive delete answers an untyped `RemoteStoreError` today (200 of
        200 threaded runs) and `DirectoryNotEmpty` on the kernel, a typing
-       change. Its symbolic links were not measured, so step 6 measures
-       them.
+       change. With the probe's `stat` dropping the channel (absent key or
+       file, × `recursive` × `missing_ok`), 8 cells: today's first call is
+       that `stat`, so it answers `BackendUnavailable`; the kernel answers
+       `NotFound`, or returns under `missing_ok`. Its symbolic links were
+       not measured, so step 6 measures them.
      - Steps 4 and 7, HNS and Graph: read, not run (no emulator). Today
        both check the type first and answer `InvalidPath` for a file (Graph
        `aio/backends/_graph/backend.py` lines 1336 to 1337, HNS through

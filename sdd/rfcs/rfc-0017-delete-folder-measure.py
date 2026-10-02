@@ -30,9 +30,11 @@ post-state both equal today's.
 
 Bounds: a model, not the kernel. It shows what the decided sequence answers
 over each wire, not that BK-389's code will; that code's fake-driver suite
-does. The SFTP dead-channel fault is injected at the driver (the probe's
-reconnect is assumed to succeed), and the race cells inject one change
-deterministically, where `race` measures today under threads.
+does. The SFTP dead-channel fault at the removal is injected at the driver,
+with the probe's reconnect succeeding; a probe that itself fails is a
+separate set of cells (`compare extra`, today's by `today extra`). The race
+cells inject one change deterministically, where `race` measures today
+under threads.
 """
 
 from __future__ import annotations
@@ -513,7 +515,122 @@ def run_azure() -> list[dict]:
     return rows
 
 
-RUNNERS = dict(memory=run_memory, local=run_local, sftp=run_sftp, s3=run_s3, sql=run_sql, azure=run_azure)
+def run_extra() -> list[dict]:
+    """PR #1057 round 1: today's answers for a probe that raises and a flat concurrent deleter.
+
+    SFTP: the first paramiko ``stat`` raises EOFError (a dropped channel), on an
+    absent key and on a file. Flat Azure: blob ``d/a`` is deleted by another
+    client just before the backend's own ``delete_blob`` on it.
+    """
+    import paramiko
+    from azure.storage.blob import BlobServiceClient
+    from azure.storage.blob.aio import BlobClient
+
+    from remote_store.aio.backends._azure import AsyncAzureBackend
+    from remote_store.backends._sftp import HostKeyPolicy, SFTPBackend
+    from tests.backends.sftp._helpers import start_sftp_server, stop_sftp_server
+
+    rows = []
+    base = Path(tempfile.mkdtemp(dir=OUT))
+    thread, port, _hk, stop, sock = start_sftp_server(root=str(base), host="127.0.0.1")
+    orig_stat = paramiko.SFTPClient.stat
+    try:
+        b = SFTPBackend(
+            host="127.0.0.1",
+            port=port,
+            username="testuser",
+            password="testpass",
+            base_path="/root",
+            host_key_policy=HostKeyPolicy.AUTO_ADD,
+            connect_kwargs={"allow_agent": False, "look_for_keys": False},
+        )
+        root = base / "root"
+        for state, (key, files) in {"absent, probe raises": ("z", []), "file f, probe raises": ("f", ["f"])}.items():
+            for rec, mok in CALLS:
+                arrange_fs(root, files, [])
+                b.exists("")
+                fired = []
+
+                def stat(self, path, _f=fired):
+                    if not _f:
+                        _f.append(1)
+                        raise EOFError("injected: channel dropped")
+                    return orig_stat(self, path)
+
+                paramiko.SFTPClient.stat = stat
+                exc = None
+                try:
+                    b.delete_folder(key, recursive=rec, missing_ok=mok)
+                except Exception as e:  # noqa: BLE001
+                    exc = e
+                finally:
+                    paramiko.SFTPClient.stat = orig_stat
+                rows.append(
+                    dict(
+                        cls="sftp",
+                        state=state,
+                        key=key,
+                        recursive=rec,
+                        missing_ok=mok,
+                        answer=answer(exc),
+                        post=fs_state(root),
+                        calls=0,
+                        ops={},
+                    )
+                )
+        b.close()
+    finally:
+        paramiko.SFTPClient.stat = orig_stat
+        stop_sftp_server(thread, stop, sock)
+        shutil.rmtree(base)
+
+    svc = BlobServiceClient.from_connection_string(CONN)
+    orig_del = BlobClient.delete_blob
+
+    async def go():
+        for mok in (False, True):
+            cont = f"m-{uuid.uuid4().hex[:8]}"
+            cc = svc.create_container(cont)
+            for f in ("d/a", "d/b"):
+                cc.upload_blob(f, b"x")
+
+            async def delete_blob(self, *a, **k):
+                if self.blob_name == "d/a":
+                    cc.get_blob_client("d/a").delete_blob()  # the concurrent deleter
+                return await orig_del(self, *a, **k)
+
+            BlobClient.delete_blob = delete_blob
+            ab = AsyncAzureBackend(container=cont, hns=False, connection_string=CONN)
+            exc = None
+            try:
+                await ab.delete_folder("d", recursive=True, missing_ok=mok)
+            except Exception as e:  # noqa: BLE001
+                exc = e
+            finally:
+                BlobClient.delete_blob = orig_del
+            rows.append(
+                dict(
+                    cls="azure-flat",
+                    state="d/a, d/b; d/a deleted concurrently",
+                    key="d",
+                    recursive=True,
+                    missing_ok=mok,
+                    answer=answer(exc),
+                    post=sorted(x.name for x in cc.list_blobs()),
+                    calls=0,
+                    ops={},
+                )
+            )
+            await ab.aclose()
+            svc.delete_container(cont)
+
+    asyncio.run(go())
+    return rows
+
+
+RUNNERS = dict(
+    memory=run_memory, local=run_local, sftp=run_sftp, s3=run_s3, sql=run_sql, azure=run_azure, extra=run_extra
+)
 
 
 # ---- inject ----
@@ -1128,16 +1245,31 @@ class AzureFlatDriver(FlatDriver):
         except ResourceNotFoundError:
             return None
 
+    page_size = None  # results_per_page for an unlimited listing; set small to force several pages
+
     def list_page(self, prefix, delimiter="/", limit=None):
+        # limit: one bounded request. No limit: every page, one wire call each (the
+        # kernel would follow the cursor; collapsing the pages here keeps the model small).
         self._inj("list")
-        self.wire()
-        pager = self.cc.list_blobs(name_starts_with=prefix + "/", results_per_page=limit).by_page()
-        page = next(pager)
-        return [b.name for b in page], []
+        names = []
+        for page in self.cc.list_blobs(
+            name_starts_with=prefix + "/", results_per_page=limit or self.page_size
+        ).by_page():
+            self.wire()
+            names += [b.name for b in page]
+            if limit:
+                break
+        return names, []
 
     def delete(self, key):
+        from azure.core.exceptions import ResourceNotFoundError
+
+        self._hook("delete", key)
         self.wire()
-        self.cc.get_blob_client(key).delete_blob()
+        try:
+            self.cc.get_blob_client(key).delete_blob()
+        except ResourceNotFoundError as e:
+            raise NotFound(key, path=key) from e
 
     def post(self):
         return sorted(b.name for b in self.cc.list_blobs())
@@ -1164,6 +1296,10 @@ class _Counting:
 
             def f(*a, **k):
                 self._drv.prims += 1
+                fail = getattr(self._drv, "fail_stat", None)
+                if name == "stat" and fail is not None:  # a probe that raises, once
+                    self._drv.fail_stat = None
+                    raise fail
                 return attr(*a, **k)
 
             return f
@@ -1188,10 +1324,24 @@ class Kernel:
                                     Le errno-typed (ENOENT/ENOTDIR -> NotFound, ENOTEMPTY -> DNE,
                                        EACCES/EPERM -> PermissionDenied, else untyped), stat follows links
                                     Ll Le's classifier, lstat: a link is never a folder (decided)
+    Added after PR #1057's round 1:
+    M  a probe that raises:         M0 the refusal is raised, the probe's error chained
+                                    M1 as M0, but missing_ok applies to a NotFound refusal (decided)
+                                    M2 the probe's error is raised, the refusal chained
+    F  parents none, no delete_tree, F0 a NotFound from delete(f) propagates
+       recursive:                   F1 tolerated, as on the walk (decided)
     """
 
-    def __init__(self, drv: Driver, P="P1", D="D1", W="W1", R="R1") -> None:
+    def __init__(self, drv: Driver, P="P1", D="D1", W="W1", R="R1", M="M1", F="F1") -> None:
         self.d, self.P, self.D, self.W, self.R = _Counting(drv), P, D, W, R
+        self.M, self.F = M, F
+
+    def probe_raised(self, e, pe, mok):
+        if self.M == "M1" and type(e) is NotFound and mok:
+            return
+        if self.M == "M2":
+            raise pe from e
+        raise e from pe
 
     def probe_wanted(self, e: RemoteStoreError) -> bool:
         if self.P == "P0":
@@ -1204,7 +1354,7 @@ class Kernel:
         try:
             k = self.d.stat(key)
         except RemoteStoreError as pe:
-            raise e from pe
+            return self.probe_raised(e, pe, mok)
         if k is None:
             if mok:
                 return
@@ -1215,7 +1365,7 @@ class Kernel:
             try:
                 ents, dirs = self.d.list_page(key, "/", 1)
             except RemoteStoreError as pe:
-                raise e from pe
+                return self.probe_raised(e, pe, False)
             if ents or dirs:
                 raise DirectoryNotEmpty(key, path=key) from e
         raise e
@@ -1270,7 +1420,7 @@ class Kernel:
             except RemoteStoreError as e:
                 if self.W == "W1" and type(e) is NotFound:
                     continue
-                raise
+                self.error_path(e, f, False, listing_arm=True)
         for sub in sorted(folders, key=lambda s: -s.count("/")):
             try:
                 d.remove_folder(sub)
@@ -1300,7 +1450,11 @@ class Kernel:
         if not ents:
             return self._empty(key, mok)
         for f in ents:
-            d.delete(f)
+            try:
+                d.delete(f)
+            except NotFound:
+                if self.F == "F0":
+                    raise
 
     def _empty(self, key, mok):
         try:
@@ -1316,8 +1470,8 @@ class Kernel:
 
 # --- runners -----------------------------------------------------------------
 
-OPTS = dict(P=("P0", "P1"), D=("D0", "D1", "D2"), W=("W0", "W1"), R=("R1", "R0"))
-DEFAULT = dict(P="P1", D="D1", W="W1", R="R1")
+OPTS = dict(P=("P0", "P1"), D=("D0", "D1", "D2"), W=("W0", "W1"), R=("R1", "R0"), M=("M0", "M1", "M2"), F=("F0", "F1"))
+DEFAULT = dict(P="P1", D="D1", W="W1", R="R1", M="M1", F="F1")
 
 
 def run_cell(drv: Driver, opts, key, rec, mok) -> dict:
@@ -1697,6 +1851,8 @@ def main() -> None:
     sect = sys.argv[1:] or ["memory", "implicit", "local", "sftp", "flat", "faults", "races", "trips", "summary"]
     if "summary" in sect:
         summary()
+    if "extra" in sect:
+        extra()
     if "memory" in sect:
         diff_section(K["memory"], ["P", "D"])
     if "implicit" in sect:
@@ -1760,12 +1916,25 @@ def trips() -> None:
     print("   Local's 'today' is os-level calls through pathlib, not comparable to its primitives; Graph and HNS: read")
 
 
-DECIDED = {"P": "P1", "D": "D1", "W": "W1", "R": "R1"}
+def extra() -> None:
+    """PR #1057 round 1's cells: a probe that raises, the walk's delete refusal, flat Azure's deleter and paging."""
+    print("\n# Round-1 cells (today where a wire exists; '-' where none)")
+    for r in K["extra"]:
+        t = TODAY.get((r["cls"], r["state"], r["recursive"], r["missing_ok"]))
+        today = "-" if t is None else f"{t['answer']} post={t['post']}"
+        o_ = " ".join(f"{k}={v}" for k, v in r["opts"].items() if v != DEFAULT[k]) or "default"
+        print(
+            f"   {r['cls']:10} {o_:6} {cellname(r):52} today {today:40} kernel {r['answer']} post={r['post']}"
+            f" calls={r['calls']}"
+        )
+
+
+DECIDED = {"P": "P1", "D": "D1", "W": "W1", "R": "R1", "M": "M1", "F": "F1"}
 
 
 def summary() -> None:
-    """Changed-cell counts under the decided options (BK-396): P1 D1 W1 R1, Local's lstat driver (Ll)."""
-    print("\n# Decided options P1 D1 W1 R1, Local driver Ll: changed cells against today")
+    """Changed-cell counts under the decided options (BK-396): P1 D1 W1 R1 M1 F1, Local's lstat driver (Ll)."""
+    print("\n# Decided options P1 D1 W1 R1 M1 F1, Local driver Ll: changed cells against today")
 
     def decided(r):
         return all(r["opts"][k] == v for k, v in DECIDED.items()) and r.get("L", "Ll") == "Ll"
@@ -1787,8 +1956,11 @@ def summary() -> None:
             ch = [
                 r
                 for r in inj
-                if INJ[(r["cls"], r["state"], r["site"], str(r["fault"]), r["recursive"], r["missing_ok"])]["answer"]
+                if (t := INJ[(r["cls"], r["state"], r["site"], str(r["fault"]), r["recursive"], r["missing_ok"])])[
+                    "answer"
+                ]
                 != r["answer"]
+                or t["post"] != r["post"]
             ]
             print(f"   {name:7} injected: {len(inj)} fired cells, {len(ch)} changed")
     f = [r for r in K["faults"] if r["opts"]["P"] == "P1"]
@@ -1799,6 +1971,23 @@ def summary() -> None:
     for r in K["races"]:
         if r["opts"]["W"] == "W1" and r["opts"]["R"] == "R1":
             print(f"   race {r['cls']:5} {r['race']:20}: {r['answer']:18} post={r['post']}")
+    ex = [r for r in K["extra"] if decided(r)]
+    measured = [r for r in ex if (r["cls"], r["state"], r["recursive"], r["missing_ok"]) in TODAY]
+    ch = [
+        r
+        for r in measured
+        if (t := TODAY[(r["cls"], r["state"], r["recursive"], r["missing_ok"])])["answer"] != r["answer"]
+        or t["post"] != r["post"]
+    ]
+    print(f"   round-1 cells: {len(ex)} decided, {len(measured)} with a today, {len(ch)} changed")
+    for r in ch:
+        t = TODAY[(r["cls"], r["state"], r["recursive"], r["missing_ok"])]
+        print(
+            f"      {r['cls']} {cellname(r)}: today {t['answer']} post={t['post']} -> kernel {r['answer']} post={r['post']}"
+        )
+    for r in ex:
+        if (r["cls"], r["state"], r["recursive"], r["missing_ok"]) not in TODAY:
+            print(f"      no today: {r['cls']} {cellname(r)}: kernel {r['answer']} post={r['post']}")
     for r in K["implicit"]:
         if decided(r) and r["recursive"] and r["state"] == "file f" and not r["missing_ok"]:
             print(f"   {r['cls']} (modelled) delete_folder('f', recursive=True): {r['answer']} post={r['post']}")
@@ -1874,6 +2063,113 @@ def cmd_race(args) -> None:
         print(f"{k:14} runs={runs} {dict(v)}")
 
 
+def extra_rows(b, base: Path) -> list[dict]:
+    """PR #1057 round 1: the cells run_extra measures today, plus two with no today.
+
+    - probe raises: the refusal is NotFound (absent key; on SFTP and Local also a
+      file, which their rmdir types NotFound) and the stat probe raises
+      BackendUnavailable, under M0/M1/M2. Memory and Local have no wire to drop,
+      so they have no today; SFTP's today is run_extra's.
+    - walk delete refusal (Local, no today): d/a becomes a non-empty directory
+      just before delete(d/a), so unlink answers EISDIR (untyped).
+    - flat Azure: d/a deleted just before delete(d/a), under F0/F1; and a
+      three-file tree listed one blob per page, to check the paging.
+    """
+    from azure.storage.blob import BlobServiceClient
+
+    rows = []
+    states = {"absent, probe raises": ("z", []), "file f, probe raises": ("f", ["f"])}
+    for M in OPTS["M"]:
+        opts = dict(DEFAULT, M=M)
+        for state, (key, files) in states.items():
+            for rec, mok in CALLS:
+                for cls in ("memory", "local", "sftp"):
+                    if cls == "memory":
+                        drv = MemoryDriver(files, [], "D1")
+                    elif cls == "local":
+                        root = base / "lroot"
+                        arrange_fs(root, files, [])
+                        drv = LocalDriver(root, "Ll")
+                    else:
+                        root = base / "sroot"
+                        arrange_fs(root, files, [])
+                        b.exists("")
+                        drv = SFTPDriver(b, root)
+                    drv.fail_stat = BackendUnavailable("injected: probe failed", path=key)
+                    rows.append(
+                        dict(
+                            cls=cls,
+                            opts=opts,
+                            state=state,
+                            key=key,
+                            recursive=rec,
+                            missing_ok=mok,
+                            **run_cell(drv, opts, key, rec, mok),
+                        )
+                    )
+    root = base / "lroot"
+    for W in OPTS["W"]:
+        opts = dict(DEFAULT, W=W)
+        arrange_fs(root, ["d/a", "d/e/b"], [])
+
+        def swap():
+            (root / "d" / "a").unlink()
+            (root / "d" / "a").mkdir()
+            (root / "d" / "a" / "z").write_bytes(b"x")
+
+        drv = LocalDriver(root, "Ll")
+        drv.hooks[("delete", "d/a")] = swap
+        rows.append(
+            dict(
+                cls="local",
+                opts=opts,
+                state="d/a becomes a non-empty directory mid-walk",
+                key="d",
+                recursive=True,
+                missing_ok=False,
+                **run_cell(drv, opts, "d", True, False),
+            )
+        )
+
+    svc = BlobServiceClient.from_connection_string(CONN)
+    for F in OPTS["F"]:
+        opts = dict(DEFAULT, F=F)
+        for mok in (False, True):
+            cc = svc.create_container(f"k-{uuid.uuid4().hex[:8]}")
+            for f in ("d/a", "d/b"):
+                cc.upload_blob(f, b"x")
+            drv = AzureFlatDriver(cc)
+            drv.hooks[("delete", "d/a")] = lambda cc=cc: cc.get_blob_client("d/a").delete_blob()
+            rows.append(
+                dict(
+                    cls="azure-flat",
+                    opts=opts,
+                    state="d/a, d/b; d/a deleted concurrently",
+                    key="d",
+                    recursive=True,
+                    missing_ok=mok,
+                    **run_cell(drv, opts, "d", True, mok),
+                )
+            )
+    cc = svc.create_container(f"k-{uuid.uuid4().hex[:8]}")
+    for f in ("d/a", "d/b", "d/c"):
+        cc.upload_blob(f, b"x")
+    drv = AzureFlatDriver(cc)
+    drv.page_size = 1
+    rows.append(
+        dict(
+            cls="azure-flat",
+            opts=DEFAULT,
+            state="d/a, d/b, d/c, one blob per page",
+            key="d",
+            recursive=True,
+            missing_ok=False,
+            **run_cell(drv, DEFAULT, "d", True, False),
+        )
+    )
+    return rows
+
+
 def cmd_kernel(args) -> None:
     from tests.backends.sftp._helpers import stop_sftp_server
 
@@ -1884,6 +2180,7 @@ def cmd_kernel(args) -> None:
         out["sftp"] = sftp_rows(b, base)
         out["faults"] = faults(b, base)
         out["races"] = races(b, base)
+        out["extra"] = extra_rows(b, base)
     finally:
         b.close()
         stop_sftp_server(srv[0], srv[3], srv[4])
