@@ -528,11 +528,11 @@ give them a way to absorb.
 
 - [ ] **BK-392 — A release can drop an interpreter before its support window closes, and nothing checks the date**
   spec: — · effort: S · audience: user.api, contributor.tooling
-  Rule 8 promises support until a version's security fixes end, and
-  `check-support-windows` dates every floor raise at release, but no check
-  dates a dropped classifier; once dropped, the chart stops drawing its bar, so
-  the release checklist's Rule 8 step cannot see it either. Found on BK-380,
-  opened two days before 3.10's window closed. Open decision: script or step.
+  Rule 8 promises support until security fixes end; `check-support-windows`
+  dates floor raises, but nothing dates a dropped classifier, and the chart
+  and drift-guard stop showing it, so the Rule 8 release step is blind to it.
+  **Until then: v0.33.0, which drops 3.10 (BK-380), is not tagged before
+  2026-10-04.** Open decision: script or checklist step.
 
 - [ ] **BUG-289 — Two floors are clean for a user and red for the suite, because the suite rejects warnings**
   spec: — · effort: S · audience: user.api, infra.test
