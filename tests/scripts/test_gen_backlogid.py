@@ -462,8 +462,8 @@ def _git(cwd: Path, *args: str) -> str:
     return subprocess.run([*cmd, "-C", str(cwd), *args], check=True, capture_output=True, text=True).stdout
 
 
-def _open_item(item_id: str) -> str:
-    return f"- [ ] **{item_id} {_EM} Minted here**\n{_ATTR}\n"
+def _open_item(item_id: str, title: str) -> str:
+    return f"- [ ] **{item_id} {_EM} {title}**\n{_ATTR}\n"
 
 
 class TestRemote:
@@ -500,9 +500,14 @@ class TestRemote:
 
     @staticmethod
     def _mint(clone: Path, item_id: str, branch: str | None, push: bool = True) -> None:
-        """Add an open item; commit and push it on ``branch`` (``None``: leave it uncommitted)."""
+        """Add an open item; commit and push it on ``branch`` (``None``: leave it uncommitted).
+
+        The title names the clone, so two sessions' mints are two items, while
+        one item carried to another tree by merge or squash keeps its title.
+        """
         backlog = clone / "sdd" / "BACKLOG.md"
-        backlog.write_text(backlog.read_text(encoding="utf-8") + _open_item(item_id), encoding="utf-8")
+        item = _open_item(item_id, f"Minted by {clone.name}")
+        backlog.write_text(backlog.read_text(encoding="utf-8") + item, encoding="utf-8")
         if branch is None:
             return
         _git(clone, "checkout", "--quiet", "-B", branch)
@@ -539,39 +544,6 @@ class TestRemote:
         assert "ID=901" in local
         assert "ID=902" in across
 
-    def test_this_branch_pushed_is_not_its_own_clash(self, clones, capsys):
-        _a, b = clones
-        self._mint(b, "ID-900", "b-work")
-        assert _mod._check(remote=True) == 0
-        assert "also minted" not in capsys.readouterr().out
-
-    def test_a_detached_checkout_of_its_own_pushed_branch_is_not_a_clash(self, clones, capsys):
-        """A detached HEAD has no branch name to skip by; its pushed tip is HEAD's own history."""
-        _a, b = clones
-        self._mint(b, "ID-900", "b-work")
-        _git(b, "checkout", "--quiet", "--detach")
-        assert _mod._check(remote=True) == 0
-        assert "also minted" not in capsys.readouterr().out
-
-    def test_a_pushed_branch_already_merged_into_this_one_is_not_a_clash(self, clones, capsys):
-        """Its IDs reached this tree by merge, which the offline gates check; they are not a rival mint."""
-        a, b = clones
-        self._mint(a, "ID-900", "a-work")
-        _git(b, "fetch", "--quiet", "origin")
-        _git(b, "-c", "user.name=t", "merge", "--quiet", "--no-edit", "origin/a-work")
-        assert _mod._check(remote=True) == 0
-        assert "also minted" not in capsys.readouterr().out
-
-    def test_a_merged_in_branch_that_later_reached_master_is_not_a_clash(self, clones, capsys):
-        """Master's merge-base with HEAD moves to the merged tip, so its IDs are shared history."""
-        a, b = clones
-        self._mint(a, "ID-900", "a-work")
-        _git(b, "fetch", "--quiet", "origin")
-        _git(b, "merge", "--quiet", "--no-edit", "origin/a-work")
-        _git(a, "push", "--quiet", "origin", "a-work:master")
-        assert _mod._check(remote=True) == 0
-        assert "also minted" not in capsys.readouterr().out
-
     def test_an_id_master_gained_after_this_branch_forked_is_reported(self, clones, capsys):
         """A merged in the meantime: the clash is with master, not with a branch."""
         a, b = clones
@@ -579,6 +551,81 @@ class TestRemote:
         self._mint(b, "ID-900", None)
         assert _mod._check(remote=True) == 1
         assert "ID-900 also minted on origin/master" in capsys.readouterr().out
+
+    @staticmethod
+    def _land(a: Path, branch: str, how: str) -> None:
+        """Clone A lands ``origin/<branch>`` on master the way ``how`` says, as GitHub would."""
+        _git(a, "fetch", "--quiet", "origin")
+        _git(a, "checkout", "--quiet", "-B", "master", "origin/master")
+        if how == "ff":
+            _git(a, "merge", "--quiet", "--ff-only", f"origin/{branch}")
+        elif how == "no-ff":
+            _git(a, "merge", "--quiet", "--no-ff", "--no-edit", f"origin/{branch}")
+        else:  # squash, this repo's merge mode
+            _git(a, "merge", "--quiet", "--squash", f"origin/{branch}")
+            _git(a, "commit", "--quiet", "-m", f"{branch} (#1)")
+        _git(a, "push", "--quiet", "origin", "master")
+
+    # The condition "which IDs did this tree mint" was narrowed in two rounds
+    # running (detached HEAD, then squash), so its space is enumerated here
+    # rather than argued a third time: whose item it is, whether and how
+    # master took it, and whether HEAD is attached. One item is never a clash.
+    @pytest.mark.parametrize("detached", [False, True], ids=["attached", "detached"])
+    @pytest.mark.parametrize("landed", [None, "ff", "no-ff", "squash"], ids=str)
+    @pytest.mark.parametrize("owner", ["merged-in", "own"])
+    def test_one_item_however_it_travels_is_never_a_clash(self, clones, owner, landed, detached, capsys):
+        a, b = clones
+        if owner == "merged-in":
+            self._mint(a, "ID-900", "a-work")
+            _git(b, "fetch", "--quiet", "origin")
+            _git(b, "merge", "--quiet", "--no-edit", "origin/a-work")
+            branch = "a-work"
+        else:
+            self._mint(b, "ID-900", "b-work")
+            branch = "b-work"
+        if landed:
+            self._land(a, branch, landed)
+        if detached:
+            _git(b, "checkout", "--quiet", "--detach")
+        assert _mod._check(remote=True) == 0
+        assert "also minted" not in capsys.readouterr().out
+
+    @pytest.mark.parametrize("landed", [None, "ff", "squash"], ids=str)
+    def test_two_items_on_one_id_clash_wherever_the_other_landed(self, clones, landed, capsys):
+        a, b = clones
+        self._mint(a, "ID-900", "a-work")
+        if landed:
+            self._land(a, "a-work", landed)
+        self._mint(b, "ID-900", None)
+        assert _mod._check(remote=True) == 1
+        assert "ID-900 also minted on origin/" in capsys.readouterr().out
+
+    def test_stated_bound_an_item_retitled_after_master_took_it_reads_as_two(self, clones, capsys):
+        """The docstring's retitle bound, pinned: loud, never silent."""
+        a, b = clones
+        self._mint(b, "ID-900", "b-work")
+        self._land(a, "b-work", "squash")
+        backlog = b / "sdd" / "BACKLOG.md"
+        backlog.write_text(backlog.read_text(encoding="utf-8").replace("Minted by b", "Retitled"), encoding="utf-8")
+        assert _mod._check(remote=True) == 1
+        assert "ID-900 also minted on origin/master" in capsys.readouterr().out
+
+    def test_another_clone_pushing_this_branch_name_is_still_seen(self, clones, capsys):
+        """A name tells nothing about whose push it is; only the item does."""
+        a, b = clones
+        self._mint(a, "ID-900", "b-work")
+        self._mint(b, "ID-900", None)
+        assert _mod._check(remote=True) == 1
+        assert "ID-900 also minted on origin/b-work" in capsys.readouterr().out
+
+    def test_a_single_branch_clone_still_sees_every_pushed_branch(self, clones, capsys):
+        """`git clone --depth 1` implies a master-only refspec; the fetch must not inherit it."""
+        a, b = clones
+        _git(b, "config", "remote.origin.fetch", "+refs/heads/master:refs/remotes/origin/master")
+        self._mint(a, "ID-900", "a-work")
+        self._mint(b, "ID-900", None)
+        assert _mod._check(remote=True) == 1
+        assert "ID-900 also minted on origin/a-work" in capsys.readouterr().out
 
     def test_an_unreachable_remote_fails_loud(self, clones, tmp_path, capsys):
         _a, b = clones

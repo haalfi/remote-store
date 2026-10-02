@@ -73,7 +73,9 @@ The mechanism is a reservation, with an opt-in remote check beside it.
 minting in parallel, `git ls-remote --heads origin` listed three heads
 (`bk-377-support-window-gate`, `gh-pages`, `master`), none of them those sessions.
 A networked `lint` would have cost an offline gate and still missed that case.
-`--check --remote` fetches `origin` and fails on any ID this tree minted that
-`origin/master` or a pushed branch also carries. `TestRemote` pins it on two
-clones of a local bare remote, and its offline twin passes on the same state.
+`--check --remote` fetches every `origin` branch and fails on any ID this tree
+minted that `origin/master` or a pushed branch carries under a different
+title. Comparing titles, not commits, is what keeps one item reached by squash
+merge (this repo's merge mode) from reading as two. `TestRemote` pins it on
+two clones of a local bare remote. Its offline twin passes on the same state.
 The "(floor: sdd/backlogid.json)" pointer now reads "the next safe ID above".

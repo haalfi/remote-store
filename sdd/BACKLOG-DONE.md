@@ -247,9 +247,10 @@ if evidence changes; these are retired.
   now says parallel sessions mint only IDs their dispatcher reserved, and the
   `Next safe IDs` line says it is safe for this tree only. `gen-backlogid
   --check --remote` is the opt-in, networked view: it fails naming each ID this
-  tree minted that `origin/master` or another pushed branch also carries. `lint`
-  stays offline. Bound: an unpushed branch stays invisible. Two-clone test,
-  offline check passing on the same state.
+  tree minted that `origin/master` or another pushed branch carries under a
+  different title, so one item reached by squash merge is not a clash. `lint`
+  stays offline. Bound: an unpushed branch stays invisible. `TestRemote`
+  enumerates how one item travels; the offline check passes a real clash.
   Detail: [dossier](backlog/id-257-parallel-id-minting.md)
 
 - [x] **BK-385 — The duplicate-ID gate cannot see the done register, where a collision would be permanent**
@@ -416,7 +417,7 @@ if evidence changes; these are retired.
   **Split** per § Completing work: this entry is the delivery; the RFC-0015
   re-measurement it was filed under stays open as
   [BK-384](BACKLOG.md), and the minting half of
-  [ID-257](BACKLOG-DONE.md) is untouched.
+  [ID-257](BACKLOG-DONE.md) was untouched.
   Two of the three are one shape — a dedupe that hides the duplicate it should
   report. The third is the squash-merge orphaning, which is a different defect
   and shipped with them because the same reading found it.
@@ -428,11 +429,13 @@ if evidence changes; these are retired.
   `check_backlog_ids_vs_base.py` imports `_extract_ids` for set arithmetic and
   a guard pins that import. **Two bounds**, both stated in the module docstring
   and both deliberate. It catches the collision only once both branches have
-  merged; preventing the mint needs a view of unmerged branches, which stays
-  ID-257's open question. And it reads the open side only: widening it to
-  `BACKLOG-DONE.md` is one line, was run, and fails on four pairs already in
-  the register from before the ID discipline, inside released sections. That
-  gap is `BK-385`, filed with those four as its evidence.
+  merged; preventing the mint needed a view of unmerged branches, which was
+  left to ID-257 (since closed: reservation, plus `--check --remote`). And it
+  read the open side only: widening it to `BACKLOG-DONE.md` is one line, was
+  run, and failed on four pairs already in the register from before the ID
+  discipline, inside released sections. That gap was filed as `BK-385` with
+  those four as its evidence (since closed: the done register is gated above
+  released history).
   **The gate found a second live collision on its first run** — `BUG-291`, on
   two distinct open items from #1021 and #1022, which nothing had reported.
   Both duplicates were renumbered by merge order, the later-merged item moving:
@@ -1766,8 +1769,9 @@ if evidence changes; these are retired.
   **The ID collision is the lesson**: two sessions drawing from one floor mint
   the same number, and `gen_backlogid --check` is what caught it. An ID minted
   and retired inside one unmerged branch buys nothing a paragraph here does not.
-  **The coordination gap itself is now [ID-257](BACKLOG-DONE.md)**, which is where the
-  open question lives — what mechanism should own it — and which corrects the
+  **The coordination gap itself became [ID-257](BACKLOG-DONE.md)**, which held the
+  open question — what mechanism should own it, since answered by reservation
+  plus `--check --remote` — and which corrects the
   first account of this incident: the floor was not at fault, since `--check`
   already maxes over open items and the documented procedure says to check both.
   What no derivation reads is another session's unpushed branch.

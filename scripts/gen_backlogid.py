@@ -76,25 +76,28 @@ Check mode (--check):
 
 Remote mode (--check --remote), ID-257:
     Opt-in, never in ``lint``: it needs the network, and the offline gate must
-    stay pure. Runs ``git fetch --prune origin``, then compares the IDs this
-    working tree minted (its headers minus those at the merge-base with
-    ``origin/master``, so an uncommitted mint counts) against the IDs
-    ``origin/master`` gained since that merge-base and those each other
-    ``origin/*`` branch gained since *its* merge-base with ``HEAD``, open or
-    done. So a ref ``HEAD`` already contains — this session's own push seen
-    from a detached checkout, or a branch merged in — contributes nothing.
-    Fails naming each shared ID and the ref carrying it, and prints the next
-    safe IDs across every pushed branch. A failed fetch fails loud rather than
-    reporting agreement. **Bounds:** a branch not yet pushed, or pushed to a
-    fork, is invisible — at mint time that is the usual state of a parallel
-    session, which is why a reservation and not this mode is the minting rule;
-    a stale or abandoned branch still carrying an ID can report a clash nobody
-    will merge; this session's own push reads as another session once ``HEAD``
-    no longer contains it (amended or rebased) unless it is
-    ``origin/<this branch's name>``. It carries **no** ``Drift-gate::`` block: no alias or hook
-    passes ``--remote``, and ``gen_gate_inventory.py`` gives every block on
-    this script the homes of the offline ``--check``, so a block here would be
-    listed as gating in ``lint``.
+    stay pure. Fetches every ``origin`` branch under an explicit refspec (a
+    ``--depth`` or ``--single-branch`` clone would otherwise fetch master
+    alone), then compares the items this working tree minted — its headers
+    minus those at the merge-base with ``origin/master``, so an uncommitted
+    mint counts — with ``origin/master`` and with what each other ``origin/*``
+    branch gained since its merge-base with ``HEAD``, open or done. **A clash
+    is one ID under two titles.** One item keeps its title wherever it travels
+    (a merge, a squash merge, this session's own push from any checkout), so
+    it never reads as two; a rival mint names something else. Fails naming
+    each clashing ID and the ref carrying it, and prints the next safe IDs
+    across every pushed branch. A failed fetch fails loud rather than reporting
+    agreement. ``TestRemote`` enumerates the one-item space (whose item,
+    whether and how master took it, attached or detached ``HEAD``).
+    **Bounds:** a branch not yet pushed, or pushed to a fork, is invisible —
+    at mint time that is the usual state of a parallel session, which is why a
+    reservation and not this mode is the minting rule; a stale or abandoned
+    branch still carrying an ID can report a clash nobody will merge; two mints
+    that happen to share a title read as one item; and an item retitled on one
+    side after the other side took it reads as two. It carries **no**
+    ``Drift-gate::`` block: no alias or hook passes ``--remote``, and
+    ``gen_gate_inventory.py`` gives every block on this script the homes of the
+    offline ``--check``, so a block here would be listed as gating in ``lint``.
 
 Drift-gate::
 
@@ -226,25 +229,36 @@ def _git(*args: str) -> subprocess.CompletedProcess[str]:
     return subprocess.run(["git", "-C", str(ROOT), *args], capture_output=True, text=True, check=False)
 
 
-def _ids_in(open_text: str, done_text: str) -> set[str]:
-    """Every header ID in one tree's pair of backlog files, open or done."""
-    found: set[str] = set()
+def _titled(open_text: str, done_text: str) -> dict[str, str]:
+    """Every header ID in one tree's pair of backlog files, open or done, with its title.
+
+    The title is what makes an item *one* item across trees: a squash merge
+    carries it under the same ID and title with no shared commit, while a rival
+    mint of the same ID names something else.
+    """
+    found: dict[str, str] = {}
     for text, status in ((open_text, " ~"), (done_text, "x")):
-        for ids in _extract_ids(text, status).values():
-            found |= ids
+        for m in _HEADER_RE.finditer(text):
+            if m.group(1) in status:
+                eol = text.find("\n", m.end())
+                rest = text[m.end() : eol if eol != -1 else None]
+                found[f"{m.group(2)}-{m.group(3)}"] = rest.split("**", 1)[0].strip()
     return found
 
 
 def _remote_view(remote: str = "origin", base: str = "master") -> tuple[dict[str, list[str]], set[str]]:
-    """ID-257: this tree's new IDs against every pushed branch. Raises ``RuntimeError``.
+    """ID-257: this tree's new items against every pushed branch. Raises ``RuntimeError``.
 
-    Returns ``(clashes, seen)``: each ID this tree minted that another ref also
-    carries, with those refs, and every ID on the base or any pushed branch.
-    "Minted here" is the working tree minus the merge-base with the base, so an
-    uncommitted mint counts, and an ID the base gained after this branch forked
-    is a clash named as the base.
+    Returns ``(clashes, seen)``: each ID this tree minted that another ref
+    carries **under a different title**, with those refs, and every ID on the
+    base or any pushed branch. "Minted here" is the working tree minus the
+    merge-base with the base, so an uncommitted mint counts. Comparing titles
+    rather than commits is what keeps one item, reached by squash merge or a
+    push from another checkout, from reading as two.
     """
-    fetch = _git("fetch", "--quiet", "--prune", remote)
+    # An explicit refspec: a clone made with `--depth`/`--single-branch` would
+    # otherwise fetch master alone, and every other branch would be unseen.
+    fetch = _git("fetch", "--quiet", "--prune", remote, f"+refs/heads/*:refs/remotes/{remote}/*")
     if fetch.returncode:
         raise RuntimeError(fetch.stderr.strip() or f"git fetch {remote} exited {fetch.returncode}")
     base_ref = f"{remote}/{base}"
@@ -253,33 +267,36 @@ def _remote_view(remote: str = "origin", base: str = "master") -> tuple[dict[str
         raise RuntimeError(f"no merge-base between HEAD and {base_ref}")
     paths = [p.relative_to(ROOT).as_posix() for p in (BACKLOG, BACKLOG_DONE)]
 
-    def ids_at(ref: str) -> set[str]:
+    def items_at(ref: str) -> dict[str, str]:
         open_text, done_text = (_git("show", f"{ref}:{p}").stdout for p in paths)
-        return _ids_in(open_text, done_text)
+        return _titled(open_text, done_text)
 
-    mine = _ids_in(BACKLOG.read_text(encoding="utf-8"), BACKLOG_DONE.read_text(encoding="utf-8"))
-    mine -= ids_at(fork.stdout.strip())
-    base_ids = ids_at(base_ref)
+    tree = _titled(BACKLOG.read_text(encoding="utf-8"), BACKLOG_DONE.read_text(encoding="utf-8"))
+    forked = items_at(fork.stdout.strip())
+    mine = {item: title for item, title in tree.items() if item not in forked}
     clashes: dict[str, list[str]] = defaultdict(list)
-    for item in sorted(mine & base_ids):
-        clashes[item].append(base_ref)
-    current = _git("rev-parse", "--abbrev-ref", "HEAD").stdout.strip()
+
+    def compare(ref: str, theirs: dict[str, str]) -> None:
+        for item in sorted(mine.keys() & theirs.keys()):
+            if theirs[item] != mine[item]:
+                clashes[item].append(ref)
+
+    base_items = items_at(base_ref)
+    compare(base_ref, base_items)
     # `origin/HEAD` lists as bare `origin` under `refname:short`.
-    skip = {base_ref, f"{remote}/HEAD", remote, f"{remote}/{current}"}
+    skip = {base_ref, f"{remote}/HEAD", remote}
     refs = _git("for-each-ref", "--format=%(refname:short)", f"refs/remotes/{remote}").stdout.split()
-    seen = set(base_ids)
+    seen = set(base_items)
     for ref in refs:
         if ref in skip:
             continue
-        ref_ids = ids_at(ref)
-        seen |= ref_ids - base_ids
-        # What the ref minted since it diverged from HEAD: a ref HEAD already
-        # contains (this session's own push, seen from a detached checkout, or
-        # a branch merged in) contributes nothing.
+        ref_items = items_at(ref)
+        seen |= ref_items.keys()
+        # What the ref gained since it diverged from HEAD and from the base, so
+        # an old item retitled on either side is not mistaken for a new mint.
         shared = _git("merge-base", "HEAD", ref)
-        theirs = ref_ids - base_ids - (ids_at(shared.stdout.strip()) if shared.returncode == 0 else set())
-        for item in sorted(mine & theirs):
-            clashes[item].append(ref)
+        old = items_at(shared.stdout.strip()).keys() if shared.returncode == 0 else set()
+        compare(ref, {k: v for k, v in ref_items.items() if k not in base_items and k not in old})
     return dict(clashes), seen
 
 
@@ -504,7 +521,7 @@ def _check(remote: bool = False) -> int:
         print("\nRenumber the later-merged entry to the next safe ID above, and sweep every reference to it.")
 
     if clashes:
-        print(f"\nFound {len(clashes)} ID(s) this tree minted that a pushed ref also carries (ID-257):")
+        print(f"\nFound {len(clashes)} ID(s) this tree minted that a pushed ref carries under another title (ID-257):")
         for item, refs in sorted(clashes.items()):
             print(f"  {item} also minted on {', '.join(refs)}")
         print("\nRe-mint from the floor across pushed branches above, before either side merges.")
