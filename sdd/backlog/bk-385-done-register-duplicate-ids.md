@@ -46,3 +46,18 @@ Holds. From `scripts/`, `python -c "import gen_backlogid as g;
 print(sorted(g._duplicate_ids(g.BACKLOG_DONE.read_text(), 'x')))"` prints
 `['BK-001', 'BK-167b', 'BUG-001', 'BUG-144']`; none sits under `## Unreleased`,
 so narrowing the check to that section would land green today. Found by the ADR-0040 § 6 conversion.
+
+## Resolved, 2026-10-02
+
+Checked, with a wider live region than `## Unreleased`. The region is
+everything above the first `## v<digit>` heading, so `Absorbed` and `Decided
+against` count too. A pair fails when one of its headers is in that region,
+which also catches a new close reusing a released ID. Re-derived before
+choosing: the same `_duplicate_ids` call printed the same four IDs, and a
+section-tagged walk of the file's headers placed all eight below the first
+`## v` heading. The latest of them is `BK-167b`, under `## v0.25.0`.
+`hatch run gen-backlogid-check` exiting 0 on the real register is the
+re-runnable form, since any of the four above the line would fail it;
+`TestCheck::test_stated_bound_a_pair_wholly_in_released_history_is_not_reported`
+pins the rule on a fixture. So the four pass by rule and no exemption list
+exists. The release record is their Rule 6 register.

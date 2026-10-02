@@ -65,3 +65,23 @@ two open `BK-382` headers reaching `master` and a second live collision on
 315 and 325-329), so the branch said to have collided twice collided a third
 time. The gap stands: `gen_backlogid.py` makes no git or network call, and the
 "(floor: sdd/backlogid.json)" wording still reads the done file only. Found by the ADR-0040 § 6 conversion.
+
+## Resolved, 2026-10-02
+
+The mechanism is a reservation, with an opt-in remote check beside it.
+**Why not a remote read in the gate:** run while three sessions were
+minting in parallel, `git ls-remote --heads origin` listed three heads
+(`bk-377-support-window-gate`, `gh-pages`, `master`), none of them those sessions.
+A networked `lint` would have cost an offline gate and still missed that case.
+`--check --remote` fetches every `origin` branch and fails on any ID this tree
+minted that `origin/master`, or a pushed branch where master does not already
+carry it, holds under different header text (everything after the checkbox).
+Comparing headers, not commits, is what
+keeps one item reached by squash merge (this repo's merge mode) from reading
+as two. Parsing a title out of the header was tried and dropped: review
+rounds 4, 5 and 6 each refuted a rule for where a title ends. `TestRemote` pins it on
+two clones of a local bare remote. Its offline twin passes on the same state.
+The "(floor: sdd/backlogid.json)" pointer now reads "the next safe ID above".
+Correction to the second-instance paragraph: its "the open question below"
+points at the paragraph *above* it ("**The open question is what
+mechanism**"); this section answers it.

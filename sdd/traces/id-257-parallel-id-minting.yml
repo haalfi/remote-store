@@ -1,0 +1,231 @@
+id: ID-257
+title: "Parallel minting: reservation as the rule, an opt-in remote check, and the done register gated"
+trigger: >-
+  PR #1050 minted ID-260/ID-261 while #1049 had already merged its own ID-260;
+  the merge renumbered #1050's and its posted replies kept the old numbers.
+  Three sessions were dispatched in parallel with reserved IDs, which is the
+  process this change writes down. BK-385 is the same script's other blind
+  spot (a duplicate in the done register), co-shipped.
+source_items:
+  - ID-257
+  - BK-385
+audience:
+  - contributor.tooling
+discovery_followups: []
+co_shipped_items:
+  - BK-385
+expected_ripples:
+  - scripts/gen_backlogid.py
+  - tests/scripts/test_gen_backlogid.py
+  - sdd/GATE-INVENTORY.md
+  - sdd/BACKLOG.md
+  - sdd/BACKLOG-DONE.md
+  - sdd/backlog/id-257-parallel-id-minting.md
+  - sdd/backlog/bk-385-done-register-duplicate-ids.md
+surprising_ripples:
+  # Its "does not look at other open branches" bound now has an opt-in
+  # answer, and a bound that omits it would send a reader nowhere. Its `_git`
+  # also shared the locale-decoding defect the closing pass found in
+  # gen_backlogid's (cp1252: a silent "agree" on cp1252-clean files, a crash
+  # on this repo's BACKLOG-DONE.md, whose byte 0x90 cp1252 lacks); fixed here on
+  # the owner's call rather than filed, with its own forced-cp1252 test.
+  #
+  # Not listed, because sdd/BACKLOG.md is already in expected_ripples: two
+  # edits there the table did not predict. ID-235's index line cited BK-385
+  # as why header uniqueness would not land green, and had to say what BK-385
+  # now gates. And the "Assigning a new ID" paragraph already named the
+  # next-safe line unconditionally, so the reservation rule went into it
+  # rather than into a second paragraph (round 1's sibling sweep).
+  - scripts/check_backlog_ids_vs_base.py
+phases:
+  - id: orient
+    name: Orient
+    steps:
+      - file: sdd/backlog/id-257-parallel-id-minting.md
+        section: "whole dossier, both corrections"
+        read_type: gate
+        extract: >-
+          Five recorded collisions; the gap is unmerged branches, not the floor.
+          Options priced: ls-remote check, per-session ranges, branch-derived
+          IDs, rebase as enforcement. The "(floor: sdd/backlogid.json)" pointer
+          is the one real inaccuracy.
+        outcome: ok
+      - file: sdd/backlog/bk-385-done-register-duplicate-ids.md
+        section: "whole dossier"
+        read_type: gate
+        extract: >-
+          Four pre-discipline pairs; options grandfather, exempt (partial), or
+          Unreleased only. Re-measured: all four sit wholly below the first
+          `## v` heading, so a live-region rule lands green with no list.
+        outcome: ok
+      - file: scripts/gen_backlogid.py
+        section: "_extract_ids, _duplicate_ids, _check, docstring bounds"
+        read_type: gate
+        extract: >-
+          `_duplicate_ids(text, "x")` is the whole BK-385 widening; the live
+          cut is the only new logic. No git call anywhere, so --remote adds the
+          module's first subprocess use.
+        outcome: ok
+      - file: scripts/check_backlog_ids_vs_base.py
+        section: "Bounds; read_base; import of _extract_ids"
+        read_type: reference
+        extract: >-
+          Already reads `git show <ref>:path`; a guard pins `_extract_ids` to
+          gen_backlogid, so the new code reuses it there rather than importing
+          this module back (which would be circular).
+        outcome: ok
+      - file: sdd/BACKLOG-DONE.md
+        section: "BK-383 entry"
+        read_type: reference
+        extract: >-
+          Open-vs-open check built as a sibling function; both bounds stated,
+          the done-register half handed to BK-385.
+        outcome: ok
+      - file: sdd/BACKLOG.md
+        section: "How this file works"
+        read_type: gate
+        extract: >-
+          "Assigning a new ID" sends every author to the next-safe line, with
+          no word on parallel sessions. Missed on first read, so a second
+          paragraph was added and merged back in round 1.
+        outcome: ok
+  - id: implement
+    name: Implement
+    steps:
+      - file: sdd/DRIFT-RULES.md
+        section: "Rules 5, 6, 7"
+        read_type: gate
+        extract: >-
+          Rule 5: --remote is advisory-by-opt-in, reason stated (network on an
+          offline gate). Rule 6: the release record is the register for the
+          tolerated pairs. Rule 7: bounds stated in the docstring; the
+          done-register rule widens the existing `rule` block. --remote is
+          declared too: every block carries an `entrypoint:`, so the inventory
+          derives --check rows as gating and the --check --remote row as
+          advisory (gen-backlogid only), measured by regenerating.
+        outcome: ok
+      - file: CONTRIBUTING.md
+        section: "Release checklist, BACKLOG-DONE rename"
+        read_type: reference
+        extract: >-
+          Release renames `## Unreleased` to `## vX.Y.Z` in place and adds a
+          fresh one above, so the first version heading stays the live/released
+          boundary across releases.
+        outcome: ok
+  - id: verify
+    name: Verify
+    steps:
+      - file: sdd/CLAUDE-REFERENCE.md
+        section: "Pre-work index / Detailed checklist"
+        read_type: verify
+        extract: >-
+          Triggered: new or changed cross-artifact check (DRIFT-RULES,
+          GATE-INVENTORY regenerated), backlog item touched (trace, done
+          entries linking dossiers). Tracker IDs in sdd/** are out of scope.
+        outcome: ok
+# The script's 9 submissions are /ship rounds 1-7, the closing pass and the
+# final pass; review_rounds counts its 12 review-driven commits, two of them
+# master merges. The final pass's own fix (1220ec6) was not re-reviewed, by
+# the owner's call.
+review:
+  # Derived by `hatch run ship-report 1053 --trace-block-only` at head 1220ec6.
+  # Do not hand-edit, except a newly required field per sdd/traces/_schema.yml
+  # section review: RFC-0015 D4 makes this script the only producer.
+  derivation: "hatch run ship-report 1053 --trace-block-only"
+  pr: 1053
+  review_rounds: 12
+  submissions: 9
+  findings: 27
+  by_round:
+    - round: 1
+      findings: 3
+      origin: {original: 3}
+      triage: {must-fix: 3}
+      duration_hours: 0.08
+    - round: 2
+      findings: 1
+      origin: {original: 1}
+      triage: {must-fix: 1}
+      duration_hours: 0.29
+    - round: 3
+      findings: 4
+      origin: {original: 3, pre-existing: 1}
+      triage: {must-fix: 4}
+      duration_hours: 0.32
+    - round: 4
+      findings: 5
+      origin: {loop-introduced: 2, original: 2, unclassifiable-file: 1}
+      triage: {must-fix: 5}
+      duration_hours: 0.33
+    - round: 5
+      findings: 1
+      origin: {loop-introduced: 1}
+      triage: {must-fix: 1}
+      duration_hours: 0.21
+    - round: 6
+      findings: 2
+      origin: {loop-introduced: 2}
+      triage: {must-fix: 2}
+      duration_hours: 0.76
+    - round: 7
+      findings: 4
+      origin: {loop-introduced: 1, original: 2, pre-existing: 1}
+      triage: {must-fix: 4}
+      duration_hours: 0.33
+    - round: 8
+      findings: 4
+      origin: {loop-introduced: 2, original: 1, pre-existing: 1}
+      triage: {must-fix: 4}
+      duration_hours: 0.87
+    - round: 9
+      findings: 3
+      origin: {loop-introduced: 3}
+      triage: {must-fix: 3}
+      duration_hours: 1.18
+  by_file:
+    - path: "scripts/gen_backlogid.py"
+      findings: 16
+    - path: "sdd/BACKLOG-DONE.md"
+      findings: 3
+    - path: "tests/scripts/test_gen_backlogid.py"
+      findings: 2
+    - path: "scripts/check_backlog_ids_vs_base.py"
+      findings: 1
+    - path: "sdd/GATE-INVENTORY.md"
+      findings: 1
+    - path: "sdd/backlog/bk-385-done-register-duplicate-ids.md"
+      findings: 1
+    - path: "sdd/backlog/id-257-parallel-id-minting.md"
+      findings: 1
+    - path: "sdd/traces/id-257-parallel-id-minting.yml"
+      findings: 1
+    - path: "tests/scripts/test_check_backlog_ids_vs_base.py"
+      findings: 1
+  untouched_files:
+    - "sdd/BACKLOG.md"
+  review_driven_commits:
+    - sha: "99aa1d7"
+      subject: "ID-257: Address PR #1053 round 1"
+    - sha: "9c9d166"
+      subject: "ID-257: Address PR #1053 round 2"
+    - sha: "61ebd70"
+      subject: "ID-257: Address PR #1053 round 3"
+    - sha: "3a73d58"
+      subject: "ID-257: Address PR #1053 round 4"
+    - sha: "ee3707c"
+      subject: "ID-257: Address PR #1053 round 5"
+    - sha: "84cd4af"
+      subject: "ID-257: Address PR #1053 round 6 by dropping title parsing"
+    - sha: "47eea16"
+      subject: "Merge remote-tracking branch 'origin/master' into claude/id-257-bk-385-parallel-minting-x4gkvz"
+    - sha: "079bb77"
+      subject: "ID-257, BK-385: Address PR #1053 round 7"
+    - sha: "32c29f6"
+      subject: "ID-257: Address PR #1053 closing pass"
+    - sha: "66200c7"
+      subject: "Merge remote-tracking branch 'origin/master' into claude/id-257-bk-385-parallel-minting-x4gkvz"
+    - sha: "091aa21"
+      subject: "ID-257: Read git output as UTF-8 in check_backlog_ids_vs_base too"
+    - sha: "1220ec6"
+      subject: "ID-257: Address PR #1053 final pass (prose only)"
+  ci: {verdict: GREEN, failed: 0, pending: 0}

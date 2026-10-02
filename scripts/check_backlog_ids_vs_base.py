@@ -67,7 +67,9 @@ Bounds (DRIFT-RULES Rule 7)
   inferred from ``origin/master`` plus this branch's commits, never by
   enumerating remote branches — that would need a network walk on a gate that is
   otherwise offline. An item opened *and* closed entirely on a third branch,
-  never reaching master, is invisible here.
+  never reaching master, is invisible here. ``gen_backlogid.py --check
+  --remote`` reads pushed branches, but only for one ID minted under two
+  headers; a drop or a poach of another branch's item passes it too.
 * **A head-open ID that master has done is not reported.** Re-opening a
   completed item is a real edit with a real author; nothing observed has needed
   it flagged, and ``gen_backlogid.py --check`` already fails on that exact
@@ -179,7 +181,14 @@ class Disagreement:
 
 
 def _git(*args: str, root: Path = ROOT, check: bool = True) -> subprocess.CompletedProcess[str]:
-    return subprocess.run(["git", "-C", str(root), *args], check=check, capture_output=True, text=True)
+    # UTF-8 explicitly, never the locale's code page (Windows without UTF-8
+    # mode uses cp1252). Under cp1252 a base of cp1252-defined bytes decodes as
+    # mojibake holding no IDs, so the gate reports agreement having compared
+    # nothing; this repo's BACKLOG-DONE.md holds an undefined byte (0x90), so
+    # there the read crashed instead.
+    return subprocess.run(
+        ["git", "-C", str(root), *args], check=check, capture_output=True, text=True, encoding="utf-8"
+    )
 
 
 def _read_head(path: Path) -> str:
