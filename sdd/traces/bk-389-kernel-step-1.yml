@@ -19,93 +19,111 @@ discovery_followups:
   - BK-394
   - BUG-299
   - BK-395
+  - BK-396
 expected_ripples:
   - sdd/BACKLOG-DONE.md
 surprising_ripples:
   - sdd/specs/003-backend-adapter-contract.md
   - sdd/backlog/bk-390-rfc-0017-spec-amendments.md
+# PR #1055's block (the planning PR, merged as c4466b05c) is in master's history:
+# git show c4466b05c:sdd/traces/bk-389-kernel-step-1.yml
 review:
-  # Derived by `hatch run ship-report 1055 --trace-block-only` at head c2cf49d.
+  # Derived by `hatch run ship-report 1056 --trace-block-only` at head 679c1af.
   # Do not hand-edit, except a newly required field per sdd/traces/_schema.yml
   # section review: RFC-0015 D4 makes this script the only producer.
-  derivation: "hatch run ship-report 1055 --trace-block-only"
-  pr: 1055
-  review_rounds: 7
-  submissions: 7
+  derivation: "hatch run ship-report 1056 --trace-block-only"
+  pr: 1056
+  review_rounds: 10
+  submissions: 10
   findings: 44
   by_round:
     - round: 1
-      findings: 6
-      origin: {original: 6}
-      triage: {must-fix: 6}
-      duration_hours: 0.08
+      findings: 3
+      origin: {original: 3}
+      triage: {must-fix: 3}
+      duration_hours: 0.23
     - round: 2
-      findings: 4
-      origin: {loop-introduced: 3, original: 1}
-      triage: {must-fix: 4}
-      duration_hours: 0.28
+      findings: 2
+      origin: {loop-introduced: 2}
+      triage: {must-fix: 2}
+      duration_hours: 0.22
     - round: 3
-      findings: 7
-      origin: {loop-introduced: 4, original: 2, unclassifiable-file: 1}
-      triage: {must-fix: 7}
-      duration_hours: 0.2
+      findings: 6
+      origin: {loop-introduced: 3, original: 1, pre-existing: 1, unclassifiable-file: 1}
+      triage: {must-fix: 6}
+      duration_hours: 0.28
     - round: 4
       findings: 8
-      origin: {loop-introduced: 5, original: 2, unclassifiable-file: 1}
+      origin: {loop-introduced: 5, original: 2, pre-existing: 1}
       triage: {must-fix: 8}
-      duration_hours: 0.24
+      duration_hours: 0.29
     - round: 5
-      findings: 6
-      origin: {loop-introduced: 6}
-      triage: {must-fix: 3, unknown: 3}
-      duration_hours: 0.44
+      findings: 5
+      origin: {loop-introduced: 4, original: 1}
+      triage: {must-fix: 5}
+      duration_hours: 0.25
     - round: 6
-      findings: 7
-      origin: {loop-introduced: 6, original: 1}
-      triage: {must-fix: 7}
-      duration_hours: 0.21
+      findings: 3
+      origin: {loop-introduced: 3}
+      triage: {must-fix: 3}
+      duration_hours: 0.32
     - round: 7
-      findings: 6
-      origin: {loop-introduced: 4, original: 1, unclassifiable-file: 1}
-      triage: {unknown: 6}
-      duration_hours: 0.19
+      findings: 4
+      origin: {loop-introduced: 3, unclassifiable-file: 1}
+      triage: {must-fix: 4}
+      duration_hours: 0.26
+    - round: 8
+      findings: 4
+      origin: {loop-introduced: 4}
+      triage: {must-fix: 4}
+      duration_hours: 0.34
+    - round: 9
+      findings: 4
+      origin: {loop-introduced: 4}
+      triage: {filed: 1, must-fix: 1, refuted: 1, unknown: 1}
+      duration_hours: 0.25
+    - round: 10
+      findings: 5
+      origin: {loop-introduced: 5}
+      triage: {must-fix: 5}
+      duration_hours: 0.44
   by_file:
     - path: "sdd/backlog/bk-389-kernel-step-1-memory.md"
-      findings: 17
-    - path: "sdd/backlog/bk-394-memory-drivers-accept-adr-0042.md"
-      findings: 13
+      findings: 26
     - path: "sdd/rfcs/rfc-0017-contract-kernel-over-thin-drivers.md"
-      findings: 4
+      findings: 7
+    - path: "sdd/backlog/bk-394-memory-drivers-accept-adr-0042.md"
+      findings: 6
     - path: "sdd/BACKLOG.md"
       findings: 3
-    - path: "sdd/traces/bk-389-kernel-step-1.yml"
-      findings: 3
-    - path: "sdd/specs/013-memory-backend.md"
+    - path: "sdd/backlog/id-264-kernel-delete-folder-sequence.md"
       findings: 2
-    - path: "sdd/backlog/bk-388-dafny-kernel-clauses.md"
-      findings: 1
-    - path: "sdd/backlog/bk-395-kernel-key-rule-addressing.md"
-      findings: 1
   untouched_files:
-    - "sdd/BACKLOG-DONE.md"
-    - "sdd/backlog/bk-345-absent-container-conformance.md"
     - "sdd/backlog/bk-390-rfc-0017-spec-amendments.md"
-    - "sdd/specs/003-backend-adapter-contract.md"
+    - "sdd/backlog/bk-395-kernel-key-rule-addressing.md"
+    - "sdd/backlog/bk-396-kernel-delete-folder-sequence.md"
+    - "sdd/traces/bk-389-kernel-step-1.yml"
   review_driven_commits:
-    - sha: "f9b3d0c"
-      subject: "BK-389: Round 1 fixes: kernel owns key validation, complete spec 013 placement"
-    - sha: "0c3eca5"
-      subject: "BK-389: Round 2 fixes: key rule from MEM-DS-005, Memory folder stats pushed down"
-    - sha: "047ba6b"
-      subject: "BK-389: Decide the recursive-listing shape (decision 7)"
-    - sha: "214496d"
-      subject: "BK-389: Round 3 fixes: root decided on the canonical key, MEM-DS-005 split"
-    - sha: "8e9f680"
-      subject: "BK-389: Round 4 re-plan: the key rule as a member-by-key-class table"
-    - sha: "73c0405"
-      subject: "BK-389: Round 5 at the ceiling: cut addressing, backslash and glob to BK-395"
-    - sha: "c2cf49d"
-      subject: "BK-389: Verification fixes: SupportsRemoveFolder, a spec 003 home for the key rule"
+    - sha: "a20d5ad"
+      subject: "BK-389: Round 1 fixes: remove_folder answers every key state, step 5 inverts both pins"
+    - sha: "4288216"
+      subject: "BK-389: Round 2 fixes: kernel types an untyped remove_folder refusal, MEM-014 has no root rule"
+    - sha: "d011658"
+      subject: "BK-389: Round 3 fixes: decision 8's error path as a table, one owner per clause"
+    - sha: "0db2a88"
+      subject: "BK-389: Round 4 fixes: Local's real rmdir classifier, delete_folder without the protocol, spec scope"
+    - sha: "29190b9"
+      subject: "BK-389: Round 5 fixes: SupportsRemoveFolder required with folder objects, raising probes, amendment lists"
+    - sha: "9becae7"
+      subject: "BK-389: Verification fixes: recursive delete_folder for parents none, migrating classes cited"
+    - sha: "14236cf"
+      subject: "BK-389: The parents none delete_folder path as a list-first table"
+    - sha: "40151bc"
+      subject: "BK-389: Round 8 fixes: delete_tree refusals get the stat probe only, BE-021's fail-open split"
+    - sha: "1185682"
+      subject: "BK-389, ID-264: Split the delete_folder sequence out of decision 8"
+    - sha: "679c1af"
+      subject: "BK-389, BK-396: Round 10 fixes: ID-264 renamed BK-396, round range 1 to 9, candidate relabelled as condensed"
   ci: {verdict: GREEN, failed: 0, pending: 0}
 phases:
   - id: orient
@@ -290,8 +308,8 @@ phases:
       - file: sdd/specs/004-path-model.md
         section: "PATH-002"
         read_type: verify
-        extract: "PATH-002 converts a backslash rather than refusing it; my BK-395 text claimed refusal matched it"
-        outcome: misleading
+        extract: "PATH-002 converts a backslash rather than refusing it; my BK-395 text claimed refusal matched it (my miss: PATH-002 states the conversion correctly)"
+        outcome: ok
       - file: tests/backends/local/test_absent_root.py
         section: "test_folder_shaped_operations_still_accept_the_root; test_strict_delete_folder_on_the_root_answers_from_the_filesystem"
         read_type: verify
@@ -311,3 +329,82 @@ phases:
         section: "lemma BackslashIsNotRoot"
         read_type: verify
         extract: "a backslash is not the root, so refusing it is a validation rule, not a root rule"
+  - id: post_merge_fix
+    name: Closing-pass findings fixed after PR #1055 merged
+    steps:
+      - file: sdd/traces/bk-389-kernel-step-1.yml
+        section: "verification"
+        read_type: verify
+        extract: "the session merged PR #1055 on a misread of 'watch both CI and merge' (meant: merge conflicts), against the maintainer's rule that Claude sessions never merge; six closing-pass threads (eight findings) were left unresolved on master, so a follow-up PR carries them"
+      - file: tests/backends/local/test_absent_root.py
+        section: "backend fixture (lines 86 to 93)"
+        read_type: verify
+        extract: "the fixture runs shutil.rmtree(root) first, so both root delete_folder tests pin the absent root; my verification extract above called the present-root answer pinned, which it is not"
+      - file: src/remote_store/backends/_memory.py
+        section: "delete_folder (lines 300 to 341)"
+        read_type: verify
+        extract: "emptiness check and detach run under one lock; the merged decision 8 split them into three kernel-sequenced driver calls, so remove_folder now refuses a non-empty folder itself (maintainer's decision)"
+      - file: src/remote_store/backends/_azure.py
+        section: "HNS delete_folder (lines 1154 to 1157)"
+        read_type: verify
+        extract: "an implicit-parents driver removes one empty folder today; SupportsRemoveFolder becomes optional for implicit, required for explicit, never for none (maintainer's decision)"
+      - file: sdd/specs/003-backend-adapter-contract.md
+        section: "BE-029 Out of scope"
+        read_type: verify
+        extract: "root delete_folder is undefined for backends, so the kernel's InvalidPath cell had no spec ID; the kernel PR now adds the spec 003 clauses its cells trace to (maintainer's decision)"
+      - file: src/remote_store/backends/_memory.py
+        section: "delete_folder (lines 316 to 336), re-read in #1056 round 1"
+        read_type: verify
+        extract: "existence, type and emptiness checks all run under the one lock, not emptiness alone; my first fix kept a kernel stat before remove_folder, still two locks, so remove_folder now answers all four key states and the kernel applies missing_ok"
+      - file: tests/backends/local/test_absent_root.py
+        section: "lines 310 to 342"
+        read_type: verify
+        extract: "both absent-root root delete_folder tests (None, NotFound) become InvalidPath under the table; my first fix hedged 'only where the table answers them differently'"
+      - file: src/remote_store/backends/_sftp.py
+        section: "delete_folder (lines 1340 to 1388), #1056 round 2"
+        read_type: verify
+        extract: "round 2 measured os.rmdir ENOTDIR for a file and for f/x and read SFTP v3's lossy status codes; my 'four answers in one wire step' held only for Memory, so the kernel's D2 error-path probes now type an untyped refusal (maintainer's decision)"
+      - file: sdd/specs/013-memory-backend.md
+        section: "MEM-014; MEM-DS-005 line 137"
+        read_type: verify
+        extract: "MEM-014 states no root rule and line 137 calls '' valid for folder operations; my placement named a 'MEM-014 root refusal' the prose does not have"
+      - file: sdd/formal/MemoryBackend.dfy
+        section: "DeleteFolder root postcondition comments (lines 625, 651, 1747, 1773); sdd/formal/README.md lines 300, 491"
+        read_type: verify
+        extract: "round 3: the formal layer states the root refusal and cites MEM-014, so my round-2 'exists only in code' was false; BK-394 now owns the re-citation"
+      - file: src/remote_store/backends/_local.py
+        section: "NotADirectoryError -> NotFound (lines 203, 237, 455); _sftp.py FileNotFoundError -> NotFound (line 3271)"
+        read_type: verify
+        extract: "round 3: both wires type a file refusal as NotFound, so 'probe only an untyped refusal' let missing_ok silence a file; decision 8's condition was refuted three rounds running (repeat-site check), so the error path became a table over key state and driver"
+      - file: src/remote_store/backends/_local.py
+        section: "delete_folder rmdir handler (lines 505 to 510), #1056 round 4"
+        read_type: verify
+        extract: "my table's Local column cited the read/delete handlers; delete_folder's own handler maps every non-ENOTEMPTY OSError to PermissionDenied, and with it the probe reproduces today's answers except a symlink to a non-empty directory"
+      - file: src/remote_store/backends/_sqlalchemy.py
+        section: "SQLBlobBackend.delete_folder(recursive=False), measured by #1056 round 5"
+        read_type: verify
+        extract: "the 'remove nothing, answer from probes' rule held for none drivers but answered NotFound for a present empty folder on an implicit driver without the protocol; the protocol became required for explicit and implicit parents and never called for none (maintainer's decision at the ceiling), and a raising probe leaves the refusal standing"
+      - file: tests/backends/memory/aio/test_basics.py
+        section: "test_delete_folder_empty_path_raises (lines 244 to 248)"
+        read_type: verify
+        extract: "my MEM-014 search could not find the async twin tagged ASYNC-013; a search for delete_folder(\"\") calls finds both"
+      - file: src/remote_store/backends/_s3_boto3.py
+        section: "delete_folder (lines 592 to 623); aio/backends/_azure.py delete_folder (lines 945 to 990), #1056 verification round"
+        read_type: verify
+        extract: "my evidence for steps 2 and 4 cited S3Backend and sync AzureBackend, which those steps retire or replace; the migrating classes check in the same order. The verification round also measured that the files-only recursive fallback for parents == none returned success for an absent key and a file, so it now probes first and lists once (maintainer's decision)"
+      - file: src/remote_store/backends/_sqlalchemy.py
+        section: "SQLBlobBackend.delete_folder (lines 967 to 978), #1056 second verification round"
+        read_type: verify
+        extract: "my stat-first none rule added a round trip and changed the file-and-prefix cell, and its recursive half was scoped away from S3, SQL and flat Azure, which all carry delete_tree; the none path was refuted in both verification rounds (repeat-site check), so it became a table in today's list-first order, delete_tree included, changing no cell (maintainer's decision)"
+      - file: sdd/specs/003-backend-adapter-contract.md
+        section: "BE-021 probe table, fail-open and determinant paragraphs (lines 751 to 778), #1056 round 8"
+        read_type: verify
+        extract: "I wrote 'a raising probe propagates' on the none path without reading BE-021, which makes the stat after an empty listing fail-open; and I sent a delete_tree refusal through the full error-path table, whose listing arm answers DirectoryNotEmpty for any failed recursive delete. Both narrowed to the existing clauses"
+      - file: src/remote_store/aio/backends/_graph/backend.py
+        section: "delete_folder type check (lines 1331 to 1337), #1056 round 9"
+        read_type: verify
+        extract: "round 9 found delete_tree has no obligation to refuse a file, and Graph and HNS would delete one; with a new defect in decision 8's delete_folder sequence every round from 1 to 9, the maintainer split the sequence into ID-264 (candidate design, measurements and open findings in its dossier) and decision 8 keeps the protocol, its atomic removal and who carries it"
+      - file: sdd/BACKLOG.md
+        section: "§ ID prefixes, #1056 round 10"
+        read_type: verify
+        extract: "the closing panel found that the split-out item's ID- prefix reads as not committed to, while BK-389 depends on it, so ID-264 was renamed BK-396 (maintainer's decision); the same round corrected my 'round 2 to 9' range against commit a20d5ade4 (round 1 found the atomicity defect), relabelled the candidate section as condensed from 40151bc rather than moved verbatim, and restored the BE-013 rationale its stat-only rule rests on"

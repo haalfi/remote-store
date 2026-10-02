@@ -11,8 +11,11 @@ together, in the PR that lands the first backend on this design (D3 step 1),
 not on the answers alone. The lifecycle, and where each amendment lands, are
 in D8 and § Impact. BK-389's planning PR answered Open Questions 2 and 3,
 deferred 5 to D3 step 3 with the shape step 1 keeps open, added the close
-posture to D1 and key validation to D2, and split step 1 into a kernel PR (BK-389) and a Memory PR
+posture and `SupportsRemoveFolder` to D1 and key validation to D2, and split step 1 into a kernel PR (BK-389) and a Memory PR
 (BK-394), the second accepting; BK-389's dossier § Decisions carries them.
+`SupportsRemoveFolder` is a construction-time requirement for any driver
+whose `parents` is `"explicit"` or `"implicit"`, so the acceptance reader
+checks it with the rest.
 
 **Date:** 2026-09-28. Every figure below is pinned to `8fa22d6` and is either
 quoted from audit-021 with its derivation, or names its command here. The tree
@@ -177,7 +180,7 @@ optional member, so presence is a protocol, not a method):
 | `SupportsEnsureParents` | `ensure_parents(key)` | called before `put` when `parents == "explicit"`; SFTP's stat walk and Local's `mkdir -p` are their implementations. Never called for `implicit` (Graph, GR-039: no explicit `mkdir`; Azure HNS) or `none` |
 | `SupportsFolderStats` | `folder_stats(prefix) -> (count, size, latest)` | `get_folder_info` push-down (SQL's aggregate query); without it, the kernel aggregates a listing |
 | `SupportsGlob` | `glob(pattern)` | native `GLOB`; without it the driver must not declare `GLOB` |
-| `SupportsRemoveFolder` (added at BK-389's planning) | `remove_folder(key)`: remove one empty folder | required when `parents == "explicit"`, checked at construction. `delete_folder(recursive=False)` checks the folder with `stat`, refuses a non-empty one with `DirectoryNotEmpty` after `list_page(limit=1)`, then calls it. `delete_folder(recursive=True)` without `SupportsDeleteTree` lists and deletes the files, then calls it on each folder, deepest first. Never called for `implicit` or `none` |
+| `SupportsRemoveFolder` (added at BK-389's planning; corrected after PR #1055 merged) | `remove_folder(key)`: remove an empty folder and refuse anything else without removing it, in one step where the wire has one (Memory's lock, `rmdir`) | required when `parents` is `"explicit"` or `"implicit"` (any driver with folder objects; Graph, Azure HNS), checked at construction; never called when `parents == "none"`. The kernel's `delete_folder` sequence around it (which refusals it probes, what `delete_tree` must refuse, the recursive and `parents == "none"` paths) is BK-396's to decide before BK-389's kernel PR; the candidate design and its measurements are in BK-396's dossier |
 
 Two more attributes the stream wrapper reads per driver, because
 `_ErrorMappingStream`'s caught set is per construction site today:
@@ -243,9 +246,10 @@ was a 28th match above it). It owns, once:
 - key validation and normalisation (added at BK-389's planning): a key
   starting with `/`, a `..` segment or a null byte is refused with
   `InvalidPath`, and empty and `.` segments are dropped. The rule is taken
-  from spec 013's MEM-DS-005 table, not from `RemotePath`'s, and BK-394
-  states it as a spec 003 clause binding every migrated class, which
-  MEM-DS-005 then cites. It runs after the closed guard and before the root check, which
+  from spec 013's MEM-DS-005 table, not from `RemotePath`'s, and BK-389's
+  kernel PR states it as a spec 003 clause binding every class on the
+  kernel, which MEM-DS-005 cites from BK-394 on (moved from BK-394 after
+  PR #1055 merged). It runs after the closed guard and before the root check, which
   then runs on the canonical key: `""` is the root, the wide predicate on
   every side. So an operation's driver call only ever sees a canonical key,
   as D1's driver, which "carries no path … logic", requires. The rule
@@ -260,7 +264,9 @@ was a 28th match above it). It owns, once:
   `close_is_terminal`, in the order spec 003 fixes; these are
   key-level checks and add no round trip;
 - the wrong-type probes on the error path (one `stat` and one
-  `list_page(limit=1)`, the same probes the classes issue today), the
+  `list_page(limit=1)`, the same probes the classes issue today; for
+  `delete_folder` the sequence, and which refusals it probes, is BK-396's
+  to decide), the
   absent-container tolerance, and the first-page listing bound (BE-021),
   including its page-not-item rule;
 - the file-ancestor pre-check as a kernel option with today's default: the
@@ -303,7 +309,7 @@ flowchart LR
   prim -->|stream| wrap["stream wrapped once:<br/>every later read passes classify too"]
   prim -->|native exception| cls["driver.classify(exc, op=read, key)"]
   cls --> post["kernel post-processing:<br/>path and backend set,<br/>blank message synthesised,<br/>a typed RemoteStoreError passes through"]
-  post -->|NotFound| probe["error-path probe:<br/>stat or list_page(limit=1)<br/>wrong type becomes InvalidPath"]
+  post -->|"NotFound<br/>(delete_folder: BK-396)"| probe["error-path probe:<br/>stat or list_page(limit=1)<br/>wrong type becomes InvalidPath"]
   post --> raise["typed error to the caller"]
   probe --> raise
   wrap --> caller["stream to the caller"]
@@ -372,9 +378,12 @@ its driver answers differently today, canonical keys included (Local's
 `delete_folder("")` removes the root directory today). Step 1's list, for Memory, is
 in BK-394's dossier. No conformance cell reaches those cells. Memory's are
 pinned by new cells in the step-1 PR. A later step's cell may already be
-pinned per backend with the opposite answer; Local's root `delete_folder` is,
-in `tests/backends/local/test_absent_root.py`. That step's PR inverts such a
-pin and records why. AZ-025's blank-message clause and its pinning
+pinned per backend with the opposite answer; that step's PR inverts such a
+pin and records why: Local's two absent-root root `delete_folder` tests in
+`tests/backends/local/test_absent_root.py` answer `None` and `NotFound`,
+and both become `InvalidPath`. Where none pins it, the step adds the cell:
+Local's root `delete_folder` on a present root has no test, since those
+tests remove the root first (corrected after PR #1055 merged). AZ-025's blank-message clause and its pinning
 test go red with BUG-276's fix under the arm decided at BK-387, synthesise
 (its dossier: "Both go red when this lands, by design"); the BUG-240 and
 BUG-292 decisions change cells on the classes that
@@ -768,9 +777,13 @@ and its answer keeps `classify`.
   `unwrap(s3fs.S3FileSystem)` callers at step 2. `Store` callers see no
   change in interface.
 - **Performance:** the kernel issues the same probes the per-backend code
-  issues today (one `stat` or one `list_page(limit=1)` on the error path; the
-  file-ancestor walk only when opted in; `ensure_parents` only for explicit
-  parents), and the S3 driver drops the s3fs layer. Two replacements change
+  issues today (one `stat` or one `list_page(limit=1)` on the error path;
+  the file-ancestor walk only when opted in; `ensure_parents` only for
+  explicit parents), and the S3 driver drops the s3fs layer. One open
+  exception: `delete_folder`'s probes are BK-396's to decide. On Memory, which
+  issues no probe today, its candidate adds a `stat` after a refusal and a
+  listing after a non-recursive refusal of a present folder. Two
+  replacements change
   data paths and are measured under D8's benchmark gate in the PR that
   lands them:
   - `S3PyArrowBackend`: reads move from PyArrow's C++ S3 filesystem to the
@@ -806,7 +819,11 @@ and its answer keeps `classify`.
   never-leak invariant on every operation, page and stream and the
   `write_atomic` and `move` syntheses over each combination of
   `put_is_atomic`, `open_write`, `rename` and `SupportsAtomicMove` the fake
-  driver can present; the driver half
+  driver can present, and the `delete_folder` synthesis over
+  `SupportsRemoveFolder` and `SupportsDeleteTree` (every cell BK-396
+  decides, and the construction refusal of an explicit- or
+  implicit-parents driver without `SupportsRemoveFolder`; added after PR
+  #1055 merged); the driver half
   stays with the per-driver suites. BK-345 and ID-244 reduce to driver
   cells (corrected at BK-389's planning: BK-345's kernel half, the
   absent-container answers per `Op`, became fake-driver kernel cells in
@@ -822,7 +839,13 @@ and its answer keeps `classify`.
   and [ADR-0042](../adrs/0042-contract-kernel-over-thin-drivers.md),
   Proposed, which carries the four ADR amendments. With D3 step 1's Memory PR
   (BK-394), which accepts that ADR (the kernel PR before it, BK-389, is
-  private and amends nothing): specs 003, 005, 029 and 037 below, spec 013 (Memory's,
+  private and touches spec 003 only: it adds the clauses its kernel cells
+  trace to, the key rule, the root `delete_folder` refusal and
+  `SupportsRemoveFolder`'s `delete_folder` sequence as BK-396 decides it, and amends any spec 003 clause
+  BK-395's answers contradict, such as BE-025 or BE-008; BK-389's dossier,
+  item 8, is the authority for this split): specs 003, 005, 029 and 037
+  below, any clause outside spec 003 that BK-395's answers contradict
+  (PATH-002, NPR-021, NPR-004, RES-020), spec 013 (Memory's,
   as a kernel/driver placement per clause, which the list at filing omitted),
   the kernel half
   of 007 and 022, the Memory drivers' rows of 007 and 022, spec 026's PING-002
