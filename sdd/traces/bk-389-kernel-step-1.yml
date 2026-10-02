@@ -145,4 +145,4 @@ phases:
       - file: sdd/specs/013-memory-backend.md
         section: "MEM-015, MEM-025, MEM-040"
         read_type: verify
-        extract: "a kernel aggregation over list_page breaks the single-lock snapshot and O(1) space; MEM-015 moves to SupportsFolderStats"
+        extract: "a kernel aggregation over list_page breaks the single-lock snapshot and O(1) space; MEM-015 moves to SupportsFolderStats, and the recursive-listing shape surfaced as decision 7"

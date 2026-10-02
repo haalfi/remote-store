@@ -869,7 +869,11 @@ and its answer keeps `classify`.
    bound on the first `Page` the **operation** receives, across every
    `list_page` call of a walk, so the bound never restarts per request
    (BUG-257's shape) and no flag is needed. Step 1's `Page` (entries, common
-   prefixes, next cursor) is final.
+   prefixes, next cursor) is final. A recursive listing is one
+   `list_page(prefix, delimiter=None)` request whatever the `namespace`; a
+   hierarchical driver walks behind the cursor, one `Page` per wire request,
+   and the kernel applies `max_depth` to the result (BK-389 dossier,
+   decision 7).
 3. **`namespace` and `parents` as values or as two kernels.** One kernel
    with flags keeps one choke point; two kernels keep the flat-namespace
    probes out of the hierarchical path. The flags are proposed; the split is

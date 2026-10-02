@@ -66,16 +66,28 @@ every case. RFC-0017 carries the same answers at the question each settles.
    Before any driver call the kernel rejects a key starting with `/`, a `..`
    segment and a null byte with `InvalidPath`, and drops empty and `.`
    segments (so a trailing slash and `//` fold too), so every driver receives
-   a canonical key. The rule is spec 013's MEM-DS-005 table, which both Memory
+   a canonical key.
+   The rule is spec 013's MEM-DS-005 table, which both Memory
    classes implement today, and **not** `RemotePath`'s, which differs on two
    inputs (measured at master `9caef6b`, `str(RemotePath(p))` against
    `MemoryBackend._split_path(p)`): `RemotePath("/a/b")` folds to `a/b` where
    Memory refuses it, and `RemotePath("a\\b")` converts the backslash to `/`
    where Memory keeps `a\b` as one segment. A backslash stays an ordinary key
    character. The root check runs on the raw key first, as the
-   **Depends on** paragraph below states, so `AddressesRoot` still sees every spelling. A later step whose
-   driver answers a non-canonical key differently today (a flat wire's
-   `a//b`, say) enumerates that cell change at its own step.
+   **Depends on** paragraph below states, so `AddressesRoot` still sees
+   every spelling. A later step whose driver answers a non-canonical key
+   differently today (a flat wire's `a//b`, say) enumerates that cell change
+   at its own step.
+7. **A recursive listing is one `delimiter=None` request** (decided in round
+   2 of this planning PR's review). For `list_files(recursive=True)` and an
+   aggregation without `SupportsFolderStats`, the kernel calls
+   `list_page(prefix, delimiter=None)` and follows the cursor, whatever the
+   driver's `namespace`. A hierarchical wire's driver walks behind the cursor,
+   one `Page` per wire request, so decision 1's per-operation bound sees every
+   page. The kernel applies `max_depth` (DEPTH-003) to what comes back, so a
+   hierarchical remote driver may read below the depth; a depth hint to the
+   driver is revisited when Local or SFTP migrates (steps 5, 6). Memory
+   answers in one locked `Page`, which keeps spec 013's MEM-025 snapshot.
 
 ## What it owes
 
