@@ -218,8 +218,10 @@ every case. RFC-0017 carries the same answers at the question each settles.
      A probe that itself raises answers nothing: the driver's refusal is
      raised, with the probe's exception chained as its context, so a probe
      never replaces a refusal it could not complete [maintainer's decision
-     in PR #1056's round 5]. A typed `NotFound` is probed too, as RFC-0017 D2's flow does, because
-     Local's and SFTP's wires type a file as `NotFound`. `missing_ok`
+     in PR #1056's round 5]. A typed `NotFound` is probed too, as RFC-0017
+     D2's flow does, because SFTP's wire types a file as `NotFound` (Local's
+     `delete_folder` classifier types it `PermissionDenied`, as the table
+     shows). `missing_ok`
      applies to the final `NotFound`. Only the probed answer can race, never
      the removal. The driver columns are what `rmdir` gives through the
      classifier each driver's `delete_folder` uses today, which step 5 and
@@ -251,12 +253,15 @@ every case. RFC-0017 carries the same answers at the question each settles.
      probe. A permission-denied folder was not measured (the container runs
      as uid 0).
    - **A wire with no one-step removal.** The driver checks and then
-     removes, and must document that race. `AzureBackend` on HNS
-     (`get_paths(max_results=1)` then `delete_directory`, `_azure.py` lines
-     1154 to 1157) and GR-043 check and then remove today, and neither
+     removes, and must document that race. Azure on HNS
+     (`get_paths(max_results=1)` then `delete_directory`; in
+     `AsyncAzureBackend`, the class step 4 migrates, `aio/backends/_azure.py`
+     lines 967 to 973, and in the sync class step 4 replaces, `_azure.py`
+     lines 1154 to 1157) and GR-043 check and then remove today, and none
      documents the race (a case-insensitive search for `race|TOCTOU` finds
-     nothing in `_azure.py`, and spec 044's hits are GR-018's create race and
-     the move race, none in GR-043), so the note is new at steps 4 and 7.
+     nothing in either Azure module, and spec 044's hits are GR-018's create
+     race and the move race, none in GR-043), so the note is new at steps 4
+     and 7.
    - **Who carries it: a rule on `parents`.** Required whenever the driver
      has folder objects, `parents == "explicit"` or `"implicit"`, checked at
      construction: Graph and Azure HNS carry it at steps 7 and 4. Never
@@ -275,9 +280,10 @@ every case. RFC-0017 carries the same answers at the question each settles.
      Measured in round 5 on SQLBlob (`sqlite://`): an empty prefix, a
      non-empty prefix, a file and `f/x` keep today's answers; a key that is
      both a file and a prefix answers `DirectoryNotEmpty` today and
-     `InvalidPath` under this rule, because `stat` runs first. S3
-     (`_s3.py` lines 423 to 444) and flat Azure (`_azure.py` lines 1159 to
-     1172) check in the same order as SQLBlob (read, not run), so steps 2,
+     `InvalidPath` under this rule, because `stat` runs first. The classes
+     steps 2 and 4 migrate, `S3Boto3Backend` (`_s3_boto3.py` lines 611 to
+     622) and flat `AsyncAzureBackend` (`aio/backends/_azure.py` from line
+     975), check in the same order as SQLBlob (read, not run), so steps 2,
      3 and 4 list that cell.
    - `delete_folder(recursive=False)`: the kernel runs decision 6's pipeline,
      then calls `remove_folder` with no probe before it, so no check is split
@@ -285,12 +291,28 @@ every case. RFC-0017 carries the same answers at the question each settles.
      SFTP's
      `stat`, `listdir`, `rmdir` sequence today (`_sftp.py` lines 1358 to
      1388) becomes `rmdir` with this probe at step 6.
-   - `delete_folder(recursive=True)` without `SupportsDeleteTree`: the kernel
+   - `delete_folder(recursive=True)` without `SupportsDeleteTree`, folder
+     objects present (`parents` is `"explicit"` or `"implicit"`): the kernel
      walks the subtree with `list_page(prefix, delimiter="/")`, so a folder
      holding no files still arrives as a common prefix, deletes the files,
-     then, unless `parents == "none"`, calls `remove_folder` on each folder,
-     deepest first; when `parents == "none"` deleting the files is the whole
-     removal. This walk is not decision 7's listing, which wants files only.
+     then calls `remove_folder` on each folder, deepest first. The last call,
+     on `key` itself, answers an absent key or a file through the table's
+     probes. This walk is not decision 7's listing, which wants files only.
+   - `delete_folder(recursive=True)` without `SupportsDeleteTree` when
+     `parents == "none"`: the kernel probes first, as the non-recursive case
+     does: `stat` a file `InvalidPath`; one paged `list_page(key,
+     delimiter=None)` (decision 7's shape) empty `NotFound`, to which
+     `missing_ok` applies; otherwise it deletes the files that listing
+     returns. A raising probe propagates its own error, since there is no
+     refusal to keep. The files come from one paged listing, as flat
+     Azure's recursive delete lists them today (`aio/backends/_azure.py`
+     line 981). One cell changes, for steps 2 to 4 to list: a key that is
+     both a file and a prefix, where SQLBlob today deletes the files under
+     it and keeps the file (measured in the verification round), answers
+     `InvalidPath`. [Maintainer's decision after PR #1056's verification round,
+     which measured the gap on SQLBlob (`sqlite://`): an absent key, a file
+     and `f/x` answer `NotFound`, `InvalidPath` and `NotFound` today, and the
+     files-only walk returned success for all three.]
 
    RFC-0017 D1's protocol table carries the row. Both Memory drivers
    implement it beside `SupportsDeleteTree` (BK-394's MEM-014 placement).
