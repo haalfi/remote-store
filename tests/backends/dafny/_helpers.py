@@ -28,7 +28,7 @@ from __future__ import annotations
 import contextlib
 import io
 import sys
-from datetime import datetime, timezone
+from datetime import UTC, datetime
 from pathlib import Path
 from typing import TYPE_CHECKING, ClassVar
 
@@ -127,7 +127,7 @@ def _dafny_ts_to_dt(opt: object, fallback: datetime) -> datetime:
     still carries a non-None ``modified_at`` as the Python model requires.
     """
     if opt.is_Some:  # type: ignore[union-attr]
-        return datetime.fromtimestamp(int(opt.value), tz=timezone.utc)  # type: ignore[union-attr]
+        return datetime.fromtimestamp(int(opt.value), tz=UTC)  # type: ignore[union-attr]
     return fallback
 
 
@@ -175,7 +175,7 @@ def _dafny_wr_to_python(path_str: str, dwr: object) -> WriteResult:
     etag = _dafny_to_str(dwr.etag.value) if dwr.etag.is_Some else None  # type: ignore[union-attr]
     version_id = _dafny_to_str(dwr.version__id.value) if dwr.version__id.is_Some else None  # type: ignore[union-attr]
     last_modified = (
-        datetime.fromtimestamp(int(dwr.last__modified.value), tz=timezone.utc)  # type: ignore[union-attr]
+        datetime.fromtimestamp(int(dwr.last__modified.value), tz=UTC)  # type: ignore[union-attr]
         if dwr.last__modified.is_Some  # type: ignore[union-attr]
         else None
     )
@@ -291,7 +291,7 @@ class DafnyOracleBackend(Backend):
         result = _raise_if_err(
             self._mb.ListFiles(_str_to_dafny(path), recursive, -1 if max_depth is None else max_depth)
         )
-        fallback = datetime.now(tz=timezone.utc)
+        fallback = datetime.now(tz=UTC)
         for fi in result:
             yield _to_file_info(fi, fallback)
 
@@ -301,7 +301,7 @@ class DafnyOracleBackend(Backend):
 
     def get_file_info(self, path: str) -> FileInfo:
         dafny_fi = _raise_if_err(self._mb.GetFileInfo(_str_to_dafny(path)))
-        return _to_file_info(dafny_fi, datetime.now(tz=timezone.utc))
+        return _to_file_info(dafny_fi, datetime.now(tz=UTC))
 
     def get_folder_info(self, path: str) -> FolderInfo:
         dafny_fi = _raise_if_err(self._mb.GetFolderInfo(_str_to_dafny(path)))

@@ -134,8 +134,8 @@ class TestProbe:
     def test_every_tracked_extra_resolves_to_a_real_module(self, import_probe):
         # The end-to-end selection, against this environment's own installs.
         # What makes that safe is narrower than "[dev] brings every tracked extra
-        # in" — it does not: `dev` names 13 extras, omitting `[s3]` and `[arrow]`
-        # (and adding the untracked `[toml]`). Every tracked extra's
+        # in" — it does not: `dev`'s `remote-store[...]` list omits `[s3]` and
+        # `[arrow]`. Every tracked extra's
         # DISTRIBUTIONS are still reachable from it, because `s3-pyarrow`
         # declares both `s3fs` and `pyarrow`. If that coincidence ever breaks,
         # this test fails wholesale with `probe()` returning 1, and the failure

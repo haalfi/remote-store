@@ -1,0 +1,116 @@
+id: BK-380
+title: "Python 3.10 stops getting security fixes on 2026-10-04, and the drop is a breaking change of its own"
+trigger: >-
+  CPython 3.10's security support ended on 2026-10-04 and ADR-0039 ties this
+  library's support to upstream's, so the decision was taken and the work of
+  moving seven spellings of the supported set, plus everything 3.10 kept alive,
+  remained.
+source_items:
+  - BK-380
+  - BK-375
+audience:
+  - user.api
+  - infra.ci
+  - contributor.tooling
+  - contributor.process
+expected_ripples:
+  - pyproject.toml
+  - packaging/conda-forge/variants.yaml
+  - .github/workflows/ci.yml
+  - .github/workflows/ci-full.yml
+  - README.md
+  - docs-src/_data/python-support-window.mmd
+  - packaging/conda-forge/recipe.yaml
+  - packaging/conda-forge/feedstock/recipe.yaml
+  - docs-src/reference/migration.md
+  - CHANGELOG.md
+  - sdd/adrs/0043-tiered-ci-gate-derived-interpreter-set.md
+  - sdd/adrs/0032-tiered-ci-gate-with-full-matrix-backstop.md
+  - sdd/adrs/DIGEST.md
+  - sdd/backlogid.json
+  - FEATURES.md
+  - docs-src/reference/tested-versions.md
+surprising_ripples:
+  # ruff infers its target from requires-python, so the bump re-targeted lint to
+  # py311: 75 UP017 sites in 33 files, plus UP035/UP036/UP041 (measured with
+  # `ruff check --target-version py311 --statistics`). No ripple row names it.
+  - src/remote_store/backends/_sqlalchemy.py
+  - tests/backends/dafny/_helpers.py
+  # Removing the `_config` mypy override exposed a `type: ignore` it had hidden.
+  - src/remote_store/_config.py
+  # The graph IR records source line numbers, so deleting lines in _backend.py
+  # and _config.py staled it (caught by `gen_graph.py --check` in preflight).
+  - docs-src/_data/graph/graph.json
+  - docs-src/explanation/graph_viz.html
+  # Dead 3.10 shims no ripple row or dossier line named.
+  - src/remote_store/_backend.py
+  - src/remote_store/aio/backends/_graph/items.py
+  # Tests and prose that hand-named the oldest interpreter or counted the set.
+  - tests/scripts/test_drift_report.py
+  - tests/scripts/test_gen_python_support.py
+  - sdd/CI-OPERATIONS.md
+  - sdd/specs/048-testing-architecture.md
+  - docs-src/explanation/dependency-policy.md
+  - sdd/specs/021-config-loaders.md
+phases:
+  - id: orient
+    name: Orient
+    steps:
+      - file: sdd/backlog/bk-380-drop-python-310.md
+        section: "(full)"
+        read_type: gate
+        extract: "seven spellings, the dead tomli/mutate markers, supersede ADR-0032; line refs re-measured by rg and all held"
+      - file: sdd/CLAUDE-REFERENCE.md
+        section: "Ripple-check table / Supported interpreter set"
+        read_type: gate
+        extract: "which spelling each gate watches; both presentations quoted README's literal 3.10, so they would go stale on every drop"
+        outcome: unclear
+      - file: sdd/adrs/0039-support-tracks-upstream-security-fixes.md
+        section: "Decision, Consequences"
+        read_type: reference
+        extract: "rule not roster; the drop supersedes ADR-0032"
+      - file: CONTRIBUTING.md
+        section: "When to bump"
+        read_type: gate
+        extract: "Breaking CHANGELOG entry plus a migration section, minor bump pre-1.0"
+      - file: sdd/000-process.md
+        section: "Rules (Rule 4)"
+        read_type: reference
+        extract: "Accepted ADRs are superseded, never edited; 0016/0017 precedent for the status table"
+  - id: design
+    name: Design
+    steps:
+      - file: scripts/drift_check.py
+        section: "_marker_gated_extras, render_docs"
+        read_type: reference
+        extract: "the exclusion is derived, so removing `toml` empties it rather than breaking it; kept and re-pinned on a synthetic project"
+      - file: sdd/specs/021-config-loaders.md
+        section: "CFG-008, CFG-009, CFG-014"
+        read_type: gate
+        extract: "CFG-009 described the tomli shim; rewritten to stdlib-only"
+      - file: pyproject.toml
+        section: "[tool.ruff], [tool.mypy.overrides]"
+        read_type: reference
+        extract: "no ruff target-version, so the floor bump re-targets lint; the _config override masked an unused ignore"
+  - id: implement
+    name: Implement
+    steps:
+      - file: tests/scripts/test_drift_report.py
+        section: "TestSupportWindowState, TestSupportWindowSignal, TestRenderSupportWindows"
+        read_type: reference
+        extract: "13 tests named 3.10 and its 2026 dates by hand; re-derived from python_support so the next drop needs no edit"
+      - file: tests/scripts/test_gen_python_support.py
+        section: "TestCheckReportsWhatChanged"
+        read_type: reference
+        extract: "its replace() target vanished with 3.10 and the test went red; given a premise assert so it cannot pass vacuously"
+  - id: verify
+    name: Verify
+    steps:
+      - file: sdd/CLAUDE-REFERENCE.md
+        section: "Detailed checklist / Supported interpreter set"
+        read_type: verify
+        extract: "all seven checked by one rg over the seven files; no gate spans the three groups"
+      - file: sdd/CLAUDE-REFERENCE.md
+        section: "Detailed checklist / Dependency"
+        read_type: verify
+        extract: "extra removed: recipe run_constraints, generated feedstock, README install list, FEATURES"

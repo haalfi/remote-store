@@ -13,7 +13,7 @@ import socket
 import stat
 import uuid
 from contextlib import contextmanager
-from datetime import datetime, timezone
+from datetime import UTC, datetime
 from enum import Enum
 from io import StringIO
 from typing import TYPE_CHECKING, Any, BinaryIO, ClassVar, TypeVar, cast
@@ -3400,7 +3400,7 @@ class SFTPBackend(Backend):
         name = path.rsplit("/", 1)[-1] if "/" in path else path
         size = attrs.st_size or 0
         mtime = attrs.st_mtime
-        modified = datetime.fromtimestamp(mtime, tz=timezone.utc) if mtime is not None else _UNKNOWN_MODIFIED_AT
+        modified = datetime.fromtimestamp(mtime, tz=UTC) if mtime is not None else _UNKNOWN_MODIFIED_AT
         return FileInfo(
             path=RemotePath(path),
             name=name,
@@ -3446,7 +3446,7 @@ class SFTPBackend(Backend):
                 file_count += 1
                 total_size += attr.st_size or 0
                 if attr.st_mtime is not None:
-                    modified = datetime.fromtimestamp(attr.st_mtime, tz=timezone.utc)
+                    modified = datetime.fromtimestamp(attr.st_mtime, tz=UTC)
                     if latest_modified is None or modified > latest_modified:
                         latest_modified = modified
             elif stat.S_ISDIR(attr.st_mode):

@@ -8,6 +8,26 @@ changes that require action when upgrading.
 
 ## v0.32.0 to v0.33.0
 
+**Python 3.10 is no longer supported:**
+
+CPython stops shipping security fixes for 3.10 on 2026-10-04, and this library
+supports a Python version for exactly as long as CPython does
+([dependency policy, Rule 8](../explanation/dependency-policy.md#rule-8)). From
+v0.33.0 the package declares `requires-python >=3.11`.
+
+**On 3.10 nothing breaks in place.** pip and uv both skip a release whose
+`Requires-Python` excludes the running interpreter, so an unpinned
+`pip install remote-store` on 3.10 keeps resolving to v0.32.x. Pinning
+`remote-store==0.33.0` there fails with `requires a different Python`. To get
+v0.33.0 and later, move to Python 3.11 or newer.
+
+**The `[toml]` extra is gone.** It installed the `tomli` backport on 3.10 only,
+and `RegistryConfig.from_toml()` now uses the standard library's `tomllib` on
+every supported interpreter, with no extra needed. Drop `[toml]` from your
+requirements. Leaving it in does not fail the install: pip warns that the
+package `does not provide the extra 'toml'`, uv that it does not have an extra
+named `toml`, and both install it.
+
 **The store root answers the same on every backend whose container is gone:**
 
 The root is a folder that always exists, and that no longer depends on whether

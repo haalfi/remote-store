@@ -11,6 +11,7 @@ import gc
 import io
 import logging
 import threading
+from datetime import UTC
 from typing import Any
 
 import pytest
@@ -1081,7 +1082,7 @@ class TestAbandonedIteratorGC:
             """Yields one item then suspends; tracks aclose() via a threading.Event."""
 
             async def list_files(self, path: str, *, recursive: bool = False, max_depth: int | None = None):  # type: ignore[override]
-                from datetime import datetime, timezone
+                from datetime import datetime
 
                 from remote_store._models import FileInfo
 
@@ -1090,7 +1091,7 @@ class TestAbandonedIteratorGC:
                         name="x.txt",
                         path="x.txt",
                         size=1,
-                        modified_at=datetime(2024, 1, 1, tzinfo=timezone.utc),
+                        modified_at=datetime(2024, 1, 1, tzinfo=UTC),
                     )
                     # Suspend indefinitely -- caller will drop the bridge.
                     import asyncio as _asyncio
@@ -1120,7 +1121,7 @@ class TestAbandonedIteratorGC:
 
         class _TrackingBackend(_RaisingAsyncBackend):
             async def list_files(self, path: str, *, recursive: bool = False, max_depth: int | None = None):  # type: ignore[override]
-                from datetime import datetime, timezone
+                from datetime import datetime
 
                 from remote_store._models import FileInfo
 
@@ -1129,7 +1130,7 @@ class TestAbandonedIteratorGC:
                         name="x.txt",
                         path="x.txt",
                         size=1,
-                        modified_at=datetime(2024, 1, 1, tzinfo=timezone.utc),
+                        modified_at=datetime(2024, 1, 1, tzinfo=UTC),
                     )
                     import asyncio as _asyncio
 

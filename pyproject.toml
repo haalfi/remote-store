@@ -8,7 +8,7 @@ version = "0.32.0"
 description = "Write file storage code once. Run it against local files, S3, SFTP, Azure, or OneDrive."
 readme = "README.md"
 license = { file = "LICENSE" }
-requires-python = ">=3.10"
+requires-python = ">=3.11"
 authors = [
   { name = "Harald Alferi" },
 ]
@@ -37,7 +37,7 @@ keywords = [
 # the set; `ci.yml`'s `ALL_PYTHONS` is a test matrix rather than a promise;
 # `packaging/conda-forge/variants.yaml`'s `python_min` and `ci.yml`'s
 # `MIN_PYTHON` restate the floor (held equal to it by
-# `scripts/check_conda_recipe_pins.py`); `README.md`'s "Requires Python 3.10+"
+# `scripts/check_conda_recipe_pins.py`); `README.md`'s "Requires Python X.Y+"
 # is prose. Nothing yet holds `ALL_PYTHONS` against these classifiers, which is
 # tracked rather than assumed.
 #
@@ -52,7 +52,6 @@ classifiers = [
   "Intended Audience :: Developers",
   "License :: OSI Approved :: MIT License",
   "Programming Language :: Python :: 3 :: Only",
-  "Programming Language :: Python :: 3.10",
   "Programming Language :: Python :: 3.11",
   "Programming Language :: Python :: 3.12",
   "Programming Language :: Python :: 3.13",
@@ -83,14 +82,13 @@ Conda-Forge = "https://anaconda.org/conda-forge/remote-store"
 # pinning `httpx<1.0` (BUG-225 / ID-229) — see the per-extra comment for the
 # rationale; the pyarrow extras carry none, since BUG-232 verified the shared
 # arrow/parquet/S3-PyArrow surface against pyarrow 25 and lifted the earlier
-# `<25` cap. The guard excludes extras for two disjoint REASONS — the sets
-# themselves overlap, and conflating the reasons is what left `toml` looking
-# like a dev aggregate. The developer/build aggregates (`dev`, `docs`, `bench`,
-# `mutate`) sit outside this convention and may pin build tooling directly —
-# e.g. `docs` caps `mkdocs<2` — while the marker-gated extras (`toml`, and
-# `mutate` again) are excluded because what they resolve to depends on the
-# running interpreter. `toml` is user-facing and is named as uncovered on the
-# published Tested versions page for exactly that reason.
+# `<25` cap. The guard excludes extras for two disjoint REASONS. The
+# developer/build aggregates (`dev`, `docs`, `bench`, `mutate`) sit outside this
+# convention and may pin build tooling directly — e.g. `docs` caps `mkdocs<2`.
+# A marker-gated extra (any requirement carrying `; python_version ...` or
+# similar) is excluded because what it resolves to depends on the running
+# interpreter; none exists today, and the published Tested versions page would
+# name one as uncovered (`scripts/drift_check.py` derives the set).
 # A scheduled drift guard
 # (`.github/workflows/drift-guard.yml`, ID-182) re-resolves each extra
 # weekly against the latest available transitive versions and diffs the
@@ -164,7 +162,6 @@ httpx = ["httpx>=0.24.0,<1.0"]
 # -- Extension extras --
 arrow = ["pyarrow>=12.0.0"]
 otel = ["opentelemetry-api>=1.28.0"]
-toml = ["tomli>=1.1.0; python_version < '3.11'"]
 yaml = ["pyyaml>=5.1"]
 pydantic = ["pydantic-settings>=2.0.0"]
 # dagster: floor at >=1.10.18 (BUG-285, correcting >=1.9). ext/dagster.py imports
@@ -179,11 +176,10 @@ dagster = ["dagster>=1.10.18"]
 # -- Mutation testing (dev/CI tooling, not a user-facing feature) --
 # Single source of truth for the pytest-gremlins pin: the hatch default env
 # (via `features` below) and both .github/workflows/{mutation,ci}.yml install
-# `.[mutate]` rather than re-pinning. Marker-gated because pytest-gremlins
-# requires py>=3.11; an install on an older interpreter resolves to nothing.
-# Excluded from the user-facing install-extras list (gen_features.py) and from
-# the transitive-drift guard (drift_check.py), like the other dev/build extras.
-mutate = ["pytest-gremlins>=1.5; python_version>='3.11'"]
+# `.[mutate]` rather than re-pinning. Excluded from the user-facing
+# install-extras list (gen_features.py) and from the transitive-drift guard
+# (drift_check.py), like the other dev/build extras.
+mutate = ["pytest-gremlins>=1.5"]
 
 # -- Benchmark suite (all backends + charting) --
 bench = [
@@ -211,7 +207,7 @@ docs = [
 
 # -- Development (all user-facing extras + test/build tooling) --
 dev = [
-  "remote-store[s3-pyarrow,sftp,azure,otel,toml,yaml,pydantic,dagster,sql,sql-query,requests,httpx,graph]",
+  "remote-store[s3-pyarrow,sftp,azure,otel,yaml,pydantic,dagster,sql,sql-query,requests,httpx,graph]",
   # Testing
   "pytest",
   "pytest-cov",
@@ -277,7 +273,6 @@ dev = [
   # Not in user-facing extras but needed for tests/examples
   "opentelemetry-sdk>=1.28.0",
   "ruamel.yaml>=0.15",
-  "tomli>=1.1.0",  # toml extra is marker-gated to <3.11; tests need tomli on all versions
   "polars>=0.20",
   "duckdb>=0.9",
   "griffe>=1.0",  # required by scripts/gen_graph.py (tested in tests/scripts/test_gen_graph.py)
@@ -582,18 +577,6 @@ namespace_packages = true
 # that only resolve when dagster's launcher puts the directory on sys.path.
 # mypy doesn't have that context, so skip the subtree.
 exclude = ["^examples/medallion_dagster/"]
-
-# tomllib is stdlib from 3.11+; on 3.10 it doesn't exist and tomli is used instead.
-[[tool.mypy.overrides]]
-module = "tomllib"
-ignore_missing_imports = true
-
-# _config.py uses `import tomli as tomllib  # type: ignore[no-redef]` in a try/except
-# fallback — the ignore is valid only on 3.11+ where tomllib exists. Suppress the
-# "unused ignore" warning so both 3.10 and 3.11+ pass.
-[[tool.mypy.overrides]]
-module = "remote_store._config"
-warn_unused_ignores = false
 
 # ext/yaml.py imports pyyaml with `# type: ignore[import-untyped]` — pyyaml has no
 # py.typed marker and no stubs. The ignore is needed but flagged as unused when

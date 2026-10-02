@@ -643,15 +643,6 @@ give them a way to absorb.
   API-reference parity.
   Detail: [dossier](backlog/id-225-zensical-migration.md)
 
-- [ ] **BK-380 — Python 3.10 stops getting security fixes on 2026-10-04, and the drop is a breaking change of its own**
-  spec: — · effort: M · audience: user.api
-  CPython 3.10 loses security support on 2026-10-04, and ADR-0039 already
-  ties our support to that; dropping it moves seven spellings of the
-  supported set at once, no gate compares all of them, and it is breaking.
-  Re-read, all seven still say 3.10. Open decision: none on shape; the
-  ripple list and the measured CI saving are in the dossier.
-  Detail: [dossier](backlog/bk-380-drop-python-310.md)
-
 ---
 
 <a id="repo-does-not-mislead"></a>

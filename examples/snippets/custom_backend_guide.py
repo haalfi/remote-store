@@ -29,7 +29,7 @@ from __future__ import annotations
 
 import contextlib
 import io
-from datetime import datetime, timezone
+from datetime import datetime, timezone, UTC
 from typing import TYPE_CHECKING, BinaryIO, ClassVar
 
 try:
@@ -286,7 +286,7 @@ class RedisBackend(Backend):
                 mapping={
                     "data": raw,
                     "size": str(len(raw)),
-                    "modified_at": datetime.now(timezone.utc).isoformat(),
+                    "modified_at": datetime.now(UTC).isoformat(),
                 },
             )
         except (AlreadyExists, InvalidPath):
@@ -558,7 +558,7 @@ class RedisBackend(Backend):
                 )
 
             # Update modified_at for the copy
-            data[b"modified_at"] = datetime.now(timezone.utc).isoformat().encode()
+            data[b"modified_at"] = datetime.now(UTC).isoformat().encode()
             self._client.hset(self._key(dst), mapping=data)
         except (NotFound, AlreadyExists, InvalidPath):
             raise

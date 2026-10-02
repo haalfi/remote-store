@@ -8,7 +8,7 @@ import logging
 import os
 from collections import deque
 from contextlib import contextmanager
-from datetime import datetime, timezone
+from datetime import UTC, datetime
 from pathlib import Path
 from typing import TYPE_CHECKING, Any, ClassVar
 
@@ -722,7 +722,7 @@ class _S3Base(Backend):
                             modified = datetime.fromisoformat(modified)
                         if modified is not None:
                             if modified.tzinfo is None:  # pragma: no cover -- moto includes tzinfo
-                                modified = modified.replace(tzinfo=timezone.utc)
+                                modified = modified.replace(tzinfo=UTC)
                             if latest_modified is None or modified > latest_modified:
                                 latest_modified = modified
             return FolderInfo(

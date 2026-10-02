@@ -241,6 +241,15 @@ if evidence changes; these are retired.
 
 ## Unreleased
 
+- [x] **BK-380 — Python 3.10 stops getting security fixes on 2026-10-04, and the drop is a breaking change of its own**
+  spec: CFG-008, CFG-009, CFG-014 · effort: M · audience: user.api, infra.ci, contributor.tooling
+  All seven spellings of the supported set now start at 3.11, and the `[toml]`
+  extra and every `tomli` fallback are gone; `from_toml` is stdlib-only (CFG-009).
+  ADR-0043 supersedes ADR-0032 and names interpreters by role, and ruff's py311
+  target retired the dead shims (`_SeekableSpool`, Graph's `Z` normalisation).
+  **Breaking**, shipped in v0.33.0 with a migration section.
+  Detail: [dossier](backlog/bk-380-drop-python-310.md)
+
 - [x] **ID-251 — BE-029's widest clause is one the conformance suite cannot fail on**
   spec: BE-029 · effort: M · audience: infra.test, library.maintainer, user.site, infra.ci
   The root write and `move`/`copy` destination cells (sync and async) run all six

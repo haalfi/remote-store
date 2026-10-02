@@ -2195,7 +2195,7 @@
       "file": "src/remote_store/_backend.py",
       "id": "cls:remote_store._backend.Backend",
       "kind": "class",
-      "line": 48,
+      "line": 37,
       "role": "abc",
       "runtime": "sync",
       "spec": "sdd/specs/003-backend-adapter-contract.md",
@@ -2380,7 +2380,7 @@
       "file": "src/remote_store/backends/_sqlalchemy.py",
       "id": "cls:remote_store.backends._sqlalchemy.SQLQueryBackend",
       "kind": "class",
-      "line": 1490,
+      "line": 1488,
       "role": "backend",
       "runtime": "sync",
       "spec": "sdd/specs/041-sql-query-backend.md",
@@ -2392,7 +2392,7 @@
       "is_abstract": true,
       "is_async": false,
       "kind": "method",
-      "line": 435,
+      "line": 425,
       "summary": "copy"
     },
     {
@@ -2401,7 +2401,7 @@
       "is_abstract": true,
       "is_async": false,
       "kind": "method",
-      "line": 302,
+      "line": 292,
       "summary": "delete"
     },
     {
@@ -2410,7 +2410,7 @@
       "is_abstract": true,
       "is_async": false,
       "kind": "method",
-      "line": 322,
+      "line": 312,
       "summary": "delete_folder"
     },
     {
@@ -2419,7 +2419,7 @@
       "is_abstract": true,
       "is_async": false,
       "kind": "method",
-      "line": 380,
+      "line": 370,
       "summary": "get_file_info"
     },
     {
@@ -2428,7 +2428,7 @@
       "is_abstract": true,
       "is_async": false,
       "kind": "method",
-      "line": 395,
+      "line": 385,
       "summary": "get_folder_info"
     },
     {
@@ -2437,7 +2437,7 @@
       "is_abstract": false,
       "is_async": false,
       "kind": "method",
-      "line": 477,
+      "line": 467,
       "summary": "glob"
     },
     {
@@ -2446,7 +2446,7 @@
       "is_abstract": false,
       "is_async": false,
       "kind": "method",
-      "line": 460,
+      "line": 450,
       "summary": "iter_children"
     },
     {
@@ -2455,7 +2455,7 @@
       "is_abstract": true,
       "is_async": false,
       "kind": "method",
-      "line": 343,
+      "line": 333,
       "summary": "list_files"
     },
     {
@@ -2464,7 +2464,7 @@
       "is_abstract": true,
       "is_async": false,
       "kind": "method",
-      "line": 369,
+      "line": 359,
       "summary": "list_folders"
     },
     {
@@ -2473,7 +2473,7 @@
       "is_abstract": true,
       "is_async": false,
       "kind": "method",
-      "line": 410,
+      "line": 400,
       "summary": "move"
     },
     {
@@ -2482,7 +2482,7 @@
       "is_abstract": true,
       "is_async": false,
       "kind": "method",
-      "line": 274,
+      "line": 264,
       "summary": "open_atomic"
     },
     {
@@ -2491,7 +2491,7 @@
       "is_abstract": true,
       "is_async": false,
       "kind": "method",
-      "line": 121,
+      "line": 110,
       "summary": "read"
     },
     {
@@ -2500,7 +2500,7 @@
       "is_abstract": true,
       "is_async": false,
       "kind": "method",
-      "line": 136,
+      "line": 125,
       "summary": "read_bytes"
     },
     {
@@ -2509,7 +2509,7 @@
       "is_abstract": false,
       "is_async": false,
       "kind": "method",
-      "line": 151,
+      "line": 140,
       "summary": "read_seekable"
     },
     {
@@ -2518,7 +2518,7 @@
       "is_abstract": true,
       "is_async": false,
       "kind": "method",
-      "line": 195,
+      "line": 185,
       "summary": "write"
     },
     {
@@ -2527,7 +2527,7 @@
       "is_abstract": true,
       "is_async": false,
       "kind": "method",
-      "line": 240,
+      "line": 230,
       "summary": "write_atomic"
     },
     {

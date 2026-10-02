@@ -318,21 +318,11 @@ class RegistryConfig:
                 via ``resolve_env`` before constructing the config.
 
         Raises:
-            ModuleNotFoundError: If ``tomllib`` is unavailable and
-                ``tomli`` is not installed.
             KeyError: If a *table* key is not found, or if
                 *resolve_env_vars* is ``True`` and a placeholder
                 references an unset variable with no default.
         """
-        try:
-            import tomllib
-        except ModuleNotFoundError:
-            try:
-                import tomli as tomllib  # type: ignore[no-redef]
-            except ModuleNotFoundError:
-                raise ModuleNotFoundError(
-                    "TOML support requires tomli on Python < 3.11. Install it with: pip install 'remote-store[toml]'"
-                ) from None
+        import tomllib
 
         with open(path, "rb") as f:
             data: dict[str, object] = tomllib.load(f)
@@ -420,7 +410,7 @@ def resolve_env(
     env: Mapping[str, str] = environ if environ is not None else os.environ
     result = _resolve_value(data, env, "$")
     assert isinstance(result, dict)  # noqa: S101 — guaranteed by input type
-    return result  # type: ignore[return-value]
+    return result
 
 
 # endregion

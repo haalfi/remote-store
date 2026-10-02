@@ -31,6 +31,34 @@ def drift_check():
     return drift_check
 
 
+# A project with marker-gated extras, which the real pyproject no longer has
+# (BK-380 removed `toml`). The exclusion is derived, so its behaviour is pinned
+# here rather than left with no live case: `legacy` is a user-facing extra
+# gated by a marker, `mutate` is an aggregate that is also gated, and `dev`
+# reaches `legacy`'s package under a different marker (the dedup bound).
+_MARKER_PROJECT = {
+    "project": {
+        "requires-python": ">=3.11",
+        "optional-dependencies": {
+            "s3": ["s3fs>=2024.2.0"],
+            "legacy": ["tomli>=1.1.0; python_version < '3.11'"],
+            "mutate": ["pytest-gremlins>=1.5; python_version>='3.11'"],
+            "dev": ["remote-store[s3,legacy]", "tomli>=1.1.0"],
+            "docs": ["mkdocs>=1.6,<2"],
+            "bench": ["pytest-benchmark>=4.0"],
+        },
+    }
+}
+
+
+@pytest.fixture
+def marker_project(drift_check, monkeypatch, tmp_path):
+    """Point drift_check at `_MARKER_PROJECT`, with no locks on disk."""
+    monkeypatch.setattr(drift_check, "_load_pyproject", lambda: _MARKER_PROJECT)
+    monkeypatch.setattr(drift_check, "LOCK_DIR", tmp_path)
+    return drift_check
+
+
 class TestIsPrerelease:
     """``_is_prerelease`` decides whether a resolved version goes into the
     informational pre-release bucket rather than the loud stable-drift
@@ -243,10 +271,15 @@ class TestDirectRequirementsFor:
         # one a reader is most surprised by, so it must survive to the page.
         assert drift_check._direct_requirements_for("graph")["httpx"] == ">=0.24.0,<1.0"
 
-    def test_keeps_the_environment_marker(self, drift_check):
-        # [toml] is marker-gated; the page renders the marker as the reason it
+    def test_keeps_the_environment_marker(self, marker_project):
+        # A marker-gated extra's page entry renders the marker as the reason it
         # carries no row, so the marker has to reach the caller intact.
-        assert drift_check._direct_requirements_for("toml")["tomli"] == ">=1.1.0; python_version < '3.11'"
+        assert marker_project._direct_requirements_for("legacy")["tomli"] == ">=1.1.0; python_version < '3.11'"
+
+    def test_marker_differing_duplicates_are_joined_not_merged(self, marker_project):
+        # The stated bound in `_direct_requirements_for`'s docstring: the unit
+        # of deduplication is the whole declaration, marker included.
+        assert marker_project._direct_requirements_for("dev")["tomli"] == ">=1.1.0; python_version < '3.11',>=1.1.0"
 
     def test_unions_a_package_declared_twice(self, drift_check):
         # [dev] reaches pyarrow through both [s3-pyarrow] (>=14.0.0) and
@@ -289,13 +322,18 @@ class TestExcludedExtras:
 
         assert drift_check._AGGREGATE_EXTRAS == gen_features._EXCLUDE_EXTRAS
 
-    def test_marker_gated_extras_are_derived(self, drift_check):
+    def test_marker_gated_extras_are_derived(self, marker_project):
         # Derived from the markers themselves, so a new marker-gated extra
         # excludes itself rather than waiting for someone to list it.
-        assert drift_check._marker_gated_extras() == frozenset({"toml", "mutate"})
+        assert marker_project._marker_gated_extras() == frozenset({"legacy", "mutate"})
 
-    def test_union_is_what_the_guard_skips(self, drift_check):
-        assert drift_check.excluded_extras() == frozenset({"dev", "docs", "bench", "toml", "mutate"})
+    def test_union_is_what_the_guard_skips(self, marker_project):
+        assert marker_project.excluded_extras() == frozenset({"dev", "docs", "bench", "legacy", "mutate"})
+
+    def test_the_real_project_has_no_marker_gated_extra(self, drift_check):
+        # What the published page's missing "does not cover" section rests on.
+        assert drift_check._marker_gated_extras() == frozenset()
+        assert drift_check.excluded_extras() == drift_check._AGGREGATE_EXTRAS
 
 
 class TestMinPython:
@@ -305,7 +343,7 @@ class TestMinPython:
     """
 
     def test_derives_the_lower_bound(self, drift_check):
-        assert drift_check.min_python() == "3.10"
+        assert drift_check.min_python() == "3.11"
 
     def test_matches_the_lowest_python_classifier(self, drift_check):
         # The classifiers are the other published statement of the same fact;
@@ -509,23 +547,24 @@ class TestRenderDocsContent:
     def test_names_the_interpreter_the_floor_lane_runs_on(self, drift_check):
         assert f"Python {drift_check.min_python()}" in drift_check.render_docs()
 
-    def test_names_every_extra_it_does_not_cover(self, drift_check):
-        rendered = drift_check.render_docs()
+    def test_names_every_extra_it_does_not_cover(self, marker_project):
+        # A user-facing extra with no row reads as "nothing changed" rather than
+        # "never checked" unless the page says so where the row would have been.
+        rendered = marker_project.render_docs()
         assert "## Extras this page does not cover" in rendered
-        # `[toml]` is in the README's install list and has no row above, which
-        # reads as "nothing changed" rather than "never checked" unless the page
-        # says so where the row would have been.
-        uncovered = drift_check._marker_gated_extras() - drift_check._AGGREGATE_EXTRAS
-        for extra in uncovered:
-            assert f"`[{extra}]`" in rendered
+        assert "| `[legacy]` | declared only for `python_version < '3.11'` |" in rendered
 
-    def test_does_not_list_a_developer_aggregate_as_uncovered(self, drift_check):
-        # `dev`, `docs` and `bench` never reach a user's environment; naming
-        # them on a user-facing page would be noise, and it is the reason the
-        # two exclusion halves are kept apart rather than merged.
-        rendered = drift_check.render_docs().rsplit("## Extras this page does not cover", 1)[-1]
-        for aggregate in ("`[dev]`", "`[docs]`", "`[bench]`"):
+    def test_does_not_list_a_developer_aggregate_as_uncovered(self, marker_project):
+        # Aggregates never reach a user's environment; naming them on a
+        # user-facing page would be noise, and it is the reason the two
+        # exclusion halves are kept apart rather than merged. `mutate` is the
+        # case that needs it: it is marker-gated and still not listed.
+        rendered = marker_project.render_docs().rsplit("## Extras this page does not cover", 1)[-1]
+        for aggregate in ("`[dev]`", "`[docs]`", "`[bench]`", "`[mutate]`"):
             assert aggregate not in rendered
+
+    def test_omits_the_section_when_nothing_is_uncovered(self, drift_check):
+        assert "## Extras this page does not cover" not in drift_check.render_docs()
 
     def test_states_each_extras_smoke_reach(self, drift_check):
         rendered = drift_check.render_docs()
@@ -559,15 +598,14 @@ class TestListExtras:
         for excluded in ("dev", "docs", "bench"):
             assert excluded not in extras
 
-    def test_excludes_marker_gated_toml(self, drift_check):
-        # `toml` is gated to Python <3.11; resolution is python-version
-        # dependent in a way that breaks the lock model. Drift guard skips.
-        assert "toml" not in drift_check.list_extras()
+    def test_excludes_a_marker_gated_extra(self, marker_project):
+        # Resolution is interpreter-dependent in a way that breaks the lock
+        # model, so the drift guard skips it.
+        assert marker_project.list_extras() == ["s3"]
 
     def test_excludes_dev_tooling_mutate(self, drift_check):
         # `mutate` carries the pytest-gremlins pin — a dev/CI test tool, not a
-        # runtime dependency, and marker-gated to py>=3.11. Excluded for the
-        # same reasons as the dev aggregates and `toml` (BUG-215).
+        # runtime dependency. Excluded as a dev aggregate (BUG-215).
         assert "mutate" not in drift_check.list_extras()
 
     def test_returns_sorted(self, drift_check):

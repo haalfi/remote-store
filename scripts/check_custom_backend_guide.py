@@ -57,12 +57,8 @@ from __future__ import annotations
 import inspect
 import re
 import sys
+import tomllib
 from pathlib import Path
-
-try:
-    import tomllib
-except ModuleNotFoundError:  # pragma: no cover - Python < 3.11
-    import tomli as tomllib  # type: ignore[no-redef]
 
 _ROOT = Path(__file__).resolve().parent.parent
 _GUIDE = _ROOT / "docs-src" / "guides" / "custom-backend-guide.md"

@@ -19,13 +19,9 @@ import inspect
 import json
 import re
 import sys
+import tomllib
 from pathlib import Path
 from typing import Any
-
-try:
-    import tomllib
-except ImportError:  # pragma: no cover
-    import tomli as tomllib  # type: ignore[no-redef]
 
 import griffe
 

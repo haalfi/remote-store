@@ -2,7 +2,7 @@
 
 from __future__ import annotations
 
-from datetime import datetime, timezone
+from datetime import UTC, datetime
 
 from remote_store._models import _UNKNOWN_MODIFIED_AT
 
@@ -17,7 +17,7 @@ def _normalize_modified(value: str | datetime | None) -> datetime:
     if isinstance(value, str):
         value = datetime.fromisoformat(value)
     if value is not None and value.tzinfo is None:
-        value = value.replace(tzinfo=timezone.utc)
+        value = value.replace(tzinfo=UTC)
     return value or _UNKNOWN_MODIFIED_AT
 
 

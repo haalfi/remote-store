@@ -53,20 +53,21 @@ class TestRenderedArtefact:
         assert gen.check() == 0
 
     def test_one_bar_and_one_milestone_per_supported_version(self, gen):
-        """Five classifiers, five sections, and two task lines in each."""
+        """One section per classifier, and two task lines in each."""
         text = gen.render()
-        for version in ("3.10", "3.11", "3.12", "3.13", "3.14"):
+        versions = ("3.11", "3.12", "3.13", "3.14")
+        for version in versions:
             assert f"    section Python {version}" in text
-        assert text.count(":milestone,") == 5
-        assert text.count("security fixes (5y)") == 5
+        assert text.count(":milestone,") == len(versions)
+        assert text.count("security fixes (5y)") == len(versions)
 
     def test_bars_run_from_release_to_the_security_window_end(self, gen):
-        """3.10: released 2021-10-04, security support ends five years later."""
-        assert "security fixes (5y) :sup310, 2021-10-04, 2026-10-04" in gen.render()
+        """3.11: released 2022-10-24, security support ends five years later."""
+        assert "security fixes (5y) :sup311, 2022-10-24, 2027-10-24" in gen.render()
 
     def test_milestone_marks_the_spec0_floor_not_the_promise(self, gen):
         """The diamond is the 3-year point, which is earlier than the bar's end."""
-        assert "SPEC 0 minimum (3y) :milestone, spec310, 2024-10-04, 0d" in gen.render()
+        assert "SPEC 0 minimum (3y) :milestone, spec311, 2025-10-24, 0d" in gen.render()
 
     def test_carries_no_date_relative_to_today(self, gen):
         """Byte-stability is the whole reason `--check` can live in `preflight`.
@@ -136,9 +137,9 @@ class TestAssertRenderable:
     def test_a_bare_marker_after_gantt_is_refused_too(self, gen):
         """Stricter than the parser, on purpose, and pinned as such.
 
-        Measured, a bare marker after `gantt` parses: **the committed artefact**
-        with one inserted before a `section` renders to a byte-identical SVG,
-        all five sections and ten tasks intact. The four-line snippet below is
+        Measured, a bare marker after `gantt` parses: **the artefact as then
+        committed** with one inserted before a `section` renders to a
+        byte-identical SVG, all five sections and ten tasks intact. The four-line snippet below is
         not that input and carries one section and no tasks — it is the minimum
         that reaches the guard, and the earlier wording attached the artefact's
         figure to it, which is the attribution error ADR-0037 is about.
@@ -212,13 +213,17 @@ class TestCheckReportsWhatChanged:
 
     def test_stale_artefact_is_reported_with_the_differing_line(self, gen, tmp_path, monkeypatch, capsys):
         stale = tmp_path / "python-support-window.mmd"
-        text = gen.render().replace("2021-10-04, 2026-10-04", "2021-10-04, 2025-10-04")
+        rendered = gen.render()
+        # Premise: the replace below must hit, or the "stale" file is the fresh
+        # one and the test passes against nothing (it did, once 3.10 went).
+        assert "2022-10-24, 2027-10-24" in rendered
+        text = rendered.replace("2022-10-24, 2027-10-24", "2022-10-24, 2026-10-24")
         stale.write_text(text, encoding="utf-8")
         monkeypatch.setattr(gen, "ARTEFACT", stale)
         assert gen.check() == 1
         err = capsys.readouterr().err
         assert "STALE" in err
-        assert "2026-10-04" in err
+        assert "2027-10-24" in err
 
     def test_missing_artefact_names_the_command_that_writes_it(self, gen, tmp_path, monkeypatch, capsys):
         monkeypatch.setattr(gen, "ARTEFACT", tmp_path / "absent.mmd")

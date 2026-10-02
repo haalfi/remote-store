@@ -22,12 +22,8 @@ import argparse
 import json
 import re
 import sys
+import tomllib
 from pathlib import Path
-
-try:
-    import tomllib
-except ImportError:  # pragma: no cover
-    import tomli as tomllib  # type: ignore[no-redef]
 
 ROOT = Path(__file__).resolve().parent.parent
 SRC = ROOT / "src"
@@ -58,7 +54,6 @@ _EXTRA_COMMENTS: dict[str, str] = {
     "pydantic": "Pydantic settings integration",
     "yaml": "YAML config loading",
     "dagster": "Dagster IO manager",
-    "toml": "TOML config (stdlib on Python 3.11+)",
     "requests": "requests HTTP adapter for ReadOnlyHttpBackend",
     "httpx": "httpx HTTP adapter for ReadOnlyHttpBackend",
 }

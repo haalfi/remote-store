@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+from datetime import UTC
 from unittest.mock import patch
 
 import pytest
@@ -133,39 +134,39 @@ class TestNormalizeModified:
     """Verify _normalize_modified handles string ISO dates and naive datetimes."""
 
     def test_string_iso_parsed_to_utc(self) -> None:
-        from datetime import datetime, timezone
+        from datetime import datetime
 
         from remote_store.backends._fileinfo import _normalize_modified
 
         result = _normalize_modified("2026-01-15T12:00:00")
         assert isinstance(result, datetime)
-        assert result.tzinfo == timezone.utc
+        assert result.tzinfo == UTC
 
     def test_naive_datetime_made_aware(self) -> None:
-        from datetime import datetime, timezone
+        from datetime import datetime
 
         from remote_store.backends._fileinfo import _normalize_modified
 
         naive = datetime(2026, 3, 1, 8, 30)
         result = _normalize_modified(naive)
-        assert result.tzinfo == timezone.utc
+        assert result.tzinfo == UTC
         assert result.year == 2026
         assert result.month == 3
 
     def test_aware_datetime_unchanged(self) -> None:
-        from datetime import datetime, timezone
+        from datetime import datetime
 
         from remote_store.backends._fileinfo import _normalize_modified
 
-        aware = datetime(2026, 1, 1, tzinfo=timezone.utc)
+        aware = datetime(2026, 1, 1, tzinfo=UTC)
         result = _normalize_modified(aware)
         assert result == aware
 
     @pytest.mark.spec("MOD-002")
     def test_none_returns_unknown_time_sentinel(self) -> None:
         # Not "now": an invented time would win folder aggregation (BUG-296).
-        from datetime import datetime, timezone
+        from datetime import datetime
 
         from remote_store.backends._fileinfo import _normalize_modified
 
-        assert _normalize_modified(None) == datetime.min.replace(tzinfo=timezone.utc)
+        assert _normalize_modified(None) == datetime.min.replace(tzinfo=UTC)
