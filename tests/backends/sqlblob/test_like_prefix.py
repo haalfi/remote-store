@@ -20,7 +20,7 @@ from remote_store._errors import DirectoryNotEmpty, InvalidPath, NotFound
 from remote_store._glob import pattern_to_regex
 from remote_store._models import FileInfo
 from remote_store._path import RemotePath
-from remote_store.backends._sqlalchemy import SQLBlobBackend, _glob_suffix_clause
+from remote_store.backends._sqlalchemy import SQLBlobBackend, _escape_like, _glob_suffix_clause
 
 if TYPE_CHECKING:
     from collections.abc import Iterator
@@ -35,6 +35,8 @@ SEEDS = (
     "up/l.txt",
     "a\\b/s.txt",
     "ab/t.txt",
+    "ax/v.txt",  # what an unescaped `\` would reach for the probe `a\x`
+    "a[xy]/k.txt",
 )
 
 
@@ -66,7 +68,24 @@ FOLDERS = [
     pytest.param("a%", "z.txt", id="percent"),
     pytest.param("Up", "u.txt", id="case"),
     pytest.param("a\\b", "s.txt", id="backslash"),
+    pytest.param("a[xy]", "k.txt", id="bracket"),
 ]
+
+
+@pytest.mark.spec("SQL-BLOB-061")
+@pytest.mark.parametrize(
+    ("literal", "escaped"),
+    [
+        pytest.param("a_b", "a\\_b", id="underscore"),
+        pytest.param("a%", "a\\%", id="percent"),
+        pytest.param("a\\b", "a\\\\b", id="escape_char_first"),
+        # SQL Server reads `[...]` as a character class; escaped, every LIKE reads it literally.
+        pytest.param("a[xy]", "a\\[xy]", id="bracket"),
+        pytest.param("a\\_[", "a\\\\\\_\\[", id="combined"),
+    ],
+)
+def test_escape_like(literal: str, escaped: str) -> None:
+    assert _escape_like(literal) == escaped
 
 
 @pytest.mark.spec("SQL-BLOB-061")
@@ -185,6 +204,21 @@ def test_escape_alone_keeps_metacharacters_literal(backend: SQLBlobBackend, fold
     assert _names(backend.list_files(folder, recursive=True)) == {only}
     backend.delete_folder(folder, recursive=True)
     assert _keys(backend) == set(SEEDS) - {f"{folder}/{only}", "A_B/c.txt"}
+
+
+@pytest.mark.spec("SQL-BLOB-061")
+@pytest.mark.parametrize("probe", ["a_q", "a%%", "a\\x"])  # no case probes: SQLite's LIKE folds case here
+def test_escape_alone_rejects_lookalike_probes(backend: SQLBlobBackend, probe: str) -> None:
+    """The non-SQLite branch must not find a folder a metacharacter reading would invent.
+
+    ``a\\x`` is the escape-character probe: unescaped, ``a\\x/%`` reads as
+    ``ax/%`` and reaches the seeded ``ax/v.txt``. On SQLite the ``=`` clause
+    would reject that by itself, which is why the probe lives on this branch.
+    """
+    backend._is_sqlite = False
+    assert backend.is_folder(probe) is False
+    with pytest.raises(NotFound):
+        backend.delete_folder(probe)
 
 
 _TOKENS = ("a", "/", "*", "**", "**/", "?", "[ab]", "[!a]", "[", "]")

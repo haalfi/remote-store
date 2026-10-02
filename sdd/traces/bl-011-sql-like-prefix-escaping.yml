@@ -12,7 +12,9 @@ discovery_followups:
   # reproduced on SQLBlobBackend and MemoryBackend, unreachable through Store.
   - BUG-297
   # External review input (Perplexity, relayed by the maintainer) named the
-  # trailing-newline case; measured as a divergence this PR introduced.
+  # trailing-newline case. The newline match BUG-298 tracks predates this PR;
+  # what this PR introduced, and fixed in 40cc778, was round 1's suffix LIKE
+  # dropping that key.
   - BUG-298
 expected_ripples:
   - sdd/backlogid.json
@@ -119,13 +121,21 @@ phases:
       - file: src/remote_store/_glob.py
         section: "pattern_to_regex"
         read_type: reference
-        extract: "Anchors with `$`, which accepts one trailing newline: glob('*.csv') matched 'a.csv\\n' on base SQLBlob and on ext.glob over Memory, and the round-1 suffix LIKE dropped it on head. My own miss: the enumeration's key alphabet held no newline, and it checked a Python model of the clause rather than the SQL. Rewritten to run the real clause in SQLite over 1554 keys: 178 of 866 compilable patterns carry a tail and query, 4916 accepted pairs, 0 misses; the mutant without the newline branch misses 1148. Round 1's '55,363 pairs' had counted tail-less patterns too"
+        extract: "Anchors with `$`, which accepts one trailing newline: glob('*.csv') matched 'a.csv\\n' on base SQLBlob and on ext.glob over Memory, and the round-1 suffix LIKE dropped it on head. My own miss: the enumeration's key alphabet held no newline, and it checked a Python model of the clause rather than the SQL. Rewritten to run the real clause in SQLite over 1554 keys: 178 of 866 compilable patterns carry a tail and query, 4916 accepted pairs, 0 misses; the mutant without the newline branch misses 1148. My round-1 PR reply (on the glob perf thread) had stated '55,363 regex-matching pairs, 0 excluded', a total that counted tail-less patterns too; corrected on that thread"
         outcome: ok
       - file: sdd/specs/018-glob.md
         section: "GLOB-014"
         read_type: reference
         extract: "Silent on a trailing newline, so whether glob should match it is filed as BUG-298 rather than decided here"
         outcome: unclear
+  - id: review_round_5
+    name: Review round 5, SQL Server bracket and vacuous probes
+    steps:
+      - file: src/remote_store/backends/_sqlalchemy.py
+        section: "_escape_like"
+        read_type: reference
+        extract: "SQL Server reads `[...]` as a LIKE class; `[` now escaped (by maintainer decision), measured harmless on SQLite (`\\[` matches only a literal `[`), claims narrowed to SQLite-measured. My own miss twice over: the `a\\x` probe cells had no seeded key to reach, and once seeded the SQLite `=` clause still masked a broken escape (no_backslash mutant left them green); the probe now runs on the non-SQLite branch, where the mutant reddens it. Same miss as round 1: I first put a case probe (aXb) on that branch, where SQLite's LIKE folds case"
+        outcome: ok
   - id: verify
     name: Verify
     steps:

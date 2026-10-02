@@ -67,11 +67,14 @@ def _escape_like(literal: str) -> str:
     """Escape *literal* so it matches only itself in a ``LIKE`` declaring ``ESCAPE _LIKE_ESCAPE``.
 
     The escape character itself goes first, or its own escapes would be doubled.
+    ``[`` is escaped too: SQL Server reads ``[...]`` as a character class, and an
+    escaped ``[`` is a literal ``[`` under ``ESCAPE`` (measured on SQLite).
     """
     return (
         literal.replace(_LIKE_ESCAPE, _LIKE_ESCAPE * 2)
         .replace("%", _LIKE_ESCAPE + "%")
         .replace("_", _LIKE_ESCAPE + "_")
+        .replace("[", _LIKE_ESCAPE + "[")
     )
 
 

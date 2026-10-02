@@ -362,8 +362,11 @@ carries the roster and the three classes that are not measured.
 **Invariant:** For folder-like operations, the prefix is `path + "/"`. The
 trailing slash prevents `"data"` from matching `"dataset/file.txt"`.
 
-A key is *under* a prefix when it starts with it **literally**: `_`, `%` and
-`\` in the prefix match only themselves. Every folder-like query (the probes of
+A key is *under* a prefix when it starts with it **literally**: `_`, `%`, `\`
+and `[` in the prefix are escaped and match only themselves (`[` because SQL
+Server reads `[...]` as a character class). Measured on SQLite only; on
+PostgreSQL, MySQL and SQL Server the escaped pattern is compiled and inspected,
+not executed. Every folder-like query (the probes of
 SQL-BLOB-026, the wrong-type probe, SQL-BLOB-025, -027, -028, -030 and -033's
 narrowing) uses one predicate for it: `key LIKE <escaped prefix> || '%' ESCAPE
 '\'`, and on SQLite additionally `key = prefix || substr(key, len(prefix) + 1)`.

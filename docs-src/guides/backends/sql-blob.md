@@ -140,9 +140,10 @@ Folders are virtual (prefix-based), not explicit nodes:
 - `list_folders("data")` extracts unique first-level subfolder names from stored keys.
 - `delete_folder("data", recursive=True)` deletes all keys starting with `data/`.
 
-"Starts with" is literal on every database: `_` and `%` in a folder name match
-only themselves, so `delete_folder("a_b", recursive=True)` never touches
-`axb/`. On SQLite, letter case is compared the way key lookups compare it:
+"Starts with" is literal: `_`, `%`, `\` and `[` in a folder name are escaped
+and match only themselves, so `delete_folder("a_b", recursive=True)` never
+touches `axb/`. That is tested on SQLite; PostgreSQL, MySQL and SQL Server
+receive the same escaped pattern but are not run by this project's tests. On SQLite, letter case is compared the way key lookups compare it:
 case-sensitive on the default table, and per the column's collation on a table
 you created yourself.
 
