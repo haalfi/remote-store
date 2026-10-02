@@ -648,6 +648,23 @@ class TestRemote:
         assert _mod._check(remote=True) == 0
         assert "also minted" not in capsys.readouterr().out
 
+    def test_stated_rule_a_rival_of_an_id_already_on_master_is_the_rivals_to_remint(self, clones, monkeypatch, capsys):
+        """The docstring's base-tip rule, from both sides: this tree passes, the rival's run fails."""
+        a, b = clones
+        self._mint(b, "ID-900", "b-work")
+        self._land(a, "b-work", "squash")
+        _git(a, "fetch", "--quiet", "origin")
+        _git(a, "checkout", "--quiet", "-B", "a-work", "origin/b-work~1")
+        self._mint(a, "ID-900", "a-work")
+        assert _mod._check(remote=True) == 0
+        assert "also minted" not in capsys.readouterr().out
+        monkeypatch.setattr(_mod, "ROOT", a)
+        monkeypatch.setattr(_mod, "BACKLOG", a / "sdd" / "BACKLOG.md")
+        monkeypatch.setattr(_mod, "BACKLOG_DONE", a / "sdd" / "BACKLOG-DONE.md")
+        monkeypatch.setattr(_mod, "ID_FILE", a / "sdd" / "backlogid.json")
+        assert _mod._check(remote=True) == 1
+        assert "ID-900 also minted on origin/master" in capsys.readouterr().out
+
     def test_stated_bound_an_item_retitled_after_master_took_it_reads_as_two(self, clones, capsys):
         """The docstring's header-change bound, pinned for a retitle: loud, never silent."""
         a, b = clones
@@ -674,6 +691,29 @@ class TestRemote:
         self._mint(b, "ID-900", None)
         assert _mod._check(remote=True) == 1
         assert "ID-900 also minted on origin/a-work" in capsys.readouterr().out
+
+    def test_remote_without_check_is_refused_and_writes_nothing(self, tmp_path, monkeypatch, capsys):
+        """Without the guard, `--remote` alone falls through to `_generate()` and rewrites the JSON."""
+        id_file, done = tmp_path / "backlogid.json", tmp_path / "BACKLOG-DONE.md"
+        _write_json(id_file, {"sentinel": 1})
+        done.write_text(_DONE_BLOCK, encoding="utf-8")
+        monkeypatch.setattr(_mod, "ROOT", tmp_path)
+        monkeypatch.setattr(_mod, "BACKLOG_DONE", done)
+        monkeypatch.setattr(_mod, "ID_FILE", id_file)
+        monkeypatch.setattr(sys, "argv", ["gen_backlogid.py", "--remote"])
+        assert _mod.main() == 1
+        assert "--remote is a mode of --check" in capsys.readouterr().out
+        assert json.loads(id_file.read_text(encoding="utf-8")) == {"sentinel": 1}
+
+    @pytest.mark.parametrize(
+        ("argv", "remote"), [(["--check"], False), (["--check", "--remote"], True), (["--remote", "--check"], True)]
+    )
+    def test_main_dispatches_check_and_remote(self, monkeypatch, argv, remote):
+        seen: list[bool] = []
+        monkeypatch.setattr(_mod, "_check", lambda remote=False: seen.append(remote) or 0)
+        monkeypatch.setattr(sys, "argv", ["gen_backlogid.py", *argv])
+        assert _mod.main() == 0
+        assert seen == [remote]
 
     def test_an_unreachable_remote_fails_loud(self, clones, tmp_path, capsys):
         _a, b = clones

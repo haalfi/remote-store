@@ -437,7 +437,7 @@ if evidence changes; these are retired.
   `_duplicate_ids` is a sibling function rather than a widening, because
   `check_backlog_ids_vs_base.py` imports `_extract_ids` for set arithmetic and
   a guard pins that import. **Two bounds**, both stated in the module docstring
-  and both deliberate. It catches the collision only once both branches have
+  at the time and both deliberate. It catches the collision only once both branches have
   merged; preventing the mint needed a view of unmerged branches, which was
   left to ID-257 (since closed: reservation, plus `--check --remote`). And it
   read the open side only: widening it to `BACKLOG-DONE.md` is one line, was

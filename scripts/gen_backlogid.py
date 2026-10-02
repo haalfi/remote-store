@@ -81,7 +81,10 @@ Remote mode (--check --remote), ID-257:
     alone), then compares the items this working tree minted — its headers
     minus those at the merge-base with ``origin/master``, so an uncommitted
     mint counts — with ``origin/master`` and with what each other ``origin/*``
-    branch gained since its merge-base with ``HEAD``, open or done. **A clash
+    branch gained since its merge-base with ``HEAD`` and that ``origin/master``
+    does not already carry, open or done. So once this tree's item has landed,
+    a rival branch's mint of the same ID is that branch's to re-mint: its own
+    ``--remote`` run reports the clash with master, and this one passes. **A clash
     is one ID under two headers**, compared as the text after the ``- [?] ``
     checkbox. One item keeps that text wherever it travels (a merge, a squash
     merge, this session's own push from any checkout, a close on one side), so
@@ -309,8 +312,9 @@ def _remote_view(remote: str = "origin", base: str = "master") -> tuple[dict[str
             continue
         ref_items = items_at(ref)
         seen |= ref_items.keys()
-        # What the ref gained since it diverged from HEAD and from the base, so
-        # an old item whose header changed on either side is not mistaken for a new mint.
+        # What the ref gained since it diverged from HEAD, minus whatever the
+        # base tip carries: an old item whose header changed on either side is
+        # not a new mint, and an ID already on master is checked against master.
         shared = _git("merge-base", "HEAD", ref)
         old = items_at(shared.stdout.strip()).keys() if shared.returncode == 0 else set()
         compare(ref, {k: v for k, v in ref_items.items() if k not in base_items and k not in old})

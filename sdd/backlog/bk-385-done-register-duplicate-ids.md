@@ -56,6 +56,8 @@ which also catches a new close reusing a released ID. Re-derived before
 choosing: the same `_duplicate_ids` call printed the same four IDs, and a
 section-tagged walk of the file's headers placed all eight below the first
 `## v` heading. The latest of them is `BK-167b`, under `## v0.25.0`.
+`hatch run gen-backlogid-check` exiting 0 on the real register is the
+re-runnable form, since any of the four above the line would fail it;
 `TestCheck::test_stated_bound_a_pair_wholly_in_released_history_is_not_reported`
-is the re-runnable form. So the four pass by rule and no exemption list
+pins the rule on a fixture. So the four pass by rule and no exemption list
 exists. The release record is their Rule 6 register.
