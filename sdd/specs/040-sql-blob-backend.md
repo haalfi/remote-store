@@ -361,12 +361,19 @@ carries the roster and the three classes that are not measured.
 trailing slash prevents `"data"` from matching `"dataset/file.txt"`.
 
 A key is *under* a prefix when it starts with it **literally**: `_`, `%` and
-`\` in the prefix match only themselves, and the comparison is the one
-`key = :key` uses. Every folder-like query (the probes of SQL-BLOB-026, the
-wrong-type probe, SQL-BLOB-025, -027, -028, -030 and -033's narrowing) uses one
-predicate for it: `key LIKE <escaped prefix> || '%' ESCAPE '\'`, and on SQLite
-additionally `substr(key, 1, len(prefix)) = prefix`, because SQLite's `LIKE`
-folds ASCII case where its `=` does not.
+`\` in the prefix match only themselves. Every folder-like query (the probes of
+SQL-BLOB-026, the wrong-type probe, SQL-BLOB-025, -027, -028, -030 and -033's
+narrowing) uses one predicate for it: `key LIKE <escaped prefix> || '%' ESCAPE
+'\'`, and on SQLite additionally `key = prefix || substr(key, len(prefix) + 1)`.
+
+On SQLite the comparison is the one `key = :key` uses: SQLite's `LIKE` folds
+ASCII case whatever the column declares, and the second clause puts the column
+on the left of `=`, so its collation decides. Measured on a default (BINARY)
+key and on a `create_table=False` table declaring `key TEXT COLLATE NOCASE`;
+`substr(key, 1, n) = prefix` would compare BINARY on both, since a function
+result carries no collation. On other dialects the predicate is the escaped
+`LIKE` alone, so case and padding follow that database's `LIKE`, which was not
+measured against its `=`.
 
 ---
 

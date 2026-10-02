@@ -34,6 +34,6 @@ the implementing session):
   dialect that branch served, PostgreSQL included.
 
 Both were folded into BL-011 by maintainer decision. Shipped shape: one
-predicate, `SQLBlobBackend._under` (escaped `LIKE`, plus `substr` equality on
-SQLite), and glob narrowing by literal prefix and literal tail on every
-dialect.
+predicate, `SQLBlobBackend._under` (escaped `LIKE`, plus on SQLite an `=` that
+applies the key column's collation), and glob narrowing by literal prefix and
+literal tail on every dialect.

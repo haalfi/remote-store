@@ -149,13 +149,36 @@ def test_delete_folder_non_recursive_still_sees_its_own_children(backend: SQLBlo
 
 
 @pytest.mark.spec("SQL-BLOB-061")
+@pytest.mark.spec("SQL-BLOB-012")
+def test_prefix_follows_the_key_columns_collation() -> None:
+    """A user table may declare ``key COLLATE NOCASE``: folder probes must then agree with ``is_file``.
+
+    ``substr(key, ...) = :prefix`` would compare with BINARY, since a function
+    result carries no collation, and answer ``is_folder("UP") is False`` while
+    ``is_file("UP/X.TXT") is True``.
+    """
+    engine = sa.create_engine("sqlite://", poolclass=StaticPool, connect_args={"check_same_thread": False})
+    with engine.begin() as conn:
+        conn.execute(sa.text("CREATE TABLE nocase (key TEXT COLLATE NOCASE PRIMARY KEY, data BLOB NOT NULL)"))
+    b = SQLBlobBackend(engine=engine, table_name="nocase", create_table=False)
+    b.write("up/x.txt", b"1")
+    b.write("upXb/y.txt", b"1")
+    assert b.is_file("UP/X.TXT") is True
+    assert b.is_folder("UP") is True
+    assert [f.name for f in b.list_files("UP")] == ["x.txt"]
+    assert b.is_folder("UP_B") is False  # `_` stays literal under NOCASE too
+    b.close()
+    engine.dispose()
+
+
+@pytest.mark.spec("SQL-BLOB-061")
 @pytest.mark.parametrize(("folder", "only"), [p for p in FOLDERS if p.id != "case"])
 def test_escape_alone_keeps_metacharacters_literal(backend: SQLBlobBackend, folder: str, only: str) -> None:
-    """The branch every non-SQLite dialect takes: escaped ``LIKE``, no ``substr``.
+    """The branch every non-SQLite dialect takes: escaped ``LIKE``, no ``=`` clause.
 
-    On SQLite the ``substr`` equality alone already rejects these siblings, so
-    without this cell the escaping is unpinned. Case is left out: off SQLite it
-    follows the column's collation, as key equality does.
+    On SQLite the ``=`` clause alone already rejects these siblings, so without
+    this cell the escaping is unpinned. Case is left out: off SQLite it is that
+    database's ``LIKE`` rule, which no fixture here exercises.
     """
     backend.delete("A_B/c.txt")  # case twin of a_b; SQLite's LIKE would fold it in
     backend._is_sqlite = False

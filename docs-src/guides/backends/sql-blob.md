@@ -142,7 +142,9 @@ Folders are virtual (prefix-based), not explicit nodes:
 
 "Starts with" is literal on every database: `_` and `%` in a folder name match
 only themselves, so `delete_folder("a_b", recursive=True)` never touches
-`axb/`. On SQLite the match is also case-sensitive, like key lookups.
+`axb/`. On SQLite, letter case is compared the way key lookups compare it:
+case-sensitive on the default table, and per the column's collation on a table
+you created yourself.
 
 ## Performance Guidelines
 

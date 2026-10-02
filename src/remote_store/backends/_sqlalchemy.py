@@ -468,14 +468,19 @@ class SQLBlobBackend(_SQLAlchemyBaseBackend):
 
         Every folder-shaped query narrows through this one predicate. The
         escaped ``LIKE`` stops ``_`` and ``%`` in a key from acting as
-        wildcards. SQLite's ``LIKE`` also folds ASCII case while its ``=`` does
-        not, so there the ``substr`` equality makes the prefix test as exact as
-        the key equality every file-shaped query uses.
+        wildcards. SQLite's ``LIKE`` also folds ASCII case whatever the column
+        declares, so there the prefix is also compared by ``=``, with the
+        column on the left so its own collation decides, exactly as for the
+        key equality every file-shaped query uses: ``key = prefix ||
+        substr(key, len(prefix) + 1)``. (``substr(key, 1, n) = prefix`` would
+        not: a function result carries no collation, so SQLite compares it
+        BINARY even on a ``COLLATE NOCASE`` key.)
         """
         key = self._table.c.key
         clause: sa.ColumnElement[bool] = key.like(_escape_like(prefix) + "%", escape="\\")
         if self._is_sqlite:
-            clause = sa.and_(clause, sa.func.substr(key, 1, len(prefix)) == prefix)
+            rest = sa.func.substr(key, len(prefix) + 1)
+            clause = sa.and_(clause, key == sa.literal(prefix, sa.Text) + rest)
         return clause
 
     # endregion

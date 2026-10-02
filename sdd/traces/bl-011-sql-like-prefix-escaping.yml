@@ -74,7 +74,12 @@ phases:
       - file: tests/backends/conformance/test_io.py
         section: "TestOperationalConsistency"
         read_type: reference
-        extract: "One `_`-sibling cell each for delete_folder and list_files; red only on sqlblob, green on the other local fixtures"
+        extract: "Home of the `_`-sibling delete_folder cell; red only on sqlblob, green on the other local fixtures"
+        outcome: ok
+      - file: tests/backends/conformance/test_listing.py
+        section: "TestBackendListing"
+        read_type: reference
+        extract: "Home of the `_`-sibling list_files cell; red only on sqlblob, green on the other local fixtures"
         outcome: ok
   - id: fix
     name: Fix
@@ -96,6 +101,14 @@ phases:
         section: "glob, _glob_literal_suffix"
         read_type: reference
         extract: "Deleting _glob_to_like dropped server-side filtering of wildcard-leading patterns off SQLite. Restored with a literal-tail LIKE; pinned by enumerating 866 compilable patterns against 780 keys (0 misses); a mutant without the **/ slash rule misses 1616 pairs"
+        outcome: ok
+  - id: review_closing
+    name: Closing gate, column collation
+    steps:
+      - file: sdd/specs/040-sql-blob-backend.md
+        section: "SQL-BLOB-012, SQL-BLOB-061"
+        read_type: gate
+        extract: "SQL-BLOB-012 admits user tables, so a key column may declare COLLATE NOCASE. My own miss: substr(key, 1, n) = prefix compares BINARY (a function result has no collation), so on such a table is_folder('UP') went False while is_file('UP/X.TXT') stayed True; base agreed with itself. Measured on base and head; fixed with key = prefix || substr(key, n + 1), column on the left"
         outcome: ok
   - id: verify
     name: Verify

@@ -629,7 +629,7 @@ def test_concurrent_writes(tmp_path: object) -> None:
 
 
 # ---------------------------------------------------------------------------
-# Coverage: optional columns, digest, extra, glob_to_like
+# Coverage: optional columns, digest, extra
 # ---------------------------------------------------------------------------
 
 
