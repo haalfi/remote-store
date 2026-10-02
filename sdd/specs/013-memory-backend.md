@@ -142,8 +142,11 @@ Validation rules (applied by splitting on `'/'` and inspecting segments):
 | `"a/../b"` (`..` segment) | Raise `InvalidPath`. Escape attempt. |
 | `"a/b\x00c"` (null byte) | Raise `InvalidPath`. Unsafe character. |
 
-This mirrors `LocalBackend._resolve()` semantics and `RemotePath` normalization
-rules. The validation is a simple segment check — no filesystem interaction.
+This mirrors `LocalBackend._resolve()` semantics. It is **not** `RemotePath`
+normalization, which differs on two inputs: `RemotePath("/a/b")` folds to
+`a/b` where this table refuses it, and `RemotePath("a\\b")` converts the
+backslash to `/` where this table keeps `a\b` as one segment. The validation is
+a simple segment check — no filesystem interaction.
 
 ### MEM-DS-006: Folder Semantics
 

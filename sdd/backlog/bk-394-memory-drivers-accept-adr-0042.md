@@ -40,12 +40,14 @@ time.
    013 was assigned to no step before this split (`rg -n '013|MEM-'` over
    RFC-0017 returned nothing). The placement covers every clause heading
    `rg -n '^### MEM-' sdd/specs/013-memory-backend.md` lists, 31 of them
-   (MEM-016 and MEM-016b both match `MEM-016`), each in exactly one row:
+   (MEM-016 and MEM-016b both match `MEM-016`), each in exactly one row
+   except MEM-DS-005, which is split: its validation table to the kernel, its
+   `_traverse` primitive to the driver (32 placements):
 
    | Owner after this PR | Clauses |
    |---|---|
-   | kernel (4) | MEM-DS-005 (every row: the kernel validates and normalises the key, BK-389 decision 6, so the driver receives a canonical key), MEM-013 (`write_atomic` as `put`, from `put_is_atomic = True`), MEM-018 (`close` through `close_is_terminal = False`), MEM-020 (the choke point; the driver raises nothing native, so `classify` is never reached) |
-   | driver (14) | MEM-DS-001, MEM-DS-002, MEM-DS-003, MEM-DS-004, MEM-DS-006, MEM-010, MEM-011, MEM-012, MEM-014 (`SupportsDeleteTree`: the subtree walk keeps the counters under the one lock), MEM-015 (`SupportsFolderStats`: one walk under the one lock, so MEM-025's snapshot and MEM-040's O(1) space hold, where a kernel aggregation over `list_page` would hold neither; its `latest` follows BE-017's rule, an unknown time skipped and `None` when none is known), MEM-016 (`SupportsAtomicMove`, one lock), MEM-016b (`SupportsCopy`), MEM-025 (including its eager collect: the driver answers each `list_page` with one locked collect and no cursor, and the kernel asks for a recursive listing as one `delimiter=None` call, BK-389 decision 7, so it stays one snapshot), MEM-026 |
+   | kernel (4) | MEM-DS-005's validation table (every row: the kernel validates and normalises the key and decides the root on it, BK-389 decision 6, so the driver receives a canonical key), MEM-013 (`write_atomic` as `put`, from `put_is_atomic = True`), MEM-018 (`close` through `close_is_terminal = False`), MEM-020 (the choke point; the driver raises nothing native, so `classify` is never reached) |
+   | driver (15) | MEM-DS-001, MEM-DS-002, MEM-DS-003, MEM-DS-004, MEM-DS-005's `_traverse` primitive (O(d) over a canonical key), MEM-DS-006, MEM-010, MEM-011, MEM-012, MEM-014 (`SupportsDeleteTree`: the subtree walk keeps the counters under the one lock), MEM-015 (`SupportsFolderStats`: one walk under the one lock, so MEM-040's O(1) space holds, where a kernel aggregation over Memory's one-`Page` `list_page` would be O(subtree); MEM-025's snapshot holds either way, by decision 7; its `latest` follows BE-017's rule, an unknown time skipped and `None` when none is known), MEM-016 (`SupportsAtomicMove`, one lock), MEM-016b (`SupportsCopy`), MEM-025 (including its eager collect: the driver answers each `list_page` with one locked collect and no cursor, and the kernel asks for a recursive listing as one `delimiter=None` call, BK-389 decision 7, so it stays one snapshot), MEM-026 |
    | forwarded or declared (7) | MEM-001 (constructor), MEM-002 (`name`), MEM-003 (capabilities, declared by the driver), MEM-004 (`repr` on the public class, reading the driver's counters), MEM-005 (registration), MEM-017 (`to_key`), MEM-019 (`unwrap`) |
    | unchanged (6) | MEM-030, MEM-031, MEM-032 (testing), MEM-040, MEM-041, MEM-042 (performance) |
 
@@ -64,7 +66,8 @@ verbatim; bracketed text is added at the split.
    - spec 005: ERR-001's `path` and `backend`, and ERR-009's floor, are set by
      the kernel for a migrated class.
    - spec 037: the `max_depth` algorithm decided once, on DEPTH-003.
-   - spec 003 BE-017: the folder `modified_at` rule above, sentinel and
+   - spec 003 BE-017: the folder `modified_at` rule above [BK-389's item 3,
+     and RFC-0017 D3; nothing above in this file states it], sentinel and
      `None` included, with a note that `GraphBackend` answers its folder
      item's own time until step 7 migrates it (BK-390).
    - spec 029: the async surface and `AsyncDriver`.

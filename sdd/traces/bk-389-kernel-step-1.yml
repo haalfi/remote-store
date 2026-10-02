@@ -18,7 +18,6 @@ audience:
 discovery_followups:
   - BK-394
 expected_ripples:
-  - sdd/backlogid.json
   - sdd/BACKLOG-DONE.md
 surprising_ripples:
   - sdd/specs/003-backend-adapter-contract.md
@@ -145,4 +144,20 @@ phases:
       - file: sdd/specs/013-memory-backend.md
         section: "MEM-015, MEM-025, MEM-040"
         read_type: verify
-        extract: "a kernel aggregation over list_page breaks the single-lock snapshot and O(1) space; MEM-015 moves to SupportsFolderStats, and the recursive-listing shape surfaced as decision 7"
+        extract: "MEM-015 moves to SupportsFolderStats for MEM-040's O(1) space; the recursive-listing shape surfaced as decision 7, which keeps MEM-025's snapshot either way"
+  - id: fix_round3
+    name: Review round 3 fix pass
+    steps:
+      - file: sdd/specs/003-backend-adapter-contract.md
+        section: "BE-008 source predicate; BE-029 read-side cost"
+        read_type: verify
+        extract: "the floor is is_root and a backend MAY exceed it; deciding the root on the canonical key closes the './' hole decision 6 opened"
+      - file: sdd/formal/BackendContract.dfy
+        section: "§5c AddressesRoot"
+        read_type: verify
+        extract: "AddressesRoot accepts a leading '/', which the leading-slash refusal reaches first with the same InvalidPath"
+      - file: sdd/specs/013-memory-backend.md
+        section: "MEM-DS-005"
+        read_type: verify
+        extract: "claimed to mirror RemotePath normalisation, measured false; corrected in the spec"
+        outcome: misleading

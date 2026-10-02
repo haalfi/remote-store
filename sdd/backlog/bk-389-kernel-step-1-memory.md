@@ -73,11 +73,27 @@ every case. RFC-0017 carries the same answers at the question each settles.
    `MemoryBackend._split_path(p)`): `RemotePath("/a/b")` folds to `a/b` where
    Memory refuses it, and `RemotePath("a\\b")` converts the backslash to `/`
    where Memory keeps `a\b` as one segment. A backslash stays an ordinary key
-   character. The root check runs on the raw key first, as the
-   **Depends on** paragraph below states, so `AddressesRoot` still sees
-   every spelling. A later step whose driver answers a non-canonical key
-   differently today (a flat wire's `a//b`, say) enumerates that cell change
-   at its own step.
+   character.
+   **The root is decided on the canonical key, on every side** (round 3 of
+   this review found the raw-key order broken: `is_root("./")` is `False`, so
+   a read or source spelled `"./"` passed the root refusal and then reached a
+   file-shaped primitive as `""`). Per operation the order is: the closed
+   guard, then the three refusals above, then normalisation, then the root
+   check on the canonical key, where `""` is the root, then the driver. For a
+   key that passes the refusals, a canonical `""` is exactly `AddressesRoot`
+   of the raw key (`BackendContract.dfy` §5c: every segment `""` or `"."`).
+   The spellings `AddressesRoot` also accepts with a leading `/` (`"/"`,
+   `"/./"`) are refused one step earlier, with the same `InvalidPath`. So
+   the write side and the `move`/`copy` destination get the wide predicate
+   BE-029 requires there. The read side and the source get it too, which
+   spec 003 permits ("the floor is `is_root` and a backend MAY exceed it",
+   spec 003 under BE-008, of the `move`/`copy` source), and which
+   `MemoryBackend` already answers on the read side: spec 003, in the same
+   place, measures `exists`/`is_folder`/`list_files` on `"./"` as on `""`
+   for it. This narrows the **Depends on** paragraph below, which
+   was written before key normalisation was the kernel's. A later step whose
+   driver answers a non-canonical key differently today (a flat wire's `a//b`
+   or `"./"`, say) enumerates that cell change at its own step.
 7. **A recursive listing is one `delimiter=None` request** (decided in round
    2 of this planning PR's review). For `list_files(recursive=True)` and an
    aggregation without `SupportsFolderStats`, the kernel calls
@@ -129,7 +145,9 @@ the check is `AddressesRoot`, the slash-and-dot segment test, wider than
 is permitted, not verified. Against an absent
 container a `write` under the root is left to the backend spec (the Dafny
 witness recreates the container), and `RequireCapability` answers after
-close. The kernel decides root-ness on raw keys; the obligation for every
+close. The kernel decides root-ness on raw keys [since decision 6: on the
+canonical key, which for a valid key is `AddressesRoot` of the raw key, so
+the obligation below is unchanged]; the obligation for every
 spelling is the raw-key entry in `RootPath.dfy` §5, not the trait alone.
 `close()` is not promised to keep the store's contents. See
 `sdd/formal/README.md` gaps 9 to 11.
@@ -178,10 +196,9 @@ below is this, run with `hatch run python`: for each of `""`, `"."`, `"./"`,
   `is_root` accepts `""` and `"."` only (`_path.py` `_ROOT_SPELLINGS`);
   `MemoryBackend._split_path` and the async module's `_split_path` drop empty
   and `.` segments, so `"./"` and `".//"` also split to the root (measured,
-  the probe: `is_root` `False`, split `[]`). Decision 6 settles what the
-  kernel hands the driver for such a key: the canonical form, after the root
-  check on the raw key (BE-029 on the read side, `AddressesRoot` on the
-  write side).
+  the probe: `is_root` `False`, split `[]`). Decision 6 settles it: the
+  kernel normalises such a key to `""` and decides the root on that, so it
+  is the root on every side, as Memory answers it today.
 - **Neither Memory class skips the unknown-time sentinel in
   `get_folder_info`.** A folder whose only file carries `datetime.min` in UTC
   answers that sentinel, sync and async, where the kernel's rule

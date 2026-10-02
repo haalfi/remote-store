@@ -34,7 +34,8 @@ user-audience defects of the last six releases (63%) to rules stated once and
 re-implemented per class; measured against this design by the rules in § What
 each cluster-A bug becomes, the kernel owns 10 of those outright (14% of the
 71), 6 are split with the driver, 8 stay in the driver, 6 waited on a
-decision at filing (three since decided, Open Question 4),
+decision at filing (four since decided, three under Open Question 4 and one
+under Open Question 2; one deferred to D3 step 3 under Open Question 5),
 2 disappear with a retired class, and 13 belong to D5's session layer. Counted
 by clause rather than by item, the 45 sit on 14 clauses (11 in cluster A, 3 in
 B); the audit derives no clause count for the other 26, so the 14 has no
@@ -240,11 +241,14 @@ was a 28th match above it). It owns, once:
   starting with `/`, a `..` segment or a null byte is refused with
   `InvalidPath`, and empty and `.` segments are dropped, by spec 013's
   MEM-DS-005 table rather than `RemotePath`'s rules (which fold a leading `/`
-  and convert `\`; BK-389's dossier has the measurement), after the root
-  check on the raw key, so a driver only ever sees a canonical
+  and convert `\`; BK-389's dossier has the measurement), after the closed
+  guard and before the root check, which then runs on the canonical key
+  (`""` is the root, the wide predicate on every side), so a driver only ever sees a canonical
   key, as D1's driver, which "carries no path … logic", requires;
-- root refusal from the key (BE-029, both predicates as `_flat_ns` now states
-  them), and the closed guard where the driver declares
+- root refusal from the key (BE-029; at filing, both predicates as `_flat_ns`
+  now states them; since BK-389's planning, decided on the canonical key,
+  which gives the wide predicate on every side, the floor BE-029 sets for
+  the write side and a permitted excess elsewhere), and the closed guard where the driver declares
   `close_is_terminal`, in the order spec 003 fixes; these are
   key-level checks and add no round trip;
 - the wrong-type probes on the error path (one `stat` and one
@@ -610,8 +614,10 @@ output is unchanged. Open Question 7 accepted this recommendation.
 
 `CONTRIBUTING.md` § Spec-First Workflow runs Propose, Accept, Implement, in
 that order, and an RFC that deprecates and deletes classes before it is
-accepted inverts it. Acceptance here rides with the first implementing PR
-(step 2 below), which is additive; no class is deleted before it. So:
+accepted inverts it. Acceptance here rides with the PR that lands the first
+backend on the design (step 2 below: BK-394, the second of step 1's two PRs,
+after BK-389's private kernel), which is additive; no class is deleted before
+it. So:
 
 1. **Decide and propose.** Open Questions 1, 4, 6 and 7 are answered and the
    design, D1, D2 and D4 to D7 plus those answers, is recorded as a Proposed
