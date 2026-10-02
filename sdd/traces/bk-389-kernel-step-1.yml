@@ -24,6 +24,89 @@ expected_ripples:
 surprising_ripples:
   - sdd/specs/003-backend-adapter-contract.md
   - sdd/backlog/bk-390-rfc-0017-spec-amendments.md
+review:
+  # Derived by `hatch run ship-report 1055 --trace-block-only` at head c2cf49d.
+  # Do not hand-edit, except a newly required field per sdd/traces/_schema.yml
+  # section review: RFC-0015 D4 makes this script the only producer.
+  derivation: "hatch run ship-report 1055 --trace-block-only"
+  pr: 1055
+  review_rounds: 7
+  submissions: 7
+  findings: 44
+  by_round:
+    - round: 1
+      findings: 6
+      origin: {original: 6}
+      triage: {must-fix: 6}
+      duration_hours: 0.08
+    - round: 2
+      findings: 4
+      origin: {loop-introduced: 3, original: 1}
+      triage: {must-fix: 4}
+      duration_hours: 0.28
+    - round: 3
+      findings: 7
+      origin: {loop-introduced: 4, original: 2, unclassifiable-file: 1}
+      triage: {must-fix: 7}
+      duration_hours: 0.2
+    - round: 4
+      findings: 8
+      origin: {loop-introduced: 5, original: 2, unclassifiable-file: 1}
+      triage: {must-fix: 8}
+      duration_hours: 0.24
+    - round: 5
+      findings: 6
+      origin: {loop-introduced: 6}
+      triage: {must-fix: 3, unknown: 3}
+      duration_hours: 0.44
+    - round: 6
+      findings: 7
+      origin: {loop-introduced: 6, original: 1}
+      triage: {must-fix: 7}
+      duration_hours: 0.21
+    - round: 7
+      findings: 6
+      origin: {loop-introduced: 4, original: 1, unclassifiable-file: 1}
+      triage: {unknown: 6}
+      duration_hours: 0.19
+  by_file:
+    - path: "sdd/backlog/bk-389-kernel-step-1-memory.md"
+      findings: 17
+    - path: "sdd/backlog/bk-394-memory-drivers-accept-adr-0042.md"
+      findings: 13
+    - path: "sdd/rfcs/rfc-0017-contract-kernel-over-thin-drivers.md"
+      findings: 4
+    - path: "sdd/BACKLOG.md"
+      findings: 3
+    - path: "sdd/traces/bk-389-kernel-step-1.yml"
+      findings: 3
+    - path: "sdd/specs/013-memory-backend.md"
+      findings: 2
+    - path: "sdd/backlog/bk-388-dafny-kernel-clauses.md"
+      findings: 1
+    - path: "sdd/backlog/bk-395-kernel-key-rule-addressing.md"
+      findings: 1
+  untouched_files:
+    - "sdd/BACKLOG-DONE.md"
+    - "sdd/backlog/bk-345-absent-container-conformance.md"
+    - "sdd/backlog/bk-390-rfc-0017-spec-amendments.md"
+    - "sdd/specs/003-backend-adapter-contract.md"
+  review_driven_commits:
+    - sha: "f9b3d0c"
+      subject: "BK-389: Round 1 fixes: kernel owns key validation, complete spec 013 placement"
+    - sha: "0c3eca5"
+      subject: "BK-389: Round 2 fixes: key rule from MEM-DS-005, Memory folder stats pushed down"
+    - sha: "047ba6b"
+      subject: "BK-389: Decide the recursive-listing shape (decision 7)"
+    - sha: "214496d"
+      subject: "BK-389: Round 3 fixes: root decided on the canonical key, MEM-DS-005 split"
+    - sha: "8e9f680"
+      subject: "BK-389: Round 4 re-plan: the key rule as a member-by-key-class table"
+    - sha: "73c0405"
+      subject: "BK-389: Round 5 at the ceiling: cut addressing, backslash and glob to BK-395"
+    - sha: "c2cf49d"
+      subject: "BK-389: Verification fixes: SupportsRemoveFolder, a spec 003 home for the key rule"
+  ci: {verdict: GREEN, failed: 0, pending: 0}
 phases:
   - id: orient
     name: Orient (planning PR)
