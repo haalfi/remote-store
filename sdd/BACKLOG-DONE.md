@@ -245,9 +245,9 @@ if evidence changes; these are retired.
   spec: SQL-BLOB-061, SQL-BLOB-025, SQL-BLOB-026, SQL-BLOB-027, SQL-BLOB-030, SQL-BLOB-033 · effort: S · audience: user.api, user.api_docs
   Every folder-prefix query in `_sqlalchemy.py` goes through one predicate,
   `SQLBlobBackend._under`: escaped `LIKE ... ESCAPE '\'`, plus `substr` equality
-  on SQLite, whose `LIKE` also folded case. `glob()` narrows by literal prefix on
-  every dialect; `_glob_to_like`, which dropped `**/` and `[...]` matches, is
-  gone. Pinned by `tests/backends/sqlblob/test_like_prefix.py` and two
+  on SQLite, whose `LIKE` also folded case. `glob()` narrows by literal prefix
+  and literal tail on every dialect; `_glob_to_like`, which dropped `**/` and
+  `[...]` matches, is gone. Pinned by `tests/backends/sqlblob/test_like_prefix.py` and two
   `_`-sibling conformance cells.
   Detail: [dossier](backlog/bl-011-sql-like-sibling-deletion.md)
 

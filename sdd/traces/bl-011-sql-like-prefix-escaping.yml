@@ -80,6 +80,19 @@ phases:
         read_type: reference
         extract: "Mutation check showed the escape unpinned on SQLite (substr alone rejects `_`/`%` siblings), so a cell runs the non-SQLite branch; each mutant (no substr, no backslash escape, no escape) turns its cells red. My own miss: I ran that new cell only against the mutants, and hatch run all then failed it on the fix, because with substr off SQLite's LIKE folded the seeded case twin A_B in; the cell now removes the twin first"
         outcome: ok
+  - id: review_round_1
+    name: Review round 1, index claim and glob narrowing
+    steps:
+      - file: sdd/specs/040-sql-blob-backend.md
+        section: "SQL-BLOB-010"
+        read_type: gate
+        extract: "My own miss: I measured EXPLAIN QUERY PLAN on a key-only SELECT and wrote it for every prefix query. Re-measured per shape: key-only reads scan the covering index, the rest scan the table"
+        outcome: ok
+      - file: src/remote_store/backends/_sqlalchemy.py
+        section: "glob, _glob_literal_suffix"
+        read_type: reference
+        extract: "Deleting _glob_to_like dropped server-side filtering of wildcard-leading patterns off SQLite. Restored with a literal-tail LIKE; pinned by enumerating 866 compilable patterns against 780 keys (0 misses); a mutant without the **/ slash rule misses 1616 pairs"
+        outcome: ok
   - id: verify
     name: Verify
     steps:

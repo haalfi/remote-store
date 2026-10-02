@@ -65,6 +65,21 @@ def _escape_like(literal: str) -> str:
     return literal.replace("\\", "\\\\").replace("%", "\\%").replace("_", "\\_")
 
 
+def _glob_literal_suffix(pattern: str) -> str:
+    """Return the literal tail every key matching the glob *pattern* must end with.
+
+    The tail is what follows the last ``*``, ``?``, ``[`` or ``]``: cutting at a
+    literal bracket only shortens it, which keeps it a necessary condition. The
+    one wildcard that can consume a following ``/`` is ``**/``, which also
+    matches zero directories, so that slash is dropped from the tail.
+    """
+    cut = max(pattern.rfind(c) for c in "*?[]")
+    tail = pattern[cut + 1 :]
+    if tail.startswith("/") and pattern[: cut + 1].endswith("**"):
+        tail = tail[1:]
+    return tail
+
+
 def _engine_kwargs(url: str) -> dict[str, Any]:
     """Name the pool for SQLite URLs whose pool SQLAlchemy would otherwise infer.
 
@@ -1322,12 +1337,11 @@ class SQLBlobBackend(_SQLAlchemyBaseBackend):
     def glob(self, pattern: str) -> Iterator[FileInfo]:
         """Yield files whose key matches the glob *pattern*.
 
-        Narrows SQL-side to the pattern's literal directory prefix, through the
-        same literal prefix predicate the listings use, then applies the full
-        glob regex to each row. Wildcards never reach SQL: a ``LIKE``
-        translation of ``**/`` or ``[...]`` drops keys the regex would keep,
-        and SQLite's native ``GLOB`` mishandles ``**``.
-        Costs one ``SELECT``. An absent backing table yields nothing, on the same
+        Narrows SQL-side by the pattern's literal directory prefix and literal
+        tail (both escaped), then applies the full glob regex to each row.
+        Wildcards themselves never reach SQL: a ``LIKE`` translation of ``**/``
+        or ``[...]`` drops keys the regex would keep, and SQLite's native
+        ``GLOB`` mishandles ``**``. Costs one ``SELECT``. An absent backing table yields nothing, on the same
         terms as the other listings.
 
         Raises:
@@ -1345,6 +1359,9 @@ class SQLBlobBackend(_SQLAlchemyBaseBackend):
             prefix = extract_prefix(pattern)
             if prefix:
                 query = query.where(self._under(prefix + "/"))
+            suffix = _glob_literal_suffix(pattern)
+            if suffix:
+                query = query.where(self._table.c.key.like("%" + _escape_like(suffix), escape="\\"))
             rows = conn.execute(query).fetchall()
             yield from (self._row_to_file_info(row) for row in rows if rx.match(row[0]))
 

@@ -8,6 +8,8 @@ folder prefix must see only the folder it was given.
 
 from __future__ import annotations
 
+import itertools
+import warnings
 from typing import TYPE_CHECKING
 
 import pytest
@@ -15,8 +17,10 @@ import sqlalchemy as sa
 from sqlalchemy.pool import StaticPool
 
 from remote_store._errors import DirectoryNotEmpty, InvalidPath, NotFound
+from remote_store._glob import pattern_to_regex
 from remote_store._models import FileInfo
-from remote_store.backends._sqlalchemy import SQLBlobBackend
+from remote_store._path import RemotePath
+from remote_store.backends._sqlalchemy import SQLBlobBackend, _glob_literal_suffix
 
 if TYPE_CHECKING:
     from collections.abc import Iterator
@@ -160,8 +164,39 @@ def test_escape_alone_keeps_metacharacters_literal(backend: SQLBlobBackend, fold
     assert _keys(backend) == set(SEEDS) - {f"{folder}/{only}", "A_B/c.txt"}
 
 
+_TOKENS = ("a", "/", "*", "**", "**/", "?", "[ab]", "[!a]", "[", "]")
+_KEY_CHARS = "ab/[]"
+
+
+@pytest.mark.spec("SQL-BLOB-033")
+def test_glob_literal_suffix_never_excludes_a_match() -> None:
+    """Every key the glob regex accepts ends with the suffix SQL narrows by.
+
+    Enumerated rather than sampled: every pattern of up to three tokens against
+    every key of up to four characters, so ``**/`` (which matches zero
+    directories), classes and stray brackets meet each other in every order.
+    """
+    patterns = {"".join(p) for n in range(1, 4) for p in itertools.product(_TOKENS, repeat=n)}
+    keys = ["".join(k) for n in range(1, 5) for k in itertools.product(_KEY_CHARS, repeat=n)]
+    misses: list[tuple[str, str, str]] = []
+    for pattern in sorted(patterns):
+        try:
+            with warnings.catch_warnings():
+                # "[[ab]" compiles with re's possible-nested-set FutureWarning
+                warnings.simplefilter("ignore", FutureWarning)
+                rx = pattern_to_regex(pattern)
+        except ValueError:
+            continue  # not a glob pattern_to_regex accepts; glob() raises the same way
+        suffix = _glob_literal_suffix(pattern)
+        misses.extend((pattern, key, suffix) for key in keys if rx.match(key) and not key.endswith(suffix))
+    assert misses == []
+
+
 GLOBS = [
     pytest.param("**/*.csv", {"a.csv", "d/b.csv"}, id="double_star_root"),
+    pytest.param("**/a.csv", {"a.csv"}, id="double_star_literal_tail"),
+    pytest.param("*_b/x.txt", {"a_b/x.txt"}, id="underscore_in_tail"),
+    pytest.param("*\\b/s.txt", {"a\\b/s.txt"}, id="backslash_in_tail"),
     pytest.param("a_b/*", {"a_b/x.txt"}, id="underscore_literal"),
     pytest.param("[]k]x", {"kx"}, id="bracket_class"),
     pytest.param("Up/*", {"Up/u.txt"}, id="case"),
@@ -176,7 +211,7 @@ def test_glob_is_dialect_independent(
     backend: SQLBlobBackend, sqlite_dialect: bool, pattern: str, expected: set[str]
 ) -> None:
     """The SQL narrowing never drops a key the glob regex would keep, on any dialect branch."""
-    for key in ("a.csv", "d/b.csv", "kx", "k]x"):
+    for key in ("a.csv", "d/b.csv", "kx", "k]x", "A_B/x.txt", "aXb/x.txt"):
         backend.write(key, b"1")
     backend._is_sqlite = sqlite_dialect
-    assert {str(f.path) for f in backend.glob(pattern)} == expected
+    assert {str(f.path) for f in backend.glob(pattern)} == {str(RemotePath(k)) for k in expected}

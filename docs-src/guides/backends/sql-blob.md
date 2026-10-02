@@ -121,7 +121,7 @@ See the [capabilities matrix](../../reference/capabilities-matrix.md) for full d
   which require complete data in a single statement. For files larger than
   process memory, use a blob-storage backend (S3, Local, Azure) instead.
 - `write_atomic()` delegates to `write()` — single SQL statements are inherently atomic.
-- `glob()` narrows SQL-side to the pattern's literal directory prefix, then applies the glob as a client-side regex to enforce standard glob semantics.
+- `glob()` narrows SQL-side by the pattern's literal directory prefix and literal ending (such as `.csv`), then applies the glob as a client-side regex to enforce standard glob semantics.
 
 ## SQLite Optimizations
 

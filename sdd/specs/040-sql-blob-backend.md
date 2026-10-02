@@ -100,9 +100,12 @@ CREATE TABLE IF NOT EXISTS remote_store_objects (
 - `digest`: optional content hash as `"algorithm:hex"` string.
 - `extra`: optional JSON-encoded metadata dict.
 
-The `PRIMARY KEY` on `key` creates a B-tree index. On SQLite a folder-prefix
-query scans that index rather than seeking it (`EXPLAIN QUERY PLAN` reports
-`SCAN ... USING COVERING INDEX`); other dialects were not measured.
+The `PRIMARY KEY` on `key` creates a B-tree index. No folder-prefix query
+seeks it on SQLite. Measured with `EXPLAIN QUERY PLAN`: the key-only reads
+(the `SELECT 1` probes, `list_folders`) report `SCAN ... USING COVERING
+INDEX`, and the reads of other columns (`list_files`, `iter_children`,
+`glob`, `get_folder_info`) and `delete_folder`'s `DELETE` report a plain
+`SCAN` of the table. Other dialects were not measured.
 
 ### SQL-BLOB-011: Custom Table Name
 
@@ -236,11 +239,15 @@ count is 0 and path is not empty string.
 **Invariant:** Two-stage filtering — SQL-side narrowing, then client-side
 regex to enforce GLOB-014 semantics (`*` = `[^/]*`, `?` = `[^/]`):
 
-1. **SQL narrowing:** on every dialect, `extract_prefix(pattern)` yields the
-   longest literal directory prefix; if non-empty, rows are narrowed to keys
-   under `prefix/` by the SQL-BLOB-061 predicate. Patterns without a literal
-   prefix (e.g. `*.txt`, `**/*.csv`) skip the SQL filter and scan the full
-   table. Wildcards are never translated to `LIKE`: `%/` cannot match the
+1. **SQL narrowing:** on every dialect, by two literal parts of the pattern,
+   each applied only when non-empty:
+   - `extract_prefix(pattern)`, the longest literal directory prefix: keys
+     under `prefix/`, by the SQL-BLOB-061 predicate.
+   - The literal tail after the last `*`, `?`, `[` or `]`: escaped
+     `key LIKE '%' || tail ESCAPE '\'`. A tail that follows `**` drops its
+     leading `/`, because `**/` also matches zero directories.
+
+   Wildcards themselves are never translated to `LIKE`: `%/` cannot match the
    zero directories `**/` can, and `[...]` has no `LIKE` form.
 2. **Client-side regex:** `pattern_to_regex(pattern)` from `_glob.py` filters
    the SQL result set to enforce GLOB-014 semantics, ensuring `*` and `?` do

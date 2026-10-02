@@ -35,4 +35,5 @@ the implementing session):
 
 Both were folded into BL-011 by maintainer decision. Shipped shape: one
 predicate, `SQLBlobBackend._under` (escaped `LIKE`, plus `substr` equality on
-SQLite), and glob narrowing by literal prefix on every dialect.
+SQLite), and glob narrowing by literal prefix and literal tail on every
+dialect.
