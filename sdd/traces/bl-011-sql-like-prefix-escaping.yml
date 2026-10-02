@@ -134,7 +134,15 @@ phases:
       - file: src/remote_store/backends/_sqlalchemy.py
         section: "_escape_like"
         read_type: reference
-        extract: "SQL Server reads `[...]` as a LIKE class; `[` now escaped (by maintainer decision), measured harmless on SQLite (`\\[` matches only a literal `[`), claims narrowed to SQLite-measured. My own miss twice over: the `a\\x` probe cells had no seeded key to reach, and once seeded the SQLite `=` clause still masked a broken escape (no_backslash mutant left them green); the probe now runs on the non-SQLite branch, where the mutant reddens it. Same miss as round 1: I first put a case probe (aXb) on that branch, where SQLite's LIKE folds case"
+        extract: "SQL Server reads `[...]` as a LIKE class; `[` now escaped (by maintainer decision), measured harmless on SQLite (`\\[` matches only a literal `[`), claims narrowed to SQLite-measured. My own miss twice over: the `a\\x` probe cells had no seeded key to reach, and once seeded the SQLite `=` clause still masked a broken escape (no_backslash mutant left them green); the probe now runs on the non-SQLite branch, where the mutant reddens it. Same miss as in the fix phase (the case twin A_B): I first put a case probe (aXb) on that branch, where SQLite's LIKE folds case"
+        outcome: ok
+  - id: review_round_6
+    name: Verification round, test hygiene and prose
+    steps:
+      - file: tests/backends/sqlblob/test_like_prefix.py
+        section: "module docstring, FOLDERS, test_prefix_follows_the_key_columns_collation"
+        read_type: reference
+        extract: "The `bracket` cells cannot fail on SQLite (no `[` class): no mutant reddens them and they pass on base, so they are labelled no-op guards and `test_escape_like` named as what pins `[`. The collation test now closes its engine in `finally`, since a leaked connection's ResourceWarning failed the next test. My own miss: SQL-BLOB-061 claimed a compile check that lived only in a gitignored script"
         outcome: ok
   - id: verify
     name: Verify

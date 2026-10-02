@@ -2,8 +2,13 @@
 
 Every seed below differs from a sibling only where ``LIKE`` would generalise:
 ``_`` (any one character), ``%`` (any run), ASCII case (SQLite's ``LIKE`` folds
-it) and ``\\`` (the escape character itself). Each operation that narrows by a
-folder prefix must see only the folder it was given.
+it), ``\\`` (the escape character itself) and ``[`` (a character class on SQL
+Server only). Each operation that narrows by a folder prefix must see only the
+folder it was given.
+
+SQLite's ``LIKE`` has no ``[`` class, so the ``[`` seeds cannot fail on any
+database this suite runs: they guard that escaping ``[`` stays harmless here.
+What pins the ``[`` escape itself is ``test_escape_like``.
 """
 
 from __future__ import annotations
@@ -62,13 +67,14 @@ def _names(items: Iterator[object]) -> set[str]:
 
 
 # Folder -> the only file it holds. Each folder has at least one sibling that a
-# metacharacter, case or escape reading of the prefix would also reach.
+# metacharacter, case or escape reading of the prefix would also reach on
+# SQLite; `bracket` is the exception (see the module docstring).
 FOLDERS = [
     pytest.param("a_b", "x.txt", id="underscore"),
     pytest.param("a%", "z.txt", id="percent"),
     pytest.param("Up", "u.txt", id="case"),
     pytest.param("a\\b", "s.txt", id="backslash"),
-    pytest.param("a[xy]", "k.txt", id="bracket"),
+    pytest.param("a[xy]", "k.txt", id="bracket"),  # SQLite no-op guard; reaches ax/ only on SQL Server
 ]
 
 
@@ -180,14 +186,17 @@ def test_prefix_follows_the_key_columns_collation() -> None:
     with engine.begin() as conn:
         conn.execute(sa.text("CREATE TABLE nocase (key TEXT COLLATE NOCASE PRIMARY KEY, data BLOB NOT NULL)"))
     b = SQLBlobBackend(engine=engine, table_name="nocase", create_table=False)
-    b.write("up/x.txt", b"1")
-    b.write("upXb/y.txt", b"1")
-    assert b.is_file("UP/X.TXT") is True
-    assert b.is_folder("UP") is True
-    assert [f.name for f in b.list_files("UP")] == ["x.txt"]
-    assert b.is_folder("UP_B") is False  # `_` stays literal under NOCASE too
-    b.close()
-    engine.dispose()
+    try:
+        b.write("up/x.txt", b"1")
+        b.write("upXb/y.txt", b"1")
+        assert b.is_file("UP/X.TXT") is True
+        assert b.is_folder("UP") is True
+        assert [f.name for f in b.list_files("UP")] == ["x.txt"]
+        assert b.is_folder("UP_B") is False  # `_` stays literal under NOCASE too
+    finally:
+        # A leaked connection's ResourceWarning would fail the next test instead.
+        b.close()
+        engine.dispose()
 
 
 @pytest.mark.spec("SQL-BLOB-061")
