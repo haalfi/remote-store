@@ -377,7 +377,7 @@ invariants, ghost variables, postconditions) erase at compile time and
 produce no Python output — regeneration is not needed. Non-ghost changes
 (method bodies, datatype definitions, function implementations) do require
 regeneration, in any of the three source files above, not only
-`MemoryBackend.dfy`; no gate compares `module_.py` with its sources. What
+`MemoryBackend.dfy`; no gate compares `module_.py` with its sources (ID-263). What
 CI does run on an `sdd/formal/` change is the `verify-formal` job, which
 besides `dafny verify` runs `tests/backends/dafny` and the oracle's
 conformance lanes (`-k dafny`) against the committed `module_.py`, so a

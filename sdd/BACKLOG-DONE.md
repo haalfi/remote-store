@@ -242,7 +242,7 @@ if evidence changes; these are retired.
 ## Unreleased
 
 - [x] **ID-251 — BE-029's widest clause is one the conformance suite cannot fail on**
-  spec: BE-029 · effort: M · audience: infra.test
+  spec: BE-029 · effort: M · audience: infra.test, library.maintainer, user.site, infra.ci
   The root write and `move`/`copy` destination cells (sync and async) run all six
   BE-029 spellings and assert the raised path names the root under any spelling
   (`_names_the_root`). With the shared guard narrowed to `is_root`, those cells on

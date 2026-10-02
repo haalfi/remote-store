@@ -368,6 +368,14 @@ no clause of the contract ships unexercised.
   Open decision: fail a key-decided cell that issues a request on replay, or record
   cassettes for it.
 
+- [ ] **ID-263 — Nothing checks that the compiled oracle matches the Dafny it is built from**
+  spec: — · effort: S · audience: infra.ci, infra.test
+  `module_.py` compiles from `MemoryBackend.dfy`, `BackendContract.dfy` and `RootPath.dfy`
+  (`sdd/formal/README.md` § Compiled oracle); a body edit there that is not regenerated
+  passes `dafny verify` while `verify-formal`'s pytest step tests the stale compiled code.
+  A native 4.11.0 translate plus `_dafny_classorder.py` reproduces the file byte for byte.
+  Open decision: a translate-and-diff step in `verify-formal`, or a pre-commit check.
+
 - [ ] **BK-382 — The file-ancestor gate ships unexercised on the overwrite path, where the pre-check runs inside an open write transaction**
   spec: BE-008 · effort: M · audience: infra.test
   The move and copy cells for the file-ancestor gate, sync and async, target a

@@ -14,6 +14,7 @@ audience:
   - infra.test
   - library.maintainer
   - user.site
+  - infra.ci
 expected_ripples:
   - sdd/BACKLOG.md
   - sdd/BACKLOG-DONE.md
@@ -176,6 +177,7 @@ phases:
 discovery_followups:
   - ID-261
   - ID-262
+  - ID-263
 surprising_ripples:
   - sdd/backlog/id-247-graph-root-path-cassettes.md
   - .github/workflows/ci.yml
