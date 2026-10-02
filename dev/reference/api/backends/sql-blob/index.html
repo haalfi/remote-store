@@ -12463,11 +12463,12 @@ a file.</p>
     <div class="doc doc-contents ">
 
         <p>Yield files whose key matches the glob <em>pattern</em>.</p>
-<p>Narrows SQL-side with a prefix <code>LIKE</code> where the pattern allows (on
-every dialect — SQLite's native <code>GLOB</code> is deliberately avoided because
-it mishandles <code>**</code>), then applies the full glob regex to each row.
-Costs one <code>SELECT</code>. An absent backing table yields nothing, on the same
-terms as the other listings.</p>
+<p>Narrows SQL-side by the pattern's literal directory prefix and literal
+tail (both escaped), then applies the full glob regex to each row.
+Wildcards themselves never reach SQL: a <code>LIKE</code> translation of <code>**/</code>
+or <code>[...]</code> drops keys the regex would keep, and SQLite's native
+<code>GLOB</code> mishandles <code>**</code>. Costs one <code>SELECT</code>. An absent backing
+table yields nothing, on the same terms as the other listings.</p>
 
 
 <p><span class="doc-section-title">Raises:</span></p>

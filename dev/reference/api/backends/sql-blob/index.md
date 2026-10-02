@@ -357,7 +357,7 @@ glob(pattern: str) -> Iterator[FileInfo]
 
 Yield files whose key matches the glob *pattern*.
 
-Narrows SQL-side with a prefix `LIKE` where the pattern allows (on every dialect — SQLite's native `GLOB` is deliberately avoided because it mishandles `**`), then applies the full glob regex to each row. Costs one `SELECT`. An absent backing table yields nothing, on the same terms as the other listings.
+Narrows SQL-side by the pattern's literal directory prefix and literal tail (both escaped), then applies the full glob regex to each row. Wildcards themselves never reach SQL: a `LIKE` translation of `**/` or `[...]` drops keys the regex would keep, and SQLite's native `GLOB` mishandles `**`. Costs one `SELECT`. An absent backing table yields nothing, on the same terms as the other listings.
 
 Raises:
 

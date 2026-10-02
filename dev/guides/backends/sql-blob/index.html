@@ -11926,7 +11926,7 @@ See the <a href="../../../reference/capabilities-matrix/">capabilities matrix</a
   which require complete data in a single statement. For files larger than
   process memory, use a blob-storage backend (S3, Local, Azure) instead.</li>
 <li><code>write_atomic()</code> delegates to <code>write()</code> — single SQL statements are inherently atomic.</li>
-<li><code>glob()</code> uses SQL-side narrowing (SQLite <code>GLOB</code> or <code>LIKE</code>) then client-side regex to enforce standard glob semantics.</li>
+<li><code>glob()</code> narrows SQL-side by the pattern's literal directory prefix and literal ending (such as <code>.csv</code>), then applies the glob as a client-side regex to enforce standard glob semantics.</li>
 </ul>
 <h2 id="sqlite-optimizations">SQLite Optimizations<a class="headerlink" href="#sqlite-optimizations" title="Permanent link">&para;</a></h2>
 <p>When using SQLite, the backend automatically:</p>
@@ -11942,6 +11942,12 @@ See the <a href="../../../reference/capabilities-matrix/">capabilities matrix</a
 <li><code>list_folders("data")</code> extracts unique first-level subfolder names from stored keys.</li>
 <li><code>delete_folder("data", recursive=True)</code> deletes all keys starting with <code>data/</code>.</li>
 </ul>
+<p>"Starts with" is literal: <code>_</code>, <code>%</code>, <code>\</code> and <code>[</code> in a folder name are escaped
+and match only themselves, so <code>delete_folder("a_b", recursive=True)</code> never
+touches <code>axb/</code>. That is tested on SQLite; PostgreSQL, MySQL and SQL Server
+receive the same escaped pattern but are not run by this project's tests. On SQLite, letter case is compared the way key lookups compare it:
+case-sensitive on the default table, and per the column's collation on a table
+you created yourself.</p>
 <h2 id="performance-guidelines">Performance Guidelines<a class="headerlink" href="#performance-guidelines" title="Permanent link">&para;</a></h2>
 <table>
 <thead>
@@ -13045,11 +13051,12 @@ a file.</p>
     <div class="doc doc-contents ">
 
         <p>Yield files whose key matches the glob <em>pattern</em>.</p>
-<p>Narrows SQL-side with a prefix <code>LIKE</code> where the pattern allows (on
-every dialect — SQLite's native <code>GLOB</code> is deliberately avoided because
-it mishandles <code>**</code>), then applies the full glob regex to each row.
-Costs one <code>SELECT</code>. An absent backing table yields nothing, on the same
-terms as the other listings.</p>
+<p>Narrows SQL-side by the pattern's literal directory prefix and literal
+tail (both escaped), then applies the full glob regex to each row.
+Wildcards themselves never reach SQL: a <code>LIKE</code> translation of <code>**/</code>
+or <code>[...]</code> drops keys the regex would keep, and SQLite's native
+<code>GLOB</code> mishandles <code>**</code>. Costs one <code>SELECT</code>. An absent backing
+table yields nothing, on the same terms as the other listings.</p>
 
 
 <p><span class="doc-section-title">Raises:</span></p>

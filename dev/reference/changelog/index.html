@@ -15001,6 +15001,9 @@
 <h2 id="unreleased">[Unreleased]<a class="headerlink" href="#unreleased" title="Permanent link">&para;</a></h2>
 <ul>
 <li>
+<p>BL-011: <code>SQLBlobBackend</code> matches folder prefixes literally, so <code>delete_folder("a_b", recursive=True)</code> no longer deletes <code>axb/</code> and listings no longer return it; nor does <code>%</code> or, on SQLite, a different letter case. <code>glob()</code> no longer drops matches such as a root-level file under <code>**/</code> on databases other than SQLite.</p>
+</li>
+<li>
 <p>BK-380: <strong>Breaking</strong> — Python 3.10 is no longer supported, since CPython's security fixes for it end on 2026-10-04; the minimum is now 3.11. The <code>[toml]</code> extra is removed, because <code>RegistryConfig.from_toml()</code> uses the standard library on every supported Python. <a href="https://docs.remotestore.dev/stable/reference/migration/#v0320-to-v0330">Migration guide</a>.</p>
 </li>
 <li>

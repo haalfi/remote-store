@@ -11957,7 +11957,12 @@ co-location, portable single-file archives.</p>
 <li><code>digest</code>: optional content hash as <code>"algorithm:hex"</code> string.</li>
 <li><code>extra</code>: optional JSON-encoded metadata dict.</li>
 </ul>
-<p>The <code>PRIMARY KEY</code> on <code>key</code> creates a B-tree index supporting prefix scans.</p>
+<p>The <code>PRIMARY KEY</code> on <code>key</code> creates a B-tree index. No folder-prefix query
+seeks it on SQLite. Measured with <code>EXPLAIN QUERY PLAN</code>: the key-only reads
+(the <code>SELECT 1</code> probes, <code>list_folders</code>) report <code>SCAN ... USING COVERING
+INDEX</code>, and the reads of other columns (<code>list_files</code>, <code>iter_children</code>,
+<code>glob</code>, <code>get_folder_info</code>) and <code>delete_folder</code>'s <code>DELETE</code> report a plain
+<code>SCAN</code> of the table. Other dialects were not measured.</p>
 <h3 id="sql-blob-011-custom-table-name">SQL-BLOB-011: Custom Table Name<a class="headerlink" href="#sql-blob-011-custom-table-name" title="Permanent link">&para;</a></h3>
 <p><strong>Invariant:</strong> <code>table_name</code> parameter changes the table name. The schema
 is identical.</p>
@@ -12006,7 +12011,8 @@ statement is inherently atomic within a transaction.</p>
 <p><strong>Invariant:</strong> Folder semantics are virtual (prefix-based). A "folder" is any
 prefix that has keys starting with <code>prefix/</code>.</p>
 <ul>
-<li><code>recursive=True</code>: <code>DELETE FROM t WHERE key LIKE :prefix || '/%'</code></li>
+<li><code>recursive=True</code>: <code>DELETE FROM t WHERE &lt;key under path/&gt;</code>, the SQL-BLOB-061
+  predicate.</li>
 <li><code>recursive=False</code>: Check if any keys exist with prefix. If yes, raise
   <code>DirectoryNotEmpty</code>. If no keys exist, raise <code>NotFound</code> (unless
   <code>missing_ok</code>).</li>
@@ -12017,11 +12023,11 @@ prefix that has keys starting with <code>prefix/</code>.</p>
   starts with <code>path/</code> (folder). Empty path returns <code>True</code> (root).</li>
 <li><code>is_file(path)</code>: <code>SELECT 1 FROM t WHERE key = :key</code>.</li>
 <li><code>is_folder(path)</code>: Empty path → <code>True</code>. Otherwise
-  <code>SELECT 1 FROM t WHERE key LIKE :prefix LIMIT 1</code> where prefix = <code>path/</code>.</li>
+  <code>SELECT 1 FROM t WHERE &lt;key under path/&gt; LIMIT 1</code> (SQL-BLOB-061).</li>
 </ul>
 <h3 id="sql-blob-027-list_files">SQL-BLOB-027: list_files()<a class="headerlink" href="#sql-blob-027-list_files" title="Permanent link">&para;</a></h3>
 <p><strong>Invariant:</strong> <code>SELECT key, size, modified_at, content_type, digest, extra
-FROM t WHERE key LIKE :prefix || '%'</code>.</p>
+FROM t WHERE &lt;key under path/&gt;</code> (SQL-BLOB-061; no filter at the root).</p>
 <ul>
 <li>Non-recursive: filter results to include only direct children (no additional
   <code>/</code> in the suffix after prefix).</li>
@@ -12038,7 +12044,7 @@ FROM t WHERE key = :key</code>. Maps columns to <code>FileInfo</code> fields. Ra
 <code>NotFound</code> if no row.</p>
 <h3 id="sql-blob-030-get_folder_info">SQL-BLOB-030: get_folder_info()<a class="headerlink" href="#sql-blob-030-get_folder_info" title="Permanent link">&para;</a></h3>
 <p><strong>Invariant:</strong> <code>SELECT COUNT(*), SUM(size), MAX(modified_at) FROM t
-WHERE key LIKE :prefix || '%'</code>. Returns <code>FolderInfo</code>. Raises <code>NotFound</code> if
+WHERE &lt;key under path/&gt;</code> (SQL-BLOB-061). Returns <code>FolderInfo</code>. Raises <code>NotFound</code> if
 count is 0 and path is not empty string.</p>
 <h3 id="sql-blob-031-move">SQL-BLOB-031: move()<a class="headerlink" href="#sql-blob-031-move" title="Permanent link">&para;</a></h3>
 <p><strong>Invariant:</strong> Within a single transaction:
@@ -12056,16 +12062,21 @@ count is 0 and path is not empty string.</p>
 <p><strong>Invariant:</strong> Two-stage filtering — SQL-side narrowing, then client-side
 regex to enforce GLOB-014 semantics (<code>*</code> = <code>[^/]*</code>, <code>?</code> = <code>[^/]</code>):</p>
 <ol>
-<li><strong>SQL narrowing:</strong></li>
-<li>SQLite: <code>extract_prefix(pattern)</code> yields the longest literal directory
-     prefix; if non-empty, apply <code>key LIKE 'prefix/%'</code> (backslash-escaped,
-     <code>ESCAPE '\'</code>). Patterns without a literal prefix (e.g. <code>*.txt</code>,
-     <code>**/*.csv</code>) skip the SQL filter and scan the full table.</li>
-<li>Other dialects: convert <code>*</code>/<code>**</code> → <code>%</code>, <code>?</code> → <code>_</code>, use <code>LIKE</code>.</li>
-<li><strong>Client-side regex:</strong> <code>pattern_to_regex(pattern)</code> from <code>_glob.py</code> filters
-   the SQL result set to enforce GLOB-014 semantics, ensuring <code>*</code> and <code>?</code> do
-   not match path separators.</li>
+<li><strong>SQL narrowing:</strong> on every dialect, by two literal parts of the pattern,
+   each applied only when non-empty:</li>
+<li><code>extract_prefix(pattern)</code>, the longest literal directory prefix: keys
+     under <code>prefix/</code>, by the SQL-BLOB-061 predicate.</li>
+<li>The literal tail after the last <code>*</code>, <code>?</code>, <code>[</code> or <code>]</code>: escaped
+     <code>key LIKE '%' || tail ESCAPE '\'</code>, or the same followed by one <code>\n</code>,
+     because the client-side regex anchors with <code>$</code>, which also accepts one
+     trailing newline. A tail that follows <code>**</code> drops its leading <code>/</code>,
+     because <code>**/</code> also matches zero directories.</li>
 </ol>
+<p>Wildcards themselves are never translated to <code>LIKE</code>: <code>%/</code> cannot match the
+   zero directories <code>**/</code> can, and <code>[...]</code> has no <code>LIKE</code> form.
+2. <strong>Client-side regex:</strong> <code>pattern_to_regex(pattern)</code> from <code>_glob.py</code> filters
+   the SQL result set to enforce GLOB-014 semantics, ensuring <code>*</code> and <code>?</code> do
+   not match path separators.</p>
 <p>Return <code>FileInfo</code> for all matching keys.</p>
 <hr />
 <h2 id="engine-connection">Engine &amp; Connection<a class="headerlink" href="#engine-connection" title="Permanent link">&para;</a></h2>
@@ -12164,6 +12175,22 @@ carries the roster and the three classes that are not measured.</p>
 <h3 id="sql-blob-061-prefix-matching">SQL-BLOB-061: Prefix Matching<a class="headerlink" href="#sql-blob-061-prefix-matching" title="Permanent link">&para;</a></h3>
 <p><strong>Invariant:</strong> For folder-like operations, the prefix is <code>path + "/"</code>. The
 trailing slash prevents <code>"data"</code> from matching <code>"dataset/file.txt"</code>.</p>
+<p>A key is <em>under</em> a prefix when it starts with it <strong>literally</strong>: <code>_</code>, <code>%</code>, <code>\</code>
+and <code>[</code> in the prefix are escaped and match only themselves (<code>[</code> because SQL
+Server reads <code>[...]</code> as a character class). Tested on SQLite only; PostgreSQL,
+MySQL and SQL Server receive the same escaped pattern, which no test here runs.
+Every folder-like query (the probes of
+SQL-BLOB-026, the wrong-type probe, SQL-BLOB-025, -027, -028, -030 and -033's
+narrowing) uses one predicate for it: <code>key LIKE &lt;escaped prefix&gt; || '%' ESCAPE
+'\'</code>, and on SQLite additionally <code>key = prefix || substr(key, len(prefix) + 1)</code>.</p>
+<p>On SQLite the comparison is the one <code>key = :key</code> uses: SQLite's <code>LIKE</code> folds
+ASCII case whatever the column declares, and the second clause puts the column
+on the left of <code>=</code>, so its collation decides. Measured on a default (BINARY)
+key and on a <code>create_table=False</code> table declaring <code>key TEXT COLLATE NOCASE</code>;
+<code>substr(key, 1, n) = prefix</code> would compare BINARY on both, since a function
+result carries no collation. On other dialects the predicate is the escaped
+<code>LIKE</code> alone, so case and padding follow that database's <code>LIKE</code>, which was not
+measured against its <code>=</code>.</p>
 <hr />
 <h2 id="performance">Performance<a class="headerlink" href="#performance" title="Permanent link">&para;</a></h2>
 <h3 id="sql-blob-070-blob-size-guidelines">SQL-BLOB-070: Blob Size Guidelines<a class="headerlink" href="#sql-blob-070-blob-size-guidelines" title="Permanent link">&para;</a></h3>
