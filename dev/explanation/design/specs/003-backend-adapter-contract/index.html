@@ -11952,9 +11952,12 @@ belongs — and the store reports itself healthy while holding nothing. That
 observation belongs in the health probe, which is off BE-021's roster and free
 to make it: <code>LocalBackend.check_health</code> tests <code>is_dir()</code>, not mere existence,
 for exactly this reason.</p>
-<p><strong>Conformance pins the outcome, not the order</strong> — and does not need to pin
-both: a backend that gets the order wrong is observable as exactly the wrong
-error class or a spurious success, which is what the cells below assert.</p>
+<p><strong>Conformance pins the outcome, not the order.</strong> A wrong order is visible to
+the cells below only where the root's own answer is wrong, and a present root
+often answers correctly by observation, so the order is unpinned there on every
+row. It matters once the container is absent, which no conformance fixture
+arranges (ID-261, BK-345); the backends that can lose theirs pin it per
+backend.</p>
 <p><strong>BE-020 outranks this check.</strong> On a backend with <code>close_is_terminal = True</code>,
 every operation in the table above except the addressing row raises
 <code>BackendUnavailable</code> <em>after</em> <code>close()</code> — not <code>InvalidPath</code> from a file- or
@@ -12070,9 +12073,18 @@ root and <code>is_root</code> does not recognise; measured against a <code>Local
 root had been deleted, a guard written as <code>if is_root(path)</code> let <code>write("./")</code>
 leave the root a regular file and <code>open_atomic("./")</code> return cleanly having done
 it — the whole defect, one character from the spelling it caught. <strong>So a backend
-implementing this clause as <code>if is_root(path)</code> is not conformant</strong>, even though
-it passes the conformance cells below, which are parametrised over the two
-canonical spellings because they also assert <code>is_root</code> on the raised path.</p>
+implementing this clause as <code>if is_root(path)</code> is not conformant</strong>. The write
+and <code>move</code>/<code>copy</code> destination cells below run all six spellings listed next,
+and require only that the raised path name the root under some spelling, since
+a backend may echo the raw key or fold it first (the verified oracle folds every
+spelling onto <code>"."</code>). <strong>They catch an <code>is_root</code> guard only where nothing
+behind the guard refuses the key.</strong> Whether something does depends on the
+backend: a hierarchical store with its container present refuses <code>"./"</code> by its
+own directory check, so there only the root destination against a missing
+source sees the narrow guard, and a flat store's own key handling may or may
+not refuse it. The case the order exists for, the absent-container write, is
+reached by no conformance fixture (BK-345), so it is pinned per backend. The
+per-lane measurement is recorded in the ID-251 trace.</p>
 <p>Decide it instead on the key's addressable segments: drop empty and <code>"."</code>
 segments, and refuse when nothing is left. That covers <code>""</code>, <code>"."</code>, <code>"./"</code>,
 <code>".//"</code>, <code>"./."</code> and <code>"/"</code>.
@@ -12142,7 +12154,8 @@ reachability argument is a clause that is wrong on the namespace nobody checked.
 and the row above governs it.</p>
 <p><strong>Conformance:</strong> <code>tests/backends/conformance/test_io.py::TestBackendRootPath</code>
 and its async sibling in <code>test_async_extended.py</code>, both gated on
-<code>Capability.LIST</code> and parametrised over both spellings; addressing is covered by
+<code>Capability.LIST</code> and parametrised over both spellings, except the write and
+<code>move</code>/<code>copy</code> destination cells, which run all six; addressing is covered by
 <code>test_identity.py::TestBackendNativePath</code> (sync) and
 <code>test_async_extended.py::TestAsyncBackendNativePath</code> (async).</p>
 <p><strong>Coverage note.</strong> Two LIST-capable backends reach these cells only in part, and
