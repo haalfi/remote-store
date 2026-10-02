@@ -9,7 +9,7 @@ spec RET-015 and the sync HTTP ``HTTP-RETRY-001`` contract.
 from __future__ import annotations
 
 import random
-from datetime import datetime, timedelta, timezone
+from datetime import UTC, datetime, timedelta
 
 import pytest
 from hypothesis import given
@@ -73,20 +73,20 @@ def test_parse_retry_after_scalar_and_garbage(value: str | None, expected: float
 
 
 def test_parse_retry_after_http_date_uses_injected_now() -> None:
-    now = datetime(2025, 1, 1, 12, 0, 0, tzinfo=timezone.utc)
+    now = datetime(2025, 1, 1, 12, 0, 0, tzinfo=UTC)
     future = "Wed, 01 Jan 2025 12:02:00 GMT"  # 120 s after `now`
     assert parse_retry_after(future, now=now) == pytest.approx(120.0)
 
 
 def test_parse_retry_after_past_date_clamps_to_zero() -> None:
-    now = datetime(2025, 1, 1, 12, 0, 0, tzinfo=timezone.utc)
+    now = datetime(2025, 1, 1, 12, 0, 0, tzinfo=UTC)
     past = "Sun, 15 Mar 2020 12:00:00 GMT"
     assert parse_retry_after(past, now=now) == 0.0
 
 
 def test_parse_retry_after_naive_date_assumed_utc() -> None:
     # A date with no timezone token is assumed UTC rather than rejected (GR-048).
-    now = datetime(2025, 1, 1, 0, 0, 0, tzinfo=timezone.utc)
+    now = datetime(2025, 1, 1, 0, 0, 0, tzinfo=UTC)
     assert parse_retry_after("Thu, 01 Jan 2026 00:00:00", now=now) == pytest.approx(timedelta(days=365).total_seconds())
 
 

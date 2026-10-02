@@ -3,7 +3,7 @@
 
 One file per extra in `pyproject.toml`'s `[project.optional-dependencies]`,
 excluding the developer and build aggregates (`dev`, `docs`, `bench`,
-`mutate`) and the marker-gated extras (`toml`, and `mutate` again). Each file pins the full transitive resolution
+`mutate`) and any marker-gated extra (none today; `scripts/drift_check.py` derives the set). Each file pins the full transitive resolution
 captured when `remote-store[<extra>]` was last known-good.
 
 `.github/workflows/drift-guard.yml` re-resolves each extra weekly with

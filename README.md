@@ -31,7 +31,7 @@ Where files live is configuration, not application code.
 Under the hood, established Python libraries like `s3fs`, `paramiko`,
 and `azure-storage-file-datalake` do the real work.
 
-**Requires Python 3.10+.** The core API is synchronous; an async counterpart is available via `remote_store.aio` (also home to the async-only Microsoft Graph backend for OneDrive / SharePoint / Teams). See the [concurrency guide](https://docs.remotestore.dev/stable/explanation/concurrency/) for atomicity caveats and race conditions.
+**Requires Python 3.11+.** The core API is synchronous; an async counterpart is available via `remote_store.aio` (also home to the async-only Microsoft Graph backend for OneDrive / SharePoint / Teams). See the [concurrency guide](https://docs.remotestore.dev/stable/explanation/concurrency/) for atomicity caveats and race conditions.
 
 <!-- omit in toc -->
 ## Table of Contents
@@ -89,7 +89,6 @@ pip install "remote-store[arrow]"          # PyArrow filesystem adapter
 pip install "remote-store[otel]"           # OpenTelemetry instrumentation
 pip install "remote-store[yaml]"           # YAML config support
 pip install "remote-store[pydantic]"       # Pydantic BaseSettings config
-pip install "remote-store[toml]"           # TOML config on Python < 3.11
 ```
 
 Every extra declares a version floor; a ceiling is the exception. See the

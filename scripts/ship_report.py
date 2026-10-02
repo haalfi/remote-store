@@ -433,7 +433,7 @@ def trace_block(data: dict[str, Any]) -> str:
     """The trace's ``review:`` key, pasted verbatim. ``review_rounds`` stays at
     a findable indent so ``rfc-0015-rounds.py`` still reads it."""
     # Hoisted rather than nested in the f-string below: a same-quote nested
-    # f-string needs PEP 701 (3.12), and this repo supports 3.10.
+    # f-string needs PEP 701 (3.12), and this repo supports 3.11.
     # `--trace-block-only`, because `derivation` is declared "re-runnable as
     # written" and the bare command prints the Markdown report instead. The one
     # field whose whole job is to name its derivation cannot name the wrong one.

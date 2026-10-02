@@ -4,7 +4,7 @@ from __future__ import annotations
 
 import logging
 import re
-from datetime import timezone
+from datetime import UTC
 from typing import TYPE_CHECKING, Any
 
 from azure.core.exceptions import (
@@ -270,7 +270,7 @@ def props_to_fileinfo(props: Any, path: str) -> FileInfo:
     size = getattr(props, "size", None) or getattr(props, "content_length", 0) or 0
     modified = getattr(props, "last_modified", None)
     if modified is not None and modified.tzinfo is None:
-        modified = modified.replace(tzinfo=timezone.utc)  # pragma: no cover
+        modified = modified.replace(tzinfo=UTC)  # pragma: no cover
     if modified is None:
         modified = _UNKNOWN_MODIFIED_AT
     # ETag: Azure returns it double-quoted (e.g. '"0x8D4BCC2E4835CD0"'); strip and lowercase.

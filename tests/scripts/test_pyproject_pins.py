@@ -45,16 +45,11 @@ Bounds
 
 from __future__ import annotations
 
+import tomllib
 from dataclasses import dataclass
 from pathlib import Path
 
 import pytest
-
-try:
-    import tomllib
-except ImportError:  # pragma: no cover — py3.10 fallback
-    import tomli as tomllib  # type: ignore[no-redef]
-
 from packaging.requirements import Requirement
 from packaging.utils import canonicalize_name
 

@@ -4,7 +4,7 @@ from __future__ import annotations
 
 import os
 import tempfile
-from datetime import datetime, timezone
+from datetime import UTC, datetime
 from pathlib import Path
 from typing import Any
 from unittest.mock import patch
@@ -30,7 +30,7 @@ from remote_store.backends._memory import MemoryBackend
 
 from .conftest import make_restricted_store
 
-NOW = datetime(2024, 1, 1, tzinfo=timezone.utc)
+NOW = datetime(2024, 1, 1, tzinfo=UTC)
 
 
 # region: _types.py — verify type aliases are importable and usable

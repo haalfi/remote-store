@@ -9,7 +9,7 @@ from __future__ import annotations
 import dataclasses
 import re
 import typing
-from datetime import datetime, timezone
+from datetime import UTC, datetime
 from typing import TYPE_CHECKING, Literal
 
 if TYPE_CHECKING:
@@ -21,7 +21,7 @@ _HEX_RE = re.compile(r"^[0-9a-f]+$")
 
 # FileInfo.modified_at for a file whose time the backend cannot know. Folder
 # aggregation skips it: the latest *known* time, or None (RFC-0017 D3).
-_UNKNOWN_MODIFIED_AT = datetime.min.replace(tzinfo=timezone.utc)
+_UNKNOWN_MODIFIED_AT = datetime.min.replace(tzinfo=UTC)
 
 
 def _known_modified_at(value: datetime) -> datetime | None:

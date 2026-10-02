@@ -227,9 +227,10 @@ primitives, since its failures are status codes rather than exceptions.
 `DriverBackend(Backend)` implements the 21 methods audit-021 command (a)
 names (`close` and `check_health` among them) over a driver and forwards the
 other 6 public members (`name`, `capabilities`, `unwrap`, `native_path`,
-`to_key`, `resolve`). `Backend` has 27 public `def`s, lines 68 to 578 of
-`_backend.py` by `rg -n '^    def [a-z]' _backend.py`, whose 28th match is
-`_SeekableSpool.seekable` at line 44, above `class Backend`. It owns, once:
+`to_key`, `resolve`). `Backend` has 27 public `def`s, lines 57 to 571 of
+`_backend.py` by `rg -n '^    def [a-z]' _backend.py`, every match inside
+`class Backend` (re-run when BK-380 deleted the `_SeekableSpool` helper that
+was a 28th match above it). It owns, once:
 
 - root refusal from the key (BE-029, both predicates as `_flat_ns` now states
   them), and the closed guard, in the order spec 003 fixes; these are

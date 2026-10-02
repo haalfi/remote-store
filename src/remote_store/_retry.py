@@ -26,7 +26,7 @@ deterministically testable.
 from __future__ import annotations
 
 import random
-from datetime import datetime, timezone
+from datetime import UTC, datetime
 from email.utils import parsedate_to_datetime
 from typing import TYPE_CHECKING
 
@@ -73,8 +73,8 @@ def parse_retry_after(value: str | None, *, now: datetime | None = None) -> floa
     except (TypeError, ValueError):
         return None
     if target.tzinfo is None:
-        target = target.replace(tzinfo=timezone.utc)
-    reference = now if now is not None else datetime.now(tz=timezone.utc)
+        target = target.replace(tzinfo=UTC)
+    reference = now if now is not None else datetime.now(tz=UTC)
     return max(0.0, (target - reference).total_seconds())
 
 

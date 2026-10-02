@@ -10,7 +10,7 @@ import urllib.error
 import urllib.parse
 import urllib.request
 from collections.abc import Callable
-from datetime import timezone
+from datetime import UTC
 from email.utils import parsedate_to_datetime
 from typing import TYPE_CHECKING, BinaryIO, ClassVar, Protocol, TypeVar, cast, runtime_checkable
 
@@ -620,7 +620,7 @@ class ReadOnlyHttpBackend(Backend):
             with contextlib.suppress(Exception):
                 modified_at = parsedate_to_datetime(last_modified)
                 if modified_at.tzinfo is None:  # pragma: no cover — defensive for non-standard dates
-                    modified_at = modified_at.replace(tzinfo=timezone.utc)
+                    modified_at = modified_at.replace(tzinfo=UTC)
 
         etag = headers.get("etag")
         content_type = headers.get("content-type")

@@ -11,7 +11,7 @@ import asyncio
 import contextlib
 import logging
 import re
-from datetime import datetime, timezone
+from datetime import UTC, datetime
 from typing import TYPE_CHECKING, Any
 from unittest.mock import AsyncMock, MagicMock, patch
 
@@ -163,7 +163,7 @@ def _mock_blob_props(
         props.name = name
     props.size = size
     props.content_length = size
-    props.last_modified = datetime(2024, 1, 1, tzinfo=timezone.utc)
+    props.last_modified = datetime(2024, 1, 1, tzinfo=UTC)
     props.etag = etag
     cs = MagicMock(spec=ContentSettings)
     cs.content_md5 = md5
@@ -519,21 +519,14 @@ class TestAsyncAzureErrorMapping:
         constrains the output whatever the input's provenance. The loopback file
         drives what aiohttp *does* produce, and it is never blank.
 
-        ``asyncio.wait_for`` rather than ``asyncio.timeout``: the latter is 3.11+
-        and broke the 3.10 CI leg. ``asyncio.TimeoutError`` rather than the
-        builtin, because on 3.10 they are **not** the same class, and
-        ``asyncio.TimeoutError`` is the one azure-core's arms catch. That half is
-        not observable from the interpreter this file usually runs on, so here is
-        the derivation: ``asyncio.TimeoutError is TimeoutError`` gives ``False``
-        on 3.10.20 and ``True`` on 3.13.11, and ``wait_for`` raises
-        ``asyncio.exceptions.TimeoutError`` on the former, the builtin on the
-        latter. The blank shape is identical on both — ``args == ()``,
-        ``str() == ""`` — which is why the assertions below hold everywhere. The
-        3.10 CI leg is what keeps the claim honest.
+        On every supported interpreter ``asyncio.TimeoutError`` is the builtin
+        ``TimeoutError``, so the one class this catches is the one azure-core's
+        arms catch. A fired timeout is blank — ``args == ()``, ``str() == ""`` —
+        which is the shape the assertions below need.
         """
         try:
             await asyncio.wait_for(asyncio.sleep(5), 0.001)
-        except asyncio.TimeoutError as timed_out:
+        except TimeoutError as timed_out:
             inner: BaseException = timed_out
         else:  # pragma: no cover -- the sleep is 5000x the bound
             pytest.fail("the timeout did not fire")
@@ -727,7 +720,7 @@ class TestAsyncAzureReadWrite:
 
         mock_response = {
             "etag": '"0x8D4BCC2E4835CD0"',
-            "last_modified": datetime(2024, 1, 1, tzinfo=timezone.utc),
+            "last_modified": datetime(2024, 1, 1, tzinfo=UTC),
         }
         bc.upload_blob = AsyncMock(return_value=mock_response)
 
@@ -736,7 +729,7 @@ class TestAsyncAzureReadWrite:
         assert isinstance(result, WriteResult)
         assert result.source == "native"
         assert result.etag == "0x8d4bcc2e4835cd0"
-        assert result.last_modified == datetime(2024, 1, 1, tzinfo=timezone.utc)
+        assert result.last_modified == datetime(2024, 1, 1, tzinfo=UTC)
         assert result.size == 5
 
     @pytest.mark.spec("WR-010")
@@ -1256,14 +1249,14 @@ class TestAsyncAzureMetadata:
 
         blob1 = _mock_blob_props(size=10)
         blob2 = _mock_blob_props(size=20)
-        blob2.last_modified = datetime(2024, 6, 1, tzinfo=timezone.utc)
+        blob2.last_modified = datetime(2024, 6, 1, tzinfo=UTC)
 
         cc.list_blobs.return_value = _async_iter([blob1, blob2])
 
         info = await backend.get_folder_info("dir")
         assert info.file_count == 2
         assert info.total_size == 30
-        assert info.modified_at == datetime(2024, 6, 1, tzinfo=timezone.utc)
+        assert info.modified_at == datetime(2024, 6, 1, tzinfo=UTC)
 
     @pytest.mark.spec("ASYNC-017")
     async def test_get_folder_info_not_found(self) -> None:
@@ -1587,7 +1580,7 @@ class TestAsyncAzureGlob:
         blob1 = MagicMock(spec=BlobProperties)
         blob1.name = "data/report.csv"
         blob1.size = 100
-        blob1.last_modified = datetime(2024, 1, 1, tzinfo=timezone.utc)
+        blob1.last_modified = datetime(2024, 1, 1, tzinfo=UTC)
         blob1.etag = None
         blob1.content_settings = MagicMock(spec=ContentSettings)
         blob1.content_settings.content_md5 = None
@@ -1595,7 +1588,7 @@ class TestAsyncAzureGlob:
         blob2 = MagicMock(spec=BlobProperties)
         blob2.name = "data/image.png"
         blob2.size = 200
-        blob2.last_modified = datetime(2024, 1, 1, tzinfo=timezone.utc)
+        blob2.last_modified = datetime(2024, 1, 1, tzinfo=UTC)
         blob2.etag = None
         blob2.content_settings = MagicMock(spec=ContentSettings)
         blob2.content_settings.content_md5 = None
@@ -1982,7 +1975,7 @@ class TestAsyncAzureHNSPaths:
         props = MagicMock(
             spec=["etag", "last_modified"],
             etag='"abc123"',
-            last_modified=datetime(2024, 1, 1, tzinfo=timezone.utc),
+            last_modified=datetime(2024, 1, 1, tzinfo=UTC),
         )
         final_fc.get_file_properties = AsyncMock(return_value=props)
         tmp_fc.rename_file.return_value = final_fc
@@ -1995,7 +1988,7 @@ class TestAsyncAzureHNSPaths:
         assert isinstance(result, WriteResult)
         assert result.source == "native"
         assert result.etag == "abc123"
-        assert result.last_modified == datetime(2024, 1, 1, tzinfo=timezone.utc)
+        assert result.last_modified == datetime(2024, 1, 1, tzinfo=UTC)
         assert result.size == 7
         assert result.version_id is None
         assert result.digest is None
@@ -2018,7 +2011,7 @@ class TestAsyncAzureHNSPaths:
         props = MagicMock(
             spec=["etag", "last_modified"],
             etag='"deadbeef"',
-            last_modified=datetime(2025, 6, 1, tzinfo=timezone.utc),
+            last_modified=datetime(2025, 6, 1, tzinfo=UTC),
         )
         final_fc.get_file_properties = AsyncMock(return_value=props)
         tmp_fc.rename_file.return_value = final_fc
@@ -2029,7 +2022,7 @@ class TestAsyncAzureHNSPaths:
 
         assert result.source == "native"
         assert result.etag == "deadbeef"  # quote-stripped by _build_azure_write_result
-        assert result.last_modified == datetime(2025, 6, 1, tzinfo=timezone.utc)
+        assert result.last_modified == datetime(2025, 6, 1, tzinfo=UTC)
         assert result.size == 5
 
     @pytest.mark.spec("WR-004", "WR-001a")

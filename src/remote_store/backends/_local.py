@@ -7,7 +7,7 @@ import logging
 import os
 import shutil
 import tempfile
-from datetime import datetime, timezone
+from datetime import UTC, datetime
 from pathlib import Path
 from typing import TYPE_CHECKING, BinaryIO, ClassVar
 
@@ -308,7 +308,7 @@ class LocalBackend(Backend):
             path=RemotePath(path),
             size=size,
             source="native",
-            last_modified=datetime.fromtimestamp(st.st_mtime, tz=timezone.utc),
+            last_modified=datetime.fromtimestamp(st.st_mtime, tz=UTC),
         )
 
     def write_atomic(
@@ -374,7 +374,7 @@ class LocalBackend(Backend):
             path=RemotePath(path),
             size=size,
             source="native",
-            last_modified=datetime.fromtimestamp(st.st_mtime, tz=timezone.utc),
+            last_modified=datetime.fromtimestamp(st.st_mtime, tz=UTC),
         )
 
     @contextlib.contextmanager
@@ -654,7 +654,7 @@ class LocalBackend(Backend):
                 total_size += st.st_size
                 if latest_mtime is None or st.st_mtime > latest_mtime:
                     latest_mtime = st.st_mtime
-        modified_at = datetime.fromtimestamp(latest_mtime, tz=timezone.utc) if latest_mtime is not None else None
+        modified_at = datetime.fromtimestamp(latest_mtime, tz=UTC) if latest_mtime is not None else None
         return FolderInfo(
             path=RemotePath.from_backend_path(path),
             file_count=file_count,
@@ -909,7 +909,7 @@ class LocalBackend(Backend):
             path=RemotePath(path),
             name=full.name,
             size=st.st_size,
-            modified_at=datetime.fromtimestamp(st.st_mtime, tz=timezone.utc),
+            modified_at=datetime.fromtimestamp(st.st_mtime, tz=UTC),
         )
 
     # endregion

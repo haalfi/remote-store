@@ -6,7 +6,7 @@ import contextlib
 import io
 import logging
 import threading
-from datetime import datetime, timezone
+from datetime import UTC, datetime
 from typing import TYPE_CHECKING, Any, BinaryIO, ClassVar
 
 from remote_store._backend import Backend
@@ -189,7 +189,7 @@ class MemoryBackend(Backend):
             # reflect lock-acquisition order: a late-acquiring writer must
             # not stamp an earlier timestamp than an earlier-acquiring writer
             # on the same key.
-            now = datetime.now(timezone.utc)
+            now = datetime.now(UTC)
             parent = self._ensure_parents(segments)
             leaf = segments[-1]
             existing = parent.children.get(leaf)
@@ -614,7 +614,7 @@ class MemoryBackend(Backend):
 
             new_entry = _FileEntry(
                 data=bytearray(src_node.data),
-                modified_at=datetime.now(timezone.utc),
+                modified_at=datetime.now(UTC),
                 content_type=src_node.content_type,
                 metadata=src_node.metadata,
             )

@@ -4,10 +4,10 @@
 
 | Field         | Value    |
 | ------------- | -------- |
-| Status        | Accepted |
-| Supersedes    | —        |
-| Superseded by | —        |
-| Amends        | —        |
+| Status        | Superseded |
+| Supersedes    | —          |
+| Superseded by | ADR-0043   |
+| Amends        | —          |
 
 Builds on the Stage model of
 [ADR-0028](0028-testing-architecture-kind-stage-replay.md) (Stage 1 = repo-only,

@@ -5,14 +5,9 @@ transitive versions (including pre-releases) and diffs the resolution
 against a committed baseline in ``infra/drift-locks/``. The scheduled
 workflow that drives this lives at ``.github/workflows/drift-guard.yml``.
 
-The script depends only on the standard library on Python 3.11+
-(``tomllib`` is stdlib). On Python 3.10 the ``tomli`` package is required —
-``[dev]`` brings it in for local development, and a standalone 3.10 invocation
-needs ``pip install tomli`` first. **The floor lane is exactly that case in
-CI**: its jobs run on the oldest interpreter ``requires-python`` admits, so
-``.github/workflows/drift-guard.yml`` installs ``tomli; python_version <
-'3.11'`` before calling ``floor`` or ``min-python``. Every other job runs on the
-primary interpreter, where the question does not arise.
+The script depends only on the standard library on every supported interpreter
+(``tomllib`` is stdlib), so the floor lane — which runs on the oldest one
+``requires-python`` admits — can call it with nothing installed first.
 
 Subcommands:
 
@@ -122,15 +117,10 @@ import re
 import subprocess
 import sys
 import tempfile
+import tomllib
 import venv
 from dataclasses import dataclass
 from pathlib import Path
-
-try:
-    import tomllib
-except ImportError:  # pragma: no cover — Python <3.11 fallback
-    import tomli as tomllib  # type: ignore[no-redef]
-
 
 sys.path.insert(0, str(Path(__file__).resolve().parent))
 
@@ -419,9 +409,9 @@ def _direct_requirements_for(extra: str) -> dict[str, str]:
     **The unit of deduplication is the whole declaration, marker included.**
     Two declarations of one package that differ only in their marker are
     therefore kept as a pair and joined, which is a string no resolver would
-    accept (``dev``'s ``tomli`` is the live example). No tracked extra is in
-    that shape — it needs one extra to aggregate another that declares the same
-    package under a marker — and the published page only renders
+    accept. No extra is in that shape today — it needs one extra to aggregate
+    another that declares the same package under a marker — and the published
+    page only renders
     ``list_extras()``, so this is a stated bound rather than a defect. Splitting
     on the marker would need the callers to agree on which side wins, and none
     of them has that question today.

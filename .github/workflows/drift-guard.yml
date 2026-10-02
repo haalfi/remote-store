@@ -406,13 +406,6 @@ jobs:
         with:
           python-version: ${{ needs.setup.outputs.min_python }}
 
-      # `drift_check.py` reads pyproject.toml, and `tomllib` is stdlib only
-      # from 3.11. Every other job runs on the primary interpreter where the
-      # question does not arise; this one runs on the minimum, which is exactly
-      # the case the script's own docstring says needs `tomli`.
-      - name: Install the script's own dependency on older interpreters
-        run: python -m pip install --quiet "tomli; python_version < '3.11'"
-
       - uses: astral-sh/setup-uv@v10.2.0
         with:
           enable-cache: false

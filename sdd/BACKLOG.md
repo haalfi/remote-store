@@ -518,6 +518,14 @@ or paying for our shortcut.
 **Promise:** nothing reaches a user that we did not test, publish, watch, or
 give them a way to absorb.
 
+- [ ] **BK-392 — A release can drop an interpreter before its support window closes, and nothing checks the date**
+  spec: — · effort: S · audience: user.api, contributor.tooling
+  Rule 8 promises support until security fixes end; `check-support-windows`
+  dates floor raises, but nothing dates a dropped classifier, and the chart
+  and drift-guard stop showing it, so the Rule 8 release step is blind to it.
+  **Until then: v0.33.0, which drops 3.10 (BK-380), is not tagged before
+  2026-10-04.** Open decision: script or checklist step.
+
 - [ ] **BUG-289 — Two floors are clean for a user and red for the suite, because the suite rejects warnings**
   spec: — · effort: S · audience: user.api, infra.test
   The floor lane runs each extra's pytest target under this repo's
@@ -634,15 +642,6 @@ give them a way to absorb.
   on every build. Open decision: trial `zensical build` now, or wait for
   API-reference parity.
   Detail: [dossier](backlog/id-225-zensical-migration.md)
-
-- [ ] **BK-380 — Python 3.10 stops getting security fixes on 2026-10-04, and the drop is a breaking change of its own**
-  spec: — · effort: M · audience: user.api
-  CPython 3.10 loses security support on 2026-10-04, and ADR-0039 already
-  ties our support to that; dropping it moves seven spellings of the
-  supported set at once, no gate compares all of them, and it is breaking.
-  Re-read, all seven still say 3.10. Open decision: none on shape; the
-  ripple list and the measured CI saving are in the dossier.
-  Detail: [dossier](backlog/bk-380-drop-python-310.md)
 
 ---
 
