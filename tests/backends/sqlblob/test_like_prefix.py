@@ -20,7 +20,7 @@ from remote_store._errors import DirectoryNotEmpty, InvalidPath, NotFound
 from remote_store._glob import pattern_to_regex
 from remote_store._models import FileInfo
 from remote_store._path import RemotePath
-from remote_store.backends._sqlalchemy import SQLBlobBackend, _glob_literal_suffix
+from remote_store.backends._sqlalchemy import SQLBlobBackend, _glob_suffix_clause
 
 if TYPE_CHECKING:
     from collections.abc import Iterator
@@ -188,36 +188,48 @@ def test_escape_alone_keeps_metacharacters_literal(backend: SQLBlobBackend, fold
 
 
 _TOKENS = ("a", "/", "*", "**", "**/", "?", "[ab]", "[!a]", "[", "]")
-_KEY_CHARS = "ab/[]"
+_KEY_CHARS = "ab/[]\n"
 
 
 @pytest.mark.spec("SQL-BLOB-033")
-def test_glob_literal_suffix_never_excludes_a_match() -> None:
-    """Every key the glob regex accepts ends with the suffix SQL narrows by.
+def test_glob_suffix_clause_never_excludes_a_match() -> None:
+    """The SQL suffix clause selects a superset of the keys the glob regex accepts.
 
-    Enumerated rather than sampled: every pattern of up to three tokens against
-    every key of up to four characters, so ``**/`` (which matches zero
-    directories), classes and stray brackets meet each other in every order.
+    The real clause runs against SQLite, so this pins the SQL ``glob()`` issues,
+    not a Python model of it. Enumerated rather than sampled: every pattern of
+    up to three tokens against every key of up to four characters, so ``**/``
+    (which matches zero directories), classes, stray brackets and the trailing
+    newline the regex's ``$`` admits meet each other in every order.
     """
     patterns = {"".join(p) for n in range(1, 4) for p in itertools.product(_TOKENS, repeat=n)}
     keys = ["".join(k) for n in range(1, 5) for k in itertools.product(_KEY_CHARS, repeat=n)]
-    misses: list[tuple[str, str, str]] = []
-    for pattern in sorted(patterns):
-        try:
-            with warnings.catch_warnings():
-                # "[[ab]" compiles with re's possible-nested-set FutureWarning
-                warnings.simplefilter("ignore", FutureWarning)
-                rx = pattern_to_regex(pattern)
-        except ValueError:
-            continue  # not a glob pattern_to_regex accepts; glob() raises the same way
-        suffix = _glob_literal_suffix(pattern)
-        misses.extend((pattern, key, suffix) for key in keys if rx.match(key) and not key.endswith(suffix))
+    engine = sa.create_engine("sqlite://", poolclass=StaticPool)
+    table = sa.Table("k", sa.MetaData(), sa.Column("key", sa.Text, primary_key=True))
+    table.metadata.create_all(engine)
+    misses: list[tuple[str, str]] = []
+    with engine.begin() as conn:
+        conn.execute(table.insert(), [{"key": k} for k in keys])
+        for pattern in sorted(patterns):
+            try:
+                with warnings.catch_warnings():
+                    # "[[ab]" compiles with re's possible-nested-set FutureWarning
+                    warnings.simplefilter("ignore", FutureWarning)
+                    rx = pattern_to_regex(pattern)
+            except ValueError:
+                continue  # not a glob pattern_to_regex accepts; glob() raises the same way
+            clause = _glob_suffix_clause(table.c.key, pattern)
+            if clause is None:
+                continue
+            selected = {row[0] for row in conn.execute(sa.select(table.c.key).where(clause))}
+            misses.extend((pattern, k) for k in keys if rx.match(k) and k not in selected)
+    engine.dispose()
     assert misses == []
 
 
 GLOBS = [
     pytest.param("**/*.csv", {"a.csv", "d/b.csv"}, id="double_star_root"),
     pytest.param("**/a.csv", {"a.csv"}, id="double_star_literal_tail"),
+    pytest.param("*.txt", {"t.txt\n"}, id="trailing_newline_admitted_by_regex"),
     pytest.param("*_b/x.txt", {"a_b/x.txt"}, id="underscore_in_tail"),
     pytest.param("*\\b/s.txt", {"a\\b/s.txt"}, id="backslash_in_tail"),
     pytest.param("a_b/*", {"a_b/x.txt"}, id="underscore_literal"),
@@ -234,7 +246,7 @@ def test_glob_is_dialect_independent(
     backend: SQLBlobBackend, sqlite_dialect: bool, pattern: str, expected: set[str]
 ) -> None:
     """The SQL narrowing never drops a key the glob regex would keep, on any dialect branch."""
-    for key in ("a.csv", "d/b.csv", "kx", "k]x", "A_B/x.txt", "aXb/x.txt"):
+    for key in ("a.csv", "d/b.csv", "kx", "k]x", "A_B/x.txt", "aXb/x.txt", "t.txt\n"):
         backend.write(key, b"1")
     backend._is_sqlite = sqlite_dialect
     assert {str(f.path) for f in backend.glob(pattern)} == {str(RemotePath(k)) for k in expected}

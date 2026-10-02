@@ -60,9 +60,34 @@ def _set_sqlite_pragmas(dbapi_conn: Any, _connection_record: Any) -> None:
     cursor.close()
 
 
+_LIKE_ESCAPE = "\\"  # the one escape character for every LIKE built here
+
+
 def _escape_like(literal: str) -> str:
-    """Escape *literal* so it matches only itself in a ``LIKE ... ESCAPE '\\'`` pattern."""
-    return literal.replace("\\", "\\\\").replace("%", "\\%").replace("_", "\\_")
+    """Escape *literal* so it matches only itself in a ``LIKE`` declaring ``ESCAPE _LIKE_ESCAPE``.
+
+    The escape character itself goes first, or its own escapes would be doubled.
+    """
+    return (
+        literal.replace(_LIKE_ESCAPE, _LIKE_ESCAPE * 2)
+        .replace("%", _LIKE_ESCAPE + "%")
+        .replace("_", _LIKE_ESCAPE + "_")
+    )
+
+
+def _glob_suffix_clause(column: sa.ColumnElement[str], pattern: str) -> sa.ColumnElement[bool] | None:
+    """Return a ``WHERE`` clause every key the glob *pattern* accepts satisfies, or ``None``.
+
+    The clause is a necessary condition, never the match: ``glob`` still applies
+    ``pattern_to_regex`` to every row it returns. That regex anchors with ``$``,
+    which also accepts one trailing ``\\n``, so a key may end with the tail or
+    with the tail plus a newline.
+    """
+    tail = _glob_literal_suffix(pattern)
+    if not tail:
+        return None
+    escaped = "%" + _escape_like(tail)
+    return sa.or_(column.like(escaped, escape=_LIKE_ESCAPE), column.like(escaped + "\n", escape=_LIKE_ESCAPE))
 
 
 def _glob_literal_suffix(pattern: str) -> str:
@@ -477,7 +502,7 @@ class SQLBlobBackend(_SQLAlchemyBaseBackend):
         BINARY even on a ``COLLATE NOCASE`` key.)
         """
         key = self._table.c.key
-        clause: sa.ColumnElement[bool] = key.like(_escape_like(prefix) + "%", escape="\\")
+        clause: sa.ColumnElement[bool] = key.like(_escape_like(prefix) + "%", escape=_LIKE_ESCAPE)
         if self._is_sqlite:
             rest = sa.func.substr(key, len(prefix) + 1)
             clause = sa.and_(clause, key == sa.literal(prefix, sa.Text) + rest)
@@ -1346,8 +1371,8 @@ class SQLBlobBackend(_SQLAlchemyBaseBackend):
         tail (both escaped), then applies the full glob regex to each row.
         Wildcards themselves never reach SQL: a ``LIKE`` translation of ``**/``
         or ``[...]`` drops keys the regex would keep, and SQLite's native
-        ``GLOB`` mishandles ``**``. Costs one ``SELECT``. An absent backing table yields nothing, on the same
-        terms as the other listings.
+        ``GLOB`` mishandles ``**``. Costs one ``SELECT``. An absent backing
+        table yields nothing, on the same terms as the other listings.
 
         Raises:
             BackendUnavailable: If the database operation fails, surfaced during
@@ -1364,9 +1389,9 @@ class SQLBlobBackend(_SQLAlchemyBaseBackend):
             prefix = extract_prefix(pattern)
             if prefix:
                 query = query.where(self._under(prefix + "/"))
-            suffix = _glob_literal_suffix(pattern)
-            if suffix:
-                query = query.where(self._table.c.key.like("%" + _escape_like(suffix), escape="\\"))
+            suffix_clause = _glob_suffix_clause(self._table.c.key, pattern)
+            if suffix_clause is not None:
+                query = query.where(suffix_clause)
             rows = conn.execute(query).fetchall()
             yield from (self._row_to_file_info(row) for row in rows if rx.match(row[0]))
 

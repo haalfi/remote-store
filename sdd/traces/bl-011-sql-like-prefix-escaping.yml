@@ -11,6 +11,9 @@ discovery_followups:
   # Round 2's measuring reviewer saw write("\\") raise yet store the row;
   # reproduced on SQLBlobBackend and MemoryBackend, unreachable through Store.
   - BUG-297
+  # External review input (Perplexity, relayed by the maintainer) named the
+  # trailing-newline case; measured as a divergence this PR introduced.
+  - BUG-298
 expected_ripples:
   - sdd/backlogid.json
   - CHANGELOG.md
@@ -110,6 +113,19 @@ phases:
         read_type: gate
         extract: "SQL-BLOB-012 admits user tables, so a key column may declare COLLATE NOCASE. My own miss: substr(key, 1, n) = prefix compares BINARY (a function result has no collation), so on such a table is_folder('UP') went False while is_file('UP/X.TXT') stayed True; base agreed with itself. Measured on base and head; fixed with key = prefix || substr(key, n + 1), column on the left"
         outcome: ok
+  - id: review_external
+    name: External review input, trailing newline
+    steps:
+      - file: src/remote_store/_glob.py
+        section: "pattern_to_regex"
+        read_type: reference
+        extract: "Anchors with `$`, which accepts one trailing newline: glob('*.csv') matched 'a.csv\\n' on base SQLBlob and on ext.glob over Memory, and the round-1 suffix LIKE dropped it on head. My own miss: the enumeration's key alphabet held no newline, and it checked a Python model of the clause rather than the SQL. Rewritten to run the real clause in SQLite over 1554 keys: 178 of 866 compilable patterns carry a tail and query, 4916 accepted pairs, 0 misses; the mutant without the newline branch misses 1148. Round 1's '55,363 pairs' had counted tail-less patterns too"
+        outcome: ok
+      - file: sdd/specs/018-glob.md
+        section: "GLOB-014"
+        read_type: reference
+        extract: "Silent on a trailing newline, so whether glob should match it is filed as BUG-298 rather than decided here"
+        outcome: unclear
   - id: verify
     name: Verify
     steps:

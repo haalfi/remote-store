@@ -381,6 +381,14 @@ no clause of the contract ships unexercised.
   the key first and stores nothing. Open decision: reject `\` in backend path
   validation, or build the result before committing.
 
+- [ ] **BUG-298 — `glob("*.csv")` matches a key ending in a newline, because `pattern_to_regex` anchors with `$`**
+  spec: GLOB-014, BE-024 · effort: S · audience: user.api
+  Python's `$` also matches before one final `\n`, so `pattern_to_regex("*.csv")`
+  accepts `"a.csv\n"`: `SQLBlobBackend.glob` and `ext.glob` over `MemoryBackend`
+  return it (measured); the S3, Azure and async Azure native globs share the
+  regex (read only). Open decision: anchor with `\Z` on every backend, or state
+  the newline rule in GLOB-014.
+
 ---
 
 <a id="users-succeed-unaided"></a>
