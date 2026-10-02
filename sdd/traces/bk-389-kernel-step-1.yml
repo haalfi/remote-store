@@ -1,0 +1,313 @@
+id: BK-389
+title: "RFC-0017 D3 step 1: the async kernel and its generated sync twin (planning, then the kernel PR)"
+trigger: >-
+  A read-only audit of master 9caef6b found BK-389 technically ready (BK-388
+  done, Memory conformance and the oracle green) but its plan open: RFC-0017
+  Open Questions 2, 3 and 5 unanswered, spec 013 assigned to no step, the
+  public identity of the Memory classes undecided, and BK-345, ID-244 and
+  ID-261 re-homed by no item. The maintainer chose to split the step into a
+  kernel PR and a Memory PR and to settle every decision before kernel code.
+source_items:
+  - BK-389
+  - BK-387
+  - BK-388
+  - BK-390
+audience:
+  - contributor.process
+  - library.maintainer
+discovery_followups:
+  - BK-394
+  - BUG-299
+  - BK-395
+expected_ripples:
+  - sdd/BACKLOG-DONE.md
+surprising_ripples:
+  - sdd/specs/003-backend-adapter-contract.md
+  - sdd/backlog/bk-390-rfc-0017-spec-amendments.md
+review:
+  # Derived by `hatch run ship-report 1055 --trace-block-only` at head c2cf49d.
+  # Do not hand-edit, except a newly required field per sdd/traces/_schema.yml
+  # section review: RFC-0015 D4 makes this script the only producer.
+  derivation: "hatch run ship-report 1055 --trace-block-only"
+  pr: 1055
+  review_rounds: 7
+  submissions: 7
+  findings: 44
+  by_round:
+    - round: 1
+      findings: 6
+      origin: {original: 6}
+      triage: {must-fix: 6}
+      duration_hours: 0.08
+    - round: 2
+      findings: 4
+      origin: {loop-introduced: 3, original: 1}
+      triage: {must-fix: 4}
+      duration_hours: 0.28
+    - round: 3
+      findings: 7
+      origin: {loop-introduced: 4, original: 2, unclassifiable-file: 1}
+      triage: {must-fix: 7}
+      duration_hours: 0.2
+    - round: 4
+      findings: 8
+      origin: {loop-introduced: 5, original: 2, unclassifiable-file: 1}
+      triage: {must-fix: 8}
+      duration_hours: 0.24
+    - round: 5
+      findings: 6
+      origin: {loop-introduced: 6}
+      triage: {must-fix: 3, unknown: 3}
+      duration_hours: 0.44
+    - round: 6
+      findings: 7
+      origin: {loop-introduced: 6, original: 1}
+      triage: {must-fix: 7}
+      duration_hours: 0.21
+    - round: 7
+      findings: 6
+      origin: {loop-introduced: 4, original: 1, unclassifiable-file: 1}
+      triage: {unknown: 6}
+      duration_hours: 0.19
+  by_file:
+    - path: "sdd/backlog/bk-389-kernel-step-1-memory.md"
+      findings: 17
+    - path: "sdd/backlog/bk-394-memory-drivers-accept-adr-0042.md"
+      findings: 13
+    - path: "sdd/rfcs/rfc-0017-contract-kernel-over-thin-drivers.md"
+      findings: 4
+    - path: "sdd/BACKLOG.md"
+      findings: 3
+    - path: "sdd/traces/bk-389-kernel-step-1.yml"
+      findings: 3
+    - path: "sdd/specs/013-memory-backend.md"
+      findings: 2
+    - path: "sdd/backlog/bk-388-dafny-kernel-clauses.md"
+      findings: 1
+    - path: "sdd/backlog/bk-395-kernel-key-rule-addressing.md"
+      findings: 1
+  untouched_files:
+    - "sdd/BACKLOG-DONE.md"
+    - "sdd/backlog/bk-345-absent-container-conformance.md"
+    - "sdd/backlog/bk-390-rfc-0017-spec-amendments.md"
+    - "sdd/specs/003-backend-adapter-contract.md"
+  review_driven_commits:
+    - sha: "f9b3d0c"
+      subject: "BK-389: Round 1 fixes: kernel owns key validation, complete spec 013 placement"
+    - sha: "0c3eca5"
+      subject: "BK-389: Round 2 fixes: key rule from MEM-DS-005, Memory folder stats pushed down"
+    - sha: "047ba6b"
+      subject: "BK-389: Decide the recursive-listing shape (decision 7)"
+    - sha: "214496d"
+      subject: "BK-389: Round 3 fixes: root decided on the canonical key, MEM-DS-005 split"
+    - sha: "8e9f680"
+      subject: "BK-389: Round 4 re-plan: the key rule as a member-by-key-class table"
+    - sha: "73c0405"
+      subject: "BK-389: Round 5 at the ceiling: cut addressing, backslash and glob to BK-395"
+    - sha: "c2cf49d"
+      subject: "BK-389: Verification fixes: SupportsRemoveFolder, a spec 003 home for the key rule"
+  ci: {verdict: GREEN, failed: 0, pending: 0}
+phases:
+  - id: orient
+    name: Orient (planning PR)
+    steps:
+      - file: sdd/BACKLOG.md
+        section: "How this file works; BK-389, BK-345, ID-244, ID-261, BK-325, BK-332, BUG-257, BUG-245"
+        read_type: gate
+        extract: "item rules for partly done, absorbed and minted IDs; the index lines this PR corrects"
+      - file: sdd/backlog/bk-389-kernel-step-1-memory.md
+        section: "(full)"
+        read_type: gate
+        extract: "what step 1 owes; item 4 omits spec 013, item 6 ties acceptance to one PR"
+        outcome: unclear
+      - file: sdd/rfcs/rfc-0017-contract-kernel-over-thin-drivers.md
+        section: "D1, D2, D3, D6, D8, Impact, Open Questions 2, 3, 5"
+        read_type: gate
+        extract: "the open questions step 1 must answer or bound; D1 lists no close-posture attribute"
+        outcome: unclear
+      - file: sdd/adrs/0042-contract-kernel-over-thin-drivers.md
+        section: "Status, Decision, Amendments on acceptance"
+        read_type: reference
+        extract: "acceptance rides with the first backend on the design"
+      - file: sdd/backlog/bk-387-rfc-0017-acceptance.md
+        section: "What it does not include; Correction (2026-09-29)"
+        read_type: reference
+        extract: "BK-345, ID-244, ID-251 become kernel or driver cells at step 1; re-homing assigned to BK-389"
+      - file: sdd/backlog/bk-388-dafny-kernel-clauses.md
+        section: "As landed; Exit criteria"
+        read_type: reference
+        extract: "root rule landed as postconditions; exit criteria still say preconditions"
+        outcome: misleading
+      - file: sdd/specs/013-memory-backend.md
+        section: "MEM-001 to MEM-020"
+        read_type: reference
+        extract: "which MEM clauses describe behaviour the kernel takes over"
+      - file: sdd/specs/003-backend-adapter-contract.md
+        section: "BE-020 close posture; BE-021 Reach, page-boundary paragraph"
+        read_type: reference
+        extract: "close_is_terminal is per backend; the no-page-boundary divergence clause OQ2 rests on"
+      - file: sdd/formal/MemoryBackend.dfy
+        section: "closeIsTerminal"
+        read_type: reference
+        extract: "the model carries the close posture as a flag the RFC's Driver protocol lacks"
+      - file: sdd/backlog/bug-257-graph-walk-first-page-bound.md
+        section: "(full)"
+        read_type: reference
+        extract: "the bound restarts per request; the fix keys it per operation"
+      - file: sdd/backlog/bug-245-sqlblob-no-such-table.md
+        section: "(full)"
+        read_type: reference
+        extract: "construction is outside BE-021's operation scope"
+      - file: sdd/CLAUDE-REFERENCE.md
+        section: "Ripple-check > Pre-work index"
+        read_type: gate
+        extract: "Spec section and Store or Backend ABC rows; sdd/-only PR triggers BACKLOG and backlogid"
+  - id: reproduce
+    name: Re-derive the code audit
+    steps:
+      - file: src/remote_store/backends/_memory.py
+        section: "_split_path; get_folder_info; backend= literals"
+        read_type: verify
+        extract: "42 backend=\"memory\" literals; './' and './/' split to root; sentinel not skipped"
+      - file: src/remote_store/aio/backends/_memory.py
+        section: "_split_path; get_folder_info; backend= literals"
+        read_type: verify
+        extract: "40 backend=\"async-memory\" literals; same root and sentinel behaviour"
+      - file: src/remote_store/_path.py
+        section: "is_root"
+        read_type: verify
+        extract: "accepts '' and '.' only"
+      - file: src/remote_store/_backend.py
+        section: "read, read_seekable, open_atomic, check_health, close"
+        read_type: verify
+        extract: "sync-only members and no probe(); the surfaces unasync cannot map by token"
+      - file: src/remote_store/aio/_async_backend.py
+        section: "read, aclose, check_health"
+        read_type: verify
+        extract: "AsyncIterator read, aclose not close, no probe()"
+  - id: design
+    name: Interview and record the decisions
+    steps:
+      - file: sdd/backlog/bk-390-rfc-0017-spec-amendments.md
+        section: "Where this comes from; Amendment by step"
+        read_type: reference
+        extract: "the step-1 boundary named BK-389; moved to BK-394 at the split, spec 013 added"
+      - file: sdd/BACKLOG-DONE.md
+        section: "Absorbed"
+        read_type: reference
+        extract: "entry shape for ID-261 into BK-389 and BK-325 into BK-394"
+      - file: sdd/specs/003-backend-adapter-contract.md
+        section: "BE-029 Conformance pins the outcome, not the order"
+        read_type: verify
+        extract: "cites ID-261 in the present tense; re-pointed to BK-345 and BK-389 once ID-261 was absorbed"
+  - id: fix
+    name: Review round 1 fix pass
+    steps:
+      - file: sdd/specs/013-memory-backend.md
+        section: "every ### MEM- heading"
+        read_type: verify
+        extract: "enumerate the 31 headings so the placement table covers each once; my first table missed MEM-004 and MEM-014"
+      - file: sdd/backlog/bk-345-absent-container-conformance.md
+        section: "(full)"
+        read_type: verify
+        extract: "the dossier still prescribed one registry cell after the index re-scoped it; dated correction added"
+      - file: sdd/BACKLOG-DONE.md
+        section: "BUG-296, BK-387 entries"
+        read_type: verify
+        extract: "two Unreleased entries named BK-389 for scope that moved to BK-394"
+  - id: fix_round2
+    name: Review round 2 fix pass
+    steps:
+      - file: src/remote_store/_path.py
+        section: "RemotePath normalisation"
+        read_type: verify
+        extract: "RemotePath folds '/a/b' and converts '\\', so decision 6 cites MEM-DS-005, not RemotePath; my first wording named the wrong rule source"
+      - file: sdd/formal/BackendContract.dfy
+        section: "§5c Root rule; §6 Backend contract"
+        read_type: verify
+        extract: "the predicate is §5c, the trait's postconditions §6; BK-388's correction conflated them"
+      - file: sdd/specs/013-memory-backend.md
+        section: "MEM-015, MEM-025, MEM-040"
+        read_type: verify
+        extract: "MEM-015 moves to SupportsFolderStats for MEM-040's O(1) space; the recursive-listing shape surfaced as decision 7, which keeps MEM-025's snapshot either way"
+  - id: fix_round3
+    name: Review round 3 fix pass
+    steps:
+      - file: sdd/specs/003-backend-adapter-contract.md
+        section: "BE-008 source predicate; BE-029 read-side cost"
+        read_type: verify
+        extract: "the floor is is_root and a backend MAY exceed it; deciding the root on the canonical key closes the './' hole decision 6 opened"
+      - file: sdd/formal/BackendContract.dfy
+        section: "§5c AddressesRoot"
+        read_type: verify
+        extract: "AddressesRoot accepts a leading '/', which the leading-slash refusal reaches first with the same InvalidPath"
+      - file: sdd/specs/013-memory-backend.md
+        section: "MEM-DS-005"
+        read_type: verify
+        extract: "claimed to mirror RemotePath normalisation, measured false; corrected in the spec"
+        outcome: misleading
+  - id: replan_round4
+    name: Round 4 re-plan, key rule enumerated
+    steps:
+      - file: src/remote_store/backends/_memory.py
+        section: "14 sync members and 11 async, 17 keys (the dossier's 15 plus d/f and d)"
+        read_type: verify
+        extract: "measure both Memory classes per member and key class; Δ cells are get_folder_info on './'-shaped roots and raw addressing answers; three prose rules had each been refuted, so the rule became a table"
+      - file: tests/backends/conformance/test_identity.py
+        section: "TestBackendNativePath, _RESOLVE_PATHS"
+        read_type: verify
+        extract: "addressing cells use canonical keys only, so normalising addressing changes no conformance cell"
+      - file: src/remote_store/backends/_local.py
+        section: "_resolve; write"
+        read_type: verify
+        extract: "_resolve accepts in-root '..' and NUL, so spec 013's 'mirrors LocalBackend' was also false; write('a/../b.txt') writes then raises, filed as BUG-299 (the reserved BUG-298 was also minted on PR #1054's branch; re-minted with the maintainer's approval)"
+      - file: sdd/specs/013-memory-backend.md
+        section: "MEM-DS-005"
+        read_type: verify
+        extract: "my round-3 correction kept the false LocalBackend half; rewritten from a three-way comparison"
+  - id: ceiling_round5
+    name: Round 5 at the ceiling, scope cut to BK-395
+    steps:
+      - file: sdd/specs/003-backend-adapter-contract.md
+        section: "BE-025 Postconditions; BE-029 backslash paragraph"
+        read_type: verify
+        extract: "native_path is total and a backslash key is not canonical; the round-4 table contradicted both, which my re-plan had not checked against existing clauses"
+      - file: sdd/specs/010-native-path-resolution.md
+        section: "NPR-004, NPR-021"
+        read_type: verify
+        extract: "to_key and native_path must not raise"
+      - file: sdd/specs/004-path-model.md
+        section: "PATH-002"
+        read_type: verify
+        extract: "the backslash rule the formal WellFormedPath cites"
+      - file: src/remote_store/backends/_local.py
+        section: "delete_folder; write_atomic"
+        read_type: verify
+        extract: "delete_folder('') rmtrees the root today (read); write_atomic writes then raises on in-root '..' (run), so BUG-299 widened"
+  - id: verification
+    name: Verification round past the ceiling
+    steps:
+      - file: sdd/specs/004-path-model.md
+        section: "PATH-002"
+        read_type: verify
+        extract: "PATH-002 converts a backslash rather than refusing it; my BK-395 text claimed refusal matched it"
+        outcome: misleading
+      - file: tests/backends/local/test_absent_root.py
+        section: "test_folder_shaped_operations_still_accept_the_root; test_strict_delete_folder_on_the_root_answers_from_the_filesystem"
+        read_type: verify
+        extract: "Local's root delete_folder is already pinned per backend, so step 5 inverts pins rather than adding cells"
+      - file: sdd/rfcs/rfc-0017-contract-kernel-over-thin-drivers.md
+        section: "D1 optional protocols"
+        read_type: verify
+        extract: "no primitive removes one empty folder on an explicit-parents driver; SupportsRemoveFolder added as decision 8"
+  - id: handoff
+    name: BUG-297 absorbed after the close, at the maintainer's request
+    steps:
+      - file: sdd/BACKLOG.md
+        section: "BUG-297"
+        read_type: reference
+        extract: "session A's direct write('\\\\') stores then raises on SQLBlob and Memory; absorbed into BK-395's backslash part, and decision 6 has the kernel build the result path before the driver commits"
+      - file: sdd/formal/RootPath.dfy
+        section: "lemma BackslashIsNotRoot"
+        read_type: verify
+        extract: "a backslash is not the root, so refusing it is a validation rule, not a root rule"

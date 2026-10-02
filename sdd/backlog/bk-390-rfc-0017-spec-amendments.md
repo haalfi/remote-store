@@ -9,9 +9,10 @@ advisory prescription ([§ Item authority](../BACKLOG.md#how-this-file-works)).
 lists the amendment set. A spec describes behaviour that exists
 (`CLAUDE.md` principle 3), so each amendment lands in the D3 step PR that makes
 it true, not at acceptance. Everything that becomes true at D3 step 1 goes
-with BK-389: specs 003, 005, 029 and 037, the kernel half of 007 and 022, and
-spec 026's PING-002 and PING-008 plus the Memory drivers' rows of 007 and 022.
-This item owns steps 2 to 8.
+with BK-394, the Memory half of step 1 split from BK-389 on 2026-10-02: specs
+003, 005, 013, 029 and 037, the kernel half of 007 and 022, and spec 026's
+PING-002 and PING-008 plus the Memory drivers' rows of 007 and 022. BK-389's
+kernel PR is private and amends no spec. This item owns steps 2 to 8.
 
 **Amendment by step** (steps are RFC-0017 D3's table):
 

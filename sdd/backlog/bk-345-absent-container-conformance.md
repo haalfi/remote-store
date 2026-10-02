@@ -55,3 +55,17 @@ BE-005 appear only here; the body above scopes the item to BE-021.
 a newly
 registered backend cannot pass CI without meeting BE-004, BE-005 and BE-021
 (BK-345).
+
+## Correction (2026-10-02, BK-389 planning PR)
+
+The work shape above, one conformance cell parametrised over the backend
+registry, predates RFC-0017's kernel and is re-scoped by the maintainer's
+re-homing at BK-389's split. The kernel applies BE-021 § Reach's
+absent-container answers per `Op`, once, so that half is now a fake-driver
+kernel cell in BK-389. What stays here is the gate that each driver's
+`container_absent` recognises its own wire's absent container: per-driver
+cells from D3 step 2, the first driver whose container can be absent (both
+Memory drivers are exempt, as above). Until a class migrates, its
+hand-written per-backend suite still carries the rule. The ID-244 dependency
+stands, and BK-394 now precedes this item because it registers drivers in
+the conformance registry.

@@ -9,7 +9,10 @@ are answered below, and the design is recorded in
 The maintainer's condition is that the ADR and this RFC become Accepted
 together, in the PR that lands the first backend on this design (D3 step 1),
 not on the answers alone. The lifecycle, and where each amendment lands, are
-in D8 and § Impact.
+in D8 and § Impact. BK-389's planning PR answered Open Questions 2 and 3,
+deferred 5 to D3 step 3 with the shape step 1 keeps open, added the close
+posture to D1 and key validation to D2, and split step 1 into a kernel PR (BK-389) and a Memory PR
+(BK-394), the second accepting; BK-389's dossier § Decisions carries them.
 
 **Date:** 2026-09-28. Every figure below is pinned to `8fa22d6` and is either
 quoted from audit-021 with its derivation, or names its command here. The tree
@@ -19,7 +22,7 @@ moves on every merge: re-run rather than quote.
 
 This RFC proposes that the `Backend` surface be implemented **once**, in a
 concrete `DriverBackend(Backend)` kernel over a per-backend `Driver` of
-fourteen required wire primitives and nine optional ones, with error mapping
+fourteen required wire primitives and ten optional ones, with error mapping
 at a single choke point that invokes the driver's operation-scoped
 `classify(exc, op, key)` on every call, listing page and stream and
 guarantees the error's `path`, `backend` and a non-empty message.
@@ -31,7 +34,8 @@ user-audience defects of the last six releases (63%) to rules stated once and
 re-implemented per class; measured against this design by the rules in § What
 each cluster-A bug becomes, the kernel owns 10 of those outright (14% of the
 71), 6 are split with the driver, 8 stay in the driver, 6 waited on a
-decision at filing (three since decided, Open Question 4),
+decision at filing (four since decided, three under Open Question 4 and one
+under Open Question 2; one deferred to D3 step 3 under Open Question 5),
 2 disappear with a retired class, and 13 belong to D5's session layer. Counted
 by clause rather than by item, the 45 sit on 14 clauses (11 in cluster A, 3 in
 B); the audit derives no clause count for the other 26, so the 14 has no
@@ -125,8 +129,8 @@ is applied to it without being restated.
 ### D1. A `Driver` of wire primitives, with capabilities declared, not derived
 
 A driver maps one-to-one onto its wire protocol and carries no path, root,
-type, closed or mapping logic. Fourteen required callables and five
-attributes:
+type, closed or mapping logic. Fourteen required callables and six
+attributes (the sixth, `close_is_terminal`, added at BK-389's planning):
 
 ```python
 class Driver(Protocol):
@@ -135,6 +139,7 @@ class Driver(Protocol):
     parents: Literal["none", "implicit", "explicit"]  # HTTP none; Graph, Azure HNS implicit; Local, SFTP explicit
     capabilities: CapabilitySet   # declared by the driver, as a backend's CAPABILITIES ClassVar is today (SEEK-001's shape); the kernel adds none
     put_is_atomic: bool           # S3, SQL, flat Azure True (write_atomic is put); Local, SFTP False
+    close_is_terminal: bool       # BE-020's posture; the kernel's closed guard runs only when True (Memory False)
 
     def stat(self, key: str) -> Entry | None: ...        # file OR folder, kind on the Entry; None if absent
     def get(self, key: str) -> BinaryIO: ...
@@ -148,14 +153,16 @@ class Driver(Protocol):
     def container_absent(self, exc: BaseException, *, op: Op) -> bool: ...
     def connection_dead(self, exc: BaseException) -> bool: ...
 
-    # interop, forwarded by the kernel unchanged (BE-022, BE-023, BE-025, resolve)
+    # interop, forwarded by the kernel (BE-022, BE-023, BE-025, resolve); how keys reach
+    # native_path, resolve and to_key is BK-395's to decide (BK-389 decision 6)
     def unwrap(self, type_hint: type[T]) -> T: ...
     def native_path(self, key: str) -> str: ...
     def to_key(self, native_path: str) -> str: ...
     def resolve(self, key: str) -> ResolutionPlan: ...
 ```
 
-Nine optional protocols, each a separate `runtime_checkable` `Protocol`
+Ten optional protocols (nine at filing; `SupportsRemoveFolder` added at
+BK-389's planning), each a separate `runtime_checkable` `Protocol`
 checked once at kernel construction (a `typing.Protocol` cannot express an
 optional member, so presence is a protocol, not a method):
 
@@ -170,6 +177,7 @@ optional member, so presence is a protocol, not a method):
 | `SupportsEnsureParents` | `ensure_parents(key)` | called before `put` when `parents == "explicit"`; SFTP's stat walk and Local's `mkdir -p` are their implementations. Never called for `implicit` (Graph, GR-039: no explicit `mkdir`; Azure HNS) or `none` |
 | `SupportsFolderStats` | `folder_stats(prefix) -> (count, size, latest)` | `get_folder_info` push-down (SQL's aggregate query); without it, the kernel aggregates a listing |
 | `SupportsGlob` | `glob(pattern)` | native `GLOB`; without it the driver must not declare `GLOB` |
+| `SupportsRemoveFolder` (added at BK-389's planning) | `remove_folder(key)`: remove one empty folder | required when `parents == "explicit"`, checked at construction. `delete_folder(recursive=False)` checks the folder with `stat`, refuses a non-empty one with `DirectoryNotEmpty` after `list_page(limit=1)`, then calls it. `delete_folder(recursive=True)` without `SupportsDeleteTree` lists and deletes the files, then calls it on each folder, deepest first. Never called for `implicit` or `none` |
 
 Two more attributes the stream wrapper reads per driver, because
 `_ErrorMappingStream`'s caught set is per construction site today:
@@ -232,8 +240,24 @@ other 6 public members (`name`, `capabilities`, `unwrap`, `native_path`,
 `class Backend` (re-run when BK-380 deleted the `_SeekableSpool` helper that
 was a 28th match above it). It owns, once:
 
-- root refusal from the key (BE-029, both predicates as `_flat_ns` now states
-  them), and the closed guard, in the order spec 003 fixes; these are
+- key validation and normalisation (added at BK-389's planning): a key
+  starting with `/`, a `..` segment or a null byte is refused with
+  `InvalidPath`, and empty and `.` segments are dropped. The rule is taken
+  from spec 013's MEM-DS-005 table, not from `RemotePath`'s, and BK-394
+  states it as a spec 003 clause binding every migrated class, which
+  MEM-DS-005 then cites. It runs after the closed guard and before the root check, which
+  then runs on the canonical key: `""` is the root, the wide predicate on
+  every side. So an operation's driver call only ever sees a canonical key,
+  as D1's driver, which "carries no path … logic", requires. The rule
+  covers the operations; the addressing members, a key holding a backslash
+  and `glob` are BK-395's to decide against BE-025, NPR-021/NPR-004, RES-020
+  and PATH-002 before kernel code. The operation-by-key-class table, with
+  its measured Memory column, is BK-389's dossier, decision 6;
+- root refusal from the key (BE-029; at filing, both predicates as `_flat_ns`
+  now states them; since BK-389's planning, decided on the canonical key,
+  which gives the wide predicate on every side, the floor BE-029 sets for
+  the write side and a permitted excess elsewhere), and the closed guard where the driver declares
+  `close_is_terminal`, in the order spec 003 fixes; these are
   key-level checks and add no round trip;
 - the wrong-type probes on the error path (one `stat` and one
   `list_page(limit=1)`, the same probes the classes issue today), the
@@ -341,7 +365,16 @@ and 8) brings its own.
 
 **The suite is not "unchanged"; the cells that change are these, enumerated
 before step 1 and each settled before the step that changes it (Open
-Question 4).** AZ-025's blank-message clause and its pinning
+Question 4).** Added at BK-389's planning: the kernel's key rule (BK-389
+dossier, decision 6) is one more enumerated change, stated once as a table of
+operation by key class. Each step's PR lists every cell of that table where
+its driver answers differently today, canonical keys included (Local's
+`delete_folder("")` removes the root directory today). Step 1's list, for Memory, is
+in BK-394's dossier. No conformance cell reaches those cells. Memory's are
+pinned by new cells in the step-1 PR. A later step's cell may already be
+pinned per backend with the opposite answer; Local's root `delete_folder` is,
+in `tests/backends/local/test_absent_root.py`. That step's PR inverts such a
+pin and records why. AZ-025's blank-message clause and its pinning
 test go red with BUG-276's fix under the arm decided at BK-387, synthesise
 (its dossier: "Both go red when this lands, by design"); the BUG-240 and
 BUG-292 decisions change cells on the classes that
@@ -598,16 +631,20 @@ output is unchanged. Open Question 7 accepted this recommendation.
 
 `CONTRIBUTING.md` § Spec-First Workflow runs Propose, Accept, Implement, in
 that order, and an RFC that deprecates and deletes classes before it is
-accepted inverts it. Acceptance here rides with the first implementing PR
-(step 2 below), which is additive; no class is deleted before it. So:
+accepted inverts it. Acceptance here rides with the PR that lands the first
+backend on the design (step 2 below: BK-394, the second of step 1's two PRs,
+after BK-389's private kernel), which is additive; no class is deleted before
+it. So:
 
 1. **Decide and propose.** Open Questions 1, 4, 6 and 7 are answered and the
    design, D1, D2 and D4 to D7 plus those answers, is recorded as a Proposed
    ADR ([ADR-0042](../adrs/0042-contract-kernel-over-thin-drivers.md)). D3,
    the migration order, is process and stays here. OQ7 is in the list because
    D7's extensions land before kernel code. Done by BK-387.
-2. **Implement** D3 in order. Step 1 runs under the Proposed ADR, and its PR,
-   the first backend on the new design, **accepts** ADR-0042 and this RFC:
+2. **Implement** D3 in order. Step 1 runs under the Proposed ADR as two PRs,
+   the kernel, private (BK-389), then the Memory drivers (BK-394), both merged
+   after the v0.33.0 tag. The second, the first backend on the new design,
+   **accepts** ADR-0042 and this RFC:
    the design is accepted once it has carried one backend through the suite,
    not on the answers alone. Each migration PR is gated by the conformance
    suite with the enumerated cell changes and by the per-driver suite.
@@ -654,7 +691,7 @@ by-hand reading of the register entries and is disputable item by item.
 | **R2 removed by retirement**: only on the s3fs lanes, which D3 retires unmigrated | BUG-255 (mid-listing 404 swallowed on the s3fs lanes), 242 (403 read as absence on the s3fs lanes) | 2 |
 | **R3 split**: the invocation or the guarantee is the kernel's, the verdict or content is the driver's | BUG-264 (message guarantee kernel; arm content driver), BK-358 (stream catch set kernel via `stream_catch`; `BackendUnavailable` verdict driver), BK-359 (message and log record kernel; stall detection driver), BK-266 (self-op copy and the auth leak kernel; probe scope driver), BK-298 (use-after-close kernel; credential ownership driver), BUG-248 (BE-021 § Reach applied per `Op` by the kernel; the identity-scope verdict the driver's, per ADR-0038) | 6 |
 | **R4 driver-kept**: classifier content, probe content or resource logic | BUG-275 (errno arm), BK-316 (non-OpenSSH shapes), BUG-231 (a probe that touched nothing; `probe()` is now required but what it touches is the driver's), 222 (429/5xx/401 rows), BK-263 (credential in a message), BK-306 (session release on close), BUG-256 (what `probe()` touches), 253 (Graph's session-create 404 under a file ancestor, with `parents == "implicit"`) | 8 |
-| **R5 needs a decision first**: at filing, the item carried an open decision in `BACKLOG.md` or depended on an open question here. BUG-240, 292 and 276 were decided at BK-387 (Open Question 4) and keep this row as their at-filing assignment | BUG-240 (OQ4; decided: DEPTH-003), 292 (BE-008's probe-error choice; decided: narrow the catch), 276 (synthesise or classify at the five base-class sites, decided: synthesise; the kernel's ERR-009 floor holds under both, so the decision is the driver's arm content, as for BUG-264 in R3), 293 (which arms receive a typed error), 245 (construction; OQ5), 257 (page boundary; OQ2) | 6 |
+| **R5 needs a decision first**: at filing, the item carried an open decision in `BACKLOG.md` or depended on an open question here. BUG-240, 292 and 276 were decided at BK-387 (Open Question 4) and keep this row as their at-filing assignment | BUG-240 (OQ4; decided: DEPTH-003), 292 (BE-008's probe-error choice; decided: narrow the catch), 276 (synthesise or classify at the five base-class sites, decided: synthesise; the kernel's ERR-009 floor holds under both, so the decision is the driver's arm content, as for BUG-264 in R3), 293 (which arms receive a typed error), 245 (construction; OQ5, deferred at BK-389's planning to step 3), 257 (page boundary; OQ2, decided at BK-389's planning) | 6 |
 | **R6 session (D5)** | BUG-279 (`unwrap` outside the mapper), 265 (connect-time shapes), 273 (connect-time context) | 3 |
 
 Ten of 35 is what the kernel alone removes; with D5's three and the two
@@ -712,9 +749,12 @@ and its answer keeps `classify`.
 - **Public API:** `Store`, the error hierarchy and capabilities unchanged in
   interface. `Backend` remains the abstract contract type; `DriverBackend` and
   `AsyncDriverBackend` are the kernel's two runtimes (Open Question 1). New
-  public names: `Driver`, `AsyncDriver`, the nine `Supports*` protocols and
+  public names: `Driver`, `AsyncDriver`, the ten `Supports*` protocols and
   their async mirrors, `DriverBackend`, `AsyncDriverBackend`, `Entry`,
-  `Page`, `WriteHandle`, `Op`, `Session`. `ext.arrow` loses its
+  `Page`, `WriteHandle`, `Op`, `Session`; and each migrated backend's
+  driver class beside its public backend class, from step 1's
+  `MemoryDriver` and `AsyncMemoryDriver` on (added at BK-389's planning;
+  BK-394's dossier, decision 1). `ext.arrow` loses its
   Tier-1 native probe on S3 once the PyArrow lane, `S3PyArrowBackend`,
   retires (D4); the s3fs lane never served that probe.
 - **Backwards compatibility:** additive for existing `Backend` subclasses,
@@ -768,7 +808,9 @@ and its answer keeps `classify`.
   `put_is_atomic`, `open_write`, `rename` and `SupportsAtomicMove` the fake
   driver can present; the driver half
   stays with the per-driver suites. BK-345 and ID-244 reduce to driver
-  cells; ID-251's widened root spellings become fake-driver kernel cells,
+  cells (corrected at BK-389's planning: BK-345's kernel half, the
+  absent-container answers per `Op`, became fake-driver kernel cells in
+  BK-389, and its driver cells start at step 2); ID-251's widened root spellings become fake-driver kernel cells,
   since R1 makes the root rule the kernel's. The conformance suite gates
   every migration with the cell
   changes D3 enumerates.
@@ -778,8 +820,11 @@ and its answer keeps `classify`.
   band,
   [`benchmarks/results/acceptance-band.md`](../../benchmarks/results/acceptance-band.md),
   and [ADR-0042](../adrs/0042-contract-kernel-over-thin-drivers.md),
-  Proposed, which carries the four ADR amendments. With D3 step 1 (BK-389),
-  which accepts that ADR: specs 003, 005, 029 and 037 below, the kernel half
+  Proposed, which carries the four ADR amendments. With D3 step 1's Memory PR
+  (BK-394), which accepts that ADR (the kernel PR before it, BK-389, is
+  private and amends nothing): specs 003, 005, 029 and 037 below, spec 013 (Memory's,
+  as a kernel/driver placement per clause, which the list at filing omitted),
+  the kernel half
   of 007 and 022, the Memory drivers' rows of 007 and 022, spec 026's PING-002
   and PING-008, spec 003's BE-017 folder `modified_at` rule, the
   custom-backend guide with its `partial-capabilities`
@@ -814,8 +859,10 @@ and its answer keeps `classify`.
   "Store or Backend ABC"
   row reads "All backend implementations, conformance tests", and both are
   what D3 walks.
-- **Open backlog items this touches**, to be re-homed or closed by BK-389
-  when D3 step 1 lands (the maintainer's assignment at BK-387's close): BK-382, BK-242 and BK-325 (file-ancestor gate and the guide),
+- **Open backlog items this touches**, to be re-homed or closed by BK-394
+  when D3 step 1 lands (the maintainer's assignment at BK-387's close, moved
+  to BK-394 at the split; BK-325 is already absorbed into it, and BK-332 runs
+  after it): BK-382, BK-242 and BK-325 (file-ancestor gate and the guide),
   BK-332 (the rehearsal), BUG-266 and ID-181 (SFTP), ID-140 (SQLBlob lazy
   reads, a `get_range` for that driver), BUG-287, 288 and 289 (floors on
   extras D4 retires or adds), ID-217 (async `ext.*`), BK-339 (the behaviour
@@ -844,12 +891,24 @@ and its answer keeps `classify`.
 2. **`Page` for wires without a page boundary.** BE-021 allows marking items
    as the service returns them; the kernel needs the driver to say which it
    does, or the divergence is stated per driver as today. BUG-257 waits on
-   this.
+   this. **Answered (BK-389 planning):** neither. A `Page` is whatever one
+   `list_page` call returns; a driver whose wire has no boundary returns its
+   native unit as one `Page`, possibly empty. The kernel keys the first-page
+   bound on the first `Page` the **operation** receives, across every
+   `list_page` call of a walk, so the bound never restarts per request
+   (BUG-257's shape) and no flag is needed. Step 1's `Page` (entries, common
+   prefixes, next cursor) is final. A recursive listing is one
+   `list_page(prefix, delimiter=None)` request whatever the `namespace`; a
+   hierarchical driver walks behind the cursor, one `Page` per wire request,
+   and the kernel applies `max_depth` to the result (BK-389 dossier,
+   decision 7).
 3. **`namespace` and `parents` as values or as two kernels.** One kernel
    with flags keeps one choke point; two kernels keep the flat-namespace
    probes out of the hierarchical path. The flags are proposed; the split is
    the fallback if the branches outgrow the guards `_flat_ns` already
-   carries.
+   carries. **Answered (BK-389 planning):** step 1 builds to the flags. Both
+   Memory drivers are `hierarchical` and `explicit`, so the fallback can be
+   judged no earlier than the first flat driver, at step 2.
 4. **Which spec contradictions the kernel must adjudicate first.** BUG-240 is
    one; the kernel encodes one answer per clause and cannot land on a clause
    the specs still dispute. **Answered (BK-387):** BUG-240 is the one
@@ -868,7 +927,12 @@ and its answer keeps `classify`.
 5. **Does the choke point cover driver construction?** BUG-245 leaks from
    `SQLBlobBackend`'s constructor, and BE-021's mapping rule is scoped to
    operations today. Either D2 wraps `Driver.__init__` too, or construction
-   errors stay per driver and BUG-245 is fixed there.
+   errors stay per driver and BUG-245 is fixed there. **Deferred (BK-389
+   planning) to D3 step 3**, where BUG-245's driver migrates. The shape step 1
+   keeps open: the kernel's constructor takes a built driver,
+   `DriverBackend(driver, *, reject_write_under_file_ancestor=False)` and its
+   async twin, and each public class builds its driver in its own `__init__`.
+   Step 3 may add a wrapped-build form beside it, never instead of it.
 6. **`classify` or a wire signal?** Eight of the 35 cluster-A items stay in
    the driver under D1. The wire-signal alternative reaches four of them at
    the cost of a primitive that must express every wire's vocabulary.
