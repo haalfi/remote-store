@@ -1,8 +1,9 @@
 id: BK-380
 title: "Python 3.10 stops getting security fixes on 2026-10-04, and the drop is a breaking change of its own"
 trigger: >-
-  CPython 3.10's security support ended on 2026-10-04 and ADR-0039 ties this
-  library's support to upstream's, so the decision was taken and the work of
+  CPython 3.10's security support was due to end on 2026-10-04, two days after
+  this work began, and ADR-0039 ties this library's support to upstream's, so
+  the decision was taken and the work of
   moving seven spellings of the supported set, plus everything 3.10 kept alive,
   remained.
 source_items:
@@ -13,6 +14,8 @@ audience:
   - infra.ci
   - contributor.tooling
   - contributor.process
+discovery_followups:
+  - BK-392
 expected_ripples:
   - pyproject.toml
   - packaging/conda-forge/variants.yaml

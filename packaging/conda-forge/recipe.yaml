@@ -26,8 +26,13 @@
 #
 # `python_min` is deliberately NOT set here: conda-forge supplies it globally,
 # and hardcoding it would pin us to today's floor after the ecosystem raises its
-# minimum.  `packaging/conda-forge/variants.yaml` supplies it for our own
-# `Conda Recipe` workflow, which renders this file standalone.
+# minimum.  That holds only while our `requires-python` floor is at or below
+# conda-forge's global `python_min` (conda-forge-pinning-feedstock's
+# `recipe/conda_build_config.yaml`); a floor above it builds on an interpreter
+# pip refuses, so it must set `python_min` in `context:` instead.  Check that
+# file whenever `requires-python` moves.  `packaging/conda-forge/variants.yaml`
+# supplies it for our own `Conda Recipe` workflow, which renders this file
+# standalone.
 
 context:
   version: "0.32.0"

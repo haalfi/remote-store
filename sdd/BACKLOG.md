@@ -526,6 +526,14 @@ or paying for our shortcut.
 **Promise:** nothing reaches a user that we did not test, publish, watch, or
 give them a way to absorb.
 
+- [ ] **BK-392 — A release can drop an interpreter before its support window closes, and nothing checks the date**
+  spec: — · effort: S · audience: user.api, contributor.tooling
+  Rule 8 promises support until a version's security fixes end, and
+  `check-support-windows` dates every floor raise at release, but no check
+  dates a dropped classifier; once dropped, the chart stops drawing its bar, so
+  the release checklist's Rule 8 step cannot see it either. Found on BK-380,
+  opened two days before 3.10's window closed. Open decision: script or step.
+
 - [ ] **BUG-289 — Two floors are clean for a user and red for the suite, because the suite rejects warnings**
   spec: — · effort: S · audience: user.api, infra.test
   The floor lane runs each extra's pytest target under this repo's

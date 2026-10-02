@@ -38,7 +38,7 @@ and returns a `RegistryConfig`.
 **Postconditions:** The returned `RegistryConfig` is identical to calling
 `from_dict()` on the parsed TOML dict (after table traversal).
 
-### CFG-009: TOML Dependency Shim
+### CFG-009: TOML Parser Dependency
 
 **Invariant:** `from_toml()` uses the stdlib `tomllib` on every supported
 interpreter, with zero runtime dependencies. There is no `toml` extra and no
