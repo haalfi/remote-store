@@ -373,6 +373,14 @@ no clause of the contract ships unexercised.
   registry, or per-backend seeding; hierarchical backends cannot hold the state.
   Detail: [dossier](backlog/bk-382-ancestor-gate-overwrite-path.md)
 
+- [ ] **BUG-297 — A backend `write` of a key `RemotePath` rejects stores the row, then raises `InvalidPath`**
+  spec: BE-008, WR-001 · effort: S · audience: user.api
+  Called on the backend directly, `write("\\")` stores the row on `SQLBlobBackend` and
+  `MemoryBackend` (measured; others unmeasured), then raises building
+  `WriteResult(path=RemotePath(path))`, which folds `\` to `/`. `Store` rejects
+  the key first and stores nothing. Open decision: reject `\` in backend path
+  validation, or build the result before committing.
+
 ---
 
 <a id="users-succeed-unaided"></a>

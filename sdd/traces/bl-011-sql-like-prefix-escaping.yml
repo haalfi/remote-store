@@ -7,6 +7,10 @@ source_items:
 audience:
   - user.api
   - user.api_docs
+discovery_followups:
+  # Round 2's measuring reviewer saw write("\\") raise yet store the row;
+  # reproduced on SQLBlobBackend and MemoryBackend, unreachable through Store.
+  - BUG-297
 expected_ripples:
   - sdd/backlogid.json
   - CHANGELOG.md
