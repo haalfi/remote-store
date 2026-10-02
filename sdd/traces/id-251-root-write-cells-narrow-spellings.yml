@@ -184,3 +184,94 @@ surprising_ripples:
   - docs-src/guides/custom-backend-guide.md
   - tests/backends/test_flat_ns.py
   - sdd/specs/003-backend-adapter-contract.md
+review:
+  # Derived by `hatch run ship-report 1050 --trace-block-only` at head 1f09ffd.
+  # Do not hand-edit, except a newly required field per sdd/traces/_schema.yml
+  # section review: RFC-0015 D4 makes this script the only producer.
+  derivation: "hatch run ship-report 1050 --trace-block-only"
+  pr: 1050
+  review_rounds: 7
+  submissions: 7
+  findings: 18
+  by_round:
+    - round: 1
+      findings: 2
+      origin: {pre-existing: 1, unclassifiable-file: 1}
+      triage: {must-fix: 2}
+      duration_hours: 0.05
+    - round: 2
+      findings: 3
+      origin: {original: 2, unclassifiable-file: 1}
+      triage: {must-fix: 3}
+      duration_hours: 0.47
+    - round: 3
+      findings: 4
+      origin: {loop-introduced: 3, unclassifiable-file: 1}
+      triage: {must-fix: 4}
+      duration_hours: 0.43
+    - round: 4
+      findings: 3
+      origin: {loop-introduced: 2, original: 1}
+      triage: {filed: 1, must-fix: 2}
+      duration_hours: 0.33
+    - round: 5
+      findings: 3
+      origin: {loop-introduced: 1, original: 1, unclassifiable-file: 1}
+      triage: {must-fix: 3}
+      duration_hours: 0.29
+    - round: 6
+      findings: 1
+      origin: {unclassifiable-file: 1}
+      triage: {must-fix: 1}
+      duration_hours: 10.56
+    - round: 7
+      findings: 2
+      origin: {loop-introduced: 1, original: 1}
+      triage: {filed: 1, must-fix: 1}
+      duration_hours: 0.3
+  by_file:
+    - path: "sdd/specs/003-backend-adapter-contract.md"
+      findings: 5
+    - path: "docs-src/guides/custom-backend-guide.md"
+      findings: 3
+    - path: "sdd/formal/README.md"
+      findings: 3
+    - path: "sdd/BACKLOG-DONE.md"
+      findings: 2
+    - path: "sdd/BACKLOG.md"
+      findings: 2
+    - path: "sdd/traces/id-251-root-write-cells-narrow-spellings.yml"
+      findings: 2
+    - path: "tests/backends/dafny/test_root_write_entry.py"
+      findings: 1
+  untouched_files:
+    - ".github/workflows/ci.yml"
+    - "CHANGELOG.md"
+    - "sdd/backlog/bk-389-kernel-step-1-memory.md"
+    - "sdd/backlog/id-247-graph-root-path-cassettes.md"
+    - "sdd/backlog/id-251-root-write-cells-narrow-spellings.md"
+    - "sdd/backlog/id-261-root-order-unobservable.md"
+    - "sdd/formal/MemoryBackend-py/module_.py"
+    - "sdd/formal/MemoryBackend.dfy"
+    - "sdd/formal/RootPath.dfy"
+    - "tests/backends/conformance/_helpers.py"
+    - "tests/backends/conformance/test_async_extended.py"
+    - "tests/backends/conformance/test_io.py"
+    - "tests/backends/dafny/_helpers.py"
+    - "tests/backends/test_flat_ns.py"
+  review_driven_commits:
+    - sha: "2afbd36"
+      subject: "ID-251: Narrow spec 003's Conformance line and re-derive ID-247's graph_replay counts"
+    - sha: "bd5aeb8"
+      subject: "ID-251: Bound what the widened cells catch of an is_root guard"
+    - sha: "baf2a05"
+      subject: "ID-251: State the is_root catch bound as a principle, not a lane list"
+    - sha: "01d205a"
+      subject: "ID-251: Withdraw BE-029's order-is-observable claim and file two coverage gaps"
+    - sha: "0157f30"
+      subject: "ID-251: Run the compiled oracle's tests from verify-formal"
+    - sha: "48e5bbd"
+      subject: "ID-251: Merge master; ID-251 done here, not absorbed"
+    - sha: "1f09ffd"
+      subject: "ID-251: File the oracle-vs-source gap as ID-263; align ID-251's audience"
+  ci: {verdict: PENDING, failed: 0, pending: 2}
