@@ -46,8 +46,9 @@ building or comparing.
 
 The grammar is an allowlist over two spans of the wrapper, not a shell parser
 (the text passes two shell levels: the ``CMDS="..."`` assignment, then
-``bash -c``).  It constrains only these spans; the rest of the wrapper is not
-read (see Bounds):
+``bash -c``).  It constrains only these spans; beyond the pin line, the UTF-8
+decode and the one-match count, the rest of the wrapper is not checked (see
+Bounds):
 
   * exactly one ``cp [-p|-f|-v]... /work/<glob> /build[/]`` line, followed only
     by ``&&``, ``;``, ``|``, ``)``, ``"`` or the line end, whose glob is
@@ -73,15 +74,16 @@ Bounds (Rule 7):
     bash reads the same way but the grammar does not list (a quoted argument,
     say) is exit 2, never a silent pass; widen the grammar with a guard cell
     when one is needed.
-  * **Outside its spans the wrapper is not read.**  Other ``CMDS`` lines, the
-    text after the build's ``|``, the body of an ``echo '...'`` step (which the
-    outer double quotes still evaluate) and what precedes ``cp`` can change what
-    the wrapper produces (a post-build edit, a second build, a ``cd``) while
-    this check builds as before.  That never lets a stale oracle pass, since
-    the check rebuilds from the sources itself; it surfaces as exit-1 drift on
-    a fresh regeneration, which rerunning the wrapper cannot clear.  Measured
-    in this check's review by enumerating wrapper variants against ``main()``.
-    Keep such steps out of the wrapper, or extend the grammar to cover them.
+  * **Outside its spans the wrapper is not checked.**  Other ``CMDS`` lines not
+    in either shape, the text after the build's ``|``, the body of an
+    ``echo '...'`` step (which the outer double quotes still evaluate) and what
+    precedes ``cp`` can change what the wrapper produces (a post-build edit, a
+    build appended after the pipe, a ``cd`` step) while this check builds as
+    before.  That never lets a stale oracle pass, since the check rebuilds from
+    the sources itself; it surfaces as exit-1 drift on a fresh regeneration,
+    which rerunning the wrapper cannot clear.  Pinned by
+    ``test_wrapper_steps_outside_the_two_spans_are_not_checked``.  Keep such
+    steps out of the wrapper, or extend the grammar to cover them.
   * **An include outside ``sdd/formal/`` is not copied.**  Dafny then fails to
     resolve it and the build-failure branch fires; it is loud, not silent.
   * **Runs where ``dafny`` is installed.**  CI's ``verify-formal`` job; not in
@@ -127,7 +129,8 @@ _PIN_RE = re.compile(r"^DAFNY_VERSION=(\S+)\s*$", re.MULTILINE)
 # match of each is required.
 # Build: a double-quoted `CMDS="$CMDS ...` line in which only `&& echo '...'` steps precede
 # `&& (/opt/dafny/dafny build <tokens> 2>&1 |`. An env prefix, `cd`, `timeout` or a single-quoted
-# piece on that line does not match. Tokens split on space and tab only, as bash does.
+# CMDS piece before the `(` does not match; nothing after the `|` is checked. Tokens split on space
+# and tab only, as bash does.
 _BUILD_RE = re.compile(
     r"^[ \t]*CMDS=\"\$CMDS(?: && echo '[^'\n]*')* && \(/opt/dafny/dafny (build\b[^|\n]*?)[ \t]+2>&1[ \t]*\|",
     re.MULTILINE,

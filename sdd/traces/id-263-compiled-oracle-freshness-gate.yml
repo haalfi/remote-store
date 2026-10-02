@@ -97,7 +97,7 @@ phases:
         section: "(new)"
         read_type: reference
         extract: >-
-          63 cells against a fake dafny executable (`pytest -q`: 63 passed).
+          64 cells (`pytest -q`: 64 passed), most against a fake dafny executable.
           Mutation check (an uncommitted harness that applies one text
           replacement to the script, runs this file, restores): 29 of 29
           mutants caught. The mutants, each one rule removed or widened: no
@@ -184,9 +184,14 @@ phases:
           The closing round's measuring member found the grammar's claim wider
           than its reach: only the build span and the cp span are read, so other
           CMDS lines, the text after the build's pipe, echo bodies and what
-          precedes cp are unconstrained. This was the fifth round on that one
-          condition, so the user chose to narrow the claim rather than extend the
-          grammar: the docstring now states the two spans and a Bounds bullet
-          names what is unread and how it surfaces (exit-1 drift, never a stale
-          pass). Prose only; no code change.
+          precedes cp are unconstrained (the member's variant counts are in its
+          PR #1052 review comment). Rounds 2, 3, 4, 5 and this closing round all
+          found the wrapper-reading condition wider than claimed, so the user
+          chose to narrow the claim rather than extend the grammar: the
+          docstring states the two spans and a Bounds bullet names what is
+          unchecked and how it surfaces (exit-1 drift, never a stale pass). The
+          appended whole-file pass on that prose found it overstated in turn
+          (the pin line, decode and one-match count are read); narrowed again,
+          and the bound is now pinned by
+          `test_wrapper_steps_outside_the_two_spans_are_not_checked`.
         outcome: ok

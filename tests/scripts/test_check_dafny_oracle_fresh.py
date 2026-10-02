@@ -126,6 +126,15 @@ class TestFreshness:
         assert env["run"]() == 0
         assert "OK:" in capsys.readouterr().out
 
+    def test_wrapper_steps_outside_the_two_spans_are_not_checked(self, env):
+        """The stated bound: an extra CMDS step or a tail after the build's pipe is accepted unread."""
+        extra = 'CMDS="$CMDS && cd /tmp"\n'
+        tail = WRAPPER.replace("|| true)", "|| true) && rm -rf /build/x")
+        env["translate"].write_text(tail + extra)
+        assert env["run"]() == 0
+        call = json.loads(env["log"].read_text())
+        assert call["argv"] == ["build", "-t", "py", "MemoryBackend.dfy", "--output:MemoryBackend"]
+
     def test_wrapper_build_command_runs_on_every_dfy(self, env):
         """The wrapper's build, with $f/$stem bound to the oracle, on all of sdd/formal/*.dfy."""
         env["run"]()
