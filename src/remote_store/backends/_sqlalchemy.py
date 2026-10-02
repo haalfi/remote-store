@@ -60,6 +60,11 @@ def _set_sqlite_pragmas(dbapi_conn: Any, _connection_record: Any) -> None:
     cursor.close()
 
 
+def _escape_like(literal: str) -> str:
+    """Escape *literal* so it matches only itself in a ``LIKE ... ESCAPE '\\'`` pattern."""
+    return literal.replace("\\", "\\\\").replace("%", "\\%").replace("_", "\\_")
+
+
 def _engine_kwargs(url: str) -> dict[str, Any]:
     """Name the pool for SQLite URLs whose pool SQLAlchemy would otherwise infer.
 
@@ -441,6 +446,25 @@ class SQLBlobBackend(_SQLAlchemyBaseBackend):
 
     # endregion
 
+    # region: private — prefix matching (SQL-BLOB-061)
+
+    def _under(self, prefix: str) -> sa.ColumnElement[bool]:
+        """Return a ``WHERE`` clause selecting keys that start with *prefix*, literally.
+
+        Every folder-shaped query narrows through this one predicate. The
+        escaped ``LIKE`` stops ``_`` and ``%`` in a key from acting as
+        wildcards. SQLite's ``LIKE`` also folds ASCII case while its ``=`` does
+        not, so there the ``substr`` equality makes the prefix test as exact as
+        the key equality every file-shaped query uses.
+        """
+        key = self._table.c.key
+        clause: sa.ColumnElement[bool] = key.like(_escape_like(prefix) + "%", escape="\\")
+        if self._is_sqlite:
+            clause = sa.and_(clause, sa.func.substr(key, 1, len(prefix)) == prefix)
+        return clause
+
+    # endregion
+
     # region: private — wrong-type reclassification (BE-021, BK-324 facet 2)
 
     def _reject_folder(self, conn: sa.Connection, path: str) -> None:
@@ -454,10 +478,8 @@ class SQLBlobBackend(_SQLAlchemyBaseBackend):
         """
         from remote_store.backends._flat_ns import _wrong_type_if_folder
 
-        t = self._table
-
         def _has_children(key: str) -> bool:
-            query = sa.select(sa.literal(1)).where(t.c.key.like(key + "/%")).limit(1)
+            query = sa.select(sa.literal(1)).where(self._under(key + "/")).limit(1)
             return conn.execute(query).first() is not None
 
         _wrong_type_if_folder(path, has_children=_has_children, backend=self.name)
@@ -533,8 +555,7 @@ class SQLBlobBackend(_SQLAlchemyBaseBackend):
             row = conn.execute(sa.select(sa.literal(1)).where(t.c.key == path)).first()
             if row is None:
                 # Check folder (any key with prefix)
-                prefix = path + "/"
-                row = conn.execute(sa.select(sa.literal(1)).where(t.c.key.like(prefix + "%")).limit(1)).first()
+                row = conn.execute(sa.select(sa.literal(1)).where(self._under(path + "/")).limit(1)).first()
             found = row is not None
         # Keeps the seeded ``False`` when the table is gone and the block above
         # is abandoned — the shape every probe and listing here uses.
@@ -583,9 +604,7 @@ class SQLBlobBackend(_SQLAlchemyBaseBackend):
             self._absent_table_is_absent_path(path, raises=False, what="Folder"),
             self._engine.connect() as conn,
         ):
-            t = self._table
-            prefix = path + "/"
-            row = conn.execute(sa.select(sa.literal(1)).where(t.c.key.like(prefix + "%")).limit(1)).first()
+            row = conn.execute(sa.select(sa.literal(1)).where(self._under(path + "/")).limit(1)).first()
             found = row is not None
         # ``found`` keeps its seeded value when the table is gone.
         return found
@@ -897,7 +916,7 @@ class SQLBlobBackend(_SQLAlchemyBaseBackend):
         ):
             t = self._table
             # Check if any keys exist under this prefix
-            has_children = conn.execute(sa.select(sa.literal(1)).where(t.c.key.like(prefix + "%")).limit(1)).first()
+            has_children = conn.execute(sa.select(sa.literal(1)).where(self._under(prefix)).limit(1)).first()
 
             if has_children is None:
                 # BE-013: a file at *path* is a type mismatch, not a missing
@@ -910,7 +929,7 @@ class SQLBlobBackend(_SQLAlchemyBaseBackend):
             if not recursive:
                 raise DirectoryNotEmpty(f"Folder not empty: {path}", path=path, backend=self.name)
 
-            conn.execute(t.delete().where(t.c.key.like(prefix + "%")))
+            conn.execute(t.delete().where(self._under(prefix)))
 
     # endregion
 
@@ -944,8 +963,7 @@ class SQLBlobBackend(_SQLAlchemyBaseBackend):
             self._absent_table_is_absent_path(path, raises=False, what="Folder"),
             self._engine.connect() as conn,
         ):
-            t = self._table
-            query = sa.select(*cols).where(t.c.key.like(prefix + "%")) if prefix else sa.select(*cols)
+            query = sa.select(*cols).where(self._under(prefix)) if prefix else sa.select(*cols)
             rows = conn.execute(query).fetchall()
 
         results: list[FileInfo] = []
@@ -988,7 +1006,7 @@ class SQLBlobBackend(_SQLAlchemyBaseBackend):
             self._engine.connect() as conn,
         ):
             t = self._table
-            query = sa.select(t.c.key).where(t.c.key.like(prefix + "%")) if prefix else sa.select(t.c.key)
+            query = sa.select(t.c.key).where(self._under(prefix)) if prefix else sa.select(t.c.key)
             rows = conn.execute(query).fetchall()
 
         seen: set[str] = set()
@@ -1025,8 +1043,7 @@ class SQLBlobBackend(_SQLAlchemyBaseBackend):
             self._absent_table_is_absent_path(path, raises=False, what="Folder"),
             self._engine.connect() as conn,
         ):
-            t = self._table
-            query = sa.select(*cols).where(t.c.key.like(prefix + "%")) if prefix else sa.select(*cols)
+            query = sa.select(*cols).where(self._under(prefix)) if prefix else sa.select(*cols)
             rows = conn.execute(query).fetchall()
 
         seen_folders: set[str] = set()
@@ -1113,7 +1130,7 @@ class SQLBlobBackend(_SQLAlchemyBaseBackend):
             else:
                 agg_cols.append(sa.literal(None))
 
-            query = sa.select(*agg_cols).where(t.c.key.like(prefix + "%")) if prefix else sa.select(*agg_cols)
+            query = sa.select(*agg_cols).where(self._under(prefix)) if prefix else sa.select(*agg_cols)
 
             row = conn.execute(query).first()
             # Aggregate queries (COUNT, SUM, MAX) always return exactly one row,
@@ -1305,9 +1322,11 @@ class SQLBlobBackend(_SQLAlchemyBaseBackend):
     def glob(self, pattern: str) -> Iterator[FileInfo]:
         """Yield files whose key matches the glob *pattern*.
 
-        Narrows SQL-side with a prefix ``LIKE`` where the pattern allows (on
-        every dialect — SQLite's native ``GLOB`` is deliberately avoided because
-        it mishandles ``**``), then applies the full glob regex to each row.
+        Narrows SQL-side to the pattern's literal directory prefix, through the
+        same literal prefix predicate the listings use, then applies the full
+        glob regex to each row. Wildcards never reach SQL: a ``LIKE``
+        translation of ``**/`` or ``[...]`` drops keys the regex would keep,
+        and SQLite's native ``GLOB`` mishandles ``**``.
         Costs one ``SELECT``. An absent backing table yields nothing, on the same
         terms as the other listings.
 
@@ -1322,22 +1341,10 @@ class SQLBlobBackend(_SQLAlchemyBaseBackend):
             self._absent_table_is_absent_path("", raises=False, what="Folder"),
             self._engine.connect() as conn,
         ):
-            t = self._table
             query = sa.select(*cols)
-
-            if self._is_sqlite:
-                # SQLite GLOB mishandles ** (zero-directory match). Use
-                # extract_prefix + LIKE for narrowing; regex does final filter.
-                prefix = extract_prefix(pattern)
-                if prefix:
-                    escaped = prefix.replace("\\", "\\\\").replace("%", "\\%").replace("_", "\\_")
-                    query = query.where(t.c.key.like(escaped + "/%", escape="\\"))
-            else:
-                # Other dialects: LIKE for SQL-side narrowing.
-                like_pattern = self._glob_to_like(pattern)
-                if like_pattern is not None:
-                    query = query.where(t.c.key.like(like_pattern))
-
+            prefix = extract_prefix(pattern)
+            if prefix:
+                query = query.where(self._under(prefix + "/"))
             rows = conn.execute(query).fetchall()
             yield from (self._row_to_file_info(row) for row in rows if rx.match(row[0]))
 
@@ -1430,45 +1437,6 @@ class SQLBlobBackend(_SQLAlchemyBaseBackend):
             extra=extra,
             metadata=user_meta,
         )
-
-    @staticmethod
-    def _glob_to_like(pattern: str) -> str | None:
-        """Convert a glob pattern to a SQL LIKE pattern.
-
-        Returns ``None`` when the pattern cannot be meaningfully narrowed
-        (e.g. a bare ``*``), signalling the caller to skip the WHERE clause.
-        """
-        like: list[str] = []
-        i = 0
-        while i < len(pattern):
-            ch = pattern[i]
-            if ch == "*":
-                # Collapse consecutive * (including **)
-                while i < len(pattern) and pattern[i] == "*":
-                    i += 1
-                like.append("%")
-            elif ch == "?":
-                like.append("_")
-                i += 1
-            elif ch in ("%", "_"):
-                # Escape SQL LIKE metacharacters that appear literally
-                like.append("\\" + ch)
-                i += 1
-            elif ch == "[":
-                # Character classes — not convertible to LIKE; use wildcard
-                end = pattern.find("]", i + 1)
-                if end == -1:
-                    like.append(ch)
-                else:
-                    like.append("_")
-                    i = end + 1
-                    continue
-                i += 1
-            else:
-                like.append(ch)
-                i += 1
-        result = "".join(like)
-        return None if result == "%" else result
 
     # endregion
 

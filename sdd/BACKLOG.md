@@ -116,15 +116,6 @@ done entry are review-enforced.
 here only when shipping without it resolved would cost users more than delaying
 the release.
 
-- [ ] **BL-011 — `SQLBlobBackend.delete_folder` deletes sibling keys, and listings return them, because prefix `LIKE` patterns leave `_` and `%` unescaped**
-  spec: — · effort: S · audience: user.api
-  Nine unescaped prefix `LIKE` sites in `_sqlalchemy.py` (`key + "/%"`,
-  `prefix + "%"`) let `_` and `%` match siblings: `delete_folder("a_b",
-  recursive=True)` deletes `axb/y.txt`, and `list_files("a_b")` returns it.
-  Silent data loss on ordinary keys. Open decision: none on shape; the fix
-  scope and its evidence are in the dossier.
-  Detail: [dossier](backlog/bl-011-sql-like-sibling-deletion.md)
-
 ---
 
 <a id="predictable-failure"></a>

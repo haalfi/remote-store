@@ -121,7 +121,7 @@ See the [capabilities matrix](../../reference/capabilities-matrix.md) for full d
   which require complete data in a single statement. For files larger than
   process memory, use a blob-storage backend (S3, Local, Azure) instead.
 - `write_atomic()` delegates to `write()` — single SQL statements are inherently atomic.
-- `glob()` uses SQL-side narrowing (SQLite `GLOB` or `LIKE`) then client-side regex to enforce standard glob semantics.
+- `glob()` narrows SQL-side to the pattern's literal directory prefix, then applies the glob as a client-side regex to enforce standard glob semantics.
 
 ## SQLite Optimizations
 
@@ -139,6 +139,10 @@ Folders are virtual (prefix-based), not explicit nodes:
 - `is_folder("data")` returns `True` if any key starts with `data/`.
 - `list_folders("data")` extracts unique first-level subfolder names from stored keys.
 - `delete_folder("data", recursive=True)` deletes all keys starting with `data/`.
+
+"Starts with" is literal on every database: `_` and `%` in a folder name match
+only themselves, so `delete_folder("a_b", recursive=True)` never touches
+`axb/`. On SQLite the match is also case-sensitive, like key lookups.
 
 ## Performance Guidelines
 

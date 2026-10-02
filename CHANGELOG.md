@@ -7,6 +7,8 @@ This project follows [Semantic Versioning](https://semver.org/). Pre-1.0, minor 
 
 ## [Unreleased]
 
+- BL-011: `SQLBlobBackend` matches folder prefixes literally, so `delete_folder("a_b", recursive=True)` no longer deletes `axb/` and listings no longer return it; nor does `%` or, on SQLite, a different letter case. `glob()` no longer drops matches such as a root-level file under `**/` on databases other than SQLite.
+
 - BK-380: **Breaking** — Python 3.10 is no longer supported, since CPython's security fixes for it end on 2026-10-04; the minimum is now 3.11. The `[toml]` extra is removed, because `RegistryConfig.from_toml()` uses the standard library on every supported Python. [Migration guide](https://docs.remotestore.dev/stable/reference/migration/#v0320-to-v0330).
 
 - ID-251: The backend conformance suite now checks that a write or `move`/`copy` destination naming the store root is refused under every spelling (`"./"`, `"/"` and the rest), not only `""` and `"."`; the custom-backend guide states which narrow guards that catches.

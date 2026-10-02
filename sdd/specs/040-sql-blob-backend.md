@@ -100,7 +100,9 @@ CREATE TABLE IF NOT EXISTS remote_store_objects (
 - `digest`: optional content hash as `"algorithm:hex"` string.
 - `extra`: optional JSON-encoded metadata dict.
 
-The `PRIMARY KEY` on `key` creates a B-tree index supporting prefix scans.
+The `PRIMARY KEY` on `key` creates a B-tree index. On SQLite a folder-prefix
+query scans that index rather than seeking it (`EXPLAIN QUERY PLAN` reports
+`SCAN ... USING COVERING INDEX`); other dialects were not measured.
 
 ### SQL-BLOB-011: Custom Table Name
 
@@ -171,7 +173,8 @@ statement is inherently atomic within a transaction.
 **Invariant:** Folder semantics are virtual (prefix-based). A "folder" is any
 prefix that has keys starting with `prefix/`.
 
-- `recursive=True`: `DELETE FROM t WHERE key LIKE :prefix || '/%'`
+- `recursive=True`: `DELETE FROM t WHERE <key under path/>`, the SQL-BLOB-061
+  predicate.
 - `recursive=False`: Check if any keys exist with prefix. If yes, raise
   `DirectoryNotEmpty`. If no keys exist, raise `NotFound` (unless
   `missing_ok`).
@@ -182,12 +185,12 @@ prefix that has keys starting with `prefix/`.
   starts with `path/` (folder). Empty path returns `True` (root).
 - `is_file(path)`: `SELECT 1 FROM t WHERE key = :key`.
 - `is_folder(path)`: Empty path → `True`. Otherwise
-  `SELECT 1 FROM t WHERE key LIKE :prefix LIMIT 1` where prefix = `path/`.
+  `SELECT 1 FROM t WHERE <key under path/> LIMIT 1` (SQL-BLOB-061).
 
 ### SQL-BLOB-027: list_files()
 
 **Invariant:** `SELECT key, size, modified_at, content_type, digest, extra
-FROM t WHERE key LIKE :prefix || '%'`.
+FROM t WHERE <key under path/>` (SQL-BLOB-061; no filter at the root).
 
 - Non-recursive: filter results to include only direct children (no additional
   `/` in the suffix after prefix).
@@ -209,7 +212,7 @@ FROM t WHERE key = :key`. Maps columns to `FileInfo` fields. Raises
 ### SQL-BLOB-030: get_folder_info()
 
 **Invariant:** `SELECT COUNT(*), SUM(size), MAX(modified_at) FROM t
-WHERE key LIKE :prefix || '%'`. Returns `FolderInfo`. Raises `NotFound` if
+WHERE <key under path/>` (SQL-BLOB-061). Returns `FolderInfo`. Raises `NotFound` if
 count is 0 and path is not empty string.
 
 ### SQL-BLOB-031: move()
@@ -233,12 +236,12 @@ count is 0 and path is not empty string.
 **Invariant:** Two-stage filtering — SQL-side narrowing, then client-side
 regex to enforce GLOB-014 semantics (`*` = `[^/]*`, `?` = `[^/]`):
 
-1. **SQL narrowing:**
-   - SQLite: `extract_prefix(pattern)` yields the longest literal directory
-     prefix; if non-empty, apply `key LIKE 'prefix/%'` (backslash-escaped,
-     `ESCAPE '\'`). Patterns without a literal prefix (e.g. `*.txt`,
-     `**/*.csv`) skip the SQL filter and scan the full table.
-   - Other dialects: convert `*`/`**` → `%`, `?` → `_`, use `LIKE`.
+1. **SQL narrowing:** on every dialect, `extract_prefix(pattern)` yields the
+   longest literal directory prefix; if non-empty, rows are narrowed to keys
+   under `prefix/` by the SQL-BLOB-061 predicate. Patterns without a literal
+   prefix (e.g. `*.txt`, `**/*.csv`) skip the SQL filter and scan the full
+   table. Wildcards are never translated to `LIKE`: `%/` cannot match the
+   zero directories `**/` can, and `[...]` has no `LIKE` form.
 2. **Client-side regex:** `pattern_to_regex(pattern)` from `_glob.py` filters
    the SQL result set to enforce GLOB-014 semantics, ensuring `*` and `?` do
    not match path separators.
@@ -349,6 +352,14 @@ carries the roster and the three classes that are not measured.
 
 **Invariant:** For folder-like operations, the prefix is `path + "/"`. The
 trailing slash prevents `"data"` from matching `"dataset/file.txt"`.
+
+A key is *under* a prefix when it starts with it **literally**: `_`, `%` and
+`\` in the prefix match only themselves, and the comparison is the one
+`key = :key` uses. Every folder-like query (the probes of SQL-BLOB-026, the
+wrong-type probe, SQL-BLOB-025, -027, -028, -030 and -033's narrowing) uses one
+predicate for it: `key LIKE <escaped prefix> || '%' ESCAPE '\'`, and on SQLite
+additionally `substr(key, 1, len(prefix)) = prefix`, because SQLite's `LIKE`
+folds ASCII case where its `=` does not.
 
 ---
 

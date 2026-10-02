@@ -1,0 +1,182 @@
+"""SQL-BLOB-061: folder prefixes match literally, never as ``LIKE`` patterns (BL-011).
+
+Every seed below differs from a sibling only where ``LIKE`` would generalise:
+``_`` (any one character), ``%`` (any run), ASCII case (SQLite's ``LIKE`` folds
+it) and ``\\`` (the escape character itself). Each operation that narrows by a
+folder prefix must see only the folder it was given.
+"""
+
+from __future__ import annotations
+
+from typing import TYPE_CHECKING
+
+import pytest
+import sqlalchemy as sa
+from sqlalchemy.pool import StaticPool
+
+from remote_store._errors import DirectoryNotEmpty, InvalidPath, NotFound
+from remote_store._models import FileInfo
+from remote_store.backends._sqlalchemy import SQLBlobBackend
+
+if TYPE_CHECKING:
+    from collections.abc import Iterator
+
+SEEDS = (
+    "a_b/x.txt",
+    "axb/y.txt",
+    "a%/z.txt",
+    "aQQ/w.txt",
+    "A_B/c.txt",
+    "Up/u.txt",
+    "up/l.txt",
+    "a\\b/s.txt",
+    "ab/t.txt",
+)
+
+
+@pytest.fixture
+def backend() -> Iterator[SQLBlobBackend]:
+    engine = sa.create_engine("sqlite://", poolclass=StaticPool, connect_args={"check_same_thread": False})
+    b = SQLBlobBackend(engine=engine)
+    for key in SEEDS:
+        b.write(key, key.encode())
+    yield b
+    b.close()
+    engine.dispose()
+
+
+def _keys(b: SQLBlobBackend) -> set[str]:
+    """Raw stored keys; ``RemotePath`` would render ``\\`` as ``/``."""
+    with b.unwrap(sa.Engine).connect() as conn:
+        return {row[0] for row in conn.execute(sa.select(b._table.c.key))}
+
+
+def _names(items: Iterator[object]) -> set[str]:
+    return {item.name for item in items}  # type: ignore[attr-defined]
+
+
+# Folder -> the only file it holds. Each folder has at least one sibling that a
+# metacharacter, case or escape reading of the prefix would also reach.
+FOLDERS = [
+    pytest.param("a_b", "x.txt", id="underscore"),
+    pytest.param("a%", "z.txt", id="percent"),
+    pytest.param("Up", "u.txt", id="case"),
+    pytest.param("a\\b", "s.txt", id="backslash"),
+]
+
+
+@pytest.mark.spec("SQL-BLOB-061")
+@pytest.mark.spec("SQL-BLOB-027")
+@pytest.mark.parametrize(("folder", "only"), FOLDERS)
+def test_list_files(backend: SQLBlobBackend, folder: str, only: str) -> None:
+    assert _names(backend.list_files(folder, recursive=True)) == {only}
+
+
+@pytest.mark.spec("SQL-BLOB-061")
+@pytest.mark.spec("SQL-BLOB-028")
+def test_list_folders(backend: SQLBlobBackend) -> None:
+    backend.write("p_q/in/x.txt", b"1")
+    backend.write("pXq/out/y.txt", b"1")
+    backend.write("P_Q/out2/z.txt", b"1")
+    assert _names(backend.list_folders("p_q")) == {"in"}
+
+
+@pytest.mark.spec("SQL-BLOB-061")
+@pytest.mark.parametrize(("folder", "only"), FOLDERS)
+def test_iter_children(backend: SQLBlobBackend, folder: str, only: str) -> None:
+    children = list(backend.iter_children(folder))
+    assert all(isinstance(c, FileInfo) for c in children)
+    assert _names(iter(children)) == {only}
+
+
+@pytest.mark.spec("SQL-BLOB-061")
+@pytest.mark.spec("SQL-BLOB-030")
+@pytest.mark.parametrize(("folder", "only"), FOLDERS)
+def test_get_folder_info(backend: SQLBlobBackend, folder: str, only: str) -> None:
+    info = backend.get_folder_info(folder)
+    assert info.file_count == 1
+    assert info.total_size == len(f"{folder}/{only}".encode())
+
+
+@pytest.mark.spec("SQL-BLOB-061")
+@pytest.mark.spec("SQL-BLOB-026")
+@pytest.mark.parametrize("probe", ["aXb", "a_q", "a%%", "UP", "uP", "a\\x"])
+def test_folder_probes_reject_lookalikes(backend: SQLBlobBackend, probe: str) -> None:
+    """No folder exists at *probe*; only a ``LIKE`` reading finds one."""
+    assert backend.is_folder(probe) is False
+    assert backend.exists(probe) is False
+
+
+@pytest.mark.spec("SQL-BLOB-061")
+@pytest.mark.spec("SQL-BLOB-025")
+@pytest.mark.parametrize(("folder", "only"), FOLDERS)
+def test_delete_folder_recursive_keeps_siblings(backend: SQLBlobBackend, folder: str, only: str) -> None:
+    backend.delete_folder(folder, recursive=True)
+    assert _keys(backend) == set(SEEDS) - {f"{folder}/{only}"}
+
+
+@pytest.mark.spec("SQL-BLOB-061")
+@pytest.mark.spec("SQL-BLOB-025")
+@pytest.mark.parametrize("probe", ["aXb", "UP", "a\\x"])
+def test_delete_folder_on_lookalike_is_not_found(backend: SQLBlobBackend, probe: str) -> None:
+    """A sibling's children must not make *probe* a non-empty folder."""
+    with pytest.raises(NotFound):
+        backend.delete_folder(probe)
+    backend.delete_folder(probe, recursive=True, missing_ok=True)
+    assert _keys(backend) == set(SEEDS)
+
+
+@pytest.mark.spec("SQL-BLOB-061")
+@pytest.mark.spec("SQL-BLOB-029")
+@pytest.mark.parametrize("probe", ["aXb", "UP"])
+def test_wrong_type_probe_ignores_lookalikes(backend: SQLBlobBackend, probe: str) -> None:
+    """``get_file_info`` on a missing key is ``NotFound``, not a folder-shaped ``InvalidPath``."""
+    with pytest.raises(NotFound) as exc_info:
+        backend.get_file_info(probe)
+    assert not isinstance(exc_info.value, InvalidPath)
+
+
+@pytest.mark.spec("SQL-BLOB-061")
+@pytest.mark.spec("SQL-BLOB-025")
+def test_delete_folder_non_recursive_still_sees_its_own_children(backend: SQLBlobBackend) -> None:
+    """Guard: the narrowed predicate still finds a real folder."""
+    with pytest.raises(DirectoryNotEmpty):
+        backend.delete_folder("a_b")
+
+
+@pytest.mark.spec("SQL-BLOB-061")
+@pytest.mark.parametrize(("folder", "only"), [p for p in FOLDERS if p.id != "case"])
+def test_escape_alone_keeps_metacharacters_literal(backend: SQLBlobBackend, folder: str, only: str) -> None:
+    """The branch every non-SQLite dialect takes: escaped ``LIKE``, no ``substr``.
+
+    On SQLite the ``substr`` equality alone already rejects these siblings, so
+    without this cell the escaping is unpinned. Case is left out: off SQLite it
+    follows the column's collation, as key equality does.
+    """
+    backend.delete("A_B/c.txt")  # case twin of a_b; SQLite's LIKE would fold it in
+    backend._is_sqlite = False
+    assert _names(backend.list_files(folder, recursive=True)) == {only}
+    backend.delete_folder(folder, recursive=True)
+    assert _keys(backend) == set(SEEDS) - {f"{folder}/{only}", "A_B/c.txt"}
+
+
+GLOBS = [
+    pytest.param("**/*.csv", {"a.csv", "d/b.csv"}, id="double_star_root"),
+    pytest.param("a_b/*", {"a_b/x.txt"}, id="underscore_literal"),
+    pytest.param("[]k]x", {"kx"}, id="bracket_class"),
+    pytest.param("Up/*", {"Up/u.txt"}, id="case"),
+]
+
+
+@pytest.mark.spec("SQL-BLOB-061")
+@pytest.mark.spec("SQL-BLOB-033")
+@pytest.mark.parametrize("sqlite_dialect", [True, False], ids=["sqlite", "other_dialect"])
+@pytest.mark.parametrize(("pattern", "expected"), GLOBS)
+def test_glob_is_dialect_independent(
+    backend: SQLBlobBackend, sqlite_dialect: bool, pattern: str, expected: set[str]
+) -> None:
+    """The SQL narrowing never drops a key the glob regex would keep, on any dialect branch."""
+    for key in ("a.csv", "d/b.csv", "kx", "k]x"):
+        backend.write(key, b"1")
+    backend._is_sqlite = sqlite_dialect
+    assert {str(f.path) for f in backend.glob(pattern)} == expected

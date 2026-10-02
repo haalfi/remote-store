@@ -601,6 +601,15 @@ class TestOperationalConsistency:
         assert not backend.exists("ec_sib/a.txt")
         assert backend.read_bytes("ec_sib/b.txt") == b"b"
 
+    @pytest.mark.spec("BE-013")
+    def test_delete_folder_preserves_lookalike_siblings(self, backend: Backend) -> None:
+        """``_`` in a folder name is a literal; the SQL ``LIKE`` reading deleted ``ecXdf``."""
+        _require(backend, Capability.DELETE)
+        _seed(backend, {"ec_df/a.txt": b"a", "ecXdf/b.txt": b"b"})
+        backend.delete_folder("ec_df", recursive=True)
+        assert not backend.exists("ec_df/a.txt")
+        assert backend.read_bytes("ecXdf/b.txt") == b"b"
+
     @pytest.mark.spec("BE-014")
     def test_list_files_returns_fileinfo_with_name(self, backend: Backend) -> None:
         _require(backend, Capability.LIST)

@@ -1,0 +1,90 @@
+id: BL-011
+title: "`SQLBlobBackend.delete_folder` deletes sibling keys, and listings return them, because prefix `LIKE` patterns leave `_` and `%` unescaped"
+trigger: "SQLBlobBackend narrowed every folder-shaped query with an unescaped `key LIKE prefix || '%'`, so `_` and `%` in a key reached siblings: delete_folder('a_b', recursive=True) deleted axb/y.txt; on SQLite, LIKE's ASCII case folding did the same across letter case"
+source_items:
+  - BL-011
+  - BUG-241
+audience:
+  - user.api
+  - user.api_docs
+expected_ripples:
+  - sdd/backlogid.json
+  - CHANGELOG.md
+  - sdd/BACKLOG.md
+  - sdd/BACKLOG-DONE.md
+  - sdd/specs/040-sql-blob-backend.md
+surprising_ripples:
+  # Neither the item nor the ripple-check named these: the guide and the Store
+  # reference both described glob as using SQLite GLOB, which the code avoids.
+  - docs-src/guides/backends/sql-blob.md
+  - docs-src/reference/api/store.md
+  - tests/backends/conformance/test_io.py
+  - tests/backends/conformance/test_listing.py
+phases:
+  - id: orient
+    name: Orient
+    steps:
+      - file: sdd/BACKLOG.md
+        section: "BL-011"
+        read_type: gate
+        extract: "Nine unescaped LIKE sites; open decision none; scope in the dossier"
+        outcome: ok
+      - file: sdd/backlog/bl-011-sql-like-sibling-deletion.md
+        section: "(full)"
+        read_type: gate
+        extract: "Why BL-; points at BUG-241's correction for sites and reproduction"
+        outcome: ok
+      - file: sdd/backlog/bug-241-sql-like-metacharacters.md
+        section: "Correction, 2026-09-27"
+        read_type: gate
+        extract: "Site list at lines 460-1116 and the reproduction. Scoped the defect to `_` and `%`; SQLite's case folding at the same sites and glob's non-SQLite branch were outside it, found only by re-running the reproduction with case and glob seeds"
+        outcome: unclear
+      - file: sdd/CLAUDE-REFERENCE.md
+        section: "Pre-work index / Bug fix, Spec section, Backlog item touched"
+        read_type: gate
+        extract: "BACKLOG, CHANGELOG stub, failing test first, spec if invariant contradicted, trace"
+        outcome: ok
+      - file: sdd/specs/040-sql-blob-backend.md
+        section: "SQL-BLOB-010, -025 to -033, -061"
+        read_type: gate
+        extract: "Pseudo-SQL wrote the unescaped LIKE into the spec; SQL-BLOB-061 stated the trailing-slash rule but not literal matching; line 103's 'index supporting prefix scans' measured false on SQLite (EXPLAIN QUERY PLAN: SCAN)"
+        outcome: misleading
+      - file: src/remote_store/backends/_sqlalchemy.py
+        section: "SQLBlobBackend probes, listings, delete_folder, glob, _glob_to_like; SQLQueryBackend"
+        read_type: reference
+        extract: "Nine sites confirmed with rg; SQLQueryBackend prefix-matches with str.startswith and is unaffected; no async SQL backend exists"
+        outcome: ok
+  - id: tests
+    name: Failing tests
+    steps:
+      - file: sdd/TESTING.md
+        section: "(full)"
+        read_type: gate
+        extract: "Spec-traced, real in-memory SQLite over mocks"
+        outcome: ok
+      - file: tests/backends/sqlblob/test_config.py
+        section: "TestGlob, test_prefix_matching_no_false_positives, TestGlobToLike"
+        read_type: reference
+        extract: "Existing SQL-BLOB-061 test covered only the trailing slash. Seen red: 24 of 37 new cells on base; the 4 backslash cells pass on base (no ESCAPE on SQLite means \\ is literal) and guard the escape once ESCAPE is added. My own miss: the first list_folders cell passed on base because its siblings never shared the prefix; rewritten and seen red"
+        outcome: ok
+      - file: tests/backends/conformance/test_io.py
+        section: "TestOperationalConsistency"
+        read_type: reference
+        extract: "One `_`-sibling cell each for delete_folder and list_files; red only on sqlblob, green on the other local fixtures"
+        outcome: ok
+  - id: fix
+    name: Fix
+    steps:
+      - file: src/remote_store/backends/_sqlalchemy.py
+        section: "_escape_like, SQLBlobBackend._under, glob"
+        read_type: reference
+        extract: "Mutation check showed the escape unpinned on SQLite (substr alone rejects `_`/`%` siblings), so a cell runs the non-SQLite branch; each mutant (no substr, no backslash escape, no escape) turns its cells red. My own miss: I ran that new cell only against the mutants, and hatch run all then failed it on the fix, because with substr off SQLite's LIKE folded the seeded case twin A_B in; the cell now removes the twin first"
+        outcome: ok
+  - id: verify
+    name: Verify
+    steps:
+      - file: sdd/CLAUDE-REFERENCE.md
+        section: "Detailed checklist / Bug fix, Spec section"
+        read_type: verify
+        extract: "BACKLOG to DONE, CHANGELOG, failing tests before fix, spec 040 amended"
+        outcome: ok
