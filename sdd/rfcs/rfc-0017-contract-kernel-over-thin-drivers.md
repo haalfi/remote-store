@@ -153,8 +153,8 @@ class Driver(Protocol):
     def container_absent(self, exc: BaseException, *, op: Op) -> bool: ...
     def connection_dead(self, exc: BaseException) -> bool: ...
 
-    # interop, forwarded by the kernel (BE-022, BE-023, BE-025, resolve); since BK-389's
-    # planning, native_path and resolve receive the canonical key (BK-389 decision 6)
+    # interop, forwarded by the kernel (BE-022, BE-023, BE-025, resolve); how keys reach
+    # native_path, resolve and to_key is BK-395's to decide (BK-389 decision 6)
     def unwrap(self, type_hint: type[T]) -> T: ...
     def native_path(self, key: str) -> str: ...
     def to_key(self, native_path: str) -> str: ...
@@ -244,12 +244,12 @@ was a 28th match above it). It owns, once:
   013's MEM-DS-005 table, not `RemotePath`'s; spec 013 states where the two
   differ. It runs after the closed guard and before the root check, which
   then runs on the canonical key: `""` is the root, the wide predicate on
-  every side. So a driver only ever sees a canonical key, as D1's driver,
-  which "carries no path … logic", requires. It covers every member that
-  takes a key: `native_path` and `resolve` too, without the closed guard,
-  per BE-020's addressing carve-out. `to_key` is forwarded unchanged, since
-  its input is a native path. The member-by-key-class table, with its
-  measured Memory column, is BK-389's dossier, decision 6;
+  every side. So an operation's driver call only ever sees a canonical key,
+  as D1's driver, which "carries no path … logic", requires. The rule
+  covers the operations; the addressing members, a key holding a backslash
+  and `glob` are BK-395's to decide against BE-025, NPR-021/NPR-004, RES-020
+  and PATH-002 before kernel code. The operation-by-key-class table, with
+  its measured Memory column, is BK-389's dossier, decision 6;
 - root refusal from the key (BE-029; at filing, both predicates as `_flat_ns`
   now states them; since BK-389's planning, decided on the canonical key,
   which gives the wide predicate on every side, the floor BE-029 sets for
@@ -364,8 +364,9 @@ and 8) brings its own.
 before step 1 and each settled before the step that changes it (Open
 Question 4).** Added at BK-389's planning: the kernel's key rule (BK-389
 dossier, decision 6) is one more enumerated change, stated once as a table of
-member by key class. Each step's PR lists that table's cells where its driver
-answers a non-canonical key differently today. Step 1's list, for Memory, is
+operation by key class. Each step's PR lists every cell of that table where
+its driver answers differently today, canonical keys included (Local's
+`delete_folder("")` removes the root directory today). Step 1's list, for Memory, is
 in BK-394's dossier. No conformance cell reaches those cells, so each is a
 direct-backend answer that its step's PR pins with a new cell. AZ-025's blank-message clause and its pinning
 test go red with BUG-276's fix under the arm decided at BK-387, synthesise
@@ -744,7 +745,10 @@ and its answer keeps `classify`.
   `AsyncDriverBackend` are the kernel's two runtimes (Open Question 1). New
   public names: `Driver`, `AsyncDriver`, the nine `Supports*` protocols and
   their async mirrors, `DriverBackend`, `AsyncDriverBackend`, `Entry`,
-  `Page`, `WriteHandle`, `Op`, `Session`. `ext.arrow` loses its
+  `Page`, `WriteHandle`, `Op`, `Session`; and each migrated backend's
+  driver class beside its public backend class, from step 1's
+  `MemoryDriver` and `AsyncMemoryDriver` on (added at BK-389's planning;
+  BK-394's dossier, decision 1). `ext.arrow` loses its
   Tier-1 native probe on S3 once the PyArrow lane, `S3PyArrowBackend`,
   retires (D4); the s3fs lane never served that probe.
 - **Backwards compatibility:** additive for existing `Backend` subclasses,

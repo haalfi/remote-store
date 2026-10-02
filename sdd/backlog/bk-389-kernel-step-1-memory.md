@@ -65,14 +65,17 @@ every case. RFC-0017 carries the same answers at the question each settles.
    validation in the driver, against D1: a driver "carries no path, root,
    type, closed or mapping logic".
    Rounds 2 to 4 refuted three prose statements of this rule in turn, so the
-   rule is the table below and nothing else.
+   rule is the table below and nothing else. It covers the **operations**
+   only. Three parts are not decided here: the addressing members, a key
+   holding a backslash, and `glob`. Each touches existing clauses (BE-025,
+   NPR-021/NPR-004, RES-020, PATH-002), so the maintainer placed them in
+   **BK-395**, on which this item depends. See **Deferred to BK-395** below.
 
-   **Pipeline, per call.** (1) The closed guard, when the driver declares
-   `close_is_terminal`, for every member except the addressing ones (BE-020's
-   carve-out). (2) Refusals, `InvalidPath`: a key starting with `/`, a `..`
+   **Pipeline, per operation.** (1) The closed guard, when the driver declares
+   `close_is_terminal`. (2) Refusals, `InvalidPath`: a key starting with `/`, a `..`
    segment, a null byte. (3) Normalisation: empty and `.` segments are
    dropped, so `//`, `/./` and a trailing `/` fold and every root spelling
-   becomes `""`; a backslash is an ordinary character. (4) The root check on
+   becomes `""`. (4) The root check on
    the canonical key, where `""` is the root. (5) The driver, with the
    canonical key. For a key that passes (2), a canonical `""` is exactly
    `AddressesRoot` of the raw key (`BackendContract.dfy` §5c: every segment
@@ -86,44 +89,58 @@ every case. RFC-0017 carries the same answers at the question each settles.
    is the kernel's answer; **Δ** marks a cell where both Memory classes
    answer differently today.
 
-   | Key class (examples) | Probes: `exists`, `is_file`, `is_folder` | File-shaped: `read`, `read_bytes`, `read_seekable`, `get_file_info`, `delete`, `move`/`copy` source | Write-shaped: `write`, `write_atomic`, `open_atomic`, `move`/`copy` destination | Folder-shaped: `list_files`, `list_folders`, `iter_children`, `get_folder_info` | `delete_folder` | Addressing: `native_path`, `resolve` |
-   |---|---|---|---|---|---|---|
-   | root (`""`, `"."`, `"./"`, `".//"`, `"./."`) | the root's answer (BE-029) | `InvalidPath` | `InvalidPath` (BE-029) | the root folder; **Δ** `get_folder_info` on `"./"`, `".//"`, `"./."`, which raises `InvalidPath` today | `InvalidPath`, refused by the kernel, never reaching `delete_tree` or the list-then-delete synthesis | the driver's answer for `""`; **Δ** on `"./"`, `".//"`, `"./."`, answered raw today |
-   | `/`-led (`"/"`, `"/./"`, `"/f"`) | `InvalidPath` | `InvalidPath` | `InvalidPath` | `InvalidPath` | `InvalidPath` | `InvalidPath`; **Δ**, answered raw today |
-   | `..` segment (`"d/../f"`) | `InvalidPath` | `InvalidPath` | `InvalidPath` | `InvalidPath` | `InvalidPath` | `InvalidPath`; **Δ** |
-   | null byte | `InvalidPath` | `InvalidPath` | `InvalidPath` | `InvalidPath` | `InvalidPath` | `InvalidPath`; **Δ** |
-   | non-canonical ordinary (`"d//f"`, `"d/./f"`, `"d/"`) | the canonical key's answer | the canonical key's answer | the canonical key's answer | the canonical key's answer | the canonical key's answer | the canonical key's answer; **Δ**, answered raw today |
-   | ordinary, a backslash included (`"f"`, `"d\\f"`) | passed through | passed through | passed through | passed through | passed through | passed through |
-
-   `to_key` is outside the table: its input is a native path, not a key, so
-   the kernel forwards it to the driver unchanged and normalises nothing
-   (Memory's `to_key` is the identity). Its BE-025 round trip holds because
-   `native_path` now always answers for a canonical key.
+   | Key class (examples) | Probes: `exists`, `is_file`, `is_folder` | File-shaped: `read`, `read_bytes`, `read_seekable`, `get_file_info`, `delete`, `move`/`copy` source | Write-shaped: `write`, `write_atomic`, `open_atomic`, `move`/`copy` destination | Folder-shaped: `list_files`, `list_folders`, `iter_children`, `get_folder_info` | `delete_folder` |
+   |---|---|---|---|---|---|
+   | root (`""`, `"."`, `"./"`, `".//"`, `"./."`) | the root's answer (BE-029) | `InvalidPath` | `InvalidPath` (BE-029) | the root folder; **Δ** `get_folder_info` on `"./"`, `".//"`, `"./."`, which raises `InvalidPath` today | `InvalidPath`, refused by the kernel, never reaching `delete_tree` or the list-then-delete synthesis |
+   | `/`-led (`"/"`, `"/./"`, `"/f"`) | `InvalidPath` | `InvalidPath` | `InvalidPath` | `InvalidPath` | `InvalidPath` |
+   | `..` segment (`"d/../f"`) | `InvalidPath` | `InvalidPath` | `InvalidPath` | `InvalidPath` | `InvalidPath` |
+   | null byte | `InvalidPath` | `InvalidPath` | `InvalidPath` | `InvalidPath` | `InvalidPath` |
+   | non-canonical (`"d//f"`, `"d/./f"`, `"d/"`) | the canonical key's answer | the canonical key's answer | the canonical key's answer | the canonical key's answer | the canonical key's answer |
+   | canonical, no backslash (`"f"`, `"d/f"`) | passed through | passed through | passed through | passed through | passed through |
 
    **Derivation of the Δ column.** Both Memory classes were run on a store
-   holding `f` and `d/f`, over the 15 keys `""`, `"."`, `"./"`, `".//"`,
+   holding `f` and `d/f` over 17 keys: the 15 `""`, `"."`, `"./"`, `".//"`,
    `"./."`, `"/"`, `"/./"`, `"/f"`, `"d/../f"`, `"f\0"`, `"d\\f"`, `"d//f"`,
-   `"d/./f"`, `"d/"`, `"f"`. The sync class was run through `exists`, `is_file`, `is_folder`,
+   `"d/./f"`, `"d/"`, `"f"`, plus `"d/f"` and `"d"` to check the
+   non-canonical row against. The sync class was run through `exists`, `is_file`, `is_folder`,
    `read_bytes`, `get_file_info`, `write`, `delete`, `delete_folder`,
    `list_files(recursive=True)`, `get_folder_info`, `move` as source and as
    destination, `native_path` and `to_key`. The async class was run through the same set
    less `is_file`, `get_file_info` and `to_key`, and the two classes agree on
    every shared cell. Every measured cell outside the Δ marks matches the
-   table, the non-canonical row checked against `"d/f"` and `"d"` themselves.
-   `list_folders`, `iter_children`, `read`, `read_seekable`, `write_atomic`,
-   `open_atomic`, `copy` and `resolve` were not run; their cells are the
-   table's by group.
-   **What the Δ cells reach:** no conformance cell. The addressing cells use
-   only canonical keys: `"some/key"`, `""`, `"."`, `"simple.txt"` and
-   `"dir/sub/file.txt"`, in `test_identity.py` and its async twin. The
-   read-side root cells use only `""` and `"."`. `Store` normalises its own
-   inputs, so every Δ is visible only to a caller holding a backend directly.
-   BK-394 lists them as step 1's Memory cell changes.
+   table. Round 5's measuring reviewer then ran `list_folders`, `iter_children`,
+   `read`, `read_seekable`, `write_atomic`, `open_atomic` and `copy` the same
+   way and found no unmarked difference. **What the Δ cells reach:** no
+   conformance cell, since the read-side root cells use only `""` and `"."`.
+   `Store` normalises its own inputs, so the Δ is visible only to a caller
+   holding a backend directly. BK-394 lists it as a step-1 Memory cell change.
 
    **Later drivers.** RFC-0017 D3's enumerated cell changes now include this
-   table: each step's PR lists the cells where its driver answers a
-   non-canonical key differently today (for example a flat wire's `"d//f"`
-   or `"./"`). That is the only change this decision adds to D3's list.
+   table. Each step's PR lists **every** cell of it where its driver answers
+   differently today, canonical keys included. For example, `LocalBackend`'s
+   `delete_folder("", recursive=True)` today runs `shutil.rmtree` on the root
+   directory (read from `_local.py`'s `delete_folder`, not run), where the
+   table refuses it. Its docstring says `SFTPBackend` answers that cell the
+   same way. A flat wire's `"d//f"` or `"./"` are further examples. This
+   decision adds nothing else to D3's list.
+
+   **Deferred to BK-395.** Three parts are decided before kernel code, in
+   BK-395, not here:
+   - The addressing members `native_path`, `resolve` and `to_key`. Applying
+     the refusals to the first two would make them raise, against BE-025's
+     and NPR-021/NPR-004's totality. Normalising `resolve`'s key would change
+     `resolve(".")`'s `plan.key`, against RES-020.
+   - A key holding a backslash. Memory stores it today, but PATH-002 and
+     `BackendContract.dfy` §5a exclude it from well-formed keys, and every
+     returned path folds it to `/`, because `RemotePath` cannot hold one.
+   - `glob` patterns.
+
+   The maintainer recorded a preferred answer for each at the ceiling:
+   addressing stays total, with refused keys passed through raw and
+   `plan.key` kept as the caller's; a backslash is refused; and a pattern's
+   literal prefix goes through the pipeline. BK-395 verifies each against the
+   clauses above before adopting it. Until then, the pipeline's step (3)
+   leaves a backslash untouched.
 
    **Not `RemotePath`'s rules, nor `LocalBackend._resolve()`'s.** The
    refusals and normalisation are spec 013's MEM-DS-005 table, which both
@@ -243,9 +260,9 @@ below is this, run with `hatch run python`: for each of `""`, `"."`, `"./"`,
   and `.` segments, so `"./"` and `".//"` also split to the root (measured,
   the probe: `is_root` `False`, split `[]`). Decision 6 settles it: the
   kernel normalises such a key to `""` and decides the root on that, so it
-  is the root on every side. Memory answers it that way today on every
-  measured member except `get_folder_info` and `native_path`, the Δ cells
-  of decision 6's table.
+  is the root on every operation. Memory answers it that way today on every
+  measured operation except `get_folder_info`, the Δ cell of decision 6's
+  table. The addressing members answer it raw today; that is BK-395's.
 - **Neither Memory class skips the unknown-time sentinel in
   `get_folder_info`.** A folder whose only file carries `datetime.min` in UTC
   answers that sentinel, sync and async, where the kernel's rule

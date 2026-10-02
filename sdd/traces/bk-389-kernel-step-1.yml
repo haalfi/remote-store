@@ -18,6 +18,7 @@ audience:
 discovery_followups:
   - BK-394
   - BUG-299
+  - BK-395
 expected_ripples:
   - sdd/BACKLOG-DONE.md
 surprising_ripples:
@@ -166,7 +167,7 @@ phases:
     name: Round 4 re-plan, key rule enumerated
     steps:
       - file: src/remote_store/backends/_memory.py
-        section: "every key-taking member, 17 keys"
+        section: "14 sync members and 11 async, 17 keys (the dossier's 15 plus d/f and d)"
         read_type: verify
         extract: "measure both Memory classes per member and key class; Δ cells are get_folder_info on './'-shaped roots and raw addressing answers; three prose rules had each been refuted, so the rule became a table"
       - file: tests/backends/conformance/test_identity.py
@@ -181,3 +182,22 @@ phases:
         section: "MEM-DS-005"
         read_type: verify
         extract: "my round-3 correction kept the false LocalBackend half; rewritten from a three-way comparison"
+  - id: ceiling_round5
+    name: Round 5 at the ceiling, scope cut to BK-395
+    steps:
+      - file: sdd/specs/003-backend-adapter-contract.md
+        section: "BE-025 Postconditions; BE-029 backslash paragraph"
+        read_type: verify
+        extract: "native_path is total and a backslash key is not canonical; the round-4 table contradicted both, which my re-plan had not checked against existing clauses"
+      - file: sdd/specs/010-native-path-resolution.md
+        section: "NPR-004, NPR-021"
+        read_type: verify
+        extract: "to_key and native_path must not raise"
+      - file: sdd/specs/004-path-model.md
+        section: "PATH-002"
+        read_type: verify
+        extract: "the backslash rule the formal WellFormedPath cites"
+      - file: src/remote_store/backends/_local.py
+        section: "delete_folder; write_atomic"
+        read_type: verify
+        extract: "delete_folder('') rmtrees the root today (read); write_atomic writes then raises on in-root '..' (run), so BUG-299 widened"

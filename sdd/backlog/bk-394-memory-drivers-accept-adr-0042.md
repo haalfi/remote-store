@@ -64,20 +64,13 @@ labelled **(was … , absorbed here)**, which is the absorption form
 2. `MemoryBackend` and `AsyncMemoryBackend` as drivers, gated by the
    conformance suite with D3's enumerated cell changes[; the fake-driver
    kernel suite stayed with BK-389].
-   - [**Step 1's Memory cell changes**, beyond D3's list: the Δ cells of
+   - [**Step 1's Memory cell changes**, beyond D3's list: the Δ cell of
      BK-389 decision 6's table, both classes. `get_folder_info("./")`,
      `(".//")` and `("./.")` answer the root `FolderInfo` where today they
-     raise `InvalidPath`. `native_path` and `resolve` answer for the
-     canonical key, or raise `InvalidPath` on a refused one, where today
-     they echo the raw key. No conformance cell reaches either (the
-     derivation is in that decision), so each is pinned by a new Memory
-     cell in this PR.]
-   - [`WriteResult.path` on a backslash key: sync `MemoryBackend.write("d\\f",
-     …)` stores the key `d\f` and returns a `WriteResult` whose `path` is
-     `RemotePath('d/f')`, because `RemotePath` converts the backslash
-     (measured at master `9caef6b`). Under decision 6 a backslash is an
-     ordinary key character, so the kernel's result path must name `d\f`
-     itself; this PR states how `WriteResult.path` renders such a key.]
+     raise `InvalidPath`. No conformance cell reaches it (the derivation is
+     in that decision), so it is pinned by a new Memory cell in this PR. Any
+     addressing or backslash cell change joins this list only once BK-395
+     decides it.]
 4. Spec amendments that become true here:
    - spec 003: a BE-021 placement table assigning each obligation to kernel or
      driver, IDs kept and prose kept, plus placement notes on BE-020 and

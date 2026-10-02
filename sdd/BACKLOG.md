@@ -260,13 +260,13 @@ failure it was.
   listing-generator pattern once across backends.
   Detail: [dossier](backlog/bug-280-local-listing-permission-leak.md)
 
-- [ ] **BUG-299 — `LocalBackend.write` on a `..` key inside the root writes the file, then raises `InvalidPath`**
-  spec: BE-008 · effort: S · audience: user.api
-  `LocalBackend.write("a/../b.txt", b"x")` raises `InvalidPath`, yet `b.txt` is
-  written and `read_bytes` returns it (measured at master `9caef6b`, BK-389's
-  planning PR): `_resolve` accepts an in-root `..`, and the refusal comes after
-  the write, so a caller told it failed has changed the store. Open decision:
-  refuse before writing here, or leave it to RFC-0017 step 5's kernel key rule.
+- [ ] **BUG-299 — `LocalBackend.write` and `write_atomic` on a `..` key inside the root write the file, then raise `InvalidPath`**
+  spec: BE-008, BE-010 · effort: S · audience: user.api
+  `write("a/../b.txt", b"x")` and `write_atomic("a/../c.txt", b"x")` raise
+  `InvalidPath`, yet the file exists afterwards (both measured at master
+  `9caef6b`, BK-389's planning PR): `_resolve` accepts an in-root `..`, and the
+  refusal comes after the write. Open decision: refuse before writing in both
+  here, or leave it to RFC-0017 step 5's kernel key rule.
 
 - [ ] **BUG-292 — The file-ancestor gate fails open on every `SQLAlchemyError`, so it degrades to a no-op without a signal**
   spec: BE-008, SQL-BLOB-031 · effort: M · audience: user.api, library.maintainer
@@ -277,13 +277,22 @@ failure it was.
   narrow the catch so only a confirmed miss reads as "no ancestor"; BE-008 changes with the fix.
   Detail: [dossier](backlog/bug-292-ancestor-gate-fails-open.md)
 
+- [ ] **BK-395 — The kernel's key rule is undecided for addressing, backslash keys and `glob`**
+  spec: BE-025, NPR-021, NPR-004, RES-020, PATH-002 · effort: S · audience: library.maintainer, contributor.process
+  BK-389's decision 6 states the kernel's key rule for the operations only. Its
+  addressing column made `native_path` and `resolve` raise, against BE-025's
+  and NPR-021's totality, and its backslash row contradicted PATH-002. `glob`
+  had no place at all. Open decision: all three. The maintainer's preferred
+  answers and the measurements are in the dossier. BK-389 waits on it.
+  Detail: [dossier](backlog/bk-395-kernel-key-rule-addressing.md)
+
 - [ ] **BK-389 — RFC-0017's kernel does not exist, so no backend can migrate onto it**
   spec: BE-017, BE-020, BE-021, BE-029, ERR-001, ERR-009, DEPTH-003, PING-002, AW-001, SAW-003 · effort: L · audience: library.maintainer, infra.test
   D3 step 1's first PR: the async kernel and its `unasync` sync twin, private,
   with a fake-driver suite, under the Proposed ADR-0042; BK-394 lands the Memory
-  drivers on it. Merges only after the v0.33.0 tag. Depends on BK-388. Open
-  decision: none; RFC-0017's open questions and the kernel-shape questions
-  planning raised are decided in the dossier's § Decisions.
+  drivers on it. Merges only after the v0.33.0 tag. Depends on BK-388 and
+  BK-395. Open decision: none of its own; the rest are decided in the
+  dossier's § Decisions, and the key rule's remainder is BK-395's.
   Detail: [dossier](backlog/bk-389-kernel-step-1-memory.md)
 
 - [ ] **BK-394 — No backend runs on RFC-0017's kernel, so ADR-0042 stays Proposed**
