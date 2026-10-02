@@ -142,7 +142,7 @@ every case. RFC-0017 carries the same answers at the question each settles.
    `test_strict_delete_folder_on_the_root_answers_from_the_filesystem`
    (`NotFound`, `""` and `"."`, recursive and not) all become `InvalidPath`.
    The second test's docstring rests on "a call no spec decides", which item
-   4's spec 003 clause ends, so step 5 rewrites that rationale too. `SFTPBackend` likely answers
+   8's spec 003 root clause ends, so step 5 rewrites that rationale too. `SFTPBackend` likely answers
    the same: its `_sftp_path` maps the root to `base_path` and its `_rmtree`
    ends in `rmdir` (read from `_sftp.py`, not run). A flat wire's `"d//f"` or
    `"./"` are further examples. This decision adds nothing else to D3's list.
@@ -218,27 +218,35 @@ every case. RFC-0017 carries the same answers at the question each settles.
      A typed `NotFound` is probed too, as RFC-0017 D2's flow does, because
      Local's and SFTP's wires type a file as `NotFound`. `missing_ok`
      applies to the final `NotFound`. Only the probed answer can race, never
-     the removal. The driver columns are what `rmdir` gives through today's
-     classifiers (`_local.py` maps `NotADirectoryError` to `NotFound` at
-     lines 203, 237 and 455; `_sftp.py` maps `FileNotFoundError` to
-     `NotFound` at line 3271); the last column is today's answer on every
-     driver, measured for Local and Memory in round 3, read for SFTP
-     (`_sftp.py` lines 1358 to 1388):
+     the removal. The driver columns are what `rmdir` gives through the
+     classifier each driver's `delete_folder` uses today, which step 5 and
+     step 6 keep for `remove_folder`: Local's handler maps `ENOTEMPTY` (or
+     145) to `DirectoryNotEmpty` and every other `OSError` to
+     `PermissionDenied` (`_local.py` lines 505 to 510); SFTP's
+     `_map_exception` maps `FileNotFoundError` to `NotFound` (`_sftp.py`
+     line 3271) and an errno-less failure to an untyped `RemoteStoreError`
+     (run in round 4). The last column is today's answer, measured for Local
+     and Memory in rounds 3 and 4, read for SFTP (`_sftp.py` lines 1358 to
+     1388):
 
      | Key state | Memory `remove_folder` | Local `rmdir` → `classify` | SFTP v3 `rmdir` → `classify` | Kernel | Answer |
      |---|---|---|---|---|---|
      | empty folder | removed | removed | removed | — | removed |
      | folder holding files | `DirectoryNotEmpty` | `ENOTEMPTY` → `DirectoryNotEmpty` | errno-less failure, untyped | probe on SFTP only: `stat` folder, `list_page` non-empty | `DirectoryNotEmpty` |
      | folder holding only an empty folder | `DirectoryNotEmpty` | `ENOTEMPTY` → `DirectoryNotEmpty` | errno-less failure, untyped | probe on SFTP only; `delimiter="/"` sees the subfolder | `DirectoryNotEmpty` |
-     | file `f` | `InvalidPath` | `ENOTDIR` → `NotFound` | `ENOENT` → `NotFound` | probe: `stat` file | `InvalidPath` |
-     | key under a file `f/x` | `NotFound` | `ENOTDIR` → `NotFound` | `ENOENT` → `NotFound` | probe: `stat` absent | `NotFound` |
-     | absent | `NotFound` | `ENOENT` → `NotFound` | `ENOENT` → `NotFound` | probe: `stat` absent | `NotFound` |
+     | file `f` | `InvalidPath` | `ENOTDIR` → `PermissionDenied` | `ENOENT` → `NotFound` | probe: `stat` file | `InvalidPath` |
+     | key under a file `f/x` | `NotFound` | `ENOTDIR` → `PermissionDenied` | `ENOENT` → `NotFound` | probe: `stat` absent | `NotFound` |
+     | absent | `NotFound` | `ENOENT` → `PermissionDenied` | `ENOENT` → `NotFound` | probe: `stat` absent | `NotFound` |
 
-     Not in the table, for step 5 to list: Local's symlink to a directory
-     answers `PermissionDenied` today (measured in round 3); under the
-     probe, `rmdir`'s `ENOTDIR` and a `stat` that reads a folder would let
-     the driver's `NotFound` stand. A permission-denied folder was not
-     measured (the container runs as uid 0).
+     Not in the table, Local's symlinks, measured in round 4 (`os.rmdir`
+     gives `ENOTDIR` on each; the rule simulated by hand): a dangling
+     symlink (`stat` absent, `NotFound`), a symlink to a file (`InvalidPath`)
+     and a symlink to an empty directory (`stat` folder, `list_page` empty,
+     the driver's `PermissionDenied` stands) keep today's answers. **One cell
+     changes, for step 5 to list:** a symlink to a non-empty directory
+     answers `PermissionDenied` today and `DirectoryNotEmpty` under the
+     probe. A permission-denied folder was not measured (the container runs
+     as uid 0).
    - **A wire with no one-step removal.** The driver checks and then
      removes, and must document that race. `AzureBackend` on HNS
      (`get_paths(max_results=1)` then `delete_directory`, `_azure.py` lines
@@ -250,6 +258,14 @@ every case. RFC-0017 carries the same answers at the question each settles.
      construction. Optional when `implicit`: Graph and Azure HNS have folder
      objects and carry it at steps 7 and 4. Never for `none`, which has no
      folder objects.
+   - **Without it** (an `implicit` driver that omits it, every `none`
+     driver): `delete_folder(recursive=False)` removes nothing, since a
+     folder with no objects has nothing to remove, and answers from the
+     probes alone: `stat` a file `InvalidPath`; `list_page(key,
+     delimiter="/", limit=1)` non-empty `DirectoryNotEmpty`; else `NotFound`,
+     to which `missing_ok` applies. [Maintainer's decision in PR #1056's
+     round 4.] BK-389's fake-driver cells pin it; each later step lists the
+     cells where its driver answers differently today.
    - `delete_folder(recursive=False)`: the kernel runs decision 6's pipeline,
      then calls `remove_folder` with no probe before it, so no check is split
      from the removal; it probes after a refusal as the table above states.
@@ -303,9 +319,12 @@ every case. RFC-0017 carries the same answers at the question each settles.
    is scoped to a class on the kernel, and no class is on it until BK-394:
    - the key rule of decision 6: its refusals, normalisation and root check
      on the canonical key, together with BK-395's answers for the
-     addressing members, backslash keys and `glob`, and any amendment of a
-     clause those answers contradict (this item's PR waits on BK-395, so
-     both land here, by the same reason);
+     addressing members, backslash keys and `glob`, and any spec 003 clause
+     those answers contradict, such as BE-025 or BE-008 (this item's PR
+     waits on BK-395, so they land here, by the same reason). A contradicted
+     clause outside spec 003 (PATH-002, NPR-021, NPR-004, RES-020) describes
+     behaviour a user sees only once a class runs on the kernel, so BK-394
+     amends it [maintainer's decision in PR #1056's round 4];
    - the root `delete_folder` refusal (`InvalidPath`), which BE-029 § Out of
      scope leaves undefined;
    - decision 8: `remove_folder`'s atomic refusal, who carries it, and the

@@ -358,3 +358,7 @@ phases:
         section: "NotADirectoryError -> NotFound (lines 203, 237, 455); _sftp.py FileNotFoundError -> NotFound (line 3271)"
         read_type: verify
         extract: "round 3: both wires type a file refusal as NotFound, so 'probe only an untyped refusal' let missing_ok silence a file; decision 8's condition was refuted three rounds running (repeat-site check), so the error path became a table over key state and driver"
+      - file: src/remote_store/backends/_local.py
+        section: "delete_folder rmdir handler (lines 505 to 510), #1056 round 4"
+        read_type: verify
+        extract: "my table's Local column cited the read/delete handlers; delete_folder's own handler maps every non-ENOTEMPTY OSError to PermissionDenied, and with it the probe reproduces today's answers except a symlink to a non-empty directory"
