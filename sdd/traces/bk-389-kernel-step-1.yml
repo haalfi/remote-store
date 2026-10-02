@@ -378,3 +378,7 @@ phases:
         section: "SQLBlobBackend.delete_folder (lines 967 to 978), #1056 second verification round"
         read_type: verify
         extract: "my stat-first none rule added a round trip and changed the file-and-prefix cell, and its recursive half was scoped away from S3, SQL and flat Azure, which all carry delete_tree; the none path was refuted in both verification rounds (repeat-site check), so it became a table in today's list-first order, delete_tree included, changing no cell (maintainer's decision)"
+      - file: sdd/specs/003-backend-adapter-contract.md
+        section: "BE-021 probe table, fail-open and determinant paragraphs (lines 751 to 778), #1056 round 8"
+        read_type: verify
+        extract: "I wrote 'a raising probe propagates' on the none path without reading BE-021, which makes the stat after an empty listing fail-open; and I sent a delete_tree refusal through the full error-path table, whose listing arm answers DirectoryNotEmpty for any failed recursive delete. Both narrowed to the existing clauses"

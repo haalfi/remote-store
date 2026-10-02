@@ -287,8 +287,18 @@ every case. RFC-0017 carries the same answers at the question each settles.
      without `SupportsDeleteTree`, one paged `list_page(key,
      delimiter=None)` whose files the kernel then deletes. On an empty
      listing, `stat`: a file answers `InvalidPath`, anything else
-     `NotFound`, to which `missing_ok` applies. A probe that raises
-     propagates its own error, since there is no driver refusal to keep.
+     `NotFound`, to which `missing_ok` applies. Spec 003 BE-021 (its probe
+     table, `delete_folder(path, missing_ok=True)` on an absent prefix, and
+     its fail-open and determinant paragraphs) fixes how a raise is
+     answered: the listing is the determinant and fails closed, so a
+     listing that raises propagates; the `stat` after an empty listing is
+     an error-path probe and fails open, so if it raises the empty
+     listing's `NotFound` stands, with `missing_ok` applied. Today
+     `S3Boto3Backend` and flat `AsyncAzureBackend` answer that way (S3Boto3
+     measured under moto with a 403 HEAD in PR #1056's round 8; Azure's
+     `_flat_is_blob`, `aio/backends/_azure.py` lines 248 to 251, read);
+     `SQLBlobBackend._reject_file` propagates the raise, so **step 3 lists
+     that one cell**.
 
      | Key state | non-recursive | recursive (`delete_tree`, or the listed files) |
      |---|---|---|
@@ -297,14 +307,17 @@ every case. RFC-0017 carries the same answers at the question each settles.
      | a file and a prefix both | `DirectoryNotEmpty` | the files under it removed, the file kept |
      | absent, or under a file (`f/x`) | `NotFound` | `NotFound` |
 
-     Every cell is today's answer on SQLBlob (`sqlite://`, measured in
-     PR #1056's round 5 and both verification rounds) and on the two
-     classes above (read, not run), so this changes no cell and adds no
-     round trip. BK-389's fake-driver cells pin each row, a raising probe
-     included.
+     Every cell is today's answer on SQLBlob (`sqlite://`, 24 cells
+     measured in PR #1056's round 8, answers and post-state) and on the two
+     classes above (S3Boto3's call counts measured under moto in round 8,
+     every path including `delete_tree`; Azure read), so the table changes
+     no cell and adds no round trip; the raising-`stat` cell above changes
+     on SQLBlob only. BK-389's fake-driver cells pin each row and both
+     raising cases.
    - `delete_folder(recursive=False)`, folder objects present: the kernel runs decision 6's pipeline,
      then calls `remove_folder` with no probe before it, so no check is split
-     from the removal; it probes after a refusal as the table above states.
+     from the removal; it probes after a refusal as the error-path table
+     states.
      SFTP's
      `stat`, `listdir`, `rmdir` sequence today (`_sftp.py` lines 1358 to
      1388) becomes `rmdir` with this probe at step 6.
@@ -313,12 +326,21 @@ every case. RFC-0017 carries the same answers at the question each settles.
      walks the subtree with `list_page(prefix, delimiter="/")`, so a folder
      holding no files still arrives as a common prefix, deletes the files,
      then calls `remove_folder` on each folder, deepest first. The last call,
-     on `key` itself, answers an absent key or a file through the table's
-     probes. This walk is not decision 7's listing, which wants files only.
-     With `SupportsDeleteTree` and folder objects present, a `delete_tree`
-     refusal goes through the same error-path table as a `remove_folder`
-     one (Memory answers under its lock; measured in PR #1056's second
-     verification round: Memory's recursive cells keep today's answers).
+     on `key` itself, answers an absent key or a file through the
+     error-path table's probes. This walk is not decision 7's listing,
+     which wants files only.
+   - `delete_folder(recursive=True)` with `SupportsDeleteTree`, folder
+     objects present: a `delete_tree` refusal gets the `stat` probe only,
+     never the listing: absent `NotFound` (to which `missing_ok` applies),
+     file `InvalidPath`, otherwise the driver's error stands, and a raising
+     probe leaves it standing, chained. A recursive delete never answers
+     `DirectoryNotEmpty` (BE-013), and a folder whose tree delete failed is
+     non-empty almost by definition, so the listing arm would turn Local's
+     `PermissionDenied` (`_local.py` line 510) or an HNS 403 into
+     `DirectoryNotEmpty`. [Corrected in PR #1056's round 8, which found the
+     full error-path table applied here.] Memory refuses only an absent key,
+     a file and `f/x`, and the probe reproduces those answers (measured in
+     rounds 7 and 8).
 
    RFC-0017 D1's protocol table carries the row. Both Memory drivers
    implement it beside `SupportsDeleteTree` (BK-394's MEM-014 placement).
