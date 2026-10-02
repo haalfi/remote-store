@@ -133,8 +133,16 @@ every case. RFC-0017 carries the same answers at the question each settles.
    tests in `tests/backends/local/test_absent_root.py` run on its `backend`
    fixture, which removes the root first, so they pin the absent-root cells
    [corrected after PR #1055 merged: as merged this called the present-root
-   answer pinned]. Step 5 therefore adds a present-root cell, and changes
-   the absent-root pins only where the table answers them differently. `SFTPBackend` likely answers
+   answer pinned]. Step 5 therefore adds a present-root cell, and inverts
+   every absent-root root `delete_folder` pin, since the table's
+   `InvalidPath` comes before the driver, so neither an absent container
+   nor `missing_ok` reaches it:
+   `test_folder_shaped_operations_still_accept_the_root` (`None` under
+   `missing_ok=True`, `""` and `"."`) and
+   `test_strict_delete_folder_on_the_root_answers_from_the_filesystem`
+   (`NotFound`, `""` and `"."`, recursive and not) all become `InvalidPath`.
+   The second test's docstring rests on "a call no spec decides", which item
+   4's spec 003 clause ends, so step 5 rewrites that rationale too. `SFTPBackend` likely answers
    the same: its `_sftp_path` maps the root to `base_path` and its `_rmtree`
    ends in `rmdir` (read from `_sftp.py`, not run). A flat wire's `"d//f"` or
    `"./"` are further examples. This decision adds nothing else to D3's list.
@@ -192,21 +200,28 @@ every case. RFC-0017 carries the same answers at the question each settles.
    one-lock check-and-detach (MEM-026, `_memory.py` lines 316 to 336) into
    three driver calls, left the probe's `delimiter` open, and excluded the
    `implicit` drivers that remove an empty folder today.]
-   - **The driver refuses atomically.** `remove_folder(key)` removes the
-     folder only if it is empty, and otherwise fails with what `classify`
-     maps to `DirectoryNotEmpty`. It does so in one wire step where the wire
-     has one: Memory under its lock, Local's and SFTP's `rmdir`. Where the
-     wire has none, the driver checks and removes itself and documents the
-     race, as `AzureBackend` on HNS (`get_paths(max_results=1)` then
-     `delete_directory`, `_azure.py` lines 1154 to 1157) and GR-043 do
-     today.
+   - **The driver answers atomically.** `remove_folder(key)` decides the
+     key's state and acts on it in one step, with one answer per state,
+     each through `classify`: an empty folder is removed; a non-empty folder
+     answers `DirectoryNotEmpty`; a file answers `InvalidPath`
+     (not-a-folder); an absent key answers `NotFound`. The step is one wire
+     step where the wire has one: Memory under its lock, which is where all
+     four checks and the detach run today (MEM-026), and Local's and SFTP's
+     `rmdir`. Where the wire has none, the driver checks and then removes,
+     and must document that race. `AzureBackend` on HNS
+     (`get_paths(max_results=1)` then `delete_directory`, `_azure.py` lines
+     1154 to 1157) and GR-043 check and then remove today, and neither
+     documents the race (a case-insensitive search for `race|TOCTOU` finds
+     nothing in `_azure.py`, and spec 044's hits are GR-018's create race and
+     the move race, none in GR-043), so the note is new at steps 4 and 7.
    - **Who carries it.** Required when `parents == "explicit"`, checked at
      construction. Optional when `implicit`: Graph and Azure HNS have folder
      objects and carry it at steps 7 and 4. Never for `none`, which has no
      folder objects.
    - `delete_folder(recursive=False)`: the kernel runs decision 6's pipeline,
-     answers `NotFound` or not-a-folder from `stat`, then calls
-     `remove_folder`. It makes no emptiness probe of its own.
+     then calls `remove_folder` and nothing else: no `stat` and no emptiness
+     probe, so no check the driver makes is split from its removal. The
+     kernel applies `missing_ok` to the driver's `NotFound`.
    - `delete_folder(recursive=True)` without `SupportsDeleteTree`: the kernel
      walks the subtree with `list_page(prefix, delimiter="/")`, so a folder
      holding no files still arrives as a common prefix, deletes the files,

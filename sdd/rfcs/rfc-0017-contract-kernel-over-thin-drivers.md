@@ -179,7 +179,7 @@ optional member, so presence is a protocol, not a method):
 | `SupportsEnsureParents` | `ensure_parents(key)` | called before `put` when `parents == "explicit"`; SFTP's stat walk and Local's `mkdir -p` are their implementations. Never called for `implicit` (Graph, GR-039: no explicit `mkdir`; Azure HNS) or `none` |
 | `SupportsFolderStats` | `folder_stats(prefix) -> (count, size, latest)` | `get_folder_info` push-down (SQL's aggregate query); without it, the kernel aggregates a listing |
 | `SupportsGlob` | `glob(pattern)` | native `GLOB`; without it the driver must not declare `GLOB` |
-| `SupportsRemoveFolder` (added at BK-389's planning; corrected after PR #1055 merged) | `remove_folder(key)`: remove the folder only if empty, else fail as `DirectoryNotEmpty`, in one wire step where the wire has one | required when `parents == "explicit"`, checked at construction; optional when `implicit` (Graph, Azure HNS); never for `none`. `delete_folder(recursive=False)` answers `NotFound` and not-a-folder from `stat`, then calls it, with no emptiness probe of its own. `delete_folder(recursive=True)` without `SupportsDeleteTree` walks with `delimiter="/"`, deletes the files, then calls it on each folder, deepest first |
+| `SupportsRemoveFolder` (added at BK-389's planning; corrected after PR #1055 merged) | `remove_folder(key)`: decide the key's state and act in one step, in one wire step where the wire has one: remove an empty folder; else `DirectoryNotEmpty`, `InvalidPath` (a file) or `NotFound` (absent) | required when `parents == "explicit"`, checked at construction; optional when `implicit` (Graph, Azure HNS); never for `none`. `delete_folder(recursive=False)` calls it and nothing else, applying `missing_ok` to its `NotFound`. `delete_folder(recursive=True)` without `SupportsDeleteTree` walks with `delimiter="/"`, deletes the files, then calls it on each folder, deepest first |
 
 Two more attributes the stream wrapper reads per driver, because
 `_ErrorMappingStream`'s caught set is per construction site today:
@@ -375,10 +375,11 @@ its driver answers differently today, canonical keys included (Local's
 in BK-394's dossier. No conformance cell reaches those cells. Memory's are
 pinned by new cells in the step-1 PR. A later step's cell may already be
 pinned per backend with the opposite answer; that step's PR inverts such a
-pin and records why. Where none pins it, the step adds the cell: Local's
-root `delete_folder` on a present root has no test (the ones in
-`tests/backends/local/test_absent_root.py` remove the root first; corrected
-after PR #1055 merged). AZ-025's blank-message clause and its pinning
+pin and records why: Local's two absent-root root `delete_folder` tests in
+`tests/backends/local/test_absent_root.py` answer `None` and `NotFound`,
+and both become `InvalidPath`. Where none pins it, the step adds the cell:
+Local's root `delete_folder` on a present root has no test, since those
+tests remove the root first (corrected after PR #1055 merged). AZ-025's blank-message clause and its pinning
 test go red with BUG-276's fix under the arm decided at BK-387, synthesise
 (its dossier: "Both go red when this lands, by design"); the BUG-240 and
 BUG-292 decisions change cells on the classes that
@@ -811,8 +812,9 @@ and its answer keeps `classify`.
   `write_atomic` and `move` syntheses over each combination of
   `put_is_atomic`, `open_write`, `rename` and `SupportsAtomicMove` the fake
   driver can present, and the `delete_folder` synthesis over
-  `SupportsRemoveFolder` and `SupportsDeleteTree` (`DirectoryNotEmpty`
-  passed through from the driver, deepest-first removal, and the
+  `SupportsRemoveFolder` and `SupportsDeleteTree` (each of
+  `remove_folder`'s answers passed through from the driver, `missing_ok`
+  applied to its `NotFound`, deepest-first removal, and the
   construction refusal of an explicit-parents driver without
   `SupportsRemoveFolder`; added after PR #1055 merged); the driver half
   stays with the per-driver suites. BK-345 and ID-244 reduce to driver

@@ -334,3 +334,11 @@ phases:
         section: "BE-029 Out of scope"
         read_type: verify
         extract: "root delete_folder is undefined for backends, so the kernel's InvalidPath cell had no spec ID; the kernel PR now adds the spec 003 clauses its cells trace to (maintainer's decision)"
+      - file: src/remote_store/backends/_memory.py
+        section: "delete_folder (lines 316 to 336), re-read in #1056 round 1"
+        read_type: verify
+        extract: "existence, type and emptiness checks all run under the one lock, not emptiness alone; my first fix kept a kernel stat before remove_folder, still two locks, so remove_folder now answers all four key states and the kernel applies missing_ok"
+      - file: tests/backends/local/test_absent_root.py
+        section: "lines 310 to 342"
+        read_type: verify
+        extract: "both absent-root root delete_folder tests (None, NotFound) become InvalidPath under the table; my first fix hedged 'only where the table answers them differently'"
