@@ -1,11 +1,11 @@
-# ID-264 — The kernel's `delete_folder` sequence around `SupportsRemoveFolder` is undecided
+# BK-396 — The kernel's `delete_folder` sequence around `SupportsRemoveFolder` is undecided
 <!-- doc: repo-only -->
 
 The index entry holds the current diagnosis; this file is evidence and
 advisory prescription ([§ Item authority](../BACKLOG.md#how-this-file-works)).
 
 **Where this comes from.** Split out of BK-389's decision 8 in PR #1056, at
-the maintainer's direction, after nine review rounds. Every round from 2 to 9
+the maintainer's direction, after nine review rounds. Every round from 1 to 9
 found a new defect in the `delete_folder` sequence, each in a case the
 previous fix had not reached: atomicity, the error-path trigger, `implicit`
 drivers, the `parents == "none"` path, the `delete_tree` refusal, and a
@@ -15,7 +15,8 @@ from round 5 on stays in BK-389's decision 8: the protocol, its atomic
 removal, and who carries it. The sequence the kernel runs around it is
 decided here, against fake drivers, before BK-389's kernel PR writes the
 spec 003 clause (its item 8) and the cells that trace to it. BK-389 depends
-on this item.
+on this item. Filed as ID-264 until PR #1056's round 10, so that PR's review
+threads use that name.
 
 ## What it decides
 
@@ -63,10 +64,12 @@ or marked read-only with its reason; each changed cell names the step that
 lists it; RFC-0017 D2's probe bullet, flowchart, § Impact Performance and
 Testing agree.
 
-## Candidate design, as it stood at PR #1056's head `40151bc`
+## Candidate design
 
-Moved verbatim from BK-389's decision 8, with the measurements. It is the
-starting point, not a decision: items 1 to 4 above refute parts of it.
+Condensed from BK-389's decision 8 at PR #1056's head `40151bc`, plus round
+9's measurements; the original text is `git show
+40151bc61:sdd/backlog/bk-389-kernel-step-1-memory.md`. It is the starting
+point, not a decision: items 1 to 4 above refute parts of it.
 
 - **The error path, enumerated.** After any refusal **except a typed
   `DirectoryNotEmpty`**, the kernel runs the error-path probes: one `stat`,
@@ -102,7 +105,8 @@ starting point, not a decision: items 1 to 4 above refute parts of it.
   each; the rule simulated by hand): a dangling symlink, a symlink to a file
   and a symlink to an empty directory keep today's answers; a symlink to a
   non-empty directory answers `PermissionDenied` today and
-  `DirectoryNotEmpty` under the probe. A permission-denied folder was not
+  `DirectoryNotEmpty` under the probe, the one changed cell, for step 5 to
+  list. A permission-denied folder was not
   measured (the container runs as uid 0).
 - **`parents == "none"`, enumerated.** No folder objects, so `remove_folder`
   is never called. The kernel lists first and `stat`s only when the listing
@@ -149,7 +153,11 @@ starting point, not a decision: items 1 to 4 above refute parts of it.
   7 with Memory and Local as stand-ins: 28 cells match today.
 - **`delete_folder(recursive=True)` with `SupportsDeleteTree`, folder
   objects present.** A `delete_tree` refusal gets the `stat` probe only,
-  never the listing: absent `NotFound`, file `InvalidPath`, otherwise the
-  driver's error stands, a raising probe leaving it standing (items 2 and 4
-  above). Memory and Local reproduce today's answers under it (20 cells,
+  never the listing: absent `NotFound`, to which `missing_ok` applies, file
+  `InvalidPath`, otherwise the driver's error stands, a raising probe
+  chained to it (items 2 and 4 above). The reason: a recursive delete never
+  answers `DirectoryNotEmpty` (BE-013), and a folder whose tree delete
+  failed is non-empty almost by definition, so the listing arm would turn
+  Local's `PermissionDenied` (`_local.py` line 510) or an HNS 403 into
+  `DirectoryNotEmpty`. Memory and Local reproduce today's answers under it (20 cells,
   round 9).

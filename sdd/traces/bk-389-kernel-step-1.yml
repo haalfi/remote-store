@@ -19,7 +19,7 @@ discovery_followups:
   - BK-394
   - BUG-299
   - BK-395
-  - ID-264
+  - BK-396
 expected_ripples:
   - sdd/BACKLOG-DONE.md
 surprising_ripples:
@@ -386,4 +386,8 @@ phases:
       - file: src/remote_store/aio/backends/_graph/backend.py
         section: "delete_folder type check (lines 1331 to 1337), #1056 round 9"
         read_type: verify
-        extract: "round 9 found delete_tree has no obligation to refuse a file, and Graph and HNS would delete one; with a new defect in decision 8's delete_folder sequence every round from 2 to 9, the maintainer split the sequence into ID-264 (candidate design, measurements and open findings in its dossier) and decision 8 keeps the protocol, its atomic removal and who carries it"
+        extract: "round 9 found delete_tree has no obligation to refuse a file, and Graph and HNS would delete one; with a new defect in decision 8's delete_folder sequence every round from 1 to 9, the maintainer split the sequence into ID-264 (candidate design, measurements and open findings in its dossier) and decision 8 keeps the protocol, its atomic removal and who carries it"
+      - file: sdd/BACKLOG.md
+        section: "§ ID prefixes, #1056 round 10"
+        read_type: verify
+        extract: "the closing panel found that the split-out item's ID- prefix reads as not committed to, while BK-389 depends on it, so ID-264 was renamed BK-396 (maintainer's decision); the same round corrected my 'round 2 to 9' range against commit a20d5ade4 (round 1 found the atomicity defect), relabelled the candidate section as condensed from 40151bc rather than moved verbatim, and restored the BE-013 rationale its stat-only rule rests on"

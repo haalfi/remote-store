@@ -213,13 +213,13 @@ every case. RFC-0017 carries the same answers at the question each settles.
      SFTP's `rmdir`, which refuse a non-empty folder and a file natively
      (measured for Local in PR #1056's round 3: `os.rmdir` removed no file,
      non-empty directory or symlink).
-   - **The `delete_folder` sequence around it is ID-264's.** [Split out in
-     PR #1056 at the maintainer's direction: from round 2 to round 9 every
+   - **The `delete_folder` sequence around it is BK-396's.** [Split out in
+     PR #1056 at the maintainer's direction: from round 1 to round 9 every
      review round found a new defect in it.] Which refusals the kernel
      probes, what `delete_tree` must refuse, and how each recursive and
-     `parents == "none"` path answers are decided in ID-264, against fake
+     `parents == "none"` path answers are decided in BK-396, against fake
      drivers, before item 8 writes their spec 003 clause. Its
-     [dossier](id-264-kernel-delete-folder-sequence.md) holds the candidate
+     [dossier](bk-396-kernel-delete-folder-sequence.md) holds the candidate
      design as it stood, every measurement, and the open findings.
    - **A wire with no one-step removal.** The driver checks and then
      removes, and must document that race. Azure on HNS
@@ -290,11 +290,11 @@ every case. RFC-0017 carries the same answers at the question each settles.
    - the root `delete_folder` refusal (`InvalidPath`), which BE-029 § Out of
      scope leaves undefined;
    - decision 8: `remove_folder`'s atomic refusal and who carries it, and
-     the kernel's `delete_folder` sequence once ID-264 decides it.
+     the kernel's `delete_folder` sequence once BK-396 decides it.
 
 **Depends on** BK-388, whose postconditions the kernel is written against,
 on BK-395, which decides the key rule's remainder (decision 6), and on
-ID-264, which decides the `delete_folder` sequence (decision 8).
+BK-396, which decides the `delete_folder` sequence (decision 8).
 As landed, the root rule is a postcondition ranked after the closed guard,
 not a precondition, so the kernel's order per operation is closed
 (`Live()`), then the root check on the key (`write`, the `move`/`copy`
