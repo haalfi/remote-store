@@ -809,11 +809,12 @@ CHANGELOG the release body is built from — say what is actually true.
 ---
 
 <a id="gate-cost"></a>
-## 7. The gate costs what the change can reach
+## 7. The gate costs only what it needs
 
 **Promise:** while work is in progress, a contributor waits only for the checks
-the change can affect; once, before merge, the whole gate runs. Narrowing never
-lifts the full pre-merge run or the coverage floor.
+the change can affect; once, before merge, the whole gate runs, and pays for
+nothing it does not need. Narrowing never lifts the full pre-merge run or the
+coverage floor.
 
 - [ ] **BK-398 — No change-scoped test selector has been measured on this suite, so none can be chosen**
   spec: — · effort: M · audience: infra.test, contributor.tooling
@@ -829,15 +830,16 @@ lifts the full pre-merge run or the coverage floor.
   `hatch run all` runs all of Stage 1 whatever the diff touched, and tests
   are most of its wall time (audit-022 § H1). Needs BK-398's selector. Open
   decision: whether a third gate branch fits audit-017 R3's one thin target
-  and BK-271's composed gate, and whether `/ship` uses it for rounds.
+  and BK-271's composed gate, and which skills run it before a round push.
   Detail: [dossier](backlog/bk-399-selected-tests-hatch-target.md)
 
 - [ ] **ID-264 — Every in-progress PR push runs the full pre-merge CI gate**
   spec: — · effort: L · audience: infra.ci, contributor.process
   `ci.yml` runs the whole gate on every PR push, including each `/ship` round
-  (audit-022 § M1). Needs BK-398's map and `/pr` and `/ship` changes. Open
-  decision: a new ADR amending ADR-0043 for a draft-PR selected lane, once
-  its four prerequisites have answers.
+  (audit-022 § M1). Needs BK-398's map; its `/pr` and `/ship` changes are its
+  own scope, and `/ship` is shared with BK-399. Open decision: a new ADR
+  amending ADR-0043 for a draft-PR selected lane, once its four
+  prerequisites have answers.
   Detail: [dossier](backlog/id-264-two-speed-ci-gate.md)
 
 - [ ] **BUG-300 — The PII sweep's bare-email regex is quadratic on base64 runs and dominates the local run**
