@@ -313,36 +313,27 @@ An earlier draft said "not repayable at all", which the appendix contradicts.
 The narrower claim is also the stronger one: prevention does not win because
 nothing else could work, it wins because nothing else arrives in time.
 
-**Correction (2026-10-03): intent debt is not uniformly partially repayable.**
-The ranking above treats it as one quantity, and most of it is forward-only.
-What survives in the code is _behaviour_: the logic that was implemented. The
-code does not record whether that behaviour was decided at all. A deliberate
-choice and an accident of implementation look identical in it, which is the
-point [`000-process.md`](../000-process.md#attribution-inside-the-intent-domain)
-makes when it holds that uniformity is not proof of intent. So reconstruction
-recovers what the system does and produces a hypothesis about why, not a record.
-It errs both ways: an accident is read as intent and given a plausible why, and
-a decision is read as an accident and "optimized" away, as with the financial
-safeguard above. Everything that makes behaviour a decision is outside the
-artifact: that it was chosen, the alternatives weighed and rejected, and what
-was known and unknown when the choice was made. Nothing in the code points at a
-path not taken, so a later reader does not know to look for it, and hindsight
-fills the gap without announcing that it has. That part exists at the moment of
-decision and at no later moment: it is repayable only forward, like cognitive
-debt.
+**Correction (2026-10-03): most of intent debt is repayable only forward.** The
+code records behaviour, not decisions: a deliberate choice and an accident of
+implementation look the same in it
+([`000-process.md`](../000-process.md#attribution-inside-the-intent-domain):
+uniformity is not proof of intent). Three things are never in the code: that
+the behaviour was chosen, which alternatives were rejected, and what was known
+when it was chosen. Recorded at the moment of decision or not at all, they
+cannot be repaid later. What a later reader reconstructs is a guess about why,
+and the guess fails both ways: an accident is read as intent, or a decision as
+an accident and removed, like the financial safeguard above.
 
-For agent-assisted work the forward-only half fails worse than by loss. The
-rationale an agent writes at the end of a session, in a PR body or an ADR, is a
-reconstruction by a party whose theory of the decision has partly left its
-context, and by the fabrication mechanism above it supplies the most plausible
-why rather than the one that held. The paydown remedy in the table — write the
-ADR afterwards — is therefore not merely late for this half; it is the route by
-which the debt's characteristic error enters the record. The preventive control
-is to keep the decision where it is made, verbatim, rather than summarise it
-later. Where decisions are put to a human as structured questions — options with
-their consequences, a recommendation, an answer — that record already exists in
-full at the moment of decision; what is missing is only its persistence and a
-reader.
+**With agents, writing the rationale afterwards produces wrong rationale, not
+just incomplete rationale.** The PR body or ADR an agent writes at the end of a
+session comes from a model that no longer has the decision in its context, after
+a context compaction or in a new session. It states the most plausible why,
+which is the fabrication mechanism above. So the paydown remedy in the table,
+"write the ADR afterwards", is how wrong rationale enters the record for this
+part of the debt. The control is to store the decision when it is made. Where
+decisions are put to a human as structured questions (options, consequences, a
+recommendation, the answer), the full record already exists at that moment; it
+only has to be kept and read.
 
 That is why the preventive column is load-bearing, and it is where the RCT above
 and Naur converge. Both are statements about *when* understanding forms — mode
