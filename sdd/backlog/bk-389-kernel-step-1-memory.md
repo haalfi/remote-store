@@ -98,7 +98,7 @@ every case. RFC-0017 carries the same answers at the question each settles.
    answer differently today. The backslash row and the addressing column are
    BK-395's.
 
-   | Key class (examples) | Probes: `exists`, `is_file`, `is_folder` | File-shaped: `read`, `read_bytes`, `read_seekable`, `get_file_info`, `delete`, `move`/`copy` source | Write-shaped: `write`, `write_atomic`, `open_atomic`, `move`/`copy` destination | Folder-shaped: `list_files`, `list_folders`, `iter_children`, `get_folder_info` | `delete_folder` | Addressing: `native_path`, `resolve` |
+   | Key class (examples) | Probes: `exists`, `is_file`, `is_folder` | File-shaped: `read`, `read_bytes`, `read_seekable`, `get_file_info`, `delete`, `move`/`copy` source | Write-shaped: `write`, `write_atomic`, `open_atomic`, `move`/`copy` destination | Folder-shaped: `list_files`, `list_folders`, `iter_children`, `get_folder_info` | `delete_folder` | Addressing: `native_path` and `resolve(k).native_path`; `resolve(k).key` is the caller's `k` in every row |
    |---|---|---|---|---|---|---|
    | root (`""`, `"."`, `"./"`, `".//"`, `"./."`) | the root's answer (BE-029) | `InvalidPath` | `InvalidPath` (BE-029) | the root folder; **Δ** `get_folder_info` on `"./"`, `".//"`, `"./."`, which raises `InvalidPath` today | `InvalidPath`, refused by the kernel, never reaching `delete_tree` or the list-then-delete synthesis | the driver's answer for `""`, the bare root; **Δ** on `"./"`, `".//"`, `"./."`, echoed raw today |
    | `/`-led (`"/"`, `"/./"`, `"/f"`) | `InvalidPath` | `InvalidPath` | `InvalidPath` | `InvalidPath` | `InvalidPath` | the raw key passed to the driver |
@@ -181,8 +181,22 @@ every case. RFC-0017 carries the same answers at the question each settles.
    addressing and all of `SQLQueryBackend`, which declares `GLOB`
    (`_QUERY_CAPABILITIES`), step 3; `S3Boto3Backend` (`GLOB`), step 2;
    `AsyncAzureBackend` (`GLOB`), step 4; `SFTPBackend`, step 6;
-   `GraphBackend`, step 7; `ReadOnlyHttpBackend`, step 8. This decision
-   adds nothing else to D3's list.
+   `GraphBackend`, step 7; `ReadOnlyHttpBackend`, step 8; and
+   `LocalBackend`'s backslash operations, step 5, of which one was run:
+   on Linux `write("d\\f")` creates a file named `d\f` in the root and
+   returns path `d/f`, where the kernel answers `InvalidPath`. SQLBlob's
+   operation cells include absorbed BUG-297's `write("\\")`, which raises
+   `InvalidPath` with `exists("\\")` then `True` (run at master `57d0797`),
+   so step 3 pins `InvalidPath` with nothing stored. Each `GLOB`
+   driver's step also lists `Store.glob`'s cells, which depend on
+   `root_path`: `Store` and `AsyncStore` prepend the root to the raw pattern
+   (`f"{root}/{pattern}"`, GLOB-007), so a leading `/` is refused under an
+   empty root and becomes a dropped empty segment under a non-empty one.
+   Measured at master `57d0797` on Local, `Store.glob("/d/*.csv")` raises
+   `NotImplementedError` with `root_path=""` and matches with
+   `root_path="r"`; the kernel keeps that split as `InvalidPath` against a
+   match, and `Store.glob`'s own pattern handling is GLOB-007's, not the
+   kernel's. This decision adds nothing else to D3's list.
 
    **Decided in BK-395** (2026-10-03, the maintainer through the interview,
    the recommended option each time; measurements and recipe in its

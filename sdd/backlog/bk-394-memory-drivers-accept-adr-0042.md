@@ -121,7 +121,9 @@ labelled **(was … , absorbed here)**, which is the absorption form
      `aio/backends/_memory.py` line 311. Each citation is re-cited to
      BK-389's spec 003 root clause in the same PR, and both tests' message
      matches follow the kernel's refusal; added in PR #1056's rounds 3 to
-     5.]
+     5. MEM-DS-005's table, which states itself as its own rule, gains a
+     backslash row (`InvalidPath`, BK-395) beside its null-byte row; added
+     in PR #1061's round 3.]
    - [spec 003's key-rule clause was planned here and moved to BK-389's
      item 8 after PR #1055 merged, so the kernel's cells have a spec ID
      before they are written. BK-395's answers land with it in BK-389's PR.
@@ -129,7 +131,9 @@ labelled **(was … , absorbed here)**, which is the absorption form
      kernel. BK-395 found no clause outside spec 003 contradicted (PATH-002
      binds `RemotePath`; NPR-004 and NPR-021 stay total; RES-020's
      `plan.key == path` is kept; BK-389 decision 6 states each), so nothing
-     outside spec 003 is amended for them here.]
+     outside spec 003 is amended for them here except spec 013's
+     MEM-DS-005, which is incomplete rather than contradicted: its
+     backslash row is in the spec 013 bullet above.]
    - [spec 003 BE-021 § Reach's page-boundary paragraph: under BK-389's
      decision 1 a migrated driver has no unmarked page, so the divergence it
      licenses applies only to a class not yet migrated.]

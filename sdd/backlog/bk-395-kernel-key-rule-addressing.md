@@ -95,9 +95,13 @@ drivers** paragraph); this section keeps only how they were reached.
    canonical pattern.
 
 Every clause the exit criteria name was checked, and none is contradicted:
-the reasons are in decision 6's **Clauses checked** paragraph. So BK-394's
-spec list gains nothing outside spec 003, and BK-389's item 8 carries
-additions to BE-024, BE-025 and BE-029.
+the reasons are in decision 6's **Clauses checked** paragraph. So BK-389's
+item 8 carries additions to BE-024, BE-025 and BE-029, and BK-394's spec
+list gains one clause outside spec 003, not contradicted but incomplete:
+spec 013's MEM-DS-005 validation table, which needs a backslash row
+(found in PR #1061's round 3). Absorbed BUG-297's defect is unchanged on
+master; its fix lands with the kernel's refusal, for Memory in BK-394 and
+for SQLBlob at RFC-0017 D3 step 3 (decision 6's **Later drivers**).
 
 **Recipe** (master `57d0797`, run with `hatch run python`, every answer the
 returned value or the exception's class name):
