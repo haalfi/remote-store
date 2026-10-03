@@ -132,3 +132,124 @@ discovery_followups:
   - BK-405
 surprising_ripples:
   - sdd/backlog/bk-390-rfc-0017-spec-amendments.md
+review:
+  # Derived by `hatch run ship-report 1061 --trace-block-only` at head 747bc92.
+  # Do not hand-edit, except a newly required field per sdd/traces/_schema.yml
+  # section review: RFC-0015 D4 makes this script the only producer.
+  derivation: "hatch run ship-report 1061 --trace-block-only"
+  pr: 1061
+  review_rounds: 14
+  submissions: 12
+  findings: 40
+  by_round:
+    - round: 1
+      findings: 3
+      origin: {original: 3}
+      triage: {must-fix: 3}
+      duration_hours: 0.06
+    - round: 2
+      findings: 1
+      origin: {loop-introduced: 1}
+      triage: {must-fix: 1}
+      duration_hours: 0.23
+    - round: 3
+      findings: 5
+      origin: {loop-introduced: 1, original: 3, unclassifiable-file: 1}
+      triage: {must-fix: 5}
+      duration_hours: 0.27
+    - round: 4
+      findings: 8
+      origin: {loop-introduced: 1, original: 7}
+      triage: {must-fix: 8}
+      duration_hours: 0.27
+    - round: 5
+      findings: 4
+      origin: {loop-introduced: 2, original: 2}
+      triage: {filed: 1, must-fix: 3}
+      duration_hours: 0.37
+    - round: 6
+      findings: 2
+      origin: {loop-introduced: 2}
+      triage: {must-fix: 2}
+      duration_hours: 0.39
+    - round: 7
+      findings: 4
+      origin: {loop-introduced: 3, pre-existing: 1}
+      triage: {must-fix: 4}
+      duration_hours: 0.22
+    - round: 8
+      findings: 2
+      origin: {loop-introduced: 2}
+      triage: {must-fix: 2}
+      duration_hours: 0.86
+    - round: 9
+      findings: 5
+      origin: {loop-introduced: 5}
+      triage: {filed: 1, must-fix: 4}
+      duration_hours: 0.27
+    - round: 10
+      findings: 4
+      origin: {loop-introduced: 4}
+      triage: {must-fix: 4}
+      duration_hours: 0.75
+    - round: 11
+      findings: 1
+      origin: {unclassifiable-file: 1}
+      triage: {must-fix: 1}
+      duration_hours: 0.0
+    - round: 12
+      findings: 1
+      origin: {loop-introduced: 1}
+      triage: {unknown: 1}
+      duration_hours: 0.78
+  by_file:
+    - path: "sdd/backlog/bk-389-kernel-step-1-memory.md"
+      findings: 20
+    - path: "sdd/BACKLOG.md"
+      findings: 4
+    - path: "sdd/backlog/bk-395-kernel-key-rule-addressing.md"
+      findings: 4
+    - path: "sdd/BACKLOG-DONE.md"
+      findings: 3
+    - path: "sdd/backlog/bk-394-memory-drivers-accept-adr-0042.md"
+      findings: 3
+    - path: "sdd/backlog/bk-390-rfc-0017-spec-amendments.md"
+      findings: 2
+    - path: "sdd/traces/bk-395-kernel-key-rule-addressing.yml"
+      findings: 2
+    - path: "sdd/backlog/bk-405-ext-glob-fallback-tier-split.md"
+      findings: 1
+    - path: "sdd/rfcs/rfc-0017-contract-kernel-over-thin-drivers.md"
+      findings: 1
+  untouched_files:
+    []
+  review_driven_commits:
+    - sha: "87ad0ed"
+      subject: "BK-395: list every unmeasured step-3+ driver and the backslash glob cell"
+    - sha: "59d37bb"
+      subject: "BK-395: name SQL-BLOB-061's backslash fixture seed and cells by derivation"
+    - sha: "d1fed94"
+      subject: "BK-395: fix resolve's key in the table, add Local and Store.glob cells, MEM-DS-005 row, BUG-297 host"
+    - sha: "68ef499"
+      subject: "BK-395, BUG-300: host BUG-297 in BK-394 and BUG-300, glob checks capability first, NPR-005/020 contradicted"
+    - sha: "6dce558"
+      subject: "BK-395, BK-398, BK-399: file the stale round-trip clauses and stored backslash keys, mark BUG-300"
+    - sha: "b7c491a"
+      subject: "BK-395: BK-398 gates BK-394 only; BK-394 owns NPR-020's Overrides line"
+    - sha: "de03996"
+      subject: "BK-395: glob keeps a trailing separator; NPR-020's Overrides line propagated"
+    - sha: "a7b3e92"
+      subject: "Merge remote-tracking branch 'origin/master' into claude/ship-bk-395-qicwrc"
+    - sha: "cbba89c"
+      subject: "BK-395: glob rule as an enumeration table; one home for who amends what"
+    - sha: "b4fdf35"
+      subject: "BK-395, BK-400: fix the consolidation's wording; file ext.glob's fallback tier split"
+    - sha: "b642e6f"
+      subject: "BK-395, BK-400: rewrite BK-400 as a present tier split with its dossier; round-10 wording"
+    - sha: "d77fd42"
+      subject: "Merge remote-tracking branch 'origin/master' into claude/ship-bk-395-qicwrc"
+    - sha: "593c802"
+      subject: "BK-405: renumber the ext.glob tier-split item, BK-400 having been minted on master"
+    - sha: "747bc92"
+      subject: "BK-405: complete the renumbering (index, H1, pointers, register, trace)"
+  ci: {verdict: GREEN, failed: 0, pending: 0}
