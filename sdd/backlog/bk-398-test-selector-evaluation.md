@@ -1,4 +1,4 @@
-# BK-398 — No change-scoped test selector has been measured on this suite, so none can be chosen
+# BK-398 — No change-scoped test selector has been chosen for this suite; one of three candidates is measured
 <!-- doc: repo-only -->
 
 Filed from [audit-022](../audits/audit-022-gate-speed-strategies.md), proposal

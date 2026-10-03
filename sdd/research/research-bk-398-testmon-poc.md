@@ -7,11 +7,14 @@
 ## Verdict
 
 **Viable with fail-open rules, for one interpreter at a time.** Every seed
-whose cause was a Python function or module that ran under a test was
-selected, at between 0.9% and 54% of the serial control's wall time. Every
-seed whose cause was not was missed. The misses fall into four path classes
-that a wrapper can recognise before testmon runs; those classes must select
-the full suite. A map does **not** carry across interpreters: on any other
+whose cause was a function that ran under a test, or module-level code in a
+file that has such a function, was selected. Each ran at between 0.9% and 54%
+of the serial control's wall time, except the module-level `conftest.py`
+seed, which selected the whole suite and ran at 138%. Every other seed was
+missed, including a module-level-only `__init__.py`. The misses fall into
+path classes that a wrapper can recognise before testmon runs and must widen
+the selection for (§ Fail-open rules). A map does **not** carry across
+interpreters: on any other
 Python, testmon discards it and runs everything. That is safe, but saves
 nothing, so ID-264's CI lane needs one map per interpreter leg.
 
@@ -78,6 +81,7 @@ share is against the 551.3 s serial control. Command:
 | backend module via `check_test_placement.py` | `class MemoryBackend: ...` appended to `_azure.py` | **no** | 825 | 36.4 s | source read as text |
 | committed cassette | an email comment appended to one Azure cassette | **no** | 0 | 1.9 s | non-Python input |
 | `pyproject.toml` pin | `httpx` extra loses `<1.0` | **no** | 0 | 1.9 s | non-Python input |
+| generated artifact | `FEATURES.md` generated row: `MemoryBackend` → `MemoryBackendX` | **no** | 0 | 2.8 s | non-Python input |
 | backend module constant | `_sftp.py`'s `_PEM_SEPARATOR` shortened | yes | 1,199 | 205.4 s (37.3%) | — |
 | backend function body | `_sanitize_pem` joins with `\r\n` | yes | 3 | 4.8 s (0.9%) | — |
 
@@ -134,25 +138,40 @@ Reading the table:
 
 ## Fail-open rules
 
-A selected run must run the full suite when the diff touches:
+A wrapper must widen testmon's selection when the diff touches one of these.
+Rules 1, 2 and 4 widen it to the full suite; rule 3 adds a set of test files.
 
 1. **Any tracked non-`.py` file.** This covers `fixtures.toml`,
    `backends.toml`, cassettes, `pyproject.toml`, and lock and CI files. The
    map has no row for any of them, so testmon cannot select for them.
 2. **A `.py` file with no `file_fp` row in the map.** That covers `__init__.py`
    re-export modules and new files. The rule is checkable from the map itself.
-3. **Any `src/` file, for the two text-reading test files.** These are
-   `tests/scripts/test_gen_features.py` and `test_check_test_placement.py`.
-   They are always added to the selection: the audit's declared entry, not
-   the full suite.
+3. **Any `src/` file, for the tests that read `src/` other than by import.**
+   These test files are always added to the selection; this is not a reason
+   to run the full suite. Audit-022 named two of them. A scan of the full
+   Stage-1 suite on 3.13 found 15, with
+   [`research-bk-398-srcreads.py`](research-bk-398-srcreads.py), an audit hook
+   on `open` that skips imports and counts collection-time reads. Eight are
+   under `tests/scripts/`: `check_capability_parity`,
+   `check_docstring_parity`, `check_no_retrospective`,
+   `check_no_tracker_refs`, `check_rst_roles`, `check_test_placement`,
+   `gen_features` and `gen_graph`, each as `test_<name>.py`. The rest are
+   `tests/aio/test_async_to_sync_adapter.py`,
+   `tests/backends/graph/aio/test_auth.py` and `test_utils.py`,
+   `tests/backends/s3/test_write_result_pbt.py`, and `tests/ext/`'s
+   `test_contract.py`, `test_observe.py` and `test_otel.py`. The set is a
+   measurement, so the wrapper should re-derive it rather than keep a list.
+   The scan does not see reads made by a subprocess.
 4. **A map from another environment.** testmon already fails open here, at
    full cost.
 
 ## Next step
 
 - **The other tools.** Run `pytest-tia` and `pytest-impact` against the same
-  seeds. The driver takes the same seed table; only the selected-run command
-  changes. A declared table stays the fallback for classes 1 and 3.
+  seeds. The table covers all eight of audit-022's P1 seed classes, with the
+  fixture and module-level classes split. The driver takes it as is; only the
+  selected-run command changes. A declared table stays the fallback for
+  class 1.
 - **For BK-399:**
   - a wrapper that applies rules 1 to 3 to `git diff --name-only`, then calls
     `--testmon-forceselect`;

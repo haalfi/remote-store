@@ -96,6 +96,12 @@ SEEDS: dict[str, tuple[str, str, str, str]] = {
         'httpx = ["httpx>=0.24.0"]',
         "tests/scripts/test_pyproject_pins.py::test_every_declaring_extra_rejects_the_unsupported_versions",
     ),
+    "generated-features": (
+        "FEATURES.md",
+        "| `memory` | `MemoryBackend` | — | All except `GLOB`, `LAZY_READ` |",
+        "| `memory` | `MemoryBackendX` | — | All except `GLOB`, `LAZY_READ` |",
+        "tests/scripts/test_gen_features.py::test_features_md_is_up_to_date",
+    ),
     "backend-sftp-const": (
         "src/remote_store/backends/_sftp.py",
         '_PEM_SEPARATOR = "-----"',

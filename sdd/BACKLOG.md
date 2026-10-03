@@ -816,7 +816,7 @@ the change can affect; once, before merge, the whole gate runs, and pays for
 nothing it does not need. Narrowing never lifts the full pre-merge run or the
 coverage floor.
 
-- [~] **BK-398 — No change-scoped test selector has been measured on this suite, so none can be chosen**
+- [~] **BK-398 — No change-scoped test selector has been chosen for this suite; one of three candidates is measured**
   spec: — · effort: M · audience: infra.test, contributor.tooling
   Both gates run every test for every diff, because nothing maps a changed
   path to the tests it can affect (audit-022 § H1). `pytest-testmon` is
