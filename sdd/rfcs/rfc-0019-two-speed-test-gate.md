@@ -169,14 +169,22 @@ whose token has `statuses: write`, and by anyone with write access.
   job, which a PR can also edit, so the design is no weaker. But the barrier
   against a tampered workflow is human review of workflow changes, not the
   status mechanism.
-- **Maintainer override:** someone with write access can still post the
-  status by hand. That is an explicit, audited override, the same class as an
-  admin bypass of branch protection, and is not a path the design relies on.
+- **Override is the ruleset bypass, not a hand-posted status.** Source
+  pinning means a status posted by hand does not satisfy the requirement,
+  whether it comes from a personal token or the `gh` CLI's OAuth app. The only
+  way to merge without a full run is therefore the ruleset's bypass list (the
+  repository admin). It leaves its own audit trail, separate from statuses. The
+  Phase 4 runbook in `sdd/CI-OPERATIONS.md` documents that bypass, and only
+  that bypass, for unblocking a merge while CI is down.
 
 **Status lifecycle.** The status is posted by the full lane's final job. That
 job depends on every other full-lane job and runs after they finish
-(`if: ${{ !cancelled() }}`). It posts `success` only when all of them passed,
-`failure` otherwise, and nothing when the run is cancelled. Each row below is a
+(`if: ${{ !cancelled() }}`). It uses today's `gate` rule (`ci.yml` `gate` job):
+- **`success`** when `setup` succeeded and every other full-lane job ended
+  `success` or `skipped`. The class filter skips jobs routinely, for example
+  `docs` when `docs=false` or every `code` job on a non-code diff.
+- **`failure`** otherwise.
+- **Nothing** when the run is cancelled. Each row below is a
 Phase 4 exit check:
 
 | Event | Expected result |
@@ -227,8 +235,12 @@ refines what runs inside `code` jobs and never turns on a job the filter turned
 off.**
 
 - **Lanes collapse without code.** When `code=false` (docs, formal, TLA or
-  hooks only), both lanes run the same jobs. That run counts as full and posts
-  `merge-gate` directly, so a docs PR needs no label.
+  hooks only), both lanes would run the same jobs, so `setup` classifies that
+  run as the **full lane**, whatever the event. The lane is therefore full on
+  any of three conditions: a `merge-candidate` label event, a master push, or
+  `code=false`. The same final job posts `merge-gate` in every case. D2's "the
+  fast lane never posts" and the single-poster lint hold as written, and a docs
+  PR needs no label.
 - **The non-code classification fails toward code.** Because a non-code run
   posts `merge-gate`, a misclassification is a merge-barrier defect, not a
   slowdown.
@@ -265,7 +277,7 @@ maintenance is not added.
 
 | Level | Rules | Everything else |
 | --- | --- | --- |
-| **Pilot** (Phase 1) | Layer 1's FULL rows, test-file rows, cassette rows, fixture-id rows and `scripts/<x>.py` → its direct test; a **leaf backend module** → its backends' fixture allowlist and `tests/backends/<backend>/` | FULL: any other `src/` module; any backend module that is not a leaf; any test or script module that another test or script imports, by name or by string; a script whose mapped test does not exist; and any path the text-reader inventory lists as read as text |
+| **Pilot** (Phase 1) | **Every layer-1 row**, with layers 2–4 absent. A row whose selection uses only layer 1 applies as written; this covers the test-file, cassette, `_cassettes*.py`, fixture-module, `fixtures.toml`, non-root `conftest.py`, `examples/**`, `scripts/<x>.py` and generated-artifact rows. The one exception is a **leaf backend module** → its backends' fixture allowlist and `tests/backends/<backend>/` | FULL in five cases: a row whose selection defers to layer 2, 3 or 4 (the `src/` rows other than a leaf backend, and the `run_examples.py`/`run_notebooks.py` row); a test or script module that another test or script imports, by name or by literal string; a script whose mapped test does not exist; any path the text-reader inventory lists as read as text; anything unmatched |
 | **Precision** (Phase 2, one at a time) | Layer 2 with hub resolution and the import-time scan; layer 3 through transitive helper edges; layer 4's mapped readers; notebook import parsing for D6 | — |
 
 **A leaf backend module** is a backend source in `backends.toml` that meets
@@ -282,8 +294,10 @@ Both are checked statically when the selection is made.
 `_registry.py:31-87` imports every registered backend module inside a function,
 and function-local imports count. Sibling modules import the remaining backend
 helpers. `_s3_boto3.py`, which nothing in `src/` imports, has its tests under
-`tests/backends/s3/` and in conformance. The pilot therefore narrows only edits
-to tests, cassettes, fixtures and scripts. Narrowing `src/` edits arrives with
+`tests/backends/s3/` and in conformance. The pilot therefore narrows no `src/`
+edit. It narrows only edits to tests, cassettes, fixture modules and
+`fixtures.toml`, non-root `conftest.py` files, examples, scripts and generated
+artifacts. Narrowing `src/` edits arrives with
 layer 2 in Phase 2. Phase 0 measures both rule sets for this reason (§ Roadmap). The second condition
 is not cosmetic: backend modules are imported directly well outside their own
 folders, for example in `tests/test_store.py`, `tests/ext/`,
@@ -327,7 +341,7 @@ the result and are always unioned, never skipped:
    | `tests/**/test_*.py` | that file |
    | Cassettes under `tests/**/cassettes/<backend>/` | that backend's replay tests and the PII sweep |
    | `tests/backends/fixtures/_cassettes*.py` | `tests/backends/fixtures/`, the replay fixtures' conformance, and the `test-cassette-pii` job |
-   | `tests/backends/fixtures/<id>.py`, where `<id>` is a `[fixture.<id>]` key in `fixtures.toml` | conformance limited to fixture `<id>`, and `tests/backends/fixtures/` |
+   | `tests/backends/fixtures/<module>.py` that registers fixtures | conformance limited to **every** fixture id the module registers, and `tests/backends/fixtures/`. The module → ids map is the inverse of `_MODULE_FOR` in `tests/backends/fixtures/__init__.py`, read as a literal dict, with each unmapped `fixtures.toml` key mapping to itself. So `s3_moto.py` selects `s3_moto` and `s3_moto_strict`, and `memory_async.py` selects both `memory_async_*` ids. Editing that map is FULL, because `__init__.py` is a FULL row |
    | `fixtures.toml` | conformance limited to the fixture ids whose block changed (both versions parsed), and `tests/backends/fixtures/`; FULL if it does not parse |
    | `examples/notebooks/**` | no tests; the `notebooks` job |
    | Other `examples/**` | no tests; the `examples` job |
@@ -458,15 +472,18 @@ FULL path such as `pyproject.toml`, or a non-`code` path such as `packaging/`
 none of which selects anything.**
 
 1. **Seed tests.** The PoC's 13 seeds become unit tests of the selector, plus
-   seeds for text readers, the D6 job rules, string-named imports, and test or
-   script modules imported by other tests or scripts. They compute selections
+   seeds for text readers, the D6 job rules, string-named imports, test or
+   script modules imported by other tests or scripts, and a failure only a
+   `*_strict` fixture reaches through a shared fixture module. They compute selections
    only and run in seconds. Each seed asserts two things:
    - **The selection contains the known failing test.**
    - **Its expected mode, `SELECTED` or `FULL` with its reason.** Containment
-     alone passes vacuously under FULL. Under the pilot, a hand mapping of
-     research Appendix B puts 9 of the 13 PoC seeds in FULL: both
-     `conftest.py` seeds, `__init__.py`, `pyproject.toml` and five non-leaf
-     `src/` modules. Pinning the mode makes a FULL → SELECTED change visible
+     alone passes vacuously under FULL. Under the pilot (every layer-1 row
+     applies, layers 2–4 absent), a hand mapping of research Appendix B puts 9
+     of the 13 PoC seeds in FULL: both `conftest.py` seeds, `__init__.py`,
+     `pyproject.toml`, and five non-leaf `src/` modules (`_path`, `_registry`,
+     `_azure`, `_sftp` twice). The other four are SELECTED: the `memory.py`
+     fixture module, `fixtures.toml`, the Azure cassette and `FEATURES.md`. Pinning the mode makes a FULL → SELECTED change visible
      when a layer is added, and so is a regression the other way.
 
    Every non-FULL layer-1 row needs at least one `SELECTED` seed. The Phase 0

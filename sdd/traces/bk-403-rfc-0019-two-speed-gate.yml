@@ -213,6 +213,26 @@ phases:
           _dafny_classorder naming mismatch, and 16 subprocess-calling test
           files; all confirmed before editing. 9 of 13 PoC seeds FULL under the
           pilot re-derived by hand mapping research Appendix B
+  - id: fix7
+    name: Consistency review, each claim verified before acting
+    steps:
+      - file: tests/backends/fixtures/__init__.py
+        section: "_MODULE_FOR (lines 84-95)"
+        read_type: reference
+        extract: >-
+          Ten TOML keys map onto shared factory modules, including the strict
+          variants; the fixture-module row now selects every id a module
+          registers via the inverse map
+      - file: .github/workflows/ci.yml
+        section: "gate job (passed-or-skipped rule)"
+        read_type: reference
+        extract: >-
+          The poster now reuses gate's success-or-skipped rule with setup
+          required; the code=false collapse is defined as the full lane so one
+          poster and the lint stay consistent; override restated as the ruleset
+          bypass since source pinning rejects hand-posted statuses; pilot
+          defined as every layer-1 row with layers 2-4 absent, which keeps the
+          re-derived 9-of-13 count
   - id: verify
     name: Verify
     steps:
