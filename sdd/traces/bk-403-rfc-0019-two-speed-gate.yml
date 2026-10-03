@@ -157,6 +157,18 @@ phases:
           I appended a Progress note and left the map dependency and draft-PR
           wording above it unmarked, the same miss the round-1 ID-266 finding
           named; marked inline now, and the BK-403 consumers line too
+  - id: fix4
+    name: Maintainer overall review
+    steps:
+      - file: sdd/rfcs/rfc-0019-two-speed-test-gate.md
+        section: "Status; D1; D2; D4; D5 maturity; D7; Roadmap"
+        read_type: reference
+        extract: >-
+          The RFC presented the full target as the build order; restructured to
+          approve Phase 0 plus a narrow local pilot, precision layers gated one
+          at a time, a status lifecycle table and poster pinning, cost-based
+          cut-off metrics, classified escapes, observable fallback, rule
+          ownership, and a non-code classifier that fails toward code
   - id: verify
     name: Verify
     steps:

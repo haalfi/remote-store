@@ -3,15 +3,18 @@
 ## Status
 
 Draft, 2026-10-03. Tracked as **BK-403**; it also sets the design for BK-404
-(local target) and ID-266 (CI lane). Nothing below is built. Phase 0
-(§ Roadmap) decides whether the rest is built at all.
+(local target) and ID-266 (CI lane). Nothing below is built.
+
+**Decision sought: approve Phase 0 and a limited local pilot.** The target
+architecture below is the direction, not a build order. Branch protection,
+`merge-candidate` handling and every blocking CI change wait until Phase 3's
+exit (§ Roadmap). Phase 0 decides whether anything is built at all.
 
 ## Management Summary
 
-**Run only the tests a change can reach while a PR is being worked on, and the
-full gate rarely: at least once, on the head that is meant to merge, and
-before that only when the author or a reviewer asks for it.** Today both gates
-run everything on every push. The selector that picks the tests is a committed
+**The full gate is removed from intermediate iteration pushes, but stays
+mandatory for the exact head that is meant to merge.** Those pushes run only
+the tests a change can reach. Today both gates run everything on every push. The selector that picks the tests is a committed
 rule set, not a runtime coverage map, and it runs the full suite whenever it
 cannot place a change.
 
@@ -59,6 +62,11 @@ and can explain every test they pick.
 5. Nothing is switched on before it has been measured: Phase 0 validates on
    seeded changes and historical PRs with a stop criterion fixed in advance,
    and the CI lane runs in shadow mode before it decides anything.
+6. The first selector is deliberately narrow (D5, pilot rule set). Precision
+   is added one layer at a time, each layer gated by its own measurement.
+7. Every fast run records whether it selected or fell back to FULL and why
+   (D7). Falling back to FULL is safe, but if it happened unrecorded it would
+   quietly remove the saving.
 
 ## Motivation
 
@@ -90,8 +98,14 @@ over `ci.yml`, `tooling-tests` counted once).
 `merge-candidate`, and any push clears the mark.** Draft state plays no role.
 The mark is a request for a full run, not a promise that the head is final: it
 is required on the merge head (D2) and allowed on any earlier head the author
-or a reviewer wants checked in full, so the full gate runs at least once per PR
-and otherwise rarely.
+or a reviewer wants checked in full. The full gate therefore runs on every PR's
+merge head, and on an intermediate push only on request.
+
+**The label is the pilot mechanism, and a known piece of process debt.** The
+merge-time enforcement a merge queue would give is not available. ADR-0043's
+reversal clause names merge-queue capacity as missing for this personal
+account (audit-022 § M1). The label stays until that changes. If a merge queue
+becomes available, the full lane moves to the queue and the label goes.
 
 | Lane | Trigger | Runs | Coverage floor |
 | --- | --- | --- | --- |
@@ -136,6 +150,41 @@ it skipped.
   workflow that acts on untrusted code. Forks are rare in this
   single-maintainer repo, so the manual path is enough.
 
+**Who can post `merge-gate`.** A commit status can be written by any workflow
+whose token has `statuses: write`, and by anyone with write access.
+
+- **Mechanism:** a commit status via the workflow's `GITHUB_TOKEN`
+  (`statuses: write` on the posting job only), not the Checks API. A check run
+  created by Actions carries its job's name, which would collide with the
+  required-job problem above.
+- **Source pinning:** the ruleset's required check names `merge-gate` with the
+  GitHub Actions app as its expected source. A status from another integration
+  or a personal token then does not satisfy it.
+- **One poster:** a lint check (Phase 4) asserts that only `ci.yml` declares
+  `statuses: write`, and only on the full lane's final job. Another workflow
+  posting the same context therefore fails review before it can merge.
+- **Maintainer override:** someone with write access can still post the
+  status by hand. That is an explicit, audited override, the same class as an
+  admin bypass of branch protection, and is not a path the design relies on.
+
+**Status lifecycle.** The status is posted by the full lane's final job. That
+job depends on every other full-lane job and runs after they finish
+(`if: ${{ !cancelled() }}`). It posts `success` only when all of them passed,
+`failure` otherwise, and nothing when the run is cancelled. Each row below is a
+Phase 4 exit check:
+
+| Event | Expected result |
+| --- | --- |
+| Full run passes | `merge-gate: success` on the head SHA |
+| Full run fails | `merge-gate: failure` on the head SHA; it replaces an earlier success there, which is conservative |
+| Full run cancelled | Nothing posted. Only an earlier full run that passed on the same SHA leaves a success there |
+| Push while a full run is active | That run is cancelled and the label cleared. The new head has no status, so merge is blocked |
+| `merge-candidate` added twice, or removed and re-added | The concurrency group cancels the earlier run; at most one full run completes per head |
+| Unrelated label added | Separate concurrency group: no cancellation, no status |
+| Full workflow re-run | Posts on the same head SHA (the event payload is replayed); the latest status per context wins |
+| A run finishes after a newer push | It posts on its own, older head SHA; the new head is unaffected |
+| Fork PR push | Fast lane runs; label clearing and status posting are skipped; no repository mutation is attempted |
+
 ### D3. Lane mechanics in `ci.yml`
 
 **`setup` decides the lane from the event, and clearing the label on push makes
@@ -174,6 +223,18 @@ off.**
 - **Lanes collapse without code.** When `code=false` (docs, formal, TLA or
   hooks only), both lanes run the same jobs. That run counts as full and posts
   `merge-gate` directly, so a docs PR needs no label.
+- **The non-code classification fails toward code.** Because a non-code run
+  posts `merge-gate`, a misclassification is a merge-barrier defect, not a
+  slowdown.
+  - No source, test, configuration, dependency, generated or workflow path may
+    classify as non-code.
+  - An error in the classifier itself selects the code class and the full
+    lane.
+  - The class outputs are recorded in the same structured output as the
+    selection (D7).
+  - Phase 4's classifier migration carries this as a test: the history replay
+    must show identical class outputs, and any path that changes class blocks
+    the migration.
 - **Locally the same split.** The `/pr` mechanical gate already composes
   `all` for code diffs and `lint` + `docs-gate` otherwise
   ([PR validation gates](../CLAUDE-REFERENCE.md#pr-validation-gates)); the
@@ -189,6 +250,21 @@ locally); output is either `FULL` with a reason, or pytest arguments and
 per-job flags with the rule behind each.** It is static: no test run, no
 installed environment, no cached state, so one result serves every interpreter
 leg. It is computed once in `setup`.
+
+**Maturity: a narrow pilot first, then precision layer by layer.** The layers
+below are the target. The first production increment (Phase 1) uses only the
+high-confidence part. The rest is added one layer at a time in Phase 2, each
+gated by seeds and the D7 cross-check. A layer that does not pay for its
+maintenance is not added.
+
+| Level | Rules | Everything else |
+| --- | --- | --- |
+| **Pilot** (Phase 1) | Layer 1's FULL rows, test-file rows, cassette rows, fixture-id rows and `scripts/<x>.py` → its direct test; a backend source listed in `backends.toml` → that backend's fixture allowlist and `tests/backends/<backend>/` | FULL: any other `src/` module, a shared helper, and any path the Phase 0 text-reader inventory lists as read as text |
+| **Precision** (Phase 2, one at a time) | Layer 2 with hub resolution and the import-time scan; layer 3 through transitive helper edges; layer 4's mapped readers; notebook import parsing for D6 | — |
+
+In the pilot, a path read as text runs FULL rather than its mapped readers.
+That is safe without a complete reader map, which is what makes it a pilot
+rule.
 
 **Composition.** Layer 1 classifies each changed path; layers 2–4 then expand
 the result and are always unioned, never skipped:
@@ -273,8 +349,12 @@ the result and are always unioned, never skipped:
    `conformance/**/*.py` (research Appendix D). A conformance test edit
    therefore also selects those readers.
 
-**Cut-off:** a selection above a threshold share of the suite runs FULL; above
-it, selection saves too little to be worth the risk. Phase 0 sets the number.
+**Cut-off:** a selection whose estimated cost is above a threshold runs FULL,
+because above it selection saves too little to be worth the risk. Cost is
+measured in estimated wall-clock time and jobs triggered, not test count: a
+selection holding 40% of tests can still start nearly every expensive job.
+Estimated time comes from the committed `.test_durations_pass1`; jobs come
+from D6. Phase 0 sets the number from the metrics in § Roadmap.
 
 ### D6. Job selection inside `code`
 
@@ -321,8 +401,46 @@ none of which selects anything.**
    test outside it is a missing rule. Runtime data checks the rules here and
    never selects, so the testmon portability limit does not apply.
 3. **Escape log.** Each full run compares its failures with the fast selection
-   for the same head. A failing test the fast lane skipped is an escape, and is
-   reported.
+   for the same head. A failing test the fast lane skipped is an escape. Each
+   escape is classified as one of:
+   - selector defect;
+   - stale or incomplete rule;
+   - environment-only failure;
+   - nondeterministic failure;
+   - failure in a job the selector does not represent;
+   - failure only the full coverage gate finds.
+
+   Zero-escape exit criteria count only deterministic, selector-reachable
+   escapes (the first two classes). The others are reported, and routed to
+   their own owners.
+
+**Every fast run is observable.** The selector writes structured output (JSON
+artifact and job summary) containing:
+
+- the mode, `SELECTED` or `FULL`, and the FULL reason;
+- the changed paths and the class outputs (D4);
+- the selected tests and jobs, with the rule behind each;
+- the estimated share and, after the run, the actual one;
+- the rule-table revision.
+
+Phase 2 and Phase 3 report the fallback rate from this output. A rising rate
+is how a fail-open selector that has stopped saving anything gets noticed.
+
+**Ownership and maintenance.** The rule table is code:
+
+- A change to it is reviewed like production code and ships with a seed for
+  the path class it adds or changes.
+- **New backend or fixture:** a selector unit test asserts that every
+  `backends.toml` backend and every `fixtures.toml` id is mapped, and that
+  every file under `tests/backends/fixtures/` matches a layer-1 row. Adding
+  one without a rule fails that test, in the PR that adds it.
+- **No project imports:** the selector uses only the standard library (`ast`,
+  `tomllib`) and never imports project modules. Its output is the same on
+  every interpreter, and it runs on the primary interpreter in `setup`. Its own
+  tests run on the full matrix, so a stdlib difference between versions shows
+  up.
+- **Parse failure:** a changed file the selector cannot parse runs FULL, with
+  that reason recorded.
 
 ### D8. Invariants
 
@@ -339,15 +457,29 @@ for this RFC.**
 ## Roadmap
 
 **Five phases, each with an exit criterion fixed before it starts; Phase 0 can
-stop the whole effort.**
+stop the whole effort.** Nothing that blocks a merge changes before Phase 3's
+exit: no branch protection, no `merge-candidate` handling, no lane that
+decides. Phases 0–2 are local only. Phase 3 adds CI jobs that only log.
+
+**What Phase 0 measures, per historical PR diff and per seed:**
+- selected test count and share;
+- estimated wall-clock share (from `.test_durations_pass1`);
+- CI jobs triggered (D6);
+- the FULL-fallback rate, with its reasons;
+- false negatives: seeds and historical failures not selected;
+- over-selection: selected tests outside the D7 cross-check's minimal set for
+  the same diff;
+- rule-table size, as a maintenance proxy.
+
+The targets for these are written into the Phase 0 plan before the run.
 
 | Phase | Goal | Deliverables | Exit |
 | --- | --- | --- | --- |
-| **0. Validate** | Prove rules plus a static graph are correct and worth it, before production code | Throwaway selector under `sdd/research/`; extended text-reader scan; seed run through the PoC driver; replay of historical PR diffs (selected share per diff); replay of past red CI runs, including auxiliary jobs (was the failing test or job selected?); prototypes of the marker scan (test files and fixture `marks=`) and notebook import parsing; the layer-2 edge rule built and measured, including hub resolution through `remote_store/__init__.py`; the core-module list derived (every-backend modules plus modules with import-time effects) | 0 seed misses, 0 historical misses, and a median selected share below a target set before the run. **Stop** if typical diffs select close to the full suite |
-| **1. Develop** | Production selector and the local lane | ADR for the local part; selector with rule table, graph, backend axis, reader table and per-job flags; registry allowlist; seed unit tests; coverage cross-check job; local fast target. BK-404 stays open until its skill edits land (Open Questions 4) | Seeds green in CI; cross-check reports no gap on master |
-| **2. Shape** | Local pilot, tune rules | Fast target used for real rounds; escape log of fast against the later full result; rule tuning | A pilot length fixed beforehand with 0 escapes; cut-off and core list settled by measurement |
-| **3. CI shadow** | Validate the CI lane without risk | Fast lane computes and logs its selection while the full lane still runs on every push; escapes compared automatically | A shadow period fixed beforehand with 0 escapes; time saved measured |
-| **4. Finalize** | Switch it on and make it maintainable | ADR amending ADR-0043; `ci.yml` triggers, label clearing, `gate-fast`, `merge-gate` status; branch protection moved to `merge-gate`; classifier migration with a history replay proving identical class outputs; runbook in `sdd/CI-OPERATIONS.md`; BK-403 closed. ID-266 stays open until its skill edits land (Open Questions 4) | Verified on a real PR: label → full → `merge-gate` on the head SHA; push → label cleared → merge blocked; unrelated label → no status, and a full run already in progress is not cancelled |
+| **0. Validate** | Decide whether to build, from evidence | Throwaway selector under `sdd/research/` with the pilot rule set, and the precision layers prototyped beside it; extended text-reader inventory; seed run through the PoC driver; replay of historical PR diffs and of past red CI runs, including auxiliary jobs; the metrics above for both rule sets; the core-module list derived (every-backend modules plus modules with import-time effects) | 0 seed misses and 0 deterministic, selector-reachable historical misses; the pilot's estimated wall-clock saving meets its predefined target. **Stop** if typical diffs fall back to FULL or select close to the full suite |
+| **1. Pilot** | Production selector with the pilot rule set, local only | ADR for the local part; selector (stdlib only) with the pilot rows, fixture allowlist, per-job flags and structured output; registry allowlist; seed and mapping-completeness unit tests; local fast target. BK-404 stays open until its skill edits land (Open Questions 4) | Seeds and the mapping test green in CI; the fallback rate recorded from the first real rounds |
+| **2. Shape** | Use the pilot, then add precision | Fast target used for real rounds; escape log against the later full result, classified; then layer 2 (hubs, import-time scan), transitive layer 3, mapped layer 4 and notebook parsing, each added only after the cross-check job is in place and reports no gap | A pilot length fixed beforehand with 0 deterministic, selector-reachable escapes; each precision layer kept only if it lowers the measured share without a cross-check gap; cut-off set by measurement |
+| **3. CI shadow** | Validate the CI lane without risk | Fast lane computes and logs its selection while the full lane still runs on every push; escapes compared and classified automatically; fallback rate reported | A shadow period fixed beforehand with 0 deterministic, selector-reachable escapes; time saved and fallback rate measured |
+| **4. Finalize** | Switch it on and make it maintainable | ADR amending ADR-0043; `ci.yml` triggers, label clearing, `gate-fast`, `merge-gate` status; the single-poster lint check; branch protection moved to `merge-gate` with the Actions app as expected source; classifier migration with a history replay proving identical class outputs; runbook in `sdd/CI-OPERATIONS.md`; BK-403 closed. ID-266 stays open until its skill edits land (Open Questions 4) | Every row of D2's status-lifecycle table verified on a real PR |
 
 The selection-free speedups (BUG-301, BK-401, BK-400) are a separate track.
 They make the full lane cheaper, which every PR still passes at least once.
@@ -416,12 +548,19 @@ on CI configuration, contributor tooling and two process records.**
 6. **`verify-tla` is not in `gate`'s `needs`** (`ci.yml` `gate` job), so a red
    TLA check does not block merge today. Confirm that is intended before the
    Phase 4 ADR, since D4's lane collapse covers TLA-only diffs.
+7. **Long-term full-lane trigger.** The label is the pilot mechanism (D1).
+   Two alternatives are worth weighing: a merge queue, if the account gains
+   one, and an explicit `workflow_dispatch` or comment command. Revisit at the
+   Phase 4 ADR.
 
 **Decided while drafting** (maintainer, 2026-10-03): rules plus static graph
 over a coverage map; the merge-candidate signal over draft state or approval;
 auxiliary jobs get their own path rules rather than always or never running;
 the class patterns move into the selector in Phase 4, not Phase 1; running
 `hatch run all` before marking a merge candidate is recommended, not required.
+From the maintainer's overall review: approval is sought for Phase 0 and a
+limited local pilot only. The pilot uses high-confidence rules, and precision
+layers are added one at a time.
 
 ## References
 
