@@ -121,8 +121,14 @@ phases:
         section: "GLOB-004, GLOB-011, GLOB-012, GLOB-017, GLOB-018"
         read_type: reference
         extract: "GLOB-009..017 are ext.glob's layer; the backend layer is GLOB-003/004 and GLOB-018..020; my design cited GLOB-012/017 for the kernel"
+      - file: sdd/specs/003-backend-adapter-contract.md
+        section: "BE-029 § Round-trip consequence"
+        read_type: reference
+        extract: "'identity holds verbatim for every other key' is contradicted like NPR-005, and GraphBackend already breaks all three on master; my verify_clauses read of BE-029 skipped this paragraph"
 discovery_followups:
   - BUG-300
+  - BK-398
+  - BK-399
 surprising_ripples:
   - sdd/backlog/bk-390-rfc-0017-spec-amendments.md
   - sdd/BACKLOG-DONE.md

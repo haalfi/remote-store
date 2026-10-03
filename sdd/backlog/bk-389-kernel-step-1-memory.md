@@ -84,8 +84,8 @@ every case. RFC-0017 carries the same answers at the question each settles.
    the canonical key, where `""` is the root. (5) The driver, with the
    canonical key. For a write, the kernel builds the result's path from that
    key before the driver commits, so no key the kernel accepts can fail
-   after the bytes land. That is the shape of BUG-299 and of BK-395's absorbed
-   BUG-297, which both write first and then raise. For a key that passes (2), a canonical `""` is exactly
+   after the bytes land. That is the shape of BUG-299 and of retired BUG-297
+   (now BK-394's Memory cells and BUG-300), which both write first and then raise. For a key that passes (2), a canonical `""` is exactly
    `AddressesRoot` of the raw key (`BackendContract.dfy` §5c: every segment
    `""` or `"."`). The `/`-led spellings it also accepts (`"/"`, `"/./"`) are
    refused at (2) with the same `InvalidPath`. So the write side and the
@@ -226,7 +226,9 @@ every case. RFC-0017 carries the same answers at the question each settles.
      refusal widens no addressing predicate, the condition BE-029 sets for a
      backend refusing it. This also decides retired BUG-297's fix:
      `write("\\")` never reaches the driver (its open work is BK-394's
-     Memory cells and BUG-300 for SQLBlob).
+     Memory cells and BUG-300 for SQLBlob). The refusal covers input keys
+     only: what a listing yields for a stored key holding a backslash that
+     another tool wrote is BK-399's, decided in this item's kernel PR.
    - **`glob(pattern)` takes the pipeline segment-wise over the whole
      pattern.** Order: the capability first (a driver without `SupportsGlob`
      declares no `GLOB`, so `CapabilityNotSupported` as BE-024 states,
@@ -249,14 +251,19 @@ every case. RFC-0017 carries the same answers at the question each settles.
    kept; NPR-004 and NPR-021 require totality; RES-020 and RES-025 hold as
    stated above; PATH-002 binds `RemotePath`, which `Store` applies before
    the backend, so a refused **key** reaches only a caller holding a backend
-   directly (a `glob` pattern does not pass `RemotePath`, above). Spec 003
-   gains clauses rather than losing any (item 8). **One clause outside it is
-   contradicted** (found in PR #1061's round 4): spec 010's round trip,
-   NPR-005's "holds for `k == ""` as well as every non-empty key — except
-   … `"."`" and NPR-020's "for all valid keys except the root spelling
-   `"."`", since a non-canonical key's address now inverts to its canonical
-   key (`to_key(native_path("d//f"))` is `"d/f"`, of `"./"` is `""`), as
-   BE-025 already allows. BK-394 amends both, by the rule item 8 states.
+   directly (a `glob` pattern does not pass `RemotePath`, above). **Three
+   round-trip clauses are contradicted, and were already false on master**
+   (found in PR #1061's rounds 4 and 5): spec 010's NPR-005 ("holds for
+   `k == ""` as well as every non-empty key — except … `"."`") and NPR-020
+   ("for all valid keys except the root spelling `"."`"), and spec 003's
+   BE-029 § Round-trip consequence ("The identity holds verbatim for every
+   other key"). Under this rule a non-canonical key's address inverts to its
+   canonical key, as BE-025 already allows, and `GraphBackend` does so
+   today: run offline at master `57d0797` (`GraphBackend("drive-x",
+   token_provider=lambda: "t")`), `to_key(native_path(k))` is `"d/f"` for
+   `"d//f"` and `"d/./f"`, `"d"` for `"d/"` and `""` for `"./"` and `".//"`.
+   BK-398 amends all three now, by maintainer decision, so BK-394 only
+   re-checks them. Otherwise spec 003 gains clauses (item 8).
 
    **Not `RemotePath`'s rules, nor `LocalBackend._resolve()`'s.** The
    refusals and normalisation are spec 013's MEM-DS-005 table, which both
@@ -534,16 +541,18 @@ every case. RFC-0017 carries the same answers at the question each settles.
    is scoped to a class on the kernel, and no class is on it until BK-394:
    - the key rule of decision 6: its refusals, the backslash among them,
      normalisation and root check on the canonical key, together with
-     BK-395's answers as decision 6 states them. They contradict no spec
-     003 clause, so what lands here is additions:
+     BK-395's answers as decision 6 states them. The round-trip clauses
+     they contradict (BE-029 § Round-trip consequence, and spec 010's
+     NPR-005 and NPR-020) are already false on master and are BK-398's,
+     amended before this PR, so what lands here is additions:
      BE-025 and BE-029's addressing row gain the kernel's addressing rule
      (canonical key to the driver, a refused key raw, `plan.key` the
      caller's); BE-029's backslash paragraphs ("a backslash-only key is
      **not** refused by this clause") gain that a class on the kernel
      refuses it under the key rule, by the route that paragraph permits;
-     and BE-024 gains the pattern rule and its order. The clauses outside
-     spec 003 they contradict, spec 010's NPR-005 and NPR-020 round trip,
-     are BK-394's [maintainer's decision in PR #1056's round 4];
+     and BE-024 gains the pattern rule and its order. Any other clause
+     outside spec 003 they contradict is BK-394's [maintainer's decision in
+     PR #1056's round 4];
    - the root `delete_folder` refusal (`InvalidPath`), which BE-029 § Out of
      scope leaves undefined;
    - decision 8: `remove_folder`'s atomic refusal and who carries it,

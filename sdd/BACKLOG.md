@@ -233,14 +233,6 @@ failure it was.
   construction (RFC-0017 Open Question 5, deferred to D3 step 3; BK-389 dossier).
   Detail: [dossier](backlog/bug-245-sqlblob-no-such-table.md)
 
-- [ ] **BUG-300 — `SQLBlobBackend.write("\\")` stores the row, then raises `InvalidPath`**
-  spec: BE-008, WR-001 · effort: S · audience: user.api
-  SQLBlob's half of retired BUG-297: a direct `write("\\")` stores the row,
-  raises `InvalidPath`, and `exists("\\")` is then `True` (master `57d0797`,
-  BK-395's dossier); `Store` refuses the key first. Fixed by the kernel's
-  backslash refusal (BK-389 decision 6) when SQLBlob migrates at RFC-0017 D3
-  step 3. Open decision: none.
-
 - [ ] **BUG-253 — `GraphBackend.write` answers a file-ancestor path differently by payload size**
   spec: BE-008, GR-019 · effort: S · audience: user.api
   `GraphBackend.write("blocker.txt/child.bin", …)` raises `InvalidPath` below
@@ -276,22 +268,46 @@ failure it was.
   narrow the catch so only a confirmed miss reads as "no ancestor"; BE-008 changes with the fix.
   Detail: [dossier](backlog/bug-292-ancestor-gate-fails-open.md)
 
+- [ ] **BK-398 — Three round-trip clauses promise `to_key(native_path(k)) == k` verbatim, which `GraphBackend` already breaks**
+  spec: NPR-005, NPR-020, BE-029 · effort: S · audience: contributor.process, user.api_docs
+  NPR-005, NPR-020 and BE-029 § Round-trip consequence say the identity holds
+  verbatim for every key but `"."`, yet `GraphBackend` folds `"d//f"`,
+  `"d/./f"`, `"d/"` and `"./"` on master, as BE-025 already permits and records.
+  BK-395's addressing rule adds both Memory classes at BK-394. Open decision:
+  none; amend all three to BE-025's non-canonical exception.
+
+- [ ] **BK-399 — A stored key holding a backslash has no kernel answer, so migration may strand it**
+  spec: BE-025, BE-029 · effort: S · audience: library.maintainer, user.api
+  BK-395 refuses a backslash in every input key, but a key written by another
+  tool (an S3 object, a file or a row named `a\b`) is still listed, folded to
+  `a/b` by `RemotePath` (on Memory, a stored `"\\"` makes the whole listing
+  raise; BK-395's dossier), then unreachable by either spelling. Open
+  decision: what a listing yields for it and how it is reached; BK-389 decides.
+
 - [ ] **BK-389 — RFC-0017's kernel does not exist, so no backend can migrate onto it**
   spec: BE-017, BE-020, BE-021, BE-024, BE-025, BE-029, ERR-001, ERR-009, DEPTH-003, PING-002, AW-001, SAW-003 · effort: L · audience: library.maintainer, infra.test
   D3 step 1's first PR: the async kernel and its `unasync` sync twin, private,
   with a fake-driver suite and the spec 003 clauses it traces to, under the
   Proposed ADR-0042; BK-394 lands Memory on it. After the v0.33.0 tag. Needs BK-388.
-  Open decision: none; all are in the dossier's § Decisions (`delete_folder`'s
-  decided in BK-396, the key rule's remainder in BK-395).
+  Open decision: BK-399's stored backslash keys; the rest are in the dossier's
+  § Decisions (`delete_folder`'s from BK-396, the key rule's from BK-395).
   Detail: [dossier](backlog/bk-389-kernel-step-1-memory.md)
 
 - [ ] **BK-394 — No backend runs on RFC-0017's kernel, so ADR-0042 stays Proposed**
   spec: BE-017, BE-020, BE-021, BE-029, ERR-001, ERR-009, DEPTH-003, ASYNC-001, AW-001, SAW-003, SAW-012, PING-002, PING-008, MEM-DS-005, MEM-013, MEM-014, MEM-015, MEM-018, MEM-020 · effort: L · audience: library.maintainer, user.api_docs, contributor.process
   ADR-0042 is accepted only with the first backend on the new design: the two
   Memory drivers on BK-389's kernel, step 1's other spec amendments (listed in
-  the dossier's item 4), and the guide as a driver. After BK-389, the v0.33.0 tag and ID-244's decision (§ 2). Open
+  the dossier's item 4), and the guide as a driver. After BK-389, BK-398, the v0.33.0 tag and ID-244's decision (§ 2). Open
   decision: none; Memory's identity and spec 013's placement are in the dossier.
   Detail: [dossier](backlog/bk-394-memory-drivers-accept-adr-0042.md)
+
+- [ ] **BUG-300 — `SQLBlobBackend.write("\\")` stores the row, then raises `InvalidPath`**
+  spec: BE-008, WR-001 · effort: S · audience: user.api
+  A direct `write("\\")` stores the row, raises, and `exists("\\")` is then
+  `True` (master `57d0797`); `Store` refuses first. Fixed by BK-389's kernel
+  refusal when SQLBlob migrates at RFC-0017 D3 step 3. Open decision: none.
+  - **(was BUG-297, absorbed here)** Its SQLBlob half; the Memory half is
+    BK-394's. Evidence: BK-395's dossier.
 
 - [ ] **BK-345 — BE-021's absent-container rule has no registry-driven gate, so a new backend is silently exempt**
   spec: BE-021 · effort: M · audience: infra.test

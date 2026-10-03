@@ -37,7 +37,9 @@ depends on it: the kernel PR does not start until it closes.
      that key folds it to `d/f`: `WriteResult`, `FileInfo` (both classes),
      and listings, where `list_files` over `d/f` and `d\f` yields `d/f`
      twice. Measured by round 5's measuring reviewer.
-   - **(was BUG-297, absorbed here)** Called on the backend directly,
+   - **(was BUG-297, absorbed here)** [Moved on in PR #1061, when this item
+     closed: its open work is now hosted by BK-394 (Memory) and BUG-300
+     (SQLBlob), each carrying the marker.] Called on the backend directly,
      `write("\\")` stores the row on `SQLBlobBackend` and `MemoryBackend`,
      then raises `InvalidPath` ("Path is empty after normalization") while
      building `WriteResult(path=RemotePath(path))`, which folds `\` to `/`;
@@ -99,10 +101,13 @@ drivers** paragraph); this section keeps only how they were reached.
 
 The exit criteria's clauses were checked against the answers; the reasons
 are in decision 6's **Clauses checked** paragraph. BK-389's item 8 carries
-additions to BE-024, BE-025 and BE-029. Outside spec 003, the answers
-contradict one clause pair, spec 010's NPR-005 and NPR-020 round trip
-(found in PR #1061's round 4), and leave spec 013's MEM-DS-005 validation
-table without a backslash row (round 3); BK-394 amends both. Absorbed
+additions to BE-024, BE-025 and BE-029. The answers contradict three
+round-trip clauses, spec 010's NPR-005 and NPR-020 and spec 003's BE-029
+§ Round-trip consequence (found in PR #1061's rounds 4 and 5), which
+`GraphBackend` already breaks on master, so BK-398 amends them now. They
+leave spec 013's MEM-DS-005 validation table without a backslash row
+(round 3), which BK-394 amends. What a listing does with a stored backslash
+key that another tool wrote is open, as BK-399 (round 5). Absorbed
 BUG-297's defect is unchanged on master; its open work moved in PR #1061
 to BK-394 (Memory) and BUG-300 (SQLBlob, at RFC-0017 D3 step 3).
 
@@ -128,6 +133,16 @@ returned value or the exception's class name):
   `"./d/*.csv"`, `"d//*.csv"`, `"d/./*.csv"`, `"/d/*.csv"`, `"../*.csv"`,
   `"d/../*.csv"`, `"*/../*.csv"`, `"d\\*.csv"`, `"d/*\0"`, `"**/*.csv"`, plus
   `""` and `"."` on Local. Run on Linux, where `\` is no path separator.
+- *Backslash post-states* (added in PR #1061's round 5, since the per-call
+  answers above show no state): per class, a fresh store holding the same
+  three keys, then one of `write("\\")`, `move("f", "\\")` and
+  `delete_folder("e\\g", recursive=True)`, then `exists(k)` for `f`, `"\\"`,
+  `"e\\g/h"` and `"e\\g"`, and `list_files("", recursive=True)`. Both
+  classes: `write("\\")` raises `InvalidPath` with `exists("\\")` then
+  `True`; `move("f", "\\")` returns with `f` gone and `exists("\\")`
+  `True`; `delete_folder("e\\g")` returns with `"e\\g/h"` gone; and after
+  either of the first two, the whole-store listing itself raises
+  `InvalidPath`, since `RemotePath("\\")` cannot be built.
 - *Later-driver probes* (added in PR #1061's round 4, for the three cells
   its round-3 fix added to decision 6's **Later drivers**): a
   `LocalBackend` on an empty temp root, `write("d\\f")`, then

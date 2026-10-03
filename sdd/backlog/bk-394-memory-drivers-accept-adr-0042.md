@@ -135,15 +135,15 @@ labelled **(was … , absorbed here)**, which is the absorption form
      before they are written. BK-395's answers land with it in BK-389's PR.
      This PR applies them to the two Memory classes, the first on the
      kernel. Outside spec 003 they keep PATH-002 (it binds `RemotePath`),
-     NPR-004 and NPR-021 (total) and RES-020 (`plan.key == path`), and
-     contradict one clause pair, amended here: spec 010's round trip,
-     NPR-005 ("holds for `k == ""` as well as every non-empty key — except
-     … `"."`") and NPR-020 ("for all valid keys except the root spelling
-     `"."`"), which gain BE-025's exception for a non-canonical key, whose
-     address inverts to its canonical key (`to_key(native_path("d//f"))` is
-     `"d/f"`). Spec 013's MEM-DS-005 is incomplete rather than contradicted:
-     its backslash row is in the spec 013 bullet above. BK-389 decision 6
-     states each; the round trip was found in PR #1061's round 4.]
+     NPR-004 and NPR-021 (total) and RES-020 (`plan.key == path`). The
+     round-trip clauses they contradict, spec 010's NPR-005 and NPR-020 and
+     spec 003's BE-029 § Round-trip consequence, are already false on
+     master for `GraphBackend`, so BK-398 amends them before this PR; this
+     PR re-checks that they cover both Memory classes, whose
+     `to_key(native_path("d//f"))` becomes `"d/f"`. Spec 013's MEM-DS-005
+     is incomplete rather than contradicted: its backslash row is in the
+     spec 013 bullet above. BK-389 decision 6 states each; found in PR
+     #1061's rounds 3 to 5.]
    - [spec 003 BE-021 § Reach's page-boundary paragraph: under BK-389's
      decision 1 a migrated driver has no unmarked page, so the divergence it
      licenses applies only to a class not yet migrated.]
