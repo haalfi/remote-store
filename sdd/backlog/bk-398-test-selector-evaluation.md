@@ -27,7 +27,7 @@ Stage-1 suite as the control group, per audit-022's P1 row. The criteria:
 - operating cost, including the two open interactions § H1 names: `xdist` and
   `pytest-cov`, which both instrument through coverage.py;
 - **portability (§ M1):** whether a map built on one run and interpreter
-  selects correctly on another. ID-264 needs this answered before it can
+  selects correctly on another. ID-266 needs this answered before it can
   choose a map transport.
 
 If no tool passes, the fallback is a declared table in the style of
@@ -37,5 +37,5 @@ If no tool passes, the fallback is a declared table in the style of
 **Whatever wins never asserts the coverage floor**: § H1, "What must stay
 full".
 
-**Consumers:** BK-399 (the local target) and ID-264 (the CI draft lane) both
+**Consumers:** BK-399 (the local target) and ID-266 (the CI draft lane) both
 need this item's verdict.
