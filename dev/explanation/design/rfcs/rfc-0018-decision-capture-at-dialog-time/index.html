@@ -11325,8 +11325,9 @@
 
 <h1 id="rfc-0018-capture-interview-decisions-where-they-are-made">RFC-0018: Capture interview decisions where they are made<a class="headerlink" href="#rfc-0018-capture-interview-decisions-where-they-are-made" title="Permanent link">&para;</a></h1>
 <h2 id="status">Status<a class="headerlink" href="#status" title="Permanent link">&para;</a></h2>
-<p>Draft, 2026-10-03. Tracked as <strong>BK-397</strong>. Nothing below is built; § Build order
-step 0 is a live observation this RFC cannot make on its own (§ Open Questions 1).</p>
+<p>Draft, 2026-10-03. Tracked as <strong>BK-397</strong>. Nothing below is built. § Build order
+step 0 ran on 2026-10-03 (§ Step 0 observations); D1, D3 and D4.0 are amended
+to what it observed.</p>
 <h2 id="summary">Summary<a class="headerlink" href="#summary" title="Permanent link">&para;</a></h2>
 <p>Decisions in this repository are mostly taken mid-work in <code>AskUserQuestion</code>
 dialogs (<a href="https://github.com/haalfi/remote-store/blob/master/CLAUDE.md#interview-mode"><code>CLAUDE.md</code> § Interview mode</a>). A
@@ -11409,8 +11410,10 @@ with matcher <code>AskUserQuestion</code> and runs the recorder,
 </table>
 <p>Every event also carries <code>tool_use_id</code> (the pairing key, documented as common to
 all three events), <code>session_id</code>, a UTC timestamp, <code>HEAD</code>'s SHA and the branch
-name. The <code>PreToolUse</code> registration sits beside the existing notification hook
-under the same matcher.</p>
+name, plus the hook process's <code>CLAUDE_CODE_REMOTE_SESSION_ID</code> when set, which is
+the identifier D4.0's trailer fallback matches (step 0 found the payload's
+<code>session_id</code> does not). The <code>PreToolUse</code> registration sits beside the existing
+notification hook under the same matcher.</p>
 <p><strong>Fail-open, including when the recorder cannot start.</strong> The hook never blocks
 a dialog. A recorder that can stop the decision it records inverts its purpose.
 Errors inside the recorder are caught and noted on stderr, but that alone is not
@@ -11477,7 +11480,7 @@ set</strong> is the labels marked <code>(Recommended)</code>, usually one and po
 </tr>
 <tr>
 <td><code>prefilled</code></td>
-<td>the <code>asked</code> event's <code>tool_input</code> already carries answers</td>
+<td>the <code>asked</code> event's <code>tool_input</code> carries an answer for the question and the <code>answered</code> event's answer equals it</td>
 </tr>
 <tr>
 <td><code>unanswered</code></td>
@@ -11499,13 +11502,27 @@ set</strong> is the labels marked <code>(Recommended)</code>, usually one and po
 </table>
 <p>The order ranks what a reviewer must see first: a failure or an answer nobody
 gave outranks what the answer was.</p>
-<p>How a multi-select answer is encoded is as undocumented as a single one, so the
-set is parsed by rules step 0 fixes, not assumed. A free-text entry inside a
-multi-select answer makes the question <code>other</code>.</p>
-<p><code>prefilled</code> exists because the tool's input schema accepts an <code>answers</code> field.
-Whether anything other than the user's dialog ever fills it is undocumented
-(§ Open Questions 2), and the BK-396 incident is the reason to look rather than
-assume.</p>
+<p><strong>Parsing rules, fixed by step 0.</strong> The answer is read from the <code>answered</code>
+event's <code>tool_response.answers</code>, a map from question text to one string (its
+<code>tool_input.answers</code> carried the same map in every observation). Never read
+answers from the <code>answered</code> event's <code>tool_input</code> to detect prefill: the harness
+writes the user's answers into it, so every answered dialog would look
+prefilled. Free text carries no marker: an "Other" answer is just a string that
+matches no label, and free text identical to a label is indistinguishable from
+choosing it. A multi-select answer is the chosen labels and any free text joined
+by <code>", "</code> into one string. A reader matches labels against it as whole
+<code>", "</code>-delimited segments, longest label first, so a label that itself contains
+<code>", "</code> still parses; any residue is free text and makes the question <code>other</code>.
+Answers are keyed by question text, so two questions with identical text in one
+call cannot be told apart.</p>
+<p><code>prefilled</code> exists because the tool's input schema accepts an <code>answers</code> field,
+and the BK-396 incident is the reason to look rather than assume. Step 0 found
+that an agent-supplied <code>answers</code> reaches <code>PreToolUse</code> verbatim, the dialog was
+still shown, and the user's choice replaced it in the <code>answered</code> event. So a
+prefill only taints the outcome when the final answer equals it: the dialog may
+have been skipped or the maintainer may have chosen the same, and the payload
+cannot tell which. When the final answer differs, the user overrode the prefill
+and the question is classified by the rows below it.</p>
 <h3 id="d4-readers">D4. Readers<a class="headerlink" href="#d4-readers" title="Permanent link">&para;</a></h3>
 <ol>
 <li><strong>Binding rule, shared by every reader.</strong> A <em>work branch</em> is any branch
@@ -11515,9 +11532,12 @@ assume.</p>
    session records an event on, if any. That captures dialogs asked before the
    branch existed without a manual move, and binds each event once. Whether a
    branch name carries an item ID plays no part. A session whose events never
-   name the branch is still bound when its <code>session_id</code> appears in a
-   <code>Claude-Session</code> trailer on <code>origin/&lt;base&gt;..HEAD</code>, if step 0 shows the two
-   identifiers correspond (§ Open Questions 4).</li>
+   name a work branch is still bound when a <code>Claude-Session</code> trailer on
+   <code>origin/&lt;base&gt;..HEAD</code> matches its recorded <code>CLAUDE_CODE_REMOTE_SESSION_ID</code>:
+   trailer <code>…/session_&lt;X&gt;</code> matches <code>cse_&lt;X&gt;</code>. The payload's <code>session_id</code> cannot
+   serve: it is a UUID with no observed relation to the trailer (§ Step 0
+   observations, Open Questions 4). A session where the variable is unset has
+   no trailer fallback.</li>
 <li><strong>Trace link.</strong> <code>sdd/traces/_schema.yml</code> gains an optional <code>decisions:</code> key,
    a list of log paths. A trace for work that ran dialogs lists its logs.</li>
 <li><strong><code>check_traces.py</code>.</strong> For each listed path: the file exists, every line
@@ -11526,7 +11546,8 @@ assume.</p>
    legitimate act, and the report is how it stays visible. A <code>tool_use_id</code>
    with both an <code>answered</code> and a <code>failed</code> event is also reported: D3 still
    classifies it, but it contradicts the assumption that the two Post events are
-   exclusive, which step 0 tests.</li>
+   exclusive, which step 0 could not test: no <code>failed</code> event fired in it, so
+   that assumption and D3's <code>failed</code> row still need an observation.</li>
 <li><strong><code>/pr</code>.</strong> The skill renders a "Decisions" section from the committed log
    only, after Step 1 has committed the tail, so the body never cites an event
    the PR does not contain. One line per question: header → answer → outcome,
@@ -11538,7 +11559,7 @@ assume.</p>
 <li><strong>Observe the payload.</strong> Register a probe that dumps raw payloads for the
    three events, then run one dialog that is answered, one answered with
    "Other", one multi-select, and one denied, and record each payload's shape
-   in § Step 0 observations below. This settles § Open Questions 1, 2 and 4,
+   in § Step 0 observations below. This settles § Open Questions 1 and 4, and 2 as far as the dialogs run reach,
    and D3's rules are adjusted to what is observed before any reader is
    written.</li>
 <li>Recorder, wrapper and <code>settings.json</code> registration, with tests that feed
@@ -11583,7 +11604,8 @@ assume.</p>
   extends to the new matcher values; <code>sdd/AUTHORING.md</code> directory defaults, for
   <code>sdd/decisions/</code>; <code>GATE-INVENTORY.md</code>, regenerated.</li>
 <li><strong>Cost per dialog:</strong> two short hook invocations and two appended lines (the
-  <code>PreToolUse</code> one, then whichever of the two Post events fires).</li>
+  <code>PreToolUse</code> one, then whichever of the two Post events fires); one of each
+  for a denied dialog, which fired no Post event in step 0.</li>
 </ul>
 <p><strong>Acceptance.</strong> Step 0 observed and its payload shapes recorded in § Step 0
 observations. Then, after the next three merged deliveries that ran dialogs: each
@@ -11591,6 +11613,9 @@ lists its logs in its trace, each PR body carries a Decisions section rendered
 from them, and <code>check_traces.py</code> passes on all three. The ADR is written once
 those three are read.</p>
 <h2 id="open-questions">Open Questions<a class="headerlink" href="#open-questions" title="Permanent link">&para;</a></h2>
+<p>Questions 1 and 4 are answered by step 0, and question 2 only for a denial:
+dismissal and timeout are still open. The answers are summarised in § Step 0
+observations and the text below is kept as asked.</p>
 <ol>
 <li><strong>Do answers reach the hook?</strong> The hooks reference documents that
    <code>PostToolUse</code> fires and carries <code>tool_input</code> and <code>tool_use_id</code>. It does not
@@ -11637,8 +11662,99 @@ recorded as answered (hand-copied, because the recorder does not exist yet):</p>
   rather than failing on them.</li>
 </ul>
 <h2 id="step-0-observations">Step 0 observations<a class="headerlink" href="#step-0-observations" title="Permanent link">&para;</a></h2>
-<p>Empty until step 0 runs. Per dialog kind (answered, "Other", multi-select,
-denied): which events fired, and where the answer sits in each payload.</p>
+<p>Answers reach <code>PostToolUse</code> as <code>tool_response.answers</code>, one string per question
+keyed by question text, with free text unmarked and multi-select joined by
+<code>", "</code>. A denied dialog fires nothing after <code>PreToolUse</code>, and no
+<code>PostToolUseFailure</code> was seen. The payload's <code>session_id</code> does not match the
+<code>Claude-Session</code> trailer, but the hook process's <code>CLAUDE_CODE_REMOTE_SESSION_ID</code>
+does.</p>
+<p>Run 2026-10-03 in one Claude Code on the web session (<code>permission_mode</code>
+<code>"auto"</code>). A probe, <code>tmp/probe_hook.py</code>, was registered in an uncommitted
+<code>.claude/settings.local.json</code> with matcher <code>AskUserQuestion</code> on <code>PreToolUse</code>,
+<code>PostToolUse</code> and <code>PostToolUseFailure</code>, and wrote each hook's stdin unchanged to
+one file. Seven dialogs ran: a trivial fire check, the four kinds below, one
+real decision (whether to run e and an environment dump), and a prefill probe
+(e) added for Open Questions 2. Enumerating the probe directory gave 13
+payloads: 7 <code>PreToolUse</code>, 6 <code>PostToolUse</code>, 0 <code>PostToolUseFailure</code>. Probe and
+payloads were deleted afterwards. Fragments are quoted verbatim from the dumped files; long question
+texts are elided with <code>…</code>.</p>
+<p><strong>Common to every payload.</strong> Top-level keys: <code>session_id</code>, <code>transcript_path</code>,
+<code>cwd</code>, <code>scratchpad_dir</code>, <code>prompt_id</code>, <code>permission_mode</code>, <code>effort</code>,
+<code>hook_event_name</code>, <code>tool_name</code>, <code>tool_input</code>, <code>tool_use_id</code>; <code>PostToolUse</code> adds
+<code>tool_response</code> and <code>duration_ms</code> (0 or 1 in every Post payload, so it does not
+measure the wait for the user). <code>PreToolUse</code> and <code>PostToolUse</code> of one dialog
+shared <code>tool_use_id</code> in every case, e.g. <code>"toolu_01DszzP88WbZW186LFgwMQtK"</code>
+for dialog a. <code>PostToolUseFailure</code> never fired.</p>
+<p><strong>a. Single-select, recommended option chosen.</strong> Events: <code>PreToolUse</code>,
+<code>PostToolUse</code>. Pre's <code>tool_input</code> holds <code>questions</code> only. Post carries the
+answer twice, identically, in <code>tool_input.answers</code> and <code>tool_response.answers</code>:</p>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a><span class="nt">"answers"</span><span class="p">:</span><span class="w"> </span><span class="p">{</span><span class="nt">"Dialog a (single-select, recommended): …"</span><span class="p">:</span><span class="w"> </span><span class="s2">"Alpha (Recommended)"</span><span class="p">}</span>
+</code></pre></div>
+<p>The value is the label string, <code>(Recommended)</code> suffix included.
+<code>tool_response.questions</code> repeats the questions. D3: <code>followed</code>.</p>
+<p><strong>b. Single-select, answered via "Other".</strong> Events: <code>PreToolUse</code>,
+<code>PostToolUse</code>. Same shape; the free text is the value, with no marker field:</p>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-1-1" name="__codelineno-1-1" href="#__codelineno-1-1"></a><span class="nt">"answers"</span><span class="p">:</span><span class="w"> </span><span class="p">{</span><span class="nt">"Dialog b (single-select, Other): …"</span><span class="p">:</span><span class="w"> </span><span class="s2">"Other manual echo"</span><span class="p">}</span>
+</code></pre></div>
+<p>D3: <code>other</code>, because the value matches neither <code>"Delta (Recommended)"</code> nor
+<code>"Echo"</code>.</p>
+<p><strong>c. multiSelect, two recommended, a different set chosen.</strong> Events:
+<code>PreToolUse</code>, <code>PostToolUse</code>. The set is one string, labels and free text joined
+by <code>", "</code>; there is no list:</p>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-2-1" name="__codelineno-2-1" href="#__codelineno-2-1"></a><span class="nt">"answers"</span><span class="p">:</span><span class="w"> </span><span class="p">{</span><span class="nt">"Dialog c (multiSelect): …"</span><span class="p">:</span><span class="w"> </span><span class="s2">"Golf (Recommended), India, Some more not mentioned yet"</span><span class="p">}</span>
+</code></pre></div>
+<p><code>"Golf (Recommended)"</code> and <code>"India"</code> are labels; <code>"Some more not mentioned yet"</code>
+is free text entered through "Other". D3: <code>other</code>.</p>
+<p><strong>d. Single-select, denied.</strong> Events: <code>PreToolUse</code> only. The agent's tool
+result was <code>Denied by user</code>; neither <code>PostToolUse</code> nor <code>PostToolUseFailure</code>
+fired. D3: <code>unanswered</code>, from the lone <code>asked</code> event.</p>
+<p><strong>e. Prefill probe.</strong> The agent's call passed
+<code>answers: {"Dialog e …": "Lima (Recommended)"}</code>, and the user was asked to pick
+<code>"Mike"</code> if the dialog appeared. Pre's <code>tool_input</code> carried it verbatim:</p>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-3-1" name="__codelineno-3-1" href="#__codelineno-3-1"></a><span class="nt">"answers"</span><span class="p">:</span><span class="w"> </span><span class="p">{</span><span class="nt">"Dialog e (prefill probe): …"</span><span class="p">:</span><span class="w"> </span><span class="s2">"Lima (Recommended)"</span><span class="p">}</span>
+</code></pre></div>
+<p>The dialog was shown, and Post's <code>tool_input.answers</code> and <code>tool_response.answers</code>
+both held <code>"Mike"</code>.</p>
+<p><strong>Answers to the Open Questions.</strong></p>
+<ol>
+<li><strong>Answers reach <code>PostToolUse</code></strong>, in both <code>tool_response.answers</code> and
+   <code>tool_input.answers</code>, keyed by question text, one string per question. The
+   result-text parser is not needed. <code>PreToolUse</code> carries none unless the agent
+   supplied them (e).</li>
+<li><strong>Answered for a denial only: it sends nothing after <code>PreToolUse</code>.</strong>
+   <code>PostToolUseFailure</code> did not fire for it. A dismissal distinct from a
+   denial and a timeout were not observed, so whether either fires
+   <code>PostToolUseFailure</code> is still open. In the normal flow nothing filled <code>answers</code> before
+   the dialog, but the agent can (e), and the user's choice then overrides it.</li>
+<li>Not in step 0's scope.</li>
+<li><strong>No: <code>session_id</code> does not match the trailer.</strong> It was
+   <code>"8f551ca6-684d-5d72-b7c0-d6da1ce729ee"</code>, a UUID (version 5, no match by
+   <code>uuid5</code> over the standard namespaces and the trailer's id forms), equal to
+   the session's <code>CLAUDE_CODE_SESSION_ID</code> and to the <code>transcript_path</code> stem. The
+   trailer was <code>https://claude.ai/code/session_01FPZRdRyQ4sj5AD4DZF1zg3</code>. The
+   hook process's environment, dumped by the probe for e, held
+   <code>"CLAUDE_CODE_REMOTE_SESSION_ID": "cse_01FPZRdRyQ4sj5AD4DZF1zg3"</code>, whose
+   suffix equals the trailer's. That correspondence is observed in one session
+   and is not documented.</li>
+</ol>
+<p><strong>What changed in the RFC, and why.</strong></p>
+<ul>
+<li><strong>D3 <code>prefilled</code></strong> now requires the final answer to equal the prefill. As
+  first written, e would read <code>prefilled</code> although the user answered <code>"Mike"</code>,
+  hiding the user's real choice.</li>
+<li><strong>D3 parsing rules</strong> replace "rules step 0 fixes": where the answer is read,
+  why Post's <code>tool_input</code> must not be used for prefill detection, how free text
+  and the <code>", "</code>-joined multi-select string are parsed (a, b, c).</li>
+<li><strong>D4.0 trailer fallback</strong> matches <code>CLAUDE_CODE_REMOTE_SESSION_ID</code> instead of
+  <code>session_id</code>, and <strong>D1</strong> records that variable, because of question 4's
+  answer. Kept rather than dropped, since the observed identifier does
+  correspond.</li>
+<li><strong>Not changed:</strong> the "Post events are exclusive" assumption and D3's <code>failed</code>
+  row. Neither was contradicted: no <code>failed</code> event fired at all, so both stay
+  untested; D4.2 now says so. Both still need an observation, a dismissal or
+  timeout probe being the remaining candidate trigger, before step 1 builds
+  the <code>failed</code> path and its tests. D3's <code>unanswered</code> row is confirmed by d.</li>
+</ul>
 <h2 id="references">References<a class="headerlink" href="#references" title="Permanent link">&para;</a></h2>
 <ul>
 <li>Host item: BK-397 (<code>sdd/BACKLOG.md</code> § 6).</li>
