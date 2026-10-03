@@ -11232,7 +11232,7 @@
 <h1 id="research-is-test-selection-worth-adopting-here-pytest-testmon-poc">Research: is test selection worth adopting here? (pytest-testmon PoC)<a class="headerlink" href="#research-is-test-selection-worth-adopting-here-pytest-testmon-poc" title="Permanent link">&para;</a></h1>
 <p><strong>Date:</strong> 2026-10-03
 <strong>Backlog items:</strong> BK-403, BK-404, ID-266
-<strong>Status:</strong> Answered for <code>pytest-testmon</code>; <code>pytest-tia</code> and <code>pytest-impact</code> were not run. Point-in-time snapshot per <a href="../../process/#document-types"><code>sdd/000-process.md</code> § Document types</a>. It measures <a href="../../audits/audit-022-gate-speed-strategies/">audit-022</a> proposal P1; the driver behind every seed row is <a href="https://github.com/haalfi/remote-store/blob/master/sdd/research/research-bk-403-testmon-poc.py"><code>research-bk-403-testmon-poc.py</code></a>.</p>
+<strong>Status:</strong> Answered for <code>pytest-testmon</code>; <code>pytest-tia</code> and <code>pytest-impact</code> were not run. Point-in-time snapshot per <a href="../../process/#document-types"><code>sdd/000-process.md</code> § Document types</a>. It measures <a href="../../audits/audit-022-gate-speed-strategies/">audit-022</a> proposal P1; the driver behind every seed row is <a href="https://github.com/haalfi/remote-store/blob/master/sdd/research/bk-403-testmon-poc/driver.py"><code>bk-403-testmon-poc/driver.py</code></a>.</p>
 <h2 id="question">Question<a class="headerlink" href="#question" title="Permanent link">&para;</a></h2>
 <p>Is runtime-coverage test selection worth adopting to speed up in-progress
 rounds, locally (BK-404) and in CI (ID-266)?</p>
@@ -11379,9 +11379,9 @@ testmon off, then a serial <code>--testmon-forceselect</code> run on a fresh cop
 map. "Confirmed" means pytest exited 1 and the named test's own JUnit case
 failed; any other exit (collection, usage or internal error, nothing
 collected) does not count. <code>POC_CONFIRM_ONLY=1 python
-sdd/research/research-bk-403-testmon-poc.py 3.13 &lt;map&gt; all</code> re-ran the
+sdd/research/bk-403-testmon-poc/driver.py 3.13 &lt;map&gt; all</code> re-ran the
 confirmation for all 13 seeds: 13 of 13 confirmed. Shares are against the 551.3 s serial control. Command:
-<code>python sdd/research/research-bk-403-testmon-poc.py 3.13 &lt;map&gt; all</code>. The 13
+<code>python sdd/research/bk-403-testmon-poc/driver.py 3.13 &lt;map&gt; all</code>. The 13
 seeds cover all eight of audit-022's P1 seed classes.</p>
 <table>
 <thead>
@@ -11584,7 +11584,7 @@ not finish inventorying it.</strong> What was measured, and what is known to be
 missing:</p>
 <ul>
 <li><strong><code>src/</code> readers, measured.</strong> A scan of the full Stage-1 suite on 3.13 with
-  <a href="https://github.com/haalfi/remote-store/blob/master/sdd/research/research-bk-403-srcreads.py"><code>research-bk-403-srcreads.py</code></a> recorded 15
+  <a href="https://github.com/haalfi/remote-store/blob/master/sdd/research/bk-403-testmon-poc/srcreads.py"><code>bk-403-testmon-poc/srcreads.py</code></a> recorded 15
   test files that opened a <code>src/**/*.py</code> file other than through the import
   machinery. Only the loader's own <code>get_data</code> open counts as import, so
   reads by module-level code during collection are kept; reads made by a
