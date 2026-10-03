@@ -92,8 +92,10 @@ phases:
         outcome: misleading
         extract: >-
           the audit's two text-reading test files were carried into rule 3 as
-          the complete set; an audit-hook scan of the Stage-1 suite found 15.
-          My miss was copying the list without measuring it
+          the complete set; an audit-hook scan of the Stage-1 suite found 15
+          readers of src/ alone, and readers of tests/ and scripts/ .py files
+          stay unmeasured. My miss was copying the list without measuring it,
+          then calling the src/ scan complete
       - file: sdd/audits/audit-022-gate-speed-strategies.md
         section: "P1's seeded changes"
         read_type: reference

@@ -46,6 +46,14 @@ has an answer:
 **Dependency:** BK-403 (a map must exist, and its portability finding
 answers prerequisite 3's last question).
 
+**Prerequisite 3, answered for `pytest-testmon` (2026-10-03):** one map does
+not serve every interpreter. testmon discards a map on any change of Python
+patch version or package minor version, and CI installs unpinned
+([`research-bk-403-testmon-poc.md`](../research/research-bk-403-testmon-poc.md),
+Appendix C). The PoC's answer to the item as a whole is "not now"; it is
+revisited on BK-403's condition (local rounds still a measured bottleneck
+after BUG-301 and BK-401).
+
 **In this item's scope:** prerequisite 4's `/pr` and `/ship` skill changes.
 No other item delivers them. The `/ship` edit shares
 `.claude/skills/ship/SKILL.md` with BK-404, whose open decision includes

@@ -837,10 +837,10 @@ coverage floor.
 - [ ] **ID-266 — Every in-progress PR push runs the full pre-merge CI gate**
   spec: — · effort: L · audience: infra.ci, contributor.process
   `ci.yml` runs the whole gate on every PR push, including each `/ship` round
-  (audit-022 § M1). Needs BK-403's map; its `/pr` and `/ship` changes are its
-  own scope, and `/ship` is shared with BK-404. Open decision: a new ADR
-  amending ADR-0043 for a draft-PR selected lane, once its four
-  prerequisites have answers.
+  (audit-022 § M1). Needs BK-403's map, which BK-403's PoC found is not
+  reusable across interpreters or dependency sets. Open decision: revisit
+  only on BK-403's condition; then a new ADR amending ADR-0043 for a
+  draft-PR selected lane, once its four prerequisites have answers.
   Detail: [dossier](backlog/id-266-two-speed-ci-gate.md)
 
 - [ ] **BUG-301 — The PII sweep's bare-email regex is quadratic on base64 runs and costs 157 of the sweep's 160 worker-seconds**

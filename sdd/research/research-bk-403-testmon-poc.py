@@ -12,6 +12,7 @@ Setup (all under the gitignored ./tmp/):
 Usage:
   python research-bk-403-testmon-poc.py <py> <pristine-map> <seed>[,<seed>...] | all
   POC_EXTRA="-n 4" adds arguments to the selected run.
+  POC_CONFIRM_ONLY=1 runs only step (1) for each seed and prints the result.
 
 Per seed: apply a one-line edit in the worktree, confirm the known test fails
 with testmon off, run a ``--testmon-forceselect`` pass against a fresh copy of
@@ -168,9 +169,27 @@ def main() -> None:
         known = seed[3]
         f, orig = apply(seed)
         try:
-            # (1) Confirm the known test fails with testmon off.
+            # (1) Confirm the known test itself fails with testmon off: exit 1
+            # (tests failed) AND a matching JUnit case failed. Exit 2-5
+            # (collection/usage/internal error, nothing collected) is not a
+            # confirmation; a seed that breaks import tests nothing.
             kpath, ksub = known.split("::")[0], known.split("::")[-1]
-            rc_known, _, out_known = pytest(py, ["-p", "no:testmon", kpath, "-k", ksub.strip("[]")], {})
+            kjunit = POC / f"confirm-{sid}-{py}.xml"
+            rc_known, _, out_known = pytest(
+                py, ["-p", "no:testmon", kpath, "-k", ksub.strip("[]"), f"--junitxml={kjunit}"], {}
+            )
+            kcases = junit_ids(kjunit) if kjunit.exists() else []
+            confirmed = rc_known == 1 and any(o == "failed" and ksub.strip("[]") in i for i, o in kcases)
+            if os.environ.get("POC_CONFIRM_ONLY"):
+                rec = {
+                    "seed": sid,
+                    "py": py,
+                    "confirm_rc": rc_known,
+                    "confirmed": confirmed,
+                    "known_cases_failed": sum(1 for _, o in kcases if o == "failed"),
+                }
+                print(json.dumps(rec), flush=True)
+                continue
             # (2) testmon-selected run on a fresh copy of the pristine map.
             data = POC / f"seed-{sid}-{py}.testmondata"
             for side in ("-wal", "-shm"):  # stale sqlite sidecars corrupt a fresh copy
@@ -195,7 +214,7 @@ def main() -> None:
                 "py": py,
                 "file": seed[0],
                 "known": known,
-                "known_fails_without_testmon": rc_known != 0,
+                "known_fails_without_testmon": confirmed,
                 "tests_run": len(ran),
                 "tests_executed": sum(1 for r in ran if r[1] != "skipped"),
                 "failed": sum(1 for r in ran if r[1] == "failed"),
@@ -205,7 +224,7 @@ def main() -> None:
                 "rc": rc,
                 "tail": out.strip().splitlines()[-1] if out.strip() else "",
             }
-            if rc_known == 0:
+            if not confirmed:
                 rec["known_tail"] = out_known.strip().splitlines()[-1]
             print(json.dumps(rec), flush=True)
             with (POC / "results.jsonl").open("a") as fh:

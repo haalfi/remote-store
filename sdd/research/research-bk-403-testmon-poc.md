@@ -59,9 +59,11 @@ and override two repo defaults.**
 - **Full suite** when the diff touches any tracked non-`.py` file, or a `.py`
   file with no row in the map (e.g. a re-export `__init__.py`), or when the
   map comes from another environment.
-- **Plus a set of tests** on any `src/` change: the 15 test files that read
-  `src/` as text rather than by import (Appendix D). Re-derive the set, do not
-  keep a list.
+- **Plus every test that reads a changed `.py` file as text** rather than by
+  import. This PoC inventoried only readers of `src/` (Appendix D); tests also
+  read `tests/` and `scripts/` `.py` files as text, and those are not
+  inventoried. A complete, reproducible inventory is the first task of any
+  revisit.
 - **Pass `--testmon-forceselect`:** `addopts`' `-m 'not live'` otherwise
   turns selection off with only a header line saying so.
 - **Set `COVERAGE_CORE=ctrace`:** on 3.14 coverage defaults to `sysmon`, which
@@ -103,7 +105,11 @@ rows, 10,143 `file_fp` rows and 96,468 test-to-file links, in an
 
 **Seeds.** Each row is a one-line edit confirmed to fail its named test with
 testmon off, then a serial `--testmon-forceselect` run on a fresh copy of the
-map. Shares are against the 551.3 s serial control. Command:
+map. "Confirmed" means pytest exited 1 and the named test's own JUnit case
+failed; any other exit (collection, usage or internal error, nothing
+collected) does not count. `POC_CONFIRM_ONLY=1 python
+sdd/research/research-bk-403-testmon-poc.py 3.13 <map> all` re-ran the
+confirmation for all 13 seeds: 13 of 13 confirmed. Shares are against the 551.3 s serial control. Command:
 `python sdd/research/research-bk-403-testmon-poc.py 3.13 <map> all`. The 13
 seeds cover all eight of audit-022's P1 seed classes.
 
@@ -170,20 +176,35 @@ interpreter.**
     argument`) and dagster paths. The seeded run added only the seed's
     failure.
 
-## Appendix D: tests that read `src/` as text
+## Appendix D: tests that read source as text
 
-**15 test files read `src/` other than by import; audit-022 named two.** A
-scan of the full Stage-1 suite on 3.13 with
-[`research-bk-403-srcreads.py`](research-bk-403-srcreads.py), an audit hook
-on `open` that skips imports and counts collection-time reads, found them.
-Reads made by a subprocess are not seen.
+**The text-read set is larger than audit-022's two files, and this PoC did
+not finish inventorying it.** What was measured, and what is known to be
+missing:
 
-- **`tests/scripts/` (8):** `test_check_capability_parity.py`,
-  `test_check_docstring_parity.py`, `test_check_no_retrospective.py`,
-  `test_check_no_tracker_refs.py`, `test_check_rst_roles.py`,
-  `test_check_test_placement.py`, `test_gen_features.py`,
-  `test_gen_graph.py`.
-- **Elsewhere (7):** `tests/aio/test_async_to_sync_adapter.py`,
-  `tests/backends/graph/aio/test_auth.py` and `test_utils.py`,
-  `tests/backends/s3/test_write_result_pbt.py`, and `tests/ext/`'s
-  `test_contract.py`, `test_observe.py` and `test_otel.py`.
+- **`src/` readers, measured.** A scan of the full Stage-1 suite on 3.13 with
+  [`research-bk-403-srcreads.py`](research-bk-403-srcreads.py) recorded 15
+  test files that opened a `src/**/*.py` file other than through the import
+  machinery. It covers collection-time reads; reads made by a subprocess are
+  not seen.
+  - **`tests/scripts/` (8), read through the scripts they drive:**
+    `test_check_capability_parity.py`, `test_check_docstring_parity.py`,
+    `test_check_no_retrospective.py`, `test_check_no_tracker_refs.py`,
+    `test_check_rst_roles.py`, `test_check_test_placement.py`,
+    `test_gen_features.py`, `test_gen_graph.py`.
+  - **Elsewhere, direct reads (2):** `tests/ext/test_contract.py:85,106` and
+    `tests/backends/graph/aio/test_utils.py:173` parse or read `src/` source
+    themselves.
+  - **Elsewhere, unclassified (5):** `tests/aio/test_async_to_sync_adapter.py`,
+    `tests/backends/graph/aio/test_auth.py`,
+    `tests/backends/s3/test_write_result_pbt.py`, `tests/ext/test_observe.py`,
+    `tests/ext/test_otel.py`. Their own source shows no read; the hits likely
+    come from library code that renders source (`linecache`,
+    `inspect.getsource`), which caches, so which file records the read can
+    depend on test order.
+- **Non-`src/` readers, not measured.** The scan drops paths outside `src/`.
+  Known examples: `tests/backends/conformance/test_large_payload_guard.py:60-63`
+  (`ast.parse` on `conformance/**/test_*.py`),
+  `tests/backends/fixtures/test_registry.py:696-699` (`read_text` on
+  `conformance/**/*.py`), `tests/scripts/test_check_traces.py:450`
+  (`rglob("*.py")` over `scripts/`).
