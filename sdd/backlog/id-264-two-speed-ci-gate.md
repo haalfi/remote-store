@@ -39,9 +39,14 @@ has an answer:
    `/ship`'s § Close each round records an interpreter-specific red that only
    the full matrix showed.
 
-**Dependencies:** BK-398 (a map must exist, and its portability finding
-answers prerequisite 3's last question); the `/pr` and `/ship` skill changes
-of prerequisite 4.
+**Dependency:** BK-398 (a map must exist, and its portability finding
+answers prerequisite 3's last question).
+
+**In this item's scope:** prerequisite 4's `/pr` and `/ship` skill changes.
+No other item delivers them. The `/ship` edit shares
+`.claude/skills/ship/SKILL.md` with BK-399, whose open decision includes
+whether `/ship` runs the selected target before round pushes; sequence the
+two edits together.
 
 **Open decision for the ADR:** the primary leg's tier in the draft lane.
 Stage 2 keeps ADR-0043's per-PR live-backend guarantee; Stage 1 is cheaper but
