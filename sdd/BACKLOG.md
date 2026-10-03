@@ -818,14 +818,14 @@ coverage floor.
 
 - [~] **BK-403 — No change-scoped test selector has been chosen for this suite; one of three candidates is measured**
   spec: — · effort: M · audience: infra.test, contributor.tooling
-  Both gates run every test for every diff, because nothing maps a changed
-  path to the tests it can affect (audit-022 § H1). `pytest-testmon` is
+  Both gates run every test for every code diff, because nothing maps a
+  changed path to the tests it can affect (audit-022 § H1). `pytest-testmon` is
   measured (viable with four fail-open classes, one map per interpreter);
   `pytest-tia` and `pytest-impact` are not. Open decision: which selector,
   if any, BK-404 and ID-266 build on.
   Detail: [dossier](backlog/bk-403-test-selector-evaluation.md)
 
-- [ ] **BK-404 — The local gate runs every test for every diff, with no selected target for in-progress rounds**
+- [ ] **BK-404 — The local gate runs every test for every code diff, with no selected target for in-progress rounds**
   spec: — · effort: M · audience: contributor.tooling
   `hatch run all` runs all of Stage 1 whatever the diff touched, and tests
   are most of its wall time (audit-022 § H1). Needs BK-403's selector. Open
