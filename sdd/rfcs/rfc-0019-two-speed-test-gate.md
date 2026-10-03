@@ -217,7 +217,7 @@ the result and are always unioned, never skipped:
    `SMOKE_TARGETS` already works around.
 4. **Text readers.** A generated table maps source globs to the tests that read
    them as text, for `src/`, `tests/` and `scripts/` alike. It extends
-   `research-bk-403-srcreads.py`, which covered `src/` only, to readers of
+   `sdd/research/bk-403-testmon-poc/srcreads.py`, which covered `src/` only, to readers of
    `tests/` and `scripts/` files. Examples: `test_large_payload_guard.py`
    parses `conformance/**/test_*.py`, and `test_registry.py` reads
    `conformance/**/*.py` (research Appendix D). A conformance test edit
