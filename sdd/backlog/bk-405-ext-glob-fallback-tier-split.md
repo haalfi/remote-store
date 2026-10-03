@@ -35,9 +35,10 @@ Once a `GLOB` driver runs on BK-389's kernel, its column follows decision
 6's pattern rule instead, which agrees with Local's on every row but the
 last.
 
-**The open decision: a leading `/`.** On a `GLOB` store the kernel never
-sees the caller's pattern: `Store.glob` prepends `root_path` raw
-(`f"{root}/{pattern}"`, GLOB-007, `_store.py`), so the kernel refuses
+**The open decision: a leading `/`.** On a `GLOB` store with a non-empty
+`root_path` the kernel sees the root-joined pattern, not the caller's:
+`Store.glob` prepends the root raw (`f"{root}/{pattern}"` only when the
+root is non-empty, GLOB-007, `_store.py`), so the kernel refuses
 `"/d/*.csv"` with `InvalidPath` under an empty root and drops the
 resulting empty segment, matching, under a non-empty one (BK-389's
 dossier, decision 6, Later drivers). Aligning the fallback with "the
