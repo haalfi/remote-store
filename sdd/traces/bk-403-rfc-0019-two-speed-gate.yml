@@ -101,6 +101,30 @@ phases:
           condition unmarked, and the roadmap closed BK-404 and ID-266 with
           their skill edits unowned; both items now stay open until RFC-0019
           Open Questions 4 lands
+  - id: fix2
+    name: Review fixes, round 2
+    steps:
+      - file: tests/scripts/run_notebooks.py
+        section: "NOTEBOOK_DIR (line 24)"
+        read_type: reference
+        extract: >-
+          Notebooks live under examples/notebooks; D6's example and notebook
+          triggers fell to layer 1's unmatched-FULL row, so layer 1 gained
+          explicit rows and D6 now states it applies to non-FULL selections only
+      - file: .github/workflows/ci.yml
+        section: "CODE_PAT, DOCS_PAT (lines 57, 73)"
+        read_type: reference
+        extract: >-
+          packaging/ is DOCS_PAT only, so a D6 package trigger on it never
+          fires; dropped. My D6 drafting named trigger paths without checking
+          them against D5's FULL rows or the class filter
+      - file: sdd/rfcs/rfc-0019-two-speed-test-gate.md
+        section: "D2 fork bullet"
+        read_type: reference
+        extract: >-
+          "Stay on the full lane" was false: the full lane cannot post on a
+          fork token. Restated as cannot merge on their own, with the maintainer
+          path and the pull_request_target rejection; clearing skipped for forks
   - id: verify
     name: Verify
     steps:

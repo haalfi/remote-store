@@ -127,8 +127,14 @@ it skipped.
 - Branch protection moves from the `gate` job to the `merge-gate` status. The
   `gate` job stays as the full lane's aggregator; the fast lane reports
   `gate-fast`, which is not required.
-- Fork PRs get a read-only token and cannot post the status; they are out of
-  scope for a single-maintainer repo and stay on the full lane.
+- **Fork PRs cannot merge on their own.** On a fork `pull_request` event,
+  `GITHUB_TOKEN` is read-only whatever `permissions:` asks for, so no lane can
+  post `merge-gate` on a fork head. To merge a fork PR, the maintainer pushes
+  its head to a branch in this repository and merges from a PR on that branch,
+  which runs the normal lanes. A `pull_request_target` or `workflow_run`
+  follow-up that posts the status is rejected: it would give a write token to a
+  workflow that acts on untrusted code. Forks are rare in this
+  single-maintainer repo, so the manual path is enough.
 
 ### D3. Lane mechanics in `ci.yml`
 
@@ -140,7 +146,10 @@ it skipped.
   and must not cancel anything (next bullet).
 - **Clearing:** on `synchronize`, `setup` removes `merge-candidate` if set
   (`pull-requests: write`). Events caused by `GITHUB_TOKEN` start no workflow,
-  so this cannot loop.
+  so this cannot loop. The step is skipped when the head repository is not
+  this one (`github.event.pull_request.head.repo.full_name !=
+  github.repository`). A fork's read-only token would otherwise fail `setup`,
+  and with it `gate-fast`.
 - **Concurrency:** the per-PR group with `cancel-in-progress`
   (`ci.yml` `concurrency`) stays for pushes and `merge-candidate`: adding the
   label cancels a fast run on the same head, and a push cancels a full run and
@@ -203,6 +212,10 @@ the result and are always unioned, never skipped:
    | `tests/**/test_*.py` | that file |
    | Cassettes under `tests/**/cassettes/<backend>/` | that backend's replay tests and the PII sweep |
    | `fixtures.toml`, `tests/backends/fixtures/<backend>.py` | that backend's conformance and `tests/backends/fixtures/` |
+   | `tests/backends/fixtures/_cassettes*.py` | `tests/backends/fixtures/`, the replay backends' conformance, and the `test-cassette-pii` job |
+   | `examples/notebooks/**` | no tests; the `notebooks` job |
+   | Other `examples/**` | no tests; the `examples` job |
+   | `tests/scripts/run_examples.py`, `tests/scripts/run_notebooks.py` | the `examples` or `notebooks` job, plus layers 2 and 4 for tests that import or read them |
    | `scripts/<x>.py` | `tests/scripts/test_<x>.py` |
    | Generated artifacts (`FEATURES.md`, graph data) | their generator and check tests |
    | Anything unmatched | FULL |
@@ -230,7 +243,11 @@ it, selection saves too little to be worth the risk. Phase 0 sets the number.
 
 **Each `code` job that runs fixed targets is a named target set: it runs in the
 fast lane only when the selector reaches one of its targets, and runs whenever
-a target cannot be placed.**
+a target cannot be placed.** The rules below apply only to non-FULL
+selections, because a FULL result (D5) runs every job. A trigger path must
+therefore be a layer-1 row that is not FULL, and a `code` path: a rule naming a
+FULL path such as `pyproject.toml`, or a non-`code` path such as `packaging/`
+(`DOCS_PAT` only), would never fire.
 
 | Job | Fast-lane rule |
 | --- | --- |
@@ -238,13 +255,13 @@ a target cannot be placed.**
 | `test`, `test-primary` | selected tests |
 | `tooling-tests` | selected `tests/scripts/` tests |
 | `test-primary-sftp` | selection holds `sftp_docker` tests |
-| `test-cassette-pii` | cassettes or `_cassettes*.py` touched |
-| `pyarrow-major-check` | selector reaches its test files (`ci.yml` job steps) or `tests/_helpers.py` |
+| `test-cassette-pii` | a cassette or `_cassettes*.py` row in layer 1 |
+| `pyarrow-major-check` | selector reaches its test files (`ci.yml` job steps) |
 | `test-cross-platform` | selection holds an `os_sensitive` test (static marker scan, module-level `pytestmark` included) |
 | `e2e` | selector reaches `tests/e2e/` |
-| `examples` | `examples/**`, `tests/scripts/run_examples.py`, or a `src/` module an example imports |
-| `notebooks` | a notebook, `tests/scripts/run_notebooks.py`, or a `src/` module a code cell imports |
-| `package` | `pyproject.toml`, `packaging/`, or a `src/` file added, deleted or renamed |
+| `examples` | an `examples/**` path outside `examples/notebooks/`, `tests/scripts/run_examples.py`, or a `src/` module an example imports |
+| `notebooks` | an `examples/notebooks/**` path, `tests/scripts/run_notebooks.py`, or a `src/` module a code cell imports |
+| `package` | a `src/` file added, deleted or renamed (wheel contents); `pyproject.toml` is FULL and so already runs it |
 | `coverage-gate` | full lane only |
 | `prepare-images` | a job that needs it runs |
 
