@@ -801,9 +801,9 @@ CHANGELOG the release body is built from — say what is actually true.
 - [ ] **BK-402 — `ci.yml` says `tests/scripts/` does not exercise `remote_store`, and it does**
   spec: — · effort: S · audience: infra.ci
   The `tooling-tests` comment (`ci.yml:451`) says `tests/scripts/` tests "not
-  remote_store", but `test_gen_features.py` imports it, and tests there read
-  `src/` as text through the scripts they drive ([audit-022](audits/audit-022-gate-speed-strategies.md)
-  § H1; BK-403 owns the full list). A selector built on the comment would
+  remote_store", but `test_gen_features.py` imports it, and eight test files
+  there read `src/` other than by import (BK-403's scan,
+  `research-bk-403-srcreads.py`). A selector built on the comment would
   drop the directory. Open decision: none.
 
 ---
@@ -815,32 +815,6 @@ CHANGELOG the release body is built from — say what is actually true.
 the change can affect; once, before merge, the whole gate runs, and pays for
 nothing it does not need. Narrowing never lifts the full pre-merge run or the
 coverage floor.
-
-- [ ] **BK-403 — No change-scoped test selector has been measured on this suite, so none can be chosen**
-  spec: — · effort: M · audience: infra.test, contributor.tooling
-  Both gates run every test for every code diff, because nothing maps a
-  changed path to the tests it can affect (audit-022 § H1). Conformance is wired
-  through the fixture registry, so import or file-level diff maps miss it. Open decision:
-  which selector, if any, survives the seeded changes, fails open where it
-  must, and has a map that holds across interpreters.
-  Detail: [dossier](backlog/bk-403-test-selector-evaluation.md)
-
-- [ ] **BK-404 — The local gate runs every test for every code diff, with no selected target for in-progress rounds**
-  spec: — · effort: M · audience: contributor.tooling
-  `hatch run all` runs all of Stage 1 whatever the diff touched, and tests
-  are most of its wall time (audit-022 § H1). Needs BK-403's selector. Open
-  decision: whether a third gate branch fits audit-017 R3's one thin target
-  and BK-271's composed gate, and which skills run it before a round push.
-  Detail: [dossier](backlog/bk-404-selected-tests-hatch-target.md)
-
-- [ ] **ID-266 — Every in-progress PR push runs the full pre-merge CI gate**
-  spec: — · effort: L · audience: infra.ci, contributor.process
-  `ci.yml` runs the whole gate on every PR push, including each `/ship` round
-  (audit-022 § M1). Needs BK-403's map; its `/pr` and `/ship` changes are its
-  own scope, and `/ship` is shared with BK-404. Open decision: a new ADR
-  amending ADR-0043 for a draft-PR selected lane, once its four
-  prerequisites have answers.
-  Detail: [dossier](backlog/id-266-two-speed-ci-gate.md)
 
 - [ ] **BUG-301 — The PII sweep's bare-email regex is quadratic on base64 runs and costs 157 of the sweep's 160 worker-seconds**
   spec: — · effort: S · audience: infra.test
@@ -855,8 +829,35 @@ coverage floor.
   Three `ci.yml` jobs (`test-primary`, `test-primary-sftp`, `test-cassette-pii`) and three
   hatch scripts (`test-cov-s1`, `test-cov`, `test-cov-strict`) use the default
   core; [audit-022](audits/audit-022-gate-speed-strategies.md) § L1 measured `sysmon` on local Stage 1 only.
-  Open decision: whether the Stage-2 and `--cov-append` paths also match under
-  `sysmon` (P6's re-measure); then switch all six. Not `test-cov-branch`.
+  Open decision: P6's re-measure of the Stage-2 and `--cov-append` paths, then
+  switch all six (not `test-cov-branch`); a testmon job (BK-403) stays off `sysmon`.
+
+- [ ] **BK-403 — No change-scoped test selector has been chosen for this suite; one of three candidates is measured**
+  spec: — · effort: M · audience: infra.test, contributor.tooling
+  Both gates run every test for every code diff (audit-022 § H1). The
+  `pytest-testmon` PoC answers "not now": selection saves real time only on
+  leaf-code edits, and BUG-301 and BK-401 are cheaper. Open decision: run
+  `pytest-tia` and `pytest-impact` only if local rounds are still a measured
+  bottleneck once both have landed.
+  Detail: [dossier](backlog/bk-403-test-selector-evaluation.md)
+
+- [ ] **BK-404 — The local gate runs every test for every code diff, with no selected target for in-progress rounds**
+  spec: — · effort: M · audience: contributor.tooling
+  `hatch run all` runs all of Stage 1 whatever the diff touched, and tests
+  are most of its wall time (audit-022 § H1). Needs BK-403's selector. Open
+  decision: build it only if local rounds are still a measured bottleneck
+  after BUG-301 and BK-401 (BK-403's PoC); then R3 and BK-271's fit, and
+  which skills run it before a round push.
+  Detail: [dossier](backlog/bk-404-selected-tests-hatch-target.md)
+
+- [ ] **ID-266 — Every in-progress PR push runs the full pre-merge CI gate**
+  spec: — · effort: L · audience: infra.ci, contributor.process
+  `ci.yml` runs the whole gate on every PR push, including each `/ship` round
+  (audit-022 § M1). Needs BK-403's map, which BK-403's PoC found is not
+  reusable across interpreters or dependency sets. Open decision: revisit
+  only on BK-403's condition; then a new ADR amending ADR-0043 for a
+  draft-PR selected lane, once its four prerequisites have answers.
+  Detail: [dossier](backlog/id-266-two-speed-ci-gate.md)
 
 - [ ] **BK-400 — The shard durations go stale between manual refreshes, so the primary shards balance on partial data**
   spec: — · effort: M · audience: infra.ci

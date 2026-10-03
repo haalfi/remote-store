@@ -1,4 +1,4 @@
-# BK-403 — No change-scoped test selector has been measured on this suite, so none can be chosen
+# BK-403 — No change-scoped test selector has been chosen for this suite; one of three candidates is measured
 <!-- doc: repo-only -->
 
 Filed from [audit-022](../audits/audit-022-gate-speed-strategies.md), proposal
@@ -50,3 +50,13 @@ full".
 
 **Consumers:** BK-404 (the local target) and ID-266 (the CI draft lane) both
 need this item's verdict.
+
+## Progress
+
+- **2026-10-03, `pytest-testmon`:** selection is not worth adopting now.
+  It saves real time only on leaf-code edits, a map does not survive a
+  change of interpreter or dependency set, and BUG-301 and BK-401 are
+  cheaper with no risk of skipping a test. Question, answer, revisit
+  condition and evidence:
+  [`research-bk-403-testmon-poc.md`](../research/research-bk-403-testmon-poc.md).
+  `pytest-tia` and `pytest-impact` wait for that revisit condition.

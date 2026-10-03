@@ -1,0 +1,210 @@
+id: BK-403
+title: "No change-scoped test selector has been chosen for this suite; one of three candidates is measured"
+trigger: >-
+  Audit-022 found that both gates run the whole suite for every diff and
+  proposed evaluating runtime-coverage selectors (P1). BK-403 was filed for it;
+  this trace covers the first PR of that work, a pytest-testmon PoC run in a
+  throwaway venv, which changes no shipped behaviour.
+source_items:
+  - BK-403
+audience:
+  - infra.test
+  - contributor.tooling
+expected_ripples:
+  - sdd/BACKLOG.md
+  - sdd/backlog/bk-403-test-selector-evaluation.md
+  # Anticipated by the BK-403 dossier ("ID-266 needs this answered"), a cited
+  # read; I still missed it until review round 2.
+  - sdd/backlog/id-266-two-speed-ci-gate.md
+# No path-level surprise. The one surprise is below path granularity: BK-401's
+# index entry, whose sysmon switch would break testmon in the same job, found
+# when 3.14's default core failed the PoC. Neither the audit nor the
+# ripple-check links a coverage-core change to a selector.
+surprising_ripples: []
+phases:
+  - id: orient
+    name: Orient
+    steps:
+      - file: sdd/audits/audit-022-gate-speed-strategies.md
+        section: "H1, M1, Proposals, P1's seeded changes"
+        read_type: gate
+        extract: "seeded-change classes, fail-open rule, open xdist / pytest-cov / portability questions"
+      - file: sdd/backlog/bk-403-test-selector-evaluation.md
+        section: "(full)"
+        read_type: gate
+        extract: "criteria and scope; the dossier was written one PR earlier from the same audit"
+      - file: sdd/traces/_schema.yml
+        section: "(full)"
+        read_type: reference
+        extract: "trace shape; review block is pasted at the close"
+      - file: sdd/AUTHORING.md
+        section: "placement table, sdd/research row"
+        read_type: reference
+        extract: "research notes live in sdd/research/research-*.md and are dual-published"
+      - file: scripts/check_sdd_index.py
+        section: "R1"
+        read_type: reference
+        extract: "a research doc needs a parseable **Date:** header"
+  - id: design
+    name: Seed design
+    steps:
+      - file: tests/conftest.py
+        section: "RestrictedBackend, hypothesis profiles"
+        read_type: reference
+        extract: "one runtime-executed seed (fixture helper body) and one import-time seed (profile registration)"
+      - file: tests/backends/fixtures/_loader.py
+        section: "module docstring"
+        read_type: reference
+        extract: "fixture facts come from fixtures.toml and backends.toml, a non-Python registry input the audit's list does not name"
+      - file: scripts/gen_features.py
+        section: "_parse_registry_order"
+        read_type: reference
+        extract: "reads _registry.py as text with a double-quote regex"
+      - file: scripts/check_test_placement.py
+        section: "_BANNED_BACKEND_NAMES"
+        read_type: reference
+        extract: "AST-walks backend modules at import"
+  - id: measure
+    name: Measure
+    steps:
+      - file: pyproject.toml
+        section: "[tool.pytest.ini_options] addopts"
+        read_type: reference
+        extract: >-
+          `-m 'not live'` makes testmon deactivate selection; read only after a
+          no-change rerun ran the whole suite and the run header named -m
+      - file: tests/conftest.py
+        section: "hypothesis profiles"
+        read_type: reference
+        extract: >-
+          my first hypothesis seed (deadline=1e-6) rounded to 0 ms and failed
+          at import, testing nothing; replaced with deadline=0.01
+      - file: sdd/audits/audit-022-gate-speed-strategies.md
+        section: "P1's seeded changes"
+        read_type: reference
+        outcome: unclear
+        extract: >-
+          the fixture class did not separate Python fixture code from the TOML
+          data the registry loads, and the expected-miss list did not name
+          module-level-only files such as __init__.py; both were misses here
+  - id: fix
+    name: Review fixes
+    steps:
+      - file: sdd/audits/audit-022-gate-speed-strategies.md
+        section: "H1, fail-open rule (Today those are...)"
+        read_type: reference
+        outcome: misleading
+        extract: >-
+          the audit's two text-reading test files were carried into rule 3 as
+          the complete set; an audit-hook scan of the Stage-1 suite found 15
+          readers of src/ alone, and readers of tests/ and scripts/ .py files
+          stay unmeasured. My miss was copying the list without measuring it,
+          then calling the src/ scan complete
+      - file: sdd/audits/audit-022-gate-speed-strategies.md
+        section: "P1's seeded changes"
+        read_type: reference
+        extract: >-
+          my seed table skipped the generated-artifact class; added as a
+          FEATURES.md seed (missed, non-Python input)
+  - id: report
+    name: Report
+    steps:
+      - file: sdd/research/research-decision-capture-at-dialog-time.md
+        section: "header"
+        read_type: reference
+        extract: "research header shape: Date, Backlog items, Status"
+      - file: sdd/BACKLOG.md
+        section: "How this file works / Item scope"
+        read_type: gate
+        extract: "[~] for multi-PR work; five-line diagnosis cap held on the BK-403 and BK-401 edits"
+      - file: sdd/CONTENT-RULES.md
+        section: "Rule 7 (Kernsatz)"
+        read_type: gate
+        extract: >-
+          the first note answered "does testmon work?" and read as a run log;
+          the PoC's question was "is selection worth adopting for faster
+          in-progress rounds?". Rewritten to lead with question, answer
+          ("not now") and revisit condition, evidence moved to appendices;
+          BK-403 back to [ ] and BK-404's open decision gated on the same
+          condition. My miss, caught by the maintainer, not by any review round
+review:
+  # Derived by `hatch run ship-report 1064 --trace-block-only` at head c6474f5.
+  # Do not hand-edit, except a newly required field per sdd/traces/_schema.yml
+  # section review: RFC-0015 D4 makes this script the only producer.
+  derivation: "hatch run ship-report 1064 --trace-block-only"
+  pr: 1064
+  review_rounds: 19
+  submissions: 3
+  findings: 12
+  by_round:
+    - round: 1
+      findings: 4
+      origin: {original: 3, unclassifiable-blame: 1}
+      triage: {must-fix: 4}
+      duration_hours: 0.47
+    - round: 2
+      findings: 4
+      origin: {loop-introduced: 3, original: 1}
+      triage: {must-fix: 4}
+      duration_hours: 2.03
+    - round: 3
+      findings: 4
+      origin: {loop-introduced: 3, original: 1}
+      triage: {must-fix: 4}
+      duration_hours: 0.95
+  by_file:
+    - path: "sdd/BACKLOG.md"
+      findings: 3
+    - path: "sdd/research/research-bk-403-testmon-poc.md"
+      findings: 3
+    - path: "sdd/research/research-bk-398-testmon-poc.md"
+      findings: 2
+    - path: "sdd/research/research-bk-403-srcreads.py"
+      findings: 2
+    - path: "sdd/research/research-bk-403-testmon-poc.py"
+      findings: 1
+    - path: "sdd/traces/bk-403-testmon-poc.yml"
+      findings: 1
+  untouched_files:
+    - "sdd/backlog/bk-403-test-selector-evaluation.md"
+    - "sdd/backlog/id-266-two-speed-ci-gate.md"
+  review_driven_commits:
+    - sha: "79517f3"
+      subject: "fix: address PR #1064 review"
+    - sha: "3e7170d"
+      subject: "fix: address PR #1062 review (round 3)"
+    - sha: "2561f28"
+      subject: "Merge branch 'claude/new-session-4aihhw' into claude/new-session-4aihhw-bk-398-poc"
+    - sha: "e7e6e89"
+      subject: "Merge remote-tracking branch 'origin/master' into claude/new-session-4aihhw"
+    - sha: "e6d8241"
+      subject: "Merge branch 'claude/new-session-4aihhw' into claude/new-session-4aihhw-bk-398-poc"
+    - sha: "bd6745e"
+      subject: "fix: address PR #1062 review (round 4)"
+    - sha: "5e8f5ec"
+      subject: "Merge branch 'claude/new-session-4aihhw' into claude/new-session-4aihhw-bk-398-poc"
+    - sha: "ecc6e00"
+      subject: "fix: correct #1062 defects found in a full self-read"
+    - sha: "2c52cf8"
+      subject: "Merge branch 'claude/new-session-4aihhw' into claude/new-session-4aihhw-bk-398-poc"
+    - sha: "34e3cc0"
+      subject: "fix: re-mint IDs colliding with #1061; drop BK-402's unsourced count"
+    - sha: "002dca3"
+      subject: "Merge #1062's re-mint: BK-398/BK-399/BUG-300 become BK-403/BK-404/BUG-301"
+    - sha: "cbfc72a"
+      subject: "fix: two overreaching claims found in a full self-review of #1062"
+    - sha: "c8e1c06"
+      subject: "Merge branch 'claude/new-session-4aihhw' into claude/new-session-4aihhw-bk-398-poc"
+    - sha: "c6d4371"
+      subject: "fix: correct BK-403's audit attribution and 'every diff' overstatement"
+    - sha: "19b6731"
+      subject: "Merge branch 'claude/new-session-4aihhw' into claude/new-session-4aihhw-bk-398-poc"
+    - sha: "782e8e9"
+      subject: "Merge remote-tracking branch 'origin/master' into claude/new-session-4aihhw-bk-398-poc"
+    - sha: "a3ce476"
+      subject: "BK-403: rewrite the testmon note around its question: is selection worth it?"
+    - sha: "971f498"
+      subject: "BK-403: Narrow text-reader claim, strict seed confirmation, gate ID-266"
+    - sha: "c6474f5"
+      subject: "BK-403: Narrow the scan's import filter, order section 7, fix trace ripples"
+  ci: {verdict: GREEN, failed: 0, pending: 0}
