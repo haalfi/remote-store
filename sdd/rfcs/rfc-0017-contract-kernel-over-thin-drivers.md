@@ -864,9 +864,10 @@ and its answer keeps `classify`.
   private and touches spec 003 only: it adds the clauses its kernel cells
   trace to, the key rule, the root `delete_folder` refusal and
   `SupportsRemoveFolder`'s `delete_folder` sequence as BK-396 decided it, and BK-395's
-  answers, which contradict no clause and add to BE-024, BE-025 and BE-029;
-  BK-389's dossier, item 8, is the authority for this split): specs 003,
-  005, 029 and 037 below, spec 013 (Memory's,
+  answers, which contradict no spec 003 clause and add to BE-024, BE-025
+  and BE-029; BK-389's dossier, item 8, is the authority for this split):
+  specs 003, 005, 029 and 037 below, spec 010's NPR-005 and NPR-020 round
+  trip, which BK-395's answers contradict, spec 013 (Memory's,
   as a kernel/driver placement per clause, which the list at filing omitted),
   the kernel half
   of 007 and 022, the Memory drivers' rows of 007 and 022, spec 026's PING-002

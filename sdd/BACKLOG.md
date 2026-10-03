@@ -233,6 +233,14 @@ failure it was.
   construction (RFC-0017 Open Question 5, deferred to D3 step 3; BK-389 dossier).
   Detail: [dossier](backlog/bug-245-sqlblob-no-such-table.md)
 
+- [ ] **BUG-300 — `SQLBlobBackend.write("\\")` stores the row, then raises `InvalidPath`**
+  spec: BE-008, WR-001 · effort: S · audience: user.api
+  SQLBlob's half of retired BUG-297: a direct `write("\\")` stores the row,
+  raises `InvalidPath`, and `exists("\\")` is then `True` (master `57d0797`,
+  BK-395's dossier); `Store` refuses the key first. Fixed by the kernel's
+  backslash refusal (BK-389 decision 6) when SQLBlob migrates at RFC-0017 D3
+  step 3. Open decision: none.
+
 - [ ] **BUG-253 — `GraphBackend.write` answers a file-ancestor path differently by payload size**
   spec: BE-008, GR-019 · effort: S · audience: user.api
   `GraphBackend.write("blocker.txt/child.bin", …)` raises `InvalidPath` below

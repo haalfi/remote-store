@@ -91,25 +91,30 @@ drivers** paragraph); this section keeps only how they were reached.
    after the first wildcard to the driver, which D1 says carries no path
    logic, and the two `GLOB` backends measured below already disagree on
    `"*/../*.csv"` (Local `InvalidPath`, SQLBlob `[]`). So the refusals apply to the whole pattern and empty and `.`
-   segments drop anywhere in it; GLOB-012's prefix is then cut from a
-   canonical pattern.
+   segments drop anywhere in it, and a native driver's prefix listing
+   (GLOB-018 to GLOB-020) starts from a canonical pattern. The capability
+   check runs before the closed guard, a maintainer's decision in PR
+   #1061's round 4, following `BackendContract.dfy`'s exemption of
+   `RequireCapability` from `Live()`.
 
-Every clause the exit criteria name was checked, and none is contradicted:
-the reasons are in decision 6's **Clauses checked** paragraph. So BK-389's
-item 8 carries additions to BE-024, BE-025 and BE-029, and BK-394's spec
-list gains one clause outside spec 003, not contradicted but incomplete:
-spec 013's MEM-DS-005 validation table, which needs a backslash row
-(found in PR #1061's round 3). Absorbed BUG-297's defect is unchanged on
-master; its fix lands with the kernel's refusal, for Memory in BK-394 and
-for SQLBlob at RFC-0017 D3 step 3 (decision 6's **Later drivers**).
+The exit criteria's clauses were checked against the answers; the reasons
+are in decision 6's **Clauses checked** paragraph. BK-389's item 8 carries
+additions to BE-024, BE-025 and BE-029. Outside spec 003, the answers
+contradict one clause pair, spec 010's NPR-005 and NPR-020 round trip
+(found in PR #1061's round 4), and leave spec 013's MEM-DS-005 validation
+table without a backslash row (round 3); BK-394 amends both. Absorbed
+BUG-297's defect is unchanged on master; its open work moved in PR #1061
+to BK-394 (Memory) and BUG-300 (SQLBlob, at RFC-0017 D3 step 3).
 
 **Recipe** (master `57d0797`, run with `hatch run python`, every answer the
 returned value or the exception's class name):
 - *Addressing.* For each of the 17 keys `""`, `"."`, `"./"`, `".//"`,
   `"./."`, `"/"`, `"/./"`, `"/f"`, `"d/../f"`, `"f\0"`, `"d\\f"`, `"\\"`,
   `"d//f"`, `"d/./f"`, `"d/"`, `"f"`, `"d/f"`: `native_path(k)`,
-  `resolve(k).key` and `to_key(native_path(k))` on `MemoryBackend`,
-  `AsyncMemoryBackend` and a `LocalBackend` on a temp root.
+  `resolve(k).key`, `resolve(k).native_path` and `to_key(native_path(k))`
+  on `MemoryBackend`, `AsyncMemoryBackend` and a `LocalBackend` on a temp
+  root (`resolve(k).native_path` on the two Memory classes, added in PR
+  #1061's round 4).
 - *Backslash.* A fresh store per call, per class, holding `f`, `"d\\f"`
   and `"e\\g/h"`; on `"d\\f"`, `"e\\g"` and `"\\"` run `exists`,
   `is_folder`, `is_file`, `read_bytes`, `get_file_info`, `delete`,
@@ -122,11 +127,19 @@ returned value or the exception's class name):
   `SQLBlobBackend` holding the same three, over the patterns `"d/*.csv"`,
   `"./d/*.csv"`, `"d//*.csv"`, `"d/./*.csv"`, `"/d/*.csv"`, `"../*.csv"`,
   `"d/../*.csv"`, `"*/../*.csv"`, `"d\\*.csv"`, `"d/*\0"`, `"**/*.csv"`, plus
-  `""` and `"."` on Local.
+  `""` and `"."` on Local. Run on Linux, where `\` is no path separator.
+- *Later-driver probes* (added in PR #1061's round 4, for the three cells
+  its round-3 fix added to decision 6's **Later drivers**): a
+  `LocalBackend` on an empty temp root, `write("d\\f")`, then
+  `os.listdir(root)`; an in-memory SQLite `SQLBlobBackend`, `write("\\")`,
+  then `exists("\\")`; and a `LocalBackend` whose root holds `d/a.csv` and
+  `r/d/a.csv`, with `Store(backend, root_path=rp).glob("/d/*.csv")` for
+  `rp` of `""` and `"r"`.
 
 What came back: both Memory classes echo every key raw from `native_path`
-and `resolve(k).key` except `"."`, whose `native_path` is `""`; Local's
+and `resolve(k).key` except `"."`, whose `native_path` is `""`, and
+`resolve(k).native_path` equals `native_path(k)` for all 17 keys; Local's
 `to_key` alone folds a backslash. `write("d\\f")` beside `d/f` returns path
 `d/f`, both are read back distinctly, and the listing yields `d/f` twice.
 The per-operation backslash answers are decision 6's Δ cells, and the
-`glob` answers its **Later drivers** cells.
+`glob` answers and later-driver probes its **Later drivers** cells.

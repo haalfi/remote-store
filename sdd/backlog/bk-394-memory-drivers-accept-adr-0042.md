@@ -84,6 +84,12 @@ labelled **(was … , absorbed here)**, which is the absorption form
      is reachable through `Store`, which hands the backend a
      `RemotePath`-normalised key, so each is pinned by a new Memory cell in
      this PR.]
+     - **(was BUG-297, absorbed here)** Its Memory half: a direct
+       `write("\\")` on either Memory class stores the row, then raises
+       `InvalidPath`, and `exists("\\")` is then `True` (measured at master
+       `9caef6b` by BL-011, PR #1054, and again at `57d0797` by BK-395). The
+       backslash cells above pin `InvalidPath` with nothing stored. Its
+       SQLBlob half is BUG-300. [Moved here from BK-395 in PR #1061.]
 4. Spec amendments that become true here:
    - spec 003: a BE-021 placement table assigning each obligation to kernel or
      driver, IDs kept and prose kept, plus placement notes on BE-020 and
@@ -128,12 +134,16 @@ labelled **(was … , absorbed here)**, which is the absorption form
      item 8 after PR #1055 merged, so the kernel's cells have a spec ID
      before they are written. BK-395's answers land with it in BK-389's PR.
      This PR applies them to the two Memory classes, the first on the
-     kernel. BK-395 found no clause outside spec 003 contradicted (PATH-002
-     binds `RemotePath`; NPR-004 and NPR-021 stay total; RES-020's
-     `plan.key == path` is kept; BK-389 decision 6 states each), so nothing
-     outside spec 003 is amended for them here except spec 013's
-     MEM-DS-005, which is incomplete rather than contradicted: its
-     backslash row is in the spec 013 bullet above.]
+     kernel. Outside spec 003 they keep PATH-002 (it binds `RemotePath`),
+     NPR-004 and NPR-021 (total) and RES-020 (`plan.key == path`), and
+     contradict one clause pair, amended here: spec 010's round trip,
+     NPR-005 ("holds for `k == ""` as well as every non-empty key — except
+     … `"."`") and NPR-020 ("for all valid keys except the root spelling
+     `"."`"), which gain BE-025's exception for a non-canonical key, whose
+     address inverts to its canonical key (`to_key(native_path("d//f"))` is
+     `"d/f"`). Spec 013's MEM-DS-005 is incomplete rather than contradicted:
+     its backslash row is in the spec 013 bullet above. BK-389 decision 6
+     states each; the round trip was found in PR #1061's round 4.]
    - [spec 003 BE-021 § Reach's page-boundary paragraph: under BK-389's
      decision 1 a migrated driver has no unmarked page, so the divergence it
      licenses applies only to a class not yet migrated.]

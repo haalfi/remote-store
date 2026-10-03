@@ -104,7 +104,7 @@ every case. RFC-0017 carries the same answers at the question each settles.
    | `/`-led (`"/"`, `"/./"`, `"/f"`) | `InvalidPath` | `InvalidPath` | `InvalidPath` | `InvalidPath` | `InvalidPath` | the raw key passed to the driver |
    | `..` segment (`"d/../f"`) | `InvalidPath` | `InvalidPath` | `InvalidPath` | `InvalidPath` | `InvalidPath` | the raw key passed to the driver |
    | null byte | `InvalidPath` | `InvalidPath` | `InvalidPath` | `InvalidPath` | `InvalidPath` | the raw key passed to the driver |
-   | backslash (`"d\\f"`, `"e\\g"`, `"\\"`) | `InvalidPath`; **Δ**, `True` or `False` today | `InvalidPath`; **Δ**, served from the stored key, or `NotFound`, today | `InvalidPath`; **Δ**, `write("d\\f")` and `move("f", "\\")` store today, and `write("\\")` stores then raises | `InvalidPath`; **Δ**, `"e\\g"` listed and aggregated, `"\\"` empty or `NotFound`, today | `InvalidPath`; **Δ**, `"e\\g"` removed and `"\\"` `NotFound` today | the raw key passed to the driver |
+   | backslash (`"d\\f"`, `"e\\g"`, `"\\"`) | `InvalidPath`; **Δ**, `True` or `False` today | `InvalidPath`; **Δ**, served from the stored key, or `NotFound`, today | `InvalidPath`; **Δ**, `write("d\\f")` and `move("f", "\\")` store today, `write("\\")` stores then raises, and `move("f", "d\\f")` onto a stored `d\f` answers `AlreadyExists` | `InvalidPath`; **Δ**, `"e\\g"` listed and aggregated, `"d\\f"` lists empty, `"\\"` empty or `NotFound`, today | `InvalidPath`; **Δ**, `"e\\g"` removed and `"\\"` `NotFound` today | the raw key passed to the driver |
    | non-canonical (`"d//f"`, `"d/./f"`, `"d/"`) | the canonical key's answer | the canonical key's answer | the canonical key's answer | the canonical key's answer | the canonical key's answer | the canonical key's answer; **Δ**, echoed raw today |
    | canonical, no backslash (`"f"`, `"d/f"`) | passed through | passed through | passed through | passed through | passed through | passed through |
 
@@ -165,7 +165,11 @@ every case. RFC-0017 carries the same answers at the question each settles.
    `NotImplementedError` for `"/d/*.csv"` and `ValueError` for `""` and
    `"."`, and answers `[]` for `"../*.csv"`, `"d\\*.csv"` and `"d/*\0"`;
    the kernel answers `InvalidPath` for the four refused patterns and
-   nothing for `""` and `"."`, step 5;
+   nothing for `""` and `"."`, step 5. All on Linux: on Windows `\` is a
+   path separator, so `"d\\*.csv"` likely matches `d/a.csv` there today
+   (read from `_local.py`'s `self._root.glob(pattern)`, not run), and
+   `Store.glob("d\\*.csv")` would go from matches to `InvalidPath`, a
+   Windows cell step 5 measures;
    `SQLBlobBackend.glob`, on a store holding no backslash key, answers `[]`
    for `"./d/*.csv"`, `"d//*.csv"` and `"d/./*.csv"`, where the kernel
    matches `d/a.csv`, and `[]` for every refused pattern, where the kernel
@@ -185,7 +189,7 @@ every case. RFC-0017 carries the same answers at the question each settles.
    `LocalBackend`'s backslash operations, step 5, of which one was run:
    on Linux `write("d\\f")` creates a file named `d\f` in the root and
    returns path `d/f`, where the kernel answers `InvalidPath`. SQLBlob's
-   operation cells include absorbed BUG-297's `write("\\")`, which raises
+   operation cells include BUG-300's `write("\\")`, which raises
    `InvalidPath` with `exists("\\")` then `True` (run at master `57d0797`),
    so step 3 pins `InvalidPath` with nothing stored. Each `GLOB`
    driver's step also lists `Store.glob`'s cells, which depend on
@@ -220,28 +224,39 @@ every case. RFC-0017 carries the same answers at the question each settles.
      backslash key, not as the root, so `RootPath.dfy`'s
      `BackslashIsNotRoot` is unaffected. Addressing passes it raw, so the
      refusal widens no addressing predicate, the condition BE-029 sets for a
-     backend refusing it. This also settles BUG-297's key: `write("\\")`
-     never reaches the driver.
+     backend refusing it. This also decides retired BUG-297's fix:
+     `write("\\")` never reaches the driver (its open work is BK-394's
+     Memory cells and BUG-300 for SQLBlob).
    - **`glob(pattern)` takes the pipeline segment-wise over the whole
-     pattern.** Order: the closed guard, then the capability (a driver
-     without `SupportsGlob` declares no `GLOB`, so `CapabilityNotSupported`
-     as BE-024 states), then step (2)'s refusals over the whole pattern (a
-     leading `/`, a `..` segment, a null byte, a backslash), then step (3)'s
-     dropping of empty and `.` segments anywhere in it, wildcard characters
-     untouched inside their segments, then the driver with the canonical
-     pattern. GLOB-012's literal prefix is therefore cut from an already
-     canonical pattern. A pattern that normalises to `""` names the root, a
-     folder, and yields nothing (GLOB-017). Unlike a key, a pattern reaches
-     the backend from `Store.glob` without `RemotePath`, so these cells are
-     visible through `Store` once a `GLOB` driver migrates. No step-1 cell:
-     neither Memory class declares `GLOB`.
+     pattern.** Order: the capability first (a driver without `SupportsGlob`
+     declares no `GLOB`, so `CapabilityNotSupported` as BE-024 states,
+     closed or not, as `BackendContract.dfy` exempts `RequireCapability`
+     from `Live()` because it reads declared data; the maintainer's
+     decision in PR #1061's round 4), then the closed guard, then step
+     (2)'s refusals over the whole pattern (a leading `/`, a `..` segment, a
+     null byte, a backslash), then step (3)'s dropping of empty and `.`
+     segments anywhere in it, wildcard characters untouched inside their
+     segments, then the driver with the canonical pattern, so a native
+     driver's prefix listing (GLOB-018 to GLOB-020) starts from a canonical
+     pattern. A pattern that normalises to `""` names the root, a folder,
+     and yields nothing, since `glob` returns only files (GLOB-004, BE-024).
+     Unlike a key, a pattern reaches the backend from `Store.glob` without
+     `RemotePath`, so these cells are visible through `Store` once a `GLOB`
+     driver migrates. No step-1 cell: neither Memory class declares `GLOB`.
 
-   **Clauses checked, none contradicted.** BE-025 permits `native_path` to
-   normalise and requires totality and the verbatim round trip of `..` and
-   null bytes, all kept; NPR-004 and NPR-021 require totality; RES-020 and
-   RES-025 hold as stated above; PATH-002 binds `RemotePath`, which `Store`
-   applies before the backend, so the refusal reaches only a caller holding a
-   backend directly. Spec 003 gains clauses rather than losing any (item 8).
+   **Clauses checked.** BE-025 permits `native_path` to normalise and
+   requires totality and the verbatim round trip of `..` and null bytes, all
+   kept; NPR-004 and NPR-021 require totality; RES-020 and RES-025 hold as
+   stated above; PATH-002 binds `RemotePath`, which `Store` applies before
+   the backend, so a refused **key** reaches only a caller holding a backend
+   directly (a `glob` pattern does not pass `RemotePath`, above). Spec 003
+   gains clauses rather than losing any (item 8). **One clause outside it is
+   contradicted** (found in PR #1061's round 4): spec 010's round trip,
+   NPR-005's "holds for `k == ""` as well as every non-empty key — except
+   … `"."`" and NPR-020's "for all valid keys except the root spelling
+   `"."`", since a non-canonical key's address now inverts to its canonical
+   key (`to_key(native_path("d//f"))` is `"d/f"`, of `"./"` is `""`), as
+   BE-025 already allows. BK-394 amends both, by the rule item 8 states.
 
    **Not `RemotePath`'s rules, nor `LocalBackend._resolve()`'s.** The
    refusals and normalisation are spec 013's MEM-DS-005 table, which both
@@ -519,16 +534,16 @@ every case. RFC-0017 carries the same answers at the question each settles.
    is scoped to a class on the kernel, and no class is on it until BK-394:
    - the key rule of decision 6: its refusals, the backslash among them,
      normalisation and root check on the canonical key, together with
-     BK-395's answers as decision 6 states them. BK-395 found no clause
-     contradicted, inside spec 003 or out, so what lands here is additions:
+     BK-395's answers as decision 6 states them. They contradict no spec
+     003 clause, so what lands here is additions:
      BE-025 and BE-029's addressing row gain the kernel's addressing rule
      (canonical key to the driver, a refused key raw, `plan.key` the
      caller's); BE-029's backslash paragraphs ("a backslash-only key is
      **not** refused by this clause") gain that a class on the kernel
      refuses it under the key rule, by the route that paragraph permits;
-     and BE-024 gains the pattern rule and its order. A clause outside spec
-     003 that a later answer did contradict would still be BK-394's
-     [maintainer's decision in PR #1056's round 4];
+     and BE-024 gains the pattern rule and its order. The clauses outside
+     spec 003 they contradict, spec 010's NPR-005 and NPR-020 round trip,
+     are BK-394's [maintainer's decision in PR #1056's round 4];
    - the root `delete_folder` refusal (`InvalidPath`), which BE-029 § Out of
      scope leaves undefined;
    - decision 8: `remove_folder`'s atomic refusal and who carries it,

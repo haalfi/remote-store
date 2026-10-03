@@ -98,5 +98,31 @@ phases:
         section: "opening paragraph"
         read_type: reference
         extract: "stale 'clauses BK-395's answers contradict' conditional"
+  - id: fix
+    name: Review fix passes
+    steps:
+      - file: sdd/specs/013-memory-backend.md
+        section: "MEM-DS-005"
+        read_type: reference
+        extract: "closed validation table with no backslash row: BK-394 owes it one"
+      - file: sdd/specs/010-native-path-resolution.md
+        section: "NPR-005, NPR-020"
+        read_type: reference
+        extract: "round trip holds for every non-empty key except '.': contradicted for non-canonical keys; my verify_clauses read of NPR-005 took it as stripping only and missed its round-trip sentence"
+      - file: sdd/formal/BackendContract.dfy
+        section: "Live() comment, RequireCapability exemption"
+        read_type: reference
+        extract: "capability is exempt from the closed guard: glob checks capability first"
+      - file: sdd/BACKLOG.md
+        section: "How this file works / Completing work"
+        read_type: gate
+        extract: "an absorbed ID needs a literal (was …, absorbed here) sub-bullet on an open host; a prose pointer from a done item is not one"
+      - file: sdd/specs/018-glob.md
+        section: "GLOB-004, GLOB-011, GLOB-012, GLOB-017, GLOB-018"
+        read_type: reference
+        extract: "GLOB-009..017 are ext.glob's layer; the backend layer is GLOB-003/004 and GLOB-018..020; my design cited GLOB-012/017 for the kernel"
+discovery_followups:
+  - BUG-300
 surprising_ripples:
   - sdd/backlog/bk-390-rfc-0017-spec-amendments.md
+  - sdd/BACKLOG-DONE.md
