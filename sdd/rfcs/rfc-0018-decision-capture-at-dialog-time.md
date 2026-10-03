@@ -48,7 +48,8 @@ the answer was given. What is missing is persistence and a reader, not content.
 1. **Rejected options survive.** They are in the `asked` event whether or not
    anyone thinks to mention them later.
 2. **The outcome is observable, including "no decision".** A dialog that was
-   denied or closed has an `asked` event and no `answered` event. A parallel
+   denied or closed has an `asked` event and either no `answered` event or one
+   whose answer is the dismissal sentinel (§ Step 0 observations, case a′). A parallel
    session on BK-396 showed the failure this guards: its dialog "recorded Q1"
    before the maintainer had answered, the choice was pushed, and the session
    noticed only afterwards and re-asked. A summary would have recorded Q1 as the
@@ -108,7 +109,9 @@ the PR diff shows the log beside the change it explains.
   commit (`/ship`'s close, `/pr`'s own questions) leave a tail: `/pr` Step 1
   commits it as a separate `decision log` commit before its clean-tree check.
   Bound: a commit the maintainer makes by hand outside the agent bypasses the
-  hook, and its dialogs reach the next agent commit instead.
+  hook, and its dialogs reach the next agent commit instead. A commit also
+  protects the log only once it is pushed: an unpushed commit goes with a
+  reclaimed container (§ Step 0 observations, container restart).
 
 - **No item ID in the path.** The ID is not knowable at capture time: branch
   names need not carry one (`CLAUDE.md` § Branching lists `fix-streaming-io`),
@@ -139,13 +142,21 @@ set** is the labels marked `(Recommended)`, usually one and possibly several on 
 |---|---|
 | `failed` | a `failed` event exists |
 | `prefilled` | the `asked` event's `tool_input` carries an answer for the question and the `answered` event's answer equals it |
-| `unanswered` | no `answered` event, or the answer is the dismissal sentinel `[User dismissed — do not proceed, wait for next instruction]` (follow-up case a′) |
+| `unanswered` | no `answered` event, or the answer begins with `[User dismissed` (the dismissal sentinel; follow-up case a′) |
 | `other` | some answer matches no label (the "Other" free-text path) |
 | `followed` | the answer set equals the recommended set |
 | `alternative` | otherwise: every answer is a label and the set differs from the recommended set, or nothing was recommended |
 
 The order ranks what a reviewer must see first: a failure or an answer nobody
 gave outranks what the answer was.
+
+**The sentinel is a harness string, matched by prefix, and that is a bound.**
+It is undocumented and was seen once (a′), in full
+`[User dismissed — do not proceed, wait for next instruction]`. A reader matches
+the prefix `[User dismissed` and is tested against a fixture taken from the a′
+payload. A rewording of the prefix itself keeps the payload's shape, so no parse
+fails and no check detects it: the answer falls to `other`, which D4.3 does not
+flag. A free-text answer that begins with the prefix is read as a dismissal.
 
 **Parsing rules, fixed by step 0.** The answer is read from the `answered`
 event's `tool_response.answers`, a map from question text to one string (its
@@ -442,13 +453,16 @@ back held this session's `cse_` id, matching its `Claude-Session` trailer).
 Listing the probe directory gave 14 payloads:
 8 `PreToolUse`, 6 `PostToolUse`, 0 `PostToolUseFailure`. Each `PostToolUse`
 shared its `tool_use_id` with exactly one `PreToolUse` (6 pairs); the 2 other
-`PreToolUse` files are the two close-cross dialogs below. `duration_ms` was 1 or 2
-in every Post payload. The user acted on the web app (the close cross is the only
+`PreToolUse` files are a and its repeat below. The 6 pairs are b, a′ and four
+ordinary answered dialogs: the fire check, the wait-length question before b,
+and the two questions put to the user after a′ (which control was used; whether
+to run the repeat). Pairs were matched by `tool_use_id`, 6 distinct ids across 6
+`PostToolUse` files. `duration_ms` was 1 or 2 in every Post payload. The user acted on the web app (the close cross is the only
 dismissal control there) and had the session open in a browser as well.
 
 - **a. Dismissal by the app's close cross.** The agent saw `Denied by user`;
-  only `PreToolUse` fired. Identical to step 0's denial, so the cross is a
-  denial to the harness, not a distinct dismissal. Repeated once with nothing
+  only `PreToolUse` fired. Identical to step 0's denial, so the cross on its
+  own is a denial to the harness, not a distinct dismissal. Repeated once with nothing
   sent from the browser (extra call): the same.
 - **a′. Dismissal accompanied by a message from the browser** (extra call, an
   interrupt attempt that the app does not offer; the user pressed the cross
@@ -488,8 +502,11 @@ dismissal control there) and had the session open in a browser as well.
   consequences follow from the design and are inferences. A restart kills the
   recorder with the session, so a log can end on a lone `asked`, which D3 reads
   as `unanswered`, indistinguishable from a denial. And the log lives in an
-  ephemeral container until `gate-commit.sh` stages it (D2), so a restart can
-  lose the uncommitted tail along with the dialog. A re-shown dialog under a new
+  ephemeral container until it is pushed: a reopened session gets a fresh VM
+  with the conversation restored, and nothing in the docs says unpushed commits
+  come with it. Staging or committing the log (D2) therefore protects nothing
+  until the push, and every unpushed commit's log is exposed, not only the
+  tail. A re-shown dialog under a new
   `tool_use_id` would leave two `asked` events for one decision, the first
   `unanswered`.
 
@@ -512,8 +529,9 @@ rejected before execution: an unknown tool name, input that fails schema or
 tool-specific validation, or a permission denial". Validation rejections "fire
 neither `PreToolUse` nor `PostToolUseFailure`"; permission denials "fire
 `PreToolUse` but not this event". That matches cases a, c and d exactly. The
-dialog is a permission-style prompt, so a close or deny is a denial, and a
-failed `AskUserQuestion` would need an execution error after the user answered;
+dialog is a permission-style prompt, so a deny, or a close by the cross alone
+(case a), is a denial; a′ shows a close can instead arrive as an answer. A failed
+`AskUserQuestion` would need an execution error after the user answered;
 no such path is documented, which makes the `failed` row likely unreachable for
 this tool (an inference). The same page documents `duration_ms` as excluding
 "time spent in permission prompts", which is why every Post payload showed 1 or

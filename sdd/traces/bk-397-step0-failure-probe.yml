@@ -31,6 +31,24 @@ phases:
         read_type: reference
         extract: "Ran dismissal, wait, duplicate texts, one option, subagent call, interrupt: 0 PostToolUseFailure in 14 payloads. The brief's case a (Esc/close) cannot be told from a denial in the app; the same cross gave Denied by user twice and a sentinel Post once, confounded by a browser message. My miss: I asked the user which control they used only after the divergence appeared"
         outcome: ok
+  - id: docs
+    name: Official docs
+    steps:
+      - file: sdd/rfcs/rfc-0018-decision-capture-at-dialog-time.md
+        section: "Step 0 observations / What the official docs say"
+        read_type: reference
+        extract: "Raw reads by curl of code.claude.com/docs/en/hooks (PostToolUseFailure, PreToolUse AskUserQuestion) and code.claude.com/docs/en/claude-code-on-the-web (Environment expired), each quoted phrase searched in the file before it was written down. Delivered: validation rejections and permission denials never fire PostToolUseFailure, which explains cases a, c, d. My miss: curl wrote the first download into the repo root instead of tmp/; removed before the commit"
+        outcome: ok
+      - file: sdd/rfcs/rfc-0018-decision-capture-at-dialog-time.md
+        section: "Step 0 observations / What the official docs say"
+        read_type: reference
+        extract: "The claude-code-guide agent's report misled twice, found by reading the raw pages: it said AskUserQuestion appears in the docs only as a mods render site (the hooks page has a PreToolUse input table for it, with the answers field), and it quoted a 'marked as cut off' passage on the cloud-sessions page that the page does not contain (searched 'cut off' in the downloaded file: no match)"
+        outcome: misleading
+      - file: sdd/rfcs/rfc-0018-decision-capture-at-dialog-time.md
+        section: "Step 0 observations / What the official docs say"
+        read_type: reference
+        extract: "A WebFetch summary of the hooks page said the docs make PostToolUse and PostToolUseFailure mutually exclusive; the raw page has no such phrase (searched 'mutually exclusive': no match). Summaries of docs pages are not a source"
+        outcome: misleading
   - id: write
     name: Write up
     steps:
