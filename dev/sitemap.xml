@@ -417,6 +417,10 @@
          <lastmod>2026-10-03</lastmod>
     </url>
     <url>
+         <loc>https://docs.remotestore.dev/dev/explanation/design/research/research-decision-capture-at-dialog-time/</loc>
+         <lastmod>2026-10-03</lastmod>
+    </url>
+    <url>
          <loc>https://docs.remotestore.dev/dev/explanation/design/research/research-depth-limited-listing/</loc>
          <lastmod>2026-10-03</lastmod>
     </url>
@@ -630,6 +634,10 @@
     </url>
     <url>
          <loc>https://docs.remotestore.dev/dev/explanation/design/rfcs/rfc-0017-contract-kernel-over-thin-drivers/</loc>
+         <lastmod>2026-10-03</lastmod>
+    </url>
+    <url>
+         <loc>https://docs.remotestore.dev/dev/explanation/design/rfcs/rfc-0018-decision-capture-at-dialog-time/</loc>
          <lastmod>2026-10-03</lastmod>
     </url>
     <url>
