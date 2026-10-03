@@ -297,6 +297,26 @@ phases:
           not read when I told the maintainer no comment said so; Open Question
           6 restated as settled. test-cross-platform's -m os_sensitive
           --ignore=tests/e2e added to the per-job survival list
+  - id: fix11
+    name: Review round on the pilot's narrowing set, verified
+    steps:
+      - file: tests/scripts/test_check_traces.py
+        section: "line 450 (rglob over scripts/)"
+        read_type: reference
+        extract: >-
+          A whole-tree reader made every scripts/ edit FULL under my "read as
+          text → FULL" pilot rule. That rule added no safety once inventory
+          completeness was a Phase 0 exit, so layer 4's mapped readers move into
+          the pilot; case (2) now excludes a script's own mapped test
+      - file: tests/backends/azure/conftest.py
+        section: "pytest_configure, pytest_sessionfinish"
+        read_type: reference
+        extract: >-
+          Non-root conftests with session-wide hooks share state across
+          directories; such conftests are FULL. Stale-run re-runs are now a
+          lifecycle row with live-head-guarded label clearing and a named
+          residual gap; Phase 2's ci-full.yml job is stated instead of "local
+          only"
   - id: verify
     name: Verify
     steps:

@@ -202,6 +202,7 @@ Each row below is a Phase 4 exit check:
 | Unrelated label added | Separate concurrency group: no cancellation, no status |
 | Full workflow re-run | Posts on the same head SHA (the event payload is replayed); the latest status per context wins |
 | A run finishes after a newer push | It posts on its own, older head SHA; the new head is unaffected |
+| Re-run of a superseded fast run while a full run is active | The re-run enters the per-PR concurrency group and cancels the full run. This is the one residual gap, because concurrency is evaluated before any job can check staleness. Its `setup` sees payload head ≠ live head, keeps the label and ends with no lane. Merge stays blocked (fail safe). Recovery, in the runbook: remove and re-add `merge-candidate`, and re-run only the current head's runs |
 | Fork PR push | Fast lane runs; label clearing and status posting are skipped; no repository mutation is attempted |
 
 ### D3. Lane mechanics in `ci.yml`
@@ -213,7 +214,11 @@ Each row below is a Phase 4 exit check:
   labeled]`. A `labeled` event for any other label runs nothing beyond `setup`,
   and must not cancel anything (next bullet).
 - **Clearing:** on `synchronize`, `setup` removes `merge-candidate` if set
-  (`pull-requests: write`). Events caused by `GITHUB_TOKEN` start no workflow,
+  (`pull-requests: write`), but only when the payload's
+  `github.event.pull_request.head.sha` equals the PR's current head, read live
+  through the API. A re-run of a superseded run replays an old payload, so it
+  must not clear a label that belongs to a newer head. Such a stale run ends in
+  `setup` with no lane. Events caused by `GITHUB_TOKEN` start no workflow,
   so this cannot loop. The step is skipped when the head repository is not
   this one (`github.event.pull_request.head.repo.full_name !=
   github.repository`). A fork's read-only token would otherwise fail `setup`,
@@ -316,8 +321,8 @@ maintenance is not added.
 
 | Level | Rules | Everything else |
 | --- | --- | --- |
-| **Pilot** (Phase 1) | **Every layer-1 row**, with layers 2–4 absent. A row whose selection uses only layer 1 applies as written; this covers the test-file, cassette, non-root `conftest.py`, `examples/**`, `scripts/<x>.py` and generated-artifact rows. The one exception is a **leaf backend module** → its backends' fixture allowlist and `tests/backends/<backend>/` | FULL in five cases. (1) A row whose selection defers to layer 2, 3 or 4: the `src/` rows other than a leaf backend, the `run_examples.py`/`run_notebooks.py` row, and the three fixture-registry rows (`_cassettes*.py`, fixture modules, `fixtures.toml`), whose consumers reach beyond conformance. (2) Any module under `tests/` or `scripts/`, not only `test_*.py`, that another module imports by name or by literal string. (3) A script whose mapped test does not exist. (4) Any path the text-reader inventory lists as read as text. (5) Anything unmatched |
-| **Precision** (Phase 2, one at a time) | Layer 2 with hub resolution and the import-time scan; layer 3 through transitive helper edges; layer 4's mapped readers; notebook import parsing for D6 | — |
+| **Pilot** (Phase 1) | **Every layer-1 row, plus layer 4's mapped readers**, with layers 2 and 3 absent. A row whose selection uses only layer 1 applies as written; this covers the test-file, cassette, non-root `conftest.py` without session-wide hooks, `examples/**`, `scripts/<x>.py` and generated-artifact rows. A path the reader inventory lists also selects its readers: `test_check_traces.py` for a `scripts/` edit, `test_registry.py` and `test_large_payload_guard.py` for a conformance edit. The one exception is a **leaf backend module** → its backends' fixture allowlist and `tests/backends/<backend>/` | FULL in four cases. (1) A row whose selection defers to layer 2 or 3: the `src/` rows other than a leaf backend, the `run_examples.py`/`run_notebooks.py` row, and the three fixture-registry rows (`_cassettes*.py`, fixture modules, `fixtures.toml`), whose consumers reach beyond conformance. (2) Any module under `tests/` or `scripts/` that a module **other than its own mapped test** imports by name or by literal string. A script loaded by its own `tests/scripts/test_<x>.py`, through `sys.path` or `spec_from_file_location`, does not count. (3) A script whose mapped test does not exist. (4) Anything unmatched |
+| **Precision** (Phase 2, one at a time) | Layer 2 with hub resolution and the import-time scan, including registry-consumer edges; layer 3 through transitive helper edges; notebook import parsing for D6 | — |
 
 **A leaf backend module** is a backend source in `backends.toml` that meets
 two conditions:
@@ -352,11 +357,16 @@ layer 2 in Phase 2, which is why Phase 0 measures both rule sets (§ Roadmap).
 The leaf rule stays in the pilot so that a future leaf module narrows without a
 spec change.
 
-**The pilot is only as safe as the text-reader inventory.** Sending listed
-paths to FULL does nothing for a reader the inventory has missed. Research
+**The pilot is only as safe as the text-reader inventory, which is why layer
+4 belongs in the pilot.** No rule helps with a reader the inventory has missed,
+whether that rule selects the reader or sends the path to FULL. Research
 Appendix D records that the inventory is incomplete for readers of `tests/` and
-`scripts/` files. Completing it is therefore a Phase 0 exit criterion, not a
-precision layer that can be deferred.
+`scripts/` files. Completing it is therefore a Phase 0 exit criterion. Once it
+is complete, selecting the mapped readers is exactly as safe as FULL. A blanket
+"read as text → FULL" rule would add no safety, and it would stop every
+`scripts/` edit narrowing, because `test_check_traces.py` reads the whole
+`scripts/` tree, and every conformance edit too, because `test_registry.py`
+reads all of `conformance/`.
 
 **Composition.** Layer 1 classifies each changed path; layers 2–4 then expand
 the result and are always unioned, never skipped:
@@ -379,7 +389,7 @@ the result and are always unioned, never skipped:
    | Any package `__init__.py` under `src/` (re-export hubs, layer 2) | FULL |
    | Core modules: those every backend passes through, and those with import-time effects beyond definitions (layer 2). The list is part of the table and Phase 0 derives it | FULL |
    | Shared fixture infrastructure: `tests/backends/fixtures/` `registry.py`, `_loader.py`, `_state.py`, `_live_env.py`, `_cassette_pytest.py`, `__init__.py`, and `backends.toml` | FULL |
-   | Any other `conftest.py` | every test under its directory |
+   | Any other `conftest.py` | every test under its directory, unless it defines a session-wide hook (`pytest_configure`, `pytest_unconfigure`, `pytest_sessionstart`, `pytest_sessionfinish`, `pytest_collection_modifyitems`, or a session-scoped autouse fixture), which makes it FULL. Those hooks act on the whole session: `tests/backends/azure/conftest.py` and `tests/backends/conformance/conftest.py` share one missing-cassette guard, armed by whichever `pytest_configure` runs first. Checked by AST scan |
    | A `src/` module that is a backend source, or that a backend source reaches (layer 3) | none of its own; layers 2 and 3 |
    | Other `src/**/*.py` | none of its own; layer 2 |
    | `tests/**/test_*.py` | that file |
@@ -557,14 +567,16 @@ none of which selects anything.**
    script modules imported by other tests or scripts, a failure only a
    `*_strict` fixture reaches through a shared fixture module, an example edit
    that breaks a `test_examples.py` assertion, an edit to the PII sweep test
-   itself, one empty-survival case per test job (D6, including the e2e-only
+   itself, an edit to a conftest's session-wide hook, a `scripts/` edit that
+   selects its own test plus `test_check_traces.py`, one empty-survival case per
+   test job (D6, including the e2e-only
    `os_sensitive` edit), and a registry-consumer case (an `azure_replay_hns.py`
    edit that breaks a `tests/backends/azure/` test). They compute
    selections only and run in seconds. Each seed asserts two things:
    - **The selection contains the known failing test.**
    - **Its expected mode, `SELECTED` or `FULL` with its reason.** Containment
-     alone passes vacuously under FULL. Under the pilot (layer-1 rows that need
-     no other layer, layers 2–4 absent), a hand mapping of research Appendix B
+     alone passes vacuously under FULL. Under the pilot (layer-1 rows plus mapped
+     readers, layers 2–3 absent), a hand mapping of research Appendix B
      puts 11 of the 13 PoC seeds in FULL:
      - both `conftest.py` seeds, `__init__.py` and `pyproject.toml`;
      - five non-leaf `src/` modules (`_path`, `_registry`, `_azure`, `_sftp`
@@ -662,7 +674,9 @@ for this RFC.**
 **Five phases, each with an exit criterion fixed before it starts; Phase 0 can
 stop the whole effort.** Nothing that blocks a merge changes before Phase 3's
 exit: no branch protection, no `merge-candidate` handling, no lane that
-decides. Phases 0–2 are local only. Phase 3 adds CI jobs that only log.
+decides. Nothing in Phases 0–2 runs in the PR workflow. Phase 2 adds one
+scheduled, non-blocking `ci-full.yml` job, the D7 coverage cross-check, and
+Phase 3 adds PR-workflow jobs that only log.
 
 **What Phase 0 measures, per historical PR diff and per seed:**
 - selected test count and share;
@@ -681,7 +695,7 @@ The targets for these are written into the Phase 0 plan before the run.
 | --- | --- | --- | --- |
 | **0. Validate** | Decide whether to build, from evidence | Throwaway selector under `sdd/research/` with the pilot rule set, and the precision layers prototyped beside it; extended text-reader inventory; seed run through the PoC driver; replay of historical PR diffs and of past red CI runs, including auxiliary jobs; the metrics above for both rule sets; the core-module list derived (every-backend modules plus modules with import-time effects) | The text-reader table passes D5 layer 4's two-method agreement (runtime union across default and randomised order, plus the static scan including subprocess targets); 0 seed misses, every seed's pinned mode met, and 0 deterministic, selector-reachable historical misses; the saving meets its predefined target. **Stop is judged on the precision rule set**, the target design, if typical diffs still fall back to FULL or select close to the full suite under it. The pilot narrows no `src/` edit by construction (D5), so its fallback rate is reported, not used to stop |
 | **1. Pilot** | Production selector with the pilot rule set, local only | ADR for the local part; selector (stdlib only) with the pilot rows, fixture allowlist, per-job flags and structured output; registry allowlist; seed and mapping-completeness unit tests; local fast target. BK-404 stays open until its skill edits land (Open Questions 4) | Seeds and the mapping test green in CI; the fallback rate recorded from the first real rounds |
-| **2. Shape** | Use the pilot, then add precision | Fast target used for real rounds; escape log against the later full result, classified; then layer 2 (hubs, import-time scan), transitive layer 3, mapped layer 4 and notebook parsing, each added only after the cross-check job is in place and reports no gap | A pilot length fixed beforehand with 0 deterministic, selector-reachable escapes; each precision layer kept only if it lowers the measured share without a cross-check gap; cut-off set by measurement |
+| **2. Shape** | Use the pilot, then add precision | Fast target used for real rounds; escape log against the later full result, classified; the D7 coverage cross-check as a scheduled `ci-full.yml` job; then layer 2 (hubs, import-time scan, registry consumers), transitive layer 3 and notebook parsing, each added only after the cross-check job is in place and reports no gap | A pilot length fixed beforehand with 0 deterministic, selector-reachable escapes; each precision layer kept only if it lowers the measured share without a cross-check gap; cut-off set by measurement |
 | **3. CI shadow** | Validate the CI lane without risk | Fast lane computes and logs its selection while the full lane still runs on every push; escapes compared and classified automatically; fallback rate reported | A shadow period fixed beforehand with 0 deterministic, selector-reachable escapes; time saved and fallback rate measured |
 | **4. Finalize** | Switch it on and make it maintainable | ADR amending ADR-0043; `ci.yml` triggers, label clearing, `gate-fast`, `merge-gate` status; the single-poster lint check; branch protection moved to `merge-gate` with the Actions app as expected source; classifier migration with a history replay proving identical class outputs; runbook in `sdd/CI-OPERATIONS.md`; BK-403 closed. ID-266 stays open until its skill edits land (Open Questions 4) | Every row of D2's status-lifecycle table verified on a real PR |
 
