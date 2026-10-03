@@ -2,7 +2,7 @@
 
 **Date:** 2026-10-03
 **Backlog items:** BK-403, BK-404, ID-266
-**Status:** Answered for `pytest-testmon`; `pytest-tia` and `pytest-impact` were not run. Point-in-time snapshot per [`sdd/000-process.md` § Document types](../000-process.md#document-types). It measures [audit-022](../audits/audit-022-gate-speed-strategies.md) proposal P1; the driver behind every seed row is [`research-bk-403-testmon-poc.py`](research-bk-403-testmon-poc.py).
+**Status:** Answered for `pytest-testmon`; `pytest-tia` and `pytest-impact` were not run. Point-in-time snapshot per [`sdd/000-process.md` § Document types](../000-process.md#document-types). It measures [audit-022](../audits/audit-022-gate-speed-strategies.md) proposal P1; the driver behind every seed row is [`bk-403-testmon-poc/driver.py`](bk-403-testmon-poc/driver.py).
 
 ## Question
 
@@ -108,9 +108,9 @@ testmon off, then a serial `--testmon-forceselect` run on a fresh copy of the
 map. "Confirmed" means pytest exited 1 and the named test's own JUnit case
 failed; any other exit (collection, usage or internal error, nothing
 collected) does not count. `POC_CONFIRM_ONLY=1 python
-sdd/research/research-bk-403-testmon-poc.py 3.13 <map> all` re-ran the
+sdd/research/bk-403-testmon-poc/driver.py 3.13 <map> all` re-ran the
 confirmation for all 13 seeds: 13 of 13 confirmed. Shares are against the 551.3 s serial control. Command:
-`python sdd/research/research-bk-403-testmon-poc.py 3.13 <map> all`. The 13
+`python sdd/research/bk-403-testmon-poc/driver.py 3.13 <map> all`. The 13
 seeds cover all eight of audit-022's P1 seed classes.
 
 | Seed | Edit | Known test selected? | Tests run | Wall (share) | Class if missed |
@@ -183,7 +183,7 @@ not finish inventorying it.** What was measured, and what is known to be
 missing:
 
 - **`src/` readers, measured.** A scan of the full Stage-1 suite on 3.13 with
-  [`research-bk-403-srcreads.py`](research-bk-403-srcreads.py) recorded 15
+  [`bk-403-testmon-poc/srcreads.py`](bk-403-testmon-poc/srcreads.py) recorded 15
   test files that opened a `src/**/*.py` file other than through the import
   machinery. Only the loader's own `get_data` open counts as import, so
   reads by module-level code during collection are kept; reads made by a

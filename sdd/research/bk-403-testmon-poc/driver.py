@@ -1,6 +1,6 @@
 """Seeded-change driver for the BK-403 pytest-testmon PoC.
 
-Evidence for research-bk-403-testmon-poc.md; not a gate, not shipped.
+Evidence for ../research-bk-403-testmon-poc.md; not a gate, not shipped.
 
 Setup (all under the gitignored ./tmp/):
   git worktree add --detach tmp/poc-wt <commit>
@@ -10,7 +10,7 @@ Setup (all under the gitignored ./tmp/):
       --stage=1 -p no:benchmark --testmon -n 4          # run from tmp/poc-wt
 
 Usage:
-  python research-bk-403-testmon-poc.py <py> <pristine-map> <seed>[,<seed>...] | all
+  python sdd/research/bk-403-testmon-poc/driver.py <py> <pristine-map> <seed>[,<seed>...] | all
   POC_EXTRA="-n 4" adds arguments to the selected run.
   POC_CONFIRM_ONLY=1 runs only step (1) for each seed and prints the result.
 
@@ -31,7 +31,7 @@ import time
 import xml.etree.ElementTree as ET
 from pathlib import Path
 
-ROOT = Path(__file__).resolve().parents[2]
+ROOT = Path(__file__).resolve().parents[3]
 WT = ROOT / "tmp" / "poc-wt"
 POC = ROOT / "tmp" / "poc"
 

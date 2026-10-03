@@ -826,7 +826,7 @@ CHANGELOG the release body is built from — say what is actually true.
   The `tooling-tests` comment (`ci.yml:451`) says `tests/scripts/` tests "not
   remote_store", but `test_gen_features.py` imports it, and eight test files
   there read `src/` other than by import (BK-403's scan,
-  `research-bk-403-srcreads.py`). A selector built on the comment would
+  `bk-403-testmon-poc/srcreads.py`). A selector built on the comment would
   drop the directory. Open decision: none.
 
 ---
