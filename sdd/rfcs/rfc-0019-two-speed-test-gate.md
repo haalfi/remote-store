@@ -9,15 +9,18 @@ Draft, 2026-10-03. Tracked as **BK-403**; it also sets the design for BK-404
 ## Management Summary
 
 **Run only the tests a change can reach while a PR is being worked on, and the
-full gate exactly once, on the head that is meant to merge.** Today both gates
+full gate rarely: at least once, on the head that is meant to merge, and
+before that only when the author or a reviewer asks for it.** Today both gates
 run everything on every push. The selector that picks the tests is a committed
 rule set, not a runtime coverage map, and it runs the full suite whenever it
 cannot place a change.
 
 - **Every PR push, including each review and fix round:** the fast lane. Lint,
   typecheck and the selected tests, on every supported interpreter.
-- **Once per merge candidate:** the existing full gate, unchanged, when a head
-  is explicitly marked as merge candidate.
+- **On request, and always on the merge head:** the existing full gate,
+  unchanged, whenever a head is marked `merge-candidate`. The final head must
+  carry a full run; the author or a reviewer may also mark an earlier head when
+  a full run is useful, for example after a risky round.
 - **After merge:** the existing `ci-full.yml` backstop, unchanged.
 
 **What it costs today.**
@@ -83,8 +86,12 @@ over `ci.yml`, `tooling-tests` counted once).
 
 ### D1. Two lanes, switched by a merge-candidate signal
 
-**Every PR push runs the fast lane; the full lane runs only on a head marked
+**Every PR push runs the fast lane; the full lane runs on a head marked
 `merge-candidate`, and any push clears the mark.** Draft state plays no role.
+The mark is a request for a full run, not a promise that the head is final: it
+is required on the merge head (D2) and allowed on any earlier head the author
+or a reviewer wants checked in full, so the full gate runs at least once per PR
+and otherwise rarely.
 
 | Lane | Trigger | Runs | Coverage floor |
 | --- | --- | --- | --- |
@@ -260,7 +267,7 @@ stop the whole effort.**
 | **4. Finalize** | Switch it on and make it maintainable | ADR amending ADR-0043; `ci.yml` triggers, label clearing, `gate-fast`, `merge-gate` status; branch protection moved to `merge-gate`; classifier migration with a history replay proving identical class outputs; runbook in `sdd/CI-OPERATIONS.md`; ID-266 and BK-403 closed | Verified on a real PR: label → full → `merge-gate`; push → label cleared → merge blocked; unrelated label → no status |
 
 The selection-free speedups (BUG-301, BK-401, BK-400) are a separate track.
-They make the full lane cheaper, which every PR still passes once.
+They make the full lane cheaper, which every PR still passes at least once.
 
 ## Alternatives Considered
 
