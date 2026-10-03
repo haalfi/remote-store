@@ -1,4 +1,4 @@
-# BK-400 — `ext.glob.glob_files` answers a non-canonical pattern differently by capability tier
+# BK-405 — `ext.glob.glob_files` answers a non-canonical pattern differently by capability tier
 <!-- doc: repo-only -->
 
 The index entry holds the current diagnosis; this file is evidence and

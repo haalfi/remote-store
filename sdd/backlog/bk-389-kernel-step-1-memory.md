@@ -203,8 +203,8 @@ every case. RFC-0017 carries the same answers at the question each settles.
    match, and `Store.glob`'s own pattern handling is GLOB-007's, not the
    kernel's. `ext.glob.glob_files` already answers a non-canonical pattern
    by capability tier on master, and the kernel rule keeps the `GLOB`
-   side's answers; the measurement and the open decision are BK-400's
-   [dossier](bk-400-ext-glob-fallback-tier-split.md). This decision adds
+   side's answers; the measurement and the open decision are BK-405's
+   [dossier](bk-405-ext-glob-fallback-tier-split.md). This decision adds
    nothing else to D3's list.
 
    **Decided in BK-395** (2026-10-03, the maintainer through the interview,

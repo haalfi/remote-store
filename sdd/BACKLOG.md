@@ -335,14 +335,14 @@ failure it was.
 **Promise:** the same call returns the same right result on every backend, and
 no clause of the contract ships unexercised.
 
-- [ ] **BK-400 — `ext.glob.glob_files` answers a non-canonical pattern differently by capability tier**
+- [ ] **BK-405 — `ext.glob.glob_files` answers a non-canonical pattern differently by capability tier**
   spec: GLOB-007, GLOB-010, GLOB-011, GLOB-012, GLOB-014 · effort: S · audience: user.api, library.maintainer
   On master, `glob_files` matches `d/a.csv` for `"./d/*.csv"`, `"d//*.csv"`
   and `"d/*/."` on a `GLOB` store (Local) but answers `[]` on the raw-pattern
   fallback (Memory). BK-389's kernel rule (§ 1) keeps the `GLOB` side. Open
   decision: a leading `/`, which `Store.glob`'s root prepend (GLOB-007) makes
   depend on `root_path` on the `GLOB` side; refuse, strip, or change GLOB-007.
-  Detail: [dossier](backlog/bk-400-ext-glob-fallback-tier-split.md)
+  Detail: [dossier](backlog/bk-405-ext-glob-fallback-tier-split.md)
 
 - [ ] **BUG-251 — A shared `cache_backend=` serves one store's bytes for another's**
   spec: RES-100 · effort: M · audience: user.api
