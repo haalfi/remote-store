@@ -792,8 +792,8 @@ CHANGELOG the release body is built from — say what is actually true.
 
 - [ ] **BK-397 — Interview-mode decisions leave no record in the repo, so their rejected options are unrecoverable**
   spec: — · effort: M · audience: contributor.process, contributor.tooling
-  Mid-work decisions are taken in `AskUserQuestion` dialogs whose question,
-  options, recommendation and answer persist only in the session transcript;
-  research § 2.3: code shows behaviour, not whether it was decided. RFC-0018
-  (Draft) proposes hook capture; step 0 ran 2026-10-03. Open: what fires
-  `PostToolUseFailure` (dismissal, timeout); then accept RFC-0018.
+  `AskUserQuestion` decisions (question, options, recommendation, answer) persist
+  only in the session transcript. RFC-0018 (Draft) proposes hook capture; step 0
+  and its follow-up ran 2026-10-03: nothing fired `PostToolUseFailure`, the docs
+  exclude denials, timeout and restart stay unobserved. Next: decide the
+  `failed` path (synthetic payload or omit), then accept RFC-0018.
