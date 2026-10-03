@@ -15,13 +15,14 @@ advisory prescription ([§ Item authority](../BACKLOG.md#how-this-file-works)).
     definition of "what validates a change". Its allowance is conditional:
     "If a lighter gate is wanted for fast iteration, document one thin target
     and have both skills call it — but only one", where the two skills are
-    `/pr` and `/fix-pr`. This item would spend that allowance, so it owes an
-    answer for `/fix-pr`, which pushes during review rounds, as well as for
-    `/ship`.
+    `/pr` and `/fix-pr`. This item owes an answer for `/fix-pr`, which pushes
+    during review rounds, as well as for `/ship`.
   - BK-271 (`BACKLOG-DONE.md`): the `/pr` gate composes `all` for code diffs
-    and `lint` + `docs-gate` otherwise, and mints no new target. A selected
-    target is a third branch beside those two, used for rounds only; it does
-    not replace either.
+    and `lint` + `docs-gate` otherwise, and mints no new target. BK-271
+    records that two-target path as a deliberate departure from R3's "but
+    only one". A selected target would be a third branch, used for rounds
+    only, and a second departure from R3, so it needs its own argument
+    rather than an unspent allowance.
 
 ## Prescription (advisory)
 
