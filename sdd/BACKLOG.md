@@ -795,5 +795,5 @@ CHANGELOG the release body is built from — say what is actually true.
   Mid-work decisions are taken in `AskUserQuestion` dialogs whose question,
   options, recommendation and answer persist only in the session transcript
   (research § 2.3). RFC-0018 (Draft) proposes hook capture; step 0 and its
-  follow-up ran 2026-10-03: no tried trigger fires `PostToolUseFailure`. Open:
-  timeout, tool errors, restart with a dialog open unobserved; `failed` path.
+  follow-up ran 2026-10-03: nothing fired `PostToolUseFailure`, and the docs
+  exclude denials. Open: timeout, restart with a dialog open, `failed` path.

@@ -502,6 +502,36 @@ open (reported, see above). Before step 1 builds the `failed` path,
 decide whether to ship it against a synthetic payload or leave it out until one
 is seen.
 
+**What the official docs say** (raw pages fetched 2026-10-03 and searched for
+each quoted phrase; a search-agent summary and a page-summarising fetch each
+misstated one point, hence the raw read). The hooks reference
+(`code.claude.com/docs/en/hooks`, § PostToolUseFailure) defines the event as
+running "when a tool that started executing fails: the tool threw an error, or
+an MCP tool returned an error result", and says it "doesn't fire for tool calls
+rejected before execution: an unknown tool name, input that fails schema or
+tool-specific validation, or a permission denial". Validation rejections "fire
+neither `PreToolUse` nor `PostToolUseFailure`"; permission denials "fire
+`PreToolUse` but not this event". That matches cases a, c and d exactly. The
+dialog is a permission-style prompt, so a close or deny is a denial, and a
+failed `AskUserQuestion` would need an execution error after the user answered;
+no such path is documented, which makes the `failed` row likely unreachable for
+this tool (an inference). The same page documents `duration_ms` as excluding
+"time spent in permission prompts", which is why every Post payload showed 1 or
+2. It states no exclusivity between `PostToolUse` and `PostToolUseFailure`
+(the phrase "mutually exclusive" does not occur on the page), so that
+assumption stays undocumented as well as untested. Its `AskUserQuestion` input
+table says Claude "doesn't set" `answers`; step 0's case e showed an
+agent-supplied `answers` reaching `PreToolUse`, so the docs understate what the
+tool accepts. Nothing documents the sentinel, a timeout, or a restart with a
+dialog open. The cloud-sessions page
+(`code.claude.com/docs/en/claude-code-on-the-web`) says only that if "Claude
+asks a question and the session sits idle, you can still answer when you come
+back, up to environment expiry", and that cloud sessions "stop after a period
+of inactivity and the session's VM is reclaimed"; reopening "provision[s] a
+fresh VM with your conversation history restored" and background work is not
+restored. That confirms the restart is expiry-shaped and that the conversation
+survives; whether a pending dialog is re-shown is not documented.
+
 ## References
 
 - Host item: BK-397 (`sdd/BACKLOG.md` § 6).
@@ -511,4 +541,7 @@ is seen.
 - [`CLAUDE.md` § Interview mode](../../CLAUDE.md#interview-mode);
   [`CLAUDE-REFERENCE.md` § Interview mode](../CLAUDE-REFERENCE.md#interview-mode-wiring).
 - Claude Code hooks reference, `PreToolUse`, `PostToolUse` and
-  `PostToolUseFailure` common input fields (code.claude.com/docs/en/hooks).
+  `PostToolUseFailure` common input fields (code.claude.com/docs/en/hooks),
+  and its § PostToolUseFailure for when the event does not fire.
+- Cloud sessions, § Environment expired
+  (code.claude.com/docs/en/claude-code-on-the-web).
