@@ -75,6 +75,32 @@ phases:
         section: "Rule 7 (Kernsatz)"
         read_type: gate
         extract: "Each RFC section opens with its claim"
+  - id: fix
+    name: Review fixes
+    steps:
+      - file: .github/workflows/ci.yml
+        section: "concurrency (lines 17-19); setup diff (line 43)"
+        read_type: reference
+        extract: >-
+          The per-PR cancel-in-progress group would let any labeled event
+          cancel a running full lane, and github.sha on pull_request is the
+          merge commit. My D2/D3 drafting reasoned about the trigger and the
+          status without reopening either block; both found by review
+      - file: sdd/research/research-bk-403-testmon-poc.md
+        section: "Appendix D, non-src readers"
+        read_type: reference
+        extract: >-
+          Tests that read other test files as text; under first-match the
+          tests/**/test_*.py row skipped them, so layer composition is now
+          stated as a union
+      - file: sdd/backlog/id-266-two-speed-ci-gate.md
+        section: "Dependency; Prerequisite 3; In this item's scope"
+        read_type: reference
+        extract: >-
+          The superseded-in-part note left the old dependency and revisit
+          condition unmarked, and the roadmap closed BK-404 and ID-266 with
+          their skill edits unowned; both items now stay open until RFC-0019
+          Open Questions 4 lands
   - id: verify
     name: Verify
     steps:

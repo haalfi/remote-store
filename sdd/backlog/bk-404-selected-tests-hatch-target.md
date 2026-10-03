@@ -50,4 +50,5 @@ decision.
 - **2026-10-03, RFC-0019:** [D1](../rfcs/rfc-0019-two-speed-test-gate.md#d1-two-lanes-switched-by-a-merge-candidate-signal)
   makes the target the gate for every round push and keeps `all` as the full
   check, recommended before marking a merge candidate. Which skills run it
-  stays open (RFC-0019 Open Questions 4).
+  stays open (RFC-0019 Open Questions 4). Those skill edits remain in this
+  item's scope, so it stays open after RFC-0019 Phase 1 delivers the target.

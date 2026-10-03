@@ -108,14 +108,19 @@ is the enforced barrier.
 
 ### D2. The merge barrier is a commit status only the full lane posts
 
-**Branch protection requires a status that a successful full run posts on its
-own commit; no other path can produce it.** A required *job* is not enough:
-GitHub reports a required job skipped by its `if:` as passing, so a fast run, or
-a run started by an unrelated label, would satisfy a required `gate` job it
-skipped.
+**Branch protection requires a status that a successful full run posts on the
+PR's head commit; no other path can produce it.** A required *job* is not
+enough: GitHub reports a required job skipped by its `if:` as passing, so a fast
+run, or a run started by an unrelated label, would satisfy a required `gate` job
+it skipped.
 
 - The full lane's last step posts commit status `merge-gate: success` on
-  `github.sha` (`statuses: write`). The fast lane never posts it.
+  `github.event.pull_request.head.sha` (`statuses: write`). Not on `github.sha`:
+  on a `pull_request` event that is the synthetic merge commit of
+  `refs/pull/<n>/merge` (which is why `setup` uses it only for the diff), and
+  branch protection evaluates statuses on the head, so a status there would
+  never be seen. On a master `push`, `github.sha` is the head. The fast lane
+  never posts the status.
 - A push creates a new head without that status, so merge is blocked until the
   full lane has passed on exactly that head. This holds by construction and
   needs no clean-up.
@@ -131,13 +136,21 @@ skipped.
 "add the label" the single action that requests a full run.**
 
 - **Triggers:** `pull_request` with `types: [opened, synchronize, reopened,
-  labeled]`. A `labeled` event for any other label runs nothing beyond `setup`.
+  labeled]`. A `labeled` event for any other label runs nothing beyond `setup`,
+  and must not cancel anything (next bullet).
 - **Clearing:** on `synchronize`, `setup` removes `merge-candidate` if set
   (`pull-requests: write`). Events caused by `GITHUB_TOKEN` start no workflow,
   so this cannot loop.
-- **Concurrency:** the existing per-PR `cancel-in-progress` stays. Adding the
-  label cancels a fast run on the same head; a push cancels a full run and
-  clears the label.
+- **Concurrency:** the per-PR group with `cancel-in-progress`
+  (`ci.yml` `concurrency`) stays for pushes and `merge-candidate`: adding the
+  label cancels a fast run on the same head, and a push cancels a full run and
+  clears the label. A `labeled` event for **any other label** gets a group of
+  its own, so it cannot cancel a running full lane: the group expression
+  appends `github.run_id` when `github.event.action == 'labeled'` and
+  `github.event.label.name != 'merge-candidate'`. Without it, a bot or manual
+  label would cancel the full run while `merge-candidate` stays set, and
+  nothing would re-trigger it. Concurrency is workflow-level and evaluated
+  before any job, so a job-level `if:` cannot prevent this.
 - **Master push:** always the full lane, as today.
 - **Who sets the label:** the maintainer, by hand. A skill change that has
   `/ship` set it at its close is outside this RFC (§ Open Questions 4); the
@@ -168,31 +181,47 @@ per-job flags with the rule behind each.** It is static: no test run, no
 installed environment, no cached state, so one result serves every interpreter
 leg. It is computed once in `setup`.
 
-1. **Path-class rules**, first match wins. A committed table in the style of
-   `scripts/drift_smoke_map.py`'s `SMOKE_TARGETS`:
+**Composition.** Layer 1 classifies each changed path; layers 2–4 then expand
+the result and are always unioned, never skipped:
 
-   | Path class | Selects |
+- If any changed path classifies as FULL, the result is FULL.
+- Otherwise each path contributes its layer-1 selection, and every changed
+  path, whatever its row, also contributes its layer-4 readers.
+- A `src/**` path contributes its layer-2 importers, and a backend module adds
+  its layer-3 backend filter.
+- The union is checked against the cut-off below.
+
+1. **Path classes**, first matching row per path. A committed table in the
+   style of `scripts/drift_smoke_map.py`'s `SMOKE_TARGETS`:
+
+   | Path class | Layer-1 selection |
    | --- | --- |
    | `tests/conftest.py`, `tests/_helpers.py`, `pyproject.toml`, `.python-version`, `.test_durations_pass1`, `.github/**`, `scripts/run_tests.py` | FULL |
    | Core modules every backend passes through (the list is part of the table) | FULL |
+   | `src/remote_store/backends/_<x>.py` | none of its own; layers 2 and 3 |
+   | Other `src/**/*.py` | none of its own; layer 2 |
    | `tests/**/test_*.py` | that file |
    | Cassettes under `tests/**/cassettes/<backend>/` | that backend's replay tests and the PII sweep |
    | `fixtures.toml`, `tests/backends/fixtures/<backend>.py` | that backend's conformance and `tests/backends/fixtures/` |
-   | `scripts/<x>.py` | `tests/scripts/test_<x>.py` and its layer-4 readers |
+   | `scripts/<x>.py` | `tests/scripts/test_<x>.py` |
    | Generated artifacts (`FEATURES.md`, graph data) | their generator and check tests |
    | Anything unmatched | FULL |
 
 2. **Static import graph.** An `ast`-built reverse graph from each `src/`
    module to the test files that import it, through `tests/` helpers too.
    This covers leaf `src/` code.
-3. **Backend axis.** A change to `src/remote_store/backends/_<x>.py` selects
-   conformance for backend `<x>` only, plus `tests/backends/<x>/`. The filter
+3. **Backend axis.** A change to `src/remote_store/backends/_<x>.py` limits
+   conformance to backend `<x>` and adds `tests/backends/<x>/`. The filter
    goes through the fixture registry (`fixture_params` honours an allowlist),
    not `-k`: `-k s3` also matches `s3_pyarrow` and `s3_boto3`, which
    `SMOKE_TARGETS` already works around.
 4. **Text readers.** A generated table maps source globs to the tests that read
-   them as text. It extends `research-bk-403-srcreads.py` to readers of
-   `tests/` and `scripts/` files, the gap the PoC left open (Appendix D).
+   them as text, for `src/`, `tests/` and `scripts/` alike. It extends
+   `research-bk-403-srcreads.py`, which covered `src/` only, to readers of
+   `tests/` and `scripts/` files. Examples: `test_large_payload_guard.py`
+   parses `conformance/**/test_*.py`, and `test_registry.py` reads
+   `conformance/**/*.py` (research Appendix D). A conformance test edit
+   therefore also selects those readers.
 
 **Cut-off:** a selection above a threshold share of the suite runs FULL; above
 it, selection saves too little to be worth the risk. Phase 0 sets the number.
@@ -261,10 +290,10 @@ stop the whole effort.**
 | Phase | Goal | Deliverables | Exit |
 | --- | --- | --- | --- |
 | **0. Validate** | Prove rules plus a static graph are correct and worth it, before production code | Throwaway selector under `sdd/research/`; extended text-reader scan; seed run through the PoC driver; replay of historical PR diffs (selected share per diff); replay of past red CI runs, including auxiliary jobs (was the failing test or job selected?); prototypes of the marker scan and notebook import parsing | 0 seed misses, 0 historical misses, and a median selected share below a target set before the run. **Stop** if typical diffs select close to the full suite |
-| **1. Develop** | Production selector and the local lane | ADR for the local part; selector with rule table, graph, backend axis, reader table and per-job flags; registry allowlist; seed unit tests; coverage cross-check job; local fast target; BK-404 closed | Seeds green in CI; cross-check reports no gap on master |
+| **1. Develop** | Production selector and the local lane | ADR for the local part; selector with rule table, graph, backend axis, reader table and per-job flags; registry allowlist; seed unit tests; coverage cross-check job; local fast target. BK-404 stays open until its skill edits land (Open Questions 4) | Seeds green in CI; cross-check reports no gap on master |
 | **2. Shape** | Local pilot, tune rules | Fast target used for real rounds; escape log of fast against the later full result; rule tuning | A pilot length fixed beforehand with 0 escapes; cut-off and core list settled by measurement |
 | **3. CI shadow** | Validate the CI lane without risk | Fast lane computes and logs its selection while the full lane still runs on every push; escapes compared automatically | A shadow period fixed beforehand with 0 escapes; time saved measured |
-| **4. Finalize** | Switch it on and make it maintainable | ADR amending ADR-0043; `ci.yml` triggers, label clearing, `gate-fast`, `merge-gate` status; branch protection moved to `merge-gate`; classifier migration with a history replay proving identical class outputs; runbook in `sdd/CI-OPERATIONS.md`; ID-266 and BK-403 closed | Verified on a real PR: label → full → `merge-gate`; push → label cleared → merge blocked; unrelated label → no status |
+| **4. Finalize** | Switch it on and make it maintainable | ADR amending ADR-0043; `ci.yml` triggers, label clearing, `gate-fast`, `merge-gate` status; branch protection moved to `merge-gate`; classifier migration with a history replay proving identical class outputs; runbook in `sdd/CI-OPERATIONS.md`; BK-403 closed. ID-266 stays open until its skill edits land (Open Questions 4) | Verified on a real PR: label → full → `merge-gate` on the head SHA; push → label cleared → merge blocked; unrelated label → no status, and a full run already in progress is not cancelled |
 
 The selection-free speedups (BUG-301, BK-401, BK-400) are a separate track.
 They make the full lane cheaper, which every PR still passes at least once.
@@ -318,10 +347,15 @@ on CI configuration, contributor tooling and two process records.**
 2. **Cut-off threshold and core-module list.** Set from Phase 0 data, not
    chosen here.
 3. **Name of the local target.**
-4. **Skill integration.** `/ship` setting `merge-candidate` at its close, and
-   `/pr` running the fast target instead of `all` before opening a PR. Out of
-   this RFC's scope by the maintainer's choice; until then the label is set by
-   hand.
+4. **Skill integration.** This covers three changes:
+   - `/ship` and `/fix-pr` running the fast target before round pushes;
+   - `/ship` setting `merge-candidate` at its close;
+   - `/pr` running the fast target instead of `all` before opening a PR.
+
+   These are out of this RFC's scope by the maintainer's choice, but not
+   without an owner. The BK-404 and ID-266 dossiers keep them in scope, so both
+   items stay open until the edits land. Until then, the label is set by hand,
+   and D1's local fast target is used by hand.
 5. **Late failures.** The full run now comes at the close, so a failure the
    selector did not reach shows one round later than today. The escape log
    measures how often.
