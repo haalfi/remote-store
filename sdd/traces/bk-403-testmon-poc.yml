@@ -127,3 +127,84 @@ phases:
           ("not now") and revisit condition, evidence moved to appendices;
           BK-403 back to [ ] and BK-404's open decision gated on the same
           condition. My miss, caught by the maintainer, not by any review round
+review:
+  # Derived by `hatch run ship-report 1064 --trace-block-only` at head c6474f5.
+  # Do not hand-edit, except a newly required field per sdd/traces/_schema.yml
+  # section review: RFC-0015 D4 makes this script the only producer.
+  derivation: "hatch run ship-report 1064 --trace-block-only"
+  pr: 1064
+  review_rounds: 19
+  submissions: 3
+  findings: 12
+  by_round:
+    - round: 1
+      findings: 4
+      origin: {original: 3, unclassifiable-blame: 1}
+      triage: {must-fix: 4}
+      duration_hours: 0.47
+    - round: 2
+      findings: 4
+      origin: {loop-introduced: 3, original: 1}
+      triage: {must-fix: 4}
+      duration_hours: 2.03
+    - round: 3
+      findings: 4
+      origin: {loop-introduced: 3, original: 1}
+      triage: {must-fix: 4}
+      duration_hours: 0.95
+  by_file:
+    - path: "sdd/BACKLOG.md"
+      findings: 3
+    - path: "sdd/research/research-bk-403-testmon-poc.md"
+      findings: 3
+    - path: "sdd/research/research-bk-398-testmon-poc.md"
+      findings: 2
+    - path: "sdd/research/research-bk-403-srcreads.py"
+      findings: 2
+    - path: "sdd/research/research-bk-403-testmon-poc.py"
+      findings: 1
+    - path: "sdd/traces/bk-403-testmon-poc.yml"
+      findings: 1
+  untouched_files:
+    - "sdd/backlog/bk-403-test-selector-evaluation.md"
+    - "sdd/backlog/id-266-two-speed-ci-gate.md"
+  review_driven_commits:
+    - sha: "79517f3"
+      subject: "fix: address PR #1064 review"
+    - sha: "3e7170d"
+      subject: "fix: address PR #1062 review (round 3)"
+    - sha: "2561f28"
+      subject: "Merge branch 'claude/new-session-4aihhw' into claude/new-session-4aihhw-bk-398-poc"
+    - sha: "e7e6e89"
+      subject: "Merge remote-tracking branch 'origin/master' into claude/new-session-4aihhw"
+    - sha: "e6d8241"
+      subject: "Merge branch 'claude/new-session-4aihhw' into claude/new-session-4aihhw-bk-398-poc"
+    - sha: "bd6745e"
+      subject: "fix: address PR #1062 review (round 4)"
+    - sha: "5e8f5ec"
+      subject: "Merge branch 'claude/new-session-4aihhw' into claude/new-session-4aihhw-bk-398-poc"
+    - sha: "ecc6e00"
+      subject: "fix: correct #1062 defects found in a full self-read"
+    - sha: "2c52cf8"
+      subject: "Merge branch 'claude/new-session-4aihhw' into claude/new-session-4aihhw-bk-398-poc"
+    - sha: "34e3cc0"
+      subject: "fix: re-mint IDs colliding with #1061; drop BK-402's unsourced count"
+    - sha: "002dca3"
+      subject: "Merge #1062's re-mint: BK-398/BK-399/BUG-300 become BK-403/BK-404/BUG-301"
+    - sha: "cbfc72a"
+      subject: "fix: two overreaching claims found in a full self-review of #1062"
+    - sha: "c8e1c06"
+      subject: "Merge branch 'claude/new-session-4aihhw' into claude/new-session-4aihhw-bk-398-poc"
+    - sha: "c6d4371"
+      subject: "fix: correct BK-403's audit attribution and 'every diff' overstatement"
+    - sha: "19b6731"
+      subject: "Merge branch 'claude/new-session-4aihhw' into claude/new-session-4aihhw-bk-398-poc"
+    - sha: "782e8e9"
+      subject: "Merge remote-tracking branch 'origin/master' into claude/new-session-4aihhw-bk-398-poc"
+    - sha: "a3ce476"
+      subject: "BK-403: rewrite the testmon note around its question: is selection worth it?"
+    - sha: "971f498"
+      subject: "BK-403: Narrow text-reader claim, strict seed confirmation, gate ID-266"
+    - sha: "c6474f5"
+      subject: "BK-403: Narrow the scan's import filter, order section 7, fix trace ripples"
+  ci: {verdict: GREEN, failed: 0, pending: 0}
