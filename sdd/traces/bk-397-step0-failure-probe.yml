@@ -1,0 +1,131 @@
+id: BK-397
+title: "Interview-mode decisions leave no record in the repo, so their rejected options are unrecoverable"
+trigger: "RFC-0018 step-0 follow-up: find what fires PostToolUseFailure for AskUserQuestion; the maintainer authorized a temporary local probe"
+source_items:
+  - BK-397
+audience:
+  - contributor.process
+  - contributor.tooling
+expected_ripples:
+  - "sdd/rfcs/rfc-0018-decision-capture-at-dialog-time.md"
+  - "sdd/BACKLOG.md"
+review:
+  # Derived by `hatch run ship-report 1063 --trace-block-only` at head 39dfda1.
+  # Do not hand-edit, except a newly required field per sdd/traces/_schema.yml
+  # section review: RFC-0015 D4 makes this script the only producer.
+  derivation: "hatch run ship-report 1063 --trace-block-only"
+  pr: 1063
+  review_rounds: 5
+  submissions: 3
+  findings: 10
+  by_round:
+    - round: 1
+      findings: 5
+      origin: {original: 3, unclassifiable-file: 2}
+      triage: {must-fix: 5}
+      duration_hours: 0.39
+    - round: 2
+      findings: 2
+      origin: {loop-introduced: 1, original: 1}
+      triage: {must-fix: 2}
+      duration_hours: 0.3
+    - round: 3
+      findings: 3
+      origin: {original: 2, unclassifiable-file: 1}
+      triage: {must-fix: 3}
+      duration_hours: 0.18
+  by_file:
+    - path: "sdd/rfcs/rfc-0018-decision-capture-at-dialog-time.md"
+      findings: 6
+    - path: "sdd/traces/bk-397-step0-failure-probe.yml"
+      findings: 3
+    - path: "sdd/BACKLOG.md"
+      findings: 1
+  untouched_files:
+    []
+  review_driven_commits:
+    - sha: "2e73e01"
+      subject: "BK-397: address PR #1063 review"
+    - sha: "9ac48d2"
+      subject: "BK-397: address PR #1063 review, round 2"
+    - sha: "966c1a1"
+      subject: "BK-397: bring the trace up to date with the review rounds"
+    - sha: "ae36c73"
+      subject: "BK-397: address PR #1063 review, round 3"
+    - sha: "39dfda1"
+      subject: "BK-397: add the derived review block to the trace"
+  ci: {verdict: GREEN, failed: 0, pending: 0}
+phases:
+  - id: orient
+    name: Orient
+    steps:
+      - file: sdd/rfcs/rfc-0018-decision-capture-at-dialog-time.md
+        section: "D3, D4.2, Open Question 2, Step 0 observations"
+        read_type: gate
+        extract: "Untested: the failed row, Post exclusivity; step 0 saw only a denial"
+        outcome: ok
+      - file: .claude/settings.json
+        section: "hooks"
+        read_type: reference
+        extract: "Probe registered beside the notification hook in settings.local.json; nothing committed changes"
+        outcome: ok
+  - id: probe
+    name: Probe
+    steps:
+      - file: sdd/rfcs/rfc-0018-decision-capture-at-dialog-time.md
+        section: "Open Question 2"
+        read_type: reference
+        extract: "Ran dismissal, wait, duplicate texts, one option, subagent call, interrupt: 0 PostToolUseFailure in this run's 14 payloads (27 with step 0's 13). The brief's case a (Esc/close) cannot be told from a denial in the app; the same cross gave Denied by user twice and a sentinel Post once, confounded by a browser message. My miss: I asked the user which control they used only after the divergence appeared. The maintainer added a restart report (a dialog vanishing on container restart) mid-task; it is recorded as unobserved, with the push-timing consequence marked an inference"
+        outcome: ok
+  - id: docs
+    name: Official docs
+    steps:
+      - file: sdd/rfcs/rfc-0018-decision-capture-at-dialog-time.md
+        section: "Step 0 observations / What the official docs say"
+        read_type: reference
+        extract: "Raw reads by curl of code.claude.com/docs/en/hooks (PostToolUseFailure, PreToolUse AskUserQuestion) and code.claude.com/docs/en/claude-code-on-the-web (Environment expired), each quoted phrase searched in the file before it was written down. Delivered: validation rejections and permission denials never fire PostToolUseFailure, which explains cases a, c, d. My misses: curl wrote the first download into the repo root instead of tmp/ (removed before the commit), and I took two summaries of the docs as sources until the raw pages contradicted them. The claude-code-guide agent's report said AskUserQuestion appears in the docs only as a mods render site (the hooks page has a PreToolUse input table for it, with the answers field) and quoted a 'marked as cut off' passage on the cloud-sessions page that the page does not contain (searched 'cut off' in the downloaded file: no match). A WebFetch summary of the hooks page said the docs make PostToolUse and PostToolUseFailure mutually exclusive (searched 'mutually exclusive' in the raw page: no match). Neither summary is a repo artifact, so no step is tagged misleading against one; summaries of docs pages are not a source"
+        outcome: ok
+  - id: write
+    name: Write up
+    steps:
+      - file: sdd/rfcs/rfc-0018-decision-capture-at-dialog-time.md
+        section: "D3, Open Questions, Step 0 observations"
+        read_type: gate
+        extract: "Amended Motivation 2, D2 (push bound, an inference), D3 (sentinel row and bound, identical-text caveat removed), D4.2 and the Open Questions summary; failed row and exclusivity left untested"
+        outcome: ok
+      - file: sdd/BACKLOG.md
+        section: "6. The repo does not mislead the next person / BK-397"
+        read_type: verify
+        extract: "Item said dismissal and timeout were the open triggers; now nothing fired PostToolUseFailure and the docs exclude denials, timeout and restart stay unobserved bounds, and the next action is to decide the failed path, then accept RFC-0018 (round 3 caught that the item had lost its next action). The diagnosis cap (R2, five lines) forced the wording down each time the item grew"
+        outcome: ok
+  - id: review
+    name: Review rounds
+    steps:
+      - file: sdd/traces/_schema.yml
+        section: "steps / file, extract, outcome"
+        read_type: reference
+        extract: "Round 2 asked for the outcome tag to name the document that failed a reader. The schema says external URLs are not allowed in file and that outcome must not blame a document for the reader's error; existing traces (BK-206) nevertheless carry URLs in file and check_traces accepts them, a schema-versus-practice mismatch left unfiled"
+        outcome: ok
+      - file: scripts/report_trace_outcomes.py
+        section: "ranking key (step file) and docstring"
+        read_type: verify
+        extract: "Confirmed the reviewer's claim: the ranking keys on each step's file, so a misleading tag against the RFC would rank it as a failed document"
+        outcome: ok
+      - file: sdd/rfcs/rfc-0018-decision-capture-at-dialog-time.md
+        section: "Proposal D5, Impact / Acceptance"
+        read_type: reference
+        extract: "Round 3 said BK-397 lost its next action. Read Acceptance: it waits on three merged deliveries, not on observing a timeout or restart, so the item's next action is deciding the failed path then accepting. Also re-derived the payload total from the RFC's step-0 count (13) and the follow-up's (14): 27"
+        outcome: ok
+      - file: sdd/CLAUDE-REFERENCE.md
+        section: "PR validation gates, Branch freshness check"
+        read_type: gate
+        extract: "Run before /pr and before each fix push: docs-only diff takes lint plus docs-gate, backlog ID-set gate with --base origin/master"
+        outcome: ok
+  - id: verify
+    name: Verify
+    steps:
+      - file: sdd/CLAUDE-REFERENCE.md
+        section: "Ripple-check table / Backlog item touched"
+        read_type: verify
+        extract: "Trace ships in the same PR; contributor.* audience needs no CHANGELOG entry for an RFC amendment"
+        outcome: ok
