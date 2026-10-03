@@ -120,25 +120,45 @@ Two observations show how much a map would select away, and where it must not:
   `ci.yml` comment above `tooling-tests` ("not remote_store") makes the same
   wrong claim.
 
-**Why a static import map is not enough.** Conformance tests reach a backend
-through the fixture registry (`tests/backends/fixtures/`), not by importing it,
-so an import graph would link every conformance test to every backend. A sound
-map has to be either:
+**Which selection mechanism fits this repo.** Selection tools differ in where
+their map comes from: runtime coverage, the git diff, static imports, or a
+build graph. Two facts about the repo decide among them:
+- **Conformance is wired at runtime.** Conformance tests reach a backend through
+  the fixture registry (`tests/backends/fixtures/`, `all_fixtures()`), not by
+  importing it. An import or diff map sees every conformance test depend on
+  every backend, or on none of them.
+- **It is one package.** `git ls-files` shows one library `pyproject.toml` (plus
+  the `examples/medallion_dagster/` sub-project) and 68 `.py` files under
+  `src/`. A package or build graph has one node to invalidate, so it selects
+  everything.
 
-1. **Coverage-derived.** Per-test contexts (`coverage run --context=test` or
-   `pytest-testmon`) record which source lines each test executed. A test is
-   selected when the diff touches a line or file it executed.
-   - It is precise, and would pick up the `tests/scripts/` dependencies above
-     on its own.
-   - It needs a periodic full run to stay fresh.
-   - Its compatibility with `xdist` has to be verified before relying on it.
-2. **Declared.** A committed path-to-selection table in the style of
-   `scripts/drift_smoke_map.py`'s `SMOKE_TARGETS`.
-   - For example, `backends/_sftp.py` would select `tests/backends/sftp/` plus
-     `conformance -k sftp`.
-   - Any unmapped path selects everything.
-   - It is cheap and reviewable, but drifts like any hand table, so it needs a
-     drift check under `sdd/DRIFT-RULES.md`.
+| Mechanism | Examples | Fit here |
+| --- | --- | --- |
+| Runtime coverage | `pytest-testmon`, `pytest-tia`, coverage.py contexts with a small selector | Sees the registry wiring and the `tests/scripts/` dependencies above; needs a periodically refreshed map |
+| Git diff, fixture-aware | `pytest-impact` | Fixture- and conftest-aware by its own description; whether that reaches registry-built parameters is untested |
+| Git diff, file-level | `pytest-picked` | Misses the registry wiring by construction; usable only as a local convenience |
+| Static import graph | `grimp`, `ast` | Same blind spot as file-level diff for conformance |
+| Declared table | in the style of `scripts/drift_smoke_map.py`'s `SMOKE_TARGETS` | Explainable and reviewable, but drifts like any hand table; needs a drift check under `sdd/DRIFT-RULES.md` |
+| Package or build graph | Pants, Bazel, Nx, Turborepo | One package, so no selection; see Not proposed |
+
+How mature each tool is decides how far it can be trusted. The PyPI JSON API
+gave the following on 2026-10-03:
+
+| Project | Releases | First → last release | Latest |
+| --- | --- | --- | --- |
+| `pytest-testmon` | 95 | 2015-06 → 2025-12 | 2.2.0 |
+| `pytest-picked` | 10 | 2018-05 → 2024-11 | 0.5.1 |
+| `pytest-tia` | 2 | 2026-06 → 2026-06 | 1.1.1 |
+| `pytest-impact` | 1 | 2026-07 → 2026-07 | 0.1.0 |
+| `python-tia` | 1 | 2018-09 → 2018-09 | 0.0.0 |
+
+A long release history is not evidence of correctness on this repo. The
+evaluation in P1 measures that. Open interactions to verify there:
+- the runtime tools against `xdist`;
+- the runtime tools against `pytest-cov`, since both instrument through
+  coverage.py;
+- non-Python inputs: 485 tracked files under `tests/` are not `.py`, 479 of
+  them cassettes.
 
 Either way, the **fail-open rule** is what keeps it safe. Anything the map
 cannot place must select the full suite:
@@ -277,9 +297,10 @@ against `ci.yml`'s short ones.
 
 ## Not proposed
 
-**The rejected levers all add parallelism to a suite that is CPU-bound and
-slot-limited, so none of them changes how much work a gate does.** The
-constraints are ADR-0032's measurements, which ADR-0043 adopts as its evidence.
+**The rejected options either add parallelism without reducing work, or select
+by a graph this repo does not have.** The parallelism limits are ADR-0032's
+measurements, which ADR-0043 adopts as its evidence: the suite is CPU-bound and
+slot-limited.
 
 - **More xdist workers or another `--dist` mode.** `-n 8/12` was no faster than
   `-n auto`.
@@ -289,6 +310,17 @@ constraints are ADR-0032's measurements, which ADR-0043 adopts as its evidence.
 - **More CI shards.** These compete for the same 20 slots as L3. Sharding the
   live-backend tier re-pays fixture setup.
 
+Two selection options are also not proposed, for reasons of fit rather than
+parallelism:
+
+- **A build or package graph (Pants, Bazel, Nx, Turborepo).** These tools
+  select by invalidated target or package. This repo has one library package,
+  so the graph has one node to invalidate. Getting per-file selection would
+  mean modelling every module as a target, a migration away from the hatch
+  tooling, to gain what a coverage map gives inside pytest. Nx and Turborepo
+  are also JS/TS-first. Revisit if the repo splits into packages.
+- **`python-tia`.** A single 0.0.0 release in 2018.
+
 ## Proposals (advisory)
 
 **P1 to P3 carry the strategy, which is to run less while work is in progress;
@@ -297,10 +329,28 @@ run or the coverage floor.
 
 | # | Proposal | Addresses | Notes |
 | --- | --- | --- | --- |
-| P1 | Dependency map with fail-open rule, plus a drift check | H1 | Decide coverage-derived versus declared first; both stay fail-open, including for `tests/scripts/` |
+| P1 | Evaluate selectors before choosing one: `pytest-testmon`, `pytest-tia` and `pytest-impact`, with the full suite as the control group. The criteria are time saved, missed failures, and how hard the tool is to run. The test cases are seeded changes that use known blind spots (see below) | H1 | Whichever wins stays fail-open, including for `tests/scripts/`; a declared table is the fallback if none passes |
 | P2 | `hatch run` target that runs map-selected tests; `all` keeps the full run for the pre-push moment | H1 | The coverage floor is never asserted on a selected run |
 | P3 | Two-speed `ci.yml`: a draft PR runs the selected lane, a non-draft PR runs the full gate | M1 | A new ADR amending ADR-0043; the full gate stays required for merge |
 | P4 | Start `test-primary*` before the short CI jobs | L3 | At most about 30 s on a PR run |
 | P5 | `ci-full.yml` publishes durations; PR shards consume them | M2 | Retires the manual refresh duty |
 | P6 | `COVERAGE_CORE=sysmon` on 3.12+ coverage runs | L1 | Re-measure covered lines on CI before switching |
 | P7 | Anchor the email PII regex | L2 | Bug-fix protocol: failing timing test first |
+
+**P1's seeded changes.** Each one is a one-line change that makes a known test
+fail, and a selector passes only if it selects that test:
+
+- **`tests/conftest.py`:** the stage option or hypothesis profile.
+- **A fixture in `tests/backends/fixtures/`:** registry-built conformance
+  parameters.
+- **A core module every backend passes through:** for example `_path.py` or
+  `_errors.py`.
+- **A package `__init__.py` re-export.**
+- **A `src/` module read by a `tests/scripts/` test:** `_registry.py` through
+  `gen_features.py`.
+- **A committed cassette `.yaml`:** the PII sweep and replay tests.
+- **`pyproject.toml`:** addopts, a pin.
+- **A generated artifact:** `FEATURES.md`, the graph data.
+
+A single miss on a seeded change means the selector fails open for that path
+class or is rejected.
