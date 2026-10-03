@@ -265,7 +265,7 @@ maintenance is not added.
 
 | Level | Rules | Everything else |
 | --- | --- | --- |
-| **Pilot** (Phase 1) | Layer 1's FULL rows, test-file rows, cassette rows, fixture-id rows and `scripts/<x>.py` → its direct test; a **leaf backend module** → its backends' fixture allowlist and `tests/backends/<backend>/` | FULL: any other `src/` module, any backend module that is not a leaf, and any path the text-reader inventory lists as read as text |
+| **Pilot** (Phase 1) | Layer 1's FULL rows, test-file rows, cassette rows, fixture-id rows and `scripts/<x>.py` → its direct test; a **leaf backend module** → its backends' fixture allowlist and `tests/backends/<backend>/` | FULL: any other `src/` module; any backend module that is not a leaf; any test or script module that another test or script imports, by name or by string; a script whose mapped test does not exist; and any path the text-reader inventory lists as read as text |
 | **Precision** (Phase 2, one at a time) | Layer 2 with hub resolution and the import-time scan; layer 3 through transitive helper edges; layer 4's mapped readers; notebook import parsing for D6 | — |
 
 **A leaf backend module** is a backend source in `backends.toml` that meets
@@ -276,7 +276,15 @@ two conditions:
 - **Every test file that imports it lies under `tests/backends/<backend>/`**
   for one of the backends that list it.
 
-Both are checked statically when the selection is made. The second condition
+Both are checked statically when the selection is made.
+
+**No module qualifies today, so the pilot narrows no `src/` edit.**
+`_registry.py:31-87` imports every registered backend module inside a function,
+and function-local imports count. Sibling modules import the remaining backend
+helpers. `_s3_boto3.py`, which nothing in `src/` imports, has its tests under
+`tests/backends/s3/` and in conformance. The pilot therefore narrows only edits
+to tests, cassettes, fixtures and scripts. Narrowing `src/` edits arrives with
+layer 2 in Phase 2. Phase 0 measures both rule sets for this reason (§ Roadmap). The second condition
 is not cosmetic: backend modules are imported directly well outside their own
 folders, for example in `tests/test_store.py`, `tests/ext/`,
 `tests/scripts/test_gen_features.py`, `tests/aio/` and `tests/e2e/` (a Grep for
@@ -324,7 +332,7 @@ the result and are always unioned, never skipped:
    | `examples/notebooks/**` | no tests; the `notebooks` job |
    | Other `examples/**` | no tests; the `examples` job |
    | `tests/scripts/run_examples.py`, `tests/scripts/run_notebooks.py` | the `examples` or `notebooks` job, plus layers 2 and 4 for tests that import or read them |
-   | `scripts/<x>.py` | `tests/scripts/test_<x>.py` |
+   | `scripts/<x>.py` | `tests/scripts/test_<x>.py`, with leading underscores of `<x>` dropped (`_dafny_classorder.py` → `test_dafny_classorder.py`); FULL if no such test exists. An empty mapping is never an empty selection |
    | Generated artifacts (`FEATURES.md`, graph data) | their generator and check tests |
    | Anything unmatched | FULL |
 
@@ -335,6 +343,22 @@ the result and are always unioned, never skipped:
      `TYPE_CHECKING`, which over-selects slightly rather than miss.
    - **`src/` → `src/` edges are followed transitively**, and so are edges
      through `tests/` helper modules.
+   - **The graph covers `tests/` and `scripts/` modules as nodes, not only
+     `src/`.** A test module imported by another test (for example,
+     `test_async_extended.py` imports from `test_atomic.py`) selects its
+     importers. Scripts import each other by bare name after a `sys.path`
+     insert (`from gen_features import …`, `from _trace_corpus import …`), so a
+     bare import that matches `scripts/<name>.py` is an edge.
+   - **String-named imports count.** Tests import modules by name:
+     `importlib.import_module`, `__import__` and `pytest.importorskip`, often
+     from a parametrize list (`tests/test_capabilities.py`,
+     `tests/backends/conformance/test_health_probe_declared.py`, the
+     `tests/backends/s3/` helpers). Every string literal in a test file that
+     names an existing module (`remote_store.…` or `tests.…`) is an edge. A
+     dynamic import whose target is not a literal puts the file in an
+     always-run set for every code change. D7's cross-check cannot see these
+     edges: those tests touch only class-body lines, which are import-phase. So
+     this rule is held by seeds, not by the oracle.
    - **Package `__init__.py` files are re-export hubs, not dependencies.**
      `remote_store/__init__.py` imports `_store`, `_path`, `_config`,
      `_registry`, `_proxy` and every `ext.*` module, so treating it as a node
@@ -368,7 +392,24 @@ the result and are always unioned, never skipped:
    allowlist of fixture ids), not `-k`. `-k s3` also matches `s3_pyarrow` and
    `s3_boto3`, which `SMOKE_TARGETS` already works around.
 4. **Text readers.** A generated table maps source globs to the tests that read
-   them as text, for `src/`, `tests/` and `scripts/` alike. It extends
+   them as text, for `src/`, `tests/` and `scripts/` alike. It is built by two
+   independent methods, because each has blind spots the other covers:
+   - **Runtime scan,** extending `srcreads.py`. Research Appendix D records two
+     blind spots in it: subprocess reads are not seen, and
+     `linecache`/`inspect.getsource` attribution depends on test order. A rerun
+     in the fixed default order reproduces both blind spots, so it is run in
+     default order **and** under `hatch run test-isolation`'s randomised
+     order, and the union is kept.
+   - **Static scan:** `read_text`, `open`, `ast.parse`, `glob`/`rglob` and
+     `subprocess` calls whose targets resolve to repository paths, across
+     `tests/` and `scripts/`. 16 files under `tests/` call `subprocess.*`
+     (Grep `subprocess\.(run|check_output|call|Popen)` over `tests/`, count
+     mode), mostly in `tests/scripts/`.
+
+   Completeness cannot be proven, so the criterion is agreement between the
+   methods. A reader found by only one method is investigated and added before
+   the table is accepted. The static half is regenerated by D7's freshness
+   check. It extends
    `sdd/research/bk-403-testmon-poc/srcreads.py`, which covered `src/` only, to readers of
    `tests/` and `scripts/` files. Examples: `test_large_payload_guard.py`
    parses `conformance/**/test_*.py`, and `test_registry.py` reads
@@ -413,20 +454,35 @@ FULL path such as `pyproject.toml`, or a non-`code` path such as `packaging/`
 
 ### D7. Keeping the rules honest
 
-**A rule table drifts, so three independent checks hold it against reality,
+**A rule table drifts, so four independent checks hold it against reality,
 none of which selects anything.**
 
-1. **Seed tests.** The PoC's 13 seeds, plus seeds for text readers and the D6
-   job rules, become unit tests of the selector. Each asserts that the
-   selection *contains* the known failing test. They compute selections only
-   and run in seconds.
-2. **Coverage cross-check**, a drift check under
+1. **Seed tests.** The PoC's 13 seeds become unit tests of the selector, plus
+   seeds for text readers, the D6 job rules, string-named imports, and test or
+   script modules imported by other tests or scripts. They compute selections
+   only and run in seconds. Each seed asserts two things:
+   - **The selection contains the known failing test.**
+   - **Its expected mode, `SELECTED` or `FULL` with its reason.** Containment
+     alone passes vacuously under FULL. Under the pilot, a hand mapping of
+     research Appendix B puts 9 of the 13 PoC seeds in FULL: both
+     `conftest.py` seeds, `__init__.py`, `pyproject.toml` and five non-leaf
+     `src/` modules. Pinning the mode makes a FULL → SELECTED change visible
+     when a layer is added, and so is a regression the other way.
+
+   Every non-FULL layer-1 row needs at least one `SELECTED` seed. The Phase 0
+   report states how many seeds a narrowing rule decided, not only how many
+   passed.
+2. **Text-reader freshness.** A check regenerates the static half of the layer-4
+   table (below) and diffs it against the committed copy. A new test that reads
+   a file as text then fails in its own PR, instead of turning up only in the
+   escape log.
+3. **Coverage cross-check**, a drift check under
    [`DRIFT-RULES.md`](../DRIFT-RULES.md). A scheduled `ci-full.yml` job records
    coverage contexts for one full run; for each `src/` file the tests that
    executed it must be a subset of what the selector picks for that file. A
    test outside it is a missing rule. Runtime data checks the rules here and
    never selects, so the testmon portability limit does not apply.
-3. **Escape log.** Each full run compares its failures with the fast selection
+4. **Escape log.** Each full run compares its failures with the fast selection
    for the same head. A failing test the fast lane skipped is an escape. Each
    escape is classified as one of:
    - selector defect;
@@ -511,7 +567,7 @@ The targets for these are written into the Phase 0 plan before the run.
 
 | Phase | Goal | Deliverables | Exit |
 | --- | --- | --- | --- |
-| **0. Validate** | Decide whether to build, from evidence | Throwaway selector under `sdd/research/` with the pilot rule set, and the precision layers prototyped beside it; extended text-reader inventory; seed run through the PoC driver; replay of historical PR diffs and of past red CI runs, including auxiliary jobs; the metrics above for both rule sets; the core-module list derived (every-backend modules plus modules with import-time effects) | The text-reader inventory is complete for `src/`, `tests/` and `scripts/` readers, re-run to the same result; 0 seed misses and 0 deterministic, selector-reachable historical misses; the pilot's estimated wall-clock saving meets its predefined target. **Stop** if typical diffs fall back to FULL or select close to the full suite |
+| **0. Validate** | Decide whether to build, from evidence | Throwaway selector under `sdd/research/` with the pilot rule set, and the precision layers prototyped beside it; extended text-reader inventory; seed run through the PoC driver; replay of historical PR diffs and of past red CI runs, including auxiliary jobs; the metrics above for both rule sets; the core-module list derived (every-backend modules plus modules with import-time effects) | The text-reader table passes D5 layer 4's two-method agreement (runtime union across default and randomised order, plus the static scan including subprocess targets); 0 seed misses, every seed's pinned mode met, and 0 deterministic, selector-reachable historical misses; the saving meets its predefined target. **Stop is judged on the precision rule set**, the target design, if typical diffs still fall back to FULL or select close to the full suite under it. The pilot narrows no `src/` edit by construction (D5), so its fallback rate is reported, not used to stop |
 | **1. Pilot** | Production selector with the pilot rule set, local only | ADR for the local part; selector (stdlib only) with the pilot rows, fixture allowlist, per-job flags and structured output; registry allowlist; seed and mapping-completeness unit tests; local fast target. BK-404 stays open until its skill edits land (Open Questions 4) | Seeds and the mapping test green in CI; the fallback rate recorded from the first real rounds |
 | **2. Shape** | Use the pilot, then add precision | Fast target used for real rounds; escape log against the later full result, classified; then layer 2 (hubs, import-time scan), transitive layer 3, mapped layer 4 and notebook parsing, each added only after the cross-check job is in place and reports no gap | A pilot length fixed beforehand with 0 deterministic, selector-reachable escapes; each precision layer kept only if it lowers the measured share without a cross-check gap; cut-off set by measurement |
 | **3. CI shadow** | Validate the CI lane without risk | Fast lane computes and logs its selection while the full lane still runs on every push; escapes compared and classified automatically; fallback rate reported | A shadow period fixed beforehand with 0 deterministic, selector-reachable escapes; time saved and fallback rate measured |

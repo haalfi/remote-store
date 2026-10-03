@@ -193,6 +193,26 @@ phases:
           pilot rule, a false safety claim about the reader inventory,
           evidence-free escape classes, an overstated lint guarantee and a
           wrong Checks-API rationale
+  - id: fix6
+    name: Testing-expert review, each claim verified before acting
+    steps:
+      - file: src/remote_store/_registry.py
+        section: "lines 31-87"
+        read_type: reference
+        extract: >-
+          Every backend is imported function-locally, so no module is a leaf and
+          the pilot narrows no src edit; stated, and Phase 0's Stop moved to the
+          precision rule set so a structural pilot fallback is not read as
+          evidence against selection
+      - file: tests
+        section: "Grep import_module|__import__; test_async_extended imports; scripts bare imports; subprocess count"
+        read_type: reference
+        extract: >-
+          10 string-based import sites, a test-to-test import, script-to-script
+          imports including _trace_corpus with no test of its own, the
+          _dafny_classorder naming mismatch, and 16 subprocess-calling test
+          files; all confirmed before editing. 9 of 13 PoC seeds FULL under the
+          pilot re-derived by hand mapping research Appendix B
   - id: verify
     name: Verify
     steps:
