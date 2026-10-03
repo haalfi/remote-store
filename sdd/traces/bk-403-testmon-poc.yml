@@ -1,17 +1,17 @@
-id: BK-398
+id: BK-403
 title: "No change-scoped test selector has been chosen for this suite; one of three candidates is measured"
 trigger: >-
   Audit-022 found that both gates run the whole suite for every diff and
-  proposed evaluating runtime-coverage selectors (P1). BK-398 was filed for it;
+  proposed evaluating runtime-coverage selectors (P1). BK-403 was filed for it;
   this trace covers the first PR of that work, a pytest-testmon PoC run in a
   throwaway venv, which changes no shipped behaviour.
 source_items:
-  - BK-398
+  - BK-403
 audience:
   - infra.test
   - contributor.tooling
 expected_ripples:
-  - sdd/backlog/bk-398-test-selector-evaluation.md
+  - sdd/backlog/bk-403-test-selector-evaluation.md
 surprising_ripples:
   # BK-401's index entry: its sysmon switch would break testmon in the same job,
   # found when 3.14's default core failed the PoC. Neither the audit nor the
@@ -25,7 +25,7 @@ phases:
         section: "H1, M1, Proposals, P1's seeded changes"
         read_type: gate
         extract: "seeded-change classes, fail-open rule, open xdist / pytest-cov / portability questions"
-      - file: sdd/backlog/bk-398-test-selector-evaluation.md
+      - file: sdd/backlog/bk-403-test-selector-evaluation.md
         section: "(full)"
         read_type: gate
         extract: "criteria and scope; the dossier was written one PR earlier from the same audit"
@@ -110,4 +110,4 @@ phases:
       - file: sdd/BACKLOG.md
         section: "How this file works / Item scope"
         read_type: gate
-        extract: "[~] for multi-PR work; five-line diagnosis cap held on the BK-398 and BK-401 edits"
+        extract: "[~] for multi-PR work; five-line diagnosis cap held on the BK-403 and BK-401 edits"

@@ -43,12 +43,12 @@ has an answer:
    `/ship`'s § Close each round records an interpreter-specific red that only
    the full matrix showed.
 
-**Dependency:** BK-398 (a map must exist, and its portability finding
+**Dependency:** BK-403 (a map must exist, and its portability finding
 answers prerequisite 3's last question).
 
 **In this item's scope:** prerequisite 4's `/pr` and `/ship` skill changes.
 No other item delivers them. The `/ship` edit shares
-`.claude/skills/ship/SKILL.md` with BK-399, whose open decision includes
+`.claude/skills/ship/SKILL.md` with BK-404, whose open decision includes
 whether `/ship` runs the selected target before round pushes; sequence the
 two edits together.
 

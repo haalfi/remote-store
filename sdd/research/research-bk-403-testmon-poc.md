@@ -1,8 +1,8 @@
 # Research: pytest-testmon on the full Stage-1 suite
 
 **Date:** 2026-10-03
-**Backlog items:** BK-398
-**Status:** PoC complete for `pytest-testmon` only. Point-in-time snapshot per [`sdd/000-process.md` § Document types](../000-process.md#document-types). It measures [audit-022](../audits/audit-022-gate-speed-strategies.md) proposal P1 for one tool; the driver that produced every seed row is [`research-bk-398-testmon-poc.py`](research-bk-398-testmon-poc.py).
+**Backlog items:** BK-403
+**Status:** PoC complete for `pytest-testmon` only. Point-in-time snapshot per [`sdd/000-process.md` § Document types](../000-process.md#document-types). It measures [audit-022](../audits/audit-022-gate-speed-strategies.md) proposal P1 for one tool; the driver that produced every seed row is [`research-bk-403-testmon-poc.py`](research-bk-403-testmon-poc.py).
 
 ## Verdict
 
@@ -67,7 +67,7 @@ silent or confusing:
 Each row is a one-line edit confirmed to fail its named test with testmon off,
 then a serial `--testmon-forceselect` run on a fresh copy of the map. The wall
 share is against the 551.3 s serial control. Command:
-`python sdd/research/research-bk-398-testmon-poc.py 3.13 <map> all`.
+`python sdd/research/research-bk-403-testmon-poc.py 3.13 <map> all`.
 
 | Seed | Edit | Known test selected? | Tests run | Wall (share) | Class if missed |
 | --- | --- | --- | --- | --- | --- |
@@ -150,7 +150,7 @@ Rules 1, 2 and 4 widen it to the full suite; rule 3 adds a set of test files.
    These test files are always added to the selection; this is not a reason
    to run the full suite. Audit-022 named two of them. A scan of the full
    Stage-1 suite on 3.13 found 15, with
-   [`research-bk-398-srcreads.py`](research-bk-398-srcreads.py), an audit hook
+   [`research-bk-403-srcreads.py`](research-bk-403-srcreads.py), an audit hook
    on `open` that skips imports and counts collection-time reads. Eight are
    under `tests/scripts/`: `check_capability_parity`,
    `check_docstring_parity`, `check_no_retrospective`,
@@ -172,7 +172,7 @@ Rules 1, 2 and 4 widen it to the full suite; rule 3 adds a set of test files.
   fixture and module-level classes split. The driver takes it as is; only the
   selected-run command changes. A declared table stays the fallback for
   class 1.
-- **For BK-399:**
+- **For BK-404:**
   - a wrapper that applies rules 1 to 3 to `git diff --name-only`, then calls
     `--testmon-forceselect`;
   - the map stored locally, per interpreter.

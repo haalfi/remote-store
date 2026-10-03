@@ -1,4 +1,4 @@
-# BK-398 — No change-scoped test selector has been chosen for this suite; one of three candidates is measured
+# BK-403 — No change-scoped test selector has been chosen for this suite; one of three candidates is measured
 <!-- doc: repo-only -->
 
 Filed from [audit-022](../audits/audit-022-gate-speed-strategies.md), proposal
@@ -39,7 +39,7 @@ If no tool passes, the fallback is a declared table in the style of
 **Whatever wins never asserts the coverage floor**: § H1, "What must stay
 full".
 
-**Consumers:** BK-399 (the local target) and ID-266 (the CI draft lane) both
+**Consumers:** BK-404 (the local target) and ID-266 (the CI draft lane) both
 need this item's verdict.
 
 ## Progress
@@ -47,5 +47,5 @@ need this item's verdict.
 - **2026-10-03, `pytest-testmon`:** viable with fail-open rules, one map per
   interpreter. Seeds, timings, the four fail-open classes and the two
   repo defaults that disable it are in
-  [`research-bk-398-testmon-poc.md`](../research/research-bk-398-testmon-poc.md).
+  [`research-bk-403-testmon-poc.md`](../research/research-bk-403-testmon-poc.md).
   `pytest-tia` and `pytest-impact` are still to run against the same seeds.

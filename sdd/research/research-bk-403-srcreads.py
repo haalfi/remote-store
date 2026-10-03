@@ -1,12 +1,12 @@
 """pytest plugin: record the src/ files each test file opens other than by import.
 
-Evidence for research-bk-398-testmon-poc.md (fail-open rule 3); not a gate.
+Evidence for research-bk-403-testmon-poc.md (fail-open rule 3); not a gate.
 An audit hook on ``open`` records every ``src/**/*.py`` opened during
 collection or a test, skipping opens made by the import machinery. Reads by a
 subprocess are not seen.
 
-Run from the PoC worktree (see research-bk-398-testmon-poc.py):
-  cp sdd/research/research-bk-398-srcreads.py tmp/poc/srcreads.py
+Run from the PoC worktree (see research-bk-403-testmon-poc.py):
+  cp sdd/research/research-bk-403-srcreads.py tmp/poc/srcreads.py
   cd tmp/poc-wt
   PYTHONPATH=../poc ../venv313/bin/python -m pytest --stage=1 -p no:benchmark -p srcreads -p no:xdist
 Writes tmp/poc/srcreads.json: {test_file: [src paths]}.

@@ -1,6 +1,6 @@
-"""Seeded-change driver for the BK-398 pytest-testmon PoC.
+"""Seeded-change driver for the BK-403 pytest-testmon PoC.
 
-Evidence for research-bk-398-testmon-poc.md; not a gate, not shipped.
+Evidence for research-bk-403-testmon-poc.md; not a gate, not shipped.
 
 Setup (all under the gitignored ./tmp/):
   git worktree add --detach tmp/poc-wt <commit>
@@ -10,7 +10,7 @@ Setup (all under the gitignored ./tmp/):
       --stage=1 -p no:benchmark --testmon -n 4          # run from tmp/poc-wt
 
 Usage:
-  python research-bk-398-testmon-poc.py <py> <pristine-map> <seed>[,<seed>...] | all
+  python research-bk-403-testmon-poc.py <py> <pristine-map> <seed>[,<seed>...] | all
   POC_EXTRA="-n 4" adds arguments to the selected run.
 
 Per seed: apply a one-line edit in the worktree, confirm the known test fails

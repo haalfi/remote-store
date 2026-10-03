@@ -1,4 +1,4 @@
-# BK-399 — The local gate runs every test for every diff, with no selected target for in-progress rounds
+# BK-404 — The local gate runs every test for every diff, with no selected target for in-progress rounds
 <!-- doc: repo-only -->
 
 Filed from [audit-022](../audits/audit-022-gate-speed-strategies.md), proposal
@@ -25,13 +25,13 @@ advisory prescription ([§ Item authority](../BACKLOG.md#how-this-file-works)).
 
 ## Prescription (advisory)
 
-One `hatch run` target that runs the map-selected tests from BK-398's winning
+One `hatch run` target that runs the map-selected tests from BK-403's winning
 selector, for in-progress rounds. `all` stays the gate before a PR is opened
 and before `/ship`'s close push. Before a round push, the target replaces
 `all`; which skills run it there (`/ship`, `/fix-pr`) is the index's open
 decision.
 
-- **Depends on BK-398:** no map, no target.
+- **Depends on BK-403:** no map, no target.
 - **Never asserts the coverage floor:** a selected run cannot measure a
   whole-suite property (audit-022 § H1, "What must stay full").
 - **Saves nothing on its own:** `/ship` runs `all` before every push today.
@@ -41,5 +41,5 @@ decision.
   follow-up.
 - **Shares `.claude/skills/ship/SKILL.md` with ID-266**, whose `/ship` edit
   marks a draft PR ready at the close. Sequence the two edits together.
-- Inherits the fail-open rule from BK-398: an unplaceable path selects the
+- Inherits the fail-open rule from BK-403: an unplaceable path selects the
   full suite.
