@@ -55,6 +55,29 @@ phases:
         read_type: reference
         extract: "HOOKS_PAT ripple for hook tests, carried into the RFC's Impact list for the build"
         outcome: ok
+  - id: fix
+    name: Review fixes
+    steps:
+      - file: sdd/000-process.md
+        section: "Document types"
+        read_type: gate
+        extract: "Review showed the research update exceeded a factual correction; split it, keeping only the 2.3 re-ranking in the 2026-08-30 record and moving the extension to a new research doc. My first reading had treated the maintainer's framing choice as settling the rule"
+        outcome: ok
+      - file: CLAUDE.md
+        section: "Branching"
+        read_type: reference
+        extract: "Branch names need not carry an ID (fix-streaming-io), so D2 cannot derive the item from the branch; logs became per-session and bound at read time"
+        outcome: ok
+      - file: .claude/skills/ship/SKILL.md
+        section: "Reviewer permissions and the tree check"
+        read_type: reference
+        extract: "Main-tree porcelain must stay unchanged during a round; a recorder append would read as contamination, so sdd/decisions/ is excluded by pathspec"
+        outcome: ok
+      - file: .claude/skills/orchestrate/SKILL.md
+        section: "Step 6 tree captures"
+        read_type: reference
+        extract: "Porcelain plus git diff HEAD capture, so an append to an already-committed log also trips it; the exclusion must cover both captures. Not named by the reviewer, found by reading beside /ship"
+        outcome: ok
   - id: verify
     name: Verify
     steps:

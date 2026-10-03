@@ -2,7 +2,7 @@
 
 **Date:** 2026-08-30
 **Backlog items:** — (no item; BK-361 was filed *from* this record's validation pass, not by it)
-**Status:** Research complete — the argument and its evidence are settled as of the date above. Point-in-time snapshot per [`sdd/000-process.md` § Document types](../000-process.md): the external telemetry it cites is 2025–2026 vintage and the repo counts in the appendix drift, so read every figure against this date. Sourcing is uneven by design and § 4 marks which rows were read from the primary and which were not. **Corrected 2026-10-03:** § 2.3 ranked intent debt as "partially repayable", which is wrong for everything the code does not show, including whether its behaviour was decided at all; the correction is marked in place there and its consequence added to the appendix's gaps.
+**Status:** Research complete — the argument and its evidence are settled as of the date above. Point-in-time snapshot per [`sdd/000-process.md` § Document types](../000-process.md): the external telemetry it cites is 2025–2026 vintage and the repo counts in the appendix drift, so read every figure against this date. Sourcing is uneven by design and § 4 marks which rows were read from the primary and which were not. **Corrected 2026-10-03:** § 2.3 ranked intent debt as "partially repayable", which is wrong for everything the code does not show, including whether its behaviour was decided at all. The sentence is flagged in place and the correction follows its paragraph; nothing else in this record changed.
 
 ## TL;DR
 
@@ -292,7 +292,7 @@ debt cannot be taken on.** Prevention differs from paydown in what it constrains
 | Debt | Paydown remedy | Preventive control |
 |---|---|---|
 | Technical | Refactoring sprints, cleanup backlogs | Merge gates: conformance suites, coverage floors, mutation testing |
-| Intent | Write the ADR afterwards | The _why_ is required before the code exists — no implementation without a spec section, decision records immutable once accepted; a decision taken mid-work is captured verbatim where it is made, rejected alternatives included (added by the correction below) |
+| Intent | Write the ADR afterwards | The _why_ is required before the code exists — no implementation without a spec section, decision records immutable once accepted |
 | Cognitive | Pair programming, AI-free checkpoints, explain-to-a-peer | Mandate the engagement in the workflow itself — reproduce the bug and watch the test fail before fixing; read the change's ripple set before starting; verify behaviour by running it, never by type-checking it |
 
 **For cognitive debt the distinction is not a preference. It is the whole
@@ -300,7 +300,9 @@ game.** The three debts differ in whether they can be serviced late, and this is
 the asymmetry neither source draws out. Technical debt is fully repayable:
 badly-shaped code can be refactored into good shape at any later date, by someone
 who never saw the original. Intent debt is partially repayable: rationale can be
-reconstructed after the fact, degraded and lossy, but reconstructed. **Cognitive
+reconstructed after the fact, degraded and lossy, but reconstructed. _(Corrected
+2026-10-03: mostly wrong. Only behaviour is recoverable from the code; see the
+correction after the next paragraph.)_ **Cognitive
 debt is repayable only forward, never backward.** Understanding can be rebuilt
 later — the trial in the appendix rebuilds some of it, and cheaply — but no
 later action makes you have understood at the moment you needed to, and the
@@ -323,17 +325,6 @@ when it was chosen. Recorded at the moment of decision or not at all, they
 cannot be repaid later. What a later reader reconstructs is a guess about why,
 and the guess fails both ways: an accident is read as intent, or a decision as
 an accident and removed, like the financial safeguard above.
-
-**With agents, writing the rationale afterwards produces wrong rationale, not
-just incomplete rationale.** The PR body or ADR an agent writes at the end of a
-session comes from a model that no longer has the decision in its context, after
-a context compaction or in a new session. It states the most plausible why,
-which is the fabrication mechanism above. So the paydown remedy in the table,
-"write the ADR afterwards", is how wrong rationale enters the record for this
-part of the debt. The control is to store the decision when it is made. Where
-decisions are put to a human as structured questions (options, consequences, a
-recommendation, the answer), the full record already exists at that moment; it
-only has to be kept and read.
 
 That is why the preventive column is load-bearing, and it is where the RCT above
 and Naur converge. Both are statements about *when* understanding forms — mode
@@ -974,21 +965,6 @@ checking surfaced, and they are a lower bound on what was missing.
 so AI provenance does not survive into `git log`. (7) The training pipeline — a
 single-maintainer project has no junior path to defend, which means the repo
 cannot demonstrate the hardest proposal rather than that it fails it.
-
-A third gap is against the preventive table rather than § 6, and the
-2026-10-03 correction in § 2.3 is what exposes it. Every intent-layer control
-above binds a decision taken _before_ implementation; none captures one taken
-during it. By the maintainer's account, decisions here are mostly taken mid-work
-in the structured dialogs [`CLAUDE.md` § Interview mode](../../CLAUDE.md#interview-mode)
-requires, and such a dialog — question, options with consequences,
-recommendation, answer — persists only in the session transcript, outside the
-repository. So "orders the work so that neither is taken on", above, holds for
-intent debt only up to the first mid-work decision. Afterwards the code shows
-the behaviour that was implemented, not that it was chosen; the choice, the
-rejected options and the information they were weighed on are not recoverable
-from it.
-[RFC-0018](../rfcs/rfc-0018-decision-capture-at-dialog-time.md) proposes the
-mechanism.
 
 Proposal 8's comprehension measurement is deliberately not listed as a third gap.
 The preventive controls above address the same failure by a different route, and
