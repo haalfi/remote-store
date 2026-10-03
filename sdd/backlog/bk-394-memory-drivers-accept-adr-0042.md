@@ -71,9 +71,19 @@ labelled **(was … , absorbed here)**, which is the absorption form
      BK-389 decision 6's table, both classes. `get_folder_info("./")`,
      `(".//")` and `("./.")` answer the root `FolderInfo` where today they
      raise `InvalidPath`. No conformance cell reaches it (the derivation is
-     in that decision), so it is pinned by a new Memory cell in this PR. Any
-     addressing or backslash cell change joins this list only once BK-395
-     decides it.]
+     in that decision), so it is pinned by a new Memory cell in this PR.]
+   - [**BK-395's Memory cell changes**, the addressing column and backslash
+     row of the same table, both classes, measured by BK-395's dossier
+     recipe. `native_path` and `resolve(k).native_path` of `"./"`, `".//"`,
+     `"./."` answer `""` and of `"d//f"`, `"d/./f"`, `"d/"` answer the
+     canonical key, where today both echo the key raw; `resolve(k).key` and
+     `to_key` are unchanged. Every operation on a key holding a backslash
+     (`"d\\f"`, `"e\\g"`, `"\\"`) answers `InvalidPath` and touches nothing;
+     what each column answers today is in that row's Δ cells, `write("\\")`
+     storing then raising among them. No `glob` cell: neither class declares `GLOB`. None
+     is reachable through `Store`, which hands the backend a
+     `RemotePath`-normalised key, so each is pinned by a new Memory cell in
+     this PR.]
 4. Spec amendments that become true here:
    - spec 003: a BE-021 placement table assigning each obligation to kernel or
      driver, IDs kept and prose kept, plus placement notes on BE-020 and
@@ -114,12 +124,12 @@ labelled **(was … , absorbed here)**, which is the absorption form
      5.]
    - [spec 003's key-rule clause was planned here and moved to BK-389's
      item 8 after PR #1055 merged, so the kernel's cells have a spec ID
-     before they are written. BK-395's answers, and any spec 003 clause they
-     contradict, land with it in BK-389's PR. This PR applies them to the
-     two Memory classes, the first on the kernel, and amends any clause
-     outside spec 003 they contradict (PATH-002, NPR-021, NPR-004,
-     RES-020), since that behaviour is first visible here; set in PR
-     #1056's round 4.]
+     before they are written. BK-395's answers land with it in BK-389's PR.
+     This PR applies them to the two Memory classes, the first on the
+     kernel. BK-395 found no clause outside spec 003 contradicted (PATH-002
+     binds `RemotePath`; NPR-004 and NPR-021 stay total; RES-020's
+     `plan.key == path` is kept; BK-389 decision 6 states each), so nothing
+     outside spec 003 is amended for them here.]
    - [spec 003 BE-021 § Reach's page-boundary paragraph: under BK-389's
      decision 1 a migrated driver has no unmarked page, so the divergence it
      licenses applies only to a class not yet migrated.]

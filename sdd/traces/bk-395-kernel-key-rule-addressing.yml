@@ -1,0 +1,104 @@
+id: BK-395
+title: "The kernel's key rule is undecided for addressing, backslash keys and glob"
+trigger: >-
+  BK-389's planning PR (#1055) cut the addressing members, backslash keys and
+  glob out of decision 6's key rule at its review ceiling; the kernel PR could
+  not start until each was decided against BE-025, NPR-021/NPR-004, RES-020
+  and PATH-002.
+source_items:
+  - BK-395
+  - BK-389
+  - BK-394
+audience:
+  - library.maintainer
+  - contributor.process
+expected_ripples:
+  - sdd/backlogid.json
+phases:
+  - id: orient
+    name: Orient
+    steps:
+      - file: sdd/backlog/bk-395-kernel-key-rule-addressing.md
+        section: "(full)"
+        read_type: gate
+        extract: "three questions, the maintainer's preferred answers, exit criteria naming BK-389 decision 6, item 8 and BK-394 item 2"
+      - file: sdd/backlog/bk-389-kernel-step-1-memory.md
+        section: "Decisions 6; What it owes item 8; Depends on"
+        read_type: gate
+        extract: "pipeline (1)-(5), operation-by-key-class table, Deferred to BK-395 block"
+      - file: sdd/backlog/bk-394-memory-drivers-accept-adr-0042.md
+        section: "What it owes items 2 and 4"
+        read_type: gate
+        extract: "where step-1 Memory cell changes and out-of-spec-003 amendments are listed"
+      - file: sdd/CLAUDE-REFERENCE.md
+        section: "Pre-work index"
+        read_type: gate
+        extract: "Backlog item touched row: trace, BACKLOG-DONE entry linking the dossier"
+  - id: verify_clauses
+    name: Verify the preferred answers against the named clauses
+    steps:
+      - file: sdd/specs/003-backend-adapter-contract.md
+        section: "BE-025"
+        read_type: reference
+        extract: "native_path normalises; '..' and null round-trip verbatim; total; lossy classes listed"
+      - file: sdd/specs/003-backend-adapter-contract.md
+        section: "BE-029 (addressing row, carve-out, backslash paragraphs)"
+        read_type: reference
+        extract: "a backend may refuse a backslash key only without widening its addressing predicate"
+      - file: sdd/specs/010-native-path-resolution.md
+        section: "NPR-004, NPR-005, NPR-021"
+        read_type: reference
+        extract: "to_key and native_path total; to_key strips, does not validate"
+      - file: sdd/specs/043-resolution-plan.md
+        section: "RES-020, RES-025"
+        read_type: reference
+        extract: "plan.key == path; plan.native_path == native_path(p)"
+      - file: sdd/specs/004-path-model.md
+        section: "PATH-002"
+        read_type: reference
+        extract: "RemotePath folds a backslash; binds RemotePath, not a backend key"
+      - file: sdd/specs/018-glob.md
+        section: "GLOB-003, GLOB-004, GLOB-012, GLOB-017, GLOB-018"
+        read_type: reference
+        extract: "segment-aligned literal prefix; no pattern-validation clause exists"
+      - file: sdd/formal/BackendContract.dfy
+        section: "WellFormedPath"
+        read_type: reference
+        extract: "excludes backslash and null byte"
+      - file: sdd/formal/RootPath.dfy
+        section: "BackslashIsNotRoot"
+        read_type: reference
+        extract: "refusing '\\' as a backslash key leaves it not the root"
+      - file: tests/backends/sqlblob/test_like_prefix.py
+        section: "SEEDS, FOLDERS"
+        read_type: reference
+        extract: "SQL-BLOB-061 writes 'a\\b/s.txt' directly: a step 3 backslash cell"
+      - file: src/remote_store/_store.py
+        section: "glob, _full_path, native_path, resolve"
+        read_type: reference
+        extract: "Store routes keys through RemotePath but passes a glob pattern raw, so glob cells are Store-visible at later steps"
+      - file: sdd/backlog/bk-395-kernel-key-rule-addressing.md
+        section: "Outcome"
+        read_type: verify
+        extract: "the probe recipe, run at master 57d0797 before any figure was written; a first pass measured only native_path and a few backslash ops, and the full backslash op sweep was added before writing the table's Δ cells"
+  - id: design
+    name: Decide and record
+    steps:
+      - file: sdd/backlog/bk-389-kernel-step-1-memory.md
+        section: "Decision 6; Later drivers; item 8; Depends on"
+        read_type: reference
+        extract: "backslash row, addressing column, Decided in BK-395 block, glob rule, later-driver cells, item 8 additions"
+      - file: sdd/backlog/bk-394-memory-drivers-accept-adr-0042.md
+        section: "What it owes items 2 and 4"
+        read_type: reference
+        extract: "Memory cell changes; no clause outside spec 003 contradicted"
+      - file: sdd/rfcs/rfc-0017-contract-kernel-over-thin-drivers.md
+        section: "D1 interop comment; D2 key bullet; Impact amendments"
+        read_type: reference
+        extract: "three 'BK-395's to decide' pointers became decided"
+      - file: sdd/backlog/bk-390-rfc-0017-spec-amendments.md
+        section: "opening paragraph"
+        read_type: reference
+        extract: "stale 'clauses BK-395's answers contradict' conditional"
+surprising_ripples:
+  - sdd/backlog/bk-390-rfc-0017-spec-amendments.md

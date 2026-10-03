@@ -75,3 +75,54 @@ BK-389's spec 003 list, item 8, since the kernel PR waits on this item and
 its cells need a spec ID. A contradicted clause in another spec (PATH-002,
 NPR-021, NPR-004, RES-020) is amended in BK-394's spec list. (Both set in
 PR #1056's rounds 3 and 4.)
+
+## Outcome (2026-10-03)
+
+Decided by the maintainer through the interview, the recommended option each
+time. The answers are stated once, in
+[BK-389's dossier](bk-389-kernel-step-1-memory.md), decision 6 (**Decided in
+BK-395**, the table's backslash row and addressing column, and its **Later
+drivers** paragraph); this section keeps only how they were reached.
+
+1. **Addressing:** the preferred answer, adopted as recorded.
+2. **Backslash:** the preferred answer, adopted as recorded.
+3. **`glob`:** the preferred answer **narrowed**. Running only the literal
+   prefix through the pipeline leaves `"*/../x"`, `"*//x"` and a null byte
+   after the first wildcard to the driver, which D1 says carries no path
+   logic, and the two `GLOB` backends measured below already disagree on
+   `"*/../*.csv"` (Local `InvalidPath`, SQLBlob `[]`). So the refusals apply to the whole pattern and empty and `.`
+   segments drop anywhere in it; GLOB-012's prefix is then cut from a
+   canonical pattern.
+
+Every clause the exit criteria name was checked, and none is contradicted:
+the reasons are in decision 6's **Clauses checked** paragraph. So BK-394's
+spec list gains nothing outside spec 003, and BK-389's item 8 carries
+additions to BE-024, BE-025 and BE-029.
+
+**Recipe** (master `57d0797`, run with `hatch run python`, every answer the
+returned value or the exception's class name):
+- *Addressing.* For each of the 17 keys `""`, `"."`, `"./"`, `".//"`,
+  `"./."`, `"/"`, `"/./"`, `"/f"`, `"d/../f"`, `"f\0"`, `"d\\f"`, `"\\"`,
+  `"d//f"`, `"d/./f"`, `"d/"`, `"f"`, `"d/f"`: `native_path(k)`,
+  `resolve(k).key` and `to_key(native_path(k))` on `MemoryBackend`,
+  `AsyncMemoryBackend` and a `LocalBackend` on a temp root.
+- *Backslash.* A fresh store per call, per class, holding `f`, `"d\\f"`
+  and `"e\\g/h"`; on `"d\\f"`, `"e\\g"` and `"\\"` run `exists`,
+  `is_folder`, `is_file`, `read_bytes`, `get_file_info`, `delete`,
+  `write(overwrite=True)`, `list_files(recursive=True)`, `get_folder_info`,
+  `delete_folder(recursive=True)`, `move(k, "z")` and `move("f", k)` (the
+  async class less `is_file` and `get_file_info`). Separately, on a store
+  holding `d/f`, `write("d\\f")` and `list_files("", recursive=True)`.
+- *`glob`.* A `LocalBackend` whose root holds `d/a.csv`, `d/sub/b.csv` and
+  `top.csv`, with `outside.csv` beside the root, and an in-memory SQLite
+  `SQLBlobBackend` holding the same three, over the patterns `"d/*.csv"`,
+  `"./d/*.csv"`, `"d//*.csv"`, `"d/./*.csv"`, `"/d/*.csv"`, `"../*.csv"`,
+  `"d/../*.csv"`, `"*/../*.csv"`, `"d\\*.csv"`, `"d/*\0"`, `"**/*.csv"`, plus
+  `""` and `"."` on Local.
+
+What came back: both Memory classes echo every key raw from `native_path`
+and `resolve(k).key` except `"."`, whose `native_path` is `""`; Local's
+`to_key` alone folds a backslash. `write("d\\f")` beside `d/f` returns path
+`d/f`, both are read back distinctly, and the listing yields `d/f` twice.
+The per-operation backslash answers are decision 6's Δ cells, and the
+`glob` answers its **Later drivers** cells.

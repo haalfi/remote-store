@@ -244,6 +244,16 @@ if evidence changes; these are retired.
 
 ## Unreleased
 
+- [x] **BK-395 — The kernel's key rule is undecided for addressing, backslash keys and `glob`**
+  spec: BE-025, NPR-021, NPR-004, RES-020, PATH-002, BE-008, WR-001 · effort: S · audience: library.maintainer, contributor.process
+  Decided, docs only: BK-389's decision 6 states it. Addressing stays total,
+  a valid key normalised and a refused one passed raw, `plan.key` the
+  caller's; a backslash is refused with `InvalidPath` on every operation,
+  which settles absorbed BUG-297's key; a `glob` pattern takes the refusals
+  and normalisation segment-wise. No clause contradicted; BE-024, BE-025 and
+  BE-029 gain clauses in BK-389's PR, and BK-394 lists the Memory cells.
+  Detail: [dossier](backlog/bk-395-kernel-key-rule-addressing.md)
+
 - [x] **BK-396 — The kernel's `delete_folder` sequence around `SupportsRemoveFolder` is undecided**
   spec: BE-013, BE-021, MEM-014, MEM-026, GR-043 · effort: M · audience: library.maintainer, contributor.process
   Decided, docs only: BK-389's decision 8 and RFC-0017's D1, D2 and § Impact

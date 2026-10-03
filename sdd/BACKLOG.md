@@ -268,30 +268,20 @@ failure it was.
   narrow the catch so only a confirmed miss reads as "no ancestor"; BE-008 changes with the fix.
   Detail: [dossier](backlog/bug-292-ancestor-gate-fails-open.md)
 
-- [ ] **BK-395 — The kernel's key rule is undecided for addressing, backslash keys and `glob`**
-  spec: BE-025, NPR-021, NPR-004, RES-020, PATH-002, BE-008, WR-001 · effort: S · audience: library.maintainer, contributor.process
-  BK-389's decision 6 covers the operations only. The kernel's answer for the
-  addressing members (BE-025, NPR-021: total), a backslash key (PATH-002 folds
-  one; a direct `write("\\")` stores the row, then raises) and `glob` is
-  undecided. Open decision: all three; the maintainer's preferred answers and
-  the measurements are in the dossier. BK-389 waits on it.
-  Detail: [dossier](backlog/bk-395-kernel-key-rule-addressing.md)
-
 - [ ] **BK-389 — RFC-0017's kernel does not exist, so no backend can migrate onto it**
-  spec: BE-017, BE-020, BE-021, BE-029, ERR-001, ERR-009, DEPTH-003, PING-002, AW-001, SAW-003 · effort: L · audience: library.maintainer, infra.test
+  spec: BE-017, BE-020, BE-021, BE-024, BE-025, BE-029, ERR-001, ERR-009, DEPTH-003, PING-002, AW-001, SAW-003 · effort: L · audience: library.maintainer, infra.test
   D3 step 1's first PR: the async kernel and its `unasync` sync twin, private,
   with a fake-driver suite and the spec 003 clauses it traces to, under the
-  Proposed ADR-0042; BK-394 lands Memory on it. After the v0.33.0 tag. Needs BK-388
-  and BK-395. Open decision: none of its own; the rest are in the dossier's
-  § Decisions (`delete_folder`'s, decided in BK-396), the key rule's remainder BK-395's.
+  Proposed ADR-0042; BK-394 lands Memory on it. After the v0.33.0 tag. Needs BK-388.
+  Open decision: none; all are in the dossier's § Decisions (`delete_folder`'s
+  decided in BK-396, the key rule's remainder in BK-395).
   Detail: [dossier](backlog/bk-389-kernel-step-1-memory.md)
 
 - [ ] **BK-394 — No backend runs on RFC-0017's kernel, so ADR-0042 stays Proposed**
   spec: BE-017, BE-020, BE-021, BE-029, ERR-001, ERR-009, DEPTH-003, ASYNC-001, AW-001, SAW-003, SAW-012, PING-002, PING-008, MEM-DS-005, MEM-013, MEM-014, MEM-015, MEM-018, MEM-020 · effort: L · audience: library.maintainer, user.api_docs, contributor.process
   ADR-0042 is accepted only with the first backend on the new design: the two
   Memory drivers on BK-389's kernel, step 1's other spec amendments (listed in
-  the dossier's item 4, BK-395's contradicted clauses outside spec 003 among
-  them), and the guide as a driver. After BK-389, the v0.33.0 tag and ID-244's decision (§ 2). Open
+  the dossier's item 4), and the guide as a driver. After BK-389, the v0.33.0 tag and ID-244's decision (§ 2). Open
   decision: none; Memory's identity and spec 013's placement are in the dossier.
   Detail: [dossier](backlog/bk-394-memory-drivers-accept-adr-0042.md)
 
