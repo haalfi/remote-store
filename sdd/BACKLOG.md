@@ -815,13 +815,13 @@ CHANGELOG the release body is built from — say what is actually true.
 the change can affect; once, before merge, the whole gate runs. Narrowing never
 lifts the full pre-merge run or the coverage floor.
 
-- [ ] **BK-398 — No change-scoped test selector has been measured on this suite, so none can be chosen**
+- [~] **BK-398 — No change-scoped test selector has been measured on this suite, so none can be chosen**
   spec: — · effort: M · audience: infra.test, contributor.tooling
   Both gates run every test for every diff, because nothing maps a changed
-  path to the tests it can affect (audit-022 § H1). Conformance is wired
-  through the fixture registry, so import or diff maps miss it. Open decision:
-  which selector, if any, survives the seeded changes, fails open where it
-  must, and has a map that holds across interpreters.
+  path to the tests it can affect (audit-022 § H1). `pytest-testmon` is
+  measured (viable with four fail-open classes, one map per interpreter);
+  `pytest-tia` and `pytest-impact` are not. Open decision: which selector,
+  if any, BK-399 and ID-264 build on.
   Detail: [dossier](backlog/bk-398-test-selector-evaluation.md)
 
 - [ ] **BK-399 — The local gate runs every test for every diff, with no selected target for in-progress rounds**
@@ -850,11 +850,11 @@ lifts the full pre-merge run or the coverage floor.
 
 - [ ] **BK-401 — Coverage runs on the slow tracer where `sysmon` gives identical results**
   spec: — · effort: S · audience: infra.ci, contributor.tooling
-  `test-primary`, `test-primary-sftp`, `test-cassette-pii` and `test-cov-s1`
-  measure coverage on the default core; [audit-022](audits/audit-022-gate-speed-strategies.md)
-  § L1 measures `COVERAGE_CORE=sysmon` at no-coverage speed with identical
-  covered lines. Open decision: none on shape (§ Proposals, P6); branch
-  coverage under `sysmon` is unchecked, so `test-cov-branch` is out of scope.
+  Four coverage jobs (`test-primary`, `-sftp`, `test-cassette-pii`,
+  `test-cov-s1`) use the default core; [audit-022](audits/audit-022-gate-speed-strategies.md)
+  § L1 measures `sysmon` at no-coverage speed, identical covered lines. Open
+  decision: none on shape (P6); `test-cov-branch` stays out until checked,
+  and `sysmon` breaks `pytest-testmon` (BK-398), so no job may run both.
 
 - [ ] **BK-400 — The shard durations go stale between manual refreshes, so the primary shards balance on partial data**
   spec: — · effort: M · audience: infra.ci

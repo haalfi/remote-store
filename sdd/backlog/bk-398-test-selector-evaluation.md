@@ -39,3 +39,11 @@ full".
 
 **Consumers:** BK-399 (the local target) and ID-264 (the CI draft lane) both
 need this item's verdict.
+
+## Progress
+
+- **2026-10-03, `pytest-testmon`:** viable with fail-open rules, one map per
+  interpreter. Seeds, timings, the four fail-open classes and the two
+  repo defaults that disable it are in
+  [`research-bk-398-testmon-poc.md`](../research/research-bk-398-testmon-poc.md).
+  `pytest-tia` and `pytest-impact` are still to run against the same seeds.

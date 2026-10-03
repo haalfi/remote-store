@@ -1,0 +1,96 @@
+id: BK-398
+title: "No change-scoped test selector has been measured on this suite, so none can be chosen"
+trigger: >-
+  Audit-022 found that both gates run the whole suite for every diff and
+  proposed evaluating runtime-coverage selectors (P1). BK-398 was filed for it;
+  this trace covers the first PR of that work, a pytest-testmon PoC run in a
+  throwaway venv, which changes no shipped behaviour.
+source_items:
+  - BK-398
+audience:
+  - infra.test
+  - contributor.tooling
+expected_ripples:
+  - sdd/backlog/bk-398-test-selector-evaluation.md
+surprising_ripples:
+  # BK-401's index entry: its sysmon switch would break testmon in the same job,
+  # found when 3.14's default core failed the PoC. Neither the audit nor the
+  # ripple-check links a coverage-core change to a selector.
+  - sdd/BACKLOG.md
+phases:
+  - id: orient
+    name: Orient
+    steps:
+      - file: sdd/audits/audit-022-gate-speed-strategies.md
+        section: "H1, M1, Proposals, P1's seeded changes"
+        read_type: gate
+        extract: "seeded-change classes, fail-open rule, open xdist / pytest-cov / portability questions"
+      - file: sdd/backlog/bk-398-test-selector-evaluation.md
+        section: "(full)"
+        read_type: gate
+        extract: "criteria and scope; the dossier was written one PR earlier from the same audit"
+      - file: sdd/traces/_schema.yml
+        section: "(full)"
+        read_type: reference
+        extract: "trace shape; review block is pasted at the close"
+      - file: sdd/AUTHORING.md
+        section: "placement table, sdd/research row"
+        read_type: reference
+        extract: "research notes live in sdd/research/research-*.md and are dual-published"
+      - file: scripts/check_sdd_index.py
+        section: "R1"
+        read_type: reference
+        extract: "a research doc needs a parseable **Date:** header"
+  - id: design
+    name: Seed design
+    steps:
+      - file: tests/conftest.py
+        section: "RestrictedBackend, hypothesis profiles"
+        read_type: reference
+        extract: "one runtime-executed seed (fixture helper body) and one import-time seed (profile registration)"
+      - file: tests/backends/fixtures/_loader.py
+        section: "module docstring"
+        read_type: reference
+        extract: "fixture facts come from fixtures.toml and backends.toml, a non-Python registry input the audit's list does not name"
+      - file: scripts/gen_features.py
+        section: "_parse_registry_order"
+        read_type: reference
+        extract: "reads _registry.py as text with a double-quote regex"
+      - file: scripts/check_test_placement.py
+        section: "_BANNED_BACKEND_NAMES"
+        read_type: reference
+        extract: "AST-walks backend modules at import"
+  - id: measure
+    name: Measure
+    steps:
+      - file: pyproject.toml
+        section: "[tool.pytest.ini_options] addopts"
+        read_type: reference
+        extract: >-
+          `-m 'not live'` makes testmon deactivate selection; read only after a
+          no-change rerun ran the whole suite and the run header named -m
+      - file: tests/conftest.py
+        section: "hypothesis profiles"
+        read_type: reference
+        extract: >-
+          my first hypothesis seed (deadline=1e-6) rounded to 0 ms and failed
+          at import, testing nothing; replaced with deadline=0.01
+      - file: sdd/audits/audit-022-gate-speed-strategies.md
+        section: "P1's seeded changes"
+        read_type: reference
+        outcome: unclear
+        extract: >-
+          the fixture class did not separate Python fixture code from the TOML
+          data the registry loads, and the expected-miss list did not name
+          module-level-only files such as __init__.py; both were misses here
+  - id: report
+    name: Report
+    steps:
+      - file: sdd/research/research-decision-capture-at-dialog-time.md
+        section: "header"
+        read_type: reference
+        extract: "research header shape: Date, Backlog items, Status"
+      - file: sdd/BACKLOG.md
+        section: "How this file works / Item scope"
+        read_type: gate
+        extract: "[~] for multi-PR work; five-line diagnosis cap held on the BK-398 and BK-401 edits"
