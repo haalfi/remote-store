@@ -278,6 +278,25 @@ phases:
           "none of these is a merge-barrier hole" is wrong for DOCS_PAT reads.
           The narrower class property is adopted, and the Phase 0 audit is told
           to list those cases rather than excuse them
+  - id: fix10
+    name: Final review round, verified
+    steps:
+      - file: tests/backends/azure/conftest.py
+        section: "_cassettes_azure imports; hns_record_params from all_fixtures()"
+        read_type: reference
+        extract: >-
+          The fixture registry is consumed outside conformance (azure conftests,
+          tests/scripts registry guards), so the three fixture-registry rows now
+          name registry consumers via layer 2 and run FULL in the pilot; pilot
+          SELECTED seeds drop from 4 to 2 (11 of 13 FULL, re-derived)
+      - file: .github/workflows/ci.yml
+        section: "verify-tla comment (lines 709-712); test-cross-platform command"
+        read_type: reference
+        extract: >-
+          verify-tla is informational by design per its own comment, which I had
+          not read when I told the maintainer no comment said so; Open Question
+          6 restated as settled. test-cross-platform's -m os_sensitive
+          --ignore=tests/e2e added to the per-job survival list
   - id: verify
     name: Verify
     steps:

@@ -316,7 +316,7 @@ maintenance is not added.
 
 | Level | Rules | Everything else |
 | --- | --- | --- |
-| **Pilot** (Phase 1) | **Every layer-1 row**, with layers 2–4 absent. A row whose selection uses only layer 1 applies as written; this covers the test-file, cassette, `_cassettes*.py`, fixture-module, `fixtures.toml`, non-root `conftest.py`, `examples/**`, `scripts/<x>.py` and generated-artifact rows. The one exception is a **leaf backend module** → its backends' fixture allowlist and `tests/backends/<backend>/` | FULL in five cases: a row whose selection defers to layer 2, 3 or 4 (the `src/` rows other than a leaf backend, and the `run_examples.py`/`run_notebooks.py` row); a test or script module that another test or script imports, by name or by literal string; a script whose mapped test does not exist; any path the text-reader inventory lists as read as text; anything unmatched |
+| **Pilot** (Phase 1) | **Every layer-1 row**, with layers 2–4 absent. A row whose selection uses only layer 1 applies as written; this covers the test-file, cassette, non-root `conftest.py`, `examples/**`, `scripts/<x>.py` and generated-artifact rows. The one exception is a **leaf backend module** → its backends' fixture allowlist and `tests/backends/<backend>/` | FULL in five cases. (1) A row whose selection defers to layer 2, 3 or 4: the `src/` rows other than a leaf backend, the `run_examples.py`/`run_notebooks.py` row, and the three fixture-registry rows (`_cassettes*.py`, fixture modules, `fixtures.toml`), whose consumers reach beyond conformance. (2) Any module under `tests/` or `scripts/`, not only `test_*.py`, that another module imports by name or by literal string. (3) A script whose mapped test does not exist. (4) Any path the text-reader inventory lists as read as text. (5) Anything unmatched |
 | **Precision** (Phase 2, one at a time) | Layer 2 with hub resolution and the import-time scan; layer 3 through transitive helper edges; layer 4's mapped readers; notebook import parsing for D6 | — |
 
 **A leaf backend module** is a backend source in `backends.toml` that meets
@@ -343,9 +343,11 @@ fails either one runs FULL in the pilot. Neither condition is cosmetic:
 `_registry.py:31-87` imports every registered backend module inside a function,
 and function-local imports count. Sibling modules import the remaining backend
 helpers. `_s3_boto3.py`, which nothing in `src/` imports, has its tests under
-`tests/backends/s3/` and in conformance. The pilot narrows only edits to tests,
-cassettes, fixture modules and `fixtures.toml`, non-root `conftest.py` files,
-examples, scripts and generated artifacts. Narrowing `src/` edits arrives with
+`tests/backends/s3/` and in conformance. The pilot narrows only edits to test
+files, cassettes, non-root `conftest.py` files, examples, scripts and generated
+artifacts. The fixture-registry rows run FULL in the pilot too, because the
+registry is consumed outside conformance (per-backend conftests, `tests/scripts/`
+registry guards), and only layer 2 can name those consumers. Narrowing `src/` edits arrives with
 layer 2 in Phase 2, which is why Phase 0 measures both rule sets (§ Roadmap).
 The leaf rule stays in the pilot so that a future leaf module narrows without a
 spec change.
@@ -381,10 +383,14 @@ the result and are always unioned, never skipped:
    | A `src/` module that is a backend source, or that a backend source reaches (layer 3) | none of its own; layers 2 and 3 |
    | Other `src/**/*.py` | none of its own; layer 2 |
    | `tests/**/test_*.py` | that file |
-   | Cassettes under `tests/**/cassettes/<backend>/` | that backend's replay tests and the PII sweep |
-   | `tests/backends/fixtures/_cassettes*.py` | `tests/backends/fixtures/`, the replay fixtures' conformance, and the `test-cassette-pii` job |
-   | `tests/backends/fixtures/<module>.py` that registers fixtures | conformance limited to **every** fixture id the module registers, and `tests/backends/fixtures/`. The module → ids map is the inverse of `_MODULE_FOR` in `tests/backends/fixtures/__init__.py`, read as a literal dict, with each unmapped `fixtures.toml` key mapping to itself. So `s3_moto.py` selects `s3_moto` and `s3_moto_strict`, and `memory_async.py` selects both `memory_async_*` ids. Editing that map is FULL, because `__init__.py` is a FULL row |
-   | `fixtures.toml` | conformance limited to the fixture ids whose block changed (both versions parsed), and `tests/backends/fixtures/`; FULL if it does not parse |
+   | Cassettes under `tests/**/cassettes/<backend>/` | that backend's replay tests, including `tests/backends/<backend>/`, and the PII sweep |
+   | `tests/backends/fixtures/_cassettes*.py` | `tests/backends/fixtures/`, the replay fixtures' conformance, `tests/backends/<backend>/` of the profile's backend (`tests/backends/azure/conftest.py` and its `aio/` twin import constants from `_cassettes_azure.py`), every other importer (layer 2), and the `test-cassette-pii` job. FULL in the pilot |
+   | `tests/backends/fixtures/<module>.py` that registers fixtures | conformance limited to **every** fixture id the module registers, and `tests/backends/fixtures/`. The module → ids map is the inverse of `_MODULE_FOR` in `tests/backends/fixtures/__init__.py`, read as a literal dict, with each unmapped `fixtures.toml` key mapping to itself. So `s3_moto.py` selects `s3_moto` and `s3_moto_strict`, and `memory_async.py` selects both `memory_async_*` ids. Editing that map is FULL, because `__init__.py` is a FULL row. The selection also includes every **registry consumer** outside conformance (layer 2):
+   - `tests/backends/<backend>/` for each backend whose fixtures change. For example, `tests/backends/azure/conftest.py` parametrizes HNS tests with records from `all_fixtures()`.
+   - Tests that call `all_fixtures()`, `fixture_params()` or `fixtures()`, or import `tests.backends.fixtures`. For example, `tests/scripts/test_mutate_scopes.py` and `test_record_cassettes.py` assert over every registered fixture.
+
+   FULL in the pilot |
+   | `fixtures.toml` | conformance limited to the fixture ids whose block changed (both versions parsed), `tests/backends/fixtures/`, and the same registry consumers as the fixture-module row; FULL if it does not parse. FULL in the pilot |
    | `examples/notebooks/**` | no tests; the `notebooks` job |
    | Other `examples/**` | the `examples` job, plus the tests that import or read examples directly: `tests/test_examples.py` and `tests/test_snippets.py` (both `from examples.…`), and `tests/backends/conformance/test_examples.py` (opens an example by path). The `examples` job runs only `run_examples.py`, not these tests |
    | `tests/scripts/run_examples.py`, `tests/scripts/run_notebooks.py` | the `examples` or `notebooks` job, plus layers 2 and 4 for tests that import or read them |
@@ -502,7 +508,7 @@ FULL path such as `pyproject.toml`, or a non-`code` path such as `packaging/`
 | `test-primary-sftp` | selection holds conformance tests whose fixture allowlist (layer 3) contains `sftp_docker`, or is unrestricted |
 | `test-cassette-pii` | the selection holds `TestCommittedCassettePIISweep` (for example, through `tests/backends/fixtures/test_cassettes.py` or the `tests/backends/fixtures/` directory), or a cassette or `_cassettes*.py` row matched. `test` and `test-primary` deselect the sweep, so this job is the only place it runs |
 | `pyarrow-major-check` | selector reaches its test files (`ci.yml` job steps) |
-| `test-cross-platform` | selection holds an `os_sensitive` test. The marker has two sources, and both are read statically: test files (marks and module-level `pytestmark`), and fixture modules' `marks=` in `tests/backends/fixtures/`. Today the second source is `local` and `local_async`, whose marks `fixture_params` attaches to every conformance test parametrized with them. So a selected conformance test whose fixture allowlist contains such a fixture, or is unrestricted, counts |
+| `test-cross-platform` | selection holds an `os_sensitive` test outside `tests/e2e/`, which the job ignores. The marker has two sources, and both are read statically: test files (marks and module-level `pytestmark`), and fixture modules' `marks=` in `tests/backends/fixtures/`. Today the second source is `local` and `local_async`, whose marks `fixture_params` attaches to every conformance test parametrized with them. So a selected conformance test whose fixture allowlist contains such a fixture, or is unrestricted, counts |
 | `e2e` | selector reaches `tests/e2e/` |
 | `examples` | an `examples/**` path outside `examples/notebooks/`, `tests/scripts/run_examples.py`, or a `src/` module an example imports |
 | `notebooks` | an `examples/notebooks/**` path, `tests/scripts/run_notebooks.py`, or a `src/` module a code cell imports |
@@ -510,10 +516,17 @@ FULL path such as `pyproject.toml`, or a non-`code` path such as `packaging/`
 | `coverage-gate` | full lane only |
 | `prepare-images` | a job that needs it runs |
 
-**Per-job survival.** Each test job applies its own filters:
+**Per-job survival.** Each test job applies its own filter set: paths, `-k`,
+`-m`, `--ignore`, `--deselect` and `--stage`. The selector reads that set from
+the job's command in `ci.yml` rather than from a copy, and it is today:
 - `test` and `test-primary`: `--ignore=tests/scripts`, the PII-sweep
-  `--deselect`, and `--stage`;
-- `test-primary-sftp`: `-k sftp_docker`.
+  `--deselect`, and `--stage=1` or `--stage=2`;
+- `test-primary-sftp`: the path `tests/backends/conformance/`, `--stage=2` and
+  `-k sftp_docker`;
+- `test-cross-platform`: `-m os_sensitive` and `--ignore=tests/e2e`. A
+  diff touching only `tests/e2e/test_async_streaming_integrity.py`, whose
+  module-level `pytestmark` is `os_sensitive`, therefore leaves this job
+  nothing to run, and it is skipped.
 
 The selector therefore computes, for each job, the part of the selection that
 survives that job's filters:
@@ -544,16 +557,22 @@ none of which selects anything.**
    script modules imported by other tests or scripts, a failure only a
    `*_strict` fixture reaches through a shared fixture module, an example edit
    that breaks a `test_examples.py` assertion, an edit to the PII sweep test
-   itself, and one empty-survival case per test job (D6). They compute
+   itself, one empty-survival case per test job (D6, including the e2e-only
+   `os_sensitive` edit), and a registry-consumer case (an `azure_replay_hns.py`
+   edit that breaks a `tests/backends/azure/` test). They compute
    selections only and run in seconds. Each seed asserts two things:
    - **The selection contains the known failing test.**
    - **Its expected mode, `SELECTED` or `FULL` with its reason.** Containment
-     alone passes vacuously under FULL. Under the pilot (every layer-1 row
-     applies, layers 2–4 absent), a hand mapping of research Appendix B puts 9
-     of the 13 PoC seeds in FULL: both `conftest.py` seeds, `__init__.py`,
-     `pyproject.toml`, and five non-leaf `src/` modules (`_path`, `_registry`,
-     `_azure`, `_sftp` twice). The other four are SELECTED: the `memory.py`
-     fixture module, `fixtures.toml`, the Azure cassette and `FEATURES.md`.
+     alone passes vacuously under FULL. Under the pilot (layer-1 rows that need
+     no other layer, layers 2–4 absent), a hand mapping of research Appendix B
+     puts 11 of the 13 PoC seeds in FULL:
+     - both `conftest.py` seeds, `__init__.py` and `pyproject.toml`;
+     - five non-leaf `src/` modules (`_path`, `_registry`, `_azure`, `_sftp`
+       twice);
+     - the `memory.py` fixture module and `fixtures.toml`, since the
+       fixture-registry rows are FULL in the pilot.
+
+     The other two are SELECTED: the Azure cassette and `FEATURES.md`.
      Pinning the mode makes a FULL → SELECTED change visible when a layer is
      added, and so is a regression the other way.
 
@@ -736,9 +755,12 @@ on CI configuration, contributor tooling and two process records.**
 5. **Late failures.** The full run now comes at the close, so a failure the
    selector did not reach shows one round later than today. The escape log
    measures how often.
-6. **`verify-tla` is not in `gate`'s `needs`** (`ci.yml` `gate` job), so a red
-   TLA check does not block merge today. Confirm that is intended before the
-   Phase 4 ADR, since D4's lane collapse covers TLA-only diffs.
+6. **`verify-tla` stays informational, and that is settled, not open.** The
+   `ci.yml` comment above `verify-tla` says it is "Not in the gate below by
+   design", citing `sdd/formal/README.md` § Authoring rules (3). A TLA-only
+   diff therefore collapses to the full lane (D4) and posts `merge-gate`
+   whatever TLC reports. This is listed only so that the revisit tracked by
+   ID-150 also reconsiders the poster's job set.
 7. **Long-term full-lane trigger.** The label is the pilot mechanism (D1).
    Two alternatives are worth weighing: a merge queue, if the account gains
    one, and an explicit `workflow_dispatch` or comment command. Revisit at the
