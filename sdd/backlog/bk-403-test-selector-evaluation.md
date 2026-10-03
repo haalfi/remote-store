@@ -48,8 +48,8 @@ If no tool passes, the fallback is a declared table in the style of
 **Whatever wins never asserts the coverage floor**: § H1, "What must stay
 full".
 
-**Consumers:** BK-404 (the local target) and ID-266 (the CI draft lane) both
-need this item's verdict.
+**Consumers:** BK-404 (the local target) and ID-266 (the CI fast lane;
+*superseded wording "draft lane"*, RFC-0019 D1) both need this item's verdict.
 
 ## Progress
 

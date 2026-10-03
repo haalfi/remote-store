@@ -125,6 +125,38 @@ phases:
           "Stay on the full lane" was false: the full lane cannot post on a
           fork token. Restated as cannot merge on their own, with the maintainer
           path and the pull_request_target rejection; clearing skipped for forks
+  - id: fix3
+    name: Review fixes, round 3
+    steps:
+      - file: src/remote_store/__init__.py
+        section: "imports (lines 5-49)"
+        read_type: reference
+        extract: >-
+          The package root eagerly imports core and every ext module, so a
+          transitive graph through it selects everything; layer 2 now treats
+          package __init__ files as re-export hubs resolved to defining modules,
+          follows function-local imports, and fails open on unresolvable hub use
+      - file: tests/backends/fixtures/backends.toml
+        section: "[backend.*] sources, async_sources"
+        read_type: reference
+        extract: >-
+          The module-to-backend map already exists, including aio backends;
+          the backend axis now selects backends whose sources reach the changed
+          module, so shared helpers like _flat_ns select their importers
+      - file: tests/backends/fixtures/registry.py
+        section: "BackendFixture.marks; fixture_params"
+        read_type: reference
+        extract: >-
+          os_sensitive rides on the local and local_async fixture params, so
+          the cross-platform rule reads fixture marks= statically as a second
+          marker source; sftp_docker is a fixture id, handled by the allowlist
+      - file: sdd/backlog/bk-404-selected-tests-hatch-target.md
+        section: "Prescription"
+        read_type: reference
+        extract: >-
+          I appended a Progress note and left the map dependency and draft-PR
+          wording above it unmarked, the same miss the round-1 ID-266 finding
+          named; marked inline now, and the BK-403 consumers line too
   - id: verify
     name: Verify
     steps:

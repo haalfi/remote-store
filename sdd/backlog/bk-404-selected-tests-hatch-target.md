@@ -26,13 +26,20 @@ advisory prescription ([§ Item authority](../BACKLOG.md#how-this-file-works)).
 
 ## Prescription (advisory)
 
-One `hatch run` target that runs the map-selected tests from BK-403's winning
-selector, for in-progress rounds. `all` stays the gate before a PR is opened
-and before `/ship`'s close push. Before a round push, the target replaces
-`all`; which skills run it there (`/ship`, `/fix-pr`) is the index's open
-decision.
+*Parts of this prescription are superseded by RFC-0019, marked inline and
+summarised under Progress.*
 
-- **Depends on BK-403:** no map, no target.
+One `hatch run` target that runs the tests selected by BK-403's
+selector, for in-progress rounds. *(Superseded wording "map-selected": the
+RFC-0019 D5 selector is static and has no map.)* `all` stays the gate before a
+PR is opened and before `/ship`'s close push. *(Superseded in part: RFC-0019
+Open Questions 4 proposes `/pr` running the fast target instead of `all`; `all`
+stays the recommended check before marking a merge candidate.)* Before a round
+push, the target replaces `all`; which skills run it there (`/ship`,
+`/fix-pr`) is the index's open decision.
+
+- **Depends on BK-403:** its selector must exist. *(Superseded wording "no
+  map, no target": the selector is RFC-0019 D5, built only if Phase 0 passes.)*
 - **Never asserts the coverage floor:** a selected run cannot measure a
   whole-suite property (audit-022 § H1, "What must stay full").
 - **Saves nothing on its own:** `/ship` runs `all` before every push today.
@@ -41,7 +48,9 @@ decision.
   skills the open decision picks, their edits are in this item's scope, not a
   follow-up.
 - **Shares `.claude/skills/ship/SKILL.md` with ID-266**, whose `/ship` edit
-  marks a draft PR ready at the close. Sequence the two edits together.
+  now sets `merge-candidate` at the close (RFC-0019 D1, Open Questions 4;
+  *superseded wording: "marks a draft PR ready"*). Sequence the two edits
+  together.
 - Inherits the fail-open rule from BK-403: an unplaceable path selects the
   full suite.
 

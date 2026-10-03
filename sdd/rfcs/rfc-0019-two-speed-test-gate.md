@@ -196,8 +196,10 @@ the result and are always unioned, never skipped:
 - If any changed path classifies as FULL, the result is FULL.
 - Otherwise each path contributes its layer-1 selection, and every changed
   path, whatever its row, also contributes its layer-4 readers.
-- A `src/**` path contributes its layer-2 importers, and a backend module adds
-  its layer-3 backend filter.
+- A `src/**` path contributes its layer-2 dependents. A module that a backend
+  source reaches also contributes its layer-3 fixture allowlist. Allowlists
+  from several paths are unioned, and conformance from any path without an
+  allowlist (a conformance test edit, say) runs unrestricted.
 - The union is checked against the cut-off below.
 
 1. **Path classes**, first matching row per path. A committed table in the
@@ -206,13 +208,17 @@ the result and are always unioned, never skipped:
    | Path class | Layer-1 selection |
    | --- | --- |
    | `tests/conftest.py`, `tests/_helpers.py`, `pyproject.toml`, `.python-version`, `.test_durations_pass1`, `.github/**`, `scripts/run_tests.py` | FULL |
-   | Core modules every backend passes through (the list is part of the table) | FULL |
-   | `src/remote_store/backends/_<x>.py` | none of its own; layers 2 and 3 |
+   | Any package `__init__.py` under `src/` (re-export hubs, layer 2) | FULL |
+   | Core modules: those every backend passes through, and those with import-time effects beyond definitions (layer 2). The list is part of the table and Phase 0 derives it | FULL |
+   | Shared fixture infrastructure: `tests/backends/fixtures/` `registry.py`, `_loader.py`, `_state.py`, `_live_env.py`, `_cassette_pytest.py`, `__init__.py`, and `backends.toml` | FULL |
+   | Any other `conftest.py` | every test under its directory |
+   | A `src/` module that is a backend source, or that a backend source reaches (layer 3) | none of its own; layers 2 and 3 |
    | Other `src/**/*.py` | none of its own; layer 2 |
    | `tests/**/test_*.py` | that file |
    | Cassettes under `tests/**/cassettes/<backend>/` | that backend's replay tests and the PII sweep |
-   | `fixtures.toml`, `tests/backends/fixtures/<backend>.py` | that backend's conformance and `tests/backends/fixtures/` |
-   | `tests/backends/fixtures/_cassettes*.py` | `tests/backends/fixtures/`, the replay backends' conformance, and the `test-cassette-pii` job |
+   | `tests/backends/fixtures/_cassettes*.py` | `tests/backends/fixtures/`, the replay fixtures' conformance, and the `test-cassette-pii` job |
+   | `tests/backends/fixtures/<id>.py`, where `<id>` is a `[fixture.<id>]` key in `fixtures.toml` | conformance limited to fixture `<id>`, and `tests/backends/fixtures/` |
+   | `fixtures.toml` | conformance limited to the fixture ids whose block changed (both versions parsed), and `tests/backends/fixtures/`; FULL if it does not parse |
    | `examples/notebooks/**` | no tests; the `notebooks` job |
    | Other `examples/**` | no tests; the `examples` job |
    | `tests/scripts/run_examples.py`, `tests/scripts/run_notebooks.py` | the `examples` or `notebooks` job, plus layers 2 and 4 for tests that import or read them |
@@ -221,13 +227,44 @@ the result and are always unioned, never skipped:
    | Anything unmatched | FULL |
 
 2. **Static import graph.** An `ast`-built reverse graph from each `src/`
-   module to the test files that import it, through `tests/` helpers too.
-   This covers leaf `src/` code.
-3. **Backend axis.** A change to `src/remote_store/backends/_<x>.py` limits
-   conformance to backend `<x>` and adds `tests/backends/<x>/`. The filter
-   goes through the fixture registry (`fixture_params` honours an allowlist),
-   not `-k`: `-k s3` also matches `s3_pyarrow` and `s3_boto3`, which
-   `SMOKE_TARGETS` already works around.
+   module to the test files that depend on it. Its edge rule:
+   - **Every import counts**: module-level, function-local (most `_flat_ns`
+     uses are lazy, e.g. `_s3_base.py`, `_azure.py`, `_sftp.py`) and inside
+     `TYPE_CHECKING`, which over-selects slightly rather than miss.
+   - **`src/` → `src/` edges are followed transitively**, and so are edges
+     through `tests/` helper modules.
+   - **Package `__init__.py` files are re-export hubs, not dependencies.**
+     `remote_store/__init__.py` imports `_store`, `_path`, `_config`,
+     `_registry`, `_proxy` and every `ext.*` module, so treating it as a node
+     would make every module reach every test. Instead, an import of a name
+     from a hub resolves to the module that defines that name, using the hub's
+     own import statements. `import remote_store` followed by
+     `remote_store.<name>` resolves the same way.
+   - **Fail open:** an unresolvable hub import (star import, `getattr`, a bare
+     module object passed around) depends on every module the hub imports.
+     Editing a hub is FULL (layer 1).
+   - **Import-time effects:** importing any submodule runs the package
+     `__init__`, so a module's top-level code runs in every test. A module
+     whose top level does more than define names (registration, patching,
+     environment reads) is therefore a core module (layer 1, FULL). Phase 0
+     derives that list by AST scan, and D7's cross-check ignores import-phase
+     lines for the same reason.
+3. **Backend axis.** It limits conformance to the fixtures of the backends a
+   change can reach, using two static registry facts:
+   - `backends.toml` names each backend's `sources` and `async_sources`, the
+     latter covering `src/remote_store/aio/backends/`;
+   - `fixtures.toml` names each fixture's `backend`.
+
+   A changed `src/` module selects every backend whose source modules reach it
+   through layer-2 edges. A shared helper such as `_flat_ns.py`, `_s3_base.py`
+   or `_fileinfo.py` therefore selects the several backends that import it,
+   not a backend named after the file. The selection is the fixture ids of
+   those backends, plus `tests/backends/<backend>/`. A helper that reaches
+   every backend hits the cut-off and runs FULL.
+
+   The filter goes through the fixture registry (`fixture_params` honours an
+   allowlist of fixture ids), not `-k`. `-k s3` also matches `s3_pyarrow` and
+   `s3_boto3`, which `SMOKE_TARGETS` already works around.
 4. **Text readers.** A generated table maps source globs to the tests that read
    them as text, for `src/`, `tests/` and `scripts/` alike. It extends
    `sdd/research/bk-403-testmon-poc/srcreads.py`, which covered `src/` only, to readers of
@@ -254,10 +291,10 @@ FULL path such as `pyproject.toml`, or a non-`code` path such as `packaging/`
 | `lint`, `typecheck` | always |
 | `test`, `test-primary` | selected tests |
 | `tooling-tests` | selected `tests/scripts/` tests |
-| `test-primary-sftp` | selection holds `sftp_docker` tests |
+| `test-primary-sftp` | selection holds conformance tests whose fixture allowlist (layer 3) contains `sftp_docker`, or is unrestricted |
 | `test-cassette-pii` | a cassette or `_cassettes*.py` row in layer 1 |
 | `pyarrow-major-check` | selector reaches its test files (`ci.yml` job steps) |
-| `test-cross-platform` | selection holds an `os_sensitive` test (static marker scan, module-level `pytestmark` included) |
+| `test-cross-platform` | selection holds an `os_sensitive` test. The marker has two sources, and both are read statically: test files (marks and module-level `pytestmark`), and fixture modules' `marks=` in `tests/backends/fixtures/`. Today the second source is `local` and `local_async`, whose marks `fixture_params` attaches to every conformance test parametrized with them. So a selected conformance test whose fixture allowlist contains such a fixture, or is unrestricted, counts |
 | `e2e` | selector reaches `tests/e2e/` |
 | `examples` | an `examples/**` path outside `examples/notebooks/`, `tests/scripts/run_examples.py`, or a `src/` module an example imports |
 | `notebooks` | an `examples/notebooks/**` path, `tests/scripts/run_notebooks.py`, or a `src/` module a code cell imports |
@@ -306,7 +343,7 @@ stop the whole effort.**
 
 | Phase | Goal | Deliverables | Exit |
 | --- | --- | --- | --- |
-| **0. Validate** | Prove rules plus a static graph are correct and worth it, before production code | Throwaway selector under `sdd/research/`; extended text-reader scan; seed run through the PoC driver; replay of historical PR diffs (selected share per diff); replay of past red CI runs, including auxiliary jobs (was the failing test or job selected?); prototypes of the marker scan and notebook import parsing | 0 seed misses, 0 historical misses, and a median selected share below a target set before the run. **Stop** if typical diffs select close to the full suite |
+| **0. Validate** | Prove rules plus a static graph are correct and worth it, before production code | Throwaway selector under `sdd/research/`; extended text-reader scan; seed run through the PoC driver; replay of historical PR diffs (selected share per diff); replay of past red CI runs, including auxiliary jobs (was the failing test or job selected?); prototypes of the marker scan (test files and fixture `marks=`) and notebook import parsing; the layer-2 edge rule built and measured, including hub resolution through `remote_store/__init__.py`; the core-module list derived (every-backend modules plus modules with import-time effects) | 0 seed misses, 0 historical misses, and a median selected share below a target set before the run. **Stop** if typical diffs select close to the full suite |
 | **1. Develop** | Production selector and the local lane | ADR for the local part; selector with rule table, graph, backend axis, reader table and per-job flags; registry allowlist; seed unit tests; coverage cross-check job; local fast target. BK-404 stays open until its skill edits land (Open Questions 4) | Seeds green in CI; cross-check reports no gap on master |
 | **2. Shape** | Local pilot, tune rules | Fast target used for real rounds; escape log of fast against the later full result; rule tuning | A pilot length fixed beforehand with 0 escapes; cut-off and core list settled by measurement |
 | **3. CI shadow** | Validate the CI lane without risk | Fast lane computes and logs its selection while the full lane still runs on every push; escapes compared automatically | A shadow period fixed beforehand with 0 escapes; time saved measured |
