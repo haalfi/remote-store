@@ -208,7 +208,8 @@ and the question is classified by the rows below it.
    with both an `answered` and a `failed` event is also reported: D3 still
    classifies it, but it contradicts the assumption that the two Post events are
    exclusive. Neither step 0 nor its follow-up could test it: no `failed` event
-   fired in 14 payloads, so that assumption and D3's `failed` row remain
+   fired in 27 payloads (13 in step 0, 14 in the follow-up), so that assumption
+   and D3's `failed` row remain
    unobserved.
 3. **`/pr`.** The skill renders a "Decisions" section from the committed log
    only, after Step 1 has committed the tail, so the body never cites an event

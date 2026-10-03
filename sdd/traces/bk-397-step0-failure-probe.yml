@@ -29,7 +29,7 @@ phases:
       - file: sdd/rfcs/rfc-0018-decision-capture-at-dialog-time.md
         section: "Open Question 2"
         read_type: reference
-        extract: "Ran dismissal, wait, duplicate texts, one option, subagent call, interrupt: 0 PostToolUseFailure in 14 payloads. The brief's case a (Esc/close) cannot be told from a denial in the app; the same cross gave Denied by user twice and a sentinel Post once, confounded by a browser message. My miss: I asked the user which control they used only after the divergence appeared. The maintainer added a restart report (a dialog vanishing on container restart) mid-task; it is recorded as unobserved, with the push-timing consequence marked an inference"
+        extract: "Ran dismissal, wait, duplicate texts, one option, subagent call, interrupt: 0 PostToolUseFailure in this run's 14 payloads (27 with step 0's 13). The brief's case a (Esc/close) cannot be told from a denial in the app; the same cross gave Denied by user twice and a sentinel Post once, confounded by a browser message. My miss: I asked the user which control they used only after the divergence appeared. The maintainer added a restart report (a dialog vanishing on container restart) mid-task; it is recorded as unobserved, with the push-timing consequence marked an inference"
         outcome: ok
   - id: docs
     name: Official docs
@@ -50,7 +50,7 @@ phases:
       - file: sdd/BACKLOG.md
         section: "6. The repo does not mislead the next person / BK-397"
         read_type: verify
-        extract: "Item said dismissal and timeout were the open triggers; now nothing fired PostToolUseFailure and the docs exclude denials, open are timeout, restart with a dialog open and the failed path. The diagnosis cap (R2, five lines) forced the wording down each time the item grew"
+        extract: "Item said dismissal and timeout were the open triggers; now nothing fired PostToolUseFailure and the docs exclude denials, timeout and restart stay unobserved bounds, and the next action is to decide the failed path, then accept RFC-0018 (round 3 caught that the item had lost its next action). The diagnosis cap (R2, five lines) forced the wording down each time the item grew"
         outcome: ok
   - id: review
     name: Review rounds
