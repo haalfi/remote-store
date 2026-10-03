@@ -797,3 +797,76 @@ CHANGELOG the release body is built from — say what is actually true.
   research § 2.3: code shows behaviour, not whether it was decided. RFC-0018
   (Draft) proposes hook capture; step 0 ran 2026-10-03. Open: what fires
   `PostToolUseFailure` (dismissal, timeout); then accept RFC-0018.
+
+- [ ] **BK-402 — `ci.yml` says `tests/scripts/` does not exercise `remote_store`, and it does**
+  spec: — · effort: S · audience: infra.ci
+  The comment above `tooling-tests` (`ci.yml:451`) says `tests/scripts/`
+  exercises scripts and hooks, "not remote_store", but `test_gen_features.py`
+  imports it and two scripts the suite drives read `src/` as text
+  ([audit-022](audits/audit-022-gate-speed-strategies.md) § H1); a selector
+  built on the comment would drop the directory. Open decision: none.
+
+---
+
+<a id="gate-cost"></a>
+## 7. The gate costs what the change can reach
+
+**Promise:** while work is in progress, a contributor waits only for the checks
+the change can affect; once, before merge, the whole gate runs. Narrowing never
+lifts the full pre-merge run or the coverage floor.
+
+- [ ] **BK-398 — No change-scoped test selector has been measured on this suite, so none can be chosen**
+  spec: — · effort: M · audience: infra.test, contributor.tooling
+  Both gates run every test for every diff, because nothing maps a changed
+  path to the tests it can affect (audit-022 § H1). Conformance is wired
+  through the fixture registry, so import or diff maps miss it. Open decision:
+  which selector, if any, survives the seeded changes, fails open where it
+  must, and has a map that holds across interpreters.
+  Detail: [dossier](backlog/bk-398-test-selector-evaluation.md)
+
+- [ ] **BK-399 — The local gate runs every test for every diff, with no selected target for in-progress rounds**
+  spec: — · effort: S · audience: contributor.tooling
+  `hatch run all` runs all of Stage 1 whatever the diff touched, and tests
+  are most of its wall time (audit-022 § H1). Needs BK-398's selector. Open
+  decision: whether a third gate branch fits audit-017 R3's one thin target
+  and BK-271's composed gate, and whether `/ship` uses it for rounds.
+  Detail: [dossier](backlog/bk-399-selected-tests-hatch-target.md)
+
+- [ ] **ID-264 — Every in-progress PR push runs the full pre-merge CI gate**
+  spec: — · effort: L · audience: infra.ci, contributor.process
+  `ci.yml` runs the whole gate on every PR push, including each `/ship` round
+  (audit-022 § M1). Needs BK-398's map and `/pr` and `/ship` changes. Open
+  decision: a new ADR amending ADR-0043 for a draft-PR selected lane, once
+  its four prerequisites have answers.
+  Detail: [dossier](backlog/id-264-two-speed-ci-gate.md)
+
+- [ ] **BUG-300 — The PII sweep's bare-email regex is quadratic on base64 runs and dominates the local run**
+  spec: — · effort: S · audience: infra.test
+  The `bare email address` pattern (`tests/backends/fixtures/_cassettes.py:180`)
+  restarts at every character of long base64 runs; [audit-022](audits/audit-022-gate-speed-strategies.md)
+  § L2 measures its share of `TestCommittedCassettePIISweep` and an anchored
+  form with identical verdicts on every committed cassette. Open decision:
+  none; the anchored pattern and its measurement are in § L2.
+
+- [ ] **BK-401 — Coverage runs on the slow tracer where `sysmon` gives identical results**
+  spec: — · effort: S · audience: infra.ci, contributor.tooling
+  `test-primary`, `test-primary-sftp`, `test-cassette-pii` and `test-cov-s1`
+  measure coverage on the default core; [audit-022](audits/audit-022-gate-speed-strategies.md)
+  § L1 measures `COVERAGE_CORE=sysmon` at no-coverage speed with identical
+  covered lines. Open decision: none on shape (§ Proposals, P6); branch
+  coverage under `sysmon` is unchecked, so `test-cov-branch` is out of scope.
+
+- [ ] **BK-400 — The shard durations go stale between manual refreshes, so the primary shards balance on partial data**
+  spec: — · effort: M · audience: infra.ci
+  `.test_durations_pass1` misses part of what the primary shards split and
+  names tests that no longer exist (audit-022 § M2); refreshing is a manual
+  duty. Open decision: the drift threshold for a `ci-full.yml`-opened refresh
+  PR, and its token, since a `GITHUB_TOKEN` PR does not trigger `ci.yml`.
+  Detail: [dossier](backlog/bk-400-durations-refresh-pr.md)
+
+- [ ] **ID-265 — The PR gate's critical path waits for a runner slot behind setup-only jobs**
+  spec: — · effort: S · audience: infra.ci
+  `test-primary` can queue only after `prepare-images`, by which time the
+  setup-only jobs hold the slots ([audit-022](audits/audit-022-gate-speed-strategies.md)
+  § L3, at most ~30 s). Gating them behind `prepare-images` delays them in
+  turn. Open decision: adopt only if a measured run shows a net gain.
