@@ -154,15 +154,21 @@ it skipped.
 whose token has `statuses: write`, and by anyone with write access.
 
 - **Mechanism:** a commit status via the workflow's `GITHUB_TOKEN`
-  (`statuses: write` on the posting job only), not the Checks API. A check run
-  created by Actions carries its job's name, which would collide with the
-  required-job problem above.
+  (`statuses: write` on the posting job only). A check run created through the
+  Checks API (`checks: write`) would work equally well, since it can carry any
+  name. The status is chosen because it is simpler: one API call, no check-suite
+  semantics.
 - **Source pinning:** the ruleset's required check names `merge-gate` with the
   GitHub Actions app as its expected source. A status from another integration
   or a personal token then does not satisfy it.
-- **One poster:** a lint check (Phase 4) asserts that only `ci.yml` declares
-  `statuses: write`, and only on the full lane's final job. Another workflow
-  posting the same context therefore fails review before it can merge.
+- **One poster, by convention:** a lint check (Phase 4) asserts that only
+  `ci.yml` declares `statuses: write`, and only on the full lane's final job.
+  This catches accidents, not an adversary. A same-repo PR runs its *own*
+  version of the workflows, so it can edit `ci.yml` or the lint and post
+  `merge-gate` itself. That is the same trust model as today's required `gate`
+  job, which a PR can also edit, so the design is no weaker. But the barrier
+  against a tampered workflow is human review of workflow changes, not the
+  status mechanism.
 - **Maintainer override:** someone with write access can still post the
   status by hand. That is an explicit, audited override, the same class as an
   admin bypass of branch protection, and is not a path the design relies on.
@@ -259,12 +265,32 @@ maintenance is not added.
 
 | Level | Rules | Everything else |
 | --- | --- | --- |
-| **Pilot** (Phase 1) | Layer 1's FULL rows, test-file rows, cassette rows, fixture-id rows and `scripts/<x>.py` → its direct test; a backend source listed in `backends.toml` → that backend's fixture allowlist and `tests/backends/<backend>/` | FULL: any other `src/` module, a shared helper, and any path the Phase 0 text-reader inventory lists as read as text |
+| **Pilot** (Phase 1) | Layer 1's FULL rows, test-file rows, cassette rows, fixture-id rows and `scripts/<x>.py` → its direct test; a **leaf backend module** → its backends' fixture allowlist and `tests/backends/<backend>/` | FULL: any other `src/` module, any backend module that is not a leaf, and any path the text-reader inventory lists as read as text |
 | **Precision** (Phase 2, one at a time) | Layer 2 with hub resolution and the import-time scan; layer 3 through transitive helper edges; layer 4's mapped readers; notebook import parsing for D6 | — |
 
-In the pilot, a path read as text runs FULL rather than its mapped readers.
-That is safe without a complete reader map, which is what makes it a pilot
-rule.
+**A leaf backend module** is a backend source in `backends.toml` that meets
+two conditions:
+
+- **No other `src/` module imports it,** at any level, including function-local
+  imports.
+- **Every test file that imports it lies under `tests/backends/<backend>/`**
+  for one of the backends that list it.
+
+Both are checked statically when the selection is made. The second condition
+is not cosmetic: backend modules are imported directly well outside their own
+folders, for example in `tests/test_store.py`, `tests/ext/`,
+`tests/scripts/test_gen_features.py`, `tests/aio/` and `tests/e2e/` (a Grep for
+`remote_store.backends._` over `tests/`). The first condition matters because
+`backends.toml` names a module under one backend while other backends use it
+too: `_s3_base.py` is listed under `s3` only, but `_s3_pyarrow` and
+`_s3_boto3` import it. A module that fails either condition runs FULL in the
+pilot.
+
+**The pilot is only as safe as the text-reader inventory.** Sending listed
+paths to FULL does nothing for a reader the inventory has missed. Research
+Appendix D records that the inventory is incomplete for readers of `tests/` and
+`scripts/` files. Completing it is therefore a Phase 0 exit criterion, not a
+precision layer that can be deferred.
 
 **Composition.** Layer 1 classifies each changed path; layers 2–4 then expand
 the result and are always unioned, never skipped:
@@ -414,6 +440,16 @@ none of which selects anything.**
    escapes (the first two classes). The others are reported, and routed to
    their own owners.
 
+   **A class other than the first two needs evidence**, or a judgment call
+   could argue a real miss away:
+   - *environment-only*: the same test fails on the base commit in the same
+     job, or passes on every other leg;
+   - *nondeterministic*: it passes on an unchanged rerun of the same commit;
+   - *not represented*: the failing job has no D6 rule;
+   - *coverage-only*: no test failed, only the floor.
+
+   An escape without that evidence counts as a selector defect.
+
 **Every fast run is observable.** The selector writes structured output (JSON
 artifact and job summary) containing:
 
@@ -475,7 +511,7 @@ The targets for these are written into the Phase 0 plan before the run.
 
 | Phase | Goal | Deliverables | Exit |
 | --- | --- | --- | --- |
-| **0. Validate** | Decide whether to build, from evidence | Throwaway selector under `sdd/research/` with the pilot rule set, and the precision layers prototyped beside it; extended text-reader inventory; seed run through the PoC driver; replay of historical PR diffs and of past red CI runs, including auxiliary jobs; the metrics above for both rule sets; the core-module list derived (every-backend modules plus modules with import-time effects) | 0 seed misses and 0 deterministic, selector-reachable historical misses; the pilot's estimated wall-clock saving meets its predefined target. **Stop** if typical diffs fall back to FULL or select close to the full suite |
+| **0. Validate** | Decide whether to build, from evidence | Throwaway selector under `sdd/research/` with the pilot rule set, and the precision layers prototyped beside it; extended text-reader inventory; seed run through the PoC driver; replay of historical PR diffs and of past red CI runs, including auxiliary jobs; the metrics above for both rule sets; the core-module list derived (every-backend modules plus modules with import-time effects) | The text-reader inventory is complete for `src/`, `tests/` and `scripts/` readers, re-run to the same result; 0 seed misses and 0 deterministic, selector-reachable historical misses; the pilot's estimated wall-clock saving meets its predefined target. **Stop** if typical diffs fall back to FULL or select close to the full suite |
 | **1. Pilot** | Production selector with the pilot rule set, local only | ADR for the local part; selector (stdlib only) with the pilot rows, fixture allowlist, per-job flags and structured output; registry allowlist; seed and mapping-completeness unit tests; local fast target. BK-404 stays open until its skill edits land (Open Questions 4) | Seeds and the mapping test green in CI; the fallback rate recorded from the first real rounds |
 | **2. Shape** | Use the pilot, then add precision | Fast target used for real rounds; escape log against the later full result, classified; then layer 2 (hubs, import-time scan), transitive layer 3, mapped layer 4 and notebook parsing, each added only after the cross-check job is in place and reports no gap | A pilot length fixed beforehand with 0 deterministic, selector-reachable escapes; each precision layer kept only if it lowers the measured share without a cross-check gap; cut-off set by measurement |
 | **3. CI shadow** | Validate the CI lane without risk | Fast lane computes and logs its selection while the full lane still runs on every push; escapes compared and classified automatically; fallback rate reported | A shadow period fixed beforehand with 0 deterministic, selector-reachable escapes; time saved and fallback rate measured |

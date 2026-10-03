@@ -169,6 +169,30 @@ phases:
           at a time, a status lifecycle table and poster pinning, cost-based
           cut-off metrics, classified escapes, observable fallback, rule
           ownership, and a non-code classifier that fails toward code
+  - id: fix5
+    name: Self-correction after accepting the overall review uncritically
+    steps:
+      - file: tests/backends/fixtures/backends.toml
+        section: "[backend.s3] sources"
+        read_type: reference
+        outcome: misleading
+        extract: >-
+          _s3_base.py is listed under s3 only, though s3_pyarrow and s3_boto3
+          import it; a per-backend source list is not a dependency set. The
+          misread was mine: I wrote a pilot rule on it without checking
+          importers
+      - file: tests
+        section: "Grep remote_store.backends._ across tests/"
+        read_type: reference
+        extract: >-
+          Backend modules are imported directly from tests/test_store.py,
+          tests/ext, tests/scripts, tests/aio and tests/e2e, so the pilot
+          narrows only leaf backend modules. The maintainer asked whether the
+          review had been handled critically; it had not: I implemented all
+          ten recommendations without verifying any, and introduced an unsafe
+          pilot rule, a false safety claim about the reader inventory,
+          evidence-free escape classes, an overstated lint guarantee and a
+          wrong Checks-API rationale
   - id: verify
     name: Verify
     steps:
