@@ -127,27 +127,16 @@ labelled **(was … , absorbed here)**, which is the absorption form
      `aio/backends/_memory.py` line 311. Each citation is re-cited to
      BK-389's spec 003 root clause in the same PR, and both tests' message
      matches follow the kernel's refusal; added in PR #1056's rounds 3 to
-     5. MEM-DS-005's table, which states itself as its own rule, gains a
-     backslash row (`InvalidPath`, BK-395) beside its null-byte row; added
-     in PR #1061's round 3.]
+     5. MEM-DS-005's table gains its backslash row, by BK-389 decision 6's
+     Clauses checked paragraph.]
    - [spec 003's key-rule clause was planned here and moved to BK-389's
      item 8 after PR #1055 merged, so the kernel's cells have a spec ID
      before they are written. BK-395's answers land with it in BK-389's PR.
      This PR applies them to the two Memory classes, the first on the
-     kernel. Outside spec 003 they keep PATH-002 (it binds `RemotePath`),
-     NPR-004 and NPR-021 (total) and RES-020 (`plan.key == path`). The
-     round-trip clauses they contradict, spec 010's NPR-005 and NPR-020 and
-     spec 003's BE-029 § Round-trip consequence, are already false on
-     master for `GraphBackend`, so BK-398 amends them before this PR; this
-     PR re-checks that they cover both Memory classes, whose
-     `to_key(native_path("d//f"))` becomes `"d/f"`. This PR also amends
-     NPR-020's Overrides line, "`MemoryBackend` inherits the identity
-     default" (spec 010 line 280), which item 2's addressing cells make
-     false: Memory's `native_path` then answers the kernel's canonical key.
-     Spec 013's MEM-DS-005 is incomplete rather than contradicted: its
-     backslash row is in the spec 013 bullet above. BK-389 decision 6's
-     Clauses checked paragraph states each; found in PR #1061's rounds 3
-     to 6.]
+     kernel, and amends every clause BK-389 decision 6's **Clauses
+     checked, and who amends each** assigns to BK-394, re-checking the ones
+     it assigns to BK-398. That paragraph is the list; it is not restated
+     here (PR #1061's round 8).]
    - [spec 003 BE-021 § Reach's page-boundary paragraph: under BK-389's
      decision 1 a migrated driver has no unmarked page, so the divergence it
      licenses applies only to a class not yet migrated.]

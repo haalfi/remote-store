@@ -278,11 +278,11 @@ failure it was.
 
 - [ ] **BK-399 — A stored key holding a backslash has no kernel answer, so migration may strand it**
   spec: BE-025, BE-029 · effort: S · audience: library.maintainer, user.api
-  BK-395 refuses a backslash in every input key, but a key written by another
-  tool (an S3 object, a file or a row named `a\b`) is still listed, folded to
-  `a/b` by `RemotePath` (on Memory, a stored `"\\"` makes the whole listing
-  raise; BK-395's dossier), then unreachable by either spelling. Open
-  decision: what a listing yields for it and how it is reached; BK-389 decides.
+  BK-395 refuses a backslash on every operation, but a key another tool wrote
+  (`a\b`) is still listed, folded to `a/b` by `RemotePath` (a stored `"\\"`
+  makes Memory's whole listing raise), then no operation reaches it; only
+  addressing still yields its native address. Open decision: what a listing
+  yields for it and how it is reached; BK-389 decides.
 
 - [ ] **BK-389 — RFC-0017's kernel does not exist, so no backend can migrate onto it**
   spec: BE-017, BE-020, BE-021, BE-024, BE-025, BE-029, ERR-001, ERR-009, DEPTH-003, PING-002, AW-001, SAW-003 · effort: L · audience: library.maintainer, infra.test

@@ -251,11 +251,10 @@ if evidence changes; these are retired.
   caller's; a backslash is refused with `InvalidPath` on every operation,
   which decides absorbed BUG-297's fix, now hosted by BK-394 and BUG-300;
   `glob` checks the capability first, then takes the refusals and
-  normalisation segment-wise. BE-024, BE-025 and BE-029 gain clauses in
-  BK-389's PR; BK-394 lists the Memory cells and amends MEM-DS-005 and
-  NPR-020's Overrides line. The
-  round-trip clauses contradicted (NPR-005, NPR-020, BE-029's) are already
-  false on master and filed as BK-398; stored backslash keys as BK-399.
+  normalisation segment-wise, keeping a trailing `/`. Which clauses are
+  affected and who amends each is decision 6's Clauses checked paragraph;
+  it filed BK-398 (round-trip clauses already false on master) and BK-399
+  (stored backslash keys).
   Detail: [dossier](backlog/bk-395-kernel-key-rule-addressing.md)
 
 - [x] **BK-396 — The kernel's `delete_folder` sequence around `SupportsRemoveFolder` is undecided**

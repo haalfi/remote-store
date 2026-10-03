@@ -235,23 +235,40 @@ every case. RFC-0017 carries the same answers at the question each settles.
      closed or not, as `BackendContract.dfy` exempts `RequireCapability`
      from `Live()` because it reads declared data; the maintainer's
      decision in PR #1061's round 4), then the closed guard, then step
-     (2)'s refusals over the whole pattern (a leading `/`, a `..` segment, a
-     null byte, a backslash), then step (3)'s dropping of interior empty
-     and `.` segments, wildcard characters untouched inside their
-     segments, then the driver with the canonical pattern, so a native
-     driver's prefix listing (GLOB-018 to GLOB-020) starts from a canonical
-     pattern. **A trailing `/` is kept** (the maintainer's decision in PR
-     #1061's round 7), since in a pattern it selects directories only: at
-     master `57d0797` `glob("d/*/")` and `glob("**/")` answer `[]` on Local
-     and SQLBlob, where dropping it would make them `d/*` and `**` and
-     return files; a pattern that is only `/` and `.` segments is the root.
-     A pattern that normalises to `""` names the root, a folder, and yields
-     nothing, since `glob` returns only files (GLOB-004, BE-024).
-     Unlike a key, a pattern reaches the backend from `Store.glob` without
-     `RemotePath`, so these cells are visible through `Store` once a `GLOB`
-     driver migrates. No step-1 cell: neither Memory class declares `GLOB`.
+     (2)'s refusals over the raw pattern (a leading `/`, a `..` segment, a
+     null byte, a backslash), then step (3) exactly as for a key: every
+     empty and `.` segment is dropped, wildcard characters untouched inside
+     their segments. **One addition: if the raw pattern ends in `/` and
+     something remains, the canonical pattern keeps that trailing `/`**,
+     since in a pattern it selects directories only (the maintainer's
+     decisions in PR #1061's rounds 7 and 8). Then the driver gets the
+     canonical pattern, so a native driver's prefix listing (GLOB-018 to
+     GLOB-020) starts from it. A canonical `""` names the root, a folder,
+     and yields nothing, since `glob` returns only files (GLOB-004, BE-024).
+     The table below is that rule's enumeration, and the rule is the table:
 
-   **Clauses checked.** BE-025 permits `native_path` to normalise and
+     | Raw pattern | Kernel's answer |
+     |---|---|
+     | `"d/*.csv"`, `"./d/*.csv"`, `"d//*.csv"`, `"d/./*.csv"` | `"d/*.csv"` to the driver |
+     | `"d/*/"`, `"d/*//"`, `"./d/*/"`, `"d/./*/"` | `"d/*/"` (directories only, so no file) |
+     | `"d//"`, `"d/./"` | `"d/"` |
+     | `"d/*/."` | `"d/*"` (a trailing `.` is dropped like any `.`; the raw pattern does not end in `/`) |
+     | `""`, `"."`, `"./"`, `".//"` | `""`, the root: nothing |
+     | `"/"`, `"/./"`, `"/d/*.csv"` | `InvalidPath` (leading `/`, refused at step (2) before step (3)) |
+     | `"*/../x"`, `"d/*\0"`, `"d\\*.csv"` | `InvalidPath` |
+
+     Measured at master `57d0797`: `glob("d/*/")` and `glob("**/")` answer
+     `[]` on Local and SQLBlob, and `glob("d/*/.")` answers `['d/a.csv']`
+     on Local and `[]` on SQLBlob, so SQLBlob's `"d/*/."` cell changes at
+     step 3. Unlike a key, a pattern reaches the backend from `Store.glob`
+     without `RemotePath`, so these cells are visible through `Store` once a
+     `GLOB` driver migrates. No step-1 cell: neither Memory class declares
+     `GLOB`.
+
+   **Clauses checked, and who amends each.** This paragraph is the one
+   home for which clauses BK-395's answers affect and which item amends
+   each; BK-394, BK-390, RFC-0017 § Impact and BK-395's dossier point here
+   rather than restating it. BE-025 permits `native_path` to normalise and
    requires totality and the verbatim round trip of `..` and null bytes, all
    kept; NPR-004 and NPR-021 require totality; RES-020 and RES-025 hold as
    stated above; PATH-002 binds `RemotePath`, which `Store` applies before
@@ -267,14 +284,16 @@ every case. RFC-0017 carries the same answers at the question each settles.
    today: run offline at master `57d0797` (`GraphBackend("drive-x",
    token_provider=lambda: "t")`), `to_key(native_path(k))` is `"d/f"` for
    `"d//f"` and `"d/./f"`, `"d"` for `"d/"` and `""` for `"./"` and `".//"`.
-   BK-398 amends all three now, by maintainer decision, so BK-394 only
-   re-checks them. Two clauses outside spec 003 are made incomplete or
+   BK-398 amends all three, by maintainer decision; it can land any time
+   and must land before BK-394, the first PR to put a class on the kernel,
+   which only re-checks them (not before this item's kernel PR). Two clauses outside spec 003 are made incomplete or
    false only once Memory runs on the kernel, so BK-394 amends them: spec
    013's MEM-DS-005 table, which has no backslash row, and NPR-020's
    Overrides line, "`MemoryBackend` inherits the identity default" (spec
    010 line 280), false once Memory's `native_path` answers the canonical
    key (found in PR #1061's rounds 3 and 6). Otherwise spec 003 gains
-   clauses (item 8).
+   clauses, which item 8 lists: BE-025 and BE-029's addressing row, BE-029's
+   backslash paragraphs, and BE-024's pattern rule.
 
    **Not `RemotePath`'s rules, nor `LocalBackend._resolve()`'s.** The
    refusals and normalisation are spec 013's MEM-DS-005 table, which both
@@ -552,12 +571,10 @@ every case. RFC-0017 carries the same answers at the question each settles.
    is scoped to a class on the kernel, and no class is on it until BK-394:
    - the key rule of decision 6: its refusals, the backslash among them,
      normalisation and root check on the canonical key, together with
-     BK-395's answers as decision 6 states them. The round-trip clauses
-     they contradict (BE-029 § Round-trip consequence, and spec 010's
-     NPR-005 and NPR-020) are already false on master and are BK-398's,
-     which lands before BK-394, the first PR to put a class on the kernel
-     (not before this one), so what lands here is additions:
-     BE-025 and BE-029's addressing row gain the kernel's addressing rule
+     BK-395's answers as decision 6 states them. The clauses those answers
+     contradict or leave incomplete, and who amends each, are decision 6's
+     **Clauses checked, and who amends each**; what lands here is the
+     additions: BE-025 and BE-029's addressing row gain the kernel's addressing rule
      (canonical key to the driver, a refused key raw, `plan.key` the
      caller's); BE-029's backslash paragraphs ("a backslash-only key is
      **not** refused by this clause") gain that a class on the kernel

@@ -92,24 +92,17 @@ drivers** paragraph); this section keeps only how they were reached.
    prefix through the pipeline leaves `"*/../x"`, `"*//x"` and a null byte
    after the first wildcard to the driver, which D1 says carries no path
    logic, and the two `GLOB` backends measured below already disagree on
-   `"*/../*.csv"` (Local `InvalidPath`, SQLBlob `[]`). So the refusals apply to the whole pattern and interior empty
-   and `.` segments drop, and a native driver's prefix listing (GLOB-018
-   to GLOB-020) starts from a canonical pattern. The capability check runs
-   before the closed guard, a maintainer's decision in PR #1061's round 4,
-   following `BackendContract.dfy`'s exemption of `RequireCapability` from
-   `Live()`. A trailing `/` is kept, since it selects directories only
-   (round 7; measured below).
+   `"*/../*.csv"` (Local `InvalidPath`, SQLBlob `[]`). So the refusals
+   apply to the whole pattern and normalisation drops every empty and `.`
+   segment as for a key, keeping only a trailing `/` (rounds 7 and 8). The
+   capability check runs before the closed guard (round 4). Decision 6
+   states the rule as an enumeration table.
 
-The exit criteria's clauses were checked against the answers; the reasons
-are in decision 6's **Clauses checked** paragraph. BK-389's item 8 carries
-additions to BE-024, BE-025 and BE-029. The answers contradict three
-round-trip clauses, spec 010's NPR-005 and NPR-020 and spec 003's BE-029
-§ Round-trip consequence (found in PR #1061's rounds 4 and 5), which
-`GraphBackend` already breaks on master, so BK-398 amends them now. They
-leave spec 013's MEM-DS-005 validation table without a backslash row
-(round 3), and make NPR-020's "`MemoryBackend` inherits the identity
-default" false (round 6); BK-394 amends both. What a listing does with a stored backslash
-key that another tool wrote is open, as BK-399 (round 5). Absorbed
+The exit criteria's clauses were checked against the answers. Which clauses
+are affected and which item amends each is stated once, in decision 6's
+**Clauses checked, and who amends each** (rounds 3 to 8 shaped it); it is
+not restated here. What a listing does with a stored backslash key that
+another tool wrote is open, as BK-399 (round 5). Absorbed
 BUG-297's defect is unchanged on master; its open work moved in PR #1061
 to BK-394 (Memory) and BUG-300 (SQLBlob, at RFC-0017 D3 step 3).
 
@@ -135,9 +128,10 @@ returned value or the exception's class name):
   `"./d/*.csv"`, `"d//*.csv"`, `"d/./*.csv"`, `"/d/*.csv"`, `"../*.csv"`,
   `"d/../*.csv"`, `"*/../*.csv"`, `"d\\*.csv"`, `"d/*\0"`, `"**/*.csv"`, plus
   `""` and `"."` on Local. Run on Linux, where `\` is no path separator.
-  Added in PR #1061's round 7: `"d/*/"`, `"**/"`, `"d/*"` and `"**"` on
-  both, where the first two answer `[]` and the last two `['d/a.csv']`
-  and every file.
+  Added in PR #1061's rounds 7 and 8: `"d/*/"`, `"**/"`, `"d/*"`, `"**"`
+  and `"d/*/."` on both, where the first two answer `[]`, the next two
+  `['d/a.csv']` and every file, and `"d/*/."` `['d/a.csv']` on Local and
+  `[]` on SQLBlob.
 - *Backslash post-states* (added in PR #1061's round 5, since the per-call
   answers above show no state): per class, a fresh store holding the same
   three keys, then one of `write("\\")`, `move("f", "\\")` and
