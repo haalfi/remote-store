@@ -11526,24 +11526,25 @@ attributes (the sixth, <code>close_is_terminal</code>, added at BK-389's plannin
 <a id="__codelineno-0-6" name="__codelineno-0-6" href="#__codelineno-0-6"></a>    <span class="n">put_is_atomic</span><span class="p">:</span> <span class="nb">bool</span>           <span class="c1"># S3, SQL, flat Azure True (write_atomic is put); Local, SFTP False</span>
 <a id="__codelineno-0-7" name="__codelineno-0-7" href="#__codelineno-0-7"></a>    <span class="n">close_is_terminal</span><span class="p">:</span> <span class="nb">bool</span>       <span class="c1"># BE-020's posture; the kernel's closed guard runs only when True (Memory False)</span>
 <a id="__codelineno-0-8" name="__codelineno-0-8" href="#__codelineno-0-8"></a>
-<a id="__codelineno-0-9" name="__codelineno-0-9" href="#__codelineno-0-9"></a>    <span class="k">def</span><span class="w"> </span><span class="nf">stat</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">key</span><span class="p">:</span> <span class="nb">str</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Entry</span> <span class="o">|</span> <span class="kc">None</span><span class="p">:</span> <span class="o">...</span>        <span class="c1"># file OR folder, kind on the Entry; None if absent</span>
+<a id="__codelineno-0-9" name="__codelineno-0-9" href="#__codelineno-0-9"></a>    <span class="k">def</span><span class="w"> </span><span class="nf">stat</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">key</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="o">*</span><span class="p">,</span> <span class="n">follow_links</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">True</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Entry</span> <span class="o">|</span> <span class="kc">None</span><span class="p">:</span> <span class="o">...</span>  <span class="c1"># file OR folder, kind on the Entry; None if absent</span>
 <a id="__codelineno-0-10" name="__codelineno-0-10" href="#__codelineno-0-10"></a>    <span class="k">def</span><span class="w"> </span><span class="nf">get</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">key</span><span class="p">:</span> <span class="nb">str</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">BinaryIO</span><span class="p">:</span> <span class="o">...</span>
 <a id="__codelineno-0-11" name="__codelineno-0-11" href="#__codelineno-0-11"></a>    <span class="k">def</span><span class="w"> </span><span class="nf">put</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">key</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="n">content</span><span class="p">,</span> <span class="o">*</span><span class="p">,</span> <span class="n">overwrite</span><span class="p">:</span> <span class="nb">bool</span><span class="p">,</span> <span class="n">metadata</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">WriteResult</span><span class="p">:</span> <span class="o">...</span>
 <a id="__codelineno-0-12" name="__codelineno-0-12" href="#__codelineno-0-12"></a>    <span class="k">def</span><span class="w"> </span><span class="nf">delete</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">key</span><span class="p">:</span> <span class="nb">str</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span> <span class="o">...</span>
-<a id="__codelineno-0-13" name="__codelineno-0-13" href="#__codelineno-0-13"></a>    <span class="k">def</span><span class="w"> </span><span class="nf">list_page</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">prefix</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="o">*</span><span class="p">,</span> <span class="n">delimiter</span><span class="p">:</span> <span class="nb">str</span> <span class="o">|</span> <span class="kc">None</span><span class="p">,</span> <span class="n">cursor</span><span class="p">,</span> <span class="n">limit</span><span class="p">:</span> <span class="nb">int</span> <span class="o">|</span> <span class="kc">None</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Page</span><span class="p">:</span> <span class="o">...</span>
-<a id="__codelineno-0-14" name="__codelineno-0-14" href="#__codelineno-0-14"></a>    <span class="k">def</span><span class="w"> </span><span class="nf">probe</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span> <span class="o">...</span>                         <span class="c1"># health; must touch the container</span>
-<a id="__codelineno-0-15" name="__codelineno-0-15" href="#__codelineno-0-15"></a>    <span class="k">def</span><span class="w"> </span><span class="nf">close</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span> <span class="o">...</span>
-<a id="__codelineno-0-16" name="__codelineno-0-16" href="#__codelineno-0-16"></a>
-<a id="__codelineno-0-17" name="__codelineno-0-17" href="#__codelineno-0-17"></a>    <span class="k">def</span><span class="w"> </span><span class="nf">classify</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">exc</span><span class="p">:</span> <span class="ne">Exception</span><span class="p">,</span> <span class="o">*</span><span class="p">,</span> <span class="n">op</span><span class="p">:</span> <span class="n">Op</span><span class="p">,</span> <span class="n">key</span><span class="p">:</span> <span class="nb">str</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">RemoteStoreError</span><span class="p">:</span> <span class="o">...</span>
-<a id="__codelineno-0-18" name="__codelineno-0-18" href="#__codelineno-0-18"></a>    <span class="k">def</span><span class="w"> </span><span class="nf">container_absent</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">exc</span><span class="p">:</span> <span class="ne">BaseException</span><span class="p">,</span> <span class="o">*</span><span class="p">,</span> <span class="n">op</span><span class="p">:</span> <span class="n">Op</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">bool</span><span class="p">:</span> <span class="o">...</span>
-<a id="__codelineno-0-19" name="__codelineno-0-19" href="#__codelineno-0-19"></a>    <span class="k">def</span><span class="w"> </span><span class="nf">connection_dead</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">exc</span><span class="p">:</span> <span class="ne">BaseException</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">bool</span><span class="p">:</span> <span class="o">...</span>
-<a id="__codelineno-0-20" name="__codelineno-0-20" href="#__codelineno-0-20"></a>
-<a id="__codelineno-0-21" name="__codelineno-0-21" href="#__codelineno-0-21"></a>    <span class="c1"># interop, forwarded by the kernel (BE-022, BE-023, BE-025, resolve); how keys reach</span>
-<a id="__codelineno-0-22" name="__codelineno-0-22" href="#__codelineno-0-22"></a>    <span class="c1"># native_path, resolve and to_key is BK-395's to decide (BK-389 decision 6)</span>
-<a id="__codelineno-0-23" name="__codelineno-0-23" href="#__codelineno-0-23"></a>    <span class="k">def</span><span class="w"> </span><span class="nf">unwrap</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">type_hint</span><span class="p">:</span> <span class="nb">type</span><span class="p">[</span><span class="n">T</span><span class="p">])</span> <span class="o">-&gt;</span> <span class="n">T</span><span class="p">:</span> <span class="o">...</span>
-<a id="__codelineno-0-24" name="__codelineno-0-24" href="#__codelineno-0-24"></a>    <span class="k">def</span><span class="w"> </span><span class="nf">native_path</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">key</span><span class="p">:</span> <span class="nb">str</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">str</span><span class="p">:</span> <span class="o">...</span>
-<a id="__codelineno-0-25" name="__codelineno-0-25" href="#__codelineno-0-25"></a>    <span class="k">def</span><span class="w"> </span><span class="nf">to_key</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">native_path</span><span class="p">:</span> <span class="nb">str</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">str</span><span class="p">:</span> <span class="o">...</span>
-<a id="__codelineno-0-26" name="__codelineno-0-26" href="#__codelineno-0-26"></a>    <span class="k">def</span><span class="w"> </span><span class="nf">resolve</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">key</span><span class="p">:</span> <span class="nb">str</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">ResolutionPlan</span><span class="p">:</span> <span class="o">...</span>
+<a id="__codelineno-0-13" name="__codelineno-0-13" href="#__codelineno-0-13"></a>    <span class="k">def</span><span class="w"> </span><span class="nf">list_page</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">prefix</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="o">*</span><span class="p">,</span> <span class="n">delimiter</span><span class="p">:</span> <span class="nb">str</span> <span class="o">|</span> <span class="kc">None</span><span class="p">,</span> <span class="n">cursor</span><span class="p">,</span> <span class="n">limit</span><span class="p">:</span> <span class="nb">int</span> <span class="o">|</span> <span class="kc">None</span><span class="p">,</span>
+<a id="__codelineno-0-14" name="__codelineno-0-14" href="#__codelineno-0-14"></a>                  <span class="n">follow_links</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">True</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Page</span><span class="p">:</span> <span class="o">...</span>  <span class="c1"># follow_links=False: delete_folder's view (BK-396)</span>
+<a id="__codelineno-0-15" name="__codelineno-0-15" href="#__codelineno-0-15"></a>    <span class="k">def</span><span class="w"> </span><span class="nf">probe</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span> <span class="o">...</span>                         <span class="c1"># health; must touch the container</span>
+<a id="__codelineno-0-16" name="__codelineno-0-16" href="#__codelineno-0-16"></a>    <span class="k">def</span><span class="w"> </span><span class="nf">close</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span> <span class="o">...</span>
+<a id="__codelineno-0-17" name="__codelineno-0-17" href="#__codelineno-0-17"></a>
+<a id="__codelineno-0-18" name="__codelineno-0-18" href="#__codelineno-0-18"></a>    <span class="k">def</span><span class="w"> </span><span class="nf">classify</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">exc</span><span class="p">:</span> <span class="ne">Exception</span><span class="p">,</span> <span class="o">*</span><span class="p">,</span> <span class="n">op</span><span class="p">:</span> <span class="n">Op</span><span class="p">,</span> <span class="n">key</span><span class="p">:</span> <span class="nb">str</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">RemoteStoreError</span><span class="p">:</span> <span class="o">...</span>
+<a id="__codelineno-0-19" name="__codelineno-0-19" href="#__codelineno-0-19"></a>    <span class="k">def</span><span class="w"> </span><span class="nf">container_absent</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">exc</span><span class="p">:</span> <span class="ne">BaseException</span><span class="p">,</span> <span class="o">*</span><span class="p">,</span> <span class="n">op</span><span class="p">:</span> <span class="n">Op</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">bool</span><span class="p">:</span> <span class="o">...</span>
+<a id="__codelineno-0-20" name="__codelineno-0-20" href="#__codelineno-0-20"></a>    <span class="k">def</span><span class="w"> </span><span class="nf">connection_dead</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">exc</span><span class="p">:</span> <span class="ne">BaseException</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">bool</span><span class="p">:</span> <span class="o">...</span>
+<a id="__codelineno-0-21" name="__codelineno-0-21" href="#__codelineno-0-21"></a>
+<a id="__codelineno-0-22" name="__codelineno-0-22" href="#__codelineno-0-22"></a>    <span class="c1"># interop, forwarded by the kernel (BE-022, BE-023, BE-025, resolve); how keys reach</span>
+<a id="__codelineno-0-23" name="__codelineno-0-23" href="#__codelineno-0-23"></a>    <span class="c1"># native_path, resolve and to_key is BK-395's to decide (BK-389 decision 6)</span>
+<a id="__codelineno-0-24" name="__codelineno-0-24" href="#__codelineno-0-24"></a>    <span class="k">def</span><span class="w"> </span><span class="nf">unwrap</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">type_hint</span><span class="p">:</span> <span class="nb">type</span><span class="p">[</span><span class="n">T</span><span class="p">])</span> <span class="o">-&gt;</span> <span class="n">T</span><span class="p">:</span> <span class="o">...</span>
+<a id="__codelineno-0-25" name="__codelineno-0-25" href="#__codelineno-0-25"></a>    <span class="k">def</span><span class="w"> </span><span class="nf">native_path</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">key</span><span class="p">:</span> <span class="nb">str</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">str</span><span class="p">:</span> <span class="o">...</span>
+<a id="__codelineno-0-26" name="__codelineno-0-26" href="#__codelineno-0-26"></a>    <span class="k">def</span><span class="w"> </span><span class="nf">to_key</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">native_path</span><span class="p">:</span> <span class="nb">str</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">str</span><span class="p">:</span> <span class="o">...</span>
+<a id="__codelineno-0-27" name="__codelineno-0-27" href="#__codelineno-0-27"></a>    <span class="k">def</span><span class="w"> </span><span class="nf">resolve</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">key</span><span class="p">:</span> <span class="nb">str</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">ResolutionPlan</span><span class="p">:</span> <span class="o">...</span>
 </code></pre></div>
 <p>Ten optional protocols (nine at filing; <code>SupportsRemoveFolder</code> added at
 BK-389's planning), each a separate <code>runtime_checkable</code> <code>Protocol</code>
@@ -11586,7 +11587,7 @@ optional member, so presence is a protocol, not a method):</p>
 <tr>
 <td><code>SupportsDeleteTree</code></td>
 <td><code>delete_tree(prefix)</code></td>
-<td><code>delete_folder(recursive=True)</code> in one wire call (Graph's single DELETE, Azure HNS <code>delete_directory</code>, SQL's one transactional <code>DELETE … LIKE</code>, S3 <code>DeleteObjects</code> in batches of 1000); without it, list then delete</td>
+<td><code>delete_folder(recursive=True)</code> in one wire call (Graph's single DELETE, Azure HNS <code>delete_directory</code>, SQL's one transactional <code>DELETE … LIKE</code>, S3 <code>DeleteObjects</code> in batches of 1000); without it, list then delete. Where folder objects exist, <code>delete_tree</code> refuses a file or an absent key without removing anything, in one step where the wire has one; a wire whose tree delete also removes a file item (Graph, HNS, as read from their code and SDK, not run against a live wire) checks first and documents the race (BK-396's decision, BK-389's dossier, decision 8)</td>
 </tr>
 <tr>
 <td><code>SupportsEnsureParents</code></td>
@@ -11606,7 +11607,7 @@ optional member, so presence is a protocol, not a method):</p>
 <tr>
 <td><code>SupportsRemoveFolder</code> (added at BK-389's planning; corrected after PR #1055 merged)</td>
 <td><code>remove_folder(key)</code>: remove an empty folder and refuse anything else without removing it, in one step where the wire has one (Memory's lock, <code>rmdir</code>)</td>
-<td>required when <code>parents</code> is <code>"explicit"</code> or <code>"implicit"</code> (any driver with folder objects; Graph, Azure HNS), checked at construction; never called when <code>parents == "none"</code>. The kernel's <code>delete_folder</code> sequence around it (which refusals it probes, what <code>delete_tree</code> must refuse, the recursive and <code>parents == "none"</code> paths) is BK-396's to decide before BK-389's kernel PR; the candidate design and its measurements are in BK-396's dossier</td>
+<td>required when <code>parents</code> is <code>"explicit"</code> or <code>"implicit"</code> (any driver with folder objects; Graph, Azure HNS), checked at construction; never called when <code>parents == "none"</code>. The kernel's <code>delete_folder</code> sequence around it was decided in BK-396 and is stated, with its measured cells, in BK-389's dossier, decision 8: a refusal is probed only when it is a typed <code>NotFound</code> or untyped, a recursive delete without <code>SupportsDeleteTree</code> walks with <code>list_page</code> and calls <code>remove_folder</code> deepest first, and <code>delete_folder</code> never traverses or removes a link as a folder: it alone calls <code>stat</code> and <code>list_page</code> with <code>follow_links=False</code>, a view in which a link (dangling or not) is a non-folder entry, while every other operation keeps the link-following default</td>
 </tr>
 </tbody>
 </table>
@@ -11687,9 +11688,10 @@ was a 28th match above it). It owns, once:</p>
   <code>close_is_terminal</code>, in the order spec 003 fixes; these are
   key-level checks and add no round trip;</li>
 <li>the wrong-type probes on the error path (one <code>stat</code> and one
-  <code>list_page(limit=1)</code>, the same probes the classes issue today; for
-  <code>delete_folder</code> the sequence, and which refusals it probes, is BK-396's
-  to decide), the
+  <code>list_page(limit=1)</code>, the same probes the classes issue today, run after
+  a <code>NotFound</code>; <code>delete_folder</code> also probes an untyped refusal, never one
+  typed <code>BackendUnavailable</code> or <code>PermissionDenied</code>, and its sequence,
+  decided in BK-396, is BK-389's dossier, decision 8), the
   absent-container tolerance, and the first-page listing bound (BE-021),
   including its page-not-item rule;</li>
 <li>the file-ancestor pre-check as a kernel option with today's default: the
@@ -11730,7 +11732,7 @@ takes the same path with its own primitive and <code>Op</code>:</p>
   prim --&gt;|stream| wrap["stream wrapped once:&lt;br/&gt;every later read passes classify too"]
   prim --&gt;|native exception| cls["driver.classify(exc, op=read, key)"]
   cls --&gt; post["kernel post-processing:&lt;br/&gt;path and backend set,&lt;br/&gt;blank message synthesised,&lt;br/&gt;a typed RemoteStoreError passes through"]
-  post --&gt;|"NotFound&lt;br/&gt;(delete_folder: BK-396)"| probe["error-path probe:&lt;br/&gt;stat or list_page(limit=1)&lt;br/&gt;wrong type becomes InvalidPath"]
+  post --&gt;|"NotFound&lt;br/&gt;(delete_folder: or untyped)"| probe["error-path probe:&lt;br/&gt;stat or list_page(limit=1)&lt;br/&gt;wrong type becomes InvalidPath"]
   post --&gt; raise["typed error to the caller"]
   probe --&gt; raise
   wrap --&gt; caller["stream to the caller"]</code></pre>
@@ -11846,7 +11848,13 @@ pin and records why: Local's two absent-root root <code>delete_folder</code> tes
 <code>tests/backends/local/test_absent_root.py</code> answer <code>None</code> and <code>NotFound</code>,
 and both become <code>InvalidPath</code>. Where none pins it, the step adds the cell:
 Local's root <code>delete_folder</code> on a present root has no test, since those
-tests remove the root first (corrected after PR #1055 merged). AZ-025's blank-message clause and its pinning
+tests remove the root first (corrected after PR #1055 merged). Added at
+BK-396: <code>delete_folder</code>'s sequence (BK-389's dossier, decision 8) changes
+cells at step 3 (SQLBlob's raising <code>stat</code> after an empty listing), step 4
+(flat Azure's recursive delete under a concurrent deleter), step 5 (Local's
+symbolic links) and step 6 (SFTP's recursive delete under a concurrent
+writer, untyped today, and its answer when the probe's <code>stat</code> drops the
+channel), each enumerated there with its measurement. AZ-025's blank-message clause and its pinning
 test go red with BUG-276's fix under the arm decided at BK-387, synthesise
 (its dossier: "Both go red when this lands, by design"); the BUG-240 and
 BUG-292 decisions change cells on the classes that
@@ -12294,10 +12302,20 @@ and its answer keeps <code>classify</code>.</p>
 <li><strong>Performance:</strong> the kernel issues the same probes the per-backend code
   issues today (one <code>stat</code> or one <code>list_page(limit=1)</code> on the error path;
   the file-ancestor walk only when opted in; <code>ensure_parents</code> only for
-  explicit parents), and the S3 driver drops the s3fs layer. One open
-  exception: <code>delete_folder</code>'s probes are BK-396's to decide. On Memory, which
-  issues no probe today, its candidate adds a <code>stat</code> after a refusal and a
-  listing after a non-recursive refusal of a present folder. Two
+  explicit parents), and the S3 driver drops the s3fs layer.
+  <code>delete_folder</code>'s counts were measured per class against today
+  (<code>sdd/rfcs/rfc-0017-delete-folder-measure.py compare trips</code>, wire calls
+  for a call without <code>missing_ok</code>; BK-396). Memory takes one driver
+  primitive, under one lock, and a second, the <code>stat</code> probe, only after a
+  <code>NotFound</code> (an absent key, a key under a file). S3Boto3 and SQLBlob are
+  equal on every measured cell. Flat Azure's recursive delete lists once
+  where it lists twice today (4 calls to 3 for two files). SFTP drops the
+  check before the removal and pays the probe after a refusal: an empty
+  folder 3 calls to 1 (2 recursive), a non-empty folder refused 2 to 3,
+  the recursive two-file tree 7 to 6, and an absent key, a file or a key
+  under a file 1 to 2, or 1 to 3 recursive. Graph and HNS were read, not
+  run: the kernel adds a <code>stat</code> only after a <code>NotFound</code>, and the rest is
+  each driver's check-then-remove, the calls it issues today. Two
   replacements change
   data paths and are measured under D8's benchmark gate in the PR that
   lands them:</li>
@@ -12335,8 +12353,10 @@ and its answer keeps <code>classify</code>.</p>
   <code>write_atomic</code> and <code>move</code> syntheses over each combination of
   <code>put_is_atomic</code>, <code>open_write</code>, <code>rename</code> and <code>SupportsAtomicMove</code> the fake
   driver can present, and the <code>delete_folder</code> synthesis over
-  <code>SupportsRemoveFolder</code> and <code>SupportsDeleteTree</code> (every cell BK-396
-  decides, and the construction refusal of an explicit- or
+  <code>SupportsRemoveFolder</code> and <code>SupportsDeleteTree</code> (every cell of BK-389's
+  dossier, decision 8, as BK-396 decided it, with the walk's concurrent
+  deleter and writer, the non-state refusals that pass through unprobed,
+  and the construction refusal of an explicit- or
   implicit-parents driver without <code>SupportsRemoveFolder</code>; added after PR
   #1055 merged); the driver half
   stays with the per-driver suites. BK-345 and ID-244 reduce to driver
@@ -12356,7 +12376,7 @@ and its answer keeps <code>classify</code>.</p>
   (BK-394), which accepts that ADR (the kernel PR before it, BK-389, is
   private and touches spec 003 only: it adds the clauses its kernel cells
   trace to, the key rule, the root <code>delete_folder</code> refusal and
-  <code>SupportsRemoveFolder</code>'s <code>delete_folder</code> sequence as BK-396 decides it, and amends any spec 003 clause
+  <code>SupportsRemoveFolder</code>'s <code>delete_folder</code> sequence as BK-396 decided it, and amends any spec 003 clause
   BK-395's answers contradict, such as BE-025 or BE-008; BK-389's dossier,
   item 8, is the authority for this split): specs 003, 005, 029 and 037
   below, any clause outside spec 003 that BK-395's answers contradict
