@@ -158,7 +158,7 @@ class Driver(Protocol):
     def connection_dead(self, exc: BaseException) -> bool: ...
 
     # interop, forwarded by the kernel (BE-022, BE-023, BE-025, resolve); how keys reach
-    # native_path, resolve and to_key is BK-395's to decide (BK-389 decision 6)
+    # native_path, resolve and to_key was decided in BK-395 (BK-389 decision 6)
     def unwrap(self, type_hint: type[T]) -> T: ...
     def native_path(self, key: str) -> str: ...
     def to_key(self, native_path: str) -> str: ...
@@ -253,11 +253,13 @@ was a 28th match above it). It owns, once:
   PR #1055 merged). It runs after the closed guard and before the root check, which
   then runs on the canonical key: `""` is the root, the wide predicate on
   every side. So an operation's driver call only ever sees a canonical key,
-  as D1's driver, which "carries no path … logic", requires. The rule
-  covers the operations; the addressing members, a key holding a backslash
-  and `glob` are BK-395's to decide against BE-025, NPR-021/NPR-004, RES-020
-  and PATH-002 before kernel code. The operation-by-key-class table, with
-  its measured Memory column, is BK-389's dossier, decision 6;
+  as D1's driver, which "carries no path … logic", requires. BK-395 decided
+  the rest against BE-025, NPR-021/NPR-004, RES-020 and PATH-002: a
+  backslash is refused too; the addressing members stay total, a valid key
+  normalised and a refused one passed raw; and a `glob` pattern takes the
+  refusals and normalisation segment-wise. The operation-by-key-class table,
+  with its measured Memory column, and the `glob` rule are BK-389's dossier,
+  decision 6;
 - root refusal from the key (BE-029; at filing, both predicates as `_flat_ns`
   now states them; since BK-389's planning, decided on the canonical key,
   which gives the wide predicate on every side, the floor BE-029 sets for
@@ -861,11 +863,11 @@ and its answer keeps `classify`.
   (BK-394), which accepts that ADR (the kernel PR before it, BK-389, is
   private and touches spec 003 only: it adds the clauses its kernel cells
   trace to, the key rule, the root `delete_folder` refusal and
-  `SupportsRemoveFolder`'s `delete_folder` sequence as BK-396 decided it, and amends any spec 003 clause
-  BK-395's answers contradict, such as BE-025 or BE-008; BK-389's dossier,
-  item 8, is the authority for this split): specs 003, 005, 029 and 037
-  below, any clause outside spec 003 that BK-395's answers contradict
-  (PATH-002, NPR-021, NPR-004, RES-020), spec 013 (Memory's,
+  `SupportsRemoveFolder`'s `delete_folder` sequence as BK-396 decided it, and BK-395's
+  answers; BK-389's dossier, item 8, is the authority for this split, and
+  its decision 6, **Clauses checked, and who amends each**, for the clauses
+  BK-395's answers touch outside it): specs 003, 005, 029 and 037 below,
+  the clauses that paragraph assigns to BK-394, spec 013 (Memory's,
   as a kernel/driver placement per clause, which the list at filing omitted),
   the kernel half
   of 007 and 022, the Memory drivers' rows of 007 and 022, spec 026's PING-002

@@ -24,7 +24,7 @@ Folded into a surviving `BACKLOG.md` item as a sub-bullet carrying its evidence.
 **The work is open, not done** — follow the host. The ID is retired because a
 sub-bullet is not an ID.
 
-- [x] **BUG-297 — A backend `write` of a key `RemotePath` rejects stores the row, then raises `InvalidPath`** → **BK-395**, its backslash-key part. Filed by BL-011 (PR #1054), absorbed in BK-389's planning PR (#1055) at the maintainer's request.
+- [x] **BUG-297 — A backend `write` of a key `RemotePath` rejects stores the row, then raises `InvalidPath`** → **BK-394**, its Memory half, and **BUG-300**, its SQLBlob half, each carrying the marker. Filed by BL-011 (PR #1054), absorbed into BK-395 in BK-389's planning PR (#1055) at the maintainer's request; BK-395 decided the fix (the kernel refuses a backslash before the driver) and closed in PR #1061, which moved the open work to those two hosts.
 - [x] **ID-261 — BE-029's order is unobservable to conformance wherever a present root already answers correctly** → **BK-389**, as fake-driver cells over an absent container. Dossier: [ID-261](backlog/id-261-root-order-unobservable.md).
 - [x] **BK-325 — Custom-backend guide: registry-integration and remaining contract-topic gaps** → **BK-394**, which rewrites the guide as a driver. Dossier: [BK-325](backlog/bk-325-custom-backend-guide-gaps.md).
 - [x] **BUG-241 — `SQLBlobBackend` builds prefix `LIKE` patterns without escaping `_` and `%`, so listings and folder deletes reach sibling keys** → **BL-011**. Dossier: [BUG-241](backlog/bug-241-sql-like-metacharacters.md).
@@ -243,6 +243,19 @@ if evidence changes; these are retired.
 ---
 
 ## Unreleased
+
+- [x] **BK-395 — The kernel's key rule is undecided for addressing, backslash keys and `glob`**
+  spec: BE-025, NPR-021, NPR-004, RES-020, PATH-002, BE-008, WR-001 · effort: S · audience: library.maintainer, contributor.process
+  Decided, docs only: BK-389's decision 6 states it. Addressing stays total,
+  a valid key normalised and a refused one passed raw, `plan.key` the
+  caller's; a backslash is refused with `InvalidPath` on every operation,
+  which decides absorbed BUG-297's fix, now hosted by BK-394 and BUG-300;
+  `glob` checks the capability first, then takes the refusals and
+  normalisation segment-wise, keeping a trailing `/`. Which clauses are
+  affected and who amends each is decision 6's Clauses checked paragraph.
+  BK-395 filed BK-398 (round-trip clauses already false on master), BK-399
+  (stored backslash keys) and BK-405 (`ext.glob`'s fallback tier).
+  Detail: [dossier](backlog/bk-395-kernel-key-rule-addressing.md)
 
 - [x] **BK-396 — The kernel's `delete_folder` sequence around `SupportsRemoveFolder` is undecided**
   spec: BE-013, BE-021, MEM-014, MEM-026, GR-043 · effort: M · audience: library.maintainer, contributor.process

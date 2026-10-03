@@ -13,7 +13,7 @@ two PRs: BK-389 lands the kernel, private, under the Proposed
 [ADR-0042](../adrs/0042-contract-kernel-over-thin-drivers.md); this item lands
 the two Memory drivers on it and is **the PR that accepts ADR-0042 and
 RFC-0017**, the first backend on the new design. **It merges only after the
-v0.33.0 tag, and after BK-389.** The decisions both halves rest on are in
+v0.33.0 tag, and after BK-389 and BK-398.** The decisions both halves rest on are in
 [BK-389's dossier](bk-389-kernel-step-1-memory.md) § Decisions; read them
 first.
 
@@ -71,9 +71,25 @@ labelled **(was … , absorbed here)**, which is the absorption form
      BK-389 decision 6's table, both classes. `get_folder_info("./")`,
      `(".//")` and `("./.")` answer the root `FolderInfo` where today they
      raise `InvalidPath`. No conformance cell reaches it (the derivation is
-     in that decision), so it is pinned by a new Memory cell in this PR. Any
-     addressing or backslash cell change joins this list only once BK-395
-     decides it.]
+     in that decision), so it is pinned by a new Memory cell in this PR.]
+   - [**BK-395's Memory cell changes**, the addressing column and backslash
+     row of the same table, both classes, measured by BK-395's dossier
+     recipe. `native_path` and `resolve(k).native_path` of `"./"`, `".//"`,
+     `"./."` answer `""` and of `"d//f"`, `"d/./f"`, `"d/"` answer the
+     canonical key, where today both echo the key raw; `resolve(k).key` and
+     `to_key` are unchanged. Every operation on a key holding a backslash
+     (`"d\\f"`, `"e\\g"`, `"\\"`) answers `InvalidPath` and touches nothing;
+     what each column answers today is in that row's Δ cells, `write("\\")`
+     storing then raising among them. No `glob` cell: neither class declares `GLOB`. None
+     is reachable through `Store`, which hands the backend a
+     `RemotePath`-normalised key, so each is pinned by a new Memory cell in
+     this PR.]
+     - **(was BUG-297, absorbed here)** Its Memory half: a direct
+       `write("\\")` on either Memory class stores the row, then raises
+       `InvalidPath`, and `exists("\\")` is then `True` (measured at master
+       `9caef6b` by BL-011, PR #1054, and again at `57d0797` by BK-395). The
+       backslash cells above pin `InvalidPath` with nothing stored. Its
+       SQLBlob half is BUG-300. [Moved here from BK-395 in PR #1061.]
 4. Spec amendments that become true here:
    - spec 003: a BE-021 placement table assigning each obligation to kernel or
      driver, IDs kept and prose kept, plus placement notes on BE-020 and
@@ -111,15 +127,16 @@ labelled **(was … , absorbed here)**, which is the absorption form
      `aio/backends/_memory.py` line 311. Each citation is re-cited to
      BK-389's spec 003 root clause in the same PR, and both tests' message
      matches follow the kernel's refusal; added in PR #1056's rounds 3 to
-     5.]
+     5. MEM-DS-005's table gains its backslash row, by BK-389 decision 6's
+     Clauses checked paragraph.]
    - [spec 003's key-rule clause was planned here and moved to BK-389's
      item 8 after PR #1055 merged, so the kernel's cells have a spec ID
-     before they are written. BK-395's answers, and any spec 003 clause they
-     contradict, land with it in BK-389's PR. This PR applies them to the
-     two Memory classes, the first on the kernel, and amends any clause
-     outside spec 003 they contradict (PATH-002, NPR-021, NPR-004,
-     RES-020), since that behaviour is first visible here; set in PR
-     #1056's round 4.]
+     before they are written. BK-395's answers land with it in BK-389's PR.
+     This PR applies them to the two Memory classes, the first on the
+     kernel, and amends every clause BK-389 decision 6's **Clauses
+     checked, and who amends each** assigns to BK-394, re-checking the ones
+     it assigns to BK-398. That paragraph is the list; it is not restated
+     here (PR #1061's round 8).]
    - [spec 003 BE-021 § Reach's page-boundary paragraph: under BK-389's
      decision 1 a migrated driver has no unmarked page, so the divergence it
      licenses applies only to a class not yet migrated.]

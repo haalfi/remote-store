@@ -37,7 +37,9 @@ depends on it: the kernel PR does not start until it closes.
      that key folds it to `d/f`: `WriteResult`, `FileInfo` (both classes),
      and listings, where `list_files` over `d/f` and `d\f` yields `d/f`
      twice. Measured by round 5's measuring reviewer.
-   - **(was BUG-297, absorbed here)** Called on the backend directly,
+   - **(was BUG-297, absorbed here)** [Moved on in PR #1061, when this item
+     closed: its open work is now hosted by BK-394 (Memory) and BUG-300
+     (SQLBlob), each carrying the marker.] Called on the backend directly,
      `write("\\")` stores the row on `SQLBlobBackend` and `MemoryBackend`,
      then raises `InvalidPath` ("Path is empty after normalization") while
      building `WriteResult(path=RemotePath(path))`, which folds `\` to `/`;
@@ -75,3 +77,85 @@ BK-389's spec 003 list, item 8, since the kernel PR waits on this item and
 its cells need a spec ID. A contradicted clause in another spec (PATH-002,
 NPR-021, NPR-004, RES-020) is amended in BK-394's spec list. (Both set in
 PR #1056's rounds 3 and 4.)
+
+## Outcome (2026-10-03)
+
+Decided by the maintainer through the interview, the recommended option each
+time. The answers are stated once, in
+[BK-389's dossier](bk-389-kernel-step-1-memory.md), decision 6 (**Decided in
+BK-395**, the table's backslash row and addressing column, and its **Later
+drivers** paragraph); this section keeps only how they were reached.
+
+1. **Addressing:** the preferred answer, adopted as recorded.
+2. **Backslash:** the preferred answer, adopted as recorded.
+3. **`glob`:** the preferred answer **narrowed**. Running only the literal
+   prefix through the pipeline leaves `"*/../x"`, `"*//x"` and a null byte
+   after the first wildcard to the driver, which D1 says carries no path
+   logic, and the two `GLOB` backends measured below already disagree on
+   `"*/../*.csv"` (Local `InvalidPath`, SQLBlob `[]`). So the refusals
+   apply to the whole pattern and normalisation drops every empty and `.`
+   segment as for a key, keeping only a trailing `/` (rounds 7 and 8). The
+   capability check runs before the closed guard (round 4). Decision 6
+   states the rule in prose, with a table of worked examples.
+
+The exit criteria's clauses were checked against the answers. Which clauses
+are affected and which item amends each is stated once, in decision 6's
+**Clauses checked, and who amends each** (rounds 3 to 8 shaped it); it is
+not restated here. What a listing does with a stored backslash key that
+another tool wrote is open, as BK-399 (round 5). Absorbed
+BUG-297's defect is unchanged on master; its open work moved in PR #1061
+to BK-394 (Memory) and BUG-300 (SQLBlob, at RFC-0017 D3 step 3).
+
+**Recipe** (master `57d0797`, run with `hatch run python`, every answer the
+returned value or the exception's class name):
+- *Addressing.* For each of the 17 keys `""`, `"."`, `"./"`, `".//"`,
+  `"./."`, `"/"`, `"/./"`, `"/f"`, `"d/../f"`, `"f\0"`, `"d\\f"`, `"\\"`,
+  `"d//f"`, `"d/./f"`, `"d/"`, `"f"`, `"d/f"`: `native_path(k)`,
+  `resolve(k).key`, `resolve(k).native_path` and `to_key(native_path(k))`
+  on `MemoryBackend`, `AsyncMemoryBackend` and a `LocalBackend` on a temp
+  root (`resolve(k).native_path` on the two Memory classes, added in PR
+  #1061's round 4).
+- *Backslash.* A fresh store per call, per class, holding `f`, `"d\\f"`
+  and `"e\\g/h"`; on `"d\\f"`, `"e\\g"` and `"\\"` run `exists`,
+  `is_folder`, `is_file`, `read_bytes`, `get_file_info`, `delete`,
+  `write(overwrite=True)`, `list_files(recursive=True)`, `get_folder_info`,
+  `delete_folder(recursive=True)`, `move(k, "z")` and `move("f", k)` (the
+  async class less `is_file` and `get_file_info`). Separately, on a store
+  holding `d/f`, `write("d\\f")` and `list_files("", recursive=True)`.
+- *`glob`.* A `LocalBackend` whose root holds `d/a.csv`, `d/sub/b.csv` and
+  `top.csv`, with `outside.csv` beside the root, and an in-memory SQLite
+  `SQLBlobBackend` holding the same three, over the patterns `"d/*.csv"`,
+  `"./d/*.csv"`, `"d//*.csv"`, `"d/./*.csv"`, `"/d/*.csv"`, `"../*.csv"`,
+  `"d/../*.csv"`, `"*/../*.csv"`, `"d\\*.csv"`, `"d/*\0"`, `"**/*.csv"`, plus
+  `""` and `"."` on Local. Run on Linux, where `\` is no path separator.
+  Added in PR #1061's rounds 7 and 8: `"d/*/"`, `"**/"`, `"d/*"`, `"**"`
+  and `"d/*/."` on both, where the first two answer `[]`, the next two
+  `['d/a.csv']` and every file, and `"d/*/."` `['d/a.csv']` on Local and
+  `[]` on SQLBlob.
+- *Backslash post-states* (added in PR #1061's round 5, since the per-call
+  answers above show no state): per class, a fresh store holding the same
+  three keys, then one of `write("\\")`, `move("f", "\\")` and
+  `delete_folder("e\\g", recursive=True)`, then `exists(k)` for `f`, `"\\"`,
+  `"e\\g/h"` and `"e\\g"`, and `list_files("", recursive=True)`. Both
+  classes: `write("\\")` raises `InvalidPath` with `exists("\\")` then
+  `True`; `move("f", "\\")` returns with `f` gone and `exists("\\")`
+  `True`; `delete_folder("e\\g")` returns with `"e\\g/h"` gone; and after
+  either of the first two, the whole-store listing itself raises
+  `InvalidPath`, since `RemotePath("\\")` cannot be built.
+- *Later-driver probes* (added in PR #1061's round 4, for the three cells
+  its round-3 fix added to decision 6's **Later drivers**): a
+  `LocalBackend` on an empty temp root, `write("d\\f")`, then
+  `os.listdir(root)`; an in-memory SQLite `SQLBlobBackend`, `write("\\")`,
+  then `exists("\\")`; and a `LocalBackend` whose root holds `d/a.csv` and
+  `r/d/a.csv`, with `Store(backend, root_path=rp).glob("/d/*.csv")` for
+  `rp` of `""` and `"r"`.
+
+What came back: both Memory classes echo every key raw from `native_path`
+and `resolve(k).key` except `"."`, whose `native_path` is `""`, and
+`resolve(k).native_path` equals `native_path(k)` for all 17 keys; Local's
+`to_key` alone folds a backslash. `write("d\\f")` beside `d/f` returns path
+`d/f`, both are read back distinctly, and the listing yields `d/f` twice.
+The per-operation backslash answers are decision 6's Δ cells; the `glob`
+answers and later-driver probes are its **Later drivers** cells, except
+the trailing-`/` and `"d/*/."` answers (rounds 7 and 8), which sit in its
+`glob` bullet's measured paragraph.

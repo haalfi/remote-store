@@ -68,22 +68,24 @@ every case. RFC-0017 carries the same answers at the question each settles.
    validation in the driver, against D1: a driver "carries no path, root,
    type, closed or mapping logic".
    Rounds 2 to 4 refuted three prose statements of this rule in turn, so the
-   rule is the table below and nothing else. It covers the **operations**
-   only. Three parts are not decided here: the addressing members, a key
-   holding a backslash, and `glob`. Each touches existing clauses (BE-025,
-   NPR-021/NPR-004, RES-020, PATH-002), so the maintainer placed them in
-   **BK-395**, on which this item depends. See **Deferred to BK-395** below.
+   rule is the table below and nothing else. It covers the **operations**,
+   and, since BK-395, the addressing members, a key holding a backslash and
+   `glob`: those three touched existing clauses (BE-025, NPR-021/NPR-004,
+   RES-020, PATH-002), so the maintainer placed them in BK-395, which decided
+   them on 2026-10-03. See **Decided in BK-395** below, which also states
+   `glob`'s rule, the one part outside the table, since a pattern is not a
+   key class.
 
    **Pipeline, per operation.** (1) The closed guard, when the driver declares
    `close_is_terminal`. (2) Refusals, `InvalidPath`: a key starting with `/`, a `..`
-   segment, a null byte. (3) Normalisation: empty and `.` segments are
+   segment, a null byte, a backslash (the last added by BK-395). (3) Normalisation: empty and `.` segments are
    dropped, so `//`, `/./` and a trailing `/` fold and every root spelling
    becomes `""`. (4) The root check on
    the canonical key, where `""` is the root. (5) The driver, with the
    canonical key. For a write, the kernel builds the result's path from that
    key before the driver commits, so no key the kernel accepts can fail
-   after the bytes land. That is the shape of BUG-299 and of BK-395's absorbed
-   BUG-297, which both write first and then raise. For a key that passes (2), a canonical `""` is exactly
+   after the bytes land. That is the shape of BUG-299 and of retired BUG-297
+   (now BK-394's Memory cells and BUG-300), which both write first and then raise. For a key that passes (2), a canonical `""` is exactly
    `AddressesRoot` of the raw key (`BackendContract.dfy` §5c: every segment
    `""` or `"."`). The `/`-led spellings it also accepts (`"/"`, `"/./"`) are
    refused at (2) with the same `InvalidPath`. So the write side and the
@@ -93,16 +95,18 @@ every case. RFC-0017 carries the same answers at the question each settles.
 
    **The table.** Rows are key classes and columns are member groups. A cell
    is the kernel's answer; **Δ** marks a cell where both Memory classes
-   answer differently today.
+   answer differently today. The backslash row and the addressing column are
+   BK-395's.
 
-   | Key class (examples) | Probes: `exists`, `is_file`, `is_folder` | File-shaped: `read`, `read_bytes`, `read_seekable`, `get_file_info`, `delete`, `move`/`copy` source | Write-shaped: `write`, `write_atomic`, `open_atomic`, `move`/`copy` destination | Folder-shaped: `list_files`, `list_folders`, `iter_children`, `get_folder_info` | `delete_folder` |
-   |---|---|---|---|---|---|
-   | root (`""`, `"."`, `"./"`, `".//"`, `"./."`) | the root's answer (BE-029) | `InvalidPath` | `InvalidPath` (BE-029) | the root folder; **Δ** `get_folder_info` on `"./"`, `".//"`, `"./."`, which raises `InvalidPath` today | `InvalidPath`, refused by the kernel, never reaching `delete_tree` or the list-then-delete synthesis |
-   | `/`-led (`"/"`, `"/./"`, `"/f"`) | `InvalidPath` | `InvalidPath` | `InvalidPath` | `InvalidPath` | `InvalidPath` |
-   | `..` segment (`"d/../f"`) | `InvalidPath` | `InvalidPath` | `InvalidPath` | `InvalidPath` | `InvalidPath` |
-   | null byte | `InvalidPath` | `InvalidPath` | `InvalidPath` | `InvalidPath` | `InvalidPath` |
-   | non-canonical (`"d//f"`, `"d/./f"`, `"d/"`) | the canonical key's answer | the canonical key's answer | the canonical key's answer | the canonical key's answer | the canonical key's answer |
-   | canonical, no backslash (`"f"`, `"d/f"`) | passed through | passed through | passed through | passed through | passed through |
+   | Key class (examples) | Probes: `exists`, `is_file`, `is_folder` | File-shaped: `read`, `read_bytes`, `read_seekable`, `get_file_info`, `delete`, `move`/`copy` source | Write-shaped: `write`, `write_atomic`, `open_atomic`, `move`/`copy` destination | Folder-shaped: `list_files`, `list_folders`, `iter_children`, `get_folder_info` | `delete_folder` | Addressing: `native_path` and `resolve(k).native_path`; `resolve(k).key` is the caller's `k` in every row |
+   |---|---|---|---|---|---|---|
+   | root (`""`, `"."`, `"./"`, `".//"`, `"./."`) | the root's answer (BE-029) | `InvalidPath` | `InvalidPath` (BE-029) | the root folder; **Δ** `get_folder_info` on `"./"`, `".//"`, `"./."`, which raises `InvalidPath` today | `InvalidPath`, refused by the kernel, never reaching `delete_tree` or the list-then-delete synthesis | the driver's answer for `""`, the bare root; **Δ** on `"./"`, `".//"`, `"./."`, echoed raw today |
+   | `/`-led (`"/"`, `"/./"`, `"/f"`) | `InvalidPath` | `InvalidPath` | `InvalidPath` | `InvalidPath` | `InvalidPath` | the raw key passed to the driver |
+   | `..` segment (`"d/../f"`) | `InvalidPath` | `InvalidPath` | `InvalidPath` | `InvalidPath` | `InvalidPath` | the raw key passed to the driver |
+   | null byte | `InvalidPath` | `InvalidPath` | `InvalidPath` | `InvalidPath` | `InvalidPath` | the raw key passed to the driver |
+   | backslash (`"d\\f"`, `"e\\g"`, `"\\"`) | `InvalidPath`; **Δ**, `True` or `False` today | `InvalidPath`; **Δ**, served from the stored key, or `NotFound`, today | `InvalidPath`; **Δ**, `write("d\\f")` and `move("f", "\\")` store today, `write("\\")` stores then raises, and `move("f", "d\\f")` onto a stored `d\f` answers `AlreadyExists` | `InvalidPath`; **Δ**, `"e\\g"` listed and aggregated, `"d\\f"` lists empty, `"\\"` empty or `NotFound`, today | `InvalidPath`; **Δ**, `"e\\g"` removed and `"\\"` `NotFound` today | the raw key passed to the driver |
+   | non-canonical (`"d//f"`, `"d/./f"`, `"d/"`) | the canonical key's answer | the canonical key's answer | the canonical key's answer | the canonical key's answer | the canonical key's answer | the canonical key's answer; **Δ**, echoed raw today |
+   | canonical, no backslash (`"f"`, `"d/f"`) | passed through | passed through | passed through | passed through | passed through | passed through |
 
    **Derivation of the Δ column.** Both Memory classes were run on a store
    holding `f` and `d/f` over 17 keys: the 15 `""`, `"."`, `"./"`, `".//"`,
@@ -114,14 +118,18 @@ every case. RFC-0017 carries the same answers at the question each settles.
    destination, `native_path` and `to_key`. The async class was run through the same set
    less `is_file`, `get_file_info` and `to_key`, and the two classes agree on
    every shared cell. Every measured operation cell for a backslash-free key
-   outside the Δ marks matches the table. The `native_path` and `to_key`
-   cells and the `"d\\f"` cells are BK-395's evidence, not this table's.
+   outside the Δ marks matches the table. The addressing column and the
+   backslash row were measured by BK-395, whose dossier's § Outcome gives
+   the recipe; every cell of both outside the Δ marks matches the table.
    Round 5's measuring reviewer then ran `list_folders`, `iter_children`,
    `read`, `read_seekable`, `write_atomic`, `open_atomic` and `copy` the same
    way and found no unmarked difference. **What the Δ cells reach:** no
    conformance cell, since the read-side root cells use only `""` and `"."`.
    `Store` normalises its own inputs, so the Δ is visible only to a caller
-   holding a backend directly. BK-394 lists it as a step-1 Memory cell change.
+   holding a backend directly. BK-394 lists it as a step-1 Memory cell change,
+   with BK-395's addressing and backslash Δ cells, which are also invisible
+   through `Store`: it hands the backend a `RemotePath`-normalised key, so
+   never a backslash nor a non-canonical spelling.
 
    **Later drivers.** RFC-0017 D3's enumerated cell changes now include this
    table. Each step's PR lists **every** cell of it where its driver answers
@@ -150,31 +158,154 @@ every case. RFC-0017 carries the same answers at the question each settles.
    reach a folder *delete*"; listed in PR #1056's round 9). `SFTPBackend` likely answers
    the same: its `_sftp_path` maps the root to `base_path` and its `_rmtree`
    ends in `rmdir` (read from `_sftp.py`, not run). A flat wire's `"d//f"` or
-   `"./"` are further examples. This decision adds nothing else to D3's list.
+   `"./"` are further examples. BK-395's parts add these, measured at master
+   `57d0797` by its dossier's recipe: `LocalBackend.native_path` echoes
+   `"./"`, `".//"`, `"./."`, `"d//f"`, `"d/./f"` and `"d/"` under the root
+   (`<root>/./` and so on), step 5; `LocalBackend.glob` raises an untyped
+   `NotImplementedError` for `"/d/*.csv"` and `ValueError` for `""` and
+   `"."`, and answers `[]` for `"../*.csv"`, `"d\\*.csv"` and `"d/*\0"`;
+   the kernel answers `InvalidPath` for the four refused patterns and
+   nothing for `""` and `"."`, step 5. All on Linux: on Windows `\` is a
+   path separator, so `"d\\*.csv"` likely matches `d/a.csv` there today
+   (read from `_local.py`'s `self._root.glob(pattern)`, not run), and
+   `Store.glob("d\\*.csv")` would go from matches to `InvalidPath`, a
+   Windows cell step 5 measures;
+   `SQLBlobBackend.glob`, on a store holding no backslash key, answers `[]`
+   for `"./d/*.csv"`, `"d//*.csv"` and `"d/./*.csv"`, where the kernel
+   matches `d/a.csv`, `[]` for `"d/*/."`, where the kernel's `"d/*"`
+   matches `d/a.csv`, and `[]` for every refused pattern, where the kernel
+   answers `InvalidPath`, step 3. Step 3 also reworks SQL-BLOB-061's
+   `tests/backends/sqlblob/test_like_prefix.py`: its `backend` fixture
+   writes the backslash key `a\b/s.txt` from `SEEDS` before every test that
+   uses it, so that seed must leave the fixture, and the cells that pass a
+   backslash key or pattern themselves invert to `InvalidPath`, the
+   parametrisations with id `backslash`, `a\\x` and `backslash_in_tail`
+   (`pytest --collect-only -q` on that file lists each).
+   Not run, so each step measures its own addressing and backslash cells,
+   and its `glob` cells where it declares `GLOB`: SQLBlob's operations and
+   addressing and all of `SQLQueryBackend`, which declares `GLOB`
+   (`_QUERY_CAPABILITIES`), step 3; `S3Boto3Backend` (`GLOB`), step 2;
+   `AsyncAzureBackend` (`GLOB`), step 4; `SFTPBackend`, step 6;
+   `GraphBackend`, step 7; `ReadOnlyHttpBackend`, step 8; and
+   `LocalBackend`'s backslash operations, step 5, of which one was run:
+   on Linux `write("d\\f")` creates a file named `d\f` in the root and
+   returns path `d/f`, where the kernel answers `InvalidPath`. SQLBlob's
+   operation cells include BUG-300's `write("\\")`, which raises
+   `InvalidPath` with `exists("\\")` then `True` (run at master `57d0797`),
+   so step 3 pins `InvalidPath` with nothing stored. Each `GLOB`
+   driver's step also lists `Store.glob`'s cells, which depend on
+   `root_path`: `Store` and `AsyncStore` prepend the root to the raw pattern
+   (`f"{root}/{pattern}"`, GLOB-007), so a leading `/` is refused under an
+   empty root and becomes a dropped empty segment under a non-empty one.
+   Measured at master `57d0797` on Local, `Store.glob("/d/*.csv")` raises
+   `NotImplementedError` with `root_path=""` and matches with
+   `root_path="r"`; the kernel keeps that split as `InvalidPath` against a
+   match, and `Store.glob`'s own pattern handling is GLOB-007's, not the
+   kernel's. `ext.glob.glob_files` already answers a non-canonical pattern
+   by capability tier on master, and the kernel rule keeps the `GLOB`
+   side's answers; the measurement and the open decision are BK-405's
+   [dossier](bk-405-ext-glob-fallback-tier-split.md). This decision adds
+   nothing else to D3's list.
 
-   **Deferred to BK-395.** Three parts are decided before kernel code, in
-   BK-395, not here:
-   - The addressing members `native_path`, `resolve` and `to_key`. Applying
-     the refusals to the first two would make them raise, against BE-025's
-     and NPR-021/NPR-004's totality. Normalising `resolve`'s key would change
-     `resolve(".")`'s `plan.key`, against RES-020.
-   - A key holding a backslash. Memory stores it today. But PATH-002
-     converts a backslash to `/` in `RemotePath`, so `BackendContract.dfy`
-     §5a's `WellFormedPath`, `RemotePath`'s fixed point, holds none, and spec
-     003 calls such a key not canonical. Every returned path folds it to `/`.
-   - `glob` patterns.
+   **Decided in BK-395** (2026-10-03, the maintainer through the interview,
+   the recommended option each time; measurements and recipe in its
+   [dossier](bk-395-kernel-key-rule-addressing.md) § Outcome):
+   - **Addressing stays total.** `native_path(key)` and `resolve(key)` run no
+     closed guard (BE-029's named carve-out) and never raise for the key. A
+     key passing step (2) is normalised by step (3) and the driver receives
+     the canonical key, so every root spelling reaches it as `""`. A key
+     step (2) refuses reaches the driver **raw**, which keeps BE-025's
+     verbatim round trip for `..` and null bytes. `resolve` returns the
+     driver's plan with `key` replaced by the caller's key, so RES-020's
+     `plan.key == path` holds and `resolve(".").key` stays `"."`; its
+     `native_path` is the kernel's `native_path(key)`, so RES-025 holds.
+     `to_key` is forwarded unchanged: its input is a native path, not a key,
+     and NPR-005 makes it stripping, not validation.
+   - **A backslash is refused** at step (2), on every operation. That keeps
+     the driver's domain inside `BackendContract.dfy` §5a's
+     `WellFormedPath`, which excludes `\`. Folding it as PATH-002 does would
+     make `d\f` collide with `d/f` on a driver that stores both, as Memory
+     does, which is BE-029's withdrawn fold. `"\\"` is refused as a
+     backslash key, not as the root, so `RootPath.dfy`'s
+     `BackslashIsNotRoot` is unaffected. Addressing passes it raw, so the
+     refusal widens no addressing predicate, the condition BE-029 sets for a
+     backend refusing it. This also decides retired BUG-297's fix:
+     `write("\\")` never reaches the driver (its open work is BK-394's
+     Memory cells and BUG-300 for SQLBlob). The refusal covers input keys
+     only: what a listing yields for a stored key holding a backslash that
+     another tool wrote is BK-399's, decided in this item's kernel PR.
+   - **`glob(pattern)` takes the pipeline segment-wise over the whole
+     pattern.** Order: the capability first (a driver without `SupportsGlob`
+     declares no `GLOB`, so `CapabilityNotSupported` as BE-024 states,
+     closed or not, as `BackendContract.dfy` exempts `RequireCapability`
+     from `Live()` because it reads declared data; the maintainer's
+     decision in PR #1061's round 4), then the closed guard, then step
+     (2)'s refusals over the raw pattern (a leading `/`, a `..` segment, a
+     null byte, a backslash), then step (3) exactly as for a key: every
+     empty and `.` segment is dropped, wildcard characters untouched inside
+     their segments. **One addition: if the raw pattern ends in `/` and
+     something remains, the canonical pattern keeps that trailing `/`**,
+     since in a pattern it selects directories only (the maintainer's
+     decisions in PR #1061's rounds 7 and 8). Then the driver gets the
+     canonical pattern, so a native driver's prefix listing (GLOB-018 to
+     GLOB-020) starts from it. A canonical `""` names the root, a folder,
+     and yields nothing, since `glob` returns only files (GLOB-004, BE-024).
+     The rule above is authoritative; the table below is worked examples
+     of it, one per edge class, and any pattern not shown follows the rule
+     (an already canonical pattern, such as `"**/*.csv"`, passes unchanged):
 
-   The maintainer recorded a preferred answer for each at the ceiling:
-   addressing stays total, with refused keys passed through raw and
-   `plan.key` kept as the caller's; a backslash is refused; and a pattern's
-   literal prefix goes through the pipeline. BK-395 verifies each against the
-   clauses above before adopting it. The pipeline has no answer for a
-   backslash key until BK-395 closes, and the kernel PR does not start
-   before then.
+     | Raw pattern | Kernel's answer |
+     |---|---|
+     | `"d/*.csv"`, `"./d/*.csv"`, `"d//*.csv"`, `"d/./*.csv"` | `"d/*.csv"` to the driver |
+     | `"d/*/"`, `"d/*//"`, `"./d/*/"`, `"d/./*/"` | `"d/*/"` (directories only, so no file) |
+     | `"d//"`, `"d/./"` | `"d/"` |
+     | `"d/*/."` | `"d/*"` (a trailing `.` is dropped like any `.`; the raw pattern does not end in `/`) |
+     | `""`, `"."`, `"./"`, `".//"` | `""`, the root: nothing |
+     | `"/"`, `"/./"`, `"/d/*.csv"` | `InvalidPath` (leading `/`, refused at step (2) before step (3)) |
+     | `"*/../x"`, `"d/*\0"`, `"d\\*.csv"` | `InvalidPath` |
+
+     Measured at master `57d0797`: `glob("d/*/")` and `glob("**/")` answer
+     `[]` on Local and SQLBlob, and `glob("d/*/.")` answers `['d/a.csv']`
+     on Local and `[]` on SQLBlob, so SQLBlob's `"d/*/."` cell changes at
+     step 3. Unlike a key, a pattern reaches the backend from `Store.glob`
+     without `RemotePath`, so these cells are visible through `Store` once a
+     `GLOB` driver migrates. No step-1 cell: neither Memory class declares
+     `GLOB`.
+
+   **Clauses checked, and who amends each.** This paragraph is the one
+   home for which clauses BK-395's answers affect and which item amends
+   each; BK-394, BK-390, RFC-0017 § Impact and BK-395's dossier point here
+   rather than restating it. BE-025 permits `native_path` to normalise and
+   requires totality and the verbatim round trip of `..` and null bytes, all
+   kept; NPR-004 and NPR-021 require totality; RES-020 and RES-025 hold as
+   stated above; PATH-002 binds `RemotePath`, which `Store` applies before
+   the backend, so a refused **key** reaches only a caller holding a backend
+   directly (a `glob` pattern does not pass `RemotePath`, above). **Three
+   round-trip clauses are contradicted, and were already false on master**
+   (found in PR #1061's rounds 4 and 5): spec 010's NPR-005 ("holds for
+   `k == ""` as well as every non-empty key — except … `"."`") and NPR-020
+   ("for all valid keys except the root spelling `"."`"), and spec 003's
+   BE-029 § Round-trip consequence ("The identity holds verbatim for every
+   other key"). Under this rule a non-canonical key's address inverts to its
+   canonical key, as BE-025 already allows, and `GraphBackend` does so
+   today: run offline at master `57d0797` (`GraphBackend("drive-x",
+   token_provider=lambda: "t")`), `to_key(native_path(k))` is `"d/f"` for
+   `"d//f"` and `"d/./f"`, `"d"` for `"d/"` and `""` for `"./"` and `".//"`.
+   BK-398 amends all three, by maintainer decision; it can land any time
+   and must land before BK-394, the first PR to put a class on the kernel,
+   which only re-checks them (not before this item's kernel PR). Two clauses outside spec 003 are made incomplete or
+   false only once Memory runs on the kernel, so BK-394 amends them: spec
+   013's MEM-DS-005 table, which has no backslash row, and NPR-020's
+   Overrides line, "`MemoryBackend` inherits the identity default" (spec
+   010 line 280), false once Memory's `native_path` answers the canonical
+   key (found in PR #1061's rounds 3 and 6). Otherwise spec 003 gains
+   clauses, which item 8 lists: BE-025 and BE-029's addressing row, BE-029's
+   backslash paragraphs, and BE-024's pattern rule.
 
    **Not `RemotePath`'s rules, nor `LocalBackend._resolve()`'s.** The
    refusals and normalisation are spec 013's MEM-DS-005 table, which both
-   Memory classes implement today, and this item's PR restates them as a
+   Memory classes implement today, plus BK-395's backslash refusal, which
+   neither does, and this item's PR restates them as a
    spec 003 clause (item 8 below; moved from BK-394 after PR #1055 merged). A comparison at master `9caef6b` shows
    where the other two rules differ from it:
    - `RemotePath` folds `"/a/b"` to `a/b`, converts the backslash in
@@ -445,14 +576,19 @@ every case. RFC-0017 carries the same answers at the question each settles.
    key clause here from BK-394. Numbered 8, after the original list's 1 to
    7, so that the gaps at 4 to 7 still mark the items that moved to BK-394.] Each
    is scoped to a class on the kernel, and no class is on it until BK-394:
-   - the key rule of decision 6: its refusals, normalisation and root check
-     on the canonical key, together with BK-395's answers for the
-     addressing members, backslash keys and `glob`, and any spec 003 clause
-     those answers contradict, such as BE-025 or BE-008 (this item's PR
-     waits on BK-395, so they land here, by the same reason). A contradicted
-     clause outside spec 003 (PATH-002, NPR-021, NPR-004, RES-020) describes
-     behaviour a user sees only once a class runs on the kernel, so BK-394
-     amends it [maintainer's decision in PR #1056's round 4];
+   - the key rule of decision 6: its refusals, the backslash among them,
+     normalisation and root check on the canonical key, together with
+     BK-395's answers as decision 6 states them. The clauses those answers
+     contradict or leave incomplete, and who amends each, are decision 6's
+     **Clauses checked, and who amends each**; what lands here is the
+     additions: BE-025 and BE-029's addressing row gain the kernel's addressing rule
+     (canonical key to the driver, a refused key raw, `plan.key` the
+     caller's); BE-029's backslash paragraphs ("a backslash-only key is
+     **not** refused by this clause") gain that a class on the kernel
+     refuses it under the key rule, by the route that paragraph permits;
+     and BE-024 gains the pattern rule and its order. Any other clause
+     outside spec 003 they contradict is BK-394's [maintainer's decision in
+     PR #1056's round 4];
    - the root `delete_folder` refusal (`InvalidPath`), which BE-029 § Out of
      scope leaves undefined;
    - decision 8: `remove_folder`'s atomic refusal and who carries it,
@@ -462,17 +598,17 @@ every case. RFC-0017 carries the same answers at the question each settles.
      `delete_folder` never treats a link as a folder (with the
      `follow_links` flag on `stat` and `list_page`).
 
-**Depends on** BK-388, whose postconditions the kernel is written against,
-and on BK-395, which decides the key rule's remainder (decision 6). BK-396,
-which decided the `delete_folder` sequence (decision 8), is done.
+**Depends on** BK-388, whose postconditions the kernel is written against.
+BK-395, which decided the key rule's remainder (decision 6), and BK-396,
+which decided the `delete_folder` sequence (decision 8), are done.
 As landed, the root rule is a postcondition ranked after the closed guard,
 not a precondition, so the kernel's order per operation is closed
 (`Live()`), then the root check on the key (`write`, the `move`/`copy`
 source then destination), then the driver [superseded by decision 6's
 pipeline, which adds the refusals and normalisation and runs the root check
-on every operation its table covers, not only these; the addressing members
-and `glob` are BK-395's; what follows is the BK-388 obligation that pipeline
-discharges]. On `write` and the destination
+on every operation its table covers, not only these, and BK-395 extended it
+to `glob` and stated the addressing members' rule; what follows is the
+BK-388 obligation that pipeline discharges]. On `write` and the destination
 the check is `AddressesRoot`, the slash-and-dot segment test, wider than
 `is_root`; on the source BE-029 requires only `is_root`, and the wider test
 is permitted, not verified. Against an absent
@@ -533,7 +669,8 @@ below is this, run with `hatch run python`: for each of `""`, `"."`, `"./"`,
   kernel normalises such a key to `""` and decides the root on that, so it
   is the root on every operation. Memory answers it that way today on every
   measured operation except `get_folder_info`, the Δ cell of decision 6's
-  table. The addressing members answer it raw today; that is BK-395's.
+  table. The addressing members answer it raw today; under BK-395's rule
+  the kernel normalises it first, a Δ cell of the same table.
 - **Neither Memory class skips the unknown-time sentinel in
   `get_folder_info`.** A folder whose only file carries `datetime.min` in UTC
   answers that sentinel, sync and async, where the kernel's rule
