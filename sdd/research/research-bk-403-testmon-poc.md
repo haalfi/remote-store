@@ -185,8 +185,12 @@ missing:
 - **`src/` readers, measured.** A scan of the full Stage-1 suite on 3.13 with
   [`research-bk-403-srcreads.py`](research-bk-403-srcreads.py) recorded 15
   test files that opened a `src/**/*.py` file other than through the import
-  machinery. It covers collection-time reads; reads made by a subprocess are
-  not seen.
+  machinery. Only the loader's own `get_data` open counts as import, so
+  reads by module-level code during collection are kept; reads made by a
+  subprocess are not seen. A first scan that excluded any open with
+  `importlib._bootstrap` within six frames could drop such reads; re-running
+  with the narrower check (10,998 passed, 541.9 s) gave the same 15 files with
+  identical per-file counts.
   - **`tests/scripts/` (8), read through the scripts they drive:**
     `test_check_capability_parity.py`, `test_check_docstring_parity.py`,
     `test_check_no_retrospective.py`, `test_check_no_tracker_refs.py`,

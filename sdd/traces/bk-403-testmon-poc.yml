@@ -11,12 +11,16 @@ audience:
   - infra.test
   - contributor.tooling
 expected_ripples:
-  - sdd/backlog/bk-403-test-selector-evaluation.md
-surprising_ripples:
-  # BK-401's index entry: its sysmon switch would break testmon in the same job,
-  # found when 3.14's default core failed the PoC. Neither the audit nor the
-  # ripple-check links a coverage-core change to a selector.
   - sdd/BACKLOG.md
+  - sdd/backlog/bk-403-test-selector-evaluation.md
+  # Anticipated by the BK-403 dossier ("ID-266 needs this answered"), a cited
+  # read; I still missed it until review round 2.
+  - sdd/backlog/id-266-two-speed-ci-gate.md
+# No path-level surprise. The one surprise is below path granularity: BK-401's
+# index entry, whose sysmon switch would break testmon in the same job, found
+# when 3.14's default core failed the PoC. Neither the audit nor the
+# ripple-check links a coverage-core change to a selector.
+surprising_ripples: []
 phases:
   - id: orient
     name: Orient

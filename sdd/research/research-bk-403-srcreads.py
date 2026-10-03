@@ -1,6 +1,6 @@
 """pytest plugin: record the src/ files each test file opens other than by import.
 
-Evidence for research-bk-403-testmon-poc.md (fail-open rule 3); not a gate.
+Evidence for research-bk-403-testmon-poc.md, Appendix D; not a gate.
 An audit hook on ``open`` records every ``src/**/*.py`` opened during
 collection or a test, skipping opens made by the import machinery. Reads by a
 subprocess are not seen.
@@ -26,14 +26,11 @@ _hits: dict[str, set[str]] = {}
 
 
 def _by_import() -> bool:
-    f = sys._getframe(2)
-    for _ in range(6):  # the import machinery sits directly above open_code
-        if f is None:
-            return False
-        if "importlib._bootstrap" in f.f_code.co_filename:
-            return True
-        f = f.f_back
-    return False
+    # Only the loader's own get_data opens counts as import. Checking any frame
+    # higher up would also swallow reads by module-level code run under
+    # exec_module, e.g. an AST walk of src/ at import time.
+    f = sys._getframe(2)  # 0 = here, 1 = _hook, 2 = the caller of open/open_code
+    return f.f_code.co_name == "get_data" and "importlib._bootstrap_external" in f.f_code.co_filename
 
 
 def _hook(event: str, args: tuple) -> None:

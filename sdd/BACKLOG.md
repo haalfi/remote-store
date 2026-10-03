@@ -816,6 +816,22 @@ the change can affect; once, before merge, the whole gate runs, and pays for
 nothing it does not need. Narrowing never lifts the full pre-merge run or the
 coverage floor.
 
+- [ ] **BUG-301 — The PII sweep's bare-email regex is quadratic on base64 runs and costs 157 of the sweep's 160 worker-seconds**
+  spec: — · effort: S · audience: infra.test
+  The `bare email address` pattern (`tests/backends/fixtures/_cassettes.py:180`)
+  restarts at every character of long base64 runs; [audit-022](audits/audit-022-gate-speed-strategies.md)
+  § L2 measures its share of `TestCommittedCassettePIISweep` and an anchored
+  form with identical verdicts on every committed cassette. Open decision:
+  none; the anchored pattern and its measurement are in § L2.
+
+- [ ] **BK-401 — Coverage runs on the slow tracer, where `sysmon` gave identical Stage-1 results**
+  spec: — · effort: S · audience: infra.ci, contributor.tooling
+  Three `ci.yml` jobs (`test-primary`, `test-primary-sftp`, `test-cassette-pii`) and three
+  hatch scripts (`test-cov-s1`, `test-cov`, `test-cov-strict`) use the default
+  core; [audit-022](audits/audit-022-gate-speed-strategies.md) § L1 measured `sysmon` on local Stage 1 only.
+  Open decision: P6's re-measure of the Stage-2 and `--cov-append` paths, then
+  switch all six (not `test-cov-branch`); a testmon job (BK-403) stays off `sysmon`.
+
 - [ ] **BK-403 — No change-scoped test selector has been chosen for this suite; one of three candidates is measured**
   spec: — · effort: M · audience: infra.test, contributor.tooling
   Both gates run every test for every code diff (audit-022 § H1). The
@@ -842,22 +858,6 @@ coverage floor.
   only on BK-403's condition; then a new ADR amending ADR-0043 for a
   draft-PR selected lane, once its four prerequisites have answers.
   Detail: [dossier](backlog/id-266-two-speed-ci-gate.md)
-
-- [ ] **BUG-301 — The PII sweep's bare-email regex is quadratic on base64 runs and costs 157 of the sweep's 160 worker-seconds**
-  spec: — · effort: S · audience: infra.test
-  The `bare email address` pattern (`tests/backends/fixtures/_cassettes.py:180`)
-  restarts at every character of long base64 runs; [audit-022](audits/audit-022-gate-speed-strategies.md)
-  § L2 measures its share of `TestCommittedCassettePIISweep` and an anchored
-  form with identical verdicts on every committed cassette. Open decision:
-  none; the anchored pattern and its measurement are in § L2.
-
-- [ ] **BK-401 — Coverage runs on the slow tracer, where `sysmon` gave identical Stage-1 results**
-  spec: — · effort: S · audience: infra.ci, contributor.tooling
-  Three `ci.yml` jobs (`test-primary`, `test-primary-sftp`, `test-cassette-pii`) and three
-  hatch scripts (`test-cov-s1`, `test-cov`, `test-cov-strict`) use the default
-  core; [audit-022](audits/audit-022-gate-speed-strategies.md) § L1 measured `sysmon` on local Stage 1 only.
-  Open decision: P6's re-measure of the Stage-2 and `--cov-append` paths, then
-  switch all six (not `test-cov-branch`); a testmon job (BK-403) stays off `sysmon`.
 
 - [ ] **BK-400 — The shard durations go stale between manual refreshes, so the primary shards balance on partial data**
   spec: — · effort: M · audience: infra.ci
