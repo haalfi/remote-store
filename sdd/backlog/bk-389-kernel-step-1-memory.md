@@ -236,12 +236,17 @@ every case. RFC-0017 carries the same answers at the question each settles.
      from `Live()` because it reads declared data; the maintainer's
      decision in PR #1061's round 4), then the closed guard, then step
      (2)'s refusals over the whole pattern (a leading `/`, a `..` segment, a
-     null byte, a backslash), then step (3)'s dropping of empty and `.`
-     segments anywhere in it, wildcard characters untouched inside their
+     null byte, a backslash), then step (3)'s dropping of interior empty
+     and `.` segments, wildcard characters untouched inside their
      segments, then the driver with the canonical pattern, so a native
      driver's prefix listing (GLOB-018 to GLOB-020) starts from a canonical
-     pattern. A pattern that normalises to `""` names the root, a folder,
-     and yields nothing, since `glob` returns only files (GLOB-004, BE-024).
+     pattern. **A trailing `/` is kept** (the maintainer's decision in PR
+     #1061's round 7), since in a pattern it selects directories only: at
+     master `57d0797` `glob("d/*/")` and `glob("**/")` answer `[]` on Local
+     and SQLBlob, where dropping it would make them `d/*` and `**` and
+     return files; a pattern that is only `/` and `.` segments is the root.
+     A pattern that normalises to `""` names the root, a folder, and yields
+     nothing, since `glob` returns only files (GLOB-004, BE-024).
      Unlike a key, a pattern reaches the backend from `Store.glob` without
      `RemotePath`, so these cells are visible through `Store` once a `GLOB`
      driver migrates. No step-1 cell: neither Memory class declares `GLOB`.
@@ -263,7 +268,13 @@ every case. RFC-0017 carries the same answers at the question each settles.
    token_provider=lambda: "t")`), `to_key(native_path(k))` is `"d/f"` for
    `"d//f"` and `"d/./f"`, `"d"` for `"d/"` and `""` for `"./"` and `".//"`.
    BK-398 amends all three now, by maintainer decision, so BK-394 only
-   re-checks them. Otherwise spec 003 gains clauses (item 8).
+   re-checks them. Two clauses outside spec 003 are made incomplete or
+   false only once Memory runs on the kernel, so BK-394 amends them: spec
+   013's MEM-DS-005 table, which has no backslash row, and NPR-020's
+   Overrides line, "`MemoryBackend` inherits the identity default" (spec
+   010 line 280), false once Memory's `native_path` answers the canonical
+   key (found in PR #1061's rounds 3 and 6). Otherwise spec 003 gains
+   clauses (item 8).
 
    **Not `RemotePath`'s rules, nor `LocalBackend._resolve()`'s.** The
    refusals and normalisation are spec 013's MEM-DS-005 table, which both

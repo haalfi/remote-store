@@ -143,11 +143,11 @@ labelled **(was … , absorbed here)**, which is the absorption form
      `to_key(native_path("d//f"))` becomes `"d/f"`. This PR also amends
      NPR-020's Overrides line, "`MemoryBackend` inherits the identity
      default" (spec 010 line 280), which item 2's addressing cells make
-     false: Memory's `native_path` then answers the kernel's canonical key
-     (added in PR #1061's round 6). Spec 013's MEM-DS-005
-     is incomplete rather than contradicted: its backslash row is in the
-     spec 013 bullet above. BK-389 decision 6 states each; found in PR
-     #1061's rounds 3 to 5.]
+     false: Memory's `native_path` then answers the kernel's canonical key.
+     Spec 013's MEM-DS-005 is incomplete rather than contradicted: its
+     backslash row is in the spec 013 bullet above. BK-389 decision 6's
+     Clauses checked paragraph states each; found in PR #1061's rounds 3
+     to 6.]
    - [spec 003 BE-021 § Reach's page-boundary paragraph: under BK-389's
      decision 1 a migrated driver has no unmarked page, so the divergence it
      licenses applies only to a class not yet migrated.]

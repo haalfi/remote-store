@@ -92,12 +92,13 @@ drivers** paragraph); this section keeps only how they were reached.
    prefix through the pipeline leaves `"*/../x"`, `"*//x"` and a null byte
    after the first wildcard to the driver, which D1 says carries no path
    logic, and the two `GLOB` backends measured below already disagree on
-   `"*/../*.csv"` (Local `InvalidPath`, SQLBlob `[]`). So the refusals apply to the whole pattern and empty and `.`
-   segments drop anywhere in it, and a native driver's prefix listing
-   (GLOB-018 to GLOB-020) starts from a canonical pattern. The capability
-   check runs before the closed guard, a maintainer's decision in PR
-   #1061's round 4, following `BackendContract.dfy`'s exemption of
-   `RequireCapability` from `Live()`.
+   `"*/../*.csv"` (Local `InvalidPath`, SQLBlob `[]`). So the refusals apply to the whole pattern and interior empty
+   and `.` segments drop, and a native driver's prefix listing (GLOB-018
+   to GLOB-020) starts from a canonical pattern. The capability check runs
+   before the closed guard, a maintainer's decision in PR #1061's round 4,
+   following `BackendContract.dfy`'s exemption of `RequireCapability` from
+   `Live()`. A trailing `/` is kept, since it selects directories only
+   (round 7; measured below).
 
 The exit criteria's clauses were checked against the answers; the reasons
 are in decision 6's **Clauses checked** paragraph. BK-389's item 8 carries
@@ -134,6 +135,9 @@ returned value or the exception's class name):
   `"./d/*.csv"`, `"d//*.csv"`, `"d/./*.csv"`, `"/d/*.csv"`, `"../*.csv"`,
   `"d/../*.csv"`, `"*/../*.csv"`, `"d\\*.csv"`, `"d/*\0"`, `"**/*.csv"`, plus
   `""` and `"."` on Local. Run on Linux, where `\` is no path separator.
+  Added in PR #1061's round 7: `"d/*/"`, `"**/"`, `"d/*"` and `"**"` on
+  both, where the first two answer `[]` and the last two `['d/a.csv']`
+  and every file.
 - *Backslash post-states* (added in PR #1061's round 5, since the per-call
   answers above show no state): per class, a fresh store holding the same
   three keys, then one of `write("\\")`, `move("f", "\\")` and

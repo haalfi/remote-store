@@ -867,7 +867,8 @@ and its answer keeps `classify`.
   answers, which add to BE-024, BE-025 and BE-029; the round-trip clauses
   they contradict, BE-029's, NPR-005 and NPR-020, are already false on master
   and BK-398 amends them before BK-394; BK-389's dossier, item 8, is the authority for
-  this split): specs 003, 005, 029 and 037 below, spec 013 (Memory's,
+  this split): specs 003, 005, 029 and 037 below, spec 010's NPR-020
+  Overrides line ("`MemoryBackend` inherits the identity default"), spec 013 (Memory's,
   as a kernel/driver placement per clause, which the list at filing omitted),
   the kernel half
   of 007 and 022, the Memory drivers' rows of 007 and 022, spec 026's PING-002
