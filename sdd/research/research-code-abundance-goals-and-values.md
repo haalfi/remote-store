@@ -2,7 +2,7 @@
 
 **Date:** 2026-08-30
 **Backlog items:** — (no item; BK-361 was filed *from* this record's validation pass, not by it)
-**Status:** Research complete — the argument and its evidence are settled as of the date above. Point-in-time snapshot per [`sdd/000-process.md` § Document types](../000-process.md): the external telemetry it cites is 2025–2026 vintage and the repo counts in the appendix drift, so read every figure against this date. Sourcing is uneven by design and § 4 marks which rows were read from the primary and which were not. **Corrected 2026-10-03:** § 2.3 ranked intent debt as uniformly "partially repayable", which is wrong for the half the code does not show; the correction is marked in place there and its consequence added to the appendix's gaps.
+**Status:** Research complete — the argument and its evidence are settled as of the date above. Point-in-time snapshot per [`sdd/000-process.md` § Document types](../000-process.md): the external telemetry it cites is 2025–2026 vintage and the repo counts in the appendix drift, so read every figure against this date. Sourcing is uneven by design and § 4 marks which rows were read from the primary and which were not. **Corrected 2026-10-03:** § 2.3 ranked intent debt as "partially repayable", which is wrong for everything the code does not show, including whether its behaviour was decided at all; the correction is marked in place there and its consequence added to the appendix's gaps.
 
 ## TL;DR
 
@@ -314,14 +314,20 @@ The narrower claim is also the stronger one: prevention does not win because
 nothing else could work, it wins because nothing else arrives in time.
 
 **Correction (2026-10-03): intent debt is not uniformly partially repayable.**
-The ranking above treats it as one quantity, and it splits along the same line
-that separates cognitive debt from technical debt. Reconstruction recovers the
-_chosen_ path: the code still shows what was decided, and a why can be re-argued
-from it, lossily. It cannot recover what the code does not show — the
-alternatives weighed and rejected, and what was known and unknown when the
-choice was made. Nothing in the artifact points at a path not taken, so a later
-reader does not know to look for it, and hindsight fills the missing
-information without announcing that it has. That half exists at the moment of
+The ranking above treats it as one quantity, and most of it is forward-only.
+What survives in the code is _behaviour_: the logic that was implemented. The
+code does not record whether that behaviour was decided at all. A deliberate
+choice and an accident of implementation look identical in it, which is the
+point [`000-process.md`](../000-process.md#attribution-inside-the-intent-domain)
+makes when it holds that uniformity is not proof of intent. So reconstruction
+recovers what the system does and produces a hypothesis about why, not a record.
+It errs both ways: an accident is read as intent and given a plausible why, and
+a decision is read as an accident and "optimized" away, as with the financial
+safeguard above. Everything that makes behaviour a decision is outside the
+artifact: that it was chosen, the alternatives weighed and rejected, and what
+was known and unknown when the choice was made. Nothing in the code points at a
+path not taken, so a later reader does not know to look for it, and hindsight
+fills the gap without announcing that it has. That part exists at the moment of
 decision and at no later moment: it is repayable only forward, like cognitive
 debt.
 
@@ -986,9 +992,10 @@ in the structured dialogs [`CLAUDE.md` § Interview mode](../../CLAUDE.md#interv
 requires, and such a dialog — question, options with consequences,
 recommendation, answer — persists only in the session transcript, outside the
 repository. So "orders the work so that neither is taken on", above, holds for
-intent debt only up to the first mid-work decision. The rationale for the chosen
-option is later re-argued from the code; the rejected options and the
-information they were weighed on are not recoverable at all.
+intent debt only up to the first mid-work decision. Afterwards the code shows
+the behaviour that was implemented, not that it was chosen; the choice, the
+rejected options and the information they were weighed on are not recoverable
+from it.
 [RFC-0018](../rfcs/rfc-0018-decision-capture-at-dialog-time.md) proposes the
 mechanism.
 

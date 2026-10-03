@@ -23,11 +23,13 @@ from being write-only: the trace links it, `check_traces.py` validates it, and
 **The rationale is lost at a known point, and reconstruction is the failure
 mode, not the fix.**
 [Research § 2.3](../research/research-code-abundance-goals-and-values.md), as
-corrected on 2026-10-03, splits intent debt into two halves. The chosen path can
-be re-argued later from the code, lossily. The rejected alternatives and what was
-known at the time cannot: nothing in the artifact points at a path not taken. An
-agent asked later for the why writes the most plausible one, which is the
-fabrication mechanism the same section describes. The research appendix's third
+corrected on 2026-10-03, finds most of intent debt forward-only. The code
+records the behaviour that was implemented, not whether it was decided: a
+deliberate choice and an accident look identical in it. That it was chosen, the
+rejected alternatives and what was known at the time are all outside the
+artifact. An agent asked later for the why writes the most plausible one, for an
+accident as readily as for a decision, which is the fabrication mechanism the
+same section describes. The research appendix's third
 gap places this in the repository: every intent-layer control binds a decision
 taken before implementation, and none binds one taken during it.
 
