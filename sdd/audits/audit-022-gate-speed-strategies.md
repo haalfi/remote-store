@@ -108,17 +108,23 @@ Two observations show how much a map would select away, and where it must not:
   `tests/backends/sftp/`. It does not reach the nine other named backend
   columns.
 - **`tests/scripts/` is 2,064 tests (17%), but it is not unreachable from
-  `src/`.**
-  - `tests/scripts/test_gen_features.py` imports `remote_store._retry`,
-    `remote_store.backends._http`, `remote_store.backends._s3_base` and `Store`.
-  - It also drives `scripts/gen_features.py`, which reads
-    `src/remote_store/_registry.py`.
-  - `test_check_test_placement.py` imports `remote_store` at module level.
-  - A `Grep` for `remote_store` over `tests/scripts/` matches 21 files.
+  `src/`.** It reaches `src/` in two ways:
+  - **By import.** `tests/scripts/test_gen_features.py` imports
+    `remote_store._retry`, `remote_store.backends._http`,
+    `remote_store.backends._s3_base` and `Store`.
+  - **By reading source as text.**
+    - `scripts/gen_features.py:259` reads `src/remote_store/_registry.py` with
+      `read_text`, and `test_gen_features.py` drives it.
+    - `scripts/check_test_placement.py:104` AST-walks
+      `src/remote_store/backends/_*.py` when the module is loaded, and
+      `test_check_test_placement.py` loads it. That test file's own
+      `remote_store` imports sit inside string fixtures; its real imports are
+      `ast`, `importlib.util`, `sys` and `pathlib`.
 
-  So a map has to place these per test file, not exclude the directory. The
-  `ci.yml` comment above `tooling-tests` ("not remote_store") makes the same
-  wrong claim.
+  A `Grep` for `remote_store` over `tests/scripts/` matches 21 files. That
+  counts text occurrences, not dependent files. So a map has to place these per
+  test file, not exclude the directory. The `ci.yml` comment above
+  `tooling-tests` ("not remote_store") makes the same wrong claim.
 
 **Which selection mechanism fits this repo.** Selection tools differ in where
 their map comes from: runtime coverage, the git diff, static imports, or a
@@ -134,7 +140,7 @@ build graph. Two facts about the repo decide among them:
 
 | Mechanism | Examples | Fit here |
 | --- | --- | --- |
-| Runtime coverage | `pytest-testmon`, `pytest-tia`, coverage.py contexts with a small selector | Sees the registry wiring and the `tests/scripts/` dependencies above; needs a periodically refreshed map |
+| Runtime coverage | `pytest-testmon`, `pytest-tia`, coverage.py contexts with a small selector | Sees the registry wiring and the `tests/scripts/` imports. Blind, like every other row, to source read as text (`gen_features.py`, `check_test_placement.py`), because a tracer records executed lines, not file reads. Needs a periodically refreshed map |
 | Git diff, fixture-aware | `pytest-impact` | Fixture- and conftest-aware by its own description; whether that reaches registry-built parameters is untested |
 | Git diff, file-level | `pytest-picked` | Misses the registry wiring by construction; usable only as a local convenience |
 | Static import graph | `grimp`, `ast` | Same blind spot as file-level diff for conformance |
@@ -157,14 +163,18 @@ evaluation in P1 measures that. Open interactions to verify there:
 - the runtime tools against `xdist`;
 - the runtime tools against `pytest-cov`, since both instrument through
   coverage.py;
-- non-Python inputs: 485 tracked files under `tests/` are not `.py`, 479 of
-  them cassettes.
+- non-Python inputs. `git ls-files tests` lists 485 files that are not `.py`.
+  478 of them are cassettes (`Glob` `tests/**/cassettes/**/*.yaml`), 2 are
+  `.gitkeep`, and 5 are other data and docs.
 
 Either way, the **fail-open rule** is what keeps it safe. Anything the map
 cannot place must select the full suite:
 - `conftest.py`, `tests/_helpers.py`, and fixtures;
 - `_store.py` and the other core modules every backend passes through;
-- `pyproject.toml`, dependency files, and CI files.
+- `pyproject.toml`, dependency files, and CI files;
+- any `src/` change while a test that reads source as text is in the suite.
+  Today those are `test_gen_features.py` and `test_check_test_placement.py`.
+  Either a declared entry maps them, or they always run.
 
 The `tests/scripts/` case shows the rule has to hold for a directory as well as
 for a file: a directory is excluded only when nothing in it reaches the change.
@@ -197,18 +207,45 @@ reversal clause names merge-queue capacity as missing. **The PR's draft state is
 the single selector:**
 
 - **Draft PR: in-progress lane.** Lint, typecheck, and the H1 map-selected
-  tests on the primary interpreter. That is a handful of jobs.
+  tests. The selected tests run on every supported interpreter, not only the
+  primary (see the `/ship` constraint below). The Stage-1 legs need no Docker,
+  so this is still far less work than the full gate.
 - **Non-draft PR: pre-merge lane.** This covers every non-draft PR, including
-  one opened as non-draft and one marked `ready_for_review`. It runs the current
-  full `ci.yml` gate, unchanged, including the coverage floor. Branch protection
-  requires its `gate` job, so nothing merges without one full green run on the
-  final head.
+  one opened as non-draft and one converted from draft. It runs the current
+  full `ci.yml` gate, including the coverage floor.
 - **Post-merge:** `ci-full.yml` as today.
 
-The open risk is a push after the full run. A re-push to a non-draft PR must
-re-run the full gate. The `pull_request` `synchronize` event on a non-draft PR
-does this under the selector above, but the policy must be stated so that
-convenience does not erode it.
+**The merge invariant needs two `ci.yml` changes.** The invariant is that
+nothing merges without one full green run on the final head. Today it does not
+hold under this selector:
+- **Conversion runs nothing.** `ci.yml:6-7` declares `pull_request` without
+  `types:`, so only `opened`, `synchronize` and `reopened` fire it. Converting a
+  draft to ready with no new push starts no run. The last check on the head is
+  then the draft lane's.
+- **The fix has two parts:**
+  - add `ready_for_review` to `types:`;
+  - make branch protection require a check that only the full lane produces.
+    If the draft lane also reports a job named `gate`, a selected run satisfies
+    protection.
+
+A later push to a non-draft PR fires `synchronize` and re-runs the full lane.
+
+**`/ship` constraint.** `/ship` is the main source of in-progress pushes, but
+the selector does not reach it today, and narrowing it naively would undo a
+measured fix:
+- **It never sees a draft.** `/pr` opens PRs through `create_pull_request` with
+  no draft flag (`.claude/skills/pr/SKILL.md` step 6), and `/ship` reviews that
+  open PR. P3 saves nothing for `/ship` unless `/pr` opens a draft and `/ship`
+  marks it ready at its close.
+- **It relies on the full interpreter matrix per round, deliberately.**
+  `.claude/skills/ship/SKILL.md` § Close each round records CI going red on a
+  rebase and staying red across four rounds. The failure was
+  interpreter-specific, and only the local gate was being read. A primary-only
+  draft lane would bring that blind spot back, which is why the draft lane above
+  keeps every interpreter.
+- **P2 has the same dependency.** `/ship` runs `hatch run all` before every
+  push. A selected local target saves nothing in that loop unless `/ship` uses
+  it for rounds and keeps `all` for its close.
 
 ### M2 — Shard timings cover 70% of the tests the primary shards split
 
@@ -279,12 +316,22 @@ its evidence.
   `test-primary (1)` started at +72 s and ended at +301 s. `gate` ended at
   +326 s. At most 19 `ci.yml` jobs ran at once, computed from each job's
   `started_at`/`completed_at`.
-- **Who held the slots:** the short jobs `package`, `notebooks`, `typecheck` ×2
-  and `pyarrow-major-check` ×2 (18 to 50 s each) started at +32 to +34 s, ahead
-  of the three `test-primary*` jobs.
+- **Why it waits:** first-in, first-out queuing behind jobs that queued
+  earlier.
+  - `test-primary` needs `prepare-images` (`ci.yml:286`), so it can only queue
+    from +42 s.
+  - By then the jobs that need only `setup` had queued at +30 s. The six short
+    jobs (`package`, `notebooks`, `typecheck` ×2, `pyarrow-major-check` ×2, 18
+    to 50 s each) started at +32 to +34 s.
+  - Slots freed after +42 s went first to longer jobs queued ahead of it:
+    `test (3.12, 2)` at +45 s, `verify-formal` at +53 s, `test (3.14, 1)` at
+    +63 s.
+  - `test-primary (1)` got a slot at +72 s, when `pyarrow-major-check` and
+    `typecheck (3.11)` finished.
 
-Ordering or merging those short jobs, as in P4, would save at most the 30 s
-wait.
+The 30 s is a ceiling on what any reordering can recover. Ordering alone cannot
+start `test-primary*` first: the other jobs would have to be gated behind a job
+that finishes after `prepare-images`, and that delays them.
 
 **The master-push figure is not this finding.** On the master push
 37030933567, `test-primary (1)` waited from +42 s to +160 s. Three other
@@ -330,9 +377,9 @@ run or the coverage floor.
 | # | Proposal | Addresses | Notes |
 | --- | --- | --- | --- |
 | P1 | Evaluate selectors before choosing one: `pytest-testmon`, `pytest-tia` and `pytest-impact`, with the full suite as the control group. The criteria are time saved, missed failures, and how hard the tool is to run. The test cases are seeded changes that use known blind spots (see below) | H1 | Whichever wins stays fail-open, including for `tests/scripts/`; a declared table is the fallback if none passes |
-| P2 | `hatch run` target that runs map-selected tests; `all` keeps the full run for the pre-push moment | H1 | The coverage floor is never asserted on a selected run |
-| P3 | Two-speed `ci.yml`: a draft PR runs the selected lane, a non-draft PR runs the full gate | M1 | A new ADR amending ADR-0043; the full gate stays required for merge |
-| P4 | Start `test-primary*` before the short CI jobs | L3 | At most about 30 s on a PR run |
+| P2 | `hatch run` target that runs map-selected tests; `all` keeps the full run for the pre-push moment | H1 | The coverage floor is never asserted on a selected run; saves nothing in `/ship` unless `/ship` uses it for rounds (M1) |
+| P3 | Two-speed `ci.yml`: a draft PR runs the selected lane on every interpreter, a non-draft PR runs the full gate | M1 | A new ADR amending ADR-0043. It needs `ready_for_review` in `types:`, a required check only the full lane produces, and `/pr` and `/ship` changed to open as draft and mark ready at close |
+| P4 | Gate the setup-only CI jobs behind `prepare-images` so `test-primary*` queue first | L3 | Recovers at most 30 s and delays the gated jobs; measure before adopting |
 | P5 | `ci-full.yml` publishes durations; PR shards consume them | M2 | Retires the manual refresh duty |
 | P6 | `COVERAGE_CORE=sysmon` on 3.12+ coverage runs | L1 | Re-measure covered lines on CI before switching |
 | P7 | Anchor the email PII regex | L2 | Bug-fix protocol: failing timing test first |
