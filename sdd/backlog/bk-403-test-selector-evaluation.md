@@ -1,4 +1,4 @@
-# BK-398 — No change-scoped test selector has been measured on this suite, so none can be chosen
+# BK-403 — No change-scoped test selector has been measured on this suite, so none can be chosen
 <!-- doc: repo-only -->
 
 Filed from [audit-022](../audits/audit-022-gate-speed-strategies.md), proposal
@@ -39,5 +39,5 @@ If no tool passes, the fallback is a declared table in the style of
 **Whatever wins never asserts the coverage floor**: § H1, "What must stay
 full".
 
-**Consumers:** BK-399 (the local target) and ID-266 (the CI draft lane) both
+**Consumers:** BK-404 (the local target) and ID-266 (the CI draft lane) both
 need this item's verdict.

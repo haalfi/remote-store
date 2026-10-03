@@ -801,9 +801,9 @@ CHANGELOG the release body is built from — say what is actually true.
 - [ ] **BK-402 — `ci.yml` says `tests/scripts/` does not exercise `remote_store`, and it does**
   spec: — · effort: S · audience: infra.ci
   The `tooling-tests` comment (`ci.yml:451`) says `tests/scripts/` tests "not
-  remote_store", but `test_gen_features.py` imports it ([audit-022](audits/audit-022-gate-speed-strategies.md)
-  § H1) and an `open` audit hook over Stage 1 finds eight of its test files
-  reading `src/` other than by import; a selector built on the comment would
+  remote_store", but `test_gen_features.py` imports it, and tests there read
+  `src/` as text through the scripts they drive ([audit-022](audits/audit-022-gate-speed-strategies.md)
+  § H1; BK-403 owns the full list). A selector built on the comment would
   drop the directory. Open decision: none.
 
 ---
@@ -816,33 +816,33 @@ the change can affect; once, before merge, the whole gate runs, and pays for
 nothing it does not need. Narrowing never lifts the full pre-merge run or the
 coverage floor.
 
-- [ ] **BK-398 — No change-scoped test selector has been measured on this suite, so none can be chosen**
+- [ ] **BK-403 — No change-scoped test selector has been measured on this suite, so none can be chosen**
   spec: — · effort: M · audience: infra.test, contributor.tooling
   Both gates run every test for every diff, because nothing maps a changed
   path to the tests it can affect (audit-022 § H1). Conformance is wired
   through the fixture registry, so import or file-level diff maps miss it. Open decision:
   which selector, if any, survives the seeded changes, fails open where it
   must, and has a map that holds across interpreters.
-  Detail: [dossier](backlog/bk-398-test-selector-evaluation.md)
+  Detail: [dossier](backlog/bk-403-test-selector-evaluation.md)
 
-- [ ] **BK-399 — The local gate runs every test for every diff, with no selected target for in-progress rounds**
+- [ ] **BK-404 — The local gate runs every test for every diff, with no selected target for in-progress rounds**
   spec: — · effort: M · audience: contributor.tooling
   `hatch run all` runs all of Stage 1 whatever the diff touched, and tests
-  are most of its wall time (audit-022 § H1). Needs BK-398's selector. Open
+  are most of its wall time (audit-022 § H1). Needs BK-403's selector. Open
   decision: whether a third gate branch fits audit-017 R3's one thin target
   and BK-271's composed gate, and which skills run it before a round push.
-  Detail: [dossier](backlog/bk-399-selected-tests-hatch-target.md)
+  Detail: [dossier](backlog/bk-404-selected-tests-hatch-target.md)
 
 - [ ] **ID-266 — Every in-progress PR push runs the full pre-merge CI gate**
   spec: — · effort: L · audience: infra.ci, contributor.process
   `ci.yml` runs the whole gate on every PR push, including each `/ship` round
-  (audit-022 § M1). Needs BK-398's map; its `/pr` and `/ship` changes are its
-  own scope, and `/ship` is shared with BK-399. Open decision: a new ADR
+  (audit-022 § M1). Needs BK-403's map; its `/pr` and `/ship` changes are its
+  own scope, and `/ship` is shared with BK-404. Open decision: a new ADR
   amending ADR-0043 for a draft-PR selected lane, once its four
   prerequisites have answers.
   Detail: [dossier](backlog/id-266-two-speed-ci-gate.md)
 
-- [ ] **BUG-300 — The PII sweep's bare-email regex is quadratic on base64 runs and costs 157 of the sweep's 160 worker-seconds**
+- [ ] **BUG-301 — The PII sweep's bare-email regex is quadratic on base64 runs and costs 157 of the sweep's 160 worker-seconds**
   spec: — · effort: S · audience: infra.test
   The `bare email address` pattern (`tests/backends/fixtures/_cassettes.py:180`)
   restarts at every character of long base64 runs; [audit-022](audits/audit-022-gate-speed-strategies.md)
