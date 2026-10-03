@@ -65,5 +65,5 @@ full".
   declared-table fallback above, extended by a static import graph, a
   registry-based backend axis and a generated text-reader table (D5), with
   the coverage map kept only as a drift oracle (D7). Its Phase 0 replaces the
-  revisit condition: the selector is built only if it misses no seed and no
-  historical failure.
+  revisit condition: the selector is built only if it passes Phase 0's exit
+  (RFC-0019 § Roadmap), which is not restated here.

@@ -867,10 +867,10 @@ coverage floor.
 - [ ] **BK-404 — The local gate runs every test for every code diff, with no selected target for in-progress rounds**
   spec: — · effort: M · audience: contributor.tooling
   `hatch run all` runs all of Stage 1 whatever the diff touched, and tests
-  are most of its wall time (audit-022 § H1). Needs BK-403's selector;
-  [RFC-0019](rfcs/rfc-0019-two-speed-test-gate.md) D1 places it as the gate
-  for every round push. Open decision: RFC-0019 Phase 0's verdict; then the
-  target's name and the R3 / BK-271 argument (Phase 1 ADR).
+  are most of its wall time (audit-022 § H1). [RFC-0019](rfcs/rfc-0019-two-speed-test-gate.md)
+  D1 makes BK-403's selector the gate for every round push. Open decision:
+  Phase 0's verdict; then the name, the R3 / BK-271 argument and which
+  skills run it (RFC-0019 Open Questions 4, keeps this item open).
   Detail: [dossier](backlog/bk-404-selected-tests-hatch-target.md)
 
 - [ ] **ID-266 — Every in-progress PR push runs the full pre-merge CI gate**

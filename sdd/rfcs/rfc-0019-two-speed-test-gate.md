@@ -14,9 +14,9 @@ exit (§ Roadmap). Phase 0 decides whether anything is built at all.
 
 **The full gate is removed from intermediate iteration pushes, but stays
 mandatory for the exact head that is meant to merge.** Those pushes run only
-the tests a change can reach. Today both gates run everything on every push. The selector that picks the tests is a committed
-rule set, not a runtime coverage map, and it runs the full suite whenever it
-cannot place a change.
+the tests a change can reach. Today both gates run everything on every push.
+The selector that picks the tests is a committed rule set, not a runtime
+coverage map, and it runs the full suite whenever it cannot place a change.
 
 - **Every PR push, including each review and fix round:** the fast lane. Lint,
   typecheck and the selected tests, on every supported interpreter.
@@ -32,9 +32,10 @@ cannot place a change.
   tests are 532 s of its 666 s ([audit-022](../audits/audit-022-gate-speed-strategies.md)
   § H1, per-member timing).
 - `ci.yml` ran the full gate 8 times on PR #1054 in under two hours
-  (audit-022 § M1, `list_workflow_runs` on its head branch). Most pushes in a
-  `/ship` loop are review rounds on an open PR, so a trigger based on draft
-  state would not reach them.
+  (audit-022 § M1, `list_workflow_runs` on its head branch). `/ship` pushes
+  each review round to a PR that `/pr` already opened as non-draft (audit-022
+  § M1, "`/ship` constraint"), so a trigger based on draft state would not
+  reach those pushes.
 
 **Why rules and not a coverage map.** The `pytest-testmon` PoC
 ([research](../research/research-bk-403-testmon-poc.md)) found two blockers
@@ -111,8 +112,8 @@ becomes available, the full lane moves to the queue and the label goes.
 | --- | --- | --- | --- |
 | Local fast | before every push | lint, typecheck, selected tests | — |
 | Local full | recommended before marking a merge candidate; not enforced | `hatch run all` | — |
-| CI fast | `opened`, `synchronize`, `reopened` | lint, typecheck, selected tests on every interpreter | — |
-| CI full | `merge-candidate` label added | today's `ci.yml` | yes |
+| CI fast | `opened`, `synchronize`, `reopened` with `code=true` | lint, typecheck, selected tests on every interpreter | — |
+| CI full | `merge-candidate` label added, or `opened`/`synchronize`/`reopened` with `code=false` (D4) | today's `ci.yml` | yes |
 | Post-merge | master push | `ci.yml` full, `ci-full.yml` | yes |
 
 The local fast target is the gate for every round push. `hatch run all` keeps
@@ -123,7 +124,9 @@ is the enforced barrier.
 ### D2. The merge barrier is a commit status only the full lane posts
 
 **Branch protection requires a status that a successful full run posts on the
-PR's head commit; no other path can produce it.** A required *job* is not
+PR's head commit; no untampered workflow path can produce it otherwise.** The
+limits of that guarantee (a PR editing its own workflow, the admin bypass) are
+stated below. A required *job* is not
 enough: GitHub reports a required job skipped by its `if:` as passing, so a fast
 run, or a run started by an unrelated label, would satisfy a required `gate` job
 it skipped.
@@ -180,12 +183,14 @@ whose token has `statuses: write`, and by anyone with write access.
 **Status lifecycle.** The status is posted by the full lane's final job. That
 job depends on every other full-lane job and runs after they finish
 (`if: ${{ !cancelled() }}`). It uses today's `gate` rule (`ci.yml` `gate` job):
+
 - **`success`** when `setup` succeeded and every other full-lane job ended
   `success` or `skipped`. The class filter skips jobs routinely, for example
   `docs` when `docs=false` or every `code` job on a non-code diff.
 - **`failure`** otherwise.
-- **Nothing** when the run is cancelled. Each row below is a
-Phase 4 exit check:
+- **Nothing** when the run is cancelled.
+
+Each row below is a Phase 4 exit check:
 
 | Event | Expected result |
 | --- | --- |
@@ -238,7 +243,9 @@ off.**
   hooks only), both lanes would run the same jobs, so `setup` classifies that
   run as the **full lane**, whatever the event. The lane is therefore full on
   any of three conditions: a `merge-candidate` label event, a master push, or
-  `code=false`. The same final job posts `merge-gate` in every case. D2's "the
+  `code=false` on an event that starts a lane (`opened`, `synchronize`,
+  `reopened`). A `labeled` event for any other label starts no lane, even with
+  `code=false` (D3). The same final job posts `merge-gate` in every case. D2's "the
   fast lane never posts" and the single-poster lint hold as written, and a docs
   PR needs no label.
 - **The non-code classification fails toward code.** Because a non-code run
@@ -288,25 +295,28 @@ two conditions:
 - **Every test file that imports it lies under `tests/backends/<backend>/`**
   for one of the backends that list it.
 
-Both are checked statically when the selection is made.
+Both are checked statically when the selection is made, and a module that
+fails either one runs FULL in the pilot. Neither condition is cosmetic:
+
+- **The first** matters because `backends.toml` names a module under one
+  backend while other backends use it too. `_s3_base.py` is listed under `s3`
+  only, but `_s3_pyarrow` and `_s3_boto3` import it.
+- **The second** matters because backend modules are imported directly well
+  outside their own folders, for example in `tests/test_store.py`,
+  `tests/ext/`, `tests/scripts/test_gen_features.py`, `tests/aio/` and
+  `tests/e2e/` (a Grep for `remote_store.backends._` over `tests/`), and by
+  string from parametrize lists (layer 2).
 
 **No module qualifies today, so the pilot narrows no `src/` edit.**
 `_registry.py:31-87` imports every registered backend module inside a function,
 and function-local imports count. Sibling modules import the remaining backend
 helpers. `_s3_boto3.py`, which nothing in `src/` imports, has its tests under
-`tests/backends/s3/` and in conformance. The pilot therefore narrows no `src/`
-edit. It narrows only edits to tests, cassettes, fixture modules and
-`fixtures.toml`, non-root `conftest.py` files, examples, scripts and generated
-artifacts. Narrowing `src/` edits arrives with
-layer 2 in Phase 2. Phase 0 measures both rule sets for this reason (§ Roadmap). The second condition
-is not cosmetic: backend modules are imported directly well outside their own
-folders, for example in `tests/test_store.py`, `tests/ext/`,
-`tests/scripts/test_gen_features.py`, `tests/aio/` and `tests/e2e/` (a Grep for
-`remote_store.backends._` over `tests/`). The first condition matters because
-`backends.toml` names a module under one backend while other backends use it
-too: `_s3_base.py` is listed under `s3` only, but `_s3_pyarrow` and
-`_s3_boto3` import it. A module that fails either condition runs FULL in the
-pilot.
+`tests/backends/s3/` and in conformance. The pilot narrows only edits to tests,
+cassettes, fixture modules and `fixtures.toml`, non-root `conftest.py` files,
+examples, scripts and generated artifacts. Narrowing `src/` edits arrives with
+layer 2 in Phase 2, which is why Phase 0 measures both rule sets (§ Roadmap).
+The leaf rule stays in the pilot so that a future leaf module narrows without a
+spec change.
 
 **The pilot is only as safe as the text-reader inventory.** Sending listed
 paths to FULL does nothing for a reader the inventory has missed. Research
@@ -408,7 +418,9 @@ the result and are always unioned, never skipped:
 4. **Text readers.** A generated table maps source globs to the tests that read
    them as text, for `src/`, `tests/` and `scripts/` alike. It is built by two
    independent methods, because each has blind spots the other covers:
-   - **Runtime scan,** extending `srcreads.py`. Research Appendix D records two
+   - **Runtime scan,** extending `sdd/research/bk-403-testmon-poc/srcreads.py`
+     from readers of `src/` to readers of `tests/` and `scripts/` files.
+     Research Appendix D records two
      blind spots in it: subprocess reads are not seen, and
      `linecache`/`inspect.getsource` attribution depends on test order. A rerun
      in the fixed default order reproduces both blind spots, so it is run in
@@ -423,9 +435,7 @@ the result and are always unioned, never skipped:
    Completeness cannot be proven, so the criterion is agreement between the
    methods. A reader found by only one method is investigated and added before
    the table is accepted. The static half is regenerated by D7's freshness
-   check. It extends
-   `sdd/research/bk-403-testmon-poc/srcreads.py`, which covered `src/` only, to readers of
-   `tests/` and `scripts/` files. Examples: `test_large_payload_guard.py`
+   check. Examples of readers of test files: `test_large_payload_guard.py`
    parses `conformance/**/test_*.py`, and `test_registry.py` reads
    `conformance/**/*.py` (research Appendix D). A conformance test edit
    therefore also selects those readers.
@@ -474,8 +484,8 @@ none of which selects anything.**
 1. **Seed tests.** The PoC's 13 seeds become unit tests of the selector, plus
    seeds for text readers, the D6 job rules, string-named imports, test or
    script modules imported by other tests or scripts, and a failure only a
-   `*_strict` fixture reaches through a shared fixture module. They compute selections
-   only and run in seconds. Each seed asserts two things:
+   `*_strict` fixture reaches through a shared fixture module. They compute
+   selections only and run in seconds. Each seed asserts two things:
    - **The selection contains the known failing test.**
    - **Its expected mode, `SELECTED` or `FULL` with its reason.** Containment
      alone passes vacuously under FULL. Under the pilot (every layer-1 row
@@ -483,14 +493,15 @@ none of which selects anything.**
      of the 13 PoC seeds in FULL: both `conftest.py` seeds, `__init__.py`,
      `pyproject.toml`, and five non-leaf `src/` modules (`_path`, `_registry`,
      `_azure`, `_sftp` twice). The other four are SELECTED: the `memory.py`
-     fixture module, `fixtures.toml`, the Azure cassette and `FEATURES.md`. Pinning the mode makes a FULL → SELECTED change visible
-     when a layer is added, and so is a regression the other way.
+     fixture module, `fixtures.toml`, the Azure cassette and `FEATURES.md`.
+     Pinning the mode makes a FULL → SELECTED change visible when a layer is
+     added, and so is a regression the other way.
 
    Every non-FULL layer-1 row needs at least one `SELECTED` seed. The Phase 0
    report states how many seeds a narrowing rule decided, not only how many
    passed.
 2. **Text-reader freshness.** A check regenerates the static half of the layer-4
-   table (below) and diffs it against the committed copy. A new test that reads
+   table (D5) and diffs it against the committed copy. A new test that reads
    a file as text then fails in its own PR, instead of turning up only in the
    escape log.
 3. **Coverage cross-check**, a drift check under
@@ -556,7 +567,8 @@ is how a fail-open selector that has stopped saving anything gets noticed.
 **Five properties hold in every phase; a change that breaks one is out of scope
 for this RFC.**
 
-1. Nothing merges without a successful full run on the final head (D2).
+1. Nothing merges without a successful full run on the final head (D2), the
+   ruleset's admin bypass and a tampered workflow being the two stated limits.
 2. A selected run never asserts the coverage floor.
 3. Fail open: an unplaceable path, a selector error, or a selection over the
    cut-off runs FULL, and the run log says why.
@@ -576,8 +588,9 @@ decides. Phases 0–2 are local only. Phase 3 adds CI jobs that only log.
 - CI jobs triggered (D6);
 - the FULL-fallback rate, with its reasons;
 - false negatives: seeds and historical failures not selected;
-- over-selection: selected tests outside the D7 cross-check's minimal set for
-  the same diff;
+- over-selection: selected tests outside the minimal set a coverage-context
+  run would give for the same diff, computed once locally, since D7's
+  scheduled job does not exist yet;
 - rule-table size, as a maintenance proxy.
 
 The targets for these are written into the Phase 0 plan before the run.
@@ -621,8 +634,9 @@ switches lanes on a signal that misses the review loop.**
 on CI configuration, contributor tooling and two process records.**
 
 - **Public API / backwards compatibility:** none.
-- **CI:** `ci.yml` triggers, `setup`, per-job conditions, a new status; branch
-  protection settings (outside the repo) move to `merge-gate`.
+- **CI:** `ci.yml` triggers, `setup`, per-job conditions, a new status. Two
+  changes outside the repo: branch protection moves to `merge-gate`, and the
+  `merge-candidate` label has to exist.
 - **Tooling:** a selector script, a local hatch target, a registry allowlist in
   `tests/backends/fixtures/registry.py`.
 - **Process:** an ADR for the local part (Phase 1) and one amending ADR-0043
