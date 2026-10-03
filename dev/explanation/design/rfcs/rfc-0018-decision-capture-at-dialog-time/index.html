@@ -8033,6 +8033,23 @@
     </span>
   </a>
   
+    <nav class="md-nav" aria-label="Step 0 observations">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#follow-up-what-fires-posttoolusefailure-2026-10-03" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Follow-up: what fires PostToolUseFailure (2026-10-03)
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
 </li>
       
         <li class="md-nav__item">
@@ -11293,6 +11310,23 @@
     </span>
   </a>
   
+    <nav class="md-nav" aria-label="Step 0 observations">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#follow-up-what-fires-posttoolusefailure-2026-10-03" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Follow-up: what fires PostToolUseFailure (2026-10-03)
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
 </li>
       
         <li class="md-nav__item">
@@ -11326,8 +11360,9 @@
 <h1 id="rfc-0018-capture-interview-decisions-where-they-are-made">RFC-0018: Capture interview decisions where they are made<a class="headerlink" href="#rfc-0018-capture-interview-decisions-where-they-are-made" title="Permanent link">&para;</a></h1>
 <h2 id="status">Status<a class="headerlink" href="#status" title="Permanent link">&para;</a></h2>
 <p>Draft, 2026-10-03. Tracked as <strong>BK-397</strong>. Nothing below is built. § Build order
-step 0 ran on 2026-10-03 (§ Step 0 observations); D1, D3 and D4.0 are amended
-to what it observed.</p>
+step 0 ran on 2026-10-03 (§ Step 0 observations); D1, D3 and D4.0 are amended to
+what it observed. A failure-probe follow-up the same day amends D2, D3 and D4.2,
+D2 to an inference rather than an observation.</p>
 <h2 id="summary">Summary<a class="headerlink" href="#summary" title="Permanent link">&para;</a></h2>
 <p>Decisions in this repository are mostly taken mid-work in <code>AskUserQuestion</code>
 dialogs (<a href="https://github.com/haalfi/remote-store/blob/master/CLAUDE.md#interview-mode"><code>CLAUDE.md</code> § Interview mode</a>). A
@@ -11365,7 +11400,8 @@ the answer was given. What is missing is persistence and a reader, not content.<
 <li><strong>Rejected options survive.</strong> They are in the <code>asked</code> event whether or not
    anyone thinks to mention them later.</li>
 <li><strong>The outcome is observable, including "no decision".</strong> A dialog that was
-   denied or closed has an <code>asked</code> event and no <code>answered</code> event. A parallel
+   denied or closed has an <code>asked</code> event and either no <code>answered</code> event or one
+   whose answer is the dismissal sentinel (§ Step 0 observations, case a′). A parallel
    session on BK-396 showed the failure this guards: its dialog "recorded Q1"
    before the maintainer had answered, the choice was pushed, and the session
    noticed only afterwards and re-asked. A summary would have recorded Q1 as the
@@ -11439,7 +11475,10 @@ the PR diff shows the log beside the change it explains.</p>
   commit (<code>/ship</code>'s close, <code>/pr</code>'s own questions) leave a tail: <code>/pr</code> Step 1
   commits it as a separate <code>decision log</code> commit before its clean-tree check.
   Bound: a commit the maintainer makes by hand outside the agent bypasses the
-  hook, and its dialogs reach the next agent commit instead.</p>
+  hook, and its dialogs reach the next agent commit instead. Inferred, not
+  observed (a maintainer report, never probed; § Step 0 observations,
+  follow-up): a commit protects the log only once it is pushed, since an
+  unpushed commit would go with a reclaimed container.</p>
 </li>
 <li>
 <p><strong>No item ID in the path.</strong> The ID is not knowable at capture time: branch
@@ -11484,7 +11523,7 @@ set</strong> is the labels marked <code>(Recommended)</code>, usually one and po
 </tr>
 <tr>
 <td><code>unanswered</code></td>
-<td>no <code>answered</code> event</td>
+<td>no <code>answered</code> event, or the answer begins with <code>[User dismissed</code> (the dismissal sentinel; follow-up case a′)</td>
 </tr>
 <tr>
 <td><code>other</code></td>
@@ -11502,6 +11541,13 @@ set</strong> is the labels marked <code>(Recommended)</code>, usually one and po
 </table>
 <p>The order ranks what a reviewer must see first: a failure or an answer nobody
 gave outranks what the answer was.</p>
+<p><strong>The sentinel is a harness string, matched by prefix, and that is a bound.</strong>
+It is undocumented and was seen once (a′), in full
+<code>[User dismissed — do not proceed, wait for next instruction]</code>. A reader matches
+the prefix <code>[User dismissed</code> and is tested against a fixture taken from the a′
+payload. A rewording of the prefix itself keeps the payload's shape, so no parse
+fails and no check detects it: the answer falls to <code>other</code>, which D4.3 does not
+flag. A free-text answer that begins with the prefix is read as a dismissal.</p>
 <p><strong>Parsing rules, fixed by step 0.</strong> The answer is read from the <code>answered</code>
 event's <code>tool_response.answers</code>, a map from question text to one string (its
 <code>tool_input.answers</code> carried the same map in every observation). Never read
@@ -11513,8 +11559,9 @@ choosing it. A multi-select answer is the chosen labels and any free text joined
 by <code>", "</code> into one string. A reader matches labels against it as whole
 <code>", "</code>-delimited segments, longest label first, so a label that itself contains
 <code>", "</code> still parses; any residue is free text and makes the question <code>other</code>.
-Answers are keyed by question text, so two questions with identical text in one
-call cannot be told apart.</p>
+Answers are keyed by question text, but the tool rejects identical question
+texts (and duplicate option labels within a question) before <code>PreToolUse</code>, so no
+log can contain the collision (follow-up case c).</p>
 <p><code>prefilled</code> exists because the tool's input schema accepts an <code>answers</code> field,
 and the BK-396 incident is the reason to look rather than assume. Step 0 found
 that an agent-supplied <code>answers</code> reaches <code>PreToolUse</code> verbatim, the dialog was
@@ -11546,8 +11593,10 @@ and the question is classified by the rows below it.</p>
    legitimate act, and the report is how it stays visible. A <code>tool_use_id</code>
    with both an <code>answered</code> and a <code>failed</code> event is also reported: D3 still
    classifies it, but it contradicts the assumption that the two Post events are
-   exclusive, which step 0 could not test: no <code>failed</code> event fired in it, so
-   that assumption and D3's <code>failed</code> row still need an observation.</li>
+   exclusive. Neither step 0 nor its follow-up could test it: no <code>failed</code> event
+   fired in 27 payloads (13 in step 0, 14 in the follow-up), so that assumption
+   and D3's <code>failed</code> row remain
+   unobserved.</li>
 <li><strong><code>/pr</code>.</strong> The skill renders a "Decisions" section from the committed log
    only, after Step 1 has committed the tail, so the body never cites an event
    the PR does not contain. One line per question: header → answer → outcome,
@@ -11613,8 +11662,9 @@ lists its logs in its trace, each PR body carries a Decisions section rendered
 from them, and <code>check_traces.py</code> passes on all three. The ADR is written once
 those three are read.</p>
 <h2 id="open-questions">Open Questions<a class="headerlink" href="#open-questions" title="Permanent link">&para;</a></h2>
-<p>Questions 1 and 4 are answered by step 0, and question 2 only for a denial:
-dismissal and timeout are still open. The answers are summarised in § Step 0
+<p>Questions 1 and 4 are answered by step 0. Question 2 is answered for denial and
+dismissal, not for timeout or genuine tool error, and no trigger of
+<code>PostToolUseFailure</code> was found. The answers are summarised in § Step 0
 observations and the text below is kept as asked.</p>
 <ol>
 <li><strong>Do answers reach the hook?</strong> The hooks reference documents that
@@ -11665,7 +11715,7 @@ recorded as answered (hand-copied, because the recorder does not exist yet):</p>
 <p>Answers reach <code>PostToolUse</code> as <code>tool_response.answers</code>, one string per question
 keyed by question text, with free text unmarked and multi-select joined by
 <code>", "</code>. A denied dialog fires nothing after <code>PreToolUse</code>, and no
-<code>PostToolUseFailure</code> was seen. The payload's <code>session_id</code> does not match the
+<code>PostToolUseFailure</code> was seen, including in the follow-up below. The payload's <code>session_id</code> does not match the
 <code>Claude-Session</code> trailer, but the hook process's <code>CLAUDE_CODE_REMOTE_SESSION_ID</code>
 does.</p>
 <p>Run 2026-10-03 in one Claude Code on the web session (<code>permission_mode</code>
@@ -11721,11 +11771,16 @@ both held <code>"Mike"</code>.</p>
    <code>tool_input.answers</code>, keyed by question text, one string per question. The
    result-text parser is not needed. <code>PreToolUse</code> carries none unless the agent
    supplied them (e).</li>
-<li><strong>Answered for a denial only: it sends nothing after <code>PreToolUse</code>.</strong>
-   <code>PostToolUseFailure</code> did not fire for it. A dismissal distinct from a
-   denial and a timeout were not observed, so whether either fires
-   <code>PostToolUseFailure</code> is still open. In the normal flow nothing filled <code>answers</code> before
-   the dialog, but the agent can (e), and the user's choice then overrides it.</li>
+<li><strong>Answered for denial and dismissal; <code>PostToolUseFailure</code> never fired.</strong> A
+   denial sends nothing after <code>PreToolUse</code>. A dismissal is not one outcome: the
+   app's close cross sent nothing after <code>PreToolUse</code> (twice, the agent saw
+   <code>Denied by user</code>), while a dismissal accompanied by a message from another
+   surface fired <code>PostToolUse</code> with the sentinel as the answer (§ Follow-up, a
+   and a′). A timeout was not observed (365 s open, nothing fired). Schema
+   violations never reach a hook. No tried trigger fires <code>PostToolUseFailure</code>;
+   a genuine tool error after <code>PreToolUse</code> was not produced. In the normal flow
+   nothing filled <code>answers</code> before the dialog, but the agent can (e), and the
+   user's choice then overrides it.</li>
 <li>Not in step 0's scope.</li>
 <li><strong>No: <code>session_id</code> does not match the trailer.</strong> It was
    <code>"8f551ca6-684d-5d72-b7c0-d6da1ce729ee"</code>, a UUID (version 5, no match by
@@ -11751,10 +11806,113 @@ both held <code>"Mike"</code>.</p>
   correspond.</li>
 <li><strong>Not changed:</strong> the "Post events are exclusive" assumption and D3's <code>failed</code>
   row. Neither was contradicted: no <code>failed</code> event fired at all, so both stay
-  untested; D4.2 now says so. Both still need an observation, a dismissal or
-  timeout probe being the remaining candidate trigger, before step 1 builds
-  the <code>failed</code> path and its tests. D3's <code>unanswered</code> row is confirmed by d.</li>
+  untested; D4.2 now says so. D3's <code>unanswered</code> row is confirmed by d, and
+  amended by the follow-up below.</li>
 </ul>
+<h3 id="follow-up-what-fires-posttoolusefailure-2026-10-03">Follow-up: what fires <code>PostToolUseFailure</code> (2026-10-03)<a class="headerlink" href="#follow-up-what-fires-posttoolusefailure-2026-10-03" title="Permanent link">&para;</a></h3>
+<p>Same method and session type as above (<code>permission_mode</code> <code>"auto"</code>, probe in an
+uncommitted <code>.claude/settings.local.json</code>, matcher <code>AskUserQuestion</code> on the three
+events, the hook process's <code>CLAUDE_CODE_SESSION_ID</code> and
+<code>CLAUDE_CODE_REMOTE_SESSION_ID</code> dumped beside each payload; the one sidecar read
+back held this session's <code>cse_</code> id, matching its <code>Claude-Session</code> trailer).
+Listing the probe directory gave 14 payloads:
+8 <code>PreToolUse</code>, 6 <code>PostToolUse</code>, 0 <code>PostToolUseFailure</code>. Each <code>PostToolUse</code>
+shared its <code>tool_use_id</code> with exactly one <code>PreToolUse</code> (6 pairs); the 2 other
+<code>PreToolUse</code> files are a and its repeat below. The 6 pairs are b, a′ and four
+ordinary answered dialogs: the fire check, the wait-length question before b,
+and the two questions put to the user after a′ (which control was used; whether
+to run the repeat). Pairs were matched by <code>tool_use_id</code>, 6 distinct ids across 6
+<code>PostToolUse</code> files. <code>duration_ms</code> was 1 or 2 in every Post payload. The user acted on the web app (the close cross is the only
+dismissal control there) and had the session open in a browser as well.</p>
+<ul>
+<li><strong>a. Dismissal by the app's close cross.</strong> The agent saw <code>Denied by user</code>;
+  only <code>PreToolUse</code> fired. Identical to step 0's denial, so the cross on its
+  own is a denial to the harness, not a distinct dismissal. Repeated once with nothing
+  sent from the browser (extra call): the same.</li>
+<li><strong>a′. Dismissal accompanied by a message from the browser</strong> (extra call, an
+  interrupt attempt that the app does not offer; the user pressed the cross
+  and, in the browser, sent a message). <code>PreToolUse</code> then <code>PostToolUse</code>, same
+  <code>tool_use_id</code>; the agent saw
+  <code>The user answered: "…"="[User dismissed — do not proceed, wait for next instruction]"</code>.
+  The payload carried the sentinel as the answer, twice:</li>
+</ul>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-4-1" name="__codelineno-4-1" href="#__codelineno-4-1"></a><span class="nt">"tool_response"</span><span class="p">:</span><span class="w"> </span><span class="p">{</span><span class="nt">"questions"</span><span class="p">:</span><span class="w"> </span><span class="p">[</span><span class="err">…</span><span class="p">],</span><span class="w"> </span><span class="nt">"answers"</span><span class="p">:</span><span class="w"> </span><span class="p">{</span><span class="nt">"Extra probe (turn interrupt): …"</span><span class="p">:</span><span class="w"> </span><span class="s2">"[User dismissed — do not proceed, wait for next instruction]"</span><span class="p">}}</span>
+</code></pre></div>
+<p><code>tool_input.answers</code> held the same map. Under D3 as first written this reads
+  <code>other</code> (it matches no label), which hides a dismissal; hence the
+  <code>unanswered</code> row now names the sentinel. What produces the sentinel is not
+  isolated: the cross alone yielded the denial, the cross plus a browser message
+  the sentinel, and a message without the cross was not run.
+- <strong>b. Timeout.</strong> Unobserved. The dialog stayed open 365 s (Pre and Post
+  timestamps 365.4 s apart) with no hook event in between; the user then
+  answered with free text. Whether a timeout exists, and at what length, is
+  unknown.
+- <strong>c. Duplicate question texts.</strong> Not observed at a hook: input validation
+  rejected the call (<code>Question texts must be unique, option labels must be
+  unique within each question</code>) before <code>PreToolUse</code>, and nothing was written.
+- <strong>d. Schema violation (one option).</strong> Same: rejected by validation ("the
+  person never saw it", <code>Too small: expected array to have &gt;=2 items</code>),
+  before <code>PreToolUse</code>. Nothing between Pre and Post, nothing at all.
+- <strong>Extra: subagent call.</strong> A general-purpose subagent has no <code>AskUserQuestion</code>
+  tool (<code>No such tool available</code>, as the subagent reported); no hook fired.
+  This is the subagent's report, confirmed by the absence of new payloads.
+- <strong>Reported by the maintainer, not observed: container restart with a dialog
+  open.</strong> A long-unanswered dialog sometimes vanishes when the hosting cloud
+  container restarts, with no notice; afterwards the dialog is sometimes shown
+  again and sometimes not. No probe ran across a restart, so what the agent
+  receives (a denial, a lost call, a re-issued one), whether a re-shown dialog
+  keeps its <code>tool_use_id</code>, and whether any hook fires are all unknown. Two
+  consequences follow from the design and are inferences. A restart kills the
+  recorder with the session, so a log can end on a lone <code>asked</code>, which D3 reads
+  as <code>unanswered</code>, indistinguishable from a denial. And the log lives in an
+  ephemeral container until it is pushed: a reopened session gets a fresh VM
+  with the conversation restored, and nothing in the docs says unpushed commits
+  come with it. Staging or committing the log (D2) therefore protects nothing
+  until the push, and every unpushed commit's log is exposed, not only the
+  tail. A re-shown dialog under a new
+  <code>tool_use_id</code> would leave two <code>asked</code> events for one decision, the first
+  <code>unanswered</code>.</p>
+<p><strong>Result.</strong> <code>PostToolUseFailure</code> fired in none of them, so D3's <code>failed</code> row,
+D4.2's both-events report and "Post events are exclusive" are neither confirmed
+nor contradicted. The follow-up amends five places (from the diff against
+<code>origin/master</code>): Motivation property 2; D2, with a push bound that is an
+inference; D3, the <code>unanswered</code> sentinel row and its bound, and the dropped
+identical-text caveat; D4.2, what stays unobserved; and the Open Questions
+summary. Still unobserved: a timeout, and any
+genuine tool error after <code>PreToolUse</code>, and a container restart with a dialog
+open (reported, see above). Before step 1 builds the <code>failed</code> path,
+decide whether to ship it against a synthetic payload or leave it out until one
+is seen.</p>
+<p><strong>What the official docs say</strong> (raw pages fetched 2026-10-03 and searched for
+each quoted phrase; a search-agent summary and a page-summarising fetch each
+misstated one point, hence the raw read). The hooks reference
+(<code>code.claude.com/docs/en/hooks</code>, § PostToolUseFailure) defines the event as
+running "when a tool that started executing fails: the tool threw an error, or
+an MCP tool returned an error result", and says it "doesn't fire for tool calls
+rejected before execution: an unknown tool name, input that fails schema or
+tool-specific validation, or a permission denial". Validation rejections "fire
+neither <code>PreToolUse</code> nor <code>PostToolUseFailure</code>"; permission denials "fire
+<code>PreToolUse</code> but not this event". That matches cases a, c and d exactly. The
+dialog is a permission-style prompt, so a deny, or a close by the cross alone
+(case a), is a denial; a′ shows a close can instead arrive as an answer. A failed
+<code>AskUserQuestion</code> would need an execution error after the user answered;
+no such path is documented, which makes the <code>failed</code> row likely unreachable for
+this tool (an inference). The same page documents <code>duration_ms</code> as excluding
+"time spent in permission prompts", which is why every Post payload showed 1 or
+2. It states no exclusivity between <code>PostToolUse</code> and <code>PostToolUseFailure</code>
+(the phrase "mutually exclusive" does not occur on the page), so that
+assumption stays undocumented as well as untested. Its <code>AskUserQuestion</code> input
+table says Claude "doesn't set" <code>answers</code>; step 0's case e showed an
+agent-supplied <code>answers</code> reaching <code>PreToolUse</code>, so the docs understate what the
+tool accepts. Nothing documents the sentinel, a timeout, or a restart with a
+dialog open. The cloud-sessions page
+(<code>code.claude.com/docs/en/claude-code-on-the-web</code>) says only that if "Claude
+asks a question and the session sits idle, you can still answer when you come
+back, up to environment expiry", and that cloud sessions "stop after a period
+of inactivity and the session's VM is reclaimed"; reopening "provision[s] a
+fresh VM with your conversation history restored" and background work is not
+restored. That confirms the restart is expiry-shaped and that the conversation
+survives; whether a pending dialog is re-shown is not documented.</p>
 <h2 id="references">References<a class="headerlink" href="#references" title="Permanent link">&para;</a></h2>
 <ul>
 <li>Host item: BK-397 (<code>sdd/BACKLOG.md</code> § 6).</li>
@@ -11764,7 +11922,10 @@ both held <code>"Mike"</code>.</p>
 <li><a href="https://github.com/haalfi/remote-store/blob/master/CLAUDE.md#interview-mode"><code>CLAUDE.md</code> § Interview mode</a>;
   <a href="https://github.com/haalfi/remote-store/blob/master/sdd/CLAUDE-REFERENCE.md#interview-mode-wiring"><code>CLAUDE-REFERENCE.md</code> § Interview mode</a>.</li>
 <li>Claude Code hooks reference, <code>PreToolUse</code>, <code>PostToolUse</code> and
-  <code>PostToolUseFailure</code> common input fields (code.claude.com/docs/en/hooks).</li>
+  <code>PostToolUseFailure</code> common input fields (code.claude.com/docs/en/hooks),
+  and its § PostToolUseFailure for when the event does not fire.</li>
+<li>Cloud sessions, § Environment expired
+  (code.claude.com/docs/en/claude-code-on-the-web).</li>
 </ul>
 
 
