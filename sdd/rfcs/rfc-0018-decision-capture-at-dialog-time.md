@@ -2,8 +2,9 @@
 
 ## Status
 
-Draft, 2026-10-03. Tracked as **BK-397**. Nothing below is built; § Build order
-step 0 is a live observation this RFC cannot make on its own (§ Open Questions 1).
+Draft, 2026-10-03. Tracked as **BK-397**. Nothing below is built. § Build order
+step 0 ran on 2026-10-03 (§ Step 0 observations); D1, D3 and D4.0 are amended
+to what it observed.
 
 ## Summary
 
@@ -75,8 +76,10 @@ with matcher `AskUserQuestion` and runs the recorder,
 
 Every event also carries `tool_use_id` (the pairing key, documented as common to
 all three events), `session_id`, a UTC timestamp, `HEAD`'s SHA and the branch
-name. The `PreToolUse` registration sits beside the existing notification hook
-under the same matcher.
+name, plus the hook process's `CLAUDE_CODE_REMOTE_SESSION_ID` when set, which is
+the identifier D4.0's trailer fallback matches (step 0 found the payload's
+`session_id` does not). The `PreToolUse` registration sits beside the existing
+notification hook under the same matcher.
 
 **Fail-open, including when the recorder cannot start.** The hook never blocks
 a dialog. A recorder that can stop the decision it records inverts its purpose.
@@ -135,7 +138,7 @@ set** is the labels marked `(Recommended)`, usually one and possibly several on 
 | Outcome | Condition (first match wins) |
 |---|---|
 | `failed` | a `failed` event exists |
-| `prefilled` | the `asked` event's `tool_input` already carries answers |
+| `prefilled` | the `asked` event's `tool_input` carries an answer for the question and the `answered` event's answer equals it |
 | `unanswered` | no `answered` event |
 | `other` | some answer matches no label (the "Other" free-text path) |
 | `followed` | the answer set equals the recommended set |
@@ -144,14 +147,28 @@ set** is the labels marked `(Recommended)`, usually one and possibly several on 
 The order ranks what a reviewer must see first: a failure or an answer nobody
 gave outranks what the answer was.
 
-How a multi-select answer is encoded is as undocumented as a single one, so the
-set is parsed by rules step 0 fixes, not assumed. A free-text entry inside a
-multi-select answer makes the question `other`.
+**Parsing rules, fixed by step 0.** The answer is read from the `answered`
+event's `tool_response.answers`, a map from question text to one string (its
+`tool_input.answers` carried the same map in every observation). Never read
+answers from the `answered` event's `tool_input` to detect prefill: the harness
+writes the user's answers into it, so every answered dialog would look
+prefilled. Free text carries no marker: an "Other" answer is just a string that
+matches no label, and free text identical to a label is indistinguishable from
+choosing it. A multi-select answer is the chosen labels and any free text joined
+by `", "` into one string. A reader matches labels against it as whole
+`", "`-delimited segments, longest label first, so a label that itself contains
+`", "` still parses; any residue is free text and makes the question `other`.
+Answers are keyed by question text, so two questions with identical text in one
+call cannot be told apart.
 
-`prefilled` exists because the tool's input schema accepts an `answers` field.
-Whether anything other than the user's dialog ever fills it is undocumented
-(§ Open Questions 2), and the BK-396 incident is the reason to look rather than
-assume.
+`prefilled` exists because the tool's input schema accepts an `answers` field,
+and the BK-396 incident is the reason to look rather than assume. Step 0 found
+that an agent-supplied `answers` reaches `PreToolUse` verbatim, the dialog was
+still shown, and the user's choice replaced it in the `answered` event. So a
+prefill only taints the outcome when the final answer equals it: the dialog may
+have been skipped or the maintainer may have chosen the same, and the payload
+cannot tell which. When the final answer differs, the user overrode the prefill
+and the question is classified by the rows below it.
 
 ### D4. Readers
 
@@ -162,9 +179,12 @@ assume.
    session records an event on, if any. That captures dialogs asked before the
    branch existed without a manual move, and binds each event once. Whether a
    branch name carries an item ID plays no part. A session whose events never
-   name the branch is still bound when its `session_id` appears in a
-   `Claude-Session` trailer on `origin/<base>..HEAD`, if step 0 shows the two
-   identifiers correspond (§ Open Questions 4).
+   name a work branch is still bound when a `Claude-Session` trailer on
+   `origin/<base>..HEAD` matches its recorded `CLAUDE_CODE_REMOTE_SESSION_ID`:
+   trailer `…/session_<X>` matches `cse_<X>`. The payload's `session_id` cannot
+   serve: it is a UUID with no observed relation to the trailer (§ Step 0
+   observations, Open Questions 4). A session where the variable is unset has
+   no trailer fallback.
 1. **Trace link.** `sdd/traces/_schema.yml` gains an optional `decisions:` key,
    a list of log paths. A trace for work that ran dialogs lists its logs.
 2. **`check_traces.py`.** For each listed path: the file exists, every line
@@ -173,7 +193,7 @@ assume.
    legitimate act, and the report is how it stays visible. A `tool_use_id`
    with both an `answered` and a `failed` event is also reported: D3 still
    classifies it, but it contradicts the assumption that the two Post events are
-   exclusive, which step 0 tests.
+   exclusive, which step 0 could not test: no `failed` event fired in it.
 3. **`/pr`.** The skill renders a "Decisions" section from the committed log
    only, after Step 1 has committed the tail, so the body never cites an event
    the PR does not contain. One line per question: header → answer → outcome,
@@ -230,7 +250,8 @@ assume.
   extends to the new matcher values; `sdd/AUTHORING.md` directory defaults, for
   `sdd/decisions/`; `GATE-INVENTORY.md`, regenerated.
 - **Cost per dialog:** two short hook invocations and two appended lines (the
-  `PreToolUse` one, then whichever of the two Post events fires).
+  `PreToolUse` one, then whichever of the two Post events fires); one of each
+  for a denied dialog, which fired no Post event in step 0.
 
 **Acceptance.** Step 0 observed and its payload shapes recorded in § Step 0
 observations. Then, after the next three merged deliveries that ran dialogs: each
@@ -239,6 +260,9 @@ from them, and `check_traces.py` passes on all three. The ADR is written once
 those three are read.
 
 ## Open Questions
+
+Questions 1, 2 and 4 are answered by step 0; the answers are summarised in
+§ Step 0 observations and the text below is kept as asked.
 
 1. **Do answers reach the hook?** The hooks reference documents that
    `PostToolUse` fires and carries `tool_input` and `tool_use_id`. It does not
@@ -286,8 +310,115 @@ recorded as answered (hand-copied, because the recorder does not exist yet):
 
 ## Step 0 observations
 
-Empty until step 0 runs. Per dialog kind (answered, "Other", multi-select,
-denied): which events fired, and where the answer sits in each payload.
+Answers reach `PostToolUse` as `tool_response.answers`, one string per question
+keyed by question text, with free text unmarked and multi-select joined by
+`", "`. A denied dialog fires nothing after `PreToolUse`, and no
+`PostToolUseFailure` was seen. The payload's `session_id` does not match the
+`Claude-Session` trailer, but the hook process's `CLAUDE_CODE_REMOTE_SESSION_ID`
+does.
+
+Run 2026-10-03 in one Claude Code on the web session (`permission_mode`
+`"auto"`). A probe, `tmp/probe_hook.py`, was registered in an uncommitted
+`.claude/settings.local.json` with matcher `AskUserQuestion` on `PreToolUse`,
+`PostToolUse` and `PostToolUseFailure`, and wrote each hook's stdin unchanged to
+one file. Seven dialogs ran: a trivial fire check, the four kinds below, one
+real decision (whether to run e and an environment dump), and a prefill probe
+(e) added for Open Questions 2. Enumerating the probe directory gave 13
+payloads: 7 `PreToolUse`, 6 `PostToolUse`, 0 `PostToolUseFailure`. Probe and
+payloads were deleted afterwards. Fragments are quoted verbatim from the dumped files; long question
+texts are elided with `…`.
+
+**Common to every payload.** Top-level keys: `session_id`, `transcript_path`,
+`cwd`, `scratchpad_dir`, `prompt_id`, `permission_mode`, `effort`,
+`hook_event_name`, `tool_name`, `tool_input`, `tool_use_id`; `PostToolUse` adds
+`tool_response` and `duration_ms` (0 or 1 in every Post payload, so it does not
+measure the wait for the user). `PreToolUse` and `PostToolUse` of one dialog
+shared `tool_use_id` in every case, e.g. `"toolu_01DszzP88WbZW186LFgwMQtK"`
+for dialog a. `PostToolUseFailure` never fired.
+
+**a. Single-select, recommended option chosen.** Events: `PreToolUse`,
+`PostToolUse`. Pre's `tool_input` holds `questions` only. Post carries the
+answer twice, identically, in `tool_input.answers` and `tool_response.answers`:
+
+```json
+"answers": {"Dialog a (single-select, recommended): …": "Alpha (Recommended)"}
+```
+
+The value is the label string, `(Recommended)` suffix included.
+`tool_response.questions` repeats the questions. D3: `followed`.
+
+**b. Single-select, answered via "Other".** Events: `PreToolUse`,
+`PostToolUse`. Same shape; the free text is the value, with no marker field:
+
+```json
+"answers": {"Dialog b (single-select, Other): …": "Other manual echo"}
+```
+
+D3: `other`, because the value matches neither `"Delta (Recommended)"` nor
+`"Echo"`.
+
+**c. multiSelect, two recommended, a different set chosen.** Events:
+`PreToolUse`, `PostToolUse`. The set is one string, labels and free text joined
+by `", "`; there is no list:
+
+```json
+"answers": {"Dialog c (multiSelect): …": "Golf (Recommended), India, Some more not mentioned yet"}
+```
+
+`"Golf (Recommended)"` and `"India"` are labels; `"Some more not mentioned yet"`
+is free text entered through "Other". D3: `other`.
+
+**d. Single-select, denied.** Events: `PreToolUse` only. The agent's tool
+result was `Denied by user`; neither `PostToolUse` nor `PostToolUseFailure`
+fired. D3: `unanswered`, from the lone `asked` event.
+
+**e. Prefill probe.** The agent's call passed
+`answers: {"Dialog e …": "Lima (Recommended)"}`, and the user was asked to pick
+`"Mike"` if the dialog appeared. Pre's `tool_input` carried it verbatim:
+
+```json
+"answers": {"Dialog e (prefill probe): …": "Lima (Recommended)"}
+```
+
+The dialog was shown, and Post's `tool_input.answers` and `tool_response.answers`
+both held `"Mike"`.
+
+**Answers to the Open Questions.**
+
+1. **Answers reach `PostToolUse`**, in both `tool_response.answers` and
+   `tool_input.answers`, keyed by question text, one string per question. The
+   result-text parser is not needed. `PreToolUse` carries none unless the agent
+   supplied them (e).
+2. **A denied dialog sends nothing after `PreToolUse`.** `PostToolUseFailure`
+   did not fire for a denial; no dismissal distinct from a denial, and no
+   timeout, was observed. In the normal flow nothing filled `answers` before
+   the dialog, but the agent can (e), and the user's choice then overrides it.
+3. Not in step 0's scope.
+4. **No: `session_id` does not match the trailer.** It was
+   `"8f551ca6-684d-5d72-b7c0-d6da1ce729ee"`, a UUID (version 5, no match by
+   `uuid5` over the standard namespaces and the trailer's id forms), equal to
+   the session's `CLAUDE_CODE_SESSION_ID` and to the `transcript_path` stem. The
+   trailer was `https://claude.ai/code/session_01FPZRdRyQ4sj5AD4DZF1zg3`. The
+   hook process's environment, dumped by the probe for e, held
+   `"CLAUDE_CODE_REMOTE_SESSION_ID": "cse_01FPZRdRyQ4sj5AD4DZF1zg3"`, whose
+   suffix equals the trailer's. That correspondence is observed in one session
+   and is not documented.
+
+**What changed in the RFC, and why.**
+
+- **D3 `prefilled`** now requires the final answer to equal the prefill. As
+  first written, e would read `prefilled` although the user answered `"Mike"`,
+  hiding the user's real choice.
+- **D3 parsing rules** replace "rules step 0 fixes": where the answer is read,
+  why Post's `tool_input` must not be used for prefill detection, how free text
+  and the `", "`-joined multi-select string are parsed (a, b, c).
+- **D4.0 trailer fallback** matches `CLAUDE_CODE_REMOTE_SESSION_ID` instead of
+  `session_id`, and **D1** records that variable, because of question 4's
+  answer. Kept rather than dropped, since the observed identifier does
+  correspond.
+- **Not changed:** the "Post events are exclusive" assumption and D3's `failed`
+  row. Neither was contradicted: no `failed` event fired at all, so both stay
+  untested; D4.2 now says so. D3's `unanswered` row is confirmed by d.
 
 ## References
 

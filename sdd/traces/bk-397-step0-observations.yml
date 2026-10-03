@@ -1,0 +1,64 @@
+id: BK-397
+title: "Interview-mode decisions leave no record in the repo, so their rejected options are unrecoverable"
+trigger: "RFC-0018 D5 step 0: observe the payloads the AskUserQuestion hooks actually receive before any reader is written; the maintainer authorized a temporary local probe"
+source_items:
+  - BK-397
+audience:
+  - contributor.process
+  - contributor.tooling
+expected_ripples:
+  - "sdd/rfcs/rfc-0018-decision-capture-at-dialog-time.md"
+  - "sdd/BACKLOG.md"
+phases:
+  - id: orient
+    name: Orient
+    steps:
+      - file: sdd/rfcs/rfc-0018-decision-capture-at-dialog-time.md
+        section: "D1, D3, D4.0, D5 step 0, Open Questions 1, 2 and 4, Step 0 observations"
+        read_type: gate
+        extract: "What step 0 must settle: where answers sit, what a denial sends, whether session_id matches the Claude-Session trailer, and which clauses (D3 outcomes, D4.0 trailer fallback, Post exclusivity) depend on it"
+        outcome: ok
+      - file: .claude/settings.json
+        section: "hooks"
+        read_type: reference
+        extract: "Existing PreToolUse AskUserQuestion notification hook; probe registered beside it in settings.local.json so nothing committed changes"
+        outcome: ok
+      - file: .gitignore
+        section: "Claude Code block"
+        read_type: reference
+        extract: "settings.local.json is in fact ignored by `.claude/*` (the task brief said otherwise); git status still checked before each commit"
+        outcome: ok
+  - id: probe
+    name: Probe
+    steps:
+      - file: sdd/rfcs/rfc-0018-decision-capture-at-dialog-time.md
+        section: "Open Questions 2, 4"
+        read_type: reference
+        extract: "The four requested dialogs left two gaps: whether an agent-supplied answers field reaches PreToolUse, and whether the hook process can see the trailer's id. Maintainer chose to run a prefill dialog and an env dump; both decided an amendment"
+        outcome: ok
+  - id: write
+    name: Write up
+    steps:
+      - file: sdd/rfcs/rfc-0018-decision-capture-at-dialog-time.md
+        section: "D3"
+        read_type: gate
+        extract: "prefilled as written would hide a user's overriding answer (dialog e); parsing rules fixed from a, b, c; failed row and Post exclusivity left unchanged because no failed event fired"
+        outcome: ok
+      - file: sdd/BACKLOG.md
+        section: "6. The repo does not mislead the next person / BK-397"
+        read_type: verify
+        extract: "Item said the maintainer runs step 0; updated to step 0 done, open decision is acceptance"
+        outcome: ok
+  - id: verify
+    name: Verify
+    steps:
+      - file: sdd/CLAUDE-REFERENCE.md
+        section: "Ripple-check table / Backlog item touched"
+        read_type: verify
+        extract: "Trace ships in the same PR; audience contributor.* needs no CHANGELOG entry for an RFC amendment"
+        outcome: ok
+      - file: sdd/CLAUDE-REFERENCE.md
+        section: "Interview mode"
+        read_type: verify
+        extract: "Wiring table unchanged: step 0 registered nothing in settings.json; the live observation does confirm the AskUserQuestion matcher fires on PreToolUse and PostToolUse"
+        outcome: ok

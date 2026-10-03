@@ -795,5 +795,5 @@ CHANGELOG the release body is built from — say what is actually true.
   Mid-work decisions are taken in `AskUserQuestion` dialogs whose question,
   options, recommendation and answer persist only in the session transcript;
   research § 2.3 (corrected 2026-10-03): code shows behaviour, not whether it
-  was decided. RFC-0018 (Draft) proposes hook capture. Open decision:
-  accept RFC-0018 after its step-0 payload probe, which the maintainer runs.
+  was decided. RFC-0018 (Draft) proposes hook capture; its step-0 payload
+  probe ran 2026-10-03 and amended D1, D3, D4.0. Open decision: accept RFC-0018.
