@@ -252,7 +252,8 @@ if evidence changes; these are retired.
   which decides absorbed BUG-297's fix, now hosted by BK-394 and BUG-300;
   `glob` checks the capability first, then takes the refusals and
   normalisation segment-wise. BE-024, BE-025 and BE-029 gain clauses in
-  BK-389's PR; BK-394 lists the Memory cells and amends MEM-DS-005. The
+  BK-389's PR; BK-394 lists the Memory cells and amends MEM-DS-005 and
+  NPR-020's Overrides line. The
   round-trip clauses contradicted (NPR-005, NPR-020, BE-029's) are already
   false on master and filed as BK-398; stored backslash keys as BK-399.
   Detail: [dossier](backlog/bk-395-kernel-key-rule-addressing.md)

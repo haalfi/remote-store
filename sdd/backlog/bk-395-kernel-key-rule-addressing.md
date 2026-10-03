@@ -106,7 +106,8 @@ round-trip clauses, spec 010's NPR-005 and NPR-020 and spec 003's BE-029
 § Round-trip consequence (found in PR #1061's rounds 4 and 5), which
 `GraphBackend` already breaks on master, so BK-398 amends them now. They
 leave spec 013's MEM-DS-005 validation table without a backslash row
-(round 3), which BK-394 amends. What a listing does with a stored backslash
+(round 3), and make NPR-020's "`MemoryBackend` inherits the identity
+default" false (round 6); BK-394 amends both. What a listing does with a stored backslash
 key that another tool wrote is open, as BK-399 (round 5). Absorbed
 BUG-297's defect is unchanged on master; its open work moved in PR #1061
 to BK-394 (Memory) and BUG-300 (SQLBlob, at RFC-0017 D3 step 3).

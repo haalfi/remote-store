@@ -13,7 +13,7 @@ two PRs: BK-389 lands the kernel, private, under the Proposed
 [ADR-0042](../adrs/0042-contract-kernel-over-thin-drivers.md); this item lands
 the two Memory drivers on it and is **the PR that accepts ADR-0042 and
 RFC-0017**, the first backend on the new design. **It merges only after the
-v0.33.0 tag, and after BK-389.** The decisions both halves rest on are in
+v0.33.0 tag, and after BK-389 and BK-398.** The decisions both halves rest on are in
 [BK-389's dossier](bk-389-kernel-step-1-memory.md) § Decisions; read them
 first.
 
@@ -140,7 +140,11 @@ labelled **(was … , absorbed here)**, which is the absorption form
      spec 003's BE-029 § Round-trip consequence, are already false on
      master for `GraphBackend`, so BK-398 amends them before this PR; this
      PR re-checks that they cover both Memory classes, whose
-     `to_key(native_path("d//f"))` becomes `"d/f"`. Spec 013's MEM-DS-005
+     `to_key(native_path("d//f"))` becomes `"d/f"`. This PR also amends
+     NPR-020's Overrides line, "`MemoryBackend` inherits the identity
+     default" (spec 010 line 280), which item 2's addressing cells make
+     false: Memory's `native_path` then answers the kernel's canonical key
+     (added in PR #1061's round 6). Spec 013's MEM-DS-005
      is incomplete rather than contradicted: its backslash row is in the
      spec 013 bullet above. BK-389 decision 6 states each; found in PR
      #1061's rounds 3 to 5.]

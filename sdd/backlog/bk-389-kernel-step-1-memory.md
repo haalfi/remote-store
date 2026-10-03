@@ -544,7 +544,8 @@ every case. RFC-0017 carries the same answers at the question each settles.
      BK-395's answers as decision 6 states them. The round-trip clauses
      they contradict (BE-029 § Round-trip consequence, and spec 010's
      NPR-005 and NPR-020) are already false on master and are BK-398's,
-     amended before this PR, so what lands here is additions:
+     which lands before BK-394, the first PR to put a class on the kernel
+     (not before this one), so what lands here is additions:
      BE-025 and BE-029's addressing row gain the kernel's addressing rule
      (canonical key to the driver, a refused key raw, `plan.key` the
      caller's); BE-029's backslash paragraphs ("a backslash-only key is
