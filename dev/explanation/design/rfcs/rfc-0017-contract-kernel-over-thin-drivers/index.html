@@ -11652,7 +11652,7 @@ attributes (the sixth, <code>close_is_terminal</code>, added at BK-389's plannin
 <a id="__codelineno-0-20" name="__codelineno-0-20" href="#__codelineno-0-20"></a>    <span class="k">def</span><span class="w"> </span><span class="nf">connection_dead</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">exc</span><span class="p">:</span> <span class="ne">BaseException</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">bool</span><span class="p">:</span> <span class="o">...</span>
 <a id="__codelineno-0-21" name="__codelineno-0-21" href="#__codelineno-0-21"></a>
 <a id="__codelineno-0-22" name="__codelineno-0-22" href="#__codelineno-0-22"></a>    <span class="c1"># interop, forwarded by the kernel (BE-022, BE-023, BE-025, resolve); how keys reach</span>
-<a id="__codelineno-0-23" name="__codelineno-0-23" href="#__codelineno-0-23"></a>    <span class="c1"># native_path, resolve and to_key is BK-395's to decide (BK-389 decision 6)</span>
+<a id="__codelineno-0-23" name="__codelineno-0-23" href="#__codelineno-0-23"></a>    <span class="c1"># native_path, resolve and to_key was decided in BK-395 (BK-389 decision 6)</span>
 <a id="__codelineno-0-24" name="__codelineno-0-24" href="#__codelineno-0-24"></a>    <span class="k">def</span><span class="w"> </span><span class="nf">unwrap</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">type_hint</span><span class="p">:</span> <span class="nb">type</span><span class="p">[</span><span class="n">T</span><span class="p">])</span> <span class="o">-&gt;</span> <span class="n">T</span><span class="p">:</span> <span class="o">...</span>
 <a id="__codelineno-0-25" name="__codelineno-0-25" href="#__codelineno-0-25"></a>    <span class="k">def</span><span class="w"> </span><span class="nf">native_path</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">key</span><span class="p">:</span> <span class="nb">str</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">str</span><span class="p">:</span> <span class="o">...</span>
 <a id="__codelineno-0-26" name="__codelineno-0-26" href="#__codelineno-0-26"></a>    <span class="k">def</span><span class="w"> </span><span class="nf">to_key</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">native_path</span><span class="p">:</span> <span class="nb">str</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">str</span><span class="p">:</span> <span class="o">...</span>
@@ -11788,11 +11788,13 @@ was a 28th match above it). It owns, once:</p>
   PR #1055 merged). It runs after the closed guard and before the root check, which
   then runs on the canonical key: <code>""</code> is the root, the wide predicate on
   every side. So an operation's driver call only ever sees a canonical key,
-  as D1's driver, which "carries no path … logic", requires. The rule
-  covers the operations; the addressing members, a key holding a backslash
-  and <code>glob</code> are BK-395's to decide against BE-025, NPR-021/NPR-004, RES-020
-  and PATH-002 before kernel code. The operation-by-key-class table, with
-  its measured Memory column, is BK-389's dossier, decision 6;</li>
+  as D1's driver, which "carries no path … logic", requires. BK-395 decided
+  the rest against BE-025, NPR-021/NPR-004, RES-020 and PATH-002: a
+  backslash is refused too; the addressing members stay total, a valid key
+  normalised and a refused one passed raw; and a <code>glob</code> pattern takes the
+  refusals and normalisation segment-wise. The operation-by-key-class table,
+  with its measured Memory column, and the <code>glob</code> rule are BK-389's dossier,
+  decision 6;</li>
 <li>root refusal from the key (BE-029; at filing, both predicates as <code>_flat_ns</code>
   now states them; since BK-389's planning, decided on the canonical key,
   which gives the wide predicate on every side, the floor BE-029 sets for
@@ -12488,11 +12490,11 @@ and its answer keeps <code>classify</code>.</p>
   (BK-394), which accepts that ADR (the kernel PR before it, BK-389, is
   private and touches spec 003 only: it adds the clauses its kernel cells
   trace to, the key rule, the root <code>delete_folder</code> refusal and
-  <code>SupportsRemoveFolder</code>'s <code>delete_folder</code> sequence as BK-396 decided it, and amends any spec 003 clause
-  BK-395's answers contradict, such as BE-025 or BE-008; BK-389's dossier,
-  item 8, is the authority for this split): specs 003, 005, 029 and 037
-  below, any clause outside spec 003 that BK-395's answers contradict
-  (PATH-002, NPR-021, NPR-004, RES-020), spec 013 (Memory's,
+  <code>SupportsRemoveFolder</code>'s <code>delete_folder</code> sequence as BK-396 decided it, and BK-395's
+  answers; BK-389's dossier, item 8, is the authority for this split, and
+  its decision 6, <strong>Clauses checked, and who amends each</strong>, for the clauses
+  BK-395's answers touch outside it): specs 003, 005, 029 and 037 below,
+  the clauses that paragraph assigns to BK-394, spec 013 (Memory's,
   as a kernel/driver placement per clause, which the list at filing omitted),
   the kernel half
   of 007 and 022, the Memory drivers' rows of 007 and 022, spec 026's PING-002
