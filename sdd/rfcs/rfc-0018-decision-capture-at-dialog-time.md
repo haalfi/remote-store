@@ -193,7 +193,8 @@ and the question is classified by the rows below it.
    legitimate act, and the report is how it stays visible. A `tool_use_id`
    with both an `answered` and a `failed` event is also reported: D3 still
    classifies it, but it contradicts the assumption that the two Post events are
-   exclusive, which step 0 could not test: no `failed` event fired in it.
+   exclusive, which step 0 could not test: no `failed` event fired in it, so
+   that assumption and D3's `failed` row still need an observation.
 3. **`/pr`.** The skill renders a "Decisions" section from the committed log
    only, after Step 1 has committed the tail, so the body never cites an event
    the PR does not contain. One line per question: header → answer → outcome,
@@ -205,7 +206,7 @@ and the question is classified by the rows below it.
 0. **Observe the payload.** Register a probe that dumps raw payloads for the
    three events, then run one dialog that is answered, one answered with
    "Other", one multi-select, and one denied, and record each payload's shape
-   in § Step 0 observations below. This settles § Open Questions 1, 2 and 4,
+   in § Step 0 observations below. This settles § Open Questions 1 and 4, and 2 as far as the dialogs run reach,
    and D3's rules are adjusted to what is observed before any reader is
    written.
 1. Recorder, wrapper and `settings.json` registration, with tests that feed
@@ -261,8 +262,9 @@ those three are read.
 
 ## Open Questions
 
-Questions 1, 2 and 4 are answered by step 0; the answers are summarised in
-§ Step 0 observations and the text below is kept as asked.
+Questions 1 and 4 are answered by step 0, and question 2 only for a denial:
+dismissal and timeout are still open. The answers are summarised in § Step 0
+observations and the text below is kept as asked.
 
 1. **Do answers reach the hook?** The hooks reference documents that
    `PostToolUse` fires and carries `tool_input` and `tool_use_id`. It does not
@@ -389,9 +391,10 @@ both held `"Mike"`.
    `tool_input.answers`, keyed by question text, one string per question. The
    result-text parser is not needed. `PreToolUse` carries none unless the agent
    supplied them (e).
-2. **A denied dialog sends nothing after `PreToolUse`.** `PostToolUseFailure`
-   did not fire for a denial; no dismissal distinct from a denial, and no
-   timeout, was observed. In the normal flow nothing filled `answers` before
+2. **Answered for a denial only: it sends nothing after `PreToolUse`.**
+   `PostToolUseFailure` did not fire for it. A dismissal distinct from a
+   denial and a timeout were not observed, so whether either fires
+   `PostToolUseFailure` is still open. In the normal flow nothing filled `answers` before
    the dialog, but the agent can (e), and the user's choice then overrides it.
 3. Not in step 0's scope.
 4. **No: `session_id` does not match the trailer.** It was
@@ -418,7 +421,9 @@ both held `"Mike"`.
   correspond.
 - **Not changed:** the "Post events are exclusive" assumption and D3's `failed`
   row. Neither was contradicted: no `failed` event fired at all, so both stay
-  untested; D4.2 now says so. D3's `unanswered` row is confirmed by d.
+  untested; D4.2 now says so. Both still need an observation, a dismissal or
+  timeout probe being the remaining candidate trigger, before step 1 builds
+  the `failed` path and its tests. D3's `unanswered` row is confirmed by d.
 
 ## References
 
