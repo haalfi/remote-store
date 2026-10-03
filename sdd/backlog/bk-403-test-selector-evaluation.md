@@ -11,11 +11,19 @@ advisory prescription ([§ Item authority](../BACKLOG.md#how-this-file-works)).
   per-area worker-second table. The figures live there and are not copied here.
 - **Which mechanisms fit:** § H1's mechanism table. Runtime coverage sees the
   fixture-registry wiring that conformance uses; every row is blind to source
-  read as text. § H1 names two such scripts (`scripts/gen_features.py`,
-  `scripts/check_test_placement.py`) as examples, not as the full set.
+  read as text.
 - **Tool maturity:** § H1's PyPI release table, dated 2026-10-03.
 - **The fail-open rule:** § H1, "Either way, the fail-open rule". It names the
   path classes that must select the full suite whatever the map says.
+
+**Correction, 2026-10-03.** The rule's last class says of the tests that read
+source as text, "Today those are `test_gen_features.py` and
+`test_check_test_placement.py`" (audit-022:208). That list is incomplete:
+`scripts/gen_graph.py:68-69` runs `read_text` and `ast.parse` on `src/` files
+for `tests/scripts/test_gen_graph.py`, and `scripts/check_capability_parity.py:187`
+reads `src/remote_store/_capabilities.py` for
+`tests/scripts/test_check_capability_parity.py`. This item's evaluation owns
+deriving the full set; the two names are not it.
 
 ## Prescription (advisory)
 

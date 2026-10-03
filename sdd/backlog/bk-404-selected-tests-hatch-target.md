@@ -1,4 +1,4 @@
-# BK-404 — The local gate runs every test for every diff, with no selected target for in-progress rounds
+# BK-404 — The local gate runs every test for every code diff, with no selected target for in-progress rounds
 <!-- doc: repo-only -->
 
 Filed from [audit-022](../audits/audit-022-gate-speed-strategies.md), proposal
