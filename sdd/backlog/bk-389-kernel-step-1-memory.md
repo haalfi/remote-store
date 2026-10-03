@@ -201,13 +201,11 @@ every case. RFC-0017 carries the same answers at the question each settles.
    `NotImplementedError` with `root_path=""` and matches with
    `root_path="r"`; the kernel keeps that split as `InvalidPath` against a
    match, and `Store.glob`'s own pattern handling is GLOB-007's, not the
-   kernel's. Once a `GLOB` driver migrates, `ext.glob.glob_files` also
-   answers by capability tier: on a non-`GLOB` store its fallback
-   (GLOB-011 to GLOB-014) runs the raw pattern, and measured on a Memory
-   `Store` holding `d/a.csv` it answers `[]` for `"./d/*.csv"`,
-   `"d//*.csv"`, `"/d/*.csv"` and `"d/*/."`, where the kernel rule matches
-   or refuses; aligning the fallback is BK-400. This decision adds nothing
-   else to D3's list.
+   kernel's. `ext.glob.glob_files` already answers a non-canonical pattern
+   by capability tier on master, and the kernel rule keeps the `GLOB`
+   side's answers; the measurement and the open decision are BK-400's
+   [dossier](bk-400-ext-glob-fallback-tier-split.md). This decision adds
+   nothing else to D3's list.
 
    **Decided in BK-395** (2026-10-03, the maintainer through the interview,
    the recommended option each time; measurements and recipe in its

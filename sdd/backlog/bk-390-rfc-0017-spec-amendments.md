@@ -13,8 +13,7 @@ with BK-394, the Memory half of step 1 split from BK-389 on 2026-10-02: specs
 003, 005, 013, 029 and 037, the kernel half of 007 and 022, and spec 026's
 PING-002 and PING-008 plus the Memory drivers' rows of 007 and 022, and the
 clauses BK-389's dossier, decision 6, **Clauses checked, and who amends each**
-assigns to BK-394 (the round-trip clauses it assigns to BK-398 are already
-false on master and land before BK-394, not with it). BK-389's kernel PR
+assigns to BK-394, not those it assigns to BK-398. BK-389's kernel PR
 is private and touches spec 003 only: the clauses its kernel cells trace to,
 BK-395's additions among them (its dossier, item 8,
 the authority for the split; corrected after PR #1055 merged, which said it

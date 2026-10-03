@@ -96,7 +96,7 @@ drivers** paragraph); this section keeps only how they were reached.
    apply to the whole pattern and normalisation drops every empty and `.`
    segment as for a key, keeping only a trailing `/` (rounds 7 and 8). The
    capability check runs before the closed guard (round 4). Decision 6
-   states the rule as an enumeration table.
+   states the rule in prose, with a table of worked examples.
 
 The exit criteria's clauses were checked against the answers. Which clauses
 are affected and which item amends each is stated once, in decision 6's
@@ -155,5 +155,7 @@ and `resolve(k).key` except `"."`, whose `native_path` is `""`, and
 `resolve(k).native_path` equals `native_path(k)` for all 17 keys; Local's
 `to_key` alone folds a backslash. `write("d\\f")` beside `d/f` returns path
 `d/f`, both are read back distinctly, and the listing yields `d/f` twice.
-The per-operation backslash answers are decision 6's Δ cells, and the
-`glob` answers and later-driver probes its **Later drivers** cells.
+The per-operation backslash answers are decision 6's Δ cells; the `glob`
+answers and later-driver probes are its **Later drivers** cells, except
+the trailing-`/` and `"d/*/."` answers (rounds 7 and 8), which sit in its
+`glob` bullet's measured paragraph.
