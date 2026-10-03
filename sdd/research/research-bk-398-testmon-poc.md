@@ -16,7 +16,7 @@ path classes that a wrapper can recognise before testmon runs and must widen
 the selection for (§ Fail-open rules). A map does **not** carry across
 interpreters: on any other
 Python, testmon discards it and runs everything. That is safe, but saves
-nothing, so ID-264's CI lane needs one map per interpreter leg.
+nothing, so ID-266's CI lane needs one map per interpreter leg.
 
 Two defaults in this repo stop testmon from working at all, and both are
 silent or confusing:
@@ -176,7 +176,7 @@ Rules 1, 2 and 4 widen it to the full suite; rule 3 adds a set of test files.
   - a wrapper that applies rules 1 to 3 to `git diff --name-only`, then calls
     `--testmon-forceselect`;
   - the map stored locally, per interpreter.
-- **For ID-264:**
+- **For ID-266:**
   - one map per interpreter leg;
   - a cache key that includes the full Python version and the resolved
     package set, since CI's `uv pip install` is unpinned and a minor-version

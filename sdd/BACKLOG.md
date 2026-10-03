@@ -822,7 +822,7 @@ coverage floor.
   path to the tests it can affect (audit-022 § H1). `pytest-testmon` is
   measured (viable with four fail-open classes, one map per interpreter);
   `pytest-tia` and `pytest-impact` are not. Open decision: which selector,
-  if any, BK-399 and ID-264 build on.
+  if any, BK-399 and ID-266 build on.
   Detail: [dossier](backlog/bk-398-test-selector-evaluation.md)
 
 - [ ] **BK-399 — The local gate runs every test for every diff, with no selected target for in-progress rounds**
@@ -833,14 +833,14 @@ coverage floor.
   and BK-271's composed gate, and which skills run it before a round push.
   Detail: [dossier](backlog/bk-399-selected-tests-hatch-target.md)
 
-- [ ] **ID-264 — Every in-progress PR push runs the full pre-merge CI gate**
+- [ ] **ID-266 — Every in-progress PR push runs the full pre-merge CI gate**
   spec: — · effort: L · audience: infra.ci, contributor.process
   `ci.yml` runs the whole gate on every PR push, including each `/ship` round
   (audit-022 § M1). Needs BK-398's map; its `/pr` and `/ship` changes are its
   own scope, and `/ship` is shared with BK-399. Open decision: a new ADR
   amending ADR-0043 for a draft-PR selected lane, once its four
   prerequisites have answers.
-  Detail: [dossier](backlog/id-264-two-speed-ci-gate.md)
+  Detail: [dossier](backlog/id-266-two-speed-ci-gate.md)
 
 - [ ] **BUG-300 — The PII sweep's bare-email regex is quadratic on base64 runs and costs 157 of the sweep's 160 worker-seconds**
   spec: — · effort: S · audience: infra.test
@@ -850,13 +850,13 @@ coverage floor.
   form with identical verdicts on every committed cassette. Open decision:
   none; the anchored pattern and its measurement are in § L2.
 
-- [ ] **BK-401 — Coverage runs on the slow tracer where `sysmon` gives identical results**
+- [ ] **BK-401 — Coverage runs on the slow tracer, where `sysmon` gave identical Stage-1 results**
   spec: — · effort: S · audience: infra.ci, contributor.tooling
   Three `ci.yml` jobs (`test-primary`, `-sftp`, `test-cassette-pii`) and three
   hatch scripts (`test-cov-s1`, `test-cov`, `test-cov-strict`) use the default
-  core; [audit-022](audits/audit-022-gate-speed-strategies.md) § L1: `sysmon` runs at no-coverage speed, same lines.
-  Open decision: none; switch all six (branch coverage is unchecked, so not
-  `test-cov-branch`); a job running testmon (BK-398) must stay off `sysmon`.
+  core; [audit-022](audits/audit-022-gate-speed-strategies.md) § L1 measured `sysmon` on local Stage 1 only.
+  Open decision: P6's re-measure of the Stage-2 and `--cov-append` paths, then
+  switch all six (not `test-cov-branch`); a testmon job (BK-398) stays off `sysmon`.
 
 - [ ] **BK-400 — The shard durations go stale between manual refreshes, so the primary shards balance on partial data**
   spec: — · effort: M · audience: infra.ci

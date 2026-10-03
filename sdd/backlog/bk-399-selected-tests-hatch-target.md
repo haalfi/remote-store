@@ -39,7 +39,7 @@ decision.
   keeps `all` for its close (audit-022 § M1, "`/ship` constraint"). Whichever
   skills the open decision picks, their edits are in this item's scope, not a
   follow-up.
-- **Shares `.claude/skills/ship/SKILL.md` with ID-264**, whose `/ship` edit
+- **Shares `.claude/skills/ship/SKILL.md` with ID-266**, whose `/ship` edit
   marks a draft PR ready at the close. Sequence the two edits together.
 - Inherits the fail-open rule from BK-398: an unplaceable path selects the
   full suite.

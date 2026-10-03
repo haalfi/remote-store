@@ -1,4 +1,4 @@
-# ID-264 — Every in-progress PR push runs the full pre-merge CI gate
+# ID-266 — Every in-progress PR push runs the full pre-merge CI gate
 <!-- doc: repo-only -->
 
 Filed from [audit-022](../audits/audit-022-gate-speed-strategies.md), proposal
