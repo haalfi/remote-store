@@ -47,8 +47,10 @@ the answer was given. What is missing is persistence and a reader, not content.
    before the maintainer had answered, the choice was pushed, and the session
    noticed only afterwards and re-asked. A summary would have recorded Q1 as the
    maintainer's decision.
-3. **Divergence from the recommendation is countable.** The agent drafts the
-   options, so the agent frames every decision. Whether the maintainer took the
+3. **Divergence from the recommendation is countable.** A choice is half a
+   decision; the other half is the framing, and the agent wrote it: which
+   options exist, what each costs, which is recommended. That is why D1 keeps
+   the `asked` event and not only the answer. Whether the maintainer took the
    recommendation, another listed option, or free text is visible per question.
    This is an audit signal for research § 6 proposal 8, not a target.
 
