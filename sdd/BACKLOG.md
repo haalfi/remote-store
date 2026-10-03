@@ -816,21 +816,22 @@ the change can affect; once, before merge, the whole gate runs, and pays for
 nothing it does not need. Narrowing never lifts the full pre-merge run or the
 coverage floor.
 
-- [~] **BK-403 — No change-scoped test selector has been chosen for this suite; one of three candidates is measured**
+- [ ] **BK-403 — No change-scoped test selector has been chosen for this suite; one of three candidates is measured**
   spec: — · effort: M · audience: infra.test, contributor.tooling
-  Both gates run every test for every code diff, because nothing maps a
-  changed path to the tests it can affect (audit-022 § H1). `pytest-testmon` is
-  measured (viable with four fail-open classes, one map per interpreter);
-  `pytest-tia` and `pytest-impact` are not. Open decision: which selector,
-  if any, BK-404 and ID-266 build on.
+  Both gates run every test for every code diff (audit-022 § H1). The
+  `pytest-testmon` PoC answers "not now": selection saves real time only on
+  leaf-code edits, and BUG-301 and BK-401 are cheaper. Open decision: run
+  `pytest-tia` and `pytest-impact` only if local rounds are still a measured
+  bottleneck once both have landed.
   Detail: [dossier](backlog/bk-403-test-selector-evaluation.md)
 
 - [ ] **BK-404 — The local gate runs every test for every code diff, with no selected target for in-progress rounds**
   spec: — · effort: M · audience: contributor.tooling
   `hatch run all` runs all of Stage 1 whatever the diff touched, and tests
   are most of its wall time (audit-022 § H1). Needs BK-403's selector. Open
-  decision: whether a third gate branch fits audit-017 R3's one thin target
-  and BK-271's composed gate, and which skills run it before a round push.
+  decision: build it only if local rounds are still a measured bottleneck
+  after BUG-301 and BK-401 (BK-403's PoC); then R3 and BK-271's fit, and
+  which skills run it before a round push.
   Detail: [dossier](backlog/bk-404-selected-tests-hatch-target.md)
 
 - [ ] **ID-266 — Every in-progress PR push runs the full pre-merge CI gate**

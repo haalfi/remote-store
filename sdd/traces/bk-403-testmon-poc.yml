@@ -111,3 +111,13 @@ phases:
         section: "How this file works / Item scope"
         read_type: gate
         extract: "[~] for multi-PR work; five-line diagnosis cap held on the BK-403 and BK-401 edits"
+      - file: sdd/CONTENT-RULES.md
+        section: "Rule 7 (Kernsatz)"
+        read_type: gate
+        extract: >-
+          the first note answered "does testmon work?" and read as a run log;
+          the PoC's question was "is selection worth adopting for faster
+          in-progress rounds?". Rewritten to lead with question, answer
+          ("not now") and revisit condition, evidence moved to appendices;
+          BK-403 back to [ ] and BK-404's open decision gated on the same
+          condition. My miss, caught by the maintainer, not by any review round

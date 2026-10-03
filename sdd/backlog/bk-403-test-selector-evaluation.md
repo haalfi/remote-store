@@ -53,8 +53,10 @@ need this item's verdict.
 
 ## Progress
 
-- **2026-10-03, `pytest-testmon`:** viable with fail-open rules, one map per
-  interpreter. Seeds, timings, the four fail-open classes and the two
-  repo defaults that disable it are in
+- **2026-10-03, `pytest-testmon`:** selection is not worth adopting now.
+  It saves real time only on leaf-code edits, a map does not survive a
+  change of interpreter or dependency set, and BUG-301 and BK-401 are
+  cheaper with no risk of skipping a test. Question, answer, revisit
+  condition and evidence:
   [`research-bk-403-testmon-poc.md`](../research/research-bk-403-testmon-poc.md).
-  `pytest-tia` and `pytest-impact` are still to run against the same seeds.
+  `pytest-tia` and `pytest-impact` wait for that revisit condition.

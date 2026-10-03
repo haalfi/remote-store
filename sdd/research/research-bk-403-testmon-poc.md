@@ -1,36 +1,77 @@
-# Research: pytest-testmon on the full Stage-1 suite
+# Research: is test selection worth adopting here? (pytest-testmon PoC)
 
 **Date:** 2026-10-03
-**Backlog items:** BK-403
-**Status:** PoC complete for `pytest-testmon` only. Point-in-time snapshot per [`sdd/000-process.md` § Document types](../000-process.md#document-types). It measures [audit-022](../audits/audit-022-gate-speed-strategies.md) proposal P1 for one tool; the driver that produced every seed row is [`research-bk-403-testmon-poc.py`](research-bk-403-testmon-poc.py).
+**Backlog items:** BK-403, BK-404, ID-266
+**Status:** Answered for `pytest-testmon`; `pytest-tia` and `pytest-impact` were not run. Point-in-time snapshot per [`sdd/000-process.md` § Document types](../000-process.md#document-types). It measures [audit-022](../audits/audit-022-gate-speed-strategies.md) proposal P1; the driver behind every seed row is [`research-bk-403-testmon-poc.py`](research-bk-403-testmon-poc.py).
 
-## Verdict
+## Question
 
-**Viable with fail-open rules, for one interpreter at a time.** Every seed
-whose cause was a function that ran under a test, or module-level code in a
-file that has such a function, was selected. Each ran at between 0.9% and 54%
-of the serial control's wall time, except the module-level `conftest.py`
-seed, which selected the whole suite and ran at 138%. Every other seed was
-missed, including a module-level-only `__init__.py`. The misses fall into
-path classes that a wrapper can recognise before testmon runs and must widen
-the selection for (§ Fail-open rules). A map does **not** carry across
-interpreters: on any other
-Python, testmon discards it and runs everything. That is safe, but saves
-nothing, so ID-266's CI lane needs one map per interpreter leg.
+Is runtime-coverage test selection worth adopting to speed up in-progress
+rounds, locally (BK-404) and in CI (ID-266)?
 
-Two defaults in this repo stop testmon from working at all, and both are
-silent or confusing:
+## Answer
 
-- `pyproject.toml`'s `addopts` passes `-m 'not live'`, and testmon turns
-  selection off whenever `-m` is used. The run header says "selection
-  automatically deactivated because -m was used", then runs every test.
-  `--testmon-forceselect` restores selection.
-- On Python 3.14, coverage 7.16 defaults to the `sysmon` core, which cannot
-  switch the per-test contexts testmon relies on. Coverage warns, and this
-  repo's `filterwarnings = error` turns the warning into an INTERNALERROR
-  before the first test. `COVERAGE_CORE=ctrace` works.
+**Not now.**
 
-## Method
+- **Locally, it saves real time only on leaf-code edits.** Edits to core
+  modules or module-level code still run a third to a half of the suite, and
+  edits to `conftest.py`, data or config run all of it (§ Why). Tests are 532 s of `hatch run all`'s 666 s (audit-022 § H1), and
+  local selection does not shorten CI, which runs the full gate on every PR
+  push (audit-022 § M1).
+- **In CI, a map is valid only for the interpreter and dependency set it was
+  built on.** Any other Python patch version or package minor version
+  discards it and runs everything (Appendix C). CI installs unpinned
+  (`uv pip install -e ".[dev]"`), and how often a cached map would survive is
+  unmeasured.
+- **Two selection-free fixes are cheaper and carry no risk of skipping a
+  test:**
+  - BUG-301 removes 157 of 721 Stage-1 worker-seconds (22%, audit-022 § L2
+    and § H1);
+  - BK-401 takes the coverage run from 310 s to 250 s at `-n 4` (19%,
+    audit-022 § L1).
+
+## When to revisit
+
+Only if, after BUG-301 and BK-401 land, local rounds are still a measured
+bottleneck. Run `pytest-tia` and `pytest-impact` against the same seeds then,
+not before; the driver takes them by changing only the selected-run command.
+
+## Why
+
+**What selection saves depends on what the change touches, and the large
+savings are confined to leaf code.** Wall time of a selected run, as a share
+of the 551.3 s serial Stage-1 run, from the seed table (Appendix B):
+
+| Kind of change | Selected run vs. full suite |
+| --- | --- |
+| Leaf function edit (`_sanitize_pem`, a conftest helper) | 0.9% |
+| Fixture factory | 2.4% |
+| Backend module-level constant (`_sftp.py`) | 37% |
+| Core module (`_path.py`) | 54% |
+| `conftest.py` module level | 138% (whole suite, plus failing hypothesis shrinks) |
+| Data, config or generated files; a different interpreter | selection is blind or discarded; must run the full suite |
+
+## If it is ever built
+
+**A wrapper around testmon must widen its selection for four path classes
+and override two repo defaults.**
+
+- **Full suite** when the diff touches any tracked non-`.py` file, or a `.py`
+  file with no row in the map (e.g. a re-export `__init__.py`), or when the
+  map comes from another environment.
+- **Plus a set of tests** on any `src/` change: the 15 test files that read
+  `src/` as text rather than by import (Appendix D). Re-derive the set, do not
+  keep a list.
+- **Pass `--testmon-forceselect`:** `addopts`' `-m 'not live'` otherwise
+  turns selection off with only a header line saying so.
+- **Set `COVERAGE_CORE=ctrace`:** on 3.14 coverage defaults to `sysmon`, which
+  testmon cannot use, and `filterwarnings = error` turns the warning into an
+  INTERNALERROR. BK-401's `sysmon` switch must therefore stay out of any
+  testmon job.
+
+---
+
+## Appendix A: method
 
 - **Tree:** a detached worktree at `12f8043` under `./tmp/`. Venvs per
   interpreter via `uv`, with `-e ".[dev]"` and `pytest-testmon==2.2.0`
@@ -43,7 +84,10 @@ silent or confusing:
 - **Repeats:** each timing is a single run, so treat differences of a few
   seconds as noise.
 
-## Control and map build (3.13)
+## Appendix B: controls, map build and seeds (3.13)
+
+**The map builds under xdist for about the cost of one parallel run and is
+reusable.**
 
 | Run | Command (extra flags) | Result | Wall |
 | --- | --- | --- | --- |
@@ -52,22 +96,16 @@ silent or confusing:
 | Map build, xdist | `--testmon -n 4` | same counts | 218.0 s |
 | No-change rerun | `--testmon-forceselect` | 0 run, 11 deselected | 2.2 s |
 
-- **What the map holds.** Read-only `sqlite3` queries on the built map give
-  11,932 `test_execution` rows, 10,143 `file_fp` rows and 96,468 test-to-file
-  links, in an 8,798,208-byte file (`ls -l`).
-- **Coverage.** No non-`.py` file appears in `file_fp`
-  (`count(distinct filename) where filename not like '%.py'` returns 0).
-- **Building under xdist works.** It cost 14 s over the xdist control on this
-  run, and the no-change rerun shows the map is complete.
-- **The deselected count.** The rerun's "11 deselected" is the tests left
-  after testmon skips collecting unchanged files.
+Read-only `sqlite3` queries on the built map give 11,932 `test_execution`
+rows, 10,143 `file_fp` rows and 96,468 test-to-file links, in an
+8,798,208-byte file (`ls -l`). No non-`.py` file appears in `file_fp`
+(`count(distinct filename) where filename not like '%.py'` returns 0).
 
-## Seeded changes (3.13, map from the xdist build)
-
-Each row is a one-line edit confirmed to fail its named test with testmon off,
-then a serial `--testmon-forceselect` run on a fresh copy of the map. The wall
-share is against the 551.3 s serial control. Command:
-`python sdd/research/research-bk-403-testmon-poc.py 3.13 <map> all`.
+**Seeds.** Each row is a one-line edit confirmed to fail its named test with
+testmon off, then a serial `--testmon-forceselect` run on a fresh copy of the
+map. Shares are against the 551.3 s serial control. Command:
+`python sdd/research/research-bk-403-testmon-poc.py 3.13 <map> all`. The 13
+seeds cover all eight of audit-022's P1 seed classes.
 
 | Seed | Edit | Known test selected? | Tests run | Wall (share) | Class if missed |
 | --- | --- | --- | --- | --- | --- |
@@ -85,34 +123,31 @@ share is against the 551.3 s serial control. Command:
 | backend module constant | `_sftp.py`'s `_PEM_SEPARATOR` shortened | yes | 1,199 | 205.4 s (37.3%) | — |
 | backend function body | `_sanitize_pem` joins with `\r\n` | yes | 3 | 4.8 s (0.9%) | — |
 
-Reading the table:
+- **Module-level conftest:** all 11,932 tests depend on `conftest.py`; the run
+  was slower than the control because 20 hypothesis tests failed and shrank.
+- **`__init__.py`:** the map holds no row for `src/remote_store/__init__.py`
+  (`file_fp` count 0); no function in it runs under a test. A module-level
+  edit in a file with recorded functions *is* caught (the `_sftp.py` constant
+  row).
+- **`fixtures.toml`:** the registry's data input
+  (`tests/backends/fixtures/_loader.py`). Python fixture code is selected; its
+  TOML data is not.
+- **Placement AST:** the 825 tests run are those that import `_azure.py`; the
+  test that walks the file as text is not among them.
 
-- **The module-level conftest edit.** It selects every test, because all
-  11,932 tests depend on `conftest.py`. It ran slower than the control
-  because 20 hypothesis tests failed and shrank.
-- **The `__init__.py` miss was not on audit-022's expected list.** The map
-  holds no row for `src/remote_store/__init__.py` (`file_fp` count 0). That
-  module is only imports and `__all__`; no function in it runs under a test.
-  A module-level edit in a file that does have recorded functions *is* caught
-  (the `_sftp.py` constant row), so the blind spot is files that are
-  module-level only.
-- **`fixtures.toml` was also not on the expected list.** It is the registry's
-  data input (`tests/backends/fixtures/_loader.py`), so the audit's fixture
-  class splits in two. Python fixture code is selected; its TOML data is not.
-- **The placement-AST seed.** The 825 tests it ran are those that import
-  `_azure.py`. The test that walks the file as text is not among them.
+## Appendix C: xdist, pytest-cov, portability
 
-## xdist, pytest-cov, portability
+**xdist and pytest-cov work with testmon; a map does not survive a change of
+interpreter.**
 
-- **xdist:** the map builds under `-n 4` and is reused by serial runs. The
-  portability runs below selected under `-n 4` as well.
+- **xdist:** the map builds under `-n 4` and is reused by serial runs and by
+  `-n 4` selected runs.
 - **pytest-cov:** testmon's `--help` says collection is "forced" off under
-  coverage. It was not, with pytest-cov 7.1 on 3.13. A probe over
+  coverage; it was not, with pytest-cov 7.1 on 3.13. A probe over
   `tests/test_path.py` and `tests/test_errors.py` wrote the same map with and
   without `--cov=remote_store`: 77 executions, 87 fingerprints and 308 links
-  each. Selection under `--cov` works. The report then measures only the
-  selected run (15% total on a no-change run), which confirms that a selected
-  run must never assert the coverage floor.
+  each. Under `--cov` the report measures only the selected run (15% total on
+  a no-change run), so a selected run must never assert the coverage floor.
 - **Portability:** the 3.13 map was copied and the `_sftp.py` function-body
   seed run on each interpreter with `POC_EXTRA="-n 4"`.
 
@@ -126,60 +161,29 @@ Reading the table:
   - **Why the map is discarded:** `testmon/db.py`'s
     `fetch_or_create_environment` starts a new environment when either the
     full Python version (`3.13.14`) or the installed-package string
-    (major.minor per package) differs. It then deletes the old one: the 3.11
-    copy afterwards held only `environment_id` 2, with all 11,932 executions.
-    A map shared between interpreters is overwritten, not extended.
+    (major.minor per package) differs, and deletes the old one: the 3.11 copy
+    afterwards held only `environment_id` 2, with all 11,932 executions.
   - **The 3.14 failures are not testmon's.** A testmon-free control on
-    3.14.0rc2 (`-n 4 -p no:testmon`) gave 14 failed and 8 errors. Four are
-    `test_bench_report.py` hitting an argparse help-format `ValueError` in the
-    rc's stdlib; the rest are pydantic (`_eval_type() got an unexpected keyword
+    3.14.0rc2 (`-n 4 -p no:testmon`) gave 14 failed and 8 errors: four
+    `test_bench_report.py` argparse help-format `ValueError`s in the rc's
+    stdlib, the rest pydantic (`_eval_type() got an unexpected keyword
     argument`) and dagster paths. The seeded run added only the seed's
     failure.
 
-## Fail-open rules
+## Appendix D: tests that read `src/` as text
 
-A wrapper must widen testmon's selection when the diff touches one of these.
-Rules 1, 2 and 4 widen it to the full suite; rule 3 adds a set of test files.
+**15 test files read `src/` other than by import; audit-022 named two.** A
+scan of the full Stage-1 suite on 3.13 with
+[`research-bk-403-srcreads.py`](research-bk-403-srcreads.py), an audit hook
+on `open` that skips imports and counts collection-time reads, found them.
+Reads made by a subprocess are not seen.
 
-1. **Any tracked non-`.py` file.** This covers `fixtures.toml`,
-   `backends.toml`, cassettes, `pyproject.toml`, and lock and CI files. The
-   map has no row for any of them, so testmon cannot select for them.
-2. **A `.py` file with no `file_fp` row in the map.** That covers `__init__.py`
-   re-export modules and new files. The rule is checkable from the map itself.
-3. **Any `src/` file, for the tests that read `src/` other than by import.**
-   These test files are always added to the selection; this is not a reason
-   to run the full suite. Audit-022 named two of them. A scan of the full
-   Stage-1 suite on 3.13 found 15, with
-   [`research-bk-403-srcreads.py`](research-bk-403-srcreads.py), an audit hook
-   on `open` that skips imports and counts collection-time reads. Eight are
-   under `tests/scripts/`: `check_capability_parity`,
-   `check_docstring_parity`, `check_no_retrospective`,
-   `check_no_tracker_refs`, `check_rst_roles`, `check_test_placement`,
-   `gen_features` and `gen_graph`, each as `test_<name>.py`. The rest are
-   `tests/aio/test_async_to_sync_adapter.py`,
-   `tests/backends/graph/aio/test_auth.py` and `test_utils.py`,
-   `tests/backends/s3/test_write_result_pbt.py`, and `tests/ext/`'s
-   `test_contract.py`, `test_observe.py` and `test_otel.py`. The set is a
-   measurement, so the wrapper should re-derive it rather than keep a list.
-   The scan does not see reads made by a subprocess.
-4. **A map from another environment.** testmon already fails open here, at
-   full cost.
-
-## Next step
-
-- **The other tools.** Run `pytest-tia` and `pytest-impact` against the same
-  seeds. The table covers all eight of audit-022's P1 seed classes, with the
-  fixture and module-level classes split. The driver takes it as is; only the
-  selected-run command changes. A declared table stays the fallback for
-  class 1.
-- **For BK-404:**
-  - a wrapper that applies rules 1 to 3 to `git diff --name-only`, then calls
-    `--testmon-forceselect`;
-  - the map stored locally, per interpreter.
-- **For ID-266:**
-  - one map per interpreter leg;
-  - a cache key that includes the full Python version and the resolved
-    package set, since CI's `uv pip install` is unpinned and a minor-version
-    bump discards the map;
-  - `COVERAGE_CORE=ctrace` in any job that runs testmon.
-- **For BK-401:** its move to `sysmon` and testmon cannot share a job.
+- **`tests/scripts/` (8):** `test_check_capability_parity.py`,
+  `test_check_docstring_parity.py`, `test_check_no_retrospective.py`,
+  `test_check_no_tracker_refs.py`, `test_check_rst_roles.py`,
+  `test_check_test_placement.py`, `test_gen_features.py`,
+  `test_gen_graph.py`.
+- **Elsewhere (7):** `tests/aio/test_async_to_sync_adapter.py`,
+  `tests/backends/graph/aio/test_auth.py` and `test_utils.py`,
+  `tests/backends/s3/test_write_result_pbt.py`, and `tests/ext/`'s
+  `test_contract.py`, `test_observe.py` and `test_otel.py`.
