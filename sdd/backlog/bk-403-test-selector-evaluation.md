@@ -11,7 +11,8 @@ advisory prescription ([§ Item authority](../BACKLOG.md#how-this-file-works)).
   per-area worker-second table. The figures live there and are not copied here.
 - **Which mechanisms fit:** § H1's mechanism table. Runtime coverage sees the
   fixture-registry wiring that conformance uses; every row is blind to source
-  read as text (`scripts/gen_features.py`, `scripts/check_test_placement.py`).
+  read as text. § H1 names two such scripts (`scripts/gen_features.py`,
+  `scripts/check_test_placement.py`) as examples, not as the full set.
 - **Tool maturity:** § H1's PyPI release table, dated 2026-10-03.
 - **The fail-open rule:** § H1, "Either way, the fail-open rule". It names the
   path classes that must select the full suite whatever the map says.
