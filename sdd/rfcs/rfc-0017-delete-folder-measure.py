@@ -2001,9 +2001,12 @@ class ScriptedDriver(Driver):
     """Every outcome set per cell: the refusal, what the stat probe answers, what the listing probe answers.
 
     Contexts: "remove_folder" (recursive=False, both probes), "delete_tree"
-    (recursive, stat only), "walk delete" (a file on the way under d; the
-    final remove_folder(d) succeeds).
+    (recursive, stat only), "walk delete" (a file on the way under d) and
+    "walk rmdir" (a subfolder d/s on the way); in both walk contexts the
+    final remove_folder(d) succeeds.
     """
+
+    WALK = {"walk delete": (["d/a"], []), "walk rmdir": ([], ["d/s"])}
 
     parents = "explicit"
 
@@ -2021,10 +2024,8 @@ class ScriptedDriver(Driver):
         return self._out(self.stat_out, key)
 
     def list_page(self, prefix, delimiter="/", limit=None):
-        if self.ctx == "walk delete" and prefix == "d" and limit is None:
-            return ["d/a"], []  # the walk's own listing
-        if self.ctx == "walk delete" and prefix == "d/a" and limit is None:
-            return [], []
+        if self.ctx in self.WALK and limit is None:
+            return self.WALK[self.ctx] if prefix == "d" else ([], [])  # the walk's own listings
         v = self._out(self.list_out, prefix)
         return (["x"], []) if v == "non-empty" else ([], [])
 
@@ -2032,7 +2033,7 @@ class ScriptedDriver(Driver):
         raise self.refusal(f"refused: {key}", path=key)
 
     def remove_folder(self, key):
-        if self.ctx == "walk delete" and key == "d":
+        if self.ctx in self.WALK and key == "d":
             return
         self._refuse(key)
 
@@ -2049,7 +2050,7 @@ class ScriptedDriver(Driver):
 def enum_rows(Q):
     """Every combination of refusal x stat x listing x missing_ok, per context, under the decided options and Q."""
     rows = []
-    for ctx in ("remove_folder", "delete_tree", "walk delete"):
+    for ctx in ("remove_folder", "delete_tree", "walk delete", "walk rmdir"):
         for refusal in (NotFound, RemoteStoreError):
             for stat_out in ("raises", None, "file", "folder"):
                 lists = ("raises", "empty", "non-empty") if stat_out == "folder" and ctx != "delete_tree" else ("-",)

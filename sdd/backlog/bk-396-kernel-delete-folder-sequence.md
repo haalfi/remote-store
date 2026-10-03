@@ -88,8 +88,11 @@ model covers their wire.
    died answered `NotFound`, or returned under `missing_ok`. The decided set
    changed none of them. Its cost falls on the driver: Local's
    `delete_folder` handler, which types every non-`ENOTEMPTY` error
-   `PermissionDenied`, changed 22 Local cells under it, so the driver must
-   classify by errno.
+   `PermissionDenied`, changed 24 Local cells under it (`compare local`,
+   `Lt P1`; that driver also follows links), 2 of them a link nested below
+   the key, where today succeeds with the target kept and the kernel
+   deletes the target's file through the link, then answers
+   `PermissionDenied`. So the driver must classify by errno.
 2. **`delete_tree` refuses a file or an absent key, removing nothing.** With
    no rule, a naive Memory `delete_tree` deleted file `f` and answered
    success (2 of 24 cells), and so did the modelled Graph and HNS wires. A
@@ -107,9 +110,9 @@ model covers their wire.
    show tolerance mid-walk, and `race` runs the writer only.
 4. **A recursive delete may answer `DirectoryNotEmpty`** under a concurrent
    writer on a walk. Today, in 200 threaded runs each (`race 200`), Local
-   answered it in 187 in the latest run (success in 13; the race's hit
-   rate varies from run to run), and SFTP
-   answered an untyped `RemoteStoreError` in all 200. The alternative, a
+   answered it in most runs, between 161 and 187 across the four runs
+   taken at PR #1057's head (success in the rest; the race's hit rate
+   varies), and SFTP answered an untyped `RemoteStoreError` in all 200. The alternative, a
    kernel that re-walks up to three passes, succeeded only by deleting the
    writer's new file, and under a persistent writer ended in
    `BackendUnavailable`.
@@ -140,10 +143,10 @@ decided both on measured cells (`compare extra`):
 
 7. **A probe that raises leaves the refusal standing, and `missing_ok`
    applies to a `NotFound` one** (BE-021's fail-open rule, as the `none`
-   path already applied it). As first written, the refusal was raised even
-   under `missing_ok=True`, against BE-013. Raising the probe's own error
-   instead would have kept SFTP's 8 cells, which answer
-   `BackendUnavailable` today, but contradicted BE-021.
+   path already applied it). Two alternatives were weighed: raising the
+   refusal even under `missing_ok=True`, which contradicts BE-013, and
+   raising the probe's own error, which would have kept SFTP's 8 cells
+   (`BackendUnavailable` today) but contradicts BE-021.
 8. **A `parents == "none"` recursive delete without `SupportsDeleteTree`
    tolerates a `NotFound` on a listed file**, as the walk does. Today flat
    Azure answers `NotFound` under a concurrent deleter, even with
@@ -153,18 +156,20 @@ Item 7's condition, a refusal the probes do not replace, was refuted again on
 a raising listing and on the walk's probes, so it was enumerated (the
 repeat-site check):
 
-9. **One rule for a refusal the probes do not replace.** The space is three
-   contexts × refusal × `stat` × listing × `missing_ok`, 64 cells
+9. **One rule for a refusal the probes do not replace.** The space is four
+   contexts (`remove_folder`, `delete_tree`, and the walk's `delete` and
+   `remove_folder`) × refusal × `stat` × listing × `missing_ok`, 88 cells
    (`compare enum`, which prints both rules side by side). Under item 7's
    narrower rule, 3 cells raise `NotFound` to a `missing_ok=True` caller
-   (the refusal says absent and the `stat` finds a folder), and 4 walk
+   (the refusal says absent and the `stat` finds a folder), and 6 walk
    cells fail the whole delete: an untyped refusal on an entry already gone
-   answers `NotFound`, and one on an entry still a file answers
-   `InvalidPath`. The maintainer chose one rule: the refusal stands,
-   `missing_ok` applying to a `NotFound`, and on the walk an absent outcome
-   is tolerated and a file delete keeps its own refusal. It changes those 7
-   cells and no other, and every other figure here re-runs unchanged. The
-   alternative weighed was to raise a refuted `NotFound` as untyped.
+   answers `NotFound` (4 cells, file and subfolder), and one on an entry
+   still a file answers `InvalidPath` (2). The maintainer chose one rule:
+   the refusal stands, `missing_ok` applying to a `NotFound`, and on the
+   walk an absent outcome is tolerated and a file delete keeps its own
+   refusal. It changes those 9 cells and no other, and every other figure
+   here re-runs unchanged. The alternative weighed was to raise a refuted
+   `NotFound` as untyped.
 
 ## Candidate design
 

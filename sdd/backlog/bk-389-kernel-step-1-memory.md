@@ -238,8 +238,9 @@ every case. RFC-0017 carries the same answers at the question each settles.
        SFTP's drivers type a file as `NotFound`, a file under `missing_ok`
        on either returns quietly when the `stat` probe cannot run. [Added
        in PR #1057's rounds 1 and 2, the maintainer's decisions; the
-       condition's whole space, three contexts × refusal × `stat` ×
-       listing × `missing_ok`, is enumerated by `compare enum`, 64 cells.]
+       condition's space, four contexts (`remove_folder`, `delete_tree`,
+       and the walk's `delete` and `remove_folder`) × refusal × `stat` ×
+       listing × `missing_ok`, is enumerated by `compare enum`, 88 cells.]
        Every other typed refusal passes through unprobed, since a
        `BackendUnavailable` or a `PermissionDenied` says nothing about the
        key. Measured on 30 injected non-state faults (`PermissionDenied` on
@@ -250,9 +251,10 @@ every case. RFC-0017 carries the same answers at the question each settles.
        reconnecting `stat`. **Driver obligation:** `classify` types a
        refusal about the key's state (`ENOENT`, `ENOTDIR`) as `NotFound`,
        never `PermissionDenied`. Local's `delete_folder` handler does the
-       latter today (`_local.py` lines 505 to 510), and with it 22 Local
+       latter today (`_local.py` lines 505 to 510), and with it 24 Local
        cells would change (`compare local`, `Lt P1`, a link-following
-       `stat`), so step 5's driver classifies by errno.
+       driver), 2 of them a link nested below `key` whose target's file is
+       deleted through the link. So step 5's driver classifies by errno.
      - *Folder objects (`parents` `"explicit"` or `"implicit"`),
        `recursive=False`.* `remove_folder(key)` with no probe before it,
        then the probes above on a refusal.
@@ -276,7 +278,10 @@ every case. RFC-0017 carries the same answers at the question each settles.
        is tolerated (the entry is already gone), and a `delete` whose probe
        finds a file keeps its own refusal, a file being that call's right
        type. A file swapped for a non-empty directory mid-walk answers
-       `DirectoryNotEmpty` (`compare extra`). The walk's own listing
+       `DirectoryNotEmpty` (`compare extra`), and a subfolder whose
+       `remove_folder` refuses untyped and whose probe finds a file
+       answers `InvalidPath` for that subfolder, with the files deleted
+       before it gone (`compare enum`). The walk's own listing
        follows the same rule: a listing of `key` that refuses goes through
        the probe rule for `key`, and a subfolder's listing that answers
        `NotFound`, or lists empty because a concurrent deleter removed it,
@@ -284,8 +289,9 @@ every case. RFC-0017 carries the same answers at the question each settles.
        subfolder: a `PermissionDenied` passes through before anything is
        removed, and an untyped refusal on a non-empty subfolder answers
        `DirectoryNotEmpty` (`compare extra`, Local and SFTP). [Added in
-       PR #1057's round 4, the maintainer's decision.] Only the last call,
-       on `key`, applies `missing_ok`.
+       PR #1057's round 4, the maintainer's decision.] Only the calls on
+       `key` itself, its listing and the final `remove_folder`, apply
+       `missing_ok`.
      - *A recursive delete may answer `DirectoryNotEmpty`*, on a walk,
        when a writer adds under the tree mid-walk. BE-013 lists it only for
        `recursive=False` and forbids nothing, and item 8's clause states
@@ -299,9 +305,8 @@ every case. RFC-0017 carries the same answers at the question each settles.
        reporting it) is a non-folder entry. So the walk deletes a link
        below `key` as a file instead of descending into it, and the probes
        answer `InvalidPath` for a link at `key`. [Maintainer's decisions in
-       PR #1057's rounds 3 and 4: scoped to `delete_folder`, then given
-       this view after a marker on `Entry` proved unable to reach a
-       dangling link, the key's own listing or a common prefix.] The
+       PR #1057's rounds 3 and 4; the alternatives weighed are in BK-396's
+       Outcome, item 6.] The
        reason: a driver that follows links in the walk deleted the
        target's file through a link to a non-empty directory, where
        `rmtree` refuses today. The view is what the 12 changed Local cells
@@ -322,7 +327,10 @@ every case. RFC-0017 carries the same answers at the question each settles.
        anything else `NotFound`, to which `missing_ok` applies. Per BE-021,
        the listing is the determinant and fails closed, and the `stat`
        fails open, so a raising `stat` leaves the empty listing's
-       `NotFound`.
+       `NotFound`. After a non-empty listing, a refusal from `delete_tree`,
+       or one other than that tolerated `NotFound` from a listed file's
+       `delete`, passes through unprobed: the listing, the determinant,
+       already settled the key's state (the model's `Kernel._none`).
 
      | Key state, folder objects | `recursive=False` | `recursive=True` |
      |---|---|---|
@@ -348,6 +356,11 @@ every case. RFC-0017 carries the same answers at the question each settles.
        returns under `missing_ok`. Its 20 base cells are unchanged, and so
        are S3Boto3's 20 and flat Azure's 20, with all 40 fired fault cells
        on each.
+     - Step 4, flat Azure: 2 cells, a concurrent deleter on a recursive
+       delete (`d/a` deleted by another client just before the backend
+       deletes it, `missing_ok` either way). Today it answers `NotFound`
+       and leaves `d/b`; the kernel tolerates the `NotFound` and empties
+       the prefix.
      - Step 5, Local: 12 of 44, every one a link at `key` (a link nested
        below `key` keeps today's answer). A dangling link
        answers `NotFound` today (silent under `missing_ok`), and a link to
@@ -359,11 +372,6 @@ every case. RFC-0017 carries the same answers at the question each settles.
        today to compare against, because Local has no wire to drop, step 5
        also lists the cells where a failing `stat` probe leaves a file
        answered `NotFound`, or quiet under `missing_ok` (`compare extra`).
-     - Step 4, flat Azure: 2 cells, a concurrent deleter on a recursive
-       delete (`d/a` deleted by another client just before the backend
-       deletes it, `missing_ok` either way). Today it answers `NotFound`
-       and leaves `d/b`; the kernel tolerates the `NotFound` and empties
-       the prefix.
      - Step 6, SFTP: none of 24 base cells. Under a concurrent writer the
        recursive delete answers an untyped `RemoteStoreError` today (200 of
        200 threaded runs, `race 200`, printed by `compare races`) and

@@ -113,6 +113,10 @@ phases:
         section: "D1 Driver protocol (stat, list_page), Entry and Page records"
         read_type: reference
         extract: "round 4: Entry and Page could not carry the round-3 link marker (dangling link, the key's own listing, common prefixes), so the divergence check fired and the maintainer chose a follow_links flag; my own miss was rewording the mechanism in round 3 without re-measuring it"
+      - file: sdd/rfcs/rfc-0017-delete-folder-measure.py
+        section: "compare local, compare enum"
+        read_type: verify
+        extract: "round 5, the ceiling: Lt P1 printed 24, not 22, after round 4's nested-link state, and the enumeration lacked the walk's remove_folder(sub), now 88 cells with 9 differing; my own miss was not re-running every section a new fixture state reaches"
   - id: verify
     name: Verify
     steps:
