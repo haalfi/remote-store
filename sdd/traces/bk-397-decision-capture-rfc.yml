@@ -6,6 +6,56 @@ source_items:
 audience:
   - contributor.process
   - contributor.tooling
+review:
+  # Derived by `hatch run ship-report 1058 --trace-block-only` at head c866725.
+  # Do not hand-edit, except a newly required field per sdd/traces/_schema.yml
+  # section review: RFC-0015 D4 makes this script the only producer.
+  derivation: "hatch run ship-report 1058 --trace-block-only"
+  pr: 1058
+  review_rounds: 4
+  submissions: 4
+  findings: 15
+  by_round:
+    - round: 1
+      findings: 1
+      origin: {original: 1}
+      triage: {refuted: 1}
+      duration_hours: 0.25
+    - round: 2
+      findings: 1
+      origin: {original: 1}
+      triage: {refuted: 1}
+      duration_hours: 0.03
+    - round: 3
+      findings: 7
+      origin: {loop-introduced: 1, original: 6}
+      triage: {must-fix: 6, unknown: 1}
+      duration_hours: 0.13
+    - round: 4
+      findings: 6
+      origin: {loop-introduced: 2, original: 4}
+      triage: {must-fix: 6}
+      duration_hours: 0.63
+  by_file:
+    - path: "sdd/rfcs/rfc-0018-decision-capture-at-dialog-time.md"
+      findings: 10
+    - path: "sdd/research/research-code-abundance-goals-and-values.md"
+      findings: 4
+    - path: "sdd/traces/bk-397-decision-capture-rfc.yml"
+      findings: 1
+  untouched_files:
+    - "sdd/BACKLOG.md"
+    - "sdd/research/research-decision-capture-at-dialog-time.md"
+  review_driven_commits:
+    - sha: "f4e2c8e"
+      subject: "BK-397: code shows behaviour, not whether it was decided"
+    - sha: "eaed6ee"
+      subject: "BK-397: tighten research 2.3 correction to plain claims"
+    - sha: "25aa6f4"
+      subject: "BK-397: address review: session logs bound at read, multi-select outcomes, research split"
+    - sha: "c866725"
+      subject: "BK-397: address second review: fail-open wrapper, binding rule, outcome precedence, log commit"
+  ci: {verdict: GREEN, failed: 0, pending: 0}
 phases:
   - id: orient
     name: Orient
