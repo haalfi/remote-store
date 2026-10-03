@@ -169,10 +169,13 @@ every case. RFC-0017 carries the same answers at the question each settles.
    `SQLBlobBackend.glob`, on a store holding no backslash key, answers `[]`
    for `"./d/*.csv"`, `"d//*.csv"` and `"d/./*.csv"`, where the kernel
    matches `d/a.csv`, and `[]` for every refused pattern, where the kernel
-   answers `InvalidPath`, step 3. Step 3 also inverts two SQL-BLOB-061 cells
-   in `tests/backends/sqlblob/test_like_prefix.py` to `InvalidPath`: the
-   `a\b` seed, which writes a backslash key directly, and the
-   `backslash_in_tail` glob cell, which matches `"*\\b/s.txt"` against it.
+   answers `InvalidPath`, step 3. Step 3 also reworks SQL-BLOB-061's
+   `tests/backends/sqlblob/test_like_prefix.py`: its `backend` fixture
+   writes the backslash key `a\b/s.txt` from `SEEDS` before every test that
+   uses it, so that seed must leave the fixture, and the cells that pass a
+   backslash key or pattern themselves invert to `InvalidPath`, the
+   parametrisations with id `backslash`, `a\\x` and `backslash_in_tail`
+   (`pytest --collect-only -q` on that file lists each).
    Not run, so each step measures its own addressing and backslash cells,
    and its `glob` cells where it declares `GLOB`: SQLBlob's operations and
    addressing and all of `SQLQueryBackend`, which declares `GLOB`
