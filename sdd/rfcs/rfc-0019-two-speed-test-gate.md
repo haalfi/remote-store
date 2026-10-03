@@ -112,8 +112,8 @@ becomes available, the full lane moves to the queue and the label goes.
 | --- | --- | --- | --- |
 | Local fast | before every push | lint, typecheck, selected tests | — |
 | Local full | recommended before marking a merge candidate; not enforced | `hatch run all` | — |
-| CI fast | `opened`, `synchronize`, `reopened` with `code=true` | lint, typecheck, selected tests on every interpreter | — |
-| CI full | `merge-candidate` label added, or `opened`/`synchronize`/`reopened` with `code=false` (D4) | today's `ci.yml` | yes |
+| CI fast | `opened`, `synchronize`, `reopened` with `code=true` and a narrowed selection | lint, typecheck, selected tests on every interpreter | — |
+| CI full | `merge-candidate` label added; or `opened`/`synchronize`/`reopened` with `code=false` or a FULL selection (D4) | today's `ci.yml` | yes |
 | Post-merge | master push | `ci.yml` full, `ci-full.yml` | yes |
 
 The local fast target is the gate for every round push. `hatch run all` keeps
@@ -242,10 +242,18 @@ off.**
 - **Lanes collapse without code.** When `code=false` (docs, formal, TLA or
   hooks only), both lanes would run the same jobs, so `setup` classifies that
   run as the **full lane**, whatever the event. The lane is therefore full on
-  any of three conditions: a `merge-candidate` label event, a master push, or
-  `code=false` on an event that starts a lane (`opened`, `synchronize`,
-  `reopened`). A `labeled` event for any other label starts no lane, even with
-  `code=false` (D3). The same final job posts `merge-gate` in every case. D2's "the
+  any of four conditions:
+  - a `merge-candidate` label event;
+  - a master push;
+  - `code=false` on an event that starts a lane (`opened`, `synchronize`,
+    `reopened`);
+  - a selection that is FULL (D5).
+
+  A FULL selection runs every job anyway, so it is the full lane and needs no
+  label. That is also what keeps `dependabot-auto-merge.yml` working: a pip
+  bump touches `pyproject.toml`, which is a FULL row. A `labeled` event for any
+  other label starts no lane, even with `code=false` (D3). The same final job
+  posts `merge-gate` in every case. D2's "the
   fast lane never posts" and the single-poster lint hold as written, and a docs
   PR needs no label.
 - **The non-code classification fails toward code.** Because a non-code run
@@ -257,9 +265,22 @@ off.**
     lane.
   - The class outputs are recorded in the same structured output as the
     selection (D7).
-  - Phase 4's classifier migration carries this as a test: the history replay
-    must show identical class outputs, and any path that changes class blocks
-    the migration.
+  - **A known violator exists today.** `CODE_PAT` names
+    `docs-src/reference/FEATURES.md`, which does not exist (`git ls-files`).
+    The real generated file is the root `FEATURES.md`: it matches neither
+    `CODE_PAT` nor `DOCS_PAT`, and `tests/scripts/test_gen_features.py` reads
+    it. A `FEATURES.md`-only diff therefore classifies as non-code. Today that
+    means nothing runs and `gate` passes. Under this RFC it would post
+    `merge-gate`. Fixing it is a pre-existing bug outside this RFC, and it must
+    land before Phase 4.
+  - **Phase 0 audits every class pattern:** each literal path in `CODE_PAT`,
+    `DOCS_PAT`, `FORMAL_PAT`, `TLA_PAT` and `HOOKS_PAT` must match a tracked
+    file, and every tracked file a test reads must classify as code.
+  - **Phase 4's classifier migration carries this as a test.** The history
+    replay must show identical class outputs, with one exception: a
+    non-code → code change is allowed when it is a listed correction, such as
+    the `FEATURES.md` fix. A code → non-code change always blocks the
+    migration.
 - **Locally the same split.** The `/pr` mechanical gate already composes
   `all` for code diffs and `lint` + `docs-gate` otherwise
   ([PR validation gates](../CLAUDE-REFERENCE.md#pr-validation-gates)); the
@@ -354,7 +375,7 @@ the result and are always unioned, never skipped:
    | `tests/backends/fixtures/<module>.py` that registers fixtures | conformance limited to **every** fixture id the module registers, and `tests/backends/fixtures/`. The module → ids map is the inverse of `_MODULE_FOR` in `tests/backends/fixtures/__init__.py`, read as a literal dict, with each unmapped `fixtures.toml` key mapping to itself. So `s3_moto.py` selects `s3_moto` and `s3_moto_strict`, and `memory_async.py` selects both `memory_async_*` ids. Editing that map is FULL, because `__init__.py` is a FULL row |
    | `fixtures.toml` | conformance limited to the fixture ids whose block changed (both versions parsed), and `tests/backends/fixtures/`; FULL if it does not parse |
    | `examples/notebooks/**` | no tests; the `notebooks` job |
-   | Other `examples/**` | no tests; the `examples` job |
+   | Other `examples/**` | the `examples` job, plus the tests that import or read examples directly: `tests/test_examples.py` and `tests/test_snippets.py` (both `from examples.…`), and `tests/backends/conformance/test_examples.py` (opens an example by path). The `examples` job runs only `run_examples.py`, not these tests |
    | `tests/scripts/run_examples.py`, `tests/scripts/run_notebooks.py` | the `examples` or `notebooks` job, plus layers 2 and 4 for tests that import or read them |
    | `scripts/<x>.py` | `tests/scripts/test_<x>.py`, with leading underscores of `<x>` dropped (`_dafny_classorder.py` → `test_dafny_classorder.py`); FULL if no such test exists. An empty mapping is never an empty selection |
    | Generated artifacts (`FEATURES.md`, graph data) | their generator and check tests |
@@ -483,8 +504,9 @@ none of which selects anything.**
 
 1. **Seed tests.** The PoC's 13 seeds become unit tests of the selector, plus
    seeds for text readers, the D6 job rules, string-named imports, test or
-   script modules imported by other tests or scripts, and a failure only a
-   `*_strict` fixture reaches through a shared fixture module. They compute
+   script modules imported by other tests or scripts, a failure only a
+   `*_strict` fixture reaches through a shared fixture module, and an example
+   edit that breaks a `test_examples.py` assertion. They compute
    selections only and run in seconds. Each seed asserts two things:
    - **The selection contains the known failing test.**
    - **Its expected mode, `SELECTED` or `FULL` with its reason.** Containment
@@ -637,6 +659,11 @@ on CI configuration, contributor tooling and two process records.**
 - **CI:** `ci.yml` triggers, `setup`, per-job conditions, a new status. Two
   changes outside the repo: branch protection moves to `merge-gate`, and the
   `merge-candidate` label has to exist.
+- **Auto-merge:** `.github/workflows/dependabot-auto-merge.yml` arms
+  `gh pr merge --auto`, which waits for the required check. It keeps working
+  only because a FULL selection is the full lane (D4). Phase 4 verifies this on
+  a Dependabot PR, and the runbook update covers the Dependabot checklist in
+  `sdd/CI-OPERATIONS.md`.
 - **Tooling:** a selector script, a local hatch target, a registry allowlist in
   `tests/backends/fixtures/registry.py`.
 - **Process:** an ADR for the local part (Phase 1) and one amending ADR-0043

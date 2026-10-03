@@ -175,7 +175,6 @@ phases:
       - file: tests/backends/fixtures/backends.toml
         section: "[backend.s3] sources"
         read_type: reference
-        outcome: misleading
         extract: >-
           _s3_base.py is listed under s3 only, though s3_pyarrow and s3_boto3
           import it; a per-backend source list is not a dependency set. The
@@ -233,6 +232,31 @@ phases:
           bypass since source pinning rejects hand-posted statuses; pilot
           defined as every layer-1 row with layers 2-4 absent, which keeps the
           re-derived 9-of-13 count
+  - id: fix8
+    name: Fourth review, each claim verified before acting
+    steps:
+      - file: .github/workflows/ci.yml
+        section: "CODE_PAT (line 57)"
+        read_type: reference
+        outcome: misleading
+        extract: >-
+          CODE_PAT names docs-src/reference/FEATURES.md, which git ls-files
+          does not list; the real root FEATURES.md is in no class pattern, so a
+          FEATURES.md-only diff is non-code today. Named in D4 as a known
+          violator and a pre-Phase-4 prerequisite, with a Phase 0 audit of all
+          class patterns
+      - file: .github/workflows/dependabot-auto-merge.yml
+        section: "gh pr merge --auto"
+        read_type: reference
+        extract: >-
+          Auto-merge waits on the required check; resolved by making a FULL
+          selection the full lane, since it runs every job anyway
+      - file: tests/test_examples.py
+        section: "from examples imports"
+        read_type: reference
+        extract: >-
+          Three test files import or read examples directly (Grep count 35
+          hits); the examples row now selects them
   - id: verify
     name: Verify
     steps:
