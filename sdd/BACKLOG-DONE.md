@@ -251,7 +251,7 @@ if evidence changes; these are retired.
   and a refusal the probes do not replace stands, `missing_ok` applying;
   `delete_tree` refuses a file or an absent key; every recursive path tolerates
   a `NotFound` on the way; a recursive delete may answer `DirectoryNotEmpty` under a
-  concurrent writer; a symbolic link is never a folder; the `none` table holds.
+  concurrent writer; `delete_folder` never traverses or removes a link as a folder; the `none` table holds.
   Derivation: `sdd/rfcs/rfc-0017-delete-folder-measure.py`.
   Detail: [dossier](backlog/bk-396-kernel-delete-folder-sequence.md)
 

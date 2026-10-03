@@ -180,7 +180,7 @@ optional member, so presence is a protocol, not a method):
 | `SupportsEnsureParents` | `ensure_parents(key)` | called before `put` when `parents == "explicit"`; SFTP's stat walk and Local's `mkdir -p` are their implementations. Never called for `implicit` (Graph, GR-039: no explicit `mkdir`; Azure HNS) or `none` |
 | `SupportsFolderStats` | `folder_stats(prefix) -> (count, size, latest)` | `get_folder_info` push-down (SQL's aggregate query); without it, the kernel aggregates a listing |
 | `SupportsGlob` | `glob(pattern)` | native `GLOB`; without it the driver must not declare `GLOB` |
-| `SupportsRemoveFolder` (added at BK-389's planning; corrected after PR #1055 merged) | `remove_folder(key)`: remove an empty folder and refuse anything else without removing it, in one step where the wire has one (Memory's lock, `rmdir`) | required when `parents` is `"explicit"` or `"implicit"` (any driver with folder objects; Graph, Azure HNS), checked at construction; never called when `parents == "none"`. The kernel's `delete_folder` sequence around it was decided in BK-396 and is stated, with its measured cells, in BK-389's dossier, decision 8: a refusal is probed only when it is a typed `NotFound` or untyped, a recursive delete without `SupportsDeleteTree` walks with `list_page` and calls `remove_folder` deepest first, and a driver's `stat` and `list_page` never present a symbolic link as a folder |
+| `SupportsRemoveFolder` (added at BK-389's planning; corrected after PR #1055 merged) | `remove_folder(key)`: remove an empty folder and refuse anything else without removing it, in one step where the wire has one (Memory's lock, `rmdir`) | required when `parents` is `"explicit"` or `"implicit"` (any driver with folder objects; Graph, Azure HNS), checked at construction; never called when `parents == "none"`. The kernel's `delete_folder` sequence around it was decided in BK-396 and is stated, with its measured cells, in BK-389's dossier, decision 8: a refusal is probed only when it is a typed `NotFound` or untyped, a recursive delete without `SupportsDeleteTree` walks with `list_page` and calls `remove_folder` deepest first, and `delete_folder` never traverses or removes a link as a folder, read from a link marker on `Entry` while `stat` and `list_page` keep following links for every other operation |
 
 Two more attributes the stream wrapper reads per driver, because
 `_ErrorMappingStream`'s caught set is per construction site today:
@@ -206,7 +206,9 @@ and `delete_folder` from what is present and never adds a flag. A driver that
 omits `get_range` or `open_write` therefore keeps its declared capabilities
 and loses a data path; § Impact names where that lands.
 
-`Entry` (key, kind `file | folder`, size, modified, etag, metadata), `Page`
+`Entry` (key, kind `file | folder`, size, modified, etag, metadata, and,
+added at BK-396, whether the entry is a link the driver followed, which only
+`delete_folder` reads), `Page`
 (entries, common prefixes, next cursor) and `WriteHandle` are small records.
 `Op` is an enum of the public operations plus the kernel's internal scopes
 (`probe`, `identity`, `monitor`), so a driver can classify by what asked:

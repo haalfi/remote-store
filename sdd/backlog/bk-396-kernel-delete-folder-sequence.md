@@ -12,10 +12,10 @@ drivers, the `parents == "none"` path, the `delete_tree` refusal, and a
 `delete_tree` that deletes a file. Rounds 1 to 5 are counted by `hatch run
 ship-report 1056`; rounds 6 to 9 are PR #1056's verification reviews. What held
 from round 5 on stays in BK-389's decision 8: the protocol, its atomic
-removal, and who carries it. The sequence the kernel runs around it is
-decided here, against fake drivers, before BK-389's kernel PR writes the
-spec 003 clause (its item 8) and the cells that trace to it. BK-389 depends
-on this item. Filed as ID-264 until PR #1056's round 10, so that PR's review
+removal, and who carries it. The sequence the kernel runs around it was
+decided here (§ Outcome below), against fake drivers, before BK-389's kernel
+PR writes the spec 003 clause (its item 8) and the cells that trace to it;
+BK-389 depended on this item until it closed. Filed as ID-264 until PR #1056's round 10, so that PR's review
 threads use that name.
 
 ## What it decides
@@ -114,7 +114,7 @@ model covers their wire.
    cells and every S3Boto3 and flat Azure fault cell. SQLBlob's raising-`stat`
    cells, which the candidate counted as one, are 8: two key states ×
    `recursive` × `missing_ok`.
-6. **New: a symbolic link is never a folder.** A Local driver whose `stat`
+6. **New: `delete_folder` never treats a link as a folder.** A Local driver whose `stat`
    and `list_page` follow links deleted `tn/a` through `sn -> tn` on a
    recursive delete, where `rmtree` refuses today. With `lstat` semantics,
    nothing was deleted through a link, and the 12 Local symlink cells became
@@ -123,6 +123,12 @@ model covers their wire.
    non-recursive cells reproduce (`compare local`, `Lt P0`), but its
    recursive walk through `sn` also deleted `tn/a`, which the paragraph
    does not show. Under the decided rule every link cell is `InvalidPath`.
+   The rule binds `delete_folder` only: `stat` and `list_page` keep
+   following links for every other operation and mark the entry as a link,
+   so no other operation's cell changes. That scope is the maintainer's
+   decision after a review found the first wording binding D1's general
+   primitives (`is_folder`, `list_folders`, `iter_children` and others,
+   today link-following at `_local.py` lines 183, 585 and 604).
 
 PR #1057's round 1 found two cases the six left open, and the maintainer
 decided both on measured cells (`compare extra`):
@@ -160,7 +166,10 @@ repeat-site check):
 Condensed from BK-389's decision 8 at PR #1056's head `40151bc`, plus round
 9's measurements; the original text is `git show
 40151bc61:sdd/backlog/bk-389-kernel-step-1-memory.md`. It is the starting
-point, not a decision: items 1 to 4 above refute parts of it.
+point, not a decision: items 1 to 4 of § What it decides refute parts of
+it, and wherever this text and § Outcome differ (items 1 to 9 there,
+including the symlink paragraph's "one changed cell", the raising-probe
+sentence and SQLBlob's one cell), the Outcome stands.
 
 - **The error path, enumerated.** After any refusal **except a typed
   `DirectoryNotEmpty`**, the kernel runs the error-path probes: one `stat`,
@@ -240,13 +249,13 @@ point, not a decision: items 1 to 4 above refute parts of it.
   delimiter="/")`, so a folder holding no files still arrives as a common
   prefix, deletes the files, then calls `remove_folder` on each folder,
   deepest first; the last call, on `key`, answers an absent key or a file
-  through the error-path table's probes (item 3 above). Measured in round
+  through the error-path table's probes (§ What it decides, item 3). Measured in round
   7 with Memory and Local as stand-ins: 28 cells match today.
 - **`delete_folder(recursive=True)` with `SupportsDeleteTree`, folder
   objects present.** A `delete_tree` refusal gets the `stat` probe only,
   never the listing: absent `NotFound`, to which `missing_ok` applies, file
   `InvalidPath`, otherwise the driver's error stands, a raising probe
-  chained to it (items 2 and 4 above). The reason: a recursive delete never
+  chained to it (§ What it decides, items 2 and 4). The reason: a recursive delete never
   answers `DirectoryNotEmpty` (BE-013), and a folder whose tree delete
   failed is non-empty almost by definition, so the listing arm would turn
   Local's `PermissionDenied` (`_local.py` line 510) or an HNS 403 into

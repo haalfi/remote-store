@@ -11,7 +11,7 @@ printed by this script. Run from the repository root, in order:
     hatch run python sdd/rfcs/rfc-0017-delete-folder-measure.py compare [section ...]
 
 Results land in tmp/rfc-0017-delete-folder/ (gitignored). `inject`, `kernel`
-and the `azure` class of `today` need Azurite's blob service on
+and the `azure` and `extra` classes of `today` need Azurite's blob service on
 127.0.0.1:10000; without Docker, `npm install --prefix tmp/azurite azurite`
 and run its `dist/src/blob/main.js --silent --loose --blobHost 127.0.0.1
 --blobPort 10000 --location tmp/azurite/data`.
@@ -1323,7 +1323,8 @@ class Kernel:
                                        PermissionDenied), stat follows links
                                     Le errno-typed (ENOENT/ENOTDIR -> NotFound, ENOTEMPTY -> DNE,
                                        EACCES/EPERM -> PermissionDenied, else untyped), stat follows links
-                                    Ll Le's classifier, lstat: a link is never a folder (decided)
+                                    Ll Le's classifier, lstat: delete_folder's view, where a link is
+                                       never a folder (decided)
     Added after PR #1057's round 1:
     M  a probe that raises:         M0 the refusal is raised, the probe's error chained
                                     M1 as M0, but missing_ok applies to a NotFound refusal (decided)
@@ -1336,11 +1337,17 @@ class Kernel:
        a folder they cannot type)   Q1 the refusal stands, missing_ok applying to a NotFound; on the
                                        walk an absent outcome is tolerated, and a delete whose probe
                                        finds a file keeps its own refusal (decided)
+                                    Q1 applies only together with P1, M1 and W1: a row for a rejected
+                                    P, M or W runs Q0, the semantics it was weighed with.
+    Ll models delete_folder's link-aware view only: the decided rule leaves stat and list_page
+    following links for every other operation, so no other operation's cells are modelled here.
     """
 
     def __init__(self, drv: Driver, P="P1", D="D1", W="W1", R="R1", M="M1", F="F1", Q="Q1") -> None:
         self.d, self.P, self.D, self.W, self.R = _Counting(drv), P, D, W, R
-        self.M, self.F, self.Q = M, F, Q
+        self.M, self.F = M, F
+        # Q1 refines the decided P1, M1 and W1; a rejected P, M or W keeps the semantics it was weighed with.
+        self.Q = Q if (P == "P1" and M == "M1" and W == "W1") else "Q0"
 
     def probe_raised(self, e, pe, mok):
         if self.M == "M1" and type(e) is NotFound and mok:

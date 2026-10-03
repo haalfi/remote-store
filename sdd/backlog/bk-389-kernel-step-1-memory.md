@@ -218,8 +218,9 @@ every case. RFC-0017 carries the same answers at the question each settles.
      found a new defect in it. Decided in BK-396 on 2026-10-02, each
      choice the maintainer's through the interview.] Measured against
      today's classes by `sdd/rfcs/rfc-0017-delete-folder-measure.py`, whose
-     docstring gives the run order and its bounds. The cell counts below
-     are its `compare summary` output. BK-396's
+     docstring gives the run order and its bounds. The **Changed cells**
+     list below is its `compare summary` output; every other figure names
+     its own `compare` section inline. BK-396's
      [dossier](bk-396-kernel-delete-folder-sequence.md) holds the candidate
      this replaces and the options the interview weighed.
      - *Which refusals are probed.* Only a typed `NotFound` and an untyped
@@ -258,7 +259,7 @@ every case. RFC-0017 carries the same answers at the question each settles.
      - *Folder objects, `recursive=True`, with `SupportsDeleteTree`.*
        `delete_tree(key)`, which D1's row binds. It removes a folder's tree
        and refuses a file or an absent key without removing anything, in
-       one step where the wire has one (Memory's lock, SQL's transaction).
+       one step where the wire has one (Memory's lock).
        A wire without one checks, then removes, and documents that race as
        `remove_folder` does: Graph's `DELETE` on an item and HNS
        `delete_directory` remove a file item too (round 9's reading of
@@ -280,13 +281,19 @@ every case. RFC-0017 carries the same answers at the question each settles.
      - *A recursive delete may answer `DirectoryNotEmpty`*, on a walk,
        when a writer adds under the tree mid-walk. BE-013 lists it only for
        `recursive=False` and forbids nothing, and item 8's clause states
-       it. A one-step `delete_tree` (Memory, SQL) cannot.
-     - *A symbolic link is never a folder.* A driver's `stat` and
-       `list_page` never present a link as a folder, so the walk never
-       traverses one and the probes answer `InvalidPath` for it. The
-       reason: a Local driver whose `stat` and `list_page` follow links
-       deleted the target's file through a link to a non-empty directory,
-       where `rmtree` refuses today.
+       it. Memory's one-step `delete_tree` cannot.
+     - *`delete_folder` never treats a link as a folder.* A driver's `stat`
+       and `list_page` keep today's link-following answers for every
+       operation, and also say that an entry is a link: a symbolic link,
+       or a Windows junction, which Local follows without `is_symlink()`
+       reporting it. Only `delete_folder`'s walk and probes act on that.
+       The walk never traverses a link, and the probes answer
+       `InvalidPath` for one. [Narrowed to `delete_folder` in PR #1057's
+       round 3, the maintainer's decision, so no other operation's cell
+       changes.] The reason: a Local driver whose `stat` and `list_page`
+       follow links deleted the target's file through a link to a
+       non-empty directory, where `rmtree` refuses today. D1's `Entry`
+       carries the marker, and item 8 states it.
      - *`parents == "none"`.* No folder objects, so `remove_folder` is
        never called. The kernel lists first and `stat`s only after an
        empty listing, the order `S3Boto3Backend`, `SQLBlobBackend` and
@@ -332,7 +339,8 @@ every case. RFC-0017 carries the same answers at the question each settles.
        an empty or a non-empty directory answers `PermissionDenied`. The
        kernel answers `InvalidPath` for all three, × `recursive` ×
        `missing_ok`. A link to a file keeps `InvalidPath`. Not measured: a
-       permission-denied folder (the container runs as uid 0). With no
+       permission-denied folder (the container runs as uid 0), and Windows
+       junctions (the container is Linux), so step 5 measures both. With no
        today to compare against, because Local has no wire to drop, step 5
        also lists the cells where a failing `stat` probe leaves a file
        answered `NotFound`, or quiet under `missing_ok` (`compare extra`).
@@ -426,8 +434,9 @@ every case. RFC-0017 carries the same answers at the question each settles.
    - decision 8: `remove_folder`'s atomic refusal and who carries it,
      `delete_tree`'s refusal, and the kernel's `delete_folder` sequence as
      decision 8 states it (decided in BK-396), including a recursive
-     `DirectoryNotEmpty` under a concurrent writer and the rule that a
-     symbolic link is never a folder.
+     `DirectoryNotEmpty` under a concurrent writer, and the rule that
+     `delete_folder` never treats a link as a folder (with `Entry`'s link
+     marker).
 
 **Depends on** BK-388, whose postconditions the kernel is written against,
 and on BK-395, which decides the key rule's remainder (decision 6). BK-396,

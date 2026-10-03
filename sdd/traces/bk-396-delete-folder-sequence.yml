@@ -90,6 +90,25 @@ phases:
         section: "compare summary, faults, races, trips"
         read_type: verify
         extract: "the cells each option changes, put to the maintainer in the interview; a Local driver following links deleted a file through a symlink, which became the sixth decision"
+  - id: fix
+    name: Review-driven decisions
+    steps:
+      - file: sdd/specs/003-backend-adapter-contract.md
+        section: "BE-013, BE-021 (fail-open probe)"
+        read_type: reference
+        extract: "round 1: a raising probe must leave the refusal standing with missing_ok applying, as the none path already does"
+      - file: sdd/rfcs/rfc-0017-delete-folder-measure.py
+        section: "compare extra"
+        read_type: verify
+        extract: "round 1: today's SFTP answers BackendUnavailable when its stat drops, flat Azure NotFound under a concurrent deleter; decisions 7 and 8"
+      - file: sdd/rfcs/rfc-0017-delete-folder-measure.py
+        section: "compare enum"
+        read_type: verify
+        extract: "round 2 refuted the round-1 condition again, so its 64-cell space was enumerated; decision 9 changed 7 cells"
+      - file: src/remote_store/backends/_local.py
+        section: "is_folder, list_folders, iter_children"
+        read_type: reference
+        extract: "round 3: the link rule bound the general stat, which every Local operation follows today; narrowed to delete_folder. My own miss: the Q1 rule leaked into the rejected-option rows until round 3's measuring member re-ran them"
   - id: verify
     name: Verify
     steps:
