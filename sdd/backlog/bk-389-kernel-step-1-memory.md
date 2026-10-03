@@ -213,14 +213,180 @@ every case. RFC-0017 carries the same answers at the question each settles.
      SFTP's `rmdir`, which refuse a non-empty folder and a file natively
      (measured for Local in PR #1056's round 3: `os.rmdir` removed no file,
      non-empty directory or symlink).
-   - **The `delete_folder` sequence around it is BK-396's.** [Split out in
-     PR #1056 at the maintainer's direction: from round 1 to round 9 every
-     review round found a new defect in it.] Which refusals the kernel
-     probes, what `delete_tree` must refuse, and how each recursive and
-     `parents == "none"` path answers are decided in BK-396, against fake
-     drivers, before item 8 writes their spec 003 clause. Its
+   - **The `delete_folder` sequence around it.** [Split out in PR #1056
+     at the maintainer's direction, after every review round from 1 to 9
+     found a new defect in it. Decided in BK-396 on 2026-10-02, each
+     choice the maintainer's through the interview.] Measured against
+     today's classes by `sdd/rfcs/rfc-0017-delete-folder-measure.py`, whose
+     docstring gives the run order and its bounds. The **Changed cells**
+     list below is its `compare summary` output; every other figure names
+     its own `compare` section inline. BK-396's
      [dossier](bk-396-kernel-delete-folder-sequence.md) holds the candidate
-     design as it stood, every measurement, and the open findings.
+     this replaces and the options the interview weighed.
+     - *Which refusals are probed.* Only a typed `NotFound` and an untyped
+       `RemoteStoreError` get the error-path probes: one `stat`, then, for
+       a folder still present, one `list_page(key, delimiter="/",
+       limit=1)` where the call can answer `DirectoryNotEmpty`. The probes
+       replace the refusal with the key's state: absent `NotFound` (to
+       which `missing_ok` applies), file `InvalidPath`, non-empty folder
+       `DirectoryNotEmpty`. **When they do not replace it**, because a
+       probe raised (its exception chained) or the probes found a folder
+       they cannot type further, the refusal stands, and `missing_ok`
+       applies to it when it is a `NotFound`: the refusal is the call's
+       linearisation point, and this is BE-021's fail-open rule, which the
+       `parents == "none"` path below also follows. Since Local's and
+       SFTP's drivers type a file as `NotFound`, a file under `missing_ok`
+       on either returns quietly when the `stat` probe cannot run. [Added
+       in PR #1057's rounds 1 and 2, the maintainer's decisions; the
+       condition's space, four contexts (`remove_folder`, `delete_tree`,
+       and the walk's `delete` and `remove_folder`) × refusal × `stat` ×
+       listing × `missing_ok`, is enumerated by `compare enum`, 88 cells.]
+       Every other typed refusal passes through unprobed, since a
+       `BackendUnavailable` or a `PermissionDenied` says nothing about the
+       key. Measured on 30 injected non-state faults (`PermissionDenied` on
+       Local and SFTP, and SFTP's dead channel before and after a landed
+       `rmdir`, `compare faults`): the kernel answers
+       the injected type in all 30. Probing them instead changed 12,
+       including a landed `rmdir` answered `NotFound` by SFTP's
+       reconnecting `stat`. **Driver obligation:** `classify` types a
+       refusal about the key's state (`ENOENT`, `ENOTDIR`) as `NotFound`,
+       never `PermissionDenied`. Local's `delete_folder` handler does the
+       latter today (`_local.py` lines 505 to 510), and with it 24 Local
+       cells would change (`compare local`, `Lt P1`, a link-following
+       driver), 2 of them a link nested below `key` whose target's file is
+       deleted through the link. So step 5's driver classifies by errno.
+     - *Folder objects (`parents` `"explicit"` or `"implicit"`),
+       `recursive=False`.* `remove_folder(key)` with no probe before it,
+       then the probes above on a refusal.
+     - *Folder objects, `recursive=True`, with `SupportsDeleteTree`.*
+       `delete_tree(key)`, which D1's row binds. It removes a folder's tree
+       and refuses a file or an absent key without removing anything, in
+       one step where the wire has one (Memory's lock).
+       A wire without one checks, then removes, and documents that race as
+       `remove_folder` does: Graph's `DELETE` on an item and HNS
+       `delete_directory` remove a file item too (round 9's reading of
+       their code and SDK, not run against a live wire), so
+       their drivers check first. A refusal gets the `stat` probe only,
+       never the listing.
+     - *Folder objects, `recursive=True`, without `SupportsDeleteTree` (the
+       walk).* `list_page(prefix, delimiter="/")` down the tree, so a
+       folder holding no files still arrives as a common prefix. Then the
+       files are deleted and `remove_folder` runs deepest first, `key`
+       last. On the way, a refusal from `delete` or `remove_folder` goes
+       through the probe rule above for its own key, with two differences:
+       an absent outcome, a typed `NotFound` or a probe answering absent,
+       is tolerated (the entry is already gone), and a `delete` whose probe
+       finds a file keeps its own refusal, a file being that call's right
+       type. A file swapped for a non-empty directory mid-walk answers
+       `DirectoryNotEmpty` (`compare extra`), and a subfolder whose
+       `remove_folder` refuses untyped and whose probe finds a file
+       answers `InvalidPath` for that subfolder, with the files deleted
+       before it gone (`compare enum`). The walk's own listing
+       follows the same rule: a listing of `key` that refuses goes through
+       the probe rule for `key`, and a subfolder's listing that answers
+       `NotFound`, or lists empty because a concurrent deleter removed it,
+       is tolerated. Its other refusals go through the probe rule for that
+       subfolder: a `PermissionDenied` passes through before anything is
+       removed, and an untyped refusal on a non-empty subfolder answers
+       `DirectoryNotEmpty` (`compare extra`, Local and SFTP). [Added in
+       PR #1057's round 4, the maintainer's decision.] Only the calls on
+       `key` itself, its listing and the final `remove_folder`, apply
+       `missing_ok`.
+     - *A recursive delete may answer `DirectoryNotEmpty`*, on a walk,
+       when a writer adds under the tree mid-walk. BE-013 lists it only for
+       `recursive=False` and forbids nothing, and item 8's clause states
+       it. Memory's one-step `delete_tree` cannot.
+     - *`delete_folder` never treats a link as a folder.* `stat` and
+       `list_page` take `follow_links: bool = True`; every operation but
+       `delete_folder` keeps the default, so its answers through links are
+       today's. `delete_folder` calls both with `follow_links=False`, a
+       view in which a link (a symbolic link, dangling or not, or a
+       Windows junction, which Local follows without `is_symlink()`
+       reporting it) is a non-folder entry. So the walk deletes a link
+       below `key` as a file instead of descending into it, and the probes
+       answer `InvalidPath` for a link at `key`. [Maintainer's decisions in
+       PR #1057's rounds 3 and 4; the alternatives weighed are in BK-396's
+       Outcome, item 6.] The
+       reason: a driver that follows links in the walk deleted the
+       target's file through a link to a non-empty directory, where
+       `rmtree` refuses today. The view is what the 12 changed Local cells
+       below were measured under (the script's `Ll` driver); a link nested
+       below `key` keeps today's answer, its target untouched (`compare
+       summary`). Item 8 states the flag.
+     - *`parents == "none"`.* No folder objects, so `remove_folder` is
+       never called. The kernel lists first and `stat`s only after an
+       empty listing, the order `S3Boto3Backend`, `SQLBlobBackend` and
+       flat `AsyncAzureBackend` use today. The listing is
+       `list_page(key, delimiter="/", limit=1)` for a non-recursive call.
+       For a recursive one it is `list_page(key, delimiter=None, limit=1)`
+       before `delete_tree`, or, without `SupportsDeleteTree`, one paged
+       `list_page(key, delimiter=None)` whose files the kernel deletes,
+       tolerating a `NotFound` on a listed file as the walk does [added in
+       PR #1057's round 1, the maintainer's decision].
+       After an empty listing, `stat`: a file answers `InvalidPath`,
+       anything else `NotFound`, to which `missing_ok` applies. Per BE-021,
+       the listing is the determinant and fails closed, and the `stat`
+       fails open, so a raising `stat` leaves the empty listing's
+       `NotFound`. After a non-empty listing, a refusal from `delete_tree`,
+       or one other than that tolerated `NotFound` from a listed file's
+       `delete`, passes through unprobed: the listing, the determinant,
+       already settled the key's state (the model's `Kernel._none`).
+
+     | Key state, folder objects | `recursive=False` | `recursive=True` |
+     |---|---|---|
+     | empty folder | removed | removed |
+     | folder holding files, or only an empty folder | `DirectoryNotEmpty` | removed (`DirectoryNotEmpty` under a concurrent writer on a walk) |
+     | file, or a symbolic link | `InvalidPath` | `InvalidPath`, nothing removed |
+     | absent, or under a file (`f/x`) | `NotFound` | `NotFound` |
+
+     | Key state, `parents == "none"` | `recursive=False` | `recursive=True` |
+     |---|---|---|
+     | files under the prefix | `DirectoryNotEmpty` | removed |
+     | file `f`, nothing under it | `InvalidPath` | `InvalidPath` |
+     | a file and a prefix both | `DirectoryNotEmpty` | the files under it removed, the file kept |
+     | absent, or under a file (`f/x`) | `NotFound` | `NotFound` |
+
+     **Changed cells, by the step that lists them**, against today's
+     answers and post-state:
+     - Step 1, Memory: none of 24.
+     - Step 3, SQLBlob: 8 of 20 injected-fault cells. A raising `stat`
+       after an empty listing (file `f`, or absent, × `recursive` ×
+       `missing_ok`) answers `BackendUnavailable` today, because
+       `_reject_file` propagates it. The kernel answers `NotFound`, or
+       returns under `missing_ok`. Its 20 base cells are unchanged, and so
+       are S3Boto3's 20 and flat Azure's 20, with all 40 fired fault cells
+       on each.
+     - Step 4, flat Azure: 2 cells, a concurrent deleter on a recursive
+       delete (`d/a` deleted by another client just before the backend
+       deletes it, `missing_ok` either way). Today it answers `NotFound`
+       and leaves `d/b`; the kernel tolerates the `NotFound` and empties
+       the prefix.
+     - Step 5, Local: 12 of 44, every one a link at `key` (a link nested
+       below `key` keeps today's answer). A dangling link
+       answers `NotFound` today (silent under `missing_ok`), and a link to
+       an empty or a non-empty directory answers `PermissionDenied`. The
+       kernel answers `InvalidPath` for all three, × `recursive` ×
+       `missing_ok`. A link to a file keeps `InvalidPath`. Not measured: a
+       permission-denied folder (the container runs as uid 0), and Windows
+       junctions (the container is Linux), so step 5 measures both. With no
+       today to compare against, because Local has no wire to drop, step 5
+       also lists the cells where a failing `stat` probe leaves a file
+       answered `NotFound`, or quiet under `missing_ok` (`compare extra`).
+     - Step 6, SFTP: none of 24 base cells. Under a concurrent writer the
+       recursive delete answers an untyped `RemoteStoreError` today (200 of
+       200 threaded runs, `race 200`, printed by `compare races`) and
+       `DirectoryNotEmpty` on the kernel (`compare summary`), a typing
+       change. With the probe's `stat` dropping the channel (absent key or
+       file, × `recursive` × `missing_ok`), 8 cells: today's first call is
+       that `stat`, so it answers `BackendUnavailable`; the kernel answers
+       `NotFound`, or returns under `missing_ok`. Its symbolic links were
+       not measured, so step 6 measures them.
+     - Steps 4 and 7, HNS and Graph: read, not run (no emulator). Today
+       both check the type first and answer `InvalidPath` for a file (Graph
+       `aio/backends/_graph/backend.py` lines 1336 to 1337, HNS through
+       `hdi_isfolder` at `aio/backends/_azure.py` lines 963 to 965). Their
+       check-then-remove keeps that answer, and the model of their wire
+       reproduces it.
    - **A wire with no one-step removal.** The driver checks and then
      removes, and must document that race. Azure on HNS
      (`get_paths(max_results=1)` then `delete_directory`; in
@@ -289,12 +455,16 @@ every case. RFC-0017 carries the same answers at the question each settles.
      amends it [maintainer's decision in PR #1056's round 4];
    - the root `delete_folder` refusal (`InvalidPath`), which BE-029 § Out of
      scope leaves undefined;
-   - decision 8: `remove_folder`'s atomic refusal and who carries it, and
-     the kernel's `delete_folder` sequence once BK-396 decides it.
+   - decision 8: `remove_folder`'s atomic refusal and who carries it,
+     `delete_tree`'s refusal, and the kernel's `delete_folder` sequence as
+     decision 8 states it (decided in BK-396), including a recursive
+     `DirectoryNotEmpty` under a concurrent writer, and the rule that
+     `delete_folder` never treats a link as a folder (with the
+     `follow_links` flag on `stat` and `list_page`).
 
 **Depends on** BK-388, whose postconditions the kernel is written against,
-on BK-395, which decides the key rule's remainder (decision 6), and on
-BK-396, which decides the `delete_folder` sequence (decision 8).
+and on BK-395, which decides the key rule's remainder (decision 6). BK-396,
+which decided the `delete_folder` sequence (decision 8), is done.
 As landed, the root rule is a postcondition ranked after the closed guard,
 not a precondition, so the kernel's order per operation is closed
 (`Live()`), then the root check on the key (`write`, the `move`/`copy`

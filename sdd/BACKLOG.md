@@ -277,22 +277,13 @@ failure it was.
   the measurements are in the dossier. BK-389 waits on it.
   Detail: [dossier](backlog/bk-395-kernel-key-rule-addressing.md)
 
-- [ ] **BK-396 — The kernel's `delete_folder` sequence around `SupportsRemoveFolder` is undecided**
-  spec: BE-013, BE-021, MEM-014, MEM-026, GR-043 · effort: M · audience: library.maintainer, contributor.process
-  BK-389's decision 8 fixes the protocol, not the sequence. Nine review rounds
-  on PR #1056 each found a new defect in it; open: which refusals the kernel
-  probes (a reconnecting SFTP `stat` turns a dead channel into `NotFound`), what
-  `delete_tree` must refuse (Graph's and HNS's tree-delete wire calls would delete
-  a file), the recursive answers. Candidate and measurements in the dossier. BK-389 waits on it.
-  Detail: [dossier](backlog/bk-396-kernel-delete-folder-sequence.md)
-
 - [ ] **BK-389 — RFC-0017's kernel does not exist, so no backend can migrate onto it**
   spec: BE-017, BE-020, BE-021, BE-029, ERR-001, ERR-009, DEPTH-003, PING-002, AW-001, SAW-003 · effort: L · audience: library.maintainer, infra.test
   D3 step 1's first PR: the async kernel and its `unasync` sync twin, private,
   with a fake-driver suite and the spec 003 clauses it traces to, under the
-  Proposed ADR-0042; BK-394 lands Memory on it. After the v0.33.0 tag. Needs BK-388,
-  BK-395 and BK-396. Open decision: none of its own; the rest are in the
-  dossier's § Decisions, the key rule's remainder BK-395's, `delete_folder` BK-396's.
+  Proposed ADR-0042; BK-394 lands Memory on it. After the v0.33.0 tag. Needs BK-388
+  and BK-395. Open decision: none of its own; the rest are in the dossier's
+  § Decisions (`delete_folder`'s, decided in BK-396), the key rule's remainder BK-395's.
   Detail: [dossier](backlog/bk-389-kernel-step-1-memory.md)
 
 - [ ] **BK-394 — No backend runs on RFC-0017's kernel, so ADR-0042 stays Proposed**
