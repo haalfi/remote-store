@@ -43,16 +43,18 @@ has an answer:
    `/ship`'s § Close each round records an interpreter-specific red that only
    the full matrix showed.
 
-**Dependency:** BK-403 (a map must exist, and its portability finding
-answers prerequisite 3's last question).
+**Dependency** *(superseded by RFC-0019, below: the selector is static and
+needs no map; the item now waits on RFC-0019 Phases 0–3)*: BK-403 (a map must
+exist, and its portability finding answers prerequisite 3's last question).
 
 **Prerequisite 3, answered for `pytest-testmon` (2026-10-03):** one map does
 not serve every interpreter. testmon discards a map on any change of Python
 patch version or package minor version, and CI installs unpinned
 ([`research-bk-403-testmon-poc.md`](../research/research-bk-403-testmon-poc.md),
-Appendix C). The PoC's answer to the item as a whole is "not now"; it is
-revisited on BK-403's condition (local rounds still a measured bottleneck
-after BUG-301 and BK-401).
+Appendix C). This finding still stands as history. *Superseded by RFC-0019,
+below:* the PoC's "not now" and its revisit condition (local rounds still a
+measured bottleneck after BUG-301 and BK-401). RFC-0019 Phase 0 replaces
+that condition.
 
 **In this item's scope:** prerequisite 4's `/pr` and `/ship` skill changes.
 No other item delivers them. The `/ship` edit shares
@@ -60,7 +62,21 @@ No other item delivers them. The `/ship` edit shares
 whether `/ship` runs the selected target before round pushes; sequence the
 two edits together.
 
-**Open decision for the ADR:** the primary leg's tier in the draft lane.
+**Superseded in part by RFC-0019 (2026-10-03).** What still holds above: the
+evidence, prerequisite 3's testmon finding as history, and "In this item's
+scope" (the skill edits keep this item open, RFC-0019 Open Questions 4). The
+Dependency line, the revisit condition and the draft-PR prescription are
+replaced as follows.
+[RFC-0019](../rfcs/rfc-0019-two-speed-test-gate.md) drops draft state as the
+switch, because review rounds push to open PRs: every push runs the fast lane,
+and the full lane runs on a head labelled `merge-candidate` (D1, D3).
+Prerequisite 1 becomes the `labeled` trigger; prerequisite 2 becomes a
+`merge-gate` commit status only the full lane posts, since a skipped required
+job passes protection (D2); prerequisite 3 needs no map, the selector being
+static (D5); prerequisite 4 is RFC-0019 Open Questions 4.
+
+**Open decision for the ADR:** the primary leg's tier in the fast lane
+(RFC-0019 Open Questions 1; the draft-lane wording below predates it).
 Stage 2 keeps ADR-0043's per-PR live-backend guarantee; Stage 1 is cheaper but
 leaves a round touching `_s3.py` or `_sftp.py` on moto or in-process SFTP until
 the close (§ M1).

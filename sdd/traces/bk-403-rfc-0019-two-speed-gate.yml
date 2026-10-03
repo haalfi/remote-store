@@ -1,0 +1,441 @@
+id: BK-403
+title: "No change-scoped test selector has been chosen for this suite; one of three candidates is measured"
+trigger: >-
+  Reviewing a management summary of audit-022's gate strategy, the maintainer
+  pointed out that the testmon PoC's "not now" judged one dependency-map tool,
+  not change-scoped selection as such, and asked for a gate strategy and a
+  roadmap to validate, build and finalise it, written as an RFC.
+source_items:
+  - BK-403
+  - BK-404
+  - ID-266
+audience:
+  - contributor.process
+  - infra.ci
+  - infra.test
+expected_ripples:
+  - sdd/BACKLOG.md
+  - sdd/backlog/bk-403-test-selector-evaluation.md
+  - sdd/backlog/bk-404-selected-tests-hatch-target.md
+  - sdd/backlog/id-266-two-speed-ci-gate.md
+surprising_ripples: []
+discovery_followups:
+  - BUG-302
+phases:
+  - id: orient
+    name: Orient
+    steps:
+      - file: sdd/research/research-bk-403-testmon-poc.md
+        section: "(full)"
+        read_type: gate
+        extract: >-
+          Which findings belong to testmon (7 of 13 seeds missed, map discarded
+          per interpreter, sysmon conflict) and which hold for any selector
+          (core-module fan-out, no coverage claim, incomplete text-reader
+          inventory). My first review treated the "not now" as a verdict on
+          selection; the maintainer corrected it
+      - file: sdd/audits/audit-022-gate-speed-strategies.md
+        section: "(full)"
+        read_type: gate
+        extract: "Mechanism table, fail-open classes, M1 lanes and the /ship constraint, L1-L3 figures cited in the RFC"
+      - file: sdd/backlog/id-266-two-speed-ci-gate.md
+        section: "(full)"
+        read_type: gate
+        extract: "Four prerequisites; each is answered or replaced by an RFC decision"
+      - file: sdd/backlog/bk-403-test-selector-evaluation.md
+        section: "(full)"
+        read_type: gate
+        extract: "Declared table named as fallback; the RFC adopts and extends it"
+      - file: sdd/backlog/bk-404-selected-tests-hatch-target.md
+        section: "(full)"
+        read_type: gate
+        extract: "audit-017 R3 and BK-271 constraints carried into Impact"
+  - id: design
+    name: Design
+    steps:
+      - file: .github/workflows/ci.yml
+        section: "setup (class patterns), code-gated jobs, gate"
+        read_type: reference
+        extract: >-
+          Five class outputs; 15 code-gated jobs (grep -c on the code
+          condition); gate aggregates passed-or-skipped and fails on a failed
+          setup; verify-tla absent from gate's needs, raised as an open
+          question
+      - file: scripts/drift_smoke_map.py
+        section: "SMOKE_TARGETS"
+        read_type: reference
+        extract: "Declared-table precedent; its -k s3 workaround is why D5's backend axis filters through the registry"
+      - file: tests/backends/fixtures/registry.py
+        section: "fixture_params"
+        read_type: reference
+        extract: "Single choke point for conformance parameters, where a backend allowlist fits"
+      - file: sdd/templates/rfc-template.md
+        section: "(full)"
+        read_type: reference
+        extract: "Section order; Management Summary placed first at the maintainer's request"
+      - file: sdd/CONTENT-RULES.md
+        section: "Rule 7 (Kernsatz)"
+        read_type: gate
+        extract: "Each RFC section opens with its claim"
+  - id: fix
+    name: Review fixes
+    steps:
+      - file: .github/workflows/ci.yml
+        section: "concurrency (lines 17-19); setup diff (line 43)"
+        read_type: reference
+        extract: >-
+          The per-PR cancel-in-progress group would let any labeled event
+          cancel a running full lane, and github.sha on pull_request is the
+          merge commit. My D2/D3 drafting reasoned about the trigger and the
+          status without reopening either block; both found by review
+      - file: sdd/research/research-bk-403-testmon-poc.md
+        section: "Appendix D, non-src readers"
+        read_type: reference
+        extract: >-
+          Tests that read other test files as text; under first-match the
+          tests/**/test_*.py row skipped them, so layer composition is now
+          stated as a union
+      - file: sdd/backlog/id-266-two-speed-ci-gate.md
+        section: "Dependency; Prerequisite 3; In this item's scope"
+        read_type: reference
+        extract: >-
+          The superseded-in-part note left the old dependency and revisit
+          condition unmarked, and the roadmap closed BK-404 and ID-266 with
+          their skill edits unowned; both items now stay open until RFC-0019
+          Open Questions 4 lands
+  - id: fix2
+    name: Review fixes, round 2
+    steps:
+      - file: tests/scripts/run_notebooks.py
+        section: "NOTEBOOK_DIR (line 24)"
+        read_type: reference
+        extract: >-
+          Notebooks live under examples/notebooks; D6's example and notebook
+          triggers fell to layer 1's unmatched-FULL row, so layer 1 gained
+          explicit rows and D6 now states it applies to non-FULL selections only
+      - file: .github/workflows/ci.yml
+        section: "CODE_PAT, DOCS_PAT (lines 57, 73)"
+        read_type: reference
+        extract: >-
+          packaging/ is DOCS_PAT only, so a D6 package trigger on it never
+          fires; dropped. My D6 drafting named trigger paths without checking
+          them against D5's FULL rows or the class filter
+      - file: sdd/rfcs/rfc-0019-two-speed-test-gate.md
+        section: "D2 fork bullet"
+        read_type: reference
+        extract: >-
+          "Stay on the full lane" was false: the full lane cannot post on a
+          fork token. Restated as cannot merge on their own, with the maintainer
+          path and the pull_request_target rejection; clearing skipped for forks
+  - id: fix3
+    name: Review fixes, round 3
+    steps:
+      - file: src/remote_store/__init__.py
+        section: "imports (lines 5-49)"
+        read_type: reference
+        extract: >-
+          The package root eagerly imports core and every ext module, so a
+          transitive graph through it selects everything; layer 2 now treats
+          package __init__ files as re-export hubs resolved to defining modules,
+          follows function-local imports, and fails open on unresolvable hub use
+      - file: tests/backends/fixtures/backends.toml
+        section: "[backend.*] sources, async_sources"
+        read_type: reference
+        extract: >-
+          The module-to-backend map already exists, including aio backends;
+          the backend axis now selects backends whose sources reach the changed
+          module, so shared helpers like _flat_ns select their importers
+      - file: tests/backends/fixtures/registry.py
+        section: "BackendFixture.marks; fixture_params"
+        read_type: reference
+        extract: >-
+          os_sensitive rides on the local and local_async fixture params, so
+          the cross-platform rule reads fixture marks= statically as a second
+          marker source; sftp_docker is a fixture id, handled by the allowlist
+      - file: sdd/backlog/bk-404-selected-tests-hatch-target.md
+        section: "Prescription"
+        read_type: reference
+        extract: >-
+          I appended a Progress note and left the map dependency and draft-PR
+          wording above it unmarked, the same miss the round-1 ID-266 finding
+          named; marked inline now, and the BK-403 consumers line too
+  - id: fix4
+    name: Maintainer overall review
+    steps:
+      - file: sdd/rfcs/rfc-0019-two-speed-test-gate.md
+        section: "Status; D1; D2; D4; D5 maturity; D7; Roadmap"
+        read_type: reference
+        extract: >-
+          The RFC presented the full target as the build order; restructured to
+          approve Phase 0 plus a narrow local pilot, precision layers gated one
+          at a time, a status lifecycle table and poster pinning, cost-based
+          cut-off metrics, classified escapes, observable fallback, rule
+          ownership, and a non-code classifier that fails toward code
+  - id: fix5
+    name: Self-correction after accepting the overall review uncritically
+    steps:
+      - file: tests/backends/fixtures/backends.toml
+        section: "[backend.s3] sources"
+        read_type: reference
+        extract: >-
+          _s3_base.py is listed under s3 only, though s3_pyarrow and s3_boto3
+          import it; a per-backend source list is not a dependency set. The
+          misread was mine: I wrote a pilot rule on it without checking
+          importers
+      - file: tests
+        section: "Grep remote_store.backends._ across tests/"
+        read_type: reference
+        extract: >-
+          Backend modules are imported directly from tests/test_store.py,
+          tests/ext, tests/scripts, tests/aio and tests/e2e, so the pilot
+          narrows only leaf backend modules. The maintainer asked whether the
+          review had been handled critically; it had not: I implemented all
+          ten recommendations without verifying any, and introduced an unsafe
+          pilot rule, a false safety claim about the reader inventory,
+          evidence-free escape classes, an overstated lint guarantee and a
+          wrong Checks-API rationale
+  - id: fix6
+    name: Testing-expert review, each claim verified before acting
+    steps:
+      - file: src/remote_store/_registry.py
+        section: "lines 31-87"
+        read_type: reference
+        extract: >-
+          Every backend is imported function-locally, so no module is a leaf and
+          the pilot narrows no src edit; stated, and Phase 0's Stop moved to the
+          precision rule set so a structural pilot fallback is not read as
+          evidence against selection
+      - file: tests
+        section: "Grep import_module|__import__; test_async_extended imports; scripts bare imports; subprocess count"
+        read_type: reference
+        extract: >-
+          10 string-based import sites, a test-to-test import, script-to-script
+          imports including _trace_corpus with no test of its own, the
+          _dafny_classorder naming mismatch, and 16 subprocess-calling test
+          files; all confirmed before editing. 9 of 13 PoC seeds FULL under the
+          pilot re-derived by hand mapping research Appendix B
+  - id: fix7
+    name: Consistency review, each claim verified before acting
+    steps:
+      - file: tests/backends/fixtures/__init__.py
+        section: "_MODULE_FOR (lines 84-95)"
+        read_type: reference
+        extract: >-
+          Ten TOML keys map onto shared factory modules, including the strict
+          variants; the fixture-module row now selects every id a module
+          registers via the inverse map
+      - file: .github/workflows/ci.yml
+        section: "gate job (passed-or-skipped rule)"
+        read_type: reference
+        extract: >-
+          The poster now reuses gate's success-or-skipped rule with setup
+          required; the code=false collapse is defined as the full lane so one
+          poster and the lint stay consistent; override restated as the ruleset
+          bypass since source pinning rejects hand-posted statuses; pilot
+          defined as every layer-1 row with layers 2-4 absent, which keeps the
+          re-derived 9-of-13 count
+  - id: fix8
+    name: Fourth review, each claim verified before acting
+    steps:
+      - file: .github/workflows/ci.yml
+        section: "CODE_PAT (line 57)"
+        read_type: reference
+        outcome: misleading
+        extract: >-
+          CODE_PAT names docs-src/reference/FEATURES.md, which git ls-files
+          does not list; the real root FEATURES.md is in no class pattern, so a
+          FEATURES.md-only diff is non-code today. Named in D4 as a known
+          violator and a pre-Phase-4 prerequisite, with a Phase 0 audit of all
+          class patterns
+      - file: .github/workflows/dependabot-auto-merge.yml
+        section: "gh pr merge --auto"
+        read_type: reference
+        extract: >-
+          Auto-merge waits on the required check; resolved by making a FULL
+          selection the full lane, since it runs every job anyway
+      - file: tests/test_examples.py
+        section: "from examples imports"
+        read_type: reference
+        extract: >-
+          Three test files import or read examples directly (Grep count 35
+          hits); the examples row now selects them
+  - id: fix9
+    name: Fifth review, verified, one point pushed back
+    steps:
+      - file: .github/workflows/ci.yml
+        section: "test / test-primary run lines; test-primary-sftp exit-5 note"
+        read_type: reference
+        extract: >-
+          --splits 2, --ignore=tests/scripts, PII --deselect and --stage=1
+          confirmed; bare pytest falls back to testpaths=tests. D6 gains a
+          per-job survival rule, unsharded fast-lane jobs, and no exit-5-as-pass
+      - file: tests/scripts/test_ship_report.py
+        section: "lines 43, 523, 856"
+        read_type: reference
+        extract: >-
+          Reads sdd/traces/*.yml and sdd/BACKLOG-DONE.md, which are DOCS_PAT
+          only while tooling-tests runs on code or hooks; so the reviewer's
+          "none of these is a merge-barrier hole" is wrong for DOCS_PAT reads.
+          The narrower class property is adopted, and the Phase 0 audit is told
+          to list those cases rather than excuse them
+  - id: fix10
+    name: Final review round, verified
+    steps:
+      - file: tests/backends/azure/conftest.py
+        section: "_cassettes_azure imports; hns_record_params from all_fixtures()"
+        read_type: reference
+        extract: >-
+          The fixture registry is consumed outside conformance (azure conftests,
+          tests/scripts registry guards), so the three fixture-registry rows now
+          name registry consumers via layer 2 and run FULL in the pilot; pilot
+          SELECTED seeds drop from 4 to 2 (11 of 13 FULL, re-derived)
+      - file: .github/workflows/ci.yml
+        section: "verify-tla comment (lines 709-712); test-cross-platform command"
+        read_type: reference
+        extract: >-
+          verify-tla is informational by design per its own comment, which I had
+          not read when I told the maintainer no comment said so; Open Question
+          6 restated as settled. test-cross-platform's -m os_sensitive
+          --ignore=tests/e2e added to the per-job survival list
+  - id: fix11
+    name: Review round on the pilot's narrowing set, verified
+    steps:
+      - file: tests/scripts/test_check_traces.py
+        section: "line 450 (rglob over scripts/)"
+        read_type: reference
+        extract: >-
+          A whole-tree reader made every scripts/ edit FULL under my "read as
+          text → FULL" pilot rule. That rule added no safety once inventory
+          completeness was a Phase 0 exit, so layer 4's mapped readers move into
+          the pilot; case (2) now excludes a script's own mapped test
+      - file: tests/backends/azure/conftest.py
+        section: "pytest_configure, pytest_sessionfinish"
+        read_type: reference
+        extract: >-
+          Non-root conftests with session-wide hooks share state across
+          directories; such conftests are FULL. Stale-run re-runs are now a
+          lifecycle row with live-head-guarded label clearing and a named
+          residual gap; Phase 2's ci-full.yml job is stated instead of "local
+          only"
+  - id: verify
+    name: Verify
+    steps:
+      - file: sdd/CLAUDE-REFERENCE.md
+        section: "Pre-work index; PR validation gates"
+        read_type: verify
+        extract: >-
+          No code touched, so lint + docs-gate; audience has no user. entry and
+          the RFC introduces no user-facing framework, so no CHANGELOG entry;
+          the selector's ripple onto the "Test whose subject is outside src/ or
+          scripts/" row is recorded in the RFC's Impact for when it is built
+review:
+  # Derived by `hatch run ship-report 1066 --trace-block-only` at head 2fef02b.
+  # Do not hand-edit, except a newly required field per sdd/traces/_schema.yml
+  # section review: RFC-0015 D4 makes this script the only producer.
+  derivation: "hatch run ship-report 1066 --trace-block-only"
+  pr: 1066
+  review_rounds: 16
+  submissions: 11
+  findings: 41
+  by_round:
+    - round: 1
+      findings: 1
+      origin: {original: 1}
+      triage: {must-fix: 1}
+      duration_hours: 0.16
+    - round: 2
+      findings: 5
+      origin: {original: 4, unclassifiable-file: 1}
+      triage: {must-fix: 5}
+      duration_hours: 0.11
+    - round: 3
+      findings: 2
+      origin: {original: 2}
+      triage: {must-fix: 2}
+      duration_hours: 0.23
+    - round: 4
+      findings: 5
+      origin: {loop-introduced: 1, original: 3, unclassifiable-file: 1}
+      triage: {must-fix: 5}
+      duration_hours: 0.12
+    - round: 5
+      findings: 1
+      origin: {unclassifiable-file: 1}
+      triage: {must-fix: 1}
+      duration_hours: 0.15
+    - round: 6
+      findings: 5
+      origin: {loop-introduced: 4, original: 1}
+      triage: {must-fix: 5}
+      duration_hours: 0.23
+    - round: 7
+      findings: 5
+      origin: {loop-introduced: 4, original: 1}
+      triage: {must-fix: 5}
+      duration_hours: 0.3
+    - round: 8
+      findings: 4
+      origin: {loop-introduced: 4}
+      triage: {must-fix: 4}
+      duration_hours: 0.18
+    - round: 9
+      findings: 5
+      origin: {loop-introduced: 4, original: 1}
+      triage: {must-fix: 4, unknown: 1}
+      duration_hours: 0.18
+    - round: 10
+      findings: 4
+      origin: {loop-introduced: 3, original: 1}
+      triage: {must-fix: 4}
+      duration_hours: 0.15
+    - round: 11
+      findings: 4
+      origin: {loop-introduced: 3, original: 1}
+      triage: {must-fix: 4}
+      duration_hours: 0.15
+  by_file:
+    - path: "sdd/rfcs/rfc-0019-two-speed-test-gate.md"
+      findings: 38
+    - path: "sdd/backlog/bk-404-selected-tests-hatch-target.md"
+      findings: 1
+    - path: "sdd/backlog/id-266-two-speed-ci-gate.md"
+      findings: 1
+    - path: "sdd/traces/bk-403-rfc-0019-two-speed-gate.yml"
+      findings: 1
+  untouched_files:
+    - "sdd/BACKLOG.md"
+    - "sdd/backlog/bk-403-test-selector-evaluation.md"
+  review_driven_commits:
+    - sha: "7a0abac"
+      subject: "BK-403: full gate at least once per PR and on request, not exactly once"
+    - sha: "ed70cb4"
+      subject: "BK-403: address review: head-SHA status, label concurrency, layer union, dossier supersession, skill-edit ownership"
+    - sha: "ce81ac9"
+      subject: "Merge origin/master into bk-403-rfc-0019-two-speed-gate"
+    - sha: "ca51391"
+      subject: "BK-403: point RFC-0019 at the relocated srcreads scan"
+    - sha: "389eb1b"
+      subject: "BK-403: address review: fork PRs cannot merge on their own; D6 triggers only on non-FULL code rows"
+    - sha: "94f1530"
+      subject: "BK-403: address review: import-graph edge rule, registry-driven backend axis, fixture marks, stale BK-404 wording"
+    - sha: "6275929"
+      subject: "BK-403: address overall review: Phase 0 plus narrow local pilot, status lifecycle and poster pinning, cost-based cut-off, observable fallback, escape classes, rule ownership"
+    - sha: "4d7a29b"
+      subject: "BK-403: correct uncritically accepted review changes: leaf-only pilot narrowing, reader inventory as Phase 0 exit, evidenced escape classes, honest status trust model"
+    - sha: "5c9d9a8"
+      subject: "BK-403: address testing review: pilot narrows no src edit, string and test/script import edges, mode-pinned seeds, two-method reader inventory, Stop on precision set"
+    - sha: "df9424b"
+      subject: "BK-403: address consistency review: fixture module ids via _MODULE_FOR, poster uses gate rule, code=false is the full lane, override is ruleset bypass, pilot defined as every layer-1 row"
+    - sha: "1488238"
+      subject: "BK-403: self-review fixes: lane table and unrelated-label precedence, guarantee limits, stale layer-4 text, derivation for the /ship claim, label in Impact, BK-404 skill scope"
+    - sha: "3a16c47"
+      subject: "BK-403: address fourth review: FULL selection is the full lane, FEATURES.md class violator named, examples row selects its tests, auto-merge in Impact, trace tag fixed"
+    - sha: "db609fe"
+      subject: "BK-403: file the CODE_PAT FEATURES.md gap found in RFC-0019 review as BUG-302"
+    - sha: "ab04ffd"
+      subject: "BK-403: address fifth review: per-job survival and unsharded fast jobs, class property narrowed with DOCS_PAT gaps listed, selection-based PII rule, .py-only reader inventory, non-vacuous mapping test"
+    - sha: "2dff6ce"
+      subject: "BK-403: address final review: fixture-registry rows name consumers and run FULL in the pilot, cross-platform filters in per-job survival, verify-tla restated as settled"
+    - sha: "2fef02b"
+      subject: "BK-403: address review: mapped readers in the pilot, own-test exclusion, session-hook conftests FULL, stale re-run lifecycle row, Phase 2 CI job stated"
+  ci: {verdict: GREEN, failed: 0, pending: 0}

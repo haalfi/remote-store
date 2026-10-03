@@ -48,8 +48,8 @@ If no tool passes, the fallback is a declared table in the style of
 **Whatever wins never asserts the coverage floor**: § H1, "What must stay
 full".
 
-**Consumers:** BK-404 (the local target) and ID-266 (the CI draft lane) both
-need this item's verdict.
+**Consumers:** BK-404 (the local target) and ID-266 (the CI fast lane;
+*superseded wording "draft lane"*, RFC-0019 D1) both need this item's verdict.
 
 ## Progress
 
@@ -60,3 +60,10 @@ need this item's verdict.
   condition and evidence:
   [`research-bk-403-testmon-poc.md`](../research/research-bk-403-testmon-poc.md).
   `pytest-tia` and `pytest-impact` wait for that revisit condition.
+- **2026-10-03, RFC-0019:** the PoC's "not now" rejects a coverage map, not
+  selection. [RFC-0019](../rfcs/rfc-0019-two-speed-test-gate.md) proposes the
+  declared-table fallback above, extended by a static import graph, a
+  registry-based backend axis and a generated text-reader table (D5), with
+  the coverage map kept only as a drift oracle (D7). Its Phase 0 replaces the
+  revisit condition: the selector is built only if it passes Phase 0's exit
+  (RFC-0019 § Roadmap), which is not restated here.
