@@ -13,7 +13,7 @@ dialog already holds what a decision record needs: the question with its
 context, the options with their consequences, the agent's recommendation and the
 answer. It persists only in the session transcript, outside the repository, so
 the next session re-argues the why from the code. This RFC keeps the dialog
-verbatim: one script, registered on three hook events, appends each asked,
+verbatim: one hook, registered on three hook events, appends each asked,
 answered and failed event to a per-session JSONL file,
 `sdd/decisions/<session_id>.jsonl`, committed with the work. Logs are bound to a
 branch when read, not when written. Three readers keep them from being
@@ -61,10 +61,11 @@ the answer was given. What is missing is persistence and a reader, not content.
 
 ## Proposal
 
-### D1. Capture: one script, three event registrations, no model involvement
+### D1. Capture: one hook, three event registrations, no model involvement
 
-A single script, `.claude/hooks/record-decision.py`, is registered on three
-events with matcher `AskUserQuestion`:
+A thin hook, `.claude/hooks/record-decision.sh`, is registered on three events
+with matcher `AskUserQuestion` and runs the recorder,
+`scripts/record_decision.py`:
 
 | Event | Appends | Payload kept |
 |---|---|---|
@@ -77,11 +78,17 @@ all three events), `session_id`, a UTC timestamp, `HEAD`'s SHA and the branch
 name. The `PreToolUse` registration sits beside the existing notification hook
 under the same matcher.
 
-**Fail-open.** The script never blocks a dialog: any error exits 0 with a
-one-line stderr note. A recorder that can stop the decision it records inverts
-its purpose.
+**Fail-open, including when the recorder cannot start.** The hook never blocks
+a dialog. A recorder that can stop the decision it records inverts its purpose.
+Errors inside the recorder are caught and noted on stderr, but that alone is not
+enough: a missing or renamed `.py` makes CPython exit 2 before any line runs,
+and exit 2 from a `PreToolUse` hook blocks the tool. So the `.sh` wrapper runs
+the recorder and then exits 0 unconditionally. The split also places the Python
+under `scripts/`, inside `lint` and `format`, and puts a `.sh` path in
+`settings.json`, which the existing existence check in
+`tests/scripts/test_claude_hooks.py` matches (its regex accepts `.sh` only).
 
-**Verbatim, not parsed.** The script stores payloads as received and does not
+**Verbatim, not parsed.** The recorder stores payloads as received and does not
 interpret them. Interpretation lives in the readers (D3), so a payload-shape
 change in Claude Code breaks a reader's parse, which a test sees, rather than
 silently losing data at capture time.
@@ -91,6 +98,14 @@ silently losing data at capture time.
 `sdd/decisions/<session_id>.jsonl`, one JSON object per line, appended and never
 rewritten. Committed with the work, so git supplies a timestamped history and
 the PR diff shows the log beside the change it explains.
+
+- **Who commits it.** `gate-commit.sh`, which already runs before every
+  `git commit` the agent issues, stages `sdd/decisions/` into that commit, so
+  the log travels with the work it explains. Dialogs after the branch's last
+  commit (`/ship`'s close, `/pr`'s own questions) leave a tail: `/pr` Step 1
+  commits it as a separate `decision log` commit before its clean-tree check.
+  Bound: a commit the maintainer makes by hand outside the agent bypasses the
+  hook, and its dialogs reach the next agent commit instead.
 
 - **No item ID in the path.** The ID is not knowable at capture time: branch
   names need not carry one (`CLAUDE.md` § Branching lists `fix-streaming-io`),
@@ -111,19 +126,23 @@ the PR diff shows the log beside the change it explains.
 
 ### D3. Outcomes are derived by readers, never stored
 
-A reader pairs events by `tool_use_id` and classifies each question. Its
-**recommended set** is the labels marked `(Recommended)`, usually one and
-possibly several on a `multiSelect` question. Its **answer set** is the one
-label chosen, or for `multiSelect` every label chosen:
+A reader pairs events by `tool_use_id` and gives each question exactly one
+outcome: the first row, top to bottom, whose condition holds. Its **recommended
+set** is the labels marked `(Recommended)`, usually one and possibly several on a
+`multiSelect` question. Its **answer set** is the one label chosen, or for
+`multiSelect` every label chosen:
 
-| Outcome | Condition |
+| Outcome | Condition (first match wins) |
 |---|---|
-| `followed` | the answer set equals the recommended set |
-| `alternative` | every answer is an option label, and the set differs from the recommended set (or no option was recommended) |
-| `other` | some answer matches no label (the "Other" free-text path) |
-| `unanswered` | `asked` with no `answered` or `failed` event |
-| `failed` | a `failed` event |
+| `failed` | a `failed` event exists |
 | `prefilled` | the `asked` event's `tool_input` already carries answers |
+| `unanswered` | no `answered` event |
+| `other` | some answer matches no label (the "Other" free-text path) |
+| `followed` | the answer set equals the recommended set |
+| `alternative` | otherwise: every answer is a label and the set differs from the recommended set, or nothing was recommended |
+
+The order ranks what a reviewer must see first: a failure or an answer nobody
+gave outranks what the answer was.
 
 How a multi-select answer is encoded is as undocumented as a single one, so the
 set is parsed by rules step 0 fixes, not assumed. A free-text entry inside a
@@ -136,11 +155,13 @@ assume.
 
 ### D4. Readers
 
-0. **Binding rule, shared by every reader.** An event belongs to a branch when
-   its recorded branch is that branch, or when it ran on the base branch, a
-   detached HEAD or another branch with no item ID, and the next named-branch
-   event in the same session is on that branch. That captures dialogs asked
-   before the branch existed without a manual move. A session whose events never
+0. **Binding rule, shared by every reader.** A *work branch* is any branch
+   other than the base branch; detached HEAD is none. An event recorded on a
+   work branch belongs to that branch and no other. An event recorded on the
+   base branch or a detached HEAD belongs to the next work branch the same
+   session records an event on, if any. That captures dialogs asked before the
+   branch existed without a manual move, and binds each event once. Whether a
+   branch name carries an item ID plays no part. A session whose events never
    name the branch is still bound when its `session_id` appears in a
    `Claude-Session` trailer on `origin/<base>..HEAD`, if step 0 shows the two
    identifiers correspond (§ Open Questions 4).
@@ -149,11 +170,15 @@ assume.
 2. **`check_traces.py`.** For each listed path: the file exists, every line
    parses, every event has a known kind, and no `tool_use_id` has two `answered`
    events. `unanswered` is reported, not failed. Declining a dialog is a
-   legitimate act, and the report is how it stays visible.
-3. **`/pr`.** The skill renders a "Decisions" section from the events the
-   binding rule assigns to the branch, one line per question: header → answer → outcome, with `unanswered`,
-   `failed` and `prefilled` flagged, and a link to each log. Reviewers see the
-   why without anyone writing it.
+   legitimate act, and the report is how it stays visible. A `tool_use_id`
+   with both an `answered` and a `failed` event is also reported: D3 still
+   classifies it, but it contradicts the assumption that the two Post events are
+   exclusive, which step 0 tests.
+3. **`/pr`.** The skill renders a "Decisions" section from the committed log
+   only, after Step 1 has committed the tail, so the body never cites an event
+   the PR does not contain. One line per question: header → answer → outcome,
+   with `unanswered`, `failed` and `prefilled` flagged, and a link to each log.
+   Reviewers see the why without anyone writing it.
 
 ### D5. Build order
 
@@ -163,9 +188,9 @@ assume.
    in § Step 0 observations below. This settles § Open Questions 1, 2 and 4,
    and D3's rules are adjusted to what is observed before any reader is
    written.
-1. Recorder and `settings.json` registration, with tests in
-   `tests/scripts/test_claude_hooks.py` that feed recorded payloads to the
-   script and assert the appended lines.
+1. Recorder, wrapper and `settings.json` registration, with tests that feed
+   recorded payloads to the recorder and assert the appended lines, and one that
+   runs the wrapper with the recorder missing and asserts exit 0.
 2. Schema key and `check_traces.py` rule, each with a failing fixture seen red
    first, per `sdd/TESTING.md`.
 3. The `/pr` rendering.
@@ -189,17 +214,22 @@ assume.
 ## Impact
 
 - **Public API:** none. **Backwards compatibility:** internal process only.
-- **Ripples:** `.claude/settings.json`; `.claude/hooks/record-decision.py`;
+- **Ripples:** `.claude/settings.json`; `.claude/hooks/record-decision.sh`;
+  `scripts/record_decision.py`, inside `lint` and `format` by location;
   `tests/scripts/test_claude_hooks.py` and CI's `HOOKS_PAT`, per the
   ripple-check row for a test whose subject is outside `src/`;
+  `.claude/hooks/gate-commit.sh`, which stages the log;
   `sdd/traces/_schema.yml`; `scripts/check_traces.py` and its tests;
-  `.claude/skills/pr/SKILL.md`; `.claude/skills/ship/SKILL.md` and
+  `.claude/skills/pr/SKILL.md`, both Step 1 (commit the tail) and the
+  rendering; `.github/PULL_REQUEST_TEMPLATE.md`, which `/pr` treats as the
+  authoritative body shape, for the Decisions section;
+  `.claude/skills/ship/SKILL.md` and
   `.claude/skills/orchestrate/SKILL.md`, whose tree-unchanged captures take
   D2's exclusion; `sdd/CLAUDE-REFERENCE.md` § Interview mode,
   whose wiring table gains a Record layer and whose tolerated-divergence note
   extends to the new matcher values; `sdd/AUTHORING.md` directory defaults, for
   `sdd/decisions/`; `GATE-INVENTORY.md`, regenerated.
-- **Cost per dialog:** two short Python invocations and two appended lines (the
+- **Cost per dialog:** two short hook invocations and two appended lines (the
   `PreToolUse` one, then whichever of the two Post events fires).
 
 **Acceptance.** Step 0 observed and its payload shapes recorded in § Step 0
@@ -244,6 +274,8 @@ recorded as answered (hand-copied, because the recorder does not exist yet):
   research doc". Revised after review: "Split: correction + new doc", because
   the added material went beyond a correction.
 - Log binding, after review: "Session file, bind at read (Recommended)".
+- Who commits the log, after the second review: "Auto-stage + /pr tail
+  (Recommended)", against "/pr commits only" and "Tail goes to the next PR".
 - Review-round interference, after review: "Exempt sdd/decisions/
   (Recommended)", against gitignored staging, whose logs a reclaimed container
   would lose.

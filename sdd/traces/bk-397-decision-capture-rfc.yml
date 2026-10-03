@@ -6,8 +6,6 @@ source_items:
 audience:
   - contributor.process
   - contributor.tooling
-expected_ripples:
-  - sdd/backlogid.json
 phases:
   - id: orient
     name: Orient
@@ -77,6 +75,21 @@ phases:
         section: "Step 6 tree captures"
         read_type: reference
         extract: "Porcelain plus git diff HEAD capture, so an append to an already-committed log also trips it; the exclusion must cover both captures. Not named by the reviewer, found by reading beside /ship"
+        outcome: ok
+      - file: tests/scripts/test_claude_hooks.py
+        section: "test_settings_hook_commands_point_at_files_that_exist"
+        read_type: reference
+        extract: "Existence regex matches .sh paths only, so a .py hook is unchecked; with CPython's exit 2 on a missing file that broke D1's fail-open claim. Resolved by a .sh wrapper over scripts/record_decision.py"
+        outcome: ok
+      - file: .claude/hooks/gate-commit.sh
+        section: "(full)"
+        read_type: reference
+        extract: "Runs before every agent git commit, so it is where sdd/decisions/ gets staged; /pr Step 1 commits the tail after the last commit"
+        outcome: ok
+      - file: sdd/traces/_schema.yml
+        section: "expected_ripples"
+        read_type: reference
+        extract: "Paths mechanically touched; my sdd/backlogid.json entry was copied from the schema example and never happened (open-item mints do not change it), so it was dropped"
         outcome: ok
   - id: verify
     name: Verify
