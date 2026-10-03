@@ -9,6 +9,50 @@ audience:
 expected_ripples:
   - "sdd/rfcs/rfc-0018-decision-capture-at-dialog-time.md"
   - "sdd/BACKLOG.md"
+review:
+  # Derived by `hatch run ship-report 1063 --trace-block-only` at head ae36c73.
+  # Do not hand-edit, except a newly required field per sdd/traces/_schema.yml
+  # section review: RFC-0015 D4 makes this script the only producer.
+  derivation: "hatch run ship-report 1063 --trace-block-only"
+  pr: 1063
+  review_rounds: 4
+  submissions: 3
+  findings: 10
+  by_round:
+    - round: 1
+      findings: 5
+      origin: {original: 3, unclassifiable-file: 2}
+      triage: {must-fix: 5}
+      duration_hours: 0.39
+    - round: 2
+      findings: 2
+      origin: {loop-introduced: 1, original: 1}
+      triage: {must-fix: 2}
+      duration_hours: 0.3
+    - round: 3
+      findings: 3
+      origin: {original: 2, unclassifiable-file: 1}
+      triage: {must-fix: 2, unknown: 1}
+      duration_hours: 0.18
+  by_file:
+    - path: "sdd/rfcs/rfc-0018-decision-capture-at-dialog-time.md"
+      findings: 6
+    - path: "sdd/traces/bk-397-step0-failure-probe.yml"
+      findings: 3
+    - path: "sdd/BACKLOG.md"
+      findings: 1
+  untouched_files:
+    []
+  review_driven_commits:
+    - sha: "2e73e01"
+      subject: "BK-397: address PR #1063 review"
+    - sha: "9ac48d2"
+      subject: "BK-397: address PR #1063 review, round 2"
+    - sha: "966c1a1"
+      subject: "BK-397: bring the trace up to date with the review rounds"
+    - sha: "ae36c73"
+      subject: "BK-397: address PR #1063 review, round 3"
+  ci: {verdict: PENDING, failed: 0, pending: 3}
 phases:
   - id: orient
     name: Orient
