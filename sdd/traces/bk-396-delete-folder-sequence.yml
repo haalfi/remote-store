@@ -1,0 +1,189 @@
+id: BK-396
+title: "Decide the kernel's delete_folder sequence around SupportsRemoveFolder"
+trigger: >-
+  BK-389's decision 8 fixed SupportsRemoveFolder, but nine review rounds on
+  PR #1056 each found a new defect in the delete_folder sequence around it.
+  The sequence was split out as BK-396, with a candidate design, five open
+  items, and BK-389's kernel PR blocked on it.
+source_items:
+  - BK-396
+  - BK-389
+audience:
+  - library.maintainer
+  - contributor.process
+expected_ripples:
+  - sdd/backlogid.json
+  - sdd/BACKLOG-DONE.md
+surprising_ripples:
+  - sdd/backlog/bk-394-memory-drivers-accept-adr-0042.md
+phases:
+  - id: orient
+    name: Orient
+    steps:
+      - file: sdd/backlog/bk-396-kernel-delete-folder-sequence.md
+        section: "(full)"
+        read_type: gate
+        extract: "five open items, exit criteria, the candidate and which items refute it"
+      - file: sdd/backlog/bk-389-kernel-step-1-memory.md
+        section: "Decision 8; What it owes, item 8; Depends on"
+        read_type: gate
+        extract: "where the decided sequence and its spec 003 clause land"
+      - file: sdd/rfcs/rfc-0017-contract-kernel-over-thin-drivers.md
+        section: "D1 protocol table, D2, D3 cell enumeration, Impact Performance and Testing"
+        read_type: gate
+        extract: "the rows and bullets that defer to BK-396"
+      - file: sdd/specs/003-backend-adapter-contract.md
+        section: "BE-013, BE-021"
+        read_type: reference
+        extract: "DirectoryNotEmpty listed only for recursive=False; error-path probes fail open, the determinant fails closed"
+      - file: sdd/specs/013-memory-backend.md
+        section: "MEM-014, MEM-026"
+        read_type: reference
+        extract: "Memory's recursive delete detaches the subtree in one locked step"
+      - file: sdd/CLAUDE-REFERENCE.md
+        section: "Ripple-check / Pre-work index"
+        read_type: gate
+        extract: "Backlog item touched: trace, done-register entry linking the dossier"
+      - file: sdd/BACKLOG.md
+        section: "How this file works / Completing work"
+        read_type: gate
+        extract: "done entry shape, the rg sweep after closing"
+  - id: measure
+    name: Measure today and the kernel model
+    steps:
+      - file: src/remote_store/backends/_local.py
+        section: "LocalBackend.delete_folder"
+        read_type: reference
+        extract: "rmtree and rmdir share one handler, every non-ENOTEMPTY OSError becomes PermissionDenied"
+      - file: src/remote_store/backends/_sftp.py
+        section: "SFTPBackend.delete_folder, _map_exception"
+        read_type: reference
+        extract: "stat, listdir, rmdir today; FileNotFoundError NotFound, connection death clears the client"
+      - file: src/remote_store/backends/_s3_boto3.py
+        section: "delete_folder, _children_or_absent_bucket, _reject_file"
+        read_type: reference
+        extract: "list first, HEAD after an empty listing, HEAD fails open"
+      - file: src/remote_store/backends/_sqlalchemy.py
+        section: "SQLBlobBackend.delete_folder, _reject_file"
+        read_type: reference
+        extract: "_reject_file propagates a raise, unlike the S3 and Azure probes"
+      - file: src/remote_store/aio/backends/_azure.py
+        section: "AsyncAzureBackend.delete_folder, _flat_children_or_absent_container"
+        read_type: reference
+        extract: "HNS checks hdi_isfolder first; flat lists twice on a recursive delete"
+      - file: src/remote_store/aio/backends/_graph/backend.py
+        section: "GraphBackend.delete_folder"
+        read_type: reference
+        extract: "GET item, type check, then DELETE; read only, no emulator"
+      - file: tests/backends/fixtures/sftp_inproc.py
+        section: "(full)"
+        read_type: reference
+        extract: "the in-process paramiko server makes SFTP measurable without Docker"
+      - file: tests/backends/fixtures/azurite_async.py
+        section: "(full)"
+        read_type: reference
+        extract: "flat Azure needs Azurite; no Docker daemon here, so Azurite came from npm"
+  - id: design
+    name: Decide
+    steps:
+      - file: sdd/rfcs/rfc-0017-delete-folder-measure.py
+        section: "compare summary, faults, races, trips"
+        read_type: verify
+        extract: "the cells each option changes, put to the maintainer in the interview; a Local driver following links deleted a file through a symlink, which became the sixth decision"
+  - id: fix
+    name: Review-driven decisions
+    steps:
+      - file: sdd/specs/003-backend-adapter-contract.md
+        section: "BE-013, BE-021 (fail-open probe)"
+        read_type: reference
+        extract: "round 1: a raising probe must leave the refusal standing with missing_ok applying, as the none path already does"
+      - file: sdd/rfcs/rfc-0017-delete-folder-measure.py
+        section: "compare extra"
+        read_type: verify
+        extract: "round 1: today's SFTP answers BackendUnavailable when its stat drops, flat Azure NotFound under a concurrent deleter; decisions 7 and 8"
+      - file: sdd/rfcs/rfc-0017-delete-folder-measure.py
+        section: "compare enum"
+        read_type: verify
+        extract: "round 2 refuted the round-1 condition again, so its 64-cell space was enumerated; decision 9 changed 7 cells"
+      - file: src/remote_store/backends/_local.py
+        section: "is_folder, list_folders, iter_children"
+        read_type: reference
+        extract: "round 3: the link rule bound the general stat, which every Local operation follows today; narrowed to delete_folder. My own miss: the Q1 rule leaked into the rejected-option rows until round 3's measuring member re-ran them"
+      - file: sdd/rfcs/rfc-0017-contract-kernel-over-thin-drivers.md
+        section: "D1 Driver protocol (stat, list_page), Entry and Page records"
+        read_type: reference
+        extract: "round 4: Entry and Page could not carry the round-3 link marker (dangling link, the key's own listing, common prefixes), so the divergence check fired and the maintainer chose a follow_links flag; my own miss was rewording the mechanism in round 3 without re-measuring it"
+      - file: sdd/rfcs/rfc-0017-delete-folder-measure.py
+        section: "compare local, compare enum"
+        read_type: verify
+        extract: "round 5, the ceiling: Lt P1 printed 24, not 22, after round 4's nested-link state, and the enumeration lacked the walk's remove_folder(sub), now 88 cells with 9 differing; my own miss was not re-running every section a new fixture state reaches"
+  - id: verify
+    name: Verify
+    steps:
+      - file: sdd/CLAUDE-REFERENCE.md
+        section: "Detailed checklist"
+        read_type: verify
+        extract: "no spec, code or public surface touched; backlog close and trace"
+review:
+  # Derived by `hatch run ship-report 1057 --trace-block-only` at head 4980a83.
+  # Do not hand-edit, except a newly required field per sdd/traces/_schema.yml
+  # section review: RFC-0015 D4 makes this script the only producer.
+  derivation: "hatch run ship-report 1057 --trace-block-only"
+  pr: 1057
+  review_rounds: 5
+  submissions: 5
+  findings: 26
+  by_round:
+    - round: 1
+      findings: 4
+      origin: {original: 4}
+      triage: {must-fix: 4}
+      duration_hours: 0.06
+    - round: 2
+      findings: 3
+      origin: {loop-introduced: 3}
+      triage: {must-fix: 3}
+      duration_hours: 0.2
+    - round: 3
+      findings: 8
+      origin: {loop-introduced: 2, original: 4, unclassifiable-file: 2}
+      triage: {must-fix: 8}
+      duration_hours: 8.93
+    - round: 4
+      findings: 5
+      origin: {loop-introduced: 3, original: 2}
+      triage: {must-fix: 5}
+      duration_hours: 0.17
+    - round: 5
+      findings: 6
+      origin: {loop-introduced: 4, original: 2}
+      triage: {must-fix: 6}
+      duration_hours: 0.61
+  by_file:
+    - path: "sdd/backlog/bk-389-kernel-step-1-memory.md"
+      findings: 16
+    - path: "sdd/backlog/bk-396-kernel-delete-folder-sequence.md"
+      findings: 4
+    - path: "sdd/rfcs/rfc-0017-delete-folder-measure.py"
+      findings: 4
+    - path: "sdd/rfcs/rfc-0017-contract-kernel-over-thin-drivers.md"
+      findings: 1
+    - path: "sdd/traces/bk-396-delete-folder-sequence.yml"
+      findings: 1
+  untouched_files:
+    - "sdd/BACKLOG-DONE.md"
+    - "sdd/BACKLOG.md"
+    - "sdd/backlog/bk-394-memory-drivers-accept-adr-0042.md"
+    - "sdd/backlogid.json"
+  review_driven_commits:
+    - sha: "d9f8c5c"
+      subject: "BK-396: Round 1 fixes: a raising probe under missing_ok, every recursive path tolerates NotFound, summary compares post-state"
+    - sha: "45061d5"
+      subject: "BK-396: Round 2 fixes: one rule for a refusal the probes do not replace, enumerated"
+    - sha: "c69b2c6"
+      subject: "BK-396: Round 3 fixes: link rule scoped to delete_folder, rejected options re-run as recorded, dossier references"
+    - sha: "1017e84"
+      subject: "BK-396: Round 4 fixes: follow_links view for delete_folder, walk listing refusals, race claim dropped"
+    - sha: "4980a83"
+      subject: "BK-396: Round 5 fixes: Lt count 24, walk missing_ok scope, enum gains walk rmdir, none-path refusals stated"
+  ci: {verdict: PENDING, failed: 0, pending: 2}
