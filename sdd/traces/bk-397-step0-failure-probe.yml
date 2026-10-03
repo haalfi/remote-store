@@ -29,7 +29,7 @@ phases:
       - file: sdd/rfcs/rfc-0018-decision-capture-at-dialog-time.md
         section: "Open Question 2"
         read_type: reference
-        extract: "Ran dismissal, wait, duplicate texts, one option, subagent call, interrupt: 0 PostToolUseFailure in 14 payloads. The brief's case a (Esc/close) cannot be told from a denial in the app; the same cross gave Denied by user twice and a sentinel Post once, confounded by a browser message. My miss: I asked the user which control they used only after the divergence appeared"
+        extract: "Ran dismissal, wait, duplicate texts, one option, subagent call, interrupt: 0 PostToolUseFailure in 14 payloads. The brief's case a (Esc/close) cannot be told from a denial in the app; the same cross gave Denied by user twice and a sentinel Post once, confounded by a browser message. My miss: I asked the user which control they used only after the divergence appeared. The maintainer added a restart report (a dialog vanishing on container restart) mid-task; it is recorded as unobserved, with the push-timing consequence marked an inference"
         outcome: ok
   - id: docs
     name: Official docs
@@ -50,7 +50,25 @@ phases:
       - file: sdd/BACKLOG.md
         section: "6. The repo does not mislead the next person / BK-397"
         read_type: verify
-        extract: "Item said dismissal and timeout were the open triggers; now timeout and genuine errors unobserved, failed path undecided"
+        extract: "Item said dismissal and timeout were the open triggers; now nothing fired PostToolUseFailure and the docs exclude denials, open are timeout, restart with a dialog open and the failed path. The diagnosis cap (R2, five lines) forced the wording down each time the item grew"
+        outcome: ok
+  - id: review
+    name: Review rounds
+    steps:
+      - file: sdd/traces/_schema.yml
+        section: "steps / file, extract, outcome"
+        read_type: reference
+        extract: "Round 2 asked for the outcome tag to name the document that failed a reader. The schema says external URLs are not allowed in file and that outcome must not blame a document for the reader's error; existing traces (BK-206) nevertheless carry URLs in file and check_traces accepts them, a schema-versus-practice mismatch left unfiled"
+        outcome: ok
+      - file: scripts/report_trace_outcomes.py
+        section: "ranking key (step file) and docstring"
+        read_type: verify
+        extract: "Confirmed the reviewer's claim: the ranking keys on each step's file, so a misleading tag against the RFC would rank it as a failed document"
+        outcome: ok
+      - file: sdd/CLAUDE-REFERENCE.md
+        section: "PR validation gates, Branch freshness check"
+        read_type: gate
+        extract: "Run before /pr and before each fix push: docs-only diff takes lint plus docs-gate, backlog ID-set gate with --base origin/master"
         outcome: ok
   - id: verify
     name: Verify
