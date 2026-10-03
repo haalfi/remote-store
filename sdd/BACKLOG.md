@@ -800,11 +800,11 @@ CHANGELOG the release body is built from — say what is actually true.
 
 - [ ] **BK-402 — `ci.yml` says `tests/scripts/` does not exercise `remote_store`, and it does**
   spec: — · effort: S · audience: infra.ci
-  The comment above `tooling-tests` (`ci.yml:451`) says `tests/scripts/`
-  exercises scripts and hooks, "not remote_store", but `test_gen_features.py`
-  imports it and two scripts the suite drives read `src/` as text
-  ([audit-022](audits/audit-022-gate-speed-strategies.md) § H1); a selector
-  built on the comment would drop the directory. Open decision: none.
+  The `tooling-tests` comment (`ci.yml:451`) says `tests/scripts/` tests "not
+  remote_store", but `test_gen_features.py` imports it ([audit-022](audits/audit-022-gate-speed-strategies.md)
+  § H1) and an `open` audit hook over Stage 1 finds eight of its test files
+  reading `src/` other than by import; a selector built on the comment would
+  drop the directory. Open decision: none.
 
 ---
 
@@ -826,7 +826,7 @@ coverage floor.
   Detail: [dossier](backlog/bk-398-test-selector-evaluation.md)
 
 - [ ] **BK-399 — The local gate runs every test for every diff, with no selected target for in-progress rounds**
-  spec: — · effort: S · audience: contributor.tooling
+  spec: — · effort: M · audience: contributor.tooling
   `hatch run all` runs all of Stage 1 whatever the diff touched, and tests
   are most of its wall time (audit-022 § H1). Needs BK-398's selector. Open
   decision: whether a third gate branch fits audit-017 R3's one thin target
@@ -852,7 +852,7 @@ coverage floor.
 
 - [ ] **BK-401 — Coverage runs on the slow tracer, where `sysmon` gave identical Stage-1 results**
   spec: — · effort: S · audience: infra.ci, contributor.tooling
-  Three `ci.yml` jobs (`test-primary`, `-sftp`, `test-cassette-pii`) and three
+  Three `ci.yml` jobs (`test-primary`, `test-primary-sftp`, `test-cassette-pii`) and three
   hatch scripts (`test-cov-s1`, `test-cov`, `test-cov-strict`) use the default
   core; [audit-022](audits/audit-022-gate-speed-strategies.md) § L1 measured `sysmon` on local Stage 1 only.
   Open decision: P6's re-measure of the Stage-2 and `--cov-append` paths, then
