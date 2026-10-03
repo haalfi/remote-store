@@ -1,0 +1,151 @@
+id: BK-397
+title: "Interview-mode decisions leave no record in the repo, so their rejected options are unrecoverable"
+trigger: "Reviewing the code-abundance research record, the maintainer observed that it never addresses a decision log written at the time of the decision, and that decisions here are mostly taken in AskUserQuestion dialogs whose content lives only in the session transcript"
+source_items:
+  - BK-397
+audience:
+  - contributor.process
+  - contributor.tooling
+review:
+  # Derived by `hatch run ship-report 1058 --trace-block-only` at head c866725.
+  # Do not hand-edit, except a newly required field per sdd/traces/_schema.yml
+  # section review: RFC-0015 D4 makes this script the only producer.
+  derivation: "hatch run ship-report 1058 --trace-block-only"
+  pr: 1058
+  review_rounds: 4
+  submissions: 4
+  findings: 15
+  by_round:
+    - round: 1
+      findings: 1
+      origin: {original: 1}
+      triage: {refuted: 1}
+      duration_hours: 0.25
+    - round: 2
+      findings: 1
+      origin: {original: 1}
+      triage: {refuted: 1}
+      duration_hours: 0.03
+    - round: 3
+      findings: 7
+      origin: {loop-introduced: 1, original: 6}
+      triage: {must-fix: 6, unknown: 1}
+      duration_hours: 0.13
+    - round: 4
+      findings: 6
+      origin: {loop-introduced: 2, original: 4}
+      triage: {must-fix: 6}
+      duration_hours: 0.63
+  by_file:
+    - path: "sdd/rfcs/rfc-0018-decision-capture-at-dialog-time.md"
+      findings: 10
+    - path: "sdd/research/research-code-abundance-goals-and-values.md"
+      findings: 4
+    - path: "sdd/traces/bk-397-decision-capture-rfc.yml"
+      findings: 1
+  untouched_files:
+    - "sdd/BACKLOG.md"
+    - "sdd/research/research-decision-capture-at-dialog-time.md"
+  review_driven_commits:
+    - sha: "f4e2c8e"
+      subject: "BK-397: code shows behaviour, not whether it was decided"
+    - sha: "eaed6ee"
+      subject: "BK-397: tighten research 2.3 correction to plain claims"
+    - sha: "25aa6f4"
+      subject: "BK-397: address review: session logs bound at read, multi-select outcomes, research split"
+    - sha: "c866725"
+      subject: "BK-397: address second review: fail-open wrapper, binding rule, outcome precedence, log commit"
+  ci: {verdict: GREEN, failed: 0, pending: 0}
+phases:
+  - id: orient
+    name: Orient
+    steps:
+      - file: sdd/research/research-code-abundance-goals-and-values.md
+        section: "2.3 (Three debts, not one); Appendix"
+        read_type: gate
+        extract: "Locate where intent debt is ranked and which controls the appendix claims; the preventive column binds only pre-implementation decisions"
+        outcome: ok
+      - file: sdd/traces/_schema.yml
+        section: "(full)"
+        read_type: reference
+        extract: "Confirm no field records decisions; traces log reads, ripples and review only"
+        outcome: ok
+      - file: sdd/CLAUDE-REFERENCE.md
+        section: "Interview mode"
+        read_type: reference
+        extract: "Existing AskUserQuestion hook is notification only; matcher values are a registered tolerated divergence verifiable only live"
+        outcome: ok
+      - file: .claude/settings.json
+        section: "hooks"
+        read_type: reference
+        extract: "PreToolUse AskUserQuestion matcher exists; no PostToolUse on it"
+        outcome: ok
+  - id: design
+    name: Design
+    steps:
+      - file: sdd/000-process.md
+        section: "Document types"
+        read_type: gate
+        extract: "Research docs take factual corrections only, so the extension had to be framed as a correction (maintainer chose this over a new document); proposal shape is an RFC"
+        outcome: ok
+      - file: sdd/rfcs/rfc-0016-backlog-as-index.md
+        section: "(full)"
+        read_type: reference
+        extract: "Process-RFC structure: Status, Summary, Motivation, D-decisions, Alternatives, Impact with ripples and Acceptance, Open Questions with decided-while-drafting"
+        outcome: ok
+      - file: sdd/BACKLOG.md
+        section: "How this file works; 6. The repo does not mislead the next person"
+        read_type: gate
+        extract: "Item shape at most eight content lines; ID from gen-backlogid --check --remote (BK=397)"
+        outcome: ok
+      - file: sdd/CLAUDE-REFERENCE.md
+        section: "Ripple-check table / Test whose subject is outside src/ or scripts/; Backlog item touched"
+        read_type: reference
+        extract: "HOOKS_PAT ripple for hook tests, carried into the RFC's Impact list for the build"
+        outcome: ok
+  - id: fix
+    name: Review fixes
+    steps:
+      - file: sdd/000-process.md
+        section: "Document types"
+        read_type: gate
+        extract: "Review showed the research update exceeded a factual correction; split it, keeping only the 2.3 re-ranking in the 2026-08-30 record and moving the extension to a new research doc. My first reading had treated the maintainer's framing choice as settling the rule"
+        outcome: ok
+      - file: CLAUDE.md
+        section: "Branching"
+        read_type: reference
+        extract: "Branch names need not carry an ID (fix-streaming-io), so D2 cannot derive the item from the branch; logs became per-session and bound at read time"
+        outcome: ok
+      - file: .claude/skills/ship/SKILL.md
+        section: "Reviewer permissions and the tree check"
+        read_type: reference
+        extract: "Main-tree porcelain must stay unchanged during a round; a recorder append would read as contamination, so sdd/decisions/ is excluded by pathspec"
+        outcome: ok
+      - file: .claude/skills/orchestrate/SKILL.md
+        section: "Step 6 tree captures"
+        read_type: reference
+        extract: "Porcelain plus git diff HEAD capture, so an append to an already-committed log also trips it; the exclusion must cover both captures. Not named by the reviewer, found by reading beside /ship"
+        outcome: ok
+      - file: tests/scripts/test_claude_hooks.py
+        section: "test_settings_hook_commands_point_at_files_that_exist"
+        read_type: reference
+        extract: "Existence regex matches .sh paths only, so a .py hook is unchecked; with CPython's exit 2 on a missing file that broke D1's fail-open claim. Resolved by a .sh wrapper over scripts/record_decision.py"
+        outcome: ok
+      - file: .claude/hooks/gate-commit.sh
+        section: "(full)"
+        read_type: reference
+        extract: "Runs before every agent git commit, so it is where sdd/decisions/ gets staged; /pr Step 1 commits the tail after the last commit"
+        outcome: ok
+      - file: sdd/traces/_schema.yml
+        section: "expected_ripples"
+        read_type: reference
+        extract: "Paths mechanically touched; my sdd/backlogid.json entry was copied from the schema example and never happened (open-item mints do not change it), so it was dropped"
+        outcome: ok
+  - id: verify
+    name: Verify
+    steps:
+      - file: sdd/CLAUDE-REFERENCE.md
+        section: "Ripple-check table / Backlog item touched"
+        read_type: verify
+        extract: "Trace ships in the same PR; audience contributor.* skips CHANGELOG unless a user-facing framework is introduced, which an internal process RFC is not"
+        outcome: ok
