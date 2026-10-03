@@ -1,0 +1,54 @@
+id: BK-397
+title: "Interview-mode decisions leave no record in the repo, so their rejected options are unrecoverable"
+trigger: "RFC-0018 step-0 follow-up: find what fires PostToolUseFailure for AskUserQuestion; the maintainer authorized a temporary local probe"
+source_items:
+  - BK-397
+audience:
+  - contributor.process
+  - contributor.tooling
+expected_ripples:
+  - "sdd/rfcs/rfc-0018-decision-capture-at-dialog-time.md"
+  - "sdd/BACKLOG.md"
+phases:
+  - id: orient
+    name: Orient
+    steps:
+      - file: sdd/rfcs/rfc-0018-decision-capture-at-dialog-time.md
+        section: "D3, D4.2, Open Question 2, Step 0 observations"
+        read_type: gate
+        extract: "Untested: the failed row, Post exclusivity; step 0 saw only a denial"
+        outcome: ok
+      - file: .claude/settings.json
+        section: "hooks"
+        read_type: reference
+        extract: "Probe registered beside the notification hook in settings.local.json; nothing committed changes"
+        outcome: ok
+  - id: probe
+    name: Probe
+    steps:
+      - file: sdd/rfcs/rfc-0018-decision-capture-at-dialog-time.md
+        section: "Open Question 2"
+        read_type: reference
+        extract: "Ran dismissal, wait, duplicate texts, one option, subagent call, interrupt: 0 PostToolUseFailure in 14 payloads. The brief's case a (Esc/close) cannot be told from a denial in the app; the same cross gave Denied by user twice and a sentinel Post once, confounded by a browser message. My miss: I asked the user which control they used only after the divergence appeared"
+        outcome: ok
+  - id: write
+    name: Write up
+    steps:
+      - file: sdd/rfcs/rfc-0018-decision-capture-at-dialog-time.md
+        section: "D3, Open Questions, Step 0 observations"
+        read_type: gate
+        extract: "unanswered row amended for the dismissal sentinel; identical-text caveat removed (tool rejects it); failed row and exclusivity left untested"
+        outcome: ok
+      - file: sdd/BACKLOG.md
+        section: "6. The repo does not mislead the next person / BK-397"
+        read_type: verify
+        extract: "Item said dismissal and timeout were the open triggers; now timeout and genuine errors unobserved, failed path undecided"
+        outcome: ok
+  - id: verify
+    name: Verify
+    steps:
+      - file: sdd/CLAUDE-REFERENCE.md
+        section: "Ripple-check table / Backlog item touched"
+        read_type: verify
+        extract: "Trace ships in the same PR; contributor.* audience needs no CHANGELOG entry for an RFC amendment"
+        outcome: ok

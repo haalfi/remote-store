@@ -3,8 +3,8 @@
 ## Status
 
 Draft, 2026-10-03. Tracked as **BK-397**. Nothing below is built. § Build order
-step 0 ran on 2026-10-03 (§ Step 0 observations); D1, D3 and D4.0 are amended
-to what it observed.
+step 0 ran on 2026-10-03 (§ Step 0 observations), with a failure-probe follow-up
+the same day; D1, D3 and D4.0 are amended to what they observed.
 
 ## Summary
 
@@ -139,7 +139,7 @@ set** is the labels marked `(Recommended)`, usually one and possibly several on 
 |---|---|
 | `failed` | a `failed` event exists |
 | `prefilled` | the `asked` event's `tool_input` carries an answer for the question and the `answered` event's answer equals it |
-| `unanswered` | no `answered` event |
+| `unanswered` | no `answered` event, or the answer is the dismissal sentinel `[User dismissed — do not proceed, wait for next instruction]` (follow-up case a′) |
 | `other` | some answer matches no label (the "Other" free-text path) |
 | `followed` | the answer set equals the recommended set |
 | `alternative` | otherwise: every answer is a label and the set differs from the recommended set, or nothing was recommended |
@@ -158,8 +158,9 @@ choosing it. A multi-select answer is the chosen labels and any free text joined
 by `", "` into one string. A reader matches labels against it as whole
 `", "`-delimited segments, longest label first, so a label that itself contains
 `", "` still parses; any residue is free text and makes the question `other`.
-Answers are keyed by question text, so two questions with identical text in one
-call cannot be told apart.
+Answers are keyed by question text, but the tool rejects identical question
+texts (and duplicate option labels within a question) before `PreToolUse`, so no
+log can contain the collision (follow-up case c).
 
 `prefilled` exists because the tool's input schema accepts an `answers` field,
 and the BK-396 incident is the reason to look rather than assume. Step 0 found
@@ -193,8 +194,9 @@ and the question is classified by the rows below it.
    legitimate act, and the report is how it stays visible. A `tool_use_id`
    with both an `answered` and a `failed` event is also reported: D3 still
    classifies it, but it contradicts the assumption that the two Post events are
-   exclusive, which step 0 could not test: no `failed` event fired in it, so
-   that assumption and D3's `failed` row still need an observation.
+   exclusive. Neither step 0 nor its follow-up could test it: no `failed` event
+   fired in 14 payloads, so that assumption and D3's `failed` row remain
+   unobserved.
 3. **`/pr`.** The skill renders a "Decisions" section from the committed log
    only, after Step 1 has committed the tail, so the body never cites an event
    the PR does not contain. One line per question: header → answer → outcome,
@@ -262,8 +264,9 @@ those three are read.
 
 ## Open Questions
 
-Questions 1 and 4 are answered by step 0, and question 2 only for a denial:
-dismissal and timeout are still open. The answers are summarised in § Step 0
+Questions 1 and 4 are answered by step 0. Question 2 is answered for denial and
+dismissal, not for timeout or genuine tool error, and no trigger of
+`PostToolUseFailure` was found. The answers are summarised in § Step 0
 observations and the text below is kept as asked.
 
 1. **Do answers reach the hook?** The hooks reference documents that
@@ -315,7 +318,7 @@ recorded as answered (hand-copied, because the recorder does not exist yet):
 Answers reach `PostToolUse` as `tool_response.answers`, one string per question
 keyed by question text, with free text unmarked and multi-select joined by
 `", "`. A denied dialog fires nothing after `PreToolUse`, and no
-`PostToolUseFailure` was seen. The payload's `session_id` does not match the
+`PostToolUseFailure` was seen, including in the follow-up below. The payload's `session_id` does not match the
 `Claude-Session` trailer, but the hook process's `CLAUDE_CODE_REMOTE_SESSION_ID`
 does.
 
@@ -391,11 +394,16 @@ both held `"Mike"`.
    `tool_input.answers`, keyed by question text, one string per question. The
    result-text parser is not needed. `PreToolUse` carries none unless the agent
    supplied them (e).
-2. **Answered for a denial only: it sends nothing after `PreToolUse`.**
-   `PostToolUseFailure` did not fire for it. A dismissal distinct from a
-   denial and a timeout were not observed, so whether either fires
-   `PostToolUseFailure` is still open. In the normal flow nothing filled `answers` before
-   the dialog, but the agent can (e), and the user's choice then overrides it.
+2. **Answered for denial and dismissal; `PostToolUseFailure` never fired.** A
+   denial sends nothing after `PreToolUse`. A dismissal is not one outcome: the
+   app's close cross sent nothing after `PreToolUse` (twice, the agent saw
+   `Denied by user`), while a dismissal accompanied by a message from another
+   surface fired `PostToolUse` with the sentinel as the answer (§ Follow-up, a
+   and a′). A timeout was not observed (365 s open, nothing fired). Schema
+   violations never reach a hook. No tried trigger fires `PostToolUseFailure`;
+   a genuine tool error after `PreToolUse` was not produced. In the normal flow
+   nothing filled `answers` before the dialog, but the agent can (e), and the
+   user's choice then overrides it.
 3. Not in step 0's scope.
 4. **No: `session_id` does not match the trailer.** It was
    `"8f551ca6-684d-5d72-b7c0-d6da1ce729ee"`, a UUID (version 5, no match by
@@ -421,9 +429,64 @@ both held `"Mike"`.
   correspond.
 - **Not changed:** the "Post events are exclusive" assumption and D3's `failed`
   row. Neither was contradicted: no `failed` event fired at all, so both stay
-  untested; D4.2 now says so. Both still need an observation, a dismissal or
-  timeout probe being the remaining candidate trigger, before step 1 builds
-  the `failed` path and its tests. D3's `unanswered` row is confirmed by d.
+  untested; D4.2 now says so. D3's `unanswered` row is confirmed by d, and
+  amended by the follow-up below.
+
+### Follow-up: what fires `PostToolUseFailure` (2026-10-03)
+
+Same method and session type as above (`permission_mode` `"auto"`, probe in an
+uncommitted `.claude/settings.local.json`, matcher `AskUserQuestion` on the three
+events, the hook process's `CLAUDE_CODE_SESSION_ID` and
+`CLAUDE_CODE_REMOTE_SESSION_ID` dumped beside each payload; the one sidecar read
+back held this session's `cse_` id, matching its `Claude-Session` trailer).
+Listing the probe directory gave 14 payloads:
+8 `PreToolUse`, 6 `PostToolUse`, 0 `PostToolUseFailure`. Each `PostToolUse`
+shared its `tool_use_id` with exactly one `PreToolUse` (6 pairs); the 2 other
+`PreToolUse` files are the two close-cross dialogs below. `duration_ms` was 1 or 2
+in every Post payload. The user acted on the web app (the close cross is the only
+dismissal control there) and had the session open in a browser as well.
+
+- **a. Dismissal by the app's close cross.** The agent saw `Denied by user`;
+  only `PreToolUse` fired. Identical to step 0's denial, so the cross is a
+  denial to the harness, not a distinct dismissal. Repeated once with nothing
+  sent from the browser (extra call): the same.
+- **a′. Dismissal accompanied by a message from the browser** (extra call, an
+  interrupt attempt that the app does not offer; the user pressed the cross
+  and, in the browser, sent a message). `PreToolUse` then `PostToolUse`, same
+  `tool_use_id`; the agent saw
+  `The user answered: "…"="[User dismissed — do not proceed, wait for next instruction]"`.
+  The payload carried the sentinel as the answer, twice:
+
+  ```json
+  "tool_response": {"questions": […], "answers": {"Extra probe (turn interrupt): …": "[User dismissed — do not proceed, wait for next instruction]"}}
+  ```
+
+  `tool_input.answers` held the same map. Under D3 as first written this reads
+  `other` (it matches no label), which hides a dismissal; hence the
+  `unanswered` row now names the sentinel. What produces the sentinel is not
+  isolated: the cross alone yielded the denial, the cross plus a browser message
+  the sentinel, and a message without the cross was not run.
+- **b. Timeout.** Unobserved. The dialog stayed open 365 s (Pre and Post
+  timestamps 365.4 s apart) with no hook event in between; the user then
+  answered with free text. Whether a timeout exists, and at what length, is
+  unknown.
+- **c. Duplicate question texts.** Not observed at a hook: input validation
+  rejected the call (`Question texts must be unique, option labels must be
+  unique within each question`) before `PreToolUse`, and nothing was written.
+- **d. Schema violation (one option).** Same: rejected by validation ("the
+  person never saw it", `Too small: expected array to have >=2 items`),
+  before `PreToolUse`. Nothing between Pre and Post, nothing at all.
+- **Extra: subagent call.** A general-purpose subagent has no `AskUserQuestion`
+  tool (`No such tool available`, as the subagent reported); no hook fired.
+  This is the subagent's report, confirmed by the absence of new payloads.
+
+**Result.** `PostToolUseFailure` fired in none of them, so D3's `failed` row,
+D4.2's both-events report and "Post events are exclusive" are neither confirmed
+nor contradicted. The only amendments are the `unanswered` sentinel and the
+removal of the identical-text caveat. Still unobserved: a timeout, and any
+genuine tool error after `PreToolUse`. Before step 1 builds the `failed` path,
+decide whether to ship it against a synthetic payload or leave it out until one
+is seen.
 
 ## References
 
