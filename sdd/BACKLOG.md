@@ -796,4 +796,4 @@ CHANGELOG the release body is built from — say what is actually true.
   options, recommendation and answer persist only in the session transcript
   (research § 2.3). RFC-0018 (Draft) proposes hook capture; step 0 and its
   follow-up ran 2026-10-03: no tried trigger fires `PostToolUseFailure`. Open:
-  timeout and tool errors unobserved, `failed` path; then accept RFC-0018.
+  timeout, tool errors, restart with a dialog open unobserved; `failed` path.

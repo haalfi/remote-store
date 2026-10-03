@@ -479,12 +479,26 @@ dismissal control there) and had the session open in a browser as well.
 - **Extra: subagent call.** A general-purpose subagent has no `AskUserQuestion`
   tool (`No such tool available`, as the subagent reported); no hook fired.
   This is the subagent's report, confirmed by the absence of new payloads.
+- **Reported by the maintainer, not observed: container restart with a dialog
+  open.** A long-unanswered dialog sometimes vanishes when the hosting cloud
+  container restarts, with no notice; afterwards the dialog is sometimes shown
+  again and sometimes not. No probe ran across a restart, so what the agent
+  receives (a denial, a lost call, a re-issued one), whether a re-shown dialog
+  keeps its `tool_use_id`, and whether any hook fires are all unknown. Two
+  consequences follow from the design and are inferences. A restart kills the
+  recorder with the session, so a log can end on a lone `asked`, which D3 reads
+  as `unanswered`, indistinguishable from a denial. And the log lives in an
+  ephemeral container until `gate-commit.sh` stages it (D2), so a restart can
+  lose the uncommitted tail along with the dialog. A re-shown dialog under a new
+  `tool_use_id` would leave two `asked` events for one decision, the first
+  `unanswered`.
 
 **Result.** `PostToolUseFailure` fired in none of them, so D3's `failed` row,
 D4.2's both-events report and "Post events are exclusive" are neither confirmed
 nor contradicted. The only amendments are the `unanswered` sentinel and the
 removal of the identical-text caveat. Still unobserved: a timeout, and any
-genuine tool error after `PreToolUse`. Before step 1 builds the `failed` path,
+genuine tool error after `PreToolUse`, and a container restart with a dialog
+open (reported, see above). Before step 1 builds the `failed` path,
 decide whether to ship it against a synthetic payload or leave it out until one
 is seen.
 
