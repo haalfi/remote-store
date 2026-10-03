@@ -37,25 +37,15 @@ phases:
       - file: sdd/rfcs/rfc-0018-decision-capture-at-dialog-time.md
         section: "Step 0 observations / What the official docs say"
         read_type: reference
-        extract: "Raw reads by curl of code.claude.com/docs/en/hooks (PostToolUseFailure, PreToolUse AskUserQuestion) and code.claude.com/docs/en/claude-code-on-the-web (Environment expired), each quoted phrase searched in the file before it was written down. Delivered: validation rejections and permission denials never fire PostToolUseFailure, which explains cases a, c, d. My miss: curl wrote the first download into the repo root instead of tmp/; removed before the commit"
+        extract: "Raw reads by curl of code.claude.com/docs/en/hooks (PostToolUseFailure, PreToolUse AskUserQuestion) and code.claude.com/docs/en/claude-code-on-the-web (Environment expired), each quoted phrase searched in the file before it was written down. Delivered: validation rejections and permission denials never fire PostToolUseFailure, which explains cases a, c, d. My misses: curl wrote the first download into the repo root instead of tmp/ (removed before the commit), and I took two summaries of the docs as sources until the raw pages contradicted them. The claude-code-guide agent's report said AskUserQuestion appears in the docs only as a mods render site (the hooks page has a PreToolUse input table for it, with the answers field) and quoted a 'marked as cut off' passage on the cloud-sessions page that the page does not contain (searched 'cut off' in the downloaded file: no match). A WebFetch summary of the hooks page said the docs make PostToolUse and PostToolUseFailure mutually exclusive (searched 'mutually exclusive' in the raw page: no match). Neither summary is a repo artifact, so no step is tagged misleading against one; summaries of docs pages are not a source"
         outcome: ok
-      - file: sdd/rfcs/rfc-0018-decision-capture-at-dialog-time.md
-        section: "Step 0 observations / What the official docs say"
-        read_type: reference
-        extract: "The claude-code-guide agent's report misled twice, found by reading the raw pages: it said AskUserQuestion appears in the docs only as a mods render site (the hooks page has a PreToolUse input table for it, with the answers field), and it quoted a 'marked as cut off' passage on the cloud-sessions page that the page does not contain (searched 'cut off' in the downloaded file: no match)"
-        outcome: misleading
-      - file: sdd/rfcs/rfc-0018-decision-capture-at-dialog-time.md
-        section: "Step 0 observations / What the official docs say"
-        read_type: reference
-        extract: "A WebFetch summary of the hooks page said the docs make PostToolUse and PostToolUseFailure mutually exclusive; the raw page has no such phrase (searched 'mutually exclusive': no match). Summaries of docs pages are not a source"
-        outcome: misleading
   - id: write
     name: Write up
     steps:
       - file: sdd/rfcs/rfc-0018-decision-capture-at-dialog-time.md
         section: "D3, Open Questions, Step 0 observations"
         read_type: gate
-        extract: "unanswered row amended for the dismissal sentinel; identical-text caveat removed (tool rejects it); failed row and exclusivity left untested"
+        extract: "Amended Motivation 2, D2 (push bound, an inference), D3 (sentinel row and bound, identical-text caveat removed), D4.2 and the Open Questions summary; failed row and exclusivity left untested"
         outcome: ok
       - file: sdd/BACKLOG.md
         section: "6. The repo does not mislead the next person / BK-397"

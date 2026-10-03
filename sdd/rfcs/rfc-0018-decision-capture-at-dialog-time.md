@@ -3,8 +3,9 @@
 ## Status
 
 Draft, 2026-10-03. Tracked as **BK-397**. Nothing below is built. § Build order
-step 0 ran on 2026-10-03 (§ Step 0 observations), with a failure-probe follow-up
-the same day; D1, D3 and D4.0 are amended to what they observed.
+step 0 ran on 2026-10-03 (§ Step 0 observations); D1, D3 and D4.0 are amended to
+what it observed. A failure-probe follow-up the same day amends D2, D3 and D4.2,
+D2 to an inference rather than an observation.
 
 ## Summary
 
@@ -109,9 +110,10 @@ the PR diff shows the log beside the change it explains.
   commit (`/ship`'s close, `/pr`'s own questions) leave a tail: `/pr` Step 1
   commits it as a separate `decision log` commit before its clean-tree check.
   Bound: a commit the maintainer makes by hand outside the agent bypasses the
-  hook, and its dialogs reach the next agent commit instead. A commit also
-  protects the log only once it is pushed: an unpushed commit goes with a
-  reclaimed container (§ Step 0 observations, container restart).
+  hook, and its dialogs reach the next agent commit instead. Inferred, not
+  observed (a maintainer report, never probed; § Step 0 observations,
+  follow-up): a commit protects the log only once it is pushed, since an
+  unpushed commit would go with a reclaimed container.
 
 - **No item ID in the path.** The ID is not knowable at capture time: branch
   names need not carry one (`CLAUDE.md` § Branching lists `fix-streaming-io`),
@@ -512,8 +514,11 @@ dismissal control there) and had the session open in a browser as well.
 
 **Result.** `PostToolUseFailure` fired in none of them, so D3's `failed` row,
 D4.2's both-events report and "Post events are exclusive" are neither confirmed
-nor contradicted. The only amendments are the `unanswered` sentinel and the
-removal of the identical-text caveat. Still unobserved: a timeout, and any
+nor contradicted. The follow-up amends five places (from the diff against
+`origin/master`): Motivation property 2; D2, with a push bound that is an
+inference; D3, the `unanswered` sentinel row and its bound, and the dropped
+identical-text caveat; D4.2, what stays unobserved; and the Open Questions
+summary. Still unobserved: a timeout, and any
 genuine tool error after `PreToolUse`, and a container restart with a dialog
 open (reported, see above). Before step 1 builds the `failed` path,
 decide whether to ship it against a synthetic payload or leave it out until one
