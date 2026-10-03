@@ -225,17 +225,21 @@ every case. RFC-0017 carries the same answers at the question each settles.
      - *Which refusals are probed.* Only a typed `NotFound` and an untyped
        `RemoteStoreError` get the error-path probes: one `stat`, then, for
        a folder still present, one `list_page(key, delimiter="/",
-       limit=1)` where the call can answer `DirectoryNotEmpty`. The answer
-       is absent `NotFound` (to which `missing_ok` applies), file
-       `InvalidPath`, non-empty folder `DirectoryNotEmpty`, and otherwise
-       the driver's refusal stands. A probe that raises answers nothing:
-       the refusal stands, with the probe's exception chained, and
-       `missing_ok` applies to it when it is a `NotFound`. That is BE-021's
-       fail-open rule, which the `parents == "none"` path below also
-       follows; on SFTP a file under `missing_ok` then returns quietly
-       when the probe cannot run. [Added in PR #1057's round 1, the
-       maintainer's decision.] Every
-       other typed refusal passes through unprobed, since a
+       limit=1)` where the call can answer `DirectoryNotEmpty`. The probes
+       replace the refusal with the key's state: absent `NotFound` (to
+       which `missing_ok` applies), file `InvalidPath`, non-empty folder
+       `DirectoryNotEmpty`. **When they do not replace it**, because a
+       probe raised (its exception chained) or the probes found a folder
+       they cannot type further, the refusal stands, and `missing_ok`
+       applies to it when it is a `NotFound`: the refusal is the call's
+       linearisation point, and this is BE-021's fail-open rule, which the
+       `parents == "none"` path below also follows. Since Local's and
+       SFTP's drivers type a file as `NotFound`, a file under `missing_ok`
+       on either returns quietly when the `stat` probe cannot run. [Added
+       in PR #1057's rounds 1 and 2, the maintainer's decisions; the
+       condition's whole space, three contexts × refusal × `stat` ×
+       listing × `missing_ok`, is enumerated by `compare enum`, 64 cells.]
+       Every other typed refusal passes through unprobed, since a
        `BackendUnavailable` or a `PermissionDenied` says nothing about the
        key. Measured on 30 injected non-state faults (`PermissionDenied` on
        Local and SFTP, and SFTP's dead channel before and after a landed
@@ -265,12 +269,14 @@ every case. RFC-0017 carries the same answers at the question each settles.
        walk).* `list_page(prefix, delimiter="/")` down the tree, so a
        folder holding no files still arrives as a common prefix. Then the
        files are deleted and `remove_folder` runs deepest first, `key`
-       last. On the way, a `NotFound` from `delete` or `remove_folder` is
-       tolerated (the entry is already gone), and any other refusal from
-       either gets the probes for its own key: a file swapped for a
-       non-empty directory mid-walk answers `DirectoryNotEmpty`
-       (`compare extra`). Only the last call, on `key`, applies
-       `missing_ok`.
+       last. On the way, a refusal from `delete` or `remove_folder` goes
+       through the probe rule above for its own key, with two differences:
+       an absent outcome, a typed `NotFound` or a probe answering absent,
+       is tolerated (the entry is already gone), and a `delete` whose probe
+       finds a file keeps its own refusal, a file being that call's right
+       type. A file swapped for a non-empty directory mid-walk answers
+       `DirectoryNotEmpty` (`compare extra`). Only the last call, on `key`,
+       applies `missing_ok`.
      - *A recursive delete may answer `DirectoryNotEmpty`*, on a walk,
        when a writer adds under the tree mid-walk. BE-013 lists it only for
        `recursive=False` and forbids nothing, and item 8's clause states
@@ -326,7 +332,10 @@ every case. RFC-0017 carries the same answers at the question each settles.
        an empty or a non-empty directory answers `PermissionDenied`. The
        kernel answers `InvalidPath` for all three, × `recursive` ×
        `missing_ok`. A link to a file keeps `InvalidPath`. Not measured: a
-       permission-denied folder (the container runs as uid 0).
+       permission-denied folder (the container runs as uid 0). With no
+       today to compare against, because Local has no wire to drop, step 5
+       also lists the cells where a failing `stat` probe leaves a file
+       answered `NotFound`, or quiet under `missing_ok` (`compare extra`).
      - Step 4, flat Azure: 2 cells, a concurrent deleter on a recursive
        delete (`d/a` deleted by another client just before the backend
        deletes it, `missing_ok` either way). Today it answers `NotFound`

@@ -1330,11 +1330,17 @@ class Kernel:
                                     M2 the probe's error is raised, the refusal chained
     F  parents none, no delete_tree, F0 a NotFound from delete(f) propagates
        recursive:                   F1 tolerated, as on the walk (decided)
+    Added after round 2, from `compare enum`, which enumerates the condition both rounds refuted:
+    Q  probes that do not replace   Q0 as written after round 1: missing_ok only after a raising stat;
+       the refusal (one raised, or     an absent outcome on the walk fails the delete
+       a folder they cannot type)   Q1 the refusal stands, missing_ok applying to a NotFound; on the
+                                       walk an absent outcome is tolerated, and a delete whose probe
+                                       finds a file keeps its own refusal (decided)
     """
 
-    def __init__(self, drv: Driver, P="P1", D="D1", W="W1", R="R1", M="M1", F="F1") -> None:
+    def __init__(self, drv: Driver, P="P1", D="D1", W="W1", R="R1", M="M1", F="F1", Q="Q1") -> None:
         self.d, self.P, self.D, self.W, self.R = _Counting(drv), P, D, W, R
-        self.M, self.F = M, F
+        self.M, self.F, self.Q = M, F, Q
 
     def probe_raised(self, e, pe, mok):
         if self.M == "M1" and type(e) is NotFound and mok:
@@ -1348,26 +1354,46 @@ class Kernel:
             return not isinstance(e, DirectoryNotEmpty)
         return type(e) is NotFound or type(e) is RemoteStoreError
 
-    def error_path(self, e, key, mok, listing_arm):
+    def error_path(self, e, key, mok, listing_arm, on_way=False, file_op=False):
+        """``on_way``: a delete or remove_folder inside a walk, on an entry under ``key``.
+
+        ``file_op``: the refused call was the walk's ``delete(f)``, for which a file is the right type.
+        """
         if not self.probe_wanted(e):
             raise e
         try:
             k = self.d.stat(key)
         except RemoteStoreError as pe:
-            return self.probe_raised(e, pe, mok)
+            return self._stands(e, mok, on_way, pe, listing=False)
         if k is None:
-            if mok:
+            if mok or (on_way and self.Q == "Q1"):
                 return
             raise NotFound(key, path=key) from e
         if k == "file":
+            if file_op and self.Q == "Q1":
+                return self._stands(e, mok, on_way, None, listing=False)
             raise InvalidPath(key, path=key) from e
         if listing_arm:
             try:
                 ents, dirs = self.d.list_page(key, "/", 1)
             except RemoteStoreError as pe:
-                return self.probe_raised(e, pe, False)
+                return self._stands(e, mok, on_way, pe, listing=True)
             if ents or dirs:
                 raise DirectoryNotEmpty(key, path=key) from e
+        return self._stands(e, mok, on_way, None, listing=False)
+
+    def _stands(self, e, mok, on_way, pe, listing):
+        """The probes did not replace the refusal: it raised, or found a folder they cannot type further."""
+        if self.Q == "Q0":  # as first written: missing_ok only after a raising stat
+            if pe is None:
+                raise e
+            return self.probe_raised(e, pe, False if listing else mok)
+        if type(e) is NotFound and (mok or on_way):
+            return
+        if pe is not None and self.M == "M2":
+            raise pe from e
+        if pe is not None:
+            raise e from pe
         raise e
 
     def delete_folder(self, key, recursive=False, missing_ok=False):
@@ -1420,14 +1446,14 @@ class Kernel:
             except RemoteStoreError as e:
                 if self.W == "W1" and type(e) is NotFound:
                     continue
-                self.error_path(e, f, False, listing_arm=True)
+                self.error_path(e, f, False, listing_arm=True, on_way=True, file_op=True)
         for sub in sorted(folders, key=lambda s: -s.count("/")):
             try:
                 d.remove_folder(sub)
             except RemoteStoreError as e:
                 if self.W == "W1" and type(e) is NotFound:
                     continue
-                self.error_path(e, sub, False, listing_arm=True)
+                self.error_path(e, sub, False, listing_arm=True, on_way=True)
         try:
             d.remove_folder(key)
         except RemoteStoreError as e:
@@ -1470,8 +1496,16 @@ class Kernel:
 
 # --- runners -----------------------------------------------------------------
 
-OPTS = dict(P=("P0", "P1"), D=("D0", "D1", "D2"), W=("W0", "W1"), R=("R1", "R0"), M=("M0", "M1", "M2"), F=("F0", "F1"))
-DEFAULT = dict(P="P1", D="D1", W="W1", R="R1", M="M1", F="F1")
+OPTS = dict(
+    P=("P0", "P1"),
+    D=("D0", "D1", "D2"),
+    W=("W0", "W1"),
+    R=("R1", "R0"),
+    M=("M0", "M1", "M2"),
+    F=("F0", "F1"),
+    Q=("Q0", "Q1"),
+)
+DEFAULT = dict(P="P1", D="D1", W="W1", R="R1", M="M1", F="F1", Q="Q1")
 
 
 def run_cell(drv: Driver, opts, key, rec, mok) -> dict:
@@ -1853,6 +1887,8 @@ def main() -> None:
         summary()
     if "extra" in sect:
         extra()
+    if "enum" in sect:
+        enum()
     if "memory" in sect:
         diff_section(K["memory"], ["P", "D"])
     if "implicit" in sect:
@@ -1916,6 +1952,92 @@ def trips() -> None:
     print("   Local's 'today' is os-level calls through pathlib, not comparable to its primitives; Graph and HNS: read")
 
 
+class ScriptedDriver(Driver):
+    """Every outcome set per cell: the refusal, what the stat probe answers, what the listing probe answers.
+
+    Contexts: "remove_folder" (recursive=False, both probes), "delete_tree"
+    (recursive, stat only), "walk delete" (a file on the way under d; the
+    final remove_folder(d) succeeds).
+    """
+
+    parents = "explicit"
+
+    def __init__(self, context, refusal, stat_out, list_out) -> None:
+        super().__init__()
+        self.ctx, self.refusal, self.stat_out, self.list_out = context, refusal, stat_out, list_out
+        self.has_delete_tree = context == "delete_tree"
+
+    def _out(self, v, key):
+        if v == "raises":
+            raise BackendUnavailable("injected: probe failed", path=key)
+        return v
+
+    def stat(self, key):
+        return self._out(self.stat_out, key)
+
+    def list_page(self, prefix, delimiter="/", limit=None):
+        if self.ctx == "walk delete" and prefix == "d" and limit is None:
+            return ["d/a"], []  # the walk's own listing
+        if self.ctx == "walk delete" and prefix == "d/a" and limit is None:
+            return [], []
+        v = self._out(self.list_out, prefix)
+        return (["x"], []) if v == "non-empty" else ([], [])
+
+    def _refuse(self, key):
+        raise self.refusal(f"refused: {key}", path=key)
+
+    def remove_folder(self, key):
+        if self.ctx == "walk delete" and key == "d":
+            return
+        self._refuse(key)
+
+    def delete_tree(self, key):
+        self._refuse(key)
+
+    def delete(self, key):
+        self._refuse(key)
+
+    def post(self):
+        return []
+
+
+def enum_rows(Q):
+    """Every combination of refusal x stat x listing x missing_ok, per context, under the decided options and Q."""
+    rows = []
+    for ctx in ("remove_folder", "delete_tree", "walk delete"):
+        for refusal in (NotFound, RemoteStoreError):
+            for stat_out in ("raises", None, "file", "folder"):
+                lists = ("raises", "empty", "non-empty") if stat_out == "folder" and ctx != "delete_tree" else ("-",)
+                for list_out in lists:
+                    for mok in (False, True):
+                        drv = ScriptedDriver(ctx, refusal, stat_out, list_out)
+                        r = run_cell(drv, dict(DEFAULT, Q=Q), "d", ctx != "remove_folder", mok)
+                        rows.append(
+                            dict(
+                                ctx=ctx,
+                                refusal=refusal.__name__ if refusal is NotFound else "untyped",
+                                stat=stat_out or "absent",
+                                listing=list_out,
+                                mok=mok,
+                                answer=r["answer"],
+                            )
+                        )
+    return rows
+
+
+def enum() -> None:
+    """The condition rounds 1 and 2 of PR #1057 each refuted, enumerated: what a refusal the probes did not replace answers."""
+    a, b = enum_rows("Q0"), enum_rows("Q1")
+    print(f"\n# Probe outcomes, enumerated: {len(a)} cells per rule; Q0 = as written after round 1, Q1 = uniform")
+    for x, y in zip(a, b):
+        mark = "" if x["answer"] == y["answer"] else "   <- differs"
+        print(
+            f"   {x['ctx']:13} {x['refusal']:8} stat={x['stat']:6} list={x['listing']:9} mok={int(x['mok'])}: "
+            f"Q0 {x['answer']:18} Q1 {y['answer']:18}{mark}"
+        )
+    print(f"   cells that differ: {sum(x['answer'] != y['answer'] for x, y in zip(a, b))}")
+
+
 def extra() -> None:
     """PR #1057 round 1's cells: a probe that raises, the walk's delete refusal, flat Azure's deleter and paging."""
     print("\n# Round-1 cells (today where a wire exists; '-' where none)")
@@ -1929,12 +2051,12 @@ def extra() -> None:
         )
 
 
-DECIDED = {"P": "P1", "D": "D1", "W": "W1", "R": "R1", "M": "M1", "F": "F1"}
+DECIDED = {"P": "P1", "D": "D1", "W": "W1", "R": "R1", "M": "M1", "F": "F1", "Q": "Q1"}
 
 
 def summary() -> None:
-    """Changed-cell counts under the decided options (BK-396): P1 D1 W1 R1 M1 F1, Local's lstat driver (Ll)."""
-    print("\n# Decided options P1 D1 W1 R1 M1 F1, Local driver Ll: changed cells against today")
+    """Changed-cell counts under the decided options (BK-396): P1 D1 W1 R1 M1 F1 Q1, Local's lstat driver (Ll)."""
+    print("\n# Decided options P1 D1 W1 R1 M1 F1 Q1, Local driver Ll: changed cells against today")
 
     def decided(r):
         return all(r["opts"][k] == v for k, v in DECIDED.items()) and r.get("L", "Ll") == "Ll"

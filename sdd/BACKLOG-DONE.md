@@ -248,7 +248,7 @@ if evidence changes; these are retired.
   spec: BE-013, BE-021, MEM-014, MEM-026, GR-043 · effort: M · audience: library.maintainer, contributor.process
   Decided, docs only: BK-389's decision 8 and RFC-0017's D1, D2 and § Impact
   state the sequence. Only a typed `NotFound` or an untyped refusal is probed,
-  and a probe that raises leaves the refusal, `missing_ok` applying;
+  and a refusal the probes do not replace stands, `missing_ok` applying;
   `delete_tree` refuses a file or an absent key; every recursive path tolerates
   a `NotFound` on the way; a recursive delete may answer `DirectoryNotEmpty` under a
   concurrent writer; a symbolic link is never a folder; the `none` table holds.

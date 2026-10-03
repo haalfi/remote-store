@@ -67,7 +67,7 @@ Testing agree.
 ## Outcome (2026-10-02)
 
 All five items are decided, plus one finding the measurement surfaced and
-two that review surfaced (items 7 and 8 below), each
+three that review surfaced (items 7 to 9 below), each
 by the maintainer through the interview with the measured cells in front of
 them. The sequence now lives in
 [BK-389's decision 8](bk-389-kernel-step-1-memory.md#decisions-planning-pr-2026-10-02),
@@ -137,6 +137,23 @@ decided both on measured cells (`compare extra`):
    tolerates a `NotFound` on a listed file**, as the walk does. Today flat
    Azure answers `NotFound` under a concurrent deleter, even with
    `missing_ok=True`, and leaves the rest of the prefix in place.
+
+Item 7's condition, a refusal the probes do not replace, was refuted again on
+a raising listing and on the walk's probes, so it was enumerated (the
+repeat-site check):
+
+9. **One rule for a refusal the probes do not replace.** The space is three
+   contexts × refusal × `stat` × listing × `missing_ok`, 64 cells
+   (`compare enum`, which prints both rules side by side). Under item 7's
+   narrower rule, 3 cells raise `NotFound` to a `missing_ok=True` caller
+   (the refusal says absent and the `stat` finds a folder), and 4 walk
+   cells fail the whole delete: an untyped refusal on an entry already gone
+   answers `NotFound`, and one on an entry still a file answers
+   `InvalidPath`. The maintainer chose one rule: the refusal stands,
+   `missing_ok` applying to a `NotFound`, and on the walk an absent outcome
+   is tolerated and a file delete keeps its own refusal. It changes those 7
+   cells and no other, and every other figure here re-runs unchanged. The
+   alternative weighed was to raise a refuted `NotFound` as untyped.
 
 ## Candidate design
 
