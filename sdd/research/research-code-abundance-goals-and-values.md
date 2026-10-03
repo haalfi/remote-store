@@ -2,7 +2,7 @@
 
 **Date:** 2026-08-30
 **Backlog items:** — (no item; BK-361 was filed *from* this record's validation pass, not by it)
-**Status:** Research complete — the argument and its evidence are settled as of the date above. Point-in-time snapshot per [`sdd/000-process.md` § Document types](../000-process.md): the external telemetry it cites is 2025–2026 vintage and the repo counts in the appendix drift, so read every figure against this date. Sourcing is uneven by design and § 4 marks which rows were read from the primary and which were not.
+**Status:** Research complete — the argument and its evidence are settled as of the date above. Point-in-time snapshot per [`sdd/000-process.md` § Document types](../000-process.md): the external telemetry it cites is 2025–2026 vintage and the repo counts in the appendix drift, so read every figure against this date. Sourcing is uneven by design and § 4 marks which rows were read from the primary and which were not. **Corrected 2026-10-03:** § 2.3 ranked intent debt as "partially repayable", which is wrong for everything the code does not show, including whether its behaviour was decided at all. The sentence is flagged in place and the correction follows its paragraph; nothing else in this record changed.
 
 ## TL;DR
 
@@ -300,7 +300,9 @@ game.** The three debts differ in whether they can be serviced late, and this is
 the asymmetry neither source draws out. Technical debt is fully repayable:
 badly-shaped code can be refactored into good shape at any later date, by someone
 who never saw the original. Intent debt is partially repayable: rationale can be
-reconstructed after the fact, degraded and lossy, but reconstructed. **Cognitive
+reconstructed after the fact, degraded and lossy, but reconstructed. _(Corrected
+2026-10-03: mostly wrong. Only behaviour is recoverable from the code; see the
+correction after the next paragraph.)_ **Cognitive
 debt is repayable only forward, never backward.** Understanding can be rebuilt
 later — the trial in the appendix rebuilds some of it, and cheaply — but no
 later action makes you have understood at the moment you needed to, and the
@@ -312,6 +314,17 @@ made while the theory was thin.
 An earlier draft said "not repayable at all", which the appendix contradicts.
 The narrower claim is also the stronger one: prevention does not win because
 nothing else could work, it wins because nothing else arrives in time.
+
+**Correction (2026-10-03): most of intent debt is repayable only forward.** The
+code records behaviour, not decisions: a deliberate choice and an accident of
+implementation look the same in it
+([`000-process.md`](../000-process.md#attribution-inside-the-intent-domain):
+uniformity is not proof of intent). Three things are never in the code: that
+the behaviour was chosen, which alternatives were rejected, and what was known
+when it was chosen. Recorded at the moment of decision or not at all, they
+cannot be repaid later. What a later reader reconstructs is a guess about why,
+and the guess fails both ways: an accident is read as intent, or a decision as
+an accident and removed, like the financial safeguard above.
 
 That is why the preventive column is load-bearing, and it is where the RCT above
 and Naur converge. Both are statements about *when* understanding forms — mode
