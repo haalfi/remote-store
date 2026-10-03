@@ -6,15 +6,24 @@ gate at `d74445c`. The question is strategic: which work each gate should run
 at which point of a change's life, not how to make a single test faster.
 `ci-full.yml`, `drift-guard.yml` and `mutation.yml` are in scope only as the
 backstop a narrower gate would lean on.
-**Method:** CI figures are per-job and per-step timings of run
-[37030933567](https://github.com/haalfi/remote-store/actions/runs/37030933567)
-(BL-011, the latest code-changing master push), read through the Actions
-`list_workflow_jobs` API. Local figures come from a Python 3.13 venv on a
-4-core container: Stage-1 runs at `-n 4`, with per-test times from
-`--junitxml` (`junit_duration_report=total`, setup and teardown included) and
-aggregated by test path. Collection time comes from `pytest --collect-only`. The
-coverage-core comparison ran Stage 1 twice, with `COVERAGE_CORE=ctrace` and
-`=sysmon`, and compared each file's `executed_lines` in the two JSON reports.
+**Method:**
+- **CI figures** are per-job timings from the Actions `list_workflow_jobs` API,
+  for two runs on PR #1054 (BL-011):
+  - the `pull_request` run
+    [37028529993](https://github.com/haalfi/remote-store/actions/runs/37028529993),
+    a code-changing push and the PR gate this audit is about;
+  - the master-push run
+    [37030933567](https://github.com/haalfi/remote-store/actions/runs/37030933567),
+    used only where L3 contrasts the two.
+- **Local figures** come from a Python 3.13 venv on a 4-core container:
+  - Stage-1 runs at `-n 4`, with per-test times from `--junitxml`
+    (`junit_duration_report=total`, setup and teardown included), aggregated by
+    test path.
+  - Collection counts come from `pytest --collect-only`.
+  - The coverage-core comparison ran Stage 1 twice, with `COVERAGE_CORE=ctrace`
+    and `=sysmon`, and compared each file's `executed_lines` in the two JSON
+    reports.
+
 This is a **report-only** audit; nothing was modified. The proposals are
 advisory.
 
@@ -26,27 +35,32 @@ advisory.
 
 **Both gates run the whole suite on every change, at every stage of the
 change.** That is the right policy for the last gate before `master` and the
-wrong one for the loop that precedes it. Locally, `hatch run all` runs all
-11,932 Stage-1 tests whatever the diff touched. In CI, every push to a PR,
-including each `/ship` review-round push, starts the full 29-job gate. The
-repo already narrows by *file class* (`CODE_PAT`/`DOCS_PAT`/`FORMAL_PAT`/
-`HOOKS_PAT`) and by *tier* (Stage 1 versus Stage 2, ADR-0032). It never
+wrong one for the loop that precedes it.
+- **Locally,** `hatch run all` runs all 11,932 Stage-1 tests whatever the diff
+  touched.
+- **In CI,** every push to a PR starts the full gate, including each `/ship`
+  review-round push. Run 37028529993 ran 28 jobs, with 1 skipped.
+
+The repo already narrows by *file class* (`CODE_PAT`/`DOCS_PAT`/`FORMAL_PAT`/
+`HOOKS_PAT`) and by *tier* (Stage 1 versus Stage 2,
+[ADR-0043](../adrs/0043-tiered-ci-gate-derived-interpreter-set.md)). It never
 narrows by *what the change can reach*.
 
-The proposed shape is two speeds. While work is in progress, gates run only
-what a **dependency map** says the diff can affect. Once, before merge, the
-full gate runs as the safety net. `ci-full.yml` stays as it is, the post-merge
-backstop. A secondary finding is that the per-PR gate has drifted from the 257 s
-ADR-0032 measured to 435 s. Most of the gap is queueing, not test time (H2).
+The proposed shape is two speeds:
+- **While work is in progress,** gates run only what a **dependency map** says
+  the diff can affect.
+- **Once, before merge,** the full gate runs as the safety net.
+
+`ci-full.yml` stays as it is, the post-merge backstop.
 
 | ID | Finding | Gate |
 | --- | --- | --- |
 | H1 | No change-scoped selection: every run pays for the whole suite | local + CI |
-| H2 | The 20-job cap queues the critical-path job for 118 s | CI |
 | M1 | Every in-progress PR push runs the full pre-merge gate | CI |
-| M2 | Shard timings cover 64% of collected tests | CI |
+| M2 | Shard timings cover 70% of the tests the primary shards split | CI |
 | L1 | Coverage runs on the slow tracer where sysmon is available | local + CI |
 | L2 | One PII regex is quadratic and costs 157 s of a local run | local |
+| L3 | The PR gate's critical path waits 30 s for a runner slot | CI |
 
 ---
 
@@ -71,16 +85,40 @@ the JUnit report, 11,932 tests, 721 s total):
 | `tests/backends/s3/` | 400 | 43 |
 | everything else | 4,052 | 78 |
 
-Two observations show how much a map would select away:
+Two observations show how much a map would select away, and where it must not:
 
-- **`tests/scripts/` is 2,064 tests (17%) that a `src/` change cannot reach.**
-  CI already runs them once, in `tooling-tests`. The local gate runs them on
-  every `all`.
-- **Conformance is parametrized by backend.** Of the 4,649 conformance tests,
-  727 are `s3`, 563 `local`, 556 `azure`, 364 `sftp`, 353 `s3_pyarrow`, 349 `sqlblob`, 212
-  `graph`, 146 `sqlquery` and 56 `http` (the backend name in the test id; 775
-  `memory` and 548 with no backend id). A change to `backends/_sftp.py` reaches
-  the sftp column plus `tests/backends/sftp/`, not the other seven backends.
+- **Conformance is parametrized by backend.** The 4,649 conformance tests split
+  by the backend name in their test id:
+
+  | Backend | Tests |
+  | --- | --- |
+  | `memory` | 775 |
+  | `s3` | 727 |
+  | `local` | 563 |
+  | `azure` | 556 |
+  | no backend id | 548 |
+  | `sftp` | 364 |
+  | `s3_pyarrow` | 353 |
+  | `sqlblob` | 349 |
+  | `graph` | 212 |
+  | `sqlquery` | 146 |
+  | `http` | 56 |
+
+  A change to `backends/_sftp.py` reaches the `sftp` column plus
+  `tests/backends/sftp/`. It does not reach the nine other named backend
+  columns.
+- **`tests/scripts/` is 2,064 tests (17%), but it is not unreachable from
+  `src/`.**
+  - `tests/scripts/test_gen_features.py` imports `remote_store._retry`,
+    `remote_store.backends._http`, `remote_store.backends._s3_base` and `Store`.
+  - It also drives `scripts/gen_features.py`, which reads
+    `src/remote_store/_registry.py`.
+  - `test_check_test_placement.py` imports `remote_store` at module level.
+  - A `Grep` for `remote_store` over `tests/scripts/` matches 21 files.
+
+  So a map has to place these per test file, not exclude the directory. The
+  `ci.yml` comment above `tooling-tests` ("not remote_store") makes the same
+  wrong claim.
 
 **Why a static import map is not enough.** Conformance tests reach a backend
 through the fixture registry (`tests/backends/fixtures/`), not by importing it,
@@ -89,51 +127,31 @@ map has to be either:
 
 1. **Coverage-derived.** Per-test contexts (`coverage run --context=test` or
    `pytest-testmon`) record which source lines each test executed. A test is
-   selected when the diff touches a line or file it executed. This is precise,
-   needs a periodic full run to stay fresh, and its compatibility with `xdist` has
-   to be verified before relying on it.
+   selected when the diff touches a line or file it executed.
+   - It is precise, and would pick up the `tests/scripts/` dependencies above
+     on its own.
+   - It needs a periodic full run to stay fresh.
+   - Its compatibility with `xdist` has to be verified before relying on it.
 2. **Declared.** A committed path-to-selection table in the style of
-   `scripts/drift_smoke_map.py`'s `SMOKE_TARGETS`. For example `backends/_sftp.py`
-   would select `tests/backends/sftp/` plus `conformance -k sftp`, and a file
-   under `scripts/` would select its `tests/scripts/test_<name>.py`. Any
-   unmapped path selects everything. This is cheap and reviewable, but drifts
-   like any hand table, so it needs a drift check under `sdd/DRIFT-RULES.md`.
+   `scripts/drift_smoke_map.py`'s `SMOKE_TARGETS`.
+   - For example, `backends/_sftp.py` would select `tests/backends/sftp/` plus
+     `conformance -k sftp`.
+   - Any unmapped path selects everything.
+   - It is cheap and reviewable, but drifts like any hand table, so it needs a
+     drift check under `sdd/DRIFT-RULES.md`.
 
 Either way, the **fail-open rule** is what keeps it safe. Anything the map
-cannot place must select the full suite: `conftest.py`, `tests/_helpers.py`,
-fixtures, `_store.py` and the other core modules every backend passes through,
-`pyproject.toml`, and dependency or CI files.
+cannot place must select the full suite:
+- `conftest.py`, `tests/_helpers.py`, and fixtures;
+- `_store.py` and the other core modules every backend passes through;
+- `pyproject.toml`, dependency files, and CI files.
+
+The `tests/scripts/` case shows the rule has to hold for a directory as well as
+for a file: a directory is excluded only when nothing in it reaches the change.
 
 **What must stay full.** The 95% coverage floor is a whole-suite property, so a
 selected run must never assert it. It belongs to the pre-merge full run (M1)
 and to `test-cov-strict`.
-
-### H2 — The 20-job cap queues the critical path
-
-**The PR gate's wall clock is set by when `test-primary (1)` gets a runner, not
-by how long it runs.** In the measured run, its dependency `prepare-images`
-finished at +42 s, but the job started at +160 s, because 29 jobs compete for
-20 slots (ADR-0032). It ran 252 s and ended at +412 s; `gate` ended at +435 s.
-
-Timeline (seconds from run creation; job duration, then start → end):
-
-| Job | Duration | Start → end |
-| --- | --- | --- |
-| `test-primary (1)` | 252 | 160 → 412 |
-| `test-primary (2)` | 213 | 115 → 328 |
-| `test-primary-sftp` | 172 | 118 → 290 |
-| `verify-formal` | 225 | 56 → 281 |
-| `test (3.14, 2)` | 186 | 73 → 259 |
-| `pyarrow-major-check` ×2, `typecheck` ×2, `package`, `notebooks` | 9–60 each | all started by +95 |
-
-Six short jobs took slots ahead of the three `test-primary*` jobs. Giving the
-critical path its slot first (merging the short jobs into one or two, or making
-them `needs:` the primary jobs) would let `test-primary (1)` start at about +45 s
-and end at about +300 s. This is an estimate from the timeline, not a
-measurement.
-
-This also explains the drift from ADR-0032's measured 257 s. The job count has
-grown since, while the cap has not.
 
 ---
 
@@ -145,38 +163,55 @@ grown since, while the cap has not.
 `ci.yml` triggers on every `pull_request` push. `cancel-in-progress` limits the
 waste to superseded runs. It does not narrow what a run does.
 
-Evidence: PR #1058 (BK-397) produced CI runs 4962, 4963, 4965 and 4966 within
-20 minutes on 2026-10-03, two of them cancelled. Each run that survives pays the
-full fan-out against the job cap. That fan-out is what H2 shows queueing.
+Evidence from two PRs:
+- **PR #1054 (BL-011):** 8 completed CI runs, all full and all green, between
+  14:04 and 15:52 on 2026-10-02 (`list_workflow_runs` on its head branch). Each
+  run took between 5 m 15 s and 6 m 16 s (`run_started_at` to `updated_at`).
+  The last one only added a trace, but `setup` diffs the whole PR against its
+  base, so the change class never drops back to docs-only.
+- **PR #1058 (BK-397):** runs 4962, 4963, 4965 and 4966 within 20 minutes on
+  2026-10-03, two of them cancelled.
 
-The two-speed shape, using only primitives a personal account has (ADR-0032:
-no merge queue):
+The two-speed shape uses only primitives a personal account has; ADR-0043's
+reversal clause names merge-queue capacity as missing. **The PR's draft state is
+the single selector:**
 
-- **In progress (draft PR, or no `ready` label):** lint, typecheck, and the H1
-  map-selected tests on the primary interpreter. That is a handful of jobs.
-- **Pre-merge (`ready_for_review`, or a label, or the PR is not a draft):** the
-  current full `ci.yml` gate, unchanged, including the coverage floor. Branch
-  protection requires its `gate` job, so nothing merges without one full green
-  run on the final head.
+- **Draft PR: in-progress lane.** Lint, typecheck, and the H1 map-selected
+  tests on the primary interpreter. That is a handful of jobs.
+- **Non-draft PR: pre-merge lane.** This covers every non-draft PR, including
+  one opened as non-draft and one marked `ready_for_review`. It runs the current
+  full `ci.yml` gate, unchanged, including the coverage floor. Branch protection
+  requires its `gate` job, so nothing merges without one full green run on the
+  final head.
 - **Post-merge:** `ci-full.yml` as today.
 
-The open risk is a push after the full run. A re-push to a ready PR must re-run
-the full gate. The `pull_request` `synchronize` event on a non-draft PR does
-this naturally, but the policy must be stated so that convenience does not
-erode it.
+The open risk is a push after the full run. A re-push to a non-draft PR must
+re-run the full gate. The `pull_request` `synchronize` event on a non-draft PR
+does this under the selector above, but the policy must be stated so that
+convenience does not erode it.
 
-### M2 — Shard timings cover 64% of collected tests
+### M2 — Shard timings cover 70% of the tests the primary shards split
 
-**`pytest-split` balances on stale data.** `.test_durations_pass1` holds 7,612
-entries (`len(json.load(...))`), while Stage 1 collects 11,932. That is 64%
-coverage, and unknown tests are weighted by the average. In the measured run the
-two primary shards took 213 s and 172 s for the pytest step.
+**`pytest-split` balances on stale data.**
+- **Timed:** `.test_durations_pass1` holds 7,612 entries
+  (`len(json.load(...))`), none under `tests/scripts/`.
+- **Collected:** the population the primary shards split was measured with
+  `pytest --stage=2 --ignore=tests/scripts --deselect …TestCommittedCassettePIISweep --collect-only`.
+  It collected 11,116 tests. 10,799 remain after dropping the `sftp_docker`
+  ids, which xdist workers filter out.
+- **Overlap:** 7,560 of those 10,799 (70%) have an entry. 52 entries name tests
+  that no longer exist.
+- **Effect:** unknown tests are weighted by the average. In run 37028529993 the
+  two primary shards took 229 s and 200 s as jobs.
 
-ADR-0032 records the refresh as a manual duty (`sdd/CI-OPERATIONS.md`
-§ Durations-refresh). A strategic fix is to let `ci-full.yml`, which already
-runs the full suite on every master push, publish fresh durations as an
-artifact, and have the PR shards consume the latest one. The duty becomes a
-pipeline instead of a reminder.
+Caveat: the collection ran locally without the Stage-2 services. CI's set may
+differ by the live-only fixtures.
+
+ADR-0043 keeps the refresh as a manual duty (§ Consequences, "Unchanged
+duties"; runbook in `sdd/CI-OPERATIONS.md` § Durations-refresh). A strategic fix
+lets `ci-full.yml`, which already runs the full suite on every master push,
+publish fresh durations as an artifact. The PR shards then consume the latest
+one, and the duty becomes a pipeline instead of a reminder.
 
 ---
 
@@ -185,9 +220,17 @@ pipeline instead of a reminder.
 ### L1 — Coverage runs on the slow tracer
 
 **On Python 3.12+, `COVERAGE_CORE=sysmon` removes almost all coverage
-overhead with identical results.** Local Stage 1 at `-n 4` measured 251 s
-without coverage, 310 s with the default core, and 250 s with sysmon. Covered
-lines were 10,805 under both cores, and 0 files differed in `executed_lines`.
+overhead with identical results.** Local Stage 1 at `-n 4` measured:
+
+| Coverage | Wall time |
+| --- | --- |
+| none | 251 s |
+| default core | 310 s |
+| `sysmon` | 250 s |
+
+Covered lines were 10,805 under both cores, and 0 files differed in
+`executed_lines`.
+
 This applies to `test-primary*` (3.13) and `test-cov-s1`. `test-cov-branch` is
 outside the gate, and branch coverage under sysmon needs its own check before it
 is used there.
@@ -195,34 +238,69 @@ is used there.
 ### L2 — A quadratic PII regex dominates the local run
 
 **`bare email address` in `tests/backends/fixtures/_cassettes.py:180` costs
-157 of the 160 worker-seconds of `TestCommittedCassettePIISweep`.** The pattern
-`[A-Za-z0-9._%+-]+@…` restarts at every character of long base64 runs. A
-leading `(?<![A-Za-z0-9._%+-])` lets a match start only at a run boundary. It
-took 0.14 s and gave identical verdicts on all 478 committed cassette files
-(359 azure, 119 graph) and on three seeded probes. CI already isolates the sweep
-in `test-cassette-pii` (98 s step). Locally it runs inside every `all`. This is
-a defect, not a strategy; it is listed so the follow-up has its evidence.
+157 of the 160 worker-seconds of `TestCommittedCassettePIISweep`.**
+- **Cause:** the pattern `[A-Za-z0-9._%+-]+@…` restarts at every character of
+  long base64 runs.
+- **Fix:** a leading `(?<![A-Za-z0-9._%+-])` lets a match start only at a run
+  boundary.
+- **Measured:** the anchored form took 0.14 s and gave identical verdicts on all
+  478 committed cassette files (359 azure, 119 graph) and on three seeded
+  probes.
+
+CI already isolates the sweep in `test-cassette-pii`. Locally it runs inside
+every `all`. This is a defect, not a strategy; it is listed so the follow-up has
+its evidence.
+
+### L3 — The PR gate's critical path waits 30 s for a runner slot
+
+**On a `pull_request` run, the 20-job cap delays the critical path by about
+30 s.**
+- **In run 37028529993:** `prepare-images` finished at +42 s, and
+  `test-primary (1)` started at +72 s and ended at +301 s. `gate` ended at
+  +326 s. At most 19 `ci.yml` jobs ran at once, computed from each job's
+  `started_at`/`completed_at`.
+- **Who held the slots:** the short jobs `package`, `notebooks`, `typecheck` ×2
+  and `pyarrow-major-check` ×2 (18 to 50 s each) started at +32 to +34 s, ahead
+  of the three `test-primary*` jobs.
+
+Ordering or merging those short jobs, as in P4, would save at most the 30 s
+wait.
+
+**The master-push figure is not this finding.** On the master push
+37030933567, `test-primary (1)` waited from +42 s to +160 s. Three other
+workflows held slots for that commit: `ci-full.yml` (four `test-full` jobs for
+the whole window), CodeQL and Docs. A `pull_request` run does not start
+`ci-full.yml`. Master-push contention is weighed against `ci-full`'s jobs, not
+against `ci.yml`'s short ones.
 
 ---
 
 ## Not proposed
 
-- **More xdist workers or another `--dist` mode.** ADR-0032 measured the suite
-  as CPU-bound; `-n 8/12` did not help.
+**The rejected levers all add parallelism to a suite that is CPU-bound and
+slot-limited, so none of them changes how much work a gate does.** The
+constraints are ADR-0032's measurements, which ADR-0043 adopts as its evidence.
+
+- **More xdist workers or another `--dist` mode.** `-n 8/12` was no faster than
+  `-n auto`.
 - **Thread-based test execution, or free-threaded CPython.** It does not help a
   CPU-bound pytest suite under the GIL. A free-threaded build fits a separate
   thread-safety lane, not gate speed.
-- **More CI shards.** These hit the same 20-job cap as H2. Sharding the
-  live-backend tier re-pays fixture setup (ADR-0032).
+- **More CI shards.** These compete for the same 20 slots as L3. Sharding the
+  live-backend tier re-pays fixture setup.
 
 ## Proposals (advisory)
 
+**P1 to P3 carry the strategy, which is to run less while work is in progress;
+P4 to P7 are independent and smaller.** None of them lifts the full pre-merge
+run or the coverage floor.
+
 | # | Proposal | Addresses | Notes |
 | --- | --- | --- | --- |
-| P1 | Dependency map with fail-open rule, plus a drift check | H1 | Decide coverage-derived versus declared first; both stay fail-open |
+| P1 | Dependency map with fail-open rule, plus a drift check | H1 | Decide coverage-derived versus declared first; both stay fail-open, including for `tests/scripts/` |
 | P2 | `hatch run` target that runs map-selected tests; `all` keeps the full run for the pre-push moment | H1 | The coverage floor is never asserted on a selected run |
-| P3 | Two-speed `ci.yml`: draft runs the selected lane, ready runs the full gate | M1, H2 | ADR amending ADR-0032; the full gate stays required for merge |
-| P4 | Consolidate short CI jobs so `test-primary*` start first | H2 | Lowers job count independently of P3 |
+| P3 | Two-speed `ci.yml`: a draft PR runs the selected lane, a non-draft PR runs the full gate | M1 | A new ADR amending ADR-0043; the full gate stays required for merge |
+| P4 | Start `test-primary*` before the short CI jobs | L3 | At most about 30 s on a PR run |
 | P5 | `ci-full.yml` publishes durations; PR shards consume them | M2 | Retires the manual refresh duty |
 | P6 | `COVERAGE_CORE=sysmon` on 3.12+ coverage runs | L1 | Re-measure covered lines on CI before switching |
 | P7 | Anchor the email PII regex | L2 | Bug-fix protocol: failing timing test first |
