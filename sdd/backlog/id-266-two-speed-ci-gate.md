@@ -25,7 +25,10 @@ has an answer:
 
 1. **Conversion must run the full lane.** `ci.yml`'s `pull_request` trigger
    has no `types:`, so marking a draft ready with no new push starts no run.
-   Add `ready_for_review`.
+   A `types:` key replaces GitHub's defaults rather than extending them, so
+   the key must restate them: `types: [opened, synchronize, reopened,
+   ready_for_review]`. The lane split must also hold for `reopened`, which
+   can fire on a draft.
 2. **Protection must require a check only the full lane produces.** If the
    draft lane also reports `gate`, a selected run satisfies branch protection
    and the merge invariant (one full green run on the final head) breaks.

@@ -24,8 +24,10 @@ Stage-1 suite as the control group, per audit-022's P1 row. The criteria:
 - time saved;
 - missed failures, on the seeded changes listed under audit-022's "P1's seeded
   changes" (a single miss makes that path class fail open, or rejects the tool);
-- operating cost, including the two open interactions § H1 names: `xdist` and
-  `pytest-cov`, which both instrument through coverage.py;
+- operating cost, including the three open interactions § H1 names: the
+  runtime tools under `xdist`; the runtime tools against `pytest-cov`, since
+  both of those instrument through coverage.py; and non-Python inputs,
+  whether the map can record a dependency on a data file at all;
 - **portability (§ M1):** whether a map built on one run and interpreter
   selects correctly on another. ID-266 needs this answered before it can
   choose a map transport.
