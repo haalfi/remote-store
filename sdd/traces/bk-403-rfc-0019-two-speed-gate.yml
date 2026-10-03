@@ -259,6 +259,25 @@ phases:
         extract: >-
           Three test files import or read examples directly (Grep count 35
           hits); the examples row now selects them
+  - id: fix9
+    name: Fifth review, verified, one point pushed back
+    steps:
+      - file: .github/workflows/ci.yml
+        section: "test / test-primary run lines; test-primary-sftp exit-5 note"
+        read_type: reference
+        extract: >-
+          --splits 2, --ignore=tests/scripts, PII --deselect and --stage=1
+          confirmed; bare pytest falls back to testpaths=tests. D6 gains a
+          per-job survival rule, unsharded fast-lane jobs, and no exit-5-as-pass
+      - file: tests/scripts/test_ship_report.py
+        section: "lines 43, 523, 856"
+        read_type: reference
+        extract: >-
+          Reads sdd/traces/*.yml and sdd/BACKLOG-DONE.md, which are DOCS_PAT
+          only while tooling-tests runs on code or hooks; so the reviewer's
+          "none of these is a merge-barrier hole" is wrong for DOCS_PAT reads.
+          The narrower class property is adopted, and the Phase 0 audit is told
+          to list those cases rather than excuse them
   - id: verify
     name: Verify
     steps:

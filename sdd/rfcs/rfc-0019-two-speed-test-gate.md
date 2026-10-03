@@ -259,8 +259,13 @@ off.**
 - **The non-code classification fails toward code.** Because a non-code run
   posts `merge-gate`, a misclassification is a merge-barrier defect, not a
   slowdown.
-  - No source, test, configuration, dependency, generated or workflow path may
-    classify as non-code.
+  - **The property the barrier needs:** every tracked file a test reads or
+    imports classifies into a class whose jobs run that test. "Classify as
+    code" is too broad. It would undo deliberate carve-outs whose own jobs run
+    the reading tests: `.claude/hooks/` and the RFC-0015 scripts are
+    `HOOKS_PAT` (run by `tooling-tests`, `ci.yml` comment above `HOOKS_PAT`),
+    and `sdd/formal/MemoryBackend-py/`, which `tests/backends/dafny/_helpers.py`
+    imports, is `FORMAL_PAT` (run by `verify-formal`).
   - An error in the classifier itself selects the code class and the full
     lane.
   - The class outputs are recorded in the same structured output as the
@@ -275,7 +280,13 @@ off.**
     land before Phase 4.
   - **Phase 0 audits every class pattern:** each literal path in `CODE_PAT`,
     `DOCS_PAT`, `FORMAL_PAT`, `TLA_PAT` and `HOOKS_PAT` must match a tracked
-    file, and every tracked file a test reads must classify as code.
+    file, and every tracked file a test reads must meet the property above.
+    The audit is expected to find more than BUG-302. `tests/scripts/` tests read
+    `sdd/` files that are `DOCS_PAT` only, and `tooling-tests` runs only for
+    `code` or `hooks`, so those tests do not run on a docs-only PR today. Each
+    such case is listed. It is then either moved to a class whose jobs run the
+    test, or recorded as accepted because a `docs-gate` check covers the same
+    claim.
   - **Phase 4's classifier migration carries this as a test.** The history
     replay must show identical class outputs, with one exception: a
     non-code → code change is allowed when it is a listed correction, such as
@@ -436,8 +447,13 @@ the result and are always unioned, never skipped:
    The filter goes through the fixture registry (`fixture_params` honours an
    allowlist of fixture ids), not `-k`. `-k s3` also matches `s3_pyarrow` and
    `s3_boto3`, which `SMOKE_TARGETS` already works around.
-4. **Text readers.** A generated table maps source globs to the tests that read
-   them as text, for `src/`, `tests/` and `scripts/` alike. It is built by two
+4. **Text readers.** A generated table maps `.py` source globs to the tests
+   that read them as text, for `src/`, `tests/` and `scripts/` alike. Non-Python
+   inputs (cassettes, `fixtures.toml`, generated artifacts) are out of its
+   scope. They are owned by their explicit layer-1 rows, and any other
+   non-Python file falls to the unmatched row and runs FULL. This matches
+   research § "If it is ever built" ("`.py` files as text"), and it keeps the
+   pilot's "listed in the inventory → FULL" rule from overriding those rows. It is built by two
    independent methods, because each has blind spots the other covers:
    - **Runtime scan,** extending `sdd/research/bk-403-testmon-poc/srcreads.py`
      from readers of `src/` to readers of `tests/` and `scripts/` files.
@@ -484,7 +500,7 @@ FULL path such as `pyproject.toml`, or a non-`code` path such as `packaging/`
 | `test`, `test-primary` | selected tests |
 | `tooling-tests` | selected `tests/scripts/` tests |
 | `test-primary-sftp` | selection holds conformance tests whose fixture allowlist (layer 3) contains `sftp_docker`, or is unrestricted |
-| `test-cassette-pii` | a cassette or `_cassettes*.py` row in layer 1 |
+| `test-cassette-pii` | the selection holds `TestCommittedCassettePIISweep` (for example, through `tests/backends/fixtures/test_cassettes.py` or the `tests/backends/fixtures/` directory), or a cassette or `_cassettes*.py` row matched. `test` and `test-primary` deselect the sweep, so this job is the only place it runs |
 | `pyarrow-major-check` | selector reaches its test files (`ci.yml` job steps) |
 | `test-cross-platform` | selection holds an `os_sensitive` test. The marker has two sources, and both are read statically: test files (marks and module-level `pytestmark`), and fixture modules' `marks=` in `tests/backends/fixtures/`. Today the second source is `local` and `local_async`, whose marks `fixture_params` attaches to every conformance test parametrized with them. So a selected conformance test whose fixture allowlist contains such a fixture, or is unrestricted, counts |
 | `e2e` | selector reaches `tests/e2e/` |
@@ -493,6 +509,27 @@ FULL path such as `pyproject.toml`, or a non-`code` path such as `packaging/`
 | `package` | a `src/` file added, deleted or renamed (wheel contents); `pyproject.toml` is FULL and so already runs it |
 | `coverage-gate` | full lane only |
 | `prepare-images` | a job that needs it runs |
+
+**Per-job survival.** Each test job applies its own filters:
+- `test` and `test-primary`: `--ignore=tests/scripts`, the PII-sweep
+  `--deselect`, and `--stage`;
+- `test-primary-sftp`: `-k sftp_docker`.
+
+The selector therefore computes, for each job, the part of the selection that
+survives that job's filters:
+- **Empty part:** the job is skipped. It is never run with no path arguments,
+  because pytest then falls back to `testpaths = ["tests"]` (`pyproject.toml`)
+  and silently runs the full suite under a fast-lane name. It is also never run
+  with arguments that collect nothing, which exits 5 and turns the job red;
+  `ci.yml` records exactly that for `test-primary-sftp` (PR #971).
+- **Non-empty part:** passed as explicit node arguments.
+- **Sharding:** the fast lane runs these jobs unsharded, one job per
+  interpreter leg instead of `--splits 2`, so a small selection cannot leave an
+  empty shard.
+- **Exit 5 is never read as a pass.** The survival rule is what prevents it, so
+  a stage mismatch stays visible instead of being hidden.
+
+A seed per job pins one empty-survival case.
 
 `gate-fast` aggregates like today's `gate`: passed or skipped counts, but
 `setup` must succeed, so a selector error can never pass silently.
@@ -505,8 +542,9 @@ none of which selects anything.**
 1. **Seed tests.** The PoC's 13 seeds become unit tests of the selector, plus
    seeds for text readers, the D6 job rules, string-named imports, test or
    script modules imported by other tests or scripts, a failure only a
-   `*_strict` fixture reaches through a shared fixture module, and an example
-   edit that breaks a `test_examples.py` assertion. They compute
+   `*_strict` fixture reaches through a shared fixture module, an example edit
+   that breaks a `test_examples.py` assertion, an edit to the PII sweep test
+   itself, and one empty-survival case per test job (D6). They compute
    selections only and run in seconds. Each seed asserts two things:
    - **The selection contains the known failing test.**
    - **Its expected mode, `SELECTED` or `FULL` with its reason.** Containment
@@ -573,9 +611,12 @@ is how a fail-open selector that has stopped saving anything gets noticed.
 - A change to it is reviewed like production code and ships with a seed for
   the path class it adds or changes.
 - **New backend or fixture:** a selector unit test asserts that every
-  `backends.toml` backend and every `fixtures.toml` id is mapped, and that
-  every file under `tests/backends/fixtures/` matches a layer-1 row. Adding
-  one without a rule fails that test, in the PR that adds it.
+  `backends.toml` backend and every `fixtures.toml` id is mapped. It also
+  asserts that every file under `tests/backends/fixtures/` either matches a row
+  **other than the unmatched catch-all**, or appears in an explicit list of
+  deliberately FULL files (the shared-infrastructure row). A new file such as
+  `_cassettes_s3.py` that does neither fails the test in the PR that adds it,
+  instead of quietly giving up narrowing.
 - **No project imports:** the selector uses only the standard library (`ast`,
   `tomllib`) and never imports project modules. Its output is the same on
   every interpreter, and it runs on the primary interpreter in `setup`. Its own
