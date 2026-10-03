@@ -839,6 +839,14 @@ the change can affect; once, before merge, the whole gate runs, and pays for
 nothing it does not need. Narrowing never lifts the full pre-merge run or the
 coverage floor.
 
+- [ ] **BUG-302 — `CODE_PAT` names a `FEATURES.md` path that does not exist, so a `FEATURES.md`-only PR runs no checks**
+  spec: — · effort: S · audience: infra.ci
+  `ci.yml` `CODE_PAT` lists `docs-src/reference/FEATURES.md`. `git ls-files`
+  has only the root `FEATURES.md`, which matches no class pattern, although
+  `tests/scripts/test_gen_features.py` checks it. Found in RFC-0019 review
+  (D4 known violator; must land before its Phase 4). Open decision: none;
+  bug-fix protocol, with a test that every literal `CODE_PAT` path is tracked.
+
 - [ ] **BUG-301 — The PII sweep's bare-email regex is quadratic on base64 runs and costs 157 of the sweep's 160 worker-seconds**
   spec: — · effort: S · audience: infra.test
   The `bare email address` pattern (`tests/backends/fixtures/_cassettes.py:180`)

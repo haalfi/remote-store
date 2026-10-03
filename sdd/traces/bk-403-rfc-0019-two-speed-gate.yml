@@ -19,6 +19,8 @@ expected_ripples:
   - sdd/backlog/bk-404-selected-tests-hatch-target.md
   - sdd/backlog/id-266-two-speed-ci-gate.md
 surprising_ripples: []
+discovery_followups:
+  - BUG-302
 phases:
   - id: orient
     name: Orient

@@ -271,7 +271,7 @@ off.**
     `CODE_PAT` nor `DOCS_PAT`, and `tests/scripts/test_gen_features.py` reads
     it. A `FEATURES.md`-only diff therefore classifies as non-code. Today that
     means nothing runs and `gate` passes. Under this RFC it would post
-    `merge-gate`. Fixing it is a pre-existing bug outside this RFC, and it must
+    `merge-gate`. The fix is tracked as BUG-302, outside this RFC, and must
     land before Phase 4.
   - **Phase 0 audits every class pattern:** each literal path in `CODE_PAT`,
     `DOCS_PAT`, `FORMAL_PAT`, `TLA_PAT` and `HOOKS_PAT` must match a tracked
