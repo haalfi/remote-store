@@ -101,11 +101,14 @@ model covers their wire.
    deleter injected (`d/a` gone before its `delete`, `d/e1` before its
    `remove_folder`), the candidate's full table answered `NotFound` and left
    `d/e0/b` and `d/e1/c` undeleted. The decided walk answered success with an
-   empty tree. Today Local and SFTP both answered success in 200 of 200
-   threaded runs (`race 200`).
+   empty tree (`compare races`). Today's answer under a concurrent deleter
+   was not measured: an unsynchronised deleter thread removes its files
+   before the walk lists them as often as during it, so its tally could not
+   show tolerance mid-walk, and `race` runs the writer only.
 4. **A recursive delete may answer `DirectoryNotEmpty`** under a concurrent
-   writer on a walk. Today, in 200 threaded runs each, Local answered it in
-   173 (success in 27; the race's hit rate varies run to run) and SFTP
+   writer on a walk. Today, in 200 threaded runs each (`race 200`), Local
+   answered it in 187 in the latest run (success in 13; the race's hit
+   rate varies from run to run), and SFTP
    answered an untyped `RemoteStoreError` in all 200. The alternative, a
    kernel that re-walks up to three passes, succeeded only by deleting the
    writer's new file, and under a persistent writer ended in
@@ -122,13 +125,15 @@ model covers their wire.
    which simulated the rule by hand: with today's classifier its
    non-recursive cells reproduce (`compare local`, `Lt P0`), but its
    recursive walk through `sn` also deleted `tn/a`, which the paragraph
-   does not show. Under the decided rule every link cell is `InvalidPath`.
-   The rule binds `delete_folder` only: `stat` and `list_page` keep
-   following links for every other operation and mark the entry as a link,
-   so no other operation's cell changes. That scope is the maintainer's
-   decision after a review found the first wording binding D1's general
-   primitives (`is_folder`, `list_folders`, `iter_children` and others,
-   today link-following at `_local.py` lines 183, 585 and 604).
+   does not show. Under the decided rule every cell with a link at the key
+   is `InvalidPath`, and a link nested below the key is deleted as a file,
+   its target kept, as today (`compare summary`, 12 of 44 Local cells
+   changed). The rule binds `delete_folder` only: `stat` and `list_page`
+   take `follow_links`, and only `delete_folder` passes `False`, so no
+   other operation's cell changes (today's link-following members:
+   `_local.py` lines 183, 585 and 604). The maintainer chose that scope,
+   and then that flag over a link marker on `Entry`, which could not
+   represent a dangling link, the key's own listing or a common prefix.
 
 PR #1057's round 1 found two cases the six left open, and the maintainer
 decided both on measured cells (`compare extra`):

@@ -276,24 +276,38 @@ every case. RFC-0017 carries the same answers at the question each settles.
        is tolerated (the entry is already gone), and a `delete` whose probe
        finds a file keeps its own refusal, a file being that call's right
        type. A file swapped for a non-empty directory mid-walk answers
-       `DirectoryNotEmpty` (`compare extra`). Only the last call, on `key`,
-       applies `missing_ok`.
+       `DirectoryNotEmpty` (`compare extra`). The walk's own listing
+       follows the same rule: a listing of `key` that refuses goes through
+       the probe rule for `key`, and a subfolder's listing that answers
+       `NotFound`, or lists empty because a concurrent deleter removed it,
+       is tolerated. Its other refusals go through the probe rule for that
+       subfolder: a `PermissionDenied` passes through before anything is
+       removed, and an untyped refusal on a non-empty subfolder answers
+       `DirectoryNotEmpty` (`compare extra`, Local and SFTP). [Added in
+       PR #1057's round 4, the maintainer's decision.] Only the last call,
+       on `key`, applies `missing_ok`.
      - *A recursive delete may answer `DirectoryNotEmpty`*, on a walk,
        when a writer adds under the tree mid-walk. BE-013 lists it only for
        `recursive=False` and forbids nothing, and item 8's clause states
        it. Memory's one-step `delete_tree` cannot.
-     - *`delete_folder` never treats a link as a folder.* A driver's `stat`
-       and `list_page` keep today's link-following answers for every
-       operation, and also say that an entry is a link: a symbolic link,
-       or a Windows junction, which Local follows without `is_symlink()`
-       reporting it. Only `delete_folder`'s walk and probes act on that.
-       The walk never traverses a link, and the probes answer
-       `InvalidPath` for one. [Narrowed to `delete_folder` in PR #1057's
-       round 3, the maintainer's decision, so no other operation's cell
-       changes.] The reason: a Local driver whose `stat` and `list_page`
-       follow links deleted the target's file through a link to a
-       non-empty directory, where `rmtree` refuses today. D1's `Entry`
-       carries the marker, and item 8 states it.
+     - *`delete_folder` never treats a link as a folder.* `stat` and
+       `list_page` take `follow_links: bool = True`; every operation but
+       `delete_folder` keeps the default, so its answers through links are
+       today's. `delete_folder` calls both with `follow_links=False`, a
+       view in which a link (a symbolic link, dangling or not, or a
+       Windows junction, which Local follows without `is_symlink()`
+       reporting it) is a non-folder entry. So the walk deletes a link
+       below `key` as a file instead of descending into it, and the probes
+       answer `InvalidPath` for a link at `key`. [Maintainer's decisions in
+       PR #1057's rounds 3 and 4: scoped to `delete_folder`, then given
+       this view after a marker on `Entry` proved unable to reach a
+       dangling link, the key's own listing or a common prefix.] The
+       reason: a driver that follows links in the walk deleted the
+       target's file through a link to a non-empty directory, where
+       `rmtree` refuses today. The view is what the 12 changed Local cells
+       below were measured under (the script's `Ll` driver); a link nested
+       below `key` keeps today's answer, its target untouched (`compare
+       summary`). Item 8 states the flag.
      - *`parents == "none"`.* No folder objects, so `remove_folder` is
        never called. The kernel lists first and `stat`s only after an
        empty listing, the order `S3Boto3Backend`, `SQLBlobBackend` and
@@ -334,7 +348,8 @@ every case. RFC-0017 carries the same answers at the question each settles.
        returns under `missing_ok`. Its 20 base cells are unchanged, and so
        are S3Boto3's 20 and flat Azure's 20, with all 40 fired fault cells
        on each.
-     - Step 5, Local: 12 of 40, every one a symbolic link. A dangling link
+     - Step 5, Local: 12 of 44, every one a link at `key` (a link nested
+       below `key` keeps today's answer). A dangling link
        answers `NotFound` today (silent under `missing_ok`), and a link to
        an empty or a non-empty directory answers `PermissionDenied`. The
        kernel answers `InvalidPath` for all three, × `recursive` ×
@@ -351,7 +366,8 @@ every case. RFC-0017 carries the same answers at the question each settles.
        the prefix.
      - Step 6, SFTP: none of 24 base cells. Under a concurrent writer the
        recursive delete answers an untyped `RemoteStoreError` today (200 of
-       200 threaded runs) and `DirectoryNotEmpty` on the kernel, a typing
+       200 threaded runs, `race 200`, printed by `compare races`) and
+       `DirectoryNotEmpty` on the kernel (`compare summary`), a typing
        change. With the probe's `stat` dropping the channel (absent key or
        file, × `recursive` × `missing_ok`), 8 cells: today's first call is
        that `stat`, so it answers `BackendUnavailable`; the kernel answers
@@ -435,8 +451,8 @@ every case. RFC-0017 carries the same answers at the question each settles.
      `delete_tree`'s refusal, and the kernel's `delete_folder` sequence as
      decision 8 states it (decided in BK-396), including a recursive
      `DirectoryNotEmpty` under a concurrent writer, and the rule that
-     `delete_folder` never treats a link as a folder (with `Entry`'s link
-     marker).
+     `delete_folder` never treats a link as a folder (with the
+     `follow_links` flag on `stat` and `list_page`).
 
 **Depends on** BK-388, whose postconditions the kernel is written against,
 and on BK-395, which decides the key rule's remainder (decision 6). BK-396,

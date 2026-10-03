@@ -85,7 +85,18 @@ HIER_STATES = {
     "key under a file f/x": ("f/x", ["f"], []),
     "absent": ("z", [], []),
 }
+
+
+def arrange_links(root: Path, key: str, target: str) -> None:
+    """The link-state fixture: tf, tn/a, an empty te, d/f, and the link at *key* (d/l for the nested state)."""
+    arrange_fs(root, ["tf", "tn/a", "d/f"], ["te"])
+    link = root / ("d/l" if key == "d" else key)
+    os.symlink(root / target, link)
+
+
 LOCAL_SYMLINKS = {
+    # the nested state: d holds a file and a link d/l to the non-empty tn; the key is d
+    "folder holding a link to a non-empty dir": ("d", "tn"),
     # name: (key, target relative to root or None for dangling)
     "dangling symlink": ("sd", "nowhere"),
     "symlink to a file": ("sf", "tf"),
@@ -215,8 +226,7 @@ def run_local() -> list[dict]:
             )
     for state, (key, target) in LOCAL_SYMLINKS.items():
         for rec, mok in CALLS:
-            arrange_fs(root, ["tf", "tn/a"], ["te"])
-            os.symlink(root / target, root / key)
+            arrange_links(root, key, target)
             b = LocalBackend(root=str(root))
             c.reset()
             exc = None
@@ -856,22 +866,21 @@ def race_writer(root: Path, stop: threading.Event) -> None:
         i += 1
 
 
-def race_deleter(root: Path, stop: threading.Event) -> None:
-    while not stop.is_set():
-        for f in ("d/e0/b", "d/e1/c"):
-            try:
-                (root / f).unlink()
-            except OSError:
-                pass
+def race_run(make, root: Path, runs: int) -> collections.Counter:
+    """Today's recursive delete under a writer that keeps adding files to d/e0.
 
-
-def race_run(make, root: Path, runs: int, kind: str) -> collections.Counter:
+    The writer runs for the whole call, so an answer of DirectoryNotEmpty shows a
+    write landed mid-walk. There is no deleter race here: an unsynchronised deleter
+    removes its files before the walk lists them as often as during it, so its tally
+    would not show tolerance mid-walk. The deleter case is the kernel's injected
+    `races` cell instead.
+    """
     tally: collections.Counter[str] = collections.Counter()
     for _ in range(runs):
         arrange_fs(root, RACE_FILES, [])
         b = make()
         stop = threading.Event()
-        t = threading.Thread(target=race_writer if kind == "writer" else race_deleter, args=(root, stop))
+        t = threading.Thread(target=race_writer, args=(root, stop))
         t.start()
         exc = None
         try:
@@ -898,6 +907,7 @@ class Driver:
         self.calls = 0
         self.hooks: dict[tuple[str, str], object] = {}  # (primitive, key) -> callable(before) once
         self.faults: dict[str, tuple[str, RemoteStoreError]] = {}  # primitive -> (when, exc), once
+        self.list_faults: dict[str, RemoteStoreError] = {}  # prefix -> exc raised by its next listing, once
 
     def wire(self, n: int = 1) -> None:
         self.calls += n
@@ -1045,14 +1055,22 @@ class LocalDriver(Driver):
         return "folder" if stat_mod.S_ISDIR(st.st_mode) else "file"
 
     def list_page(self, prefix, delimiter="/", limit=None):
+        # An absent or non-folder prefix lists empty (BE-014's listing answer); any
+        # other refusal is raised, classified, so the walk's listing rule is exercised.
+        self._hook("list_page", prefix)
         self.wire()
         follow = self.cls != "Ll"
         try:
+            fault = self.list_faults.pop(prefix, None)
+            if fault is not None:
+                raise fault
             if not follow and os.path.islink(self.p(prefix)):
                 return [], []
             ents = list(os.scandir(self.p(prefix)))
         except (FileNotFoundError, NotADirectoryError):
             return [], []
+        except OSError as e:
+            raise self.classify(e, prefix) from e
         files = sorted(f"{prefix}/{e.name}" for e in ents if not e.is_dir(follow_symlinks=follow))
         dirs = sorted(f"{prefix}/{e.name}" for e in ents if e.is_dir(follow_symlinks=follow))
         if limit:
@@ -1106,11 +1124,21 @@ class SFTPDriver(Driver):
         return "folder" if stat_mod.S_ISDIR(a.st_mode) else "file"
 
     def list_page(self, prefix, delimiter="/", limit=None):
+        # As LocalDriver: an absent prefix lists empty (SFTPBackend.list_files does
+        # today); any other refusal is raised through SFTP's classifier.
+        self._hook("list_page", prefix)
         self.wire()
         try:
+            fault = self.list_faults.pop(prefix, None)
+            if fault is not None:
+                raise fault
             ents = self.c().listdir_attr(self.sp(prefix))
-        except OSError:
+        except FileNotFoundError:
             return [], []
+        except RemoteStoreError:
+            raise
+        except Exception as e:  # noqa: BLE001
+            raise self.b._map_exception(e, prefix) from e
         files = sorted(f"{prefix}/{e.filename}" for e in ents if not stat_mod.S_ISDIR(e.st_mode))
         dirs = sorted(f"{prefix}/{e.filename}" for e in ents if stat_mod.S_ISDIR(e.st_mode))
         if limit:
@@ -1323,8 +1351,9 @@ class Kernel:
                                        PermissionDenied), stat follows links
                                     Le errno-typed (ENOENT/ENOTDIR -> NotFound, ENOTEMPTY -> DNE,
                                        EACCES/EPERM -> PermissionDenied, else untyped), stat follows links
-                                    Ll Le's classifier, lstat: delete_folder's view, where a link is
-                                       never a folder (decided)
+                                    Ll Le's classifier with stat and list_page as follow_links=False:
+                                       the view delete_folder requests, where a link is never a
+                                       folder (decided)
     Added after PR #1057's round 1:
     M  a probe that raises:         M0 the refusal is raised, the probe's error chained
                                     M1 as M0, but missing_ok applies to a NotFound refusal (decided)
@@ -1443,7 +1472,17 @@ class Kernel:
         stack = [key]
         while stack:
             cur = stack.pop()
-            fs, ds = d.list_page(cur, "/")
+            try:
+                fs, ds = d.list_page(cur, "/")
+            except RemoteStoreError as e:
+                # The walk's own listing refused: the key's goes through the probe rule
+                # with missing_ok; a subfolder's follows the on-the-way rule.
+                if cur == key:
+                    return self.error_path(e, key, mok, listing_arm=True)
+                if self.W == "W1" and type(e) is NotFound:
+                    continue
+                self.error_path(e, cur, False, listing_arm=True, on_way=True)
+                continue
             files += fs
             folders += ds
             stack += ds
@@ -1598,8 +1637,7 @@ def local_rows(base: Path):
                     )
             for state, (key, target) in LOCAL_SYMLINKS.items():
                 for rec, mok in CALLS:
-                    arrange_fs(root, ["tf", "tn/a"], ["te"])
-                    os.symlink(root / target, root / key)
+                    arrange_links(root, key, target)
                     drv = LocalDriver(root, L)
                     rows.append(
                         dict(
@@ -2168,8 +2206,7 @@ def cmd_race(args) -> None:
     out = {}
     base = Path(tempfile.mkdtemp(dir=OUT))
     root = base / "root"
-    for kind in ("writer", "deleter"):
-        out[f"local/{kind}"] = race_run(lambda: LocalBackend(root=str(root)), root, runs, kind)
+    out["local/writer"] = race_run(lambda: LocalBackend(root=str(root)), root, runs)
     thread, port, _hk, stop, sock = start_sftp_server(root=str(base), host="127.0.0.1")
     sb = SFTPBackend(
         host="127.0.0.1",
@@ -2181,8 +2218,7 @@ def cmd_race(args) -> None:
         connect_kwargs={"allow_agent": False, "look_for_keys": False},
     )
     try:
-        for kind in ("writer", "deleter"):
-            out[f"sftp/{kind}"] = race_run(lambda: sb, root, runs, kind)
+        out["sftp/writer"] = race_run(lambda: sb, root, runs)
     finally:
         sb.close()
         stop_sftp_server(thread, stop, sock)
@@ -2259,6 +2295,51 @@ def extra_rows(b, base: Path) -> list[dict]:
                 **run_cell(drv, opts, "d", True, False),
             )
         )
+
+    # The walk's own listing refusing on a subfolder (no today: no hook reaches today's
+    # classes between listings). Tree d/a, d/e0/b, d/e1/c; the subfolder is d/e0.
+    def gone():  # a concurrent deleter removes d/e0 between its parent's listing and its own
+        shutil.rmtree(root / "d" / "e0")
+
+    listing_cases = [
+        ("d/e0 deleted before its listing", lambda drv: drv.hooks.__setitem__(("list_page", "d/e0"), gone)),
+        (
+            "d/e0 listing answers NotFound",
+            lambda drv: (
+                drv.hooks.__setitem__(("list_page", "d/e0"), gone),
+                drv.list_faults.__setitem__("d/e0", NotFound("injected", path="d/e0")),
+            ),
+        ),
+        (
+            "d/e0 listing PermissionDenied",
+            lambda drv: drv.list_faults.__setitem__("d/e0", PermissionDenied("injected", path="d/e0")),
+        ),
+        (
+            "d/e0 listing untyped",
+            lambda drv: drv.list_faults.__setitem__("d/e0", RemoteStoreError("injected", path="d/e0")),
+        ),
+    ]
+    for cls in ("local", "sftp"):
+        for state, arm in listing_cases:
+            root = base / ("lroot" if cls == "local" else "sroot")
+            arrange_fs(root, ["d/a", "d/e0/b", "d/e1/c"], [])
+            if cls == "local":
+                drv = LocalDriver(root, "Ll")
+            else:
+                b.exists("")
+                drv = SFTPDriver(b, root)
+            arm(drv)
+            rows.append(
+                dict(
+                    cls=cls,
+                    opts=DEFAULT,
+                    state=state,
+                    key="d",
+                    recursive=True,
+                    missing_ok=False,
+                    **run_cell(drv, DEFAULT, "d", True, False),
+                )
+            )
 
     svc = BlobServiceClient.from_connection_string(CONN)
     for F in OPTS["F"]:

@@ -144,11 +144,12 @@ class Driver(Protocol):
     put_is_atomic: bool           # S3, SQL, flat Azure True (write_atomic is put); Local, SFTP False
     close_is_terminal: bool       # BE-020's posture; the kernel's closed guard runs only when True (Memory False)
 
-    def stat(self, key: str) -> Entry | None: ...        # file OR folder, kind on the Entry; None if absent
+    def stat(self, key: str, *, follow_links: bool = True) -> Entry | None: ...  # file OR folder, kind on the Entry; None if absent
     def get(self, key: str) -> BinaryIO: ...
     def put(self, key: str, content, *, overwrite: bool, metadata) -> WriteResult: ...
     def delete(self, key: str) -> None: ...
-    def list_page(self, prefix: str, *, delimiter: str | None, cursor, limit: int | None) -> Page: ...
+    def list_page(self, prefix: str, *, delimiter: str | None, cursor, limit: int | None,
+                  follow_links: bool = True) -> Page: ...  # follow_links=False: delete_folder's view (BK-396)
     def probe(self) -> None: ...                         # health; must touch the container
     def close(self) -> None: ...
 
@@ -180,7 +181,7 @@ optional member, so presence is a protocol, not a method):
 | `SupportsEnsureParents` | `ensure_parents(key)` | called before `put` when `parents == "explicit"`; SFTP's stat walk and Local's `mkdir -p` are their implementations. Never called for `implicit` (Graph, GR-039: no explicit `mkdir`; Azure HNS) or `none` |
 | `SupportsFolderStats` | `folder_stats(prefix) -> (count, size, latest)` | `get_folder_info` push-down (SQL's aggregate query); without it, the kernel aggregates a listing |
 | `SupportsGlob` | `glob(pattern)` | native `GLOB`; without it the driver must not declare `GLOB` |
-| `SupportsRemoveFolder` (added at BK-389's planning; corrected after PR #1055 merged) | `remove_folder(key)`: remove an empty folder and refuse anything else without removing it, in one step where the wire has one (Memory's lock, `rmdir`) | required when `parents` is `"explicit"` or `"implicit"` (any driver with folder objects; Graph, Azure HNS), checked at construction; never called when `parents == "none"`. The kernel's `delete_folder` sequence around it was decided in BK-396 and is stated, with its measured cells, in BK-389's dossier, decision 8: a refusal is probed only when it is a typed `NotFound` or untyped, a recursive delete without `SupportsDeleteTree` walks with `list_page` and calls `remove_folder` deepest first, and `delete_folder` never traverses or removes a link as a folder, read from a link marker on `Entry` while `stat` and `list_page` keep following links for every other operation |
+| `SupportsRemoveFolder` (added at BK-389's planning; corrected after PR #1055 merged) | `remove_folder(key)`: remove an empty folder and refuse anything else without removing it, in one step where the wire has one (Memory's lock, `rmdir`) | required when `parents` is `"explicit"` or `"implicit"` (any driver with folder objects; Graph, Azure HNS), checked at construction; never called when `parents == "none"`. The kernel's `delete_folder` sequence around it was decided in BK-396 and is stated, with its measured cells, in BK-389's dossier, decision 8: a refusal is probed only when it is a typed `NotFound` or untyped, a recursive delete without `SupportsDeleteTree` walks with `list_page` and calls `remove_folder` deepest first, and `delete_folder` never traverses or removes a link as a folder: it alone calls `stat` and `list_page` with `follow_links=False`, a view in which a link (dangling or not) is a non-folder entry, while every other operation keeps the link-following default |
 
 Two more attributes the stream wrapper reads per driver, because
 `_ErrorMappingStream`'s caught set is per construction site today:
@@ -206,9 +207,7 @@ and `delete_folder` from what is present and never adds a flag. A driver that
 omits `get_range` or `open_write` therefore keeps its declared capabilities
 and loses a data path; § Impact names where that lands.
 
-`Entry` (key, kind `file | folder`, size, modified, etag, metadata, and,
-added at BK-396, whether the entry is a link the driver followed, which only
-`delete_folder` reads), `Page`
+`Entry` (key, kind `file | folder`, size, modified, etag, metadata), `Page`
 (entries, common prefixes, next cursor) and `WriteHandle` are small records.
 `Op` is an enum of the public operations plus the kernel's internal scopes
 (`probe`, `identity`, `monitor`), so a driver can classify by what asked:

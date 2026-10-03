@@ -109,6 +109,10 @@ phases:
         section: "is_folder, list_folders, iter_children"
         read_type: reference
         extract: "round 3: the link rule bound the general stat, which every Local operation follows today; narrowed to delete_folder. My own miss: the Q1 rule leaked into the rejected-option rows until round 3's measuring member re-ran them"
+      - file: sdd/rfcs/rfc-0017-contract-kernel-over-thin-drivers.md
+        section: "D1 Driver protocol (stat, list_page), Entry and Page records"
+        read_type: reference
+        extract: "round 4: Entry and Page could not carry the round-3 link marker (dangling link, the key's own listing, common prefixes), so the divergence check fired and the maintainer chose a follow_links flag; my own miss was rewording the mechanism in round 3 without re-measuring it"
   - id: verify
     name: Verify
     steps:
