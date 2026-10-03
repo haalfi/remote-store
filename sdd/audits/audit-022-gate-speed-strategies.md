@@ -6,6 +6,15 @@ gate at `d74445c`. The question is strategic: which work each gate should run
 at which point of a change's life, not how to make a single test faster.
 `ci-full.yml`, `drift-guard.yml` and `mutation.yml` are in scope only as the
 backstop a narrower gate would lean on.
+**Predecessors on the same gates:**
+- [audit-017](audit-017-dev-process-gate-topology.md) R3: one definition of
+  "what validates a change", and at most one thin fast-iteration target.
+- BK-271 (`sdd/BACKLOG-DONE.md`): the `/pr` gate composes `all` for code
+  diffs and `lint` + `docs-gate` otherwise, and mints no new target.
+- [audit-018](audit-018-ci-operations.md): the scheduled guards'
+  notification surfaces. It does not cover the durations duty.
+
+P2 and P5 below are weighed against these.
 **Method:**
 - **CI figures** are per-job timings from the Actions `list_workflow_jobs` API,
   for two runs on PR #1054 (BL-011):
@@ -39,7 +48,8 @@ wrong one for the loop that precedes it.
 - **Locally,** `hatch run all` runs all 11,932 Stage-1 tests whatever the diff
   touched.
 - **In CI,** every push to a PR starts the full gate, including each `/ship`
-  review-round push. Run 37028529993 ran 28 jobs, with 1 skipped.
+  review-round push. Run 37028529993 lists 29 jobs in the jobs API: 28 ran,
+  and `verify-tla` was skipped (no TLA path changed).
 
 The repo already narrows by *file class* (`CODE_PAT`/`DOCS_PAT`/`FORMAL_PAT`/
 `HOOKS_PAT`) and by *tier* (Stage 1 versus Stage 2,
@@ -72,6 +82,28 @@ The proposed shape is two speeds:
 layout makes a map from changed paths to affected tests unusually cheap to
 build, and the backstops that would make a narrow in-progress gate safe already
 exist.
+
+**Tests are most of the local gate.** Each of the ten members of `hatch run all`
+(`pyproject.toml:563`) was timed separately with `uvx hatch run <member>`, in
+order, on the same container:
+
+| Member | Wall | Share |
+| --- | --- | --- |
+| `test-cov-s1` | 532 s | 80% |
+| `typecheck` | 44 s | 7% |
+| `docs-build` | 39 s | 6% |
+| `lint` | 19 s | 3% |
+| `examples` | 15 s | 2% |
+| `preflight` | 9 s | 1% |
+| the other four | 8 s | 1% |
+| **Total** | **666 s** | |
+
+`test-cov-s1` goes through `scripts/run_tests.py`, which caps xdist workers
+(BK-277): 2 workers on this 4-core container, from `floor(4 × 0.75) − 1` in
+`compute_workers`. That explains why it takes 532 s here against the 310 s of the
+`-n 4` runs below. The non-test members together are 134 s, so they are not
+worth a strategy of their own; this audit's selection question is about the
+test member.
 
 What one local Stage-1 run spends, by test area (`-n 4`, worker-seconds from
 the JUnit report, 11,932 tests, 721 s total):
@@ -207,9 +239,16 @@ reversal clause names merge-queue capacity as missing. **The PR's draft state is
 the single selector:**
 
 - **Draft PR: in-progress lane.** Lint, typecheck, and the H1 map-selected
-  tests. The selected tests run on every supported interpreter, not only the
-  primary (see the `/ship` constraint below). The Stage-1 legs need no Docker,
-  so this is still far less work than the full gate.
+  tests on every supported interpreter (see the `/ship` constraint below). The
+  tier is set per leg:
+  - **Non-primary legs:** Stage 1, selected. No Docker.
+  - **Primary leg:** Stage 2, selected, with `prepare-images`. It keeps the
+    live backends, which ADR-0043 makes the per-PR carrier of the live-backend
+    guarantee.
+
+  Dropping the primary to Stage 1 would be cheaper, but a round touching
+  `_s3.py` or `_sftp.py` would then see only moto or in-process SFTP until the
+  close. That trade is the ADR's to make, not a default.
 - **Non-draft PR: pre-merge lane.** This covers every non-draft PR, including
   one opened as non-draft and one converted from draft. It runs the current
   full `ci.yml` gate, including the coverage floor.
@@ -229,6 +268,20 @@ hold under this selector:
     protection.
 
 A later push to a non-draft PR fires `synchronize` and re-runs the full lane.
+
+**The draft lane also needs a map in CI, and that is the hardest part.** The
+runtime-coverage selectors H1 rates as fitting build their map from a full run
+and keep it in a data file (for `pytest-testmon`, `.testmondata`). A draft-lane
+job on a fresh runner has no such file. Three things have to be settled:
+- **Who produces it:** the last full lane, or `ci-full.yml` on master.
+- **How it reaches the PR run:** a cross-run artifact fetch or a cache, with a
+  fail-open fallback to the full suite when it is missing or stale.
+- **Whether one map serves all interpreters:** a map built on the primary has
+  to be shown valid for the 3.11, 3.12 and 3.14 legs, or each leg needs its own.
+
+Without these, a draft lane can only fail open to the full suite, which is
+today's gate. A declared table needs none of them, since it is committed with
+the code.
 
 **`/ship` constraint.** `/ship` is the main source of in-progress pushes, but
 the selector does not reach it today, and narrowing it naively would undo a
@@ -265,10 +318,21 @@ Caveat: the collection ran locally without the Stage-2 services. CI's set may
 differ by the live-only fixtures.
 
 ADR-0043 keeps the refresh as a manual duty (§ Consequences, "Unchanged
-duties"; runbook in `sdd/CI-OPERATIONS.md` § Durations-refresh). A strategic fix
-lets `ci-full.yml`, which already runs the full suite on every master push,
-publish fresh durations as an artifact. The PR shards then consume the latest
-one, and the duty becomes a pipeline instead of a reminder.
+duties"; runbook in `sdd/CI-OPERATIONS.md` § Durations-refresh). The committed
+file is deliberate. It is in `CODE_PAT` (`ci.yml:53-56`, a BK-319 review fix),
+so a refresh or a truncated write re-runs the gate, and every run's shard split
+can be reproduced from its commit.
+
+A fix should keep that property. `ci-full.yml` already runs the full suite on
+every master push. It can regenerate the durations there and open a refresh PR
+when they drift past a threshold, which `CODE_PAT` then gates like any other.
+
+The alternative, PR shards fetching durations from the last `ci-full.yml` run,
+is rejected for two reasons:
+- **Cost:** it needs a cross-run artifact lookup and a token in every shard job,
+  plus a fallback when there is no run.
+- **Reproducibility:** two runs of one commit could shard differently, and a
+  bad artifact would fail every shard with no PR that introduced it.
 
 ---
 
@@ -288,7 +352,13 @@ overhead with identical results.** Local Stage 1 at `-n 4` measured:
 Covered lines were 10,805 under both cores, and 0 files differed in
 `executed_lines`.
 
-This applies to `test-primary*` (3.13) and `test-cov-s1`. `test-cov-branch` is
+This applies to every job that feeds the coverage floor, found by grepping
+`--cov` in `ci.yml`:
+- `test-primary` (line 327);
+- `test-primary-sftp` (line 371);
+- `test-cassette-pii` (line 400), which carries L2's 160 worker-seconds;
+
+and locally to `test-cov-s1`. `test-cov-branch` is
 outside the gate, and branch coverage under sysmon needs its own check before it
 is used there.
 
@@ -314,8 +384,22 @@ its evidence.
 30 s.**
 - **In run 37028529993:** `prepare-images` finished at +42 s, and
   `test-primary (1)` started at +72 s and ended at +301 s. `gate` ended at
-  +326 s. At most 19 `ci.yml` jobs ran at once, computed from each job's
-  `started_at`/`completed_at`.
+  +326 s.
+- **The cap was full.** Sampled every 2 s from +40 s to +68 s, using each job's
+  `started_at`/`completed_at` across every run in the repo that overlapped the
+  window:
+
+  | Holder | Slots |
+  | --- | --- |
+  | this run's `ci.yml` jobs | 17–18 |
+  | CodeQL `Analyze (Python)`, started by the same `pull_request` event (run 37028529838) | 1 |
+  | another PR's `verify-formal` (run 37028178879), until +70 s | 1 |
+  | **Total** | **19–20** |
+
+  The 19s are the second or two between one job ending and the next starting.
+  So one slot went to a different PR's run: contention across PRs, not only
+  within a run. The cap is per account, and other repos' runs, which this audit
+  cannot see, may add to it.
 - **Why it waits:** first-in, first-out queuing behind jobs that queued
   earlier.
   - `test-primary` needs `prepare-images` (`ci.yml:286`), so it can only queue
@@ -376,12 +460,12 @@ run or the coverage floor.
 
 | # | Proposal | Addresses | Notes |
 | --- | --- | --- | --- |
-| P1 | Evaluate selectors before choosing one: `pytest-testmon`, `pytest-tia` and `pytest-impact`, with the full suite as the control group. The criteria are time saved, missed failures, and how hard the tool is to run. The test cases are seeded changes that use known blind spots (see below) | H1 | Whichever wins stays fail-open, including for `tests/scripts/`; a declared table is the fallback if none passes |
-| P2 | `hatch run` target that runs map-selected tests; `all` keeps the full run for the pre-push moment | H1 | The coverage floor is never asserted on a selected run; saves nothing in `/ship` unless `/ship` uses it for rounds (M1) |
-| P3 | Two-speed `ci.yml`: a draft PR runs the selected lane on every interpreter, a non-draft PR runs the full gate | M1 | A new ADR amending ADR-0043. It needs `ready_for_review` in `types:`, a required check only the full lane produces, and `/pr` and `/ship` changed to open as draft and mark ready at close |
+| P1 | Evaluate selectors before choosing one: `pytest-testmon`, `pytest-tia` and `pytest-impact`, with the full suite as the control group. The criteria are time saved, missed failures, and how hard the tool is to run. The test cases are seeded changes that use known blind spots (see below). A further criterion is whether the map can be produced on one run and consumed by another, on another interpreter (M1) | H1 | Whichever wins stays fail-open, including for `tests/scripts/`; a declared table is the fallback if none passes |
+| P2 | One thin `hatch run` target that runs map-selected tests, used for in-progress rounds; `all` stays the pre-push gate | H1 | The "one thin target" audit-017 R3 allowed, and a third branch for BK-271's `/pr` gate. The coverage floor is never asserted on a selected run. It saves nothing in `/ship` unless `/ship` uses it for rounds (M1), and only the test share of `all` is at stake (see the `all` timing) |
+| P3 | Two-speed `ci.yml`: a draft PR runs the selected lane on every interpreter (Stage 2 on the primary), a non-draft PR runs the full gate | M1 | A new ADR amending ADR-0043. It needs: `ready_for_review` in `types:`; a required check only the full lane produces; a CI map source and transport (M1); and `/pr` and `/ship` changed to open as draft and mark ready at close |
 | P4 | Gate the setup-only CI jobs behind `prepare-images` so `test-primary*` queue first | L3 | Recovers at most 30 s and delays the gated jobs; measure before adopting |
-| P5 | `ci-full.yml` publishes durations; PR shards consume them | M2 | Retires the manual refresh duty |
-| P6 | `COVERAGE_CORE=sysmon` on 3.12+ coverage runs | L1 | Re-measure covered lines on CI before switching |
+| P5 | `ci-full.yml` regenerates durations and opens a refresh PR when they drift | M2 | Keeps the committed file and its `CODE_PAT` gating; turns the manual duty into an automated PR |
+| P6 | `COVERAGE_CORE=sysmon` on `test-primary`, `test-primary-sftp`, `test-cassette-pii` and `test-cov-s1` | L1 | Switch all four together, then re-measure covered lines on CI |
 | P7 | Anchor the email PII regex | L2 | Bug-fix protocol: failing timing test first |
 
 **P1's seeded changes.** Each one is a one-line change that makes a known test
