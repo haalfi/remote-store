@@ -16,8 +16,9 @@ advisory prescription ([§ Item authority](../BACKLOG.md#how-this-file-works)).
 
 A new ADR amending
 [ADR-0043](../adrs/0043-tiered-ci-gate-derived-interpreter-set.md): a draft PR
-runs a selected lane on every supported interpreter (Stage 2 on the primary,
-Stage 1 elsewhere), and a non-draft PR runs today's full `ci.yml` gate.
+runs a selected lane on every supported interpreter (Stage 1 on the
+non-primary legs; the primary leg's tier is the open decision below), and a
+non-draft PR runs today's full `ci.yml` gate.
 `ci-full.yml` stays the post-merge backstop.
 
 **Four prerequisites, all from § M1.** The ADR cannot be accepted until each
