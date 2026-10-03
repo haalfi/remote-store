@@ -172,6 +172,7 @@ every case. RFC-0017 carries the same answers at the question each settles.
    Windows cell step 5 measures;
    `SQLBlobBackend.glob`, on a store holding no backslash key, answers `[]`
    for `"./d/*.csv"`, `"d//*.csv"` and `"d/./*.csv"`, where the kernel
+   matches `d/a.csv`, `[]` for `"d/*/."`, where the kernel's `"d/*"`
    matches `d/a.csv`, and `[]` for every refused pattern, where the kernel
    answers `InvalidPath`, step 3. Step 3 also reworks SQL-BLOB-061's
    `tests/backends/sqlblob/test_like_prefix.py`: its `backend` fixture
@@ -200,7 +201,13 @@ every case. RFC-0017 carries the same answers at the question each settles.
    `NotImplementedError` with `root_path=""` and matches with
    `root_path="r"`; the kernel keeps that split as `InvalidPath` against a
    match, and `Store.glob`'s own pattern handling is GLOB-007's, not the
-   kernel's. This decision adds nothing else to D3's list.
+   kernel's. Once a `GLOB` driver migrates, `ext.glob.glob_files` also
+   answers by capability tier: on a non-`GLOB` store its fallback
+   (GLOB-011 to GLOB-014) runs the raw pattern, and measured on a Memory
+   `Store` holding `d/a.csv` it answers `[]` for `"./d/*.csv"`,
+   `"d//*.csv"`, `"/d/*.csv"` and `"d/*/."`, where the kernel rule matches
+   or refuses; aligning the fallback is BK-400. This decision adds nothing
+   else to D3's list.
 
    **Decided in BK-395** (2026-10-03, the maintainer through the interview,
    the recommended option each time; measurements and recipe in its
@@ -245,7 +252,9 @@ every case. RFC-0017 carries the same answers at the question each settles.
      canonical pattern, so a native driver's prefix listing (GLOB-018 to
      GLOB-020) starts from it. A canonical `""` names the root, a folder,
      and yields nothing, since `glob` returns only files (GLOB-004, BE-024).
-     The table below is that rule's enumeration, and the rule is the table:
+     The rule above is authoritative; the table below is worked examples
+     of it, one per edge class, and any pattern not shown follows the rule
+     (an already canonical pattern, such as `"**/*.csv"`, passes unchanged):
 
      | Raw pattern | Kernel's answer |
      |---|---|

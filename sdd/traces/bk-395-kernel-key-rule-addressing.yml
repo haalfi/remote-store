@@ -129,6 +129,7 @@ discovery_followups:
   - BUG-300
   - BK-398
   - BK-399
+  - BK-400
 surprising_ripples:
   - sdd/backlog/bk-390-rfc-0017-spec-amendments.md
   - sdd/BACKLOG-DONE.md

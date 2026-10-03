@@ -301,6 +301,14 @@ failure it was.
   decision: none; Memory's identity and spec 013's placement are in the dossier.
   Detail: [dossier](backlog/bk-394-memory-drivers-accept-adr-0042.md)
 
+- [ ] **BK-400 — `ext.glob`'s fallback runs the raw pattern, so it will diverge from the kernel's pattern rule by capability tier**
+  spec: GLOB-010, GLOB-011, GLOB-012, GLOB-014 · effort: S · audience: user.api, library.maintainer
+  On a non-`GLOB` store `glob_files` runs `extract_prefix` and
+  `pattern_to_regex` over the raw pattern: on Memory it answers `[]` for
+  `"./d/*.csv"`, `"d//*.csv"`, `"/d/*.csv"` and `"d/*/."` (master `ffce774`).
+  BK-389's kernel matches or refuses them, so the tiers split once a `GLOB`
+  driver migrates (D3 step 2). Open decision: none; apply the kernel's rule.
+
 - [ ] **BUG-300 — `SQLBlobBackend.write("\\")` stores the row, then raises `InvalidPath`**
   spec: BE-008, WR-001 · effort: S · audience: user.api
   A direct `write("\\")` stores the row, raises, and `exists("\\")` is then

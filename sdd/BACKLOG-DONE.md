@@ -252,9 +252,9 @@ if evidence changes; these are retired.
   which decides absorbed BUG-297's fix, now hosted by BK-394 and BUG-300;
   `glob` checks the capability first, then takes the refusals and
   normalisation segment-wise, keeping a trailing `/`. Which clauses are
-  affected and who amends each is decision 6's Clauses checked paragraph;
-  it filed BK-398 (round-trip clauses already false on master) and BK-399
-  (stored backslash keys).
+  affected and who amends each is decision 6's Clauses checked paragraph.
+  BK-395 filed BK-398 (round-trip clauses already false on master), BK-399
+  (stored backslash keys) and BK-400 (`ext.glob`'s fallback tier).
   Detail: [dossier](backlog/bk-395-kernel-key-rule-addressing.md)
 
 - [x] **BK-396 — The kernel's `delete_folder` sequence around `SupportsRemoveFolder` is undecided**
