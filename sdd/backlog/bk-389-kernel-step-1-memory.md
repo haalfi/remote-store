@@ -166,13 +166,20 @@ every case. RFC-0017 carries the same answers at the question each settles.
    `"."`, and answers `[]` for `"../*.csv"`, `"d\\*.csv"` and `"d/*\0"`;
    the kernel answers `InvalidPath` for the four refused patterns and
    nothing for `""` and `"."`, step 5;
-   `SQLBlobBackend.glob` answers `[]` for `"./d/*.csv"`, `"d//*.csv"` and
-   `"d/./*.csv"`, where the kernel matches `d/a.csv`, and `[]` for every
-   refused pattern, where the kernel answers `InvalidPath`, step 3; and
-   SQL-BLOB-061's `a\b` seed in `tests/backends/sqlblob/test_like_prefix.py`,
-   which writes a backslash key directly, step 3. S3, Azure and Graph were
-   not run, so steps 2, 4 and 7 measure theirs. This decision adds nothing
-   else to D3's list.
+   `SQLBlobBackend.glob`, on a store holding no backslash key, answers `[]`
+   for `"./d/*.csv"`, `"d//*.csv"` and `"d/./*.csv"`, where the kernel
+   matches `d/a.csv`, and `[]` for every refused pattern, where the kernel
+   answers `InvalidPath`, step 3. Step 3 also inverts two SQL-BLOB-061 cells
+   in `tests/backends/sqlblob/test_like_prefix.py` to `InvalidPath`: the
+   `a\b` seed, which writes a backslash key directly, and the
+   `backslash_in_tail` glob cell, which matches `"*\\b/s.txt"` against it.
+   Not run, so each step measures its own addressing and backslash cells,
+   and its `glob` cells where it declares `GLOB`: SQLBlob's operations and
+   addressing and all of `SQLQueryBackend`, which declares `GLOB`
+   (`_QUERY_CAPABILITIES`), step 3; `S3Boto3Backend` (`GLOB`), step 2;
+   `AsyncAzureBackend` (`GLOB`), step 4; `SFTPBackend`, step 6;
+   `GraphBackend`, step 7; `ReadOnlyHttpBackend`, step 8. This decision
+   adds nothing else to D3's list.
 
    **Decided in BK-395** (2026-10-03, the maintainer through the interview,
    the recommended option each time; measurements and recipe in its

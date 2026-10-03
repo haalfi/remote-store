@@ -12,8 +12,6 @@ source_items:
 audience:
   - library.maintainer
   - contributor.process
-expected_ripples:
-  - sdd/backlogid.json
 phases:
   - id: orient
     name: Orient
