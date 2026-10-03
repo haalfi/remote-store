@@ -44,3 +44,10 @@ decision.
   marks a draft PR ready at the close. Sequence the two edits together.
 - Inherits the fail-open rule from BK-403: an unplaceable path selects the
   full suite.
+
+## Progress
+
+- **2026-10-03, RFC-0019:** [D1](../rfcs/rfc-0019-two-speed-test-gate.md#d1-two-lanes-switched-by-a-merge-candidate-signal)
+  makes the target the gate for every round push and keeps `all` as the full
+  check, recommended before marking a merge candidate. Which skills run it
+  stays open (RFC-0019 Open Questions 4).

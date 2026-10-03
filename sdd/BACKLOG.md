@@ -858,28 +858,28 @@ coverage floor.
 - [ ] **BK-403 — No change-scoped test selector has been chosen for this suite; one of three candidates is measured**
   spec: — · effort: M · audience: infra.test, contributor.tooling
   Both gates run every test for every code diff (audit-022 § H1). The
-  `pytest-testmon` PoC answers "not now": selection saves real time only on
-  leaf-code edits, and BUG-301 and BK-401 are cheaper. Open decision: run
-  `pytest-tia` and `pytest-impact` only if local rounds are still a measured
-  bottleneck once both have landed.
+  `pytest-testmon` PoC rejects a coverage map as the selector (blind to
+  non-Python inputs and text reads, map not portable). [RFC-0019](rfcs/rfc-0019-two-speed-test-gate.md)
+  proposes a rule-based selector instead. Open decision: RFC-0019 Phase 0
+  (seed and historical-PR replay) decides whether it is built.
   Detail: [dossier](backlog/bk-403-test-selector-evaluation.md)
 
 - [ ] **BK-404 — The local gate runs every test for every code diff, with no selected target for in-progress rounds**
   spec: — · effort: M · audience: contributor.tooling
   `hatch run all` runs all of Stage 1 whatever the diff touched, and tests
-  are most of its wall time (audit-022 § H1). Needs BK-403's selector. Open
-  decision: build it only if local rounds are still a measured bottleneck
-  after BUG-301 and BK-401 (BK-403's PoC); then R3 and BK-271's fit, and
-  which skills run it before a round push.
+  are most of its wall time (audit-022 § H1). Needs BK-403's selector;
+  [RFC-0019](rfcs/rfc-0019-two-speed-test-gate.md) D1 places it as the gate
+  for every round push. Open decision: RFC-0019 Phase 0's verdict; then the
+  target's name and the R3 / BK-271 argument (Phase 1 ADR).
   Detail: [dossier](backlog/bk-404-selected-tests-hatch-target.md)
 
 - [ ] **ID-266 — Every in-progress PR push runs the full pre-merge CI gate**
   spec: — · effort: L · audience: infra.ci, contributor.process
   `ci.yml` runs the whole gate on every PR push, including each `/ship` round
-  (audit-022 § M1). Needs BK-403's map, which BK-403's PoC found is not
-  reusable across interpreters or dependency sets. Open decision: revisit
-  only on BK-403's condition; then a new ADR amending ADR-0043 for a
-  draft-PR selected lane, once its four prerequisites have answers.
+  (audit-022 § M1). [RFC-0019](rfcs/rfc-0019-two-speed-test-gate.md)
+  replaces the draft-PR lane with a fast lane on every push and a full lane
+  on a `merge-candidate` head, guarded by a `merge-gate` status. Open
+  decision: RFC-0019 Phases 0–3; then the ADR amending ADR-0043 (Phase 4).
   Detail: [dossier](backlog/id-266-two-speed-ci-gate.md)
 
 - [ ] **BK-400 — The shard durations go stale between manual refreshes, so the primary shards balance on partial data**

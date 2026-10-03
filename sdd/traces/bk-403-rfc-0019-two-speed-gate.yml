@@ -1,0 +1,88 @@
+id: BK-403
+title: "No change-scoped test selector has been chosen for this suite; one of three candidates is measured"
+trigger: >-
+  Reviewing a management summary of audit-022's gate strategy, the maintainer
+  pointed out that the testmon PoC's "not now" judged one dependency-map tool,
+  not change-scoped selection as such, and asked for a gate strategy and a
+  roadmap to validate, build and finalise it, written as an RFC.
+source_items:
+  - BK-403
+  - BK-404
+  - ID-266
+audience:
+  - contributor.process
+  - infra.ci
+  - infra.test
+expected_ripples:
+  - sdd/BACKLOG.md
+  - sdd/backlog/bk-403-test-selector-evaluation.md
+  - sdd/backlog/bk-404-selected-tests-hatch-target.md
+  - sdd/backlog/id-266-two-speed-ci-gate.md
+surprising_ripples: []
+phases:
+  - id: orient
+    name: Orient
+    steps:
+      - file: sdd/research/research-bk-403-testmon-poc.md
+        section: "(full)"
+        read_type: gate
+        extract: >-
+          Which findings belong to testmon (7 of 13 seeds missed, map discarded
+          per interpreter, sysmon conflict) and which hold for any selector
+          (core-module fan-out, no coverage claim, incomplete text-reader
+          inventory). My first review treated the "not now" as a verdict on
+          selection; the maintainer corrected it
+      - file: sdd/audits/audit-022-gate-speed-strategies.md
+        section: "(full)"
+        read_type: gate
+        extract: "Mechanism table, fail-open classes, M1 lanes and the /ship constraint, L1-L3 figures cited in the RFC"
+      - file: sdd/backlog/id-266-two-speed-ci-gate.md
+        section: "(full)"
+        read_type: gate
+        extract: "Four prerequisites; each is answered or replaced by an RFC decision"
+      - file: sdd/backlog/bk-403-test-selector-evaluation.md
+        section: "(full)"
+        read_type: gate
+        extract: "Declared table named as fallback; the RFC adopts and extends it"
+      - file: sdd/backlog/bk-404-selected-tests-hatch-target.md
+        section: "(full)"
+        read_type: gate
+        extract: "audit-017 R3 and BK-271 constraints carried into Impact"
+  - id: design
+    name: Design
+    steps:
+      - file: .github/workflows/ci.yml
+        section: "setup (class patterns), code-gated jobs, gate"
+        read_type: reference
+        extract: >-
+          Five class outputs; 15 code-gated jobs (grep -c on the code
+          condition); gate aggregates passed-or-skipped and fails on a failed
+          setup; verify-tla absent from gate's needs, raised as an open
+          question
+      - file: scripts/drift_smoke_map.py
+        section: "SMOKE_TARGETS"
+        read_type: reference
+        extract: "Declared-table precedent; its -k s3 workaround is why D5's backend axis filters through the registry"
+      - file: tests/backends/fixtures/registry.py
+        section: "fixture_params"
+        read_type: reference
+        extract: "Single choke point for conformance parameters, where a backend allowlist fits"
+      - file: sdd/templates/rfc-template.md
+        section: "(full)"
+        read_type: reference
+        extract: "Section order; Management Summary placed first at the maintainer's request"
+      - file: sdd/CONTENT-RULES.md
+        section: "Rule 7 (Kernsatz)"
+        read_type: gate
+        extract: "Each RFC section opens with its claim"
+  - id: verify
+    name: Verify
+    steps:
+      - file: sdd/CLAUDE-REFERENCE.md
+        section: "Pre-work index; PR validation gates"
+        read_type: verify
+        extract: >-
+          No code touched, so lint + docs-gate; audience has no user. entry and
+          the RFC introduces no user-facing framework, so no CHANGELOG entry;
+          the selector's ripple onto the "Test whose subject is outside src/ or
+          scripts/" row is recorded in the RFC's Impact for when it is built

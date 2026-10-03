@@ -60,7 +60,17 @@ No other item delivers them. The `/ship` edit shares
 whether `/ship` runs the selected target before round pushes; sequence the
 two edits together.
 
-**Open decision for the ADR:** the primary leg's tier in the draft lane.
+**Superseded in part by RFC-0019 (2026-10-03).**
+[RFC-0019](../rfcs/rfc-0019-two-speed-test-gate.md) drops draft state as the
+switch, because review rounds push to open PRs: every push runs the fast lane,
+and the full lane runs on a head labelled `merge-candidate` (D1, D3).
+Prerequisite 1 becomes the `labeled` trigger; prerequisite 2 becomes a
+`merge-gate` commit status only the full lane posts, since a skipped required
+job passes protection (D2); prerequisite 3 needs no map, the selector being
+static (D5); prerequisite 4 is RFC-0019 Open Questions 4.
+
+**Open decision for the ADR:** the primary leg's tier in the fast lane
+(RFC-0019 Open Questions 1; the draft-lane wording below predates it).
 Stage 2 keeps ADR-0043's per-PR live-backend guarantee; Stage 1 is cheaper but
 leaves a round touching `_s3.py` or `_sftp.py` on moto or in-process SFTP until
 the close (§ M1).

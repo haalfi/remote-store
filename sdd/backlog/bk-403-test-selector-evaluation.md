@@ -60,3 +60,10 @@ need this item's verdict.
   condition and evidence:
   [`research-bk-403-testmon-poc.md`](../research/research-bk-403-testmon-poc.md).
   `pytest-tia` and `pytest-impact` wait for that revisit condition.
+- **2026-10-03, RFC-0019:** the PoC's "not now" rejects a coverage map, not
+  selection. [RFC-0019](../rfcs/rfc-0019-two-speed-test-gate.md) proposes the
+  declared-table fallback above, extended by a static import graph, a
+  registry-based backend axis and a generated text-reader table (D5), with
+  the coverage map kept only as a drift oracle (D7). Its Phase 0 replaces the
+  revisit condition: the selector is built only if it misses no seed and no
+  historical failure.
