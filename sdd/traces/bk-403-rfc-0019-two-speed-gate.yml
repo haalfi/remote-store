@@ -328,3 +328,114 @@ phases:
           the RFC introduces no user-facing framework, so no CHANGELOG entry;
           the selector's ripple onto the "Test whose subject is outside src/ or
           scripts/" row is recorded in the RFC's Impact for when it is built
+review:
+  # Derived by `hatch run ship-report 1066 --trace-block-only` at head 2fef02b.
+  # Do not hand-edit, except a newly required field per sdd/traces/_schema.yml
+  # section review: RFC-0015 D4 makes this script the only producer.
+  derivation: "hatch run ship-report 1066 --trace-block-only"
+  pr: 1066
+  review_rounds: 16
+  submissions: 11
+  findings: 41
+  by_round:
+    - round: 1
+      findings: 1
+      origin: {original: 1}
+      triage: {must-fix: 1}
+      duration_hours: 0.16
+    - round: 2
+      findings: 5
+      origin: {original: 4, unclassifiable-file: 1}
+      triage: {must-fix: 5}
+      duration_hours: 0.11
+    - round: 3
+      findings: 2
+      origin: {original: 2}
+      triage: {must-fix: 2}
+      duration_hours: 0.23
+    - round: 4
+      findings: 5
+      origin: {loop-introduced: 1, original: 3, unclassifiable-file: 1}
+      triage: {must-fix: 5}
+      duration_hours: 0.12
+    - round: 5
+      findings: 1
+      origin: {unclassifiable-file: 1}
+      triage: {must-fix: 1}
+      duration_hours: 0.15
+    - round: 6
+      findings: 5
+      origin: {loop-introduced: 4, original: 1}
+      triage: {must-fix: 5}
+      duration_hours: 0.23
+    - round: 7
+      findings: 5
+      origin: {loop-introduced: 4, original: 1}
+      triage: {must-fix: 5}
+      duration_hours: 0.3
+    - round: 8
+      findings: 4
+      origin: {loop-introduced: 4}
+      triage: {must-fix: 4}
+      duration_hours: 0.18
+    - round: 9
+      findings: 5
+      origin: {loop-introduced: 4, original: 1}
+      triage: {must-fix: 4, unknown: 1}
+      duration_hours: 0.18
+    - round: 10
+      findings: 4
+      origin: {loop-introduced: 3, original: 1}
+      triage: {must-fix: 4}
+      duration_hours: 0.15
+    - round: 11
+      findings: 4
+      origin: {loop-introduced: 3, original: 1}
+      triage: {must-fix: 4}
+      duration_hours: 0.15
+  by_file:
+    - path: "sdd/rfcs/rfc-0019-two-speed-test-gate.md"
+      findings: 38
+    - path: "sdd/backlog/bk-404-selected-tests-hatch-target.md"
+      findings: 1
+    - path: "sdd/backlog/id-266-two-speed-ci-gate.md"
+      findings: 1
+    - path: "sdd/traces/bk-403-rfc-0019-two-speed-gate.yml"
+      findings: 1
+  untouched_files:
+    - "sdd/BACKLOG.md"
+    - "sdd/backlog/bk-403-test-selector-evaluation.md"
+  review_driven_commits:
+    - sha: "7a0abac"
+      subject: "BK-403: full gate at least once per PR and on request, not exactly once"
+    - sha: "ed70cb4"
+      subject: "BK-403: address review: head-SHA status, label concurrency, layer union, dossier supersession, skill-edit ownership"
+    - sha: "ce81ac9"
+      subject: "Merge origin/master into bk-403-rfc-0019-two-speed-gate"
+    - sha: "ca51391"
+      subject: "BK-403: point RFC-0019 at the relocated srcreads scan"
+    - sha: "389eb1b"
+      subject: "BK-403: address review: fork PRs cannot merge on their own; D6 triggers only on non-FULL code rows"
+    - sha: "94f1530"
+      subject: "BK-403: address review: import-graph edge rule, registry-driven backend axis, fixture marks, stale BK-404 wording"
+    - sha: "6275929"
+      subject: "BK-403: address overall review: Phase 0 plus narrow local pilot, status lifecycle and poster pinning, cost-based cut-off, observable fallback, escape classes, rule ownership"
+    - sha: "4d7a29b"
+      subject: "BK-403: correct uncritically accepted review changes: leaf-only pilot narrowing, reader inventory as Phase 0 exit, evidenced escape classes, honest status trust model"
+    - sha: "5c9d9a8"
+      subject: "BK-403: address testing review: pilot narrows no src edit, string and test/script import edges, mode-pinned seeds, two-method reader inventory, Stop on precision set"
+    - sha: "df9424b"
+      subject: "BK-403: address consistency review: fixture module ids via _MODULE_FOR, poster uses gate rule, code=false is the full lane, override is ruleset bypass, pilot defined as every layer-1 row"
+    - sha: "1488238"
+      subject: "BK-403: self-review fixes: lane table and unrelated-label precedence, guarantee limits, stale layer-4 text, derivation for the /ship claim, label in Impact, BK-404 skill scope"
+    - sha: "3a16c47"
+      subject: "BK-403: address fourth review: FULL selection is the full lane, FEATURES.md class violator named, examples row selects its tests, auto-merge in Impact, trace tag fixed"
+    - sha: "db609fe"
+      subject: "BK-403: file the CODE_PAT FEATURES.md gap found in RFC-0019 review as BUG-302"
+    - sha: "ab04ffd"
+      subject: "BK-403: address fifth review: per-job survival and unsharded fast jobs, class property narrowed with DOCS_PAT gaps listed, selection-based PII rule, .py-only reader inventory, non-vacuous mapping test"
+    - sha: "2dff6ce"
+      subject: "BK-403: address final review: fixture-registry rows name consumers and run FULL in the pilot, cross-platform filters in per-job survival, verify-tla restated as settled"
+    - sha: "2fef02b"
+      subject: "BK-403: address review: mapped readers in the pilot, own-test exclusion, session-hook conftests FULL, stale re-run lifecycle row, Phase 2 CI job stated"
+  ci: {verdict: GREEN, failed: 0, pending: 0}
