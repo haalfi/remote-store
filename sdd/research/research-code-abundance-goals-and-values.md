@@ -2,7 +2,7 @@
 
 **Date:** 2026-08-30
 **Backlog items:** — (no item; BK-361 was filed *from* this record's validation pass, not by it)
-**Status:** Research complete — the argument and its evidence are settled as of the date above. Point-in-time snapshot per [`sdd/000-process.md` § Document types](../000-process.md): the external telemetry it cites is 2025–2026 vintage and the repo counts in the appendix drift, so read every figure against this date. Sourcing is uneven by design and § 4 marks which rows were read from the primary and which were not.
+**Status:** Research complete — the argument and its evidence are settled as of the date above. Point-in-time snapshot per [`sdd/000-process.md` § Document types](../000-process.md): the external telemetry it cites is 2025–2026 vintage and the repo counts in the appendix drift, so read every figure against this date. Sourcing is uneven by design and § 4 marks which rows were read from the primary and which were not. **Corrected 2026-10-03:** § 2.3 ranked intent debt as uniformly "partially repayable", which is wrong for the half the code does not show; the correction is marked in place there and its consequence added to the appendix's gaps.
 
 ## TL;DR
 
@@ -292,7 +292,7 @@ debt cannot be taken on.** Prevention differs from paydown in what it constrains
 | Debt | Paydown remedy | Preventive control |
 |---|---|---|
 | Technical | Refactoring sprints, cleanup backlogs | Merge gates: conformance suites, coverage floors, mutation testing |
-| Intent | Write the ADR afterwards | The _why_ is required before the code exists — no implementation without a spec section, decision records immutable once accepted |
+| Intent | Write the ADR afterwards | The _why_ is required before the code exists — no implementation without a spec section, decision records immutable once accepted; a decision taken mid-work is captured verbatim where it is made, rejected alternatives included (added by the correction below) |
 | Cognitive | Pair programming, AI-free checkpoints, explain-to-a-peer | Mandate the engagement in the workflow itself — reproduce the bug and watch the test fail before fixing; read the change's ripple set before starting; verify behaviour by running it, never by type-checking it |
 
 **For cognitive debt the distinction is not a preference. It is the whole
@@ -312,6 +312,31 @@ made while the theory was thin.
 An earlier draft said "not repayable at all", which the appendix contradicts.
 The narrower claim is also the stronger one: prevention does not win because
 nothing else could work, it wins because nothing else arrives in time.
+
+**Correction (2026-10-03): intent debt is not uniformly partially repayable.**
+The ranking above treats it as one quantity, and it splits along the same line
+that separates cognitive debt from technical debt. Reconstruction recovers the
+_chosen_ path: the code still shows what was decided, and a why can be re-argued
+from it, lossily. It cannot recover what the code does not show — the
+alternatives weighed and rejected, and what was known and unknown when the
+choice was made. Nothing in the artifact points at a path not taken, so a later
+reader does not know to look for it, and hindsight fills the missing
+information without announcing that it has. That half exists at the moment of
+decision and at no later moment: it is repayable only forward, like cognitive
+debt.
+
+For agent-assisted work the forward-only half fails worse than by loss. The
+rationale an agent writes at the end of a session, in a PR body or an ADR, is a
+reconstruction by a party whose theory of the decision has partly left its
+context, and by the fabrication mechanism above it supplies the most plausible
+why rather than the one that held. The paydown remedy in the table — write the
+ADR afterwards — is therefore not merely late for this half; it is the route by
+which the debt's characteristic error enters the record. The preventive control
+is to keep the decision where it is made, verbatim, rather than summarise it
+later. Where decisions are put to a human as structured questions — options with
+their consequences, a recommendation, an answer — that record already exists in
+full at the moment of decision; what is missing is only its persistence and a
+reader.
 
 That is why the preventive column is load-bearing, and it is where the RCT above
 and Naur converge. Both are statements about *when* understanding forms — mode
@@ -952,6 +977,20 @@ checking surfaced, and they are a lower bound on what was missing.
 so AI provenance does not survive into `git log`. (7) The training pipeline — a
 single-maintainer project has no junior path to defend, which means the repo
 cannot demonstrate the hardest proposal rather than that it fails it.
+
+A third gap is against the preventive table rather than § 6, and the
+2026-10-03 correction in § 2.3 is what exposes it. Every intent-layer control
+above binds a decision taken _before_ implementation; none captures one taken
+during it. By the maintainer's account, decisions here are mostly taken mid-work
+in the structured dialogs [`CLAUDE.md` § Interview mode](../../CLAUDE.md#interview-mode)
+requires, and such a dialog — question, options with consequences,
+recommendation, answer — persists only in the session transcript, outside the
+repository. So "orders the work so that neither is taken on", above, holds for
+intent debt only up to the first mid-work decision. The rationale for the chosen
+option is later re-argued from the code; the rejected options and the
+information they were weighed on are not recoverable at all.
+[RFC-0018](../rfcs/rfc-0018-decision-capture-at-dialog-time.md) proposes the
+mechanism.
 
 Proposal 8's comprehension measurement is deliberately not listed as a third gap.
 The preventive controls above address the same failure by a different route, and
