@@ -24,9 +24,16 @@ chosen.** The open decision is which of the shapes below to build, or none.
   pasted while the PR is open. The decision itself names the PR number, which
   the block emits as `pr`, as the durable handle; the branch SHAs it lists stop
   resolving at the squash merge.
-- **The script needs no local state beyond the repo.** `scripts/ship_report.py`
-  reads GitHub through `gh api` only (line 206), so it can run in a GitHub
-  Actions job.
+- **The script can run in a GitHub Actions job, given a deep checkout.**
+  `scripts/ship_report.py` reads GitHub through `gh api` (`_gh_one`) and the
+  classifier it imports (`sdd/rfcs/rfc-0015-findings.py`), but it also runs git
+  against the checkout: `git log <base>..<head>` against `origin/<base>` for the
+  review-driven commits, and `git blame` at the reviewed head for each finding's
+  origin tag. Its docstring states "Requires `gh` authenticated and the base ref
+  fetched", and that a depth-50 clone yields graft artefacts. A job therefore
+  needs the PR head checked out, the base branch fetched, and history deep
+  enough for blame; `actions/checkout` defaults to depth 1, under which origin
+  tags degrade to `unclassifiable-*` without an error.
 - **The block undercounts rounds posted as conversation comments.** On PR #1071
   both review rounds were posted as PR conversation comments, not as review
   submissions or inline threads. The derived block reported
@@ -45,10 +52,17 @@ chosen.** The open decision is which of the shapes below to build, or none.
   mark**. A close step that pushes the block after `merge-candidate` is set
   clears it and restarts the wait. Whichever shape is chosen has to order the
   close commit before the mark, or be the thing that sets it.
-- **CI on a bot push.** A commit pushed with the default `GITHUB_TOKEN` does not
+- **CI on a bot push or label.** A commit pushed with the default `GITHUB_TOKEN` does not
   trigger `ci.yml`, so required checks would never report on the new head. A
   GitHub App or fine-grained token is needed for any shape that commits from a
-  workflow. BK-400 records the same constraint for a bot-opened PR.
+  workflow. BK-400 records the same constraint for a bot-opened PR. The same
+  holds for the label: RFC-0019 D3 states that events caused by `GITHUB_TOKEN`
+  start no workflow, and the full lane starts on the `merge-candidate`
+  `labeled` event. A close workflow that adds `merge-candidate` with its default
+  token leaves the head with no full run and no `merge-gate`, so merge stays
+  blocked with nothing reporting why. Shape 2, and any shape that "is the thing
+  that sets" the mark, needs the App or fine-grained token for the label too,
+  even if it commits nothing.
 - **Signed commits.** Master requires signed commits. A commit made through the
   GraphQL `createCommitOnBranch` mutation is signed by GitHub; this is to be
   verified against the ruleset before relying on it.
@@ -61,11 +75,14 @@ chosen.** The open decision is which of the shapes below to build, or none.
    runs `gh pr merge --auto --squash`. The repo already enables auto-merge from
    a workflow after a human approval
    (`.github/workflows/dependabot-auto-merge.yml`). Keeps RFC-0015 D4 intact.
-   Costs a token and the RFC-0019 ordering above.
+   Costs a token, a checkout deep enough for `ship-report` (Evidence above), and
+   the RFC-0019 ordering above.
 2. **Fold the close into RFC-0019's `merge-candidate`.** The one signal that
    says "this head is final" also writes the block, before the full lane runs.
    Removes a second label, but couples this item to ID-266's phases and needs
-   D1's push-clears-the-mark rule to exempt or precede the close commit.
+   D1's push-clears-the-mark rule to exempt or precede the close commit. Costs
+   the same token and checkout as shape 1: a workflow that sets the label with
+   `GITHUB_TOKEN` starts no full lane.
 3. **Stop committing the block.** The trace keeps `pr: <N>` and the figures are
    derived on demand from it. Removes the close step entirely. Reverses D4's
    "its output is the trace's review block, verbatim", so it needs RFC-0015
