@@ -37,6 +37,12 @@ the first ``bash``; macOS would add only a real ``osascript``, which point 5
 already covers via a stub, so the leg would buy coverage this file already has.
 Recorded because the ripple-check "New test file" row asks for the decision, and
 an unstated one reads the same as a forgotten one.
+
+A contributor's own Windows box still collects the module through ``hatch run
+all``, so every test that runs the hook carries ``posix_only``: the harness
+symlinks binaries (a privilege Windows withholds by default), detaches the
+terminal with ``setsid`` and forks a pty, none of which Windows has. Point 6 is
+pure Python and runs everywhere.
 """
 
 from __future__ import annotations
@@ -45,9 +51,12 @@ import json
 import re
 import shutil
 import subprocess
+import sys
 from pathlib import Path
 
 import pytest
+
+posix_only = pytest.mark.skipif(sys.platform == "win32", reason="the hook harness needs symlinks, setsid and a pty")
 
 # Everything the hook shells out to, plus bash itself. A PATH holding only
 # these is how the "no notification backend" case is built: it cannot simply be
@@ -144,6 +153,7 @@ def _run(payload: str, label: str, bin_dir: Path) -> subprocess.CompletedProcess
     )
 
 
+@posix_only
 @pytest.mark.parametrize(
     ("payload", "label", "expected"),
     [
@@ -164,6 +174,7 @@ def test_notification_message(payload: str, label: str, expected: str, stub_bin:
     assert delivered.strip() == f"Claude Code Waiting on you: {expected}"
 
 
+@posix_only
 def test_survives_missing_notification_backend(tmp_path: Path) -> None:
     """No backend and no controlling terminal is a normal container run, not an error.
 
@@ -176,6 +187,7 @@ def test_survives_missing_notification_backend(tmp_path: Path) -> None:
     assert result.stderr == ""
 
 
+@posix_only
 def test_osascript_literal_survives_quote_injection(osascript_bin: Path) -> None:
     """Contract point 5, pinned on the branch that actually builds a quoted literal.
 
@@ -191,6 +203,7 @@ def test_osascript_literal_survives_quote_injection(osascript_bin: Path) -> None
     assert delivered == '-e display notification "Waiting on you: say hi  nownext" with title "Claude Code"'
 
 
+@posix_only
 def test_powershell_arm_is_reached_when_it_is_the_only_backend(powershell_bin: Path) -> None:
     """The last arm of the chain fires, so no backend is dead in the suite.
 
@@ -238,6 +251,7 @@ def test_settings_hook_commands_point_at_files_that_exist() -> None:
     assert not missing, f"settings.json references hook scripts that do not exist: {missing}"
 
 
+@posix_only
 def test_bell_rings_when_a_terminal_is_present(tmp_path: Path) -> None:
     """Contract point 3: the hook's primary channel actually fires.
 

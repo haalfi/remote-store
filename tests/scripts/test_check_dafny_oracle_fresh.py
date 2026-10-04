@@ -54,7 +54,7 @@ def env(tmp_path: Path, mod, monkeypatch):
     for name in ("MemoryBackend.dfy", "BackendContract.dfy", "RootPath.dfy", "ResourceSafety.dfy"):
         (formal / name).write_text(f"// {name}\n")
     translate = tmp_path / "dafny_translate.sh"
-    translate.write_text(WRAPPER)
+    translate.write_text(WRAPPER, encoding="utf-8")
 
     build_out = tmp_path / "build_out"  # what the fake build writes, pre-reorder
     (build_out / "_dafny").mkdir(parents=True)
@@ -131,7 +131,7 @@ class TestFreshness:
         extra = 'CMDS="$CMDS && cd /tmp"\n'
         assert "|| true)" in WRAPPER
         tail = WRAPPER.replace("|| true)", "|| true) && rm -rf /build/x")
-        env["translate"].write_text(tail + extra)
+        env["translate"].write_text(tail + extra, encoding="utf-8")
         assert env["run"]() == 0
         call = json.loads(env["log"].read_text())
         assert call["argv"] == ["build", "-t", "py", "MemoryBackend.dfy", "--output:MemoryBackend"]
@@ -145,7 +145,7 @@ class TestFreshness:
 
     def test_build_flags_come_from_the_wrapper(self, env):
         """A flag added to the wrapper's build reaches the check, so a regenerated tree stays fresh."""
-        env["translate"].write_text(WRAPPER.replace("build -t py $f", "build -t py --foo $f"))
+        env["translate"].write_text(WRAPPER.replace("build -t py $f", "build -t py --foo $f"), encoding="utf-8")
         env["run"]()
         call = json.loads(env["log"].read_text())
         assert call["argv"] == ["build", "-t", "py", "--foo", "MemoryBackend.dfy", "--output:MemoryBackend"]
@@ -187,7 +187,7 @@ class TestFreshness:
 
     def test_source_set_comes_from_the_wrapper(self, env):
         """The files copied into the build are the wrapper's `cp /work/<glob>`, not a pattern restated here."""
-        env["translate"].write_text(WRAPPER.replace("cp /work/*.dfy", "cp /work/Memory*.dfy"))
+        env["translate"].write_text(WRAPPER.replace("cp /work/*.dfy", "cp /work/Memory*.dfy"), encoding="utf-8")
         env["run"]()
         assert json.loads(env["log"].read_text())["cwd_files"] == ["MemoryBackend.dfy"]
 
@@ -249,17 +249,17 @@ class TestSetupErrors:
         assert "not found" in capsys.readouterr().err
 
     def test_unreadable_pin_exits_2(self, env, capsys):
-        env["translate"].write_text("#!/bin/bash\n")
+        env["translate"].write_text("#!/bin/bash\n", encoding="utf-8")
         assert env["run"]() == 2
         assert "DAFNY_VERSION" in capsys.readouterr().err
 
     def test_wrapper_without_build_line_exits_2(self, env, capsys):
-        env["translate"].write_text("#!/bin/bash\nDAFNY_VERSION=4.11.0\n")
+        env["translate"].write_text("#!/bin/bash\nDAFNY_VERSION=4.11.0\n", encoding="utf-8")
         assert env["run"]() == 2
         assert "dafny build" in capsys.readouterr().err
 
     def test_wrapper_without_source_copy_exits_2(self, env, capsys):
-        env["translate"].write_text(WRAPPER.replace("cp /work/*.dfy /build/", "true"))
+        env["translate"].write_text(WRAPPER.replace("cp /work/*.dfy /build/", "true"), encoding="utf-8")
         assert env["run"]() == 2
         err = capsys.readouterr().err
         assert "/work/<glob>" in err
@@ -268,7 +268,7 @@ class TestSetupErrors:
     def test_wrapper_with_two_build_lines_exits_2(self, env):
         """Two invocations: which one produced the committed tree is not decidable from the text."""
         build_line = next(line for line in WRAPPER.splitlines() if "dafny build" in line)
-        env["translate"].write_text(WRAPPER + build_line + "\n")
+        env["translate"].write_text(WRAPPER + build_line + "\n", encoding="utf-8")
         assert env["run"]() == 2
 
     def test_wrapper_that_is_not_utf8_exits_2(self, env, capsys):
@@ -278,7 +278,7 @@ class TestSetupErrors:
 
     def test_wrapper_with_two_source_copies_exits_2(self, env):
         copy_line = next(line for line in WRAPPER.splitlines() if "cp /work/" in line)
-        env["translate"].write_text(WRAPPER + copy_line + "\n")
+        env["translate"].write_text(WRAPPER + copy_line + "\n", encoding="utf-8")
         assert env["run"]() == 2
 
     # Outside the allowlist grammar: each is exit 2 naming the offending token, and dafny never runs.
@@ -357,7 +357,7 @@ class TestSetupErrors:
     def test_wrapper_outside_the_grammar_exits_2(self, env, capsys, old, new, named):
         """Anything not in the grammar is a setup error, never a mangled argument that fails as drift."""
         assert old in WRAPPER
-        env["translate"].write_text(WRAPPER.replace(old, new))
+        env["translate"].write_text(WRAPPER.replace(old, new), encoding="utf-8")
         assert env["run"]() == 2
         assert named in capsys.readouterr().err
         assert not env["log"].exists()
@@ -395,7 +395,7 @@ class TestSetupErrors:
 )
 def test_equivalent_wrapper_spellings_build_the_same(env, old, new):
     assert old in WRAPPER
-    env["translate"].write_text(WRAPPER.replace(old, new))
+    env["translate"].write_text(WRAPPER.replace(old, new), encoding="utf-8")
     assert env["run"]() == 0
     call = json.loads(env["log"].read_text())
     assert call["argv"] == ["build", "-t", "py", "MemoryBackend.dfy", "--output:MemoryBackend"]

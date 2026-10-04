@@ -785,13 +785,6 @@ CHANGELOG the release body is built from — say what is actually true.
   remove or re-defer, with a successor ticket.
   Detail: [dossier](backlog/id-150-verify-tla-revisit.md)
 
-- [ ] **BUG-305 — `report-trace-outcomes` crashes on a Windows console before printing**
-  spec: — · effort: S · audience: contributor.tooling
-  `hatch run report-trace-outcomes` raises `UnicodeEncodeError` on `→` under
-  the default cp1252 console, so the release's Phase 0 revisit read fails on
-  the maintainer's own machine; `PYTHONIOENCODING=utf-8` works around it.
-  Reproduced at the v0.33.0 release. Open decision: none; bug-fix protocol.
-
 - [ ] **ID-267 — Trace-outcome report revisit at the next release**
   spec: — · effort: S · audience: contributor.process
   The release-anchored trace-outcome revisit fires at the next release; ID-259
@@ -841,14 +834,6 @@ CHANGELOG the release body is built from — say what is actually true.
   there read `src/` other than by import (BK-403's scan,
   `bk-403-testmon-poc/srcreads.py`). A selector built on the comment would
   drop the directory. Open decision: none.
-
-- [ ] **BUG-304 — `hatch run all` fails on a Windows dev box in four `tests/scripts/` files that CI never runs there**
-  spec: — · effort: S · audience: contributor.tooling, infra.test
-  At the v0.33.0 release, 4 failed and 22 errored, all in `tests/scripts/`: the
-  `check_backlog_ids_vs_base` temp repo inherits a global `commit.gpgsign`; `claude_hooks`
-  needs symlinks and `termios`; `check_traces` expects `IsADirectoryError` (Windows
-  raises `PermissionError`); a `dafny_oracle_fresh` fixture writes cp1252. Open decision:
-  none; `tooling-tests` runs Linux only, so each fix needs a Windows run.
 
 ---
 

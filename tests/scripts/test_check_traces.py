@@ -126,6 +126,7 @@ class TestValidation:
         # unreadable trace are distinguishable in CI output.
         assert "ParserError" in violations[0].message
 
+    @pytest.mark.os_sensitive
     @pytest.mark.parametrize("kind", ["undecodable", "directory"])
     def test_unreadable_trace_is_a_violation_not_a_traceback(self, tmp_path, kind):
         # Neither is a yaml.YAMLError: both come out of read_text before
@@ -144,7 +145,8 @@ class TestValidation:
             expected = "UnicodeDecodeError"
         else:
             (traces / "adir.yml").mkdir()
-            expected = "IsADirectoryError"
+            # Windows refuses to open a directory with EACCES, not EISDIR.
+            expected = "PermissionError" if sys.platform == "win32" else "IsADirectoryError"
 
         violations = _mod.collect_violations(schema_path=schema, traces_dir=traces)
 

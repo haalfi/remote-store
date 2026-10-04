@@ -244,6 +244,21 @@ if evidence changes; these are retired.
 
 ## Unreleased
 
+- [x] **BUG-305 — `report-trace-outcomes` crashes on a Windows console before printing**
+  spec: — · effort: S · audience: contributor.tooling
+  `main()` reconfigures a text stdout to UTF-8 before printing, so a cp1252
+  console or pipe no longer raises `UnicodeEncodeError` on `→`. Pinned by
+  `TestOutputEncoding` in `tests/scripts/test_report_trace_outcomes.py`, which
+  fails without the fix on any OS.
+
+- [x] **BUG-304 — `hatch run all` fails on a Windows dev box in four `tests/scripts/` files that CI never runs there**
+  spec: — · effort: S · audience: contributor.tooling, infra.test
+  `tests/scripts/` passes on Windows: 2027 passed, 38 skipped (`pytest tests/scripts -n 4`),
+  against 4 failed and 22 errored before. The temp repo sets `commit.gpgsign false`;
+  the hook tests that run bash carry a `posix_only` skip; `check_traces` expects
+  `PermissionError` on Windows and is now `os_sensitive`; the Dafny wrapper fixtures
+  write UTF-8.
+
 - [x] **BUG-303 — The weekly mutation run outgrows the 6 h job cap on pytest-gremlins 1.10**
   spec: — · effort: S · audience: infra.ci, contributor.tooling
   Run 43 (#1065): four legs cancelled at 360 min, ext-parquet and core-misc

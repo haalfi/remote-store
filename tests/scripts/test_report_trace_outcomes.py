@@ -21,6 +21,7 @@ nothing.
 from __future__ import annotations
 
 import importlib.util
+import io
 import re
 import sys
 import textwrap
@@ -664,6 +665,24 @@ class TestNeverAGate:
             _mod.main(argv)
 
         assert exc.value.code == 2
+
+
+class TestOutputEncoding:
+    def test_non_cp1252_text_survives_a_cp1252_stdout(self, tmp_path, monkeypatch):
+        # A Windows pipe or console defaults stdout to cp1252, and trace
+        # extracts routinely carry `→`; printing raised UnicodeEncodeError
+        # before any of the report reached the reader (BUG-305). The
+        # report is Markdown, so it is written as UTF-8 whatever the locale.
+        root, traces = _repo(tmp_path, "a.md")
+        _write(traces, "bk-1-x.yml", _trace("BK-1", _step("a.md", "misleading", extract="a → b")))
+        raw = io.BytesIO()
+        monkeypatch.setattr(sys, "stdout", io.TextIOWrapper(raw, encoding="cp1252"))
+
+        rc = _mod.main(["--traces-dir", str(traces), "--repo-root", str(root)])
+
+        sys.stdout.flush()
+        assert rc == 0
+        assert "a → b" in raw.getvalue().decode("utf-8")
 
 
 class TestRendering:
