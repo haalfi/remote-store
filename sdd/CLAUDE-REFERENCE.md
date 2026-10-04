@@ -506,7 +506,10 @@ Shared by `/pr` and `/fix-pr`. `<BASE>` is the PR base branch (default
 `master`). Run `git fetch origin <BASE>`, then
 `git rev-list --count origin/<BASE> ^HEAD`. A non-zero count means the branch is
 behind `origin/<BASE>` — **stop and ask the user whether to rebase**. If
-approved: `git rebase origin/<BASE>` then immediately
+approved: first commit the decision-log tail with the commands in
+[`/pr` Step 4](../.claude/skills/pr/SKILL.md). The question just asked appended
+to `sdd/decisions/`, and a modified tracked log makes `git rebase` refuse
+("cannot rebase: You have unstaged changes"). Then `git rebase origin/<BASE>` and immediately
 `git push --force-with-lease origin <current-branch>`, so later steps act on the
 rebased remote state. Never rebase silently — `--force-with-lease` is
 destructive to anyone tracking the branch. (`/fix-pr` fetches review comments

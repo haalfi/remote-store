@@ -107,3 +107,11 @@ phases:
         read_type: verify
         extract: "D4.3 still said Step 1 commits the tail; my pass-1 sweep searched 'Step 1 commits' and missed 'after Step 1 has committed'. In /pr the body was drafted (Step 5) before the tail commit (Step 6), so the tail now runs as Step 4, after the last asking step (maintainer's choice); D2 and D4.3 say it lands before the body is drafted. The renumbering staled the Rules' 'Step 5 builds the body', fixed; bk-363's dossier cites SKILL.md:27-46 in a correction dated 2026-09-28, true then, left as a dated record. D2's 'cannot conflict on merge' measured false for one session across two branches (scratch repo, git 2.52.0.windows.1): blocked switch from a modified committed log, blocked switch back over an untracked log, CONFLICT (add/add) merging A and B. Bounded in D2 and added to BK-397's pending list (maintainer's choice), no code change"
         outcome: misleading
+  - id: review_fix_3
+    name: Review fix pass 3
+    steps:
+      - file: sdd/CLAUDE-REFERENCE.md
+        section: "Branch freshness check"
+        read_type: verify
+        extract: "The freshness check asks before rebasing, and with the recorder registered that answer modifies the tracked log. Measured in a scratch repo (git 2.52.0.windows.1, rebase.autoStash unset): git rebase refused with 'cannot rebase: You have unstaged changes'; after the pathspec tail commit it rebased cleanly and kept the decision-log commit. The check now commits the tail first, pointing at /pr Step 4 for the commands (maintainer's choice over --autostash, whose stash stack is shared across sessions). I had not hit this earlier because my rebases in this session ran under a standing instruction, without the question. The PR body's '26 tests' was stale against 29 (def test_ count with parametrizations, matching pytest's 29 passed); body corrected"
+        outcome: ok

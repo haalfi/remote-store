@@ -139,7 +139,11 @@ the PR diff shows the log beside the change it explains.
   tree files would be overwritten"); and if the session then starts branch B
   from the base, merging A and B gives `CONFLICT (add/add)` on the log. The
   remedy is open (BK-397, pending); a per-branch file name would clear the last
-  two cases but not the first.
+  two cases but not the first. The same dirty-tracked-log shape stops a rebase
+  on one branch ("cannot rebase: You have unstaged changes", same scratch
+  repo), and the branch freshness check's own rebase question produces it; that
+  case is handled, because the check commits the tail before rebasing
+  ([`CLAUDE-REFERENCE.md` § Branch freshness](../CLAUDE-REFERENCE.md#branch-freshness)).
 - **Exempt from the tree-unchanged checks.** The recorder writes while a review
   round may be running. `/ship`'s main-tree `git status --porcelain` capture and
   `/orchestrate`'s porcelain and `git diff HEAD` captures exclude
