@@ -250,9 +250,11 @@ if evidence changes; these are retired.
   killed. Three causes, each reproduced locally. The unbounded `>=1.5` pin let
   in 1.10, which runs one pytest subprocess per gremlin (core-path 6.9 s → 30.4 s);
   now `>=1.10.1,<1.11`, with `--gremlin-workers=4` and a 330 min leg timeout.
-  Scopes needing the sftp container stay serial, so the four unsplit
-  full-conformance topics (listing, metadata, streaming, sync-adapter) are now
-  split by transport like the others, confining sftp to the `-ssh` legs.
+  Scopes needing the sftp container stay serial, and the four unsplit
+  full-conformance scopes carried it through the union of every fixture's
+  container: listing, metadata and streaming are now split by transport like
+  the others, confining sftp to the `-ssh` legs; sync-adapter, whose SFTP
+  server is in-process, now names its one container, Azurite (64 → 76 scopes).
   Mutant g050 (`ext/parquet.py:480`, `<` to `<=`) looped `_split_table` until
   the runner's memory ran out; a per-process `ulimit -v` makes it an `error`.
   The report flags in `PYTEST_ADDOPTS` reached the coverage pre-scan, which

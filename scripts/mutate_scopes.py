@@ -20,7 +20,8 @@ ext source (e.g., the namespace-wide ``test_contract.py``) roll into
 Transport split
 ===============
 
-Every conformance topic is split by ``[backend.<x>].transport``. pytest-gremlins
+Every conformance topic parametrized by registry fixtures is split by
+``[backend.<x>].transport``. pytest-gremlins
 re-runs pytest with every collected node id as argv, and a topic over all
 backends can exceed the ~32 KiB Windows command-line limit (WinError 206).
 Splitting also confines the ``sftp`` container to the ``-ssh`` legs, which
@@ -323,7 +324,7 @@ def _build() -> dict[str, Scope]:
             ),
         )
 
-    # Conformance topics — every one split by transport. Two reasons: a
+    # Registry-parametrized conformance topics, split by transport. Two reasons: a
     # topic over all backends can exceed the Windows cmdline limit (see the
     # module docstring), and an unsplit topic's ``needs`` include ``sftp``, so
     # its leg must run serially (sftp_docker cannot take concurrent gremlin
@@ -347,22 +348,14 @@ def _build() -> dict[str, Scope]:
 
     # Sync-adapter: parametrized by its own ids (``adapter-memory``,
     # ``adapter-local``, ``live-s3``, ``live-sftp``, ``live-azure``), not by
-    # registry fixtures, so the transport filters above select nothing for some
-    # transports. Split off the one SFTP id instead, for the same serial-leg
-    # reason.
-    ssh_src = {s for b in backends if b.transport == "ssh" for s in _src(b)}
-    sync_test = "tests/backends/conformance/test_sync_adapter_conformance.py"
+    # registry fixtures, so it stays one scope and its ``needs`` cannot come
+    # from ``_needs``. Its live ids use ``moto_server`` and ``sftp_server``,
+    # both in-process (tests/conftest.py), and ``azurite_server``: Azurite is
+    # its only container, so it takes parallel workers.
     out["conformance-sync-adapter"] = Scope(
-        targets=sorted({*(s for b in backends for s in _src(b)), _SYNC_ADAPTER} - ssh_src),
-        tests=[sync_test],
-        filter="not live-sftp",
-        needs=[c for c in _needs(None) if c != "sftp"],
-    )
-    out["conformance-sync-adapter-ssh"] = Scope(
-        targets=sorted({*ssh_src, _SYNC_ADAPTER}),
-        tests=[sync_test],
-        filter="live-sftp",
-        needs=["sftp"],
+        targets=sorted({*(s for b in backends for s in _src(b)), _SYNC_ADAPTER}),
+        tests=["tests/backends/conformance/test_sync_adapter_conformance.py"],
+        needs=["azurite"],
     )
 
     # Async-extended — per backend that wires a native or adapted async
