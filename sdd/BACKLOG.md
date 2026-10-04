@@ -855,7 +855,7 @@ coverage floor.
 
 - [ ] **BUG-306 — 48 tracked files that `tests/scripts/` tests read match no CI class pattern, so a PR touching only them runs no checks**
   spec: — · effort: S · audience: infra.ci
-  RFC-0019 Phase 0's D4 audit ([report](research/research-bk-403-rfc-0019-phase-0.md)
+  RFC-0019 Phase 0's D4 audit ([report](research/bk-403-phase-0/report.md)
   Appendix G) lists them: `.claude/skills/*`, `.claude/agents/*`, `CONTRIBUTING.md`,
   `CLAUDE.md`, `infra/drift-locks/*` and more, each read by a test that never runs
   for such a PR; 776 further `docs`-class files have readers outside `docs-gate`.
@@ -877,13 +877,31 @@ coverage floor.
   Open decision: P6's re-measure of the Stage-2 and `--cov-append` paths, then
   switch all six (not `test-cov-branch`).
 
+- [ ] **BK-403 — No change-scoped test selector has been chosen for this suite; one of three candidates is measured**
+  spec: — · effort: M · audience: infra.test, contributor.tooling
+  Both gates run every test for every code diff (audit-022 § H1). A coverage map
+  failed its PoC; [RFC-0019](rfcs/rfc-0019-two-speed-test-gate.md)'s rule-based
+  selector failed its Phase 0 ([report](research/bk-403-phase-0/report.md)):
+  72.6% of code PRs fall back to FULL, 59 of 106 through `pyproject.toml` or `.github/**`.
+  Open decision: a selection idea that narrows those rows or the base-module fan-out.
+  Detail: [dossier](backlog/bk-403-test-selector-evaluation.md)
+
+- [ ] **BK-404 — The local gate runs every test for every code diff, with no selected target for in-progress rounds**
+  spec: — · effort: M · audience: contributor.tooling
+  `hatch run all` runs all of Stage 1 whatever the diff touched, and tests
+  are most of its wall time (audit-022 § H1). [RFC-0019](rfcs/rfc-0019-two-speed-test-gate.md)
+  D1 makes BK-403's selector the gate for every round push. Open decision:
+  blocked on BK-403; then the name, the R3 / BK-271 argument and which skills
+  run it (RFC-0019 Open Questions 4, keeps this item open).
+  Detail: [dossier](backlog/bk-404-selected-tests-hatch-target.md)
+
 - [ ] **ID-266 — Every in-progress PR push runs the full pre-merge CI gate**
   spec: — · effort: L · audience: infra.ci, contributor.process
   `ci.yml` runs the whole gate on every PR push, including each `/ship` round
-  (audit-022 § M1). Change-scoped selection is ruled out: RFC-0019 Phase 0
-  ([report](research/research-bk-403-rfc-0019-phase-0.md)) sends 72.6% of code PRs to FULL.
-  Open decision: whether any non-selecting lane is worth its process cost, or the
-  selection-free track (BUG-301, BK-401, BK-400) alone is enough.
+  (audit-022 § M1). [RFC-0019](rfcs/rfc-0019-two-speed-test-gate.md) proposes a
+  fast lane on every push and a full lane on a `merge-candidate` head; its
+  Phase 0 stopped the selector the fast lane needs. Open decision: blocked on
+  BK-403; then RFC-0019 Phases 1–3 and the ADR amending ADR-0043 (Phase 4).
   Detail: [dossier](backlog/id-266-two-speed-ci-gate.md)
 
 - [ ] **BK-400 — The shard durations go stale between manual refreshes, so the primary shards balance on partial data**

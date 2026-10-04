@@ -1,8 +1,9 @@
 # Research: RFC-0019 Phase 0, does a rule-based selector earn its build?
+<!-- doc: repo-only -->
 
 **Date:** 2026-10-04
 **Backlog items:** BK-403, BK-404, ID-266
-**Status:** Answered: **stop**. Point-in-time snapshot per [`sdd/000-process.md` § Document types](../000-process.md#document-types). It runs the Phase 0 row of [RFC-0019 § Roadmap](../rfcs/rfc-0019-two-speed-test-gate.md#roadmap) against targets the maintainer fixed before the run ([`bk-403-phase-0/plan.md`](bk-403-phase-0/plan.md), commit `3bac9c4e7`); every script and result file named below is under [`bk-403-phase-0/`](bk-403-phase-0/), and the rule sets were frozen at commit `482d07add` before either replay ran.
+**Status:** Answered: **stop for the D5 selector; RFC-0019 stays Draft**. Point-in-time snapshot per [`sdd/000-process.md` § Document types](../../000-process.md#document-types). It runs the Phase 0 row of [RFC-0019 § Roadmap](../../rfcs/rfc-0019-two-speed-test-gate.md#roadmap) against targets the maintainer fixed before the run ([`plan.md`](plan.md), commit `3bac9c4e7`). Every script and result file named below sits beside this report, and the rule sets were frozen at commit `482d07add` before either replay ran.
 
 ## Question
 
@@ -12,8 +13,10 @@ the selector (Phase 1)?
 
 ## Answer
 
-**Stop. Typical code diffs still run the full suite, so the selector misses
-both fixed thresholds.**
+**Stop, for the selector as D5 designs it. Typical code diffs still run the
+full suite, so it misses both fixed thresholds.** The motivation is
+unaffected; what the run shows is where a better idea has to cut (§ Why typical
+diffs fall back to FULL).
 
 | Fixed target (precision rule set) | Target | Measured | Met |
 | --- | --- | --- | --- |
@@ -115,19 +118,23 @@ The D4 audit (below) is a sixth finding, already anticipated by the RFC.
 
 ## Consequences for the dependent items
 
-- **BK-403:** the declared-table selector is not built. The PoC rejected a
-  coverage map; this rejects the rule-based selector on this repository's
-  diff mix. What remains cheaper and risk-free is the selection-free track
-  (BUG-301, BK-401, BK-400), which shortens the full gate every PR still
-  pays once.
-- **BK-404 (local fast target):** loses its prerequisite. A local target
-  over this selector would run the full suite on about 7 of 10 code diffs.
-- **ID-266 (CI fast lane):** loses its prerequisite for the same reason; the
-  `merge-candidate` lane mechanics (D1 to D3) have no selector to switch to.
-- **When a revisit could pay:** only if the diff mix changes, for instance if
-  `pyproject.toml`, workflow and base-class edits stop riding along with
-  most code PRs. The sensitivity run shows that narrowing the two coarsest
-  rows alone is not enough.
+**The D5 selector is not built as designed; the motivation stands, so RFC-0019
+stays Draft and the three items stay open, waiting for a better selection
+idea.**
+
+- **BK-403:** open, with a narrower question. A coverage map failed its PoC,
+  and this run stops the D5 rule set on this repository's diff mix. A next idea
+  has to remove the FULL fallback where it comes from. That means
+  `pyproject.toml` and `.github/**`, which fire on 59 of the 106 PRs, and the
+  base modules every test reaches. Narrowing the two coarsest rows alone is
+  not enough: the sensitivity run still falls back on 54.7%.
+- **BK-404 (local fast target):** open, blocked on BK-403. A local target over
+  this selector would run the full suite on about 7 of 10 code diffs.
+- **ID-266 (CI fast lane):** open, blocked on BK-403 for the same reason. The
+  `merge-candidate` lane mechanics (D1 to D3) are untouched by this run.
+- **Meanwhile:** the selection-free track (BUG-301, BK-401, BK-400) shortens
+  the full gate that every PR pays at least once, at no risk of skipping a
+  test.
 
 ---
 
@@ -156,7 +163,7 @@ The D4 audit (below) is a sixth finding, already anticipated by the RFC.
 confirmed failing with the edit applied.** "Confirmed" is the PoC driver's
 definition: pytest exits 1 and the known test's own JUnit case fails. The 13
 PoC seeds are reused verbatim from
-[`bk-403-testmon-poc/driver.py`](bk-403-testmon-poc/driver.py).
+[`bk-403-testmon-poc/driver.py`](../bk-403-testmon-poc/driver.py).
 
 | Seed | Origin | Pilot | Precision | Selected run (precision) |
 | --- | --- | --- | --- | --- |

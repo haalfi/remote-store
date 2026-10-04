@@ -19,12 +19,9 @@ expected_ripples:
   - sdd/backlog/bk-404-selected-tests-hatch-target.md
   - sdd/backlog/id-266-two-speed-ci-gate.md
   - sdd/rfcs/rfc-0019-two-speed-test-gate.md
-  - sdd/BACKLOG-DONE.md
   - sdd/backlogid.json
 surprising_ripples:
   - sdd/backlog/id-268-pr-close-step.md
-co_shipped_items:
-  - BK-404
 discovery_followups:
   - BUG-306
 phases:
@@ -181,13 +178,18 @@ phases:
         section: "How this file works / Completing work (Decided against)"
         read_type: gate
         extract: >-
-          BK-403 and BK-404 decided against with their diagnosis; sweep found
-          ID-268's dossier stating RFC-0019's merge-candidate lane in present
-          tense, BUG-302's Phase 4 deadline and BK-401's testmon clause
-      - file: sdd/templates/rfc-template.md
-        section: "Status"
+          Sweep found ID-268's dossier stating RFC-0019's merge-candidate lane
+          in present tense, BUG-302's Phase 4 deadline and BK-401's testmon
+          clause
+      - file: sdd/rfcs/rfc-0019-two-speed-test-gate.md
+        section: "Status; Motivation"
         read_type: reference
-        extract: "Rejected is a template status; the maintainer chose it over Draft"
+        extract: >-
+          I recommended Rejected and closing BK-403 and BK-404, treating a stop
+          for the D5 design as a stop for the RFC. The maintainer corrected it:
+          the motivation still holds, so the RFC stays Draft and both items
+          reopen, waiting for a better selection idea. Phase 0's stop applies to
+          the design, not the problem
       - file: sdd/CLAUDE-REFERENCE.md
         section: "PR validation gates"
         read_type: verify
