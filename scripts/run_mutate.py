@@ -10,6 +10,7 @@ Usage::
     python scripts/run_mutate.py <scope> [pytest args...]
                                                     # exec pytest; trailing
                                                     # args go on its argv
+                                                    # (-h is this script's)
     python scripts/run_mutate.py --list-scopes      # JSON array of names
     python scripts/run_mutate.py --container-needs minio
                                                     # JSON array of scopes
@@ -113,7 +114,10 @@ def _build_pytest_argv(scope_name: str) -> list[str]:
 
 
 def main() -> int:
-    parser = argparse.ArgumentParser(description=__doc__)
+    # allow_abbrev=False: trailing args are pytest's, and abbreviation matching
+    # would read e.g. pytest's `--co` as `--container-needs`. `-h` stays this
+    # script's own help.
+    parser = argparse.ArgumentParser(description=__doc__, allow_abbrev=False)
     parser.add_argument(
         "scope",
         nargs="?",

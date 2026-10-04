@@ -202,15 +202,22 @@ jobs:
       # always a harness/impl failure — the leg stays red by design.
       #
       # Since 1.10 every gremlin is its own pytest subprocess, so workers are
-      # the throughput lever (4 = the runner's vCPUs). SFTP scopes stay serial:
-      # the same sshd MaxStartups carve-out as scripts/run_tests.py's serial pass.
-      # `ulimit -v` caps each process's address space, inherited by every gremlin
-      # subprocess: a mutant that turns a loop infinite (ext/parquet.py
-      # `_split_table`, `<` to `<=`) then dies as an `error` instead of
-      # exhausting the runner's 16 GB and taking the leg down with it.
+      # the throughput lever (4 = the runner's vCPUs). Scopes needing the sftp
+      # container stay serial: gremlin workers do not set PYTEST_XDIST_WORKER,
+      # so the registry's sftp_docker carve-out does not apply to them.
+      # mutate_scopes.py confines sftp to the `-ssh` scopes.
+      #
+      # `ulimit -v` caps each process's virtual address space at 4 GiB,
+      # inherited by every gremlin subprocess. It stops a single runaway mutant
+      # (ext/parquet.py `_split_table`, `<` to `<=`), which then fails as an
+      # `error`. It does not bound the total: four workers can still reach the
+      # runner's 16 GB together. MALLOC_ARENA_MAX keeps glibc from reserving a
+      # 64 MiB arena per thread, so thread-heavy clients stay well inside the
+      # cap on address space they never touch.
       - name: Run mutate ${{ matrix.scope }}
         env:
           PYTEST_ADDOPTS: "--no-cov"
+          MALLOC_ARENA_MAX: "2"
           SCOPE: ${{ matrix.scope }}
           WORKERS: ${{ contains(fromJSON(needs.setup.outputs.sftp-scopes), matrix.scope) && '1' || '4' }}
         run: |

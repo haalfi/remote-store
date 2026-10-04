@@ -87,6 +87,22 @@ def _kfilter_matches(name: str, kfilter: str) -> bool:
 
 
 @pytest.mark.spec("TEST-004")
+def test_only_ssh_scopes_need_the_sftp_container() -> None:
+    """BUG-303: a scope needing ``sftp`` runs its mutate leg serially.
+
+    Gremlin worker subprocesses do not set ``PYTEST_XDIST_WORKER``, so the
+    registry's sftp_docker carve-out does not protect them, and mutation.yml
+    gives every scope in ``--container-needs sftp`` one worker. A non-ssh
+    scope picking up ``sftp`` (e.g. an unsplit topic over all backends) is
+    serialised and outgrew the 6 h job cap.
+    """
+    scopes = _load_manifest().SCOPES
+    leaked = sorted(n for n, s in scopes.items() if "sftp" in s.needs and not n.endswith("-ssh"))
+    assert not leaked, f"non-ssh scopes needing the sftp container: {leaked}"
+    assert any("sftp" in s.needs for s in scopes.values()), "no scope covers sftp_docker at all"
+
+
+@pytest.mark.spec("TEST-004")
 def test_async_extended_scopes_use_explicit_filter() -> None:
     """Every async-extended scope must declare an explicit ``-k`` filter.
 

@@ -25,6 +25,12 @@ surprising_ripples:
   # Two failure signatures (job-cap cancel, runner shutdown) the triage list
   # did not name.
   - .claude/skills/mutation/SKILL.md
+  # PR #1068 review: the four unsplit full-conformance scopes carry the sftp
+  # container via full_needs, so the serial-for-sftp worker rule left two of
+  # the four capped legs serial. They are now split by transport; the
+  # sync-adapter suite parametrizes by its own ids, so it splits on live-sftp.
+  - scripts/mutate_scopes.py
+  - tests/scripts/test_mutate_scopes.py
 phases:
   - id: orient
     name: Orient
@@ -86,6 +92,18 @@ phases:
         section: "TestPytestArgPassthrough"
         read_type: gate
         extract: "Failed first (argparse: unrecognized arguments), passes after parse_known_args forwarding"
+      - file: tests/backends/fixtures/registry.py
+        section: "fixture_params (SFTP-Docker exclusion under xdist)"
+        read_type: reference
+        extract: "The carve-out keys on PYTEST_XDIST_WORKER, which gremlin worker subprocesses never set, so any scope with sftp_docker must run one worker"
+      - file: "GitHub Actions: run 43 listing and streaming logs"
+        section: "last 'Gremlin N/M' line before the cancel"
+        read_type: verify
+        extract: "listing 761/1721, streaming 1635/1721 at 360 min serial: about 815 and 380 min needed, so serial cannot fit"
+      - file: tests/backends/conformance/test_sync_adapter_conformance.py
+        section: "adapted_backend / live_adapted_backend params"
+        read_type: reference
+        extract: "Own ids (adapter-memory, adapter-local, live-s3, live-sftp, live-azure): transport -k filters selected 0 tests for sql and http"
       - file: sdd/CLAUDE-REFERENCE.md
         section: "Ripple-check / Dependency"
         read_type: verify

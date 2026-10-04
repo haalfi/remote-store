@@ -131,6 +131,40 @@ class TestPytestArgPassthrough:
         cmd = self._run_main(monkeypatch, [scope])
         assert cmd == [sys.executable, *_mod._build_pytest_argv(scope)]
 
+    def test_prefix_of_own_option_is_forwarded_not_abbreviated(self, monkeypatch):
+        # `--co` is pytest's collect-only and a prefix of `--container-needs`;
+        # argparse's default abbreviation matching would swallow it.
+        scope = next(iter(_mod.SCOPES))
+        cmd = self._run_main(monkeypatch, [scope, "--co"])
+        assert cmd[-1] == "--co"
+
+
+class TestWorkflowKeepsGremlinsFlagsOffAddopts:
+    """BUG-303: the defect lived in mutation.yml, so pin the workflow itself.
+
+    A ``--gremlin*`` token in the mutate step's ``PYTEST_ADDOPTS`` silently
+    turns coverage-guided selection off; the report flags must stay on the
+    ``run_mutate.py`` command line instead.
+    """
+
+    _WORKFLOW = Path(__file__).resolve().parents[2] / ".github" / "workflows" / "mutation.yml"
+
+    def _mutate_step(self) -> dict:
+        yaml = pytest.importorskip("yaml")
+        steps = yaml.safe_load(self._WORKFLOW.read_text(encoding="utf-8"))["jobs"]["mutate"]["steps"]
+        matches = [s for s in steps if "run_mutate.py" in s.get("run", "")]
+        assert len(matches) == 1, "expected exactly one step invoking run_mutate.py"
+        return matches[0]
+
+    def test_pytest_addopts_carries_no_gremlins_flag(self):
+        addopts = self._mutate_step().get("env", {}).get("PYTEST_ADDOPTS", "")
+        assert "gremlin" not in addopts
+
+    def test_report_flags_are_on_the_command_line(self):
+        run = self._mutate_step()["run"]
+        assert "--gremlin-report=" in run
+        assert "--gremlins-html-dir=" in run
+
 
 class TestScopeCandidateDiscovery:
     """Asks pytest-gremlins' own transformer, so it matches what the plugin
