@@ -55,10 +55,10 @@ phases:
         read_type: verify
         extract: "Seen red first (ModuleNotFoundError before the recorder existed). First green run failed 5 bash tests on Windows: subprocess 'bash' resolves to WSL's System32 launcher before PATH, fixed by shutil.which. Wrapper mutation (no guard, no exit 0) turned both fail-open tests red with exit 2, which also measured D1's premise that a missing .py exits 2"
         outcome: ok
-      - file: sdd/BACKLOG.md
-        section: "BUG-304"
-        read_type: reference
-        extract: "test_claude_hooks.py's 9 Windows failures (symlink privilege, no termios) are BUG-304's, pre-existing and unrelated; its settings existence check passes"
+      - file: tests/scripts/test_claude_hooks.py
+        section: "Windows skips; test_settings_hook_commands_point_at_files_that_exist"
+        read_type: verify
+        extract: "Before rebasing onto BUG-304's fix, its 9 notification tests failed on Windows (symlink privilege, no termios); after it they skip ('the hook harness needs symlinks, setsid and a pty'). Its settings existence check runs and passes on both, covering the new wrapper path. tests/scripts after the rebase: 2063 passed, 38 skipped"
         outcome: ok
   - id: e2e
     name: End-to-end
