@@ -42,6 +42,19 @@ Both static, stdlib only, reading every file from the commit under test
 (`git cat-file`), never from the working tree. **The rule tables are frozen
 (committed) before the H and R replays run.**
 
+**Non-code paths (maintainer decision, 2026-10-04, before the run).** 97 of
+the 106 H PRs also change files outside `CODE_PAT` (`sdd/traces` in 91,
+`BACKLOG-DONE.md` in 85; scratch count over the same window). D5 as written
+sends every unmatched non-`.py` path to FULL, which would decide the stop on
+the FULL rate before any rule is exercised. Both variants therefore
+extends layer 4 from `.py` sources to **every tracked file a test reads**: a
+non-code-class path selects its readers, and one with no reader adds nothing,
+since its own class's jobs still run (D4). Readers include **directory
+scans**: a test that lists a directory reads every file later added to it.
+Code-class paths keep D5's rows unchanged (an unmatched one is FULL). The
+literal reading is reported beside it, and the change is recorded as an RFC
+amendment with the verdict.
+
 ## Metric definitions
 
 Per H diff and per seed, for both variants:
