@@ -15,15 +15,21 @@ scopes pair each ``src/remote_store/ext/<x>.py`` with the single file at
 / bare-named matching). Top-level tests with no matching src by prefix
 roll into ``core-misc``; ``tests/ext/test_*.py`` files with no matching
 ext source (e.g., the namespace-wide ``test_contract.py``) roll into
-``ext-misc``.
+``ext-misc``. One value is hand-written: ``conformance-sync-adapter``'s
+``needs``, because its suite is parametrized by its own ids rather than
+registry fixtures; ``tests/scripts/test_mutate_scopes.py`` ties it to the
+server fixtures that suite requests.
 
-Cmdline split
-=============
+Transport split
+===============
 
-pytest-gremlins re-runs pytest with every collected node id as argv. A
-single conformance topic file can exceed the ~32 KiB Windows command-line
-limit (WinError 206) when it covers all backends. Topics that fit run as
-one scope; topics over the limit are split by ``[backend.<x>].transport``.
+Every conformance topic parametrized by registry fixtures is split by
+``[backend.<x>].transport``. pytest-gremlins
+re-runs pytest with every collected node id as argv, and a topic over all
+backends can exceed the ~32 KiB Windows command-line limit (WinError 206).
+Splitting also confines the ``sftp`` container to the ``-ssh`` legs, which
+must run serially, so every other leg can take parallel gremlin workers
+(BUG-303).
 """
 
 from __future__ import annotations
@@ -204,8 +210,6 @@ def _add_misc_scope(
 
 def _build() -> dict[str, Scope]:
     backends = load_backends().values()
-    all_src = sorted({s for b in backends for s in _src(b)})
-    full_needs = _needs(None)
     out: dict[str, Scope] = {}
     matched_core_tests: set[str] = set()
     matched_ext_tests: set[str] = set()
@@ -323,24 +327,16 @@ def _build() -> dict[str, Scope]:
             ),
         )
 
-    # Conformance — sync-adapter + the three unsplit topics walk every backend.
-    out["conformance-sync-adapter"] = Scope(
-        targets=sorted({*all_src, _SYNC_ADAPTER}),
-        tests=["tests/backends/conformance/test_sync_adapter_conformance.py"],
-        needs=full_needs,
-    )
-    for topic in ("listing", "metadata", "streaming"):
-        out[f"conformance-{topic}"] = Scope(
-            targets=all_src,
-            tests=[f"tests/backends/conformance/test_{topic}.py"],
-            needs=full_needs,
-        )
-
-    # Conformance topics over the cmdline limit — split by transport.
-    # Skip transports with no stage-≤2 backends (``_filter_term`` returns
-    # empty for them); an empty filter would otherwise materialise as a
-    # full-conformance scope with empty targets and ``needs=full_needs``.
-    for topic in ("io", "atomic", "errors", "identity"):
+    # Registry-parametrized conformance topics, split by transport. Two reasons: a
+    # topic over all backends can exceed the Windows cmdline limit (see the
+    # module docstring), and an unsplit topic's ``needs`` include ``sftp``, so
+    # its leg must run serially (sftp_docker cannot take concurrent gremlin
+    # workers) and outgrows the 6 h job cap (BUG-303). Split, only the ``-ssh``
+    # legs need sftp. Skip transports with no stage-≤2 backends
+    # (``_filter_term`` returns empty for them); an empty filter would
+    # otherwise materialise as a full-conformance scope with empty targets and
+    # every container in ``needs``.
+    for topic in ("listing", "metadata", "streaming", "io", "atomic", "errors", "identity"):
         for t in _TRANSPORTS:
             ts = [b for b in backends if b.transport == t]
             f = " or ".join(filter(None, (_filter_term(b.name) for b in ts)))
@@ -353,11 +349,24 @@ def _build() -> dict[str, Scope]:
                 needs=_needs(f),
             )
 
+    # Sync-adapter: parametrized by its own ids (``adapter-memory``,
+    # ``adapter-local``, ``live-s3``, ``live-sftp``, ``live-azure``), not by
+    # registry fixtures, so it stays one scope and its ``needs`` cannot come
+    # from ``_needs``. Its live ids use ``moto_server`` and ``sftp_server``,
+    # both in-process (tests/conftest.py), and ``azurite_server``: Azurite is
+    # its only container, so it takes parallel workers. Pinned by
+    # test_sync_adapter_needs_match_the_servers_its_suite_requests.
+    out["conformance-sync-adapter"] = Scope(
+        targets=sorted({*(s for b in backends for s in _src(b)), _SYNC_ADAPTER}),
+        tests=["tests/backends/conformance/test_sync_adapter_conformance.py"],
+        needs=["azurite"],
+    )
+
     # Async-extended — per backend that wires a native or adapted async
     # implementation today (memory, local, azure, dafny oracle, graph). Mirrors
     # the conformance-split ``if not f: continue`` guard so a future backend with
     # only stage-3 fixtures does not silently produce a scope with empty
-    # filter and ``_needs(f)`` expanding to ``full_needs``.
+    # filter and ``_needs(f)`` expanding to every container.
     #
     # ``dafny`` is here for the ID-210 ``dafny_oracle_async`` fixture: the
     # compiled oracle is verified-by-construction so it has no

@@ -95,6 +95,89 @@ class TestEnsureReportForEmptyScope:
         assert not report.exists()
 
 
+class TestPytestArgPassthrough:
+    """BUG-303: gremlins flags must reach pytest on argv, never via PYTEST_ADDOPTS.
+
+    The plugin's coverage pre-scan is a child pytest that inherits
+    ``PYTEST_ADDOPTS`` but not the gremlins plugin's options, so a
+    ``--gremlin-*`` flag there makes the pre-scan record no data and every
+    gremlin falls back to the full test set. ``run_mutate.py`` therefore
+    forwards trailing arguments onto the pytest command line.
+    """
+
+    def _run_main(self, monkeypatch, argv: list[str]) -> list[str]:
+        seen: list[list[str]] = []
+
+        def fake_run(cmd, check):
+            seen.append(cmd)
+            return SimpleNamespace(returncode=0)
+
+        monkeypatch.setattr(_mod.subprocess, "run", fake_run)
+        monkeypatch.setattr(_mod, "_ensure_report_for_empty_scope", lambda scope, rc: None)
+        monkeypatch.setattr(sys, "argv", ["run_mutate.py", *argv])
+        assert _mod.main() == 0
+        assert len(seen) == 1
+        return seen[0]
+
+    def test_trailing_args_are_appended_to_pytest_argv(self, monkeypatch):
+        scope = next(iter(_mod.SCOPES))
+        cmd = self._run_main(monkeypatch, [scope, "--gremlin-report=html,json", "--gremlin-workers=4"])
+        assert cmd[:3] == [sys.executable, "-m", "pytest"]
+        assert cmd[-2:] == ["--gremlin-report=html,json", "--gremlin-workers=4"]
+        assert "--gremlins" in cmd
+
+    def test_no_trailing_args_leaves_argv_unchanged(self, monkeypatch):
+        scope = next(iter(_mod.SCOPES))
+        cmd = self._run_main(monkeypatch, [scope])
+        assert cmd == [sys.executable, *_mod._build_pytest_argv(scope)]
+
+    def test_prefix_of_own_option_is_forwarded_not_abbreviated(self, monkeypatch):
+        # `--co` is pytest's collect-only and a prefix of `--container-needs`;
+        # argparse's default abbreviation matching would swallow it.
+        scope = next(iter(_mod.SCOPES))
+        cmd = self._run_main(monkeypatch, [scope, "--co"])
+        assert cmd[-1] == "--co"
+
+
+class TestWorkflowKeepsGremlinsFlagsOffAddopts:
+    """BUG-303: the defect lived in mutation.yml, so pin the workflow itself.
+
+    A ``--gremlin*`` token in the mutate step's ``PYTEST_ADDOPTS`` silently
+    turns coverage-guided selection off; the report flags must stay on the
+    ``run_mutate.py`` command line instead.
+    """
+
+    _WORKFLOW = Path(__file__).resolve().parents[2] / ".github" / "workflows" / "mutation.yml"
+
+    def _mutate_step(self) -> dict:
+        yaml = pytest.importorskip("yaml")
+        steps = yaml.safe_load(self._WORKFLOW.read_text(encoding="utf-8"))["jobs"]["mutate"]["steps"]
+        matches = [s for s in steps if "run_mutate.py" in s.get("run", "")]
+        assert len(matches) == 1, "expected exactly one step invoking run_mutate.py"
+        return matches[0]
+
+    def test_pytest_addopts_carries_no_gremlins_flag(self):
+        addopts = self._mutate_step().get("env", {}).get("PYTEST_ADDOPTS", "")
+        assert "gremlin" not in addopts
+
+    def test_report_flags_are_on_the_command_line(self):
+        run = self._mutate_step()["run"]
+        assert "--gremlin-report=" in run
+        assert "--gremlins-html-dir=" in run
+
+    def test_plugin_warnings_are_shown_not_fatal(self):
+        # The project's filterwarnings escalates warnings to errors; without
+        # this filter the plugin's "no data" UserWarning failed a leg (run 45).
+        assert "-W default::UserWarning:pytest_gremlins.plugin" in self._mutate_step()["run"]
+
+    def test_sftp_scopes_get_one_worker(self):
+        step = self._mutate_step()
+        workers = step["env"]["WORKERS"]
+        assert "sftp-scopes" in workers
+        assert "'1'" in workers
+        assert '--gremlin-workers="$WORKERS"' in step["run"]
+
+
 class TestScopeCandidateDiscovery:
     """Asks pytest-gremlins' own transformer, so it matches what the plugin
     counts and goes red if the plugin moves the internals

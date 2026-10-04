@@ -16,6 +16,7 @@ from __future__ import annotations
 
 import importlib.util
 import json
+import os
 import subprocess
 import sys
 import textwrap
@@ -84,6 +85,130 @@ def _kfilter_matches(name: str, kfilter: str) -> bool:
     syntax, which is the right tripwire.
     """
     return any(term.strip() and term.strip() in name for term in kfilter.split(" or "))
+
+
+@pytest.mark.spec("TEST-004")
+def test_only_ssh_scopes_need_the_sftp_container() -> None:
+    """BUG-303: a scope needing ``sftp`` runs its mutate leg serially.
+
+    Gremlin worker subprocesses do not set ``PYTEST_XDIST_WORKER``, so the
+    registry's sftp_docker carve-out does not protect them, and mutation.yml
+    gives every scope in ``--container-needs sftp`` one worker. A non-ssh
+    scope picking up ``sftp`` (e.g. an unsplit topic over all backends) is
+    serialised and outgrew the 6 h job cap.
+    """
+    scopes = _load_manifest().SCOPES
+    leaked = sorted(n for n, s in scopes.items() if "sftp" in s.needs and not n.endswith("-ssh"))
+    assert not leaked, f"non-ssh scopes needing the sftp container: {leaked}"
+    assert any("sftp" in s.needs for s in scopes.values()), "no scope covers sftp_docker at all"
+
+
+# Tests in transport-split topics that no leg selects, predating BUG-303's
+# split of listing/metadata/streaming (which drops none): parametrized by
+# backend name rather than fixture name, or by no backend at all. Tracked as
+# BK-407; the guard below fails on any addition and on any entry that becomes
+# covered, so this list stays exact.
+_CONF = "tests/backends/conformance"
+_KNOWN_UNSPLIT_TESTS = {
+    f"{_CONF}/test_atomic.py::test_field_capability_map_covers_every_write_result_field",
+    f"{_CONF}/test_atomic.py::TestMoveCrashInjection::test_partial_move_preserves_at_least_one_copy[after_copy]",
+    f"{_CONF}/test_atomic.py::TestMoveCrashInjection::test_partial_move_preserves_at_least_one_copy[after_delete]",
+    f"{_CONF}/test_atomic.py::TestMoveCrashInjection::test_or_assertion_catches_be018_violation",
+    *(
+        f"{_CONF}/test_identity.py::{cls}::{test}[{backend}]"
+        for cls, test in (
+            ("TestAtomicMoveCapability", "test_atomic_move_capability_declaration"),
+            ("TestSeekableCapability", "test_seekable_read_capability_declaration"),
+        )
+        for backend in ("s3", "s3_pyarrow", "azure")
+    ),
+}
+
+
+@pytest.mark.spec("TEST-004")
+def test_transport_split_scopes_cover_their_whole_topic_file() -> None:
+    """BUG-303: splitting a topic by transport must not drop any of its tests.
+
+    Each ``conformance-<topic>-<transport>`` scope runs only what its ``-k``
+    filter selects, so a test whose id matches no transport's filter (no
+    backend fixture id, or a fixture no filter names) silently leaves mutation
+    testing. Collect each split topic's file once and require the union of its
+    legs' filters to select every node id.
+    """
+    scopes = _load_manifest().SCOPES
+    legs_by_file: dict[str, list[str]] = {}
+    for name, scope in scopes.items():
+        if name.startswith("conformance-") and scope.filter and not name.startswith("conformance-async-extended-"):
+            legs_by_file.setdefault(scope.tests[0], []).append(scope.filter)
+    assert legs_by_file, "no transport-split conformance scopes found"
+
+    # Strip the xdist worker markers an outer `-n` run sets: registry.fixture_params
+    # drops sftp_docker params under PYTEST_XDIST_WORKER, which would make this
+    # guard check a smaller set locally than on CI's serial tooling lane.
+    env = {k: v for k, v in os.environ.items() if not k.startswith("PYTEST_XDIST")}
+    proc = subprocess.run(
+        [sys.executable, "-m", "pytest", "--co", "-q", "-p", "no:cacheprovider", *sorted(legs_by_file)],
+        cwd=_REPO_ROOT,
+        env=env,
+        capture_output=True,
+        text=True,
+        check=False,
+        timeout=300,
+    )
+    # A file that fails to collect contributes no ids and so could never be
+    # "uncovered"; a partial collection must fail the guard, not pass it.
+    assert proc.returncode == 0, f"collection failed ({proc.returncode}):\n{proc.stdout[-2000:]}\n{proc.stderr[-2000:]}"
+    node_ids = [line for line in proc.stdout.splitlines() if "::" in line]
+    assert node_ids, f"collection returned no node ids:\n{proc.stdout[-2000:]}"
+
+    uncovered = {
+        node
+        for node in node_ids
+        if not any(_kfilter_matches(node, f) for f in legs_by_file.get(node.split("::", 1)[0], []))
+    }
+    new = sorted(uncovered - _KNOWN_UNSPLIT_TESTS)
+    assert not new, f"{len(new)} tests selected by no transport leg, e.g. {new[:5]}"
+    stale = sorted(_KNOWN_UNSPLIT_TESTS - uncovered)
+    assert not stale, f"now covered or gone, drop from _KNOWN_UNSPLIT_TESTS: {stale}"
+
+
+# Session server fixtures in tests/conftest.py and the container each one needs
+# (None = in-process). Mirrors that file; a new ``*_server`` fixture must be
+# classified here before the sync-adapter guard below accepts it.
+_SERVER_FIXTURE_CONTAINERS = {
+    "moto_server": None,  # moto in server mode, in-process
+    "sftp_server": None,  # paramiko server on port 0, in-process
+    "azurite_server": "azurite",
+}
+
+
+@pytest.mark.spec("TEST-004")
+def test_sync_adapter_needs_match_the_servers_its_suite_requests() -> None:
+    """BUG-303: ``conformance-sync-adapter`` lists its containers by hand.
+
+    Its suite is parametrized by its own ids, so ``_needs`` cannot derive them.
+    A live param that requests a container fixture missing from ``needs``
+    would skip silently (the container never starts) and, for an sftp one,
+    run at four workers against sshd. Tie the list to the ``*_server``
+    fixtures the suite actually requests as parameters, of sync or async
+    functions, positional or keyword-only. A dynamic
+    ``request.getfixturevalue("..._server")`` is not seen.
+    """
+    import ast
+
+    suite = _REPO_ROOT / "tests" / "backends" / "conformance" / "test_sync_adapter_conformance.py"
+    tree = ast.parse(suite.read_text(encoding="utf-8"))
+    requested = {
+        arg.arg
+        for node in ast.walk(tree)
+        if isinstance(node, (ast.FunctionDef, ast.AsyncFunctionDef))
+        for arg in (*node.args.posonlyargs, *node.args.args, *node.args.kwonlyargs)
+        if arg.arg.endswith("_server")
+    }
+    unknown = requested - _SERVER_FIXTURE_CONTAINERS.keys()
+    assert not unknown, f"classify these server fixtures in _SERVER_FIXTURE_CONTAINERS: {sorted(unknown)}"
+    expected = sorted({c for name in requested if (c := _SERVER_FIXTURE_CONTAINERS[name])})
+    assert _load_manifest().SCOPES["conformance-sync-adapter"].needs == expected
 
 
 @pytest.mark.spec("TEST-004")

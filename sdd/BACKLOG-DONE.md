@@ -244,7 +244,24 @@ if evidence changes; these are retired.
 
 ## Unreleased
 
-*(none)*
+- [x] **BUG-303 — The weekly mutation run outgrows the 6 h job cap on pytest-gremlins 1.10**
+  spec: — · effort: S · audience: infra.ci, contributor.tooling
+  Run 43 (#1065): four legs cancelled at 360 min, ext-parquet and core-misc
+  killed. Three causes, each reproduced locally. The unbounded `>=1.5` pin let
+  in 1.10, which runs one pytest subprocess per gremlin (core-path 6.9 s → 30.4 s);
+  now `>=1.10.1,<1.11`, with `--gremlin-workers=4`.
+  Scopes needing the sftp container stay serial, and the four unsplit
+  full-conformance scopes carried it through the union of every fixture's
+  container: listing, metadata and streaming are now split by transport like
+  the others, confining sftp to the `-ssh` legs; sync-adapter, whose SFTP
+  server is in-process, now names its one container, Azurite (64 → 76 scopes).
+  Mutant g050 (`ext/parquet.py:480`, `<` to `<=`) looped `_split_table` until
+  the runner's memory ran out; a per-process `ulimit -v` makes it an `error`.
+  The report flags in `PYTEST_ADDOPTS` reached the coverage pre-scan, which
+  then recorded nothing, so every gremlin had run the full suite; they now go
+  on `run_mutate.py`'s argv. Pinned by `TestWorkflowKeepsGremlinsFlagsOffAddopts`,
+  `TestPytestArgPassthrough`, `test_only_ssh_scopes_need_the_sftp_container` and
+  `test_sync_adapter_needs_match_the_servers_its_suite_requests`.
 
 ---
 

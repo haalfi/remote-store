@@ -189,16 +189,46 @@ jobs:
             gremlins-${{ matrix.scope }}-
 
       # --- Run mutation testing ---
-      # Invoke the manifest-driven scope runner directly. Report flags
-      # are injected via PYTEST_ADDOPTS (pytest picks them up automatically).
+      # Invoke the manifest-driven scope runner directly. Gremlins flags go on
+      # its argv, never in PYTEST_ADDOPTS: the plugin's coverage pre-scan
+      # inherits PYTEST_ADDOPTS without the plugin's options, records no data,
+      # and every gremlin then runs the full test set (BUG-303).
       # `json` (written to coverage/gremlins/gremlins.json) feeds the
       # outcome record below: job.status alone cannot see survivors, because
       # pytest-gremlins exits 0 on them. A non-zero exit here is therefore
       # always a harness/impl failure — the leg stays red by design.
+      #
+      # Since 1.10 every gremlin is its own pytest subprocess, so workers are
+      # the throughput lever (4 = the runner's vCPUs). Scopes needing the sftp
+      # container stay serial: gremlin workers do not set PYTEST_XDIST_WORKER,
+      # so the registry's sftp_docker carve-out does not apply to them.
+      # mutate_scopes.py confines sftp to the `-ssh` scopes.
+      #
+      # `ulimit -v` caps each process's virtual address space at 8 GiB,
+      # inherited by every gremlin subprocess. It stops a single runaway mutant
+      # (ext/parquet.py `_split_table`, `<` to `<=`), which then fails as an
+      # `error`. It does not bound the total: four workers can still reach the
+      # runner's 16 GB together. The cap counts reserved address space, and
+      # every thread reserves its stack: 4 GiB starved backends-ssh's baseline
+      # ("can't start new thread"; tests/backends/sftp peaks at 143 threads and
+      # 2.9 GiB without its Docker tests). MALLOC_ARENA_MAX keeps glibc from
+      # also reserving a 64 MiB arena per thread.
+      #
+      # The project's filterwarnings turns warnings into errors, which would
+      # make the plugin's own UserWarnings (e.g. "Coverage collection returned
+      # no data") fail the leg; `default` keeps them visible in the log instead.
       - name: Run mutate ${{ matrix.scope }}
         env:
-          PYTEST_ADDOPTS: "--no-cov -W ignore::UserWarning:pytest_gremlins.plugin --gremlin-report=html,json --gremlins-html-dir=mutation-report"
-        run: python scripts/run_mutate.py ${{ matrix.scope }}
+          PYTEST_ADDOPTS: "--no-cov"
+          MALLOC_ARENA_MAX: "2"
+          SCOPE: ${{ matrix.scope }}
+          WORKERS: ${{ contains(fromJSON(needs.setup.outputs.sftp-scopes), matrix.scope) && '1' || '4' }}
+        run: |
+          ulimit -v 8388608
+          python scripts/run_mutate.py "$SCOPE" \
+            --gremlin-report=html,json --gremlins-html-dir=mutation-report \
+            --gremlin-workers="$WORKERS" \
+            -W default::UserWarning:pytest_gremlins.plugin
 
       # --- Upload HTML report ---
       - name: Upload mutation report

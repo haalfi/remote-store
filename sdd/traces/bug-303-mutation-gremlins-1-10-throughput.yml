@@ -1,0 +1,201 @@
+id: BUG-303
+title: "The weekly mutation run outgrows the 6 h job cap on pytest-gremlins 1.10"
+trigger: >
+  Rolling issue #1065 for run 37115737721 (run 43) listed six harness failures:
+  backends-http, conformance-listing, conformance-streaming and conformance-io-http
+  cancelled at 360 min; ext-parquet and core-misc with no outcome. Run 42 took
+  7-17 min for the same four legs.
+source_items:
+  - BUG-303
+audience:
+  - infra.ci
+  - contributor.tooling
+expected_ripples:
+  - pyproject.toml
+  - .github/workflows/mutation.yml
+  - scripts/run_mutate.py
+  - tests/scripts/test_run_mutate.py
+  - sdd/BACKLOG-DONE.md
+discovery_followups:
+  # Run 45 (full dispatch on 3730a04): the graph leg's pre-scan recorded no
+  # data because its only target, the sync adapter, is never executed by its
+  # tests; the manifest reads no backend's async_sources. The coverage-union
+  # guard added for review round 4 then found ten atomic/identity tests no
+  # transport filter selects, predating this PR; folded into the same item.
+  # Minted as BK-406, renumbered at the v0.33.0 merge, which took that ID.
+  - BK-407
+surprising_ripples:
+  # A third cause predating 1.10: the report flags in PYTEST_ADDOPTS reached the
+  # plugin's coverage pre-scan, which then recorded no data, so coverage-guided
+  # selection had never been on in CI. The -W ignore in the same variable hid
+  # the warning that says so.
+  - .github/workflows/mutation.yml
+  # Two failure signatures (job-cap cancel, runner shutdown) the triage list
+  # did not name.
+  - .claude/skills/mutation/SKILL.md
+  # PR #1068 review: the four unsplit full-conformance scopes carry the sftp
+  # container via full_needs, so the serial-for-sftp worker rule left two of
+  # the four capped legs serial. Listing, metadata and streaming are now split
+  # by transport. Sync-adapter never used the container (its SFTP server is
+  # in-process, found by the second review round), so it stays one scope
+  # needing only Azurite, a hand-written value now tied by a test to the
+  # server fixtures its suite requests. Round three also showed the 330 min
+  # leg timeout rested on a false premise: run 43's capped legs already
+  # recorded their outcomes under the default 360 min, so it was dropped.
+  - scripts/mutate_scopes.py
+  - tests/scripts/test_mutate_scopes.py
+phases:
+  - id: orient
+    name: Orient
+    steps:
+      - file: .claude/skills/mutation/SKILL.md
+        section: "Steps 1-3"
+        read_type: gate
+        extract: "Issue tracks run health; classify each failing leg from its log via get_job_logs"
+      - file: .github/workflows/mutation.yml
+        section: "mutate job"
+        read_type: reference
+        extract: "Unbounded .[mutate] install, report flags and -W ignore in PYTEST_ADDOPTS, weekly gremlins cache"
+      - file: scripts/mutate_scopes.py
+        section: "_build / core-misc"
+        read_type: reference
+        extract: "core-misc targets every non-backend src file, ext/parquet.py included, so it meets the same runaway mutant"
+  - id: classify
+    name: Classify the failures
+    steps:
+      - file: "GitHub Actions: runs 41, 42, 43 job lists"
+        section: "per-job started_at/completed_at"
+        read_type: verify
+        extract: "Every scope 10-50x slower in run 43; total 3682 job-minutes; four legs at 360 min"
+      - file: "GitHub Actions: mutate-core-path logs, runs 42 and 43"
+        section: "install + gremlins report"
+        read_type: verify
+        extract: "pytest-gremlins 1.9.0 -> 1.10.1; _path.py and test_path.py unchanged (git diff a4474b3e 83e261b2); 26/0 -> 23/3, 3.99 s -> 34.21 s; cache never restored in either run"
+      - file: "GitHub Actions: mutate-ext-parquet log, run 43"
+        section: "tail"
+        read_type: verify
+        extract: "exit 143 + 'runner has received a shutdown signal' after 2 min; output buffered, so the kill was mid-mutation"
+  - id: reproduce
+    name: Reproduce locally
+    steps:
+      - file: "pytest_gremlins 1.10.1: plugin.py, parallel/runner_eligibility.py"
+        section: "--gremlin-executor, lightweight runner"
+        read_type: reference
+        extract: "fork/inprocess/lightweight disabled upstream (#532, #538): one pytest subprocess per gremlin"
+      - file: scripts/run_mutate.py
+        section: "core-path, venvs pinned to 1.9.0 and 1.10.1"
+        read_type: verify
+        extract: "6.9 s / 1 survived vs 30.4 s / 3 survived, identical test selection"
+      - file: scripts/run_mutate.py
+        section: "ext-parquet on 1.10.1, RSS sampled every 5 s"
+        read_type: verify
+        extract: "g050 parquet.py:480 '<' to '<=' grows ~170 MB/s to 5.5 GB before the gremlins timeout; under ulimit -v 4194304 it is an error, other counts unchanged"
+      - file: scripts/run_mutate.py
+        section: "core-path, one PYTEST_ADDOPTS variant at a time"
+        read_type: verify
+        extract: "Any --gremlin* flag in PYTEST_ADDOPTS -> 26/26 gremlins run the full suite; CI=true alone does not; flags on argv restore selection"
+      - file: scripts/run_mutate.py
+        section: "backends-memory: addopts / argv / argv + 4 workers"
+        read_type: verify
+        extract: "353.9 s / 379.7 s / 106.5 s; selection alone saves nothing on 1.10, workers are the lever"
+  - id: implement
+    name: Implement the harness fix
+    steps:
+      - file: tests/scripts/test_run_mutate.py
+        section: "TestPytestArgPassthrough"
+        read_type: gate
+        extract: "Failed first (argparse: unrecognized arguments), passes after parse_known_args forwarding"
+      - file: tests/backends/fixtures/registry.py
+        section: "fixture_params (SFTP-Docker exclusion under xdist)"
+        read_type: reference
+        extract: "The carve-out keys on PYTEST_XDIST_WORKER, which gremlin worker subprocesses never set, so any scope with sftp_docker must run one worker"
+      - file: "GitHub Actions: run 43 listing and streaming logs"
+        section: "last 'Gremlin N/M' line before the cancel"
+        read_type: verify
+        extract: "listing 761/1721, streaming 1635/1721 at 360 min serial: about 815 and 380 min needed, so serial cannot fit"
+      - file: tests/backends/conformance/test_sync_adapter_conformance.py
+        section: "adapted_backend / live_adapted_backend params"
+        read_type: reference
+        extract: "Own ids (adapter-memory, adapter-local, live-s3, live-sftp, live-azure): transport -k filters selected 0 tests for sql and http, so it cannot take the transport split"
+      - file: tests/conftest.py
+        section: "moto_server / sftp_server / azurite_server"
+        read_type: reference
+        extract: "moto and the SFTP server are in-process; Azurite is sync-adapter's only container. My first split assumed live-sftp used sftp_docker without reading this"
+      - file: "GitHub Actions: run 45, full dispatch on 3730a04"
+        section: "failed legs at 41 min"
+        read_type: verify
+        extract: "69/77 green; backends-ssh baseline 'can't start new thread' under the 4 GiB cap (thread stacks; local tests/backends/sftp peaks 143 threads / 2.9 GiB without Docker tests), so the cap is 8 GiB; graph leg failed on the plugin's 'no data' UserWarning made fatal by filterwarnings=error once -W ignore was gone, so -W default keeps it visible"
+      - file: sdd/CLAUDE-REFERENCE.md
+        section: "Ripple-check / Dependency"
+        read_type: verify
+        extract: "mutate is a dev extra: not in the conda recipe, README names no version; no CHANGELOG (no user.* audience)"
+review:
+  # Derived by `hatch run ship-report 1068 --trace-block-only` at head bfcd967.
+  # Do not hand-edit, except a newly required field per sdd/traces/_schema.yml
+  # section review: RFC-0015 D4 makes this script the only producer.
+  derivation: "hatch run ship-report 1068 --trace-block-only"
+  pr: 1068
+  review_rounds: 7
+  submissions: 5
+  findings: 12
+  by_round:
+    - round: 1
+      findings: 4
+      origin: {original: 4}
+      triage: {must-fix: 2, unknown: 2}
+      duration_hours: 0.15
+    - round: 2
+      findings: 1
+      origin: {loop-introduced: 1}
+      triage: {must-fix: 1}
+      duration_hours: 0.48
+    - round: 3
+      findings: 2
+      origin: {loop-introduced: 1, original: 1}
+      triage: {must-fix: 1, unknown: 1}
+      duration_hours: 0.27
+    - round: 4
+      findings: 3
+      origin: {loop-introduced: 2, unclassifiable-file: 1}
+      triage: {must-fix: 1, unknown: 2}
+      duration_hours: 1.27
+    - round: 5
+      findings: 2
+      origin: {loop-introduced: 2}
+      triage: {must-fix: 2}
+      duration_hours: 1.43
+  by_file:
+    - path: ".github/workflows/mutation.yml"
+      findings: 3
+    - path: "scripts/mutate_scopes.py"
+      findings: 3
+    - path: "tests/scripts/test_mutate_scopes.py"
+      findings: 2
+    - path: "tests/scripts/test_run_mutate.py"
+      findings: 2
+    - path: ".claude/skills/mutation/SKILL.md"
+      findings: 1
+    - path: "scripts/run_mutate.py"
+      findings: 1
+  untouched_files:
+    - "pyproject.toml"
+    - "sdd/BACKLOG-DONE.md"
+    - "sdd/BACKLOG.md"
+    - "sdd/backlogid.json"
+    - "sdd/traces/bug-303-mutation-gremlins-1-10-throughput.yml"
+  review_driven_commits:
+    - sha: "a43d5e4"
+      subject: "BUG-303: Split full-conformance scopes by transport; address review"
+    - sha: "4f2fbdc"
+      subject: "BUG-303: Keep sync-adapter one scope; it needs only Azurite"
+    - sha: "3730a04"
+      subject: "BUG-303: Drop the 330 min leg timeout; pin sync-adapter needs"
+    - sha: "1e729e5"
+      subject: "BUG-303: Raise the address-space cap to 8 GiB; keep gremlins warnings non-fatal"
+    - sha: "9956bb6"
+      subject: "BUG-303: Guard split-topic coverage and the mutate step's flags"
+    - sha: "8a1b310"
+      subject: "Merge master (v0.33.0) into fix-mutation-gremlins-1-10"
+    - sha: "bfcd967"
+      subject: "BUG-303: Make the two new manifest guards check what they claim"
+  ci: {verdict: GREEN, failed: 0, pending: 0}
