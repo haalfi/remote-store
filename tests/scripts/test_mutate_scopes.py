@@ -105,7 +105,7 @@ def test_only_ssh_scopes_need_the_sftp_container() -> None:
 # Tests in transport-split topics that no leg selects, predating BUG-303's
 # split of listing/metadata/streaming (which drops none): parametrized by
 # backend name rather than fixture name, or by no backend at all. Tracked as
-# BK-406; the guard below fails on any addition and on any entry that becomes
+# BK-407; the guard below fails on any addition and on any entry that becomes
 # covered, so this list stays exact.
 _CONF = "tests/backends/conformance"
 _KNOWN_UNSPLIT_TESTS = {

@@ -18,7 +18,7 @@
 # hardcoding it would pin this package to one minimum after the ecosystem
 # raises its own.
 context:
-  version: "0.32.0"
+  version: "0.33.0"
 
 package:
   name: remote-store
@@ -26,7 +26,7 @@ package:
 
 source:
   url: https://pypi.org/packages/source/r/remote-store/remote_store-${{ version }}.tar.gz
-  sha256: be46ad694ecc451a32e5a4ad73cab246b8b3362bfd369fbb4fbca563d396289d
+  sha256: 80258c298f8464575272fdef215cdba7e10cb8fec3554ed4cab5f23dc26d8557
 
 build:
   noarch: python

@@ -421,7 +421,7 @@ no clause of the contract ships unexercised.
   regex (read only). Open decision: anchor with `\Z` on every backend, or state
   the newline rule in GLOB-014.
 
-- [ ] **BK-406 — Mutation scopes miss every backend's `async_sources` and ten split-topic tests**
+- [ ] **BK-407 — Mutation scopes miss every backend's `async_sources` and ten split-topic tests**
   spec: — · effort: S · audience: infra.test
   `_src` reads only `[backend.<x>].sources`: `-async-extended-graph` mutates only
   `_sync_adapter.py`, which its tests never run (26 survived, 0 zapped, pre-scan
@@ -785,23 +785,28 @@ CHANGELOG the release body is built from — say what is actually true.
   remove or re-defer, with a successor ticket.
   Detail: [dossier](backlog/id-150-verify-tla-revisit.md)
 
-- [ ] **ID-259 — Trace-outcome report revisit at the next release**
-  spec: — · effort: S · audience: contributor.process
-  The release-anchored trace-outcome revisit fires at the next release, and
-  none has happened since v0.32.0 (no `v0.33.0` tag); today's report counts
-  335 traces and 331 negative tags against the recorded 310 and 306. Open
-  decision: at that release, act, defer or accept per selected reference,
-  and name the successor.
-  Detail: [dossier](backlog/id-259-trace-outcome-revisit.md)
+- [ ] **BUG-305 — `report-trace-outcomes` crashes on a Windows console before printing**
+  spec: — · effort: S · audience: contributor.tooling
+  `hatch run report-trace-outcomes` raises `UnicodeEncodeError` on `→` under
+  the default cp1252 console, so the release's Phase 0 revisit read fails on
+  the maintainer's own machine; `PYTHONIOENCODING=utf-8` works around it.
+  Reproduced at the v0.33.0 release. Open decision: none; bug-fix protocol.
 
-- [ ] **BK-386 — ADR-0041's short done entry is unmeasured until the next release**
+- [ ] **ID-267 — Trace-outcome report revisit at the next release**
   spec: — · effort: S · audience: contributor.process
-  ADR-0041 keeps a done entry for an item with a dossier short, by review
-  alone, so compliance shows only in the next release section;
-  `hatch run report-done-length` over the register at `8fa22d6` gives
-  medians of 403 words at v0.32.0, 646 at v0.31.0, 67 for Unreleased's one
-  dossier entry. Open decision: at the next release, keep, gate or reverse the rule.
-  Detail: [dossier](backlog/bk-386-done-entry-shape-measure.md)
+  The release-anchored trace-outcome revisit fires at the next release; ID-259
+  closed it at v0.33.0 over 356 traces and 358 negative tags, deferring
+  `CONTRIBUTING.md` § Release on a stated test. Open decision: at that
+  release, act, defer or accept per selected reference, and name the successor.
+  Detail: [dossier](backlog/id-267-trace-outcome-revisit.md)
+
+- [ ] **BK-406 — ADR-0041's short done entry is measured on one release only**
+  spec: — · effort: S · audience: contributor.process
+  BK-386 kept ADR-0041's review-only rule at the v0.33.0 release base: 11 dossier
+  entries, all linked, median 100 words against 529 without. One release is one sample, so
+  the reading repeats once. Open decision: at the next release, keep, gate or
+  reverse, and whether the Phase 0 line stays.
+  Detail: [dossier](backlog/bk-406-done-entry-shape-remeasure.md)
 
 - [ ] **BK-366 — Bug share of shipped work rose 3% → 35% across five releases, undiagnosed**
   spec: — · effort: M · audience: contributor.process
@@ -836,6 +841,14 @@ CHANGELOG the release body is built from — say what is actually true.
   there read `src/` other than by import (BK-403's scan,
   `bk-403-testmon-poc/srcreads.py`). A selector built on the comment would
   drop the directory. Open decision: none.
+
+- [ ] **BUG-304 — `hatch run all` fails on a Windows dev box in four `tests/scripts/` files that CI never runs there**
+  spec: — · effort: S · audience: contributor.tooling, infra.test
+  At the v0.33.0 release, 4 failed and 22 errored, all in `tests/scripts/`: the
+  `check_backlog_ids_vs_base` temp repo inherits a global `commit.gpgsign`; `claude_hooks`
+  needs symlinks and `termios`; `check_traces` expects `IsADirectoryError` (Windows
+  raises `PermissionError`); a `dafny_oracle_fresh` fixture writes cp1252. Open decision:
+  none; `tooling-tests` runs Linux only, so each fix needs a Windows run.
 
 ---
 

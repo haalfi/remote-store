@@ -1,0 +1,95 @@
+id: ID-259
+title: "Trace-outcome report revisit at the next release"
+trigger: >-
+  The v0.33.0 release checklist reached Phase 0's trace-outcome step, which
+  reads the report and closes the open revisit ticket. ID-259 was that ticket,
+  the third since ID-238 anchored the review to the release.
+source_items:
+  - ID-259
+  - ID-258
+  - ID-238
+audience:
+  - contributor.process
+discovery_followups:
+  - ID-267
+  - BUG-305
+co_shipped_items:
+  - BK-386
+expected_ripples:
+  - sdd/backlogid.json
+  - sdd/BACKLOG-DONE.md
+phases:
+  - id: orient
+    name: Read the step and the ticket it closes
+    steps:
+      - file: CONTRIBUTING.md
+        section: "Release / Phase 0: Pre-flight"
+        read_type: gate
+        extract: >-
+          Read the report, close the open revisit item against it, record the
+          corpus totals, the references selected and a decision per reference.
+          A report, never a gate
+        outcome: ok
+      - file: sdd/backlog/id-259-trace-outcome-revisit.md
+        section: "(dossier)"
+        read_type: gate
+        extract: >-
+          The selection rule and its fitted threshold, the three dispositions,
+          the 1d43c1b baseline, and the instruction to difference the interval
+          before dispositioning so carry-over is not re-selected as new
+          evidence
+        outcome: ok
+      - file: sdd/BACKLOG-DONE.md
+        section: "(item) ID-258"
+        read_type: reference
+        extract: >-
+          How each reference was dispositioned last time, and the standing
+          test for CONTRIBUTING.md: act once ID-254 and ID-255 close and
+          § Release still gains tags
+        outcome: ok
+  - id: measure
+    name: Run the report, re-run the baseline, difference the interval
+    steps:
+      - file: scripts/report_trace_outcomes.py
+        section: "(generated report at 39059422c)"
+        read_type: reference
+        extract: >-
+          Crashed first with UnicodeEncodeError on the cp1252 console; ran
+          with PYTHONIOENCODING=utf-8, filed as BUG-305. 356 traces, 358
+          negative tags; BACKLOG.md top at 35/358, bar 14.66% from the ratio;
+          six rows clear it at reads >= 20, found by filtering all 155 rows
+          rather than reading the table
+      - file: scripts/report_trace_outcomes.py
+        section: "(the 1d43c1b commit's own script over its own traces, in a worktree)"
+        read_type: verify
+        extract: >-
+          Reproduced the recorded baseline exactly, 310 traces and 306 tags,
+          so per-reference counts difference like against like. Four of the
+          seven selections gained no tag; migration.md is selected only
+          because its reads reached 20
+      - file: sdd/traces/
+        section: "(tag lines per selected reference, base report against today's)"
+        read_type: verify
+        extract: >-
+          Named the new tags: BACKLOG.md's five from BK-365, BK-369, BK-377,
+          BUG-281 and ID-263; CONTRIBUTING.md's three from BK-371 and BK-375
+          on § Release and BK-391 on § Development Setup; formal/README's one
+          from ID-263
+  - id: implement
+    name: Record the decision, close the ticket, open its successor
+    steps:
+      - file: sdd/BACKLOG.md
+        section: "How this file works / Completing work, Assigning a new ID"
+        read_type: gate
+        extract: >-
+          A done entry for an item with a dossier is short and links it; IDs
+          minted while BUG-303 sat on a pushed branch, so gen-backlogid
+          --check --remote confirmed ID-267 and BUG-305 collide with nothing
+        outcome: ok
+      - file: sdd/BACKLOG-DONE.md
+        section: "(item) ID-258"
+        read_type: verify
+        extract: >-
+          Its close note said ID-259 was `[ ]` in BACKLOG.md, true until this
+          commit. Re-worded to name whichever revisit ID BACKLOG.md holds, the
+          wording ID-258's own sweep gave the earlier notes

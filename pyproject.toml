@@ -4,7 +4,7 @@ build-backend = "hatchling.build"
 
 [project]
 name = "remote-store"
-version = "0.32.0"
+version = "0.33.0"
 description = "Write file storage code once. Run it against local files, S3, SFTP, Azure, or OneDrive."
 readme = "README.md"
 license = { file = "LICENSE" }
@@ -525,7 +525,7 @@ gen-gate-inventory-check = "python scripts/gen_gate_inventory.py --check"
 # suite, which is what keeps it executable without gating on it.
 report-trace-outcomes = "python scripts/report_trace_outcomes.py {args}"
 # BK-386: advisory for the same reason as the report above, stated in its own
-# module docstring; read at the release that decides ADR-0041's done-entry shape.
+# module docstring; read at the release by the open done-length revisit item.
 report-done-length = "python scripts/report_done_length.py {args}"
 # BK-378 / RFC-0015 D1 and D4. Three entries, wired three different ways, and
 # the differences are the point.
@@ -782,7 +782,7 @@ known-first-party = ["remote_store"]
 # Bumps version in all four files listed below atomically.
 
 [tool.bumpversion]
-current_version = "0.32.0"
+current_version = "0.33.0"
 commit = false
 tag = false
 tag_name = "v{new_version}"
