@@ -138,6 +138,15 @@ phases:
           e2e edits; the linters read every module, so the pins were wrong,
           not the selector. Corrected before the freeze; cassette-yaml pins the
           job's empty-survival case
+      - file: sdd/research/bk-403-phase-0/seeds.py
+        section: "edit_worktree, restore"
+        read_type: reference
+        extract: >-
+          My restore wrote files back in text mode, which on Windows turned
+          every restored file's LF into CRLF, so each later seed ran on a tree
+          that was not pristine (content identical, line endings not). Found by
+          checking the seed worktree's status before removing it; made
+          byte-exact and the whole confirmation rerun on a reset tree
   - id: replay
     name: Replays and classification
     steps:

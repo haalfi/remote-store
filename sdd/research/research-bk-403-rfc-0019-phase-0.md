@@ -190,6 +190,11 @@ PoC seeds are reused verbatim from
   the first one failed nothing; three job pins that expected `tooling-tests`
   absent were wrong (finding 3 above); and a driver bug that passed
   `Class::method` to `-k` was fixed.
+- **The committed results come from a rerun on a pristine tree.** The first
+  run restored edited files in text mode, which on Windows rewrote their line
+  endings, so later seeds ran on a tree that differed in line endings only.
+  After a byte-exact fix and a reset, the full confirmation was rerun:
+  identical outcome, and the seed worktree was clean afterwards.
 
 ## Appendix C: historical replay (`replay_h.py`, `summarize_h.py`)
 

@@ -295,26 +295,30 @@ def run_pytest(args: list[str], junit: Path, workers: str = "0") -> tuple[int, l
     return r.returncode, cases, (r.stdout[-1500:] + r.stderr[-800:])
 
 
-def edit_worktree(seed: Seed) -> dict[Path, str | None]:
-    saved: dict[Path, str | None] = {}
+def edit_worktree(seed: Seed) -> dict[Path, bytes | None]:
+    """Apply the edit byte-exactly: text mode on Windows would rewrite every
+    line ending as CRLF and leave the file changed after restore."""
+    saved: dict[Path, bytes | None] = {}
     for f, old, new in seed.edits:
         p = WT / f
-        saved[p] = p.read_text(encoding="utf-8") if p.exists() else None
+        saved[p] = p.read_bytes() if p.exists() else None
+        text = (saved[p] or b"").decode("utf-8")
         if old is None:
-            p.write_text(new + "\n", encoding="utf-8")
+            text = new + "\n"
         elif old == "":
-            p.write_text((saved[p] or "").rstrip("\n") + "\n" + new + "\n", encoding="utf-8")
+            text = text.rstrip("\n") + "\n" + new + "\n"
         else:
-            p.write_text((saved[p] or "").replace(old + "\n", new + "\n"), encoding="utf-8")
+            text = text.replace(old + "\n", new + "\n")
+        p.write_bytes(text.encode("utf-8"))
     return saved
 
 
-def restore(saved: dict[Path, str | None]) -> None:
-    for p, text in saved.items():
-        if text is None:
+def restore(saved: dict[Path, bytes | None]) -> None:
+    for p, data in saved.items():
+        if data is None:
             p.unlink(missing_ok=True)
         else:
-            p.write_text(text, encoding="utf-8")
+            p.write_bytes(data)
 
 
 def known_matches(known: str, ident: str) -> bool:
