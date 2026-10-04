@@ -23,6 +23,107 @@ expected_ripples:
   - "sdd/decisions/24c9a1ec-ee6e-4d95-ab22-352eea31346e.jsonl"
 surprising_ripples:
   - ".claude/skills/rvw-pr/SKILL.md"
+review:
+  # Derived by `hatch run ship-report 1073 --trace-block-only` at head 14c36c7.
+  # Do not hand-edit, except a newly required field per sdd/traces/_schema.yml
+  # section review: RFC-0015 D4 makes this script the only producer.
+  derivation: "hatch run ship-report 1073 --trace-block-only"
+  pr: 1073
+  review_rounds: 8
+  submissions: 9
+  findings: 22
+  by_round:
+    - round: 1
+      findings: 5
+      origin: {original: 4, pre-existing: 1}
+      triage: {must-fix: 5}
+      duration_hours: 0.07
+    - round: 2
+      findings: 3
+      origin: {original: 3}
+      triage: {must-fix: 3}
+      duration_hours: 0.25
+    - round: 3
+      findings: 2
+      origin: {pre-existing: 1, unclassifiable-file: 1}
+      triage: {must-fix: 2}
+      duration_hours: 0.61
+    - round: 4
+      findings: 1
+      origin: {loop-introduced: 1}
+      triage: {must-fix: 1}
+      duration_hours: 0.26
+    - round: 5
+      findings: 2
+      origin: {original: 1, pre-existing: 1}
+      triage: {must-fix: 2}
+      duration_hours: 0.17
+    - round: 6
+      findings: 4
+      origin: {loop-introduced: 2, original: 1, unclassifiable-file: 1}
+      triage: {must-fix: 4}
+      duration_hours: 0.33
+    - round: 7
+      findings: 2
+      origin: {loop-introduced: 1, unclassifiable-file: 1}
+      triage: {must-fix: 2}
+      duration_hours: 0.15
+    - round: 8
+      findings: 2
+      origin: {original: 2}
+      triage: {must-fix: 2}
+      duration_hours: 0.23
+    - round: 9
+      findings: 1
+      origin: {unclassifiable-file: 1}
+      triage: {must-fix: 1}
+      duration_hours: 0.23
+  by_file:
+    - path: "sdd/rfcs/rfc-0018-decision-capture-at-dialog-time.md"
+      findings: 5
+    - path: "scripts/record_decision.py"
+      findings: 4
+    - path: ".claude/skills/pr/SKILL.md"
+      findings: 3
+    - path: ".claude/skills/orchestrate/SKILL.md"
+      findings: 2
+    - path: ".claude/skills/rvw-pr/SKILL.md"
+      findings: 2
+    - path: ".claude/skills/ship/SKILL.md"
+      findings: 2
+    - path: ".claude/hooks/record-decision.sh"
+      findings: 1
+    - path: "sdd/CLAUDE-REFERENCE.md"
+      findings: 1
+    - path: "sdd/traces/bk-397-recorder.yml"
+      findings: 1
+    - path: "tests/scripts/test_record_decision.py"
+      findings: 1
+  untouched_files:
+    - ".claude/hooks/gate-commit.sh"
+    - ".claude/settings.json"
+    - "sdd/BACKLOG.md"
+    - "sdd/decisions/24c9a1ec-ee6e-4d95-ab22-352eea31346e.jsonl"
+    - "tests/scripts/fixtures/record_decision/live-post.json"
+    - "tests/scripts/fixtures/record_decision/live-pre.json"
+  review_driven_commits:
+    - sha: "0461216"
+      subject: "fix: address PR #1073 review"
+    - sha: "3ef146e"
+      subject: "fix: address PR #1073 review"
+    - sha: "bd134ef"
+      subject: "fix: address PR #1073 review"
+    - sha: "2429991"
+      subject: "fix: address PR #1073 review"
+    - sha: "833be56"
+      subject: "fix: address PR #1073 review"
+    - sha: "a55c0d3"
+      subject: "fix: address PR #1073 review"
+    - sha: "4ba2a98"
+      subject: "BK-397: fix: address PR #1073 review"
+    - sha: "14c36c7"
+      subject: "BK-397: fix: address PR #1073 review"
+  ci: {verdict: GREEN, failed: 0, pending: 0}
 phases:
   - id: orient
     name: Orient
