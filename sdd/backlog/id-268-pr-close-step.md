@@ -30,10 +30,18 @@ chosen.** The open decision is which of the shapes below to build, or none.
   against the checkout: `git log <base>..<head>` against `origin/<base>` for the
   review-driven commits, and `git blame` at the reviewed head for each finding's
   origin tag. Its docstring states "Requires `gh` authenticated and the base ref
-  fetched", and that a depth-50 clone yields graft artefacts. A job therefore
-  needs the PR head checked out, the base branch fetched, and history deep
-  enough for blame; `actions/checkout` defaults to depth 1, under which origin
-  tags degrade to `unclassifiable-*` without an error.
+  fetched". A job therefore needs the PR head, the base branch and full history
+  (`fetch-depth: 0` or an explicit unshallow); `actions/checkout` defaults to
+  depth 1. Measured in a `git clone --depth 1` of this branch, a shallow
+  checkout fails in one of two ways, and neither shows up as `unclassifiable-*`:
+  - **Base not fetched:** `git log origin/master..HEAD` exits 128, and the
+    script's `_git` helper runs with `check=True`, so the run raises.
+  - **Base fetched but shallow:** `git blame` exits 0 and attributes lines past
+    the graft to the boundary commit (`^<sha>`). Read from the code, not run:
+    `origin()` strips the `^` and passes that commit to its ancestry and
+    author-date checks as if it had authored the line, so the tags look
+    plausible and are wrong, and the block cannot show the checkout was too
+    shallow.
 - **The block undercounts rounds posted as conversation comments.** On PR #1071
   both review rounds were posted as PR conversation comments, not as review
   submissions or inline threads. The derived block reported
@@ -75,7 +83,7 @@ chosen.** The open decision is which of the shapes below to build, or none.
    runs `gh pr merge --auto --squash`. The repo already enables auto-merge from
    a workflow after a human approval
    (`.github/workflows/dependabot-auto-merge.yml`). Keeps RFC-0015 D4 intact.
-   Costs a token, a checkout deep enough for `ship-report` (Evidence above), and
+   Costs a token, a full-history checkout for `ship-report` (Evidence above), and
    the RFC-0019 ordering above.
 2. **Fold the close into RFC-0019's `merge-candidate`.** The one signal that
    says "this head is final" also writes the block, before the full lane runs.
