@@ -1,0 +1,776 @@
+{
+ "derivation": "sensitivity.py 2026-07-04 d306e0223 tmp/universe.json",
+ "variant": "S1 (post-hoc, not a verdict input)",
+ "n": 106,
+ "full": 58,
+ "full_rate": 0.5471698113207547,
+ "median_wall_share": 1.0,
+ "prs_with_relaxed_paths": 45,
+ "relaxed_paths_in_selected_prs": {
+  "pyproject.toml": 14,
+  ".github/workflows/drift-guard.yml": 4,
+  ".github/workflows/benchmark.yml": 4,
+  ".github/workflows/conda-recipe.yml": 2
+ },
+ "rows": [
+  {
+   "pr": 1071,
+   "mode": "SELECTED",
+   "wall_share": 0.004641274997482897,
+   "removed": []
+  },
+  {
+   "pr": 1068,
+   "mode": "FULL",
+   "wall_share": 1.0,
+   "removed": [
+    ".github/workflows/mutation.yml"
+   ]
+  },
+  {
+   "pr": 1069,
+   "mode": "FULL",
+   "wall_share": 1.0,
+   "removed": [
+    "pyproject.toml"
+   ]
+  },
+  {
+   "pr": 1054,
+   "mode": "SELECTED",
+   "wall_share": 0.6939271230965012,
+   "removed": []
+  },
+  {
+   "pr": 1053,
+   "mode": "SELECTED",
+   "wall_share": 0.004166234402996404,
+   "removed": []
+  },
+  {
+   "pr": 1052,
+   "mode": "FULL",
+   "wall_share": 1.0,
+   "removed": [
+    "pyproject.toml"
+   ]
+  },
+  {
+   "pr": 1051,
+   "mode": "FULL",
+   "wall_share": 1.0,
+   "removed": [
+    ".github/workflows/ci-full.yml",
+    ".github/workflows/drift-guard.yml"
+   ]
+  },
+  {
+   "pr": 1050,
+   "mode": "FULL",
+   "wall_share": 1.0,
+   "removed": []
+  },
+  {
+   "pr": 1049,
+   "mode": "FULL",
+   "wall_share": 1.0,
+   "removed": []
+  },
+  {
+   "pr": 1047,
+   "mode": "FULL",
+   "wall_share": 1.0,
+   "removed": []
+  },
+  {
+   "pr": 1048,
+   "mode": "FULL",
+   "wall_share": 1.0,
+   "removed": []
+  },
+  {
+   "pr": 1046,
+   "mode": "FULL",
+   "wall_share": 1.0,
+   "removed": []
+  },
+  {
+   "pr": 1042,
+   "mode": "SELECTED",
+   "wall_share": 0.008056431703791198,
+   "removed": [
+    "pyproject.toml"
+   ]
+  },
+  {
+   "pr": 1041,
+   "mode": "SELECTED",
+   "wall_share": 0.005244704941830604,
+   "removed": []
+  },
+  {
+   "pr": 1039,
+   "mode": "FULL",
+   "wall_share": 1.0,
+   "removed": [
+    ".github/workflows/benchmark.yml",
+    ".github/workflows/ci-full.yml",
+    ".github/workflows/docs.yml",
+    ".github/workflows/drift-guard.yml",
+    ".github/workflows/mutation.yml",
+    ".github/workflows/publish.yml"
+   ]
+  },
+  {
+   "pr": 1034,
+   "mode": "FULL",
+   "wall_share": 1.0,
+   "removed": []
+  },
+  {
+   "pr": 1032,
+   "mode": "SELECTED",
+   "wall_share": 0.004057103455614372,
+   "removed": []
+  },
+  {
+   "pr": 1029,
+   "mode": "SELECTED",
+   "wall_share": 0.004628436062496776,
+   "removed": []
+  },
+  {
+   "pr": 1027,
+   "mode": "FULL",
+   "wall_share": 1.0,
+   "removed": [
+    "pyproject.toml"
+   ]
+  },
+  {
+   "pr": 1026,
+   "mode": "SELECTED",
+   "wall_share": 0.04108110248471813,
+   "removed": [
+    "pyproject.toml"
+   ]
+  },
+  {
+   "pr": 1025,
+   "mode": "SELECTED",
+   "wall_share": 0.4986416005146473,
+   "removed": []
+  },
+  {
+   "pr": 1023,
+   "mode": "SELECTED",
+   "wall_share": 0.013696902640541594,
+   "removed": [
+    ".github/workflows/conda-recipe.yml",
+    ".github/workflows/drift-guard.yml",
+    "pyproject.toml"
+   ]
+  },
+  {
+   "pr": 1021,
+   "mode": "SELECTED",
+   "wall_share": 0.8942297100607729,
+   "removed": []
+  },
+  {
+   "pr": 1022,
+   "mode": "SELECTED",
+   "wall_share": 0.013594191160652622,
+   "removed": [
+    ".github/workflows/drift-guard.yml",
+    "pyproject.toml"
+   ]
+  },
+  {
+   "pr": 1018,
+   "mode": "FULL",
+   "wall_share": 1.0,
+   "removed": [
+    ".github/workflows/drift-guard.yml",
+    "pyproject.toml"
+   ]
+  },
+  {
+   "pr": 1003,
+   "mode": "SELECTED",
+   "wall_share": 0.012682626776638001,
+   "removed": [
+    "pyproject.toml"
+   ]
+  },
+  {
+   "pr": 1008,
+   "mode": "FULL",
+   "wall_share": 1.0,
+   "removed": [
+    ".github/workflows/benchmark.yml",
+    ".github/workflows/ci-full.yml",
+    ".github/workflows/docs.yml",
+    ".github/workflows/mutation.yml",
+    ".github/workflows/publish.yml"
+   ]
+  },
+  {
+   "pr": 1009,
+   "mode": "FULL",
+   "wall_share": 1.0,
+   "removed": []
+  },
+  {
+   "pr": 1006,
+   "mode": "FULL",
+   "wall_share": 1.0,
+   "removed": [
+    "pyproject.toml"
+   ]
+  },
+  {
+   "pr": 1004,
+   "mode": "FULL",
+   "wall_share": 1.0,
+   "removed": [
+    ".github/workflows/conda-recipe.yml"
+   ]
+  },
+  {
+   "pr": 1000,
+   "mode": "FULL",
+   "wall_share": 1.0,
+   "removed": [
+    "pyproject.toml"
+   ]
+  },
+  {
+   "pr": 999,
+   "mode": "SELECTED",
+   "wall_share": 0.4909706775463062,
+   "removed": []
+  },
+  {
+   "pr": 997,
+   "mode": "FULL",
+   "wall_share": 1.0,
+   "removed": []
+  },
+  {
+   "pr": 996,
+   "mode": "SELECTED",
+   "wall_share": 0.4909706775463062,
+   "removed": []
+  },
+  {
+   "pr": 994,
+   "mode": "SELECTED",
+   "wall_share": 0.4911504226361119,
+   "removed": []
+  },
+  {
+   "pr": 993,
+   "mode": "FULL",
+   "wall_share": 1.0,
+   "removed": [
+    "pyproject.toml"
+   ]
+  },
+  {
+   "pr": 992,
+   "mode": "SELECTED",
+   "wall_share": 0.5113903748674428,
+   "removed": []
+  },
+  {
+   "pr": 968,
+   "mode": "FULL",
+   "wall_share": 1.0,
+   "removed": []
+  },
+  {
+   "pr": 991,
+   "mode": "FULL",
+   "wall_share": 1.0,
+   "removed": []
+  },
+  {
+   "pr": 989,
+   "mode": "SELECTED",
+   "wall_share": 0.4927809673793493,
+   "removed": []
+  },
+  {
+   "pr": 990,
+   "mode": "SELECTED",
+   "wall_share": 0.004975087307122055,
+   "removed": []
+  },
+  {
+   "pr": 987,
+   "mode": "FULL",
+   "wall_share": 1.0,
+   "removed": []
+  },
+  {
+   "pr": 986,
+   "mode": "SELECTED",
+   "wall_share": 0.4911504226361119,
+   "removed": []
+  },
+  {
+   "pr": 988,
+   "mode": "FULL",
+   "wall_share": 1.0,
+   "removed": []
+  },
+  {
+   "pr": 983,
+   "mode": "SELECTED",
+   "wall_share": 0.008281113066048323,
+   "removed": [
+    "pyproject.toml"
+   ]
+  },
+  {
+   "pr": 985,
+   "mode": "SELECTED",
+   "wall_share": 0.008281113066048323,
+   "removed": [
+    "pyproject.toml"
+   ]
+  },
+  {
+   "pr": 978,
+   "mode": "SELECTED",
+   "wall_share": 0.4911504226361119,
+   "removed": []
+  },
+  {
+   "pr": 977,
+   "mode": "FULL",
+   "wall_share": 1.0,
+   "removed": []
+  },
+  {
+   "pr": 974,
+   "mode": "FULL",
+   "wall_share": 1.0,
+   "removed": []
+  },
+  {
+   "pr": 976,
+   "mode": "FULL",
+   "wall_share": 1.0,
+   "removed": []
+  },
+  {
+   "pr": 973,
+   "mode": "SELECTED",
+   "wall_share": 0.4911504226361119,
+   "removed": []
+  },
+  {
+   "pr": 971,
+   "mode": "FULL",
+   "wall_share": 1.0,
+   "removed": []
+  },
+  {
+   "pr": 972,
+   "mode": "FULL",
+   "wall_share": 1.0,
+   "removed": [
+    "pyproject.toml"
+   ]
+  },
+  {
+   "pr": 965,
+   "mode": "FULL",
+   "wall_share": 1.0,
+   "removed": []
+  },
+  {
+   "pr": 969,
+   "mode": "SELECTED",
+   "wall_share": 0.0748258148473146,
+   "removed": []
+  },
+  {
+   "pr": 966,
+   "mode": "FULL",
+   "wall_share": 1.0,
+   "removed": [
+    ".github/workflows/benchmark.yml",
+    ".github/workflows/ci-full.yml",
+    ".github/workflows/docs.yml",
+    ".github/workflows/mutation.yml",
+    ".github/workflows/publish.yml"
+   ]
+  },
+  {
+   "pr": 964,
+   "mode": "FULL",
+   "wall_share": 1.0,
+   "removed": []
+  },
+  {
+   "pr": 961,
+   "mode": "FULL",
+   "wall_share": 1.0,
+   "removed": []
+  },
+  {
+   "pr": 960,
+   "mode": "SELECTED",
+   "wall_share": 0.0039094557032739756,
+   "removed": []
+  },
+  {
+   "pr": 959,
+   "mode": "FULL",
+   "wall_share": 1.0,
+   "removed": [
+    ".github/workflows/drift-guard.yml"
+   ]
+  },
+  {
+   "pr": 952,
+   "mode": "FULL",
+   "wall_share": 1.0,
+   "removed": []
+  },
+  {
+   "pr": 951,
+   "mode": "FULL",
+   "wall_share": 1.0,
+   "removed": [
+    "pyproject.toml"
+   ]
+  },
+  {
+   "pr": 949,
+   "mode": "FULL",
+   "wall_share": 1.0,
+   "removed": []
+  },
+  {
+   "pr": 947,
+   "mode": "FULL",
+   "wall_share": 1.0,
+   "removed": []
+  },
+  {
+   "pr": 945,
+   "mode": "FULL",
+   "wall_share": 1.0,
+   "removed": []
+  },
+  {
+   "pr": 944,
+   "mode": "FULL",
+   "wall_share": 1.0,
+   "removed": [
+    "pyproject.toml"
+   ]
+  },
+  {
+   "pr": 941,
+   "mode": "SELECTED",
+   "wall_share": 0.007921622886436924,
+   "removed": [
+    "pyproject.toml"
+   ]
+  },
+  {
+   "pr": 940,
+   "mode": "FULL",
+   "wall_share": 1.0,
+   "removed": [
+    "pyproject.toml"
+   ]
+  },
+  {
+   "pr": 936,
+   "mode": "FULL",
+   "wall_share": 1.0,
+   "removed": []
+  },
+  {
+   "pr": 933,
+   "mode": "FULL",
+   "wall_share": 1.0,
+   "removed": [
+    ".github/workflows/benchmark.yml",
+    ".github/workflows/ci-full.yml",
+    ".github/workflows/docs.yml",
+    ".github/workflows/mutation.yml",
+    ".github/workflows/publish.yml"
+   ]
+  },
+  {
+   "pr": 932,
+   "mode": "FULL",
+   "wall_share": 1.0,
+   "removed": [
+    "pyproject.toml"
+   ]
+  },
+  {
+   "pr": 931,
+   "mode": "FULL",
+   "wall_share": 1.0,
+   "removed": [
+    ".github/workflows/ci-full.yml"
+   ]
+  },
+  {
+   "pr": 929,
+   "mode": "SELECTED",
+   "wall_share": 0.004865956359740022,
+   "removed": []
+  },
+  {
+   "pr": 927,
+   "mode": "FULL",
+   "wall_share": 1.0,
+   "removed": [
+    ".github/workflows/benchmark.yml",
+    ".github/workflows/docs.yml",
+    ".github/workflows/drift-guard.yml",
+    ".github/workflows/mutation.yml",
+    ".github/workflows/publish.yml"
+   ]
+  },
+  {
+   "pr": 925,
+   "mode": "FULL",
+   "wall_share": 1.0,
+   "removed": [
+    "pyproject.toml"
+   ]
+  },
+  {
+   "pr": 908,
+   "mode": "SELECTED",
+   "wall_share": 0.0048595368922469614,
+   "removed": [
+    ".github/workflows/benchmark.yml"
+   ]
+  },
+  {
+   "pr": 923,
+   "mode": "SELECTED",
+   "wall_share": 0.003646257536058486,
+   "removed": [
+    ".github/workflows/benchmark.yml"
+   ]
+  },
+  {
+   "pr": 922,
+   "mode": "SELECTED",
+   "wall_share": 0.4886525409393289,
+   "removed": []
+  },
+  {
+   "pr": 921,
+   "mode": "SELECTED",
+   "wall_share": 0.007549293771839401,
+   "removed": [
+    "pyproject.toml"
+   ]
+  },
+  {
+   "pr": 918,
+   "mode": "SELECTED",
+   "wall_share": 0.08166626241848675,
+   "removed": []
+  },
+  {
+   "pr": 915,
+   "mode": "SELECTED",
+   "wall_share": 0.8264615528597793,
+   "removed": []
+  },
+  {
+   "pr": 914,
+   "mode": "SELECTED",
+   "wall_share": 0.0047680361507716025,
+   "removed": []
+  },
+  {
+   "pr": 910,
+   "mode": "FULL",
+   "wall_share": 1.0,
+   "removed": []
+  },
+  {
+   "pr": 912,
+   "mode": "SELECTED",
+   "wall_share": 0.007851008744013255,
+   "removed": [
+    "pyproject.toml"
+   ]
+  },
+  {
+   "pr": 909,
+   "mode": "SELECTED",
+   "wall_share": 0.007870267146492436,
+   "removed": [
+    "pyproject.toml"
+   ]
+  },
+  {
+   "pr": 906,
+   "mode": "SELECTED",
+   "wall_share": 0.008460858155854022,
+   "removed": [
+    ".github/workflows/benchmark.yml",
+    "pyproject.toml"
+   ]
+  },
+  {
+   "pr": 903,
+   "mode": "FULL",
+   "wall_share": 1.0,
+   "removed": []
+  },
+  {
+   "pr": 902,
+   "mode": "SELECTED",
+   "wall_share": 0.009498570900079885,
+   "removed": [
+    ".github/workflows/drift-guard.yml"
+   ]
+  },
+  {
+   "pr": 901,
+   "mode": "SELECTED",
+   "wall_share": 0.4069663830392783,
+   "removed": []
+  },
+  {
+   "pr": 900,
+   "mode": "SELECTED",
+   "wall_share": 0.005867393288657494,
+   "removed": [
+    ".github/workflows/drift-guard.yml"
+   ]
+  },
+  {
+   "pr": 894,
+   "mode": "SELECTED",
+   "wall_share": 0.008908597520092215,
+   "removed": [
+    "pyproject.toml"
+   ]
+  },
+  {
+   "pr": 896,
+   "mode": "FULL",
+   "wall_share": 1.0,
+   "removed": [
+    ".github/workflows/benchmark.yml",
+    ".github/workflows/docs.yml",
+    ".github/workflows/mutation.yml",
+    ".github/workflows/publish.yml"
+   ]
+  },
+  {
+   "pr": 895,
+   "mode": "SELECTED",
+   "wall_share": 0.0004622016595003715,
+   "removed": [
+    ".github/workflows/conda-recipe.yml"
+   ]
+  },
+  {
+   "pr": 893,
+   "mode": "SELECTED",
+   "wall_share": 0.011276658873483975,
+   "removed": []
+  },
+  {
+   "pr": 892,
+   "mode": "FULL",
+   "wall_share": 1.0,
+   "removed": []
+  },
+  {
+   "pr": 891,
+   "mode": "SELECTED",
+   "wall_share": 0.007664844186714494,
+   "removed": [
+    ".github/workflows/benchmark.yml",
+    "pyproject.toml"
+   ]
+  },
+  {
+   "pr": 889,
+   "mode": "FULL",
+   "wall_share": 1.0,
+   "removed": [
+    "pyproject.toml"
+   ]
+  },
+  {
+   "pr": 887,
+   "mode": "FULL",
+   "wall_share": 1.0,
+   "removed": []
+  },
+  {
+   "pr": 886,
+   "mode": "FULL",
+   "wall_share": 1.0,
+   "removed": []
+  },
+  {
+   "pr": 885,
+   "mode": "SELECTED",
+   "wall_share": 0.006271819740720319,
+   "removed": []
+  },
+  {
+   "pr": 884,
+   "mode": "SELECTED",
+   "wall_share": 0.6451083658663292,
+   "removed": []
+  },
+  {
+   "pr": 883,
+   "mode": "FULL",
+   "wall_share": 1.0,
+   "removed": []
+  },
+  {
+   "pr": 882,
+   "mode": "FULL",
+   "wall_share": 1.0,
+   "removed": []
+  },
+  {
+   "pr": 881,
+   "mode": "SELECTED",
+   "wall_share": 0.005172467439130878,
+   "removed": []
+  },
+  {
+   "pr": 880,
+   "mode": "FULL",
+   "wall_share": 1.0,
+   "removed": []
+  },
+  {
+   "pr": 879,
+   "mode": "FULL",
+   "wall_share": 1.0,
+   "removed": [
+    ".github/workflows/docs.yml",
+    ".github/workflows/mutation.yml",
+    ".github/workflows/publish.yml"
+   ]
+  }
+ ]
+}

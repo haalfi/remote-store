@@ -29,10 +29,14 @@ from p0tree import ROOT, Tree, git
 from selector import CODE_JOBS, Readers, changed_paths, select
 
 NOT_SELECTOR = {"docs", "verify-formal", "verify-tla", "gate", "setup"}
+# Historical job names that ci.yml has since renamed (found by tallying every
+# failing job id in R; an unmapped name would otherwise count as not-selector).
+JOB_ALIASES = {"pyarrow24-check": "pyarrow-major-check"}
 
 
 def job_id(name: str) -> str:
-    return re.split(r"[ (]", name, maxsplit=1)[0]
+    jid = re.split(r"[ (]", name, maxsplit=1)[0]
+    return JOB_ALIASES.get(jid, jid)
 
 
 def have(sha: str) -> bool:

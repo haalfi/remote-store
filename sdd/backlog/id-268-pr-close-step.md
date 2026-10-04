@@ -55,7 +55,9 @@ chosen.** The open decision is which of the shapes below to build, or none.
 
 ## Interactions
 
-- **[RFC-0019](../rfcs/rfc-0019-two-speed-test-gate.md) D1 (ID-266).** A
+- **[RFC-0019](../rfcs/rfc-0019-two-speed-test-gate.md) D1 (ID-266).**
+  *(RFC-0019 was rejected at Phase 0 on 2026-10-04; this interaction binds
+  only if ID-266 revives a `merge-candidate` lane.)* A
   `merge-candidate` label starts the full CI lane, and **any push clears the
   mark**. A close step that pushes the block after `merge-candidate` is set
   clears it and restarts the wait. Whichever shape is chosen has to order the

@@ -67,3 +67,10 @@ full".
   the coverage map kept only as a drift oracle (D7). Its Phase 0 replaces the
   revisit condition: the selector is built only if it passes Phase 0's exit
   (RFC-0019 § Roadmap), which is not restated here.
+- **2026-10-04, RFC-0019 Phase 0: stop; item decided against.** Under the
+  precision rule set, 72.6% of 106 code PRs fall back to FULL and the median
+  wall-clock share is 100%, against targets fixed before the run (at most
+  30% and 50%). The reader inventory and the seeds passed; the selector is
+  sound where it narrows, and it narrows too few diffs. RFC-0019 is
+  Rejected. Question, answer, figures and their derivations:
+  [`research-bk-403-rfc-0019-phase-0.md`](../research/research-bk-403-rfc-0019-phase-0.md).

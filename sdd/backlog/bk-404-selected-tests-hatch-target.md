@@ -61,3 +61,7 @@ push, the target replaces `all`; which skills run it there (`/ship`,
   check, recommended before marking a merge candidate. Which skills run it
   stays open (RFC-0019 Open Questions 4). Those skill edits remain in this
   item's scope, so it stays open after RFC-0019 Phase 1 delivers the target.
+- **2026-10-04, RFC-0019 Phase 0: stop; item decided against.** The target
+  needed BK-403's selector, which falls back to FULL on 72.6% of code PRs
+  ([report](../research/research-bk-403-rfc-0019-phase-0.md)). There is no
+  Phase 1, so the prescription above and its skill edits lapse.

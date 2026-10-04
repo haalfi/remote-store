@@ -49,6 +49,29 @@ a decision *about* a diagnosis is still a decision and deleting both is how the
 same idea returns with the argument had from scratch. Re-file under a **new** ID
 if evidence changes; these are retired.
 
+- [x] **BK-403 — No change-scoped test selector has been chosen for this suite; one of three candidates is measured**
+  Diagnosis: both gates run every test for every code diff (audit-022 § H1).
+  **Decided against on 2026-10-04: no selector is adopted.** The
+  `pytest-testmon` PoC rejected a coverage map; RFC-0019's rule-based selector
+  then failed its Phase 0, run against targets the maintainer fixed beforehand:
+  under the precision rule set 72.6% of 106 code PRs fall back to FULL and the
+  median wall-clock share is 100% (targets at most 30% and 50%). D5's FULL row
+  alone (`pyproject.toml`, `.github/**` and five other global files)
+  fires on 59 of the 106.
+  `pytest-tia` and `pytest-impact` were never run; they are runtime tools with
+  the blind spots that sank the map. Re-file if the diff mix changes. Report:
+  [research-bk-403-rfc-0019-phase-0.md](research/research-bk-403-rfc-0019-phase-0.md).
+  Dossier: [BK-403](backlog/bk-403-test-selector-evaluation.md).
+
+- [x] **BK-404 — The local gate runs every test for every code diff, with no selected target for in-progress rounds**
+  Diagnosis: `hatch run all` runs all of Stage 1 whatever the diff touched,
+  and tests are most of its wall time (audit-022 § H1). **Decided against on
+  2026-10-04 with BK-403:** the target needed BK-403's selector, and RFC-0019
+  Phase 0 found it would run the full suite on about 7 of 10 code diffs, so
+  the target would save little and still need the audit-017 R3 argument. The
+  skill edits it owned (RFC-0019 Open Questions 4) lapse with it.
+  Dossier: [BK-404](backlog/bk-404-selected-tests-hatch-target.md).
+
 - [x] **— A gate binding a `**Breaking**` entry to a migration section** *(refused as BUG-261's second disposition; never had an ID)*
   BUG-261 offered it as one of three dispositions: if any `[Unreleased]` entry
   contains `**Breaking**`, `docs-src/reference/migration.md` must carry a

@@ -19,8 +19,14 @@ expected_ripples:
   - sdd/backlog/bk-404-selected-tests-hatch-target.md
   - sdd/backlog/id-266-two-speed-ci-gate.md
   - sdd/rfcs/rfc-0019-two-speed-test-gate.md
-surprising_ripples: []
-discovery_followups: []
+  - sdd/BACKLOG-DONE.md
+  - sdd/backlogid.json
+surprising_ripples:
+  - sdd/backlog/id-268-pr-close-step.md
+co_shipped_items:
+  - BK-404
+discovery_followups:
+  - BUG-306
 phases:
   - id: orient
     name: Orient
@@ -114,3 +120,69 @@ phases:
           or third-party; D5's "every code change" made test and
           test-cross-platform always run, contradicting D7's e2e-only
           empty-survival seed. Scoped to src/ diffs as I7
+  - id: seeds
+    name: Seed run through the PoC driver
+    steps:
+      - file: tests/backends/conformance/test_async_extended.py
+        section: "test_populated_field_implies_declared_capability"
+        read_type: reference
+        extract: >-
+          My first test-module-imported edit (path -> WRITE_RESULT_NATIVE)
+          failed nothing because every async Stage-1 backend declares it;
+          switched to GLOB, which memory lacks, and the seed confirmed
+      - file: tests/scripts/test_check_rst_roles.py
+        section: "(layer-4 reads of tests/, examples/, src/)"
+        read_type: reference
+        extract: >-
+          Three job pins I wrote expected tooling-tests absent for test and
+          e2e edits; the linters read every module, so the pins were wrong,
+          not the selector. Corrected before the freeze; cassette-yaml pins the
+          job's empty-survival case
+  - id: replay
+    name: Replays and classification
+    steps:
+      - file: sdd/research/bk-403-phase-0/plan.md
+        section: "Targets; Stop criterion"
+        read_type: gate
+        extract: >-
+          Precision: FULL 77 of 106 (72.6%), median wall share 100%; both
+          stop conditions fire. Fix-and-rerun not run, since it cannot move
+          either figure
+      - file: src/remote_store/backends/_sftp.py
+        section: "__del__ (lines 1751-1759)"
+        read_type: reference
+        extract: >-
+          Coverage charged SFTPBackend.__del__ to s3_moto and sqlblob cells:
+          finalizers of an earlier test's backend run during a later test.
+          All 10 cross-check gaps were finalizer or background-thread
+          attribution, none a missing rule
+      - file: .github/workflows/ci.yml
+        section: "historical job names (gh run view --json jobs steps)"
+        read_type: reference
+        outcome: unclear
+        extract: >-
+          R's job names come from each run's own ci.yml: a job then named
+          test-primary ran pytest tests/scripts/ and pyarrow24-check is today's
+          pyarrow-major-check. Mapped by step and by an alias table in the
+          replay harness
+  - id: close
+    name: Report and backlog
+    steps:
+      - file: sdd/BACKLOG.md
+        section: "How this file works / Completing work (Decided against)"
+        read_type: gate
+        extract: >-
+          BK-403 and BK-404 decided against with their diagnosis; sweep found
+          ID-268's dossier stating RFC-0019's merge-candidate lane in present
+          tense, BUG-302's Phase 4 deadline and BK-401's testmon clause
+      - file: sdd/templates/rfc-template.md
+        section: "Status"
+        read_type: reference
+        extract: "Rejected is a template status; the maintainer chose it over Draft"
+      - file: sdd/CLAUDE-REFERENCE.md
+        section: "PR validation gates"
+        read_type: verify
+        extract: >-
+          No CODE_PAT path changed (sdd/ only), so lint + docs-gate; audience has
+          no user. entry and nothing user-facing is introduced, so no CHANGELOG
+          entry

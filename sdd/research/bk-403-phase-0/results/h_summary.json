@@ -1,0 +1,122 @@
+{
+ "derivation": "summarize_h.py sdd/research/bk-403-phase-0/results/h_replay.jsonl",
+ "variants": {
+  "pilot": {
+   "n": 106,
+   "full": 100,
+   "full_rate": 0.9433962264150944,
+   "median_wall_share": 1.0,
+   "mean_wall_share": 0.9437343616299326,
+   "median_selected_share": 1.0,
+   "median_wall_share_selected_only": 0.004871561728946828,
+   "median_wall_share_src_prs": 1.0,
+   "median_wall_share_non_src_prs": 1.0,
+   "n_src_prs": 41,
+   "full_src_prs": 41,
+   "median_jobs_selected": 4.0,
+   "jobs_hist_selected": {
+    "4": 4,
+    "7": 1,
+    "8": 1
+   },
+   "full_reasons_any": {
+    "FULL row": 59,
+    "src module, not a leaf backend module": 36,
+    "script imported by another module": 16,
+    "script with no mapped test": 7,
+    "tests/ module imported by another module": 7,
+    "unmatched": 6,
+    "package __init__": 5,
+    "fixture module": 4,
+    "shared fixture infrastructure": 3,
+    "fixtures.toml": 3,
+    "_cassettes row": 2,
+    "conftest with session-wide hook": 1,
+    "test module imported by another module": 1
+   },
+   "full_reason_first": {
+    "FULL row": 59,
+    "src module, not a leaf backend module": 32,
+    "script imported by another module": 6,
+    "script with no mapped test": 1,
+    "_cassettes row": 1,
+    "unmatched": 1
+   },
+   "imputed_rows": 0
+  },
+  "precision": {
+   "n": 106,
+   "full": 77,
+   "full_rate": 0.7264150943396226,
+   "median_wall_share": 1.0,
+   "mean_wall_share": 0.8077846318581222,
+   "median_selected_share": 1.0,
+   "median_wall_share_selected_only": 0.4069663830392783,
+   "median_wall_share_src_prs": 1.0,
+   "median_wall_share_non_src_prs": 1.0,
+   "n_src_prs": 41,
+   "full_src_prs": 24,
+   "median_jobs_selected": 10,
+   "jobs_hist_selected": {
+    "4": 9,
+    "7": 2,
+    "8": 2,
+    "10": 2,
+    "12": 3,
+    "13": 11
+   },
+   "full_reasons_any": {
+    "FULL row": 59,
+    "reaches tests/conftest.py": 14,
+    "reaches fixture infrastructure": 13,
+    "script with no mapped test": 7,
+    "unmatched": 6,
+    "core module": 6,
+    "package __init__": 5,
+    "shared fixture infrastructure": 3,
+    "conftest with session-wide hook": 1
+   },
+   "full_reason_first": {
+    "FULL row": 59,
+    "reaches fixture infrastructure": 9,
+    "reaches tests/conftest.py": 5,
+    "core module": 2,
+    "script with no mapped test": 1,
+    "unmatched": 1
+   },
+   "imputed_rows": 16
+  },
+  "precision-literal": {
+   "n": 106,
+   "full": 106,
+   "full_rate": 1.0,
+   "median_wall_share": 1.0,
+   "mean_wall_share": 1.0,
+   "median_selected_share": 1.0,
+   "median_wall_share_selected_only": null,
+   "median_wall_share_src_prs": 1.0,
+   "median_wall_share_non_src_prs": 1.0,
+   "n_src_prs": 41,
+   "full_src_prs": 41,
+   "median_jobs_selected": null,
+   "jobs_hist_selected": {},
+   "full_reasons_any": {
+    "non-code path, unmatched": 97,
+    "FULL row": 59,
+    "reaches tests/conftest.py": 14,
+    "reaches fixture infrastructure": 13,
+    "script with no mapped test": 7,
+    "unmatched": 6,
+    "core module": 6,
+    "package __init__": 5,
+    "shared fixture infrastructure": 3,
+    "conftest with session-wide hook": 1
+   },
+   "full_reason_first": {
+    "non-code path, unmatched": 78,
+    "FULL row": 28
+   },
+   "imputed_rows": 0
+  }
+ }
+}

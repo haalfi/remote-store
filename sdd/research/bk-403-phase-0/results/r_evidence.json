@@ -1,0 +1,627 @@
+[
+ {
+  "run": 27841382779,
+  "sha": "f80d2230f6",
+  "title": "BK-300: document HNS write_atomic drops WriteResult.digest",
+  "changed": [
+   "CHANGELOG.md",
+   "docs-src/guides/backends/azure.md",
+   "sdd/BACKLOG-DONE.md",
+   "sdd/BACKLOG.md",
+   "sdd/traces/bk-300-hns-write-atomic-digest.yml",
+   "tests/backends/azure/aio/test_live_hns.py",
+   "tests/backends/azure/test_live_hns.py"
+  ],
+  "precision_mode": "SELECTED",
+  "precision_jobs": [
+   "lint",
+   "prepare-images",
+   "test",
+   "test-cross-platform",
+   "test-primary",
+   "tooling-tests",
+   "typecheck"
+  ],
+  "pilot": {
+   "mode": "SELECTED",
+   "full_reasons": [],
+   "job_misses": [],
+   "test_misses": [
+    {
+     "job": "test (3.14)",
+     "test": "tests/backends/graph/aio/test_http.py::TestGraphSend::test_debug_log_redacts_token"
+    }
+   ],
+   "not_selector_jobs": [
+    "gate"
+   ]
+  },
+  "precision": {
+   "mode": "SELECTED",
+   "full_reasons": [],
+   "job_misses": [],
+   "test_misses": [
+    {
+     "job": "test (3.14)",
+     "test": "tests/backends/graph/aio/test_http.py::TestGraphSend::test_debug_log_redacts_token"
+    }
+   ],
+   "not_selector_jobs": [
+    "gate"
+   ]
+  },
+  "failed_steps": {
+   "test (3.14)": [
+    "Run pytest -n auto -p no:benchmark --ignore=tests/scripts"
+   ],
+   "gate": [
+    "Check job results"
+   ]
+  },
+  "runs_on_same_sha": [
+   {
+    "attempt": 1,
+    "conclusion": "failure",
+    "createdAt": "2026-06-19T18:05:48Z",
+    "databaseId": 27841382779,
+    "event": "pull_request"
+   }
+  ],
+  "attempt": 1
+ },
+ {
+  "run": 27835426242,
+  "sha": "65fb060212",
+  "title": "BK-306: release the s3fs/aiobotocore session on S3 close()",
+  "changed": [
+   "CHANGELOG.md",
+   "sdd/BACKLOG-DONE.md",
+   "sdd/BACKLOG.md",
+   "sdd/backlogid.json",
+   "sdd/specs/008-s3-backend.md",
+   "sdd/traces/bk-306-s3-close-session-release.yml",
+   "src/remote_store/backends/_s3.py",
+   "src/remote_store/backends/_s3_base.py",
+   "src/remote_store/backends/_s3_boto3.py",
+   "src/remote_store/backends/_s3_pyarrow.py",
+   "tests/backends/s3/test_boto3.py",
+   "tests/backends/s3/test_moto.py",
+   "tests/backends/s3/test_shared.py"
+  ],
+  "precision_mode": "SELECTED",
+  "precision_jobs": [
+   "e2e",
+   "examples",
+   "lint",
+   "notebooks",
+   "prepare-images",
+   "pyarrow-major-check",
+   "test",
+   "test-cassette-pii",
+   "test-cross-platform",
+   "test-primary",
+   "tooling-tests",
+   "typecheck"
+  ],
+  "pilot": {
+   "mode": "FULL",
+   "full_reasons": [
+    "src/remote_store/backends/_s3.py: src module, not a leaf backend module (pilot)",
+    "src/remote_store/backends/_s3_base.py: src module, not a leaf backend module (pilot)",
+    "src/remote_store/backends/_s3_boto3.py: src module, not a leaf backend module (pilot)"
+   ],
+   "job_misses": [],
+   "test_misses": [],
+   "not_selector_jobs": [
+    "gate"
+   ]
+  },
+  "precision": {
+   "mode": "SELECTED",
+   "full_reasons": [],
+   "job_misses": [],
+   "test_misses": [
+    {
+     "job": "test (3.14)",
+     "test": "tests/backends/graph/aio/test_http.py::TestGraphSend::test_debug_log_redacts_token"
+    }
+   ],
+   "not_selector_jobs": [
+    "gate"
+   ]
+  },
+  "failed_steps": {
+   "test (3.14)": [
+    "Run pytest -n auto -p no:benchmark --ignore=tests/scripts"
+   ],
+   "gate": [
+    "Check job results"
+   ]
+  },
+  "runs_on_same_sha": [
+   {
+    "attempt": 1,
+    "conclusion": "failure",
+    "createdAt": "2026-06-19T15:47:06Z",
+    "databaseId": 27835426242,
+    "event": "pull_request"
+   }
+  ],
+  "attempt": 1
+ },
+ {
+  "run": 26739651911,
+  "sha": "47c2a17354",
+  "title": "Add --node single-cassette recording mode to record_cassettes.py",
+  "changed": [
+   "scripts/record_cassettes.py",
+   "sdd/TESTING.md"
+  ],
+  "precision_mode": "SELECTED",
+  "precision_jobs": [
+   "lint",
+   "test-cross-platform",
+   "tooling-tests",
+   "typecheck"
+  ],
+  "pilot": {
+   "mode": "SELECTED",
+   "full_reasons": [],
+   "job_misses": [
+    {
+     "job": "test-primary",
+     "tests": []
+    }
+   ],
+   "test_misses": [],
+   "not_selector_jobs": [
+    "gate"
+   ]
+  },
+  "precision": {
+   "mode": "SELECTED",
+   "full_reasons": [],
+   "job_misses": [
+    {
+     "job": "test-primary",
+     "tests": []
+    }
+   ],
+   "test_misses": [],
+   "not_selector_jobs": [
+    "gate"
+   ]
+  },
+  "failed_steps": {
+   "test-primary": [
+    "Run pytest tests/scripts/ -q"
+   ],
+   "gate": [
+    "Check job results"
+   ]
+  },
+  "runs_on_same_sha": [
+   {
+    "attempt": 1,
+    "conclusion": "failure",
+    "createdAt": "2026-06-01T06:47:46Z",
+    "databaseId": 26739651911,
+    "event": "pull_request"
+   }
+  ],
+  "attempt": 1
+ },
+ {
+  "run": 25933348126,
+  "sha": "c6b1632c24",
+  "title": "BUG-210: add cleanup= to azure_replay fixture (close AzureBackend)",
+  "changed": [
+   "sdd/BACKLOG-DONE.md",
+   "sdd/backlogid.json",
+   "sdd/traces/BUG-210-azure-replay-fixture-leak.yml",
+   "tests/backends/fixtures/azure_replay.py",
+   "tests/backends/fixtures/test_registry.py"
+  ],
+  "precision_mode": "SELECTED",
+  "precision_jobs": [
+   "lint",
+   "prepare-images",
+   "test",
+   "test-cassette-pii",
+   "test-cross-platform",
+   "test-primary",
+   "tooling-tests",
+   "typecheck"
+  ],
+  "pilot": {
+   "mode": "FULL",
+   "full_reasons": [
+    "tests/backends/fixtures/azure_replay.py: fixture module (FULL in the pilot)"
+   ],
+   "job_misses": [],
+   "test_misses": [],
+   "not_selector_jobs": [
+    "gate"
+   ]
+  },
+  "precision": {
+   "mode": "SELECTED",
+   "full_reasons": [],
+   "job_misses": [],
+   "test_misses": [
+    {
+     "job": "test (3.11)",
+     "test": "tests/ext/test_dagster.py::TestParquetSerializer::test_serialize_polars_like"
+    },
+    {
+     "job": "test-primary",
+     "test": "tests/backends/s3/test_shared.py::TestS3SharedFolderSemantics::test_is_folder_simple[empty_prefix-s3]"
+    }
+   ],
+   "not_selector_jobs": [
+    "gate"
+   ]
+  },
+  "failed_steps": {
+   "test (3.11)": [
+    "Run pytest -n auto -p no:benchmark --ignore=tests/scripts"
+   ],
+   "test-primary": [
+    "Run pytest -n auto -p no:benchmark --cov=remote_store --cov-report= --ignore=tests/scripts"
+   ],
+   "gate": [
+    "Check job results"
+   ]
+  },
+  "runs_on_same_sha": [
+   {
+    "attempt": 1,
+    "conclusion": "failure",
+    "createdAt": "2026-05-15T18:01:52Z",
+    "databaseId": 25933348126,
+    "event": "pull_request"
+   }
+  ],
+  "attempt": 1
+ },
+ {
+  "run": 25932881682,
+  "sha": "86bde35960",
+  "title": "BUG-210: add cleanup= to azure_replay fixture (close AzureBackend)",
+  "changed": [
+   "sdd/BACKLOG-DONE.md",
+   "sdd/backlogid.json",
+   "sdd/traces/BUG-210-azure-replay-fixture-leak.yml",
+   "tests/backends/fixtures/azure_replay.py",
+   "tests/backends/fixtures/test_registry.py"
+  ],
+  "precision_mode": "SELECTED",
+  "precision_jobs": [
+   "lint",
+   "prepare-images",
+   "test",
+   "test-cassette-pii",
+   "test-cross-platform",
+   "test-primary",
+   "tooling-tests",
+   "typecheck"
+  ],
+  "pilot": {
+   "mode": "FULL",
+   "full_reasons": [
+    "tests/backends/fixtures/azure_replay.py: fixture module (FULL in the pilot)"
+   ],
+   "job_misses": [],
+   "test_misses": [],
+   "not_selector_jobs": [
+    "gate"
+   ]
+  },
+  "precision": {
+   "mode": "SELECTED",
+   "full_reasons": [],
+   "job_misses": [],
+   "test_misses": [
+    {
+     "job": "test (3.10)",
+     "test": "tests/backends/http/test_config.py::TestOptionalTransports::test_head_succeeds[requests]"
+    },
+    {
+     "job": "test-primary",
+     "test": "tests/backends/s3/test_shared.py::TestS3SharedFolderSemantics::test_folder_vanishes_when_empty[s3]"
+    }
+   ],
+   "not_selector_jobs": [
+    "gate"
+   ]
+  },
+  "failed_steps": {
+   "test-primary": [
+    "Run pytest -n auto -p no:benchmark --cov=remote_store --cov-report= --ignore=tests/scripts"
+   ],
+   "test (3.10)": [
+    "Run pytest -n auto -p no:benchmark --ignore=tests/scripts"
+   ],
+   "gate": [
+    "Check job results"
+   ]
+  },
+  "runs_on_same_sha": [
+   {
+    "attempt": 1,
+    "conclusion": "failure",
+    "createdAt": "2026-05-15T17:51:46Z",
+    "databaseId": 25932881682,
+    "event": "pull_request"
+   }
+  ],
+  "attempt": 1
+ },
+ {
+  "run": 24666811268,
+  "sha": "c32a8b16eb",
+  "title": "ID-151 part 3: Python WR-* conformance assertions + BUG-177",
+  "changed": [
+   "CHANGELOG.md",
+   "sdd/BACKLOG.md",
+   "sdd/specs/003-backend-adapter-contract.md",
+   "sdd/specs/045-write-result.md",
+   "tests/backends/test_conformance.py"
+  ],
+  "precision_mode": "SELECTED",
+  "precision_jobs": [
+   "lint",
+   "prepare-images",
+   "test",
+   "test-primary",
+   "tooling-tests",
+   "typecheck"
+  ],
+  "pilot": {
+   "mode": "SELECTED",
+   "full_reasons": [],
+   "job_misses": [
+    {
+     "job": "test-cross-platform (macos-latest)",
+     "tests": []
+    }
+   ],
+   "test_misses": [],
+   "not_selector_jobs": [
+    "gate"
+   ]
+  },
+  "precision": {
+   "mode": "SELECTED",
+   "full_reasons": [],
+   "job_misses": [
+    {
+     "job": "test-cross-platform (macos-latest)",
+     "tests": []
+    }
+   ],
+   "test_misses": [],
+   "not_selector_jobs": [
+    "gate"
+   ]
+  },
+  "failed_steps": {
+   "test-cross-platform (macos-latest)": [],
+   "test (3.13)": [],
+   "gate": []
+  },
+  "runs_on_same_sha": [
+   {
+    "attempt": 1,
+    "conclusion": "failure",
+    "createdAt": "2026-04-20T12:36:08Z",
+    "databaseId": 24666811268,
+    "event": "pull_request"
+   }
+  ],
+  "attempt": 1
+ },
+ {
+  "run": 24666401441,
+  "sha": "ccdfa7e88e",
+  "title": "ID-151 part 3: Python WR-* conformance assertions + BUG-177",
+  "changed": [
+   "CHANGELOG.md",
+   "sdd/BACKLOG.md",
+   "tests/backends/test_conformance.py"
+  ],
+  "precision_mode": "SELECTED",
+  "precision_jobs": [
+   "lint",
+   "prepare-images",
+   "test",
+   "test-primary",
+   "tooling-tests",
+   "typecheck"
+  ],
+  "pilot": {
+   "mode": "SELECTED",
+   "full_reasons": [],
+   "job_misses": [
+    {
+     "job": "test-cross-platform (macos-latest)",
+     "tests": []
+    }
+   ],
+   "test_misses": [],
+   "not_selector_jobs": [
+    "gate"
+   ]
+  },
+  "precision": {
+   "mode": "SELECTED",
+   "full_reasons": [],
+   "job_misses": [
+    {
+     "job": "test-cross-platform (macos-latest)",
+     "tests": []
+    }
+   ],
+   "test_misses": [],
+   "not_selector_jobs": [
+    "gate"
+   ]
+  },
+  "failed_steps": {
+   "test-cross-platform (macos-latest)": [],
+   "test (3.13)": [],
+   "gate": []
+  },
+  "runs_on_same_sha": [
+   {
+    "attempt": 1,
+    "conclusion": "failure",
+    "createdAt": "2026-04-20T12:26:43Z",
+    "databaseId": 24666401441,
+    "event": "pull_request"
+   }
+  ],
+  "attempt": 1
+ },
+ {
+  "run": 24633981966,
+  "sha": "d1a542f6b6",
+  "title": "ID-151: Dafny WriteResult extension (part 1 \u2014 contract + refinement)",
+  "changed": [
+   "CHANGELOG.md",
+   "sdd/BACKLOG.md",
+   "sdd/formal/BackendContract.dfy",
+   "sdd/formal/MemoryBackend.dfy",
+   "sdd/formal/README.md",
+   "sdd/specs/003-backend-adapter-contract.md",
+   "sdd/specs/045-write-result.md",
+   "tests/backends/dafny_oracle.py"
+  ],
+  "precision_mode": "SELECTED",
+  "precision_jobs": [
+   "lint",
+   "prepare-images",
+   "pyarrow-major-check",
+   "test",
+   "test-cassette-pii",
+   "test-cross-platform",
+   "test-primary",
+   "tooling-tests",
+   "typecheck"
+  ],
+  "pilot": {
+   "mode": "FULL",
+   "full_reasons": [
+    "tests/backends/dafny_oracle.py: tests/ module imported by another module (pilot case 2)"
+   ],
+   "job_misses": [],
+   "test_misses": [],
+   "not_selector_jobs": [
+    "gate"
+   ]
+  },
+  "precision": {
+   "mode": "SELECTED",
+   "full_reasons": [],
+   "job_misses": [
+    {
+     "job": "e2e",
+     "tests": []
+    }
+   ],
+   "test_misses": [],
+   "not_selector_jobs": [
+    "gate"
+   ]
+  },
+  "failed_steps": {
+   "e2e": [],
+   "gate": []
+  },
+  "runs_on_same_sha": [
+   {
+    "attempt": 1,
+    "conclusion": "failure",
+    "createdAt": "2026-04-19T16:40:29Z",
+    "databaseId": 24633981966,
+    "event": "pull_request"
+   }
+  ],
+  "attempt": 1
+ },
+ {
+  "run": 24610391398,
+  "sha": "8227995d80",
+  "title": "ID-148: WriteResult / head() / ext.write docs ripple",
+  "changed": [
+   "FEATURES.md",
+   "README.md",
+   "docs-src/_nav.yml",
+   "docs-src/api/extensions/_nav.yml",
+   "docs-src/api/extensions/index.md",
+   "docs-src/api/store.md",
+   "docs-src/write-integrity.md",
+   "examples/snippets/write_integrity.py",
+   "sdd/BACKLOG-DONE.md",
+   "sdd/BACKLOG.md",
+   "sdd/rfcs/rfc-0011-write-result.md"
+  ],
+  "precision_mode": "SELECTED",
+  "precision_jobs": [
+   "examples",
+   "lint",
+   "prepare-images",
+   "test",
+   "test-cross-platform",
+   "test-primary",
+   "tooling-tests",
+   "typecheck"
+  ],
+  "pilot": {
+   "mode": "SELECTED",
+   "full_reasons": [],
+   "job_misses": [
+    {
+     "job": "e2e",
+     "tests": [
+      "tests/e2e/test_streaming_integrity.py::TestStreamingIntegrity::test_roundrobin_checksum_and_memory"
+     ]
+    }
+   ],
+   "test_misses": [],
+   "not_selector_jobs": [
+    "gate"
+   ]
+  },
+  "precision": {
+   "mode": "SELECTED",
+   "full_reasons": [],
+   "job_misses": [
+    {
+     "job": "e2e",
+     "tests": [
+      "tests/e2e/test_streaming_integrity.py::TestStreamingIntegrity::test_roundrobin_checksum_and_memory"
+     ]
+    }
+   ],
+   "test_misses": [],
+   "not_selector_jobs": [
+    "gate"
+   ]
+  },
+  "failed_steps": {
+   "e2e": [],
+   "gate": []
+  },
+  "runs_on_same_sha": [
+   {
+    "attempt": 1,
+    "conclusion": "failure",
+    "createdAt": "2026-04-18T17:49:41Z",
+    "databaseId": 24610391398,
+    "event": "pull_request"
+   }
+  ],
+  "attempt": 1
+ }
+]

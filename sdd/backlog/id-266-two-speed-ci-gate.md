@@ -75,7 +75,18 @@ Prerequisite 1 becomes the `labeled` trigger; prerequisite 2 becomes a
 job passes protection (D2); prerequisite 3 needs no map, the selector being
 static (D5); prerequisite 4 is RFC-0019 Open Questions 4.
 
-**Open decision for the ADR:** the primary leg's tier in the fast lane
+**RFC-0019 rejected at Phase 0 (2026-10-04).** Its rule-based selector falls
+back to FULL on 72.6% of 106 code PRs, with a median wall-clock share of 100%
+([report](../research/research-bk-403-rfc-0019-phase-0.md)). Everything above
+that assumes a selected fast lane, including the `merge-candidate` lane, the
+`merge-gate` status and prerequisite 4's skill edits, is therefore advisory
+history, not a plan. The diagnosis stands: every PR push still runs the full
+gate. The index entry holds the open decision. Two Phase 0 findings bear on any
+non-selecting lane: D5's FULL row alone fires on 59 of the 106 code PRs, and
+`tooling-tests` has readers in nearly every `.py` edit (report § What the run
+found in RFC-0019 itself).
+
+**Open decision for the ADR** *(superseded with RFC-0019 above)*: the primary leg's tier in the fast lane
 (RFC-0019 Open Questions 1; the draft-lane wording below predates it).
 Stage 2 keeps ADR-0043's per-PR live-backend guarantee; Stage 1 is cheaper but
 leaves a round touching `_s3.py` or `_sftp.py` on moto or in-process SFTP until
