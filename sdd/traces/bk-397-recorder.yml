@@ -141,3 +141,11 @@ phases:
         read_type: verify
         extract: "Primed measuring self-review at 242999127 in a subagent (solo pass, review worktree; tree checks clean, branch unmoved). Four findings, all taken. The no-root read used --paginate unchecked, which Step 4 of the same file forbids, and printed null for a missing patch: now an explicit page= walk at per_page=100 with a visible marker. Measured: at per_page=5 the 16 files end on a page of 1; jq on synthetic rows printed the marker for a binary and a rename and dropped the log row. Grep, Glob, git show and git log -p were a third route to the log: Step 1 now names the glob and pathspec. CLAUDE-REFERENCE's PR I/O table still gave the unfiltered root diff: fixed. The trace lacked surprising_ripples for rvw-pr, and three changed files sat in neither list: added"
         outcome: ok
+  - id: review_fix_6
+    name: Review fix pass 6
+    steps:
+      - file: .claude/skills/ship/SKILL.md
+        section: "Whole-file member; Stop rule; Step 5; Rules"
+        read_type: verify
+        extract: "Unprimed review at 833be5680 in a subagent (PR number, root and constraints only; tree checks clean, branch unmoved). Two findings, both taken. /ship's whole-file gate, stop rule and Rules still required every changed file read whole, which rvw-pr's exclusion makes unsatisfiable on any PR carrying a log: the three clauses now say outside sdd/decisions/. ADR-0037's Decision says the same and stays as written; RFC-0018 D2 records the narrowing (maintainer's choice over amending the ADR). /ship's close had no tail commit, since /pr runs before the loop: Step 5 now commits the tail after its last commit with /pr Step 4's commands. /orchestrate's whole-file read is an open question there, not a rule, so unchanged"
+        outcome: ok

@@ -114,10 +114,12 @@ the PR diff shows the log beside the change it explains.
 - **Who commits it.** `gate-commit.sh`, which already runs before every
   `git commit` the agent issues, stages `sdd/decisions/` into that commit, so
   the log travels with the work it explains. Dialogs after the branch's last
-  commit (`/ship`'s close, `/pr`'s own questions) leave a tail: `/pr` commits
-  it as a separate `decision log` commit, pinned to `sdd/decisions/` by
-  pathspec, after its last step that can ask and before it drafts the PR body.
-  Its pre-check tolerates the tail and nothing else.
+  commit leave a tail, committed as a separate `decision log` commit pinned to
+  `sdd/decisions/` by pathspec. `/pr` commits it after its last step that can
+  ask and before it drafts the PR body, which covers its own questions; its
+  pre-check tolerates the tail and nothing else. `/ship` runs `/pr` before its
+  review loop, so its close commits its own tail after its last commit, with
+  the same commands, and the branch freshness check does so before a rebase.
   Bound: a commit the maintainer makes by hand outside the agent bypasses the
   hook, and its dialogs reach the next agent commit instead. Inferred, not
   observed (a maintainer report, never probed; § Step 0 observations,
@@ -155,6 +157,11 @@ the PR diff shows the log beside the change it explains.
   it would read the conversation that `/rvw-pr` Step 1 refuses to fetch, and
   `/ship`'s unprimed passes would be primed. `/rvw-pr` Step 1 therefore leaves
   `sdd/decisions/` out of the diff it reads and out of its full-file reads.
+  This narrows the whole-file gate of
+  [ADR-0037](../adrs/0037-whole-file-gate-and-derived-figures.md) ("every
+  changed file whole") to files outside `sdd/decisions/`, and `/ship`'s stop
+  rule says so: a log of dialogs makes no claim about the code a whole-file
+  read could find false, and reading it is what the exclusion forbids.
   D4.3's Decisions section in the PR body raises the same question for those
   passes, which read the body; it is settled with step 3.
 - **Anchored at the project directory.** The hook is registered as
@@ -296,7 +303,7 @@ and the question is classified by the rows below it.
   authoritative body shape, for the Decisions section;
   `.claude/skills/ship/SKILL.md` and
   `.claude/skills/orchestrate/SKILL.md`, whose tree-unchanged captures take
-  D2's exclusion; `.claude/skills/rvw-pr/SKILL.md`, whose Step 1 does not read
+  D2's exclusion, and `/ship`'s whole-file gate, stop rule and close as well; `.claude/skills/rvw-pr/SKILL.md`, whose Step 1 does not read
   the log; `sdd/CLAUDE-REFERENCE.md` § Branch freshness check, which commits the
   tail before rebasing; `sdd/CLAUDE-REFERENCE.md` § Interview mode,
   whose wiring table gains a Record layer and whose tolerated-divergence note
