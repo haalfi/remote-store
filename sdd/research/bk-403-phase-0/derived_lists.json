@@ -1,0 +1,141 @@
+{
+ "rev": "HEAD",
+ "src_modules": 68,
+ "hubs": [
+  "src/remote_store/__init__.py",
+  "src/remote_store/aio/__init__.py",
+  "src/remote_store/aio/backends/__init__.py",
+  "src/remote_store/aio/backends/_graph/__init__.py",
+  "src/remote_store/aio/ext/__init__.py",
+  "src/remote_store/backends/__init__.py",
+  "src/remote_store/ext/__init__.py"
+ ],
+ "core": {
+  "src/remote_store/_capabilities.py": "every backend reaches it",
+  "src/remote_store/_errors.py": "every backend reaches it",
+  "src/remote_store/_info.py": "import-time effect: line 18: assigns to BackendInfo.__doc__",
+  "src/remote_store/_models.py": "every backend reaches it",
+  "src/remote_store/_path.py": "every backend reaches it",
+  "src/remote_store/_resolution.py": "every backend reaches it"
+ },
+ "eager_imported": [
+  "src/remote_store/__init__.py",
+  "src/remote_store/_async_to_sync_adapter.py",
+  "src/remote_store/_backend.py",
+  "src/remote_store/_capabilities.py",
+  "src/remote_store/_config.py",
+  "src/remote_store/_errors.py",
+  "src/remote_store/_glob.py",
+  "src/remote_store/_info.py",
+  "src/remote_store/_models.py",
+  "src/remote_store/_path.py",
+  "src/remote_store/_proxy.py",
+  "src/remote_store/_registry.py",
+  "src/remote_store/_resolution.py",
+  "src/remote_store/_store.py",
+  "src/remote_store/ext/batch.py",
+  "src/remote_store/ext/cache.py",
+  "src/remote_store/ext/glob.py",
+  "src/remote_store/ext/integrity.py",
+  "src/remote_store/ext/observe.py",
+  "src/remote_store/ext/partition.py",
+  "src/remote_store/ext/streams.py",
+  "src/remote_store/ext/transfer.py",
+  "src/remote_store/ext/write.py"
+ ],
+ "top_effect_modules_all": {
+  "src/remote_store/_info.py": [
+   "line 18: assigns to BackendInfo.__doc__"
+  ],
+  "src/remote_store/_path.py": [
+   "line 126: top-level call object.__setattr__",
+   "line 127: assigns to RemotePath.ROOT"
+  ]
+ },
+ "backend_reach_sizes": {
+  "azure": 16,
+  "s3": 14,
+  "s3_pyarrow": 14,
+  "s3_boto3": 14,
+  "sftp": 11,
+  "sqlblob": 10,
+  "sqlquery": 10,
+  "http": 13,
+  "local": 9,
+  "memory": 12,
+  "dafny": 8,
+  "graph": 18
+ },
+ "always_run": [
+  "tests/aio/test_async_backend.py",
+  "tests/backends/conformance/test_health_probe_declared.py",
+  "tests/backends/s3/test_denied_probe.py",
+  "tests/backends/s3/test_moto.py",
+  "tests/backends/s3/test_options.py",
+  "tests/backends/s3/test_shared.py",
+  "tests/ext/test_contract.py",
+  "tests/test_capabilities.py",
+  "tests/test_registry.py"
+ ],
+ "registry_consumers": [
+  "tests/scripts/test_mutate_scopes.py",
+  "tests/scripts/test_record_cassettes.py"
+ ],
+ "os_sensitive_files": [
+  "tests/backends/azure/aio/test_error_detail.py",
+  "tests/backends/conformance/test_sync_adapter_conformance.py",
+  "tests/backends/fixtures/test_missing_cassette_guard.py",
+  "tests/backends/local/test_absent_root.py",
+  "tests/backends/local/test_concurrency.py",
+  "tests/backends/local/test_config.py",
+  "tests/backends/sftp/test_config.py",
+  "tests/e2e/test_async_streaming_integrity.py",
+  "tests/ext/test_dagster.py",
+  "tests/ext/test_glob.py",
+  "tests/ext/test_parquet.py",
+  "tests/scripts/test_check_docs_framework.py",
+  "tests/scripts/test_check_links.py",
+  "tests/scripts/test_check_sdd_index.py",
+  "tests/scripts/test_check_traces.py",
+  "tests/scripts/test_dafny_classorder.py",
+  "tests/scripts/test_docs_framework.py",
+  "tests/scripts/test_gen_graph.py",
+  "tests/scripts/test_gen_graph_viz.py",
+  "tests/scripts/test_render_sdd_indexes.py",
+  "tests/scripts/test_report_done_length.py",
+  "tests/scripts/test_report_trace_outcomes.py",
+  "tests/test_depth_listing.py",
+  "tests/test_examples.py",
+  "tests/test_glob.py",
+  "tests/test_open_atomic.py",
+  "tests/test_path.py",
+  "tests/test_pbt_write_result.py",
+  "tests/test_proxy.py",
+  "tests/test_snippets.py"
+ ],
+ "os_sensitive_ids": [
+  "local",
+  "local_async_adapted"
+ ],
+ "conftests_with_session_hooks": {
+  "tests/backends/azure/conftest.py": [
+   "pytest_configure",
+   "pytest_sessionfinish"
+  ],
+  "tests/backends/conformance/conftest.py": [
+   "pytest_collection_modifyitems",
+   "pytest_configure",
+   "pytest_sessionfinish"
+  ],
+  "tests/backends/conftest.py": [
+   "session autouse fixture _populate_infra"
+  ],
+  "tests/conftest.py": [
+   "pytest_collection_modifyitems",
+   "pytest_configure",
+   "session autouse fixture _close_leaked_event_loops"
+  ]
+ },
+ "unparseable": [],
+ "test_files": 213
+}

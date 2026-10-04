@@ -1,0 +1,901 @@
+{
+ "rev": "HEAD",
+ "runtime_readers": 69,
+ "static_readers": 34,
+ "both": [
+  "tests/backends/conformance/test_large_payload_guard.py",
+  "tests/backends/conformance/test_xfail_guard.py",
+  "tests/backends/fixtures/test_registry.py",
+  "tests/scripts/test_bench_report.py",
+  "tests/scripts/test_check_api_docs.py",
+  "tests/scripts/test_check_backlog_ids_vs_base.py",
+  "tests/scripts/test_check_breaking_migration_link.py",
+  "tests/scripts/test_check_conda_recipe_pins.py",
+  "tests/scripts/test_check_custom_backend_guide.py",
+  "tests/scripts/test_check_dafny_twin_parity.py",
+  "tests/scripts/test_check_hatch_python.py",
+  "tests/scripts/test_check_no_retrospective.py",
+  "tests/scripts/test_check_readthedocs_python.py",
+  "tests/scripts/test_check_spec_marks.py",
+  "tests/scripts/test_check_support_windows.py",
+  "tests/scripts/test_check_traces.py",
+  "tests/scripts/test_claude_hooks.py",
+  "tests/scripts/test_dependabot_automerge_control.py",
+  "tests/scripts/test_drift_check.py",
+  "tests/scripts/test_drift_report.py",
+  "tests/scripts/test_gen_adr_digest.py",
+  "tests/scripts/test_gen_backlogid.py",
+  "tests/scripts/test_gen_conda_feedstock.py",
+  "tests/scripts/test_gen_features.py",
+  "tests/scripts/test_gen_gate_inventory.py",
+  "tests/scripts/test_gen_graph.py",
+  "tests/scripts/test_gen_graph_viz.py",
+  "tests/scripts/test_gen_python_support.py",
+  "tests/scripts/test_import_probe.py",
+  "tests/scripts/test_mutate_scopes.py",
+  "tests/scripts/test_pyproject_pins.py",
+  "tests/scripts/test_rfc_0015_findings.py",
+  "tests/scripts/test_run_mutate.py",
+  "tests/scripts/test_ship_report.py"
+ ],
+ "per_run_readers": {
+  "tmp/readscan/default": 67,
+  "tmp/readscan/random-a": 68,
+  "tmp/readscan/random-b": 67
+ },
+ "order_dependent": [
+  "tests/scripts/test_check_docs_framework.py",
+  "tests/scripts/test_docs_framework.py",
+  "tests/scripts/test_link.py",
+  "tests/test_pbt_stateful.py"
+ ],
+ "dropped": {
+  "untracked target": 951,
+  "test file reading itself": 30,
+  "cassette (owned by its layer-1 row)": 2889,
+  "hypothesis constant harvesting": 137
+ },
+ "runtime_only": {
+  "tests/aio/test_async_to_sync_adapter.py": {
+   "classes": {
+    "render": 2
+   },
+   "n_targets": 2,
+   "sample": {
+    "src/remote_store/_async_to_sync_adapter.py": [
+     "read",
+     "src/remote_store/_async_to_sync_adapter.py:699 (lib:logging/__init__.py)"
+    ],
+    "tests/aio/_doubles.py": [
+     "read",
+     "src/remote_store/_async_to_sync_adapter.py:470 (lib:logging/__init__.py)"
+    ]
+   }
+  },
+  "tests/backends/conformance/test_examples.py": {
+   "classes": {
+    "direct": 1
+   },
+   "n_targets": 1,
+   "sample": {
+    "examples/backends/graph_backend.py": [
+     "read",
+     "tests/backends/conformance/test_examples.py:144 (lib:<frozen runpy>)"
+    ]
+   }
+  },
+  "tests/backends/graph/aio/test_auth.py": {
+   "classes": {
+    "render": 1
+   },
+   "n_targets": 1,
+   "sample": {
+    "src/remote_store/aio/backends/_graph/auth.py": [
+     "read",
+     "src/remote_store/aio/backends/_graph/auth.py:72 (lib:logging/__init__.py)"
+    ]
+   }
+  },
+  "tests/backends/graph/aio/test_utils.py": {
+   "classes": {
+    "direct": 1
+   },
+   "n_targets": 1,
+   "sample": {
+    "src/remote_store/aio/backends/_graph/utils.py": [
+     "read",
+     "tests/backends/graph/aio/test_utils.py:173 (lib:pathlib/_local.py)"
+    ]
+   }
+  },
+  "tests/ext/test_contract.py": {
+   "classes": {
+    "direct": 18
+   },
+   "n_targets": 18,
+   "sample": {
+    "src/remote_store/aio/ext": [
+     "scan",
+     "tests/ext/test_contract.py:28 (lib:Lib/glob.py)"
+    ],
+    "src/remote_store/aio/ext/write.py": [
+     "read",
+     "tests/ext/test_contract.py:85 (lib:pathlib/_local.py)"
+    ],
+    "src/remote_store/ext": [
+     "scan",
+     "tests/ext/test_contract.py:28 (lib:Lib/glob.py)"
+    ],
+    "src/remote_store/ext/arrow.py": [
+     "read",
+     "tests/ext/test_contract.py:85 (lib:pathlib/_local.py)"
+    ],
+    "src/remote_store/ext/batch.py": [
+     "read",
+     "tests/ext/test_contract.py:85 (lib:pathlib/_local.py)"
+    ],
+    "src/remote_store/ext/cache.py": [
+     "read",
+     "tests/ext/test_contract.py:85 (lib:pathlib/_local.py)"
+    ],
+    "src/remote_store/ext/dagster.py": [
+     "read",
+     "tests/ext/test_contract.py:85 (lib:pathlib/_local.py)"
+    ],
+    "src/remote_store/ext/glob.py": [
+     "read",
+     "tests/ext/test_contract.py:85 (lib:pathlib/_local.py)"
+    ]
+   }
+  },
+  "tests/ext/test_observe.py": {
+   "classes": {
+    "render": 3
+   },
+   "n_targets": 3,
+   "sample": {
+    "src/remote_store/_store.py": [
+     "read",
+     "src/remote_store/ext/observe.py:220 (lib:logging/__init__.py)"
+    ],
+    "src/remote_store/backends/_memory.py": [
+     "read",
+     "src/remote_store/ext/observe.py:220 (lib:logging/__init__.py)"
+    ],
+    "src/remote_store/ext/observe.py": [
+     "read",
+     "src/remote_store/ext/observe.py:213 (lib:logging/__init__.py)"
+    ]
+   }
+  },
+  "tests/ext/test_otel.py": {
+   "classes": {
+    "src": 4
+   },
+   "n_targets": 4,
+   "sample": {
+    "src/remote_store/_store.py": [
+     "read",
+     "src/remote_store/ext/otel.py:119 (lib:opentelemetry/sdk/trace/__init__.py)"
+    ],
+    "src/remote_store/backends/_memory.py": [
+     "read",
+     "src/remote_store/ext/otel.py:119 (lib:opentelemetry/sdk/trace/__init__.py)"
+    ],
+    "src/remote_store/ext/observe.py": [
+     "read",
+     "src/remote_store/ext/otel.py:119 (lib:opentelemetry/sdk/trace/__init__.py)"
+    ],
+    "src/remote_store/ext/otel.py": [
+     "read",
+     "src/remote_store/ext/otel.py:119 (lib:opentelemetry/sdk/trace/__init__.py)"
+    ]
+   }
+  },
+  "tests/scripts/test_check_backend_order.py": {
+   "classes": {
+    "direct": 122
+   },
+   "n_targets": 122,
+   "sample": {
+    "CONTRIBUTING.md": [
+     "read",
+     "scripts/check_backend_order.py:380 (lib:pathlib/_local.py)"
+    ],
+    "README.md": [
+     "read",
+     "scripts/check_backend_order.py:380 (lib:pathlib/_local.py)"
+    ],
+    "context7.json": [
+     "read",
+     "scripts/check_backend_order.py:380 (lib:pathlib/_local.py)"
+    ],
+    "docs-src": [
+     "scan",
+     "scripts/check_backend_order.py:401 (lib:Lib/glob.py)"
+    ],
+    "docs-src/_data": [
+     "scan",
+     "scripts/check_backend_order.py:401 (lib:Lib/glob.py)"
+    ],
+    "docs-src/_data/graph": [
+     "scan",
+     "scripts/check_backend_order.py:401 (lib:Lib/glob.py)"
+    ],
+    "docs-src/context7.json": [
+     "read",
+     "scripts/check_backend_order.py:380 (lib:pathlib/_local.py)"
+    ],
+    "docs-src/css": [
+     "scan",
+     "scripts/check_backend_order.py:401 (lib:Lib/glob.py)"
+    ]
+   }
+  },
+  "tests/scripts/test_check_capability_parity.py": {
+   "classes": {
+    "direct": 2
+   },
+   "n_targets": 2,
+   "sample": {
+    "sdd/formal/BackendContract.dfy": [
+     "read",
+     "scripts/check_capability_parity.py:159 (lib:pathlib/_local.py)"
+    ],
+    "src/remote_store/_capabilities.py": [
+     "read",
+     "scripts/check_capability_parity.py:84 (lib:pathlib/_local.py)"
+    ]
+   }
+  },
+  "tests/scripts/test_check_changelog_unreleased.py": {
+   "classes": {
+    "direct": 3
+   },
+   "n_targets": 3,
+   "sample": {
+    "CHANGELOG.md": [
+     "read",
+     "scripts/check_changelog_unreleased.py:323 (lib:pathlib/_local.py)"
+    ],
+    "sdd/BACKLOG-DONE.md": [
+     "read",
+     "scripts/check_changelog_unreleased.py:461 (lib:pathlib/_local.py)"
+    ],
+    "sdd/BACKLOG.md": [
+     "read",
+     "scripts/check_changelog_unreleased.py:532 (lib:pathlib/_local.py)"
+    ]
+   }
+  },
+  "tests/scripts/test_check_ci_full_matrix.py": {
+   "classes": {
+    "direct": 2
+   },
+   "n_targets": 2,
+   "sample": {
+    ".github/workflows/ci-full.yml": [
+     "read",
+     "scripts/check_ci_full_matrix.py:50 (lib:pathlib/_local.py)"
+    ],
+    ".github/workflows/ci.yml": [
+     "read",
+     "scripts/check_ci_full_matrix.py:39 (lib:pathlib/_local.py)"
+    ]
+   }
+  },
+  "tests/scripts/test_check_ci_inventory.py": {
+   "classes": {
+    "direct": 13
+   },
+   "n_targets": 13,
+   "sample": {
+    ".github/workflows": [
+     "scan",
+     "scripts/check_ci_inventory.py:94 (lib:Lib/glob.py)"
+    ],
+    ".github/workflows/benchmark.yml": [
+     "read",
+     "scripts/check_ci_inventory.py:65 (lib:pathlib/_local.py)"
+    ],
+    ".github/workflows/ci-full.yml": [
+     "read",
+     "scripts/check_ci_inventory.py:65 (lib:pathlib/_local.py)"
+    ],
+    ".github/workflows/ci.yml": [
+     "read",
+     "scripts/check_ci_inventory.py:65 (lib:pathlib/_local.py)"
+    ],
+    ".github/workflows/codeql.yml": [
+     "read",
+     "scripts/check_ci_inventory.py:65 (lib:pathlib/_local.py)"
+    ],
+    ".github/workflows/conda-recipe.yml": [
+     "read",
+     "scripts/check_ci_inventory.py:65 (lib:pathlib/_local.py)"
+    ],
+    ".github/workflows/dependabot-auto-merge.yml": [
+     "read",
+     "scripts/check_ci_inventory.py:65 (lib:pathlib/_local.py)"
+    ],
+    ".github/workflows/docs.yml": [
+     "read",
+     "scripts/check_ci_inventory.py:65 (lib:pathlib/_local.py)"
+    ]
+   }
+  },
+  "tests/scripts/test_check_dafny_oracle_fresh.py": {
+   "classes": {
+    "direct": 1
+   },
+   "n_targets": 1,
+   "sample": {
+    "scripts/dafny_translate.sh": [
+     "read",
+     "scripts/check_dafny_oracle_fresh.py:155 (lib:pathlib/_local.py)"
+    ]
+   }
+  },
+  "tests/scripts/test_check_docs_framework.py": {
+   "classes": {
+    "direct": 1
+   },
+   "n_targets": 1,
+   "sample": {
+    "docs-src/_path_rules.yml": [
+     "read",
+     "scripts/docs/scan.py:83 (lib:pathlib/_local.py)"
+    ]
+   }
+  },
+  "tests/scripts/test_check_docstring_parity.py": {
+   "classes": {
+    "direct": 6
+   },
+   "n_targets": 6,
+   "sample": {
+    "src/remote_store/_backend.py": [
+     "read",
+     "tests/scripts/test_check_docstring_parity.py:263 (lib:pathlib/_local.py)"
+    ],
+    "src/remote_store/_store.py": [
+     "read",
+     "tests/scripts/test_check_docstring_parity.py:263 (lib:pathlib/_local.py)"
+    ],
+    "src/remote_store/aio/_async_backend.py": [
+     "read",
+     "tests/scripts/test_check_docstring_parity.py:264 (lib:pathlib/_local.py)"
+    ],
+    "src/remote_store/aio/_async_store.py": [
+     "read",
+     "tests/scripts/test_check_docstring_parity.py:264 (lib:pathlib/_local.py)"
+    ],
+    "src/remote_store/aio/backends/_azure.py": [
+     "read",
+     "tests/scripts/test_check_docstring_parity.py:264 (lib:pathlib/_local.py)"
+    ],
+    "src/remote_store/backends/_azure.py": [
+     "read",
+     "tests/scripts/test_check_docstring_parity.py:263 (lib:pathlib/_local.py)"
+    ]
+   }
+  },
+  "tests/scripts/test_check_formal_trace.py": {
+   "classes": {
+    "direct": 81
+   },
+   "n_targets": 81,
+   "sample": {
+    "sdd/formal": [
+     "scan",
+     "scripts/check_formal_trace.py:172 (lib:Lib/glob.py)"
+    ],
+    "sdd/formal/BackendContract.dfy": [
+     "read",
+     "scripts/check_formal_trace.py:174 (lib:pathlib/_local.py)"
+    ],
+    "sdd/formal/DepthCounting.dfy": [
+     "read",
+     "scripts/check_formal_trace.py:174 (lib:pathlib/_local.py)"
+    ],
+    "sdd/formal/MemoryBackend.dfy": [
+     "read",
+     "scripts/check_formal_trace.py:174 (lib:pathlib/_local.py)"
+    ],
+    "sdd/formal/ResourceSafety.dfy": [
+     "read",
+     "scripts/check_formal_trace.py:174 (lib:pathlib/_local.py)"
+    ],
+    "sdd/formal/RootPath.dfy": [
+     "read",
+     "scripts/check_formal_trace.py:174 (lib:pathlib/_local.py)"
+    ],
+    "sdd/specs": [
+     "scan",
+     "scripts/check_formal_trace.py:294 (lib:Lib/glob.py)"
+    ],
+    "sdd/specs/001-store-api.md": [
+     "read",
+     "scripts/check_formal_trace.py:296 (lib:pathlib/_local.py)"
+    ]
+   }
+  },
+  "tests/scripts/test_check_links.py": {
+   "classes": {
+    "direct": 500
+   },
+   "n_targets": 500,
+   "sample": {
+    ".claude/agents/documentation-expert.md": [
+     "read",
+     "scripts/docs/check_links.py:386 (lib:pathlib/_local.py)"
+    ],
+    ".claude/agents/extension-expert.md": [
+     "read",
+     "scripts/docs/check_links.py:386 (lib:pathlib/_local.py)"
+    ],
+    ".claude/agents/sdd-expert.md": [
+     "read",
+     "scripts/docs/check_links.py:386 (lib:pathlib/_local.py)"
+    ],
+    ".claude/agents/store-backend-expert.md": [
+     "read",
+     "scripts/docs/check_links.py:386 (lib:pathlib/_local.py)"
+    ],
+    ".claude/agents/testing-expert.md": [
+     "read",
+     "scripts/docs/check_links.py:386 (lib:pathlib/_local.py)"
+    ],
+    ".claude/output-styles/interview.md": [
+     "read",
+     "scripts/docs/check_links.py:386 (lib:pathlib/_local.py)"
+    ],
+    ".claude/skills/audit/SKILL.md": [
+     "read",
+     "scripts/docs/check_links.py:386 (lib:pathlib/_local.py)"
+    ],
+    ".claude/skills/drift/SKILL.md": [
+     "read",
+     "scripts/docs/check_links.py:386 (lib:pathlib/_local.py)"
+    ]
+   }
+  },
+  "tests/scripts/test_check_no_tracker_refs.py": {
+   "classes": {
+    "direct": 247
+   },
+   "n_targets": 247,
+   "sample": {
+    "CONTRIBUTING.md": [
+     "read",
+     "scripts/check_no_tracker_refs.py:361 (lib:pathlib/_local.py)"
+    ],
+    "FEATURES.md": [
+     "read",
+     "scripts/check_no_tracker_refs.py:361 (lib:pathlib/_local.py)"
+    ],
+    "README.md": [
+     "read",
+     "scripts/check_no_tracker_refs.py:361 (lib:pathlib/_local.py)"
+    ],
+    "docs-src": [
+     "scan",
+     "scripts/check_no_tracker_refs.py:425 (lib:Lib/glob.py)"
+    ],
+    "docs-src/_data": [
+     "scan",
+     "scripts/check_no_tracker_refs.py:425 (lib:Lib/glob.py)"
+    ],
+    "docs-src/_data/graph": [
+     "scan",
+     "scripts/check_no_tracker_refs.py:425 (lib:Lib/glob.py)"
+    ],
+    "docs-src/css": [
+     "scan",
+     "scripts/check_no_tracker_refs.py:425 (lib:Lib/glob.py)"
+    ],
+    "docs-src/explanation": [
+     "scan",
+     "scripts/check_no_tracker_refs.py:425 (lib:Lib/glob.py)"
+    ]
+   }
+  },
+  "tests/scripts/test_check_ripple_parity.py": {
+   "classes": {
+    "direct": 1
+   },
+   "n_targets": 1,
+   "sample": {
+    "sdd/CLAUDE-REFERENCE.md": [
+     "read",
+     "scripts/check_ripple_parity.py:311 (lib:pathlib/_local.py)"
+    ]
+   }
+  },
+  "tests/scripts/test_check_rst_roles.py": {
+   "classes": {
+    "direct": 529
+   },
+   "n_targets": 529,
+   "sample": {
+    "examples": [
+     "scan",
+     "scripts/check_rst_roles.py:57 (lib:Lib/glob.py)"
+    ],
+    "examples/__init__.py": [
+     "read",
+     "scripts/check_rst_roles.py:37 (lib:pathlib/_local.py)"
+    ],
+    "examples/advanced": [
+     "scan",
+     "scripts/check_rst_roles.py:57 (lib:Lib/glob.py)"
+    ],
+    "examples/advanced/__init__.py": [
+     "read",
+     "scripts/check_rst_roles.py:37 (lib:pathlib/_local.py)"
+    ],
+    "examples/advanced/async_store.py": [
+     "read",
+     "scripts/check_rst_roles.py:37 (lib:pathlib/_local.py)"
+    ],
+    "examples/advanced/health_check.py": [
+     "read",
+     "scripts/check_rst_roles.py:37 (lib:pathlib/_local.py)"
+    ],
+    "examples/advanced/memory_backend.py": [
+     "read",
+     "scripts/check_rst_roles.py:37 (lib:pathlib/_local.py)"
+    ],
+    "examples/advanced/path_model.py": [
+     "read",
+     "scripts/check_rst_roles.py:37 (lib:pathlib/_local.py)"
+    ]
+   }
+  },
+  "tests/scripts/test_check_sdd_index.py": {
+   "classes": {
+    "direct": 200
+   },
+   "n_targets": 200,
+   "sample": {
+    "docs-src/_path_rules.yml": [
+     "read",
+     "scripts/docs/scan.py:83 (lib:pathlib/_local.py)"
+    ],
+    "docs-src/explanation/design/adrs/_index.tmpl": [
+     "read",
+     "tests/scripts/test_check_sdd_index.py:45 (lib:Lib/shutil.py)"
+    ],
+    "docs-src/explanation/design/audits/_index.tmpl": [
+     "read",
+     "tests/scripts/test_check_sdd_index.py:45 (lib:Lib/shutil.py)"
+    ],
+    "docs-src/explanation/design/research/_index.tmpl": [
+     "read",
+     "tests/scripts/test_check_sdd_index.py:45 (lib:Lib/shutil.py)"
+    ],
+    "docs-src/explanation/design/rfcs/_index.tmpl": [
+     "read",
+     "tests/scripts/test_check_sdd_index.py:45 (lib:Lib/shutil.py)"
+    ],
+    "docs-src/explanation/design/specs/_index.tmpl": [
+     "read",
+     "tests/scripts/test_check_sdd_index.py:45 (lib:Lib/shutil.py)"
+    ],
+    "sdd/adrs": [
+     "scan",
+     "scripts/docs/scan.py:149 (lib:Lib/glob.py)"
+    ],
+    "sdd/adrs/0001-architecture-store-registry-backends.md": [
+     "read",
+     "scripts/docs/scan.py:157 (lib:pathlib/_local.py)"
+    ]
+   }
+  },
+  "tests/scripts/test_check_test_placement.py": {
+   "classes": {
+    "direct": 16
+   },
+   "n_targets": 16,
+   "sample": {
+    "src/remote_store/aio/backends": [
+     "scan",
+     "scripts/check_test_placement.py:81 (lib:Lib/glob.py)"
+    ],
+    "src/remote_store/aio/backends/_azure.py": [
+     "read",
+     "scripts/check_test_placement.py:85 (lib:pathlib/_local.py)"
+    ],
+    "src/remote_store/backends": [
+     "scan",
+     "scripts/check_test_placement.py:81 (lib:Lib/glob.py)"
+    ],
+    "src/remote_store/backends/_azure.py": [
+     "read",
+     "scripts/check_test_placement.py:85 (lib:pathlib/_local.py)"
+    ],
+    "src/remote_store/backends/_azure_common.py": [
+     "read",
+     "scripts/check_test_placement.py:85 (lib:pathlib/_local.py)"
+    ],
+    "src/remote_store/backends/_flat_ns.py": [
+     "read",
+     "scripts/check_test_placement.py:85 (lib:pathlib/_local.py)"
+    ],
+    "src/remote_store/backends/_http.py": [
+     "read",
+     "scripts/check_test_placement.py:85 (lib:pathlib/_local.py)"
+    ],
+    "src/remote_store/backends/_http_httpx.py": [
+     "read",
+     "scripts/check_test_placement.py:85 (lib:pathlib/_local.py)"
+    ]
+   }
+  },
+  "tests/scripts/test_dafny_classorder.py": {
+   "classes": {
+    "direct": 1
+   },
+   "n_targets": 1,
+   "sample": {
+    "sdd/formal/MemoryBackend-py/module_.py": [
+     "read",
+     "tests/scripts/test_dafny_classorder.py:102 (lib:pathlib/_local.py)"
+    ]
+   }
+  },
+  "tests/scripts/test_docs_framework.py": {
+   "classes": {
+    "direct": 1
+   },
+   "n_targets": 1,
+   "sample": {
+    "docs-src/_path_rules.yml": [
+     "read",
+     "scripts/docs/scan.py:83 (lib:pathlib/_local.py)"
+    ]
+   }
+  },
+  "tests/scripts/test_drift_feedstock.py": {
+   "classes": {
+    "direct": 1
+   },
+   "n_targets": 1,
+   "sample": {
+    "packaging/conda-forge/feedstock/recipe.yaml": [
+     "read",
+     "scripts/drift_feedstock.py:723 (lib:pathlib/_local.py)"
+    ]
+   }
+  },
+  "tests/scripts/test_link.py": {
+   "classes": {
+    "direct": 1
+   },
+   "n_targets": 1,
+   "sample": {
+    "docs-src/_path_rules.yml": [
+     "read",
+     "scripts/docs/scan.py:83 (lib:pathlib/_local.py)"
+    ]
+   }
+  },
+  "tests/scripts/test_python_support.py": {
+   "classes": {
+    "direct": 1
+   },
+   "n_targets": 1,
+   "sample": {
+    "pyproject.toml": [
+     "read",
+     "scripts/python_support.py:166 (lib:pathlib/_local.py)"
+    ]
+   }
+  },
+  "tests/scripts/test_record_cassettes.py": {
+   "classes": {
+    "direct": 1
+   },
+   "n_targets": 1,
+   "sample": {
+    "scripts/record_cassettes.py": [
+     "read",
+     "tests/scripts/test_record_cassettes.py:456 (lib:Lib/inspect.py)"
+    ]
+   }
+  },
+  "tests/scripts/test_render_sdd_indexes.py": {
+   "classes": {
+    "direct": 195
+   },
+   "n_targets": 195,
+   "sample": {
+    "docs-src/_path_rules.yml": [
+     "read",
+     "scripts/docs/scan.py:83 (lib:pathlib/_local.py)"
+    ],
+    "sdd/adrs": [
+     "scan",
+     "scripts/docs/scan.py:149 (lib:Lib/glob.py)"
+    ],
+    "sdd/adrs/0001-architecture-store-registry-backends.md": [
+     "read",
+     "scripts/docs/scan.py:157 (lib:pathlib/_local.py)"
+    ],
+    "sdd/adrs/0002-config-resolution-no-merge.md": [
+     "read",
+     "scripts/docs/scan.py:157 (lib:pathlib/_local.py)"
+    ],
+    "sdd/adrs/0003-fsspec-is-implementation-detail.md": [
+     "read",
+     "scripts/docs/scan.py:157 (lib:pathlib/_local.py)"
+    ],
+    "sdd/adrs/0004-empty-path-semantics.md": [
+     "read",
+     "scripts/docs/scan.py:157 (lib:pathlib/_local.py)"
+    ],
+    "sdd/adrs/0005-native-path-resolution.md": [
+     "read",
+     "scripts/docs/scan.py:157 (lib:pathlib/_local.py)"
+    ],
+    "sdd/adrs/0006-documentation-architecture.md": [
+     "read",
+     "scripts/docs/scan.py:157 (lib:pathlib/_local.py)"
+    ]
+   }
+  },
+  "tests/scripts/test_report_done_length.py": {
+   "classes": {
+    "direct": 2
+   },
+   "n_targets": 2,
+   "sample": {
+    "sdd/BACKLOG-DONE.md": [
+     "read",
+     "scripts/report_done_length.py:181 (lib:pathlib/_local.py)"
+    ],
+    "sdd/backlog": [
+     "scan",
+     "scripts/report_done_length.py:103 (lib:pathlib/_local.py)"
+    ]
+   }
+  },
+  "tests/scripts/test_report_trace_outcomes.py": {
+   "classes": {
+    "direct": 362
+   },
+   "n_targets": 362,
+   "sample": {
+    "sdd/traces": [
+     "scan",
+     "scripts/_trace_corpus.py:64 (lib:Lib/glob.py)"
+    ],
+    "sdd/traces/BK-181-cassette-replay-impl.yml": [
+     "read",
+     "scripts/report_trace_outcomes.py:356 (lib:pathlib/_local.py)"
+    ],
+    "sdd/traces/BK-181-cassette-replay-poc.yml": [
+     "read",
+     "scripts/report_trace_outcomes.py:356 (lib:pathlib/_local.py)"
+    ],
+    "sdd/traces/BK-191-allow-list-audit.yml": [
+     "read",
+     "scripts/report_trace_outcomes.py:356 (lib:pathlib/_local.py)"
+    ],
+    "sdd/traces/BK-197-host-key-policy-aliases.yml": [
+     "read",
+     "scripts/report_trace_outcomes.py:356 (lib:pathlib/_local.py)"
+    ],
+    "sdd/traces/BK-198-ssh-rsa-compat.yml": [
+     "read",
+     "scripts/report_trace_outcomes.py:356 (lib:pathlib/_local.py)"
+    ],
+    "sdd/traces/BK-199-scan-host-keys.yml": [
+     "read",
+     "scripts/report_trace_outcomes.py:356 (lib:pathlib/_local.py)"
+    ],
+    "sdd/traces/BK-200-scan-host-algorithms.yml": [
+     "read",
+     "scripts/report_trace_outcomes.py:356 (lib:pathlib/_local.py)"
+    ]
+   }
+  },
+  "tests/scripts/test_scan_sdd_kinds.py": {
+   "classes": {
+    "direct": 1
+   },
+   "n_targets": 1,
+   "sample": {
+    "docs-src/_path_rules.yml": [
+     "read",
+     "scripts/docs/scan.py:83 (lib:pathlib/_local.py)"
+    ]
+   }
+  },
+  "tests/test_api_coverage.py": {
+   "classes": {
+    "direct": 54
+   },
+   "n_targets": 54,
+   "sample": {
+    "docs-src/reference/api": [
+     "scan",
+     "tests/test_api_coverage.py:24 (lib:Lib/glob.py)"
+    ],
+    "docs-src/reference/api/aio": [
+     "scan",
+     "tests/test_api_coverage.py:24 (lib:Lib/glob.py)"
+    ],
+    "docs-src/reference/api/aio/adapters.md": [
+     "read",
+     "tests/test_api_coverage.py:25 (lib:pathlib/_local.py)"
+    ],
+    "docs-src/reference/api/aio/backend.md": [
+     "read",
+     "tests/test_api_coverage.py:25 (lib:pathlib/_local.py)"
+    ],
+    "docs-src/reference/api/aio/backends": [
+     "scan",
+     "tests/test_api_coverage.py:24 (lib:Lib/glob.py)"
+    ],
+    "docs-src/reference/api/aio/backends/azure.md": [
+     "read",
+     "tests/test_api_coverage.py:25 (lib:pathlib/_local.py)"
+    ],
+    "docs-src/reference/api/aio/backends/graph.md": [
+     "read",
+     "tests/test_api_coverage.py:25 (lib:pathlib/_local.py)"
+    ],
+    "docs-src/reference/api/aio/backends/index.md": [
+     "read",
+     "tests/test_api_coverage.py:25 (lib:pathlib/_local.py)"
+    ]
+   }
+  },
+  "tests/test_info.py": {
+   "classes": {
+    "src": 1
+   },
+   "n_targets": 1,
+   "sample": {
+    "src/remote_store/ext": [
+     "scan",
+     "src/remote_store/_info.py:114 (lib:Lib/pkgutil.py)"
+    ]
+   }
+  },
+  "tests/test_pbt_stateful.py": {
+   "classes": {
+    "lib": 5
+   },
+   "n_targets": 5,
+   "sample": {
+    "scripts/check_hatch_python.py": [
+     "read",
+     "lib:<string>"
+    ],
+    "scripts/drift_check.py": [
+     "read",
+     "lib:<string>"
+    ],
+    "scripts/drift_feedstock.py": [
+     "read",
+     "lib:<string>"
+    ],
+    "scripts/drift_report.py": [
+     "read",
+     "lib:<string>"
+    ],
+    "scripts/gen_graph.py": [
+     "read",
+     "lib:<string>"
+    ]
+   }
+  }
+ },
+ "static_only": {},
+ "table": {
+  "reads": 1334,
+  "scans": 85
+ }
+}
