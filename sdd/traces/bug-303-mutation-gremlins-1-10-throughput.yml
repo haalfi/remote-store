@@ -129,3 +129,73 @@ phases:
         section: "Ripple-check / Dependency"
         read_type: verify
         extract: "mutate is a dev extra: not in the conda recipe, README names no version; no CHANGELOG (no user.* audience)"
+review:
+  # Derived by `hatch run ship-report 1068 --trace-block-only` at head bfcd967.
+  # Do not hand-edit, except a newly required field per sdd/traces/_schema.yml
+  # section review: RFC-0015 D4 makes this script the only producer.
+  derivation: "hatch run ship-report 1068 --trace-block-only"
+  pr: 1068
+  review_rounds: 7
+  submissions: 5
+  findings: 12
+  by_round:
+    - round: 1
+      findings: 4
+      origin: {original: 4}
+      triage: {must-fix: 2, unknown: 2}
+      duration_hours: 0.15
+    - round: 2
+      findings: 1
+      origin: {loop-introduced: 1}
+      triage: {must-fix: 1}
+      duration_hours: 0.48
+    - round: 3
+      findings: 2
+      origin: {loop-introduced: 1, original: 1}
+      triage: {must-fix: 1, unknown: 1}
+      duration_hours: 0.27
+    - round: 4
+      findings: 3
+      origin: {loop-introduced: 2, unclassifiable-file: 1}
+      triage: {must-fix: 1, unknown: 2}
+      duration_hours: 1.27
+    - round: 5
+      findings: 2
+      origin: {loop-introduced: 2}
+      triage: {must-fix: 2}
+      duration_hours: 1.43
+  by_file:
+    - path: ".github/workflows/mutation.yml"
+      findings: 3
+    - path: "scripts/mutate_scopes.py"
+      findings: 3
+    - path: "tests/scripts/test_mutate_scopes.py"
+      findings: 2
+    - path: "tests/scripts/test_run_mutate.py"
+      findings: 2
+    - path: ".claude/skills/mutation/SKILL.md"
+      findings: 1
+    - path: "scripts/run_mutate.py"
+      findings: 1
+  untouched_files:
+    - "pyproject.toml"
+    - "sdd/BACKLOG-DONE.md"
+    - "sdd/BACKLOG.md"
+    - "sdd/backlogid.json"
+    - "sdd/traces/bug-303-mutation-gremlins-1-10-throughput.yml"
+  review_driven_commits:
+    - sha: "a43d5e4"
+      subject: "BUG-303: Split full-conformance scopes by transport; address review"
+    - sha: "4f2fbdc"
+      subject: "BUG-303: Keep sync-adapter one scope; it needs only Azurite"
+    - sha: "3730a04"
+      subject: "BUG-303: Drop the 330 min leg timeout; pin sync-adapter needs"
+    - sha: "1e729e5"
+      subject: "BUG-303: Raise the address-space cap to 8 GiB; keep gremlins warnings non-fatal"
+    - sha: "9956bb6"
+      subject: "BUG-303: Guard split-topic coverage and the mutate step's flags"
+    - sha: "8a1b310"
+      subject: "Merge master (v0.33.0) into fix-mutation-gremlins-1-10"
+    - sha: "bfcd967"
+      subject: "BUG-303: Make the two new manifest guards check what they claim"
+  ci: {verdict: GREEN, failed: 0, pending: 0}
