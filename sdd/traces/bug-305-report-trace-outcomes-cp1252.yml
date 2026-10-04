@@ -86,3 +86,31 @@ phases:
           the schema's derived rule skips it for contributor.tooling. Took the
           schema's rule.
         outcome: unclear
+review:
+  # Derived by `hatch run ship-report 1071 --trace-block-only` at head 5437d74.
+  # Do not hand-edit, except a newly required field per sdd/traces/_schema.yml
+  # section review: RFC-0015 D4 makes this script the only producer.
+  derivation: "hatch run ship-report 1071 --trace-block-only"
+  pr: 1071
+  review_rounds: 0
+  submissions: 0
+  findings: 0
+  by_round: []
+  by_file: []
+  untouched_files:
+    - "scripts/report_trace_outcomes.py"
+    - "sdd/BACKLOG-DONE.md"
+    - "sdd/BACKLOG.md"
+    - "sdd/backlog/id-259-trace-outcome-revisit.md"
+    - "sdd/backlog/id-267-trace-outcome-revisit.md"
+    - "sdd/backlogid.json"
+    - "sdd/traces/bug-304-windows-tooling-tests.yml"
+    - "sdd/traces/bug-305-report-trace-outcomes-cp1252.yml"
+    - "tests/scripts/test_check_backlog_ids_vs_base.py"
+    - "tests/scripts/test_check_dafny_oracle_fresh.py"
+    - "tests/scripts/test_check_traces.py"
+    - "tests/scripts/test_claude_hooks.py"
+    - "tests/scripts/test_report_trace_outcomes.py"
+  review_driven_commits:
+    []
+  ci: {verdict: GREEN, failed: 0, pending: 0}
