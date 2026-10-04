@@ -102,6 +102,66 @@ def test_only_ssh_scopes_need_the_sftp_container() -> None:
     assert any("sftp" in s.needs for s in scopes.values()), "no scope covers sftp_docker at all"
 
 
+# Tests in transport-split topics that no leg selects, predating BUG-303's
+# split of listing/metadata/streaming (which drops none): parametrized by
+# backend name rather than fixture name, or by no backend at all. Tracked as
+# BK-406; the guard below fails on any addition and on any entry that becomes
+# covered, so this list stays exact.
+_CONF = "tests/backends/conformance"
+_KNOWN_UNSPLIT_TESTS = {
+    f"{_CONF}/test_atomic.py::test_field_capability_map_covers_every_write_result_field",
+    f"{_CONF}/test_atomic.py::TestMoveCrashInjection::test_partial_move_preserves_at_least_one_copy[after_copy]",
+    f"{_CONF}/test_atomic.py::TestMoveCrashInjection::test_partial_move_preserves_at_least_one_copy[after_delete]",
+    f"{_CONF}/test_atomic.py::TestMoveCrashInjection::test_or_assertion_catches_be018_violation",
+    *(
+        f"{_CONF}/test_identity.py::{cls}::{test}[{backend}]"
+        for cls, test in (
+            ("TestAtomicMoveCapability", "test_atomic_move_capability_declaration"),
+            ("TestSeekableCapability", "test_seekable_read_capability_declaration"),
+        )
+        for backend in ("s3", "s3_pyarrow", "azure")
+    ),
+}
+
+
+@pytest.mark.spec("TEST-004")
+def test_transport_split_scopes_cover_their_whole_topic_file() -> None:
+    """BUG-303: splitting a topic by transport must not drop any of its tests.
+
+    Each ``conformance-<topic>-<transport>`` scope runs only what its ``-k``
+    filter selects, so a test whose id matches no transport's filter (no
+    backend fixture id, or a fixture no filter names) silently leaves mutation
+    testing. Collect each split topic's file once and require the union of its
+    legs' filters to select every node id.
+    """
+    scopes = _load_manifest().SCOPES
+    legs_by_file: dict[str, list[str]] = {}
+    for name, scope in scopes.items():
+        if name.startswith("conformance-") and scope.filter and not name.startswith("conformance-async-extended-"):
+            legs_by_file.setdefault(scope.tests[0], []).append(scope.filter)
+    assert legs_by_file, "no transport-split conformance scopes found"
+
+    out = subprocess.run(
+        [sys.executable, "-m", "pytest", "--co", "-q", "-p", "no:cacheprovider", *sorted(legs_by_file)],
+        cwd=_REPO_ROOT,
+        capture_output=True,
+        text=True,
+        check=False,
+    ).stdout
+    node_ids = [line for line in out.splitlines() if "::" in line]
+    assert node_ids, f"collection returned no node ids:\n{out[-2000:]}"
+
+    uncovered = {
+        node
+        for node in node_ids
+        if not any(_kfilter_matches(node, f) for f in legs_by_file.get(node.split("::", 1)[0], []))
+    }
+    new = sorted(uncovered - _KNOWN_UNSPLIT_TESTS)
+    assert not new, f"{len(new)} tests selected by no transport leg, e.g. {new[:5]}"
+    stale = sorted(_KNOWN_UNSPLIT_TESTS - uncovered)
+    assert not stale, f"now covered or gone, drop from _KNOWN_UNSPLIT_TESTS: {stale}"
+
+
 # Session server fixtures in tests/conftest.py and the container each one needs
 # (None = in-process). Mirrors that file; a new ``*_server`` fixture must be
 # classified here before the sync-adapter guard below accepts it.

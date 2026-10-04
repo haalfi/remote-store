@@ -165,6 +165,18 @@ class TestWorkflowKeepsGremlinsFlagsOffAddopts:
         assert "--gremlin-report=" in run
         assert "--gremlins-html-dir=" in run
 
+    def test_plugin_warnings_are_shown_not_fatal(self):
+        # The project's filterwarnings escalates warnings to errors; without
+        # this filter the plugin's "no data" UserWarning failed a leg (run 45).
+        assert "-W default::UserWarning:pytest_gremlins.plugin" in self._mutate_step()["run"]
+
+    def test_sftp_scopes_get_one_worker(self):
+        step = self._mutate_step()
+        workers = step["env"]["WORKERS"]
+        assert "sftp-scopes" in workers
+        assert "'1'" in workers
+        assert '--gremlin-workers="$WORKERS"' in step["run"]
+
 
 class TestScopeCandidateDiscovery:
     """Asks pytest-gremlins' own transformer, so it matches what the plugin

@@ -421,13 +421,13 @@ no clause of the contract ships unexercised.
   regex (read only). Open decision: anchor with `\Z` on every backend, or state
   the newline rule in GLOB-014.
 
-- [ ] **BK-406 — No mutation scope mutates a backend's `async_sources`**
+- [ ] **BK-406 — Mutation scopes miss every backend's `async_sources` and ten split-topic tests**
   spec: — · effort: S · audience: infra.test
-  `mutate_scopes.py`'s `_src` reads only `[backend.<x>].sources`, so the
-  `conformance-async-extended-*` scopes target the sync adapter plus sync files:
-  `-graph` mutates only `_sync_adapter.py`, which its tests never run (BUG-303's
-  run: 26 survived, 0 zapped, pre-scan "no data"), and Azure's and Memory's
-  `async_sources` are mutated nowhere. Open decision: none on shape.
+  `_src` reads only `[backend.<x>].sources`: `-async-extended-graph` mutates only
+  `_sync_adapter.py`, which its tests never run (26 survived, 0 zapped, pre-scan
+  "no data"), and Azure's and Memory's `async_sources` are mutated nowhere. Ten
+  atomic/identity tests match no transport `-k` filter (backend-name ids, or none);
+  `_KNOWN_UNSPLIT_TESTS` in `test_mutate_scopes.py` lists them. Open decision: none.
 
 ---
 

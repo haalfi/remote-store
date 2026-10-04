@@ -19,7 +19,9 @@ expected_ripples:
 discovery_followups:
   # Run 45 (full dispatch on 3730a04): the graph leg's pre-scan recorded no
   # data because its only target, the sync adapter, is never executed by its
-  # tests; the manifest reads no backend's async_sources.
+  # tests; the manifest reads no backend's async_sources. The coverage-union
+  # guard added for review round 4 then found ten atomic/identity tests no
+  # transport filter selects, predating this PR; folded into the same item.
   - BK-406
 surprising_ripples:
   # A third cause predating 1.10: the report flags in PYTEST_ADDOPTS reached the

@@ -63,6 +63,10 @@ Repo: `haalfi/remote-store`.
 
 4. **Reproduce locally** before claiming a fix: `hatch run mutate <scope>`
    (containers per the scope's `needs` start via `infra/docker-compose.yml`).
+   A bare run is not the CI leg: copy the `ulimit`, env and trailing flags
+   from `mutation.yml`'s `Run mutate` step (the single home of that
+   invocation; `run_mutate.py` forwards trailing args to pytest), or a
+   memory-, worker- or warning-dependent failure will not reproduce.
    Per CLAUDE.md principle 6, see it fail, fix, see it pass.
 
 5. **Survivors (advisory).** If the body or the run-summary table lists
