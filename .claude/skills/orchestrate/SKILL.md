@@ -221,8 +221,10 @@ git diff HEAD -- . ':(exclude)sdd/decisions/'
 ```
 
 The exclusion is the decision log, which the recorder hook appends to whenever
-a dialog runs, including one during review; no reviewer writes there
+a dialog runs, including one during review
 ([RFC-0018 D2](../../../sdd/rfcs/rfc-0018-decision-capture-at-dialog-time.md)).
+It costs detection there: a reviewer's write under `sdd/decisions/` is invisible
+to all three captures (the table's last row).
 
 `git diff HEAD` is the content-sensitive one, and it is what catches an edit to a
 file the authors already modified — porcelain prints ` M path` either way.
@@ -238,8 +240,9 @@ each tamper in a throwaway worktree:
 | Create or delete an untracked, non-ignored file | porcelain |
 | Overwrite an existing untracked file's contents | — |
 | Create or edit **anything on a gitignored path** | — |
+| Create or edit anything under `sdd/decisions/` | — (excluded from all three) |
 
-The last row is the wide one, and it is not restricted to content edits or to
+The gitignored row is the wide one, and it is not restricted to content edits or to
 files that already exist: `--untracked-files=all` lists untracked-but-not-ignored
 paths only, so a *creation* under `site/`, `dist/`, `build/`, `htmlcov/`,
 `.venv/`, `__pycache__/`, `.benchmarks/` or the ignored part of `.claude/` is as

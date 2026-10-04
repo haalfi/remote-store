@@ -5,15 +5,22 @@ hook event to ``sdd/decisions/<session_id>.jsonl``; the wrapper
 ``.claude/hooks/record-decision.sh`` runs it and always exits 0, because exit 2
 from a ``PreToolUse`` hook blocks the dialog it is recording.
 
-**The payloads are reconstructed, not recorded.** Step 0's probe dumps were
-deleted after the probe (RFC-0018 § Step 0 observations). Each fixture below is
-rebuilt from the fragments that section quotes verbatim, under the top-level key
-set it lists as common to every payload. What the recorder must not lose is
-exactly those quoted parts, so that is what each test asserts.
+**Most payloads are reconstructed, not recorded.** Step 0's probe dumps were
+deleted after the probe (RFC-0018 § Step 0 observations). The ``ANSWERED``
+fixtures are rebuilt from the fragments that section quotes verbatim, under the
+top-level key set it lists as common to every payload; what the recorder must
+not lose is exactly those quoted parts, so that is what those tests assert. One
+pair is recorded: ``fixtures/record_decision/live-*.json``, captured raw from a
+real dialog with only its local paths replaced
+(``test_live_payload_pair_is_kept_verbatim``).
 
-Every test drives a real git repository in ``tmp_path`` rather than a mocked
-``git`` (``sdd/TESTING.md`` Rule 6): branch and HEAD are read with ``git -C``,
-and a stub could not tell a detached HEAD from a missing repo.
+Git state is read from a real repository in ``tmp_path`` rather than a mocked
+``git`` (``sdd/TESTING.md`` Rule 6): branch and HEAD come from ``git -C``, and a
+stub could not tell a detached HEAD from a missing repo. Three tests depart from
+that on purpose: ``test_outside_a_git_repo_records_null_git_fields`` uses a
+directory that is no repository, ``test_shared_git_budget_fits_inside_the_hook_timeout``
+reads only ``settings.json``, and ``test_slow_git_degrades_to_null_fields_within_budget``
+replaces the git command with a sleeper to force the timeout.
 """
 
 from __future__ import annotations

@@ -149,3 +149,11 @@ phases:
         read_type: verify
         extract: "Unprimed review at 833be5680 in a subagent (PR number, root and constraints only; tree checks clean, branch unmoved). Two findings, both taken. /ship's whole-file gate, stop rule and Rules still required every changed file read whole, which rvw-pr's exclusion makes unsatisfiable on any PR carrying a log: the three clauses now say outside sdd/decisions/. ADR-0037's Decision says the same and stays as written; RFC-0018 D2 records the narrowing (maintainer's choice over amending the ADR). /ship's close had no tail commit, since /pr runs before the loop: Step 5 now commits the tail after its last commit with /pr Step 4's commands. /orchestrate's whole-file read is an open question there, not a rule, so unchanged"
         outcome: ok
+  - id: review_fix_7
+    name: Review fix pass 7
+    steps:
+      - file: .claude/skills/orchestrate/SKILL.md
+        section: "Tree captures; residual table"
+        read_type: verify
+        extract: "Closing pass at a55c0d38a in a subagent, whole-file and measuring at once (tree checks clean, branch unmoved; it measured both diff reads at 15 files, the status pathspecs, and the tail-commit and rebase behaviour in a scratch repo, all as documented). Two findings, both taken. The sdd/decisions/ exclusion hides a reviewer's own write there from every capture, measured by the reviewer (an overwritten tracked log and a planted file vanished from the excluded captures); 'no reviewer writes there' assumed the bound the captures exist to test. /orchestrate's residual table gains the row, and /ship's main-tree sentence and RFC D2 state the bound instead of the premise; /ship's worktree check is unexcluded and still sees such a write. The test module docstring claimed every payload reconstructed and every test on a real repo: narrowed to the ANSWERED fixtures and the live pair, with the three departing tests named (grep: all four names resolve). The reviewer also noted the fix commits lack the BK-397 prefix CLAUDE.md asks for; /fix-pr prescribes 'fix: address PR #N review', and this pass's commit carries both"
+        outcome: ok

@@ -150,8 +150,12 @@ the PR diff shows the log beside the change it explains.
   round may be running. `/ship`'s main-tree `git status --porcelain` capture and
   `/orchestrate`'s porcelain and `git diff HEAD` captures exclude
   `sdd/decisions/` by pathspec (`-- . ':(exclude)sdd/decisions/'`), so a dialog
-  during a round does not read as a contaminated pass. The exemption is safe
-  because the recorder only appends to files no reviewer writes.
+  during a round does not read as a contaminated pass. Bound: the exclusion
+  also hides a reviewer's own write under `sdd/decisions/` from those captures
+  (measured in a scratch repo: an overwritten tracked log and a planted file
+  both vanished from the excluded captures), so reviewers are instructed not to
+  write there rather than checked. `/ship`'s review-worktree check is not
+  excluded and still sees such a write there.
 - **Not read by reviewers.** During a `/ship` loop the log holds the fix-pass
   dialogs about earlier findings and their dispositions, so a reviewer reading
   it would read the conversation that `/rvw-pr` Step 1 refuses to fetch, and
