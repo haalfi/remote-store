@@ -16,6 +16,11 @@ expected_ripples:
   - scripts/run_mutate.py
   - tests/scripts/test_run_mutate.py
   - sdd/BACKLOG-DONE.md
+discovery_followups:
+  # Run 45 (full dispatch on 3730a04): the graph leg's pre-scan recorded no
+  # data because its only target, the sync adapter, is never executed by its
+  # tests; the manifest reads no backend's async_sources.
+  - BK-406
 surprising_ripples:
   # A third cause predating 1.10: the report flags in PYTEST_ADDOPTS reached the
   # plugin's coverage pre-scan, which then recorded no data, so coverage-guided
@@ -113,6 +118,10 @@ phases:
         section: "moto_server / sftp_server / azurite_server"
         read_type: reference
         extract: "moto and the SFTP server are in-process; Azurite is sync-adapter's only container. My first split assumed live-sftp used sftp_docker without reading this"
+      - file: "GitHub Actions: run 45, full dispatch on 3730a04"
+        section: "failed legs at 41 min"
+        read_type: verify
+        extract: "69/77 green; backends-ssh baseline 'can't start new thread' under the 4 GiB cap (thread stacks; local tests/backends/sftp peaks 143 threads / 2.9 GiB without Docker tests), so the cap is 8 GiB; graph leg failed on the plugin's 'no data' UserWarning made fatal by filterwarnings=error once -W ignore was gone, so -W default keeps it visible"
       - file: sdd/CLAUDE-REFERENCE.md
         section: "Ripple-check / Dependency"
         read_type: verify

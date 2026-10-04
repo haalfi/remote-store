@@ -204,13 +204,19 @@ jobs:
       # so the registry's sftp_docker carve-out does not apply to them.
       # mutate_scopes.py confines sftp to the `-ssh` scopes.
       #
-      # `ulimit -v` caps each process's virtual address space at 4 GiB,
+      # `ulimit -v` caps each process's virtual address space at 8 GiB,
       # inherited by every gremlin subprocess. It stops a single runaway mutant
       # (ext/parquet.py `_split_table`, `<` to `<=`), which then fails as an
       # `error`. It does not bound the total: four workers can still reach the
-      # runner's 16 GB together. MALLOC_ARENA_MAX keeps glibc from reserving a
-      # 64 MiB arena per thread, so thread-heavy clients stay well inside the
-      # cap on address space they never touch.
+      # runner's 16 GB together. The cap counts reserved address space, and
+      # every thread reserves its stack: 4 GiB starved backends-ssh's baseline
+      # ("can't start new thread"; tests/backends/sftp peaks at 143 threads and
+      # 2.9 GiB without its Docker tests). MALLOC_ARENA_MAX keeps glibc from
+      # also reserving a 64 MiB arena per thread.
+      #
+      # The project's filterwarnings turns warnings into errors, which would
+      # make the plugin's own UserWarnings (e.g. "Coverage collection returned
+      # no data") fail the leg; `default` keeps them visible in the log instead.
       - name: Run mutate ${{ matrix.scope }}
         env:
           PYTEST_ADDOPTS: "--no-cov"
@@ -218,10 +224,11 @@ jobs:
           SCOPE: ${{ matrix.scope }}
           WORKERS: ${{ contains(fromJSON(needs.setup.outputs.sftp-scopes), matrix.scope) && '1' || '4' }}
         run: |
-          ulimit -v 4194304
+          ulimit -v 8388608
           python scripts/run_mutate.py "$SCOPE" \
             --gremlin-report=html,json --gremlins-html-dir=mutation-report \
-            --gremlin-workers="$WORKERS"
+            --gremlin-workers="$WORKERS" \
+            -W default::UserWarning:pytest_gremlins.plugin
 
       # --- Upload HTML report ---
       - name: Upload mutation report
