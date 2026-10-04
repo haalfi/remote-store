@@ -819,13 +819,13 @@ CHANGELOG the release body is built from — say what is actually true.
   deliveries form the sample, then graduate or return to Draft.
   Detail: [dossier](backlog/bk-384-rfc-0015-graduation-measurement.md)
 
-- [ ] **BK-397 — Interview-mode decisions leave no record in the repo, so their rejected options are unrecoverable**
+- [~] **BK-397 — Interview-mode decisions leave no record in the repo, so their rejected options are unrecoverable**
   spec: — · effort: M · audience: contributor.process, contributor.tooling
-  `AskUserQuestion` decisions (question, options, recommendation, answer) persist
-  only in the session transcript. RFC-0018 (Draft) proposes hook capture; step 0
-  and its follow-up ran 2026-10-03: nothing fired `PostToolUseFailure`, the docs
-  exclude denials, timeout and restart stay unobserved. Next: decide the
-  `failed` path (synthetic payload or omit), then accept RFC-0018.
+  `AskUserQuestion` decisions persisted only in the session transcript. RFC-0018
+  accepted 2026-10-04, `failed` path omitted. Done: D5 step 1 and D2's staging
+  and exclusions. Pending: step 2 (trace `decisions:` key, `check_traces.py`
+  rule), step 3 (`/pr` Decisions section, without priming `/ship`'s unprimed
+  passes), and a remedy for one session's log across two branches (D2 bound).
 
 - [ ] **BK-402 — `ci.yml` says `tests/scripts/` does not exercise `remote_store`, and it does**
   spec: — · effort: S · audience: infra.ci

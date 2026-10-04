@@ -485,7 +485,7 @@ reading as "the post failed" is what made pinning necessary.)
 
 | Direction | Tool |
 |-----------|------|
-| Read PR **content** (diff, changed files, body, state) | `gh` CLI (`gh pr view`, `gh pr diff`, `gh pr view --json …`) **when available**; fall back to MCP `pull_request_read` when `gh` is absent (e.g. claude.ai/code). One local exception by design: a `/rvw-pr` pass handed a review root by `/ship` reads the diff from that worktree's git (`git -C <root> diff origin/master...HEAD`), because `gh pr diff` returns the PR's current head and the root is pinned at the commit being certified |
+| Read PR **content** (diff, changed files, body, state) | `gh` CLI (`gh pr view`, `gh pr diff`, `gh pr view --json …`) **when available**; fall back to MCP `pull_request_read` when `gh` is absent (e.g. claude.ai/code). `/rvw-pr` reads the diff without the decision log, `sdd/decisions/`, so it uses its Step 1's filtered PR-files read instead of `gh pr diff`. One local exception by design: a `/rvw-pr` pass handed a review root by `/ship` reads the diff from that worktree's git (`git -C <root> diff origin/master...HEAD -- . ':(exclude)sdd/decisions/'`), because the PR API returns the PR's current head and the root is pinned at the commit being certified |
 | Read review **feedback with resolution state** (`isResolved`/`isOutdated`) | MCP dual-fetch (`get_review_comments` + `get_comments`), or `gh api graphql` `reviewThreads` — but **not** plain `gh` content reads (`gh pr view`/`gh pr diff`), which omit resolution state |
 | **Write** (post review, inline comments) | MCP (`pull_request_review_write`, `add_comment_to_pending_review`) |
 | Resolve/unresolve **threads** | MCP where available; `gh api graphql` mutation for the resolve gap |
@@ -506,7 +506,10 @@ Shared by `/pr` and `/fix-pr`. `<BASE>` is the PR base branch (default
 `master`). Run `git fetch origin <BASE>`, then
 `git rev-list --count origin/<BASE> ^HEAD`. A non-zero count means the branch is
 behind `origin/<BASE>` — **stop and ask the user whether to rebase**. If
-approved: `git rebase origin/<BASE>` then immediately
+approved: first commit the decision-log tail with the commands in
+[`/pr` Step 4](../.claude/skills/pr/SKILL.md). The question just asked appended
+to `sdd/decisions/`, and a modified tracked log makes `git rebase` refuse
+("cannot rebase: You have unstaged changes"). Then `git rebase origin/<BASE>` and immediately
 `git push --force-with-lease origin <current-branch>`, so later steps act on the
 rebased remote state. Never rebase silently — `--force-with-lease` is
 destructive to anyone tracking the branch. (`/fix-pr` fetches review comments
@@ -615,6 +618,7 @@ session and this is maintenance detail.
 | --- | --- |
 | Steering | An output style saying when a decision is the user's to make, and how to shape the options |
 | Notification | Bell plus desktop notification when a dialog opens or the session goes idle |
+| Record | Appends each dialog's asked and answered events to `sdd/decisions/<session_id>.jsonl`, staged by `gate-commit.sh`; design in [RFC-0018](rfcs/rfc-0018-decision-capture-at-dialog-time.md) |
 
 Which events fire which layer is declared in `.claude/settings.json`. Read it
 there; a second copy here would rot.
@@ -622,7 +626,7 @@ there; a second copy here would rot.
 **Ungated on purpose** — this table and `settings.json` are a hand-maintained
 pair, and no check binds them. It is therefore a tolerated divergence, and this
 paragraph is its [DRIFT-RULES Rule 6](DRIFT-RULES.md#tolerated) register entry.
-Owner: whoever next edits either side. Rationale: the claim space is two rows
+Owner: whoever next edits either side. Rationale: the claim space is a few rows
 that change about once a year, so a gate costs more to build and maintain than
 the drift it would catch — a gate here would be the tail wagging the dog, which
 is the mistake this feature's own history is a record of. If it is ever built,
@@ -632,7 +636,7 @@ is the mistake this feature's own history is a record of. If it is ever built,
 since the table was written from the same file it would be checked against.
 
 The same register entry covers the **hook matcher values** in `settings.json`
-(`AskUserQuestion`, `idle_prompt`). Those name events in Claude Code, not in this
+(`AskUserQuestion` on `PreToolUse` and `PostToolUse`, `idle_prompt`). Those name events in Claude Code, not in this
 repo, so nothing here can confirm them: a typo is indistinguishable from a hook
 that never fires, and the failure mode is silence — on a feature whose whole
 purpose is to stop questions being silent. What *is* gated is that every

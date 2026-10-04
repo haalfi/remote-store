@@ -115,6 +115,11 @@
           {
             "type": "command",
             "command": "bash \"$CLAUDE_PROJECT_DIR\"/.claude/hooks/notify-attention.sh 'a decision'"
+          },
+          {
+            "type": "command",
+            "command": "bash \"$CLAUDE_PROJECT_DIR\"/.claude/hooks/record-decision.sh",
+            "timeout": 10
           }
         ]
       }
@@ -152,6 +157,16 @@
             "type": "command",
             "if": "Edit(*BACKLOG.md)",
             "command": "bash \"$CLAUDE_PROJECT_DIR\"/.claude/hooks/backlog-status-brake.sh"
+          }
+        ]
+      },
+      {
+        "matcher": "AskUserQuestion",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "bash \"$CLAUDE_PROJECT_DIR\"/.claude/hooks/record-decision.sh",
+            "timeout": 10
           }
         ]
       }

@@ -214,11 +214,17 @@ spawn and require all three unchanged before triage:
 git rev-parse HEAD
 ```
 ```bash
-git status --porcelain --untracked-files=all
+git status --porcelain --untracked-files=all -- . ':(exclude)sdd/decisions/'
 ```
 ```bash
-git diff HEAD
+git diff HEAD -- . ':(exclude)sdd/decisions/'
 ```
+
+The exclusion is the decision log, which the recorder hook appends to whenever
+a dialog runs, including one during review
+([RFC-0018 D2](../../../sdd/rfcs/rfc-0018-decision-capture-at-dialog-time.md)).
+It costs detection there: a reviewer's write under `sdd/decisions/` is invisible
+to all three captures (the table's last row).
 
 `git diff HEAD` is the content-sensitive one, and it is what catches an edit to a
 file the authors already modified — porcelain prints ` M path` either way.
@@ -234,8 +240,9 @@ each tamper in a throwaway worktree:
 | Create or delete an untracked, non-ignored file | porcelain |
 | Overwrite an existing untracked file's contents | — |
 | Create or edit **anything on a gitignored path** | — |
+| Create or edit anything under `sdd/decisions/` | — (excluded from all three) |
 
-The last row is the wide one, and it is not restricted to content edits or to
+The gitignored row is the wide one, and it is not restricted to content edits or to
 files that already exist: `--untracked-files=all` lists untracked-but-not-ignored
 paths only, so a *creation* under `site/`, `dist/`, `build/`, `htmlcov/`,
 `.venv/`, `__pycache__/`, `.benchmarks/` or the ignored part of `.claude/` is as
@@ -246,8 +253,9 @@ The `tmp/` write bound narrows the *honest* reviewer's blast radius, but it is
 not the answer here: these captures exist for the reviewer that broke the bound,
 so assuming the bound holds is assuming what the check is testing. Committing
 before review — which would restore `/ship`'s empty-porcelain model exactly, and
-with it detection of every case above — is the structural closure this skill has
-not taken.
+with it detection of the first three rows above, though not of the gitignored
+or `sdd/decisions/` rows, which that model's main-tree capture also misses — is
+the structural closure this skill has not taken.
 
 Never pin or prefer a model
 ([ADR-0035 § Decision](../../../sdd/adrs/0035-vary-method-not-model.md#decision)).

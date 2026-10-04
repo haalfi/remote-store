@@ -2,10 +2,13 @@
 
 ## Status
 
-Draft, 2026-10-03. Tracked as **BK-397**. Nothing below is built. § Build order
+Accepted, 2026-10-04. Tracked as **BK-397**. Drafted 2026-10-03. § Build order
 step 0 ran on 2026-10-03 (§ Step 0 observations); D1, D3 and D4.0 are amended to
 what it observed. A failure-probe follow-up the same day amends D2, D3 and D4.2,
-D2 to an inference rather than an observation.
+D2 to an inference rather than an observation. On acceptance the maintainer
+omitted the `failed` path until it is observed (§ Open Questions 5), which
+amends the Summary, D1, D3 and D4. Built: step 1 and D2's commit and exclusion
+mechanics. Steps 2 and 3 are not.
 
 ## Summary
 
@@ -15,8 +18,8 @@ dialog already holds what a decision record needs: the question with its
 context, the options with their consequences, the agent's recommendation and the
 answer. It persists only in the session transcript, outside the repository, so
 the next session re-argues the why from the code. This RFC keeps the dialog
-verbatim: one hook, registered on three hook events, appends each asked,
-answered and failed event to a per-session JSONL file,
+verbatim: one hook, registered on two hook events, appends each asked and
+answered event to a per-session JSONL file,
 `sdd/decisions/<session_id>.jsonl`, committed with the work. Logs are bound to a
 branch when read, not when written. Three readers keep them from being
 write-only: the trace links them, `check_traces.py` validates them, and `/pr`
@@ -64,9 +67,9 @@ the answer was given. What is missing is persistence and a reader, not content.
 
 ## Proposal
 
-### D1. Capture: one hook, three event registrations, no model involvement
+### D1. Capture: one hook, two event registrations, no model involvement
 
-A thin hook, `.claude/hooks/record-decision.sh`, is registered on three events
+A thin hook, `.claude/hooks/record-decision.sh`, is registered on two events
 with matcher `AskUserQuestion` and runs the recorder,
 `scripts/record_decision.py`:
 
@@ -74,10 +77,10 @@ with matcher `AskUserQuestion` and runs the recorder,
 |---|---|---|
 | `PreToolUse` | `asked` | `tool_input` verbatim (questions, headers, options with descriptions, `multiSelect`) |
 | `PostToolUse` | `answered` | `tool_input` and `tool_response` verbatim |
-| `PostToolUseFailure` | `failed` | the error payload verbatim |
 
-Every event also carries `tool_use_id` (the pairing key, documented as common to
-all three events), `session_id`, a UTC timestamp, `HEAD`'s SHA and the branch
+`PostToolUseFailure` is not registered (§ Open Questions 5). Every event also
+carries `tool_use_id` (the pairing key, documented as common to both events),
+`session_id`, a UTC timestamp, `HEAD`'s SHA and the branch
 name, plus the hook process's `CLAUDE_CODE_REMOTE_SESSION_ID` when set, which is
 the identifier D4.0's trailer fallback matches (step 0 found the payload's
 `session_id` does not). The `PreToolUse` registration sits beside the existing
@@ -96,7 +99,11 @@ under `scripts/`, inside `lint` and `format`, and puts a `.sh` path in
 **Verbatim, not parsed.** The recorder stores payloads as received and does not
 interpret them. Interpretation lives in the readers (D3), so a payload-shape
 change in Claude Code breaks a reader's parse, which a test sees, rather than
-silently losing data at capture time.
+silently losing data at capture time. For the same reason a payload from any
+other event, should the hook ever be registered on one, is appended under its
+raw `hook_event_name` rather than dropped, with its payload less the local
+paths every payload carries (`cwd`, `transcript_path`, `scratchpad_dir`),
+which a log committed to a public repository must not hold.
 
 ### D2. Storage: one append-only file per session, bound to work when read
 
@@ -107,8 +114,12 @@ the PR diff shows the log beside the change it explains.
 - **Who commits it.** `gate-commit.sh`, which already runs before every
   `git commit` the agent issues, stages `sdd/decisions/` into that commit, so
   the log travels with the work it explains. Dialogs after the branch's last
-  commit (`/ship`'s close, `/pr`'s own questions) leave a tail: `/pr` Step 1
-  commits it as a separate `decision log` commit before its clean-tree check.
+  commit leave a tail, committed as a separate `decision log` commit pinned to
+  `sdd/decisions/` by pathspec. `/pr` commits it after its last step that can
+  ask and before it drafts the PR body, which covers its own questions; its
+  pre-check tolerates the tail and nothing else. `/ship` runs `/pr` before its
+  review loop, so its close commits its own tail after its last commit, with
+  the same commands, and the branch freshness check does so before a rebase.
   Bound: a commit the maintainer makes by hand outside the agent bypasses the
   hook, and its dialogs reach the next agent commit instead. Inferred, not
   observed (a maintainer report, never probed; § Step 0 observations,
@@ -121,14 +132,48 @@ the PR diff shows the log beside the change it explains.
   branch or detached (`/ship` Step 2 asks in plan mode, before Step 3 builds).
   This RFC's own branch, `rfc-decision-capture`, has no ID. Each event records
   branch and HEAD instead, and D4 binds logs to work when they are read.
-- **Per session.** Two sessions never append to one file, so logs cannot
-  conflict on merge.
+- **Per session.** Two sessions never append to one file, so two sessions'
+  logs cannot conflict on merge. **Bound: one session that spans two branches
+  can.** Measured in a scratch repo (git 2.52.0.windows.1), with the log
+  committed on branch A: a dialog after A's last commit blocks `git switch` to
+  the base ("Your local changes … would be overwritten"); a dialog on the base
+  leaves an untracked log that blocks switching back to A ("untracked working
+  tree files would be overwritten"); and if the session then starts branch B
+  from the base, merging A and B gives `CONFLICT (add/add)` on the log. The
+  remedy is open (BK-397, pending); a per-branch file name would clear the last
+  two cases but not the first. The same dirty-tracked-log shape stops a rebase
+  on one branch ("cannot rebase: You have unstaged changes", same scratch
+  repo), and the branch freshness check's own rebase question produces it; that
+  case is handled, because the check commits the tail before rebasing
+  ([`CLAUDE-REFERENCE.md` § Branch freshness](../CLAUDE-REFERENCE.md#branch-freshness)).
 - **Exempt from the tree-unchanged checks.** The recorder writes while a review
   round may be running. `/ship`'s main-tree `git status --porcelain` capture and
   `/orchestrate`'s porcelain and `git diff HEAD` captures exclude
   `sdd/decisions/` by pathspec (`-- . ':(exclude)sdd/decisions/'`), so a dialog
-  during a round does not read as a contaminated pass. The exemption is safe
-  because the recorder only appends to files no reviewer writes.
+  during a round does not read as a contaminated pass. Bound: the exclusion
+  also hides a reviewer's own write under `sdd/decisions/` from those captures
+  (measured in a scratch repo: an overwritten tracked log and a planted file
+  both vanished from the excluded captures), so reviewers are instructed not to
+  write there rather than checked. `/ship`'s review-worktree check is not
+  excluded and still sees such a write there.
+- **Not read by reviewers.** During a `/ship` loop the log holds the fix-pass
+  dialogs about earlier findings and their dispositions, so a reviewer reading
+  it would read the conversation that `/rvw-pr` Step 1 refuses to fetch, and
+  `/ship`'s unprimed passes would be primed. `/rvw-pr` Step 1 therefore leaves
+  `sdd/decisions/` out of the diff it reads and out of its full-file reads.
+  This narrows the whole-file gate of
+  [ADR-0037](../adrs/0037-whole-file-gate-and-derived-figures.md) ("every
+  changed file whole") to files outside `sdd/decisions/`, and `/ship`'s stop
+  rule says so: a log of dialogs makes no claim about the code a whole-file
+  read could find false, and reading it is what the exclusion forbids.
+  D4.3's Decisions section in the PR body raises the same question for those
+  passes, which read the body; it is settled with step 3.
+- **Anchored at the project directory.** The hook is registered as
+  `"$CLAUDE_PROJECT_DIR"/.claude/hooks/record-decision.sh`, so the log is
+  written under `$CLAUDE_PROJECT_DIR`, while `gate-commit.sh` stages under the
+  toplevel of the shell's working directory. Bound: a session that commits in a
+  different checkout than its project directory leaves the log behind in the
+  project directory, uncommitted.
 - **Committed verbatim, decided by the maintainer** (§ Decided while drafting).
   The repository is public, so free-text answers become public with the PR.
 
@@ -142,15 +187,19 @@ set** is the labels marked `(Recommended)`, usually one and possibly several on 
 
 | Outcome | Condition (first match wins) |
 |---|---|
-| `failed` | a `failed` event exists |
 | `prefilled` | the `asked` event's `tool_input` carries an answer for the question and the `answered` event's answer equals it |
 | `unanswered` | no `answered` event, or the answer begins with `[User dismissed` (the dismissal sentinel; follow-up case a′) |
 | `other` | some answer matches no label (the "Other" free-text path) |
 | `followed` | the answer set equals the recommended set |
 | `alternative` | otherwise: every answer is a label and the set differs from the recommended set, or nothing was recommended |
 
-The order ranks what a reviewer must see first: a failure or an answer nobody
-gave outranks what the answer was.
+The order ranks what a reviewer must see first: an answer nobody gave outranks
+what the answer was.
+
+**Unknown event kinds are tolerated.** A reader that meets an event kind other
+than `asked` and `answered` skips it for classification and never fails on it,
+so a later registration (§ Open Questions 5) cannot break a reader written
+before it.
 
 **The sentinel is a harness string, matched by prefix, and that is a bound.**
 It is undocumented and was seen once (a′), in full
@@ -202,19 +251,15 @@ and the question is classified by the rows below it.
 1. **Trace link.** `sdd/traces/_schema.yml` gains an optional `decisions:` key,
    a list of log paths. A trace for work that ran dialogs lists its logs.
 2. **`check_traces.py`.** For each listed path: the file exists, every line
-   parses, every event has a known kind, and no `tool_use_id` has two `answered`
-   events. `unanswered` is reported, not failed. Declining a dialog is a
-   legitimate act, and the report is how it stays visible. A `tool_use_id`
-   with both an `answered` and a `failed` event is also reported: D3 still
-   classifies it, but it contradicts the assumption that the two Post events are
-   exclusive. Neither step 0 nor its follow-up could test it: no `failed` event
-   fired in 27 payloads (13 in step 0, 14 in the follow-up), so that assumption
-   and D3's `failed` row remain
-   unobserved.
+   parses, and no `tool_use_id` has two `answered` events. `unanswered` is
+   reported, not failed. Declining a dialog is a legitimate act, and the report
+   is how it stays visible. An event of unknown kind is reported, not failed
+   (D3).
 3. **`/pr`.** The skill renders a "Decisions" section from the committed log
-   only, after Step 1 has committed the tail, so the body never cites an event
-   the PR does not contain. One line per question: header → answer → outcome,
-   with `unanswered`, `failed` and `prefilled` flagged, and a link to each log.
+   only. `/pr` commits the tail before it drafts the body (D2), after its last
+   step that can ask, so the body never cites an event the PR does not contain
+   and misses none of `/pr`'s own. One line per question: header → answer → outcome,
+   with `unanswered` and `prefilled` flagged, and a link to each log.
    Reviewers see the why without anyone writing it.
 
 ### D5. Build order
@@ -257,18 +302,24 @@ and the question is classified by the rows below it.
   ripple-check row for a test whose subject is outside `src/`;
   `.claude/hooks/gate-commit.sh`, which stages the log;
   `sdd/traces/_schema.yml`; `scripts/check_traces.py` and its tests;
-  `.claude/skills/pr/SKILL.md`, both Step 1 (commit the tail) and the
+  `.claude/skills/pr/SKILL.md`, both the tail commit and the
   rendering; `.github/PULL_REQUEST_TEMPLATE.md`, which `/pr` treats as the
   authoritative body shape, for the Decisions section;
   `.claude/skills/ship/SKILL.md` and
   `.claude/skills/orchestrate/SKILL.md`, whose tree-unchanged captures take
-  D2's exclusion; `sdd/CLAUDE-REFERENCE.md` § Interview mode,
+  D2's exclusion, and `/ship`'s whole-file gate, stop rule and close as well; `.claude/skills/rvw-pr/SKILL.md`, whose Step 1 does not read
+  the log; `sdd/CLAUDE-REFERENCE.md` § Branch freshness check, which commits the
+  tail before rebasing; `sdd/CLAUDE-REFERENCE.md` § Interview mode,
   whose wiring table gains a Record layer and whose tolerated-divergence note
-  extends to the new matcher values; `sdd/AUTHORING.md` directory defaults, for
-  `sdd/decisions/`; `GATE-INVENTORY.md`, regenerated.
-- **Cost per dialog:** two short hook invocations and two appended lines (the
-  `PreToolUse` one, then whichever of the two Post events fires); one of each
-  for a denied dialog, which fired no Post event in step 0.
+  extends to the new matcher values. Two files need no change:
+  `sdd/AUTHORING.md` § Directory defaults classifies `.md` files for the docs
+  pipeline, and `.jsonl` never enters it (`hatch run docs-check` and
+  `hatch run docs-build` pass with a log committed); `GATE-INVENTORY.md` lists
+  gates, and the recorder is none (`gen_gate_inventory.py --check` passes with
+  it present).
+- **Cost per dialog:** two short hook invocations and two appended lines,
+  `asked` then `answered`; one of each for a denied dialog, which fired no Post
+  event in step 0.
 
 **Acceptance.** Step 0 observed and its payload shapes recorded in § Step 0
 observations. Then, after the next three merged deliveries that ran dialogs: each
@@ -303,6 +354,16 @@ observations and the text below is kept as asked.
    trailer carries a claude.ai session URL; the hook payload carries a
    `session_id` of undocumented form. If they do not correspond, D4's trailer
    fallback is dropped and binding rests on recorded branch names alone.
+5. **The `failed` path, omitted until observed.** Decided by the maintainer on
+   acceptance, 2026-10-04: the hook is not registered on `PostToolUseFailure`,
+   and D3 has no `failed` outcome, because no trigger was found in 27 payloads
+   (§ Step 0 observations, follow-up) and the hooks reference makes the event
+   likely unreachable for this tool. A reader already tolerates an unknown event
+   kind (D3), so adding the event later breaks no reader. **Revisit when** a
+   real `PostToolUseFailure` payload for `AskUserQuestion` is seen: register the
+   hook on it, then restore a `failed` outcome and decide its precedence against
+   an `answered` event for the same `tool_use_id`, which the docs do not rule
+   out.
 
 **Decided by the maintainer while drafting**, in this RFC's own dialogs and
 recorded as answered (hand-copied, because the recorder does not exist yet):
@@ -443,8 +504,9 @@ both held `"Mike"`.
   correspond.
 - **Not changed:** the "Post events are exclusive" assumption and D3's `failed`
   row. Neither was contradicted: no `failed` event fired at all, so both stay
-  untested; D4.2 now says so. D3's `unanswered` row is confirmed by d, and
-  amended by the follow-up below.
+  untested; D4.2 then said so. Both were removed on acceptance (§ Open
+  Questions 5). D3's `unanswered` row is confirmed by d, and amended by the
+  follow-up below.
 
 ### Follow-up: what fires `PostToolUseFailure` (2026-10-03)
 
@@ -523,7 +585,7 @@ summary. Still unobserved: a timeout, and any
 genuine tool error after `PreToolUse`, and a container restart with a dialog
 open (reported, see above). Before step 1 builds the `failed` path,
 decide whether to ship it against a synthetic payload or leave it out until one
-is seen.
+is seen. Decided 2026-10-04: left out (§ Open Questions 5).
 
 **What the official docs say** (raw pages fetched 2026-10-03 and searched for
 each quoted phrase; a search-agent summary and a page-summarising fetch each

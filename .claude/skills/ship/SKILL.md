@@ -188,7 +188,12 @@ this reasoning is the failure the sibling-sweep rule exists to catch.
   <branch>` and require `git rev-parse origin/<branch>` still equal to `<sha>`.
   A push during the round means the passes certified a superseded commit;
   re-run them against the new one. And keep one capture in the main tree:
-  `git status --porcelain` at spawn, required unchanged before triage. An
+  `git status --porcelain -- . ':(exclude)sdd/decisions/'` at spawn, required
+  unchanged before triage. The exclusion is the decision log, which the
+  recorder hook appends to whenever a dialog runs, round or not. The cost is
+  that a reviewer's write under `sdd/decisions/` in the main tree goes unseen
+  here; the worktree check above is not excluded and still sees one there
+  ([RFC-0018 D2](../../../sdd/rfcs/rfc-0018-decision-capture-at-dialog-time.md)). An
   `Agent`'s Bash runs in the main tree on every call (measured, `/rvw-pr`
   § Review root), so a member that drops the `-C` / `env -C` prefix and runs a
   writing alias dirties the tree the next fix pass commits from while the
@@ -402,7 +407,10 @@ odd panel the scoped member is the measuring one.
 thing under review.** The other method axis, and the third exit gate
 ([ADR-0037 § Decision](../../../sdd/adrs/0037-whole-file-gate-and-derived-figures.md#decision)).
 Every reviewer already reads the changed files in full — `rvw-pr` Step 1 requires
-it — so what this brief changes is not *what is read* but *what is judged*: the
+it, for every changed file outside the decision log `sdd/decisions/`, which no
+reviewer reads ([RFC-0018](../../../sdd/rfcs/rfc-0018-decision-capture-at-dialog-time.md)
+D2) and which this gate and the stop rule's whole-file clause therefore exclude
+— so what this brief changes is not *what is read* but *what is judged*: the
 file as it now stands has to be true, whether or not the untrue part sits in a
 hunk.
 
@@ -546,8 +554,8 @@ what was refuted and why. The PR record is where that survives.
 
 > **Stop when the most recent round yields zero must-fix findings, that round
 > reviewed the most recent fix pass, an unprimed reviewer has seen the final
-> state and found nothing must-fix, every changed file has been read whole
-> against that final state, *and* every behavioural claim the PR makes has been
+> state and found nothing must-fix, every changed file outside `sdd/decisions/`
+> has been read whole against that final state, *and* every behavioural claim the PR makes has been
 > executed by a measuring pass.**
 
 The last four clauses close the loop's measured blind spots. **Three of them name
@@ -698,6 +706,11 @@ neither substitutes for the other.
    [`_schema.yml` § `review`](../../../sdd/traces/_schema.yml) states —
    `review_rounds` included
    ([CLAUDE.md § Trace authoring](../../../CLAUDE.md#trace-authoring)).
+   Commit and push these, then commit any decision-log tail left by dialogs
+   after that commit, with the commands in [`/pr`](../pr/SKILL.md) Step 4, and
+   push again. `/pr` ran in Step 3, before the loop, so it cannot commit the
+   close's own dialogs, and an uncommitted line in the tracked log blocks a
+   later `git switch` ([RFC-0018](../../../sdd/rfcs/rfc-0018-decision-capture-at-dialog-time.md) D2).
 3. Report: run `hatch run ship-report <N>`. Its output **is** the Step 5 report
    for everything derived from the PR — rounds run, findings per round, the
    final per-file distribution, the origin tag per finding, the review-driven
@@ -720,7 +733,7 @@ Then stop. **`/ship` never merges.** It hands over a PR that is ready to be.
 - Never push to master.
 - Never end the loop on an unreviewed fix pass.
 - Never end the loop on a state no unprimed reviewer has seen.
-- Never end the loop on a changed file no pass has read whole.
+- Never end the loop on a changed file outside `sdd/decisions/` no pass has read whole.
 - Never end the loop on a behavioural claim no measuring pass has executed.
 - Never end the loop on a red or unread CI.
 - Reviewers are read-only and fresh each round; the **subagents** — authors, and
