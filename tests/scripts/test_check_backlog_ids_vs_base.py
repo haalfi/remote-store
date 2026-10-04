@@ -277,6 +277,9 @@ def repo(tmp_path: Path):
     run("init", "-q", "-b", "main")
     run("config", "user.email", "guard@example.invalid")
     run("config", "user.name", "Guard")
+    # A contributor's global `commit.gpgsign` would otherwise sign here, and
+    # fail wherever the signing key is scoped to the real checkout.
+    run("config", "commit.gpgsign", "false")
 
     write("sdd/BACKLOG.md", _open_items("BK-100", "BK-101"))
     write("sdd/BACKLOG-DONE.md", _done_items("BK-099"))

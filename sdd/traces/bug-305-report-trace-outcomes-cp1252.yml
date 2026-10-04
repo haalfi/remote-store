@@ -1,0 +1,116 @@
+id: BUG-305
+title: "Write the trace-outcome report as UTF-8 so a cp1252 Windows stdout does not crash it"
+trigger: >-
+  `hatch run report-trace-outcomes` raised UnicodeEncodeError on `→` under the
+  default cp1252 stdout at the v0.33.0 release's Phase 0 revisit; ID-267's
+  dossier told Windows readers to set PYTHONIOENCODING=utf-8 until it closed.
+source_items:
+  - BUG-305
+audience:
+  - contributor.tooling
+discovery_followups: []
+co_shipped_items:
+  - BUG-304
+expected_ripples:
+  - scripts/report_trace_outcomes.py
+  - tests/scripts/test_report_trace_outcomes.py
+  - sdd/BACKLOG.md
+  - sdd/BACKLOG-DONE.md
+  - sdd/backlogid.json
+  - sdd/backlog/id-267-trace-outcome-revisit.md
+surprising_ripples:
+  # Caught in review: a done item's dossier also carried the workaround as a
+  # present-tense instruction, and nothing in the ripple-check asks for a sweep
+  # of closed items' dossiers when a fix retires a workaround they state.
+  - sdd/backlog/id-259-trace-outcome-revisit.md
+phases:
+  - id: orient
+    name: Orient
+    steps:
+      - file: sdd/BACKLOG.md
+        section: "BUG-305; How this file works"
+        read_type: gate
+        extract: >-
+          Diagnosis and the workaround; open decision none, bug-fix protocol.
+          Completing work: delete here, `[x]` entry in BACKLOG-DONE.md, sweep
+          the ID's inbound references.
+        outcome: ok
+      - file: scripts/report_trace_outcomes.py
+        section: "main()"
+        read_type: reference
+        extract: >-
+          One print() of render_markdown's output; the `→` comes from trace
+          extracts quoted verbatim, not from the script's own text, so no
+          literal in the script would show the hazard.
+        outcome: ok
+  - id: implement
+    name: Implement
+    steps:
+      - file: tests/scripts/test_report_trace_outcomes.py
+        section: "TestOutputEncoding"
+        read_type: verify
+        extract: >-
+          Reproduced first with the real command (traceback at the print).
+          The test swaps sys.stdout for a cp1252 TextIOWrapper over BytesIO,
+          so it fails on any OS, not only Windows; seen red with the same
+          UnicodeEncodeError, then the module's 55 tests green after the fix.
+        outcome: ok
+      - file: scripts/report_trace_outcomes.py
+        section: "main()"
+        read_type: verify
+        extract: >-
+          sys.stdout.reconfigure(encoding="utf-8") when stdout is a
+          TextIOWrapper; the report is Markdown, so UTF-8 is its encoding
+          whatever the locale. `hatch run report-trace-outcomes --top 2` then
+          printed the full report from the Bash tool's pipe.
+        outcome: ok
+  - id: verify
+    name: Verify
+    steps:
+      - file: sdd/backlog/id-267-trace-outcome-revisit.md
+        section: "On Windows"
+        read_type: verify
+        extract: >-
+          A present-tense instruction to use PYTHONIOENCODING until BUG-305
+          closes; removed. ID-259's trace narrates the workaround in the past
+          tense and stays. ID-259's dossier still stated it as a present-tense
+          instruction, which review caught (Grep `PYTHONIOENCODING` over the
+          repo then returned only it, ID-259's trace and this trace); it got a dated correction rather
+          than a rewrite, since a dossier's evidence is not rewritten.
+        outcome: ok
+      - file: sdd/CLAUDE-REFERENCE.md
+        section: "Ripple-check / Bug fix row vs _schema.yml audience rule"
+        read_type: verify
+        extract: >-
+          Same disagreement BUG-295 tagged: the row asks for a CHANGELOG stub,
+          the schema's derived rule skips it for contributor.tooling. Took the
+          schema's rule.
+        outcome: unclear
+review:
+  # Derived by `hatch run ship-report 1071 --trace-block-only` at head 5437d74.
+  # Do not hand-edit, except a newly required field per sdd/traces/_schema.yml
+  # section review: RFC-0015 D4 makes this script the only producer.
+  derivation: "hatch run ship-report 1071 --trace-block-only"
+  pr: 1071
+  review_rounds: 0
+  submissions: 0
+  findings: 0
+  by_round: []
+  by_file: []
+  untouched_files:
+    - "scripts/report_trace_outcomes.py"
+    - "sdd/BACKLOG-DONE.md"
+    - "sdd/BACKLOG.md"
+    - "sdd/backlog/id-259-trace-outcome-revisit.md"
+    - "sdd/backlog/id-267-trace-outcome-revisit.md"
+    - "sdd/backlogid.json"
+    - "sdd/traces/bug-304-windows-tooling-tests.yml"
+    - "sdd/traces/bug-305-report-trace-outcomes-cp1252.yml"
+    - "tests/scripts/test_check_backlog_ids_vs_base.py"
+    - "tests/scripts/test_check_dafny_oracle_fresh.py"
+    - "tests/scripts/test_check_traces.py"
+    - "tests/scripts/test_claude_hooks.py"
+    - "tests/scripts/test_report_trace_outcomes.py"
+  review_driven_commits:
+    []
+  ci: {verdict: GREEN, failed: 0, pending: 0}

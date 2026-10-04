@@ -195,6 +195,7 @@ Drift-gate::
 from __future__ import annotations
 
 import argparse
+import io
 import sys
 from dataclasses import dataclass
 from pathlib import Path, PurePosixPath
@@ -690,6 +691,10 @@ def main(argv: list[str] | None = None) -> int:
         # that fails on input it does not gate would be a gate.
         print(f"report_trace_outcomes: skipped {name}: {message}", file=sys.stderr)
 
+    # The report is Markdown quoting trace extracts verbatim, and those
+    # carry characters (`→`) a Windows cp1252 stdout cannot encode.
+    if isinstance(sys.stdout, io.TextIOWrapper):
+        sys.stdout.reconfigure(encoding="utf-8")
     print(render_markdown(corpus, top=args.top, min_count=args.min_count))
     return 0
 

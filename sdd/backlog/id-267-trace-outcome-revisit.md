@@ -43,8 +43,5 @@ carries the interval and how each was dispositioned.
 recurrence. It becomes **act** if § Release still gains tags once ID-254 and
 ID-255 have closed.
 
-**On Windows**, run the report with `PYTHONIOENCODING=utf-8` until BUG-305
-closes; the default cp1252 console raises `UnicodeEncodeError` before printing.
-
 **Exit criteria:** decision logged here, then the successor ticket opened and
 its ID named in this item's close note.

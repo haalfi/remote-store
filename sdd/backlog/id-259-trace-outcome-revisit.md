@@ -73,6 +73,8 @@ against like.
 
 **On Windows the report needs `PYTHONIOENCODING=utf-8`**: under the default
 cp1252 console it raises `UnicodeEncodeError` on `→` before printing (BUG-305).
+*Correction (2026-10-04):* no longer needed. BUG-305 made the report write UTF-8
+whatever the console encoding.
 
 **Selection, by ID-238's rule.** Top row `sdd/BACKLOG.md` at 35 over 358 reads,
 so the bar is 1.5 × 35/358 = **14.66%**, from the ratio. Six rows clear it at

@@ -1,0 +1,139 @@
+id: BUG-304
+title: "Make tests/scripts/ pass on a Windows dev box"
+trigger: >-
+  `hatch run all` on Windows at the v0.33.0 release: 4 failed and 22 errored,
+  all in tests/scripts/, which CI runs on Linux only (tooling-tests), so no CI
+  leg ever saw them.
+source_items:
+  - BUG-304
+audience:
+  - contributor.tooling
+  - infra.test
+discovery_followups: []
+co_shipped_items:
+  - BUG-305
+expected_ripples:
+  - tests/scripts/test_check_backlog_ids_vs_base.py
+  - tests/scripts/test_claude_hooks.py
+  - tests/scripts/test_check_traces.py
+  - tests/scripts/test_check_dafny_oracle_fresh.py
+  - sdd/BACKLOG.md
+  - sdd/BACKLOG-DONE.md
+  - sdd/backlogid.json
+surprising_ripples: []
+phases:
+  - id: orient
+    name: Orient
+    steps:
+      - file: sdd/BACKLOG.md
+        section: "BUG-304"
+        read_type: gate
+        extract: >-
+          Four causes named, one per file; open decision none; each fix needs a
+          Windows run because tooling-tests is Linux only.
+        outcome: ok
+      - file: .github/workflows/ci.yml
+        section: "tooling-tests; test-cross-platform"
+        read_type: reference
+        extract: >-
+          tests/scripts/ runs on ubuntu only; the windows/macos legs select by
+          `-m os_sensitive` across the tree, so a marked test under
+          tests/scripts/ does reach Windows CI.
+        outcome: ok
+  - id: reproduce
+    name: Reproduce
+    steps:
+      - file: tests/scripts/
+        section: "pytest tests/scripts -n 4 on Windows 11, Python 3.13"
+        read_type: verify
+        extract: >-
+          4 failed, 2010 passed, 29 skipped, 22 errors: 15 errors in
+          TestGitReads (git commit exit 128, signing), 7 errors and 2 failures
+          in test_claude_hooks (WinError 1314 on symlink_to, no termios), 1
+          failure in check_traces (PermissionError where IsADirectoryError was
+          expected), 1 in check_dafny_oracle_fresh (nbsp-token).
+        outcome: ok
+  - id: implement
+    name: Implement
+    steps:
+      - file: tests/scripts/test_gen_backlogid.py
+        section: "git -c commit.gpgsign=false"
+        read_type: reference
+        extract: >-
+          Precedent for disabling signing in a throwaway repo; the backlog-ids
+          fixture now sets it in the repo's local config instead.
+        outcome: ok
+      - file: tests/scripts/test_claude_hooks.py
+        section: "module docstring"
+        read_type: reference
+        extract: >-
+          The module records a decision not to mark it os_sensitive because the
+          harness is POSIX by construction (bash, symlinks, setsid, pty). Kept
+          that decision and added a `posix_only` skipif on the five test functions
+          (nine cases) that run the hook; the settings.json wiring test is pure Python and still
+          runs on Windows.
+        outcome: ok
+      - file: scripts/check_dafny_oracle_fresh.py
+        section: "translate_script.read_text(encoding=\"utf-8\")"
+        read_type: reference
+        extract: >-
+          The script reads the wrapper as UTF-8 while every fixture wrote it in
+          the locale encoding; only the NBSP case was non-ASCII, but all eleven
+          wrapper writes now pass encoding="utf-8" so the next non-ASCII case
+          cannot reintroduce it.
+        outcome: ok
+      - file: tests/scripts/test_check_traces.py
+        section: "test_unreadable_trace_is_a_violation_not_a_traceback"
+        read_type: verify
+        extract: >-
+          Expects PermissionError on win32, IsADirectoryError elsewhere, and is
+          now marked os_sensitive so the Windows CI leg keeps it honest; the
+          other three fixes are not OS-dependent in CI (no global gpgsign
+          there) or are skipped on Windows by design.
+        outcome: ok
+  - id: verify
+    name: Verify
+    steps:
+      - file: tests/scripts/
+        section: "pytest tests/scripts -n 4 on Windows after the fixes"
+        read_type: verify
+        extract: >-
+          2027 passed, 38 skipped: the 26 failures and errors are gone, and the
+          nine extra skips are the posix_only hook tests.
+        outcome: ok
+      - file: sdd/CLAUDE-REFERENCE.md
+        section: "Ripple-check / Bug fix; Tests / New test file"
+        read_type: verify
+        extract: >-
+          No new test file; os_sensitive decision recorded per test. CHANGELOG
+          skipped per the schema's audience rule (contributor.tooling,
+          infra.test), as BUG-305.
+        outcome: ok
+review:
+  # Derived by `hatch run ship-report 1071 --trace-block-only` at head 5437d74.
+  # Do not hand-edit, except a newly required field per sdd/traces/_schema.yml
+  # section review: RFC-0015 D4 makes this script the only producer.
+  derivation: "hatch run ship-report 1071 --trace-block-only"
+  pr: 1071
+  review_rounds: 0
+  submissions: 0
+  findings: 0
+  by_round: []
+  by_file: []
+  untouched_files:
+    - "scripts/report_trace_outcomes.py"
+    - "sdd/BACKLOG-DONE.md"
+    - "sdd/BACKLOG.md"
+    - "sdd/backlog/id-259-trace-outcome-revisit.md"
+    - "sdd/backlog/id-267-trace-outcome-revisit.md"
+    - "sdd/backlogid.json"
+    - "sdd/traces/bug-304-windows-tooling-tests.yml"
+    - "sdd/traces/bug-305-report-trace-outcomes-cp1252.yml"
+    - "tests/scripts/test_check_backlog_ids_vs_base.py"
+    - "tests/scripts/test_check_dafny_oracle_fresh.py"
+    - "tests/scripts/test_check_traces.py"
+    - "tests/scripts/test_claude_hooks.py"
+    - "tests/scripts/test_report_trace_outcomes.py"
+  review_driven_commits:
+    []
+  ci: {verdict: GREEN, failed: 0, pending: 0}
