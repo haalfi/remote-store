@@ -86,7 +86,7 @@ def _payload(event: str, tool_use_id: str, tool_input: dict[str, Any], tool_resp
     """A hook payload with step 0's common top-level keys."""
     payload: dict[str, Any] = {
         "session_id": SESSION,
-        "transcript_path": f"/root/.claude/projects/x/{SESSION}.jsonl",
+        "transcript_path": "<transcript_path>",
         "cwd": "/home/user/remote-store",
         "scratchpad_dir": "/tmp/scratch",
         "prompt_id": "p1",
