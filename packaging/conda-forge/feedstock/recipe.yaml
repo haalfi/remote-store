@@ -18,7 +18,7 @@
 # hardcoding it would pin this package to one minimum after the ecosystem
 # raises its own.
 context:
-  version: "0.32.0"
+  version: "0.33.0"
 
 package:
   name: remote-store

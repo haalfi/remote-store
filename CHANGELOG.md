@@ -7,29 +7,136 @@ This project follows [Semantic Versioning](https://semver.org/). Pre-1.0, minor 
 
 ## [Unreleased]
 
-- BL-011: `SQLBlobBackend` matches folder prefixes literally, so `delete_folder("a_b", recursive=True)` no longer deletes `axb/` and listings no longer return it; nor does `%` or, on SQLite, a different letter case. `glob()` no longer drops matches such as a root-level file under `**/` on databases other than SQLite.
+## [0.33.0] - 2026-10-04
 
-- BK-380: **Breaking** — Python 3.10 is no longer supported, since CPython's security fixes for it end on 2026-10-04; the minimum is now 3.11. The `[toml]` extra is removed, because `RegistryConfig.from_toml()` uses the standard library on every supported Python. [Migration guide](https://docs.remotestore.dev/stable/reference/migration/#v0320-to-v0330).
+### Changed
 
-- ID-251: The backend conformance suite now checks that a write or `move`/`copy` destination naming the store root is refused under every spelling (`"./"`, `"/"` and the rest), not only `""` and `"."`; the custom-backend guide states which narrow guards that catches.
+- **Python 3.11 is the minimum** (BK-380, **Breaking**): CPython stops shipping
+  security fixes for 3.10 on 2026-10-04, which is where this library's support
+  promise for it ends, so the package now declares `requires-python >=3.11`.
+  Nothing breaks in place on 3.10: pip and uv skip a release whose
+  `Requires-Python` excludes the running interpreter, so an unpinned install
+  there keeps resolving to v0.32.x, and a pin to 0.33.0 fails at resolution
+  rather than installing. Move to 3.11 or newer to upgrade. See the
+  [migration guide](https://docs.remotestore.dev/stable/reference/migration/#v0320-to-v0330).
+- **The store root answers from the key when its container is gone**
+  (BUG-254, **Breaking**): five backend classes disagreed with the contract in
+  two opposite directions once the bucket or container was missing. On
+  `S3Backend` and `S3PyArrowBackend`, `exists("")` and `is_folder("")` now
+  answer `True` instead of `False`, so `Store.get_folder_info("", max_depth=N)`
+  aggregates to zero instead of raising `NotFound`; against a bucket you are
+  denied, the same two probes answer `True` where they answered `False` and
+  raised `PermissionDenied`. On `S3Boto3Backend`, `AzureBackend` and
+  `AsyncAzureBackend`, `get_folder_info("")` aggregates to zero files instead
+  of raising `NotFound`.
+  An `except NotFound` or `except PermissionDenied` written to detect a
+  missing container around those calls no longer fires; `Store.ping()` remains
+  the operation that reports an unreachable store. A closed backend still
+  refuses at the root with `BackendUnavailable` on all five. See the
+  [migration guide](https://docs.remotestore.dev/stable/reference/migration/#v0320-to-v0330).
+- **`max_depth` without `recursive=True` is inert on `GraphBackend` too**
+  (BUG-240, **Breaking**): `GraphBackend.list_files()` called directly with
+  `recursive=False` and `max_depth` set now yields the immediate files for
+  every `max_depth`, as every other backend does, instead of expanding the
+  traversal. `AsyncStore.list_files()` is unaffected, because it folds
+  `max_depth` into `recursive` before delegating; only code calling the backend
+  directly needs to pass `recursive=True` alongside `max_depth`. See the
+  [migration guide](https://docs.remotestore.dev/stable/reference/migration/#v0320-to-v0330).
+- **Python versions are supported for as long as CPython ships security fixes
+  for them** (BK-375): five years from each release, replacing the three-year
+  window the [dependency policy](https://docs.remotestore.dev/stable/explanation/dependency-policy/)
+  first published. It is a widening, so no user lost a version by it; 3.10's
+  window is the one that closes with this release.
+- **The conformance suite refuses the store root under every spelling**
+  (ID-251): its write and `move`/`copy`-destination cells now try all six
+  spellings that address the root (`""`, `"."`, `"./"`, `"/"` and the rest)
+  and accept an error naming the root under any of them. A custom backend whose
+  write guard checks only `""` and `"."` now fails those cells instead of
+  passing them; the custom-backend guide states which narrow guards that
+  catches.
 
-- BUG-240: **Breaking** — `GraphBackend.list_files()` called directly with `recursive=False` and `max_depth` set now yields the immediate files, as every other backend does; `AsyncStore` is unaffected. [Migration guide](https://docs.remotestore.dev/stable/reference/migration/#v0320-to-v0330).
+### Fixed
 
-- BUG-296: An unknown file modification time is now `datetime.min` in UTC on every backend (SFTP, Azure and S3 used the current time, Graph the epoch), so `get_folder_info(max_depth=N)` answers `None` like the plain call; `head()`, `WriteResult` and `ext.arrow` report it as `None`.
+- **`SQLBlobBackend` matches folder prefixes literally** (BL-011):
+  `delete_folder("a_b", recursive=True)` deleted rows under sibling prefixes
+  such as `axb/`, with no error, because `_` and `%` in a key reached `LIKE`
+  unescaped; listings returned those siblings too. On SQLite
+  a prefix also matched a different letter case, so `delete_folder("UP",
+  recursive=True)` removed `Up/` and `up/`. Every folder-prefix query now goes
+  through one escaped predicate, which on SQLite also applies the key column's
+  own collation. `glob()` no longer drops matches on databases other than
+  SQLite, such as a root-level file under `**/` or a name matched by a `[...]`
+  class.
+- **An unknown modification time is the same value on every backend**
+  (BUG-296): `FileInfo.modified_at` is `datetime.min` in UTC where the backend
+  cannot know the time. SFTP, Azure and the S3 family reported the current time
+  and `GraphBackend` the Unix epoch, so a sort or freshness check on those
+  values read a fabricated date. `get_folder_info(max_depth=N)` now answers
+  `None` for such a folder as the plain call does, where it reported
+  `0001-01-01`; `head()`, `WriteResult.last_modified` and `ext.arrow`'s `mtime`
+  report `None`, the last avoiding a pyarrow timestamp that wrapped to
+  1754-08-30.
+- **SQLite in-memory URLs no longer warn under SQLAlchemy 2.1** (BUG-281): a
+  URL spelling an in-memory database with `mode=memory` now states the pool it
+  was already given rather than leaving SQLAlchemy to infer it, which 2.1
+  deprecates. `SQLBlobBackend` and `SQLQueryBackend` behave as before. None of
+  the in-memory SQLite configurations is safe for concurrent writers, and the
+  [concurrency page](https://docs.remotestore.dev/stable/explanation/concurrency/)
+  now says so.
+- **conda-forge serves the current release with the declared constraints**
+  (ID-018): the channel was publishing 0.30.0, whose `run_constraints` predated
+  the corrected dependency floors. It now serves 0.32.0 with those floors and
+  the `tomli` and `aiohttp` constraints.
 
-- BK-387: The plan to implement the backend contract once, in a shared kernel over thin per-backend drivers, has its design questions answered and is proposed as ADR-0042; nothing changes for users yet, and it is accepted with the first backend built on it.
+### Removed
 
-- BK-370: The recipe conda-forge builds `remote-store` from is now generated rather than copied by hand, and a weekly check reports when the published copy stops matching what this project published for that version — from the next release, the first with a generated copy to compare against.
+- **The `[toml]` extra** (BK-380): it installed the `tomli` backport on 3.10
+  only, and `RegistryConfig.from_toml()` uses the standard library's `tomllib`
+  on every supported Python. Drop `[toml]` from your requirements; leaving it
+  in does not fail the install, though pip and uv warn that the extra does not
+  exist. See the
+  [migration guide](https://docs.remotestore.dev/stable/reference/migration/#v0320-to-v0330).
 
-- BUG-281: A SQLite URL spelling an in-memory database with `mode=memory` now states the pool it already had instead of letting SQLAlchemy infer one, so `SQLBlobBackend` and `SQLQueryBackend` no longer warn under SQLAlchemy 2.1. Behaviour is unchanged; in-memory SQLite's concurrency limits are now documented.
-- BUG-254: **Breaking** — The store root now answers from the key on every measured backend, so `exists("")` and `is_folder("")` are `True` whether the container is missing or denied, `get_folder_info("")` aggregates to zero instead of raising `NotFound`, and a closed backend still refuses. [Migration guide](https://docs.remotestore.dev/stable/reference/migration/#v0320-to-v0330).
-- BK-375: Python versions are now supported for as long as CPython ships security fixes for them, which is longer than the 3-year window previously published; 3.11 through 3.14 all stay, and 3.10's support ends when upstream's does on 2026-10-04.
-- BK-373: The [dependency policy](https://docs.remotestore.dev/stable/explanation/dependency-policy/) draws the Python support windows as a chart with a marker at today, so the rule no longer has to be computed from five release dates.
-- BK-377: Both published support windows are now derived rather than remembered: a release-time check dates every version a raised dependency floor excludes, and the weekly dependency guard reports how each interpreter stands against its window.
-- BK-374: The [Tested versions](https://docs.remotestore.dev/stable/reference/tested-versions/) page publishes each extra's declared range beside the version CI was last green against, states how deep its check goes, and names the extras it does not cover.
-- BK-369: Scheduled CI now installs each extra at the floor of every range it declares and runs its smoke there, on the oldest supported Python, so the dependency policy states what is checked weekly and on which interpreter rather than that nothing re-derives a floor.
-- ID-018: The conda-forge channel serves 0.32.0 with the corrected dependency floors plus the `tomli` and `aiohttp` constraints; it had been publishing 0.30.0, whose `run_constraints` predated them.
-- BK-371: Publish the dependency and version policy as 15 citable rules, including support windows for interpreters and dependency versions; a dependency version stays supported at least 2 years after its own release, and the interpreter window is the one BK-375 states above.
+### Documentation
+
+- **A published dependency and version policy** (BK-371): the
+  [dependency policy](https://docs.remotestore.dev/stable/explanation/dependency-policy/)
+  states 15 numbered, citable rules in one place, among them the stability
+  tiers (moved there from the contributor guide), why dependency ceilings are
+  the exception, and two support windows: a Python version for as long as
+  CPython ships security fixes for it (BK-375 above), and a dependency version
+  for at least two years after its own release.
+- **The Python support windows are drawn as a chart** (BK-373): the policy page
+  shows one bar per supported version, from its release to the end of its
+  security support, with a marker at today, so the window no longer has to be
+  computed from five release dates.
+- **The Tested versions page shows what is declared, not only what was
+  tested** (BK-374): the
+  [Tested versions](https://docs.remotestore.dev/stable/reference/tested-versions/)
+  page publishes each extra's declared range beside the version CI was last
+  green against, states how far each extra's check reaches, and names the
+  extras it does not cover.
+
+### Internal
+
+- **Every declared dependency floor is installed and run weekly** (BK-369,
+  BK-372): scheduled CI installs each extra at the floor of every range it
+  declares, on the oldest supported Python, imports its packages and runs its
+  smoke there, and installs each extra on its own before anything else joins
+  the environment. Its first run found four floors that install and then fail
+  to import, now tracked.
+- **Both support windows are checked by a mechanism** (BK-377): a release-time
+  check names the newest release a raised dependency floor excludes and how old
+  it is, and the weekly dependency report lists each supported interpreter with
+  the days left in its window.
+- **The conda-forge recipe copy is generated and watched** (BK-370): the recipe
+  conda-forge builds from is generated from this repo's rather than copied by
+  hand, and a weekly check reports when the published copy stops matching the
+  one committed for its version. The first comparable copy is this release's.
+- **A shared contract kernel is designed, not yet built** (BK-387): the plan
+  to implement the backend contract once, over thin per-backend drivers, has
+  its open design questions answered and is proposed as ADR-0042. Nothing
+  changes for users yet; it is accepted with the first backend built on it.
 
 ## [0.32.0] - 2026-09-13
 

@@ -20,6 +20,12 @@ expected_ripples:
   - sdd/GATE-INVENTORY.md
 surprising_ripples:
   - CONTRIBUTING.md
+# The close, at the v0.33.0 release, is recorded in the `close_*` phases below
+# and shipped in the release PR; the review block above them is #1042's.
+discovery_followups:
+  - BK-406
+co_shipped_items:
+  - ID-259
 phases:
   - id: orient
     name: Orient
@@ -93,6 +99,47 @@ phases:
         section: "gen-gate-inventory"
         read_type: gate
         extract: "Regenerated; the new row reads `report-done-length` | advisory."
+        outcome: ok
+  - id: close_orient
+    name: Close at v0.33.0 — read the step and the decision it owes
+    steps:
+      - file: CONTRIBUTING.md
+        section: "Release / Phase 0: Pre-flight"
+        read_type: gate
+        extract: >-
+          Read report-done-length and close the scheduling item against it:
+          keep, gate or reverse. A report, never a gate
+        outcome: ok
+      - file: sdd/backlog/bk-386-done-entry-shape-measure.md
+        section: "Read at the release; Record at the revisit; Exit criteria"
+        read_type: gate
+        extract: >-
+          The figure is the With dossier median of the section the release
+          renames, against its Without median, plus Unlinked; record the
+          entries counted; a kept Phase 0 line needs a named successor
+        outcome: ok
+  - id: close_measure
+    name: Close at v0.33.0 — run the report and name what it counted
+    steps:
+      - file: scripts/report_done_length.py
+        section: "(report at 39059422c)"
+        read_type: reference
+        extract: >-
+          Unreleased: 30 entries, 11 with a dossier at a median of 100 words,
+          0 unlinked, 19 without at 529. The script reports counts only, so
+          the eleven IDs came from re-running its own parse() with the item ID
+          kept
+        outcome: ok
+  - id: close_implement
+    name: Close at v0.33.0 — record keep, open the successor
+    steps:
+      - file: pyproject.toml
+        section: "report-done-length comment"
+        read_type: verify
+        extract: >-
+          Said the script is read at "the release that decides" the shape,
+          which this release did; re-worded to the open revisit item without
+          naming its ID, so the comment survives the next handover
         outcome: ok
 review:
   # Derived by `hatch run ship-report 1042 --trace-block-only` at head 39ee08f.

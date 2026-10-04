@@ -244,6 +244,28 @@ if evidence changes; these are retired.
 
 ## Unreleased
 
+*(none)*
+
+---
+
+## v0.33.0
+
+- [x] **BK-386 — ADR-0041's short done entry is unmeasured until the next release**
+  spec: — · effort: S · audience: contributor.process
+  Measured at the v0.33.0 release, Phase 0, with `hatch run report-done-length`:
+  11 dossier entries, all linked, median 100 words against 529 without one.
+  Decided **keep**: review holds ADR-0041's rule. The Phase 0 line stays for one
+  more reading, owned by successor **BK-406**.
+  Detail: [dossier](backlog/bk-386-done-entry-shape-measure.md)
+
+- [x] **ID-259 — Trace-outcome report revisit at the next release**
+  spec: — · effort: S · audience: contributor.process
+  Fired at the v0.33.0 release, Phase 0, over 356 traces and 358 negative tags.
+  Seven references selected, four of them carry-over; `CONTRIBUTING.md`
+  deferred on ID-258's unchanged test, the other six accepted. Successor:
+  **ID-267**. Filed BUG-305 for the report's Windows console crash.
+  Detail: [dossier](backlog/id-259-trace-outcome-revisit.md)
+
 - [x] **BK-395 — The kernel's key rule is undecided for addressing, backslash keys and `glob`**
   spec: BE-025, NPR-021, NPR-004, RES-020, PATH-002, BE-008, WR-001 · effort: S · audience: library.maintainer, contributor.process
   Decided, docs only: BK-389's decision 6 states it. Addressing stays total,
@@ -1321,7 +1343,8 @@ if evidence changes; these are retired.
 - [x] **ID-258 — Trace-outcome report revisit at the next release**
   spec: — · effort: S · audience: contributor.process
   Fired at the v0.32.0 release, Phase 0, as the second revisit of the trigger
-  ID-238 shipped. Successor: **ID-259**, `[ ]` in `BACKLOG.md`.
+  ID-238 shipped. Successor: **ID-259**; the live pin is whichever revisit ID
+  `BACKLOG.md` holds.
   **Corpus at `1d43c1b`** (`hatch run report-trace-outcomes`): 310 traces, 4775
   steps, 2410 carrying an explicit `outcome` (50.5%), 306 negative tags (263
   `misleading`, 43 `unclear`) across 141 traces and 135 references. Against the

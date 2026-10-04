@@ -51,3 +51,31 @@ known by filename and links by text (the script's bound); and one of:
 either goes or gets a successor: if the line stays, open the item it will close
 at the following release and name it in the close note; otherwise remove it in
 the same change.
+
+## Decision at v0.33.0, 2026-10-04: keep
+
+Read at the release base `39059422c`, before Phase 2 renames the section, so
+the section is still `Unreleased`; v0.32.0's row is unchanged from the
+baseline above.
+
+| Section | Entries | Median | With dossier | Median | Unlinked | Without | Median |
+| --- | ---: | ---: | ---: | ---: | ---: | ---: | ---: |
+| Unreleased (v0.33.0) | 30 | 290.5 | 11 | 100 | 0 | 19 | 529 |
+| v0.32.0 | 6 | 403 | 0 | — | 0 | 6 | 403 |
+
+**Entries counted as having a dossier**, by re-running the script's own
+`parse()` with the item ID kept (words in parentheses): ID-257 (134), BK-395
+(125), BK-387 (109), BK-396 (107), ID-251 (103), BL-011 (100), BK-388 (98),
+BK-380 (89), BK-385 (87), BUG-240 (70), BK-365 (67). All eleven link their own
+dossier.
+
+**Keep.** Dossier entries came out short and linked under review alone: a
+median of 100 words against 529 for entries without a dossier, and none
+unlinked. Nothing drifted that a gate would catch, and nothing here shows a
+short entry costing a reader what the dossier failed to give back, which is
+ADR-0041's reversal condition.
+
+**The Phase 0 line stays for one more release.** One release is one sample,
+and this one's eleven entries were written in the weeks right after the
+rule landed. Successor: **BK-406**, which repeats the reading at the next
+release and decides whether the line then goes.
