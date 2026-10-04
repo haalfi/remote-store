@@ -16,6 +16,7 @@ from __future__ import annotations
 
 import importlib.util
 import json
+import os
 import subprocess
 import sys
 import textwrap
@@ -141,15 +142,24 @@ def test_transport_split_scopes_cover_their_whole_topic_file() -> None:
             legs_by_file.setdefault(scope.tests[0], []).append(scope.filter)
     assert legs_by_file, "no transport-split conformance scopes found"
 
-    out = subprocess.run(
+    # Strip the xdist worker markers an outer `-n` run sets: registry.fixture_params
+    # drops sftp_docker params under PYTEST_XDIST_WORKER, which would make this
+    # guard check a smaller set locally than on CI's serial tooling lane.
+    env = {k: v for k, v in os.environ.items() if not k.startswith("PYTEST_XDIST")}
+    proc = subprocess.run(
         [sys.executable, "-m", "pytest", "--co", "-q", "-p", "no:cacheprovider", *sorted(legs_by_file)],
         cwd=_REPO_ROOT,
+        env=env,
         capture_output=True,
         text=True,
         check=False,
-    ).stdout
-    node_ids = [line for line in out.splitlines() if "::" in line]
-    assert node_ids, f"collection returned no node ids:\n{out[-2000:]}"
+        timeout=300,
+    )
+    # A file that fails to collect contributes no ids and so could never be
+    # "uncovered"; a partial collection must fail the guard, not pass it.
+    assert proc.returncode == 0, f"collection failed ({proc.returncode}):\n{proc.stdout[-2000:]}\n{proc.stderr[-2000:]}"
+    node_ids = [line for line in proc.stdout.splitlines() if "::" in line]
+    assert node_ids, f"collection returned no node ids:\n{proc.stdout[-2000:]}"
 
     uncovered = {
         node
@@ -180,7 +190,9 @@ def test_sync_adapter_needs_match_the_servers_its_suite_requests() -> None:
     A live param that requests a container fixture missing from ``needs``
     would skip silently (the container never starts) and, for an sftp one,
     run at four workers against sshd. Tie the list to the ``*_server``
-    fixtures the suite actually requests.
+    fixtures the suite actually requests as parameters, of sync or async
+    functions, positional or keyword-only. A dynamic
+    ``request.getfixturevalue("..._server")`` is not seen.
     """
     import ast
 
@@ -189,8 +201,8 @@ def test_sync_adapter_needs_match_the_servers_its_suite_requests() -> None:
     requested = {
         arg.arg
         for node in ast.walk(tree)
-        if isinstance(node, ast.FunctionDef)
-        for arg in node.args.args
+        if isinstance(node, (ast.FunctionDef, ast.AsyncFunctionDef))
+        for arg in (*node.args.posonlyargs, *node.args.args, *node.args.kwonlyargs)
         if arg.arg.endswith("_server")
     }
     unknown = requested - _SERVER_FIXTURE_CONTAINERS.keys()
