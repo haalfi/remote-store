@@ -157,3 +157,11 @@ phases:
         read_type: verify
         extract: "Closing pass at a55c0d38a in a subagent, whole-file and measuring at once (tree checks clean, branch unmoved; it measured both diff reads at 15 files, the status pathspecs, and the tail-commit and rebase behaviour in a scratch repo, all as documented). Two findings, both taken. The sdd/decisions/ exclusion hides a reviewer's own write there from every capture, measured by the reviewer (an overwritten tracked log and a planted file vanished from the excluded captures); 'no reviewer writes there' assumed the bound the captures exist to test. /orchestrate's residual table gains the row, and /ship's main-tree sentence and RFC D2 state the bound instead of the premise; /ship's worktree check is unexcluded and still sees such a write. The test module docstring claimed every payload reconstructed and every test on a real repo: narrowed to the ANSWERED fixtures and the live pair, with the three departing tests named (grep: all four names resolve). The reviewer also noted the fix commits lack the BK-397 prefix CLAUDE.md asks for; /fix-pr prescribes 'fix: address PR #N review', and this pass's commit carries both"
         outcome: ok
+  - id: review_fix_8
+    name: Review fix pass 8 and close
+    steps:
+      - file: .claude/skills/orchestrate/SKILL.md
+        section: "Tree captures; residual paragraph"
+        read_type: verify
+        extract: "Scoped measuring verification of 4ba2a98d2 in a subagent (tree checks clean, branch unmoved): all four changes measured true, including /ship's claim that its unexcluded worktree check sees a write under sdd/decisions/ while the excluded capture does not, and 29 tests passed. One finding: the residual paragraph still said committing before review would restore detection of every case above, false for the new sdd/decisions/ row and, before this PR, for the gitignored row; narrowed to the first three rows. The maintainer ended the review loop after this round, past the five-round soft ceiling with severity falling. Stated bounds of the close: no unprimed pass after 833be5680, no whole-file pass after a55c0d38a, and this last fix (one sentence) unreviewed"
+        outcome: ok
