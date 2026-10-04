@@ -182,7 +182,11 @@ dagster = ["dagster>=1.10.18"]
 # `.[mutate]` rather than re-pinning. Excluded from the user-facing
 # install-extras list (gen_features.py) and from the transitive-drift guard
 # (drift_check.py), like the other dev/build extras.
-mutate = ["pytest-gremlins>=1.5"]
+# Capped at the minor (BUG-303): 1.10 replaced in-process execution with one
+# pytest subprocess per gremlin, a 10-50x slowdown that pushed four weekly legs
+# past the 6 h job cap unannounced. Raise the cap deliberately, after a full
+# mutation.yml dispatch on the new minor.
+mutate = ["pytest-gremlins>=1.10.1,<1.11"]
 
 # -- Benchmark suite (all backends + charting) --
 bench = [

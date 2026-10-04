@@ -95,6 +95,43 @@ class TestEnsureReportForEmptyScope:
         assert not report.exists()
 
 
+class TestPytestArgPassthrough:
+    """BUG-303: gremlins flags must reach pytest on argv, never via PYTEST_ADDOPTS.
+
+    The plugin's coverage pre-scan is a child pytest that inherits
+    ``PYTEST_ADDOPTS`` but not the gremlins plugin's options, so a
+    ``--gremlin-*`` flag there makes the pre-scan record no data and every
+    gremlin falls back to the full test set. ``run_mutate.py`` therefore
+    forwards trailing arguments onto the pytest command line.
+    """
+
+    def _run_main(self, monkeypatch, argv: list[str]) -> list[str]:
+        seen: list[list[str]] = []
+
+        def fake_run(cmd, check):
+            seen.append(cmd)
+            return SimpleNamespace(returncode=0)
+
+        monkeypatch.setattr(_mod.subprocess, "run", fake_run)
+        monkeypatch.setattr(_mod, "_ensure_report_for_empty_scope", lambda scope, rc: None)
+        monkeypatch.setattr(sys, "argv", ["run_mutate.py", *argv])
+        assert _mod.main() == 0
+        assert len(seen) == 1
+        return seen[0]
+
+    def test_trailing_args_are_appended_to_pytest_argv(self, monkeypatch):
+        scope = next(iter(_mod.SCOPES))
+        cmd = self._run_main(monkeypatch, [scope, "--gremlin-report=html,json", "--gremlin-workers=4"])
+        assert cmd[:3] == [sys.executable, "-m", "pytest"]
+        assert cmd[-2:] == ["--gremlin-report=html,json", "--gremlin-workers=4"]
+        assert "--gremlins" in cmd
+
+    def test_no_trailing_args_leaves_argv_unchanged(self, monkeypatch):
+        scope = next(iter(_mod.SCOPES))
+        cmd = self._run_main(monkeypatch, [scope])
+        assert cmd == [sys.executable, *_mod._build_pytest_argv(scope)]
+
+
 class TestScopeCandidateDiscovery:
     """Asks pytest-gremlins' own transformer, so it matches what the plugin
     counts and goes red if the plugin moves the internals

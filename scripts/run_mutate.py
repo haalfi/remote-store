@@ -7,7 +7,9 @@ matrix and container-startup decisions).
 
 Usage::
 
-    python scripts/run_mutate.py <scope>            # exec pytest
+    python scripts/run_mutate.py <scope> [pytest args...]
+                                                    # exec pytest; trailing
+                                                    # args go on its argv
     python scripts/run_mutate.py --list-scopes      # JSON array of names
     python scripts/run_mutate.py --container-needs minio
                                                     # JSON array of scopes
@@ -127,7 +129,12 @@ def main() -> int:
         metavar="CONTAINER",
         help=("Print scopes needing the given container (minio/azurite/sftp) as a JSON array and exit."),
     )
-    args = parser.parse_args()
+    # Unknown trailing args are forwarded to pytest's argv. Gremlins flags must
+    # travel this way, never via PYTEST_ADDOPTS: the plugin's coverage pre-scan
+    # is a child pytest that inherits PYTEST_ADDOPTS without the plugin's
+    # options, records no data, and every gremlin then runs the full test set
+    # (BUG-303).
+    args, pytest_args = parser.parse_known_args()
 
     if args.list_scopes:
         print(json.dumps(list(SCOPES.keys())))
@@ -147,7 +154,7 @@ def main() -> int:
     # POSIX but spawn+wait+exit on Windows, and a launch failure raises
     # rather than returning an exit code. subprocess.run is platform-neutral
     # and surfaces non-zero exit codes uniformly.
-    completed = subprocess.run([sys.executable, *_build_pytest_argv(args.scope)], check=False)
+    completed = subprocess.run([sys.executable, *_build_pytest_argv(args.scope), *pytest_args], check=False)
     _ensure_report_for_empty_scope(SCOPES[args.scope], completed.returncode)
     return completed.returncode
 

@@ -95,6 +95,9 @@ jobs:
     needs: [setup]
     name: mutate-${{ matrix.scope }}
     runs-on: ubuntu-latest
+    # Below GitHub's 6 h hard cap, so an overrunning leg is cancelled while the
+    # always() steps can still upload its report and record its outcome.
+    timeout-minutes: 330
     strategy:
       fail-fast: false
       matrix:
@@ -189,16 +192,32 @@ jobs:
             gremlins-${{ matrix.scope }}-
 
       # --- Run mutation testing ---
-      # Invoke the manifest-driven scope runner directly. Report flags
-      # are injected via PYTEST_ADDOPTS (pytest picks them up automatically).
+      # Invoke the manifest-driven scope runner directly. Gremlins flags go on
+      # its argv, never in PYTEST_ADDOPTS: the plugin's coverage pre-scan
+      # inherits PYTEST_ADDOPTS without the plugin's options, records no data,
+      # and every gremlin then runs the full test set (BUG-303).
       # `json` (written to coverage/gremlins/gremlins.json) feeds the
       # outcome record below: job.status alone cannot see survivors, because
       # pytest-gremlins exits 0 on them. A non-zero exit here is therefore
       # always a harness/impl failure — the leg stays red by design.
+      #
+      # Since 1.10 every gremlin is its own pytest subprocess, so workers are
+      # the throughput lever (4 = the runner's vCPUs). SFTP scopes stay serial:
+      # the same sshd MaxStartups carve-out as scripts/run_tests.py's serial pass.
+      # `ulimit -v` caps each process's address space, inherited by every gremlin
+      # subprocess: a mutant that turns a loop infinite (ext/parquet.py
+      # `_split_table`, `<` to `<=`) then dies as an `error` instead of
+      # exhausting the runner's 16 GB and taking the leg down with it.
       - name: Run mutate ${{ matrix.scope }}
         env:
-          PYTEST_ADDOPTS: "--no-cov -W ignore::UserWarning:pytest_gremlins.plugin --gremlin-report=html,json --gremlins-html-dir=mutation-report"
-        run: python scripts/run_mutate.py ${{ matrix.scope }}
+          PYTEST_ADDOPTS: "--no-cov"
+          SCOPE: ${{ matrix.scope }}
+          WORKERS: ${{ contains(fromJSON(needs.setup.outputs.sftp-scopes), matrix.scope) && '1' || '4' }}
+        run: |
+          ulimit -v 4194304
+          python scripts/run_mutate.py "$SCOPE" \
+            --gremlin-report=html,json --gremlins-html-dir=mutation-report \
+            --gremlin-workers="$WORKERS"
 
       # --- Upload HTML report ---
       - name: Upload mutation report
