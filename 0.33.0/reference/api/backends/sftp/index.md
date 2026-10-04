@@ -1,0 +1,388 @@
+# SFTPBackend
+
+API reference for `SFTPBackend` — stores files on any SSH/SFTP server using paramiko. Explicit host key verification and Azure Key Vault PEM support.
+
+## SFTPBackend
+
+```
+SFTPBackend(
+    host: str,
+    *,
+    port: int = 22,
+    username: str | None = None,
+    password: str | Secret | None = None,
+    pkey: Any = None,
+    base_path: str = "/",
+    host_key_policy: HostKeyPolicy | str = STRICT,
+    known_host_keys: str | None = None,
+    host_keys_path: str | None = None,
+    config: dict[str, Any] | None = None,
+    timeout: int = 10,
+    io_timeout: float | None = 120.0,
+    connect_kwargs: dict[str, Any] | None = None,
+    retry: RetryPolicy | None = None,
+)
+```
+
+SFTP backend using pure paramiko.
+
+`move()` attempts `posix_rename` (atomic on POSIX-compliant servers), then falls back to `rename`, and finally to a stream copy followed by a delete. Because atomicity cannot be guaranteed across all servers, `ATOMIC_MOVE` is not declared.
+
+Warning
+
+**Not thread-safe for concurrent access.** This backend maintains a single SSH/SFTP connection (paramiko `SFTPClient`), which is not safe to call from multiple threads simultaneously. Concurrent calls via `SyncBackendAdapter` and `asyncio.gather` will race on the shared socket and may hang or corrupt responses. Create one `SFTPBackend` instance per thread if you need parallel operations.
+
+Parameters:
+
+- **`host`** (`str`) – SFTP server hostname (required, non-empty).
+- **`port`** (`int`, default: `22` ) – SSH port (default: 22).
+- **`username`** (`str | None`, default: `None` ) – SSH username.
+- **`password`** (`str | Secret | None`, default: `None` ) – SSH password.
+- **`pkey`** (`Any`, default: `None` ) – paramiko.PKey instance for key-based auth.
+- **`base_path`** (`str`, default: `'/'` ) – Root path on the remote server (default: /).
+- **`host_key_policy`** (`HostKeyPolicy | str`, default: `STRICT` ) – Host key verification policy (see SFTPUtils.HostKeyPolicy). Accepts enum value or string.
+- **`known_host_keys`** (`str | None`, default: `None` ) – Known hosts string (code-level override).
+- **`host_keys_path`** (`str | None`, default: `None` ) – Path to known_hosts file (default: ~/.ssh/known_hosts).
+- **`config`** (`dict[str, Any] | None`, default: `None` ) – Optional config dict (may contain known_host_keys).
+- **`timeout`** (`int`, default: `10` ) – SSH connection timeout in seconds. Bounds the connect phase only — it is passed as paramiko's timeout / banner_timeout / auth_timeout / channel_timeout, the last of which bounds channel open, not traffic on an opened channel.
+- **`io_timeout`** (`float | None`, default: `120.0` ) – Seconds a single blocking read or write on the open SFTP channel may go without progress before it fails. Defaults to 120.0; pass None for no bound. Applied with Channel.settimeout() on every connect and every reconnect, and armed before the SFTP session setup, so a peer that completes the SSH handshake and then falls silent is bounded there too. This is silence between bytes, not a deadline for the whole transfer: a large file over a slow link is unaffected however long it takes, while a peer that stops sending mid-transfer raises BackendUnavailable instead of blocking forever. That asymmetry is what picks the default: raising it costs only detection latency, since a slow link is unaffected at any value, while lowering it turns a healthy-but-quiet server — an antivirus or dedup appliance scanning a large file on open() — into intermittent BackendUnavailable, which reads as network flakiness and is harder to diagnose than the hang it replaces. Must be positive when set; 0 is rejected because paramiko reads it as non-blocking, so it is not the way to ask for no bound — None is. A streamed read raises rather than returning short, so a truncated transfer is never mistaken for a complete one. Seeking to the end of a stream (seek(0, SEEK_END)) asks the server for the file size, so a stall there raises like any other. Every stall that surfaces is reported, and none is retried: the retry policy wraps the SSH connect call alone, so a partially consumed stream is never silently restarted — and a stall during session setup is reported too, rather than retried as a connect failure would be.
+- **`connect_kwargs`** (`dict[str, Any] | None`, default: `None` ) – Extra kwargs passed to SSHClient.connect().
+
+### check_health
+
+```
+check_health() -> None
+```
+
+Confirm the SFTP connection works by `stat`-ing the base path.
+
+Establishes the SSH/SFTP connection lazily if needed (retried at connection scope) and issues one `stat` round-trip.
+
+Raises:
+
+- `NotFound` – If the configured base path does not exist.
+- `PermissionDenied` – If access to the base path is denied (EACCES or EPERM). Not necessarily by the server: the mapping sees only the exception, so a connect this machine refused locally — a firewall rule — reaches this too, as Permission denied: with an empty key. Distinguishing the two needs connect-time context and is tracked separately.
+- `BackendUnavailable` – If the SSH/SFTP connection cannot be established.
+
+### resolve
+
+```
+resolve(path: str) -> ResolutionPlan
+```
+
+Return a `ResolutionPlan` with SFTP-specific details.
+
+Parameters:
+
+- **`path`** (`str`) – Backend-relative key.
+
+Returns:
+
+- `ResolutionPlan` – Plan with kind="sftp" and details containing
+- `ResolutionPlan` – host, port, and base_path.
+
+### exists
+
+```
+exists(path: str) -> bool
+```
+
+Return `True` if a file or folder exists at *path*; never `NotFound`.
+
+Issues one `stat` round-trip; a missing path returns `False`.
+
+Raises:
+
+- `PermissionDenied` – If the server denies access (EACCES or EPERM).
+- `BackendUnavailable` – If the SSH/SFTP connection cannot be established or fails.
+
+### is_file
+
+```
+is_file(path: str) -> bool
+```
+
+Return `True` if *path* is an existing regular file (`False` if absent or a folder).
+
+Raises:
+
+- `PermissionDenied` – If the server denies access (EACCES or EPERM).
+- `BackendUnavailable` – If the SSH/SFTP connection cannot be established or fails.
+
+### is_folder
+
+```
+is_folder(path: str) -> bool
+```
+
+Return `True` if *path* is an existing directory (`False` if absent or a file).
+
+Raises:
+
+- `PermissionDenied` – If the server denies access (EACCES or EPERM).
+- `BackendUnavailable` – If the SSH/SFTP connection cannot be established or fails.
+
+### read
+
+```
+read(path: str) -> BinaryIO
+```
+
+Open *path* for reading and return a buffered, streaming handle.
+
+Reads lazily over the SFTP channel (wrapped in a `BufferedReader`), so memory stays constant regardless of file size. Because the read is deferred, *path* being a directory must be rejected before the handle is returned — a real OpenSSH server opens a directory for reading without error and only fails on the first read, which this streaming path never issues itself. So this one read path keeps an eager type check, unlike `read_bytes` (which reads immediately and classifies on failure).
+
+Raises:
+
+- `NotFound` – If the file does not exist, or a path component is itself a file.
+- `InvalidPath` – If path names a directory.
+- `PermissionDenied` – If the server denies access (EACCES or EPERM).
+- `BackendUnavailable` – If the SSH/SFTP connection cannot be established or fails mid-read.
+
+### read_bytes
+
+```
+read_bytes(path: str) -> bytes
+```
+
+Read and return the full file content as bytes.
+
+Prefetches and materialises the whole file in memory (unlike the lazy `read` stream).
+
+Directory rejection is lazy (unlike `read`, which stats eagerly): a directory target raises `InvalidPath` only because the read of it fails. This assumes the server either refuses to open a directory for reading or reports a non-zero directory `st_size` — both hold on OpenSSH, where a directory reports `st_size == 4096`. A non-standard server that opens a directory for reading *and* reports `st_size == 0` would make this return empty bytes rather than raising `InvalidPath`.
+
+Raises:
+
+- `NotFound` – If the file does not exist, or a path component is itself a file.
+- `InvalidPath` – If path names a directory (subject to the server assumption above).
+- `PermissionDenied` – If the server denies access (EACCES or EPERM).
+- `BackendUnavailable` – If the SSH/SFTP connection cannot be established or fails mid-read.
+
+### write
+
+```
+write(
+    path: str,
+    content: WritableContent,
+    *,
+    overwrite: bool = False,
+    metadata: Mapping[str, str] | None = None,
+) -> WriteResult
+```
+
+Write *content* to *path*, streaming it over the SFTP channel.
+
+The bytes are streamed straight to the destination file (no temp-and-rename), so a failed write may already have changed that path. A `BackendUnavailable` means no reply came back, not that the server never acted. **Any amount of the write may have happened, from none of it to all of it**, and the error does not say which: the destination may be untouched, emptied (the server truncated on open and the old content is gone), holding an unpredictable prefix of *content*, or holding it in full. Retry with `overwrite=True` (the path is usually still occupied) and re-write from the start rather than appending to what is there — the prefix length depends on buffering the caller cannot observe. Use `write_atomic` when readers must never see a half-written file. Missing parent directories are created first (one `stat` per ancestor) and are **not** removed when the write fails.
+
+The returned `WriteResult` carries `size` (counted during upload) and `source="native"`, but every rich field — `last_modified`, `etag`, `version_id`, `digest` — is `None`: SFTP's write response carries no metadata at all, and the backend does not stat afterwards to fetch any. Call `get_file_info` when the metadata is needed.
+
+Raises:
+
+- `AlreadyExists` – If the file exists and overwrite is False.
+- `InvalidPath` – If path is the store root, or names a directory, or an ancestor of path exists as a regular file.
+- `PermissionDenied` – If the server denies access (EACCES or EPERM).
+- `BackendUnavailable` – If the SSH/SFTP connection cannot be established or fails mid-write.
+
+### write_atomic
+
+```
+write_atomic(
+    path: str,
+    content: WritableContent,
+    *,
+    overwrite: bool = False,
+    metadata: Mapping[str, str] | None = None,
+) -> WriteResult
+```
+
+Write *content* to *path* atomically via a temp file plus server rename.
+
+Readers never observe a partial file: the body is streamed to a hidden temp file in the destination directory, then promoted with `posix_rename` (atomic on POSIX-compliant servers). Servers without `posix_rename` fall back to a plain `rename` (non-atomic overwrite: the target is moved aside first, and moved back if the rename fails).
+
+A failure *before* the promote leaves the destination untouched, and the temp file is cleaned up **best-effort**: the cleanup is deliberately skipped when the failure is itself a dropped connection, so a stall leaves an orphan `.~tmp.<name>.<uuid8>` beside the target rather than stalling again on an unlink the server cannot answer. A stall whose lost reply is the **promote itself** is different: the rename was performed, so the destination holds the new content and no temp remains, while the caller is told `BackendUnavailable`. What is guaranteed is that no reader ever sees a half-written file — not that a reported failure means the write did not happen.
+
+The **rename-fallback** path cannot rename onto an occupied path, so it displaces the destination first and puts it back if the promote fails. Ordinarily the restore succeeds and the old content is back at its own path. It is best-effort, though: a dropped connection stops it being attempted at all, and a live server can refuse it — and *then* the old content is beside the target as `.~bak.<name>.<uuid8>` instead. That path is entered when `posix_rename` fails for a reason `_probe_is_futile` does not recognise — neither a dropped connection nor a host the reconnect could not reach — and the target is not a directory, so it is not confined to servers lacking the extension.
+
+As in `write`, the returned `WriteResult` carries `size` and `source="native"` but leaves every rich field (`last_modified` / `etag` / `version_id` / `digest`) `None`.
+
+Raises:
+
+- `AlreadyExists` – If the file exists and overwrite is False.
+- `InvalidPath` – If path is the store root, or names a directory, or an ancestor of path exists as a regular file.
+- `PermissionDenied` – If the server denies access (EACCES or EPERM).
+- `BackendUnavailable` – If the SSH/SFTP connection cannot be established or fails.
+
+### open_atomic
+
+```
+open_atomic(
+    path: str, *, overwrite: bool = False
+) -> Iterator[BinaryIO]
+```
+
+Yield a writable handle promoted to *path* atomically on clean exit.
+
+Writes stream to a hidden temp file in the destination directory; on clean exit it is promoted with `posix_rename` (atomic on POSIX servers, falling back to `rename`). On an exception raised by the caller's own code, the temp file is removed and *path* is left untouched.
+
+**A dropped connection is the exception to both halves**, on the same terms as `write_atomic`, whose docstring carries the detail. The temp cleanup is deliberately skipped when the failure is itself a dropped-connection signal, so an orphan `.~tmp.<name>.<uuid8>` remains; a stall whose lost reply is the promote leaves the rename *performed*, so *path* holds the new content; and on the rename-fallback path a dropped connection can leave *path* empty with its old content displaced to `.~bak.<name>.<uuid8>`. No reader ever sees a half-written file, which is what the atomicity buys — but a reported failure means neither that nothing happened nor that *path* still holds what it held.
+
+Raises:
+
+- `AlreadyExists` – If the file exists and overwrite is False.
+- `InvalidPath` – If path is the store root, or names a directory, or an ancestor of path exists as a regular file.
+- `PermissionDenied` – If the server denies access (EACCES or EPERM).
+- `BackendUnavailable` – If the SSH/SFTP connection cannot be established or fails.
+
+### delete
+
+```
+delete(path: str, *, missing_ok: bool = False) -> None
+```
+
+Delete the file at *path*.
+
+Raises:
+
+- `NotFound` – If the file does not exist (or a path component is itself a file) and missing_ok is False.
+- `InvalidPath` – If path names a directory (use delete_folder).
+- `PermissionDenied` – If the server denies access (EACCES or EPERM).
+- `BackendUnavailable` – If the SSH/SFTP connection cannot be established or fails.
+
+### delete_folder
+
+```
+delete_folder(
+    path: str,
+    *,
+    recursive: bool = False,
+    missing_ok: bool = False,
+) -> None
+```
+
+Delete the folder at *path*.
+
+`recursive=True` walks and removes the subtree bottom-up (one round-trip per entry — not atomic; an interruption can leave the tree partially removed). `recursive=False` removes only an empty folder after checking it has no entries.
+
+Raises:
+
+- `NotFound` – If the folder does not exist and missing_ok is False.
+- `InvalidPath` – If path names a file, not a folder.
+- `DirectoryNotEmpty` – If the folder is non-empty and recursive is False.
+- `PermissionDenied` – If the server denies access (EACCES or EPERM).
+- `BackendUnavailable` – If the SSH/SFTP connection cannot be established or fails.
+
+### list_files
+
+```
+list_files(
+    path: str,
+    *,
+    recursive: bool = False,
+    max_depth: int | None = None,
+) -> Iterator[FileInfo]
+```
+
+Yield files under *path*, one `FileInfo` at a time.
+
+Lazily walks the remote directory (`listdir_attr`); a missing *path* yields nothing. `recursive` descends via one directory-listing round-trip per folder (`max_depth` bounds the descent). Failures other than a missing path surface during iteration, mapped as they are for the single-object operations — a denied listing raises `PermissionDenied` (`EACCES` or `EPERM`), a dropped or unreachable connection `BackendUnavailable`, and anything else the base `RemoteStoreError`.
+
+### list_folders
+
+```
+list_folders(path: str) -> Iterator[FolderEntry]
+```
+
+Yield immediate subfolders of *path* as `FolderEntry` records.
+
+One directory-listing round-trip; a missing *path* yields nothing. Other failures surface during iteration, mapped as in `list_files` — a denied listing raises `PermissionDenied` (`EACCES` or `EPERM`).
+
+### iter_children
+
+```
+iter_children(
+    path: str,
+) -> Iterator[FileInfo | FolderEntry]
+```
+
+Yield the immediate files and folders under *path* in one listing.
+
+Overrides the base two-pass default with a single `listdir_attr` round-trip, yielding `FileInfo` for files and `FolderEntry` for folders. A missing *path* yields nothing; other failures surface during iteration, mapped as in `list_files` — a denied listing raises `PermissionDenied` (`EACCES` or `EPERM`).
+
+### get_file_info
+
+```
+get_file_info(path: str) -> FileInfo
+```
+
+Return metadata for the file at *path* from a single `stat` round-trip.
+
+Raises:
+
+- `NotFound` – If the file does not exist.
+- `InvalidPath` – If path names a directory, not a file.
+- `PermissionDenied` – If the server denies access (EACCES or EPERM).
+- `BackendUnavailable` – If the SSH/SFTP connection cannot be established or fails.
+
+### get_folder_info
+
+```
+get_folder_info(path: str) -> FolderInfo
+```
+
+Return aggregate metadata for the folder at *path*.
+
+File count, total size, and latest modification time are gathered by recursively walking the whole subtree (one listing round-trip per folder), so cost scales with the number of descendants.
+
+Raises:
+
+- `NotFound` – If the folder does not exist.
+- `InvalidPath` – If path names a file, not a folder.
+- `PermissionDenied` – If the server denies access (EACCES or EPERM).
+- `BackendUnavailable` – If the SSH/SFTP connection cannot be established or fails.
+
+### move
+
+```
+move(
+    src: str, dst: str, *, overwrite: bool = False
+) -> None
+```
+
+Move or rename the file *src* to *dst*.
+
+Tries `posix_rename` first (atomic on POSIX-compliant servers), then a plain `rename`, and finally a stream copy-then-delete. Because the outcome depends on server support, atomicity is not guaranteed across all servers and `ATOMIC_MOVE` is not declared. `src == dst` is a no-op; missing parent directories of *dst* are created first.
+
+A `BackendUnavailable` here means no reply came back, not that the rename did not happen: if the stall swallowed the *reply* to `posix_rename`, the server performed the move and the caller is told it failed. Re-check both paths before retrying — a blind retry of a move that actually succeeded raises `NotFound` on a source that is gone. There is a further state on the **rename-fallback** path, which displaces the destination before renaming onto it: a stall in that window leaves the destination path empty, its old content under `.~bak.<name>.<uuid8>` and the source still there, because the restore is best-effort and a dropped connection stops it being attempted. That path is entered when `posix_rename` fails for a reason `_probe_is_futile` does not recognise — neither a dropped connection nor a host the reconnect could not reach — and the destination is not a directory, so it is not confined to servers lacking `posix-rename@openssh.com`.
+
+Raises:
+
+- `NotFound` – If src does not exist.
+- `InvalidPath` – If src or dst is the store root, or names a directory, or an ancestor of dst exists as a regular file.
+- `AlreadyExists` – If dst exists, src != dst, and overwrite is False.
+- `PermissionDenied` – If the server denies access (EACCES or EPERM).
+- `BackendUnavailable` – If the SSH/SFTP connection cannot be established or fails.
+
+### copy
+
+```
+copy(
+    src: str, dst: str, *, overwrite: bool = False
+) -> None
+```
+
+Copy the file *src* to *dst* by streaming through the client.
+
+SFTP has no server-side copy, so the bytes round-trip through the client (download then upload). The destination is opened and streamed to directly, exactly as in `write`, so this is not atomic: an interruption may leave *dst* untouched, emptied, holding an unpredictable prefix of *src*, or holding it in full, and retrying needs `overwrite=True`. *src* is untouched either way. `src == dst` is a no-op; missing parent directories of *dst* are created first and are not removed when the copy fails.
+
+Raises:
+
+- `NotFound` – If src does not exist.
+- `InvalidPath` – If src or dst is the store root, or names a directory, or an ancestor of dst exists as a regular file.
+- `AlreadyExists` – If dst exists, src != dst, and overwrite is False.
+- `PermissionDenied` – If the server denies access (EACCES or EPERM).
+- `BackendUnavailable` – If the SSH/SFTP connection cannot be established or fails.
+
+## See also
+
+- [SFTP Backend Guide](https://docs.remotestore.dev/stable/guides/backends/sftp/index.md) — usage patterns, configuration, and examples
+- [SFTP Backend example](https://docs.remotestore.dev/stable/tutorial/examples/sftp-backend/index.md) — SFTP backend in action

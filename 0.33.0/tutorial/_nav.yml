@@ -1,0 +1,4 @@
+# Linear learning order: orientation first, then getting-started, then examples.
+# Sub-section (examples/) last per default rule.
+- Getting Started: getting-started.md
+- Examples: examples/

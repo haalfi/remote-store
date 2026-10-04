@@ -1,0 +1,128 @@
+# Tested versions
+
+Each `[<extra>]` below lists the range it declares and the versions CI was last green against. **Declared** is the range a resolver is held to — a floor always, plus a ceiling only where a known-incompatible major looms. **Tested up to** is the exact version pinned when that extra's resolution was last recorded. Why the ranges are shaped that way, and what this page does and does not promise, is on [Dependency and version policy](https://docs.remotestore.dev/stable/explanation/dependency-policy/index.md).
+
+The drift guard (`.github/workflows/drift-guard.yml`) keeps both ends of each range under a weekly check. It re-resolves every extra against the latest available versions, pre-releases included, and diffs the result against the record in `infra/drift-locks/` that the "Tested up to" column is taken from. It also installs each extra at the **floor** of every range above and runs that extra's smoke against it, on Python 3.11 — the oldest interpreter this package supports. Findings from either end land on a rolling issue for a maintainer to read; neither end blocks a release on its own.
+
+*Smoke* names how far that check reaches for each extra. A smoke that imports a module exercises less than one that runs a test suite, and a version pair below is evidence only as far as its smoke goes.
+
+## `[arrow]`
+
+*Captured 2026-09-07 on Python 3.13.* *Smoke:* `tests/ext/test_arrow.py`, `tests/ext/test_parquet.py`
+
+| Package   | Declared   | Tested up to |
+| --------- | ---------- | ------------ |
+| `pyarrow` | `>=12.0.0` | `25.0.1`     |
+
+## `[azure]`
+
+*Captured 2026-09-13 on Python 3.13.* *Smoke:* the `[azure]` selection from `tests/backends/conformance/`
+
+| Package                       | Declared    | Tested up to |
+| ----------------------------- | ----------- | ------------ |
+| `aiohttp`                     | `>=3.0`     | `3.14.3`     |
+| `azure-identity`              | `>=1.0.0`   | `1.26.0b2`   |
+| `azure-storage-file-datalake` | `>=12.16.0` | `12.26.0b1`  |
+
+## `[dagster]`
+
+*Captured 2026-09-07 on Python 3.13.* *Smoke:* `tests/ext/test_dagster.py`
+
+| Package   | Declared    | Tested up to |
+| --------- | ----------- | ------------ |
+| `dagster` | `>=1.10.18` | `1.13.21`    |
+
+## `[graph]`
+
+*Captured 2026-09-07 on Python 3.13.* *Smoke:* import of `remote_store.aio.backends._graph.http` only
+
+| Package           | Declared        | Tested up to |
+| ----------------- | --------------- | ------------ |
+| `httpx`           | `>=0.24.0,<1.0` | `0.28.1`     |
+| `msal`            | `>=1.20.0`      | `1.38.0`     |
+| `msal-extensions` | `>=1.3`         | `1.3.1`      |
+| `platformdirs`    | `>=3.0.0`       | `4.11.7`     |
+
+## `[httpx]`
+
+*Captured 2026-09-07 on Python 3.13.* *Smoke:* `tests/backends/http/`
+
+| Package | Declared        | Tested up to |
+| ------- | --------------- | ------------ |
+| `httpx` | `>=0.24.0,<1.0` | `0.28.1`     |
+
+## `[otel]`
+
+*Captured 2026-07-21 on Python 3.13.* *Smoke:* import of `remote_store.ext.otel` only
+
+| Package             | Declared   | Tested up to |
+| ------------------- | ---------- | ------------ |
+| `opentelemetry-api` | `>=1.28.0` | `1.44.0`     |
+
+## `[pydantic]`
+
+*Captured 2026-09-07 on Python 3.13.* *Smoke:* `tests/ext/test_pydantic.py`
+
+| Package             | Declared  | Tested up to |
+| ------------------- | --------- | ------------ |
+| `pydantic-settings` | `>=2.0.0` | `2.15.0`     |
+
+## `[requests]`
+
+*Captured 2026-09-07 on Python 3.13.* *Smoke:* `tests/backends/http/`
+
+| Package    | Declared   | Tested up to |
+| ---------- | ---------- | ------------ |
+| `requests` | `>=2.25.0` | `2.34.2`     |
+| `urllib3`  | `>=1.26.5` | `2.7.0`      |
+
+## `[s3]`
+
+*Captured 2026-09-07 on Python 3.13.* *Smoke:* the `[s3]` selection from `tests/backends/conformance/`
+
+| Package | Declared     | Tested up to |
+| ------- | ------------ | ------------ |
+| `s3fs`  | `>=2024.2.0` | `2026.7.0`   |
+
+## `[s3-pyarrow]`
+
+*Captured 2026-09-07 on Python 3.13.* *Smoke:* the `[s3-pyarrow]` selection from `tests/backends/conformance/`
+
+| Package   | Declared     | Tested up to |
+| --------- | ------------ | ------------ |
+| `pyarrow` | `>=14.0.0`   | `25.0.1`     |
+| `s3fs`    | `>=2024.2.0` | `2026.7.0`   |
+
+## `[sftp]`
+
+*Captured 2026-09-07 on Python 3.13.* *Smoke:* the `[sftp]` selection from `tests/backends/conformance/`, `tests/e2e/test_sftp_legacy_recovery.py`, `tests/e2e/test_sftp_workflow.py`
+
+| Package    | Declared  | Tested up to |
+| ---------- | --------- | ------------ |
+| `paramiko` | `>=3.1`   | `5.0.0`      |
+| `tenacity` | `>=8.0.1` | `9.1.4`      |
+
+## `[sql]`
+
+*Captured 2026-07-13 on Python 3.13.* *Smoke:* the `[sql]` selection from `tests/backends/sqlblob/`, `tests/backends/conformance/`
+
+| Package      | Declared   | Tested up to |
+| ------------ | ---------- | ------------ |
+| `sqlalchemy` | `>=2.0.31` | `2.1.0b3`    |
+
+## `[sql-query]`
+
+*Captured 2026-09-07 on Python 3.13.* *Smoke:* the `[sql-query]` selection from `tests/backends/sqlquery/`, `tests/backends/conformance/`
+
+| Package      | Declared   | Tested up to |
+| ------------ | ---------- | ------------ |
+| `pyarrow`    | `>=12.0.0` | `25.0.1`     |
+| `sqlalchemy` | `>=2.0.31` | `2.1.0rc1`   |
+
+## `[yaml]`
+
+*Captured 2026-05-25 on Python 3.13.* *Smoke:* `tests/ext/test_yaml.py`
+
+| Package  | Declared | Tested up to |
+| -------- | -------- | ------------ |
+| `pyyaml` | `>=5.1`  | `6.0.3`      |
