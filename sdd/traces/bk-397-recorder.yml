@@ -66,12 +66,20 @@ phases:
       - file: sdd/decisions/24c9a1ec-ee6e-4d95-ab22-352eea31346e.jsonl
         section: "first two lines"
         read_type: verify
-        extract: "One real AskUserQuestion dialog in this local Windows session, after registration and with no restart: asked then answered, same tool_use_id, branch bk-397-decision-recorder, HEAD recorded. A temporary uncommitted settings.local.json probe dumped the raw pair, kept as tests/scripts/fixtures/record_decision/ with the three local paths replaced. New since step 0: an annotations key in tool_input and tool_response, effort as an object; both kept verbatim. Not exercised: a cloud session (CLAUDE_CODE_REMOTE_SESSION_ID path is covered by a unit test only). The trace cannot list the log under decisions: until step 2 adds the key"
+        extract: "One real AskUserQuestion dialog in this local Windows session, after registration and with no restart: asked then answered, same tool_use_id, branch bk-397-decision-recorder, HEAD recorded. A temporary uncommitted settings.local.json probe dumped the raw pair, kept as tests/scripts/fixtures/record_decision/ with the three local paths replaced. New since step 0: an annotations key in tool_input and tool_response, effort as an object; both kept verbatim. A cloud session was exercised later, in phase cloud_e2e. The trace cannot list the log under decisions: until step 2 adds the key"
         outcome: ok
       - file: .claude/skills/ship/SKILL.md
         section: "Reviewer permissions: main-tree capture"
         read_type: verify
         extract: "In this worktree, git status --porcelain --untracked-files=all (orchestrate's spelling) with and without -- . ':(exclude)sdd/decisions/' while the log was untracked: the excluded form omitted exactly that path. That was not ship's spelling, which uses the default untracked mode (review finding). Measured that one in a scratch repo, git 2.52.0.windows.1, sdd/ tracked and sdd/decisions/ wholly untracked: plain porcelain printed '?? sdd/decisions/' (the collapsed directory entry); git status --porcelain -- . ':(exclude)sdd/decisions/' printed nothing, and still printed ' M sdd/BACKLOG.md' once a tracked file beside it was edited"
+        outcome: ok
+  - id: cloud_e2e
+    name: Cloud end-to-end
+    steps:
+      - file: scripts/record_decision.py
+        section: "live run in a claude.ai/code cloud session"
+        read_type: verify
+        extract: "Run by the maintainer in a separate cloud session (Linux) on its own branch, with this PR's files copied into its working tree and removed afterwards; reported, not observed from this session. Copying settings.json mid-session registered the hooks without a restart. One real AskUserQuestion dialog wrote asked then answered to sdd/decisions/<session_id>.jsonl, same tool_use_id, that session's branch and HEAD, and remote_session_id set (cse_ prefix), so the CLAUDE_CODE_REMOTE_SESSION_ID path works there. tests/scripts/test_record_decision.py: 29 of 29 after copying gate-commit.sh as well (pip-installed pytest, PYTHONPATH=src; the image has no hatch env). Not checked there: whether the cse_ suffix matched that session's Claude-Session trailer, the /pr tail commit, a real gate-commit staging (exercised in this session instead: fix commit 046121605 carried the log lines it staged)"
         outcome: ok
   - id: review_fix_1
     name: Review fix pass 1
@@ -84,10 +92,18 @@ phases:
       - file: .claude/skills/pr/SKILL.md
         section: "Steps 1 and 6"
         read_type: verify
-        extract: "The tail commit moved from Step 1 to a new Step 6, after the last step that can ask (maintainer's choice), so /pr's own questions reach the PR. Step 1 checks the tree clean apart from sdd/decisions/. Measured in a scratch repo: git commit -m X -- sdd/decisions/ fails on an untracked path ('pathspec did not match any file(s) known to git'); after git add -- sdd/decisions/ it commits only the log and leaves an unrelated staged file staged"
+        extract: "The tail commit moved from Step 1 to a new Step 6, after the last step that can ask (maintainer's choice), so /pr's own questions reach the PR; review fix pass 2 moved it on to Step 4. Step 1 checks the tree clean apart from sdd/decisions/. Measured in a scratch repo: git commit -m X -- sdd/decisions/ fails on an untracked path ('pathspec did not match any file(s) known to git'); after git add -- sdd/decisions/ it commits only the log and leaves an unrelated staged file staged"
         outcome: ok
       - file: sdd/rfcs/rfc-0018-decision-capture-at-dialog-time.md
         section: "D1, D2 Who commits it, Impact"
         read_type: verify
         extract: "Impact listed AUTHORING.md directory defaults and a GATE-INVENTORY.md regeneration as ripples; neither was needed or made. Narrowed to what was run (docs-check, docs-build, gen_gate_inventory --check pass with the log present), the maintainer's choice over an AUTHORING row. D1's fallback sentence and D2's tail-commit placement follow the code changes"
+        outcome: misleading
+  - id: review_fix_2
+    name: Review fix pass 2
+    steps:
+      - file: sdd/rfcs/rfc-0018-decision-capture-at-dialog-time.md
+        section: "D4.3; D2 Per session"
+        read_type: verify
+        extract: "D4.3 still said Step 1 commits the tail; my pass-1 sweep searched 'Step 1 commits' and missed 'after Step 1 has committed'. In /pr the body was drafted (Step 5) before the tail commit (Step 6), so the tail now runs as Step 4, after the last asking step (maintainer's choice); D2 and D4.3 say it lands before the body is drafted. The renumbering staled the Rules' 'Step 5 builds the body', fixed; bk-363's dossier cites SKILL.md:27-46 in a correction dated 2026-09-28, true then, left as a dated record. D2's 'cannot conflict on merge' measured false for one session across two branches (scratch repo, git 2.52.0.windows.1): blocked switch from a modified committed log, blocked switch back over an untracked log, CONFLICT (add/add) merging A and B. Bounded in D2 and added to BK-397's pending list (maintainer's choice), no code change"
         outcome: misleading

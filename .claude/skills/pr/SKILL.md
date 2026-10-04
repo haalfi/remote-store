@@ -18,7 +18,7 @@ Fall back to `gh` CLI for GraphQL-only flows like review-thread resolution.
 1. **Pre-check:** Verify not on master, the working tree clean apart from the
    decision log (`git status --porcelain -- . ':(exclude)sdd/decisions/'` prints
    nothing), and the branch pushed to remote. Push with `-u` if needed. The log
-   is left for Step 6, because this skill's own questions append to it. Then run
+   is left for Step 4, because this skill's own questions append to it. Then run
    the [branch freshness
    check](../../../sdd/CLAUDE-REFERENCE.md#branch-freshness) with `<BASE>`.
 
@@ -48,18 +48,11 @@ Fall back to `gh` CLI for GraphQL-only flows like review-thread resolution.
    authoring (mandatory)](../../../CLAUDE.md#trace-authoring) requires the trace to ship in the same PR as the
    work. Schema: `sdd/traces/_schema.yml`. No ID-prefixed commits? Skip the gate.
 
-4. **Gather context:** `git log origin/<BASE>..HEAD --oneline` and `git diff origin/<BASE>...HEAD`
-   to understand all changes (not just the latest commit). Use `origin/<BASE>`,
-   not local `<BASE>`, so context does not depend on a stale local ref.
-
-5. **Draft PR:** Title (<70 chars) + body. Read `.github/PULL_REQUEST_TEMPLATE.md`
-   and fill each section from gathered context: summary bullets from commits,
-   check the appropriate Type of change box, link any related issues, fill the
-   Checklist. The template is the authoritative body shape.
-
-6. **Commit the decision-log tail**, after the last step that can ask a
-   question. Dialogs since the branch's last commit, this skill's own included,
-   leave uncommitted lines in `sdd/decisions/`
+4. **Commit the decision-log tail.** Steps 2 and 3 are the last that can ask a
+   question; the body is drafted after this commit, so it can rely on a log
+   that holds every dialog the PR will carry. Dialogs since the branch's last
+   commit, this skill's own included, leave uncommitted lines in
+   `sdd/decisions/`
    ([RFC-0018 D2](../../../sdd/rfcs/rfc-0018-decision-capture-at-dialog-time.md)).
    If `git status --porcelain -- sdd/decisions/` prints anything, run
    `git add -- sdd/decisions/`, then
@@ -69,10 +62,19 @@ Fall back to `gh` CLI for GraphQL-only flows like review-thread resolution.
    already staged. The `git add` comes first because a pathspec commit fails on
    a path git does not yet track.
 
+5. **Gather context:** `git log origin/<BASE>..HEAD --oneline` and `git diff origin/<BASE>...HEAD`
+   to understand all changes (not just the latest commit). Use `origin/<BASE>`,
+   not local `<BASE>`, so context does not depend on a stale local ref.
+
+6. **Draft PR:** Title (<70 chars) + body. Read `.github/PULL_REQUEST_TEMPLATE.md`
+   and fill each section from gathered context: summary bullets from commits,
+   check the appropriate Type of change box, link any related issues, fill the
+   Checklist. The template is the authoritative body shape.
+
 7. **Create PR** using `create_pull_request`:
    - `owner: "haalfi"`, `repo: "remote-store"`
    - `head:` current branch, `base:` `<BASE>`
-   - `title:` and `body:` from step 5
+   - `title:` and `body:` from step 6
 
 8. **Report** the PR URL.
 
@@ -82,7 +84,7 @@ Fall back to `gh` CLI for GraphQL-only flows like review-thread resolution.
 - Do not push to master.
 - **Every figure in the body names the derivation it came from**, run before the
   sentence is written ([`CLAUDE.md` principle 9](../../../CLAUDE.md#principles)).
-  Step 5 builds the body from commits, so its counts and claims are exactly the
+  Step 6 builds the body from commits, so its counts and claims are exactly the
   ones nobody re-checks: the measured instance behind this rule is a PR body
   asserting a field had moved to 6 when `git show` showed 4 → 5
   ([ADR-0037](../../../sdd/adrs/0037-whole-file-gate-and-derived-figures.md)).

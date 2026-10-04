@@ -821,11 +821,11 @@ CHANGELOG the release body is built from — say what is actually true.
 
 - [~] **BK-397 — Interview-mode decisions leave no record in the repo, so their rejected options are unrecoverable**
   spec: — · effort: M · audience: contributor.process, contributor.tooling
-  `AskUserQuestion` decisions (question, options, recommendation, answer) persisted
-  only in the session transcript. RFC-0018 accepted 2026-10-04, `failed` path
-  omitted until observed. Done: D5 step 1 (recorder, wrapper, registration) and
-  D2's staging and tree-check exclusions. Pending: step 2 (trace `decisions:`
-  key, `check_traces.py` rule), step 3 (`/pr` Decisions section).
+  `AskUserQuestion` decisions persisted only in the session transcript. RFC-0018
+  accepted 2026-10-04, `failed` path omitted. Done: D5 step 1 and D2's staging
+  and exclusions. Pending: step 2 (trace `decisions:` key, `check_traces.py`
+  rule), step 3 (`/pr` Decisions section), and a remedy for one session's log
+  across two branches (D2 bound: blocked switches, add/add merge conflict).
 
 - [ ] **BK-402 — `ci.yml` says `tests/scripts/` does not exercise `remote_store`, and it does**
   spec: — · effort: S · audience: infra.ci

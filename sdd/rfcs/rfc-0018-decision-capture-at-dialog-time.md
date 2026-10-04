@@ -116,8 +116,8 @@ the PR diff shows the log beside the change it explains.
   the log travels with the work it explains. Dialogs after the branch's last
   commit (`/ship`'s close, `/pr`'s own questions) leave a tail: `/pr` commits
   it as a separate `decision log` commit, pinned to `sdd/decisions/` by
-  pathspec, after its last step that can ask and before it creates the PR. Its
-  pre-check tolerates the tail and nothing else.
+  pathspec, after its last step that can ask and before it drafts the PR body.
+  Its pre-check tolerates the tail and nothing else.
   Bound: a commit the maintainer makes by hand outside the agent bypasses the
   hook, and its dialogs reach the next agent commit instead. Inferred, not
   observed (a maintainer report, never probed; § Step 0 observations,
@@ -130,8 +130,16 @@ the PR diff shows the log beside the change it explains.
   branch or detached (`/ship` Step 2 asks in plan mode, before Step 3 builds).
   This RFC's own branch, `rfc-decision-capture`, has no ID. Each event records
   branch and HEAD instead, and D4 binds logs to work when they are read.
-- **Per session.** Two sessions never append to one file, so logs cannot
-  conflict on merge.
+- **Per session.** Two sessions never append to one file, so two sessions'
+  logs cannot conflict on merge. **Bound: one session that spans two branches
+  can.** Measured in a scratch repo (git 2.52.0.windows.1), with the log
+  committed on branch A: a dialog after A's last commit blocks `git switch` to
+  the base ("Your local changes … would be overwritten"); a dialog on the base
+  leaves an untracked log that blocks switching back to A ("untracked working
+  tree files would be overwritten"); and if the session then starts branch B
+  from the base, merging A and B gives `CONFLICT (add/add)` on the log. The
+  remedy is open (BK-397, pending); a per-branch file name would clear the last
+  two cases but not the first.
 - **Exempt from the tree-unchanged checks.** The recorder writes while a review
   round may be running. `/ship`'s main-tree `git status --porcelain` capture and
   `/orchestrate`'s porcelain and `git diff HEAD` captures exclude
@@ -220,8 +228,9 @@ and the question is classified by the rows below it.
    is how it stays visible. An event of unknown kind is reported, not failed
    (D3).
 3. **`/pr`.** The skill renders a "Decisions" section from the committed log
-   only, after Step 1 has committed the tail, so the body never cites an event
-   the PR does not contain. One line per question: header → answer → outcome,
+   only. `/pr` commits the tail before it drafts the body (D2), after its last
+   step that can ask, so the body never cites an event the PR does not contain
+   and misses none of `/pr`'s own. One line per question: header → answer → outcome,
    with `unanswered` and `prefilled` flagged, and a link to each log.
    Reviewers see the why without anyone writing it.
 
