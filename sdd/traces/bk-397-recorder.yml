@@ -115,3 +115,16 @@ phases:
         read_type: verify
         extract: "The freshness check asks before rebasing, and with the recorder registered that answer modifies the tracked log. Measured in a scratch repo (git 2.52.0.windows.1, rebase.autoStash unset): git rebase refused with 'cannot rebase: You have unstaged changes'; after the pathspec tail commit it rebased cleanly and kept the decision-log commit. The check now commits the tail first, pointing at /pr Step 4 for the commands (maintainer's choice over --autostash, whose stash stack is shared across sessions). I had not hit this earlier because my rebases in this session ran under a standing instruction, without the question. The PR body's '26 tests' was stale against 29 (def test_ count with parametrizations, matching pytest's 29 passed); body corrected"
         outcome: ok
+  - id: review_fix_4
+    name: Review fix pass 4
+    steps:
+      - file: .claude/skills/rvw-pr/SKILL.md
+        section: "Bash allowlist; Step 1"
+        read_type: verify
+        extract: "The committed log sat in the PR diff and Step 1 reads changed files in full, so /ship's unprimed passes read earlier findings and their dispositions; this PR's own log held four. Step 1 now never reads sdd/decisions/ (maintainer's choice). gh 2.86.0's pr diff has no path filter, so the default path reads per-file patches from the PR files API filtered by jq; the root path takes a pathspec. Both run against PR 1073: 14 files, the log absent, against 15 from gh pr diff --name-only. /orchestrate's reviewers are briefed, not unprimed, so it needs no change; step 3's body section is flagged in BK-397 as the same question"
+        outcome: ok
+      - file: .claude/hooks/record-decision.sh
+        section: "header comment"
+        read_type: verify
+        extract: "The comment claimed 'not via $CLAUDE_PROJECT_DIR', but the registration runs the file through that variable, so the two are one path. Comment now states the anchor; D2 states the bound that a session committing in another checkout than its project directory leaves the log behind there. The recorder keeps the project-directory anchor: the cwd would send logs into /ship's tmp/review worktrees, which are removed"
+        outcome: misleading

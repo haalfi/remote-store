@@ -150,6 +150,19 @@ the PR diff shows the log beside the change it explains.
   `sdd/decisions/` by pathspec (`-- . ':(exclude)sdd/decisions/'`), so a dialog
   during a round does not read as a contaminated pass. The exemption is safe
   because the recorder only appends to files no reviewer writes.
+- **Not read by reviewers.** During a `/ship` loop the log holds the fix-pass
+  dialogs about earlier findings and their dispositions, so a reviewer reading
+  it would read the conversation that `/rvw-pr` Step 1 refuses to fetch, and
+  `/ship`'s unprimed passes would be primed. `/rvw-pr` Step 1 therefore leaves
+  `sdd/decisions/` out of the diff it reads and out of its full-file reads.
+  D4.3's Decisions section in the PR body raises the same question for those
+  passes, which read the body; it is settled with step 3.
+- **Anchored at the project directory.** The hook is registered as
+  `"$CLAUDE_PROJECT_DIR"/.claude/hooks/record-decision.sh`, so the log is
+  written under `$CLAUDE_PROJECT_DIR`, while `gate-commit.sh` stages under the
+  toplevel of the shell's working directory. Bound: a session that commits in a
+  different checkout than its project directory leaves the log behind in the
+  project directory, uncommitted.
 - **Committed verbatim, decided by the maintainer** (§ Decided while drafting).
   The repository is public, so free-text answers become public with the PR.
 
@@ -283,7 +296,9 @@ and the question is classified by the rows below it.
   authoritative body shape, for the Decisions section;
   `.claude/skills/ship/SKILL.md` and
   `.claude/skills/orchestrate/SKILL.md`, whose tree-unchanged captures take
-  D2's exclusion; `sdd/CLAUDE-REFERENCE.md` § Interview mode,
+  D2's exclusion; `.claude/skills/rvw-pr/SKILL.md`, whose Step 1 does not read
+  the log; `sdd/CLAUDE-REFERENCE.md` § Branch freshness check, which commits the
+  tail before rebasing; `sdd/CLAUDE-REFERENCE.md` § Interview mode,
   whose wiring table gains a Record layer and whose tolerated-divergence note
   extends to the new matcher values. Two files need no change:
   `sdd/AUTHORING.md` § Directory defaults classifies `.md` files for the docs
