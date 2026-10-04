@@ -102,6 +102,43 @@ def test_only_ssh_scopes_need_the_sftp_container() -> None:
     assert any("sftp" in s.needs for s in scopes.values()), "no scope covers sftp_docker at all"
 
 
+# Session server fixtures in tests/conftest.py and the container each one needs
+# (None = in-process). Mirrors that file; a new ``*_server`` fixture must be
+# classified here before the sync-adapter guard below accepts it.
+_SERVER_FIXTURE_CONTAINERS = {
+    "moto_server": None,  # moto in server mode, in-process
+    "sftp_server": None,  # paramiko server on port 0, in-process
+    "azurite_server": "azurite",
+}
+
+
+@pytest.mark.spec("TEST-004")
+def test_sync_adapter_needs_match_the_servers_its_suite_requests() -> None:
+    """BUG-303: ``conformance-sync-adapter`` lists its containers by hand.
+
+    Its suite is parametrized by its own ids, so ``_needs`` cannot derive them.
+    A live param that requests a container fixture missing from ``needs``
+    would skip silently (the container never starts) and, for an sftp one,
+    run at four workers against sshd. Tie the list to the ``*_server``
+    fixtures the suite actually requests.
+    """
+    import ast
+
+    suite = _REPO_ROOT / "tests" / "backends" / "conformance" / "test_sync_adapter_conformance.py"
+    tree = ast.parse(suite.read_text(encoding="utf-8"))
+    requested = {
+        arg.arg
+        for node in ast.walk(tree)
+        if isinstance(node, ast.FunctionDef)
+        for arg in node.args.args
+        if arg.arg.endswith("_server")
+    }
+    unknown = requested - _SERVER_FIXTURE_CONTAINERS.keys()
+    assert not unknown, f"classify these server fixtures in _SERVER_FIXTURE_CONTAINERS: {sorted(unknown)}"
+    expected = sorted({c for name in requested if (c := _SERVER_FIXTURE_CONTAINERS[name])})
+    assert _load_manifest().SCOPES["conformance-sync-adapter"].needs == expected
+
+
 @pytest.mark.spec("TEST-004")
 def test_async_extended_scopes_use_explicit_filter() -> None:
     """Every async-extended scope must declare an explicit ``-k`` filter.

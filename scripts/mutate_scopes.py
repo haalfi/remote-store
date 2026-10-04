@@ -15,7 +15,10 @@ scopes pair each ``src/remote_store/ext/<x>.py`` with the single file at
 / bare-named matching). Top-level tests with no matching src by prefix
 roll into ``core-misc``; ``tests/ext/test_*.py`` files with no matching
 ext source (e.g., the namespace-wide ``test_contract.py``) roll into
-``ext-misc``.
+``ext-misc``. One value is hand-written: ``conformance-sync-adapter``'s
+``needs``, because its suite is parametrized by its own ids rather than
+registry fixtures; ``tests/scripts/test_mutate_scopes.py`` ties it to the
+server fixtures that suite requests.
 
 Transport split
 ===============
@@ -351,7 +354,8 @@ def _build() -> dict[str, Scope]:
     # registry fixtures, so it stays one scope and its ``needs`` cannot come
     # from ``_needs``. Its live ids use ``moto_server`` and ``sftp_server``,
     # both in-process (tests/conftest.py), and ``azurite_server``: Azurite is
-    # its only container, so it takes parallel workers.
+    # its only container, so it takes parallel workers. Pinned by
+    # test_sync_adapter_needs_match_the_servers_its_suite_requests.
     out["conformance-sync-adapter"] = Scope(
         targets=sorted({*(s for b in backends for s in _src(b)), _SYNC_ADAPTER}),
         tests=["tests/backends/conformance/test_sync_adapter_conformance.py"],

@@ -30,7 +30,10 @@ surprising_ripples:
   # the four capped legs serial. Listing, metadata and streaming are now split
   # by transport. Sync-adapter never used the container (its SFTP server is
   # in-process, found by the second review round), so it stays one scope
-  # needing only Azurite.
+  # needing only Azurite, a hand-written value now tied by a test to the
+  # server fixtures its suite requests. Round three also showed the 330 min
+  # leg timeout rested on a false premise: run 43's capped legs already
+  # recorded their outcomes under the default 360 min, so it was dropped.
   - scripts/mutate_scopes.py
   - tests/scripts/test_mutate_scopes.py
 phases:

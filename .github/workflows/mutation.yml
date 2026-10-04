@@ -95,9 +95,6 @@ jobs:
     needs: [setup]
     name: mutate-${{ matrix.scope }}
     runs-on: ubuntu-latest
-    # Below GitHub's 6 h hard cap, so an overrunning leg is cancelled while the
-    # always() steps can still upload its report and record its outcome.
-    timeout-minutes: 330
     strategy:
       fail-fast: false
       matrix:
