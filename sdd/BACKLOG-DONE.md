@@ -244,6 +244,18 @@ if evidence changes; these are retired.
 
 ## Unreleased
 
+- [x] **BUG-303 — The weekly mutation run outgrows the 6 h job cap on pytest-gremlins 1.10**
+  spec: — · effort: S · audience: infra.ci, contributor.tooling
+  Run 43 (#1065): four legs cancelled at 360 min, ext-parquet and core-misc
+  killed. Three causes, each reproduced locally. The unbounded `>=1.5` pin let
+  in 1.10, which runs one pytest subprocess per gremlin (core-path 6.9 s → 30.4 s);
+  now `>=1.10.1,<1.11`, with `--gremlin-workers=4` (1 for SFTP scopes) and a
+  330 min leg timeout. Mutant g050 (`ext/parquet.py:480`, `<` to `<=`) looped
+  `_split_table` until the runner's memory ran out; `ulimit -v` makes it an
+  `error`. The report flags in `PYTEST_ADDOPTS` reached the coverage pre-scan,
+  which then recorded nothing, so every gremlin had run the full suite; they
+  now go on `run_mutate.py`'s argv. Pinned by `TestPytestArgPassthrough`.
+
 - [x] **BK-395 — The kernel's key rule is undecided for addressing, backslash keys and `glob`**
   spec: BE-025, NPR-021, NPR-004, RES-020, PATH-002, BE-008, WR-001 · effort: S · audience: library.maintainer, contributor.process
   Decided, docs only: BK-389's decision 6 states it. Addressing stays total,

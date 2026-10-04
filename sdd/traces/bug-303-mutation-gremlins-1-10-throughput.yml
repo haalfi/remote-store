@@ -1,0 +1,92 @@
+id: BUG-303
+title: "The weekly mutation run outgrows the 6 h job cap on pytest-gremlins 1.10"
+trigger: >
+  Rolling issue #1065 for run 37115737721 (run 43) listed six harness failures:
+  backends-http, conformance-listing, conformance-streaming and conformance-io-http
+  cancelled at 360 min; ext-parquet and core-misc with no outcome. Run 42 took
+  7-17 min for the same four legs.
+source_items:
+  - BUG-303
+audience:
+  - infra.ci
+  - contributor.tooling
+expected_ripples:
+  - pyproject.toml
+  - .github/workflows/mutation.yml
+  - scripts/run_mutate.py
+  - tests/scripts/test_run_mutate.py
+  - sdd/BACKLOG-DONE.md
+surprising_ripples:
+  # A third cause predating 1.10: the report flags in PYTEST_ADDOPTS reached the
+  # plugin's coverage pre-scan, which then recorded no data, so coverage-guided
+  # selection had never been on in CI. The -W ignore in the same variable hid
+  # the warning that says so.
+  - .github/workflows/mutation.yml
+  # Two failure signatures (job-cap cancel, runner shutdown) the triage list
+  # did not name.
+  - .claude/skills/mutation/SKILL.md
+phases:
+  - id: orient
+    name: Orient
+    steps:
+      - file: .claude/skills/mutation/SKILL.md
+        section: "Steps 1-3"
+        read_type: gate
+        extract: "Issue tracks run health; classify each failing leg from its log via get_job_logs"
+      - file: .github/workflows/mutation.yml
+        section: "mutate job"
+        read_type: reference
+        extract: "Unbounded .[mutate] install, report flags and -W ignore in PYTEST_ADDOPTS, weekly gremlins cache"
+      - file: scripts/mutate_scopes.py
+        section: "_build / core-misc"
+        read_type: reference
+        extract: "core-misc targets every non-backend src file, ext/parquet.py included, so it meets the same runaway mutant"
+  - id: classify
+    name: Classify the failures
+    steps:
+      - file: "GitHub Actions: runs 41, 42, 43 job lists"
+        section: "per-job started_at/completed_at"
+        read_type: verify
+        extract: "Every scope 10-50x slower in run 43; total 3682 job-minutes; four legs at 360 min"
+      - file: "GitHub Actions: mutate-core-path logs, runs 42 and 43"
+        section: "install + gremlins report"
+        read_type: verify
+        extract: "pytest-gremlins 1.9.0 -> 1.10.1; _path.py and test_path.py unchanged (git diff a4474b3e 83e261b2); 26/0 -> 23/3, 3.99 s -> 34.21 s; cache never restored in either run"
+      - file: "GitHub Actions: mutate-ext-parquet log, run 43"
+        section: "tail"
+        read_type: verify
+        extract: "exit 143 + 'runner has received a shutdown signal' after 2 min; output buffered, so the kill was mid-mutation"
+  - id: reproduce
+    name: Reproduce locally
+    steps:
+      - file: "pytest_gremlins 1.10.1: plugin.py, parallel/runner_eligibility.py"
+        section: "--gremlin-executor, lightweight runner"
+        read_type: reference
+        extract: "fork/inprocess/lightweight disabled upstream (#532, #538): one pytest subprocess per gremlin"
+      - file: scripts/run_mutate.py
+        section: "core-path, venvs pinned to 1.9.0 and 1.10.1"
+        read_type: verify
+        extract: "6.9 s / 1 survived vs 30.4 s / 3 survived, identical test selection"
+      - file: scripts/run_mutate.py
+        section: "ext-parquet on 1.10.1, RSS sampled every 5 s"
+        read_type: verify
+        extract: "g050 parquet.py:480 '<' to '<=' grows ~170 MB/s to 5.5 GB before the gremlins timeout; under ulimit -v 4194304 it is an error, other counts unchanged"
+      - file: scripts/run_mutate.py
+        section: "core-path, one PYTEST_ADDOPTS variant at a time"
+        read_type: verify
+        extract: "Any --gremlin* flag in PYTEST_ADDOPTS -> 26/26 gremlins run the full suite; CI=true alone does not; flags on argv restore selection"
+      - file: scripts/run_mutate.py
+        section: "backends-memory: addopts / argv / argv + 4 workers"
+        read_type: verify
+        extract: "353.9 s / 379.7 s / 106.5 s; selection alone saves nothing on 1.10, workers are the lever"
+  - id: implement
+    name: Implement the harness fix
+    steps:
+      - file: tests/scripts/test_run_mutate.py
+        section: "TestPytestArgPassthrough"
+        read_type: gate
+        extract: "Failed first (argparse: unrecognized arguments), passes after parse_known_args forwarding"
+      - file: sdd/CLAUDE-REFERENCE.md
+        section: "Ripple-check / Dependency"
+        read_type: verify
+        extract: "mutate is a dev extra: not in the conda recipe, README names no version; no CHANGELOG (no user.* audience)"

@@ -53,7 +53,10 @@ Repo: `haalfi/remote-store`.
    - **Harness/tooling break** — an import error, plugin INTERNALERROR,
      dependency/config change, or a timeout cascade (`no tests ran`). Fix the
      harness (`mutate_scopes.py` targets, the workflow's install step, or the
-     plugin pin), not the tests.
+     plugin pin), not the tests. A leg `cancelled` at the job's time limit, or
+     killed by "The runner has received a shutdown signal" (memory), is a
+     throughput break: diff the installed `pytest-gremlins` version against the
+     last green run and look for a mutant that makes a loop unbounded (BUG-303).
    - **`(setup)` pseudo-scope** — the setup job died before listing scopes
      (e.g. an import chain reaching for a dep the bare runner lacks). Fix
      `scripts/run_mutate.py` / `mutate_scopes.py` imports or the workflow.
