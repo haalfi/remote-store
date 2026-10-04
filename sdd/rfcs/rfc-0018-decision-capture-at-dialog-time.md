@@ -101,7 +101,9 @@ interpret them. Interpretation lives in the readers (D3), so a payload-shape
 change in Claude Code breaks a reader's parse, which a test sees, rather than
 silently losing data at capture time. For the same reason a payload from any
 other event, should the hook ever be registered on one, is appended under its
-raw `hook_event_name` with the whole payload rather than dropped.
+raw `hook_event_name` rather than dropped, with its payload less the local
+paths every payload carries (`cwd`, `transcript_path`, `scratchpad_dir`),
+which a log committed to a public repository must not hold.
 
 ### D2. Storage: one append-only file per session, bound to work when read
 
@@ -112,8 +114,10 @@ the PR diff shows the log beside the change it explains.
 - **Who commits it.** `gate-commit.sh`, which already runs before every
   `git commit` the agent issues, stages `sdd/decisions/` into that commit, so
   the log travels with the work it explains. Dialogs after the branch's last
-  commit (`/ship`'s close, `/pr`'s own questions) leave a tail: `/pr` Step 1
-  commits it as a separate `decision log` commit before its clean-tree check.
+  commit (`/ship`'s close, `/pr`'s own questions) leave a tail: `/pr` commits
+  it as a separate `decision log` commit, pinned to `sdd/decisions/` by
+  pathspec, after its last step that can ask and before it creates the PR. Its
+  pre-check tolerates the tail and nothing else.
   Bound: a commit the maintainer makes by hand outside the agent bypasses the
   hook, and its dialogs reach the next agent commit instead. Inferred, not
   observed (a maintainer report, never probed; § Step 0 observations,
@@ -261,15 +265,19 @@ and the question is classified by the rows below it.
   ripple-check row for a test whose subject is outside `src/`;
   `.claude/hooks/gate-commit.sh`, which stages the log;
   `sdd/traces/_schema.yml`; `scripts/check_traces.py` and its tests;
-  `.claude/skills/pr/SKILL.md`, both Step 1 (commit the tail) and the
+  `.claude/skills/pr/SKILL.md`, both the tail commit and the
   rendering; `.github/PULL_REQUEST_TEMPLATE.md`, which `/pr` treats as the
   authoritative body shape, for the Decisions section;
   `.claude/skills/ship/SKILL.md` and
   `.claude/skills/orchestrate/SKILL.md`, whose tree-unchanged captures take
   D2's exclusion; `sdd/CLAUDE-REFERENCE.md` § Interview mode,
   whose wiring table gains a Record layer and whose tolerated-divergence note
-  extends to the new matcher values; `sdd/AUTHORING.md` directory defaults, for
-  `sdd/decisions/`; `GATE-INVENTORY.md`, regenerated.
+  extends to the new matcher values. Two files need no change:
+  `sdd/AUTHORING.md` § Directory defaults classifies `.md` files for the docs
+  pipeline, and `.jsonl` never enters it (`hatch run docs-check` and
+  `hatch run docs-build` pass with a log committed); `GATE-INVENTORY.md` lists
+  gates, and the recorder is none (`gen_gate_inventory.py --check` passes with
+  it present).
 - **Cost per dialog:** two short hook invocations and two appended lines,
   `asked` then `answered`; one of each for a denied dialog, which fired no Post
   event in step 0.

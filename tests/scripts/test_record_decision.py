@@ -22,6 +22,7 @@ import json
 import shutil
 import subprocess
 import sys
+import time
 import zlib
 from pathlib import Path
 from typing import Any
@@ -289,13 +290,57 @@ def test_other_tools_are_ignored(recorder: Any, repo: Path) -> None:
 
 def test_unregistered_event_kept_under_its_raw_name(recorder: Any, repo: Path) -> None:
     """``PostToolUseFailure`` is not registered (RFC-0018 Open Questions), but if a
-    future registration delivers it, the payload is kept rather than dropped."""
+    future registration delivers it, the payload is kept rather than dropped,
+    less the local paths every payload carries: the log is committed to a public
+    repository, and the live fixtures scrub the same three keys."""
     payload = dict(ANSWERED["a-followed"][0], hook_event_name="PostToolUseFailure", error="boom")
+    payload.update(cwd="/home/someone/repo", transcript_path="/home/someone/t.jsonl", scratchpad_dir="/home/someone/s")
     recorder.record(payload, repo, {})
 
     (line,) = _lines(repo)
     assert line["event"] == "PostToolUseFailure"
     assert line["payload"]["error"] == "boom"
+    assert line["payload"]["tool_input"] == payload["tool_input"]
+    assert not {"cwd", "transcript_path", "scratchpad_dir"} & line["payload"].keys()
+    assert "/home/someone" not in json.dumps(line)
+
+
+def test_slow_git_degrades_to_null_fields_within_budget(
+    recorder: Any, repo: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """Both git calls share one deadline, so a hung git cannot outlast the hook.
+
+    The hook's own timeout in ``settings.json`` is 10 s; if the recorder were
+    killed there, the event would be lost instead of written with null git
+    fields. The hang is injected by replacing the git command with a sleeper,
+    so this pins the budget arithmetic, not any particular way git can hang.
+    """
+    monkeypatch.setattr(recorder, "_GIT_CMD", [sys.executable, "-c", "import time; time.sleep(30)"])
+    monkeypatch.setattr(recorder, "_GIT_BUDGET_S", 1.0)
+
+    started = time.monotonic()
+    recorder.record(ANSWERED["a-followed"][0], repo, {})
+    elapsed = time.monotonic() - started
+
+    (line,) = _lines(repo)
+    assert (line["branch"], line["head"]) == (None, None)
+    # Both calls together, not each: two sequential 1 s timeouts would take ~2 s.
+    assert elapsed < 1.8, f"git calls took {elapsed:.1f}s against a 1.0s shared budget"
+
+
+def test_shared_git_budget_fits_inside_the_hook_timeout(recorder: Any) -> None:
+    settings = json.loads((ROOT / ".claude" / "settings.json").read_text(encoding="utf-8"))
+    timeouts = [
+        handler["timeout"]
+        for event in settings["hooks"].values()
+        for entry in event
+        for handler in entry["hooks"]
+        if "record-decision.sh" in handler.get("command", "")
+    ]
+
+    assert timeouts, "record-decision.sh is not registered"
+    # Interpreter start-up and the write need the rest; half the hook timeout is the margin.
+    assert all(t / 2 >= recorder._GIT_BUDGET_S for t in timeouts)
 
 
 @pytest.mark.parametrize("bad", ["../escape", "a/b", "", None], ids=["dotdot", "slash", "empty", "missing"])
@@ -345,6 +390,28 @@ def test_main_on_garbage_stdin_exits_zero_without_stdout(repo: Path) -> None:
     assert result.returncode == 0
     assert result.stdout == b""
     assert b"record_decision" in result.stderr
+
+
+def test_main_runs_on_an_interpreter_without_datetime_utc(repo: Path) -> None:
+    """The hook runs the host's ``python``, not the hatch env, so the repo's 3.11
+    floor does not bind it. ``datetime.UTC`` is 3.11+; on 3.10 an import of it
+    fails before ``main()``'s ``try`` and the wrapper hides the exit.
+
+    No 3.10 interpreter is assumed on the test host, so the 3.10 condition is
+    injected: ``datetime.UTC`` is deleted before the recorder is loaded.
+    """
+    _repo_layout(repo, recorder_body=(SCRIPTS / "record_decision.py").read_text(encoding="utf-8"))
+    script = repo / "scripts" / "record_decision.py"
+    loader = f"import datetime, runpy; del datetime.UTC; runpy.run_path({str(script)!r}, run_name='__main__')"
+    result = subprocess.run(
+        [sys.executable, "-c", loader],
+        input=json.dumps(ANSWERED["a-followed"][0]).encode("utf-8"),
+        capture_output=True,
+        check=False,
+    )
+
+    assert result.returncode == 0, result.stderr.decode("utf-8", "replace")
+    assert [line["event"] for line in _lines(repo)] == ["asked"]
 
 
 def test_main_appends_under_its_own_repo_root(repo: Path) -> None:

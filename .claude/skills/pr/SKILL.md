@@ -15,12 +15,11 @@ Fall back to `gh` CLI for GraphQL-only flows like review-thread resolution.
 
 ## Steps
 
-1. **Pre-check:** Verify not on master. Commit any uncommitted `sdd/decisions/`
-   tail first, alone, with subject `<ID>: decision log` (bare `decision log` when
-   the branch carries no item): dialogs after the branch's last commit leave one
-   ([RFC-0018 D2](../../../sdd/rfcs/rfc-0018-decision-capture-at-dialog-time.md)).
-   Then verify the working tree clean and the branch pushed to remote. Push
-   with `-u` if needed. Then run the [branch freshness
+1. **Pre-check:** Verify not on master, the working tree clean apart from the
+   decision log (`git status --porcelain -- . ':(exclude)sdd/decisions/'` prints
+   nothing), and the branch pushed to remote. Push with `-u` if needed. The log
+   is left for Step 6, because this skill's own questions append to it. Then run
+   the [branch freshness
    check](../../../sdd/CLAUDE-REFERENCE.md#branch-freshness) with `<BASE>`.
 
 2. **Validation gates:** Run the shared [PR validation
@@ -58,12 +57,24 @@ Fall back to `gh` CLI for GraphQL-only flows like review-thread resolution.
    check the appropriate Type of change box, link any related issues, fill the
    Checklist. The template is the authoritative body shape.
 
-6. **Create PR** using `create_pull_request`:
+6. **Commit the decision-log tail**, after the last step that can ask a
+   question. Dialogs since the branch's last commit, this skill's own included,
+   leave uncommitted lines in `sdd/decisions/`
+   ([RFC-0018 D2](../../../sdd/rfcs/rfc-0018-decision-capture-at-dialog-time.md)).
+   If `git status --porcelain -- sdd/decisions/` prints anything, run
+   `git add -- sdd/decisions/`, then
+   `git commit -m "<ID>: decision log" -- sdd/decisions/` (bare `decision log`
+   when the branch carries no item), then push. The pathspec is what makes the
+   commit hold the log alone: without it, `git commit` also takes anything
+   already staged. The `git add` comes first because a pathspec commit fails on
+   a path git does not yet track.
+
+7. **Create PR** using `create_pull_request`:
    - `owner: "haalfi"`, `repo: "remote-store"`
    - `head:` current branch, `base:` `<BASE>`
    - `title:` and `body:` from step 5
 
-7. **Report** the PR URL.
+8. **Report** the PR URL.
 
 ## Rules
 

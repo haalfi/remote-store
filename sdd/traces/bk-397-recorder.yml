@@ -71,5 +71,23 @@ phases:
       - file: .claude/skills/ship/SKILL.md
         section: "Reviewer permissions: main-tree capture"
         read_type: verify
-        extract: "Ran git status --porcelain --untracked-files=all with and without -- . ':(exclude)sdd/decisions/' while the log was untracked: the excluded form omitted exactly that path"
+        extract: "In this worktree, git status --porcelain --untracked-files=all (orchestrate's spelling) with and without -- . ':(exclude)sdd/decisions/' while the log was untracked: the excluded form omitted exactly that path. That was not ship's spelling, which uses the default untracked mode (review finding). Measured that one in a scratch repo, git 2.52.0.windows.1, sdd/ tracked and sdd/decisions/ wholly untracked: plain porcelain printed '?? sdd/decisions/' (the collapsed directory entry); git status --porcelain -- . ':(exclude)sdd/decisions/' printed nothing, and still printed ' M sdd/BACKLOG.md' once a tracked file beside it was edited"
         outcome: ok
+  - id: review_fix_1
+    name: Review fix pass 1
+    steps:
+      - file: scripts/record_decision.py
+        section: "imports, _git, record fallback"
+        read_type: verify
+        extract: "Three findings, each pinned by a test seen red first. datetime.UTC is 3.11+ and the hook runs the host python, which requires-python does not bind: replaced by timezone.utc; no 3.10 on this host (py -3.10 absent), so the test deletes datetime.UTC before loading the recorder, an injection. The raw-name fallback committed cwd, transcript_path and scratchpad_dir; now dropped, and a grep of sdd/decisions/ for those keys and for drive or home paths found 0 matches. Two git calls at 5 s each could reach the hook's 10 s timeout and lose the event: one shared 4 s deadline. Mutations: per-call budget instead of shared (elapsed 2.0 s against the 1.0 s assertion); budget 6.0 (fits-inside assertion). My miss: the formatter rewrote timezone.utc to UTC in the first pass and I accepted it against the repo floor, not the hook's interpreter"
+        outcome: ok
+      - file: .claude/skills/pr/SKILL.md
+        section: "Steps 1 and 6"
+        read_type: verify
+        extract: "The tail commit moved from Step 1 to a new Step 6, after the last step that can ask (maintainer's choice), so /pr's own questions reach the PR. Step 1 checks the tree clean apart from sdd/decisions/. Measured in a scratch repo: git commit -m X -- sdd/decisions/ fails on an untracked path ('pathspec did not match any file(s) known to git'); after git add -- sdd/decisions/ it commits only the log and leaves an unrelated staged file staged"
+        outcome: ok
+      - file: sdd/rfcs/rfc-0018-decision-capture-at-dialog-time.md
+        section: "D1, D2 Who commits it, Impact"
+        read_type: verify
+        extract: "Impact listed AUTHORING.md directory defaults and a GATE-INVENTORY.md regeneration as ripples; neither was needed or made. Narrowed to what was run (docs-check, docs-build, gen_gate_inventory --check pass with the log present), the maintainer's choice over an AUTHORING row. D1's fallback sentence and D2's tail-commit placement follow the code changes"
+        outcome: misleading
