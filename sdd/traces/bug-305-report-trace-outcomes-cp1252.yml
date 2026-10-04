@@ -18,7 +18,11 @@ expected_ripples:
   - sdd/BACKLOG-DONE.md
   - sdd/backlogid.json
   - sdd/backlog/id-267-trace-outcome-revisit.md
-surprising_ripples: []
+surprising_ripples:
+  # Caught in review: a done item's dossier also carried the workaround as a
+  # present-tense instruction, and nothing in the ripple-check asks for a sweep
+  # of closed items' dossiers when a fix retires a workaround they state.
+  - sdd/backlog/id-259-trace-outcome-revisit.md
 phases:
   - id: orient
     name: Orient
@@ -68,8 +72,11 @@ phases:
         read_type: verify
         extract: >-
           A present-tense instruction to use PYTHONIOENCODING until BUG-305
-          closes; removed. ID-259's dossier and trace narrate the bug in the
-          past tense and stay.
+          closes; removed. ID-259's trace narrates the workaround in the past
+          tense and stays. ID-259's dossier still stated it as a present-tense
+          instruction, which review caught (Grep `PYTHONIOENCODING` over the
+          repo then returned only it, ID-259's trace and this trace); it got a dated correction rather
+          than a rewrite, since a dossier's evidence is not rewritten.
         outcome: ok
       - file: sdd/CLAUDE-REFERENCE.md
         section: "Ripple-check / Bug fix row vs _schema.yml audience rule"
