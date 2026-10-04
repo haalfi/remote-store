@@ -16,7 +16,12 @@ is one sample. This item is that second reading.
 **Baseline**, from BK-386's close at `39059422c`: the v0.33.0 section (then
 `Unreleased`) at 30 entries, 11 with a dossier at a median of 100 words, 0
 unlinked, 19 without at a median of 529. BK-386's dossier lists the eleven by ID
-and word count.
+and word count. **It does not reproduce from the released register.** The
+release PR then added two close entries to that section, BK-386 and ID-259, each
+linking its dossier, so `hatch run report-done-length` on the release branch
+prints `v0.33.0 | 32 | 288.5 | 13 | 98 | 0 | 19 | 529`. Compare against the
+recorded baseline, which excludes those two: re-run it at `39059422c` in a
+worktree, or drop BK-386 and ID-259 from the eleven-plus-two.
 
 **Read at the release, not before**, as BK-386 did: the *With dossier* median of
 the section the release renames from `Unreleased`, its *Unlinked* count, and its

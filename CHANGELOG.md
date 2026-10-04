@@ -19,18 +19,23 @@ This project follows [Semantic Versioning](https://semver.org/). Pre-1.0, minor 
   there keeps resolving to v0.32.x, and a pin to 0.33.0 fails at resolution
   rather than installing. Move to 3.11 or newer to upgrade. See the
   [migration guide](https://docs.remotestore.dev/stable/reference/migration/#v0320-to-v0330).
+- **Python versions are supported for as long as CPython ships security fixes
+  for them** (BK-375): five years from each release, replacing the three-year
+  window the [dependency policy](https://docs.remotestore.dev/stable/explanation/dependency-policy/)
+  first published. It is a widening, so no user lost a version by it; 3.10's
+  window is the one that closes with this release.
 - **The store root answers from the key when its container is gone**
   (BUG-254, **Breaking**): five backend classes disagreed with the contract in
   two opposite directions once the bucket or container was missing. On
   `S3Backend` and `S3PyArrowBackend`, `exists("")` and `is_folder("")` now
   answer `True` instead of `False`, so `Store.get_folder_info("", max_depth=N)`
-  aggregates to zero instead of raising `NotFound`; against a bucket you are
-  denied, the same two probes answer `True` where they answered `False` and
-  raised `PermissionDenied`. On `S3Boto3Backend`, `AzureBackend` and
-  `AsyncAzureBackend`, `get_folder_info("")` aggregates to zero files instead
-  of raising `NotFound`.
+  aggregates to zero instead of raising `NotFound`. Against a bucket you are
+  denied, both probes now answer `True` too, where `exists("")` answered
+  `False` and `is_folder("")` raised `PermissionDenied`. On `S3Boto3Backend`,
+  `AzureBackend` and `AsyncAzureBackend`, `get_folder_info("")` aggregates to
+  zero files instead of raising `NotFound`.
   An `except NotFound` or `except PermissionDenied` written to detect a
-  missing container around those calls no longer fires; `Store.ping()` remains
+  missing or denied container around those calls no longer fires; `Store.ping()` remains
   the operation that reports an unreachable store. A closed backend still
   refuses at the root with `BackendUnavailable` on all five. See the
   [migration guide](https://docs.remotestore.dev/stable/reference/migration/#v0320-to-v0330).
@@ -42,18 +47,6 @@ This project follows [Semantic Versioning](https://semver.org/). Pre-1.0, minor 
   `max_depth` into `recursive` before delegating; only code calling the backend
   directly needs to pass `recursive=True` alongside `max_depth`. See the
   [migration guide](https://docs.remotestore.dev/stable/reference/migration/#v0320-to-v0330).
-- **Python versions are supported for as long as CPython ships security fixes
-  for them** (BK-375): five years from each release, replacing the three-year
-  window the [dependency policy](https://docs.remotestore.dev/stable/explanation/dependency-policy/)
-  first published. It is a widening, so no user lost a version by it; 3.10's
-  window is the one that closes with this release.
-- **The conformance suite refuses the store root under every spelling**
-  (ID-251): its write and `move`/`copy`-destination cells now try all six
-  spellings that address the root (`""`, `"."`, `"./"`, `"/"` and the rest)
-  and accept an error naming the root under any of them. A custom backend whose
-  write guard checks only `""` and `"."` now fails those cells instead of
-  passing them; the custom-backend guide states which narrow guards that
-  catches.
 
 ### Fixed
 
@@ -137,6 +130,11 @@ This project follows [Semantic Versioning](https://semver.org/). Pre-1.0, minor 
   to implement the backend contract once, over thin per-backend drivers, has
   its open design questions answered and is proposed as ADR-0042. Nothing
   changes for users yet; it is accepted with the first backend built on it.
+- **The conformance suite refuses the store root under every spelling**
+  (ID-251): its write and `move`/`copy`-destination cells now try all six
+  spellings that address the root (`""`, `"."`, `"./"`, `"/"` and the rest),
+  not only `""` and `"."`. The custom-backend guide states which narrow write
+  guards those cells catch.
 
 ## [0.32.0] - 2026-09-13
 

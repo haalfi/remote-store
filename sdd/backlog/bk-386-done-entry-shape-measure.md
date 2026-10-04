@@ -56,7 +56,9 @@ the same change.
 
 Read at the release base `39059422c`, before Phase 2 renames the section, so
 the section is still `Unreleased`; v0.32.0's row is unchanged from the
-baseline above.
+baseline above. The release PR adds this item's and ID-259's close entries to
+the section afterwards, so the released v0.33.0 row reads 32 entries and 13 with
+a dossier; BK-406 records how to compare against the row below.
 
 | Section | Entries | Median | With dossier | Median | Unlinked | Without | Median |
 | --- | ---: | ---: | ---: | ---: | ---: | ---: | ---: |

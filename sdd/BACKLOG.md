@@ -794,8 +794,8 @@ CHANGELOG the release body is built from — say what is actually true.
 
 - [ ] **BK-406 — ADR-0041's short done entry is measured on one release only**
   spec: — · effort: S · audience: contributor.process
-  BK-386 kept ADR-0041's review-only rule at v0.33.0: 11 dossier entries, all
-  linked, median 100 words against 529 without. One release is one sample, so
+  BK-386 kept ADR-0041's review-only rule at the v0.33.0 release base: 11 dossier
+  entries, all linked, median 100 words against 529 without. One release is one sample, so
   the reading repeats once. Open decision: at the next release, keep, gate or
   reverse, and whether the Phase 0 line stays.
   Detail: [dossier](backlog/bk-406-done-entry-shape-remeasure.md)
