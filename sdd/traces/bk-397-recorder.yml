@@ -18,6 +18,11 @@ expected_ripples:
   - ".claude/skills/orchestrate/SKILL.md"
   - "sdd/CLAUDE-REFERENCE.md"
   - "sdd/BACKLOG.md"
+  - "tests/scripts/fixtures/record_decision/live-pre.json"
+  - "tests/scripts/fixtures/record_decision/live-post.json"
+  - "sdd/decisions/24c9a1ec-ee6e-4d95-ab22-352eea31346e.jsonl"
+surprising_ripples:
+  - ".claude/skills/rvw-pr/SKILL.md"
 phases:
   - id: orient
     name: Orient
@@ -128,3 +133,11 @@ phases:
         read_type: verify
         extract: "The comment claimed 'not via $CLAUDE_PROJECT_DIR', but the registration runs the file through that variable, so the two are one path. Comment now states the anchor; D2 states the bound that a session committing in another checkout than its project directory leaves the log behind there. The recorder keeps the project-directory anchor: the cwd would send logs into /ship's tmp/review worktrees, which are removed"
         outcome: misleading
+  - id: review_fix_5
+    name: Review fix pass 5
+    steps:
+      - file: .claude/skills/rvw-pr/SKILL.md
+        section: "Step 1"
+        read_type: verify
+        extract: "Primed measuring self-review at 242999127 in a subagent (solo pass, review worktree; tree checks clean, branch unmoved). Four findings, all taken. The no-root read used --paginate unchecked, which Step 4 of the same file forbids, and printed null for a missing patch: now an explicit page= walk at per_page=100 with a visible marker. Measured: at per_page=5 the 16 files end on a page of 1; jq on synthetic rows printed the marker for a binary and a rename and dropped the log row. Grep, Glob, git show and git log -p were a third route to the log: Step 1 now names the glob and pathspec. CLAUDE-REFERENCE's PR I/O table still gave the unfiltered root diff: fixed. The trace lacked surprising_ripples for rvw-pr, and three changed files sat in neither list: added"
+        outcome: ok
