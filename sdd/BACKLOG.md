@@ -910,3 +910,12 @@ coverage floor.
   setup-only jobs hold the slots ([audit-022](audits/audit-022-gate-speed-strategies.md)
   § L3, at most ~30 s). Gating them behind `prepare-images` delays them in
   turn. Open decision: adopt only if a measured run shows a net gain.
+
+- [ ] **ID-268 — Closing a PR needs a manual agent round trip before it can merge**
+  spec: — · effort: M · audience: contributor.process, infra.ci
+  The trace's `review:` block is pasted at the close (`CLAUDE.md` § Trace
+  authoring), so a converged, green PR waits for an agent run, a push and a CI
+  re-run before the maintainer can merge (PR #1071). GitHub has no pre-merge
+  step that edits a PR. Open decision: which of the dossier's five shapes, if
+  any; it interacts with ID-266's `merge-candidate` and with BK-384.
+  Detail: [dossier](backlog/id-268-pr-close-step.md)
