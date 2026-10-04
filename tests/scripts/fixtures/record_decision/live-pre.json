@@ -1,0 +1,33 @@
+{
+ "session_id": "24c9a1ec-ee6e-4d95-ab22-352eea31346e",
+ "transcript_path": "<transcript_path>",
+ "cwd": "<cwd>",
+ "scratchpad_dir": "<scratchpad_dir>",
+ "prompt_id": "c5cc96b5-cfd6-4b13-bd5b-758f02236620",
+ "permission_mode": "auto",
+ "effort": {
+  "level": "medium"
+ },
+ "hook_event_name": "PreToolUse",
+ "tool_name": "AskUserQuestion",
+ "tool_input": {
+  "questions": [
+   {
+    "question": "The recorder is registered on PreToolUse and PostToolUse only. If someone later registers it on another event (e.g. PostToolUseFailure), what should it do with that payload?",
+    "header": "Unknown evt",
+    "options": [
+     {
+      "label": "Keep under raw name (Recommended)",
+      "description": "Append a line with event=<hook_event_name> and the whole payload. Nothing is lost; readers skip unknown kinds, as the amended RFC requires. Current implementation."
+     },
+     {
+      "label": "Drop it",
+      "description": "Write nothing for unregistered events. The log only ever holds asked/answered; a future registration silently records nothing until the recorder is extended."
+     }
+    ],
+    "multiSelect": false
+   }
+  ]
+ },
+ "tool_use_id": "toolu_017WrNs7UzsbXTgpMt7n9fBD"
+}

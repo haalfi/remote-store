@@ -15,8 +15,12 @@ Fall back to `gh` CLI for GraphQL-only flows like review-thread resolution.
 
 ## Steps
 
-1. **Pre-check:** Verify not on master, working tree clean, branch pushed to
-   remote. Push with `-u` if needed. Then run the [branch freshness
+1. **Pre-check:** Verify not on master. Commit any uncommitted `sdd/decisions/`
+   tail first, alone, with subject `<ID>: decision log` (bare `decision log` when
+   the branch carries no item): dialogs after the branch's last commit leave one
+   ([RFC-0018 D2](../../../sdd/rfcs/rfc-0018-decision-capture-at-dialog-time.md)).
+   Then verify the working tree clean and the branch pushed to remote. Push
+   with `-u` if needed. Then run the [branch freshness
    check](../../../sdd/CLAUDE-REFERENCE.md#branch-freshness) with `<BASE>`.
 
 2. **Validation gates:** Run the shared [PR validation

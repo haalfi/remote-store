@@ -214,11 +214,15 @@ spawn and require all three unchanged before triage:
 git rev-parse HEAD
 ```
 ```bash
-git status --porcelain --untracked-files=all
+git status --porcelain --untracked-files=all -- . ':(exclude)sdd/decisions/'
 ```
 ```bash
-git diff HEAD
+git diff HEAD -- . ':(exclude)sdd/decisions/'
 ```
+
+The exclusion is the decision log, which the recorder hook appends to whenever
+a dialog runs, including one during review; no reviewer writes there
+([RFC-0018 D2](../../../sdd/rfcs/rfc-0018-decision-capture-at-dialog-time.md)).
 
 `git diff HEAD` is the content-sensitive one, and it is what catches an edit to a
 file the authors already modified — porcelain prints ` M path` either way.

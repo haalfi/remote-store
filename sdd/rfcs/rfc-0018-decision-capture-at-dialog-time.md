@@ -2,10 +2,13 @@
 
 ## Status
 
-Draft, 2026-10-03. Tracked as **BK-397**. Nothing below is built. § Build order
+Accepted, 2026-10-04. Tracked as **BK-397**. Drafted 2026-10-03. § Build order
 step 0 ran on 2026-10-03 (§ Step 0 observations); D1, D3 and D4.0 are amended to
 what it observed. A failure-probe follow-up the same day amends D2, D3 and D4.2,
-D2 to an inference rather than an observation.
+D2 to an inference rather than an observation. On acceptance the maintainer
+omitted the `failed` path until it is observed (§ Open Questions 5), which
+amends the Summary, D1, D3 and D4. Built: step 1 and D2's commit and exclusion
+mechanics. Steps 2 and 3 are not.
 
 ## Summary
 
@@ -15,8 +18,8 @@ dialog already holds what a decision record needs: the question with its
 context, the options with their consequences, the agent's recommendation and the
 answer. It persists only in the session transcript, outside the repository, so
 the next session re-argues the why from the code. This RFC keeps the dialog
-verbatim: one hook, registered on three hook events, appends each asked,
-answered and failed event to a per-session JSONL file,
+verbatim: one hook, registered on two hook events, appends each asked and
+answered event to a per-session JSONL file,
 `sdd/decisions/<session_id>.jsonl`, committed with the work. Logs are bound to a
 branch when read, not when written. Three readers keep them from being
 write-only: the trace links them, `check_traces.py` validates them, and `/pr`
@@ -64,9 +67,9 @@ the answer was given. What is missing is persistence and a reader, not content.
 
 ## Proposal
 
-### D1. Capture: one hook, three event registrations, no model involvement
+### D1. Capture: one hook, two event registrations, no model involvement
 
-A thin hook, `.claude/hooks/record-decision.sh`, is registered on three events
+A thin hook, `.claude/hooks/record-decision.sh`, is registered on two events
 with matcher `AskUserQuestion` and runs the recorder,
 `scripts/record_decision.py`:
 
@@ -74,10 +77,10 @@ with matcher `AskUserQuestion` and runs the recorder,
 |---|---|---|
 | `PreToolUse` | `asked` | `tool_input` verbatim (questions, headers, options with descriptions, `multiSelect`) |
 | `PostToolUse` | `answered` | `tool_input` and `tool_response` verbatim |
-| `PostToolUseFailure` | `failed` | the error payload verbatim |
 
-Every event also carries `tool_use_id` (the pairing key, documented as common to
-all three events), `session_id`, a UTC timestamp, `HEAD`'s SHA and the branch
+`PostToolUseFailure` is not registered (§ Open Questions 5). Every event also
+carries `tool_use_id` (the pairing key, documented as common to both events),
+`session_id`, a UTC timestamp, `HEAD`'s SHA and the branch
 name, plus the hook process's `CLAUDE_CODE_REMOTE_SESSION_ID` when set, which is
 the identifier D4.0's trailer fallback matches (step 0 found the payload's
 `session_id` does not). The `PreToolUse` registration sits beside the existing
@@ -96,7 +99,9 @@ under `scripts/`, inside `lint` and `format`, and puts a `.sh` path in
 **Verbatim, not parsed.** The recorder stores payloads as received and does not
 interpret them. Interpretation lives in the readers (D3), so a payload-shape
 change in Claude Code breaks a reader's parse, which a test sees, rather than
-silently losing data at capture time.
+silently losing data at capture time. For the same reason a payload from any
+other event, should the hook ever be registered on one, is appended under its
+raw `hook_event_name` with the whole payload rather than dropped.
 
 ### D2. Storage: one append-only file per session, bound to work when read
 
@@ -142,15 +147,19 @@ set** is the labels marked `(Recommended)`, usually one and possibly several on 
 
 | Outcome | Condition (first match wins) |
 |---|---|
-| `failed` | a `failed` event exists |
 | `prefilled` | the `asked` event's `tool_input` carries an answer for the question and the `answered` event's answer equals it |
 | `unanswered` | no `answered` event, or the answer begins with `[User dismissed` (the dismissal sentinel; follow-up case a′) |
 | `other` | some answer matches no label (the "Other" free-text path) |
 | `followed` | the answer set equals the recommended set |
 | `alternative` | otherwise: every answer is a label and the set differs from the recommended set, or nothing was recommended |
 
-The order ranks what a reviewer must see first: a failure or an answer nobody
-gave outranks what the answer was.
+The order ranks what a reviewer must see first: an answer nobody gave outranks
+what the answer was.
+
+**Unknown event kinds are tolerated.** A reader that meets an event kind other
+than `asked` and `answered` skips it for classification and never fails on it,
+so a later registration (§ Open Questions 5) cannot break a reader written
+before it.
 
 **The sentinel is a harness string, matched by prefix, and that is a bound.**
 It is undocumented and was seen once (a′), in full
@@ -202,19 +211,14 @@ and the question is classified by the rows below it.
 1. **Trace link.** `sdd/traces/_schema.yml` gains an optional `decisions:` key,
    a list of log paths. A trace for work that ran dialogs lists its logs.
 2. **`check_traces.py`.** For each listed path: the file exists, every line
-   parses, every event has a known kind, and no `tool_use_id` has two `answered`
-   events. `unanswered` is reported, not failed. Declining a dialog is a
-   legitimate act, and the report is how it stays visible. A `tool_use_id`
-   with both an `answered` and a `failed` event is also reported: D3 still
-   classifies it, but it contradicts the assumption that the two Post events are
-   exclusive. Neither step 0 nor its follow-up could test it: no `failed` event
-   fired in 27 payloads (13 in step 0, 14 in the follow-up), so that assumption
-   and D3's `failed` row remain
-   unobserved.
+   parses, and no `tool_use_id` has two `answered` events. `unanswered` is
+   reported, not failed. Declining a dialog is a legitimate act, and the report
+   is how it stays visible. An event of unknown kind is reported, not failed
+   (D3).
 3. **`/pr`.** The skill renders a "Decisions" section from the committed log
    only, after Step 1 has committed the tail, so the body never cites an event
    the PR does not contain. One line per question: header → answer → outcome,
-   with `unanswered`, `failed` and `prefilled` flagged, and a link to each log.
+   with `unanswered` and `prefilled` flagged, and a link to each log.
    Reviewers see the why without anyone writing it.
 
 ### D5. Build order
@@ -266,9 +270,9 @@ and the question is classified by the rows below it.
   whose wiring table gains a Record layer and whose tolerated-divergence note
   extends to the new matcher values; `sdd/AUTHORING.md` directory defaults, for
   `sdd/decisions/`; `GATE-INVENTORY.md`, regenerated.
-- **Cost per dialog:** two short hook invocations and two appended lines (the
-  `PreToolUse` one, then whichever of the two Post events fires); one of each
-  for a denied dialog, which fired no Post event in step 0.
+- **Cost per dialog:** two short hook invocations and two appended lines,
+  `asked` then `answered`; one of each for a denied dialog, which fired no Post
+  event in step 0.
 
 **Acceptance.** Step 0 observed and its payload shapes recorded in § Step 0
 observations. Then, after the next three merged deliveries that ran dialogs: each
@@ -303,6 +307,16 @@ observations and the text below is kept as asked.
    trailer carries a claude.ai session URL; the hook payload carries a
    `session_id` of undocumented form. If they do not correspond, D4's trailer
    fallback is dropped and binding rests on recorded branch names alone.
+5. **The `failed` path, omitted until observed.** Decided by the maintainer on
+   acceptance, 2026-10-04: the hook is not registered on `PostToolUseFailure`,
+   and D3 has no `failed` outcome, because no trigger was found in 27 payloads
+   (§ Step 0 observations, follow-up) and the hooks reference makes the event
+   likely unreachable for this tool. A reader already tolerates an unknown event
+   kind (D3), so adding the event later breaks no reader. **Revisit when** a
+   real `PostToolUseFailure` payload for `AskUserQuestion` is seen: register the
+   hook on it, then restore a `failed` outcome and decide its precedence against
+   an `answered` event for the same `tool_use_id`, which the docs do not rule
+   out.
 
 **Decided by the maintainer while drafting**, in this RFC's own dialogs and
 recorded as answered (hand-copied, because the recorder does not exist yet):
@@ -443,8 +457,9 @@ both held `"Mike"`.
   correspond.
 - **Not changed:** the "Post events are exclusive" assumption and D3's `failed`
   row. Neither was contradicted: no `failed` event fired at all, so both stay
-  untested; D4.2 now says so. D3's `unanswered` row is confirmed by d, and
-  amended by the follow-up below.
+  untested; D4.2 then said so. Both were removed on acceptance (§ Open
+  Questions 5). D3's `unanswered` row is confirmed by d, and amended by the
+  follow-up below.
 
 ### Follow-up: what fires `PostToolUseFailure` (2026-10-03)
 
@@ -523,7 +538,7 @@ summary. Still unobserved: a timeout, and any
 genuine tool error after `PreToolUse`, and a container restart with a dialog
 open (reported, see above). Before step 1 builds the `failed` path,
 decide whether to ship it against a synthetic payload or leave it out until one
-is seen.
+is seen. Decided 2026-10-04: left out (§ Open Questions 5).
 
 **What the official docs say** (raw pages fetched 2026-10-03 and searched for
 each quoted phrase; a search-agent summary and a page-summarising fetch each

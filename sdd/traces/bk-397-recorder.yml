@@ -1,0 +1,75 @@
+id: BK-397
+title: "Interview-mode decisions leave no record in the repo, so their rejected options are unrecoverable"
+trigger: "/ship BK-397: accept RFC-0018 with the failed path omitted, build D5 step 1 (recorder, wrapper, registration)"
+source_items:
+  - BK-397
+audience:
+  - contributor.process
+  - contributor.tooling
+expected_ripples:
+  - "sdd/rfcs/rfc-0018-decision-capture-at-dialog-time.md"
+  - ".claude/settings.json"
+  - ".claude/hooks/record-decision.sh"
+  - "scripts/record_decision.py"
+  - "tests/scripts/test_record_decision.py"
+  - ".claude/hooks/gate-commit.sh"
+  - ".claude/skills/pr/SKILL.md"
+  - ".claude/skills/ship/SKILL.md"
+  - ".claude/skills/orchestrate/SKILL.md"
+  - "sdd/CLAUDE-REFERENCE.md"
+  - "sdd/BACKLOG.md"
+phases:
+  - id: orient
+    name: Orient
+    steps:
+      - file: sdd/rfcs/rfc-0018-decision-capture-at-dialog-time.md
+        section: "whole file, incl. Step 0 observations and the 2026-10-03 follow-up"
+        read_type: gate
+        extract: "D5 step 1 is recorder, wrapper, registration. D2's gate-commit staging, the /pr tail commit and the /ship and /orchestrate porcelain exclusions are listed in Impact but owned by no D5 step; registering the hook alone would leave an untracked sdd/decisions/ file after every dialog, tripping /pr's clean pre-check and the /ship and /orchestrate tree checks. Asked the maintainer: D2 mechanics built in this PR. Step 0's raw payloads were deleted, so 'feed the recorded step-0 payloads' could not be literal; fixtures are rebuilt from the RFC's verbatim fragments plus one live pair from this session"
+        outcome: unclear
+      - file: .claude/skills/ship/SKILL.md
+        section: "Steps 1-5, Reviewer permissions and the tree check"
+        read_type: gate
+        extract: "Main-tree porcelain capture is required unchanged across a round; a dialog during a round would break it once the recorder exists"
+        outcome: ok
+      - file: sdd/CLAUDE-REFERENCE.md
+        section: "Pre-work index; Interview mode"
+        read_type: gate
+        extract: "Rows hit: Backlog item touched, Test whose subject is outside src/ or scripts/ (HOOKS_PAT already matches ^.claude/hooks/; the recorder is under scripts/, in CODE_PAT), New test file (not os_sensitive: runs on Linux CI, also passes on Windows Git Bash). Interview-mode table gains a Record row"
+        outcome: ok
+      - file: tests/scripts/test_claude_hooks.py
+        section: "test_settings_hook_commands_point_at_files_that_exist"
+        read_type: reference
+        extract: "Existence check matches .sh paths only, so the wrapper keeps the new registration covered without a new test"
+        outcome: ok
+      - file: sdd/traces/_schema.yml
+        section: "audience derived rule"
+        read_type: reference
+        extract: "contributor.process and contributor.tooling only; the recorder is internal process tooling, not a user-facing framework: no CHANGELOG entry"
+        outcome: ok
+  - id: build
+    name: Build
+    steps:
+      - file: tests/scripts/test_record_decision.py
+        section: "whole file"
+        read_type: verify
+        extract: "Seen red first (ModuleNotFoundError before the recorder existed). First green run failed 5 bash tests on Windows: subprocess 'bash' resolves to WSL's System32 launcher before PATH, fixed by shutil.which. Wrapper mutation (no guard, no exit 0) turned both fail-open tests red with exit 2, which also measured D1's premise that a missing .py exits 2"
+        outcome: ok
+      - file: sdd/BACKLOG.md
+        section: "BUG-304"
+        read_type: reference
+        extract: "test_claude_hooks.py's 9 Windows failures (symlink privilege, no termios) are BUG-304's, pre-existing and unrelated; its settings existence check passes"
+        outcome: ok
+  - id: e2e
+    name: End-to-end
+    steps:
+      - file: sdd/decisions/24c9a1ec-ee6e-4d95-ab22-352eea31346e.jsonl
+        section: "first two lines"
+        read_type: verify
+        extract: "One real AskUserQuestion dialog in this local Windows session, after registration and with no restart: asked then answered, same tool_use_id, branch bk-397-decision-recorder, HEAD recorded. A temporary uncommitted settings.local.json probe dumped the raw pair, kept as tests/scripts/fixtures/record_decision/ with the three local paths replaced. New since step 0: an annotations key in tool_input and tool_response, effort as an object; both kept verbatim. Not exercised: a cloud session (CLAUDE_CODE_REMOTE_SESSION_ID path is covered by a unit test only). The trace cannot list the log under decisions: until step 2 adds the key"
+        outcome: ok
+      - file: .claude/skills/ship/SKILL.md
+        section: "Reviewer permissions: main-tree capture"
+        read_type: verify
+        extract: "Ran git status --porcelain --untracked-files=all with and without -- . ':(exclude)sdd/decisions/' while the log was untracked: the excluded form omitted exactly that path"
+        outcome: ok

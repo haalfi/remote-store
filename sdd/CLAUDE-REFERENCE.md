@@ -615,6 +615,7 @@ session and this is maintenance detail.
 | --- | --- |
 | Steering | An output style saying when a decision is the user's to make, and how to shape the options |
 | Notification | Bell plus desktop notification when a dialog opens or the session goes idle |
+| Record | Appends each dialog's asked and answered events to `sdd/decisions/<session_id>.jsonl`, staged by `gate-commit.sh`; design in [RFC-0018](rfcs/rfc-0018-decision-capture-at-dialog-time.md) |
 
 Which events fire which layer is declared in `.claude/settings.json`. Read it
 there; a second copy here would rot.
@@ -622,7 +623,7 @@ there; a second copy here would rot.
 **Ungated on purpose** — this table and `settings.json` are a hand-maintained
 pair, and no check binds them. It is therefore a tolerated divergence, and this
 paragraph is its [DRIFT-RULES Rule 6](DRIFT-RULES.md#tolerated) register entry.
-Owner: whoever next edits either side. Rationale: the claim space is two rows
+Owner: whoever next edits either side. Rationale: the claim space is a few rows
 that change about once a year, so a gate costs more to build and maintain than
 the drift it would catch — a gate here would be the tail wagging the dog, which
 is the mistake this feature's own history is a record of. If it is ever built,
@@ -632,7 +633,7 @@ is the mistake this feature's own history is a record of. If it is ever built,
 since the table was written from the same file it would be checked against.
 
 The same register entry covers the **hook matcher values** in `settings.json`
-(`AskUserQuestion`, `idle_prompt`). Those name events in Claude Code, not in this
+(`AskUserQuestion` on `PreToolUse` and `PostToolUse`, `idle_prompt`). Those name events in Claude Code, not in this
 repo, so nothing here can confirm them: a typo is indistinguishable from a hook
 that never fires, and the failure mode is silence — on a feature whose whole
 purpose is to stop questions being silent. What *is* gated is that every

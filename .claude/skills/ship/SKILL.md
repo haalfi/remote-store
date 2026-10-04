@@ -188,7 +188,10 @@ this reasoning is the failure the sibling-sweep rule exists to catch.
   <branch>` and require `git rev-parse origin/<branch>` still equal to `<sha>`.
   A push during the round means the passes certified a superseded commit;
   re-run them against the new one. And keep one capture in the main tree:
-  `git status --porcelain` at spawn, required unchanged before triage. An
+  `git status --porcelain -- . ':(exclude)sdd/decisions/'` at spawn, required
+  unchanged before triage. The exclusion is the decision log, which the
+  recorder hook appends to whenever a dialog runs, round or not; no reviewer
+  writes there ([RFC-0018 D2](../../../sdd/rfcs/rfc-0018-decision-capture-at-dialog-time.md)). An
   `Agent`'s Bash runs in the main tree on every call (measured, `/rvw-pr`
   § Review root), so a member that drops the `-C` / `env -C` prefix and runs a
   writing alias dirties the tree the next fix pass commits from while the
