@@ -78,18 +78,36 @@ worked out in detail; that is a direction to explore, not a choice.
   `2a174de`, the first SHA in `sdd/traces/bk-378-d1-d4.yml`'s
   `review_driven_commits` (PR #1026, squash-merged), resolves through the
   commits API (`get_commit`, run 2026-10-05). One sample. What holds is the
-  weaker claim, held only by `ship_report.py`'s Bounds (lines 118-121): the
-  SHAs are not *reachable from master*. The refuted "stop resolving" claim
-  also sits in four places outside this dossier (Grep, 2026-10-05):
-  - RFC-0015 D4, `rfc-0015-ship-two-surfaces.md:596` ("It does not buy SHAs
-    that resolve") and :613 ("During the loop the branch SHAs resolve");
-  - `sdd/traces/_schema.yml:234-236` ("the SHAs stop resolving at the merge");
-  - `_schema.yml:312-313`, `pr` as "the only field here that still resolves
-    once the PR is merged";
-  - `scripts/ship_report.py:447-448`, the same sentence in `trace_block()`.
+  weaker claim the Bounds measure at `ship_report.py:115-117`: the SHAs are
+  not *reachable from master* (0 of 9).
 
-  They stay as written until whoever acts on ID-268 corrects them, with a
-  second sample first. Shape 6's *Gains* does not rest on this claim: the
+  **Sites outside this dossier.** Found by a case-insensitive multiline Grep
+  at `0c5f9fa9`, excluding `sdd/decisions/` and `sdd/backlog/`, for
+  `SHAs[\s\S]{0,40}?(resolv|check\s+out|dying)`, `squash\s+merge\s+retires`,
+  `survives\s+the\s+merge`, `still\s+resolves`, `orphaned\s+on\s+arrival`,
+  `handle\s+that\s+survives` and `durable\s+handle`. Three hits are
+  unrelated: `record_cassettes.py:159`, `BACKLOG-DONE.md:15`, and the
+  `bk-357` trace. The rest:
+  - *States the refuted claim* (SHAs stop resolving, or `pr` is the only
+    field that still resolves):
+    - `ship_report.py:122-123` and `:130`, inside the Bounds;
+    - `ship_report.py:447-448`, in `trace_block()`;
+    - RFC-0015 `:596-597` and `:613`;
+    - `_schema.yml:234` and `:312-313`.
+  - *Ambiguous wording* (a squash "retires" the SHAs, `pr` is "the durable
+    handle"), true under the reachability reading:
+    - `ship_report.py:99` and `:124`;
+    - RFC-0015 `:406` and `:606-609`;
+    - `_schema.yml:236-238`, `:314-315` and `:391-394`;
+    - `test_ship_report.py:453-457`, the docstring of
+      `test_the_block_names_the_pr_it_measures`, and `:848`.
+  - *Pins wording:* `test_ship_report.py:840` asserts the Bounds heading at
+    `ship_report.py:99`, so rewording that heading breaks the guard.
+  - *Historical record, not corrected:* `BACKLOG-DONE.md:569-575`.
+
+  The live sites stay as written until whoever acts on ID-268 corrects them,
+  with a second sample first. `ship_report.py:122-123` also conflicts with
+  the next bullet, where `ensure_commit()` fetches a post-merge head by SHA. Shape 6's *Gains* does not rest on this claim: the
   squash SHA D4 withheld is `merge_commit_sha` on an *open* PR, GitHub's
   ephemeral test merge, which is a different commit.
 - **The script runs post-merge with one caveat, read from the code.**
@@ -220,30 +238,43 @@ worked out in detail; that is a direction to explore, not a choice.
      and, when the count is above zero, a verdict in `triage()`'s vocabulary
      (`must-fix` / `filed` / `refuted` / `unknown`). Zero is carried by the
      count alone; the vocabulary is not extended.
-     - *Clean rounds are tagged by their author, not by a fix pass.* A clean
-       round gets no fix pass (`/ship`: "a clean round needs no successor",
-       `ship/SKILL.md:625-626`), and `/ship`'s closing unprimed pass is one by
-       construction. So `/rvw-pr` Step 4 puts the round marker, with findings
-       count 0, in its own body-only review. A fix pass only tags feedback
-       that `/rvw-pr` did not post: human reviews, other bots, conversation
-       comments.
-     - *Counting:* a source-3/4 comment is a round iff a tag or a `/rvw-pr`
-       round marker names it. A review that already has inline findings is
+     - *Clean rounds are marked by whoever posts the round, not by a fix
+       pass.* A clean round gets no fix pass (`/ship`: "a clean round needs
+       no successor", `ship/SKILL.md:625-626`), and `/ship`'s closing unprimed
+       pass is one by construction. The round marker, with findings count 0
+       when clean, goes into the round's review, posted by:
+       - `/rvw-pr` Step 4, when a round has one reviewer;
+       - `/ship`'s orchestrator, for a panel round. Panel members run
+         `/rvw-pr` analyze-only and skip Step 4, and the orchestrator posts
+         the merged round (`ship/SKILL.md:228-240`). Panels cover every odd
+         round from round 3 and a close appending two or three passes
+         (`:244-247`).
+
+       The orchestrator posts exactly one marker per round, never one per
+       member, and posts a body-only review for a clean panel round, which
+       nothing requires today. A fix pass only tags feedback no round
+       marker covers: human reviews, other bots, conversation comments.
+     - *Counting:* a source-3/4 comment is a round iff a tag or a round
+       marker names it. A review that already has inline findings is
        one `by_round` entry and is not tagged, so no round counts twice.
      - *Exclusion rule, still needed:* the tag comments and shape 6's own
-       snapshot comment carry a skip marker, distinct from `/rvw-pr`'s round
-       marker, and both `/fix-pr`'s triage and the script skip comments
+       snapshot comment carry a skip marker, distinct from the round marker,
+       and both `/fix-pr`'s triage and the script skip comments
        carrying it. Login cannot separate the rest: `/rvw-pr` posts with the
        owner token, so reviewer and author share one.
-     - *Residual:* feedback that neither `/rvw-pr` posted nor a fix pass
+     - *Residual:* feedback that no round marker covers and no fix pass
        tagged stays untagged. The script reports untagged, unmarked
-       source-3/4 comments as an `untagged` count. That count is an upper bound on missed feedback, not a count of
-       it, because author replies and status comments land there too.
+       source-3/4 comments as an `untagged` count. That count is an upper
+       bound on missed feedback, not a count of it, because author replies
+       and status comments land there too.
 
-     Costs amendments to `/fix-pr`, to `/ship`'s "Close each round" (it runs
-     `/fix-pr`'s mechanics inline rather than invoking it, `ship/SKILL.md:531-536`)
-     and to `/rvw-pr` Step 4, plus a tag and marker format all three and the
-     script parse.
+     Costs amendments to:
+     - `/fix-pr`;
+     - `/ship`'s "Close each round", which runs `/fix-pr`'s mechanics inline
+       rather than invoking it (`ship/SKILL.md:531-536`);
+     - `/ship`'s panel-posting paragraph (`:228-240`);
+     - `/rvw-pr` Step 4;
+     - a tag and marker format that all of them and the script parse.
 7. **`git notes` on the squash commit.** As 6, but the block goes to
    `refs/notes/review` instead of a comment. Keeps the record in git. Notes
    are not fetched by default, few readers know them, and whether the
