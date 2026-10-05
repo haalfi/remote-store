@@ -83,4 +83,4 @@ full".
   Phase 0's sensitivity run already relaxed part of those rows to only 54.7%
   FULL, so the gain is open. Its next step is a replay with Phase 0's harness
   against the same targets:
-  [`bucket-rules.md`](../research/bk-403-rule-buckets/bucket-rules.md).
+  [`bucket-rules.md`](../research/bk-403-phase-0/bucket-rules.md).

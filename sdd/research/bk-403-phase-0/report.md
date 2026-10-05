@@ -128,6 +128,8 @@ idea.**
   `pyproject.toml` and `.github/**`, which fire on 59 of the 106 PRs, and the
   base modules every test reaches. Narrowing the two coarsest rows alone is
   not enough: the sensitivity run still falls back on 54.7%.
+  An unmeasured candidate for that next idea, added after this run:
+  [`bucket-rules.md`](bucket-rules.md).
 - **BK-404 (local fast target):** open, blocked on BK-403. A local target over
   this selector would run the full suite on about 7 of 10 code diffs.
 - **ID-266 (CI fast lane):** open, blocked on BK-403 for the same reason. The

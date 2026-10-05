@@ -5,7 +5,7 @@
 **Backlog items:** BK-403, BK-404, ID-266
 **Status:** Proposal, **unmeasured**. A rule set agreed in a maintainer
 interview, kept as the alternative to the D5 selector that
-[Phase 0](../bk-403-phase-0/report.md) stopped. Nothing here is built or
+[Phase 0](report.md) stopped. Nothing here is built or
 replayed.
 
 ## Question
@@ -104,5 +104,5 @@ answers. Every row is therefore a reasoned rule, not an observed one.
 
 Replay this rule set with Phase 0's harness (`replay_h.py`,
 `summarize_h.py`, `seeds.py`) on the same 106 code PRs and the same seeds,
-against the same targets in [`plan.md`](../bk-403-phase-0/plan.md). That
+against the same targets in [`plan.md`](plan.md). That
 gives a like-for-like comparison with the stopped D5 selector.
