@@ -160,8 +160,18 @@ worked out in detail; that is a direction to explore, not a choice.
      needs a post-merge base (Evidence, 2026-10-05) and a way to find the PR
      number (trace field or the squash subject). A `workflow_dispatch` input
      for a PR number covers backfill and a failed run.
-   - *Does not fix:* the conversation-comment undercount. It stops mattering
-     for convergence, but the frozen figures inherit it, so it needs its own item.
+   - *Final round count, including conversation rounds (folded in
+     2026-10-05).* A purpose of the snapshot is the PR's final review-round
+     figures: rounds as submissions (`by_round`) and `review_rounds`, which
+     counts review-driven *commits* (`ship_report.py` Bounds). Post-merge,
+     both are final, and the run also counts rounds posted as PR conversation
+     comments (`issues/<N>/comments`), which today's script never reads (the
+     PR #1071 undercount above). Reading them after the merge primes no
+     reviewer, since the loop is over. Open: what marks a conversation comment
+     as a round. `/rvw-pr` always submits a review (its Step 4), so #1071's
+     comment rounds came from another path and carry no marker this dossier
+     has found; the script needs a convention (e.g. a heading) or the posting
+     path changed to submit reviews.
 7. **`git notes` on the squash commit.** As 6, but the block goes to
    `refs/notes/review` instead of a comment. Keeps the record in git. Notes
    are not fetched by default, few readers know them, and whether the
