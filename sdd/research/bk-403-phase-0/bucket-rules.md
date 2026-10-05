@@ -181,6 +181,18 @@ correctness fixes and declined its inventory and import-closure layers
 ## Next step
 
 Replay this rule set with Phase 0's harness (`replay_h.py`,
-`summarize_h.py`, `seeds.py`) on the same 106 code PRs and the same seeds,
-against the same targets in [`plan.md`](plan.md). That gives a like-for-like
-comparison with the stopped D5 selector.
+`summarize_h.py`, `seeds.py`) on the same 106 code PRs and the same seeds.
+
+**It is judged on net time saved, not on zero misses.** This lane exists to
+cut wait time in local and pre-merge rounds; safety is the merge-head gate's
+job. Phase 0's zero-miss exit ([`plan.md`](plan.md)) is a merge-barrier
+criterion and does not apply here. Two criteria, fixed before the run:
+
+- **Saving:** the median wall-clock share of a selected run is at most 50%,
+  Phase 0's own saving target.
+- **Net of escapes:** the escapes `--verify` finds, each costed as one extra
+  full run, sum to less than the time the selection saves across the same
+  PRs.
+
+The FULL-fallback rate and every escape, with its row, are reported but are
+not pass or fail criteria on their own.

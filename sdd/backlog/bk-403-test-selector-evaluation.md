@@ -81,6 +81,7 @@ full".
   fallback (`pyproject.toml` split by section, `.github/**` lint-only locally,
   backend-only `src/` edits narrowed via `backends.toml`). Base modules stay FULL, and
   Phase 0's sensitivity run already relaxed part of those rows to only 54.7%
-  FULL, so the gain is open. Its next step is a replay with Phase 0's harness
-  against the same targets:
+  FULL, so the gain is open. Its next step is a replay with Phase 0's harness,
+  judged on net time saved rather than Phase 0's zero-miss exit, since this
+  lane is a speed lane and the merge-head gate is the safety net:
   [`bucket-rules.md`](../research/bk-403-phase-0/bucket-rules.md).
