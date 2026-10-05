@@ -76,3 +76,9 @@ full".
   stays Draft, because the motivation stands and a better selection idea is the
   open work. Question, answer, figures and their derivations:
   [Phase 0 report](../research/bk-403-phase-0/report.md).
+- **2026-10-05, alternative proposed, unmeasured:** a coarse path-bucket rule
+  set from a maintainer interview, aimed at the rows that drove Phase 0's
+  fallback (`pyproject.toml` split by section, `.github/**` lint-only locally,
+  backend-only `src/` edits narrowed by grep). Its next step is a replay with
+  Phase 0's harness against the same targets:
+  [`bucket-rules.md`](../research/bk-403-rule-buckets/bucket-rules.md).
