@@ -16,12 +16,24 @@ FULL?
 
 ## Answer
 
-**Plausibly, because the buckets cut exactly where Phase 0's fallback came
-from, but that is a hypothesis until it is replayed.** Phase 0 traced most of
-its FULL fallbacks to `pyproject.toml` and `.github/**` (report § Why typical
-diffs fall back to FULL). Here `pyproject.toml` is split by section (Q2, Q6),
-`.github/**` no longer forces a local full run (Q11), and a backend-only or
-backend-subset `src/` edit narrows by grep instead of D5's leaf rule (Q3, Q13).
+**Unknown until replayed, and Phase 0's own data caps the expected gain.**
+The buckets go further than Phase 0's post-hoc sensitivity run, which already
+relaxed `pyproject.toml` script and lint edits and `.github/**` outside
+`ci.yml` and still fell back to FULL on 54.7% of PRs (report § Answer,
+`sensitivity.py`). Beyond that run, the buckets:
+
+- take every `.github/**` edit, `ci.yml` included, off the local FULL path (Q11);
+- split the rest of `pyproject.toml` by section, including coverage config and
+  single-extra floors (Q2, Q6, Q12);
+- send a `scripts/<x>.py` with no mapped test to `tests/scripts/` instead of
+  FULL, a reason that fired on 7 PRs (Q1);
+- narrow backend-only and backend-subset `src/` edits by grep (Q3, Q13).
+
+They do **not** narrow the base modules behind Phase 0's other large FULL
+reasons (`_backend.py`, `_store.py`, `_memory.py`, fixture infrastructure;
+report § Why typical diffs fall back to FULL). So the replay may well still
+miss the 30% target; what it can show is how far below 54.7% the extra cuts
+reach.
 
 The merge barrier is unchanged: the full gate on the merge head
 (RFC-0019 D1, D2), and a selected run never asserts the coverage floor (D8.2).
