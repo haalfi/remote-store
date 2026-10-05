@@ -76,3 +76,12 @@ full".
   stays Draft, because the motivation stands and a better selection idea is the
   open work. Question, answer, figures and their derivations:
   [Phase 0 report](../research/bk-403-phase-0/report.md).
+- **2026-10-05, alternative proposed, unmeasured:** a coarse path-bucket rule
+  set from a maintainer interview, aimed at the rows that drove Phase 0's
+  fallback (`pyproject.toml` classified per key, `.github/**` no longer FULL
+  locally, backend-only `src/` edits narrowed via `backends.toml`). Base modules stay FULL, and
+  Phase 0's sensitivity run already relaxed part of those rows to only 54.7%
+  FULL, so the gain is open. Its next step is a replay with Phase 0's harness,
+  judged on net time saved rather than Phase 0's zero-miss exit, since this
+  lane is a speed lane and the merge-head gate is the safety net:
+  [`bucket-rules.md`](../research/bk-403-phase-0/bucket-rules.md).
