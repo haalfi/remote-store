@@ -58,43 +58,41 @@ The merge barrier is unchanged: the full gate on the merge head
    changed key that matches no row is FULL. A parse failure is FULL.
 4. **Union.** The selection is the union over all paths and keys. Any FULL
    wins.
-5. **Base layer.** Every non-FULL selection also runs lint,
-   `tests/scripts/`, and every reader of every changed path in Phase 0's
-   [`readers.json`](readers.json). `tests/scripts/` holds the whole-tree
-   readers a name grep misses: `test_gen_graph.py`, `test_gen_features.py` and
-   the `test_check_*` directory scanners.
-6. **Conftest hits.** When a row's reader search or grep reaches a
-   `conftest.py`, the selection widens to that conftest's row.
+5. **No inventory layer.** Every non-FULL selection runs lint; beyond that,
+   each row names what it runs. There is no reader inventory and no import
+   closure: a reader a row does not name is an accepted miss (§ Accepted
+   misses).
+6. **Conftest hits.** When a row's grep reaches a `conftest.py`, the
+   selection widens to that conftest's row.
 
 ### Path table
 
-| Change | Runs, besides the base layer | Q |
+| Change | Runs, besides lint | Q |
 | --- | --- | --- |
 | The selector script and its table; `scripts/run_tests.py`; `scripts/gen_split_durations.py` (writes the cut-off's input) | FULL | 1, R6 |
 | `.python-version`, `.test_durations_pass1`, `infra/*.py` (`tests/conftest.py` imports `infra._settings`) | FULL | R5 |
-| `scripts/dafny_translate.sh`, `scripts/_dafny_classorder.py` | `tests/backends/dafny/` | R6 |
-| `scripts/record_cassettes.py` | the cassette set (below) | R6 |
-| `scripts/mkdocs_hooks.py` | `docs-gate` | R6 |
-| `scripts/**` | nothing more | 1 |
+| `scripts/dafny_translate.sh`, `scripts/_dafny_classorder.py` | `tests/scripts/`, `tests/backends/dafny/` | R6 |
+| `scripts/record_cassettes.py` | `tests/scripts/`, the cassette set (below) | R6 |
+| `scripts/mkdocs_hooks.py` | `tests/scripts/`, `docs-gate` | R6 |
+| `scripts/**` | `tests/scripts/` | 1 |
 | `pyproject.toml` | per key, see the key table | 2, 6, 12 |
 | A package `__init__.py` under `src/` (`remote_store`, `backends`, `aio`, `ext`); a module in Phase 0's core-module list (`derived_lists.json`); a `src/` module imported by `tests/conftest.py`, `tests/aio/conftest.py`, `tests/e2e/conftest.py` or fixture infrastructure (AST scan; today `_store.py`, `_memory.py`, `_capabilities.py` among them) | FULL | R2 |
-| A backend source: an entry of `sources` or `async_sources` in `tests/backends/fixtures/backends.toml`, a package directory (`aio/backends/_graph/`) counting as one module | the backend set of **every** backend that lists it: conformance on its fixtures, `tests/backends/<backend>/` where it exists, `tests/e2e/`, the examples job, typecheck, and every test file naming the module or a symbol it exports | 3, R1 |
-| A `src/` helper whose reverse-import closure, stopping at hubs, reaches only backend sources | the union of those backends' sets. A closure reaching any non-backend `src/` module is FULL | 13, R1 |
-| `ext/<name>.py`, `aio/ext/<name>.py` | `tests/ext/test_<name>.py`, the `tests/aio/ext/` tests naming the module, `tests/ext/test_contract.py` (reads every `ext/` module as text), typecheck | R4 |
+| A backend source: an entry of `sources` or `async_sources` in `tests/backends/fixtures/backends.toml`, a package directory (`aio/backends/_graph/`) counting as one module | the backend set of **every** backend that lists it: conformance on its fixtures, `tests/backends/<backend>/` where it exists, `tests/e2e/`, the examples job, typecheck, every test file naming the module (grep over `tests/`), and `tests/scripts/` (the whole-tree generators `test_gen_graph.py` and `test_gen_features.py` live there) | 3, R1 |
+| A `src/` helper whose direct importers (grep over `src/`, function-local imports included, package `__init__.py` files ignored) are all backend sources | the union of those backends' sets. Any other importer, including a helper that is itself imported by backends, is FULL | 13, R1 |
+| `ext/<name>.py`, `aio/ext/<name>.py` | `tests/ext/test_<name>.py`, the `tests/aio/ext/` tests naming the module, `tests/ext/test_contract.py` (reads every `ext/` module as text), `tests/scripts/`, typecheck | R4 |
 | Other `src/` | FULL | — |
-| `tests/conftest.py`, `tests/_helpers.py`, `tests/backends/fixtures/` `registry.py`, `_loader.py`, `_state.py`, `_live_env.py`, `_cassette_pytest.py`, `__init__.py`, `_cassettes*.py`, `*.toml` | FULL | R3 |
-| `tests/backends/fixtures/<name>.py` (loaded by name from `fixtures.toml`, so a grep finds no importer) | conformance on every fixture id it registers, `tests/backends/fixtures/` | R3 |
+| `tests/conftest.py`, `tests/_helpers.py`, every module and `*.toml` under `tests/backends/fixtures/` that is not a `test_*.py` (per-fixture modules included: the registry has consumers outside conformance, in `tests/backends/<backend>/` and both root conftests) | FULL | R3 |
 | Any other `conftest.py` | every test under its directory; FULL if it defines a session-wide hook (RFC-0019 D5, conftest row) | 8 |
 | `tests/backends/cassettes/**` | the cassette set | 9 |
-| `tests/**/test_*.py` | that file, plus the tests that import or read it | 8 |
-| `sdd/formal/MemoryBackend-py/**` (generated) | `check_dafny_oracle_fresh.py`, which also catches a hand edit; `tests/backends/dafny/`; `docs-gate` | 4, 5 |
-| `sdd/formal/**` | formal verification, `check_dafny_oracle_fresh.py`, `tests/backends/dafny/`, `docs-gate`. The selector never regenerates files | 4, 5 |
-| `docs-src/reference/api/**` | `docs-gate`, `tests/test_api_coverage.py` | 4, R7 |
-| `.claude/**`, `sdd/**`, `docs-src/**` | `docs-gate` | 4 |
-| Root `*.md`, `mkdocs.yml`, `codecov.yml`, `.readthedocs.yaml`, `CITATION.cff`, `context7.json`, `.pre-commit-config.yaml`, `packaging/**`, `infra/drift-locks/**`, `benchmarks/**` | `docs-gate` | R5 |
+| `tests/**/test_*.py` | that file, plus the test files naming it (grep over `tests/`) | 8 |
+| `sdd/formal/MemoryBackend-py/**` (generated) | `tests/backends/dafny/`, `docs-gate`; `check_dafny_oracle_fresh.py` only where Dafny is installed (it is not in `hatch run all`), otherwise the merge-head gate's `verify-formal` | 4, 5 |
+| `sdd/formal/**` | `tests/scripts/`, `tests/backends/dafny/`, `docs-gate`; formal verification and the freshness check only where Dafny is installed, as above. The selector never regenerates files | 4, 5 |
+| `docs-src/reference/api/**` | `tests/scripts/`, `docs-gate`, `tests/test_api_coverage.py` | 4, R7 |
+| `.claude/**`, `sdd/**`, `docs-src/**` | `tests/scripts/`, `docs-gate` | 4 |
+| Root `*.md`, `tests/**/*.md`, `mkdocs.yml`, `codecov.yml`, `.readthedocs.yaml`, `CITATION.cff`, `context7.json`, `.pre-commit-config.yaml`, `packaging/**`, `infra/drift-locks/**`, `benchmarks/**` | `tests/scripts/`, `docs-gate` | R5 |
 | `examples/notebooks/**` | the notebooks job | 10 |
-| `examples/**` | the examples job, `tests/test_examples.py`, `tests/test_snippets.py`, `tests/backends/conformance/test_examples.py`, typecheck | 10, R7 |
-| `.github/**` | nothing more locally; the PR needs a full CI run | 11 |
+| `examples/**` | the examples job, `tests/test_examples.py`, `tests/test_snippets.py`, `tests/backends/conformance/test_examples.py`, `tests/scripts/` (directory scanners), typecheck | 10, R7 |
+| `.github/**` | `tests/scripts/`; the PR needs a full CI run | 11 |
 | Anything unmatched | FULL | 15 |
 
 **The cassette set** is `tests/backends/<backend>/` and conformance on the
@@ -105,13 +103,13 @@ key (`vcrpy`, `httpx`, `aiohttp`, `requests`) (Q7).
 
 ### `pyproject.toml` key table
 
-| Changed key | Runs, besides the base layer | Q |
+| Changed key | Runs, besides lint | Q |
 | --- | --- | --- |
-| None (old and new parse equal) | lint only | 2 |
-| `project.version`, `tool.bumpversion.*` | nothing more | R8 |
-| `tool.ruff.*`, `tool.mypy.*`, `tool.coverage.*` | typecheck | 6 |
-| `tool.hatch.envs.*.scripts.<name>`, `<name>` not starting with `test` | nothing more | 6 |
-| One floor in `project.optional-dependencies.<extra>`, `<extra>` not `dev`, run on a fresh min-deps env | the backend set of that extra's backends; the cassette set for recorder or HTTP-stack packages. Without a min-deps env, FULL | 12, R8 |
+| None (old and new parse equal) | nothing more | 2 |
+| `project.version`, `tool.bumpversion.*` | `tests/scripts/` | R8 |
+| `tool.ruff.*`, `tool.mypy.*`, `tool.coverage.*` | typecheck, `tests/scripts/` | 6 |
+| `tool.hatch.envs.*.scripts.<name>`, `<name>` not starting with `test` | `tests/scripts/` | 6 |
+| One floor in `project.optional-dependencies.<extra>`, `<extra>` not `dev`, run on a fresh min-deps env | the backend set of that extra's backends, `tests/scripts/` (`gen_graph.py` reads the extras); the cassette set for recorder or HTTP-stack packages. Without a min-deps env, FULL | 12, R8 |
 | `project.optional-dependencies.dev`; `tool.hatch.envs.*` `features`, `dependencies` and `test*` scripts; `tool.pytest.*`; `build-system`; `project.dependencies`; `project.requires-python`; any other key | FULL | 6, R8 |
 
 ### Cut-off and mechanism
@@ -129,14 +127,32 @@ key (`vcrpy`, `httpx`, `aiohttp`, `requests`) (Q7).
   which is also the replay's false-negative measurement. Agent judgment never
   picks a row.
 
+## Accepted misses
+
+**This lane is not a merge barrier, so it may miss; the merge-head full gate
+catches what it misses, one round later.** That is why the table names its
+readers by row and grep instead of rebuilding D5's import graph and reader
+inventory, the machinery Phase 0 measured and stopped. Known miss classes:
+
+- a reader that reads a changed file as text and is not named by its row (D5
+  layer 4's territory; Phase 0's `readers.json` lists the known ones);
+- a test that reaches a backend source only through a re-export or a
+  transitive helper the direct-importer grep does not see;
+- a Dafny oracle that is stale locally, where Dafny is not installed.
+
+The replay's `--verify` runs count these as escapes. If escapes cost more
+rounds than the narrowing saves, the answer is a FULL row for the offending
+path, not an inventory layer.
+
 ## Open edges
 
-- The fixed costs for jobs outside pytest, and whether the base layer's
-  `tests/scripts/` run eats the gain on small diffs. Both are replay outputs.
+- The fixed costs for jobs outside pytest, a replay output.
 - `.test_durations_pass1` has no `sftp_docker` entries and goes stale
   (BK-400), so the cut-off underestimates the serial pass.
-- `readers.json` needs the freshness check RFC-0019 D7 item 2 describes,
-  or the base layer decays.
+
+The root-docs row is checked: a grep over `tests/` outside `tests/scripts/`
+for the row's file names and `benchmarks` finds only comments and docstrings,
+no reads.
 
 The two edges the first draft listed are empty, as checked in the review of
 PR #1075: no test reads `pyproject.toml` as raw text, and no reader of
@@ -158,7 +174,9 @@ the maintainer. During the interview Claude's only sources were RFC-0019 and
 the repository's file tree, so the Q rows are reasoned, not observed. The
 Answer section was written afterwards, from [`report.md`](report.md). Rows
 marked R1 to R8 come from the review of PR #1075, which checked the table
-against the tree at `9c5087e`.
+against the tree at `9c5087e`. The maintainer then kept the review's
+correctness fixes and declined its inventory and import-closure layers
+(§ Accepted misses).
 
 ## Next step
 
