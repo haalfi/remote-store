@@ -86,8 +86,8 @@ The merge barrier is unchanged: the full gate on the merge head
 | Any other `conftest.py` | every test under its directory; FULL if it defines a session-wide hook (RFC-0019 D5, conftest row) | 8 |
 | `tests/backends/cassettes/**` | the cassette set | 9 |
 | `tests/**/test_*.py` | that file, plus the test files naming it (grep over `tests/`) | 8 |
-| `sdd/formal/MemoryBackend-py/**` (generated) | `tests/backends/dafny/`, `docs-gate`; `check_dafny_oracle_fresh.py` only where Dafny is installed (it is not in `hatch run all`), otherwise the merge-head gate's `verify-formal` | 4, 5 |
-| `sdd/formal/**` | `tests/scripts/`, `tests/backends/dafny/`, `docs-gate`; formal verification and the freshness check only where Dafny is installed, as above. The selector never regenerates files | 4, 5 |
+| `sdd/formal/MemoryBackend-py/**` (generated) | `tests/backends/dafny/`, `docs-gate`, and the oracle freshness check: `check_dafny_oracle_fresh.py` with native Dafny, or with Docker `scripts/dafny_translate.sh` followed by an empty `git status sdd/formal/` (the check's own documented local fallback) | 4, 5 |
+| `sdd/formal/**` | `tests/scripts/`, `tests/backends/dafny/`, `docs-gate`, formal verification (`scripts/dafny_verify.sh` via Docker, or native `dafny verify`), and the freshness check as above. Neither toolchain available → the selector stops with an error, not FULL: a non-ghost `.dfy` change cannot be authored without regenerating, which needs one of them (`sdd/formal/README.md` § Regenerating the compiled output). The selector never regenerates files | 4, 5 |
 | `docs-src/reference/api/**` | `tests/scripts/`, `docs-gate`, `tests/test_api_coverage.py` | 4, R7 |
 | `.claude/**`, `sdd/**`, `docs-src/**` | `tests/scripts/`, `docs-gate` | 4 |
 | Root `*.md`, `tests/**/*.md`, `mkdocs.yml`, `codecov.yml`, `.readthedocs.yaml`, `CITATION.cff`, `context7.json`, `.pre-commit-config.yaml`, `packaging/**`, `infra/drift-locks/**`, `benchmarks/**` | `tests/scripts/`, `docs-gate` | R5 |
@@ -138,8 +138,10 @@ inventory, the machinery Phase 0 measured and stopped. Known miss classes:
 - a reader that reads a changed file as text and is not named by its row (D5
   layer 4's territory; Phase 0's `readers.json` lists the known ones);
 - a test that reaches a backend source only through a re-export or a
-  transitive helper the direct-importer grep does not see;
-- a Dafny oracle that is stale locally, where Dafny is not installed.
+  transitive helper the direct-importer grep does not see.
+
+A stale Dafny oracle is **not** an accepted miss: a formal change requires
+Dafny or Docker to author at all, so the formal rows require it too.
 
 The replay's `--verify` runs count these as escapes. If escapes cost more
 rounds than the narrowing saves, the answer is a FULL row for the offending
