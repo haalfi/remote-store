@@ -11447,12 +11447,30 @@
 
 <h1 id="rfc-0019-two-speed-test-gate-with-a-rule-based-selector">RFC-0019: Two-speed test gate with a rule-based selector<a class="headerlink" href="#rfc-0019-two-speed-test-gate-with-a-rule-based-selector" title="Permanent link">&para;</a></h1>
 <h2 id="status">Status<a class="headerlink" href="#status" title="Permanent link">&para;</a></h2>
-<p>Draft, 2026-10-03. Tracked as <strong>BK-403</strong>; it also sets the design for BK-404
-(local target) and ID-266 (CI lane). Nothing below is built.</p>
-<p><strong>Decision sought: approve Phase 0 and a limited local pilot.</strong> The target
-architecture below is the direction, not a build order. Branch protection,
-<code>merge-candidate</code> handling and every blocking CI change wait until Phase 3's
-exit (§ Roadmap). Phase 0 decides whether anything is built at all.</p>
+<p>Draft. <strong>Phase 0 (2026-10-04) stopped the selector as designed in D5; the
+motivation stands, and the RFC needs a better selection idea before any later
+phase.</strong> Nothing below is built. The maintainer approved Phase 0 only. Its
+report, <a href="https://github.com/haalfi/remote-store/blob/master/sdd/research/bk-403-phase-0/report.md">Phase 0 report</a>,
+measured the precision rule set against targets fixed before the run. Typical
+code diffs still run the full suite: 72.6% of 106 code PRs fall back to FULL,
+and the median wall-clock share is 100%, against targets of at most 30% and
+50%. Both stop conditions fire.</p>
+<ul>
+<li><strong>Where the fallback comes from.</strong> D5's FULL row alone fires on 59 of the
+  106 code PRs, through <code>pyproject.toml</code> and <code>.github/**</code>. Base modules every
+  test reaches account for most of the rest. Any revision has to narrow those
+  rows or reduce that fan-out.</li>
+<li><strong>What already works.</strong> Where the selector narrows, it is sound and small.
+  The reader inventory, the seeds and the historical misses are reported
+  separately.</li>
+<li><strong>Five defects in D5 and D7.</strong> The report records them; they are not yet
+  amended here.</li>
+</ul>
+<p>Tracked as <strong>BK-403</strong>, with the design for BK-404 (local target) and ID-266
+(CI lane). All three stay open.</p>
+<p><em>Superseded framing:</em> this RFC sought approval for Phase 0 and a limited local
+pilot, and treated the target architecture below as the direction rather than a
+build order.</p>
 <h2 id="management-summary">Management Summary<a class="headerlink" href="#management-summary" title="Permanent link">&para;</a></h2>
 <p><strong>The full gate is removed from intermediate iteration pushes, but stays
 mandatory for the exact head that is meant to merge.</strong> Those pushes run only
@@ -12373,8 +12391,14 @@ on CI configuration, contributor tooling and two process records.</strong></p>
 <li><strong>Primary leg tier in the fast lane.</strong> Stage 2 keeps ADR-0043's per-PR
    live-backend guarantee; Stage 1 is cheaper but leaves <code>_s3.py</code> and
    <code>_sftp.py</code> rounds on moto and in-process SFTP until the full run.</li>
-<li><strong>Cut-off threshold and core-module list.</strong> Set from Phase 0 data, not
-   chosen here.</li>
+<li><strong>Cut-off threshold and core-module list.</strong> <em>Answered by Phase 0
+   (2026-10-04): no cut-off was set, because the D5 selector stopped first.</em> The derived
+   core-module list has 6 entries: <code>_capabilities.py</code>, <code>_errors.py</code>,
+   <code>_models.py</code>, <code>_path.py</code> and <code>_resolution.py</code>, which every backend reaches,
+   and <code>_info.py</code>, by import-time effect
+   (<a href="https://github.com/haalfi/remote-store/blob/master/sdd/research/bk-403-phase-0/report.md">report</a>, Appendix F).
+   A cut-off would have mattered little: the stop came from the FULL rate,
+   before any selection reached a threshold.</li>
 <li><strong>Name of the local target.</strong></li>
 <li><strong>Skill integration.</strong> This covers three changes:</li>
 <li><code>/ship</code> and <code>/fix-pr</code> running the fast target before round pushes;</li>
