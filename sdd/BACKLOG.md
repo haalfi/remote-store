@@ -877,13 +877,20 @@ coverage floor.
   Open decision: P6's re-measure of the Stage-2 and `--cov-append` paths, then
   switch all six (not `test-cov-branch`).
 
+- [ ] **BK-408 — RFC-0019 judges its fast lane by merge-gate exit criteria, so a redrafted selector must reach zero escapes**
+  spec: — · effort: S · audience: contributor.process, infra.test
+  RFC-0019 § Roadmap exits Phases 0, 2 and 3 on "0 deterministic, selector-reachable"
+  misses or escapes, yet D1–D2 make the merge-head full gate the barrier. That bar pushed D5 to an
+  import graph and reader inventory; the [bucket rules](research/bk-403-phase-0/bucket-rules.md)
+  judge on net time saved instead. Open decision: amend those exits before RFC-0019 is redrafted.
+
 - [ ] **BK-403 — No change-scoped test selector has been chosen for this suite; one of three candidates is measured**
   spec: — · effort: M · audience: infra.test, contributor.tooling
   Both gates run every test for every code diff (audit-022 § H1). A coverage map
   failed its PoC; [RFC-0019](rfcs/rfc-0019-two-speed-test-gate.md)'s rule-based
   selector failed its Phase 0 ([report](research/bk-403-phase-0/report.md)):
   72.6% of code PRs fall back to FULL, 59 of 106 through `pyproject.toml` or `.github/**`.
-  Open decision: a selection idea that narrows those rows or the base-module fan-out.
+  Open decision: a selection idea that narrows those rows or the base-module fan-out (exit bar: BK-408).
   Detail: [dossier](backlog/bk-403-test-selector-evaluation.md)
 
 - [ ] **BK-404 — The local gate runs every test for every code diff, with no selected target for in-progress rounds**
