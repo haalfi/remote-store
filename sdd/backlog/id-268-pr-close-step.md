@@ -5,6 +5,8 @@ Filed at the maintainer's request after PR #1071 (2026-10-04). The index entry
 holds the current diagnosis; this file is evidence and advisory prescription
 ([§ Item authority](../BACKLOG.md#how-this-file-works)). **No alternative is
 chosen.** The open decision is which of the shapes below to build, or none.
+On 2026-10-05 the maintainer asked for shape 6 (post-merge snapshot) to be
+worked out in detail; that is a direction to explore, not a choice.
 
 ## Evidence
 
@@ -52,6 +54,36 @@ chosen.** The open decision is which of the shapes below to build, or none.
   (`merge_group`) runs checks on a temporary merge commit and cannot add
   commits to the PR branch, so a block written there never reaches master.
   Stated from GitHub's documented model, not measured in this repo.
+
+### Added 2026-10-05
+
+- **No code consumes a committed `review:` block's figures.** Every `*.py`
+  match for a `"review"` / `'review'` key (Grep over the repo) is either
+  `tests/scripts/test_ship_report.py`, which tests the writer, or an unrelated
+  regex group in `scripts/drift_report.py`. Two guards touch the block without
+  reading its figures: `check_traces.py` validates it against `_schema.yml`, and
+  `_trace_corpus.py` rejects the duplicate `review:` key a second paste leaves.
+  `report-trace-outcomes` does not read it. Not checked: humans or agents that
+  read blocks by eye.
+- **Branch SHAs still resolve on GitHub after the squash.** `2a174de`, the
+  first SHA in `sdd/traces/bk-378-d1-d4.yml`'s `review_driven_commits` (PR
+  #1026, squash-merged), resolves through the commits API (`get_commit`, run
+  2026-10-05). This narrows, not contradicts, the evidence above and
+  `ship_report.py`'s Bounds: the SHAs are not *reachable from master*, but
+  GitHub keeps them via the PR's refs. One sample.
+- **The script runs post-merge with one caveat, read from the code.**
+  `collect()` takes `head` from the PR's `head.sha`, which stays the last
+  branch head after the merge, and `ensure_commit()` fetches it by SHA. The
+  range is `origin/<base>..head`. Under a squash merge that range is still the
+  branch's commits. Under a merge commit (`allow_merge_commit` is enabled per
+  the Bounds) head becomes an ancestor of master, the range is empty, and
+  `review_rounds` reads 0 with no error. A post-merge run needs the base pinned
+  to the merge commit's first parent.
+- **The trace→PR link is derivable from git.** The squash commit that adds a
+  trace carries `(#NNNN)` in its subject in 941 of the 976 merge-free commits
+  `ship_report.py`'s Bounds counted, so `git log --diff-filter=A -- <trace>`
+  usually names the PR without any field in the trace. The 35 exceptions mean
+  this is a fallback, not a guarantee.
 
 ## Interactions
 
@@ -106,11 +138,56 @@ chosen.** The open decision is which of the shapes below to build, or none.
 5. **Write the block after the merge.** Listed for completeness: it breaks
    `CLAUDE.md`'s same-PR rule and principle 3 (the repo describes reality at
    every commit), and needs its own PR because master accepts no direct push.
+6. **Post-merge snapshot on the PR.** The merge is the convergence signal, so
+   nothing has to infer it. A workflow on `pull_request_target: closed` with
+   `merged == true` checks out master at full depth, runs `ship-report`, and
+   posts the block as a PR comment. The trace carries no `review:` block.
+   - *Removes:* the close commit, its CI re-run, the token and signed-commit
+     questions (commenting needs only `pull-requests: write` on the default
+     token), and the RFC-0019 ordering, since no push happens before the merge.
+   - *Gains:* the figures are frozen at merge time, which shape 3 lacks; the
+     squash SHA is final, so the block can emit it (D4 withheld it because it
+     was ephemeral); the "count excludes the commit that carries it" offset in
+     `ship_report.py`'s Bounds disappears.
+   - *`pull_request_target` is safe here* because the workflow and script come
+     from master and the PR head is only read by `git log` / `git blame`, never
+     executed. It also covers fork PRs, where `pull_request` gets a read-only token.
+   - *Costs:* amend RFC-0015 D4 ("its output is the trace's review block") and
+     `CLAUDE.md` § Trace authoring; the `/ship` skill's close step and
+     `_schema.yml`'s `review` key go or become optional. The record moves out
+     of git into a comment that anyone with write access can edit or delete,
+     and leaves with the repo if it ever leaves GitHub. `ship_report.py`
+     needs a post-merge base (Evidence, 2026-10-05) and a way to find the PR
+     number (trace field or the squash subject). A `workflow_dispatch` input
+     for a PR number covers backfill and a failed run.
+   - *Does not fix:* the conversation-comment undercount. It stops mattering
+     for convergence, but the frozen figures inherit it, so it needs its own item.
+7. **`git notes` on the squash commit.** As 6, but the block goes to
+   `refs/notes/review` instead of a comment. Keeps the record in git. Notes
+   are not fetched by default, few readers know them, and whether the
+   ruleset covers a notes ref is not checked.
+8. **Batched backfill PR.** At merge the trace holds a `review: pending`
+   marker (honest under principle 3, like `[~]`); a scheduled bot opens one PR
+   filling every pending block. Keeps blocks in the tree; needs the App token
+   (as BK-400) and adds a recurring PR.
+9. **Shape 4 plus a cheap re-run.** The agent pushes the block in the same
+   turn; CI path-filters a commit that only touches traces' `review:` keys down
+   to the fast jobs; a gate checks the block is present. Changes no RFC; the
+   round trip remains but costs seconds instead of a full run.
+
+**Set aside.** A merge queue (see Evidence) and a required check that the
+committed block *equals* a fresh run. GitHub review data keeps changing after
+the close (late comments, edited reviews), so an equality check flaps; only a
+presence check is stable, and shape 9 includes it.
 
 ## What would decide
 
 - Whether RFC-0015's graduation (BK-384) keeps the committed block; if not,
-  shape 3 dominates.
+  shape 6 dominates shape 3 (same amendment, frozen figures). No code consumes
+  the block's figures today (Evidence, 2026-10-05), so dropping it breaks no
+  reader; the two guards that validate its shape lose their subject.
+- Whether a record outside the tree (a PR comment) is acceptable as the
+  durable home; if not, shapes 7 and 8 keep post-merge timing in git.
 - Whether ID-266's `merge-candidate` lands; if it does, shapes 1 and 2 are the
   same question asked of one trigger.
 - Whether convergence must stay a human judgement. The undercount above says
