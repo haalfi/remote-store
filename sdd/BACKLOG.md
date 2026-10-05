@@ -931,6 +931,6 @@ coverage floor.
   The trace's `review:` block is pasted at the close (`CLAUDE.md` § Trace
   authoring), so a converged, green PR waits for an agent run, a push and a CI
   re-run before the maintainer can merge (PR #1071). GitHub has no pre-merge
-  step that edits a PR. Open decision: which of the dossier's five shapes, if
-  any; it interacts with ID-266's `merge-candidate` and with BK-384.
+  step that edits a PR. Open decision: which of the dossier's nine shapes, if
+  any (shape 6, post-merge, under study); it touches ID-266 and BK-384.
   Detail: [dossier](backlog/id-268-pr-close-step.md)
