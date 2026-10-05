@@ -1,8 +1,9 @@
 # ID-269 — Mechanisms the repo defines in its own words have established names it never uses
 <!-- doc: repo-only -->
 
-The index entry holds the current diagnosis; this file is evidence and advisory
-prescription ([§ Item authority](../BACKLOG.md#how-this-file-works)).
+Parked in [`BACKLOG-DONE.md` § Decided against](../BACKLOG-DONE.md#decided-against),
+which holds the diagnosis and the re-file trigger; this file is evidence and
+advisory prescription ([§ Item authority](../BACKLOG.md#how-this-file-works)).
 
 **Origin.** Evaluation of the Semantic Anchors project's Claude Code installer
 (`LLM-Coding/Semantic-Anchors`, `docs/agent-installation.adoc`). The installer
@@ -22,9 +23,11 @@ and German plus `_template`, counted with `os.listdir`.
 over every `.md`, `.py`, `.yml` and `.toml` file under the repo root, skipping
 `.git`, `.venv`, `node_modules`, `site`, `tmp` and `htmlcov`; acronyms (MECE,
 MADR, EARS, STRIDE, BLUF, FMEA, ADR, YAGNI) match case-sensitively, the rest
-ignore case. At base `5971a7a`, 38 of 58 had zero hits. After this item is
-filed, the count drops to 35: BLUF, Fagan and premortem match this item's own
-index text, not a use.
+ignore case. At base `5971a7a`, 38 of 58 had zero hits.
+**Re-running it contaminates itself:** this file spells out almost every
+zero-hit term, and the register entry names more. Re-run against `5971a7a`, or
+exclude `sdd/backlog/id-269-*` and the ID-269 register entry; any figure taken
+on a later tree without that exclusion counts this item, not a use.
 
 Already in use (hits / files at `5971a7a`): ADR 1725/320, property-based or
 `hypothesis` 186/57, Diátaxis 67/18, single source of truth 62/44, mutation
@@ -32,17 +35,19 @@ testing 44/18, SemVer 11/7, test doubles 5/4, Keep a Changelog 3/3.
 
 ## Shortlist (advisory)
 
-Each names a mechanism the repo already has, so the anchor adds a name, not a rule.
+Rows marked *name* label a mechanism the repo already has; rows marked
+*candidate* would add a method, which is a rule change and not just a name.
 
 | Anchor | Pattern counted | Where it applies |
 | --- | --- | --- |
-| BLUF, Pyramid Principle (Minto) | `\bBLUF\b`, `pyramid principle\|minto` | [`CONTENT-RULES.md` Rule 7](../CONTENT-RULES.md#kernsatz): lead with the core claim in at most three sentences |
-| Fagan inspection, Premortem, Devil's Advocate | `fagan`, `pre-?mortem`, `devil'?s advocate` | [ADR-0035](../adrs/0035-vary-method-not-model.md), [ADR-0036](../adrs/0036-reviewers-by-subject-and-method.md): reviewers picked by method |
-| EARS | `\bEARS\b` | Spec clause wording in `sdd/specs/` |
-| TDD Chicago vs. London school | `chicago school\|classicist`, `london school` | `sdd/TESTING.md` mock discipline |
-| Fallacies of Distributed Computing | `fallacies of distributed` | Backend reviews (S3, SFTP, Azure) |
-| Chesterton's Fence | `chesterton` | Removals and refactors; principle 2 |
-| Goodhart's Law (4 hits, 1 file, research only) | `goodhart` | Coverage gate; [ADR-0037](../adrs/0037-whole-file-gate-and-derived-figures.md) derived figures |
+| BLUF, Pyramid Principle (Minto) | `\bBLUF\b`, `pyramid principle\|minto` | *Name.* [`CONTENT-RULES.md` Rule 7](../CONTENT-RULES.md#kernsatz): lead with the core claim in at most three sentences |
+| Fagan inspection | `fagan` | *Candidate.* [ADR-0035](../adrs/0035-vary-method-not-model.md)'s only method axis is reading versus executing; Fagan's role- and checklist-structured reading would refine the reading member, not name an existing method |
+| Premortem, Devil's Advocate | `pre-?mortem`, `devil'?s advocate` | *Candidate.* No counterpart in ADR-0035 or [ADR-0036](../adrs/0036-reviewers-by-subject-and-method.md); would be new review methods |
+| EARS | `\bEARS\b` | *Candidate.* A wording template for clauses in `sdd/specs/` |
+| TDD Chicago vs. London school | `chicago school\|classicist`, `london school` | *Name, unverified.* `sdd/TESTING.md` mock discipline; which school it matches has not been checked |
+| Fallacies of Distributed Computing | `fallacies of distributed` | *Candidate.* A checklist for backend reviews (S3, SFTP, Azure) |
+| Chesterton's Fence | `chesterton` | *Candidate.* A rule for removals and refactors; principle 2 covers ripples, not intent |
+| Goodhart's Law (4 hits, 1 file, research only) | `goodhart` | *Name, unverified.* The reasoning behind the coverage gate's floor |
 
 **Further candidates, unassessed.** The user asked to keep the list open. Zero
 hits at `5971a7a`, each plausibly naming something present: Arrange-Act-Assert,
@@ -55,9 +60,10 @@ research-only hits.
 **Rejected.** Conventional Commits: it conflicts with the backlog-ID commit
 prefix in `CLAUDE.md` § Backlog.
 
-## Open decision
+## Open decision, if re-filed
 
-Which anchors to name, and where: inline in the document that owns each
+Which section's promise the work serves (none did at filing: PR #1078 review),
+then which anchors to name, and where: inline in the document that owns each
 mechanism (no indirection, but scattered), or one glossary in
 `sdd/CLAUDE-REFERENCE.md` that maps anchor to mechanism and links to it (one
 place, one more hop). Either way, the name goes beside the existing rule,

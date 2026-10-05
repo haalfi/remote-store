@@ -147,6 +147,16 @@ if evidence changes; these are retired.
   is not had from scratch — re-file under a new ID the first time a stampede is
   measured against a real backend.
 
+- [x] **ID-269 — Mechanisms the repo defines in its own words have established names it never uses**
+  Some rules restate a published method without naming it: CONTENT-RULES
+  Rule 7 is BLUF, and TESTING.md never names its TDD school. Naming them would
+  help recall and discoverability, but every rule is already true and enforced,
+  so the item serves no section's promise
+  ([§ Admission test](BACKLOG.md#how-this-file-works)) and is parked here, not
+  refused on merit. The shortlist, its derivation and the review corrections
+  are in the [dossier](backlog/id-269-semantic-anchors.md). Re-file under a new
+  ID when a review or trace shows a reader missing a rule that a known name would
+  have surfaced.
 - [x] **BK-350 — The drift-refresh procedure spans five prose sites with no gate**
   PR #959 answered it structurally: `infra/drift-locks/README.md` became the
   single normative description and the other four sites were cut back to links.
