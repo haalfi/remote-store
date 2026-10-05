@@ -850,8 +850,16 @@ coverage floor.
   `ci.yml` `CODE_PAT` lists `docs-src/reference/FEATURES.md`. `git ls-files`
   has only the root `FEATURES.md`, which matches no class pattern, although
   `tests/scripts/test_gen_features.py` checks it. Found in RFC-0019 review
-  (D4 known violator; must land before its Phase 4). Open decision: none;
+  (D4 known violator); the wider class hole is BUG-306. Open decision: none;
   bug-fix protocol, with a test that every literal `CODE_PAT` path is tracked.
+
+- [ ] **BUG-306 — 48 tracked files that `tests/scripts/` tests read match no CI class pattern, so a PR touching only them runs no checks**
+  spec: — · effort: S · audience: infra.ci
+  RFC-0019 Phase 0's D4 audit ([report](research/bk-403-phase-0/report.md)
+  Appendix G) lists them: `.claude/skills/*`, `.claude/agents/*`, `CONTRIBUTING.md`,
+  `CLAUDE.md`, `infra/drift-locks/*` and more, each read by a test that never runs
+  for such a PR; 776 further `docs`-class files have readers outside `docs-gate`.
+  Open decision: per file, move it to a class whose jobs run its readers, or accept it.
 
 - [ ] **BUG-301 — The PII sweep's bare-email regex is quadratic on base64 runs and costs 157 of the sweep's 160 worker-seconds**
   spec: — · effort: S · audience: infra.test
@@ -867,15 +875,15 @@ coverage floor.
   hatch scripts (`test-cov-s1`, `test-cov`, `test-cov-strict`) use the default
   core; [audit-022](audits/audit-022-gate-speed-strategies.md) § L1 measured `sysmon` on local Stage 1 only.
   Open decision: P6's re-measure of the Stage-2 and `--cov-append` paths, then
-  switch all six (not `test-cov-branch`); a testmon job (BK-403) stays off `sysmon`.
+  switch all six (not `test-cov-branch`).
 
 - [ ] **BK-403 — No change-scoped test selector has been chosen for this suite; one of three candidates is measured**
   spec: — · effort: M · audience: infra.test, contributor.tooling
-  Both gates run every test for every code diff (audit-022 § H1). The
-  `pytest-testmon` PoC rejects a coverage map as the selector (blind to
-  non-Python inputs and text reads, map not portable). [RFC-0019](rfcs/rfc-0019-two-speed-test-gate.md)
-  proposes a rule-based selector instead. Open decision: RFC-0019 Phase 0
-  (seed and historical-PR replay) decides whether it is built.
+  Both gates run every test for every code diff (audit-022 § H1). A coverage map
+  failed its PoC; [RFC-0019](rfcs/rfc-0019-two-speed-test-gate.md)'s rule-based
+  selector failed its Phase 0 ([report](research/bk-403-phase-0/report.md)):
+  72.6% of code PRs fall back to FULL, 59 of 106 through `pyproject.toml` or `.github/**`.
+  Open decision: a selection idea that narrows those rows or the base-module fan-out.
   Detail: [dossier](backlog/bk-403-test-selector-evaluation.md)
 
 - [ ] **BK-404 — The local gate runs every test for every code diff, with no selected target for in-progress rounds**
@@ -883,17 +891,17 @@ coverage floor.
   `hatch run all` runs all of Stage 1 whatever the diff touched, and tests
   are most of its wall time (audit-022 § H1). [RFC-0019](rfcs/rfc-0019-two-speed-test-gate.md)
   D1 makes BK-403's selector the gate for every round push. Open decision:
-  Phase 0's verdict; then the name, the R3 / BK-271 argument and which
-  skills run it (RFC-0019 Open Questions 4, keeps this item open).
+  blocked on BK-403; then the name, the R3 / BK-271 argument and which skills
+  run it (RFC-0019 Open Questions 4, keeps this item open).
   Detail: [dossier](backlog/bk-404-selected-tests-hatch-target.md)
 
 - [ ] **ID-266 — Every in-progress PR push runs the full pre-merge CI gate**
   spec: — · effort: L · audience: infra.ci, contributor.process
   `ci.yml` runs the whole gate on every PR push, including each `/ship` round
-  (audit-022 § M1). [RFC-0019](rfcs/rfc-0019-two-speed-test-gate.md)
-  replaces the draft-PR lane with a fast lane on every push and a full lane
-  on a `merge-candidate` head, guarded by a `merge-gate` status. Open
-  decision: RFC-0019 Phases 0–3; then the ADR amending ADR-0043 (Phase 4).
+  (audit-022 § M1). [RFC-0019](rfcs/rfc-0019-two-speed-test-gate.md) proposes a
+  fast lane on every push and a full lane on a `merge-candidate` head; its
+  Phase 0 stopped the selector the fast lane needs. Open decision: blocked on
+  BK-403; then RFC-0019 Phases 1–3 and the ADR amending ADR-0043 (Phase 4).
   Detail: [dossier](backlog/id-266-two-speed-ci-gate.md)
 
 - [ ] **BK-400 — The shard durations go stale between manual refreshes, so the primary shards balance on partial data**

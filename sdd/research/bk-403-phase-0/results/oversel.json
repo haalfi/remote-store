@@ -1,0 +1,241 @@
+{
+ "derivation": "oversel.py tmp/p0cov/contexts.json tmp/universe.json sdd/research/bk-403-phase-0/results/h_replay.jsonl",
+ "diffs": 17,
+ "median_ratio": 3.0082918739635156,
+ "max_ratio": 17.506666666666668,
+ "diffs_with_minimal_not_selected": 10,
+ "rows": [
+  {
+   "pr": 1054,
+   "selected": 5352,
+   "minimal": 2076,
+   "ratio": 2.578034682080925,
+   "minimal_not_selected": 0,
+   "sample_missing": []
+  },
+  {
+   "pr": 1025,
+   "selected": 4280,
+   "minimal": 1001,
+   "ratio": 4.275724275724276,
+   "minimal_not_selected": 0,
+   "sample_missing": []
+  },
+  {
+   "pr": 1021,
+   "selected": 9076,
+   "minimal": 4362,
+   "ratio": 2.0806969280146723,
+   "minimal_not_selected": 5,
+   "sample_missing": [
+    "tests/backends/conformance/test_async_extended.py::TestListFilesCompleteness::test_list_files_all_results_are_children[dafny_oracle_async]",
+    "tests/backends/conformance/test_errors.py::TestWriteErrorFidelity::test_write_on_directory_raises_error[write-dafny_oracle]",
+    "tests/backends/conformance/test_errors.py::TestWriteErrorFidelity::test_write_under_file_ancestor_raises_invalid_path[write_atomic-bytes-dafny_oracle]",
+    "tests/backends/conformance/test_listing.py::TestListFilesCompleteness::test_list_files_non_recursive[dafny_oracle]",
+    "tests/backends/conformance/test_listing.py::TestListFilesCompleteness::test_list_files_unlimited_depth[dafny_oracle]"
+   ]
+  },
+  {
+   "pr": 999,
+   "selected": 3600,
+   "minimal": 1206,
+   "ratio": 2.985074626865672,
+   "minimal_not_selected": 263,
+   "sample_missing": [
+    "tests/backends/conformance/test_atomic.py::TestBackendMoveCopy::test_already_exists[copy-sqlblob]",
+    "tests/backends/conformance/test_atomic.py::TestBackendMoveCopy::test_already_exists[move-s3_moto]",
+    "tests/backends/conformance/test_atomic.py::TestBackendMoveCopy::test_copy[s3_moto]",
+    "tests/backends/conformance/test_atomic.py::TestBackendMoveCopy::test_move[s3_moto]",
+    "tests/backends/conformance/test_atomic.py::TestBackendMoveCopy::test_not_found[copy-s3_moto]",
+    "tests/backends/conformance/test_atomic.py::TestBackendMoveCopy::test_not_found[move-s3_moto]",
+    "tests/backends/conformance/test_atomic.py::TestBackendMoveCopy::test_overwrite[copy-s3_moto]",
+    "tests/backends/conformance/test_atomic.py::TestBackendMoveCopy::test_overwrite[move-sqlblob]",
+    "tests/backends/conformance/test_atomic.py::TestBackendOpenAtomic::test_open_atomic_already_exists[s3_moto]",
+    "tests/backends/conformance/test_atomic.py::TestBackendOpenAtomic::test_open_atomic_creates_file[s3_moto]"
+   ]
+  },
+  {
+   "pr": 996,
+   "selected": 3600,
+   "minimal": 1206,
+   "ratio": 2.985074626865672,
+   "minimal_not_selected": 263,
+   "sample_missing": [
+    "tests/backends/conformance/test_atomic.py::TestBackendMoveCopy::test_already_exists[copy-sqlblob]",
+    "tests/backends/conformance/test_atomic.py::TestBackendMoveCopy::test_already_exists[move-s3_moto]",
+    "tests/backends/conformance/test_atomic.py::TestBackendMoveCopy::test_copy[s3_moto]",
+    "tests/backends/conformance/test_atomic.py::TestBackendMoveCopy::test_move[s3_moto]",
+    "tests/backends/conformance/test_atomic.py::TestBackendMoveCopy::test_not_found[copy-s3_moto]",
+    "tests/backends/conformance/test_atomic.py::TestBackendMoveCopy::test_not_found[move-s3_moto]",
+    "tests/backends/conformance/test_atomic.py::TestBackendMoveCopy::test_overwrite[copy-s3_moto]",
+    "tests/backends/conformance/test_atomic.py::TestBackendMoveCopy::test_overwrite[move-sqlblob]",
+    "tests/backends/conformance/test_atomic.py::TestBackendOpenAtomic::test_open_atomic_already_exists[s3_moto]",
+    "tests/backends/conformance/test_atomic.py::TestBackendOpenAtomic::test_open_atomic_creates_file[s3_moto]"
+   ]
+  },
+  {
+   "pr": 994,
+   "selected": 3628,
+   "minimal": 1206,
+   "ratio": 3.0082918739635156,
+   "minimal_not_selected": 263,
+   "sample_missing": [
+    "tests/backends/conformance/test_atomic.py::TestBackendMoveCopy::test_already_exists[copy-sqlblob]",
+    "tests/backends/conformance/test_atomic.py::TestBackendMoveCopy::test_already_exists[move-s3_moto]",
+    "tests/backends/conformance/test_atomic.py::TestBackendMoveCopy::test_copy[s3_moto]",
+    "tests/backends/conformance/test_atomic.py::TestBackendMoveCopy::test_move[s3_moto]",
+    "tests/backends/conformance/test_atomic.py::TestBackendMoveCopy::test_not_found[copy-s3_moto]",
+    "tests/backends/conformance/test_atomic.py::TestBackendMoveCopy::test_not_found[move-s3_moto]",
+    "tests/backends/conformance/test_atomic.py::TestBackendMoveCopy::test_overwrite[copy-s3_moto]",
+    "tests/backends/conformance/test_atomic.py::TestBackendMoveCopy::test_overwrite[move-sqlblob]",
+    "tests/backends/conformance/test_atomic.py::TestBackendOpenAtomic::test_open_atomic_already_exists[s3_moto]",
+    "tests/backends/conformance/test_atomic.py::TestBackendOpenAtomic::test_open_atomic_creates_file[s3_moto]"
+   ]
+  },
+  {
+   "pr": 992,
+   "selected": 4320,
+   "minimal": 1124,
+   "ratio": 3.8434163701067616,
+   "minimal_not_selected": 0,
+   "sample_missing": []
+  },
+  {
+   "pr": 989,
+   "selected": 3882,
+   "minimal": 1206,
+   "ratio": 3.218905472636816,
+   "minimal_not_selected": 263,
+   "sample_missing": [
+    "tests/backends/conformance/test_atomic.py::TestBackendMoveCopy::test_already_exists[copy-sqlblob]",
+    "tests/backends/conformance/test_atomic.py::TestBackendMoveCopy::test_already_exists[move-s3_moto]",
+    "tests/backends/conformance/test_atomic.py::TestBackendMoveCopy::test_copy[s3_moto]",
+    "tests/backends/conformance/test_atomic.py::TestBackendMoveCopy::test_move[s3_moto]",
+    "tests/backends/conformance/test_atomic.py::TestBackendMoveCopy::test_not_found[copy-s3_moto]",
+    "tests/backends/conformance/test_atomic.py::TestBackendMoveCopy::test_not_found[move-s3_moto]",
+    "tests/backends/conformance/test_atomic.py::TestBackendMoveCopy::test_overwrite[copy-s3_moto]",
+    "tests/backends/conformance/test_atomic.py::TestBackendMoveCopy::test_overwrite[move-sqlblob]",
+    "tests/backends/conformance/test_atomic.py::TestBackendOpenAtomic::test_open_atomic_already_exists[s3_moto]",
+    "tests/backends/conformance/test_atomic.py::TestBackendOpenAtomic::test_open_atomic_creates_file[s3_moto]"
+   ]
+  },
+  {
+   "pr": 986,
+   "selected": 3628,
+   "minimal": 1206,
+   "ratio": 3.0082918739635156,
+   "minimal_not_selected": 263,
+   "sample_missing": [
+    "tests/backends/conformance/test_atomic.py::TestBackendMoveCopy::test_already_exists[copy-sqlblob]",
+    "tests/backends/conformance/test_atomic.py::TestBackendMoveCopy::test_already_exists[move-s3_moto]",
+    "tests/backends/conformance/test_atomic.py::TestBackendMoveCopy::test_copy[s3_moto]",
+    "tests/backends/conformance/test_atomic.py::TestBackendMoveCopy::test_move[s3_moto]",
+    "tests/backends/conformance/test_atomic.py::TestBackendMoveCopy::test_not_found[copy-s3_moto]",
+    "tests/backends/conformance/test_atomic.py::TestBackendMoveCopy::test_not_found[move-s3_moto]",
+    "tests/backends/conformance/test_atomic.py::TestBackendMoveCopy::test_overwrite[copy-s3_moto]",
+    "tests/backends/conformance/test_atomic.py::TestBackendMoveCopy::test_overwrite[move-sqlblob]",
+    "tests/backends/conformance/test_atomic.py::TestBackendOpenAtomic::test_open_atomic_already_exists[s3_moto]",
+    "tests/backends/conformance/test_atomic.py::TestBackendOpenAtomic::test_open_atomic_creates_file[s3_moto]"
+   ]
+  },
+  {
+   "pr": 978,
+   "selected": 3628,
+   "minimal": 1201,
+   "ratio": 3.0208159866777686,
+   "minimal_not_selected": 263,
+   "sample_missing": [
+    "tests/backends/conformance/test_atomic.py::TestBackendMoveCopy::test_already_exists[copy-sqlblob]",
+    "tests/backends/conformance/test_atomic.py::TestBackendMoveCopy::test_already_exists[move-s3_moto]",
+    "tests/backends/conformance/test_atomic.py::TestBackendMoveCopy::test_copy[s3_moto]",
+    "tests/backends/conformance/test_atomic.py::TestBackendMoveCopy::test_move[s3_moto]",
+    "tests/backends/conformance/test_atomic.py::TestBackendMoveCopy::test_not_found[copy-s3_moto]",
+    "tests/backends/conformance/test_atomic.py::TestBackendMoveCopy::test_not_found[move-s3_moto]",
+    "tests/backends/conformance/test_atomic.py::TestBackendMoveCopy::test_overwrite[copy-s3_moto]",
+    "tests/backends/conformance/test_atomic.py::TestBackendMoveCopy::test_overwrite[move-sqlblob]",
+    "tests/backends/conformance/test_atomic.py::TestBackendOpenAtomic::test_open_atomic_already_exists[s3_moto]",
+    "tests/backends/conformance/test_atomic.py::TestBackendOpenAtomic::test_open_atomic_creates_file[s3_moto]"
+   ]
+  },
+  {
+   "pr": 973,
+   "selected": 3628,
+   "minimal": 1206,
+   "ratio": 3.0082918739635156,
+   "minimal_not_selected": 263,
+   "sample_missing": [
+    "tests/backends/conformance/test_atomic.py::TestBackendMoveCopy::test_already_exists[copy-sqlblob]",
+    "tests/backends/conformance/test_atomic.py::TestBackendMoveCopy::test_already_exists[move-s3_moto]",
+    "tests/backends/conformance/test_atomic.py::TestBackendMoveCopy::test_copy[s3_moto]",
+    "tests/backends/conformance/test_atomic.py::TestBackendMoveCopy::test_move[s3_moto]",
+    "tests/backends/conformance/test_atomic.py::TestBackendMoveCopy::test_not_found[copy-s3_moto]",
+    "tests/backends/conformance/test_atomic.py::TestBackendMoveCopy::test_not_found[move-s3_moto]",
+    "tests/backends/conformance/test_atomic.py::TestBackendMoveCopy::test_overwrite[copy-s3_moto]",
+    "tests/backends/conformance/test_atomic.py::TestBackendMoveCopy::test_overwrite[move-sqlblob]",
+    "tests/backends/conformance/test_atomic.py::TestBackendOpenAtomic::test_open_atomic_already_exists[s3_moto]",
+    "tests/backends/conformance/test_atomic.py::TestBackendOpenAtomic::test_open_atomic_creates_file[s3_moto]"
+   ]
+  },
+  {
+   "pr": 969,
+   "selected": 1313,
+   "minimal": 75,
+   "ratio": 17.506666666666668,
+   "minimal_not_selected": 0,
+   "sample_missing": []
+  },
+  {
+   "pr": 922,
+   "selected": 3409,
+   "minimal": 1206,
+   "ratio": 2.826699834162521,
+   "minimal_not_selected": 263,
+   "sample_missing": [
+    "tests/backends/conformance/test_atomic.py::TestBackendMoveCopy::test_already_exists[copy-sqlblob]",
+    "tests/backends/conformance/test_atomic.py::TestBackendMoveCopy::test_already_exists[move-s3_moto]",
+    "tests/backends/conformance/test_atomic.py::TestBackendMoveCopy::test_copy[s3_moto]",
+    "tests/backends/conformance/test_atomic.py::TestBackendMoveCopy::test_move[s3_moto]",
+    "tests/backends/conformance/test_atomic.py::TestBackendMoveCopy::test_not_found[copy-s3_moto]",
+    "tests/backends/conformance/test_atomic.py::TestBackendMoveCopy::test_not_found[move-s3_moto]",
+    "tests/backends/conformance/test_atomic.py::TestBackendMoveCopy::test_overwrite[copy-s3_moto]",
+    "tests/backends/conformance/test_atomic.py::TestBackendMoveCopy::test_overwrite[move-sqlblob]",
+    "tests/backends/conformance/test_atomic.py::TestBackendOpenAtomic::test_open_atomic_already_exists[s3_moto]",
+    "tests/backends/conformance/test_atomic.py::TestBackendOpenAtomic::test_open_atomic_creates_file[s3_moto]"
+   ]
+  },
+  {
+   "pr": 918,
+   "selected": 1825,
+   "minimal": 146,
+   "ratio": 12.5,
+   "minimal_not_selected": 1,
+   "sample_missing": [
+    "tests/backends/conformance/test_errors.py::TestDeleteErrorFidelity::test_delete_on_directory_missing_ok_still_raises[sqlblob]"
+   ]
+  },
+  {
+   "pr": 915,
+   "selected": 6865,
+   "minimal": 3662,
+   "ratio": 1.8746586564718732,
+   "minimal_not_selected": 0,
+   "sample_missing": []
+  },
+  {
+   "pr": 901,
+   "selected": 2135,
+   "minimal": 557,
+   "ratio": 3.8330341113105924,
+   "minimal_not_selected": 0,
+   "sample_missing": []
+  },
+  {
+   "pr": 884,
+   "selected": 3960,
+   "minimal": 1165,
+   "ratio": 3.3991416309012874,
+   "minimal_not_selected": 0,
+   "sample_missing": []
+  }
+ ]
+}

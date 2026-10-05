@@ -67,3 +67,12 @@ full".
   the coverage map kept only as a drift oracle (D7). Its Phase 0 replaces the
   revisit condition: the selector is built only if it passes Phase 0's exit
   (RFC-0019 § Roadmap), which is not restated here.
+- **2026-10-04, RFC-0019 Phase 0: the D5 selector stops; the item stays
+  open.** Under the precision rule set, 72.6% of 106 code PRs fall back to
+  FULL and the median wall-clock share is 100%, against targets fixed before
+  the run (at most 30% and 50%). The reader inventory and the seeds passed: the
+  selector is sound where it narrows, and it narrows too few diffs. D5's FULL
+  row alone (`pyproject.toml`, `.github/**`) fires on 59 of the 106. RFC-0019
+  stays Draft, because the motivation stands and a better selection idea is the
+  open work. Question, answer, figures and their derivations:
+  [Phase 0 report](../research/bk-403-phase-0/report.md).

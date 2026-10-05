@@ -2,13 +2,31 @@
 
 ## Status
 
-Draft, 2026-10-03. Tracked as **BK-403**; it also sets the design for BK-404
-(local target) and ID-266 (CI lane). Nothing below is built.
+Draft. **Phase 0 (2026-10-04) stopped the selector as designed in D5; the
+motivation stands, and the RFC needs a better selection idea before any later
+phase.** Nothing below is built. The maintainer approved Phase 0 only. Its
+report, [Phase 0 report](../research/bk-403-phase-0/report.md),
+measured the precision rule set against targets fixed before the run. Typical
+code diffs still run the full suite: 72.6% of 106 code PRs fall back to FULL,
+and the median wall-clock share is 100%, against targets of at most 30% and
+50%. Both stop conditions fire.
 
-**Decision sought: approve Phase 0 and a limited local pilot.** The target
-architecture below is the direction, not a build order. Branch protection,
-`merge-candidate` handling and every blocking CI change wait until Phase 3's
-exit (§ Roadmap). Phase 0 decides whether anything is built at all.
+- **Where the fallback comes from.** D5's FULL row alone fires on 59 of the
+  106 code PRs, through `pyproject.toml` and `.github/**`. Base modules every
+  test reaches account for most of the rest. Any revision has to narrow those
+  rows or reduce that fan-out.
+- **What already works.** Where the selector narrows, it is sound and small.
+  The reader inventory, the seeds and the historical misses are reported
+  separately.
+- **Five defects in D5 and D7.** The report records them; they are not yet
+  amended here.
+
+Tracked as **BK-403**, with the design for BK-404 (local target) and ID-266
+(CI lane). All three stay open.
+
+*Superseded framing:* this RFC sought approval for Phase 0 and a limited local
+pilot, and treated the target architecture below as the direction rather than a
+build order.
 
 ## Management Summary
 
@@ -754,8 +772,14 @@ on CI configuration, contributor tooling and two process records.**
 1. **Primary leg tier in the fast lane.** Stage 2 keeps ADR-0043's per-PR
    live-backend guarantee; Stage 1 is cheaper but leaves `_s3.py` and
    `_sftp.py` rounds on moto and in-process SFTP until the full run.
-2. **Cut-off threshold and core-module list.** Set from Phase 0 data, not
-   chosen here.
+2. **Cut-off threshold and core-module list.** *Answered by Phase 0
+   (2026-10-04): no cut-off was set, because the D5 selector stopped first.* The derived
+   core-module list has 6 entries: `_capabilities.py`, `_errors.py`,
+   `_models.py`, `_path.py` and `_resolution.py`, which every backend reaches,
+   and `_info.py`, by import-time effect
+   ([report](../research/bk-403-phase-0/report.md), Appendix F).
+   A cut-off would have mattered little: the stop came from the FULL rate,
+   before any selection reached a threshold.
 3. **Name of the local target.**
 4. **Skill integration.** This covers three changes:
    - `/ship` and `/fix-pr` running the fast target before round pushes;

@@ -1,0 +1,134 @@
+{
+ "1021": {
+  "src/remote_store/aio/backends/_azure.py": {
+   "_has_open_clients": {
+    "tests": 1,
+    "sample": [
+     "tests/backends/conformance/test_async_extended.py::TestListFilesCompleteness::test_list_files_all_results_are_children[dafny_oracle_async]"
+    ]
+   },
+   "__del__": {
+    "tests": 1,
+    "sample": [
+     "tests/backends/conformance/test_async_extended.py::TestListFilesCompleteness::test_list_files_all_results_are_children[dafny_oracle_async]"
+    ]
+   }
+  },
+  "src/remote_store/backends/_azure.py": {
+   "__del__": {
+    "tests": 4,
+    "sample": [
+     "tests/backends/conformance/test_errors.py::TestWriteErrorFidelity::test_write_on_directory_raises_error[write-dafny_oracle]",
+     "tests/backends/conformance/test_errors.py::TestWriteErrorFidelity::test_write_under_file_ancestor_raises_invalid_path[write_atomic-bytes-dafny_oracle]",
+     "tests/backends/conformance/test_listing.py::TestListFilesCompleteness::test_list_files_non_recursive[dafny_oracle]"
+    ]
+   }
+  }
+ },
+ "999": {
+  "src/remote_store/backends/_sftp.py": {
+   "__del__": {
+    "tests": 263,
+    "sample": [
+     "tests/backends/conformance/test_atomic.py::TestBackendMoveCopy::test_already_exists[copy-sqlblob]",
+     "tests/backends/conformance/test_atomic.py::TestBackendMoveCopy::test_already_exists[move-s3_moto]",
+     "tests/backends/conformance/test_atomic.py::TestBackendMoveCopy::test_copy[s3_moto]"
+    ]
+   }
+  }
+ },
+ "996": {
+  "src/remote_store/backends/_sftp.py": {
+   "__del__": {
+    "tests": 263,
+    "sample": [
+     "tests/backends/conformance/test_atomic.py::TestBackendMoveCopy::test_already_exists[copy-sqlblob]",
+     "tests/backends/conformance/test_atomic.py::TestBackendMoveCopy::test_already_exists[move-s3_moto]",
+     "tests/backends/conformance/test_atomic.py::TestBackendMoveCopy::test_copy[s3_moto]"
+    ]
+   }
+  }
+ },
+ "994": {
+  "src/remote_store/backends/_sftp.py": {
+   "__del__": {
+    "tests": 263,
+    "sample": [
+     "tests/backends/conformance/test_atomic.py::TestBackendMoveCopy::test_already_exists[copy-sqlblob]",
+     "tests/backends/conformance/test_atomic.py::TestBackendMoveCopy::test_already_exists[move-s3_moto]",
+     "tests/backends/conformance/test_atomic.py::TestBackendMoveCopy::test_copy[s3_moto]"
+    ]
+   }
+  }
+ },
+ "989": {
+  "src/remote_store/backends/_sftp.py": {
+   "__del__": {
+    "tests": 263,
+    "sample": [
+     "tests/backends/conformance/test_atomic.py::TestBackendMoveCopy::test_already_exists[copy-sqlblob]",
+     "tests/backends/conformance/test_atomic.py::TestBackendMoveCopy::test_already_exists[move-s3_moto]",
+     "tests/backends/conformance/test_atomic.py::TestBackendMoveCopy::test_copy[s3_moto]"
+    ]
+   }
+  }
+ },
+ "986": {
+  "src/remote_store/backends/_sftp.py": {
+   "__del__": {
+    "tests": 263,
+    "sample": [
+     "tests/backends/conformance/test_atomic.py::TestBackendMoveCopy::test_already_exists[copy-sqlblob]",
+     "tests/backends/conformance/test_atomic.py::TestBackendMoveCopy::test_already_exists[move-s3_moto]",
+     "tests/backends/conformance/test_atomic.py::TestBackendMoveCopy::test_copy[s3_moto]"
+    ]
+   }
+  }
+ },
+ "978": {
+  "src/remote_store/backends/_sftp.py": {
+   "__del__": {
+    "tests": 263,
+    "sample": [
+     "tests/backends/conformance/test_atomic.py::TestBackendMoveCopy::test_already_exists[copy-sqlblob]",
+     "tests/backends/conformance/test_atomic.py::TestBackendMoveCopy::test_already_exists[move-s3_moto]",
+     "tests/backends/conformance/test_atomic.py::TestBackendMoveCopy::test_copy[s3_moto]"
+    ]
+   }
+  }
+ },
+ "973": {
+  "src/remote_store/backends/_sftp.py": {
+   "__del__": {
+    "tests": 263,
+    "sample": [
+     "tests/backends/conformance/test_atomic.py::TestBackendMoveCopy::test_already_exists[copy-sqlblob]",
+     "tests/backends/conformance/test_atomic.py::TestBackendMoveCopy::test_already_exists[move-s3_moto]",
+     "tests/backends/conformance/test_atomic.py::TestBackendMoveCopy::test_copy[s3_moto]"
+    ]
+   }
+  }
+ },
+ "922": {
+  "src/remote_store/backends/_sftp.py": {
+   "__del__": {
+    "tests": 263,
+    "sample": [
+     "tests/backends/conformance/test_atomic.py::TestBackendMoveCopy::test_already_exists[copy-sqlblob]",
+     "tests/backends/conformance/test_atomic.py::TestBackendMoveCopy::test_already_exists[move-s3_moto]",
+     "tests/backends/conformance/test_atomic.py::TestBackendMoveCopy::test_copy[s3_moto]"
+    ]
+   }
+  }
+ },
+ "918": {
+  "src/remote_store/_async_to_sync_adapter.py": {
+   "_drain_tasks": {
+    "tests": 1,
+    "sample": [
+     "tests/backends/conformance/test_errors.py::TestDeleteErrorFidelity::test_delete_on_directory_missing_ok_still_raises[sqlblob]"
+    ]
+   }
+  }
+ }
+}

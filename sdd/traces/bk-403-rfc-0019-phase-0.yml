@@ -1,0 +1,199 @@
+id: BK-403
+title: "No change-scoped test selector has been chosen for this suite; one of three candidates is measured"
+trigger: >-
+  RFC-0019 was merged as a draft seeking approval for Phase 0. The maintainer
+  approved Phase 0 only on 2026-10-04 (no local pilot, no ci.yml, pyproject
+  or skill change) and asked for the Phase 0 row of the Roadmap delivered
+  under sdd/research/ with targets fixed before the replay.
+source_items:
+  - BK-403
+  - BK-404
+  - ID-266
+audience:
+  - infra.test
+  - contributor.tooling
+  - infra.ci
+expected_ripples:
+  - sdd/BACKLOG.md
+  - sdd/backlog/bk-403-test-selector-evaluation.md
+  - sdd/backlog/bk-404-selected-tests-hatch-target.md
+  - sdd/backlog/id-266-two-speed-ci-gate.md
+  - sdd/rfcs/rfc-0019-two-speed-test-gate.md
+  - sdd/backlogid.json
+surprising_ripples:
+  - sdd/backlog/id-268-pr-close-step.md
+discovery_followups:
+  - BUG-306
+phases:
+  - id: orient
+    name: Orient
+    steps:
+      - file: sdd/rfcs/rfc-0019-two-speed-test-gate.md
+        section: "(full); D5, D7, Roadmap"
+        read_type: gate
+        extract: >-
+          Phase 0 deliverables, the seven metrics, stop judged on the precision
+          set, layer-4 two-method agreement as an exit criterion
+      - file: sdd/backlog/bk-403-test-selector-evaluation.md
+        section: "(full)"
+        read_type: gate
+        extract: "Phase 0 replaces the PoC's revisit condition; consumers BK-404, ID-266"
+      - file: sdd/research/research-bk-403-testmon-poc.md
+        section: "Appendix B (seeds), Appendix D (text readers)"
+        read_type: gate
+        extract: "13 seeds and their known tests; the srcreads blind spots to extend past"
+      - file: sdd/research/bk-403-testmon-poc/driver.py
+        section: "SEEDS, apply, confirm definition"
+        read_type: reference
+        extract: "Seed edits reused verbatim; confirmed = exit 1 and the known case failed"
+  - id: plan
+    name: Plan and targets
+    steps:
+      - file: .github/workflows/ci.yml
+        section: "setup class patterns (CODE_PAT line 57)"
+        read_type: reference
+        extract: "Population H = squash PRs whose diff matches CODE_PAT; 106 of 182 since 2026-07-04"
+      - file: sdd/rfcs/rfc-0019-two-speed-test-gate.md
+        section: "D5 layer 1 'Anything unmatched'; layer 4 '.py only'"
+        read_type: reference
+        outcome: unclear
+        extract: >-
+          Read literally, every non-code path in a code PR is FULL; 97 of 106 code
+          PRs touch one (sdd/traces in 91), so the stop would be decided before
+          any rule ran. The RFC never says whether the selector sees non-code
+          paths; the maintainer chose readers-from-inventory before the run
+  - id: implement
+    name: Throwaway selector and inventory
+    steps:
+      - file: tests/backends/fixtures/backends.toml
+        section: "[backend.*] sources, async_sources"
+        read_type: reference
+        extract: "Backend reach for layer 3 and the every-backend core rule"
+      - file: tests/backends/fixtures/__init__.py
+        section: "_MODULE_FOR"
+        read_type: reference
+        extract: "Fixture module to ids, read as a literal dict"
+      - file: tests/backends/fixtures/registry.py
+        section: "fixture_params (parametrize id = fixture name)"
+        read_type: reference
+        extract: "Conformance node ids carry the fixture id, so allowlists apply at node level"
+      - file: .github/workflows/ci.yml
+        section: "code-gated jobs (test, test-primary, test-primary-sftp, test-cassette-pii, tooling-tests, pyarrow-major-check, test-cross-platform, notebooks, examples, e2e, package)"
+        read_type: reference
+        extract: "Per-job filters for D6 survival; pyarrow-major-check's five files"
+      - file: sdd/research/bk-403-testmon-poc/srcreads.py
+        section: "_by_import"
+        read_type: reference
+        extract: >-
+          Extended to every repo file, directory scans and subprocess targets.
+          My first extension dropped any read with pytest's assertion-rewrite
+          frame anywhere on the stack, which hid every module-level read in a
+          test module; found because the static scan's only one-method reader
+          (test_rfc_0015_findings.py) reads its fixture at import. My first run
+          also lowercased paths (normcase on Windows). Both fixed and the runtime
+          scans rerun
+      - file: tests/test_models.py
+        section: "line 321 (@given)"
+        read_type: reference
+        extract: >-
+          A @given test showed as a reader of unrelated scripts/ and examples/
+          files: Hypothesis (internal/constants_ast.py in the installed package)
+          reads the source of every loaded first-party module to harvest
+          literals. Classified by the outermost library frame and excluded from
+          the table
+      - file: sdd/research/bk-403-phase-0/run_scans.sh
+        section: "(full)"
+        read_type: reference
+        extract: >-
+          My first batch ran two scans at once after TaskStop killed the shell
+          but not its pytest workers, and a mid-run edit of the script changed
+          the running batch (bash reads scripts incrementally); the overlap hung
+          at 97%. Outputs discarded, scans rerun one at a time
+      - file: tests/backends/conformance/test_health_probe_declared.py
+        section: "lines 41-54 (__import__ over a literal tuple)"
+        read_type: reference
+        extract: >-
+          All 9 always-run files import names that are literals in the same file
+          or third-party; D5's "every code change" made test and
+          test-cross-platform always run, contradicting D7's e2e-only
+          empty-survival seed. Scoped to src/ diffs as I7
+  - id: seeds
+    name: Seed run through the PoC driver
+    steps:
+      - file: tests/backends/conformance/test_async_extended.py
+        section: "test_populated_field_implies_declared_capability"
+        read_type: reference
+        extract: >-
+          My first test-module-imported edit (path -> WRITE_RESULT_NATIVE)
+          failed nothing because every async Stage-1 backend declares it;
+          switched to GLOB, which memory lacks, and the seed confirmed
+      - file: tests/scripts/test_check_rst_roles.py
+        section: "(layer-4 reads of tests/, examples/, src/)"
+        read_type: reference
+        extract: >-
+          Three job pins I wrote expected tooling-tests absent for test and
+          e2e edits; the linters read every module, so the pins were wrong,
+          not the selector. Corrected before the freeze; cassette-yaml pins the
+          job's empty-survival case
+      - file: sdd/research/bk-403-phase-0/seeds.py
+        section: "edit_worktree, restore"
+        read_type: reference
+        extract: >-
+          My restore wrote files back in text mode, which on Windows turned
+          every restored file's LF into CRLF, so each later seed ran on a tree
+          that was not pristine (content identical, line endings not). Found by
+          checking the seed worktree's status before removing it; made
+          byte-exact and the whole confirmation rerun on a reset tree
+  - id: replay
+    name: Replays and classification
+    steps:
+      - file: sdd/research/bk-403-phase-0/plan.md
+        section: "Targets; Stop criterion"
+        read_type: gate
+        extract: >-
+          Precision: FULL 77 of 106 (72.6%), median wall share 100%; both
+          stop conditions fire. Fix-and-rerun not run, since it cannot move
+          either figure
+      - file: src/remote_store/backends/_sftp.py
+        section: "__del__ (lines 1751-1759)"
+        read_type: reference
+        extract: >-
+          Coverage charged SFTPBackend.__del__ to s3_moto and sqlblob cells:
+          finalizers of an earlier test's backend run during a later test.
+          All 10 cross-check gaps were finalizer or background-thread
+          attribution, none a missing rule
+      - file: .github/workflows/ci.yml
+        section: "historical job names (gh run view --json jobs steps)"
+        read_type: reference
+        outcome: unclear
+        extract: >-
+          R's job names come from each run's own ci.yml: a job then named
+          test-primary ran pytest tests/scripts/ and pyarrow24-check is today's
+          pyarrow-major-check. Mapped by step and by an alias table in the
+          replay harness
+  - id: close
+    name: Report and backlog
+    steps:
+      - file: sdd/BACKLOG.md
+        section: "How this file works / Completing work (Decided against)"
+        read_type: gate
+        extract: >-
+          Sweep found ID-268's dossier stating RFC-0019's merge-candidate lane
+          in present tense, BUG-302's Phase 4 deadline and BK-401's testmon
+          clause
+      - file: sdd/rfcs/rfc-0019-two-speed-test-gate.md
+        section: "Status; Motivation"
+        read_type: reference
+        extract: >-
+          I recommended Rejected and closing BK-403 and BK-404, treating a stop
+          for the D5 design as a stop for the RFC. The maintainer corrected it:
+          the motivation still holds, so the RFC stays Draft and both items
+          reopen, waiting for a better selection idea. Phase 0's stop applies to
+          the design, not the problem
+      - file: sdd/CLAUDE-REFERENCE.md
+        section: "PR validation gates"
+        read_type: verify
+        extract: >-
+          No CODE_PAT path changed (sdd/ only), so lint + docs-gate; audience has
+          no user. entry and nothing user-facing is introduced, so no CHANGELOG
+          entry
