@@ -173,9 +173,21 @@ worked out in detail; that is a direction to explore, not a choice.
      (the PR #1071 undercount above) and a review whose findings sit only in
      its body. The post-merge run counts rounds over the same four sources;
      reading them after the merge primes no reviewer, since the loop is over.
-     Open: `/fix-pr` filters by judgement ("actionable items"), a script needs
-     a mechanical rule for which source-4 comments are not rounds (the PR
-     author's replies, CI and status bots, the agent's own status comments).
+     `/fix-pr` filters sources 2–4 by judgement ("actionable items"), so the
+     script needs to know which comments that judgement counted. **Proposed
+     (maintainer, 2026-10-05): `/fix-pr` records it while fixing.** Today it
+     leaves no trace for sources 2–4: inline threads get replies whose prefix
+     `fnd.triage()` parses ("Fixed in", "Filed as", "Refuted"), while Step 4
+     only resolves threads. Each pass would post one conversation comment
+     carrying a machine-readable tag per comment it treated as review
+     feedback: its id, a verdict in `triage()`'s vocabulary, and a findings
+     count, with a zero-finding verdict so an "LGTM" round still counts. The
+     post-merge script counts a source-3/4 comment as a round iff a tag names
+     it; author replies, bots and status comments never get one, so no
+     exclusion rule is needed. Residual: feedback handled without `/fix-pr`
+     stays untagged; the script reports those comments as an `untriaged`
+     count rather than dropping them silently. Costs a `/fix-pr` amendment
+     and a tag format both sides parse.
 7. **`git notes` on the squash commit.** As 6, but the block goes to
    `refs/notes/review` instead of a comment. Keeps the record in git. Notes
    are not fetched by default, few readers know them, and whether the
