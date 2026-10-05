@@ -38,8 +38,9 @@ which invoke the test runner and so stay FULL. Beyond that run they:
 They do **not** narrow the base modules behind Phase 0's other large FULL
 reasons: `_backend.py`, `_store.py`, `_memory.py`, anything a root conftest
 imports, and fixture infrastructure (report § Why typical diffs fall back to
-FULL; rows R1 to R3 below). So the replay may well still miss the 30% target;
-what it can show is how far below 54.7% the extra cuts reach.
+FULL; rows R1 to R3 below). The Saving criterion (§ Next step) needs fewer
+than half the PRs to fall back to FULL, so the question the replay answers is
+whether the extra cuts take the FULL rate from 54.7% to below 50%.
 
 The merge barrier is unchanged: the full gate on the merge head
 (RFC-0019 D1, D2), and a selected run never asserts the coverage floor (D8.2).
@@ -76,8 +77,8 @@ The merge barrier is unchanged: the full gate on the merge head
 | `scripts/mkdocs_hooks.py` | `tests/scripts/`, `docs-gate` | R6 |
 | `scripts/**` | `tests/scripts/` | 1 |
 | `pyproject.toml` | per key, see the key table | 2, 6, 12 |
-| A package `__init__.py` under `src/` (`remote_store`, `backends`, `aio`, `ext`); a module in Phase 0's core-module list (`derived_lists.json`); a `src/` module imported by `tests/conftest.py`, `tests/aio/conftest.py`, `tests/e2e/conftest.py` or fixture infrastructure (AST scan; today `_store.py`, `_memory.py`, `_capabilities.py` among them) | FULL | R2 |
-| A backend source: an entry of `sources` or `async_sources` in `tests/backends/fixtures/backends.toml`, a package directory (`aio/backends/_graph/`) counting as one module | the backend set of **every** backend that lists it: conformance on its fixtures, `tests/backends/<backend>/` where it exists, `tests/e2e/`, the examples job, typecheck, every test file naming the module (grep over `tests/`), and `tests/scripts/` (the whole-tree generators `test_gen_graph.py` and `test_gen_features.py` live there) | 3, R1 |
+| A package `__init__.py` under `src/` (`remote_store`, `backends`, `aio`, `ext`); a module in Phase 0's core-module list (`derived_lists.json`); a `src/` module imported by `tests/conftest.py`, `tests/aio/conftest.py`, `tests/e2e/conftest.py` or the shared fixture modules `tests/backends/fixtures/` `registry.py`, `_loader.py`, `_state.py`, `_live_env.py`, `_cassette_pytest.py`, `_cassettes*.py`, `__init__.py` (AST scan; today `_store.py`, `_memory.py`, `_capabilities.py` among them). Per-fixture modules are **not** scanned: each imports its own backend source, so scanning them would send every backend source here | FULL | R2 |
+| A backend source: an entry of `sources` or `async_sources` in `tests/backends/fixtures/backends.toml`, a package directory (`aio/backends/_graph/`) counting as one module | the backend set of **every** backend that lists it or whose sources import it directly (grep over `src/`; `_s3_base.py` is listed under s3 only, but `_s3_pyarrow.py` and `_s3_boto3.py` import it): conformance on its fixtures, `tests/backends/<backend>/` where it exists, `tests/e2e/`, the examples job, typecheck, every test file naming the module (grep over `tests/`), and `tests/scripts/` (the whole-tree generators `test_gen_graph.py` and `test_gen_features.py` live there) | 3, R1 |
 | A `src/` helper whose direct importers (grep over `src/`, function-local imports included, package `__init__.py` files ignored) are all backend sources | the union of those backends' sets. Any other importer, including a helper that is itself imported by backends, is FULL | 13, R1 |
 | `ext/<name>.py`, `aio/ext/<name>.py` | `tests/ext/test_<name>.py`, the `tests/aio/ext/` tests naming the module, `tests/ext/test_contract.py` (reads every `ext/` module as text), `tests/scripts/`, typecheck | R4 |
 | Other `src/` | FULL | — |
@@ -188,11 +189,14 @@ cut wait time in local and pre-merge rounds; safety is the merge-head gate's
 job. Phase 0's zero-miss exit ([`plan.md`](plan.md)) is a merge-barrier
 criterion and does not apply here. Two criteria, fixed before the run:
 
-- **Saving:** the median wall-clock share of a selected run is at most 50%,
-  Phase 0's own saving target.
+- **Saving:** the median estimated wall-clock share **over all 106 PRs**,
+  a FULL fallback counted as 100%, is at most 50%. This is Phase 0's own
+  metric and target (report § Answer). The median over SELECTED runs alone
+  would pass by construction, since the cut-off forces FULL above 50%.
 - **Net of escapes:** the escapes `--verify` finds, each costed as one extra
   full run, sum to less than the time the selection saves across the same
   PRs.
 
-The FULL-fallback rate and every escape, with its row, are reported but are
-not pass or fail criteria on their own.
+The FULL-fallback rate and every escape, with its row, are reported. Phase
+0's separate 30% FULL-rate target does not apply; the Saving criterion bounds
+the FULL rate below 50% on its own.
