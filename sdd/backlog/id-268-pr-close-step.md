@@ -57,20 +57,29 @@ worked out in detail; that is a direction to explore, not a choice.
 
 ### Added 2026-10-05
 
-- **No code consumes a committed `review:` block's figures.** Every `*.py`
-  match for a `"review"` / `'review'` key (Grep over the repo) is either
-  `tests/scripts/test_ship_report.py`, which tests the writer, or an unrelated
-  regex group in `scripts/drift_report.py`. Two guards touch the block without
-  reading its figures: `check_traces.py` validates it against `_schema.yml`, and
-  `_trace_corpus.py` rejects the duplicate `review:` key a second paste leaves.
-  `report-trace-outcomes` does not read it. Not checked: humans or agents that
-  read blocks by eye.
-- **Branch SHAs still resolve on GitHub after the squash.** `2a174de`, the
-  first SHA in `sdd/traces/bk-378-d1-d4.yml`'s `review_driven_commits` (PR
-  #1026, squash-merged), resolves through the commits API (`get_commit`, run
-  2026-10-05). This narrows, not contradicts, the evidence above and
-  `ship_report.py`'s Bounds: the SHAs are not *reachable from master*, but
-  GitHub keeps them via the PR's refs. One sample.
+- **What reads a committed `review:` block.** The `*.py` files naming
+  `review_rounds` or indexing a `review` key are three (Grep over the repo):
+  - `sdd/rfcs/rfc-0015-rounds.py`, the derivation of RFC-0015 Table 1. Its
+    `RX` anchor admits the two-space indent so it reads `review_rounds`
+    *inside* the block, and its docstring names the "after" population
+    emptying as the failure that widening prevents.
+  - `scripts/ship_report.py`, the writer; `trace_block()` keeps the field at
+    that indent so the rounds script still reads it.
+  - `tests/scripts/test_ship_report.py`,
+    `test_the_legacy_corpus_reads_identically_under_the_anchor`, which reads
+    every committed block and asserts the anchor agrees with it.
+
+  Two guards check its shape: `check_traces.py` validates it against
+  `_schema.yml`, and `_trace_corpus.py` rejects the duplicate `review:` key a
+  second paste leaves. Any shape that stops committing the block takes every
+  later trace out of Table 1's "after" population.
+- **Correction to "Why it cannot be produced earlier":** "the branch SHAs it
+  lists stop resolving at the squash merge" is false for one measured case.
+  `2a174de`, the first SHA in `sdd/traces/bk-378-d1-d4.yml`'s
+  `review_driven_commits` (PR #1026, squash-merged), resolves through the
+  commits API (`get_commit`, run 2026-10-05). What holds is the weaker claim
+  in `ship_report.py`'s Bounds and RFC-0015 D4: the SHAs are not *reachable
+  from master*. One sample.
 - **The script runs post-merge with one caveat, read from the code.**
   `collect()` takes `head` from the PR's `head.sha`, which stays the last
   branch head after the merge, and `ensure_commit()` fetches it by SHA. The
@@ -79,11 +88,11 @@ worked out in detail; that is a direction to explore, not a choice.
   the Bounds) head becomes an ancestor of master, the range is empty, and
   `review_rounds` reads 0 with no error. A post-merge run needs the base pinned
   to the merge commit's first parent.
-- **The trace→PR link is derivable from git.** The squash commit that adds a
-  trace carries `(#NNNN)` in its subject in 941 of the 976 merge-free commits
-  `ship_report.py`'s Bounds counted, so `git log --diff-filter=A -- <trace>`
-  usually names the PR without any field in the trace. The 35 exceptions mean
-  this is a fallback, not a guarantee.
+- **The trace→PR link is derivable from git.** Of the 285 commits on master
+  that add a trace, all 285 end their subject with `(#NNNN)`
+  (`git log --diff-filter=A --format=%s origin/master -- 'sdd/traces/[!_]*.yml'`
+  in a full clone, matched against `\(#\d+\)$`, run 2026-10-05). It is a
+  convention, not a guarantee: nothing enforces the subject.
 
 ## Interactions
 
@@ -152,14 +161,29 @@ worked out in detail; that is a direction to explore, not a choice.
    - *`pull_request_target` is safe here* because the workflow and script come
      from master and the PR head is only read by `git log` / `git blame`, never
      executed. It also covers fork PRs, where `pull_request` gets a read-only token.
-   - *Costs:* amend RFC-0015 D4 ("its output is the trace's review block") and
-     `CLAUDE.md` § Trace authoring; the `/ship` skill's close step and
-     `_schema.yml`'s `review` key go or become optional. The record moves out
-     of git into a comment that anyone with write access can edit or delete,
-     and leaves with the repo if it ever leaves GitHub. `ship_report.py`
-     needs a post-merge base (Evidence, 2026-10-05) and a way to find the PR
-     number (trace field or the squash subject). A `workflow_dispatch` input
-     for a PR number covers backfill and a failed run.
+   - *Costs, shared with shape 3 (and 7):* every RFC-0015 clause that assumes
+     the block sits in the trace is amended. Found in
+     `sdd/rfcs/rfc-0015-ship-two-surfaces.md`:
+     - **D4**, "its output is the trace's review block".
+     - **D1's mechanism**: the block pasted under one `review:` key, the
+       boundary `check_traces.py` / `_trace_corpus.py` guard.
+     - **D6's deferred half**: the whole-file brief excludes the trace's
+       `review:` key.
+     - **The acceptance criterion's clause 2**, BK-384's graduation test: "the
+       derived trace block draws a finding in at most one round". Without the
+       block the clause has no referent.
+     - **Table 1's derivation**, `rfc-0015-rounds.py`, which loses every later
+       trace from its "after" population (Evidence, 2026-10-05).
+
+     Outside the RFC: `CLAUDE.md` § Trace authoring and the `/ship` close step.
+     `pr` exists only inside the `review:` block and the schema's top level is
+     `additionalProperties: false` (`_schema.yml:27`), so the trace keeps no
+     PR number unless a top-level field is added; the squash subject is the
+     alternative (Evidence, 2026-10-05). The record moves out of git into a
+     comment that anyone with write access can edit or delete, and leaves with
+     the repo if it ever leaves GitHub. `ship_report.py` needs a post-merge
+     base (Evidence, 2026-10-05). A `workflow_dispatch` input for a PR number
+     covers backfill and a failed run.
    - *Final round count, including conversation rounds (folded in
      2026-10-05).* A purpose of the snapshot is the PR's final review-round
      figures: rounds as submissions (`by_round`) and `review_rounds`, which
@@ -175,19 +199,27 @@ worked out in detail; that is a direction to explore, not a choice.
      reading them after the merge primes no reviewer, since the loop is over.
      `/fix-pr` filters sources 2–4 by judgement ("actionable items"), so the
      script needs to know which comments that judgement counted. **Proposed
-     (maintainer, 2026-10-05): `/fix-pr` records it while fixing.** Today it
-     leaves no trace for sources 2–4: inline threads get replies whose prefix
-     `fnd.triage()` parses ("Fixed in", "Filed as", "Refuted"), while Step 4
-     only resolves threads. Each pass would post one conversation comment
-     carrying a machine-readable tag per comment it treated as review
-     feedback: its id, a verdict in `triage()`'s vocabulary, and a findings
-     count, with a zero-finding verdict so an "LGTM" round still counts. The
-     post-merge script counts a source-3/4 comment as a round iff a tag names
-     it; author replies, bots and status comments never get one, so no
-     exclusion rule is needed. Residual: feedback handled without `/fix-pr`
-     stays untagged; the script reports those comments as an `untriaged`
-     count rather than dropping them silently. Costs a `/fix-pr` amendment
-     and a tag format both sides parse.
+     (maintainer, 2026-10-05): `/fix-pr` records it while fixing.** Inline
+     findings already leave a record: their replies carry the prefix
+     `fnd.triage()` parses ("Fixed in", "Filed as", "Refuted"). Review bodies
+     and conversation comments (sources 3 and 4) get no defined reply. Each
+     pass would post one conversation comment carrying a machine-readable tag
+     per such comment it treated as review feedback: its id, a verdict in
+     `triage()`'s vocabulary, and a findings count, with a zero-finding
+     verdict so an "LGTM" round still counts.
+     - *Counting:* a source-3/4 comment is a round iff a tag names it. A
+       review that already has inline findings is one `by_round` entry and is
+       not tagged, so no round counts twice.
+     - *Exclusion rule, still needed:* the tag comments and shape 6's own
+       snapshot comment carry a fixed marker, and both `/fix-pr`'s triage and
+       the script skip comments carrying it. Login cannot separate the rest:
+       `/rvw-pr` posts with the owner token, so reviewer and author share one.
+     - *Residual:* feedback handled without `/fix-pr` stays untagged. The
+       script reports untagged, unmarked source-3/4 comments as an `untagged`
+       count. That count is an upper bound on missed feedback, not a count of
+       it, because author replies and status comments land there too.
+
+     Costs a `/fix-pr` amendment and a tag and marker format both sides parse.
 7. **`git notes` on the squash commit.** As 6, but the block goes to
    `refs/notes/review` instead of a comment. Keeps the record in git. Notes
    are not fetched by default, few readers know them, and whether the
@@ -208,10 +240,11 @@ presence check is stable, and shape 9 includes it.
 
 ## What would decide
 
-- Whether RFC-0015's graduation (BK-384) keeps the committed block; if not,
-  shape 6 dominates shape 3 (same amendment, frozen figures). No code consumes
-  the block's figures today (Evidence, 2026-10-05), so dropping it breaks no
-  reader; the two guards that validate its shape lose their subject.
+- Whether RFC-0015 is amended to drop the committed block. BK-384's
+  graduation test (acceptance clause 2) presupposes the block, so graduating
+  as written keeps it; dropping it amends that clause, D1, D4, D6 and Table
+  1's derivation (shape 6, *Costs*). If that amendment is taken, shape 6
+  dominates shape 3 (same amendment, frozen figures).
 - Whether a record outside the tree (a PR comment) is acceptable as the
   durable home; if not, shapes 7 and 8 keep post-merge timing in git.
 - Whether ID-266's `merge-candidate` lands; if it does, shapes 1 and 2 are the
