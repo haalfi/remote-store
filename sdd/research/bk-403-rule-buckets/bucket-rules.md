@@ -40,12 +40,14 @@ The merge barrier is unchanged: the full gate on the merge head
 
 ## Rule set
 
-First matching row wins; a diff spanning several rows runs their union.
+Each changed path takes the first row it matches, so a specific row sits above
+any broader row covering the same paths. A diff spanning several rows runs
+their union.
 
 | Change | Runs | Q |
 | --- | --- | --- |
-| `scripts/**` | all of `tests/scripts/` | 1 |
 | `scripts/run_tests.py` | FULL | 1 |
+| `scripts/**` | all of `tests/scripts/` | 1 |
 | `pyproject.toml`, `tomllib` parse of old and new equal | lint only | 2 |
 | `pyproject.toml`, ruff / mypy / hatch-script / coverage sections | lint, typecheck, `tests/scripts/` | 6 |
 | `pyproject.toml`, `[tool.pytest.*]` or test dependencies | FULL | 6 |
@@ -53,13 +55,13 @@ First matching row wins; a diff spanning several rows runs their union.
 | One backend's own `src/` module | conformance on that backend's fixtures, `tests/backends/<backend>/`, e2e, examples, and every test file naming the module (import or string literal, by grep over `tests/`) | 3 |
 | `src/` helper imported by a known subset of backends | union of those backends' Q3 sets; importers found by grep over `src/`, function-local imports included, `_registry.py` excluded | 13 |
 | Other `src/` | FULL | — |
+| `sdd/formal/**` | `tests/scripts/`, the doc checks, formal verification, `tests/backends/dafny/`; the generated `MemoryBackend-py/` must be regenerated first | 4, 5 |
 | `.claude/**`, `sdd/**`, `docs-src/**` | `tests/scripts/` and the doc checks | 4 |
-| `sdd/formal/**` | the row above, formal verification, `tests/backends/dafny/`; the generated `MemoryBackend-py/` must be regenerated first | 4, 5 |
 | Test file only | that file and the tests that import or read it as text | 8 |
 | `conftest.py` | every test under its directory | 8 |
 | Cassettes | `tests/backends/<backend>/`, conformance on that backend's replay fixtures, the PII sweep | 9 |
-| `examples/**` | examples job, `tests/test_examples.py`, `tests/test_snippets.py`, `tests/backends/conformance/test_examples.py` | 10 |
 | `examples/notebooks/**` | notebooks job | 10 |
+| `examples/**` | examples job, `tests/test_examples.py`, `tests/test_snippets.py`, `tests/backends/conformance/test_examples.py` | 10 |
 | `.github/**` | locally lint and `tests/scripts/`; the PR needs a full CI run | 11 |
 | Anything unmatched | FULL | 15 |
 
