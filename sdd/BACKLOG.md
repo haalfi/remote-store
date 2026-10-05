@@ -835,6 +835,15 @@ CHANGELOG the release body is built from — say what is actually true.
   `bk-403-testmon-poc/srcreads.py`). A selector built on the comment would
   drop the directory. Open decision: none.
 
+- [ ] **ID-269 — Mechanisms the repo defines in its own words have established names it never uses**
+  spec: — · effort: S · audience: contributor.process
+  Several rules restate a published method without naming it: CONTENT-RULES
+  Rule 7 is BLUF, ADR-0035's review methods match Fagan inspection and
+  premortem, and TESTING.md never names its TDD school. 38 of 58 catalogue
+  anchors checked have zero repo hits. Open decision: which anchors to name,
+  and whether inline at point of use or in one CLAUDE-REFERENCE glossary.
+  Detail: [dossier](backlog/id-269-semantic-anchors.md)
+
 ---
 
 <a id="gate-cost"></a>
