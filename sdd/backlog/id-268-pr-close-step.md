@@ -164,14 +164,18 @@ worked out in detail; that is a direction to explore, not a choice.
      2026-10-05).* A purpose of the snapshot is the PR's final review-round
      figures: rounds as submissions (`by_round`) and `review_rounds`, which
      counts review-driven *commits* (`ship_report.py` Bounds). Post-merge,
-     both are final, and the run also counts rounds posted as PR conversation
-     comments (`issues/<N>/comments`), which today's script never reads (the
-     PR #1071 undercount above). Reading them after the merge primes no
-     reviewer, since the loop is over. Open: what marks a conversation comment
-     as a round. `/rvw-pr` always submits a review (its Step 4), so #1071's
-     comment rounds came from another path and carry no marker this dossier
-     has found; the script needs a convention (e.g. a heading) or the posting
-     path changed to submit reviews.
+     both are final. What counts as review feedback is already defined:
+     [`/fix-pr` Step 1](../../.claude/skills/fix-pr/SKILL.md) fetches four
+     sources and its triage scans all of them, plain conversation comments
+     (source 4, `issues/<N>/comments`) included. `ship_report.py` reads inline
+     comments grouped by review and uses reviews (source 3) only for
+     `submitted_at` (`rounds_with_findings()`), so it misses source 4 entirely
+     (the PR #1071 undercount above) and a review whose findings sit only in
+     its body. The post-merge run counts rounds over the same four sources;
+     reading them after the merge primes no reviewer, since the loop is over.
+     Open: `/fix-pr` filters by judgement ("actionable items"), a script needs
+     a mechanical rule for which source-4 comments are not rounds (the PR
+     author's replies, CI and status bots, the agent's own status comments).
 7. **`git notes` on the squash commit.** As 6, but the block goes to
    `refs/notes/review` instead of a comment. Keeps the record in git. Notes
    are not fetched by default, few readers know them, and whether the
