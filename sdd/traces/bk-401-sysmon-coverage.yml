@@ -1,0 +1,51 @@
+id: BK-401
+title: "Coverage runs on the slow tracer, where `sysmon` gave identical Stage-1 results"
+trigger: >-
+  Audit-022 § L1 measured COVERAGE_CORE=sysmon on local Stage 1 only (310 s to
+  250 s, identical executed lines) and P6 proposed switching the coverage runs
+  after re-measuring the Stage-2 and --cov-append paths. RFC-0019 Phase 0
+  stopped the selector, leaving the selection-free track as the speed lever.
+source_items:
+  - BK-401
+audience:
+  - infra.ci
+  - contributor.tooling
+phases:
+  - id: orient
+    name: Orient
+    steps:
+      - file: sdd/BACKLOG.md
+        section: "BK-401"
+        read_type: gate
+        extract: "six runs named, test-cov-branch excluded, P6 re-measure first"
+      - file: sdd/audits/audit-022-gate-speed-strategies.md
+        section: "Method, L1, Proposals P6"
+        read_type: gate
+        extract: "method: compare per-file executed_lines in JSON reports; P6 names four runs, the item six"
+      - file: sdd/research/research-bk-403-testmon-poc.md
+        section: "If it is ever built"
+        read_type: reference
+        extract: "a testmon job must set COVERAGE_CORE=ctrace; the env var overrides config, so a config-level switch stays compatible"
+      - file: sdd/CLAUDE-REFERENCE.md
+        section: "Pre-work index"
+        read_type: gate
+        extract: "Backlog item touched; no row covers coverage-tool configuration"
+      - file: sdd/traces/_schema.yml
+        section: "(full)"
+        read_type: reference
+        extract: "audience infra.ci + contributor.tooling owes no CHANGELOG entry"
+      - file: sdd/BACKLOG.md
+        section: "How this file works / Completing work"
+        read_type: reference
+        extract: "delete from index, [x] at top of BACKLOG-DONE Unreleased"
+  - id: measure
+    name: Measure
+    steps:
+      - file: .github/workflows/ci.yml
+        section: "test-primary, test-primary-sftp, test-cassette-pii, coverage-gate"
+        read_type: reference
+        extract: "exact CI commands replicated for the partials + combine path"
+      - file: pyproject.toml
+        section: "test-cov, test-cov-s1, test-cov-strict, test-cov-branch; [tool.coverage.run]"
+        read_type: reference
+        extract: "two-pass --cov-append local path; no per-command env syntax in hatch scripts"
