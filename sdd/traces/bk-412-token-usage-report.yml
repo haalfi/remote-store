@@ -131,3 +131,54 @@ phases:
         read_type: gate
         extract: "Regenerated; 58 mechanisms, the new row is report-token-usage, advisory."
         outcome: ok
+review:
+  # Derived by `hatch run ship-report 1086 --trace-block-only` at head a2e8241.
+  # Do not hand-edit, except a newly required field per sdd/traces/_schema.yml
+  # section review: RFC-0015 D4 makes this script the only producer.
+  derivation: "hatch run ship-report 1086 --trace-block-only"
+  pr: 1086
+  review_rounds: 4
+  submissions: 3
+  findings: 7
+  by_round:
+    - round: 1
+      findings: 4
+      origin: {original: 4}
+      triage: {must-fix: 4}
+      duration_hours: 0.07
+    - round: 2
+      findings: 2
+      origin: {original: 1, pre-existing: 1}
+      triage: {must-fix: 2}
+      duration_hours: 0.18
+    - round: 3
+      findings: 1
+      origin: {loop-introduced: 1}
+      triage: {must-fix: 1}
+      duration_hours: 0.29
+  by_file:
+    - path: "scripts/report_token_usage.py"
+      findings: 4
+    - path: "sdd/traces/bk-412-token-usage-report.yml"
+      findings: 2
+    - path: "scripts/_trace_corpus.py"
+      findings: 1
+  untouched_files:
+    - "pyproject.toml"
+    - "scripts/check_traces.py"
+    - "sdd/BACKLOG-DONE.md"
+    - "sdd/GATE-INVENTORY.md"
+    - "sdd/backlogid.json"
+    - "sdd/decisions/5e38934e-230f-5669-9baf-e9ebbd9003f1.jsonl"
+    - "tests/scripts/test_check_traces.py"
+    - "tests/scripts/test_report_token_usage.py"
+  review_driven_commits:
+    - sha: "b5343bb"
+      subject: "fix: address PR #1086 review"
+    - sha: "147caba"
+      subject: "fix: address PR #1086 review"
+    - sha: "9667e23"
+      subject: "fix: address PR #1086 review"
+    - sha: "a2e8241"
+      subject: "BK-412: decision log"
+  ci: {verdict: GREEN, failed: 0, pending: 0}
