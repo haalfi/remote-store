@@ -30,6 +30,8 @@ jobs:
         with:
           python-version-file: .python-version
       - uses: astral-sh/setup-uv@v10.2.0
+        with:
+          enable-cache: false  # a one-off .[docs] key per pyproject hash (BK-411)
       - run: uv pip install -e ".[docs]"
       - name: Configure git
         run: |
@@ -51,6 +53,8 @@ jobs:
         with:
           python-version-file: .python-version
       - uses: astral-sh/setup-uv@v10.2.0
+        with:
+          enable-cache: false  # a one-off .[docs] key per pyproject hash (BK-411)
       - run: uv pip install -e ".[docs]"
       - name: Configure git
         run: |

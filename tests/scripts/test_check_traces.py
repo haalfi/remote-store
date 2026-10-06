@@ -20,7 +20,7 @@ _SCRIPTS_DIR = _SCRIPT.parent
 if str(_SCRIPTS_DIR) not in sys.path:
     sys.path.insert(0, str(_SCRIPTS_DIR))
 
-import _trace_corpus  # noqa: E402  — the shared loader both consumers use
+import _trace_corpus  # noqa: E402  — the shared loader every consumer uses
 
 
 def _load():
@@ -134,9 +134,10 @@ class TestValidation:
         # `lint` and `docs-gate` instead of printing the violation it
         # exists to print. The glob admits directories because Path.glob
         # does not filter to files, and a bad rebase can leave a file
-        # undecodable. report_trace_outcomes.py handles the same three —
-        # one driver, so the consumers must agree, and both must be shown
-        # to agree rather than asserted to.
+        # undecodable. Every consumer handles the same cases — one driver,
+        # so they must agree, and each must be shown to agree rather than
+        # asserted to: report_trace_outcomes.py and report_token_usage.py
+        # pin them in their own suites.
         schema = _write_schema(tmp_path)
         traces = tmp_path / "traces"
         traces.mkdir(parents=True, exist_ok=True)
@@ -258,8 +259,8 @@ class TestDuplicateKeys:
         before using the key and raises `ConstructorError` when it is not.
         A duplicate-detector that tests membership first does the unhashable
         lookup itself, and `TypeError` is not a `yaml.YAMLError` — so it
-        escapes the `except` arm both consumers report `(parse)` violations
-        from, and the gate aborts with a traceback instead. Measured before the
+        escapes the `except yaml.YAMLError` arm every consumer has, and the
+        gate aborts with a traceback instead. Measured before the
         guard: `load_trace('? [a, b]\\n: value\\n')` raised `TypeError`.
         """
         schema = _write_schema(tmp_path)
@@ -358,8 +359,8 @@ class TestDuplicateKeys:
         was the original bug; refusing too *much* — a merge override, a
         `!!map` on a sequence — was introduced by the fixes for it, twice. The
         `must_refuse` cases also assert the refusal is a `yaml.YAMLError`,
-        because a `TypeError` or `ValueError` escapes the arm both consumers
-        report `(parse)` violations from and aborts the gate with a traceback.
+        because a `TypeError` or `ValueError` escapes the `yaml.YAMLError` arm
+        every consumer has and aborts the gate with a traceback.
         """
         import yaml as _yaml
 
@@ -414,7 +415,7 @@ class TestDuplicateKeys:
 
 
 class TestOneLoader:
-    """Both trace consumers parse through the same function, and it is pinned.
+    """Every trace consumer parses through the same function, and it is pinned.
 
     `_trace_corpus`'s docstring makes this the load-bearing claim: "A consumer
     reaching for `yaml.safe_load` directly opts back out of it silently, which

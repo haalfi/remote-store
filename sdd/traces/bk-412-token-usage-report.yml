@@ -1,0 +1,184 @@
+id: BK-412
+title: "Nothing measured where Claude Code sessions on this repo spend tokens"
+trigger: >-
+  The maintainer asked for an analysis of generic token-saving advice (prompt
+  caching, /clear and /compact, compression skills, terse output). A byte count
+  of the instruction files could rank the repo's own docs, but not say what a
+  session actually pays, and no transcript-based measurement existed. The
+  maintainer chose to land a tested, advisory reporter over a scratch script,
+  so the measurement repeats on past /ship transcripts before any restructuring.
+source_items:
+  - BK-412
+audience:
+  - contributor.tooling
+expected_ripples:
+  - scripts/
+  - tests/scripts/
+  - pyproject.toml
+  - sdd/GATE-INVENTORY.md
+  - sdd/BACKLOG-DONE.md
+surprising_ripples:
+  - "scripts/report_token_usage.py docstring: the local-machine-reference rule bans the literal transcript path, so the docstring names default_dir instead"
+  - "tests/scripts/test_check_traces.py TestOneLoader: every trace consumer must parse via _trace_corpus.load_trace; the trace section first used yaml.safe_load and hatch run all failed on it"
+  - "Comments in scripts/_trace_corpus.py, scripts/check_traces.py and tests/scripts/test_check_traces.py assumed exactly two corpus consumers in fifteen places, found over three review rounds: round 1 fixed two, round 2 nine (five in _trace_corpus.py, four in test_check_traces.py), round 3 four (three in check_traces.py, one in test_check_traces.py, which also gained the undecodable/directory test the comment promised). Each fix missed copies because it searched only the files the review named; round 3 swept scripts/ and tests/scripts/ for 'shared with report_trace_outcomes' and '(both|two|either) (consumers|tools|readers)', then the three corpus scripts for 'report_trace_outcomes|check_traces' (which found check_traces.py:18 and :211 the first sweep missed), and read every hit. Counts dropped for 'every consumer', with TestOneLoader named as the complete enumeration (PR #1086)"
+phases:
+  - id: orient
+    name: Orient
+    steps:
+      - file: CLAUDE.md
+        section: "Principles; Backlog; Trace authoring"
+        read_type: gate
+        extract: "Ship complete: register entry, trace and gate inventory in the same PR."
+        outcome: ok
+      - file: sdd/BACKLOG.md
+        section: "How this file works"
+        read_type: gate
+        extract: >-
+          Next safe BK from gen-backlogid-check was 411, which master took
+          in parallel (#1085); re-minted 412 at the rebase, confirmed free by
+          `gen-backlogid --check --remote`. The file says the plain check is
+          safe for this tree only; `--remote`, which compares pushed
+          branches, was not run at mint time. An item shipped in the
+          same PR goes straight to BACKLOG-DONE as [x]; no section in the index
+          is needed, which avoids arguing a new promise for agent cost.
+        outcome: ok
+      - file: sdd/traces/bk-386-done-entry-shape-measure.yml
+        section: "(full)"
+        read_type: reference
+        extract: "Closest precedent: a committed, tested, advisory reporter."
+        outcome: ok
+      - file: scripts/report_done_length.py
+        section: "module docstring; main"
+        read_type: reference
+        extract: >-
+          Report shape: Rule 5 reason and Rule 7 bound in the docstring,
+          `kind: report`, exit 0 on any finding and 2 on unreadable input.
+        outcome: ok
+      - file: sdd/traces
+        section: "(grep for token figures)"
+        read_type: reference
+        extract: >-
+          Looked for prior token figures in traces; every hit was review-round
+          counts or BK-353's word-token check, none about LLM tokens. The
+          unbounded grep was itself the costliest result of the session
+          (first report row), which is the pattern the report exists to show.
+          The absence is not a corpus defect and the grep was the author's
+          choice of method (outcome re-tagged ok in review, PR #1086).
+        outcome: ok
+  - id: implement
+    name: Implement
+    steps:
+      - file: tests/scripts/test_report_token_usage.py
+        section: "(new)"
+        read_type: verify
+        extract: >-
+          Hermetic JSONL fixtures in Claude Code's record shape: response
+          dedup by message.id, prefix, weights, carried cost, legacy usage
+          without the TTL split, bad lines, recursive scan, --top, exit 2.
+          16 passed.
+        outcome: ok
+      - file: sdd/CLAUDE-REFERENCE.md
+        section: "Detailed checklist / Tests, Docs, Release & meta"
+        read_type: verify
+        extract: >-
+          New test file is os_sensitive (tmp_path, path separators in the
+          transcript label). Local-machine-reference row bans the transcript
+          path literal; see surprising_ripples.
+        outcome: ok
+  - id: verify
+    name: Verify
+    steps:
+      - file: scripts/report_token_usage.py
+        section: "(first run, on this session's own transcript)"
+        read_type: verify
+        extract: >-
+          `hatch run report-token-usage --top 6` mid-session, 24 API calls:
+          prefix 73,995 tokens before the first tool result, of which
+          CLAUDE.md is about 3.7k (14,989 bytes by `wc -c`, / 4); cost split
+          by units 47% cache read, 32% cache write, 20% output. Top carried
+          result: one Grep over sdd/traces, 2,960 tokens x 19 later calls.
+        outcome: ok
+      - file: sdd/traces/_schema.yml
+        section: "description; phases.steps"
+        read_type: reference
+        extract: >-
+          The schema says traces exist to find hotspot files, yet no script
+          aggregated reads per file (grep of scripts/ for hotspot, co-read,
+          gate density: none). The maintainer asked for that view; added as
+          the report's trace section, keyed by trace filename per the id note.
+          The one-loader rule is not the schema's topic; it is stated in
+          scripts/_trace_corpus.py's docstring, which the author did not read,
+          and enforced by TestOneLoader, which failed `hatch run all`.
+          Switched to load_trace, with a duplicate-key test that plain
+          safe_load fails. Review then found the docstrings assumed two
+          consumers; fixing that took three rounds (see
+          surprising_ripples).
+        outcome: ok
+      - file: scripts/report_token_usage.py
+        section: "(trace section, first run)"
+        read_type: verify
+        extract: >-
+          `hatch run report-token-usage --top 12`: 366 traces. By traces read
+          in: CLAUDE-REFERENCE.md 295 (81%), BACKLOG.md 242 (66%, 262 gate
+          steps), pyproject.toml 84, BACKLOG-DONE.md 89. By exposure (traces x
+          bytes/4): BACKLOG-DONE.md first at 240,678 tokens on disk, 15x
+          CLAUDE-REFERENCE.md (15,781). Exposure is an upper bound; this
+          session's own reads of BACKLOG.md and CLAUDE-REFERENCE.md were
+          offset/limit slices of 3,060 and 1,205 tokens.
+        outcome: ok
+      - file: sdd/GATE-INVENTORY.md
+        section: "gen-gate-inventory"
+        read_type: gate
+        extract: "Regenerated; 58 mechanisms, the new row is report-token-usage, advisory."
+        outcome: ok
+review:
+  # Derived by `hatch run ship-report 1086 --trace-block-only` at head a2e8241.
+  # Do not hand-edit, except a newly required field per sdd/traces/_schema.yml
+  # section review: RFC-0015 D4 makes this script the only producer.
+  derivation: "hatch run ship-report 1086 --trace-block-only"
+  pr: 1086
+  review_rounds: 4
+  submissions: 3
+  findings: 7
+  by_round:
+    - round: 1
+      findings: 4
+      origin: {original: 4}
+      triage: {must-fix: 4}
+      duration_hours: 0.07
+    - round: 2
+      findings: 2
+      origin: {original: 1, pre-existing: 1}
+      triage: {must-fix: 2}
+      duration_hours: 0.18
+    - round: 3
+      findings: 1
+      origin: {loop-introduced: 1}
+      triage: {must-fix: 1}
+      duration_hours: 0.29
+  by_file:
+    - path: "scripts/report_token_usage.py"
+      findings: 4
+    - path: "sdd/traces/bk-412-token-usage-report.yml"
+      findings: 2
+    - path: "scripts/_trace_corpus.py"
+      findings: 1
+  untouched_files:
+    - "pyproject.toml"
+    - "scripts/check_traces.py"
+    - "sdd/BACKLOG-DONE.md"
+    - "sdd/GATE-INVENTORY.md"
+    - "sdd/backlogid.json"
+    - "sdd/decisions/5e38934e-230f-5669-9baf-e9ebbd9003f1.jsonl"
+    - "tests/scripts/test_check_traces.py"
+    - "tests/scripts/test_report_token_usage.py"
+  review_driven_commits:
+    - sha: "b5343bb"
+      subject: "fix: address PR #1086 review"
+    - sha: "147caba"
+      subject: "fix: address PR #1086 review"
+    - sha: "9667e23"
+      subject: "fix: address PR #1086 review"
+    - sha: "a2e8241"
+      subject: "BK-412: decision log"
+  ci: {verdict: GREEN, failed: 0, pending: 0}

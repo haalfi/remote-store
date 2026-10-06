@@ -90,7 +90,11 @@ jobs:
           python-version: ${{ matrix.python-version }}
       - uses: astral-sh/setup-uv@v10.2.0
         with:
-          cache-suffix: ci-full-${{ matrix.python-version }}
+          # Restores ci.yml's per-interpreter key; ci.yml saves it (BK-411).
+          python-version: ${{ matrix.python-version }}  # same key literal as ci.yml (BUG-308)
+          cache-suffix: uv-dev-${{ matrix.python-version }}
+          cache-dependency-glob: pyproject.toml
+          save-cache: false
       - run: uv pip install -e ".[dev]"
       # ID-195 two-pass split: pass 1 runs all backends in parallel with xdist
       # (sftp_docker excluded under PYTEST_XDIST_WORKER); pass 2 runs the
