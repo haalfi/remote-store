@@ -53,7 +53,7 @@ documented here by convention, not enforcement.
 | Guard | When | Finding shows up in | How to act |
 |---|---|---|---|
 | `drift-guard.yml` | Mon 07:00 UTC | rolling `[drift-guard]` Issue | `/drift` skill |
-| `mutation.yml` | Sat 05:00 UTC | rolling `[mutation]` Issue (harness failures) | `/mutation` skill |
+| `mutation.yml` | Fri 23:00 UTC | rolling `[mutation]` Issue (harness failures) | `/mutation` skill |
 | dependabot + `dependabot-auto-merge.yml` | Mon (weekly) | update PR + its CI status | per-ecosystem runbook below |
 | `codeql.yml` | push / PR + Mon 06:00 UTC | Security tab alerts | runbook below (exception) |
 | `benchmark.yml` | Mon 04:17 UTC + dispatch | red run + `benchmark-results` artifact + job summary | runbook below (exception) |
@@ -185,8 +185,10 @@ documented in [`CONTRIBUTING.md`](../CONTRIBUTING.md).
   outcome JSON (`job.status` + the pytest-gremlins report counts), and the
   `summary` job classifies them via `scripts/mutation_report.py` and
   reconciles the rolling issue.
-- **When:** Saturday 05:00 UTC, plus manual `workflow_dispatch` (optionally for a
-  single scope).
+- **When:** Friday 23:00 UTC (Saturday 01:00 CEST / 00:00 CET), plus manual
+  `workflow_dispatch` (optionally for a single scope). A full run takes 5-6 h
+  and fills the runner pool, so the schedule sits at night in the maintainer's
+  time zone; dispatch a full run at night too, or it queues daytime CI behind it.
 - **Where the finding shows up:** depends on which of the two outcomes
   occurred. They are deliberately split:
   - **Harness / implementation failure** (the run itself broke: an import,
