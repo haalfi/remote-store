@@ -277,10 +277,14 @@ jobs:
       # test-full); jobs with `enable-cache: false` install uncached. Saved by
       # one leg only (two savers of one key race: BK-230), and only on a master
       # push: a pull_request save is scoped to that PR's merge ref, which no
-      # other PR can restore. The Linux key carries no Python version, so the
-      # suffix must. Only the root pyproject.toml feeds the hash.
+      # other PR can restore. Only the root pyproject.toml feeds the hash.
+      # `python-version` puts that literal in the key; without it setup-uv
+      # writes the runner image's patch version (3.13.15 vs 3.13.16), or
+      # `unknown`, so a saver and its readers on different images miss each
+      # other (BUG-308).
       - uses: astral-sh/setup-uv@v10.2.0
         with:
+          python-version: ${{ matrix.python-version }}
           cache-suffix: uv-dev-${{ matrix.python-version }}
           cache-dependency-glob: pyproject.toml
           save-cache: ${{ github.event_name == 'push' && matrix.shard == 1 }}
@@ -335,6 +339,7 @@ jobs:
       # The primary key's one saver (see the uv-cache note in `test`).
       - uses: astral-sh/setup-uv@v10.2.0
         with:
+          python-version: ${{ needs.setup.outputs.primary }}
           cache-suffix: uv-dev-${{ needs.setup.outputs.primary }}
           cache-dependency-glob: pyproject.toml
           save-cache: ${{ github.event_name == 'push' && matrix.shard == 1 }}
@@ -383,6 +388,7 @@ jobs:
           python-version: ${{ needs.setup.outputs.primary }}
       - uses: astral-sh/setup-uv@v10.2.0
         with:
+          python-version: ${{ needs.setup.outputs.primary }}
           cache-suffix: uv-dev-${{ needs.setup.outputs.primary }}
           cache-dependency-glob: pyproject.toml
           save-cache: false  # test-primary saves this key
@@ -419,6 +425,7 @@ jobs:
           python-version: ${{ needs.setup.outputs.primary }}
       - uses: astral-sh/setup-uv@v10.2.0
         with:
+          python-version: ${{ needs.setup.outputs.primary }}
           cache-suffix: uv-dev-${{ needs.setup.outputs.primary }}
           cache-dependency-glob: pyproject.toml
           save-cache: false  # test-primary saves this key
@@ -563,6 +570,7 @@ jobs:
       # The OS axis separates the key; master pushes save it (see `test`).
       - uses: astral-sh/setup-uv@v10.2.0
         with:
+          python-version: ${{ needs.setup.outputs.primary }}
           cache-dependency-glob: pyproject.toml
           save-cache: ${{ github.event_name == 'push' }}
       - run: uv pip install -e ".[dev]"
@@ -629,6 +637,7 @@ jobs:
           python-version: ${{ needs.setup.outputs.primary }}
       - uses: astral-sh/setup-uv@v10.2.0
         with:
+          python-version: ${{ needs.setup.outputs.primary }}
           cache-suffix: uv-dev-${{ needs.setup.outputs.primary }}
           cache-dependency-glob: pyproject.toml
           save-cache: false  # test-primary saves this key

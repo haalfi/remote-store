@@ -17,6 +17,8 @@ jobs:
         with:
           python-version-file: .python-version
       - uses: astral-sh/setup-uv@v10.2.0
+        with:
+          enable-cache: false  # as ci.yml's package job; a release-only key is never reused
       - run: uv pip install build twine
       - run: python -m build
       - run: twine check dist/*
