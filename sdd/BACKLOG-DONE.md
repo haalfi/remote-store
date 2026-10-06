@@ -254,6 +254,15 @@ if evidence changes; these are retired.
 
 ## Unreleased
 
+- [x] **BK-412 — Nothing measured where Claude Code sessions on this repo spend tokens**
+  spec: — · effort: S · audience: contributor.tooling
+  `hatch run report-token-usage` reads session transcripts and prints per
+  transcript the first-call prefix, cache read/write and output tokens with a
+  price-weighted split, then the tool results ranked by size × later calls.
+  A second section ranks the files `sdd/traces` steps read by traces × size.
+  Advisory: transcripts are local, CI has none. First-run figures are in the
+  [trace](traces/bk-412-token-usage-report.yml).
+
 - [x] **BK-411 — CI spends its setup time on a full clone, a pip-built hatch env and seventeen uv cache keys**
   spec: — · effort: S · audience: infra.ci
   In CI run 37444421117 (step timestamps), `setup`'s full-history checkout took 30 s, and `lint`/`docs` spent
