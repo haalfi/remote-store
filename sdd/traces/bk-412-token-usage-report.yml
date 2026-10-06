@@ -20,7 +20,7 @@ expected_ripples:
 surprising_ripples:
   - "scripts/report_token_usage.py docstring: the local-machine-reference rule bans the literal transcript path, so the docstring names default_dir instead"
   - "tests/scripts/test_check_traces.py TestOneLoader: every trace consumer must parse via _trace_corpus.load_trace; the trace section first used yaml.safe_load and hatch run all failed on it"
-  - "scripts/_trace_corpus.py docstrings named the consumers as a closed set of two; now three, with TestOneLoader named as the complete enumeration (review, PR #1086)"
+  - "scripts/_trace_corpus.py and TestOneLoader's docstrings assumed exactly two consumers in eleven places (round 1 fixed two; round 2 fixed five in _trace_corpus.py and four in test_check_traces.py, three of those found by grep beyond the six the review named); counts dropped for 'every consumer', with TestOneLoader named as the complete enumeration (PR #1086)"
 phases:
   - id: orient
     name: Orient
@@ -110,8 +110,9 @@ phases:
           scripts/_trace_corpus.py's docstring, which the author did not read,
           and enforced by TestOneLoader, which failed `hatch run all`.
           Switched to load_trace, with a duplicate-key test that plain
-          safe_load fails; review then found that docstring still named two
-          consumers, now fixed.
+          safe_load fails. Review then found the docstrings assumed two
+          consumers; the first fix changed two of eleven sentences, the
+          second round the other nine (see surprising_ripples).
         outcome: ok
       - file: scripts/report_token_usage.py
         section: "(trace section, first run)"

@@ -219,29 +219,56 @@ class FileReads:
         return len(self.traces) * self.size
 
 
+def _steps(data: object) -> list[object] | None:
+    """A trace's steps, or None when it is not trace-shaped.
+
+    Input under ``--traces-dir`` need not have passed ``check_traces.py``, so
+    a YAML-valid trace of the wrong shape is skipped, never a traceback.
+    """
+    if data is None:  # an empty file: a trace with no steps
+        return []
+    if not isinstance(data, dict):
+        return None
+    phases = data.get("phases") or []
+    if not isinstance(phases, list):
+        return None
+    steps: list[object] = []
+    for phase in phases:
+        if not isinstance(phase, dict):
+            return None
+        phase_steps = phase.get("steps") or []
+        if not isinstance(phase_steps, list):
+            return None
+        steps.extend(phase_steps)
+    return steps
+
+
 def trace_reads(traces: Path, repo: Path) -> tuple[list[FileReads], int, int]:
-    """Aggregate trace steps per file; returns (rows, traces read, traces unparseable)."""
+    """Aggregate trace steps per file; returns (rows, traces read, traces skipped).
+
+    Skipped: not parseable by the shared loader, or not trace-shaped.
+    """
     rows: dict[str, FileReads] = {}
     read = bad = 0
     for trace in iter_trace_files(traces):
         try:
             # The shared loader rejects duplicate keys instead of keeping the last.
-            data = load_trace(trace.read_text(encoding="utf-8"))
+            steps = _steps(load_trace(trace.read_text(encoding="utf-8")))
         except (yaml.YAMLError, OSError, UnicodeDecodeError):
+            steps = None
+        if steps is None:
             bad += 1
             continue
         read += 1
-        phases = data.get("phases") if isinstance(data, dict) else None
-        for phase in phases or []:
-            for step in (phase or {}).get("steps") or []:
-                if not isinstance(step, dict) or not step.get("file"):
-                    continue
-                # A step may name an anchor (`path#id`); the file is the unit.
-                path = str(step["file"]).split("#")[0].strip()
-                row = rows.setdefault(path, FileReads(path))
-                row.traces.add(trace.name)
-                row.steps += 1
-                row.gates += step.get("read_type") == "gate"
+        for step in steps:
+            if not isinstance(step, dict) or not step.get("file"):
+                continue
+            # A step may name an anchor (`path#id`); the file is the unit.
+            path = str(step["file"]).split("#")[0].strip()
+            row = rows.setdefault(path, FileReads(path))
+            row.traces.add(trace.name)
+            row.steps += 1
+            row.gates += step.get("read_type") == "gate"
     for row in rows.values():
         f = repo / row.path
         row.size = f.stat().st_size // 4 if f.is_file() else 0
@@ -260,7 +287,7 @@ def _print_trace_reads(traces: Path, repo: Path, top: int) -> None:
             f" | {r.steps} | {r.gates} | {size} | `{r.path}` |"
         )
     if bad:
-        print(f"\n{bad} trace(s) were not valid YAML and were skipped.")
+        print(f"\n{bad} trace(s) were not valid YAML or not trace-shaped and were skipped.")
 
 
 def main(argv: list[str] | None = None) -> int:

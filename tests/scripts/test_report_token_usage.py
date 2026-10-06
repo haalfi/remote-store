@@ -184,6 +184,22 @@ class TestTraceReads:
         assert rows == []
         assert (read, bad) == (1, 1)
 
+    @pytest.mark.parametrize(
+        "text",
+        [
+            "phases: [orient]\n",  # a phase that is a scalar
+            "phases: {orient: {steps: []}}\n",  # phases as a mapping
+            "phases:\n  - steps: big.md\n",  # steps as a scalar
+            "- phases: []\n",  # top level a list
+        ],
+    )
+    def test_yaml_valid_but_wrong_shape_is_skipped_not_fatal(self, repo, text):
+        self._write(repo, "shape.yml", text)
+        self._write(repo, "ok.yml", _trace([{"file": "big.md"}]))
+        rows, read, bad = rtu.trace_reads(repo / "sdd" / "traces", repo)
+        assert (read, bad) == (1, 1)
+        assert [r.path for r in rows] == ["big.md"]
+
     def test_duplicate_key_trace_is_rejected_by_shared_loader(self, repo):
         # Plain yaml.safe_load would keep the last `phases` and count this trace.
         self._write(repo, "dup.yml", "phases: []\nphases: []\n")

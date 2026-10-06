@@ -10,7 +10,7 @@ parse-and-schema gate) and the reports ``report_trace_outcomes.py`` and
 ``scripts/``, so it, not this list, is complete: check it before changing
 ``TRACE_GLOB`` or ``StrictTraceLoader``.
 
-It lives here rather than in either tool because
+It lives here rather than in any one consumer because
 [`sdd/DRIFT-RULES.md` Rule 1](../sdd/DRIFT-RULES.md#one-driver) prefers one
 normative description driving N artifacts over N copies that agree until
 they do not. A copied glob is exactly the shape that drifts: an earlier
@@ -24,14 +24,14 @@ are two descriptions of one fact, and nothing detects them diverging: if
 the schema changes the carve-out, this constant is what is wrong, and no
 check will say so.
 
-The report does not import the gate directly, even though the gate is
+The reports do not import the gate directly, even though the gate is
 where the glob first landed. ``check_traces`` imports ``jsonschema`` at
 module scope, and a report that only needs to parse YAML should not
 acquire a schema-validation dependency to borrow a five-character
 string.
 
-``load_trace`` is here for the same Rule 1 reason as ``TRACE_GLOB``: the
-gate and the report must not disagree about which files parse, and the
+``load_trace`` is here for the same Rule 1 reason as ``TRACE_GLOB``: no
+two consumers may disagree about which files parse, and the
 duplicate-key refusal below is a parse-time verdict rather than a schema
 one. A consumer reaching for ``yaml.safe_load`` directly opts back out of
 it silently, which is why there is one function rather than a documented
@@ -115,8 +115,8 @@ class StrictTraceLoader(yaml.SafeLoader):
           accepts and resolves to the override; and
         * it unpacks ``node.value`` pairwise, so calling it on a node that is
           not a ``MappingNode`` — ``x: !!map\n  - a`` — raised ``TypeError``,
-          which is not a ``YAMLError`` and so escaped the arm both consumers
-          report ``(parse)`` violations from.
+          which is not a ``YAMLError`` and so escaped the ``YAMLError`` arm
+          every consumer catches.
 
         Deferring to ``super()`` for the node-type guard, the flattening and the
         construction leaves this override responsible for one question only:
@@ -141,9 +141,10 @@ class StrictTraceLoader(yaml.SafeLoader):
                         key_node.start_mark,
                     )
                 if key in seen:
-                    # ConstructorError subclasses YAMLError, which is what both
-                    # consumers already catch and report as a ``(parse)``
-                    # violation. A bare ValueError would escape that handler.
+                    # ConstructorError subclasses YAMLError, which is what every
+                    # consumer catches (the gate and the outcome report record
+                    # a ``(parse)`` violation, the token report a skipped
+                    # trace). A bare ValueError would escape that handler.
                     raise yaml.constructor.ConstructorError(
                         "while constructing a mapping",
                         node.start_mark,
