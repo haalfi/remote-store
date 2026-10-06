@@ -184,6 +184,19 @@ class TestTraceReads:
         assert rows == []
         assert (read, bad) == (1, 1)
 
+    @pytest.mark.parametrize("kind", ["undecodable", "directory"])
+    def test_unreadable_trace_is_skipped_not_fatal(self, repo, kind):
+        # Same cases test_check_traces pins for the gate: neither is a YAMLError.
+        traces = repo / "sdd" / "traces"
+        if kind == "undecodable":
+            (traces / "bad.yml").write_bytes(b'id: BK-1\ntitle: "\xff\xfe"\n')
+        else:
+            (traces / "adir.yml").mkdir()
+        self._write(repo, "ok.yml", _trace([{"file": "big.md"}]))
+        rows, read, bad = rtu.trace_reads(traces, repo)
+        assert (read, bad) == (1, 1)
+        assert [r.path for r in rows] == ["big.md"]
+
     @pytest.mark.parametrize(
         "text",
         [

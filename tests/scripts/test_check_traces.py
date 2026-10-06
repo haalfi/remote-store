@@ -134,9 +134,10 @@ class TestValidation:
         # `lint` and `docs-gate` instead of printing the violation it
         # exists to print. The glob admits directories because Path.glob
         # does not filter to files, and a bad rebase can leave a file
-        # undecodable. report_trace_outcomes.py handles the same three —
-        # one driver, so the consumers must agree, and both must be shown
-        # to agree rather than asserted to.
+        # undecodable. Every consumer handles the same cases — one driver,
+        # so they must agree, and each must be shown to agree rather than
+        # asserted to: report_trace_outcomes.py and report_token_usage.py
+        # pin them in their own suites.
         schema = _write_schema(tmp_path)
         traces = tmp_path / "traces"
         traces.mkdir(parents=True, exist_ok=True)

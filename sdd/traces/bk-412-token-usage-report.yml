@@ -20,7 +20,7 @@ expected_ripples:
 surprising_ripples:
   - "scripts/report_token_usage.py docstring: the local-machine-reference rule bans the literal transcript path, so the docstring names default_dir instead"
   - "tests/scripts/test_check_traces.py TestOneLoader: every trace consumer must parse via _trace_corpus.load_trace; the trace section first used yaml.safe_load and hatch run all failed on it"
-  - "scripts/_trace_corpus.py and TestOneLoader's docstrings assumed exactly two consumers in eleven places (round 1 fixed two; round 2 fixed five in _trace_corpus.py and four in test_check_traces.py, three of those found by grep beyond the six the review named); counts dropped for 'every consumer', with TestOneLoader named as the complete enumeration (PR #1086)"
+  - "Comments in scripts/_trace_corpus.py, scripts/check_traces.py and tests/scripts/test_check_traces.py assumed exactly two corpus consumers in fifteen places, found over three review rounds: round 1 fixed two, round 2 nine (five in _trace_corpus.py, four in test_check_traces.py), round 3 four (three in check_traces.py, one in test_check_traces.py, which also gained the undecodable/directory test the comment promised). Each fix missed copies because it searched only the files the review named; round 3 swept scripts/ and tests/scripts/ for 'shared with report_trace_outcomes' and '(both|two|either) (consumers|tools|readers)', then the three corpus scripts for 'report_trace_outcomes|check_traces' (which found check_traces.py:18 and :211 the first sweep missed), and read every hit. Counts dropped for 'every consumer', with TestOneLoader named as the complete enumeration (PR #1086)"
 phases:
   - id: orient
     name: Orient
@@ -111,8 +111,8 @@ phases:
           and enforced by TestOneLoader, which failed `hatch run all`.
           Switched to load_trace, with a duplicate-key test that plain
           safe_load fails. Review then found the docstrings assumed two
-          consumers; the first fix changed two of eleven sentences, the
-          second round the other nine (see surprising_ripples).
+          consumers; fixing that took three rounds (see
+          surprising_ripples).
         outcome: ok
       - file: scripts/report_token_usage.py
         section: "(trace section, first run)"

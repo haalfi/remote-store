@@ -14,8 +14,8 @@ What this gate does
 -------------------
 For every ``sdd/traces/[!_]*.yml`` file (the ``[!_]`` glob skips
 infrastructure files like ``_schema.yml`` itself, per the schema's own
-note; it lives in ``scripts/_trace_corpus.py`` so this gate and
-``report_trace_outcomes.py`` share one definition of "a trace"), parse
+note; it lives in ``scripts/_trace_corpus.py`` so this gate and every
+report over the corpus share one definition of "a trace"), parse
 the YAML and validate the document against the *whole*
 schema using ``jsonschema``. The draft is selected from the schema's
 ``$schema`` keyword, so the check tracks whatever JSON Schema dialect the
@@ -105,7 +105,7 @@ if TYPE_CHECKING:
 SCHEMA_PATH = TRACES_DIR / "_schema.yml"
 
 # The "[!_]" carve-out that skips _schema.yml lives in _trace_corpus.py,
-# shared with report_trace_outcomes.py so the gate and the report cannot
+# shared with every corpus consumer so the gate and the reports cannot
 # disagree about what a trace is. DRIFT-RULES Rule 1.
 
 
@@ -208,7 +208,7 @@ def collect_violations(
             # a bad rebase can leave a file undecodable. Uncaught, either
             # aborts this gate with a traceback in `lint` and `docs-gate`
             # instead of printing the violation it exists to print.
-            # report_trace_outcomes.py handles the same three for the same
+            # Every corpus consumer handles the same three for the same
             # reason: one driver, so the consumers must agree about what
             # it can hand them.
             violations.append(Violation(source=str(rel), path="(parse)", message=f"{type(exc).__name__}: {exc}"))
