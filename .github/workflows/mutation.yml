@@ -166,9 +166,10 @@ jobs:
       # Install the dev extra directly via uv (same pattern every other CI
       # workflow uses — see .github/workflows/ci.yml). Going through
       # ``hatch run`` here would re-derive the environment via hatch's
-      # features key; hatch 1.16.5 + uv installer silently leaves features
-      # out of the venv, so the matrix shard ran ``python -m pytest`` against
-      # a venv that did not have pytest. The mutate-specific dep
+      # features key; under this workflow's UV_SYSTEM_PYTHON=1 hatch's uv
+      # installer syncs features into the system Python, not the venv (BK-411),
+      # so the matrix shard ran ``python -m pytest`` against a venv that did not
+      # have pytest. The mutate-specific dep
       # (``pytest-gremlins``) lives in the ``[mutate]`` extra — the single
       # source of truth for the pin — installed alongside ``[dev]``.
       - uses: actions/setup-python@v7

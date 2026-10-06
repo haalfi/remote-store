@@ -299,15 +299,10 @@ python = "3.13"
 # real optional-dependencies extra rather than an env-only `dependencies` entry
 # so the two mutation workflows can install the same pin via `.[mutate]`.
 features = ["dev", "docs", "bench", "mutate"]
-
-[tool.hatch.envs.default.overrides]
-# BK-269: force the pip installer in CI. With `installer = "uv"` above, hatch's
-# dependency sync silently drops the env `features` (the dev/docs/bench extras)
-# on GitHub runners — the `lint` job came up without `griffe` (the same hatch +
-# uv installer bug recorded in .github/workflows/mutation.yml). Local dev keeps
-# uv (fast); GITHUB_ACTIONS is always "true" on runners, so this only flips the
-# installer in CI.
-env.GITHUB_ACTIONS.installer = { value = "pip", if = ["true"] }
+# The uv installer honours UV_SYSTEM_PYTHON=1 (set workflow-wide in CI) and then
+# syncs these features into the system Python, not .venv. A job that runs hatch
+# sets UV_SYSTEM_PYTHON=0 (BK-411); tests/scripts/test_workflow_hatch_uv_system.py
+# fails any workflow step that runs hatch without it.
 
 [tool.hatch.envs.default.scripts]
 # Fast artifact-drift checks (check_hatch_python first, so a gate on the wrong

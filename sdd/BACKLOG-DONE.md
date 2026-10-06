@@ -254,6 +254,17 @@ if evidence changes; these are retired.
 
 ## Unreleased
 
+- [x] **BK-411 — CI spends its setup time on a full clone, a pip-built hatch env and seventeen uv cache keys**
+  spec: — · effort: S · audience: infra.ci
+  In CI run 37444421117 (step timestamps), `setup`'s full-history checkout took 30 s, and `lint`/`docs` spent
+  98 s/72 s in hatch's pip install. The pip override was a BK-269 workaround: under
+  `UV_SYSTEM_PYTHON=1`, hatch's uv installer syncs features into the system Python
+  (reproduced locally; `=0` fixes it), so those jobs now set `=0`. `setup` diffs two
+  depth-1 commits. The jobs that cache uv go from 17 keys per `pyproject.toml` hash to 6, each saved by
+  one leg of a master push only (a PR's save is scoped to its merge ref); `enable-cache: false` jobs stay uncached.
+  `tests/scripts/test_workflow_hatch_uv_system.py` pins `UV_SYSTEM_PYTHON` falsy on every hatch step.
+  Method: [trace](traces/bk-411-ci-setup-time.yml).
+
 - [x] **BK-410 — Test fixtures still modelled the 3.10 floor and the `tomli` extra after BK-380 removed both**
   spec: CFG-009 · effort: S · audience: infra.test
   `test_check_conda_recipe_pins.py`'s synthetic tree now carries a 3.11 floor

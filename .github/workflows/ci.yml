@@ -33,18 +33,23 @@ jobs:
       test-matrix: ${{ steps.versions.outputs.test-matrix }}
       typecheck-matrix: ${{ steps.versions.outputs.typecheck-matrix }}
     steps:
+      # Shallow checkout + a depth-1 fetch of the one comparison commit: a
+      # two-tree `git diff` needs no history, and a full clone cost ~30 s on the
+      # critical path of every run (BK-411).
       - uses: actions/checkout@v7
-        with:
-          fetch-depth: 0
       - name: Detect changed files
         id: filter
         run: |
           if [ "${{ github.event_name }}" = "pull_request" ]; then
-            FILES=$(git diff --name-only "${{ github.event.pull_request.base.sha }}" "${{ github.sha }}")
-          elif [ "${{ github.event.before }}" = "0000000000000000000000000000000000000000" ] || [ -z "${{ github.event.before }}" ]; then
+            BASE="${{ github.event.pull_request.base.sha }}"
+          else
+            BASE="${{ github.event.before }}"
+          fi
+          if [ "$BASE" = "0000000000000000000000000000000000000000" ] || [ -z "$BASE" ]; then
             FILES=$(git ls-files)
           else
-            FILES=$(git diff --name-only "${{ github.event.before }}" "${{ github.sha }}")
+            git fetch --no-tags --depth=1 origin "$BASE"
+            FILES=$(git diff --name-only "$BASE" "${{ github.sha }}")
           fi
           # .python-version is the source this job reads for the primary
           # Python (below), so a lone bump must re-run the gating jobs that
@@ -128,6 +133,10 @@ jobs:
     needs: [setup]
     if: needs.setup.outputs.code == 'true'
     runs-on: ubuntu-latest
+    # hatch's uv installer honours UV_SYSTEM_PYTHON and would sync the env's
+    # features into the runner's Python instead of hatch's .venv (BK-411).
+    env:
+      UV_SYSTEM_PYTHON: "0"
     steps:
       - uses: actions/checkout@v7
       - uses: actions/setup-python@v7
@@ -262,9 +271,19 @@ jobs:
       - uses: actions/setup-python@v7
         with:
           python-version: ${{ matrix.python-version }}
+      # uv cache (BK-411): one key per interpreter for the `.[dev]` install,
+      # shared only by the jobs that set `cache-suffix: uv-dev-*` (this job,
+      # test-primary, test-primary-sftp, test-cassette-pii, e2e, ci-full.yml's
+      # test-full); jobs with `enable-cache: false` install uncached. Saved by
+      # one leg only (two savers of one key race: BK-230), and only on a master
+      # push: a pull_request save is scoped to that PR's merge ref, which no
+      # other PR can restore. The Linux key carries no Python version, so the
+      # suffix must. Only the root pyproject.toml feeds the hash.
       - uses: astral-sh/setup-uv@v10.2.0
         with:
-          cache-suffix: ci-test-stage1-${{ matrix.python-version }}-${{ matrix.shard }}  # BK-230
+          cache-suffix: uv-dev-${{ matrix.python-version }}
+          cache-dependency-glob: pyproject.toml
+          save-cache: ${{ github.event_name == 'push' && matrix.shard == 1 }}
       - run: uv pip install -e ".[dev]"
       # Stage 1 = repo-only tier (no Docker): the sftp_docker / live-s3 / live-azure
       # Stage-2 fixtures are excluded, so this needs no service containers and no
@@ -313,9 +332,12 @@ jobs:
       - uses: actions/setup-python@v7
         with:
           python-version: ${{ needs.setup.outputs.primary }}
+      # The primary key's one saver (see the uv-cache note in `test`).
       - uses: astral-sh/setup-uv@v10.2.0
         with:
-          cache-suffix: ci-test-primary-${{ matrix.shard }}  # BK-230
+          cache-suffix: uv-dev-${{ needs.setup.outputs.primary }}
+          cache-dependency-glob: pyproject.toml
+          save-cache: ${{ github.event_name == 'push' && matrix.shard == 1 }}
       - run: uv pip install -e ".[dev]"
       # The full live-backend Stage-2 pass-1, split 2 ways (least_duration over the
       # setup-inclusive durations). TestCommittedCassettePIISweep is deselected and
@@ -361,7 +383,9 @@ jobs:
           python-version: ${{ needs.setup.outputs.primary }}
       - uses: astral-sh/setup-uv@v10.2.0
         with:
-          cache-suffix: ci-test-primary-sftp
+          cache-suffix: uv-dev-${{ needs.setup.outputs.primary }}
+          cache-dependency-glob: pyproject.toml
+          save-cache: false  # test-primary saves this key
       - run: uv pip install -e ".[dev]"
       # --stage=2 explicitly, for the same reason test-primary passes it: without
       # it the stage is auto-detected by a `docker info` probe that falls back to
@@ -395,7 +419,9 @@ jobs:
           python-version: ${{ needs.setup.outputs.primary }}
       - uses: astral-sh/setup-uv@v10.2.0
         with:
-          cache-suffix: ci-test-cassette-pii
+          cache-suffix: uv-dev-${{ needs.setup.outputs.primary }}
+          cache-dependency-glob: pyproject.toml
+          save-cache: false  # test-primary saves this key
       - run: uv pip install -e ".[dev]"
       - run: pytest --stage=1 -p no:benchmark --cov=remote_store --cov-report= tests/backends/fixtures/test_cassettes.py::TestCommittedCassettePIISweep
       - run: |
@@ -534,7 +560,11 @@ jobs:
       - uses: actions/setup-python@v7
         with:
           python-version: ${{ needs.setup.outputs.primary }}
+      # The OS axis separates the key; master pushes save it (see `test`).
       - uses: astral-sh/setup-uv@v10.2.0
+        with:
+          cache-dependency-glob: pyproject.toml
+          save-cache: ${{ github.event_name == 'push' }}
       - run: uv pip install -e ".[dev]"
       - name: Run OS-sensitive tests
         run: pytest -m "os_sensitive" --ignore=tests/e2e
@@ -599,7 +629,9 @@ jobs:
           python-version: ${{ needs.setup.outputs.primary }}
       - uses: astral-sh/setup-uv@v10.2.0
         with:
-          cache-suffix: ci-e2e  # BK-230
+          cache-suffix: uv-dev-${{ needs.setup.outputs.primary }}
+          cache-dependency-glob: pyproject.toml
+          save-cache: false  # test-primary saves this key
       - run: uv pip install -e ".[dev]"
       - run: pytest tests/e2e/ -v -o addopts= -p no:randomly
 
@@ -607,6 +639,9 @@ jobs:
     needs: [setup]
     if: needs.setup.outputs.docs == 'true'
     runs-on: ubuntu-latest
+    # Same hatch .venv reason as the lint job (BK-411).
+    env:
+      UV_SYSTEM_PYTHON: "0"
     steps:
       - uses: actions/checkout@v7
       - uses: actions/setup-python@v7
