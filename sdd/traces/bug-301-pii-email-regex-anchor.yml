@@ -116,3 +116,31 @@ phases:
           dossiers, the testmon research and one trace mention it only as
           history or a named track; nothing states it as still tracked.
         outcome: ok
+review:
+  # Derived by `hatch run ship-report 1079 --trace-block-only` at head 298fee2.
+  # Do not hand-edit, except a newly required field per sdd/traces/_schema.yml
+  # section review: RFC-0015 D4 makes this script the only producer.
+  derivation: "hatch run ship-report 1079 --trace-block-only"
+  pr: 1079
+  review_rounds: 1
+  submissions: 1
+  findings: 1
+  by_round:
+    - round: 1
+      findings: 1
+      origin: {original: 1}
+      triage: {must-fix: 1}
+      duration_hours: 0.07
+  by_file:
+    - path: "sdd/traces/bug-301-pii-email-regex-anchor.yml"
+      findings: 1
+  untouched_files:
+    - "sdd/BACKLOG-DONE.md"
+    - "sdd/BACKLOG.md"
+    - "sdd/decisions/1e622a53-9eb9-5e5f-a7f5-6878b450f531.jsonl"
+    - "tests/backends/fixtures/_cassettes.py"
+    - "tests/backends/fixtures/test_cassettes.py"
+  review_driven_commits:
+    - sha: "298fee2"
+      subject: "BUG-301: Name both timing runs and the probe skip in trace and done entry"
+  ci: {verdict: GREEN, failed: 0, pending: 0}
