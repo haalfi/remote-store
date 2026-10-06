@@ -301,7 +301,8 @@ python = "3.13"
 features = ["dev", "docs", "bench", "mutate"]
 # The uv installer honours UV_SYSTEM_PYTHON=1 (set workflow-wide in CI) and then
 # syncs these features into the system Python, not .venv. A job that runs hatch
-# sets UV_SYSTEM_PYTHON=0 (ci.yml lint, docs; BK-411).
+# sets UV_SYSTEM_PYTHON=0 (BK-411); tests/scripts/test_workflow_hatch_uv_system.py
+# fails any workflow step that runs hatch without it.
 
 [tool.hatch.envs.default.scripts]
 # Fast artifact-drift checks (check_hatch_python first, so a gate on the wrong

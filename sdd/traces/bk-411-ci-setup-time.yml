@@ -16,6 +16,7 @@ expected_ripples:
 surprising_ripples:
   - pyproject.toml
   - .github/workflows/mutation.yml
+  - tests/scripts/test_workflow_hatch_uv_system.py
 phases:
   - id: orient
     name: Orient
@@ -128,6 +129,18 @@ phases:
           per-suffix entries of one interpreter are within 0.2% of each other
           in size: copies of one install. Under BK-411, 4 Linux x ~0.28 GB + macOS
           0.25 + Windows 0.25 = ~1.6 GB, all on master.
+        outcome: ok
+      - file: tests/scripts/test_workflow_hatch_uv_system.py
+        section: "added for PR #1085 review (guard replacing the repo-wide pip override)"
+        read_type: verify
+        extract: >-
+          The removed override covered every hatch run; its replacement was two
+          hand-copied job env blocks. The test resolves UV_SYSTEM_PYTHON step >
+          job > workflow for every step whose `run` matches \bhatch\b in
+          .github/workflows and .github/actions (a composite step must set it
+          itself). Run against `git show origin/master:.github/workflows/ci.yml`
+          it flags lint steps 5-7 and docs step 3, the 4 steps the override had
+          protected; at the head, 4 passed.
         outcome: ok
   - id: verify
     name: Verify

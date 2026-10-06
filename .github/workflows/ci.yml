@@ -272,11 +272,13 @@ jobs:
         with:
           python-version: ${{ matrix.python-version }}
       # uv cache (BK-411): one key per interpreter for the `.[dev]` install,
-      # shared by every job and workflow that installs it, saved by one leg only
-      # (two savers of one key race: BK-230), and only on a master push: a
-      # pull_request save is scoped to that PR's merge ref, which no other PR
-      # can restore. The Linux key carries no Python version, so the suffix
-      # must. Only the root pyproject.toml feeds the hash.
+      # shared only by the jobs that set `cache-suffix: uv-dev-*` (this job,
+      # test-primary, test-primary-sftp, test-cassette-pii, e2e, ci-full.yml's
+      # test-full); jobs with `enable-cache: false` install uncached. Saved by
+      # one leg only (two savers of one key race: BK-230), and only on a master
+      # push: a pull_request save is scoped to that PR's merge ref, which no
+      # other PR can restore. The Linux key carries no Python version, so the
+      # suffix must. Only the root pyproject.toml feeds the hash.
       - uses: astral-sh/setup-uv@v10.2.0
         with:
           cache-suffix: uv-dev-${{ matrix.python-version }}
