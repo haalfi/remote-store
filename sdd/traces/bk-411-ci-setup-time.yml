@@ -139,3 +139,16 @@ phases:
           9 files, 184 passed. `hatch run preflight` clean. actionlint not run
           locally (download blocked in this session); CI lint runs it.
         outcome: ok
+      - file: "CI run 37444421117, jobs 112206159281 (windows), 112206159202 (macos), 112206159099 (lint)"
+        section: "observed, not acted on (none filed; the owner decides)"
+        read_type: reference
+        extract: >-
+          (1) Windows: cache hit, yet `Installed 253 packages in 59.73s` (macOS
+          19.57 s, Linux 3.29 s); the cost is file copy under UV_LINK_MODE=copy,
+          not download, so caching cannot remove it. (2) setup-uv logs "Could not
+          determine uv version ... Falling back to latest" (0.12.23): uv is
+          unpinned in every workflow. (3) The macOS key reads `macos-16` on a
+          macos-26 image, a setup-uv label only. (4) Shard durations, chosen in
+          the interview (sdd/decisions/871a402b-...jsonl), stay with BK-400: the
+          refresh needs the live-backend stack and this container has no Docker.
+        outcome: ok
