@@ -33,7 +33,11 @@ phases:
         section: "How this file works"
         read_type: gate
         extract: >-
-          Next safe BK from gen-backlogid-check is 411. An item shipped in the
+          Next safe BK from gen-backlogid-check was 411, which master took
+          in parallel (#1085); re-minted 412 at the rebase, confirmed free by
+          `gen-backlogid --check --remote`. The file says the plain check is
+          safe for this tree only; `--remote`, which compares pushed
+          branches, was not run at mint time. An item shipped in the
           same PR goes straight to BACKLOG-DONE as [x]; no section in the index
           is needed, which avoids arguing a new promise for agent cost.
         outcome: ok
