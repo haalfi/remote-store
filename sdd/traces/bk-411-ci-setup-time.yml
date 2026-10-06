@@ -105,6 +105,16 @@ phases:
           saving; docs.yml deploy jobs stop caching. Keys per hash: 4 Linux + 2
           OS = 6.
         outcome: ok
+      - file: "https://docs.github.com/en/actions/reference/workflows-and-actions/dependency-caching"
+        section: "Restrictions for accessing a cache; Usage limits and eviction policy"
+        read_type: reference
+        extract: >-
+          A pull_request run's cache is scoped to refs/pull/N/merge and restorable
+          only by that PR; eviction is least-recently-accessed past 10 GB. So
+          every saver is gated on `github.event_name == 'push'` (master, the
+          scope all PRs read), including test-cross-platform, which had cached
+          and saved by default.
+        outcome: ok
   - id: verify
     name: Verify
     steps:

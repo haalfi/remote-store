@@ -273,13 +273,15 @@ jobs:
           python-version: ${{ matrix.python-version }}
       # uv cache (BK-411): one key per interpreter for the `.[dev]` install,
       # shared by every job and workflow that installs it, saved by one leg only
-      # (two savers of one key race: BK-230). The Linux key carries no Python
-      # version, so the suffix must. Only the root pyproject.toml feeds the hash.
+      # (two savers of one key race: BK-230), and only on a master push: a
+      # pull_request save is scoped to that PR's merge ref, which no other PR
+      # can restore. The Linux key carries no Python version, so the suffix
+      # must. Only the root pyproject.toml feeds the hash.
       - uses: astral-sh/setup-uv@v10.2.0
         with:
           cache-suffix: uv-dev-${{ matrix.python-version }}
           cache-dependency-glob: pyproject.toml
-          save-cache: ${{ matrix.shard == 1 }}
+          save-cache: ${{ github.event_name == 'push' && matrix.shard == 1 }}
       - run: uv pip install -e ".[dev]"
       # Stage 1 = repo-only tier (no Docker): the sftp_docker / live-s3 / live-azure
       # Stage-2 fixtures are excluded, so this needs no service containers and no
@@ -333,7 +335,7 @@ jobs:
         with:
           cache-suffix: uv-dev-${{ needs.setup.outputs.primary }}
           cache-dependency-glob: pyproject.toml
-          save-cache: ${{ matrix.shard == 1 }}
+          save-cache: ${{ github.event_name == 'push' && matrix.shard == 1 }}
       - run: uv pip install -e ".[dev]"
       # The full live-backend Stage-2 pass-1, split 2 ways (least_duration over the
       # setup-inclusive durations). TestCommittedCassettePIISweep is deselected and
@@ -556,7 +558,11 @@ jobs:
       - uses: actions/setup-python@v7
         with:
           python-version: ${{ needs.setup.outputs.primary }}
+      # The OS axis separates the key; master pushes save it (see `test`).
       - uses: astral-sh/setup-uv@v10.2.0
+        with:
+          cache-dependency-glob: pyproject.toml
+          save-cache: ${{ github.event_name == 'push' }}
       - run: uv pip install -e ".[dev]"
       - name: Run OS-sensitive tests
         run: pytest -m "os_sensitive" --ignore=tests/e2e

@@ -260,7 +260,8 @@ if evidence changes; these are retired.
   98 s/72 s in hatch's pip install. The pip override was a BK-269 workaround: under
   `UV_SYSTEM_PYTHON=1`, hatch's uv installer syncs features into the system Python
   (reproduced locally; `=0` fixes it), so those jobs now set `=0`. `setup` diffs two
-  depth-1 commits. The uv cache drops from 17 keys per `pyproject.toml` hash to 6, with one saver per key.
+  depth-1 commits. The uv cache drops from 17 keys per `pyproject.toml` hash to 6, each saved by
+  one leg of a master push only (a PR's save is scoped to its merge ref).
   Method: [trace](traces/bk-411-ci-setup-time.yml).
 
 - [x] **BK-410 — Test fixtures still modelled the 3.10 floor and the `tomli` extra after BK-380 removed both**
