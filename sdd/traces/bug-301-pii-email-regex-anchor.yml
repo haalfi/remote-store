@@ -1,0 +1,146 @@
+id: BUG-301
+title: "Anchor the PII sweep's bare-email regex so it stops going quadratic on base64 runs"
+trigger: >-
+  audit-022 § L2 measured the `bare email address` marker at 157 of
+  TestCommittedCassettePIISweep's 160 worker-seconds; the sweep runs inside
+  every local `hatch run all`. Picked as the first selection-free step after
+  RFC-0019 Phase 0 stopped the D5 selector.
+source_items:
+  - BUG-301
+audience:
+  - infra.test
+discovery_followups: []
+expected_ripples:
+  - tests/backends/fixtures/_cassettes.py
+  - tests/backends/fixtures/test_cassettes.py
+  - sdd/BACKLOG.md
+  - sdd/BACKLOG-DONE.md
+surprising_ripples: []
+phases:
+  - id: orient
+    name: Orient
+    steps:
+      - file: sdd/rfcs/rfc-0019-two-speed-test-gate.md
+        section: "Status; Roadmap (selection-free track)"
+        read_type: reference
+        extract: >-
+          Phase 0 stopped D5; BUG-301, BK-401, BK-400 named as the separate
+          selection-free track that shortens the full gate every PR pays.
+        outcome: ok
+      - file: sdd/research/bk-403-phase-0/report.md
+        section: "Consequences for the dependent items"
+        read_type: reference
+        extract: "Meanwhile: the selection-free track, at no risk of skipping a test"
+        outcome: ok
+      - file: sdd/BACKLOG.md
+        section: "BUG-301; How this file works / Completing work"
+        read_type: gate
+        extract: >-
+          Open decision none, fix shape in audit-022 § L2. Completing: delete
+          here, `[x]` entry in BACKLOG-DONE.md, sweep inbound references.
+        outcome: ok
+      - file: sdd/audits/audit-022-gate-speed-strategies.md
+        section: "L2"
+        read_type: gate
+        extract: >-
+          Cause (restart at every byte of a base64 run), fix (leading
+          `(?<![A-Za-z0-9._%+-])`), measurement (0.14 s, identical verdicts on
+          478 files). P7 prescribes a failing timing test first.
+        outcome: ok
+      - file: sdd/specs/049-live-recording-architecture.md
+        section: "REC-006"
+        read_type: reference
+        extract: "Spec names the envelope, not the pattern; no spec change"
+        outcome: ok
+  - id: reproduce
+    name: Reproduce
+    steps:
+      - file: tests/backends/fixtures/_cassettes.py
+        section: "FORBIDDEN_ENVELOPE"
+        read_type: verify
+        extract: >-
+          Timed one re.search per file over tests/backends/cassettes/**/*.yaml
+          (478: 359 azure, 119 graph) with both patterns: old 107.63 s, anchored
+          0.14 s (pattern inlined in the script), 0 verdict differences. Rerun
+          after the fix, importing the committed pattern: anchored 0.11 s, same
+          verdicts; the done entry quotes this run. Synthetic `QUJD` runs of 10/20/40 KB:
+          old 0.44/1.77/7.20 s (x4 per doubling), anchored < 1 ms.
+        outcome: ok
+      - file: sdd/TESTING.md
+        section: "It asserts the wrong signal"
+        read_type: reference
+        extract: >-
+          Warns that timing is flaky and proves nothing, aimed at proving
+          offloading. Kept a timing test anyway because elapsed time is the
+          contract here; the 1 s bound sits >1000x above anchored and 7x below
+          unanchored on 40 KB.
+        outcome: ok
+  - id: implement
+    name: Implement
+    steps:
+      - file: tests/backends/fixtures/test_cassettes.py
+        section: "TestScrubCore (email marker tests)"
+        read_type: verify
+        extract: >-
+          Placed in TestScrubCore, not the sweep class, because test and
+          test-primary deselect the sweep. Linear-time test seen red (7.3 s),
+          four verdict-preservation cases green before and after; the file's
+          67 tests green after the fix, sweep calls 0.16 s.
+        outcome: ok
+      - file: tests/backends/fixtures/_cassettes.py
+        section: "FORBIDDEN_ENVELOPE / bare email address"
+        read_type: verify
+        extract: >-
+          Lookbehind added. Every cassette is clean, so 0 differences only
+          proved parity on non-matches: seeded `leak.user@example.com` at
+          start, middle and end of the longest 60+ char run in every 10th
+          cassette (48 sampled, 4 with no such run skipped: 44 x 3 = 132
+          probes), all flagged by both forms.
+        outcome: ok
+  - id: verify
+    name: Verify
+    steps:
+      - file: sdd/CLAUDE-REFERENCE.md
+        section: "Ripple-check / Bug fix row vs _schema.yml audience rule"
+        read_type: verify
+        extract: >-
+          Same disagreement BUG-295 and BUG-305 tagged: the row asks for a
+          CHANGELOG stub, the schema's derived rule skips it for infra.test.
+          Took the schema's rule, as both precedents did.
+        outcome: unclear
+      - file: sdd/BACKLOG.md
+        section: "Completing work / inbound sweep"
+        read_type: verify
+        extract: >-
+          Grep `BUG-301` over the repo: RFC-0019, the Phase 0 report, two
+          dossiers, the testmon research and one trace mention it only as
+          history or a named track; nothing states it as still tracked.
+        outcome: ok
+review:
+  # Derived by `hatch run ship-report 1079 --trace-block-only` at head 298fee2.
+  # Do not hand-edit, except a newly required field per sdd/traces/_schema.yml
+  # section review: RFC-0015 D4 makes this script the only producer.
+  derivation: "hatch run ship-report 1079 --trace-block-only"
+  pr: 1079
+  review_rounds: 1
+  submissions: 1
+  findings: 1
+  by_round:
+    - round: 1
+      findings: 1
+      origin: {original: 1}
+      triage: {must-fix: 1}
+      duration_hours: 0.07
+  by_file:
+    - path: "sdd/traces/bug-301-pii-email-regex-anchor.yml"
+      findings: 1
+  untouched_files:
+    - "sdd/BACKLOG-DONE.md"
+    - "sdd/BACKLOG.md"
+    - "sdd/decisions/1e622a53-9eb9-5e5f-a7f5-6878b450f531.jsonl"
+    - "tests/backends/fixtures/_cassettes.py"
+    - "tests/backends/fixtures/test_cassettes.py"
+  review_driven_commits:
+    - sha: "298fee2"
+      subject: "BUG-301: Name both timing runs and the probe skip in trace and done entry"
+  ci: {verdict: GREEN, failed: 0, pending: 0}

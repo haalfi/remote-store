@@ -176,8 +176,11 @@ FORBIDDEN_ENVELOPE: tuple[tuple[str, bytes], ...] = (
     # real leak. Kept deliberately — a raw account email is a real failure
     # mode no other marker covers on every surface. If it ever trips on
     # benign content, scope it (exclude the matched domain/field) rather
-    # than dropping the gate.
-    ("bare email address", rb"[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Za-z]{2,}"),
+    # than dropping the gate. The lookbehind starts a match only at a run
+    # boundary: unanchored, the local part restarts at every byte of a long
+    # base64 run, which made the sweep quadratic (BUG-301). Same verdicts:
+    # any match inside a run also matches from the run's start.
+    ("bare email address", rb"(?<![A-Za-z0-9._%+-])[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Za-z]{2,}"),
 )
 
 # endregion
