@@ -861,14 +861,6 @@ coverage floor.
   for such a PR; 776 further `docs`-class files have readers outside `docs-gate`.
   Open decision: per file, move it to a class whose jobs run its readers, or accept it.
 
-- [ ] **BUG-301 — The PII sweep's bare-email regex is quadratic on base64 runs and costs 157 of the sweep's 160 worker-seconds**
-  spec: — · effort: S · audience: infra.test
-  The `bare email address` pattern (`tests/backends/fixtures/_cassettes.py:180`)
-  restarts at every character of long base64 runs; [audit-022](audits/audit-022-gate-speed-strategies.md)
-  § L2 measures its share of `TestCommittedCassettePIISweep` and an anchored
-  form with identical verdicts on every committed cassette. Open decision:
-  none; the anchored pattern and its measurement are in § L2.
-
 - [ ] **BK-401 — Coverage runs on the slow tracer, where `sysmon` gave identical Stage-1 results**
   spec: — · effort: S · audience: infra.ci, contributor.tooling
   Three `ci.yml` jobs (`test-primary`, `test-primary-sftp`, `test-cassette-pii`) and three

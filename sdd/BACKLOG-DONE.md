@@ -254,6 +254,15 @@ if evidence changes; these are retired.
 
 ## Unreleased
 
+- [x] **BUG-301 — The PII sweep's bare-email regex is quadratic on base64 runs and costs 157 of the sweep's 160 worker-seconds**
+  spec: REC-006 · effort: S · audience: infra.test
+  The `bare email address` marker in `FORBIDDEN_ENVELOPE` gains a leading
+  `(?<![A-Za-z0-9._%+-])`, so a match starts only at a run boundary
+  ([audit-022](audits/audit-022-gate-speed-strategies.md) § L2). Timing one
+  `re.search` per file over `tests/backends/cassettes/**/*.yaml` (478 files):
+  107.63 s → 0.11 s, 0 verdict differences; 132 addresses seeded into base64
+  runs are flagged by both forms. Pinned by `TestScrubCore`'s linear-time test.
+
 - [x] **BUG-305 — `report-trace-outcomes` crashes on a Windows console before printing**
   spec: — · effort: S · audience: contributor.tooling
   `main()` reconfigures a text stdout to UTF-8 before printing, so a cp1252
