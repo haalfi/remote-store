@@ -1,0 +1,112 @@
+id: BK-410
+title: "Test fixtures still modelled the 3.10 floor and the `tomli` extra after BK-380 removed both"
+trigger: >-
+  After BK-380 dropped Python 3.10, `rg -n 'tomli'` outside traces still hit
+  live files. Read one by one, only the conda-pins test fixture (3.10 floor,
+  `toml` extra, `tomli` recipe entry) and the `TestFromTomlFallbacks` class
+  name described the removed world; every other hit was intentional.
+source_items:
+  - BK-410
+  - BK-380
+audience:
+  - infra.test
+discovery_followups: []
+expected_ripples:
+  - sdd/BACKLOG-DONE.md
+  - sdd/backlogid.json
+surprising_ripples: []
+phases:
+  - id: orient
+    name: Orient
+    steps:
+      - file: sdd/specs/021-config-loaders.md
+        section: "CFG-009"
+        read_type: gate
+        extract: >-
+          Invariant already says stdlib tomllib only, no `tomli` fallback; the
+          spec's own `tomli` mention is the negative claim and stays.
+        outcome: ok
+      - file: tests/test_config.py
+        section: "TestFromTomlFallbacks"
+        read_type: reference
+        extract: >-
+          test_needs_no_tomli_backport is CFG-009's guard (poisoned `tomli`
+          module), so it stays; only the class name still says "fallbacks".
+        outcome: ok
+      - file: tests/scripts/test_drift_check.py
+        section: "_MARKER_PROJECT"
+        read_type: reference
+        extract: >-
+          Synthetic marker-gated project, its comment already says the real
+          pyproject no longer has one after BK-380; stays.
+        outcome: ok
+      - file: scripts/check_conda_recipe_pins.py
+        section: "Bounds (Rule 7)"
+        read_type: reference
+        extract: >-
+          Markers are dropped and "no extra carries a marker today", so the
+          marker-gated test needs a synthetic package; any live marker works.
+        outcome: ok
+      - file: sdd/BACKLOG.md
+        section: "BK-400; How this file works"
+        read_type: gate
+        extract: >-
+          BK-400 already owns the stale `.test_durations_pass1` entries
+          (renamed tests), so the durations file is not touched here.
+          Completing work: `[x]` entry in BACKLOG-DONE.md, gen-backlogid.
+        outcome: ok
+  - id: implement
+    name: Implement
+    steps:
+      - file: tests/scripts/test_check_conda_recipe_pins.py
+        section: "_PYPROJECT, _RECIPE, _VARIANTS, _CI, TestPythonMin"
+        read_type: verify
+        extract: >-
+          Floor 3.10 -> 3.11 across all four fixture strings and the
+          TestPythonMin replace() literals; `toml`/`tomli` -> `compat` with
+          `typing-extensions; python_version < '3.13'`, a marker that is live
+          under a 3.11 floor. Each drift test asserts a violation, so a
+          replace() that matched nothing would fail, not pass silently.
+          `pytest tests/scripts/test_check_conda_recipe_pins.py
+          tests/test_config.py::TestFromTomlEdges`: 33 passed, covering both
+          changed surfaces. (A first run reported 49 from a `-k` filter that
+          also caught unrelated `*Toml*` classes; review caught the figure.)
+        outcome: ok
+  - id: verify
+    name: Verify
+    steps:
+      - file: sdd/CLAUDE-REFERENCE.md
+        section: "Ripple-check table / Tests"
+        read_type: verify
+        extract: >-
+          No row beyond backlogid.json applies to a test-only fixture change;
+          infra.test owes no CHANGELOG entry per the schema's audience rule.
+        outcome: ok
+review:
+  # Derived by `hatch run ship-report 1084 --trace-block-only` at head 9c31d44.
+  # Do not hand-edit, except a newly required field per sdd/traces/_schema.yml
+  # section review: RFC-0015 D4 makes this script the only producer.
+  derivation: "hatch run ship-report 1084 --trace-block-only"
+  pr: 1084
+  review_rounds: 1
+  submissions: 1
+  findings: 1
+  by_round:
+    - round: 1
+      findings: 1
+      origin: {original: 1}
+      triage: {must-fix: 1}
+      duration_hours: 0.04
+  by_file:
+    - path: "sdd/traces/bk-410-stale-tomli-test-fixtures.yml"
+      findings: 1
+  untouched_files:
+    - "sdd/BACKLOG-DONE.md"
+    - "sdd/backlogid.json"
+    - "sdd/decisions/3bfaec9b-b806-5464-843b-97819f9cdabb.jsonl"
+    - "tests/scripts/test_check_conda_recipe_pins.py"
+    - "tests/test_config.py"
+  review_driven_commits:
+    - sha: "9c31d44"
+      subject: "BK-410: Derive the trace's test count from a named invocation"
+  ci: {verdict: GREEN, failed: 0, pending: 0}

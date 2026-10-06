@@ -254,6 +254,15 @@ if evidence changes; these are retired.
 
 ## Unreleased
 
+- [x] **BK-410 — Test fixtures still modelled the 3.10 floor and the `tomli` extra after BK-380 removed both**
+  spec: CFG-009 · effort: S · audience: infra.test
+  `test_check_conda_recipe_pins.py`'s synthetic tree now carries a 3.11 floor
+  and a live marker-gated `typing-extensions` in place of the dead `toml` extra;
+  `TestFromTomlFallbacks` is `TestFromTomlEdges`. The 11 files left by
+  `rg -l 'tomli\b' --glob '!sdd/traces/**'` hold CFG-009's own invariant, its
+  guard test, a synthetic drift fixture, history, or dagster's captured lock;
+  stale timings in `.test_durations_pass1` stay with BK-400.
+
 - [x] **BK-401 — Coverage runs on the slow tracer, where `sysmon` gave identical Stage-1 results**
   spec: — · effort: S · audience: infra.ci, contributor.tooling
   `[tool.coverage.run] core = "sysmon"` reaches all six runs. On 3.13, Stage 2, both
