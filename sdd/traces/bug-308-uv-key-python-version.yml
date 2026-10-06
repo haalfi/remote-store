@@ -72,7 +72,40 @@ phases:
         section: "test_workflow_uv_cache_key.py + test_workflow_hatch_uv_system.py"
         read_type: verify
         extract: >-
-          6 passed after the fix; the first test sees 7 cached steps. The key
-          string itself is confirmed only by this PR's CI logs (python-version
-          literal in place of 3.13.15/unknown).
+          6 passed after the fix; the first test sees 7 cached steps.
         outcome: ok
+      - file: "PR #1087 CI run 37488326987, jobs 112354300247, 112354232276, 112354232236"
+        section: "setup-uv restore line"
+        read_type: verify
+        extract: >-
+          Keys now carry the literal: `...-ubuntu-24.04-3.13-<hash>-uv-dev-3.13`
+          (test-primary (2)), `...-3.12-...-uv-dev-3.12` (test (3.12, 1)),
+          `...-windows-2025-3.13-<hash>` (Windows), each after `Set UV_PYTHON
+          to <ver>`. The runner Pythons still differ underneath (3.13.15 there,
+          3.13.16 in tooling-tests), so the key no longer tracks the image.
+          `uv pip install` stayed on the setup-python interpreter
+          (`Using Python 3.13.15 environment at: /opt/hostedtoolcache/...`).
+        outcome: ok
+review:
+  # Derived by `hatch run ship-report 1087 --trace-block-only` at head 197be74.
+  # Do not hand-edit, except a newly required field per sdd/traces/_schema.yml
+  # section review: RFC-0015 D4 makes this script the only producer.
+  derivation: "hatch run ship-report 1087 --trace-block-only"
+  pr: 1087
+  review_rounds: 0
+  submissions: 0
+  findings: 0
+  by_round: []
+  by_file: []
+  untouched_files:
+    - ".github/workflows/ci-full.yml"
+    - ".github/workflows/ci.yml"
+    - ".github/workflows/publish.yml"
+    - "sdd/BACKLOG-DONE.md"
+    - "sdd/backlogid.json"
+    - "sdd/decisions/871a402b-e1cd-54c0-a412-d700ce2be942.jsonl"
+    - "sdd/traces/bug-308-uv-key-python-version.yml"
+    - "tests/scripts/test_workflow_uv_cache_key.py"
+  review_driven_commits:
+    []
+  ci: {verdict: GREEN, failed: 0, pending: 0}
