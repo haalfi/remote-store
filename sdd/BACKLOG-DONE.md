@@ -260,8 +260,8 @@ if evidence changes; these are retired.
   `(?<![A-Za-z0-9._%+-])`, so a match starts only at a run boundary
   ([audit-022](audits/audit-022-gate-speed-strategies.md) § L2). Timing one
   `re.search` per file over `tests/backends/cassettes/**/*.yaml` (478 files):
-  107.63 s → 0.11 s, 0 verdict differences; 132 addresses seeded into base64
-  runs are flagged by both forms. Pinned by `TestScrubCore`'s linear-time test.
+  107.63 s → 0.11 s, 0 verdict differences; an address seeded at three points
+  of the longest run in 44 sampled cassettes (132 probes) is flagged by both. Pinned by `TestScrubCore`'s linear-time test.
 
 - [x] **BUG-305 — `report-trace-outcomes` crashes on a Windows console before printing**
   spec: — · effort: S · audience: contributor.tooling
