@@ -115,6 +115,20 @@ phases:
           scope all PRs read), including test-cross-platform, which had cached
           and saved by default.
         outcome: ok
+      - file: "GET /repos/haalfi/remote-store/actions/caches?per_page=100&sort=size_in_bytes (user export, 2026-10-06)"
+        section: "all 100 of 104 entries listed (the 4 unlisted are the smallest)"
+        read_type: reference
+        extract: >-
+          Grouped by key prefix and ref in Python: 10.717 GB listed, over the
+          10 GB limit. uv on PR merge refs 21 entries / 5.828 GB; uv on master
+          18 / 4.796 GB (the 17 counted above plus docs.yml's 36 MB `.[docs]`
+          key); ci-images 1 / 0.093 GB, created 2026-07-23 and the oldest entry;
+          gremlins 60 entries, under 1 MB together. Every uv entry was created
+          the same day, so eviction is churning them within hours. The
+          per-suffix entries of one interpreter are within 0.2% of each other
+          in size: copies of one install. Under BK-411, 4 Linux x ~0.28 GB + macOS
+          0.25 + Windows 0.25 = ~1.6 GB, all on master.
+        outcome: ok
   - id: verify
     name: Verify
     steps:
