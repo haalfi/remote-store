@@ -22,7 +22,18 @@ expected_ripples:
 #   testmon job. A config-level switch is now in every job, so such a job must
 #   set COVERAGE_CORE=ctrace, as that note already prescribes; the env var
 #   overrides the config (coverage/config.py reads COVERAGE_CORE last).
-surprising_ripples: []
+# - Found in review, not by me: the config-level switch also reaches mutation.yml's
+#   pytest-gremlins coverage pre-scan, a per-test-context consumer (sysmon drops
+#   switch_context). Unaffected, with evidence: pytest-gremlins 1.10.1 (the
+#   `mutate` pin, >=1.10.1,<1.11) runs the pre-scan as
+#   `coverage run --rcfile=.coveragerc.gremlins` with `core = ctrace` and strips
+#   COVERAGE_CORE (plugin.py `_COVERAGE_CORE_RC_LINE`, `_prescan_env`); its
+#   PRIVATE mode calls set_option('run:core', 'ctrace'), and PIGGYBACK skips
+#   context switching when it detects sysmon. Replaying that command from the repo
+#   root under COVERAGE_DEBUG=sys read only the rc file (configs_read) and ran
+#   CTracer, so this pyproject setting does not reach it.
+surprising_ripples:
+  - .github/workflows/mutation.yml
 # Measurement (derivation for every figure in the BACKLOG-DONE entry):
 # - Host: 4-core container, Python 3.13.16, coverage 7.16.2, pytest-cov 7.1.0.
 #   Services: Azurite 3.35.0 and atmoz/sftp:alpine in Docker. MinIO could not be

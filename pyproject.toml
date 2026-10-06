@@ -751,10 +751,13 @@ exclude = ["**/__init__.py", "**/__pycache__/*"]
 # jobs); storing source paths relative to the rootdir makes them line up during
 # `coverage combine` regardless of each runner's absolute checkout path.
 # core = sysmon (BK-401): same executed lines as the default core on every
-# coverage path, ~20% faster. Where sysmon cannot run (3.11; --cov-branch before
-# 3.14) coverage falls back to its default core; disable_warnings keeps that
-# fallback from becoming an error under filterwarnings = error. COVERAGE_CORE in
-# the environment overrides this setting.
+# coverage path, and faster on the large parallel passes (figures: BK-401's trace).
+# Where sysmon cannot run (3.11; --cov-branch before 3.14) coverage falls back to
+# its default core; disable_warnings keeps that fallback from becoming an error
+# under filterwarnings = error. COVERAGE_CORE in the environment overrides this
+# setting. Per-test-context consumers need ctrace (sysmon drops switch_context):
+# pytest-gremlins' pre-scan pins it via its own --rcfile and strips COVERAGE_CORE,
+# so recheck that when moving the `mutate` pin.
 [tool.coverage.run]
 parallel = true
 relative_files = true
