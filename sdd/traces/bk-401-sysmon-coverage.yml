@@ -55,8 +55,14 @@ surprising_ripples: []
 #   CoverageWarning (no-sysmon) when warnings are errors.
 # - `core` setting first shipped in coverage 7.9.0 (CHANGES.rst of the 7.9.0
 #   sdist; absent from 7.8.2's config.py), hence the `coverage>=7.9` floor.
-# - Not measured: Python 3.14 (not installed here; coverage already defaults to
-#   sysmon there, branch included), real MinIO, CI runners themselves.
+# - CI check (P6's "re-measure covered lines on CI"): coverage-gate's
+#   `coverage report` table on PR #1081 (sysmon, job 112169015962) and on the
+#   master push of BUG-301 (default core, run 37431274704, job 112164319923) are
+#   identical row for row: TOTAL 11102 stmts, 133 miss, the same Missing lines in
+#   every file. CI covers 10,969, one line fewer than the local 10,970 under both
+#   cores, so that gap is environment (moto vs real MinIO, runner), not core.
+# - Not measured: Python 3.14 locally (not installed; coverage already defaults to
+#   sysmon there, branch included; the CI 3.14 legs run without --cov).
 phases:
   - id: orient
     name: Orient
