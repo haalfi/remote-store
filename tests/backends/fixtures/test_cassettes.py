@@ -19,6 +19,7 @@ from __future__ import annotations
 
 import json
 import re
+import time
 import types
 from typing import Any
 from urllib.parse import urlsplit
@@ -930,6 +931,32 @@ class TestScrubCore:
         live_shape = b"X-AnchorMailbox: Oid:00000000-0000-0000-dead-beefcafe0123@9188040d-6c67-4c5b-b112-36a304b66dad"
         markers = dict(FORBIDDEN_ENVELOPE)
         assert re.search(markers["oid anchor (hyphen-split account id)"], live_shape, re.IGNORECASE)
+
+    @pytest.mark.spec("REC-006")
+    @pytest.mark.parametrize(
+        "blob",
+        [
+            b"user@example.com",
+            b"x: first.last+tag@sub.example.org\n",
+            b'{"mail":"a_b%c-d@host-1.example.co"}',
+            b"QUJDREVG+user@example.com",  # match inside a longer local-part run
+        ],
+    )
+    def test_email_marker_still_matches(self, blob: bytes) -> None:
+        """The email marker keeps flagging an address wherever its local-part
+        run starts (BUG-301 anchors the run, it must not narrow the verdict)."""
+        assert re.search(dict(FORBIDDEN_ENVELOPE)["bare email address"], blob, re.IGNORECASE)
+
+    @pytest.mark.spec("REC-006")
+    def test_email_marker_is_linear_on_long_base64_runs(self) -> None:
+        """BUG-301: an unanchored local part restarts at every byte of a base64
+        run, so the sweep went quadratic. Here elapsed time *is* the contract:
+        40 KB took ~7 s unanchored, <1 ms anchored, so the 1 s bound is far
+        from both and not timing-sensitive."""
+        blob = b"QUJD" * 10_000
+        start = time.perf_counter()
+        assert re.search(dict(FORBIDDEN_ENVELOPE)["bare email address"], blob, re.IGNORECASE) is None
+        assert time.perf_counter() - start < 1.0
 
     @pytest.mark.spec("REC-006")
     def test_fire_counts_accumulate_and_manifest_dumps(self, tmp_path: Any, monkeypatch: pytest.MonkeyPatch) -> None:
