@@ -10,6 +10,53 @@ source_items:
 audience:
   - infra.ci
   - contributor.tooling
+expected_ripples:
+  - sdd/backlogid.json
+  - sdd/decisions/87bce456-1b8d-513c-8207-a63c4c70d86c.jsonl
+# No path-level surprise. Two below path granularity:
+# - The item named six runs to switch, but hatch scripts have no per-command env
+#   syntax and an `env VAR=...` prefix breaks Windows dev boxes (BUG-304's
+#   audience). The switch therefore moved into `[tool.coverage.run]`, which
+#   reaches every --cov run, ad-hoc ones included, and leaves ci.yml untouched.
+# - research-bk-403-testmon-poc.md says the sysmon switch must stay out of any
+#   testmon job. A config-level switch is now in every job, so such a job must
+#   set COVERAGE_CORE=ctrace, as that note already prescribes; the env var
+#   overrides the config (coverage/config.py reads COVERAGE_CORE last).
+surprising_ripples: []
+# Measurement (derivation for every figure in the BACKLOG-DONE entry):
+# - Host: 4-core container, Python 3.13.16, coverage 7.16.2, pytest-cov 7.1.0.
+#   Services: Azurite 3.35.0 and atmoz/sftp:alpine in Docker. MinIO could not be
+#   pulled (cgr.dev, quay.io and dl.min.io denied by the egress proxy, Docker Hub
+#   rate-limited), so `moto_server -p 19100` stood in on MinIO's port; the
+#   MinIO-keyed conformance tests passed against it (313 passed, 37 skipped,
+#   `pytest --stage=2 -n 4 -k minio tests/backends/conformance/`). CI's real
+#   MinIO is therefore not what was measured.
+# - Default core = COVERAGE_CORE unset (ctrace on 3.13); sysmon = COVERAGE_CORE=sysmon.
+# - Path L (test-cov-strict without the floor), per core:
+#   `python scripts/run_tests.py -p no:benchmark --stage=2 --cov=remote_store --cov-report=`
+#   then `pytest -p no:benchmark --stage=2 --cov=remote_store --cov-append --cov-report= -k sftp_docker tests/backends/conformance/`,
+#   `coverage json` after each pass.
+#   default: pass 1 519.9 s, pass 2 125.3 s; sysmon: pass 1 413.9 s, pass 2 120.6 s.
+#   Pass 1 and final: 10,970 / 11,102 covered under both cores; 68 files, 0 differ.
+#   Pass 2 (305 passed) adds no line over pass 1 under either core.
+# - Path C (ci.yml verbatim): test-primary shards 1 and 2 (`--splits 2`, `-n auto`,
+#   PII sweep deselected, RS_REQUIRE_MINIO=1), test-primary-sftp, test-cassette-pii;
+#   each `coverage combine` + mv, then coverage-gate's combine and
+#   `coverage report --fail-under=95` (rc=0 under both cores).
+#   default: 171.8 + 129.7 + 125.0 + 143.3 s; sysmon: 139.9 + 102.5 + 121.4 + 142.2 s.
+#   Covered lines identical per partial (10,342 / 10,321 / 2,878 / 2,278) and
+#   combined (10,970), 0 of 68 files differing in executed_lines in every pair.
+#   A first C run was discarded: dockerd hit its background time limit mid-run.
+# - Fallback, real pytest under the repo config (filterwarnings = error) on
+#   tests/test_path.py + tests/test_errors.py, core read from COVERAGE_DEBUG=sys:
+#   3.11 CTracer for --cov, --cov-branch and --cov-append; 3.12 and 3.13
+#   SysMonitor for --cov and --cov-append, CTracer for --cov-branch; all rc=0.
+#   Without disable_warnings, a branch run under sysmon on 3.13 raises
+#   CoverageWarning (no-sysmon) when warnings are errors.
+# - `core` setting first shipped in coverage 7.9.0 (CHANGES.rst of the 7.9.0
+#   sdist; absent from 7.8.2's config.py), hence the `coverage>=7.9` floor.
+# - Not measured: Python 3.14 (not installed here; coverage already defaults to
+#   sysmon there, branch included), real MinIO, CI runners themselves.
 phases:
   - id: orient
     name: Orient
@@ -49,3 +96,29 @@ phases:
         section: "test-cov, test-cov-s1, test-cov-strict, test-cov-branch; [tool.coverage.run]"
         read_type: reference
         extract: "two-pass --cov-append local path; no per-command env syntax in hatch scripts"
+      - file: .github/actions/start-backends/action.yml
+        section: "(full)"
+        read_type: reference
+        extract: "service images and ports, to start Azurite and SFTP by hand"
+      - file: tests/conftest.py
+        section: "_container_reachable"
+        read_type: reference
+        extract: "MinIO reachability is a bare TCP probe, so a moto server on the port serves the fixture"
+  - id: design
+    name: Mechanism
+    steps:
+      - file: sdd/BACKLOG-DONE.md
+        section: "BUG-304"
+        read_type: reference
+        extract: "Windows dev boxes run hatch run all, ruling out an `env VAR=` script prefix; coverage's own fallback rules (core.py) are in the measurement notes above"
+  - id: verify
+    name: Verify
+    steps:
+      - file: sdd/CLAUDE-REFERENCE.md
+        section: "Detailed checklist / Dependency"
+        read_type: verify
+        extract: "dev-extra floor only; the conda recipe carries no test tooling"
+      - file: sdd/BACKLOG.md
+        section: "How this file works / Completing work"
+        read_type: verify
+        extract: "BK-401 hits in id-266 and bk-403 dossiers are dated records; nothing to fix"
