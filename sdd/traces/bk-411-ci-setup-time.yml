@@ -1,0 +1,117 @@
+id: BK-411
+title: "CI spends its setup time on a full clone, a pip-built hatch env and seventeen uv cache keys"
+trigger: >-
+  User asked to analyze GitHub Actions cache use for faster runs. The cache API
+  (`gh api .../actions/caches`) is blocked by the session proxy (HTTP 403), so the
+  analysis came from the workflow files plus step timings and job logs of CI run
+  37444421117 (PR #1084 head ec05d45), read via the GitHub MCP tools.
+source_items:
+  - BK-411
+audience:
+  - infra.ci
+discovery_followups: []
+expected_ripples:
+  - sdd/BACKLOG-DONE.md
+  - sdd/backlogid.json
+surprising_ripples:
+  - pyproject.toml
+  - .github/workflows/mutation.yml
+phases:
+  - id: orient
+    name: Orient
+    steps:
+      - file: .github/workflows/ci.yml
+        section: "setup, lint, test, test-primary, test-primary-sftp, test-cassette-pii, e2e, docs"
+        read_type: reference
+        extract: >-
+          `rg -n 'cache-suffix|enable-cache' .github/workflows` gave the uv cache
+          keys per pyproject hash: test 3 interpreters x 2 shards (6), test-primary
+          x2, test-primary-sftp, test-cassette-pii, e2e (5), test-cross-platform
+          macOS/Windows (2), ci-full.yml test-full (4) = 17. Every Linux key
+          carries "unknown" for Python (job 112206159278 log), so the suffix is
+          what separates interpreters.
+        outcome: ok
+      - file: "CI run 37444421117, jobs list + logs"
+        section: "step started_at/completed_at; setup-uv and hatch log lines"
+        read_type: reference
+        extract: >-
+          setup checkout (fetch-depth 0) 30 s; lint `Installing project in
+          development mode` 09:40:34 -> 09:42:12 (98 s); docs same phase 09:40:31
+          -> 09:41:43 (72 s); Linux uv cache hit ~271 MB, restore ~4 s, then
+          `uv pip install` 4 s; Windows restore ~14 s + `Installed 253 packages in
+          59.73s` despite the hit (file copy, not download).
+        outcome: ok
+      - file: sdd/BACKLOG-DONE.md
+        section: "BK-230; BK-269"
+        read_type: gate
+        extract: >-
+          BK-230's suffixes exist only to stop two savers racing on one key, so
+          one key with one saver keeps that property. BK-269 forced hatch's pip
+          installer in CI because uv "dropped features" there but not locally.
+        outcome: ok
+      - file: pyproject.toml
+        section: "[tool.hatch.envs.default.overrides]"
+        read_type: reference
+        extract: >-
+          The override flips the installer to pip on GITHUB_ACTIONS only. The
+          CI-only trigger matches the workflow-level UV_SYSTEM_PYTHON=1, which
+          scripts/drift_check.py:290 already strips for the same reason.
+        outcome: ok
+      - file: sdd/BACKLOG.md
+        section: "How this file works; section 7 (BK-400, ID-265)"
+        read_type: gate
+        extract: >-
+          Shard rebalance (`test-primary` shards 180 s vs 121 s pytest) is BK-400's
+          refresh duty; it needs the live-backend stack and this container has no
+          Docker (`docker info` fails), so it is not done here. ID-265 is a
+          different critical-path cost (slot queueing).
+        outcome: ok
+      - file: sdd/CLAUDE-REFERENCE.md
+        section: "Pre-work index"
+        read_type: gate
+        extract: >-
+          No trigger row covers a workflow-only edit; pyproject.toml and
+          mutation.yml were ripples found by `rg` for the removed override and
+          the misattributed bug comment.
+        outcome: unclear
+  - id: implement
+    name: Implement
+    steps:
+      - file: pyproject.toml
+        section: "[tool.hatch.envs.default]"
+        read_type: verify
+        extract: >-
+          Reproduced in a fresh worktree with hatch 1.18.1: `UV_SYSTEM_PYTHON=1
+          hatch env create` (uv installer) -> `.venv/bin/python -c "import griffe"`
+          ModuleNotFoundError; unset or `=0` -> griffe, mkdocs, pytest, mypy,
+          pytest_gremlins import. Override removed; lint and docs set
+          UV_SYSTEM_PYTHON "0" at job level.
+        outcome: ok
+      - file: .github/workflows/ci.yml
+        section: "setup / Detect changed files"
+        read_type: verify
+        extract: >-
+          Default depth-1 checkout plus `git fetch --depth=1 origin <base>`. In a
+          `git clone --depth=1` the diff e8024af..00d7dcb lists the same 6 files
+          as the full-history clone.
+        outcome: ok
+      - file: .github/workflows/ci.yml
+        section: "uv cache keys"
+        read_type: verify
+        extract: >-
+          Suffix `uv-dev-<python>`, `cache-dependency-glob: pyproject.toml`
+          (the example project's pyproject was also hashed), saved by `test`
+          shard 1 and `test-primary` shard 1 only; ci-full.yml restores without
+          saving; docs.yml deploy jobs stop caching. Keys per hash: 4 Linux + 2
+          OS = 6.
+        outcome: ok
+  - id: verify
+    name: Verify
+    steps:
+      - file: tests/scripts
+        section: "every test file that reads a workflow (`rg -l 'ci\\.yml|ci-full\\.yml|docs\\.yml|mutation\\.yml' tests`) + test_check_hatch_python.py"
+        read_type: verify
+        extract: >-
+          9 files, 184 passed. `hatch run preflight` clean. actionlint not run
+          locally (download blocked in this session); CI lint runs it.
+        outcome: ok
