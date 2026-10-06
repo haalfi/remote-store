@@ -561,6 +561,14 @@ or paying for our shortcut.
 **Promise:** nothing reaches a user that we did not test, publish, watch, or
 give them a way to absorb.
 
+- [ ] **BK-409 — Python 3.15 is due 2026-10-09 and no spelling of the supported set names it**
+  spec: — · effort: M · audience: user.api, infra.ci, contributor.tooling
+  PEP 790 schedules `- 3.15.0 final: Friday, 2026-10-09`, so its security
+  window ends 2031-10-09 (final + 5 years). The classifiers, CI matrices and
+  `PYTHON_RELEASES` stop at 3.14, so nothing tests it. Gated on final, not
+  rc3. Open decision: whether an extra with no 3.15 wheel holds support back,
+  measured per extra at final.
+
 - [ ] **BK-392 — A release can drop an interpreter before its support window closes, and nothing checks the date**
   spec: — · effort: S · audience: user.api, contributor.tooling
   Rule 8 promises support until security fixes end; `check-support-windows`
