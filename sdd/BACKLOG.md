@@ -877,14 +877,6 @@ coverage floor.
   for such a PR; 776 further `docs`-class files have readers outside `docs-gate`.
   Open decision: per file, move it to a class whose jobs run its readers, or accept it.
 
-- [ ] **BK-401 — Coverage runs on the slow tracer, where `sysmon` gave identical Stage-1 results**
-  spec: — · effort: S · audience: infra.ci, contributor.tooling
-  Three `ci.yml` jobs (`test-primary`, `test-primary-sftp`, `test-cassette-pii`) and three
-  hatch scripts (`test-cov-s1`, `test-cov`, `test-cov-strict`) use the default
-  core; [audit-022](audits/audit-022-gate-speed-strategies.md) § L1 measured `sysmon` on local Stage 1 only.
-  Open decision: P6's re-measure of the Stage-2 and `--cov-append` paths, then
-  switch all six (not `test-cov-branch`).
-
 - [ ] **BK-408 — RFC-0019 judges its fast lane by merge-gate exit criteria, so a redrafted selector must reach zero escapes**
   spec: — · effort: S · audience: contributor.process, infra.test
   RFC-0019 § Roadmap exits Phases 0, 2 and 3 on "0 deterministic, selector-reachable"

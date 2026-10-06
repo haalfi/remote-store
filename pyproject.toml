@@ -219,6 +219,7 @@ dev = [
   # Testing
   "pytest",
   "pytest-cov",
+  "coverage>=7.9",  # BK-401: first release with the `[tool.coverage.run] core` setting
   "pytest-httpserver>=1.0.0",
   "pytest-asyncio>=0.23",
   "pytest-recording>=0.13",
@@ -750,9 +751,20 @@ exclude = ["**/__init__.py", "**/__pycache__/*"]
 # produced on *different* runners (the sharded test-primary + test-primary-sftp
 # jobs); storing source paths relative to the rootdir makes them line up during
 # `coverage combine` regardless of each runner's absolute checkout path.
+# core = sysmon (BK-401): same executed lines as the default core on every
+# coverage path, and faster on the large parallel passes (figures: BK-401's trace).
+# Where sysmon cannot run (3.11; --cov-branch before 3.14) coverage falls back to
+# its default core; disable_warnings keeps that fallback from becoming an error
+# under filterwarnings = error. COVERAGE_CORE in the environment overrides this
+# setting. Per-test-context runs need ctrace (sysmon drops switch_context): a
+# `--cov-context=test` run fails here on CoverageWarning no-sysmon-context, so set
+# COVERAGE_CORE=ctrace for it. pytest-gremlins' pre-scan pins ctrace via its own
+# --rcfile and strips COVERAGE_CORE; recheck that when moving the `mutate` pin.
 [tool.coverage.run]
 parallel = true
 relative_files = true
+core = "sysmon"
+disable_warnings = ["no-sysmon"]
 
 [tool.ruff]
 line-length = 120

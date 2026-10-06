@@ -1,0 +1,161 @@
+id: BK-401
+title: "Coverage runs on the slow tracer, where `sysmon` gave identical Stage-1 results"
+trigger: >-
+  Audit-022 § L1 measured COVERAGE_CORE=sysmon on local Stage 1 only (310 s to
+  250 s, identical executed lines) and P6 proposed switching the coverage runs
+  after re-measuring the Stage-2 and --cov-append paths. RFC-0019 Phase 0
+  stopped the selector, leaving the selection-free track as the speed lever.
+source_items:
+  - BK-401
+audience:
+  - infra.ci
+  - contributor.tooling
+expected_ripples:
+  - sdd/backlogid.json
+  - sdd/decisions/87bce456-1b8d-513c-8207-a63c4c70d86c.jsonl
+# No path-level surprise. Two below path granularity:
+# - The item named six runs to switch, but hatch scripts have no per-command env
+#   syntax and an `env VAR=...` prefix breaks Windows dev boxes (BUG-304's
+#   audience). The switch therefore moved into `[tool.coverage.run]`, which
+#   reaches every --cov run, ad-hoc ones included, and leaves ci.yml untouched.
+# - research-bk-403-testmon-poc.md says the sysmon switch must stay out of any
+#   testmon job. A config-level switch is now in every job, so such a job must
+#   set COVERAGE_CORE=ctrace, as that note already prescribes; the env var
+#   overrides the config (coverage/config.py reads COVERAGE_CORE last).
+# - Found in review, not by me: the config-level switch also reaches mutation.yml's
+#   pytest-gremlins coverage pre-scan, a per-test-context consumer (sysmon drops
+#   switch_context). Unaffected, with evidence: pytest-gremlins 1.10.1 (the
+#   `mutate` pin, >=1.10.1,<1.11) runs the pre-scan as
+#   `coverage run --rcfile=.coveragerc.gremlins` with `core = ctrace` and strips
+#   COVERAGE_CORE (plugin.py `_COVERAGE_CORE_RC_LINE`, `_prescan_env`); its
+#   PRIVATE mode calls set_option('run:core', 'ctrace'), and PIGGYBACK skips
+#   context switching when it detects sysmon. Replaying that command from the repo
+#   root under COVERAGE_DEBUG=sys read only the rc file (configs_read) and ran
+#   CTracer, so this pyproject setting does not reach it.
+#   Re-checked for 1.11.0, the floor PR #1082 (BUG-307) moves the pin to: its
+#   wheel's plugin.py keeps `_COVERAGE_CORE_RC_LINE = 'core = ctrace'`, the
+#   `--rcfile` pre-scan, the COVERAGE_CORE strip and PRIVATE mode's
+#   set_option('run:core', 'ctrace'), with no other coverage.Coverage(...)
+#   construction (`pip download pytest-gremlins==1.11.0`, regex scan of the
+#   unpacked wheel). Source read only; #1082's validation dispatch runs on a
+#   branch without this setting, so the 1.11 + sysmon pair is not executed.
+#   `git merge-tree` of both heads is clean.
+# - Found in the second review, not by me: BK-403 Phase 0's over-selection
+#   recipe (`--cov-context=test`, sdd/research/bk-403-phase-0/oversel.py input)
+#   is a second per-test-context consumer. Measured on tests/test_path.py +
+#   tests/test_errors.py with `--cov=remote_store --cov-context=test`: under the
+#   repo config (SysMonitor) the run fails, 154 errors, rc=1, each
+#   `CoverageWarning ... (no-sysmon-context)`, a slug `disable_warnings` does not
+#   cover; under COVERAGE_CORE=ctrace, 77 passed. `coverage json --show-contexts`
+#   pairs (file, line, context): 2,454 under sysmon vs 3,139 under ctrace, the
+#   sysmon set a strict subset (685 missing). So the recipe fails loudly rather
+#   than mis-measuring; oversel.py's docstring now says to set
+#   COVERAGE_CORE=ctrace. plan.md is a dated plan record and stays as written.
+surprising_ripples:
+  - .github/workflows/mutation.yml
+  - sdd/research/bk-403-phase-0/oversel.py
+# Measurement (derivation for every figure in the BACKLOG-DONE entry):
+# - Host: 4-core container, Python 3.13.16, coverage 7.16.2, pytest-cov 7.1.0.
+#   Services: Azurite 3.35.0 and atmoz/sftp:alpine in Docker. MinIO could not be
+#   pulled (cgr.dev, quay.io and dl.min.io denied by the egress proxy, Docker Hub
+#   rate-limited), so `moto_server -p 19100` stood in on MinIO's port; the
+#   MinIO-keyed conformance tests passed against it (313 passed, 37 skipped,
+#   `pytest --stage=2 -n 4 -k minio tests/backends/conformance/`). CI's real
+#   MinIO is therefore not what was measured.
+# - Default core = COVERAGE_CORE unset (ctrace on 3.13); sysmon = COVERAGE_CORE=sysmon.
+# - Path L (test-cov-strict without the floor), per core:
+#   `python scripts/run_tests.py -p no:benchmark --stage=2 --cov=remote_store --cov-report=`
+#   then `pytest -p no:benchmark --stage=2 --cov=remote_store --cov-append --cov-report= -k sftp_docker tests/backends/conformance/`,
+#   `coverage json` after each pass.
+#   default: pass 1 519.9 s, pass 2 125.3 s; sysmon: pass 1 413.9 s, pass 2 120.6 s.
+#   Pass 1 and final: 10,970 / 11,102 covered under both cores; 68 files, 0 differ.
+#   Pass 2 (305 passed) adds no line over pass 1 under either core.
+# - Path C (ci.yml verbatim): test-primary shards 1 and 2 (`--splits 2`, `-n auto`,
+#   PII sweep deselected, RS_REQUIRE_MINIO=1), test-primary-sftp, test-cassette-pii;
+#   each `coverage combine` + mv, then coverage-gate's combine and
+#   `coverage report --fail-under=95` (rc=0 under both cores).
+#   default: 171.8 + 129.7 + 125.0 + 143.3 s; sysmon: 139.9 + 102.5 + 121.4 + 142.2 s.
+#   Covered lines identical per partial (10,342 / 10,321 / 2,878 / 2,278) and
+#   combined (10,970), 0 of 68 files differing in executed_lines in every pair.
+#   A first C run was discarded: dockerd hit its background time limit mid-run.
+# - Fallback, real pytest under the repo config (filterwarnings = error) on
+#   tests/test_path.py + tests/test_errors.py, core read from COVERAGE_DEBUG=sys:
+#   3.11 CTracer for --cov, --cov-branch and --cov-append; 3.12 and 3.13
+#   SysMonitor for --cov and --cov-append, CTracer for --cov-branch; all rc=0.
+#   Without disable_warnings, a branch run under sysmon on 3.13 raises
+#   CoverageWarning (no-sysmon) when warnings are errors.
+# - `core` setting first shipped in coverage 7.9.0 (CHANGES.rst of the 7.9.0
+#   sdist; absent from 7.8.2's config.py), hence the `coverage>=7.9` floor.
+# - CI check (P6's "re-measure covered lines on CI"): coverage-gate's
+#   `coverage report` table on PR #1081 (sysmon, job 112169015962) and on the
+#   master push of BUG-301 (default core, run 37431274704, job 112164319923) are
+#   identical row for row: TOTAL 11102 stmts, 133 miss, the same Missing lines in
+#   every file. CI covers 10,969, one line fewer than the local 10,970 under both
+#   cores, so that gap is environment (moto vs real MinIO, runner), not core.
+# - Not measured: Python 3.14 locally (not installed; coverage already defaults to
+#   sysmon there, branch included; the CI 3.14 legs run without --cov).
+phases:
+  - id: orient
+    name: Orient
+    steps:
+      - file: sdd/BACKLOG.md
+        section: "BK-401"
+        read_type: gate
+        extract: "six runs named, test-cov-branch excluded, P6 re-measure first"
+      - file: sdd/audits/audit-022-gate-speed-strategies.md
+        section: "Method, L1, Proposals P6"
+        read_type: gate
+        extract: "method: compare per-file executed_lines in JSON reports; P6 names four runs, the item six"
+      - file: sdd/research/research-bk-403-testmon-poc.md
+        section: "If it is ever built"
+        read_type: reference
+        extract: "a testmon job must set COVERAGE_CORE=ctrace; the env var overrides config, so a config-level switch stays compatible"
+      - file: sdd/CLAUDE-REFERENCE.md
+        section: "Pre-work index"
+        read_type: gate
+        extract: "Backlog item touched; no row covers coverage-tool configuration"
+      - file: sdd/traces/_schema.yml
+        section: "(full)"
+        read_type: reference
+        extract: "audience infra.ci + contributor.tooling owes no CHANGELOG entry"
+      - file: sdd/BACKLOG.md
+        section: "How this file works / Completing work"
+        read_type: reference
+        extract: "delete from index, [x] at top of BACKLOG-DONE Unreleased"
+  - id: measure
+    name: Measure
+    steps:
+      - file: .github/workflows/ci.yml
+        section: "test-primary, test-primary-sftp, test-cassette-pii, coverage-gate"
+        read_type: reference
+        extract: "exact CI commands replicated for the partials + combine path"
+      - file: pyproject.toml
+        section: "test-cov, test-cov-s1, test-cov-strict, test-cov-branch; [tool.coverage.run]"
+        read_type: reference
+        extract: "two-pass --cov-append local path; no per-command env syntax in hatch scripts"
+      - file: .github/actions/start-backends/action.yml
+        section: "(full)"
+        read_type: reference
+        extract: "service images and ports, to start Azurite and SFTP by hand"
+      - file: tests/conftest.py
+        section: "_container_reachable"
+        read_type: reference
+        extract: "MinIO reachability is a bare TCP probe, so a moto server on the port serves the fixture"
+  - id: design
+    name: Mechanism
+    steps:
+      - file: sdd/BACKLOG-DONE.md
+        section: "BUG-304"
+        read_type: reference
+        extract: "Windows dev boxes run hatch run all, ruling out an `env VAR=` script prefix; coverage's own fallback rules (core.py) are in the measurement notes above"
+  - id: verify
+    name: Verify
+    steps:
+      - file: sdd/CLAUDE-REFERENCE.md
+        section: "Detailed checklist / Dependency"
+        read_type: verify
+        extract: "dev-extra floor only; the conda recipe carries no test tooling"
+      - file: sdd/BACKLOG.md
+        section: "How this file works / Completing work"
+        read_type: verify
+        extract: "BK-401 hits in id-266 and bk-403 dossiers are dated records; nothing to fix"

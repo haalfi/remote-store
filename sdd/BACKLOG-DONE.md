@@ -254,6 +254,25 @@ if evidence changes; these are retired.
 
 ## Unreleased
 
+- [x] **BK-410 — Test fixtures still modelled the 3.10 floor and the `tomli` extra after BK-380 removed both**
+  spec: CFG-009 · effort: S · audience: infra.test
+  `test_check_conda_recipe_pins.py`'s synthetic tree now carries a 3.11 floor
+  and a live marker-gated `typing-extensions` in place of the dead `toml` extra;
+  `TestFromTomlFallbacks` is `TestFromTomlEdges`. The 11 files left by
+  `rg -l 'tomli\b' --glob '!sdd/traces/**'` hold CFG-009's own invariant, its
+  guard test, a synthetic drift fixture, history, or dagster's captured lock;
+  stale timings in `.test_durations_pass1` stay with BK-400.
+
+- [x] **BK-401 — Coverage runs on the slow tracer, where `sysmon` gave identical Stage-1 results**
+  spec: — · effort: S · audience: infra.ci, contributor.tooling
+  `[tool.coverage.run] core = "sysmon"` reaches all six runs. On 3.13, Stage 2, both
+  the `test-cov-strict` two-pass path and the four CI partials combined
+  covered 10,970 of 11,102 lines under either core, with 0 of 68 files differing in
+  `executed_lines` (`coverage json` per run, compared per file); pass 1 went
+  519.9 s → 413.9 s. 3.11 and `--cov-branch` before 3.14 fall back to the
+  default core; `disable_warnings = ["no-sysmon"]` keeps that from erroring.
+  Method and every figure: [trace](traces/bk-401-sysmon-coverage.yml).
+
 - [x] **BUG-301 — The PII sweep's bare-email regex is quadratic on base64 runs and costs 157 of the sweep's 160 worker-seconds**
   spec: REC-006 · effort: S · audience: infra.test
   The `bare email address` marker in `FORBIDDEN_ENVELOPE` gains a leading

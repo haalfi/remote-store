@@ -10,6 +10,10 @@ minimal. Contexts are from today's tree, so a historical diff is measured
 against today's coverage of the same files.
 
 Usage: python sdd/research/bk-403-phase-0/oversel.py <coverage.json> <universe.json> <h.jsonl> <out.json>
+
+Produce ``<coverage.json>`` with ``COVERAGE_CORE=ctrace``: the repo's
+``core = "sysmon"`` (BK-401) cannot record per-test contexts, and the
+``--cov-context=test`` run fails on its ``no-sysmon-context`` warning.
 """
 
 from __future__ import annotations
