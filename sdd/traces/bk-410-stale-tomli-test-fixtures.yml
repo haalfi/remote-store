@@ -66,8 +66,11 @@ phases:
           TestPythonMin replace() literals; `toml`/`tomli` -> `compat` with
           `typing-extensions; python_version < '3.13'`, a marker that is live
           under a 3.11 floor. Each drift test asserts a violation, so a
-          replace() that matched nothing would fail, not pass silently. 49
-          selected tests green.
+          replace() that matched nothing would fail, not pass silently.
+          `pytest tests/scripts/test_check_conda_recipe_pins.py
+          tests/test_config.py::TestFromTomlEdges`: 33 passed, covering both
+          changed surfaces. (A first run reported 49 from a `-k` filter that
+          also caught unrelated `*Toml*` classes; review caught the figure.)
         outcome: ok
   - id: verify
     name: Verify
