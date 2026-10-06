@@ -743,6 +743,14 @@ markers = [
 [tool.pytest-gremlins]
 cache = true
 exclude = ["**/__init__.py", "**/__pycache__/*"]
+# BUG-307. mutant_timeout: the default 30 s left 15 s (half) for the unmutated
+# confirmation run; under 4 workers a selection over ~1/5 of a backend scope
+# missed it (backends-http's full set takes 71 s unmutated, locally), so run 49
+# recorded 176 ERRORs there and spent hours re-running pooled timeouts alone.
+# coverage_timeout: backends-ssh's pre-scan passed 120 s, which disables
+# coverage-guided selection for the whole leg.
+mutant_timeout = 120
+coverage_timeout = 600
 
 # Required for xdist: each worker writes its own `.coverage.<id>` partial that
 # pytest-cov combines at session end. Also needed across the two-pass `test-cov*`
