@@ -503,7 +503,7 @@ def test_no_unknown_key_warning(data: dict[str, Any]) -> None:
 # ---------------------------------------------------------------------------
 
 
-class TestFromTomlFallbacks:
+class TestFromTomlEdges:
     """CFG-009 (stdlib only) and CFG-008 edge paths of from_toml()."""
 
     @pytest.mark.spec("CFG-009")

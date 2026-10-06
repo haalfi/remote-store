@@ -34,7 +34,7 @@ _mod = _load()
 _PYPROJECT = """\
 [project]
 name = "remote-store"
-requires-python = ">=3.10"
+requires-python = ">=3.11"
 
 [project.optional-dependencies]
 s3 = ["s3fs>=2024.2.0"]
@@ -42,7 +42,7 @@ s3-pyarrow = ["s3fs>=2024.2.0", "pyarrow>=14.0.0"]
 arrow = ["pyarrow>=12.0.0"]
 sftp = ["paramiko>=3.1"]
 httpx = ["httpx>=0.24.0,<1.0"]
-toml = ["tomli>=1.1.0; python_version < '3.11'"]
+compat = ["typing-extensions>=4.6; python_version < '3.13'"]
 bench = ["remote-store[s3-pyarrow]", "matplotlib>=3.8"]
 dev = ["remote-store[s3,sftp]", "pytest"]
 """
@@ -51,14 +51,14 @@ dev = ["remote-store[s3,sftp]", "pytest"]
 _RECIPE = """\
 requirements:
   run:
-    - python >=3.10
+    - python >=3.11
   run_constraints:
     # A comment inside the block is skipped.
     - s3fs >=2024.2.0
     - pyarrow >=14.0.0
     - paramiko >=3.1
     - httpx >=0.24.0,<1.0
-    - tomli >=1.1.0
+    - typing-extensions >=4.6
 
 tests:
   - python:
@@ -70,14 +70,14 @@ tests:
 _VARIANTS = """\
 # Comment above the value, as the real file has.
 python_min:
-  - "3.10"
+  - "3.11"
 """
 
 _CI = """\
       - name: Resolve Python versions
         env:
-          ALL_PYTHONS: '["3.10", "3.11"]'
-          MIN_PYTHON: "3.10"
+          ALL_PYTHONS: '["3.11", "3.12"]'
+          MIN_PYTHON: "3.11"
 """
 
 
@@ -133,7 +133,9 @@ class TestSeededDiscrepancies:
 
     def test_stray_entry(self, tmp_path):
         """A package no user-facing extra declares. `pytest` is dev-only."""
-        tree = _tree(tmp_path, recipe=_RECIPE.replace("    - tomli", "    - pytest >=8.0\n    - tomli"))
+        tree = _tree(
+            tmp_path, recipe=_RECIPE.replace("    - typing-extensions", "    - pytest >=8.0\n    - typing-extensions")
+        )
         violations = _mod.collect_violations(tree)
         assert [v.package for v in violations] == ["pytest"]
         assert "no user-facing extra declares it" in violations[0].reason
@@ -146,9 +148,9 @@ class TestSeededDiscrepancies:
         assert "<1.0" in violations[0].reason
 
     def test_marker_gated_dependency_is_still_required(self, tmp_path):
-        """`tomli` is marker-gated in pyproject; conda has no marker, so it is required."""
-        tree = _tree(tmp_path, recipe=_RECIPE.replace("    - tomli >=1.1.0\n", ""))
-        assert [v.package for v in _mod.collect_violations(tree)] == ["tomli"]
+        """`typing-extensions` is marker-gated in pyproject; conda has no marker, so it is required."""
+        tree = _tree(tmp_path, recipe=_RECIPE.replace("    - typing-extensions >=4.6\n", ""))
+        assert [v.package for v in _mod.collect_violations(tree)] == ["typing-extensions"]
 
 
 class TestUnsupportedOperators:
@@ -204,20 +206,20 @@ class TestPythonMin:
         assert _mod.python_min_violations(_REPO_ROOT) == []
 
     def test_variants_drift_is_caught(self, tmp_path):
-        tree = _tree(tmp_path, variants=_VARIANTS.replace('"3.10"', '"3.11"'))
+        tree = _tree(tmp_path, variants=_VARIANTS.replace('"3.11"', '"3.12"'))
         violations = _mod.python_min_violations(tree)
         assert [v.package for v in violations] == ["python_min"]
         assert "variants.yaml" in violations[0].reason
 
     def test_ci_drift_is_caught(self, tmp_path):
-        tree = _tree(tmp_path, ci=_CI.replace('MIN_PYTHON: "3.10"', 'MIN_PYTHON: "3.11"'))
+        tree = _tree(tmp_path, ci=_CI.replace('MIN_PYTHON: "3.11"', 'MIN_PYTHON: "3.12"'))
         violations = _mod.python_min_violations(tree)
         assert [v.package for v in violations] == ["python_min"]
         assert "MIN_PYTHON" in violations[0].reason
 
     def test_requires_python_bump_flags_both_restatements(self, tmp_path):
         """The realistic direction: the floor rises and the two copies lag."""
-        tree = _tree(tmp_path, pyproject=_PYPROJECT.replace('">=3.10"', '">=3.12"'))
+        tree = _tree(tmp_path, pyproject=_PYPROJECT.replace('">=3.11"', '">=3.12"'))
         assert len(_mod.python_min_violations(tree)) == 2
 
     def test_missing_python_min_is_a_violation(self, tmp_path):
@@ -231,7 +233,7 @@ class TestPythonMin:
         compares *that* against requires-python — passing while python_min is
         wrong, or failing while naming a value that is not python_min at all.
         """
-        variants = 'numpy:\n  - "1.26"\npython_min:\n  - "3.10"\n'
+        variants = 'numpy:\n  - "1.26"\npython_min:\n  - "3.11"\n'
         assert _mod.python_min_violations(_tree(tmp_path, variants=variants)) == []
 
     def test_anchored_lookup_still_sees_a_wrong_value_below_another_key(self, tmp_path):
@@ -260,7 +262,7 @@ class TestParsing:
     def test_block_ends_at_dedent(self, tmp_path):
         """`tests:` follows the block; its entries must not be read as constraints."""
         parsed = _mod.recipe_constraints(_tree(tmp_path) / "packaging" / "conda-forge" / "recipe.yaml")
-        assert set(parsed) == {"s3fs", "pyarrow", "paramiko", "httpx", "tomli"}
+        assert set(parsed) == {"s3fs", "pyarrow", "paramiko", "httpx", "typing-extensions"}
 
     def test_self_referential_extras_are_not_followed(self, tmp_path):
         """`remote-store[...]` aggregates; it is never itself a constraint."""
