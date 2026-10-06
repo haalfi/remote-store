@@ -20,6 +20,7 @@ expected_ripples:
 surprising_ripples:
   - "scripts/report_token_usage.py docstring: the local-machine-reference rule bans the literal transcript path, so the docstring names default_dir instead"
   - "tests/scripts/test_check_traces.py TestOneLoader: every trace consumer must parse via _trace_corpus.load_trace; the trace section first used yaml.safe_load and hatch run all failed on it"
+  - "scripts/_trace_corpus.py docstrings named the consumers as a closed set of two; now three, with TestOneLoader named as the complete enumeration (review, PR #1086)"
 phases:
   - id: orient
     name: Orient
@@ -61,7 +62,9 @@ phases:
           counts or BK-353's word-token check, none about LLM tokens. The
           unbounded grep was itself the costliest result of the session
           (first report row), which is the pattern the report exists to show.
-        outcome: unclear
+          The absence is not a corpus defect and the grep was the author's
+          choice of method (outcome re-tagged ok in review, PR #1086).
+        outcome: ok
   - id: implement
     name: Implement
     steps:
@@ -103,11 +106,13 @@ phases:
           aggregated reads per file (grep of scripts/ for hotspot, co-read,
           gate density: none). The maintainer asked for that view; added as
           the report's trace section, keyed by trace filename per the id note.
-          It does not say that consumers must parse through
-          scripts/_trace_corpus.py; that rule lives only in its test
-          (TestOneLoader), found when `hatch run all` failed. Switched to
-          load_trace, with a duplicate-key test that plain safe_load fails.
-        outcome: unclear
+          The one-loader rule is not the schema's topic; it is stated in
+          scripts/_trace_corpus.py's docstring, which the author did not read,
+          and enforced by TestOneLoader, which failed `hatch run all`.
+          Switched to load_trace, with a duplicate-key test that plain
+          safe_load fails; review then found that docstring still named two
+          consumers, now fixed.
+        outcome: ok
       - file: scripts/report_token_usage.py
         section: "(trace section, first run)"
         read_type: verify

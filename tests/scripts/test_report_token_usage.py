@@ -194,18 +194,28 @@ class TestTraceReads:
         self._write(repo, "a.yml", _trace([{"file": "small.md"}, {"file": "big.md", "read_type": "gate"}]))
         empty = repo / "no-transcripts"
         empty.mkdir()
-        assert rtu.main([str(empty), "--traces", str(repo / "sdd" / "traces")]) == 0
+        assert rtu.main([str(empty), "--traces-dir", str(repo / "sdd" / "traces"), "--repo-root", str(repo)]) == 0
         out = capsys.readouterr().out
         assert "across 1 trace(s)" in out
         assert out.index("`big.md`") < out.index("`small.md`")
         assert "| 100 | 1 | 100 | 1 | 1 | 100 | `big.md` |" in out
+
+    def test_repo_root_is_explicit_not_derived_from_traces_dir(self, repo, tmp_path, capsys):
+        # A corpus outside <repo>/sdd/traces still sizes against --repo-root.
+        snap = tmp_path / "snap" / "a" / "traces"
+        snap.mkdir(parents=True)
+        (snap / "a.yml").write_text(_trace([{"file": "big.md"}]), encoding="utf-8")
+        empty = repo / "no-transcripts"
+        empty.mkdir()
+        assert rtu.main([str(empty), "--traces-dir", str(snap), "--repo-root", str(repo)]) == 0
+        assert "| 100 | 1 | 100 | 1 | 0 | 100 | `big.md` |" in capsys.readouterr().out
 
 
 @pytest.fixture
 def no_traces(tmp_path):
     d = tmp_path / "traces-empty"
     d.mkdir()
-    return ["--traces", str(d)]
+    return ["--traces-dir", str(d), "--repo-root", str(tmp_path)]
 
 
 class TestMain:
@@ -241,9 +251,31 @@ class TestMain:
         rtu.main([str(f), *no_traces])
         assert "1 line(s) were not JSON" in capsys.readouterr().out
 
-    def test_explicit_missing_path_exits_2(self, tmp_path, capsys, no_traces):
-        assert rtu.main([str(tmp_path / "absent"), *no_traces]) == 2
-        assert "no transcripts" in capsys.readouterr().err
+    @pytest.mark.parametrize(
+        ("extra", "message"),
+        [
+            (["absent-transcripts"], "no transcripts at"),
+            (["--top"], "expected one argument"),
+            (["--top", "abc"], "invalid int value"),
+            (["--top", "-1"], "--top must be >= 0"),
+            (["--bogus"], "unrecognized arguments"),
+            (["--traces-dir", "absent-dir"], "--traces-dir does not exist"),
+            (["--repo-root", "absent-root"], "--repo-root does not exist"),
+        ],
+    )
+    def test_usage_errors_exit_2(self, tmp_path, capsys, monkeypatch, no_traces, extra, message):
+        monkeypatch.chdir(tmp_path)  # relative "absent-*" paths resolve under tmp_path
+        # Later flags override the fixture's, so each case isolates one error.
+        with pytest.raises(SystemExit) as exc:
+            rtu.main([*no_traces, *extra])
+        assert exc.value.code == 2
+        assert message in capsys.readouterr().err
+
+    def test_help_exits_0(self, capsys):
+        with pytest.raises(SystemExit) as exc:
+            rtu.main(["--help"])
+        assert exc.value.code == 0
+        assert "--repo-root" in capsys.readouterr().out
 
     def test_absent_default_dir_skips_transcripts(self, tmp_path, capsys, monkeypatch, no_traces):
         monkeypatch.setattr(rtu, "default_dir", lambda: tmp_path / "absent")

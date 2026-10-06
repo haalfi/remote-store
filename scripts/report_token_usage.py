@@ -30,10 +30,15 @@ It ranks reads by what they cost the session, not by their size alone.
 Run with::
 
     hatch run report-token-usage                  # this repo's transcripts
-    hatch run report-token-usage -- <path> [--top N] [--traces DIR]
+    hatch run report-token-usage -- [<path>] [--top N] [--traces-dir DIR] [--repo-root DIR]
 
 The default path is the directory where Claude Code stores this repo's
-transcripts in the user's home; ``default_dir`` derives it.
+transcripts in the user's home; ``default_dir`` derives it. Trace step
+paths are sized against ``--repo-root``, not derived from ``--traces-dir``.
+
+Exit codes: ``0`` whatever is found; ``2`` for a usage error (an explicit
+transcript path, ``--traces-dir`` or ``--repo-root`` that does not exist,
+or a negative ``--top``).
 
 Why this is a report, not a gate
 ================================
@@ -81,6 +86,7 @@ Drift-gate::
 
 from __future__ import annotations
 
+import argparse
 import json
 import re
 import sys
@@ -242,8 +248,8 @@ def trace_reads(traces: Path, repo: Path) -> tuple[list[FileReads], int, int]:
     return list(rows.values()), read, bad
 
 
-def _print_trace_reads(traces: Path, top: int) -> None:
-    rows, read, bad = trace_reads(traces, traces.parents[1])
+def _print_trace_reads(traces: Path, repo: Path, top: int) -> None:
+    rows, read, bad = trace_reads(traces, repo)
     print(f"\nTop {top} files read across {read} trace(s) in {traces}, by exposure (traces x size):\n")
     print("| Exposure | Traces | % of traces | Steps | Gate steps | Size | File |")
     print("| ---: | ---: | ---: | ---: | ---: | ---: | --- |")
@@ -258,25 +264,41 @@ def _print_trace_reads(traces: Path, top: int) -> None:
 
 
 def main(argv: list[str] | None = None) -> int:
-    args = list(sys.argv[1:] if argv is None else argv)
-    top, traces = 15, _TRACES
-    if "--top" in args:
-        i = args.index("--top")
-        top = int(args[i + 1])
-        del args[i : i + 2]
-    if "--traces" in args:
-        i = args.index("--traces")
-        traces = Path(args[i + 1])
-        del args[i : i + 2]
-    root = Path(args[0]) if args else default_dir()
+    parser = argparse.ArgumentParser(description=__doc__.splitlines()[0])
+    parser.add_argument(
+        "transcripts",
+        nargs="?",
+        type=Path,
+        default=None,
+        help="Transcript file or directory (default: this repo's Claude Code transcripts; skipped if absent).",
+    )
+    parser.add_argument("--top", type=int, default=15, help="Rows per ranking table (default: 15).")
+    parser.add_argument(
+        "--traces-dir", type=Path, default=_TRACES, help="Directory of trace YAML files (default: sdd/traces)."
+    )
+    parser.add_argument(
+        "--repo-root", type=Path, default=_REPO, help="Root trace step paths are sized against (default: the repo)."
+    )
+    args = parser.parse_args(argv)
+
+    if args.transcripts is not None and not args.transcripts.exists():
+        parser.error(f"no transcripts at {args.transcripts}")
+    if not args.traces_dir.is_dir():
+        parser.error(f"--traces-dir does not exist: {args.traces_dir}")
+    # --repo-root sizes every step: pointed somewhere wrong, every size and
+    # exposure reads 0 and the table still looks real. Loud, not plausible.
+    if not args.repo_root.is_dir():
+        parser.error(f"--repo-root does not exist: {args.repo_root}")
+    # A negative --top makes [:top] drop the lowest rows and look complete.
+    if args.top < 0:
+        parser.error(f"--top must be >= 0, got {args.top}")
+
+    root = args.transcripts or default_dir()
     if root.exists():
-        _print_transcripts(root, top)
-    elif args:  # An explicit path that is absent is a usage error.
-        print(f"report-token-usage: no transcripts at {root}", file=sys.stderr)
-        return 2
+        _print_transcripts(root, args.top)
     else:
         print(f"No transcripts at {root}; transcript section skipped.")
-    _print_trace_reads(traces, top)
+    _print_trace_reads(args.traces_dir, args.repo_root, args.top)
     return 0
 
 

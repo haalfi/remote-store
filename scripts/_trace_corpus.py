@@ -2,9 +2,13 @@
 
 ``sdd/traces/_schema.yml`` tells aggregators to glob
 ``"sdd/traces/[!_]*.yml"`` so that underscore-prefixed infrastructure
-files — the schema itself — are not read as traces. Two tools need that
-carve-out: ``check_traces.py`` (the PR-time parse-and-schema gate) and
-``report_trace_outcomes.py`` (the outcome report).
+files — the schema itself — are not read as traces. Every script that
+parses the corpus needs that carve-out: ``check_traces.py`` (the PR-time
+parse-and-schema gate) and the reports ``report_trace_outcomes.py`` and
+``report_token_usage.py``. ``TestOneLoader`` in
+``tests/scripts/test_check_traces.py`` finds consumers by scanning
+``scripts/``, so it, not this list, is complete: check it before changing
+``TRACE_GLOB`` or ``StrictTraceLoader``.
 
 It lives here rather than in either tool because
 [`sdd/DRIFT-RULES.md` Rule 1](../sdd/DRIFT-RULES.md#one-driver) prefers one
@@ -155,7 +159,7 @@ class StrictTraceLoader(yaml.SafeLoader):
 def load_trace(text: str) -> Any:
     """Parse one trace, refusing duplicate keys (see ``StrictTraceLoader``).
 
-    The single entry point both the gate and the report call, so they cannot
+    The single entry point every corpus consumer calls, so they cannot
     disagree about what parses — the same Rule 1 reason ``TRACE_GLOB`` lives
     here. A consumer calling ``yaml.safe_load`` directly gets the silent
     last-wins behaviour back.
