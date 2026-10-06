@@ -32,6 +32,14 @@ expected_ripples:
 #   context switching when it detects sysmon. Replaying that command from the repo
 #   root under COVERAGE_DEBUG=sys read only the rc file (configs_read) and ran
 #   CTracer, so this pyproject setting does not reach it.
+#   Re-checked for 1.11.0, the floor PR #1082 (BUG-307) moves the pin to: its
+#   wheel's plugin.py keeps `_COVERAGE_CORE_RC_LINE = 'core = ctrace'`, the
+#   `--rcfile` pre-scan, the COVERAGE_CORE strip and PRIVATE mode's
+#   set_option('run:core', 'ctrace'), with no other coverage.Coverage(...)
+#   construction (`pip download pytest-gremlins==1.11.0`, regex scan of the
+#   unpacked wheel). Source read only; #1082's validation dispatch runs on a
+#   branch without this setting, so the 1.11 + sysmon pair is not executed.
+#   `git merge-tree` of both heads is clean.
 surprising_ripples:
   - .github/workflows/mutation.yml
 # Measurement (derivation for every figure in the BACKLOG-DONE entry):
