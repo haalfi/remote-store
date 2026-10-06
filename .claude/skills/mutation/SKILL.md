@@ -72,7 +72,11 @@ Repo: `haalfi/remote-store`.
 5. **Survivors (advisory).** If the body or the run-summary table lists
    surviving mutants, do not treat them as part of this triage. Note them for
    a coverage-hardening pass; the per-scope detail is in the
-   `mutation-report-<scope>` HTML artifacts.
+   `mutation-report-<scope>` HTML artifacts. *Gremlins without a verdict*
+   (ERROR) are advisory as well, but they are a harness-tuning signal, not a
+   coverage gap: a quoted `timeout_warning` means the unmutated tests ran past
+   half of `mutant_timeout`, so raise it in `[tool.pytest-gremlins]` or speed
+   up those tests.
 
 6. **Branch hygiene.** Never on `master`; create a dedicated branch off
    `origin/master`, e.g. `fix-mutation-<slug>`.

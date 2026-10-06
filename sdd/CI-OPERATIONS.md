@@ -206,6 +206,11 @@ documented in [`CONTRIBUTING.md`](../CONTRIBUTING.md).
     runner never fails a run on survivors, and strict coverage gates already
     run in CI, so survivors feed a coverage-hardening pass rather than a
     standalone TODO.
+  - **ERROR gremlin** (no verdict reached, mostly a timeout the plugin could
+    not confirm): **advisory**, like survivors, but its own `errors` verdict,
+    so the scope never reads `ok`. When the issue is open for other reasons,
+    its body lists these scopes and quotes the plugin's `timeout_warning`. The
+    fix is `mutant_timeout` in `[tool.pytest-gremlins]` or faster tests.
 - **How to act:** run the **`/mutation` skill**. It reads the rolling issue,
   classifies each failing scope from the linked run's logs (baseline test
   failure vs harness/tooling break vs setup death), and fixes the regression

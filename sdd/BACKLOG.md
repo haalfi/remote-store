@@ -429,6 +429,14 @@ no clause of the contract ships unexercised.
   atomic/identity tests match no transport `-k` filter (backend-name ids, or none);
   `_KNOWN_UNSPLIT_TESTS` in `test_mutate_scopes.py` lists them. Open decision: none.
 
+- [~] **BUG-307 — Mutation scores count unconfirmed timeouts as kills, and a scope with only ERRORs reads `ok`**
+  spec: — · effort: S · audience: infra.ci, contributor.tooling
+  Run 47 on pytest-gremlins 1.10.1 scored 2696 timeouts as kills across 15 scopes,
+  none confirmed; 1.11.0 confirms them or reports ERROR. `classify_scopes` read
+  `survived` only, so an ERROR-only scope was `ok`. Shipped on the branch: floor
+  `>=1.11.0,<1.12`, an advisory `errors` verdict. Open: the full dispatch on 1.11
+  and `mutant_timeout` tuning from it.
+
 ---
 
 <a id="users-succeed-unaided"></a>

@@ -16,6 +16,10 @@ A3): mutation has two outcomes and only one of them is a TODO.
   only: counts land in the run-summary table and the HTML artifacts; they
   never open the issue (they are listed in the body only when harness
   failures opened it anyway).
+* **ERROR gremlins** (BUG-307) — no verdict reached, mostly timeouts that
+  pytest-gremlins >= 1.11 could not confirm. Advisory like survivors, but a
+  verdict of their own so a scope with errors never reads ``ok``; the body
+  quotes the report's ``timeout_warning``.
 
 Two subcommands, both invoked from ``.github/workflows/mutation.yml``:
 
@@ -86,8 +90,27 @@ def _load_counts(gremlins_json: Path) -> dict | None:
         return None
 
 
+def _load_timeout_warning(gremlins_json: Path) -> dict | None:
+    """The report's ``timeout_warning`` object (pytest-gremlins >= 1.11), or None.
+
+    Present only when timeouts were downgraded to errors because the unmutated
+    tests did not finish within half the per-mutant timeout. Its message names
+    the fix (``mutant_timeout``), which the issue body quotes.
+    """
+    try:
+        warning = json.loads(gremlins_json.read_text(encoding="utf-8")).get("timeout_warning")
+    except (OSError, ValueError, AttributeError):
+        return None
+    return warning if isinstance(warning, dict) else None
+
+
 def record(scope: str, job_status: str, gremlins_json: Path, out: Path) -> int:
-    outcome = {"scope": scope, "job_status": job_status, "counts": _load_counts(gremlins_json)}
+    outcome = {
+        "scope": scope,
+        "job_status": job_status,
+        "counts": _load_counts(gremlins_json),
+        "timeout_warning": _load_timeout_warning(gremlins_json),
+    }
     out.parent.mkdir(parents=True, exist_ok=True)
     fd, tmp_name = tempfile.mkstemp(dir=out.parent, suffix=".tmp")
     try:
@@ -136,7 +159,10 @@ def _load_outcomes(dir_: Path) -> dict[str, dict]:
 
 
 def classify_scopes(expected: list[str], outcomes: dict[str, dict]) -> dict[str, dict]:
-    """Per-scope verdicts: harness_failure (reason) / survivors / ok.
+    """Per-scope verdicts: harness_failure (reason) / errors / survivors / ok.
+
+    ``errors`` (BUG-307) outranks ``survivors``: an ERROR gremlin has no
+    verdict at all, so the scope's score is not trustworthy either way.
 
     ``expected`` is the run's scope list; an expected scope without an
     outcome file means the leg died before its ``if: always()`` upload — a
@@ -164,6 +190,13 @@ def classify_scopes(expected: list[str], outcomes: dict[str, dict]) -> dict[str,
                 "status": "harness_failure",
                 "reason": "job was green but wrote no gremlins JSON report (reporting half broke)",
                 "counts": None,
+            }
+        elif counts.get("error", 0) > 0:
+            classified[scope] = {
+                "status": "errors",
+                "reason": None,
+                "counts": counts,
+                "timeout_warning": outcome.get("timeout_warning"),
             }
         elif counts.get("survived", 0) > 0:
             classified[scope] = {"status": "survivors", "reason": None, "counts": counts}
@@ -199,6 +232,29 @@ def render_body(classified: dict[str, dict], run_url: str, full_run: bool) -> st
         lines.append("")
         for scope in failures:
             lines.append(f"- `{scope}` — {classified[scope]['reason']}")
+        lines.append("")
+
+    errored = [s for s, c in classified.items() if c["status"] == "errors"]
+    if errored:
+        lines.append("## Gremlins without a verdict (advisory)")
+        lines.append("")
+        lines.append(
+            "These scopes have ERROR gremlins: no test verdict was reached, so their "
+            "score is unreliable either way. Most are timeouts pytest-gremlins could "
+            "not confirm; raise `mutant_timeout` in `[tool.pytest-gremlins]` or speed "
+            "up the tests named in the HTML report. Like survivors, errors never open "
+            "this issue and the run stays green on them."
+        )
+        lines.append("")
+        for scope in errored:
+            c = classified[scope]
+            counts = c["counts"]
+            lines.append(
+                f"- `{scope}` — {counts['error']} error / {counts.get('survived', 0)} survived"
+                f" / {counts.get('zapped', 0)} zapped"
+            )
+            if c.get("timeout_warning"):
+                lines.append(f"  - {c['timeout_warning'].get('message', '')}")
         lines.append("")
 
     survivors = [s for s, c in classified.items() if c["status"] == "survivors"]
@@ -237,7 +293,12 @@ def render_table(classified: dict[str, dict]) -> str:
     lines = ["## Mutation Testing Summary", ""]
     lines.append("| Scope | Verdict | Zapped | Survived | Timeout | Error |")
     lines.append("|-------|---------|--------|----------|---------|-------|")
-    verdict_label = {"ok": "ok", "survivors": "survivors (advisory)", "harness_failure": "**harness failure**"}
+    verdict_label = {
+        "ok": "ok",
+        "survivors": "survivors (advisory)",
+        "errors": "errors (advisory)",
+        "harness_failure": "**harness failure**",
+    }
     for scope, c in classified.items():
         counts = c["counts"] or {}
         cells = [str(counts[k]) if k in counts else "—" for k in _COUNT_KEYS]
