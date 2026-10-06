@@ -1,0 +1,78 @@
+id: BUG-308
+title: "The shared 3.13 uv cache key embeds the runner image's patch version, so its readers miss its one saver"
+trigger: >-
+  Verifying BK-411's first master run (37477115861) after PR #1085 merged:
+  the one 3.13 Linux uv cache saved could not be restored by the jobs that
+  read it.
+source_items:
+  - BUG-308
+  - BK-411
+audience:
+  - infra.ci
+discovery_followups: []
+expected_ripples:
+  - sdd/BACKLOG-DONE.md
+  - sdd/backlogid.json
+surprising_ripples:
+  - .github/workflows/publish.yml
+phases:
+  - id: orient
+    name: Orient
+    steps:
+      - file: "CI run 37477115861 job logs (14 jobs, via mcp__github__get_job_logs)"
+        section: "setup-uv restore / post-job save lines"
+        read_type: reference
+        extract: >-
+          test-primary (1) ran on image 20261004.327.1, got CPython 3.13.16 and
+          logged `uv cache saved with key: ...-ubuntu-24.04-3.13.16-<H>-uv-dev-3.13`.
+          test-primary (2), test-primary-sftp, test-cassette-pii and e2e ran on
+          20260927.320.1 with 3.13.15 and looked up the 3.13.15 key. The test
+          matrix keys read `unknown` instead, so a 3.12.14/3.12.15 image split
+          did not split them. Each key had exactly one saver and no
+          "Unable to reserve" or ##[warning] line appeared.
+        outcome: ok
+      - file: "astral-sh/setup-uv v10.2.0 src/setup-uv.ts:44-72, src/cache/restore-cache.ts:100"
+        section: "getPythonVersion, computeKeys"
+        read_type: reference
+        extract: >-
+          With the `python-version` input set, the key's version field is that
+          literal and UV_PYTHON is exported with it. Otherwise it runs `uv python
+          find` and `python --version`, returning the full patch version, or
+          "unknown" when find fails (the matrix jobs: .python-version names 3.13,
+          which those jobs never install).
+        outcome: ok
+  - id: implement
+    name: Implement
+    steps:
+      - file: tests/scripts/test_workflow_uv_cache_key.py
+        section: "test_every_cached_setup_uv_step_sets_python_version"
+        read_type: verify
+        extract: >-
+          Written first and run before the fix: failed with 8 cached setup-uv
+          steps lacking python-version (ci.yml test, test-primary,
+          test-primary-sftp, test-cassette-pii, test-cross-platform, e2e;
+          ci-full.yml test-full; publish.yml build). enable-cache defaults to
+          "auto", which caches on GitHub-hosted runners, so an unset input counts.
+        outcome: ok
+      - file: .github/workflows/ci.yml
+        section: "uv-dev setup-uv steps, test-cross-platform; ci-full.yml test-full; publish.yml build"
+        read_type: verify
+        extract: >-
+          The 7 uv-dev and cross-platform steps set python-version to the same
+          expression as their cache-suffix (matrix.python-version or
+          needs.setup.outputs.primary), the version setup-python installs, so
+          UV_PYTHON names the interpreter uv already targets under
+          UV_SYSTEM_PYTHON=1. publish.yml takes enable-cache: false, matching
+          ci.yml's package job (same `uv pip install build twine`).
+        outcome: ok
+  - id: verify
+    name: Verify
+    steps:
+      - file: tests/scripts
+        section: "test_workflow_uv_cache_key.py + test_workflow_hatch_uv_system.py"
+        read_type: verify
+        extract: >-
+          6 passed after the fix; the first test sees 7 cached steps. The key
+          string itself is confirmed only by this PR's CI logs (python-version
+          literal in place of 3.13.15/unknown).
+        outcome: ok

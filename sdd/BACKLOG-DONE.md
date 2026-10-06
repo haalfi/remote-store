@@ -263,6 +263,14 @@ if evidence changes; these are retired.
   Advisory: transcripts are local, CI has none. First-run figures are in the
   [trace](traces/bk-412-token-usage-report.yml).
 
+- [x] **BUG-308 — The shared 3.13 uv cache key embeds the runner image's patch version, so its readers miss its one saver**
+  spec: — · effort: S · audience: infra.ci
+  In master run 37477115861 (job logs), `test-primary (1)` saved `...-3.13.16-...-uv-dev-3.13` on a newer
+  image while its four restore-only readers looked up `3.13.15`. Without a `python-version` input, setup-uv
+  v10.2.0 keys on `uv python find` → `python --version` (`src/setup-uv.ts`). Every cached setup-uv step now
+  sets it; `publish.yml`'s release-only cache is off. `tests/scripts/test_workflow_uv_cache_key.py` pins it.
+  Method: [trace](traces/bug-308-uv-key-python-version.yml).
+
 - [x] **BK-411 — CI spends its setup time on a full clone, a pip-built hatch env and seventeen uv cache keys**
   spec: — · effort: S · audience: infra.ci
   In CI run 37444421117 (step timestamps), `setup`'s full-history checkout took 30 s, and `lint`/`docs` spent
