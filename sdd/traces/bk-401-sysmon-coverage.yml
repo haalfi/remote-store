@@ -40,8 +40,20 @@ expected_ripples:
 #   unpacked wheel). Source read only; #1082's validation dispatch runs on a
 #   branch without this setting, so the 1.11 + sysmon pair is not executed.
 #   `git merge-tree` of both heads is clean.
+# - Found in the second review, not by me: BK-403 Phase 0's over-selection
+#   recipe (`--cov-context=test`, sdd/research/bk-403-phase-0/oversel.py input)
+#   is a second per-test-context consumer. Measured on tests/test_path.py +
+#   tests/test_errors.py with `--cov=remote_store --cov-context=test`: under the
+#   repo config (SysMonitor) the run fails, 154 errors, rc=1, each
+#   `CoverageWarning ... (no-sysmon-context)`, a slug `disable_warnings` does not
+#   cover; under COVERAGE_CORE=ctrace, 77 passed. `coverage json --show-contexts`
+#   pairs (file, line, context): 2,454 under sysmon vs 3,139 under ctrace, the
+#   sysmon set a strict subset (685 missing). So the recipe fails loudly rather
+#   than mis-measuring; oversel.py's docstring now says to set
+#   COVERAGE_CORE=ctrace. plan.md is a dated plan record and stays as written.
 surprising_ripples:
   - .github/workflows/mutation.yml
+  - sdd/research/bk-403-phase-0/oversel.py
 # Measurement (derivation for every figure in the BACKLOG-DONE entry):
 # - Host: 4-core container, Python 3.13.16, coverage 7.16.2, pytest-cov 7.1.0.
 #   Services: Azurite 3.35.0 and atmoz/sftp:alpine in Docker. MinIO could not be

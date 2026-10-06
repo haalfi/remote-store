@@ -755,9 +755,10 @@ exclude = ["**/__init__.py", "**/__pycache__/*"]
 # Where sysmon cannot run (3.11; --cov-branch before 3.14) coverage falls back to
 # its default core; disable_warnings keeps that fallback from becoming an error
 # under filterwarnings = error. COVERAGE_CORE in the environment overrides this
-# setting. Per-test-context consumers need ctrace (sysmon drops switch_context):
-# pytest-gremlins' pre-scan pins it via its own --rcfile and strips COVERAGE_CORE,
-# so recheck that when moving the `mutate` pin.
+# setting. Per-test-context runs need ctrace (sysmon drops switch_context): a
+# `--cov-context=test` run fails here on CoverageWarning no-sysmon-context, so set
+# COVERAGE_CORE=ctrace for it. pytest-gremlins' pre-scan pins ctrace via its own
+# --rcfile and strips COVERAGE_CORE; recheck that when moving the `mutate` pin.
 [tool.coverage.run]
 parallel = true
 relative_files = true
