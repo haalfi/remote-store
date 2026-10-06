@@ -190,9 +190,10 @@ jobs:
 
       # --- Run mutation testing ---
       # Invoke the manifest-driven scope runner directly. Gremlins flags go on
-      # its argv, never in PYTEST_ADDOPTS: the plugin's coverage pre-scan
-      # inherits PYTEST_ADDOPTS without the plugin's options, records no data,
-      # and every gremlin then runs the full test set (BUG-303).
+      # its argv, not in PYTEST_ADDOPTS. Before pytest-gremlins 1.11.0 a
+      # gremlins flag there broke the coverage pre-scan and every gremlin ran
+      # the full test set (BUG-303; fixed upstream in #568). The floor now
+      # excludes that, but argv keeps the flags explicit and version-proof.
       # `json` (written to coverage/gremlins/gremlins.json) feeds the
       # outcome record below: job.status alone cannot see survivors, because
       # pytest-gremlins exits 0 on them. A non-zero exit here is therefore

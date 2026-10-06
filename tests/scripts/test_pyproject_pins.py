@@ -139,6 +139,17 @@ _PINS: tuple[Pin, ...] = (
         must_keep=("1.10.18", "1.12.0"),
         why="TruncatingCloudStorageComputeLogManager starts at dagster 1.10.18 (BUG-285)",
     ),
+    Pin(
+        package="pytest-gremlins",
+        # Dev extra `mutate`. Floor: upstream CHANGELOG v1.11.0 — "Timeout kills
+        # are confirmed before they count toward the score" (#575); on 1.10.1
+        # every timeout was a kill, so a too-short per-mutant timeout inflated
+        # the score. Ceiling: a new minor is raised only after a full
+        # mutation.yml dispatch on it (BUG-303: 1.10 cost 10-50x unannounced).
+        must_reject=("1.10.1", "1.12.0"),
+        must_keep=("1.11.0", "1.11.1"),
+        why="1.11.0 confirms timeout kills; 1.12 is unvalidated (BUG-307, BUG-303)",
+    ),
 )
 
 

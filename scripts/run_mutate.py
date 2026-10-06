@@ -133,11 +133,11 @@ def main() -> int:
         metavar="CONTAINER",
         help=("Print scopes needing the given container (minio/azurite/sftp) as a JSON array and exit."),
     )
-    # Unknown trailing args are forwarded to pytest's argv. Gremlins flags must
-    # travel this way, never via PYTEST_ADDOPTS: the plugin's coverage pre-scan
-    # is a child pytest that inherits PYTEST_ADDOPTS without the plugin's
-    # options, records no data, and every gremlin then runs the full test set
-    # (BUG-303).
+    # Unknown trailing args are forwarded to pytest's argv, which is where
+    # gremlins flags travel. Before pytest-gremlins 1.11.0, a gremlins flag in
+    # PYTEST_ADDOPTS broke the plugin's coverage pre-scan and every gremlin ran
+    # the full test set (BUG-303; fixed upstream in #568). argv stays the route
+    # because it is explicit and independent of the plugin version.
     args, pytest_args = parser.parse_known_args()
 
     if args.list_scopes:

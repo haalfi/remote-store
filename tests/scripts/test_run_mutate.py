@@ -96,13 +96,12 @@ class TestEnsureReportForEmptyScope:
 
 
 class TestPytestArgPassthrough:
-    """BUG-303: gremlins flags must reach pytest on argv, never via PYTEST_ADDOPTS.
+    """BUG-303: gremlins flags reach pytest on argv, not via PYTEST_ADDOPTS.
 
-    The plugin's coverage pre-scan is a child pytest that inherits
-    ``PYTEST_ADDOPTS`` but not the gremlins plugin's options, so a
-    ``--gremlin-*`` flag there makes the pre-scan record no data and every
-    gremlin falls back to the full test set. ``run_mutate.py`` therefore
-    forwards trailing arguments onto the pytest command line.
+    Before pytest-gremlins 1.11.0 a ``--gremlin-*`` flag in ``PYTEST_ADDOPTS``
+    broke the plugin's coverage pre-scan, so every gremlin fell back to the
+    full test set (fixed upstream in #568). ``run_mutate.py`` forwards trailing
+    arguments onto the pytest command line, which works on every version.
     """
 
     def _run_main(self, monkeypatch, argv: list[str]) -> list[str]:
@@ -142,9 +141,9 @@ class TestPytestArgPassthrough:
 class TestWorkflowKeepsGremlinsFlagsOffAddopts:
     """BUG-303: the defect lived in mutation.yml, so pin the workflow itself.
 
-    A ``--gremlin*`` token in the mutate step's ``PYTEST_ADDOPTS`` silently
-    turns coverage-guided selection off; the report flags must stay on the
-    ``run_mutate.py`` command line instead.
+    Before pytest-gremlins 1.11.0, a ``--gremlin*`` token in the mutate step's
+    ``PYTEST_ADDOPTS`` silently turned coverage-guided selection off. The
+    report flags stay on the ``run_mutate.py`` command line regardless.
     """
 
     _WORKFLOW = Path(__file__).resolve().parents[2] / ".github" / "workflows" / "mutation.yml"
