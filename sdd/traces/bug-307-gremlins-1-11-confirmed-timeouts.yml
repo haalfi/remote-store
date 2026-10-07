@@ -16,13 +16,23 @@ expected_ripples:
   - .github/workflows/mutation.yml
   - scripts/mutation_report.py
   - tests/scripts/test_mutation_report.py
-discovery_followups: []
+discovery_followups:
+  # Run 50: backends-ssh's unmutated selections pass 60 s (half of 120 s).
+  - BK-413
 surprising_ripples:
   # The pin question led to the classifier: 1.11 turns unconfirmed timeouts
   # into ERRORs, and classify_scopes never looked at the error count.
   - scripts/mutation_report.py
   - sdd/CI-OPERATIONS.md
   - .claude/skills/mutation/SKILL.md
+  # Run 49 showed the 30 s default was too short for the backend and
+  # conformance scopes, and that 1.11 re-runs every pooled timeout serially in
+  # the parent (plugin.py:3027-3048) with no output, so legs looked hung at
+  # Progress N-1/N for hours.
+  - pyproject.toml
+  # A 76-leg run fills the runner pool for 4-6 h and blocked the maintainer's
+  # daytime CI (PR #1082 was closed for it): the weekly cron moved to night.
+  - .github/workflows/mutation.yml
 phases:
   - id: orient
     name: Orient
@@ -82,3 +92,32 @@ phases:
         section: "timeout_warning"
         read_type: reference
         extract: "Top-level key {downgraded, mutant_timeout, message}, present only when timeouts were downgraded"
+  - id: validate
+    name: Validate on CI
+    steps:
+      - file: "GitHub Actions: run 48 (37435627251)"
+        section: "dispatch"
+        read_type: verify
+        extract: "Cancelled after ~45 min: it held the runner pool while the maintainer's other PR waited; its finished legs seeded the 1.11 gremlins cache"
+        outcome: unclear
+      - file: "GitHub Actions: run 49 (37445577264), 76 legs, mutant_timeout default 30 s"
+        section: "Recorded outcome + Warning per leg (full logs, python)"
+        read_type: verify
+        extract: "71 legs at 12:22: 262 ERRORs (backends-http 176, backends-ssh 85 after its pre-scan passed 120 s); later io-ssh 217 and atomic-ssh 212 ERRORs (1 worker, so not contention); listing-http 734 timeout kills became 831 survivors; atomic-http and io-http cancelled at ~295 min, no report"
+      - file: "pytest_gremlins 1.11.0: plugin.py"
+        section: "_run_parallel collection loop, _confirm_pooled_result"
+        read_type: reference
+        extract: "After the pool, every pooled TIMEOUT is re-run alone then run unmutated, serially in the parent, printing nothing; the final Progress newline stays buffered"
+      - file: "tests/backends/{azure,graph,http,s3} (backends-http scope), unmutated"
+        section: "pytest --durations=15, serial"
+        read_type: verify
+        extract: "1552 passed in 71.30 s, slowest test 2.55 s: selection size, not one slow test, outruns a 15 s headroom"
+      - file: "GitHub Actions: artifact download for mutation-report-backends-http"
+        section: "zip from blob storage"
+        read_type: verify
+        extract: "Proxy denied productionresultssa4.blob.core.windows.net (CONNECT 403); per-gremlin timings unavailable, so mutant_timeout came from the local run and job durations"
+        outcome: unclear
+      - file: "GitHub Actions: run 50 (37544206380), mutant_timeout 120, coverage_timeout 600"
+        section: "all 76 legs, full logs, python"
+        read_type: verify
+        extract: "success in 232.7 min; zapped 4669, survived 13746, timeout 6, error 28 (backends-ssh 26 with timeout_warning at 120 s, core-misc 1, ext-parquet 1); longest leg conformance-io-ssh 226.9 min; summary closed issue #1083"
