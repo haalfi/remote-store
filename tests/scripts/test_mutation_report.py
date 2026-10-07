@@ -8,6 +8,7 @@ classifies them and reconciles a single rolling ``[mutation]`` GitHub issue
 * harness/implementation failure (the run broke) -> issue opened/updated;
   the mutate leg is already red.
 * surviving mutants -> advisory only; they never trigger the issue.
+* ERROR gremlins -> advisory too, but their own verdict, never ``ok`` (BUG-307).
 * all clear on a full run -> comment-and-close; a partial (single-scope)
   dispatch never closes the issue.
 
@@ -38,27 +39,42 @@ def _load():
 _mod = _load()
 
 
-def _gremlins_json(tmp_path: Path, survived: int = 0, zapped: int = 10, timeout: int = 0, error: int = 0) -> Path:
+def _gremlins_json(
+    tmp_path: Path,
+    survived: int = 0,
+    zapped: int = 10,
+    timeout: int = 0,
+    error: int = 0,
+    timeout_warning: dict | None = None,
+) -> Path:
     path = tmp_path / "gremlins.json"
     total = survived + zapped + timeout + error
-    path.write_text(
-        json.dumps(
-            {
-                "summary": {
-                    "total": total,
-                    "zapped": zapped,
-                    "survived": survived,
-                    "timeout": timeout,
-                    "error": error,
-                    "pardoned": 0,
-                    "percentage": 100.0 * zapped / total if total else 0.0,
-                },
-                "files": {},
-                "results": [],
-            }
-        )
-    )
+    report: dict = {
+        "summary": {
+            "total": total,
+            "zapped": zapped,
+            "survived": survived,
+            "timeout": timeout,
+            "error": error,
+            "pardoned": 0,
+            "percentage": 100.0 * zapped / total if total else 0.0,
+        },
+        "files": {},
+        "results": [],
+    }
+    if timeout_warning is not None:
+        report["timeout_warning"] = timeout_warning
+    path.write_text(json.dumps(report))
     return path
+
+
+# Shape of pytest-gremlins 1.11's JsonTimeoutWarning (reporting/types.py).
+_TIMEOUT_WARNING = {
+    "downgraded": 4,
+    "mutant_timeout": 30,
+    "message": "4 timeouts counted as errors, not kills: without the mutant, their tests do not finish "
+    "within half the 30s timeout.",
+}
 
 
 def _write_outcome(dir_: Path, scope: str, job_status: str, counts: dict | None) -> None:
@@ -170,6 +186,25 @@ class TestRecord:
         assert data["job_status"] == "success"
         assert data["counts"] is None
 
+    def test_timeout_warning_is_carried_into_the_outcome(self, tmp_path):
+        # BUG-307: 1.11 downgrades unconfirmed timeouts to errors and explains
+        # why only in this report key; the summary job never sees the report.
+        report = _gremlins_json(tmp_path, zapped=6, error=4, timeout_warning=_TIMEOUT_WARNING)
+        out = tmp_path / "outcome" / "backends-http.json"
+        rc = _mod.main(
+            ["record", "backends-http", "--job-status", "success", "--gremlins-json", str(report), "--out", str(out)]
+        )
+        assert rc == 0
+        data = json.loads(out.read_text())
+        assert data["counts"]["error"] == 4
+        assert data["timeout_warning"] == _TIMEOUT_WARNING
+
+    def test_report_without_timeout_warning_records_none(self, tmp_path):
+        report = _gremlins_json(tmp_path, zapped=10)
+        out = tmp_path / "outcome" / "core-path.json"
+        _mod.main(["record", "core-path", "--job-status", "success", "--gremlins-json", str(report), "--out", str(out)])
+        assert json.loads(out.read_text())["timeout_warning"] is None
+
 
 # --------------------------------------------------------------------------- #
 # classification
@@ -224,6 +259,39 @@ class TestClassify:
         )
         assert scopes["a"]["status"] == "ok"
 
+    def test_errors_without_survivors_are_not_ok(self):
+        # BUG-307: an ERROR is a gremlin with no verdict. Reading it as "ok"
+        # hid every unconfirmed timeout pytest-gremlins 1.11 reports.
+        scopes = _mod.classify_scopes(
+            ["a"],
+            {"a": {"scope": "a", "job_status": "success", "counts": {"survived": 0, "zapped": 6, "error": 4}}},
+        )
+        assert scopes["a"]["status"] == "errors"
+        assert scopes["a"]["reason"] is None
+
+    def test_errors_take_precedence_over_survivors(self):
+        scopes = _mod.classify_scopes(
+            ["a"],
+            {"a": {"scope": "a", "job_status": "success", "counts": {"survived": 2, "zapped": 6, "error": 1}}},
+        )
+        assert scopes["a"]["status"] == "errors"
+
+    def test_errors_carry_the_timeout_warning(self):
+        outcome = {
+            "scope": "a",
+            "job_status": "success",
+            "counts": {"survived": 0, "zapped": 6, "error": 4},
+            "timeout_warning": _TIMEOUT_WARNING,
+        }
+        scopes = _mod.classify_scopes(["a"], {"a": outcome})
+        assert scopes["a"]["timeout_warning"] == _TIMEOUT_WARNING
+
+    def test_red_job_with_errors_stays_harness_failure(self):
+        scopes = _mod.classify_scopes(
+            ["a"], {"a": {"scope": "a", "job_status": "failure", "counts": {"survived": 0, "error": 3}}}
+        )
+        assert scopes["a"]["status"] == "harness_failure"
+
 
 # --------------------------------------------------------------------------- #
 # body rendering
@@ -262,6 +330,26 @@ class TestRenderBody:
         body = _mod.render_body(scopes, run_url="u", full_run=True)
         assert "Clear" in body
         assert "`b`" in body
+
+    def test_errors_section_is_advisory_and_quotes_the_timeout_warning(self):
+        scopes = _mod.classify_scopes(
+            ["a", "b"],
+            {
+                "a": {"scope": "a", "job_status": "failure", "counts": None},
+                "b": {
+                    "scope": "b",
+                    "job_status": "success",
+                    "counts": {"survived": 2, "zapped": 6, "error": 4},
+                    "timeout_warning": _TIMEOUT_WARNING,
+                },
+            },
+        )
+        body = _mod.render_body(scopes, run_url="u", full_run=True)
+        section = body.split("## Gremlins without a verdict (advisory)", 1)[1].split("\n## ", 1)[0]
+        assert "never open" in section
+        assert "- `b` — 4 error / 2 survived / 6 zapped" in section
+        assert _TIMEOUT_WARNING["message"] in section
+        assert "## Clear" not in body  # an errors scope is never listed as clear
 
     def test_partial_run_is_flagged_in_body(self):
         scopes = _mod.classify_scopes(["a"], {"a": {"scope": "a", "job_status": "failure", "counts": None}})
@@ -336,6 +424,19 @@ class TestReconcile:
         assert _reconcile(tmp_path, monkeypatch, gh=gh, scopes_json='["a"]') == 0
         assert "create" not in gh.verbs()
         assert "edit" not in gh.verbs()
+
+    def test_errors_alone_do_not_open_an_issue(self, tmp_path, monkeypatch):
+        _write_outcome(tmp_path / "outcomes", "a", "success", {"survived": 0, "zapped": 6, "error": 4})
+        gh = _GhRecorder(open_issue=None)
+        assert _reconcile(tmp_path, monkeypatch, gh=gh, scopes_json='["a"]') == 0
+        assert gh.verbs() == ["list"]
+
+    def test_step_summary_labels_errors_verdict(self, tmp_path, monkeypatch):
+        _write_outcome(tmp_path / "outcomes", "a", "success", {"survived": 0, "zapped": 6, "timeout": 0, "error": 4})
+        summary = tmp_path / "summary.md"
+        monkeypatch.setenv("GITHUB_STEP_SUMMARY", str(summary))
+        assert _reconcile(tmp_path, monkeypatch, gh=_GhRecorder(), scopes_json='["a"]') == 0
+        assert "| `a` | errors (advisory) | 6 | 0 | 0 | 4 |" in summary.read_text()
 
     def test_all_clear_full_run_closes_open_issue_with_comment(self, tmp_path, monkeypatch):
         _write_outcome(tmp_path / "outcomes", "a", "success", {"survived": 0, "zapped": 10})

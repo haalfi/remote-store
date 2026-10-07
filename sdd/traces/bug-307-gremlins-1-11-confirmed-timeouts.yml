@@ -1,0 +1,162 @@
+id: BUG-307
+title: "Mutation scores count unconfirmed timeouts as kills, and a scope with only ERRORs reads ok"
+trigger: >
+  pytest-gremlins 1.11.0 shipped our pre-scan fix (upstream #568) on 2026-10-05.
+  The maintainer asked whether the `mutate` pin `>=1.10.1,<1.11` and the
+  argv-forwarding workaround from BUG-303 should change.
+source_items:
+  - BUG-307
+audience:
+  - infra.ci
+  - contributor.tooling
+expected_ripples:
+  - pyproject.toml
+  - tests/scripts/test_pyproject_pins.py
+  - scripts/run_mutate.py
+  - .github/workflows/mutation.yml
+  - scripts/mutation_report.py
+  - tests/scripts/test_mutation_report.py
+discovery_followups:
+  # Run 50: backends-ssh's unmutated selections pass 60 s (half of 120 s).
+  - BK-413
+surprising_ripples:
+  # The pin question led to the classifier: 1.11 turns unconfirmed timeouts
+  # into ERRORs, and classify_scopes never looked at the error count.
+  - scripts/mutation_report.py
+  - sdd/CI-OPERATIONS.md
+  - .claude/skills/mutation/SKILL.md
+  # Run 49 showed the 30 s default was too short for the backend and
+  # conformance scopes, and that 1.11 re-runs every pooled timeout serially in
+  # the parent (plugin.py:3027-3048) with no output, so legs looked hung at
+  # Progress N-1/N for hours.
+  - pyproject.toml
+  # A 76-leg run fills the runner pool for 4-6 h and blocked the maintainer's
+  # daytime CI (PR #1082 was closed for it): the weekly cron moved to night.
+  - .github/workflows/mutation.yml
+phases:
+  - id: orient
+    name: Orient
+    steps:
+      - file: pyproject.toml
+        section: "mutate extra + BUG-303 comment"
+        read_type: reference
+        extract: "Minor cap; raise only after a full mutation.yml dispatch on the new minor"
+      - file: sdd/traces/bug-303-mutation-gremlins-1-10-throughput.yml
+        section: "reproduce"
+        read_type: reference
+        extract: "1.10.1 with a --gremlin* flag in PYTEST_ADDOPTS ran 26/26 gremlins on the full suite"
+      - file: "PyPI JSON + upstream CHANGELOG.md (pytest-gremlins)"
+        section: "v1.11.0, v1.11.1"
+        read_type: verify
+        extract: "1.11.0 published 2026-10-05: #568 (ours), #575 confirmed timeouts, mutant_timeout default 30 s; 1.11.1 in CHANGELOG but /pypi/pytest-gremlins/1.11.1/json is 404; fast path still pending (#538)"
+      - file: sdd/CLAUDE-REFERENCE.md
+        section: "Pre-work index / Dependency"
+        read_type: gate
+        extract: "mutate is a dev extra: no conda run_constraints, README names no version"
+  - id: measure
+    name: Measure
+    steps:
+      - file: scripts/run_mutate.py
+        section: "core-path on venvs pinned to 1.10.1 and 1.11.0, cache cleared, PYTEST_ADDOPTS=--no-cov"
+        read_type: verify
+        extract: "23 zapped / 3 survived on both, same three survivors; 36.88 s vs 36.67 s"
+      - file: scripts/run_mutate.py
+        section: "core-path on 1.11.0 with --gremlin-report=json in PYTEST_ADDOPTS"
+        read_type: verify
+        extract: "Per-gremlin selection kept (1 to 40 of 47 tests, g026 47/47 as on argv): #568 works"
+      - file: "tests/scripts/test_{run_mutate,mutate_scopes,mutation_report}.py on 1.11.0"
+        section: "whole files"
+        read_type: verify
+        extract: "49 passed; the BUG-215 internals (transform_source, get_default_registry) still import"
+      - file: "GitHub Actions: run 47 (37200838377), 76 mutate legs"
+        section: "Recorded outcome line per leg"
+        read_type: verify
+        extract: "python sum over the 76 record lines: timeout 2696, error 0, across 15 scopes; three legs restored from the gremlins cache"
+        outcome: unclear
+      - file: scripts/mutation_report.py
+        section: "classify_scopes"
+        read_type: reference
+        extract: "Branches on survived only: error>0 with survived 0 classifies ok"
+  - id: implement
+    name: Implement
+    steps:
+      - file: tests/scripts/test_pyproject_pins.py
+        section: "_PINS pytest-gremlins row"
+        read_type: gate
+        extract: "Failed on >=1.10.1,<1.11 (rejects 1.10.1, keeps 1.11.0), passes after the bump"
+      - file: tests/scripts/test_mutation_report.py
+        section: "errors verdict, timeout_warning record/render"
+        read_type: gate
+        extract: "7 failed first (KeyError timeout_warning, ok != errors), 34 passed after"
+      - file: "pytest_gremlins 1.11.0: reporting/json_reporter.py, score.py, types.py"
+        section: "timeout_warning"
+        read_type: reference
+        extract: "Top-level key {downgraded, mutant_timeout, message}, present only when timeouts were downgraded"
+  - id: validate
+    name: Validate on CI
+    steps:
+      - file: "GitHub Actions: run 48 (37435627251)"
+        section: "dispatch"
+        read_type: verify
+        extract: "Cancelled after ~45 min: it held the runner pool while the maintainer's other PR waited; its finished legs seeded the 1.11 gremlins cache"
+        outcome: unclear
+      - file: "GitHub Actions: run 49 (37445577264), 76 legs, mutant_timeout default 30 s"
+        section: "Recorded outcome + Warning per leg (full logs, python)"
+        read_type: verify
+        extract: "71 legs at 12:22: 262 ERRORs (backends-http 176, backends-ssh 85 after its pre-scan passed 120 s); later io-ssh 217 and atomic-ssh 212 ERRORs (1 worker, so not contention); listing-http 734 timeout kills became 831 survivors; atomic-http and io-http cancelled at ~295 min, no report"
+      - file: "pytest_gremlins 1.11.0: plugin.py"
+        section: "_run_parallel collection loop, _confirm_pooled_result"
+        read_type: reference
+        extract: "After the pool, every pooled TIMEOUT is re-run alone then run unmutated, serially in the parent, printing nothing; the final Progress newline stays buffered"
+      - file: "tests/backends/{azure,graph,http,s3} (backends-http scope), unmutated"
+        section: "pytest --durations=15, serial"
+        read_type: verify
+        extract: "1552 passed in 71.30 s, slowest test 2.55 s: selection size, not one slow test, outruns a 15 s headroom"
+      - file: "GitHub Actions: artifact download for mutation-report-backends-http"
+        section: "zip from blob storage"
+        read_type: verify
+        extract: "Proxy denied productionresultssa4.blob.core.windows.net (CONNECT 403); per-gremlin timings unavailable, so mutant_timeout came from the local run and job durations"
+        outcome: unclear
+      - file: "GitHub Actions: run 50 (37544206380), mutant_timeout 120, coverage_timeout 600"
+        section: "all 76 legs, full logs, python"
+        read_type: verify
+        extract: "success in 232.7 min; zapped 4669, survived 13746, timeout 6, error 28 (backends-ssh 26 with timeout_warning at 120 s, core-misc 1, ext-parquet 1); longest leg conformance-io-ssh 226.9 min; summary closed issue #1083"
+      - file: scripts/run_mutate.py
+        section: "ext-parquet, 1.11.0, mutant_timeout 120, ulimit -v 8388608, 4 workers"
+        read_type: verify
+        extract: "43/9/1 as on CI; the ERROR is parquet_b608_g050 (parquet.py:480 '<' to '<='), BUG-303's runaway mutant, stopped by the address-space cap after 41.3 s, before the timeout. core-misc's single ERROR inferred to be the same gremlin (it targets ext/parquet.py), not re-run. Raised by the PR review as an unexplained gap in the done entry"
+review:
+  # Derived by `hatch run ship-report 1088 --trace-block-only` at head 49de2ac.
+  # Do not hand-edit, except a newly required field per sdd/traces/_schema.yml
+  # section review: RFC-0015 D4 makes this script the only producer.
+  derivation: "hatch run ship-report 1088 --trace-block-only"
+  pr: 1088
+  review_rounds: 1
+  submissions: 1
+  findings: 1
+  by_round:
+    - round: 1
+      findings: 1
+      origin: {unclassifiable-file: 1}
+      triage: {must-fix: 1}
+      duration_hours: 0.36
+  by_file:
+    - path: "sdd/CI-OPERATIONS.md"
+      findings: 1
+  untouched_files:
+    - ".claude/skills/mutation/SKILL.md"
+    - ".github/workflows/mutation.yml"
+    - "pyproject.toml"
+    - "scripts/mutation_report.py"
+    - "scripts/run_mutate.py"
+    - "sdd/BACKLOG-DONE.md"
+    - "sdd/BACKLOG.md"
+    - "sdd/decisions/04f6e302-551c-5dad-858b-13ca23c146eb.jsonl"
+    - "sdd/traces/bug-307-gremlins-1-11-confirmed-timeouts.yml"
+    - "tests/scripts/test_mutation_report.py"
+    - "tests/scripts/test_pyproject_pins.py"
+    - "tests/scripts/test_run_mutate.py"
+  review_driven_commits:
+    - sha: "49de2ac"
+      subject: "BUG-307: State the post-fix full-run duration (about 4 h, run 50)"
+  ci: {verdict: GREEN, failed: 0, pending: 0}

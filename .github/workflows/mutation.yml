@@ -22,7 +22,10 @@ name: Mutation Testing
 
 on:
   schedule:
-    - cron: "0 5 * * 6"  # Every Saturday at 05:00 UTC
+    # Friday 23:00 UTC = Saturday 01:00 CEST / 00:00 CET. A full run takes
+    # about 4 h (run 50: 232.7 min) and fills the runner pool, so it starts at
+    # night in the maintainer's time zone to stay clear of daytime CI (BUG-307).
+    - cron: "0 23 * * 5"
   workflow_dispatch:
     inputs:
       scope:
@@ -37,7 +40,7 @@ permissions:
 
 # Single-writer guarantee on the rolling issue (drift-guard.yml carries the
 # same block for the same reason): a manual workflow_dispatch launched while
-# the scheduled Saturday run is still in a long mutate leg would otherwise
+# the scheduled weekly run is still in a long mutate leg would otherwise
 # race the summary job and last-writer-wins on `gh issue edit` / `close`.
 # Queue dispatches behind a running schedule rather than cancelling, so the
 # schedule's full matrix always completes.
@@ -191,9 +194,10 @@ jobs:
 
       # --- Run mutation testing ---
       # Invoke the manifest-driven scope runner directly. Gremlins flags go on
-      # its argv, never in PYTEST_ADDOPTS: the plugin's coverage pre-scan
-      # inherits PYTEST_ADDOPTS without the plugin's options, records no data,
-      # and every gremlin then runs the full test set (BUG-303).
+      # its argv, not in PYTEST_ADDOPTS. Before pytest-gremlins 1.11.0 a
+      # gremlins flag there broke the coverage pre-scan and every gremlin ran
+      # the full test set (BUG-303; fixed upstream in #568). The floor now
+      # excludes that, but argv keeps the flags explicit and version-proof.
       # `json` (written to coverage/gremlins/gremlins.json) feeds the
       # outcome record below: job.status alone cannot see survivors, because
       # pytest-gremlins exits 0 on them. A non-zero exit here is therefore

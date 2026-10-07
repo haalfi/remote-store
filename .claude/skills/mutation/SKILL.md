@@ -72,7 +72,11 @@ Repo: `haalfi/remote-store`.
 5. **Survivors (advisory).** If the body or the run-summary table lists
    surviving mutants, do not treat them as part of this triage. Note them for
    a coverage-hardening pass; the per-scope detail is in the
-   `mutation-report-<scope>` HTML artifacts.
+   `mutation-report-<scope>` HTML artifacts. *Gremlins without a verdict*
+   (ERROR) are advisory as well, but they are a harness-tuning signal, not a
+   coverage gap: a quoted `timeout_warning` means the unmutated tests ran past
+   half of `mutant_timeout`, so raise it in `[tool.pytest-gremlins]` or speed
+   up those tests.
 
 6. **Branch hygiene.** Never on `master`; create a dedicated branch off
    `origin/master`, e.g. `fix-mutation-<slug>`.
@@ -84,7 +88,9 @@ Repo: `haalfi/remote-store`.
    diagnosis and fix, then stop — PR creation is user-initiated via `/pr`.
    Reference the rolling issue with `Refs #<n>` — never `Closes`: the workflow
    owns the issue lifecycle and closes it on the next healthy full run. To
-   close promptly after merge, dispatch a full run:
+   close promptly after merge, dispatch a full run, at night in the
+   maintainer's time zone (Europe/Berlin): it takes about 4 h (run 50: 232.7
+   min) and fills the runner pool, queuing daytime CI behind it.
    `gh workflow run mutation.yml --repo haalfi/remote-store` (from a sandboxed
    session the token lacks `actions: write` and `gh` gets 403; the MCP server's
    `actions_run_trigger` dispatches).

@@ -429,6 +429,13 @@ no clause of the contract ships unexercised.
   atomic/identity tests match no transport `-k` filter (backend-name ids, or none);
   `_KNOWN_UNSPLIT_TESTS` in `test_mutate_scopes.py` lists them. Open decision: none.
 
+- [ ] **BK-413 — `backends-ssh` leaves 26 gremlins without a verdict at `mutant_timeout = 120`**
+  spec: — · effort: S · audience: infra.ci
+  Run 50 (BUG-307's validation): 26 ERRORs, each a timeout whose unmutated
+  selection ran past 60 s, half the limit; every other scope fits. The leg took
+  139.7 min. Open decision: faster sftp test selections, a per-scope timeout in
+  `mutate_scopes.py`, or splitting the scope.
+
 ---
 
 <a id="users-succeed-unaided"></a>
