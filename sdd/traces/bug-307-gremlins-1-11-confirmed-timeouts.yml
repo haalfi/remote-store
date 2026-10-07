@@ -126,16 +126,23 @@ phases:
         read_type: verify
         extract: "43/9/1 as on CI; the ERROR is parquet_b608_g050 (parquet.py:480 '<' to '<='), BUG-303's runaway mutant, stopped by the address-space cap after 41.3 s, before the timeout. core-misc's single ERROR inferred to be the same gremlin (it targets ext/parquet.py), not re-run. Raised by the PR review as an unexplained gap in the done entry"
 review:
-  # Derived by `hatch run ship-report 1088 --trace-block-only` at head 68a8cc4.
+  # Derived by `hatch run ship-report 1088 --trace-block-only` at head 49de2ac.
   # Do not hand-edit, except a newly required field per sdd/traces/_schema.yml
   # section review: RFC-0015 D4 makes this script the only producer.
   derivation: "hatch run ship-report 1088 --trace-block-only"
   pr: 1088
-  review_rounds: 0
-  submissions: 0
-  findings: 0
-  by_round: []
-  by_file: []
+  review_rounds: 1
+  submissions: 1
+  findings: 1
+  by_round:
+    - round: 1
+      findings: 1
+      origin: {unclassifiable-file: 1}
+      triage: {must-fix: 1}
+      duration_hours: 0.36
+  by_file:
+    - path: "sdd/CI-OPERATIONS.md"
+      findings: 1
   untouched_files:
     - ".claude/skills/mutation/SKILL.md"
     - ".github/workflows/mutation.yml"
@@ -144,12 +151,12 @@ review:
     - "scripts/run_mutate.py"
     - "sdd/BACKLOG-DONE.md"
     - "sdd/BACKLOG.md"
-    - "sdd/CI-OPERATIONS.md"
     - "sdd/decisions/04f6e302-551c-5dad-858b-13ca23c146eb.jsonl"
     - "sdd/traces/bug-307-gremlins-1-11-confirmed-timeouts.yml"
     - "tests/scripts/test_mutation_report.py"
     - "tests/scripts/test_pyproject_pins.py"
     - "tests/scripts/test_run_mutate.py"
   review_driven_commits:
-    []
+    - sha: "49de2ac"
+      subject: "BUG-307: State the post-fix full-run duration (about 4 h, run 50)"
   ci: {verdict: GREEN, failed: 0, pending: 0}
