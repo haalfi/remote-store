@@ -121,3 +121,7 @@ phases:
         section: "all 76 legs, full logs, python"
         read_type: verify
         extract: "success in 232.7 min; zapped 4669, survived 13746, timeout 6, error 28 (backends-ssh 26 with timeout_warning at 120 s, core-misc 1, ext-parquet 1); longest leg conformance-io-ssh 226.9 min; summary closed issue #1083"
+      - file: scripts/run_mutate.py
+        section: "ext-parquet, 1.11.0, mutant_timeout 120, ulimit -v 8388608, 4 workers"
+        read_type: verify
+        extract: "43/9/1 as on CI; the ERROR is parquet_b608_g050 (parquet.py:480 '<' to '<='), BUG-303's runaway mutant, stopped by the address-space cap after 41.3 s, before the timeout. core-misc's single ERROR inferred to be the same gremlin (it targets ext/parquet.py), not re-run. Raised by the PR review as an unexplained gap in the done entry"

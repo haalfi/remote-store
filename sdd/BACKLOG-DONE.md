@@ -264,8 +264,11 @@ if evidence changes; these are retired.
   600` in `[tool.pytest-gremlins]`, and the weekly cron moved to Friday 23:00 UTC
   (night in Europe/Berlin). Run 49 at the 30 s default: at least 691 ERRORs, five
   http/ssh legs stuck in the serial confirmation phase for 3.8 h or more. Run 50
-  at 120 s: green in 232.7 min, 6 confirmed timeouts, 28 ERRORs (26 in
-  backends-ssh, carried as BK-413), 13746 survived. `conformance-listing-http`
+  at 120 s: green in 232.7 min, 6 confirmed timeouts, 28 ERRORs, 13746 survived.
+  26 ERRORs are backends-ssh, carried as BK-413. The other two are by design:
+  ext-parquet's is `parquet.py:480` `<` to `<=`, BUG-303's runaway mutant, which
+  now reaches the 8 GiB `ulimit -v` cap (41.3 s in a local run of the scope)
+  before the 120 s timeout; core-misc targets the same file. `conformance-listing-http`
   went from 734 timeout kills to 831 survivors. Trace:
   [bug-307](traces/bug-307-gremlins-1-11-confirmed-timeouts.yml).
 
