@@ -23,8 +23,8 @@ name: Mutation Testing
 on:
   schedule:
     # Friday 23:00 UTC = Saturday 01:00 CEST / 00:00 CET. A full run takes
-    # 5-6 h (run 49) and fills the runner pool, so it starts at night in the
-    # maintainer's time zone to stay clear of daytime CI (BUG-307).
+    # about 4 h (run 50: 232.7 min) and fills the runner pool, so it starts at
+    # night in the maintainer's time zone to stay clear of daytime CI (BUG-307).
     - cron: "0 23 * * 5"
   workflow_dispatch:
     inputs:

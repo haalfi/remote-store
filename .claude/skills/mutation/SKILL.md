@@ -89,8 +89,8 @@ Repo: `haalfi/remote-store`.
    Reference the rolling issue with `Refs #<n>` — never `Closes`: the workflow
    owns the issue lifecycle and closes it on the next healthy full run. To
    close promptly after merge, dispatch a full run, at night in the
-   maintainer's time zone (Europe/Berlin): it takes 5-6 h and fills the runner
-   pool, queuing daytime CI behind it.
+   maintainer's time zone (Europe/Berlin): it takes about 4 h (run 50: 232.7
+   min) and fills the runner pool, queuing daytime CI behind it.
    `gh workflow run mutation.yml --repo haalfi/remote-store` (from a sandboxed
    session the token lacks `actions: write` and `gh` gets 403; the MCP server's
    `actions_run_trigger` dispatches).

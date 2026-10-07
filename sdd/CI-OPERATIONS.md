@@ -186,9 +186,10 @@ documented in [`CONTRIBUTING.md`](../CONTRIBUTING.md).
   `summary` job classifies them via `scripts/mutation_report.py` and
   reconciles the rolling issue.
 - **When:** Friday 23:00 UTC (Saturday 01:00 CEST / 00:00 CET), plus manual
-  `workflow_dispatch` (optionally for a single scope). A full run takes 5-6 h
-  and fills the runner pool, so the schedule sits at night in the maintainer's
-  time zone; dispatch a full run at night too, or it queues daytime CI behind it.
+  `workflow_dispatch` (optionally for a single scope). A full run takes about
+  4 h (run 50: 232.7 min) and fills the runner pool, so the schedule sits at
+  night in the maintainer's time zone; dispatch a full run at night too, or it
+  queues daytime CI behind it.
 - **Where the finding shows up:** depends on which of the two outcomes
   occurred. They are deliberately split:
   - **Harness / implementation failure** (the run itself broke: an import,
