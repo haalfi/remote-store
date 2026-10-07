@@ -11401,7 +11401,7 @@ documented here by convention, not enforcement.</p>
 </tr>
 <tr>
 <td><code>mutation.yml</code></td>
-<td>Sat 05:00 UTC</td>
+<td>Fri 23:00 UTC</td>
 <td>rolling <code>[mutation]</code> Issue (harness failures)</td>
 <td><code>/mutation</code> skill</td>
 </tr>
@@ -11561,8 +11561,11 @@ documented in <a href="../../contributing/"><code>CONTRIBUTING.md</code></a>.</p
   outcome JSON (<code>job.status</code> + the pytest-gremlins report counts), and the
   <code>summary</code> job classifies them via <code>scripts/mutation_report.py</code> and
   reconciles the rolling issue.</li>
-<li><strong>When:</strong> Saturday 05:00 UTC, plus manual <code>workflow_dispatch</code> (optionally for a
-  single scope).</li>
+<li><strong>When:</strong> Friday 23:00 UTC (Saturday 01:00 CEST / 00:00 CET), plus manual
+  <code>workflow_dispatch</code> (optionally for a single scope). A full run takes about
+  4 h (run 50: 232.7 min) and fills the runner pool, so the schedule sits at
+  night in the maintainer's time zone; dispatch a full run at night too, or it
+  queues daytime CI behind it.</li>
 <li><strong>Where the finding shows up:</strong> depends on which of the two outcomes
   occurred. They are deliberately split:</li>
 <li><strong>Harness / implementation failure</strong> (the run itself broke: an import,
@@ -11582,6 +11585,11 @@ documented in <a href="../../contributing/"><code>CONTRIBUTING.md</code></a>.</p
     runner never fails a run on survivors, and strict coverage gates already
     run in CI, so survivors feed a coverage-hardening pass rather than a
     standalone TODO.</li>
+<li><strong>ERROR gremlin</strong> (no verdict reached, mostly a timeout the plugin could
+    not confirm): <strong>advisory</strong>, like survivors, but its own <code>errors</code> verdict,
+    so the scope never reads <code>ok</code>. When the issue is open for other reasons,
+    its body lists these scopes and quotes the plugin's <code>timeout_warning</code>. The
+    fix is <code>mutant_timeout</code> in <code>[tool.pytest-gremlins]</code> or faster tests.</li>
 <li><strong>How to act:</strong> run the <strong><code>/mutation</code> skill</strong>. It reads the rolling issue,
   classifies each failing scope from the linked run's logs (baseline test
   failure vs harness/tooling break vs setup death), and fixes the regression
