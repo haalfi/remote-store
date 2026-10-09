@@ -867,6 +867,14 @@ CHANGELOG the release body is built from — say what is actually true.
   `bk-403-testmon-poc/srcreads.py`). A selector built on the comment would
   drop the directory. Open decision: none.
 
+- [ ] **BK-417 — `report-token-usage` undercounts tool results about 1.7 times and leaves out the prefix and hidden thinking**
+  spec: — · effort: S · audience: contributor.tooling
+  A regression of context growth over 3,667 consecutive-call pairs (R² 0.91) puts
+  tool results at about 2.4 characters per token, where the script assumes 4, and
+  keeps hidden thinking in context at about 0.95 tokens per output token. Its carried
+  ranking omits the session prefix and thinking, about a third of re-read context.
+  Open decision: none. Derivation: [`calibration.json`](research/token-usage/results/calibration.json).
+
 ---
 
 <a id="gate-cost"></a>
@@ -917,6 +925,15 @@ coverage floor.
   blocked on BK-403; then the name, the R3 / BK-271 argument and which skills
   run it (RFC-0019 Open Questions 4, keeps this item open).
   Detail: [dossier](backlog/bk-404-selected-tests-hatch-target.md)
+
+- [ ] **BK-419 — A local gate run has no per-test timeout and no wait deadline, so a stalled suite stalls the session**
+  spec: — · effort: M · audience: contributor.tooling, infra.test
+  In `/ship BUG-280` run A, 31 foreground `hatch run all` runs had a median of 194 s, 3 were
+  cut off at the 600 s tool limit, and a backgrounded gate left the session idle 37 min
+  ([`run_a_final_gates.json`](research/token-usage/results/run_a_final_gates.json)). Two
+  cut-offs overlapped another session's full suite and one did not, so overlap is one cause,
+  not the only one. Open decision: suite lock, per-test timeout, wait deadline, or all three.
+  Detail: [dossier](backlog/bk-419-local-gate-unbounded-wait.md)
 
 - [ ] **ID-266 — Every in-progress PR push runs the full pre-merge CI gate**
   spec: — · effort: L · audience: infra.ci, contributor.process
