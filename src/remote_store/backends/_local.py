@@ -40,7 +40,8 @@ log = logging.getLogger(__name__)
 # ``Path.is_file`` / ``is_dir`` read as ``False`` on 3.11 to 3.13. ``ELOOP`` is
 # a link loop, which BE-021 skips like a dangling link; the ``winerror`` values
 # are a drive not ready (21), an invalid name (123) and a link Windows cannot
-# resolve (1921).
+# resolve (1921). Ask this before treating an error as a denial: Python builds
+# 21 as a ``PermissionError``.
 _ABSENT_ERRNOS = frozenset({errno.ENOENT, errno.ENOTDIR, errno.EBADF, errno.ELOOP})
 _ABSENT_WINERRORS = frozenset({21, 123, 1921})
 
@@ -66,9 +67,9 @@ def _stat_or_absent(path: Path) -> os.stat_result | None:
     try:
         return path.stat()
     except OSError as exc:
-        if isinstance(exc, PermissionError) or not _is_absence(exc):
-            raise
-        return None
+        if _is_absence(exc):
+            return None
+        raise
 
 
 def _entry_stat_or_absent(entry: Path) -> os.stat_result | None:
@@ -86,7 +87,7 @@ def _entry_stat_or_absent(entry: Path) -> os.stat_result | None:
             skip = S_ISLNK(os.lstat(entry).st_mode)
         except OSError as exc:
             # Refused too: the entry itself is denied. Gone since: skip it.
-            skip = not isinstance(exc, PermissionError) and _is_absence(exc)
+            skip = _is_absence(exc)
         if skip:
             return None
         raise
@@ -106,9 +107,9 @@ def _entries_or_absent(folder: Path) -> list[Path]:
     try:
         return list(folder.iterdir())
     except OSError as exc:
-        if isinstance(exc, PermissionError) or not _is_absence(exc):
-            raise
-        return []
+        if _is_absence(exc):
+            return []
+        raise
 
 
 class LocalBackend(Backend):
@@ -631,8 +632,10 @@ class LocalBackend(Backend):
         one checks *path* with a ``stat`` only, so a folder the OS refuses to
         list, *path* itself or a subfolder, is left out without an error; and a
         symlink into a folder it cannot enter can raise ``PermissionDenied``
-        rather than be skipped. A native error the walk does raise reaches the
-        caller mapped, as below.
+        rather than be skipped. Any other OS error the walk raises reaches the
+        caller as a ``RemoteStoreError``, absences included: with
+        ``max_depth``, a dangling link or a link loop in the tree, and in
+        either form a file removed while the walk runs.
 
         Raises:
             PermissionDenied: If the OS refuses to list *path*, or to ``stat``
@@ -671,7 +674,7 @@ class LocalBackend(Backend):
         except PermissionError:
             raise PermissionDenied(f"Permission denied: {path}", path=path, backend=self.name) from None
         except OSError as exc:
-            raise RemoteStoreError(f"Cannot list {path}: {exc.strerror}", path=path, backend=self.name) from None
+            raise RemoteStoreError(f"Cannot list {path}: {exc}", path=path, backend=self.name) from None
 
     def list_folders(self, path: str) -> Iterator[FolderEntry]:
         """Yield immediate subfolders of *path* as ``FolderEntry`` records.
@@ -697,7 +700,7 @@ class LocalBackend(Backend):
         except PermissionError:
             raise PermissionDenied(f"Permission denied: {path}", path=path, backend=self.name) from None
         except OSError as exc:
-            raise RemoteStoreError(f"Cannot list {path}: {exc.strerror}", path=path, backend=self.name) from None
+            raise RemoteStoreError(f"Cannot list {path}: {exc}", path=path, backend=self.name) from None
 
     def iter_children(self, path: str) -> Iterator[FileInfo | FolderEntry]:
         """Yield the immediate files and folders under *path* in one scan.
@@ -730,7 +733,7 @@ class LocalBackend(Backend):
         except PermissionError:
             raise PermissionDenied(f"Permission denied: {path}", path=path, backend=self.name) from None
         except OSError as exc:
-            raise RemoteStoreError(f"Cannot list {path}: {exc.strerror}", path=path, backend=self.name) from None
+            raise RemoteStoreError(f"Cannot list {path}: {exc}", path=path, backend=self.name) from None
 
     def get_file_info(self, path: str) -> FileInfo:
         """Return metadata for the file at *path* from a single ``stat``.

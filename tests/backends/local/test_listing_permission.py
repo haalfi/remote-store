@@ -269,15 +269,17 @@ _WITH_F_GONE_BEFORE_STAT: dict[str, set[str]] = {
 
 # The errors a ``stat`` answers for a path that is not there, which the scans
 # read as absence: the set ``Path.is_file`` / ``is_dir`` read as ``False`` on
-# 3.11 to 3.13. ``winerror`` 123 (an invalid name) exists only on Windows.
+# 3.11 to 3.13, one cell per member. ``winerror`` exists only on Windows, where
+# Python builds 21 (drive not ready) as a ``PermissionError``.
+_ON_WINDOWS = pytest.mark.skipif(sys.platform != "win32", reason="winerror exists on Windows only")
 _ABSENCE: list[Any] = [
     pytest.param(lambda p: OSError(errno.ENOENT, os.strerror(errno.ENOENT), p), id="ENOENT"),
+    pytest.param(lambda p: OSError(errno.ENOTDIR, os.strerror(errno.ENOTDIR), p), id="ENOTDIR"),
+    pytest.param(lambda p: OSError(errno.EBADF, os.strerror(errno.EBADF), p), id="EBADF"),
     pytest.param(lambda p: OSError(errno.ELOOP, os.strerror(errno.ELOOP), p), id="ELOOP-link-loop"),
-    pytest.param(
-        lambda p: OSError(errno.EINVAL, "invalid name", p, 123),
-        id="winerror-123",
-        marks=pytest.mark.skipif(sys.platform != "win32", reason="winerror exists on Windows only"),
-    ),
+    pytest.param(lambda p: OSError(0, "drive not ready", p, 21), id="winerror-21", marks=_ON_WINDOWS),
+    pytest.param(lambda p: OSError(0, "invalid name", p, 123), id="winerror-123", marks=_ON_WINDOWS),
+    pytest.param(lambda p: OSError(0, "cannot resolve", p, 1921), id="winerror-1921", marks=_ON_WINDOWS),
 ]
 
 
@@ -337,6 +339,11 @@ def test_an_os_error_that_is_neither_denial_nor_absence_raises_a_mapped_error(
     assert err.backend == "local"
     assert err.__cause__ is None
     assert err.__suppress_context__ is True
+    # The message names what failed, so an entry's error is not read as the
+    # listed folder's.
+    assert os.strerror(errno.EIO) in str(err)
+    if site == "entry-stat":
+        assert "f.txt" in str(err)
 
 
 @pytest.mark.parametrize("gone", [FileNotFoundError, NotADirectoryError], ids=["removed", "replaced-by-a-file"])

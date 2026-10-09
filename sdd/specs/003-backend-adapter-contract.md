@@ -1200,23 +1200,37 @@ All other operations MUST raise appropriate errors.
 **A listing's denial is about the folder it lists, not about an entry's link
 target.** `list_files`, `list_folders` and `iter_children` raise
 `PermissionDenied` when the backend is refused the listed folder, or the
-metadata of an entry in it. Where a backend's listing follows links, an entry
-that is a link the caller cannot read through is skipped, as an entry gone
-before its metadata was read is: a dangling link, and a link whose target the
-backend is refused. The entry itself is present and readable as a link, so the
-folder was not denied and the listing has nothing to report about it. Any other
-error the listing meets is raised as a mapped `RemoteStoreError`.
+metadata of an entry in it. An entry gone before its metadata was read is
+skipped. So, where a backend's listing follows links, is an entry that is a link
+the caller cannot read through: a dangling link, a link loop (which resolves to
+nothing, as a dangling link does), and a link whose target the backend is
+refused. The entry itself is present and readable as a link, so the folder was
+not denied and the listing has nothing to report about it. Any other OS error
+the listing meets is raised as a mapped `RemoteStoreError`.
 
-The clause decides those two kinds of link and no other. A link whose target
+"Gone" is the backend's own notion of a path that is not there. For
+`LocalBackend` it is what `Path.is_dir` read as `False` on 3.11 to 3.13: no such
+file, not a directory, a bad descriptor, a link loop, and on Windows a drive not
+ready, an invalid name, or a name it cannot resolve.
+
+The clause decides those kinds of link and no other. A link whose target
 resolves outside the store root is not decided by it. `LocalBackend`'s
 single-level listings follow links; this clause does not decide whether any
 other backend's do.
 
 **Known divergence: `LocalBackend`'s recursive `list_files`.** It does not meet
-this clause yet. It leaves out a folder the OS refuses to list, the listed one
-included, without an error, and it can raise `PermissionDenied` for a link
-into a folder it cannot enter. BK-416 moves it onto RFC-0017's listing kernel,
-and its strict `xfail` cells name the item.
+this clause yet:
+- it leaves out a folder the OS refuses to list, the listed one included,
+  without an error;
+- it can raise `PermissionDenied` for a link into a folder it cannot enter;
+- it raises `RemoteStoreError` for an entry this clause skips: with
+  `max_depth`, a dangling link or link loop anywhere in the tree, on every
+  call, and in either form a file removed while it runs.
+
+BK-416 moves it onto RFC-0017's listing kernel, and its strict `xfail` cells
+name the item. On 3.11 and 3.12, a listed path that is or passes through a link
+loop raises a bare `RuntimeError` from path resolution, for every operation,
+not only listings. BK-416 records it.
 
 ### BE-022: unwrap()
 

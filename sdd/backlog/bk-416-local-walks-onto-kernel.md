@@ -119,14 +119,28 @@ pins the plain walk's skip of an unstattable entry there.
   `read` of that key then raises `InvalidPath("Path escapes root directory")`.
   `glob` skips it (GLOB-005). The recursive walks never descend into a folder
   link (`os.walk` with `followlinks=False`, and `rglob`). BE-021's link clause
-  decides only dangling and refused-target links, so `classify` has to choose.
+  decides only dangling, looping and refused-target links, so `classify` has
+  to choose.
   This was read from the code by BUG-280's round 3 and not run.
 - **The walks' native errors are mapped, but not classified.** BUG-280 keeps the
   recursive branches inside `list_files`' handler, so whatever escapes them
   reaches the caller as `PermissionDenied` or a `RemoteStoreError`, never raw.
   That includes a file removed mid-walk (`FileNotFoundError` from its `stat`)
-  and a link loop under `max_depth` (`ELOOP`), which master leaked raw and
-  which `classify` should answer as absences.
+  and, under `max_depth`, a dangling link or a link loop anywhere in the tree.
+  `os.walk` lists those links as files, and their `stat` fails on every call.
+  Master leaked all of them raw; `classify` should answer them as absences.
+  BUG-280's round 4 measured them on Linux 3.11 to 3.14. Under churn, plain
+  recursive raised `RemoteStoreError` in 20 to 42 calls and `max_depth` in
+  about 200, per interpreter, over about 4 s per mode. Every `max_depth` call
+  over a dangling link or loop raised.
+- **On 3.11 and 3.12, a link loop in the path itself leaks a bare
+  `RuntimeError`.** `_resolve` resolves the deepest existing ancestor, and
+  `Path.resolve` raises `RuntimeError("Symlink loop from …")` there; 3.13 and
+  3.14 do not. It reaches every operation, not only listings, because every
+  operation resolves its path. BUG-280's round 4 measured it on Linux 3.11 and
+  3.12, on head and master alike, for `list_files('a/loop1')`, `a/self/x` and
+  the other listing calls. `classify` needs it, and the fix belongs in
+  `_resolve`, not per operation.
 - **`_resolve` reports a folder mid-delete as escaping the root.** In the same
   listed-folder runs, both trees raised `InvalidPath("Path escapes root
   directory")` in up to 350 of 3000 calls per method; one run (3.11.9, the
@@ -135,10 +149,14 @@ pins the plain walk's skip of an unstattable entry there.
   something that is not under the root. The cause is read from the code and the
   message, not traced further. The kernel's absence answer has to come before
   this check, or the check has to learn the state.
-- **"Absent" is a short list, not "anything but a denial".** The walks skip
-  every non-permission `OSError` (`EIO`, `ENAMETOOLONG`,
-  `WinError 362` for a cloud placeholder whose provider is not running) when it
-  comes from a folder's scan. BUG-280's single-level scans read as absent only
+- **"Absent" is a short list, not "anything but a denial".** When a folder's
+  scan fails with a non-permission `OSError` (`EIO`, `ENAMETOOLONG`,
+  `WinError 362` for a cloud placeholder whose provider is not running), the
+  walks mostly skip the folder. The `max_depth` walk's `os.walk` and plain
+  `rglob` on 3.12 to 3.14 do. Plain `rglob` on 3.11 does not: its selectors
+  catch only `PermissionError`, so the error propagates, now mapped. That was
+  read from each interpreter's `pathlib` / `glob` source. BUG-280's
+  single-level scans read as absent only
   `_is_absence`'s set, which is what `Path.is_dir` read as `False` on 3.11 to
   3.13: `ENOENT`, `ENOTDIR`, `EBADF`, `ELOOP`, and `winerror` 21, 123 and 1921.
   They map anything else to a `RemoteStoreError` naming the listed key, as SFTP

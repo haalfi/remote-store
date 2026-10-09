@@ -567,3 +567,56 @@ phases:
           slim containers: 55 / 55 / 55 / 54 passed, 6 skipped, 8 / 8 / 8 / 9
           xfailed
         outcome: ok
+  - id: fix_r4b
+    name: Fix pass (round 4 after the re-plan)
+    steps:
+      - file: src/remote_store/backends/_local.py
+        section: "_is_absence ordering; the RemoteStoreError message"
+        read_type: verify
+        extract: >-
+          fix_r3b's comment said the absence set was "what Path.is_dir read as
+          False", and one member of it could never match: Python builds
+          winerror 21 as a PermissionError (checked: OSError(0, 'x', None, 21)
+          is PermissionError, errno 13), and every site re-raised a
+          PermissionError before asking the set. The three winerror-21 cells
+          failed before the reorder; the set is now asked first, and each
+          member has a cell (ENOENT, ENOTDIR, EBADF, ELOOP; winerror 21, 123,
+          1921 on Windows). The message uses str(exc), as SFTP does, so an
+          entry's error names the entry instead of reading as the listed
+          folder's (measured: "Cannot list t: No such file or directory" for a
+          vanished t/d4/deep/g0)
+        outcome: ok
+      - file: docs-src/reference/migration.md
+        section: "v0.33.0 to v0.33.1, recursive list_files"
+        read_type: verify
+        extract: >-
+          fix_r3b mapped every OSError the walks raise without measuring what
+          that covers. The measuring member found that under max_depth a
+          dangling link or link loop anywhere in the tree fails every call
+          (Linux 3.11 to 3.14), which the note presented as a rare race. The
+          maintainer chose to keep the mapping and document it; the note,
+          the list_files docstring and BE-021's divergence paragraph now say
+          so, with the advice that a retry will not clear it
+        outcome: ok
+      - file: sdd/specs/003-backend-adapter-contract.md
+        section: "BE-021 listing clause"
+        read_type: verify
+        extract: >-
+          The clause named only dangling and refused-target links while the
+          code also skipped loops and Windows' invalid-name codes. It now
+          names a link loop and defines "gone" as the backend's own absence
+          set, and "any other error" is narrowed to OS errors. A pre-existing
+          bare RuntimeError on 3.11 and 3.12 for a listed path through a link
+          loop (from _resolve, every operation) is recorded in BE-021 and
+          BK-416, not fixed, by the maintainer's call
+        outcome: ok
+      - file: sdd/backlog/bk-416-local-walks-onto-kernel.md
+        section: "Absent is a short list"
+        read_type: verify
+        extract: >-
+          fix_r3b wrote "the walks skip every non-permission OSError from a
+          folder's scan". Read from each interpreter's source: 3.11's pathlib
+          selectors catch only PermissionError, so plain rglob propagates EIO
+          there; 3.12's catch OSError. The reviewer named 3.11 and 3.12; only
+          3.11 holds
+        outcome: misleading

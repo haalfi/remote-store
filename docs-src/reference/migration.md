@@ -33,20 +33,25 @@ where it used to raise the bare `PermissionError`: Windows reports that state as
 access denied.
 
 A folder whose parent you may not open now raises `PermissionDenied` on every
-version. On 3.14 on POSIX these calls used to return nothing for it, as for a
-missing folder.
+version. On 3.14 these calls used to return nothing for it, as for a missing
+folder.
 
 Any other error the OS reports while listing, such as an I/O error, now raises a
-`RemoteStoreError` carrying `path` and `backend`. It used to escape as the bare
-`OSError`, except on 3.14 on POSIX, where an error from the folder's or an
-entry's `stat` was read as an empty folder or a missing entry.
+`RemoteStoreError` carrying `path` and `backend`, and naming the entry that
+failed. It used to escape as the bare `OSError`, except on 3.14, where an error
+from the folder's or an entry's `stat` was read as an empty folder or a missing
+entry.
 
 A **recursive** `list_files()` keeps its traversal. The errors it lets escape
 now reach you mapped:
 - the bare `PermissionError` for an entry it may not `stat` (3.11 to 3.13, and
   with `max_depth` on every version) arrives as `PermissionDenied`;
-- a `FileNotFoundError` for a file removed during the walk arrives as a
-  `RemoteStoreError`.
+- any other `OSError` arrives as a `RemoteStoreError`. That includes a file
+  removed during the walk, an occasional race. It also includes, with
+  `max_depth`, a dangling symlink or a symlink loop anywhere in the tree, which
+  fails **every** call while the link is there. Without `max_depth` the walk
+  skips such a link. Retrying will not clear it; remove the link or list
+  without `max_depth`.
 
 It still leaves out a folder it cannot list, without an error, including the
 folder you asked for. `get_folder_info()` and `glob()` are not changed by this
