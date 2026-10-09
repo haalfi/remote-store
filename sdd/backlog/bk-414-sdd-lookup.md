@@ -56,8 +56,32 @@ ID"). The rest are content: `BACKLOG.md` prescriptions and line references that
 had gone stale when trusted (BK-269, BK-271, BK-272, BK-369, BK-331), and
 ripple-check rows missing a trigger or disagreeing with `_schema.yml`'s
 CHANGELOG rule. A lookup returns the same text, so this item's case is the
-search-and-reread cycle, under a ceiling of about 3% of re-read context; the
-content defects are owned elsewhere (BK-346 for the ripple-check's blind spots).
+search-and-reread cycle (measured below); the content defects are owned
+elsewhere (BK-346 for the ripple-check's blind spots).
+
+**Cycles and carried cost** (2026-10-09, second walk, during PR #1094's
+review). The same transcript directories, now 107 files, excluding the session
+that measured this; the corpus grew from 97 with sessions run since, including
+those that reviewed this item. Per transcript, in order of tool calls:
+
+| File | Transcripts | Reads | Greps (by `path`) | Grep → later Read | Re-read overlapping an earlier range |
+|---|---:|---:|---:|---:|---:|
+| `BACKLOG.md` | 23 | 39 | 37 | 25 | 6 |
+| `BACKLOG-DONE.md` | 16 | 31 | 29 | 17 | 5 |
+| `CLAUDE-REFERENCE.md` | 26 | 30 | 33 | 20 | 5 |
+
+A *Grep → later Read* counts each Grep on a file followed later in the same
+transcript by a Read of that file; *overlapping* compares a Read's
+`[offset, offset + limit)` with every earlier Read of the file. 37 transcripts
+touch any of the three: 62 Grep → Read cycles and 16 overlapping re-reads.
+
+The ceiling on what the tool can save is these Reads' **carried** cost, as
+`scripts/report_token_usage.py`'s `parse` defines it (result chars / 4 times
+the API calls left in the transcript), over all tool results' carried cost:
+`BACKLOG.md` 1.61%, `BACKLOG-DONE.md` 0.71%, `CLAUDE-REFERENCE.md` 2.21%,
+dossiers 0.92%, together 5.44%. **Bound:** Reads only. `parse` keys a Grep by
+its pattern, not its path, so Grep results are not attributed. The tool's own
+output is carried too, so the saving is less than this share.
 
 ## Design (advisory)
 
@@ -146,6 +170,20 @@ reading, the one lever the tool has on the misleading tags above.
 
 ### Acceptance measure
 
-Re-run the transcript count about 30 days after the pointers merge: sliced Reads
-and Greps on the three files per session should fall. The tag counts are not
-the measure, for the reason in § Evidence.
+Fewer sliced Reads and Greps is not the measure: once the pointers send
+sessions to `hatch run backlog-show` or `ref-show`, those lookups become Bash
+calls and the Read and Grep counts fall by construction. Per-call cost need not
+fall either. The commonest lookup, `ref-show pr-validation-gates`, returns about
+1.7k tokens, the size of the median 80-line slice it replaces. So the gain has
+to show as fewer cycles.
+
+About 30 days after the pointers merge, re-walk the transcripts as in
+§ Evidence (second walk) and compare per transcript touching the three files:
+
+- Grep → Read cycles plus overlapping re-reads (baseline: 62 + 16 = 78 over 37
+  transcripts), counting a tool call followed by a Read of the same file as a
+  cycle too.
+- Total tool calls on the three files, including Bash calls to the tool.
+- Carried tokens of those calls' results, the tool's included.
+
+The tag counts are not the measure, for the reason in § Evidence.
