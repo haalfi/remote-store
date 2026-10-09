@@ -108,6 +108,51 @@ phases:
           BE-021 is shared by seven open items at run A's base commit, not two:
           the redesign pair plus five sibling items. Recorded as the orient
           check's noise in the report
+  - id: rfc
+    name: Draft RFC-0020
+    steps:
+      - file: sdd/adrs/0033-ship-convergence-driven-review.md
+        section: "Status (Amends), Decision, Consequences"
+        read_type: gate
+        extract: >-
+          Amends nothing; its convergence clause carries ADR-0034's and
+          ADR-0037's amendments in place, ADR-0035's note sits on the
+          diversify-reviewers clause, and the fix-pass clause carries none. My
+          first draft targeted only the fix-pass clause; review showed P1
+          collides with convergence and both exit gates, so P1 now names all
+          four clauses
+      - file: sdd/adrs/0034-ship-panel-rounds-and-unprimed-exit.md
+        section: "Status (Amends ADR-0033), Decision"
+        read_type: gate
+        extract: "The sibling sweep sits on the fixer; P2 keeps that with a post-PR driver as fixer"
+      - file: sdd/adrs/0035-vary-method-not-model.md
+        section: "Status (Amends ADR-0033, ADR-0034), Decision"
+        read_type: gate
+        extract: "Method over model; untouched by all four proposals"
+      - file: sdd/adrs/0036-reviewers-by-subject-and-method.md
+        section: "Status (Amends ADR-0020, ADR-0035), Decision"
+        read_type: gate
+        extract: >-
+          "The main loop fixes and owns the sweep" contrasts the main loop with a
+          domain-scoped delegate; a fresh post-PR session is still the main loop,
+          so P2 amends no ADR. Its real constraint is /ship § Roles (orchestrator
+          never delegated), which rules out a spawned driver
+      - file: sdd/adrs/0037-whole-file-gate-and-derived-figures.md
+        section: "Status (Amends ADR-0033, ADR-0034), Decision"
+        read_type: gate
+        extract: "The whole-file gate is the closing pass P1 relies on; unchanged"
+      - file: .claude/skills/ship/SKILL.md
+        section: "Step 1, Step 3, Stop rule"
+        read_type: reference
+        extract: >-
+          The run plan fixes run B's prompt as exactly /ship BUG-280 while
+          nothing changing /ship may merge first; a separate variant skill
+          would need another prompt. Maintainer chose an unmerged branch that
+          edits /ship, run from a fresh worktree
+      - file: sdd/rfcs/rfc-0019-two-speed-test-gate.md
+        section: "Status, Roadmap"
+        read_type: reference
+        extract: "Phase 0 pattern: exit fixed before the run, stop judged on predefined targets"
   - id: close
     name: Record
     steps:
