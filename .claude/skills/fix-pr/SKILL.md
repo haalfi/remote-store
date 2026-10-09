@@ -175,6 +175,9 @@ before the PR is opened. Update it with the review-driven fields:
 - `surprising_ripples` — paths the ripple-check table did not anticipate
   that the review caught.
 - `co_shipped_items` — unrelated items the review confirmed this PR also closes.
+- `decisions` — this session's `sdd/decisions/<session_id>.jsonl`, if the
+  fix pass asked a dialog and the trace does not list it yet
+  ([RFC-0018 D4.1](../../../sdd/rfcs/rfc-0018-decision-capture-at-dialog-time.md)).
 
 No trace in the diff? The PR touches no backlog item; skip and note it
 in the Step 6 report. If the review surfaces a distinct new backlog item

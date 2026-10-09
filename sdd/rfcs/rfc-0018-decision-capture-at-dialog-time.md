@@ -311,7 +311,8 @@ and the question is classified by the rows below it.
   `.claude/hooks/gate-commit.sh`, which stages the log;
   `sdd/traces/_schema.yml`; `scripts/check_traces.py` and its tests;
   `.claude/skills/pr/SKILL.md`, both the tail commit and the
-  rendering; `.github/PULL_REQUEST_TEMPLATE.md`, which `/pr` treats as the
+  rendering; `.claude/skills/fix-pr/SKILL.md`, whose trace update lists
+  `decisions` among the fields a fix pass fills; `.github/PULL_REQUEST_TEMPLATE.md`, which `/pr` treats as the
   authoritative body shape, for the Decisions section;
   `.claude/skills/ship/SKILL.md` and
   `.claude/skills/orchestrate/SKILL.md`, whose tree-unchanged captures take

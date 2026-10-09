@@ -609,6 +609,9 @@ class TestDecisionLogs:
         assert v.path == "decisions[0]"
         assert _LOG in v.message
         assert "does not exist" in v.message
+        # The log governs: a missing one is the trace's entry to fix, never a
+        # log to create (that would fabricate a record).
+        assert "fix the trace's entry" in v.message
 
     @pytest.mark.parametrize(
         ("raw", "expected"),
@@ -820,8 +823,8 @@ class TestMain:
         assert "A → B" in result.stdout.decode("utf-8")
 
     def test_main_hint_names_the_log_case(self, tmp_path, capsys):
-        # A log violation is not a trace disagreeing with the schema; the hint
-        # must send the reader to the log and its remedy.
+        # A `decisions[N]` path is either the trace's to fix (a missing log, a
+        # pattern rejection) or the log's (a line fault); the hint must say which.
         schema = _write_schema(tmp_path)
         traces = tmp_path / "sdd" / "traces"
         _write_trace(traces, "id-1-x.yml", f'id: "ID-1"\ntitle: "ok"\ndecisions:\n  - "{_LOG}"\n')
@@ -829,6 +832,7 @@ class TestMain:
         assert rc == 1
         err = capsys.readouterr().err
         assert "`decisions[N]`" in err
+        assert "a missing log or a path that does not match is the trace's entry to fix" in err
         assert "under `decisions:` in sdd/traces/_schema.yml" in err, "the hint points at the remedy's home"
 
     def test_main_clean_returns_zero(self, tmp_path):
