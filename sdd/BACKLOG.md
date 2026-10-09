@@ -244,11 +244,11 @@ failure it was.
 
 - [ ] **BUG-311 — `LocalBackend.glob` drops a denied subtree silently**
   spec: BE-021, GLOB-005 · effort: S · audience: user.api
-  `glob()` walks through `Path.glob`, whose recursive selector swallows the
-  `OSError` from listing a folder, so a subtree the OS refuses to list is left
-  out of the result without an error. `list_files` raises `PermissionDenied`
-  for the same denial since BUG-280. Open decision: how to surface the denial
-  without re-implementing pattern matching, keeping GLOB-005's escape skip.
+  `glob()` walks through `Path.glob`, whose selector swallows a folder's listing
+  error, so a subtree the OS refuses to list drops out silently; a folder it can
+  list but not traverse leaks a raw `PermissionError` on 3.11 to 3.13. Since
+  BUG-280 `list_files` raises `PermissionDenied` for both. Open decision: how to
+  surface them without re-implementing pattern matching, keeping GLOB-005's skip.
   Detail: [dossier](backlog/bug-311-local-glob-denied-subtree.md)
 
 - [ ] **BUG-313 — `LocalBackend`'s `get_file_info` and path predicates misanswer a path they may not `stat`**
@@ -540,6 +540,14 @@ copies an example, without opening an issue.
 
 **Promise:** the library does the thing, instead of the user hand-rolling it
 or paying for our shortcut.
+
+- [ ] **BK-415 — A recursive listing cannot skip folders the caller may not read**
+  spec: BE-014, BE-017, BE-021 · effort: M · audience: user.api
+  Since BUG-280 a recursive `list_files` or `get_folder_info` on `LocalBackend`
+  raises `PermissionDenied` at the first unreadable folder, so a store rooted at
+  a drive or mount root (`System Volume Information`, `lost+found`) cannot be
+  listed whole by a non-admin; the migration guide's workaround is a hand-rolled
+  per-folder walk. Open decision: an opt-in skip parameter, its name, its reach.
 
 - [ ] **ID-217 — Async-native extension surface (owner for the deferred async `ext.*`)**
   spec: GR-003 · effort: L · audience: user.api

@@ -19,6 +19,9 @@ discovery_followups:
   # Born in the closing round's sibling sweep over .is_file()/.is_dir(); the
   # same 3.14 mechanism outside the walks this PR fixes.
   - BUG-313
+  # Born in round 5: the strict raise this PR chose leaves no way to skip an
+  # unreadable folder; kept strict by decision, the opt-in filed rather than built.
+  - BK-415
 decisions:
   - sdd/decisions/b5344dfd-891b-4dc2-853e-0437078390fd.jsonl
 phases:
@@ -310,3 +313,41 @@ phases:
           on a real dangling junction). The new cell makes an entry's stat find
           it gone for all eight entry points; the deletion mutant now dies. 20
           mutants, all die on 3.14
+  - id: fix_5
+    name: Fix pass (round 5, ceiling)
+    steps:
+      - file: docs-src/reference/migration.md
+        section: "v0.33.0 to v0.33.1, catching the error"
+        read_type: verify
+        extract: >-
+          The unprimed member found the note's "has to catch the error" was
+          advice nobody could follow: the raise ends a generator and returns no
+          total, and nothing restores skipping. That is a consequence of the
+          first commit's design, not of a fix pass, so the divergence check did
+          not fire; it reached the user at the round ceiling with the
+          findings-per-round evidence. Decided: keep strict, document, file the
+          opt-in (BK-415). The note now says the error ends the call, that there
+          is no skip option yet, and names the per-folder walk, which was run
+          against a real ACL-denied subfolder before it was written: recursive
+          raises, the walk returns a/f.txt and a/ok/h.txt and skips a/sub
+        outcome: ok
+      - file: tests/backends/local/test_listing_permission.py
+        section: "_ON_SUB"
+        read_type: verify
+        extract: >-
+          fix_4's extract above says _ON_SUB became "every entry point x every
+          denial site". It was not: list_files-recursive-max_depth was missing,
+          and the whole-file member counted 7 keys against 8. Added. The
+          extract is left as written because it records what that pass claimed
+        outcome: ok
+      - file: sdd/backlog/bug-313-local-get-file-info-denied-parent.md
+        section: "Evidence; next ring"
+        read_type: verify
+        extract: >-
+          Its exists cell on 3.14 was not what the stated script produces: 3.14
+          Path.exists calls the native nt._path_exists on Windows, which the
+          genericpath swap of isfile/isdir never reaches, so the script answers
+          True. And its sweep pattern \.is_(file|dir)\(\) cannot see .exists(),
+          which hid delete_folder, the one pre-check with nothing after it to
+          map the error. Both corrected, the ring enumerated from the
+          whole-class pattern

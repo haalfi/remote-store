@@ -28,11 +28,19 @@ installed interpreter's standard library rather than from runs. On 3.11,
 
 A later measurement on the same branch, with a real ACL denial (`icacls /deny
 RD`) on 3.13.11, found a denied **top** folder also returns `[]` from
-`glob("a/**/*.txt")` and `glob("a/*.txt")`, not only a denied subtree. `glob`
-also filters with `item.is_file()`, which BUG-280 found answers `False` on 3.14
-(POSIX) for an entry the OS refuses to `stat`, so a folder that lists but cannot
-be traversed drops out too; that shape was read from the code, not run against
-`glob`.
+`glob("a/**/*.txt")` and `glob("a/*.txt")`, not only a denied subtree.
+
+`glob` also filters with `item.is_file()`, and a folder that lists but cannot be
+traversed answers differently by interpreter. This was measured with BUG-280's
+`_deny_child_stat` simulation (denied `os.stat` on the folder's entries,
+POSIX's `genericpath.isfile` / `isdir` swapped in), on Windows, not against a
+real POSIX directory. `glob("a/**/*.txt")`:
+- on 3.11.15, 3.12.13 and 3.13.11, raises a bare `builtins.PermissionError`,
+  because `Path.is_file` re-raises `EACCES`. That is a never-leak breach of
+  BE-021, not a silent drop, and both base and BUG-280's head do it.
+- on 3.14.0, silently returns the rest, because `is_file` answers `False`.
+
+So this item owes a mapping on 3.11 to 3.13 as well as an answer on 3.14.
 
 ## Why it is not BUG-280
 

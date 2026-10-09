@@ -22,16 +22,21 @@ A subfolder they could not read used to be skipped without a word, so a partly
 unreadable tree came back as a shorter listing, or a smaller file count and
 total size, that looked complete, and a top folder they could not read came back
 empty. Both now raise `PermissionDenied`: the listing part-way through the
-iteration, where the walk meets the denied folder. Code that relied on the walk
-passing over folders it cannot read has to catch the error. A `max_depth` that
-stops above the denied folder still never opens it and does not raise.
+iteration, where the walk meets the denied folder. A `max_depth` that stops
+above the denied folder still never opens it and does not raise.
+
+The error ends the call: catching it does not resume a listing, and
+`get_folder_info()` returns no total. There is no option yet to skip folders you
+cannot read. If your tree has some, for example a store rooted at a drive or
+mount root (`System Volume Information` on Windows, `lost+found` on Linux),
+walk it one level at a time instead: `list_folders()` for the subfolders and a
+non-recursive `list_files()` for each, catching `PermissionDenied` per folder.
 
 The same holds for a folder you may list but not open, such as a POSIX
-directory with read but no execute permission. On Python 3.14 its entries used
-to vanish without an error from `list_folders()`, `iter_children()`,
-`get_folder_info()` and a `list_files()` without `max_depth`. A `list_files()`
-with `max_depth` raised the bare `PermissionError` there, as every listing did
-on 3.11 to 3.13. Every version now raises `PermissionDenied`, so an
+directory with read but no execute permission. On Python 3.14 most of these
+calls used to lose its entries without an error; a recursive listing bounded by
+`max_depth` raised the bare `PermissionError` instead, as every call here did on
+3.11 to 3.13. Every version now raises `PermissionDenied`, so an
 `except PermissionError` around any of these no longer fires.
 
 `glob()` is not changed by this release. It still leaves out a folder it cannot

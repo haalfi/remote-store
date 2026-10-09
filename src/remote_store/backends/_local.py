@@ -683,9 +683,11 @@ class LocalBackend(Backend):
         walking the entire subtree and ``stat``-ing every file, so cost is
         O(files-in-subtree) — not a constant-time lookup.
 
-        The store root (``""`` or ``"."``) always answers, never raising: it is
-        a folder by definition, so a store whose root directory is missing
-        aggregates to zero rather than reporting itself absent.
+        The store root (``""`` or ``"."``) never raises ``NotFound`` or
+        ``InvalidPath``: it is a folder by definition, so a store whose root
+        directory is missing aggregates to zero rather than reporting itself
+        absent. A root the OS refuses to list raises ``PermissionDenied`` like
+        any other folder.
 
         Raises:
             NotFound: If the folder does not exist.

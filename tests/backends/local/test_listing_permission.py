@@ -208,6 +208,7 @@ def test_a_child_the_os_refuses_to_stat_raises_permission_denied(tmp_path: Path,
 _ON_SUB: dict[str, Callable[[LocalBackend], object]] = {
     "list_files": lambda b: _keys(b.list_files("a/sub")),
     "list_files-recursive": lambda b: _keys(b.list_files("a/sub", recursive=True)),
+    "list_files-recursive-max_depth": lambda b: _keys(b.list_files("a/sub", recursive=True, max_depth=5)),
     "list_folders": lambda b: _keys(b.list_folders("a/sub")),
     "iter_children": lambda b: _keys(b.iter_children("a/sub")),
     "get_folder_info": lambda b: b.get_folder_info("a/sub").file_count,
@@ -251,6 +252,21 @@ def test_a_folder_whose_parent_cannot_be_traversed_raises_rather_than_reading_as
     assert info.value.path == "a/sub"
     assert info.value.backend == "local"
     assert info.value.__cause__ is None
+
+
+@pytest.mark.spec("BE-021")
+def test_a_store_root_the_os_refuses_to_list_raises_permission_denied(tmp_path: Path) -> None:
+    """The root never answers ``NotFound`` (BE-029), but a denial is still a denial.
+
+    An absent root aggregates to zero; a root that is there and cannot be
+    listed raises, rather than reporting the empty store it is not.
+    """
+    backend = _tree(tmp_path)
+    with _deny(tmp_path, _denied()), pytest.raises(PermissionDenied) as info:
+        backend.get_folder_info("")
+    assert type(info.value) is PermissionDenied
+    assert info.value.path == ""
+    assert info.value.backend == "local"
 
 
 # Every entry point that reads ``a/f.txt``'s size or type, with what it answers
