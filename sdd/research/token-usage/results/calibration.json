@@ -1,0 +1,38 @@
+{
+ "_provenance": {
+  "script": "calibrate.py",
+  "generated": "2026-10-09",
+  "inputs": {
+   "calls.jsonl": "907901dab77ca147566a751fdf9aa7af8e8019e3f7c4ef1455bdc564eaa1cc92",
+   "items.jsonl": "e63d24c895b34565a54b17d85b48d00a951295026edb50fae5b936bef59ecb03",
+   "sessions.json": "7fc8f47d516e2686beb920dbb8b42bff97afddc9f0bfa913eb55785f98903590"
+  }
+ },
+ "pairs": 3667,
+ "r2": 0.911,
+ "tokens_per_char": {
+  "tool_result": 0.421,
+  "attachment_and_user": 0.411,
+  "assistant_visible": 0.318
+ },
+ "chars_per_token": {
+  "tool_result": 2.37,
+  "attachment_and_user": 2.43,
+  "assistant_visible": 3.14
+ },
+ "context_per_hidden_output_token": 0.947,
+ "price_fit": {
+  "claude-opus-5-5[1m]": {
+   "n": 24,
+   "usd_per_mtok_input": 2.31,
+   "write_weight": 2.0,
+   "mean_abs_error_pct": 15.0
+  },
+  "claude-opus-5[1m]": {
+   "n": 4,
+   "usd_per_mtok_input": 5.05,
+   "write_weight": 1.35,
+   "mean_abs_error_pct": 1.8
+  }
+ }
+}

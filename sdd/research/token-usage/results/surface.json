@@ -1,0 +1,116 @@
+{
+ "_provenance": {
+  "script": "surface.py",
+  "generated": "2026-10-09",
+  "inputs": {
+   "history": "origin/master",
+   "commits": "ac5b1e022 1169d00d9 1d826fb85 83e22a3d8 8cb27ced7 ed99c0919 bfa8f861c 31ebe6be7"
+  }
+ },
+ "dates": {
+  "2026-05-15": {
+   "kb": {
+    "CLAUDE.md": 7.1,
+    "sdd/CLAUDE-REFERENCE.md": 18.2,
+    "CONTRIBUTING.md": 18.6,
+    "sdd/traces/_schema.yml": 13.8,
+    ".claude/skills/ship/SKILL.md": null,
+    ".claude/skills/rvw-pr/SKILL.md": null,
+    ".claude/skills/fix-pr/SKILL.md": 6.0
+   },
+   "repo_skills": 7,
+   "skill_description_bytes": 422
+  },
+  "2026-06-01": {
+   "kb": {
+    "CLAUDE.md": 7.3,
+    "sdd/CLAUDE-REFERENCE.md": 23.2,
+    "CONTRIBUTING.md": 20.7,
+    "sdd/traces/_schema.yml": 14.1,
+    ".claude/skills/ship/SKILL.md": null,
+    ".claude/skills/rvw-pr/SKILL.md": 8.0,
+    ".claude/skills/fix-pr/SKILL.md": 6.4
+   },
+   "repo_skills": 8,
+   "skill_description_bytes": 507
+  },
+  "2026-07-01": {
+   "kb": {
+    "CLAUDE.md": 8.6,
+    "sdd/CLAUDE-REFERENCE.md": 28.7,
+    "CONTRIBUTING.md": 24.4,
+    "sdd/traces/_schema.yml": 14.1,
+    ".claude/skills/ship/SKILL.md": null,
+    ".claude/skills/rvw-pr/SKILL.md": 8.2,
+    ".claude/skills/fix-pr/SKILL.md": 5.7
+   },
+   "repo_skills": 9,
+   "skill_description_bytes": 591
+  },
+  "2026-08-01": {
+   "kb": {
+    "CLAUDE.md": 9.5,
+    "sdd/CLAUDE-REFERENCE.md": 36.4,
+    "CONTRIBUTING.md": 28.5,
+    "sdd/traces/_schema.yml": 14.1,
+    ".claude/skills/ship/SKILL.md": null,
+    ".claude/skills/rvw-pr/SKILL.md": 8.3,
+    ".claude/skills/fix-pr/SKILL.md": 5.7
+   },
+   "repo_skills": 9,
+   "skill_description_bytes": 591
+  },
+  "2026-08-15": {
+   "kb": {
+    "CLAUDE.md": 12.5,
+    "sdd/CLAUDE-REFERENCE.md": 43.2,
+    "CONTRIBUTING.md": 29.6,
+    "sdd/traces/_schema.yml": 17.2,
+    ".claude/skills/ship/SKILL.md": 39.3,
+    ".claude/skills/rvw-pr/SKILL.md": 22.3,
+    ".claude/skills/fix-pr/SKILL.md": 10.4
+   },
+   "repo_skills": 10,
+   "skill_description_bytes": 1607
+  },
+  "2026-09-01": {
+   "kb": {
+    "CLAUDE.md": 12.5,
+    "sdd/CLAUDE-REFERENCE.md": 47.7,
+    "CONTRIBUTING.md": 32.4,
+    "sdd/traces/_schema.yml": 18.2,
+    ".claude/skills/ship/SKILL.md": 39.3,
+    ".claude/skills/rvw-pr/SKILL.md": 22.3,
+    ".claude/skills/fix-pr/SKILL.md": 10.4
+   },
+   "repo_skills": 10,
+   "skill_description_bytes": 1607
+  },
+  "2026-10-01": {
+   "kb": {
+    "CLAUDE.md": 14.6,
+    "sdd/CLAUDE-REFERENCE.md": 58.7,
+    "CONTRIBUTING.md": 45.7,
+    "sdd/traces/_schema.yml": 27.5,
+    ".claude/skills/ship/SKILL.md": 46.0,
+    ".claude/skills/rvw-pr/SKILL.md": 27.9,
+    ".claude/skills/fix-pr/SKILL.md": 13.3
+   },
+   "repo_skills": 10,
+   "skill_description_bytes": 1607
+  },
+  "2026-10-09": {
+   "kb": {
+    "CLAUDE.md": 14.7,
+    "sdd/CLAUDE-REFERENCE.md": 61.7,
+    "CONTRIBUTING.md": 45.8,
+    "sdd/traces/_schema.yml": 29.5,
+    ".claude/skills/ship/SKILL.md": 47.0,
+    ".claude/skills/rvw-pr/SKILL.md": 29.2,
+    ".claude/skills/fix-pr/SKILL.md": 13.5
+   },
+   "repo_skills": 10,
+   "skill_description_bytes": 1607
+  }
+ }
+}

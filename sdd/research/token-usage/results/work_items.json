@@ -1,0 +1,306 @@
+{
+ "_provenance": {
+  "script": "workitems.py",
+  "generated": "2026-10-09",
+  "inputs": {
+   "calls.jsonl": "907901dab77ca147566a751fdf9aa7af8e8019e3f7c4ef1455bdc564eaa1cc92",
+   "items.jsonl": "e63d24c895b34565a54b17d85b48d00a951295026edb50fae5b936bef59ecb03",
+   "sessions.json": "7fc8f47d516e2686beb920dbb8b42bff97afddc9f0bfa913eb55785f98903590",
+   "prs.json": "beb1e0f90225cfe9b9f9b2dc81383307e0267b72f7338b44a53de2ad45b4cd59"
+  }
+ },
+ "items": {
+  "BUG-264": {
+   "kind": "/ship (2026-09-05)",
+   "prs": [
+    992
+   ],
+   "session_groups": 1,
+   "transcripts": 22,
+   "calls": 1661,
+   "units_m": 51.4,
+   "usd_estimate": 260,
+   "subagent_or_review_units_pct": 36.0,
+   "trace_steps": 19,
+   "trace_files": 14,
+   "repo_files_read": 53,
+   "overlap": 13,
+   "read_tokens_not_in_trace_pct": 50.0,
+   "review_rounds": 8,
+   "findings": null,
+   "units_per_finding_m": null,
+   "changed_lines": 1145,
+   "units_per_changed_line_k": 44.9
+  },
+  "BK-397": {
+   "kind": "/ship + 5 rvw-pr sessions",
+   "prs": [
+    1073
+   ],
+   "session_groups": 6,
+   "transcripts": 15,
+   "calls": 633,
+   "units_m": 24.1,
+   "usd_estimate": 56,
+   "subagent_or_review_units_pct": 26.0,
+   "trace_steps": 21,
+   "trace_files": 12,
+   "repo_files_read": 66,
+   "overlap": 12,
+   "read_tokens_not_in_trace_pct": 70.0,
+   "review_rounds": 8,
+   "findings": 22,
+   "units_per_finding_m": 1.1,
+   "changed_lines": 1297,
+   "units_per_changed_line_k": 18.6
+  },
+  "BK-403": {
+   "kind": "interactive research",
+   "prs": [
+    1074
+   ],
+   "session_groups": 1,
+   "transcripts": 1,
+   "calls": 326,
+   "units_m": 17.2,
+   "usd_estimate": 40,
+   "subagent_or_review_units_pct": 0.0,
+   "trace_steps": 23,
+   "trace_files": 19,
+   "repo_files_read": 42,
+   "overlap": 16,
+   "read_tokens_not_in_trace_pct": 45.0,
+   "review_rounds": null,
+   "findings": null,
+   "units_per_finding_m": null,
+   "changed_lines": 15990,
+   "units_per_changed_line_k": 1.1
+  },
+  "BUG-304/305": {
+   "kind": "interactive + 2 rvw-pr",
+   "prs": [
+    1071
+   ],
+   "session_groups": 3,
+   "transcripts": 5,
+   "calls": 162,
+   "units_m": 3.6,
+   "usd_estimate": 8,
+   "subagent_or_review_units_pct": 28.0,
+   "trace_steps": 15,
+   "trace_files": 11,
+   "repo_files_read": 19,
+   "overlap": 8,
+   "read_tokens_not_in_trace_pct": 35.0,
+   "review_rounds": 0,
+   "findings": 0,
+   "units_per_finding_m": null,
+   "changed_lines": 359,
+   "units_per_changed_line_k": 9.9
+  },
+  "ID-268": {
+   "kind": "fix-pr + 2 rvw-pr",
+   "prs": [
+    1072
+   ],
+   "session_groups": 3,
+   "transcripts": 5,
+   "calls": 106,
+   "units_m": 1.7,
+   "usd_estimate": 4,
+   "subagent_or_review_units_pct": 75.0,
+   "trace_steps": 0,
+   "trace_files": 0,
+   "repo_files_read": 12,
+   "overlap": 0,
+   "read_tokens_not_in_trace_pct": 100.0,
+   "review_rounds": null,
+   "findings": null,
+   "units_per_finding_m": null,
+   "changed_lines": 123,
+   "units_per_changed_line_k": 13.6
+  },
+  "v0.33.0 release": {
+   "kind": "/release + fix-pr + 2 rvw-pr",
+   "prs": [
+    1069
+   ],
+   "session_groups": 3,
+   "transcripts": 6,
+   "calls": 362,
+   "units_m": 12.0,
+   "usd_estimate": 28,
+   "subagent_or_review_units_pct": 29.0,
+   "trace_steps": 0,
+   "trace_files": 0,
+   "repo_files_read": 29,
+   "overlap": 0,
+   "read_tokens_not_in_trace_pct": 100.0,
+   "review_rounds": null,
+   "findings": null,
+   "units_per_finding_m": null,
+   "changed_lines": 587,
+   "units_per_changed_line_k": 20.4
+  },
+  "BUG-303 (review only)": {
+   "kind": "1 rvw-pr",
+   "prs": [
+    1068
+   ],
+   "session_groups": 1,
+   "transcripts": 2,
+   "calls": 32,
+   "units_m": 0.6,
+   "usd_estimate": 1,
+   "subagent_or_review_units_pct": 92.0,
+   "trace_steps": 18,
+   "trace_files": 15,
+   "repo_files_read": 6,
+   "overlap": 3,
+   "read_tokens_not_in_trace_pct": 35.0,
+   "review_rounds": 7,
+   "findings": 12,
+   "units_per_finding_m": 0.05,
+   "changed_lines": 579,
+   "units_per_changed_line_k": 1.0
+  },
+  "ID-256 (review only)": {
+   "kind": "/orchestrate review panel",
+   "prs": [
+    968
+   ],
+   "session_groups": 2,
+   "transcripts": 7,
+   "calls": 203,
+   "units_m": 3.7,
+   "usd_estimate": 19,
+   "subagent_or_review_units_pct": 74.0,
+   "trace_steps": 14,
+   "trace_files": 10,
+   "repo_files_read": 23,
+   "overlap": 8,
+   "read_tokens_not_in_trace_pct": 47.0,
+   "review_rounds": 6,
+   "findings": null,
+   "units_per_finding_m": null,
+   "changed_lines": 1434,
+   "units_per_changed_line_k": 2.6
+  }
+ },
+ "after_pr_open": [
+  {
+   "item": "BK-397",
+   "pr": 1073,
+   "group_units_after_pr_open_pct": 82.0,
+   "group_calls_before_after": [
+    118,
+    384
+   ],
+   "main_context_at_pr_open": 338278,
+   "main_units_per_call_before_after": [
+    33794,
+    61662
+   ],
+   "fresh_context_ceiling": {
+    "gross_pct": 32.0,
+    "net_pct": {
+     "reread_30k": 28.0,
+     "reread_60k": 23.0
+    },
+    "rounds_assumed": 6
+   }
+  },
+  {
+   "item": "BUG-304/305",
+   "pr": 1071,
+   "group_units_after_pr_open_pct": 56.0,
+   "group_calls_before_after": [
+    68,
+    56
+   ],
+   "main_context_at_pr_open": 179044,
+   "main_units_per_call_before_after": [
+    18618,
+    28950
+   ],
+   "fresh_context_ceiling": {
+    "gross_pct": 23.0,
+    "net_pct": {
+     "reread_30k": 18.0,
+     "reread_60k": 12.0
+    },
+    "rounds_assumed": 1
+   }
+  },
+  {
+   "item": "ID-268",
+   "pr": 1072,
+   "group_units_after_pr_open_pct": 74.0,
+   "group_calls_before_after": [
+    14,
+    40
+   ],
+   "main_context_at_pr_open": 91135,
+   "main_units_per_call_before_after": [
+    17399,
+    17699
+   ],
+   "fresh_context_ceiling": {
+    "gross_pct": 11.0,
+    "net_pct": {
+     "reread_30k": -5.0,
+     "reread_60k": -22.0
+    },
+    "rounds_assumed": 1
+   }
+  },
+  {
+   "item": "v0.33.0 release",
+   "pr": 1069,
+   "group_units_after_pr_open_pct": 54.0,
+   "group_calls_before_after": [
+    151,
+    116
+   ],
+   "main_context_at_pr_open": 362431,
+   "main_units_per_call_before_after": [
+    31636,
+    48479
+   ],
+   "fresh_context_ceiling": {
+    "gross_pct": 34.0,
+    "net_pct": {
+     "reread_30k": 31.0,
+     "reread_60k": 28.0
+    },
+    "rounds_assumed": 2
+   }
+  }
+ ],
+ "paid_by_file": {
+  "sdd/BACKLOG-DONE.md": {
+   "reads": 46,
+   "units_pct": 0.57
+  },
+  "sdd/BACKLOG.md": {
+   "reads": 68,
+   "units_pct": 1.27
+  },
+  "sdd/CLAUDE-REFERENCE.md": {
+   "reads": 23,
+   "units_pct": 0.82
+  },
+  "sdd/traces/_schema.yml": {
+   "reads": 19,
+   "units_pct": 0.97
+  },
+  ".claude/skills/ship/SKILL.md": {
+   "reads": 14,
+   "units_pct": 0.75
+  },
+  ".claude/skills/rvw-pr/SKILL.md": {
+   "reads": 26,
+   "units_pct": 1.4
+  }
+ }
+}

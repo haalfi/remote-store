@@ -1,0 +1,25 @@
+{
+ "_provenance": {
+  "script": "gates.py",
+  "generated": "2026-10-09",
+  "inputs": {
+   "transcript 0": "82bd321dcb4e0a7f51a5cb5d87d1151424e57df78c0835cdc4fbe0e9c84a116e"
+  }
+ },
+ "transcripts": 1,
+ "gate_runs": 19,
+ "by_outcome": {
+  "passed": 8,
+  "failed": 7,
+  "cut off": 3,
+  "background": 1
+ },
+ "foreground_all": {
+  "n": 18,
+  "median_s": 194.5,
+  "at_or_over_590s": 3
+ },
+ "idle_stalls_min": [
+  37
+ ]
+}

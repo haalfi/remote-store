@@ -1,0 +1,180 @@
+{
+ "_provenance": {
+  "script": "inventory.py",
+  "generated": "2026-10-09",
+  "inputs": {
+   "calls.jsonl": "907901dab77ca147566a751fdf9aa7af8e8019e3f7c4ef1455bdc564eaa1cc92",
+   "items.jsonl": "e63d24c895b34565a54b17d85b48d00a951295026edb50fae5b936bef59ecb03",
+   "sessions.json": "7fc8f47d516e2686beb920dbb8b42bff97afddc9f0bfa913eb55785f98903590",
+   "prs.json": "beb1e0f90225cfe9b9f9b2dc81383307e0267b72f7338b44a53de2ad45b4cd59"
+  }
+ },
+ "window_days": [
+  "2026-09-05",
+  "2026-10-04"
+ ],
+ "calls_by_model": {
+  "claude-opus-5-5": 1806,
+  "claude-opus-5": 1932
+ },
+ "transcripts": {
+  "with_calls": 71,
+  "main": 28,
+  "subagent": 43
+ },
+ "calls": 3738,
+ "tokens": {
+  "input": 7634,
+  "read": 945409559,
+  "w5": 6256513,
+  "w1h": 5306336,
+  "out": 1328253
+ },
+ "tokens_total": 958308295,
+ "units_total": 119623168,
+ "tokens_pct": {
+  "input": 0.0,
+  "read": 98.7,
+  "w5": 0.7,
+  "w1h": 0.6,
+  "out": 0.1
+ },
+ "units_pct": {
+  "input": 0.0,
+  "read": 79.0,
+  "w5": 6.5,
+  "w1h": 8.9,
+  "out": 5.6
+ },
+ "usd_estimate": {
+  "total": 430,
+  "by_model": {
+   "claude-opus-5-5": 147,
+   "claude-opus-5": 283
+  },
+  "by_class": {
+   "input": 0,
+   "read": 342,
+   "w5": 32,
+   "w1h": 34,
+   "out": 22
+  },
+  "by_kind": {
+   "subagent": 127,
+   "main": 303
+  }
+ },
+ "usd_cost_state_main_sessions": 500.6,
+ "context_per_call": {
+  "p50": 164021,
+  "p90": 606887,
+  "max": 878998,
+  "mean": 256014
+ },
+ "context_bands": [
+  {
+   "band": "0k-50k",
+   "calls_pct": 1.0,
+   "units_pct": 1.3
+  },
+  {
+   "band": "50k-100k",
+   "calls_pct": 18.8,
+   "units_pct": 9.1
+  },
+  {
+   "band": "100k-200k",
+   "calls_pct": 40.9,
+   "units_pct": 23.5
+  },
+  {
+   "band": "200k-400k",
+   "calls_pct": 16.5,
+   "units_pct": 18.6
+  },
+  {
+   "band": "400k-",
+   "calls_pct": 22.8,
+   "units_pct": 47.4
+  }
+ ],
+ "cache": {
+  "rebuilds": 5,
+  "rebuilds_by_cause": {
+   "gap > 1h": 4,
+   "gap 5m-1h": 1
+  },
+  "rebuild_units_pct": 2.1,
+  "gaps_over_5m": 67,
+  "gaps_over_1h": 4,
+  "write_tokens_main": {
+   "w5": 0,
+   "w1h": 5301133
+  },
+  "write_tokens_subagent": {
+   "w5": 6256513,
+   "w1h": 5203
+  }
+ },
+ "scaling": {
+  "main_n": 13,
+  "main_exponent": 1.19,
+  "subagent_n": 42,
+  "subagent_exponent": 0.91,
+  "longest_main_transcripts": [
+   {
+    "calls": 560,
+    "ctx_growth_per_call": 1443,
+    "half_units_after_call_pct": 67.0
+   },
+   {
+    "calls": 369,
+    "ctx_growth_per_call": 1856,
+    "half_units_after_call_pct": 63.0
+   },
+   {
+    "calls": 326,
+    "ctx_growth_per_call": 1993,
+    "half_units_after_call_pct": 61.0
+   },
+   {
+    "calls": 253,
+    "ctx_growth_per_call": 1723,
+    "half_units_after_call_pct": 59.0
+   }
+  ]
+ },
+ "top_session_groups": [
+  {
+   "item": "BUG-264",
+   "units_m": 51.4,
+   "units_pct": 43.0
+  },
+  {
+   "item": "BK-397",
+   "units_m": 21.8,
+   "units_pct": 18.0
+  },
+  {
+   "item": "BK-403",
+   "units_m": 17.2,
+   "units_pct": 14.0
+  },
+  {
+   "item": "v0.33.0 release",
+   "units_m": 10.4,
+   "units_pct": 9.0
+  }
+ ],
+ "subagent_units_pct": 24.7,
+ "skill_attribution_units_pct": {
+  "(none)": 63.4,
+  "(subagent)": 16.3,
+  "ship": 5.0,
+  "rvw-pr": 4.9,
+  "fix-pr": 3.2,
+  "release": 3.0,
+  "orchestrate": 2.2,
+  "pr": 2.0
+ }
+}

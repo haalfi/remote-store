@@ -1,0 +1,143 @@
+{
+ "_provenance": {
+  "script": "tokkit.py",
+  "generated": "2026-10-09",
+  "inputs": {
+   "main transcript": "932ee82fff2db438f19b650c52981801ea8ca37f8571d2b65fe8ed9ce372a35c"
+  }
+ },
+ "transcripts": 15,
+ "calls": 633,
+ "main_calls": 369,
+ "units_m": 24.14,
+ "usd_estimate": 55.76,
+ "units_pct_by_class": {
+  "input": 0.0,
+  "read": 80.5,
+  "w5": 6.4,
+  "w1h": 8.2,
+  "out": 4.9
+ },
+ "first_edit_call": 20,
+ "pr_open_call": 118,
+ "compaction_calls": [],
+ "phases": {
+  "orient + plan (before first edit)": {
+   "calls": 20,
+   "units_pct": 2.2,
+   "mean_ctx_k": 119
+  },
+  "build (first edit to PR open)": {
+   "calls": 98,
+   "units_pct": 14.3,
+   "mean_ctx_k": 247
+  },
+  "review loop (after PR open)": {
+   "calls": 251,
+   "units_pct": 64.1,
+   "mean_ctx_k": 556
+  },
+  "subagents": {
+   "calls": 264,
+   "units_pct": 19.4
+  }
+ },
+ "context_shares_pct": {
+  "result:Read": 21.3,
+  "session prefix": 18.0,
+  "result:Bash": 16.9,
+  "attachment": 11.3,
+  "thinking (hidden)": 10.9,
+  "tool_input": 8.7,
+  "result": 4.3,
+  "result:Grep": 2.6,
+  "unexplained": 1.9,
+  "assistant_text": 1.8,
+  "user_meta": 1.3,
+  "user_prompt": 1.1
+ },
+ "top_items_pct": [
+  {
+   "kind": "attachment",
+   "detail": "skill_listing",
+   "pct": 4.12
+  },
+  {
+   "kind": "result:Read",
+   "detail": ".claude/skills/ship/SKILL.md",
+   "pct": 4.11
+  },
+  {
+   "kind": "result:Bash",
+   "detail": "hatch run test-cov-s1",
+   "pct": 3.58
+  },
+  {
+   "kind": "result:Read",
+   "detail": "sdd/rfcs/rfc-0018-decision-capture-at-dialog-time.md",
+   "pct": 3.42
+  },
+  {
+   "kind": "result:mcp",
+   "detail": "add_reply_to_pull_request_comment",
+   "pct": 2.67
+  },
+  {
+   "kind": "result:Read",
+   "detail": "<tool-results>",
+   "pct": 2.41
+  },
+  {
+   "kind": "attachment",
+   "detail": "instructions",
+   "pct": 2.09
+  },
+  {
+   "kind": "result:Bash",
+   "detail": "hatch run examples",
+   "pct": 2.07
+  },
+  {
+   "kind": "result:Bash",
+   "detail": "hatch run lint",
+   "pct": 1.83
+  },
+  {
+   "kind": "assistant_text",
+   "detail": "",
+   "pct": 1.82
+  }
+ ],
+ "read_tokens_reread_pct": 30.0,
+ "spilled_outputs": 13,
+ "rounds": [
+  {
+   "spawn_call": 252,
+   "members": 1,
+   "main_ctx_k": 571,
+   "main_units_m": 1.38,
+   "subagent_units_m": 0.49
+  },
+  {
+   "spawn_call": 273,
+   "members": 1,
+   "main_ctx_k": 608,
+   "main_units_m": 1.49,
+   "subagent_units_m": 0.53
+  },
+  {
+   "spawn_call": 295,
+   "members": 1,
+   "main_ctx_k": 637,
+   "main_units_m": 1.69,
+   "subagent_units_m": 0.94
+  },
+  {
+   "spawn_call": 318,
+   "members": 1,
+   "main_ctx_k": 686,
+   "main_units_m": 3.87,
+   "subagent_units_m": 0.37
+  }
+ ]
+}

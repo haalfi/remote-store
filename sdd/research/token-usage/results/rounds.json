@@ -1,0 +1,74 @@
+{
+ "_provenance": {
+  "script": "rounds.py",
+  "generated": "2026-10-09",
+  "inputs": {
+   "round_comments.json": "c23dc48ad9074b37ca34478cae88d727d2191dd7bf31a8e5359fd1d129c19d02"
+  }
+ },
+ "trace_review_blocks": 41,
+ "origin_by_round": {
+  "1": {
+   "findings": 124,
+   "loop_introduced_pct": 0.0
+  },
+  "2": {
+   "findings": 79,
+   "loop_introduced_pct": 28.0
+  },
+  "3": {
+   "findings": 116,
+   "loop_introduced_pct": 23.0
+  },
+  "4": {
+   "findings": 96,
+   "loop_introduced_pct": 49.0
+  },
+  "5": {
+   "findings": 55,
+   "loop_introduced_pct": 67.0
+  },
+  "6": {
+   "findings": 30,
+   "loop_introduced_pct": 60.0
+  },
+  "7": {
+   "findings": 38,
+   "loop_introduced_pct": 53.0
+  },
+  "8": {
+   "findings": 27,
+   "loop_introduced_pct": 78.0
+  },
+  "9+": {
+   "findings": 85,
+   "loop_introduced_pct": 71.0
+  }
+ },
+ "comments": {
+  "prs": 41,
+  "top_level": 650,
+  "by_kind": {
+   "prose": 399,
+   "code/test": 186,
+   "trace": 59,
+   "other": 6
+  }
+ },
+ "prose_and_trace_share_by_round_pct": {
+  "1": 68.0,
+  "2": 75.0,
+  "3": 60.0,
+  "4": 70.0,
+  "5": 71.0,
+  "6": 73.0,
+  "7": 74.0,
+  "8": 67.0,
+  "9+": 84.0
+ },
+ "rounds_after_last_code_finding": {
+  "median": 1,
+  "share_two_or_more_pct": 34.0,
+  "prs": 41
+ }
+}

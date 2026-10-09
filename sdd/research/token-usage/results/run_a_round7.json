@@ -1,0 +1,171 @@
+{
+ "_provenance": {
+  "script": "tokkit.py",
+  "generated": "2026-10-09",
+  "inputs": {
+   "main transcript": "82bd321dcb4e0a7f51a5cb5d87d1151424e57df78c0835cdc4fbe0e9c84a116e"
+  }
+ },
+ "transcripts": 21,
+ "calls": 1012,
+ "main_calls": 413,
+ "units_m": 31.5,
+ "usd_estimate": 72.77,
+ "units_pct_by_class": {
+  "input": 0.0,
+  "read": 79.7,
+  "w5": 9.7,
+  "w1h": 5.3,
+  "out": 5.3
+ },
+ "first_edit_call": 9,
+ "pr_open_call": 129,
+ "compaction_calls": [],
+ "phases": {
+  "orient + plan (before first edit)": {
+   "calls": 9,
+   "units_pct": 0.7,
+   "mean_ctx_k": 89
+  },
+  "build (first edit to PR open)": {
+   "calls": 120,
+   "units_pct": 10.3,
+   "mean_ctx_k": 212
+  },
+  "review loop (after PR open)": {
+   "calls": 284,
+   "units_pct": 58.3,
+   "mean_ctx_k": 567
+  },
+  "subagents": {
+   "calls": 599,
+   "units_pct": 30.6
+  }
+ },
+ "context_shares_pct": {
+  "session prefix": 22.8,
+  "result:Read": 19.9,
+  "result:Bash": 11.5,
+  "thinking (hidden)": 11.5,
+  "tool_input": 11.0,
+  "attachment": 7.6,
+  "result": 5.5,
+  "result:Grep": 4.0,
+  "user_meta": 2.8,
+  "unexplained": 1.8,
+  "assistant_text": 1.1,
+  "user_prompt": 0.5
+ },
+ "top_items_pct": [
+  {
+   "kind": "result:Bash",
+   "detail": "git",
+   "pct": 4.06
+  },
+  {
+   "kind": "result:mcp",
+   "detail": "add_reply_to_pull_request_comment",
+   "pct": 3.69
+  },
+  {
+   "kind": "user_meta",
+   "detail": "",
+   "pct": 2.75
+  },
+  {
+   "kind": "result:Read",
+   "detail": "<review-snapshot>/.claude/skills/rvw-pr/SKILL.md",
+   "pct": 2.72
+  },
+  {
+   "kind": "result:Read",
+   "detail": "sdd/specs/003-backend-adapter-contract.md",
+   "pct": 2.02
+  },
+  {
+   "kind": "result:Read",
+   "detail": "sdd/traces/bug-275-raise-if-dir-eperm.yml",
+   "pct": 1.97
+  },
+  {
+   "kind": "result:Read",
+   "detail": "src/remote_store/backends/_local.py",
+   "pct": 1.9
+  },
+  {
+   "kind": "attachment",
+   "detail": "output_style",
+   "pct": 1.72
+  },
+  {
+   "kind": "attachment",
+   "detail": "nested_memory",
+   "pct": 1.58
+  },
+  {
+   "kind": "result:Read",
+   "detail": "<review-snapshot>/tests/backends/local/test_listing_permission.py",
+   "pct": 1.51
+  }
+ ],
+ "read_tokens_reread_pct": 18.5,
+ "spilled_outputs": 23,
+ "rounds": [
+  {
+   "spawn_call": 103,
+   "members": 1,
+   "main_ctx_k": 255,
+   "main_units_m": 1.23,
+   "subagent_units_m": 0.29
+  },
+  {
+   "spawn_call": 139,
+   "members": 1,
+   "main_ctx_k": 304,
+   "main_units_m": 1.62,
+   "subagent_units_m": 0.37
+  },
+  {
+   "spawn_call": 182,
+   "members": 3,
+   "main_ctx_k": 355,
+   "main_units_m": 3.63,
+   "subagent_units_m": 1.49
+  },
+  {
+   "spawn_call": 251,
+   "members": 3,
+   "main_ctx_k": 510,
+   "main_units_m": 2.53,
+   "subagent_units_m": 1.71
+  },
+  {
+   "spawn_call": 288,
+   "members": 3,
+   "main_ctx_k": 622,
+   "main_units_m": 3.55,
+   "subagent_units_m": 1.74
+  },
+  {
+   "spawn_call": 335,
+   "members": 3,
+   "main_ctx_k": 719,
+   "main_units_m": 1.02,
+   "subagent_units_m": 0.16
+  },
+  {
+   "spawn_call": 348,
+   "members": 3,
+   "main_ctx_k": 735,
+   "main_units_m": 4.27,
+   "subagent_units_m": 2.0
+  },
+  {
+   "spawn_call": 398,
+   "members": 3,
+   "main_ctx_k": 828,
+   "main_units_m": 1.39,
+   "subagent_units_m": 1.89
+  }
+ ]
+}

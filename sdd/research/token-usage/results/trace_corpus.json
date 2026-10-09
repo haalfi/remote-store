@@ -1,0 +1,106 @@
+{
+ "_provenance": {
+  "script": "trace_corpus.py",
+  "generated": "2026-10-09",
+  "inputs": {
+   "sdd/traces at commit": "31ebe6be7"
+  }
+ },
+ "traces": 372,
+ "first": "2026-05-10",
+ "last": "2026-10-09",
+ "monthly": {
+  "2026-05": {
+   "traces": 124,
+   "kb_read_mean": 287,
+   "process_share_of_bytes_pct": 38.0,
+   "review_rounds_median": 1.0
+  },
+  "2026-06": {
+   "traces": 101,
+   "kb_read_mean": 335,
+   "process_share_of_bytes_pct": 42.0,
+   "review_rounds_median": 2
+  },
+  "2026-07": {
+   "traces": 35,
+   "kb_read_mean": 351,
+   "process_share_of_bytes_pct": 49.0,
+   "review_rounds_median": 2.0
+  },
+  "2026-08": {
+   "traces": 31,
+   "kb_read_mean": 804,
+   "process_share_of_bytes_pct": 61.0,
+   "review_rounds_median": 6
+  },
+  "2026-09": {
+   "traces": 48,
+   "kb_read_mean": 747,
+   "process_share_of_bytes_pct": 66.0,
+   "review_rounds_median": 6.0
+  },
+  "2026-10": {
+   "traces": 33,
+   "kb_read_mean": 534,
+   "process_share_of_bytes_pct": 55.0,
+   "review_rounds_median": 5.0
+  }
+ },
+ "process_file_reach_pct_by_month": {
+  "sdd/CLAUDE-REFERENCE.md": {
+   "2026-05": 77.0,
+   "2026-06": 87.0,
+   "2026-07": 89.0,
+   "2026-08": 87.0,
+   "2026-09": 62.0,
+   "2026-10": 82.0
+  },
+  "sdd/BACKLOG.md": {
+   "2026-05": 55.0,
+   "2026-06": 67.0,
+   "2026-07": 66.0,
+   "2026-08": 74.0,
+   "2026-09": 81.0,
+   "2026-10": 76.0
+  },
+  "sdd/BACKLOG-DONE.md": {
+   "2026-05": 22.0,
+   "2026-06": 21.0,
+   "2026-07": 20.0,
+   "2026-08": 48.0,
+   "2026-09": 31.0,
+   "2026-10": 18.0
+  },
+  "CLAUDE.md": {
+   "2026-05": 40.0,
+   "2026-06": 9.0,
+   "2026-07": 20.0,
+   "2026-08": 19.0,
+   "2026-09": 15.0,
+   "2026-10": 6.0
+  },
+  "sdd/TESTING.md": {
+   "2026-05": 31.0,
+   "2026-06": 10.0,
+   "2026-07": 9.0,
+   "2026-08": 29.0,
+   "2026-09": 10.0,
+   "2026-10": 9.0
+  },
+  "sdd/traces/_schema.yml": {
+   "2026-05": 12.0,
+   "2026-06": 11.0,
+   "2026-07": 29.0,
+   "2026-08": 45.0,
+   "2026-09": 23.0,
+   "2026-10": 24.0
+  }
+ },
+ "review_rounds_all": {
+  "n": 306,
+  "median": 2.0,
+  "max": 19
+ },
+ "traces_with_review_block": 44
+}

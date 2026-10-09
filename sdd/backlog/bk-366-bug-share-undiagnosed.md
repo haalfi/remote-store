@@ -50,3 +50,19 @@ by users; the eight Graph burn-in defects were fixed before release. Its
 design conclusion is
 [RFC-0017](../rfcs/rfc-0017-contract-kernel-over-thin-drivers.md). Whether
 that meets this item's exit criteria is undecided here.
+
+## Note, 2026-10-09: bug share by month, around `/ship`
+
+By calendar month instead of by release, the share does not start rising with
+`/ship` (2026-08-05). It is too noisy to date any onset. Measured as `BUG-`
+against all `- [x] **PREFIX-NNN` headers the first time each appears in
+`BACKLOG-DONE.md` (`git log -p`, so a header that moves inside the file counts
+once; every exit, done or not), it runs 37% (2026-04), 23% (05), 12% (06), 32%
+(07), 21% (08), 46% (09) and 38% (10, partial). July is already above June
+before `/ship`, but August falls back. Derivation:
+[`ship_era.py`](../research/token-usage/ship_era.py), result
+`backlog_exits_by_month` in
+[`results/ship_era.json`](../research/token-usage/results/ship_era.json).
+This replaces an earlier scratch series that read the high-water mark in
+`sdd/backlogid.json`, which counts neither closures nor filings
+([report § Corrections](../research/token-usage/report.md#corrections-to-the-scratch-analysis)).
