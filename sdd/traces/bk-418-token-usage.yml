@@ -115,10 +115,12 @@ phases:
         section: "Status (Amends), Decision, Consequences"
         read_type: gate
         extract: >-
-          Amends nothing; its convergence and fix-pass clauses carry the
-          amendments of ADR-0034, 0035 and 0037 in place, so P1 amends the
-          fix-pass clause at its home. Consequences already leave cost control
-          to the skill
+          Amends nothing; its convergence clause carries ADR-0034's and
+          ADR-0037's amendments in place, ADR-0035's note sits on the
+          diversify-reviewers clause, and the fix-pass clause carries none. My
+          first draft targeted only the fix-pass clause; review showed P1
+          collides with convergence and both exit gates, so P1 now names all
+          four clauses
       - file: sdd/adrs/0034-ship-panel-rounds-and-unprimed-exit.md
         section: "Status (Amends ADR-0033), Decision"
         read_type: gate
@@ -130,7 +132,11 @@ phases:
       - file: sdd/adrs/0036-reviewers-by-subject-and-method.md
         section: "Status (Amends ADR-0020, ADR-0035), Decision"
         read_type: gate
-        extract: "\"The main loop fixes and owns the sweep\" is ADR-0036's own clause and P2's amendment target"
+        extract: >-
+          "The main loop fixes and owns the sweep" contrasts the main loop with a
+          domain-scoped delegate; a fresh post-PR session is still the main loop,
+          so P2 amends no ADR. Its real constraint is /ship § Roles (orchestrator
+          never delegated), which rules out a spawned driver
       - file: sdd/adrs/0037-whole-file-gate-and-derived-figures.md
         section: "Status (Amends ADR-0033, ADR-0034), Decision"
         read_type: gate

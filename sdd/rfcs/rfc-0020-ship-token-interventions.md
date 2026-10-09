@@ -37,18 +37,14 @@ figures and their derivations. This section names only the four it acts on.
   trace findings only, including loops of 10 to 13 rounds. Of 321 prose findings
   in the 13 longest loops, 94% are settled by a command or by listing the cases
   (report § 5).
-- **Related open work.** BUG-280 shares spec BE-021 with seven open items. Run A
-  had BK-389, half of the redesign, in context from call 2 and planned without it.
-  BK-394, which says the redesign is pending, first entered at call 414, after
-  the maintainer raised it (report § 7).
+- **Related open work.** BUG-280 shares spec BE-021 with seven open items, two of
+  them the redesign that later narrowed run A's fix. The ID BK-389 first appeared
+  in run A's context at call 2, and BK-394 at call 414. That records when an ID
+  was in front of the session, not whether the plan weighed it (report § 7).
 - **Environment.** Three of run A's local gate runs were cut off at the tool
   limit, and one background wait left it idle for 37 minutes (report § 7). Two of
-  the three cut-offs overlapped another session's suite (BK-419's dossier).
-
-ADR-0033 already says the review loop, not the implementation, dominates a
-delivery's cost, and it leaves keeping that cost where it pays to the skill
-([ADR-0033 § Consequences](../adrs/0033-ship-convergence-driven-review.md#consequences)).
-This RFC is that guidance, measured before it is written into the skill.
+  the three cut-offs overlapped another session's suite, per the dossier of
+  BK-419, which is filed in PR #1097 and not yet on master.
 
 ## Proposal
 
@@ -69,18 +65,27 @@ that settles them, not by another review round.**
     enumerated cases), and the fixer runs it before committing;
   - no new finding-round opens for prose alone;
   - the loop closes on one pass that carries the existing exit gates (unprimed,
-    whole-file, measuring where it applies) over the final state.
+    whole-file, measuring where it applies) over the final state;
+  - a prose must-fix finding from that closing pass is fixed, its check is run
+    and recorded in the reply, and the loop ends there without another gated
+    pass.
 
-  A prose finding with no check, which the report puts at 6% (judgment), stays
-  must-fix under today's rule.
-- **Would amend.** [ADR-0033](../adrs/0033-ship-convergence-driven-review.md)'s
-  *The loop may not end on an unreviewed fix pass*: in the tail, a prose fix pass
-  is verified by its named checks and by the closing pass, not by its own
-  verification round. *Terminate the review loop on convergence* keeps its
-  must-fix definition and the third and fourth stop clauses added by
-  [ADR-0034](../adrs/0034-ship-panel-rounds-and-unprimed-exit.md) and
-  [ADR-0037](../adrs/0037-whole-file-gate-and-derived-figures.md). Nothing in
-  ADR-0035 or ADR-0036 changes.
+  A prose finding with no check, which the report puts at 6% (judgment), and
+  every code or test finding, reopen the loop as today.
+- **Would amend.** Four clauses, each at its home, all for check-closed prose
+  findings in the tail only:
+  - [ADR-0033](../adrs/0033-ship-convergence-driven-review.md)'s *Terminate the
+    review loop on convergence*: a round whose only must-fix findings are
+    check-closed tail prose counts as converged;
+  - ADR-0033's *The loop may not end on an unreviewed fix pass*: the fix after
+    the closing pass is verified by its recorded check, not by a review;
+  - [ADR-0034](../adrs/0034-ship-panel-rounds-and-unprimed-exit.md)'s *The loop
+    cannot end until an unprimed reviewer has seen the final state*;
+  - [ADR-0037](../adrs/0037-whole-file-gate-and-derived-figures.md)'s whole-file
+    gate: both gates are met by the closing pass and stay met after a
+    check-closed prose fix.
+
+  ADR-0035 and ADR-0036 are unchanged.
 - **Ceiling.** Small on PRs that change code: of 24 PRs with a code or test
   finding, the median had no round with findings after the last one, and 4 had
   two or more. Large on PRs without code findings: 17 of the 41 drew prose and
@@ -98,16 +103,18 @@ one that built it.**
     marks;
   - the trace path and open decisions.
 
-  It then ends. A fresh session (or a top-level agent with no inherited context)
-  reads the handoff, the PR and the files it touches, and runs Step 4 and Step 5.
-  Reviewers are unchanged.
-- **Would amend.** [ADR-0036](../adrs/0036-reviewers-by-subject-and-method.md)'s
-  *The main loop fixes and owns the sweep*: "main loop" becomes the post-PR
-  driver, which still fixes and still owns the sibling sweep that
-  [ADR-0034](../adrs/0034-ship-panel-rounds-and-unprimed-exit.md) places on the
-  fixer. Reviewers stay read-only and never resumed (ADR-0033).
+  It then ends. A fresh top-level session, started by the maintainer, reads the
+  handoff, the PR and the files it touches, and runs Step 4 and Step 5. It is the
+  main loop from then on: it fixes, owns the sibling sweep, and holds the
+  convergence judgement. Reviewers are unchanged.
+- **Would amend.** No ADR clause. ADR-0036's *The main loop fixes and owns the
+  sweep* sets the main loop against a domain-scoped delegate, and the fresh
+  session is still the main loop in that sense. The change lands in
+  `.claude/skills/ship/SKILL.md` (Step 3's end and a handoff step). A spawned
+  agent as driver would instead delegate the orchestrator, which `/ship` § Roles
+  forbids ("Never delegated"), so Phase 0 does not use one.
 - **Ceiling.** 23 to 28% of the session group, net of the fresh session's own
-  reads, on BK-397, the one `/ship` run that recorded the PR-open moment (report
+  reads, on BK-397, the one `/ship` run the report computes it for (report
   § 9, row 1). That is an upper bound, and it decays. After run A's compaction
   the context regrew by about 102k per round, so a single reset at PR open buys
   only the first rounds. Open Question 1 asks whether to reset per round.
@@ -126,10 +133,10 @@ IDs or the files it will touch, and asks how they relate.**
 - **Would amend.** No ADR clause. The step sequence is the skill's operational
   contract (ADR-0033 § Decision, last paragraph), so this lands in
   `.claude/skills/ship/SKILL.md` Step 1 alone.
-- **Why a dialog, not a listing.** Run A had BK-389 in context from call 2 and
-  planned without it. Five of the seven items were in context by call 14 (report
-  § 7). Seeing an item did not make the session weigh it, so the check asks
-  instead of listing. Whether asking works is what Phase 0 measures.
+- **Why a dialog, not a listing.** Five of the seven items' IDs were in run A's
+  context by call 14 (report § 7). An ID in context does not show that the plan
+  weighed the item. A dialog records an answer per item, so whether the plan
+  changed is observable.
 - **Noise.** For BUG-280 the query returns seven items, two of them the redesign
   (report § 7). Phase 0 records the count and how many of them changed the plan.
 - **Ceiling.** A whole review loop, on items a pending redesign reshapes. Run A's
@@ -150,8 +157,9 @@ leave a session waiting without a deadline.**
   - a deadline on every background wait, after which the session reports and
     stops waiting.
 
-  The tooling half is tracked as BK-419, which this RFC does not duplicate. Phase
-  0 needs only the operational rule (no parallel suites) and the deadline.
+  The tooling half is BK-419 (PR #1097), which this RFC does not duplicate. In
+  Phase 0 the collision half is a start condition rather than an intervention
+  (§ Experiment), so only the deadline is under test.
 - **Would amend.** No ADR clause. It changes `CLAUDE.md` § Parallel tests and
   `scripts/run_tests.py`, under BK-419.
 - **Ceiling.** Wall time and re-run gates rather than a token share. Idle time
@@ -161,8 +169,8 @@ leave a session waiting without a deadline.**
 ### Not in run B: a smaller reviewer input
 
 The report's hypotheses 3 and 4 point at what every reviewer re-reads: its
-skill file (2.72% of run A's re-read context at round 7), oversized `gh pr
-diff` outputs read back, and the shared process files. A diet for that input
+skill file (2.72% of run A's re-read context at round 7), spilled tool outputs
+read back, and the shared process files. A diet for that input
 was considered and left out of run B by the maintainer, so that run B tests the
 four interventions above and no more. It stays a candidate for a later RFC.
 
@@ -191,19 +199,20 @@ the two PRs is then merged and the other closed.
 
 ### Metrics
 
-Run A's values are in the report's `results/run_a_final.json`. Run B's come
-from the same scripts.
+Run B's values come from the same scripts as run A's. Run A's are in the
+report's `results/` where the last column names a file. The others do not exist
+yet, and Phase 0 derives them for both runs.
 
-| Level | Metric | Source |
-| --- | --- | --- |
-| Run | Units, estimated dollars, share after PR open | `tokkit.py report --json` |
-| Phase | Calls, units share, mean context: orient, build, review main, subagents | same, `phases` |
-| Round | Main context at the round's start, main units, subagent units, members | same, `rounds` |
-| Round | Findings by target (code/test, prose, trace) and the loop-introduced share | the PR's review comments and the trace's `review:` block, as `rounds.py` derives them |
-| Tail | Finding-rounds after the last code or test finding; prose fixes closed by a named check | same, plus the fix commits |
-| Orient | Related items listed, dialogs asked, whether the plan changed | Step 1 output, `sdd/decisions/` |
-| Gate | Gate runs, cut-offs, idle stalls | `gates.py` |
-| Outcome | Must-fix findings found after the close by the maintainer's review | the PR |
+| Level | Metric | Source | Run A |
+| --- | --- | --- | --- |
+| Run | Units, estimated dollars, share after PR open | `tokkit.py report --json` | `run_a_final.json` |
+| Phase | Calls, units share, mean context: orient, build, review main, subagents | same, `phases` | `run_a_final.json`; first route `run_a_round7.json` |
+| Round | Main context at the round's start, main units, subagent units, members | same, `rounds` | same two files |
+| Round | Findings by target (code/test, prose, trace) and the loop-introduced share | the PR's review comments, via `rounds.py` with a per-PR mode | not yet derived |
+| Tail | Finding-rounds after the last code or test finding; prose fixes closed by a named check | same, plus the fix commits | not yet derived |
+| Orient | Related items listed, dialogs asked, whether the plan changed | Step 1 output, `sdd/decisions/` | `run_a_orient_check.json` (listing only) |
+| Gate | Gate runs, cut-offs, idle stalls | `gates.py` | `run_a_final_gates.json` |
+| Outcome | Must-fix findings found after the close by the maintainer's review | the PR | PR #1093 |
 
 ### Decision rule
 
@@ -212,10 +221,10 @@ from the same scripts.
 
 | Intervention | Keeps if | Fails if |
 | --- | --- | --- |
-| P1 prose-tail stop | Run B opens no finding-round for prose alone after its code converged, and every tail prose fix names a check | The maintainer's post-close review finds a false claim of a kind the tail closed by check |
+| P1 prose-tail stop | Run B has fewer finding-rounds after its last code or test finding than run A's first route | The maintainer's post-close review finds a false claim of a kind the tail closed by check |
 | P2 fresh context | Main context at the start of each of run B's first three rounds is at most half of run A's at the same round (run A: 255k, 304k, 355k) | Run B's post-PR units are not lower than run A's first-route post-PR units (28.0 M: 88.9% of 31.5 M, review loop and subagents, report § 7), or the handoff lost a subject that run A covered |
-| P3 orient check | The check runs before plan mode and its dialog's answer is recorded | It runs after planning, or its list is ignored without a dialog |
-| P4 gate | No gate run cut off, and no idle stall over its deadline | Any suite collision or stall in run B |
+| P3 orient check | The recorded dialog changes run B's plan for at least one listed item before plan mode | The plan is unchanged by the dialog, or the check runs after planning |
+| P4 gate deadline | Every background wait ends by completion or by its deadline | Any idle stall over the deadline |
 
 **Run B as a whole fails** if its PR ships a must-fix defect that run A's PR
 did not have. It also fails if its total units are not lower than run A's
@@ -226,7 +235,11 @@ the RFC records why.
 **Confounds, stated in advance.** Master moves between the runs, and this RFC,
 the report and the variant each add to the context of later sessions. Run B's
 author knows BUG-280 only through what master holds. Any of run A's narrowing
-that is not on master is invisible to it, and that is intended.
+that is not on master is invisible to it, and that is intended. Run B also runs
+with no other suite on the machine, a start condition run A did not have: two of
+run A's three cut-offs overlapped another session's suite (BK-419's dossier),
+and each cut-off cost a re-run gate. That favours run B in the run-level and P2
+comparisons for a reason none of P1 to P3 controls.
 
 ## Roadmap
 
@@ -237,7 +250,7 @@ the whole effort, and nothing that changes `/ship` itself lands before Phase
 | Phase | Goal | Deliverables | Exit |
 | --- | --- | --- | --- |
 | **0. Test** | Decide from one delivery which interventions to keep | The `/ship` variant (an unmerged branch editing `.claude/skills/ship/SKILL.md`; master's `/ship` stays unchanged); `rounds.py` able to take one PR without a trace block; run B; the comparison written into the report's run B section | The decision rule above, applied per intervention |
-| **1. Amend** | Write what Phase 0 kept into process | One ADR amending the clauses named under each kept intervention; `/ship` Step 1, Step 4 and Step 5 edits; the variant branch closed | The ADR accepted and `/ship` carrying the kept interventions |
+| **1. Amend** | Write what Phase 0 kept into process | If P1 is kept, one ADR amending the four clauses named under it; `/ship` edits for every kept intervention; the variant branch closed | The ADR, if any, accepted and `/ship` carrying the kept interventions |
 | **2. Confirm** | Check the gain holds on a delivery that is not BUG-280 | The next two `/ship` deliveries measured with the same metrics | Post-PR share and tail rounds no worse than run B's on both; otherwise reopen |
 
 ## Alternatives Considered
@@ -253,8 +266,9 @@ tell which helped, or targets a cost the report puts at a few percent.**
   many rounds P1 leaves. Rejected for Phase 0. Phase 2 can separate them if the
   bundle passes.
 - **A hard round cap instead of P1.** Rejected for the reason ADR-0033 gives: a
-  cap ships defects the rounds after it would find. P1 keeps convergence and
-  changes only how the prose tail is closed.
+  cap ships defects the rounds after it would find. P1 relaxes convergence only
+  for prose findings in the tail that a recorded check closes. Code findings and
+  unchecked prose still reopen the loop.
 - **Trimming the always-loaded files first.** Done where it was cheap (report §
   8). What is left is a few percent per file (report § 3), against a post-PR share
   of 82 to 94%.
@@ -262,19 +276,20 @@ tell which helped, or targets a cost the report puts at a few percent.**
 ## Impact
 
 **No public API, runtime behaviour or user documentation changes. The impact
-is on one skill, one ADR amendment if Phase 0 keeps anything, and the local
-gate.**
+is on one skill, an ADR amendment only if P1 is kept, and the local gate.**
 
 - **Public API / backwards compatibility:** none.
-- **Process:** Phase 0 adds an unmerged variant branch of `/ship`. Phase 1 amends ADR
-  clauses named per intervention (ADR-0033, ADR-0036) and edits `/ship`. ADR-0034,
-  ADR-0035 and ADR-0037 are not amended. Their clauses that P1 and P2 touch stay
-  in force as they are.
+- **Process:** Phase 0 adds an unmerged variant branch of `/ship`. If P1 is kept,
+  Phase 1 amends ADR-0033 (convergence and fix-pass clauses), ADR-0034 (unprimed
+  exit gate) and ADR-0037 (whole-file gate) for check-closed tail prose. P2, P3
+  and P4 change the skill and the gate tooling only. ADR-0035 and ADR-0036 are not
+  amended.
 - **Tooling:** `rounds.py` gains a per-PR mode. Gate robustness lands under
-  BK-419.
-- **Ripples to carry when built:** the `/ship` skill's references to the main
-  session as fixer; `/fix-pr`'s sibling-sweep clause, which `/ship` inherits by
-  citation; `CLAUDE.md` § Parallel tests.
+  BK-419 (PR #1097).
+- **Ripples to carry when built:** `/ship` § Stop rule and § Roles (the
+  orchestrator stays the main loop, now the post-PR session); `/fix-pr`'s
+  sibling-sweep clause and reply rules, which carry P1's recorded check;
+  `CLAUDE.md` § Parallel tests.
 
 ## Open Questions
 
@@ -282,17 +297,19 @@ gate.**
    regrowing within one loop. A fresh fixer per round would hold context flat, at
    the cost of a handoff per round. Phase 0 runs the once-per-PR form. Phase 2
    decides whether to try per round.
-2. **Who drives after the handoff.** A new top-level session needs the maintainer
-   to start it, while an agent spawned by the build session inherits nothing, but
-   its results return into the build session's context. The variant has to pick
-   one, and the choice changes P2's saving.
+2. **A driver the maintainer need not start.** Phase 0 uses a fresh top-level
+   session, which the maintainer starts. A spawned agent would avoid that step
+   but delegates the orchestrator, which `/ship` § Roles forbids, and its results
+   return into the build session's context. If P2 is kept, Phase 1 decides
+   whether that trade is worth amending § Roles for.
 3. **File overlap in P3.** Spec IDs come from the attribute line. Touched files
    come from dossiers, which name files in prose. Phase 0 counts how often the file
    half adds an item the spec half missed.
 4. **Where the prose tail starts on a PR with no code.** P1's trigger, the first
    round with no code finding after a verified code fix, never fires on a PR
-   without code, and those PRs hold the longest loops (report § 5). Starting the
-   tail after round 1 there would end most of them early. Run B cannot test it,
+   without code findings. Seventeen of 41 PRs are like that, with loops of up to
+   13 rounds (report § 5). Starting the tail after round 1 there would end most
+   of them early. Run B cannot test it,
    because BUG-280 is a code PR. A docs-only delivery is needed before Phase 1
    writes P1 for that case.
 
@@ -307,4 +324,5 @@ gate.**
   [0037](../adrs/0037-whole-file-gate-and-derived-figures.md).
 - [RFC-0019](rfc-0019-two-speed-test-gate.md): the Phase 0 pattern this RFC
   follows.
-- Backlog: BK-418 (this RFC), BK-419 (gate robustness), BK-366 (bug share).
+- Backlog: BK-418 (this RFC), BK-419 (gate robustness, filed in PR #1097, which
+  merges after #1098), BK-366 (bug share).
