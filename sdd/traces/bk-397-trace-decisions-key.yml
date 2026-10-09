@@ -86,3 +86,21 @@ phases:
         read_type: verify
         extract: "The Record layer row named only the writer; an author learns of decisions: from it only if it names the reader. RFC-0018 Impact lists this section for the step-1 row, not for step 2"
         outcome: unclear
+  - id: fix
+    name: Fix review round 1
+    steps:
+      - file: sdd/rfcs/rfc-0018-decision-capture-at-dialog-time.md
+        section: "D2 (append-only), D4.2"
+        read_type: gate
+        extract: "My schema text said a log is never edited, which left de-listing as the only fix for a malformed or double-answered line. The maintainer chose repair: a line that is not a record may be deleted. D2's 'appended and never rewritten' had to be amended with it, which no reviewer flagged"
+        outcome: ok
+      - file: sdd/DRIFT-RULES.md
+        section: "Rules 4, 6, 7"
+        read_type: gate
+        extract: "Split the Drift-gate block: existence is the pair, line validity and single answers are a rule about one artifact; state the two silent drops as notes rather than bounds"
+        outcome: ok
+      - file: scripts/check_traces.py
+        section: "_collect, _check_decision_log, main"
+        read_type: verify
+        extract: "Six new failing tests seen red, then five mutations each caught by its own test; re-run over the eleven real logs still gives the one 'Trace close' note"
+        outcome: ok

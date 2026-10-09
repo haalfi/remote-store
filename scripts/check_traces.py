@@ -54,27 +54,36 @@ entry, are both well-formed and pass.
 
 Decision logs (RFC-0018 D4.2)
 -----------------------------
-For each path a trace lists under ``decisions:``, the log exists, every line
-parses as one JSON object, and no ``tool_use_id`` has two ``answered`` events.
-Two things are **reported, not failed**, as notes on stdout: a question left
-``unanswered`` (no ``answered`` event, no answer for it, or an answer starting
-with the dismissal prefix ``[User dismissed``), because declining a dialog is
-a legitimate act and the report is how it stays visible; and an event of a kind
-other than ``asked`` and ``answered``, so a later hook registration cannot break
-this reader (D3).
+For each path a trace lists under ``decisions:`` that the schema accepts, the
+log exists, every line parses as one JSON object, and no ``tool_use_id`` has two
+``answered`` events. A path the schema rejects is reported by the schema and not
+read. What an author may do about each failure is stated with the key, in
+``sdd/traces/_schema.yml``. **Reported, not failed**, as notes on stdout: a
+question left ``unanswered`` (no ``answered`` event, no answer for it, or an
+answer starting with the dismissal prefix ``[User dismissed``), because
+declining a dialog is a legitimate act and the report is how it stays visible;
+an event of a kind other than ``asked`` and ``answered``, so a later hook
+registration cannot break this reader (D3); an ``asked`` event whose
+``tool_input.questions`` is not a list of objects, which would otherwise drop
+out of the unanswered report silently; and an ``answered`` event with no
+``asked`` event.
 
 Bounds: it reads only the logs a trace lists. Whether a trace lists *every* log
 its work produced, or a log that belongs to other work, is D4.0's binding rule
 and is not checked here. The dismissal prefix is an undocumented harness string
 (RFC-0018 D3): a rewording passes as an answer, and free text starting with the
 prefix reads as a dismissal. Outcomes other than ``unanswered`` are not derived.
+A question whose object lacks a ``question`` key is matched under the text
+``None``, so it reads as unanswered rather than being skipped.
 
 Exit codes
 ==========
 
-* ``0`` — every trace (and every schema example) validates.
+* ``0`` — every trace (and every schema example) validates, and every listed
+  log passes; notes may still be printed.
 * ``1`` — one or more violations, printed to stderr as
-  ``file: <json-path>: <message>``, sorted for stable diffs.
+  ``file: <json-path>: <message>``, sorted for stable diffs. A
+  ``decisions[N]`` path is a fault in the log that entry names.
 
 Run with::
 
@@ -101,7 +110,14 @@ Drift-gate::
 Drift-gate::
 
     kind:       pair
-    compares:   a trace's decisions: list ↔ the sdd/decisions/ logs it names
+    compares:   a trace's decisions: list ↔ the sdd/decisions/ logs that exist
+    domain:     process
+
+Drift-gate::
+
+    kind:       rule
+    rule: every sdd/decisions/ log a trace lists has one JSON object per line
+        and no dialog answered twice
     domain:     process
 """
 
@@ -218,7 +234,7 @@ def _check_decision_log(root: Path, name: str, *, source: str, path: str) -> Rep
         return Report([Violation(source, path, f"{name}: {type(exc).__name__}: {exc}")], [])
 
     asked: dict[Any, dict[str, Any]] = {}
-    answered: dict[Any, tuple[int, dict[str, Any]]] = {}
+    answered: dict[Any, tuple[int, dict[str, Any], str]] = {}
     for lineno, raw in enumerate(text.splitlines(), start=1):
         try:
             event = json.loads(raw)
@@ -233,27 +249,31 @@ def _check_decision_log(root: Path, name: str, *, source: str, path: str) -> Rep
             asked.setdefault(tool_use_id, event)
         elif kind == "answered":
             if tool_use_id in answered:
-                first = answered[tool_use_id][0]
+                first, _, first_raw = answered[tool_use_id]
+                # Which remedy applies (sdd/traces/_schema.yml `decisions`) turns on this.
+                how = f"identical copy of line {first}" if raw == first_raw else f"differs from line {first}"
                 violations.append(
-                    Violation(
-                        source,
-                        path,
-                        f"{name} line {lineno}: {tool_use_id} answered twice (first on line {first})",
-                    )
+                    Violation(source, path, f"{name} line {lineno}: {tool_use_id} answered twice ({how})")
                 )
             else:
-                answered[tool_use_id] = (lineno, event)
+                answered[tool_use_id] = (lineno, event, raw)
         else:
             notes.append(Violation(source, path, f"{name} line {lineno}: unknown event kind {kind!r}, skipped"))
 
     for tool_use_id, event in asked.items():
-        response = answered.get(tool_use_id, (0, {}))[1].get("tool_response")
+        response = answered.get(tool_use_id, (0, {}, ""))[1].get("tool_response")
         answers = response.get("answers") if isinstance(response, dict) else None
         answers = answers if isinstance(answers, dict) else {}
-        for question, header in _questions(event):
+        questions = _questions(event)
+        if not questions:
+            notes.append(Violation(source, path, f"{name}: {tool_use_id} asked event has no readable questions"))
+        for question, header in questions:
             answer = answers.get(question)
             if not isinstance(answer, str) or answer.startswith(_DISMISSED_PREFIX):
                 notes.append(Violation(source, path, f"{name}: {tool_use_id} question {header!r} unanswered"))
+    for tool_use_id, (lineno, _, _) in answered.items():
+        if tool_use_id not in asked:
+            notes.append(Violation(source, path, f"{name} line {lineno}: {tool_use_id} answered with no asked event"))
     return Report(violations, notes)
 
 
@@ -335,10 +355,15 @@ def _collect(
             # it can hand them.
             violations.append(Violation(source=str(rel), path="(parse)", message=f"{type(exc).__name__}: {exc}"))
             continue
-        violations.extend(_validate_document(validator, document, source=str(rel)))
+        document_violations = _validate_document(validator, document, source=str(rel))
+        violations.extend(document_violations)
+        # An entry the schema rejected is not read: its pattern is what confines
+        # a listed path to the log directory, so reading it anyway would open,
+        # and echo in notes, a file the trace was not allowed to name.
+        rejected = {v.path for v in document_violations}
         logs = document.get("decisions") if isinstance(document, dict) else None
         for idx, entry in enumerate(logs if isinstance(logs, list) else []):
-            if isinstance(entry, str):
+            if isinstance(entry, str) and f"decisions[{idx}]" not in rejected:
                 report = _check_decision_log(root, entry, source=str(rel), path=f"decisions[{idx}]")
                 violations.extend(report.violations)
                 notes.extend(report.notes)
@@ -374,7 +399,10 @@ def main(argv: list[str] | None = None) -> int:
         print(f"note: {note.format()}")
     violations = report.violations
     if not violations:
-        print("check_traces: all traces parse and validate against sdd/traces/_schema.yml.")
+        print(
+            "check_traces: all traces parse and validate against sdd/traces/_schema.yml, "
+            "and every decision log they list passes."
+        )
         return 0
 
     for v in violations:
@@ -382,7 +410,9 @@ def main(argv: list[str] | None = None) -> int:
     print(
         f"\ncheck_traces: {len(violations)} violation(s). Each line above names the file to fix: "
         "a `(parse)` or `(schema)` path is a malformed or duplicate-keyed file, "
-        "an `examples[N]` source is the schema's own example block, and "
+        "an `examples[N]` source is the schema's own example block, "
+        "a `decisions[N]` path is a fault in the decision log that entry names "
+        "(the remedy per fault is under `decisions:` in sdd/traces/_schema.yml), and "
         "anything else is a trace disagreeing with sdd/traces/_schema.yml.",
         file=sys.stderr,
     )

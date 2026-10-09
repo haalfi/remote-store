@@ -8,7 +8,8 @@ what it observed. A failure-probe follow-up the same day amends D2, D3 and D4.2,
 D2 to an inference rather than an observation. On acceptance the maintainer
 omitted the `failed` path until it is observed (§ Open Questions 5), which
 amends the Summary, D1, D3 and D4. Built: steps 1 and 2 and D2's commit and
-exclusion mechanics. Step 3 is not.
+exclusion mechanics. Step 3 is not. Step 2's review (2026-10-09) amends D2 to
+let a line that is not a record be deleted, the maintainer's choice of remedy.
 
 ## Summary
 
@@ -108,7 +109,10 @@ which a log committed to a public repository must not hold.
 ### D2. Storage: one append-only file per session, bound to work when read
 
 `sdd/decisions/<session_id>.jsonl`, one JSON object per line, appended and never
-rewritten. Committed with the work, so git supplies a timestamped history and
+rewritten, except that a line which is not a record (one that does not parse,
+or an identical copy left by a merge) may be deleted in a commit of its own.
+The remedy per fault is stated with the trace key, in `sdd/traces/_schema.yml`
+`decisions`. Committed with the work, so git supplies a timestamped history and
 the PR diff shows the log beside the change it explains.
 
 - **Who commits it.** `gate-commit.sh`, which already runs before every

@@ -34,7 +34,7 @@ including what *Enforcement* does not mean — is the last section below.
 | `scripts/check_ripple_parity.py` | the ripple-check Pre-work index ↔ the Detailed checklist, both in sdd/CLAUDE-REFERENCE.md | process | `all`, `check-ripple-parity`, `docs-gate`, `lint` | gating |
 | `scripts/check_spec_marks.py` | spec IDs declared in sdd/specs/ ↔ spec IDs cited by pytest.mark.spec markers under tests/ | intent ↔ verification | `all`, `ci.yml:verify-formal`, `lint` | gating |
 | `scripts/check_support_windows.py` | the declared dependency floors at a base git revision and in the working tree ↔ the PyPI upload dates of the releases each raised floor newly excludes, over the packages named by every user-facing extra | process | `check-support-windows` | advisory |
-| `scripts/check_traces.py` | a trace's decisions: list ↔ the sdd/decisions/ logs it names | process | `all`, `check-traces`, `docs-gate`, `lint` | gating |
+| `scripts/check_traces.py` | a trace's decisions: list ↔ the sdd/decisions/ logs that exist | process | `all`, `check-traces`, `docs-gate`, `lint` | gating |
 | `scripts/check_traces.py` | every trace under sdd/traces/ ↔ the schema in sdd/traces/_schema.yml | process | `all`, `check-traces`, `docs-gate`, `lint` | gating |
 | `scripts/docs/check_links.py` | every Markdown link and context7 manifest path ↔ the on-disk files and built docs-site pages they name | explanation | `all`, `check-links`, `docs-gate` | gating |
 | `scripts/docs/check_links.py` | every Markdown link carrying a #fragment, off the historical denylist ↔ the explicit <a id> tags and heading slugs of the file it names | explanation | `all`, `check-links`, `docs-gate` | gating |
@@ -73,6 +73,7 @@ yield no row for them at all.
 | `scripts/check_test_assertions.py` | every test function contains at least one assert or pytest.raises (TESTING.md Rule 1) | verification | `all`, `check-test-quality`, `lint` | gating |
 | `scripts/check_test_placement.py` | every test file sits in the subpackage TESTING.md and spec 048 place it in | verification | `all`, `check-test-placement`, `check-test-quality`, `lint` | gating |
 | `scripts/check_tla_no_emdash.py` | no TLA+ module under sdd/formal/tla/ contains an em dash, which TLC rejects | intent-formalized | `all`, `ci.yml:verify-tla`, `lint` | gating |
+| `scripts/check_traces.py` | every sdd/decisions/ log a trace lists has one JSON object per line and no dialog answered twice | process | `all`, `check-traces`, `docs-gate`, `lint` | gating |
 | `scripts/check_traces.py` | no file this gate parses repeats a mapping key at any depth — every trace under sdd/traces/, and sdd/traces/_schema.yml itself | process | `all`, `check-traces`, `docs-gate`, `lint` | gating |
 | `scripts/docs/check_links.py` | both context7 manifests stay within Context7's per-field list and rule-length maxima, which it silently rejects a manifest for exceeding | explanation | `all`, `check-links`, `docs-gate` | gating |
 | `scripts/docs/check_links.py` | every <a id> anchor in any git-tracked Markdown file off the consumer denylist is unique within its file and adjacent to a heading, whether or not a link points into it | explanation | `all`, `check-links`, `docs-gate` | gating |

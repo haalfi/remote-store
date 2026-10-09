@@ -53,7 +53,9 @@ _SCHEMA = textwrap.dedent(
         minLength: 1
       decisions:
         type: array
-        items: {type: string}
+        items:
+          type: string
+          pattern: '^sdd/decisions/[A-Za-z0-9_-]+\\.jsonl$'
     examples:
       - id: ID-1
         title: "valid example"
@@ -638,6 +640,40 @@ class TestDecisionLogs:
         assert v.path == "decisions[0]"
         assert "toolu_1" in v.message
         assert "line 3" in v.message, "the second answered line is the one to inspect (Rule 2)"
+        # Two different answers are not a merge artifact: the maintainer decides.
+        assert "differs from line 2" in v.message
+
+    def test_an_identical_second_answered_line_is_named_as_a_copy(self, tmp_path):
+        # The union-merge artifact the schema's remedy lets an author delete.
+        report = self._run(tmp_path, [_asked(), _answered(), _answered()])
+        assert len(report.violations) == 1
+        assert "identical copy of line 2" in report.violations[0].message
+
+    def test_a_path_the_schema_rejects_is_not_read(self, tmp_path):
+        # The pattern confines the verdict; the reader must honour it too, or a
+        # listed path outside the log directory is opened and echoed.
+        (tmp_path / "outside.jsonl").write_text('{"event": "secret-content"}\n{not json\n', encoding="utf-8")
+        report = self._run(tmp_path, listed=("outside.jsonl",))
+        assert len(report.violations) == 1, report.violations
+        assert report.violations[0].path == "decisions[0]"
+        assert "does not match" in report.violations[0].message
+        assert report.notes == [], "nothing from the unlisted-directory file may be echoed"
+
+    def test_an_asked_event_with_unreadable_questions_is_reported(self, tmp_path):
+        # A reshaped tool_input must not silently drop the unanswered report.
+        asked = {"event": "asked", "tool_use_id": "toolu_1", "tool_input": {"questions": "reshaped"}}
+        report = self._run(tmp_path, [asked])
+        assert report.violations == []
+        assert len(report.notes) == 1
+        assert "toolu_1" in report.notes[0].message
+        assert "no readable questions" in report.notes[0].message
+
+    def test_an_answered_event_with_no_asked_is_reported(self, tmp_path):
+        report = self._run(tmp_path, [_answered()])
+        assert report.violations == []
+        assert len(report.notes) == 1
+        assert "toolu_1" in report.notes[0].message
+        assert "no asked event" in report.notes[0].message
 
     def test_two_dialogs_each_answered_once_pass(self, tmp_path):
         lines = [_asked("toolu_1"), _answered("toolu_1"), _asked("toolu_2"), _answered("toolu_2", "B")]
@@ -703,6 +739,18 @@ class TestMain:
         out = capsys.readouterr().out
         assert "unanswered" in out
         assert "toolu_1" in out
+
+    def test_main_hint_names_the_log_case(self, tmp_path, capsys):
+        # A log violation is not a trace disagreeing with the schema; the hint
+        # must send the reader to the log and its remedy.
+        schema = _write_schema(tmp_path)
+        traces = tmp_path / "sdd" / "traces"
+        _write_trace(traces, "id-1-x.yml", f'id: "ID-1"\ntitle: "ok"\ndecisions:\n  - "{_LOG}"\n')
+        rc = _mod.main(["--schema", str(schema), "--traces-dir", str(traces), "--root", str(tmp_path)])
+        assert rc == 1
+        err = capsys.readouterr().err
+        assert "`decisions[N]`" in err
+        assert "under `decisions:` in sdd/traces/_schema.yml" in err, "the hint points at the remedy's home"
 
     def test_main_clean_returns_zero(self, tmp_path):
         schema = _write_schema(tmp_path)
