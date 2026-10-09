@@ -9,7 +9,7 @@ import shutil
 import tempfile
 from datetime import UTC, datetime
 from pathlib import Path
-from stat import S_ISDIR, S_ISREG
+from stat import S_ISDIR, S_ISLNK, S_ISREG
 from typing import TYPE_CHECKING, BinaryIO, ClassVar
 
 from remote_store._backend import _COPY_BUFSIZE, Backend
@@ -50,13 +50,34 @@ def _stat_or_absent(path: Path) -> os.stat_result | None:
         return None
 
 
+def _entry_stat_or_absent(entry: Path) -> os.stat_result | None:
+    """``_stat_or_absent`` for an entry a scan listed; a link it may not follow is absent.
+
+    A symlink whose target the OS refuses to ``stat`` (one behind a folder the
+    caller cannot enter) is an entry the caller cannot read through, like a
+    dangling link, not a denial of the folder being listed. A denial on the
+    entry itself, which ``lstat`` meets too, still propagates.
+    """
+    try:
+        return _stat_or_absent(entry)
+    except PermissionError:
+        try:
+            if S_ISLNK(os.lstat(entry).st_mode):
+                return None
+        except OSError:
+            pass
+        raise
+
+
 def _entries_or_absent(folder: Path) -> list[Path]:
     """List *folder*'s entries; none if it is gone or no longer a folder.
 
     The single-level scans classify *folder* with ``_stat_or_absent`` before
     opening it, so a folder removed (or replaced by a file) in between would
     otherwise surface as a raw ``FileNotFoundError`` / ``NotADirectoryError``.
-    A denial propagates for the caller to map.
+    A denial propagates for the caller to map. On Windows a folder whose
+    deletion is still in progress fails its scan with ``PermissionError``
+    (``winerror`` 5), so there it is a denial, not an absence.
     """
     try:
         return list(folder.iterdir())
@@ -587,7 +608,7 @@ class LocalBackend(Backend):
 
         Raises:
             PermissionDenied: If the OS refuses to list *path*, or to ``stat``
-                an entry in it.
+                an entry in it. A symlink whose target it refuses is skipped.
         """
         try:
             full = self._resolve(path)
@@ -613,7 +634,7 @@ class LocalBackend(Backend):
                         yield self._stat_to_fileinfo(rel, item)
             else:
                 for item in _entries_or_absent(full):
-                    st = _stat_or_absent(item)
+                    st = _entry_stat_or_absent(item)
                     if st is not None and S_ISREG(st.st_mode):
                         yield self._stat_to_fileinfo(self.to_key(str(item)), item, st)
         except PermissionError:
@@ -626,7 +647,7 @@ class LocalBackend(Backend):
 
         Raises:
             PermissionDenied: If the OS refuses to list *path*, or to ``stat``
-                an entry in it.
+                an entry in it. A symlink whose target it refuses is skipped.
         """
         try:
             full = self._resolve(path)
@@ -634,7 +655,7 @@ class LocalBackend(Backend):
             if top is None or not S_ISDIR(top.st_mode):
                 return
             for item in _entries_or_absent(full):
-                st = _stat_or_absent(item)
+                st = _entry_stat_or_absent(item)
                 if st is not None and S_ISDIR(st.st_mode):
                     yield FolderEntry(path=RemotePath(self.to_key(str(item))), name=item.name)
         except PermissionError:
@@ -650,7 +671,7 @@ class LocalBackend(Backend):
 
         Raises:
             PermissionDenied: If the OS refuses to list *path*, or to ``stat``
-                an entry in it.
+                an entry in it. A symlink whose target it refuses is skipped.
         """
         try:
             full = self._resolve(path)
@@ -658,7 +679,7 @@ class LocalBackend(Backend):
             if top is None or not S_ISDIR(top.st_mode):
                 return
             for item in _entries_or_absent(full):
-                st = _stat_or_absent(item)
+                st = _entry_stat_or_absent(item)
                 if st is None:
                     continue
                 if S_ISREG(st.st_mode):

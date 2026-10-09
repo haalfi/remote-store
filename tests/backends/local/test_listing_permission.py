@@ -30,7 +30,9 @@ import contextlib
 import errno
 import genericpath
 import getpass
+import glob
 import os
+import stat
 import subprocess
 import sys
 from typing import TYPE_CHECKING, Any
@@ -54,6 +56,7 @@ pytestmark = pytest.mark.os_sensitive
 _REAL_SCANDIR = os.scandir
 _REAL_LISTDIR = os.listdir
 _REAL_STAT = os.stat
+_REAL_LSTAT = os.lstat
 
 
 def _tree(root: Path) -> LocalBackend:
@@ -68,21 +71,39 @@ def _norm(p: Any) -> str:
     return os.path.normcase(os.path.abspath(os.fspath(p)))
 
 
-def _deny(target: Path, exc: OSError) -> AbstractContextManager[Any]:
-    """Patch both directory-listing calls to raise *exc* for *target* only."""
+def _deny(target: Path, exc: OSError, hits: list[str] | None = None) -> AbstractContextManager[Any]:
+    """Patch the directory-listing calls to raise *exc* for *target* only.
+
+    Each injection is appended to *hits*, so a cell can prove the denial was
+    met rather than assume it. On 3.13 ``Path.rglob`` lists through
+    ``glob._StringGlobber.scandir``, a copy of ``os.scandir`` bound when
+    ``glob`` is imported, which a patch on ``os`` never reaches; that copy is
+    patched too. 3.14's wrapper looks ``os.scandir`` up at call time, and 3.11
+    and 3.12 have no such class.
+    """
     resolved = _norm(target.resolve())
 
     def scandir(p: object = ".") -> object:
         if _norm(p) == resolved:
+            if hits is not None:
+                hits.append("scandir")
             raise exc
         return _REAL_SCANDIR(p)  # type: ignore[arg-type]
 
     def listdir(p: object = ".") -> list[str]:
         if _norm(p) == resolved:
+            if hits is not None:
+                hits.append("listdir")
             raise exc
         return _REAL_LISTDIR(p)  # type: ignore[arg-type]
 
-    return mock.patch.multiple(os, scandir=scandir, listdir=listdir)
+    stack = contextlib.ExitStack()
+    stack.enter_context(mock.patch.multiple(os, scandir=scandir, listdir=listdir))
+    globber = getattr(glob, "_StringGlobber", None)
+    bound = vars(globber).get("scandir") if globber is not None else None
+    if isinstance(bound, staticmethod) and bound.__func__ is _REAL_SCANDIR:
+        stack.enter_context(mock.patch.object(globber, "scandir", staticmethod(scandir)))
+    return stack
 
 
 def _deny_child_stat(folder: Path) -> AbstractContextManager[Any]:
@@ -290,6 +311,62 @@ def test_a_broken_symlink_is_not_listed(tmp_path: Path, entry: str) -> None:
     assert _ENTRY_POINTS[entry](backend) == expected
 
 
+# What each scan answers for ``a`` when it also holds a link it may not follow:
+# the tree without that link.
+_WITH_LINK_SKIPPED: dict[str, set[str]] = {
+    "list_files": {"a/f.txt"},
+    "list_folders": {"a/sub"},
+    "iter_children": {"a/f.txt", "a/sub"},
+}
+
+
+@pytest.mark.parametrize("entry", _traced(_WITH_LINK_SKIPPED))
+def test_a_link_whose_target_the_os_refuses_to_stat_is_skipped(tmp_path: Path, entry: str) -> None:
+    """A link into a folder the caller cannot enter is skipped, like a dangling one.
+
+    Its ``stat`` follows it and is refused, but the folder being listed is not
+    the thing denied. Simulated here, so it runs where symlinks cannot be made:
+    ``a/link`` is a plain file whose ``lstat`` reports a link and whose ``stat``
+    is refused. A refused ``stat`` on an entry that is not a link still raises
+    (``test_an_entry_the_os_refuses_to_stat_raises_permission_denied``).
+    """
+    backend = _tree(tmp_path)
+    (tmp_path / "a" / "link").write_bytes(b"")
+    target = _norm((tmp_path / "a" / "link").resolve())
+    link_mode = os.stat_result((stat.S_IFLNK | 0o777, 0, 0, 0, 0, 0, 0, 0, 0, 0))
+
+    def stat_(p: Any, *args: Any, **kwargs: Any) -> os.stat_result:
+        if _norm(p) == target:
+            raise PermissionError(errno.EACCES, "Permission denied", os.fspath(p))
+        return _REAL_STAT(p, *args, **kwargs)
+
+    def lstat(p: Any, *args: Any, **kwargs: Any) -> os.stat_result:
+        if _norm(p) == target:
+            return link_mode
+        return _REAL_LSTAT(p, *args, **kwargs)
+
+    with mock.patch.multiple(os, stat=stat_, lstat=lstat):
+        assert _ENTRY_POINTS[entry](backend) == _WITH_LINK_SKIPPED[entry]
+
+
+@pytest.mark.parametrize("entry", _traced(_WITH_LINK_SKIPPED))
+@pytest.mark.skipif(sys.platform == "win32", reason="symlinks need a privilege; the simulated cell above runs here")
+@pytest.mark.skipif(getattr(os, "geteuid", lambda: -1)() == 0, reason="root ignores permission bits")
+def test_a_real_link_into_an_unenterable_folder_is_skipped(tmp_path: Path, entry: str) -> None:
+    """The link cell above against a real symlink and a real ``chmod``."""
+    backend = _tree(tmp_path)
+    locked = tmp_path / "locked"
+    locked.mkdir()
+    (locked / "x.txt").write_bytes(b"x")
+    (tmp_path / "a" / "link").symlink_to(locked / "x.txt")
+    locked.chmod(0)
+    try:
+        listed = _ENTRY_POINTS[entry](backend)
+    finally:
+        locked.chmod(0o755)
+    assert listed == _WITH_LINK_SKIPPED[entry]
+
+
 @pytest.mark.spec("BE-021")
 @pytest.mark.skipif(sys.platform == "win32", reason="POSIX permission bits; Windows denies through ACLs")
 @pytest.mark.skipif(getattr(os, "geteuid", lambda: -1)() == 0, reason="root ignores permission bits")
@@ -338,8 +415,11 @@ def test_a_folder_denied_by_acl_raises_permission_denied(tmp_path: Path, entry: 
 # is dropped from a recursive listing and from ``get_folder_info``'s total with
 # no error. Moving them onto RFC-0017's listing kernel (BK-416) is what fixes
 # that; strict, so that change has to remove these marks.
+# ``raises=AssertionError``: only the missing ``PermissionDenied`` is the
+# expected failure; a denial the walk never met fails the cell outright.
 _RECURSIVE_SKIP_DENIED = pytest.mark.xfail(
     strict=True,
+    raises=AssertionError,
     reason="BK-416: the recursive walks still drop a subfolder the OS refuses to list",
 )
 
@@ -357,5 +437,13 @@ _RECURSIVE: dict[str, Callable[[LocalBackend], object]] = {
 def test_a_recursive_walk_raises_on_a_denied_subfolder(tmp_path: Path, entry: str) -> None:
     """What BE-021 asks of a recursive walk that meets a folder it may not list."""
     backend = _tree(tmp_path)
-    with _deny(tmp_path / "a" / "sub", _denied()), pytest.raises(PermissionDenied):
-        _RECURSIVE[entry](backend)
+    hits: list[str] = []
+    raised = False
+    with _deny(tmp_path / "a" / "sub", _denied(), hits):
+        try:
+            _RECURSIVE[entry](backend)
+        except PermissionDenied:
+            raised = True
+    if not hits:
+        pytest.fail("the denial never reached the walk, so this cell tests nothing")
+    assert raised, "the walk met the denied subfolder and dropped it silently"

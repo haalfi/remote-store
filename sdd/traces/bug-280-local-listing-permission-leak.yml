@@ -437,3 +437,48 @@ phases:
           Four strict xfail cells name BK-416. 12 mutants over the retained
           sites all die on 3.14; two die only there by construction
         outcome: ok
+  - id: fix_r1b
+    name: Fix pass (round 1 after the re-plan)
+    steps:
+      - file: tests/backends/local/test_listing_permission.py
+        section: "_deny; test_a_recursive_walk_raises_on_a_denied_subfolder"
+        read_type: verify
+        extract: >-
+          The replan extract's "four strict xfail cells" overstated them: on
+          3.13, Path.rglob lists through glob._StringGlobber.scandir, a copy of
+          os.scandir bound at import, so three of the four (list_files-recursive,
+          get_folder_info, Store.get_folder_info) never met the denial and
+          xfailed for nothing. 3.11 and 3.12 have no such class, and 3.14's
+          wrapper looks os.scandir up per call (probed on each). _deny now
+          patches the bound copy where it is os.scandir itself and records each
+          injection; the cell pytest.fail()s when nothing was injected, outside
+          xfail(raises=AssertionError). With the glob patch disabled the three
+          3.13 cells fail outright; with it, all four xfail on 3.11 to 3.14
+        outcome: ok
+      - file: src/remote_store/backends/_local.py
+        section: "_entry_stat_or_absent"
+        read_type: verify
+        extract: >-
+          A symlink entry whose target the OS refuses to stat failed the whole
+          scan with PermissionDenied(path=a), while a dangling link is skipped;
+          on 3.14 POSIX master skipped it. Entries now lstat on a refused stat
+          and read as absent when they are links; the listed folder itself keeps
+          _stat_or_absent, so a link given as the path still raises. The
+          simulated cell (lstat reports a link, stat refused) failed 3 of 3
+          before the fix; a real symlink + chmod cell runs on POSIX only, as
+          this machine lacks the symlink privilege
+        outcome: ok
+      - file: docs-src/reference/migration.md
+        section: "v0.33.0 to v0.33.1"
+        read_type: verify
+        extract: >-
+          "A folder removed while ... opening it now lists as empty" is false on
+          Windows mid-delete. Measured with tmp/bug280/scan_churn.py, 3000 calls
+          per method on 3.11.9, 3.13.11 and 3.14.2: churning the listed folder
+          gives PermissionDenied in 0 to 83 calls on the branch, where master
+          raised the bare PermissionError(winerror 5) in 8 to 59; churning only
+          its children gives no error on the branch and raw FileNotFoundError
+          on master. Not a regression, so the wording was corrected and the
+          table went to BK-416's dossier with a pre-existing spurious
+          InvalidPath both trees raise in the same runs
+        outcome: ok

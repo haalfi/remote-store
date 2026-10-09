@@ -21,9 +21,15 @@ The same holds for a folder you may list but not open, such as a POSIX
 directory with read but no execute permission. On Python 3.14 a non-recursive
 `list_files()`, `list_folders()` and `iter_children()` used to lose its entries
 without an error, and on 3.11 to 3.13 they raised the bare `PermissionError`;
-every version now raises `PermissionDenied`. A folder removed while one of these
-calls was opening it now lists as empty instead of raising the bare
-`FileNotFoundError`.
+every version now raises `PermissionDenied`. A symlink inside the folder whose
+target you may not reach is skipped, as a dangling one is, rather than failing
+the listing.
+
+A folder removed while one of these calls was opening it now lists as empty
+instead of raising the bare `FileNotFoundError`. On Windows, a call that meets
+the folder while its deletion is still in progress raises `PermissionDenied`,
+where it used to raise the bare `PermissionError`: Windows reports that state as
+access denied.
 
 A **recursive** `list_files()` changes only where it used to raise the bare
 `PermissionError`, which now arrives as `PermissionDenied`. It still leaves out

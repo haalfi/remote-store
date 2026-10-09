@@ -65,6 +65,32 @@ walks raise, and the marks have to come off then.
   from the exception alone turns a concurrent delete into a permission error.
   Telling them apart, for example by a re-check, is **unmeasured** and is this
   item's open decision. Run a deterministic delete-pending reproduction first.
+
+  BUG-280's single-level scans meet the same state, and map it. Measured with
+  `tmp/bug280/scan_churn.py` (gitignored; the shape is one thread looping
+  `rmtree` / recreate and the other calling the method 3000 times). The branch
+  was BUG-280 at `cdcaa35c6`, master was `31ebe6be7`, and the runs were on
+  Windows. With the listed folder `a` itself churned:
+
+  | Interpreter | Branch: `PermissionDenied` (`list_files` / `list_folders` / `iter_children`) | master: raw `PermissionError` (`winerror=5`) |
+  |---|---|---|
+  | 3.11.9 | 33 / 7 / 0 | 24 / 34 / 8 |
+  | 3.13.11 | 35 / 40 / 26 | 52 / 59 / 53 |
+  | 3.14.2 | 54 / 65 / 83 | 40 / 36 / 56 |
+
+  With only the folder's children churned, the branch answered all 3000 calls
+  of each method, while master leaked a raw `FileNotFoundError` in 9 to 261
+  calls of `list_files` and `iter_children` (none of `list_folders`).
+  `classify` inherits this: the scans' "a removed folder lists as empty" holds
+  on Windows only once the delete has completed.
+- **`_resolve` reports a folder mid-delete as escaping the root.** In the same
+  listed-folder runs, both trees raised `InvalidPath("Path escapes root
+  directory")` in up to 350 of 3000 calls per method; one run (3.11.9, the
+  branch's `iter_children`) met none. `_within_root` resolves
+  the deepest existing ancestor, and a delete-pending folder resolves to
+  something that is not under the root. The cause is read from the code and the
+  message, not traced further. The kernel's absence answer has to come before
+  this check, or the check has to learn the state.
 - **"Absent" is a short list, not "anything but a denial".** The walks skip
   every non-permission `OSError` (`EIO`, `ENAMETOOLONG`,
   `WinError 362` for a cloud placeholder whose provider is not running), while
