@@ -20,22 +20,26 @@ review loop after the PR opens is where both are largest.** Cache reads are
 `tokens_pct`, `units_pct`].
 
 - **The cost is after the PR opens.** In run A (`/ship BUG-280`), 94.1% of
-  units came after the PR opened [run_a_final: `phases`]. In BK-397's `/ship`
-  run the figure is 82% [work_items: `after_pr_open`].
+  units went to the main session after the PR opened plus all subagents (the one
+  subagent spawned before the PR-link record is 0.5%) [run_a_final: `phases`,
+  `rounds`]. In BK-397's `/ship` run, 82% came after the PR opened [work_items:
+  `after_pr_open`].
 - **The review loop runs on the implementation's context.** Every round pays
   again for the context the build left behind. Starting the post-PR work from a
-  fresh context would have saved an estimated 23 to 31% of the session group on
-  the two largest runs that recorded the moment [work_items:
+  fresh context would have saved an estimated 23 to 28% of BK-397's `/ship`
+  session group, and 28 to 31% of the v0.33.0 release's [work_items:
   `fresh_context_ceiling`].
 - **The long tail of a review loop is prose, and most of it the loop made
   itself.** From round 4 on, 49 to 78% of findings were caused by an earlier
   fix in the same loop [rounds: `origin_by_round`]. Of 321 prose findings in the
   13 longest loops, 94% are checkable by a command or by listing the cases
   [prose_classes: `checkable_counts`].
-- **Run A planned without the related open work.** BUG-280 shares spec BE-021
-  with seven open items, two of them the backend redesign that later reshaped
-  the fix. BK-394 first entered the session's context at call 414, after the
-  maintainer raised it [run_a_orient_check].
+- **Run A met most related items early, but not the one that said the
+  redesign was pending.** BUG-280 shares spec BE-021 with seven open items. BK-389
+  and RFC-0017 were in context from call 2, before the first edit at call 9, and
+  five of the seven items by call 14. BK-394 and ADR-0042, which
+  state that the redesign is pending, entered only at calls 414 and 415
+  [run_a_orient_check: `first_mention_call`; run_a_final: `first_edit_call`].
 - **The always-loaded instruction files are second order.** The backlog files,
   linked docs and `CLAUDE.md` text each account for about 2 to 3% of re-read
   context [backlog_links: `groups`; composition: `instruction_files`].
@@ -57,8 +61,9 @@ describe what happened, they do not estimate a rate.**
   covers 13 PRs chosen as the longest loops, so it describes the expensive tail,
   not a typical PR.
 - **Pruning.** A compaction resets carried context, and this record counts an
-  item only until its segment ends. Traces record a quarter to a half of what a
-  session read [work_items: `read_tokens_not_in_trace_pct`]. Trace sizes are
+  item only until its segment ends. For the six work items with a trace, the
+  files the trace names hold 30 to 65% of the Read tokens their sessions spent
+  [work_items: `read_tokens_not_in_trace_pct`, 35 to 70 not in the trace]. Trace sizes are
   taken at each trace's creation commit and bound the read from above.
 - **LLM-assisted classification.** The prose labels were assigned once, by a
   model, against a fixed rubric (`prose_classes.py`). The analysis session
@@ -155,13 +160,15 @@ From [composition: `shares_pct`]; smaller rows are in the file.
 
 ## 4. Five months of traces and PRs
 
-**Every activity measure steps up when `/ship` and ADR-0033 landed on
-2026-08-05, and per-PR cost rose roughly fivefold while monthly PR throughput
-fell to about a third.** Traces and PRs carry no token counts, so cost here is
-projected from PR activity and calibrated on six PRs with measured units.
+**Commits per PR, review threads per PR and review rounds per trace step up
+when `/ship` and ADR-0033 landed on 2026-08-05. PR throughput had already
+fallen in July.** Traces and PRs carry no token counts, so cost here is
+projected from commits per PR, fitted on six PRs with measured units. All six
+are from September and October, so every earlier month is an extrapolation.
 
 | Month | PRs merged | Commits (median) | Review threads (mean) | Est. units per PR |
 | --- | ---: | ---: | ---: | ---: |
+| 2026-05 | 141 | 3 | 6.1 | 12.5 M |
 | 2026-06 | 157 | 3 | 3.2 | 4.6 M |
 | 2026-07 | 63 | 3 | 6.2 | 7.6 M |
 | 2026-08 | 44 | 7.5 | 21.6 | 27.5 M |
@@ -170,9 +177,10 @@ projected from PR activity and calibrated on six PRs with measured units.
 
 From [pr_model: `monthly`]. Commit count predicts a PR's units best: log-log r
 0.83, with a leave-one-out error factor of 2.3. The other features score 3.0 to
-3.7 [pr_model: `features`]. Before the earliest calibration PR the projection is
-out of its domain. Read the absolute figures as orders of magnitude; the step at
-2026-08-05 is the robust part.
+3.7 [pr_model: `features`, `calibration_prs`]. The estimated units depend on
+the baseline month: August's 27.5 M per PR is 6.0 times June's and 2.2 times
+May's. Read them as orders of magnitude. The observable step is commits (median
+3 to 7.5) and review threads (mean 6.2 in July to 21.6 in August).
 
 - **Review rounds per trace** went from a median of 2 (June, July) to 6
   (August, September) [trace_corpus: `monthly`].
@@ -207,9 +215,12 @@ with a derived `review:` block give each round's findings by origin [rounds:
   399 are on prose files, 59 on traces and 186 on code or tests [rounds:
   `comments`]. Prose and traces are 68% of round 1 and 84% from round 9 on
   [rounds: `prose_and_trace_share_by_round_pct`].
-- **Pure code converges fast.** The median PR has one round with findings after
-  its last code or test finding. 34% have two or more [rounds:
-  `rounds_after_last_code_finding`].
+- **Pure code converges fast; the longest loops have no code finding at all.**
+  Of the 24 PRs with a code or test finding, the median has no round with
+  findings after the last one, and 4 have two or more [rounds:
+  `rounds_after_last_code_finding`]. The other 17 PRs drew prose and trace
+  findings only, including loops of 13, 12, 11 and 10 rounds [rounds:
+  `prs_without_code_finding`].
 
 **The prose findings are checkable, not vague.** All 321 prose findings in the
 13 longest loops were classified against a fixed rubric
@@ -225,9 +236,9 @@ with a derived `review:` block give each round's findings by origin [rounds:
 | DESIGN | 19 | | | |
 | CLARITY | 6 | | | |
 
-- **The mix shifts toward missing cases.** FACT falls from 38% of prose findings
-  in rounds 1 to 2 to 23% in rounds 5 to 8, while SCOPE rises from 23% to 36%
-  [prose_classes: `class_by_round_band_pct`].
+- **SCOPE peaks mid-loop.** Across the round bands 1–2, 3–4, 5–8 and 9+ (53, 98,
+  97 and 73 findings), SCOPE is 23, 26, 36 and 26% of prose findings and FACT 38,
+  29, 23 and 26% [prose_classes: `class_by_round_band_pct`].
 - **Edits invalidate neighbouring claims.** Findings that say an earlier fix of
   the same PR caused them rise from 4% (rounds 1 to 2) to 19 to 21% (rounds 3
   and later). This counts only explicit statements, so it undercounts
@@ -238,11 +249,15 @@ with a derived `review:` block give each round's findings by origin [rounds:
 ## 6. Skills listed but never used
 
 **Skills synced from claude.ai were listed in every session and every
-subagent without ever being used; turning them off removes about 3k tokens
-per call.** Claude Code's `/plugins` Stats view, read on 2026-10-09, showed
-13 synced skills, about 3,160 tokens listed and zero uses. It also showed
-about 380 tokens for this repo's listed skills. That view is the source for
-those three figures. No script here produces them.
+subagent without ever being used, so turning them off removes part of a
+listing this record measures at about 2.6k tokens per main session.**
+Claude Code's `/plugins` Stats view, read on 2026-10-09, showed 13 synced
+skills, about 3,160 tokens listed and zero uses, and about 380 tokens for this
+repo's listed skills. No script here produces those three figures. They exceed
+the whole listing this record measures in the first-call prefix: 2,558 tokens
+per main session and 2,423 per subagent, at the § 1 calibration [composition:
+`prefix`]. The two are on different scales, and this record does not reconcile
+them.
 
 - The skill listing re-enters mid-session too: 23 times in the window, 1.57% of
   re-read context [composition: `attachments_after_start`].
@@ -255,7 +270,7 @@ those three figures. No script here produces them.
 ## 7. Run A: `/ship BUG-280` at the round-7 checkpoint
 
 **A pure-baseline `/ship` run on an S-sized bug spent 31.5 M units by its
-seventh review round, nine tenths of it after the PR opened, hardening a fix
+seventh review round, nine tenths of it in the review loop and its subagents, hardening a fix
 that related open work would reshape.** The maintainer paused it there
 [run_a_round7]. The cut is the
 round-7 checkpoint's last call (`tokkit.py report --until
@@ -269,15 +284,20 @@ round-7 checkpoint's last call (`tokkit.py report --until
 | Review subagents | 599 | 30.6% | — |
 
 From [run_a_round7: `phases`]. The main session's context entering each round
-grew from 255k (round 1) to 828k (round 7) [run_a_round7: `rounds`].
+grew from 255k (round 1) to 828k (round 7) [run_a_round7: `rounds`]. That key
+has eight spawns for seven rounds: round 6 spawned twice (calls 335 and 348),
+re-run after master moved. Round 1, the `/rvw-pr` at call 103, comes before the
+PR-link record at call 129, because `/pr` ran at call 90.
 
-- **Context the run never gathered.** BUG-280 lists one spec, BE-021, and seven
-  open items shared it at the run's base commit. Two were the backend redesign,
-  BK-389 and BK-394 [run_a_orient_check: `related`]. BK-389 entered the context
-  at call 2. BK-394 entered at call 414 and ADR-0042
-  at call 415, after the maintainer asked whether the redesign changed the fix
-  [run_a_orient_check: `first_mention_call`]. The other five shared items are
-  sibling bugs and a gate item, so a spec-ID query has noise to triage.
+- **The late context.** BUG-280 lists one spec, BE-021, and seven open items
+  shared it at the run's base commit. Two were the backend redesign, BK-389 and
+  BK-394 [run_a_orient_check: `related`]. BK-389 and RFC-0017 entered the context
+  at call 2, and five of the seven items by call 14. BK-394 and ADR-0042, which
+  state that the redesign is pending, entered at calls 414 and 415, after the
+  maintainer asked whether the redesign changed the fix [run_a_orient_check:
+  `first_mention_call`]. So the run had met BK-389 and still planned without
+  it. What a spec-ID query would have added is BK-394, among five items that
+  are sibling bugs and a gate item.
 - **Environment cost.** Of 19 local gate runs, 3 were cut off at the tool's 600 s
   limit, and one background wait left the session idle for 37 minutes
   [run_a_gates]. The maintainer attributes these to full test suites from other
@@ -290,10 +310,10 @@ every call, so neither needs a change in how sessions work.**
 
 | Change | Per call | Scope |
 | --- | ---: | --- |
-| Synced claude.ai skills off (`syncClaudeAiSkills: false` in local settings) | about −3.2k tokens | Main sessions and every subagent, this repo |
+| Synced claude.ai skills off (`syncClaudeAiSkills: false` in local settings) | at most −2.6k tokens (the whole measured listing) | Main sessions and every subagent, this repo |
 | MEMORY.md trimmed from 13,620 to 4,043 bytes | about −3.9k tokens | Main sessions only |
 
-The skills figure is the Stats view's (§ 6). The MEMORY.md sizes are the file's
+The skills bound is the measured listing, not the Stats view's figure (§ 6). The MEMORY.md sizes are the file's
 bytes before and after the trim, divided by 2.43 characters per token (§ 1). Its
 measured cost before the trim was 1.19% of units [composition:
 `instruction_files`]. Both changes apply to sessions started afterwards. The
@@ -308,7 +328,7 @@ acting could move rather than predicting a saving.
 
 | # | Hypothesis | Evidence | Ceiling | How to test |
 | --- | --- | --- | --- | --- |
-| 1 | The review loop is expensive mainly because it runs on the implementation's context | 82% (BK-397) and 94.1% (run A) of units after PR open; fresh-context estimate 23–31% net on the two largest runs | 23–31% of a `/ship` session group | Units per round with and without a fresh context at PR open |
+| 1 | The review loop is expensive mainly because it runs on the implementation's context | 82% (BK-397) of units after PR open; 94.1% (run A) in the post-PR main session plus all subagents; fresh-context estimate 23–28% net on BK-397, the one `/ship` run with the PR-open moment recorded (28–31% on the release) | 23–28% of a `/ship` session group | Units per round with and without a fresh context at PR open |
 | 2 | The part of the prefix this repo controls is the instruction files | Prefix 22.3%; instructions 11.8k of 55.9k per main call | 2.5% (`CLAUDE.md`) + 1.19% (MEMORY.md, before trim) | First-call prefix before and after a size change |
 | 3 | Subagents pay the prefix again and re-read the same process files | Subagents 24.7% of units; mean prefix 52.9k; rvw-pr skill read by 24 | 24.7% | Per subagent: prefix, shared process files, PR-specific reads |
 | 4 | Oversized outputs read back are the costliest read pattern | Transcript-folder reads 2.67% | about 3% | Spilled outputs and their read-back tokens per run |
@@ -318,8 +338,8 @@ acting could move rather than predicting a saving.
 | 8 | Backlog files and linked docs are second order | 2.22%, 2.26%, 3.09% (upper bound) | 2–5% | Same, over a longer sample, with Grep hits |
 | 9 | The repo's own token report understates context | 4 chars/token assumed against 2.4 measured; prefix and thinking left out | measurement | Re-run § 1 on new transcripts, compare rankings |
 | 10 | The long prose tail is checkable claims nothing checks but the next round | 49–78% loop-introduced from round 4; 94% of prose findings checkable | most of a long loop | Per round, count findings a mechanical check would have caught first |
-| 11 | Listed but unused skills cost on every call | 13 synced skills, about 3.2k tokens; 4.12% in BK-397 | about 1% | First-call context with and without the listing |
-| 12 | An orient check for related open work prevents loops on items a redesign will reshape | Run A: BE-021 shared with BK-389, BK-394 among 7; 89% after PR open at round 7 | a whole loop, on affected items | Before planning, list open items sharing spec IDs; count how often the plan changes |
+| 11 | Listed but unused skills cost on every call | 13 synced skills (Stats view: 3,160 tokens); whole listing measured at 2.6k per main session; 4.12% of BK-397's re-read context | about 1% | First-call context with and without the listing |
+| 12 | An orient check for related open work prevents loops on items a redesign will reshape | Run A: BE-021 shared with 7 open items; BK-389 in context from call 2 without changing the plan; BK-394, which says the redesign is pending, only at call 414. A listing alone did not help; whether a dialog about it would is untested | a whole loop, on affected items | Before planning, list open items sharing spec IDs and ask how each relates; count how often the plan changes |
 
 Sources: rows 1, 12 [work_items], [run_a_final], [run_a_orient_check]; rows
 2–6, 8 [composition], [backlog_links]; row 7 [inventory]; row 9 [calibration];
@@ -327,7 +347,8 @@ row 10 [rounds], [prose_classes]; row 11 § 6.
 
 ## Run A final
 
-**Run A finished at 59.3 M units, $137, with 94.1% after the PR opened. The
+**Run A finished at 59.3 M units, $137, with 94.1% in the post-PR main session
+and all subagents. The
 compaction at call 458 cut the main context to 113k, and six rounds later it
 was back at 625k.** Figures from [run_a_final] (the finished transcript, no cut)
 and [run_a_final_gates].
@@ -343,11 +364,12 @@ and [run_a_final_gates].
   re-planned (narrowed the PR) and ran six more spawning rounds after the
   compaction [run_a_final: `rounds`, `compaction_calls`]. The first route cost
   31.5 M units; the whole run 59.3 M.
-- **Compaction as a natural test of proposal #2.** Main context at a round's
-  start fell from 828k (round 7) to 113k after the compaction, then grew 113k,
-  223k, 273k, 396k, 479k and 625k over the next six rounds [run_a_final:
-  `rounds`]. A one-time reset buys a few cheap rounds. The context regrows at
-  roughly 85k per round, so the saving decays within one loop.
+- **Compaction as a natural test of hypothesis 1 (fresh context).** Main context
+  at a round's start fell from 828k (round 7) to 113k after the compaction, then
+  stood at 113k, 223k, 273k, 396k, 479k and 625k at the next six rounds
+  [run_a_final: `rounds`]. That is about 102k of regrowth per round ((625 − 113)
+  / 5 intervals), so a one-time reset buys a few cheap rounds and the saving
+  decays within one loop.
 - **Gates.** Over the whole run, 33 gate runs: 3 cut off at the 600 s limit,
   the same three as at round 7, and one 37-minute idle stall
   [run_a_final_gates].

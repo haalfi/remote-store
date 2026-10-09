@@ -115,3 +115,14 @@ phases:
         section: "Correction, Note sections"
         read_type: reference
         extract: "Dated notes are appended, the original evidence is not rewritten (Item authority)"
+      - file: sdd/research/token-usage/report.md
+        section: "(whole), after /rvw-pr on PR #1098"
+        read_type: verify
+        extract: >-
+          One review pass found nine claims wider than their cited key, all
+          mine: a ceiling taken from a non-/ship run, a tail figure that
+          counted prose-only PRs as tail (rounds.py now splits them), a
+          divisor off by one, a baseline month chosen at the trough, and an
+          orient claim the record's own first-mention data contradicts. Each
+          narrowed to its key; round 1's eight-spawns-for-seven-rounds count
+          was right and now carries its enumeration

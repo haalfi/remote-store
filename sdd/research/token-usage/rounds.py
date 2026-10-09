@@ -93,7 +93,8 @@ def main(argv=None) -> int:
     cache.write_text(json.dumps(data), encoding="utf-8")
 
     where = collections.defaultdict(collections.Counter)
-    tail = []
+    tail = []  # rounds after the last code/test finding, for PRs that have one
+    prose_only = []  # rounds of PRs with no code/test finding at all
     for revs in data.values():
         revs = sorted(revs, key=lambda r: r["at"])
         for i, rv in enumerate(revs, 1):
@@ -101,7 +102,10 @@ def main(argv=None) -> int:
                 where[min(i, 9)][kind(x["path"])] += 1
         if revs:
             code_idx = [i for i, r in enumerate(revs, 1) if any(kind(x["path"]) == "code/test" for x in r["comments"])]
-            tail.append(len(revs) - (max(code_idx) if code_idx else 0))
+            if code_idx:
+                tail.append(len(revs) - max(code_idx))
+            else:
+                prose_only.append(len(revs))
     total = collections.Counter()
     for cnt in where.values():
         total.update(cnt)
@@ -123,10 +127,11 @@ def main(argv=None) -> int:
             label(b): c.pct(cnt["prose"] + cnt["trace"], sum(cnt.values()), 0) for b, cnt in sorted(where.items())
         },
         "rounds_after_last_code_finding": {
-            "median": st.median(tail),
-            "share_two_or_more_pct": c.pct(sum(1 for x in tail if x >= 2), len(tail), 0),
             "prs": len(tail),
+            "median": st.median(tail),
+            "two_or_more": sum(1 for x in tail if x >= 2),
         },
+        "prs_without_code_finding": {"prs": len(prose_only), "rounds": sorted(prose_only, reverse=True)},
     }
     c.write_result(args.results, "rounds", "rounds", {"round_comments.json": cache}, payload)
     return 0

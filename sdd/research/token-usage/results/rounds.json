@@ -67,8 +67,30 @@
   "9+": 84.0
  },
  "rounds_after_last_code_finding": {
-  "median": 1,
-  "share_two_or_more_pct": 34.0,
-  "prs": 41
+  "prs": 24,
+  "median": 0.0,
+  "two_or_more": 4
+ },
+ "prs_without_code_finding": {
+  "prs": 17,
+  "rounds": [
+   13,
+   12,
+   11,
+   10,
+   6,
+   4,
+   3,
+   2,
+   2,
+   2,
+   1,
+   1,
+   1,
+   1,
+   1,
+   1,
+   1
+  ]
  }
 }

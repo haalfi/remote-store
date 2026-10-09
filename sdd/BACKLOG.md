@@ -978,8 +978,8 @@ sessions work is measured before it becomes process.
 
 - [~] **BK-418 — `/ship` spends most of a delivery after the PR opens, and no intervention against it is measured**
   spec: — · effort: L · audience: contributor.process, contributor.tooling
-  Run A (`/ship BUG-280`) spent 94% of its 59.3 M units after the PR opened,
-  and from round 4 most findings were caused by the loop's own fixes
+  Run A (`/ship BUG-280`) spent 94% of its 59.3 M units in its review loop and
+  subagents, and from round 4 most findings were caused by the loop's own fixes
   ([research record](research/token-usage/report.md)). Four interventions are
   unmeasured: a prose-tail stop, fresh context at PR open, an orient check for
   related open work, gate robustness. Open decision: which survive run B.
