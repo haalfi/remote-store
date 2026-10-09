@@ -883,7 +883,7 @@ coverage floor.
   import graph and reader inventory; the [bucket rules](research/bk-403-phase-0/bucket-rules.md)
   judge on net time saved instead. Open decision: amend those exits before RFC-0019 is redrafted.
 
-- [ ] **BK-403 — No change-scoped test selector has been chosen for this suite; one of three candidates is measured**
+- [~] **BK-403 — No change-scoped test selector has been chosen for this suite; one of three candidates is measured**
   spec: — · effort: M · audience: infra.test, contributor.tooling
   Both gates run every test for every code diff (audit-022 § H1). A coverage map
   failed its PoC; [RFC-0019](rfcs/rfc-0019-two-speed-test-gate.md)'s rule-based
