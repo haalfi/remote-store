@@ -688,3 +688,142 @@ phases:
           the defect. The stub follows the repo's "- <ID>: <Title>" rule,
           which the release step expands; kept by the maintainer's call
         outcome: ok
+review:
+  # Derived by `hatch run ship-report 1093 --trace-block-only` at head b49d737.
+  # Do not hand-edit, except a newly required field per sdd/traces/_schema.yml
+  # section review: RFC-0015 D4 makes this script the only producer.
+  derivation: "hatch run ship-report 1093 --trace-block-only"
+  pr: 1093
+  review_rounds: 16
+  submissions: 13
+  findings: 74
+  by_round:
+    - round: 1
+      findings: 1
+      origin: {unclassifiable-file: 1}
+      triage: {filed: 1}
+      duration_hours: 0.04
+    - round: 2
+      findings: 1
+      origin: {original: 1}
+      triage: {must-fix: 1}
+      duration_hours: 0.25
+    - round: 3
+      findings: 6
+      origin: {original: 6}
+      triage: {filed: 2, must-fix: 3, refuted: 1}
+      duration_hours: 1.25
+    - round: 4
+      findings: 7
+      origin: {loop-introduced: 7}
+      triage: {must-fix: 6, refuted: 1}
+      duration_hours: 0.57
+    - round: 5
+      findings: 6
+      origin: {loop-introduced: 5, unclassifiable-file: 1}
+      triage: {filed: 1, must-fix: 5}
+      duration_hours: 0.42
+    - round: 6
+      findings: 4
+      origin: {loop-introduced: 3, original: 1}
+      triage: {must-fix: 4}
+      duration_hours: 0.83
+    - round: 7
+      findings: 3
+      origin: {loop-introduced: 3}
+      triage: {must-fix: 2, unknown: 1}
+      duration_hours: 1.15
+    - round: 8
+      findings: 1
+      origin: {loop-introduced: 1}
+      triage: {must-fix: 1}
+      duration_hours: 0.27
+    - round: 9
+      findings: 3
+      origin: {loop-introduced: 2, unclassifiable-file: 1}
+      triage: {must-fix: 2, unknown: 1}
+      duration_hours: 0.07
+    - round: 10
+      findings: 7
+      origin: {loop-introduced: 7}
+      triage: {must-fix: 6, refuted: 1}
+      duration_hours: 0.32
+    - round: 11
+      findings: 9
+      origin: {loop-introduced: 9}
+      triage: {must-fix: 8, unknown: 1}
+      duration_hours: 0.45
+    - round: 12
+      findings: 15
+      origin: {loop-introduced: 12, original: 2, pre-existing: 1}
+      triage: {must-fix: 15}
+      duration_hours: 0.36
+    - round: 13
+      findings: 11
+      origin: {loop-introduced: 9, original: 1, unclassifiable-file: 1}
+      triage: {must-fix: 10, unknown: 1}
+      duration_hours: 0.37
+  by_file:
+    - path: "src/remote_store/backends/_local.py"
+      findings: 22
+    - path: "tests/backends/local/test_listing_permission.py"
+      findings: 12
+    - path: "docs-src/reference/migration.md"
+      findings: 11
+    - path: "sdd/specs/003-backend-adapter-contract.md"
+      findings: 8
+    - path: "sdd/backlog/bug-313-local-get-file-info-denied-parent.md"
+      findings: 6
+    - path: "sdd/backlog/bk-416-local-walks-onto-kernel.md"
+      findings: 5
+    - path: "sdd/traces/bug-280-local-listing-permission-leak.yml"
+      findings: 3
+    - path: "sdd/BACKLOG-DONE.md"
+      findings: 2
+    - path: "sdd/backlog/bug-280-local-listing-permission-leak.md"
+      findings: 2
+    - path: "CHANGELOG.md"
+      findings: 1
+    - path: "sdd/BACKLOG.md"
+      findings: 1
+    - path: "sdd/backlog/bug-311-local-glob-denied-subtree.md"
+      findings: 1
+  untouched_files:
+    - "docs-src/_data/graph/graph.json"
+    - "docs-src/explanation/graph_viz.html"
+    - "sdd/backlogid.json"
+    - "sdd/decisions/b5344dfd-891b-4dc2-853e-0437078390fd.jsonl"
+  review_driven_commits:
+    - sha: "5d5e1de"
+      subject: "BUG-280: Map a denied subtree in get_folder_info to PermissionDenied"
+    - sha: "800af9d"
+      subject: "BUG-280: Pin the vanished-subfolder tolerance on every recursive walk"
+    - sha: "47f18c6"
+      subject: "BUG-280: Classify each walked path with one stat whose denial propagates"
+    - sha: "1883d34"
+      subject: "BUG-280: Enumerate the Store forms at every denial site and narrow the claims"
+    - sha: "ad562e6"
+      subject: "BUG-280: decision log"
+    - sha: "fdc5ed0"
+      subject: "BUG-280: List the session's decision log in the trace"
+    - sha: "ad986cb"
+      subject: "BUG-280: Say the walk's denial ends the call, and file the opt-in skip"
+    - sha: "898ad2f"
+      subject: "BUG-280: Read a folder gone between its stat and its scan as absent"
+    - sha: "cdcaa35"
+      subject: "BUG-280: Narrow to the single-level scans; the recursive walks go to BK-416"
+    - sha: "4c36160"
+      subject: "BUG-280: Skip a link the scan may not follow, and make the BK-416 xfails meet their denial"
+    - sha: "66e90f0"
+      subject: "BUG-280: State the listing-entry link rule in BE-021, and scope its wording"
+    - sha: "2103ed1"
+      subject: "BUG-280: Name the lstat fallback instead of an empty except"
+    - sha: "a387794"
+      subject: "BUG-280: Map a non-absence OSError, and scope the claims to the single-level scans"
+    - sha: "0b069ab"
+      subject: "BUG-280: Ask the absence set before the denial, and say what the walk maps"
+    - sha: "150f0b9"
+      subject: "BUG-280: Skip a junction the scan may not follow, and stop describing the walks"
+    - sha: "b49d737"
+      subject: "BUG-280: Say the listed folder check is shared, and state the 3.11/3.12 RuntimeError"
+  ci: {verdict: GREEN, failed: 0, pending: 0}

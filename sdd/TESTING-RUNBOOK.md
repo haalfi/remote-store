@@ -322,3 +322,26 @@ is consistent with the recorded wire behaviour.
 of truth; the cassette is only a faithful recording of a single trajectory.
 Account-config variance, eventual consistency, and timing-dependent SDK paths
 can hide behind a green replay.
+
+## Real OS denials on Windows
+
+A test that denies access with `icacls` must be able to lift the deny again in
+its `finally`. The deny shape decides whether it can.
+
+| Deny | Effect | Liftable by the test |
+|---|---|---|
+| `(F)`, `(R)`, `(RX)` | refuses opens, and also read-control and write-DAC | **No**: `icacls /remove:d` is refused too, and the folder needs an administrator (`takeown`, `icacls /reset`) to delete |
+| `(RD)` | refuses listing a folder; `stat` still succeeds | Yes |
+| `(S)` | refuses every open, since every open requests SYNCHRONIZE; a `stat` through a junction into the folder is refused | Yes |
+
+A `stat` of the denied file or folder itself still succeeds under `(S)`, and
+under `(RA)` or `(RD,RA,REA,X)`: CPython falls back to the parent's directory
+entry, so such a file is still listed. Only a reparse point, such as a junction,
+blocks that fallback. So a Windows ACL cannot make a non-recursive listing
+refuse a plain entry; that case runs on POSIX (`chmod`) only.
+
+A Windows directory junction is the link a test can make without the symlink
+privilege: `_winapi.CreateJunction(target, link)`. `lstat` reports it as a
+directory with reparse tag `0xA0000003`, not as `S_IFLNK`. The `stat` module
+defines `IO_REPARSE_TAG_*` on Windows only, so code that compares the tag needs
+its own constant. `tests/backends/local/test_listing_permission.py` uses both.
