@@ -2,8 +2,10 @@
 <!-- doc: repo-only -->
 
 Filed by BUG-280's closing round. Its sibling sweep listed every place that
-classifies a path with `Path.is_file` or `is_dir`. BUG-280 fixed the folder
-walks among them. `get_file_info` was left out of that PR's scope by decision.
+classifies a path with `Path.is_file` or `is_dir`. BUG-280, as merged, fixed the
+single-level scans among them; the recursive walks and `get_folder_info` went
+to BK-416 (RFC-0017 step 5). `get_file_info` was left out of that PR's scope by
+decision.
 
 The next round's measuring member found that the public predicates `exists`,
 `is_file` and `is_folder` have the same shape, which the first filing missed. It
@@ -48,37 +50,37 @@ The mechanism is the one BUG-280 measured for the walks. Each of these asks
   answer `False` for any `OSError`, so a path the OS refuses to `stat` reads as
   absent.
 
-**The `Store` path that inherits it.** `Store.get_folder_info(path,
-max_depth=N)` asks `backend.is_folder(path)` before it aggregates through
-`list_files`. When `path`'s parent cannot be traversed:
-- with a `max_depth`, it leaks the raw `PermissionError` on 3.11 to 3.13 and
-  answers `NotFound` on 3.14;
-- with `max_depth=None`, it reaches the backend aggregate and raises
-  `PermissionDenied` since BUG-280.
-
-`tests/backends/local/test_listing_permission.py` pins that cell as a strict
-`xfail`. It names this item, and it fails the day the `max_depth` form raises
-`PermissionDenied`.
+**`get_folder_info` inherits it, through both `Store` routes.** On a folder
+whose parent cannot be traversed, `get_folder_info` and `Store.get_folder_info`
+both classify the folder with `is_file()` / `is_dir()`, with or without a
+`max_depth`; the `max_depth` form asks `backend.is_folder(path)` before it
+aggregates through `list_files`. Measured at BUG-280's merged head with this
+item's script, all three forms leak a raw `builtins.PermissionError` on 3.11.15
+and 3.13.11 and answer `NotFound` on 3.14.0. The routes agree; they agree on
+the wrong answer.
 
 ## Advisory prescription
 
-For `get_file_info`, classify and measure with one `stat`, as BUG-280's
-`_stat_or_absent` does for the walks. Map a `PermissionError` to
-`PermissionDenied`. Keep `InvalidPath` for a directory and `NotFound` for an
-absent path.
+**Decide first whether this waits for BK-416.** At RFC-0017 step 5, Local's one
+`classify` behind the kernel answers every row here, and the walks with them;
+fixing them one method at a time first is the per-site pattern BUG-280 stopped.
+
+If it is fixed here: for `get_file_info`, classify and measure with one `stat`,
+as BUG-280's `_stat_or_absent` does for the single-level scans. Map a
+`PermissionError` to `PermissionDenied`. Keep `InvalidPath` for a directory and
+`NotFound` for an absent path.
 
 The predicates are the open decision. BE-021 forbids them from raising, so on a
-denial they must answer something. `False` is what 3.14 already does, and it
-makes the `Store` `max_depth` form answer `NotFound` on every version. That
-removes the leak, but leaves the two `max_depth` forms disagreeing.
-
-Making the two forms agree means changing `Store`'s depth branch, so that it
-learns about a denial without asking a predicate. That reaches every backend,
-which is why it was kept out of BUG-280.
+denial they must answer something. `False` is what 3.14 already does; it removes
+the leak, but then `Store.get_folder_info(max_depth=N)` answers a denied folder
+`NotFound`, a missing folder rather than a refused one. Avoiding that means
+`Store`'s depth branch learning about a denial without asking a predicate, which
+reaches every backend.
 
 The next ring is every other hit of the whole-class pattern above. It excludes
-the walks BUG-280 fixed, the predicates and `get_file_info` this item names, and
-`glob`'s `item.is_file()`, which is BUG-311's. Each was measured with this
+the single-level scans BUG-280 fixed, the recursive walks and `get_folder_info`
+(BK-416), the predicates and `get_file_info` this item names, and `glob`'s
+`item.is_file()`, which is BUG-311's. Each was measured with this
 item's script shape, extended to deny `open` and `unlink` inside the folder
 and to swap in `genericpath.exists`, on 3.11.15, 3.13.11 and 3.14.0, unless it
 is marked as read.

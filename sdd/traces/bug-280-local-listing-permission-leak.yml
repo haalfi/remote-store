@@ -21,7 +21,11 @@ discovery_followups:
   - BUG-313
   # Born in round 5: the strict raise this PR chose leaves no way to skip an
   # unreadable folder; kept strict by decision, the opt-in filed rather than built.
+  # Absorbed into BK-416 when the PR was narrowed (it was never on master).
   - BK-415
+  # Born at the re-plan after round 7: the recursive walks and get_folder_info,
+  # handed to RFC-0017 step 5 with every measurement the seven rounds produced.
+  - BK-416
 decisions:
   - sdd/decisions/b5344dfd-891b-4dc2-853e-0437078390fd.jsonl
 phases:
@@ -387,4 +391,49 @@ phases:
           lead entry and the index diagnosis names it. A list said to be
           complete was wrong twice in two passes: the derivation behind it was
           a pattern, and each pass trusted the pattern's hits as the subject
+        outcome: ok
+  - id: replan
+    name: Re-plan after round 7 (narrowed to the single-level scans)
+    steps:
+      - file: src/remote_store/backends/_local.py
+        section: "_raise_if_denied (os.walk hook)"
+        read_type: verify
+        extract: >-
+          Round 7's measuring member ran a real concurrent delete (one thread
+          looping rmtree/recreate on a/sub, 3000 calls per walk) and found the
+          hook turning Windows' delete-pending WinError 5 into PermissionDenied
+          in 75-1717 of 3000 calls by interpreter, where master read most of
+          those as absent. Its unprimed member found every non-permission
+          OSError skipped by the walks and leaked by the scans. The rule
+          "denial raises, anything else is absence" had now failed on timing
+          and on error class, after seven rounds of per-site fixes; the user
+          stopped the loop
+        outcome: ok
+      - file: sdd/rfcs/rfc-0017-contract-kernel-over-thin-drivers.md
+        section: "D2 kernel responsibilities; D3 migration table"
+        read_type: gate
+        extract: >-
+          The user asked whether BK-389/BK-394's redesign would make this
+          simpler. It does: the kernel owns the never-leak choke point on every
+          list_page iteration (naming BUG-249 and 280), the recursive walk and
+          max_depth (BK-389 decision 7) and the get_folder_info aggregate; a
+          LocalDriver supplies list_page and one classify. Local migrates at
+          step 5, so the hand-built walk model would be thrown away there. The
+          PR was cut to the single-level scans, which round 7 measured as
+          regression-free, and the walks went to BK-416 with every measurement
+        outcome: ok
+      - file: src/remote_store/backends/_local.py
+        section: "list_files recursive branches, get_folder_info"
+        read_type: verify
+        extract: >-
+          Reverted to master's traversal (rglob, max_depth os.walk without a
+          hook) and get_folder_info byte-for-byte; the recursive branches stay
+          inside list_files' mapping try. Measured against master 31ebe6be7 on
+          3.11, 3.13 and 3.14 with real ACL denials of a and a/sub: 0 differing
+          cells across every recursive and get_folder_info form. One intended
+          difference, measured separately: a recursive list_files over entries
+          it cannot stat raised the bare PermissionError on master and now
+          raises PermissionDenied; its silent subtree drop is unchanged.
+          Four strict xfail cells name BK-416. 12 mutants over the retained
+          sites all die on 3.14; two die only there by construction
         outcome: ok

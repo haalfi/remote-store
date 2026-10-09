@@ -17,30 +17,18 @@ raise `PermissionDenied`, as `read`, `write` and `delete` already did. If you
 wrote `except PermissionError` around a listing on this backend, it no longer
 fires. Catch `PermissionDenied`.
 
-A **recursive** `list_files()` and `get_folder_info()` change in a second way.
-A subfolder they could not read used to be skipped without a word, so a partly
-unreadable tree came back as a shorter listing, or a smaller file count and
-total size, that looked complete, and a top folder they could not read came back
-empty. Both now raise `PermissionDenied`: the listing part-way through the
-iteration, where the walk meets the denied folder. A `max_depth` that stops
-above the denied folder still never opens it and does not raise.
-
-The error ends the call: catching it does not resume a listing, and
-`get_folder_info()` returns no total. There is no option yet to skip folders you
-cannot read. If your tree has some, for example a store rooted at a drive or
-mount root (`System Volume Information` on Windows, `lost+found` on Linux),
-walk it one level at a time instead: `list_folders()` for the subfolders and a
-non-recursive `list_files()` for each, catching `PermissionDenied` per folder.
-
 The same holds for a folder you may list but not open, such as a POSIX
-directory with read but no execute permission. On Python 3.14 most of these
-calls used to lose its entries without an error; a recursive listing bounded by
-`max_depth` raised the bare `PermissionError` instead, as every call here did on
-3.11 to 3.13. Every version now raises `PermissionDenied`, so an
-`except PermissionError` around any of these no longer fires.
+directory with read but no execute permission. On Python 3.14 a non-recursive
+`list_files()`, `list_folders()` and `iter_children()` used to lose its entries
+without an error, and on 3.11 to 3.13 they raised the bare `PermissionError`;
+every version now raises `PermissionDenied`. A folder removed while one of these
+calls was opening it now lists as empty instead of raising the bare
+`FileNotFoundError`.
 
-`glob()` is not changed by this release. It still leaves out a folder it cannot
-read, without an error.
+A **recursive** `list_files()` changes only where it used to raise the bare
+`PermissionError`, which now arrives as `PermissionDenied`. It still leaves out
+a subfolder it cannot read, without an error. `get_folder_info()` and `glob()`
+are not changed by this release, and do the same.
 
 ## v0.32.0 to v0.33.0
 

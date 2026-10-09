@@ -24,6 +24,7 @@ Folded into a surviving `BACKLOG.md` item as a sub-bullet carrying its evidence.
 **The work is open, not done** — follow the host. The ID is retired because a
 sub-bullet is not an ID.
 
+- [x] **BK-415 — A recursive listing cannot skip folders the caller may not read** → **BK-416**, as a kernel-level listing option. Filed in BUG-280's PR (#1093) while that PR made the recursive walks raise on a denial; the PR was then narrowed to the single-level scans and the walks were left for RFC-0017 step 5, which carries the question. Never on master.
 - [x] **BUG-297 — A backend `write` of a key `RemotePath` rejects stores the row, then raises `InvalidPath`** → **BK-394**, its Memory half, and **BUG-300**, its SQLBlob half, each carrying the marker. Filed by BL-011 (PR #1054), absorbed into BK-395 in BK-389's planning PR (#1055) at the maintainer's request; BK-395 decided the fix (the kernel refuses a backslash before the driver) and closed in PR #1061, which moved the open work to those two hosts.
 - [x] **ID-261 — BE-029's order is unobservable to conformance wherever a present root already answers correctly** → **BK-389**, as fake-driver cells over an absent container. Dossier: [ID-261](backlog/id-261-root-order-unobservable.md).
 - [x] **BK-325 — Custom-backend guide: registry-integration and remaining contract-topic gaps** → **BK-394**, which rewrites the guide as a driver. Dossier: [BK-325](backlog/bk-325-custom-backend-guide-gaps.md).
@@ -317,25 +318,20 @@ if evidence changes; these are retired.
 
 - [x] **BUG-280 — `LocalBackend`'s three listing methods leak a raw `PermissionError`**
   spec: BE-021 · effort: S · audience: user.api
-  `list_files`, `list_folders` and `iter_children` now raise `PermissionDenied`
-  naming the requested key. Each wraps its whole generator body, the shape the
-  SFTP twin uses. Both recursive `list_files` branches and `get_folder_info` had
-  a second defect: a denied subtree was dropped silently. Each is now an `os.walk`
-  whose error hook re-raises a denial and tolerates anything else, so
-  `Store.get_folder_info` answers a denied folder or entry alike for every
-  `max_depth`. It does not yet for a starting folder whose parent cannot be
-  traversed: with a `max_depth` it asks `is_folder` first, which BE-021 forbids
-  from raising, and that divergence is BUG-313's. A third:
-  every walk classified paths with `Path.is_file` / `is_dir`, which on 3.14
-  (POSIX) answer `False` for a path the OS refuses to `stat`, so a folder that
-  lists but cannot be traversed lost its entries silently. Each path is now
-  classified and measured by one `stat` whose denial propagates, which also
-  closes the window in which a file removed after classification leaked a raw
-  `FileNotFoundError`; a listed folder removed between its `stat` and its scan
-  now lists as empty on the single-level scans too, as the walks already did.
-  Fixed here rather than once across backends, which is
-  RFC-0017's kernel; `glob`'s same silent drop is BUG-311. Tests:
-  `tests/backends/local/test_listing_permission.py`.
+  The single-level scans (`list_files` without `recursive`, `list_folders`,
+  `iter_children`) now raise `PermissionDenied` naming the requested key, each
+  wrapping its whole body, the shape the SFTP twin uses. They classify the
+  folder and each entry by one `stat` whose denial propagates, so a folder that
+  lists but cannot be traversed raises on 3.14 instead of listing empty, a file
+  removed after classification no longer leaks `FileNotFoundError`, and a folder
+  removed before its scan lists as empty. A recursive `list_files` keeps
+  master's traversal inside the same mapping, so its raw leak becomes
+  `PermissionDenied` while its silent subtree drop stays; `get_folder_info` is
+  unchanged. The PR first rewrote those walks too, and stopped after seven
+  review rounds and a measured Windows regression: they move to RFC-0017's
+  kernel at step 5, as BK-416, with every measurement. `glob` is BUG-311. Tests:
+  `tests/backends/local/test_listing_permission.py`, whose strict `xfail`s
+  name BK-416.
   Upgrade note: `docs-src/reference/migration.md` § v0.33.0 to v0.33.1.
   Trace: [bug-280](traces/bug-280-local-listing-permission-leak.yml).
   Detail: [dossier](backlog/bug-280-local-listing-permission-leak.md).

@@ -246,9 +246,9 @@ failure it was.
   spec: BE-021, GLOB-005 · effort: S · audience: user.api
   `glob()` walks through `Path.glob`, whose selector swallows a folder's listing
   error, so a subtree the OS refuses to list drops out silently; a folder it can
-  list but not traverse leaks a raw `PermissionError` on 3.11 to 3.13. Since
-  BUG-280 `list_files` raises `PermissionDenied` for both. Open decision: how to
-  surface them without re-implementing pattern matching, keeping GLOB-005's skip.
+  list but not traverse leaks a raw `PermissionError` on 3.11 to 3.13. The
+  recursive `list_files` shares the drop (BK-416). Open decision: fix here, or
+  with BK-416 at RFC-0017 step 5, keeping GLOB-005's skip.
   Detail: [dossier](backlog/bug-311-local-glob-denied-subtree.md)
 
 - [ ] **BUG-313 — `LocalBackend`'s `get_file_info` and path predicates misanswer a path they may not `stat`**
@@ -257,7 +257,7 @@ failure it was.
   predicates leak a raw `PermissionError` on 3.11 to 3.13; on 3.14 (POSIX) they
   answer `NotFound` / `False`, and `delete_folder(missing_ok=True)` reports a
   delete it never did. `Store.get_folder_info(max_depth=N)` inherits it. Open
-  decision: what a predicate BE-021 forbids from raising answers.
+  decision: a predicate's answer to a denial, here or in BK-416's `classify`.
   Detail: [dossier](backlog/bug-313-local-get-file-info-denied-parent.md)
 
 - [ ] **BUG-299 — `LocalBackend.write` and `write_atomic` on a `..` key inside the root write the file, then raise `InvalidPath`**
@@ -309,6 +309,15 @@ failure it was.
   the dossier's item 4), and the guide as a driver. After BK-389, BK-398, the v0.33.0 tag and ID-244's decision (§ 2). Open
   decision: none; Memory's identity and spec 013's placement are in the dossier.
   Detail: [dossier](backlog/bk-394-memory-drivers-accept-adr-0042.md)
+
+- [ ] **BK-416 — `LocalBackend`'s recursive walks map their own errors, and RFC-0017 step 5 is where they get one classifier**
+  spec: BE-014, BE-017, BE-021, DEPTH-003 · effort: L · audience: user.api, library.maintainer
+  Recursive `list_files` and `get_folder_info` leave out a subfolder they may not
+  list, and `get_folder_info` leaks a raw `PermissionError` on 3.11 to 3.13;
+  BUG-280 fixed the scans only. Local's step-5 driver gets one `classify`. Open
+  decision: telling Windows' delete-pending WinError 5 from a denial. After BK-394.
+  - **(was BK-415, absorbed here)** An opt-in skip of unreadable folders.
+  Detail: [dossier](backlog/bk-416-local-walks-onto-kernel.md)
 
 - [ ] **BUG-300 — `SQLBlobBackend.write("\\")` stores the row, then raises `InvalidPath`**
   spec: BE-008, WR-001 · effort: S · audience: user.api
@@ -540,14 +549,6 @@ copies an example, without opening an issue.
 
 **Promise:** the library does the thing, instead of the user hand-rolling it
 or paying for our shortcut.
-
-- [ ] **BK-415 — A recursive listing cannot skip folders the caller may not read**
-  spec: BE-014, BE-017, BE-021 · effort: M · audience: user.api
-  Since BUG-280 a recursive `list_files` or `get_folder_info` on `LocalBackend`
-  raises `PermissionDenied` at the first unreadable folder, so a store rooted at
-  a drive or mount root (`System Volume Information`, `lost+found`) cannot be
-  listed whole by a non-admin; the migration guide's workaround is a hand-rolled
-  per-folder walk. Open decision: an opt-in skip parameter, its name, its reach.
 
 - [ ] **ID-217 — Async-native extension surface (owner for the deferred async `ext.*`)**
   spec: GR-003 · effort: L · audience: user.api

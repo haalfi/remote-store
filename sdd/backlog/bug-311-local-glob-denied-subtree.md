@@ -1,9 +1,11 @@
 # BUG-311 — `LocalBackend.glob` drops a denied subtree silently
 <!-- doc: repo-only -->
 
-Filed by BUG-280, which fixed the same shape in `LocalBackend.list_files`'
-recursive branches and left `glob` out of scope by decision rather than by
-oversight.
+Filed by BUG-280, which first fixed the same shape in `LocalBackend.list_files`'
+recursive branches and left `glob` out of scope by decision. That PR was later
+narrowed to the single-level scans, and the recursive walks moved to BK-416,
+RFC-0017 step 5, where `glob` belongs too: one Local `classify` behind the
+kernel's listing would answer both.
 
 ## Evidence
 
@@ -45,15 +47,15 @@ So this item owes a mapping on 3.11 to 3.13 as well as an answer on 3.14.
 ## Why it is not BUG-280
 
 `list_files(recursive=True)` and `glob` reach the same OS behaviour through
-different stdlib entry points. BUG-280 replaced `rglob` with
-`os.walk(onerror=...)`. `glob` takes a caller's pattern, so the same swap means
-re-implementing pattern matching over a walk, or checking the pattern's
-directories separately. That is a design choice of its own, and GLOB-005's
-symlink-escape skip has to survive it.
+different stdlib entry points. `glob` takes a caller's pattern, so replacing
+`Path.glob` with a walk means re-implementing pattern matching over it, or
+checking the pattern's directories separately. That is a design choice of its
+own, and GLOB-005's symlink-escape skip has to survive it.
 
 ## Advisory prescription
 
 Raise `PermissionDenied`, naming the pattern's prefix, when the walk meets a
-denied folder. That matches `list_files` after BUG-280 and SFTP's recursive
-walk. Check first whether GLOB-004's postconditions or GLOB-017 (empty results)
-say anything about a partly readable tree.
+denied folder, as SFTP's recursive walk does. Decide first whether this waits
+for BK-416, where the kernel's listing and Local's one `classify` make it the
+same fix as the recursive `list_files`. Check whether GLOB-004's postconditions
+or GLOB-017 (empty results) say anything about a partly readable tree.
