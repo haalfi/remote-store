@@ -679,6 +679,16 @@ class TestDecisionLogs:
         assert "does not match" in report.violations[0].message
         assert report.notes == [], "nothing from the unlisted-directory file may be echoed"
 
+    def test_a_non_string_entry_is_a_schema_failure_at_its_index_and_is_not_read(self, tmp_path):
+        # The case the hint routes to the trace: it fails at `decisions[0]`
+        # and names no log at all.
+        schema = _write_schema(tmp_path)
+        traces = tmp_path / "sdd" / "traces"
+        _write_trace(traces, "id-1-x.yml", 'id: "ID-1"\ntitle: "ok"\ndecisions:\n  - 42\n')
+        report = _mod.collect(schema_path=schema, traces_dir=traces, root=tmp_path)
+        assert [(v.path, v.message) for v in report.violations] == [("decisions[0]", "42 is not of type 'string'")]
+        assert report.notes == []
+
     def test_an_asked_event_with_unreadable_questions_is_reported(self, tmp_path):
         # A reshaped tool_input must not silently drop the unanswered report.
         asked = {"event": "asked", "tool_use_id": "toolu_1", "tool_input": {"questions": "reshaped"}}
@@ -832,7 +842,13 @@ class TestMain:
         assert rc == 1
         err = capsys.readouterr().err
         assert "`decisions[N]`" in err
-        assert "a missing log or a path that does not match is the trace's entry to fix" in err
+        # The whole class, not a list of cases: every schema failure at
+        # `decisions[N]` (a non-string entry too) is the trace's, and only a
+        # `<log> line K:` message is the log's.
+        assert "a schema failure or a missing log is the trace's entry to fix" in err
+        assert "only a `<log> line K:` message is a fault in that log" in err
+        # The one remaining violation, an OSError reading the file, is neither.
+        assert "an `OSError` reading it is the checkout's" in err
         assert "under `decisions:` in sdd/traces/_schema.yml" in err, "the hint points at the remedy's home"
 
     def test_main_clean_returns_zero(self, tmp_path):

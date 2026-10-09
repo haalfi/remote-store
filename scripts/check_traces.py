@@ -88,9 +88,10 @@ Exit codes
   log passes; notes may still be printed.
 * ``1`` — one or more violations, printed to stderr as
   ``file: <json-path>: <message>``, sorted for stable diffs. A
-  ``decisions[N]`` path is about that entry: a missing log or a path that does
-  not match the pattern is the trace's entry to fix, and any other is a fault
-  in the log it names.
+  ``decisions[N]`` path is about that entry: a schema failure (a path that does
+  not match, an entry that is not a string) or a missing log is the trace's
+  entry to fix, only a ``<log> line K:`` message is a fault in that log, and
+  an ``OSError`` reading it is the checkout's (permissions, a locked file).
 
 Run with::
 
@@ -453,9 +454,10 @@ def main(argv: list[str] | None = None) -> int:
         f"\ncheck_traces: {len(violations)} violation(s). Each line above names the file to fix: "
         "a `(parse)` or `(schema)` path is a malformed or duplicate-keyed file, "
         "an `examples[N]` source is the schema's own example block, "
-        "a `decisions[N]` path is about that entry: a missing log or a path that does not match is the "
-        "trace's entry to fix, and any other is a fault in the decision log it names "
-        "(the remedy per fault is under `decisions:` in sdd/traces/_schema.yml), and "
+        "a `decisions[N]` path is about that entry: a schema failure or a missing log is the "
+        "trace's entry to fix, only a `<log> line K:` message is a fault in that log "
+        "(the remedy per fault is under `decisions:` in sdd/traces/_schema.yml), "
+        "and an `OSError` reading it is the checkout's; "
         "anything else is a trace disagreeing with sdd/traces/_schema.yml.",
         file=sys.stderr,
     )

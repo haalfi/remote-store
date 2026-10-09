@@ -149,3 +149,16 @@ phases:
         read_type: verify
         extract: "My round-1 hint said every decisions[N] path is a log fault; a missing log and a pattern rejection are the trace's, and the missing-log case invited fabricating a log"
         outcome: ok
+  - id: fix
+    name: Fix review round 5
+    steps:
+      - file: scripts/check_traces.py
+        section: "_check_decision_log violations, main hint"
+        read_type: verify
+        extract: "Round 4 fixed the hint by listing two trace-side cases, which missed a third (a non-string entry). Enumerated every violation the reader emits instead: missing log, OSError, and four 'line K:' faults; the hint now routes by class, and OSError is the checkout's"
+        outcome: ok
+      - file: sdd/traces/_schema.yml
+        section: "decisions / remedy"
+        read_type: verify
+        extract: "The remedy named not UTF-8 and not JSON but not 'not a JSON object', so that fault had no remedy; now 'does not decode or parse as one JSON object', mirrored in RFC-0018 D2"
+        outcome: ok

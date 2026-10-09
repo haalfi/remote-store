@@ -231,8 +231,9 @@ properties:
 
       **A line that is not a record may be deleted.** The log is append-only
       for the recorder, not frozen against repair. Two faults are not
-      records: a line that does not decode or parse (an append cut short,
-      `not UTF-8` or `not JSON`) and an
+      records: a line that does not decode or parse as one JSON object (an
+      append cut short or garbled: `not UTF-8`, `not JSON` or `not a JSON
+      object`) and an
       `answered` line the gate names an *identical copy* of an earlier one
       (a union merge of one log from two branches). Delete such a line in a
       commit of its own whose message names the line and its cause. An
