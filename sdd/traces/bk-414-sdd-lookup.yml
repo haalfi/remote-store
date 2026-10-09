@@ -10,7 +10,8 @@ source_items:
 audience:
   - contributor.tooling
   - contributor.process
-discovery_followups: []
+discovery_followups:
+  - BK-420
 expected_ripples: []
 surprising_ripples: []
 decisions:
@@ -152,32 +153,36 @@ phases:
           four plain lines naming the commands and linking the script's
           docstring for the rest.
         outcome: ok
-review:
-  # Derived by `hatch run ship-report 1099 --trace-block-only` at head 4ce322b.
-  # Do not hand-edit, except a newly required field per sdd/traces/_schema.yml
-  # section review: RFC-0015 D4 makes this script the only producer.
-  derivation: "hatch run ship-report 1099 --trace-block-only"
-  pr: 1099
-  review_rounds: 1
-  submissions: 1
-  findings: 2
-  by_round:
-    - round: 1
-      findings: 2
-      origin: {original: 2}
-      triage: {must-fix: 2}
-      duration_hours: 0.06
-  by_file:
-    - path: "scripts/sdd_lookup.py"
-      findings: 2
-  untouched_files:
-    - "pyproject.toml"
-    - "sdd/BACKLOG.md"
-    - "sdd/backlog/bk-414-sdd-lookup.md"
-    - "sdd/decisions/3bad7c8f-a0b4-4e5a-854f-5432cd88feea.jsonl"
-    - "sdd/traces/bk-414-sdd-lookup.yml"
-    - "tests/scripts/test_sdd_lookup.py"
-  review_driven_commits:
-    - sha: "4ce322b"
-      subject: "fix: address PR #1099 review"
-  ci: {verdict: GREEN, failed: 0, pending: 0}
+  - id: review_fix_3
+    name: Review round 3 fixes (maintainer's external review)
+    steps:
+      - file: sdd/rfcs/rfc-0020-ship-token-interventions.md
+        section: "P4 exclusion paragraph; Decision rule, Confounds"
+        read_type: verify
+        extract: >-
+          "Run B tests the four interventions above and no more" and the confound
+          list became false when this PR landed the tool before run B. Qualified
+          to "no other intervention" plus a confound sentence. My first draft
+          said the tool moves "the rows P3 is judged on"; P3's decision row is
+          whether the dialog changes the plan, so it was narrowed to the Phase
+          row's orient calls and the Orient row's listing.
+        outcome: ok
+      - file: sdd/BACKLOG.md
+        section: "8. A delivery costs only what it needs"
+        read_type: verify
+        extract: >-
+          The 30-day acceptance re-walk had no owner once BK-414 closed. Minted
+          BK-420 under section 8 at the maintainer's choice (free on every pushed
+          branch per gen-backlogid --check --remote); the done entry and the
+          dossier's acceptance section name it.
+        outcome: ok
+      - file: tests/scripts/test_sdd_lookup.py
+        section: "TestLive.test_every_anchor_shows"
+        read_type: verify
+        extract: >-
+          The anchor list came from _headings, the parser under test. It is now a
+          regex over the file; with a blank line inserted between the
+          branch-freshness anchor and its heading, the test failed with
+          AssertionError: branch-freshness. The review block pasted mid-loop is
+          removed and is re-derived at the close.
+        outcome: ok

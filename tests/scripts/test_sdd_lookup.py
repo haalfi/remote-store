@@ -8,6 +8,7 @@ files, which is what fails when a file's shape outgrows the parse.
 
 from __future__ import annotations
 
+import re
 import sys
 from pathlib import Path
 
@@ -485,8 +486,9 @@ class TestLive:
             assert f"\n{item} · " in f"\n{out}"
 
     def test_every_anchor_shows(self, capsys):
-        lines = _mod.REFERENCE.read_text(encoding="utf-8").split("\n")
-        anchors = [h.anchor for h in _mod._headings(lines) if h.anchor]
+        # Enumerated apart from `_headings`, so an anchor it fails to attach still fails here.
+        text = _mod.REFERENCE.read_text(encoding="utf-8")
+        anchors = re.findall(r'<a id="([^"]+)"></a>', text)
         assert "pr-validation-gates" in anchors
         for anchor in anchors:
             code, out, _ = _run(capsys, "ref-show", anchor)

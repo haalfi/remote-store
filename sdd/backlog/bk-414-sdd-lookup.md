@@ -204,7 +204,7 @@ fall either. The commonest lookup, `ref-show pr-validation-gates`, returns about
 1.7k tokens, the size of the median 80-line slice it replaces. So the gain has
 to show as fewer cycles.
 
-About 30 days after the pointers merge, re-walk the transcripts as in
+Tracked as BK-420. About 30 days after the pointers merge, re-walk the transcripts as in
 § Evidence (second walk) and compare per transcript touching the three files:
 
 - Grep → Read cycles plus overlapping re-reads (baseline: 62 + 16 = 78 over 37

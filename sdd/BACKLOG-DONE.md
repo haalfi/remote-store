@@ -305,8 +305,8 @@ if evidence changes; these are retired.
   `backlog-outline`, `ref-show`, `ref-rows`); `CLAUDE.md` § Backlog and the
   single-key lookup steps of five skills point at it (not `/rvw-pr`, whose Bash
   use is bounded). Tests:
-  `tests/scripts/test_sdd_lookup.py`. The acceptance re-walk is due about 30
-  days after merge. Dossier: [BK-414](backlog/bk-414-sdd-lookup.md); trace:
+  `tests/scripts/test_sdd_lookup.py`. The acceptance re-walk is BK-420.
+  Dossier: [BK-414](backlog/bk-414-sdd-lookup.md); trace:
   [bk-414](traces/bk-414-sdd-lookup.yml).
 
 - [x] **BUG-314 — The Edit/Write ruff hook deletes an import added before its use, so the next edit raises `NameError`**

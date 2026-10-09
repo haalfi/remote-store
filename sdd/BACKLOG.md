@@ -984,3 +984,11 @@ sessions work is measured before it becomes process.
   ([research record](research/token-usage/report.md)). Four interventions are
   unmeasured. Open decision: which survive run B, per Draft
   [RFC-0020](rfcs/rfc-0020-ship-token-interventions.md).
+
+- [ ] **BK-420 — BK-414's lookup tool is not yet measured against its baseline of 78 search-and-reread cycles**
+  spec: — · effort: S · audience: contributor.tooling, contributor.process
+  BK-414 pointed `CLAUDE.md` and five skills at `scripts/sdd_lookup.py` to cut
+  Grep → Read cycles and overlapping re-reads on the backlog and reference files:
+  78 over 37 transcripts before it. Re-walk the transcripts about 30 days after
+  #1099 merges, by [BK-414's dossier](backlog/bk-414-sdd-lookup.md) § Acceptance
+  measure. Open decision: keep, change or remove the pointers, by that result.

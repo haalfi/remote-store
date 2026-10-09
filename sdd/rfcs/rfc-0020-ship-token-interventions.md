@@ -172,7 +172,8 @@ The report's hypotheses 3 and 4 point at what every reviewer re-reads: its
 skill file (2.72% of run A's re-read context at round 7), spilled tool outputs
 read back, and the shared process files. A diet for that input
 was considered and left out of run B by the maintainer, so that run B tests the
-four interventions above and no more. It stays a candidate for a later RFC.
+four interventions above and no other intervention; the one other change it runs
+under is a confound, stated below. It stays a candidate for a later RFC.
 
 ## Experiment
 
@@ -239,7 +240,16 @@ that is not on master is invisible to it, and that is intended. Run B also runs
 with no other suite on the machine, a start condition run A did not have: two of
 run A's three cut-offs overlapped another session's suite (BK-419's dossier),
 and each cut-off cost a re-run gate. That favours run B in the run-level and P2
-comparisons for a reason none of P1 to P3 controls.
+comparisons for a reason none of P1 to P3 controls. Run B also runs with BK-414's
+lookup tool, which lands before it by the maintainer's decision: `/ship` Step 1
+reads the item and the Pre-work index through it, and a `CLAUDE.md` rule sends
+every session's single-key lookups to it. That can move the Phase row's orient
+calls and units share, and how the Orient row's related items are listed, for a
+reason none of P1 to P3 controls. Its lookups appear as Bash calls to
+`hatch run backlog-*` and `ref-*`, not as Reads of the files they print from, so
+the comparison counts them together with Read and Grep calls on `BACKLOG*.md` and
+`CLAUDE-REFERENCE.md` in both runs; otherwise run B's lookups read as a drop in
+reads.
 
 ## Roadmap
 
