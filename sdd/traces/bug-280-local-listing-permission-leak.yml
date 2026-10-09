@@ -482,3 +482,40 @@ phases:
           table went to BK-416's dossier with a pre-existing spurious
           InvalidPath both trees raise in the same runs
         outcome: ok
+  - id: fix_r2b
+    name: Fix pass (round 2 after the re-plan)
+    steps:
+      - file: sdd/specs/003-backend-adapter-contract.md
+        section: "BE-021: Broad exception handler rule"
+        read_type: gate
+        extract: >-
+          The link skip was a carve-out no clause stated, and it contradicted
+          this rule's "silent returns are permitted ONLY for exists, is_file,
+          is_folder". BE-021 now names the listing entries as the second
+          permitted case and states the reason: a listing's denial is about the
+          folder it lists, so a link the caller cannot read through (dangling,
+          or a refused target) is skipped. It is scoped to backends whose
+          listing follows links, naming LocalBackend and deciding no other. The
+          two link cells and the dangling-link cell are retraced from the
+          absence clauses to BE-021
+        outcome: ok
+      - file: docs-src/reference/migration.md
+        section: "v0.33.0 to v0.33.1"
+        read_type: verify
+        extract: >-
+          The fix_r1b link sentence sat in the paragraph about a folder that
+          lists but cannot be opened, where lstat is refused too and the
+          listing raises. Moved to its own sentence scoped to a folder you can
+          open; the three Raises docstrings narrowed the same way
+        outcome: ok
+      - file: sdd/backlog/bk-416-local-walks-onto-kernel.md
+        section: "What the rounds learned"
+        read_type: verify
+        extract: >-
+          Measured with tmp/bug280/link_walk_probe.py (simulated link, POSIX
+          isfile/isdir swapped in) on 3.11.15, 3.12.13, 3.13.11 and 3.14.0: the
+          recursive list_files raises PermissionDenied on 3.11 to 3.13 and
+          skips the link on 3.14; max_depth raises on all four; get_folder_info
+          and Store.get_folder_info leak a raw PermissionError on 3.11 to 3.13.
+          Recorded as a classify obligation
+        outcome: ok

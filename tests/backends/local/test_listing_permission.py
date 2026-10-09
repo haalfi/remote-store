@@ -298,7 +298,8 @@ def test_a_folder_gone_between_its_stat_and_its_scan_is_an_absence(
         assert _ENTRY_POINTS[entry](backend) == set()
 
 
-@pytest.mark.parametrize("entry", _traced(["list_files", "iter_children"]))
+@pytest.mark.spec("BE-021")
+@pytest.mark.parametrize("entry", ["list_files", "iter_children"])
 @pytest.mark.skipif(
     sys.platform == "win32",
     reason="symlink creation requires SeCreateSymbolicLinkPrivilege on Windows",
@@ -320,7 +321,8 @@ _WITH_LINK_SKIPPED: dict[str, set[str]] = {
 }
 
 
-@pytest.mark.parametrize("entry", _traced(_WITH_LINK_SKIPPED))
+@pytest.mark.spec("BE-021")
+@pytest.mark.parametrize("entry", list(_WITH_LINK_SKIPPED))
 def test_a_link_whose_target_the_os_refuses_to_stat_is_skipped(tmp_path: Path, entry: str) -> None:
     """A link into a folder the caller cannot enter is skipped, like a dangling one.
 
@@ -349,7 +351,8 @@ def test_a_link_whose_target_the_os_refuses_to_stat_is_skipped(tmp_path: Path, e
         assert _ENTRY_POINTS[entry](backend) == _WITH_LINK_SKIPPED[entry]
 
 
-@pytest.mark.parametrize("entry", _traced(_WITH_LINK_SKIPPED))
+@pytest.mark.spec("BE-021")
+@pytest.mark.parametrize("entry", list(_WITH_LINK_SKIPPED))
 @pytest.mark.skipif(sys.platform == "win32", reason="symlinks need a privilege; the simulated cell above runs here")
 @pytest.mark.skipif(getattr(os, "geteuid", lambda: -1)() == 0, reason="root ignores permission bits")
 def test_a_real_link_into_an_unenterable_folder_is_skipped(tmp_path: Path, entry: str) -> None:

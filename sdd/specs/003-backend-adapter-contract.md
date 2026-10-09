@@ -1194,7 +1194,19 @@ choosing the mapped error. Silent returns (swallowing exceptions without
 re-raising a `RemoteStoreError`) are permitted ONLY for `exists()`,
 `is_file()`, and `is_folder()` — these three methods return `False` on any
 traversal error, including file-as-directory-component conflicts, rather than
-raising `InvalidPath`. All other operations MUST raise appropriate errors.
+raising `InvalidPath` — and for the listing entries the next paragraph names.
+All other operations MUST raise appropriate errors.
+
+**A listing's denial is about the folder it lists, not about an entry's link
+target.** `list_files`, `list_folders` and `iter_children` raise
+`PermissionDenied` when the backend is refused the listed folder, or the
+metadata of an entry in it. Where a backend's listing follows links, an entry
+that is a link the caller cannot read through is skipped, as an entry gone
+before its metadata was read is: a dangling link, and a link whose target the
+backend is refused. The entry itself is present and readable as a link, so the
+folder was not denied and the listing has nothing to report about it.
+`LocalBackend` follows links; this clause does not decide whether any other
+backend does.
 
 ### BE-022: unwrap()
 

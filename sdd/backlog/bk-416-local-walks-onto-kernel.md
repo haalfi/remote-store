@@ -83,6 +83,25 @@ walks raise, and the marks have to come off then.
   calls of `list_files` and `iter_children` (none of `list_folders`).
   `classify` inherits this: the scans' "a removed folder lists as empty" holds
   on Windows only once the delete has completed.
+- **A link the caller cannot read through is skipped, by BE-021's listing
+  clause.** BUG-280 gave the single-level scans that rule
+  (`_entry_stat_or_absent`); the walks do not follow it yet. Measured with
+  `tmp/bug280/link_walk_probe.py` (gitignored). It is simulated on Windows:
+  `a/link` is a plain file whose `lstat` reports a link and whose `stat` is
+  refused, with POSIX `genericpath.isfile` / `isdir` swapped in. The tree is
+  `a/f.txt`, `a/sub/g.txt`, `a/link`.
+
+  | Call | 3.11.15, 3.12.13, 3.13.11 | 3.14.0 |
+  |---|---|---|
+  | `list_files("a")` | `a/f.txt` | `a/f.txt` |
+  | `list_files("a", recursive=True)` | `PermissionDenied` | both files |
+  | `list_files(..., max_depth=5)` | `PermissionDenied` | `PermissionDenied` |
+  | `get_folder_info("a")`, `Store.get_folder_info("a")` | raw `PermissionError` | 2 |
+  | `Store.get_folder_info("a", max_depth=5)` | `PermissionDenied` | `PermissionDenied` |
+
+  The same tree therefore lists one level deep and fails recursively, and
+  `get_folder_info` leaks. `classify` has to answer the link from `lstat`, as
+  the scans do.
 - **`_resolve` reports a folder mid-delete as escaping the root.** In the same
   listed-folder runs, both trees raised `InvalidPath("Path escapes root
   directory")` in up to 350 of 3000 calls per method; one run (3.11.9, the

@@ -608,7 +608,8 @@ class LocalBackend(Backend):
 
         Raises:
             PermissionDenied: If the OS refuses to list *path*, or to ``stat``
-                an entry in it. A symlink whose target it refuses is skipped.
+                an entry in it. A symlink the OS lets it read but whose target
+                it refuses is skipped instead.
         """
         try:
             full = self._resolve(path)
@@ -647,7 +648,8 @@ class LocalBackend(Backend):
 
         Raises:
             PermissionDenied: If the OS refuses to list *path*, or to ``stat``
-                an entry in it. A symlink whose target it refuses is skipped.
+                an entry in it. A symlink the OS lets it read but whose target
+                it refuses is skipped instead.
         """
         try:
             full = self._resolve(path)
@@ -671,7 +673,8 @@ class LocalBackend(Backend):
 
         Raises:
             PermissionDenied: If the OS refuses to list *path*, or to ``stat``
-                an entry in it. A symlink whose target it refuses is skipped.
+                an entry in it. A symlink the OS lets it read but whose target
+                it refuses is skipped instead.
         """
         try:
             full = self._resolve(path)
