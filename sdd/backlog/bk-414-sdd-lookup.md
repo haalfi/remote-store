@@ -100,7 +100,7 @@ in the docstring with no `Drift-gate::` block.
 | `backlog-find <regex> [--open\|--done\|--dossiers] [--max 20]` | One line per matching item, not per matching line | ~40 per hit, ≤ 800 at the cap |
 | `backlog-outline [--done] [--section <text>]` | `##` headings with item counts; with `--section`, that section's headers | ~120; ≤ 700 for the done register |
 | `ref-show <anchor\|heading> [--list]` | The section from its anchor or heading to the next heading of the same level | see the section sizes above |
-| `ref-rows <trigger>` | The trigger's Pre-work row and its Detailed checklist rows, verbatim | ~300 typical, ~1.5k worst |
+| `ref-rows <text>` | Every trigger whose name contains `<text>`, case-insensitive, with backticks and `**` stripped: its Pre-work row and its Detailed checklist rows, verbatim. A Detailed match with no Pre-work twin prints `[pre-work] none: expansion row` | ~300 typical, ~1.5k worst |
 
 Output shapes:
 
@@ -133,9 +133,15 @@ reading, the one lever the tool has on the misleading tags above.
 - Entries start at `^- \[.\] \*\*`, so the ID-less `- [x] **— …**` entries in
   § Decided against stand alone. `_HEADER_RE` needs an ID and would fold them
   into the entry above, so this one boundary is the tool's own, not imported.
-- An unknown key exits 1 and lists the valid keys; never an empty success.
+- A Detailed trigger's row extent is the tool's own boundary too:
+  `_parse_detailed` returns only each trigger's first line, so the extent runs
+  from it to the line before the next trigger, `####` heading or non-table line.
+- An unknown key exits 1 and lists the valid keys; never an empty success. For
+  `ref-rows`, unknown means no trigger name in either presentation contains the
+  text.
 - `tests/scripts/test_sdd_lookup.py`: fixtures, plus one test over the live
-  files that every open ID, every anchor and every Pre-work trigger resolves.
+  files that every open ID, every anchor and every trigger in both
+  presentations resolves.
 
 ### Bounds (for the docstring, DRIFT-RULES Rule 7)
 
@@ -144,6 +150,15 @@ reading, the one lever the tool has on the misleading tags above.
   each labelled with its section.
 - `ref-show` reaches anchored sections and, by heading text, the unanchored ones.
 - `ref-rows` returns table rows, not the paragraphs before a table.
+- `ref-rows` pairs the presentations by substring, not by a parent link: the
+  imported `Trigger` carries `(section, name, line)` and no parent, and
+  `check_ripple_parity.py` declines an expansion map as something that would go
+  stale. On 2026-10-09 the parity parsers give 33 Pre-work and 35 Detailed
+  triggers. The two with no twin are `` `_GATING` dict (async) `` and
+  `` `_ASYNC_BACKEND_GATING` ``, reached with their parents by querying the stem
+  (`_GATING` dict, `_BACKEND_GATING`). Queried by its own name, an expansion
+  prints with no Pre-work row. A short query over-matches (`_GATING dict` also
+  returns `_BACKEND_GATING dict`) and prints every match.
 - Verbatim output; no judgement of currency. This tree only, not other branches.
 - Not a gate: a wrong answer fails only its own tests. It compares nothing, so it
   carries no `Drift-gate::` block, and its name is outside the prefixes that
@@ -181,8 +196,14 @@ About 30 days after the pointers merge, re-walk the transcripts as in
 § Evidence (second walk) and compare per transcript touching the three files:
 
 - Grep → Read cycles plus overlapping re-reads (baseline: 62 + 16 = 78 over 37
-  transcripts), counting a tool call followed by a Read of the same file as a
-  cycle too.
+  transcripts), with one addition: a Bash call to the tool followed later by a
+  Read of a file it printed from also counts as a cycle. The file comes from the
+  command: `backlog-show` and `backlog-find` name it on each location line
+  (`sdd/BACKLOG.md:<n>`, `sdd/BACKLOG-DONE.md:<n>`, or a dossier path);
+  `backlog-outline` reads `BACKLOG.md`, or `BACKLOG-DONE.md` with `--done`; `ref-*`
+  read `CLAUDE-REFERENCE.md`. No other Read → Read pair is added. The baseline
+  stays comparable: no such call exists before the tool, so the widened rule
+  over the second walk's corpus still gives 78.
 - Total tool calls on the three files, including Bash calls to the tool.
 - Carried tokens of those calls' results, the tool's included.
 
