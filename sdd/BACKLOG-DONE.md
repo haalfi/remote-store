@@ -50,10 +50,11 @@ same idea returns with the argument had from scratch. Re-file under a **new** ID
 if evidence changes; these are retired.
 
 - [x] **— Lean 4 as a formal layer, as replacement for or extension of Dafny** *(evaluated on request; never had an ID)*
-  Lean's kernel-checked proofs do not time out, which is the one Dafny pain the
-  traces record: `EnsureParents`, `Write` and `Copy` exceeded the Z3 time limit
-  until given `{:isolate_assertions}` or a ghost lemma (traces `bk-388`,
-  `id-209`). **Refused as replacement:** Lean has no Python target, so the
+  Lean's kernel-checked proofs do not time out, and the traces record Dafny
+  proofs that did, all in `MemoryBackend.dfy`: `EnsureParents` and `Copy`
+  exceeded the time limit until given `{:isolate_assertions}`, as did `Write`
+  in a five-file run under load; `GetFolderInfo` exceeded a 10 s limit until a
+  ghost lemma restored it (traces `bk-388`, `id-209`). **Refused as replacement:** Lean has no Python target, so the
   compiled oracle and with it shapes (T) and (O) of
   [`sdd/formal/README.md`](formal/README.md#three-shapes-of-dafny-section-work-c-t-o)
   would be lost. **Refused as extension:** each gap the repo documents outside
@@ -66,9 +67,9 @@ if evidence changes; these are retired.
   so every Lean proof restates the contract as a third copy needing its own
   drift check, and the one thing only a shared logic gives, a Dafny-to-TLA+
   link, is what README § Decoupled, not coupled rejects. Re-file under a new ID
-  if solver timeouts block a ghost-only proof (`RootPath.dfy`,
-  `DepthCounting.dfy`) that Dafny-side remedies cannot fix; porting that one
-  file is the probe.
+  if an observed solver timeout blocks a proof that compiles into nothing (a
+  lemma-only file, not one declaring a `method`) and Dafny-side remedies cannot
+  fix it; porting that file is the probe.
 - [x] **— Deductive verification of `src/` with Nagini** *(evaluated on request; never had an ID)*
   Nagini (ETH Zurich, on Viper) proves contracts, loop invariants, exceptional
   postconditions and termination for Python, beyond what mypy or Pyright check.
