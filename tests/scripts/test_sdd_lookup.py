@@ -79,13 +79,13 @@ _DONE = """\
 
 ## v0.1.0
 
-- [x] **BK-012 — Old thing**
+- [x] **BK-012b — Old thing**
 
 A section note at column 0, not part of the entry.
 
 ## Bugs
 
-- [x] **BK-012 — Old thing, released duplicate**
+- [x] **BK-012b — Old thing, released duplicate**
 """
 
 _REFERENCE = """\
@@ -213,13 +213,15 @@ class TestShow:
             "  A second paragraph after a blank line.",
         ]
 
-    def test_released_duplicate_prints_both_with_sections(self, tree, capsys):
-        _, out, _ = _run(capsys, "show", "BK-012")
-        heads = [line for line in out.splitlines() if line.startswith("BK-012 ·")]
+    def test_released_duplicate_with_suffix_prints_both_with_sections(self, tree, capsys):
+        # The suffix letter is lowercase in the file; the key is matched case-insensitively.
+        code, out, _ = _run(capsys, "show", "BK-012B")
+        assert code == 0
+        heads = [line for line in out.splitlines() if line.startswith("BK-012b ·")]
         assert "A section note" not in out
         assert heads == [
-            "BK-012 · done · sdd/BACKLOG-DONE.md:20 · § v0.1.0",
-            "BK-012 · done · sdd/BACKLOG-DONE.md:26 · § Bugs",
+            "BK-012b · done · sdd/BACKLOG-DONE.md:20 · § v0.1.0",
+            "BK-012b · done · sdd/BACKLOG-DONE.md:26 · § Bugs",
         ]
 
     def test_several_ids_one_unknown_prints_known_and_exits_1(self, tree, capsys):
@@ -466,6 +468,15 @@ class TestLive:
         text = _mod.BACKLOG.read_text(encoding="utf-8")
         ids = [f"{m.group(2)}-{m.group(3)}" for m in gen_backlogid._HEADER_RE.finditer(text) if m.group(1) in " ~"]
         assert ids
+        code, out, _ = _run(capsys, "show", *ids)
+        assert code == 0
+        for item in ids:
+            assert f"\n{item} · " in f"\n{out}"
+
+    def test_every_done_id_shows(self, capsys):
+        text = _mod.BACKLOG_DONE.read_text(encoding="utf-8")
+        ids = sorted({f"{m.group(2)}-{m.group(3)}" for m in gen_backlogid._HEADER_RE.finditer(text)})
+        assert any(item[-1].isalpha() for item in ids)  # the suffixed IDs this test exists for
         code, out, _ = _run(capsys, "show", *ids)
         assert code == 0
         for item in ids:

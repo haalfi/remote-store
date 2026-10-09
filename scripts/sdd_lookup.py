@@ -10,7 +10,7 @@ generated copy. Commands, each with a hatch alias:
     whole, under a banner carrying ``BACKLOG.md`` § Item authority.
 ``find [<regex>] [--open | --done | --dossiers] [--spec <ID>]... [--max N]`` (``backlog-find``)
     One line per matching item, not per matching line. The regex is
-    case-insensitive and matched against the whole entry. ``--spec`` keeps
+    case-insensitive and matched one line at a time. ``--spec`` keeps
     open items whose attribute line names that spec ID as a whole token
     (case-insensitive); given several times it keeps an item naming any.
 ``outline [--done] [--section <text>]`` (``backlog-outline``)
@@ -46,6 +46,8 @@ Bounds (DRIFT-RULES Rule 7):
 * ``show`` finds an ID on a header only; a prose mention is reachable by
   ``find``. A released duplicate pair that ``gen_backlogid.py`` tolerates
   prints both headers, each labelled with its section.
+* ``find`` matches per line, and entries and dossiers are hard-wrapped, so a
+  phrase that wraps across a line break is not found.
 * ``--spec`` reads the attribute line, which only open items carry, so it
   never reaches a done entry or a dossier.
 * ``ref-show`` reaches anchored sections and, by heading text, unanchored ones.
@@ -175,11 +177,12 @@ def cmd_show(ids: list[str], dossier: bool) -> int:
     missing: list[str] = []
     blocks: list[str] = []
     for raw in ids:
-        item = raw.upper()
-        hits = [e for e in entries if e.item == item]
+        # Case-insensitive: a suffix letter is lowercase in the file (`BK-139d`).
+        hits = [e for e in entries if e.item and e.item.casefold() == raw.casefold()]
         if not hits:
             missing.append(raw)
             continue
+        item = hits[0].item
         shown: list[Path] = []
         for e in hits:
             blocks.append(f"{e.location()} · § {e.section}\n" + "\n".join(e.lines))
@@ -395,7 +398,7 @@ def _parser() -> argparse.ArgumentParser:
     show.add_argument("--dossier", action="store_true", help="append the item's dossier whole")
 
     find = sub.add_parser("find", help="one line per item matching a regex and/or spec ID")
-    find.add_argument("pattern", nargs="?", help="case-insensitive regex, matched against each entry")
+    find.add_argument("pattern", nargs="?", help="case-insensitive regex, matched per line")
     scope = find.add_mutually_exclusive_group()
     scope.add_argument("--open", dest="scope", action="store_const", const="open")
     scope.add_argument("--done", dest="scope", action="store_const", const="done")

@@ -81,3 +81,24 @@ phases:
           A header quoting `**Breaking**` cut the title at the inner `**`
           under a lazy `\*\*(.*?)\*\*`; the title regex now skips code spans.
         outcome: ok
+  - id: review_fix_1
+    name: Review round 1 fixes
+    steps:
+      - file: scripts/sdd_lookup.py
+        section: "cmd_show (review thread on line 179)"
+        read_type: verify
+        extract: >-
+          My miss: `raw.upper()` turned `BK-139d` into `BK-139D`, so no suffixed
+          ID resolved; TestLive covered open IDs only, none suffixed. The match is
+          now case-insensitive. New TestLive.test_every_done_id_shows over the
+          711 distinct done-register IDs (20 suffixed) and a suffixed fixture
+          pair both failed before the fix and pass after.
+        outcome: ok
+      - file: scripts/sdd_lookup.py
+        section: "module docstring, find help (review thread on line 221)"
+        read_type: verify
+        extract: >-
+          The docstring said find matches "the whole entry"; it matches per
+          line. Narrowed the docstring and help text, and added the wrap miss
+          to Bounds, rather than changing behaviour.
+        outcome: ok
