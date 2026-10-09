@@ -62,10 +62,11 @@ def _entry_stat_or_absent(entry: Path) -> os.stat_result | None:
         return _stat_or_absent(entry)
     except PermissionError:
         try:
-            if S_ISLNK(os.lstat(entry).st_mode):
-                return None
+            is_link = S_ISLNK(os.lstat(entry).st_mode)
         except OSError:
-            pass
+            is_link = False  # ``lstat`` is refused too: the entry itself is denied
+        if is_link:
+            return None
         raise
 
 
