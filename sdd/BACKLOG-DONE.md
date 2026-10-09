@@ -49,6 +49,29 @@ a decision *about* a diagnosis is still a decision and deleting both is how the
 same idea returns with the argument had from scratch. Re-file under a **new** ID
 if evidence changes; these are retired.
 
+- [x] **— Deductive verification of `src/` with Nagini** *(evaluated on request; never had an ID)*
+  Nagini (ETH Zurich, on Viper) proves contracts, loop invariants, exceptional
+  postconditions and termination for Python, beyond what mypy or Pyright check.
+  Measured with Nagini 1.3.1 in `ghcr.io/bigtalk-org/docker-nagini` (the image
+  its README names) against master `05b0fddb4`; every attempt stopped before
+  verification. A driver importing `RemotePath` pulls the package `__init__`,
+  and Nagini's embedded mypy then rejects every backend's SDK import (azure,
+  botocore, sqlalchemy, pyarrow, s3fs, paramiko, msal, requests). `_path.py`
+  and `_errors.py` isolated under an empty `__init__` stop at "Not supported:
+  only simple assignments and reads allowed for static fields"
+  (`RemotePath.ROOT = _root`; `object.__setattr__`, `__slots__` and `Final` were
+  never reached). `_normalize` rewritten with a `Requires`/`Ensures` contract
+  crashes the translator with an `AttributeError` on `str.replace`, and without
+  that line on `for segment in p.split("/")`.
+  **Refused because the supported subset excludes this package's substance:**
+  string handling, `io` streams, context managers, `async` and third-party SDKs.
+  Verifying anything means a Nagini-shaped second implementation kept in step
+  by hand, which proves the copy, not the shipped code. The contract is already
+  modelled in Dafny (`sdd/formal/`) and held to the code by the conformance
+  suite. Re-file under a new ID if Nagini models `str` methods and iteration
+  over their results and tolerates unresolved third-party imports; re-run the
+  three probes above to check.
+
 - [x] **— A gate binding a `**Breaking**` entry to a migration section** *(refused as BUG-261's second disposition; never had an ID)*
   BUG-261 offered it as one of three dispositions: if any `[Unreleased]` entry
   contains `**Breaking**`, `docs-src/reference/migration.md` must carry a

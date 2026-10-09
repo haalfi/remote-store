@@ -421,6 +421,23 @@ no clause of the contract ships unexercised.
   regex (read only). Open decision: anchor with `\Z` on every backend, or state
   the newline rule in GLOB-014.
 
+- [ ] **BUG-310 — A closed Azure `read_seekable()` or HTTP `read()` stream keeps answering instead of raising `ValueError`**
+  spec: SIO-001, SEEK-006 · effort: M · audience: user.api
+  After `close()`, Azure `read_seekable()` raises `RemoteStoreError` while bytes
+  remain, returns `b""` at EOF, and its `seek`/`tell` return positions. HTTP
+  `read()` returns `b""` (urllib), unread bytes (httpx) or `BackendUnavailable`
+  (requests). Azure `read()` raises `ValueError`; no spec clause or conformance cell covers this.
+  Open decision: guard each adapter, or once in `_ErrorMappingStream`; the reach of each is in the dossier.
+  Detail: [dossier](backlog/bug-310-closed-stream-read.md)
+
+- [ ] **BUG-312 — `tell()`/`seek()` on a non-seekable `read()` stream raise `RemoteStoreError` instead of `io.UnsupportedOperation`**
+  spec: SIO-012 · effort: S · audience: user.api
+  On an open HTTP `read()` stream (urllib, requests, httpx) both raise
+  `BackendUnavailable: Stream error: seek`; on Azure `read()` only `tell()` does,
+  its `BufferedReader` refusing `seek()` first. A plain non-seekable stream raises
+  `io.UnsupportedOperation`, which SIO-012 maps as an `OSError`. BUG-310 shares the wrapper.
+  Open decision: exempt it in SIO-012, or keep mapping it.
+
 - [ ] **BK-407 — Mutation scopes miss every backend's `async_sources` and ten split-topic tests**
   spec: — · effort: S · audience: infra.test
   `_src` reads only `[backend.<x>].sources`: `-async-extended-graph` mutates only
