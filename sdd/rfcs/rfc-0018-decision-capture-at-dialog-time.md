@@ -7,8 +7,11 @@ step 0 ran on 2026-10-03 (§ Step 0 observations); D1, D3 and D4.0 are amended t
 what it observed. A failure-probe follow-up the same day amends D2, D3 and D4.2,
 D2 to an inference rather than an observation. On acceptance the maintainer
 omitted the `failed` path until it is observed (§ Open Questions 5), which
-amends the Summary, D1, D3 and D4. Built: step 1 and D2's commit and exclusion
-mechanics. Steps 2 and 3 are not.
+amends the Summary, D1, D3 and D4. Built: steps 1 and 2 and D2's commit and
+exclusion mechanics. Step 3 is not. Step 2's review (2026-10-09) amends D2, by
+the maintainer's choice of remedy, to let a line that is not a record be
+deleted, and one of two differing answers to one dialog once the maintainer
+has picked the record.
 
 ## Summary
 
@@ -108,7 +111,12 @@ which a log committed to a public repository must not hold.
 ### D2. Storage: one append-only file per session, bound to work when read
 
 `sdd/decisions/<session_id>.jsonl`, one JSON object per line, appended and never
-rewritten. Committed with the work, so git supplies a timestamped history and
+rewritten, with two exceptions, each deleted in a commit of its own. A line
+which is not a record (one that does not decode or parse as one JSON object,
+or an identical copy left by a merge) may be deleted. And when one dialog carries two `answered` lines that
+differ, the maintainer picks the record and the commit deleting the other says
+which and why. The remedy per fault is stated with the trace key, in
+`sdd/traces/_schema.yml` `decisions`. Committed with the work, so git supplies a timestamped history and
 the PR diff shows the log beside the change it explains.
 
 - **Who commits it.** `gate-commit.sh`, which already runs before every
@@ -303,7 +311,8 @@ and the question is classified by the rows below it.
   `.claude/hooks/gate-commit.sh`, which stages the log;
   `sdd/traces/_schema.yml`; `scripts/check_traces.py` and its tests;
   `.claude/skills/pr/SKILL.md`, both the tail commit and the
-  rendering; `.github/PULL_REQUEST_TEMPLATE.md`, which `/pr` treats as the
+  rendering; `.claude/skills/fix-pr/SKILL.md`, whose trace update lists
+  `decisions` among the fields a fix pass fills; `.github/PULL_REQUEST_TEMPLATE.md`, which `/pr` treats as the
   authoritative body shape, for the Decisions section;
   `.claude/skills/ship/SKILL.md` and
   `.claude/skills/orchestrate/SKILL.md`, whose tree-unchanged captures take

@@ -203,6 +203,44 @@ properties:
       `docs-src/_data/graph/graph.json` after a docstring sweep when the
       ripple-check table did not flag graph regen.
 
+  decisions:
+    type: array
+    uniqueItems: true
+    items:
+      type: string
+      # Mirrors the recorder's session-id rule (scripts/record_decision.py
+      # _SAFE_ID), so no path outside the log directory can be listed.
+      pattern: "^sdd/decisions/[A-Za-z0-9_-]+\\.jsonl$"
+    description: |
+      Repo-relative paths of the `AskUserQuestion` decision logs this work's
+      dialogs were recorded in (RFC-0018 D4.1). A trace for work that ran
+      dialogs lists its logs; optional, absent on work that asked nothing.
+      Which logs belong to a work branch is RFC-0018 D4.0's binding rule.
+
+      `scripts/check_traces.py` reads each one the pattern accepts: it must
+      exist, every line must decode as UTF-8 and parse as a JSON object, and
+      no dialog may be answered twice. A question left unanswered, an event
+      of unknown kind, an `asked` event with no readable questions, an
+      `answered` event with no `asked` one, and an event whose `tool_use_id`
+      is not a string (missing, null, a list or an object) are printed as
+      notes and do not fail the gate.
+
+      **The log governs** (`DRIFT-RULES.md` Rule 4): it is the record, and
+      this list only points at it. A listed log that does not exist is the
+      list's to fix; a log is never edited to match a trace.
+
+      **A line that is not a record may be deleted.** The log is append-only
+      for the recorder, not frozen against repair. Two faults are not
+      records: a line that does not decode or parse as one JSON object (an
+      append cut short or garbled: `not UTF-8`, `not JSON` or `not a JSON
+      object`) and an
+      `answered` line the gate names an *identical copy* of an earlier one
+      (a union merge of one log from two branches). Delete such a line in a
+      commit of its own whose message names the line and its cause. An
+      `answered` line that *differs from* an earlier one for the same dialog
+      is not an artifact: the maintainer decides which line is the record,
+      and the commit deleting the other says which and why (RFC-0018 D2).
+
   review_rounds:
     type: integer
     minimum: 0
