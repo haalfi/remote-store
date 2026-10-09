@@ -319,9 +319,10 @@ if evidence changes; these are retired.
   spec: BE-021 · effort: S · audience: user.api
   `list_files`, `list_folders` and `iter_children` now raise `PermissionDenied`
   naming the requested key. Each wraps its whole generator body, the shape the
-  SFTP twin uses. Both recursive `list_files` branches had a second defect: a
-  denied subtree was dropped silently. They are now one `os.walk` whose error hook
-  re-raises a denial and tolerates anything else. Fixed here rather than once
+  SFTP twin uses. Both recursive `list_files` branches and `get_folder_info` had
+  a second defect: a denied subtree was dropped silently. Each is now an `os.walk`
+  whose error hook re-raises a denial and tolerates anything else, so
+  `Store.get_folder_info` answers a denial alike for every `max_depth`. Fixed here rather than once
   across backends, which is RFC-0017's kernel; `glob`'s same silent drop is
   BUG-311. Tests: `tests/backends/local/test_listing_permission.py`.
   Upgrade note: `docs-src/reference/migration.md` § v0.33.0 to v0.33.1.

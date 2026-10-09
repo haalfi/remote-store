@@ -165,3 +165,35 @@ phases:
           The rule says a lone session may use the local value, and that was
           true when this session started; a parallel session pushed in between
         outcome: ok
+  - id: fix
+    name: Fix pass (round 1)
+    steps:
+      - file: src/remote_store/backends/_local.py
+        section: "get_folder_info"
+        read_type: verify
+        extract: >-
+          Round 1's unprimed pass found a fifth local walk the subject list had
+          never named: get_folder_info still aggregated with rglob("*"). So
+          Store.get_folder_info, which goes to the backend for max_depth=None
+          and to list_files otherwise, now answered one denial two ways.
+          Measured with a real ACL denial (icacls /deny RD) on 3.13: (1, 1)
+          silently for max_depth=None, PermissionDenied for max_depth=5. Before
+          this PR both forms under-counted alike, so the split was this PR's own
+          doing. The framing enumerated the methods the item named and their
+          branches, not every walk the item's *claim* (a denied subtree is
+          dropped silently) is true of. A grep for rglob/os.walk/iterdir/
+          scandir/listdir over src/ was the derivation that would have named it,
+          and it was run only in this fix pass's sibling sweep. It found six
+          local walks: four fixed, glob (BUG-311), and this one
+      - file: tests/backends/local/test_listing_permission.py
+        section: "_ENTRY_POINTS, ACL cell"
+        read_type: verify
+        extract: >-
+          get_folder_info and both Store.get_folder_info forms joined the
+          enumeration. Six cells failed before the fix, and the Store max_depth
+          cells already passed, which is the split itself. A Windows real-denial
+          cell (icacls) now runs on the platform the local gate uses, so the
+          real-OS answer is executed here as well as on CI's POSIX lanes. Ten
+          mutants all die. get_folder_info's is_file filter survived until the
+          ghost-name cell was parametrised over it too
+        outcome: ok

@@ -660,6 +660,9 @@ class LocalBackend(Backend):
         Raises:
             NotFound: If the folder does not exist.
             InvalidPath: If *path* names a file, not a folder.
+            PermissionDenied: If the OS refuses to list *path* or any folder
+                beneath it. A denied subfolder raises rather than being left
+                out, so a total that comes back is never missing a subtree.
         """
         full = self._resolve(path)
         if not is_root(path):
@@ -673,13 +676,18 @@ class LocalBackend(Backend):
         file_count = 0
         total_size = 0
         latest_mtime: float | None = None
-        for item in full.rglob("*"):
-            if item.is_file():
-                file_count += 1
-                st = item.stat()
-                total_size += st.st_size
-                if latest_mtime is None or st.st_mtime > latest_mtime:
-                    latest_mtime = st.st_mtime
+        try:
+            for dirpath, _dirnames, filenames in os.walk(full, onerror=_raise_if_denied):
+                for fname in filenames:
+                    item = Path(dirpath) / fname
+                    if item.is_file():
+                        file_count += 1
+                        st = item.stat()
+                        total_size += st.st_size
+                        if latest_mtime is None or st.st_mtime > latest_mtime:
+                            latest_mtime = st.st_mtime
+        except PermissionError:
+            raise PermissionDenied(f"Permission denied: {path}", path=path, backend=self.name) from None
         modified_at = datetime.fromtimestamp(latest_mtime, tz=UTC) if latest_mtime is not None else None
         return FolderInfo(
             path=RemotePath.from_backend_path(path),

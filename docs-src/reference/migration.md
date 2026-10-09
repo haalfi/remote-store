@@ -18,13 +18,14 @@ on the class but these. They now raise `PermissionDenied`, the type every other
 `except PermissionError` around a listing on this backend, it no longer fires.
 Catch `PermissionDenied`.
 
-A **recursive** `list_files()` changes in a second way. A subfolder it could not
-read used to be skipped without a word, so a partly unreadable tree came back as
-a shorter listing that looked complete, and a top folder it could not read came
-back empty. Both now raise `PermissionDenied`, part-way through the iteration,
-where the walk meets the denied folder. Code that relied on the walk passing over
-folders it cannot read has to catch the error. A `max_depth` that stops above
-the denied folder still never opens it and does not raise.
+A **recursive** `list_files()` and `get_folder_info()` change in a second way.
+A subfolder they could not read used to be skipped without a word, so a partly
+unreadable tree came back as a shorter listing, or a smaller file count and
+total size, that looked complete, and a top folder they could not read came back
+empty. Both now raise `PermissionDenied`: the listing part-way through the
+iteration, where the walk meets the denied folder. Code that relied on the walk
+passing over folders it cannot read has to catch the error. A `max_depth` that
+stops above the denied folder still never opens it and does not raise.
 
 ## v0.32.0 to v0.33.0
 
