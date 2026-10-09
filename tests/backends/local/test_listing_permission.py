@@ -1,8 +1,8 @@
-"""What ``LocalBackend``'s folder walks answer when the OS refuses to list a folder.
+"""What ``LocalBackend``'s folder walks answer when the OS refuses to list a folder or ``stat`` an entry.
 
 BE-021's canonical table maps an operation the OS denies to ``PermissionDenied``,
-and its invariant says no native exception leaks. The walks met neither, in two
-different ways:
+and its invariant says no native exception leaks. The walks met neither, in
+three different ways:
 
 - the single-level scans (``list_files``, ``list_folders``, ``iter_children``)
   let the raw ``PermissionError`` escape, carrying no ``path`` or ``backend``;
@@ -10,7 +10,12 @@ different ways:
   dropped a denied subtree **silently**: ``os.walk``'s default ``onerror=None``
   and ``Path.rglob``'s selector each swallow the error, so a partly unreadable
   tree came back as a short listing or an under-counted aggregate that looked
-  complete, and a denied top folder as empty.
+  complete, and a denied top folder as empty;
+- every walk classified an entry with ``Path.is_file`` / ``is_dir``, which on
+  3.14 answer ``False`` for an entry the OS refuses to ``stat``, so a folder
+  that lists but cannot be traversed lost all its entries silently, and which
+  left a window between classifying a file and measuring it in which a removal
+  leaked a raw ``FileNotFoundError``.
 
 The cells enumerate entry point x denied site rather than sampling them, because
 the shapes above live in different branches and methods, and a fix to one says
@@ -18,14 +23,18 @@ nothing about the others. ``Store.get_folder_info`` is enumerated too, because i
 reaches the backend's aggregate for ``max_depth=None`` and ``list_files`` for any
 other value: one method, two walks, which must answer a denial alike.
 
-The denial is injected at ``os.scandir`` and ``os.listdir``, the two calls every
-walk here lists through on 3.11 to 3.14. One POSIX cell repeats the recursive
-cases against a real ``chmod``, and one Windows cell against a real ACL denial.
+A listing denial is injected at ``os.scandir`` and ``os.listdir``, the two calls
+every walk here lists through on 3.11 to 3.14, and an entry denial at
+``os.stat``. One POSIX cell repeats the recursive cases against a real
+``chmod`` (unlistable, and listable but not traversable), and one Windows cell
+against a real ACL denial.
 """
 
 from __future__ import annotations
 
+import contextlib
 import errno
+import genericpath
 import getpass
 import os
 import subprocess
@@ -152,6 +161,115 @@ def test_a_denied_subfolder_raises_only_where_the_listing_descends(tmp_path: Pat
             assert _ENTRY_POINTS[entry](backend) == expected
 
 
+_REAL_STAT = os.stat
+
+
+def _deny_child_stat(folder: Path) -> AbstractContextManager[Any]:
+    """Refuse ``stat`` on every entry directly inside *folder*, but not on *folder*.
+
+    That is what a folder the caller may list but not traverse does: a POSIX
+    ``0o444`` directory for a non-root user lists its names and fails every
+    child's ``stat`` with ``EACCES``. ``os.path.isfile`` and ``isdir`` are swapped
+    for POSIX's ``genericpath`` forms too, because on 3.14 ``Path.is_file`` and
+    ``is_dir`` ask them, and the POSIX forms turn that ``EACCES`` into ``False``
+    — the silent skip — while Windows' native forms never reach this patch.
+    """
+    # Compared lexically: resolving inside a ``stat`` patch would re-enter it.
+    denied_parent = _norm(folder.resolve())
+
+    def stat(p: Any, *args: Any, **kwargs: Any) -> os.stat_result:
+        if os.path.dirname(_norm(p)) == denied_parent:
+            raise PermissionError(errno.EACCES, "Permission denied", os.fspath(p))
+        return _REAL_STAT(p, *args, **kwargs)
+
+    stack = contextlib.ExitStack()
+    stack.enter_context(mock.patch.object(os, "stat", stat))
+    stack.enter_context(mock.patch.object(os.path, "isfile", genericpath.isfile))
+    stack.enter_context(mock.patch.object(os.path, "isdir", genericpath.isdir))
+    return stack
+
+
+def _norm(p: Any) -> str:
+    return os.path.normcase(os.path.abspath(os.fspath(p)))
+
+
+@pytest.mark.spec("BE-021")
+@pytest.mark.parametrize("entry", list(_ENTRY_POINTS))
+def test_a_child_the_os_refuses_to_stat_raises_permission_denied(tmp_path: Path, entry: str) -> None:
+    """A folder that lists but cannot be traversed raises, rather than listing as empty."""
+    backend = _tree(tmp_path)
+    with _deny_child_stat(tmp_path / "a"), pytest.raises(PermissionDenied) as info:
+        _ENTRY_POINTS[entry](backend)
+    _assert_mapped(info)
+
+
+_ON_SUB: dict[str, Callable[[LocalBackend], object]] = {
+    "list_files": lambda b: _keys(b.list_files("a/sub")),
+    "list_files-recursive": lambda b: _keys(b.list_files("a/sub", recursive=True)),
+    "list_folders": lambda b: _keys(b.list_folders("a/sub")),
+    "iter_children": lambda b: _keys(b.iter_children("a/sub")),
+    "get_folder_info": lambda b: b.get_folder_info("a/sub").file_count,
+}
+
+
+@pytest.mark.spec("BE-021")
+@pytest.mark.parametrize("entry", list(_ON_SUB))
+def test_a_folder_whose_parent_cannot_be_traversed_raises_rather_than_reading_as_absent(
+    tmp_path: Path, entry: str
+) -> None:
+    """The walk's own starting folder is classified by a ``stat`` that may be refused too.
+
+    A missing folder lists as nothing (BE-014) and has no aggregate
+    (``NotFound``, BE-017), so a starting folder the OS refuses to ``stat`` must
+    not be taken for a missing one.
+    """
+    backend = _tree(tmp_path)
+    with _deny_child_stat(tmp_path / "a"), pytest.raises(PermissionDenied) as info:
+        _ON_SUB[entry](backend)
+    assert type(info.value) is PermissionDenied
+    assert info.value.path == "a/sub"
+    assert info.value.backend == "local"
+    assert info.value.__cause__ is None
+
+
+# Every entry point that reads ``a/f.txt``'s size or type, with what it answers
+# when that file is still there for its first ``stat`` and gone after it.
+_WITH_F_GONE_AFTER_FIRST_STAT: dict[str, object] = {
+    "list_files": {"a/f.txt"},
+    "list_files-recursive": {"a/f.txt", "a/sub/g.txt"},
+    "list_files-recursive-max_depth": {"a/f.txt", "a/sub/g.txt"},
+    "iter_children": {"a/f.txt", "a/sub"},
+    "get_folder_info": 2,
+    "Store.get_folder_info": 2,
+    "Store.get_folder_info-max_depth": 2,
+}
+
+
+@pytest.mark.spec("BE-021")
+@pytest.mark.parametrize("entry", list(_WITH_F_GONE_AFTER_FIRST_STAT))
+def test_a_file_removed_after_it_was_classified_does_not_leak(tmp_path: Path, entry: str) -> None:
+    """Each child is classified and measured by one ``stat``, so no later one can find it gone.
+
+    Classifying with ``is_file()`` and then measuring with a second ``stat``
+    leaves a window in which a removed file surfaces as a raw
+    ``FileNotFoundError``. Frozen here by letting ``a/f.txt``'s first ``stat``
+    succeed and every later one fail.
+    """
+    backend = _tree(tmp_path)
+    target = _norm((tmp_path / "a" / "f.txt").resolve())
+    seen: list[int] = []
+
+    def stat(p: Any, *args: Any, **kwargs: Any) -> os.stat_result:
+        if _norm(p) == target:
+            seen.append(1)
+            if len(seen) > 1:
+                raise FileNotFoundError(errno.ENOENT, "No such file or directory", os.fspath(p))
+        return _REAL_STAT(p, *args, **kwargs)
+
+    with mock.patch.object(os, "stat", stat):
+        assert _ENTRY_POINTS[entry](backend) == _WITH_F_GONE_AFTER_FIRST_STAT[entry]
+
+
 @pytest.mark.spec("BE-021")
 def test_a_depth_bound_that_stops_above_the_denied_folder_never_opens_it(tmp_path: Path) -> None:
     """Pruning happens before the walk descends, so the denial is never met."""
@@ -172,15 +290,33 @@ _WITH_SUB_GONE: dict[str, object] = {
 }
 
 
-@pytest.mark.spec("BE-014")
-@pytest.mark.parametrize("entry", list(_WITH_SUB_GONE))
+# The clause each entry point's absence answer is traced to. Every one that
+# reaches ``list_files`` is BE-014's; the backend aggregate is BE-017's.
+_ABSENCE_CLAUSE = {
+    "list_files": "BE-014",
+    "list_files-recursive": "BE-014",
+    "list_files-recursive-max_depth": "BE-014",
+    "list_folders": "BE-015",
+    "iter_children": "BE-026",
+    "get_folder_info": "BE-017",
+    "Store.get_folder_info": "BE-017",
+    "Store.get_folder_info-max_depth": "BE-014",
+}
+
+
+def _traced(entries: Iterable[str]) -> list[Any]:
+    return [pytest.param(e, id=e, marks=pytest.mark.spec(_ABSENCE_CLAUSE[e])) for e in entries]
+
+
+@pytest.mark.parametrize("entry", _traced(_WITH_SUB_GONE))
 def test_a_subfolder_vanishing_mid_walk_is_still_an_absence(tmp_path: Path, entry: str) -> None:
     """Only a denial raises: a subfolder gone by the time the walk opens it holds nothing.
 
     The control that keeps the fix narrow, held on every recursive walk because
-    each has its own error hook to get wrong. A missing path yields nothing under
-    BE-014, and a walk that started before a subfolder was removed meets exactly
-    that; turning every ``OSError`` into a raise would make it an error.
+    each has its own error hook to get wrong. A walk that started before a
+    subfolder was removed meets a missing path, which lists as nothing (BE-014)
+    and holds no files to aggregate (BE-017); turning every ``OSError`` into a
+    raise would make it an error.
     """
     backend = _tree(tmp_path)
     gone = FileNotFoundError(errno.ENOENT, "No such file or directory")
@@ -188,21 +324,23 @@ def test_a_subfolder_vanishing_mid_walk_is_still_an_absence(tmp_path: Path, entr
         assert _ENTRY_POINTS[entry](backend) == _WITH_SUB_GONE[entry]
 
 
-@pytest.mark.spec("BE-014")
 @pytest.mark.parametrize(
     ("entry", "expected"),
     [
-        pytest.param("list_files-recursive", {"a/f.txt", "a/sub/g.txt"}, id="list_files"),
-        pytest.param("get_folder_info", 2, id="get_folder_info"),
+        pytest.param(
+            "list_files-recursive", {"a/f.txt", "a/sub/g.txt"}, id="list_files", marks=pytest.mark.spec("BE-014")
+        ),
+        pytest.param("get_folder_info", 2, id="get_folder_info", marks=pytest.mark.spec("BE-017")),
     ],
 )
 def test_a_file_removed_between_scan_and_stat_is_not_counted(tmp_path: Path, entry: str, expected: object) -> None:
-    """Each recursive walk re-checks a name it was handed before statting it.
+    """Each recursive walk skips a name it was handed that is no longer there.
 
     ``os.walk`` reports names from a scan that is already stale by the time the
     caller stats them. A file removed in that window must drop out of the
-    answer, not surface as a raw ``FileNotFoundError`` from the stat. Driven by
-    handing the walk a name that is not on disk, which is that window frozen.
+    answer, not surface as a raw ``FileNotFoundError`` from its ``stat``. Driven
+    by handing the walk a name that is not on disk, which is that window frozen;
+    the window after the ``stat`` is the next test's.
     """
     backend = _tree(tmp_path)
     real_walk = os.walk
@@ -236,11 +374,19 @@ _RECURSIVE = [name for name, answer in _WITH_SUB_DENIED.items() if answer is Non
 @pytest.mark.skipif(sys.platform == "win32", reason="POSIX permission bits; Windows denies through ACLs")
 @pytest.mark.skipif(getattr(os, "geteuid", lambda: -1)() == 0, reason="root ignores permission bits")
 @pytest.mark.parametrize("entry", _RECURSIVE)
-def test_a_really_unreadable_subfolder_raises_permission_denied(tmp_path: Path, entry: str) -> None:
-    """The recursive walks against a real ``chmod`` rather than an injection."""
+@pytest.mark.parametrize(
+    "mode",
+    [pytest.param(0, id="unlistable"), pytest.param(0o444, id="listable-not-traversable")],
+)
+def test_a_really_unreadable_subfolder_raises_permission_denied(tmp_path: Path, entry: str, mode: int) -> None:
+    """The recursive walks against a real ``chmod`` rather than an injection.
+
+    ``0o444`` is the shape ``Path.is_file`` used to hide on 3.14: the folder
+    lists, and every entry's ``stat`` fails.
+    """
     backend = _tree(tmp_path)
     sub = tmp_path / "a" / "sub"
-    sub.chmod(0)
+    sub.chmod(mode)
     try:
         with pytest.raises(PermissionDenied) as info:
             _ENTRY_POINTS[entry](backend)

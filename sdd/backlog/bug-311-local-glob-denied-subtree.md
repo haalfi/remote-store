@@ -26,6 +26,14 @@ installed interpreter's standard library rather than from runs. On 3.11,
 `Path.walk()`, whose default `on_error=None` ignores the error. On 3.14,
 `glob.py`'s `select_recursive_step` keeps 3.13's `except OSError: pass`.
 
+A later measurement on the same branch, with a real ACL denial (`icacls /deny
+RD`) on 3.13.11, found a denied **top** folder also returns `[]` from
+`glob("a/**/*.txt")` and `glob("a/*.txt")`, not only a denied subtree. `glob`
+also filters with `item.is_file()`, which BUG-280 found answers `False` on 3.14
+(POSIX) for an entry the OS refuses to `stat`, so a folder that lists but cannot
+be traversed drops out too; that shape was read from the code, not run against
+`glob`.
+
 ## Why it is not BUG-280
 
 `list_files(recursive=True)` and `glob` reach the same OS behaviour through

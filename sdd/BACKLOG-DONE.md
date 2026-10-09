@@ -322,9 +322,15 @@ if evidence changes; these are retired.
   SFTP twin uses. Both recursive `list_files` branches and `get_folder_info` had
   a second defect: a denied subtree was dropped silently. Each is now an `os.walk`
   whose error hook re-raises a denial and tolerates anything else, so
-  `Store.get_folder_info` answers a denial alike for every `max_depth`. Fixed here rather than once
-  across backends, which is RFC-0017's kernel; `glob`'s same silent drop is
-  BUG-311. Tests: `tests/backends/local/test_listing_permission.py`.
+  `Store.get_folder_info` answers a denial alike for every `max_depth`. A third:
+  every walk classified paths with `Path.is_file` / `is_dir`, which on 3.14
+  (POSIX) answer `False` for a path the OS refuses to `stat`, so a folder that
+  lists but cannot be traversed lost its entries silently. Each path is now
+  classified and measured by one `stat` whose denial propagates, which also
+  closes the window in which a file removed after classification leaked a raw
+  `FileNotFoundError`. Fixed here rather than once across backends, which is
+  RFC-0017's kernel; `glob`'s same silent drop is BUG-311. Tests:
+  `tests/backends/local/test_listing_permission.py`.
   Upgrade note: `docs-src/reference/migration.md` § v0.33.0 to v0.33.1.
   Trace: [bug-280](traces/bug-280-local-listing-permission-leak.yml).
   Detail: [dossier](backlog/bug-280-local-listing-permission-leak.md).

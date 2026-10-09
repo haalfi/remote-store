@@ -12,11 +12,10 @@ changes that require action when upgrading.
 
 `list_files()`, `list_folders()` and `iter_children()` on `LocalBackend` let the
 operating system's `PermissionError` reach the caller unmapped, with no `path`
-or `backend`, so an `except RemoteStoreError` clause caught every other failure
-on the class but these. They now raise `PermissionDenied`, the type every other
-`LocalBackend` operation already answers a denial with. If you wrote
-`except PermissionError` around a listing on this backend, it no longer fires.
-Catch `PermissionDenied`.
+or `backend`, so an `except RemoteStoreError` clause did not catch it. They now
+raise `PermissionDenied`, as `read`, `write` and `delete` already did. If you
+wrote `except PermissionError` around a listing on this backend, it no longer
+fires. Catch `PermissionDenied`.
 
 A **recursive** `list_files()` and `get_folder_info()` change in a second way.
 A subfolder they could not read used to be skipped without a word, so a partly
@@ -26,6 +25,14 @@ empty. Both now raise `PermissionDenied`: the listing part-way through the
 iteration, where the walk meets the denied folder. Code that relied on the walk
 passing over folders it cannot read has to catch the error. A `max_depth` that
 stops above the denied folder still never opens it and does not raise.
+
+The same holds for a folder you may list but not open, such as a POSIX
+directory with read but no execute permission. On Python 3.14 its entries used
+to vanish from these listings and totals, and on 3.11 to 3.13 they raised the
+bare `PermissionError`; every version now raises `PermissionDenied`.
+
+`glob()` is not changed by this release. It still leaves out a folder it cannot
+read, without an error.
 
 ## v0.32.0 to v0.33.0
 

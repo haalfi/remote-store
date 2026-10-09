@@ -251,6 +251,15 @@ failure it was.
   without re-implementing pattern matching, keeping GLOB-005's escape skip.
   Detail: [dossier](backlog/bug-311-local-glob-denied-subtree.md)
 
+- [ ] **BUG-313 — `LocalBackend.get_file_info` answers a file it may not `stat` as missing, or leaks `PermissionError`**
+  spec: BE-016, BE-021 · effort: S · audience: user.api
+  `get_file_info` on a file whose parent can be listed but not traversed answers
+  `NotFound` on 3.14 (POSIX) and leaks a raw `PermissionError` on 3.11 to 3.13:
+  it classifies with `Path.is_dir` / `is_file` before its own `stat`, the shape
+  BUG-280 fixed in the folder walks. Open decision: whether the other `is_dir()`
+  pre-checks in `_local.py` belong in the same fix.
+  Detail: [dossier](backlog/bug-313-local-get-file-info-denied-parent.md)
+
 - [ ] **BUG-299 — `LocalBackend.write` and `write_atomic` on a `..` key inside the root write the file, then raise `InvalidPath`**
   spec: BE-008, BE-010 · effort: S · audience: user.api
   `write("a/../b.txt", b"x")` and `write_atomic("a/../c.txt", b"x")` raise

@@ -9,6 +9,7 @@ import shutil
 import tempfile
 from datetime import UTC, datetime
 from pathlib import Path
+from stat import S_ISDIR, S_ISREG
 from typing import TYPE_CHECKING, BinaryIO, ClassVar
 
 from remote_store._backend import _COPY_BUFSIZE, Backend
@@ -32,12 +33,34 @@ def _raise_if_denied(exc: OSError) -> None:
     """``os.walk`` error hook: propagate a denial, tolerate anything else.
 
     ``os.walk`` swallows every listing error by default, which turned a denied
-    subfolder into a silently short listing. A denial now reaches the caller
-    (mapped by ``list_files``); any other error keeps the default, so a
-    subfolder removed while the walk runs still reads as an absent one.
+    subfolder into a silently short listing or an under-counted total. A denial
+    now reaches the caller, and each caller maps it (``list_files`` and
+    ``get_folder_info``); any other error keeps the default, so a subfolder
+    removed while the walk runs still reads as an absent one.
     """
     if isinstance(exc, PermissionError):
         raise exc
+
+
+def _stat_or_absent(path: Path) -> os.stat_result | None:
+    """``stat`` *path* once, following links; ``None`` if it is not there.
+
+    The walks classify a path from this rather than from ``Path.is_file`` /
+    ``is_dir``, which answer ``False`` for a path the OS refuses to ``stat`` on
+    some interpreters (3.14 on POSIX): a listed folder that cannot be traversed
+    then lost every entry silently, and a listed path whose parent cannot be
+    traversed read as absent. A denial therefore propagates for the caller to
+    map. One ``stat`` also both classifies an entry and measures it, so a file
+    removed between the two cannot surface as a raw ``FileNotFoundError``. Any
+    other error, a dangling link or a link loop among them, reads as absence,
+    as it always did.
+    """
+    try:
+        return path.stat()
+    except PermissionError:
+        raise
+    except OSError:
+        return None
 
 
 class LocalBackend(Backend):
@@ -561,29 +584,31 @@ class LocalBackend(Backend):
 
         Raises:
             PermissionDenied: If the OS refuses to list *path* or, when
-                ``recursive``, any folder the walk descends into. A denied
-                subfolder raises rather than being skipped, so a listing that
-                completes is never missing a subtree it could not read.
+                ``recursive``, any folder the walk descends into, or refuses
+                to ``stat`` an entry in one. A denied subfolder or entry raises
+                rather than being skipped, so a listing that completes is never
+                missing something it could not read.
         """
         try:
             full = self._resolve(path)
-            if not full.is_dir():
+            top = _stat_or_absent(full)
+            if top is None or not S_ISDIR(top.st_mode):
                 return
             if recursive:
                 for dirpath, dirnames, filenames in os.walk(full, onerror=_raise_if_denied):
                     depth = len(Path(dirpath).relative_to(full).parts)
                     for fname in filenames:
                         item = Path(dirpath) / fname
-                        if item.is_file():
-                            rel = self.to_key(str(item))
-                            yield self._stat_to_fileinfo(rel, item)
+                        st = _stat_or_absent(item)
+                        if st is not None and S_ISREG(st.st_mode):
+                            yield self._stat_to_fileinfo(self.to_key(str(item)), item, st)
                     if max_depth is not None and depth >= max_depth:
                         dirnames.clear()
             else:
                 for item in full.iterdir():
-                    if item.is_file():
-                        rel = self.to_key(str(item))
-                        yield self._stat_to_fileinfo(rel, item)
+                    st = _stat_or_absent(item)
+                    if st is not None and S_ISREG(st.st_mode):
+                        yield self._stat_to_fileinfo(self.to_key(str(item)), item, st)
         except PermissionError:
             raise PermissionDenied(f"Permission denied: {path}", path=path, backend=self.name) from None
 
@@ -593,16 +618,18 @@ class LocalBackend(Backend):
         Lazy single-level scan; a missing or non-folder *path* yields nothing.
 
         Raises:
-            PermissionDenied: If the OS refuses to list *path*.
+            PermissionDenied: If the OS refuses to list *path*, or to ``stat``
+                an entry in it.
         """
         try:
             full = self._resolve(path)
-            if not full.is_dir():
+            top = _stat_or_absent(full)
+            if top is None or not S_ISDIR(top.st_mode):
                 return
             for item in full.iterdir():
-                if item.is_dir():
-                    rel = self.to_key(str(item))
-                    yield FolderEntry(path=RemotePath(rel), name=item.name)
+                st = _stat_or_absent(item)
+                if st is not None and S_ISDIR(st.st_mode):
+                    yield FolderEntry(path=RemotePath(self.to_key(str(item))), name=item.name)
         except PermissionError:
             raise PermissionDenied(f"Permission denied: {path}", path=path, backend=self.name) from None
 
@@ -615,19 +642,22 @@ class LocalBackend(Backend):
         nothing.
 
         Raises:
-            PermissionDenied: If the OS refuses to list *path*.
+            PermissionDenied: If the OS refuses to list *path*, or to ``stat``
+                an entry in it.
         """
         try:
             full = self._resolve(path)
-            if not full.is_dir():
+            top = _stat_or_absent(full)
+            if top is None or not S_ISDIR(top.st_mode):
                 return
             for item in full.iterdir():
-                if item.is_file():
-                    rel = self.to_key(str(item))
-                    yield self._stat_to_fileinfo(rel, item)
-                elif item.is_dir():
-                    rel = self.to_key(str(item))
-                    yield FolderEntry(path=RemotePath(rel), name=item.name)
+                st = _stat_or_absent(item)
+                if st is None:
+                    continue
+                if S_ISREG(st.st_mode):
+                    yield self._stat_to_fileinfo(self.to_key(str(item)), item, st)
+                elif S_ISDIR(st.st_mode):
+                    yield FolderEntry(path=RemotePath(self.to_key(str(item))), name=item.name)
         except PermissionError:
             raise PermissionDenied(f"Permission denied: {path}", path=path, backend=self.name) from None
 
@@ -661,28 +691,29 @@ class LocalBackend(Backend):
             NotFound: If the folder does not exist.
             InvalidPath: If *path* names a file, not a folder.
             PermissionDenied: If the OS refuses to list *path* or any folder
-                beneath it. A denied subfolder raises rather than being left
-                out, so a total that comes back is never missing a subtree.
+                beneath it, or to ``stat`` a file in one. A denied subfolder or
+                file raises rather than being left out, so a total that comes
+                back is never missing something it could not read.
         """
         full = self._resolve(path)
-        if not is_root(path):
-            # The root is a folder by definition (BE-029), so it is never a
-            # file and never missing: an absent root aggregates to zero rather
-            # than reporting itself gone. Every other path answers from a stat.
-            if full.is_file():
-                raise InvalidPath(f"Not a folder: {path}", path=path, backend=self.name)
-            if not full.is_dir():
-                raise NotFound(f"Folder not found: {path}", path=path, backend=self.name)
         file_count = 0
         total_size = 0
         latest_mtime: float | None = None
         try:
+            if not is_root(path):
+                # The root is a folder by definition (BE-029), so it is never a
+                # file and never missing: an absent root aggregates to zero rather
+                # than reporting itself gone. Every other path answers from a stat.
+                top = _stat_or_absent(full)
+                if top is not None and S_ISREG(top.st_mode):
+                    raise InvalidPath(f"Not a folder: {path}", path=path, backend=self.name)
+                if top is None or not S_ISDIR(top.st_mode):
+                    raise NotFound(f"Folder not found: {path}", path=path, backend=self.name)
             for dirpath, _dirnames, filenames in os.walk(full, onerror=_raise_if_denied):
                 for fname in filenames:
-                    item = Path(dirpath) / fname
-                    if item.is_file():
+                    st = _stat_or_absent(Path(dirpath) / fname)
+                    if st is not None and S_ISREG(st.st_mode):
                         file_count += 1
-                        st = item.stat()
                         total_size += st.st_size
                         if latest_mtime is None or st.st_mtime > latest_mtime:
                             latest_mtime = st.st_mtime
@@ -937,8 +968,9 @@ class LocalBackend(Backend):
             return False
         return True
 
-    def _stat_to_fileinfo(self, path: str, full: Path) -> FileInfo:
-        st = full.stat()
+    def _stat_to_fileinfo(self, path: str, full: Path, st: os.stat_result | None = None) -> FileInfo:
+        if st is None:
+            st = full.stat()
         return FileInfo(
             path=RemotePath(path),
             name=full.name,

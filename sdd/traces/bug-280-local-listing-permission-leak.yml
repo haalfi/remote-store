@@ -3,8 +3,8 @@ title: "LocalBackend's listing methods leak a raw PermissionError"
 trigger: |
   Filed by BUG-275's closing measuring member: list_files, list_folders and
   iter_children on LocalBackend let a raw PermissionError from iterdir escape,
-  breaching BE-021's never-leak invariant, while every other LocalBackend path
-  maps it. Measured before planning, the recursive list_files branches were
+  breaching BE-021's never-leak invariant, while read, write and delete map
+  it. Measured before planning, the recursive list_files branches were
   found to answer the same denial differently again: they drop the denied
   subtree silently.
 source_items:
@@ -16,12 +16,9 @@ discovery_followups:
   # Same silent drop, reached through Path.glob rather than rglob; left out of
   # scope by decision at framing, not by oversight.
   - BUG-311
-surprising_ripples:
-  # The ripple-check names no row for a migration section on a bug fix that is
-  # not marked Breaking; the Breaking-change row's "a fix that breaks an except
-  # clause without earning the marker owes the section alone" is what reaches
-  # it, and BUG-249's v0.31.0 section is the precedent.
-  - docs-src/reference/migration.md
+  # Born in the closing round's sibling sweep over .is_file()/.is_dir(); the
+  # same 3.14 mechanism outside the walks this PR fixes.
+  - BUG-313
 phases:
   - id: orient
     name: Orient
@@ -222,3 +219,53 @@ phases:
           held, but "list_files-no-onerror: 15 failed" measured two sites.
           Re-anchored on "for dirpath, dirnames"; it now kills 9 cells alone.
           No outcome tag: the author built the instrument
+  - id: fix_3
+    name: Fix pass (round 3, closing panel)
+    steps:
+      - file: src/remote_store/backends/_local.py
+        section: "_stat_or_absent; the four walks' classification"
+        read_type: verify
+        extract: >-
+          The whole-file member guessed, unreproduced, that "3.13+" Path.is_file
+          answers False for an entry the OS refuses to stat. Reading the stdlib
+          put it on 3.14 only: 3.13's _abc.is_file re-raises EACCES, 3.14's
+          calls os.path.isfile, whose POSIX form swallows any OSError. Measured
+          by denying os.stat on a/sub's entries with genericpath.isfile
+          substituted: on master, 3.11, 3.12 and 3.13 leak the raw
+          PermissionError and 3.14 returns ['a/f.txt'] and (1, 1). So the
+          guarantee this PR's docstrings state ("never missing a subtree it
+          could not read") was false on CI's 3.14 Linux lanes. Every walk now
+          classifies and measures with one stat whose denial propagates, which
+          also closed the unprimed member's is_file-then-stat window. The
+          sibling sweep (rg on .is_file()/.is_dir() in _local.py) found the
+          same defect in the four walks' own starting-folder checks, fixed
+          with them; get_file_info and glob have it outside this PR's methods
+      - file: tests/backends/local/test_listing_permission.py
+        section: "_deny_child_stat, three new tests, chmod 0o444"
+        read_type: verify
+        extract: >-
+          The entry-stat cells failed first on 3.14 (8 of 8) and pass on 3.13
+          before the fix, as they must; the race cells failed first on 3.13 (7
+          of 7) and not on 3.14, whose native is_file never reaches the patched
+          os.stat. The instrument needed both genericpath.isfile and isdir:
+          with isfile alone, a get_folder_info top-check mutant survived on
+          Windows 3.14 because os.path.isdir is native there. With both, all 19
+          mutants die on 3.14; three of them only can, by construction. The
+          BE-014 marks on BE-017 cells are now per-parameter
+      - file: sdd/CLAUDE-REFERENCE.md
+        section: "Pre-work index, Breaking change row; Detailed checklist, Breaking change row"
+        read_type: reference
+        extract: >-
+          The trace's surprising_ripples entry claimed no ripple row names a
+          migration section for an unmarked fix. Both presentations do, so the
+          entry was removed. The reviewer's half that the quoted clause appears
+          only in other traces was wrong: it is the Pre-work index's own text
+      - file: docs-src/reference/migration.md
+        section: "v0.33.0 to v0.33.1"
+        read_type: verify
+        extract: >-
+          "the type every other LocalBackend operation already answers a denial
+          with" was false for glob (measured, [] for a denied top folder) and
+          for get_file_info (no PermissionError mapping, read). Narrowed to
+          read, write and delete, each checked for an except PermissionError
+          arm, and glob is named as unchanged
