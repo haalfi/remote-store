@@ -1,0 +1,117 @@
+{
+ "_provenance": {
+  "script": "backlog_links.py",
+  "generated": "2026-10-09",
+  "inputs": {
+   "calls.jsonl": "907901dab77ca147566a751fdf9aa7af8e8019e3f7c4ef1455bdc564eaa1cc92",
+   "items.jsonl": "e63d24c895b34565a54b17d85b48d00a951295026edb50fae5b936bef59ecb03",
+   "sessions.json": "7fc8f47d516e2686beb920dbb8b42bff97afddc9f0bfa913eb55785f98903590",
+   "CLAUDE.md": "7cf66222fdeb6d3b003b8b9cf0cf673357b10e4b02309a08153d441d4049ec57"
+  }
+ },
+ "groups": {
+  "src/ + tests/": {
+   "reads": 224,
+   "sessions": 7,
+   "context_pct": 4.25,
+   "usd_estimate": 20.3
+  },
+  "linked from the authority docs (second hop)": {
+   "reads": 96,
+   "sessions": 15,
+   "context_pct": 3.09,
+   "usd_estimate": 11.0
+  },
+  ".claude/skills": {
+   "reads": 62,
+   "sessions": 6,
+   "context_pct": 2.62,
+   "usd_estimate": 11.3
+  },
+  "linked from CLAUDE.md": {
+   "reads": 72,
+   "sessions": 14,
+   "context_pct": 2.26,
+   "usd_estimate": 9.9
+  },
+  "backlog files": {
+   "reads": 140,
+   "sessions": 15,
+   "context_pct": 2.22,
+   "usd_estimate": 9.9
+  },
+  "sdd/ other": {
+   "reads": 80,
+   "sessions": 10,
+   "context_pct": 2.02,
+   "usd_estimate": 7.2
+  },
+  "other repo files": {
+   "reads": 107,
+   "sessions": 20,
+   "context_pct": 1.3,
+   "usd_estimate": 4.5
+  }
+ },
+ "per_file": {
+  "sdd/BACKLOG.md": {
+   "reads": 68,
+   "tokens_per_read": 1703,
+   "context_pct": 1.41,
+   "usd_estimate": 6.5
+  },
+  "sdd/traces/_schema.yml": {
+   "reads": 20,
+   "tokens_per_read": 6578,
+   "context_pct": 1.01,
+   "usd_estimate": 4.9
+  },
+  "sdd/CLAUDE-REFERENCE.md": {
+   "reads": 26,
+   "tokens_per_read": 3639,
+   "context_pct": 0.93,
+   "usd_estimate": 3.9
+  },
+  "sdd/rfcs/rfc-0019-two-speed-test-gate.md": {
+   "reads": 11,
+   "tokens_per_read": 3248,
+   "context_pct": 0.83,
+   "usd_estimate": 2.0
+  },
+  "sdd/rfcs/rfc-0018-decision-capture-at-dialog-time.md": {
+   "reads": 16,
+   "tokens_per_read": 3270,
+   "context_pct": 0.79,
+   "usd_estimate": 1.9
+  },
+  "sdd/BACKLOG-DONE.md": {
+   "reads": 46,
+   "tokens_per_read": 2621,
+   "context_pct": 0.52,
+   "usd_estimate": 2.5
+  },
+  "sdd/traces/bk-359-stalled-sftp-error-detail.yml": {
+   "reads": 1,
+   "tokens_per_read": 8279,
+   "context_pct": 0.48,
+   "usd_estimate": 2.4
+  },
+  "CHANGELOG.md": {
+   "reads": 15,
+   "tokens_per_read": 2011,
+   "context_pct": 0.3,
+   "usd_estimate": 1.3
+  }
+ },
+ "backlog_touches_in_surviving_transcripts": {
+  "BACKLOG-DONE.md: Edit/Write": 18,
+  "BACKLOG-DONE.md: Grep content": 18,
+  "BACKLOG-DONE.md: Read slice": 19,
+  "BACKLOG-DONE.md: other": 15,
+  "BACKLOG.md: Edit/Write": 35,
+  "BACKLOG.md: Grep content": 24,
+  "BACKLOG.md: Grep count": 1,
+  "BACKLOG.md: Read slice": 24,
+  "BACKLOG.md: other": 30
+ }
+}

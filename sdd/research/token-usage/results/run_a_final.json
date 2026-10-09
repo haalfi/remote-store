@@ -1,0 +1,215 @@
+{
+ "_provenance": {
+  "script": "tokkit.py",
+  "generated": "2026-10-09",
+  "inputs": {
+   "main transcript": "82bd321dcb4e0a7f51a5cb5d87d1151424e57df78c0835cdc4fbe0e9c84a116e"
+  }
+ },
+ "transcripts": 34,
+ "calls": 1823,
+ "main_calls": 795,
+ "units_m": 59.3,
+ "usd_estimate": 136.99,
+ "units_pct_by_class": {
+  "input": 0.0,
+  "read": 78.9,
+  "w5": 9.9,
+  "w1h": 5.6,
+  "out": 5.6
+ },
+ "first_edit_call": 9,
+ "pr_open_call": 129,
+ "compaction_calls": [
+  458
+ ],
+ "phases": {
+  "orient + plan (before first edit)": {
+   "calls": 9,
+   "units_pct": 0.4,
+   "mean_ctx_k": 89
+  },
+  "build (first edit to PR open)": {
+   "calls": 120,
+   "units_pct": 5.5,
+   "mean_ctx_k": 212
+  },
+  "review loop (after PR open)": {
+   "calls": 666,
+   "units_pct": 64.4,
+   "mean_ctx_k": 493
+  },
+  "subagents": {
+   "calls": 1028,
+   "units_pct": 29.7
+  }
+ },
+ "context_shares_pct": {
+  "session prefix": 21.9,
+  "result:Read": 17.2,
+  "result:Bash": 12.2,
+  "thinking (hidden)": 11.7,
+  "tool_input": 11.0,
+  "attachment": 10.1,
+  "result": 7.1,
+  "result:Grep": 3.7,
+  "user_meta": 3.4,
+  "assistant_text": 1.1,
+  "user_prompt": 1.1,
+  "unexplained": -0.5
+ },
+ "top_items_pct": [
+  {
+   "kind": "result:mcp",
+   "detail": "add_reply_to_pull_request_comment",
+   "pct": 5.36
+  },
+  {
+   "kind": "result:Bash",
+   "detail": "git",
+   "pct": 3.47
+  },
+  {
+   "kind": "user_meta",
+   "detail": "",
+   "pct": 3.37
+  },
+  {
+   "kind": "result:Read",
+   "detail": "<review-snapshot>/.claude/skills/rvw-pr/SKILL.md",
+   "pct": 2.34
+  },
+  {
+   "kind": "attachment",
+   "detail": "output_style",
+   "pct": 1.75
+  },
+  {
+   "kind": "result:Read",
+   "detail": "<review-snapshot>/tests/backends/local/test_listing_permission.py",
+   "pct": 1.54
+  },
+  {
+   "kind": "result:Read",
+   "detail": "sdd/specs/003-backend-adapter-contract.md",
+   "pct": 1.49
+  },
+  {
+   "kind": "result:Bash",
+   "detail": "uv",
+   "pct": 1.45
+  },
+  {
+   "kind": "result:Read",
+   "detail": "src/remote_store/backends/_local.py",
+   "pct": 1.45
+  },
+  {
+   "kind": "attachment",
+   "detail": "instructions",
+   "pct": 1.38
+  }
+ ],
+ "read_tokens_reread_pct": 18.9,
+ "spilled_outputs": 39,
+ "rounds": [
+  {
+   "spawn_call": 103,
+   "members": 1,
+   "main_ctx_k": 255,
+   "main_units_m": 1.23,
+   "subagent_units_m": 0.29
+  },
+  {
+   "spawn_call": 139,
+   "members": 1,
+   "main_ctx_k": 304,
+   "main_units_m": 1.62,
+   "subagent_units_m": 0.37
+  },
+  {
+   "spawn_call": 182,
+   "members": 3,
+   "main_ctx_k": 355,
+   "main_units_m": 3.63,
+   "subagent_units_m": 1.49
+  },
+  {
+   "spawn_call": 251,
+   "members": 3,
+   "main_ctx_k": 510,
+   "main_units_m": 2.53,
+   "subagent_units_m": 1.71
+  },
+  {
+   "spawn_call": 288,
+   "members": 3,
+   "main_ctx_k": 622,
+   "main_units_m": 3.55,
+   "subagent_units_m": 1.74
+  },
+  {
+   "spawn_call": 335,
+   "members": 3,
+   "main_ctx_k": 719,
+   "main_units_m": 1.02,
+   "subagent_units_m": 0.16
+  },
+  {
+   "spawn_call": 348,
+   "members": 3,
+   "main_ctx_k": 735,
+   "main_units_m": 4.27,
+   "subagent_units_m": 2.0
+  },
+  {
+   "spawn_call": 398,
+   "members": 3,
+   "main_ctx_k": 828,
+   "main_units_m": 6.57,
+   "subagent_units_m": 1.89
+  },
+  {
+   "spawn_call": 495,
+   "members": 1,
+   "main_ctx_k": 113,
+   "main_units_m": 1.5,
+   "subagent_units_m": 0.39
+  },
+  {
+   "spawn_call": 560,
+   "members": 1,
+   "main_ctx_k": 223,
+   "main_units_m": 1.08,
+   "subagent_units_m": 0.29
+  },
+  {
+   "spawn_call": 595,
+   "members": 3,
+   "main_ctx_k": 273,
+   "main_units_m": 2.34,
+   "subagent_units_m": 1.57
+  },
+  {
+   "spawn_call": 651,
+   "members": 2,
+   "main_ctx_k": 396,
+   "main_units_m": 1.6,
+   "subagent_units_m": 1.07
+  },
+  {
+   "spawn_call": 680,
+   "members": 3,
+   "main_ctx_k": 479,
+   "main_units_m": 3.75,
+   "subagent_units_m": 2.21
+  },
+  {
+   "spawn_call": 739,
+   "members": 3,
+   "main_ctx_k": 625,
+   "main_units_m": 4.39,
+   "subagent_units_m": 2.44
+  }
+ ]
+}

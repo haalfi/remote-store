@@ -1,0 +1,81 @@
+{
+ "_provenance": {
+  "script": "ship_era.py",
+  "generated": "2026-10-09",
+  "inputs": {
+   "BACKLOG-DONE.md history at commit": "31ebe6be7",
+   "prs.json": "beb1e0f90225cfe9b9f9b2dc81383307e0267b72f7338b44a53de2ad45b4cd59",
+   "corpus.json": "1d7c94d146cc9e1c4c1f21ca9f406047d90c2ff420119b4e92cb06c1454f75c0"
+  }
+ },
+ "backlog_exits_by_month": {
+  "2026-03": {
+   "ID": 114,
+   "BK": 30,
+   "BUG": 7,
+   "bug_share_pct": 5.0
+  },
+  "2026-04": {
+   "ID": 48,
+   "BK": 33,
+   "BUG": 48,
+   "bug_share_pct": 37.0
+  },
+  "2026-05": {
+   "BK": 67,
+   "ID": 29,
+   "BUG": 29,
+   "bug_share_pct": 23.0
+  },
+  "2026-06": {
+   "BUG": 11,
+   "BK": 67,
+   "ID": 13,
+   "bug_share_pct": 12.0
+  },
+  "2026-07": {
+   "BK": 16,
+   "ID": 9,
+   "BUG": 12,
+   "bug_share_pct": 32.0
+  },
+  "2026-08": {
+   "BK": 25,
+   "BUG": 12,
+   "ID": 20,
+   "bug_share_pct": 21.0
+  },
+  "2026-09": {
+   "BUG": 19,
+   "BK": 17,
+   "ID": 5,
+   "bug_share_pct": 46.0
+  },
+  "2026-10": {
+   "BUG": 11,
+   "BK": 12,
+   "ID": 6,
+   "bug_share_pct": 38.0
+  }
+ },
+ "eras": {
+  "May-Jul": {
+   "prs": 363,
+   "review_threads_median": 3,
+   "commits_median": 3
+  },
+  "after /ship": {
+   "prs": 138,
+   "review_threads_median": 11.0,
+   "commits_median": 6.5
+  }
+ },
+ "discovery_followups_per_trace": {
+  "2026-05": 0.42,
+  "2026-06": 0.29,
+  "2026-07": 0.66,
+  "2026-08": 1.55,
+  "2026-09": 0.94,
+  "2026-10": 0.64
+ }
+}

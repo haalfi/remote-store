@@ -1,0 +1,103 @@
+{
+ "_provenance": {
+  "script": "prose_classes.py",
+  "generated": "2026-10-09",
+  "inputs": {
+   "prose_labels.json": "4780d00b501dced9d95bcccde731e5034449fcfc208dca6a807d2eb13e52b08b"
+  }
+ },
+ "findings": 321,
+ "prs": 13,
+ "class_counts": {
+  "SCOPE": 91,
+  "FACT": 89,
+  "MIRROR": 82,
+  "RULE": 34,
+  "DESIGN": 19,
+  "CLARITY": 6
+ },
+ "checkable_counts": {
+  "enumeration": 171,
+  "mechanical": 130,
+  "judgment": 20
+ },
+ "class_pct": {
+  "SCOPE": 28.0,
+  "FACT": 28.0,
+  "MIRROR": 26.0,
+  "RULE": 11.0,
+  "DESIGN": 6.0,
+  "CLARITY": 2.0
+ },
+ "checkable_pct": {
+  "enumeration": 53.0,
+  "mechanical": 40.0,
+  "judgment": 6.0
+ },
+ "class_by_round_band_pct": {
+  "rounds 1-2": {
+   "DESIGN": 9.0,
+   "FACT": 38.0,
+   "MIRROR": 21.0,
+   "RULE": 9.0,
+   "SCOPE": 23.0,
+   "n": 53
+  },
+  "rounds 3-4": {
+   "CLARITY": 1.0,
+   "DESIGN": 3.0,
+   "FACT": 29.0,
+   "MIRROR": 33.0,
+   "RULE": 9.0,
+   "SCOPE": 26.0,
+   "n": 98
+  },
+  "rounds 5-8": {
+   "CLARITY": 2.0,
+   "DESIGN": 9.0,
+   "FACT": 23.0,
+   "MIRROR": 19.0,
+   "RULE": 11.0,
+   "SCOPE": 36.0,
+   "n": 97
+  },
+  "rounds 9+": {
+   "CLARITY": 4.0,
+   "DESIGN": 3.0,
+   "FACT": 26.0,
+   "MIRROR": 29.0,
+   "RULE": 12.0,
+   "SCOPE": 26.0,
+   "n": 73
+  }
+ },
+ "loop_ref_by_round_band_pct": {
+  "rounds 1-2": 4.0,
+  "rounds 3-4": 19.0,
+  "rounds 5-8": 21.0,
+  "rounds 9+": 21.0
+ },
+ "findings_by_target_kind": {
+  "backlog": 127,
+  "rfc": 74,
+  "other": 28,
+  "trace": 27,
+  "spec": 21,
+  "process-doc": 16,
+  "adr": 15,
+  "skill": 9,
+  "guide": 4
+ },
+ "spot_check_keys": [
+  "1056-8-165",
+  "1047-3-77",
+  "1061-7-202",
+  "1045-3-24",
+  "1045-4-37",
+  "1073-9-274",
+  "1045-5-48",
+  "1061-4-187",
+  "1050-4-298",
+  "1045-3-29"
+ ]
+}

@@ -1,0 +1,70 @@
+{
+ "_provenance": {
+  "script": "orient_check.py",
+  "generated": "2026-10-09",
+  "inputs": {
+   "sdd/BACKLOG.md at commit": "ff00a1dd7",
+   "main transcript": "82bd321dcb4e0a7f51a5cb5d87d1151424e57df78c0835cdc4fbe0e9c84a116e"
+  }
+ },
+ "item": "BUG-280",
+ "spec": [
+  "BE-021"
+ ],
+ "open_items": 87,
+ "related": {
+  "BUG-293": {
+   "shared": [
+    "BE-021"
+   ],
+   "title": "Twelve Azure `except Exception` arms re-type an already-typed error, so a closed store reports the base class"
+  },
+  "BUG-255": {
+   "shared": [
+    "BE-021"
+   ],
+   "title": "A container deleted mid-listing truncates the listing silently on the two s3fs lanes"
+  },
+  "BUG-257": {
+   "shared": [
+    "BE-021"
+   ],
+   "title": "`GraphBackend` restarts the first-page bound at every folder of a recursive walk"
+  },
+  "BUG-245": {
+   "shared": [
+    "BE-021"
+   ],
+   "title": "`SQLBlobBackend(create_table=False)` leaks `NoSuchTableError` from its constructor"
+  },
+  "BK-389": {
+   "shared": [
+    "BE-021"
+   ],
+   "title": "RFC-0017's kernel does not exist, so no backend can migrate onto it"
+  },
+  "BK-394": {
+   "shared": [
+    "BE-021"
+   ],
+   "title": "No backend runs on RFC-0017's kernel, so ADR-0042 stays Proposed"
+  },
+  "BK-345": {
+   "shared": [
+    "BE-021"
+   ],
+   "title": "BE-021's absent-container rule has no registry-driven gate, so a new backend is silently exempt"
+  }
+ },
+ "first_mention_call": {
+  "BK-345": 6,
+  "BK-389": 2,
+  "BK-394": 414,
+  "BUG-245": null,
+  "BUG-255": 6,
+  "BUG-257": 6,
+  "BUG-293": 14,
+  "ADR-0042": 415,
+  "RFC-0017": 2
+ }
+}

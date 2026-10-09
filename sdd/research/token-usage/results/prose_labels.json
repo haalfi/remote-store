@@ -1,0 +1,2905 @@
+{
+ "_provenance": {
+  "script": "prose_classes.py",
+  "generated": "2026-10-09",
+  "inputs": {
+   "prose_findings.json": "d3371d9ea26a08b9bf54530ebb2f953aa9ab99af3dfdf0f5401b9ac0b6d72f23",
+   "prose_cls_1.json": "629acee8cb3a7d85c0ec0cf0a930e493520346784d33146c3c8d5e2267d3ab93",
+   "prose_cls_2.json": "7c3b18566ec5a0136e4c25b85cf4548afff7fdfb82629223cd077953d448ba6a",
+   "prose_cls_3.json": "a5e5d04c2e554532eec3f17d8cc293b89e15b5ef117521ed3bfb1818d447291d",
+   "prose_cls_4.json": "3cb7abc0b747c0925d99a5628fa58621022393048434ebc789b6453df6617627"
+  }
+ },
+ "unlabelled": 0,
+ "labels": [
+  {
+   "key": "1027-1-0",
+   "pr": 1027,
+   "round": 1,
+   "cls": "MIRROR",
+   "checkable": "enumeration",
+   "loop_ref": false,
+   "target_kind": "process-doc"
+  },
+  {
+   "key": "1027-1-1",
+   "pr": 1027,
+   "round": 1,
+   "cls": "MIRROR",
+   "checkable": "enumeration",
+   "loop_ref": false,
+   "target_kind": "backlog"
+  },
+  {
+   "key": "1027-1-2",
+   "pr": 1027,
+   "round": 1,
+   "cls": "FACT",
+   "checkable": "mechanical",
+   "loop_ref": false,
+   "target_kind": "backlog"
+  },
+  {
+   "key": "1027-2-3",
+   "pr": 1027,
+   "round": 2,
+   "cls": "SCOPE",
+   "checkable": "enumeration",
+   "loop_ref": false,
+   "target_kind": "backlog"
+  },
+  {
+   "key": "1027-2-4",
+   "pr": 1027,
+   "round": 2,
+   "cls": "RULE",
+   "checkable": "judgment",
+   "loop_ref": false,
+   "target_kind": "backlog"
+  },
+  {
+   "key": "1027-3-5",
+   "pr": 1027,
+   "round": 3,
+   "cls": "FACT",
+   "checkable": "mechanical",
+   "loop_ref": true,
+   "target_kind": "backlog"
+  },
+  {
+   "key": "1027-7-6",
+   "pr": 1027,
+   "round": 7,
+   "cls": "FACT",
+   "checkable": "mechanical",
+   "loop_ref": false,
+   "target_kind": "rfc"
+  },
+  {
+   "key": "1027-8-7",
+   "pr": 1027,
+   "round": 8,
+   "cls": "FACT",
+   "checkable": "mechanical",
+   "loop_ref": true,
+   "target_kind": "backlog"
+  },
+  {
+   "key": "1027-9-8",
+   "pr": 1027,
+   "round": 9,
+   "cls": "MIRROR",
+   "checkable": "mechanical",
+   "loop_ref": false,
+   "target_kind": "process-doc"
+  },
+  {
+   "key": "1027-12-9",
+   "pr": 1027,
+   "round": 12,
+   "cls": "FACT",
+   "checkable": "mechanical",
+   "loop_ref": true,
+   "target_kind": "process-doc"
+  },
+  {
+   "key": "1027-16-10",
+   "pr": 1027,
+   "round": 16,
+   "cls": "SCOPE",
+   "checkable": "enumeration",
+   "loop_ref": true,
+   "target_kind": "backlog"
+  },
+  {
+   "key": "1027-17-11",
+   "pr": 1027,
+   "round": 17,
+   "cls": "MIRROR",
+   "checkable": "enumeration",
+   "loop_ref": false,
+   "target_kind": "backlog"
+  },
+  {
+   "key": "1027-19-12",
+   "pr": 1027,
+   "round": 19,
+   "cls": "RULE",
+   "checkable": "enumeration",
+   "loop_ref": false,
+   "target_kind": "trace"
+  },
+  {
+   "key": "1027-20-13",
+   "pr": 1027,
+   "round": 20,
+   "cls": "RULE",
+   "checkable": "mechanical",
+   "loop_ref": false,
+   "target_kind": "trace"
+  },
+  {
+   "key": "1045-1-14",
+   "pr": 1045,
+   "round": 1,
+   "cls": "RULE",
+   "checkable": "mechanical",
+   "loop_ref": false,
+   "target_kind": "backlog"
+  },
+  {
+   "key": "1045-1-15",
+   "pr": 1045,
+   "round": 1,
+   "cls": "FACT",
+   "checkable": "mechanical",
+   "loop_ref": false,
+   "target_kind": "backlog"
+  },
+  {
+   "key": "1045-1-16",
+   "pr": 1045,
+   "round": 1,
+   "cls": "FACT",
+   "checkable": "mechanical",
+   "loop_ref": false,
+   "target_kind": "backlog"
+  },
+  {
+   "key": "1045-1-17",
+   "pr": 1045,
+   "round": 1,
+   "cls": "SCOPE",
+   "checkable": "enumeration",
+   "loop_ref": false,
+   "target_kind": "backlog"
+  },
+  {
+   "key": "1045-1-18",
+   "pr": 1045,
+   "round": 1,
+   "cls": "FACT",
+   "checkable": "enumeration",
+   "loop_ref": false,
+   "target_kind": "other"
+  },
+  {
+   "key": "1045-1-19",
+   "pr": 1045,
+   "round": 1,
+   "cls": "MIRROR",
+   "checkable": "enumeration",
+   "loop_ref": false,
+   "target_kind": "backlog"
+  },
+  {
+   "key": "1045-1-20",
+   "pr": 1045,
+   "round": 1,
+   "cls": "MIRROR",
+   "checkable": "enumeration",
+   "loop_ref": false,
+   "target_kind": "adr"
+  },
+  {
+   "key": "1045-2-21",
+   "pr": 1045,
+   "round": 2,
+   "cls": "FACT",
+   "checkable": "mechanical",
+   "loop_ref": false,
+   "target_kind": "other"
+  },
+  {
+   "key": "1045-2-22",
+   "pr": 1045,
+   "round": 2,
+   "cls": "RULE",
+   "checkable": "enumeration",
+   "loop_ref": false,
+   "target_kind": "backlog"
+  },
+  {
+   "key": "1045-3-23",
+   "pr": 1045,
+   "round": 3,
+   "cls": "MIRROR",
+   "checkable": "enumeration",
+   "loop_ref": false,
+   "target_kind": "rfc"
+  },
+  {
+   "key": "1045-3-24",
+   "pr": 1045,
+   "round": 3,
+   "cls": "MIRROR",
+   "checkable": "enumeration",
+   "loop_ref": false,
+   "target_kind": "rfc"
+  },
+  {
+   "key": "1045-3-25",
+   "pr": 1045,
+   "round": 3,
+   "cls": "SCOPE",
+   "checkable": "enumeration",
+   "loop_ref": false,
+   "target_kind": "rfc"
+  },
+  {
+   "key": "1045-3-26",
+   "pr": 1045,
+   "round": 3,
+   "cls": "MIRROR",
+   "checkable": "judgment",
+   "loop_ref": false,
+   "target_kind": "rfc"
+  },
+  {
+   "key": "1045-3-27",
+   "pr": 1045,
+   "round": 3,
+   "cls": "FACT",
+   "checkable": "mechanical",
+   "loop_ref": false,
+   "target_kind": "adr"
+  },
+  {
+   "key": "1045-3-28",
+   "pr": 1045,
+   "round": 3,
+   "cls": "FACT",
+   "checkable": "mechanical",
+   "loop_ref": false,
+   "target_kind": "backlog"
+  },
+  {
+   "key": "1045-3-29",
+   "pr": 1045,
+   "round": 3,
+   "cls": "MIRROR",
+   "checkable": "enumeration",
+   "loop_ref": false,
+   "target_kind": "backlog"
+  },
+  {
+   "key": "1045-3-30",
+   "pr": 1045,
+   "round": 3,
+   "cls": "MIRROR",
+   "checkable": "enumeration",
+   "loop_ref": false,
+   "target_kind": "backlog"
+  },
+  {
+   "key": "1045-3-31",
+   "pr": 1045,
+   "round": 3,
+   "cls": "FACT",
+   "checkable": "mechanical",
+   "loop_ref": false,
+   "target_kind": "trace"
+  },
+  {
+   "key": "1045-3-32",
+   "pr": 1045,
+   "round": 3,
+   "cls": "FACT",
+   "checkable": "mechanical",
+   "loop_ref": false,
+   "target_kind": "other"
+  },
+  {
+   "key": "1045-3-33",
+   "pr": 1045,
+   "round": 3,
+   "cls": "SCOPE",
+   "checkable": "enumeration",
+   "loop_ref": false,
+   "target_kind": "backlog"
+  },
+  {
+   "key": "1045-3-34",
+   "pr": 1045,
+   "round": 3,
+   "cls": "SCOPE",
+   "checkable": "enumeration",
+   "loop_ref": false,
+   "target_kind": "other"
+  },
+  {
+   "key": "1045-4-35",
+   "pr": 1045,
+   "round": 4,
+   "cls": "FACT",
+   "checkable": "mechanical",
+   "loop_ref": true,
+   "target_kind": "adr"
+  },
+  {
+   "key": "1045-4-36",
+   "pr": 1045,
+   "round": 4,
+   "cls": "FACT",
+   "checkable": "mechanical",
+   "loop_ref": false,
+   "target_kind": "adr"
+  },
+  {
+   "key": "1045-4-37",
+   "pr": 1045,
+   "round": 4,
+   "cls": "MIRROR",
+   "checkable": "enumeration",
+   "loop_ref": false,
+   "target_kind": "rfc"
+  },
+  {
+   "key": "1045-4-38",
+   "pr": 1045,
+   "round": 4,
+   "cls": "SCOPE",
+   "checkable": "enumeration",
+   "loop_ref": false,
+   "target_kind": "other"
+  },
+  {
+   "key": "1045-4-39",
+   "pr": 1045,
+   "round": 4,
+   "cls": "SCOPE",
+   "checkable": "mechanical",
+   "loop_ref": true,
+   "target_kind": "other"
+  },
+  {
+   "key": "1045-4-40",
+   "pr": 1045,
+   "round": 4,
+   "cls": "FACT",
+   "checkable": "mechanical",
+   "loop_ref": false,
+   "target_kind": "backlog"
+  },
+  {
+   "key": "1045-4-41",
+   "pr": 1045,
+   "round": 4,
+   "cls": "MIRROR",
+   "checkable": "enumeration",
+   "loop_ref": false,
+   "target_kind": "backlog"
+  },
+  {
+   "key": "1045-4-42",
+   "pr": 1045,
+   "round": 4,
+   "cls": "MIRROR",
+   "checkable": "enumeration",
+   "loop_ref": false,
+   "target_kind": "backlog"
+  },
+  {
+   "key": "1045-4-43",
+   "pr": 1045,
+   "round": 4,
+   "cls": "FACT",
+   "checkable": "mechanical",
+   "loop_ref": true,
+   "target_kind": "backlog"
+  },
+  {
+   "key": "1045-5-44",
+   "pr": 1045,
+   "round": 5,
+   "cls": "SCOPE",
+   "checkable": "enumeration",
+   "loop_ref": false,
+   "target_kind": "rfc"
+  },
+  {
+   "key": "1045-5-45",
+   "pr": 1045,
+   "round": 5,
+   "cls": "FACT",
+   "checkable": "mechanical",
+   "loop_ref": false,
+   "target_kind": "rfc"
+  },
+  {
+   "key": "1045-5-46",
+   "pr": 1045,
+   "round": 5,
+   "cls": "FACT",
+   "checkable": "mechanical",
+   "loop_ref": false,
+   "target_kind": "rfc"
+  },
+  {
+   "key": "1045-5-47",
+   "pr": 1045,
+   "round": 5,
+   "cls": "SCOPE",
+   "checkable": "enumeration",
+   "loop_ref": false,
+   "target_kind": "adr"
+  },
+  {
+   "key": "1045-5-48",
+   "pr": 1045,
+   "round": 5,
+   "cls": "SCOPE",
+   "checkable": "mechanical",
+   "loop_ref": false,
+   "target_kind": "other"
+  },
+  {
+   "key": "1045-6-49",
+   "pr": 1045,
+   "round": 6,
+   "cls": "SCOPE",
+   "checkable": "enumeration",
+   "loop_ref": false,
+   "target_kind": "adr"
+  },
+  {
+   "key": "1045-7-50",
+   "pr": 1045,
+   "round": 7,
+   "cls": "FACT",
+   "checkable": "enumeration",
+   "loop_ref": false,
+   "target_kind": "adr"
+  },
+  {
+   "key": "1045-7-51",
+   "pr": 1045,
+   "round": 7,
+   "cls": "SCOPE",
+   "checkable": "enumeration",
+   "loop_ref": false,
+   "target_kind": "backlog"
+  },
+  {
+   "key": "1045-7-52",
+   "pr": 1045,
+   "round": 7,
+   "cls": "FACT",
+   "checkable": "mechanical",
+   "loop_ref": false,
+   "target_kind": "other"
+  },
+  {
+   "key": "1045-7-53",
+   "pr": 1045,
+   "round": 7,
+   "cls": "MIRROR",
+   "checkable": "mechanical",
+   "loop_ref": true,
+   "target_kind": "rfc"
+  },
+  {
+   "key": "1045-7-54",
+   "pr": 1045,
+   "round": 7,
+   "cls": "MIRROR",
+   "checkable": "mechanical",
+   "loop_ref": false,
+   "target_kind": "backlog"
+  },
+  {
+   "key": "1045-8-55",
+   "pr": 1045,
+   "round": 8,
+   "cls": "CLARITY",
+   "checkable": "judgment",
+   "loop_ref": false,
+   "target_kind": "adr"
+  },
+  {
+   "key": "1045-9-56",
+   "pr": 1045,
+   "round": 9,
+   "cls": "FACT",
+   "checkable": "enumeration",
+   "loop_ref": false,
+   "target_kind": "adr"
+  },
+  {
+   "key": "1045-9-57",
+   "pr": 1045,
+   "round": 9,
+   "cls": "MIRROR",
+   "checkable": "enumeration",
+   "loop_ref": false,
+   "target_kind": "rfc"
+  },
+  {
+   "key": "1045-9-58",
+   "pr": 1045,
+   "round": 9,
+   "cls": "SCOPE",
+   "checkable": "enumeration",
+   "loop_ref": false,
+   "target_kind": "rfc"
+  },
+  {
+   "key": "1045-9-59",
+   "pr": 1045,
+   "round": 9,
+   "cls": "MIRROR",
+   "checkable": "enumeration",
+   "loop_ref": false,
+   "target_kind": "rfc"
+  },
+  {
+   "key": "1045-9-60",
+   "pr": 1045,
+   "round": 9,
+   "cls": "SCOPE",
+   "checkable": "enumeration",
+   "loop_ref": false,
+   "target_kind": "backlog"
+  },
+  {
+   "key": "1045-9-61",
+   "pr": 1045,
+   "round": 9,
+   "cls": "SCOPE",
+   "checkable": "enumeration",
+   "loop_ref": false,
+   "target_kind": "other"
+  },
+  {
+   "key": "1045-9-62",
+   "pr": 1045,
+   "round": 9,
+   "cls": "RULE",
+   "checkable": "mechanical",
+   "loop_ref": false,
+   "target_kind": "trace"
+  },
+  {
+   "key": "1045-10-63",
+   "pr": 1045,
+   "round": 10,
+   "cls": "MIRROR",
+   "checkable": "enumeration",
+   "loop_ref": false,
+   "target_kind": "rfc"
+  },
+  {
+   "key": "1045-10-64",
+   "pr": 1045,
+   "round": 10,
+   "cls": "MIRROR",
+   "checkable": "enumeration",
+   "loop_ref": false,
+   "target_kind": "rfc"
+  },
+  {
+   "key": "1045-10-65",
+   "pr": 1045,
+   "round": 10,
+   "cls": "FACT",
+   "checkable": "mechanical",
+   "loop_ref": false,
+   "target_kind": "trace"
+  },
+  {
+   "key": "1045-11-66",
+   "pr": 1045,
+   "round": 11,
+   "cls": "CLARITY",
+   "checkable": "judgment",
+   "loop_ref": false,
+   "target_kind": "adr"
+  },
+  {
+   "key": "1045-12-67",
+   "pr": 1045,
+   "round": 12,
+   "cls": "DESIGN",
+   "checkable": "judgment",
+   "loop_ref": false,
+   "target_kind": "adr"
+  },
+  {
+   "key": "1045-13-68",
+   "pr": 1045,
+   "round": 13,
+   "cls": "SCOPE",
+   "checkable": "enumeration",
+   "loop_ref": false,
+   "target_kind": "backlog"
+  },
+  {
+   "key": "1045-13-69",
+   "pr": 1045,
+   "round": 13,
+   "cls": "FACT",
+   "checkable": "mechanical",
+   "loop_ref": false,
+   "target_kind": "rfc"
+  },
+  {
+   "key": "1045-13-70",
+   "pr": 1045,
+   "round": 13,
+   "cls": "MIRROR",
+   "checkable": "enumeration",
+   "loop_ref": true,
+   "target_kind": "rfc"
+  },
+  {
+   "key": "1047-1-71",
+   "pr": 1047,
+   "round": 1,
+   "cls": "RULE",
+   "checkable": "enumeration",
+   "loop_ref": false,
+   "target_kind": "backlog"
+  },
+  {
+   "key": "1047-1-72",
+   "pr": 1047,
+   "round": 1,
+   "cls": "SCOPE",
+   "checkable": "enumeration",
+   "loop_ref": false,
+   "target_kind": "spec"
+  },
+  {
+   "key": "1047-2-73",
+   "pr": 1047,
+   "round": 2,
+   "cls": "MIRROR",
+   "checkable": "mechanical",
+   "loop_ref": false,
+   "target_kind": "rfc"
+  },
+  {
+   "key": "1047-3-74",
+   "pr": 1047,
+   "round": 3,
+   "cls": "MIRROR",
+   "checkable": "enumeration",
+   "loop_ref": false,
+   "target_kind": "spec"
+  },
+  {
+   "key": "1047-3-75",
+   "pr": 1047,
+   "round": 3,
+   "cls": "FACT",
+   "checkable": "mechanical",
+   "loop_ref": false,
+   "target_kind": "rfc"
+  },
+  {
+   "key": "1047-3-76",
+   "pr": 1047,
+   "round": 3,
+   "cls": "MIRROR",
+   "checkable": "mechanical",
+   "loop_ref": false,
+   "target_kind": "rfc"
+  },
+  {
+   "key": "1047-3-77",
+   "pr": 1047,
+   "round": 3,
+   "cls": "MIRROR",
+   "checkable": "mechanical",
+   "loop_ref": false,
+   "target_kind": "trace"
+  },
+  {
+   "key": "1047-3-78",
+   "pr": 1047,
+   "round": 3,
+   "cls": "SCOPE",
+   "checkable": "enumeration",
+   "loop_ref": false,
+   "target_kind": "other"
+  },
+  {
+   "key": "1047-3-79",
+   "pr": 1047,
+   "round": 3,
+   "cls": "FACT",
+   "checkable": "mechanical",
+   "loop_ref": false,
+   "target_kind": "spec"
+  },
+  {
+   "key": "1047-3-80",
+   "pr": 1047,
+   "round": 3,
+   "cls": "FACT",
+   "checkable": "mechanical",
+   "loop_ref": false,
+   "target_kind": "spec"
+  },
+  {
+   "key": "1047-3-81",
+   "pr": 1047,
+   "round": 3,
+   "cls": "SCOPE",
+   "checkable": "enumeration",
+   "loop_ref": false,
+   "target_kind": "spec"
+  },
+  {
+   "key": "1047-4-82",
+   "pr": 1047,
+   "round": 4,
+   "cls": "FACT",
+   "checkable": "mechanical",
+   "loop_ref": true,
+   "target_kind": "trace"
+  },
+  {
+   "key": "1047-4-83",
+   "pr": 1047,
+   "round": 4,
+   "cls": "FACT",
+   "checkable": "mechanical",
+   "loop_ref": true,
+   "target_kind": "spec"
+  },
+  {
+   "key": "1047-5-84",
+   "pr": 1047,
+   "round": 5,
+   "cls": "FACT",
+   "checkable": "enumeration",
+   "loop_ref": true,
+   "target_kind": "spec"
+  },
+  {
+   "key": "1047-5-85",
+   "pr": 1047,
+   "round": 5,
+   "cls": "SCOPE",
+   "checkable": "mechanical",
+   "loop_ref": false,
+   "target_kind": "other"
+  },
+  {
+   "key": "1047-5-86",
+   "pr": 1047,
+   "round": 5,
+   "cls": "SCOPE",
+   "checkable": "enumeration",
+   "loop_ref": false,
+   "target_kind": "backlog"
+  },
+  {
+   "key": "1047-5-87",
+   "pr": 1047,
+   "round": 5,
+   "cls": "RULE",
+   "checkable": "mechanical",
+   "loop_ref": false,
+   "target_kind": "trace"
+  },
+  {
+   "key": "1047-6-88",
+   "pr": 1047,
+   "round": 6,
+   "cls": "FACT",
+   "checkable": "mechanical",
+   "loop_ref": true,
+   "target_kind": "spec"
+  },
+  {
+   "key": "1047-7-89",
+   "pr": 1047,
+   "round": 7,
+   "cls": "SCOPE",
+   "checkable": "mechanical",
+   "loop_ref": false,
+   "target_kind": "spec"
+  },
+  {
+   "key": "1047-7-90",
+   "pr": 1047,
+   "round": 7,
+   "cls": "SCOPE",
+   "checkable": "enumeration",
+   "loop_ref": false,
+   "target_kind": "spec"
+  },
+  {
+   "key": "1047-7-91",
+   "pr": 1047,
+   "round": 7,
+   "cls": "SCOPE",
+   "checkable": "enumeration",
+   "loop_ref": false,
+   "target_kind": "spec"
+  },
+  {
+   "key": "1047-8-92",
+   "pr": 1047,
+   "round": 8,
+   "cls": "FACT",
+   "checkable": "enumeration",
+   "loop_ref": false,
+   "target_kind": "spec"
+  },
+  {
+   "key": "1047-8-93",
+   "pr": 1047,
+   "round": 8,
+   "cls": "FACT",
+   "checkable": "mechanical",
+   "loop_ref": false,
+   "target_kind": "other"
+  },
+  {
+   "key": "1047-8-94",
+   "pr": 1047,
+   "round": 8,
+   "cls": "FACT",
+   "checkable": "mechanical",
+   "loop_ref": true,
+   "target_kind": "trace"
+  },
+  {
+   "key": "1047-9-95",
+   "pr": 1047,
+   "round": 9,
+   "cls": "MIRROR",
+   "checkable": "enumeration",
+   "loop_ref": false,
+   "target_kind": "spec"
+  },
+  {
+   "key": "1047-9-96",
+   "pr": 1047,
+   "round": 9,
+   "cls": "MIRROR",
+   "checkable": "mechanical",
+   "loop_ref": false,
+   "target_kind": "backlog"
+  },
+  {
+   "key": "1047-9-97",
+   "pr": 1047,
+   "round": 9,
+   "cls": "RULE",
+   "checkable": "mechanical",
+   "loop_ref": false,
+   "target_kind": "trace"
+  },
+  {
+   "key": "1047-10-98",
+   "pr": 1047,
+   "round": 10,
+   "cls": "MIRROR",
+   "checkable": "enumeration",
+   "loop_ref": true,
+   "target_kind": "rfc"
+  },
+  {
+   "key": "1047-10-99",
+   "pr": 1047,
+   "round": 10,
+   "cls": "RULE",
+   "checkable": "mechanical",
+   "loop_ref": false,
+   "target_kind": "backlog"
+  },
+  {
+   "key": "1047-11-100",
+   "pr": 1047,
+   "round": 11,
+   "cls": "MIRROR",
+   "checkable": "enumeration",
+   "loop_ref": true,
+   "target_kind": "spec"
+  },
+  {
+   "key": "1047-11-101",
+   "pr": 1047,
+   "round": 11,
+   "cls": "FACT",
+   "checkable": "mechanical",
+   "loop_ref": false,
+   "target_kind": "backlog"
+  },
+  {
+   "key": "1047-11-102",
+   "pr": 1047,
+   "round": 11,
+   "cls": "MIRROR",
+   "checkable": "mechanical",
+   "loop_ref": false,
+   "target_kind": "backlog"
+  },
+  {
+   "key": "1047-11-103",
+   "pr": 1047,
+   "round": 11,
+   "cls": "MIRROR",
+   "checkable": "mechanical",
+   "loop_ref": false,
+   "target_kind": "backlog"
+  },
+  {
+   "key": "1047-11-104",
+   "pr": 1047,
+   "round": 11,
+   "cls": "FACT",
+   "checkable": "mechanical",
+   "loop_ref": false,
+   "target_kind": "backlog"
+  },
+  {
+   "key": "1047-11-105",
+   "pr": 1047,
+   "round": 11,
+   "cls": "SCOPE",
+   "checkable": "enumeration",
+   "loop_ref": false,
+   "target_kind": "backlog"
+  },
+  {
+   "key": "1047-12-106",
+   "pr": 1047,
+   "round": 12,
+   "cls": "FACT",
+   "checkable": "mechanical",
+   "loop_ref": true,
+   "target_kind": "trace"
+  },
+  {
+   "key": "1047-12-107",
+   "pr": 1047,
+   "round": 12,
+   "cls": "SCOPE",
+   "checkable": "enumeration",
+   "loop_ref": false,
+   "target_kind": "spec"
+  },
+  {
+   "key": "1047-13-108",
+   "pr": 1047,
+   "round": 13,
+   "cls": "FACT",
+   "checkable": "mechanical",
+   "loop_ref": false,
+   "target_kind": "other"
+  },
+  {
+   "key": "1047-13-109",
+   "pr": 1047,
+   "round": 13,
+   "cls": "MIRROR",
+   "checkable": "mechanical",
+   "loop_ref": true,
+   "target_kind": "spec"
+  },
+  {
+   "key": "1047-13-110",
+   "pr": 1047,
+   "round": 13,
+   "cls": "FACT",
+   "checkable": "mechanical",
+   "loop_ref": true,
+   "target_kind": "trace"
+  },
+  {
+   "key": "1047-13-111",
+   "pr": 1047,
+   "round": 13,
+   "cls": "FACT",
+   "checkable": "mechanical",
+   "loop_ref": false,
+   "target_kind": "trace"
+  },
+  {
+   "key": "1047-14-112",
+   "pr": 1047,
+   "round": 14,
+   "cls": "FACT",
+   "checkable": "enumeration",
+   "loop_ref": true,
+   "target_kind": "other"
+  },
+  {
+   "key": "1048-3-113",
+   "pr": 1048,
+   "round": 3,
+   "cls": "SCOPE",
+   "checkable": "enumeration",
+   "loop_ref": false,
+   "target_kind": "process-doc"
+  },
+  {
+   "key": "1048-4-114",
+   "pr": 1048,
+   "round": 4,
+   "cls": "RULE",
+   "checkable": "enumeration",
+   "loop_ref": false,
+   "target_kind": "process-doc"
+  },
+  {
+   "key": "1048-5-115",
+   "pr": 1048,
+   "round": 5,
+   "cls": "SCOPE",
+   "checkable": "enumeration",
+   "loop_ref": false,
+   "target_kind": "process-doc"
+  },
+  {
+   "key": "1048-6-116",
+   "pr": 1048,
+   "round": 6,
+   "cls": "MIRROR",
+   "checkable": "enumeration",
+   "loop_ref": false,
+   "target_kind": "process-doc"
+  },
+  {
+   "key": "1048-7-117",
+   "pr": 1048,
+   "round": 7,
+   "cls": "MIRROR",
+   "checkable": "mechanical",
+   "loop_ref": false,
+   "target_kind": "process-doc"
+  },
+  {
+   "key": "1052-3-118",
+   "pr": 1052,
+   "round": 3,
+   "cls": "FACT",
+   "checkable": "mechanical",
+   "loop_ref": false,
+   "target_kind": "other"
+  },
+  {
+   "key": "1052-3-119",
+   "pr": 1052,
+   "round": 3,
+   "cls": "FACT",
+   "checkable": "mechanical",
+   "loop_ref": false,
+   "target_kind": "trace"
+  },
+  {
+   "key": "1052-4-120",
+   "pr": 1052,
+   "round": 4,
+   "cls": "MIRROR",
+   "checkable": "mechanical",
+   "loop_ref": false,
+   "target_kind": "other"
+  },
+  {
+   "key": "1052-4-121",
+   "pr": 1052,
+   "round": 4,
+   "cls": "SCOPE",
+   "checkable": "enumeration",
+   "loop_ref": true,
+   "target_kind": "other"
+  },
+  {
+   "key": "1052-4-122",
+   "pr": 1052,
+   "round": 4,
+   "cls": "SCOPE",
+   "checkable": "mechanical",
+   "loop_ref": false,
+   "target_kind": "other"
+  },
+  {
+   "key": "1052-4-123",
+   "pr": 1052,
+   "round": 4,
+   "cls": "FACT",
+   "checkable": "mechanical",
+   "loop_ref": false,
+   "target_kind": "trace"
+  },
+  {
+   "key": "1052-5-124",
+   "pr": 1052,
+   "round": 5,
+   "cls": "SCOPE",
+   "checkable": "mechanical",
+   "loop_ref": true,
+   "target_kind": "other"
+  },
+  {
+   "key": "1052-5-125",
+   "pr": 1052,
+   "round": 5,
+   "cls": "RULE",
+   "checkable": "mechanical",
+   "loop_ref": false,
+   "target_kind": "trace"
+  },
+  {
+   "key": "1052-7-126",
+   "pr": 1052,
+   "round": 7,
+   "cls": "RULE",
+   "checkable": "enumeration",
+   "loop_ref": true,
+   "target_kind": "trace"
+  },
+  {
+   "key": "1053-1-127",
+   "pr": 1053,
+   "round": 1,
+   "cls": "FACT",
+   "checkable": "mechanical",
+   "loop_ref": false,
+   "target_kind": "process-doc"
+  },
+  {
+   "key": "1053-1-128",
+   "pr": 1053,
+   "round": 1,
+   "cls": "FACT",
+   "checkable": "mechanical",
+   "loop_ref": false,
+   "target_kind": "trace"
+  },
+  {
+   "key": "1053-3-129",
+   "pr": 1053,
+   "round": 3,
+   "cls": "MIRROR",
+   "checkable": "enumeration",
+   "loop_ref": false,
+   "target_kind": "backlog"
+  },
+  {
+   "key": "1053-4-130",
+   "pr": 1053,
+   "round": 4,
+   "cls": "FACT",
+   "checkable": "mechanical",
+   "loop_ref": false,
+   "target_kind": "backlog"
+  },
+  {
+   "key": "1053-7-131",
+   "pr": 1053,
+   "round": 7,
+   "cls": "FACT",
+   "checkable": "mechanical",
+   "loop_ref": false,
+   "target_kind": "backlog"
+  },
+  {
+   "key": "1053-7-132",
+   "pr": 1053,
+   "round": 7,
+   "cls": "FACT",
+   "checkable": "mechanical",
+   "loop_ref": false,
+   "target_kind": "backlog"
+  },
+  {
+   "key": "1053-8-133",
+   "pr": 1053,
+   "round": 8,
+   "cls": "SCOPE",
+   "checkable": "enumeration",
+   "loop_ref": true,
+   "target_kind": "backlog"
+  },
+  {
+   "key": "1056-1-134",
+   "pr": 1056,
+   "round": 1,
+   "cls": "DESIGN",
+   "checkable": "enumeration",
+   "loop_ref": false,
+   "target_kind": "backlog"
+  },
+  {
+   "key": "1056-1-135",
+   "pr": 1056,
+   "round": 1,
+   "cls": "FACT",
+   "checkable": "mechanical",
+   "loop_ref": false,
+   "target_kind": "backlog"
+  },
+  {
+   "key": "1056-1-136",
+   "pr": 1056,
+   "round": 1,
+   "cls": "SCOPE",
+   "checkable": "enumeration",
+   "loop_ref": false,
+   "target_kind": "backlog"
+  },
+  {
+   "key": "1056-2-137",
+   "pr": 1056,
+   "round": 2,
+   "cls": "FACT",
+   "checkable": "enumeration",
+   "loop_ref": true,
+   "target_kind": "backlog"
+  },
+  {
+   "key": "1056-2-138",
+   "pr": 1056,
+   "round": 2,
+   "cls": "FACT",
+   "checkable": "mechanical",
+   "loop_ref": false,
+   "target_kind": "backlog"
+  },
+  {
+   "key": "1056-3-139",
+   "pr": 1056,
+   "round": 3,
+   "cls": "DESIGN",
+   "checkable": "enumeration",
+   "loop_ref": false,
+   "target_kind": "backlog"
+  },
+  {
+   "key": "1056-3-140",
+   "pr": 1056,
+   "round": 3,
+   "cls": "MIRROR",
+   "checkable": "mechanical",
+   "loop_ref": true,
+   "target_kind": "rfc"
+  },
+  {
+   "key": "1056-3-141",
+   "pr": 1056,
+   "round": 3,
+   "cls": "MIRROR",
+   "checkable": "enumeration",
+   "loop_ref": false,
+   "target_kind": "rfc"
+  },
+  {
+   "key": "1056-3-142",
+   "pr": 1056,
+   "round": 3,
+   "cls": "MIRROR",
+   "checkable": "enumeration",
+   "loop_ref": false,
+   "target_kind": "backlog"
+  },
+  {
+   "key": "1056-3-143",
+   "pr": 1056,
+   "round": 3,
+   "cls": "MIRROR",
+   "checkable": "enumeration",
+   "loop_ref": false,
+   "target_kind": "backlog"
+  },
+  {
+   "key": "1056-3-144",
+   "pr": 1056,
+   "round": 3,
+   "cls": "FACT",
+   "checkable": "mechanical",
+   "loop_ref": false,
+   "target_kind": "backlog"
+  },
+  {
+   "key": "1056-4-145",
+   "pr": 1056,
+   "round": 4,
+   "cls": "FACT",
+   "checkable": "mechanical",
+   "loop_ref": true,
+   "target_kind": "backlog"
+  },
+  {
+   "key": "1056-4-146",
+   "pr": 1056,
+   "round": 4,
+   "cls": "MIRROR",
+   "checkable": "enumeration",
+   "loop_ref": false,
+   "target_kind": "backlog"
+  },
+  {
+   "key": "1056-4-147",
+   "pr": 1056,
+   "round": 4,
+   "cls": "MIRROR",
+   "checkable": "enumeration",
+   "loop_ref": false,
+   "target_kind": "rfc"
+  },
+  {
+   "key": "1056-4-148",
+   "pr": 1056,
+   "round": 4,
+   "cls": "FACT",
+   "checkable": "enumeration",
+   "loop_ref": false,
+   "target_kind": "backlog"
+  },
+  {
+   "key": "1056-4-149",
+   "pr": 1056,
+   "round": 4,
+   "cls": "SCOPE",
+   "checkable": "enumeration",
+   "loop_ref": false,
+   "target_kind": "backlog"
+  },
+  {
+   "key": "1056-4-150",
+   "pr": 1056,
+   "round": 4,
+   "cls": "MIRROR",
+   "checkable": "enumeration",
+   "loop_ref": false,
+   "target_kind": "backlog"
+  },
+  {
+   "key": "1056-4-151",
+   "pr": 1056,
+   "round": 4,
+   "cls": "SCOPE",
+   "checkable": "mechanical",
+   "loop_ref": false,
+   "target_kind": "backlog"
+  },
+  {
+   "key": "1056-4-152",
+   "pr": 1056,
+   "round": 4,
+   "cls": "MIRROR",
+   "checkable": "mechanical",
+   "loop_ref": false,
+   "target_kind": "backlog"
+  },
+  {
+   "key": "1056-5-153",
+   "pr": 1056,
+   "round": 5,
+   "cls": "SCOPE",
+   "checkable": "enumeration",
+   "loop_ref": false,
+   "target_kind": "backlog"
+  },
+  {
+   "key": "1056-5-154",
+   "pr": 1056,
+   "round": 5,
+   "cls": "SCOPE",
+   "checkable": "enumeration",
+   "loop_ref": false,
+   "target_kind": "backlog"
+  },
+  {
+   "key": "1056-5-155",
+   "pr": 1056,
+   "round": 5,
+   "cls": "SCOPE",
+   "checkable": "enumeration",
+   "loop_ref": false,
+   "target_kind": "rfc"
+  },
+  {
+   "key": "1056-5-156",
+   "pr": 1056,
+   "round": 5,
+   "cls": "SCOPE",
+   "checkable": "mechanical",
+   "loop_ref": false,
+   "target_kind": "backlog"
+  },
+  {
+   "key": "1056-5-157",
+   "pr": 1056,
+   "round": 5,
+   "cls": "FACT",
+   "checkable": "mechanical",
+   "loop_ref": false,
+   "target_kind": "backlog"
+  },
+  {
+   "key": "1056-6-158",
+   "pr": 1056,
+   "round": 6,
+   "cls": "SCOPE",
+   "checkable": "enumeration",
+   "loop_ref": false,
+   "target_kind": "backlog"
+  },
+  {
+   "key": "1056-6-159",
+   "pr": 1056,
+   "round": 6,
+   "cls": "FACT",
+   "checkable": "mechanical",
+   "loop_ref": false,
+   "target_kind": "backlog"
+  },
+  {
+   "key": "1056-6-160",
+   "pr": 1056,
+   "round": 6,
+   "cls": "FACT",
+   "checkable": "enumeration",
+   "loop_ref": false,
+   "target_kind": "backlog"
+  },
+  {
+   "key": "1056-7-161",
+   "pr": 1056,
+   "round": 7,
+   "cls": "SCOPE",
+   "checkable": "enumeration",
+   "loop_ref": true,
+   "target_kind": "backlog"
+  },
+  {
+   "key": "1056-7-162",
+   "pr": 1056,
+   "round": 7,
+   "cls": "SCOPE",
+   "checkable": "enumeration",
+   "loop_ref": false,
+   "target_kind": "backlog"
+  },
+  {
+   "key": "1056-7-163",
+   "pr": 1056,
+   "round": 7,
+   "cls": "SCOPE",
+   "checkable": "enumeration",
+   "loop_ref": false,
+   "target_kind": "rfc"
+  },
+  {
+   "key": "1056-7-164",
+   "pr": 1056,
+   "round": 7,
+   "cls": "MIRROR",
+   "checkable": "enumeration",
+   "loop_ref": true,
+   "target_kind": "backlog"
+  },
+  {
+   "key": "1056-8-165",
+   "pr": 1056,
+   "round": 8,
+   "cls": "DESIGN",
+   "checkable": "enumeration",
+   "loop_ref": false,
+   "target_kind": "backlog"
+  },
+  {
+   "key": "1056-8-166",
+   "pr": 1056,
+   "round": 8,
+   "cls": "MIRROR",
+   "checkable": "enumeration",
+   "loop_ref": false,
+   "target_kind": "backlog"
+  },
+  {
+   "key": "1056-8-167",
+   "pr": 1056,
+   "round": 8,
+   "cls": "SCOPE",
+   "checkable": "enumeration",
+   "loop_ref": false,
+   "target_kind": "rfc"
+  },
+  {
+   "key": "1056-8-168",
+   "pr": 1056,
+   "round": 8,
+   "cls": "CLARITY",
+   "checkable": "judgment",
+   "loop_ref": true,
+   "target_kind": "backlog"
+  },
+  {
+   "key": "1056-9-169",
+   "pr": 1056,
+   "round": 9,
+   "cls": "DESIGN",
+   "checkable": "enumeration",
+   "loop_ref": false,
+   "target_kind": "backlog"
+  },
+  {
+   "key": "1056-9-170",
+   "pr": 1056,
+   "round": 9,
+   "cls": "SCOPE",
+   "checkable": "enumeration",
+   "loop_ref": false,
+   "target_kind": "backlog"
+  },
+  {
+   "key": "1056-9-171",
+   "pr": 1056,
+   "round": 9,
+   "cls": "FACT",
+   "checkable": "mechanical",
+   "loop_ref": false,
+   "target_kind": "backlog"
+  },
+  {
+   "key": "1056-9-172",
+   "pr": 1056,
+   "round": 9,
+   "cls": "SCOPE",
+   "checkable": "enumeration",
+   "loop_ref": false,
+   "target_kind": "backlog"
+  },
+  {
+   "key": "1056-10-173",
+   "pr": 1056,
+   "round": 10,
+   "cls": "FACT",
+   "checkable": "mechanical",
+   "loop_ref": false,
+   "target_kind": "backlog"
+  },
+  {
+   "key": "1056-10-174",
+   "pr": 1056,
+   "round": 10,
+   "cls": "FACT",
+   "checkable": "mechanical",
+   "loop_ref": false,
+   "target_kind": "backlog"
+  },
+  {
+   "key": "1056-10-175",
+   "pr": 1056,
+   "round": 10,
+   "cls": "FACT",
+   "checkable": "mechanical",
+   "loop_ref": false,
+   "target_kind": "backlog"
+  },
+  {
+   "key": "1056-10-176",
+   "pr": 1056,
+   "round": 10,
+   "cls": "FACT",
+   "checkable": "enumeration",
+   "loop_ref": true,
+   "target_kind": "rfc"
+  },
+  {
+   "key": "1056-10-177",
+   "pr": 1056,
+   "round": 10,
+   "cls": "RULE",
+   "checkable": "judgment",
+   "loop_ref": false,
+   "target_kind": "backlog"
+  },
+  {
+   "key": "1061-1-178",
+   "pr": 1061,
+   "round": 1,
+   "cls": "SCOPE",
+   "checkable": "enumeration",
+   "loop_ref": false,
+   "target_kind": "backlog"
+  },
+  {
+   "key": "1061-1-179",
+   "pr": 1061,
+   "round": 1,
+   "cls": "SCOPE",
+   "checkable": "enumeration",
+   "loop_ref": false,
+   "target_kind": "backlog"
+  },
+  {
+   "key": "1061-1-180",
+   "pr": 1061,
+   "round": 1,
+   "cls": "FACT",
+   "checkable": "mechanical",
+   "loop_ref": false,
+   "target_kind": "trace"
+  },
+  {
+   "key": "1061-2-181",
+   "pr": 1061,
+   "round": 2,
+   "cls": "FACT",
+   "checkable": "mechanical",
+   "loop_ref": false,
+   "target_kind": "backlog"
+  },
+  {
+   "key": "1061-3-182",
+   "pr": 1061,
+   "round": 3,
+   "cls": "MIRROR",
+   "checkable": "enumeration",
+   "loop_ref": false,
+   "target_kind": "backlog"
+  },
+  {
+   "key": "1061-3-183",
+   "pr": 1061,
+   "round": 3,
+   "cls": "SCOPE",
+   "checkable": "enumeration",
+   "loop_ref": false,
+   "target_kind": "backlog"
+  },
+  {
+   "key": "1061-3-184",
+   "pr": 1061,
+   "round": 3,
+   "cls": "SCOPE",
+   "checkable": "enumeration",
+   "loop_ref": false,
+   "target_kind": "backlog"
+  },
+  {
+   "key": "1061-3-185",
+   "pr": 1061,
+   "round": 3,
+   "cls": "SCOPE",
+   "checkable": "enumeration",
+   "loop_ref": false,
+   "target_kind": "backlog"
+  },
+  {
+   "key": "1061-3-186",
+   "pr": 1061,
+   "round": 3,
+   "cls": "MIRROR",
+   "checkable": "enumeration",
+   "loop_ref": false,
+   "target_kind": "backlog"
+  },
+  {
+   "key": "1061-4-187",
+   "pr": 1061,
+   "round": 4,
+   "cls": "SCOPE",
+   "checkable": "enumeration",
+   "loop_ref": false,
+   "target_kind": "backlog"
+  },
+  {
+   "key": "1061-4-188",
+   "pr": 1061,
+   "round": 4,
+   "cls": "RULE",
+   "checkable": "enumeration",
+   "loop_ref": false,
+   "target_kind": "backlog"
+  },
+  {
+   "key": "1061-4-189",
+   "pr": 1061,
+   "round": 4,
+   "cls": "SCOPE",
+   "checkable": "enumeration",
+   "loop_ref": false,
+   "target_kind": "backlog"
+  },
+  {
+   "key": "1061-4-190",
+   "pr": 1061,
+   "round": 4,
+   "cls": "DESIGN",
+   "checkable": "judgment",
+   "loop_ref": false,
+   "target_kind": "backlog"
+  },
+  {
+   "key": "1061-4-191",
+   "pr": 1061,
+   "round": 4,
+   "cls": "FACT",
+   "checkable": "mechanical",
+   "loop_ref": false,
+   "target_kind": "backlog"
+  },
+  {
+   "key": "1061-4-192",
+   "pr": 1061,
+   "round": 4,
+   "cls": "RULE",
+   "checkable": "enumeration",
+   "loop_ref": true,
+   "target_kind": "backlog"
+  },
+  {
+   "key": "1061-4-193",
+   "pr": 1061,
+   "round": 4,
+   "cls": "RULE",
+   "checkable": "mechanical",
+   "loop_ref": true,
+   "target_kind": "backlog"
+  },
+  {
+   "key": "1061-4-194",
+   "pr": 1061,
+   "round": 4,
+   "cls": "SCOPE",
+   "checkable": "enumeration",
+   "loop_ref": false,
+   "target_kind": "backlog"
+  },
+  {
+   "key": "1061-5-195",
+   "pr": 1061,
+   "round": 5,
+   "cls": "FACT",
+   "checkable": "mechanical",
+   "loop_ref": false,
+   "target_kind": "backlog"
+  },
+  {
+   "key": "1061-5-196",
+   "pr": 1061,
+   "round": 5,
+   "cls": "RULE",
+   "checkable": "enumeration",
+   "loop_ref": false,
+   "target_kind": "backlog"
+  },
+  {
+   "key": "1061-5-197",
+   "pr": 1061,
+   "round": 5,
+   "cls": "RULE",
+   "checkable": "enumeration",
+   "loop_ref": false,
+   "target_kind": "backlog"
+  },
+  {
+   "key": "1061-5-198",
+   "pr": 1061,
+   "round": 5,
+   "cls": "DESIGN",
+   "checkable": "judgment",
+   "loop_ref": false,
+   "target_kind": "backlog"
+  },
+  {
+   "key": "1061-6-199",
+   "pr": 1061,
+   "round": 6,
+   "cls": "MIRROR",
+   "checkable": "enumeration",
+   "loop_ref": false,
+   "target_kind": "backlog"
+  },
+  {
+   "key": "1061-6-200",
+   "pr": 1061,
+   "round": 6,
+   "cls": "SCOPE",
+   "checkable": "enumeration",
+   "loop_ref": false,
+   "target_kind": "backlog"
+  },
+  {
+   "key": "1061-7-201",
+   "pr": 1061,
+   "round": 7,
+   "cls": "DESIGN",
+   "checkable": "enumeration",
+   "loop_ref": false,
+   "target_kind": "backlog"
+  },
+  {
+   "key": "1061-7-202",
+   "pr": 1061,
+   "round": 7,
+   "cls": "MIRROR",
+   "checkable": "enumeration",
+   "loop_ref": true,
+   "target_kind": "rfc"
+  },
+  {
+   "key": "1061-7-203",
+   "pr": 1061,
+   "round": 7,
+   "cls": "FACT",
+   "checkable": "mechanical",
+   "loop_ref": true,
+   "target_kind": "backlog"
+  },
+  {
+   "key": "1061-7-204",
+   "pr": 1061,
+   "round": 7,
+   "cls": "MIRROR",
+   "checkable": "mechanical",
+   "loop_ref": true,
+   "target_kind": "backlog"
+  },
+  {
+   "key": "1061-8-205",
+   "pr": 1061,
+   "round": 8,
+   "cls": "MIRROR",
+   "checkable": "enumeration",
+   "loop_ref": true,
+   "target_kind": "backlog"
+  },
+  {
+   "key": "1061-8-206",
+   "pr": 1061,
+   "round": 8,
+   "cls": "SCOPE",
+   "checkable": "enumeration",
+   "loop_ref": false,
+   "target_kind": "backlog"
+  },
+  {
+   "key": "1061-9-207",
+   "pr": 1061,
+   "round": 9,
+   "cls": "MIRROR",
+   "checkable": "enumeration",
+   "loop_ref": true,
+   "target_kind": "backlog"
+  },
+  {
+   "key": "1061-9-208",
+   "pr": 1061,
+   "round": 9,
+   "cls": "MIRROR",
+   "checkable": "enumeration",
+   "loop_ref": true,
+   "target_kind": "backlog"
+  },
+  {
+   "key": "1061-9-209",
+   "pr": 1061,
+   "round": 9,
+   "cls": "SCOPE",
+   "checkable": "enumeration",
+   "loop_ref": false,
+   "target_kind": "backlog"
+  },
+  {
+   "key": "1061-9-210",
+   "pr": 1061,
+   "round": 9,
+   "cls": "SCOPE",
+   "checkable": "enumeration",
+   "loop_ref": false,
+   "target_kind": "backlog"
+  },
+  {
+   "key": "1061-9-211",
+   "pr": 1061,
+   "round": 9,
+   "cls": "CLARITY",
+   "checkable": "judgment",
+   "loop_ref": false,
+   "target_kind": "backlog"
+  },
+  {
+   "key": "1061-10-212",
+   "pr": 1061,
+   "round": 10,
+   "cls": "FACT",
+   "checkable": "mechanical",
+   "loop_ref": false,
+   "target_kind": "backlog"
+  },
+  {
+   "key": "1061-10-213",
+   "pr": 1061,
+   "round": 10,
+   "cls": "RULE",
+   "checkable": "mechanical",
+   "loop_ref": false,
+   "target_kind": "backlog"
+  },
+  {
+   "key": "1061-10-214",
+   "pr": 1061,
+   "round": 10,
+   "cls": "MIRROR",
+   "checkable": "mechanical",
+   "loop_ref": true,
+   "target_kind": "backlog"
+  },
+  {
+   "key": "1061-10-215",
+   "pr": 1061,
+   "round": 10,
+   "cls": "RULE",
+   "checkable": "judgment",
+   "loop_ref": true,
+   "target_kind": "backlog"
+  },
+  {
+   "key": "1061-11-216",
+   "pr": 1061,
+   "round": 11,
+   "cls": "RULE",
+   "checkable": "enumeration",
+   "loop_ref": false,
+   "target_kind": "trace"
+  },
+  {
+   "key": "1061-12-217",
+   "pr": 1061,
+   "round": 12,
+   "cls": "FACT",
+   "checkable": "mechanical",
+   "loop_ref": false,
+   "target_kind": "backlog"
+  },
+  {
+   "key": "1066-1-218",
+   "pr": 1066,
+   "round": 1,
+   "cls": "DESIGN",
+   "checkable": "judgment",
+   "loop_ref": false,
+   "target_kind": "rfc"
+  },
+  {
+   "key": "1066-2-219",
+   "pr": 1066,
+   "round": 2,
+   "cls": "FACT",
+   "checkable": "mechanical",
+   "loop_ref": false,
+   "target_kind": "rfc"
+  },
+  {
+   "key": "1066-2-220",
+   "pr": 1066,
+   "round": 2,
+   "cls": "FACT",
+   "checkable": "enumeration",
+   "loop_ref": false,
+   "target_kind": "rfc"
+  },
+  {
+   "key": "1066-2-221",
+   "pr": 1066,
+   "round": 2,
+   "cls": "SCOPE",
+   "checkable": "enumeration",
+   "loop_ref": false,
+   "target_kind": "rfc"
+  },
+  {
+   "key": "1066-2-222",
+   "pr": 1066,
+   "round": 2,
+   "cls": "MIRROR",
+   "checkable": "enumeration",
+   "loop_ref": false,
+   "target_kind": "rfc"
+  },
+  {
+   "key": "1066-2-223",
+   "pr": 1066,
+   "round": 2,
+   "cls": "MIRROR",
+   "checkable": "mechanical",
+   "loop_ref": false,
+   "target_kind": "backlog"
+  },
+  {
+   "key": "1066-3-224",
+   "pr": 1066,
+   "round": 3,
+   "cls": "FACT",
+   "checkable": "enumeration",
+   "loop_ref": false,
+   "target_kind": "rfc"
+  },
+  {
+   "key": "1066-3-225",
+   "pr": 1066,
+   "round": 3,
+   "cls": "MIRROR",
+   "checkable": "enumeration",
+   "loop_ref": false,
+   "target_kind": "rfc"
+  },
+  {
+   "key": "1066-4-226",
+   "pr": 1066,
+   "round": 4,
+   "cls": "SCOPE",
+   "checkable": "enumeration",
+   "loop_ref": false,
+   "target_kind": "rfc"
+  },
+  {
+   "key": "1066-4-227",
+   "pr": 1066,
+   "round": 4,
+   "cls": "SCOPE",
+   "checkable": "enumeration",
+   "loop_ref": false,
+   "target_kind": "rfc"
+  },
+  {
+   "key": "1066-4-228",
+   "pr": 1066,
+   "round": 4,
+   "cls": "SCOPE",
+   "checkable": "enumeration",
+   "loop_ref": false,
+   "target_kind": "rfc"
+  },
+  {
+   "key": "1066-4-229",
+   "pr": 1066,
+   "round": 4,
+   "cls": "CLARITY",
+   "checkable": "enumeration",
+   "loop_ref": false,
+   "target_kind": "rfc"
+  },
+  {
+   "key": "1066-4-230",
+   "pr": 1066,
+   "round": 4,
+   "cls": "MIRROR",
+   "checkable": "mechanical",
+   "loop_ref": false,
+   "target_kind": "backlog"
+  },
+  {
+   "key": "1066-5-231",
+   "pr": 1066,
+   "round": 5,
+   "cls": "DESIGN",
+   "checkable": "judgment",
+   "loop_ref": false,
+   "target_kind": "rfc"
+  },
+  {
+   "key": "1066-6-232",
+   "pr": 1066,
+   "round": 6,
+   "cls": "FACT",
+   "checkable": "enumeration",
+   "loop_ref": false,
+   "target_kind": "rfc"
+  },
+  {
+   "key": "1066-6-233",
+   "pr": 1066,
+   "round": 6,
+   "cls": "SCOPE",
+   "checkable": "enumeration",
+   "loop_ref": false,
+   "target_kind": "rfc"
+  },
+  {
+   "key": "1066-6-234",
+   "pr": 1066,
+   "round": 6,
+   "cls": "SCOPE",
+   "checkable": "enumeration",
+   "loop_ref": false,
+   "target_kind": "rfc"
+  },
+  {
+   "key": "1066-6-235",
+   "pr": 1066,
+   "round": 6,
+   "cls": "DESIGN",
+   "checkable": "judgment",
+   "loop_ref": false,
+   "target_kind": "rfc"
+  },
+  {
+   "key": "1066-6-236",
+   "pr": 1066,
+   "round": 6,
+   "cls": "DESIGN",
+   "checkable": "enumeration",
+   "loop_ref": false,
+   "target_kind": "rfc"
+  },
+  {
+   "key": "1066-7-237",
+   "pr": 1066,
+   "round": 7,
+   "cls": "SCOPE",
+   "checkable": "enumeration",
+   "loop_ref": false,
+   "target_kind": "rfc"
+  },
+  {
+   "key": "1066-7-238",
+   "pr": 1066,
+   "round": 7,
+   "cls": "MIRROR",
+   "checkable": "enumeration",
+   "loop_ref": false,
+   "target_kind": "rfc"
+  },
+  {
+   "key": "1066-7-239",
+   "pr": 1066,
+   "round": 7,
+   "cls": "SCOPE",
+   "checkable": "enumeration",
+   "loop_ref": false,
+   "target_kind": "rfc"
+  },
+  {
+   "key": "1066-7-240",
+   "pr": 1066,
+   "round": 7,
+   "cls": "MIRROR",
+   "checkable": "enumeration",
+   "loop_ref": false,
+   "target_kind": "rfc"
+  },
+  {
+   "key": "1066-7-241",
+   "pr": 1066,
+   "round": 7,
+   "cls": "SCOPE",
+   "checkable": "enumeration",
+   "loop_ref": false,
+   "target_kind": "rfc"
+  },
+  {
+   "key": "1066-8-242",
+   "pr": 1066,
+   "round": 8,
+   "cls": "FACT",
+   "checkable": "mechanical",
+   "loop_ref": false,
+   "target_kind": "rfc"
+  },
+  {
+   "key": "1066-8-243",
+   "pr": 1066,
+   "round": 8,
+   "cls": "SCOPE",
+   "checkable": "enumeration",
+   "loop_ref": false,
+   "target_kind": "rfc"
+  },
+  {
+   "key": "1066-8-244",
+   "pr": 1066,
+   "round": 8,
+   "cls": "SCOPE",
+   "checkable": "enumeration",
+   "loop_ref": false,
+   "target_kind": "rfc"
+  },
+  {
+   "key": "1066-8-245",
+   "pr": 1066,
+   "round": 8,
+   "cls": "RULE",
+   "checkable": "mechanical",
+   "loop_ref": false,
+   "target_kind": "trace"
+  },
+  {
+   "key": "1066-9-246",
+   "pr": 1066,
+   "round": 9,
+   "cls": "SCOPE",
+   "checkable": "enumeration",
+   "loop_ref": false,
+   "target_kind": "rfc"
+  },
+  {
+   "key": "1066-9-247",
+   "pr": 1066,
+   "round": 9,
+   "cls": "SCOPE",
+   "checkable": "enumeration",
+   "loop_ref": false,
+   "target_kind": "rfc"
+  },
+  {
+   "key": "1066-9-248",
+   "pr": 1066,
+   "round": 9,
+   "cls": "SCOPE",
+   "checkable": "enumeration",
+   "loop_ref": false,
+   "target_kind": "rfc"
+  },
+  {
+   "key": "1066-9-249",
+   "pr": 1066,
+   "round": 9,
+   "cls": "CLARITY",
+   "checkable": "enumeration",
+   "loop_ref": false,
+   "target_kind": "rfc"
+  },
+  {
+   "key": "1066-9-250",
+   "pr": 1066,
+   "round": 9,
+   "cls": "FACT",
+   "checkable": "enumeration",
+   "loop_ref": false,
+   "target_kind": "rfc"
+  },
+  {
+   "key": "1066-10-251",
+   "pr": 1066,
+   "round": 10,
+   "cls": "SCOPE",
+   "checkable": "enumeration",
+   "loop_ref": false,
+   "target_kind": "rfc"
+  },
+  {
+   "key": "1066-10-252",
+   "pr": 1066,
+   "round": 10,
+   "cls": "SCOPE",
+   "checkable": "enumeration",
+   "loop_ref": false,
+   "target_kind": "rfc"
+  },
+  {
+   "key": "1066-10-253",
+   "pr": 1066,
+   "round": 10,
+   "cls": "SCOPE",
+   "checkable": "enumeration",
+   "loop_ref": false,
+   "target_kind": "rfc"
+  },
+  {
+   "key": "1066-10-254",
+   "pr": 1066,
+   "round": 10,
+   "cls": "MIRROR",
+   "checkable": "mechanical",
+   "loop_ref": false,
+   "target_kind": "rfc"
+  },
+  {
+   "key": "1066-11-255",
+   "pr": 1066,
+   "round": 11,
+   "cls": "MIRROR",
+   "checkable": "enumeration",
+   "loop_ref": false,
+   "target_kind": "rfc"
+  },
+  {
+   "key": "1066-11-256",
+   "pr": 1066,
+   "round": 11,
+   "cls": "SCOPE",
+   "checkable": "enumeration",
+   "loop_ref": false,
+   "target_kind": "rfc"
+  },
+  {
+   "key": "1066-11-257",
+   "pr": 1066,
+   "round": 11,
+   "cls": "SCOPE",
+   "checkable": "enumeration",
+   "loop_ref": false,
+   "target_kind": "rfc"
+  },
+  {
+   "key": "1066-11-258",
+   "pr": 1066,
+   "round": 11,
+   "cls": "MIRROR",
+   "checkable": "mechanical",
+   "loop_ref": false,
+   "target_kind": "rfc"
+  },
+  {
+   "key": "1073-1-259",
+   "pr": 1073,
+   "round": 1,
+   "cls": "DESIGN",
+   "checkable": "enumeration",
+   "loop_ref": false,
+   "target_kind": "skill"
+  },
+  {
+   "key": "1073-1-260",
+   "pr": 1073,
+   "round": 1,
+   "cls": "MIRROR",
+   "checkable": "enumeration",
+   "loop_ref": false,
+   "target_kind": "skill"
+  },
+  {
+   "key": "1073-1-261",
+   "pr": 1073,
+   "round": 1,
+   "cls": "RULE",
+   "checkable": "mechanical",
+   "loop_ref": false,
+   "target_kind": "rfc"
+  },
+  {
+   "key": "1073-1-262",
+   "pr": 1073,
+   "round": 1,
+   "cls": "FACT",
+   "checkable": "mechanical",
+   "loop_ref": false,
+   "target_kind": "skill"
+  },
+  {
+   "key": "1073-3-263",
+   "pr": 1073,
+   "round": 3,
+   "cls": "MIRROR",
+   "checkable": "mechanical",
+   "loop_ref": true,
+   "target_kind": "rfc"
+  },
+  {
+   "key": "1073-3-264",
+   "pr": 1073,
+   "round": 3,
+   "cls": "SCOPE",
+   "checkable": "enumeration",
+   "loop_ref": false,
+   "target_kind": "rfc"
+  },
+  {
+   "key": "1073-4-265",
+   "pr": 1073,
+   "round": 4,
+   "cls": "DESIGN",
+   "checkable": "enumeration",
+   "loop_ref": true,
+   "target_kind": "skill"
+  },
+  {
+   "key": "1073-5-266",
+   "pr": 1073,
+   "round": 5,
+   "cls": "DESIGN",
+   "checkable": "judgment",
+   "loop_ref": false,
+   "target_kind": "rfc"
+  },
+  {
+   "key": "1073-6-267",
+   "pr": 1073,
+   "round": 6,
+   "cls": "MIRROR",
+   "checkable": "enumeration",
+   "loop_ref": false,
+   "target_kind": "skill"
+  },
+  {
+   "key": "1073-6-268",
+   "pr": 1073,
+   "round": 6,
+   "cls": "SCOPE",
+   "checkable": "enumeration",
+   "loop_ref": false,
+   "target_kind": "skill"
+  },
+  {
+   "key": "1073-6-269",
+   "pr": 1073,
+   "round": 6,
+   "cls": "MIRROR",
+   "checkable": "mechanical",
+   "loop_ref": false,
+   "target_kind": "process-doc"
+  },
+  {
+   "key": "1073-6-270",
+   "pr": 1073,
+   "round": 6,
+   "cls": "RULE",
+   "checkable": "mechanical",
+   "loop_ref": true,
+   "target_kind": "trace"
+  },
+  {
+   "key": "1073-7-271",
+   "pr": 1073,
+   "round": 7,
+   "cls": "MIRROR",
+   "checkable": "enumeration",
+   "loop_ref": false,
+   "target_kind": "skill"
+  },
+  {
+   "key": "1073-7-272",
+   "pr": 1073,
+   "round": 7,
+   "cls": "FACT",
+   "checkable": "enumeration",
+   "loop_ref": false,
+   "target_kind": "rfc"
+  },
+  {
+   "key": "1073-8-273",
+   "pr": 1073,
+   "round": 8,
+   "cls": "SCOPE",
+   "checkable": "enumeration",
+   "loop_ref": false,
+   "target_kind": "skill"
+  },
+  {
+   "key": "1073-9-274",
+   "pr": 1073,
+   "round": 9,
+   "cls": "MIRROR",
+   "checkable": "enumeration",
+   "loop_ref": true,
+   "target_kind": "skill"
+  },
+  {
+   "key": "1041-1-275",
+   "pr": 1041,
+   "round": 1,
+   "cls": "FACT",
+   "checkable": "mechanical",
+   "loop_ref": false,
+   "target_kind": "adr"
+  },
+  {
+   "key": "1041-1-276",
+   "pr": 1041,
+   "round": 1,
+   "cls": "SCOPE",
+   "checkable": "enumeration",
+   "loop_ref": false,
+   "target_kind": "backlog"
+  },
+  {
+   "key": "1041-1-277",
+   "pr": 1041,
+   "round": 1,
+   "cls": "SCOPE",
+   "checkable": "enumeration",
+   "loop_ref": false,
+   "target_kind": "backlog"
+  },
+  {
+   "key": "1041-1-278",
+   "pr": 1041,
+   "round": 1,
+   "cls": "DESIGN",
+   "checkable": "judgment",
+   "loop_ref": false,
+   "target_kind": "adr"
+  },
+  {
+   "key": "1041-2-279",
+   "pr": 1041,
+   "round": 2,
+   "cls": "MIRROR",
+   "checkable": "enumeration",
+   "loop_ref": false,
+   "target_kind": "rfc"
+  },
+  {
+   "key": "1041-3-280",
+   "pr": 1041,
+   "round": 3,
+   "cls": "RULE",
+   "checkable": "enumeration",
+   "loop_ref": false,
+   "target_kind": "adr"
+  },
+  {
+   "key": "1041-4-281",
+   "pr": 1041,
+   "round": 4,
+   "cls": "MIRROR",
+   "checkable": "mechanical",
+   "loop_ref": false,
+   "target_kind": "rfc"
+  },
+  {
+   "key": "1041-4-282",
+   "pr": 1041,
+   "round": 4,
+   "cls": "SCOPE",
+   "checkable": "mechanical",
+   "loop_ref": false,
+   "target_kind": "adr"
+  },
+  {
+   "key": "1041-5-283",
+   "pr": 1041,
+   "round": 5,
+   "cls": "RULE",
+   "checkable": "mechanical",
+   "loop_ref": true,
+   "target_kind": "trace"
+  },
+  {
+   "key": "1041-6-284",
+   "pr": 1041,
+   "round": 6,
+   "cls": "SCOPE",
+   "checkable": "mechanical",
+   "loop_ref": true,
+   "target_kind": "trace"
+  },
+  {
+   "key": "1041-7-285",
+   "pr": 1041,
+   "round": 7,
+   "cls": "MIRROR",
+   "checkable": "enumeration",
+   "loop_ref": false,
+   "target_kind": "backlog"
+  },
+  {
+   "key": "1041-8-286",
+   "pr": 1041,
+   "round": 8,
+   "cls": "MIRROR",
+   "checkable": "mechanical",
+   "loop_ref": true,
+   "target_kind": "process-doc"
+  },
+  {
+   "key": "1050-1-287",
+   "pr": 1050,
+   "round": 1,
+   "cls": "MIRROR",
+   "checkable": "mechanical",
+   "loop_ref": false,
+   "target_kind": "spec"
+  },
+  {
+   "key": "1050-1-288",
+   "pr": 1050,
+   "round": 1,
+   "cls": "FACT",
+   "checkable": "mechanical",
+   "loop_ref": false,
+   "target_kind": "backlog"
+  },
+  {
+   "key": "1050-2-289",
+   "pr": 1050,
+   "round": 2,
+   "cls": "SCOPE",
+   "checkable": "enumeration",
+   "loop_ref": true,
+   "target_kind": "spec"
+  },
+  {
+   "key": "1050-2-290",
+   "pr": 1050,
+   "round": 2,
+   "cls": "SCOPE",
+   "checkable": "enumeration",
+   "loop_ref": false,
+   "target_kind": "guide"
+  },
+  {
+   "key": "1050-2-291",
+   "pr": 1050,
+   "round": 2,
+   "cls": "FACT",
+   "checkable": "mechanical",
+   "loop_ref": false,
+   "target_kind": "other"
+  },
+  {
+   "key": "1050-3-292",
+   "pr": 1050,
+   "round": 3,
+   "cls": "RULE",
+   "checkable": "judgment",
+   "loop_ref": true,
+   "target_kind": "spec"
+  },
+  {
+   "key": "1050-3-293",
+   "pr": 1050,
+   "round": 3,
+   "cls": "MIRROR",
+   "checkable": "enumeration",
+   "loop_ref": true,
+   "target_kind": "spec"
+  },
+  {
+   "key": "1050-3-294",
+   "pr": 1050,
+   "round": 3,
+   "cls": "MIRROR",
+   "checkable": "mechanical",
+   "loop_ref": false,
+   "target_kind": "guide"
+  },
+  {
+   "key": "1050-3-295",
+   "pr": 1050,
+   "round": 3,
+   "cls": "SCOPE",
+   "checkable": "enumeration",
+   "loop_ref": false,
+   "target_kind": "guide"
+  },
+  {
+   "key": "1050-4-296",
+   "pr": 1050,
+   "round": 4,
+   "cls": "FACT",
+   "checkable": "mechanical",
+   "loop_ref": true,
+   "target_kind": "spec"
+  },
+  {
+   "key": "1050-4-297",
+   "pr": 1050,
+   "round": 4,
+   "cls": "FACT",
+   "checkable": "mechanical",
+   "loop_ref": false,
+   "target_kind": "trace"
+  },
+  {
+   "key": "1050-4-298",
+   "pr": 1050,
+   "round": 4,
+   "cls": "RULE",
+   "checkable": "mechanical",
+   "loop_ref": false,
+   "target_kind": "backlog"
+  },
+  {
+   "key": "1050-5-299",
+   "pr": 1050,
+   "round": 5,
+   "cls": "RULE",
+   "checkable": "enumeration",
+   "loop_ref": false,
+   "target_kind": "backlog"
+  },
+  {
+   "key": "1050-5-300",
+   "pr": 1050,
+   "round": 5,
+   "cls": "RULE",
+   "checkable": "enumeration",
+   "loop_ref": false,
+   "target_kind": "trace"
+  },
+  {
+   "key": "1050-6-301",
+   "pr": 1050,
+   "round": 6,
+   "cls": "FACT",
+   "checkable": "mechanical",
+   "loop_ref": false,
+   "target_kind": "other"
+  },
+  {
+   "key": "1050-7-302",
+   "pr": 1050,
+   "round": 7,
+   "cls": "RULE",
+   "checkable": "mechanical",
+   "loop_ref": false,
+   "target_kind": "other"
+  },
+  {
+   "key": "1050-7-303",
+   "pr": 1050,
+   "round": 7,
+   "cls": "MIRROR",
+   "checkable": "mechanical",
+   "loop_ref": false,
+   "target_kind": "backlog"
+  },
+  {
+   "key": "1051-1-304",
+   "pr": 1051,
+   "round": 1,
+   "cls": "MIRROR",
+   "checkable": "mechanical",
+   "loop_ref": false,
+   "target_kind": "other"
+  },
+  {
+   "key": "1051-2-305",
+   "pr": 1051,
+   "round": 2,
+   "cls": "SCOPE",
+   "checkable": "enumeration",
+   "loop_ref": false,
+   "target_kind": "other"
+  },
+  {
+   "key": "1051-2-306",
+   "pr": 1051,
+   "round": 2,
+   "cls": "FACT",
+   "checkable": "mechanical",
+   "loop_ref": false,
+   "target_kind": "process-doc"
+  },
+  {
+   "key": "1051-2-307",
+   "pr": 1051,
+   "round": 2,
+   "cls": "FACT",
+   "checkable": "mechanical",
+   "loop_ref": false,
+   "target_kind": "backlog"
+  },
+  {
+   "key": "1051-2-308",
+   "pr": 1051,
+   "round": 2,
+   "cls": "DESIGN",
+   "checkable": "judgment",
+   "loop_ref": false,
+   "target_kind": "guide"
+  },
+  {
+   "key": "1051-3-309",
+   "pr": 1051,
+   "round": 3,
+   "cls": "MIRROR",
+   "checkable": "mechanical",
+   "loop_ref": false,
+   "target_kind": "other"
+  },
+  {
+   "key": "1051-3-310",
+   "pr": 1051,
+   "round": 3,
+   "cls": "RULE",
+   "checkable": "enumeration",
+   "loop_ref": false,
+   "target_kind": "other"
+  },
+  {
+   "key": "1051-3-311",
+   "pr": 1051,
+   "round": 3,
+   "cls": "FACT",
+   "checkable": "mechanical",
+   "loop_ref": true,
+   "target_kind": "process-doc"
+  },
+  {
+   "key": "1051-3-312",
+   "pr": 1051,
+   "round": 3,
+   "cls": "FACT",
+   "checkable": "mechanical",
+   "loop_ref": false,
+   "target_kind": "other"
+  },
+  {
+   "key": "1051-3-313",
+   "pr": 1051,
+   "round": 3,
+   "cls": "FACT",
+   "checkable": "mechanical",
+   "loop_ref": false,
+   "target_kind": "process-doc"
+  },
+  {
+   "key": "1051-3-314",
+   "pr": 1051,
+   "round": 3,
+   "cls": "RULE",
+   "checkable": "mechanical",
+   "loop_ref": false,
+   "target_kind": "trace"
+  },
+  {
+   "key": "1051-4-315",
+   "pr": 1051,
+   "round": 4,
+   "cls": "MIRROR",
+   "checkable": "mechanical",
+   "loop_ref": false,
+   "target_kind": "other"
+  },
+  {
+   "key": "1051-4-316",
+   "pr": 1051,
+   "round": 4,
+   "cls": "MIRROR",
+   "checkable": "enumeration",
+   "loop_ref": true,
+   "target_kind": "backlog"
+  },
+  {
+   "key": "1051-4-317",
+   "pr": 1051,
+   "round": 4,
+   "cls": "SCOPE",
+   "checkable": "enumeration",
+   "loop_ref": true,
+   "target_kind": "process-doc"
+  },
+  {
+   "key": "1051-5-318",
+   "pr": 1051,
+   "round": 5,
+   "cls": "DESIGN",
+   "checkable": "judgment",
+   "loop_ref": false,
+   "target_kind": "backlog"
+  },
+  {
+   "key": "1051-5-319",
+   "pr": 1051,
+   "round": 5,
+   "cls": "SCOPE",
+   "checkable": "enumeration",
+   "loop_ref": false,
+   "target_kind": "process-doc"
+  },
+  {
+   "key": "1051-6-320",
+   "pr": 1051,
+   "round": 6,
+   "cls": "DESIGN",
+   "checkable": "judgment",
+   "loop_ref": true,
+   "target_kind": "backlog"
+  }
+ ]
+}

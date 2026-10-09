@@ -1,0 +1,284 @@
+{
+ "_provenance": {
+  "script": "composition.py",
+  "generated": "2026-10-09",
+  "inputs": {
+   "calls.jsonl": "907901dab77ca147566a751fdf9aa7af8e8019e3f7c4ef1455bdc564eaa1cc92",
+   "items.jsonl": "e63d24c895b34565a54b17d85b48d00a951295026edb50fae5b936bef59ecb03",
+   "sessions.json": "7fc8f47d516e2686beb920dbb8b42bff97afddc9f0bfa913eb55785f98903590",
+   "CLAUDE.md": "7cf66222fdeb6d3b003b8b9cf0cf673357b10e4b02309a08153d441d4049ec57"
+  }
+ },
+ "sum_context_tokens": 956980042,
+ "shares_pct": {
+  "session prefix": 22.3,
+  "tool result: Read": 21.6,
+  "tool result: Bash": 13.2,
+  "hidden thinking": 11.8,
+  "tool inputs the model wrote": 10.1,
+  "harness attachments": 4.9,
+  "tool result: Grep": 4.7,
+  "unexplained": 4.4,
+  "tool result: other": 2.2,
+  "prompts, skill bodies, other": 1.9,
+  "visible model text": 1.5,
+  "tool result: TaskOutput": 1.3
+ },
+ "top_items_pct": [
+  {
+   "kind": "tool_result:Read",
+   "detail": "<transcript>",
+   "pct": 2.67
+  },
+  {
+   "kind": "tool_result:Bash",
+   "detail": "python",
+   "pct": 1.8
+  },
+  {
+   "kind": "attachment",
+   "detail": "skill_listing",
+   "pct": 1.57
+  },
+  {
+   "kind": "user_prompt",
+   "detail": "",
+   "pct": 1.42
+  },
+  {
+   "kind": "tool_result:Read",
+   "detail": "sdd/BACKLOG.md",
+   "pct": 1.41
+  },
+  {
+   "kind": "tool_result:Read",
+   "detail": ".claude/skills/rvw-pr/SKILL.md",
+   "pct": 1.36
+  },
+  {
+   "kind": "tool_result:TaskOutput",
+   "detail": "",
+   "pct": 1.3
+  },
+  {
+   "kind": "assistant_text",
+   "detail": "",
+   "pct": 1.24
+  },
+  {
+   "kind": "tool_result:Bash",
+   "detail": "git",
+   "pct": 1.09
+  },
+  {
+   "kind": "tool_result:Bash",
+   "detail": "hatch run lint",
+   "pct": 1.03
+  },
+  {
+   "kind": "tool_result:Read",
+   "detail": "sdd/traces/_schema.yml",
+   "pct": 1.01
+  },
+  {
+   "kind": "tool_result:Read",
+   "detail": "src/remote_store/backends/_azure_common.py",
+   "pct": 0.95
+  },
+  {
+   "kind": "assistant_tool_use:Write",
+   "detail": "<scratch/tasks>",
+   "pct": 0.9
+  },
+  {
+   "kind": "tool_result:Read",
+   "detail": "sdd/CLAUDE-REFERENCE.md",
+   "pct": 0.9
+  },
+  {
+   "kind": "attachment",
+   "detail": "output_style",
+   "pct": 0.9
+  },
+  {
+   "kind": "tool_result:Bash",
+   "detail": "gh pr",
+   "pct": 0.88
+  },
+  {
+   "kind": "assistant_tool_use:Bash",
+   "detail": "python",
+   "pct": 0.87
+  },
+  {
+   "kind": "tool_result:Read",
+   "detail": "<scratch/tasks>",
+   "pct": 0.87
+  },
+  {
+   "kind": "tool_result:Read",
+   "detail": ".claude/skills/ship/SKILL.md",
+   "pct": 0.86
+  },
+  {
+   "kind": "attachment",
+   "detail": "instructions",
+   "pct": 0.85
+  },
+  {
+   "kind": "tool_result:Read",
+   "detail": "sdd/rfcs/rfc-0019-two-speed-test-gate.md",
+   "pct": 0.83
+  },
+  {
+   "kind": "tool_result:Bash",
+   "detail": "pytest",
+   "pct": 0.76
+  },
+  {
+   "kind": "tool_result:Bash",
+   "detail": "hatch run pytest",
+   "pct": 0.74
+  },
+  {
+   "kind": "tool_result:Bash",
+   "detail": "hatch run test-cov-s1",
+   "pct": 0.73
+  },
+  {
+   "kind": "tool_result:Read",
+   "detail": "sdd/rfcs/rfc-0018-decision-capture-at-dialog-time.md",
+   "pct": 0.71
+  }
+ ],
+ "attachments_after_start": {
+  "skill_listing": {
+   "injections": 23,
+   "pct": 1.57
+  },
+  "output_style": {
+   "injections": 1227,
+   "pct": 0.9
+  },
+  "instructions": {
+   "injections": 6,
+   "pct": 0.85
+  },
+  "total_tokens_reminder": {
+   "injections": 1677,
+   "pct": 0.62
+  },
+  "queued_command": {
+   "injections": 37,
+   "pct": 0.2
+  },
+  "edited_text_file": {
+   "injections": 29,
+   "pct": 0.12
+  }
+ },
+ "prefix": {
+  "main": {
+   "n": 28,
+   "mean_prefix_tokens": 55885,
+   "min_prefix_tokens": 46563,
+   "max_prefix_tokens": 75884,
+   "instructions": 11785,
+   "skill_listing": 2558,
+   "system_prompt_and_tools_rest": 35828
+  },
+  "subagent": {
+   "n": 43,
+   "mean_prefix_tokens": 52891,
+   "min_prefix_tokens": 44560,
+   "max_prefix_tokens": 232292,
+   "instructions": 4935,
+   "skill_listing": 2423,
+   "system_prompt_and_tools_rest": 39845
+  }
+ },
+ "output": {
+  "tokens": 1328253,
+  "units_pct": 5.6,
+  "hidden_pct_of_output": 50.0,
+  "visible_tokens_by_kind": {
+   "Write": 211387,
+   "Bash": 155204,
+   "Edit": 135445,
+   "assistant_text": 99332,
+   "Grep": 51166,
+   "Agent": 41045
+  }
+ },
+ "tool_volume": {
+  "Bash": {
+   "results": 2126,
+   "mean_tokens": 571
+  },
+  "Grep": {
+   "results": 962,
+   "mean_tokens": 663
+  },
+  "Read": {
+   "results": 917,
+   "mean_tokens": 3126
+  },
+  "Edit": {
+   "results": 428,
+   "mean_tokens": 65
+  },
+  "Write": {
+   "results": 169,
+   "mean_tokens": 75
+  }
+ },
+ "tool_errors": {
+  "total": 233,
+  "by_tool": {
+   "Bash": 196,
+   "Edit": 10,
+   "mcp:MCP_DOCKER": 8
+  }
+ },
+ "read_tokens_reread_pct": 24.0,
+ "files_read_by_most_subagents": [
+  {
+   "file": ".claude/skills/rvw-pr/SKILL.md",
+   "subagents": 24
+  },
+  {
+   "file": "<transcript>",
+   "subagents": 23
+  },
+  {
+   "file": "sdd/BACKLOG.md",
+   "subagents": 22
+  },
+  {
+   "file": "src/remote_store/backends/_azure_common.py",
+   "subagents": 19
+  },
+  {
+   "file": "sdd/specs/012-azure-backend.md",
+   "subagents": 19
+  },
+  {
+   "file": "sdd/BACKLOG-DONE.md",
+   "subagents": 16
+  },
+  {
+   "file": "sdd/traces/_schema.yml",
+   "subagents": 16
+  },
+  {
+   "file": "src/remote_store/_errors.py",
+   "subagents": 16
+  }
+ ],
+ "instruction_files": {
+  "claude_md_tokens": 6196,
+  "claude_md_units_pct_if_every_call": 2.5,
+  "memory_md_tokens": 5605,
+  "memory_md_units_pct_main_sessions": 1.19
+ }
+}

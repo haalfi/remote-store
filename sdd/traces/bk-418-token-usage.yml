@@ -1,0 +1,128 @@
+id: BK-418
+title: "`/ship` spends most of a delivery after the PR opens, and no intervention against it is measured"
+trigger: >-
+  A scratch token-usage analysis (2026-10-09) and the live run A of
+  `/ship BUG-280` showed the review loop after PR open carrying most of a
+  delivery's tokens. The maintainer asked for a durable research record under
+  sdd/research/token-usage/ (PR 1), then a Draft RFC framing the interventions
+  as an experiment, run B (PR 2), then the /ship variant (PR 3).
+source_items:
+  - BK-418
+audience:
+  - contributor.process
+  - contributor.tooling
+expected_ripples:
+  - sdd/BACKLOG.md
+  - sdd/backlog/bk-366-bug-share-undiagnosed.md
+surprising_ripples: []
+discovery_followups: []
+decisions:
+  - sdd/decisions/d09d3d81-2a9f-4eaa-8038-6a8d68d1d09d.jsonl
+phases:
+  - id: orient
+    name: Orient
+    steps:
+      - file: sdd/research/bk-403-phase-0/report.md
+        section: "header, Question, Answer"
+        read_type: reference
+        extract: "Precedent: repo-only report.md beside scripts and results/, header Date/Backlog/Status"
+      - file: sdd/AUTHORING.md
+        section: "Directory defaults"
+        read_type: gate
+        extract: >-
+          Only sdd/research/research-*.md defaults to dual; a report.md in a
+          subfolder needs an explicit repo-only marker, as the precedent has
+      - file: scripts/check_sdd_index.py
+        section: "module docstring (R1, R2)"
+        read_type: gate
+        extract: >-
+          R1 requires a header date only for documents the research kind's glob
+          matches; a subfolder report is outside it
+      - file: sdd/CONTENT-RULES.md
+        section: "Rule 7"
+        read_type: gate
+        extract: "Every new section opens with its core claim in at most three sentences"
+      - file: sdd/CLAUDE-REFERENCE.md
+        section: "Pre-work index: Local-machine reference row"
+        read_type: gate
+        extract: >-
+          Patterns drive-letter paths, ~/.claude, .claude/projects; the ported
+          code builds the transcript folder from Path.home() parts as
+          scripts/report_token_usage.py's default_dir does, so no pattern matches
+      - file: scripts/report_token_usage.py
+        section: "default_dir"
+        read_type: reference
+        extract: "Slug of the checkout path under the home transcript folder; worktrees get sibling folders"
+      - file: sdd/BACKLOG.md
+        section: "How this file works; section headings"
+        read_type: gate
+        extract: >-
+          No section's promise fits session token cost; maintainer chose a new
+          § 9. Next ID from gen-backlogid --check --remote collided with a
+          parallel session (BK-415, BK-416 pushed), so BK-418 was agreed with it
+  - id: port
+    name: Port and re-derive
+    steps:
+      - file: sdd/research/token-usage/_common.py
+        section: "session_prs, work_groups"
+        read_type: reference
+        extract: >-
+          The scratch analysis grouped sessions into work items by a hand table
+          of session-ID prefixes. Grouping by the PR a session served (pr-link,
+          PR number in the first real prompt, else head branch) reproduces all
+          eight groups; the branch rule first over-included the BUG-304/305
+          session in ID-268 until made a fallback
+      - file: sdd/research/token-usage/inventory.py
+        section: "cache rebuilds"
+        read_type: reference
+        outcome: misleading
+        extract: >-
+          The scratch extract measured gaps and rebuilds against Claude Code's
+          <synthetic> records: 9 of its 11 "rebuilds" were those records, and
+          rebuilds right after one were missed. Recomputed over real calls, 5
+          rebuilds at 2.1% of units, not 11 at 0.4%. The misleading artifact is
+          the scratch extract.py's prev-call bookkeeping, now outside the repo
+      - file: sdd/backlogid.json
+        section: "(whole)"
+        read_type: reference
+        outcome: misleading
+        extract: >-
+          The scratch bug-share series read this file's monthly high-water mark
+          as "IDs closed per month"; gen_backlogid.py's docstring says it is the
+          max ID present in BACKLOG-DONE.md, which counts neither closures nor
+          filings. Replaced by done-entry headers from BACKLOG-DONE.md history,
+          which removes the clean July onset the BK-366 annotation was to record
+      - file: sdd/research/token-usage/tokkit.py
+        section: "rounds_of"
+        read_type: reference
+        extract: >-
+          A spawn event's idx is the call after the spawning one, and a re-run
+          round repeats its subagent descriptions; my first matching put all of
+          round 6's subagent cost on the abandoned panel. Fixed by matching each
+          subagent to the latest spawn whose spawning call precedes it; rounds
+          now sum to the run's subagent total
+      - file: sdd/BACKLOG.md
+        section: "BUG-280 and every open item's spec: line"
+        read_type: reference
+        extract: >-
+          BE-021 is shared by seven open items at run A's base commit, not two:
+          the redesign pair plus five sibling items. Recorded as the orient
+          check's noise in the report
+  - id: close
+    name: Record
+    steps:
+      - file: sdd/backlog/bk-366-bug-share-undiagnosed.md
+        section: "Correction, Note sections"
+        read_type: reference
+        extract: "Dated notes are appended, the original evidence is not rewritten (Item authority)"
+      - file: sdd/research/token-usage/report.md
+        section: "(whole), after /rvw-pr on PR #1098"
+        read_type: verify
+        extract: >-
+          One review pass found nine claims wider than their cited key, all
+          mine: a ceiling taken from a non-/ship run, a tail figure that
+          counted prose-only PRs as tail (rounds.py now splits them), a
+          divisor off by one, a baseline month chosen at the trough, and an
+          orient claim the record's own first-mention data contradicts. Each
+          narrowed to its key; round 1's eight-spawns-for-seven-rounds count
+          was right and now carries its enumeration

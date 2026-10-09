@@ -1,0 +1,131 @@
+{
+ "_provenance": {
+  "script": "pr_model.py",
+  "generated": "2026-10-09",
+  "inputs": {
+   "prs.json": "beb1e0f90225cfe9b9f9b2dc81383307e0267b72f7338b44a53de2ad45b4cd59",
+   "corpus.json": "1d7c94d146cc9e1c4c1f21ca9f406047d90c2ff420119b4e92cb06c1454f75c0",
+   "work_items.json": "fe44ce103402fefa9155c8cb0583b1fb49e62b4d367dcefd413719c2769b0641"
+  }
+ },
+ "calibration_prs": [
+  992,
+  1069,
+  1071,
+  1072,
+  1073,
+  1074
+ ],
+ "features": {
+  "commits": {
+   "b": 1.87,
+   "r": 0.83,
+   "loo_error_factor": 2.3
+  },
+  "threads": {
+   "b": 0.45,
+   "r": 0.45,
+   "loo_error_factor": 3.28
+  },
+  "reviews": {
+   "b": 0.37,
+   "r": 0.39,
+   "loo_error_factor": 3.74
+  },
+  "lines": {
+   "b": 0.49,
+   "r": 0.64,
+   "loo_error_factor": 3.36
+  },
+  "files": {
+   "b": 0.84,
+   "r": 0.58,
+   "loo_error_factor": 3.2
+  },
+  "open_h": {
+   "b": 0.95,
+   "r": 0.73,
+   "loo_error_factor": 3.01
+  }
+ },
+ "best_feature": "commits",
+ "monthly": {
+  "2026-02": {
+   "prs": 68,
+   "commits_median": 2.0,
+   "review_threads_mean": 2.2,
+   "open_hours_median": 0.2,
+   "est_units_m": 400,
+   "est_units_per_pr_m": 5.9
+  },
+  "2026-03": {
+   "prs": 269,
+   "commits_median": 3,
+   "review_threads_mean": 3.5,
+   "open_hours_median": 0.4,
+   "est_units_m": 1875,
+   "est_units_per_pr_m": 7.0
+  },
+  "2026-04": {
+   "prs": 210,
+   "commits_median": 3.0,
+   "review_threads_mean": 4.5,
+   "open_hours_median": 0.7,
+   "est_units_m": 1863,
+   "est_units_per_pr_m": 8.9
+  },
+  "2026-05": {
+   "prs": 141,
+   "commits_median": 3,
+   "review_threads_mean": 6.1,
+   "open_hours_median": 1.0,
+   "est_units_m": 1764,
+   "est_units_per_pr_m": 12.5
+  },
+  "2026-06": {
+   "prs": 157,
+   "commits_median": 3,
+   "review_threads_mean": 3.2,
+   "open_hours_median": 0.8,
+   "est_units_m": 718,
+   "est_units_per_pr_m": 4.6
+  },
+  "2026-07": {
+   "prs": 63,
+   "commits_median": 3,
+   "review_threads_mean": 6.2,
+   "open_hours_median": 1.6,
+   "est_units_m": 481,
+   "est_units_per_pr_m": 7.6
+  },
+  "2026-08": {
+   "prs": 44,
+   "commits_median": 7.5,
+   "review_threads_mean": 21.6,
+   "open_hours_median": 13.3,
+   "est_units_m": 1210,
+   "est_units_per_pr_m": 27.5
+  },
+  "2026-09": {
+   "prs": 56,
+   "commits_median": 5.5,
+   "review_threads_mean": 14.8,
+   "open_hours_median": 11.5,
+   "est_units_m": 1110,
+   "est_units_per_pr_m": 19.8
+  },
+  "2026-10": {
+   "prs": 40,
+   "commits_median": 7.5,
+   "review_threads_mean": 12.2,
+   "open_hours_median": 1.4,
+   "est_units_m": 1089,
+   "est_units_per_pr_m": 27.2
+  }
+ },
+ "rounds_vs_commits": {
+  "pairs": 318,
+  "r": 0.57
+ },
+ "top_10pct_share_of_est_units_pct": 48.0
+}
