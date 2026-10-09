@@ -1,4 +1,4 @@
-# BUG-310 — A closed Azure `read_seekable()` stream keeps answering instead of raising `ValueError`
+# BUG-310 — A closed Azure `read_seekable()` or HTTP `read()` stream keeps answering instead of raising `ValueError`
 <!-- doc: repo-only -->
 
 ## Evidence
@@ -54,15 +54,27 @@ The `tell` on Azure `read()` is not a closed-stream defect: it raises the same
 `RemoteStoreError: seek` while the stream is open, because the non-seekable
 inner raises `io.UnsupportedOperation`, an `OSError` subclass that
 `_ErrorMappingStream` maps. It is out of this item's diagnosis and filed as
-BUG-312 (§ 2).
+BUG-312 (§ 2), together with the same mapping on HTTP's `seek` and `tell`.
+
+**HTTP `read()` has the defect too**, found in PR #1092's third review round
+and measured on `8f7502510` with no stubs: `ReadOnlyHttpBackend` on each
+`http_client` against a local `http.server`, through
+`_ErrorMappingStream(resp.body)` (`_http.py:306`, no `BufferedReader`):
+
+| Transport (`resp.body`) | `read(4)` after close, 3 bytes read | `read(4)` after close, at EOF |
+| --- | --- | --- |
+| `urllib` (`http.client.HTTPResponse`) | `b""`: the unread rest is silently dropped | `b""` |
+| `requests` (`_Urllib3StreamAdapter`) | `BackendUnavailable` (`IncompleteRead`) | `b""` |
+| `httpx` (`_HttpxStreamAdapter`) | `b"3456"`: data after close | `b""` |
 
 `_ErrorMappingStream` has no closed guard of its own: `read`, `readinto`,
 `readline`, `seek` and `tell` delegate to the inner stream without checking
 `self.closed` (`_stream.py`), so each unbuffered public stream answers
-read-after-close however its inner adapter does. The other construction sites
-were not measured: `rg -n '_ErrorMappingStream\(' src` prints nine lines; less
-the class statement and a docstring mention in `_sftp.py`, seven construction
-sites remain (S3 s3fs, S3-PyArrow, the boto3 PoC, SFTP, HTTP, and Azure twice).
+read-after-close however its inner adapter does. `rg -n '_ErrorMappingStream\(' src`
+prints nine lines; less the class statement and a docstring mention in
+`_sftp.py`, seven construction sites remain (S3 s3fs, S3-PyArrow, the boto3
+PoC, SFTP, HTTP, and Azure twice). Measured: Azure twice, the boto3 PoC, HTTP.
+Not measured: S3 s3fs, S3-PyArrow and SFTP.
 
 No spec clause states read-after-close behaviour for a `Backend.read()` or
 `read_seekable()` stream: `rg -n "closed file" sdd/specs` finds one hit,
@@ -86,17 +98,24 @@ Scope chosen in the session that filed this:
   states to reach every symptom: bytes remaining, read to EOF, and a zero-byte
   object. It asserts `ValueError` on `seek`/`tell` after a non-zero read, not a
   particular position.
-- Settle the HTTP stream with real response objects in `tests/backends/http/`:
-  the conformance `http` fixture is read-only and reaches no `WRITE`-gated cell
-  (ID-244, § 2), and it uses the urllib transport only.
+- Pin HTTP in `tests/backends/http/`, on all three transports: the conformance
+  `http` fixture is read-only and reaches no `WRITE`-gated cell (ID-244, § 2),
+  and it uses the urllib transport only.
 - Fix the boto3 PoC's `_S3RangeReader` alongside: identical code, so whoever
   revives the PoC inherits the fix.
 
-Where the guard goes is open. Per adapter (`_AzureRangeReader`, `_S3RangeReader`)
-matches `_ChunkPullReader.read`, but only at the top of `readinto`, `seek` and
-`tell`: a guard beside the `self._bc` dereference Pyright flagged sits after the
-`remaining <= 0` return and leaves the EOF `b""` in place. A `self.closed`
-check in `_ErrorMappingStream` itself would cover every unbuffered public
-stream at all seven construction sites, including the unmeasured HTTP one. Either way, check that the
-`ValueError` is not mapped: the wrapper catches `OSError` and `EOFError`, and
-`io.UnsupportedOperation` subclasses both `OSError` and `ValueError`.
+Where the guard goes is this item's open decision:
+
+- **Per adapter**, as `_ChunkPullReader.read` does, and only at the top of
+  `readinto`, `seek` and `tell`: a guard beside the `self._bc` dereference
+  Pyright flagged sits after the `remaining <= 0` return and leaves the EOF
+  `b""` in place. It reaches the two range readers and the two HTTP adapters
+  this repo owns, but not urllib, whose body is the stdlib
+  `http.client.HTTPResponse`, so urllib would need an adapter of its own.
+- **Once in `_ErrorMappingStream`**, as a `self.closed` check on every path it
+  intercepts. It reaches every unbuffered public stream at all seven
+  construction sites, urllib included, and the three unmeasured ones too.
+
+Either way, check that the `ValueError` is not mapped: the wrapper catches
+`OSError` and `EOFError`, and `io.UnsupportedOperation` subclasses both
+`OSError` and `ValueError`.
