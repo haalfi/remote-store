@@ -133,8 +133,8 @@ in `backlog-show` names `backlog-outline` rather than listing every ID.
 ### Staying correct
 
 - Parses on every call; no cache, no generated copy.
-- Item grammar is imported from `gen_backlogid.py` (`_HEADER_RE`, `_sections`,
-  `_SEP_RE`), trigger grammar from `check_ripple_parity.py` (`_blocks`,
+- Item grammar is imported from `gen_backlogid.py` (`_HEADER_RE`, `_sections`),
+  trigger grammar from `check_ripple_parity.py` (`_blocks`,
   `_parse_pre_work`, `_parse_detailed`). Both are gated in `lint` and
   `docs-gate`, so a shape change that breaks the parse fails there first.
 - Entries start at `^- \[.\] \*\*`, so the ID-less `- [x] **— …**` entries in
@@ -143,7 +143,8 @@ in `backlog-show` names `backlog-outline` rather than listing every ID.
 - A Detailed trigger's row extent is the tool's own boundary too:
   `_parse_detailed` returns only each trigger's first line, so the extent runs
   from it to the line before the next trigger, `####` heading or non-table line.
-- An unknown key exits 1 and lists the valid keys; never an empty success. For
+- An unknown key exits 1 and lists the valid keys, except in `backlog-show`
+  (see As built); never an empty success. For
   `ref-rows`, unknown means no trigger name in either presentation contains the
   text.
 - `tests/scripts/test_sdd_lookup.py`: fixtures, plus one test over the live
