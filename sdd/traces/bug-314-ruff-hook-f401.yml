@@ -16,6 +16,8 @@ expected_ripples:
 surprising_ripples:
   - tests/scripts/test_record_decision.py
   - tests/scripts/test_check_readthedocs_python.py
+decisions:
+  - sdd/decisions/6bc9ad86-a192-47cb-83c7-da806206f0e1.jsonl
 phases:
   - id: orient
     name: Orient
@@ -59,11 +61,12 @@ phases:
         section: "D4.0 binding rule"
         read_type: gate
         extract: >-
-          Read to fill the new `decisions` key. This session's dialogs, including
-          the three that approved this item, were recorded on the session's
-          earlier work branch, so D4.0 binds them there, not here. That log also
-          holds a private local-memory interview; by the maintainer's choice it
-          is not committed, so this trace lists no `decisions`.
+          Read to fill the new `decisions` key. The three dialogs that approved
+          this item were recorded on the session's earlier work branch, so D4.0
+          binds them there, not here; that log also holds a private local-memory
+          interview and, by the maintainer's choice, is not committed. The one
+          dialog later asked on this branch (how to close the PR) is in a fresh
+          log under the same session name, which this trace lists.
         outcome: ok
   - id: implement
     name: Implement
@@ -145,4 +148,19 @@ phases:
           change and the two sibling modules it also fixed, so the register
           answers why hook_bash exists. The PR body was stale for the same
           reason and was rewritten from the branch diff.
+        outcome: ok
+  - id: review_fix_3
+    name: Review round 3 note
+    steps:
+      - file: tests/scripts/test_ruff_format_hook.py
+        section: "module docstring, positive-control comment"
+        read_type: verify
+        extract: >-
+          Round 3 posted no findings but noted, below its confidence bar, that
+          my docstring's "tmp_path, outside the repo, so ruff runs its default
+          rule set" might be false. Measured: running the hook from the repo root
+          on a temp-dir file rewrote List[int] to list[int], UP006, which only the
+          repo's select enables, so ruff used the repo's pyproject.toml. Both
+          copies of the claim (docstring, comment) narrowed to that; the tests'
+          outcome does not change, since F is selected under either config.
         outcome: ok

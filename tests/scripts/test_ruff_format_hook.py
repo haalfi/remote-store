@@ -11,8 +11,11 @@ Rule 6): a stub could not tell which fixes ruff applies. ``bash`` comes from
 and ``ruff`` are looked up through that bash, since it is the one that must see
 them. All three are required, so a missing one fails rather than skips, because
 a skipped test reads as a pass (``sdd/TESTING.md`` § A green test can be vacuous). Files are written to
-``tmp_path``, outside the repo, so ruff runs its default rule set, which selects
-F401 and treats it as fixable, as the repo's own ``select`` does.
+``tmp_path``, which has no ruff config above it, so ruff falls back to the one it
+finds from the working directory: the repo's ``pyproject.toml`` when pytest runs
+from the root (measured: the hook applied the repo-only UP006 fix to such a
+file). Ruff's defaults and the repo's ``select`` both include F, so F401 and F541
+are selected and fixable whichever config applies.
 
 Not marked ``os_sensitive``: what is pinned is which fixes ruff applies, which
 does not vary by OS, and ``tooling-tests`` runs this module on every
@@ -64,7 +67,7 @@ def test_hook_keeps_an_import_whose_use_is_not_written_yet(tmp_path: Path) -> No
 def test_hook_still_formats_and_applies_other_fixes(tmp_path: Path) -> None:
     # Positive control: without it, a hook that silently stopped running ruff
     # would pass the test above. F541 (f-string without placeholders) is a safe
-    # fix in the default rule set; `x=` exercises the formatter.
+    # fix in the F family the module docstring covers; `x=` exercises the formatter.
     target = tmp_path / "other.py"
     target.write_text('import json\nx=f"plain"\n', encoding="utf-8")
 
