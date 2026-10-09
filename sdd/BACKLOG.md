@@ -252,12 +252,12 @@ failure it was.
   Detail: [dossier](backlog/bug-311-local-glob-denied-subtree.md)
 
 - [ ] **BUG-313 — `LocalBackend`'s `get_file_info` and path predicates misanswer a path they may not `stat`**
-  spec: BE-004, BE-005, BE-016, BE-021 · effort: M · audience: user.api
-  On a path whose parent lists but cannot be traversed, `get_file_info`,
-  `exists`, `is_file` and `is_folder` leak a raw `PermissionError` on 3.11 to
-  3.13; on 3.14 (POSIX) `get_file_info` answers `NotFound` and the predicates
-  `False`. `Store.get_folder_info` with a `max_depth` inherits it through
-  `is_folder`. Open decision: what a predicate BE-021 forbids from raising answers.
+  spec: BE-004, BE-005, BE-013, BE-016, BE-021 · effort: M · audience: user.api
+  On a path whose parent lists but cannot be traversed, `get_file_info` and the
+  predicates leak a raw `PermissionError` on 3.11 to 3.13; on 3.14 (POSIX) they
+  answer `NotFound` / `False`, and `delete_folder(missing_ok=True)` reports a
+  delete it never did. `Store.get_folder_info(max_depth=N)` inherits it. Open
+  decision: what a predicate BE-021 forbids from raising answers.
   Detail: [dossier](backlog/bug-313-local-get-file-info-denied-parent.md)
 
 - [ ] **BUG-299 — `LocalBackend.write` and `write_atomic` on a `..` key inside the root write the file, then raise `InvalidPath`**

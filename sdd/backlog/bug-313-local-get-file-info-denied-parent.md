@@ -76,23 +76,34 @@ Making the two forms agree means changing `Store`'s depth branch, so that it
 learns about a denial without asking a predicate. That reaches every backend,
 which is why it was kept out of BUG-280.
 
-The next ring is every other hit of the whole-class pattern above, outside the
-walks BUG-280 fixed and the predicates and `get_file_info` this item names:
+The next ring is every other hit of the whole-class pattern above. It excludes
+the walks BUG-280 fixed, the predicates and `get_file_info` this item names, and
+`glob`'s `item.is_file()`, which is BUG-311's. Each was measured with this
+item's script shape, extended to deny `open` and `unlink` inside the folder
+and to swap in `genericpath.exists`, on 3.11.15, 3.13.11 and 3.14.0, unless it
+is marked as read.
 
 - **`delete_folder`**: `if not full.exists()` and then `if not full.is_dir()`,
-  both outside its `except OSError`. Nothing after them maps the error, so on a
-  path whose parent cannot be traversed the pre-check *is* the leak: a raw
-  `PermissionError` on 3.11 to 3.13, `NotFound` on 3.14. This was read from the
-  code and not run.
+  both outside its `except OSError`, so nothing after them maps the error. On
+  3.11 to 3.13 both forms leak a raw `PermissionError`. On 3.14 the strict form
+  answers `NotFound`, and **`missing_ok=True` returns cleanly while the folder
+  is still on disk**: a delete reported done that never happened. The 3.14
+  cells were measured by BUG-280's sixth review round on 3.14.0. This is the
+  most urgent member of the ring.
+- **`check_health`**: `if not self._root.is_dir()` on a root whose parent cannot
+  be traversed leaks a raw `PermissionError` on 3.11 and 3.13 and answers
+  `NotFound` on 3.14, for a root that is there.
+- **`read` and `delete`**: their `is_dir()` sits inside the `except
+  PermissionError` arm, to choose `InvalidPath` or `PermissionDenied`, but on
+  3.11 to 3.13 that `is_dir()` itself re-raises `EACCES`. A raw
+  `PermissionError` then escapes the handler, as measured for both on 3.11 and
+  3.13. On 3.14 both answer `PermissionDenied`. **`read_bytes`** has the same
+  shape and is read only: the script's `open` patch does not reach its read.
 - **The writers**: `write`, `write_atomic` and `open_atomic`, at their `is_dir()`
-  and `overwrite`-guard `exists()`.
+  and `overwrite`-guard `exists()`. Read only.
 - **`move` and `copy`**: the source `exists()` / `is_dir()` and the destination
-  `is_dir()` / `exists()`.
+  `is_dir()` / `exists()`. Read only.
 
 For the writers and for `move` / `copy`, the operation after the pre-check maps
 a `PermissionError` itself, so a pre-check that answers wrongly may never be
 reached. Measure each before deciding.
-
-`read`, `read_bytes` and `delete` are not in this ring. Their `is_dir()` sits
-inside an `except PermissionError` arm and only chooses between `InvalidPath`
-and `PermissionDenied` there.

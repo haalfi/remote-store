@@ -397,6 +397,37 @@ def test_an_entry_gone_before_its_stat_is_skipped(tmp_path: Path, entry: str) ->
         assert _ENTRY_POINTS[entry](backend) == _WITH_F_GONE_BEFORE_STAT[entry]
 
 
+# What each entry point answers when ``a`` itself passes its ``stat`` and is
+# gone (or no longer a folder) by the time the scan opens it: nothing.
+_WITH_A_GONE_BEFORE_SCAN: dict[str, object] = {
+    "list_files": set(),
+    "list_files-recursive": set(),
+    "list_files-recursive-max_depth": set(),
+    "list_folders": set(),
+    "iter_children": set(),
+    "get_folder_info": 0,
+    "Store.get_folder_info": 0,
+    "Store.get_folder_info-max_depth": 0,
+}
+
+
+@pytest.mark.parametrize("gone", [FileNotFoundError, NotADirectoryError], ids=["removed", "replaced-by-a-file"])
+@pytest.mark.parametrize("entry", _traced(_WITH_A_GONE_BEFORE_SCAN))
+def test_a_folder_gone_between_its_stat_and_its_scan_is_an_absence(
+    tmp_path: Path, entry: str, gone: type[OSError]
+) -> None:
+    """The listed folder itself may vanish after it was classified, before it is opened.
+
+    The single-level scans and the walks must answer that race alike, as the
+    absent folder it now is (BE-014), not with the raw ``FileNotFoundError`` or
+    ``NotADirectoryError`` the scan meets.
+    """
+    backend = _tree(tmp_path)
+    errno_ = errno.ENOENT if gone is FileNotFoundError else errno.ENOTDIR
+    with _deny(tmp_path / "a", gone(errno_, os.strerror(errno_))):
+        assert _ENTRY_POINTS[entry](backend) == _WITH_A_GONE_BEFORE_SCAN[entry]
+
+
 @pytest.mark.parametrize(
     ("entry", "expected"),
     [

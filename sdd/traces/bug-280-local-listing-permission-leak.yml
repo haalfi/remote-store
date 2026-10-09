@@ -351,3 +351,40 @@ phases:
           which hid delete_folder, the one pre-check with nothing after it to
           map the error. Both corrected, the ring enumerated from the
           whole-class pattern
+  - id: fix_6
+    name: Fix pass (round 6, past the ceiling)
+    steps:
+      - file: src/remote_store/backends/_local.py
+        section: "_entries_or_absent; the three single-level scans"
+        read_type: verify
+        extract: >-
+          The unprimed member found a race older than this PR in the methods it
+          rewrote: a listed folder removed between its _stat_or_absent check and
+          iterdir() leaked a raw FileNotFoundError (or NotADirectoryError) from
+          the three single-level scans, while list_files' recursive branch read
+          the same race as absence through the walk's hook. A cell over all
+          eight entry points x {removed, replaced by a file} failed 6 of 16
+          before the fix, exactly the single-level scans. The scans now open the
+          folder through _entries_or_absent, scoped to the scan alone rather
+          than a method-wide except, which is safe because Path.iterdir lists
+          eagerly before it yields on 3.11 to 3.14. 22 mutants all die on 3.14
+        outcome: ok
+      - file: sdd/backlog/bug-313-local-get-file-info-denied-parent.md
+        section: "next ring"
+        read_type: verify
+        extract: >-
+          fix_5 rewrote the ring to be "every other hit" and it was not: the
+          whole-class pattern also hits check_health, and glob's is_file (now
+          named as BUG-311's). Its exclusion of read, read_bytes and delete
+          rested on a premise true only on 3.14: on 3.11 and 3.13 their
+          is_dir() inside the except PermissionError arm re-raises EACCES.
+          Measured with an extended script (open and unlink denied, exists
+          swapped): read and delete leak raw on 3.11 and 3.13 and map on 3.14,
+          check_health leaks raw on 3.11 and 3.13 and answers NotFound on 3.14;
+          read_bytes stays read only because the open patch does not reach it.
+          The measuring member's delete_folder(missing_ok=True) on 3.14,
+          returning cleanly with the folder still on disk, is now the ring's
+          lead entry and the index diagnosis names it. A list said to be
+          complete was wrong twice in two passes: the derivation behind it was
+          a pattern, and each pass trusted the pattern's hits as the subject
+        outcome: ok

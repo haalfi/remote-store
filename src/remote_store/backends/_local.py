@@ -63,6 +63,21 @@ def _stat_or_absent(path: Path) -> os.stat_result | None:
         return None
 
 
+def _entries_or_absent(folder: Path) -> list[Path]:
+    """List *folder*'s entries; none if it is gone or no longer a folder.
+
+    The single-level scans classify *folder* with ``_stat_or_absent`` before
+    opening it, so a folder removed (or replaced by a file) in between would
+    otherwise surface as a raw ``FileNotFoundError`` / ``NotADirectoryError``;
+    the recursive walks already read that race as absence through
+    ``_raise_if_denied``. A denial propagates for the caller to map.
+    """
+    try:
+        return list(folder.iterdir())
+    except (FileNotFoundError, NotADirectoryError):
+        return []
+
+
 class LocalBackend(Backend):
     """Local filesystem backend using only the Python standard library.
 
@@ -605,7 +620,7 @@ class LocalBackend(Backend):
                     if max_depth is not None and depth >= max_depth:
                         dirnames.clear()
             else:
-                for item in full.iterdir():
+                for item in _entries_or_absent(full):
                     st = _stat_or_absent(item)
                     if st is not None and S_ISREG(st.st_mode):
                         yield self._stat_to_fileinfo(self.to_key(str(item)), item, st)
@@ -626,7 +641,7 @@ class LocalBackend(Backend):
             top = _stat_or_absent(full)
             if top is None or not S_ISDIR(top.st_mode):
                 return
-            for item in full.iterdir():
+            for item in _entries_or_absent(full):
                 st = _stat_or_absent(item)
                 if st is not None and S_ISDIR(st.st_mode):
                     yield FolderEntry(path=RemotePath(self.to_key(str(item))), name=item.name)
@@ -650,7 +665,7 @@ class LocalBackend(Backend):
             top = _stat_or_absent(full)
             if top is None or not S_ISDIR(top.st_mode):
                 return
-            for item in full.iterdir():
+            for item in _entries_or_absent(full):
                 st = _stat_or_absent(item)
                 if st is None:
                     continue

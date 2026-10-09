@@ -331,7 +331,9 @@ if evidence changes; these are retired.
   lists but cannot be traversed lost its entries silently. Each path is now
   classified and measured by one `stat` whose denial propagates, which also
   closes the window in which a file removed after classification leaked a raw
-  `FileNotFoundError`. Fixed here rather than once across backends, which is
+  `FileNotFoundError`; a listed folder removed between its `stat` and its scan
+  now lists as empty on the single-level scans too, as the walks already did.
+  Fixed here rather than once across backends, which is
   RFC-0017's kernel; `glob`'s same silent drop is BUG-311. Tests:
   `tests/backends/local/test_listing_permission.py`.
   Upgrade note: `docs-src/reference/migration.md` § v0.33.0 to v0.33.1.
