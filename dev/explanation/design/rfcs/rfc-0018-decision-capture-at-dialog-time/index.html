@@ -11420,8 +11420,11 @@ step 0 ran on 2026-10-03 (§ Step 0 observations); D1, D3 and D4.0 are amended t
 what it observed. A failure-probe follow-up the same day amends D2, D3 and D4.2,
 D2 to an inference rather than an observation. On acceptance the maintainer
 omitted the <code>failed</code> path until it is observed (§ Open Questions 5), which
-amends the Summary, D1, D3 and D4. Built: step 1 and D2's commit and exclusion
-mechanics. Steps 2 and 3 are not.</p>
+amends the Summary, D1, D3 and D4. Built: steps 1 and 2 and D2's commit and
+exclusion mechanics. Step 3 is not. Step 2's review (2026-10-09) amends D2, by
+the maintainer's choice of remedy, to let a line that is not a record be
+deleted, and one of two differing answers to one dialog once the maintainer
+has picked the record.</p>
 <h2 id="summary">Summary<a class="headerlink" href="#summary" title="Permanent link">&para;</a></h2>
 <p>Decisions in this repository are mostly taken mid-work in <code>AskUserQuestion</code>
 dialogs (<a href="https://github.com/haalfi/remote-store/blob/master/CLAUDE.md#interview-mode"><code>CLAUDE.md</code> § Interview mode</a>). A
@@ -11524,7 +11527,12 @@ paths every payload carries (<code>cwd</code>, <code>transcript_path</code>, <co
 which a log committed to a public repository must not hold.</p>
 <h3 id="d2-storage-one-append-only-file-per-session-bound-to-work-when-read">D2. Storage: one append-only file per session, bound to work when read<a class="headerlink" href="#d2-storage-one-append-only-file-per-session-bound-to-work-when-read" title="Permanent link">&para;</a></h3>
 <p><code>sdd/decisions/&lt;session_id&gt;.jsonl</code>, one JSON object per line, appended and never
-rewritten. Committed with the work, so git supplies a timestamped history and
+rewritten, with two exceptions, each deleted in a commit of its own. A line
+which is not a record (one that does not decode or parse as one JSON object,
+or an identical copy left by a merge) may be deleted. And when one dialog carries two <code>answered</code> lines that
+differ, the maintainer picks the record and the commit deleting the other says
+which and why. The remedy per fault is stated with the trace key, in
+<code>sdd/traces/_schema.yml</code> <code>decisions</code>. Committed with the work, so git supplies a timestamped history and
 the PR diff shows the log beside the change it explains.</p>
 <ul>
 <li>
@@ -11737,7 +11745,8 @@ and the question is classified by the rows below it.</p>
   <code>.claude/hooks/gate-commit.sh</code>, which stages the log;
   <code>sdd/traces/_schema.yml</code>; <code>scripts/check_traces.py</code> and its tests;
   <code>.claude/skills/pr/SKILL.md</code>, both the tail commit and the
-  rendering; <code>.github/PULL_REQUEST_TEMPLATE.md</code>, which <code>/pr</code> treats as the
+  rendering; <code>.claude/skills/fix-pr/SKILL.md</code>, whose trace update lists
+  <code>decisions</code> among the fields a fix pass fills; <code>.github/PULL_REQUEST_TEMPLATE.md</code>, which <code>/pr</code> treats as the
   authoritative body shape, for the Decisions section;
   <code>.claude/skills/ship/SKILL.md</code> and
   <code>.claude/skills/orchestrate/SKILL.md</code>, whose tree-unchanged captures take
