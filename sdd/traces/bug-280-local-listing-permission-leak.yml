@@ -19,6 +19,8 @@ discovery_followups:
   # Born in the closing round's sibling sweep over .is_file()/.is_dir(); the
   # same 3.14 mechanism outside the walks this PR fixes.
   - BUG-313
+decisions:
+  - sdd/decisions/b5344dfd-891b-4dc2-853e-0437078390fd.jsonl
 phases:
   - id: orient
     name: Orient
