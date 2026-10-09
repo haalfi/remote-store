@@ -7,6 +7,8 @@ This project follows [Semantic Versioning](https://semver.org/). Pre-1.0, minor 
 
 ## [Unreleased]
 
+- BUG-280: `LocalBackend`'s three listing methods leak a raw `PermissionError`
+
 ## [0.33.0] - 2026-10-04
 
 ### Changed

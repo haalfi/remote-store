@@ -28,6 +28,18 @@ _ALL_CAPABILITIES = CapabilitySet(set(Capability) - {Capability.USER_METADATA})
 log = logging.getLogger(__name__)
 
 
+def _raise_if_denied(exc: OSError) -> None:
+    """``os.walk`` error hook: propagate a denial, tolerate anything else.
+
+    ``os.walk`` swallows every listing error by default, which turned a denied
+    subfolder into a silently short listing. A denial now reaches the caller
+    (mapped by ``list_files``); any other error keeps the default, so a
+    subfolder removed while the walk runs still reads as an absent one.
+    """
+    if isinstance(exc, PermissionError):
+        raise exc
+
+
 class LocalBackend(Backend):
     """Local filesystem backend using only the Python standard library.
 
@@ -546,45 +558,53 @@ class LocalBackend(Backend):
         non-folder *path* yields nothing (no error). With ``recursive`` and
         ``max_depth`` set, traversal is pruned at the depth bound during the
         ``os.walk`` rather than filtered afterwards.
+
+        Raises:
+            PermissionDenied: If the OS refuses to list *path* or, when
+                ``recursive``, any folder the walk descends into. A denied
+                subfolder raises rather than being skipped, so a listing that
+                completes is never missing a subtree it could not read.
         """
-        full = self._resolve(path)
-        if not full.is_dir():
-            return
-        if recursive and max_depth is not None:
-            for dirpath, dirnames, filenames in os.walk(full):
-                depth = len(Path(dirpath).relative_to(full).parts)
-                if depth > max_depth:
-                    dirnames.clear()
-                    continue
-                for fname in filenames:
-                    item = Path(dirpath) / fname
-                    rel = self.to_key(str(item))
-                    yield self._stat_to_fileinfo(rel, item)
-                if depth == max_depth:
-                    dirnames.clear()
-        elif recursive:
-            for item in full.rglob("*"):
-                if item.is_file():
-                    rel = self.to_key(str(item))
-                    yield self._stat_to_fileinfo(rel, item)
-        else:
-            for item in full.iterdir():
-                if item.is_file():
-                    rel = self.to_key(str(item))
-                    yield self._stat_to_fileinfo(rel, item)
+        try:
+            full = self._resolve(path)
+            if not full.is_dir():
+                return
+            if recursive:
+                for dirpath, dirnames, filenames in os.walk(full, onerror=_raise_if_denied):
+                    depth = len(Path(dirpath).relative_to(full).parts)
+                    for fname in filenames:
+                        item = Path(dirpath) / fname
+                        if item.is_file():
+                            rel = self.to_key(str(item))
+                            yield self._stat_to_fileinfo(rel, item)
+                    if max_depth is not None and depth >= max_depth:
+                        dirnames.clear()
+            else:
+                for item in full.iterdir():
+                    if item.is_file():
+                        rel = self.to_key(str(item))
+                        yield self._stat_to_fileinfo(rel, item)
+        except PermissionError:
+            raise PermissionDenied(f"Permission denied: {path}", path=path, backend=self.name) from None
 
     def list_folders(self, path: str) -> Iterator[FolderEntry]:
         """Yield immediate subfolders of *path* as ``FolderEntry`` records.
 
         Lazy single-level scan; a missing or non-folder *path* yields nothing.
+
+        Raises:
+            PermissionDenied: If the OS refuses to list *path*.
         """
-        full = self._resolve(path)
-        if not full.is_dir():
-            return
-        for item in full.iterdir():
-            if item.is_dir():
-                rel = self.to_key(str(item))
-                yield FolderEntry(path=RemotePath(rel), name=item.name)
+        try:
+            full = self._resolve(path)
+            if not full.is_dir():
+                return
+            for item in full.iterdir():
+                if item.is_dir():
+                    rel = self.to_key(str(item))
+                    yield FolderEntry(path=RemotePath(rel), name=item.name)
+        except PermissionError:
+            raise PermissionDenied(f"Permission denied: {path}", path=path, backend=self.name) from None
 
     def iter_children(self, path: str) -> Iterator[FileInfo | FolderEntry]:
         """Yield the immediate files and folders under *path* in one scan.
@@ -593,17 +613,23 @@ class LocalBackend(Backend):
         two passes) to walk the directory once, yielding ``FileInfo`` for files
         and ``FolderEntry`` for folders. A missing or non-folder *path* yields
         nothing.
+
+        Raises:
+            PermissionDenied: If the OS refuses to list *path*.
         """
-        full = self._resolve(path)
-        if not full.is_dir():
-            return
-        for item in full.iterdir():
-            if item.is_file():
-                rel = self.to_key(str(item))
-                yield self._stat_to_fileinfo(rel, item)
-            elif item.is_dir():
-                rel = self.to_key(str(item))
-                yield FolderEntry(path=RemotePath(rel), name=item.name)
+        try:
+            full = self._resolve(path)
+            if not full.is_dir():
+                return
+            for item in full.iterdir():
+                if item.is_file():
+                    rel = self.to_key(str(item))
+                    yield self._stat_to_fileinfo(rel, item)
+                elif item.is_dir():
+                    rel = self.to_key(str(item))
+                    yield FolderEntry(path=RemotePath(rel), name=item.name)
+        except PermissionError:
+            raise PermissionDenied(f"Permission denied: {path}", path=path, backend=self.name) from None
 
     def get_file_info(self, path: str) -> FileInfo:
         """Return metadata for the file at *path* from a single ``stat``.

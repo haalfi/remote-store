@@ -1,0 +1,167 @@
+id: BUG-280
+title: "LocalBackend's listing methods leak a raw PermissionError"
+trigger: |
+  Filed by BUG-275's closing measuring member: list_files, list_folders and
+  iter_children on LocalBackend let a raw PermissionError from iterdir escape,
+  breaching BE-021's never-leak invariant, while every other LocalBackend path
+  maps it. Measured before planning, the recursive list_files branches were
+  found to answer the same denial differently again: they drop the denied
+  subtree silently.
+source_items:
+  - BUG-280
+audience:
+  - user.api
+  - user.api_docs
+discovery_followups:
+  # Same silent drop, reached through Path.glob rather than rglob; left out of
+  # scope by decision at framing, not by oversight.
+  - BUG-311
+surprising_ripples:
+  # The ripple-check names no row for a migration section on a bug fix that is
+  # not marked Breaking; the Breaking-change row's "a fix that breaks an except
+  # clause without earning the marker owes the section alone" is what reaches
+  # it, and BUG-249's v0.31.0 section is the precedent.
+  - docs-src/reference/migration.md
+phases:
+  - id: orient
+    name: Orient
+    steps:
+      - file: sdd/BACKLOG.md
+        section: "(item) BUG-280"
+        read_type: gate
+        extract: "Three methods, BE-021, and the open decision: fix here or the listing-generator pattern once across backends"
+      - file: sdd/backlog/bug-280-local-listing-permission-leak.md
+        section: "(full)"
+        read_type: gate
+        extract: >-
+          The reproduction (patch Path.iterdir to raise PermissionError(13)) and
+          the BUG-249 / SFTP BUG-146 twins. The table measures the
+          non-recursive call only, so it says nothing about list_files'
+          recursive=True branches
+      - file: sdd/specs/003-backend-adapter-contract.md
+        section: "BE-014, BE-015, BE-021"
+        read_type: gate
+        extract: >-
+          The canonical table's ACL row (PermissionDenied) governs a denied
+          listing; BE-014/015's missing-path clause covers absence only, so an
+          empty answer for a denied folder has no clause to stand on
+      - file: sdd/rfcs/rfc-0017-contract-kernel-over-thin-drivers.md
+        section: "Motivation"
+        read_type: reference
+        extract: >-
+          Cites BUG-280 as an instance of "the fix lands per method, so it is
+          missed per method". The cross-backend remedy the item's open decision
+          names is this RFC's kernel, so it is not this item's to build
+      - file: src/remote_store/backends/_sftp.py
+        section: "list_files / list_folders / iter_children"
+        read_type: reference
+        extract: >-
+          The twin: the whole generator body runs inside one try that maps
+          through _map_exception, and the recursive walk raises PermissionDenied
+          on a denied subfolder rather than skipping it
+      - file: sdd/CLAUDE-REFERENCE.md
+        section: "Pre-work index"
+        read_type: gate
+        extract: "Triggered rows: Spec section, Public method signature (Raises: docstrings), Bug fix, Backlog item touched, CHANGELOG entry"
+  - id: reproduce
+    name: Reproduce
+    steps:
+      - file: src/remote_store/backends/_local.py
+        section: "list_files / list_folders / iter_children"
+        read_type: verify
+        extract: >-
+          Measured on 3.13.11 with a script under tmp/: the three non-recursive
+          calls raise builtins.PermissionError with no path. With os.scandir
+          denied on a subfolder, list_files(recursive=True, max_depth=5) returns
+          the parent's file only (os.walk's onerror=None swallows), and
+          list_files(recursive=True) goes through rglob, whose 3.13 selector
+          wraps scandir in `except OSError: pass`. So a denied subtree is
+          dropped silently and a denied top folder lists as empty
+        outcome: ok
+      - file: sdd/backlog/bug-280-local-listing-permission-leak.md
+        section: "reproduction table"
+        read_type: reference
+        extract: >-
+          The table measured each method once, with recursive left at its
+          default, so the dossier reported three unguarded methods where the
+          defect also sat in two branches of the first. An item's measurement
+          is evidence of where the symptom was seen, not of where the subject
+          ends
+        outcome: misleading
+  - id: design
+    name: Design
+    steps:
+      - file: docs-src/reference/migration.md
+        section: "v0.30.0 to v0.31.0 (S3Boto3 listing ClientError)"
+        read_type: reference
+        extract: >-
+          BUG-249's precedent: an exception type changing under an except clause
+          earned a migration paragraph without the Breaking marker. This fix
+          owes the same, plus the recursive behaviour change
+      - file: CONTRIBUTING.md
+        section: "When to bump"
+        read_type: gate
+        extract: "A bug fix is a patch, so the section is v0.33.0 to v0.33.1"
+  - id: tests
+    name: Failing test first
+    steps:
+      - file: tests/backends/local/test_listing_permission.py
+        section: "(new)"
+        read_type: verify
+        extract: >-
+          Entry point x denied site, injected at os.scandir and os.listdir.
+          Before the fix, 7 target cells failed (5 with the listed folder
+          denied, 2 recursive with a subfolder denied). The unbounded
+          vanishing-subfolder control also failed, for an instrument reason:
+          3.13's glob._StringGlobber binds os.scandir at class creation, so the
+          patch never reached rglob. That stops mattering once the branch walks
+          with os.walk
+        outcome: ok
+  - id: implement
+    name: Implement
+    steps:
+      - file: src/remote_store/backends/_local.py
+        section: "list_files / list_folders / iter_children, _raise_if_denied"
+        read_type: verify
+        extract: >-
+          Each generator wraps its whole body in except PermissionError ->
+          PermissionDenied(from None), which also catches 3.11/3.12's
+          is_file/is_dir re-raising EACCES. The two recursive branches became
+          one os.walk with an error hook that re-raises a denial and tolerates
+          the rest. That keeps a subfolder vanishing mid-walk an absence and
+          adds the is_file filter the old max_depth branch lacked. Seven
+          mutants run by tmp/bug280/mutate.py all die. The is_file-filter
+          mutant needed a portable cell (a name handed out by the walk but not
+          on disk): the broken-symlink cell is POSIX-only, and a broken junction
+          on Windows lands in dirnames, so neither could reach the filter on
+          this machine
+        outcome: ok
+  - id: verify
+    name: Verify
+    steps:
+      - file: tests/backends/local/test_listing_permission.py
+        section: "(full)"
+        read_type: verify
+        extract: >-
+          14 passed, 4 skipped on each of 3.11, 3.12, 3.13 and 3.14 (uv
+          isolated envs with the package editable). The 4 skips are the POSIX
+          symlink and chmod cells, which CI's Linux lanes run
+        outcome: ok
+      - file: sdd/backlog/bug-311-local-glob-denied-subtree.md
+        section: "Evidence"
+        read_type: verify
+        extract: >-
+          The per-interpreter claims about Path.glob were first written from
+          memory, then checked against the installed 3.11, 3.12 and 3.14
+          standard libraries before being kept
+      - file: sdd/BACKLOG.md
+        section: "Assigning a new ID"
+        read_type: gate
+        extract: >-
+          The local --check offered BUG-310 as safe, and the follow-up was
+          minted from it. Before the push, --check --remote reported BUG-310
+          already minted on a pushed branch (bug-azure-range-reader-closed),
+          so it was re-minted as BUG-311 before anything left this machine.
+          The rule says a lone session may use the local value, and that was
+          true when this session started; a parallel session pushed in between
+        outcome: ok

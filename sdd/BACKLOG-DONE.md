@@ -315,6 +315,19 @@ if evidence changes; these are retired.
   through `git`; `tests/scripts/test_hook_bash.py` pins it. Trace:
   [bug-314](traces/bug-314-ruff-hook-f401.yml).
 
+- [x] **BUG-280 — `LocalBackend`'s three listing methods leak a raw `PermissionError`**
+  spec: BE-021 · effort: S · audience: user.api
+  `list_files`, `list_folders` and `iter_children` now raise `PermissionDenied`
+  naming the requested key. Each wraps its whole generator body, the shape the
+  SFTP twin uses. Both recursive `list_files` branches had a second defect: a
+  denied subtree was dropped silently. They are now one `os.walk` whose error hook
+  re-raises a denial and tolerates anything else. Fixed here rather than once
+  across backends, which is RFC-0017's kernel; `glob`'s same silent drop is
+  BUG-311. Tests: `tests/backends/local/test_listing_permission.py`.
+  Upgrade note: `docs-src/reference/migration.md` § v0.33.0 to v0.33.1.
+  Trace: [bug-280](traces/bug-280-local-listing-permission-leak.yml).
+  Detail: [dossier](backlog/bug-280-local-listing-permission-leak.md).
+
 - [x] **BUG-309 — `report-token-usage` drops every id-less response after the first, and `python -OO` crashes it**
   spec: — · effort: S · audience: contributor.tooling
   Pyright flagged both (`reportArgumentType`, `reportOptionalMemberAccess`).
