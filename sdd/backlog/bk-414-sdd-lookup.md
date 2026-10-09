@@ -106,8 +106,9 @@ reading, the one lever the tool has on the misleading tags above.
   `_SEP_RE`), trigger grammar from `check_ripple_parity.py` (`_blocks`,
   `_parse_pre_work`, `_parse_detailed`). Both are gated in `lint` and
   `docs-gate`, so a shape change that breaks the parse fails there first.
-- One boundary is the tool's own: an entry starts at `^- \[.\] \*\*`, or the
-  ID-less `**—` entries in § Decided against fold into the entry above.
+- Entries start at `^- \[.\] \*\*`, so the ID-less `- [x] **— …**` entries in
+  § Decided against stand alone. `_HEADER_RE` needs an ID and would fold them
+  into the entry above, so this one boundary is the tool's own, not imported.
 - An unknown key exits 1 and lists the valid keys; never an empty success.
 - `tests/scripts/test_sdd_lookup.py`: fixtures, plus one test over the live
   files that every open ID, every anchor and every Pre-work trigger resolves.
