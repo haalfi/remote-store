@@ -142,6 +142,16 @@ phases:
           line naming BE-021, and TestFindSpec.test_spec_searches_open_items_only
           fails (BK-011 returned) when --spec is allowed to read done entries.
         outcome: ok
+      - file: CLAUDE.md
+        section: "Backlog (mandatory), the new lookup bullet"
+        read_type: verify
+        extract: >-
+          Maintainer comment: the new bullet matched its neighbours in neither
+          style nor detail. They are plain sentences saying where a thing lives
+          and linking its authority; mine was bold and listed flags. It is now
+          four plain lines naming the commands and linking the script's
+          docstring for the rest.
+        outcome: ok
 review:
   # Derived by `hatch run ship-report 1099 --trace-block-only` at head 4ce322b.
   # Do not hand-edit, except a newly required field per sdd/traces/_schema.yml

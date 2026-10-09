@@ -47,13 +47,10 @@ the failing test, run it, see it fail** before implementing the fix.
   [§ How this file works](sdd/BACKLOG.md#how-this-file-works). Why:
   [ADR-0040](sdd/adrs/0040-backlog-as-index.md), and for the done register
   [ADR-0041](sdd/adrs/0041-done-register-links-dossiers.md).
-- **Look up one key with `scripts/sdd_lookup.py`, not Grep and a sliced Read.**
-  `hatch run backlog-show <ID> [--dossier]` prints an item or done entry;
-  `backlog-find <regex>` and `backlog-find --spec <ID>` list matching items one
-  line each; `ref-show <anchor>` prints a `sdd/CLAUDE-REFERENCE.md` section and
-  `ref-rows <trigger>` its ripple rows. Grep and Read stay for edits, for a
-  step that reads a whole file, and in a skill that limits its own Bash use
-  (`/rvw-pr`). Commands and bounds: the script's docstring.
+- One item, entry or `CLAUDE-REFERENCE.md` section is looked up by key with
+  `hatch run backlog-show`, `backlog-find`, `ref-show` or `ref-rows`, not by
+  Grep and a sliced Read; edits, whole-file reads and `/rvw-pr` keep those.
+  Commands and bounds: [`scripts/sdd_lookup.py`](scripts/sdd_lookup.py).
 - Commit messages start with item ID when applicable (e.g., `AF-008: Add credential masking`).
 
 <a id="trace-authoring"></a>
