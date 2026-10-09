@@ -36,15 +36,17 @@ from typing import Any
 
 import pytest
 
+from tests._helpers import hook_bash
+
 ROOT = Path(__file__).resolve().parents[2]
 SCRIPTS = ROOT / "scripts"
 WRAPPER = ROOT / ".claude" / "hooks" / "record-decision.sh"
 GATE_COMMIT = ROOT / ".claude" / "hooks" / "gate-commit.sh"
 
-# Resolved through PATH, not left to the OS: on Windows, CreateProcess searches
-# System32 before PATH and a bare "bash" runs WSL's launcher instead of the Git
-# Bash that Claude Code runs hooks with.
-BASH = shutil.which("bash") or "bash"
+# Not a bare "bash" and not plain PATH order: on Windows both can reach WSL's
+# launcher in System32 instead of the Git Bash Claude Code runs hooks with
+# (tests._helpers.hook_bash).
+BASH = hook_bash() or "bash"
 
 SESSION = "8f551ca6-684d-5d72-b7c0-d6da1ce729ee"  # step 0's session_id, observation 4
 

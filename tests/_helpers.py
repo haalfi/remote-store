@@ -6,7 +6,10 @@ import asyncio
 import asyncio.base_events
 import gc
 import io
+import shutil
+import sys
 import weakref
+from pathlib import Path
 from typing import TYPE_CHECKING
 
 # Re-export from infra._settings so MinIO credentials change in exactly
@@ -25,6 +28,7 @@ __all__ = [
     "PEEL_STOPPED_ON_WRAPPER",
     "FailingContentReader",
     "close_all_abandoned_event_loops",
+    "hook_bash",
     "install_event_loop_tracker",
     "peel_to_body",
     "pyarrow_ge_24",
@@ -183,6 +187,39 @@ class FailingContentReader(io.RawIOBase):
     def buffered(cls, fill: int) -> io.BufferedReader:
         """Return a ``BufferedReader`` wrapping a ``FailingContentReader``."""
         return io.BufferedReader(cls(fill))
+
+
+def _is_wsl_launcher(path: str) -> bool:
+    parent = Path(path).parent.name.lower()
+    return parent == "system32" or "windowsapps" in path.lower()
+
+
+def hook_bash() -> str | None:
+    """Return a bash that runs repo shell scripts as Claude Code does, or ``None``.
+
+    On POSIX this is the ``bash`` on ``PATH``. On Windows, ``PATH`` order alone
+    is not enough: the system ``PATH`` puts ``System32`` first, where WSL's
+    ``bash.exe`` launcher lives, and Git for Windows' default ``cmd`` entry holds
+    no ``bash.exe``. So from a plain PowerShell or cmd shell, ``shutil.which``
+    returns WSL's launcher, which cannot resolve a ``K:/...`` script path and
+    exits non-zero. That launcher (``System32`` or ``WindowsApps``) is rejected,
+    and Git Bash is found from ``git``'s install root instead, preferring
+    ``usr/bin/bash.exe`` (what Claude Code resolves) over the ``bin`` launcher.
+    """
+    found = shutil.which("bash")
+    if sys.platform != "win32":
+        return found
+    if found and not _is_wsl_launcher(found):
+        return found
+    git = shutil.which("git")
+    if git is None:
+        return None
+    for root in Path(git).resolve().parents:
+        for rel in ("usr/bin/bash.exe", "bin/bash.exe"):
+            candidate = root / rel
+            if candidate.is_file():
+                return str(candidate)
+    return None
 
 
 def pyarrow_ge_24() -> bool:

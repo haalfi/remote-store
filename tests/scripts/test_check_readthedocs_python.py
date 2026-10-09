@@ -4,13 +4,14 @@ from __future__ import annotations
 
 import importlib.util
 import os
-import shutil
 import subprocess
 import sys
 from pathlib import Path
 
 import pytest
 import yaml
+
+from tests._helpers import hook_bash
 
 _ROOT = Path(__file__).resolve().parents[2]
 _SCRIPT = _ROOT / "scripts" / "check_readthedocs_python.py"
@@ -57,7 +58,7 @@ def test_post_build_scripts_exist_and_parse():
     RTD has no way to surface a syntax error in a build script except by failing
     the build, so validate it here where a break is a cheap red test instead.
     """
-    bash = shutil.which("bash")
+    bash = hook_bash()
     for cmd in _post_build_commands():
         parts = cmd.split()
         if len(parts) >= 2 and parts[0] == "bash":
@@ -86,7 +87,7 @@ def _run_gen_script(bash: str, env: dict[str, str]) -> subprocess.CompletedProce
 def _gen_script_bash_or_skip() -> str:
     if not _GEN_SCRIPT.is_file():
         pytest.skip("gen_llms_api.sh absent")
-    bash = shutil.which("bash")
+    bash = hook_bash()
     if bash is None:
         pytest.skip("bash unavailable; cannot run the script")
     return bash
