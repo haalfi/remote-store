@@ -117,6 +117,14 @@ class TestParse:
         )
         assert rtu.parse([line], "s").results == {"?": [2, 0]}
 
+    def test_responses_without_id_each_count(self):
+        # The id dedupes records of one response; with no id there is nothing to
+        # dedupe on, so a second id-less response must not be dropped as a repeat.
+        lines = [json.dumps({"message": {"usage": _usage(inp=5)}}), json.dumps({"message": {"usage": _usage(inp=7)}})]
+        s = rtu.parse(lines, "s")
+        assert s.calls == 2
+        assert s.tokens["input"] == 12
+
     def test_bad_lines_are_counted_not_fatal(self):
         s = rtu.parse(["{not json", *_session()], "s")
         assert s.bad_lines == 1
@@ -301,6 +309,14 @@ class TestMain:
         assert message in capsys.readouterr().err
 
     def test_help_exits_0(self, capsys):
+        with pytest.raises(SystemExit) as exc:
+            rtu.main(["--help"])
+        assert exc.value.code == 0
+        assert "--repo-root" in capsys.readouterr().out
+
+    def test_help_without_docstring_exits_0(self, capsys, monkeypatch):
+        # `python -OO` strips docstrings; the parser description must not need one.
+        monkeypatch.setattr(rtu, "__doc__", None)
         with pytest.raises(SystemExit) as exc:
             rtu.main(["--help"])
         assert exc.value.code == 0

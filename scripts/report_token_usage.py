@@ -171,9 +171,12 @@ def parse(lines: list[str], name: str) -> Session:
         if not isinstance(msg, dict):
             continue
         usage = msg.get("usage")
-        # One API response is split over several records sharing its id.
-        if isinstance(usage, dict) and msg.get("id") not in seen:
-            seen.add(msg.get("id"))
+        mid = msg.get("id")
+        # One API response is split over several records sharing its id; a
+        # record without one has nothing to dedupe on and counts as its own call.
+        if isinstance(usage, dict) and (not isinstance(mid, str) or mid not in seen):
+            if isinstance(mid, str):
+                seen.add(mid)
             if s.calls == 0:
                 s.prefix = sum(
                     usage.get(k, 0) for k in ("input_tokens", "cache_creation_input_tokens", "cache_read_input_tokens")
@@ -291,7 +294,8 @@ def _print_trace_reads(traces: Path, repo: Path, top: int) -> None:
 
 
 def main(argv: list[str] | None = None) -> int:
-    parser = argparse.ArgumentParser(description=__doc__.splitlines()[0])
+    # `python -OO` strips docstrings, leaving `__doc__` None.
+    parser = argparse.ArgumentParser(description=(__doc__ or "Token usage report.").splitlines()[0])
     parser.add_argument(
         "transcripts",
         nargs="?",
