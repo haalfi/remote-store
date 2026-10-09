@@ -1,0 +1,87 @@
+id: BUG-314
+title: "The Edit/Write ruff hook deletes an import added before its use, so the next edit raises `NameError`"
+trigger: >-
+  A Claude Code session lost three imports in one session (json, io, Hashable in
+  scripts/check_traces.py), each added one edit before its use, despite an
+  agent-side note warning about exactly this; the maintainer asked for the cause
+  to be fixed in the hook rather than tallied again.
+source_items:
+  - BUG-314
+audience:
+  - contributor.tooling
+discovery_followups: []
+expected_ripples:
+  - .claude/hooks/ruff-format.sh
+  - tests/scripts/test_ruff_format_hook.py
+  - sdd/BACKLOG-DONE.md
+  - sdd/backlogid.json
+surprising_ripples: []
+phases:
+  - id: orient
+    name: Orient
+    steps:
+      - file: .claude/hooks/ruff-format.sh
+        section: "whole file (PostToolUse on Edit/Write)"
+        read_type: reference
+        extract: >-
+          Runs `ruff format` then `ruff check --fix` on the edited .py file.
+          `--fix` applies F401 (unused import) as soon as an import has no use,
+          which is always true for an import added one edit before its call site.
+        outcome: ok
+      - file: pyproject.toml
+        section: "[tool.hatch.envs.default.scripts] lint; [tool.ruff.lint] select"
+        read_type: gate
+        extract: >-
+          `lint` runs "ruff check src/ tests/ examples/ scripts/" without --fix,
+          and select includes F, so an import that stays unused still fails lint
+          once F401 is unfixable in the hook. `ruff check --help` lists
+          `--unfixable <RULE_CODE>`, applicable when fix is enabled.
+        outcome: ok
+      - file: .github/workflows/ci.yml
+        section: "setup HOOKS_PAT; tooling-tests job"
+        read_type: gate
+        extract: >-
+          A .claude/hooks/-only diff sets hooks=true, which runs tooling-tests:
+          `pytest tests/scripts/ -q` on ubuntu with bash and jq and the [dev]
+          extra (ruff). A new tests/scripts/ module is therefore gated by the
+          same trigger as the hook it pins.
+        outcome: ok
+      - file: sdd/BACKLOG.md
+        section: "How this file works: Completing work, Assigning a new ID"
+        read_type: gate
+        extract: >-
+          A parallel session was active, so the ID was reserved by the
+          maintainer: BUG-314, the next free across pushed branches per
+          `hatch run gen-backlogid --check --remote`. Filed and fixed in one PR,
+          so the entry goes straight to BACKLOG-DONE.md as [x].
+        outcome: ok
+      - file: sdd/rfcs/rfc-0018-decision-capture-at-dialog-time.md
+        section: "D4.0 binding rule"
+        read_type: gate
+        extract: >-
+          Read to fill the new `decisions` key. This session's dialogs, including
+          the three that approved this item, were recorded on the session's
+          earlier work branch, so D4.0 binds them there, not here. That log also
+          holds a private local-memory interview; by the maintainer's choice it
+          is not committed, so this trace lists no `decisions`.
+        outcome: ok
+  - id: implement
+    name: Implement
+    steps:
+      - file: tests/scripts/test_ruff_format_hook.py
+        section: "test_hook_keeps_an_import_whose_use_is_not_written_yet, test_hook_still_formats_and_applies_other_fixes"
+        read_type: verify
+        extract: >-
+          Runs the real hook with real bash, jq and ruff; a missing tool fails
+          rather than skips. Written first and run before the fix: both failed
+          with the import removed ('' == 'import json\n'), while the positive
+          control's output showed the formatter and the F541 fix had run.
+        outcome: ok
+      - file: .claude/hooks/ruff-format.sh
+        section: "ruff check line"
+        read_type: verify
+        extract: >-
+          Now `ruff check --fix --unfixable F401`; both tests pass. Probed by
+          hand that the F811 sweep of a redundant function-local re-import still
+          applies (ruff reported "1 fixed" and removed the local import).
+        outcome: ok

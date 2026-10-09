@@ -277,6 +277,18 @@ if evidence changes; these are retired.
 
 ## Unreleased
 
+- [x] **BUG-314 — The Edit/Write ruff hook deletes an import added before its use, so the next edit raises `NameError`**
+  spec: — · effort: S · audience: contributor.tooling
+  `.claude/hooks/ruff-format.sh` ran `ruff check --fix` after every Edit and Write,
+  and ruff's F401 autofix removed an import that had no use yet, so adding the
+  import before its call site lost it silently; it recurred across sessions, three
+  times in one session on `check_traces.py`. The hook now passes `--unfixable F401`.
+  `lint` runs `ruff check` without `--fix`, so an import that stays unused still
+  fails it, and the hook's F811 sweep of redundant local re-imports still applies.
+  `tests/scripts/test_ruff_format_hook.py` runs the real hook: a regression test,
+  seen failing first, and a positive control. Trace:
+  [bug-314](traces/bug-314-ruff-hook-f401.yml).
+
 - [x] **BUG-309 — `report-token-usage` drops every id-less response after the first, and `python -OO` crashes it**
   spec: — · effort: S · audience: contributor.tooling
   Pyright flagged both (`reportArgumentType`, `reportOptionalMemberAccess`).
