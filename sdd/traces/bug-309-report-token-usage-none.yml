@@ -1,0 +1,100 @@
+id: BUG-309
+title: "`report-token-usage` drops every id-less response after the first, and `python -OO` crashes it"
+trigger: >-
+  The Pyright plugin, newly attached to a Claude Code session analysing token
+  spend with this script, reported two type errors in
+  scripts/report_token_usage.py (lines 176 and 294).
+source_items:
+  - BUG-309
+  - BK-412
+audience:
+  - contributor.tooling
+discovery_followups: []
+expected_ripples:
+  - sdd/BACKLOG-DONE.md
+  - sdd/backlogid.json
+surprising_ripples: []
+phases:
+  - id: orient
+    name: Orient
+    steps:
+      - file: scripts/report_token_usage.py
+        section: "parse (dedupe on message.id), main (ArgumentParser description)"
+        read_type: reference
+        extract: >-
+          Line 176 `seen.add(msg.get("id"))`: a record with usage and no id
+          stores None, so every later id-less record tests `None in seen` and is
+          skipped; only the first counts. Line 294 `__doc__.splitlines()`:
+          `python -OO` strips docstrings, so `__doc__` is None and main raises
+          AttributeError before parsing arguments. Both are latent: real
+          Claude Code transcripts carry message.id, and the hatch script does
+          not pass -OO.
+        outcome: ok
+      - file: sdd/BACKLOG.md
+        section: "How this file works: Completing work, Assigning a new ID"
+        read_type: gate
+        extract: >-
+          Done entry goes to BACKLOG-DONE.md as `[x]` in the header shape;
+          `gen_backlogid.py --check --remote` gave BUG=309 free on this tree and
+          on every pushed branch.
+        outcome: ok
+  - id: implement
+    name: Implement
+    steps:
+      - file: tests/scripts/test_report_token_usage.py
+        section: "test_responses_without_id_each_count, test_help_without_docstring_exits_0"
+        read_type: verify
+        extract: >-
+          Written first and run before the fix: the first failed with
+          `calls == 1` for two id-less responses, the second with
+          `AttributeError: 'NoneType' object has no attribute 'splitlines'`
+          after monkeypatching the module's `__doc__` to None.
+        outcome: ok
+      - file: scripts/report_token_usage.py
+        section: "parse, main"
+        read_type: verify
+        extract: >-
+          parse dedupes only string ids and counts an id-less record as its own
+          call; main uses `(__doc__ or "Token usage report.")`. The test file
+          passes (38), and `npx pyright@1.1.390` on the script reports 0 errors.
+        outcome: ok
+      - file: sdd/DRIFT-RULES.md
+        section: "Rule 7 (miss-rate), raised by review round 1"
+        read_type: gate
+        extract: >-
+          The fix trades a silent undercount for a possible silent overcount: a
+          response split over records without a string id counts once per
+          record. Stated as a bound in the module docstring's "does NOT catch"
+          section; the parse comment now says "missing or not a string" to match
+          the isinstance guard, and the id-less test gained an int-id case.
+          Mutation: guarding with `mid is None` instead made the not-a-string
+          case fail on `assert s.calls == 2` (got 1).
+        outcome: ok
+review:
+  # Derived by `hatch run ship-report 1090 --trace-block-only` at head f28912a.
+  # Do not hand-edit, except a newly required field per sdd/traces/_schema.yml
+  # section review: RFC-0015 D4 makes this script the only producer.
+  derivation: "hatch run ship-report 1090 --trace-block-only"
+  pr: 1090
+  review_rounds: 1
+  submissions: 1
+  findings: 1
+  by_round:
+    - round: 1
+      findings: 1
+      origin: {original: 1}
+      triage: {must-fix: 1}
+      duration_hours: 0.05
+  by_file:
+    - path: "scripts/report_token_usage.py"
+      findings: 1
+  untouched_files:
+    - "sdd/BACKLOG-DONE.md"
+    - "sdd/backlogid.json"
+    - "sdd/decisions/77fda9f0-9695-4ba4-8c8e-e31c39085fc5.jsonl"
+    - "sdd/traces/bug-309-report-token-usage-none.yml"
+    - "tests/scripts/test_report_token_usage.py"
+  review_driven_commits:
+    - sha: "f28912a"
+      subject: "fix: address PR #1090 review"
+  ci: {verdict: GREEN, failed: 0, pending: 0}
