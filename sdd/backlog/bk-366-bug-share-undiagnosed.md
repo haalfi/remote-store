@@ -66,3 +66,19 @@ before `/ship`, but August falls back. Derivation:
 This replaces an earlier scratch series that read the high-water mark in
 `sdd/backlogid.json`, which counts neither closures nor filings
 ([report § Corrections](../research/token-usage/report.md#corrections-to-the-scratch-analysis)).
+
+## Escape rate by era, 2026-10-09
+
+**One more column for the escaped/caught classification:** whether each `BUG-`'s
+origin PR predates 2026-08-05, the day `/ship` landed (ID-243, ADR-0033). The 363
+PRs merged from May to July had medians of 3 review threads and 3 commits; the 138
+merged from 2026-08-05 had 11 and 6.5, and the median of review rounds per trace
+rose from 1 or 2 to 5 or 6. The escape rate per era is the figure that says whether
+that extra review buys fewer escapes. Derivation: era medians from
+[`ship_era.py`](../research/token-usage/ship_era.py), result `eras` in
+[`results/ship_era.json`](../research/token-usage/results/ship_era.json), over PR
+data fetched by [`prs.py`](../research/token-usage/prs.py); rounds per trace from
+[`trace_corpus.py`](../research/token-usage/trace_corpus.py), result
+`monthly.review_rounds_median` in
+[`results/trace_corpus.json`](../research/token-usage/results/trace_corpus.json)
+(May 1, June and July 2, August and September 6, October 5).

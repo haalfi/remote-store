@@ -867,6 +867,14 @@ CHANGELOG the release body is built from — say what is actually true.
   `bk-403-testmon-poc/srcreads.py`). A selector built on the comment would
   drop the directory. Open decision: none.
 
+- [ ] **BK-417 — `report-token-usage` undercounts tool results about 1.7 times and leaves out the prefix and hidden thinking**
+  spec: — · effort: S · audience: contributor.tooling
+  A regression of context growth over 3,667 consecutive-call pairs (R² 0.91) puts
+  tool results at about 2.4 characters per token, where the script assumes 4, and
+  keeps hidden thinking in context at about 0.95 tokens per output token. Its carried
+  ranking omits the session prefix and thinking, about a third of re-read context.
+  Open decision: none; the derivation lands in BK-418's token-usage research record.
+
 ---
 
 <a id="gate-cost"></a>
@@ -917,6 +925,14 @@ coverage floor.
   blocked on BK-403; then the name, the R3 / BK-271 argument and which skills
   run it (RFC-0019 Open Questions 4, keeps this item open).
   Detail: [dossier](backlog/bk-404-selected-tests-hatch-target.md)
+
+- [ ] **BUG-315 — A local gate that overlaps another full suite on the machine hangs, and nothing bounds the wait**
+  spec: — · effort: M · audience: contributor.tooling, infra.test
+  In the surviving transcripts, 20 completed `hatch run all` runs took 188–212 s. A 2,364 s
+  hang (2026-10-04) and 600 s cut-offs at 09:53 and 12:22 (2026-10-09) each overlapped
+  another full suite on the machine; a third cut-off (13:07) is unchecked. A hung xdist worker
+  has no per-test timeout and a backgrounded gate no deadline, so one `/ship` run idled 37 min.
+  Open decision: lock, timeout, deadline, or all three; reproducing the overlap is pending.
 
 - [ ] **ID-266 — Every in-progress PR push runs the full pre-merge CI gate**
   spec: — · effort: L · audience: infra.ci, contributor.process
