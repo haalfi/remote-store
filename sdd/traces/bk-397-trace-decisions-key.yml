@@ -122,3 +122,16 @@ phases:
         read_type: gate
         extract: "My round-1 D2 amendment named two deletable cases while the schema named three; the maintainer chose to amend D2 with the third (differing answers, maintainer picks the record)"
         outcome: ok
+  - id: fix
+    name: Fix review round 3
+    steps:
+      - file: scripts/record_decision.py
+        section: "record (tool_use_id, session_id fallback)"
+        read_type: verify
+        extract: "payload.get('tool_use_id') writes null when absent, and id-less payloads share unknown-session.jsonl; my round-2 Hashable guard let null through, so unrelated dialogs paired under None and failed as 'differs from'"
+        outcome: ok
+      - file: scripts/check_traces.py
+        section: "_check_decision_log (read)"
+        read_type: verify
+        extract: "Strict whole-file read_text turned a mid-character truncation into an unlocalized UnicodeDecodeError that skipped every other check; now split bytes on \\n and decode per line"
+        outcome: ok

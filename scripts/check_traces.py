@@ -55,7 +55,8 @@ entry, are both well-formed and pass.
 Decision logs (RFC-0018 D4.2)
 -----------------------------
 For each path a trace lists under ``decisions:`` that the schema accepts, the
-log exists, every line parses as one JSON object, and no ``tool_use_id`` has two
+log exists, every line decodes as UTF-8 and parses as one JSON object, and no
+``tool_use_id`` has two
 ``answered`` events. A path the schema rejects is reported by the schema and not
 read. What an author may do about each failure is stated with the key, in
 ``sdd/traces/_schema.yml``. **Reported, not failed**, as notes on stdout: a
@@ -66,9 +67,11 @@ an event of a kind other than ``asked`` and ``answered``, so a later hook
 registration cannot break this reader (D3); an ``asked`` event whose
 ``tool_input.questions`` is not a list of objects, which would otherwise drop
 out of the unanswered report silently; an ``answered`` event with no
-``asked`` event; and an event whose ``tool_use_id`` is a list or object, which
-cannot pair and is skipped. Lines are split on ``\\n`` alone, the only break the
-recorder writes. An entry listed twice is read once.
+``asked`` event; and an event whose ``tool_use_id`` is not a string (missing,
+null, a list or an object), which cannot pair and is skipped. Lines are split on
+the byte ``\\n`` alone, the only break the recorder writes, and decoded one at a
+time, so an append cut inside a multi-byte character fails its own line. An
+entry listed twice is read once.
 
 Bounds: it reads only the logs a trace lists. Whether a trace lists *every* log
 its work produced, or a log that belongs to other work, is D4.0's binding rule
@@ -129,7 +132,6 @@ import argparse
 import io
 import json
 import sys
-from collections.abc import Hashable
 from dataclasses import dataclass
 from pathlib import Path
 from typing import TYPE_CHECKING, Any
@@ -233,20 +235,26 @@ def _check_decision_log(root: Path, name: str, *, source: str, path: str) -> Rep
     if not log.is_file():
         return Report([Violation(source, path, f"{name}: log does not exist")], [])
     try:
-        text = log.read_text(encoding="utf-8")
-    except (OSError, UnicodeDecodeError) as exc:
+        data = log.read_bytes()
+    except OSError as exc:
         return Report([Violation(source, path, f"{name}: {type(exc).__name__}: {exc}")], [])
 
-    asked: dict[Any, dict[str, Any]] = {}
-    answered: dict[Any, tuple[int, dict[str, Any], str]] = {}
-    # Split on "\n" alone, the only break the recorder writes: its
-    # ensure_ascii=False leaves U+2028, U+2029 and U+0085 raw inside strings,
-    # and str.splitlines() would cut a real record there. A CRLF checkout's
-    # trailing "\r" is whitespace json.loads accepts.
-    lines = text.split("\n")
-    if lines and not lines[-1]:
-        lines.pop()
-    for lineno, raw in enumerate(lines, start=1):
+    asked: dict[str, dict[str, Any]] = {}
+    answered: dict[str, tuple[int, dict[str, Any], str]] = {}
+    # Split on b"\n" alone, the only break the recorder writes, and decode per
+    # line. Its ensure_ascii=False leaves U+2028, U+2029 and U+0085 raw inside
+    # strings, where str.splitlines() would cut a real record; and an append cut
+    # inside a multi-byte character then fails its own line, not the whole file.
+    # A CRLF checkout's trailing "\r" is whitespace json.loads accepts.
+    chunks = data.split(b"\n")
+    if chunks and not chunks[-1]:
+        chunks.pop()
+    for lineno, chunk in enumerate(chunks, start=1):
+        try:
+            raw = chunk.decode("utf-8")
+        except UnicodeDecodeError as exc:
+            violations.append(Violation(source, path, f"{name} line {lineno}: not UTF-8 ({exc.reason})"))
+            continue
         try:
             event = json.loads(raw)
         except json.JSONDecodeError as exc:
@@ -256,9 +264,10 @@ def _check_decision_log(root: Path, name: str, *, source: str, path: str) -> Rep
             violations.append(Violation(source, path, f"{name} line {lineno}: not a JSON object"))
             continue
         kind, tool_use_id = event.get("event"), event.get("tool_use_id")
-        if not isinstance(tool_use_id, Hashable):
-            # A list or object id cannot pair; reported rather than raised.
-            notes.append(Violation(source, path, f"{name} line {lineno}: tool_use_id is not a value, skipped"))
+        if not isinstance(tool_use_id, str):
+            # Missing, null, a list or an object: none can pair. Null in
+            # particular would pair unrelated id-less dialogs under one key.
+            notes.append(Violation(source, path, f"{name} line {lineno}: tool_use_id is not a string, skipped"))
             continue
         if kind == "asked":
             asked.setdefault(tool_use_id, event)

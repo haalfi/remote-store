@@ -112,8 +112,8 @@ which a log committed to a public repository must not hold.
 
 `sdd/decisions/<session_id>.jsonl`, one JSON object per line, appended and never
 rewritten, with two exceptions, each deleted in a commit of its own. A line
-which is not a record (one that does not parse, or an identical copy left by a
-merge) may be deleted. And when one dialog carries two `answered` lines that
+which is not a record (one that does not decode or parse, or an identical copy
+left by a merge) may be deleted. And when one dialog carries two `answered` lines that
 differ, the maintainer picks the record and the commit deleting the other says
 which and why. The remedy per fault is stated with the trace key, in
 `sdd/traces/_schema.yml` `decisions`. Committed with the work, so git supplies a timestamped history and

@@ -218,11 +218,12 @@ properties:
       Which logs belong to a work branch is RFC-0018 D4.0's binding rule.
 
       `scripts/check_traces.py` reads each one the pattern accepts: it must
-      exist, every line must parse as a JSON object, and no dialog may be
-      answered twice. A question left unanswered, an event of unknown kind,
-      an `asked` event with no readable questions, an `answered` event with
-      no `asked` one, and an event whose `tool_use_id` is a list or object
-      are printed as notes and do not fail the gate.
+      exist, every line must decode as UTF-8 and parse as a JSON object, and
+      no dialog may be answered twice. A question left unanswered, an event
+      of unknown kind, an `asked` event with no readable questions, an
+      `answered` event with no `asked` one, and an event whose `tool_use_id`
+      is not a string (missing, null, a list or an object) are printed as
+      notes and do not fail the gate.
 
       **The log governs** (`DRIFT-RULES.md` Rule 4): it is the record, and
       this list only points at it. A listed log that does not exist is the
@@ -230,7 +231,8 @@ properties:
 
       **A line that is not a record may be deleted.** The log is append-only
       for the recorder, not frozen against repair. Two faults are not
-      records: a line that does not parse (an append cut short) and an
+      records: a line that does not decode or parse (an append cut short,
+      `not UTF-8` or `not JSON`) and an
       `answered` line the gate names an *identical copy* of an earlier one
       (a union merge of one log from two branches). Delete such a line in a
       commit of its own whose message names the line and its cause. An

@@ -632,7 +632,23 @@ class TestDecisionLogs:
         (tmp_path / _LOG).write_bytes(b'{"event": "\xff"}\n')
         report = self._run(tmp_path)
         assert len(report.violations) == 1
-        assert "UnicodeDecodeError" in report.violations[0].message
+        assert "line 1: not UTF-8" in report.violations[0].message
+
+    def test_an_append_cut_inside_a_multibyte_character_is_localized_to_its_line(self, tmp_path):
+        # The recorder writes ensure_ascii=False, so a truncated append can end
+        # mid-character. That is the schema remedy's "line that does not parse",
+        # and it must be named by line, with the rest of the log still checked.
+        import json
+
+        good = "".join(json.dumps(line, ensure_ascii=False) + "\n" for line in [_asked("toolu_9")])
+        cut = json.dumps(_asked(header="A → B"), ensure_ascii=False).encode("utf-8")
+        cut = cut[: cut.index("→".encode()) + 1]  # one byte of a three-byte character
+        (tmp_path / "sdd" / "decisions").mkdir(parents=True)
+        (tmp_path / _LOG).write_bytes(good.encode("utf-8") + cut)
+        report = self._run(tmp_path)
+        assert len(report.violations) == 1, report.violations
+        assert "line 2: not UTF-8" in report.violations[0].message
+        assert [n for n in report.notes if "toolu_9" in n.message], "line 1 must still be checked"
 
     def test_a_dialog_answered_twice_is_a_violation_naming_its_id(self, tmp_path):
         report = self._run(tmp_path, [_asked(), _answered(), _answered(answer="B")])
@@ -695,6 +711,21 @@ class TestDecisionLogs:
         assert len(report.notes) == 1
         assert "line 1" in report.notes[0].message
         assert "tool_use_id" in report.notes[0].message
+
+    def test_id_less_dialogs_are_skipped_not_paired_under_none(self, tmp_path):
+        # The recorder writes payload.get("tool_use_id"), null when the payload
+        # omits it. Pairing two unrelated id-less dialogs under None would fail
+        # them as "answered twice", and the remedy would delete a real record.
+        lines = [
+            {**_asked(), "tool_use_id": None},
+            {**_answered(), "tool_use_id": None},
+            {k: v for k, v in _asked().items() if k != "tool_use_id"},
+            {**_answered(answer="B"), "tool_use_id": None},
+        ]
+        report = self._run(tmp_path, lines)
+        assert report.violations == []
+        assert len(report.notes) == 4, report.notes
+        assert all("tool_use_id is not a string" in n.message for n in report.notes)
 
     def test_an_answered_event_with_no_asked_is_reported(self, tmp_path):
         report = self._run(tmp_path, [_answered()])
