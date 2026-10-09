@@ -421,6 +421,15 @@ no clause of the contract ships unexercised.
   regex (read only). Open decision: anchor with `\Z` on every backend, or state
   the newline rule in GLOB-014.
 
+- [ ] **BUG-310 — Reading a closed Azure stream answers a `RemoteStoreError` or end-of-file instead of `ValueError`**
+  spec: SIO-001, SEEK-006 · effort: M · audience: user.api
+  After `close()`, `read()` on an Azure `read_seekable()` stream raises
+  `RemoteStoreError` (`'NoneType' object has no attribute 'download_blob'`) and
+  on an Azure `read()` stream returns `b""`; `io.BytesIO` and S3-PyArrow raise
+  `ValueError`. No spec clause or conformance cell covers read-after-close.
+  Open decision: none; the clause, the adapters it reaches, and the reproduction are in the dossier.
+  Detail: [dossier](backlog/bug-310-closed-stream-read.md)
+
 - [ ] **BK-407 — Mutation scopes miss every backend's `async_sources` and ten split-topic tests**
   spec: — · effort: S · audience: infra.test
   `_src` reads only `[backend.<x>].sources`: `-async-extended-graph` mutates only
