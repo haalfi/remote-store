@@ -49,6 +49,27 @@ a decision *about* a diagnosis is still a decision and deleting both is how the
 same idea returns with the argument had from scratch. Re-file under a **new** ID
 if evidence changes; these are retired.
 
+- [x] **— Lean 4 as a formal layer, as replacement for or extension of Dafny** *(evaluated on request; never had an ID)*
+  Lean's kernel-checked proofs do not time out, and the traces record Dafny
+  proofs that did, all in `MemoryBackend.dfy`: `EnsureParents` and `Copy`
+  exceeded the time limit until given `{:isolate_assertions}`, as did `Write`
+  in a five-file run under load; `GetFolderInfo` exceeded a 10 s limit until a
+  ghost lemma restored it (traces `bk-388`, `id-209`). **Refused as replacement:** Lean has no Python target, so the
+  compiled oracle and with it shapes (T) and (O) of
+  [`sdd/formal/README.md`](formal/README.md#three-shapes-of-dafny-section-work-c-t-o)
+  would be lost. **Refused as extension:** each gap the repo documents outside
+  Dafny has a better home. The error-path frame (README § Design decisions) is
+  a compile restriction Dafny can state as a lemma or ghost function;
+  `write_atomic` atomicity (spec 003 BE-010) needs a crash model in Dafny or
+  TLA+; cross-layer protocols are TLA+'s; TLC's bounded `MC3` model can be
+  made unbounded with TLAPS or a Dafny state machine; SIO-009 and populated
+  rich fields are runtime or empirical. A Lean proof cannot import a Dafny one,
+  so every Lean proof restates the contract as a third copy needing its own
+  drift check, and the one thing only a shared logic gives, a Dafny-to-TLA+
+  link, is what README § Decoupled, not coupled rejects. Re-file under a new ID
+  if an observed solver timeout blocks a proof that compiles into nothing (a
+  lemma-only file, not one declaring a `method`) and Dafny-side remedies cannot
+  fix it; porting that file is the probe.
 - [x] **— Deductive verification of `src/` with Nagini** *(evaluated on request; never had an ID)*
   Nagini (ETH Zurich, on Viper) proves contracts, loop invariants, exceptional
   postconditions and termination for Python, beyond what mypy or Pyright check.
