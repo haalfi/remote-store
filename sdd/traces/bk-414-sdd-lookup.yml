@@ -1,0 +1,262 @@
+id: BK-414
+title: "Sessions reach one backlog item or reference section by grep and slice"
+trigger: >-
+  The maintainer asked for the lookup tool BK-414's dossier designs, plus a
+  `--spec <ID>` filter on the item search for the token-usage RFC's orient
+  check, with the skill and CLAUDE.md pointers held back until a planned A/B
+  run (BUG-280 run B) is done.
+source_items:
+  - BK-414
+audience:
+  - contributor.tooling
+  - contributor.process
+discovery_followups:
+  - BK-420
+expected_ripples: []
+surprising_ripples: []
+decisions:
+  - sdd/decisions/3bad7c8f-a0b4-4e5a-854f-5432cd88feea.jsonl
+phases:
+  - id: orient
+    name: Orient
+    steps:
+      - file: sdd/backlog/bk-414-sdd-lookup.md
+        section: "whole file"
+        read_type: gate
+        extract: >-
+          Five commands, output shapes, bounds for the docstring, imported
+          grammars (gen_backlogid, check_ripple_parity) and the tool's own two
+          boundaries (ID-less entries, Detailed row extent). Both #1094 review
+          findings the brief named (async ripple rows, acceptance comparability)
+          are already resolved in the dossier: replies 4229767734 and 4229768218.
+        outcome: ok
+      - file: sdd/BACKLOG.md
+        section: "How this file works"
+        read_type: gate
+        extract: >-
+          Completing work and Item scope. Asked the maintainer how BK-414 stands
+          with pointers deferred: it stays open as [~], and the dossier carries
+          the pointer step as pending until run B.
+        outcome: ok
+      - file: scripts/gen_backlogid.py
+        section: "_HEADER_RE, _sections, _SEP_RE, _ATTR_RE"
+        read_type: reference
+        extract: >-
+          _sections excludes the rules header and pulls each end back over
+          separators; usable for both backlog files. _ATTR_RE does not capture
+          the spec field, so --spec parses the attribute line itself.
+        outcome: ok
+      - file: scripts/check_ripple_parity.py
+        section: "_blocks, _parse_pre_work, _parse_detailed, _norm"
+        read_type: reference
+        extract: >-
+          Trigger is (section, name, line); _norm strips `**` but keeps
+          backticks and the non-bold qualifier inside the leading cell, so
+          `**`_GATING` dict** (async)` is named "`_GATING` dict (async)".
+        outcome: ok
+      - file: sdd/DRIFT-RULES.md
+        section: "Rule 7"
+        read_type: gate
+        extract: >-
+          Bounds stated in the docstring; a script named outside check_/gen_/
+          drift_/report_ with no Drift-gate block is not demanded one.
+        outcome: ok
+  - id: implement
+    name: Implement
+    steps:
+      - file: tests/scripts/test_sdd_lookup.py
+        section: "whole file"
+        read_type: verify
+        extract: >-
+          48 tests: fixtures per command plus TestLive, which resolves every
+          open ID, anchor and ripple trigger in the real files. Mutated four
+          boundaries (fence tracking, --spec as substring, entry end at the
+          next entry, Detailed extent past the table): three failed tests at
+          once; the entry-end mutant survived until a fixture gained a
+          column-0 note line after a done entry, then failed 1 test.
+        outcome: ok
+      - file: sdd/BACKLOG-DONE.md
+        section: "§ Decided against, line 96"
+        read_type: verify
+        extract: >-
+          A header quoting `**Breaking**` cut the title at the inner `**`
+          under a lazy `\*\*(.*?)\*\*`; the title regex now skips code spans.
+        outcome: ok
+  - id: review_fix_1
+    name: Review round 1 fixes
+    steps:
+      - file: scripts/sdd_lookup.py
+        section: "cmd_show (review thread on line 179)"
+        read_type: verify
+        extract: >-
+          My miss: `raw.upper()` turned `BK-139d` into `BK-139D`, so no suffixed
+          ID resolved; TestLive covered open IDs only, none suffixed. The match is
+          now case-insensitive. New TestLive.test_every_done_id_shows over the
+          711 distinct done-register IDs (20 suffixed) and a suffixed fixture
+          pair both failed before the fix and pass after.
+        outcome: ok
+      - file: scripts/sdd_lookup.py
+        section: "module docstring, find help (review thread on line 221)"
+        read_type: verify
+        extract: >-
+          The docstring said find matches "the whole entry"; it matches per
+          line. Narrowed the docstring and help text, and added the wrap miss
+          to Bounds, rather than changing behaviour.
+        outcome: ok
+  - id: pointers
+    name: Pointers before run B
+    steps:
+      - file: .claude/skills
+        section: 'references matching CLAUDE-REFERENCE\.md#|BACKLOG(-DONE)?\.md'
+        read_type: verify
+        extract: >-
+          The maintainer reversed the hold-back: run B should use the tool. The
+          Grep over .claude/skills returns 20 lines in 6 skills; 14 fetch one key
+          and now name the command beside the link (ship 3, orchestrate 3, fix-pr
+          3, pr 2, rvw-pr 2, release 1). The other 6 stay: orchestrate's five
+          close-out lines edit the backlog files, and rvw-pr line 235 cites
+          BK-348 as a source. CLAUDE.md § Backlog gains the rule. BK-414 closes
+          here, and § 8, which held only it, is removed.
+        outcome: ok
+  - id: review_fix_2
+    name: Review round 2 fixes
+    steps:
+      - file: .claude/skills/rvw-pr/SKILL.md
+        section: "allowed-tools comment (line 7), Search discipline (line 132)"
+        read_type: verify
+        extract: >-
+          My miss: I added two pointers to /rvw-pr without reading its bounded
+          Bash use (five listed uses) or its ban on searching with Bash. Both
+          pointers removed, so the file matches master; CLAUDE.md's rule now
+          names /rvw-pr as a skill that keeps Read and Grep. Pointers now: 12
+          lines in 5 skills (Grep for `hatch run (backlog|ref)-` over
+          .claude/skills).
+        outcome: ok
+      - file: sdd/BACKLOG-DONE.md
+        section: "attribute lines"
+        read_type: verify
+        extract: >-
+          My miss: the docstring said only open items carry an attribute line.
+          The done register has 229 lines matching `^  spec: (.+?) · effort`,
+          96 naming a spec ID. The docstring and the usage error now state the
+          open-only scope as a choice; a done fixture entry gained an attribute
+          line naming BE-021, and TestFindSpec.test_spec_searches_open_items_only
+          fails (BK-011 returned) when --spec is allowed to read done entries.
+        outcome: ok
+      - file: CLAUDE.md
+        section: "Backlog (mandatory), the new lookup bullet"
+        read_type: verify
+        extract: >-
+          Maintainer comment: the new bullet matched its neighbours in neither
+          style nor detail. They are plain sentences saying where a thing lives
+          and linking its authority; mine was bold and listed flags. It is now
+          four plain lines naming the commands and linking the script's
+          docstring for the rest.
+        outcome: ok
+  - id: review_fix_3
+    name: Review round 3 fixes (maintainer's external review)
+    steps:
+      - file: sdd/rfcs/rfc-0020-ship-token-interventions.md
+        section: "P4 exclusion paragraph; Decision rule, Confounds"
+        read_type: verify
+        extract: >-
+          "Run B tests the four interventions above and no more" and the confound
+          list became false when this PR landed the tool before run B. Qualified
+          to "no other intervention" plus a confound sentence. My first draft
+          said the tool moves "the rows P3 is judged on"; P3's decision row is
+          whether the dialog changes the plan, so it was narrowed to the Phase
+          row's orient calls and the Orient row's listing.
+        outcome: ok
+      - file: sdd/BACKLOG.md
+        section: "8. A delivery costs only what it needs"
+        read_type: verify
+        extract: >-
+          The 30-day acceptance re-walk had no owner once BK-414 closed. Minted
+          BK-420 under section 8 at the maintainer's choice (free on every pushed
+          branch per gen-backlogid --check --remote); the done entry and the
+          dossier's acceptance section name it.
+        outcome: ok
+      - file: tests/scripts/test_sdd_lookup.py
+        section: "TestLive.test_every_anchor_shows"
+        read_type: verify
+        extract: >-
+          The anchor list came from _headings, the parser under test. It is now a
+          regex over the file; with a blank line inserted between the
+          branch-freshness anchor and its heading, the test failed with
+          AssertionError: branch-freshness. The review block pasted mid-loop is
+          removed and is re-derived at the close.
+        outcome: ok
+review:
+  # Derived by `hatch run ship-report 1099 --trace-block-only` at head 2dd4f44.
+  # Do not hand-edit, except a newly required field per sdd/traces/_schema.yml
+  # section review: RFC-0015 D4 makes this script the only producer.
+  derivation: "hatch run ship-report 1099 --trace-block-only"
+  pr: 1099
+  review_rounds: 8
+  submissions: 4
+  findings: 9
+  by_round:
+    - round: 1
+      findings: 2
+      origin: {original: 2}
+      triage: {must-fix: 2}
+      duration_hours: 0.06
+    - round: 2
+      findings: 2
+      origin: {loop-introduced: 1, original: 1}
+      triage: {must-fix: 2}
+      duration_hours: 0.94
+    - round: 3
+      findings: 1
+      origin: {loop-introduced: 1}
+      triage: {must-fix: 1}
+      duration_hours: 0.11
+    - round: 4
+      findings: 4
+      origin: {loop-introduced: 3, original: 1}
+      triage: {must-fix: 4}
+      duration_hours: 0.14
+  by_file:
+    - path: "scripts/sdd_lookup.py"
+      findings: 3
+    - path: ".claude/skills/rvw-pr/SKILL.md"
+      findings: 1
+    - path: "CLAUDE.md"
+      findings: 1
+    - path: "sdd/BACKLOG-DONE.md"
+      findings: 1
+    - path: "sdd/backlog/bk-414-sdd-lookup.md"
+      findings: 1
+    - path: "sdd/traces/bk-414-sdd-lookup.yml"
+      findings: 1
+    - path: "tests/scripts/test_sdd_lookup.py"
+      findings: 1
+  untouched_files:
+    - ".claude/skills/fix-pr/SKILL.md"
+    - ".claude/skills/orchestrate/SKILL.md"
+    - ".claude/skills/pr/SKILL.md"
+    - ".claude/skills/release/SKILL.md"
+    - ".claude/skills/ship/SKILL.md"
+    - "pyproject.toml"
+    - "sdd/BACKLOG.md"
+    - "sdd/backlogid.json"
+    - "sdd/decisions/3bad7c8f-a0b4-4e5a-854f-5432cd88feea.jsonl"
+    - "sdd/rfcs/rfc-0020-ship-token-interventions.md"
+  review_driven_commits:
+    - sha: "5e69681"
+      subject: "fix: address PR #1099 review"
+    - sha: "bf0bf5c"
+      subject: "BK-414: trace review block and decision log"
+    - sha: "6217cc7"
+      subject: "BK-414: Narrow two dossier claims to the shipped tool"
+    - sha: "0778ad9"
+      subject: "BK-414: Point CLAUDE.md and six skills at the lookup tool, and close the item"
+    - sha: "76322f1"
+      subject: "BK-414: decision log"
+    - sha: "776b4c2"
+      subject: "fix: address PR #1099 review (round 2)"
+    - sha: "b762f59"
+      subject: "fix: address PR #1099 review"
+    - sha: "2dd4f44"
+      subject: "fix: address PR #1099 review (round 3)"
+  ci: {verdict: GREEN, failed: 0, pending: 0}

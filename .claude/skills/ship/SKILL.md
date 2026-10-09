@@ -48,8 +48,8 @@ surface.
 
 Parse `$ARGUMENTS` for backlog IDs, a task description, or both. Neither: ask.
 
-1. Read the item(s) in `sdd/BACKLOG.md` and every spec/RFC they link.
-2. Read [`sdd/CLAUDE-REFERENCE.md` § Ripple-check > Pre-work index](../../../sdd/CLAUDE-REFERENCE.md#pre-work-index); note triggered rows.
+1. Read the item(s) with `hatch run backlog-show <ID>... --dossier`, and every spec/RFC they link.
+2. Read [`sdd/CLAUDE-REFERENCE.md` § Ripple-check > Pre-work index](../../../sdd/CLAUDE-REFERENCE.md#pre-work-index) (`hatch run ref-show pre-work-index`); note triggered rows.
 3. **Enumerate the subjects** (below).
 4. Open or create the trace per [CLAUDE.md § Trace authoring](../../../CLAUDE.md#trace-authoring).
 5. Branch: `git checkout -b <id>-<short-name>`.
@@ -695,7 +695,7 @@ neither substitutes for the other.
 
 ## Step 5: Close
 
-1. Ripple-check audit: [`sdd/CLAUDE-REFERENCE.md` § Detailed checklist](../../../sdd/CLAUDE-REFERENCE.md#detailed-checklist).
+1. Ripple-check audit: [`sdd/CLAUDE-REFERENCE.md` § Detailed checklist](../../../sdd/CLAUDE-REFERENCE.md#detailed-checklist) (`hatch run ref-show detailed-checklist`, or `ref-rows <trigger>` per triggered row).
 2. CHANGELOG, BACKLOG/BACKLOG-DONE, and the trace — `discovery_followups` and
    `surprising_ripples` by hand, and the **`review:` block pasted verbatim**
    from `hatch run ship-report <N> --trace-block-only` (the bare command prints

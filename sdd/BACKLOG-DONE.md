@@ -298,6 +298,17 @@ if evidence changes; these are retired.
 
 ## Unreleased
 
+- [x] **BK-414 — Sessions reach one backlog item or reference section by grep and slice**
+  spec: — · effort: M · audience: contributor.tooling, contributor.process
+  `scripts/sdd_lookup.py` prints one item, done entry, dossier, reference section
+  or ripple row by key (`hatch run backlog-show`, `backlog-find` with `--spec`,
+  `backlog-outline`, `ref-show`, `ref-rows`); `CLAUDE.md` § Backlog and the
+  single-key lookup steps of five skills point at it (not `/rvw-pr`, whose Bash
+  use is bounded). Tests:
+  `tests/scripts/test_sdd_lookup.py`. The acceptance re-walk is BK-420.
+  Dossier: [BK-414](backlog/bk-414-sdd-lookup.md); trace:
+  [bk-414](traces/bk-414-sdd-lookup.yml).
+
 - [x] **BUG-314 — The Edit/Write ruff hook deletes an import added before its use, so the next edit raises `NameError`**
   spec: — · effort: S · audience: contributor.tooling
   `.claude/hooks/ruff-format.sh` ran `ruff check --fix` after every Edit and Write,

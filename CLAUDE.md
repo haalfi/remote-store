@@ -47,6 +47,10 @@ the failing test, run it, see it fail** before implementing the fix.
   [§ How this file works](sdd/BACKLOG.md#how-this-file-works). Why:
   [ADR-0040](sdd/adrs/0040-backlog-as-index.md), and for the done register
   [ADR-0041](sdd/adrs/0041-done-register-links-dossiers.md).
+- One item, entry or `CLAUDE-REFERENCE.md` section is looked up by key with
+  `hatch run backlog-show`, `backlog-find`, `ref-show` or `ref-rows`, not by
+  Grep and a sliced Read; edits, whole-file reads and `/rvw-pr` keep those.
+  Commands and bounds: [`scripts/sdd_lookup.py`](scripts/sdd_lookup.py).
 - Commit messages start with item ID when applicable (e.g., `AF-008: Add credential masking`).
 
 <a id="trace-authoring"></a>

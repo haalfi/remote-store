@@ -970,24 +970,8 @@ coverage floor.
 
 ---
 
-<a id="lookup-cost"></a>
-## 8. A session reads what it needs, not the file around it
-
-**Promise:** a session that needs one backlog item, done entry, dossier or
-reference section gets it by key, without a search-and-reread cycle over the
-file that holds it.
-
-- [ ] **BK-414 — Sessions reach one backlog item or reference section by grep and slice**
-  spec: — · effort: M · audience: contributor.tooling, contributor.process
-  In 97 transcripts every Read of `BACKLOG.md` (33), `BACKLOG-DONE.md` (24) and
-  `CLAUDE-REFERENCE.md` (24) was a slice, and the three files drew 82 Greps; 10 of
-  the 24 reference Reads mostly returned § PR validation gates, which skills cite
-  by anchor. Open decision: none on shape; the lookup design, its bounds, and why
-  it leaves content that traces tag misleading alone are in the dossier.
-  Detail: [dossier](backlog/bk-414-sdd-lookup.md)
-
 <a id="delivery-cost"></a>
-## 9. A delivery costs only what it needs
+## 8. A delivery costs only what it needs
 
 **Promise:** a session's token spend follows the work it does, not the context
 it has piled up or the rounds that repair its own fixes. A change to how
@@ -1000,3 +984,11 @@ sessions work is measured before it becomes process.
   ([research record](research/token-usage/report.md)). Four interventions are
   unmeasured. Open decision: which survive run B, per Draft
   [RFC-0020](rfcs/rfc-0020-ship-token-interventions.md).
+
+- [ ] **BK-420 — BK-414's lookup tool is not yet measured against its baseline of 78 search-and-reread cycles**
+  spec: — · effort: S · audience: contributor.tooling, contributor.process
+  BK-414 pointed `CLAUDE.md` and five skills at `scripts/sdd_lookup.py` to cut
+  Grep → Read cycles and overlapping re-reads on the backlog and reference files:
+  78 over 37 transcripts before it. Re-walk the transcripts about 30 days after
+  #1099 merges, by [BK-414's dossier](backlog/bk-414-sdd-lookup.md) § Acceptance
+  measure. Open decision: keep, change or remove the pointers, by that result.

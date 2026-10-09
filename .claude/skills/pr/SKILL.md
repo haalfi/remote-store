@@ -20,10 +20,12 @@ Fall back to `gh` CLI for GraphQL-only flows like review-thread resolution.
    nothing), and the branch pushed to remote. Push with `-u` if needed. The log
    is left for Step 4, because this skill's own questions append to it. Then run
    the [branch freshness
-   check](../../../sdd/CLAUDE-REFERENCE.md#branch-freshness) with `<BASE>`.
+   check](../../../sdd/CLAUDE-REFERENCE.md#branch-freshness)
+   (`hatch run ref-show branch-freshness`) with `<BASE>`.
 
 2. **Validation gates:** Run the shared [PR validation
-   gates](../../../sdd/CLAUDE-REFERENCE.md#pr-validation-gates) — the mechanical
+   gates](../../../sdd/CLAUDE-REFERENCE.md#pr-validation-gates)
+   (`hatch run ref-show pr-validation-gates`) — the mechanical
    gate, the backlog ID-set gate, local-machine reference, and qualitative
    TESTING/CONTENT review. Resolve any stop condition before drafting the PR.
 

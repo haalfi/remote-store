@@ -123,11 +123,18 @@ BK-399 · done · sdd/BACKLOG-DONE.md:4120 · <header title> ⟶ <first matching
 The `--dossier` banner carries `BACKLOG.md` § Item authority to the point of
 reading, the one lever the tool has on the misleading tags above.
 
+**As built** (`scripts/sdd_lookup.py`, 2026-10-09). The commands above, plus
+`backlog-find --spec <ID>`: open items whose attribute line names that spec ID
+as a whole token, repeatable (any), combinable with a regex (both). It serves
+the token-usage RFC's orient check for related open work. `backlog-find` with
+no scope flag searches open items, done entries and dossiers. An unknown ID
+in `backlog-show` names `backlog-outline` rather than listing every ID.
+
 ### Staying correct
 
 - Parses on every call; no cache, no generated copy.
-- Item grammar is imported from `gen_backlogid.py` (`_HEADER_RE`, `_sections`,
-  `_SEP_RE`), trigger grammar from `check_ripple_parity.py` (`_blocks`,
+- Item grammar is imported from `gen_backlogid.py` (`_HEADER_RE`, `_sections`),
+  trigger grammar from `check_ripple_parity.py` (`_blocks`,
   `_parse_pre_work`, `_parse_detailed`). Both are gated in `lint` and
   `docs-gate`, so a shape change that breaks the parse fails there first.
 - Entries start at `^- \[.\] \*\*`, so the ID-less `- [x] **— …**` entries in
@@ -136,7 +143,8 @@ reading, the one lever the tool has on the misleading tags above.
 - A Detailed trigger's row extent is the tool's own boundary too:
   `_parse_detailed` returns only each trigger's first line, so the extent runs
   from it to the line before the next trigger, `####` heading or non-table line.
-- An unknown key exits 1 and lists the valid keys; never an empty success. For
+- An unknown key exits 1 and lists the valid keys, except in `backlog-show`
+  (see As built); never an empty success. For
   `ref-rows`, unknown means no trigger name in either presentation contains the
   text.
 - `tests/scripts/test_sdd_lookup.py`: fixtures, plus one test over the live
@@ -166,6 +174,10 @@ reading, the one lever the tool has on the misleading tags above.
 
 ### Pointers
 
+**Landed with the tool** (2026-10-09), before BUG-280 run B, so that run B
+uses it: run B differs from run A by the token-usage RFC's interventions and
+by this tool. Its merge starts the acceptance measure's 30 days.
+
 - `CLAUDE.md` § Backlog: one rule, to query one item, entry, dossier or section
   by key, keeping Grep and sliced Read for edits and for whole-file reads a step
   requires.
@@ -192,7 +204,7 @@ fall either. The commonest lookup, `ref-show pr-validation-gates`, returns about
 1.7k tokens, the size of the median 80-line slice it replaces. So the gain has
 to show as fewer cycles.
 
-About 30 days after the pointers merge, re-walk the transcripts as in
+Tracked as BK-420. About 30 days after the pointers merge, re-walk the transcripts as in
 § Evidence (second walk) and compare per transcript touching the three files:
 
 - Grep → Read cycles plus overlapping re-reads (baseline: 62 + 16 = 78 over 37

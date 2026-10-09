@@ -527,6 +527,13 @@ report-done-length = "python scripts/report_done_length.py {args}"
 # BK-412: advisory for the reasons in its module docstring; its input is
 # local session transcripts, which CI does not have.
 report-token-usage = "python scripts/report_token_usage.py {args}"
+# BK-414: a read-only lookup, not a check; absent from every bundle because it
+# compares nothing. Its tests run in the suite.
+backlog-show = "python scripts/sdd_lookup.py show {args}"
+backlog-find = "python scripts/sdd_lookup.py find {args}"
+backlog-outline = "python scripts/sdd_lookup.py outline {args}"
+ref-show = "python scripts/sdd_lookup.py ref-show {args}"
+ref-rows = "python scripts/sdd_lookup.py ref-rows {args}"
 # BK-378 / RFC-0015 D1 and D4. Three entries, wired three different ways, and
 # the differences are the point.
 #
