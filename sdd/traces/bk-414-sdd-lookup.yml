@@ -102,3 +102,32 @@ phases:
           line. Narrowed the docstring and help text, and added the wrap miss
           to Bounds, rather than changing behaviour.
         outcome: ok
+review:
+  # Derived by `hatch run ship-report 1099 --trace-block-only` at head 4ce322b.
+  # Do not hand-edit, except a newly required field per sdd/traces/_schema.yml
+  # section review: RFC-0015 D4 makes this script the only producer.
+  derivation: "hatch run ship-report 1099 --trace-block-only"
+  pr: 1099
+  review_rounds: 1
+  submissions: 1
+  findings: 2
+  by_round:
+    - round: 1
+      findings: 2
+      origin: {original: 2}
+      triage: {must-fix: 2}
+      duration_hours: 0.06
+  by_file:
+    - path: "scripts/sdd_lookup.py"
+      findings: 2
+  untouched_files:
+    - "pyproject.toml"
+    - "sdd/BACKLOG.md"
+    - "sdd/backlog/bk-414-sdd-lookup.md"
+    - "sdd/decisions/3bad7c8f-a0b4-4e5a-854f-5432cd88feea.jsonl"
+    - "sdd/traces/bk-414-sdd-lookup.yml"
+    - "tests/scripts/test_sdd_lookup.py"
+  review_driven_commits:
+    - sha: "4ce322b"
+      subject: "fix: address PR #1099 review"
+  ci: {verdict: GREEN, failed: 0, pending: 0}
