@@ -977,7 +977,7 @@ coverage floor.
 reference section gets it by key, without a search-and-reread cycle over the
 file that holds it.
 
-- [ ] **BK-414 — Sessions reach one backlog item or reference section by grep and slice**
+- [~] **BK-414 — Sessions reach one backlog item or reference section by grep and slice**
   spec: — · effort: M · audience: contributor.tooling, contributor.process
   In 97 transcripts every Read of `BACKLOG.md` (33), `BACKLOG-DONE.md` (24) and
   `CLAUDE-REFERENCE.md` (24) was a slice, and the three files drew 82 Greps; 10 of

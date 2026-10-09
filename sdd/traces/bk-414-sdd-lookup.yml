@@ -1,0 +1,83 @@
+id: BK-414
+title: "Sessions reach one backlog item or reference section by grep and slice"
+trigger: >-
+  The maintainer asked for the lookup tool BK-414's dossier designs, plus a
+  `--spec <ID>` filter on the item search for the token-usage RFC's orient
+  check, with the skill and CLAUDE.md pointers held back until a planned A/B
+  run (BUG-280 run B) is done.
+source_items:
+  - BK-414
+audience:
+  - contributor.tooling
+  - contributor.process
+discovery_followups: []
+expected_ripples: []
+surprising_ripples: []
+decisions:
+  - sdd/decisions/3bad7c8f-a0b4-4e5a-854f-5432cd88feea.jsonl
+phases:
+  - id: orient
+    name: Orient
+    steps:
+      - file: sdd/backlog/bk-414-sdd-lookup.md
+        section: "whole file"
+        read_type: gate
+        extract: >-
+          Five commands, output shapes, bounds for the docstring, imported
+          grammars (gen_backlogid, check_ripple_parity) and the tool's own two
+          boundaries (ID-less entries, Detailed row extent). Both #1094 review
+          findings the brief named (async ripple rows, acceptance comparability)
+          are already resolved in the dossier: replies 4229767734 and 4229768218.
+        outcome: ok
+      - file: sdd/BACKLOG.md
+        section: "How this file works"
+        read_type: gate
+        extract: >-
+          Completing work and Item scope. Asked the maintainer how BK-414 stands
+          with pointers deferred: it stays open as [~], and the dossier carries
+          the pointer step as pending until run B.
+        outcome: ok
+      - file: scripts/gen_backlogid.py
+        section: "_HEADER_RE, _sections, _SEP_RE, _ATTR_RE"
+        read_type: reference
+        extract: >-
+          _sections excludes the rules header and pulls each end back over
+          separators; usable for both backlog files. _ATTR_RE does not capture
+          the spec field, so --spec parses the attribute line itself.
+        outcome: ok
+      - file: scripts/check_ripple_parity.py
+        section: "_blocks, _parse_pre_work, _parse_detailed, _norm"
+        read_type: reference
+        extract: >-
+          Trigger is (section, name, line); _norm strips `**` but keeps
+          backticks and the non-bold qualifier inside the leading cell, so
+          `**`_GATING` dict** (async)` is named "`_GATING` dict (async)".
+        outcome: ok
+      - file: sdd/DRIFT-RULES.md
+        section: "Rule 7"
+        read_type: gate
+        extract: >-
+          Bounds stated in the docstring; a script named outside check_/gen_/
+          drift_/report_ with no Drift-gate block is not demanded one.
+        outcome: ok
+  - id: implement
+    name: Implement
+    steps:
+      - file: tests/scripts/test_sdd_lookup.py
+        section: "whole file"
+        read_type: verify
+        extract: >-
+          48 tests: fixtures per command plus TestLive, which resolves every
+          open ID, anchor and ripple trigger in the real files. Mutated four
+          boundaries (fence tracking, --spec as substring, entry end at the
+          next entry, Detailed extent past the table): three failed tests at
+          once; the entry-end mutant survived until a fixture gained a
+          column-0 note line after a done entry, then failed 1 test.
+        outcome: ok
+      - file: sdd/BACKLOG-DONE.md
+        section: "§ Decided against, line 96"
+        read_type: verify
+        extract: >-
+          A header quoting `**Breaking**` cut the title at the inner `**`
+          under a lazy `\*\*(.*?)\*\*`; the title regex now skips code spans.
+        outcome: ok

@@ -123,6 +123,13 @@ BK-399 · done · sdd/BACKLOG-DONE.md:4120 · <header title> ⟶ <first matching
 The `--dossier` banner carries `BACKLOG.md` § Item authority to the point of
 reading, the one lever the tool has on the misleading tags above.
 
+**As built** (`scripts/sdd_lookup.py`, 2026-10-09). The commands above, plus
+`backlog-find --spec <ID>`: open items whose attribute line names that spec ID
+as a whole token, repeatable (any), combinable with a regex (both). It serves
+the token-usage RFC's orient check for related open work. `backlog-find` with
+no scope flag searches open items, done entries and dossiers. An unknown ID
+in `backlog-show` names `backlog-outline` rather than listing every ID.
+
 ### Staying correct
 
 - Parses on every call; no cache, no generated copy.
@@ -165,6 +172,12 @@ reading, the one lever the tool has on the misleading tags above.
   would demand one.
 
 ### Pointers
+
+**Pending until BUG-280 run B is done** (2026-10-09). The tool shipped
+without them: the token-usage RFC's run B compares a `/ship` session against
+run A, and a pointer in a skill or `CLAUDE.md` would change what run B's
+session reads. Once run B is recorded, land the edits below in one PR; that
+PR closes BK-414 and starts the acceptance measure's 30 days.
 
 - `CLAUDE.md` § Backlog: one rule, to query one item, entry, dossier or section
   by key, keeping Grep and sliced Read for edits and for whole-file reads a step
