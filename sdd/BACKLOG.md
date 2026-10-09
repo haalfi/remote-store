@@ -873,7 +873,7 @@ CHANGELOG the release body is built from — say what is actually true.
   tool results at about 2.4 characters per token, where the script assumes 4, and
   keeps hidden thinking in context at about 0.95 tokens per output token. Its carried
   ranking omits the session prefix and thinking, about a third of re-read context.
-  Open decision: none; the derivation lands in BK-418's token-usage research record.
+  Open decision: none. Derivation: [`calibration.json`](research/token-usage/results/calibration.json).
 
 ---
 
@@ -926,13 +926,14 @@ coverage floor.
   run it (RFC-0019 Open Questions 4, keeps this item open).
   Detail: [dossier](backlog/bk-404-selected-tests-hatch-target.md)
 
-- [ ] **BUG-315 — A local gate that overlaps another full suite on the machine hangs, and nothing bounds the wait**
+- [ ] **BK-419 — A local gate run has no per-test timeout and no wait deadline, so a stalled suite stalls the session**
   spec: — · effort: M · audience: contributor.tooling, infra.test
-  In the surviving transcripts, 20 completed `hatch run all` runs took 188–212 s. A 2,364 s
-  hang (2026-10-04) and 600 s cut-offs at 09:53 and 12:22 (2026-10-09) each overlapped
-  another full suite on the machine; a third cut-off (13:07) is unchecked. A hung xdist worker
-  has no per-test timeout and a backgrounded gate no deadline, so one `/ship` run idled 37 min.
-  Open decision: lock, timeout, deadline, or all three; reproducing the overlap is pending.
+  In `/ship BUG-280` run A, 31 foreground `hatch run all` runs had a median of 194 s, 3 were
+  cut off at the 600 s tool limit, and a backgrounded gate left the session idle 37 min
+  ([`run_a_final_gates.json`](research/token-usage/results/run_a_final_gates.json)). Two
+  cut-offs overlapped another session's full suite and one did not, so overlap is one cause,
+  not the only one. Open decision: suite lock, per-test timeout, wait deadline, or all three.
+  Detail: [dossier](backlog/bk-419-local-gate-unbounded-wait.md)
 
 - [ ] **ID-266 — Every in-progress PR push runs the full pre-merge CI gate**
   spec: — · effort: L · audience: infra.ci, contributor.process
