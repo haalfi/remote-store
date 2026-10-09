@@ -7,8 +7,8 @@ step 0 ran on 2026-10-03 (§ Step 0 observations); D1, D3 and D4.0 are amended t
 what it observed. A failure-probe follow-up the same day amends D2, D3 and D4.2,
 D2 to an inference rather than an observation. On acceptance the maintainer
 omitted the `failed` path until it is observed (§ Open Questions 5), which
-amends the Summary, D1, D3 and D4. Built: step 1 and D2's commit and exclusion
-mechanics. Steps 2 and 3 are not.
+amends the Summary, D1, D3 and D4. Built: steps 1 and 2 and D2's commit and
+exclusion mechanics. Step 3 is not.
 
 ## Summary
 

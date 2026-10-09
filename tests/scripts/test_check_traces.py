@@ -51,6 +51,9 @@ _SCHEMA = textwrap.dedent(
       title:
         type: string
         minLength: 1
+      decisions:
+        type: array
+        items: {type: string}
     examples:
       - id: ID-1
         title: "valid example"
@@ -532,7 +535,175 @@ class TestOneLoader:
             assert "load_trace" in body, f"{name} parses the corpus without the shared loader"
 
 
+_LOG = "sdd/decisions/s1.jsonl"
+_QUESTION = "Which way?"
+# The harness's dismissal string, as observed in RFC-0018 § Step 0 follow-up case a'.
+_SENTINEL = "[User dismissed — do not proceed, wait for next instruction]"
+
+
+def _asked(tool_use_id: str = "toolu_1", *, header: str = "Way") -> dict:
+    return {
+        "event": "asked",
+        "tool_use_id": tool_use_id,
+        "tool_input": {
+            "questions": [
+                {
+                    "question": _QUESTION,
+                    "header": header,
+                    "options": [{"label": "A (Recommended)"}, {"label": "B"}],
+                    "multiSelect": False,
+                }
+            ]
+        },
+    }
+
+
+def _answered(tool_use_id: str = "toolu_1", answer: str | None = "A (Recommended)") -> dict:
+    answers = {} if answer is None else {_QUESTION: answer}
+    return {"event": "answered", "tool_use_id": tool_use_id, "tool_response": {"answers": answers}}
+
+
+class TestDecisionLogs:
+    """RFC-0018 D4.2: every log a trace lists exists, parses, and pairs each dialog at most once.
+
+    `unanswered` and unknown event kinds are reported, not failed: declining a
+    dialog is a legitimate act, and a later hook registration must not break a
+    reader written before it (D3).
+    """
+
+    @staticmethod
+    def _run(tmp_path, lines=None, *, raw=None, listed=(_LOG,)):
+        import json
+
+        schema = _write_schema(tmp_path)
+        traces = tmp_path / "sdd" / "traces"
+        body = 'id: "ID-1"\ntitle: "ok"\n'
+        if listed:
+            body += "decisions:\n" + "".join(f'  - "{p}"\n' for p in listed)
+        _write_trace(traces, "id-1-x.yml", body)
+        if lines is not None or raw is not None:
+            log = tmp_path / _LOG
+            log.parent.mkdir(parents=True, exist_ok=True)
+            text = raw if raw is not None else "".join(json.dumps(line) + "\n" for line in lines or [])
+            log.write_text(text, encoding="utf-8")
+        return _mod.collect(schema_path=schema, traces_dir=traces, root=tmp_path)
+
+    def test_a_clean_log_passes_with_nothing_to_report(self, tmp_path):
+        report = self._run(tmp_path, [_asked(), _answered()])
+        assert report.violations == []
+        assert report.notes == []
+
+    def test_a_trace_without_decisions_reads_no_log(self, tmp_path):
+        report = self._run(tmp_path, listed=())
+        assert report.violations == []
+        assert report.notes == []
+
+    def test_a_missing_log_is_a_violation(self, tmp_path):
+        report = self._run(tmp_path)
+        assert len(report.violations) == 1
+        v = report.violations[0]
+        assert v.source.endswith("id-1-x.yml")
+        assert v.path == "decisions[0]"
+        assert _LOG in v.message
+        assert "does not exist" in v.message
+
+    @pytest.mark.parametrize(
+        ("raw", "expected"),
+        [
+            ('{"event": "asked", "tool_use_id": "toolu_1"}\n{not json\n', "line 2"),
+            ('{"event": "asked", "tool_use_id": "toolu_1"}\n\n', "line 2"),
+            ('["a list, not an object"]\n', "line 1"),
+        ],
+        ids=["malformed", "blank", "not_an_object"],
+    )
+    def test_a_line_that_does_not_parse_is_a_violation_naming_the_line(self, tmp_path, raw, expected):
+        report = self._run(tmp_path, raw=raw)
+        assert len(report.violations) == 1
+        v = report.violations[0]
+        assert v.path == "decisions[0]"
+        assert _LOG in v.message
+        assert expected in v.message
+
+    def test_an_undecodable_log_is_a_violation_not_a_traceback(self, tmp_path):
+        (tmp_path / "sdd" / "decisions").mkdir(parents=True)
+        (tmp_path / _LOG).write_bytes(b'{"event": "\xff"}\n')
+        report = self._run(tmp_path)
+        assert len(report.violations) == 1
+        assert "UnicodeDecodeError" in report.violations[0].message
+
+    def test_a_dialog_answered_twice_is_a_violation_naming_its_id(self, tmp_path):
+        report = self._run(tmp_path, [_asked(), _answered(), _answered(answer="B")])
+        assert len(report.violations) == 1
+        v = report.violations[0]
+        assert v.path == "decisions[0]"
+        assert "toolu_1" in v.message
+        assert "line 3" in v.message, "the second answered line is the one to inspect (Rule 2)"
+
+    def test_two_dialogs_each_answered_once_pass(self, tmp_path):
+        lines = [_asked("toolu_1"), _answered("toolu_1"), _asked("toolu_2"), _answered("toolu_2", "B")]
+        assert self._run(tmp_path, lines).violations == []
+
+    @pytest.mark.parametrize(
+        "lines",
+        [
+            [_asked()],
+            [_asked(), _answered(answer=_SENTINEL)],
+            [_asked(), _answered(answer=None)],
+        ],
+        ids=["denied_no_answered_event", "dismissed_sentinel", "question_absent_from_answers"],
+    )
+    def test_an_unanswered_question_is_reported_not_failed(self, tmp_path, lines):
+        report = self._run(tmp_path, lines)
+        assert report.violations == []
+        assert len(report.notes) == 1
+        note = report.notes[0]
+        assert note.path == "decisions[0]"
+        assert "unanswered" in note.message
+        assert "toolu_1" in note.message
+        assert "Way" in note.message, "the header is what a reader recognises the question by"
+
+    def test_free_text_starting_with_the_prefix_reads_as_dismissal(self, tmp_path):
+        # D3's stated bound: the sentinel is matched by prefix, so this is read as dismissal.
+        report = self._run(tmp_path, [_asked(), _answered(answer="[User dismissed it, then typed this")])
+        assert [n.message for n in report.notes if "unanswered" in n.message]
+
+    def test_an_unknown_event_kind_is_reported_not_failed(self, tmp_path):
+        lines = [_asked(), {"event": "PostToolUseFailure", "tool_use_id": "toolu_1"}, _answered()]
+        report = self._run(tmp_path, lines)
+        assert report.violations == []
+        assert len(report.notes) == 1
+        assert "PostToolUseFailure" in report.notes[0].message
+        assert "line 2" in report.notes[0].message
+
+    def test_the_live_schema_confines_listed_paths_to_the_log_directory(self):
+        # Anything else (an absolute path, a `..` escape, another extension) is
+        # not a recorder log; the pattern mirrors record_decision.py's session-id rule.
+        from jsonschema.validators import validator_for
+
+        schema = _mod.load_schema()
+        validator = validator_for(schema)(schema["properties"]["decisions"])
+        assert validator.is_valid(["sdd/decisions/8352892b-3229-4a0a-9656-c75b8d1d153b.jsonl"])
+        for bad in ["/etc/passwd", "sdd/decisions/../traces/x.jsonl", "sdd/decisions/a.json", "x.jsonl"]:
+            assert not validator.is_valid([bad]), bad
+        assert not validator.is_valid([_LOG, _LOG]), "a log listed twice is a copy-paste slip"
+
+
 class TestMain:
+    def test_main_prints_notes_and_still_returns_zero(self, tmp_path, capsys):
+        import json
+
+        schema = _write_schema(tmp_path)
+        traces = tmp_path / "sdd" / "traces"
+        _write_trace(traces, "id-1-x.yml", f'id: "ID-1"\ntitle: "ok"\ndecisions:\n  - "{_LOG}"\n')
+        log = tmp_path / _LOG
+        log.parent.mkdir(parents=True)
+        log.write_text(json.dumps(_asked()) + "\n", encoding="utf-8")
+        rc = _mod.main(["--schema", str(schema), "--traces-dir", str(traces), "--root", str(tmp_path)])
+        assert rc == 0
+        out = capsys.readouterr().out
+        assert "unanswered" in out
+        assert "toolu_1" in out
+
     def test_main_clean_returns_zero(self, tmp_path):
         schema = _write_schema(tmp_path)
         traces = tmp_path / "traces"

@@ -1,0 +1,88 @@
+id: BK-397
+title: "Interview-mode decisions leave no record in the repo, so their rejected options are unrecoverable"
+trigger: "Eleven session logs had accumulated under sdd/decisions/ since PR #1073, but no trace listed one and no check read them; the maintainer chose to build RFC-0018 D5 step 2 (trace `decisions:` key and check_traces.py rule)"
+source_items:
+  - BK-397
+audience:
+  - contributor.process
+  - contributor.tooling
+expected_ripples:
+  - "sdd/traces/_schema.yml"
+  - "scripts/check_traces.py"
+  - "tests/scripts/test_check_traces.py"
+  - "sdd/rfcs/rfc-0018-decision-capture-at-dialog-time.md"
+  - "sdd/BACKLOG.md"
+  - "sdd/GATE-INVENTORY.md"
+surprising_ripples:
+  - "CLAUDE.md"
+  - "sdd/CLAUDE-REFERENCE.md"
+decisions:
+  - "sdd/decisions/8352892b-3229-4a0a-9656-c75b8d1d153b.jsonl"
+phases:
+  - id: orient
+    name: Orient
+    steps:
+      - file: sdd/BACKLOG.md
+        section: "6. The repo does not mislead the next person / BK-397"
+        read_type: gate
+        extract: "Done: step 1 and D2 staging; pending: step 2, step 3, the two-branch remedy"
+        outcome: ok
+      - file: sdd/rfcs/rfc-0018-decision-capture-at-dialog-time.md
+        section: "D3, D4, D5, Acceptance"
+        read_type: gate
+        extract: "Step 2 is D4.1 (optional list of log paths) and D4.2 (exists, parses, no tool_use_id answered twice; unanswered and unknown kinds reported, not failed)"
+        outcome: ok
+      - file: scripts/record_decision.py
+        section: "(full)"
+        read_type: reference
+        extract: "Line shape the reader parses; session ids restricted to [A-Za-z0-9_-]+, which the schema's path pattern mirrors"
+        outcome: ok
+      - file: sdd/decisions/87bce456-1b8d-513c-8207-a63c4c70d86c.jsonl
+        section: "(full)"
+        read_type: reference
+        extract: "A real asked/answered pair: answers keyed by question text in tool_response.answers"
+        outcome: ok
+  - id: design
+    name: Design
+    steps:
+      - file: scripts/check_traces.py
+        section: "(full)"
+        read_type: reference
+        extract: "Violation shape and the Drift-gate blocks; reporting needs a second, non-failing channel"
+        outcome: ok
+      - file: sdd/traces/_schema.yml
+        section: "properties"
+        read_type: reference
+        extract: "Where the optional key goes and how optional keys are documented"
+        outcome: ok
+      - file: sdd/DRIFT-RULES.md
+        section: "Rules 2, 5, 7"
+        read_type: gate
+        extract: "Localize to file and line, gate on the mandatory path, state the bound and declare a Drift-gate block"
+        outcome: ok
+      - file: tests/scripts/test_check_traces.py
+        section: "(full)"
+        read_type: reference
+        extract: "Hermetic tmp_path schema and trace fixtures; extend with a root to resolve log paths against"
+        outcome: ok
+  - id: tests
+    name: Tests first
+    steps:
+      - file: tests/scripts/test_check_traces.py
+        section: "TestDecisionLogs"
+        read_type: gate
+        extract: "Seen red twice: first on the missing collect(), then four assertions that a message names the listed path, not the basename, which the first implementation got wrong"
+        outcome: ok
+  - id: verify
+    name: Verify
+    steps:
+      - file: sdd/decisions/
+        section: "(full)"
+        read_type: verify
+        extract: "Ran the gate over a scratch trace listing all eleven committed logs: no violation, one note, a lone asked line for 'Trace close' in 5e38934e (line 9), confirmed a denied dialog"
+        outcome: ok
+      - file: sdd/CLAUDE-REFERENCE.md
+        section: "Interview mode"
+        read_type: verify
+        extract: "The Record layer row named only the writer; an author learns of decisions: from it only if it names the reader. RFC-0018 Impact lists this section for the step-1 row, not for step 2"
+        outcome: unclear

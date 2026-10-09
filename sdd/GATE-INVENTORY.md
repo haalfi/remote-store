@@ -34,6 +34,7 @@ including what *Enforcement* does not mean — is the last section below.
 | `scripts/check_ripple_parity.py` | the ripple-check Pre-work index ↔ the Detailed checklist, both in sdd/CLAUDE-REFERENCE.md | process | `all`, `check-ripple-parity`, `docs-gate`, `lint` | gating |
 | `scripts/check_spec_marks.py` | spec IDs declared in sdd/specs/ ↔ spec IDs cited by pytest.mark.spec markers under tests/ | intent ↔ verification | `all`, `ci.yml:verify-formal`, `lint` | gating |
 | `scripts/check_support_windows.py` | the declared dependency floors at a base git revision and in the working tree ↔ the PyPI upload dates of the releases each raised floor newly excludes, over the packages named by every user-facing extra | process | `check-support-windows` | advisory |
+| `scripts/check_traces.py` | a trace's decisions: list ↔ the sdd/decisions/ logs it names | process | `all`, `check-traces`, `docs-gate`, `lint` | gating |
 | `scripts/check_traces.py` | every trace under sdd/traces/ ↔ the schema in sdd/traces/_schema.yml | process | `all`, `check-traces`, `docs-gate`, `lint` | gating |
 | `scripts/docs/check_links.py` | every Markdown link and context7 manifest path ↔ the on-disk files and built docs-site pages they name | explanation | `all`, `check-links`, `docs-gate` | gating |
 | `scripts/docs/check_links.py` | every Markdown link carrying a #fragment, off the historical denylist ↔ the explicit <a id> tags and heading slugs of the file it names | explanation | `all`, `check-links`, `docs-gate` | gating |

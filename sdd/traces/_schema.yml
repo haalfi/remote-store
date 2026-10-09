@@ -203,6 +203,25 @@ properties:
       `docs-src/_data/graph/graph.json` after a docstring sweep when the
       ripple-check table did not flag graph regen.
 
+  decisions:
+    type: array
+    uniqueItems: true
+    items:
+      type: string
+      # Mirrors the recorder's session-id rule (scripts/record_decision.py
+      # _SAFE_ID), so no path outside the log directory can be listed.
+      pattern: "^sdd/decisions/[A-Za-z0-9_-]+\\.jsonl$"
+    description: |
+      Repo-relative paths of the `AskUserQuestion` decision logs this work's
+      dialogs were recorded in (RFC-0018 D4.1). A trace for work that ran
+      dialogs lists its logs; optional, absent on work that asked nothing.
+      Which logs belong to a work branch is RFC-0018 D4.0's binding rule.
+
+      `scripts/check_traces.py` reads each one: it must exist, every line
+      must parse as a JSON object, and no dialog may be answered twice. A
+      question left unanswered, and an event of unknown kind, are printed as
+      notes and do not fail the gate.
+
   review_rounds:
     type: integer
     minimum: 0

@@ -52,6 +52,23 @@ The duplicate-key rule reaches repeated *keys*, not repeated *content*: two
 differently-named keys holding the same list, or one key whose list repeats an
 entry, are both well-formed and pass.
 
+Decision logs (RFC-0018 D4.2)
+-----------------------------
+For each path a trace lists under ``decisions:``, the log exists, every line
+parses as one JSON object, and no ``tool_use_id`` has two ``answered`` events.
+Two things are **reported, not failed**, as notes on stdout: a question left
+``unanswered`` (no ``answered`` event, no answer for it, or an answer starting
+with the dismissal prefix ``[User dismissed``), because declining a dialog is
+a legitimate act and the report is how it stays visible; and an event of a kind
+other than ``asked`` and ``answered``, so a later hook registration cannot break
+this reader (D3).
+
+Bounds: it reads only the logs a trace lists. Whether a trace lists *every* log
+its work produced, or a log that belongs to other work, is D4.0's binding rule
+and is not checked here. The dismissal prefix is an undocumented harness string
+(RFC-0018 D3): a rewording passes as an answer, and free text starting with the
+prefix reads as a dismissal. Outcomes other than ``unanswered`` are not derived.
+
 Exit codes
 ==========
 
@@ -80,11 +97,18 @@ Drift-gate::
     rule: no file this gate parses repeats a mapping key at any depth — every
         trace under sdd/traces/, and sdd/traces/_schema.yml itself
     domain:     process
+
+Drift-gate::
+
+    kind:       pair
+    compares:   a trace's decisions: list ↔ the sdd/decisions/ logs it names
+    domain:     process
 """
 
 from __future__ import annotations
 
 import argparse
+import json
 import sys
 from dataclasses import dataclass
 from pathlib import Path
@@ -119,6 +143,18 @@ class Violation:
 
     def format(self) -> str:
         return f"{self.source}: {self.path}: {self.message}"
+
+
+@dataclass(frozen=True)
+class Report:
+    """What one run found: ``violations`` fail the gate, ``notes`` are printed and do not."""
+
+    violations: list[Violation]
+    notes: list[Violation]
+
+
+# The harness's dismissal answer, matched by prefix (RFC-0018 D3, follow-up case a').
+_DISMISSED_PREFIX = "[User dismissed"
 
 
 def _json_path(absolute_path: Iterable[Any]) -> str:
@@ -160,18 +196,104 @@ def _validate_document(
     return [Violation(source=source, path=_json_path(e.absolute_path), message=e.message) for e in errors]
 
 
-def collect_violations(
+def _questions(event: dict[str, Any]) -> list[tuple[str, str]]:
+    """``(question, header)`` per question of an ``asked`` event; empty if its input is not that shape."""
+    tool_input = event.get("tool_input")
+    questions = tool_input.get("questions") if isinstance(tool_input, dict) else None
+    if not isinstance(questions, list):
+        return []
+    return [(str(q.get("question")), str(q.get("header", q.get("question")))) for q in questions if isinstance(q, dict)]
+
+
+def _check_decision_log(root: Path, name: str, *, source: str, path: str) -> Report:
+    """RFC-0018 D4.2 for the log listed as *name*: exists, parses, one ``answered`` per dialog."""
+    violations: list[Violation] = []
+    notes: list[Violation] = []
+    log = root / name
+    if not log.is_file():
+        return Report([Violation(source, path, f"{name}: log does not exist")], [])
+    try:
+        text = log.read_text(encoding="utf-8")
+    except (OSError, UnicodeDecodeError) as exc:
+        return Report([Violation(source, path, f"{name}: {type(exc).__name__}: {exc}")], [])
+
+    asked: dict[Any, dict[str, Any]] = {}
+    answered: dict[Any, tuple[int, dict[str, Any]]] = {}
+    for lineno, raw in enumerate(text.splitlines(), start=1):
+        try:
+            event = json.loads(raw)
+        except json.JSONDecodeError as exc:
+            violations.append(Violation(source, path, f"{name} line {lineno}: not JSON ({exc.msg})"))
+            continue
+        if not isinstance(event, dict):
+            violations.append(Violation(source, path, f"{name} line {lineno}: not a JSON object"))
+            continue
+        kind, tool_use_id = event.get("event"), event.get("tool_use_id")
+        if kind == "asked":
+            asked.setdefault(tool_use_id, event)
+        elif kind == "answered":
+            if tool_use_id in answered:
+                first = answered[tool_use_id][0]
+                violations.append(
+                    Violation(
+                        source,
+                        path,
+                        f"{name} line {lineno}: {tool_use_id} answered twice (first on line {first})",
+                    )
+                )
+            else:
+                answered[tool_use_id] = (lineno, event)
+        else:
+            notes.append(Violation(source, path, f"{name} line {lineno}: unknown event kind {kind!r}, skipped"))
+
+    for tool_use_id, event in asked.items():
+        response = answered.get(tool_use_id, (0, {}))[1].get("tool_response")
+        answers = response.get("answers") if isinstance(response, dict) else None
+        answers = answers if isinstance(answers, dict) else {}
+        for question, header in _questions(event):
+            answer = answers.get(question)
+            if not isinstance(answer, str) or answer.startswith(_DISMISSED_PREFIX):
+                notes.append(Violation(source, path, f"{name}: {tool_use_id} question {header!r} unanswered"))
+    return Report(violations, notes)
+
+
+def collect(
     *,
     schema_path: Path = SCHEMA_PATH,
     traces_dir: Path = TRACES_DIR,
-) -> list[Violation]:
-    """Validate the schema, its examples, and every trace; return violations.
+    root: Path = ROOT,
+) -> Report:
+    """Validate the schema, its examples, every trace, and every listed decision log.
 
     Order: the schema is checked for well-formedness first (a broken
     schema is reported and short-circuits, since it would make every
     trace result meaningless), then the schema's ``examples`` block, then
-    each trace file.
+    each trace file and the logs its ``decisions:`` lists, resolved against
+    *root*. A ``decisions:`` entry that is not a string is left to the schema.
     """
+    notes: list[Violation] = []
+    violations = _collect(schema_path=schema_path, traces_dir=traces_dir, root=root, notes=notes)
+    notes.sort(key=lambda v: (v.source, v.path, v.message))
+    return Report(violations, notes)
+
+
+def collect_violations(
+    *,
+    schema_path: Path = SCHEMA_PATH,
+    traces_dir: Path = TRACES_DIR,
+    root: Path = ROOT,
+) -> list[Violation]:
+    """The failing half of ``collect``."""
+    return collect(schema_path=schema_path, traces_dir=traces_dir, root=root).violations
+
+
+def _collect(
+    *,
+    schema_path: Path,
+    traces_dir: Path,
+    root: Path,
+    notes: list[Violation],
+) -> list[Violation]:
     rel = schema_path.relative_to(ROOT) if schema_path.is_relative_to(ROOT) else schema_path
     try:
         schema = load_schema(schema_path)
@@ -214,6 +336,12 @@ def collect_violations(
             violations.append(Violation(source=str(rel), path="(parse)", message=f"{type(exc).__name__}: {exc}"))
             continue
         violations.extend(_validate_document(validator, document, source=str(rel)))
+        logs = document.get("decisions") if isinstance(document, dict) else None
+        for idx, entry in enumerate(logs if isinstance(logs, list) else []):
+            if isinstance(entry, str):
+                report = _check_decision_log(root, entry, source=str(rel), path=f"decisions[{idx}]")
+                violations.extend(report.violations)
+                notes.extend(report.notes)
 
     violations.sort(key=lambda v: (v.source, v.path, v.message))
     return violations
@@ -233,9 +361,18 @@ def main(argv: list[str] | None = None) -> int:
         default=SCHEMA_PATH,
         help="Trace schema file (default: sdd/traces/_schema.yml).",
     )
+    parser.add_argument(
+        "--root",
+        type=Path,
+        default=ROOT,
+        help="Directory a trace's decisions: paths resolve against (default: the repo root).",
+    )
     args = parser.parse_args(argv)
 
-    violations = collect_violations(schema_path=args.schema, traces_dir=args.traces_dir)
+    report = collect(schema_path=args.schema, traces_dir=args.traces_dir, root=args.root)
+    for note in report.notes:
+        print(f"note: {note.format()}")
+    violations = report.violations
     if not violations:
         print("check_traces: all traces parse and validate against sdd/traces/_schema.yml.")
         return 0
