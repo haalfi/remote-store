@@ -43,8 +43,8 @@ figures and their derivations. This section names only the four it acts on.
   was in front of the session, not whether the plan weighed it (report § 7).
 - **Environment.** Three of run A's local gate runs were cut off at the tool
   limit, and one background wait left it idle for 37 minutes (report § 7). Two of
-  the three cut-offs overlapped another session's suite, per the dossier of
-  BK-419, which is filed in PR #1097 and not yet on master.
+  the three cut-offs overlapped another session's suite, per
+  [BK-419's dossier](../backlog/bk-419-local-gate-unbounded-wait.md).
 
 ## Proposal
 
@@ -157,7 +157,7 @@ leave a session waiting without a deadline.**
   - a deadline on every background wait, after which the session reports and
     stops waiting.
 
-  The tooling half is BK-419 (PR #1097), which this RFC does not duplicate. In
+  The tooling half is BK-419, which this RFC does not duplicate. In
   Phase 0 the collision half is a start condition rather than an intervention
   (§ Experiment), so only the deadline is under test.
 - **Would amend.** No ADR clause. It changes `CLAUDE.md` § Parallel tests and
@@ -285,7 +285,7 @@ is on one skill, an ADR amendment only if P1 is kept, and the local gate.**
   and P4 change the skill and the gate tooling only. ADR-0035 and ADR-0036 are not
   amended.
 - **Tooling:** `rounds.py` gains a per-PR mode. Gate robustness lands under
-  BK-419 (PR #1097).
+  BK-419.
 - **Ripples to carry when built:** `/ship` § Stop rule and § Roles (the
   orchestrator stays the main loop, now the post-PR session); `/fix-pr`'s
   sibling-sweep clause and reply rules, which carry P1's recorded check;
@@ -324,5 +324,6 @@ is on one skill, an ADR amendment only if P1 is kept, and the local gate.**
   [0037](../adrs/0037-whole-file-gate-and-derived-figures.md).
 - [RFC-0019](rfc-0019-two-speed-test-gate.md): the Phase 0 pattern this RFC
   follows.
-- Backlog: BK-418 (this RFC), BK-419 (gate robustness, filed in PR #1097, which
-  merges after #1098), BK-366 (bug share).
+- Backlog: BK-418 (this RFC),
+  [BK-419](../backlog/bk-419-local-gate-unbounded-wait.md) (gate robustness),
+  BK-366 (bug share).
