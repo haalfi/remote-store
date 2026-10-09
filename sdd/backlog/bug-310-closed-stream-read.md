@@ -1,4 +1,4 @@
-# BUG-310 — Reading a closed Azure stream answers a `RemoteStoreError` or end-of-file instead of `ValueError`
+# BUG-310 — Reading a closed Azure `read_seekable()` stream raises `RemoteStoreError` instead of `ValueError`
 <!-- doc: repo-only -->
 
 ## Evidence
@@ -21,18 +21,32 @@ The `AttributeError` is raised inside `readinto()`'s `except Exception`, re-rais
 as `OSError`, and mapped by `_ErrorMappingStream` into a `RemoteStoreError`, so
 a caller's use-after-close bug reads as a backend failure.
 
-**Per adapter.** `read(4)`, `readinto(bytearray(4))`, `seek(0)` and `tell()`
-after `close()`, each adapter constructed directly (stub clients via
-`unittest.mock`):
+**Per public composition.** `read(4)`, `seek(0)` and `tell()` after `close()`,
+each stream built exactly as the cited backend line builds it, with stub SDK
+clients (`unittest.mock`) and `AzureBackend._classify` as the mapper. Measured
+on `b2979470a` (PR #1092's review round, which caught that an earlier table here
+probed the raw adapters and so missed `read()`'s `BufferedReader`):
 
-| Adapter | read / readinto after close | seek / tell after close |
+| Stream (source line) | read after close | seek / tell after close |
 | --- | --- | --- |
-| `_AzureRangeReader` (`read_seekable`) | `OSError`, mapped to `RemoteStoreError` | returns `0` |
-| `_AzureBinaryIO` (Azure `read()`) | returns `b""` / `0`, indistinguishable from EOF | `UnsupportedOperation` |
-| `_S3RangeReader` (boto3 PoC, excluded from the wheel) | `OSError` on `None.get_object` | returns `0` |
-| `_PyArrowBinaryIO` | `ValueError` | `ValueError` |
-| `_HttpxStreamAdapter`, `_Urllib3StreamAdapter` | inconclusive: the stubs did not behave like a real `httpx.Response` / `urllib3.HTTPResponse` | `UnsupportedOperation` |
-| `io.BytesIO` (reference) | `ValueError` | `ValueError` |
+| Azure `read_seekable()`: `_ErrorMappingStream(_AzureRangeReader)` (`_azure.py:739`) | `RemoteStoreError` | returns `0` / `0` |
+| Azure `read()`: `BufferedReader(_ErrorMappingStream(_AzureBinaryIO))` (`_azure.py:706`) | `ValueError` | `ValueError` / `RemoteStoreError` |
+| boto3 PoC `read()`: `_ErrorMappingStream(_S3RangeReader)` (`_s3_boto3.py:401`; excluded from the wheel) | `RemoteStoreError` | returns `0` / `0` |
+| Reference: `_ErrorMappingStream(io.BytesIO)` | `ValueError` | `ValueError` / `ValueError` |
+
+The `tell` on Azure `read()` is not a closed-stream defect: it raises the same
+`RemoteStoreError: seek` while the stream is open, because the non-seekable
+inner raises `io.UnsupportedOperation`, an `OSError` subclass that
+`_ErrorMappingStream` maps. It is out of this item's diagnosis and filed as
+BUG-312 (§ 2).
+
+`_ErrorMappingStream` has no closed guard of its own: `read`, `readinto`,
+`readline`, `seek` and `tell` delegate to the inner stream without checking
+`self.closed` (`_stream.py`), so each unbuffered public stream answers
+read-after-close however its inner adapter does. The other construction sites
+were not measured: `rg -n '_ErrorMappingStream\(' src` prints nine lines; less
+the class statement and a docstring mention in `_sftp.py`, seven construction
+sites remain (S3 s3fs, S3-PyArrow, the boto3 PoC, SFTP, HTTP, and Azure twice).
 
 No spec clause states read-after-close behaviour for a `Backend.read()` or
 `read_seekable()` stream: `rg -n "closed file" sdd/specs` finds one hit,
@@ -50,15 +64,18 @@ Scope chosen in the session that filed this:
   so do `seek` and `tell` on a closed seekable one, never a `RemoteStoreError`
   and never empty data.
 - Add a conformance cell over every sync fixture, for both `read()` and
-  `read_seekable()`, against real backends rather than stubs; fix every adapter
-  that fails it. The two Azure adapters are known to.
-- Settle the two HTTP adapters with real response objects in
-  `tests/backends/http/`: the conformance `http` fixture is read-only and
-  reaches no `WRITE`-gated cell (ID-244, § 2), and it uses the urllib transport only.
-- Fix `_S3RangeReader` alongside: identical code, so whoever revives the PoC
-  inherits the fix.
+  `read_seekable()`, against real backends rather than stubs. Azure
+  `read_seekable()` is known to fail it; the `read()` half on Azure is a
+  regression guard, measured passing above.
+- Settle the HTTP stream with real response objects in `tests/backends/http/`:
+  the conformance `http` fixture is read-only and reaches no `WRITE`-gated cell
+  (ID-244, § 2), and it uses the urllib transport only.
+- Fix the boto3 PoC's `_S3RangeReader` alongside: identical code, so whoever
+  revives the PoC inherits the fix.
 
-Guarding on `self.closed` at the top of `readinto`, `seek` and `tell` matches
-`_ChunkPullReader.read`. Check that `_ErrorMappingStream` lets the `ValueError`
-through: it catches `OSError` and `EOFError` only, but `io.UnsupportedOperation`
-subclasses both `OSError` and `ValueError`.
+Where the guard goes is open. Per adapter (`_AzureRangeReader`, `_S3RangeReader`)
+matches `_ChunkPullReader.read`. A `self.closed` check in `_ErrorMappingStream`
+itself would cover every unbuffered public stream at all seven construction
+sites, including the unmeasured HTTP one. Either way, check that the
+`ValueError` is not mapped: the wrapper catches `OSError` and `EOFError`, and
+`io.UnsupportedOperation` subclasses both `OSError` and `ValueError`.

@@ -421,14 +421,22 @@ no clause of the contract ships unexercised.
   regex (read only). Open decision: anchor with `\Z` on every backend, or state
   the newline rule in GLOB-014.
 
-- [ ] **BUG-310 — Reading a closed Azure stream answers a `RemoteStoreError` or end-of-file instead of `ValueError`**
+- [ ] **BUG-310 — Reading a closed Azure `read_seekable()` stream raises `RemoteStoreError` instead of `ValueError`**
   spec: SIO-001, SEEK-006 · effort: M · audience: user.api
   After `close()`, `read()` on an Azure `read_seekable()` stream raises
-  `RemoteStoreError` (`'NoneType' object has no attribute 'download_blob'`) and
-  on an Azure `read()` stream returns `b""`; `io.BytesIO` and S3-PyArrow raise
-  `ValueError`. No spec clause or conformance cell covers read-after-close.
+  `RemoteStoreError` (`'NoneType' object has no attribute 'download_blob'`), and
+  `seek`/`tell` answer `0`. Azure `read()` already raises `ValueError` through its
+  `BufferedReader`. No spec clause or conformance cell covers read-after-close.
   Open decision: none; the clause, the adapters it reaches, and the reproduction are in the dossier.
   Detail: [dossier](backlog/bug-310-closed-stream-read.md)
+
+- [ ] **BUG-312 — `tell()` on Azure's non-seekable `read()` stream raises `RemoteStoreError` instead of `io.UnsupportedOperation`**
+  spec: SIO-012 · effort: S · audience: user.api
+  Open or closed, `tell()` raises `RemoteStoreError: seek`; a plain non-seekable
+  `BufferedReader` raises `io.UnsupportedOperation` (`seek()` is unaffected:
+  `BufferedReader` refuses first). SIO-012 maps every `OSError` on `tell`, and
+  `UnsupportedOperation` is one. Other non-seekable sites unmeasured; BUG-310
+  shares the wrapper. Open decision: exempt it in SIO-012, or keep mapping it.
 
 - [ ] **BK-407 — Mutation scopes miss every backend's `async_sources` and ten split-topic tests**
   spec: — · effort: S · audience: infra.test
