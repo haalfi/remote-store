@@ -11664,7 +11664,8 @@ leave a session waiting without a deadline.</strong></p>
 skill file (2.72% of run A's re-read context at round 7), spilled tool outputs
 read back, and the shared process files. A diet for that input
 was considered and left out of run B by the maintainer, so that run B tests the
-four interventions above and no more. It stays a candidate for a later RFC.</p>
+four interventions above and no other intervention; the one other change it runs
+under is a confound, stated below. It stays a candidate for a later RFC.</p>
 <h2 id="experiment">Experiment<a class="headerlink" href="#experiment" title="Permanent link">&para;</a></h2>
 <p><strong>Run B is one <code>/ship BUG-280</code> delivery under the variant, started under the
 same conditions as run A and compared with it round by round, not only in
@@ -11793,7 +11794,16 @@ that is not on master is invisible to it, and that is intended. Run B also runs
 with no other suite on the machine, a start condition run A did not have: two of
 run A's three cut-offs overlapped another session's suite (BK-419's dossier),
 and each cut-off cost a re-run gate. That favours run B in the run-level and P2
-comparisons for a reason none of P1 to P3 controls.</p>
+comparisons for a reason none of P1 to P3 controls. Run B also runs with BK-414's
+lookup tool, which lands before it by the maintainer's decision: <code>/ship</code> Step 1
+reads the item and the Pre-work index through it, and a <code>CLAUDE.md</code> rule sends
+every session's single-key lookups to it. That can move the Phase row's orient
+calls and units share, and how the Orient row's related items are listed, for a
+reason none of P1 to P3 controls. Its lookups appear as Bash calls to
+<code>hatch run backlog-*</code> and <code>ref-*</code>, not as Reads of the files they print from, so
+the comparison counts them together with Read and Grep calls on <code>BACKLOG*.md</code> and
+<code>CLAUDE-REFERENCE.md</code> in both runs; otherwise run B's lookups read as a drop in
+reads.</p>
 <h2 id="roadmap">Roadmap<a class="headerlink" href="#roadmap" title="Permanent link">&para;</a></h2>
 <p><strong>Three phases, each with its exit fixed before it starts. Phase 0 can stop
 the whole effort, and nothing that changes <code>/ship</code> itself lands before Phase
