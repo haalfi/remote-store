@@ -19,6 +19,71 @@ surprising_ripples:
   - ".claude/skills/fix-pr/SKILL.md"
 decisions:
   - "sdd/decisions/8352892b-3229-4a0a-9656-c75b8d1d153b.jsonl"
+review:
+  # Derived by `hatch run ship-report 1091 --trace-block-only` at head d7ee702.
+  # Do not hand-edit, except a newly required field per sdd/traces/_schema.yml
+  # section review: RFC-0015 D4 makes this script the only producer.
+  derivation: "hatch run ship-report 1091 --trace-block-only"
+  pr: 1091
+  review_rounds: 6
+  submissions: 5
+  findings: 13
+  by_round:
+    - round: 1
+      findings: 4
+      origin: {original: 3, unclassifiable-file: 1}
+      triage: {must-fix: 4}
+      duration_hours: 0.16
+    - round: 2
+      findings: 3
+      origin: {loop-introduced: 1, original: 2}
+      triage: {must-fix: 3}
+      duration_hours: 0.39
+    - round: 3
+      findings: 2
+      origin: {loop-introduced: 1, original: 1}
+      triage: {must-fix: 2}
+      duration_hours: 0.68
+    - round: 4
+      findings: 2
+      origin: {loop-introduced: 1, original: 1}
+      triage: {must-fix: 2}
+      duration_hours: 0.53
+    - round: 5
+      findings: 2
+      origin: {loop-introduced: 2}
+      triage: {must-fix: 2}
+      duration_hours: 0.2
+  by_file:
+    - path: "scripts/check_traces.py"
+      findings: 9
+    - path: "sdd/traces/_schema.yml"
+      findings: 3
+    - path: "CLAUDE.md"
+      findings: 1
+  untouched_files:
+    - ".claude/skills/fix-pr/SKILL.md"
+    - "sdd/BACKLOG.md"
+    - "sdd/CLAUDE-REFERENCE.md"
+    - "sdd/GATE-INVENTORY.md"
+    - "sdd/decisions/8352892b-3229-4a0a-9656-c75b8d1d153b.jsonl"
+    - "sdd/rfcs/rfc-0018-decision-capture-at-dialog-time.md"
+    - "sdd/traces/bk-397-trace-decisions-key.yml"
+    - "tests/scripts/test_check_traces.py"
+  review_driven_commits:
+    - sha: "a14a8cd"
+      subject: "BK-397: decision log"
+    - sha: "660b3a7"
+      subject: "BK-397: fix: address PR #1091 review"
+    - sha: "a62e1e9"
+      subject: "BK-397: fix: address PR #1091 review, round 2"
+    - sha: "90c8e21"
+      subject: "BK-397: fix: address PR #1091 review, round 3"
+    - sha: "3b2e068"
+      subject: "BK-397: fix: address PR #1091 review, round 4"
+    - sha: "d7ee702"
+      subject: "BK-397: fix: address PR #1091 review, round 5"
+  ci: {verdict: GREEN, failed: 0, pending: 0}
 phases:
   - id: orient
     name: Orient
