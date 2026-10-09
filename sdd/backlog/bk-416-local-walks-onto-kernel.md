@@ -7,6 +7,11 @@ into a `LocalBackend`-only error model for every folder walk, and each round
 found the next site or error class the per-site rules had missed. Round 7
 measured a Windows regression in that model.
 
+Review restarted at round 1 on the narrowed diff, so the PR has two round
+sequences. Below, a bare "round N" is from before the narrowing, and "round N
+after the re-plan" is from after it. Every measurement after the narrowing
+names its commit.
+
 The maintainer then cut BUG-280 back to the single-level scans (`list_files`
 without `recursive`, `list_folders`, `iter_children`). The walks were left as
 master has them, for RFC-0017's kernel. Under RFC-0017 the kernel owns:
@@ -35,7 +40,8 @@ predicates swapped in.
 | `get_folder_info` | under-counts silently | 3.11–3.13: raw `builtins.PermissionError`; 3.14: under-counts silently |
 | `Store.get_folder_info(max_depth=N)` | under-counts silently, through `list_files` | as `list_files(max_depth=N)` |
 
-A denied **listed** folder is dropped the same way. BUG-280's round 3 measured
+A denied **listed** folder is dropped the same way. BUG-280's round 3 after
+the re-plan measured
 it at `2103ed1de`. With `a` itself at chmod 0 or 0o111, on Linux uid 1000 on
 3.11 to 3.14, and under a real `icacls /deny RD` on Windows 3.13, two calls
 return `[]`, where the non-recursive call raises `PermissionDenied`:
@@ -44,7 +50,8 @@ counts 0. The only check on the listed folder before the walk is a `stat`,
 which a folder that refuses its listing still answers. On 3.14 the plain walk
 also drops a listed folder that lists but cannot be traversed: with `a` at
 0o444, `list_files("a")` raises and `list_files("a", recursive=True)` returns
-`[]`. BUG-280's round 5 measured that on Linux 3.14.8 at `0b069ab3b`.
+`[]`. BUG-280's round 5 after the re-plan measured that on Linux 3.14.8 at
+`0b069ab3b`.
 
 Two of these cells are BE-021 breaches:
 - the silent drop, of a subtree or of the whole listing, a short answer that
@@ -124,7 +131,8 @@ pins the plain walk's skip of an unstattable entry there.
   link (`os.walk` with `followlinks=False`, and `rglob`). BE-021's link clause
   decides only dangling, looping and refused-target links, so `classify` has
   to choose.
-  This was read from the code by BUG-280's round 3 and not run.
+  This was read from the code by BUG-280's round 3 after the re-plan and not
+  run.
 - **The walks' native errors are mapped, but not classified.** BUG-280 keeps the
   recursive branches inside `list_files`' handler, so whatever escapes them
   reaches the caller as `PermissionDenied` or a `RemoteStoreError`, never raw.
@@ -134,19 +142,20 @@ pins the plain walk's skip of an unstattable entry there.
   call. A link below the bound is never reached: with one at
   `a/sub/dangling.txt`, `max_depth=0` lists and `max_depth=1` raises. Master
   leaked all of them raw; `classify` should answer them as absences. BUG-280's
-  round 4 measured them on Linux 3.11 to 3.14 at `a387794f3`. Under churn,
-  plain recursive raised `RemoteStoreError` in 20 to 42 calls and `max_depth`
-  in about 200, per interpreter, over about 4 s per mode. Every `max_depth`
-  call over a dangling link or loop within the bound raised. Round 5 measured
-  the depth bound at `0b069ab3b`. On Windows 3.11 the plain walk raises too,
+  round 4 after the re-plan measured them on Linux 3.11 to 3.14 at
+  `a387794f3`. Under churn, plain recursive raised `RemoteStoreError` in 20 to
+  42 calls and `max_depth` in about 200, per interpreter, over about 4 s per
+  mode. Every `max_depth` call over a dangling link or loop within the bound
+  raised. Round 5 after the re-plan measured the depth bound at `0b069ab3b`.
+  On Windows 3.11 the plain walk raises too,
   for a dangling junction or a junction loop, because 3.11's `rglob` selectors
   catch only `PermissionError`; 3.12 to 3.14 skip them.
 - **On 3.11 and 3.12, a link loop in the path itself leaks a bare
   `RuntimeError`.** `_resolve` resolves the deepest existing ancestor, and
   `Path.resolve` raises `RuntimeError("Symlink loop from …")` there; 3.13 and
   3.14 do not. It reaches every operation, not only listings, because every
-  operation resolves its path. BUG-280's round 4 measured it on Linux 3.11 and
-  3.12, on head and master alike, for `list_files('a/loop1')`, `a/self/x` and
+  operation resolves its path. BUG-280's round 4 after the re-plan measured it
+  on Linux 3.11 and 3.12, on head and master alike, for `list_files('a/loop1')`, `a/self/x` and
   the other listing calls. `classify` needs it, and the fix belongs in
   `_resolve`, not per operation.
 - **`_resolve` reports a folder mid-delete as escaping the root.** In the same
@@ -170,8 +179,9 @@ pins the plain walk's skip of an unstattable entry there.
   They map anything else to a `RemoteStoreError` naming the listed key, as SFTP
   does for `EIO`. That is the shape for `classify`: a short absence list, a
   denial, and a mapped error for the rest, not a skip and not a leak. The
-  scans' cells inject `EIO` at the folder's `stat`, an entry's `stat` and the
-  folder's scan; nothing injects it into the walks yet.
+  scans' cells inject `EIO` at four sites: the folder's `stat`, an entry's
+  `stat`, an entry's `lstat` after a refused `stat`, and the folder's scan.
+  Nothing injects it into the walks yet.
 - **Classify from one `stat`, not from `Path.is_file` / `is_dir`.** On 3.14
   those call `os.path.isfile` / `isdir`, whose POSIX forms answer `False` on
   `EACCES`. On 3.11–3.13 they re-raise it. BUG-280's `_stat_or_absent` is the

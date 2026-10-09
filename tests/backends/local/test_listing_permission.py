@@ -208,10 +208,14 @@ def test_an_entry_the_os_refuses_to_stat_raises_permission_denied(tmp_path: Path
     assert "f.txt" in str(info.value) or "sub" in str(info.value)
 
 
+# The recursive forms share the single-level check of the listed folder, so the
+# refused-ancestor rule holds for them too.
 _ON_SUB: dict[str, Callable[[LocalBackend], set[str]]] = {
     "list_files": lambda b: _keys(b.list_files("a/sub")),
     "list_folders": lambda b: _keys(b.list_folders("a/sub")),
     "iter_children": lambda b: _keys(b.iter_children("a/sub")),
+    "list_files-recursive": lambda b: _keys(b.list_files("a/sub", recursive=True)),
+    "list_files-recursive-max_depth": lambda b: _keys(b.list_files("a/sub", recursive=True, max_depth=5)),
 }
 
 

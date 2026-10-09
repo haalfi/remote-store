@@ -659,3 +659,32 @@ phases:
           states which BE-014 ancestor rule wins: a file component yields
           nothing, a refused ancestor raises
         outcome: ok
+  - id: fix_close
+    name: Fix pass (closing round; closed without a further round)
+    steps:
+      - file: docs-src/reference/migration.md
+        section: "v0.33.0 to v0.33.1"
+        read_type: verify
+        extract: >-
+          fix_r5b's trim said the recursive listing "does not follow these
+          rules" and only its error type changes. Both are false for the listed
+          folder itself, which every branch classifies with the shared top
+          stat: on 3.14 a recursive listing under an untraversable parent, or
+          with a too-long name, went from [] to an error (measured, Linux
+          3.14.8 and a Windows 3.14.0 junction). The note, the docstring and
+          BE-021's divergence now say the listed folder's check is shared, and
+          _ON_SUB carries both recursive forms. The 3.11/3.12 RuntimeError for
+          a path through a link loop, which the docstring's "native error
+          mapped" contradicted, is stated in the docstrings, the note and its
+          own BE-021 divergence covering every operation. The maintainer chose
+          to correct the claims, not to catch it per method, and to close
+          without another review round
+        outcome: ok
+      - file: CHANGELOG.md
+        section: "[Unreleased]"
+        read_type: gate
+        extract: >-
+          The unprimed member read the "- BUG-280: <title>" stub as stating
+          the defect. The stub follows the repo's "- <ID>: <Title>" rule,
+          which the release step expands; kept by the maintainer's call
+        outcome: ok

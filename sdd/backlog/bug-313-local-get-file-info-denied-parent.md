@@ -1,7 +1,8 @@
 # BUG-313 — `LocalBackend`'s `get_file_info` and path predicates misanswer a path they may not `stat`
 <!-- doc: repo-only -->
 
-Filed by BUG-280's closing round. Its sibling sweep listed every place that
+Filed by BUG-280's third review round, before the PR was narrowed and its
+review restarted. Its sibling sweep listed every place that
 classifies a path with `Path.is_file` or `is_dir`. BUG-280 fixes the
 single-level scans among them; the recursive walks and `get_folder_info` went
 to BK-416 (RFC-0017 step 5). `get_file_info` was left out of that PR's scope by
@@ -91,7 +92,8 @@ is marked as read.
   3.11 to 3.13 both forms leak a raw `PermissionError`. On 3.14 the strict form
   answers `NotFound`, and **`missing_ok=True` returns cleanly while the folder
   is still on disk**: a delete reported done that never happened. The 3.14
-  cells were measured by BUG-280's sixth review round on 3.14.0. This is the
+  cells were measured by BUG-280's sixth review round, before the narrowing,
+  on 3.14.0. This is the
   most urgent member of the ring.
 - **`check_health`**: `if not self._root.is_dir()` on a root whose parent cannot
   be traversed leaks a raw `PermissionError` on 3.11 and 3.13 and answers

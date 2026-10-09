@@ -636,12 +636,14 @@ class LocalBackend(Backend):
         ``recursive`` and ``max_depth`` set, traversal is pruned at the depth
         bound during the ``os.walk`` rather than filtered afterwards.
 
-        The ``Raises`` below describe the non-recursive listing. A recursive
-        listing keeps its traversal and does not apply the link and absence
-        rules below: it can leave out a folder the OS refuses to list, *path*
-        included, without an error, and it can raise for an entry the
-        non-recursive listing skips. A native error it raises still reaches the
-        caller as ``PermissionDenied`` or ``RemoteStoreError``.
+        A recursive listing checks *path* itself as the non-recursive one
+        does, so a *path* whose parent the OS refuses to traverse raises
+        ``PermissionDenied``. Below *path* it keeps its traversal and does not
+        apply the link and absence rules in ``Raises``: it can leave out a
+        folder the OS refuses to list, *path* included, without an error, and
+        it can raise for an entry the non-recursive listing skips. An ``OSError``
+        it raises reaches the caller as ``PermissionDenied`` or
+        ``RemoteStoreError``.
 
         Raises:
             PermissionDenied: If the OS refuses to list *path*, or to ``stat``
@@ -650,6 +652,10 @@ class LocalBackend(Backend):
                 instead.
             RemoteStoreError: If the OS fails the listing with an error that
                 is neither a denial nor an absence, such as ``EIO``.
+
+        On Python 3.11 and 3.12, a *path* that is or passes through a symlink
+        loop raises the interpreter's ``RuntimeError`` from path resolution,
+        as every operation on this backend does there.
         """
         try:
             full = self._resolve(path)
@@ -697,6 +703,10 @@ class LocalBackend(Backend):
                 instead.
             RemoteStoreError: If the OS fails the listing with an error that
                 is neither a denial nor an absence, such as ``EIO``.
+
+        On Python 3.11 and 3.12, a *path* that is or passes through a symlink
+        loop raises the interpreter's ``RuntimeError`` from path resolution,
+        as every operation on this backend does there.
         """
         try:
             full = self._resolve(path)
@@ -728,6 +738,10 @@ class LocalBackend(Backend):
                 instead.
             RemoteStoreError: If the OS fails the listing with an error that
                 is neither a denial nor an absence, such as ``EIO``.
+
+        On Python 3.11 and 3.12, a *path* that is or passes through a symlink
+        loop raises the interpreter's ``RuntimeError`` from path resolution,
+        as every operation on this backend does there.
         """
         try:
             full = self._resolve(path)

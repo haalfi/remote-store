@@ -13,9 +13,9 @@ changes that require action when upgrading.
 `list_files()`, `list_folders()` and `iter_children()` on `LocalBackend` let the
 operating system's `PermissionError` reach the caller unmapped, with no `path`
 or `backend`, so an `except RemoteStoreError` clause did not catch it. They now
-raise `PermissionDenied`, as `read`, `write` and `delete` already did. If you
-wrote `except PermissionError` around a listing on this backend, it no longer
-fires. Catch `PermissionDenied`.
+raise `PermissionDenied`, as `read`, `write` and `delete` already did for a
+file the OS refuses. If you wrote `except PermissionError` around a listing on
+this backend, it no longer fires. Catch `PermissionDenied`.
 
 The same holds for a folder you may list but not open, such as a POSIX
 directory with read but no execute permission. On Python 3.14 a non-recursive
@@ -43,12 +43,18 @@ failed. It used to escape as the bare `OSError`, except on 3.14, where an error
 from the folder's or an entry's `stat` was read as an empty folder or a missing
 entry.
 
-A **recursive** `list_files()` keeps its traversal and does not follow these
+A **recursive** `list_files()` checks the folder you asked for as the other
+calls do, so the parent and other-error paragraphs above apply to it too, 3.14
+included. Below that folder it keeps its traversal and does not follow these
 rules. It can still leave out a folder it cannot list, the one you asked for
 included, without an error, and it can raise for an entry a non-recursive
-listing skips. What changes is the error type: where it raises, you now get
-`PermissionDenied` or `RemoteStoreError` instead of the bare `OSError`.
-`get_folder_info()` and `glob()` are not changed by this release.
+listing skips. Where it raises an `OSError`, you now get `PermissionDenied` or
+`RemoteStoreError` instead. `get_folder_info()` and `glob()` are not changed by
+this release.
+
+On Python 3.11 and 3.12, a path that is or passes through a symlink loop still
+raises Python's bare `RuntimeError`, from every `LocalBackend` operation. This
+release does not change that.
 
 ## v0.32.0 to v0.33.0
 

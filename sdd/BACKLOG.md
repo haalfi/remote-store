@@ -254,9 +254,9 @@ failure it was.
 - [ ] **BUG-313 — `LocalBackend`'s `get_file_info` and path predicates misanswer a path they may not `stat`**
   spec: BE-004, BE-005, BE-013, BE-016, BE-021 · effort: M · audience: user.api
   On a path whose parent lists but cannot be traversed, `get_file_info` and the
-  predicates leak a raw `PermissionError` on 3.11 to 3.13; on 3.14 (POSIX) they
-  answer `NotFound` / `False`, and `delete_folder(missing_ok=True)` reports a
-  delete it never did. `Store.get_folder_info(max_depth=N)` inherits it. Open
+  predicates leak a raw `PermissionError` on 3.11 to 3.13. On 3.14 (simulated)
+  `get_file_info` answers `NotFound`, `is_file` / `is_folder` answer `False`,
+  and `delete_folder(missing_ok=True)` reports a delete it never did. `Store.get_folder_info(max_depth=N)` inherits it. Open
   decision: a predicate's answer to a denial, here or in BK-416's `classify`.
   Detail: [dossier](backlog/bug-313-local-get-file-info-denied-parent.md)
 

@@ -1224,14 +1224,21 @@ single-level listings follow links, and count a Windows directory junction as
 one; this clause does not decide whether any other backend's do.
 
 **Known divergence: `LocalBackend`'s recursive walks.** Recursive `list_files`
-and `get_folder_info` do not meet this clause or the never-leak invariant yet.
-They can leave out a folder the OS refuses to list without an error, and raise
-for entries this clause skips, and `get_folder_info` can leak the bare error.
-How each answers, by interpreter and platform, is recorded in BK-416, which
-moves them onto RFC-0017's listing kernel; its strict `xfail` cells name the
-item. On 3.11 and 3.12, a listed path that is or passes through a link loop
-raises a bare `RuntimeError` from path resolution, for every operation, not
-only listings; BK-416 records that too.
+checks the listed folder as the single-level listings do, so the refused-ancestor
+rule above holds for it. Below that folder, it and `get_folder_info` do not meet
+this clause or the never-leak invariant yet. They can leave out a folder the OS
+refuses to list without an error, and raise for entries this clause skips, and
+`get_folder_info` can leak the bare error. How each answers, by interpreter and
+platform, is recorded in BK-416, which moves them onto RFC-0017's listing
+kernel; its strict `xfail` cells name the item.
+
+**Known divergence: a link loop in the path on 3.11 and 3.12.** There,
+`LocalBackend` raises Python's bare `RuntimeError` from path resolution for a
+path that is or passes through a link loop, before any listing or other
+operation runs. It breaches the never-leak invariant for every operation, the
+single-level listings included, where this clause would answer the loop as
+gone. 3.13 and 3.14 answer it as gone. BK-416 records it, with the fix in path
+resolution rather than per operation.
 
 ### BE-022: unwrap()
 
