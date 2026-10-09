@@ -421,12 +421,12 @@ no clause of the contract ships unexercised.
   regex (read only). Open decision: anchor with `\Z` on every backend, or state
   the newline rule in GLOB-014.
 
-- [ ] **BUG-310 — Reading a closed Azure `read_seekable()` stream raises `RemoteStoreError` instead of `ValueError`**
+- [ ] **BUG-310 — A closed Azure `read_seekable()` stream keeps answering instead of raising `ValueError`**
   spec: SIO-001, SEEK-006 · effort: M · audience: user.api
-  After `close()`, `read()` on an Azure `read_seekable()` stream raises
-  `RemoteStoreError` (`'NoneType' object has no attribute 'download_blob'`), and
-  `seek`/`tell` answer `0`. Azure `read()` already raises `ValueError` through its
-  `BufferedReader`. No spec clause or conformance cell covers read-after-close.
+  After `close()`, `read` raises `RemoteStoreError` (`'NoneType' object has no
+  attribute 'download_blob'`) mid-object and returns `b""` at EOF or on an empty
+  blob, and `seek`/`tell` return positions. Azure `read()` already raises
+  `ValueError` through its `BufferedReader`; no spec clause or conformance cell covers this.
   Open decision: none; the clause, the adapters it reaches, and the reproduction are in the dossier.
   Detail: [dossier](backlog/bug-310-closed-stream-read.md)
 
