@@ -186,3 +186,77 @@ phases:
           AssertionError: branch-freshness. The review block pasted mid-loop is
           removed and is re-derived at the close.
         outcome: ok
+review:
+  # Derived by `hatch run ship-report 1099 --trace-block-only` at head 2dd4f44.
+  # Do not hand-edit, except a newly required field per sdd/traces/_schema.yml
+  # section review: RFC-0015 D4 makes this script the only producer.
+  derivation: "hatch run ship-report 1099 --trace-block-only"
+  pr: 1099
+  review_rounds: 8
+  submissions: 4
+  findings: 9
+  by_round:
+    - round: 1
+      findings: 2
+      origin: {original: 2}
+      triage: {must-fix: 2}
+      duration_hours: 0.06
+    - round: 2
+      findings: 2
+      origin: {loop-introduced: 1, original: 1}
+      triage: {must-fix: 2}
+      duration_hours: 0.94
+    - round: 3
+      findings: 1
+      origin: {loop-introduced: 1}
+      triage: {must-fix: 1}
+      duration_hours: 0.11
+    - round: 4
+      findings: 4
+      origin: {loop-introduced: 3, original: 1}
+      triage: {must-fix: 4}
+      duration_hours: 0.14
+  by_file:
+    - path: "scripts/sdd_lookup.py"
+      findings: 3
+    - path: ".claude/skills/rvw-pr/SKILL.md"
+      findings: 1
+    - path: "CLAUDE.md"
+      findings: 1
+    - path: "sdd/BACKLOG-DONE.md"
+      findings: 1
+    - path: "sdd/backlog/bk-414-sdd-lookup.md"
+      findings: 1
+    - path: "sdd/traces/bk-414-sdd-lookup.yml"
+      findings: 1
+    - path: "tests/scripts/test_sdd_lookup.py"
+      findings: 1
+  untouched_files:
+    - ".claude/skills/fix-pr/SKILL.md"
+    - ".claude/skills/orchestrate/SKILL.md"
+    - ".claude/skills/pr/SKILL.md"
+    - ".claude/skills/release/SKILL.md"
+    - ".claude/skills/ship/SKILL.md"
+    - "pyproject.toml"
+    - "sdd/BACKLOG.md"
+    - "sdd/backlogid.json"
+    - "sdd/decisions/3bad7c8f-a0b4-4e5a-854f-5432cd88feea.jsonl"
+    - "sdd/rfcs/rfc-0020-ship-token-interventions.md"
+  review_driven_commits:
+    - sha: "5e69681"
+      subject: "fix: address PR #1099 review"
+    - sha: "bf0bf5c"
+      subject: "BK-414: trace review block and decision log"
+    - sha: "6217cc7"
+      subject: "BK-414: Narrow two dossier claims to the shipped tool"
+    - sha: "0778ad9"
+      subject: "BK-414: Point CLAUDE.md and six skills at the lookup tool, and close the item"
+    - sha: "76322f1"
+      subject: "BK-414: decision log"
+    - sha: "776b4c2"
+      subject: "fix: address PR #1099 review (round 2)"
+    - sha: "b762f59"
+      subject: "fix: address PR #1099 review"
+    - sha: "2dd4f44"
+      subject: "fix: address PR #1099 review (round 3)"
+  ci: {verdict: GREEN, failed: 0, pending: 0}
