@@ -197,3 +197,28 @@ phases:
           mutants all die. get_folder_info's is_file filter survived until the
           ghost-name cell was parametrised over it too
         outcome: ok
+  - id: fix_2
+    name: Fix pass (round 2)
+    steps:
+      - file: tests/backends/local/test_listing_permission.py
+        section: "test_a_subfolder_vanishing_mid_walk_is_still_an_absence"
+        read_type: verify
+        extract: >-
+          Round 2's measuring pass confirmed every premise on master and every
+          new-behaviour claim at the head with real ACL denials. It found one
+          gap: the vanishing-subfolder control drove list_files only, so
+          get_folder_info's own error hook could be made to raise on any
+          OSError with nothing failing. Parametrised over all five recursive
+          walks. A per-site mutant (get_folder_info's hook re-raising
+          everything) now dies on the 2 new cells
+      - file: tmp/bug280/mutate.py
+        section: "list_files mutants"
+        read_type: verify
+        extract: >-
+          The instrument was wrong for one fix pass. The list_files mutants
+          matched "dirnames, filenames in os.walk", which is also a substring
+          of get_folder_info's "_dirnames, filenames in os.walk", so they
+          mutated both sites at once. The round-1 reply's per-mutant claims
+          held, but "list_files-no-onerror: 15 failed" measured two sites.
+          Re-anchored on "for dirpath, dirnames"; it now kills 9 cells alone.
+          No outcome tag: the author built the instrument

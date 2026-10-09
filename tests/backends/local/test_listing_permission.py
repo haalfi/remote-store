@@ -161,20 +161,31 @@ def test_a_depth_bound_that_stops_above_the_denied_folder_never_opens_it(tmp_pat
     assert listed == {"a/f.txt"}
 
 
-@pytest.mark.spec("BE-014")
-@pytest.mark.parametrize("max_depth", [None, 5], ids=["unbounded", "max_depth"])
-def test_a_subfolder_vanishing_mid_walk_is_still_an_absence(tmp_path: Path, max_depth: int | None) -> None:
-    """Only a denial raises: a subfolder gone by the time the walk opens it lists as nothing.
+# What each recursive walk answers for ``a`` when ``a/sub`` is gone by the time
+# the walk opens it: the readable part, since an absent subfolder holds nothing.
+_WITH_SUB_GONE: dict[str, object] = {
+    "list_files-recursive": {"a/f.txt"},
+    "list_files-recursive-max_depth": {"a/f.txt"},
+    "get_folder_info": 1,
+    "Store.get_folder_info": 1,
+    "Store.get_folder_info-max_depth": 1,
+}
 
-    The control that keeps the fix narrow. A missing path yields nothing under
+
+@pytest.mark.spec("BE-014")
+@pytest.mark.parametrize("entry", list(_WITH_SUB_GONE))
+def test_a_subfolder_vanishing_mid_walk_is_still_an_absence(tmp_path: Path, entry: str) -> None:
+    """Only a denial raises: a subfolder gone by the time the walk opens it holds nothing.
+
+    The control that keeps the fix narrow, held on every recursive walk because
+    each has its own error hook to get wrong. A missing path yields nothing under
     BE-014, and a walk that started before a subfolder was removed meets exactly
     that; turning every ``OSError`` into a raise would make it an error.
     """
     backend = _tree(tmp_path)
     gone = FileNotFoundError(errno.ENOENT, "No such file or directory")
     with _deny(tmp_path / "a" / "sub", gone):
-        listed = {str(fi.path) for fi in backend.list_files("a", recursive=True, max_depth=max_depth)}
-    assert listed == {"a/f.txt"}
+        assert _ENTRY_POINTS[entry](backend) == _WITH_SUB_GONE[entry]
 
 
 @pytest.mark.spec("BE-014")
