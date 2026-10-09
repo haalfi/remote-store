@@ -65,8 +65,10 @@ declining a dialog is a legitimate act and the report is how it stays visible;
 an event of a kind other than ``asked`` and ``answered``, so a later hook
 registration cannot break this reader (D3); an ``asked`` event whose
 ``tool_input.questions`` is not a list of objects, which would otherwise drop
-out of the unanswered report silently; and an ``answered`` event with no
-``asked`` event.
+out of the unanswered report silently; an ``answered`` event with no
+``asked`` event; and an event whose ``tool_use_id`` is a list or object, which
+cannot pair and is skipped. Lines are split on ``\\n`` alone, the only break the
+recorder writes. An entry listed twice is read once.
 
 Bounds: it reads only the logs a trace lists. Whether a trace lists *every* log
 its work produced, or a log that belongs to other work, is D4.0's binding rule
@@ -124,8 +126,10 @@ Drift-gate::
 from __future__ import annotations
 
 import argparse
+import io
 import json
 import sys
+from collections.abc import Hashable
 from dataclasses import dataclass
 from pathlib import Path
 from typing import TYPE_CHECKING, Any
@@ -235,7 +239,14 @@ def _check_decision_log(root: Path, name: str, *, source: str, path: str) -> Rep
 
     asked: dict[Any, dict[str, Any]] = {}
     answered: dict[Any, tuple[int, dict[str, Any], str]] = {}
-    for lineno, raw in enumerate(text.splitlines(), start=1):
+    # Split on "\n" alone, the only break the recorder writes: its
+    # ensure_ascii=False leaves U+2028, U+2029 and U+0085 raw inside strings,
+    # and str.splitlines() would cut a real record there. A CRLF checkout's
+    # trailing "\r" is whitespace json.loads accepts.
+    lines = text.split("\n")
+    if lines and not lines[-1]:
+        lines.pop()
+    for lineno, raw in enumerate(lines, start=1):
         try:
             event = json.loads(raw)
         except json.JSONDecodeError as exc:
@@ -245,6 +256,10 @@ def _check_decision_log(root: Path, name: str, *, source: str, path: str) -> Rep
             violations.append(Violation(source, path, f"{name} line {lineno}: not a JSON object"))
             continue
         kind, tool_use_id = event.get("event"), event.get("tool_use_id")
+        if not isinstance(tool_use_id, Hashable):
+            # A list or object id cannot pair; reported rather than raised.
+            notes.append(Violation(source, path, f"{name} line {lineno}: tool_use_id is not a value, skipped"))
+            continue
         if kind == "asked":
             asked.setdefault(tool_use_id, event)
         elif kind == "answered":
@@ -362,8 +377,12 @@ def _collect(
         # and echo in notes, a file the trace was not allowed to name.
         rejected = {v.path for v in document_violations}
         logs = document.get("decisions") if isinstance(document, dict) else None
+        # uniqueItems reports at `decisions`, not at the repeated entry, so a
+        # repeat is skipped here rather than read twice.
+        seen: set[str] = set()
         for idx, entry in enumerate(logs if isinstance(logs, list) else []):
-            if isinstance(entry, str) and f"decisions[{idx}]" not in rejected:
+            if isinstance(entry, str) and f"decisions[{idx}]" not in rejected and entry not in seen:
+                seen.add(entry)
                 report = _check_decision_log(root, entry, source=str(rel), path=f"decisions[{idx}]")
                 violations.extend(report.violations)
                 notes.extend(report.notes)
@@ -395,6 +414,11 @@ def main(argv: list[str] | None = None) -> int:
     args = parser.parse_args(argv)
 
     report = collect(schema_path=args.schema, traces_dir=args.traces_dir, root=args.root)
+    # Notes and violations echo log text (headers, ids, event kinds), which a
+    # redirected Windows stdout would encode as cp1252 and fail on (BUG-305).
+    for stream in (sys.stdout, sys.stderr):
+        if isinstance(stream, io.TextIOWrapper):
+            stream.reconfigure(encoding="utf-8")
     for note in report.notes:
         print(f"note: {note.format()}")
     violations = report.violations

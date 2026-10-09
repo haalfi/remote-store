@@ -104,3 +104,21 @@ phases:
         read_type: verify
         extract: "Six new failing tests seen red, then five mutations each caught by its own test; re-run over the eleven real logs still gives the one 'Trace close' note"
         outcome: ok
+  - id: fix
+    name: Fix review round 2
+    steps:
+      - file: scripts/record_decision.py
+        section: "record (ensure_ascii=False)"
+        read_type: verify
+        extract: "The writer leaves U+2028, U+2029 and U+0085 raw, so the reader must split on \\n alone; my splitlines() made a real record look like the deletable 'does not parse' fault"
+        outcome: ok
+      - file: scripts/report_trace_outcomes.py
+        section: "main (stdout reconfigure)"
+        read_type: reference
+        extract: "BUG-305's UTF-8 reconfigure is the precedent; reproduced the cp1252 crash here first: piped stdout is cp1252 on this machine and a header with U+2192 raised UnicodeEncodeError"
+        outcome: ok
+      - file: sdd/rfcs/rfc-0018-decision-capture-at-dialog-time.md
+        section: "D2"
+        read_type: gate
+        extract: "My round-1 D2 amendment named two deletable cases while the schema named three; the maintainer chose to amend D2 with the third (differing answers, maintainer picks the record)"
+        outcome: ok

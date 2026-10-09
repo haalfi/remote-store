@@ -220,8 +220,9 @@ properties:
       `scripts/check_traces.py` reads each one the pattern accepts: it must
       exist, every line must parse as a JSON object, and no dialog may be
       answered twice. A question left unanswered, an event of unknown kind,
-      an `asked` event with no readable questions and an `answered` event
-      with no `asked` one are printed as notes and do not fail the gate.
+      an `asked` event with no readable questions, an `answered` event with
+      no `asked` one, and an event whose `tool_use_id` is a list or object
+      are printed as notes and do not fail the gate.
 
       **The log governs** (`DRIFT-RULES.md` Rule 4): it is the record, and
       this list only points at it. A listed log that does not exist is the
@@ -235,7 +236,7 @@ properties:
       commit of its own whose message names the line and its cause. An
       `answered` line that *differs from* an earlier one for the same dialog
       is not an artifact: the maintainer decides which line is the record,
-      and the commit deleting the other says so.
+      and the commit deleting the other says which and why (RFC-0018 D2).
 
   review_rounds:
     type: integer

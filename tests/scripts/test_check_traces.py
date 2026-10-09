@@ -53,6 +53,7 @@ _SCHEMA = textwrap.dedent(
         minLength: 1
       decisions:
         type: array
+        uniqueItems: true
         items:
           type: string
           pattern: '^sdd/decisions/[A-Za-z0-9_-]+\\.jsonl$'
@@ -668,6 +669,33 @@ class TestDecisionLogs:
         assert "toolu_1" in report.notes[0].message
         assert "no readable questions" in report.notes[0].message
 
+    @pytest.mark.parametrize("separator", [chr(0x2028), chr(0x2029), chr(0x85)], ids=["LS", "PS", "NEL"])
+    def test_a_record_holding_a_unicode_line_break_still_parses(self, tmp_path, separator):
+        # The recorder writes ensure_ascii=False, which leaves these unescaped;
+        # str.splitlines() breaks on them, and the remedy would then delete a record.
+        import json
+
+        lines = [_asked(), _answered(answer=f"free text {separator} spanning")]
+        raw = "".join(json.dumps(line, ensure_ascii=False) + "\n" for line in lines)
+        assert separator in raw, "the fixture must carry the raw character, as the recorder writes it"
+        report = self._run(tmp_path, raw=raw)
+        assert report.violations == []
+
+    def test_a_log_listed_twice_is_read_once(self, tmp_path):
+        # uniqueItems reports at `decisions`, not `decisions[1]`, so the
+        # per-entry skip alone would read the copy and duplicate its notes.
+        report = self._run(tmp_path, [_asked()], listed=(_LOG, _LOG))
+        assert [v.path for v in report.violations] == ["decisions"]
+        assert len(report.notes) == 1, report.notes
+
+    def test_an_unhashable_tool_use_id_is_reported_not_raised(self, tmp_path):
+        lines = [{"event": "asked", "tool_use_id": ["not", "a", "key"]}, _asked(), _answered()]
+        report = self._run(tmp_path, lines)
+        assert report.violations == []
+        assert len(report.notes) == 1
+        assert "line 1" in report.notes[0].message
+        assert "tool_use_id" in report.notes[0].message
+
     def test_an_answered_event_with_no_asked_is_reported(self, tmp_path):
         report = self._run(tmp_path, [_answered()])
         assert report.violations == []
@@ -739,6 +767,26 @@ class TestMain:
         out = capsys.readouterr().out
         assert "unanswered" in out
         assert "toolu_1" in out
+
+    def test_main_prints_log_text_through_a_cp1252_stdout(self, tmp_path):
+        # Notes echo headers from logs. A redirected Windows stdout encodes
+        # with the locale codec; forced here so the case runs on every OS.
+        import json
+        import os
+        import subprocess
+
+        schema = _write_schema(tmp_path)
+        traces = tmp_path / "sdd" / "traces"
+        _write_trace(traces, "id-1-x.yml", f'id: "ID-1"\ntitle: "ok"\ndecisions:\n  - "{_LOG}"\n')
+        log = tmp_path / _LOG
+        log.parent.mkdir(parents=True)
+        log.write_text(json.dumps(_asked(header="A → B"), ensure_ascii=False) + "\n", encoding="utf-8")
+        env = {k: v for k, v in os.environ.items() if k not in {"PYTHONUTF8", "PYTHONIOENCODING"}}
+        env["PYTHONIOENCODING"] = "cp1252"
+        args = ["--schema", str(schema), "--traces-dir", str(traces), "--root", str(tmp_path)]
+        result = subprocess.run([sys.executable, str(_SCRIPT), *args], capture_output=True, env=env, check=False)
+        assert result.returncode == 0, result.stderr.decode("utf-8", "replace")
+        assert "A → B" in result.stdout.decode("utf-8")
 
     def test_main_hint_names_the_log_case(self, tmp_path, capsys):
         # A log violation is not a trace disagreeing with the schema; the hint
