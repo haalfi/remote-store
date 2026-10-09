@@ -258,9 +258,10 @@ if evidence changes; these are retired.
   spec: — · effort: S · audience: contributor.tooling
   Pyright flagged both (`reportArgumentType`, `reportOptionalMemberAccess`).
   `parse` deduped responses on `message.id`, so a second record with usage and
-  no id matched the stored `None` and was skipped; such records now count each.
-  `main` built the parser description from `__doc__`, which `-OO` sets to
-  `None`; it now falls back to a fixed line. Two regression tests in
+  no id matched the stored `None` and was skipped. A record with a missing or
+  non-string id now counts as its own call; the docstring states the overcount
+  this allows. `main` built the parser description from `__doc__`, which `-OO`
+  sets to `None`; it now falls back to a fixed line. Two regression tests in
   `tests/scripts/test_report_token_usage.py`, both seen failing first. Trace:
   [bug-309](traces/bug-309-report-token-usage-none.yml).
 

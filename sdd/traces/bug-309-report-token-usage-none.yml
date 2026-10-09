@@ -58,3 +58,15 @@ phases:
           call; main uses `(__doc__ or "Token usage report.")`. The test file
           passes (38), and `npx pyright@1.1.390` on the script reports 0 errors.
         outcome: ok
+      - file: sdd/DRIFT-RULES.md
+        section: "Rule 7 (miss-rate), raised by review round 1"
+        read_type: gate
+        extract: >-
+          The fix trades a silent undercount for a possible silent overcount: a
+          response split over records without a string id counts once per
+          record. Stated as a bound in the module docstring's "does NOT catch"
+          section; the parse comment now says "missing or not a string" to match
+          the isinstance guard, and the id-less test gained an int-id case.
+          Mutation: guarding with `mid is None` instead made the not-a-string
+          case fail on `assert s.calls == 2` (got 1).
+        outcome: ok

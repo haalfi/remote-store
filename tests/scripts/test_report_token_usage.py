@@ -117,10 +117,11 @@ class TestParse:
         )
         assert rtu.parse([line], "s").results == {"?": [2, 0]}
 
-    def test_responses_without_id_each_count(self):
-        # The id dedupes records of one response; with no id there is nothing to
-        # dedupe on, so a second id-less response must not be dropped as a repeat.
-        lines = [json.dumps({"message": {"usage": _usage(inp=5)}}), json.dumps({"message": {"usage": _usage(inp=7)}})]
+    @pytest.mark.parametrize("ident", [{}, {"id": 123}], ids=["missing", "not-a-string"])
+    def test_responses_without_string_id_each_count(self, ident):
+        # The id dedupes records of one response; without a string id there is
+        # nothing to dedupe on, so a second such response must not be dropped.
+        lines = [json.dumps({"message": {**ident, "usage": _usage(inp=n)}}) for n in (5, 7)]
         s = rtu.parse(lines, "s")
         assert s.calls == 2
         assert s.tokens["input"] == 12

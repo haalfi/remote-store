@@ -68,6 +68,10 @@ State the bound, per [Rule 7](../sdd/DRIFT-RULES.md#miss-rate):
   ``message.usage`` or ``tool_use``/``tool_result`` blocks are skipped; a
   format change shows as zero calls, never as an error. Lines that are not
   JSON are counted and reported.
+* **Responses are deduplicated by ``message.id`` alone.** A record whose id
+  is missing or not a string counts as its own call, so a response split over
+  several such records is counted once per record, in ``calls``, the prefix
+  and every token class, with nothing in the output to show it.
 * **Exposure is an upper bound, not a measurement.** A trace step names a
   ``section``, and most steps read one section, not the whole file; size is
   today's, not the size at the time of the read. Exposure ranks where a
@@ -173,7 +177,8 @@ def parse(lines: list[str], name: str) -> Session:
         usage = msg.get("usage")
         mid = msg.get("id")
         # One API response is split over several records sharing its id; a
-        # record without one has nothing to dedupe on and counts as its own call.
+        # record whose id is missing or not a string has nothing to dedupe on
+        # and counts as its own call.
         if isinstance(usage, dict) and (not isinstance(mid, str) or mid not in seen):
             if isinstance(mid, str):
                 seen.add(mid)
