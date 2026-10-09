@@ -1204,9 +1204,19 @@ metadata of an entry in it. Where a backend's listing follows links, an entry
 that is a link the caller cannot read through is skipped, as an entry gone
 before its metadata was read is: a dangling link, and a link whose target the
 backend is refused. The entry itself is present and readable as a link, so the
-folder was not denied and the listing has nothing to report about it.
-`LocalBackend` follows links; this clause does not decide whether any other
-backend does.
+folder was not denied and the listing has nothing to report about it. Any other
+error the listing meets is raised as a mapped `RemoteStoreError`.
+
+The clause decides those two kinds of link and no other. A link whose target
+resolves outside the store root is not decided by it. `LocalBackend`'s
+single-level listings follow links; this clause does not decide whether any
+other backend's do.
+
+**Known divergence: `LocalBackend`'s recursive `list_files`.** It does not meet
+this clause yet. It leaves out a folder the OS refuses to list, the listed one
+included, without an error, and it can raise `PermissionDenied` for a link
+into a folder it cannot enter. BK-416 moves it onto RFC-0017's listing kernel,
+and its strict `xfail` cells name the item.
 
 ### BE-022: unwrap()
 

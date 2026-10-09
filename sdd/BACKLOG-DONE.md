@@ -324,10 +324,12 @@ if evidence changes; these are retired.
   folder and each entry by one `stat` whose denial propagates, so a folder that
   lists but cannot be traversed raises on 3.14 instead of listing empty, a file
   removed after classification no longer leaks `FileNotFoundError`, and a folder
-  removed before its scan lists as empty. A recursive `list_files` keeps
-  master's traversal inside the same mapping, so its raw leak becomes
-  `PermissionDenied` while its silent subtree drop stays; `get_folder_info` is
-  unchanged. The PR first rewrote those walks too, and stopped after seven
+  removed before its scan lists as empty. Only `Path.is_dir`'s old absence set
+  reads as absent; any other `OSError`, such as `EIO`, raises a mapped
+  `RemoteStoreError`. A link whose target is refused is skipped, which BE-021
+  now states. A recursive `list_files` keeps master's traversal inside the same
+  mapping, so its raw leaks arrive mapped while its silent drops stay, and
+  BE-021 records that as a known divergence; `get_folder_info` is unchanged. The PR first rewrote those walks too, and stopped after seven
   review rounds and a measured Windows regression: they move to RFC-0017's
   kernel at step 5, as BK-416, with every measurement. `glob` is BUG-311. Tests:
   `tests/backends/local/test_listing_permission.py`, whose strict `xfail`s

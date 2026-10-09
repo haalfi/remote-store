@@ -441,7 +441,7 @@ phases:
     name: Fix pass (round 1 after the re-plan)
     steps:
       - file: tests/backends/local/test_listing_permission.py
-        section: "_deny; test_a_recursive_walk_raises_on_a_denied_subfolder"
+        section: "_deny; test_a_recursive_walk_raises_on_a_denied_subfolder (since renamed _folder)"
         read_type: verify
         extract: >-
           The replan extract's "four strict xfail cells" overstated them: on
@@ -518,4 +518,52 @@ phases:
           skips the link on 3.14; max_depth raises on all four; get_folder_info
           and Store.get_folder_info leak a raw PermissionError on 3.11 to 3.13.
           Recorded as a classify obligation
+        outcome: ok
+  - id: fix_r3b
+    name: Fix pass (round 3 after the re-plan)
+    steps:
+      - file: src/remote_store/backends/_local.py
+        section: "_is_absence; _stat_or_absent; _entries_or_absent; the three scans"
+        read_type: verify
+        extract: >-
+          Two members found _stat_or_absent reading every non-permission
+          OSError as absence, which BE-021's broad-handler rule forbids and SFTP
+          pins the opposite of. The absence set is now what Path.is_dir read as
+          False on 3.11 to 3.13 (ENOENT, ENOTDIR, EBADF, ELOOP; winerror 21,
+          123, 1921), for the stat and the scan alike, and each scan maps the
+          rest to RemoteStoreError naming the listed key. Nine EIO cells (three
+          methods x folder stat, entry stat, folder scan) failed before the fix
+          (six silent, three raw OSError); the absence cells passed before and
+          after. The refused-target link's lstat now also skips a link gone
+          since, a race the spec member noted below its bar
+        outcome: ok
+      - file: sdd/specs/003-backend-adapter-contract.md
+        section: "BE-021 listing clause"
+        read_type: verify
+        extract: >-
+          The clause bound list_files with no recursive scope, and the measuring
+          member showed recursive list_files breaking both halves: a denied
+          listed folder returns [] (Linux uid 1000 3.11 to 3.14, Windows icacls
+          3.13), and a refused-target link raises. Now a stated known divergence
+          naming BK-416, plus a sentence leaving root-escaping links undecided
+          (the scans list them, glob skips them). The denied-listed-folder walk
+          case had no cell and no backlog row; it now has four strict xfails
+          (the denied-folder test parametrised over a/sub and a) and a BK-416
+          paragraph
+        outcome: ok
+      - file: docs-src/reference/migration.md
+        section: "v0.33.0 to v0.33.1"
+        read_type: verify
+        extract: >-
+          The recursive paragraph claimed list_files changed only where it
+          raised the bare PermissionError; the measuring member showed 3.14
+          (POSIX) listing a folder under an untraversable parent going from []
+          to PermissionDenied, and get_folder_info leaking raw on 3.11 to 3.13
+          where the note said it drops silently. Rewritten from those
+          measurements, plus the new RemoteStoreError mapping. The recursive
+          mapping the note claims is now pinned by
+          test_a_recursive_list_files_maps_a_denial_it_meets (xfail on 3.14
+          for the plain walk). Module run as uid 1000 in python:3.11 to 3.14
+          slim containers: 55 / 55 / 55 / 54 passed, 6 skipped, 8 / 8 / 8 / 9
+          xfailed
         outcome: ok

@@ -40,7 +40,7 @@ from unittest import mock
 
 import pytest
 
-from remote_store._errors import PermissionDenied
+from remote_store._errors import PermissionDenied, RemoteStoreError
 from remote_store._store import Store
 from remote_store.backends._local import LocalBackend
 
@@ -267,19 +267,76 @@ _WITH_F_GONE_BEFORE_STAT: dict[str, set[str]] = {
 }
 
 
+# The errors a ``stat`` answers for a path that is not there, which the scans
+# read as absence: the set ``Path.is_file`` / ``is_dir`` read as ``False`` on
+# 3.11 to 3.13. ``winerror`` 123 (an invalid name) exists only on Windows.
+_ABSENCE: list[Any] = [
+    pytest.param(lambda p: OSError(errno.ENOENT, os.strerror(errno.ENOENT), p), id="ENOENT"),
+    pytest.param(lambda p: OSError(errno.ELOOP, os.strerror(errno.ELOOP), p), id="ELOOP-link-loop"),
+    pytest.param(
+        lambda p: OSError(errno.EINVAL, "invalid name", p, 123),
+        id="winerror-123",
+        marks=pytest.mark.skipif(sys.platform != "win32", reason="winerror exists on Windows only"),
+    ),
+]
+
+
+@pytest.mark.spec("BE-021")
+@pytest.mark.parametrize("absence", _ABSENCE)
 @pytest.mark.parametrize("entry", _traced(_WITH_F_GONE_BEFORE_STAT))
-def test_an_entry_gone_before_its_stat_is_skipped(tmp_path: Path, entry: str) -> None:
+def test_an_entry_gone_before_its_stat_is_skipped(
+    tmp_path: Path, entry: str, absence: Callable[[str], OSError]
+) -> None:
     """An entry the scan listed but its ``stat`` no longer finds drops out of the answer."""
     backend = _tree(tmp_path)
     target = _norm((tmp_path / "a" / "f.txt").resolve())
 
     def stat(p: Any, *args: Any, **kwargs: Any) -> os.stat_result:
         if _norm(p) == target:
-            raise FileNotFoundError(errno.ENOENT, "No such file or directory", os.fspath(p))
+            raise absence(os.fspath(p))
         return _REAL_STAT(p, *args, **kwargs)
 
     with mock.patch.object(os, "stat", stat):
         assert _ENTRY_POINTS[entry](backend) == _WITH_F_GONE_BEFORE_STAT[entry]
+
+
+# Where a scan meets an ``OSError`` that is neither a denial nor an absence.
+_EIO_SITES = ["listed-folder-stat", "entry-stat", "listed-folder-scan"]
+
+
+@pytest.mark.spec("BE-021")
+@pytest.mark.parametrize("site", _EIO_SITES)
+@pytest.mark.parametrize("entry", list(_ENTRY_POINTS))
+def test_an_os_error_that_is_neither_denial_nor_absence_raises_a_mapped_error(
+    tmp_path: Path, entry: str, site: str
+) -> None:
+    """An I/O error is reported, not read as an empty folder or a missing entry.
+
+    BE-021 permits a silent answer only for the absences and links it names;
+    everything else is mapped and raised, as SFTP does for ``EIO``.
+    """
+    backend = _tree(tmp_path)
+    patch: AbstractContextManager[Any]
+    if site == "listed-folder-scan":
+        patch = _deny(tmp_path / "a", OSError(errno.EIO, os.strerror(errno.EIO)))
+    else:
+        leaf = "a" if site == "listed-folder-stat" else "a/f.txt"
+        target = _norm((tmp_path / leaf).resolve())
+
+        def stat(p: Any, *args: Any, **kwargs: Any) -> os.stat_result:
+            if _norm(p) == target:
+                raise OSError(errno.EIO, os.strerror(errno.EIO), os.fspath(p))
+            return _REAL_STAT(p, *args, **kwargs)
+
+        patch = mock.patch.object(os, "stat", stat)
+    with patch, pytest.raises(RemoteStoreError) as info:
+        _ENTRY_POINTS[entry](backend)
+    err = info.value
+    assert type(err) is RemoteStoreError
+    assert err.path == "a"
+    assert err.backend == "local"
+    assert err.__cause__ is None
+    assert err.__suppress_context__ is True
 
 
 @pytest.mark.parametrize("gone", [FileNotFoundError, NotADirectoryError], ids=["removed", "replaced-by-a-file"])
@@ -322,15 +379,18 @@ _WITH_LINK_SKIPPED: dict[str, set[str]] = {
 
 
 @pytest.mark.spec("BE-021")
+@pytest.mark.parametrize("lstat_meets", ["a-link", "the-link-gone"])
 @pytest.mark.parametrize("entry", list(_WITH_LINK_SKIPPED))
-def test_a_link_whose_target_the_os_refuses_to_stat_is_skipped(tmp_path: Path, entry: str) -> None:
+def test_a_link_whose_target_the_os_refuses_to_stat_is_skipped(tmp_path: Path, entry: str, lstat_meets: str) -> None:
     """A link into a folder the caller cannot enter is skipped, like a dangling one.
 
     Its ``stat`` follows it and is refused, but the folder being listed is not
     the thing denied. Simulated here, so it runs where symlinks cannot be made:
     ``a/link`` is a plain file whose ``lstat`` reports a link and whose ``stat``
     is refused. A refused ``stat`` on an entry that is not a link still raises
-    (``test_an_entry_the_os_refuses_to_stat_raises_permission_denied``).
+    (``test_an_entry_the_os_refuses_to_stat_raises_permission_denied``). The
+    ``the-link-gone`` cell removes the link between the two calls, which BE-021
+    skips as an entry gone before its metadata was read.
     """
     backend = _tree(tmp_path)
     (tmp_path / "a" / "link").write_bytes(b"")
@@ -344,6 +404,8 @@ def test_a_link_whose_target_the_os_refuses_to_stat_is_skipped(tmp_path: Path, e
 
     def lstat(p: Any, *args: Any, **kwargs: Any) -> os.stat_result:
         if _norm(p) == target:
+            if lstat_meets == "the-link-gone":
+                raise FileNotFoundError(errno.ENOENT, os.strerror(errno.ENOENT), os.fspath(p))
             return link_mode
         return _REAL_LSTAT(p, *args, **kwargs)
 
@@ -414,16 +476,16 @@ def test_a_folder_denied_by_acl_raises_permission_denied(tmp_path: Path, entry: 
     _assert_mapped(info)
 
 
-# The recursive walks are left as they were: a subfolder the OS refuses to list
-# is dropped from a recursive listing and from ``get_folder_info``'s total with
-# no error. Moving them onto RFC-0017's listing kernel (BK-416) is what fixes
-# that; strict, so that change has to remove these marks.
-# ``raises=AssertionError``: only the missing ``PermissionDenied`` is the
-# expected failure; a denial the walk never met fails the cell outright.
+# The recursive walks are left as they were: a folder the OS refuses to list,
+# the listed one or a subfolder, is dropped from a recursive listing and from
+# ``get_folder_info``'s total with no error. Moving them onto RFC-0017's listing
+# kernel (BK-416) is what fixes that; strict, so that change has to remove
+# these marks. ``raises=AssertionError``: only the missing ``PermissionDenied``
+# is the expected failure; a denial the walk never met fails the cell outright.
 _RECURSIVE_SKIP_DENIED = pytest.mark.xfail(
     strict=True,
     raises=AssertionError,
-    reason="BK-416: the recursive walks still drop a subfolder the OS refuses to list",
+    reason="BK-416: the recursive walks still drop a folder the OS refuses to list",
 )
 
 _RECURSIVE: dict[str, Callable[[LocalBackend], object]] = {
@@ -436,17 +498,49 @@ _RECURSIVE: dict[str, Callable[[LocalBackend], object]] = {
 
 @_RECURSIVE_SKIP_DENIED
 @pytest.mark.spec("BE-021")
+@pytest.mark.parametrize("denied", ["a/sub", "a"], ids=["subfolder", "listed-folder"])
 @pytest.mark.parametrize("entry", list(_RECURSIVE))
-def test_a_recursive_walk_raises_on_a_denied_subfolder(tmp_path: Path, entry: str) -> None:
+def test_a_recursive_walk_raises_on_a_denied_folder(tmp_path: Path, entry: str, denied: str) -> None:
     """What BE-021 asks of a recursive walk that meets a folder it may not list."""
     backend = _tree(tmp_path)
     hits: list[str] = []
     raised = False
-    with _deny(tmp_path / "a" / "sub", _denied(), hits):
+    with _deny(tmp_path / denied, _denied(), hits):
         try:
             _RECURSIVE[entry](backend)
         except PermissionDenied:
             raised = True
     if not hits:
         pytest.fail("the denial never reached the walk, so this cell tests nothing")
-    assert raised, "the walk met the denied subfolder and dropped it silently"
+    assert raised, "the walk met the denied folder and dropped it silently"
+
+
+# Plain ``rglob`` classifies with ``Path.is_file``, which on 3.14 answers
+# ``False`` for an entry it may not ``stat`` and so skips it; BK-416 owns that.
+_SKIPS_ON_314 = pytest.mark.xfail(
+    sys.version_info >= (3, 14),
+    strict=True,
+    raises=pytest.fail.Exception,
+    reason="BK-416: on 3.14 the plain recursive walk skips an entry it may not stat",
+)
+
+
+@pytest.mark.spec("BE-021")
+@pytest.mark.parametrize(
+    "call",
+    [
+        pytest.param(lambda b: list(b.list_files("a", recursive=True)), id="recursive", marks=_SKIPS_ON_314),
+        pytest.param(lambda b: list(b.list_files("a", recursive=True, max_depth=5)), id="recursive-max_depth"),
+    ],
+)
+def test_a_recursive_list_files_maps_a_denial_it_meets(tmp_path: Path, call: Callable[[LocalBackend], object]) -> None:
+    """Where a recursive walk does raise on a denial, it raises ``PermissionDenied``, never the bare error.
+
+    The walks stay inside ``list_files``' mapping, so an entry in ``a/sub``
+    that the OS refuses to ``stat`` reaches the caller mapped. Moving the walk
+    out of that ``try`` would leak the native error again.
+    """
+    backend = _tree(tmp_path)
+    with _deny_child_stat(tmp_path / "a" / "sub"), pytest.raises(PermissionDenied) as info:
+        call(backend)
+    _assert_mapped(info)

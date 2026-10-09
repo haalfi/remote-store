@@ -32,10 +32,27 @@ the folder while its deletion is still in progress raises `PermissionDenied`,
 where it used to raise the bare `PermissionError`: Windows reports that state as
 access denied.
 
-A **recursive** `list_files()` changes only where it used to raise the bare
-`PermissionError`, which now arrives as `PermissionDenied`. It still leaves out
-a subfolder it cannot read, without an error. `get_folder_info()` and `glob()`
-are not changed by this release, and do the same.
+A folder whose parent you may not open now raises `PermissionDenied` on every
+version. On 3.14 on POSIX these calls used to return nothing for it, as for a
+missing folder.
+
+Any other error the OS reports while listing, such as an I/O error, now raises a
+`RemoteStoreError` carrying `path` and `backend`. It used to escape as the bare
+`OSError`, except on 3.14 on POSIX, where an error from the folder's or an
+entry's `stat` was read as an empty folder or a missing entry.
+
+A **recursive** `list_files()` keeps its traversal. The errors it lets escape
+now reach you mapped:
+- the bare `PermissionError` for an entry it may not `stat` (3.11 to 3.13, and
+  with `max_depth` on every version) arrives as `PermissionDenied`;
+- a `FileNotFoundError` for a file removed during the walk arrives as a
+  `RemoteStoreError`.
+
+It still leaves out a folder it cannot list, without an error, including the
+folder you asked for. `get_folder_info()` and `glob()` are not changed by this
+release. `get_folder_info()` leaves out an unreadable subfolder the same way,
+and on 3.11 to 3.13 it can still raise the bare `PermissionError` for an entry
+it may not `stat`.
 
 ## v0.32.0 to v0.33.0
 

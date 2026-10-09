@@ -35,14 +35,26 @@ predicates swapped in.
 | `get_folder_info` | under-counts silently | 3.11–3.13: raw `builtins.PermissionError`; 3.14: under-counts silently |
 | `Store.get_folder_info(max_depth=N)` | under-counts silently, through `list_files` | as `list_files(max_depth=N)` |
 
+A denied **listed** folder is dropped the same way. BUG-280's round 3 measured
+it at `2103ed1de`. With `a` itself at chmod 0 or 0o111, on Linux uid 1000 on
+3.11 to 3.14, and under a real `icacls /deny RD` on Windows 3.13, two calls
+return `[]`, where the non-recursive call raises `PermissionDenied`:
+`list_files("a", recursive=True)` and the `max_depth=5` form. `get_folder_info`
+counts 0. The only check on the listed folder before the walk is a `stat`,
+which a folder that refuses its listing still answers.
+
 Two of these cells are BE-021 breaches:
-- the silent subtree drop, a short answer that looks complete;
+- the silent drop, of a subtree or of the whole listing, a short answer that
+  looks complete;
 - `get_folder_info`'s raw leak.
 
-`tests/backends/local/test_listing_permission.py` pins the denied-listing
-column as four strict `xfail` cells naming this item, in
-`test_a_recursive_walk_raises_on_a_denied_subfolder`. They fail the day the
-walks raise, and the marks have to come off then.
+`tests/backends/local/test_listing_permission.py` pins the denied-listing cases
+as eight strict `xfail` cells naming this item, in
+`test_a_recursive_walk_raises_on_a_denied_folder`: four entry points, each with
+the subfolder and with the listed folder denied. They fail the day the walks
+raise, and the marks have to come off then. So does
+`test_a_recursive_list_files_maps_a_denial_it_meets[recursive]` on 3.14, which
+pins the plain walk's skip of an unstattable entry there.
 
 ## What the rounds learned, for the driver's `classify`
 
@@ -102,6 +114,19 @@ walks raise, and the marks have to come off then.
   The same tree therefore lists one level deep and fails recursively, and
   `get_folder_info` leaks. `classify` has to answer the link from `lstat`, as
   the scans do.
+- **A link that escapes the root is answered two ways, and BE-021 leaves it
+  open.** The single-level scans list it, because its `stat` succeeds, and a
+  `read` of that key then raises `InvalidPath("Path escapes root directory")`.
+  `glob` skips it (GLOB-005). The recursive walks never descend into a folder
+  link (`os.walk` with `followlinks=False`, and `rglob`). BE-021's link clause
+  decides only dangling and refused-target links, so `classify` has to choose.
+  This was read from the code by BUG-280's round 3 and not run.
+- **The walks' native errors are mapped, but not classified.** BUG-280 keeps the
+  recursive branches inside `list_files`' handler, so whatever escapes them
+  reaches the caller as `PermissionDenied` or a `RemoteStoreError`, never raw.
+  That includes a file removed mid-walk (`FileNotFoundError` from its `stat`)
+  and a link loop under `max_depth` (`ELOOP`), which master leaked raw and
+  which `classify` should answer as absences.
 - **`_resolve` reports a folder mid-delete as escaping the root.** In the same
   listed-folder runs, both trees raised `InvalidPath("Path escapes root
   directory")` in up to 350 of 3000 calls per method; one run (3.11.9, the
@@ -112,12 +137,15 @@ walks raise, and the marks have to come off then.
   this check, or the check has to learn the state.
 - **"Absent" is a short list, not "anything but a denial".** The walks skip
   every non-permission `OSError` (`EIO`, `ENAMETOOLONG`,
-  `WinError 362` for a cloud placeholder whose provider is not running), while
-  the single-level scans let the same errors escape raw. BUG-280's single-level
-  helpers read only `FileNotFoundError` / `NotADirectoryError` (and, from
-  `stat`, any non-denial `OSError`) as absent. Anything else needs a mapped
-  `RemoteStoreError`, not a skip and not a leak. This is read from the code;
-  no cell injects it yet.
+  `WinError 362` for a cloud placeholder whose provider is not running) when it
+  comes from a folder's scan. BUG-280's single-level scans read as absent only
+  `_is_absence`'s set, which is what `Path.is_dir` read as `False` on 3.11 to
+  3.13: `ENOENT`, `ENOTDIR`, `EBADF`, `ELOOP`, and `winerror` 21, 123 and 1921.
+  They map anything else to a `RemoteStoreError` naming the listed key, as SFTP
+  does for `EIO`. That is the shape for `classify`: a short absence list, a
+  denial, and a mapped error for the rest, not a skip and not a leak. The
+  scans' cells inject `EIO` at the folder's `stat`, an entry's `stat` and the
+  folder's scan; nothing injects it into the walks yet.
 - **Classify from one `stat`, not from `Path.is_file` / `is_dir`.** On 3.14
   those call `os.path.isfile` / `isdir`, whose POSIX forms answer `False` on
   `EACCES`. On 3.11–3.13 they re-raise it. BUG-280's `_stat_or_absent` is the

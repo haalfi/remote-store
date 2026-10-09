@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import contextlib
+import errno
 import logging
 import os
 import shutil
@@ -14,7 +15,14 @@ from typing import TYPE_CHECKING, BinaryIO, ClassVar
 
 from remote_store._backend import _COPY_BUFSIZE, Backend
 from remote_store._capabilities import Capability, CapabilitySet
-from remote_store._errors import AlreadyExists, DirectoryNotEmpty, InvalidPath, NotFound, PermissionDenied
+from remote_store._errors import (
+    AlreadyExists,
+    DirectoryNotEmpty,
+    InvalidPath,
+    NotFound,
+    PermissionDenied,
+    RemoteStoreError,
+)
 from remote_store._models import FileInfo, FolderEntry, FolderInfo, WriteResult
 from remote_store._path import RemotePath, is_root
 
@@ -28,6 +36,18 @@ _ALL_CAPABILITIES = CapabilitySet(set(Capability) - {Capability.USER_METADATA})
 
 log = logging.getLogger(__name__)
 
+# What a ``stat`` or a scan answers for a path that is not there: the set
+# ``Path.is_file`` / ``is_dir`` read as ``False`` on 3.11 to 3.13. ``ELOOP`` is
+# a link loop, which BE-021 skips like a dangling link; the ``winerror`` values
+# are a drive not ready (21), an invalid name (123) and a link Windows cannot
+# resolve (1921).
+_ABSENT_ERRNOS = frozenset({errno.ENOENT, errno.ENOTDIR, errno.EBADF, errno.ELOOP})
+_ABSENT_WINERRORS = frozenset({21, 123, 1921})
+
+
+def _is_absence(exc: OSError) -> bool:
+    return exc.errno in _ABSENT_ERRNOS or getattr(exc, "winerror", None) in _ABSENT_WINERRORS
+
 
 def _stat_or_absent(path: Path) -> os.stat_result | None:
     """``stat`` *path* once, following links; ``None`` if it is not there.
@@ -36,17 +56,18 @@ def _stat_or_absent(path: Path) -> os.stat_result | None:
     ``Path.is_file`` / ``is_dir``, which answer ``False`` for a path the OS
     refuses to ``stat`` on some interpreters (3.14 on POSIX): a listed folder
     that cannot be traversed then lost every entry silently, and a listed path
-    whose parent cannot be traversed read as absent. A denial therefore
-    propagates for the caller to map. One ``stat`` also both classifies an
-    entry and measures it, so a file removed between the two cannot surface as
-    a raw ``FileNotFoundError``. Any other error, a dangling link or a link loop
-    among them, reads as absence.
+    whose parent cannot be traversed read as absent. One ``stat`` also both
+    classifies an entry and measures it, so a file removed between the two
+    cannot surface as a raw ``FileNotFoundError``. Only an absence
+    (``_is_absence``, a dangling link or a link loop among them) reads as
+    ``None``; a denial or any other error, such as ``EIO``, propagates for the
+    caller to map.
     """
     try:
         return path.stat()
-    except PermissionError:
-        raise
-    except OSError:
+    except OSError as exc:
+        if isinstance(exc, PermissionError) or not _is_absence(exc):
+            raise
         return None
 
 
@@ -62,10 +83,11 @@ def _entry_stat_or_absent(entry: Path) -> os.stat_result | None:
         return _stat_or_absent(entry)
     except PermissionError:
         try:
-            is_link = S_ISLNK(os.lstat(entry).st_mode)
-        except OSError:
-            is_link = False  # ``lstat`` is refused too: the entry itself is denied
-        if is_link:
+            skip = S_ISLNK(os.lstat(entry).st_mode)
+        except OSError as exc:
+            # Refused too: the entry itself is denied. Gone since: skip it.
+            skip = not isinstance(exc, PermissionError) and _is_absence(exc)
+        if skip:
             return None
         raise
 
@@ -76,13 +98,16 @@ def _entries_or_absent(folder: Path) -> list[Path]:
     The single-level scans classify *folder* with ``_stat_or_absent`` before
     opening it, so a folder removed (or replaced by a file) in between would
     otherwise surface as a raw ``FileNotFoundError`` / ``NotADirectoryError``.
-    A denial propagates for the caller to map. On Windows a folder whose
-    deletion is still in progress fails its scan with ``PermissionError``
-    (``winerror`` 5), so there it is a denial, not an absence.
+    A denial or any other error propagates for the caller to map. On Windows a
+    folder whose deletion is still in progress fails its scan with
+    ``PermissionError`` (``winerror`` 5), so there it is a denial, not an
+    absence.
     """
     try:
         return list(folder.iterdir())
-    except (FileNotFoundError, NotADirectoryError):
+    except OSError as exc:
+        if isinstance(exc, PermissionError) or not _is_absence(exc):
+            raise
         return []
 
 
@@ -561,8 +586,6 @@ class LocalBackend(Backend):
             else:
                 full.rmdir()
         except OSError as exc:
-            import errno
-
             if exc.errno in (errno.ENOTEMPTY, 145):
                 raise DirectoryNotEmpty(f"Folder not empty: {path}", path=path, backend=self.name) from None
             raise PermissionDenied(f"Permission denied: {path}", path=path, backend=self.name) from None
@@ -604,13 +627,19 @@ class LocalBackend(Backend):
         ``recursive`` and ``max_depth`` set, traversal is pruned at the depth
         bound during the ``os.walk`` rather than filtered afterwards.
 
-        A recursive listing still leaves out a subfolder the OS refuses to
-        list, without an error: only *path* itself is checked.
+        The ``Raises`` below describe the non-recursive listing. A recursive
+        one checks *path* with a ``stat`` only, so a folder the OS refuses to
+        list, *path* itself or a subfolder, is left out without an error; and a
+        symlink into a folder it cannot enter can raise ``PermissionDenied``
+        rather than be skipped. A native error the walk does raise reaches the
+        caller mapped, as below.
 
         Raises:
             PermissionDenied: If the OS refuses to list *path*, or to ``stat``
                 an entry in it. A symlink the OS lets it read but whose target
                 it refuses is skipped instead.
+            RemoteStoreError: If the OS fails the listing with an error that
+                is neither a denial nor an absence, such as ``EIO``.
         """
         try:
             full = self._resolve(path)
@@ -641,6 +670,8 @@ class LocalBackend(Backend):
                         yield self._stat_to_fileinfo(self.to_key(str(item)), item, st)
         except PermissionError:
             raise PermissionDenied(f"Permission denied: {path}", path=path, backend=self.name) from None
+        except OSError as exc:
+            raise RemoteStoreError(f"Cannot list {path}: {exc.strerror}", path=path, backend=self.name) from None
 
     def list_folders(self, path: str) -> Iterator[FolderEntry]:
         """Yield immediate subfolders of *path* as ``FolderEntry`` records.
@@ -651,6 +682,8 @@ class LocalBackend(Backend):
             PermissionDenied: If the OS refuses to list *path*, or to ``stat``
                 an entry in it. A symlink the OS lets it read but whose target
                 it refuses is skipped instead.
+            RemoteStoreError: If the OS fails the listing with an error that
+                is neither a denial nor an absence, such as ``EIO``.
         """
         try:
             full = self._resolve(path)
@@ -663,6 +696,8 @@ class LocalBackend(Backend):
                     yield FolderEntry(path=RemotePath(self.to_key(str(item))), name=item.name)
         except PermissionError:
             raise PermissionDenied(f"Permission denied: {path}", path=path, backend=self.name) from None
+        except OSError as exc:
+            raise RemoteStoreError(f"Cannot list {path}: {exc.strerror}", path=path, backend=self.name) from None
 
     def iter_children(self, path: str) -> Iterator[FileInfo | FolderEntry]:
         """Yield the immediate files and folders under *path* in one scan.
@@ -676,6 +711,8 @@ class LocalBackend(Backend):
             PermissionDenied: If the OS refuses to list *path*, or to ``stat``
                 an entry in it. A symlink the OS lets it read but whose target
                 it refuses is skipped instead.
+            RemoteStoreError: If the OS fails the listing with an error that
+                is neither a denial nor an absence, such as ``EIO``.
         """
         try:
             full = self._resolve(path)
@@ -692,6 +729,8 @@ class LocalBackend(Backend):
                     yield FolderEntry(path=RemotePath(self.to_key(str(item))), name=item.name)
         except PermissionError:
             raise PermissionDenied(f"Permission denied: {path}", path=path, backend=self.name) from None
+        except OSError as exc:
+            raise RemoteStoreError(f"Cannot list {path}: {exc.strerror}", path=path, backend=self.name) from None
 
     def get_file_info(self, path: str) -> FileInfo:
         """Return metadata for the file at *path* from a single ``stat``.
