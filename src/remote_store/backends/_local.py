@@ -45,6 +45,10 @@ log = logging.getLogger(__name__)
 _ABSENT_ERRNOS = frozenset({errno.ENOENT, errno.ENOTDIR, errno.EBADF, errno.ELOOP})
 _ABSENT_WINERRORS = frozenset({21, 123, 1921})
 
+# A Windows directory junction's reparse tag. ``stat`` defines the constant on
+# Windows only, and ``st_reparse_tag`` exists only there.
+_IO_REPARSE_TAG_MOUNT_POINT = 0xA0000003
+
 
 def _is_absence(exc: OSError) -> bool:
     return exc.errno in _ABSENT_ERRNOS or getattr(exc, "winerror", None) in _ABSENT_WINERRORS
@@ -55,7 +59,7 @@ def _stat_or_absent(path: Path) -> os.stat_result | None:
 
     The single-level scans classify a path from this rather than from
     ``Path.is_file`` / ``is_dir``, which answer ``False`` for a path the OS
-    refuses to ``stat`` on some interpreters (3.14 on POSIX): a listed folder
+    refuses to ``stat`` on some interpreters (3.14): a listed folder
     that cannot be traversed then lost every entry silently, and a listed path
     whose parent cannot be traversed read as absent. One ``stat`` also both
     classifies an entry and measures it, so a file removed between the two
@@ -75,20 +79,24 @@ def _stat_or_absent(path: Path) -> os.stat_result | None:
 def _entry_stat_or_absent(entry: Path) -> os.stat_result | None:
     """``_stat_or_absent`` for an entry a scan listed; a link it may not follow is absent.
 
-    A symlink whose target the OS refuses to ``stat`` (one behind a folder the
+    A link whose target the OS refuses to ``stat`` (one behind a folder the
     caller cannot enter) is an entry the caller cannot read through, like a
-    dangling link, not a denial of the folder being listed. A denial on the
-    entry itself, which ``lstat`` meets too, still propagates.
+    dangling link, not a denial of the folder being listed. A link is a symlink
+    or a Windows directory junction, which ``lstat`` reports as a directory
+    with a mount-point reparse tag rather than as a link. A denial on the entry
+    itself, which ``lstat`` meets too, still propagates; so does any other error
+    ``lstat`` meets, for the caller to map.
     """
     try:
         return _stat_or_absent(entry)
     except PermissionError:
         try:
-            skip = S_ISLNK(os.lstat(entry).st_mode)
+            link = os.lstat(entry)
         except OSError as exc:
-            # Refused too: the entry itself is denied. Gone since: skip it.
-            skip = _is_absence(exc)
-        if skip:
+            if _is_absence(exc):
+                return None  # gone since its ``stat``
+            raise
+        if S_ISLNK(link.st_mode) or getattr(link, "st_reparse_tag", 0) == _IO_REPARSE_TAG_MOUNT_POINT:
             return None
         raise
 
@@ -629,18 +637,17 @@ class LocalBackend(Backend):
         bound during the ``os.walk`` rather than filtered afterwards.
 
         The ``Raises`` below describe the non-recursive listing. A recursive
-        one checks *path* with a ``stat`` only, so a folder the OS refuses to
-        list, *path* itself or a subfolder, is left out without an error; and a
-        symlink into a folder it cannot enter can raise ``PermissionDenied``
-        rather than be skipped. Any other OS error the walk raises reaches the
-        caller as a ``RemoteStoreError``, absences included: with
-        ``max_depth``, a dangling link or a link loop in the tree, and in
-        either form a file removed while the walk runs.
+        listing keeps its traversal and does not apply the link and absence
+        rules below: it can leave out a folder the OS refuses to list, *path*
+        included, without an error, and it can raise for an entry the
+        non-recursive listing skips. A native error it raises still reaches the
+        caller as ``PermissionDenied`` or ``RemoteStoreError``.
 
         Raises:
             PermissionDenied: If the OS refuses to list *path*, or to ``stat``
-                an entry in it. A symlink the OS lets it read but whose target
-                it refuses is skipped instead.
+                an entry in it. A link (a symlink, or a junction on Windows)
+                the OS lets it read but whose target it refuses is skipped
+                instead.
             RemoteStoreError: If the OS fails the listing with an error that
                 is neither a denial nor an absence, such as ``EIO``.
         """
@@ -671,20 +678,23 @@ class LocalBackend(Backend):
                     st = _entry_stat_or_absent(item)
                     if st is not None and S_ISREG(st.st_mode):
                         yield self._stat_to_fileinfo(self.to_key(str(item)), item, st)
-        except PermissionError:
-            raise PermissionDenied(f"Permission denied: {path}", path=path, backend=self.name) from None
+        except PermissionError as exc:
+            # The OS error names what was refused, which may be an entry, not *path*.
+            raise PermissionDenied(f"Permission denied: {path}: {exc}", path=path, backend=self.name) from None
         except OSError as exc:
             raise RemoteStoreError(f"Cannot list {path}: {exc}", path=path, backend=self.name) from None
 
     def list_folders(self, path: str) -> Iterator[FolderEntry]:
         """Yield immediate subfolders of *path* as ``FolderEntry`` records.
 
-        Lazy single-level scan; a missing or non-folder *path* yields nothing.
+        The folder's entries are read in one scan and yielded one at a time; a
+        missing or non-folder *path* yields nothing.
 
         Raises:
             PermissionDenied: If the OS refuses to list *path*, or to ``stat``
-                an entry in it. A symlink the OS lets it read but whose target
-                it refuses is skipped instead.
+                an entry in it. A link (a symlink, or a junction on Windows)
+                the OS lets it read but whose target it refuses is skipped
+                instead.
             RemoteStoreError: If the OS fails the listing with an error that
                 is neither a denial nor an absence, such as ``EIO``.
         """
@@ -697,8 +707,9 @@ class LocalBackend(Backend):
                 st = _entry_stat_or_absent(item)
                 if st is not None and S_ISDIR(st.st_mode):
                     yield FolderEntry(path=RemotePath(self.to_key(str(item))), name=item.name)
-        except PermissionError:
-            raise PermissionDenied(f"Permission denied: {path}", path=path, backend=self.name) from None
+        except PermissionError as exc:
+            # The OS error names what was refused, which may be an entry, not *path*.
+            raise PermissionDenied(f"Permission denied: {path}: {exc}", path=path, backend=self.name) from None
         except OSError as exc:
             raise RemoteStoreError(f"Cannot list {path}: {exc}", path=path, backend=self.name) from None
 
@@ -712,8 +723,9 @@ class LocalBackend(Backend):
 
         Raises:
             PermissionDenied: If the OS refuses to list *path*, or to ``stat``
-                an entry in it. A symlink the OS lets it read but whose target
-                it refuses is skipped instead.
+                an entry in it. A link (a symlink, or a junction on Windows)
+                the OS lets it read but whose target it refuses is skipped
+                instead.
             RemoteStoreError: If the OS fails the listing with an error that
                 is neither a denial nor an absence, such as ``EIO``.
         """
@@ -730,8 +742,9 @@ class LocalBackend(Backend):
                     yield self._stat_to_fileinfo(self.to_key(str(item)), item, st)
                 elif S_ISDIR(st.st_mode):
                     yield FolderEntry(path=RemotePath(self.to_key(str(item))), name=item.name)
-        except PermissionError:
-            raise PermissionDenied(f"Permission denied: {path}", path=path, backend=self.name) from None
+        except PermissionError as exc:
+            # The OS error names what was refused, which may be an entry, not *path*.
+            raise PermissionDenied(f"Permission denied: {path}: {exc}", path=path, backend=self.name) from None
         except OSError as exc:
             raise RemoteStoreError(f"Cannot list {path}: {exc}", path=path, backend=self.name) from None
 

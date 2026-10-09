@@ -299,6 +299,18 @@ if evidence changes; these are retired.
 
 ## Unreleased
 
+- [x] **BUG-280 — `LocalBackend`'s three listing methods leak a raw `PermissionError`**
+  spec: BE-021 · effort: S · audience: user.api
+  The single-level scans (`list_files` without `recursive`, `list_folders`,
+  `iter_children`) raise `PermissionDenied`, or a `RemoteStoreError` for any
+  other OS error, naming the listed key. Each entry is classified by one `stat`,
+  and a link the caller cannot read through is skipped, as BE-021 now states.
+  The recursive walks and `get_folder_info` are BK-416; `glob` is BUG-311.
+  Tests: `tests/backends/local/test_listing_permission.py`.
+  Upgrade note: `docs-src/reference/migration.md` § v0.33.0 to v0.33.1.
+  Trace: [bug-280](traces/bug-280-local-listing-permission-leak.yml).
+  Detail: [dossier](backlog/bug-280-local-listing-permission-leak.md).
+
 - [x] **BUG-314 — The Edit/Write ruff hook deletes an import added before its use, so the next edit raises `NameError`**
   spec: — · effort: S · audience: contributor.tooling
   `.claude/hooks/ruff-format.sh` ran `ruff check --fix` after every Edit and Write,
@@ -315,28 +327,6 @@ if evidence changes; these are retired.
   use `tests._helpers.hook_bash`, which skips that launcher and finds Git Bash
   through `git`; `tests/scripts/test_hook_bash.py` pins it. Trace:
   [bug-314](traces/bug-314-ruff-hook-f401.yml).
-
-- [x] **BUG-280 — `LocalBackend`'s three listing methods leak a raw `PermissionError`**
-  spec: BE-021 · effort: S · audience: user.api
-  The single-level scans (`list_files` without `recursive`, `list_folders`,
-  `iter_children`) now raise `PermissionDenied` naming the requested key, each
-  wrapping its whole body, the shape the SFTP twin uses. They classify the
-  folder and each entry by one `stat` whose denial propagates, so a folder that
-  lists but cannot be traversed raises on 3.14 instead of listing empty, a file
-  removed after classification no longer leaks `FileNotFoundError`, and a folder
-  removed before its scan lists as empty. Only `Path.is_dir`'s old absence set
-  reads as absent; any other `OSError`, such as `EIO`, raises a mapped
-  `RemoteStoreError`. A link whose target is refused is skipped, which BE-021
-  now states. A recursive `list_files` keeps master's traversal inside the same
-  mapping, so its raw leaks arrive mapped while its silent drops stay, and
-  BE-021 records that as a known divergence; `get_folder_info` is unchanged. The PR first rewrote those walks too, and stopped after seven
-  review rounds and a measured Windows regression: they move to RFC-0017's
-  kernel at step 5, as BK-416, with every measurement. `glob` is BUG-311. Tests:
-  `tests/backends/local/test_listing_permission.py`, whose strict `xfail`s
-  name BK-416.
-  Upgrade note: `docs-src/reference/migration.md` § v0.33.0 to v0.33.1.
-  Trace: [bug-280](traces/bug-280-local-listing-permission-leak.yml).
-  Detail: [dossier](backlog/bug-280-local-listing-permission-leak.md).
 
 - [x] **BUG-309 — `report-token-usage` drops every id-less response after the first, and `python -OO` crashes it**
   spec: — · effort: S · audience: contributor.tooling
@@ -2046,7 +2036,7 @@ if evidence changes; these are retired.
   unprivileged uid, `LocalBackend`'s three listing methods still leak a raw
   `PermissionError` rather than mapping it, so the two are not equivalent across
   the whole surface and nothing here says they are. **That leak is now
-  [BUG-280](BACKLOG.md)**, filed from this measurement rather than left standing
+  [BUG-280](backlog/bug-280-local-listing-permission-leak.md)**, filed from this measurement rather than left standing
   in a closed item's prose.
   **The entry-point table needed a third errno to stop being partly vacuous.**
   It drives 17 methods × 2 key depths × 2 denial sites and asserts the two

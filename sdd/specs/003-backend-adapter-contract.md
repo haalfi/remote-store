@@ -1208,6 +1208,11 @@ refused. The entry itself is present and readable as a link, so the folder was
 not denied and the listing has nothing to report about it. Any other OS error
 the listing meets is raised as a mapped `RemoteStoreError`.
 
+An ancestor of the listed folder is "non-traversable" in BE-014 and BE-015's
+sense, and the listing yields nothing, when a component of the path is a file.
+An ancestor the backend is refused is a denial instead, and raises
+`PermissionDenied` under this clause.
+
 "Gone" is the backend's own notion of a path that is not there. For
 `LocalBackend` it is what `Path.is_dir` read as `False` on 3.11 to 3.13: no such
 file, not a directory, a bad descriptor, a link loop, and on Windows a drive not
@@ -1215,22 +1220,18 @@ ready, an invalid name, or a name it cannot resolve.
 
 The clause decides those kinds of link and no other. A link whose target
 resolves outside the store root is not decided by it. `LocalBackend`'s
-single-level listings follow links; this clause does not decide whether any
-other backend's do.
+single-level listings follow links, and count a Windows directory junction as
+one; this clause does not decide whether any other backend's do.
 
-**Known divergence: `LocalBackend`'s recursive `list_files`.** It does not meet
-this clause yet:
-- it leaves out a folder the OS refuses to list, the listed one included,
-  without an error;
-- it can raise `PermissionDenied` for a link into a folder it cannot enter;
-- it raises `RemoteStoreError` for an entry this clause skips: with
-  `max_depth`, a dangling link or link loop anywhere in the tree, on every
-  call, and in either form a file removed while it runs.
-
-BK-416 moves it onto RFC-0017's listing kernel, and its strict `xfail` cells
-name the item. On 3.11 and 3.12, a listed path that is or passes through a link
-loop raises a bare `RuntimeError` from path resolution, for every operation,
-not only listings. BK-416 records it.
+**Known divergence: `LocalBackend`'s recursive walks.** Recursive `list_files`
+and `get_folder_info` do not meet this clause or the never-leak invariant yet.
+They can leave out a folder the OS refuses to list without an error, and raise
+for entries this clause skips, and `get_folder_info` can leak the bare error.
+How each answers, by interpreter and platform, is recorded in BK-416, which
+moves them onto RFC-0017's listing kernel; its strict `xfail` cells name the
+item. On 3.11 and 3.12, a listed path that is or passes through a link loop
+raises a bare `RuntimeError` from path resolution, for every operation, not
+only listings; BK-416 records that too.
 
 ### BE-022: unwrap()
 

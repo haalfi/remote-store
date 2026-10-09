@@ -17,7 +17,7 @@ discovery_followups:
   # scope by decision at framing, not by oversight.
   - BUG-311
   # Born in the closing round's sibling sweep over .is_file()/.is_dir(); the
-  # same 3.14 mechanism outside the walks this PR fixes.
+  # same 3.14 mechanism outside the single-level scans this PR fixes.
   - BUG-313
   # Born in round 5: the strict raise this PR chose leaves no way to skip an
   # unreadable folder; kept strict by decision, the opt-in filed rather than built.
@@ -618,5 +618,44 @@ phases:
           folder's scan". Read from each interpreter's source: 3.11's pathlib
           selectors catch only PermissionError, so plain rglob propagates EIO
           there; 3.12's catch OSError. The reviewer named 3.11 and 3.12; only
-          3.11 holds
-        outcome: misleading
+          3.11 holds. The miss was the author's, writing the dossier from an
+          unread premise, so no outcome tag
+        outcome: ok
+  - id: fix_r5b
+    name: Fix pass (round 5 after the re-plan, past the ceiling)
+    steps:
+      - file: src/remote_store/backends/_local.py
+        section: "_entry_stat_or_absent"
+        read_type: verify
+        extract: >-
+          The link rule recognised only S_IFLNK, and a Windows directory
+          junction's lstat reports a directory with reparse tag 0xa0000003
+          (measured on 3.14). A junction into a denied folder therefore failed
+          the whole listing on 3.11 to 3.14, a regression from base on Windows
+          3.14, which listed the folder. A real-junction cell (no privilege:
+          _winapi.CreateJunction plus an icacls deny) failed 3 of 3 before the
+          fix. Its first form denied (F), which also denies the read-control
+          and write-DAC icacls needs to lift the deny; the test folders it
+          left behind need an administrator to remove. A deny of SYNCHRONIZE
+          alone refuses the stat and can be lifted (probed). stat's
+          IO_REPARSE_TAG_MOUNT_POINT exists on Windows only (checked in a
+          python:3.11-slim container), so the tag is a module constant. An
+          lstat error that is neither absence nor denial now surfaces as
+          itself (a new EIO cell failed 3 of 3 before), and PermissionDenied's
+          message carries the OS error, naming the refused entry
+        outcome: ok
+      - file: sdd/specs/003-backend-adapter-contract.md
+        section: "BE-021 listing clause and divergence"
+        read_type: verify
+        extract: >-
+          Rounds 3 to 5 each measured the next edge of the PR's own description
+          of the recursive walks and found it wrong (anywhere in the tree vs
+          within max_depth; 3.11 junctions without max_depth; 3.14's silent
+          drop of a listed folder). By the maintainer's call the docs stop
+          describing the walks: the divergence paragraph, the migration note
+          and the docstring say only that the walks do not follow the rules and
+          that what they raise arrives mapped, and BK-416's dossier holds the
+          per-interpreter answers, corrected for round 5. The clause also
+          states which BE-014 ancestor rule wins: a file component yields
+          nothing, a refused ancestor raises
+        outcome: ok

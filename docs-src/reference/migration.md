@@ -23,8 +23,9 @@ directory with read but no execute permission. On Python 3.14 a non-recursive
 without an error, and on 3.11 to 3.13 they raised the bare `PermissionError`;
 every version now raises `PermissionDenied`.
 
-In a folder you can open, a symlink whose target you may not reach is skipped,
-as a dangling one is, rather than failing the listing.
+In a folder you can open, a link whose target you may not reach, a symlink or
+a Windows junction, is skipped as a dangling one is, rather than failing the
+listing.
 
 A folder removed while one of these calls was opening it now lists as empty
 instead of raising the bare `FileNotFoundError`. On Windows, a call that meets
@@ -42,22 +43,12 @@ failed. It used to escape as the bare `OSError`, except on 3.14, where an error
 from the folder's or an entry's `stat` was read as an empty folder or a missing
 entry.
 
-A **recursive** `list_files()` keeps its traversal. The errors it lets escape
-now reach you mapped:
-- the bare `PermissionError` for an entry it may not `stat` (3.11 to 3.13, and
-  with `max_depth` on every version) arrives as `PermissionDenied`;
-- any other `OSError` arrives as a `RemoteStoreError`. That includes a file
-  removed during the walk, an occasional race. It also includes, with
-  `max_depth`, a dangling symlink or a symlink loop anywhere in the tree, which
-  fails **every** call while the link is there. Without `max_depth` the walk
-  skips such a link. Retrying will not clear it; remove the link or list
-  without `max_depth`.
-
-It still leaves out a folder it cannot list, without an error, including the
-folder you asked for. `get_folder_info()` and `glob()` are not changed by this
-release. `get_folder_info()` leaves out an unreadable subfolder the same way,
-and on 3.11 to 3.13 it can still raise the bare `PermissionError` for an entry
-it may not `stat`.
+A **recursive** `list_files()` keeps its traversal and does not follow these
+rules. It can still leave out a folder it cannot list, the one you asked for
+included, without an error, and it can raise for an entry a non-recursive
+listing skips. What changes is the error type: where it raises, you now get
+`PermissionDenied` or `RemoteStoreError` instead of the bare `OSError`.
+`get_folder_info()` and `glob()` are not changed by this release.
 
 ## v0.32.0 to v0.33.0
 

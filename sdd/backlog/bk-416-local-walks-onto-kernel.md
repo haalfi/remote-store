@@ -22,8 +22,8 @@ before the step exists so the evidence is not lost.
 
 ## What ships after BUG-280, measured
 
-Every row was measured at BUG-280's narrowed head against master `31ebe6be7`
-on Windows, CPython 3.11.15, 3.13.11 and 3.14.0. "Denied listing" is a real
+Every row was measured on BUG-280's narrowed tree, committed as `cdcaa35c6`,
+against master `31ebe6be7` on Windows, CPython 3.11.15, 3.13.11 and 3.14.0. "Denied listing" is a real
 `icacls /deny RD`. "Unstattable entries" is BUG-280's `_deny_child_stat`
 shape: `os.stat` refused on a folder's entries, with POSIX's `genericpath`
 predicates swapped in.
@@ -41,7 +41,10 @@ it at `2103ed1de`. With `a` itself at chmod 0 or 0o111, on Linux uid 1000 on
 return `[]`, where the non-recursive call raises `PermissionDenied`:
 `list_files("a", recursive=True)` and the `max_depth=5` form. `get_folder_info`
 counts 0. The only check on the listed folder before the walk is a `stat`,
-which a folder that refuses its listing still answers.
+which a folder that refuses its listing still answers. On 3.14 the plain walk
+also drops a listed folder that lists but cannot be traversed: with `a` at
+0o444, `list_files("a")` raises and `list_files("a", recursive=True)` returns
+`[]`. BUG-280's round 5 measured that on Linux 3.14.8 at `0b069ab3b`.
 
 Two of these cells are BE-021 breaches:
 - the silent drop, of a subtree or of the whole listing, a short answer that
@@ -126,13 +129,18 @@ pins the plain walk's skip of an unstattable entry there.
   recursive branches inside `list_files`' handler, so whatever escapes them
   reaches the caller as `PermissionDenied` or a `RemoteStoreError`, never raw.
   That includes a file removed mid-walk (`FileNotFoundError` from its `stat`)
-  and, under `max_depth`, a dangling link or a link loop anywhere in the tree.
-  `os.walk` lists those links as files, and their `stat` fails on every call.
-  Master leaked all of them raw; `classify` should answer them as absences.
-  BUG-280's round 4 measured them on Linux 3.11 to 3.14. Under churn, plain
-  recursive raised `RemoteStoreError` in 20 to 42 calls and `max_depth` in
-  about 200, per interpreter, over about 4 s per mode. Every `max_depth` call
-  over a dangling link or loop raised.
+  and, under `max_depth`, a dangling link or a link loop within the depth
+  bound. `os.walk` lists those links as files, and their `stat` fails on every
+  call. A link below the bound is never reached: with one at
+  `a/sub/dangling.txt`, `max_depth=0` lists and `max_depth=1` raises. Master
+  leaked all of them raw; `classify` should answer them as absences. BUG-280's
+  round 4 measured them on Linux 3.11 to 3.14 at `a387794f3`. Under churn,
+  plain recursive raised `RemoteStoreError` in 20 to 42 calls and `max_depth`
+  in about 200, per interpreter, over about 4 s per mode. Every `max_depth`
+  call over a dangling link or loop within the bound raised. Round 5 measured
+  the depth bound at `0b069ab3b`. On Windows 3.11 the plain walk raises too,
+  for a dangling junction or a junction loop, because 3.11's `rglob` selectors
+  catch only `PermissionError`; 3.12 to 3.14 skip them.
 - **On 3.11 and 3.12, a link loop in the path itself leaks a bare
   `RuntimeError`.** `_resolve` resolves the deepest existing ancestor, and
   `Path.resolve` raises `RuntimeError("Symlink loop from …")` there; 3.13 and

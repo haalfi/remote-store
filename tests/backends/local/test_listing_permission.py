@@ -14,14 +14,16 @@ and its invariant says no native exception leaks. ``list_files`` (non-recursive)
 
 The cells enumerate entry point x denied site rather than sampling them. A
 listing denial is injected at ``os.scandir`` and ``os.listdir``, the two calls
-the scans list through on 3.11 to 3.14, and an entry denial at ``os.stat``. One
-POSIX cell repeats the cases against a real ``chmod`` (unlistable, and listable
-but not traversable), and one Windows cell against a real ACL denial.
+the scans list through on 3.11 to 3.14, and an entry denial at ``os.stat``. Real
+denials repeat the cases: POSIX ``chmod`` (unlistable, and listable but not
+traversable), a POSIX symlink into a locked folder, and on Windows an ACL and a
+junction into a denied folder.
 
-The recursive walks (``list_files(recursive=True)``, ``get_folder_info``) are
-not changed here; the cells at the end pin what they still do with a denied
-subfolder as strict ``xfail``\\ s, so the change that fixes them has to remove
-the marks.
+The recursive walks keep their traversal. The cells at the end pin two things
+about them: ``list_files(recursive=True)`` reaches the caller mapped where it
+raises, and the walks still drop a denied folder (the listed one or a
+subfolder). The second is pinned as strict ``xfail``\\ s, so the change that
+fixes the walks has to remove the marks.
 """
 
 from __future__ import annotations
@@ -194,11 +196,16 @@ def test_a_denied_subfolder_does_not_reach_a_single_level_scan(tmp_path: Path, e
 @pytest.mark.spec("BE-021")
 @pytest.mark.parametrize("entry", list(_ENTRY_POINTS))
 def test_an_entry_the_os_refuses_to_stat_raises_permission_denied(tmp_path: Path, entry: str) -> None:
-    """A folder that lists but cannot be traversed raises, rather than listing as empty."""
+    """A folder that lists but cannot be traversed raises, rather than listing as empty.
+
+    The message names the refused entry, so the caller can tell it from a
+    refusal of the listed folder itself.
+    """
     backend = _tree(tmp_path)
     with _deny_child_stat(tmp_path / "a"), pytest.raises(PermissionDenied) as info:
         _ENTRY_POINTS[entry](backend)
     _assert_mapped(info)
+    assert "f.txt" in str(info.value) or "sub" in str(info.value)
 
 
 _ON_SUB: dict[str, Callable[[LocalBackend], set[str]]] = {
@@ -303,7 +310,9 @@ def test_an_entry_gone_before_its_stat_is_skipped(
 
 
 # Where a scan meets an ``OSError`` that is neither a denial nor an absence.
-_EIO_SITES = ["listed-folder-stat", "entry-stat", "listed-folder-scan"]
+# ``entry-lstat``: the entry's ``stat`` is refused, and the ``lstat`` that
+# asks whether it is a link fails with ``EIO``.
+_EIO_SITES = ["listed-folder-stat", "entry-stat", "entry-lstat", "listed-folder-scan"]
 
 
 @pytest.mark.spec("BE-021")
@@ -321,6 +330,20 @@ def test_an_os_error_that_is_neither_denial_nor_absence_raises_a_mapped_error(
     patch: AbstractContextManager[Any]
     if site == "listed-folder-scan":
         patch = _deny(tmp_path / "a", OSError(errno.EIO, os.strerror(errno.EIO)))
+    elif site == "entry-lstat":
+        entry_path = _norm((tmp_path / "a" / "f.txt").resolve())
+
+        def refused_stat(p: Any, *args: Any, **kwargs: Any) -> os.stat_result:
+            if _norm(p) == entry_path:
+                raise PermissionError(errno.EACCES, "Permission denied", os.fspath(p))
+            return _REAL_STAT(p, *args, **kwargs)
+
+        def failing_lstat(p: Any, *args: Any, **kwargs: Any) -> os.stat_result:
+            if _norm(p) == entry_path:
+                raise OSError(errno.EIO, os.strerror(errno.EIO), os.fspath(p))
+            return _REAL_LSTAT(p, *args, **kwargs)
+
+        patch = mock.patch.multiple(os, stat=refused_stat, lstat=failing_lstat)
     else:
         leaf = "a" if site == "listed-folder-stat" else "a/f.txt"
         target = _norm((tmp_path / leaf).resolve())
@@ -342,7 +365,7 @@ def test_an_os_error_that_is_neither_denial_nor_absence_raises_a_mapped_error(
     # The message names what failed, so an entry's error is not read as the
     # listed folder's.
     assert os.strerror(errno.EIO) in str(err)
-    if site == "entry-stat":
+    if site in ("entry-stat", "entry-lstat"):
         assert "f.txt" in str(err)
 
 
@@ -436,6 +459,36 @@ def test_a_real_link_into_an_unenterable_folder_is_skipped(tmp_path: Path, entry
         listed = _ENTRY_POINTS[entry](backend)
     finally:
         locked.chmod(0o755)
+    assert listed == _WITH_LINK_SKIPPED[entry]
+
+
+@pytest.mark.spec("BE-021")
+@pytest.mark.parametrize("entry", list(_WITH_LINK_SKIPPED))
+@pytest.mark.skipif(sys.platform != "win32", reason="directory junctions exist on Windows only")
+def test_a_junction_into_a_folder_denied_by_acl_is_skipped(tmp_path: Path, entry: str) -> None:
+    """A Windows directory junction is a link too, though ``lstat`` does not report it as one.
+
+    Junctions need no privilege to create, so they are the link a Windows user
+    most often has. Its target is denied by a real ACL: ``SYNCHRONIZE``, which
+    every open asks for, so the junction's ``stat`` is refused. Denying full
+    control would also deny the read-control and write-DAC rights ``icacls``
+    needs to lift the denial again, leaving a folder only an administrator can
+    remove.
+    """
+    import _winapi  # type: ignore[import-not-found]  # Windows-only module
+
+    backend = _tree(tmp_path)
+    locked = tmp_path / "locked"
+    locked.mkdir()
+    _winapi.CreateJunction(str(locked), str(tmp_path / "a" / "j"))
+    user = getpass.getuser()
+    denied = subprocess.run(["icacls", str(locked), "/deny", f"{user}:(S)"], capture_output=True, check=False)
+    if denied.returncode != 0:
+        pytest.skip("icacls could not deny access on this runner")
+    try:
+        listed = _ENTRY_POINTS[entry](backend)
+    finally:
+        subprocess.run(["icacls", str(locked), "/remove:d", user], capture_output=True, check=False)
     assert listed == _WITH_LINK_SKIPPED[entry]
 
 

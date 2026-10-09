@@ -2,9 +2,22 @@
 <!-- doc: repo-only -->
 
 Moved verbatim from [`BACKLOG.md` § 1](../BACKLOG.md#predictable-failure) by the ADR-0040 § 1
-pilot, links re-based to this directory. The index entry holds the current
-diagnosis; this file is evidence and advisory prescription
-([§ Item authority](../BACKLOG.md#how-this-file-works)).
+pilot, links re-based to this directory. The item is done; its register entry
+in [`BACKLOG-DONE.md`](../BACKLOG-DONE.md) says what shipped, and this file is
+the evidence ([§ Item authority](../BACKLOG.md#how-this-file-works)).
+
+## How it closed
+
+PR #1093 first rewrote every `LocalBackend` folder walk as well as the three
+scans. Seven review rounds each found the next site or error class the
+per-site rules had missed, and round 7 measured a Windows regression: a
+concurrent delete reported as `PermissionDenied`. The PR was narrowed to the
+single-level scans. The recursive walks and `get_folder_info` went to BK-416,
+RFC-0017 step 5, where Local's one `classify` behind the listing kernel answers
+them, with every measurement in its dossier. The review then restarted at
+round 1 on the narrowed diff. The trace
+([bug-280](../traces/bug-280-local-listing-permission-leak.yml)) records each
+round.
 
 BE-021 is the never-leak invariant this breaches
 ([003-backend-adapter-contract.md](../specs/003-backend-adapter-contract.md)),

@@ -2,7 +2,7 @@
 <!-- doc: repo-only -->
 
 Filed by BUG-280's closing round. Its sibling sweep listed every place that
-classifies a path with `Path.is_file` or `is_dir`. BUG-280, as merged, fixed the
+classifies a path with `Path.is_file` or `is_dir`. BUG-280 fixes the
 single-level scans among them; the recursive walks and `get_folder_info` went
 to BK-416 (RFC-0017 step 5). `get_file_info` was left out of that PR's scope by
 decision.
@@ -54,8 +54,9 @@ The mechanism is the one BUG-280 measured for the walks. Each of these asks
 whose parent cannot be traversed, `get_folder_info` and `Store.get_folder_info`
 both classify the folder with `is_file()` / `is_dir()`, with or without a
 `max_depth`; the `max_depth` form asks `backend.is_folder(path)` before it
-aggregates through `list_files`. Measured at BUG-280's merged head with this
-item's script, all three forms leak a raw `builtins.PermissionError` on 3.11.15
+aggregates through `list_files`. Measured with this item's script on BUG-280's
+narrowed tree, committed as `cdcaa35c6`, where `get_folder_info` is master's
+code, all three forms leak a raw `builtins.PermissionError` on 3.11.15
 and 3.13.11 and answer `NotFound` on 3.14.0. The routes agree; they agree on
 the wrong answer.
 

@@ -9,7 +9,8 @@ kernel's listing would answer both.
 
 ## Evidence
 
-Measured at the BUG-280 branch on CPython 3.13.11 (Windows) with a tree
+Measured on the BUG-280 branch, whose `glob` is master's code unchanged, on
+CPython 3.13.11 (Windows) with a tree
 `a/f.txt`, `a/sub/g.txt`. `LocalBackend.glob("a/**/*.txt")` walks through
 `Path.glob`, and the 3.13 recursive selector
 (`glob._Globber.recursive_selector`'s `select_recursive_step`) wraps its
