@@ -48,8 +48,8 @@ Bounds (DRIFT-RULES Rule 7):
   prints both headers, each labelled with its section.
 * ``find`` matches per line, and entries and dossiers are hard-wrapped, so a
   phrase that wraps across a line break is not found.
-* ``--spec`` reads the attribute line, which only open items carry, so it
-  never reaches a done entry or a dossier.
+* ``--spec`` searches open items only, the related open work it was built to
+  find; done entries carry attribute lines too, and it skips them.
 * ``ref-show`` reaches anchored sections and, by heading text, unanchored ones.
   A heading inside a fenced code block is not a heading.
 * ``ref-rows`` returns table rows, not the paragraphs before a table. It pairs
@@ -435,7 +435,7 @@ def main(argv: list[str] | None = None) -> int:
         if args.pattern is None and not args.spec:
             parser.error("find needs a pattern, --spec, or both")
         if args.spec and args.scope in ("done", "dossiers"):
-            parser.error("--spec reads the attribute line, which only open items carry")
+            parser.error("--spec searches open items only")
         try:
             pattern = re.compile(args.pattern, re.IGNORECASE) if args.pattern is not None else None
         except re.error as exc:

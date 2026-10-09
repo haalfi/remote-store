@@ -117,6 +117,31 @@ phases:
           BK-348 as a source. CLAUDE.md § Backlog gains the rule. BK-414 closes
           here, and § 8, which held only it, is removed.
         outcome: ok
+  - id: review_fix_2
+    name: Review round 2 fixes
+    steps:
+      - file: .claude/skills/rvw-pr/SKILL.md
+        section: "allowed-tools comment (line 7), Search discipline (line 132)"
+        read_type: verify
+        extract: >-
+          My miss: I added two pointers to /rvw-pr without reading its bounded
+          Bash use (five listed uses) or its ban on searching with Bash. Both
+          pointers removed, so the file matches master; CLAUDE.md's rule now
+          names /rvw-pr as a skill that keeps Read and Grep. Pointers now: 12
+          lines in 5 skills (Grep for `hatch run (backlog|ref)-` over
+          .claude/skills).
+        outcome: ok
+      - file: sdd/BACKLOG-DONE.md
+        section: "attribute lines"
+        read_type: verify
+        extract: >-
+          My miss: the docstring said only open items carry an attribute line.
+          The done register has 229 lines matching `^  spec: (.+?) · effort`,
+          96 naming a spec ID. The docstring and the usage error now state the
+          open-only scope as a choice; a done fixture entry gained an attribute
+          line naming BE-021, and TestFindSpec.test_spec_searches_open_items_only
+          fails (BK-011 returned) when --spec is allowed to read done entries.
+        outcome: ok
 review:
   # Derived by `hatch run ship-report 1099 --trace-block-only` at head 4ce322b.
   # Do not hand-edit, except a newly required field per sdd/traces/_schema.yml

@@ -51,8 +51,9 @@ the failing test, run it, see it fail** before implementing the fix.
   `hatch run backlog-show <ID> [--dossier]` prints an item or done entry;
   `backlog-find <regex>` and `backlog-find --spec <ID>` list matching items one
   line each; `ref-show <anchor>` prints a `sdd/CLAUDE-REFERENCE.md` section and
-  `ref-rows <trigger>` its ripple rows. Grep and Read stay for edits and for a
-  step that reads a whole file. Commands and bounds: the script's docstring.
+  `ref-rows <trigger>` its ripple rows. Grep and Read stay for edits, for a
+  step that reads a whole file, and in a skill that limits its own Bash use
+  (`/rvw-pr`). Commands and bounds: the script's docstring.
 - Commit messages start with item ID when applicable (e.g., `AF-008: Add credential masking`).
 
 <a id="trace-authoring"></a>

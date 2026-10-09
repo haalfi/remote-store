@@ -73,6 +73,7 @@ _DONE = """\
 ## Unreleased
 
 - [x] **BK-011 — Shipped thing**
+  spec: BE-021 · effort: S · audience: user.api
   Dossier: [BK-011](backlog/bk-011-shipped.md).
 
   A second paragraph after a blank line.
@@ -208,6 +209,7 @@ class TestShow:
         _, out, _ = _run(capsys, "show", "BK-011")
         assert out.splitlines()[1:] == [
             "- [x] **BK-011 — Shipped thing**",
+            "  spec: BE-021 · effort: S · audience: user.api",
             "  Dossier: [BK-011](backlog/bk-011-shipped.md).",
             "",
             "  A second paragraph after a blank line.",
@@ -220,8 +222,8 @@ class TestShow:
         heads = [line for line in out.splitlines() if line.startswith("BK-012b ·")]
         assert "A section note" not in out
         assert heads == [
-            "BK-012b · done · sdd/BACKLOG-DONE.md:20 · § v0.1.0",
-            "BK-012b · done · sdd/BACKLOG-DONE.md:26 · § Bugs",
+            "BK-012b · done · sdd/BACKLOG-DONE.md:21 · § v0.1.0",
+            "BK-012b · done · sdd/BACKLOG-DONE.md:27 · § Bugs",
         ]
 
     def test_several_ids_one_unknown_prints_known_and_exits_1(self, tree, capsys):
@@ -300,8 +302,8 @@ class TestFind:
         ("argv", "message"),
         [
             (["find"], "needs a pattern"),
-            (["find", "x", "--spec", "BE-021", "--done"], "only open items"),
-            (["find", "--spec", "BE-021", "--dossiers"], "only open items"),
+            (["find", "x", "--spec", "BE-021", "--done"], "open items only"),
+            (["find", "--spec", "BE-021", "--dossiers"], "open items only"),
             (["find", "("], "invalid regex"),
         ],
     )
@@ -335,11 +337,11 @@ class TestFindSpec:
         assert code == 0
         assert [line.split(" · ")[0] for line in out.splitlines()] == ["BUG-002"]
 
-    def test_spec_never_reaches_done_entries(self, tree, capsys):
-        # Done entries carry no attribute line; a spec ID in a done body is prose.
-        code, _, err = _run(capsys, "find", "--spec", "BK-011")
-        assert code == 1
-        assert "spec BK-011" in err
+    def test_spec_searches_open_items_only(self, tree, capsys):
+        # BK-011 is a done entry whose attribute line names BE-021; --spec skips it by scope.
+        code, out, _ = _run(capsys, "find", "--spec", "BE-021")
+        assert code == 0
+        assert [line.split(" · ")[0] for line in out.splitlines()] == ["BK-001"]
 
     def test_dash_spec_matches_nothing(self, tree, capsys):
         code, _, _ = _run(capsys, "find", "--spec", "BE-999")
