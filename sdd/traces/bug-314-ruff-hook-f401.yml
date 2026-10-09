@@ -11,11 +11,11 @@ audience:
   - contributor.tooling
 discovery_followups: []
 expected_ripples:
-  - .claude/hooks/ruff-format.sh
-  - tests/scripts/test_ruff_format_hook.py
   - sdd/BACKLOG-DONE.md
   - sdd/backlogid.json
-surprising_ripples: []
+surprising_ripples:
+  - tests/scripts/test_record_decision.py
+  - tests/scripts/test_check_readthedocs_python.py
 phases:
   - id: orient
     name: Orient
@@ -84,4 +84,41 @@ phases:
           Now `ruff check --fix --unfixable F401`; both tests pass. Probed by
           hand that the F811 sweep of a redundant function-local re-import still
           applies (ruff reported "1 fixed" and removed the local import).
+        outcome: ok
+  - id: review_fix_1
+    name: Review round 1 fixes
+    steps:
+      - file: tests/scripts/test_ruff_format_hook.py
+        section: "bash resolution (review thread on line 34)"
+        read_type: verify
+        extract: >-
+          My miss: I took `shutil.which("bash")` from test_record_decision.py and
+          checked it only inside a Claude Code session, whose PATH leads with Git
+          Bash. With PATH rebuilt as a fresh PowerShell does (Machine then User),
+          `shutil.which("bash")` returned WSL's launcher in System32, and
+          10 tests failed with WSL's `execvpe(/bin/bash) failed`: 2 here, 5 in
+          test_record_decision.py, 3 in test_check_readthedocs_python.py, the
+          last two already failing that way on master.
+        outcome: ok
+      - file: tests/_helpers.py
+        section: "hook_bash"
+        read_type: verify
+        extract: >-
+          One resolver for all three modules: on Windows it rejects a System32 or
+          WindowsApps bash and derives Git Bash from git's install root. Under the
+          same fresh-shell PATH with the venv in front, which still resolved
+          `bash` to WSL, the four modules passed 42 of 42. The hook test now asks
+          the chosen bash for jq and ruff instead of this process's PATH.
+          tests/scripts/test_hook_bash.py pins the resolver on every OS by faking
+          sys.platform and shutil.which; mutation (WSL rejection removed) failed
+          4 of its 6 tests, each returning the WSL path.
+        outcome: ok
+      - file: sdd/traces/_schema.yml
+        section: "expected_ripples, surprising_ripples"
+        read_type: gate
+        extract: >-
+          expected_ripples is for files the ripple-check anticipated as
+          tag-alongs; the hook and its test are the work, so they were removed.
+          The two sibling test modules the review's class reached are recorded
+          as surprising_ripples: no read or ripple-check row anticipated them.
         outcome: ok

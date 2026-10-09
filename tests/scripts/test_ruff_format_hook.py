@@ -6,9 +6,11 @@ removing it in between leaves a ``NameError`` behind. Unused imports stay the
 ``lint`` gate's job, which runs ``ruff check`` without ``--fix``.
 
 The hook runs for real, with real ``bash``, ``jq`` and ``ruff`` (``sdd/TESTING.md``
-Rule 6): a stub could not tell which fixes ruff applies. All three are required,
-so a missing one fails rather than skips, because a skipped test reads as a pass
-(``sdd/TESTING.md`` § A green test can be vacuous). Files are written to
+Rule 6): a stub could not tell which fixes ruff applies. ``bash`` comes from
+``tests._helpers.hook_bash``, which on Windows skips WSL's launcher, and ``jq``
+and ``ruff`` are looked up through that bash, since it is the one that must see
+them. All three are required, so a missing one fails rather than skips, because
+a skipped test reads as a pass (``sdd/TESTING.md`` § A green test can be vacuous). Files are written to
 ``tmp_path``, outside the repo, so ruff runs its default rule set, which selects
 F401 and treats it as fixable, as the repo's own ``select`` does.
 
@@ -20,28 +22,32 @@ does not vary by OS, and ``tooling-tests`` runs this module on every
 from __future__ import annotations
 
 import json
-import shutil
 import subprocess
 from pathlib import Path
 
 import pytest
 
-HOOK = Path(__file__).resolve().parents[2] / ".claude" / "hooks" / "ruff-format.sh"
+from tests._helpers import hook_bash
 
-# Resolved through PATH, not left to the OS: on Windows, CreateProcess searches
-# System32 before PATH and a bare "bash" runs WSL's launcher instead of the Git
-# Bash that Claude Code runs hooks with.
-BASH = shutil.which("bash") or "bash"
+HOOK = Path(__file__).resolve().parents[2] / ".claude" / "hooks" / "ruff-format.sh"
 
 
 def _run_hook(target: Path) -> None:
-    missing = [name for name in ("bash", "jq", "ruff") if shutil.which(name) is None]
+    bash = hook_bash()
+    if bash is None:
+        pytest.fail("no usable bash (Git Bash on Windows); a skip would read as a pass")
+    # Ask the chosen bash, not this process: the tools must be on *its* PATH.
+    missing = [
+        tool
+        for tool in ("jq", "ruff")
+        if subprocess.run([bash, "-c", f"command -v {tool}"], capture_output=True, check=False).returncode != 0
+    ]
     if missing:
-        pytest.fail(f"not on PATH: {', '.join(missing)}; the hook needs them, and a skip would read as a pass")
+        pytest.fail(f"{bash} cannot see {', '.join(missing)}; the hook needs them, and a skip would read as a pass")
     # Claude Code passes the absolute, platform-native path, so the test does too.
     payload = json.dumps({"tool_name": "Edit", "tool_input": {"file_path": str(target)}})
     result = subprocess.run(
-        [BASH, HOOK.as_posix()], input=payload, capture_output=True, text=True, check=False, timeout=60
+        [bash, HOOK.as_posix()], input=payload, capture_output=True, text=True, check=False, timeout=60
     )
     assert result.returncode == 0, result.stderr
 
