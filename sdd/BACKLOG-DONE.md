@@ -322,7 +322,10 @@ if evidence changes; these are retired.
   SFTP twin uses. Both recursive `list_files` branches and `get_folder_info` had
   a second defect: a denied subtree was dropped silently. Each is now an `os.walk`
   whose error hook re-raises a denial and tolerates anything else, so
-  `Store.get_folder_info` answers a denial alike for every `max_depth`. A third:
+  `Store.get_folder_info` answers a denied folder or entry alike for every
+  `max_depth`. It does not yet for a starting folder whose parent cannot be
+  traversed: with a `max_depth` it asks `is_folder` first, which BE-021 forbids
+  from raising, and that divergence is BUG-313's. A third:
   every walk classified paths with `Path.is_file` / `is_dir`, which on 3.14
   (POSIX) answer `False` for a path the OS refuses to `stat`, so a folder that
   lists but cannot be traversed lost its entries silently. Each path is now

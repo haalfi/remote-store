@@ -269,3 +269,42 @@ phases:
           for get_file_info (no PermissionError mapping, read). Narrowed to
           read, write and delete, each checked for an except PermissionError
           arm, and glob is named as unchanged
+  - id: fix_4
+    name: Fix pass (round 4, panel)
+    steps:
+      - file: src/remote_store/_store.py
+        section: "Store.get_folder_info (max_depth branch)"
+        read_type: verify
+        extract: >-
+          All three members found the claim "Store.get_folder_info answers a
+          denial alike for every max_depth" false again, at the site fix_3
+          added: a starting folder whose parent cannot be traversed. The
+          max_depth branch asks backend.is_folder first, and BE-021 forbids that
+          predicate from raising, so no walk-side change reaches it. This is the
+          second refutation of the same claim (round 1 at the subtree site), so
+          the condition's space was enumerated rather than argued: both Store
+          forms joined _ON_SUB, making the table every entry point x every
+          denial site, and the one cell that diverges is a strict xfail naming
+          BUG-313. The claim was narrowed in BACKLOG-DONE, the test module and
+          the PR body, and BUG-313 widened (decided with the user) to the
+          predicates exists/is_file/is_folder and this Store path
+        outcome: ok
+      - file: docs-src/reference/migration.md
+        section: "v0.33.0 to v0.33.1, the not-traversable paragraph"
+        read_type: verify
+        extract: >-
+          The measuring member refuted fix_3's own sentence on base 3.14.2: the
+          max_depth branch never classified with is_file, so it raised the bare
+          PermissionError there rather than losing entries. The paragraph now
+          names which calls vanished entries on 3.14 and which raised. fix_3
+          measured the premise with list_files(a, recursive) and
+          get_folder_info only, and generalised to "these listings"
+      - file: tests/backends/local/test_listing_permission.py
+        section: "test_an_entry_gone_before_its_stat_is_skipped"
+        read_type: verify
+        extract: >-
+          iter_children's `if st is None: continue` was reached by no cell
+          (coverage line 656 missed; deleting it passed the module, and crashed
+          on a real dangling junction). The new cell makes an entry's stat find
+          it gone for all eight entry points; the deletion mutant now dies. 20
+          mutants, all die on 3.14

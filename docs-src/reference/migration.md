@@ -28,8 +28,11 @@ stops above the denied folder still never opens it and does not raise.
 
 The same holds for a folder you may list but not open, such as a POSIX
 directory with read but no execute permission. On Python 3.14 its entries used
-to vanish from these listings and totals, and on 3.11 to 3.13 they raised the
-bare `PermissionError`; every version now raises `PermissionDenied`.
+to vanish without an error from `list_folders()`, `iter_children()`,
+`get_folder_info()` and a `list_files()` without `max_depth`. A `list_files()`
+with `max_depth` raised the bare `PermissionError` there, as every listing did
+on 3.11 to 3.13. Every version now raises `PermissionDenied`, so an
+`except PermissionError` around any of these no longer fires.
 
 `glob()` is not changed by this release. It still leaves out a folder it cannot
 read, without an error.

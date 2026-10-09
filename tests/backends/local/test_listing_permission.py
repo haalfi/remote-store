@@ -21,7 +21,9 @@ The cells enumerate entry point x denied site rather than sampling them, because
 the shapes above live in different branches and methods, and a fix to one says
 nothing about the others. ``Store.get_folder_info`` is enumerated too, because it
 reaches the backend's aggregate for ``max_depth=None`` and ``list_files`` for any
-other value: one method, two walks, which must answer a denial alike.
+other value: one method, two walks, which must answer a denial alike. They do at
+every site but one, a starting folder whose parent cannot be traversed, where
+the ``max_depth`` form asks ``is_folder`` first; that cell is a strict ``xfail``.
 
 A listing denial is injected at ``os.scandir`` and ``os.listdir``, the two calls
 every walk here lists through on 3.11 to 3.14, and an entry denial at
@@ -209,11 +211,30 @@ _ON_SUB: dict[str, Callable[[LocalBackend], object]] = {
     "list_folders": lambda b: _keys(b.list_folders("a/sub")),
     "iter_children": lambda b: _keys(b.iter_children("a/sub")),
     "get_folder_info": lambda b: b.get_folder_info("a/sub").file_count,
+    "Store.get_folder_info": lambda b: Store(backend=b).get_folder_info("a/sub").file_count,
+    "Store.get_folder_info-max_depth": lambda b: Store(backend=b).get_folder_info("a/sub", max_depth=5).file_count,
 }
+
+# The one cell of this table the walks cannot reach. ``Store.get_folder_info``
+# with a ``max_depth`` asks ``is_folder`` before it walks, and BE-021 forbids
+# that predicate from raising, so no walk-side fix makes it answer a denial;
+# today it leaks the bare ``PermissionError`` on 3.11 to 3.13 and answers
+# ``NotFound`` on 3.14. Strict, so the day it raises ``PermissionDenied`` this
+# cell fails and the mark has to go.
+_START_DENIAL_DIVERGES = pytest.mark.xfail(
+    strict=True,
+    reason="BUG-313: Store's max_depth branch classifies the start through is_folder",
+)
 
 
 @pytest.mark.spec("BE-021")
-@pytest.mark.parametrize("entry", list(_ON_SUB))
+@pytest.mark.parametrize(
+    "entry",
+    [
+        pytest.param(e, id=e, marks=_START_DENIAL_DIVERGES if e == "Store.get_folder_info-max_depth" else ())
+        for e in _ON_SUB
+    ],
+)
 def test_a_folder_whose_parent_cannot_be_traversed_raises_rather_than_reading_as_absent(
     tmp_path: Path, entry: str
 ) -> None:
@@ -238,6 +259,7 @@ _WITH_F_GONE_AFTER_FIRST_STAT: dict[str, object] = {
     "list_files": {"a/f.txt"},
     "list_files-recursive": {"a/f.txt", "a/sub/g.txt"},
     "list_files-recursive-max_depth": {"a/f.txt", "a/sub/g.txt"},
+    "list_folders": {"a/sub"},
     "iter_children": {"a/f.txt", "a/sub"},
     "get_folder_info": 2,
     "Store.get_folder_info": 2,
@@ -312,8 +334,9 @@ def _traced(entries: Iterable[str]) -> list[Any]:
 def test_a_subfolder_vanishing_mid_walk_is_still_an_absence(tmp_path: Path, entry: str) -> None:
     """Only a denial raises: a subfolder gone by the time the walk opens it holds nothing.
 
-    The control that keeps the fix narrow, held on every recursive walk because
-    each has its own error hook to get wrong. A walk that started before a
+    The control that keeps the fix narrow. There are two error-hook sites,
+    ``list_files``' walk and ``get_folder_info``'s, and five entry points reach
+    them by different routes, so each route is held. A walk that started before a
     subfolder was removed meets a missing path, which lists as nothing (BE-014)
     and holds no files to aggregate (BE-017); turning every ``OSError`` into a
     raise would make it an error.
@@ -322,6 +345,40 @@ def test_a_subfolder_vanishing_mid_walk_is_still_an_absence(tmp_path: Path, entr
     gone = FileNotFoundError(errno.ENOENT, "No such file or directory")
     with _deny(tmp_path / "a" / "sub", gone):
         assert _ENTRY_POINTS[entry](backend) == _WITH_SUB_GONE[entry]
+
+
+# What each entry point answers for ``a`` when ``a/f.txt`` is listed by the scan
+# but already gone when its ``stat`` runs: everything but that file.
+_WITH_F_GONE_BEFORE_STAT: dict[str, object] = {
+    "list_files": set(),
+    "list_files-recursive": {"a/sub/g.txt"},
+    "list_files-recursive-max_depth": {"a/sub/g.txt"},
+    "list_folders": {"a/sub"},
+    "iter_children": {"a/sub"},
+    "get_folder_info": 1,
+    "Store.get_folder_info": 1,
+    "Store.get_folder_info-max_depth": 1,
+}
+
+
+@pytest.mark.parametrize("entry", _traced(_WITH_F_GONE_BEFORE_STAT))
+def test_an_entry_gone_before_its_stat_is_skipped(tmp_path: Path, entry: str) -> None:
+    """An entry the scan listed but its ``stat`` no longer finds drops out of the answer.
+
+    Each walk classifies an entry by its ``stat``, and a ``None`` from that
+    ``stat`` has to mean "skip it", not "classify it": every entry point
+    takes that branch here, ``iter_children``'s included.
+    """
+    backend = _tree(tmp_path)
+    target = _norm((tmp_path / "a" / "f.txt").resolve())
+
+    def stat(p: Any, *args: Any, **kwargs: Any) -> os.stat_result:
+        if _norm(p) == target:
+            raise FileNotFoundError(errno.ENOENT, "No such file or directory", os.fspath(p))
+        return _REAL_STAT(p, *args, **kwargs)
+
+    with mock.patch.object(os, "stat", stat):
+        assert _ENTRY_POINTS[entry](backend) == _WITH_F_GONE_BEFORE_STAT[entry]
 
 
 @pytest.mark.parametrize(
@@ -339,8 +396,11 @@ def test_a_file_removed_between_scan_and_stat_is_not_counted(tmp_path: Path, ent
     ``os.walk`` reports names from a scan that is already stale by the time the
     caller stats them. A file removed in that window must drop out of the
     answer, not surface as a raw ``FileNotFoundError`` from its ``stat``. Driven
-    by handing the walk a name that is not on disk, which is that window frozen;
-    the window after the ``stat`` is the next test's.
+    by handing the walk a name that is not on disk, which is that window frozen.
+    The window after the ``stat`` is pinned by
+    ``test_a_file_removed_after_it_was_classified_does_not_leak``, and the
+    single-level scans' version of this one by
+    ``test_an_entry_gone_before_its_stat_is_skipped``.
     """
     backend = _tree(tmp_path)
     real_walk = os.walk
