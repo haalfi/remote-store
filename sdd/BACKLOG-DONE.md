@@ -286,7 +286,12 @@ if evidence changes; these are retired.
   `lint` runs `ruff check` without `--fix`, so an import that stays unused still
   fails it, and the hook's F811 sweep of redundant local re-imports still applies.
   `tests/scripts/test_ruff_format_hook.py` runs the real hook: a regression test,
-  seen failing first, and a positive control. Trace:
+  seen failing first, and a positive control. Review found its bash pick,
+  `shutil.which("bash")`, returns WSL's launcher from a plain PowerShell shell on
+  Windows, as did `test_record_decision.py` and `test_check_readthedocs_python.py`
+  (10 tests failed there, the sibling modules already on master). All three now
+  use `tests._helpers.hook_bash`, which skips that launcher and finds Git Bash
+  through `git`; `tests/scripts/test_hook_bash.py` pins it. Trace:
   [bug-314](traces/bug-314-ruff-hook-f401.yml).
 
 - [x] **BUG-309 — `report-token-usage` drops every id-less response after the first, and `python -OO` crashes it**

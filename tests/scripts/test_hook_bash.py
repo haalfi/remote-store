@@ -56,6 +56,18 @@ def test_windows_skips_the_wsl_launcher_for_git_bash(
     assert hook_bash() == str((root / "usr/bin/bash.exe").resolve())
 
 
+def test_windows_prefers_usr_bin_when_git_ships_both(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
+    # A real Git for Windows install has both; usr/bin/bash.exe is the one
+    # Claude Code resolves for hooks, so it must win over the bin launcher.
+    root = _git_install(tmp_path, "usr/bin/bash.exe")
+    (root / "bin").mkdir()
+    (root / "bin" / "bash.exe").write_bytes(b"")
+    monkeypatch.setattr(sys, "platform", "win32")
+    _fake_which(monkeypatch, {"bash": _WSL, "git": str(root / "cmd" / "git.exe")})
+
+    assert hook_bash() == str((root / "usr/bin/bash.exe").resolve())
+
+
 def test_windows_falls_back_to_the_bin_launcher(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
     root = _git_install(tmp_path, "bin/bash.exe")
     monkeypatch.setattr(sys, "platform", "win32")
@@ -64,11 +76,21 @@ def test_windows_falls_back_to_the_bin_launcher(tmp_path: Path, monkeypatch: pyt
     assert hook_bash() == str((root / "bin/bash.exe").resolve())
 
 
-def test_windows_keeps_a_path_bash_that_is_not_wsl(monkeypatch: pytest.MonkeyPatch) -> None:
+def test_windows_keeps_a_path_bash_that_is_not_wsl(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
+    # A git-derived bash is also available, so this pins that PATH's non-WSL
+    # bash is preferred, not merely that it is used when nothing else exists.
+    root = _git_install(tmp_path, "usr/bin/bash.exe")
     monkeypatch.setattr(sys, "platform", "win32")
-    _fake_which(monkeypatch, {"bash": "F:/Coding/Git/usr/bin/bash.exe", "git": None})
+    _fake_which(monkeypatch, {"bash": "F:/Coding/Git/usr/bin/bash.exe", "git": str(root / "cmd" / "git.exe")})
 
     assert hook_bash() == "F:/Coding/Git/usr/bin/bash.exe"
+
+
+def test_windows_with_only_wsl_and_no_git_returns_none(monkeypatch: pytest.MonkeyPatch) -> None:
+    monkeypatch.setattr(sys, "platform", "win32")
+    _fake_which(monkeypatch, {"bash": _WSL, "git": None})
+
+    assert hook_bash() is None
 
 
 def test_windows_without_git_bash_returns_none(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:

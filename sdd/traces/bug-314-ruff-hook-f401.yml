@@ -122,3 +122,27 @@ phases:
           The two sibling test modules the review's class reached are recorded
           as surprising_ripples: no read or ripple-check row anticipated them.
         outcome: ok
+  - id: review_fix_2
+    name: Review round 2 fixes
+    steps:
+      - file: tests/scripts/test_hook_bash.py
+        section: "test_windows_prefers_usr_bin_when_git_ships_both, test_windows_keeps_a_path_bash_that_is_not_wsl, test_windows_with_only_wsl_and_no_git_returns_none"
+        read_type: verify
+        extract: >-
+          Review: the usr/bin over bin order was unpinned. Re-derived: with the
+          tuple swapped, all 6 tests still passed. Swept hook_bash's six
+          decisions for the same gap and found two more: a non-WSL PATH bash
+          winning over the git-derived one (its test had no git tree), and
+          WSL-plus-no-git returning None. One test each; mutations, all restored:
+          order swapped (1 of 7 failed), PATH preference dropped (1 of 8), the
+          git-None guard dropped (1 of 8, TypeError on Path(None)).
+        outcome: ok
+      - file: sdd/BACKLOG-DONE.md
+        section: "BUG-314 entry"
+        read_type: verify
+        extract: >-
+          Review: the entry named only the hook fix. Added the bash-resolution
+          change and the two sibling modules it also fixed, so the register
+          answers why hook_bash exists. The PR body was stale for the same
+          reason and was rewritten from the branch diff.
+        outcome: ok
