@@ -222,6 +222,10 @@ properties:
       question left unanswered, and an event of unknown kind, are printed as
       notes and do not fail the gate.
 
+      **The log governs** (`DRIFT-RULES.md` Rule 4): it is the record, and
+      this list only points at it, so a disagreement is the list's to fix.
+      A log is append-only and is never edited to match a trace.
+
   review_rounds:
     type: integer
     minimum: 0
