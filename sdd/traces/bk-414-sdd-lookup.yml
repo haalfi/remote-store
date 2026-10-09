@@ -102,6 +102,21 @@ phases:
           line. Narrowed the docstring and help text, and added the wrap miss
           to Bounds, rather than changing behaviour.
         outcome: ok
+  - id: pointers
+    name: Pointers before run B
+    steps:
+      - file: .claude/skills
+        section: 'references matching CLAUDE-REFERENCE\.md#|BACKLOG(-DONE)?\.md'
+        read_type: verify
+        extract: >-
+          The maintainer reversed the hold-back: run B should use the tool. The
+          Grep over .claude/skills returns 20 lines in 6 skills; 14 fetch one key
+          and now name the command beside the link (ship 3, orchestrate 3, fix-pr
+          3, pr 2, rvw-pr 2, release 1). The other 6 stay: orchestrate's five
+          close-out lines edit the backlog files, and rvw-pr line 235 cites
+          BK-348 as a source. CLAUDE.md § Backlog gains the rule. BK-414 closes
+          here, and § 8, which held only it, is removed.
+        outcome: ok
 review:
   # Derived by `hatch run ship-report 1099 --trace-block-only` at head 4ce322b.
   # Do not hand-edit, except a newly required field per sdd/traces/_schema.yml

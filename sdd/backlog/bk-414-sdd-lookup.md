@@ -174,11 +174,9 @@ in `backlog-show` names `backlog-outline` rather than listing every ID.
 
 ### Pointers
 
-**Pending until BUG-280 run B is done** (2026-10-09). The tool shipped
-without them: the token-usage RFC's run B compares a `/ship` session against
-run A, and a pointer in a skill or `CLAUDE.md` would change what run B's
-session reads. Once run B is recorded, land the edits below in one PR; that
-PR closes BK-414 and starts the acceptance measure's 30 days.
+**Landed with the tool** (2026-10-09), before BUG-280 run B, so that run B
+uses it: run B differs from run A by the token-usage RFC's interventions and
+by this tool. Its merge starts the acceptance measure's 30 days.
 
 - `CLAUDE.md` § Backlog: one rule, to query one item, entry, dossier or section
   by key, keeping Grep and sliced Read for edits and for whole-file reads a step

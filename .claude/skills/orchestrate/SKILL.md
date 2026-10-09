@@ -22,9 +22,9 @@ remainder is optional task description. Ask if missing.
 
 ## Step 1: Pre-check
 
-1. Read `sdd/BACKLOG.md` — confirm item exists, note description and dependencies
+1. Read the item with `hatch run backlog-show <ID> --dossier` — confirm it exists, note description and dependencies
 2. Read linked specs and RFCs from the backlog entry
-3. Read [`sdd/CLAUDE-REFERENCE.md` § Ripple-check table > Pre-work index](../../../sdd/CLAUDE-REFERENCE.md#pre-work-index) — identify triggered rows
+3. Read [`sdd/CLAUDE-REFERENCE.md` § Ripple-check table > Pre-work index](../../../sdd/CLAUDE-REFERENCE.md#pre-work-index) (`hatch run ref-show pre-work-index`) — identify triggered rows
 4. Create feature branch: `git checkout -b <id>-<short-name>`
 
 ## Step 2: Plan
@@ -407,7 +407,8 @@ orchestrator fixes directly.
 
 ## Step 7: Finish
 
-1. **Ripple-check audit**: Walk [`sdd/CLAUDE-REFERENCE.md` § Ripple-check table > Detailed checklist](../../../sdd/CLAUDE-REFERENCE.md#detailed-checklist). For each
+1. **Ripple-check audit**: Walk [`sdd/CLAUDE-REFERENCE.md` § Ripple-check table > Detailed checklist](../../../sdd/CLAUDE-REFERENCE.md#detailed-checklist)
+   (`hatch run ref-show detailed-checklist`, or `ref-rows <trigger>` per row). For each
    triggered row, verify target files were updated. **Close the gaps yourself**,
    and delegate only where a fix needs depth inside one file tree — the same
    routing as Step 6, for the same reason. This step is where cross-file sweeps

@@ -21,15 +21,16 @@ Read the PR state via `gh pr view <resolved PR number> --repo haalfi/remote-stor
 Check out the PR's head branch.
 
 **Freshness check:** Run the shared [branch freshness
-check](../../../sdd/CLAUDE-REFERENCE.md#branch-freshness) with `<BASE>` =
-`master`, so Step 6's push is a plain fast-forward.
+check](../../../sdd/CLAUDE-REFERENCE.md#branch-freshness)
+(`hatch run ref-show branch-freshness`) with `<BASE>` = `master`, so Step 6's push is a plain fast-forward.
 
 Read PR **content** (diff, files, body) via `gh` CLI when available; read review
 **feedback with resolution state** (the four comment sources below) via the
 GitHub MCP server — content-only `gh` reads miss `isResolved`/`isOutdated`. Post
 comments and resolve threads via MCP, falling back to `gh api graphql` for the
 thread-resolve gap. This split is identical in the main session and any forked
-PR skill — see [`sdd/CLAUDE-REFERENCE.md` § GitHub PR I/O split](../../../sdd/CLAUDE-REFERENCE.md#github-pr-io-split).
+PR skill — see [`sdd/CLAUDE-REFERENCE.md` § GitHub PR I/O split](../../../sdd/CLAUDE-REFERENCE.md#github-pr-io-split)
+(`hatch run ref-show github-pr-io-split`).
 
 **Fetch comments after any rebase, not before.** Line numbers and the
 `isOutdated` flag are computed against the PR's current HEAD; comments
@@ -161,7 +162,8 @@ Only resolve threads you fixed. No gh? Tell user to resolve manually.
 ## Step 5: Validate
 
 Run the shared [PR validation
-gates](../../../sdd/CLAUDE-REFERENCE.md#pr-validation-gates) — the mechanical gate,
+gates](../../../sdd/CLAUDE-REFERENCE.md#pr-validation-gates)
+(`hatch run ref-show pr-validation-gates`) — the mechanical gate,
 the backlog ID-set gate, local-machine reference, and qualitative TESTING/CONTENT
 review — with `<BASE>` = `master`. Report violations and resolve any stop
 condition before committing.
