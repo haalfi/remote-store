@@ -383,12 +383,8 @@ rounds are review states, not submissions: PR #1093 has 88 review submissions
 over 13 rounds [pr_1093_rounds: `submissions`, `routes`]. Context and units are
 from [run_a_route2], findings from [pr_1093_rounds].
 
-RFC-0020's decision rule, written before this baseline existed, still compares
-run B with run A's first route (31.5 M in total; 255k, 304k and 355k context at
-rounds 1 to 3), and its metrics table lists findings by round as not yet
-derived. Which route each check compares against is settled when RFC-0020 is
-rewritten, after the other BK-418 changes for run B have merged; until then the
-RFC's rule is the one in force.
+RFC-0020's decision rule compares run B with this route, not the first
+([§ Decision rule](../../rfcs/rfc-0020-ship-token-interventions.md#decision-rule)).
 
 | Round | Members | Main context at start | Main units | Subagent units | Findings | Prose (classifier) |
 | --- | ---: | ---: | ---: | ---: | ---: | ---: |

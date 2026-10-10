@@ -1,0 +1,170 @@
+id: BK-418
+title: "RFC-0020 rewritten to the plan run B now tests"
+trigger: >-
+  Session E of the token-usage plan. RFC-0020's Status carried two bracketed
+  notes overriding its own text: the plan after run A put P2, § Orient, claim
+  discipline (a) and (b) and the gate fixes on master, and BK-422 put a size
+  ratchet on the process files. Run B tests rule (c) alone, on the variant
+  #1101, so the RFC is rewritten to say that before run B starts.
+source_items:
+  - BK-418
+audience:
+  - contributor.process
+expected_ripples:
+  - sdd/BACKLOG.md
+  - sdd/research/token-usage/report.md
+surprising_ripples:
+  - sdd/research/token-usage/tokkit.py
+discovery_followups:
+  - BUG-317
+decisions:
+  - sdd/decisions/0b26f6a6-64de-4295-87a8-ba03c81a4306.jsonl
+  - sdd/decisions/b68a3f5f-3c9e-4ab0-85b4-e9e206383d34.jsonl
+orient:
+  - items: [BK-423]
+    verdict: constrains
+    evidence: >-
+      Its body holds the decision until "after RFC-0020's run B is scored";
+      #1110's Status note keeps it out of run B because it acts on the findings
+      rule (c) targets. The rewrite carries that exclusion and leaves BK-423's
+      decision to after scoring.
+  - items: [BK-414, BK-420]
+    verdict: constrains
+    evidence: >-
+      BK-414's dossier § Pointers: "run B differs from run A by the token-usage
+      RFC's interventions and by this tool". The lookup tool is on master before
+      run B, so the rewrite names it as a confound by link; BK-420's re-walk is
+      a separate measure of the same tool and stays its own item.
+  - items: [BK-384]
+    verdict: unrelated
+    evidence: >-
+      Its exit amends ADR-0033/0034/0035/0037 after three pooled deliveries of
+      RFC-0015; Phase 1 here would amend clauses of the same records. That is
+      coordination for whoever writes Phase 1's ADR, and changes nothing the
+      rewrite says about run B.
+  - items: [BK-397]
+    verdict: unrelated
+    evidence: >-
+      Governs how sdd/decisions/ logs are committed (RFC-0018 D2); this PR
+      commits two logs under that rule and changes nothing in it.
+  - items: [BK-366]
+    verdict: unrelated
+    evidence: >-
+      Cites the token-usage research only as a data source (ship_era.py); no
+      bearing on run B.
+phases:
+  - id: orient
+    name: Orient
+    steps:
+      - file: "token-kit UNDERSTANDING.md (the maintainer's working notes, outside the repo)"
+        section: "(whole)"
+        read_type: gate
+        extract: "The plan table the RFC must now state: rule (c) under test, everything else environment, compared with route 2"
+      - file: sdd/rfcs/rfc-0020-ship-token-interventions.md
+        section: "(whole)"
+        read_type: gate
+        extract: "Two Status notes list the clauses that no longer hold; P1's tail trigger differs from the variant's every-round rule (c)"
+      - file: sdd/research/token-usage/report.md
+        section: "Run A final; Run B baseline: run A's route 2"
+        read_type: reference
+        extract: "Route 2: six rounds, 28.19 M units, 113k/223k/273k context at rounds 1 to 3, 49 findings, classifier 30 prose; the route choice is left to this rewrite"
+      - file: .claude/skills/ship/SKILL.md
+        section: "Orient; Hand off at the PR; Resume at the PR; Triage each finding"
+        read_type: reference
+        extract: "P2 and § Orient as they stand on master"
+      - file: sdd/CONTENT-RULES.md
+        section: "Rule 8"
+        read_type: gate
+        extract: "Confounds named by link, no detail of behaviour this PR leaves alone"
+      - file: "PR #1101"
+        section: "body; commit e35579c03"
+        read_type: reference
+        extract: >-
+          Already rebased onto 1172e9a26 with the BK-422 raise (295438 to
+          297425); the body still names the old base a6d0412d6 and variant
+          1ff494d74
+      - file: sdd/BACKLOG.md
+        section: "backlog-find RFC-0020, token-usage --dossiers; backlog-show BK-418 BK-423 BK-384 BK-414 BK-420 BK-397 BK-366"
+        read_type: reference
+        extract: "Clusters in the orient key"
+  - id: implement
+    name: Implement
+    steps:
+      - file: sdd/research/token-usage/results/pr_1093_rounds.json
+        section: "rounds, route 2"
+        read_type: verify
+        extract: >-
+          Classifier code findings per route-2 round 3, 1, 4, 4, 5, 1: no round
+          would have converged on prose alone under rule (c), so the decision
+          rule also requires rule (c) to fire
+      - file: sdd/research/token-usage/results/run_a_route2.json
+        section: "route"
+        read_type: verify
+        extract: "28.19 M route units, 22.62 M loop units, 113k context at round 1"
+      - file: "git log 31ebe6be7..origin/master over the process and gate paths"
+        section: "(output)"
+        read_type: verify
+        extract: >-
+          31ebe6be7 is #1093's base. The commits are #1099, #1103 and #1105 to
+          #1110, the confound list; #1104 touches research tooling only
+      - file: sdd/CLAUDE-REFERENCE.md
+        section: "Pre-work index"
+        read_type: gate
+        extract: "Rows triggered: backlog item touched; local-machine reference, which this trace first broke with a drive path"
+  - id: fix
+    name: "Fix pass after the /rvw-pr review on PR #1111"
+    steps:
+      - file: sdd/BACKLOG.md
+        section: "BUG-280 (backlog-show)"
+        read_type: verify
+        extract: >-
+          Its open decision leaves the scope to run B's § Orient, so "run B has
+          route 2's scope" was unsupported. Class swept with a grep for "same
+          scope|scope run B has": Summary and Motivation carried it too. Scope is
+          now observed, and the route-2 round and unit checks are void on another
+          scope
+      - file: "PR #1093"
+        section: "changed files (gh pr view --json files)"
+        read_type: verify
+        extract: "Route 2's shipped scope is LocalBackend's listings: _local.py, its test, spec 003"
+      - file: sdd/research/token-usage/tokkit.py
+        section: "line 360 comment"
+        read_type: verify
+        extract: >-
+          Named "RFC-0020's P2", a section the rewrite removed; now points at
+          /ship § Resume at the PR. A repo grep for RFC-0020 with P1 to P4
+          found no other hit; the variant commit's "(RFC-0020 P1)" is reworded
+          at its rebase
+review:
+  # Derived by `hatch run ship-report 1111 --trace-block-only` at head 11eae38.
+  # Do not hand-edit, except a newly required field per sdd/traces/_schema.yml
+  # section review: RFC-0015 D4 makes this script the only producer.
+  derivation: "hatch run ship-report 1111 --trace-block-only"
+  pr: 1111
+  review_rounds: 3
+  submissions: 1
+  findings: 3
+  by_round:
+    - round: 1
+      findings: 3
+      origin: {original: 3}
+      triage: {must-fix: 3}
+      duration_hours: 0.06
+  by_file:
+    - path: "sdd/rfcs/rfc-0020-ship-token-interventions.md"
+      findings: 3
+  untouched_files:
+    - "sdd/BACKLOG.md"
+    - "sdd/decisions/0b26f6a6-64de-4295-87a8-ba03c81a4306.jsonl"
+    - "sdd/decisions/b68a3f5f-3c9e-4ab0-85b4-e9e206383d34.jsonl"
+    - "sdd/research/token-usage/report.md"
+    - "sdd/research/token-usage/tokkit.py"
+    - "sdd/traces/bk-418-rfc-rewrite.yml"
+  review_driven_commits:
+    - sha: "4f59bf2"
+      subject: "fix: address PR #1111 review"
+    - sha: "7a18725"
+      subject: "BK-418: decision log"
+    - sha: "11eae38"
+      subject: "BK-418: decision log"
+  ci: {verdict: GREEN, failed: 0, pending: 0}

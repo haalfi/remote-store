@@ -357,7 +357,7 @@ def cmd_report(args):
     parsed = {f: load(f) for f in files}
     mc, mi, me = parsed[main]
     # Review/fix rounds a /ship loop runs as their own sessions (e.g. a forked /rvw-pr <PR>),
-    # and the fresh session RFC-0020's P2 resumes the loop in (/ship resume <PR>).
+    # and the fresh session /ship § Resume at the PR runs the loop in (/ship resume <PR>).
     prs = {e["detail"].split("#")[1] for e in me if e["kind"] == "pr-open"}
     start = first_ts(main) or ""
     related = []
