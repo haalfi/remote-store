@@ -1,0 +1,264 @@
+{
+ "_provenance": {
+  "script": "prep_cost.py",
+  "generated": "2026-10-10",
+  "inputs": {
+   "class map": "a430227b6432b4aa91d34c314cff6b72071dc57ce01077735fa916ed44e7064e",
+   "transcript 0": "f6cbf79cd08b74ade7041c81b5e651b5318d08d596b6ab5bbbfee111b8c25783",
+   "transcript 1": "e14fb0d4172deb65ae0c6d79e0a5439490369be4442f094d48b00216b56ecab4",
+   "transcript 2": "08d41a68a11bd0ba490f2100e44a4a859f62f29dbbb8b34b68a7876ab978546c",
+   "transcript 3": "2c3423f5bf21743d25240cdbe817e1d7679cc5d6ecccdd64f108df94a4c996c7",
+   "transcript 4": "4dec5d43422cd3351ab0416a7f532ed8a95469264debab8377174b840dd28600",
+   "transcript 5": "23a1cfbaf551062e97ab0fde2237ddde0f85c341f258b40f9413bea37e54c986",
+   "transcript 6": "9123fa4b161ca9dc96ac7647bb3bc9c5ec32122d4caa1e43f9a21c4f4b73d545",
+   "transcript 7": "7733a29298d48f83c2b4e0cf43f4df52cbb8b9b1e7655328bf70a969429e73af",
+   "transcript 8": "0c869bad5e0724f6eb8c6adb5d8cc7cc242453e3152a40ce22d2f5e96a6326d7",
+   "transcript 9": "546082bfd2511b3d50d65ee73d625c93645c59d290de2e1b409ac95b117c1690",
+   "transcript 10": "5c4fc9c0f9fe9cc817d0ac54db4c5755c3a685e1cf87b8e0f4e8131f36235669",
+   "transcript 11": "0c8ff6e7348da80e44997f478b41ff7a55d61748a3c86972401369af6f53f508",
+   "transcript 12": "dc2ab6dacd0098a3046c62e5af3bcd025482cebc9fd10c9482babc1c972558cb",
+   "transcript 13": "2b68709c576054bc902ac81e964ea2d41fa429d22678044102e352dcb6c9f647",
+   "transcript 14": "fc29bd2000dd865169065ede509bbab042b160a78496f6dfb072f44c03bf65e5",
+   "transcript 15": "57284aeabd62c9ddce4383eb9035e921e2107ece7c0cfb8f5f02bb72edaafea0",
+   "transcript 16": "b8ffd16912d01e1c6f1654d2d4e67d7414044e9f7e1ed14cd07cd6bbed116f97",
+   "transcript 17": "d7f598fdd125af309e4ef76220eec95d25bee2618b8bc980ff1df1781668610e",
+   "transcript 18": "f32bebb5b07aaf5d65ef1fb57b3b4a198ab7af6fac53a0300682bf82b8b93416",
+   "transcript 19": "566f6f034f362d14cc9895de5eeaef0f2bf46786c7ee3a6a190b74696f60caf0",
+   "transcript 20": "ed7264496bdd60897efbdeef59e5fe04854442c182a14d5f11fd6902ba1234ed",
+   "transcript 21": "e69e8ae13d5b9c4363dc4b86304fed6754891fa9c19ae38a1bc773507c0821fa",
+   "transcript 22": "90069669e0e516b0c1f87f16f744a0d625c7df3f248a1af35623e90695d538f6",
+   "transcript 23": "36ab41e4cf9ed3736af5af97893853706431351ffb010749d94ae7cd95ea1456",
+   "transcript 24": "6d469da929394fb75faf8c5795b301ce216ddf047d8d04671ccd94b2bee179ea",
+   "transcript 25": "7d7ec907dfdcea24f4626c57d6418838f2593d5cfa526f85452eb5dc64ed378d",
+   "transcript 26": "37471d055f7e94570033947bdc6c0b255e7b1d5aadcf8e3ec8bdf47ac3f669dd",
+   "transcript 27": "482f98f5f2d10e120ecc86532b35d987ec5ae7b4cf73f597d4b2cb835c2aa809",
+   "transcript 28": "65fdecc8734957e35cb981a77a0eab04d020dd84d4ea4605e0ae2d4d4945e77b",
+   "transcript 29": "3756057467ddb2e3176d683f69d3796a623698efc17c642c66daef3c5469afc0",
+   "transcript 30": "f69fb47c860e76c42d17c794184e84ac09f24baacfcabdc1708793005b790715",
+   "transcript 31": "958fac81c5431f3202e9a7bdd1fc43f9f882056e2f3210e5fec4616cc662bfed",
+   "transcript 32": "41a39c6da782005c67411e4e888521777543fd73197b1a8d7abd4d39e94d6a7e",
+   "transcript 33": "f43cce71e28ae57481c146881f6e2b34e564405ad0351a16df199b40d48cafce",
+   "transcript 34": "5757ee15281bfccf53920c2ed358451e85003301e9e658ec3ce8ffcef66031e4",
+   "transcript 35": "31b61c4165e20c79774aea87d47196ac396efe646158959e0ee907e7398d7a74",
+   "transcript 36": "cc0996660cbbd85a35cf7f35585865ecf869dc7ee8a2691b082dbe0a4dcc42cb",
+   "transcript 37": "4786cd99eca019c328d5beb4eb6fdd41cc5c83581e4cd8084a56160008d61f63",
+   "transcript 38": "6226a255218d6335b3d8edc25957fb438ded6df302ace300e33b7232d1369b76",
+   "transcript 39": "755660ad548f8669e332f2ad101d695c36b6134bf076ca4606d3001280672eb4",
+   "transcript 40": "13dc909aecf548eb6b979e7265195bebbb9039d5c9d32f70f6181beb7c504cc4",
+   "transcript 41": "2a82e6cfb6e651b9fbc6c0202fdd487bf1f617732fa846d68abac49da0c56a04",
+   "transcript 42": "f7c9218fcefac08b7d053a2c3ebeed8bf57c38d04feefe037000a23ca8deb492",
+   "transcript 43": "09ee8cf62ed833741db345c04aa490b60d8623a7d16d0d2af983dec1bea6b9cc",
+   "transcript 44": "e109e4e3bf83a273681a76ba272881341879afb0df67dc7964d0d79c072c8a40",
+   "transcript 45": "6913857f8f95d3c456ab8dff9b5fb6309e0c1ca35e01a71dc34bd24f1689e47c",
+   "transcript 46": "defd6a13e378acf43a75f2d44dc9a00fc0ab387988b4f748caf74ca3cf2c910a",
+   "transcript 47": "8a06c461615caeff5989d90070ca2322b88662c0ea01653a3ec7bfef48bac43c",
+   "transcript 48": "85aa3df84e0babc34258dbf5afbea950466776f369e867bdda13ab8754854723",
+   "transcript 49": "87cdf52f30152d3b45f7fc6aef1518ee6f6986288d31cf6007ab03394f7f1fe0",
+   "transcript 50": "dfa2f8afaa0114025610ad445666b001acd34df42e6814dfdbfe03aff9d87e10",
+   "transcript 51": "c0c12c157698daf2c6f1f77c880a1e5fbfcd8819b67fcafed82dada3581d7eae"
+  }
+ },
+ "window": {
+  "since": "2026-10-09T00:00:00Z",
+  "until": "2026-10-10T13:42:18Z"
+ },
+ "sessions": 52,
+ "calls": 4411,
+ "sessions_compacted": 0,
+ "units_m_by_class": {
+  "a": 74.67,
+  "b": 36.95,
+  "c": 22.4,
+  "d": 16.16
+ },
+ "usd_by_class": {
+  "a": 172.48,
+  "b": 85.34,
+  "c": 51.74,
+  "d": 37.32
+ },
+ "preparation_units_m": 134.01,
+ "preparation_usd": 309.56,
+ "all_units_m": 150.17,
+ "by_pr": {
+  "1090": {
+   "units_m": 3.34,
+   "classes": [
+    "b"
+   ],
+   "sessions": 2
+  },
+  "1091": {
+   "units_m": 8.67,
+   "classes": [
+    "d"
+   ],
+   "sessions": 6
+  },
+  "1092": {
+   "units_m": 6.63,
+   "classes": [
+    "d"
+   ],
+   "sessions": 4
+  },
+  "1094": {
+   "units_m": 3.89,
+   "classes": [
+    "a"
+   ],
+   "sessions": 3
+  },
+  "1095": {
+   "units_m": 9.72,
+   "classes": [
+    "a"
+   ],
+   "sessions": 3
+  },
+  "1096": {
+   "units_m": 0.68,
+   "classes": [
+    "d"
+   ],
+   "sessions": 1
+  },
+  "1097": {
+   "units_m": 5.83,
+   "classes": [
+    "a"
+   ],
+   "sessions": 3
+  },
+  "1098": {
+   "units_m": 9.24,
+   "classes": [
+    "b"
+   ],
+   "sessions": 2
+  },
+  "1099": {
+   "units_m": 10.75,
+   "classes": [
+    "a"
+   ],
+   "sessions": 4
+  },
+  "1100": {
+   "units_m": 7.36,
+   "classes": [
+    "c"
+   ],
+   "sessions": 1
+  },
+  "1101": {
+   "units_m": 4.83,
+   "classes": [
+    "c"
+   ],
+   "sessions": 3
+  },
+  "1102": {
+   "units_m": 0.29,
+   "classes": [
+    "c"
+   ],
+   "sessions": 1
+  },
+  "1103": {
+   "units_m": 3.95,
+   "classes": [
+    "a"
+   ],
+   "sessions": 2
+  },
+  "1104": {
+   "units_m": 3.77,
+   "classes": [
+    "c"
+   ],
+   "sessions": 1
+  },
+  "1105": {
+   "units_m": 6.38,
+   "classes": [
+    "a"
+   ],
+   "sessions": 2
+  },
+  "1106": {
+   "units_m": 6.63,
+   "classes": [
+    "a"
+   ],
+   "sessions": 2
+  },
+  "1107": {
+   "units_m": 5.85,
+   "classes": [
+    "a"
+   ],
+   "sessions": 3
+  },
+  "1108": {
+   "units_m": 3.73,
+   "classes": [
+    "a"
+   ],
+   "sessions": 3
+  },
+  "1109": {
+   "units_m": 4.44,
+   "classes": [
+    "a"
+   ],
+   "sessions": 4
+  },
+  "1110": {
+   "units_m": 0.39,
+   "classes": [
+    "a"
+   ],
+   "sessions": 2
+  },
+  "1111": {
+   "units_m": 5.48,
+   "classes": [
+    "c"
+   ],
+   "sessions": 1
+  }
+ },
+ "costliest": [
+  {
+   "label": "run A monitoring and token analysis",
+   "units_m": 30.74,
+   "peak_ctx_k": 945,
+   "compactions": 0
+  },
+  {
+   "label": "research record and RFC-0020 draft",
+   "units_m": 20.05,
+   "peak_ctx_k": 788,
+   "compactions": 0
+  },
+  {
+   "label": "MEMORY.md trim and BUG-314 ruff hook",
+   "units_m": 15.97,
+   "peak_ctx_k": 736,
+   "compactions": 0
+  },
+  {
+   "label": "claim discipline and CONTENT-RULES leads",
+   "units_m": 10.03,
+   "peak_ctx_k": 587,
+   "compactions": 0
+  },
+  {
+   "label": "BK-414 lookup tool build",
+   "units_m": 9.96,
+   "peak_ctx_k": 486,
+   "compactions": 0
+  }
+ ]
+}

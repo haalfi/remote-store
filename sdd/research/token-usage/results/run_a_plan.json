@@ -1,0 +1,107 @@
+{
+ "_provenance": {
+  "script": "tokkit.py",
+  "generated": "2026-10-10",
+  "inputs": {
+   "main transcript": "82bd321dcb4e0a7f51a5cb5d87d1151424e57df78c0835cdc4fbe0e9c84a116e"
+  }
+ },
+ "transcripts": 1,
+ "calls": 34,
+ "main_calls": 34,
+ "units_m": 0.76,
+ "usd_estimate": 1.75,
+ "units_pct_by_class": {
+  "input": 0.0,
+  "read": 52.5,
+  "w5": 0.0,
+  "w1h": 34.1,
+  "out": 13.4
+ },
+ "first_edit_call": 9,
+ "pr_open_call": null,
+ "compaction_calls": [],
+ "phases": {
+  "orient + plan (before first edit)": {
+   "calls": 9,
+   "units_pct": 30.9,
+   "mean_ctx_k": 89
+  },
+  "build (first edit to PR open)": {
+   "calls": 25,
+   "units_pct": 69.1,
+   "mean_ctx_k": 133
+  },
+  "subagents": {
+   "calls": 0,
+   "units_pct": 0.0
+  }
+ },
+ "context_shares_pct": {
+  "session prefix": 62.3,
+  "result:Read": 23.2,
+  "result:Grep": 6.2,
+  "thinking (hidden)": 4.8,
+  "attachment": 2.4,
+  "tool_input": 1.9,
+  "result:Bash": 1.5,
+  "result": 0.2,
+  "assistant_text": 0.0,
+  "unexplained": -2.4
+ },
+ "top_items_pct": [
+  {
+   "kind": "result:Read",
+   "detail": "sdd/specs/003-backend-adapter-contract.md",
+   "pct": 8.58
+  },
+  {
+   "kind": "result:Read",
+   "detail": "src/remote_store/backends/_local.py",
+   "pct": 5.32
+  },
+  {
+   "kind": "result:Read",
+   "detail": "sdd/traces/bug-275-raise-if-dir-eperm.yml",
+   "pct": 3.43
+  },
+  {
+   "kind": "result:Grep",
+   "detail": "BE-021|BUG-249|BUG-146",
+   "pct": 2.04
+  },
+  {
+   "kind": "result:Read",
+   "detail": "sdd/CLAUDE-REFERENCE.md",
+   "pct": 1.97
+  },
+  {
+   "kind": "result:Grep",
+   "detail": "symlink",
+   "pct": 1.95
+  },
+  {
+   "kind": "result:Read",
+   "detail": "src/remote_store/backends/_sftp.py",
+   "pct": 1.47
+  },
+  {
+   "kind": "result:Bash",
+   "detail": "git",
+   "pct": 0.91
+  },
+  {
+   "kind": "result:Read",
+   "detail": "sdd/backlog/bug-280-local-listing-permission-leak.md",
+   "pct": 0.85
+  },
+  {
+   "kind": "result:Grep",
+   "detail": "def (list_files|list_folders|iter_children|_listdi",
+   "pct": 0.83
+  }
+ ],
+ "read_tokens_reread_pct": 15.4,
+ "spilled_outputs": 0,
+ "rounds": []
+}

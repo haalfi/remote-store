@@ -1,0 +1,107 @@
+{
+ "_provenance": {
+  "script": "tokkit.py",
+  "generated": "2026-10-10",
+  "inputs": {
+   "main transcript": "ffe95a39a629bce78c16abcd5523de35a9413acd57a243da6b7e64135efbe09b"
+  }
+ },
+ "transcripts": 1,
+ "calls": 44,
+ "main_calls": 44,
+ "units_m": 1.11,
+ "usd_estimate": 2.56,
+ "units_pct_by_class": {
+  "input": 0.0,
+  "read": 56.8,
+  "w5": 0.0,
+  "w1h": 30.8,
+  "out": 12.4
+ },
+ "first_edit_call": 14,
+ "pr_open_call": null,
+ "compaction_calls": [],
+ "phases": {
+  "orient + plan (before first edit)": {
+   "calls": 14,
+   "units_pct": 33.2,
+   "mean_ctx_k": 109
+  },
+  "build (first edit to PR open)": {
+   "calls": 30,
+   "units_pct": 66.8,
+   "mean_ctx_k": 164
+  },
+  "subagents": {
+   "calls": 0,
+   "units_pct": 0.0
+  }
+ },
+ "context_shares_pct": {
+  "session prefix": 51.8,
+  "result:Read": 23.2,
+  "result:Bash": 13.2,
+  "result:Grep": 4.5,
+  "thinking (hidden)": 4.4,
+  "attachment": 1.9,
+  "tool_input": 1.9,
+  "result": 0.2,
+  "assistant_text": 0.1,
+  "unexplained": -1.0
+ },
+ "top_items_pct": [
+  {
+   "kind": "result:Read",
+   "detail": "src/remote_store/backends/_local.py",
+   "pct": 11.75
+  },
+  {
+   "kind": "result:Bash",
+   "detail": "ls",
+   "pct": 4.09
+  },
+  {
+   "kind": "result:Read",
+   "detail": "sdd/traces/bug-275-raise-if-dir-eperm.yml",
+   "pct": 3.58
+  },
+  {
+   "kind": "result:Bash",
+   "detail": "hatch run ref-show",
+   "pct": 3.26
+  },
+  {
+   "kind": "result:Bash",
+   "detail": "hatch run backlog-show",
+   "pct": 3.08
+  },
+  {
+   "kind": "result:Read",
+   "detail": "sdd/rfcs/rfc-0017-contract-kernel-over-thin-drivers.md",
+   "pct": 2.35
+  },
+  {
+   "kind": "result:Read",
+   "detail": "sdd/specs/003-backend-adapter-contract.md",
+   "pct": 1.82
+  },
+  {
+   "kind": "result:Read",
+   "detail": "sdd/traces/_schema.yml",
+   "pct": 1.54
+  },
+  {
+   "kind": "result:Bash",
+   "detail": "hatch run backlog-find",
+   "pct": 1.34
+  },
+  {
+   "kind": "result:Read",
+   "detail": "<tool-results>",
+   "pct": 1.25
+  }
+ ],
+ "read_tokens_reread_pct": 12.9,
+ "spilled_outputs": 1,
+ "rounds": []
+}

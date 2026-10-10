@@ -1,0 +1,49 @@
+{
+ "_provenance": {
+  "script": "run_durations.py",
+  "generated": "2026-10-10",
+  "inputs": {
+   "A transcript 0": "cf6004ad6699cfbda0f48ffb94e4865ec5fcb5566e2c41fe46b6d2da245e4a49",
+   "B transcript 0": "ffe95a39a629bce78c16abcd5523de35a9413acd57a243da6b7e64135efbe09b",
+   "B transcript 1": "057d94a17eb1de7d6dcc95275fff35eec16fa6265d6596c433ddaeececf35886"
+  }
+ },
+ "idle_threshold_min": 5.0,
+ "runs": {
+  "A": {
+   "start": "2026-10-09T09:06:28.785000+00:00",
+   "end": "2026-10-09T16:12:22.130000+00:00",
+   "wall_min": 426,
+   "active_min": 343,
+   "idle_min": 83,
+   "longest_idle_min": [
+    34,
+    13,
+    10,
+    10,
+    10
+   ],
+   "milestones_min": {
+    "pr_open": 27,
+    "route_2_start": 269
+   }
+  },
+  "B": {
+   "start": "2026-10-10T13:42:18.624000+00:00",
+   "end": "2026-10-10T16:11:40.381000+00:00",
+   "wall_min": 149,
+   "active_min": 109,
+   "idle_min": 40,
+   "longest_idle_min": [
+    30,
+    6,
+    5
+   ],
+   "milestones_min": {
+    "plan_approved": 16,
+    "pr_open": 26,
+    "resume": 57
+   }
+  }
+ }
+}

@@ -1,0 +1,35 @@
+{
+ "_provenance": {
+  "script": "gates.py",
+  "generated": "2026-10-10",
+  "inputs": {
+   "transcript 0": "ffe95a39a629bce78c16abcd5523de35a9413acd57a243da6b7e64135efbe09b",
+   "transcript 1": "6e74876f8270765172c63eaa279edcc4b24889ed78707cbdfbe5ea0e45b7f9a9",
+   "transcript 2": "c0c09a88ad202435f06580b6005486e8f5aa3905e2d50e19b1bb2736182be626",
+   "transcript 3": "e7c6056b006af9b667427457fb8cd654c26a4cf4e851da14bdb161ed351ac3d5",
+   "transcript 4": "26150fae028a2d6b8f9382a7bbdb8f23e92dc4532d8ada4590388916e92efc5f",
+   "transcript 5": "79bfe0aa8c8b9c5de520b1bd6d92274f0bec793d6a817a7e938263ef224dee04",
+   "transcript 6": "75599dc392a844e67ef59adb764a06ecffa69e98da222a0bc6b12eb652cb3a81",
+   "transcript 7": "0fb93f4c811ac9e5b8ab6d4745d5009b34af8d29cc374ce2c252e68dba9333d2",
+   "transcript 8": "2df675a2c1bad4467bc92db411bdabac1b8978883099792afe6395076237f59c",
+   "transcript 9": "cbde0f810f60f7c0c9b38cde23b8ab032ff7c4ca2c50562d9ee2626852a19c84",
+   "transcript 10": "73fdd624b75ff10e68f30ca08003559afa6870bec9846bb2d91a66f77b22ea60",
+   "transcript 11": "a908fb9feca7659bf91487e0276b6264e853addba918b2e3b6dd5a08a0660769",
+   "transcript 12": "057d94a17eb1de7d6dcc95275fff35eec16fa6265d6596c433ddaeececf35886"
+  }
+ },
+ "transcripts": 13,
+ "gate_runs": 16,
+ "by_outcome": {
+  "passed": 8,
+  "failed": 7,
+  "cut off": 0,
+  "background": 1
+ },
+ "foreground_all": {
+  "n": 13,
+  "median_s": 7,
+  "at_or_over_590s": 0
+ },
+ "idle_stalls_min": []
+}

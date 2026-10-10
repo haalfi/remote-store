@@ -1,0 +1,648 @@
+<title>Remote-Store Token Spend</title>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500&family=IBM+Plex+Sans+Condensed:wght@500;600&family=IBM+Plex+Sans:ital,wght@0,400;0,500;0,600;1,400&display=swap">
+<style>
+/* Layout: one reading column of findings; each finding leads with its claim, then a to-scale bar chart or table. */
+:root {
+  --bg: #f6f7f9;
+  --surface: #ffffff;
+  --fg: #1b2230;
+  --muted: #5a6577;
+  --rule: #d9dee6;
+  --accent: #1f6f8b;      /* cache-read teal: the cost that dominates */
+  --accent-2: #c4842a;    /* write / output amber */
+  --accent-3: #7a5ea8;    /* thinking violet */
+  --track: #e8ecf1;
+  --warn-bg: #fff4e0;
+  --warn-fg: #7a4a00;
+  --display: "IBM Plex Sans Condensed", "Arial Narrow", system-ui, sans-serif;
+  --body: "IBM Plex Sans", system-ui, -apple-system, "Segoe UI", sans-serif;
+  --mono: "IBM Plex Mono", ui-monospace, "Cascadia Mono", Consolas, monospace;
+  color-scheme: light;
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    --bg: #11151c; --surface: #181e27; --fg: #e3e8ef; --muted: #98a3b4; --rule: #2a3340;
+    --accent: #4fb3d1; --accent-2: #e0a24a; --accent-3: #a98ad6; --track: #232b37;
+    --warn-bg: #2e2412; --warn-fg: #f0c27a; color-scheme: dark;
+  }
+}
+:root[data-theme="dark"] {
+  --bg: #11151c; --surface: #181e27; --fg: #e3e8ef; --muted: #98a3b4; --rule: #2a3340;
+  --accent: #4fb3d1; --accent-2: #e0a24a; --accent-3: #a98ad6; --track: #232b37;
+  --warn-bg: #2e2412; --warn-fg: #f0c27a; color-scheme: dark;
+}
+* { box-sizing: border-box; }
+html, body { margin: 0; }
+body {
+  background: var(--bg); color: var(--fg);
+  font: 400 15px/1.6 var(--body);
+  padding: 0 clamp(16px, 14vw, 320px);
+  padding-block: 40px 64px;
+}
+main { width: 100%; display: grid; gap: 44px; }
+header { display: grid; gap: 10px; }
+.eyebrow { font: 500 12px/1 var(--mono); letter-spacing: .08em; text-transform: uppercase; color: var(--muted); }
+h1 { font: 600 clamp(30px, 5vw, 44px)/1.08 var(--display); margin: 0; text-wrap: balance; letter-spacing: -.01em; }
+h2 { font: 600 24px/1.2 var(--display); margin: 0; text-wrap: balance; }
+h3 { font: 600 17px/1.3 var(--display); margin: 0; }
+p { margin: 0; }
+section { display: grid; gap: 16px; }
+.lead { font-size: 17px; color: var(--fg); }
+.muted { color: var(--muted); }
+.num, td.r, th.r { font-variant-numeric: tabular-nums; }
+code { font: 13px var(--mono); background: var(--track); padding: 1px 5px; border-radius: 3px; }
+.note {
+  background: var(--warn-bg); color: var(--warn-fg);
+  padding: 12px 14px; border-radius: 6px; font-size: 14px;
+}
+.kpis { display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: 1px; background: var(--rule); border: 1px solid var(--rule); border-radius: 6px; overflow: hidden; }
+.kpi { background: var(--surface); padding: 14px 16px; display: grid; gap: 4px; }
+.kpi b { font: 600 26px/1.1 var(--display); font-variant-numeric: tabular-nums; }
+.kpi span { font-size: 12.5px; color: var(--muted); }
+/* to-scale horizontal bars */
+.bars { display: grid; gap: 8px; }
+.bar { display: grid; grid-template-columns: minmax(0, 22rem) 1fr 4.2rem; gap: 12px; align-items: center; font-size: 14px; }
+.bar .lbl { min-width: 0; overflow-wrap: anywhere; }
+.bar .trk { height: 14px; background: var(--track); border-radius: 2px; overflow: hidden; }
+.bar .fill { height: 100%; background: var(--accent); }
+.bar .fill.amber { background: var(--accent-2); }
+.bar .fill.violet { background: var(--accent-3); }
+.bar .fill.grey { background: var(--muted); }
+.bar .v { text-align: right; font: 500 13px var(--mono); font-variant-numeric: tabular-nums; }
+.stack { display: flex; height: 26px; border-radius: 3px; overflow: hidden; }
+.stack div { height: 100%; }
+.legend { display: flex; flex-wrap: wrap; gap: 6px 18px; font-size: 13px; color: var(--muted); }
+.legend i { display: inline-block; width: 10px; height: 10px; border-radius: 2px; margin-right: 6px; vertical-align: -1px; }
+.tbl { overflow-x: auto; border: 1px solid var(--rule); border-radius: 6px; background: var(--surface); }
+table { border-collapse: collapse; width: 100%; font-size: 13.5px; }
+th, td { padding: 8px 12px; text-align: left; border-bottom: 1px solid var(--rule); vertical-align: top; }
+th { font: 600 12px/1.3 var(--body); color: var(--muted); text-transform: uppercase; letter-spacing: .04em; white-space: nowrap; }
+tr:last-child td { border-bottom: 0; }
+td.r, th.r { text-align: right; }
+ul { margin: 0; padding-left: 1.2em; display: grid; gap: 6px; }
+.two { display: grid; grid-template-columns: repeat(auto-fit, minmax(min(100%, 360px), 1fr)); gap: 24px; }
+.two > * { min-width: 0; }
+footer { font-size: 13px; color: var(--muted); border-top: 1px solid var(--rule); padding-top: 16px; display: grid; gap: 8px; }
+@media (max-width: 520px) {
+  .bar { grid-template-columns: 1fr 3.6rem; }
+  .bar .lbl { grid-column: 1 / -1; }
+}
+</style>
+<main>
+
+<header>
+  <div class="eyebrow">Claude Code transcripts · remote-store · 2026-08-14 to 2026-10-10</div>
+  <h1>Where the tokens went</h1>
+  <p class="lead">Almost all spend is the model re-reading its own context on every call. 98.7% of tokens are cache reads, worth 80% of the dollars. A session costs roughly calls × context size, so four long sessions took 84% of the spend. In the <code>/ship</code> and release sessions, more than half of the cost came after the PR opened.</p>
+  <p class="note"><strong>Sample size.</strong> The 8-week window holds only two working days: 2026-09-05 (Opus 5) and 2026-10-04 (Opus 5.5). Cloud sessions and the analysis session itself are not included. The 2026-09-05 transcripts were deleted by Claude Code's ~30-day cleanup while this analysis ran. The figures come from an extract taken before the deletion and can no longer be re-derived from disk. Read everything here as a description of two days, not as statistics.</p>
+</header>
+
+<section aria-labelledby="s1">
+  <h2 id="s1">Totals</h2>
+  <div class="kpis">
+    <div class="kpi"><b>≈ $430</b><span>estimated cost (Opus 5 $283, Opus 5.5 $147)</span></div>
+    <div class="kpi"><b>958 M</b><span>tokens</span></div>
+    <div class="kpi"><b>3,738</b><span>API calls in 71 transcripts (28 main, 43 subagent)</span></div>
+    <div class="kpi"><b>255k</b><span>mean context per call</span></div>
+  </div>
+  <h3>Cost by token class</h3>
+  <div class="stack" role="img" aria-label="Units: cache read 79.0%, cache write 1h 8.9%, cache write 5m 6.5%, output 5.6%">
+    <div style="width:79.0%;background:var(--accent)"></div>
+    <div style="width:8.9%;background:var(--accent-2)"></div>
+    <div style="width:6.5%;background:var(--accent-2);opacity:.6"></div>
+    <div style="width:5.6%;background:var(--accent-3)"></div>
+  </div>
+  <div class="legend">
+    <span><i style="background:var(--accent)"></i>Cache read 79.0% ($342)</span>
+    <span><i style="background:var(--accent-2)"></i>Cache write, 1h TTL 8.9% ($34)</span>
+    <span><i style="background:var(--accent-2);opacity:.6"></i>Cache write, 5m TTL 6.5% ($32)</span>
+    <span><i style="background:var(--accent-3)"></i>Output 5.6% ($22)</span>
+  </div>
+  <p class="muted">Units weight tokens by relative price: input 1, cache read 0.1, 5-minute write 1.25, 1-hour write 2, output 5. Dollars come from per-model prices fitted to Claude Code's <code>cost-state</code> records: Opus 5.5 about $2.31/MTok input (mean error 15%), Opus 5 about $5.05/MTok (1.8%). The raw <code>cost-state</code> totals add up to $500. They aren't used as the total, because whether they include subagents varies by session, and resumed sessions report less than their own transcripts.</p>
+</section>
+
+<section aria-labelledby="s2">
+  <h2 id="s2">Four sessions took 84%</h2>
+  <div class="bars" role="img" aria-label="Share of units by work item">
+    <div class="bar"><span class="lbl">BUG-264 · <code>/ship</code> + 21-agent review panel</span><div class="trk"><div class="fill" style="width:43%"></div></div><span class="v">43%</span></div>
+    <div class="bar"><span class="lbl">BK-397 · <code>/ship</code></span><div class="trk"><div class="fill" style="width:18%"></div></div><span class="v">18%</span></div>
+    <div class="bar"><span class="lbl">BK-403 · interactive research</span><div class="trk"><div class="fill" style="width:14%"></div></div><span class="v">14%</span></div>
+    <div class="bar"><span class="lbl">v0.33.0 release · <code>/release</code> + <code>/fix-pr</code></span><div class="trk"><div class="fill" style="width:9%"></div></div><span class="v">9%</span></div>
+    <div class="bar"><span class="lbl">24 other sessions</span><div class="trk"><div class="fill grey" style="width:16%"></div></div><span class="v">16%</span></div>
+  </div>
+  <p class="muted">Bars share one 0–100% scale. BUG-264 ran 1,667 calls for 51.4 M units, BK-397 504 calls for 21.8 M, BK-403 328 calls for 17.2 M, and the release 267 calls for 10.4 M. Units here count the main session plus its own subagents. Separate <code>/rvw-pr</code> sessions are left out; section 7 adds them per work item.</p>
+</section>
+
+<section aria-labelledby="s3">
+  <h2 id="s3">Cost grows faster than session length</h2>
+  <p>Each call costs about 0.1 × its context. Context grows 1.4k to 2.0k tokens per call in the long sessions. Across main sessions, cost grows faster than length: a session with twice the calls costs about 2.3 times as much (a log-log fit gives an exponent of 1.19). Subagents stay short, so their exponent is 0.91, close to linear. In the four largest sessions, half the units are spent after 59 to 67% of the calls.</p>
+  <div class="two">
+    <div>
+      <h3>Share of calls by context size</h3>
+      <div class="bars">
+        <div class="bar"><span class="lbl">&lt; 50k</span><div class="trk"><div class="fill grey" style="width:1.3%"></div></div><span class="v">1.3%</span></div>
+        <div class="bar"><span class="lbl">50–100k</span><div class="trk"><div class="fill grey" style="width:18.7%"></div></div><span class="v">18.7%</span></div>
+        <div class="bar"><span class="lbl">100–200k</span><div class="trk"><div class="fill grey" style="width:40.8%"></div></div><span class="v">40.8%</span></div>
+        <div class="bar"><span class="lbl">200–400k</span><div class="trk"><div class="fill grey" style="width:16.4%"></div></div><span class="v">16.4%</span></div>
+        <div class="bar"><span class="lbl">≥ 400k</span><div class="trk"><div class="fill grey" style="width:22.7%"></div></div><span class="v">22.7%</span></div>
+      </div>
+    </div>
+    <div>
+      <h3>Share of units by context size</h3>
+      <div class="bars">
+        <div class="bar"><span class="lbl">&lt; 50k</span><div class="trk"><div class="fill" style="width:1.3%"></div></div><span class="v">1.3%</span></div>
+        <div class="bar"><span class="lbl">50–100k</span><div class="trk"><div class="fill" style="width:9.1%"></div></div><span class="v">9.1%</span></div>
+        <div class="bar"><span class="lbl">100–200k</span><div class="trk"><div class="fill" style="width:23.5%"></div></div><span class="v">23.5%</span></div>
+        <div class="bar"><span class="lbl">200–400k</span><div class="trk"><div class="fill" style="width:18.6%"></div></div><span class="v">18.6%</span></div>
+        <div class="bar"><span class="lbl">≥ 400k</span><div class="trk"><div class="fill" style="width:47.4%"></div></div><span class="v">47.4%</span></div>
+      </div>
+    </div>
+  </div>
+  <p class="muted">Context per call: median 164k, 90th percentile 607k, maximum 879k. Cache misses are not a driver: 5 rebuilds, 4 of them after a gap of over an hour, cost 2.1% of units. Main sessions write the cache only at the 1-hour TTL, at 2× the input price, which is 8.9% of units. Subagents write at the 5-minute TTL.</p>
+</section>
+
+<section aria-labelledby="s4">
+  <h2 id="s4">What the re-read context is made of</h2>
+  <p>Across all calls, 957 M tokens of context were re-read. Token sizes were calibrated by a regression of context growth between consecutive calls (R² 0.91, 3,667 pairs). Tool results and attachments average about 2.4 characters per token, not 4. Hidden thinking stays in context at 0.95 tokens per token. After calibration, 4.4% of the context is unexplained.</p>
+  <div class="bars" role="img" aria-label="Composition of re-read context">
+    <div class="bar"><span class="lbl">Session prefix: system prompt, tool schemas, CLAUDE.md, listings</span><div class="trk"><div class="fill grey" style="width:22.3%"></div></div><span class="v">22.3%</span></div>
+    <div class="bar"><span class="lbl">Read results</span><div class="trk"><div class="fill" style="width:21.6%"></div></div><span class="v">21.6%</span></div>
+    <div class="bar"><span class="lbl">Bash results</span><div class="trk"><div class="fill" style="width:13.2%"></div></div><span class="v">13.2%</span></div>
+    <div class="bar"><span class="lbl">Hidden thinking</span><div class="trk"><div class="fill violet" style="width:11.8%"></div></div><span class="v">11.8%</span></div>
+    <div class="bar"><span class="lbl">Tool inputs the model wrote (Write, Edit, Bash, other)</span><div class="trk"><div class="fill violet" style="width:10.2%"></div></div><span class="v">10.2%</span></div>
+    <div class="bar"><span class="lbl">Harness attachments added mid-session</span><div class="trk"><div class="fill grey" style="width:4.9%"></div></div><span class="v">4.9%</span></div>
+    <div class="bar"><span class="lbl">Grep results</span><div class="trk"><div class="fill" style="width:4.7%"></div></div><span class="v">4.7%</span></div>
+    <div class="bar"><span class="lbl">Tool-results files, MCP, TaskOutput, other tools</span><div class="trk"><div class="fill" style="width:3.5%"></div></div><span class="v">3.5%</span></div>
+    <div class="bar"><span class="lbl">Visible text, user prompts, skill bodies</span><div class="trk"><div class="fill violet" style="width:3.4%"></div></div><span class="v">3.4%</span></div>
+    <div class="bar"><span class="lbl">Unexplained</span><div class="trk"><div class="fill grey" style="width:4.4%;opacity:.5"></div></div><span class="v">4.4%</span></div>
+  </div>
+  <div class="two">
+    <div>
+      <h3>The prefix, paid on every call</h3>
+      <ul>
+        <li>About 56k tokens per main session and 53k per subagent.</li>
+        <li>36k to 40k of that is the system prompt plus tool schemas.</li>
+        <li>About 11.8k is instructions: global CLAUDE.md, project CLAUDE.md and MEMORY.md. Subagents get about 4.9k.</li>
+        <li>About 2.6k is the skill listing.</li>
+        <li>All 43 subagents pay a 45k–56k prefix before doing any work.</li>
+      </ul>
+    </div>
+    <div>
+      <h3>Attachments injected again mid-session</h3>
+      <ul>
+        <li>Skill listing: 50 times, 1.57% of context.</li>
+        <li>Interview output-style reminder: 1,238 times, 0.90%.</li>
+        <li>Instructions: 0.85%.</li>
+        <li><code>total_tokens</code> reminder: 1,687 times, 0.62%.</li>
+      </ul>
+    </div>
+  </div>
+  <p class="muted">Output is 1.33 M tokens. About half of it is thinking the user never sees. The visible part is mostly tool inputs (Write 166k, Bash 122k, Edit 106k) against 78k of prose. Direct output cost is small (5.6%), but the thinking carried forward is about 12% of all re-reads.</p>
+</section>
+
+<section aria-labelledby="s5">
+  <h2 id="s5">Tools and files that cost the most</h2>
+  <div class="tbl">
+    <table>
+      <thead><tr><th>Item</th><th class="r">Share of re-read context</th><th>Note</th></tr></thead>
+      <tbody>
+        <tr><td>Oversized tool outputs read back</td><td class="r">2.67%</td><td>Reads of files under Claude Code's transcript folder: tool outputs too large to show inline, and subagent transcripts, read back.</td></tr>
+        <tr><td><code>python</code> Bash results</td><td class="r">1.80%</td><td>Mostly BK-403 Phase 0 research scripts.</td></tr>
+        <tr><td><code>sdd/BACKLOG.md</code></td><td class="r">1.41%</td><td>Read 13 times inside BUG-264 alone.</td></tr>
+        <tr><td><code>.claude/skills/rvw-pr/SKILL.md</code></td><td class="r">1.36%</td><td>Read by 24 different subagents.</td></tr>
+        <tr><td>TaskOutput</td><td class="r">1.30%</td><td>Background task output.</td></tr>
+        <tr><td><code>hatch run lint</code> output</td><td class="r">1.03%</td><td></td></tr>
+        <tr><td><code>sdd/traces/_schema.yml</code></td><td class="r">1.01%</td><td>Read by 16 subagents.</td></tr>
+        <tr><td><code>sdd/CLAUDE-REFERENCE.md</code></td><td class="r">0.90%</td><td></td></tr>
+        <tr><td><code>.claude/skills/ship/SKILL.md</code></td><td class="r">0.86%</td><td>Read 6 times in BK-397.</td></tr>
+      </tbody>
+    </table>
+  </div>
+  <ul>
+    <li>Tool volume: Bash 2,126 calls (about 570 tokens per result), Grep 962 (about 660), Read 917 (about 3.1k), Edit 428.</li>
+    <li>24% of Read tokens are re-reads of a file already read in the same transcript.</li>
+    <li>233 tool errors, 196 of them in Bash, mostly hook blocks. Each costs a retry round.</li>
+  </ul>
+</section>
+
+<section aria-labelledby="s6">
+  <h2 id="s6">Subagents and the review loop</h2>
+  <p>Subagents account for 24.7% of units, about $127. The 27 review-panel members of BUG-264 used 22.8 M units (19% of everything), averaging 845k each. The 14 forked <code>/rvw-pr</code> runs averaged 421k each.</p>
+  <div class="tbl">
+    <table>
+      <thead><tr><th>Session</th><th class="r">Units after PR opened</th><th class="r">Main context at PR open</th><th class="r">Units per main call, before → after</th></tr></thead>
+      <tbody>
+        <tr><td>BK-397</td><td class="r">82%</td><td class="r">338k</td><td class="r">33.8k → 61.7k</td></tr>
+        <tr><td>v0.33.0 release</td><td class="r">54%</td><td class="r">362k</td><td class="r">31.6k → 48.5k</td></tr>
+        <tr><td>BUG-304/305</td><td class="r">56%</td><td class="r">179k</td><td class="r">18.6k → 29.0k</td></tr>
+      </tbody>
+    </table>
+  </div>
+  <p>The review loop runs on top of the implementation context, so every fix round pays for that context again. BK-397's trace records 8 rounds and 22 findings: about <strong>1.1 M units per finding</strong>. Of its 24.1 M units (the session plus five <code>/rvw-pr</code> sessions), 26% are subagent or review-labelled calls. The rest of the after-PR cost is the main session itself.</p>
+</section>
+
+<section aria-labelledby="s7">
+  <h2 id="s7">Comparison with the session traces</h2>
+  <div class="tbl">
+    <table>
+      <thead><tr><th>Item</th><th class="r">Units</th><th class="r">Units / changed line</th><th class="r">Files in trace</th><th class="r">Repo files Read</th><th class="r">Overlap</th><th class="r">Read tokens not in trace</th></tr></thead>
+      <tbody>
+        <tr><td>BUG-264</td><td class="r">51.4 M</td><td class="r">44.9k</td><td class="r">14</td><td class="r">53</td><td class="r">13</td><td class="r">50%</td></tr>
+        <tr><td>BK-397</td><td class="r">24.1 M</td><td class="r">18.6k</td><td class="r">12</td><td class="r">66</td><td class="r">12</td><td class="r">70%</td></tr>
+        <tr><td>BK-403</td><td class="r">17.2 M</td><td class="r">1.1k*</td><td class="r">19</td><td class="r">42</td><td class="r">16</td><td class="r">45%</td></tr>
+        <tr><td>BUG-304/305</td><td class="r">3.6 M</td><td class="r">9.9k</td><td class="r">11</td><td class="r">19</td><td class="r">8</td><td class="r">35%</td></tr>
+        <tr><td>v0.33.0 release</td><td class="r">12.0 M</td><td class="r">20.4k</td><td class="r">—</td><td class="r">29</td><td class="r">—</td><td class="r">100%</td></tr>
+        <tr><td>ID-268</td><td class="r">1.7 M</td><td class="r">13.6k</td><td class="r">—</td><td class="r">12</td><td class="r">—</td><td class="r">100%</td></tr>
+      </tbody>
+    </table>
+  </div>
+  <p class="muted">* PR 1074 is mostly generated research data (+15,967 lines), so its per-line figure is not comparable. Release and ID-268 have no trace.</p>
+  <ul>
+    <li><strong>Traces record about a quarter to a half of what was read.</strong> The untraced reads are mostly process files every session needs (the <code>rvw-pr</code> and <code>ship</code> skill files, <code>_schema.yml</code>, <code>BACKLOG-DONE.md</code>, <code>ci.yml</code>), plus BK-397's review snapshots under <code>tmp/review/&lt;sha&gt;/</code>.</li>
+    <li><strong>The trace-based exposure ranking does not match what was paid.</strong> <code>BACKLOG-DONE.md</code> ranks first by exposure (21.7 M) but cost 0.57% here. <code>rvw-pr/SKILL.md</code> is the most costly file at 1.36% and is not in the exposure top 40. <code>_schema.yml</code> cost 0.97% but ranks far down. The populations differ (all 369 traces against two days), but the gap is large.</li>
+    <li><strong>The costliest reads are not traced at all.</strong> Read-backs of oversized outputs, Bash output, hidden thinking and the prefix make up about 60% of re-read context, and none of it appears as a trace step.</li>
+    <li>Units per changed line vary about 4.5× across comparable items, from 9.9k to 44.9k. With n = 8 this is a spread, not a correlation.</li>
+  </ul>
+</section>
+
+<section aria-labelledby="s8">
+  <h2 id="s8">The online session's two hypotheses, tested</h2>
+  <p>A cloud session, which cannot see local transcripts, pointed at two causes: the backlog files bloating context, and links in CLAUDE.md and the authority docs pulling reads in. The measured data shows both as real but second-order. The shares below count Read results only; Grep hits on these files are not included.</p>
+  <div class="tbl">
+    <table>
+      <thead><tr><th>Read target</th><th class="r">Reads</th><th class="r">Tokens per read</th><th class="r">Share of re-read context</th><th class="r">Est. $</th></tr></thead>
+      <tbody>
+        <tr><td><code>sdd/BACKLOG.md</code></td><td class="r">68</td><td class="r">1,703</td><td class="r">1.41%</td><td class="r">6.5</td></tr>
+        <tr><td><code>sdd/BACKLOG-DONE.md</code></td><td class="r">46</td><td class="r">2,621</td><td class="r">0.52%</td><td class="r">2.5</td></tr>
+        <tr><td><code>sdd/backlog/*</code> dossiers</td><td class="r">26</td><td class="r">1,845</td><td class="r">0.30%</td><td class="r">0.9</td></tr>
+        <tr><td><strong>All backlog files</strong></td><td class="r">140</td><td class="r"></td><td class="r"><strong>2.22%</strong></td><td class="r"><strong>9.9</strong></td></tr>
+        <tr><td>Files linked from CLAUDE.md</td><td class="r">72</td><td class="r"></td><td class="r">2.26%</td><td class="r">9.9</td></tr>
+        <tr><td>Files linked from the authority docs (second hop)</td><td class="r">96</td><td class="r"></td><td class="r">3.09%</td><td class="r">11.0</td></tr>
+      </tbody>
+    </table>
+  </div>
+  <ul>
+    <li><strong>BACKLOG-DONE.md is large on disk but never read whole.</strong> The file is 966 KB, roughly 400k tokens. In the surviving transcripts it was touched by 19 Reads with <code>offset</code>/<code>limit</code> and 18 Grep content searches, with no whole-file read. Each read pulled about 2.6k tokens. Its trace exposure of 21.7 M assumes a whole-file read per trace and is about 40 times what was paid.</li>
+    <li><strong>BACKLOG.md costs through repetition.</strong> It was read 68 times, 13 of them in BUG-264, and a median read lands halfway into a session, so it is carried for the second half.</li>
+    <li><strong>Links cost nothing until followed.</strong> Claude Code auto-loads only <code>@</code> imports, and CLAUDE.md has none. The largest linked reads were <code>_schema.yml</code> (1.01%) and <code>CLAUDE-REFERENCE.md</code> (0.93%). RFC-0018 and RFC-0019 (about 0.8% each) were read because the prompts named them. The link shares are upper bounds.</li>
+    <li><strong>What CLAUDE.md does cost is its own text in every call.</strong> The project CLAUDE.md (188 lines, 15 KB) is about 6.2k tokens per main call, and MEMORY.md (93 lines, 13.6 KB, under the 200-line and 25 KB load caps) about 5.6k. Together they are roughly 4.6% of re-read context if counted in every call. The measured instruction share, including re-injections, is about 4%.</li>
+  </ul>
+</section>
+
+<section aria-labelledby="s10">
+  <h2 id="s10">Five months of traces and PR history</h2>
+  <p>Transcripts cover two days; the 370 traces (2026-05-10 to 2026-10-09) and 1,048 merged PRs cover months. They carry no token counts, so cost is inferred from size and activity, calibrated on the six PRs with measured units.</p>
+  <h3>The process changed on 2026-08-05</h3>
+  <p><code>/ship</code> and ADR-0033 landed that day, ADR-0034 to 0037 within six days. Every activity measure steps up at that date.</p>
+  <div class="tbl">
+    <table>
+      <thead><tr><th>Month</th><th class="r">PRs merged</th><th class="r">Commits per PR (median)</th><th class="r">Review threads per PR</th><th class="r">Open hours (median)</th><th class="r">Review rounds per trace (median)</th></tr></thead>
+      <tbody>
+        <tr><td>2026-06</td><td class="r">157</td><td class="r">3</td><td class="r">3.2</td><td class="r">0.8</td><td class="r">2</td></tr>
+        <tr><td>2026-07</td><td class="r">63</td><td class="r">3</td><td class="r">6.2</td><td class="r">1.6</td><td class="r">2</td></tr>
+        <tr><td>2026-08</td><td class="r">44</td><td class="r">7.5</td><td class="r">21.6</td><td class="r">13.3</td><td class="r">6</td></tr>
+        <tr><td>2026-09</td><td class="r">56</td><td class="r">5.5</td><td class="r">14.8</td><td class="r">11.5</td><td class="r">6</td></tr>
+        <tr><td>2026-10</td><td class="r">40</td><td class="r">7.5</td><td class="r">12.2</td><td class="r">1.4</td><td class="r">5</td></tr>
+      </tbody>
+    </table>
+  </div>
+  <h3>The material every session reads grew two to four times</h3>
+  <div class="tbl">
+    <table>
+      <thead><tr><th>File (KB, at that date's commit)</th><th class="r">2026-05-15</th><th class="r">2026-08-01</th><th class="r">2026-10-09</th></tr></thead>
+      <tbody>
+        <tr><td><code>CLAUDE.md</code> (loaded every call)</td><td class="r">7.1</td><td class="r">9.5</td><td class="r">14.7</td></tr>
+        <tr><td><code>sdd/CLAUDE-REFERENCE.md</code></td><td class="r">18.2</td><td class="r">36.4</td><td class="r">61.7</td></tr>
+        <tr><td><code>CONTRIBUTING.md</code></td><td class="r">18.6</td><td class="r">28.5</td><td class="r">45.8</td></tr>
+        <tr><td><code>sdd/traces/_schema.yml</code></td><td class="r">13.8</td><td class="r">14.1</td><td class="r">27.5</td></tr>
+        <tr><td><code>ship</code> / <code>rvw-pr</code> / <code>fix-pr</code> skills</td><td class="r">— / 8.0* / 6.0</td><td class="r">— / 8.3 / 5.7</td><td class="r">47.0 / 29.2 / 13.3</td></tr>
+      </tbody>
+    </table>
+  </div>
+  <p class="muted">* <code>rvw-pr</code> on 2026-06-01, its first appearance under that name. Process files went from 38% of the bytes a trace reads (May) to 61–66% (August and September); <code>CLAUDE-REFERENCE.md</code> is read by 62–89% of traces each month. Sizes are taken at each trace's creation commit, so they bound what was read from above: most steps read one section.</p>
+  <h3>Per-PR cost rose about five times while throughput fell about three times</h3>
+  <p>Commit count is the best single predictor of a PR's measured units (log-log r 0.83, leave-one-out error factor 2.3 on n = 6); lines, files and review threads predict worse (factor 3.0–3.7). Across 318 PRs with a trace, commits correlate with trace review rounds at 0.57. Projected, June ran about 157 PRs at roughly 4.6 M units each; August to October ran 40–56 PRs a month at roughly 20–28 M each, so monthly spend rose about 1.6 times while far fewer PRs shipped. The top 10% of PRs carry about 48% of estimated units.</p>
+  <p class="muted">Fitted on six PRs from August to October; before July the projection is out of its domain and likely overestimates. Read the absolute figures as orders of magnitude; the step at 2026-08-05 is the robust part.</p>
+</section>
+
+<section aria-labelledby="s11">
+  <h2 id="s11">Skills listed but never used</h2>
+  <p>Claude Code's <code>/plugins</code> Stats view shows what each skill costs per turn just by being listed. The 13 skills synced from claude.ai add about 3,160 tokens and all show zero uses; this repo's listed skills (<code>fix-pr</code>, <code>pr</code>, <code>rvw-pr</code>) add about 380. Skills shown as "—" (<code>ship</code>, <code>release</code>, <code>orchestrate</code> and others) load only when invoked and cost nothing until then.</p>
+  <ul>
+    <li>The synced skills appear in every session since 2026-10-04, including every subagent, which pays them again in its own prefix (29 transcripts checked).</li>
+    <li>About 3.2k tokens re-read per call is roughly 1% of spend at this repo's average context. In the BK-397 run the skill listing was the single largest re-read item (4.1%), injected into the main session five times and into every subagent.</li>
+    <li>The Stats view's "7d tokens" column attributes tokens only while a skill's own turn is active. It shows <code>/ship</code> at 15.9 M for two uses, while the BK-397 run alone used about 197 M raw tokens; 63% of all units in the transcripts carry no skill attribution at all.</li>
+  </ul>
+</section>
+
+<section aria-labelledby="s12">
+  <h2 id="s12">What the long review loops are made of</h2>
+  <p>Code and test findings settle within a round or two of the last code fix; the long tail is prose. The data says why: the prose is dense with checkable claims that nothing checks except the next review round, and each round's fixes make other claims false.</p>
+  <h3>Later rounds mostly repair the loop's own fixes</h3>
+  <div class="tbl">
+    <table>
+      <thead><tr><th>Round</th><th class="r">1</th><th class="r">2</th><th class="r">3</th><th class="r">4</th><th class="r">5</th><th class="r">6</th><th class="r">7</th><th class="r">8</th><th class="r">9+</th></tr></thead>
+      <tbody>
+        <tr><td>Findings</td><td class="r">124</td><td class="r">79</td><td class="r">116</td><td class="r">96</td><td class="r">55</td><td class="r">30</td><td class="r">38</td><td class="r">27</td><td class="r">85</td></tr>
+        <tr><td>Loop-introduced</td><td class="r">0%</td><td class="r">28%</td><td class="r">23%</td><td class="r">49%</td><td class="r">67%</td><td class="r">60%</td><td class="r">53%</td><td class="r">78%</td><td class="r">71%</td></tr>
+      </tbody>
+    </table>
+  </div>
+  <p class="muted">From the derived <code>review:</code> blocks in 41 traces. A finding is loop-introduced when an earlier fix in the same loop caused it.</p>
+  <ul>
+    <li><strong>Prose leads from round 1.</strong> Of 650 top-level review comments on 41 PRs, 399 are on prose files, 59 on traces and 186 on code or tests. Prose and traces are 68% of round 1 and 84% from round 9 on.</li>
+    <li><strong>Two kinds of long loop.</strong> Decision PRs (#1045 ADR-0042, #1061 key rule, #1066 RFC-0019, #1056) ran 10–13 rounds with no code findings at all. Gate and tooling PRs whose code is defined in prose (#1027, #1047, #1048, #1052, #1053) ran 8–20 rounds with code findings to the end.</li>
+    <li><strong>Pure code converges fast.</strong> Of the 24 PRs with a code or test finding, the median has no round with findings after the last one, and 4 have two or more. The other 17 drew prose and trace findings only.</li>
+  </ul>
+  <h3>The prose findings are checkable, not vague</h3>
+  <p>All 321 prose findings in the 13 longest loops, each classified against a fixed rubric (LLM-assisted; 9 of 10 spot-checked labels clearly right).</p>
+  <div class="bars" role="img" aria-label="Prose findings by class">
+    <div class="bar"><span class="lbl">SCOPE: overstated "every"/"all", missing case or bound</span><div class="trk"><div class="fill" style="width:28%"></div></div><span class="v">28%</span></div>
+    <div class="bar"><span class="lbl">FACT: wrong count, path, line reference, behaviour claim</span><div class="trk"><div class="fill" style="width:28%"></div></div><span class="v">28%</span></div>
+    <div class="bar"><span class="lbl">MIRROR: two artifacts or two places disagree</span><div class="trk"><div class="fill" style="width:26%"></div></div><span class="v">26%</span></div>
+    <div class="bar"><span class="lbl">RULE: a written rule broken, mostly principle 9</span><div class="trk"><div class="fill amber" style="width:11%"></div></div><span class="v">11%</span></div>
+    <div class="bar"><span class="lbl">DESIGN: disagreement with the decision itself</span><div class="trk"><div class="fill grey" style="width:6%"></div></div><span class="v">6%</span></div>
+    <div class="bar"><span class="lbl">CLARITY: wording, structure, placement</span><div class="trk"><div class="fill grey" style="width:2%"></div></div><span class="v">2%</span></div>
+  </div>
+  <ul>
+    <li><strong>Only 6% need judgment.</strong> 41% are mechanically checkable (a command, grep, count or link check settles them); 53% are checkable by listing the cases.</li>
+    <li><strong>The mix shifts toward missing cases.</strong> FACT falls from 38% of prose findings in rounds 1–2 to 23% in rounds 5–8, while SCOPE rises from 23% to 36%. In decision documents the cases are enumerated through review, one round at a time.</li>
+    <li><strong>Edits invalidate neighbouring claims.</strong> Findings that say an earlier fix of the same PR caused them rise from 4% (rounds 1–2) to 19–21% (round 3 on); this counts only explicit statements, so it undercounts.</li>
+    <li><strong>Design documents carry most of it.</strong> Backlog dossiers 127 findings and RFCs 74, two thirds of the total; traces 27, mostly principle-9 figures; ADRs 15, the only kind with a noticeable share of clarity and design findings.</li>
+  </ul>
+  <p class="muted">The 13 PRs were chosen as the longest loops, so this describes the expensive tail, not a typical PR. About a third of review comments carry no category prefix, mostly from panel members.</p>
+</section>
+
+<section aria-labelledby="s14">
+  <h2 id="s14">Live run: <code>/ship BUG-280</code>, checkpoint after round 7</h2>
+  <p>A pure-baseline <code>/ship</code> run on an S-sized bug (BUG-280, LocalBackend listings leaking a raw <code>PermissionError</code>, PR #1093), watched live with a token kit and paused by the maintainer after its seventh review round, when the session itself invoked <code>/ship</code>'s divergence rule and switched to re-planning. Figures are from the kit's report at that pause (21 transcripts snapshotted).</p>
+  <div class="kpis">
+    <div class="kpi"><b>31.5 M</b><span>units, about $73 (BK-397's whole run: 24.1 M)</span></div>
+    <div class="kpi"><b>~89%</b><span>of units after the PR opened (BK-397: 82%)</span></div>
+    <div class="kpi"><b>1,012</b><span>calls: 413 main, 599 in 20 review subagents</span></div>
+    <div class="kpi"><b>836k</b><span>main context at the pause, up from 89k at the start</span></div>
+  </div>
+  <div class="two">
+    <div>
+      <h3>Main session by phase</h3>
+      <div class="tbl">
+        <table>
+          <thead><tr><th>Phase</th><th class="r">Calls</th><th class="r">Share of units</th><th class="r">Mean context</th></tr></thead>
+          <tbody>
+            <tr><td>Orient and plan</td><td class="r">9</td><td class="r">0.7%</td><td class="r">89k</td></tr>
+            <tr><td>Build</td><td class="r">120</td><td class="r">10.3%</td><td class="r">212k</td></tr>
+            <tr><td>Review loop</td><td class="r">284</td><td class="r">58.3%</td><td class="r">567k</td></tr>
+            <tr><td>Review subagents</td><td class="r">599</td><td class="r">30.6%</td><td class="r">—</td></tr>
+          </tbody>
+        </table>
+      </div>
+      <p class="muted">The PR-open boundary is the PR-link record at call 129; <code>/pr</code> ran at call 90, so about 40 build calls were already PR work.</p>
+    </div>
+    <div>
+      <h3>Context carried into each round</h3>
+      <div class="tbl">
+        <table>
+          <thead><tr><th>Round</th><th class="r">Call</th><th class="r">Main context</th></tr></thead>
+          <tbody>
+            <tr><td>1 (<code>/rvw-pr</code>)</td><td class="r">103</td><td class="r">~255k</td></tr>
+            <tr><td>2 (<code>/rvw-pr</code>, measuring)</td><td class="r">139</td><td class="r">305k</td></tr>
+            <tr><td>3 (panel of three)</td><td class="r">182</td><td class="r">359k</td></tr>
+            <tr><td>4</td><td class="r">251</td><td class="r">515k</td></tr>
+            <tr><td>5</td><td class="r">288</td><td class="r">~615k</td></tr>
+            <tr><td>6 (re-run after a rebase)</td><td class="r">335 / 348</td><td class="r">~700k</td></tr>
+            <tr><td>7</td><td class="r">398</td><td class="r">~830k</td></tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+  <h3>What the rounds found</h3>
+  <div class="tbl">
+    <table>
+      <thead><tr><th class="r">Round</th><th class="r">Findings</th><th>What they targeted</th></tr></thead>
+      <tbody>
+        <tr><td class="r">1</td><td class="r">1</td><td>Code: <code>get_folder_info</code> still walked the old way</td></tr>
+        <tr><td class="r">2</td><td class="r">1</td><td>Test coverage of one control case</td></tr>
+        <tr><td class="r">3</td><td class="r">6</td><td>Three on code behaviour or tests, one docstring claim, two prose (migration guide, trace)</td></tr>
+        <tr><td class="r">4</td><td class="r">8</td><td>Mostly claims in text: migration-guide sentences, a BACKLOG-DONE line, a new dossier's sweep, three test docstrings and comments; one untested branch</td></tr>
+        <tr><td class="r">5</td><td class="r">6</td><td>Migration guide (2), two new dossiers filed during the loop (<code>bug-311</code>, <code>bug-313</code>), a docstring, a test-table enumeration</td></tr>
+      </tbody>
+    </table>
+  </div>
+  <ul>
+    <li><strong>Late "code" findings are mostly prose inside code.</strong> From round 4, most findings filed on <code>.py</code> files concern docstrings and comments, not behaviour; by subject, rounds 4–5 are about 80% claims in text.</li>
+    <li><strong>The loop grows its own surface.</strong> Follow-up items filed during the run brought new dossiers, and the next round found errors in them.</li>
+    <li><strong>Environment cost on top.</strong> The local gate was cut off at the 600 s tool limit or hung four times; each case overlapped another full test suite running on the machine. One hang left the session idle for 37 minutes. Master moved mid-loop, so round 6 ran twice (the abandoned first panel cost only 0.16 M).</li>
+  </ul>
+  <h3>What was re-read</h3>
+  <p>Session prefix 22.8%, Read results 19.9%, Bash output 11.5%, hidden thinking 11.5%, tool inputs 11.0%. The largest single items were git output (4.1%), PR comment replies (3.7%) and the <code>rvw-pr</code> skill read again in every review snapshot (2.7%). 18.5% of Read tokens were re-reads; 23 tool outputs spilled to files. The skill listing, the top item in BK-397, no longer appears after the synced skills were turned off mid-run.</p>
+</section>
+
+<section aria-labelledby="s16">
+  <h2 id="s16">Run A final: <code>/ship BUG-280</code> to merge-ready</h2>
+  <p>After the round-7 pause the session re-planned, narrowed the PR, compacted at call 458 and ran a second route of reviews to a closing round. PR #1093 ended merge-ready and is held as a draft for the planned comparison run. Figures from the kit's final report (34 transcripts snapshotted).</p>
+  <div class="kpis">
+    <div class="kpi"><b>59.3 M</b><span>units, about $137: 2.5 times BK-397's whole run (24.1 M)</span></div>
+    <div class="kpi"><b>94%</b><span>after the PR opened: main review loop 64.4%, review subagents 29.7%</span></div>
+    <div class="kpi"><b>1,823</b><span>calls: 795 main, 1,028 in 33 review subagents</span></div>
+    <div class="kpi"><b>5.9%</b><span>orient and build together (0.4% and 5.5%)</span></div>
+  </div>
+  <div class="tbl">
+    <table>
+      <thead><tr><th>Stretch</th><th class="r">Units</th><th>What happened</th></tr></thead>
+      <tbody>
+        <tr><td>Start to round-7 pause (calls 1–413)</td><td class="r">31.5 M</td><td>Build, PR, seven review rounds (round 6 twice after a rebase), four gate cut-offs or hangs</td></tr>
+        <tr><td>Re-plan to merge-ready (calls 414–795)</td><td class="r">27.8 M</td><td>Narrowing after the BK-389/BK-394 question, compaction, two single reviews, panels for new rounds 3–5, a closing round, final fix</td></tr>
+      </tbody>
+    </table>
+  </div>
+  <ul>
+    <li><strong>Compaction reset the price, not the trend.</strong> Per-call cost fell from 98–111k units at 960k context to 9–17k at 79k. Without a planned reset, context grew back to 721k by the end, about 1.7k tokens per call.</li>
+    <li><strong>The second route was nearly as expensive as the first.</strong> 28.19 M against 31.12 M, route against route, despite the narrowed scope: it re-ran the full review machinery on a context that refilled.</li>
+    <li><strong>What was re-read.</strong> Session prefix 21.9%, Read results 17.2%, Bash output 12.2%, hidden thinking 11.7%, tool inputs 11.0%, attachments 10.1%. The largest single item became PR comment replies (5.4%), then git output (3.5%) and the <code>rvw-pr</code> skill read in every review snapshot (2.3%). 19% of Read tokens were re-reads (299k of 1.58M); 39 tool outputs spilled to files.</li>
+  </ul>
+  <p class="muted">Dollar figures use the fitted Opus 5.5 rate. The comparison run (same item, same prompt, on the means) ran on 2026-10-10: see "Run B" below.</p>
+</section>
+
+<section aria-labelledby="s15">
+  <h2 id="s15">Context the run never gathered</h2>
+  <p>The maintainer stopped the BUG-280 run after round 7 with one question: would the backend redesign (BK-389, BK-394) make this simpler and better? The session halted and narrowed the open PR heavily. BK-389 and RFC-0017 were in context from the run's second call; the run recorded no verdict on the related items before planning.</p>
+  <ul>
+    <li><strong>The orient phase was tiny.</strong> 9 calls, 0.7% of the run's units, and none of them looked for related open work.</li>
+    <li><strong>BK-389 appeared only by accident.</strong> It surfaced at call 2 inside a <code>BACKLOG.md</code> read, as a mention in a neighbouring item (BUG-245), not in relation to BUG-280. BK-394 and ADR-0042 first appear at call 414, right after the maintainer's question.</li>
+    <li><strong>The link was already in the backlog.</strong> BUG-280 lists spec <code>BE-021</code>; so do BK-389 and BK-394. A query for open items sharing a spec ID would have surfaced both redesign items before any code was written.</li>
+    <li><strong>What skipping it cost.</strong> The review loop and its subagents took about 28 M units (89% of the run) hardening an error model that the redesign would reshape. Not all of it is lost: the permission-leak fix itself stays. But most of seven rounds went into making a stopgap watertight.</li>
+  </ul>
+  <p class="muted">The cost figure is the run's post-PR share at the round-7 checkpoint; how much of it survives the narrowing is not yet measured.</p>
+</section>
+
+<section aria-labelledby="s17">
+  <h2 id="s17">Run B: <code>/ship BUG-280</code> on the means, with rule (c)</h2>
+  <p class="lead">The same prompt on master plus the means, with one tested change: rule (c), a prose finding closed by a check the fixer runs and quotes, not by another review round. Run B closed merge-ready in 5 rounds at <strong>15.0 M units, about $35</strong>: a quarter of run A, and 47% below run A's route 2, the baseline RFC-0020 compares it with.</p>
+  <p class="note"><strong>One run, two arms, many confounds.</strong> Every means on master changed together with rule (c), so a shorter loop alone does not show which one caused it (RFC-0020 § Confounds). Read the figures as one delivery measured the same way as run A, not as an effect size.</p>
+  <div class="kpis">
+    <div class="kpi"><b>15.0 M</b><span>units, about $35 (run A 59.3 M; route 2 28.19 M)</span></div>
+    <div class="kpi"><b>83%</b><span>after the PR opened (run A 94%)</span></div>
+    <div class="kpi"><b>629</b><span>calls: 95 build, 222 resumed review session, 312 in 11 review subagents</span></div>
+    <div class="kpi"><b>104k</b><span>main context at round 1, after the handoff (run A 255k; route 2 113k)</span></div>
+  </div>
+  <p class="muted">Start: master <code>eff7953bb</code>, variant <code>fba0850a6</code>, worktree <code>.claude/worktrees/run-b</code>, prompt exactly <code>/ship BUG-280</code>, same model as run A. Build session 13:42–14:09 UTC on 2026-10-10, handoff, <code>/clear</code>, <code>/ship resume 1113</code> 14:38–16:08. PR #1113, head <code>6148d49</code>, CI green, not merged. Totals: <code>results/run_b_final.json</code> (13 transcripts: the build session, the resumed session and 11 review subagents).</p>
+
+  <div class="two">
+    <div>
+      <h3>By phase</h3>
+      <div class="tbl">
+        <table>
+          <thead><tr><th>Phase</th><th class="r">Calls</th><th class="r">Units</th><th class="r">Share</th></tr></thead>
+          <tbody>
+            <tr><td>Orient and plan (to plan approval)</td><td class="r">44</td><td class="r">1.11 M</td><td class="r">7.4%</td></tr>
+            <tr><td>Build (to PR open)</td><td class="r">49</td><td class="r">1.43 M</td><td class="r">9.5%</td></tr>
+            <tr><td>Handoff, resume before round 1</td><td class="r">10</td><td class="r">0.33 M</td><td class="r">2.2%</td></tr>
+            <tr><td>Review loop, main session</td><td class="r">214</td><td class="r">6.94 M</td><td class="r">46.3%</td></tr>
+            <tr><td>Review loop, 11 subagents</td><td class="r">312</td><td class="r">5.19 M</td><td class="r">34.6%</td></tr>
+          </tbody>
+        </table>
+      </div>
+      <p class="muted">Orient and build are cut at the session's own milestones (plan approval at 13:58:23, PR open at call 93), not at the kit's first-edit and PR-link boundaries: the first edit was a probe script, and a branch-name match linked the session to run A's #1093 at call 90. Loop: <code>route_baseline.py --route-start-call 1</code> on the resumed session.</p>
+    </div>
+    <div>
+      <h3>Orient this time weighed the redesign</h3>
+      <ul>
+        <li>To plan approval, 44 calls and 1.11 M units against run A's 34 calls and 0.76 M, both cut at plan approval. <code>backlog-find</code>, <code>backlog-show</code> and <code>ref-show</code> replaced whole-file backlog reads; RFC-0017 and spec 003 were read before planning.</li>
+        <li>Verdicts in the trace: BK-389/BK-394 subsume the fix but only at RFC-0017's step 5, so fix in place now; BUG-257/255 constrain it to every branch, since spec 003 calls a short walk a defect.</li>
+        <li>Scope chosen: "three methods, all branches". Wider than route 2, which shipped the single-level scans and left the recursive walks to BK-416 with <code>xfail</code> marks.</li>
+      </ul>
+    </div>
+  </div>
+
+  <h3>Round by round against route 2</h3>
+  <div class="tbl">
+    <table>
+      <thead><tr><th>Round</th><th class="r">Members B / R2</th><th class="r">Main context B / R2</th><th class="r">Units B / R2</th><th class="r">Findings B / R2</th><th class="r">B prose : code</th><th>What run B's round found</th></tr></thead>
+      <tbody>
+        <tr><td>1</td><td class="r">1 / 1</td><td class="r">104k / 113k</td><td class="r">1.53 / 1.89</td><td class="r">1 / 3</td><td class="r">0 : 1</td><td>A symlink loop now aborted a listing (code)</td></tr>
+        <tr><td>2</td><td class="r">1 / 1</td><td class="r">170k / 223k</td><td class="r">1.12 / 1.37</td><td class="r">1 / 4</td><td class="r">1 : 0</td><td>Migration note's premise missed two cases; <strong>closed by check</strong></td></tr>
+        <tr><td>3</td><td class="r">3 / 3</td><td class="r">194k / 273k</td><td class="r">2.41 / 3.91</td><td class="r">4 / 7</td><td class="r">1 : 3</td><td>Windows loop shape, a vanished subfolder skipped, two texts</td></tr>
+        <tr><td>4</td><td class="r">3 / 2</td><td class="r">276k / 396k</td><td class="r">3.09 / 2.67</td><td class="r">7 / 9</td><td class="r">1 : 6</td><td>Round 3's <code>NotFound</code> broke Windows junctions; divergence check fired, reverted</td></tr>
+        <tr><td>5</td><td class="r">3 / 3</td><td class="r">360k / 479k</td><td class="r">3.98 / 5.96</td><td class="r">4 / 15</td><td class="r">3 : 1</td><td>Spec register entry and three texts; loop ended on the maintainer's call at the soft ceiling</td></tr>
+        <tr><td>6</td><td class="r">— / 3</td><td class="r">— / 625k</td><td class="r">— / 6.83</td><td class="r">— / 11</td><td class="r">—</td><td></td></tr>
+        <tr><td><strong>All</strong></td><td class="r"></td><td class="r"></td><td class="r"><strong>12.13 / 22.62</strong></td><td class="r"><strong>17 / 49</strong></td><td class="r">6 : 11</td><td>Route 2: 30 prose, 18 code, 1 unfixed</td></tr>
+      </tbody>
+    </table>
+  </div>
+  <p class="muted">Units are main plus subagent units per round, in millions. Run B: <code>route_baseline.py</code> on the resumed session; route 2: <code>results/run_a_route2.json</code>. Findings and the prose/code split: <code>pr_rounds.py --pr 1113</code> against <code>pr_1093_rounds.json</code> route 2; the classifier counts a docstring fixed in a commit that also changed code as code, so 11 review replies close a finding on a recorded check where the classifier sees 6 prose findings: 10 of the 11 are prose findings by the fix replies, and the 11th removed a <code>spec</code> mark, an executable line.</p>
+  <ul>
+    <li><strong>Every round started on less context.</strong> 104k to 360k against 113k to 625k. The handoff (#1103) gave the review loop a fresh session; route 2 got its low start only from a compaction.</li>
+    <li><strong>A third as many findings, and fewer of them prose.</strong> 17 against 49. By hand, from the fix replies, 10 of 17 are prose, 59%, against route 2's 37 of 49, 76%; the fix-commit classifier, which counts a prose fix committed beside code as code, gives 35% against 61%. A round cost 2.43 M against 3.77 M; per finding the loop cost more (0.71 M against 0.46 M) because findings per round fell further, 3.4 against 8.2.</li>
+    <li><strong>The loop still made its own work.</strong> Round 3's fix (raise <code>NotFound</code> for a subfolder deleted mid-walk, the maintainer's call) caused four of round 4's seven findings. The session reverted it at round 4 by <code>/ship</code>'s divergence rule; run A's re-plan came after round 7, at 830k context, and narrowed its whole scope.</li>
+    <li><strong>Filed items drew findings again.</strong> BUG-318 (build) and BUG-319 (round 1's fix) drew three of the eight findings in rounds 3 and 5, as run A's mid-loop dossiers did.</li>
+  </ul>
+
+  <h3>Rule (c), scored by RFC-0020's decision rule</h3>
+  <div class="tbl">
+    <table>
+      <thead><tr><th>Clause</th><th>Result</th><th>Evidence</th></tr></thead>
+      <tbody>
+        <tr><td>Keeps: a round closes on check-closed prose alone, with no round opened to verify it</td><td>Not met</td><td>Round 2: one prose finding, closed by a re-run probe (<code>tmp/probe_note.py</code>, modes 000 and 0o444, 3.11 and 3.14). Round 3 then opened on that fix and re-read it; it was owed for round 1's code fix, and the clause's text admits no such exception (the maintainer's reading). Round 5 does not count: one fix removed a <code>spec</code> mark, an executable line, and the loop ended on the maintainer's call.</td></tr>
+        <tr><td>Keeps: fewer than route 2's six rounds</td><td>Holds</td><td>5 rounds; ended at the soft ceiling on the maintainer's call, not by convergence.</td></tr>
+        <tr><td>Keeps: every check-closed fix quotes its check and what it returned</td><td>Holds</td><td>11 replies close a finding on a recorded check, each naming the check and what it returned; 10 are prose findings, the 11th (a <code>spec</code> mark) closed on the maintainer's call at the ceiling.</td></tr>
+        <tr><td>Fails: rule (c) never fires</td><td>Does not apply</td><td>Fired in rounds 2 to 5: 1, 2, 4 and 4 replies.</td></tr>
+        <tr><td>Fails: a check-closed prose fix proves false later</td><td>Not so far</td><td><code>git blame</code> at each later head: round 4's migration-note finding sits on lines round 3's <em>code</em> fix wrote, not on round 2's check-closed lines. Rounds 4 and 5's fixes have no later round; the maintainer's post-close review is the remaining test.</td></tr>
+        <tr><td>Fails: a reply names no check, or one not run</td><td>Does not apply</td><td>But four of the ten prose checks were run without being able to settle their claim: a <code>git grep</code> for wording, twice, and <code>gen-backlogid-check</code>, which tests an item's shape, on what BUG-318 and BUG-319 say. The rule has no clause for that.</td></tr>
+        <tr><td>Run fails: units not below route 2's 28.19 M</td><td>Does not apply</td><td>15.00 M from the first call to the close.</td></tr>
+        <tr><td>Run fails: a must-fix defect run A's PR did not have</td><td>Does not apply</td><td>On the maintainer's call: #1113 has two regressions #1093 avoids (a subfolder in Windows' classic delete-pending state; a link into a locked folder on Python 3.14), both narrow and ending in a typed error; they are open follow-ups on #1113. In return it skips files deleted mid-walk, where master raised in 2 to 18 of 200 runs and #1093 in 1 to 15 (<code>delete_pending_probe.py</code>).</td></tr>
+      </tbody>
+    </table>
+  </div>
+  <p><strong>Reading: rule (c) does not pass. It saved no review round, so it stays out of <code>/ship</code> and its variant closes.</strong> It fired, its closes held through the rounds that followed, and the run closed shorter and cheaper. The shorter loop also missed the delete-pending case run A's round 7 had measured. What the run cannot show is how much of the gap is rule (c): the handoff, claim discipline (Rule 8), the deeper orient and the narrower findings mix moved the same figures, and only one round (2) shows rule (c) letting the loop skip a verification. Any later rule that closes findings by a check needs the clause this one lacked: a check counts only if it can return the claim false.</p>
+
+  <h3>Confounds and measurement notes</h3>
+  <ul>
+    <li><strong>Wider scope than route 2</strong>, against run B: it fixed the recursive walks route 2 deferred. RFC-0020's scope condition still holds (LocalBackend's listing methods), so the round and unit checks stand.</li>
+    <li><strong>Run B knew it was run B.</strong> During orient it read the auto-memory note on the A/B experiment, which names run A's 59.3 M and PR #1093, and the RFC lines quoting run A's post-PR share. RFC-0020 asks for nothing steering run B; for a clean rerun, hide that memory pointer first.</li>
+    <li><strong>The maintainer answered the run's dialogs</strong>: scope, contract placement, BUG-318 and pushing without the variant (build); BUG-319's scope, the round-3 <code>NotFound</code>, the round-4 re-plan, the round-5 close and spec fix (review). The scope answer followed the monitoring session's recommendation. One more dialog was spent on a question meant for the monitoring session, typed into run B by mistake at 15:20.</li>
+    <li><strong>Kit gaps found by this run:</strong> the PR-open boundary follows Claude Code's <code>pr-link</code> record, which fired for run A's #1093 because the worktree's local branch reused its name; commits and pushes run as <code>git -C tmp/pr-push …</code> are not detected as events; phase 1 ends at the first file write, here a probe script.</li>
+  </ul>
+
+  <div class="two">
+    <div>
+      <h3>Local gate</h3>
+      <p>16 gate runs: 8 passed, 7 failed, 1 in the background. <strong>No cut-off at the 600 s limit and no idle stall</strong>, against run A's 33 runs with 3 cut-offs and a 37-minute stall. Each failure ended within seconds on a generator or drift check before the tests (a stale <code>graph.json</code>, the graph page, a lint fix, the backlog item cap): the gate stops at the first stale artifact, so each costs one more gate call. From <code>results/run_b_gates.json</code>.</p>
+    </div>
+    <div>
+      <h3>What was re-read</h3>
+      <p>Session prefix 34.4%, Read results 17.9%, Bash output 14.3%, hidden thinking 8.4%, attachments 7.2%, tool inputs 7.2%. Largest single items: git output 4.1%, the <code>rvw-pr</code> skill (3.2%, plus 1.0% in review snapshots), the nested memory attachment 3.1%, Docker output 3.0%. 20% of Read tokens were re-reads; 16 outputs spilled. The prefix share is higher than run A's 21.9% because the run was shorter, not because the prefix grew.</p>
+    </div>
+  </div>
+</section>
+
+<section aria-labelledby="s18">
+  <h2 id="s18">What the means cost to build</h2>
+  <p>Between run A and run B, 52 local sessions (2026-10-09 and 2026-10-10) worked on this topic or next to it. Kept apart from run B's total so the A/B comparison stays clean.</p>
+  <div class="tbl">
+    <table>
+      <thead><tr><th>Class</th><th class="r">Units</th><th class="r">Est. $</th><th>What it holds</th></tr></thead>
+      <tbody>
+        <tr><td>Means</td><td class="r">74.7 M</td><td class="r">172</td><td>PRs on master (#1099, #1103, #1105–#1110), the stable local gate (#1097, #1105, #1107, #1108: 21.8 M, plus two gate analyses outside any PR), BUG-314 (#1095, the ruff hook that deleted imports), and the MEMORY.md trim, which cuts every later main session's prefix without a repo record.</td></tr>
+        <tr><td>Measurement and analysis</td><td class="r">37.0 M</td><td class="r">85</td><td>The two analysis sessions, including run A's monitoring (945k peak context, no compaction).</td></tr>
+        <tr><td>Experiment setup</td><td class="r">22.4 M</td><td class="r">52</td><td>RFC-0020, the variant #1101, sessions A to E, the run B worktree.</td></tr>
+        <tr><td><strong>Preparation</strong></td><td class="r"><strong>134.0 M</strong></td><td class="r"><strong>310</strong></td><td>2.3 times run A; 8.9 times run B.</td></tr>
+        <tr><td class="muted">Unrelated, not counted</td><td class="r muted">16.2 M</td><td class="r muted">37</td><td class="muted"></td></tr>
+      </tbody>
+    </table>
+  </div>
+  <ul>
+    <li><strong>Arithmetic, not a forecast.</strong> Run B was 44.3 M below run A and 13.2 M below route 2. Against run A, the means alone (74.7 M) equal about 1.7 such savings. Whether later deliveries save anything like this is what BK-420 and later runs have to show.</li>
+    <li><strong>The costliest single means was BK-414's lookup tool</strong> (#1099): 10.75 M over four sessions. Fix rounds ran inside the build sessions and are not separated from them.</li>
+    <li><strong>Not measured:</strong> #1110 was built in a cloud session, so only its two local reviews (0.39 M) are counted; #1111 and #1112 came from one session and are not split; nothing before 2026-10-09.</li>
+  </ul>
+  <p class="muted">From <code>results/prep_cost.json</code> (<code>prep_cost.py</code>): each call's units go to the git branch it ran on, and a class map kept outside the repo assigns each session and branch a class and a PR. The MEMORY.md trim, BUG-314 and the gate analyses count as means on the maintainer's word. $ at the fitted Opus 5.5 rate.</p>
+</section>
+
+<section aria-labelledby="s13">
+  <h2 id="s13">Changes made so far</h2>
+  <p>Two of the always-loaded items were cut on 2026-10-09, both aimed at tokens every call carries. The MEMORY.md trim shows in a session's first call; turning off the synced skills does not.</p>
+  <div class="tbl">
+    <table>
+      <thead><tr><th>Change</th><th class="r">Before</th><th class="r">After</th><th class="r">Per call</th><th class="r">Est. share of spend</th><th>Scope</th></tr></thead>
+      <tbody>
+        <tr><td>Synced claude.ai skills off (<code>syncClaudeAiSkills: false</code> in <code>.claude/settings.local.json</code>)</td><td class="r">13 skills listed</td><td class="r">0</td><td class="r">no change measured at a session's first call</td><td class="r">—</td><td>This repo only, main sessions and every subagent</td></tr>
+        <tr><td>MEMORY.md trimmed in an interview session</td><td class="r">13,620 bytes, ~5.6k tokens</td><td class="r">4,043 bytes, ~1.7k tokens</td><td class="r">−~3.9k tokens</td><td class="r">~0.85%</td><td>Main sessions only; subagents never load it</td></tr>
+      </tbody>
+    </table>
+  </div>
+  <p class="muted">Token figures use the calibrated 2.43 characters per token. The MEMORY.md share scales its measured cost before the trim (1.19% of units in the transcripts) by the size reduction (72%). The skills setting took effect at 10:18:53 UTC, during the BUG-280 run. Measured afterwards, the first call of a session showed no change from it (report § What each means did on its own). Both changes apply to sessions started afterwards; MEMORY.md is read once at session start.</p>
+</section>
+
+<section aria-labelledby="s9">
+  <h2 id="s9">Summary and hypotheses to act on</h2>
+  <p>Cost is set by how many calls a session makes and how large its context has grown by then. Every content type is multiplied by the calls that follow it, so the same item costs more the earlier it enters and the longer the session runs. Each hypothesis below names its evidence, the largest share of spend it could move, and the measurement that would confirm or refute it.</p>
+  <div class="tbl">
+    <table>
+      <thead><tr><th>#</th><th>Hypothesis</th><th>Evidence here</th><th class="r">Ceiling</th><th>How to test</th></tr></thead>
+      <tbody>
+        <tr><td>1</td><td>The review loop is expensive mainly because it runs on the implementation session's context, not because of the review itself.</td><td>BK-397: 82% of units after the PR opened; mean units per main call rose from 33.8k to 61.7k. Release 54%, BUG-304/305 56%. About 1.1 M units per finding. <em>Run B:</em> with the handoff to a fresh session, round 1 started at 104k (run A 255k) and every round on less context than route 2; loop 12.13 M against 22.62 M.</td><td class="r">23–28% of a <code>/ship</code> session group</td><td>Compare units per review round between a round run in the original session and one run in a fresh session that starts at the PR.</td></tr>
+        <tr><td>2</td><td>The session prefix is the largest single item, and the part this repo controls is the instruction files.</td><td>Prefix 22.3% of re-read context (about 56k per main call). Of that, instructions are about 11.8k (CLAUDE.md 6.2k, MEMORY.md 5.6k) and the skill listing about 2.6k. The rest is system prompt and tool schemas.</td><td class="r">2.5% (<code>CLAUDE.md</code>) + 1.19% (MEMORY.md, before its trim)</td><td>Measure prefix tokens before and after a change in the size of the instruction files, using the first call of new sessions.</td></tr>
+        <tr><td>3</td><td>Subagents pay the prefix again and re-read the same process files.</td><td>Subagents 24.7% of units. Each pays a 45k–56k prefix. <code>rvw-pr/SKILL.md</code> was read by 24 subagents, <code>_schema.yml</code> by 16.</td><td class="r">~25%</td><td>Units per subagent split into prefix, shared process files and PR-specific reads, across the next review rounds.</td></tr>
+        <tr><td>4</td><td>Oversized tool outputs read back in pieces are the costliest single read pattern.</td><td>Reads of spilled outputs and subagent transcripts are 2.67% of re-read context.</td><td class="r">~3%</td><td>Count spilled outputs and their read-back tokens per review run.</td></tr>
+        <tr><td>5</td><td>Repeated reads of the same file inside one session add context without adding information.</td><td>24% of Read tokens are re-reads of a file already read in the same transcript. BACKLOG.md 13 times in one session.</td><td class="r">~5% (24% of Read's 21.6%)</td><td>Re-read share per session, and whether the second read followed an edit to the file.</td></tr>
+        <tr><td>6</td><td>Hidden thinking is a large carried cost that output token counts don't show.</td><td>About half of output tokens are thinking, and that thinking makes up 11.8% of re-read context.</td><td class="r">~12%</td><td>Thinking share of output per effort level, across sessions with different effort settings.</td></tr>
+        <tr><td>7</td><td>The 1-hour cache TTL on main sessions costs more than the cache misses it prevents.</td><td>1-hour writes are 8.9% of units; 5 rebuilds cost 2.1%. 4 gaps between calls exceeded an hour, and 67 exceeded 5 minutes.</td><td class="r">under 8.9%</td><td>Simulate 5-minute TTL on the recorded call timeline: extra rebuilds against the write premium saved.</td></tr>
+        <tr><td>8</td><td>The backlog files and linked docs are second-order costs.</td><td>Backlog files 2.2%, CLAUDE.md links 2.3%, second-hop links up to 3.1% (upper bound).</td><td class="r">~2–5%</td><td>Same measurement on a longer sample, including Grep hits on these files.</td></tr>
+        <tr><td>9</td><td>The repo's own report understates context.</td><td><code>report_token_usage.py</code> assumes 4 characters per token (measured 2.4) and leaves out the prefix and thinking, which are about a third of context.</td><td class="r">measurement</td><td>Re-run the calibration regression on new transcripts and compare its ranking with the script's.</td></tr>
+        <tr><td>10</td><td>The long review tail is prose whose checkable claims nothing checks except the next review round, and each round's fixes falsify neighbouring claims.</td><td>Loop-introduced 49–78% of findings from round 4. 94% of 321 prose findings are checkable (41% mechanically). SCOPE rises from 23% to 36% of prose findings by rounds 5–8. <em>Run B:</em> with Rule 8 and rule (c), prose fell to 59% of findings by hand (route 2 76%), 35% by the classifier (61%); 10 prose findings closed by a quoted check and none proved false in a later round, but four of those checks could not have returned the claim false.</td><td class="r">most of a long loop</td><td>For the next long loops, count per round how many findings a mechanical check (count, line reference, cross-reference, link) would have caught before review.</td></tr>
+        <tr><td>11</td><td>Skills that are listed but never used cost on every call, in every subagent.</td><td>13 synced skills, ~3,160 tokens per turn, zero uses; the skill listing was the top re-read item (4.1%) in the BK-397 run.</td><td class="r">~1%</td><td>Compare first-call context of sessions with and without the synced listing.</td></tr>
+        <tr><td>12</td><td>An orient step that checks related open work prevents long loops on items a pending redesign will reshape.</td><td>BUG-280 shares spec BE-021 with BK-389 and BK-394; the run recorded no verdict on them before planning, ran seven rounds (~28 M units after PR open), then was narrowed once the link was raised. <em>Run B:</em> § Orient read RFC-0017 and the related items before planning (1.11 M units to plan approval, against run A's 0.76 M) and recorded a verdict per cluster; no re-plan over scope followed.</td><td class="r">a whole review loop, on affected items</td><td>Before planning, list open items sharing the item's spec IDs or touched files (e.g. a <code>backlog-find --spec</code> query in BK-414's tool) and ask how they relate; count how often it changes the plan.</td></tr>
+      </tbody>
+    </table>
+  </div>
+  <p class="muted">Ceilings are the share of re-read context or units the factor accounts for in this sample. They can overlap and don't add up. They bound what acting on a hypothesis could move; they don't predict a saving. With two working days and one dominant session, each hypothesis needs its test on new data before anyone acts on it.</p>
+</section>
+
+<footer>
+  <div><strong>Method.</strong> All Claude Code transcripts of this repository and its worktrees whose first record falls in the window were parsed into one row per API call (usage, model, skill, TTL split) and one row per content item (tool result, attachment, tool input). Calls were deduplicated by message id. An item's carried cost is its calibrated size times the calls it stays in context, until a compaction. Hidden thinking is estimated as output tokens minus visible output.</div>
+  <div><strong>Limits.</strong> Two working days. One Opus 5 session dominates, and Opus 5 cost about 2.2× Opus 5.5 per token. Prices are fitted, not list prices. <code>report_token_usage.py</code> assumes 4 characters per token and leaves out the prefix and thinking, so its "carried" ranking misses about a third of context and undercounts tool results by about 1.7×.</div>
+  <div>First published 2026-10-09 from the scratch analysis that <code>report.md</code> ports; run B and the cost of the means added 2026-10-10 from <code>results/</code>. Some figures of the first sections have no result file. <code>report.md</code> beside this page is the authoritative record and wins where the two differ.</div>
+</footer>
+
+</main>

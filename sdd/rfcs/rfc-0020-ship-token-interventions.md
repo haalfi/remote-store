@@ -12,6 +12,15 @@ ADR-0037 stay unchanged unless run B passes the decision rule below. Tracked as
 [`sdd/research/token-usage/report.md`](../research/token-usage/report.md),
 cited below as *the report*.
 
+**Phase 0 ran on 2026-10-10** as PR #1113, on master `eff7953bb` plus the
+variant `fba0850a6`. **It does not establish rule (c):** the first keeps
+clause is not met, because the one round that closed on check-closed prose
+alone was followed by a round that re-read its fix, owed for a code fix
+(the maintainer's reading of the clause's text). Rule (c) stays out of
+`/ship`, and #1101 closes, per the Roadmap. The report's § Run B scores every
+clause. The maintainer judged the two regressions #1113 has and #1093 avoids
+not must-fix; they are open follow-ups on #1113.
+
 ## Summary
 
 **A `/ship` delivery spends most of its tokens after the PR opens, and the

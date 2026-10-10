@@ -1,0 +1,112 @@
+{
+ "_provenance": {
+  "script": "tokkit.py",
+  "generated": "2026-10-10",
+  "inputs": {
+   "main transcript": "ffe95a39a629bce78c16abcd5523de35a9413acd57a243da6b7e64135efbe09b"
+  }
+ },
+ "transcripts": 1,
+ "calls": 93,
+ "main_calls": 93,
+ "units_m": 2.54,
+ "usd_estimate": 5.88,
+ "units_pct_by_class": {
+  "input": 0.0,
+  "read": 70.8,
+  "w5": 0.0,
+  "w1h": 18.9,
+  "out": 10.4
+ },
+ "first_edit_call": 14,
+ "pr_open_call": 90,
+ "compaction_calls": [],
+ "phases": {
+  "orient + plan (before first edit)": {
+   "calls": 14,
+   "units_pct": 14.4,
+   "mean_ctx_k": 109
+  },
+  "build (first edit to PR open)": {
+   "calls": 76,
+   "units_pct": 81.8,
+   "mean_ctx_k": 209
+  },
+  "review loop (after PR open)": {
+   "calls": 3,
+   "units_pct": 3.8,
+   "mean_ctx_k": 272
+  },
+  "subagents": {
+   "calls": 0,
+   "units_pct": 0.0
+  }
+ },
+ "context_shares_pct": {
+  "session prefix": 38.7,
+  "result:Read": 24.0,
+  "result:Bash": 14.0,
+  "thinking (hidden)": 8.0,
+  "result:Grep": 6.1,
+  "tool_input": 5.5,
+  "attachment": 3.4,
+  "result": 1.4,
+  "assistant_text": 0.1,
+  "unexplained": -1.3
+ },
+ "top_items_pct": [
+  {
+   "kind": "result:Read",
+   "detail": "src/remote_store/backends/_local.py",
+   "pct": 9.38
+  },
+  {
+   "kind": "result:Read",
+   "detail": "sdd/traces/bug-275-raise-if-dir-eperm.yml",
+   "pct": 4.71
+  },
+  {
+   "kind": "result:Bash",
+   "detail": "ls",
+   "pct": 3.15
+  },
+  {
+   "kind": "result:Bash",
+   "detail": "hatch run ref-show",
+   "pct": 2.58
+  },
+  {
+   "kind": "result:Bash",
+   "detail": "hatch run backlog-show",
+   "pct": 2.45
+  },
+  {
+   "kind": "result:Read",
+   "detail": "sdd/traces/_schema.yml",
+   "pct": 2.11
+  },
+  {
+   "kind": "result:Bash",
+   "detail": "hatch run pytest",
+   "pct": 2.1
+  },
+  {
+   "kind": "result:Read",
+   "detail": "sdd/rfcs/rfc-0017-contract-kernel-over-thin-drivers.md",
+   "pct": 2.1
+  },
+  {
+   "kind": "result:Read",
+   "detail": "sdd/specs/003-backend-adapter-contract.md",
+   "pct": 1.99
+  },
+  {
+   "kind": "result:Grep",
+   "detail": "def (list_files|list_folders|iter_children)",
+   "pct": 1.73
+  }
+ ],
+ "read_tokens_reread_pct": 15.2,
+ "spilled_outputs": 2,
+ "rounds": []
+}

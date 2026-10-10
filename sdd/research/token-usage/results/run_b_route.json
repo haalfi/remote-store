@@ -1,0 +1,71 @@
+{
+ "_provenance": {
+  "script": "route_baseline.py",
+  "generated": "2026-10-10",
+  "inputs": {
+   "main transcript": "057d94a17eb1de7d6dcc95275fff35eec16fa6265d6596c433ddaeececf35886"
+  }
+ },
+ "run": {
+  "transcripts": 12,
+  "units_m": 12.36,
+  "main_calls": 222,
+  "subagent_units_m": 5.19
+ },
+ "route_start_call": 1,
+ "route_start_ts": "2026-10-10T14:39:06.382Z",
+ "route": {
+  "units_m": 12.27,
+  "main_units_m": 7.08,
+  "subagent_units_m": 5.19,
+  "before_first_round": {
+   "calls": 8,
+   "units_m": 0.14
+  },
+  "loop_units_m": 12.13,
+  "rounds": [
+   {
+    "round": 1,
+    "spawn_call": 9,
+    "members": 1,
+    "main_ctx_k": 104,
+    "main_units_m": 1.14,
+    "subagent_units_m": 0.39
+   },
+   {
+    "round": 2,
+    "spawn_call": 71,
+    "members": 1,
+    "main_ctx_k": 170,
+    "main_units_m": 0.44,
+    "subagent_units_m": 0.68
+   },
+   {
+    "round": 3,
+    "spawn_call": 89,
+    "members": 3,
+    "main_ctx_k": 194,
+    "main_units_m": 1.38,
+    "subagent_units_m": 1.03
+   },
+   {
+    "round": 4,
+    "spawn_call": 132,
+    "members": 3,
+    "main_ctx_k": 276,
+    "main_units_m": 1.72,
+    "subagent_units_m": 1.37
+   },
+   {
+    "round": 5,
+    "spawn_call": 174,
+    "members": 3,
+    "main_ctx_k": 360,
+    "main_units_m": 2.26,
+    "subagent_units_m": 1.72
+   }
+  ]
+ },
+ "earlier_route_units_m": 0.09,
+ "derivation": "route_baseline.py --snapshot <snapshots>/<sid> --route-start-call 1 --name run_b_route"
+}
