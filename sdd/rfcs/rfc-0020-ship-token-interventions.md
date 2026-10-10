@@ -13,9 +13,10 @@ ADR-0037 stay unchanged unless run B passes the decision rule below. Tracked as
 cited below as *the report*.
 
 **Phase 0 ran on 2026-10-10** as PR #1113, on master `eff7953bb` plus the
-variant `fba0850a6`, and passes the decision rule. The report's § Run B scores
-it clause by clause; the maintainer judged the two regressions #1113 has and
-#1093 avoids not must-fix, so #1113 fixes or documents them before merging.
+variant `fba0850a6`, and meets every clause of the decision rule scored so far;
+the clause on the maintainer's post-close review stays open. The report's
+§ Run B scores it clause by clause. The maintainer judged the two regressions
+#1113 has and #1093 avoids not must-fix; they are open follow-ups on #1113.
 
 ## Summary
 

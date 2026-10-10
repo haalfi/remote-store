@@ -33,6 +33,18 @@ Link 1 is the arithmetic of prompt caching. Links 2 to 5 are this record's own,
 measured on one repository: § 1 and § 2 argue 1 to 3, § 3 argues 4, § 4 tests it
 once, and § 5 argues 5 and marks where the argument breaks.
 
+In practice, four controls carry link 4, each tested once in § 4:
+
+- **Orient before plan:** weigh the open work that shares the change's spec or
+  files, and record a verdict, before the plan is written.
+- **Fresh context for review:** the build writes a handoff and stops; the review
+  starts in a new session.
+- **Detail owned, prose closed by check:** write only what the change owns, and
+  close a prose finding by a check that could have failed.
+- **A stable gate:** one suite at a time, bounded waits, workers sized to the
+  machine. It is not an order but the condition under which the other three's
+  savings show instead of drowning in stalls.
+
 ## Context
 
 The repository asked for **sound, standing means that keep token spend and
@@ -43,8 +55,8 @@ to a delivery: the tokens it spends, and detail written only where the work owns
 it.
 
 The investigation ran in three steps. A first `/ship BUG-280` delivery (run A)
-was watched call by call. What it exposed was turned into means on master, each
-its own PR. Then the same prompt was delivered again on those means plus one
+was watched call by call. What it exposed was turned into means on master
+through the PRs the appendix lists. Then the same prompt was delivered again on those means plus one
 tested rule (run B), and compared with run A under a decision rule fixed before
 the run ([RFC-0020](../rfcs/rfc-0020-ship-token-interventions.md#decision-rule)).
 
@@ -112,9 +124,11 @@ checks when it is written is checked by the next review round, at that round's
 context.
 
 **Orientation came after the plan.** Run A's spec was shared by the backend
-redesign. The run never weighed it, hardened a stopgap for seven rounds, and
-re-planned only when the maintainer asked; the first route cost 31.5 M units
-before the re-plan ([report § 7](token-usage/report.md#7-run-a-ship-bug-280-at-the-round-7-checkpoint)).
+redesign, whose IDs were in context from the run's second call. The run
+recorded no verdict on the related items before planning, hardened a stopgap
+for seven rounds, and narrowed its scope after round 7, when the maintainer
+raised the redesign; the first route cost 31.5 M units before the re-plan
+([report § 7](token-usage/report.md#7-run-a-ship-bug-280-at-the-round-7-checkpoint)).
 
 **The environment stalled the work.** The local gate was cut off at the tool
 limit three times and once left the session idle for 37 minutes, which the
@@ -172,12 +186,13 @@ it there.
 
 **Run B, the same prompt on master with the controls and one tested rule, closed
 merge-ready in five rounds at 15.0 M units: a quarter of run A, and 47% below
-run A's second route, which had the comparable scope.** The decision rule fixed
-before the run was met ([report § Run B](token-usage/report.md#run-b-ship-bug-280-on-the-means)).
+run A's second route, the one RFC-0020 compares it with.** It meets every clause
+of the decision rule fixed before the run that is scored so far; the clause on
+the maintainer's post-close review is still open ([report § Run B](token-usage/report.md#run-b-ship-bug-280-on-the-means)).
 
 | | Run A | Run A, route 2 | Run B |
 | --- | ---: | ---: | ---: |
-| Units, first call to close | 59.3 M | 28.19 M | 15.0 M |
+| Units, first call to close | 59.3 M | 28.19 M¹ | 15.0 M |
 | Review rounds | 13 | 6 | 5 |
 | Main context entering round 1 | 255k | 113k | 104k |
 | Findings | — | 49 | 17 |
@@ -186,19 +201,23 @@ before the run was met ([report § Run B](token-usage/report.md#run-b-ship-bug-2
 | Wall time, first call to close | 7 h 06 min | — | 2 h 29 min |
 | of it active (gaps of five minutes or less) | 5 h 43 min | — | 1 h 49 min |
 
+¹ Route 2 from the re-plan on (run A's call 409), not from run A's first call.
+
 Each control shows in the run:
 
 - **Orient before plan.** Run B read the redesign and its related items first,
   recorded a verdict per cluster, and fixed every branch of the listing methods,
-  including the recursive walks run A had deferred. Orient cost 7.4% of the run,
-  and no re-plan over scope followed.
+  including the recursive walks run A had deferred. Orient and plan, both cut at
+  plan approval, took 1.11 M units against run A's 0.76 M, and no re-plan over
+  scope followed.
 - **Fresh context for review.** Every round started on less context than route
   2's, which reached its low start only through a compaction.
 - **Detail owned, prose closed by check.** Prose fell from 61% to 35% of the
   findings. The tested rule, rule (c), closed eleven findings by a check the
   fixer ran and quoted, and none of those closes was later found false
   ([report § Rule (c) against the decision rule](token-usage/report.md#rule-c-against-the-decision-rule)).
-- **A stable gate.** 16 gate runs, none cut off, no stall.
+- **A stable gate.** 16 gate runs, none cut off, no stall, against run A's 33
+  runs with three cut-offs.
 
 Both runs opened their PR within half an hour; the time, like the tokens, went
 into what followed ([report § How long the runs took](token-usage/report.md#how-long-the-runs-took)).
@@ -222,10 +241,11 @@ B is still the better fix on every case measured, and the maintainer judged both
 regressions not must-fix
 ([report § The two deliveries compared](token-usage/report.md#the-two-deliveries-compared)).
 The point stands regardless: **fewer rounds is a saving only when the
-reviewers still reach the platform and edge cases the change touches.** The
-miss came from the shorter loop, not from the fresh context: run A found the
-case in its seventh round, on a context of over 800k. Proposal 9 is the
-control it calls for. This is
+reviewers still reach the platform and edge cases the change touches.** What
+was observed is only that run B's five rounds did not raise the delete-pending
+case and run A's seventh did; whether the fewer rounds or the fresh session's
+narrower input missed it, one run cannot separate. Proposal 9 addresses both.
+This is
 why link 5 of the chain exists. Token spend is on the list of effort proxies
 the code-abundance record says to retire
 ([§ 2.4](research-code-abundance-goals-and-values.md#24-goodhart-applied)), and
@@ -247,9 +267,9 @@ times the saving run B made against run A
 They repay only across later deliveries, which one comparison cannot show.
 
 **The work did not apply its own thesis.** Measurement, analysis and experiment
-setup together cost as much as run A itself. Run A's monitoring and analysis session ran nine hours to a
-945k context without a compaction, and no session in the preparation window
-compacted at all. Knowing that cost is carried context did not make the
+setup together cost as much as run A itself. Run A's monitoring and analysis
+session reached a 945k context without a compaction, and no session in the
+preparation window compacted at all. Knowing that cost is carried context did not make the
 investigating sessions carry less; only a control would have.
 
 ## 6. Proposals
@@ -307,16 +327,16 @@ reached. This is how a cheaper loop is kept from becoming a shallower one.
 
 ## Appendix: remote-store as a worked example
 
-**Seven controls are on master, each its own PR, each acting on every delivery
-without anyone remembering to use it.** The authoritative text of each lives
+**Seven controls are on master through the PRs listed, each acting on every
+delivery without anyone remembering to use it.** The authoritative text of each lives
 where the table points; it is not restated here.
 
 | Control | Where it lives | PR | Measured on its own |
 | --- | --- | --- | --- |
-| Orient before planning: a verdict per cluster of related open items, a scope recommended before the plan | [`/ship` § Orient](../../.claude/skills/ship/SKILL.md#orient), [`CLAUDE.md` § Backlog](../../CLAUDE.md#backlog) | #1103 | only inside run B: 7.4% of the run, no re-plan |
+| Orient before planning: a verdict per cluster of related open items, a scope recommended before the plan | [`/ship` § Orient](../../.claude/skills/ship/SKILL.md#orient), [`CLAUDE.md` § Backlog](../../CLAUDE.md#backlog) | #1103 | only inside run B: 1.11 M to plan approval against run A's 0.76 M, no re-plan |
 | Handoff at the PR: the build writes `tmp/ship-handoff-<N>.md` and stops; `/ship resume <N>` reviews in a fresh session | [`/ship`](../../.claude/skills/ship/SKILL.md) | #1103 | only inside run B: round 1 at 104k context against 255k |
 | Detail only what the change owns | [`CONTENT-RULES.md` Rule 8](../CONTENT-RULES.md#change-details-what-it-changes) | #1106, #1109 | only inside run B, with rule (c): prose 35% of findings against 61% |
-| A stable local gate: one suite per machine, a per-test timeout, a 15-minute deadline on every background wait, workers capped by free memory, a port race fixed | `scripts/run_tests.py`, [`CLAUDE.md` § Parallel tests](../../CLAUDE.md#parallel-tests) | #1105, #1107, #1108 | 3 cut-offs in 85 gate runs before; none in 35 after |
+| A stable local gate: one suite per machine, a per-test timeout, a 15-minute deadline on every background wait, workers capped by free memory, a port race fixed | `scripts/run_tests.py`, [`CLAUDE.md` § Parallel tests](../../CLAUDE.md#parallel-tests) | #1105, #1107, #1108 | 3 cut-offs in 85 gate runs before; none in 35 after, 16 of them run B's |
 | A budget on process files: their total grows only by a recorded raise | `scripts/check_process_budget.py`, `sdd/process-budget.json` | #1110 | not measurable: it prevents growth |
 | A lookup tool: one backlog item or reference section by key, instead of a search and a sliced read | [`scripts/sdd_lookup.py`](../../scripts/sdd_lookup.py) | #1099 | large-file reads per working session from 11.0 to 2.3, their characters by six sevenths |
 | The Edit/Write lint hook no longer deletes an import before its first use, which forced re-edits | `.claude/hooks/` | #1095 | not measured |
@@ -331,8 +351,9 @@ own](token-usage/report.md#what-each-means-did-on-its-own)). The measurement kit
 [`token-usage/tokkit.py`](token-usage/tokkit.py) and its siblings, is the
 standing means for testing the next control the same way.
 
-**Still open.** Rule (c) passed its test and awaits adoption by an ADR with the
-clause in proposal 3 (RFC-0020 Phase 1). BK-423 is proposal 4. BK-424 fixes the
+**Still open.** Rule (c) meets every clause of its test scored so far; the
+maintainer's post-close review of #1113 is the one left, and adoption by an ADR
+with the clause in proposal 3 is RFC-0020 Phase 1. BK-423 is proposal 4. BK-424 fixes the
 measurement kit's phase dating. BK-420 re-walks the lookup tool against its
 baseline around 2026-11-08.
 

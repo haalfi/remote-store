@@ -48,10 +48,15 @@ def units(u: dict) -> float:
 
 
 def session(main: Path) -> dict:
-    """Units per git branch, dollars, calls and peak main context, over a main transcript and its subagents."""
+    """Units and dollars per git branch, calls and peak main context, over a main transcript and its subagents.
+
+    Dollars use each call's own model price, so a session that mixes models is
+    priced call by call rather than at one flat rate.
+    """
     files = [main] + sorted((main.parent / main.stem / "subagents").glob("*.jsonl"))
     by_branch: dict[str, float] = collections.defaultdict(float)
-    seen, calls, usd, peak, compactions = set(), 0, 0.0, 0, 0
+    usd_by_branch: dict[str, float] = collections.defaultdict(float)
+    seen, calls, peak, compactions = set(), 0, 0, 0
     for f in files:
         for line in f.read_text(encoding="utf-8", errors="replace").splitlines():
             try:
@@ -69,8 +74,9 @@ def session(main: Path) -> dict:
             seen.add(mid)
             x = units(u)
             calls += 1
-            by_branch[r.get("gitBranch") or "?"] += x
-            usd += x * c.PRICE.get(m.get("model") or "", c.PRICE["claude-opus-5-5"])
+            branch = r.get("gitBranch") or "?"
+            by_branch[branch] += x
+            usd_by_branch[branch] += x * c.PRICE.get(m.get("model") or "", c.PRICE["claude-opus-5-5"])
             if f == main:
                 ctx = (
                     u.get("input_tokens", 0)
@@ -78,7 +84,13 @@ def session(main: Path) -> dict:
                     + u.get("cache_creation_input_tokens", 0)
                 )
                 peak = max(peak, ctx)
-    return {"by_branch": by_branch, "calls": calls, "usd": usd, "peak_ctx": peak, "compactions": compactions}
+    return {
+        "by_branch": by_branch,
+        "usd_by_branch": usd_by_branch,
+        "calls": calls,
+        "peak_ctx": peak,
+        "compactions": compactions,
+    }
 
 
 def first_ts(path: Path) -> str | None:
@@ -118,6 +130,7 @@ def main(argv=None) -> int:
             rows.append((p.stem, s, p))
 
     by_class: dict[str, float] = collections.defaultdict(float)
+    usd_by_class: dict[str, float] = collections.defaultdict(float)
     by_pr: dict = collections.defaultdict(lambda: {"units": 0.0, "classes": set(), "sessions": 0})
     for sid, s, _ in rows:
         e = cmap[sid]
@@ -125,6 +138,7 @@ def main(argv=None) -> int:
             o = e.get("branches", {}).get(br, {})
             cls, pr = o.get("class", e["class"]), o.get("pr", e.get("pr"))
             by_class[cls] += u
+            usd_by_class[cls] += s["usd_by_branch"][br]
             if pr:
                 by_pr[pr]["units"] += u
                 by_pr[pr]["classes"].add(cls)
@@ -132,9 +146,9 @@ def main(argv=None) -> int:
             if pr:
                 by_pr[pr]["sessions"] += 1
 
-    rate = c.PRICE["claude-opus-5-5"]
     total = sum(by_class.values())
     prep = by_class["a"] + by_class["b"] + by_class["c"]
+    prep_usd = usd_by_class["a"] + usd_by_class["b"] + usd_by_class["c"]
     top = sorted(rows, key=lambda r: -sum(r[1]["by_branch"].values()))[:5]
     payload = {
         "window": {"since": args.since, "until": args.until},
@@ -142,9 +156,9 @@ def main(argv=None) -> int:
         "calls": sum(s["calls"] for _, s, _ in rows),
         "sessions_compacted": sum(1 for _, s, _ in rows if s["compactions"]),
         "units_m_by_class": {k: round(by_class[k] / 1e6, 2) for k in "abcd"},
-        "usd_by_class": {k: round(by_class[k] * rate, 2) for k in "abcd"},
+        "usd_by_class": {k: round(usd_by_class[k], 2) for k in "abcd"},
         "preparation_units_m": round(prep / 1e6, 2),
-        "preparation_usd": round(prep * rate, 2),
+        "preparation_usd": round(prep_usd, 2),
         "all_units_m": round(total / 1e6, 2),
         "by_pr": {
             str(pr): {

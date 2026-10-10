@@ -173,10 +173,11 @@ for name in ("list_files(recursive)", "list_files(recursive,max_depth=5)"):
             list(it)
             tally["ok"] += 1
         except StopIteration:
-            go.set()
             tally["ok"] += 1
         except Exception as exc:  # noqa: BLE001
             tally[f"{type(exc).__name__}: {getattr(exc, 'path', '')}"] += 1
+        finally:
+            go.set()  # every outcome releases the killer, or join() waits forever
         t.join()
         shutil.rmtree(rroot, ignore_errors=True)
     print(f"   [P2] {name:36s} N={N} -> {dict(tally)}")

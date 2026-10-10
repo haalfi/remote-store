@@ -388,9 +388,12 @@ and [run_a_final_gates].
 
 ## Run B baseline: run A's route 2
 
-**Run B has route 2's scope, so route 2's figures are recorded here for the
-comparison: six rounds, 28.19 M units from the re-plan on, and 49 findings, of
-which a fix-commit classifier labels 30 prose and a hand reading 37.** The
+**Route 2 shipped `LocalBackend`'s listing methods, the scope RFC-0020 compares
+run B with when run B's orient picks those methods, so its figures are recorded
+here: six rounds, 28.19 M units from the re-plan on, and 49 findings, of which a
+fix-commit classifier labels 30 prose and a hand reading 37.** Run B picked
+those methods and also fixed the recursive walks route 2 deferred
+(§ Run B). The
 rounds are review states, not submissions: PR #1093 has 88 review submissions
 over 13 rounds [pr_1093_rounds: `submissions`, `routes`]. Context and units are
 from [run_a_route2], findings from [pr_1093_rounds].
@@ -492,8 +495,8 @@ row for each round is in § Run B baseline. The loop cost 12.13 M against route
   items sharing BE-021 through `backlog-find` and `backlog-show`, recorded a
   verdict per cluster, and fixed every branch of the three listing methods, the
   recursive walks included. Route 2 had left those walks to a follow-up.
-  Orient cost 1.11 M against run A's 0.4% of 59.3 M, about 0.24 M
-  [run_b_plan: `units_m`; run_a_final: `phases`, `units_m`], and no re-plan
+  Orient and plan, both cut at plan approval, took 44 calls and 1.11 M units
+  against run A's 34 calls and 0.76 M [run_b_plan; run_a_plan], and no re-plan
   over scope followed.
 - **The handoff held context down.** Round 1 started at 104k against run A's
   255k; route 2 reached 113k only through a compaction [run_b_route:
@@ -501,8 +504,8 @@ row for each round is in § Run B baseline. The loop cost 12.13 M against route
 - **The loop still made its own work.** Round 3's fix (a subfolder deleted
   mid-walk raises `NotFound`) caused four of round 4's seven findings: it broke
   recursive listings over a dangling Windows junction. `/ship`'s divergence
-  check fired at round 4 and the fix was reverted. Run A reached the same kind
-  of re-plan after round 7. Items the delivery filed during the loop, BUG-318
+  check fired at round 4 and the fix was reverted; run A's re-plan after round 7
+  narrowed its whole scope instead. Items the delivery filed during the loop, BUG-318
   and BUG-319, drew three of rounds 3 and 5's eight findings.
 - **Fewer findings, each dearer.** Prose was 35% of findings against route 2's
   61% [pr_1113_rounds: `routes`]. Per finding the loop cost 0.71 M units
@@ -516,10 +519,11 @@ row for each round is in § Run B baseline. The loop cost 12.13 M against route
 
 ### Rule (c) against the decision rule
 
-**Rule (c) fired in rounds 2 to 5, no check-closed fix was found false
-afterwards, and the run closed shorter and cheaper than route 2, so it passes
-the decision rule. Only round 2 closed on check-closed prose alone, and the
-shorter loop missed a regression run A's longer one had found.** Eleven review replies close a finding on a recorded check: 1,
+**Rule (c) fired in rounds 2 to 5, no check-closed fix was found false in a
+later round, and the run closed shorter and cheaper than route 2, so it meets
+every clause scored so far. The clause on the maintainer's post-close review
+stays open; only round 2 closed on check-closed prose alone, and the shorter
+loop missed a regression run A's longer one had found.** Eleven review replies close a finding on a recorded check: 1,
 2, 4 and 4 in rounds 2 to 5 (`gh api repos/haalfi/remote-store/pulls/1113/comments`,
 replies matching `check-closed|Closed on recorded checks`).
 
@@ -532,7 +536,7 @@ replies matching `check-closed|Closed on recorded checks`).
 | Fails: a check-closed prose fix proves false later | Not so far. `git blame` at each later head puts round 4's migration-note finding on lines round 3's code fix wrote, not on round 2's check-closed lines; rounds 4 and 5 have no later round |
 | Fails: a reply names no check, or one not run | Does not apply; but see below |
 | Run fails: units not below 28.19 M | Does not apply: 15.0 M |
-| Run fails: a must-fix defect run A's PR did not have | Does not apply, on the maintainer's call: #1113 has two regressions #1093 avoids, both narrow and both ending in a typed error, which #1113 fixes or documents before merging (§ The two deliveries compared) |
+| Run fails: a must-fix defect run A's PR did not have | Does not apply, on the maintainer's call: #1113 has two regressions #1093 avoids, both narrow and both ending in a typed error, and they are open follow-ups on #1113 (§ The two deliveries compared) |
 
 **The decision rule lacks a clause run B needed.** Three of the eleven checks
 were run but could not have shown their claim false: `gen-backlogid-check`
@@ -635,7 +639,7 @@ before-and-after observations, not controlled comparisons.
 | MEMORY.md trim | 13,651 characters in a `/rvw-pr` session's instructions; first call 47.8k tokens | 4,680 characters; first call 44.3k | [means_effects: `prefix`, `rvw-pr`] |
 | Synced claude.ai skills off | the rest of a `/rvw-pr` first call, instruction files subtracted: 35.1k | 35.7k, then 35.0k | [means_effects: `prefix`, `rest_ctx_median`] |
 | Lookup tool (#1099) | 18 working sessions: 16 read the large process files, 198 reads, 547k result characters, 11.0 reads per session | 20 sessions: 10 read them, 46 reads, 88k characters, 2.3 per session | [means_effects: `lookup`] |
-| Stable gate (#1105, #1108) | 85 gate runs: 3 cut off; idle stalls of 37, 35 and 22 minutes | 35 runs: none cut off; one 25-minute stall | [means_effects: `gate`] |
+| Stable gate (#1105, #1108) | 85 gate runs: 3 cut off; idle stalls of 37, 35 and 22 minutes | 35 runs, 16 of them run B's: none cut off; one 25-minute stall | [means_effects: `gate`], [run_b_gates: `gate_runs`] |
 
 - **The memory trim shows where it was aimed.** `/rvw-pr` sessions open with
   nearly the same prompt, so their first call isolates the instruction files:
@@ -653,9 +657,10 @@ before-and-after observations, not controlled comparisons.
   per working session fell by four fifths, and the characters they brought in
   by six sevenths. The two periods hold different work, so BK-420's re-walk
   against its own baseline remains the measurement of record.
-- **The gate has had no cut-off since its lock.** The one stall after it is the
-  session that monitored run B, waiting on purpose for the run's events, not a
-  gate. A passing `hatch run all` took about the same time before and after
+- **The gate has had no cut-off since its lock.** Sixteen of the 35 runs after
+  it are run B's, so outside run B the record is 19 runs with no cut-off. The
+  one stall after it is the session that monitored run B, waiting on purpose
+  for the run's events, not a gate. A passing `hatch run all` took about the same time before and after
   (199 and 193 s median): the gate means target reliability, not speed.
 - **Orient, the handoff and claim discipline act inside a delivery**, so only a
   delivery measures them: § Run B for the three together.
@@ -688,8 +693,8 @@ holding its figures.
 **What moved it**
 
 - **Orient before planning.** Reading the items that share a spec ID, and
-  recording a verdict per cluster, cost run B 7.4% of its units and avoided the
-  re-plan that split run A into two routes (§ Run B).
+  recording a verdict per cluster, cost run B 7.4% of its units, and no re-plan
+  over scope followed; run A re-planned its scope after seven rounds (§ Run B).
 - **A fresh session for the review loop.** The handoff kept every round's
   starting context below route 2's; a compaction resets context once, and it
   regrows about 100k per round (§ Run A final, § Run B).
@@ -764,6 +769,7 @@ siblings (`_common.default_transcripts`).
 | `run_a_orient_check.json` | `orient_check.py --item BUG-280 --rev ff00a1dd7` | `BACKLOG.md` at run A's base commit, run A's transcript |
 | `run_a_route2.json` | `route_baseline.py --route-start-call 409 --checkpoint 2026-10-09T13:35:51Z --name run_a_route2` | run A's `tokkit.py` snapshot (`--snapshot`) |
 | `pr_1093_rounds.json` | `pr_rounds.py --pr 1093 --route-start cdcaa35c6` | GitHub reviews and PR commits (cached in `--data`), the fix commits in git |
+| `run_a_plan.json` | `tokkit.py report --json --until 2026-10-09T09:11:21Z` (run A's plan approval) | run A's main transcript |
 | `run_b_final.json`, `run_b_plan.json`, `run_b_pr_open.json` | `tokkit.py report --json`, with `--until 2026-10-10T13:58:24Z` (plan approval) and `--until 2026-10-10T14:08:33Z` (PR creation) for the two cuts | run B's build session; the full report adds its resumed session through the PR link |
 | `run_b_route.json` | `route_baseline.py --route-start-call 1 --name run_b_route` | run B's resumed session's `tokkit.py` snapshot |
 | `pr_1113_rounds.json` | `pr_rounds.py --pr 1113` | GitHub reviews and PR commits (cached in `--data`), the fix commits in git |

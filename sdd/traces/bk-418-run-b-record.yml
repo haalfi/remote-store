@@ -18,6 +18,7 @@ expected_ripples:
   - sdd/BACKLOG.md
 surprising_ripples:
   - sdd/research/token-usage/prep_cost.py
+  - sdd/research/token-usage/results/run_a_plan.json
 discovery_followups:
   - BK-424
 decisions:
