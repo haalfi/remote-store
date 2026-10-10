@@ -10,20 +10,19 @@
   "transcripts": 34,
   "units_m": 59.3,
   "main_calls": 795,
-  "subagent_units_m": 17.62,
-  "subagent_units_in_rounds_m": 17.62
+  "subagent_units_m": 17.62
  },
  "route_start_call": 409,
  "route_start_ts": "2026-10-09T13:35:20.685Z",
  "route": {
   "units_m": 28.19,
   "main_units_m": 20.22,
-  "subagent_units_m": 7.97,
+  "subagent_units_m": 7.96,
   "before_first_round": {
    "calls": 86,
    "units_m": 5.56
   },
-  "loop_units_m": 22.63,
+  "loop_units_m": 22.62,
   "rounds": [
    {
     "round": 1,
@@ -75,12 +74,14 @@
    }
   ]
  },
- "earlier_route_units_m": 31.11,
+ "earlier_route_units_m": 31.12,
  "checkpoint": {
   "until": "2026-10-09T13:35:51Z",
   "units_m": 31.5,
   "after_units_m": 27.8,
   "first_main_call_after": 413,
+  "route_minus_after_m": 0.38,
+  "route_main_units_before_cut_m": 0.38,
   "earlier_subagent_units_after_m": 0.0
  },
  "derivation": "route_baseline.py --snapshot <snapshots>/<sid> --route-start-call 409 --checkpoint 2026-10-09T13:35:51Z --name run_a_route2"

@@ -35,8 +35,10 @@ phases:
         read_type: reference
         extract: >-
           rounds_of gives per spawn the members, main context, main units to
-          the next spawn and the spawned subagents' units; its subagent total
-          equals the run's (17.62 M both), so a route split can reuse it
+          the next spawn and the spawned subagents' units, each rounded to
+          0.01 M. Summing those rounded values put the route-2 loop at
+          22.63 M; the review of PR 1104 caught it, and route totals now sum
+          unrounded call units (22.62 M)
       - file: sdd/research/token-usage/rounds.py
         section: "(whole)"
         read_type: reference

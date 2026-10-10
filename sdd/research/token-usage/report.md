@@ -376,12 +376,19 @@ and [run_a_final_gates].
 
 ## Run B baseline: run A's route 2
 
-**Run B has route 2's scope, so route 2 is what it is compared with: six
-rounds, 28.19 M units from the re-plan on, and 49 findings, of which a
-fix-commit classifier labels 30 prose and a hand reading 37.** The rounds are
-review states, not submissions: PR #1093 has 88 review submissions over 13
-rounds [pr_1093_rounds: `submissions`, `routes`]. Context and units are from
-[run_a_route2], findings from [pr_1093_rounds].
+**Run B has route 2's scope, so route 2's figures are recorded here for the
+comparison: six rounds, 28.19 M units from the re-plan on, and 49 findings, of
+which a fix-commit classifier labels 30 prose and a hand reading 37.** The
+rounds are review states, not submissions: PR #1093 has 88 review submissions
+over 13 rounds [pr_1093_rounds: `submissions`, `routes`]. Context and units are
+from [run_a_route2], findings from [pr_1093_rounds].
+
+RFC-0020's decision rule, written before this baseline existed, still compares
+run B with run A's first route (31.5 M in total; 255k, 304k and 355k context at
+rounds 1 to 3), and its metrics table lists findings by round as not yet
+derived. Which route each check compares against is settled when RFC-0020 is
+rewritten, after the other BK-418 changes for run B have merged; until then the
+RFC's rule is the one in force.
 
 | Round | Members | Main context at start | Main units | Subagent units | Findings | Prose (classifier) |
 | --- | ---: | ---: | ---: | ---: | ---: | ---: |
@@ -397,14 +404,16 @@ The closing round's eleventh finding has no fix (the CHANGELOG stub, kept by the
 maintainer's call), so its classes sum to 10.
 
 - **Where route 2 starts.** Call 408 asks the maintainer how to proceed after
-  round 7; call 409 enters plan mode, so route 2 is call 409 on, plus the
-  subagents its rounds spawned. It cost 28.19 M units: 5.56 M re-planning and
-  re-building over 86 calls before its first round, and 22.63 M in the loop
-  [run_a_route2: `route`]. The round-7 checkpoint cut (`--until
-  2026-10-09T13:35:51Z`) leaves 27.80 M after it [run_a_route2: `checkpoint`];
-  the 0.38 M between the two is calls 409 to 412, which ran before the cut,
-  since no route-1 subagent ran past it [run_a_route2:
-  `checkpoint.earlier_subagent_units_after_m`].
+  round 7; call 409 enters plan mode, so route 2 is call 409 on, plus every
+  subagent that began after it. It cost 28.19 M units: 5.56 M re-planning and
+  re-building over 86 calls before its first round, and 22.62 M in the loop
+  [run_a_route2: `route`]. Route totals are summed from unrounded call units,
+  so they can differ by 0.01 M from sums of the rounded figures shown. The
+  round-7 checkpoint cut (`--until 2026-10-09T13:35:51Z`) leaves 27.80 M after
+  it. The route exceeds that by 0.38 M, all of it calls 409 to 412, which ran
+  before the cut; no route-1 subagent ran past it [run_a_route2:
+  `checkpoint.route_minus_after_m`, `route_main_units_before_cut_m`,
+  `earlier_subagent_units_after_m`].
 - **Rounds and routes.** `pr_rounds.py` groups findings by the head commit they
   were posted against, and puts a round in route 2 when that head descends from
   `cdcaa35c6`. Route 2's findings per round, 3, 4, 7, 9, 15 and 11, match the

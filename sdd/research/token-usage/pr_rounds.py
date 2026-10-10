@@ -33,7 +33,10 @@ rounds several times over. This script groups instead:
   source file.
 
 Commits are read from the local git object store; one a rebase dropped is
-fetched from ``origin`` by its full SHA. The fetched review data is cached in
+fetched from ``origin`` by its full SHA. Reviews are paged; more than 250
+commits or 100 comments on one review stops the script rather than cutting the
+result short, and so does a commit lookup failing for any reason but "no such
+commit". The fetched review data is cached in
 ``--data/pr_<N>_reviews.json``. Writes ``results/pr_<N>_rounds.json``.
 
     python pr_rounds.py --pr 1093 --route-start cdcaa35c6
@@ -51,10 +54,11 @@ from pathlib import Path, PurePosixPath
 import _common as c
 
 Q = (
-    "query($owner:String!,$name:String!,$n:Int!){repository(owner:$owner,name:$name){pullRequest(number:$n){"
-    "commits(first:250){nodes{commit{oid committedDate}}}"
-    "reviews(first:100){nodes{submittedAt body author{login __typename} commit{oid}"
-    "comments(first:100){nodes{id path createdAt body author{login __typename} replyTo{id} originalCommit{oid}}}}}}}}"
+    "query($owner:String!,$name:String!,$n:Int!,$after:String){repository(owner:$owner,name:$name){pullRequest(number:$n){"
+    "commits(first:250){totalCount nodes{commit{oid committedDate}}}"
+    "reviews(first:100,after:$after){pageInfo{hasNextPage endCursor} nodes{submittedAt body author{login __typename}"
+    " commit{oid} comments(first:100){totalCount nodes{id path createdAt body author{login __typename}"
+    " replyTo{id} originalCommit{oid}}}}}}}}"
 )
 SHA = re.compile(r"\b[0-9a-f]{7,40}\b")
 COMMENT = {".sh": "#", ".toml": "#", ".yml": "#", ".yaml": "#", ".ps1": "#", ".dfy": "//", ".tla": "\\*"}
@@ -74,8 +78,24 @@ def fetch(pr: int, repo: str, cache: Path) -> dict:
     if cache.exists():
         return json.loads(cache.read_text(encoding="utf-8"))
     owner, name = repo.split("/")
-    out = gh("api", "graphql", "-f", f"query={Q}", "-F", f"owner={owner}", "-F", f"name={name}", "-F", f"n={pr}")
-    data = json.loads(out)["data"]["repository"]["pullRequest"]
+    data: dict = {"reviews": {"nodes": []}}
+    after: list[str] = []
+    while True:  # reviews page by cursor; a capped count is an error, never a short result
+        args = ["api", "graphql", "-f", f"query={Q}", "-F", f"owner={owner}", "-F", f"name={name}", "-F", f"n={pr}"]
+        page = json.loads(gh(*args, *after))["data"]["repository"]["pullRequest"]
+        data["commits"] = page["commits"]
+        data["reviews"]["nodes"] += page["reviews"]["nodes"]
+        if not page["reviews"]["pageInfo"]["hasNextPage"]:
+            break
+        after = ["-f", f"after={page['reviews']['pageInfo']['endCursor']}"]
+    over = [f"commits {data['commits']['totalCount']} > 250"] if data["commits"]["totalCount"] > 250 else []
+    over += [
+        f"review at {r['submittedAt']}: {r['comments']['totalCount']} comments > 100"
+        for r in data["reviews"]["nodes"]
+        if r["comments"]["totalCount"] > len(r["comments"]["nodes"])
+    ]
+    if over:
+        raise SystemExit(f"PR #{pr} exceeds a fetch cap: {'; '.join(over)}")
     cache.parent.mkdir(parents=True, exist_ok=True)
     cache.write_text(json.dumps(data), encoding="utf-8")
     return data
@@ -105,7 +125,10 @@ class Commits:
                 ["gh", "api", f"repos/{self.repo}/commits/{abbrev}", "--jq", "[.sha, .commit.committer.date]"],
                 capture_output=True, text=True, encoding="utf-8",
             )  # fmt: skip
-            self.cache["commit"][abbrev] = json.loads(r.stdout) if r.returncode == 0 and r.stdout.strip() else None
+            if r.returncode and not re.search(r"\(HTTP (404|422)\)", r.stderr):
+                # rate limit, network, auth: fail rather than cache a real commit as "none"
+                raise SystemExit(f"commit lookup {abbrev} failed: {r.stderr.strip()}")
+            self.cache["commit"][abbrev] = json.loads(r.stdout) if r.returncode == 0 else None
         got = self.cache["commit"][abbrev]
         if not got:
             return None
