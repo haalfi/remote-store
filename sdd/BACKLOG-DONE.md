@@ -298,6 +298,17 @@ if evidence changes; these are retired.
 
 ## Unreleased
 
+- [x] **BK-422 — The process files agents re-read grew with nothing pricing the growth**
+  spec: — · effort: S · audience: contributor.tooling, contributor.process
+  `scripts/check_process_budget.py` holds the total size of `CLAUDE.md`, the
+  output styles, the skills, the agent definitions, `CLAUDE-REFERENCE.md` and
+  the trace schema to
+  `sdd/process-budget.json`: growth needs a raise recorded with an item and a
+  reason, and a cut is locked in. In `preflight` and `docs-gate`; `ci.yml`'s
+  DOCS_PAT now routes those paths to the docs job. Tests:
+  `tests/scripts/test_check_process_budget.py`. Trace:
+  [bk-422](traces/bk-422-process-budget.yml).
+
 - [x] **BK-421 — The local gate's default worker count ignores free memory, so a box short on commit crashes every worker at startup**
   spec: — · effort: S · audience: contributor.tooling, infra.test
   On 2026-10-04, 14 workers with 7.9 GB of free commit all died with

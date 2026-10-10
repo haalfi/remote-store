@@ -30,6 +30,16 @@ any other wording here:** under the plan, run B starts from master with P2,
 holding only the prose-closing rule that overrides ADR clauses. Rewriting this
 RFC to the plan is open under BK-418.]
 
+[2026-10-10, BK-422: `scripts/check_process_budget.py` lands on master before
+run B, by the maintainer's decision, and fails any growth of the process files
+(`ship/SKILL.md` among them) that `sdd/process-budget.json` does not record as a
+raise. So the variant commit, rebased onto it, also runs
+`python scripts/check_process_budget.py --raise --item BK-418 --reason "<what the variant adds>"`
+and commits the budget file beside `ship/SKILL.md`. The gate changes no `/ship`
+step: it is part of run B's environment, a confound like BK-414's tool, not an
+intervention. BK-423, a quantifier rule at authoring time, stays out of run B
+because it acts on the findings the prose-closing rule targets.]
+
 ## Summary
 
 **A `/ship` delivery spends most of its tokens after the PR opens, because

@@ -991,3 +991,11 @@ sessions work is measured before it becomes process.
   78 over 37 transcripts before it. Re-walk the transcripts about 30 days after
   #1099 merges, by [BK-414's dossier](backlog/bk-414-sdd-lookup.md) § Acceptance
   measure. Open decision: keep, change or remove the pointers, by that result.
+
+- [ ] **BK-423 — A universal quantifier in process prose owes no enumeration until a reviewer refutes it**
+  spec: — · effort: S · audience: contributor.process
+  Principle 9 makes a figure name its derivation before it is written; "every",
+  "all" and "never" owe theirs only after a finding, under `/fix-pr` § Rules'
+  quantifier rule. SCOPE findings, overstated quantifiers and missing cases, are
+  91 of 321 long-loop prose findings ([research record](research/token-usage/report.md) § 5).
+  Open decision: extend principle 9 to quantifiers, after RFC-0020's run B is scored.
