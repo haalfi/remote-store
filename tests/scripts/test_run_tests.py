@@ -1,14 +1,20 @@
-"""Unit tests for scripts/run_tests.py (BK-277).
+"""Unit tests for scripts/run_tests.py (BK-277, BK-419).
 
 Pins the resource-bounded worker formula and the explicit-``-n`` passthrough so
 a future edit cannot silently restore ``-n auto`` behaviour or break the
-``RS_TEST_WORKERS`` override.
+``RS_TEST_WORKERS`` override; and the suite lock and per-test timeout, the lock
+against real separate processes, because what it guards against is another
+process.
 """
 
 from __future__ import annotations
 
 import importlib.util
+import io
+import os
+import subprocess
 import sys
+import time
 from pathlib import Path
 
 import pytest
@@ -26,6 +32,7 @@ def _load_module():
     return module
 
 
+_REAL_RUN = subprocess.run
 _mod = _load_module()
 compute_workers = _mod.compute_workers
 _has_explicit_n = _mod._has_explicit_n
@@ -91,6 +98,22 @@ def test_no_explicit_n(args: list[str]) -> None:
     assert _has_explicit_n(args) is False
 
 
+@pytest.fixture(autouse=True)
+def lock_file(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> Path:
+    """Point every test at its own lock file, never the machine-wide one.
+
+    The suite running these tests holds the real lock, and exports
+    ``RS_TEST_LOCK_HELD`` to its workers; both are removed here so ``main()``
+    exercises the locking path against a file no other test shares.
+    """
+    lock = tmp_path / "suite.lock"
+    monkeypatch.setenv("RS_TEST_LOCK_FILE", str(lock))
+    monkeypatch.delenv("RS_TEST_LOCK_HELD", raising=False)
+    monkeypatch.delenv("RS_TEST_LOCK_WAIT", raising=False)
+    monkeypatch.delenv("RS_TEST_TIMEOUT", raising=False)
+    return lock
+
+
 def _stub_run(monkeypatch: pytest.MonkeyPatch, cpu_count: int = 8) -> dict:
     """Stub subprocess.run / os.cpu_count / RS_TEST_WORKERS; capture the argv."""
     captured: dict = {}
@@ -98,9 +121,10 @@ def _stub_run(monkeypatch: pytest.MonkeyPatch, cpu_count: int = 8) -> dict:
     class _Result:
         returncode = 7
 
-    def _fake_run(argv, check):  # type: ignore[no-untyped-def]  # noqa: ANN001, ANN202
+    def _fake_run(argv, check, env=None):  # type: ignore[no-untyped-def]  # noqa: ANN001, ANN202
         captured["argv"] = argv
         captured["check"] = check
+        captured["env"] = env
         return _Result()
 
     monkeypatch.setattr(_mod.subprocess, "run", _fake_run)
@@ -118,7 +142,8 @@ def test_main_injects_bounded_workers_and_forwards(monkeypatch: pytest.MonkeyPat
     argv = captured["argv"]
     assert argv[:3] == [_mod.sys.executable, "-m", "pytest"]
     assert argv[3:5] == ["-n", "5"]  # floor(8*0.75) - 1
-    assert argv[5:] == ["-p", "no:benchmark", "tests/x"]
+    assert argv[5] == "--timeout=300"  # local per-test default
+    assert argv[6:] == ["-p", "no:benchmark", "tests/x"]
     assert captured["check"] is False
 
 
@@ -128,7 +153,7 @@ def test_main_respects_explicit_n(monkeypatch: pytest.MonkeyPatch) -> None:
     monkeypatch.setattr(_mod.sys, "argv", ["run_tests.py", "-n", "2", "tests/x"])
     main()
     argv = captured["argv"]
-    assert argv == [_mod.sys.executable, "-m", "pytest", "-n", "2", "tests/x"]
+    assert argv == [_mod.sys.executable, "-m", "pytest", "--timeout=300", "-n", "2", "tests/x"]
     assert argv.count("-n") == 1  # no second -n injected
 
 
@@ -139,3 +164,253 @@ def test_main_invalid_override_returns_2(monkeypatch: pytest.MonkeyPatch) -> Non
     monkeypatch.setattr(_mod.sys, "argv", ["run_tests.py"])
     assert main() == 2
     assert "argv" not in captured  # subprocess.run never called
+
+
+# -- Per-test timeout (BK-419) ---------------------------------------------
+
+
+@pytest.mark.parametrize("args", [["--timeout=60"], ["--timeout", "60"], ["-p", "x", "--timeout=0"]])
+def test_main_respects_explicit_timeout(monkeypatch: pytest.MonkeyPatch, args: list[str]) -> None:
+    """A caller's own --timeout wins; the launcher adds no second one."""
+    captured = _stub_run(monkeypatch)
+    monkeypatch.setattr(_mod.sys, "argv", ["run_tests.py", *args])
+    main()
+    timeouts = [a for a in captured["argv"] if a.startswith("--timeout")]
+    assert timeouts == [a for a in args if a.startswith("--timeout")]
+
+
+@pytest.mark.parametrize(("raw", "expected"), [("45", "--timeout=45"), (" 120 ", "--timeout=120")])
+def test_timeout_env_override(monkeypatch: pytest.MonkeyPatch, raw: str, expected: str) -> None:
+    captured = _stub_run(monkeypatch)
+    monkeypatch.setenv("RS_TEST_TIMEOUT", raw)
+    monkeypatch.setattr(_mod.sys, "argv", ["run_tests.py"])
+    main()
+    assert [a for a in captured["argv"] if a.startswith("--timeout")] == [expected]
+
+
+def test_timeout_env_zero_disables(monkeypatch: pytest.MonkeyPatch) -> None:
+    captured = _stub_run(monkeypatch)
+    monkeypatch.setenv("RS_TEST_TIMEOUT", "0")
+    monkeypatch.setattr(_mod.sys, "argv", ["run_tests.py"])
+    main()
+    assert not any(a.startswith("--timeout") for a in captured["argv"])
+
+
+@pytest.mark.parametrize("name", ["RS_TEST_TIMEOUT", "RS_TEST_LOCK_WAIT"])
+@pytest.mark.parametrize("raw", ["abc", "-1", "1.5x"])
+def test_invalid_seconds_env_returns_2(monkeypatch: pytest.MonkeyPatch, name: str, raw: str) -> None:
+    captured = _stub_run(monkeypatch)
+    monkeypatch.setenv(name, raw)
+    monkeypatch.setattr(_mod.sys, "argv", ["run_tests.py"])
+    assert main() == 2
+    assert "argv" not in captured
+
+
+@pytest.mark.os_sensitive
+def test_timeout_reaches_a_hung_test(tmp_path: Path) -> None:
+    """End to end: the injected timeout ends a hung test and names it.
+
+    Runs the real launcher on a one-test file that sleeps past a 2 s timeout,
+    serially, so the outcome does not depend on xdist's crash reporting.
+    """
+    test_file = tmp_path / "test_hang.py"
+    test_file.write_text("import time\n\n\ndef test_hangs_forever():\n    time.sleep(60)\n", encoding="utf-8")
+    env = {**os.environ, "RS_TEST_TIMEOUT": "2", "RS_TEST_LOCK_FILE": str(tmp_path / "e2e.lock")}
+    env.pop("RS_TEST_LOCK_HELD", None)
+    proc = subprocess.run(
+        [sys.executable, str(_SCRIPT), "-n", "0", "-p", "no:cacheprovider", str(test_file)],
+        capture_output=True,
+        text=True,
+        env=env,
+        cwd=tmp_path,
+        timeout=50,
+        check=False,
+    )
+    out = proc.stdout + proc.stderr
+    assert proc.returncode != 0
+    assert "Timeout" in out
+    assert "test_hangs_forever" in out
+
+
+# -- Machine-wide suite lock (BK-419) --------------------------------------
+
+_HOLDER = """
+import importlib.util, sys, time
+spec = importlib.util.spec_from_file_location("run_tests", sys.argv[1])
+mod = importlib.util.module_from_spec(spec)
+spec.loader.exec_module(mod)
+lock = mod.acquire_suite_lock(mod.Path(sys.argv[2]), wait_seconds=0)
+print(f"LOCKED {mod.os.getpid()}" if lock else "BUSY", flush=True)
+time.sleep(float(sys.argv[3]))
+"""
+
+_PROBE = """
+import importlib.util, sys
+spec = importlib.util.spec_from_file_location("run_tests", sys.argv[1])
+mod = importlib.util.module_from_spec(spec)
+spec.loader.exec_module(mod)
+print("FREE" if mod.acquire_suite_lock(mod.Path(sys.argv[2]), wait_seconds=0) else "BUSY")
+"""
+
+
+class _Holder:
+    """A separate process holding the lock. ``pid`` is the interpreter's own pid.
+
+    ``proc.pid`` is not used: on Windows a venv's ``python.exe`` is a launcher
+    that runs the interpreter as a child, so the two pids differ.
+    """
+
+    def __init__(self, proc: subprocess.Popen[str], pid: int) -> None:
+        self.proc = proc
+        self.pid = pid
+
+
+def _start_holder(lock: Path, hold_seconds: float) -> _Holder:
+    """Start a separate process that takes *lock* and holds it for *hold_seconds*."""
+    proc = subprocess.Popen(
+        [sys.executable, "-c", _HOLDER, str(_SCRIPT), str(lock), str(hold_seconds)],
+        stdout=subprocess.PIPE,
+        text=True,
+    )
+    assert proc.stdout is not None
+    first = proc.stdout.readline().split()
+    if first[:1] != ["LOCKED"]:
+        _stop(proc)
+        pytest.fail(f"lock holder did not take the lock: {first!r}")
+    return _Holder(proc, int(first[1]))
+
+
+def _stop(target: subprocess.Popen[str] | _Holder) -> None:
+    proc = target.proc if isinstance(target, _Holder) else target
+    proc.kill()
+    proc.wait()
+    if proc.stdout is not None:
+        proc.stdout.close()
+
+
+def _probe(lock: Path) -> bool:
+    """True if a fresh process can take *lock* right now.
+
+    Calls ``_REAL_RUN``: the tests that probe have patched ``subprocess.run``.
+    """
+    out = _REAL_RUN(
+        [sys.executable, "-c", _PROBE, str(_SCRIPT), str(lock)], capture_output=True, text=True, timeout=30, check=True
+    )
+    return out.stdout.strip() == "FREE"
+
+
+@pytest.mark.os_sensitive
+def test_second_run_waits_then_gives_up_naming_the_holder(lock_file: Path) -> None:
+    holder = _start_holder(lock_file, hold_seconds=30)
+    try:
+        out = io.StringIO()
+        lock = _mod.acquire_suite_lock(lock_file, wait_seconds=1.5, poll=0.1, report_every=0.5, out=out)
+        assert lock is None
+        text = out.getvalue()
+        assert f"pid {holder.pid}" in text  # the holder is named
+        assert "waiting" in text
+        assert "gave up" in text
+    finally:
+        _stop(holder)
+
+
+@pytest.mark.os_sensitive
+def test_second_run_proceeds_once_the_holder_exits(lock_file: Path) -> None:
+    holder = _start_holder(lock_file, hold_seconds=1.0)
+    try:
+        out = io.StringIO()
+        start = time.monotonic()
+        lock = _mod.acquire_suite_lock(lock_file, wait_seconds=30, poll=0.1, out=out)
+        assert lock is not None
+        assert time.monotonic() - start < 25  # took over when the holder left, not at the bound
+        assert "waiting" in out.getvalue()
+        lock.release()
+    finally:
+        _stop(holder)
+
+
+@pytest.mark.os_sensitive
+def test_main_returns_lock_timeout_code_without_running_pytest(
+    monkeypatch: pytest.MonkeyPatch, lock_file: Path
+) -> None:
+    holder = _start_holder(lock_file, hold_seconds=30)
+    try:
+        captured = _stub_run(monkeypatch)
+        monkeypatch.setenv("RS_TEST_LOCK_WAIT", "0")
+        monkeypatch.setattr(_mod.sys, "argv", ["run_tests.py"])
+        assert main() == _mod.EXIT_LOCK_TIMEOUT
+        assert "argv" not in captured  # pytest never started
+    finally:
+        _stop(holder)
+
+
+@pytest.mark.os_sensitive
+def test_lock_of_a_killed_holder_does_not_block(lock_file: Path) -> None:
+    """A holder that dies without cleanup leaves its files behind, not its lock."""
+    holder = _start_holder(lock_file, hold_seconds=60)
+    _stop(holder)
+    assert lock_file.exists()  # the dead holder's files are still there
+    assert lock_file.with_name(lock_file.name + ".info").exists()
+    # A short wait, not zero: on Windows the venv launcher's child interpreter,
+    # which holds the lock, exits a moment after the launcher is killed.
+    lock = _mod.acquire_suite_lock(lock_file, wait_seconds=10, poll=0.1, out=io.StringIO())
+    assert lock is not None
+    lock.release()
+
+
+@pytest.mark.os_sensitive
+def test_main_holds_lock_during_run_and_exports_marker(monkeypatch: pytest.MonkeyPatch, lock_file: Path) -> None:
+    seen: dict = {}
+
+    class _Result:
+        returncode = 0
+
+    def _fake_run(argv, check, env=None):  # type: ignore[no-untyped-def]  # noqa: ANN001, ANN202
+        seen["free_during_run"] = _probe(lock_file)
+        seen["env"] = env
+        return _Result()
+
+    monkeypatch.setattr(_mod.subprocess, "run", _fake_run)
+    monkeypatch.setattr(_mod.sys, "argv", ["run_tests.py"])
+    assert main() == 0
+    assert seen["free_during_run"] is False
+    assert seen["env"]["RS_TEST_LOCK_HELD"] == str(os.getpid())
+    assert _probe(lock_file) is True  # released after a normal exit
+
+
+@pytest.mark.os_sensitive
+@pytest.mark.parametrize("exc", [KeyboardInterrupt, FileNotFoundError])
+def test_main_releases_lock_when_the_run_raises(
+    monkeypatch: pytest.MonkeyPatch, lock_file: Path, exc: type[BaseException]
+) -> None:
+    def _boom(argv, check, env=None):  # type: ignore[no-untyped-def]  # noqa: ANN001, ANN202
+        raise exc
+
+    monkeypatch.setattr(_mod.subprocess, "run", _boom)
+    monkeypatch.setattr(_mod.sys, "argv", ["run_tests.py"])
+    with pytest.raises(exc):
+        main()
+    assert _probe(lock_file) is True
+
+
+@pytest.mark.os_sensitive
+def test_nested_run_skips_the_lock(monkeypatch: pytest.MonkeyPatch, lock_file: Path) -> None:
+    """A run started inside a locked suite must not wait on its own parent."""
+    holder = _start_holder(lock_file, hold_seconds=30)
+    try:
+        captured = _stub_run(monkeypatch)
+        monkeypatch.setenv("RS_TEST_LOCK_HELD", str(holder.pid))
+        monkeypatch.setenv("RS_TEST_LOCK_WAIT", "0")
+        monkeypatch.setattr(_mod.sys, "argv", ["run_tests.py"])
+        assert main() == 7
+        assert "argv" in captured
+    finally:
+        _stop(holder)
+
+
+def test_default_lock_path_is_outside_the_checkout(monkeypatch: pytest.MonkeyPatch) -> None:
+    """Every worktree and clone must resolve the same file, so it cannot live in one."""
+    monkeypatch.delenv("RS_TEST_LOCK_FILE", raising=False)
+    path = _mod.suite_lock_path()
+    assert path.is_relative_to(Path.home())
+    assert not path.is_relative_to(_SCRIPT.parents[1])

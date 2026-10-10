@@ -1,0 +1,87 @@
+id: BK-419
+title: "A local gate run has no per-test timeout and no wait deadline, so a stalled suite stalls the session"
+trigger: >
+  In `/ship BUG-280` run A, 3 of 31 foreground `hatch run all` runs were cut off
+  at the 600 s tool limit and a backgrounded gate left the session idle for
+  37 min. Two of the cut-offs overlapped another session's full suite, and the
+  09:53 stall sat at 97% with idle xdist workers. Nothing serialised suites
+  across sessions, nothing bounded a hung test, and nothing bounded a wait on a
+  background gate.
+source_items:
+  - BK-419
+audience:
+  - contributor.tooling
+  - infra.test
+decisions:
+  - sdd/decisions/75b94481-b661-4e10-b779-f515340a3d42.jsonl
+expected_ripples:
+  - sdd/backlogid.json
+surprising_ripples:
+  # The serial sftp_docker pass of `test` / `test-cov*` called bare pytest, so a
+  # lock in the launcher alone would have left that pass unguarded; routed
+  # through the launcher with `-n 0`.
+  - pyproject.toml
+phases:
+  - id: orient
+    name: Orient
+    steps:
+      - file: sdd/backlog/bk-419-local-gate-unbounded-wait.md
+        section: "(full)"
+        read_type: gate
+        extract: "Three failure modes (stalled worker, unbounded wait, overlap); 13:07 cut-off had no overlap, so a lock alone is not enough"
+        outcome: ok
+      - file: scripts/run_tests.py
+        section: "(full)"
+        read_type: gate
+        extract: "Launcher is the single local entry point for pass 1; pass 2 is bare pytest"
+        outcome: ok
+      - file: pyproject.toml
+        section: "[tool.hatch.envs.default.scripts] test*, dev deps"
+        read_type: gate
+        extract: "`all` runs test-cov-s1 (one launcher call); test/test-cov* have a second bare-pytest pass; no pytest-timeout in dev"
+        outcome: ok
+      - file: .test_durations_pass1
+        section: "(full)"
+        read_type: reference
+        extract: "Slowest test 48 s (cassette PII sweep), next under 3 s: 300 s per-test bound leaves margin under load"
+        outcome: ok
+      - file: sdd/traces/bk-277-resource-bounded-test-runner.yml
+        section: "(full)"
+        read_type: reference
+        extract: "Predecessor's miss: a new dev plugin auto-activates in CI's inline pytest. pytest-timeout is inert without a timeout, so the launcher-only flag keeps CI unchanged"
+        outcome: ok
+      - file: sdd/CLAUDE-REFERENCE.md
+        section: "Ripple-check table / Pre-work index"
+        read_type: gate
+        extract: "Dependency row (pyproject extras; conda recipe carries no test deps); Backlog item touched row (trace, BACKLOG-DONE, backlogid.json)"
+        outcome: ok
+  - id: implement
+    name: Implement
+    steps:
+      - file: tests/scripts/test_run_tests.py
+        section: "(full)"
+        read_type: reference
+        extract: "Lock tests against real separate processes (holder, probe), each seen failing before the implementation; timeout tested end to end on a hung test"
+        outcome: ok
+      - file: .claude/skills/ship/SKILL.md
+        section: "Close each round (on branch bk-418-ship-variant)"
+        read_type: reference
+        extract: "15-minute background-wait deadline wording, generalised into CLAUDE.md § Parallel tests without the /ship-specific report count"
+        outcome: ok
+  - id: verify
+    name: Verify
+    steps:
+      - file: tests/scripts/test_run_tests.py
+        section: "(full)"
+        read_type: verify
+        extract: >-
+          54 passed on Windows (msvcrt) and in Docker python:3.11-slim (fcntl).
+          First Windows run showed a killed holder's lock still held for a moment:
+          the venv python.exe is a launcher whose child interpreter holds the lock
+          and exits shortly after; the test waits up to 10 s instead of 0
+        outcome: ok
+      - file: sdd/CLAUDE-REFERENCE.md
+        section: "Ripple-check table / Detailed checklist"
+        read_type: verify
+        extract: "contributor.tooling + infra.test: no CHANGELOG; BACKLOG-DONE entry links dossier and trace; backlogid.json regenerated"
+        outcome: ok

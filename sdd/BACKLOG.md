@@ -926,15 +926,6 @@ coverage floor.
   run it (RFC-0019 Open Questions 4, keeps this item open).
   Detail: [dossier](backlog/bk-404-selected-tests-hatch-target.md)
 
-- [ ] **BK-419 — A local gate run has no per-test timeout and no wait deadline, so a stalled suite stalls the session**
-  spec: — · effort: M · audience: contributor.tooling, infra.test
-  In `/ship BUG-280` run A, 31 foreground `hatch run all` runs had a median of 194 s, 3 were
-  cut off at the 600 s tool limit, and a backgrounded gate left the session idle 37 min
-  ([`run_a_final_gates.json`](research/token-usage/results/run_a_final_gates.json)). Two
-  cut-offs overlapped another session's full suite and one did not, so overlap is one cause,
-  not the only one. Open decision: suite lock, per-test timeout, wait deadline, or all three.
-  Detail: [dossier](backlog/bk-419-local-gate-unbounded-wait.md)
-
 - [ ] **ID-266 — Every in-progress PR push runs the full pre-merge CI gate**
   spec: — · effort: L · audience: infra.ci, contributor.process
   `ci.yml` runs the whole gate on every PR push, including each `/ship` round
