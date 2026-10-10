@@ -34,6 +34,34 @@ not a proven one. Since BK-419, a local run through `scripts/run_tests.py` ends
 such a hang at its per-test timeout (fixture setup counts toward it). CI runs
 pytest inline with no timeout, so a CI run would still hang.
 
+## Reproduced, 2026-10-10
+
+Both inferred steps above now hold by measurement; step 4's hang also has a
+real trigger on Windows. Probes ran moto 5.2.3's `ThreadedMotoServer`, with
+`start()` in a thread joined after 5 s.
+
+- **Windows 11, Python 3.13.11.** A second `ThreadedMotoServer` on a port that a
+  running one holds, both on `0.0.0.0`, starts and shares it (step 3), as does
+  one on a port held by a plain `127.0.0.1` listener. `start()` hangs on a port
+  held with `SO_EXCLUSIVEADDRUSE` (WinError 10013), on an unassignable address
+  (WinError 10049), and on port 49800 (10013), which
+  `netsh interface ipv4 show excludedportrange protocol=tcp` lists as excluded.
+  That command listed 17 ranges, 15 of them inside the dynamic range
+  `netsh interface ipv4 show dynamicport tcp` reports (start 49152, 16384
+  ports).
+  A range reserved between `_free_port()` returning and moto binding is a
+  failed bind, and so a hang.
+- **Linux (`python:3.13-slim` in Docker, Python 3.13.13).** The collision does
+  not share: werkzeug prints `Address already in use`, and the second server's
+  `start()` hangs. On CI the race therefore ends as a hang, and `ci.yml` passes
+  pytest no timeout.
+
+Also measured: werkzeug's `BaseWSGIServer.__init__` answers a failed bind by
+printing the `OSError` and calling `sys.exit(1)`, so a bind in the caller's
+thread surfaces as `SystemExit` whose `__context__` is the `OSError`. And
+moto's S3 state is per process: two servers in one process share buckets, so
+the isolation a distinct port buys is between xdist workers.
+
 ## Advisory fix
 
 Bind once and read the port back: construct
@@ -43,3 +71,9 @@ That removes the gap between choosing and binding, and stops listening on every
 interface. Per the bug-fix protocol, the failing test comes first: for example,
 a test that a port already held by another socket cannot be handed to the
 fixture.
+
+**Shipped differently, 2026-10-10.** `port=0` through `ThreadedMotoServer`
+closes the race but keeps the unbounded wait for any bind that still fails. The
+fixture instead binds with werkzeug's `make_server("127.0.0.1", 0, ...)` in its
+own thread and converts the `SystemExit` above back to `OSError`; the failing
+test is a bind to an unassignable address, which hung before and raises now.

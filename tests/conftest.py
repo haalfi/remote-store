@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import os
 import socket
+import threading
 from typing import TYPE_CHECKING
 
 import pytest
@@ -31,6 +32,8 @@ from tests.backends.fixtures._state import set_current_stage
 
 if TYPE_CHECKING:
     from collections.abc import Iterator
+
+    from werkzeug.serving import BaseWSGIServer
 
 
 def _maybe_load_dotenv_for_live(config: pytest.Config) -> None:
@@ -75,12 +78,6 @@ def _maybe_load_dotenv_for_live(config: pytest.Config) -> None:
 # importing from a parent conftest is an upward import that creates the
 # same cross-boundary problem in reverse.
 # ---------------------------------------------------------------------------
-
-
-def _free_port() -> int:
-    with socket.socket() as s:
-        s.bind(("", 0))
-        return s.getsockname()[1]
 
 
 def _s3_available() -> bool:
@@ -162,6 +159,35 @@ _AZURITE_CONN_STR = (
 )
 
 
+def _start_moto_server(host: str = "127.0.0.1") -> tuple[BaseWSGIServer, threading.Thread]:
+    """Bind a moto server to port 0 on ``host`` here, then serve it from a daemon thread.
+
+    Not ``ThreadedMotoServer``: it binds a caller-chosen port inside its server
+    thread, and ``start()`` waits without a timeout on an event that only a
+    successful bind sets, so a failed bind hangs the caller. Choosing the port
+    beforehand left a window in which another server could take it, and on
+    Windows werkzeug's ``SO_REUSEADDR`` let both bind it (BUG-315). Binding
+    port 0 in the calling thread lets the OS pick the port in the same bind and
+    raises ``OSError`` here when the bind fails. Read the port from
+    ``server.server_port``.
+    """
+    from moto.moto_server.werkzeug_app import DomainDispatcherApplication, create_backend_app
+    from werkzeug.serving import make_server
+
+    try:
+        server = make_server(host, 0, DomainDispatcherApplication(create_backend_app), threaded=True)
+    except SystemExit as exc:
+        # werkzeug answers a failed bind by printing the OSError and calling
+        # sys.exit(1), which would end the session instead of failing it.
+        bind_error = exc.__context__
+        if isinstance(bind_error, OSError):
+            raise OSError(bind_error.errno, f"moto server could not bind {host}:0: {bind_error}") from bind_error
+        raise
+    thread = threading.Thread(target=server.serve_forever, name="moto-server", daemon=True)
+    thread.start()
+    return server, thread
+
+
 @pytest.fixture(scope="session")
 def moto_server() -> Iterator[str | None]:
     """Start a moto HTTP server for the test session.
@@ -172,13 +198,11 @@ def moto_server() -> Iterator[str | None]:
     if not _s3_available():
         yield None
         return
-    from moto.moto_server.threaded_moto_server import ThreadedMotoServer
-
-    port = _free_port()
-    server = ThreadedMotoServer(port=port, verbose=False)
-    server.start()
-    yield f"http://127.0.0.1:{port}"
-    server.stop()
+    server, thread = _start_moto_server()
+    yield f"http://127.0.0.1:{server.server_port}"
+    server.shutdown()
+    thread.join()
+    server.server_close()
 
 
 @pytest.fixture(scope="session")
