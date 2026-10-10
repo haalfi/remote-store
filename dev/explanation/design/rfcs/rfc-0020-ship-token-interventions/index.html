@@ -11572,7 +11572,7 @@ that settles them, not by another review round.</strong></p>
 </ul>
 <p>A prose finding with no check, which the report puts at 6% (judgment), and
   every code or test finding, reopen the loop as today.
-- <strong>Would amend.</strong> Four clauses, each at its home, all for check-closed prose
+- <strong>Would amend.</strong> Five clauses, each at its home, all for check-closed prose
   findings in the tail only:
   - <a href="../../adrs/0033-ship-convergence-driven-review/">ADR-0033</a>'s <em>Terminate the
     review loop on convergence</em>: a round whose only must-fix findings are
@@ -11583,8 +11583,12 @@ that settles them, not by another review round.</strong></p>
     cannot end until an unprimed reviewer has seen the final state</em>;
   - <a href="../../adrs/0037-whole-file-gate-and-derived-figures/">ADR-0037</a>'s whole-file
     gate: both gates are met by the closing pass and stay met after a
-    check-closed prose fix.</p>
-<p>ADR-0035 and ADR-0036 are unchanged.
+    check-closed prose fix;
+  - <a href="../../adrs/0035-vary-method-not-model/">ADR-0035</a>'s <em>A premise about
+    existing behaviour is executed, not read, before it ships</em>: the measuring
+    gate met by the closing pass stays met, and a prose fix narrowing a
+    behavioural claim is measured by its own recorded check.</p>
+<p>ADR-0036 is unchanged.
 - <strong>Ceiling.</strong> Small on PRs that change code: of 24 PRs with a code or test
   finding, the median had no round with findings after the last one, and 4 had
   two or more. Large on PRs without code findings: 17 of the 41 drew prose and
@@ -11827,7 +11831,7 @@ the whole effort, and nothing that changes <code>/ship</code> itself lands befor
 <tr>
 <td><strong>1. Amend</strong></td>
 <td>Write what Phase 0 kept into process</td>
-<td>If P1 is kept, one ADR amending the four clauses named under it; <code>/ship</code> edits for every kept intervention; the variant branch closed</td>
+<td>If P1 is kept, one ADR amending the five clauses named under it; <code>/ship</code> edits for every kept intervention; the variant branch closed</td>
 <td>The ADR, if any, accepted and <code>/ship</code> carrying the kept interventions</td>
 </tr>
 <tr>
@@ -11864,9 +11868,9 @@ is on one skill, an ADR amendment only if P1 is kept, and the local gate.</stron
 <li><strong>Public API / backwards compatibility:</strong> none.</li>
 <li><strong>Process:</strong> Phase 0 adds an unmerged variant branch of <code>/ship</code>. If P1 is kept,
   Phase 1 amends ADR-0033 (convergence and fix-pass clauses), ADR-0034 (unprimed
-  exit gate) and ADR-0037 (whole-file gate) for check-closed tail prose. P2, P3
-  and P4 change the skill and the gate tooling only. ADR-0035 and ADR-0036 are not
-  amended.</li>
+  exit gate), ADR-0035 (measuring clause) and ADR-0037 (whole-file gate) for
+  check-closed tail prose. P2, P3 and P4 change the skill and the gate tooling
+  only. ADR-0036 is not amended.</li>
 <li><strong>Tooling:</strong> <code>rounds.py</code> gains a per-PR mode. Gate robustness lands under
   BK-419.</li>
 <li><strong>Ripples to carry when built:</strong> <code>/ship</code> § Stop rule and § Roles (the
