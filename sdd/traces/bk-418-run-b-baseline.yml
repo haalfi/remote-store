@@ -1,0 +1,80 @@
+id: BK-418
+title: "`/ship` spends most of a delivery after the PR opens, and no intervention against it is measured"
+trigger: >-
+  Session C of the token-usage plan (the token kit's UNDERSTANDING.md, outside
+  the repo, agreed 2026-10-10): build run B's comparison baseline. Run A's route 2 (after
+  the re-plan at cdcaa35c6) per round, a fix-commit classifier for prose against
+  code findings, and real /ship rounds instead of review submissions.
+source_items:
+  - BK-418
+audience:
+  - contributor.tooling
+expected_ripples:
+  - sdd/research/token-usage/report.md
+surprising_ripples:
+  - sdd/research/token-usage/rounds.py
+discovery_followups: []
+decisions: []
+phases:
+  - id: orient
+    name: Orient
+    steps:
+      - file: token kit UNDERSTANDING.md (outside the repo)
+        section: "(whole)"
+        read_type: reference
+        extract: >-
+          Route 2 is the baseline because run B has its scope; ship-report's
+          13 "rounds" are submissions and its file-based classes hid the prose
+          share. The 27.8 M route figure was to be re-derived, not trusted
+      - file: sdd/research/token-usage/report.md
+        section: "Run A final, Reproducing"
+        read_type: reference
+        extract: "31.5 M is the round-7 checkpoint cut (--until 2026-10-09T13:35:51Z), not the re-plan"
+      - file: sdd/research/token-usage/tokkit.py
+        section: "parse_file, rounds_of"
+        read_type: reference
+        extract: >-
+          rounds_of gives per spawn the members, main context, main units to
+          the next spawn and the spawned subagents' units; its subagent total
+          equals the run's (17.62 M both), so a route split can reuse it
+      - file: sdd/research/token-usage/rounds.py
+        section: "(whole)"
+        read_type: reference
+        outcome: misleading
+        extract: >-
+          Counts each review submission with comments as a round. On #1093 a
+          round posts one summary review and its fix pass one reply submission
+          per finding: 88 submissions for 13 rounds. Now points to pr_rounds.py
+  - id: baseline
+    name: Route-2 baseline
+    steps:
+      - file: run A main transcript (tokkit snapshot), calls 395-500
+        section: "emits and timestamps"
+        read_type: reference
+        extract: >-
+          Call 408 asks the maintainer how to go on after round 7, call 409
+          enters plan mode, the narrowing commit cdcaa35c6 lands at call 474
+          and route 2's round 1 spawns at call 494. Route start = call 409; the
+          checkpoint cut differs by calls 409-412 (0.38 M)
+  - id: classify
+    name: Rounds and fix classifier
+    steps:
+      - file: PR #1093 reviews (GitHub GraphQL)
+        section: "submissions, top-level comments, replies"
+        read_type: reference
+        extract: >-
+          Top-level comments grouped by originalCommit reproduce the hand
+          reading's route-2 rounds (3, 4, 7, 9, 15, 11) including the CodeQL
+          alert in round 2. Replies cite the fix commit as an abbreviated SHA;
+          route-1 heads were dropped by a rebase but resolve via the commits
+          API and fetch by full SHA
+      - file: sdd/research/token-usage/pr_rounds.py
+        section: "classify"
+        read_type: verify
+        extract: >-
+          File scope gives 30 prose against the hand count's 37. Reading the 18
+          code labels' replies: six are prose fixes batched in a commit with a
+          code fix to the same file or a test file, plus the unfixed CHANGELOG
+          finding: 30 + 6 + 1 = 37. A def-level scope was tried and dropped: it
+          labelled the round-1 link fix prose because the fix added a new
+          helper. Re-run from cache gives a byte-identical result
