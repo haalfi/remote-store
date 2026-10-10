@@ -6,15 +6,18 @@ entry to learn its type and size. Any of them can fail, and BE-021 forbids the
 native exception from reaching the caller. Each failure takes one answer by its
 class, the same on every syscall:
 
-* ``FileNotFoundError`` / ``NotADirectoryError``, or ``ELOOP`` from a symlink
-  that never resolves: the thing is absent. An absent target is an empty
-  listing, and a subfolder or entry that vanished mid-walk, or a looping
-  link, is skipped while its siblings are still listed.
-* ``PermissionError``: ``PermissionDenied`` naming the denied key. A recursive
-  listing raises rather than leaving out the subtree it could not read, since
-  a short listing that ends cleanly reads as a complete one.
+* ``FileNotFoundError`` / ``NotADirectoryError``, or a symlink that never
+  resolves (``ELOOP``, or Windows' ``ERROR_CANT_RESOLVE_FILENAME``): the thing
+  is absent. An absent target is an empty listing, and an entry that vanished
+  mid-scan, or a looping link, is skipped while its siblings are still listed.
+  A subfolder absent when the walk reaches it was deleted underneath the walk,
+  so it raises ``NotFound`` naming it.
+* ``PermissionError``: ``PermissionDenied`` naming the denied key.
 * Any other ``OSError``: the base ``RemoteStoreError`` naming the key, never
   ``PermissionDenied``.
+
+A recursive listing never leaves out a subtree it could not read, since a
+short listing that ends cleanly reads as a complete one.
 
 The cells below are the whole product of branch x site x error class, so a fix
 that maps one syscall and forgets another fails by name. Faults are injected
@@ -27,6 +30,7 @@ from __future__ import annotations
 
 import errno
 import os
+import shutil
 import sys
 from typing import TYPE_CHECKING
 from unittest import mock
@@ -34,7 +38,7 @@ from unittest import mock
 import pytest
 
 from remote_store import Store
-from remote_store._errors import PermissionDenied, RemoteStoreError
+from remote_store._errors import NotFound, PermissionDenied, RemoteStoreError
 from remote_store.backends._local import LocalBackend
 
 if TYPE_CHECKING:
@@ -58,9 +62,8 @@ _BRANCHES: dict[str, Callable[[LocalBackend], Iterator[object]]] = {
 }
 _RECURSIVE = ("list_files-recursive", "list_files-max_depth")
 
-# What each branch lists when nothing fails, and when the fault makes its
-# target absent. The absent answers are the only cells whose listing is not
-# all-or-nothing, so they are stated in full rather than derived.
+# What each branch lists when nothing fails; an absent cell that does not raise
+# lists this, less what the fault made absent.
 _COMPLETE = {
     "list_files": {"a.txt"},
     "list_files-recursive": set(_FILES),
@@ -68,7 +71,6 @@ _COMPLETE = {
     "list_folders": {"sub", "other"},
     "iter_children": {"a.txt", "sub", "other"},
 }
-_WITHOUT_SUB_SUBTREE = {"a.txt", "other/d.txt"}
 
 
 def _norm(p: object) -> str:
@@ -104,6 +106,10 @@ def _error(kind: str, target: Path) -> OSError:
     if kind == "absent":
         return FileNotFoundError(errno.ENOENT, "No such file or directory", str(target))
     if kind == "loop":
+        if sys.platform == "win32":
+            # What Windows raises for a link that resolves to itself: winerror
+            # 1921, which CPython maps to errno EINVAL, not ELOOP.
+            return OSError(errno.EINVAL, "The name of the file cannot be resolved", str(target), 1921)
         return OSError(errno.ELOOP, "Too many levels of symbolic links", str(target))
     return OSError(errno.EIO, "Input/output error", str(target))
 
@@ -126,12 +132,15 @@ def _cells() -> Iterator[object]:
                 yield pytest.param(branch, syscall, key, kind, id=f"{branch}-{site}-{kind}")
 
 
-def _absent_answer(branch: str, key: str) -> set[str]:
-    if key == "":
-        return set()
-    if key == "sub":
-        return _WITHOUT_SUB_SUBTREE
-    return _COMPLETE[branch] - {"a.txt"}
+def _raised(key: str, kind: str) -> type[RemoteStoreError] | None:
+    """The error a cell raises, or ``None`` for a cell that lists."""
+    if kind == "denied":
+        return PermissionDenied
+    if kind == "other":
+        # The control: an error that is not a denial must not be reported as one.
+        return RemoteStoreError
+    # Absent: only a subfolder, which existed when the walk began, raises.
+    return NotFound if key == "sub" else None
 
 
 @pytest.mark.spec("BE-021")
@@ -141,21 +150,19 @@ def test_a_listing_maps_every_os_error_it_meets(
 ) -> None:
     target = backend._root / key if key else backend._root
     real = _REAL_SCANDIR if syscall == "scandir" else _REAL_STAT
+    expected = _raised(key, kind)
     with mock.patch(f"os.{syscall}", _failing(real, target, _error(kind, target))):
-        if kind in ("absent", "loop"):
-            assert _keys(_BRANCHES[branch](backend)) == _absent_answer(branch, key)
+        if expected is None:
+            absent = _COMPLETE[branch] - {key} if key else set()
+            assert _keys(_BRANCHES[branch](backend)) == absent
             return
         with pytest.raises(RemoteStoreError) as info:
             list(_BRANCHES[branch](backend))
     err = info.value
+    assert type(err) is expected
     assert err.path == key
     assert err.backend == "local"
     assert err.__cause__ is None
-    if kind == "denied":
-        assert type(err) is PermissionDenied
-    else:
-        # The control: an error that is not a denial must not be reported as one.
-        assert type(err) is RemoteStoreError
 
 
 @pytest.mark.spec("BE-021")
@@ -188,6 +195,18 @@ def test_a_real_unreadable_subfolder(backend: LocalBackend, branch: str) -> None
             list(_BRANCHES[branch](backend))
     finally:
         sub.chmod(0o755)
+    assert info.value.path == "sub"
+
+
+@pytest.mark.spec("BE-021")
+@pytest.mark.parametrize("branch", _RECURSIVE)
+def test_a_subfolder_deleted_during_the_walk_raises(backend: LocalBackend, branch: str) -> None:
+    """The walk is lazy and top-down: the root's files come before ``sub`` is scanned."""
+    listing = _BRANCHES[branch](backend)
+    assert str(next(listing).path) == "a.txt"  # type: ignore[attr-defined]
+    shutil.rmtree(backend._root / "sub")
+    with pytest.raises(NotFound) as info:
+        list(listing)
     assert info.value.path == "sub"
 
 

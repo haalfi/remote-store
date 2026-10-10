@@ -172,3 +172,24 @@ phases:
           returned []. The migration note had said only "leaked
           PermissionError"; narrowed to name both outcomes. Head: 10 of 10
           cases PermissionDenied on 3.14
+      - file: sdd/specs/003-backend-adapter-contract.md
+        section: "BE-021: the empty listing is about a container absent when the listing began; Known divergences (GraphBackend, BUG-257)"
+        read_type: reference
+        extract: >-
+          A sub-walk 404 part-way through a recursive walk must propagate, not
+          end the listing short. The orient verdict quoted this clause and the
+          build applied it to denials only, skipping a vanished subfolder; a
+          round 3 reviewer caught it. Now a subfolder absent when the walk
+          reaches it raises NotFound; an entry that vanishes mid-scan is still
+          skipped (an item, not a container)
+      - file: tmp/probe_midwalk.py
+        section: "(probe, not committed): rmtree(sub) after the first yield, Windows 3.13"
+        read_type: verify
+        extract: >-
+          master: both recursive branches return ['other/d.txt'] after a.txt,
+          no error. Head: NotFound path 'sub'. Same shape pinned by
+          test_a_subfolder_deleted_during_the_walk_raises, which failed before
+          the change. The Windows loop shape (winerror 1921, errno 22, not
+          ELOOP) was added to _listing_error and the injected loop cell;
+          before it the 12 loop cells failed on Windows. After: 58 passed, 7
+          skipped on Windows 3.13; 65 passed on python:3.11 and 3.14 in Docker

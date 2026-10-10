@@ -21,13 +21,14 @@ listings in `except PermissionError`, catch `PermissionDenied` (or
 `RemoteStoreError`) instead, and if you treated an empty listing as an empty
 folder, a refused one now raises.
 
-*A recursive listing no longer leaves out a folder it cannot read.*
+*A recursive listing no longer leaves out a subfolder.*
 `list_files(recursive=True)`, with or without `max_depth`, used to skip a
-subfolder it could not read and return the rest as if it were the whole tree.
-It now raises `PermissionDenied` for that subfolder. If you relied on a
-best-effort walk over a tree with unreadable parts, walk it yourself with
-`list_folders()` and `list_files()` per folder, catching `PermissionDenied`
-for each.
+subfolder it could not read, or one deleted while it walked, and return the
+rest as if it were the whole tree. It now raises `PermissionDenied` for a
+subfolder it cannot read and `NotFound` for one deleted underneath it. If you
+relied on a best-effort walk over a tree with unreadable or changing parts,
+walk it yourself with `list_folders()` and `list_files()` per folder, catching
+`PermissionDenied` and `NotFound` for each.
 
 ## v0.32.0 to v0.33.0
 

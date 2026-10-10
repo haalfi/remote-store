@@ -253,10 +253,10 @@ failure it was.
 - [ ] **BUG-319 — `LocalBackend`'s single-path stats leak a raw `PermissionError`, and a looping key a `RuntimeError`**
   spec: BE-021 · effort: S · audience: user.api
   An injected `os.stat` denial on one file (Windows 3.13) leaks a raw
-  `PermissionError` from `get_file_info`, `exists`, `is_file`, `glob` and
-  `get_folder_info`, not `read_bytes`. `list_files` on a looping-symlink key
-  raises `RuntimeError` from `_resolve`, which every operation calls (python
-  3.11; others not run). A real POSIX denial is not yet measured.
+  `PermissionError` from `get_file_info`, `exists`, `is_file`, and BUG-318's
+  `glob` and `get_folder_info`. `list_files` on a looping-symlink key raises
+  `RuntimeError` from `_resolve` (python 3.11). Open decision: map each method
+  here, or leave it to RFC-0017's kernel when Local migrates (D3 step 5).
 
 - [ ] **BUG-299 — `LocalBackend.write` and `write_atomic` on a `..` key inside the root write the file, then raise `InvalidPath`**
   spec: BE-008, BE-010 · effort: S · audience: user.api
