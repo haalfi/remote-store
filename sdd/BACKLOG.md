@@ -249,6 +249,7 @@ failure it was.
   (entry stat leak: BUG-319). Every Local walk also skips a subfolder deleted
   mid-walk (spec 003 BE-021 Known divergences). Open decision: raise or skip a
   vanished one, since a dangling Windows junction is absent from the start.
+  Detail: [dossier](backlog/bug-318-local-glob-folder-info-denied-subtree.md)
 
 - [ ] **BUG-319 — `LocalBackend`'s single-path stats leak a raw `PermissionError`, and a looping key a `RuntimeError`**
   spec: BE-021 · effort: S · audience: user.api
@@ -257,6 +258,7 @@ failure it was.
   `glob` and `get_folder_info`. A looping-symlink key raises `RuntimeError` from
   `_resolve`, shared by the keyed operations (measured on `list_files`, `exists`:
   3.11; not 3.14). Open decision: map it here, or leave it to RFC-0017's kernel (D3 step 5).
+  Detail: [dossier](backlog/bug-319-local-single-path-stat-leaks.md)
 
 - [ ] **BUG-299 — `LocalBackend.write` and `write_atomic` on a `..` key inside the root write the file, then raise `InvalidPath`**
   spec: BE-008, BE-010 · effort: S · audience: user.api
