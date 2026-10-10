@@ -162,3 +162,13 @@ phases:
           So "every other LocalBackend operation" mapping it, in this trace's
           trigger and the migration note, was false; deleted from both, and
           the leaks filed as BUG-319
+      - file: tmp/probe_note.py
+        section: "(probe, not committed): master listings of a folder at mode 000 and 0o444"
+        read_type: verify
+        extract: >-
+          python:3.11-slim and 3.14-slim, uid 1000. Mode 000: the recursive
+          list_files returned [] (both branches) where the flat ones leaked
+          PermissionError. Mode 0o444 on 3.14: the three flat listings
+          returned []. The migration note had said only "leaked
+          PermissionError"; narrowed to name both outcomes. Head: 10 of 10
+          cases PermissionDenied on 3.14

@@ -10,12 +10,16 @@ changes that require action when upgrading.
 
 **A `LocalBackend` listing that the OS refuses raises `PermissionDenied`:**
 
-`list_files()`, `list_folders()` and `iter_children()` let Python's own
-`PermissionError` reach the caller when the folder could not be read, so an
-`except RemoteStoreError` clause around them did not catch it. They now raise
-`PermissionDenied`, naming the folder or entry that was refused. `PermissionDenied` is not a subclass of `PermissionError`: if
-you wrapped these listings in `except PermissionError`, catch
-`PermissionDenied` (or `RemoteStoreError`) instead.
+When the folder could not be read, `list_files()`, `list_folders()` and
+`iter_children()` either let Python's own `PermissionError` reach the caller,
+which an `except RemoteStoreError` clause did not catch, or returned an empty
+listing: `list_files(recursive=True)` did for an unreadable folder, and on
+Python 3.14 all three did for a folder whose entries could not be inspected.
+They now raise `PermissionDenied`, naming the folder or entry that was refused.
+`PermissionDenied` is not a subclass of `PermissionError`: if you wrapped these
+listings in `except PermissionError`, catch `PermissionDenied` (or
+`RemoteStoreError`) instead, and if you treated an empty listing as an empty
+folder, a refused one now raises.
 
 *A recursive listing no longer leaves out a folder it cannot read.*
 `list_files(recursive=True)`, with or without `max_depth`, used to skip a

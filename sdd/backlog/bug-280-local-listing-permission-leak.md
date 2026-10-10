@@ -23,10 +23,10 @@ patching `pathlib.Path.iterdir` to raise
 | `delete` | mapped (never reaches `iterdir`) |
 
 A caller catching `RemoteStoreError` around a listing gets nothing, and the
-exception carries no `path` or `backend`. `LocalBackend` maps this correctly
-everywhere else — it catches bare `except PermissionError:` at 14 sites, 11
-raising `PermissionDenied` outright — so this is three unguarded methods, not a
-design position.
+exception carries no `path` or `backend`. `LocalBackend` catches bare
+`except PermissionError:` at 14 sites, 11 raising `PermissionDenied` outright,
+so this is three unguarded methods, not a design position. It does not map a
+denial everywhere else, though: its single-path stats leak too (BUG-319).
 **Exactly the shape of [BUG-249](../BACKLOG-DONE.md)**, which fixed the same three
 method names on `S3Boto3Backend` leaking a raw `botocore.ClientError`, and of
 `TestSFTPBug146ListingEioRaises`, which pins the SFTP twin. The listing methods
