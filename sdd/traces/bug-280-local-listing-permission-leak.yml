@@ -329,14 +329,14 @@ phases:
           _local.py hunks touch only the listings, helpers and imports); folded
           into the BUG-318 and BUG-319 dossiers. BK-416 not carried
 review:
-  # Derived by `hatch run ship-report 1113 --trace-block-only` at head 960c268.
+  # Derived by `hatch run ship-report 1113 --trace-block-only` at head 01332a2.
   # Do not hand-edit, except a newly required field per sdd/traces/_schema.yml
   # section review: RFC-0015 D4 makes this script the only producer.
   derivation: "hatch run ship-report 1113 --trace-block-only"
   pr: 1113
-  review_rounds: 5
-  submissions: 5
-  findings: 17
+  review_rounds: 9
+  submissions: 6
+  findings: 18
   by_round:
     - round: 1
       findings: 1
@@ -363,37 +363,55 @@ review:
       origin: {loop-introduced: 4}
       triage: {must-fix: 4}
       duration_hours: 0.29
+    - round: 6
+      findings: 1
+      origin: {original: 1}
+      triage: {must-fix: 1}
+      duration_hours: 2.67
   by_file:
     - path: "src/remote_store/backends/_local.py"
       findings: 8
+    - path: "tests/backends/local/test_listing_errors.py"
+      findings: 4
     - path: "docs-src/reference/migration.md"
       findings: 3
     - path: "sdd/BACKLOG.md"
-      findings: 3
-    - path: "tests/backends/local/test_listing_errors.py"
       findings: 3
   untouched_files:
     - "CHANGELOG.md"
     - "docs-src/_data/graph/graph.json"
     - "docs-src/explanation/graph_viz.html"
     - "sdd/BACKLOG-DONE.md"
+    - "sdd/TESTING-RUNBOOK.md"
     - "sdd/backlog/bk-389-kernel-step-1-memory.md"
     - "sdd/backlog/bk-396-kernel-delete-folder-sequence.md"
     - "sdd/backlog/bug-280-local-listing-permission-leak.md"
+    - "sdd/backlog/bug-318-local-glob-folder-info-denied-subtree.md"
+    - "sdd/backlog/bug-319-local-single-path-stat-leaks.md"
     - "sdd/decisions/04387f02-b97f-4133-ab2e-e9c3b7b02bc4.jsonl"
+    - "sdd/decisions/4b0278bb-bdf1-40a2-bfdb-7f645ce7a779.jsonl"
+    - "sdd/decisions/aea513e5-6990-4bc5-a9c4-d38cca0637b8.jsonl"
     - "sdd/rfcs/rfc-0012-doc-graph-model.md"
     - "sdd/rfcs/rfc-0017-contract-kernel-over-thin-drivers.md"
     - "sdd/specs/003-backend-adapter-contract.md"
     - "sdd/traces/bug-280-local-listing-permission-leak.yml"
   review_driven_commits:
-    - sha: "16ba907"
+    - sha: "00a2852"
       subject: "BUG-280: Skip a looping symlink in a LocalBackend listing, and drop a false migration premise"
-    - sha: "111faf4"
+    - sha: "5187acf"
       subject: "BUG-280: Name both old outcomes of a refused listing in the migration note"
-    - sha: "ea74969"
+    - sha: "c487cd9"
       subject: "BUG-280: Raise NotFound for a subfolder deleted mid-walk, and skip a Windows symlink loop"
-    - sha: "7cbb700"
+    - sha: "735f01a"
       subject: "BUG-280: Skip a vanished subfolder again, and pin a non-folder target as empty"
-    - sha: "960c268"
+    - sha: "3510899"
       subject: "BUG-280: Record Local's mid-walk skip as a BE-021 divergence, and tighten three notes"
+    - sha: "5fe2b7f"
+      subject: "BUG-280: Close the review loop in the trace, and commit the review session's decision log"
+    - sha: "058db23"
+      subject: "BUG-280: Skip a link into a folder the caller cannot enter, read winerrors 21 and 123 as absent"
+    - sha: "008898c"
+      subject: "BUG-280: Give BUG-318 and BUG-319 dossiers, and carry over the Windows ACL runbook section"
+    - sha: "01332a2"
+      subject: "fix: address PR #1113 review"
   ci: {verdict: GREEN, failed: 0, pending: 0}
