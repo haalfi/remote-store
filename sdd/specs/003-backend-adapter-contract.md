@@ -1025,6 +1025,13 @@ here is what makes the container case answerable from one place.
   whole breadth-first walk and a 404 on any sub-prefix propagates — that is the
   shape a fix takes.
 
+- `LocalBackend`'s recursive walks end short in the same shape. A subfolder
+  absent when the walk reaches it is skipped by `list_files`, `glob` and
+  `get_folder_info`; at the scan a deleted folder cannot be told from a dangling
+  Windows junction, which is absent from the start. `glob` and `get_folder_info`
+  also skip a subfolder they cannot read, where the recursive `list_files`
+  raises `PermissionDenied`. Tracked as **BUG-318**.
+
 Four bullets have left this list and are recorded rather than deleted, because
 each was a *measured* divergence and the measurement is what a later reader
 needs in order to trust the entries that remain:

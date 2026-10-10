@@ -214,3 +214,21 @@ phases:
           test_a_file_path_lists_empty (5 cases; removing NotADirectoryError
           from the absent tuple fails all 5). After: 63 passed, 7 skipped on
           Windows 3.13; 70 passed on python:3.11 and 3.14 in Docker
+      - file: sdd/specs/003-backend-adapter-contract.md
+        section: "BE-021 Known divergences (round 5: the ceiling, closed on recorded checks by user decision)"
+        read_type: reference
+        extract: >-
+          With the skip kept, a BE-021-marked test pinned what the clause calls
+          a breach. A LocalBackend bullet now records the mid-walk skip (and
+          glob/get_folder_info's denied-subfolder skip) as a divergence tracked
+          by BUG-318, overriding the build's "no spec change" decision for the
+          register only; the skip test carries no spec mark
+      - file: tests/backends/local/test_listing_errors.py
+        section: "the 12 'other' (EIO) cells run against master's source, python:3.11-slim"
+        read_type: verify
+        extract: >-
+          master raised a raw OSError from every entry stat and from the plain
+          recursive branch's scans, and the max_depth branch skipped an EIO
+          subfolder and listed an EIO target empty; the 3 flat target cells are
+          inconclusive (3.11's iterdir uses os.listdir, not os.scandir). The
+          migration note's EIO sentence is narrowed to that

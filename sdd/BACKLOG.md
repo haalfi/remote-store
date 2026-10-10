@@ -245,18 +245,18 @@ failure it was.
 - [ ] **BUG-318 — `LocalBackend.glob` and `get_folder_info` leave out a subtree they cannot read**
   spec: BE-021 · effort: S · audience: user.api
   `glob` (`Path.glob`) and `get_folder_info` (`rglob`) swallow a denied subfolder
-  scan and come back short as if complete (entry stat leak: BUG-319). Every
-  Local walk, `list_files` included, also skips a subfolder deleted mid-walk.
-  Open decision: whether BE-021 makes a walk raise on a denied or vanished
-  subtree; a dangling Windows junction is absent from the start, not deleted.
+  scan, which should raise `PermissionDenied` as `list_files` does since BUG-280
+  (entry stat leak: BUG-319). Every Local walk also skips a subfolder deleted
+  mid-walk (spec 003 BE-021 Known divergences). Open decision: raise or skip a
+  vanished one, since a dangling Windows junction is absent from the start.
 
 - [ ] **BUG-319 — `LocalBackend`'s single-path stats leak a raw `PermissionError`, and a looping key a `RuntimeError`**
   spec: BE-021 · effort: S · audience: user.api
   An injected `os.stat` denial on one file (Windows 3.13) leaks a raw
   `PermissionError` from `get_file_info`, `exists`, `is_file`, and BUG-318's
-  `glob` and `get_folder_info`. `list_files` on a looping-symlink key raises
-  `RuntimeError` from `_resolve` (python 3.11). Open decision: map each method
-  here, or leave it to RFC-0017's kernel when Local migrates (D3 step 5).
+  `glob` and `get_folder_info`. A looping-symlink key raises `RuntimeError` from
+  `_resolve`, shared by the keyed operations (measured on `list_files`, `exists`:
+  3.11; not 3.14). Open decision: map it here, or leave it to RFC-0017's kernel (D3 step 5).
 
 - [ ] **BUG-299 — `LocalBackend.write` and `write_atomic` on a `..` key inside the root write the file, then raise `InvalidPath`**
   spec: BE-008, BE-010 · effort: S · audience: user.api

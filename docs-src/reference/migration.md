@@ -19,7 +19,10 @@ They now raise `PermissionDenied`, naming the folder or entry that was refused.
 `PermissionDenied` is not a subclass of `PermissionError`: if you wrapped these
 listings in `except PermissionError`, catch `PermissionDenied` (or
 `RemoteStoreError`) instead, and if you treated an empty listing as an empty
-folder, a refused one now raises.
+folder, a refused one now raises. Any other OS error these listings meet, such
+as `EIO`, now raises the base `RemoteStoreError` where it used to surface as
+Python's `OSError` (or, with `max_depth`, skip the subfolder): replace an
+`except OSError` around them with `except RemoteStoreError`.
 
 *A recursive listing no longer leaves out a folder it cannot read.*
 `list_files(recursive=True)`, with or without `max_depth`, used to skip a

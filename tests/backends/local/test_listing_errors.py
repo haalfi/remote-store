@@ -142,7 +142,11 @@ def _raised(kind: str) -> type[RemoteStoreError] | None:
 
 
 def _without(branch: str, key: str) -> set[str]:
-    """What *branch* lists when *key*, and everything under it, is absent."""
+    """What *branch* lists when *key*, and everything under it, is absent.
+
+    For ``key == "sub"`` this is the subfolder skip spec 003 lists under BE-021's
+    Known divergences (BUG-318): those cells pin what ships, not the clause.
+    """
     if not key:
         return set()
     return {k for k in _COMPLETE[branch] if k != key and not k.startswith(f"{key}/")}
@@ -202,10 +206,13 @@ def test_a_real_unreadable_subfolder(backend: LocalBackend, branch: str) -> None
     assert info.value.path == "sub"
 
 
-@pytest.mark.spec("BE-021")
 @pytest.mark.parametrize("branch", _RECURSIVE)
 def test_a_subfolder_deleted_during_the_walk_is_skipped(backend: LocalBackend, branch: str) -> None:
-    """The walk is lazy and top-down: the root's files come before ``sub`` is scanned."""
+    """The walk is lazy and top-down: the root's files come before ``sub`` is scanned.
+
+    Pins what ships, not BE-021: spec 003 lists this skip under BE-021's Known
+    divergences (BUG-318), so the test carries no spec mark.
+    """
     listing = _BRANCHES[branch](backend)
     assert str(next(listing).path) == "a.txt"  # type: ignore[attr-defined]
     shutil.rmtree(backend._root / "sub")
