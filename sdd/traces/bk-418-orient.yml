@@ -15,6 +15,7 @@ audience:
 expected_ripples:
   - sdd/CLAUDE-REFERENCE.md
 surprising_ripples:
+  - .claude/skills/orchestrate/SKILL.md
   - sdd/traces/_schema.yml
   - sdd/rfcs/rfc-0020-ship-token-interventions.md
 discovery_followups: []
@@ -165,7 +166,7 @@ phases:
         read_type: reference
         extract: "One bullet applying Orient to all item work, linking the skill as the procedure's single home"
   - id: fix
-    name: "Fix pass after one /rvw-pr round on PR #1103"
+    name: "Fix passes after the two reviews on PR #1103"
     steps:
       - file: sdd/rfcs/rfc-0020-ship-token-interventions.md
         section: "Experiment, Decision rule, Confounds paragraph, Roadmap"
@@ -197,3 +198,19 @@ phases:
           The example judged its own discovery follow-up with placeholder
           evidence that validates. Now `orient: []` with a comment on the
           empty meaning and the entry shape
+      - file: sdd/rfcs/rfc-0020-ship-token-interventions.md
+        section: "Status, Summary, Not in run B, Experiment (second review)"
+        read_type: verify
+        extract: >-
+          My first fix listed clauses by the reviewer's examples, not by the
+          class. A grep for variant|all four|four interventions|carrying found
+          four more four-intervention clauses (lines 6, 36, 195, 200); the note
+          now lists them and its last sentence overrides any other wording
+      - file: .claude/skills/orchestrate/SKILL.md
+        section: "Step 1: Pre-check"
+        read_type: verify
+        extract: >-
+          The other skill that starts item work had no orient step and opens no
+          trace in Step 1; it now opens the trace and links /ship § Orient.
+          Of the ten skills under .claude/skills/, only /ship and /orchestrate
+          start backlog-item work

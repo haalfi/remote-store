@@ -15,16 +15,20 @@ trace: two parts now ship on master ahead of run B. P2 landed as written. P3
 is replaced by `/ship` § Orient, in which the session reads the related work
 and judges it rather than asking the user per cluster. So these clauses no
 longer hold, and **do not set up run B from them**: the sentences above saying
-nothing is built and `/ship` stays unchanged; § Start conditions' "master plus
+nothing is built, that the variant carries four interventions, and that
+`/ship` stays unchanged; the Summary's "a variant carrying all four"; the end
+of § Not in run B ("run B tests the four interventions above", with one other
+change); § Experiment's opening "under the variant", read as all four; § Start conditions' "master plus
 one commit, the variant" and "Master's `/ship` is unchanged throughout"; the
 Decision rule's P3 row, which scores the per-cluster dialog § Orient replaced;
 the **Confounds** paragraph, which names BK-414's lookup tool landing before
 run B but not P2 and § Orient; and the
 Roadmap's "nothing that changes `/ship` itself lands before Phase 1", with its
-Phase 0 row's "master's `/ship` stays unchanged". Under the
-plan, run B starts from master with P2 and § Orient merged, plus one variant
-commit holding only the prose-closing rule that overrides ADR clauses.
-Rewriting this RFC to the plan is open under BK-418.]
+Phase 0 row's "master's `/ship` stays unchanged". **This sentence overrides
+any other wording here:** under the plan, run B starts from master with P2,
+§ Orient and the plan's other master fixes merged, plus one variant commit
+holding only the prose-closing rule that overrides ADR clauses. Rewriting this
+RFC to the plan is open under BK-418.]
 
 ## Summary
 
