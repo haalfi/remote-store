@@ -137,6 +137,60 @@ def test_main_is_silent_when_memory_does_not_bind(
     assert "workers" not in capsys.readouterr().err
 
 
+@pytest.mark.parametrize(
+    ("argv", "env_workers", "expected_n"),
+    [
+        (["run_tests.py", "-n", "0"], None, None),  # the caller's -n runs, so no claim about workers
+        (["run_tests.py"], "8", "8"),  # the override runs, so nothing was capped
+    ],
+)
+def test_main_is_silent_when_the_caller_chose_the_count(
+    monkeypatch: pytest.MonkeyPatch,
+    capsys: pytest.CaptureFixture[str],
+    argv: list[str],
+    env_workers: str | None,
+    expected_n: str | None,
+) -> None:
+    captured = _stub_run(monkeypatch, cpu_count=20, free_bytes=int(7.9 * _GIB))
+    if env_workers is not None:
+        monkeypatch.setenv("RS_TEST_WORKERS", env_workers)
+    monkeypatch.setattr(_mod.sys, "argv", argv)
+    main()
+    run = captured["argv"]
+    if expected_n is None:
+        assert run.count("-n") == 1
+        assert run[run.index("-n") + 1] == "0"  # the caller's, not an injected 3
+    else:
+        assert run[3:5] == ["-n", expected_n]
+    assert "workers" not in capsys.readouterr().err
+
+
+def test_memory_is_probed_after_the_lock(monkeypatch: pytest.MonkeyPatch, capsys: pytest.CaptureFixture[str]) -> None:
+    """A run that waited for the lock sizes itself by the memory left once the holder is gone.
+
+    While another suite holds the lock its workers hold their memory, so a probe
+    taken before the wait would under-provision this run.
+    """
+    captured = _stub_run(monkeypatch, cpu_count=20)
+    state = {"locked": False}
+
+    class _Lock:
+        def release(self) -> None:
+            pass
+
+    def _fake_acquire(path, wait_seconds):  # type: ignore[no-untyped-def]  # noqa: ANN001, ANN202
+        state["locked"] = True
+        return _Lock()
+
+    monkeypatch.setattr(_mod, "acquire_suite_lock", _fake_acquire)
+    # Before the lock: the holder's workers leave 7.9 GiB; after: 100 GiB.
+    monkeypatch.setattr(_mod, "free_commit_bytes", lambda: 100 * _GIB if state["locked"] else int(7.9 * _GIB))
+    monkeypatch.setattr(_mod.sys, "argv", ["run_tests.py"])
+    main()
+    assert captured["argv"][3:5] == ["-n", "14"]
+    assert "workers" not in capsys.readouterr().err
+
+
 def test_free_commit_bytes_reads_this_machine() -> None:
     """The real probe answers on Windows and Linux, the two platforms the suite runs on.
 

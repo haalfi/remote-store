@@ -19,8 +19,10 @@ Worker count (``compute_workers``):
   cap binds. Each worker imports the whole suite, and too many of them for the
   memory left crash at startup with ``MemoryError`` while no test fails. "Free"
   is free commit (``ullAvailPageFile``) on Windows, where the pagefile bounds
-  every allocation, and ``MemAvailable`` on Linux; elsewhere it is unknown and
-  only the CPU formula applies. An explicit ``RS_TEST_WORKERS`` skips the cap.
+  every allocation, and ``MemAvailable`` on Linux (blind to a container's
+  cgroup limit); elsewhere it is unknown and only the CPU formula applies. Free
+  memory is read after the suite lock is taken, so a run that waited sees what
+  the previous suite left. An explicit ``RS_TEST_WORKERS`` skips the cap.
 
 Suite lock (``acquire_suite_lock``): one launcher run at a time per machine,
 across sessions, worktrees and clones. Two suites at once have stalled each
@@ -130,7 +132,13 @@ def _meminfo_available(text: str) -> int | None:
 
 
 def free_commit_bytes() -> int | None:
-    """Return the memory new workers can still allocate; None where it cannot be read."""
+    """Return the machine's free memory for new workers; None where it cannot be read.
+
+    Windows: free commit. Linux: ``MemAvailable``, which does not see a cgroup
+    memory limit (``docker run --memory``), so inside such a container this
+    over-reports and the cap may not bind. CI and the Docker test runner call
+    pytest directly, not this launcher.
+    """
     if os.name == "nt":
         import ctypes
         from ctypes import wintypes
@@ -304,36 +312,39 @@ def main() -> int:
     forwarded = sys.argv[1:]
     try:
         override = os.environ.get("RS_TEST_WORKERS")
-        free = free_commit_bytes()
-        workers = compute_workers(os.cpu_count(), override, free)
+        by_cpu = compute_workers(os.cpu_count(), override)
         timeout = _env_seconds("RS_TEST_TIMEOUT", _DEFAULT_TIMEOUT)
         lock_wait = _env_seconds("RS_TEST_LOCK_WAIT", _DEFAULT_LOCK_WAIT)
     except ValueError as exc:
         print(f"run_tests: {exc}", file=sys.stderr)
         return 2
-    by_cpu = compute_workers(os.cpu_count(), override)
-    if free is not None and workers < by_cpu and not _has_explicit_n(forwarded):
-        print(
-            f"run_tests: {workers} workers, not {by_cpu}: only {free / 2**30:.1f} GiB of memory is free. "
-            "Set RS_TEST_WORKERS to choose a count.",
-            file=sys.stderr,
-            flush=True,
-        )
-
-    argv = [sys.executable, "-m", "pytest"]
-    if not _has_explicit_n(forwarded):
-        argv += ["-n", str(workers)]
-    if timeout > 0 and not _has_explicit_timeout(forwarded):
-        argv.append(f"--timeout={timeout:g}")
-    argv += forwarded
 
     lock = None
     if not os.environ.get(_HELD_ENV):
         lock = acquire_suite_lock(suite_lock_path(), lock_wait)
         if lock is None:
             return EXIT_LOCK_TIMEOUT
-    env = {**os.environ, _HELD_ENV: os.environ.get(_HELD_ENV) or str(os.getpid())}
+
     try:
+        # Probed under the lock: while another suite holds it, its workers hold
+        # memory they free before this run starts.
+        free = free_commit_bytes()
+        workers = compute_workers(os.cpu_count(), override, free)
+        if free is not None and workers < by_cpu and not _has_explicit_n(forwarded):
+            print(
+                f"run_tests: {workers} workers, not {by_cpu}: only {free / 2**30:.1f} GiB of memory is free. "
+                "Set RS_TEST_WORKERS to choose a count.",
+                file=sys.stderr,
+                flush=True,
+            )
+
+        argv = [sys.executable, "-m", "pytest"]
+        if not _has_explicit_n(forwarded):
+            argv += ["-n", str(workers)]
+        if timeout > 0 and not _has_explicit_timeout(forwarded):
+            argv.append(f"--timeout={timeout:g}")
+        argv += forwarded
+        env = {**os.environ, _HELD_ENV: os.environ.get(_HELD_ENV) or str(os.getpid())}
         # subprocess.run + sys.exit, not os.execvp: the latter is spawn+wait on
         # Windows and raises on launch failure rather than returning a code.
         # subprocess.run is platform-neutral and surfaces exit codes uniformly.
