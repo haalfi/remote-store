@@ -372,9 +372,77 @@ and [run_a_final_gates].
 - **Gates.** Over the whole run, 33 gate runs: 3 cut off at the 600 s limit,
   the same three as at round 7, and one 37-minute idle stall
   [run_a_final_gates].
-- **Prose against code findings for the second route** are not derived here;
-  `rounds.py` derives them from PR #1093's review comments once its trace
-  carries a `review:` block.
+- **Prose against code findings for the second route:** § Run B baseline.
+
+## Run B baseline: run A's route 2
+
+**Run B has route 2's scope, so route 2's figures are recorded here for the
+comparison: six rounds, 28.19 M units from the re-plan on, and 49 findings, of
+which a fix-commit classifier labels 30 prose and a hand reading 37.** The
+rounds are review states, not submissions: PR #1093 has 88 review submissions
+over 13 rounds [pr_1093_rounds: `submissions`, `routes`]. Context and units are
+from [run_a_route2], findings from [pr_1093_rounds].
+
+RFC-0020's decision rule, written before this baseline existed, still compares
+run B with run A's first route (31.5 M in total; 255k, 304k and 355k context at
+rounds 1 to 3), and its metrics table lists findings by round as not yet
+derived. Which route each check compares against is settled when RFC-0020 is
+rewritten, after the other BK-418 changes for run B have merged; until then the
+RFC's rule is the one in force.
+
+| Round | Members | Main context at start | Main units | Subagent units | Findings | Prose (classifier) |
+| --- | ---: | ---: | ---: | ---: | ---: | ---: |
+| 1 | 1 | 113k | 1.50 M | 0.39 M | 3 | 0 |
+| 2 | 1 | 223k | 1.08 M | 0.29 M | 4 | 3 |
+| 3 | 3 | 273k | 2.34 M | 1.57 M | 7 | 3 |
+| 4 | 2 | 396k | 1.60 M | 1.07 M | 9 | 5 |
+| 5 | 3 | 479k | 3.75 M | 2.21 M | 15 | 10 |
+| closing | 3 | 625k | 4.39 M | 2.44 M | 11 | 9 |
+
+From [run_a_route2: `route.rounds`] and [pr_1093_rounds: `rounds`, route 2].
+The closing round's eleventh finding has no fix (the CHANGELOG stub, kept by the
+maintainer's call), so its classes sum to 10.
+
+- **Where route 2 starts.** Call 408 asks the maintainer how to proceed after
+  round 7; call 409 enters plan mode, so route 2 is call 409 on, plus every
+  subagent that began after it. It cost 28.19 M units: 5.56 M re-planning and
+  re-building over 86 calls before its first round, and 22.62 M in the loop
+  [run_a_route2: `route`]. Route totals are summed from unrounded call units,
+  so they can differ by 0.01 M from sums of the rounded figures shown. The
+  round-7 checkpoint cut (`--until 2026-10-09T13:35:51Z`) leaves 27.80 M after
+  it. The route exceeds that by 0.38 M, all of it calls 409 to 412, which ran
+  before the cut; no route-1 subagent ran past it [run_a_route2:
+  `checkpoint.route_minus_after_m`, `route_main_units_before_cut_m`,
+  `earlier_subagent_units_after_m`].
+- **Rounds and routes.** `pr_rounds.py` groups findings by the head commit they
+  were posted against, and puts a round in route 2 when that head descends from
+  `cdcaa35c6`. Route 2's findings per round, 3, 4, 7, 9, 15 and 11, match the
+  hand reading; route 1 has seven rounds, the last posted in its review body
+  with no inline finding [pr_1093_rounds: `routes`].
+- **Classifier against the hand count.** The classifier labels a finding prose
+  when its fix commit changes no executable line of the finding's file. That
+  gives 30 prose, 18 code and 1 unfixed; the hand reading gave 37 prose and 12
+  code. Reading the fix replies of the 18 code labels, six are docstring or
+  prose fixes whose commit also fixed code in the same file, or a test file, for
+  another finding: the round-1 delete-pending finding, answered by a
+  measurement, whose reply cites another finding's fix commit; the round-3
+  `list_files` docstring; the round-4 "as below" docstring and the 3.11/3.12
+  `RuntimeError`, recorded in prose rather than fixed; and the round-5
+  `list_folders` docstring and stale test-module docstring. With those and the
+  unfixed CHANGELOG finding counted prose, 30 + 6 + 1 = 37. The classifier
+  marks 14 of the 18 code labels `shared_fix` (their fix commit also fixed
+  another finding in that file); five of the six are among them, the test-module
+  docstring is not, because the code in its commit was for a finding filed
+  against `_local.py` [pr_1093_rounds: `code_in_shared_fix`].
+- **What that means for run B.** The fix pass commits once per round, so a
+  per-commit classifier cannot split a commit's prose fixes from its code fixes
+  in the same file. Narrowing to the function enclosing the finding's line was
+  tried and was worse: it labelled the round-1 link finding prose, whose fix added
+  a new helper rather than changing the commented function. Run B's PR goes
+  through the same rule, so the two runs compare like for like. On #1093 the
+  rule errs toward code; a prose label can also be wrong, when the code a
+  finding asked for landed only in another file and the finding's own file got
+  only a docstring.
 
 ## Reproducing
 
@@ -406,6 +474,8 @@ siblings (`_common.default_transcripts`).
 | `run_a_round7.json`, `run_a_final.json`, `bk397_ship_run.json` | `tokkit.py report --json` (`--until` for round 7) | one `/ship` session and its subagents |
 | `run_a_gates.json`, `run_a_final_gates.json` | `gates.py` (`--until` for round 7) | run A's main transcript |
 | `run_a_orient_check.json` | `orient_check.py --item BUG-280 --rev ff00a1dd7` | `BACKLOG.md` at run A's base commit, run A's transcript |
+| `run_a_route2.json` | `route_baseline.py --route-start-call 409 --checkpoint 2026-10-09T13:35:51Z --name run_a_route2` | run A's `tokkit.py` snapshot (`--snapshot`) |
+| `pr_1093_rounds.json` | `pr_rounds.py --pr 1093 --route-start cdcaa35c6` | GitHub reviews and PR commits (cached in `--data`), the fix commits in git |
 
 Sessions are assigned to work items through the PR they served, never by
 session ID: a `pr-link` record, a PR number the first real prompt hands

@@ -51,6 +51,13 @@ the failing test, run it, see it fail** before implementing the fix.
   `hatch run backlog-show`, `backlog-find`, `ref-show` or `ref-rows`, not by
   Grep and a sliced Read; edits, whole-file reads and `/rvw-pr` keep those.
   Commands and bounds: [`scripts/sdd_lookup.py`](scripts/sdd_lookup.py).
+- **Orient before planning item work**, in any session, not only under
+  `/ship`: find the open items sharing the item's spec IDs or the files it
+  will touch, read their dossiers and the RFC or ADR they point to, record a
+  verdict per cluster (subsumes, constrains, unrelated, with evidence) in the
+  trace's `orient:` key, and recommend a scope in one `AskUserQuestion`
+  before planning. Spending tokens here is intended. Procedure:
+  [`/ship` § Orient](.claude/skills/ship/SKILL.md#orient).
 - Commit messages start with item ID when applicable (e.g., `AF-008: Add credential masking`).
 
 <a id="trace-authoring"></a>
@@ -58,7 +65,7 @@ the failing test, run it, see it fail** before implementing the fix.
 
 When working on a backlog item, maintain `sdd/traces/<id>-<slug>.yml` as you work, not after merge. Schema: `sdd/traces/_schema.yml`. **"Working on" means implementing the item, or closing it by implementing it.** Two closes do not require a trace, because a trace records what reading and ripples the *work* met and there was no work: an item **decided against** and an item **absorbed** into another, both defined in [`sdd/BACKLOG.md` § Completing work](sdd/BACKLOG.md#how-this-file-works), which carry their decision in the `BACKLOG-DONE.md` register entry instead. A pure advisory annotation to a body (e.g. recording a verification-run result) that neither implements nor closes the item does not require one either; the trace is authored when implementation begins.
 
-- **Before starting:** open the trace if it exists, otherwise create one from the schema example.
+- **Before starting:** open the trace if it exists, otherwise create one from the schema example, and write its `orient:` note before planning ([§ Backlog](#backlog)).
 - **As you read:** record each gate and reference read as a step. Tag `outcome: unclear | misleading` on any read that did not deliver — these are aggregated by `hatch run report-trace-outcomes`, which ranks the documents that failed readers, so tag the artifact that actually misled and put your own misses in the `extract`.
 - **As events occur:** fill `discovery_followups` (new backlog IDs born during the work), `surprising_ripples` (paths the ripple-check table did not anticipate), `co_shipped_items` (other items closed by the same PR), `decisions` (the `sdd/decisions/` logs of sessions that asked dialogs for this work).
 - **At the close, not as you go: the `review:` block.** Run `hatch run ship-report <PR> --trace-block-only` once the review has converged and paste its output verbatim into the trace as a top-level key. The flag matters: the bare command prints the Step 5 Markdown report, which is for the report and not for the trace, and the block it prints already opens with `review:` — so it is pasted *as* the key, never under one. **Do not hand-write or hand-edit any figure about the loop** — rounds, findings, per-file distribution, origin counts, review-driven commits. One carve-out, stated in full in [`sdd/traces/_schema.yml` § `review`](sdd/traces/_schema.yml): a field the schema has *newly* made required is added to an existing block by hand, because re-running the script would re-measure the loop at today's head instead of at the close it recorded. That is the only part of the trace derived rather than observed, and the split is deliberate: the *reads* above are things only the author witnessed, while the review figures are in the PR and a hand copy of them goes stale on the next push. Eleven such copies went stale across four traces, each costing a review round, which is the measurement behind [RFC-0015](sdd/rfcs/rfc-0015-ship-two-surfaces.md) D4. Mid-loop, `--out tmp/ship-report-<PR>.md` writes a scratch copy for a brief to quote; `tmp/` is gitignored and nothing durable holds it until the close.

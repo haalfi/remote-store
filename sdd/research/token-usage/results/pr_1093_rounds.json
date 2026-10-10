@@ -1,0 +1,1015 @@
+{
+ "_provenance": {
+  "script": "pr_rounds.py",
+  "generated": "2026-10-10",
+  "inputs": {
+   "pr_1093_reviews.json": "b34efd56c2c29bb7be483f75f928084a5e123599400550c78cfbd5308c7f7ee3"
+  }
+ },
+ "pr": 1093,
+ "submissions": 88,
+ "routes": {
+  "1": {
+   "start": null,
+   "rounds": 7,
+   "findings_by_round": [
+    1,
+    1,
+    6,
+    7,
+    6,
+    4,
+    0
+   ],
+   "findings": 25,
+   "prose": 13,
+   "code": 12,
+   "unfixed": 0,
+   "prose_pct": 52.0,
+   "code_in_shared_fix": 7
+  },
+  "2": {
+   "start": "cdcaa35c6",
+   "rounds": 6,
+   "findings_by_round": [
+    3,
+    4,
+    7,
+    9,
+    15,
+    11
+   ],
+   "findings": 49,
+   "prose": 30,
+   "code": 18,
+   "unfixed": 1,
+   "prose_pct": 61.0,
+   "code_in_shared_fix": 14
+  }
+ },
+ "rounds": [
+  {
+   "route": 1,
+   "round": 1,
+   "head": "d66425be5",
+   "first_submitted": "2026-10-09T09:35:28Z",
+   "findings": 1,
+   "prose": 0,
+   "code": 1,
+   "unfixed": 0,
+   "code_in_shared_fix": 0,
+   "fix_commits": [
+    "6c93e6eae"
+   ],
+   "items": [
+    {
+     "path": "src/remote_store/backends/_local.py",
+     "category": "Bug",
+     "bot": false,
+     "fix": "6c93e6eae",
+     "class": "code",
+     "scope": "file",
+     "shared_fix": false,
+     "executable_files": [
+      "src/remote_store/backends/_local.py"
+     ]
+    }
+   ]
+  },
+  {
+   "route": 1,
+   "round": 2,
+   "head": "6c93e6eae",
+   "first_submitted": "2026-10-09T09:50:19Z",
+   "findings": 1,
+   "prose": 0,
+   "code": 1,
+   "unfixed": 0,
+   "code_in_shared_fix": 0,
+   "fix_commits": [
+    "e1ee5f03b"
+   ],
+   "items": [
+    {
+     "path": "tests/backends/local/test_listing_permission.py",
+     "category": "Test",
+     "bot": false,
+     "fix": "e1ee5f03b",
+     "class": "code",
+     "scope": "file",
+     "shared_fix": false,
+     "executable_files": [
+      "tests/backends/local/test_listing_permission.py"
+     ]
+    }
+   ]
+  },
+  {
+   "route": 1,
+   "round": 3,
+   "head": "e1ee5f03b",
+   "first_submitted": "2026-10-09T11:05:15Z",
+   "findings": 6,
+   "prose": 2,
+   "code": 4,
+   "unfixed": 0,
+   "code_in_shared_fix": 4,
+   "fix_commits": [
+    "b4f69b650"
+   ],
+   "items": [
+    {
+     "path": "docs-src/reference/migration.md",
+     "category": "Bug",
+     "bot": false,
+     "fix": "b4f69b650",
+     "class": "prose",
+     "scope": "file",
+     "shared_fix": false
+    },
+    {
+     "path": "src/remote_store/backends/_local.py",
+     "category": "Consistency",
+     "bot": false,
+     "fix": "b4f69b650",
+     "class": "code",
+     "scope": "file",
+     "shared_fix": true,
+     "executable_files": [
+      "src/remote_store/backends/_local.py"
+     ]
+    },
+    {
+     "path": "src/remote_store/backends/_local.py",
+     "category": "Possible",
+     "bot": false,
+     "fix": "b4f69b650",
+     "class": "code",
+     "scope": "file",
+     "shared_fix": true,
+     "executable_files": [
+      "src/remote_store/backends/_local.py"
+     ]
+    },
+    {
+     "path": "tests/backends/local/test_listing_permission.py",
+     "category": "Possible",
+     "bot": false,
+     "fix": "b4f69b650",
+     "class": "code",
+     "scope": "file",
+     "shared_fix": true,
+     "executable_files": [
+      "tests/backends/local/test_listing_permission.py"
+     ]
+    },
+    {
+     "path": "tests/backends/local/test_listing_permission.py",
+     "category": "Test",
+     "bot": false,
+     "fix": "b4f69b650",
+     "class": "code",
+     "scope": "file",
+     "shared_fix": true,
+     "executable_files": [
+      "tests/backends/local/test_listing_permission.py"
+     ]
+    },
+    {
+     "path": "sdd/traces/bug-280-local-listing-permission-leak.yml",
+     "category": "Bug",
+     "bot": false,
+     "fix": "b4f69b650",
+     "class": "prose",
+     "scope": "file",
+     "shared_fix": false
+    }
+   ]
+  },
+  {
+   "route": 1,
+   "round": 4,
+   "head": "b4f69b650",
+   "first_submitted": "2026-10-09T11:39:34Z",
+   "findings": 7,
+   "prose": 3,
+   "code": 4,
+   "unfixed": 0,
+   "code_in_shared_fix": 3,
+   "fix_commits": [
+    "9dad71434"
+   ],
+   "items": [
+    {
+     "path": "sdd/BACKLOG-DONE.md",
+     "category": "Bug",
+     "bot": false,
+     "fix": "9dad71434",
+     "class": "prose",
+     "scope": "file",
+     "shared_fix": false
+    },
+    {
+     "path": "docs-src/reference/migration.md",
+     "category": "Bug",
+     "bot": false,
+     "fix": "9dad71434",
+     "class": "prose",
+     "scope": "file",
+     "shared_fix": false
+    },
+    {
+     "path": "src/remote_store/backends/_local.py",
+     "category": "Test",
+     "bot": false,
+     "fix": "9dad71434",
+     "class": "code",
+     "scope": "commit",
+     "shared_fix": false,
+     "executable_files": [
+      "tests/backends/local/test_listing_permission.py"
+     ]
+    },
+    {
+     "path": "sdd/backlog/bug-313-local-get-file-info-denied-parent.md",
+     "category": "Ripple",
+     "bot": false,
+     "fix": "9dad71434",
+     "class": "prose",
+     "scope": "file",
+     "shared_fix": false
+    },
+    {
+     "path": "tests/backends/local/test_listing_permission.py",
+     "category": "Bug",
+     "bot": false,
+     "fix": "9dad71434",
+     "class": "code",
+     "scope": "file",
+     "shared_fix": true,
+     "executable_files": [
+      "tests/backends/local/test_listing_permission.py"
+     ]
+    },
+    {
+     "path": "tests/backends/local/test_listing_permission.py",
+     "category": "Bug",
+     "bot": false,
+     "fix": "9dad71434",
+     "class": "code",
+     "scope": "file",
+     "shared_fix": true,
+     "executable_files": [
+      "tests/backends/local/test_listing_permission.py"
+     ]
+    },
+    {
+     "path": "tests/backends/local/test_listing_permission.py",
+     "category": "Bug",
+     "bot": false,
+     "fix": "9dad71434",
+     "class": "code",
+     "scope": "file",
+     "shared_fix": true,
+     "executable_files": [
+      "tests/backends/local/test_listing_permission.py"
+     ]
+    }
+   ]
+  },
+  {
+   "route": 1,
+   "round": 5,
+   "head": "37b0fe23d",
+   "first_submitted": "2026-10-09T12:04:38Z",
+   "findings": 6,
+   "prose": 5,
+   "code": 1,
+   "unfixed": 0,
+   "code_in_shared_fix": 0,
+   "fix_commits": [
+    "8a81a328b"
+   ],
+   "items": [
+    {
+     "path": "docs-src/reference/migration.md",
+     "category": "Consistency",
+     "bot": false,
+     "fix": "8a81a328b",
+     "class": "prose",
+     "scope": "file",
+     "shared_fix": false
+    },
+    {
+     "path": "src/remote_store/backends/_local.py",
+     "category": "Bug",
+     "bot": false,
+     "fix": "8a81a328b",
+     "class": "prose",
+     "scope": "file",
+     "shared_fix": false
+    },
+    {
+     "path": "tests/backends/local/test_listing_permission.py",
+     "category": "Test",
+     "bot": false,
+     "fix": "8a81a328b",
+     "class": "code",
+     "scope": "file",
+     "shared_fix": false,
+     "executable_files": [
+      "tests/backends/local/test_listing_permission.py"
+     ]
+    },
+    {
+     "path": "docs-src/reference/migration.md",
+     "category": "Possible",
+     "bot": false,
+     "fix": "8a81a328b",
+     "class": "prose",
+     "scope": "file",
+     "shared_fix": false
+    },
+    {
+     "path": "sdd/backlog/bug-313-local-get-file-info-denied-parent.md",
+     "category": "Bug",
+     "bot": false,
+     "fix": "8a81a328b",
+     "class": "prose",
+     "scope": "file",
+     "shared_fix": false
+    },
+    {
+     "path": "sdd/backlog/bug-311-local-glob-denied-subtree.md",
+     "category": "Consistency",
+     "bot": false,
+     "fix": "8a81a328b",
+     "class": "prose",
+     "scope": "file",
+     "shared_fix": false
+    }
+   ]
+  },
+  {
+   "route": 1,
+   "round": 6,
+   "head": "e5bd98b2a",
+   "first_submitted": "2026-10-09T12:54:38Z",
+   "findings": 4,
+   "prose": 3,
+   "code": 1,
+   "unfixed": 0,
+   "code_in_shared_fix": 0,
+   "fix_commits": [
+    "8412ad598"
+   ],
+   "items": [
+    {
+     "path": "src/remote_store/backends/_local.py",
+     "category": "Bug",
+     "bot": false,
+     "fix": "8412ad598",
+     "class": "code",
+     "scope": "file",
+     "shared_fix": false,
+     "executable_files": [
+      "src/remote_store/backends/_local.py"
+     ]
+    },
+    {
+     "path": "sdd/backlog/bug-313-local-get-file-info-denied-parent.md",
+     "category": "Bug",
+     "bot": false,
+     "fix": "8412ad598",
+     "class": "prose",
+     "scope": "file",
+     "shared_fix": false
+    },
+    {
+     "path": "sdd/backlog/bug-313-local-get-file-info-denied-parent.md",
+     "category": "Consistency",
+     "bot": false,
+     "fix": "8412ad598",
+     "class": "prose",
+     "scope": "file",
+     "shared_fix": false
+    },
+    {
+     "path": "sdd/backlog/bug-313-local-get-file-info-denied-parent.md",
+     "category": "Bug",
+     "bot": false,
+     "fix": "8412ad598",
+     "class": "prose",
+     "scope": "file",
+     "shared_fix": false
+    }
+   ]
+  },
+  {
+   "route": 1,
+   "round": 7,
+   "head": "898ad2fe0",
+   "first_submitted": "2026-10-09T14:00:30Z",
+   "findings": 0,
+   "prose": 0,
+   "code": 0,
+   "unfixed": 0,
+   "code_in_shared_fix": 0,
+   "fix_commits": [],
+   "items": []
+  },
+  {
+   "route": 2,
+   "round": 1,
+   "head": "cdcaa35c6",
+   "first_submitted": "2026-10-09T14:03:50Z",
+   "findings": 3,
+   "prose": 0,
+   "code": 3,
+   "unfixed": 0,
+   "code_in_shared_fix": 2,
+   "fix_commits": [
+    "4c361607e"
+   ],
+   "items": [
+    {
+     "path": "src/remote_store/backends/_local.py",
+     "category": "Bug",
+     "bot": false,
+     "fix": "4c361607e",
+     "class": "code",
+     "scope": "file",
+     "shared_fix": true,
+     "executable_files": [
+      "src/remote_store/backends/_local.py"
+     ]
+    },
+    {
+     "path": "src/remote_store/backends/_local.py",
+     "category": "Possible",
+     "bot": false,
+     "fix": "4c361607e",
+     "class": "code",
+     "scope": "file",
+     "shared_fix": true,
+     "executable_files": [
+      "src/remote_store/backends/_local.py"
+     ]
+    },
+    {
+     "path": "tests/backends/local/test_listing_permission.py",
+     "category": "Test",
+     "bot": false,
+     "fix": "4c361607e",
+     "class": "code",
+     "scope": "file",
+     "shared_fix": false,
+     "executable_files": [
+      "tests/backends/local/test_listing_permission.py"
+     ]
+    }
+   ]
+  },
+  {
+   "route": 2,
+   "round": 2,
+   "head": "4c361607e",
+   "first_submitted": "2026-10-09T14:24:34Z",
+   "findings": 4,
+   "prose": 3,
+   "code": 1,
+   "unfixed": 0,
+   "code_in_shared_fix": 0,
+   "fix_commits": [
+    "66e90f046",
+    "2103ed1de"
+   ],
+   "items": [
+    {
+     "path": "src/remote_store/backends/_local.py",
+     "category": "?",
+     "bot": true,
+     "fix": "2103ed1de",
+     "class": "code",
+     "scope": "file",
+     "shared_fix": false,
+     "executable_files": [
+      "src/remote_store/backends/_local.py"
+     ]
+    },
+    {
+     "path": "docs-src/reference/migration.md",
+     "category": "Consistency",
+     "bot": false,
+     "fix": "66e90f046",
+     "class": "prose",
+     "scope": "file",
+     "shared_fix": false
+    },
+    {
+     "path": "src/remote_store/backends/_local.py",
+     "category": "Spec",
+     "bot": false,
+     "fix": "66e90f046",
+     "class": "prose",
+     "scope": "file",
+     "shared_fix": false
+    },
+    {
+     "path": "sdd/backlog/bk-416-local-walks-onto-kernel.md",
+     "category": "Ripple",
+     "bot": false,
+     "fix": "66e90f046",
+     "class": "prose",
+     "scope": "file",
+     "shared_fix": false
+    }
+   ]
+  },
+  {
+   "route": 2,
+   "round": 3,
+   "head": "2103ed1de",
+   "first_submitted": "2026-10-09T14:43:44Z",
+   "findings": 7,
+   "prose": 3,
+   "code": 4,
+   "unfixed": 0,
+   "code_in_shared_fix": 4,
+   "fix_commits": [
+    "a387794f3"
+   ],
+   "items": [
+    {
+     "path": "src/remote_store/backends/_local.py",
+     "category": "Bug",
+     "bot": false,
+     "fix": "a387794f3",
+     "class": "code",
+     "scope": "file",
+     "shared_fix": true,
+     "executable_files": [
+      "src/remote_store/backends/_local.py"
+     ]
+    },
+    {
+     "path": "src/remote_store/backends/_local.py",
+     "category": "Spec",
+     "bot": false,
+     "fix": "a387794f3",
+     "class": "code",
+     "scope": "file",
+     "shared_fix": true,
+     "executable_files": [
+      "src/remote_store/backends/_local.py"
+     ]
+    },
+    {
+     "path": "sdd/specs/003-backend-adapter-contract.md",
+     "category": "Spec",
+     "bot": false,
+     "fix": "a387794f3",
+     "class": "prose",
+     "scope": "file",
+     "shared_fix": false
+    },
+    {
+     "path": "sdd/specs/003-backend-adapter-contract.md",
+     "category": "Possible",
+     "bot": false,
+     "fix": "a387794f3",
+     "class": "prose",
+     "scope": "file",
+     "shared_fix": false
+    },
+    {
+     "path": "docs-src/reference/migration.md",
+     "category": "Bug",
+     "bot": false,
+     "fix": "a387794f3",
+     "class": "prose",
+     "scope": "file",
+     "shared_fix": false
+    },
+    {
+     "path": "tests/backends/local/test_listing_permission.py",
+     "category": "Test",
+     "bot": false,
+     "fix": "a387794f3",
+     "class": "code",
+     "scope": "file",
+     "shared_fix": true,
+     "executable_files": [
+      "tests/backends/local/test_listing_permission.py"
+     ]
+    },
+    {
+     "path": "tests/backends/local/test_listing_permission.py",
+     "category": "Possible",
+     "bot": false,
+     "fix": "a387794f3",
+     "class": "code",
+     "scope": "file",
+     "shared_fix": true,
+     "executable_files": [
+      "tests/backends/local/test_listing_permission.py"
+     ]
+    }
+   ]
+  },
+  {
+   "route": 2,
+   "round": 4,
+   "head": "a387794f3",
+   "first_submitted": "2026-10-09T15:10:49Z",
+   "findings": 9,
+   "prose": 5,
+   "code": 4,
+   "unfixed": 0,
+   "code_in_shared_fix": 4,
+   "fix_commits": [
+    "0b069ab3b"
+   ],
+   "items": [
+    {
+     "path": "sdd/specs/003-backend-adapter-contract.md",
+     "category": "Spec",
+     "bot": false,
+     "fix": "0b069ab3b",
+     "class": "prose",
+     "scope": "file",
+     "shared_fix": false
+    },
+    {
+     "path": "docs-src/reference/migration.md",
+     "category": "Consistency",
+     "bot": false,
+     "fix": "0b069ab3b",
+     "class": "prose",
+     "scope": "file",
+     "shared_fix": false
+    },
+    {
+     "path": "src/remote_store/backends/_local.py",
+     "category": "Bug",
+     "bot": false,
+     "fix": "0b069ab3b",
+     "class": "code",
+     "scope": "file",
+     "shared_fix": true,
+     "executable_files": [
+      "src/remote_store/backends/_local.py"
+     ]
+    },
+    {
+     "path": "src/remote_store/backends/_local.py",
+     "category": "Bug",
+     "bot": false,
+     "fix": "0b069ab3b",
+     "class": "code",
+     "scope": "file",
+     "shared_fix": true,
+     "executable_files": [
+      "src/remote_store/backends/_local.py"
+     ]
+    },
+    {
+     "path": "src/remote_store/backends/_local.py",
+     "category": "Bug",
+     "bot": false,
+     "fix": "0b069ab3b",
+     "class": "code",
+     "scope": "file",
+     "shared_fix": true,
+     "executable_files": [
+      "src/remote_store/backends/_local.py"
+     ]
+    },
+    {
+     "path": "sdd/specs/003-backend-adapter-contract.md",
+     "category": "Spec",
+     "bot": false,
+     "fix": "0b069ab3b",
+     "class": "prose",
+     "scope": "file",
+     "shared_fix": false
+    },
+    {
+     "path": "src/remote_store/backends/_local.py",
+     "category": "Bug",
+     "bot": false,
+     "fix": "0b069ab3b",
+     "class": "code",
+     "scope": "file",
+     "shared_fix": true,
+     "executable_files": [
+      "src/remote_store/backends/_local.py"
+     ]
+    },
+    {
+     "path": "docs-src/reference/migration.md",
+     "category": "Possible",
+     "bot": false,
+     "fix": "0b069ab3b",
+     "class": "prose",
+     "scope": "file",
+     "shared_fix": false
+    },
+    {
+     "path": "sdd/backlog/bk-416-local-walks-onto-kernel.md",
+     "category": "Possible",
+     "bot": false,
+     "fix": "0b069ab3b",
+     "class": "prose",
+     "scope": "file",
+     "shared_fix": false
+    }
+   ]
+  },
+  {
+   "route": 2,
+   "round": 5,
+   "head": "0b069ab3b",
+   "first_submitted": "2026-10-09T15:32:04Z",
+   "findings": 15,
+   "prose": 10,
+   "code": 5,
+   "unfixed": 0,
+   "code_in_shared_fix": 4,
+   "fix_commits": [
+    "150f0b946"
+   ],
+   "items": [
+    {
+     "path": "src/remote_store/backends/_local.py",
+     "category": "Bug",
+     "bot": false,
+     "fix": "150f0b946",
+     "class": "code",
+     "scope": "file",
+     "shared_fix": true,
+     "executable_files": [
+      "src/remote_store/backends/_local.py"
+     ]
+    },
+    {
+     "path": "src/remote_store/backends/_local.py",
+     "category": "Spec",
+     "bot": false,
+     "fix": "150f0b946",
+     "class": "code",
+     "scope": "file",
+     "shared_fix": true,
+     "executable_files": [
+      "src/remote_store/backends/_local.py"
+     ]
+    },
+    {
+     "path": "src/remote_store/backends/_local.py",
+     "category": "Consistency",
+     "bot": false,
+     "fix": "150f0b946",
+     "class": "code",
+     "scope": "file",
+     "shared_fix": true,
+     "executable_files": [
+      "src/remote_store/backends/_local.py"
+     ]
+    },
+    {
+     "path": "src/remote_store/backends/_local.py",
+     "category": "Consistency",
+     "bot": false,
+     "fix": "150f0b946",
+     "class": "code",
+     "scope": "file",
+     "shared_fix": true,
+     "executable_files": [
+      "src/remote_store/backends/_local.py"
+     ]
+    },
+    {
+     "path": "sdd/specs/003-backend-adapter-contract.md",
+     "category": "Spec",
+     "bot": false,
+     "fix": "150f0b946",
+     "class": "prose",
+     "scope": "file",
+     "shared_fix": false
+    },
+    {
+     "path": "sdd/specs/003-backend-adapter-contract.md",
+     "category": "Spec",
+     "bot": false,
+     "fix": "150f0b946",
+     "class": "prose",
+     "scope": "file",
+     "shared_fix": false
+    },
+    {
+     "path": "sdd/specs/003-backend-adapter-contract.md",
+     "category": "Spec",
+     "bot": false,
+     "fix": "150f0b946",
+     "class": "prose",
+     "scope": "file",
+     "shared_fix": false
+    },
+    {
+     "path": "docs-src/reference/migration.md",
+     "category": "Spec",
+     "bot": false,
+     "fix": "150f0b946",
+     "class": "prose",
+     "scope": "file",
+     "shared_fix": false
+    },
+    {
+     "path": "docs-src/reference/migration.md",
+     "category": "Bug",
+     "bot": false,
+     "fix": "150f0b946",
+     "class": "prose",
+     "scope": "file",
+     "shared_fix": false
+    },
+    {
+     "path": "tests/backends/local/test_listing_permission.py",
+     "category": "Bug",
+     "bot": false,
+     "fix": "150f0b946",
+     "class": "code",
+     "scope": "file",
+     "shared_fix": false,
+     "executable_files": [
+      "tests/backends/local/test_listing_permission.py"
+     ]
+    },
+    {
+     "path": "sdd/traces/bug-280-local-listing-permission-leak.yml",
+     "category": "Bug",
+     "bot": false,
+     "fix": "150f0b946",
+     "class": "prose",
+     "scope": "file",
+     "shared_fix": false
+    },
+    {
+     "path": "sdd/traces/bug-280-local-listing-permission-leak.yml",
+     "category": "Consistency",
+     "bot": false,
+     "fix": "150f0b946",
+     "class": "prose",
+     "scope": "file",
+     "shared_fix": false
+    },
+    {
+     "path": "sdd/BACKLOG-DONE.md",
+     "category": "Consistency",
+     "bot": false,
+     "fix": "150f0b946",
+     "class": "prose",
+     "scope": "file",
+     "shared_fix": false
+    },
+    {
+     "path": "sdd/backlog/bug-313-local-get-file-info-denied-parent.md",
+     "category": "Bug",
+     "bot": false,
+     "fix": "150f0b946",
+     "class": "prose",
+     "scope": "file",
+     "shared_fix": false
+    },
+    {
+     "path": "sdd/backlog/bk-416-local-walks-onto-kernel.md",
+     "category": "Consistency",
+     "bot": false,
+     "fix": "150f0b946",
+     "class": "prose",
+     "scope": "file",
+     "shared_fix": false
+    }
+   ]
+  },
+  {
+   "route": 2,
+   "round": 6,
+   "head": "150f0b946",
+   "first_submitted": "2026-10-09T15:54:38Z",
+   "findings": 11,
+   "prose": 9,
+   "code": 1,
+   "unfixed": 1,
+   "code_in_shared_fix": 0,
+   "fix_commits": [
+    "b49d7372c"
+   ],
+   "items": [
+    {
+     "path": "src/remote_store/backends/_local.py",
+     "category": "Bug",
+     "bot": false,
+     "fix": "b49d7372c",
+     "class": "prose",
+     "scope": "file",
+     "shared_fix": false
+    },
+    {
+     "path": "src/remote_store/backends/_local.py",
+     "category": "Bug",
+     "bot": false,
+     "fix": "b49d7372c",
+     "class": "prose",
+     "scope": "file",
+     "shared_fix": false
+    },
+    {
+     "path": "sdd/specs/003-backend-adapter-contract.md",
+     "category": "Spec",
+     "bot": false,
+     "fix": "b49d7372c",
+     "class": "prose",
+     "scope": "file",
+     "shared_fix": false
+    },
+    {
+     "path": "docs-src/reference/migration.md",
+     "category": "Bug",
+     "bot": false,
+     "fix": "b49d7372c",
+     "class": "prose",
+     "scope": "file",
+     "shared_fix": false
+    },
+    {
+     "path": "tests/backends/local/test_listing_permission.py",
+     "category": "Test",
+     "bot": false,
+     "fix": "b49d7372c",
+     "class": "code",
+     "scope": "file",
+     "shared_fix": false,
+     "executable_files": [
+      "tests/backends/local/test_listing_permission.py"
+     ]
+    },
+    {
+     "path": "sdd/backlog/bk-416-local-walks-onto-kernel.md",
+     "category": "Consistency",
+     "bot": false,
+     "fix": "b49d7372c",
+     "class": "prose",
+     "scope": "file",
+     "shared_fix": false
+    },
+    {
+     "path": "sdd/backlog/bk-416-local-walks-onto-kernel.md",
+     "category": "Consistency",
+     "bot": false,
+     "fix": "b49d7372c",
+     "class": "prose",
+     "scope": "file",
+     "shared_fix": false
+    },
+    {
+     "path": "sdd/backlog/bug-280-local-listing-permission-leak.md",
+     "category": "Consistency",
+     "bot": false,
+     "fix": "b49d7372c",
+     "class": "prose",
+     "scope": "file",
+     "shared_fix": false
+    },
+    {
+     "path": "sdd/backlog/bug-280-local-listing-permission-leak.md",
+     "category": "Consistency",
+     "bot": false,
+     "fix": "b49d7372c",
+     "class": "prose",
+     "scope": "file",
+     "shared_fix": false
+    },
+    {
+     "path": "sdd/BACKLOG.md",
+     "category": "Consistency",
+     "bot": false,
+     "fix": "b49d7372c",
+     "class": "prose",
+     "scope": "file",
+     "shared_fix": false
+    },
+    {
+     "path": "CHANGELOG.md",
+     "category": "Bug",
+     "bot": false,
+     "fix": null,
+     "class": "unfixed",
+     "scope": null,
+     "shared_fix": false
+    }
+   ]
+  }
+ ],
+ "derivation": "pr_rounds.py --pr 1093 --route-start cdcaa35c6"
+}
