@@ -112,7 +112,7 @@ the shape:
    it or replacing it with a one-line pointer to the item that owns it,
    never this shape. A premise the change relies on is not such a claim: a
    refuted one is a finding against the change, shape 1 or 5
-   ([`CONTENT-RULES.md` Rule 4](../../../sdd/CONTENT-RULES.md#change-details-what-it-changes)).
+   ([`CONTENT-RULES.md` Rule 8](../../../sdd/CONTENT-RULES.md#change-details-what-it-changes)).
 5. **Filing** — the File-it verdict: the finding is real, it closes outside
    this PR, and the reply names the backlog ID. A finding fixed in this PR
    takes one of shapes 1 to 4.

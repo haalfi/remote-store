@@ -462,7 +462,7 @@ menu by link rather than copying it.
   finding against the change, fixed by shape (1) or filed. A refuted claim
   that only describes behaviour the PR leaves alone is deleted, not measured
   again more narrowly
-  ([`CONTENT-RULES.md` Rule 4](../../../sdd/CONTENT-RULES.md#change-details-what-it-changes)).
+  ([`CONTENT-RULES.md` Rule 8](../../../sdd/CONTENT-RULES.md#change-details-what-it-changes)).
 
 ### The measuring member
 
@@ -605,7 +605,7 @@ with its derivation — a command, a test name or an enumeration; **(4)** narrow
 the claim to what was measured, only for behaviour this PR changes, since a
 claim about behaviour it leaves alone takes (2), deleted or replaced by a
 pointer to the item that owns it, unless the change relies on it
-([`CONTENT-RULES.md` Rule 4](../../../sdd/CONTENT-RULES.md#change-details-what-it-changes));
+([`CONTENT-RULES.md` Rule 8](../../../sdd/CONTENT-RULES.md#change-details-what-it-changes));
 **(5)** filing, which is the File-it verdict. A
 Must-fix takes (1) to (4), as the table says. *Write a rationale* is not a
 shape. The fix-shape column is required, and the

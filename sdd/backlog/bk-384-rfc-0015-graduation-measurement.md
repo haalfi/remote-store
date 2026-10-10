@@ -97,7 +97,7 @@ Under BK-418 (trace `sdd/traces/bk-418-claims.yml`), D2's shape (4), narrowing
 a claim to what was measured, applies only to behaviour the PR changes. A
 claim about behaviour the PR leaves alone, and that the change does not rely
 on, takes shape (2)
-([`CONTENT-RULES.md` Rule 4](../CONTENT-RULES.md#change-details-what-it-changes)).
+([`CONTENT-RULES.md` Rule 8](../CONTENT-RULES.md#change-details-what-it-changes)).
 D2's five shapes are unchanged in number and text. A delivery sampled here
 that merged after this ran D2 in the restricted form, and its shape histogram
 should say so.

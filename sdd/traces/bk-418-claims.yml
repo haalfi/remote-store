@@ -20,6 +20,9 @@ expected_ripples:
   - .claude/skills/orchestrate/SKILL.md
 surprising_ripples:
   - sdd/backlog/bk-384-rfc-0015-graduation-measurement.md
+  - CLAUDE.md
+  - sdd/CLAUDE-REFERENCE.md
+  - .claude/agents/documentation-expert.md
 discovery_followups: []
 decisions:
   - sdd/decisions/0b26f6a6-64de-4295-87a8-ba03c81a4306.jsonl
@@ -153,6 +156,35 @@ phases:
           The section gives prose and code counts only, not the walks topic,
           which I took from PR #1093's threads. The clause now cites each
           source for what it supports, with the section anchor
+  - id: fix_2
+    name: "Fix pass after the maintainer's targeted review on PR #1106"
+    steps:
+      - file: sdd/CONTENT-RULES.md
+        section: "Rule 4 clause; How the rules interact; Provenance"
+        read_type: verify
+        extract: >-
+          The clause had its own trigger, failure and fix, so it was a second
+          rule hidden under "One copy per fact", and "When in doubt on any of
+          those six, ask rule 1" decided it wrongly. Moved to Rule 8 (same
+          anchor) as a third axis, named in Intent & Scope and How the rules
+          interact, with an example. The run-A evidence moved to Provenance.
+          My scope dialog had recommended the Rule 4 placement; the
+          maintainer chose Rule 8 in the fix-pass dialog
+      - file: CLAUDE.md
+        section: "Documentation framework, item 3"
+        read_type: verify
+        extract: >-
+          Sweep of live summaries of CONTENT-RULES by a grep for
+          `Rule 7's|in Rule 7 alone|rules 1–6` outside records found five:
+          CLAUDE.md, CLAUDE-REFERENCE pr-validation-gates, the
+          documentation-expert FOUNDATION line, the mkdocs.yml comment and
+          gen_pages.py's docstring. The first three steer authors or
+          reviewers and now name Rule 8. The last two point editors of docs
+          tooling at the file, stay true as labels, and are left alone
+      - file: .claude/skills/fix-pr/SKILL.md
+        section: "anchor links"
+        read_type: verify
+        extract: "Seven `Rule 4](...#change-details-what-it-changes)` links retargeted to Rule 8, counted by the replacing script per file: ship 2, orchestrate 2, rvw-pr 1, fix-pr 1, BK-384 1"
 review:
   # Derived by `hatch run ship-report 1106 --trace-block-only` at head 00285e6.
   # Do not hand-edit, except a newly required field per sdd/traces/_schema.yml

@@ -602,7 +602,8 @@ trace step (`/pr` verifies a trace exists, `/fix-pr` updates it).
   gate enforce the mechanical rules but not the judgment-based ones. Review the
   changed tests against [`TESTING.md`](TESTING.md) (assertion depth, mock
   discipline), changed documentation against [`CONTENT-RULES.md`](CONTENT-RULES.md)
-  (prose longevity in rules 1–6, and Rule 7's comprehension test), and any new or
+  (prose longevity in rules 1–6, Rule 7's comprehension test, and Rule 8's
+  limit of a change's detail to the behaviour it changes), and any new or
   changed cross-artifact check or drift report against
   [`DRIFT-RULES.md`](DRIFT-RULES.md) (claim space, declared authority, stated
   bounds). Report violations before finishing.

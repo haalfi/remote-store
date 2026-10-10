@@ -372,7 +372,7 @@ Spawn reviewers per [Reviewer selection](#reviewer-selection). Each reviews
   a violation, and neither needs six lines)
 - Detail the authoring output writes about behaviour the change does not
   alter and does not rely on, flagged under
-  [`CONTENT-RULES.md` Rule 4](../../../sdd/CONTENT-RULES.md#change-details-what-it-changes)
+  [`CONTENT-RULES.md` Rule 8](../../../sdd/CONTENT-RULES.md#change-details-what-it-changes)
   with deletion or a pointer to the owning item as the change, never a
   narrower claim
 - What it **ran** and what came back, if it is the measuring reviewer
@@ -395,7 +395,7 @@ orchestrator fixes directly.
    first, deleting the false claim, replacing it with its derivation, narrowing
    it to what was measured (only for behaviour the change alters; any other
    claim is deleted unless the change relies on it, per
-   [`CONTENT-RULES.md` Rule 4](../../../sdd/CONTENT-RULES.md#change-details-what-it-changes)),
+   [`CONTENT-RULES.md` Rule 8](../../../sdd/CONTENT-RULES.md#change-details-what-it-changes)),
    or filing — and never a rationale; the finding's
    class, not only the lines it names; the sibling descriptions of your own
    changes; a fix to a quantified claim scoped to the quantifier. Step 3's
