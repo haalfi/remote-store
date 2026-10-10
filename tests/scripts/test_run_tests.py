@@ -191,17 +191,59 @@ def test_memory_is_probed_after_the_lock(monkeypatch: pytest.MonkeyPatch, capsys
     assert "workers" not in capsys.readouterr().err
 
 
-def test_free_commit_bytes_reads_this_machine() -> None:
-    """The real probe answers on Windows and Linux, the two platforms the suite runs on.
+def _independent_free_bytes() -> int:
+    """Free memory read through a second route, for checking the probe's field and scale.
 
-    Bounded by total physical memory plus any pagefile, so a wrong field (total
-    instead of free, or kB read as bytes) shows up as an absurd value.
+    Windows: ``GetPerformanceInfo``'s commit limit minus commit charge, in pages,
+    the same quantity as ``ullAvailPageFile`` from another API. Linux: this
+    test's own parse of ``MemAvailable``.
+    """
+    if sys.platform == "win32":
+        import ctypes
+        from ctypes import wintypes
+
+        class _PerfInfo(ctypes.Structure):
+            _fields_ = [  # noqa: RUF012 - ctypes reads it from the class
+                ("cb", wintypes.DWORD),
+                ("CommitTotal", ctypes.c_size_t),
+                ("CommitLimit", ctypes.c_size_t),
+                ("CommitPeak", ctypes.c_size_t),
+                ("PhysicalTotal", ctypes.c_size_t),
+                ("PhysicalAvailable", ctypes.c_size_t),
+                ("SystemCache", ctypes.c_size_t),
+                ("KernelTotal", ctypes.c_size_t),
+                ("KernelPaged", ctypes.c_size_t),
+                ("KernelNonpaged", ctypes.c_size_t),
+                ("PageSize", ctypes.c_size_t),
+                ("HandleCount", wintypes.DWORD),
+                ("ProcessCount", wintypes.DWORD),
+                ("ThreadCount", wintypes.DWORD),
+            ]
+
+        info = _PerfInfo()
+        info.cb = ctypes.sizeof(info)
+        assert ctypes.windll.kernel32.K32GetPerformanceInfo(ctypes.byref(info), info.cb)
+        return (info.CommitLimit - info.CommitTotal) * info.PageSize
+    fields = dict(line.split(":", 1) for line in Path("/proc/meminfo").read_text(encoding="ascii").splitlines())
+    kib, unit = fields["MemAvailable"].split()
+    assert unit == "kB"
+    return int(kib) * 1024
+
+
+def test_free_commit_bytes_reads_this_machine() -> None:
+    """The real probe reads free memory, not another field, at the right scale.
+
+    Checked against a second route to the same quantity within 1 GiB, the
+    allowance for memory moving between the two reads. On the machine this was
+    written on the wrong Windows fields sit 13 GiB or more away (free 44.4 GiB;
+    available RAM 14.4, total RAM 31.3, commit limit 71.3), and kB read as bytes
+    is off by a factor of 1024.
     """
     if sys.platform not in ("win32", "linux"):
         pytest.skip("no free-memory probe on this platform; the cap stays off")
     free = _mod.free_commit_bytes()
     assert free is not None
-    assert 0 < free < 4096 * _GIB
+    assert abs(free - _independent_free_bytes()) < _GIB
 
 
 @pytest.mark.parametrize(
