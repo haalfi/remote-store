@@ -12,6 +12,7 @@ audience:
   - contributor.process
   - contributor.tooling
 expected_ripples:
+  - sdd/research/research-token-spend-means.md
   - sdd/research/token-usage/report.md
   - sdd/rfcs/rfc-0020-ship-token-interventions.md
   - sdd/BACKLOG.md
@@ -111,6 +112,14 @@ phases:
           deleted mid-walk where #1093 raises; the maintainer judged the two not
           must-fix, which settled the decision rule. The probe was committed and
           re-run on master, reproducing the bare PermissionError and the race
+      - file: sdd/AUTHORING.md
+        section: "Where does my new file go?, Directory defaults"
+        read_type: gate
+        extract: >-
+          sdd/research/research-*.md is dual by default, published under
+          explanation/design/research/; check_sdd_index needs a Date header.
+          The summary for readers goes there, linking the record for every
+          figure rather than copying it
       - file: token kit notes outside the repo (understanding, handoff, run A reports)
         section: "(whole)"
         read_type: reference
