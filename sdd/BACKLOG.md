@@ -978,11 +978,11 @@ sessions work is measured before it becomes process.
 
 - [~] **BK-418 — `/ship` spends most of a delivery after the PR opens, and no intervention against it is measured**
   spec: — · effort: L · audience: contributor.process, contributor.tooling
-  Run A (`/ship BUG-280`) spent 94% of its 59.3 M units in its review loop and
-  subagents; from round 4 most findings came from the loop's own fixes
-  ([research record](research/token-usage/report.md)). Open decision: whether
-  rule (c), check-closed prose on variant #1101, survives run B, per Draft
-  [RFC-0020](rfcs/rfc-0020-ship-token-interventions.md).
+  Run A (`/ship BUG-280`) spent 59.3 M units, 94% after the PR opened; run B,
+  the same delivery on the means and rule (c), spent 15.0 M in five rounds
+  ([research record](research/token-usage/report.md) § Run B). Open decision:
+  keep rule (c) (variant #1101) per Draft [RFC-0020](rfcs/rfc-0020-ship-token-interventions.md),
+  once the maintainer's review of #1113 settles its last clause.
 
 - [ ] **BK-420 — BK-414's lookup tool is not yet measured against its baseline of 78 search-and-reread cycles**
   spec: — · effort: S · audience: contributor.tooling, contributor.process
@@ -999,3 +999,11 @@ sessions work is measured before it becomes process.
   quantifier rule. SCOPE findings, overstated quantifiers and missing cases, are
   91 of 321 long-loop prose findings ([research record](research/token-usage/report.md) § 5).
   Open decision: extend principle 9 to quantifiers, after RFC-0020's run B is scored.
+
+- [ ] **BK-424 — The token kit dates a run's phases from records that can point at the wrong event**
+  spec: — · effort: S · audience: contributor.tooling
+  On run B, `tokkit.py` took PR open from a `pr-link` record Claude Code wrote
+  for another PR whose branch name the worktree reused, missed commits run as
+  `git -C <dir>`, and ended the orient phase at a probe script's write
+  ([research record](research/token-usage/report.md) § Learnings). Open
+  decision: date phases from the PR's creation and the plan approval instead.

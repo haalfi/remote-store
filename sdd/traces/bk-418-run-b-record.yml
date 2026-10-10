@@ -1,0 +1,111 @@
+id: BK-418
+title: "`/ship` spends most of a delivery after the PR opens, and no intervention against it is measured"
+trigger: >-
+  Run B (`/ship BUG-280` on master plus the rule (c) variant, PR #1113) closed
+  merge-ready on 2026-10-10 while a monitoring session measured it. RFC-0020
+  asks for its scoring in the research record, and the maintainer had agreed
+  that the analysis page, the results and every learning of runs A and B land
+  in sdd/research/token-usage/ as one research record.
+source_items:
+  - BK-418
+audience:
+  - contributor.process
+  - contributor.tooling
+expected_ripples:
+  - sdd/research/token-usage/report.md
+  - sdd/rfcs/rfc-0020-ship-token-interventions.md
+  - sdd/BACKLOG.md
+surprising_ripples:
+  - sdd/research/token-usage/prep_cost.py
+discovery_followups:
+  - BK-424
+decisions:
+  - sdd/decisions/11c5226f-c156-4f5c-863f-28c1ace02938.jsonl
+orient:
+  - items: [BK-423]
+    verdict: constrains
+    evidence: >-
+      BACKLOG.md BK-423: "Open decision: extend principle 9 to quantifiers,
+      after RFC-0020's run B is scored"; RFC-0020 § Roadmap decides it after
+      scoring, so this record carries run B's scope findings as its evidence
+      and leaves the decision out.
+  - items: [BK-417]
+    verdict: unrelated
+    evidence: >-
+      BACKLOG.md BK-417 is about scripts/report_token_usage.py's undercount,
+      not the research kit this record extends.
+  - items: [BK-420]
+    verdict: unrelated
+    evidence: >-
+      BACKLOG.md BK-420 re-walks BK-414's lookup tool against its own baseline
+      about 30 days after #1099; it uses no run B figure.
+phases:
+  - id: orient
+    name: Orient
+    steps:
+      - file: sdd/BACKLOG.md
+        section: "BK-418, BK-423 (hatch run backlog-show)"
+        read_type: gate
+        extract: "BK-418's open decision is rule (c) after run B; BK-423 waits on run B's scoring"
+      - file: sdd/rfcs/rfc-0020-ship-token-interventions.md
+        section: "Status, Experiment, Decision rule, Roadmap, Impact"
+        read_type: gate
+        extract: >-
+          Phase 0's deliverable is the comparison in the report's run B section
+          with both SHAs; the decision rule's clauses, scored one by one
+      - file: sdd/research/token-usage/report.md
+        section: "Run A final, Run B baseline, Reproducing"
+        read_type: reference
+        extract: >-
+          Every figure cites [file: key] under results/, and every result file
+          has a row naming its script and inputs; extracts keyed by session ID
+          stay out of the repo
+      - file: sdd/traces/bk-418-run-b-baseline.yml
+        section: "(whole)"
+        read_type: reference
+        extract: "Route 2 is run B's baseline; the fix-commit classifier errs toward code"
+      - file: sdd/CLAUDE-REFERENCE.md
+        section: "Local-machine reference row"
+        read_type: verify
+        extract: "No drive paths, ~/.claude paths or memory slugs in committed files; the page's footer had both"
+  - id: measure
+    name: Measure run B
+    steps:
+      - file: sdd/research/token-usage/tokkit.py
+        section: "report, live, find"
+        read_type: reference
+        outcome: misleading
+        extract: >-
+          The PR-open boundary follows Claude Code's pr-link record, which
+          pointed at run A's #1093 because run B's worktree branch reused its
+          name; git -C commits and pushes raise no event; phase 1 ends at the
+          first file write, a probe script here. Phases were re-cut with
+          --until at plan approval and PR creation. Filed as BK-424
+      - file: sdd/research/token-usage/gates.py
+        section: "gate_runs, payload"
+        read_type: reference
+        outcome: unclear
+        extract: >-
+          foreground_all counts only hatch run all; run B's 7 s median comes
+          from 7 runs failing in seconds on generator and drift checks before
+          the tests, which the result does not say
+      - file: sdd/research/token-usage/pr_rounds.py
+        section: "classify"
+        read_type: reference
+        extract: >-
+          A fix that removes a spec mark is code, so run B's round 5 is not a
+          prose-only round although its replies close on recorded checks
+  - id: record
+    name: Record and compile
+    steps:
+      - file: PR #1113 review replies (GitHub)
+        section: "replies matching check-closed or Closed on recorded checks"
+        read_type: verify
+        extract: "11 replies, 1, 2, 4 and 4 in rounds 2 to 5; git blame at each later head finds none proved false"
+      - file: token kit notes outside the repo (understanding, handoff, run A reports)
+        section: "(whole)"
+        read_type: reference
+        extract: >-
+          The learnings compiled into the report's § Learnings; a background
+          agent's preparation sweep, reclassified by the maintainer, became
+          prep_cost.py with a class map kept outside the repo

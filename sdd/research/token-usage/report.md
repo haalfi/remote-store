@@ -1,15 +1,15 @@
 # Research: Where Claude Code sessions on this repo spend their tokens
 <!-- doc: repo-only -->
 
-**Date:** 2026-10-09
-**Backlog items:** BK-418
-**Status:** Point-in-time snapshot per [`sdd/000-process.md` § Document types](../../000-process.md#document-types). It ports, re-runs and corrects an analysis done in a scratch session on 2026-10-09. Every figure names the result file it comes from, as `[file: key]` under `results/`. § Reproducing says which script and inputs produced each file. BK-418 tracks the interventions it motivates.
+**Date:** 2026-10-09, extended 2026-10-10 with run B, the cost of the means and § Learnings
+**Backlog items:** BK-418, BK-424
+**Status:** Point-in-time snapshot per [`sdd/000-process.md` § Document types](../../000-process.md#document-types). It ports, re-runs and corrects an analysis done in a scratch session on 2026-10-09. Every figure names the result file it comes from, as `[file: key]` under `results/`. § Reproducing says which script and inputs produced each file. BK-418 tracks the interventions it motivates. [`token-spend-analysis.html`](token-spend-analysis.html) shows the same figures as a page; where the two differ, this record wins.
 
 ## Question
 
 Where do the tokens of a `/ship` delivery, and of sessions on this repo in
 general, go? Which of those costs could a change to how sessions work
-actually move?
+actually move, and did the changes made after run A move them?
 
 ## Answer
 
@@ -43,6 +43,12 @@ review loop after the PR opens is where both are largest.** Cache reads are
 - **The always-loaded instruction files are second order.** The backlog files,
   linked docs and `CLAUDE.md` text each account for about 2 to 3% of re-read
   context [backlog_links: `groups`; composition: `instruction_files`].
+- **The changes made after run A cut the same delivery to a quarter.** Run B,
+  the same `/ship BUG-280` on master with the means and rule (c), closed in five
+  rounds at 15.0 M units against run A's 59.3 M and route 2's 28.19 M
+  [run_b_final: `units_m`; run_b_route: `route.rounds`]. Building the means
+  cost 74.7 M [prep_cost: `units_m_by_class`]. Which change did how much, one
+  run cannot say (§ Run B, § Learnings).
 
 ## What this does not establish
 
@@ -72,6 +78,10 @@ describe what happened, they do not estimate a rate.**
 - **Prices are fitted, not listed.** Dollars use per-model prices fitted to
   Claude Code's cost records, with mean errors of 15.0% (Opus 5.5) and 1.8%
   (Opus 5, n = 4) [calibration: `price_fit`].
+- **Run B is one run against one.** Every means on master changed together with
+  rule (c), run B's scope was wider than route 2's, and run B saw a note about
+  the experiment during orient (§ Run B). It shows what the means did once,
+  not what each is worth.
 
 ## 1. Calibration
 
@@ -316,7 +326,8 @@ The skills figures and why they differ are in § 6. The MEMORY.md sizes are the 
 bytes before and after the trim, divided by 2.43 characters per token (§ 1). Its
 measured cost before the trim was 1.19% of units [composition:
 `instruction_files`]. Both changes apply to sessions started afterwards. The
-skills setting took effect during run A.
+skills setting took effect during run A. The changes made after this section,
+and what building them cost, are in § What the means cost.
 
 ## 9. Hypotheses
 
@@ -342,7 +353,8 @@ acting could move rather than predicting a saving.
 
 Sources: rows 1, 12 [work_items], [run_a_final], [run_a_orient_check]; rows
 2–6, 8 [composition], [backlog_links]; row 7 [inventory]; row 9 [calibration];
-row 10 [rounds], [prose_classes]; row 11 § 6.
+row 10 [rounds], [prose_classes]; row 11 § 6. Run B is evidence on rows 1, 10
+and 12: § Run B.
 
 ## Run A final
 
@@ -440,6 +452,192 @@ maintainer's call), so its classes sum to 10.
   finding asked for landed only in another file and the finding's own file got
   only a docstring.
 
+## Run B: `/ship BUG-280` on the means
+
+**Run B closed merge-ready in five rounds at 15.0 M units, about $35: a quarter
+of run A and 47% below route 2's 28.19 M.** Every round started on less context
+than route 2's, and the loop drew 17 findings against 49 [run_b_final:
+`units_m`, `usd_estimate`; run_b_route: `route.rounds`; pr_1113_rounds:
+`routes`]. It ran on master `eff7953bb` plus the variant `fba0850a6`, which
+carries rule (c) alone, so the means on master and rule (c) changed together.
+
+| Phase | Calls | Units | Share |
+| --- | ---: | ---: | ---: |
+| Orient and plan (to plan approval) | 44 | 1.11 M | 7.4% |
+| Build (to PR open) | 49 | 1.43 M | 9.5% |
+| Handoff, and the resumed session before round 1 | 10 | 0.33 M | 2.2% |
+| Review loop, main session | 214 | 6.94 M | 46.3% |
+| Review loop, 11 subagents | 312 | 5.19 M | 34.6% |
+
+The first two rows are cut at the session's own milestones with `tokkit.py
+report --until`: plan approval [run_b_plan: `calls`, `units_m`] and the PR's
+creation [run_b_pr_open: `calls`, `units_m`]. The kit's own boundaries fall
+elsewhere here (§ Learnings). The loop rows are [run_b_route:
+`route`]; the handoff row is the remainder of [run_b_final: `units_m`]. After the
+PR opened: 83% of units, against run A's 94.1%.
+
+| Round | Members | Main context at start | Main units | Subagent units | Findings | Prose (classifier) |
+| --- | ---: | ---: | ---: | ---: | ---: | ---: |
+| 1 | 1 | 104k | 1.14 M | 0.39 M | 1 | 0 |
+| 2 | 1 | 170k | 0.44 M | 0.68 M | 1 | 1 |
+| 3 | 3 | 194k | 1.38 M | 1.03 M | 4 | 1 |
+| 4 | 3 | 276k | 1.72 M | 1.37 M | 7 | 1 |
+| 5 | 3 | 360k | 2.26 M | 1.72 M | 4 | 3 |
+
+From [run_b_route: `route.rounds`] and [pr_1113_rounds: `rounds`]; route 2's
+row for each round is in § Run B baseline. The loop cost 12.13 M against route
+2's 22.62 M [run_b_route: `route.loop_units_m`].
+
+- **Orient weighed the redesign.** Before planning, run B read RFC-0017 and the
+  items sharing BE-021 through `backlog-find` and `backlog-show`, recorded a
+  verdict per cluster, and fixed every branch of the three listing methods, the
+  recursive walks included. Route 2 had left those walks to a follow-up.
+  Orient cost 1.11 M against run A's 0.4% of 59.3 M, about 0.24 M
+  [run_b_plan: `units_m`; run_a_final: `phases`, `units_m`], and no re-plan
+  over scope followed.
+- **The handoff held context down.** Round 1 started at 104k against run A's
+  255k; route 2 reached 113k only through a compaction [run_b_route:
+  `route.rounds`; run_a_route2: `route.rounds`].
+- **The loop still made its own work.** Round 3's fix (a subfolder deleted
+  mid-walk raises `NotFound`) caused four of round 4's seven findings: it broke
+  recursive listings over a dangling Windows junction. `/ship`'s divergence
+  check fired at round 4 and the fix was reverted. Run A reached the same kind
+  of re-plan after round 7. Items the delivery filed during the loop, BUG-318
+  and BUG-319, drew three of rounds 3 and 5's eight findings.
+- **Fewer findings, each dearer.** Prose was 35% of findings against route 2's
+  61% [pr_1113_rounds: `routes`]. Per finding the loop cost 0.71 M units
+  against 0.46 M, because the rounds were smaller but not cheaper per round.
+- **No gate trouble.** 16 gate runs, none cut off and no idle stall, against run
+  A's 33 runs with 3 cut-offs and a 37-minute stall [run_b_gates;
+  run_a_final_gates]. The 7 failures each ended within seconds on a generator or
+  drift check before the tests (`graph.json`, the graph page, a lint fix, the
+  backlog item cap), read in the transcripts' results: the gate stops at the
+  first stale artifact, so each costs one more gate call.
+
+### Rule (c) against the decision rule
+
+**Rule (c) fired in rounds 2 to 5, no check-closed fix was found false
+afterwards, and the run closed shorter and cheaper than route 2. Only round 2
+closed on check-closed prose alone, and the maintainer's post-close review is
+still to come.** Eleven review replies close a finding on a recorded check: 1,
+2, 4 and 4 in rounds 2 to 5 (`gh api repos/haalfi/remote-store/pulls/1113/comments`,
+replies matching `check-closed|Closed on recorded checks`).
+
+| Clause ([RFC-0020](../../rfcs/rfc-0020-ship-token-interventions.md#decision-rule)) | Result |
+| --- | --- |
+| Keeps: a round closes on check-closed prose alone, no round opened to verify it | Holds, narrowly: round 2. Round 3 opened, but it was owed, because no unprimed or whole-file pass had seen round 1's code fix. Round 5 does not count: one of its fixes removed a `spec` mark, an executable line, and the loop ended at the soft round ceiling on the maintainer's call |
+| Keeps: fewer than route 2's six rounds | Holds: five, ended by the ceiling call rather than by convergence |
+| Keeps: every check-closed fix quotes its check and what it returned | Holds |
+| Fails: rule (c) never fires | Does not apply |
+| Fails: a check-closed prose fix proves false later | Not so far. `git blame` at each later head puts round 4's migration-note finding on lines round 3's code fix wrote, not on round 2's check-closed lines; rounds 4 and 5 have no later round |
+| Fails: a reply names no check, or one not run | Does not apply; but see below |
+| Run fails: units not below 28.19 M | Does not apply: 15.0 M |
+| Run fails: a must-fix defect run A's PR did not have | Pending: the maintainer's review of PR #1113 |
+
+**The decision rule lacks a clause run B needed.** Three of the eleven checks
+were run but could not have shown their claim false: `gen-backlogid-check`
+twice, which tests a backlog item's shape and not what it says, and a `git
+grep` that tests wording. A check should count only if it can return the claim
+false.
+
+**What run B cannot separate.** The handoff, claim discipline (Rule 8), the
+deeper orient and a lower prose share all moved the same figures. Run B's scope
+was wider than route 2's, which works against it. Run B also read, during
+orient, an auto-memory note describing the A/B experiment and run A's cost,
+which RFC-0020's start conditions exclude; a rerun should hide that note first.
+
+## What the means cost
+
+**Building the means took 74.7 M units, about $172, and the whole preparation
+between run A and run B 134.0 M, about $310.** That is nine runs B; against run
+A, run B saved 44.3 M, so the means alone equal about 1.7 such savings, an
+arithmetic fact and not a forecast. From [prep_cost], over the 52 local
+sessions started between 2026-10-09 and run B's start.
+
+| Class | Units | Est. $ |
+| --- | ---: | ---: |
+| Means: PRs on master, the stable local gate, the ruff-hook fix, the MEMORY.md trim | 74.67 M | 172 |
+| Measurement and analysis, run A's monitoring included | 36.95 M | 85 |
+| Experiment setup: RFC-0020, the variant, the baseline, the run B worktree | 22.40 M | 52 |
+| Unrelated work in the same window, not counted | 16.16 M | 37 |
+
+From [prep_cost: `units_m_by_class`, `usd_by_class`]. A session's units are
+split by the git branch of each call, because one session often served several
+PRs; the class of each session and branch comes from a map kept outside the
+repo, since it is keyed by session ID.
+
+- **The stable gate's four PRs took 21.8 M**: its filing (#1097), the suite
+  lock (#1105), the moto port fix (#1107) and memory-capped workers (#1108)
+  [prep_cost: `by_pr`]. Two read-only gate analyses served no PR, so their
+  units count under means but not under a PR.
+- **The costliest single means was BK-414's lookup tool** (#1099), 10.75 M over
+  four sessions [prep_cost: `by_pr`]. Fix rounds ran inside the build sessions
+  and are not separated from them.
+- **No session in the window compacted** [prep_cost: `sessions_compacted`], and
+  the two analysis sessions peaked at 945k and 788k context [prep_cost:
+  `costliest`].
+- **Not measured:** PR #1110 was built in a cloud session, so only its two local
+  reviews are counted; nothing before 2026-10-09.
+
+## Learnings
+
+**What this work established, in one place: what a delivery costs, which
+changes moved it, and what measuring it takes.** Each item points at the section
+holding its figures.
+
+**Where the cost is**
+
+- A call re-reads its whole context, so a session costs about its calls times
+  its context, and the review loop after the PR opens is where both are largest
+  (§ 2, § Run A final).
+- The repo's always-loaded files are a few percent of that; tool results, the
+  session prefix and hidden thinking are most of it (§ 3).
+- Every subagent pays a prefix of about 53k tokens before doing any work, and
+  review subagents re-read the same process files (§ 3).
+
+**What moved it**
+
+- **Orient before planning.** Reading the items that share a spec ID, and
+  recording a verdict per cluster, cost run B 7.4% of its units and avoided the
+  re-plan that split run A into two routes (§ Run B).
+- **A fresh session for the review loop.** The handoff kept every round's
+  starting context below route 2's; a compaction resets context once, and it
+  regrows about 100k per round (§ Run A final, § Run B).
+- **Detail only for what the change owns.** With claim discipline on master,
+  among the other changes, prose fell from 61% to 35% of findings (§ Run B).
+- **Closing prose by a check, not a round.** It fired eleven times and held, but
+  a check must be able to fail the claim to count (§ Rule (c) against the
+  decision rule).
+- **A stable gate.** With one suite at a time, a per-test timeout and workers
+  capped by memory, run B had none of run A's cut-offs or stalls (§ Run B).
+
+**What still costs**
+
+- A fix pass breeds findings: a behaviour change made in round 3 caused most of
+  round 4. Re-planning by the divergence check, not patching, ended it.
+- Items filed during the loop draw findings in the next round; keep a mid-loop
+  item to its defect.
+- A gate that stops at the first stale generated file costs one gate call per
+  stale file.
+
+**What measuring taught**
+
+- **Fix the decision rule before the run, and observe scope rather than set
+  it.** RFC-0020 did both, which is why run B's wider scope is a recorded
+  confound and not a moved goalpost.
+- **Keep the experiment out of the subject's context.** A memory note naming
+  the experiment reached run B during orient.
+- **Measure from the PR, not from Claude Code's link records.** Run B's
+  worktree branch reused run A's branch name, and Claude Code linked the session
+  to run A's PR; the kit's PR-open boundary followed that link. The kit also
+  misses commits run as `git -C <dir>` and ends its orient phase at the first
+  file write, which in run B was a probe script. These are filed as BK-424.
+- **Snapshot early.** Claude Code deletes transcripts after about 30 days, and
+  cloud sessions leave none locally.
+- **Measurement is not free.** Run A's monitoring and analysis session ran
+  30.7 M units without a compaction, and analysis and setup together cost
+  59.4 M, as much as run A itself (§ What the means cost).
+
 ## Reproducing
 
 **Every result file is produced by one script from inputs named in its own
@@ -472,6 +670,11 @@ siblings (`_common.default_transcripts`).
 | `run_a_orient_check.json` | `orient_check.py --item BUG-280 --rev ff00a1dd7` | `BACKLOG.md` at run A's base commit, run A's transcript |
 | `run_a_route2.json` | `route_baseline.py --route-start-call 409 --checkpoint 2026-10-09T13:35:51Z --name run_a_route2` | run A's `tokkit.py` snapshot (`--snapshot`) |
 | `pr_1093_rounds.json` | `pr_rounds.py --pr 1093 --route-start cdcaa35c6` | GitHub reviews and PR commits (cached in `--data`), the fix commits in git |
+| `run_b_final.json`, `run_b_plan.json`, `run_b_pr_open.json` | `tokkit.py report --json`, with `--until 2026-10-10T13:58:24Z` (plan approval) and `--until 2026-10-10T14:08:33Z` (PR creation) for the two cuts | run B's build session; the full report adds its resumed session through the PR link |
+| `run_b_route.json` | `route_baseline.py --route-start-call 1 --name run_b_route` | run B's resumed session's `tokkit.py` snapshot |
+| `pr_1113_rounds.json` | `pr_rounds.py --pr 1113` | GitHub reviews and PR commits (cached in `--data`), the fix commits in git |
+| `run_b_gates.json` | `gates.py --name run_b_gates` | both run B sessions' transcripts |
+| `prep_cost.json` | `prep_cost.py --since 2026-10-09T00:00:00Z --until 2026-10-10T13:42:18Z` | transcripts, and the class map in `--data` (keyed by session ID, so not committed) |
 
 Sessions are assigned to work items through the PR they served, never by
 session ID: a `pr-link` record, a PR number the first real prompt hands

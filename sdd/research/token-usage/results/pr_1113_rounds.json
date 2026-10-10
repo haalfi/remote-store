@@ -1,0 +1,299 @@
+{
+ "_provenance": {
+  "script": "pr_rounds.py",
+  "generated": "2026-10-10",
+  "inputs": {
+   "pr_1113_reviews.json": "0f309c8ba169b86870338525831d72cfc682ae8fe262a95f02122c077ebb4a9f"
+  }
+ },
+ "pr": 1113,
+ "submissions": 23,
+ "routes": {
+  "1": {
+   "start": null,
+   "rounds": 5,
+   "findings_by_round": [
+    1,
+    1,
+    4,
+    7,
+    4
+   ],
+   "findings": 17,
+   "prose": 6,
+   "code": 11,
+   "unfixed": 0,
+   "prose_pct": 35.0,
+   "code_in_shared_fix": 9
+  }
+ },
+ "rounds": [
+  {
+   "route": 1,
+   "round": 1,
+   "head": "eab37b49b",
+   "first_submitted": "2026-10-10T14:42:33Z",
+   "findings": 1,
+   "prose": 0,
+   "code": 1,
+   "unfixed": 0,
+   "code_in_shared_fix": 0,
+   "fix_commits": [
+    "16ba907c3"
+   ],
+   "items": [
+    {
+     "path": "src/remote_store/backends/_local.py",
+     "category": "Bug",
+     "bot": false,
+     "fix": "16ba907c3",
+     "class": "code",
+     "scope": "file",
+     "shared_fix": false,
+     "executable_files": [
+      "src/remote_store/backends/_local.py"
+     ]
+    }
+   ]
+  },
+  {
+   "route": 1,
+   "round": 2,
+   "head": "16ba907c3",
+   "first_submitted": "2026-10-10T15:04:37Z",
+   "findings": 1,
+   "prose": 1,
+   "code": 0,
+   "unfixed": 0,
+   "code_in_shared_fix": 0,
+   "fix_commits": [
+    "111faf4a4"
+   ],
+   "items": [
+    {
+     "path": "docs-src/reference/migration.md",
+     "category": "Bug",
+     "bot": false,
+     "fix": "111faf4a4",
+     "class": "prose",
+     "scope": "file",
+     "shared_fix": false
+    }
+   ]
+  },
+  {
+   "route": 1,
+   "round": 3,
+   "head": "111faf4a4",
+   "first_submitted": "2026-10-10T15:17:39Z",
+   "findings": 4,
+   "prose": 1,
+   "code": 3,
+   "unfixed": 0,
+   "code_in_shared_fix": 3,
+   "fix_commits": [
+    "ea749695f"
+   ],
+   "items": [
+    {
+     "path": "src/remote_store/backends/_local.py",
+     "category": "Spec",
+     "bot": false,
+     "fix": "ea749695f",
+     "class": "code",
+     "scope": "file",
+     "shared_fix": true,
+     "executable_files": [
+      "src/remote_store/backends/_local.py"
+     ]
+    },
+    {
+     "path": "src/remote_store/backends/_local.py",
+     "category": "Possible",
+     "bot": false,
+     "fix": "ea749695f",
+     "class": "code",
+     "scope": "file",
+     "shared_fix": true,
+     "executable_files": [
+      "src/remote_store/backends/_local.py"
+     ]
+    },
+    {
+     "path": "src/remote_store/backends/_local.py",
+     "category": "Bug",
+     "bot": false,
+     "fix": "ea749695f",
+     "class": "code",
+     "scope": "file",
+     "shared_fix": true,
+     "executable_files": [
+      "src/remote_store/backends/_local.py"
+     ]
+    },
+    {
+     "path": "sdd/BACKLOG.md",
+     "category": "Consistency",
+     "bot": false,
+     "fix": "ea749695f",
+     "class": "prose",
+     "scope": "file",
+     "shared_fix": false
+    }
+   ]
+  },
+  {
+   "route": 1,
+   "round": 4,
+   "head": "ea749695f",
+   "first_submitted": "2026-10-10T15:35:03Z",
+   "findings": 7,
+   "prose": 1,
+   "code": 6,
+   "unfixed": 0,
+   "code_in_shared_fix": 6,
+   "fix_commits": [
+    "7cbb70091"
+   ],
+   "items": [
+    {
+     "path": "src/remote_store/backends/_local.py",
+     "category": "Bug",
+     "bot": false,
+     "fix": "7cbb70091",
+     "class": "code",
+     "scope": "file",
+     "shared_fix": true,
+     "executable_files": [
+      "src/remote_store/backends/_local.py"
+     ]
+    },
+    {
+     "path": "src/remote_store/backends/_local.py",
+     "category": "Spec",
+     "bot": false,
+     "fix": "7cbb70091",
+     "class": "code",
+     "scope": "file",
+     "shared_fix": true,
+     "executable_files": [
+      "src/remote_store/backends/_local.py"
+     ]
+    },
+    {
+     "path": "src/remote_store/backends/_local.py",
+     "category": "Bug",
+     "bot": false,
+     "fix": "7cbb70091",
+     "class": "code",
+     "scope": "file",
+     "shared_fix": true,
+     "executable_files": [
+      "src/remote_store/backends/_local.py"
+     ]
+    },
+    {
+     "path": "docs-src/reference/migration.md",
+     "category": "Bug",
+     "bot": false,
+     "fix": "7cbb70091",
+     "class": "prose",
+     "scope": "file",
+     "shared_fix": false
+    },
+    {
+     "path": "tests/backends/local/test_listing_errors.py",
+     "category": "Test",
+     "bot": false,
+     "fix": "7cbb70091",
+     "class": "code",
+     "scope": "file",
+     "shared_fix": true,
+     "executable_files": [
+      "tests/backends/local/test_listing_errors.py"
+     ]
+    },
+    {
+     "path": "tests/backends/local/test_listing_errors.py",
+     "category": "Bug",
+     "bot": false,
+     "fix": "7cbb70091",
+     "class": "code",
+     "scope": "file",
+     "shared_fix": true,
+     "executable_files": [
+      "tests/backends/local/test_listing_errors.py"
+     ]
+    },
+    {
+     "path": "src/remote_store/backends/_local.py",
+     "category": "Ripple",
+     "bot": false,
+     "fix": "7cbb70091",
+     "class": "code",
+     "scope": "file",
+     "shared_fix": true,
+     "executable_files": [
+      "src/remote_store/backends/_local.py"
+     ]
+    }
+   ]
+  },
+  {
+   "route": 1,
+   "round": 5,
+   "head": "7cbb70091",
+   "first_submitted": "2026-10-10T15:52:17Z",
+   "findings": 4,
+   "prose": 3,
+   "code": 1,
+   "unfixed": 0,
+   "code_in_shared_fix": 0,
+   "fix_commits": [
+    "960c26803"
+   ],
+   "items": [
+    {
+     "path": "tests/backends/local/test_listing_errors.py",
+     "category": "Spec",
+     "bot": false,
+     "fix": "960c26803",
+     "class": "code",
+     "scope": "file",
+     "shared_fix": false,
+     "executable_files": [
+      "tests/backends/local/test_listing_errors.py"
+     ]
+    },
+    {
+     "path": "sdd/BACKLOG.md",
+     "category": "Consistency",
+     "bot": false,
+     "fix": "960c26803",
+     "class": "prose",
+     "scope": "file",
+     "shared_fix": false
+    },
+    {
+     "path": "sdd/BACKLOG.md",
+     "category": "Consistency",
+     "bot": false,
+     "fix": "960c26803",
+     "class": "prose",
+     "scope": "file",
+     "shared_fix": false
+    },
+    {
+     "path": "docs-src/reference/migration.md",
+     "category": "Consistency",
+     "bot": false,
+     "fix": "960c26803",
+     "class": "prose",
+     "scope": "file",
+     "shared_fix": false
+    }
+   ]
+  }
+ ],
+ "derivation": "pr_rounds.py --pr 1113"
+}

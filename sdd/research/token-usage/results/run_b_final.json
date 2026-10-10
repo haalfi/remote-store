@@ -1,0 +1,114 @@
+{
+ "_provenance": {
+  "script": "tokkit.py",
+  "generated": "2026-10-10",
+  "inputs": {
+   "main transcript": "ffe95a39a629bce78c16abcd5523de35a9413acd57a243da6b7e64135efbe09b"
+  }
+ },
+ "transcripts": 13,
+ "calls": 629,
+ "main_calls": 95,
+ "units_m": 15.0,
+ "usd_estimate": 34.65,
+ "units_pct_by_class": {
+  "input": 0.0,
+  "read": 71.8,
+  "w5": 12.3,
+  "w1h": 8.7,
+  "out": 7.2
+ },
+ "first_edit_call": 14,
+ "pr_open_call": 90,
+ "compaction_calls": [],
+ "phases": {
+  "orient + plan (before first edit)": {
+   "calls": 14,
+   "units_pct": 2.4,
+   "mean_ctx_k": 109
+  },
+  "build (first edit to PR open)": {
+   "calls": 76,
+   "units_pct": 13.9,
+   "mean_ctx_k": 209
+  },
+  "review loop (after PR open)": {
+   "calls": 5,
+   "units_pct": 1.3,
+   "mean_ctx_k": 273
+  },
+  "subagents": {
+   "calls": 534,
+   "units_pct": 82.4
+  }
+ },
+ "context_shares_pct": {
+  "session prefix": 34.4,
+  "result:Read": 17.9,
+  "result:Bash": 14.3,
+  "thinking (hidden)": 8.4,
+  "tool_input": 7.2,
+  "attachment": 7.2,
+  "result:Grep": 3.1,
+  "user_meta": 3.0,
+  "unexplained": 2.3,
+  "result": 1.5,
+  "assistant_text": 0.4,
+  "user_prompt": 0.2
+ },
+ "top_items_pct": [
+  {
+   "kind": "result:Bash",
+   "detail": "git",
+   "pct": 4.11
+  },
+  {
+   "kind": "result:Read",
+   "detail": ".claude/skills/rvw-pr/SKILL.md",
+   "pct": 3.18
+  },
+  {
+   "kind": "attachment",
+   "detail": "nested_memory",
+   "pct": 3.07
+  },
+  {
+   "kind": "user_meta",
+   "detail": "",
+   "pct": 3.04
+  },
+  {
+   "kind": "result:Bash",
+   "detail": "docker",
+   "pct": 3.01
+  },
+  {
+   "kind": "result:Bash",
+   "detail": "env",
+   "pct": 2.18
+  },
+  {
+   "kind": "result:Read",
+   "detail": "<tool-results>",
+   "pct": 1.61
+  },
+  {
+   "kind": "result:Read",
+   "detail": "src/remote_store/backends/_local.py",
+   "pct": 1.59
+  },
+  {
+   "kind": "result:Read",
+   "detail": "<review-snapshot>/src/remote_store/backends/_local.py",
+   "pct": 1.35
+  },
+  {
+   "kind": "attachment",
+   "detail": "output_style",
+   "pct": 1.34
+  }
+ ],
+ "read_tokens_reread_pct": 20.4,
+ "spilled_outputs": 16,
+ "rounds": []
+}

@@ -12,6 +12,10 @@ ADR-0037 stay unchanged unless run B passes the decision rule below. Tracked as
 [`sdd/research/token-usage/report.md`](../research/token-usage/report.md),
 cited below as *the report*.
 
+**Phase 0 ran on 2026-10-10** as PR #1113, on master `eff7953bb` plus the
+variant `fba0850a6`. The report's § Run B scores it clause by clause; every
+clause is decided except one, the maintainer's post-close review of #1113.
+
 ## Summary
 
 **A `/ship` delivery spends most of its tokens after the PR opens, and the
