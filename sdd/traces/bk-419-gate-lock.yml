@@ -14,6 +14,9 @@ audience:
   - infra.test
 decisions:
   - sdd/decisions/75b94481-b661-4e10-b779-f515340a3d42.jsonl
+discovery_followups:
+  # The moto port race, from a read-only contention analysis run beside this work.
+  - BUG-315
 expected_ripples:
   - sdd/backlogid.json
 surprising_ripples:

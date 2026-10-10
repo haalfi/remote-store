@@ -901,6 +901,14 @@ coverage floor.
   for such a PR; 776 further `docs`-class files have readers outside `docs-gate`.
   Open decision: per file, move it to a class whose jobs run its readers, or accept it.
 
+- [ ] **BUG-315 — The moto fixture picks a port and binds it later, so two servers can share it or a failed bind hangs the session**
+  spec: — · effort: S · audience: infra.test
+  `tests/conftest.py`'s `_free_port()` closes its socket before `moto_server`
+  binds `0.0.0.0` with `SO_REUSEADDR`; a failed bind leaves `ThreadedMotoServer.start()`
+  waiting forever, a candidate cause of BK-419's 97% stall. Open decision: none;
+  bug-fix protocol, binding port 0 once.
+  Detail: [dossier](backlog/bug-315-moto-port-race.md)
+
 - [ ] **BK-408 — RFC-0019 judges its fast lane by merge-gate exit criteria, so a redrafted selector must reach zero escapes**
   spec: — · effort: S · audience: contributor.process, infra.test
   RFC-0019 § Roadmap exits Phases 0, 2 and 3 on "0 deterministic, selector-reachable"
