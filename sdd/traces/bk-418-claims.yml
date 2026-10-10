@@ -1,5 +1,5 @@
 id: BK-418
-title: "Claim discipline: a change details only behaviour it changes, and a claim about unchanged behaviour is deleted, not narrowed"
+title: "Claim discipline: a change details only behaviour it owns, and a claim about behaviour it leaves alone is deleted, not narrowed"
 trigger: >-
   Run A of `/ship BUG-280` (PR #1093), route 2 after the re-plan at
   `cdcaa35c6`: 37 of 49 findings were prose (a hand reading of each, per the
@@ -204,14 +204,14 @@ phases:
           CLAUDE-REFERENCE 1, BK-384 1, /fix-pr 3, /rvw-pr 2,
           /orchestrate 2, /ship 1). My miss
 review:
-  # Derived by `hatch run ship-report 1106 --trace-block-only` at head 5ae7eac.
+  # Derived by `hatch run ship-report 1106 --trace-block-only` at head 4c1f476.
   # Do not hand-edit, except a newly required field per sdd/traces/_schema.yml
   # section review: RFC-0015 D4 makes this script the only producer.
   derivation: "hatch run ship-report 1106 --trace-block-only"
   pr: 1106
-  review_rounds: 3
-  submissions: 2
-  findings: 4
+  review_rounds: 5
+  submissions: 4
+  findings: 7
   by_round:
     - round: 1
       findings: 2
@@ -223,10 +223,22 @@ review:
       origin: {loop-introduced: 1, original: 1}
       triage: {must-fix: 2}
       duration_hours: 0.33
+    - round: 3
+      findings: 2
+      origin: {loop-introduced: 2}
+      triage: {must-fix: 1, unknown: 1}
+      duration_hours: 0.1
+    - round: 4
+      findings: 1
+      origin: {loop-introduced: 1}
+      triage: {must-fix: 1}
+      duration_hours: 0.01
   by_file:
     - path: "sdd/CONTENT-RULES.md"
-      findings: 3
+      findings: 5
     - path: ".claude/skills/ship/SKILL.md"
+      findings: 1
+    - path: "sdd/traces/bk-418-claims.yml"
       findings: 1
   untouched_files:
     - ".claude/agents/documentation-expert.md"
@@ -237,12 +249,15 @@ review:
     - "sdd/CLAUDE-REFERENCE.md"
     - "sdd/backlog/bk-384-rfc-0015-graduation-measurement.md"
     - "sdd/decisions/0b26f6a6-64de-4295-87a8-ba03c81a4306.jsonl"
-    - "sdd/traces/bk-418-claims.yml"
   review_driven_commits:
     - sha: "00285e6"
       subject: "fix: address PR #1106 review"
     - sha: "e509c49"
       subject: "BK-418: trace review block for PR #1106"
     - sha: "5ae7eac"
+      subject: "fix: address PR #1106 review"
+    - sha: "b6ca62f"
+      subject: "BK-418: trace review block for PR #1106 at its close"
+    - sha: "4c1f476"
       subject: "fix: address PR #1106 review"
   ci: {verdict: GREEN, failed: 0, pending: 0}
