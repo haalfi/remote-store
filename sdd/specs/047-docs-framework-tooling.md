@@ -373,8 +373,10 @@ package's PyPI long description — honest.
 | `test_block_fixture_leaves_list_under_python_markdown` | G-08 | anchors the block fixture |
 | `test_under_indented_list_item_block_fails` | G-08 | table after a blank line |
 | `test_g08_skips_lazy_continuation` | G-08 | |
+| `test_nesting_after_column_zero_lazy_line_fails` | G-08 | a column-0 lazy line keeps the item open |
 | `test_g08_skips_list_glued_to_paragraph` | G-08 | no list to Python-Markdown |
-| `test_g08_ignores_fences_and_new_lists` | G-08 | |
+| `test_g08_skips_fence_body_inside_item` | G-08 | fence inside an open item |
+| `test_g08_new_list_after_paragraph_break` | G-08 | text after a blank line closes the list |
 | `test_g08_four_space_nesting_passes` | G-08 | positive control |
 | `test_g08_against_live_repo` | G-08 | live repo |
 

@@ -25,6 +25,7 @@ surprising_ripples:
   - tests/scripts/test_check_spec_marks.py
 discovery_followups:
   - BUG-321
+  - BUG-322
 decisions:
   - sdd/decisions/0695d737-12e4-58f2-af4c-8731bddd810c.jsonl
 orient:
@@ -115,6 +116,26 @@ phases:
           install. `markdown` added to `dev`; `uv pip compile --extra dev`
           now resolves markdown 3.11. importorskip was rejected: it would skip the
           anchors in exactly the job that runs them
+  - id: review
+    name: Owner review fixes
+    steps:
+      - file: scripts/check_docs_framework.py
+        section: "G-08 list close"
+        read_type: verify
+        extract: >-
+          `1. a long` / `wrapped at col 0` / `   - sub`: CommonMark nests `sub`,
+          Python-Markdown 3.11 renders it a sibling <li>, G-08 reported nothing
+          because any column-0 line cleared the stack. A column-0 line now closes
+          the list only after a blank line or as a heading or fence. The
+          live-repo scan stays at zero hits, so no source needed re-indenting
+      - file: tests/scripts/test_check_docs_framework.py
+        section: "fence and new-list tests"
+        read_type: verify
+        extract: >-
+          The old combined test passed with either behaviour removed. Its two
+          replacements were checked by exec'ing mutants of find_under_indented:
+          without the fence skip the fence fixture reports (4, list marker, 2, 4),
+          without the list close the new-list fixture reports (5, list marker, 2, 4)
   - id: followup
     name: Follow-up
     steps:

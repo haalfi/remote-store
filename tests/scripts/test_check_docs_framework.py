@@ -233,6 +233,21 @@ def test_g08_skips_lazy_continuation(gate_mod, tmp_path):
 
 
 @pytest.mark.spec("DOCFRAME-004")
+def test_nesting_after_column_zero_lazy_line_fails(gate_mod, tmp_path):
+    # A column-0 lazy line keeps the item open in both renderers, so the
+    # 3-space marker after it still nests on GitHub and flattens here.
+    import markdown
+
+    body = "1. a long\nwrapped at col 0\n   - sub\n"
+    assert "<ul>" not in markdown.markdown(body)
+    _write_dual(tmp_path, body)
+
+    assert gate_mod._check_g08(tmp_path) == [
+        "G-08 sdd/adrs/0001-list.md:6: nested list marker indented 3, Python-Markdown needs 4",
+    ]
+
+
+@pytest.mark.spec("DOCFRAME-004")
 def test_g08_skips_list_glued_to_paragraph(gate_mod, tmp_path):
     # Python-Markdown starts no list right after paragraph text, so a
     # 2-space block under it is not lost nesting (and 4 spaces would be code).
@@ -246,9 +261,23 @@ def test_g08_skips_list_glued_to_paragraph(gate_mod, tmp_path):
 
 
 @pytest.mark.spec("DOCFRAME-004")
-def test_g08_ignores_fences_and_new_lists(gate_mod, tmp_path):
-    # Markers in a fence, and a list after a paragraph break, are not nesting.
-    _write_dual(tmp_path, "1. a\n\n```text\n  - not a list\n```\n\nText.\n - new list, 1 space\n")
+def test_g08_skips_fence_body_inside_item(gate_mod, tmp_path):
+    # The fence sits inside the open item, so only the fence skip keeps
+    # `  - x` (depth 1, under 4 spaces) from being reported.
+    _write_dual(tmp_path, "- a\n\n    ```text\n  - x\n    ```\n")
+
+    assert gate_mod._check_g08(tmp_path) == []
+
+
+@pytest.mark.spec("DOCFRAME-004")
+def test_g08_new_list_after_paragraph_break(gate_mod, tmp_path):
+    # Text after a blank line closes the list, so a 2-space list after the
+    # next blank line is a new top-level list in both renderers, not nesting.
+    import markdown
+
+    body = "- a\n\nText.\n\n  - b\n"
+    assert markdown.markdown(body).count("<ul>") == 2
+    _write_dual(tmp_path, body)
 
     assert gate_mod._check_g08(tmp_path) == []
 

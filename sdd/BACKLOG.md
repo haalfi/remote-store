@@ -744,6 +744,14 @@ give them a way to absorb.
 ripple-check, the revisit pins, the generated inventories, the unreleased
 CHANGELOG the release body is built from — say what is actually true.
 
+- [ ] **BUG-322 — Spec 047's G-07 row describes a check `check_docs_framework.py` does not run**
+  spec: DOCFRAME-004 · effort: S · audience: contributor.process
+  The DOCFRAME-004 table says G-07 is "`mkdocs build --strict` succeeds";
+  `_check_g07` asserts that `docs-src/api/` does not exist. Its Performance
+  paragraph says G-06 and G-07 invoke MkDocs; `_check_g06` parses `_nav.yml`
+  and neither calls MkDocs. Found reviewing PR #1115. Open decision: correct
+  the spec to the code, or move the strict build into the gate.
+
 - [ ] **ID-235 — Backlog-file integrity lint (structure and inbound tracker citations)**
   spec: — · effort: S · audience: contributor.tooling
   `gen_backlogid.py`'s R1–R4 cover open items only: nothing checks

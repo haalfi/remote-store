@@ -267,7 +267,8 @@ def find_under_indented(text: str) -> list[tuple[int, str, int, int]]:
     Containment is judged as CommonMark does: a marker, or a block after a
     blank line, at or past an open item's content column belongs to it. A
     line at depth *d* must then sit at ``4 * d`` spaces or more. Lazy
-    continuation lines (no blank line before) are not checked, nor is a
+    continuation lines (no blank line before) are not checked and keep the
+    list open, even at column 0; nor is a
     list that directly follows paragraph text: Python-Markdown renders that
     as text, so it has no nesting to lose.
     """
@@ -295,8 +296,8 @@ def find_under_indented(text: str) -> list[tuple[int, str, int, int]]:
                 found.append((lineno, "list marker" if m else "list-item block", indent, required))
             if m is not None:
                 content_cols.append(indent + len(m.group(2)) + len(m.group(3)))
-        elif indent == 0:
-            content_cols.clear()  # unindented text ends the list
+        elif indent == 0 and (after_blank or line.startswith(("#", "```", "~~~"))):
+            content_cols.clear()  # unindented block ends the list; a lazy line does not
         after_blank = False
         after_text = not content_cols and not line.lstrip().startswith(("#", "```", "~~~"))
     return found
