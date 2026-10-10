@@ -11516,6 +11516,25 @@ ADR-0033 to ADR-0037 stay unchanged unless Phase 0 passes the decision rule
 below. Tracked as <strong>BK-418</strong>. The evidence is the research record
 <a href="https://github.com/haalfi/remote-store/blob/master/sdd/research/token-usage/report.md"><code>sdd/research/token-usage/report.md</code></a>,
 cited below as <em>the report</em>.</p>
+<p>[2026-10-10, the maintainer's plan after run A, BK-418's <code>bk-418-orient</code>
+trace: two parts now ship on master ahead of run B. P2 landed as written. P3
+is replaced by <code>/ship</code> § Orient, in which the session reads the related work
+and judges it rather than asking the user per cluster. So these clauses no
+longer hold, and <strong>do not set up run B from them</strong>: the sentences above saying
+nothing is built, that the variant carries four interventions, and that
+<code>/ship</code> stays unchanged; the Summary's "a variant carrying all four"; the end
+of § Not in run B ("run B tests the four interventions above", with one other
+change); § Experiment's opening "under the variant", read as all four; § Start conditions' "master plus
+one commit, the variant" and "Master's <code>/ship</code> is unchanged throughout"; the
+Decision rule's P3 row, which scores the per-cluster dialog § Orient replaced;
+the <strong>Confounds</strong> paragraph, which names BK-414's lookup tool landing before
+run B but not P2 and § Orient; and the
+Roadmap's "nothing that changes <code>/ship</code> itself lands before Phase 1", with its
+Phase 0 row's "master's <code>/ship</code> stays unchanged". <strong>This sentence overrides
+any other wording here:</strong> under the plan, run B starts from master with P2,
+§ Orient and the plan's other master fixes merged, plus one variant commit
+holding only the prose-closing rule that overrides ADR clauses. Rewriting this
+RFC to the plan is open under BK-418.]</p>
 <h2 id="summary">Summary<a class="headerlink" href="#summary" title="Permanent link">&para;</a></h2>
 <p><strong>A <code>/ship</code> delivery spends most of its tokens after the PR opens, because
 every review round re-reads the context the build left behind, and the long
