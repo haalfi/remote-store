@@ -128,3 +128,78 @@ phases:
           The learnings compiled into the report's § Learnings; a background
           agent's preparation sweep, reclassified by the maintainer, became
           prep_cost.py with a class map kept outside the repo
+review:
+  # Derived by `hatch run ship-report 1114 --trace-block-only` at head b05c430.
+  # Do not hand-edit, except a newly required field per sdd/traces/_schema.yml
+  # section review: RFC-0015 D4 makes this script the only producer.
+  derivation: "hatch run ship-report 1114 --trace-block-only"
+  pr: 1114
+  review_rounds: 4
+  submissions: 5
+  findings: 25
+  by_round:
+    - round: 1
+      findings: 12
+      origin: {original: 12}
+      triage: {must-fix: 12}
+      duration_hours: 0.57
+    - round: 2
+      findings: 1
+      origin: {unclassifiable-file: 1}
+      triage: {must-fix: 1}
+      duration_hours: 0.0
+    - round: 3
+      findings: 1
+      origin: {unclassifiable-file: 1}
+      triage: {unknown: 1}
+      duration_hours: 0.03
+    - round: 4
+      findings: 6
+      origin: {loop-introduced: 1, original: 5}
+      triage: {must-fix: 6}
+      duration_hours: 0.26
+    - round: 5
+      findings: 5
+      origin: {loop-introduced: 1, original: 4}
+      triage: {must-fix: 5}
+      duration_hours: 0.21
+  by_file:
+    - path: "sdd/research/research-token-spend-means.md"
+      findings: 10
+    - path: "sdd/research/token-usage/report.md"
+      findings: 9
+    - path: "sdd/research/token-usage/means_effects.py"
+      findings: 2
+    - path: "sdd/research/token-usage/delete_pending_probe.py"
+      findings: 1
+    - path: "sdd/research/token-usage/prep_cost.py"
+      findings: 1
+    - path: "sdd/research/token-usage/token-spend-analysis.html"
+      findings: 1
+    - path: "sdd/rfcs/rfc-0020-ship-token-interventions.md"
+      findings: 1
+  untouched_files:
+    - "sdd/BACKLOG.md"
+    - "sdd/decisions/11c5226f-c156-4f5c-863f-28c1ace02938.jsonl"
+    - "sdd/research/token-usage/results/means_effects.json"
+    - "sdd/research/token-usage/results/pr_1113_rounds.json"
+    - "sdd/research/token-usage/results/prep_cost.json"
+    - "sdd/research/token-usage/results/run_a_plan.json"
+    - "sdd/research/token-usage/results/run_b_final.json"
+    - "sdd/research/token-usage/results/run_b_gates.json"
+    - "sdd/research/token-usage/results/run_b_plan.json"
+    - "sdd/research/token-usage/results/run_b_pr_open.json"
+    - "sdd/research/token-usage/results/run_b_route.json"
+    - "sdd/research/token-usage/results/run_durations.json"
+    - "sdd/research/token-usage/run_durations.py"
+    - "sdd/traces/bk-418-run-b-record.yml"
+  review_driven_commits:
+    - sha: "201f954"
+      subject: "fix: address PR #1114 review"
+    - sha: "b165ad1"
+      subject: "fix: address PR #1114 review"
+    - sha: "4e19c05"
+      subject: "fix: address PR #1114 review"
+    - sha: "b05c430"
+      subject: "fix: address PR #1114 review"
+  ci: {verdict: PENDING, failed: 0, pending: 2}
