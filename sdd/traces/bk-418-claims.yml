@@ -129,3 +129,24 @@ phases:
         section: "D2 restricted, 2026-10-10"
         read_type: reference
         extract: "Dated note, per the scope dialog"
+  - id: fix
+    name: "Fix pass after the review on PR #1106"
+    steps:
+      - file: .claude/skills/ship/SKILL.md
+        section: "Premise lens"
+        read_type: verify
+        extract: >-
+          "Delete claims about unchanged behaviour" also caught a refuted
+          premise the change relies on, which would delete the sentence and
+          ship the code built on it. Class: every site stating the rule. The
+          carve-out (description, not premise) went into the CONTENT-RULES
+          clause and a qualifier into each of the nine sites that state the
+          rule, enumerated by grep for the anchor `change-details-what-it-changes`
+          plus the CONTENT-RULES home and the BK-384 note. My miss
+      - file: sdd/research/token-usage/report.md
+        section: "Run B baseline: run A's route 2"
+        read_type: verify
+        extract: >-
+          The section gives prose and code counts only, not the walks topic,
+          which I took from PR #1093's threads. The clause now cites each
+          source for what it supports, with the section anchor

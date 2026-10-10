@@ -52,10 +52,15 @@ framework](../CLAUDE.md#documentation-framework)): placement →
    such a claim is fixed by deleting it, or replacing it with the pointer,
    never by narrowing it**: a narrower claim is still a claim about behaviour
    the change does not own, and the next measuring pass refutes it somewhere
-   else. Run A of `/ship BUG-280` spent most of its last review rounds that
-   way, on per-interpreter statements about walks the PR no longer changed
-   ([research record § Run B baseline](research/token-usage/report.md)). The
-   fix shapes this restricts are in
+   else. **This binds description, not premise**: a claim the change relies
+   on, such as the behaviour its code assumes or the reason it gives for
+   itself, belongs to the change, so a refuted premise means the change is
+   wrong, and it is fixed by changing behaviour or filed, never by deleting
+   the sentence. After its re-plan, most findings in run A of `/ship BUG-280`
+   were prose
+   ([research record § Run B baseline](research/token-usage/report.md#run-b-baseline-run-as-route-2)),
+   among them per-interpreter statements about walks the PR no longer changed
+   (PR #1093's review threads). The fix shapes this restricts are in
    [`/fix-pr` Step 3](../.claude/skills/fix-pr/SKILL.md#step-3-fix).
 
 5. <a id="source-code-facts-stay-in-source"></a>**Source-code facts stay in source.** [review-enforced]
