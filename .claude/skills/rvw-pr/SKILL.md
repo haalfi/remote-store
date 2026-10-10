@@ -135,6 +135,8 @@ This clause bounds *searching*, not *measuring*, and the distinction is load-bea
 
 **Content-rules check (prose changes only):** Apply `sdd/CONTENT-RULES.md`. File findings under `Consistency:`.
 
+**Flag detail about behaviour the PR does not change**, wherever the PR writes it: a docstring, a spec clause, a migration note, a dossier. That breaks [`CONTENT-RULES.md` Rule 4](../../../sdd/CONTENT-RULES.md#change-details-what-it-changes), whose remedy is deleting the detail or replacing it with a one-line pointer to the item that owns the behaviour. When such a claim is also false, the finding is still a `Bug:` or `Spec:` one. Either way, name the deletion or the pointer as the change, never a narrower restatement: a narrower claim about unchanged behaviour is the next round's finding.
+
 **A prose finding names the reader harm it prevents, or it is a preference.**
 A `Consistency:` finding on prose states six lines — **Reader**, **Task**,
 **Failure**, **Harm**, **Change**, **Preserve** — in the form

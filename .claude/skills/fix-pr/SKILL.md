@@ -107,7 +107,11 @@ the shape:
 2. **Deleting the false claim.**
 3. **Replacing the claim with its derivation** — a command, a test name or an
    enumeration.
-4. **Narrowing the claim to what was measured.**
+4. **Narrowing the claim to what was measured**, only for behaviour this PR
+   changes. A claim about behaviour it leaves alone takes shape 2, deleting
+   it or replacing it with a one-line pointer to the item that owns it,
+   never this shape
+   ([`CONTENT-RULES.md` Rule 4](../../../sdd/CONTENT-RULES.md#change-details-what-it-changes)).
 5. **Filing** — the File-it verdict: the finding is real, it closes outside
    this PR, and the reply names the backlog ID. A finding fixed in this PR
    takes one of shapes 1 to 4.
@@ -131,7 +135,8 @@ the shape:
   established through injection — a patched method, a fake client, a forced
   errno — is written as a fact about that injection unless a trigger a user can
   produce is named beside it. Ask *could a user reach this?* of every claim
-  before publishing it; shape 4 is the fix when the answer is no.
+  before publishing it; shape 4 is the fix when the answer is no and the
+  behaviour is one this PR changes, shape 2 when it is not.
 - **A new measurement is swept like a fix.** Before a measured fact is recorded
   anywhere, list the artifacts that assert something about the same behaviour
   and leave each one true.
@@ -232,6 +237,8 @@ executed.
   item scoped to every operation except the two deletes, not to whichever
   subset a reviewer happened to measure — that gap was caught, closed to its
   own wording, and caught again three rounds later in the same sentence.
+  When the quantified claim is about behaviour this PR does not change, its
+  extent is not yours to complete: delete it (Step 3, shape 2).
 - Sweep your own fixes the same way: a fix changes a thing, and every other
   description of that thing — docstring, comment, spec table, guide — is now
   suspect. The class sweep above fires on a review finding; nothing but this

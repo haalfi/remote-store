@@ -370,6 +370,11 @@ Spawn reviewers per [Reviewer selection](#reviewer-selection). Each reviews
   no fix and no backlog item (a false statement in prose is a `Bug:` or
   `Spec:` finding, a finding citing a `CONTENT-RULES` or `DRIFT-RULES` rule is
   a violation, and neither needs six lines)
+- Detail the authoring output writes about behaviour the change does not
+  alter, flagged under
+  [`CONTENT-RULES.md` Rule 4](../../../sdd/CONTENT-RULES.md#change-details-what-it-changes)
+  with deletion or a pointer to the owning item as the change, never a
+  narrower claim
 - What it **ran** and what came back, if it is the measuring reviewer
 - "Clean — no issues" if nothing to report
 
@@ -388,7 +393,10 @@ orchestrator fixes directly.
    [`/fix-pr`](../fix-pr/SKILL.md)'s Step 3 and Rules: **a fix takes exactly
    one of the five shapes** — a behaviour change pinned by a test seen failing
    first, deleting the false claim, replacing it with its derivation, narrowing
-   it to what was measured, or filing — and never a rationale; the finding's
+   it to what was measured (only for behaviour the change alters; any other
+   claim is deleted, per
+   [`CONTENT-RULES.md` Rule 4](../../../sdd/CONTENT-RULES.md#change-details-what-it-changes)),
+   or filing — and never a rationale; the finding's
    class, not only the lines it names; the sibling descriptions of your own
    changes; a fix to a quantified claim scoped to the quantifier. Step 3's
    six-line triage bullet is satisfiable here because the reviewer contract

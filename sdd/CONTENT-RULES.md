@@ -41,6 +41,22 @@ framework](../CLAUDE.md#documentation-framework)): placement →
    [`sdd/AUTHORING.md`](AUTHORING.md) Rule 1; content type homes in
    [`sdd/DOCUMENTATION.md` § 2](DOCUMENTATION.md#content-homes). README and
    guides link; they do not copy.
+   <a id="change-details-what-it-changes"></a>**A change details only the
+   behaviour it changes.** Text a change writes, whether a docstring, a spec
+   clause, a guide, a migration note or a dossier, describes in detail only
+   behaviour that change alters. Behaviour it leaves alone already has a home,
+   the code (Rule 5) and the item, spec or ADR that governs it, so the change
+   gives it at most a one-line pointer to that item. Detail about unchanged
+   behaviour is a copy the change had no reason to measure, so it is the claim
+   a review refutes on the interpreter or platform nobody ran. **A finding on
+   such a claim is fixed by deleting it, or replacing it with the pointer,
+   never by narrowing it**: a narrower claim is still a claim about behaviour
+   the change does not own, and the next measuring pass refutes it somewhere
+   else. Run A of `/ship BUG-280` spent most of its last review rounds that
+   way, on per-interpreter statements about walks the PR no longer changed
+   ([research record § Run B baseline](research/token-usage/report.md)). The
+   fix shapes this restricts are in
+   [`/fix-pr` Step 3](../.claude/skills/fix-pr/SKILL.md#step-3-fix).
 
 5. <a id="source-code-facts-stay-in-source"></a>**Source-code facts stay in source.** [review-enforced]
    API signatures, capability sets, type annotations, default values live in code.

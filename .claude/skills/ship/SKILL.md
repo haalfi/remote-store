@@ -458,7 +458,9 @@ menu by link rather than copying it.
   prose, a docstring, a commit message, a rationale — is executed on the base
   branch and reported as measured or refuted. A reading lens cannot find a false
   premise: it checks the diff against itself, and a false premise is consistent
-  with everything in the diff.
+  with everything in the diff. A refuted claim about behaviour the PR leaves
+  alone is fixed by deleting it, not by measuring a narrower one
+  ([`CONTENT-RULES.md` Rule 4](../../../sdd/CONTENT-RULES.md#change-details-what-it-changes)).
 
 ### The measuring member
 
@@ -598,7 +600,11 @@ worktree root only.
 is closed by exactly one of: **(1)** a behaviour change pinned by a test seen
 failing first; **(2)** deleting the false claim; **(3)** replacing the claim
 with its derivation — a command, a test name or an enumeration; **(4)** narrowing
-the claim to what was measured; **(5)** filing, which is the File-it verdict. A
+the claim to what was measured, only for behaviour this PR changes, since a
+claim about behaviour it leaves alone takes (2), deleted or replaced by a
+pointer to the item that owns it
+([`CONTENT-RULES.md` Rule 4](../../../sdd/CONTENT-RULES.md#change-details-what-it-changes));
+**(5)** filing, which is the File-it verdict. A
 Must-fix takes (1) to (4), as the table says. *Write a rationale* is not a
 shape. The fix-shape column is required, and the
 fix pass owes what [`/fix-pr`](../fix-pr/SKILL.md) Step 3 lists under each
