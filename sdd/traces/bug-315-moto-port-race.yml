@@ -11,7 +11,8 @@ source_items:
   - BK-419
 audience:
   - infra.test
-discovery_followups: []
+discovery_followups:
+  - BUG-316
 expected_ripples:
   - sdd/BACKLOG.md
   - sdd/BACKLOG-DONE.md
@@ -23,6 +24,8 @@ surprising_ripples:
   - tests/backends/fixtures/s3_moto.py
   - tests/backends/fixtures/s3_boto3_moto.py
   - tests/backends/s3/test_pyarrow.py
+  - .github/workflows/ci.yml
+  - sdd/CLAUDE-REFERENCE.md
 decisions:
   - sdd/decisions/c91be2ac-3fa5-4dce-ba27-b3f814390a29.jsonl
 orient:
@@ -164,5 +167,33 @@ phases:
         extract: >-
           infra/ matches no CI class pattern, so an infra/_moto.py-only PR would
           run no tests; infra/_settings.py already has the same exposure. Left to
-          BUG-306, whose open decision is which class each such file joins
+          BUG-306, whose open decision is which class each such file joins.
+          Round 2 showed that hand-off was my misread: BUG-306's entry scopes
+          itself to files tests/scripts/ reads, which infra/_moto.py is not
+        outcome: ok
+  - id: review_fix_2
+    name: Review fix, round 2
+    steps:
+      - file: sdd/research/bk-403-phase-0/bucket-rules.md
+        section: "Path table, infra/*.py row"
+        read_type: reference
+        extract: >-
+          Phase 0 already classes infra/*.py as FULL because tests/conftest.py
+          imports infra._settings; ci.yml's CODE_PAT now carries
+          ^infra/[^/]+\.py$. Probed by extracting CODE_PAT from ci.yml and
+          running the workflow's grep -qE over nine paths: the three infra/*.py
+          files and tests/conftest.py match; infra/.env, docker-compose.yml,
+          drift-locks/x.txt, infra/sub/a.py and sdd/BACKLOG.md do not
+        outcome: ok
+      - file: sdd/CLAUDE-REFERENCE.md
+        section: "PR validation gates: Mechanical gate"
+        read_type: verify
+        extract: "The local list of CODE_PAT's test-bearing members gains infra/*.py, so the two stay in step"
+        outcome: ok
+      - file: .github/actions/start-backends/action.yml
+        section: "infra/.env sourcing"
+        read_type: reference
+        extract: >-
+          infra/.env and infra/docker-compose.yml stay unclassified; filed as
+          BUG-316 after a scope dialog rather than widening CODE_PAT here
         outcome: ok

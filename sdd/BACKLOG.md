@@ -901,6 +901,14 @@ coverage floor.
   for such a PR; 776 further `docs`-class files have readers outside `docs-gate`.
   Open decision: per file, move it to a class whose jobs run its readers, or accept it.
 
+- [ ] **BUG-316 — `infra/.env` and `infra/docker-compose.yml` match no CI class pattern, so editing either alone runs no checks**
+  spec: — · effort: S · audience: infra.ci
+  `infra/_settings.py` reads `infra/.env` at import for the ports and credentials
+  tests use, and `.github/actions/start-backends` sources it; its guard,
+  `check_infra_settings.py`, runs in `lint`, which `CODE_PAT` gates. Since
+  BUG-315, `CODE_PAT` covers `infra/*.py` only. Not in BUG-306's list, which is
+  files `tests/scripts/` reads. Open decision: which class, at what CI cost.
+
 - [ ] **BK-408 — RFC-0019 judges its fast lane by merge-gate exit criteria, so a redrafted selector must reach zero escapes**
   spec: — · effort: S · audience: contributor.process, infra.test
   RFC-0019 § Roadmap exits Phases 0, 2 and 3 on "0 deterministic, selector-reachable"
