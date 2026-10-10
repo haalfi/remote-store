@@ -543,7 +543,7 @@ footer { font-size: 13px; color: var(--muted); border-top: 1px solid var(--rule)
     <table>
       <thead><tr><th>Clause</th><th>Result</th><th>Evidence</th></tr></thead>
       <tbody>
-        <tr><td>Keeps: a round closes on check-closed prose alone, with no round opened to verify it</td><td>Holds, narrowly</td><td>Round 2: one prose finding, closed by a re-run probe (<code>tmp/probe_note.py</code>, modes 000 and 0o444, 3.11 and 3.14). Round 3 opened anyway, but it was owed: no unprimed or whole-file pass had seen round 1's code fix. Round 5 does not count: one fix removed a <code>spec</code> mark, an executable line, and the loop ended on the maintainer's call.</td></tr>
+        <tr><td>Keeps: a round closes on check-closed prose alone, with no round opened to verify it</td><td>Not met</td><td>Round 2: one prose finding, closed by a re-run probe (<code>tmp/probe_note.py</code>, modes 000 and 0o444, 3.11 and 3.14). Round 3 then opened on that fix and re-read it; it was owed for round 1's code fix, and the clause's text admits no such exception (the maintainer's reading). Round 5 does not count: one fix removed a <code>spec</code> mark, an executable line, and the loop ended on the maintainer's call.</td></tr>
         <tr><td>Keeps: fewer than route 2's six rounds</td><td>Holds</td><td>5 rounds; ended at the soft ceiling on the maintainer's call, not by convergence.</td></tr>
         <tr><td>Keeps: every check-closed fix quotes its check and what it returned</td><td>Holds</td><td>11 replies close a finding on a recorded check, each naming the check and what it returned; 10 are prose findings, the 11th (a <code>spec</code> mark) closed on the maintainer's call at the ceiling.</td></tr>
         <tr><td>Fails: rule (c) never fires</td><td>Does not apply</td><td>Fired in rounds 2 to 5: 1, 2, 4 and 4 replies.</td></tr>
@@ -554,7 +554,7 @@ footer { font-size: 13px; color: var(--muted); border-top: 1px solid var(--rule)
       </tbody>
     </table>
   </div>
-  <p><strong>Reading: rule (c) meets every clause scored so far; the maintainer's post-close review is the one left.</strong> It fired, its closes held through the rounds that followed, and the run closed shorter and cheaper. The shorter loop also missed the delete-pending case run A's round 7 had measured. What the run cannot show is how much of the gap is rule (c): the handoff, claim discipline (Rule 8), the deeper orient and the narrower findings mix moved the same figures, and only one round (2) shows rule (c) letting the loop skip a verification. Before an ADR adopts it, the decision rule needs the clause it lacked here: a check counts only if it can return the claim false.</p>
+  <p><strong>Reading: rule (c) does not pass. It saved no review round, so it stays out of <code>/ship</code> and its variant closes.</strong> It fired, its closes held through the rounds that followed, and the run closed shorter and cheaper. The shorter loop also missed the delete-pending case run A's round 7 had measured. What the run cannot show is how much of the gap is rule (c): the handoff, claim discipline (Rule 8), the deeper orient and the narrower findings mix moved the same figures, and only one round (2) shows rule (c) letting the loop skip a verification. Any later rule that closes findings by a check needs the clause this one lacked: a check counts only if it can return the claim false.</p>
 
   <h3>Confounds and measurement notes</h3>
   <ul>

@@ -502,7 +502,7 @@ row for each round is in § Run B baseline. The loop cost 12.13 M against route
   over scope followed.
 - **The handoff held context down.** Round 1 started at 104k against run A's
   255k; route 2 reached 113k only through a compaction [run_b_route:
-  `route.rounds`; run_a_route2: `route.rounds`].
+  `route.rounds`; run_a_final: `rounds`; run_a_route2: `route.rounds`].
 - **The loop still made its own work.** Round 3's fix (a subfolder deleted
   mid-walk raises `NotFound`) caused four of round 4's seven findings: it broke
   recursive listings over a dangling Windows junction. `/ship`'s divergence
@@ -532,11 +532,13 @@ row for each round is in § Run B baseline. The loop cost 12.13 M against route
 
 ### Rule (c) against the decision rule
 
-**Rule (c) fired in rounds 2 to 5, no check-closed fix was found false in a
-later round, and the run closed shorter and cheaper than route 2, so it meets
-every clause scored so far. The clause on the maintainer's post-close review
-stays open; only round 2 closed on check-closed prose alone, and the shorter
-loop missed a regression run A's longer one had found.** Eleven review replies close a finding on a recorded check: 1,
+**Rule (c) fired in rounds 2 to 5 and no check-closed fix was found false in a
+later round, but it never saved a review round, so the first keeps clause is
+not met and Phase 0 does not establish rule (c).** Round 2 closed on
+check-closed prose alone, and round 3 opened on its fix and re-read it: owed
+for round 1's code fix, but a round opened over the check-closed fix all the
+same, which the clause's text excludes. The run closed shorter and cheaper than
+route 2, and the shorter loop missed a regression run A's longer one had found. Eleven review replies close a finding on a recorded check: 1,
 2, 4 and 4 in rounds 2 to 5 (`gh api repos/haalfi/remote-store/pulls/1113/comments`,
 replies matching `check-closed|Closed on recorded checks`). Ten of them are
 prose findings by RFC-0020's definition, and say "check-closed prose". The
@@ -546,7 +548,7 @@ ceiling.
 
 | Clause ([RFC-0020](../../rfcs/rfc-0020-ship-token-interventions.md#decision-rule)) | Result |
 | --- | --- |
-| Keeps: a round closes on check-closed prose alone, no round opened to verify it | Holds, narrowly: round 2. Round 3 opened, but it was owed, because no unprimed or whole-file pass had seen round 1's code fix. Round 5 does not count: one of its fixes removed a `spec` mark, an executable line, and the loop ended at the soft round ceiling on the maintainer's call |
+| Keeps: a round closes on check-closed prose alone, no round opened to verify it | Not met. Round 2 closed on check-closed prose alone, but round 3 opened on its fix and its whole-file member re-read it; that round was owed for round 1's code fix, and the clause's text admits no such exception (the maintainer's reading). Round 5 does not count either: one of its fixes removed a `spec` mark, an executable line, and the loop ended at the soft round ceiling on the maintainer's call |
 | Keeps: fewer than route 2's six rounds | Holds: five, ended by the ceiling call rather than by convergence |
 | Keeps: every check-closed fix quotes its check and what it returned | Holds |
 | Fails: rule (c) never fires | Does not apply |
@@ -657,19 +659,20 @@ before-and-after observations, not controlled comparisons.
 
 | Means | Before | After | Source |
 | --- | --- | --- | --- |
-| MEMORY.md trim | 13,651 characters in a `/rvw-pr` session's instructions; first call 47.8k tokens | 4,680 characters; first call 44.3k | [means_effects: `prefix`, `rvw-pr`] |
-| Synced claude.ai skills off | the rest of a `/rvw-pr` first call, instruction files subtracted: 35.1k | 35.7k, then 35.0k | [means_effects: `prefix`, `rest_ctx_median`] |
+| MEMORY.md trim | 13,651 characters in a `/rvw-pr` session's instructions; first call 47.8k tokens | 4,678 characters; first call 44.2k | [means_effects: `prefix`, `rvw-pr`] |
+| Synced claude.ai skills off | the rest of a `/rvw-pr` first call, instruction files subtracted: 35.1k | 36.2k over the two sessions before the trim, then 35.0k | [means_effects: `prefix`, `rest_ctx_median`] |
 | Lookup tool (#1099) | 18 working sessions: 16 read the large process files, 198 reads, 547k result characters, 11.0 reads per session | 20 sessions: 10 read them, 46 reads, 88k characters, 2.3 per session | [means_effects: `lookup`] |
 | Stable gate (#1105, #1108) | 85 gate runs: 3 cut off; idle stalls of 37, 35 and 22 minutes | 35 runs, 16 of them run B's: none cut off; one 25-minute stall | [means_effects: `gate`], [run_b_gates: `gate_runs`] |
 
 - **The memory trim shows where it was aimed.** `/rvw-pr` sessions open with
   nearly the same prompt, so their first call isolates the instruction files:
-  MEMORY.md fell by 8,971 characters, about 3.7k tokens at § 1's calibration,
-  and the first call by 3.5k. The project `CLAUDE.md` grew by 1,882 characters
+  MEMORY.md fell by 8,973 characters, about 3.7k tokens at § 1's calibration,
+  and the first call by 3.6k. The project `CLAUDE.md` grew by 1,867 characters
   over the same days, through the means that added rules to it, which takes
   back about a fifth of that saving.
 - **Turning off the synced skills left the first call unchanged.** The rest of
-  the prefix moved by under a thousand tokens either way, within the noise of a
+  the prefix moved by about a thousand tokens either way, over only two
+  sessions between the setting change and the trim, and within the noise of a
   Claude Code version change in the same days. The listing was measured at
   about 2.6k tokens in § 6, and it re-entered mid-session; whatever the setting
   saves, it does not show at a session's start.
@@ -714,18 +717,20 @@ holding its figures.
 **What moved it**
 
 - **Orient before planning.** Reading the items that share a spec ID, and
-  recording a verdict per cluster, cost run B 7.4% of its units, and no re-plan
-  over scope followed; run A re-planned its scope after seven rounds (§ Run B).
+  recording a verdict per cluster, was part of an orient-and-plan phase that
+  cost run B 7.4% of its units to plan approval, and no re-plan over scope
+  followed; run A re-planned its scope after seven rounds (§ Run B).
 - **A fresh session for the review loop.** The handoff kept every round's
   starting context below route 2's; a compaction resets context once, and it
   regrows about 100k per round (§ Run A final, § Run B).
 - **Detail only for what the change owns.** With claim discipline on master,
   among the other changes, the prose share of findings fell, from 76% to 59%
   by hand and from 61% to 35% by the fix-commit classifier (§ Run B).
-- **Closing prose by a check, not a round.** It closed ten prose findings and
-  held, but
-  a check must be able to fail the claim to count (§ Rule (c) against the
-  decision rule).
+- **Closing prose by a check did not, in the end, save a round.** Rule (c)
+  closed ten prose findings and none proved false, but the round after its one
+  prose-only round was owed for code and re-read the fix anyway, so Phase 0
+  does not establish it; and a check counts only if it can fail the claim
+  (§ Rule (c) against the decision rule).
 - **A stable gate.** With one suite at a time, a per-test timeout and workers
   capped by memory, run B had none of run A's cut-offs or stalls (§ Run B).
 
@@ -798,7 +803,7 @@ siblings (`_common.default_transcripts`).
 | `pr_1113_rounds.json` | `pr_rounds.py --pr 1113` | GitHub reviews and PR commits (cached in `--data`), the fix commits in git |
 | `run_b_gates.json` | `gates.py --name run_b_gates` | both run B sessions' transcripts |
 | `prep_cost.json` | `prep_cost.py --since 2026-10-09T00:00:00Z --until 2026-10-10T13:42:18Z` | transcripts, and the class map in `--data` (keyed by session ID, so not committed) |
-| `means_effects.json` | `means_effects.py --skills-off 2026-10-09T10:18:53Z --memory-trim 2026-10-09T12:40:14Z --lookup 2026-10-09T18:21:44Z --gate 2026-10-10T08:59:29Z --gate-workers 2026-10-10T10:05:31Z` | every surviving main transcript and its subagents; the cuts are the setting change, the last MEMORY.md edit, and the merges of #1099, #1105 and #1108 |
+| `means_effects.json` | `means_effects.py --skills-off 2026-10-09T10:18:53Z --memory-trim 2026-10-09T11:05:43Z --lookup 2026-10-09T18:21:44Z --gate 2026-10-10T08:59:29Z --gate-workers 2026-10-10T10:05:31Z` | every surviving main transcript and its subagents; the cuts are the setting change, the write that replaced MEMORY.md, and the merges of #1099, #1105 and #1108 |
 | `run_durations.json` | `run_durations.py --run A=… --run B=…,… --milestone …` | run A's and run B's main transcripts; milestones at PR creation, plan approval, route 2's start and the resume |
 | *(printed, no result file)* | `delete_pending_probe.py <src> <work> <label>`, once per tree | `git archive` trees of master `eff7953bb`, #1093 and #1113; Windows only |
 

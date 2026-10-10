@@ -40,7 +40,9 @@ In practice, four controls carry link 4, each tested once in § 4:
 - **Fresh context for review:** the build writes a handoff and stops; the review
   starts in a new session.
 - **Detail owned, prose closed by check:** write only what the change owns, and
-  close a prose finding by a check that could have failed.
+  close a prose finding by a check that could have failed. The second half,
+  tested in run B as rule (c), closed findings but saved no review round, so it
+  is not on master.
 - **A stable gate:** one suite at a time, bounded waits, workers sized to the
   machine. It is not an order but the condition under which the other three's
   savings show instead of drowning in stalls.
@@ -192,9 +194,10 @@ it there.
 
 **Run B, the same prompt on master with the controls and one tested rule, closed
 merge-ready in five rounds at 15.0 M units: a quarter of run A, and 47% below
-run A's second route, the one RFC-0020 compares it with.** It meets every clause
-of the decision rule fixed before the run that is scored so far; the clause on
-the maintainer's post-close review is still open ([report § Run B](token-usage/report.md#run-b-ship-bug-280-on-the-means)).
+run A's second route, the one RFC-0020 compares it with.** The tested rule did
+not pass the decision rule fixed before the run: it never saved a review round
+([report § Run B](token-usage/report.md#run-b-ship-bug-280-on-the-means)), so
+the saving belongs to the controls on master.
 
 | | Run A | Run A, route 2 | Run B |
 | --- | ---: | ---: | ---: |
@@ -223,7 +226,9 @@ Each control shows in the run:
   findings by hand, from 61% to 35% by a classifier that counts a prose fix
   committed beside code as code. The tested rule, rule (c), closed ten prose
   findings by a check the fixer ran and quoted, and none of those closes was
-  later found false
+  later found false, but it saved no round: the round after its one prose-only
+  round was owed for a code fix and re-read the check-closed fix anyway, so the
+  decision rule does not establish it
   ([report § Rule (c) against the decision rule](token-usage/report.md#rule-c-against-the-decision-rule)).
 - **A stable gate.** 16 gate runs, none cut off, no stall, against run A's 33
   runs with three cut-offs.
@@ -292,9 +297,10 @@ the act is a paydown, and pays interest in carried context.
 ships, compared with the delivery it replaces, as RFC-0020's decision rule did.
 Spend without an outcome check rewards the shorter loop that found less.
 
-**3. A check counts only if it can return the claim false.** Adopting rule (c)
-needs this clause; a shape check or a wording grep closes nothing. This is the
-amendment run B showed missing.
+**3. A check counts only if it can return the claim false.** Any close by a
+check needs this clause; a shape check or a wording grep closes nothing. Run B
+showed it missing from rule (c), which stays out of `/ship` for the other
+reason in § 4: it saved no round.
 
 **4. Owe the enumeration when the claim is written.** "Every", "all" and
 "never" are where the scope findings come from; principle 9 already makes a
@@ -310,7 +316,7 @@ the next ordering control to test.
 
 **6. Measure the next deliveries the same way, and measure them where they
 run.** Two more `/ship` deliveries, one of them drawing prose findings only,
-decide whether the saving recurs (RFC-0020 Phase 2). Cloud sessions need their
+decide whether the saving recurs. Cloud sessions need their
 transcripts copied out to be measured at all.
 
 **7. Hold measuring sessions to the same order.** Delegate sweeps to subagents
@@ -344,15 +350,16 @@ where the table points; it is not restated here.
 | --- | --- | --- | --- |
 | Orient before planning: a verdict per cluster of related open items, a scope recommended before the plan | [`/ship` § Orient](../../.claude/skills/ship/SKILL.md#orient), [`CLAUDE.md` § Backlog](../../CLAUDE.md#backlog) | #1103 | only inside run B: 1.11 M to plan approval against run A's 0.76 M, no re-plan |
 | Handoff at the PR: the build writes `tmp/ship-handoff-<N>.md` and stops; `/ship resume <N>` reviews in a fresh session | [`/ship`](../../.claude/skills/ship/SKILL.md) | #1103 | only inside run B: round 1 at 104k context against 255k |
-| Detail only what the change owns | [`CONTENT-RULES.md` Rule 8](../CONTENT-RULES.md#change-details-what-it-changes) | #1106, #1109 | only inside run B, with rule (c): prose 59% of findings against 76% by hand |
+| Detail only what the change owns | [`CONTENT-RULES.md` Rule 8](../CONTENT-RULES.md#change-details-what-it-changes) | #1106, #1109 | only inside run B, together with rule (c): prose 59% of findings against 76% by hand |
 | A stable local gate: one suite per machine, a per-test timeout, a 15-minute deadline on every background wait, workers capped by free memory, a port race fixed | `scripts/run_tests.py`, [`CLAUDE.md` § Parallel tests](../../CLAUDE.md#parallel-tests) | #1105, #1107, #1108 | 3 cut-offs in 85 gate runs before; none in 35 after, 16 of them run B's |
 | A budget on process files: their total grows only by a recorded raise | `scripts/check_process_budget.py`, `sdd/process-budget.json` | #1110 | not measurable: it prevents growth |
 | A lookup tool: one backlog item or reference section by key, instead of a search and a sliced read | [`scripts/sdd_lookup.py`](../../scripts/sdd_lookup.py) | #1099 | large-file reads per working session from 11.0 to 2.3, their characters by six sevenths |
 | The Edit/Write lint hook no longer deletes an import before its first use, which forced re-edits | `.claude/hooks/` | #1095 | not measured |
 
 Two more act outside the repository, per checkout. The auto-memory index was
-trimmed: about 3.7k fewer tokens in every main session's first call, a fifth
-of it taken back by the project `CLAUDE.md` growing through the controls above.
+trimmed: about 3.7k fewer tokens in the first call of a `/rvw-pr` session, whose
+near-identical prompt isolates the instruction files, a fifth of it taken back
+by the project `CLAUDE.md` growing through the controls above.
 The claude.ai skills synced into every session's listing were turned off, with
 no measurable change in a session's first call. The before-and-after figures
 compare periods holding different work ([report § What each means did on its
@@ -360,9 +367,8 @@ own](token-usage/report.md#what-each-means-did-on-its-own)). The measurement kit
 [`token-usage/tokkit.py`](token-usage/tokkit.py) and its siblings, is the
 standing means for testing the next control the same way.
 
-**Still open.** Rule (c) meets every clause of its test scored so far; the
-maintainer's post-close review of #1113 is the one left, and adoption by an ADR
-with the clause in proposal 3 is RFC-0020 Phase 1. BK-423 is proposal 4. BK-424 fixes the
+**Still open.** Rule (c), the one rule run B tested, stays out of `/ship`
+because it saved no round; its variant, #1101, closes. BK-423 is proposal 4. BK-424 fixes the
 measurement kit's phase dating. BK-420 re-walks the lookup tool against its
 baseline around 2026-11-08.
 

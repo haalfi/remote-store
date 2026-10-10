@@ -980,9 +980,9 @@ sessions work is measured before it becomes process.
   spec: — · effort: L · audience: contributor.process, contributor.tooling
   Run A (`/ship BUG-280`) spent 59.3 M units; run B, on the means and rule (c),
   15.0 M in five rounds ([research record](research/token-usage/report.md)
-  § Run B), meeting every clause of Draft [RFC-0020](rfcs/rfc-0020-ship-token-interventions.md)'s
-  decision rule scored so far. Open decision: adopt rule (c) (variant #1101) by
-  an ADR (Phase 1), once the post-close review clause is in.
+  § Run B); rule (c) saved no round, so Draft [RFC-0020](rfcs/rfc-0020-ship-token-interventions.md)
+  keeps it out of `/ship`. Open decision: BK-423, and whether the next
+  deliveries are measured the same way.
 
 - [ ] **BK-420 — BK-414's lookup tool is not yet measured against its baseline of 78 search-and-reread cycles**
   spec: — · effort: S · audience: contributor.tooling, contributor.process
