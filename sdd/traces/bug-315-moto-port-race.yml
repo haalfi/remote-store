@@ -28,6 +28,60 @@ surprising_ripples:
   - sdd/CLAUDE-REFERENCE.md
 decisions:
   - sdd/decisions/c91be2ac-3fa5-4dce-ba27-b3f814390a29.jsonl
+review:
+  # Derived by `hatch run ship-report 1107 --trace-block-only` at head 4efe7f8.
+  # Do not hand-edit, except a newly required field per sdd/traces/_schema.yml
+  # section review: RFC-0015 D4 makes this script the only producer.
+  derivation: "hatch run ship-report 1107 --trace-block-only"
+  pr: 1107
+  review_rounds: 4
+  submissions: 3
+  findings: 3
+  by_round:
+    - round: 1
+      findings: 1
+      origin: {unclassifiable-file: 1}
+      triage: {must-fix: 1}
+      duration_hours: 0.03
+    - round: 2
+      findings: 1
+      origin: {loop-introduced: 1}
+      triage: {must-fix: 1}
+      duration_hours: 0.37
+    - round: 3
+      findings: 1
+      origin: {loop-introduced: 1}
+      triage: {must-fix: 1}
+      duration_hours: 0.35
+  by_file:
+    - path: "sdd/traces/bug-315-moto-port-race.yml"
+      findings: 2
+    - path: "tests/conftest.py"
+      findings: 1
+  untouched_files:
+    - ".github/workflows/ci.yml"
+    - "benchmarks/conftest.py"
+    - "infra/_moto.py"
+    - "sdd/BACKLOG-DONE.md"
+    - "sdd/BACKLOG.md"
+    - "sdd/CLAUDE-REFERENCE.md"
+    - "sdd/backlog/bug-315-moto-port-race.md"
+    - "sdd/backlogid.json"
+    - "sdd/decisions/c91be2ac-3fa5-4dce-ba27-b3f814390a29.jsonl"
+    - "tests/backends/fixtures/s3_boto3_moto.py"
+    - "tests/backends/fixtures/s3_moto.py"
+    - "tests/backends/s3/test_pyarrow.py"
+    - "tests/test_moto_server_fixture.py"
+  review_driven_commits:
+    - sha: "b697fad"
+      subject: "fix: address PR #1107 review"
+    - sha: "c287b74"
+      subject: "fix: address PR #1107 review (round 2)"
+    - sha: "f6704d1"
+      subject: "BUG-315: decision log"
+    - sha: "4efe7f8"
+      subject: "fix: address PR #1107 review (round 3)"
+  ci: {verdict: GREEN, failed: 0, pending: 0}
 orient:
   - items: [BUG-289]
     verdict: constrains
