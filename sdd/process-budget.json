@@ -2,15 +2,17 @@
   "_doc": "Ratchet on the process files agents re-read. Written by scripts/check_process_budget.py (--update, --raise); read its docstring before editing by hand.",
   "globs": [
     "CLAUDE.md",
+    ".claude/output-styles/*.md",
     ".claude/skills/*/SKILL.md",
     ".claude/agents/*.md",
     "sdd/CLAUDE-REFERENCE.md",
     "sdd/traces/_schema.yml"
   ],
   "slack": 0.02,
-  "total": 293333,
+  "total": 295438,
   "files": {
     "CLAUDE.md": 16931,
+    ".claude/output-styles/interview.md": 2105,
     ".claude/skills/audit/SKILL.md": 1355,
     ".claude/skills/drift/SKILL.md": 23728,
     ".claude/skills/fix-pr/SKILL.md": 14682,
@@ -29,5 +31,12 @@
     "sdd/CLAUDE-REFERENCE.md": 63772,
     "sdd/traces/_schema.yml": 31935
   },
-  "raises": []
+  "raises": [
+    {
+      "item": "BK-422",
+      "from": 293333,
+      "to": 295438,
+      "reason": "measured set widened to .claude/output-styles/, which settings.json loads into every session (PR #1110 review)"
+    }
+  ]
 }

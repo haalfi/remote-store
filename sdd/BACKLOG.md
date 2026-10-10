@@ -995,7 +995,7 @@ sessions work is measured before it becomes process.
 - [ ] **BK-423 — A universal quantifier in process prose owes no enumeration until a reviewer refutes it**
   spec: — · effort: S · audience: contributor.process
   Principle 9 makes a figure name its derivation before it is written; "every",
-  "all" and "never" owe theirs only after a finding, under `/fix-pr` Step 3's
+  "all" and "never" owe theirs only after a finding, under `/fix-pr` § Rules'
   quantifier rule. SCOPE findings, overstated quantifiers and missing cases, are
   91 of 321 long-loop prose findings ([research record](research/token-usage/report.md) § 5).
   Open decision: extend principle 9 to quantifiers, after RFC-0020's run B is scored.

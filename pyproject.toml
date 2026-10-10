@@ -564,8 +564,8 @@ ref-rows = "python scripts/sdd_lookup.py ref-rows {args}"
 # PR, never anything about what it found. Gating on a measurement would make the
 # number worth managing.
 check-no-retrospective = "python scripts/check_no_retrospective.py"
-# BK-422. Ratchet on the process files agents re-read (CLAUDE.md, skills,
-# agents). In `preflight` for `hatch run all`, and in `docs-gate` because those
+# BK-422. Ratchet on the process files agents re-read (CLAUDE.md, output
+# styles, skills, agents). In `preflight` for `hatch run all`, and in `docs-gate` because those
 # paths reach CI only through DOCS_PAT; CODE_PAT never matches them.
 check-process-budget = "python scripts/check_process_budget.py {args}"
 check-backlog-ids-vs-base = "python scripts/check_backlog_ids_vs_base.py {args}"
