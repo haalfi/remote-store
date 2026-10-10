@@ -1,0 +1,263 @@
+id: BK-418
+title: "Claim discipline: a change details only behaviour it owns, and a claim about behaviour it leaves alone is deleted, not narrowed"
+trigger: >-
+  Run A of `/ship BUG-280` (PR #1093), route 2 after the re-plan at
+  `cdcaa35c6`: 37 of 49 findings were prose (a hand reading of each, per the
+  kickoff prompt), growing per round. Most were false per-interpreter and
+  per-platform claims about the recursive walks the PR no longer changed,
+  in docstrings, BE-021, the migration note and the BK-416 / BUG-313
+  dossiers; each fix narrowed a claim (shape 4) and the next measuring pass
+  refuted the narrower one. The maintainer's plan (2026-10-10, session D)
+  lands rules (a) and (b) on master; rule (c) stays on the variant.
+source_items:
+  - BK-418
+audience:
+  - contributor.process
+expected_ripples:
+  - .claude/skills/fix-pr/SKILL.md
+  - .claude/skills/rvw-pr/SKILL.md
+  - .claude/skills/ship/SKILL.md
+  - .claude/skills/orchestrate/SKILL.md
+surprising_ripples:
+  - sdd/backlog/bk-384-rfc-0015-graduation-measurement.md
+  - CLAUDE.md
+  - sdd/CLAUDE-REFERENCE.md
+  - .claude/agents/documentation-expert.md
+discovery_followups: []
+decisions:
+  - sdd/decisions/0b26f6a6-64de-4295-87a8-ba03c81a4306.jsonl
+orient:
+  - items: [BK-384]
+    verdict: constrains
+    evidence: >-
+      Dossier: RFC-0015's graduation is read over "the next three deliveries"
+      run under its rules, D2 (the five fix shapes) among them. Rule (b)
+      restricts when shape 4 applies without adding or removing a shape, so
+      RFC-0015 D2's text stays true; a delivery sampled after this merges ran
+      under the restricted form. Recommend a dated note on the BK-384 dossier
+      so the sample can say so.
+  - items: [BK-404, ID-266, ID-268]
+    verdict: unrelated
+    evidence: >-
+      Index entries: the two-speed gate (which gate a round push runs) and
+      the close-time `review:` paste. Both touch `/ship` § Close each round or
+      Step 5, not § Triage, `/fix-pr` Step 3 or `/rvw-pr` Step 2.
+  - items: [BK-363, BK-346]
+    verdict: unrelated
+    evidence: >-
+      Index entries: `/fix-pr`'s trace gate and the ripple-check table's
+      adjacent questions; neither is about what prose a fix may write.
+phases:
+  - id: orient
+    name: Orient
+    steps:
+      - file: K-sandbox token-kit UNDERSTANDING.md (outside the repo)
+        section: "Pain point 2; agreed plan row 3"
+        read_type: gate
+        extract: >-
+          Claim discipline replaces #1101's P1, which only fires after a
+          code-free round; (a) and (b) on master, (c) on the variant only
+      - file: .claude/skills/fix-pr/SKILL.md
+        section: "Step 3; Rules"
+        read_type: gate
+        extract: >-
+          Single home of the five fix shapes (`/ship` § Triage restates them
+          inline, `/orchestrate` Step 6 lists them and links Step 3; RFC-0015
+          D2 is the draft record they came from). Two sibling bullets also
+          prescribe shape 4: the instrument-bound bullet and the quantifier rule
+      - file: sdd/CONTENT-RULES.md
+        section: "Rules 4 and 5"
+        read_type: gate
+        extract: >-
+          (a) is Rule 4 applied to a change: behaviour the change leaves alone
+          has a home (the code, per Rule 5, and its governing item), so the
+          change's own detail about it is a copy
+      - file: sdd/rfcs/rfc-0015-ship-two-surfaces.md
+        section: "Status; D2"
+        read_type: reference
+        extract: >-
+          D2 is Draft, not an ADR clause, and BK-384 measures it. (b) restricts
+          shape 4's domain and adds no shape, so it collides with no accepted
+          ADR
+      - file: sdd/adrs/0035-vary-method-not-model.md
+        section: "Decision: premise about existing behaviour"
+        read_type: reference
+        extract: >-
+          Premises about existing behaviour are executed before they ship. (a)
+          leaves fewer such premises and removes none of the obligation; no
+          collision
+      - file: sdd/rfcs/rfc-0020-ship-token-interventions.md
+        section: "Status note; P1"
+        read_type: reference
+        extract: >-
+          The five clauses (c) will waive are listed under P1; the Status note
+          already says run B's base is master with the plan's master fixes plus
+          one variant commit
+      - file: sdd/research/token-usage/report.md
+        section: "Run B baseline: run A's route 2"
+        read_type: reference
+        extract: "Hand reading 37 prose of 49, classifier 30; the CONTENT-RULES clause links this section rather than copying the figures"
+      - file: .claude/skills/orchestrate/SKILL.md
+        section: "Step 6 reviewer contract and fix step"
+        read_type: gate
+        extract: >-
+          Its reviewers do not run `/rvw-pr`, so the reviewer half of (a) needs
+          its own pointer in the Step 6 return list, not only the fix step.
+          PR #1103's thread `discussion_r4236988933` was this skill missed once
+          already
+      - file: sdd/BACKLOG.md
+        section: "backlog-find --dossiers on the five touched files; backlog-show of the hits"
+        read_type: reference
+        extract: "Clusters in the orient key; `orchestrate` returned no dossier hit"
+  - id: implement
+    name: Implement
+    steps:
+      - file: sdd/CONTENT-RULES.md
+        section: "Rule 4, anchor change-details-what-it-changes"
+        read_type: reference
+        extract: "Rule (a) and its consequence (b), with the reason, as a clause of Rule 4"
+      - file: .claude/skills/fix-pr/SKILL.md
+        section: "Step 3 shape 4; instrument bullet; quantifier rule"
+        read_type: reference
+        extract: "Shape 4 limited to behaviour the PR changes; both siblings that prescribe shape 4 now route unchanged behaviour to shape 2"
+      - file: .claude/skills/ship/SKILL.md
+        section: "Triage each finding; Premise lens"
+        read_type: reference
+        extract: "Inline shape list and the Premise lens link the rule"
+      - file: .claude/skills/rvw-pr/SKILL.md
+        section: "Step 2 content-rules check"
+        read_type: reference
+        extract: "Reviewers flag such detail citing Rule 4, naming deletion or a pointer as the change"
+      - file: sdd/backlog/bk-384-rfc-0015-graduation-measurement.md
+        section: "D2 restricted, 2026-10-10"
+        read_type: reference
+        extract: "Dated note, per the scope dialog"
+  - id: fix
+    name: "Fix pass after the review on PR #1106"
+    steps:
+      - file: .claude/skills/ship/SKILL.md
+        section: "Premise lens"
+        read_type: verify
+        extract: >-
+          "Delete claims about unchanged behaviour" also caught a refuted
+          premise the change relies on, which would delete the sentence and
+          ship the code built on it. Class: every site stating the rule. The
+          carve-out (description, not premise) went into the CONTENT-RULES
+          home clause and a qualifier into each of the other nine sites: the
+          seven links a grep for `change-details-what-it-changes` returns
+          (`/ship` 2, `/orchestrate` 2, `/fix-pr` 1, `/rvw-pr` 1, BK-384 1)
+          and the two unlinked `/fix-pr` siblings. A grep for
+          `relies on|rely on` over the four skills returns 8 lines; the other
+          two sites wrap the phrase across a line. My miss
+      - file: sdd/research/token-usage/report.md
+        section: "Run B baseline: run A's route 2"
+        read_type: verify
+        extract: >-
+          The section gives prose and code counts only, not the walks topic,
+          which I took from PR #1093's threads. The clause now cites each
+          source for what it supports, with the section anchor
+  - id: fix_2
+    name: "Fix pass after the maintainer's targeted review on PR #1106"
+    steps:
+      - file: sdd/CONTENT-RULES.md
+        section: "Rule 4 clause; How the rules interact; Provenance"
+        read_type: verify
+        extract: >-
+          The clause had its own trigger, failure and fix, so it was a second
+          rule hidden under "One copy per fact", and "When in doubt on any of
+          those six, ask rule 1" decided it wrongly. Moved to Rule 8 (same
+          anchor) as a third axis, named in Intent & Scope and How the rules
+          interact, with an example. The run-A evidence moved to Provenance.
+          My scope dialog had recommended the Rule 4 placement; the
+          maintainer chose Rule 8 in the fix-pass dialog
+      - file: CLAUDE.md
+        section: "Documentation framework, item 3"
+        read_type: verify
+        extract: >-
+          Sweep of live summaries of CONTENT-RULES by a grep for
+          `Rule 7's|in Rule 7 alone|rules 1–6` outside records found five:
+          CLAUDE.md, CLAUDE-REFERENCE pr-validation-gates, the
+          documentation-expert FOUNDATION line, the mkdocs.yml comment and
+          gen_pages.py's docstring. The first three steer authors or
+          reviewers and now name Rule 8. The last two point editors of docs
+          tooling at the file, stay true as labels, and are left alone
+      - file: .claude/skills/fix-pr/SKILL.md
+        section: "anchor links"
+        read_type: verify
+        extract: "Seven `Rule 4](...#change-details-what-it-changes)` links retargeted to Rule 8, counted by the replacing script per file: ship 2, orchestrate 2, rvw-pr 1, fix-pr 1, BK-384 1"
+  - id: fix_3
+    name: "Fix pass after the third review on PR #1106"
+    steps:
+      - file: sdd/CONTENT-RULES.md
+        section: "Rule 8; How the rules interact"
+        read_type: verify
+        extract: >-
+          "Behaviour the change alters" caught every docs-only change, whose
+          subject is behaviour it exists to document. Rule 8 now defines
+          *owns* (alters or exists to document) and *leaves alone*, and the
+          doubt test asks changes, documents or relies on. The site list
+          reads "such as", not as an enumeration. Swept: a grep for
+          `unchanged behaviour|does not change|does not alter|behaviour ...
+          changes` over CONTENT-RULES, CLAUDE.md, CLAUDE-REFERENCE, the
+          BK-384 dossier, the skills and the agents now returns nothing,
+          after 14 edits across 8 files (CONTENT-RULES 3, CLAUDE.md 1,
+          CLAUDE-REFERENCE 1, BK-384 1, /fix-pr 3, /rvw-pr 2,
+          /orchestrate 2, /ship 1). My miss
+review:
+  # Derived by `hatch run ship-report 1106 --trace-block-only` at head 4c1f476.
+  # Do not hand-edit, except a newly required field per sdd/traces/_schema.yml
+  # section review: RFC-0015 D4 makes this script the only producer.
+  derivation: "hatch run ship-report 1106 --trace-block-only"
+  pr: 1106
+  review_rounds: 5
+  submissions: 4
+  findings: 7
+  by_round:
+    - round: 1
+      findings: 2
+      origin: {original: 2}
+      triage: {must-fix: 2}
+      duration_hours: 0.02
+    - round: 2
+      findings: 2
+      origin: {loop-introduced: 1, original: 1}
+      triage: {must-fix: 2}
+      duration_hours: 0.33
+    - round: 3
+      findings: 2
+      origin: {loop-introduced: 2}
+      triage: {must-fix: 1, unknown: 1}
+      duration_hours: 0.1
+    - round: 4
+      findings: 1
+      origin: {loop-introduced: 1}
+      triage: {must-fix: 1}
+      duration_hours: 0.01
+  by_file:
+    - path: "sdd/CONTENT-RULES.md"
+      findings: 5
+    - path: ".claude/skills/ship/SKILL.md"
+      findings: 1
+    - path: "sdd/traces/bk-418-claims.yml"
+      findings: 1
+  untouched_files:
+    - ".claude/agents/documentation-expert.md"
+    - ".claude/skills/fix-pr/SKILL.md"
+    - ".claude/skills/orchestrate/SKILL.md"
+    - ".claude/skills/rvw-pr/SKILL.md"
+    - "CLAUDE.md"
+    - "sdd/CLAUDE-REFERENCE.md"
+    - "sdd/backlog/bk-384-rfc-0015-graduation-measurement.md"
+    - "sdd/decisions/0b26f6a6-64de-4295-87a8-ba03c81a4306.jsonl"
+  review_driven_commits:
+    - sha: "00285e6"
+      subject: "fix: address PR #1106 review"
+    - sha: "e509c49"
+      subject: "BK-418: trace review block for PR #1106"
+    - sha: "5ae7eac"
+      subject: "fix: address PR #1106 review"
+    - sha: "b6ca62f"
+      subject: "BK-418: trace review block for PR #1106 at its close"
+    - sha: "4c1f476"
+      subject: "fix: address PR #1106 review"
+  ci: {verdict: GREEN, failed: 0, pending: 0}
