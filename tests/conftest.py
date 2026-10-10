@@ -9,6 +9,7 @@ from typing import TYPE_CHECKING
 import pytest
 from hypothesis import HealthCheck, settings
 
+from infra._moto import start_moto_server
 from infra._settings import (
     AZURITE_HOST,
     AZURITE_PORT,
@@ -75,12 +76,6 @@ def _maybe_load_dotenv_for_live(config: pytest.Config) -> None:
 # importing from a parent conftest is an upward import that creates the
 # same cross-boundary problem in reverse.
 # ---------------------------------------------------------------------------
-
-
-def _free_port() -> int:
-    with socket.socket() as s:
-        s.bind(("", 0))
-        return s.getsockname()[1]
 
 
 def _s3_available() -> bool:
@@ -167,18 +162,17 @@ def moto_server() -> Iterator[str | None]:
     """Start a moto HTTP server for the test session.
 
     Uses server mode instead of mock_aws() to avoid Python 3.13
-    PEP 667 f_locals incompatibility with s3fs/aiobotocore.
+    PEP 667 f_locals incompatibility with s3fs/aiobotocore. The server is
+    bound and run by ``infra._moto.start_moto_server``.
     """
     if not _s3_available():
         yield None
         return
-    from moto.moto_server.threaded_moto_server import ThreadedMotoServer
-
-    port = _free_port()
-    server = ThreadedMotoServer(port=port, verbose=False)
-    server.start()
-    yield f"http://127.0.0.1:{port}"
-    server.stop()
+    server, thread = start_moto_server()
+    yield f"http://127.0.0.1:{server.server_port}"
+    server.shutdown()
+    thread.join()
+    server.server_close()
 
 
 @pytest.fixture(scope="session")

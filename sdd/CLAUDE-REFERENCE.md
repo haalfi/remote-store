@@ -534,9 +534,10 @@ trace step (`/pr` verifies a trace exists, `/fix-pr` updates it).
 - **Mechanical gate.** Classify the diff with
   `git diff origin/<BASE>...HEAD --name-only`, then run the matching target. Fix
   failures, re-run until clean.
-    - **Touches `src/`, `tests/`, `examples/`, `scripts/`, `.claude/hooks/`,
-      `sdd/rfcs/rfc-0015-{findings,rounds}.py`, `pyproject.toml`, or
-      `.python-version`** → run `hatch run all`, the full pre-PR superset (its
+    - **Touches `src/`, `tests/`, `examples/`, `scripts/`, `infra/*.py`,
+      `.claude/hooks/`, `sdd/rfcs/rfc-0015-{findings,rounds}.py`,
+      `pyproject.toml`, or `.python-version`** → run `hatch run all`, the full
+      pre-PR superset (its
       constituent scripts are the source of truth in `pyproject.toml`). The two
       RFC-0015 scripts ride with `.claude/hooks/` below: they are pinned by
       `tests/scripts/` and gated in CI by the same `hooks` output. Other
@@ -545,6 +546,7 @@ trace step (`/pr` verifies a trace exists, `/fix-pr` updates it).
       interpreter-defining members of CI's `CODE_PAT`;
       `scripts/` is among them because its guards live under `tests/scripts/`, which
       only the suite runs (a `scripts/`-only diff must still run it).
+      `infra/*.py` is among them because `tests/conftest.py` imports it.
       `.claude/hooks/` is here for the same reason — its guard is
       `tests/scripts/test_claude_hooks.py`, so a hook-only diff that skipped the
       suite would validate nothing — but it is deliberately **not** in

@@ -1,7 +1,7 @@
 """``s3_moto`` fixture: S3Backend against an in-process moto server.
 
-Stage 1, real-local. moto runs entirely in-process via
-``ThreadedMotoServer``; no Docker required. Each factory call creates
+Stage 1, real-local. moto runs entirely in-process, started by the
+session ``moto_server`` fixture; no Docker required. Each factory call creates
 a fresh bucket with a random suffix so concurrent fixtures do not
 collide.
 """

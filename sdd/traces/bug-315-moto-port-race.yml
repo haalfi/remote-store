@@ -1,0 +1,265 @@
+id: BUG-315
+title: "The moto fixture picks a port and binds it later, so two servers can share it or a failed bind hangs the session"
+trigger: >-
+  BK-419's contention analysis found that tests/conftest.py's moto_server chose a
+  port with _free_port(), released it, and let ThreadedMotoServer bind it later on
+  0.0.0.0 with SO_REUSEADDR, and that start() waits without a timeout on a ready
+  event only a successful bind sets; filed as a candidate cause of the 97% stall,
+  not reproduced. The maintainer asked for an analysis, then for the fix.
+source_items:
+  - BUG-315
+  - BK-419
+audience:
+  - infra.test
+discovery_followups:
+  - BUG-316
+expected_ripples:
+  - sdd/BACKLOG.md
+  - sdd/BACKLOG-DONE.md
+  - sdd/backlogid.json
+  - sdd/backlog/bug-315-moto-port-race.md
+surprising_ripples:
+  - benchmarks/conftest.py
+  - infra/_moto.py
+  - tests/backends/fixtures/s3_moto.py
+  - tests/backends/fixtures/s3_boto3_moto.py
+  - tests/backends/s3/test_pyarrow.py
+  - .github/workflows/ci.yml
+  - sdd/CLAUDE-REFERENCE.md
+decisions:
+  - sdd/decisions/c91be2ac-3fa5-4dce-ba27-b3f814390a29.jsonl
+review:
+  # Derived by `hatch run ship-report 1107 --trace-block-only` at head 4efe7f8.
+  # Do not hand-edit, except a newly required field per sdd/traces/_schema.yml
+  # section review: RFC-0015 D4 makes this script the only producer.
+  derivation: "hatch run ship-report 1107 --trace-block-only"
+  pr: 1107
+  review_rounds: 4
+  submissions: 3
+  findings: 3
+  by_round:
+    - round: 1
+      findings: 1
+      origin: {unclassifiable-file: 1}
+      triage: {must-fix: 1}
+      duration_hours: 0.03
+    - round: 2
+      findings: 1
+      origin: {loop-introduced: 1}
+      triage: {must-fix: 1}
+      duration_hours: 0.37
+    - round: 3
+      findings: 1
+      origin: {loop-introduced: 1}
+      triage: {must-fix: 1}
+      duration_hours: 0.35
+  by_file:
+    - path: "sdd/traces/bug-315-moto-port-race.yml"
+      findings: 2
+    - path: "tests/conftest.py"
+      findings: 1
+  untouched_files:
+    - ".github/workflows/ci.yml"
+    - "benchmarks/conftest.py"
+    - "infra/_moto.py"
+    - "sdd/BACKLOG-DONE.md"
+    - "sdd/BACKLOG.md"
+    - "sdd/CLAUDE-REFERENCE.md"
+    - "sdd/backlog/bug-315-moto-port-race.md"
+    - "sdd/backlogid.json"
+    - "sdd/decisions/c91be2ac-3fa5-4dce-ba27-b3f814390a29.jsonl"
+    - "tests/backends/fixtures/s3_boto3_moto.py"
+    - "tests/backends/fixtures/s3_moto.py"
+    - "tests/backends/s3/test_pyarrow.py"
+    - "tests/test_moto_server_fixture.py"
+  review_driven_commits:
+    - sha: "b697fad"
+      subject: "fix: address PR #1107 review"
+    - sha: "c287b74"
+      subject: "fix: address PR #1107 review (round 2)"
+    - sha: "f6704d1"
+      subject: "BUG-315: decision log"
+    - sha: "4efe7f8"
+      subject: "fix: address PR #1107 review (round 3)"
+  ci: {verdict: GREEN, failed: 0, pending: 0}
+orient:
+  - items: [BUG-289]
+    verdict: constrains
+    evidence: >-
+      Its dossier: the suite runs under this repo's `filterwarnings = error`
+      (pyproject.toml [tool.pytest.ini_options] opens with "error") and the
+      strictness "is deliberate and is not the defect". The new fixture must
+      therefore emit no warning, including PytestUnhandledThreadExceptionWarning
+      from a server thread that dies on a failed bind; binding in the caller's
+      thread avoids that thread entirely.
+  - items: [ID-242, ID-266, BK-325, BK-382, BK-396, ID-261]
+    verdict: unrelated
+    evidence: >-
+      `backlog-find "moto" --dossiers` hits; each names moto only as the S3 lane
+      a test runs on (ID-242's pragmas, ID-266's Stage-1 lane, conformance
+      collection in BK-325/BK-382/BK-396/ID-261). None plans work on how the
+      moto server is started or bound.
+phases:
+  - id: orient
+    name: Orient
+    steps:
+      - file: sdd/BACKLOG.md
+        section: "BUG-315 (item)"
+        read_type: gate
+        extract: "Diagnosis and open decision (none; bind port 0 once), read via hatch run backlog-show"
+        outcome: ok
+      - file: sdd/backlog/bug-315-moto-port-race.md
+        section: "(full)"
+        read_type: gate
+        extract: >-
+          Steps 1-4 and the advisory fix; steps 3 (port sharing) and the hang were
+          marked inferred / not reproduced, so both were probed before planning
+        outcome: ok
+      - file: tests/conftest.py
+        section: "_free_port; moto_server fixture"
+        read_type: reference
+        extract: "_free_port has one caller (moto_server); the fixture passes no ip_address"
+        outcome: ok
+      - file: .claude/skills/ship/SKILL.md
+        section: "Orient: does related open work change the fix?"
+        read_type: gate
+        extract: "Find by spec (none) and by file/subject (conftest.py, moto, free_port), judge clusters, recommend scope in one dialog"
+        outcome: ok
+      - file: sdd/backlog/bug-289-floor-warnings-fail-suite.md
+        section: "(full)"
+        read_type: reference
+        extract: "filterwarnings = error is deliberate; constrains the fixture to warning-free behaviour"
+        outcome: ok
+      - file: sdd/backlog/id-266-two-speed-ci-gate.md
+        section: "(full)"
+        read_type: reference
+        extract: "Moto appears only as the Stage-1 S3 lane; unrelated to how the server binds"
+        outcome: ok
+  - id: reproduce
+    name: Reproduce
+    steps:
+      - file: .github/workflows/ci.yml
+        section: "test job runs-on; any pytest timeout"
+        read_type: reference
+        extract: >-
+          Linux runners for the main gate, windows/macos legs for os_sensitive;
+          no pytest --timeout, so a CI hang runs to the job limit
+        outcome: ok
+      - file: tests/conftest.py
+        section: "moto_server (probed in scratch scripts, Windows and Docker Linux)"
+        read_type: verify
+        extract: >-
+          Windows: two servers share a port; start() hangs on an exclusively held
+          port, an unassignable address and an excluded-range port. Linux: the
+          collision is EADDRINUSE and a hang. Recorded in the dossier's dated
+          section
+        outcome: ok
+  - id: tests
+    name: Failing test first
+    steps:
+      - file: tests/test_async_loop_leak_guard.py
+        section: "module docstring and layout"
+        read_type: reference
+        extract: "Precedent for a root-level test that pins tests/conftest.py machinery"
+        outcome: ok
+      - file: pyproject.toml
+        section: "[tool.pytest.ini_options] markers: os_sensitive"
+        read_type: reference
+        extract: "Bind failure semantics differ per OS; mark the module os_sensitive so the Windows and macOS legs run it"
+        outcome: ok
+  - id: implement
+    name: Implement
+    steps:
+      - file: tests/conftest.py
+        section: "_start_moto_server (moved to infra/_moto.py in review); moto_server"
+        read_type: reference
+        extract: >-
+          The first fix run showed werkzeug answering a failed bind with
+          sys.exit(1) (its OSError is __context__) and moto sharing S3 state
+          per process; the helper re-raises OSError and the second test dropped
+          a cross-server isolation assertion that was my own wrong assumption
+        outcome: ok
+  - id: verify
+    name: Verify
+    steps:
+      - file: sdd/CLAUDE-REFERENCE.md
+        section: "Pre-work index / Release & meta: Bug fix; Backlog item touched; Tests rows"
+        read_type: verify
+        extract: >-
+          Backlog close with dossier link, trace, failing test before fix. The
+          CHANGELOG stub the Bug fix row asks for is not owed: audience is only
+          infra.test, which the trace schema's derived rule exempts (BUG-314's
+          precedent). tests/ is in ci.yml CODE_PAT, so the new test runs on a
+          tests-only PR
+        outcome: unclear
+      - file: sdd/BACKLOG.md
+        section: "How this file works: Completing work"
+        read_type: verify
+        extract: "Delete the index entry, short [x] entry in BACKLOG-DONE linking dossier and trace, run gen-backlogid"
+        outcome: ok
+  - id: review_fix_1
+    name: Review fix, round 1
+    steps:
+      - file: benchmarks/conftest.py
+        section: "moto_url"
+        read_type: reference
+        extract: >-
+          Review found the same choose-release-bind pattern and its docstring
+          pointing at tests/conftest.py. My orient searched backlog dossiers and
+          tests/, not the code for the pattern; `rg ThreadedMotoServer` would have
+          found it. Benchmarks import infra/ but never tests/, so the helper moved
+          to infra/_moto.py (dialog in the decision log) and both fixtures use it
+        outcome: ok
+      - file: infra/_settings.py
+        section: "module docstring"
+        read_type: reference
+        extract: "infra/ is the shared Python home for the test suite and benchmarks"
+        outcome: ok
+      - file: .github/workflows/ci.yml
+        section: "setup CODE_PAT"
+        read_type: verify
+        extract: >-
+          infra/ matches no CI class pattern, so an infra/_moto.py-only PR would
+          run no tests; infra/_settings.py already has the same exposure. Left to
+          BUG-306, whose open decision is which class each such file joins.
+          Round 2 showed that hand-off was my misread: BUG-306's entry scopes
+          itself to files tests/scripts/ reads, which infra/_moto.py is not
+        outcome: ok
+  - id: review_fix_2
+    name: Review fix, round 2
+    steps:
+      - file: sdd/research/bk-403-phase-0/bucket-rules.md
+        section: "Path table, infra/*.py row"
+        read_type: reference
+        extract: >-
+          Phase 0 already classes infra/*.py as FULL because tests/conftest.py
+          imports infra._settings; ci.yml's CODE_PAT now carries
+          ^infra/[^/]+\.py$. Probed by extracting CODE_PAT from ci.yml and
+          running the workflow's grep -qE over nine paths: the three infra/*.py
+          files and tests/conftest.py match; infra/.env, docker-compose.yml,
+          drift-locks/x.txt, infra/sub/a.py and sdd/BACKLOG.md do not
+        outcome: ok
+      - file: sdd/CLAUDE-REFERENCE.md
+        section: "PR validation gates: Mechanical gate"
+        read_type: verify
+        extract: "The local list of CODE_PAT's test-bearing members gains infra/*.py, so the two stay in step"
+        outcome: ok
+      - file: .github/actions/start-backends/action.yml
+        section: "infra/.env sourcing"
+        read_type: reference
+        extract: >-
+          infra/.env and infra/docker-compose.yml stay unclassified; filed as
+          BUG-316 after a scope dialog rather than widening CODE_PAT here
+        outcome: ok
+  - id: review_fix_3
+    name: Review fix, round 3
+    steps:
+      - file: sdd/traces/id-200-s3-error-mapping-fidelity.yml
+        section: "step citing the probe harness template"
+        read_type: reference
+        extract: >-
+          The same rg that found the benchmark copy finds 5 ThreadedMotoServer
+          sites in 3 research/RFC scripts, one cited as a probe template. Per a
+          scope dialog they stay as records; the dossier now names them and
+          points new probes at infra._moto.start_moto_server
+        outcome: ok

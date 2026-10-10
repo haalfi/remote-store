@@ -59,7 +59,10 @@ jobs:
           # json.load-ed by every shard at collection; a lone refresh of it (or a
           # truncated write) must re-run the gate, else code=false skips every
           # shard and gate goes green having validated nothing (BK-319 review).
-          CODE_PAT='^(src|tests|examples|scripts)/|^pyproject\.toml$|^\.python-version$|^\.test_durations_pass1$|^docs-src/reference/FEATURES\.md$|^docs-src/_data/graph/|^\.github/workflows/|^\.github/actions/'
+          # infra/*.py is imported by tests/conftest.py (infra._settings for
+          # ports and credentials, infra._moto for the session moto server), so
+          # an edit to it changes what every test runs against (BUG-315 review).
+          CODE_PAT='^(src|tests|examples|scripts)/|^infra/[^/]+\.py$|^pyproject\.toml$|^\.python-version$|^\.test_durations_pass1$|^docs-src/reference/FEATURES\.md$|^docs-src/_data/graph/|^\.github/workflows/|^\.github/actions/'
           # .pre-commit-config.yaml is an input to gen_gate_inventory's claim
           # space (ID-245): a hook's `entry:` is wiring, so editing one changes
           # sdd/GATE-INVENTORY.md and the gate that notices must run. It goes in

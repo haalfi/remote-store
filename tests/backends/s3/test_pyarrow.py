@@ -1,7 +1,7 @@
 """S3-PyArrow hybrid backend tests -- covers S3PA-xxx spec items.
 
 Requires: s3fs, pyarrow, boto3 (test dependencies).
-On pyarrow < 24: uses moto ThreadedMotoServer. On pyarrow ≥ 24: uses MinIO.
+On pyarrow < 24: uses the in-process moto server (``moto_server`` fixture). On pyarrow ≥ 24: uses MinIO.
 All tests are skipped if the required backend is unavailable.
 """
 

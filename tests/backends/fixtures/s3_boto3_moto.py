@@ -1,7 +1,7 @@
 """``s3_boto3_moto`` fixture: S3Boto3Backend against an in-process moto server.
 
-Stage 1, real-local (ID-202 PoC). moto runs in-process via
-``ThreadedMotoServer``; no Docker required. Each factory call creates a
+Stage 1, real-local (ID-202 PoC). moto runs in-process, started by
+the session ``moto_server`` fixture; no Docker required. Each factory call creates a
 fresh bucket with a random suffix so concurrent fixtures do not collide.
 
 Mirrors ``s3_moto.py`` but constructs the boto3-direct ``S3Boto3Backend``
