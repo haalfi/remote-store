@@ -298,6 +298,15 @@ if evidence changes; these are retired.
 
 ## Unreleased
 
+- [x] **BUG-317 — pymdown-extensions 12.2 breaks the docs build, so every docs job fails**
+  spec: — · effort: S · audience: user.site, infra.ci
+  Released 2026-10-10, its `Highlight` takes a required `md` that
+  mkdocstrings 1.0.6's `Highlighter` does not pass, so `mkdocs build --strict`
+  raises `TypeError` on the first API page. It is transitive (via
+  mkdocs-material), so nothing held it back. The `docs` group now excludes
+  12.2; reproduced with 12.2 and green with 12.1. Trace:
+  [bug-317](traces/bug-317-pymdown-pin.yml).
+
 - [x] **BK-422 — The process files agents re-read grew with nothing pricing the growth**
   spec: — · effort: S · audience: contributor.tooling, contributor.process
   `scripts/check_process_budget.py` holds the total size of `CLAUDE.md`, the
