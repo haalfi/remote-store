@@ -15,7 +15,8 @@ expected_ripples:
   - sdd/research/token-usage/report.md
 surprising_ripples:
   - sdd/research/token-usage/tokkit.py
-discovery_followups: []
+discovery_followups:
+  - BUG-317
 decisions:
   - sdd/decisions/0b26f6a6-64de-4295-87a8-ba03c81a4306.jsonl
   - sdd/decisions/b68a3f5f-3c9e-4ab0-85b4-e9e206383d34.jsonl
@@ -134,3 +135,36 @@ phases:
           /ship § Resume at the PR. A repo grep for RFC-0020 with P1 to P4
           found no other hit; the variant commit's "(RFC-0020 P1)" is reworded
           at its rebase
+review:
+  # Derived by `hatch run ship-report 1111 --trace-block-only` at head 11eae38.
+  # Do not hand-edit, except a newly required field per sdd/traces/_schema.yml
+  # section review: RFC-0015 D4 makes this script the only producer.
+  derivation: "hatch run ship-report 1111 --trace-block-only"
+  pr: 1111
+  review_rounds: 3
+  submissions: 1
+  findings: 3
+  by_round:
+    - round: 1
+      findings: 3
+      origin: {original: 3}
+      triage: {must-fix: 3}
+      duration_hours: 0.06
+  by_file:
+    - path: "sdd/rfcs/rfc-0020-ship-token-interventions.md"
+      findings: 3
+  untouched_files:
+    - "sdd/BACKLOG.md"
+    - "sdd/decisions/0b26f6a6-64de-4295-87a8-ba03c81a4306.jsonl"
+    - "sdd/decisions/b68a3f5f-3c9e-4ab0-85b4-e9e206383d34.jsonl"
+    - "sdd/research/token-usage/report.md"
+    - "sdd/research/token-usage/tokkit.py"
+    - "sdd/traces/bk-418-rfc-rewrite.yml"
+  review_driven_commits:
+    - sha: "4f59bf2"
+      subject: "fix: address PR #1111 review"
+    - sha: "7a18725"
+      subject: "BK-418: decision log"
+    - sha: "11eae38"
+      subject: "BK-418: decision log"
+  ci: {verdict: GREEN, failed: 0, pending: 0}
