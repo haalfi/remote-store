@@ -620,6 +620,55 @@ repo, since it is keyed by session ID.
 - **Not measured:** PR #1110 was built in a cloud session, so only its two local
   reviews are counted; nothing before 2026-10-09.
 
+## What each means did on its own
+
+**Four means can be compared before and after their start from the surviving
+transcripts; the others act only inside a delivery and are measured by run B
+alone.** The lookup tool and the memory trim show clear effects, the stable gate
+a clean record since its merge, and turning off the synced skills nothing
+measurable in a session's first call [means_effects]. Sessions are placed by
+their start time, and the session mix differs between periods, so these are
+before-and-after observations, not controlled comparisons.
+
+| Means | Before | After | Source |
+| --- | --- | --- | --- |
+| MEMORY.md trim | 13,651 characters in a `/rvw-pr` session's instructions; first call 47.8k tokens | 4,680 characters; first call 44.3k | [means_effects: `prefix`, `rvw-pr`] |
+| Synced claude.ai skills off | the rest of a `/rvw-pr` first call, instruction files subtracted: 35.1k | 35.7k, then 35.0k | [means_effects: `prefix`, `rest_ctx_median`] |
+| Lookup tool (#1099) | 18 working sessions: 16 read the large process files, 198 reads, 547k result characters, 11.0 reads per session | 20 sessions: 10 read them, 46 reads, 88k characters, 2.3 per session | [means_effects: `lookup`] |
+| Stable gate (#1105, #1108) | 85 gate runs: 3 cut off; idle stalls of 37, 35 and 22 minutes | 35 runs: none cut off; one 25-minute stall | [means_effects: `gate`] |
+
+- **The memory trim shows where it was aimed.** `/rvw-pr` sessions open with
+  nearly the same prompt, so their first call isolates the instruction files:
+  MEMORY.md fell by 8,971 characters, about 3.7k tokens at § 1's calibration,
+  and the first call by 3.5k. The project `CLAUDE.md` grew by 1,882 characters
+  over the same days, through the means that added rules to it, which takes
+  back about a fifth of that saving.
+- **Turning off the synced skills left the first call unchanged.** The rest of
+  the prefix moved by under a thousand tokens either way, within the noise of a
+  Claude Code version change in the same days. The listing was measured at
+  about 2.6k tokens in § 6, and it re-entered mid-session; whatever the setting
+  saves, it does not show at a session's start.
+- **The lookup tool replaced most large-file reads.** The early read is
+  strong: reads of `BACKLOG.md`, `BACKLOG-DONE.md` and `CLAUDE-REFERENCE.md`
+  per working session fell by four fifths, and the characters they brought in
+  by six sevenths. The two periods hold different work, so BK-420's re-walk
+  against its own baseline remains the measurement of record.
+- **The gate has had no cut-off since its lock.** The one stall after it is the
+  session that monitored run B, waiting on purpose for the run's events, not a
+  gate. A passing `hatch run all` took about the same time before and after
+  (199 and 193 s median): the gate means target reliability, not speed.
+- **Orient, the handoff and claim discipline act inside a delivery**, so only a
+  delivery measures them: § Run B for the three together.
+
+### How long the runs took
+
+**Run B took 2 h 29 min from first call to close, against run A's 7 h 06 min;
+both opened their PR within half an hour.** Of run B's wall time, 1 h 49 min was
+active and 40 min idle, 30 of them the gap between the handoff and the resumed
+session; run A was active for 5 h 43 min, and began its second route 4 h 29 min
+in [run_durations]. Time counts as idle where two records are more than five
+minutes apart.
+
 ## Learnings
 
 **What this work established, in one place: what a delivery costs, which
@@ -720,6 +769,8 @@ siblings (`_common.default_transcripts`).
 | `pr_1113_rounds.json` | `pr_rounds.py --pr 1113` | GitHub reviews and PR commits (cached in `--data`), the fix commits in git |
 | `run_b_gates.json` | `gates.py --name run_b_gates` | both run B sessions' transcripts |
 | `prep_cost.json` | `prep_cost.py --since 2026-10-09T00:00:00Z --until 2026-10-10T13:42:18Z` | transcripts, and the class map in `--data` (keyed by session ID, so not committed) |
+| `means_effects.json` | `means_effects.py --skills-off 2026-10-09T10:18:53Z --memory-trim 2026-10-09T12:40:14Z --lookup 2026-10-09T18:21:44Z --gate 2026-10-10T08:59:29Z --gate-workers 2026-10-10T10:05:31Z` | every surviving main transcript and its subagents; the cuts are the setting change, the last MEMORY.md edit, and the merges of #1099, #1105 and #1108 |
+| `run_durations.json` | `run_durations.py --run A=… --run B=…,… --milestone …` | run A's and run B's main transcripts; milestones at PR creation, plan approval, route 2's start and the resume |
 | *(printed, no result file)* | `delete_pending_probe.py <src> <work> <label>`, once per tree | `git archive` trees of master `eff7953bb`, #1093 and #1113; Windows only |
 
 Sessions are assigned to work items through the PR they served, never by

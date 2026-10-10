@@ -168,6 +168,8 @@ before the run was met ([report § Run B](token-usage/report.md#run-b-ship-bug-2
 | Findings | — | 49 | 17 |
 | Share of findings on prose | — | 61% | 35% |
 | Gate cut-offs and idle stalls | 3 and 1 | — | none |
+| Wall time, first call to close | 7 h 06 min | — | 2 h 29 min |
+| of it active (gaps of five minutes or less) | 5 h 43 min | — | 1 h 49 min |
 
 Each control shows in the run:
 
@@ -183,10 +185,14 @@ Each control shows in the run:
   ([report § Rule (c) against the decision rule](token-usage/report.md#rule-c-against-the-decision-rule)).
 - **A stable gate.** 16 gate runs, none cut off, no stall.
 
+Both runs opened their PR within half an hour; the time, like the tokens, went
+into what followed ([report § How long the runs took](token-usage/report.md#how-long-the-runs-took)).
+
 **What the table cannot show** is which control did how much. They changed
 together, run B's scope was wider than route 2's, and run B saw a note about the
 experiment during orient. It is one delivery measured twice the same way, not an
-effect size per control.
+effect size per control. Four controls can be compared before and after their
+start in the surviving transcripts; the appendix gives what each did there.
 
 ## 5. Where the argument breaks
 
@@ -277,20 +283,23 @@ link run B to run A's PR, and the measurement kit followed that link
 without anyone remembering to use it.** The authoritative text of each lives
 where the table points; it is not restated here.
 
-| Control | Where it lives | PR |
-| --- | --- | --- |
-| Orient before planning: a verdict per cluster of related open items, a scope recommended before the plan | [`/ship` § Orient](../../.claude/skills/ship/SKILL.md#orient), [`CLAUDE.md` § Backlog](../../CLAUDE.md#backlog) | #1103 |
-| Handoff at the PR: the build writes `tmp/ship-handoff-<N>.md` and stops; `/ship resume <N>` reviews in a fresh session | [`/ship`](../../.claude/skills/ship/SKILL.md) | #1103 |
-| Detail only what the change owns | [`CONTENT-RULES.md` Rule 8](../CONTENT-RULES.md#change-details-what-it-changes) | #1106, #1109 |
-| A stable local gate: one suite per machine, a per-test timeout, a 15-minute deadline on every background wait, workers capped by free memory, a port race fixed | `scripts/run_tests.py`, [`CLAUDE.md` § Parallel tests](../../CLAUDE.md#parallel-tests) | #1105, #1107, #1108 |
-| A budget on process files: their total grows only by a recorded raise | `scripts/check_process_budget.py`, `sdd/process-budget.json` | #1110 |
-| A lookup tool: one backlog item or reference section by key, instead of a search and a sliced read | [`scripts/sdd_lookup.py`](../../scripts/sdd_lookup.py) | #1099 |
-| The Edit/Write lint hook no longer deletes an import before its first use, which forced re-edits | `.claude/hooks/` | #1095 |
+| Control | Where it lives | PR | Measured on its own |
+| --- | --- | --- | --- |
+| Orient before planning: a verdict per cluster of related open items, a scope recommended before the plan | [`/ship` § Orient](../../.claude/skills/ship/SKILL.md#orient), [`CLAUDE.md` § Backlog](../../CLAUDE.md#backlog) | #1103 | only inside run B: 7.4% of the run, no re-plan |
+| Handoff at the PR: the build writes `tmp/ship-handoff-<N>.md` and stops; `/ship resume <N>` reviews in a fresh session | [`/ship`](../../.claude/skills/ship/SKILL.md) | #1103 | only inside run B: round 1 at 104k context against 255k |
+| Detail only what the change owns | [`CONTENT-RULES.md` Rule 8](../CONTENT-RULES.md#change-details-what-it-changes) | #1106, #1109 | only inside run B, with rule (c): prose 35% of findings against 61% |
+| A stable local gate: one suite per machine, a per-test timeout, a 15-minute deadline on every background wait, workers capped by free memory, a port race fixed | `scripts/run_tests.py`, [`CLAUDE.md` § Parallel tests](../../CLAUDE.md#parallel-tests) | #1105, #1107, #1108 | 3 cut-offs in 85 gate runs before; none in 35 after |
+| A budget on process files: their total grows only by a recorded raise | `scripts/check_process_budget.py`, `sdd/process-budget.json` | #1110 | not measurable: it prevents growth |
+| A lookup tool: one backlog item or reference section by key, instead of a search and a sliced read | [`scripts/sdd_lookup.py`](../../scripts/sdd_lookup.py) | #1099 | large-file reads per working session from 11.0 to 2.3, their characters by six sevenths |
+| The Edit/Write lint hook no longer deletes an import before its first use, which forced re-edits | `.claude/hooks/` | #1095 | not measured |
 
-Two more act outside the repository, per checkout: the claude.ai skills synced
-into every session's listing were turned off, and the auto-memory index was
-trimmed; both shrink the prefix every call carries
-([report § 8](token-usage/report.md#8-changes-made-so-far)). The measurement kit,
+Two more act outside the repository, per checkout. The auto-memory index was
+trimmed: about 3.7k fewer tokens in every main session's first call, a fifth
+of it taken back by the project `CLAUDE.md` growing through the controls above.
+The claude.ai skills synced into every session's listing were turned off, with
+no measurable change in a session's first call. The before-and-after figures
+compare periods holding different work ([report § What each means did on its
+own](token-usage/report.md#what-each-means-did-on-its-own)). The measurement kit,
 [`token-usage/tokkit.py`](token-usage/tokkit.py) and its siblings, is the
 standing means for testing the next control the same way.
 

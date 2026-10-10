@@ -1,0 +1,278 @@
+{
+ "_provenance": {
+  "script": "means_effects.py",
+  "generated": "2026-10-10",
+  "inputs": {
+   "transcript 0": "f6cbf79cd08b74ade7041c81b5e651b5318d08d596b6ab5bbbfee111b8c25783",
+   "transcript 1": "e14fb0d4172deb65ae0c6d79e0a5439490369be4442f094d48b00216b56ecab4",
+   "transcript 2": "0af0dc7e4f1b584bbd67a75f4ed891956a921019ea4293e29a63238ec9633cb8",
+   "transcript 3": "95f02543ee019ebf17eecdfba8d9224ad3661a0ad42366b3a5143fbea418cca1",
+   "transcript 4": "b2a17d155ac09eb39516003fbe0e2f177a3b7b6eb853922b3b2ad885323a6d81",
+   "transcript 5": "5dcf9bb72e8947b4923746ea9926a9afd44fca0c6d97e16263aa865b17b01e41",
+   "transcript 6": "a62dd8a3d5924b6e197f2245cc0cacc40caa0d796ffaf77faefac1c690b3ccab",
+   "transcript 7": "e4ab7ad49fed314b7b5210a762f7231677fc29402a7546ac1a3d39d8e1f02ed5",
+   "transcript 8": "9db787b3028c94f3726f7b979a515c1fcbf30fcef2873a3b96a40ad64705aa2d",
+   "transcript 9": "95cf189aff1526d360875424032ee9680a5a141bc3899115500f55febc5159a3",
+   "transcript 10": "0edc4e162096dba81e4dc1b6c267bcd436261832f5b65404a3714149123806cc",
+   "transcript 11": "08d41a68a11bd0ba490f2100e44a4a859f62f29dbbb8b34b68a7876ab978546c",
+   "transcript 12": "2c3423f5bf21743d25240cdbe817e1d7679cc5d6ecccdd64f108df94a4c996c7",
+   "transcript 13": "4dec5d43422cd3351ab0416a7f532ed8a95469264debab8377174b840dd28600",
+   "transcript 14": "06d8a06d664450ac8e6f0f3a3b8af3480e6ea1c9ad5b3f61227c6d344edd2bf1",
+   "transcript 15": "23a1cfbaf551062e97ab0fde2237ddde0f85c341f258b40f9413bea37e54c986",
+   "transcript 16": "a58187bb4511d6ef0de8766f478561ed2f20448a49dd8e833cb703fafcc45f4c",
+   "transcript 17": "1d4c115f357016ea3d82afa6d517ddbaf7ce51c7abd91e9ab8a66eb1a1fd51d3",
+   "transcript 18": "932ee82fff2db438f19b650c52981801ea8ca37f8571d2b65fe8ed9ce372a35c",
+   "transcript 19": "c7e446f1d74aa32d4597f97267ea7281485600e20c0f1a459f8083462a407814",
+   "transcript 20": "8c67efb8b9aee7d7d564b5c5a9c500c52b6e61171b4c2f28ea3a3abce2c3ba23",
+   "transcript 21": "9123fa4b161ca9dc96ac7647bb3bc9c5ec32122d4caa1e43f9a21c4f4b73d545",
+   "transcript 22": "10ff1628cd9cee86ece79bdbaf36b3769403cbaec05065ccd4c3cb295c75314c",
+   "transcript 23": "5e670e8c64ab4a52405104abc171bd75628f5f06155da6ce4cb5b48a93a78ef7",
+   "transcript 24": "71caaf2c7f01ec18289088dabbe653ca52b5cd9bee6b4e9064565c5aad9ff14a",
+   "transcript 25": "698867d2d2ede0a517fd764295b12cc4fada959fbbbbd3a6813229f4dfbc080b",
+   "transcript 26": "2bc332da2e711e57e27e89d5a4f7e6b3f55cd7d858f3ed21ef74efe88ec9f7e5",
+   "transcript 27": "70857d49d6b0bcc2bcd5f55594f2ea0516eb775a12f6197dfc2c93c5fe9a0ad4",
+   "transcript 28": "aa066018ab391ec5f376cc8ab767d38919ca94c418ba57a4a578843f02f6b2f4",
+   "transcript 29": "7733a29298d48f83c2b4e0cf43f4df52cbb8b9b1e7655328bf70a969429e73af",
+   "transcript 30": "0c869bad5e0724f6eb8c6adb5d8cc7cc242453e3152a40ce22d2f5e96a6326d7",
+   "transcript 31": "f92a92dd76181656170b991852b17928e7bfad5c474fa769d9e4a8ab6a7bccb7",
+   "transcript 32": "aeed6b8640beb8c99ca28c08aa5d414be7276f16a35ac44c8d95cf1cf6ba5b4d",
+   "transcript 33": "546082bfd2511b3d50d65ee73d625c93645c59d290de2e1b409ac95b117c1690",
+   "transcript 34": "01d90e9c55f8ac5136757767dc95b22994a947509d56ff89876cebbcc1fd99fe",
+   "transcript 35": "dadce5f6030fcfca086e04b1895549818b899035853c22848117636d627fddc5",
+   "transcript 36": "62b9a5cfd9776c8b7c414a091b251f5bb6d658d9ef40df8a8971ec07d547c9e9",
+   "transcript 37": "1b4b5429d1928dfb354e454380f8656d6e312734cecd46ed97b6e74367e6f30c",
+   "transcript 38": "b9e6332e2d181de7b0b8d22d9fc550c378e7dd9faa4b872a01ccfb23aebc3d81",
+   "transcript 39": "aac055d8df2beb172fbe5f95e1595e1af3bc5f5de3fc8f32e5177371834463b3",
+   "transcript 40": "5c4fc9c0f9fe9cc817d0ac54db4c5755c3a685e1cf87b8e0f4e8131f36235669",
+   "transcript 41": "0c8ff6e7348da80e44997f478b41ff7a55d61748a3c86972401369af6f53f508",
+   "transcript 42": "1878bf0fa780c31ad2d8b8d4f56b54a75b5a502bfce3b9612fe8b6a8ff03fbc3",
+   "transcript 43": "dc2ab6dacd0098a3046c62e5af3bcd025482cebc9fd10c9482babc1c972558cb",
+   "transcript 44": "2b68709c576054bc902ac81e964ea2d41fa429d22678044102e352dcb6c9f647",
+   "transcript 45": "cdcd76a499a20d0a00c8d7a3b544624edc8d2afb15004eeb9df9594d911cf6fa",
+   "transcript 46": "58a1d34b7b9841c887f4cb6fa00a23f1de0746edde842fcb81b2dc0c18a693e3",
+   "transcript 47": "75afdf9618da62f891a970321f47c513dace30ad1b3a1230a53911962538f001",
+   "transcript 48": "e5ca5247e2041078f9f67e44e7b26e479de5f282e738dd48260f2a6344d68f5a",
+   "transcript 49": "fc29bd2000dd865169065ede509bbab042b160a78496f6dfb072f44c03bf65e5",
+   "transcript 50": "57284aeabd62c9ddce4383eb9035e921e2107ece7c0cfb8f5f02bb72edaafea0",
+   "transcript 51": "b8ffd16912d01e1c6f1654d2d4e67d7414044e9f7e1ed14cd07cd6bbed116f97",
+   "transcript 52": "8ce91dee58992d33f07b35bef4f0551f87f1db4fd020766508e00ed2bf925856",
+   "transcript 53": "6b6b735bea1fd8f0a6b0a6f69ee80b6ab8870600dfe11e1ed60cbf9719e0a8e6",
+   "transcript 54": "d7f598fdd125af309e4ef76220eec95d25bee2618b8bc980ff1df1781668610e",
+   "transcript 55": "f32bebb5b07aaf5d65ef1fb57b3b4a198ab7af6fac53a0300682bf82b8b93416",
+   "transcript 56": "566f6f034f362d14cc9895de5eeaef0f2bf46786c7ee3a6a190b74696f60caf0",
+   "transcript 57": "ed7264496bdd60897efbdeef59e5fe04854442c182a14d5f11fd6902ba1234ed",
+   "transcript 58": "e69e8ae13d5b9c4363dc4b86304fed6754891fa9c19ae38a1bc773507c0821fa",
+   "transcript 59": "bc47f1238e208f425aad8e301eec70a0a5e9471cf434be77860ba77bebbe5fc6",
+   "transcript 60": "fe7ba1559dc3ac12f30c891f8f1e76cd640a0290c1e9309314188370427106eb",
+   "transcript 61": "7e2356b661d1ea8a83f6b382dcd47dfaac496e31cdc53543951833d4c250710c",
+   "transcript 62": "90069669e0e516b0c1f87f16f744a0d625c7df3f248a1af35623e90695d538f6",
+   "transcript 63": "78476b4d9992d27d6c92297a3fce1d1741226b98cd91a281d1bcfefa48c64b05",
+   "transcript 64": "36ab41e4cf9ed3736af5af97893853706431351ffb010749d94ae7cd95ea1456",
+   "transcript 65": "6cd1fbad157eb11d5fe36ce27417614ca0e0032169b43c88a16a8c659a31f6e0",
+   "transcript 66": "6d469da929394fb75faf8c5795b301ce216ddf047d8d04671ccd94b2bee179ea",
+   "transcript 67": "b1c47a923296ce80e3344294375411dcc84d13a98753044bd3a4f97fa382898c",
+   "transcript 68": "7d7ec907dfdcea24f4626c57d6418838f2593d5cfa526f85452eb5dc64ed378d",
+   "transcript 69": "b18c89ac426d8356d75bfb2f562b3643d1cde28c1f733da503cf9826cdb28b97",
+   "transcript 70": "37471d055f7e94570033947bdc6c0b255e7b1d5aadcf8e3ec8bdf47ac3f669dd",
+   "transcript 71": "482f98f5f2d10e120ecc86532b35d987ec5ae7b4cf73f597d4b2cb835c2aa809",
+   "transcript 72": "93a4b9db4ac66620f48e032497f26d09cb891e43e94baefb17e726812453a939",
+   "transcript 73": "ee5324b2df0f41585a72bbd219998a7ea282b9ed540aa73be9b9392e80ce38bc",
+   "transcript 74": "47fd1b71d54b35a3adb3ca411e2b5d2dbdc655367d1b670e5fb788dafab1570a",
+   "transcript 75": "587a7315f8362461896847abf14f2257b73ff3c07236ff56fe706d28e3d821d9",
+   "transcript 76": "a5b686530e8dba80038d6fd07e63c9f4d6065b694650b7d2949571520b8f0140",
+   "transcript 77": "65fdecc8734957e35cb981a77a0eab04d020dd84d4ea4605e0ae2d4d4945e77b",
+   "transcript 78": "25fb0ec9a505b2c6a2e5f19de65e469511ae88c3287aa1a6275b69a8562cfa97",
+   "transcript 79": "3756057467ddb2e3176d683f69d3796a623698efc17c642c66daef3c5469afc0",
+   "transcript 80": "a1c009ff2578c25eb3b0beb373992d9e8f6d163e68a082ccadbb9fdb1d0d0354",
+   "transcript 81": "f69fb47c860e76c42d17c794184e84ac09f24baacfcabdc1708793005b790715",
+   "transcript 82": "958fac81c5431f3202e9a7bdd1fc43f9f882056e2f3210e5fec4616cc662bfed",
+   "transcript 83": "5b7e1b89cc57f2f87792e21a4c1bca263747515c6117ec97c3cb01736cf2a8de",
+   "transcript 84": "bdc586fbcd1b74f8703dc37ed456eb47589fb5b104ff737a26d35ad257ecd32f",
+   "transcript 85": "b8ca87439f7e3673bcea104c7bdda9cf7469499ca2787007dfdbf81ed2d48921",
+   "transcript 86": "41a39c6da782005c67411e4e888521777543fd73197b1a8d7abd4d39e94d6a7e",
+   "transcript 87": "82bd321dcb4e0a7f51a5cb5d87d1151424e57df78c0835cdc4fbe0e9c84a116e",
+   "transcript 88": "f43cce71e28ae57481c146881f6e2b34e564405ad0351a16df199b40d48cafce",
+   "transcript 89": "5757ee15281bfccf53920c2ed358451e85003301e9e658ec3ce8ffcef66031e4",
+   "transcript 90": "b585d2bbcd97c022e5386c3dbde41992481961639e6f033c25b24d5f98c084bc",
+   "transcript 91": "43c6720ceec177ee142ab92a862ffc9b54096654c7c403308f135900e875d5f7",
+   "transcript 92": "9ea53e5f073f462c8cd2a4cf6255f89b327926a4bbbd4e8d95d92939d4a55f5e",
+   "transcript 93": "70a6dd5a5ed3f3ff86fc8ec48526cf16283f866e573959069e9c600af481f739",
+   "transcript 94": "31b61c4165e20c79774aea87d47196ac396efe646158959e0ee907e7398d7a74",
+   "transcript 95": "1c5138a237bb5affaa0a9f95a082ac7f18b898949200710249b3260daa6c3931",
+   "transcript 96": "e8c087dfed9a748a880f54826e0891f2e4d74ae0283176020c5e51802bc0e66e",
+   "transcript 97": "cc0996660cbbd85a35cf7f35585865ecf869dc7ee8a2691b082dbe0a4dcc42cb",
+   "transcript 98": "3e8ae875d0bddf68197a1222cc531858060b70a35e30ee0ece005a3742ca03d1",
+   "transcript 99": "d3aaf843b12558ef242f69151915cc25a29aa4d2ea55453dc1267a464e982831",
+   "transcript 100": "86d71faae6e49ef6390c6d1724cc6250f6f9899f084a313577bafee1edff26c2",
+   "transcript 101": "cf4b0340ddb64015b4fcb1d3aa0855f624c882d1449e41879ca124497d84a374",
+   "transcript 102": "dfa892e53946847dc6b052e30b24c67913724b50105fa473bea8d4456bc4b112",
+   "transcript 103": "4786cd99eca019c328d5beb4eb6fdd41cc5c83581e4cd8084a56160008d61f63",
+   "transcript 104": "6226a255218d6335b3d8edc25957fb438ded6df302ace300e33b7232d1369b76",
+   "transcript 105": "755660ad548f8669e332f2ad101d695c36b6134bf076ca4606d3001280672eb4",
+   "transcript 106": "999372d3e259a0236fb78b09c904b44b95457048a69b5657a51b50ba6a411178",
+   "transcript 107": "13dc909aecf548eb6b979e7265195bebbb9039d5c9d32f70f6181beb7c504cc4",
+   "transcript 108": "b557c0b89c86dbe2c4794db729c9e53adce9030a0bcc98cb0d72c7d0dc264171",
+   "transcript 109": "2a82e6cfb6e651b9fbc6c0202fdd487bf1f617732fa846d68abac49da0c56a04",
+   "transcript 110": "c5e24feecbd65e10decd6d5fbb4ffe1f853a0176c900a6f453825c01554b988e",
+   "transcript 111": "4e0c476c90163398fa786d88d78349a78e4cfd6b18288b04f2728c8b95df2ca2",
+   "transcript 112": "428801ba875caa9e4cf10e9765fe171f99222a5e1340a834eb56d910073c4bf6",
+   "transcript 113": "2edb5e4d075e74d9cdaeab5136405d3a7e95b22d4fbf5346e2a9550483410206",
+   "transcript 114": "f7c9218fcefac08b7d053a2c3ebeed8bf57c38d04feefe037000a23ca8deb492",
+   "transcript 115": "e6218d86b67d228f20467ef26f52d9548d3d1ac118d0f361f7d5a93753094b85",
+   "transcript 116": "09ee8cf62ed833741db345c04aa490b60d8623a7d16d0d2af983dec1bea6b9cc",
+   "transcript 117": "70bc474656c630ab593cd5d4707c825942119f1a0e2d5516606279bd226a9aab",
+   "transcript 118": "e109e4e3bf83a273681a76ba272881341879afb0df67dc7964d0d79c072c8a40",
+   "transcript 119": "6913857f8f95d3c456ab8dff9b5fb6309e0c1ca35e01a71dc34bd24f1689e47c",
+   "transcript 120": "defd6a13e378acf43a75f2d44dc9a00fc0ab387988b4f748caf74ca3cf2c910a",
+   "transcript 121": "8a06c461615caeff5989d90070ca2322b88662c0ea01653a3ec7bfef48bac43c",
+   "transcript 122": "85aa3df84e0babc34258dbf5afbea950466776f369e867bdda13ab8754854723",
+   "transcript 123": "87cdf52f30152d3b45f7fc6aef1518ee6f6986288d31cf6007ab03394f7f1fe0",
+   "transcript 124": "ffe95a39a629bce78c16abcd5523de35a9413acd57a243da6b7e64135efbe09b",
+   "transcript 125": "1ea1023d1559788dc912781218ed049c8646e0123043dfb81881b4fdcf28ca46",
+   "transcript 126": "057d94a17eb1de7d6dcc95275fff35eec16fa6265d6596c433ddaeececf35886",
+   "transcript 127": "dfa2f8afaa0114025610ad445666b001acd34df42e6814dfdbfe03aff9d87e10",
+   "transcript 128": "c0c12c157698daf2c6f1f77c880a1e5fbfcd8819b67fcafed82dada3581d7eae",
+   "transcript 129": "87f492420da732b7770279ee93d0310b574978c580ab3fb5ca2aa075eb83e8ab"
+  }
+ },
+ "cuts": {
+  "skills_off": "2026-10-09T10:18:53Z",
+  "memory_trim": "2026-10-09T12:40:14Z",
+  "lookup": "2026-10-09T18:21:44Z",
+  "gate": "2026-10-10T08:59:29Z",
+  "gate_workers": "2026-10-10T10:05:31Z"
+ },
+ "tokens_per_char": 0.411,
+ "prefix": {
+  "before skills off": {
+   "all": {
+    "sessions": 32,
+    "versions": [
+     "2.1.289",
+     "2.1.295"
+    ],
+    "first_ctx_median": 49734,
+    "memory_chars_median": 16348,
+    "project_claude_md_chars_median": 14901,
+    "rest_ctx_median": 35566
+   },
+   "rvw-pr": {
+    "sessions": 19,
+    "versions": [
+     "2.1.289",
+     "2.1.295"
+    ],
+    "first_ctx_median": 47802,
+    "memory_chars_median": 13651,
+    "project_claude_md_chars_median": 14901,
+    "rest_ctx_median": 35070
+   }
+  },
+  "skills off, memory untrimmed": {
+   "all": {
+    "sessions": 8,
+    "versions": [
+     "2.1.295"
+    ],
+    "first_ctx_median": 46232,
+    "memory_chars_median": 8781,
+    "project_claude_md_chars_median": 14901,
+    "rest_ctx_median": 36012
+   },
+   "rvw-pr": {
+    "sessions": 6,
+    "versions": [
+     "2.1.295"
+    ],
+    "first_ctx_median": 43874,
+    "memory_chars_median": 3880,
+    "project_claude_md_chars_median": 14901,
+    "rest_ctx_median": 35699
+   }
+  },
+  "skills off, memory trimmed": {
+   "all": {
+    "sessions": 35,
+    "versions": [
+     "2.1.295",
+     "2.1.296"
+    ],
+    "first_ctx_median": 52243,
+    "memory_chars_median": 4680,
+    "project_claude_md_chars_median": 16783,
+    "rest_ctx_median": 43014
+   },
+   "rvw-pr": {
+    "sessions": 12,
+    "versions": [
+     "2.1.295",
+     "2.1.296"
+    ],
+    "first_ctx_median": 44262,
+    "memory_chars_median": 4680,
+    "project_claude_md_chars_median": 16783,
+    "rest_ctx_median": 34962
+   }
+  }
+ },
+ "lookup": {
+  "before": {
+   "sessions": 18,
+   "sessions_reading_big_files": 16,
+   "big_file_reads": 198,
+   "big_file_result_chars": 547233,
+   "lookup_calls": 54
+  },
+  "after": {
+   "sessions": 20,
+   "sessions_reading_big_files": 10,
+   "big_file_reads": 46,
+   "big_file_result_chars": 88166,
+   "lookup_calls": 112
+  }
+ },
+ "gate": {
+  "before": {
+   "sessions": 53,
+   "gate_runs": 85,
+   "by_outcome": {
+    "passed": 44,
+    "failed": 20,
+    "cut off": 3,
+    "background": 18
+   },
+   "passing_hatch_run_all_median_s": 199,
+   "idle_stalls_min": [
+    37,
+    35,
+    22
+   ]
+  },
+  "lock_and_timeout_only": {
+   "sessions": 10,
+   "gate_runs": 15,
+   "by_outcome": {
+    "passed": 6,
+    "failed": 5,
+    "cut off": 0,
+    "background": 4
+   },
+   "passing_hatch_run_all_median_s": 196,
+   "idle_stalls_min": []
+  },
+  "after": {
+   "sessions": 12,
+   "gate_runs": 20,
+   "by_outcome": {
+    "passed": 12,
+    "failed": 7,
+    "cut off": 0,
+    "background": 1
+   },
+   "passing_hatch_run_all_median_s": 193,
+   "idle_stalls_min": [
+    25
+   ]
+  }
+ }
+}
