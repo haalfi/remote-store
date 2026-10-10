@@ -185,6 +185,24 @@ phases:
         section: "anchor links"
         read_type: verify
         extract: "Seven `Rule 4](...#change-details-what-it-changes)` links retargeted to Rule 8, counted by the replacing script per file: ship 2, orchestrate 2, rvw-pr 1, fix-pr 1, BK-384 1"
+  - id: fix_3
+    name: "Fix pass after the third review on PR #1106"
+    steps:
+      - file: sdd/CONTENT-RULES.md
+        section: "Rule 8; How the rules interact"
+        read_type: verify
+        extract: >-
+          "Behaviour the change alters" caught every docs-only change, whose
+          subject is behaviour it exists to document. Rule 8 now defines
+          *owns* (alters or exists to document) and *leaves alone*, and the
+          doubt test asks changes, documents or relies on. The site list
+          reads "such as", not as an enumeration. Swept: a grep for
+          `unchanged behaviour|does not change|does not alter|behaviour ...
+          changes` over CONTENT-RULES, CLAUDE.md, CLAUDE-REFERENCE, the
+          BK-384 dossier, the skills and the agents now returns nothing,
+          after 14 edits across 8 files (CONTENT-RULES 3, CLAUDE.md 1,
+          CLAUDE-REFERENCE 1, BK-384 1, /fix-pr 3, /rvw-pr 2,
+          /orchestrate 2, /ship 1). My miss
 review:
   # Derived by `hatch run ship-report 1106 --trace-block-only` at head 5ae7eac.
   # Do not hand-edit, except a newly required field per sdd/traces/_schema.yml

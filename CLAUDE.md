@@ -142,7 +142,7 @@ Three authority docs govern documentation. Apply in order:
 
 1. **[`sdd/AUTHORING.md`](sdd/AUTHORING.md)**: placement (where files belong).
 2. **[`sdd/DOCUMENTATION.md`](sdd/DOCUMENTATION.md)**: structure (what shape they take).
-3. **[`sdd/CONTENT-RULES.md`](sdd/CONTENT-RULES.md)**: longevity (writing that stays accurate), and — in Rule 7 alone — comprehension at writing time; Rule 8 limits a change's detail to the behaviour it changes.
+3. **[`sdd/CONTENT-RULES.md`](sdd/CONTENT-RULES.md)**: longevity (writing that stays accurate), and — in Rule 7 alone — comprehension at writing time; Rule 8 limits a change's detail to the behaviour it alters or exists to document.
 
 ## Code conventions
 

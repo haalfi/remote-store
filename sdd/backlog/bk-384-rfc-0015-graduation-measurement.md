@@ -94,7 +94,8 @@ conversion.
 ## D2 restricted, 2026-10-10
 
 Under BK-418 (trace `sdd/traces/bk-418-claims.yml`), D2's shape (4), narrowing
-a claim to what was measured, applies only to behaviour the PR changes. A
+a claim to what was measured, applies only to behaviour the PR owns (alters
+or exists to document). A
 claim about behaviour the PR leaves alone, and that the change does not rely
 on, takes shape (2)
 ([`CONTENT-RULES.md` Rule 8](../CONTENT-RULES.md#change-details-what-it-changes)).

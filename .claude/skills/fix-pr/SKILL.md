@@ -108,7 +108,8 @@ the shape:
 3. **Replacing the claim with its derivation** — a command, a test name or an
    enumeration.
 4. **Narrowing the claim to what was measured**, only for behaviour this PR
-   changes. A claim about behaviour it leaves alone takes shape 2, deleting
+   owns, which it alters or exists to document. A claim about behaviour it
+   leaves alone takes shape 2, deleting
    it or replacing it with a one-line pointer to the item that owns it,
    never this shape. A premise the change relies on is not such a claim: a
    refuted one is a finding against the change, shape 1 or 5
@@ -137,8 +138,8 @@ the shape:
   errno — is written as a fact about that injection unless a trigger a user can
   produce is named beside it. Ask *could a user reach this?* of every claim
   before publishing it; shape 4 is the fix when the answer is no and the
-  behaviour is one this PR changes, shape 2 when it is not and the change
-  does not rely on it.
+  behaviour is one this PR owns, shape 2 when it is not and the change does
+  not rely on it.
 - **A new measurement is swept like a fix.** Before a measured fact is recorded
   anywhere, list the artifacts that assert something about the same behaviour
   and leave each one true.
@@ -239,8 +240,8 @@ executed.
   item scoped to every operation except the two deletes, not to whichever
   subset a reviewer happened to measure — that gap was caught, closed to its
   own wording, and caught again three rounds later in the same sentence.
-  When the quantified claim is about behaviour this PR does not change and
-  the change does not rely on it, its extent is not yours to complete:
+  When the quantified claim is about behaviour this PR leaves alone and the
+  change does not rely on it, its extent is not yours to complete:
   delete it (Step 3, shape 2).
 - Sweep your own fixes the same way: a fix changes a thing, and every other
   description of that thing — docstring, comment, spec table, guide — is now

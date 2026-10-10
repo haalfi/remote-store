@@ -602,7 +602,8 @@ worktree root only.
 is closed by exactly one of: **(1)** a behaviour change pinned by a test seen
 failing first; **(2)** deleting the false claim; **(3)** replacing the claim
 with its derivation — a command, a test name or an enumeration; **(4)** narrowing
-the claim to what was measured, only for behaviour this PR changes, since a
+the claim to what was measured, only for behaviour this PR alters or exists
+to document, since a
 claim about behaviour it leaves alone takes (2), deleted or replaced by a
 pointer to the item that owns it, unless the change relies on it
 ([`CONTENT-RULES.md` Rule 8](../../../sdd/CONTENT-RULES.md#change-details-what-it-changes));
