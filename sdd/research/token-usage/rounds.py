@@ -13,6 +13,10 @@ Two sources:
 The comment cache (path and category prefix per comment, no bodies) is kept
 in ``--data/round_comments.json``; PRs already in it are not fetched again.
 Writes ``results/rounds.json``.
+
+A review submission is not a ``/ship`` round: one round posts a review per
+reviewer and its fix pass a reply submission per finding. For one PR's real
+rounds, routes and prose-or-code fixes, use ``pr_rounds.py``.
 """
 
 from __future__ import annotations

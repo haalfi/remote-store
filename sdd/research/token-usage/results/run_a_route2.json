@@ -1,0 +1,88 @@
+{
+ "_provenance": {
+  "script": "route_baseline.py",
+  "generated": "2026-10-10",
+  "inputs": {
+   "main transcript": "cf6004ad6699cfbda0f48ffb94e4865ec5fcb5566e2c41fe46b6d2da245e4a49"
+  }
+ },
+ "run": {
+  "transcripts": 34,
+  "units_m": 59.3,
+  "main_calls": 795,
+  "subagent_units_m": 17.62
+ },
+ "route_start_call": 409,
+ "route_start_ts": "2026-10-09T13:35:20.685Z",
+ "route": {
+  "units_m": 28.19,
+  "main_units_m": 20.22,
+  "subagent_units_m": 7.96,
+  "before_first_round": {
+   "calls": 86,
+   "units_m": 5.56
+  },
+  "loop_units_m": 22.62,
+  "rounds": [
+   {
+    "round": 1,
+    "spawn_call": 495,
+    "members": 1,
+    "main_ctx_k": 113,
+    "main_units_m": 1.5,
+    "subagent_units_m": 0.39
+   },
+   {
+    "round": 2,
+    "spawn_call": 560,
+    "members": 1,
+    "main_ctx_k": 223,
+    "main_units_m": 1.08,
+    "subagent_units_m": 0.29
+   },
+   {
+    "round": 3,
+    "spawn_call": 595,
+    "members": 3,
+    "main_ctx_k": 273,
+    "main_units_m": 2.34,
+    "subagent_units_m": 1.57
+   },
+   {
+    "round": 4,
+    "spawn_call": 651,
+    "members": 2,
+    "main_ctx_k": 396,
+    "main_units_m": 1.6,
+    "subagent_units_m": 1.07
+   },
+   {
+    "round": 5,
+    "spawn_call": 680,
+    "members": 3,
+    "main_ctx_k": 479,
+    "main_units_m": 3.75,
+    "subagent_units_m": 2.21
+   },
+   {
+    "round": 6,
+    "spawn_call": 739,
+    "members": 3,
+    "main_ctx_k": 625,
+    "main_units_m": 4.39,
+    "subagent_units_m": 2.44
+   }
+  ]
+ },
+ "earlier_route_units_m": 31.12,
+ "checkpoint": {
+  "until": "2026-10-09T13:35:51Z",
+  "units_m": 31.5,
+  "after_units_m": 27.8,
+  "first_main_call_after": 413,
+  "route_minus_after_m": 0.38,
+  "route_main_units_before_cut_m": 0.38,
+  "earlier_subagent_units_after_m": 0.0
+ },
+ "derivation": "route_baseline.py --snapshot <snapshots>/<sid> --route-start-call 409 --checkpoint 2026-10-09T13:35:51Z --name run_a_route2"
+}
