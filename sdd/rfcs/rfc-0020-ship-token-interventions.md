@@ -10,6 +10,13 @@ below. Tracked as **BK-418**. The evidence is the research record
 [`sdd/research/token-usage/report.md`](../research/token-usage/report.md),
 cited below as *the report*.
 
+[2026-10-10, the maintainer's plan after run A, BK-418's `bk-418-orient`
+trace: two parts now ship on master ahead of run B. P2 landed as written. P3
+is replaced by `/ship` § Orient, in which the session reads the related work
+and judges it rather than asking the user per cluster. The sentences above
+saying nothing is built and `/ship` stays unchanged no longer hold for those
+two; rewriting this RFC to the plan is open under BK-418.]
+
 ## Summary
 
 **A `/ship` delivery spends most of its tokens after the PR opens, because

@@ -241,6 +241,42 @@ properties:
       is not an artifact: the maintainer decides which line is the record,
       and the commit deleting the other says which and why (RFC-0018 D2).
 
+  orient:
+    type: array
+    items:
+      type: object
+      additionalProperties: false
+      required: [items, verdict, evidence]
+      properties:
+        items:
+          type: array
+          minItems: 1
+          uniqueItems: true
+          items:
+            type: string
+            pattern: "^(BK|BUG|ID|AF|BL)-[0-9]+[a-z]?$"
+          description: The open items of one cluster, lead item first.
+        verdict:
+          type: string
+          enum: [subsumes, constrains, unrelated]
+        evidence:
+          type: string
+          minLength: 1
+          description: |
+            What the read showed, quoted or cited by file and section. A
+            shared spec ID or file is how the cluster was found, never the
+            evidence for its verdict.
+    description: |
+      The orient note: what related open work does to this item's fix,
+      written before planning. One entry per cluster of open items sharing
+      the item's spec IDs or touched files, with the session's own verdict.
+      The procedure, including how clusters are found and what each verdict
+      means, is `.claude/skills/ship/SKILL.md` § Orient, which `CLAUDE.md`
+      § Backlog applies to all backlog-item work; the reads behind each
+      verdict are steps of the `orient` phase. An empty list records that
+      the search found nothing left to judge. Optional, because traces
+      written before BK-418 have none and are not retrofitted.
+
   review_rounds:
     type: integer
     minimum: 0
@@ -595,6 +631,12 @@ examples:
       - BK-192
     expected_ripples:
       - sdd/backlogid.json
+    orient:
+      - items: [BK-192]
+        verdict: unrelated
+        evidence: >-
+          Placeholder: name the dossier or RFC section read and what it says
+          about this fix
     # This example is what CLAUDE.md tells a new trace author to copy, so it
     # carries the `review:` block rather than a hand-counted `review_rounds`.
     # Do not fill it in by hand: run `hatch run ship-report <PR> --trace-block-only`
