@@ -806,24 +806,24 @@ and its answer keeps `classify`.
   replacements change
   data paths and are measured under D8's benchmark gate in the PR that
   lands them:
-  - `S3PyArrowBackend`: reads move from PyArrow's C++ S3 filesystem to the
-    boto3 driver.
-  - sync `AzureBackend`: its replacement is generated from the async driver,
-    whose `get_range` keeps the ranged `read_seekable`
-    (`_AzureRangeReader`, one Range request per read) the class has today;
-    `open_atomic` stays the spool-and-upload the kernel synthesises without
-    `open_write`, which is what flat and HNS `AzureBackend` do today.
+    - `S3PyArrowBackend`: reads move from PyArrow's C++ S3 filesystem to the
+      boto3 driver.
+    - sync `AzureBackend`: its replacement is generated from the async driver,
+      whose `get_range` keeps the ranged `read_seekable`
+      (`_AzureRangeReader`, one Range request per read) the class has today;
+      `open_atomic` stays the spool-and-upload the kernel synthesises without
+      `open_write`, which is what flat and HNS `AzureBackend` do today.
 
-  The rejected adapter route for sync Azure (Open Question 1) is kept here as
-  the reason it was rejected. The sync class never declared `SEEKABLE_READ`,
-  so what it would have lost is its `read_seekable` override, replaced by the
-  adapter's spool; a call from a thread with a running event loop raises
-  `RuntimeError`, so sync `Store` over Azure would stop working inside
-  notebooks and `pytest-asyncio` tests; `unwrap()` raises
-  `CapabilityNotSupported` by default; a caller-supplied sync `credential=`
-  is handed to the async SDK unchanged; `error.backend` carries the async
-  driver's name; and `type="azure"` needs the wrapping registration D4
-  describes.
+    The rejected adapter route for sync Azure (Open Question 1) is kept here as
+    the reason it was rejected. The sync class never declared `SEEKABLE_READ`,
+    so what it would have lost is its `read_seekable` override, replaced by the
+    adapter's spool; a call from a thread with a running event loop raises
+    `RuntimeError`, so sync `Store` over Azure would stop working inside
+    notebooks and `pytest-asyncio` tests; `unwrap()` raises
+    `CapabilityNotSupported` by default; a caller-supplied sync `credential=`
+    is handed to the async SDK unchanged; `error.backend` carries the async
+    driver's name; and `type="azure"` needs the wrapping registration D4
+    describes.
 - **Risks:** a kernel defect is a regression on every migrated class at once.
   BUG-249 reached one class; its kernel equivalent reaches every driver. That
   is the price of applying a rule once, and it is bounded by D3 migrating one

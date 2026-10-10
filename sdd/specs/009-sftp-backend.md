@@ -1098,56 +1098,56 @@ re-entries differently:
    dead-connection exit, since `SFTPFile.close()` flushes and then issues a
    synchronous `CMD_CLOSE` whose reply never comes.
 
-   That last is the worst of the set when unguarded, because paramiko swallows
-   the timeout raised inside its own close, making it a wait with no error to
-   explain it. The guard is one helper (`_handle`) rather than a per-site
-   repeat, because the site that first exposed it was not the only one:
-   `read_bytes`, `write`, `write_atomic`, `copy` and `move`'s copy fallback all
-   hold a handle the same way, and `open_atomic` applies the same rule inline
-   (its clean-exit close must sit inside `_errors` so a flush failure still
-   maps). Measured at a 2 s bound, on a stream that goes quiet mid-transfer:
-   4.00 s before the guard and 2.00 s after for both `write` and `write_atomic`,
-   and 6.9 s before and 2.0 s after for `copy`, which holds two handles rather
-   than one.
+    That last is the worst of the set when unguarded, because paramiko swallows
+    the timeout raised inside its own close, making it a wait with no error to
+    explain it. The guard is one helper (`_handle`) rather than a per-site
+    repeat, because the site that first exposed it was not the only one:
+    `read_bytes`, `write`, `write_atomic`, `copy` and `move`'s copy fallback all
+    hold a handle the same way, and `open_atomic` applies the same rule inline
+    (its clean-exit close must sit inside `_errors` so a flush failure still
+    maps). Measured at a 2 s bound, on a stream that goes quiet mid-transfer:
+    4.00 s before the guard and 2.00 s after for both `write` and `write_atomic`,
+    and 6.9 s before and 2.0 s after for `copy`, which holds two handles rather
+    than one.
 
-   Three of the five call sites are measured that way; the other two are named
-   here rather than counted as covered, because the helper being shared is not
-   evidence that a site was exercised. `read_bytes` prefetches, so a stall inside
-   its read fails in paramiko's prefetch machinery rather than on the close of a
-   partly-read handle, and a test there would pin something other than what it
-   claimed. `move`'s copy fallback (`_copy_and_delete`) is reached only when both
-   `posix_rename` and `rename` fail for non-dead reasons; its handles are
-   exercised, but never against a stall, because a dead channel stops the ladder
-   a rung above them.
+    Three of the five call sites are measured that way; the other two are named
+    here rather than counted as covered, because the helper being shared is not
+    evidence that a site was exercised. `read_bytes` prefetches, so a stall inside
+    its read fails in paramiko's prefetch machinery rather than on the close of a
+    partly-read handle, and a test there would pin something other than what it
+    claimed. `move`'s copy fallback (`_copy_and_delete`) is reached only when both
+    `posix_rename` and `rename` fail for non-dead reasons; its handles are
+    exercised, but never against a stall, because a dead channel stops the ladder
+    a rung above them.
 
-   The distinction is drawn because `copy` shipped unrouted for a round while
-   five artifacts named it covered — the call-site list was read as evidence that
-   the list had been run. The same reading is what put a `no cover` pragma on too
-   much code twice: first over `move`'s dead-rename guard, then over
-   `_move_fallback`'s own, each of which is reachable well outside the case the
-   pragma named. Each split moved the pragma down a level; what finally removed
-   it was staging the refusal client-side, which reaches every rung on a live
-   connection. Both guards have a test apiece.
+    The distinction is drawn because `copy` shipped unrouted for a round while
+    five artifacts named it covered — the call-site list was read as evidence that
+    the list had been run. The same reading is what put a `no cover` pragma on too
+    much code twice: first over `move`'s dead-rename guard, then over
+    `_move_fallback`'s own, each of which is reachable well outside the case the
+    pragma named. Each split moved the pragma down a level; what finally removed
+    it was staging the refusal client-side, which reaches every rung on a live
+    connection. Both guards have a test apiece.
 
-   The helper bounds what the caller waits inline; it does not promise the
-   round-trip is never made. `SFTPFile.__del__` calls `_close(async_=True)`
-   unconditionally, and the `BufferedFile.close` inside it — which flushes —
-   sits outside `_close`'s own `try`, so a *write* handle still holding buffered
-   bytes can attempt one blocking write when it is collected, on whatever thread
-   collects it. A read handle cannot: its write buffer is empty and `_write_all`
-   returns without a round-trip.
+    The helper bounds what the caller waits inline; it does not promise the
+    round-trip is never made. `SFTPFile.__del__` calls `_close(async_=True)`
+    unconditionally, and the `BufferedFile.close` inside it — which flushes —
+    sits outside `_close`'s own `try`, so a *write* handle still holding buffered
+    bytes can attempt one blocking write when it is collected, on whatever thread
+    collects it. A read handle cannot: its write buffer is empty and `_write_all`
+    returns without a round-trip.
 
-   The `move` guard is a case where a coverage pragma hid a gap. A
-   `# pragma: no cover -- fallback for servers without posix_rename` sat on
-   `_rename_fallback` and named a bound that does not hold: the residue
-   subsection below establishes that neither fallback is confined to servers
-   lacking the extension. What the gap was: the dead-connection guard above it is
-   reachable on *any* server, since a stalled channel fails `posix_rename` like
-   anything else. Splitting `_move_fallback` out is what stopped the pragma
-   covering that guard; the pragma itself is gone, because denying the promote on
-   a live connection reaches both fallbacks and the copy rung below them
-   (`tests/backends/sftp/test_atomic_fallback.py`). A pragma whose stated bound
-   is wrong is the shape to look for here, not the pragma.
+    The `move` guard is a case where a coverage pragma hid a gap. A
+    `# pragma: no cover -- fallback for servers without posix_rename` sat on
+    `_rename_fallback` and named a bound that does not hold: the residue
+    subsection below establishes that neither fallback is confined to servers
+    lacking the extension. What the gap was: the dead-connection guard above it is
+    reachable on *any* server, since a stalled channel fails `posix_rename` like
+    anything else. Splitting `_move_fallback` out is what stopped the pragma
+    covering that guard; the pragma itself is gone, because denying the promote on
+    a live connection reaches both fallbacks and the copy rung below them
+    (`tests/backends/sftp/test_atomic_fallback.py`). A pragma whose stated bound
+    is wrong is the shape to look for here, not the pragma.
 
 **Bounded, with one stated exception.** It is not fixed here:
 

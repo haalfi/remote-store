@@ -99,7 +99,7 @@ is a realized consequence of auto-wrapping, covered under Consequences.
 - No breaking changes to the existing sync API.
 - Same error model, path model, capability model, metadata types.
 - Doubles the abstraction surface — `Backend` + `AsyncBackend`, `Store`
-  + `AsyncStore`. Mitigated by drift-protection tests (ADR-0010 pattern).
+    + `AsyncStore`. Mitigated by drift-protection tests (ADR-0010 pattern).
 - `SyncBackendAdapter` materializes iterators, increasing memory for
   large listings on wrapped sync backends. Native async backends stream.
 - Extension modules need async variants (Phase 3).

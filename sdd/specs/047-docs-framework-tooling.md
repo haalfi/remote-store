@@ -111,6 +111,7 @@ every PR.
 | G-05 | AUTHORING R3 + DOCFRAME-008 | Every relative `](path)` link in every git-tracked `.md` file resolves on disk in the repo. No class-based carve-out. |
 | G-06 | DOCUMENTATION R7 | For every page reachable through `docs-src/_nav.yml` and its child `_nav.yml` files, the URL prefix matches the nav-section prefix (Reference → `/reference/`, Explanation → `/explanation/`, etc.). The check parses the nav source files directly; it does not rely on the generated `SUMMARY.md` (which is a build-time artifact, not a source). |
 | G-07 | DOCUMENTATION R8 | `mkdocs build --strict` succeeds. (`--strict` promotes all warnings to failures; MkDocs 1.x does not accept `error` as a literal value for `validation.links.not_found`.) |
+| G-08 | AUTHORING R3 | In every dual source and `docs-src/**/*.md`, a list marker or a block after a blank line that CommonMark places inside a list item sits at `4 × depth` spaces or more, so Python-Markdown nests it as GitHub does. Lazy continuation lines and a list directly after paragraph text (no list to Python-Markdown) are not checked. |
 
 **Failure output:** one line per violation, formatted
 `<check-id> <path>: <reason>`. Lines are stable across runs (sorted by
@@ -118,7 +119,7 @@ path) so diffs in CI logs are minimal.
 
 **Performance:** scan + checks G-01 through G-05 run in under 5 seconds
 on the full tree; G-06 and G-07 invoke MkDocs, bounded by docs build
-time.
+time. G-08 is a line scan over the published sources.
 
 **Rationale:** [AUTHORING.md](../AUTHORING.md) Rule 5.
 
@@ -350,7 +351,7 @@ package's PyPI long description — honest.
 | `test_on_page_markdown_passthrough_outside_docs_src` | DOCFRAME-008 | Branch 2: gen-files virtual page |
 | `test_on_page_markdown_rewrites_docs_src_links` | DOCFRAME-008 | Branch 3: docs-src link rewritten |
 
-`tests/scripts/test_check_docs_framework.py` (gate — DOCFRAME-004, G-02..G-06):
+`tests/scripts/test_check_docs_framework.py` (gate — DOCFRAME-004, G-02..G-06, G-08):
 
 | Test | Spec ref | Note |
 |---|---|---|
@@ -365,6 +366,19 @@ package's PyPI long description — honest.
 | `test_g05_valid_link_passes` | G-05 | positive control |
 | `test_url_nav_misalignment_fails` | G-06 | |
 | `test_g06_correct_prefix_passes` | G-06 | positive control |
+| `test_fixture_flattens_under_python_markdown` | G-08 | anchors the fixture to the renderer |
+| `test_nested_list_under_four_spaces_fails` | G-08 | 3-space bullets under `1.` |
+| `test_two_space_bullet_nesting_fails` | G-08 | depth 2 needs 8 |
+| `test_nested_list_in_docs_src_fails` | G-08 | docs-only sources |
+| `test_block_fixture_leaves_list_under_python_markdown` | G-08 | anchors the block fixture |
+| `test_under_indented_list_item_block_fails` | G-08 | table after a blank line |
+| `test_g08_skips_lazy_continuation` | G-08 | |
+| `test_nesting_after_column_zero_lazy_line_fails` | G-08 | a column-0 lazy line keeps the item open |
+| `test_g08_skips_list_glued_to_paragraph` | G-08 | no list to Python-Markdown |
+| `test_g08_skips_fence_body_inside_item` | G-08 | fence inside an open item |
+| `test_g08_new_list_after_paragraph_break` | G-08 | text after a blank line closes the list |
+| `test_g08_four_space_nesting_passes` | G-08 | positive control |
+| `test_g08_against_live_repo` | G-08 | live repo |
 
 Each test traces back via `@pytest.mark.spec("DOCFRAME-NNN")` per
 [`000-process.md`](../000-process.md) Rule 2.

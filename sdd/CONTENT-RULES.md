@@ -51,17 +51,17 @@ framework](../CLAUDE.md#documentation-framework)): placement →
 6. <a id="code-examples-sourced"></a>**A fenced block in published prose is generated or sourced, not typed.** [review-enforced]
    Each block comes from one of two homes, and a hand-written fence is the
    bounded exception.
-   - **Runnable code** comes from `examples/snippets/` via `pymdownx.snippets`
-     `--8<--` regions, so CI catches API drift.
-   - **A generated non-code artefact**, such as a diagram derived from the
-     repository, comes from a `gen_*` script with a `--check` gate, committed
-     under `docs-src/_data/` and included the same way. A diagram with dates
-     in it is a Rule 1 violation the moment it is typed by hand.
-   - **A hand-written fence** is allowed only for a snippet that cannot execute
-     in CI (e.g. it needs real credentials) or an illustration of markup, and
-     notes its reason inline.
-   - **A literal `--8<--`** inside an illustration is escaped with a leading
-     `;`, or `pymdownx.snippets` expands it.
+    - **Runnable code** comes from `examples/snippets/` via `pymdownx.snippets`
+      `--8<--` regions, so CI catches API drift.
+    - **A generated non-code artefact**, such as a diagram derived from the
+      repository, comes from a `gen_*` script with a `--check` gate, committed
+      under `docs-src/_data/` and included the same way. A diagram with dates
+      in it is a Rule 1 violation the moment it is typed by hand.
+    - **A hand-written fence** is allowed only for a snippet that cannot execute
+      in CI (e.g. it needs real credentials) or an illustration of markup, and
+      notes its reason inline.
+    - **A literal `--8<--`** inside an illustration is escaped with a leading
+      `;`, or `pymdownx.snippets` expands it.
 
 7. <a id="kernsatz"></a>**Lead with the Kernsatz** — the core claim, stated first. [review-enforced]
    A new or substantially rewritten section in `sdd/`, `.claude/` or a
@@ -70,18 +70,18 @@ framework](../CLAUDE.md#documentation-framework)): placement →
    the section is not yet understood well enough to write, so return to the
    source — the material the section is about — instead of writing around the
    gap.
-   - The opening defines any term the section coins or uses in a sense the
-     reader cannot be assumed to hold. A one-clause gloss plus a link satisfies
-     both this and Rule 4.
-   - What follows the Kernsatz is detail the Kernsatz earned. A claim that is
-     absent and a claim that arrives late both fail this rule.
-   - A *section* is a heading-delimited unit of Markdown prose at any heading
-     level; a list item, a table and a YAML block are not sections, and a
-     section whose body is mostly a table still opens with the claim the table
-     serves.
-   - *Substantially rewritten* means the section's claim changed, not its
-     wording; a section that stated no claim before is substantially rewritten
-     by definition.
+    - The opening defines any term the section coins or uses in a sense the
+      reader cannot be assumed to hold. A one-clause gloss plus a link satisfies
+      both this and Rule 4.
+    - What follows the Kernsatz is detail the Kernsatz earned. A claim that is
+      absent and a claim that arrives late both fail this rule.
+    - A *section* is a heading-delimited unit of Markdown prose at any heading
+      level; a list item, a table and a YAML block are not sections, and a
+      section whose body is mostly a table still opens with the claim the table
+      serves.
+    - *Substantially rewritten* means the section's claim changed, not its
+      wording; a section that stated no claim before is substantially rewritten
+      by definition.
 
 8. <a id="change-details-what-it-changes"></a>**A change details only the behaviour it owns.** [review-enforced]
    A change *owns* the behaviour it alters, including behaviour it introduces,
@@ -89,17 +89,17 @@ framework](../CLAUDE.md#documentation-framework)): placement →
    or a docstring made accurate does; it *leaves alone* everything else. Text
    the change writes, such as a docstring, a spec clause, a guide, a migration
    note or a dossier, describes in detail only behaviour the change owns.
-   - Behaviour the change leaves alone already has a home, the code (Rule 5)
-     and the item, spec or ADR that governs it, so the change gives it at most
-     a one-line pointer to that item.
-   - A finding on such detail is fixed by deleting it or replacing it with the
-     pointer, never by narrowing it.
-   - **This binds description, not premise.** A claim the change relies on,
-     such as the behaviour its code assumes or the reason it gives for itself,
-     belongs to the change: a refuted premise is fixed by changing behaviour or
-     filed, never by deleting the sentence.
-   - The fix shapes this restricts are in
-     [`/fix-pr` Step 3](../.claude/skills/fix-pr/SKILL.md#step-3-fix).
+    - Behaviour the change leaves alone already has a home, the code (Rule 5)
+      and the item, spec or ADR that governs it, so the change gives it at most
+      a one-line pointer to that item.
+    - A finding on such detail is fixed by deleting it or replacing it with the
+      pointer, never by narrowing it.
+    - **This binds description, not premise.** A claim the change relies on,
+      such as the behaviour its code assumes or the reason it gives for itself,
+      belongs to the change: a refuted premise is fixed by changing behaviour or
+      filed, never by deleting the sentence.
+    - The fix shapes this restricts are in
+      [`/fix-pr` Step 3](../.claude/skills/fix-pr/SKILL.md#step-3-fix).
 
 ## Guides
 

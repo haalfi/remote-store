@@ -545,15 +545,15 @@ dismissal control there) and had the session open in a browser as well.
   `The user answered: "…"="[User dismissed — do not proceed, wait for next instruction]"`.
   The payload carried the sentinel as the answer, twice:
 
-  ```json
-  "tool_response": {"questions": […], "answers": {"Extra probe (turn interrupt): …": "[User dismissed — do not proceed, wait for next instruction]"}}
-  ```
+    ```json
+    "tool_response": {"questions": […], "answers": {"Extra probe (turn interrupt): …": "[User dismissed — do not proceed, wait for next instruction]"}}
+    ```
 
-  `tool_input.answers` held the same map. Under D3 as first written this reads
-  `other` (it matches no label), which hides a dismissal; hence the
-  `unanswered` row now names the sentinel. What produces the sentinel is not
-  isolated: the cross alone yielded the denial, the cross plus a browser message
-  the sentinel, and a message without the cross was not run.
+    `tool_input.answers` held the same map. Under D3 as first written this reads
+    `other` (it matches no label), which hides a dismissal; hence the
+    `unanswered` row now names the sentinel. What produces the sentinel is not
+    isolated: the cross alone yielded the denial, the cross plus a browser message
+    the sentinel, and a message without the cross was not run.
 - **b. Timeout.** Unobserved. The dialog stayed open 365 s (Pre and Post
   timestamps 365.4 s apart) with no hook event in between; the user then
   answered with free text. Whether a timeout exists, and at what length, is

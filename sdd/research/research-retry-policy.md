@@ -129,12 +129,12 @@ Again, undiscoverable and SDK-specific.
 
 - **Data path (PyArrow C++ S3):** PyArrow exposes `retry_strategy` on
   `S3FileSystem` with two strategy classes:
-  - `AwsStandardS3RetryStrategy(max_attempts=3)` — default, exponential
-    backoff, broad error coverage (recommended).
-  - `AwsDefaultS3RetryStrategy(max_attempts=N)` — legacy, narrower coverage.
-  The **only configurable knob** is `max_attempts`. Backoff timing, jitter,
-  and error classification are not configurable through PyArrow's API.
-  Related timeout parameters: `request_timeout`, `connect_timeout`.
+    - `AwsStandardS3RetryStrategy(max_attempts=3)` — default, exponential
+      backoff, broad error coverage (recommended).
+    - `AwsDefaultS3RetryStrategy(max_attempts=N)` — legacy, narrower coverage.
+    The **only configurable knob** is `max_attempts`. Backoff timing, jitter,
+    and error classification are not configurable through PyArrow's API.
+    Related timeout parameters: `request_timeout`, `connect_timeout`.
 - **Control path (s3fs):** Same as S3 backend above.
 
 ### 2.5 Local / Memory — No retry (correct)

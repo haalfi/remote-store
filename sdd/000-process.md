@@ -14,8 +14,8 @@ Authoritative source for the Spec-Driven Development workflow, spec/ADR/RFC form
 4. **ADRs are immutable once Accepted**: supersede an Accepted ADR, never edit it. Drafts may be refined before acceptance.
 5. **IDs are stable**: once assigned, a section ID never changes meaning. Deprecated sections are marked `[DEPRECATED]`, not removed.
 6. <a id="workflows"></a>**Workflows**:
-   - **Features**: SPEC → TEST → IMPLEMENT → VALIDATE → DOCS. Operational items (CI, docs, pins) skip the spec step.
-   - **Bug fixes**: BACKLOG → CHANGELOG → failing TEST → FIX → COMMIT together. If the bug contradicts a spec invariant, update the spec. The reproduction lives in the item's dossier where it has one ([§ Backlog](#backlog)).
+    - **Features**: SPEC → TEST → IMPLEMENT → VALIDATE → DOCS. Operational items (CI, docs, pins) skip the spec step.
+    - **Bug fixes**: BACKLOG → CHANGELOG → failing TEST → FIX → COMMIT together. If the bug contradicts a spec invariant, update the spec. The reproduction lives in the item's dossier where it has one ([§ Backlog](#backlog)).
 7. <a id="intent-attribution"></a>**Prose records the resolution; it does not win the argument**: when spec prose, a Dafny postcondition and a conformance test disagree, the decision is written into the prose — but prose carries no presumption of correctness against a verified postcondition or against a claim the conformance suite never asserted. See [§ Attribution inside the intent domain](#attribution-inside-the-intent-domain).
 
 ## Guides
@@ -75,12 +75,12 @@ in that order.
    the model, two on the suite and shipped behaviour. Rows 1 and 3 also settle which
    side moves; rows 2 and 4 reopen the question instead:
 
-   | Defeater | What you observe | What follows |
-   |---|---|---|
-   | **Unsatisfiable** | The verifier rejects the postcondition form the prose requires | Prose moves — the section contradicts itself. Owned by [`formal/README.md`](formal/README.md#layers-at-a-glance) and stated here only to complete the procedure |
-   | **Over-specified** | A postcondition *verifies* and still asserts more than the prose does — the model is stricter than the contract it formalizes | Decide which is the contract. The postcondition is not self-authorizing: a verified clause with no prose parent is the formal layer's own orphan realization. Either prose adopts the stronger form, or the postcondition weakens to what prose actually requires |
-   | **Under-determined** | Prose is silent, or permits a variation, where shipped behaviour is uniform | Prose moves — state the behaviour and add the test it never had. Silence is not a licence to diverge; uniformity is not proof of intent, so where it is defensive duplication of a rule enforced elsewhere, spec it at the layer that enforces it. **Where prose *permits* rather than is silent, narrowing it retires a licence** third-party implementers of a public ABC were shipped against: that is a breaking change and takes the same path as the row below |
-   | **Unenforced** | Prose demands X and no test asserts X — for the backends in question. Two axes, and both bind: [Rule 2](#spec-test-traceability)'s marker is section-level, so a marked section is not evidence the *clause* is covered; and the suite parameterizes over backends, so a clause asserted for one family is unenforced for the others. Backends diverging is how you notice, not what decides | Nothing moves yet. An unenforced claim is not a default, so decide it once. **If nothing diverges**, prose stands and the deliverable is [Rule 2](#spec-test-traceability)'s missing test. **If something diverges**, adopt it as a declared variation, or enforce X as a breaking change on the ordinary path |
+    | Defeater | What you observe | What follows |
+    |---|---|---|
+    | **Unsatisfiable** | The verifier rejects the postcondition form the prose requires | Prose moves — the section contradicts itself. Owned by [`formal/README.md`](formal/README.md#layers-at-a-glance) and stated here only to complete the procedure |
+    | **Over-specified** | A postcondition *verifies* and still asserts more than the prose does — the model is stricter than the contract it formalizes | Decide which is the contract. The postcondition is not self-authorizing: a verified clause with no prose parent is the formal layer's own orphan realization. Either prose adopts the stronger form, or the postcondition weakens to what prose actually requires |
+    | **Under-determined** | Prose is silent, or permits a variation, where shipped behaviour is uniform | Prose moves — state the behaviour and add the test it never had. Silence is not a licence to diverge; uniformity is not proof of intent, so where it is defensive duplication of a rule enforced elsewhere, spec it at the layer that enforces it. **Where prose *permits* rather than is silent, narrowing it retires a licence** third-party implementers of a public ABC were shipped against: that is a breaking change and takes the same path as the row below |
+    | **Unenforced** | Prose demands X and no test asserts X — for the backends in question. Two axes, and both bind: [Rule 2](#spec-test-traceability)'s marker is section-level, so a marked section is not evidence the *clause* is covered; and the suite parameterizes over backends, so a clause asserted for one family is unenforced for the others. Backends diverging is how you notice, not what decides | Nothing moves yet. An unenforced claim is not a default, so decide it once. **If nothing diverges**, prose stands and the deliverable is [Rule 2](#spec-test-traceability)'s missing test. **If something diverges**, adopt it as a declared variation, or enforce X as a breaking change on the ordinary path |
 
 3. **Two mechanical sides agreeing is not a vote.** A postcondition and a test
    written in one change from one reading are one description, not two. Establish

@@ -1,0 +1,149 @@
+id: BUG-320
+title: "Nested lists indented for GitHub render flattened on the docs site"
+trigger: >-
+  The maintainer sent a screenshot of docs.remotestore.dev's content-rules page:
+  Rule 6's and Rule 7's sub-bullets rendered as top-level rules 7–14.
+source_items:
+  - BUG-320
+audience:
+  - user.site
+  - contributor.tooling
+expected_ripples:
+  - CHANGELOG.md
+  - sdd/BACKLOG.md
+  - sdd/BACKLOG-DONE.md
+  - sdd/backlogid.json
+  - sdd/GATE-INVENTORY.md
+  - sdd/specs/047-docs-framework-tooling.md
+  - tests/scripts/test_check_docs_framework.py
+surprising_ripples:
+  - pyproject.toml
+  - sdd/AUTHORING.md
+  - sdd/backlog/bk-327-dual-doc-nav-reachability.md
+  - sdd/backlog/bk-376-llmstxt-sections-hand-listed.md
+  - scripts/check_spec_marks.py
+  - tests/scripts/test_check_spec_marks.py
+discovery_followups:
+  - BUG-321
+  - BUG-322
+decisions:
+  - sdd/decisions/0695d737-12e4-58f2-af4c-8731bddd810c.jsonl
+orient:
+  - items: [ID-225]
+    verdict: unrelated
+    evidence: >-
+      `hatch run backlog-find --open "render|indent|nested|mkdocs|markdown"`
+      found BUG-276 (word match only), ID-245 (word match only) and ID-225.
+      ID-225 weighs moving to Zensical, which keeps Python-Markdown, so the
+      4-space rule and G-08 stay valid under either stack.
+  - items: [BK-327, BK-376]
+    verdict: constrains
+    evidence: >-
+      `rg 'G-0[7-9]'` found BK-327's fix shape claiming "a G-08" in
+      check_docs_framework.py and BK-376 citing it. This item ships first and
+      takes G-08; both prescriptions now say "a new gate", and BK-327's dossier
+      carries a dated correction.
+phases:
+  - id: reproduce
+    name: Reproduce
+    steps:
+      - file: sdd/CONTENT-RULES.md
+        section: "Rules 6-8"
+        read_type: verify
+        extract: >-
+          Sub-bullets at 3 spaces under `N. `. Python-Markdown 3.11 renders the
+          file's rules list as one <ol> with 20 flat <li> and no <ul>
+      - file: mkdocs.yml
+        section: markdown_extensions
+        read_type: reference
+        extract: "No list extension; stock Python-Markdown needs 4 spaces per nesting level"
+  - id: approach
+    name: Choose the fix
+    steps:
+      - file: "mdx_truly_sane_lists 1.3 wheel source"
+        section: TrulySaneListExtension
+        read_type: verify
+        extract: >-
+          One global nested_indent. Full-site builds against a baseline, compared
+          per page on <article> tag counts: nested_indent 3 cut SUMMARY from 347
+          <li> to 89 and stripped <p> from loose CHANGELOG items; nested_indent 2
+          with truly_sane off cut SUMMARY to 5 <li>, CHANGELOG by 33 and
+          choosing-a-backend by 2. Rejected; maintainer chose re-indent + gate
+      - file: "Python-Markdown 3.11 renders of hand fixtures"
+        section: "list containment"
+        read_type: verify
+        extract: >-
+          Three divergences from CommonMark: nested markers need 4 spaces per
+          level; a block after a blank line inside an item needs the same or it
+          leaves the list; a list right after paragraph text is no list at all.
+          The first re-indent ignored the third and turned 4-space blocks under
+          such text into code blocks on 3 pages
+  - id: fix
+    name: Fix
+    steps:
+      - file: scripts/check_docs_framework.py
+        section: "G-08"
+        read_type: verify
+        extract: >-
+          One line walk judging containment as CommonMark does and requiring
+          4 × depth; skips fences, lazy continuations, and lists glued to text
+      - file: "32 published sources"
+        section: "re-indent"
+        read_type: verify
+        extract: >-
+          A scratch tool on the same walk shifted each flagged item or block and
+          its continuations. `git diff -w` is empty; markdown-it-py's CommonMark
+          render of each file is identical at HEAD and after; against a pre-fix
+          `mkdocs build --strict`, all 32 changed pages keep visible text, <li>
+          count and every <pre> block, and only nesting differs
+      - file: sdd/CLAUDE-REFERENCE.md
+        section: "Pre-work index: Bug fix; New or changed cross-artifact check or drift report"
+        read_type: gate
+        extract: >-
+          Bug-fix row followed (BACKLOG-DONE, CHANGELOG stub, failing test
+          first). G-08 is a single-artifact rule, kind `rule` in its
+          Drift-gate:: block, so GATE-INVENTORY regenerates from the docstring
+  - id: ci
+    name: CI
+    steps:
+      - file: "CI tooling-tests job, PR #1115 head f39dd75"
+        section: "tests/scripts/test_check_docs_framework.py"
+        read_type: verify
+        extract: >-
+          Three renderer-anchor tests failed with ModuleNotFoundError: markdown.
+          The job installs `.[dev,mutate]`; Python-Markdown arrives only with the
+          `docs` group, and the local hatch env had it from an earlier docs
+          install. `markdown` added to `dev`; `uv pip compile --extra dev`
+          now resolves markdown 3.11. importorskip was rejected: it would skip the
+          anchors in exactly the job that runs them
+  - id: review
+    name: Owner review fixes
+    steps:
+      - file: scripts/check_docs_framework.py
+        section: "G-08 list close"
+        read_type: verify
+        extract: >-
+          `1. a long` / `wrapped at col 0` / `   - sub`: CommonMark nests `sub`,
+          Python-Markdown 3.11 renders it a sibling <li>, G-08 reported nothing
+          because any column-0 line cleared the stack. A column-0 line now closes
+          the list only after a blank line or as a heading or fence. The
+          live-repo scan stays at zero hits, so no source needed re-indenting
+      - file: tests/scripts/test_check_docs_framework.py
+        section: "fence and new-list tests"
+        read_type: verify
+        extract: >-
+          The old combined test passed with either behaviour removed. Its two
+          replacements were checked by exec'ing mutants of find_under_indented:
+          without the fence skip the fence fixture reports (4, list marker, 2, 4),
+          without the list close the new-list fixture reports (5, list marker, 2, 4)
+  - id: followup
+    name: Follow-up
+    steps:
+      - file: docs-src/guides/observe.md
+        section: "line 123"
+        read_type: verify
+        extract: >-
+          `Parameters:` then `- max_queue ...` reaches the built page as
+          `<p>Parameters:\n- ...`. A scan of the G-08 published set for a
+          top-level marker after paragraph text found 447 sites in 81 files;
+          filed as BUG-321

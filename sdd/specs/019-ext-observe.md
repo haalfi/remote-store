@@ -283,13 +283,13 @@ conventions:
 - **Span name:** `store.{operation}` (e.g., `store.read`, `store.write`).
 - **Span kind:** `SpanKind.CLIENT`.
 - **Attributes:**
-  - `remote_store.operation` (str): operation name.
-  - `remote_store.backend` (str): backend name.
-  - `remote_store.path` (str): store-relative key.
+    - `remote_store.operation` (str): operation name.
+    - `remote_store.backend` (str): backend name.
+    - `remote_store.path` (str): store-relative key.
 - **On error:**
-  - `span.set_status(StatusCode.ERROR, str(exc))`.
-  - `span.record_exception(exc)`.
-  - `error.type` attribute set to the exception class's qualified name.
+    - `span.set_status(StatusCode.ERROR, str(exc))`.
+    - `span.record_exception(exc)`.
+    - `error.type` attribute set to the exception class's qualified name.
 
 ### OBS-013: Metric Instruments
 

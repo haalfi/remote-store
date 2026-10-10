@@ -1158,21 +1158,21 @@ class FileInfo:
    the file's bytes, with a known algorithm. Backends populate this only
    when they can **guarantee** it represents the content.
 
-   **Backend population rules:**
+    **Backend population rules:**
 
-   ETags are opaque version/cache tokens in every backend. They go to
-   `etag`, never to `digest` — even when they *happen* to look like a
-   hex-encoded hash (e.g., S3 single-part uploads). `digest` is only
-   populated when the backend returns a checksum through a **dedicated
-   checksum API** that explicitly guarantees content integrity.
+    ETags are opaque version/cache tokens in every backend. They go to
+    `etag`, never to `digest` — even when they *happen* to look like a
+    hex-encoded hash (e.g., S3 single-part uploads). `digest` is only
+    populated when the backend returns a checksum through a **dedicated
+    checksum API** that explicitly guarantees content integrity.
 
-   | Backend | When `etag` is populated | When `digest` is populated |
-   |---------|--------------------------|---------------------------|
-   | S3 | Always — every `GetObject`/`HeadObject` returns an `ETag`. | Only from `x-amz-checksum-*` response headers (requires `ChecksumMode: ENABLED` on the request). Algorithm and value are explicit. |
-   | Azure | When `ETag` header is present (virtually always). | Only when `Content-MD5` header is present and non-empty. Decode from base64 to bytes, re-encode as lowercase hex → `ContentDigest("md5", value)`. |
-   | Local | N/A — no native ETag concept. | On explicit request only (`ext.integrity.checksum()`). Never computed automatically in `get_file_info()` — too expensive. |
-   | SFTP | N/A — no native ETag concept. | On explicit request only (`ext.integrity.checksum()`). Same as local — no native checksum support. |
-   | HTTP | Always — when `ETag` response header is present. | **Never.** HTTP ETags are opaque version identifiers with no content-hash guarantee. |
+    | Backend | When `etag` is populated | When `digest` is populated |
+    |---------|--------------------------|---------------------------|
+    | S3 | Always — every `GetObject`/`HeadObject` returns an `ETag`. | Only from `x-amz-checksum-*` response headers (requires `ChecksumMode: ENABLED` on the request). Algorithm and value are explicit. |
+    | Azure | When `ETag` header is present (virtually always). | Only when `Content-MD5` header is present and non-empty. Decode from base64 to bytes, re-encode as lowercase hex → `ContentDigest("md5", value)`. |
+    | Local | N/A — no native ETag concept. | On explicit request only (`ext.integrity.checksum()`). Never computed automatically in `get_file_info()` — too expensive. |
+    | SFTP | N/A — no native ETag concept. | On explicit request only (`ext.integrity.checksum()`). Same as local — no native checksum support. |
+    | HTTP | Always — when `ETag` response header is present. | **Never.** HTTP ETags are opaque version identifiers with no content-hash guarantee. |
 
 2. **`etag`** is an **opaque backend tag** — useful for conditional
    requests and change detection, but explicitly **not comparable across
@@ -1246,10 +1246,10 @@ before any backend populates the field avoids a painful migration.
 ### Path decision (make before investing in proxy/middleware infra)
 
 6. **Choose Path 1 or Path 2 based on the extension roadmap.**
-   - If extensions = observe + cache only → Path 1 (ProxyStore).
-   - If retry, rate-limit, or similar extensions are planned → Path 2
-     (middleware). Do not choose Path 1 as a stepping stone with a
-     vague intent to do Path 2 later.
+    - If extensions = observe + cache only → Path 1 (ProxyStore).
+    - If retry, rate-limit, or similar extensions are planned → Path 2
+      (middleware). Do not choose Path 1 as a stepping stone with a
+      vague intent to do Path 2 later.
 
 ### Path 1 follow-up
 

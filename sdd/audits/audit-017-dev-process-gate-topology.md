@@ -47,9 +47,9 @@ local:
 3. **The skills hand-roll a partial subset of the gate instead of delegating.**
    `/pr` never runs `hatch run lint` or `hatch run all` (CONTRIBUTING's
    prescribed pre-PR command); it reconstructs a coverage + manual-review + trace
-   + local-machine subset, and for "docs/config-only" diffs prescribes
-   `hatch run test` — the suite least relevant to a doc/spec change — while never
-   prescribing `hatch run lint`, the gate most relevant to it.
+    + local-machine subset, and for "docs/config-only" diffs prescribes
+    `hatch run test` — the suite least relevant to a doc/spec change — while never
+    prescribing `hatch run lint`, the gate most relevant to it.
 
 The rest are redundancy and dead-config findings: a mypy pre-push hook that the
 documented install command never wires up, doc-only PRs that skip
