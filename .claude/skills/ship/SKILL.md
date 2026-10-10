@@ -625,6 +625,27 @@ measuring member catching it one round later.
 Refuting is a first-class outcome. Reviewers are wrong often enough that
 accepting every finding degrades the work, so verify before fixing.
 
+<a id="check-closed-prose"></a>
+### Check-closed prose
+
+**In every round, a prose finding is closed by the check that settles it,
+not by another review round.** A prose finding is one whose fix changes no
+executable line: docs, specs, skills, comments, CHANGELOG, the trace. A code
+or test finding is everything else, and this section does not touch it.
+
+- **The fixer names the check, runs it before committing, and quotes it in
+  the reply** with what it returned: a command, a grep, a count, or the
+  enumerated cases. That is shape (2), (3) or (4) carried out, not cited.
+- **A check-closed prose fix needs no review round to verify it.** A round
+  whose only must-fix findings are check-closed prose counts as converged,
+  and the fix pass after it is verified by its recorded checks.
+- **The exit gates already met stay met** across a check-closed prose fix:
+  unprimed, whole-file, and measuring. A prose fix narrowing a behavioural
+  claim (shape 4) is measured by its own check, which is run, not read.
+- **What it does not cover.** A prose finding no check can settle (a
+  judgement call) and every code or test finding go through the loop as
+  before, including the stop rule's clauses.
+
 ### Close each round
 
 `hatch run all` green → commit → push → **check CI** → reply to **every** thread
@@ -700,6 +721,13 @@ pass gets the PR number and the root alone, so it never carries a whole-file
 brief or the `measuring` token. Such a delivery closes on one appended pass, or two, never on
 round 1.
 
+**One exception to the stop rule: [check-closed prose](#check-closed-prose).**
+A round whose only must-fix findings are prose closed by a recorded check
+counts as converged. Its fix pass is verified by those checks, not by a
+review, and the unprimed, whole-file and measuring gates already met stay
+met. The clauses bind unchanged for any code, test or unchecked prose
+finding.
+
 - **Floor: lens coverage, not a round count.** Every lens the diff *warrants* must
   have been applied. A one-surface change may warrant only the broad round; a diff
   that adds code the gate never executes, spreads a claim across artifacts that can
@@ -717,7 +745,8 @@ round 1.
   round that found that run's most severe finding was past the ceiling. Do not
   terminate silently. A verification round over an otherwise unreviewed fix pass
   does not count *if it finds nothing*; one that finds something is a
-  finding-round like any other, and its own fix pass still owes a verification.
+  finding-round like any other, and its own fix pass still owes a verification,
+  unless every fix in it is [check-closed prose](#check-closed-prose).
   Without that, the verify-fix-verify tail is exempt from the bound it exists
   under.
 - **Judge severity, not count.** Counts plateau while severity falls.
@@ -820,8 +849,10 @@ neither substitutes for the other.
    what condition, or that it did not, what was filed rather than fixed, any
    surface the gate never executed, the **final state of the Step 1 subject
    list** (as carried by the handoff) with each entry marked executed / read
-   only / not reached, and the orient verdicts with the scope they led to, from
-   the trace's `orient:` key, or from the plan when there is no trace. Every figure
+   only / not reached, the orient verdicts with the scope they led to, from
+   the trace's `orient:` key, or from the plan when there is no trace, and
+   each [check-closed prose](#check-closed-prose) finding with its check and
+   what it returned. Every figure
    names its derivation
    ([CLAUDE.md principle 9](../../../CLAUDE.md#principles)); a report about a loop
    cannot be the one artifact asserting its counts from memory, which is why the
@@ -832,10 +863,15 @@ Then stop. **`/ship` never merges.** It hands over a PR that is ready to be.
 ## Rules
 
 - Never push to master.
-- Never end the loop on an unreviewed fix pass.
-- Never end the loop on a state no unprimed reviewer has seen.
-- Never end the loop on a changed file outside `sdd/decisions/` no pass has read whole.
-- Never end the loop on a behavioural claim no measuring pass has executed.
+- Never end the loop on an unreviewed fix pass, unless every fix in it is
+  [check-closed prose](#check-closed-prose).
+- Never end the loop on a state no unprimed reviewer has seen, with the same
+  check-closed-prose exception.
+- Never end the loop on a changed file outside `sdd/decisions/` no pass has
+  read whole, with the same exception.
+- Never end the loop on a behavioural claim no measuring pass has executed,
+  with the same exception.
+- Never open a review round only to verify check-closed prose fixes.
 - Never end the loop on a red or unread CI.
 - Reviewers are read-only and fresh each round; the **subagents** — authors, and
   fixers delegated for depth — may decline an instruction with evidence. The
