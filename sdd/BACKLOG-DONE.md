@@ -310,11 +310,13 @@ if evidence changes; these are retired.
 
 - [x] **BUG-315 — The moto fixture picks a port and binds it later, so two servers can share it or a failed bind hangs the session**
   spec: — · effort: S · audience: infra.test
-  `tests/conftest.py`'s `_start_moto_server` binds moto to `127.0.0.1` port 0
-  with werkzeug's `make_server` in the fixture's own thread and serves from a
-  daemon thread, so one bind both chooses and claims the port, and a failed bind
-  raises `OSError` instead of hanging `ThreadedMotoServer.start()`; `_free_port`
-  is gone. Both failure modes were reproduced, Windows and Linux. Tests:
+  `infra/_moto.py`'s `start_moto_server` binds moto to `127.0.0.1` port 0 with
+  werkzeug's `make_server` in the caller's thread and serves from a daemon
+  thread, so one bind both chooses and claims the port, and a failed bind raises
+  `OSError` instead of hanging `ThreadedMotoServer.start()`. The test suite's
+  `moto_server` and the benchmarks' `moto_url`, which had the same pattern, both
+  use it; `_free_port` is gone. Both failure modes were reproduced, Windows and
+  Linux. Tests:
   `tests/test_moto_server_fixture.py`, the hang test seen failing first.
   Dossier: [BUG-315](backlog/bug-315-moto-port-race.md); trace:
   [bug-315](traces/bug-315-moto-port-race.yml).

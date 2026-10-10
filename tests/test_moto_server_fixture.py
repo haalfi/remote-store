@@ -1,11 +1,12 @@
-"""Regression for the session ``moto_server`` fixture's bind (BUG-315).
+"""Regression for how the moto server fixtures bind (BUG-315).
 
-The fixture used to choose a free port, release it, and let moto bind it later.
-On Windows, werkzeug's ``SO_REUSEADDR`` let a second server share a port that
-was already in use; and when a bind failed, ``ThreadedMotoServer.start()``
-waited forever on a ready event that only a successful bind sets, hanging the
-xdist worker. ``_start_moto_server`` in ``tests/conftest.py`` now binds port 0
-on loopback in the caller's thread, so the port is chosen by that one bind and a
+The test suite's ``moto_server`` and the benchmarks' ``moto_url`` used to choose
+a free port, release it, and let moto bind it later. On Windows, werkzeug's
+``SO_REUSEADDR`` let a second server share a port that was already in use; and
+when a bind failed, ``ThreadedMotoServer.start()`` waited forever on a ready
+event that only a successful bind sets, hanging the caller. Both fixtures now
+start the server with ``infra._moto.start_moto_server``, which binds port 0 on
+loopback in the caller's thread, so the port is chosen by that one bind and a
 failed bind raises in the fixture.
 """
 
@@ -16,7 +17,7 @@ import urllib.request
 
 import pytest
 
-from tests.conftest import _start_moto_server
+from infra._moto import start_moto_server
 
 pytest.importorskip("moto")
 
@@ -32,7 +33,7 @@ def test_failed_bind_raises_instead_of_hanging() -> None:
 
     def attempt() -> None:
         try:
-            _start_moto_server(host=_UNASSIGNABLE_HOST)
+            start_moto_server(host=_UNASSIGNABLE_HOST)
         except BaseException as exc:  # noqa: BLE001 -- recorded for the assertion below
             outcome.append(exc)
         else:
@@ -56,8 +57,8 @@ def test_two_servers_bind_distinct_loopback_ports_and_serve() -> None:
     buckets; the isolation the fixture needs is between xdist worker processes,
     which a distinct port per server gives.
     """
-    first, first_thread = _start_moto_server()
-    second, second_thread = _start_moto_server()
+    first, first_thread = start_moto_server()
+    second, second_thread = start_moto_server()
     try:
         assert first.server_address[0] == "127.0.0.1"
         assert second.server_address[0] == "127.0.0.1"

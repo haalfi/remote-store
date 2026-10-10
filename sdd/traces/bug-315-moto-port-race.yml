@@ -17,7 +17,12 @@ expected_ripples:
   - sdd/BACKLOG-DONE.md
   - sdd/backlogid.json
   - sdd/backlog/bug-315-moto-port-race.md
-surprising_ripples: []
+surprising_ripples:
+  - benchmarks/conftest.py
+  - infra/_moto.py
+  - tests/backends/fixtures/s3_moto.py
+  - tests/backends/fixtures/s3_boto3_moto.py
+  - tests/backends/s3/test_pyarrow.py
 decisions:
   - sdd/decisions/c91be2ac-3fa5-4dce-ba27-b3f814390a29.jsonl
 orient:
@@ -109,7 +114,7 @@ phases:
     name: Implement
     steps:
       - file: tests/conftest.py
-        section: "_start_moto_server; moto_server"
+        section: "_start_moto_server (moved to infra/_moto.py in review); moto_server"
         read_type: reference
         extract: >-
           The first fix run showed werkzeug answering a failed bind with
@@ -134,4 +139,30 @@ phases:
         section: "How this file works: Completing work"
         read_type: verify
         extract: "Delete the index entry, short [x] entry in BACKLOG-DONE linking dossier and trace, run gen-backlogid"
+        outcome: ok
+  - id: review_fix_1
+    name: Review fix, round 1
+    steps:
+      - file: benchmarks/conftest.py
+        section: "moto_url"
+        read_type: reference
+        extract: >-
+          Review found the same choose-release-bind pattern and its docstring
+          pointing at tests/conftest.py. My orient searched backlog dossiers and
+          tests/, not the code for the pattern; `rg ThreadedMotoServer` would have
+          found it. Benchmarks import infra/ but never tests/, so the helper moved
+          to infra/_moto.py (dialog in the decision log) and both fixtures use it
+        outcome: ok
+      - file: infra/_settings.py
+        section: "module docstring"
+        read_type: reference
+        extract: "infra/ is the shared Python home for the test suite and benchmarks"
+        outcome: ok
+      - file: .github/workflows/ci.yml
+        section: "setup CODE_PAT"
+        read_type: verify
+        extract: >-
+          infra/ matches no CI class pattern, so an infra/_moto.py-only PR would
+          run no tests; infra/_settings.py already has the same exposure. Left to
+          BUG-306, whose open decision is which class each such file joins
         outcome: ok

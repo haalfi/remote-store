@@ -454,23 +454,24 @@ def moto_url() -> Iterator[str | None]:
     """Start an in-process moto S3 server for ``--infra moto``; ``None`` otherwise.
 
     Server mode (not ``mock_aws()``) so the s3fs/aiobotocore ``s3`` lane works
-    the same way it does in the test suite (see ``tests/conftest.py``).
+    the same way it does in the test suite: both start the server with
+    ``infra._moto.start_moto_server``.
     """
     if not _MOTO_MODE:
         yield None
         return
     try:
-        from moto.moto_server.threaded_moto_server import ThreadedMotoServer
+        import moto.moto_server.werkzeug_app  # noqa: F401
     except ImportError:
         yield None
         return
-    with socket.socket() as sock:
-        sock.bind(("", 0))
-        port = sock.getsockname()[1]
-    server = ThreadedMotoServer(port=port, verbose=False)
-    server.start()
-    yield f"http://127.0.0.1:{port}"
-    server.stop()
+    from infra._moto import start_moto_server
+
+    server, thread = start_moto_server()
+    yield f"http://127.0.0.1:{server.server_port}"
+    server.shutdown()
+    thread.join()
+    server.server_close()
 
 
 # ---------------------------------------------------------------------------

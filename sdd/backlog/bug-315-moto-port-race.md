@@ -73,7 +73,10 @@ a test that a port already held by another socket cannot be handed to the
 fixture.
 
 **Shipped differently, 2026-10-10.** `port=0` through `ThreadedMotoServer`
-closes the race but keeps the unbounded wait for any bind that still fails. The
-fixture instead binds with werkzeug's `make_server("127.0.0.1", 0, ...)` in its
-own thread and converts the `SystemExit` above back to `OSError`; the failing
-test is a bind to an unassignable address, which hung before and raises now.
+closes the race but keeps the unbounded wait for any bind that still fails.
+`infra/_moto.py`'s `start_moto_server` instead binds with werkzeug's
+`make_server("127.0.0.1", 0, ...)` in the caller's thread and converts the
+`SystemExit` above back to `OSError`; the failing test is a bind to an
+unassignable address, which hung before and raises now. Review of PR #1107
+found the same pattern in `benchmarks/conftest.py`'s `moto_url`, which now uses
+the same helper.
