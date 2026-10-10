@@ -67,7 +67,7 @@ phases:
       - file: sdd/CLAUDE-REFERENCE.md
         section: "Local-machine reference row"
         read_type: verify
-        extract: "No drive paths, ~/.claude paths or memory slugs in committed files; the page's footer had both"
+        extract: "No drive paths, home-folder Claude paths or memory slugs in committed files; the page's footer had a transcript-folder path"
   - id: measure
     name: Measure run B
     steps:
