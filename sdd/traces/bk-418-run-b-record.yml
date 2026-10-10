@@ -102,6 +102,15 @@ phases:
         section: "replies matching check-closed or Closed on recorded checks"
         read_type: verify
         extract: "11 replies, 1, 2, 4 and 4 in rounds 2 to 5; git blame at each later head finds none proved false"
+      - file: PR #1093 and PR #1113 final diffs (a comparison written outside the repo)
+        section: "behaviour per case, risks, delete-pending probe"
+        read_type: verify
+        extract: >-
+          #1113 ships two regressions #1093 avoided (Windows classic
+          delete-pending, a link into a locked folder on 3.14) and skips files
+          deleted mid-walk where #1093 raises; the maintainer judged the two not
+          must-fix, which settled the decision rule. The probe was committed and
+          re-run on master, reproducing the bare PermissionError and the race
       - file: token kit notes outside the repo (understanding, handoff, run A reports)
         section: "(whole)"
         read_type: reference

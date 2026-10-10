@@ -517,9 +517,9 @@ row for each round is in § Run B baseline. The loop cost 12.13 M against route
 ### Rule (c) against the decision rule
 
 **Rule (c) fired in rounds 2 to 5, no check-closed fix was found false
-afterwards, and the run closed shorter and cheaper than route 2. Only round 2
-closed on check-closed prose alone, and the maintainer's post-close review is
-still to come.** Eleven review replies close a finding on a recorded check: 1,
+afterwards, and the run closed shorter and cheaper than route 2, so it passes
+the decision rule. Only round 2 closed on check-closed prose alone, and the
+shorter loop missed a regression run A's longer one had found.** Eleven review replies close a finding on a recorded check: 1,
 2, 4 and 4 in rounds 2 to 5 (`gh api repos/haalfi/remote-store/pulls/1113/comments`,
 replies matching `check-closed|Closed on recorded checks`).
 
@@ -532,7 +532,7 @@ replies matching `check-closed|Closed on recorded checks`).
 | Fails: a check-closed prose fix proves false later | Not so far. `git blame` at each later head puts round 4's migration-note finding on lines round 3's code fix wrote, not on round 2's check-closed lines; rounds 4 and 5 have no later round |
 | Fails: a reply names no check, or one not run | Does not apply; but see below |
 | Run fails: units not below 28.19 M | Does not apply: 15.0 M |
-| Run fails: a must-fix defect run A's PR did not have | Pending: the maintainer's review of PR #1113 |
+| Run fails: a must-fix defect run A's PR did not have | Does not apply, on the maintainer's call: #1113 has two regressions #1093 avoids, both narrow and both ending in a typed error, which #1113 fixes or documents before merging (§ The two deliveries compared) |
 
 **The decision rule lacks a clause run B needed.** Three of the eleven checks
 were run but could not have shown their claim false: `gen-backlogid-check`
@@ -545,6 +545,47 @@ deeper orient and a lower prose share all moved the same figures. Run B's scope
 was wider than route 2's, which works against it. Run B also read, during
 orient, an auto-memory note describing the A/B experiment and run A's cost,
 which RFC-0020's start conditions exclude; a rerun should hide that note first.
+
+### The two deliveries compared
+
+**#1113 is the better fix on every case measured, in a third of the lines, but
+it ships two regressions #1093 had avoided.** #1093 adds 2,267 lines over 18
+commits and #1113 774 over 7, both across 17 files (`gh pr view <N> --json
+additions,deletions,changedFiles,commits`). Both bases carry the same
+`_local.py`, spec 003 and `tests/backends/local` (`git diff --stat
+31ebe6be7 eff7953bb`), so the code compares directly.
+
+| Case | #1093 | #1113 |
+| --- | --- | --- |
+| Single-level listing, folder or entry denied | `PermissionDenied` | `PermissionDenied` |
+| Recursive listing, a subfolder it cannot read | skipped silently, pinned by a strict `xfail` | `PermissionDenied` |
+| Recursive listing, a file deleted while it walks | raises | skipped |
+| A link into a folder the caller cannot enter | skipped, a BE-021 rule with tests | the whole listing raises; a regression on Python 3.14 only, inferred from the diff and not run |
+| A subfolder in the classic delete-pending state (Windows) | skipped | `PermissionDenied` |
+
+The last two rows are the regressions. The delete-pending row and the race
+below come from [`delete_pending_probe.py`](delete_pending_probe.py), run on
+`git archive` trees of master `eff7953bb`, #1093 and #1113, on Windows 11 with
+Python 3.13.11, on an NTFS and a ReFS drive. Its output is printed, not written
+to `results/`.
+
+- **The classic delete-pending state is rare.** It forms when a deleter sets the
+  classic delete disposition while another handle stays open; Python's own
+  `rmdir` and `rmtree` never produced it on either filesystem, because Windows
+  deletes them the POSIX way. Run A's round 7 had measured this state, which is
+  why #1093 kept the recursive walks as they were.
+- **A real concurrent delete is common.** With a thread running `rmtree` on a
+  200-file subfolder while the recursive listing walks, master raised in 2 to 18
+  of 200 runs and #1093 in 1 to 15, by drive and form; #1113 in none. A file
+  listed by the walk and gone before its `stat` is the cause.
+- **What #1113 still owes before it merges:** #1093's skip for a link into a
+  locked folder and its tests; Windows errors 21 and 123 treated as absent, as
+  #1093 does; the classic delete-pending case in the migration note and spec
+  003's known divergences; and dossiers for BUG-318 and BUG-319. #1093's test
+  depth (16 test functions against 7, real ACL and junction cases) is worth
+  carrying over; its recursive design is not.
+- **Not measured:** Python 3.11, 3.12 and 3.14, Windows Server and CI runners,
+  network shares, FAT and exFAT, and the setup run A's round 7 measured on.
 
 ## What the means cost
 
@@ -613,6 +654,10 @@ holding its figures.
 
 **What still costs**
 
+- A shorter loop finds less. Run B's five rounds never raised the Windows
+  delete-pending case that run A's round 7 had measured, nor a link into a
+  locked folder (§ The two deliveries compared). Fewer rounds is only a saving
+  when the reviewers still reach the platform and edge cases the change touches.
 - A fix pass breeds findings: a behaviour change made in round 3 caused most of
   round 4. Re-planning by the divergence check, not patching, ended it.
 - Items filed during the loop draw findings in the next round; keep a mid-loop
@@ -675,6 +720,7 @@ siblings (`_common.default_transcripts`).
 | `pr_1113_rounds.json` | `pr_rounds.py --pr 1113` | GitHub reviews and PR commits (cached in `--data`), the fix commits in git |
 | `run_b_gates.json` | `gates.py --name run_b_gates` | both run B sessions' transcripts |
 | `prep_cost.json` | `prep_cost.py --since 2026-10-09T00:00:00Z --until 2026-10-10T13:42:18Z` | transcripts, and the class map in `--data` (keyed by session ID, so not committed) |
+| *(printed, no result file)* | `delete_pending_probe.py <src> <work> <label>`, once per tree | `git archive` trees of master `eff7953bb`, #1093 and #1113; Windows only |
 
 Sessions are assigned to work items through the PR they served, never by
 session ID: a `pr-link` record, a PR number the first real prompt hands
