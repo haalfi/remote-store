@@ -204,6 +204,7 @@ docs = [
   "mkdocs>=1.6,<2",
   "mkdocs-material>=9.5",
   "mkdocstrings[python]>=0.27",
+  "pymdown-extensions!=12.2",  # BUG-317: 12.2's Highlight needs `md`, which mkdocstrings 1.0.6 does not pass
   "mkdocs-gen-files>=0.5",
   "mkdocs-literate-nav>=0.6",
   "mkdocs-section-index>=0.3",

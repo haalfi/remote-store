@@ -1,0 +1,62 @@
+id: BUG-317
+title: "pymdown-extensions 12.2 breaks the docs build, so every docs job fails"
+trigger: >-
+  CI's docs job on PR #1111 (an RFC-text PR) failed in `mkdocs build --strict`
+  with `Highlight.__init__() missing 1 required positional argument: 'md'`,
+  five minutes after pymdown-extensions 12.2 reached PyPI. Master's last run
+  (12:42) predated the release. The maintainer chose a separate hotfix PR.
+source_items:
+  - BUG-317
+audience:
+  - user.site
+  - infra.ci
+expected_ripples:
+  - pyproject.toml
+  - CHANGELOG.md
+  - sdd/BACKLOG-DONE.md
+  - sdd/backlogid.json
+surprising_ripples: []
+discovery_followups: []
+decisions: []
+orient:
+  - items: [ID-225]
+    verdict: unrelated
+    evidence: >-
+      `hatch run backlog-find "pymdown" --dossiers` found nothing;
+      `backlog-find "mkdocstrings"` found only done items and ID-225, which
+      weighs replacing the docs stack. A one-release exclusion changes nothing
+      about that choice. The dialog that chose this hotfix is logged on PR
+      #1111's branch, since one session's log cannot live on two branches.
+phases:
+  - id: reproduce
+    name: Reproduce
+    steps:
+      - file: "CI run 38054446326, docs job"
+        section: "mkdocs build --strict"
+        read_type: verify
+        extract: "TypeError in mkdocstrings' Highlighter on guides/backends/azure.md"
+      - file: "PyPI JSON for pymdown-extensions, mkdocstrings, markdown, mkdocs-material"
+        section: "release upload times"
+        read_type: verify
+        extract: "pymdown-extensions 12.2 uploaded 2026-10-10T13:01:18; the others unchanged since September or earlier"
+      - file: "local mkdocs build --strict"
+        section: "12.2 vs 12.1"
+        read_type: verify
+        extract: "With 12.2 installed, the same TypeError; with 12.1, the build passes"
+  - id: fix
+    name: Fix
+    steps:
+      - file: pyproject.toml
+        section: "docs group"
+        read_type: verify
+        extract: >-
+          Excludes 12.2 only, so a fixed 12.2.x or 12.3 is taken without another
+          change. `uv pip compile --refresh` of mkdocs, mkdocs-material and
+          mkdocstrings resolves pymdown-extensions 12.2 without the exclusion
+          and 12.1 with it. uv's cache hid 12.2 until `--refresh`, and hatch did
+          not resync a forced 12.2 on an unchanged pyproject, so local envs built
+          before the release stay green and prove nothing either way
+      - file: sdd/CLAUDE-REFERENCE.md
+        section: "Pre-work index: Dependency"
+        read_type: gate
+        extract: "The docs group is not an install extra, so the conda recipe and README install owe nothing; check_conda_recipe_pins confirms"
