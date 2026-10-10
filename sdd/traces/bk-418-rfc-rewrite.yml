@@ -13,7 +13,8 @@ audience:
 expected_ripples:
   - sdd/BACKLOG.md
   - sdd/research/token-usage/report.md
-surprising_ripples: []
+surprising_ripples:
+  - sdd/research/token-usage/tokkit.py
 discovery_followups: []
 decisions:
   - sdd/decisions/0b26f6a6-64de-4295-87a8-ba03c81a4306.jsonl
@@ -109,3 +110,27 @@ phases:
         section: "Pre-work index"
         read_type: gate
         extract: "Rows triggered: backlog item touched; local-machine reference, which this trace first broke with a drive path"
+  - id: fix
+    name: "Fix pass after the /rvw-pr review on PR #1111"
+    steps:
+      - file: sdd/BACKLOG.md
+        section: "BUG-280 (backlog-show)"
+        read_type: verify
+        extract: >-
+          Its open decision leaves the scope to run B's § Orient, so "run B has
+          route 2's scope" was unsupported. Class swept with a grep for "same
+          scope|scope run B has": Summary and Motivation carried it too. Scope is
+          now observed, and the route-2 round and unit checks are void on another
+          scope
+      - file: "PR #1093"
+        section: "changed files (gh pr view --json files)"
+        read_type: verify
+        extract: "Route 2's shipped scope is LocalBackend's listings: _local.py, its test, spec 003"
+      - file: sdd/research/token-usage/tokkit.py
+        section: "line 360 comment"
+        read_type: verify
+        extract: >-
+          Named "RFC-0020's P2", a section the rewrite removed; now points at
+          /ship § Resume at the PR. A repo grep for RFC-0020 with P1 to P4
+          found no other hit; the variant commit's "(RFC-0020 P1)" is reworded
+          at its rebase

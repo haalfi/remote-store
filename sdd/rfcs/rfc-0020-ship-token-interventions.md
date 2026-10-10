@@ -19,7 +19,7 @@ long tail of its review rounds repairs prose that the loop's own fixes made
 false.** Rule (c) closes each prose finding by the check that settles it
 instead of by another review round. One delivery of BUG-280 under a variant
 carrying rule (c), on a master that already carries the other changes, is
-compared with run A's second route, which had the same scope. If rule (c) holds,
+compared with run A's second route when run B picks that route's scope. If rule (c) holds,
 one ADR amends the five clauses it waives; otherwise the variant closes.
 
 ## Motivation
@@ -36,7 +36,7 @@ derivations; this section names only those rule (c) acts on.
   and trace findings only, including loops of 10 to 13 rounds. Of 321 prose
   findings in the 13 longest loops, 94% are settled by a command or by listing
   the cases (report § 5).
-- **Run A's second route**, the scope run B has: six rounds and 49 findings,
+- **Run A's second route**, the scope PR #1093 shipped: six rounds and 49 findings,
   of which the fix-commit classifier labels 30 prose and a hand reading 37
   (report § Run B baseline).
 
@@ -96,6 +96,9 @@ a draft that is never merged) as one commit to
 
 ### Not in run B
 
+**Two candidates that act on the same cost stay out, so that rule (c) is the
+only change run B scores.**
+
 - **BK-423**, a quantifier rule at authoring time, is held until run B is
   scored, because it acts on the findings rule (c) targets.
 - **A smaller reviewer input** (the report's hypotheses 3 and 4: what every
@@ -110,6 +113,9 @@ n = 1 per arm, the comparison can reject a rule that does nothing or does harm,
 but cannot estimate a rate; the decision rule is written for that.
 
 ### Start conditions
+
+**Run B starts as run A did, from a recorded base, with nothing steering it
+toward run A's outcome.**
 
 - Master after this RFC's rewrite merges, plus the variant commit rebased onto
   it, which touches `.claude/skills/ship/SKILL.md` and `sdd/process-budget.json`
@@ -150,10 +156,19 @@ same rule.
 
 **Fixed before run B starts. Rule (c) goes on to an ADR amendment (Phase 1)
 only if it fired, the loop was shorter, and no prose fix it closed without
-review proved false.** The baseline is route 2, not route 1: run B has route
-2's scope, and route 1 ran a plan the re-plan at `cdcaa35c6` discarded (report
-§ Run B baseline). Route 2 still started with route 1's context, 113k at its
-first round (`run_a_route2.json` `route.rounds`).
+review proved false.** The baseline is route 2, not route 1: route 1 ran a
+plan the re-plan at `cdcaa35c6` discarded, and route 2 shipped the scope
+PR #1093 holds, `LocalBackend`'s listing methods only (report § Run B
+baseline). Route 2 still started with route 1's context, 113k at its first
+round (`run_a_route2.json` `route.rounds`).
+
+**Scope is observed, not set.** BUG-280's entry leaves the scope open (the
+three methods, or the listing-generator pattern across backends), and run B's
+prompt stays exactly `/ship BUG-280`, so its § Orient dialog picks the scope.
+The round and unit checks below compare against route 2 only when that dialog
+picks `LocalBackend`'s listing methods. On any other scope they are void:
+run B is scored on the remaining checks, and the report records the scope it
+took.
 
 | Keeps if all hold | Fails if any holds |
 | --- | --- |
@@ -178,7 +193,7 @@ interventions, and none is scored. Derived with
 point:
 
 - #1099, BK-414's lookup tool: [dossier](../backlog/bk-414-sdd-lookup.md);
-- #1103, `/ship` § Orient and the P2 handoff with `/ship resume`:
+- #1103, `/ship` § Orient and the handoff at the PR with `/ship resume`:
   [trace](../traces/bk-418-orient.yml);
 - #1105, suite lock, per-test timeout, background-wait deadline:
   [BK-419](../backlog/bk-419-local-gate-unbounded-wait.md);
@@ -240,6 +255,8 @@ is on one skill and, if rule (c) is kept, one ADR.**
   raise.
 
 ## Open Questions
+
+**One question run B cannot answer, because BUG-280 is a code PR.**
 
 1. **A delivery without code findings.** Run B is a code PR, so it cannot show
    what rule (c) does on the 17 of 41 PRs that drew prose and trace findings
