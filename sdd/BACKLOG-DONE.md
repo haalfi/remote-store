@@ -298,6 +298,16 @@ if evidence changes; these are retired.
 
 ## Unreleased
 
+- [x] **BK-421 — The local gate's default worker count ignores free memory, so a box short on commit crashes every worker at startup**
+  spec: — · effort: S · audience: contributor.tooling, infra.test
+  On 2026-10-04, 14 workers with 7.9 GB of free commit all died with
+  `MemoryError` while no test failed; the fix was a hand-set `RS_TEST_WORKERS`.
+  `scripts/run_tests.py` now also caps its default at one worker per 1.5 GiB of
+  free memory above a 2 GiB reserve, and says so on stderr when the cap binds;
+  an explicit `RS_TEST_WORKERS` still wins. Budget and probe: its docstring.
+  Tests: `tests/scripts/test_run_tests.py`, on Windows and Linux. Trace:
+  [bk-421](traces/bk-421-memory-aware-workers.yml).
+
 - [x] **BK-419 — A local gate run has no per-test timeout and no wait deadline, so a stalled suite stalls the session**
   spec: — · effort: M · audience: contributor.tooling, infra.test
   All three. `scripts/run_tests.py` takes a machine-wide OS file lock (a second

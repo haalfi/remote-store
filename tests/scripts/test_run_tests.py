@@ -1,6 +1,6 @@
-"""Unit tests for scripts/run_tests.py (BK-277, BK-419).
+"""Unit tests for scripts/run_tests.py (BK-277, BK-419, BK-421).
 
-Pins the resource-bounded worker formula and the explicit-``-n`` passthrough so
+Pins the resource-bounded worker formula, its free-memory cap, and the explicit-``-n`` passthrough so
 a future edit cannot silently restore ``-n auto`` behaviour or break the
 ``RS_TEST_WORKERS`` override; and the suite lock and per-test timeout, the lock
 against real separate processes, because what it guards against is another
@@ -85,6 +85,83 @@ def test_invalid_override_raises(override: str) -> None:
         compute_workers(8, override)
 
 
+# -- Free-memory cap (BK-421) ----------------------------------------------
+
+_GIB = 2**30
+
+
+@pytest.mark.parametrize(
+    ("free_gib", "expected"),
+    [
+        (7.9, 3),  # the 2026-10-04 crash: (7.9 - 2) // 1.5, where 14 workers died
+        (3.5, 1),  # exactly one worker's budget above the reserve
+        (2.0, 1),  # nothing above the reserve: still one worker, never zero
+        (0.5, 1),  # below the reserve
+        (100.0, 14),  # plenty of memory: the CPU formula binds
+    ],
+)
+def test_free_memory_caps_the_default(free_gib: float, expected: int) -> None:
+    assert compute_workers(20, None, int(free_gib * _GIB)) == expected
+
+
+def test_unknown_free_memory_leaves_the_cpu_formula() -> None:
+    assert compute_workers(20, None, None) == 14
+
+
+@pytest.mark.parametrize("override", ["8", "auto"])
+def test_override_ignores_the_memory_cap(override: str) -> None:
+    """An explicit RS_TEST_WORKERS is the caller's decision, memory or not."""
+    assert compute_workers(20, override, 1 * _GIB) == (8 if override == "8" else 20)
+
+
+def test_main_reports_when_memory_caps_workers(
+    monkeypatch: pytest.MonkeyPatch, capsys: pytest.CaptureFixture[str]
+) -> None:
+    captured = _stub_run(monkeypatch, cpu_count=20, free_bytes=int(7.9 * _GIB))
+    monkeypatch.setattr(_mod.sys, "argv", ["run_tests.py"])
+    main()
+    assert captured["argv"][3:5] == ["-n", "3"]
+    err = capsys.readouterr().err
+    assert "3 workers" in err
+    assert "14" in err  # what the CPU formula would have used
+    assert "RS_TEST_WORKERS" in err  # how to override
+
+
+def test_main_is_silent_when_memory_does_not_bind(
+    monkeypatch: pytest.MonkeyPatch, capsys: pytest.CaptureFixture[str]
+) -> None:
+    captured = _stub_run(monkeypatch, cpu_count=20, free_bytes=100 * _GIB)
+    monkeypatch.setattr(_mod.sys, "argv", ["run_tests.py"])
+    main()
+    assert captured["argv"][3:5] == ["-n", "14"]
+    assert "workers" not in capsys.readouterr().err
+
+
+def test_free_commit_bytes_reads_this_machine() -> None:
+    """The real probe answers on Windows and Linux, the two platforms the suite runs on.
+
+    Bounded by total physical memory plus any pagefile, so a wrong field (total
+    instead of free, or kB read as bytes) shows up as an absurd value.
+    """
+    if sys.platform not in ("win32", "linux"):
+        pytest.skip("no free-memory probe on this platform; the cap stays off")
+    free = _mod.free_commit_bytes()
+    assert free is not None
+    assert 0 < free < 4096 * _GIB
+
+
+@pytest.mark.parametrize(
+    ("meminfo", "expected"),
+    [
+        ("MemTotal:       16000000 kB\nMemFree:  100 kB\nMemAvailable:    8000000 kB\n", 8000000 * 1024),
+        ("MemTotal:       16000000 kB\nMemFree:  100 kB\n", None),  # kernel older than 3.14
+        ("", None),
+    ],
+)
+def test_meminfo_available_parsing(meminfo: str, expected: int | None) -> None:
+    assert _mod._meminfo_available(meminfo) == expected
+
+
 @pytest.mark.parametrize(
     "args",
     [["-n", "4"], ["-n0"], ["--numprocesses=2"], ["--numprocesses", "auto"], ["-p", "x", "-n", "2"]],
@@ -114,8 +191,12 @@ def lock_file(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> Path:
     return lock
 
 
-def _stub_run(monkeypatch: pytest.MonkeyPatch, cpu_count: int = 8) -> dict:
-    """Stub subprocess.run / os.cpu_count / RS_TEST_WORKERS; capture the argv."""
+def _stub_run(monkeypatch: pytest.MonkeyPatch, cpu_count: int = 8, free_bytes: int | None = None) -> dict:
+    """Stub subprocess.run / os.cpu_count / free memory / RS_TEST_WORKERS; capture the argv.
+
+    *free_bytes* ``None`` (the default) means free memory is unknown, so only the
+    CPU formula applies and the result does not depend on the machine running it.
+    """
     captured: dict = {}
 
     class _Result:
@@ -129,6 +210,7 @@ def _stub_run(monkeypatch: pytest.MonkeyPatch, cpu_count: int = 8) -> dict:
 
     monkeypatch.setattr(_mod.subprocess, "run", _fake_run)
     monkeypatch.setattr(_mod.os, "cpu_count", lambda: cpu_count)
+    monkeypatch.setattr(_mod, "free_commit_bytes", lambda: free_bytes)
     monkeypatch.delenv("RS_TEST_WORKERS", raising=False)
     return captured
 

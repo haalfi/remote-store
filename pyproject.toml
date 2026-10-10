@@ -322,8 +322,9 @@ format = "ruff format src/ tests/ examples/ scripts/"
 format-check = "ruff format --check src/ tests/ examples/ scripts/"
 typecheck = "mypy src/ examples/"
 # Local test runs are resource-bounded, not `-n auto` (BK-277):
-# `scripts/run_tests.py` caps xdist workers to leave the machine usable when
-# several suites run at once (see its docstring; `RS_TEST_WORKERS=auto`
+# `scripts/run_tests.py` caps xdist workers by CPU count and free memory
+# (BK-421) to leave the machine usable when several suites run at once (see
+# its docstring; `RS_TEST_WORKERS=auto`
 # restores per-CPU behaviour, `RS_TEST_WORKERS=<n>` forces a count). CI keeps
 # `-n auto` — its workflows call pytest inline, not these `hatch` scripts, so
 # this change is local-only. Two passes:
