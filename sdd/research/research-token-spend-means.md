@@ -71,6 +71,17 @@ mostly not what anyone chose to read**: the session prefix, tool results and
 hidden thinking are most of the re-read context, the repository's own
 instruction files a few percent ([report § 3](token-usage/report.md#3-what-the-re-read-context-is-made-of)).
 
+**A second instrument agrees.** Claude Code's own `/usage` panel, read on
+2026-10-10, put 73% of the last 24 hours' usage on this machine at more than
+150k context, and 83% in sessions heavy with subagents. No script here produces
+those figures, and they are not comparable with the record's: the window is one
+day of local sessions mixing run B with the work around it, the panel calls its
+figures approximate and "not a breakdown", and it counts whole sessions that
+used subagents rather than the subagents' own share, which was 30 to 35% in the
+two runs. Its per-skill shares are left out: they credit a skill only while its
+own turn is active, the artefact the record measured in Claude Code's skill
+statistics ([report § 6](token-usage/report.md#6-skills-listed-but-never-used)).
+
 So the question is not how much work a delivery does, but in what order, and on
 what context, it does it.
 
