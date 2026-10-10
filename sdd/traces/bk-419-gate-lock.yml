@@ -21,6 +21,9 @@ surprising_ripples:
   # lock in the launcher alone would have left that pass unguarded; routed
   # through the launcher with `-n 0`.
   - pyproject.toml
+  # Caught in review: two comments said no pytest-timeout is configured, which
+  # the new dependency made false for local launcher runs.
+  - tests/backends/sftp/test_io_timeout.py
 phases:
   - id: orient
     name: Orient
@@ -85,3 +88,41 @@ phases:
         read_type: verify
         extract: "contributor.tooling + infra.test: no CHANGELOG; BACKLOG-DONE entry links dossier and trace; backlogid.json regenerated"
         outcome: ok
+review:
+  # Derived by `hatch run ship-report 1105 --trace-block-only` at head 288456c.
+  # Do not hand-edit, except a newly required field per sdd/traces/_schema.yml
+  # section review: RFC-0015 D4 makes this script the only producer.
+  derivation: "hatch run ship-report 1105 --trace-block-only"
+  pr: 1105
+  review_rounds: 1
+  submissions: 2
+  findings: 3
+  by_round:
+    - round: 1
+      findings: 2
+      origin: {original: 2}
+      triage: {must-fix: 2}
+      duration_hours: 0.03
+    - round: 2
+      findings: 1
+      origin: {original: 1}
+      triage: {must-fix: 1}
+      duration_hours: 0.0
+  by_file:
+    - path: "pyproject.toml"
+      findings: 2
+    - path: "scripts/run_tests.py"
+      findings: 1
+  untouched_files:
+    - "CLAUDE.md"
+    - "sdd/BACKLOG-DONE.md"
+    - "sdd/BACKLOG.md"
+    - "sdd/backlogid.json"
+    - "sdd/decisions/75b94481-b661-4e10-b779-f515340a3d42.jsonl"
+    - "sdd/traces/bk-419-gate-lock.yml"
+    - "tests/backends/sftp/test_io_timeout.py"
+    - "tests/scripts/test_run_tests.py"
+  review_driven_commits:
+    - sha: "288456c"
+      subject: "fix: address PR #1105 review"
+  ci: {verdict: PENDING, failed: 0, pending: 22}
