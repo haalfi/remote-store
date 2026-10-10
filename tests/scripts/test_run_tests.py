@@ -408,6 +408,26 @@ def test_nested_run_skips_the_lock(monkeypatch: pytest.MonkeyPatch, lock_file: P
         _stop(holder)
 
 
+def test_default_lock_wait_fits_inside_the_session_bounds(monkeypatch: pytest.MonkeyPatch) -> None:
+    """The default wait leaves room for a run under both session bounds.
+
+    A foreground tool call is cut off at 600 s, and CLAUDE.md gives a background
+    wait 15 minutes. A wait of 300 s leaves a gate run about 300 s inside the
+    tighter bound, so a waiter either takes the lock with time to run or gives
+    up with exit 75 before any cut-off.
+    """
+    _stub_run(monkeypatch)
+    seen: dict = {}
+
+    def _fake_acquire(path, wait_seconds):  # type: ignore[no-untyped-def]  # noqa: ANN001, ANN202
+        seen["wait"] = wait_seconds
+
+    monkeypatch.setattr(_mod, "acquire_suite_lock", _fake_acquire)
+    monkeypatch.setattr(_mod.sys, "argv", ["run_tests.py"])
+    assert main() == _mod.EXIT_LOCK_TIMEOUT  # the fake never grants the lock
+    assert seen["wait"] == 300
+
+
 def test_default_lock_path_is_outside_the_checkout(monkeypatch: pytest.MonkeyPatch) -> None:
     """Every worktree and clone must resolve the same file, so it cannot live in one."""
     monkeypatch.delenv("RS_TEST_LOCK_FILE", raising=False)

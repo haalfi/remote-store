@@ -19,13 +19,16 @@ Suite lock (``acquire_suite_lock``): one launcher run at a time per machine,
 across sessions, worktrees and clones. Two suites at once have stalled each
 other near the end of the run, so a second run waits for the first, printing
 who holds the lock, and gives up with exit code ``EXIT_LOCK_TIMEOUT`` after
-``RS_TEST_LOCK_WAIT`` seconds (default 900; ``0`` refuses at once). The lock is
+``RS_TEST_LOCK_WAIT`` seconds (default 300; ``0`` refuses at once). The lock is
 an OS file lock on ``RS_TEST_LOCK_FILE`` (default under the user's home), so
 the OS drops it when the holder exits by any path, a crash or a kill included,
 and a dead holder never blocks a later run. A run started from inside a locked
 suite (``RS_TEST_LOCK_HELD`` set) skips the lock instead of waiting on its own
-parent. Bound: the lock belongs to this launcher process, so if the launcher is
-killed while its pytest children survive, the lock is free while they still run.
+parent. Bounds: the lock belongs to one launcher call. If the launcher is killed
+while its pytest children survive, the lock is free while they still run. A hatch
+script with two launcher calls (``test``, ``test-cov*``) takes it twice, so
+another session's suite can run between its passes (never during one), and the
+script can wait twice.
 
 Per-test timeout: ``--timeout=300`` (pytest-timeout) is added unless the
 forwarded args set ``--timeout``; ``RS_TEST_TIMEOUT=<seconds>`` changes it and
@@ -62,7 +65,9 @@ if TYPE_CHECKING:
 
 _HEADROOM_FRACTION = 0.75
 _DEFAULT_TIMEOUT = 300
-_DEFAULT_LOCK_WAIT = 900.0
+# Under both session bounds with room for a run: a foreground tool call ends at
+# 600 s, a background wait at 15 min (CLAUDE.md § Parallel tests).
+_DEFAULT_LOCK_WAIT = 300.0
 # EX_TEMPFAIL: distinct from pytest's own 0-5, and "try again later" is what it means.
 EXIT_LOCK_TIMEOUT = 75
 _HELD_ENV = "RS_TEST_LOCK_HELD"

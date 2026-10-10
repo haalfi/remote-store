@@ -301,7 +301,7 @@ if evidence changes; these are retired.
 - [x] **BK-419 — A local gate run has no per-test timeout and no wait deadline, so a stalled suite stalls the session**
   spec: — · effort: M · audience: contributor.tooling, infra.test
   All three. `scripts/run_tests.py` takes a machine-wide OS file lock (a second
-  run waits up to 15 min naming the holder, then exits 75; the OS frees it when
+  run waits up to 5 min naming the holder, then exits 75; the OS frees it when
   the holder dies) and passes pytest-timeout's `--timeout=300`; the hatch
   scripts' serial sftp_docker pass now goes through it too. `CLAUDE.md`
   § Parallel tests gives every background wait a 15-minute deadline. Tests:
