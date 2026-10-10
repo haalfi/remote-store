@@ -80,3 +80,33 @@ phases:
           finding: 30 + 6 + 1 = 37. A def-level scope was tried and dropped: it
           labelled the round-1 link fix prose because the fix added a new
           helper. Re-run from cache gives a byte-identical result
+review:
+  # Derived by `hatch run ship-report 1104 --trace-block-only` at head 4cf5bb8.
+  # Do not hand-edit, except a newly required field per sdd/traces/_schema.yml
+  # section review: RFC-0015 D4 makes this script the only producer.
+  derivation: "hatch run ship-report 1104 --trace-block-only"
+  pr: 1104
+  review_rounds: 1
+  submissions: 1
+  findings: 4
+  by_round:
+    - round: 1
+      findings: 4
+      origin: {original: 4}
+      triage: {must-fix: 4}
+      duration_hours: 0.05
+  by_file:
+    - path: "sdd/research/token-usage/pr_rounds.py"
+      findings: 2
+    - path: "sdd/research/token-usage/report.md"
+      findings: 2
+  untouched_files:
+    - "sdd/research/token-usage/results/pr_1093_rounds.json"
+    - "sdd/research/token-usage/results/run_a_route2.json"
+    - "sdd/research/token-usage/rounds.py"
+    - "sdd/research/token-usage/route_baseline.py"
+    - "sdd/traces/bk-418-run-b-baseline.yml"
+  review_driven_commits:
+    - sha: "4cf5bb8"
+      subject: "fix: address PR #1104 review"
+  ci: {verdict: PENDING, failed: 0, pending: 2}
