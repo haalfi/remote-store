@@ -11258,11 +11258,11 @@
 <p>Rules for writing documentation that stays accurate over time (rules 1–6),
 applying to all content: README, guides, docstrings, and inline doc comments.
 <strong>Rule 7 is a second axis and carries its own narrower scope</strong>: it is about
-whether a section is understood well enough to write, not about staying accurate,
-and it binds <code>sdd/</code> and <code>.claude/</code> only. That split is deliberate — see the note
-in the rule. <strong>Rule 8 is a third axis</strong> and applies to all content like rules
-1–6: it is about which change owns a claim, not how long the claim stays
-accurate.</p>
+whether a section is understood well enough to write, and it binds the repo's
+own reasoning surfaces: <code>sdd/</code>, <code>.claude/</code>, <code>CLAUDE.md</code>, <code>CONTRIBUTING.md</code> and
+<code>AGENTS.md</code>.
+<strong>Rule 8 is a third axis</strong> and applies to all content like rules 1–6: it is
+about which change owns a claim, not how long the claim stays accurate.</p>
 <p>Part of the documentation framework (see <a href="https://github.com/haalfi/remote-store/blob/master/CLAUDE.md#documentation-framework"><code>CLAUDE.md</code> § Documentation
 framework</a>): placement →
 <a href="../authoring/"><code>sdd/AUTHORING.md</code></a>; structure →
@@ -11272,107 +11272,97 @@ framework</a>): placement →
 <ol>
 <li>
 <p><a id="six-month-test"></a><strong>The 6-month test.</strong> [review-enforced]
-   Before writing any sentence, ask: "Would this still be accurate in 6 months?"
-   If not, it belongs in a linked SSoT or generated artefact, not in stable prose.</p>
+   Before writing any sentence, ask whether it will still be accurate in six
+   months; if not, link to its authoritative source or generate it from there
+   instead of putting it in stable prose.</p>
 </li>
 <li>
 <p><strong>Describe principles, not enumerations.</strong> [review-enforced]
-   Write what the system does and why. List 2–3 representative examples and link
-   to the authoritative source. Never reproduce an exhaustive list inline.
-   Copies become lies.</p>
+   Explain what the system does and why, give 2–3 representative examples, and
+   link to the authoritative source rather than copying an exhaustive list,
+   which goes stale.</p>
 </li>
 <li>
 <p><strong>No pseudo-precise values in narrative.</strong> [review-enforced]
-   Exact counts, latency figures, and percentages belong in generated artefacts
-   (FEATURES.md, benchmark output, API reference). In prose: qualitative categories
-   and a link. Write "significantly faster via caching" + link, not "+17% / 29×".
-   Out of scope: counts in <code>sdd/</code> records, backlog items, commit messages and
-   <code>.claude/skills/</code>, which are measured history rather than narrative and are
+   Exact counts, latency figures and percentages belong in generated artefacts
+   (FEATURES.md, benchmark output, API reference), and prose uses qualitative
+   categories plus a link. Counts in <code>sdd/</code> records, backlog items, commit
+   messages and <code>.claude/skills/</code> are out of scope: they are measured history,
    bound by <a href="https://github.com/haalfi/remote-store/blob/master/CLAUDE.md#principles"><code>CLAUDE.md</code> principle 9</a> instead.</p>
 </li>
 <li>
 <p><strong>One copy per fact.</strong> [review-enforced]
-   Every fact lives in exactly one authoritative place; everywhere else is a link
-   or a paraphrase of the principle. Authoritative homes: file placement in
-   <a href="../authoring/"><code>sdd/AUTHORING.md</code></a> Rule 1; content type homes in
-   <a href="../documentation/#content-homes"><code>sdd/DOCUMENTATION.md</code> § 2</a>. README and
-   guides link; they do not copy.</p>
+   Every fact lives in exactly one authoritative place, and everywhere else
+   links to it or paraphrases the principle. File placement homes are in
+   <a href="../authoring/"><code>sdd/AUTHORING.md</code></a> Rule 1, content type homes in
+   <a href="../documentation/#content-homes"><code>sdd/DOCUMENTATION.md</code> § 2</a>.</p>
 </li>
 <li>
 <p><a id="source-code-facts-stay-in-source"></a><strong>Source-code facts stay in source.</strong> [review-enforced]
-   API signatures, capability sets, type annotations, default values live in code.
-   Docs describe the pattern and link to the reference; they do not reproduce the
-   values.</p>
+   API signatures, capability sets, type annotations and default values live
+   in code or a generated reference; docs describe the pattern and link to
+   them.</p>
 </li>
 <li>
 <p><a id="code-examples-sourced"></a><strong>A fenced block in published prose is generated or sourced, not typed.</strong> [review-enforced]
-   Two homes, by what the block is. <strong>Runnable code</strong> comes from
-   <code>examples/snippets/</code> via <code>pymdownx.snippets</code> <code>--8&lt;--</code> regions, so CI catches
-   API drift. A <strong>generated non-code artefact</strong> — a diagram whose content is
-   derived from the repository, such as the support-window chart on the
-   dependency-policy page — comes from a <code>gen_*</code> script with a <code>--check</code> gate,
-   and is committed under <code>docs-src/_data/</code> and included the same way; a
-   diagram with dates in it is a Rule 1 violation the moment it is typed by
-   hand. Hand-written fences are allowed only where neither applies: a snippet
-   that cannot execute in CI (e.g. it needs real credentials), or an
-   illustration of markup rather than a thing being described. Note the reason
-   inline. An illustration containing a literal <code>--8&lt;--</code> must escape it with a
-   leading <code>;</code>, or <code>pymdownx.snippets</code> expands it — silently, until
-   <code>check_paths: true</code> made a missing target fail the build.</p>
+   Each block comes from one of two homes, and a hand-written fence is the
+   bounded exception.</p>
+</li>
+<li><strong>Runnable code</strong> comes from <code>examples/snippets/</code> via <code>pymdownx.snippets</code>
+     <code>--8&lt;--</code> regions, so CI catches API drift.</li>
+<li><strong>A generated non-code artefact</strong>, such as a diagram derived from the
+     repository, comes from a <code>gen_*</code> script with a <code>--check</code> gate, committed
+     under <code>docs-src/_data/</code> and included the same way. A diagram with dates
+     in it is a Rule 1 violation the moment it is typed by hand.</li>
+<li><strong>A hand-written fence</strong> is allowed only for a snippet that cannot execute
+     in CI (e.g. it needs real credentials) or an illustration of markup, and
+     notes its reason inline.</li>
+<li>
+<p><strong>A literal <code>--8&lt;--</code></strong> inside an illustration is escaped with a leading
+     <code>;</code>, or <code>pymdownx.snippets</code> expands it.</p>
 </li>
 <li>
 <p><a id="kernsatz"></a><strong>Lead with the Kernsatz</strong> — the core claim, stated first. [review-enforced]
-   A new or substantially rewritten section in <code>sdd/</code>, <code>.claude/</code> or a root-level
-   process doc opens with
-   its core claim in at most three sentences, defining any term it coins or uses
-   in a sense the reader cannot be assumed to hold. If those sentences will not
-   come, the section is not yet understood well enough to write: return to the
-   source — the material the section is about — instead of writing around the gap.
-   What follows the Kernsatz is detail the Kernsatz earned. <strong>A claim that is absent
-   and a claim that arrives in paragraph four both fail this rule</strong>; the first is
-   the one it exists to catch, and the second is the one it is easiest to fix.
-   <strong>What triggers it.</strong> A <em>section</em> is a heading-delimited unit of Markdown
-   prose at any heading level; a list item, a table and a YAML block are not
-   sections, and a section whose body is mostly a table still opens with the
-   claim the table serves. <em>Substantially rewritten</em> means the section's claim
-   changed, not its wording — <strong>and a section that stated no claim before is
-   substantially rewritten by definition</strong>, since there was nothing for the
-   rewrite to preserve.
-   <strong>Why the scope is what it is.</strong> Rules 1–6 govern accuracy over time and apply
-   everywhere; this one governs comprehension at writing time and is confined to
-   the repo's own reasoning surfaces, where author and reader are both
-   contributors. Those are <code>sdd/</code>, <code>.claude/</code>, and the root-level process docs
-   (<code>CLAUDE.md</code>, <code>CONTRIBUTING.md</code>, <code>AGENTS.md</code>) — the scope line above names the
-   first two; the third is named here because the rationale selects it and an
-   author rewriting a principle should not have to infer that. Extending it to
-   <code>docs-src/</code> and docstrings has not been argued for: those readers are not
-   contributors, and § 9.5 of the record below argues they need <em>more</em> context
-   rather than a tighter opening.
-   <strong>Defining a term does not mean restating an authority.</strong> Rule 4 keeps facts in
-   one place; a one-clause gloss plus a link satisfies both.</p>
+   A new or substantially rewritten section in <code>sdd/</code>, <code>.claude/</code> or a
+   root-level process doc (<code>CLAUDE.md</code>, <code>CONTRIBUTING.md</code>, <code>AGENTS.md</code>) opens
+   with its core claim in at most three sentences; if the claim will not come,
+   the section is not yet understood well enough to write, so return to the
+   source — the material the section is about — instead of writing around the
+   gap.</p>
+</li>
+<li>The opening defines any term the section coins or uses in a sense the
+     reader cannot be assumed to hold. A one-clause gloss plus a link satisfies
+     both this and Rule 4.</li>
+<li>What follows the Kernsatz is detail the Kernsatz earned. A claim that is
+     absent and a claim that arrives late both fail this rule.</li>
+<li>A <em>section</em> is a heading-delimited unit of Markdown prose at any heading
+     level; a list item, a table and a YAML block are not sections, and a
+     section whose body is mostly a table still opens with the claim the table
+     serves.</li>
+<li>
+<p><em>Substantially rewritten</em> means the section's claim changed, not its
+     wording; a section that stated no claim before is substantially rewritten
+     by definition.</p>
 </li>
 <li>
 <p><a id="change-details-what-it-changes"></a><strong>A change details only the behaviour it owns.</strong> [review-enforced]
-   A change <em>owns</em> the behaviour it alters and the behaviour it exists to
-   document, as a guide for an existing feature or a docstring made accurate
-   does; it <em>leaves alone</em> everything else. Text a change writes, such as a
-   docstring, a spec clause, a guide, a migration note or a dossier, describes
-   in detail only behaviour that change owns. Behaviour it leaves alone already
-   has a home, the code (Rule 5) and the item, spec or ADR that governs it, so
-   the change gives it at most a one-line pointer to that item. Detail about
-   behaviour it leaves alone is a claim the change had no reason to measure,
-   so it is the one a review refutes on the interpreter or platform nobody
-   ran. <strong>A finding on such a claim is fixed by deleting it, or replacing it
-   with the pointer, never by narrowing it</strong>: a narrower claim is still a
-   claim about behaviour the change does not own, and the next measuring pass
-   refutes it somewhere else. <strong>This binds
-   description, not premise</strong>: a claim the change relies on, such as the
-   behaviour its code assumes or the reason it gives for itself, belongs to
-   the change, so a refuted premise means the change is wrong, and it is fixed
-   by changing behaviour or filed, never by deleting the sentence. The fix
-   shapes this restricts are in
-   <a href="https://github.com/haalfi/remote-store/blob/master/.claude/skills/fix-pr/SKILL.md#step-3-fix"><code>/fix-pr</code> Step 3</a>.</p>
+   A change <em>owns</em> the behaviour it alters, including behaviour it introduces,
+   and the behaviour it exists to document, as a guide for an existing feature
+   or a docstring made accurate does; it <em>leaves alone</em> everything else. Text
+   the change writes, such as a docstring, a spec clause, a guide, a migration
+   note or a dossier, describes in detail only behaviour the change owns.</p>
 </li>
+<li>Behaviour the change leaves alone already has a home, the code (Rule 5)
+     and the item, spec or ADR that governs it, so the change gives it at most
+     a one-line pointer to that item.</li>
+<li>A finding on such detail is fixed by deleting it or replacing it with the
+     pointer, never by narrowing it.</li>
+<li><strong>This binds description, not premise.</strong> A claim the change relies on,
+     such as the behaviour its code assumes or the reason it gives for itself,
+     belongs to the change: a refuted premise is fixed by changing behaviour or
+     filed, never by deleting the sentence.</li>
+<li>The fix shapes this restricts are in
+     <a href="https://github.com/haalfi/remote-store/blob/master/.claude/skills/fix-pr/SKILL.md#step-3-fix"><code>/fix-pr</code> Step 3</a>.</li>
 </ol>
 <h2 id="guides">Guides<a class="headerlink" href="#guides" title="Permanent link">&para;</a></h2>
 <h3 id="examples-bad-good">Examples (bad → good)<a class="headerlink" href="#examples-bad-good" title="Permanent link">&para;</a></h3>
@@ -11431,6 +11421,7 @@ pointer or nothing.</p>
 ranking of the referenced files, with the traces and sections that cited each.
 It is a report, never a gate: read it when asking which documents to improve,
 not as a pass/fail. The script's module docstring states what it does not catch.</p>
+<p><a id="provenance"></a></p>
 <h3 id="provenance">Provenance<a class="headerlink" href="#provenance" title="Permanent link">&para;</a></h3>
 <p>Rules 1–6 derive from
 <a href="../research/research-doc-content-longevity/"><code>sdd/research/research-doc-content-longevity.md</code></a>.
