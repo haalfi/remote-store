@@ -2,10 +2,11 @@
 name: ship
 description: Deliver a task as one merge-ready PR. Plan, build, then review to convergence
 disable-model-invocation: true
-argument-hint: "[BACKLOG-ID ...] or [task description]"
+argument-hint: "[BACKLOG-ID ...] or [task description] or resume <PR>"
 ---
 
-Take a task from framing to a PR that is ready to merge, in one invocation. The
+Take a task from framing to a PR that is ready to merge, in two invocations:
+one builds to the PR, and `/ship resume <PR>` in a fresh session reviews it. The
 deliverable is **one PR whose review has converged**, not a PR reviewed a fixed
 number of times.
 
@@ -38,7 +39,7 @@ surface.
 
 | Role | Who | Notes |
 |---|---|---|
-| Orchestrator | main loop | **Never delegated.** It holds the convergence judgement |
+| Orchestrator | main loop; from PR open, the [resumed session](#resume) | **Never delegated.** It holds the convergence judgement |
 | Designer / planner | main loop, plan mode | One role, not two, unless the task is architectural |
 | Author | domain-expert subagents where the work is theirs | May decline an instruction **with evidence** |
 | Fixer | **main loop by default.** Delegate only for depth inside one file tree | The fixer owns the sibling sweep ([ADR-0034 § Decision](../../../sdd/adrs/0034-ship-panel-rounds-and-unprimed-exit.md#decision)), and the sweeps that pay are cross-file — a domain-scoped fixer cannot perform them ([ADR-0036 § Decision](../../../sdd/adrs/0036-reviewers-by-subject-and-method.md#decision)). A delegate still returns the sweep across what it touched |
@@ -47,12 +48,73 @@ surface.
 ## Step 1: Frame
 
 Parse `$ARGUMENTS` for backlog IDs, a task description, or both. Neither: ask.
+`resume <PR>`: skip Steps 1 to 3 and go to [Resume at the PR](#resume).
 
 1. Read the item(s) with `hatch run backlog-show <ID>... --dossier`, and every spec/RFC they link.
 2. Read [`sdd/CLAUDE-REFERENCE.md` § Ripple-check > Pre-work index](../../../sdd/CLAUDE-REFERENCE.md#pre-work-index) (`hatch run ref-show pre-work-index`); note triggered rows.
-3. **Enumerate the subjects** (below).
-4. Open or create the trace per [CLAUDE.md § Trace authoring](../../../CLAUDE.md#trace-authoring).
-5. Branch: `git checkout -b <id>-<short-name>`.
+3. Open or create the trace per [CLAUDE.md § Trace authoring](../../../CLAUDE.md#trace-authoring).
+4. **Orient** (below), and agree the scope, before anything is planned.
+5. **Enumerate the subjects** (below), for the agreed scope.
+6. Branch: `git checkout -b <id>-<short-name>`.
+
+<a id="orient"></a>
+### Orient: does related open work change the fix?
+
+**Before planning, find the open items that share the item's specs or files,
+read what they plan, and judge yourself whether any of them changes this fix.
+Then recommend a scope.** Spending tokens here is intended: in run A of
+`/ship BUG-280`, orienting and planning cost under 1% of the delivery, the plan
+never weighed a scoped redesign that already owned the fix's pattern, and the
+re-plan came after seven review rounds
+([research record § 7](../../../sdd/research/token-usage/report.md)). Listing
+related items and asking the user how they relate is not orientation: it hands
+the user the judgement this step exists to make.
+
+Written for one item. **Several items** are oriented once, together: the spec
+half takes the union of their spec IDs, and Cluster drops all of them. **A
+task description with no item** has no attribute line, so run the file half
+only, over the files the change will touch, and keep the verdicts in the plan
+when no trace exists. Every other step, the dialog included, is unchanged.
+
+1. **Find.** Spec half: one call with every spec ID on the item's attribute
+   line, `hatch run backlog-find --spec <ID> --spec <ID> ...`. File half: list
+   the source files the change will touch, those the item, its dossier and its
+   specs name and the file of each class, function or method they name (locate
+   it; an item rarely spells the path). For each, one call:
+   `hatch run backlog-find "<basename, regex-escaped>" --dossiers`. One file
+   per call, since a `|` in the pattern breaks under `hatch run` on Windows.
+   Dossier hits carry no status, so get it for all of them in one
+   `hatch run backlog-show <ID> <ID> ...`.
+2. **Cluster.** Drop the item itself, done items, and hits that cite the file
+   only as data (a report, a trace revisit). Group the rest into clusters of
+   items that would bear on the fix the same way: a redesign that owns its
+   pattern, sibling defects of one shape, a gate over the same rule.
+3. **Read.** For each cluster, read the lead item's dossier
+   (`hatch run backlog-show <ID> --dossier`) and the RFC or ADR it points to,
+   at least the sections naming this item, its spec IDs, its files or its
+   pattern. An ID that passed through the context shows nothing: run A had the
+   redesign's ID in context at its second call
+   ([research record § 7](../../../sdd/research/token-usage/report.md)).
+4. **Judge** each cluster, with evidence quoted or cited from what you read,
+   never the bare fact of a shared ID:
+   - **subsumes**: its planned work removes this defect or delivers this
+     change. Say when it lands and what it waits on, since a fix now can still
+     be right while that work is far off;
+   - **constrains**: it changes how this item should be done, such as the
+     right scope, a shape to match or avoid, or a part to leave to it;
+   - **unrelated**: it shares a spec or file and changes nothing about the
+     fix. Say why in one clause.
+5. **Record** the verdicts in the trace's `orient:` key, one entry per cluster
+   ([`_schema.yml` § `orient`](../../../sdd/traces/_schema.yml)), and each
+   dossier or RFC read as a step of its `orient` phase.
+6. **Recommend.** Always one `AskUserQuestion`, also when every verdict is
+   *unrelated*. Its first option is the scope you recommend, marked
+   `(Recommended)`: what it includes, and what it leaves to which item. The
+   other options are the scopes your verdicts make defensible, such as the
+   item as framed, narrowed around a constraining cluster, or waiting for a
+   subsuming one. The dialog checks your judgement; it never asks for one, so
+   a question without a recommendation is this step not done. Plan the scope
+   the answer picks. The recorder hook logs the dialog under `sdd/decisions/`.
 
 ### Enumerate the subjects, not the files
 
@@ -99,6 +161,34 @@ the point. Same for round history: by the closing gate the PR carries every
 round's findings, and the appended pass stays unprimed only because `rvw-pr`
 Step 1 fetches diff and files, not comments — do not defeat that by restating
 round history in the body.
+
+### Hand off at the PR
+
+**The session that built the PR does not review it.** Every round re-reads the
+context the session carries, and the build leaves most of it behind. When `/pr`
+returns, write `tmp/ship-handoff-<N>.md` and stop:
+
+- PR number, branch, head SHA, and the working directory;
+- the approved plan, verbatim;
+- the Step 1 subject list with its executed / read only / not reached marks;
+- the orient verdicts and the scope the Step 1 dialog agreed;
+- the trace path, the Pre-work rows still to discharge in Step 5, and open
+  decisions;
+- what you doubt about the change. It goes here and into scoped briefs, never
+  into the PR body.
+
+Then print `Handoff written. Run /clear, then /ship resume <N>.` and end the
+turn. Do not start Step 4 in this session.
+
+<a id="resume"></a>
+### Resume at the PR
+
+`/ship resume <N>` starts in a fresh session. Read `tmp/ship-handoff-<N>.md`,
+`gh pr view <N>`, the PR's diff, every changed file whole and the trace. Do not
+re-read Step 1's sources unless the handoff shows a gap; a missing handoff is a
+stop-and-ask, never a reconstruction. From here this session is the
+orchestrator and the fixer of § Roles and owns the convergence judgement: run
+Steps 4 and 5, carrying the subject list from the handoff.
 
 ## Step 4: Review loop
 
@@ -719,8 +809,10 @@ neither substitutes for the other.
    added test, the class swept per must-fix finding and the sibling sweep per
    fix — each with what it caught — whether the repeat-site check fired and on
    what condition, or that it did not, what was filed rather than fixed, any
-   surface the gate never executed, and the **final state of the Step 1 subject
-   list** with each entry marked executed / read only / not reached. Every figure
+   surface the gate never executed, the **final state of the Step 1 subject
+   list** (as carried by the handoff) with each entry marked executed / read
+   only / not reached, and the orient verdicts with the scope they led to, from
+   the trace's `orient:` key, or from the plan when there is no trace. Every figure
    names its derivation
    ([CLAUDE.md principle 9](../../../CLAUDE.md#principles)); a report about a loop
    cannot be the one artifact asserting its counts from memory, which is why the

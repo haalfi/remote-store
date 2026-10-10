@@ -1,0 +1,216 @@
+id: BK-418
+title: "`/ship` orients by reading related work and judging it; P2 handoff ported to master"
+trigger: >-
+  Run A of `/ship BUG-280` (PR #1093) spent under 1% of its units orienting and
+  did not weigh that RFC-0017's kernel (BK-389, BK-394) owns the pattern
+  BUG-280 names; it re-planned after seven review rounds. The variant's P3
+  (PR #1101) listed related items and asked the user per cluster, which moves
+  the judgement onto the user. The maintainer's plan (2026-10-10, session B)
+  lands a session-led orient step and the P2 handoff on master.
+source_items:
+  - BK-418
+audience:
+  - contributor.process
+  - contributor.tooling
+expected_ripples:
+  - sdd/CLAUDE-REFERENCE.md
+surprising_ripples:
+  - .claude/skills/orchestrate/SKILL.md
+  - sdd/traces/_schema.yml
+  - sdd/rfcs/rfc-0020-ship-token-interventions.md
+discovery_followups: []
+decisions:
+  - sdd/decisions/7c07576b-8c83-4087-b075-83077f5e4776.jsonl
+  - sdd/decisions/e86fbd2f-b4d3-4f87-aefa-11a6ea3875a1.jsonl
+orient:
+  - items: [BK-404, ID-266]
+    verdict: unrelated
+    evidence: >-
+      Index entries: RFC-0019's two-speed gate changes which gate a round push
+      runs (BK-404 dossier line 50, ID-266 dossier line 61 name their own
+      `/ship` edit). That is Step 3 and § Close each round, not Step 1 or the
+      handoff; a later merge rebases.
+  - items: [ID-268]
+    verdict: unrelated
+    evidence: >-
+      Index entry: the close-time `review:` paste and its CI round trip. This
+      PR adds an optional `orient:` key beside it and changes nothing about
+      `review:` (dossier line 21 is about `review` not being required).
+  - items: [BK-419]
+    verdict: unrelated
+    evidence: >-
+      Index entry and UNDERSTANDING.md plan row 1: gate tooling and the
+      background-wait deadline, in `CLAUDE.md` § Parallel tests, not § Backlog.
+      Whoever merges second rebases.
+phases:
+  - id: orient
+    name: Orient
+    steps:
+      - file: sdd/research/token-usage/report.md
+        section: "7. Run A at the round-7 checkpoint"
+        read_type: gate
+        extract: >-
+          Orient and plan under 1% of units; BK-389 and RFC-0017 in context
+          from call 2, BK-394 only at call 414. The skill cites this section
+          rather than copying its figures
+      - file: .claude/skills/ship/SKILL.md
+        section: "Step 1, Step 3, Step 5"
+        read_type: gate
+        extract: "Insertion points for Orient (before plan mode) and the handoff (after /pr)"
+      - file: sdd/rfcs/rfc-0020-ship-token-interventions.md
+        section: "Status, P2, P3"
+        read_type: reference
+        outcome: misleading
+        extract: >-
+          Status says nothing is built and /ship stays unchanged until run B;
+          the maintainer's later plan lands P2 and orientation on master. A
+          dated note now says so; the rewrite stays open under BK-418
+      - file: sdd/traces/_schema.yml
+        section: "top level (additionalProperties: false)"
+        read_type: gate
+        extract: >-
+          No field can hold a per-cluster verdict. Maintainer chose a new
+          optional `orient:` key (verdict enum) over free text in phase extracts
+      - file: sdd/CLAUDE-REFERENCE.md
+        section: "Pre-work index: Backlog item touched"
+        read_type: gate
+        extract: "The row says the orient phase reads the item's dossier; extended to related items and the orient key"
+      - file: scripts/check_traces.py
+        section: "module docstring"
+        read_type: reference
+        extract: "Validates traces and the schema's examples against the whole schema, so a new key needs no script change"
+      - file: sdd/BACKLOG.md
+        section: "BK-404, ID-266, ID-268, BK-419, BK-414 entries"
+        read_type: reference
+        extract: >-
+          This PR's own orient, by `backlog-find --dossiers` on the touched
+          files. All unrelated, read at index-entry depth. No scope dialog: the
+          kickoff prompt fixed the scope and nothing found changes it, which is
+          the always-ask rule applied loosely; recorded rather than hidden
+  - id: paper_check
+    name: "Paper check: the Orient procedure on BUG-280 at master 7c2ade103"
+    steps:
+      - file: sdd/BACKLOG.md
+        section: "backlog-find --spec BE-021"
+        read_type: verify
+        extract: >-
+          Spec half: seven open items besides BUG-280 (BUG-293, BUG-255,
+          BUG-257, BUG-245, BK-389, BK-394, BK-345), by `hatch run backlog-find
+          --spec BE-021`. The redesign pair is reached by the spec half alone
+      - file: src/remote_store/backends/_local.py
+        section: "list_files, list_folders, iter_children"
+        read_type: verify
+        extract: >-
+          File half: BUG-280 names methods, not a path; Grep for their defs
+          locates `_local.py`. `backlog-find "_local\.py" --dossiers` returns
+          BK-389, BK-396 (done), ID-259 (done) and ID-267 (cites the file as
+          trace-outcome data), so after the drop rule the file half adds
+          nothing the spec half missed. A `|` alternation under hatch run
+          failed on Windows, as the skill warns
+      - file: sdd/backlog/bk-389-kernel-step-1-memory.md
+        section: "Decisions 1 and 7; header split; What it does not include"
+        read_type: verify
+        extract: >-
+          Decision 7: a recursive listing is one delimiter=None request, a
+          hierarchical driver walking behind the cursor, revisited when Local
+          migrates (step 5). Decision 1 keys BE-021's first-page bound per
+          operation. Both PRs merge after the v0.33.0 tag; steps 2 onward are
+          RFC-0017 D3's
+      - file: sdd/rfcs/rfc-0017-contract-kernel-over-thin-drivers.md
+        section: "Motivation (line 61), D2 choke point (line 291), D3 step table (line 365)"
+        read_type: verify
+        extract: >-
+          Verdict constrains, flagged. Motivation names BUG-280 as an instance
+          of the per-method fix the kernel removes; D2's choke point passes
+          every list_page iteration through classify; D3 migrates LocalBackend
+          at step 5, after Memory, S3, SQL and Azure. So the "pattern once
+          across backends" arm of BUG-280's open decision is the kernel, whose
+          Local step comes after steps 1 to 4, and the session would recommend: fix the three
+          single-level `iterdir` scans now and leave the recursive walks
+          (`os.walk`, `rglob`) to step 5 under decision 7. That is the scope
+          run A reached only at its round-7 re-plan. Bound: this session knew
+          run A's outcome, so the check shows the procedure reaches the
+          evidence, not that an unprimed session weighs it the same
+      - file: sdd/backlog/bug-280-local-listing-permission-leak.md
+        section: "(whole)"
+        read_type: verify
+        outcome: unclear
+        extract: >-
+          The dossier frames "fix the pattern once across backends" as an open
+          option and links neither RFC-0017 nor BK-389, so the redesign is
+          reached only through the spec half. Not changed here: BUG-280 is
+          run B's item and its text stays as run A saw it
+      - file: sdd/BACKLOG.md
+        section: "BUG-293, BUG-255, BUG-257, BUG-245, BK-345 entries"
+        read_type: verify
+        extract: >-
+          Read at index-entry depth only: each is another backend's shape or a
+          gate (BUG-257 and BUG-245 already re-homed to RFC-0017 steps), so
+          unrelated to the Local fix. Under the procedure a session reads each
+          cluster lead's dossier; this check did not, so their verdicts are
+          the weakest part of it
+  - id: implement
+    name: Implement
+    steps:
+      - file: .claude/skills/ship/SKILL.md
+        section: "Step 1 Orient; Step 3 Hand off at the PR; Resume at the PR; Roles; intro; argument-hint; Step 5"
+        read_type: reference
+        extract: >-
+          Orient written as find, cluster, read, judge, record, recommend; the
+          dialog always runs, with the session's recommendation first (the
+          maintainer chose always-ask over skipping when all are unrelated).
+          P2 ported from PR #1101 with the handoff carrying the orient
+          verdicts instead of P3's dialog record
+      - file: CLAUDE.md
+        section: "Backlog; Trace authoring"
+        read_type: reference
+        extract: "One bullet applying Orient to all item work, linking the skill as the procedure's single home"
+  - id: fix
+    name: "Fix passes after the two reviews on PR #1103"
+    steps:
+      - file: sdd/rfcs/rfc-0020-ship-token-interventions.md
+        section: "Experiment, Decision rule, Confounds paragraph, Roadmap"
+        read_type: verify
+        extract: >-
+          My Status note covered only Status; Start conditions, the P3 decision
+          row, Confounds and the Roadmap's Phase 0 row also describe a master
+          without P2 and Orient. The note now names each and states run B's
+          base per the plan. My miss, not the RFC's
+      - file: sdd/CLAUDE-REFERENCE.md
+        section: "Detailed checklist: Backlog item touched"
+        read_type: verify
+        extract: >-
+          Edited the Pre-work row and not its Detailed twin;
+          check_ripple_parity pairs rows by trigger name only, so nothing
+          caught it. The insertion also orphaned the row's "links it", now
+          "links the item's own dossier"
+      - file: .claude/skills/ship/SKILL.md
+        section: "Orient"
+        read_type: verify
+        extract: >-
+          Orient was written for one item; /ship also takes several IDs or a
+          bare task description. Several: union of spec IDs, drop all. None:
+          file half only, verdicts in the plan when no trace exists
+      - file: sdd/traces/_schema.yml
+        section: "examples: orient"
+        read_type: verify
+        extract: >-
+          The example judged its own discovery follow-up with placeholder
+          evidence that validates. Now `orient: []` with a comment on the
+          empty meaning and the entry shape
+      - file: sdd/rfcs/rfc-0020-ship-token-interventions.md
+        section: "Status, Summary, Not in run B, Experiment (second review)"
+        read_type: verify
+        extract: >-
+          My first fix listed clauses by the reviewer's examples, not by the
+          class. A grep for variant|all four|four interventions|carrying found
+          four more four-intervention clauses (lines 6, 36, 195, 200); the note
+          now lists them and its last sentence overrides any other wording
+      - file: .claude/skills/orchestrate/SKILL.md
+        section: "Step 1: Pre-check"
+        read_type: verify
+        extract: >-
+          The other skill that starts item work had no orient step and opens no
+          trace in Step 1; it now opens the trace and links /ship § Orient.
+          Of the ten skills under .claude/skills/, only /ship and /orchestrate
+          start backlog-item work
