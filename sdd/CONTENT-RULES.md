@@ -8,7 +8,9 @@ applying to all content: README, guides, docstrings, and inline doc comments.
 **Rule 7 is a second axis and carries its own narrower scope**: it is about
 whether a section is understood well enough to write, not about staying accurate,
 and it binds `sdd/` and `.claude/` only. That split is deliberate — see the note
-in the rule.
+in the rule. **Rule 8 is a third axis** and applies to all content like rules
+1–6: it is about which change owns a claim, not how long the claim stays
+accurate.
 
 Part of the documentation framework (see [`CLAUDE.md` § Documentation
 framework](../CLAUDE.md#documentation-framework)): placement →
@@ -92,6 +94,27 @@ framework](../CLAUDE.md#documentation-framework)): placement →
    **Defining a term does not mean restating an authority.** Rule 4 keeps facts in
    one place; a one-clause gloss plus a link satisfies both.
 
+8. <a id="change-details-what-it-changes"></a>**A change details only the behaviour it owns.** [review-enforced]
+   A change *owns* the behaviour it alters and the behaviour it exists to
+   document, as a guide for an existing feature or a docstring made accurate
+   does; it *leaves alone* everything else. Text a change writes, such as a
+   docstring, a spec clause, a guide, a migration note or a dossier, describes
+   in detail only behaviour that change owns. Behaviour it leaves alone already
+   has a home, the code (Rule 5) and the item, spec or ADR that governs it, so
+   the change gives it at most a one-line pointer to that item. Detail about
+   behaviour it leaves alone is a claim the change had no reason to measure,
+   so it is the one a review refutes on the interpreter or platform nobody
+   ran. **A finding on such a claim is fixed by deleting it, or replacing it
+   with the pointer, never by narrowing it**: a narrower claim is still a
+   claim about behaviour the change does not own, and the next measuring pass
+   refutes it somewhere else. **This binds
+   description, not premise**: a claim the change relies on, such as the
+   behaviour its code assumes or the reason it gives for itself, belongs to
+   the change, so a refuted premise means the change is wrong, and it is fixed
+   by changing behaviour or filed, never by deleting the sentence. The fix
+   shapes this restricts are in
+   [`/fix-pr` Step 3](../.claude/skills/fix-pr/SKILL.md#step-3-fix).
+
 ## Guides
 
 ### Examples (bad → good)
@@ -124,11 +147,16 @@ framework](../CLAUDE.md#documentation-framework)): placement →
 # good: "A retry policy decides which failures are worth repeating. It repeats
 #        the ones a later attempt could plausibly answer differently, and no
 #        others." — then the cases, and only what that claim earned.
+
+# Rule 8 — a change details only the behaviour it owns
+# bad, in a PR that fixes single-level listing only: a docstring paragraph on
+#      how the recursive walk behaves per interpreter and platform
+# good: "Recursive walks are unchanged; see <owning item>."
 ```
 
 ### How the rules interact
 
-**Rules 1–6 are one axis; rule 7 is the other.** Rules 1–6 are expressions of a
+**Rules 1–6 are one axis; rules 7 and 8 are two others.** Rules 1–6 are expressions of a
 single principle: **stable prose describes shape; volatile detail lives in its
 authoritative location.** The positive side of the same coin: a document is the
 SSoT for its own stable core — its purpose, principles, and design intent. Other
@@ -138,6 +166,13 @@ any of those six, ask rule 1.
 Rule 7 does not belong to that family and rule 1 cannot decide it: the 6-month
 accuracy test says nothing about whether a section leads with its claim. When in
 doubt on rule 7, try to write the three sentences — failing is the answer.
+
+Rule 8 does not belong to that family either, and rule 1 decides it wrongly: a sentence
+about behaviour the change leaves alone can stay accurate for six months and
+still break rule 8, which asks whether this change owns what the sentence
+describes. When in doubt on rule 8, ask whether the diff changes that
+behaviour, exists to document it, or relies on it; if none, the sentence is a
+pointer or nothing.
 
 ### Finding the documents that are failing readers
 
@@ -154,3 +189,5 @@ Rules 1–6 derive from
 Rule 7 derives from
 [`sdd/research/research-appropriate-level-of-detail.md`](research/research-appropriate-level-of-detail.md),
 which argues it and marks what it does not establish.
+Rule 8 derives from
+[`sdd/research/token-usage/report.md` § Run B baseline](research/token-usage/report.md#run-b-baseline-run-as-route-2).
