@@ -80,3 +80,13 @@ closes the race but keeps the unbounded wait for any bind that still fails.
 unassignable address, which hung before and raises now. Review of PR #1107
 found the same pattern in `benchmarks/conftest.py`'s `moto_url`, which now uses
 the same helper.
+
+**Left unchanged, 2026-10-10.** `rg 'ThreadedMotoServer\(' sdd -g '*.py'` finds
+the pattern at 5 sites in 3 measurement scripts:
+`sdd/research/research-s3-error-mapping-fidelity.py` (1),
+`sdd/research/research-id-211-flat-ns-file-ancestor-precheck.py` (1) and
+`sdd/rfcs/rfc-0017-delete-folder-measure.py` (3). They stay as written because
+they are records of what they measured. A new probe should start its server
+with `infra._moto.start_moto_server` rather than copy one of them, including
+the one `sdd/traces/id-200-s3-error-mapping-fidelity.yml` calls the probe
+harness template.

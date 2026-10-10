@@ -197,3 +197,15 @@ phases:
           infra/.env and infra/docker-compose.yml stay unclassified; filed as
           BUG-316 after a scope dialog rather than widening CODE_PAT here
         outcome: ok
+  - id: review_fix_3
+    name: Review fix, round 3
+    steps:
+      - file: sdd/traces/id-200-s3-error-mapping-fidelity.yml
+        section: "step citing the probe harness template"
+        read_type: reference
+        extract: >-
+          The same rg that found the benchmark copy finds 5 ThreadedMotoServer
+          sites in 3 research/RFC scripts, one cited as a probe template. Per a
+          scope dialog they stay as records; the dossier now names them and
+          points new probes at infra._moto.start_moto_server
+        outcome: ok
