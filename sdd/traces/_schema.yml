@@ -631,12 +631,10 @@ examples:
       - BK-192
     expected_ripples:
       - sdd/backlogid.json
-    orient:
-      - items: [BK-192]
-        verdict: unrelated
-        evidence: >-
-          Placeholder: name the dossier or RFC section read and what it says
-          about this fix
+    # Empty: the search found no open item left to judge. A real entry is
+    # {items, verdict, evidence}, per the `orient` property above; never a
+    # `discovery_followups` ID, which does not exist yet when orient runs.
+    orient: []
     # This example is what CLAUDE.md tells a new trace author to copy, so it
     # carries the `review:` block rather than a hand-counted `review_rounds`.
     # Do not fill it in by hand: run `hatch run ship-report <PR> --trace-block-only`

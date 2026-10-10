@@ -164,3 +164,36 @@ phases:
         section: "Backlog; Trace authoring"
         read_type: reference
         extract: "One bullet applying Orient to all item work, linking the skill as the procedure's single home"
+  - id: fix
+    name: "Fix pass after one /rvw-pr round on PR #1103"
+    steps:
+      - file: sdd/rfcs/rfc-0020-ship-token-interventions.md
+        section: "Experiment, Decision rule, Confounds paragraph, Roadmap"
+        read_type: verify
+        extract: >-
+          My Status note covered only Status; Start conditions, the P3 decision
+          row, Confounds and the Roadmap's Phase 0 row also describe a master
+          without P2 and Orient. The note now names each and states run B's
+          base per the plan. My miss, not the RFC's
+      - file: sdd/CLAUDE-REFERENCE.md
+        section: "Detailed checklist: Backlog item touched"
+        read_type: verify
+        extract: >-
+          Edited the Pre-work row and not its Detailed twin;
+          check_ripple_parity pairs rows by trigger name only, so nothing
+          caught it. The insertion also orphaned the row's "links it", now
+          "links the item's own dossier"
+      - file: .claude/skills/ship/SKILL.md
+        section: "Orient"
+        read_type: verify
+        extract: >-
+          Orient was written for one item; /ship also takes several IDs or a
+          bare task description. Several: union of spec IDs, drop all. None:
+          file half only, verdicts in the plan when no trace exists
+      - file: sdd/traces/_schema.yml
+        section: "examples: orient"
+        read_type: verify
+        extract: >-
+          The example judged its own discovery follow-up with placeholder
+          evidence that validates. Now `orient: []` with a comment on the
+          empty meaning and the entry shape

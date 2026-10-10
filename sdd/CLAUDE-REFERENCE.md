@@ -337,8 +337,11 @@ Read this at verify-end (after the diff is complete) and during PR review. Each 
 |                            | proceeds (not retrospectively); ships in same PR; schema  |
 |                            | at `sdd/traces/_schema.yml`. `audience` priority-sorted   |
 |                            | drives the CHANGELOG-required rule. The item's dossier,   |
-|                            | if any, is an orient step; on close, whatever the         |
-|                            | outcome, the `BACKLOG-DONE.md` entry links it (its path   |
+|                            | if any, is an orient step, and so is each related open    |
+|                            | item's dossier and RFC/ADR read before planning; the      |
+|                            | trace's `orient:` key holds a verdict per cluster         |
+|                            | ([CLAUDE.md § Backlog](../CLAUDE.md#backlog)). On close, whatever the |
+|                            | outcome, the `BACKLOG-DONE.md` entry links the item's own dossier (its path   |
 |                            | never moves).                                             |
 | **CHANGELOG entry**        | Add `- <ID>: <Title>` at the top of `[Unreleased]`.       |
 |                            | One line, no details, no sections. Three of those         |

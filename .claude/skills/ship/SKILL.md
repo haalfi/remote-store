@@ -70,6 +70,12 @@ re-plan came after seven review rounds
 related items and asking the user how they relate is not orientation: it hands
 the user the judgement this step exists to make.
 
+Written for one item. **Several items** are oriented once, together: the spec
+half takes the union of their spec IDs, and Cluster drops all of them. **A
+task description with no item** has no attribute line, so run the file half
+only, over the files the change will touch, and keep the verdicts in the plan
+when no trace exists. Every other step, the dialog included, is unchanged.
+
 1. **Find.** Spec half: one call with every spec ID on the item's attribute
    line, `hatch run backlog-find --spec <ID> --spec <ID> ...`. File half: list
    the source files the change will touch, those the item, its dossier and its
@@ -806,7 +812,7 @@ neither substitutes for the other.
    surface the gate never executed, the **final state of the Step 1 subject
    list** (as carried by the handoff) with each entry marked executed / read
    only / not reached, and the orient verdicts with the scope they led to, from
-   the trace's `orient:` key. Every figure
+   the trace's `orient:` key, or from the plan when there is no trace. Every figure
    names its derivation
    ([CLAUDE.md principle 9](../../../CLAUDE.md#principles)); a report about a loop
    cannot be the one artifact asserting its counts from memory, which is why the
