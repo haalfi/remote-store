@@ -72,7 +72,7 @@ that settles them, not by another review round.**
 
   A prose finding with no check, which the report puts at 6% (judgment), and
   every code or test finding, reopen the loop as today.
-- **Would amend.** Four clauses, each at its home, all for check-closed prose
+- **Would amend.** Five clauses, each at its home, all for check-closed prose
   findings in the tail only:
   - [ADR-0033](../adrs/0033-ship-convergence-driven-review.md)'s *Terminate the
     review loop on convergence*: a round whose only must-fix findings are
@@ -83,9 +83,13 @@ that settles them, not by another review round.**
     cannot end until an unprimed reviewer has seen the final state*;
   - [ADR-0037](../adrs/0037-whole-file-gate-and-derived-figures.md)'s whole-file
     gate: both gates are met by the closing pass and stay met after a
-    check-closed prose fix.
+    check-closed prose fix;
+  - [ADR-0035](../adrs/0035-vary-method-not-model.md)'s *A premise about
+    existing behaviour is executed, not read, before it ships*: the measuring
+    gate met by the closing pass stays met, and a prose fix narrowing a
+    behavioural claim is measured by its own recorded check.
 
-  ADR-0035 and ADR-0036 are unchanged.
+  ADR-0036 is unchanged.
 - **Ceiling.** Small on PRs that change code: of 24 PRs with a code or test
   finding, the median had no round with findings after the last one, and 4 had
   two or more. Large on PRs without code findings: 17 of the 41 drew prose and
@@ -260,7 +264,7 @@ the whole effort, and nothing that changes `/ship` itself lands before Phase
 | Phase | Goal | Deliverables | Exit |
 | --- | --- | --- | --- |
 | **0. Test** | Decide from one delivery which interventions to keep | The `/ship` variant (an unmerged branch editing `.claude/skills/ship/SKILL.md`; master's `/ship` stays unchanged); `rounds.py` able to take one PR without a trace block; run B; the comparison written into the report's run B section | The decision rule above, applied per intervention |
-| **1. Amend** | Write what Phase 0 kept into process | If P1 is kept, one ADR amending the four clauses named under it; `/ship` edits for every kept intervention; the variant branch closed | The ADR, if any, accepted and `/ship` carrying the kept interventions |
+| **1. Amend** | Write what Phase 0 kept into process | If P1 is kept, one ADR amending the five clauses named under it; `/ship` edits for every kept intervention; the variant branch closed | The ADR, if any, accepted and `/ship` carrying the kept interventions |
 | **2. Confirm** | Check the gain holds on a delivery that is not BUG-280 | The next two `/ship` deliveries measured with the same metrics | Post-PR share and tail rounds no worse than run B's on both; otherwise reopen |
 
 ## Alternatives Considered
@@ -291,9 +295,9 @@ is on one skill, an ADR amendment only if P1 is kept, and the local gate.**
 - **Public API / backwards compatibility:** none.
 - **Process:** Phase 0 adds an unmerged variant branch of `/ship`. If P1 is kept,
   Phase 1 amends ADR-0033 (convergence and fix-pass clauses), ADR-0034 (unprimed
-  exit gate) and ADR-0037 (whole-file gate) for check-closed tail prose. P2, P3
-  and P4 change the skill and the gate tooling only. ADR-0035 and ADR-0036 are not
-  amended.
+  exit gate), ADR-0035 (measuring clause) and ADR-0037 (whole-file gate) for
+  check-closed tail prose. P2, P3 and P4 change the skill and the gate tooling
+  only. ADR-0036 is not amended.
 - **Tooling:** `rounds.py` gains a per-PR mode. Gate robustness lands under
   BK-419.
 - **Ripples to carry when built:** `/ship` § Stop rule and § Roles (the

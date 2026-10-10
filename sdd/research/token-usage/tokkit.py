@@ -356,7 +356,8 @@ def cmd_report(args):
 
     parsed = {f: load(f) for f in files}
     mc, mi, me = parsed[main]
-    # Review/fix rounds a /ship loop runs as their own sessions (e.g. a forked /rvw-pr <PR>).
+    # Review/fix rounds a /ship loop runs as their own sessions (e.g. a forked /rvw-pr <PR>),
+    # and the fresh session RFC-0020's P2 resumes the loop in (/ship resume <PR>).
     prs = {e["detail"].split("#")[1] for e in me if e["kind"] == "pr-open"}
     start = first_ts(main) or ""
     related = []
@@ -365,7 +366,7 @@ def cmd_report(args):
             if cand == main or (first_ts(cand) or "") < start:
                 continue
             fp = first_prompt(cand)
-            if any(re.search(rf"/(rvw-pr|fix-pr)\b.*\b{pr}\b", fp) for pr in prs):
+            if any(re.search(rf"/(rvw-pr|fix-pr|ship\b.*\bresume)\b.*\b{pr}\b", fp) for pr in prs):
                 related.append(cand)
                 snapshot(cand)
                 for rf in transcript_files(cand):
