@@ -32,6 +32,7 @@ expected_ripples:
   - docs-src/explanation/graph_viz.html
 decisions:
   - sdd/decisions/04387f02-b97f-4133-ab2e-e9c3b7b02bc4.jsonl
+  - sdd/decisions/4b0278bb-bdf1-40a2-bfdb-7f645ce7a779.jsonl
 orient:
   - items: [BK-389, BK-394, BK-345]
     verdict: subsumes
@@ -232,3 +233,72 @@ phases:
           subfolder and listed an EIO target empty; the 3 flat target cells are
           inconclusive (3.11's iterdir uses os.listdir, not os.scandir). The
           migration note's EIO sentence is narrowed to that
+review:
+  # Derived by `hatch run ship-report 1113 --trace-block-only` at head 960c268.
+  # Do not hand-edit, except a newly required field per sdd/traces/_schema.yml
+  # section review: RFC-0015 D4 makes this script the only producer.
+  derivation: "hatch run ship-report 1113 --trace-block-only"
+  pr: 1113
+  review_rounds: 5
+  submissions: 5
+  findings: 17
+  by_round:
+    - round: 1
+      findings: 1
+      origin: {original: 1}
+      triage: {must-fix: 1}
+      duration_hours: 0.57
+    - round: 2
+      findings: 1
+      origin: {loop-introduced: 1}
+      triage: {must-fix: 1}
+      duration_hours: 0.37
+    - round: 3
+      findings: 4
+      origin: {loop-introduced: 3, original: 1}
+      triage: {must-fix: 4}
+      duration_hours: 0.22
+    - round: 4
+      findings: 7
+      origin: {loop-introduced: 4, original: 2, unclassifiable-file: 1}
+      triage: {must-fix: 6, refuted: 1}
+      duration_hours: 0.29
+    - round: 5
+      findings: 4
+      origin: {loop-introduced: 4}
+      triage: {must-fix: 4}
+      duration_hours: 0.29
+  by_file:
+    - path: "src/remote_store/backends/_local.py"
+      findings: 8
+    - path: "docs-src/reference/migration.md"
+      findings: 3
+    - path: "sdd/BACKLOG.md"
+      findings: 3
+    - path: "tests/backends/local/test_listing_errors.py"
+      findings: 3
+  untouched_files:
+    - "CHANGELOG.md"
+    - "docs-src/_data/graph/graph.json"
+    - "docs-src/explanation/graph_viz.html"
+    - "sdd/BACKLOG-DONE.md"
+    - "sdd/backlog/bk-389-kernel-step-1-memory.md"
+    - "sdd/backlog/bk-396-kernel-delete-folder-sequence.md"
+    - "sdd/backlog/bug-280-local-listing-permission-leak.md"
+    - "sdd/decisions/04387f02-b97f-4133-ab2e-e9c3b7b02bc4.jsonl"
+    - "sdd/rfcs/rfc-0012-doc-graph-model.md"
+    - "sdd/rfcs/rfc-0017-contract-kernel-over-thin-drivers.md"
+    - "sdd/specs/003-backend-adapter-contract.md"
+    - "sdd/traces/bug-280-local-listing-permission-leak.yml"
+  review_driven_commits:
+    - sha: "16ba907"
+      subject: "BUG-280: Skip a looping symlink in a LocalBackend listing, and drop a false migration premise"
+    - sha: "111faf4"
+      subject: "BUG-280: Name both old outcomes of a refused listing in the migration note"
+    - sha: "ea74969"
+      subject: "BUG-280: Raise NotFound for a subfolder deleted mid-walk, and skip a Windows symlink loop"
+    - sha: "7cbb700"
+      subject: "BUG-280: Skip a vanished subfolder again, and pin a non-folder target as empty"
+    - sha: "960c268"
+      subject: "BUG-280: Record Local's mid-walk skip as a BE-021 divergence, and tighten three notes"
+  ci: {verdict: GREEN, failed: 0, pending: 0}
