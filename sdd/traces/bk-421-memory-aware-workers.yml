@@ -94,3 +94,43 @@ phases:
         read_type: verify
         extract: "Subject is under scripts/, so the path filters reach it; contributor.tooling + infra.test owe no CHANGELOG"
         outcome: ok
+review:
+  # Derived by `hatch run ship-report 1108 --trace-block-only` at head 01cc9b9.
+  # Do not hand-edit, except a newly required field per sdd/traces/_schema.yml
+  # section review: RFC-0015 D4 makes this script the only producer.
+  derivation: "hatch run ship-report 1108 --trace-block-only"
+  pr: 1108
+  review_rounds: 3
+  submissions: 2
+  findings: 4
+  by_round:
+    - round: 1
+      findings: 3
+      origin: {original: 3}
+      triage: {must-fix: 3}
+      duration_hours: 0.13
+    - round: 2
+      findings: 1
+      origin: {original: 1}
+      triage: {must-fix: 1}
+      duration_hours: 0.17
+  by_file:
+    - path: "scripts/run_tests.py"
+      findings: 2
+    - path: "tests/scripts/test_run_tests.py"
+      findings: 2
+  untouched_files:
+    - "CLAUDE.md"
+    - "pyproject.toml"
+    - "sdd/BACKLOG-DONE.md"
+    - "sdd/backlogid.json"
+    - "sdd/decisions/15b46d0e-9e30-4e2e-ba95-d1adc0837506.jsonl"
+    - "sdd/traces/bk-421-memory-aware-workers.yml"
+  review_driven_commits:
+    - sha: "82aa90b"
+      subject: "fix: address PR #1108 review"
+    - sha: "bf4cfb7"
+      subject: "fix: address PR #1108 review"
+    - sha: "01cc9b9"
+      subject: "Merge remote-tracking branch 'origin/master' into bk-421-memory-aware-workers"
+  ci: {verdict: PENDING, failed: 0, pending: 21}
