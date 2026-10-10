@@ -3,7 +3,7 @@
 
 **Date:** 2026-10-09, extended 2026-10-10 with run B, the cost of the means and § Learnings
 **Backlog items:** BK-418, BK-424
-**Status:** Point-in-time snapshot per [`sdd/000-process.md` § Document types](../../000-process.md#document-types). It ports, re-runs and corrects an analysis done in a scratch session on 2026-10-09. Every figure names the result file it comes from, as `[file: key]` under `results/`. § Reproducing says which script and inputs produced each file. BK-418 tracks the interventions it motivates. [`token-spend-analysis.html`](token-spend-analysis.html) shows the same figures as a page; where the two differ, this record wins. [`research-token-spend-means.md`](../research-token-spend-means.md) summarises the goal, the means on master and the learnings for readers who need the outcome, not the derivations.
+**Status:** Point-in-time snapshot per [`sdd/000-process.md` § Document types](../../000-process.md#document-types). It ports, re-runs and corrects an analysis done in a scratch session on 2026-10-09. Every figure names the result file it comes from, as `[file: key]` under `results/`. § Reproducing says which script and inputs produced each file. BK-418 tracks the interventions it motivates. [`token-spend-analysis.html`](token-spend-analysis.html) shows the same figures as a page; where the two differ, this record wins. [`research-token-spend-means.md`](../research-token-spend-means.md) argues what this evidence means: that a delivery costs what it carries, and the controls that cut it fix an order.
 
 ## Question
 
