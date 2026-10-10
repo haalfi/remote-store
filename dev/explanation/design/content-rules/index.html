@@ -11260,7 +11260,9 @@ applying to all content: README, guides, docstrings, and inline doc comments.
 <strong>Rule 7 is a second axis and carries its own narrower scope</strong>: it is about
 whether a section is understood well enough to write, not about staying accurate,
 and it binds <code>sdd/</code> and <code>.claude/</code> only. That split is deliberate — see the note
-in the rule.</p>
+in the rule. <strong>Rule 8 is a third axis</strong> and applies to all content like rules
+1–6: it is about which change owns a claim, not how long the claim stays
+accurate.</p>
 <p>Part of the documentation framework (see <a href="https://github.com/haalfi/remote-store/blob/master/CLAUDE.md#documentation-framework"><code>CLAUDE.md</code> § Documentation
 framework</a>): placement →
 <a href="../authoring/"><code>sdd/AUTHORING.md</code></a>; structure →
@@ -11349,6 +11351,28 @@ framework</a>): placement →
    <strong>Defining a term does not mean restating an authority.</strong> Rule 4 keeps facts in
    one place; a one-clause gloss plus a link satisfies both.</p>
 </li>
+<li>
+<p><a id="change-details-what-it-changes"></a><strong>A change details only the behaviour it owns.</strong> [review-enforced]
+   A change <em>owns</em> the behaviour it alters and the behaviour it exists to
+   document, as a guide for an existing feature or a docstring made accurate
+   does; it <em>leaves alone</em> everything else. Text a change writes, such as a
+   docstring, a spec clause, a guide, a migration note or a dossier, describes
+   in detail only behaviour that change owns. Behaviour it leaves alone already
+   has a home, the code (Rule 5) and the item, spec or ADR that governs it, so
+   the change gives it at most a one-line pointer to that item. Detail about
+   behaviour it leaves alone is a claim the change had no reason to measure,
+   so it is the one a review refutes on the interpreter or platform nobody
+   ran. <strong>A finding on such a claim is fixed by deleting it, or replacing it
+   with the pointer, never by narrowing it</strong>: a narrower claim is still a
+   claim about behaviour the change does not own, and the next measuring pass
+   refutes it somewhere else. <strong>This binds
+   description, not premise</strong>: a claim the change relies on, such as the
+   behaviour its code assumes or the reason it gives for itself, belongs to
+   the change, so a refuted premise means the change is wrong, and it is fixed
+   by changing behaviour or filed, never by deleting the sentence. The fix
+   shapes this restricts are in
+   <a href="https://github.com/haalfi/remote-store/blob/master/.claude/skills/fix-pr/SKILL.md#step-3-fix"><code>/fix-pr</code> Step 3</a>.</p>
+</li>
 </ol>
 <h2 id="guides">Guides<a class="headerlink" href="#guides" title="Permanent link">&para;</a></h2>
 <h3 id="examples-bad-good">Examples (bad → good)<a class="headerlink" href="#examples-bad-good" title="Permanent link">&para;</a></h3>
@@ -11379,9 +11403,14 @@ framework</a>): placement →
 <a id="__codelineno-0-25" name="__codelineno-0-25" href="#__codelineno-0-25"></a># good: "A retry policy decides which failures are worth repeating. It repeats
 <a id="__codelineno-0-26" name="__codelineno-0-26" href="#__codelineno-0-26"></a>#        the ones a later attempt could plausibly answer differently, and no
 <a id="__codelineno-0-27" name="__codelineno-0-27" href="#__codelineno-0-27"></a>#        others." — then the cases, and only what that claim earned.
+<a id="__codelineno-0-28" name="__codelineno-0-28" href="#__codelineno-0-28"></a>
+<a id="__codelineno-0-29" name="__codelineno-0-29" href="#__codelineno-0-29"></a># Rule 8 — a change details only the behaviour it owns
+<a id="__codelineno-0-30" name="__codelineno-0-30" href="#__codelineno-0-30"></a># bad, in a PR that fixes single-level listing only: a docstring paragraph on
+<a id="__codelineno-0-31" name="__codelineno-0-31" href="#__codelineno-0-31"></a>#      how the recursive walk behaves per interpreter and platform
+<a id="__codelineno-0-32" name="__codelineno-0-32" href="#__codelineno-0-32"></a># good: "Recursive walks are unchanged; see &lt;owning item&gt;."
 </code></pre></div>
 <h3 id="how-the-rules-interact">How the rules interact<a class="headerlink" href="#how-the-rules-interact" title="Permanent link">&para;</a></h3>
-<p><strong>Rules 1–6 are one axis; rule 7 is the other.</strong> Rules 1–6 are expressions of a
+<p><strong>Rules 1–6 are one axis; rules 7 and 8 are two others.</strong> Rules 1–6 are expressions of a
 single principle: <strong>stable prose describes shape; volatile detail lives in its
 authoritative location.</strong> The positive side of the same coin: a document is the
 SSoT for its own stable core — its purpose, principles, and design intent. Other
@@ -11390,6 +11419,12 @@ any of those six, ask rule 1.</p>
 <p>Rule 7 does not belong to that family and rule 1 cannot decide it: the 6-month
 accuracy test says nothing about whether a section leads with its claim. When in
 doubt on rule 7, try to write the three sentences — failing is the answer.</p>
+<p>Rule 8 does not belong to that family either, and rule 1 decides it wrongly: a sentence
+about behaviour the change leaves alone can stay accurate for six months and
+still break rule 8, which asks whether this change owns what the sentence
+describes. When in doubt on rule 8, ask whether the diff changes that
+behaviour, exists to document it, or relies on it; if none, the sentence is a
+pointer or nothing.</p>
 <h3 id="finding-the-documents-that-are-failing-readers">Finding the documents that are failing readers<a class="headerlink" href="#finding-the-documents-that-are-failing-readers" title="Permanent link">&para;</a></h3>
 <p>Agent traces tag any read that did not deliver (<code>sdd/traces/_schema.yml</code>
 <code>outcome</code>). <code>hatch run report-trace-outcomes</code> aggregates those tags into a
@@ -11401,7 +11436,9 @@ not as a pass/fail. The script's module docstring states what it does not catch.
 <a href="../research/research-doc-content-longevity/"><code>sdd/research/research-doc-content-longevity.md</code></a>.
 Rule 7 derives from
 <a href="../research/research-appropriate-level-of-detail/"><code>sdd/research/research-appropriate-level-of-detail.md</code></a>,
-which argues it and marks what it does not establish.</p>
+which argues it and marks what it does not establish.
+Rule 8 derives from
+<a href="https://github.com/haalfi/remote-store/blob/master/sdd/research/token-usage/report.md#run-b-baseline-run-as-route-2"><code>sdd/research/token-usage/report.md</code> § Run B baseline</a>.</p>
 
 
 
