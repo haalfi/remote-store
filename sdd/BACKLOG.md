@@ -980,8 +980,8 @@ sessions work is measured before it becomes process.
   spec: — · effort: L · audience: contributor.process, contributor.tooling
   Run A (`/ship BUG-280`) spent 94% of its 59.3 M units in its review loop and
   subagents; from round 4 most findings came from the loop's own fixes
-  ([research record](research/token-usage/report.md)). Four interventions are
-  unmeasured. Open decision: which survive run B, per Draft
+  ([research record](research/token-usage/report.md)). Open decision: whether
+  rule (c), check-closed prose on variant #1101, survives run B, per Draft
   [RFC-0020](rfcs/rfc-0020-ship-token-interventions.md).
 
 - [ ] **BK-420 — BK-414's lookup tool is not yet measured against its baseline of 78 search-and-reread cycles**
