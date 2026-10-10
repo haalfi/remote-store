@@ -242,14 +242,13 @@ failure it was.
   into `write`, or run it on the session-creation 404; measure first.
   Detail: [dossier](backlog/bug-253-graph-write-ancestor-by-size.md)
 
-- [ ] **BUG-280 — `LocalBackend`'s three listing methods leak a raw `PermissionError`**
+- [ ] **BUG-318 — `LocalBackend.glob` and `get_folder_info` leave out a subtree they cannot read**
   spec: BE-021 · effort: S · audience: user.api
-  `LocalBackend.list_files`, `list_folders` and `iter_children` leak a raw
-  `PermissionError` from `iterdir`, breaching BE-021's never-leak invariant,
-  while every other `LocalBackend` path maps it. It is the generator shape
-  BUG-249 fixed on `S3Boto3Backend`. Open decision: fix the three here, or the
-  listing-generator pattern once across backends.
-  Detail: [dossier](backlog/bug-280-local-listing-permission-leak.md)
+  `glob` (`Path.glob`) and `get_folder_info` (`rglob`) swallow every `OSError`
+  from a subfolder scan, so a denied subfolder drops out and the matches, or the
+  count and size, come back short and read as complete. BUG-280 fixed the three
+  listings with a mapped walk. Open decision: whether BE-021 states for every
+  backend that a recursive walk raises on a denied subtree; none other measured.
 
 - [ ] **BUG-299 — `LocalBackend.write` and `write_atomic` on a `..` key inside the root write the file, then raise `InvalidPath`**
   spec: BE-008, BE-010 · effort: S · audience: user.api

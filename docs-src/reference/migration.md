@@ -6,6 +6,26 @@ Breaking changes and upgrade paths between `remote-store` versions.
 The core Store API is stable, but extensions may evolve. This page documents
 changes that require action when upgrading.
 
+## v0.33.0 to v0.34.0
+
+**A `LocalBackend` listing that the OS refuses raises `PermissionDenied`:**
+
+`list_files()`, `list_folders()` and `iter_children()` let Python's own
+`PermissionError` reach the caller when the folder could not be read, so an
+`except RemoteStoreError` clause caught every other `LocalBackend` operation
+but these three. They now raise `PermissionDenied`, naming the folder or entry
+that was refused. `PermissionDenied` is not a subclass of `PermissionError`: if
+you wrapped these listings in `except PermissionError`, catch
+`PermissionDenied` (or `RemoteStoreError`) instead.
+
+*A recursive listing no longer leaves out a folder it cannot read.*
+`list_files(recursive=True)`, with or without `max_depth`, used to skip a
+subfolder it could not read and return the rest as if it were the whole tree.
+It now raises `PermissionDenied` for that subfolder. If you relied on a
+best-effort walk over a tree with unreadable parts, walk it yourself with
+`list_folders()` and `list_files()` per folder, catching `PermissionDenied`
+for each.
+
 ## v0.32.0 to v0.33.0
 
 **Python 3.10 is no longer supported:**

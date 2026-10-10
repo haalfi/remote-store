@@ -1,0 +1,138 @@
+id: BUG-280
+title: "`LocalBackend`'s three listing methods leak a raw `PermissionError`"
+trigger: |
+  BUG-275's closing measuring member found that `LocalBackend.list_files`,
+  `list_folders` and `iter_children` let a `PermissionError` from `iterdir`
+  escape unmapped, breaching BE-021's never-leak invariant, while every other
+  `LocalBackend` path maps it. Same generator shape BUG-249 fixed on
+  `S3Boto3Backend`.
+source_items:
+  - BUG-280
+audience:
+  - user.api
+discovery_followups:
+  # Born at orient, from the probe that measured the recursive branches: the
+  # same swallowing walk sits under glob and get_folder_info, outside the
+  # agreed scope.
+  - BUG-318
+expected_ripples:
+  # The two generated artefacts the ripple-check names for a public docstring
+  # change; sdd/backlogid.json is not here, since gen-backlogid takes the max
+  # from BACKLOG-DONE.md and BUG-280 sits below the stored BUG floor.
+  - docs-src/_data/graph/graph.json
+  - docs-src/explanation/graph_viz.html
+decisions:
+  - sdd/decisions/04387f02-b97f-4133-ab2e-e9c3b7b02bc4.jsonl
+orient:
+  - items: [BK-389, BK-394, BK-345]
+    verdict: subsumes
+    evidence: >-
+      RFC-0017 § Summary: error mapping "at a single choke point that invokes
+      the driver's operation-scoped classify(exc, op, key) on every call,
+      listing page and stream"; § Motivation names BUG-280 as the per-method
+      miss this removes. But § D3's table migrates `LocalBackend` at step 5,
+      after Memory (step 1, BK-389 + BK-394, both "after the v0.33.0 tag",
+      neither started), S3Boto3 (2), SQL (3) and Azure (4). § Alternatives
+      calls a Store-boundary mapper "worth doing first as a stop-gap if D3 is
+      delayed; not a substitute". So the item's "pattern once across backends"
+      option is the kernel's job and lands far off; an in-place Local fix now
+      is right and is rewritten into a driver at step 5. BK-345 is a gate over
+      the absent-container rule, not the ACL row, and its kernel half is BK-389.
+  - items: [BUG-257, BUG-255]
+    verdict: constrains
+    evidence: >-
+      Spec 003 § BE-021 Known divergences: a listing that ends cleanly when a
+      sub-walk fails "returns a short result as a complete one" is a defect,
+      and "Contrast S3Boto3Backend.list_files, where ... a 404 on any
+      sub-prefix propagates — that is the shape a fix takes". Measured on
+      master (tmp probe, Python 3.13.11): Local's recursive `list_files`
+      (both the `rglob` and the `os.walk`/`max_depth` branch) silently drops a
+      subfolder whose scan is denied, and the `max_depth` branch answers `[]`
+      for a denied root; `glob` and `get_folder_info` drop it too. `rglob`
+      swallows via `glob._StringGlobber`'s `except OSError: pass`; `os.walk`
+      via its default `onerror=None`. So fixing only the top-level `iterdir`
+      would leave `list_files(recursive=True)` answering a denial with a
+      truncated listing: the fix must cover every branch of the three methods
+      and propagate a sub-walk denial, not swallow it.
+  - items: [BUG-293, BUG-245]
+    verdict: unrelated
+    evidence: >-
+      Both share BE-021 only. BUG-293 is Azure `except Exception` arms
+      re-typing an already-typed error (its index entry); BUG-245 is SQLBlob
+      construction, deferred to RFC-0017 step 3. Neither touches Local or
+      listing generators.
+  - items: [BK-405]
+    verdict: unrelated
+    evidence: >-
+      Found via `LocalBackend`; it is `ext.glob` pattern canonicalisation by
+      capability tier (GLOB-007..014), not error mapping.
+phases:
+  - id: orient
+    name: Orient
+    steps:
+      - file: sdd/BACKLOG.md
+        section: "(item) BUG-280 + dossier"
+        read_type: gate
+        extract: "Repro by patching Path.iterdir; open decision: fix the three here, or the listing-generator pattern once across backends"
+      - file: sdd/CLAUDE-REFERENCE.md
+        section: "Pre-work index"
+        read_type: gate
+        extract: "Triggered rows: Spec section, Error type (no new type), Bug fix, Backlog item touched, CHANGELOG entry, Tracker ID in published prose"
+      - file: src/remote_store/backends/_local.py
+        section: "list_files, list_folders, iter_children, glob, get_folder_info"
+        read_type: reference
+        extract: "Three unguarded iterdir loops; recursive forms via rglob and os.walk"
+      - file: sdd/backlog/bk-389-kernel-step-1-memory.md
+        section: "Split, Decisions 1-7"
+        read_type: reference
+        extract: "Kernel PR then Memory PR, both after v0.33.0; Local is revisited at step 5"
+      - file: sdd/rfcs/rfc-0017-contract-kernel-over-thin-drivers.md
+        section: "Summary, Motivation, D3 table, Alternatives (Store-boundary mapper)"
+        read_type: reference
+        extract: "Choke point maps every listing page; Local migrates at step 5; boundary mapper is a stop-gap, not a substitute"
+      - file: sdd/specs/003-backend-adapter-contract.md
+        section: "BE-021 table and Known divergences"
+        read_type: reference
+        extract: "ACL row -> PermissionDenied; a sub-walk failure that truncates silently is a defect, S3Boto3's propagate is the fix shape"
+      - file: tmp/bug280_probe.py
+        section: "(probe, not committed)"
+        read_type: verify
+        extract: >-
+          Reproduced the three leaks; found the recursive branches, glob and
+          get_folder_info swallow a denied subfolder scan silently
+  - id: design
+    name: Design
+    steps:
+      - file: tests/backends/sftp/test_config.py
+        section: "TestSFTPBug146ListingEioRaises"
+        read_type: reference
+        extract: "Listing precedent: ENOENT means empty, any other error raises mapped; adopted for Local"
+      - file: docs-src/reference/migration.md
+        section: "v0.30.0 to v0.31.0 (BUG-249 listing paragraph)"
+        read_type: reference
+        extract: "Shape for the upgrade note: name the methods, the old type, what to catch now"
+  - id: tests
+    name: Failing test first
+    steps:
+      - file: tests/backends/local/test_listing_errors.py
+        section: "test_a_listing_maps_every_os_error_it_meets"
+        read_type: verify
+        extract: >-
+          Branch x site x error class, 36 cells, plus a baseline, a Store-facade
+          and a POSIX chmod test. On master: 33 failed, 11 passed (the passing
+          ones are absent cells master already answered). After the fix, 44
+          passed on Windows 3.13 and 46 on python:3.11-slim as uid 1000, with
+          the real chmod cells included. Three mutants (walk swallows all,
+          denial mapped to the base class, every error absent) were killed by
+          8, 15 and 27 cells
+  - id: implement
+    name: Implement
+    steps:
+      - file: src/remote_store/backends/_local.py
+        section: "list_files, list_folders, iter_children, _listing_error, _scan, _stat_entry, _raise_walk_error"
+        read_type: reference
+        extract: >-
+          Dropping the is_dir() pre-check was needed, not cosmetic: it swallows
+          a denied stat and answers empty, the fail-open determinant spec 003
+          forbids. Non-folder and missing targets still list empty, through the
+          scan's own ENOENT/ENOTDIR (checked on Windows)
