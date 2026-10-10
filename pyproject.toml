@@ -229,6 +229,7 @@ dev = [
   "pytest-split>=0.9",  # BK-319: CI shard balancing (`--splits/--group`) + `scripts/gen_split_durations.py`
   "pytest-randomly>=3.15",  # BK-277: randomised test order in the `test-isolation` proof lane
   "pytest-timeout>=2.3",  # BK-419: per-test bound that `scripts/run_tests.py` passes as `--timeout`; inert without one
+  "markdown",  # BUG-320: G-08's tests check their fixtures against Python-Markdown's real output
   "hypothesis>=6.0",
   "moto[server,s3]>=5.2.0",
   # vcrpy is a transitive of pytest-recording (which floors it at only >=2.0.1),

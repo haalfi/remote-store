@@ -17,6 +17,7 @@ expected_ripples:
   - sdd/specs/047-docs-framework-tooling.md
   - tests/scripts/test_check_docs_framework.py
 surprising_ripples:
+  - pyproject.toml
   - sdd/AUTHORING.md
   - sdd/backlog/bk-327-dual-doc-nav-reachability.md
   - sdd/backlog/bk-376-llmstxt-sections-hand-listed.md
@@ -101,6 +102,19 @@ phases:
           Bug-fix row followed (BACKLOG-DONE, CHANGELOG stub, failing test
           first). G-08 is a single-artifact rule, kind `rule` in its
           Drift-gate:: block, so GATE-INVENTORY regenerates from the docstring
+  - id: ci
+    name: CI
+    steps:
+      - file: "CI tooling-tests job, PR #1115 head f39dd75"
+        section: "tests/scripts/test_check_docs_framework.py"
+        read_type: verify
+        extract: >-
+          Three renderer-anchor tests failed with ModuleNotFoundError: markdown.
+          The job installs `.[dev,mutate]`; Python-Markdown arrives only with the
+          `docs` group, and the local hatch env had it from an earlier docs
+          install. `markdown` added to `dev`; `uv pip compile --extra dev`
+          now resolves markdown 3.11. importorskip was rejected: it would skip the
+          anchors in exactly the job that runs them
   - id: followup
     name: Follow-up
     steps:
