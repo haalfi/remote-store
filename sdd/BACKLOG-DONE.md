@@ -298,6 +298,19 @@ if evidence changes; these are retired.
 
 ## Unreleased
 
+- [x] **BK-419 — A local gate run has no per-test timeout and no wait deadline, so a stalled suite stalls the session**
+  spec: — · effort: M · audience: contributor.tooling, infra.test
+  All three. `scripts/run_tests.py` takes a machine-wide OS file lock (a second
+  run waits a bounded time naming the holder, then exits with its own code; the
+  OS frees it when the holder dies) and passes a per-test pytest-timeout
+  (defaults in its docstring); the hatch scripts' serial sftp_docker pass now
+  goes through it too. `CLAUDE.md`
+  § Parallel tests gives every background wait a 15-minute deadline. Tests:
+  `tests/scripts/test_run_tests.py`. The dossier's deliberate overlap
+  reproduction was not run.
+  Dossier: [BK-419](backlog/bk-419-local-gate-unbounded-wait.md); trace:
+  [bk-419](traces/bk-419-gate-lock.yml).
+
 - [x] **BK-414 — Sessions reach one backlog item or reference section by grep and slice**
   spec: — · effort: M · audience: contributor.tooling, contributor.process
   `scripts/sdd_lookup.py` prints one item, done entry, dossier, reference section

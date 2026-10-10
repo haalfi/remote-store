@@ -1269,8 +1269,9 @@ def test_releasing_a_stalled_handle_after_no_failure_is_silent(
     )
     # Two-sided: the lower bound is what says the close really did re-enter the
     # stalled channel rather than returning early, and the upper is what says it
-    # cost one bound rather than several. No pytest-timeout is configured, so an
-    # unbounded regression hangs the suite rather than failing here.
+    # cost one bound rather than several. An unbounded regression does not fail
+    # here: CI sets no per-test timeout and hangs, and a local run through
+    # `scripts/run_tests.py` fails this test by name at its `--timeout`.
     assert io_timeout * 0.5 < elapsed < io_timeout * 1.75, (
         f"the silent close took {elapsed:.1f}s ({elapsed / io_timeout:.1f}x the bound); "
         "expected ~1x — one CMD_CLOSE into a stalled channel, swallowed by paramiko"
@@ -1369,9 +1370,10 @@ def test_seek_to_end_on_a_stalled_channel_costs_one_bound(stall_relay: _StallRel
     )
     # Upper bound only, and two-sided would be wrong here: the cost is now one
     # bound, and there is no floor to assert below it — a seek that failed
-    # *faster* than the bound would be a different fault, not this one. No
-    # pytest-timeout is configured, so a regression to an unbounded wait hangs
-    # the suite rather than failing here; the 1.75x ceiling is what catches the
+    # *faster* than the bound would be a different fault, not this one. A
+    # regression to an unbounded wait does not fail this assertion: CI sets no
+    # per-test timeout and hangs, and a local run through `scripts/run_tests.py`
+    # fails by name at its `--timeout`. The 1.75x ceiling is what catches the
     # doubling, which is the regression this guards.
     assert elapsed < io_timeout * 1.75, (
         f"seek-to-end plus release took {elapsed:.1f}s ({elapsed / io_timeout:.1f}x the bound); "

@@ -901,6 +901,14 @@ coverage floor.
   for such a PR; 776 further `docs`-class files have readers outside `docs-gate`.
   Open decision: per file, move it to a class whose jobs run its readers, or accept it.
 
+- [ ] **BUG-315 — The moto fixture picks a port and binds it later, so two servers can share it or a failed bind hangs the session**
+  spec: — · effort: S · audience: infra.test
+  `tests/conftest.py`'s `_free_port()` closes its socket before `moto_server`
+  binds `0.0.0.0` with `SO_REUSEADDR`; a failed bind leaves `ThreadedMotoServer.start()`
+  waiting forever, a candidate cause of BK-419's 97% stall. Open decision: none;
+  bug-fix protocol, binding port 0 once.
+  Detail: [dossier](backlog/bug-315-moto-port-race.md)
+
 - [ ] **BK-408 — RFC-0019 judges its fast lane by merge-gate exit criteria, so a redrafted selector must reach zero escapes**
   spec: — · effort: S · audience: contributor.process, infra.test
   RFC-0019 § Roadmap exits Phases 0, 2 and 3 on "0 deterministic, selector-reachable"
@@ -925,15 +933,6 @@ coverage floor.
   blocked on BK-403; then the name, the R3 / BK-271 argument and which skills
   run it (RFC-0019 Open Questions 4, keeps this item open).
   Detail: [dossier](backlog/bk-404-selected-tests-hatch-target.md)
-
-- [ ] **BK-419 — A local gate run has no per-test timeout and no wait deadline, so a stalled suite stalls the session**
-  spec: — · effort: M · audience: contributor.tooling, infra.test
-  In `/ship BUG-280` run A, 31 foreground `hatch run all` runs had a median of 194 s, 3 were
-  cut off at the 600 s tool limit, and a backgrounded gate left the session idle 37 min
-  ([`run_a_final_gates.json`](research/token-usage/results/run_a_final_gates.json)). Two
-  cut-offs overlapped another session's full suite and one did not, so overlap is one cause,
-  not the only one. Open decision: suite lock, per-test timeout, wait deadline, or all three.
-  Detail: [dossier](backlog/bk-419-local-gate-unbounded-wait.md)
 
 - [ ] **ID-266 — Every in-progress PR push runs the full pre-merge CI gate**
   spec: — · effort: L · audience: infra.ci, contributor.process

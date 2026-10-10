@@ -1,0 +1,147 @@
+id: BK-419
+title: "A local gate run has no per-test timeout and no wait deadline, so a stalled suite stalls the session"
+trigger: >
+  In `/ship BUG-280` run A, 3 of 31 foreground `hatch run all` runs were cut off
+  at the 600 s tool limit and a backgrounded gate left the session idle for
+  37 min. Two of the cut-offs overlapped another session's full suite, and the
+  09:53 stall sat at 97% with idle xdist workers. Nothing serialised suites
+  across sessions, nothing bounded a hung test, and nothing bounded a wait on a
+  background gate.
+source_items:
+  - BK-419
+audience:
+  - contributor.tooling
+  - infra.test
+decisions:
+  - sdd/decisions/75b94481-b661-4e10-b779-f515340a3d42.jsonl
+discovery_followups:
+  # The moto port race, from a read-only contention analysis run beside this work.
+  - BUG-315
+expected_ripples:
+  - sdd/backlogid.json
+surprising_ripples:
+  # The serial sftp_docker pass of `test` / `test-cov*` called bare pytest, so a
+  # lock in the launcher alone would have left that pass unguarded; routed
+  # through the launcher with `-n 0`.
+  - pyproject.toml
+  # Caught in review: two comments said no pytest-timeout is configured, which
+  # the new dependency made false for local launcher runs.
+  - tests/backends/sftp/test_io_timeout.py
+phases:
+  - id: orient
+    name: Orient
+    steps:
+      - file: sdd/backlog/bk-419-local-gate-unbounded-wait.md
+        section: "(full)"
+        read_type: gate
+        extract: "Three failure modes (stalled worker, unbounded wait, overlap); 13:07 cut-off had no overlap, so a lock alone is not enough"
+        outcome: ok
+      - file: scripts/run_tests.py
+        section: "(full)"
+        read_type: gate
+        extract: "Launcher is the single local entry point for pass 1; pass 2 is bare pytest"
+        outcome: ok
+      - file: pyproject.toml
+        section: "[tool.hatch.envs.default.scripts] test*, dev deps"
+        read_type: gate
+        extract: "`all` runs test-cov-s1 (one launcher call); test/test-cov* have a second bare-pytest pass; no pytest-timeout in dev"
+        outcome: ok
+      - file: .test_durations_pass1
+        section: "(full)"
+        read_type: reference
+        extract: "Slowest test 48 s (cassette PII sweep), next under 3 s: 300 s per-test bound leaves margin under load"
+        outcome: ok
+      - file: sdd/traces/bk-277-resource-bounded-test-runner.yml
+        section: "(full)"
+        read_type: reference
+        extract: "Predecessor's miss: a new dev plugin auto-activates in CI's inline pytest. pytest-timeout is inert without a timeout, so the launcher-only flag keeps CI unchanged"
+        outcome: ok
+      - file: sdd/CLAUDE-REFERENCE.md
+        section: "Ripple-check table / Pre-work index"
+        read_type: gate
+        extract: "Dependency row (pyproject extras; conda recipe carries no test deps); Backlog item touched row (trace, BACKLOG-DONE, backlogid.json)"
+        outcome: ok
+  - id: implement
+    name: Implement
+    steps:
+      - file: tests/scripts/test_run_tests.py
+        section: "(full)"
+        read_type: reference
+        extract: "Lock tests against real separate processes (holder, probe), each seen failing before the implementation; timeout tested end to end on a hung test"
+        outcome: ok
+      - file: .claude/skills/ship/SKILL.md
+        section: "Close each round (on branch bk-418-ship-variant)"
+        read_type: reference
+        extract: "15-minute background-wait deadline wording, generalised into CLAUDE.md § Parallel tests without the /ship-specific report count"
+        outcome: ok
+  - id: verify
+    name: Verify
+    steps:
+      - file: tests/scripts/test_run_tests.py
+        section: "(full)"
+        read_type: verify
+        extract: >-
+          54 passed on Windows (msvcrt) and in Docker python:3.11-slim (fcntl).
+          First Windows run showed a killed holder's lock still held for a moment:
+          the venv python.exe is a launcher whose child interpreter holds the lock
+          and exits shortly after; the test waits up to 10 s instead of 0
+        outcome: ok
+      - file: sdd/CLAUDE-REFERENCE.md
+        section: "Ripple-check table / Detailed checklist"
+        read_type: verify
+        extract: "contributor.tooling + infra.test: no CHANGELOG; BACKLOG-DONE entry links dossier and trace; backlogid.json regenerated"
+        outcome: ok
+review:
+  # Derived by `hatch run ship-report 1105 --trace-block-only` at head eac5cc5.
+  # Do not hand-edit, except a newly required field per sdd/traces/_schema.yml
+  # section review: RFC-0015 D4 makes this script the only producer.
+  derivation: "hatch run ship-report 1105 --trace-block-only"
+  pr: 1105
+  review_rounds: 5
+  submissions: 3
+  findings: 5
+  by_round:
+    - round: 1
+      findings: 2
+      origin: {original: 2}
+      triage: {must-fix: 2}
+      duration_hours: 0.03
+    - round: 2
+      findings: 1
+      origin: {original: 1}
+      triage: {must-fix: 1}
+      duration_hours: 0.0
+    - round: 3
+      findings: 2
+      origin: {loop-introduced: 2}
+      triage: {must-fix: 2}
+      duration_hours: 0.53
+  by_file:
+    - path: "pyproject.toml"
+      findings: 2
+    - path: "CLAUDE.md"
+      findings: 1
+    - path: "scripts/run_tests.py"
+      findings: 1
+    - path: "sdd/traces/bk-419-gate-lock.yml"
+      findings: 1
+  untouched_files:
+    - "sdd/BACKLOG-DONE.md"
+    - "sdd/BACKLOG.md"
+    - "sdd/backlog/bug-315-moto-port-race.md"
+    - "sdd/backlogid.json"
+    - "sdd/decisions/75b94481-b661-4e10-b779-f515340a3d42.jsonl"
+    - "tests/backends/sftp/test_io_timeout.py"
+    - "tests/scripts/test_run_tests.py"
+  review_driven_commits:
+    - sha: "288456c"
+      subject: "fix: address PR #1105 review"
+    - sha: "08a2fe3"
+      subject: "BK-419: trace review block and review-caught ripple"
+    - sha: "a66ae1f"
+      subject: "Merge origin/master into bk-419-gate-lock"
+    - sha: "a1f63e1"
+      subject: "fix: address PR #1105 review"
+    - sha: "eac5cc5"
+      subject: "BK-419: File BUG-315, the moto fixture port race"
+  ci: {verdict: PENDING, failed: 0, pending: 6}

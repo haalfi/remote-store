@@ -227,6 +227,7 @@ dev = [
   "pytest-xdist>=3.5",
   "pytest-split>=0.9",  # BK-319: CI shard balancing (`--splits/--group`) + `scripts/gen_split_durations.py`
   "pytest-randomly>=3.15",  # BK-277: randomised test order in the `test-isolation` proof lane
+  "pytest-timeout>=2.3",  # BK-419: per-test bound that `scripts/run_tests.py` passes as `--timeout`; inert without one
   "hypothesis>=6.0",
   "moto[server,s3]>=5.2.0",
   # vcrpy is a transitive of pytest-recording (which floors it at only >=2.0.1),
@@ -331,6 +332,8 @@ typecheck = "mypy src/ examples/"
 #           when PYTEST_XDIST_WORKER is set (atmoz/sftp's OpenSSH daemon
 #           is unreliable under concurrent xdist worker connections).
 #   Pass 2: serial single-process for sftp_docker conformance variants only.
+#           Also through the launcher (`-n 0`), so it takes the suite lock and
+#           the per-test timeout like pass 1 (BK-419; both in its docstring).
 # `-p no:benchmark` suppresses PytestBenchmarkWarning under xdist
 # (filterwarnings=error would otherwise turn it into INTERNALERROR);
 # bench-* scripts load the plugin explicitly. Order determinism is handled
@@ -339,7 +342,7 @@ typecheck = "mypy src/ examples/"
 # randomisation with `-p randomly`.
 test = [
   "python scripts/run_tests.py -p no:benchmark",
-  "pytest -p no:benchmark -k sftp_docker tests/backends/conformance/",
+  "python scripts/run_tests.py -n 0 -p no:benchmark -k sftp_docker tests/backends/conformance/",
 ]
 # Coverage variants. `test-cov` reports coverage with no floor — everyday
 # local feedback. `test-cov-s1` is Stage-1 only (no Docker probe), no floor;
@@ -349,16 +352,16 @@ test = [
 # contribute the coverage that makes the 95% floor reachable).
 test-cov = [
   "python scripts/run_tests.py -p no:benchmark --cov=remote_store --cov-report=",
-  "pytest -p no:benchmark --cov=remote_store --cov-append --cov-report=term-missing --cov-report=xml -k sftp_docker tests/backends/conformance/",
+  "python scripts/run_tests.py -n 0 -p no:benchmark --cov=remote_store --cov-append --cov-report=term-missing --cov-report=xml -k sftp_docker tests/backends/conformance/",
 ]
 test-cov-s1 = "python scripts/run_tests.py -p no:benchmark --stage=1 --cov=remote_store --cov-report=term-missing --cov-report=xml"
 test-cov-strict = [
   "python scripts/run_tests.py -p no:benchmark --cov=remote_store --cov-report=",
-  "pytest -p no:benchmark --cov=remote_store --cov-append --cov-report=term-missing --cov-report=xml --cov-fail-under=95 -k sftp_docker tests/backends/conformance/",
+  "python scripts/run_tests.py -n 0 -p no:benchmark --cov=remote_store --cov-append --cov-report=term-missing --cov-report=xml --cov-fail-under=95 -k sftp_docker tests/backends/conformance/",
 ]
 test-cov-branch = [
   "python scripts/run_tests.py -p no:benchmark --cov=remote_store --cov-branch --cov-report=",
-  "pytest -p no:benchmark --cov=remote_store --cov-append --cov-branch --cov-report=term-missing --cov-report=xml -k sftp_docker tests/backends/conformance/",
+  "python scripts/run_tests.py -n 0 -p no:benchmark --cov=remote_store --cov-append --cov-branch --cov-report=term-missing --cov-report=xml -k sftp_docker tests/backends/conformance/",
 ]
 # Isolation proof lane (BK-277): bounded-parallel + randomised order to flush
 # hidden cross-test state — the explicit "prove no hidden state" run. `-p
