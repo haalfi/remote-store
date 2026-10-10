@@ -124,11 +124,14 @@ checks when it is written is checked by the next review round, at that round's
 context.
 
 **Orientation came after the plan.** Run A's spec was shared by the backend
-redesign, whose IDs were in context from the run's second call. The run
-recorded no verdict on the related items before planning, hardened a stopgap
-for seven rounds, and narrowed its scope after round 7, when the maintainer
-raised the redesign; the first route cost 31.5 M units before the re-plan
-([report § 7](token-usage/report.md#7-run-a-ship-bug-280-at-the-round-7-checkpoint)).
+redesign. Two of its IDs, BK-389 and RFC-0017, appeared in context from the
+run's second call, a first appearance that can be one line in a listing; BK-394
+appeared only at call 414. The run recorded no verdict on the related items
+before planning, hardened a stopgap for seven rounds, and narrowed its scope
+after round 7, when the maintainer raised the redesign; its first route cost
+31.1 M units
+([report § 7](token-usage/report.md#7-run-a-ship-bug-280-at-the-round-7-checkpoint),
+[§ Run A final](token-usage/report.md#run-a-final)).
 
 **The environment stalled the work.** The local gate was cut off at the tool
 limit three times and once left the session idle for 37 minutes, which the
@@ -167,9 +170,12 @@ artifact having enough state"). That note used resets against a model's
 behaviour in long sessions and dropped them once a newer model no longer needed
 them; this record's reason is cost, which a better model does not remove.
 
-Two rows are not orders but gates on the environment; they belong to the
-merge-gate cell of the same table, and they are what makes the other rows'
-savings visible rather than drowned by stalls.
+Two rows are not orders but checks, the gate-stalls row on the machine and the
+process-files row on the repository. They belong to the merge-gate cell of the
+code-abundance record's table
+([§ 2.3](research-code-abundance-goals-and-values.md#23-three-debts-not-one),
+its Technical row), and they are what makes the other rows' savings visible
+rather than drowned by stalls.
 
 **The detail rule is an ordering control, not a style rule.** A change that
 details only the behaviour it owns removes, at writing time, the claims the
@@ -196,7 +202,8 @@ the maintainer's post-close review is still open ([report § Run B](token-usage/
 | Review rounds | 13 | 6 | 5 |
 | Main context entering round 1 | 255k | 113k | 104k |
 | Findings | — | 49 | 17 |
-| Share of findings on prose | — | 61% | 35% |
+| Share of findings on prose, by hand | — | 76% | 59% |
+| the same, by the fix-commit classifier | — | 61% | 35% |
 | Gate cut-offs and idle stalls | 3 and 1 | — | none |
 | Wall time, first call to close | 7 h 06 min | — | 2 h 29 min |
 | of it active (gaps of five minutes or less) | 5 h 43 min | — | 1 h 49 min |
@@ -212,9 +219,11 @@ Each control shows in the run:
   scope followed.
 - **Fresh context for review.** Every round started on less context than route
   2's, which reached its low start only through a compaction.
-- **Detail owned, prose closed by check.** Prose fell from 61% to 35% of the
-  findings. The tested rule, rule (c), closed eleven findings by a check the
-  fixer ran and quoted, and none of those closes was later found false
+- **Detail owned, prose closed by check.** Prose fell from 76% to 59% of the
+  findings by hand, from 61% to 35% by a classifier that counts a prose fix
+  committed beside code as code. The tested rule, rule (c), closed ten prose
+  findings by a check the fixer ran and quoted, and none of those closes was
+  later found false
   ([report § Rule (c) against the decision rule](token-usage/report.md#rule-c-against-the-decision-rule)).
 - **A stable gate.** 16 gate runs, none cut off, no stall, against run A's 33
   runs with three cut-offs.
@@ -253,16 +262,16 @@ as a bare target it would reward exactly this. It survives here only because
 the decision rule also failed the run on any must-fix defect the slower run did
 not have.
 
-**A control can decay into ritual.** Three of rule (c)'s eleven checks could not
-have shown their claim false: a backlog-shape check, run twice, that tests an
-item's form and not what it says, and a `git grep` that tests wording. They were
-run and quoted, so the rule as written was met. A check that cannot fail is
+**A control can decay into ritual.** Four of rule (c)'s ten checks could not
+have shown their claim false: a `git grep` that tests wording, twice, and a
+backlog-shape check, run on what two backlog items say rather than on their
+form. They were run and quoted, so the rule as written was met. A check that cannot fail is
 Goodhart inside the control itself, and the decision rule had no clause against
 it.
 
 **The controls cost more than one delivery saves.** Building them took 74.7 M
-units, and the whole preparation between the runs 134.0 M: nine runs B, or 1.7
-times the saving run B made against run A
+units, 1.7 times the saving run B made against run A, and the whole
+preparation between the runs 134.0 M: nine runs B, or three times that saving
 ([report § What the means cost](token-usage/report.md#what-the-means-cost)).
 They repay only across later deliveries, which one comparison cannot show.
 
@@ -335,7 +344,7 @@ where the table points; it is not restated here.
 | --- | --- | --- | --- |
 | Orient before planning: a verdict per cluster of related open items, a scope recommended before the plan | [`/ship` § Orient](../../.claude/skills/ship/SKILL.md#orient), [`CLAUDE.md` § Backlog](../../CLAUDE.md#backlog) | #1103 | only inside run B: 1.11 M to plan approval against run A's 0.76 M, no re-plan |
 | Handoff at the PR: the build writes `tmp/ship-handoff-<N>.md` and stops; `/ship resume <N>` reviews in a fresh session | [`/ship`](../../.claude/skills/ship/SKILL.md) | #1103 | only inside run B: round 1 at 104k context against 255k |
-| Detail only what the change owns | [`CONTENT-RULES.md` Rule 8](../CONTENT-RULES.md#change-details-what-it-changes) | #1106, #1109 | only inside run B, with rule (c): prose 35% of findings against 61% |
+| Detail only what the change owns | [`CONTENT-RULES.md` Rule 8](../CONTENT-RULES.md#change-details-what-it-changes) | #1106, #1109 | only inside run B, with rule (c): prose 59% of findings against 76% by hand |
 | A stable local gate: one suite per machine, a per-test timeout, a 15-minute deadline on every background wait, workers capped by free memory, a port race fixed | `scripts/run_tests.py`, [`CLAUDE.md` § Parallel tests](../../CLAUDE.md#parallel-tests) | #1105, #1107, #1108 | 3 cut-offs in 85 gate runs before; none in 35 after, 16 of them run B's |
 | A budget on process files: their total grows only by a recorded raise | `scripts/check_process_budget.py`, `sdd/process-budget.json` | #1110 | not measurable: it prevents growth |
 | A lookup tool: one backlog item or reference section by key, instead of a search and a sliced read | [`scripts/sdd_lookup.py`](../../scripts/sdd_lookup.py) | #1099 | large-file reads per working session from 11.0 to 2.3, their characters by six sevenths |

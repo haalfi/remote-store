@@ -46,7 +46,7 @@ review loop after the PR opens is where both are largest.** Cache reads are
 - **The changes made after run A cut the same delivery to a quarter.** Run B,
   the same `/ship BUG-280` on master with the means and rule (c), closed in five
   rounds at 15.0 M units against run A's 59.3 M and route 2's 28.19 M
-  [run_b_final: `units_m`; run_b_route: `route.rounds`]. Building the means
+  [run_b_final: `units_m`; run_a_final: `units_m`; run_a_route2: `route`]. Building the means
   cost 74.7 M [prep_cost: `units_m_by_class`]. Which change did how much, one
   run cannot say (§ Run B, § Learnings).
 
@@ -374,7 +374,9 @@ and [run_a_final_gates].
 - **Two routes.** Rounds 1 to 7 ran on the original plan; the session then
   re-planned (narrowed the PR) and ran six more spawning rounds after the
   compaction [run_a_final: `rounds`, `compaction_calls`]. The first route cost
-  31.5 M units; the whole run 59.3 M.
+  31.12 M units [run_a_route2: `earlier_route_units_m`]; the whole run 59.3 M.
+  The 31.5 M of § 7 is the round-7 checkpoint cut, which also holds route 2's
+  first four calls (§ Run B baseline).
 - **Compaction as a natural test of hypothesis 1 (fresh context).** Main context
   at a round's start fell from 828k (round 7) to 113k after the compaction, then
   stood at 113k, 223k, 273k, 396k, 479k and 625k at the next six rounds
@@ -507,9 +509,20 @@ row for each round is in § Run B baseline. The loop cost 12.13 M against route
   check fired at round 4 and the fix was reverted; run A's re-plan after round 7
   narrowed its whole scope instead. Items the delivery filed during the loop, BUG-318
   and BUG-319, drew three of rounds 3 and 5's eight findings.
-- **Fewer findings, each dearer.** Prose was 35% of findings against route 2's
-  61% [pr_1113_rounds: `routes`]. Per finding the loop cost 0.71 M units
-  against 0.46 M, because the rounds were smaller but not cheaper per round.
+- **Fewer findings, fewer of them prose.** The fix-commit classifier labels 6
+  of run B's 17 findings prose, 35%, against route 2's 30 of 49, 61%
+  [pr_1113_rounds: `routes`; pr_1093_rounds: `routes`]. It errs toward code
+  when a fix pass commits prose and code fixes to one file together, as run B's
+  did: by the fix replies, 10 of the 17 are prose, 59%, against route 2's hand
+  reading of 37 of 49, 76% (§ Run B baseline). The replies give each finding's
+  fix shape, ten of them "check-closed prose" (`gh api
+  repos/haalfi/remote-store/pulls/1113/comments`). Either way prose fell, by 26
+  points on the classifier and 17 by hand.
+- **Cheaper rounds, dearer findings.** A round of run B's loop cost 2.43 M units
+  against route 2's 3.77 M, 12.13 M over 5 rounds against 22.62 M over 6
+  [run_b_route: `route.loop_units_m`; run_a_route2: `route.loop_units_m`]. Per
+  finding it cost 0.71 M against 0.46 M, because findings per round fell
+  further: 3.4 against 8.2.
 - **No gate trouble.** 16 gate runs, none cut off and no idle stall, against run
   A's 33 runs with 3 cut-offs and a 37-minute stall [run_b_gates;
   run_a_final_gates]. The 7 failures each ended within seconds on a generator or
@@ -525,7 +538,11 @@ every clause scored so far. The clause on the maintainer's post-close review
 stays open; only round 2 closed on check-closed prose alone, and the shorter
 loop missed a regression run A's longer one had found.** Eleven review replies close a finding on a recorded check: 1,
 2, 4 and 4 in rounds 2 to 5 (`gh api repos/haalfi/remote-store/pulls/1113/comments`,
-replies matching `check-closed|Closed on recorded checks`).
+replies matching `check-closed|Closed on recorded checks`). Ten of them are
+prose findings by RFC-0020's definition, and say "check-closed prose". The
+eleventh, in round 5, removed a `spec` mark from a test, an executable line, so
+it is outside rule (c)'s scope; it closed on the maintainer's call at the round
+ceiling.
 
 | Clause ([RFC-0020](../../rfcs/rfc-0020-ship-token-interventions.md#decision-rule)) | Result |
 | --- | --- |
@@ -538,11 +555,15 @@ replies matching `check-closed|Closed on recorded checks`).
 | Run fails: units not below 28.19 M | Does not apply: 15.0 M |
 | Run fails: a must-fix defect run A's PR did not have | Does not apply, on the maintainer's call: #1113 has two regressions #1093 avoids, both narrow and both ending in a typed error, and they are open follow-ups on #1113 (§ The two deliveries compared) |
 
-**The decision rule lacks a clause run B needed.** Three of the eleven checks
-were run but could not have shown their claim false: `gen-backlogid-check`
-twice, which tests a backlog item's shape and not what it says, and a `git
-grep` that tests wording. A check should count only if it can return the claim
-false.
+**The decision rule lacks a clause run B needed.** Four of the ten prose closes
+ran a check that could not have shown their claim false: a `git grep` for
+wording, twice (the `_stat_entry` docstring in round 3, "never skipped" in round
+4), and `gen-backlogid-check`, which tests a backlog item's shape, on what
+BUG-318 and BUG-319 say (round 5). On BUG-319 in round 3 the same check covers
+the shape rules the finding cited, but not the text the fix added. The other
+five ran two probes, an enumeration matched against the collected tests, and
+greps that confirm a deletion or a removed citation. A check should count only
+if it can return the claim false.
 
 **What run B cannot separate.** The handoff, claim discipline (Rule 8), the
 deeper orient and a lower prose share all moved the same figures. Run B's scope
@@ -699,8 +720,10 @@ holding its figures.
   starting context below route 2's; a compaction resets context once, and it
   regrows about 100k per round (§ Run A final, § Run B).
 - **Detail only for what the change owns.** With claim discipline on master,
-  among the other changes, prose fell from 61% to 35% of findings (§ Run B).
-- **Closing prose by a check, not a round.** It fired eleven times and held, but
+  among the other changes, the prose share of findings fell, from 76% to 59%
+  by hand and from 61% to 35% by the fix-commit classifier (§ Run B).
+- **Closing prose by a check, not a round.** It closed ten prose findings and
+  held, but
   a check must be able to fail the claim to count (§ Rule (c) against the
   decision rule).
 - **A stable gate.** With one suite at a time, a per-test timeout and workers
