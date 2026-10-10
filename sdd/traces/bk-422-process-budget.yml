@@ -154,3 +154,52 @@ phases:
           without history cannot catch a consistent edit of total and files
           together, so that is a stated bound and the rule line narrowed.
           Seven mutants, each killed
+review:
+  # Derived by `hatch run ship-report 1110 --trace-block-only` at head 0bd4c5f.
+  # Do not hand-edit, except a newly required field per sdd/traces/_schema.yml
+  # section review: RFC-0015 D4 makes this script the only producer.
+  derivation: "hatch run ship-report 1110 --trace-block-only"
+  pr: 1110
+  review_rounds: 3
+  submissions: 3
+  findings: 6
+  by_round:
+    - round: 1
+      findings: 3
+      origin: {original: 3}
+      triage: {must-fix: 3}
+      duration_hours: 0.04
+    - round: 2
+      findings: 2
+      origin: {original: 2}
+      triage: {must-fix: 2}
+      duration_hours: 0.18
+    - round: 3
+      findings: 1
+      origin: {original: 1}
+      triage: {must-fix: 1}
+      duration_hours: 0.09
+  by_file:
+    - path: "scripts/check_process_budget.py"
+      findings: 5
+    - path: "sdd/BACKLOG.md"
+      findings: 1
+  untouched_files:
+    - ".github/workflows/ci.yml"
+    - "pyproject.toml"
+    - "sdd/BACKLOG-DONE.md"
+    - "sdd/GATE-INVENTORY.md"
+    - "sdd/backlogid.json"
+    - "sdd/decisions/f32b6315-e654-5f54-8a77-ed2da01a44c3.jsonl"
+    - "sdd/process-budget.json"
+    - "sdd/rfcs/rfc-0020-ship-token-interventions.md"
+    - "sdd/traces/bk-422-process-budget.yml"
+    - "tests/scripts/test_check_process_budget.py"
+  review_driven_commits:
+    - sha: "2c0d80b"
+      subject: "fix: address PR #1110 review"
+    - sha: "3181c44"
+      subject: "fix: address PR #1110 review"
+    - sha: "0bd4c5f"
+      subject: "fix: address PR #1110 review"
+  ci: {verdict: GREEN, failed: 0, pending: 0}
