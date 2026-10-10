@@ -3,9 +3,11 @@
 from __future__ import annotations
 
 import contextlib
+import errno
 import logging
 import os
 import shutil
+import stat
 import tempfile
 from datetime import UTC, datetime
 from pathlib import Path
@@ -13,7 +15,14 @@ from typing import TYPE_CHECKING, BinaryIO, ClassVar
 
 from remote_store._backend import _COPY_BUFSIZE, Backend
 from remote_store._capabilities import Capability, CapabilitySet
-from remote_store._errors import AlreadyExists, DirectoryNotEmpty, InvalidPath, NotFound, PermissionDenied
+from remote_store._errors import (
+    AlreadyExists,
+    DirectoryNotEmpty,
+    InvalidPath,
+    NotFound,
+    PermissionDenied,
+    RemoteStoreError,
+)
 from remote_store._models import FileInfo, FolderEntry, FolderInfo, WriteResult
 from remote_store._path import RemotePath, is_root
 
@@ -25,7 +34,26 @@ if TYPE_CHECKING:
 
 _ALL_CAPABILITIES = CapabilitySet(set(Capability) - {Capability.USER_METADATA})
 
+# The winerrors a listing reads as absent, the set CPython's pathlib ignores: a
+# drive not ready (21), an invalid name (123), and a symlink that resolves to
+# itself (1921). CPython builds 21 as a ``PermissionError`` and maps 1921 to
+# EINVAL, so neither the exception class nor ELOOP catches them.
+_ABSENT_WINERRORS = frozenset({21, 123, 1921})
+
+# A Windows directory junction's reparse tag. ``stat`` defines the constant on
+# Windows only, and ``lstat`` reports a junction as a directory, not a link.
+_IO_REPARSE_TAG_MOUNT_POINT = 0xA0000003
+
 log = logging.getLogger(__name__)
+
+
+def _is_link(full: Path) -> bool:
+    """Whether *full* is a symlink or a Windows directory junction; ``False`` if ``lstat`` fails."""
+    try:
+        st = os.lstat(full)
+    except OSError:
+        return False
+    return stat.S_ISLNK(st.st_mode) or getattr(st, "st_reparse_tag", 0) == _IO_REPARSE_TAG_MOUNT_POINT
 
 
 class LocalBackend(Backend):
@@ -541,50 +569,66 @@ class LocalBackend(Backend):
     ) -> Iterator[FileInfo]:
         """Yield files under *path*, one ``FileInfo`` at a time.
 
-        Lazy: entries are produced as the directory is scanned, so listing a
-        large tree holds only the current entry in memory. A missing or
+        Lazy: entries are produced as the tree is walked, so listing a large
+        tree holds one directory's entries in memory at a time. A missing or
         non-folder *path* yields nothing (no error). With ``recursive`` and
         ``max_depth`` set, traversal is pruned at the depth bound during the
         ``os.walk`` rather than filtered afterwards.
+
+        A subfolder or file that disappears while the walk is running, a
+        symlink that loops, or a link (a symlink, or a Windows junction) into a
+        folder the caller cannot enter, is skipped, so a tree changed during
+        the walk can list short. A subfolder the walk descends into but cannot
+        read is never skipped: the listing raises instead.
+
+        Raises:
+            PermissionDenied: If the OS denies reading *path*, a subfolder the
+                walk descends into, or the metadata of an entry.
+            RemoteStoreError: If any of those fails for another OS reason.
         """
         full = self._resolve(path)
-        if not full.is_dir():
+        if not recursive:
+            for entry in self._scan(full):
+                item = Path(entry.path)
+                st = self._stat_entry(item)
+                if st is not None and stat.S_ISREG(st.st_mode):
+                    yield self._fileinfo_from_stat(self.to_key(str(item)), item, st)
             return
-        if recursive and max_depth is not None:
-            for dirpath, dirnames, filenames in os.walk(full):
-                depth = len(Path(dirpath).relative_to(full).parts)
-                if depth > max_depth:
-                    dirnames.clear()
-                    continue
-                for fname in filenames:
-                    item = Path(dirpath) / fname
-                    rel = self.to_key(str(item))
-                    yield self._stat_to_fileinfo(rel, item)
-                if depth == max_depth:
-                    dirnames.clear()
-        elif recursive:
-            for item in full.rglob("*"):
-                if item.is_file():
-                    rel = self.to_key(str(item))
-                    yield self._stat_to_fileinfo(rel, item)
-        else:
-            for item in full.iterdir():
-                if item.is_file():
-                    rel = self.to_key(str(item))
-                    yield self._stat_to_fileinfo(rel, item)
+
+        def raise_walk_error(exc: OSError) -> None:
+            self._raise_walk_error(exc, full)
+
+        for dirpath, dirnames, filenames in os.walk(full, onerror=raise_walk_error):
+            depth = len(Path(dirpath).relative_to(full).parts)
+            if max_depth is not None and depth > max_depth:
+                dirnames.clear()
+                continue
+            for fname in filenames:
+                item = Path(dirpath) / fname
+                st = self._stat_entry(item)
+                if st is not None and stat.S_ISREG(st.st_mode):
+                    yield self._fileinfo_from_stat(self.to_key(str(item)), item, st)
+            if max_depth is not None and depth == max_depth:
+                dirnames.clear()
 
     def list_folders(self, path: str) -> Iterator[FolderEntry]:
         """Yield immediate subfolders of *path* as ``FolderEntry`` records.
 
-        Lazy single-level scan; a missing or non-folder *path* yields nothing.
+        Lazy single-level scan; a missing or non-folder *path* yields nothing,
+        and an entry that disappears during the scan, a symlink that loops, or
+        a link into a folder the caller cannot enter, is skipped.
+
+        Raises:
+            PermissionDenied: If the OS denies reading *path* or the metadata
+                of an entry.
+            RemoteStoreError: If either fails for another OS reason.
         """
         full = self._resolve(path)
-        if not full.is_dir():
-            return
-        for item in full.iterdir():
-            if item.is_dir():
-                rel = self.to_key(str(item))
-                yield FolderEntry(path=RemotePath(rel), name=item.name)
+        for entry in self._scan(full):
+            item = Path(entry.path)
+            st = self._stat_entry(item)
+            if st is not None and stat.S_ISDIR(st.st_mode):
+                yield FolderEntry(path=RemotePath(self.to_key(str(item))), name=item.name)
 
     def iter_children(self, path: str) -> Iterator[FileInfo | FolderEntry]:
         """Yield the immediate files and folders under *path* in one scan.
@@ -592,17 +636,24 @@ class LocalBackend(Backend):
         Overrides the base (which chains ``list_files`` and ``list_folders``,
         two passes) to walk the directory once, yielding ``FileInfo`` for files
         and ``FolderEntry`` for folders. A missing or non-folder *path* yields
-        nothing.
+        nothing, and an entry that disappears during the scan, a symlink that
+        loops, or a link into a folder the caller cannot enter, is skipped.
+
+        Raises:
+            PermissionDenied: If the OS denies reading *path* or the metadata
+                of an entry.
+            RemoteStoreError: If either fails for another OS reason.
         """
         full = self._resolve(path)
-        if not full.is_dir():
-            return
-        for item in full.iterdir():
-            if item.is_file():
-                rel = self.to_key(str(item))
-                yield self._stat_to_fileinfo(rel, item)
-            elif item.is_dir():
-                rel = self.to_key(str(item))
+        for entry in self._scan(full):
+            item = Path(entry.path)
+            st = self._stat_entry(item)
+            if st is None:
+                continue
+            rel = self.to_key(str(item))
+            if stat.S_ISREG(st.st_mode):
+                yield self._fileinfo_from_stat(rel, item, st)
+            elif stat.S_ISDIR(st.st_mode):
                 yield FolderEntry(path=RemotePath(rel), name=item.name)
 
     def get_file_info(self, path: str) -> FileInfo:
@@ -902,6 +953,75 @@ class LocalBackend(Backend):
         except ValueError:
             return False
         return True
+
+    def _listing_error(self, exc: OSError, full: Path, *, entry: bool) -> RemoteStoreError | None:
+        """Classify an OS error met by a listing at *full*; ``None`` means skip it.
+
+        An absent answer lets the caller treat the folder or entry as not
+        there: an empty listing for the target, a skip for a subfolder or
+        entry that vanished mid-walk. A symlink loop (``ELOOP``, or winerror
+        1921) is absent too, like a dangling link: it names nothing that can be
+        listed. So is Windows' drive not ready (21) or invalid name (123). An
+        *entry* (anything but the folder asked for) that is a link the OS
+        refuses to follow is skipped as well: it is readable as a link, and only
+        its target is refused, so the folder being listed was not. Every other
+        error is mapped, never skipped, so a folder the listing cannot read
+        never ends it short as if it were complete.
+        """
+        if (
+            isinstance(exc, (FileNotFoundError, NotADirectoryError))
+            or exc.errno == errno.ELOOP
+            or getattr(exc, "winerror", None) in _ABSENT_WINERRORS
+        ):
+            return None
+        if isinstance(exc, PermissionError) and entry and _is_link(full):
+            return None
+        key = self.to_key(str(full))
+        if isinstance(exc, PermissionError):
+            return PermissionDenied(f"Permission denied: {key}", path=key, backend=self.name)
+        return RemoteStoreError(f"Cannot list {key}: {exc.strerror or exc}", path=key, backend=self.name)
+
+    def _scan(self, full: Path) -> list[os.DirEntry[str]]:
+        """Return the entries of the directory *full*, or ``[]`` if it is absent."""
+        try:
+            with os.scandir(full) as it:
+                return list(it)
+        except OSError as exc:
+            mapped = self._listing_error(exc, full, entry=False)
+            if mapped is None:
+                return []
+            raise mapped from None
+
+    def _stat_entry(self, full: Path) -> os.stat_result | None:
+        """Stat a listed entry, following links; ``None`` to skip it (see ``_listing_error``)."""
+        try:
+            return os.stat(full)
+        except OSError as exc:
+            mapped = self._listing_error(exc, full, entry=True)
+            if mapped is None:
+                return None
+            raise mapped from None
+
+    def _raise_walk_error(self, exc: OSError, top: Path) -> None:
+        """``os.walk``'s ``onerror`` for a walk of *top*: skip what ``_listing_error`` skips, raise the rest.
+
+        ``os.walk`` passes the failed folder as ``exc.filename``; without this
+        hook it skips every folder it cannot scan, absent or denied alike. A
+        folder below *top* is an entry of its parent, so a junction the walk
+        descended into is skipped as a link.
+        """
+        failed = Path(exc.filename)
+        mapped = self._listing_error(exc, failed, entry=failed != top)
+        if mapped is not None:
+            raise mapped from None
+
+    def _fileinfo_from_stat(self, path: str, full: Path, st: os.stat_result) -> FileInfo:
+        return FileInfo(
+            path=RemotePath(path),
+            name=full.name,
+            size=st.st_size,
+            modified_at=datetime.fromtimestamp(st.st_mtime, tz=UTC),
+        )
 
     def _stat_to_fileinfo(self, path: str, full: Path) -> FileInfo:
         st = full.stat()

@@ -298,6 +298,21 @@ if evidence changes; these are retired.
 
 ## Unreleased
 
+- [x] **BUG-280 — `LocalBackend`'s three listing methods leak a raw `PermissionError`**
+  spec: BE-021 · effort: S · audience: user.api
+  `list_files`, `list_folders` and `iter_children` now scan with `os.scandir`
+  and `os.walk(onerror=...)` under one rule: absent is empty or skipped, a
+  denial is `PermissionDenied`, any other `OSError` the base class. The
+  recursive `list_files` also stops leaving out a subfolder it cannot read;
+  one deleted mid-walk is still skipped, and a Windows delete-pending one
+  raises, both under BUG-318. A link into a folder the caller cannot enter is
+  skipped, a BE-021 rule.
+  Fixed in place; RFC-0017's kernel takes it over at D3 step 5. `glob` and
+  `get_folder_info` were filed as BUG-318. Tests:
+  `tests/backends/local/test_listing_errors.py`. Trace:
+  [bug-280](traces/bug-280-local-listing-permission-leak.yml). Detail:
+  [dossier](backlog/bug-280-local-listing-permission-leak.md).
+
 - [x] **BUG-317 — pymdown-extensions 12.2 breaks the docs build, so every docs job fails**
   spec: — · effort: S · audience: user.site, infra.ci
   Released 2026-10-10, its `Highlight` takes a required `md` that

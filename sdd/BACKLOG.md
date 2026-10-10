@@ -242,14 +242,23 @@ failure it was.
   into `write`, or run it on the session-creation 404; measure first.
   Detail: [dossier](backlog/bug-253-graph-write-ancestor-by-size.md)
 
-- [ ] **BUG-280 — `LocalBackend`'s three listing methods leak a raw `PermissionError`**
+- [ ] **BUG-318 — `LocalBackend.glob` and `get_folder_info` leave out a subtree they cannot read**
   spec: BE-021 · effort: S · audience: user.api
-  `LocalBackend.list_files`, `list_folders` and `iter_children` leak a raw
-  `PermissionError` from `iterdir`, breaching BE-021's never-leak invariant,
-  while every other `LocalBackend` path maps it. It is the generator shape
-  BUG-249 fixed on `S3Boto3Backend`. Open decision: fix the three here, or the
-  listing-generator pattern once across backends.
-  Detail: [dossier](backlog/bug-280-local-listing-permission-leak.md)
+  `glob` (`Path.glob`) and `get_folder_info` (`rglob`) swallow a denied subfolder
+  scan, which should raise `PermissionDenied` as `list_files` does since BUG-280
+  (entry stat leak: BUG-319). Every Local walk also skips a subfolder deleted
+  mid-walk (spec 003 BE-021 Known divergences). Open decision: raise or skip a
+  vanished one, since a dangling Windows junction is absent from the start.
+  Detail: [dossier](backlog/bug-318-local-glob-folder-info-denied-subtree.md)
+
+- [ ] **BUG-319 — `LocalBackend`'s single-path stats leak a raw `PermissionError`, and a looping key a `RuntimeError`**
+  spec: BE-021 · effort: S · audience: user.api
+  An injected `os.stat` denial on one file (Windows 3.13) leaks a raw
+  `PermissionError` from `get_file_info`, `exists`, `is_file`, and BUG-318's
+  `glob` and `get_folder_info`. A looping-symlink key raises `RuntimeError` from
+  `_resolve`, shared by the keyed operations (measured on `list_files`, `exists`:
+  3.11; not 3.14). Open decision: map it here, or leave it to RFC-0017's kernel (D3 step 5).
+  Detail: [dossier](backlog/bug-319-local-single-path-stat-leaks.md)
 
 - [ ] **BUG-299 — `LocalBackend.write` and `write_atomic` on a `..` key inside the root write the file, then raise `InvalidPath`**
   spec: BE-008, BE-010 · effort: S · audience: user.api

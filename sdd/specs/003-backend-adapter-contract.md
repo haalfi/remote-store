@@ -1025,6 +1025,18 @@ here is what makes the container case answerable from one place.
   whole breadth-first walk and a 404 on any sub-prefix propagates — that is the
   shape a fix takes.
 
+- `LocalBackend`'s recursive walks end short in the same shape. A subfolder
+  absent when the walk reaches it is skipped by `list_files`, `glob` and
+  `get_folder_info`; at the scan a deleted folder cannot be told from a dangling
+  Windows junction, which is absent from the start. `glob` and `get_folder_info`
+  also skip a subfolder they cannot read, where the recursive `list_files`
+  raises `PermissionDenied`. A subfolder in Windows' classic delete-pending
+  state (its delete disposition set while another handle stays open) is going
+  away, but its scan fails with the code a denial carries (`winerror` 5), so
+  the recursive `list_files` raises `PermissionDenied` for it; Python's own
+  `rmdir` and `rmtree` delete the POSIX way and do not leave that state.
+  Tracked as **BUG-318**.
+
 Four bullets have left this list and are recorded rather than deleted, because
 each was a *measured* divergence and the measurement is what a later reader
 needs in order to trust the entries that remain:
@@ -1077,16 +1089,17 @@ needs in order to trust the entries that remain:
 `GraphBackend` was a bullet too, adjudicated by
 [ADR-0038](../adrs/0038-absent-container-outranks-drive-identity.md). Counting
 bullets rather than backend classes — one of the two frames `sdd/BACKLOG.md` § 1
-uses, and the one it counts this list in — **this list holds two live bullets
-today**, both of the first-page bound: `S3Backend`/`S3PyArrowBackend` and
-`GraphBackend`. Four are recorded above as having left, the most recent
+uses, and the one it counts this list in — **this list holds three live bullets
+today**: two of the first-page bound, `S3Backend`/`S3PyArrowBackend` and
+`GraphBackend`, and `LocalBackend`'s recursive walks. Four are recorded above as
+having left, the most recent
 being `LocalBackend` (BUG-247) — first in that list by position, last by date,
-and the last of the original entries still standing. The two that remain are
-both *newer* than the list they joined: the
+and the last of the original entries still standing. The two first-page bullets
+are both *newer* than the list they joined: the
 first-page bound BUG-246 wrote into § Reach made them breaches of a clause they
 were outside of before. A list of divergences grows when its clause does, not
 only when a backend regresses — and this one has now turned over completely,
-every original entry closed and every live entry created by a clause that grew.
+every original entry closed.
 [GR-031](044-graph-backend.md#gr-031-404-discrimination-item-vs-drive) mapped
 `404 resourceNotFound` to `BackendUnavailable` for every error-raising
 operation, deliberately, on the grounds that a deleted drive is a backend
@@ -1194,7 +1207,20 @@ choosing the mapped error. Silent returns (swallowing exceptions without
 re-raising a `RemoteStoreError`) are permitted ONLY for `exists()`,
 `is_file()`, and `is_folder()` — these three methods return `False` on any
 traversal error, including file-as-directory-component conflicts, rather than
-raising `InvalidPath`. All other operations MUST raise appropriate errors.
+raising `InvalidPath` — and for the listing entries the next paragraph names.
+All other operations MUST raise appropriate errors.
+
+**A listing's denial is about the folder it lists, not about an entry's link
+target.** `list_files`, `list_folders` and `iter_children` raise
+`PermissionDenied` when the backend is refused the folder they list, a subfolder
+a recursive listing descends into, or the metadata of an entry. They skip an
+entry gone before its metadata was read, a dangling link, a link loop, and a
+link (a symlink, or on Windows a directory junction) whose target the backend
+is refused: the link is present and readable as a link, and only its target is
+refused, so the listed folder was not. The folder a listing is asked for is not
+an entry: asked for such a link itself, the listing is refused the folder it
+lists, and raises. The clause decides links only where a backend's listings
+follow them, as `LocalBackend`'s do.
 
 ### BE-022: unwrap()
 

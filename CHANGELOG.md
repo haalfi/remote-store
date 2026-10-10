@@ -7,6 +7,7 @@ This project follows [Semantic Versioning](https://semver.org/). Pre-1.0, minor 
 
 ## [Unreleased]
 
+- BUG-280: `LocalBackend`'s three listing methods leak a raw `PermissionError`
 - BUG-317: pymdown-extensions 12.2 breaks the docs build, so every docs job fails
 
 ## [0.33.0] - 2026-10-04
