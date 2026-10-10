@@ -458,7 +458,7 @@ footer { font-size: 13px; color: var(--muted); border-top: 1px solid var(--rule)
   </div>
   <ul>
     <li><strong>Compaction reset the price, not the trend.</strong> Per-call cost fell from 98–111k units at 960k context to 9–17k at 79k. Without a planned reset, context grew back to 721k by the end, about 1.7k tokens per call.</li>
-    <li><strong>The second route was nearly as expensive as the first.</strong> 27.8 M against 31.5 M, despite the narrowed scope: it re-ran the full review machinery on a context that refilled.</li>
+    <li><strong>The second route was nearly as expensive as the first.</strong> 28.19 M against 31.12 M, route against route, despite the narrowed scope: it re-ran the full review machinery on a context that refilled.</li>
     <li><strong>What was re-read.</strong> Session prefix 21.9%, Read results 17.2%, Bash output 12.2%, hidden thinking 11.7%, tool inputs 11.0%, attachments 10.1%. The largest single item became PR comment replies (5.4%), then git output (3.5%) and the <code>rvw-pr</code> skill read in every review snapshot (2.3%). 19% of Read tokens were re-reads (299k of 1.58M); 39 tool outputs spilled to files.</li>
   </ul>
   <p class="muted">Dollar figures use the fitted Opus 5.5 rate. The comparison run (same item, same prompt, on the means) ran on 2026-10-10: see "Run B" below.</p>
