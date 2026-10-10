@@ -246,9 +246,17 @@ failure it was.
   spec: BE-021 · effort: S · audience: user.api
   `glob` (`Path.glob`) and `get_folder_info` (`rglob`) swallow every `OSError`
   from a subfolder scan, so a denied subfolder drops out and the matches, or the
-  count and size, come back short and read as complete. BUG-280 fixed the three
-  listings with a mapped walk. Open decision: whether BE-021 states for every
-  backend that a recursive walk raises on a denied subtree; none other measured.
+  count and size, come back short and read as complete (an entry stat leaks:
+  BUG-319). BUG-280 fixed the listings. Open decision: whether BE-021 states for
+  every backend that a recursive walk raises on a denied subtree.
+
+- [ ] **BUG-319 — `LocalBackend`'s single-path stats leak a raw `PermissionError`, and a looping key a `RuntimeError`**
+  spec: BE-021 · effort: S · audience: user.api
+  An injected `os.stat` denial on one file (Windows 3.13) leaks a raw
+  `PermissionError` from `get_file_info`, `exists`, `is_file`, `glob` and
+  `get_folder_info`, not `read_bytes`. `list_files` on a looping-symlink key
+  raises `RuntimeError` from `_resolve`, which every operation calls (python
+  3.11; others not run). A real POSIX denial is not yet measured.
 
 - [ ] **BUG-299 — `LocalBackend.write` and `write_atomic` on a `..` key inside the root write the file, then raise `InvalidPath`**
   spec: BE-008, BE-010 · effort: S · audience: user.api

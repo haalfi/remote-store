@@ -3,9 +3,8 @@ title: "`LocalBackend`'s three listing methods leak a raw `PermissionError`"
 trigger: |
   BUG-275's closing measuring member found that `LocalBackend.list_files`,
   `list_folders` and `iter_children` let a `PermissionError` from `iterdir`
-  escape unmapped, breaching BE-021's never-leak invariant, while every other
-  `LocalBackend` path maps it. Same generator shape BUG-249 fixed on
-  `S3Boto3Backend`.
+  escape unmapped, breaching BE-021's never-leak invariant. Same generator
+  shape BUG-249 fixed on `S3Boto3Backend`.
 source_items:
   - BUG-280
 audience:
@@ -15,6 +14,9 @@ discovery_followups:
   # same swallowing walk sits under glob and get_folder_info, outside the
   # agreed scope.
   - BUG-318
+  # Born in review round 1, from the probe that refuted the migration note's
+  # "every other LocalBackend operation" premise.
+  - BUG-319
 expected_ripples:
   # The two generated artefacts the ripple-check names for a public docstring
   # change; sdd/backlogid.json is not here, since gen-backlogid takes the max
@@ -136,3 +138,27 @@ phases:
           a denied stat and answers empty, the fail-open determinant spec 003
           forbids. Non-folder and missing targets still list empty, through the
           scan's own ENOENT/ENOTDIR (checked on Windows)
+  - id: review
+    name: Review fixes
+    steps:
+      - file: tmp/probe_eloop.py
+        section: "(probe, not committed): a self-referential symlink at the root"
+        read_type: verify
+        extract: >-
+          python:3.11-slim, uid 1000. master skips the link in list_files,
+          its recursive form, list_folders and iter_children, and leaks a raw
+          OSError(ELOOP) from the max_depth branch; the reviewed head raised
+          RemoteStoreError from all five. ELOOP is now absent, like a dangling
+          link. Matrix gained a loop class (12 injected cells) and a real
+          symlink case per branch (5, POSIX only); against the reviewed head
+          17 failed, after the fix 63 passed in Docker and 56 passed, 7
+          skipped on Windows 3.13
+      - file: tmp/probe_premise.py
+        section: "(probe, not committed): an injected EACCES on one file's os.stat"
+        read_type: verify
+        extract: >-
+          Windows 3.13: glob, get_folder_info, get_file_info, exists and
+          is_file each let the raw PermissionError through; read_bytes did not.
+          So "every other LocalBackend operation" mapping it, in this trace's
+          trigger and the migration note, was false; deleted from both, and
+          the leaks filed as BUG-319

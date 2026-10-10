@@ -12,9 +12,8 @@ changes that require action when upgrading.
 
 `list_files()`, `list_folders()` and `iter_children()` let Python's own
 `PermissionError` reach the caller when the folder could not be read, so an
-`except RemoteStoreError` clause caught every other `LocalBackend` operation
-but these three. They now raise `PermissionDenied`, naming the folder or entry
-that was refused. `PermissionDenied` is not a subclass of `PermissionError`: if
+`except RemoteStoreError` clause around them did not catch it. They now raise
+`PermissionDenied`, naming the folder or entry that was refused. `PermissionDenied` is not a subclass of `PermissionError`: if
 you wrapped these listings in `except PermissionError`, catch
 `PermissionDenied` (or `RemoteStoreError`) instead.
 

@@ -6,9 +6,10 @@ entry to learn its type and size. Any of them can fail, and BE-021 forbids the
 native exception from reaching the caller. Each failure takes one answer by its
 class, the same on every syscall:
 
-* ``FileNotFoundError`` / ``NotADirectoryError``: the thing is absent. An absent
-  target is an empty listing, and a subfolder or entry that vanished
-  mid-walk is skipped while its siblings are still listed.
+* ``FileNotFoundError`` / ``NotADirectoryError``, or ``ELOOP`` from a symlink
+  that never resolves: the thing is absent. An absent target is an empty
+  listing, and a subfolder or entry that vanished mid-walk, or a looping
+  link, is skipped while its siblings are still listed.
 * ``PermissionError``: ``PermissionDenied`` naming the denied key. A recursive
   listing raises rather than leaving out the subtree it could not read, since
   a short listing that ends cleanly reads as a complete one.
@@ -102,6 +103,8 @@ def _error(kind: str, target: Path) -> OSError:
         return PermissionError(errno.EACCES, "Permission denied", str(target))
     if kind == "absent":
         return FileNotFoundError(errno.ENOENT, "No such file or directory", str(target))
+    if kind == "loop":
+        return OSError(errno.ELOOP, "Too many levels of symbolic links", str(target))
     return OSError(errno.EIO, "Input/output error", str(target))
 
 
@@ -119,7 +122,7 @@ def _cells() -> Iterator[object]:
         for site, syscall, key in _SITES:
             if site == "subfolder-scan" and branch not in _RECURSIVE:
                 continue
-            for kind in ("denied", "absent", "other"):
+            for kind in ("denied", "absent", "loop", "other"):
                 yield pytest.param(branch, syscall, key, kind, id=f"{branch}-{site}-{kind}")
 
 
@@ -139,7 +142,7 @@ def test_a_listing_maps_every_os_error_it_meets(
     target = backend._root / key if key else backend._root
     real = _REAL_SCANDIR if syscall == "scandir" else _REAL_STAT
     with mock.patch(f"os.{syscall}", _failing(real, target, _error(kind, target))):
-        if kind == "absent":
+        if kind in ("absent", "loop"):
             assert _keys(_BRANCHES[branch](backend)) == _absent_answer(branch, key)
             return
         with pytest.raises(RemoteStoreError) as info:
@@ -186,3 +189,12 @@ def test_a_real_unreadable_subfolder(backend: LocalBackend, branch: str) -> None
     finally:
         sub.chmod(0o755)
     assert info.value.path == "sub"
+
+
+@pytest.mark.spec("BE-021")
+@pytest.mark.skipif(sys.platform == "win32", reason="creating a symlink needs a privilege Windows does not grant")
+@pytest.mark.parametrize("branch", list(_BRANCHES))
+def test_a_real_symlink_loop_is_skipped(backend: LocalBackend, branch: str) -> None:
+    for link in (backend._root / "loop", backend._root / "sub" / "loop"):
+        link.symlink_to(link)
+    assert _keys(_BRANCHES[branch](backend)) == _COMPLETE[branch]

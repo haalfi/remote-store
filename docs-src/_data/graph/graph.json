@@ -2305,7 +2305,7 @@
       "file": "src/remote_store/backends/_local.py",
       "id": "cls:remote_store.backends._local.LocalBackend",
       "kind": "class",
-      "line": 39,
+      "line": 40,
       "role": "backend",
       "runtime": "sync",
       "spec": "sdd/specs/003-backend-adapter-contract.md",

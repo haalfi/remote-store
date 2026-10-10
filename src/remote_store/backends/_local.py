@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import contextlib
+import errno
 import logging
 import os
 import shutil
@@ -555,8 +556,8 @@ class LocalBackend(Backend):
         ``max_depth`` set, traversal is pruned at the depth bound during the
         ``os.walk`` rather than filtered afterwards.
 
-        A subfolder or file that disappears while the walk is running is
-        skipped. A subfolder the walk cannot read is never skipped: the listing
+        A subfolder or file that disappears while the walk is running, or a
+        symlink that loops, is skipped. A subfolder the walk cannot read is never skipped: the listing
         raises instead of yielding a short result as a complete one.
 
         Raises:
@@ -589,7 +590,8 @@ class LocalBackend(Backend):
         """Yield immediate subfolders of *path* as ``FolderEntry`` records.
 
         Lazy single-level scan; a missing or non-folder *path* yields nothing,
-        and an entry that disappears during the scan is skipped.
+        and an entry that disappears during the scan, or a symlink that
+        loops, is skipped.
 
         Raises:
             PermissionDenied: If the OS denies reading *path* or the metadata
@@ -609,7 +611,8 @@ class LocalBackend(Backend):
         Overrides the base (which chains ``list_files`` and ``list_folders``,
         two passes) to walk the directory once, yielding ``FileInfo`` for files
         and ``FolderEntry`` for folders. A missing or non-folder *path* yields
-        nothing, and an entry that disappears during the scan is skipped.
+        nothing, and an entry that disappears during the scan, or a symlink
+        that loops, is skipped.
 
         Raises:
             PermissionDenied: If the OS denies reading *path* or the metadata
@@ -931,10 +934,12 @@ class LocalBackend(Backend):
 
         An absent answer lets the caller treat the folder or entry as not
         there: an empty listing for the target, a skip for a subfolder or
-        entry that vanished mid-walk. Every other error is mapped, never
-        skipped, so a listing cannot end short and read as complete.
+        entry that vanished mid-walk. A symlink loop (``ELOOP``) is absent
+        too, like a dangling link: it names nothing that can be listed. Every
+        other error is mapped, never skipped, so a listing cannot end short
+        and read as complete.
         """
-        if isinstance(exc, (FileNotFoundError, NotADirectoryError)):
+        if isinstance(exc, (FileNotFoundError, NotADirectoryError)) or exc.errno == errno.ELOOP:
             return None
         key = self.to_key(str(full))
         if isinstance(exc, PermissionError):
