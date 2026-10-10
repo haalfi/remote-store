@@ -1,0 +1,113 @@
+id: BK-422
+title: "The process files agents re-read grew with nothing pricing the growth"
+trigger: >-
+  Discussion of Zhang et al., ACL 2026 ("Towards Structural Understanding of
+  LLM Overthinking") against the token-spend analysis and
+  research-appropriate-level-of-detail.md. That record argues against length
+  rules from comprehension evidence; the analysis prices every byte of a
+  process file per call and per subagent. The maintainer chose a size ratchet
+  on those files (gate with a recorded override, must tighten after a cut,
+  DOCS_PAT routing, merged before run B) and filed the claim rule's residue
+  as BK-423.
+source_items:
+  - BK-422
+audience:
+  - contributor.tooling
+  - contributor.process
+expected_ripples:
+  - pyproject.toml
+  - .github/workflows/ci.yml
+  - sdd/GATE-INVENTORY.md
+  - sdd/BACKLOG-DONE.md
+surprising_ripples:
+  - sdd/rfcs/rfc-0020-ship-token-interventions.md
+  - sdd/BACKLOG.md
+discovery_followups:
+  - BK-423
+decisions:
+  - sdd/decisions/f32b6315-e654-5f54-8a77-ed2da01a44c3.jsonl
+orient:
+  - items: [BK-418]
+    verdict: constrains
+    evidence: >-
+      RFC-0020 § Alternatives rejects trimming the always-loaded files as a few
+      percent per file; a ratchet trims nothing, so the rejection does not
+      reach it. But run B's variant grows ship/SKILL.md, so under the ratchet it
+      needs a recorded raise; the RFC's Status now says so. § Not in run B kept
+      a smaller reviewer input out of run B, so the rvw-pr paydown stays out.
+  - items: [BK-333]
+    verdict: constrains
+    evidence: >-
+      Same failure shape: a checker unreachable for the diffs that invalidate
+      it. Its open decision names `docs-gate` as one remedy; this gate follows
+      it for its own subject only (DOCS_PAT plus docs-gate) and leaves BK-333's
+      three checkers to that item.
+  - items: [ID-266]
+    verdict: constrains
+    evidence: >-
+      A skill-only push now runs the docs job, a per-push CI cost the two-speed
+      gate weighs; accepted in the CI-wiring dialog.
+  - items: [BK-414, BK-420]
+    verdict: unrelated
+    evidence: >-
+      The lookup tool cuts how often the files are read; this gate bounds how
+      large they are. Neither changes the other.
+phases:
+  - id: orient
+    name: Orient
+    steps:
+      - file: sdd/research/research-appropriate-level-of-detail.md
+        section: "Recommendations; §§ 2, 6.2, 6.3, 9"
+        read_type: reference
+        extract: >-
+          Rejects word budgets on comprehension grounds and never prices
+          re-reading. § 6.2 reads the 40 `unclear` tags as undershoot and none
+          of the 227 `misleading` ones. About ten of those, read from one Grep
+          window and mostly from bk-360's trace, were over-reaching claims; an
+          anecdote, not a classification
+        outcome: misleading
+      - file: sdd/rfcs/rfc-0020-ship-token-interventions.md
+        section: "Status; P1-P4; Not in run B; Alternatives; Experiment"
+        read_type: gate
+        extract: "Run B's base, the excluded reviewer-input diet and the rejected trim; the ratchet must not become an intervention"
+      - file: sdd/traces/bk-418-claims.yml
+        section: "(whole)"
+        read_type: reference
+        extract: >-
+          Rule 8 and the variant's rule (c) already carry most of the claim
+          rule; principle 9 and the /fix-pr quantifier rule most of the rest.
+          The residue is quantifiers at authoring time, filed as BK-423
+      - file: sdd/CLAUDE-REFERENCE.md
+        section: "Pre-work index"
+        read_type: gate
+        extract: "Rows triggered: new check (DRIFT-RULES) and backlog item touched"
+      - file: sdd/DRIFT-RULES.md
+        section: "Rules 2, 3, 5, 6, 7"
+        read_type: gate
+        extract: >-
+          Localize per file, derive the set from globs and fail a dead glob,
+          gate by default, register raises with owner and reason, state bounds
+          and declare a Drift-gate block
+      - file: .github/workflows/ci.yml
+        section: "CODE_PAT, DOCS_PAT"
+        read_type: verify
+        extract: ".claude/skills/, .claude/agents/ and CLAUDE.md matched neither classifier, so the gate could not fire in CI on the diffs it exists for"
+      - file: sdd/BACKLOG.md
+        section: "backlog-find on DOCS_PAT, ci.yml, skill-file terms; backlog-show BK-333 ID-266"
+        read_type: reference
+        extract: "Clusters in the orient key"
+  - id: implement
+    name: Implement
+    steps:
+      - file: scripts/check_process_budget.py
+        section: "(whole)"
+        read_type: verify
+        extract: "Bootstrapped with --update on the real tree: 18 files, 293333 bytes; a plain run passes"
+      - file: tests/scripts/test_check_process_budget.py
+        section: "(whole)"
+        read_type: verify
+        extract: "16 tests: both failure directions, offsetting cuts, new files, CRLF, dead glob, update and raise refusals"
+      - file: sdd/research/token-usage/report.md
+        section: "§ 5 prose classes table"
+        read_type: verify
+        extract: "SCOPE 91 of 321 prose findings, the figure BK-423 cites"

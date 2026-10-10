@@ -78,7 +78,10 @@ jobs:
           # — the very thing that gate's docstring says cannot see the drift. A
           # pyproject.toml edit already reaches it through CODE_PAT; this is the
           # other direction of the same pair.
-          DOCS_PAT='^(docs-src|src)/|^mkdocs\.yml$|^README\.md$|^CHANGELOG\.md$|^sdd/|^packaging/|^scripts/(docs/|check_docs_framework\.py$)|^\.pre-commit-config\.yaml$|^\.github/workflows/ci\.yml$'
+          # ^\.claude/(skills|agents)/ and ^CLAUDE\.md$ are here for
+          # check_process_budget.py (BK-422): they are its subject and matched
+          # neither classifier, so a skill-only diff ran no gate at all.
+          DOCS_PAT='^(docs-src|src)/|^mkdocs\.yml$|^README\.md$|^CHANGELOG\.md$|^sdd/|^packaging/|^scripts/(docs/|check_docs_framework\.py$)|^\.pre-commit-config\.yaml$|^\.github/workflows/ci\.yml$|^\.claude/(skills|agents)/|^CLAUDE\.md$'
           if echo "$FILES" | grep -qE "$CODE_PAT"; then echo "code=true" >> "$GITHUB_OUTPUT"
           else echo "code=false" >> "$GITHUB_OUTPUT"; fi
           if echo "$FILES" | grep -qE "$DOCS_PAT"; then echo "docs=true" >> "$GITHUB_OUTPUT"
