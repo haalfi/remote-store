@@ -140,9 +140,12 @@ phases:
           premise the change relies on, which would delete the sentence and
           ship the code built on it. Class: every site stating the rule. The
           carve-out (description, not premise) went into the CONTENT-RULES
-          clause and a qualifier into each of the nine sites that state the
-          rule, enumerated by grep for the anchor `change-details-what-it-changes`
-          plus the CONTENT-RULES home and the BK-384 note. My miss
+          home clause and a qualifier into each of the other nine sites: the
+          seven links a grep for `change-details-what-it-changes` returns
+          (`/ship` 2, `/orchestrate` 2, `/fix-pr` 1, `/rvw-pr` 1, BK-384 1)
+          and the two unlinked `/fix-pr` siblings. A grep for
+          `relies on|rely on` over the four skills returns 8 lines; the other
+          two sites wrap the phrase across a line. My miss
       - file: sdd/research/token-usage/report.md
         section: "Run B baseline: run A's route 2"
         read_type: verify
@@ -150,3 +153,34 @@ phases:
           The section gives prose and code counts only, not the walks topic,
           which I took from PR #1093's threads. The clause now cites each
           source for what it supports, with the section anchor
+review:
+  # Derived by `hatch run ship-report 1106 --trace-block-only` at head 00285e6.
+  # Do not hand-edit, except a newly required field per sdd/traces/_schema.yml
+  # section review: RFC-0015 D4 makes this script the only producer.
+  derivation: "hatch run ship-report 1106 --trace-block-only"
+  pr: 1106
+  review_rounds: 1
+  submissions: 1
+  findings: 2
+  by_round:
+    - round: 1
+      findings: 2
+      origin: {original: 2}
+      triage: {must-fix: 2}
+      duration_hours: 0.02
+  by_file:
+    - path: ".claude/skills/ship/SKILL.md"
+      findings: 1
+    - path: "sdd/CONTENT-RULES.md"
+      findings: 1
+  untouched_files:
+    - ".claude/skills/fix-pr/SKILL.md"
+    - ".claude/skills/orchestrate/SKILL.md"
+    - ".claude/skills/rvw-pr/SKILL.md"
+    - "sdd/backlog/bk-384-rfc-0015-graduation-measurement.md"
+    - "sdd/decisions/0b26f6a6-64de-4295-87a8-ba03c81a4306.jsonl"
+    - "sdd/traces/bk-418-claims.yml"
+  review_driven_commits:
+    - sha: "00285e6"
+      subject: "fix: address PR #1106 review"
+  ci: {verdict: GREEN, failed: 0, pending: 0}
