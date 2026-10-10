@@ -14,10 +14,12 @@ audience:
 expected_ripples:
   - sdd/BACKLOG.md
   - sdd/backlog/bk-366-bug-share-undiagnosed.md
-surprising_ripples: []
+surprising_ripples:
+  - sdd/research/token-usage/tokkit.py
 discovery_followups: []
 decisions:
   - sdd/decisions/d09d3d81-2a9f-4eaa-8038-6a8d68d1d09d.jsonl
+  - sdd/decisions/7c07576b-8c83-4087-b075-83077f5e4776.jsonl
 phases:
   - id: orient
     name: Orient
@@ -171,3 +173,49 @@ phases:
           orient claim the record's own first-mention data contradicts. Each
           narrowed to its key; round 1's eight-spawns-for-seven-rounds count
           was right and now carries its enumeration
+  - id: variant
+    name: Build the /ship variant (PR #1101, unmerged)
+    steps:
+      - file: sdd/rfcs/rfc-0020-ship-token-interventions.md
+        section: "Proposal P1 to P4, Experiment"
+        read_type: gate
+        outcome: misleading
+        extract: >-
+          P1's mechanism ends the loop "without another gated pass", but its
+          Would-amend list named four clauses and said ADR-0035 is unchanged.
+          ADR-0035's premise clause is the measuring stop-rule gate, so the
+          variant has to waive it too. The PR #1101 review found the gap; the
+          RFC now names five clauses
+      - file: .claude/skills/ship/SKILL.md
+        section: "(whole)"
+        read_type: reference
+        extract: >-
+          The P1 exception lands in the Stop rule, the ceiling bullet and four
+          Rules (fix pass, unprimed, whole-file, measuring; the review found
+          the measuring one missing), per a grep for "prose-tail exception" and
+          "check-closed" in the variant.
+          P2 touches the intro ("one invocation"), § Roles and the argument
+          hint, as well as Step 3
+      - file: scripts/sdd_lookup.py
+        section: "module docstring (find --spec, --dossiers)"
+        read_type: reference
+        extract: >-
+          backlog-find --spec carries P3's spec half. --dossiers rows carry no
+          status, and a | in the pattern breaks under hatch run on Windows, so
+          the skill uses one call per file and one backlog-show for status.
+          BUG-280's dossier names classes, not files, so the file half has to
+          locate them
+      - file: sdd/research/token-usage/tokkit.py
+        section: "cmd_report related sessions"
+        read_type: verify
+        extract: >-
+          The report adds only /rvw-pr and /fix-pr sessions on the PR, so P2's
+          resumed session would have dropped out of run B's totals. The regex
+          now also matches /ship ... resume <PR>, checked on six sample prompts
+      - file: .claude/hooks/gate-commit.sh
+        section: "(whole)"
+        read_type: reference
+        extract: >-
+          The hook stages all of sdd/decisions/ on every commit, so keeping
+          the variant to one SKILL.md-only commit needed the session's log
+          moved out of the tree during the commit
