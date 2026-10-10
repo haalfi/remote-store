@@ -421,6 +421,24 @@ def test_a_subfolder_deleted_during_the_walk_is_skipped(backend: LocalBackend, b
     assert _keys(listing) == {"other/d.txt"}
 
 
+@pytest.mark.spec("BE-021")
+@pytest.mark.parametrize("kind", ["denied", "other"])
+@pytest.mark.parametrize(
+    ("max_depth", "key", "listed"),
+    [
+        pytest.param(0, "sub", {"a.txt"}, id="depth0-sub"),
+        pytest.param(1, "sub/deep", {"a.txt", "sub/b.txt", "other/d.txt"}, id="depth1-sub-deep"),
+    ],
+)
+def test_a_folder_below_max_depth_is_never_scanned(
+    backend: LocalBackend, max_depth: int, key: str, listed: set[str], kind: str
+) -> None:
+    """The depth bound prunes before the scan, so a refused folder below it cannot fail the listing."""
+    target = backend._root / key
+    with mock.patch("os.scandir", _failing(_REAL_SCANDIR, target, _error(kind, target))):
+        assert _keys(backend.list_files("", recursive=True, max_depth=max_depth)) == listed
+
+
 @pytest.mark.spec("BE-014")
 @pytest.mark.parametrize(
     "listing",
