@@ -107,9 +107,9 @@ This was the original BK-001 proposal and mirrors the S3Backend's use of `s3fs`.
 2. **The S3PyArrow precedent.** The project already went through the cycle of shipping an fsspec-based S3 backend (S3Backend via s3fs), then needing a hybrid variant (S3PyArrowBackend) to work around throughput limitations on the data path. Starting with adlfs would likely repeat this trajectory — ship a wrapper now, build a native variant later.
 
 3. **Loss of ADLS Gen2 native semantics.** adlfs wraps `azure-storage-blob` under the hood and hides the ADLS Gen2 file/directory distinction. Key advantages are lost or attenuated:
-   - **Atomic rename/move** — ADLS Gen2's strongest differentiator. adlfs may not use the native rename API in all code paths.
-   - **True `write_atomic`** — With the direct SDK, temp-file + rename works natively (like LocalBackend), which is more robust than relying on PUT-level atomicity.
-   - **Real directory operations** — Native `list_files`/`list_folders` without prefix hacking.
+    - **Atomic rename/move** — ADLS Gen2's strongest differentiator. adlfs may not use the native rename API in all code paths.
+    - **True `write_atomic`** — With the direct SDK, temp-file + rename works natively (like LocalBackend), which is more robust than relying on PUT-level atomicity.
+    - **Real directory operations** — Native `list_files`/`list_folders` without prefix hacking.
 
 4. **Transitive dependency weight.** adlfs pulls in `azure-core`, `azure-identity`, `azure-storage-blob`, and `fsspec` as runtime dependencies. The direct SDK (`azure-storage-file-datalake`) also depends on `azure-core` and `azure-storage-blob` internally, but does not require `fsspec` — keeping the dependency footprint focused.
 

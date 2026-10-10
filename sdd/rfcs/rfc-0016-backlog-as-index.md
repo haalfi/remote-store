@@ -212,8 +212,8 @@ that is evidence against this departure, and the ADR records it as such.
 
 - **Public API:** none. **Backwards compatibility:** internal process only.
 - **Context cost:** estimate, not a measurement — 67 items × (≤ 8 content lines
-  + 1 blank separator) ≈ 600 lines, plus ~40 of rules and ~6 per section,
-  ≈ 680 lines, one `Read`. The acceptance run below replaces this estimate with a figure.
+    + 1 blank separator) ≈ 600 lines, plus ~40 of rules and ~6 per section,
+    ≈ 680 lines, one `Read`. The acceptance run below replaces this estimate with a figure.
 - **Ripples:** `CLAUDE.md` § Backlog; `000-process.md` § Backlog and Rule 6's
   bug-fix pipeline (where the reproduction now lives);
   `AUTHORING.md` § Directory defaults (new `sdd/backlog/*.md` → repo-only row);

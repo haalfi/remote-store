@@ -161,7 +161,7 @@ _BACKLOG_ID_PREFIXES: tuple[str, ...] = ("BK", "BUG", "ID", "AF", "BL", "UC")
 #   * backlog / process items (``_BACKLOG_ID_PREFIXES`` above) — a
 #     sanctioned provenance convention (a test tagged with the item that
 #     introduced it).
-#   * docs-framework gate codes (``G-01``..``G-07``) — defined in spec
+#   * docs-framework gate codes (``G-NN``) — defined in spec
 #     047 and ``scripts/check_docs_framework.py``, cited alongside the
 #     ``DOCFRAME-NNN`` section a docs-framework test traces to.
 # A mark citing one of these is not a stale spec reference, so it is

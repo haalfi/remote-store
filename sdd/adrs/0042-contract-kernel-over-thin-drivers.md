@@ -83,19 +83,19 @@ live in D3 and D8.
 - **[ADR-0012](0012-async-store-backend-api.md)**, *separate async types* and
   its dismissal of Option E: the types stay separate, and the dismissal is
   narrowed rather than reversed. By driver kind, the sync surface is:
-  - **sync drivers** (Memory, Local, SFTP, the SQL pair, S3, HTTP; Memory
-    also keeps an async driver of its own): served by the sync kernel, whose
-    shared surface is generated as native sync source from the async kernel
-    and whose sync-only surface is hand-written (the Decision above);
-  - **async drivers with a generated sync twin** (Azure): served by that
-    twin, generated except for its stream-returning primitives, through the
-    sync kernel, with no runtime wrapper;
-  - **async-only drivers** (Graph): reached by sync callers through
-    `AsyncBackendSyncAdapter` over the async kernel, the runtime wrapper
-    ADR-0012's Option E describes, as they are today.
+    - **sync drivers** (Memory, Local, SFTP, the SQL pair, S3, HTTP; Memory
+      also keeps an async driver of its own): served by the sync kernel, whose
+      shared surface is generated as native sync source from the async kernel
+      and whose sync-only surface is hand-written (the Decision above);
+    - **async drivers with a generated sync twin** (Azure): served by that
+      twin, generated except for its stream-returning primitives, through the
+      sync kernel, with no runtime wrapper;
+    - **async-only drivers** (Graph): reached by sync callers through
+      `AsyncBackendSyncAdapter` over the async kernel, the runtime wrapper
+      ADR-0012's Option E describes, as they are today.
 
-  Async-first source is taken for the kernel and the Azure driver. Option E's
-  runtime wrapper stays where ADR-0025 already uses it.
+    Async-first source is taken for the kernel and the Azure driver. Option E's
+    runtime wrapper stays where ADR-0025 already uses it.
 - **[ADR-0025](0025-async-to-sync-backend-adapter.md)**, its scope: the
   adapter stays the sync route for async-only backends (Graph), and is not the
   route for Azure, which gets a generated sync driver. Its capability

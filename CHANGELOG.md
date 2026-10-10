@@ -7,6 +7,7 @@ This project follows [Semantic Versioning](https://semver.org/). Pre-1.0, minor 
 
 ## [Unreleased]
 
+- BUG-320: Nested lists indented for GitHub render flattened on the docs site
 - BUG-280: `LocalBackend`'s three listing methods leak a raw `PermissionError`
 - BUG-317: pymdown-extensions 12.2 breaks the docs build, so every docs job fails
 
@@ -613,24 +614,24 @@ This project follows [Semantic Versioning](https://semver.org/). Pre-1.0, minor 
   installed with `remote-store[graph]`. It is **async-only** — construct it with
   `AsyncStore(backend=GraphBackend(...))`; there is no sync `Store` wrapper or
   config `type=` string. It covers the full Store surface:
-  - **Read path** — `read` / `read_bytes` / `get_file_info` / `exists` /
-    `is_file` / `is_folder`, with range reads, download-URL expiry recovery,
-    in-backend retry, and a SharePoint range fallback that is scoped to the
-    drive and self-heals (BK-259).
-  - **Listing** — `iter_children` / `list_files` / `list_folders` /
-    `get_folder_info`.
-  - **Write path** — `write` / `write_atomic` (small `PUT /content` plus a
-    large-file upload session), auto-mkdir, and a native `WriteResult`.
-  - **Mutate path** — `delete` / `delete_folder` / `move` / `copy` with async
-    copy/move monitor polling.
-  - `GraphBackend(base_path=…)` scopes a backend to a drive subfolder (GR-058).
-  - `write` / `move` / `copy` raise `InvalidPath` for folder targets,
-    file-ancestor descents, and directory destinations, matching the
-    hierarchical backends' error fidelity.
-  - Public companions `GraphAuth` and `GraphUtils`; config auto-wraps
-    `client_secret` / `client_certificate` in `Secret`.
-  - Ships with a setup and usage guide plus full capability listings (FEATURES,
-    capabilities matrix, choosing-a-backend, README).
+    - **Read path** — `read` / `read_bytes` / `get_file_info` / `exists` /
+      `is_file` / `is_folder`, with range reads, download-URL expiry recovery,
+      in-backend retry, and a SharePoint range fallback that is scoped to the
+      drive and self-heals (BK-259).
+    - **Listing** — `iter_children` / `list_files` / `list_folders` /
+      `get_folder_info`.
+    - **Write path** — `write` / `write_atomic` (small `PUT /content` plus a
+      large-file upload session), auto-mkdir, and a native `WriteResult`.
+    - **Mutate path** — `delete` / `delete_folder` / `move` / `copy` with async
+      copy/move monitor polling.
+    - `GraphBackend(base_path=…)` scopes a backend to a drive subfolder (GR-058).
+    - `write` / `move` / `copy` raise `InvalidPath` for folder targets,
+      file-ancestor descents, and directory destinations, matching the
+      hierarchical backends' error fidelity.
+    - Public companions `GraphAuth` and `GraphUtils`; config auto-wraps
+      `client_secret` / `client_certificate` in `Secret`.
+    - Ships with a setup and usage guide plus full capability listings (FEATURES,
+      capabilities matrix, choosing-a-backend, README).
 
 - **`ResourceLocked` error** (ID-127): a new `RemoteStoreError` subtype for a
   resource held by another session.
@@ -1199,24 +1200,24 @@ or silently corrupted state. Sync and async siblings are kept in lockstep throug
 - **`WriteResult`: write methods return rich metadata; `Store.head()`; user metadata; hashing helpers; async parity** (ID-146, ID-148, ID-013b):
   The entire write surface now returns a structured result and accepts optional user metadata.
 
-  - **`WriteResult` dataclass** — every `write*()` call returns `WriteResult(path, size, source,
-    digest, etag, version_id, last_modified, metadata)`. `source` signals origin:
-    `NativeSource` (from the backend's write response), `BasicSource` (from a post-write stat),
-    or `SidecarSource` (from `ext.write`). Two new capabilities gate the rich fields:
-    `WRITE_RESULT_NATIVE` (backend populates `etag`, `digest`, `version_id`, `last_modified`
-    from its own response) and `USER_METADATA` (caller-supplied `metadata=` is persisted).
-  - **`Store.head(path)`** — retrieves file metadata as a `WriteResult` without reading content;
-    gated on `Capability.METADATA`.
-  - **`ext.write`** — `write_with_hash` and `open_atomic_with_hash` guarantee a client-side
-    SHA-256 digest in `WriteResult.digest` regardless of whether the backend declares
-    `WRITE_RESULT_NATIVE`; suitable for integrity-critical pipelines.
-  - **Async parity** — `AsyncStore.write*()` and `AsyncBackend.write` / `write_atomic`
-    return `WriteResult` and accept `metadata=`; `Capability.USER_METADATA` enforced at the
-    `AsyncStore` layer; `aio.ext.write.write_with_hash` mirrors the sync helper.
-  - **Proxy forwarding** — `ProxyStore`, `ObservedStore`, and `CachedStore` all forward
-    `WriteResult` and `head()`; `StoreEvent.metadata["write_result"]` is populated on
-    successful writes.
-  - Docs: Write Integrity guide; RFC-0011 (Implemented).
+    - **`WriteResult` dataclass** — every `write*()` call returns `WriteResult(path, size, source,
+      digest, etag, version_id, last_modified, metadata)`. `source` signals origin:
+      `NativeSource` (from the backend's write response), `BasicSource` (from a post-write stat),
+      or `SidecarSource` (from `ext.write`). Two new capabilities gate the rich fields:
+      `WRITE_RESULT_NATIVE` (backend populates `etag`, `digest`, `version_id`, `last_modified`
+      from its own response) and `USER_METADATA` (caller-supplied `metadata=` is persisted).
+    - **`Store.head(path)`** — retrieves file metadata as a `WriteResult` without reading content;
+      gated on `Capability.METADATA`.
+    - **`ext.write`** — `write_with_hash` and `open_atomic_with_hash` guarantee a client-side
+      SHA-256 digest in `WriteResult.digest` regardless of whether the backend declares
+      `WRITE_RESULT_NATIVE`; suitable for integrity-critical pipelines.
+    - **Async parity** — `AsyncStore.write*()` and `AsyncBackend.write` / `write_atomic`
+      return `WriteResult` and accept `metadata=`; `Capability.USER_METADATA` enforced at the
+      `AsyncStore` layer; `aio.ext.write.write_with_hash` mirrors the sync helper.
+    - **Proxy forwarding** — `ProxyStore`, `ObservedStore`, and `CachedStore` all forward
+      `WriteResult` and `head()`; `StoreEvent.metadata["write_result"]` is populated on
+      successful writes.
+    - Docs: Write Integrity guide; RFC-0011 (Implemented).
 
 - **`AsyncBackendSyncAdapter`** (ID-141–143c): new public class wrapping any
   `AsyncBackend` as a synchronous `Backend` via a private event loop on a
@@ -2223,12 +2224,12 @@ or silently corrupted state. Sync and async siblings are kept in lockstep throug
 ### Changed
 
 - **Renamed ext factory functions for naming consistency** (BK-010):
-  - `pydantic_to_registry_config()` → `from_pydantic()` — matches the `from_*`
-    pattern used by `from_yaml`, `from_dict`, `from_toml`.
-  - `remote_store_io_manager()` → `dagster_io_manager()` — drops redundant
-    `remote_store_` prefix, matches `pyarrow_fs` pattern.
-  - `cached_store()` → `cache()` — bare verb, matches `observe()`.
-  - Old names remain as deprecated aliases emitting `DeprecationWarning`.
+    - `pydantic_to_registry_config()` → `from_pydantic()` — matches the `from_*`
+      pattern used by `from_yaml`, `from_dict`, `from_toml`.
+    - `remote_store_io_manager()` → `dagster_io_manager()` — drops redundant
+      `remote_store_` prefix, matches `pyarrow_fs` pattern.
+    - `cached_store()` → `cache()` — bare verb, matches `observe()`.
+    - Old names remain as deprecated aliases emitting `DeprecationWarning`.
 
 ### Documentation
 
@@ -2653,9 +2654,9 @@ or silently corrupted state. Sync and async siblings are kept in lockstep throug
 ### Added
 
 - **Glob pattern matching — three-tier design (ADR-0009)** (BK-002, ID-007)
-  - **Tier 1:** `list_files(pattern=…)` — universal `fnmatch` name filtering, works with every backend (needs only `LIST`)
-  - **Tier 2:** `Store.glob()` / `Capability.GLOB` — native backend glob, capability-gated (like `unwrap()`). `LocalBackend` implements via `pathlib`
-  - **Tier 3:** `ext.glob.glob_files()` — portable full-glob fallback with `**` recursive patterns and `[abc]`/`[!abc]` character classes; delegates to native glob when available, otherwise `list_files` + client-side regex
+    - **Tier 1:** `list_files(pattern=…)` — universal `fnmatch` name filtering, works with every backend (needs only `LIST`)
+    - **Tier 2:** `Store.glob()` / `Capability.GLOB` — native backend glob, capability-gated (like `unwrap()`). `LocalBackend` implements via `pathlib`
+    - **Tier 3:** `ext.glob.glob_files()` — portable full-glob fallback with `**` recursive patterns and `[abc]`/`[!abc]` character classes; delegates to native glob when available, otherwise `list_files` + client-side regex
 ### Changed
 
 - **Beta status.** Project classifier changed from Alpha to Beta. Core API
@@ -2827,8 +2828,8 @@ or silently corrupted state. Sync and async siblings are kept in lockstep throug
 ### Added
 
 - **S3-PyArrow hybrid backend** — uses PyArrow's C++ S3 filesystem for reads/writes/copies (higher throughput for large files) and s3fs for listing/metadata/deletion. Drop-in alternative to `S3Backend` with the same constructor signature.
-  - Install via `pip install "remote-store[s3-pyarrow]"`
-  - Spec: `sdd/specs/011-s3-pyarrow-backend.md`
+    - Install via `pip install "remote-store[s3-pyarrow]"`
+    - Spec: `sdd/specs/011-s3-pyarrow-backend.md`
 - New optional extra: `s3-pyarrow` (requires `s3fs>=2024.2.0` and `pyarrow>=14.0.0`)
 - Dual `unwrap()` support: returns either `pyarrow.fs.S3FileSystem` or `s3fs.S3FileSystem`
 

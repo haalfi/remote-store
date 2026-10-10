@@ -382,35 +382,35 @@ authoritative tier; Stage 1 replay is what runs in default CI.
   the impl PR-set** (not free against today's spine): the existing
   replay machinery is Azure-hardcoded and has to be generalised
   before Graph can plug in. Concretely:
-  - `tests/backends/conformance/conftest.py:vcr_cassette_dir`
-    currently returns `CASSETTE_DIR_AZURE` unconditionally; TEST-007
-    mandates `cassettes/<backend>/`, so a per-backend dispatch is
-    needed (Graph gets `cassettes/graph/`, not "alongside" Azure).
-  - The id-alias map, `_AZURE_REAL_FIXTURE_IDS` set, and missing-cassette
-    → skip hook in `tests/backends/fixtures/registry.py` recognise
-    only `azure_*` ids; `graph_replay` needs the same recognition.
-  - **Cassette scrub layer** (`tests/backends/fixtures/_cassettes.py`)
-    is Azure-specific (`x-ms-*`, SharedKey, connection-string,
-    Azurite). Graph uses `Authorization: Bearer` plus pre-signed
-    `@microsoft.graph.downloadUrl` hosts — without a Graph-aware
-    scrub list, **a bearer token would survive and leak into
-    committed cassettes.** This is a security-critical prerequisite,
-    not a polish item.
-  - `scripts/record_cassettes.py` `_BACKENDS` carries only `azure`
-    today; a `graph` entry is part of the same work.
-  - **`httpx` streaming-replay path is unproven.** Azure async needed
-    a bespoke `AsyncioRequestsTransport` shim because vcrpy 8.1.1's
-    aiohttp stub cannot stream a response body
-    (`azure_replay_async.py:9-23`); whether vcrpy can capture/replay
-    `httpx.AsyncClient.stream()` for GR-012 (chunked reads) and
-    GR-015 (`Range`-over-`downloadUrl`) is open. `respx` has no
-    record-from-live mode and is unit-only.
+    - `tests/backends/conformance/conftest.py:vcr_cassette_dir`
+      currently returns `CASSETTE_DIR_AZURE` unconditionally; TEST-007
+      mandates `cassettes/<backend>/`, so a per-backend dispatch is
+      needed (Graph gets `cassettes/graph/`, not "alongside" Azure).
+    - The id-alias map, `_AZURE_REAL_FIXTURE_IDS` set, and missing-cassette
+      → skip hook in `tests/backends/fixtures/registry.py` recognise
+      only `azure_*` ids; `graph_replay` needs the same recognition.
+    - **Cassette scrub layer** (`tests/backends/fixtures/_cassettes.py`)
+      is Azure-specific (`x-ms-*`, SharedKey, connection-string,
+      Azurite). Graph uses `Authorization: Bearer` plus pre-signed
+      `@microsoft.graph.downloadUrl` hosts — without a Graph-aware
+      scrub list, **a bearer token would survive and leak into
+      committed cassettes.** This is a security-critical prerequisite,
+      not a polish item.
+    - `scripts/record_cassettes.py` `_BACKENDS` carries only `azure`
+      today; a `graph` entry is part of the same work.
+    - **`httpx` streaming-replay path is unproven.** Azure async needed
+      a bespoke `AsyncioRequestsTransport` shim because vcrpy 8.1.1's
+      aiohttp stub cannot stream a response body
+      (`azure_replay_async.py:9-23`); whether vcrpy can capture/replay
+      `httpx.AsyncClient.stream()` for GR-012 (chunked reads) and
+      GR-015 (`Range`-over-`downloadUrl`) is open. `respx` has no
+      record-from-live mode and is unit-only.
 
-  If the generic spine + scrub + httpx-streaming-replay package
-  cannot land alongside the Graph backend, the Stage-1-replay scope
-  shrinks to the operations that don't require streaming and the
-  conformance matrix runs against Graph at Stage 3 only — call this
-  out explicitly in the impl PR.
+    If the generic spine + scrub + httpx-streaming-replay package
+    cannot land alongside the Graph backend, the Stage-1-replay scope
+    shrinks to the operations that don't require streaming and the
+    conformance matrix runs against Graph at Stage 3 only — call this
+    out explicitly in the impl PR.
 - **Stage 3 — live (`graph_live` fixture).** Gated by the
   `RS_TEST_LIVE_GRAPH=1` opt-in **plus** the three credential env
   vars `GRAPH_CLIENT_ID`, `GRAPH_TENANT_ID` (`consumers`),

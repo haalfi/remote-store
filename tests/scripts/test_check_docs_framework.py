@@ -1,4 +1,4 @@
-"""Tests for scripts/check_docs_framework.py DOCFRAME-004 gate (G-02..G-06).
+"""Tests for scripts/check_docs_framework.py DOCFRAME-004 gate (G-02..G-06, G-08).
 
 Spec: sdd/specs/047-docs-framework-tooling.md
 """
@@ -135,6 +135,125 @@ def test_url_nav_misalignment_fails(gate_mod, tmp_path):
 
 
 # ---------------------------------------------------------------------------
+# G-08: nested list markers indented for Python-Markdown
+# ---------------------------------------------------------------------------
+
+# GitHub nests the sub-bullet (it sits in the item's content column);
+# Python-Markdown needs 4 spaces and flattens it into the outer list.
+_FLAT_NESTED = "1. **Rule.**\n   Body.\n   - sub one\n   - sub two\n\n2. **Next.**\n"
+_FIXED_NESTED = "1. **Rule.**\n   Body.\n    - sub one\n    - sub two\n\n2. **Next.**\n"
+
+
+def _write_dual(tmp_path: Path, body: str) -> None:
+    adrs = tmp_path / "sdd" / "adrs"
+    adrs.mkdir(parents=True)
+    (adrs / "0001-list.md").write_text(f"<!-- doc: dual dest=explanation/design/list.md -->\n# ADR-0001\n\n{body}")
+
+
+@pytest.mark.spec("DOCFRAME-004")
+def test_fixture_flattens_under_python_markdown():
+    """Anchors G-08 to the renderer: the failing fixture really flattens, the fixed one nests."""
+    import markdown
+
+    assert "<ul>" not in markdown.markdown(_FLAT_NESTED)
+    assert "<ol>\n<li>\n<p><strong>Rule.</strong>" in markdown.markdown(_FIXED_NESTED)
+    assert "<ul>" in markdown.markdown(_FIXED_NESTED)
+
+
+@pytest.mark.spec("DOCFRAME-004")
+def test_nested_list_under_four_spaces_fails(gate_mod, tmp_path):
+    _write_dual(tmp_path, _FLAT_NESTED)
+
+    errors = gate_mod._check_g08(tmp_path)
+
+    assert errors == [
+        "G-08 sdd/adrs/0001-list.md:6: nested list marker indented 3, Python-Markdown needs 4",
+        "G-08 sdd/adrs/0001-list.md:7: nested list marker indented 3, Python-Markdown needs 4",
+    ]
+
+
+@pytest.mark.spec("DOCFRAME-004")
+def test_two_space_bullet_nesting_fails(gate_mod, tmp_path):
+    _write_dual(tmp_path, "- a\n  - b\n    - c\n")
+
+    errors = gate_mod._check_g08(tmp_path)
+
+    assert [e.split(": ", 1)[1] for e in errors] == [
+        "nested list marker indented 2, Python-Markdown needs 4",
+        "nested list marker indented 4, Python-Markdown needs 8",
+    ]
+
+
+@pytest.mark.spec("DOCFRAME-004")
+def test_nested_list_in_docs_src_fails(gate_mod, tmp_path):
+    guides = tmp_path / "docs-src" / "guides"
+    guides.mkdir(parents=True)
+    (guides / "page.md").write_text("# Guide\n\n- a\n  - b\n")
+
+    errors = gate_mod._check_g08(tmp_path)
+
+    assert errors == ["G-08 docs-src/guides/page.md:4: nested list marker indented 2, Python-Markdown needs 4"]
+
+
+# A table GitHub keeps in the item; Python-Markdown ends the list at it, so
+# the 4-space bullets after it become a code block.
+_FLAT_BLOCK = "- **Item.**\n\n  | a | b |\n  | - | - |\n  | 1 | 2 |\n\n    - sub\n"
+_FIXED_BLOCK = "- **Item.**\n\n    | a | b |\n    | - | - |\n    | 1 | 2 |\n\n    - sub\n"
+
+
+@pytest.mark.spec("DOCFRAME-004")
+def test_block_fixture_leaves_list_under_python_markdown():
+    import markdown
+
+    flat = markdown.markdown(_FLAT_BLOCK, extensions=["tables"])
+    fixed = markdown.markdown(_FIXED_BLOCK, extensions=["tables"])
+    assert "</ul>\n<table>" in flat
+    assert "<pre><code>- sub" in flat
+    assert "<li>\n<p><strong>Item.</strong></p>\n<table>" in fixed
+    assert "<pre>" not in fixed
+
+
+@pytest.mark.spec("DOCFRAME-004")
+def test_under_indented_list_item_block_fails(gate_mod, tmp_path):
+    _write_dual(tmp_path, _FLAT_BLOCK)
+
+    errors = gate_mod._check_g08(tmp_path)
+
+    assert errors == [
+        "G-08 sdd/adrs/0001-list.md:6: nested list-item block indented 2, Python-Markdown needs 4",
+    ]
+
+
+@pytest.mark.spec("DOCFRAME-004")
+def test_g08_skips_lazy_continuation(gate_mod, tmp_path):
+    # Without a blank line, a short-indented line continues the paragraph in both renderers.
+    _write_dual(tmp_path, "1. a long\n  wrapped line\n    - sub\n")
+
+    assert gate_mod._check_g08(tmp_path) == []
+
+
+@pytest.mark.spec("DOCFRAME-004")
+def test_g08_skips_list_glued_to_paragraph(gate_mod, tmp_path):
+    # Python-Markdown starts no list right after paragraph text, so a
+    # 2-space block under it is not lost nesting (and 4 spaces would be code).
+    import markdown
+
+    body = "**Label:**\n- item\n\n  | a | b |\n  | - | - |\n"
+    assert "<li>" not in markdown.markdown(body, extensions=["tables"])
+    _write_dual(tmp_path, body)
+
+    assert gate_mod._check_g08(tmp_path) == []
+
+
+@pytest.mark.spec("DOCFRAME-004")
+def test_g08_ignores_fences_and_new_lists(gate_mod, tmp_path):
+    # Markers in a fence, and a list after a paragraph break, are not nesting.
+    _write_dual(tmp_path, "1. a\n\n```text\n  - not a list\n```\n\nText.\n - new list, 1 space\n")
+
+    assert gate_mod._check_g08(tmp_path) == []
+
+
+# ---------------------------------------------------------------------------
 # Positive controls: clean fixtures return no errors
 # ---------------------------------------------------------------------------
 
@@ -188,3 +307,15 @@ def test_g06_correct_prefix_passes(gate_mod, tmp_path):
     (docs_src / "_nav.yml").write_text("- Guides:\n    - guides/page.md\n")
 
     assert gate_mod._check_g06(tmp_path) == []
+
+
+@pytest.mark.spec("DOCFRAME-004")
+def test_g08_four_space_nesting_passes(gate_mod, tmp_path):
+    _write_dual(tmp_path, _FIXED_NESTED + "\n- a\n    - b\n        - c\n\n" + _FIXED_BLOCK)
+
+    assert gate_mod._check_g08(tmp_path) == []
+
+
+@pytest.mark.spec("DOCFRAME-004")
+def test_g08_against_live_repo(gate_mod):
+    assert gate_mod._check_g08(ROOT) == []

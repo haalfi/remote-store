@@ -65,9 +65,9 @@ Fix is a one-line import path change (`from remote_store._x import Y` → `from 
 
 3. **Resolve Category 1 internals**  
    Three symbols have no public path and each requires a decision:
-   - `_glob` utilities (`extract_prefix`, `needs_recursive`, `pattern_to_regex`) — expose as public or internalise inside `ext.glob`
-   - `_registry._BACKEND_FACTORIES`, `_register_builtin_backends` — decide via ADR if these are stable API
-   - `_store._validate_metadata` — expose as public helper or remove from extension use
+    - `_glob` utilities (`extract_prefix`, `needs_recursive`, `pattern_to_regex`) — expose as public or internalise inside `ext.glob`
+    - `_registry._BACKEND_FACTORIES`, `_register_builtin_backends` — decide via ADR if these are stable API
+    - `_store._validate_metadata` — expose as public helper or remove from extension use
 
 ---
 

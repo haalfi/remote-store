@@ -470,6 +470,14 @@ no clause of the contract ships unexercised.
 **Promise:** a user gets set up, picks the right backend, writes their own, or
 copies an example, without opening an issue.
 
+- [ ] **BUG-321 — A list that directly follows paragraph text renders as literal dashes on the docs site**
+  spec: DOCFRAME-004 · effort: S · audience: user.site
+  GitHub starts a list right after a paragraph line; Python-Markdown needs a
+  blank line, so `guides/observe.md`'s `Parameters:` + `- max_queue …` reaches
+  the site as one paragraph with literal dashes. Scanning the G-08 published
+  set for a top-level marker after paragraph text finds 447 sites in 81 files.
+  Open decision: none on shape (insert the blank line; extend G-08).
+
 - [ ] **BK-364 — `transfer-operations.md` documents partial files for `download` only, and the other direction is the one that can destroy data**
   spec: — · effort: S · audience: user.site
   `transfer-operations.md` warns that a failed `download` can leave a partial
@@ -521,7 +529,7 @@ copies an example, without opening an issue.
   and nothing checks it against `_nav.yml`. Re-measured, `index.md`,
   `reference/changelog.md`, `explanation/contributing.md` and
   `development-story.md` match no pattern and no comment says why, so both
-  bundles omit them. Open decision: one check with BK-327's G-08, or two.
+  bundles omit them. Open decision: one check with BK-327's new gate, or two.
   Detail: [dossier](backlog/bk-376-llmstxt-sections-hand-listed.md)
 
 - [ ] **BK-332 — Schedule the custom-backend rehearsal**

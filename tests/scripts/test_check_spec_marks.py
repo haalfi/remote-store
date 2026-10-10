@@ -278,7 +278,7 @@ class TestComputeViolations:
         assert violations == []
 
     def test_gate_code_mark_is_not_stale(self) -> None:
-        # Docs-framework gate codes (G-01..G-07, spec 047) are a separate
+        # Docs-framework gate codes (G-NN, spec 047) are a separate
         # traceability namespace cited alongside DOCFRAME-NNN sections.
         violations = compute_violations(
             declared={"BE-014": ["s:1"]},

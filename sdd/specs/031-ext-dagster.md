@@ -248,10 +248,10 @@ to its deserialized object.
 
 1. If `context.has_asset_partitions` is true **and**
    `len(context.asset_partition_keys) > 1`:
-   - For each key in `context.asset_partition_keys`, derive the storage
-     path (or dataset key) using the asset key plus that partition key.
-   - Read and deserialize each partition independently.
-   - Return `{partition_key: deserialized_object, ...}`.
+    - For each key in `context.asset_partition_keys`, derive the storage
+      path (or dataset key) using the asset key plus that partition key.
+    - Read and deserialize each partition independently.
+    - Return `{partition_key: deserialized_object, ...}`.
 2. Otherwise (single or no partition): existing behaviour — return a single
    deserialized object.
 
@@ -291,15 +291,15 @@ public contract. The `ConfigurableClass` hooks are:
 
 - `config_type()` returns a config schema with fields:
 
-  | Field | Type | Required | Default |
-  |-------|------|----------|---------|
-  | `backend_type` | `StringSource` | yes | — |
-  | `backend_options` | `Permissive` dict | no | `{}` |
-  | `root_path` | `StringSource` | no | `""` |
-  | `local_dir` | `StringSource` | no | system temp dir |
-  | `prefix` | `StringSource` | no | `"dagster"` |
-  | `skip_empty_files` | `bool` | no | `false` |
-  | `upload_interval` | `Noneable(int)` | no | `None` |
+    | Field | Type | Required | Default |
+    |-------|------|----------|---------|
+    | `backend_type` | `StringSource` | yes | — |
+    | `backend_options` | `Permissive` dict | no | `{}` |
+    | `root_path` | `StringSource` | no | `""` |
+    | `local_dir` | `StringSource` | no | system temp dir |
+    | `prefix` | `StringSource` | no | `"dagster"` |
+    | `skip_empty_files` | `bool` | no | `false` |
+    | `upload_interval` | `Noneable(int)` | no | `None` |
 
 - `inst_data` (property) returns the `ConfigurableClassData` passed to the
   constructor, or `None` when constructed directly.

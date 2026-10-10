@@ -122,41 +122,41 @@ Two observations show how much a map would select away, and where it must not:
 - **Conformance is parametrized by backend.** The 4,649 conformance tests split
   by the backend name in their test id:
 
-  | Backend | Tests |
-  | --- | --- |
-  | `memory` | 775 |
-  | `s3` | 727 |
-  | `local` | 563 |
-  | `azure` | 556 |
-  | no backend id | 548 |
-  | `sftp` | 364 |
-  | `s3_pyarrow` | 353 |
-  | `sqlblob` | 349 |
-  | `graph` | 212 |
-  | `sqlquery` | 146 |
-  | `http` | 56 |
+    | Backend | Tests |
+    | --- | --- |
+    | `memory` | 775 |
+    | `s3` | 727 |
+    | `local` | 563 |
+    | `azure` | 556 |
+    | no backend id | 548 |
+    | `sftp` | 364 |
+    | `s3_pyarrow` | 353 |
+    | `sqlblob` | 349 |
+    | `graph` | 212 |
+    | `sqlquery` | 146 |
+    | `http` | 56 |
 
-  A change to `backends/_sftp.py` reaches the `sftp` column plus
-  `tests/backends/sftp/`. It does not reach the nine other named backend
-  columns.
+    A change to `backends/_sftp.py` reaches the `sftp` column plus
+    `tests/backends/sftp/`. It does not reach the nine other named backend
+    columns.
 - **`tests/scripts/` is 2,064 tests (17%), but it is not unreachable from
   `src/`.** It reaches `src/` in two ways:
-  - **By import.** `tests/scripts/test_gen_features.py` imports
-    `remote_store._retry`, `remote_store.backends._http`,
-    `remote_store.backends._s3_base` and `Store`.
-  - **By reading source as text.**
-    - `scripts/gen_features.py:259` reads `src/remote_store/_registry.py` with
-      `read_text`, and `test_gen_features.py` drives it.
-    - `scripts/check_test_placement.py:104` AST-walks
-      `src/remote_store/backends/_*.py` when the module is loaded, and
-      `test_check_test_placement.py` loads it. That test file's own
-      `remote_store` imports sit inside string fixtures; its real imports are
-      `ast`, `importlib.util`, `sys` and `pathlib`.
+    - **By import.** `tests/scripts/test_gen_features.py` imports
+      `remote_store._retry`, `remote_store.backends._http`,
+      `remote_store.backends._s3_base` and `Store`.
+    - **By reading source as text.**
+        - `scripts/gen_features.py:259` reads `src/remote_store/_registry.py` with
+          `read_text`, and `test_gen_features.py` drives it.
+        - `scripts/check_test_placement.py:104` AST-walks
+          `src/remote_store/backends/_*.py` when the module is loaded, and
+          `test_check_test_placement.py` loads it. That test file's own
+          `remote_store` imports sit inside string fixtures; its real imports are
+          `ast`, `importlib.util`, `sys` and `pathlib`.
 
-  A `Grep` for `remote_store` over `tests/scripts/` matches 21 files. That
-  counts text occurrences, not dependent files. So a map has to place these per
-  test file, not exclude the directory. The `ci.yml` comment above
-  `tooling-tests` ("not remote_store") makes the same wrong claim.
+    A `Grep` for `remote_store` over `tests/scripts/` matches 21 files. That
+    counts text occurrences, not dependent files. So a map has to place these per
+    test file, not exclude the directory. The `ci.yml` comment above
+    `tooling-tests` ("not remote_store") makes the same wrong claim.
 
 **Which selection mechanism fits this repo.** Selection tools differ in where
 their map comes from: runtime coverage, the git diff, static imports, or a
@@ -241,14 +241,14 @@ the single selector:**
 - **Draft PR: in-progress lane.** Lint, typecheck, and the H1 map-selected
   tests on every supported interpreter (see the `/ship` constraint below). The
   tier is set per leg:
-  - **Non-primary legs:** Stage 1, selected. No Docker.
-  - **Primary leg:** Stage 2, selected, with `prepare-images`. It keeps the
-    live backends, which ADR-0043 makes the per-PR carrier of the live-backend
-    guarantee.
+    - **Non-primary legs:** Stage 1, selected. No Docker.
+    - **Primary leg:** Stage 2, selected, with `prepare-images`. It keeps the
+      live backends, which ADR-0043 makes the per-PR carrier of the live-backend
+      guarantee.
 
-  Dropping the primary to Stage 1 would be cheaper, but a round touching
-  `_s3.py` or `_sftp.py` would then see only moto or in-process SFTP until the
-  close. That trade is the ADR's to make, not a default.
+    Dropping the primary to Stage 1 would be cheaper, but a round touching
+    `_s3.py` or `_sftp.py` would then see only moto or in-process SFTP until the
+    close. That trade is the ADR's to make, not a default.
 - **Non-draft PR: pre-merge lane.** This covers every non-draft PR, including
   one opened as non-draft and one converted from draft. It runs the current
   full `ci.yml` gate, including the coverage floor.

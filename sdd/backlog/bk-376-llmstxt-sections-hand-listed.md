@@ -45,9 +45,8 @@ nav: the omission is invisible either way.
 opt-out list in `mkdocs.yml` carrying a reason per excluded page — so the
 three above become declared exclusions or become entries, and the next one
 cannot be neither. The open choice is **one check or two**: BK-327's fix
-shape already claims G-08 in `check_docs_framework.py` (which today defines
-G-01 through G-07), so this either folds into that same check or takes its
-own ID beside it. Folding is the likely economy, since both difference
+shape already claims a new gate in `check_docs_framework.py`, so this either
+folds into that same check or takes its own ID beside it. Folding is the likely economy, since both difference
 emitted pages against `_nav.yml`.
 **Measured, not hypothetical:** `explanation/dependency-policy.md` (BK-371)
 had to be added to this list by hand, and was caught by reading the config

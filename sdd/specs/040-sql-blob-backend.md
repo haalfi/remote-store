@@ -241,16 +241,16 @@ regex to enforce GLOB-014 semantics (`*` = `[^/]*`, `?` = `[^/]`):
 
 1. **SQL narrowing:** on every dialect, by two literal parts of the pattern,
    each applied only when non-empty:
-   - `extract_prefix(pattern)`, the longest literal directory prefix: keys
-     under `prefix/`, by the SQL-BLOB-061 predicate.
-   - The literal tail after the last `*`, `?`, `[` or `]`: escaped
-     `key LIKE '%' || tail ESCAPE '\'`, or the same followed by one `\n`,
-     because the client-side regex anchors with `$`, which also accepts one
-     trailing newline. A tail that follows `**` drops its leading `/`,
-     because `**/` also matches zero directories.
+    - `extract_prefix(pattern)`, the longest literal directory prefix: keys
+      under `prefix/`, by the SQL-BLOB-061 predicate.
+    - The literal tail after the last `*`, `?`, `[` or `]`: escaped
+      `key LIKE '%' || tail ESCAPE '\'`, or the same followed by one `\n`,
+      because the client-side regex anchors with `$`, which also accepts one
+      trailing newline. A tail that follows `**` drops its leading `/`,
+      because `**/` also matches zero directories.
 
-   Wildcards themselves are never translated to `LIKE`: `%/` cannot match the
-   zero directories `**/` can, and `[...]` has no `LIKE` form.
+    Wildcards themselves are never translated to `LIKE`: `%/` cannot match the
+    zero directories `**/` can, and `[...]` has no `LIKE` form.
 2. **Client-side regex:** `pattern_to_regex(pattern)` from `_glob.py` filters
    the SQL result set to enforce GLOB-014 semantics, ensuring `*` and `?` do
    not match path separators.

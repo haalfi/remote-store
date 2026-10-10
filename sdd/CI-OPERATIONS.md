@@ -192,28 +192,28 @@ documented in [`CONTRIBUTING.md`](../CONTRIBUTING.md).
   queues daytime CI behind it.
 - **Where the finding shows up:** depends on which of the two outcomes
   occurred. They are deliberately split:
-  - **Harness / implementation failure** (the run itself broke: an import,
-    config, or tooling error, a baseline test failure, a leg that recorded no
-    outcome or no readable report): the run is **red** AND the single
-    **rolling `[mutation]` GitHub Issue** is opened or updated. This is the same
-    split drift-guard makes and for the same reason — a finding about a
-    dependency or a mutant is advisory and lives on the issue, while a guard
-    that broke is a real regression worth both a red X and a durable TODO. What
-    differs is where each guard draws the line: drift-guard's newest-lane smoke
-    failure is red because it is a regression against a resolution CI accepted,
-    and its floor lane is never red because a known-bad floor is a standing
-    decision rather than a new break.
-  - **Surviving mutant** (a mutated line no test caught): **advisory only**.
-    The run stays green and no issue is opened; counts appear in the
-    run-summary table and the per-scope HTML report artifacts. The mutation
-    runner never fails a run on survivors, and strict coverage gates already
-    run in CI, so survivors feed a coverage-hardening pass rather than a
-    standalone TODO.
-  - **ERROR gremlin** (no verdict reached, mostly a timeout the plugin could
-    not confirm): **advisory**, like survivors, but its own `errors` verdict,
-    so the scope never reads `ok`. When the issue is open for other reasons,
-    its body lists these scopes and quotes the plugin's `timeout_warning`. The
-    fix is `mutant_timeout` in `[tool.pytest-gremlins]` or faster tests.
+    - **Harness / implementation failure** (the run itself broke: an import,
+      config, or tooling error, a baseline test failure, a leg that recorded no
+      outcome or no readable report): the run is **red** AND the single
+      **rolling `[mutation]` GitHub Issue** is opened or updated. This is the same
+      split drift-guard makes and for the same reason — a finding about a
+      dependency or a mutant is advisory and lives on the issue, while a guard
+      that broke is a real regression worth both a red X and a durable TODO. What
+      differs is where each guard draws the line: drift-guard's newest-lane smoke
+      failure is red because it is a regression against a resolution CI accepted,
+      and its floor lane is never red because a known-bad floor is a standing
+      decision rather than a new break.
+    - **Surviving mutant** (a mutated line no test caught): **advisory only**.
+      The run stays green and no issue is opened; counts appear in the
+      run-summary table and the per-scope HTML report artifacts. The mutation
+      runner never fails a run on survivors, and strict coverage gates already
+      run in CI, so survivors feed a coverage-hardening pass rather than a
+      standalone TODO.
+    - **ERROR gremlin** (no verdict reached, mostly a timeout the plugin could
+      not confirm): **advisory**, like survivors, but its own `errors` verdict,
+      so the scope never reads `ok`. When the issue is open for other reasons,
+      its body lists these scopes and quotes the plugin's `timeout_warning`. The
+      fix is `mutant_timeout` in `[tool.pytest-gremlins]` or faster tests.
 - **How to act:** run the **`/mutation` skill**. It reads the rolling issue,
   classifies each failing scope from the linked run's logs (baseline test
   failure vs harness/tooling break vs setup death), and fixes the regression
@@ -239,14 +239,14 @@ documented in [`CONTRIBUTING.md`](../CONTRIBUTING.md).
   `pip` PRs the approval click is the load-bearing gate: it fires the merge.
   For `github-actions` PRs the merge itself is the manual step.
 - **How to act, per ecosystem:**
-  - **`github-actions` (`Chore(deps)`):** diff the action's changelog and
-    confirm no `with:` input or permission surface changed. Then merge
-    manually: `gh pr merge <N> --squash --delete-branch` (approval alone does
-    nothing for this ecosystem).
-  - **`pip` dev-dep (`Chore(deps-dev)`):** a red CI is a real signal. Decide
-    whether the failing ceiling is real (hold the PR, or bump the floor) or
-    transient/unsupported (close it). Approve only when green and understood:
-    approval auto-merges to `master`, irreversibly.
+    - **`github-actions` (`Chore(deps)`):** diff the action's changelog and
+      confirm no `with:` input or permission surface changed. Then merge
+      manually: `gh pr merge <N> --squash --delete-branch` (approval alone does
+      nothing for this ecosystem).
+    - **`pip` dev-dep (`Chore(deps-dev)`):** a red CI is a real signal. Decide
+      whether the failing ceiling is real (hold the PR, or bump the floor) or
+      transient/unsupported (close it). Approve only when green and understood:
+      approval auto-merges to `master`, irreversibly.
 
 ### `codeql.yml` — security scanning (exception to Rule 1)
 
@@ -366,17 +366,17 @@ documented in [`CONTRIBUTING.md`](../CONTRIBUTING.md).
   `scripts/check_ci_inventory.py` does not parse it (that gate reads
   `.github/workflows/*.yml` only; RTD is inventoried here by convention).
 - **Out-of-repo state the maintainer owns (RTD dashboard):**
-  - **Default version `stable`** with URL scheme `/<version>/<filename>`, so the
-    canonical deep-link form is `docs.remotestore.dev/stable/…` and every doc link
-    uses it.
-  - **One redirect** (Admin → Redirects): `/context7.json` →
-    `/stable/context7.json`. It lets Context7 fetch the docs-site manifest (built
-    from `docs-src/context7.json`) at the domain root. Because `/stable/` is the
-    highest-tag build, a change to that manifest reaches the redirect target only
-    on the next release; repoint the redirect at `/latest/context7.json` to serve
-    the `master` build sooner.
-  - The **automation rule** above and the **`docs.remotestore.dev` custom
-    domain**.
+    - **Default version `stable`** with URL scheme `/<version>/<filename>`, so the
+      canonical deep-link form is `docs.remotestore.dev/stable/…` and every doc link
+      uses it.
+    - **One redirect** (Admin → Redirects): `/context7.json` →
+      `/stable/context7.json`. It lets Context7 fetch the docs-site manifest (built
+      from `docs-src/context7.json`) at the domain root. Because `/stable/` is the
+      highest-tag build, a change to that manifest reaches the redirect target only
+      on the next release; repoint the redirect at `/latest/context7.json` to serve
+      the `master` build sooner.
+    - The **automation rule** above and the **`docs.remotestore.dev` custom
+      domain**.
 - **In-repo pieces kept in sync:** `.readthedocs.yaml` (Python pinned to
   `.python-version`, enforced by `scripts/check_readthedocs_python.py` in
   `hatch run lint`); `scripts/docs/gen_llms_api.sh` (pins `lx`, non-fatal by
