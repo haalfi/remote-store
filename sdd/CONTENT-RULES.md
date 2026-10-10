@@ -7,7 +7,8 @@ Rules for writing documentation that stays accurate over time (rules 1–6),
 applying to all content: README, guides, docstrings, and inline doc comments.
 **Rule 7 is a second axis and carries its own narrower scope**: it is about
 whether a section is understood well enough to write, and it binds the repo's
-own reasoning surfaces, `sdd/`, `.claude/` and the root-level process docs.
+own reasoning surfaces: `sdd/`, `.claude/`, `CLAUDE.md`, `CONTRIBUTING.md` and
+`AGENTS.md`.
 **Rule 8 is a third axis** and applies to all content like rules 1–6: it is
 about which change owns a claim, not how long the claim stays accurate.
 
@@ -48,7 +49,8 @@ framework](../CLAUDE.md#documentation-framework)): placement →
    them.
 
 6. <a id="code-examples-sourced"></a>**A fenced block in published prose is generated or sourced, not typed.** [review-enforced]
-   Each block comes from its home, so a change upstream reaches it.
+   Each block comes from one of two homes, and a hand-written fence is the
+   bounded exception.
    - **Runnable code** comes from `examples/snippets/` via `pymdownx.snippets`
      `--8<--` regions, so CI catches API drift.
    - **A generated non-code artefact**, such as a diagram derived from the
@@ -63,10 +65,11 @@ framework](../CLAUDE.md#documentation-framework)): placement →
 
 7. <a id="kernsatz"></a>**Lead with the Kernsatz** — the core claim, stated first. [review-enforced]
    A new or substantially rewritten section in `sdd/`, `.claude/` or a
-   root-level process doc opens with its core claim in at most three
-   sentences; if the claim will not come, the section is not yet understood
-   well enough to write, so return to the source instead of writing around the
-   gap ([why this scope](#rule-7-detail)).
+   root-level process doc (`CLAUDE.md`, `CONTRIBUTING.md`, `AGENTS.md`) opens
+   with its core claim in at most three sentences; if the claim will not come,
+   the section is not yet understood well enough to write, so return to the
+   source — the material the section is about — instead of writing around the
+   gap.
    - The opening defines any term the section coins or uses in a sense the
      reader cannot be assumed to hold. A one-clause gloss plus a link satisfies
      both this and Rule 4.
@@ -81,12 +84,14 @@ framework](../CLAUDE.md#documentation-framework)): placement →
      by definition.
 
 8. <a id="change-details-what-it-changes"></a>**A change details only the behaviour it owns.** [review-enforced]
-   Text a change writes, such as a docstring, a spec clause, a guide, a
-   migration note or a dossier, describes in detail only behaviour the change
-   alters, including behaviour it introduces, or exists to document
-   ([why](#rule-8-detail)).
-   - Behaviour it leaves alone gets at most a one-line pointer to its home: the
-     code (Rule 5) and the item, spec or ADR that governs it.
+   A change *owns* the behaviour it alters, including behaviour it introduces,
+   and the behaviour it exists to document, as a guide for an existing feature
+   or a docstring made accurate does; it *leaves alone* everything else. Text
+   the change writes, such as a docstring, a spec clause, a guide, a migration
+   note or a dossier, describes in detail only behaviour the change owns.
+   - Behaviour the change leaves alone already has a home, the code (Rule 5)
+     and the item, spec or ADR that governs it, so the change gives it at most
+     a one-line pointer to that item.
    - A finding on such detail is fixed by deleting it or replacing it with the
      pointer, never by narrowing it.
    - **This binds description, not premise.** A claim the change relies on,
@@ -97,25 +102,6 @@ framework](../CLAUDE.md#documentation-framework)): placement →
      [`/fix-pr` Step 3](../.claude/skills/fix-pr/SKILL.md#step-3-fix).
 
 ## Guides
-
-<a id="rule-7-detail"></a>
-### Why Rule 7's scope is narrow
-
-**Rule 7 governs comprehension at writing time, so it binds only surfaces
-where author and reader are both contributors.** Rules 1–6 govern accuracy over
-time and apply everywhere. Extending Rule 7 to `docs-src/` and docstrings has not
-been argued for: those readers are not contributors, and § 9.5 of the record in
-[Provenance](#provenance) argues they need *more* context rather than a tighter
-opening.
-
-<a id="rule-8-detail"></a>
-### Why Rule 8 deletes rather than narrows
-
-**Detail about behaviour a change does not own is a claim it had no reason to
-measure, and narrowing it only moves the refutation.** Such detail is the claim
-a review refutes on the interpreter or platform nobody ran, and a narrower claim
-is refuted the same way somewhere else. A premise is the opposite case:
-deleting a refuted one would ship the code built on it.
 
 ### Examples (bad → good)
 
