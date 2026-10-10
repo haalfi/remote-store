@@ -141,3 +141,16 @@ phases:
           naming the file. In-slack cuts accumulating across merges is now a
           stated bound, and the shrink message tells a PR that made no cut
           why it fails. Five mutants of the fix, each killed
+  - id: fix_3
+    name: "Fix pass after the maintainer's second review on PR #1110"
+    steps:
+      - file: scripts/check_process_budget.py
+        section: "integrity, SLACK, Bounds, Drift-gate rule"
+        read_type: verify
+        extract: >-
+          A plain run never read raises, slack or total against files, so a
+          hand edit passed. Now every run checks total == sum(files), no
+          unknown key and well-formed raises; slack moved into code. A file
+          without history cannot catch a consistent edit of total and files
+          together, so that is a stated bound and the rule line narrowed.
+          Seven mutants, each killed

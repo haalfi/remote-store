@@ -8,7 +8,6 @@
     "sdd/CLAUDE-REFERENCE.md",
     "sdd/traces/_schema.yml"
   ],
-  "slack": 0.02,
   "total": 295438,
   "files": {
     "CLAUDE.md": 16931,

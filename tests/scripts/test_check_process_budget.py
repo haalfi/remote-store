@@ -30,7 +30,7 @@ def _load():
 _mod = _load()
 
 
-def _tree(root: Path, files: dict[str, bytes], total: int | None = None, slack: float = 0.02) -> None:
+def _tree(root: Path, files: dict[str, bytes], total: int | None = None) -> None:
     for rel, body in files.items():
         path = root / rel
         path.parent.mkdir(parents=True, exist_ok=True)
@@ -38,7 +38,6 @@ def _tree(root: Path, files: dict[str, bytes], total: int | None = None, slack: 
     sizes = {rel: len(body) for rel, body in files.items()}
     budget = {
         "globs": ["CLAUDE.md", ".claude/skills/*/SKILL.md"],
-        "slack": slack,
         "total": sum(sizes.values()) if total is None else total,
         "files": sizes,
         "raises": [],
@@ -83,14 +82,14 @@ class TestCheck:
         assert ".claude/skills/new/SKILL.md (new)" in capsys.readouterr().err
 
     def test_shrink_within_slack_passes(self, tmp_path: Path) -> None:
-        _tree(tmp_path, _BASE, slack=0.02)
+        _tree(tmp_path, _BASE)
         (tmp_path / "CLAUDE.md").write_bytes(b"a" * 96)  # 196 >= floor 196
         assert _mod.main([], root=tmp_path) == 0
 
     def test_shrink_past_slack_fails_and_asks_for_update(
         self, tmp_path: Path, capsys: pytest.CaptureFixture[str]
     ) -> None:
-        _tree(tmp_path, _BASE, slack=0.02)
+        _tree(tmp_path, _BASE)
         (tmp_path / "CLAUDE.md").write_bytes(b"a" * 95)  # 195 < floor 196
         assert _mod.main([], root=tmp_path) == 1
         err = capsys.readouterr().err
@@ -124,16 +123,55 @@ class TestUnreadableBudget:
     def test_missing_key(self, tmp_path: Path, capsys: pytest.CaptureFixture[str]) -> None:
         _tree(tmp_path, _BASE)
         budget = _budget(tmp_path)
-        del budget["slack"]
+        del budget["total"]
         (tmp_path / "sdd" / "process-budget.json").write_text(json.dumps(budget), encoding="utf-8")
         assert _mod.main([], root=tmp_path) == 2
-        assert self._PREFIX + "KeyError: 'slack'" in capsys.readouterr().err
+        assert self._PREFIX + "KeyError: 'total'" in capsys.readouterr().err
 
     def test_missing_file(self, tmp_path: Path, capsys: pytest.CaptureFixture[str]) -> None:
         _tree(tmp_path, _BASE)
         (tmp_path / "sdd" / "process-budget.json").unlink()
         assert _mod.main([], root=tmp_path) == 2
         assert self._PREFIX + "FileNotFoundError" in capsys.readouterr().err
+
+
+class TestIntegrity:
+    """Hand edits a plain run can see in the file itself are exit 2, not a silent pass."""
+
+    def _edit(self, root: Path, **changes: object) -> None:
+        budget = _budget(root)
+        budget.update(changes)
+        (root / "sdd" / "process-budget.json").write_text(json.dumps(budget), encoding="utf-8")
+
+    def test_total_raised_without_files(self, tmp_path: Path, capsys: pytest.CaptureFixture[str]) -> None:
+        _tree(tmp_path, _BASE)
+        self._edit(tmp_path, total=400)
+        (tmp_path / "CLAUDE.md").write_bytes(b"a" * 250)  # growth the hand edit would admit
+        assert _mod.main([], root=tmp_path) == 2
+        assert "total 400 is not the sum of files (200)" in capsys.readouterr().err
+
+    def test_slack_key_is_rejected(self, tmp_path: Path, capsys: pytest.CaptureFixture[str]) -> None:
+        _tree(tmp_path, _BASE)
+        self._edit(tmp_path, slack=1.0)
+        assert _mod.main([], root=tmp_path) == 2
+        assert "unknown key(s): slack" in capsys.readouterr().err
+
+    @pytest.mark.parametrize(
+        "entry",
+        [
+            {"item": "BK-422", "from": 100, "to": 200},
+            {"item": "BK-422", "from": 100, "to": 200, "reason": " "},
+            {"item": "bk422", "from": 100, "to": 200, "reason": "x"},
+            {"item": "BK-422", "from": 200, "to": 100, "reason": "x"},
+        ],
+    )
+    def test_malformed_raise_entry(
+        self, tmp_path: Path, capsys: pytest.CaptureFixture[str], entry: dict[str, object]
+    ) -> None:
+        _tree(tmp_path, _BASE)
+        self._edit(tmp_path, raises=[entry])
+        assert _mod.main([], root=tmp_path) == 2
+        assert "raises[0] needs an item, a reason, and from < to" in capsys.readouterr().err
 
 
 class TestUpdate:
