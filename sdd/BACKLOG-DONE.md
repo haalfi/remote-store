@@ -304,7 +304,9 @@ if evidence changes; these are retired.
   and `os.walk(onerror=...)` under one rule: absent is empty or skipped, a
   denial is `PermissionDenied`, any other `OSError` the base class. The
   recursive `list_files` also stops leaving out a subfolder it cannot read;
-  one deleted mid-walk is still skipped, filed under BUG-318.
+  one deleted mid-walk is still skipped, and a Windows delete-pending one
+  raises, both under BUG-318. A link into a folder the caller cannot enter is
+  skipped, a BE-021 rule.
   Fixed in place; RFC-0017's kernel takes it over at D3 step 5. `glob` and
   `get_folder_info` were filed as BUG-318. Tests:
   `tests/backends/local/test_listing_errors.py`. Trace:

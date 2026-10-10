@@ -34,11 +34,26 @@ if TYPE_CHECKING:
 
 _ALL_CAPABILITIES = CapabilitySet(set(Capability) - {Capability.USER_METADATA})
 
-# What Windows raises for a symlink that resolves to itself (CPython's pathlib
-# names it too); its errno is EINVAL, so ELOOP alone does not catch it.
-_WINERROR_CANT_RESOLVE_FILENAME = 1921
+# The winerrors a listing reads as absent, the set CPython's pathlib ignores: a
+# drive not ready (21), an invalid name (123), and a symlink that resolves to
+# itself (1921). CPython builds 21 as a ``PermissionError`` and maps 1921 to
+# EINVAL, so neither the exception class nor ELOOP catches them.
+_ABSENT_WINERRORS = frozenset({21, 123, 1921})
+
+# A Windows directory junction's reparse tag. ``stat`` defines the constant on
+# Windows only, and ``lstat`` reports a junction as a directory, not a link.
+_IO_REPARSE_TAG_MOUNT_POINT = 0xA0000003
 
 log = logging.getLogger(__name__)
+
+
+def _is_link(full: Path) -> bool:
+    """Whether *full* is a symlink or a Windows directory junction; ``False`` if ``lstat`` fails."""
+    try:
+        st = os.lstat(full)
+    except OSError:
+        return False
+    return stat.S_ISLNK(st.st_mode) or getattr(st, "st_reparse_tag", 0) == _IO_REPARSE_TAG_MOUNT_POINT
 
 
 class LocalBackend(Backend):
@@ -560,10 +575,11 @@ class LocalBackend(Backend):
         ``max_depth`` set, traversal is pruned at the depth bound during the
         ``os.walk`` rather than filtered afterwards.
 
-        A subfolder or file that disappears while the walk is running, or a
-        symlink that loops, is skipped, so a tree changed during the walk can
-        list short. A subfolder the walk descends into but cannot read is
-        never skipped: the listing raises instead.
+        A subfolder or file that disappears while the walk is running, a
+        symlink that loops, or a link (a symlink, or a Windows junction) into a
+        folder the caller cannot enter, is skipped, so a tree changed during
+        the walk can list short. A subfolder the walk descends into but cannot
+        read is never skipped: the listing raises instead.
 
         Raises:
             PermissionDenied: If the OS denies reading *path*, a subfolder the
@@ -578,7 +594,11 @@ class LocalBackend(Backend):
                 if st is not None and stat.S_ISREG(st.st_mode):
                     yield self._fileinfo_from_stat(self.to_key(str(item)), item, st)
             return
-        for dirpath, dirnames, filenames in os.walk(full, onerror=self._raise_walk_error):
+
+        def raise_walk_error(exc: OSError) -> None:
+            self._raise_walk_error(exc, full)
+
+        for dirpath, dirnames, filenames in os.walk(full, onerror=raise_walk_error):
             depth = len(Path(dirpath).relative_to(full).parts)
             if max_depth is not None and depth > max_depth:
                 dirnames.clear()
@@ -595,8 +615,8 @@ class LocalBackend(Backend):
         """Yield immediate subfolders of *path* as ``FolderEntry`` records.
 
         Lazy single-level scan; a missing or non-folder *path* yields nothing,
-        and an entry that disappears during the scan, or a symlink that
-        loops, is skipped.
+        and an entry that disappears during the scan, a symlink that loops, or
+        a link into a folder the caller cannot enter, is skipped.
 
         Raises:
             PermissionDenied: If the OS denies reading *path* or the metadata
@@ -616,8 +636,8 @@ class LocalBackend(Backend):
         Overrides the base (which chains ``list_files`` and ``list_folders``,
         two passes) to walk the directory once, yielding ``FileInfo`` for files
         and ``FolderEntry`` for folders. A missing or non-folder *path* yields
-        nothing, and an entry that disappears during the scan, or a symlink
-        that loops, is skipped.
+        nothing, and an entry that disappears during the scan, a symlink that
+        loops, or a link into a folder the caller cannot enter, is skipped.
 
         Raises:
             PermissionDenied: If the OS denies reading *path* or the metadata
@@ -934,22 +954,27 @@ class LocalBackend(Backend):
             return False
         return True
 
-    def _listing_error(self, exc: OSError, full: Path) -> RemoteStoreError | None:
-        """Classify an OS error met by a listing at *full*; ``None`` means absent.
+    def _listing_error(self, exc: OSError, full: Path, *, entry: bool) -> RemoteStoreError | None:
+        """Classify an OS error met by a listing at *full*; ``None`` means skip it.
 
         An absent answer lets the caller treat the folder or entry as not
         there: an empty listing for the target, a skip for a subfolder or
-        entry that vanished mid-walk. A symlink loop (``ELOOP``, or Windows'
-        ``ERROR_CANT_RESOLVE_FILENAME``, which CPython maps to ``EINVAL``) is
-        absent too, like a dangling link: it names nothing that can be listed.
-        Every other error is mapped, never skipped, so a folder the listing
-        cannot read never ends it short as if it were complete.
+        entry that vanished mid-walk. A symlink loop (``ELOOP``, or winerror
+        1921) is absent too, like a dangling link: it names nothing that can be
+        listed. So is Windows' drive not ready (21) or invalid name (123). An
+        *entry* (anything but the folder asked for) that is a link the OS
+        refuses to follow is skipped as well: it is readable as a link, and only
+        its target is refused, so the folder being listed was not. Every other
+        error is mapped, never skipped, so a folder the listing cannot read
+        never ends it short as if it were complete.
         """
         if (
             isinstance(exc, (FileNotFoundError, NotADirectoryError))
             or exc.errno == errno.ELOOP
-            or getattr(exc, "winerror", None) == _WINERROR_CANT_RESOLVE_FILENAME
+            or getattr(exc, "winerror", None) in _ABSENT_WINERRORS
         ):
+            return None
+        if isinstance(exc, PermissionError) and entry and _is_link(full):
             return None
         key = self.to_key(str(full))
         if isinstance(exc, PermissionError):
@@ -962,28 +987,31 @@ class LocalBackend(Backend):
             with os.scandir(full) as it:
                 return list(it)
         except OSError as exc:
-            mapped = self._listing_error(exc, full)
+            mapped = self._listing_error(exc, full, entry=False)
             if mapped is None:
                 return []
             raise mapped from None
 
     def _stat_entry(self, full: Path) -> os.stat_result | None:
-        """Stat a listed entry, following links; ``None`` if it is absent (vanished, or a looping link)."""
+        """Stat a listed entry, following links; ``None`` to skip it (see ``_listing_error``)."""
         try:
             return os.stat(full)
         except OSError as exc:
-            mapped = self._listing_error(exc, full)
+            mapped = self._listing_error(exc, full, entry=True)
             if mapped is None:
                 return None
             raise mapped from None
 
-    def _raise_walk_error(self, exc: OSError) -> None:
-        """``os.walk``'s ``onerror``: skip an absent folder, raise anything else.
+    def _raise_walk_error(self, exc: OSError, top: Path) -> None:
+        """``os.walk``'s ``onerror`` for a walk of *top*: skip what ``_listing_error`` skips, raise the rest.
 
         ``os.walk`` passes the failed folder as ``exc.filename``; without this
-        hook it skips every folder it cannot scan, absent or denied alike.
+        hook it skips every folder it cannot scan, absent or denied alike. A
+        folder below *top* is an entry of its parent, so a junction the walk
+        descended into is skipped as a link.
         """
-        mapped = self._listing_error(exc, Path(exc.filename))
+        failed = Path(exc.filename)
+        mapped = self._listing_error(exc, failed, entry=failed != top)
         if mapped is not None:
             raise mapped from None
 

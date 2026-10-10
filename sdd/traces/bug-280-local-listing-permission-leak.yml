@@ -24,6 +24,9 @@ surprising_ripples:
   - sdd/backlog/bk-396-kernel-delete-folder-sequence.md
   - sdd/rfcs/rfc-0012-doc-graph-model.md
   - sdd/rfcs/rfc-0017-contract-kernel-over-thin-drivers.md
+  # Follow-up: the Known-divergences count paragraph, stale since round 5
+  # added a bullet the count did not follow.
+  - sdd/specs/003-backend-adapter-contract.md
 expected_ripples:
   # The two generated artefacts the ripple-check names for a public docstring
   # change; sdd/backlogid.json is not here, since gen-backlogid takes the max
@@ -33,6 +36,7 @@ expected_ripples:
 decisions:
   - sdd/decisions/04387f02-b97f-4133-ab2e-e9c3b7b02bc4.jsonl
   - sdd/decisions/4b0278bb-bdf1-40a2-bfdb-7f645ce7a779.jsonl
+  - sdd/decisions/aea513e5-6990-4bc5-a9c4-d38cca0637b8.jsonl
 orient:
   - items: [BK-389, BK-394, BK-345]
     verdict: subsumes
@@ -76,6 +80,25 @@ orient:
     evidence: >-
       Found via `LocalBackend`; it is `ext.glob` pattern canonicalisation by
       capability tier (GLOB-007..014), not error mapping.
+  # Follow-up pass (session F, after review closed): re-oriented on the
+  # rebased branch for the merge conditions in the research record.
+  - items: [BUG-318, BUG-319]
+    verdict: constrains
+    evidence: >-
+      `sdd/BACKLOG.md` entries on this branch, no dossiers. BUG-318 keeps
+      `glob` and `get_folder_info` and the mid-walk skip's open decision, so
+      the link skip must stay inside the three listings and must not decide
+      the vanished-subfolder question. BUG-319 keeps the single-path stats.
+      #1093's BUG-311 and BUG-313 dossiers measured both on master's code for
+      those methods (`git diff eff7953bb HEAD -- _local.py` touches neither
+      `glob`, `get_folder_info`, `get_file_info` nor the predicates), so their
+      diagnosis carries over; BK-416, which they defer to, does not, since
+      this PR fixes the walks it was filed for.
+  - items: [BUG-299]
+    verdict: unrelated
+    evidence: >-
+      Found by `backlog-find` on `LocalBackend`; it is `write` on a `..` key,
+      not a listing or a stat.
 phases:
   - id: orient
     name: Orient
@@ -233,6 +256,78 @@ phases:
           subfolder and listed an EIO target empty; the 3 flat target cells are
           inconclusive (3.11's iterdir uses os.listdir, not os.scandir). The
           migration note's EIO sentence is narrowed to that
+  # Session F: the follow-up the maintainer made a condition of merging, after
+  # the review loop above had closed. Scope: the link skip, winerrors 21 and
+  # 123, the delete-pending divergence, the BUG-318/319 dossiers, and #1093's
+  # runbook section and real-denial cases (user decision, scope dialog).
+  - id: followup
+    name: Merge-condition follow-up
+    steps:
+      - file: sdd/research/token-usage/report.md
+        section: "Run B; The two deliveries compared"
+        read_type: gate
+        extract: "What #1113 owes before merge: link skip, winerrors 21/123, delete-pending documented, BUG-318/319 dossiers"
+      - file: "bug280-diff-comparison.md (token kit, outside the repo)"
+        section: "Risks found in the diffs; Verification of risk 1"
+        read_type: reference
+        outcome: misleading
+        extract: >-
+          Risk 2 says the link regression is "on 3.14 only". Measured (next
+          step), master's max_depth branch already skipped a junction on
+          Windows 3.11 to 3.13, and leaked on POSIX 3.14, so the regression's
+          reach is per branch and platform, not per interpreter alone
+      - file: sdd/research/token-usage/delete_pending_probe.py
+        section: "P1b (classic disposition)"
+        read_type: reference
+        extract: "SetFileInformationByHandle(FileDispositionInfo) on an empty sub with a second handle open; the test reuses this shape"
+      - file: tmp/probe_link.py
+        section: "(probe, not committed): a link in a/ into a locked folder, master vs #1113 git-archive trees"
+        read_type: verify
+        extract: >-
+          Windows (junction, locked denied (S)): master 3.11, 3.12, 3.13 leak a
+          bare PermissionError from list_files, its recursive form,
+          list_folders and iter_children, and the max_depth branch skips the
+          junction; master 3.14.2 skips it in all five. #1113 raises
+          PermissionDenied path a/j from all five on 3.11 and 3.14. POSIX
+          (python:3.11-slim and 3.14-slim, uid 1000, file symlink into a mode-000
+          folder): master 3.11 leaks a bare PermissionError from all five;
+          3.14 skips it in four and leaks from the max_depth branch; #1113
+          raises PermissionDenied from all five on both
+      - file: "origin/bug-280-local-listing-permission: tests/backends/local/test_listing_permission.py, sdd/TESTING-RUNBOOK.md"
+        section: "link, junction and ACL cases; Real OS denials on Windows"
+        read_type: reference
+        extract: "Junction + (S) and symlink + chmod 0 recipes, (RD) for a folder denial; carried over adapted to test_listing_errors.py"
+      - file: tests/backends/local/test_listing_errors.py
+        section: "winerror cells, link skip and its boundary, delete-pending pin, real chmod and ACL denials"
+        read_type: verify
+        extract: >-
+          Before the fix: 29 failed on Windows 3.13 (24 winerror-21/123 cells, 5
+          link cells), 5 failed on python:3.11-slim (link cells). After: 104
+          passed, 15 skipped on Windows 3.11, 3.13 and 3.14; 88 passed, 31
+          skipped on python:3.11 and 3.14 in Docker. Mutants: the link skip on
+          the target scan (killed by 3 boundary cells), on the walk's top (2),
+          never in the walk's onerror (2, so os.walk does descend into the
+          junction), winerror 5 read as absent (12, the 2 delete-pending pins
+          among them)
+      - file: sdd/specs/003-backend-adapter-contract.md
+        section: "BE-021 Known divergences count; Broad exception handler rule"
+        read_type: reference
+        outcome: misleading
+        extract: >-
+          The count paragraph still said "two live bullets" after this PR's
+          round 5 added the LocalBackend bullet, and "every live entry created
+          by a clause that grew", which that bullet is not; both corrected. The
+          handler rule allowed silent returns only for the three predicates,
+          so the listings' skips needed naming there; the link rule is written
+          as that exception
+      - file: "origin/bug-280-local-listing-permission: sdd/backlog/bug-311-*.md, bug-313-*.md"
+        section: "Evidence"
+        read_type: reference
+        extract: >-
+          Measured on #1093's branch, whose glob, get_folder_info, get_file_info,
+          predicates and delete_folder are master's code, as on #1113 (its
+          _local.py hunks touch only the listings, helpers and imports); folded
+          into the BUG-318 and BUG-319 dossiers. BK-416 not carried
 review:
   # Derived by `hatch run ship-report 1113 --trace-block-only` at head 960c268.
   # Do not hand-edit, except a newly required field per sdd/traces/_schema.yml
