@@ -247,7 +247,14 @@ list_files(
 
 Yield files under *path*, one `FileInfo` at a time.
 
-Lazy: entries are produced as the directory is scanned, so listing a large tree holds only the current entry in memory. A missing or non-folder *path* yields nothing (no error). With `recursive` and `max_depth` set, traversal is pruned at the depth bound during the `os.walk` rather than filtered afterwards.
+Lazy: entries are produced as the tree is walked, so listing a large tree holds one directory's entries in memory at a time. A missing or non-folder *path* yields nothing (no error). With `recursive` and `max_depth` set, traversal is pruned at the depth bound during the `os.walk` rather than filtered afterwards.
+
+A subfolder or file that disappears while the walk is running, a symlink that loops, or a link (a symlink, or a Windows junction) into a folder the caller cannot enter, is skipped, so a tree changed during the walk can list short. A subfolder the walk descends into but cannot read is never skipped: the listing raises instead.
+
+Raises:
+
+- `PermissionDenied` – If the OS denies reading path, a subfolder the walk descends into, or the metadata of an entry.
+- `RemoteStoreError` – If any of those fails for another OS reason.
 
 ### list_folders
 
@@ -257,7 +264,12 @@ list_folders(path: str) -> Iterator[FolderEntry]
 
 Yield immediate subfolders of *path* as `FolderEntry` records.
 
-Lazy single-level scan; a missing or non-folder *path* yields nothing.
+Lazy single-level scan; a missing or non-folder *path* yields nothing, and an entry that disappears during the scan, a symlink that loops, or a link into a folder the caller cannot enter, is skipped.
+
+Raises:
+
+- `PermissionDenied` – If the OS denies reading path or the metadata of an entry.
+- `RemoteStoreError` – If either fails for another OS reason.
 
 ### iter_children
 
@@ -269,7 +281,12 @@ iter_children(
 
 Yield the immediate files and folders under *path* in one scan.
 
-Overrides the base (which chains `list_files` and `list_folders`, two passes) to walk the directory once, yielding `FileInfo` for files and `FolderEntry` for folders. A missing or non-folder *path* yields nothing.
+Overrides the base (which chains `list_files` and `list_folders`, two passes) to walk the directory once, yielding `FileInfo` for files and `FolderEntry` for folders. A missing or non-folder *path* yields nothing, and an entry that disappears during the scan, a symlink that loops, or a link into a folder the caller cannot enter, is skipped.
+
+Raises:
+
+- `PermissionDenied` – If the OS denies reading path or the metadata of an entry.
+- `RemoteStoreError` – If either fails for another OS reason.
 
 ### get_file_info
 

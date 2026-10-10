@@ -4,6 +4,14 @@ Breaking changes and upgrade paths between `remote-store` versions.
 
 `remote-store` has been published on PyPI since v0.11.0 (first Beta release). The core Store API is stable, but extensions may evolve. This page documents changes that require action when upgrading.
 
+## v0.33.0 to v0.34.0
+
+**A `LocalBackend` listing that the OS refuses raises `PermissionDenied`:**
+
+When the folder could not be read, `list_files()`, `list_folders()` and `iter_children()` either let Python's own `PermissionError` reach the caller, which an `except RemoteStoreError` clause did not catch, or returned an empty listing: `list_files(recursive=True)` did for an unreadable folder, and on Python 3.14 all three did for a folder whose entries could not be inspected. They now raise `PermissionDenied`, naming the folder or entry that was refused. An entry that is a link (a symlink, or a Windows junction) into a folder the caller cannot enter is skipped instead: the folder being listed was not refused. `PermissionDenied` is not a subclass of `PermissionError`: if you wrapped these listings in `except PermissionError`, catch `PermissionDenied` (or `RemoteStoreError`) instead, and if you treated an empty listing as an empty folder, a refused one now raises. Any other OS error these listings meet, such as `EIO`, now raises the base `RemoteStoreError` where it used to surface as Python's `OSError` (or, with `max_depth`, skip the subfolder): replace an `except OSError` around them with `except RemoteStoreError`.
+
+*A recursive listing no longer leaves out a folder it cannot read.* `list_files(recursive=True)`, with or without `max_depth`, used to skip a subfolder it could not read and return the rest as if it were the whole tree. It now raises `PermissionDenied` for that subfolder. On Windows that includes a subfolder another program is deleting in the classic way, setting its delete disposition while a second handle stays open: Windows refuses its scan as it does a denied folder. Python's own `rmdir` and `rmtree` do not leave that state. If you relied on a best-effort walk over a tree with unreadable parts, walk it yourself with `list_folders()` and `list_files()` per folder, catching `PermissionDenied` for each.
+
 ## v0.32.0 to v0.33.0
 
 **Python 3.10 is no longer supported:**

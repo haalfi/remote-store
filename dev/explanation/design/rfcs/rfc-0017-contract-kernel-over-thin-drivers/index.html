@@ -11773,7 +11773,7 @@ optional member, so presence is a protocol, not a method):</p>
 <tr>
 <td><code>SupportsRename</code></td>
 <td><code>rename(src, dst, *, replace: bool)</code></td>
-<td><code>move</code> for drivers without <code>SupportsAtomicMove</code>: <code>replace=True</code> where the wire's rename replaces atomically (Local's <code>os.rename</code> within one root, which is why <code>LocalBackend</code> declares <code>ATOMIC_MOVE</code> today, <code>_local.py</code> lines 668 to 670), <code>replace=False</code> where it cannot, in which case the kernel runs the displace-and-restore fallback SFTP carries today, and only there</td>
+<td><code>move</code> for drivers without <code>SupportsAtomicMove</code>: <code>replace=True</code> where the wire's rename replaces atomically (Local's <code>os.rename</code> within one root, which is why <code>LocalBackend</code> declares <code>ATOMIC_MOVE</code> today, per <code>LocalBackend.move</code>'s docstring), <code>replace=False</code> where it cannot, in which case the kernel runs the displace-and-restore fallback SFTP carries today, and only there</td>
 </tr>
 <tr>
 <td><code>SupportsCopy</code></td>
@@ -11844,7 +11844,7 @@ the driver, not the kernel, decides what an identity-scope failure means.</p>
 <p><strong><code>classify</code> may perform I/O, and the kernel says where it runs.</strong> SQL's
 dropped-table detection is an inspector round trip (<code>_sqlalchemy.py</code> line
 798) and Local on Windows maps <code>PermissionError</code> through <code>is_dir()</code>
-(<code>_local.py</code> lines 215 and 244). SFTP's <code>_map_exception</code> is pure over the
+(the <code>except PermissionError</code> arms of <code>LocalBackend.read</code> and <code>read_bytes</code>). SFTP's <code>_map_exception</code> is pure over the
 exception, its two connection predicates being static methods over <code>exc</code>;
 the I/O BUG-274 paid was the classification path around it re-evaluating
 the lazy <code>_sftp</code> accessor. For a remote driver the kernel invokes <code>classify</code>

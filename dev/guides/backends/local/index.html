@@ -12521,11 +12521,36 @@ only files are yielded.</p>
     <div class="doc doc-contents ">
 
         <p>Yield files under <em>path</em>, one <code>FileInfo</code> at a time.</p>
-<p>Lazy: entries are produced as the directory is scanned, so listing a
-large tree holds only the current entry in memory. A missing or
+<p>Lazy: entries are produced as the tree is walked, so listing a large
+tree holds one directory's entries in memory at a time. A missing or
 non-folder <em>path</em> yields nothing (no error). With <code>recursive</code> and
 <code>max_depth</code> set, traversal is pruned at the depth bound during the
 <code>os.walk</code> rather than filtered afterwards.</p>
+<p>A subfolder or file that disappears while the walk is running, a
+symlink that loops, or a link (a symlink, or a Windows junction) into a
+folder the caller cannot enter, is skipped, so a tree changed during
+the walk can list short. A subfolder the walk descends into but cannot
+read is never skipped: the listing raises instead.</p>
+
+
+<p><span class="doc-section-title">Raises:</span></p>
+    <ul>
+        <li class="doc-section-item field-body">
+              <code><a class="autorefs autorefs-internal" title="            PermissionDenied (remote_store._errors.PermissionDenied)" href="../../../reference/api/errors/#remote_store.PermissionDenied">PermissionDenied</a></code>
+            –
+          <div class="doc-md-description">
+            <p>If the OS denies reading <em>path</em>, a subfolder the
+walk descends into, or the metadata of an entry.</p>
+          </div>
+        </li>
+        <li class="doc-section-item field-body">
+              <code><a class="autorefs autorefs-internal" title="            RemoteStoreError (remote_store._errors.RemoteStoreError)" href="../../../reference/api/errors/#remote_store.RemoteStoreError">RemoteStoreError</a></code>
+            –
+          <div class="doc-md-description">
+            <p>If any of those fails for another OS reason.</p>
+          </div>
+        </li>
+    </ul>
 
 
     </div>
@@ -12551,7 +12576,29 @@ non-folder <em>path</em> yields nothing (no error). With <code>recursive</code> 
     <div class="doc doc-contents ">
 
         <p>Yield immediate subfolders of <em>path</em> as <code>FolderEntry</code> records.</p>
-<p>Lazy single-level scan; a missing or non-folder <em>path</em> yields nothing.</p>
+<p>Lazy single-level scan; a missing or non-folder <em>path</em> yields nothing,
+and an entry that disappears during the scan, a symlink that loops, or
+a link into a folder the caller cannot enter, is skipped.</p>
+
+
+<p><span class="doc-section-title">Raises:</span></p>
+    <ul>
+        <li class="doc-section-item field-body">
+              <code><a class="autorefs autorefs-internal" title="            PermissionDenied (remote_store._errors.PermissionDenied)" href="../../../reference/api/errors/#remote_store.PermissionDenied">PermissionDenied</a></code>
+            –
+          <div class="doc-md-description">
+            <p>If the OS denies reading <em>path</em> or the metadata
+of an entry.</p>
+          </div>
+        </li>
+        <li class="doc-section-item field-body">
+              <code><a class="autorefs autorefs-internal" title="            RemoteStoreError (remote_store._errors.RemoteStoreError)" href="../../../reference/api/errors/#remote_store.RemoteStoreError">RemoteStoreError</a></code>
+            –
+          <div class="doc-md-description">
+            <p>If either fails for another OS reason.</p>
+          </div>
+        </li>
+    </ul>
 
 
     </div>
@@ -12587,7 +12634,28 @@ non-folder <em>path</em> yields nothing (no error). With <code>recursive</code> 
 <p>Overrides the base (which chains <code>list_files</code> and <code>list_folders</code>,
 two passes) to walk the directory once, yielding <code>FileInfo</code> for files
 and <code>FolderEntry</code> for folders. A missing or non-folder <em>path</em> yields
-nothing.</p>
+nothing, and an entry that disappears during the scan, a symlink that
+loops, or a link into a folder the caller cannot enter, is skipped.</p>
+
+
+<p><span class="doc-section-title">Raises:</span></p>
+    <ul>
+        <li class="doc-section-item field-body">
+              <code><a class="autorefs autorefs-internal" title="            PermissionDenied (remote_store._errors.PermissionDenied)" href="../../../reference/api/errors/#remote_store.PermissionDenied">PermissionDenied</a></code>
+            –
+          <div class="doc-md-description">
+            <p>If the OS denies reading <em>path</em> or the metadata
+of an entry.</p>
+          </div>
+        </li>
+        <li class="doc-section-item field-body">
+              <code><a class="autorefs autorefs-internal" title="            RemoteStoreError (remote_store._errors.RemoteStoreError)" href="../../../reference/api/errors/#remote_store.RemoteStoreError">RemoteStoreError</a></code>
+            –
+          <div class="doc-md-description">
+            <p>If either fails for another OS reason.</p>
+          </div>
+        </li>
+    </ul>
 
 
     </div>

@@ -4775,6 +4775,17 @@
     <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
       
         <li class="md-nav__item">
+  <a href="#v0330-to-v0340" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        v0.33.0 to v0.34.0
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
   <a href="#v0320-to-v0330" class="md-nav__link">
     <span class="md-ellipsis">
       
@@ -11282,6 +11293,17 @@
     <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
       
         <li class="md-nav__item">
+  <a href="#v0330-to-v0340" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        v0.33.0 to v0.34.0
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
   <a href="#v0320-to-v0330" class="md-nav__link">
     <span class="md-ellipsis">
       
@@ -11493,6 +11515,33 @@
 <p><code>remote-store</code> has been published on PyPI since v0.11.0 (first Beta release).
 The core Store API is stable, but extensions may evolve. This page documents
 changes that require action when upgrading.</p>
+<h2 id="v0330-to-v0340">v0.33.0 to v0.34.0<a class="headerlink" href="#v0330-to-v0340" title="Permanent link">&para;</a></h2>
+<p><strong>A <code>LocalBackend</code> listing that the OS refuses raises <code>PermissionDenied</code>:</strong></p>
+<p>When the folder could not be read, <code>list_files()</code>, <code>list_folders()</code> and
+<code>iter_children()</code> either let Python's own <code>PermissionError</code> reach the caller,
+which an <code>except RemoteStoreError</code> clause did not catch, or returned an empty
+listing: <code>list_files(recursive=True)</code> did for an unreadable folder, and on
+Python 3.14 all three did for a folder whose entries could not be inspected.
+They now raise <code>PermissionDenied</code>, naming the folder or entry that was refused.
+An entry that is a link (a symlink, or a Windows junction) into a folder the
+caller cannot enter is skipped instead: the folder being listed was not refused.
+<code>PermissionDenied</code> is not a subclass of <code>PermissionError</code>: if you wrapped these
+listings in <code>except PermissionError</code>, catch <code>PermissionDenied</code> (or
+<code>RemoteStoreError</code>) instead, and if you treated an empty listing as an empty
+folder, a refused one now raises. Any other OS error these listings meet, such
+as <code>EIO</code>, now raises the base <code>RemoteStoreError</code> where it used to surface as
+Python's <code>OSError</code> (or, with <code>max_depth</code>, skip the subfolder): replace an
+<code>except OSError</code> around them with <code>except RemoteStoreError</code>.</p>
+<p><em>A recursive listing no longer leaves out a folder it cannot read.</em>
+<code>list_files(recursive=True)</code>, with or without <code>max_depth</code>, used to skip a
+subfolder it could not read and return the rest as if it were the whole tree.
+It now raises <code>PermissionDenied</code> for that subfolder. On Windows that includes
+a subfolder another program is deleting in the classic way, setting its delete
+disposition while a second handle stays open: Windows refuses its scan as it
+does a denied folder. Python's own <code>rmdir</code> and <code>rmtree</code> do not leave that
+state. If you relied on a best-effort walk over a tree with unreadable parts,
+walk it yourself with <code>list_folders()</code> and <code>list_files()</code> per folder, catching
+<code>PermissionDenied</code> for each.</p>
 <h2 id="v0320-to-v0330">v0.32.0 to v0.33.0<a class="headerlink" href="#v0320-to-v0330" title="Permanent link">&para;</a></h2>
 <p><strong>Python 3.10 is no longer supported:</strong></p>
 <p>CPython stops shipping security fixes for 3.10 on 2026-10-04, which is where
