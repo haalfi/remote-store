@@ -154,7 +154,7 @@ every case. RFC-0017 carries the same answers at the question each settles.
    decides"), the first test's docstring (`test_absent_root.py` lines 312
    to 316, "`delete_folder` and `get_folder_info` … legitimately take the
    root", still true of `get_folder_info`), and `LocalBackend.delete_folder`'s
-   own docstring (`_local.py` lines 477 to 484, "the root rule does not
+   own docstring ("the root rule does not
    reach a folder *delete*"; listed in PR #1056's round 9). `SFTPBackend` likely answers
    the same: its `_sftp_path` maps the root to `base_path` and its `_rmtree`
    ends in `rmdir` (read from `_sftp.py`, not run). A flat wire's `"d//f"` or
@@ -382,7 +382,7 @@ every case. RFC-0017 carries the same answers at the question each settles.
        reconnecting `stat`. **Driver obligation:** `classify` types a
        refusal about the key's state (`ENOENT`, `ENOTDIR`) as `NotFound`,
        never `PermissionDenied`. Local's `delete_folder` handler does the
-       latter today (`_local.py` lines 505 to 510), and with it 24 Local
+       latter today (its `except OSError` arm), and with it 24 Local
        cells would change (`compare local`, `Lt P1`, a link-following
        driver), 2 of them a link nested below `key` whose target's file is
        deleted through the link. So step 5's driver classifies by errno.

@@ -49,7 +49,7 @@ threads use that name.
 4. **Whether a recursive delete may answer `DirectoryNotEmpty`.** The
    candidate says it never does (BE-013). Round 9 measured that false for
    Local today: `shutil.rmtree` runs inside the same `except OSError`
-   handler as `rmdir` (`_local.py` lines 500 to 510), and with a concurrent
+   handler as `rmdir` (in `LocalBackend.delete_folder`), and with a concurrent
    writer under `d/e0`, `delete_folder("d", recursive=True)` answered
    `DirectoryNotEmpty` in 198 of 200 runs. BE-013 lists `DirectoryNotEmpty`
    only for `recursive=False`; it does not forbid it on a recursive call.
@@ -134,7 +134,8 @@ model covers their wire.
    changed). The rule binds `delete_folder` only: `stat` and `list_page`
    take `follow_links`, and only `delete_folder` passes `False`, so no
    other operation's cell changes (today's link-following members:
-   `_local.py` lines 183, 585 and 604). The maintainer chose that scope,
+   `LocalBackend.is_folder`'s `is_dir()`, and the entry stat `list_folders`
+   and `iter_children` take). The maintainer chose that scope,
    and then that flag over a link marker on `Entry`, which could not
    represent a dangling link, the key's own listing or a common prefix.
 
@@ -196,7 +197,7 @@ sentence and SQLBlob's one cell), the Outcome stands.
   what `rmdir` gives through the classifier each driver's `delete_folder`
   uses today: Local's handler maps `ENOTEMPTY` (or 145) to
   `DirectoryNotEmpty` and every other `OSError` to `PermissionDenied`
-  (`_local.py` lines 505 to 510); SFTP's `_map_exception` maps
+  (`delete_folder`'s `except OSError` arm); SFTP's `_map_exception` maps
   `FileNotFoundError` to `NotFound` (`_sftp.py` line 3271) and an
   errno-less failure to an untyped `RemoteStoreError` (run in round 4). The
   last column is today's answer, measured for Local and Memory in rounds 3
@@ -268,6 +269,6 @@ sentence and SQLBlob's one cell), the Outcome stands.
   chained to it (§ What it decides, items 2 and 4). The reason: a recursive delete never
   answers `DirectoryNotEmpty` (BE-013), and a folder whose tree delete
   failed is non-empty almost by definition, so the listing arm would turn
-  Local's `PermissionDenied` (`_local.py` line 510) or an HNS 403 into
+  Local's `PermissionDenied` (that same arm) or an HNS 403 into
   `DirectoryNotEmpty`. Memory and Local reproduce today's answers under it (20 cells,
   round 9).

@@ -416,7 +416,7 @@ the peers are symmetric).
 
 - ID-159 (`FEATURES.md` hybrid generation): `sdd/BACKLOG.md`
 - ID-140 (dialect-conditional capabilities): `sdd/BACKLOG.md`
-- Backend capabilities: `src/remote_store/backends/_local.py:26`,
+- Backend capabilities: `src/remote_store/backends/_local.py` (`_ALL_CAPABILITIES`),
   `_s3.py:37`, `_sftp.py:47`, `_azure.py:47`, `_sqlalchemy.py:47`,
   `_http.py:41`
 - Capability gating in Store: `src/remote_store/_store.py:68,87,118,189`

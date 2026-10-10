@@ -4,7 +4,6 @@ from __future__ import annotations
 
 import contextlib
 import errno
-import functools
 import logging
 import os
 import shutil
@@ -561,15 +560,14 @@ class LocalBackend(Backend):
         ``max_depth`` set, traversal is pruned at the depth bound during the
         ``os.walk`` rather than filtered afterwards.
 
-        A file that disappears while the walk is running, or a symlink that
-        loops, is skipped. A subfolder is never skipped: one the walk cannot
-        read, or one deleted before the walk reaches it, makes the listing
-        raise instead of yielding a short result as a complete one.
+        A subfolder or file that disappears while the walk is running, or a
+        symlink that loops, is skipped, so a tree changed during the walk can
+        list short. A subfolder the walk descends into but cannot read is
+        never skipped: the listing raises instead.
 
         Raises:
             PermissionDenied: If the OS denies reading *path*, a subfolder the
                 walk descends into, or the metadata of an entry.
-            NotFound: If a subfolder is deleted while the walk is running.
             RemoteStoreError: If any of those fails for another OS reason.
         """
         full = self._resolve(path)
@@ -580,7 +578,7 @@ class LocalBackend(Backend):
                 if st is not None and stat.S_ISREG(st.st_mode):
                     yield self._fileinfo_from_stat(self.to_key(str(item)), item, st)
             return
-        for dirpath, dirnames, filenames in os.walk(full, onerror=functools.partial(self._raise_walk_error, full)):
+        for dirpath, dirnames, filenames in os.walk(full, onerror=self._raise_walk_error):
             depth = len(Path(dirpath).relative_to(full).parts)
             if max_depth is not None and depth > max_depth:
                 dirnames.clear()
@@ -940,12 +938,12 @@ class LocalBackend(Backend):
         """Classify an OS error met by a listing at *full*; ``None`` means absent.
 
         An absent answer lets the caller treat the folder or entry as not
-        there: an empty listing for the target, a skip for an entry that
-        vanished mid-scan. A symlink loop (``ELOOP``, or Windows'
+        there: an empty listing for the target, a skip for a subfolder or
+        entry that vanished mid-walk. A symlink loop (``ELOOP``, or Windows'
         ``ERROR_CANT_RESOLVE_FILENAME``, which CPython maps to ``EINVAL``) is
         absent too, like a dangling link: it names nothing that can be listed.
-        Every other error is mapped, never skipped, so a listing cannot end
-        short and read as complete.
+        Every other error is mapped, never skipped, so a folder the listing
+        cannot read never ends it short as if it were complete.
         """
         if (
             isinstance(exc, (FileNotFoundError, NotADirectoryError))
@@ -979,22 +977,15 @@ class LocalBackend(Backend):
                 return None
             raise mapped from None
 
-    def _raise_walk_error(self, top: Path, exc: OSError) -> None:
-        """``os.walk``'s ``onerror``: an absent *top* lists empty; anything else raises.
+    def _raise_walk_error(self, exc: OSError) -> None:
+        """``os.walk``'s ``onerror``: skip an absent folder, raise anything else.
 
         ``os.walk`` passes the failed folder as ``exc.filename``; without this
-        hook it skips every folder it cannot scan, absent or denied alike. A
-        subfolder below *top* that is absent when the walk reaches it existed
-        when the walk began, so it was deleted underneath the walk: that is
-        ``NotFound``, never a skip that would end the listing short.
+        hook it skips every folder it cannot scan, absent or denied alike.
         """
-        failed = Path(exc.filename)
-        mapped = self._listing_error(exc, failed)
+        mapped = self._listing_error(exc, Path(exc.filename))
         if mapped is not None:
             raise mapped from None
-        if failed != top:
-            key = self.to_key(str(failed))
-            raise NotFound(f"Folder deleted during listing: {key}", path=key, backend=self.name) from None
 
     def _fileinfo_from_stat(self, path: str, full: Path, st: os.stat_result) -> FileInfo:
         return FileInfo(

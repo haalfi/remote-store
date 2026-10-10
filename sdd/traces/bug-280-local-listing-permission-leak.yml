@@ -17,6 +17,13 @@ discovery_followups:
   # Born in review round 1, from the probe that refuted the migration note's
   # "every other LocalBackend operation" premise.
   - BUG-319
+surprising_ripples:
+  # Line-number citations into _local.py that the edit shifted; replaced by
+  # symbol names (round 4).
+  - sdd/backlog/bk-389-kernel-step-1-memory.md
+  - sdd/backlog/bk-396-kernel-delete-folder-sequence.md
+  - sdd/rfcs/rfc-0012-doc-graph-model.md
+  - sdd/rfcs/rfc-0017-contract-kernel-over-thin-drivers.md
 expected_ripples:
   # The two generated artefacts the ripple-check names for a public docstring
   # change; sdd/backlogid.json is not here, since gen-backlogid takes the max
@@ -179,9 +186,9 @@ phases:
           A sub-walk 404 part-way through a recursive walk must propagate, not
           end the listing short. The orient verdict quoted this clause and the
           build applied it to denials only, skipping a vanished subfolder; a
-          round 3 reviewer caught it. Now a subfolder absent when the walk
-          reaches it raises NotFound; an entry that vanishes mid-scan is still
-          skipped (an item, not a container)
+          round 3 reviewer caught it, and round 3's fix raised NotFound for a
+          subfolder absent when the walk reached it. Reverted in round 4 (see
+          the junction step below)
       - file: tmp/probe_midwalk.py
         section: "(probe, not committed): rmtree(sub) after the first yield, Windows 3.13"
         read_type: verify
@@ -193,3 +200,17 @@ phases:
           ELOOP) was added to _listing_error and the injected loop cell;
           before it the 12 loop cells failed on Windows. After: 58 passed, 7
           skipped on Windows 3.13; 65 passed on python:3.11 and 3.14 in Docker
+      - file: src/remote_store/backends/_local.py
+        section: "_raise_walk_error, under a Windows directory junction (round 4 measuring member)"
+        read_type: verify
+        extract: >-
+          os.walk descends into a junction (is_symlink() is False for it), so a
+          dangling or looping junction is absent from the start, not deleted;
+          round 3's NotFound arm aborted the whole recursive listing on it
+          (Windows 3.13) where master and list_folders skip it. The divergence
+          check fired; the re-plan (user decision) reverted the arm: a vanished
+          subfolder is skipped again, as on master, and the BE-021 question
+          moved to BUG-318's open decision. Kept: the winerror-1921 loop. Added
+          test_a_file_path_lists_empty (5 cases; removing NotADirectoryError
+          from the absent tuple fails all 5). After: 63 passed, 7 skipped on
+          Windows 3.13; 70 passed on python:3.11 and 3.14 in Docker

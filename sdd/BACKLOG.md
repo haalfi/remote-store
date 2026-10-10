@@ -244,11 +244,11 @@ failure it was.
 
 - [ ] **BUG-318 — `LocalBackend.glob` and `get_folder_info` leave out a subtree they cannot read**
   spec: BE-021 · effort: S · audience: user.api
-  `glob` (`Path.glob`) and `get_folder_info` (`rglob`) swallow every `OSError`
-  from a subfolder scan, so a denied subfolder drops out and the matches, or the
-  count and size, come back short and read as complete (an entry stat leaks:
-  BUG-319). BUG-280 fixed the listings. Open decision: whether BE-021 states for
-  every backend that a recursive walk raises on a denied subtree.
+  `glob` (`Path.glob`) and `get_folder_info` (`rglob`) swallow a denied subfolder
+  scan and come back short as if complete (entry stat leak: BUG-319). Every
+  Local walk, `list_files` included, also skips a subfolder deleted mid-walk.
+  Open decision: whether BE-021 makes a walk raise on a denied or vanished
+  subtree; a dangling Windows junction is absent from the start, not deleted.
 
 - [ ] **BUG-319 — `LocalBackend`'s single-path stats leak a raw `PermissionError`, and a looping key a `RuntimeError`**
   spec: BE-021 · effort: S · audience: user.api

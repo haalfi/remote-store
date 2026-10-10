@@ -303,8 +303,8 @@ if evidence changes; these are retired.
   `list_files`, `list_folders` and `iter_children` now scan with `os.scandir`
   and `os.walk(onerror=...)` under one rule: absent is empty or skipped, a
   denial is `PermissionDenied`, any other `OSError` the base class. The
-  recursive `list_files` also stops leaving out a subfolder: an unreadable one
-  is `PermissionDenied`, one deleted mid-walk `NotFound` (BE-021).
+  recursive `list_files` also stops leaving out a subfolder it cannot read;
+  one deleted mid-walk is still skipped, filed under BUG-318.
   Fixed in place; RFC-0017's kernel takes it over at D3 step 5. `glob` and
   `get_folder_info` were filed as BUG-318. Tests:
   `tests/backends/local/test_listing_errors.py`. Trace:
