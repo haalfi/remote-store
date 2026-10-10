@@ -62,7 +62,11 @@ Cloud sessions are not measured, because their transcripts stay remote.
 context it re-reads, and a session costs about its calls times its context.**
 Calls at 400k context or more were 23% of calls and 47% of units; across main
 sessions, units grew with calls to the power 1.19
-([report § 2](token-usage/report.md#2-cost-structure)).
+([report § 2](token-usage/report.md#2-cost-structure)). Claude Code's cost
+documentation states the same mechanism from the vendor's side: "Token costs
+scale with context size", because Claude Code "sends your full conversation
+with every request", so "a one-line question in a session that has been open
+all day still draws usage for the whole conversation" (§ Sources).
 
 Two consequences carry the rest of this record. **An item's cost is its size
 times the calls it stays for**, so the same file read early in a long session
@@ -138,6 +142,17 @@ fixed by what is in context when a call is made:
 | Gate stalls | retry, wait, re-run | **one suite per machine, a deadline on every wait, workers sized to free memory** |
 | Unpriced process files | trim them when someone notices | **their total may grow only by a recorded raise** |
 
+**A compaction is not a handoff.** A compaction summarises the history it
+carries, and is itself a large request over that history; a handoff writes down
+only the state the next phase needs, and the next phase starts without the rest.
+Claude Code's documentation says the first part ("compacting a large context is
+itself a large request", while `/clear` "costs nothing"), and Anthropic's
+harness-design note the second ("While compaction preserves continuity, it
+doesn't give the agent a clean slate"; a reset does, "at the cost of the handoff
+artifact having enough state"). That note used resets against a model's
+behaviour in long sessions and dropped them once a newer model no longer needed
+them; this record's reason is cost, which a better model does not remove.
+
 Two rows are not orders but gates on the environment; they belong to the
 merge-gate cell of the same table, and they are what makes the other rows'
 savings visible rather than drowned by stalls.
@@ -207,7 +222,10 @@ B is still the better fix on every case measured, and the maintainer judged both
 regressions not must-fix
 ([report § The two deliveries compared](token-usage/report.md#the-two-deliveries-compared)).
 The point stands regardless: **fewer rounds is a saving only when the
-reviewers still reach the platform and edge cases the change touches.** This is
+reviewers still reach the platform and edge cases the change touches.** The
+miss came from the shorter loop, not from the fresh context: run A found the
+case in its seventh round, on a context of over 800k. Proposal 9 is the
+control it calls for. This is
 why link 5 of the chain exists. Token spend is on the list of effort proxies
 the code-abundance record says to retire
 ([§ 2.4](research-code-abundance-goals-and-values.md#24-goodhart-applied)), and
@@ -277,6 +295,16 @@ reached run B during orient; a branch name shared with run A made Claude Code
 link run B to run A's PR, and the measurement kit followed that link
 ([BK-424](../BACKLOG.md)).
 
+**9. Make the handoff a review contract.** A fresh review session knows only
+what the handoff tells it, so the handoff should say what the review must
+cover: the behaviour that changed, the platforms and edge cases it touches,
+what evidence each has (executed, read only, not reached), and the known risks.
+A loop converges only when every row is covered or explicitly waived. Run B's
+handoff already had the shape: a subject list marked executed, read only or not
+reached, and a list of the author's doubts. It had no row for Windows deletion
+states, and nothing required a reviewer to take up the rows marked not
+reached. This is how a cheaper loop is kept from becoming a shallower one.
+
 ## Appendix: remote-store as a worked example
 
 **Seven controls are on master, each its own PR, each acting on every delivery
@@ -321,3 +349,9 @@ The process it acts on:
 - [ADR-0033](../adrs/0033-ship-convergence-driven-review.md) to [ADR-0037](../adrs/0037-whole-file-gate-and-derived-figures.md): the `/ship` review loop the controls sit in
 - [`CONTENT-RULES.md`](../CONTENT-RULES.md) and [`research-appropriate-level-of-detail.md`](research-appropriate-level-of-detail.md): the detail rule
 - [`research-code-abundance-goals-and-values.md`](research-code-abundance-goals-and-values.md): the preventive-control argument and the Goodhart list this record answers
+
+External, read on 2026-10-10 through a fetch tool that returns extracted text;
+the quotations in § 1 and § 3 are as it returned them:
+
+- [Claude Code: Manage costs effectively](https://code.claude.com/docs/en/costs), § Reduce token usage and § Why usage climbs in a long session
+- Prithvi Rajasekaran, [Harness design for long-running application development](https://www.anthropic.com/engineering/harness-design-long-running-apps), Anthropic Engineering, 24 March 2026
