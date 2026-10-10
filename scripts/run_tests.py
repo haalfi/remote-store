@@ -14,6 +14,15 @@ Worker count (``compute_workers``):
 * Otherwise: ``max(1, floor(cpu * 0.75) - 1)`` — roughly three-quarters of the
   cores, minus one, never below 1. (8 cores -> 5, 16 -> 11, 32 -> 23; a 1-2
   core machine -> 1.)
+* That default is further capped by free memory (BK-421): one worker per
+  1.5 GiB above a 2 GiB reserve, never below 1, with a line on stderr when the
+  cap binds. Each worker imports the whole suite, and too many of them for the
+  memory left crash at startup with ``MemoryError`` while no test fails. "Free"
+  is free commit (``ullAvailPageFile``) on Windows, where the pagefile bounds
+  every allocation, and ``MemAvailable`` on Linux (blind to a container's
+  cgroup limit); elsewhere it is unknown and only the CPU formula applies. Free
+  memory is read after the suite lock is taken, so a run that waited sees what
+  the previous suite left. An explicit ``RS_TEST_WORKERS`` skips the cap.
 
 Suite lock (``acquire_suite_lock``): one launcher run at a time per machine,
 across sessions, worktrees and clones. Two suites at once have stalled each
@@ -64,6 +73,12 @@ if TYPE_CHECKING:
     from collections.abc import Sequence
 
 _HEADROOM_FRACTION = 0.75
+# Per-worker budget: on Windows with 8 workers, a Stage-1 run took 10.9 GB of
+# commit at its peak (about 1.36 GB per worker) and its largest process
+# reached 1.42 GB, so 1.5 GiB covers the largest. The reserve is left for the
+# controller and the rest of the machine.
+_WORKER_MEMORY_BYTES = 3 * 2**29
+_MEMORY_RESERVE_BYTES = 2 * 2**30
 _DEFAULT_TIMEOUT = 300
 # Under both session bounds with room for a run: a foreground tool call ends at
 # 600 s, a background wait at 15 min (CLAUDE.md § Parallel tests).
@@ -73,7 +88,7 @@ EXIT_LOCK_TIMEOUT = 75
 _HELD_ENV = "RS_TEST_LOCK_HELD"
 
 
-def compute_workers(cpu_count: int | None, override: str | None) -> int:
+def compute_workers(cpu_count: int | None, override: str | None, free_bytes: int | None = None) -> int:
     """Return the xdist worker count for this machine.
 
     Args:
@@ -82,6 +97,8 @@ def compute_workers(cpu_count: int | None, override: str | None) -> int:
         override: Raw ``RS_TEST_WORKERS`` value (``None`` when unset). ``"auto"``
             (case-insensitive) means one worker per CPU; a positive integer
             string means exactly that many.
+        free_bytes: Free memory (``free_commit_bytes()``); caps the default,
+            not an override. ``None`` (unknown) leaves the CPU formula alone.
 
     Raises:
         ValueError: If *override* is set but is neither ``"auto"`` nor a
@@ -99,7 +116,56 @@ def compute_workers(cpu_count: int | None, override: str | None) -> int:
         if n < 1:
             raise ValueError(f"RS_TEST_WORKERS must be >= 1, got {override!r}")
         return n
-    return max(1, math.floor(cpus * _HEADROOM_FRACTION) - 1)
+    workers = max(1, math.floor(cpus * _HEADROOM_FRACTION) - 1)
+    if free_bytes is not None:
+        workers = min(workers, max(1, (free_bytes - _MEMORY_RESERVE_BYTES) // _WORKER_MEMORY_BYTES))
+    return workers
+
+
+def _meminfo_available(text: str) -> int | None:
+    """Return ``MemAvailable`` in bytes from ``/proc/meminfo`` text; None if absent."""
+    for line in text.splitlines():
+        name, _, rest = line.partition(":")
+        if name == "MemAvailable":
+            return int(rest.split()[0]) * 1024
+    return None
+
+
+def free_commit_bytes() -> int | None:
+    """Return the machine's free memory for new workers; None where it cannot be read.
+
+    Windows: free commit. Linux: ``MemAvailable``, which does not see a cgroup
+    memory limit (``docker run --memory``), so inside such a container this
+    over-reports and the cap may not bind. CI and the Docker test runner call
+    pytest directly, not this launcher.
+    """
+    if os.name == "nt":
+        import ctypes
+        from ctypes import wintypes
+
+        class _MemoryStatusEx(ctypes.Structure):
+            _fields_ = [  # noqa: RUF012 - ctypes reads it from the class
+                ("dwLength", wintypes.DWORD),
+                ("dwMemoryLoad", wintypes.DWORD),
+                ("ullTotalPhys", ctypes.c_ulonglong),
+                ("ullAvailPhys", ctypes.c_ulonglong),
+                ("ullTotalPageFile", ctypes.c_ulonglong),
+                ("ullAvailPageFile", ctypes.c_ulonglong),
+                ("ullTotalVirtual", ctypes.c_ulonglong),
+                ("ullAvailVirtual", ctypes.c_ulonglong),
+                ("ullAvailExtendedVirtual", ctypes.c_ulonglong),
+            ]
+
+        status = _MemoryStatusEx()
+        status.dwLength = ctypes.sizeof(_MemoryStatusEx)
+        if not ctypes.windll.kernel32.GlobalMemoryStatusEx(ctypes.byref(status)):
+            return None
+        # Despite the name, this is the commit limit minus the commit charge.
+        return int(status.ullAvailPageFile)
+    try:
+        return _meminfo_available(Path("/proc/meminfo").read_text(encoding="ascii"))
+    except (OSError, ValueError, IndexError):
+        return None
 
 
 def _env_seconds(name: str, default: float) -> float:
@@ -245,27 +311,40 @@ def acquire_suite_lock(
 def main() -> int:
     forwarded = sys.argv[1:]
     try:
-        workers = compute_workers(os.cpu_count(), os.environ.get("RS_TEST_WORKERS"))
+        override = os.environ.get("RS_TEST_WORKERS")
+        by_cpu = compute_workers(os.cpu_count(), override)
         timeout = _env_seconds("RS_TEST_TIMEOUT", _DEFAULT_TIMEOUT)
         lock_wait = _env_seconds("RS_TEST_LOCK_WAIT", _DEFAULT_LOCK_WAIT)
     except ValueError as exc:
         print(f"run_tests: {exc}", file=sys.stderr)
         return 2
 
-    argv = [sys.executable, "-m", "pytest"]
-    if not _has_explicit_n(forwarded):
-        argv += ["-n", str(workers)]
-    if timeout > 0 and not _has_explicit_timeout(forwarded):
-        argv.append(f"--timeout={timeout:g}")
-    argv += forwarded
-
     lock = None
     if not os.environ.get(_HELD_ENV):
         lock = acquire_suite_lock(suite_lock_path(), lock_wait)
         if lock is None:
             return EXIT_LOCK_TIMEOUT
-    env = {**os.environ, _HELD_ENV: os.environ.get(_HELD_ENV) or str(os.getpid())}
+
     try:
+        # Probed under the lock: while another suite holds it, its workers hold
+        # memory they free before this run starts.
+        free = free_commit_bytes()
+        workers = compute_workers(os.cpu_count(), override, free)
+        if free is not None and workers < by_cpu and not _has_explicit_n(forwarded):
+            print(
+                f"run_tests: {workers} workers, not {by_cpu}: only {free / 2**30:.1f} GiB of memory is free. "
+                "Set RS_TEST_WORKERS to choose a count.",
+                file=sys.stderr,
+                flush=True,
+            )
+
+        argv = [sys.executable, "-m", "pytest"]
+        if not _has_explicit_n(forwarded):
+            argv += ["-n", str(workers)]
+        if timeout > 0 and not _has_explicit_timeout(forwarded):
+            argv.append(f"--timeout={timeout:g}")
+        argv += forwarded
+        env = {**os.environ, _HELD_ENV: os.environ.get(_HELD_ENV) or str(os.getpid())}
         # subprocess.run + sys.exit, not os.execvp: the latter is spawn+wait on
         # Windows and raises on launch failure rather than returning a code.
         # subprocess.run is platform-neutral and surfaces exit codes uniformly.

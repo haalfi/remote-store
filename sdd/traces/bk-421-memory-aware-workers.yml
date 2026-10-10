@@ -1,0 +1,136 @@
+id: BK-421
+title: "The local gate's default worker count ignores free memory, so a box short on commit crashes every worker at startup"
+trigger: >
+  A read-only survey of known local-gate reliability issues found one the
+  backlog did not track: on 2026-10-04 the default 14 xdist workers crashed at
+  startup with `MemoryError` while 7.9 GB of commit was free, and the only
+  remedy was a hand-set `RS_TEST_WORKERS` in the maintainer's User environment.
+  The maintainer asked for it to be fixed.
+source_items:
+  - BK-421
+audience:
+  - contributor.tooling
+  - infra.test
+decisions:
+  # The dialog proposed "about 1 GB per worker" from an unmeasured note; the
+  # measurement below set 1.5 GiB. It also named a CHANGELOG, which the
+  # audience rule does not require for these two audiences.
+  - sdd/decisions/15b46d0e-9e30-4e2e-ba95-d1adc0837506.jsonl
+orient:
+  - items: [BUG-315]
+    verdict: unrelated
+    evidence: >
+      BUG-315's index entry and dossier fix the moto fixture's port in
+      `tests/conftest.py`; it touches no worker count. Being fixed in parallel
+      in worktree `bug-315`, so the only shared file is `sdd/BACKLOG-DONE.md`
+      § Unreleased, a textual merge.
+  - items: [BK-404, BK-403]
+    verdict: unrelated
+    evidence: >
+      Both are about which tests run (a change-scoped selector), not how many
+      workers run them; BK-404's dossier names a hatch target, not
+      `run_tests.py`'s worker formula.
+expected_ripples:
+  - sdd/backlogid.json
+  - sdd/BACKLOG-DONE.md
+surprising_ripples:
+  # Both restate what the launcher caps by, so each named only the CPU half.
+  - CLAUDE.md
+  - pyproject.toml
+phases:
+  - id: orient
+    name: Orient
+    steps:
+      - file: sdd/BACKLOG.md
+        section: "§ 7. The gate costs only what it needs"
+        read_type: gate
+        extract: "Only BUG-315 is about local reliability; the rest are gate speed or CI routing. No item for the worker MemoryError"
+        outcome: ok
+      - file: sdd/backlog/bk-419-local-gate-unbounded-wait.md
+        section: "(full)"
+        read_type: reference
+        extract: "Stall, wait and overlap failure modes; memory is not among them"
+        outcome: ok
+      - file: scripts/run_tests.py
+        section: "(full)"
+        read_type: gate
+        extract: "compute_workers is CPU-only; RS_TEST_WORKERS is the sole memory remedy"
+        outcome: ok
+  - id: reproduce
+    name: Measure
+    steps:
+      - file: scripts/run_tests.py
+        section: "hatch run test-cov-s1, 8 workers, sampled every 6 s"
+        read_type: verify
+        extract: >-
+          Free commit (Win32_OperatingSystem.FreeVirtualMemory) fell from
+          45.56 GB after the run to 34.66 GB at its lowest: 10.9 GB, about
+          1.36 GB per worker. Largest python process PrivateMemorySize64
+          1.42 GB. 11171 passed. Budget set to 1.5 GiB per worker, 2 GiB
+          reserve; the 2026-10-04 case (7.9 GB free) then gets 3 workers
+        outcome: ok
+  - id: implement
+    name: Implement
+    steps:
+      - file: tests/scripts/test_run_tests.py
+        section: "(full)"
+        read_type: reference
+        extract: "New cap, probe and stderr tests seen failing (missing compute_workers argument, missing free_commit_bytes) before the implementation"
+        outcome: ok
+  - id: verify
+    name: Verify
+    steps:
+      - file: tests/scripts/test_run_tests.py
+        section: "(full)"
+        read_type: verify
+        extract: >-
+          69 passed on Windows and 69 in Docker python:3.11-slim (with
+          --noconftest and pytest-xdist installed). Probe against the OS:
+          Windows 44.39 GiB vs FreeVirtualMemory 44.42 GiB; Linux 14.44 GiB vs
+          MemAvailable 15155140 kB
+        outcome: ok
+      - file: sdd/CLAUDE-REFERENCE.md
+        section: "Ripple-check rows: Backlog item touched; Test whose subject is outside src/ or scripts/"
+        read_type: verify
+        extract: "Subject is under scripts/, so the path filters reach it; contributor.tooling + infra.test owe no CHANGELOG"
+        outcome: ok
+review:
+  # Derived by `hatch run ship-report 1108 --trace-block-only` at head 01cc9b9.
+  # Do not hand-edit, except a newly required field per sdd/traces/_schema.yml
+  # section review: RFC-0015 D4 makes this script the only producer.
+  derivation: "hatch run ship-report 1108 --trace-block-only"
+  pr: 1108
+  review_rounds: 3
+  submissions: 2
+  findings: 4
+  by_round:
+    - round: 1
+      findings: 3
+      origin: {original: 3}
+      triage: {must-fix: 3}
+      duration_hours: 0.13
+    - round: 2
+      findings: 1
+      origin: {original: 1}
+      triage: {must-fix: 1}
+      duration_hours: 0.17
+  by_file:
+    - path: "scripts/run_tests.py"
+      findings: 2
+    - path: "tests/scripts/test_run_tests.py"
+      findings: 2
+  untouched_files:
+    - "CLAUDE.md"
+    - "pyproject.toml"
+    - "sdd/BACKLOG-DONE.md"
+    - "sdd/backlogid.json"
+    - "sdd/decisions/15b46d0e-9e30-4e2e-ba95-d1adc0837506.jsonl"
+    - "sdd/traces/bk-421-memory-aware-workers.yml"
+  review_driven_commits:
+    - sha: "82aa90b"
+      subject: "fix: address PR #1108 review"
+    - sha: "bf4cfb7"
+      subject: "fix: address PR #1108 review"
+    - sha: "01cc9b9"
+      subject: "Merge remote-tracking branch 'origin/master' into bk-421-memory-aware-workers"
+  ci: {verdict: PENDING, failed: 0, pending: 21}
