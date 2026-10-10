@@ -129,3 +129,15 @@ phases:
         section: "Step 3; Rules"
         read_type: verify
         extract: "The quantifier rule sits under Rules, not Step 3; BK-423 corrected"
+  - id: fix_2
+    name: "Fix pass after the maintainer's review on PR #1110"
+    steps:
+      - file: scripts/check_process_budget.py
+        section: "load, main, Bounds, shrink message"
+        read_type: verify
+        extract: >-
+          Conflict markers, a missing key and a missing file each raised a
+          traceback with exit 1, seen failing first in three tests; now exit 2
+          naming the file. In-slack cuts accumulating across merges is now a
+          stated bound, and the shrink message tells a PR that made no cut
+          why it fails. Five mutants of the fix, each killed

@@ -96,6 +96,7 @@ class TestCheck:
         err = capsys.readouterr().err
         assert "--update" in err
         assert "CLAUDE.md (100 -> 95)" in err
+        assert "If this PR made no cut" in err
 
     def test_crlf_measures_as_lf(self, tmp_path: Path) -> None:
         _tree(tmp_path, {"CLAUDE.md": b"x\n" * 50, ".claude/skills/ship/SKILL.md": b"y" * 100})
@@ -106,6 +107,33 @@ class TestCheck:
         _tree(tmp_path, {"CLAUDE.md": b"a" * 10})
         assert _mod.main([], root=tmp_path) == 1
         assert ".claude/skills/*/SKILL.md" in capsys.readouterr().err
+
+
+class TestUnreadableBudget:
+    """A broken budget file is exit 2 with an instruction, never a traceback or exit 1."""
+
+    _PREFIX = "budget file unreadable: sdd/process-budget.json: "
+
+    def test_conflict_markers(self, tmp_path: Path, capsys: pytest.CaptureFixture[str]) -> None:
+        _tree(tmp_path, _BASE)
+        path = tmp_path / "sdd" / "process-budget.json"
+        path.write_text("<<<<<<< HEAD\n" + path.read_text(encoding="utf-8") + "=======\n", encoding="utf-8")
+        assert _mod.main([], root=tmp_path) == 2
+        assert self._PREFIX + "JSONDecodeError" in capsys.readouterr().err
+
+    def test_missing_key(self, tmp_path: Path, capsys: pytest.CaptureFixture[str]) -> None:
+        _tree(tmp_path, _BASE)
+        budget = _budget(tmp_path)
+        del budget["slack"]
+        (tmp_path / "sdd" / "process-budget.json").write_text(json.dumps(budget), encoding="utf-8")
+        assert _mod.main([], root=tmp_path) == 2
+        assert self._PREFIX + "KeyError: 'slack'" in capsys.readouterr().err
+
+    def test_missing_file(self, tmp_path: Path, capsys: pytest.CaptureFixture[str]) -> None:
+        _tree(tmp_path, _BASE)
+        (tmp_path / "sdd" / "process-budget.json").unlink()
+        assert _mod.main([], root=tmp_path) == 2
+        assert self._PREFIX + "FileNotFoundError" in capsys.readouterr().err
 
 
 class TestUpdate:
