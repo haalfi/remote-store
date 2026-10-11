@@ -302,7 +302,8 @@ if evidence changes; these are retired.
   spec: — · effort: S · audience: contributor.process, infra.test
   RFC-0019 § Roadmap now exits Phases 2 and 3 on net time saved: a saving
   target fixed in the phase plan, and deterministic, selector-reachable escapes
-  costed as one full run each below the time saved. The merge-head full gate
+  below the time saved, each priced by when it surfaces: one full run in
+  Phase 2, a close-time fix and full run in Phase 3. The merge-head full gate
   stays the barrier (D1, D2). Phase 0's zero-miss row is kept as run. Trace:
   [bk-408](traces/bk-408-rfc-0019-exit-criteria.yml).
 

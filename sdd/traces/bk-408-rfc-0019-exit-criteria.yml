@@ -88,3 +88,18 @@ phases:
           Grep for "zero", "0 deterministic" and "escape" after the edit: no
           zero-escape exit left outside Phase 0's row, which is kept as run.
         outcome: ok
+  - id: fix
+    name: Fix
+    steps:
+      - file: sdd/rfcs/rfc-0019-two-speed-test-gate.md
+        section: "D1 table; Open Questions 5"
+        read_type: verify
+        extract: >-
+          Review round 1: the one-full-run price per escape came from the
+          local gate, which CI's per-push full run backs. In the switched-on
+          CI lane Phase 3 shadows, the full run comes only at merge-candidate,
+          so an escape surfaces at the close. Escapes are now priced by the
+          plan per phase: one full run in Phase 2, at least a fix pass, its
+          re-review and a full run in Phase 3. D7.4 again scopes the
+          counted classes to Phase 0's exit as well.
+        outcome: ok

@@ -635,9 +635,10 @@ none of which selects anything.**
     - failure in a job the selector does not represent;
     - failure only the full coverage gate finds.
 
-    The Phase 2 and 3 exits (§ Roadmap) cost only deterministic,
-    selector-reachable escapes (the first two classes) against the time the
-    selection saves. The others are reported, and routed to their own owners.
+    Phase 0's zero-miss exit counts, and the Phase 2 and 3 exits (§ Roadmap)
+    cost against the time the selection saves, only deterministic,
+    selector-reachable escapes (the first two classes). The others are
+    reported, and routed to their own owners.
 
     **A class other than the first two needs evidence**, or a judgment call
     could argue a real miss away:
@@ -725,7 +726,7 @@ The targets for these are written into the Phase 0 plan before the run.
 
 **Phases 2 and 3 exit on net time saved, not on zero escapes.** The fast lane
 is not the merge barrier: D1 and D2 put the full run on the merge head, so an
-escape costs a red full run one round later, not a defect on `master`. A zero
+escape costs a later red full run and its fix, not a defect on `master`. A zero
 bar fits a barrier; meeting it is what D5's import graph and reader inventory
 are for, and a lane that may miss needs neither
 ([bucket rules § Accepted misses](../research/bk-403-phase-0/bucket-rules.md#accepted-misses)).
@@ -736,8 +737,13 @@ targets were:
   period, a FULL fallback counted as 100%, meets the plan's target. A median
   over selected units alone would pass by construction under the cut-off.
 - **Net of escapes:** the deterministic, selector-reachable escapes (D7.4),
-  each costed as one extra full run, sum to less than the time the selection
-  saved over the same units.
+  each at the cost the plan sets, sum to less than the time the selection
+  saved over the same units. Where a full run still follows every push, as
+  for Phase 2 while CI runs the full gate per push, an escape shows one round
+  later and costs one extra full run. Phase 3 shadows the switched-on lane,
+  where the full run comes only at `merge-candidate` (D1; Open Questions 5),
+  so its plan prices an escape as found at the close: at least a fix pass, its
+  re-review and another full run.
 
 Phase 0's row keeps the zero-miss exit it was run and stopped against. The
 bar follows the local gate's
