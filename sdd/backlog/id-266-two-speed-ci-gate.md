@@ -95,6 +95,8 @@ the local gate now leans on CI's full run per push, so a CI fast lane needs a
 full run before merge (RFC-0019 D1's `merge-candidate` lane), and the `/ship`
 edit no longer has a BK-404 edit to sequence with. Whether the CI lane reuses
 the selector, whose base is a local record CI does not have, is open.
+Whichever it is, BK-408 set the bar its shadow phase meets: net time saved,
+not zero escapes (RFC-0019 § Roadmap).
 
 **Open decision for the ADR:** the primary leg's tier in the fast lane
 (RFC-0019 Open Questions 1; the draft-lane wording below predates it).
