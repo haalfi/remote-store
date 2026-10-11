@@ -147,3 +147,76 @@ phases:
           `<p>Parameters:\n- ...`. A scan of the G-08 published set for a
           top-level marker after paragraph text found 447 sites in 81 files;
           filed as BUG-321
+review:
+  # Derived by `hatch run ship-report 1115 --trace-block-only` at head f264df5.
+  # Do not hand-edit, except a newly required field per sdd/traces/_schema.yml
+  # section review: RFC-0015 D4 makes this script the only producer.
+  derivation: "hatch run ship-report 1115 --trace-block-only"
+  pr: 1115
+  review_rounds: 2
+  submissions: 1
+  findings: 3
+  by_round:
+    - round: 1
+      findings: 3
+      origin: {original: 2, pre-existing: 1}
+      triage: {filed: 1, must-fix: 1, unknown: 1}
+      duration_hours: 0.07
+  by_file:
+    - path: "scripts/check_docs_framework.py"
+      findings: 1
+    - path: "sdd/specs/047-docs-framework-tooling.md"
+      findings: 1
+    - path: "tests/scripts/test_check_docs_framework.py"
+      findings: 1
+  untouched_files:
+    - "CHANGELOG.md"
+    - "CONTRIBUTING.md"
+    - "pyproject.toml"
+    - "scripts/check_spec_marks.py"
+    - "sdd/000-process.md"
+    - "sdd/AUTHORING.md"
+    - "sdd/BACKLOG-DONE.md"
+    - "sdd/BACKLOG.md"
+    - "sdd/CI-OPERATIONS.md"
+    - "sdd/CONTENT-RULES.md"
+    - "sdd/GATE-INVENTORY.md"
+    - "sdd/adrs/0012-async-store-backend-api.md"
+    - "sdd/adrs/0025-async-to-sync-backend-adapter.md"
+    - "sdd/adrs/0042-contract-kernel-over-thin-drivers.md"
+    - "sdd/audits/audit-010-ext-private-imports.md"
+    - "sdd/audits/audit-015-spec-traceability.md"
+    - "sdd/audits/audit-017-dev-process-gate-topology.md"
+    - "sdd/audits/audit-022-gate-speed-strategies.md"
+    - "sdd/backlog/bk-327-dual-doc-nav-reachability.md"
+    - "sdd/backlog/bk-376-llmstxt-sections-hand-listed.md"
+    - "sdd/backlogid.json"
+    - "sdd/decisions/0695d737-12e4-58f2-af4c-8731bddd810c.jsonl"
+    - "sdd/research/research-benchmark-suite-v2.md"
+    - "sdd/research/research-bk-403-testmon-poc.md"
+    - "sdd/research/research-retry-policy.md"
+    - "sdd/research/research-store-middleware-architecture.md"
+    - "sdd/research/research-v1-communication-plan.md"
+    - "sdd/rfcs/rfc-0001-azure-backend.md"
+    - "sdd/rfcs/rfc-0003-s3-pyarrow-read-optimization.md"
+    - "sdd/rfcs/rfc-0004-streaming-atomic-writes.md"
+    - "sdd/rfcs/rfc-0007-doc-cross-links.md"
+    - "sdd/rfcs/rfc-0009-multi-agent-orchestration.md"
+    - "sdd/rfcs/rfc-0010-graph-backend.md"
+    - "sdd/rfcs/rfc-0016-backlog-as-index.md"
+    - "sdd/rfcs/rfc-0017-contract-kernel-over-thin-drivers.md"
+    - "sdd/rfcs/rfc-0018-decision-capture-at-dialog-time.md"
+    - "sdd/rfcs/rfc-0019-two-speed-test-gate.md"
+    - "sdd/rfcs/rfc-0020-ship-token-interventions.md"
+    - "sdd/specs/009-sftp-backend.md"
+    - "sdd/specs/019-ext-observe.md"
+    - "sdd/specs/031-ext-dagster.md"
+    - "sdd/specs/040-sql-blob-backend.md"
+    - "sdd/traces/bug-320-nested-list-indent.yml"
+    - "tests/scripts/test_check_spec_marks.py"
+  review_driven_commits:
+    - sha: "b5c4a25"
+      subject: "BUG-320: Add Python-Markdown to dev so G-08's renderer anchors run in CI"
+    - sha: "f264df5"
+      subject: "BUG-320: Keep a list open across a column-0 lazy line in G-08; file BUG-322"
+  ci: {verdict: GREEN, failed: 0, pending: 0}
