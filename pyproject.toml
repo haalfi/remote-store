@@ -230,6 +230,10 @@ dev = [
   "pytest-randomly>=3.15",  # BK-277: randomised test order in the `test-isolation` proof lane
   "pytest-timeout>=2.3",  # BK-419: per-test bound that `scripts/run_tests.py` passes as `--timeout`; inert without one
   "markdown",  # BUG-320: G-08's tests check their fixtures against Python-Markdown's real output
+  # BK-389: scripts/gen_sync_kernel.py derives the sync contract kernel from the
+  # async one (RFC-0017 D6); its `--check` runs in `preflight`, and CI's
+  # tooling-tests import it. Pinned: its token pass is what the committed twin is.
+  "unasync==0.6.0",
   "hypothesis>=6.0",
   "moto[server,s3]>=5.2.0",
   # vcrpy is a transitive of pytest-recording (which floors it at only >=2.0.1),
@@ -303,10 +307,6 @@ python = "3.13"
 # real optional-dependencies extra rather than an env-only `dependencies` entry
 # so the two mutation workflows can install the same pin via `.[mutate]`.
 features = ["dev", "docs", "bench", "mutate"]
-# Env-only, not an extra: a code generator the package never imports at runtime.
-# scripts/gen_sync_kernel.py derives the sync contract kernel from the async one
-# (RFC-0017 D6); the `--check` lane in `preflight` needs it.
-dependencies = ["unasync==0.6.0"]
 # The uv installer honours UV_SYSTEM_PYTHON=1 (set workflow-wide in CI) and then
 # syncs these features into the system Python, not .venv. A job that runs hatch
 # sets UV_SYSTEM_PYTHON=0 (BK-411); tests/scripts/test_workflow_hatch_uv_system.py

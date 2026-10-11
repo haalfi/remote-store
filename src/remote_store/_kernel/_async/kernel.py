@@ -539,11 +539,14 @@ class _AsyncKernelCore:
             if existing is not None:
                 raise self._occupied(existing, key)
         temp = _temp_key(key)
-        result = await self._put(op, temp, content, True, metadata)
         try:
+            result = await self._put(op, temp, content, True, metadata)
+            # replace=overwrite: a file written after the check above is refused,
+            # never silently replaced.
             with self._choke(op, key):
-                await self._rename.rename(temp, key, replace=True)
+                await self._rename.rename(temp, key, replace=overwrite)
         except BaseException:
+            # A failed put can leave a partial temporary on some wires.
             with contextlib.suppress(Exception):
                 await self._driver.delete(temp)
             raise
@@ -590,7 +593,8 @@ class _AsyncKernelCore:
         # The source's NotFound outranks the destination's preconditions (BE-018), so
         # the source is confirmed before the ancestor walk or parent creation can
         # answer or act for the destination.
-        if self._reject_under_file or self._parents_maker is not None:
+        source_checked = self._reject_under_file or self._parents_maker is not None
+        if source_checked:
             await self._require_file(op, source)
         await self._prepare_write(op, target)
         if op is Op.COPY:
@@ -606,7 +610,7 @@ class _AsyncKernelCore:
                 await self._destination_is_wrong_type(err, op, target)
                 raise
         elif self._rename is not None:
-            await self._rename_into(source, target, overwrite)
+            await self._rename_into(source, target, overwrite, source_checked=source_checked)
         elif self._copier is not None:
             await self._copy(op, source, target, overwrite)
             with self._choke(op, source):
@@ -633,10 +637,11 @@ class _AsyncKernelCore:
             await self._destination_is_wrong_type(err, op, target)
             raise
 
-    async def _rename_into(self, source: str, target: str, overwrite: bool) -> None:
+    async def _rename_into(self, source: str, target: str, overwrite: bool, *, source_checked: bool) -> None:
         assert self._rename is not None
         op = Op.MOVE
-        await self._require_file(op, source)
+        if not source_checked:
+            await self._require_file(op, source)
         existing = await self._stat(op, target)
         if existing is not None and (existing.kind == "folder" or not overwrite):
             raise self._occupied(existing, target)
@@ -994,14 +999,19 @@ class _AsyncKernelCore:
         files, _ = await self._df_listing(key, None, None)
         if not files:
             return await self._df_empty(key, missing_ok)
+        left = False
         for file in files:
             if not _keys.listable(file):
+                # Never handed to the driver (BE-030); it keeps the prefix alive.
+                left = True
                 continue
             try:
                 with self._choke(Op.DELETE_FOLDER, file):
                     await self._driver.delete(file)
             except NotFound:
                 continue
+        if left:
+            raise self._df_error(DirectoryNotEmpty, key)
         return None
 
     async def _df_empty(self, key: str, missing_ok: bool) -> None:

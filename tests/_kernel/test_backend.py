@@ -33,6 +33,17 @@ def test_read_seekable_uses_ranged_reads_when_the_driver_has_them() -> None:
 
 
 @pytest.mark.spec("SEEK-001")
+def test_reading_the_rest_of_a_ranged_stream_is_one_request() -> None:
+    store = FakeStore().add("big", data=bytes(range(256)) * 200)  # 51200 bytes, over six 8 KiB chunks
+    run = make_kernel("sync", store, protocols=("remove_folder", "range"))
+    with run.kernel.read_seekable("big") as stream:
+        stream.seek(100)
+        assert stream.read() == store.files["big"].data[100:]
+        assert stream.read() == b""
+    assert store.called("get_range") == [("get_range", "big")]
+
+
+@pytest.mark.spec("SEEK-001")
 def test_read_seekable_spools_over_read_without_ranged_reads() -> None:
     run = make_kernel("sync", _store(), protocols=("remove_folder",))
     with run.kernel.read_seekable("f") as stream:

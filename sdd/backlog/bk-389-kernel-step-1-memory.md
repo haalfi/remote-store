@@ -725,6 +725,10 @@ Choices the decisions above left open, as built:
   `read`; outside that set an error propagates unmapped in both, as
   `_ErrorMappingStream` does today (SIO-012). A first draft mapped every
   `Exception` on the async side only.
+- **`unasync` is pinned in the `dev` extra**, not in the hatch environment
+  alone as the evidence above (2026-10-02) proposed: CI's test jobs install
+  `.[dev]`, not the hatch env, and import the generator's tests, so an
+  env-only pin turned them red on the kernel PR's first push.
 - **`_flat_ns._addressable_segments` is restated, not imported:** importing it
   runs `remote_store.backends.__init__`, which imports every backend, and the
   backends will subclass the kernel.

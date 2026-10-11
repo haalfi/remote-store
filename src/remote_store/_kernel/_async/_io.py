@@ -1,21 +1,25 @@
 """Where the async runtime differs in kind, not by ``await``: stream and content shapes.
 
 Hand-written in both runtimes; ``_sync/_io.py`` is its counterpart, with the
-same names, which the generated modules import in place of these.
+same names, which the generated modules import in place of these. Neither
+imports the driver module, which imports them.
 """
 
 from __future__ import annotations
 
 from collections.abc import AsyncIterator
-from typing import TYPE_CHECKING
-
-if TYPE_CHECKING:
-    from remote_store._kernel._async.driver import AsyncWriteHandle
+from typing import Protocol
 
 #: What ``get`` returns: the async driver streams chunks.
 ReadStream = AsyncIterator[bytes]
 #: What ``put`` and ``write_atomic`` accept.
 Content = bytes | AsyncIterator[bytes]
+
+
+class _Writable(Protocol):
+    """The part of a driver's write handle ``feed`` uses."""
+
+    async def write(self, data: bytes) -> None: ...
 
 
 async def read_all(stream: ReadStream) -> bytes:
@@ -33,7 +37,7 @@ async def close_stream(stream: object) -> None:
         await aclose()
 
 
-async def feed(handle: AsyncWriteHandle, content: Content) -> None:
+async def feed(handle: _Writable, content: Content) -> None:
     """Write all of *content* into an open write handle."""
     if isinstance(content, bytes | bytearray | memoryview):
         await handle.write(bytes(content))

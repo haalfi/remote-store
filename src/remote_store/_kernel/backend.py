@@ -111,15 +111,24 @@ class _RangeReader(io.RawIOBase):
         self._pos = target
         return target
 
+    def _fetch(self, want: int) -> bytes:
+        with self._core._choke(Op.READ_SEEKABLE, self._key):
+            data = self._ranged.get_range(self._key, self._pos, want)
+        self._pos += len(data)
+        return data
+
     def readinto(self, buffer: bytearray | memoryview) -> int:  # type: ignore[override]
         want = min(len(buffer), max(self._size - self._pos, 0))
         if not want:
             return 0
-        with self._core._choke(Op.READ_SEEKABLE, self._key):
-            data = self._ranged.get_range(self._key, self._pos, want)
+        data = self._fetch(want)
         buffer[: len(data)] = data
-        self._pos += len(data)
         return len(data)
+
+    def readall(self) -> bytes:
+        """The rest of the file in one ranged request, not one per default buffer."""
+        want = max(self._size - self._pos, 0)
+        return self._fetch(want) if want else b""
 
 
 class _HandleStream(io.RawIOBase):

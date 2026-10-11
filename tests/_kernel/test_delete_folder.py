@@ -261,6 +261,23 @@ def test_parents_none_reads_an_absent_container_as_an_empty_listing(runtime: str
         run.delete_folder("d")
 
 
+@pytest.mark.spec("BE-030")
+@pytest.mark.parametrize("with_tree", [False, True])
+def test_parents_none_over_an_omitted_key(runtime: str, with_tree: bool) -> None:
+    store = FakeStore(parents="none").add("d/a")
+    store.files["d/b\\c"] = store.files["d/a"]
+    run = make_kernel(runtime, store, protocols=("delete_tree",) if with_tree else ())
+    if with_tree:
+        # The wire's tree delete removes the whole prefix, the omitted key with it.
+        run.delete_folder("d", recursive=True)
+        assert store.files == {}
+        return
+    with pytest.raises(DirectoryNotEmpty):
+        run.delete_folder("d", recursive=True)
+    assert sorted(store.files) == ["d/b\\c"]
+    assert ("delete", "d/b\\c") not in store.calls
+
+
 def test_parents_none_tolerates_a_file_deleted_under_the_walk(runtime: str) -> None:
     store = FakeStore(parents="none").add("d/a", "d/b")
     run = make_kernel(runtime, store, protocols=())

@@ -1,15 +1,13 @@
 """Where the sync runtime differs in kind, not by ``await``: stream and content shapes.
 
 Hand-written in both runtimes; ``_async/_io.py`` is its counterpart, with the
-same names. The generated modules beside this one import these.
+same names. The generated modules beside this one import these. Neither
+imports the driver module, which imports them.
 """
 
 from __future__ import annotations
 
-from typing import TYPE_CHECKING, BinaryIO
-
-if TYPE_CHECKING:
-    from remote_store._kernel._sync.driver import WriteHandle
+from typing import BinaryIO, Protocol
 
 #: What ``get`` returns: the sync driver hands back a binary stream.
 ReadStream = BinaryIO
@@ -17,6 +15,12 @@ ReadStream = BinaryIO
 Content = BinaryIO | bytes
 
 _CHUNK = 256 * 1024
+
+
+class _Writable(Protocol):
+    """The part of a driver's write handle ``feed`` uses."""
+
+    def write(self, data: bytes) -> None: ...
 
 
 def read_all(stream: ReadStream) -> bytes:
@@ -34,7 +38,7 @@ def close_stream(stream: object) -> None:
         close()
 
 
-def feed(handle: WriteHandle, content: Content) -> None:
+def feed(handle: _Writable, content: Content) -> None:
     """Write all of *content* into an open write handle."""
     if isinstance(content, bytes | bytearray | memoryview):
         handle.write(bytes(content))

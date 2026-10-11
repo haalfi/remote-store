@@ -1397,8 +1397,10 @@ that aggregates natively computes that aggregate itself, so it owes the same
 omission (BE-017: it returns the value the kernel would). Folding it
 would name another node (`a\b` as `a/b`), which is BE-029's withdrawn fold;
 raising would make every sibling unlistable. The entry stays reachable through
-addressing and `unwrap()`. A recursive `delete_folder` over a folder holding one
-therefore cannot empty it and answers `DirectoryNotEmpty` (BE-031).
+addressing and `unwrap()`. Since the kernel never hands such a key to its driver,
+a recursive `delete_folder` that walks the tree cannot empty a folder holding
+one and answers `DirectoryNotEmpty`; one the driver's `delete_tree` performs
+removes it with the rest of the tree (BE-031).
 
 **`glob(pattern)` takes the rule segment-wise over the whole pattern.** Order:
 the capability first (a driver without native glob declares no `GLOB`, so
@@ -1412,7 +1414,7 @@ canonical `""` names the root, a folder, and yields nothing. Worked examples:
 `"d/*//"` as `"d/*/"`; `"d/*/."` as `"d/*"`; `"/d/*.csv"`, `"*/../x"` and
 `"d\\*.csv"` raise `InvalidPath`.
 
-**Conformance:** fake-driver kernel cells in `tests/kernel/`, run against both
+**Conformance:** fake-driver kernel cells in `tests/_kernel/`, run against both
 runtimes; Memory's cells arrive with its migration.
 
 ### BE-031: `delete_folder` on the Kernel
@@ -1468,7 +1470,9 @@ says nothing about the key. A `delete_tree` refusal gets the `stat` probe only.
 - *`parents == "none"`:* list first, `stat` only after an empty listing. A
   non-recursive call lists `limit=1` with `delimiter="/"`; a recursive one lists
   with `delimiter=None`, `limit=1` before `delete_tree`, or paged without
-  `delete_tree`, deleting each listed file and tolerating a `NotFound` on one.
+  `delete_tree`, deleting each listed file and tolerating a `NotFound` on one;
+  a listed key BE-030 omits is left, and the call then answers
+  `DirectoryNotEmpty`.
   The listing is the determinant and fails closed, except that a `NotFound`
   from it is an empty listing: an absent prefix, or an absent container, holds
   nothing (BE-013). After an empty listing, `stat`: a file → `InvalidPath`,
@@ -1490,15 +1494,15 @@ says nothing about the key. A `delete_tree` refusal gets the `stat` probe only.
 | a file and a prefix both | `DirectoryNotEmpty` | the files under it removed, the file kept |
 | absent, or under a file (`f/x`) | `NotFound` | `NotFound` |
 
-**A recursive delete may answer `DirectoryNotEmpty`** on a walk, when a writer
-adds under the tree mid-walk, or when an entry the listing omits (BE-030) stays
-behind. BE-013 lists the error for `recursive=False` and forbids it nowhere else.
+**A recursive delete may answer `DirectoryNotEmpty`** on a walk (either
+`parents` case), when a writer adds under the tree mid-walk, or when an entry
+the listing omits (BE-030) stays behind. BE-013 lists the error for `recursive=False` and forbids it nowhere else.
 
 **The root.** `delete_folder` on any root spelling raises `InvalidPath` before
 the driver is called (BE-030's table), never reaching `remove_folder`,
 `delete_tree` or the walk. BE-029 leaves the root `delete_folder` undefined for
 backends in general; for a class on the kernel this clause defines it.
 
-**Conformance:** fake-driver kernel cells in `tests/kernel/`, which enumerate the
+**Conformance:** fake-driver kernel cells in `tests/_kernel/`, which enumerate the
 probe rule's condition space (refusal × `stat` outcome × listing outcome ×
 `missing_ok`, per context).

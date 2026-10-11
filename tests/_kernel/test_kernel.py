@@ -304,8 +304,35 @@ def test_a_listed_non_canonical_key_is_omitted_and_logged(runtime: str, caplog: 
         assert keys_of(run.list_files("d")) == ["d/a"]
         assert keys_of(run.list_files("", recursive=True)) == ["d/a"]
         assert run.get_folder_info("d").file_count == 1
-    assert "omitted" in caplog.text
-    assert "d/b\\\\c" in caplog.text or "d/\\\\" in caplog.text or "d//e" in caplog.text
+    omissions = [r.getMessage().split(": ", 1)[1] for r in caplog.records if "omitted" in r.getMessage()]
+    # One record per listing: its count, and its first omitted key. The flat
+    # listing of "d" sees "d//e" as a folder prefix, which list_files skips.
+    assert [m.split(" that ")[0] + m.split("e.g.")[1] for m in omissions] == [
+        "omitted 3 listed key(s) under 'd' 'd/\\\\'",
+        "omitted 4 listed key(s) under '' 'd//e'",
+        "omitted 4 listed key(s) under 'd' 'd//e'",
+    ]
+
+
+@pytest.mark.spec("BE-030")
+def test_glob_folder_listings_and_iter_children_omit_a_non_canonical_key(
+    runtime: str, caplog: pytest.LogCaptureFixture
+) -> None:
+    store = FakeStore()
+    store.add("d/a.csv", "d/s/x")
+    store.files["d/b\\c.csv"] = store.files["d/a.csv"]
+    store.folders.add("d/t\\u")  # a folder another tool named with a backslash
+    store.files["d/t\\u/y"] = store.files["d/a.csv"]
+    run = make_kernel(runtime, store, caps=(Capability.READ, Capability.LIST, Capability.GLOB))
+    with caplog.at_level("WARNING", logger="remote_store._kernel"):
+        assert keys_of(run.glob("d/*.csv")) == ["d/a.csv"]
+        assert keys_of(run.list_folders("d")) == ["d/s"]
+        assert keys_of(run.iter_children("d")) == ["d/a.csv", "d/s"]
+    omissions = [r.getMessage() for r in caplog.records if "omitted" in r.getMessage()]
+    assert len(omissions) == 3
+    assert "'d/b\\\\c.csv'" in omissions[0]
+    assert "'d/t\\\\u'" in omissions[1]
+    assert "omitted 2 listed key(s)" in omissions[2]
 
 
 @pytest.mark.spec("BE-030")
@@ -761,6 +788,37 @@ def test_a_failed_commit_aborts_the_wire_temporary(runtime: str) -> None:
         run.write_atomic("a", b"new")
     assert [h.state for h in store.handles] == ["aborted"]
     assert "a" not in store.files
+
+
+@pytest.mark.spec("BE-010")
+def test_a_failed_put_of_the_temporary_removes_it(runtime: str) -> None:
+    store = FakeStore().add("a", data=b"old")
+    run = make_kernel(runtime, store, protocols=("remove_folder", "rename"))
+    store.fault("put", FakeDown("upload lost"))
+    with pytest.raises(BackendUnavailable, match="upload lost"):
+        run.write_atomic("a", b"new", overwrite=True)
+    (temp,) = [k for p, k in store.calls if p == "put"]
+    assert ("delete", temp) in store.calls  # a wire may leave a partial temporary
+    assert store.files["a"].data == b"old"
+
+
+@pytest.mark.spec("BE-010")
+def test_write_atomic_by_rename_never_replaces_a_file_written_after_its_check(runtime: str) -> None:
+    store = FakeStore()
+    run = make_kernel(runtime, store, protocols=("remove_folder", "rename"))
+    store.fault("rename", hook=lambda: store.add("a", data=b"theirs"))
+    with pytest.raises(AlreadyExists):
+        run.write_atomic("a", b"mine")
+    assert store.files["a"].data == b"theirs"
+    assert sorted(store.files) == ["a"]  # the temporary removed
+
+
+@pytest.mark.spec("BE-018")
+def test_a_rename_move_stats_its_source_once(runtime: str) -> None:
+    store = FakeStore().add("s")
+    run = make_kernel(runtime, store, protocols=("remove_folder", "rename", "ensure_parents"))
+    run.move("s", "n/t")
+    assert store.called("stat") == [("stat", "s"), ("stat", "n/t")]
 
 
 @pytest.mark.spec("BE-010")
