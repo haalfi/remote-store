@@ -50,11 +50,6 @@ phases:
   - id: orient
     name: Orient
     steps:
-      - file: K:/Code/sandbox/token-kit/ROADMAP.md
-        section: "Order"
-        read_type: reference
-        extract: "BK-430 is step 1; builds on ADR-0044; done when proposals 2 and 3 are standing rules or decided against"
-        outcome: ok
       - file: sdd/research/research-token-spend-means.md
         section: "§ 3, § 5, § 6"
         read_type: gate
