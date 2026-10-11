@@ -16,7 +16,7 @@
         <link rel="prev" href="../0043-tiered-ci-gate-derived-interpreter-set/">
       
       
-        <link rel="next" href="../../audits/">
+        <link rel="next" href="../0045-close-on-a-check-that-can-fail/">
       
       
         
@@ -6717,6 +6717,34 @@
 
               
             
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../0045-close-on-a-check-that-can-fail/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    0045: A Close Rests on a Check That Can Fail, and Spend Is Judged With Defects
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
           </ul>
         </nav>
       
@@ -11274,7 +11302,8 @@ covered before it closes.</p>
 compared case by case
 (<a href="https://github.com/haalfi/remote-store/blob/master/sdd/research/token-usage/report.md#the-two-deliveries-compared">report § The two deliveries compared</a>).
 Run B (#1113) was the better fix in a third of the lines and reached it in five
-review rounds, but it shipped two regressions run A (#1093) had avoided: a link
+review rounds, but its loop closed with two regressions run A (#1093) had
+avoided, the first fixed before merge: a link
 into a folder the caller cannot enter makes the whole listing raise, and a
 subfolder in the classic delete-pending state on Windows raises
 <code>PermissionDenied</code>. Run A's round 7 had measured the second state.</p>
@@ -11300,7 +11329,9 @@ saving only while its reviewers still reach what the change touches
   that alone block the stop go to the user in one dialog, and only the user
   waives one: the session that wants to stop is not the one to decide what it
   may leave unreviewed. <em>Reverse if</em> covering rows adds rounds across a
-  meaningful sample of deliveries without changing what ships.</li>
+  meaningful sample of deliveries without changing what ships.
+  <em>Amended by <a href="../0045-close-on-a-check-that-can-fail/">ADR-0045</a>:</em> the method
+  that covers a row must be one that could have found the row's risk.</li>
 </ul>
 <p>The row shape, the brief item and the dialog are operational contract and live
 in <code>.claude/skills/ship/SKILL.md</code>.</p>
@@ -11378,13 +11409,13 @@ in <code>.claude/skills/ship/SKILL.md</code>.</p>
         
         
           
-          <a href="../../audits/" class="md-footer__link md-footer__link--next" aria-label="Next: Audits">
+          <a href="../0045-close-on-a-check-that-can-fail/" class="md-footer__link md-footer__link--next" aria-label="Next: 0045: A Close Rests on a Check That Can Fail, and Spend Is Judged With Defects">
             <div class="md-footer__title">
               <span class="md-footer__direction">
                 Next
               </span>
               <div class="md-ellipsis">
-                Audits
+                0045: A Close Rests on a Check That Can Fail, and Spend Is Judged With Defects
               </div>
             </div>
             <div class="md-footer__button md-icon">
