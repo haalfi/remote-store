@@ -59,8 +59,8 @@ phases:
           measuring block (non-measuring passes) and Step 4 posting
           (analyze-only members, which skip Step 4).
         outcome: ok
-      - file: K:/Code/sandbox/token-kit/runs/4b0278bb-bdf1-40a2-bfdb-7f645ce7a779
-        section: "11 subagent transcripts of run B's resumed session"
+      - file: "(transcripts) run B's resumed /ship session, snapshot kept outside the repo"
+        section: "its 11 subagent transcripts, read with tokkit.py's parse_file and carried"
         read_type: verify
         extract: >-
           Split with tokkit.parse_file/carried (scratch script): of 34.4 M
