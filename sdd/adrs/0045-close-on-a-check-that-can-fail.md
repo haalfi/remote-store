@@ -32,12 +32,13 @@ rather than on their form
 ([report § Rule (c) against the decision rule](../research/token-usage/report.md#rule-c-against-the-decision-rule)).
 The rule under test was met as written; the check had become ritual.
 
-Run B also cost a quarter of run A's units and shipped two regressions run A's
-PR had avoided
-([report § The two deliveries compared](../research/token-usage/report.md#the-two-deliveries-compared)).
-RFC-0020's decision rule caught that only because it failed the run on a
-must-fix defect the slower run did not have, a clause written for that one
-experiment. Nothing on master weighs a cheaper loop by what it ships.
+Run B also cost a quarter of run A's units and closed its loop with two
+regressions run A's PR had avoided
+([report § The two deliveries compared](../research/token-usage/report.md#the-two-deliveries-compared));
+before #1113 merged, one was fixed and the other left to BUG-318. RFC-0020's
+decision rule weighed run B by its defects as well as its spend, with a clause
+written for that one experiment. Nothing on master weighs a cheaper loop by
+what it ships.
 
 ## Decision
 
@@ -77,5 +78,7 @@ row coverage is operational contract and lives in
   visible in the reply; it does not make it mechanical.
 - **Negative:** this changes how findings close inside BK-384's graduation
   sample for RFC-0015, to be recorded there.
-- **Neutral:** `/orchestrate` applies `/fix-pr`'s Step 3 and so inherits the
-  first clause; it has no stop rule and no spend comparison for the second.
+- **Neutral:** `/orchestrate` carries the first clause for its fixes only,
+  naming each refuting result in its Step 7 report since it has no reply; it
+  has no refute verdict, no subject-list rows and no spend comparison, so the
+  rest does not reach it.

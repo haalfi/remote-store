@@ -683,7 +683,7 @@ unprimed pass. A PR making no such claim satisfies it vacuously, exactly as a
 round that fixed nothing satisfies the fix-pass clause.
 
 **Nor on a subject-list row nobody took up.** Run B of `/ship BUG-280`
-converged in five rounds and shipped two regressions run A had caught, a link
+converged in five rounds with two regressions run A had caught, a link
 into a locked folder and a Windows delete-pending state: no row named them and
 no round had to reach a `not reached` one
 ([report § The two deliveries compared](../../../sdd/research/token-usage/report.md#the-two-deliveries-compared)).

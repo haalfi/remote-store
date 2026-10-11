@@ -307,9 +307,10 @@ if evidence changes; these are retired.
   and `/ship`'s triage and row coverage; and a `/ship` tuning justified by
   fewer units or rounds also compares the defects its deliveries shipped.
   Evidence: four of run B's ten check-closed prose findings ran a check that
-  could not fail, and run B shipped two regressions run A had avoided
+  could not fail, and run B closed its loop with two regressions run A had
+  avoided, one fixed before #1113 merged
   ([report](research/token-usage/report.md#rule-c-against-the-decision-rule)).
-  Process files raised 294,945 to 295,249 bytes after `/ship`'s copy of the
+  Process files raised 294,945 to 295,293 bytes after `/ship`'s copy of the
   Step 3 list became a pointer (`scripts/check_process_budget.py`). Trace:
   [bk-430](traces/bk-430-falsifiable-checks.yml).
 

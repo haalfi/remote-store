@@ -1,6 +1,6 @@
 id: BK-430
 title: "A review loop may close prose on a check that cannot fail, and no standing rule weighs a cheaper delivery by its defects"
-trigger: "Run B of /ship BUG-280: four of ten check-closed prose findings ran a check that could not show the claim false, and the 4x cheaper loop shipped two regressions run A had avoided (report § Rule (c) against the decision rule, § The two deliveries compared)"
+trigger: "Run B of /ship BUG-280: four of ten check-closed prose findings ran a check that could not show the claim false, and the 4x cheaper loop closed with two regressions run A had avoided, one fixed before #1113 merged (report § Rule (c) against the decision rule, § The two deliveries compared)"
 source_items:
   - BK-430
 audience:
@@ -14,6 +14,7 @@ expected_ripples:
   - sdd/backlog/bk-384-rfc-0015-graduation-measurement.md
 surprising_ripples:
   - CLAUDE.md
+  - .claude/skills/orchestrate/SKILL.md
 decisions:
   - sdd/decisions/f4419e46-e713-4605-867a-e1286a2dc3da.jsonl
 orient:
@@ -101,7 +102,7 @@ phases:
       - file: scripts/check_process_budget.py
         section: "module docstring"
         read_type: gate
-        extract: "Budget at 294945 of 294945; /ship's copy of the /fix-pr Step 3 list cut to a pointer (-74), remainder +304 raised under BK-430"
+        extract: "Budget at 294945 of 294945; /ship's copy of the /fix-pr Step 3 list cut to a pointer saves 442 against 361 of new /ship clauses (tmp/bk430_bytes.py, not committed), remainder +348 raised under BK-430 after the review round"
         outcome: ok
   - id: verify
     name: Verify
