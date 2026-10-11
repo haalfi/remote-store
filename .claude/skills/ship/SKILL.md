@@ -136,8 +136,8 @@ current: it sizes panels and briefs, and it is **the review's contract**
 ([ADR-0044](../../../sdd/adrs/0044-ship-subject-list-review-contract.md)): the
 loop ends only when every row is covered or the user waived it (Stop rule). The
 mark is the author's evidence; coverage is the loop's. A row is covered only by
-a review pass reporting on it (brief item 4), whatever its mark, and the
-orchestrator records that pass against the row.
+a review pass reporting on it or a CI lane executing it (brief item 4), whatever
+its mark, and the orchestrator records which against the row.
 
 The third delivery was scoped by where a symptom was reported, and a capable
 backend the new clause bound by *specification* went unnamed for six rounds
@@ -556,11 +556,8 @@ are not substitutes.
    docstring ([RFC-0015](../../../sdd/rfcs/rfc-0015-ship-two-surfaces.md) D4).
 
    **Running it is the orchestrator's job, done while writing the brief. Put the
-   *result* in the brief; never the command.** It reads PR *comments*, and
-   `/rvw-pr` Step 1 forbids a reviewer from fetching those — that prohibition is
-   the whole mechanism keeping unprimed passes unprimed, so a brief asking a
-   member to run `ship-report` turns that member into one that has read the
-   conversation.
+   *result* in the brief; never the command**: it reads PR *comments*, which
+   `/rvw-pr` Step 1 forbids a reviewer to fetch.
 
    **No reviewer runs `ship-report`, including a measuring member**: it is not
    on `/rvw-pr`'s by-name measuring allowlist, and it reads comment **bodies**,
@@ -746,7 +743,8 @@ which dropped the model axis and added the measuring member; and
 [ADR-0037](../../../sdd/adrs/0037-whole-file-gate-and-derived-figures.md) the
 fourth (PR #956), which added the whole-file gate after a converged, CI-green loop
 left defects in all eight files a single whole-file read then had to touch. Read
-all four before tuning any of the above.
+all four before tuning any of the above; the row clause's record is
+[ADR-0044](../../../sdd/adrs/0044-ship-subject-list-review-contract.md).
 
 **Reviewer *selection* is not in that set** —
 [ADR-0036](../../../sdd/adrs/0036-reviewers-by-subject-and-method.md) decides it,

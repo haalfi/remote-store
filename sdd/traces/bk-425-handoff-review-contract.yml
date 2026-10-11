@@ -27,11 +27,12 @@ orient:
     verdict: constrains
     evidence: >-
       Filed in open PR #1118 (bk-430-research-follow-ups), after this orient
-      ran; its open decision is "proposals 2 and 3 as standing rules, or
-      folded into BK-425". Proposal 2 (a check counts only if it could have
-      failed) bears on when a row is covered; proposal 3 (weigh a cheaper
-      delivery by its defects) measures outcomes, not coverage. Not folded:
-      the agreed scope stands and BK-430 keeps its decision.
+      ran; its open decision now reads "proposals 2 and 3 as standing rules.
+      BK-425 overlaps: when a check covers a row". Proposal 3 (a check counts
+      only if it can return the claim false) bears on when a row is covered;
+      proposal 2 (never target spend alone: weigh a cheaper delivery by its
+      defects) measures outcomes, not coverage (research-token-spend-means.md
+      § 6). Not folded: the agreed scope stands and BK-430 keeps its decision.
   - items: [BK-384]
     verdict: constrains
     evidence: >-
@@ -138,9 +139,9 @@ phases:
         section: "(run)"
         read_type: verify
         extract: >-
-          Against origin/master's sdd/process-budget.json, after the round-1 fix:
-          ship/SKILL.md 54463 to 54206, rvw-pr/SKILL.md 30783 to 30702,
-          CLAUDE.md 17194 to 17294, total 295263 to 295025
+          Against origin/master's sdd/process-budget.json, after the round-2 fix:
+          ship/SKILL.md 54463 to 54126, rvw-pr/SKILL.md 30783 to 30702,
+          CLAUDE.md 17194 to 17294, total 295263 to 294945
       - file: sdd/000-process.md
         section: "Document types (Research row)"
         read_type: verify
@@ -157,7 +158,10 @@ phases:
         extract: >-
           Round 1 (#1119): coverage needed a place in the reviewer's report
           (fixed with Row: lines) and the mark vs coverage needed relating
-          (fixed in § Enumerate; width and ceiling now read uncovered rows)
+          (fixed in § Enumerate; width and ceiling now read uncovered rows).
+          Round 2 verified that fix and found my § Enumerate line had dropped
+          the CI-lane route brief item 4 allows, "Read all four" no longer
+          reaching ADR-0044, and BK-430 cited before it exists on master
       - file: sdd/backlogid.json
         section: "BK"
         read_type: verify

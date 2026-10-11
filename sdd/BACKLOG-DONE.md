@@ -310,9 +310,9 @@ if evidence changes; these are retired.
   folder and the Windows delete-pending state
   ([report](research/token-usage/report.md#the-two-deliveries-compared));
   [proposal 9](research/research-token-spend-means.md#6-proposals). Cuts in
-  `/ship` and `/rvw-pr` paid for the growth (295,263 to 295,025 bytes,
-  `scripts/check_process_budget.py`). BK-430 (proposals 2 and 3) overlaps:
-  a covering check that cannot fail is its question, left open there. Trace:
+  `/ship` and `/rvw-pr` paid for the growth (295,263 to 294,945 bytes,
+  `scripts/check_process_budget.py`). BK-430 (proposals 2 and 3, filed in #1118) overlaps:
+  whether a check that covers a row can fail is its question, open there. Trace:
   [bk-425](traces/bk-425-handoff-review-contract.yml).
 
 - [x] **BK-423 — A universal quantifier in process prose owes no enumeration until a reviewer refutes it**
