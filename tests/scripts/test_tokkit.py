@@ -123,8 +123,9 @@ class TestBashCategory:
             ("git --no-pager -C wt log -1", "git log"),
             ("git --git-dir=.git --work-tree=. diff", "git diff"),
             ("GIT_EDITOR=true git -C wt commit", "git commit"),
-            # The directory name must not make a cherry-pick a push.
+            # Stripping -C must not leave its directory to be read as the subcommand.
             ("git -C tmp/pr-push cherry-pick 460ff5cea", "git"),
+            # Before the word boundary this started with "git commit" and counted as a commit.
             ("git commit-tree abc", "git"),
             ("gh pr create --title x", "gh pr"),
         ],
@@ -221,6 +222,51 @@ class TestUntil:
         _write(transcripts, records)
         s = _report(tmp_path, snap, "--until", "2026-10-10T14:07:00Z")
         assert s["main_calls"] == 4
+
+    def test_a_cut_without_an_offset_is_read_as_utc(self, kit, tmp_path):
+        # Transcript timestamps end in Z; a naive cut must not fail to compare with them.
+        transcripts, snap = kit
+        _write(transcripts, _run_b_shaped())
+        assert _report(tmp_path, snap, "--until", "2026-10-10T14:07:00")["main_calls"] == 5
+
+    def test_a_cut_that_is_not_a_timestamp_is_a_usage_error(self, kit, tmp_path, capsys):
+        transcripts, snap = kit
+        _write(transcripts, _run_b_shaped())
+        with pytest.raises(SystemExit) as exc:
+            _report(tmp_path, snap, "--until", "yesterday")
+        assert exc.value.code == 2
+        assert "--until" in capsys.readouterr().err
+
+
+class TestRelatedSessions:
+    """A review session of the PR, opened after the main one, joins the report only through --pr."""
+
+    def _with_review(self, transcripts: Path, prompt: str) -> None:
+        _write(transcripts, _run_b_shaped())
+        review = [
+            {"type": "user", "timestamp": _ts(20), "message": {"role": "user", "content": prompt}},
+            _call(100, 21),
+            _call(101, 22),
+        ]
+        (transcripts / "00000000-0000-0000-0000-000000000002.jsonl").write_text(
+            "\n".join(json.dumps(r) for r in review), encoding="utf-8"
+        )
+
+    def test_the_review_of_the_given_pr_is_counted(self, kit, tmp_path):
+        transcripts, snap = kit
+        self._with_review(transcripts, "/rvw-pr 7")
+        _cache_pr(snap, 7, "2026-10-10T14:11:00Z")
+        s = _report(tmp_path, snap, "--pr", "7")
+        assert (s["transcripts"], s["calls"]) == (2, 9 + 2)
+
+    @pytest.mark.parametrize("extra", [[], ["--pr", "6"]], ids=["no-pr", "pr-link-of-reused-branch"])
+    def test_a_review_of_another_pr_or_without_pr_is_left_out(self, kit, tmp_path, extra):
+        # PR 6 is the one the pr-link record named for the reused branch name.
+        transcripts, snap = kit
+        self._with_review(transcripts, "/rvw-pr 7")
+        _cache_pr(snap, 6, "2026-10-10T13:00:00Z")
+        s = _report(tmp_path, snap, *extra)
+        assert (s["transcripts"], s["calls"]) == (1, 9)
 
 
 class TestPrCreation:

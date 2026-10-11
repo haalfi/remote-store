@@ -13,6 +13,10 @@ audience:
   - contributor.tooling
 co_shipped_items:
   - BK-417
+surprising_ripples:
+  - sdd/research/token-usage/gates.py
+  - sdd/research/token-usage/prep_cost.py
+  - sdd/research/token-usage/route_baseline.py
 expected_ripples:
   - sdd/backlogid.json
   - sdd/GATE-INVENTORY.md
@@ -100,7 +104,7 @@ phases:
       - file: sdd/CLAUDE-REFERENCE.md
         section: "Ripple-check / Test whose subject is outside src/ or scripts/ (hatch run ref-rows script)"
         read_type: verify
-        extract: "test_tokkit.py's subject sits in sdd/research/; added to HOOKS_PAT and the mechanical-gate list, as BUG-295 did for RFC-0015's scripts"
+        extract: "test_tokkit.py's and test_token_kit_cuts.py's subjects sit in sdd/research/; added to HOOKS_PAT and the mechanical-gate list, as BUG-295 did for RFC-0015's scripts"
       - file: .github/workflows/ci.yml
         section: "HOOKS_PAT"
         read_type: verify
@@ -108,8 +112,31 @@ phases:
       - file: sdd/CLAUDE-REFERENCE.md
         section: "PR validation gates"
         read_type: verify
-        extract: "Mechanical-gate path list mirrors HOOKS_PAT; 45 bytes cut in the same paragraph to stay inside the process budget"
+        extract: "Mechanical-gate path list mirrors HOOKS_PAT (the kit as sdd/research/token-usage/*.py after the fix pass); 45 bytes cut in the same paragraph to stay inside the process budget"
       - file: sdd/BACKLOG.md
         section: "How this file works / Completing work"
         read_type: verify
         extract: "Delete both items, add [x] entries under Unreleased, regenerate backlogid.json"
+  - id: fix
+    name: Review fix pass (PR 1122, round 1)
+    steps:
+      - file: sdd/research/token-usage/tokkit.py
+        section: "when; --until; related sessions"
+        read_type: gate
+        extract: >-
+          Reproduced the offset-less --until TypeError, the old bash_cat returning "git" for the
+          cherry-pick (so the PR body's "before" claim was false; commit-tree was the real misread)
+          and the 3,738 figure living in inventory.json, not composition.json
+      - file: sdd/research/token-usage/gates.py
+        section: "UNTIL; records"
+        read_type: reference
+        extract: >-
+          Class sweep for string-compared cuts: gates.py --until, prep_cost.py --since/--until,
+          route_baseline.py --checkpoint (documented to reconcile with a tokkit --until cut) and
+          tokkit find --since; fixed together through _common.when at the maintainer's choice
+      - file: sdd/research/token-usage/route_baseline.py
+        section: "split, checkpoint"
+        read_type: verify
+        extract: >-
+          Own-fix sweep: the first rewrite dropped calls without a timestamp, which the string
+          compare had kept as before the cut; restored in route_baseline and tokkit --until

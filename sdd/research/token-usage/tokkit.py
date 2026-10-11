@@ -27,7 +27,6 @@ from __future__ import annotations
 
 import argparse
 import collections
-import datetime as dt
 import json
 import re
 import shutil
@@ -90,7 +89,7 @@ def cmd_find(args):
     for d in project_dirs():
         for p in d.glob("*.jsonl"):
             t = first_ts(p)
-            if t and (not args.since or t >= args.since):
+            if t and (not args.since or when(t) >= args.since):
                 rows.append((t, p.stem, d.name, p.stat().st_size, first_prompt(p)))
     for t, sid, d, size, prompt in sorted(rows):
         print(f"{t[:19]}  {sid}  {size / 1e6:6.2f} MB  {d:44}  {prompt}")
@@ -379,8 +378,7 @@ def pr_created(number: int, dest: Path) -> str:
     return json.loads(cache.read_text(encoding="utf-8"))["createdAt"]
 
 
-def when(ts: str) -> dt.datetime:
-    return dt.datetime.fromisoformat(ts.replace("Z", "+00:00"))
+when = cm.when
 
 
 def plan_end(events):
@@ -402,8 +400,7 @@ def cmd_report(args):
     def load(f):
         calls, items, events = parse_file(f)
         if args.until:
-            # As times, not strings: "13:58:24.977Z" <= "13:58:24Z" holds as text.
-            calls = [x for x in calls if x["ts"] and when(x["ts"]) <= when(args.until)]
+            calls = [x for x in calls if not x["ts"] or when(x["ts"]) <= args.until]
             items = [i for i in items if i["enter"] < len(calls)]
             events = [e for e in events if e["idx"] < len(calls)]
         return calls, items, events
@@ -657,7 +654,7 @@ def main(argv=None):
     )
     sp = ap.add_subparsers(dest="cmd", required=True)
     f = sp.add_parser("find")
-    f.add_argument("--since", default=None)
+    f.add_argument("--since", type=when, default=None, help="ISO timestamp, UTC when it has no offset")
     lv = sp.add_parser("live")
     lv.add_argument("--session", required=True)
     lv.add_argument("--every", type=int, default=25)
@@ -666,7 +663,12 @@ def main(argv=None):
     rp.add_argument("--session", required=True)
     rp.add_argument("--md", default=None)
     rp.add_argument("--json", default=None, help="also write an aggregated, ID-free summary to this .json path")
-    rp.add_argument("--until", default=None, help="ISO timestamp: ignore calls after it, in every transcript")
+    rp.add_argument(
+        "--until",
+        type=when,
+        default=None,
+        help="ISO timestamp, UTC when it has no offset: ignore calls after it, in every transcript",
+    )
     rp.add_argument(
         "--pr", type=int, default=None, help="the PR the session opened: its createdAt starts the review loop"
     )

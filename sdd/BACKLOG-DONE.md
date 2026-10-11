@@ -324,10 +324,14 @@ if evidence changes; these are retired.
   (else the first answered `AskUserQuestion`), and starts the review loop at
   the `createdAt` of the PR `--pr` names, read once with `gh` and cached in the
   snapshot; `pr-link` records are listed as events only. Commits and pushes
-  run as `git -C <dir>` count, and `--until` compares times, not strings. On
-  run B's build session the split is 43 / 50 / 2 calls; the research record's
-  hand cut at plan approval counted 44, because as strings `13:58:24.977Z`
-  sorts before `13:58:24Z`. Tests: `tests/scripts/test_tokkit.py`. Trace:
+  run as `git -C <dir>` count. Every time cut the kit takes (`tokkit.py`
+  `--until` and `find --since`, `gates.py --until`, `prep_cost.py`
+  `--since`/`--until`, `route_baseline.py --checkpoint`) compares times, not
+  strings, and reads a cut without an offset as UTC. On run B's build session
+  the split is 43 / 50 / 2 calls; the research record's hand cut at plan
+  approval counted 44, because as strings `13:58:24.977Z` sorts before
+  `13:58:24Z`. Tests: `tests/scripts/test_tokkit.py`,
+  `tests/scripts/test_token_kit_cuts.py`. Trace:
   [bk-424](traces/bk-424-tokkit-phase-dating.yml).
 
 - [x] **BK-417 — `report-token-usage` undercounts tool results about 1.7 times and leaves out the prefix and hidden thinking**

@@ -397,8 +397,9 @@ def _print_transcripts(root: Path, top: int) -> None:
             row = total.setdefault(f"`{target.replace('|', '/')}`", [0, 0])
             row[0] += est
             row[1] += carried
-    # Ranked with the tool results: 22.3% and 11.8% of re-read context over 3,738 calls
-    # (sdd/research/token-usage/results/composition.json, `shares_pct`).
+    # Ranked with the tool results: 22.3% and 11.8% of re-read context
+    # (sdd/research/token-usage/results/composition.json, `shares_pct`) over 3,738 calls
+    # (results/inventory.json, `calls`).
     total["*session prefix*"] = [sum(s.prefix for s in sessions), sum(s.prefix_carried for s in sessions)]
     total["*hidden thinking*"] = [sum(s.hidden for s in sessions), sum(s.hidden_carried for s in sessions)]
     print(f"\nTop {top} context items by carried tokens (size x later calls), all transcripts:\n")

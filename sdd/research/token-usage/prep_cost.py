@@ -108,8 +108,10 @@ def first_ts(path: Path) -> str | None:
 def main(argv=None) -> int:
     ap = c.parser(__doc__)
     ap.add_argument("--classes", default="prep_classes.json", help="class map file inside --data")
-    ap.add_argument("--since", required=True, help="ISO timestamp: first session start counted")
-    ap.add_argument("--until", required=True, help="ISO timestamp: sessions starting after it are left out")
+    ap.add_argument("--since", type=c.when, required=True, help="ISO timestamp: first session start counted")
+    ap.add_argument(
+        "--until", type=c.when, required=True, help="ISO timestamp: sessions starting after it are left out"
+    )
     ap.add_argument("--name", default="prep_cost", help="result file name")
     args = c.resolve(ap.parse_args(argv))
     cmap_path = args.data / args.classes
@@ -120,7 +122,7 @@ def main(argv=None) -> int:
     for d in c.default_transcripts(args.repo_root):
         for p in d.glob("*.jsonl"):
             t = first_ts(p)
-            if not t or not (args.since <= t <= args.until) or p.stem in exclude:
+            if not t or not (args.since <= c.when(t) <= args.until) or p.stem in exclude:
                 continue
             s = session(p)
             if not s["calls"]:
@@ -151,7 +153,7 @@ def main(argv=None) -> int:
     prep_usd = usd_by_class["a"] + usd_by_class["b"] + usd_by_class["c"]
     top = sorted(rows, key=lambda r: -sum(r[1]["by_branch"].values()))[:5]
     payload = {
-        "window": {"since": args.since, "until": args.until},
+        "window": {"since": c.iso(args.since), "until": c.iso(args.until)},
         "sessions": len(rows),
         "calls": sum(s["calls"] for _, s, _ in rows),
         "sessions_compacted": sum(1 for _, s, _ in rows if s["compactions"]),

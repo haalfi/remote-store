@@ -17,6 +17,7 @@ import datetime as _dt
 import hashlib
 import json
 import re
+from datetime import UTC
 from pathlib import Path
 from typing import TYPE_CHECKING
 
@@ -76,6 +77,22 @@ def resolve(args: argparse.Namespace) -> argparse.Namespace:
     if getattr(args, "data", "absent") is None:
         args.data = args.repo_root / "tmp" / "token-usage-data"
     return args
+
+
+def when(ts: str) -> _dt.datetime:
+    """An ISO timestamp as an aware time; one without an offset is read as UTC, as transcripts are.
+
+    Every cut a script takes (``--since``, ``--until``, ``--checkpoint``) is compared through
+    this, never as a string: transcripts write milliseconds, so ``"13:58:24.977Z" <= "13:58:24Z"``
+    holds as text. As an argparse ``type`` it turns a bad value into a usage error.
+    """
+    t = _dt.datetime.fromisoformat(ts.replace("Z", "+00:00"))
+    return t if t.tzinfo else t.replace(tzinfo=UTC)
+
+
+def iso(t: _dt.datetime) -> str:
+    """A cut as written into a result: UTC with a ``Z``, as the transcripts write it."""
+    return t.astimezone(UTC).isoformat().replace("+00:00", "Z")
 
 
 def default_transcripts(repo: Path) -> list[Path]:
