@@ -6745,6 +6745,34 @@
 
               
             
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../0046-review-tools-come-from-the-agent/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    0046: A Review Pass's Tools Come From Its Agent, Not From allowed-tools
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
           </ul>
         </nav>
       
@@ -11399,7 +11427,10 @@ repeat-site check and the CI check are operational contract and live in
   which the spawn path loses and must restate as an instruction. It is not a
   read-only guarantee — that frontmatter grants <code>Bash</code> — and what covers the
   <code>Bash</code> residue is the unchanged-<code>HEAD</code> and clean-tree check every pass
-  carries. <code>Agent</code> spawning remains for panels, which <code>/rvw-pr</code> cannot form.</li>
+  carries. <code>Agent</code> spawning remains for panels, which <code>/rvw-pr</code> cannot form.
+  <em>Amended by <a href="../0046-review-tools-come-from-the-agent/">ADR-0046</a>:</em>
+  <code>allowed-tools</code> withholds nothing; a pass lacks a tool only when its agent's
+  <code>tools:</code> list omits it.</li>
 <li><strong>Negative:</strong> a measuring member costs more than a reading one. It runs code,
   which means environment setup, gate time, and a longer round.</li>
 <li><strong>Negative:</strong> it also widens a reviewer's tool surface. <code>/rvw-pr</code> confined
