@@ -168,3 +168,48 @@ phases:
           BK 423 to 425: the file holds the highest ID per prefix in
           BACKLOG-DONE.md (scripts/gen_backlogid.py docstring), and closing
           BK-425 raised it. I first misread it as an open-item high-water mark
+review:
+  # Derived by `hatch run ship-report 1119 --trace-block-only` at head ce8dd7a.
+  # Do not hand-edit, except a newly required field per sdd/traces/_schema.yml
+  # section review: RFC-0015 D4 makes this script the only producer.
+  derivation: "hatch run ship-report 1119 --trace-block-only"
+  pr: 1119
+  review_rounds: 3
+  submissions: 2
+  findings: 5
+  by_round:
+    - round: 1
+      findings: 2
+      origin: {original: 2}
+      triage: {must-fix: 2}
+      duration_hours: 0.05
+    - round: 2
+      findings: 3
+      origin: {loop-introduced: 3}
+      triage: {must-fix: 3}
+      duration_hours: 0.2
+  by_file:
+    - path: ".claude/skills/ship/SKILL.md"
+      findings: 4
+    - path: "sdd/BACKLOG-DONE.md"
+      findings: 1
+  untouched_files:
+    - ".claude/skills/rvw-pr/SKILL.md"
+    - "CLAUDE.md"
+    - "sdd/BACKLOG.md"
+    - "sdd/adrs/0033-ship-convergence-driven-review.md"
+    - "sdd/adrs/0044-ship-subject-list-review-contract.md"
+    - "sdd/adrs/DIGEST.md"
+    - "sdd/backlog/bk-384-rfc-0015-graduation-measurement.md"
+    - "sdd/backlogid.json"
+    - "sdd/decisions/1eb63e38-d23c-411c-ada0-db6d189af555.jsonl"
+    - "sdd/process-budget.json"
+    - "sdd/traces/bk-425-handoff-review-contract.yml"
+  review_driven_commits:
+    - sha: "179d3a1"
+      subject: "BK-425: fix: address PR #1119 review"
+    - sha: "5981b7b"
+      subject: "BK-425: fix: address PR #1119 review round 2"
+    - sha: "ce8dd7a"
+      subject: "BK-425: Correct the trace after rebasing onto #1118"
+  ci: {verdict: GREEN, failed: 0, pending: 0}
