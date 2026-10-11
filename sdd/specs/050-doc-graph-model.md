@@ -299,7 +299,7 @@ introduce set-ordering nondeterminism.
 **Invariant:** `scripts/gen_graph.py --check` and
 `scripts/gen_graph_viz.py --check` exit non-zero (without writing) when the
 committed `graph.json` / `graph_viz.html` would differ from a fresh build. Both
-run in the pre-commit gate (`hatch run all`) and in CI; a source change that is
+run in `preflight`, which the pre-commit gate (`hatch run fast`) always runs, and in CI; a source change that is
 not accompanied by regenerated artifacts fails the gate.
 
 **Invariant (schema_version ripple):** Bumping `schema_version` requires updating

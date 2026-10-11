@@ -73,6 +73,8 @@ FILES = {
     "tests/conftest.py": "from remote_store import Store\n",
     "tests/e2e/conftest.py": "from remote_store.backends._sftp import *\n",
     "tests/e2e/test_flow.py": "def test_a(): ...\n",
+    "tests/aio/conftest.py": "from remote_store.backends._sftp import *\n",
+    "tests/aio/test_aio.py": "def test_a(): ...\n",
     "tests/backends/fixtures/registry.py": "",
     "tests/backends/fixtures/backends.toml": BACKENDS_TOML,
     "tests/backends/fixtures/fixtures.toml": FIXTURES_TOML,
@@ -123,10 +125,16 @@ def test_backend_source_selects_its_fixtures_dir_and_importers(repo) -> None:
     sel = _select(repo, "src/remote_store/backends/_local.py")
     assert not sel.full
     assert set(sel.conformance_ids) == {"local"}
-    assert {"tests/backends/local/", "tests/backends/local/test_local.py", "tests/e2e/", "tests/scripts/"} <= set(
-        sel.targets
-    )
+    assert {"tests/backends/local/", "tests/backends/local/test_local.py", "tests/scripts/"} <= set(sel.targets)
     assert "tests/test_store.py" not in sel.targets
+
+
+def test_e2e_is_never_selected_because_all_never_runs_it(repo) -> None:
+    # addopts ignores tests/e2e, but an explicit target bypasses --ignore and collects it.
+    for path in ("src/remote_store/backends/_local.py", "src/remote_store/backends/_sftp.py", "tests/e2e/conftest.py"):
+        assert not any(t.startswith("tests/e2e/") for t in _select(repo, path).targets), path
+    assert _select(repo, "tests/e2e/test_flow.py").empty
+    assert "tests/e2e/test_flow.py" not in fg.suite_files(repo)
 
 
 def test_shared_helper_selects_every_backend_reaching_it_without_stage_2_or_3_ids(repo) -> None:
@@ -146,7 +154,19 @@ def test_module_every_backend_reaches_is_full() -> None:
 def test_scoped_conftest_import_selects_its_directory_not_full(repo) -> None:
     sel = _select(repo, "src/remote_store/backends/_sftp.py")
     assert not sel.full
-    assert "tests/e2e/" in sel.targets
+    assert "tests/aio/" in sel.targets
+
+
+def test_example_cassette_and_infra_rules(repo) -> None:
+    sel = _select(repo, "examples/getting_started/quickstart.py")
+    assert set(sel.targets) == {*fg.EXAMPLE_TESTS, "tests/scripts/"}
+    sel = _select(repo, "tests/backends/cassettes/s3/rec.yaml")
+    assert set(sel.conformance_ids) == {"s3_moto"}
+    assert fg.PII_TEST in sel.targets
+    sel = _select(repo, "tests/backends/fixtures/_cassettes_s3.py")
+    assert set(sel.conformance_ids) == {"s3_moto"}
+    assert fg.PII_TEST in sel.targets
+    assert _select(repo, "infra/_moto.py").full
 
 
 def test_changed_test_runs_itself_and_its_importers(repo) -> None:
@@ -164,6 +184,12 @@ def test_package_init_and_deleted_src_module_are_full(repo) -> None:
 def test_root_conftest_and_fixture_infrastructure_are_full(repo) -> None:
     assert _select(repo, "tests/conftest.py").full
     assert _select(repo, "tests/backends/fixtures/local.py").full
+
+
+def test_markdown_under_tests_is_docs_not_test_data(repo) -> None:
+    # A data file under tests/ selects its directory; tests/README.md would select the whole suite.
+    assert set(_select(repo, "tests/README.md", "tests/aio/README.md").targets) == {"tests/scripts/"}
+    assert "tests/backends/s3/" in _select(repo, "tests/backends/s3/data.json").targets
 
 
 def test_docs_specs_and_ci_files_select_tooling_tests_only(repo) -> None:
@@ -201,10 +227,32 @@ def test_changed_pyproject_keys_flattens_and_diffs() -> None:
 # --------------------------------------------------------------------------- members and commands
 
 
-def test_specs_only_round_skips_typecheck_examples_notebooks_and_docs_build(repo) -> None:
+def test_specs_only_round_skips_typecheck_examples_and_notebooks_but_builds_docs(repo) -> None:
+    # gen_pages.py renders every sdd/ file into the site, so a spec edit can break the strict build.
     paths = ["sdd/BACKLOG.md", "sdd/traces/x.yml"]
     steps = fg.plan_steps(paths, _select(repo, *paths))
-    assert set(steps) == {"preflight", "lint", "format-check", "tests", "docs-check", "check-links"}
+    assert set(steps) == {"preflight", "lint", "format-check", "tests", "docs-check", "check-links", "docs-build"}
+
+
+@pytest.mark.parametrize(
+    "path",
+    [
+        "sdd/adrs/0001-x.md",
+        "examples/getting_started/quickstart.py",
+        "assets/logo.svg",
+        "benchmarks/results/comparative.md",
+        "scripts/gen_pages.py",
+        "scripts/docs/scan.py",
+        ".claude/skills/pr/SKILL.md",
+    ],
+)
+def test_every_docs_build_input_runs_docs_build(path: str) -> None:
+    assert "docs-build" in fg.plan_steps([path], fg.Selection())
+
+
+@pytest.mark.parametrize("path", ["tests/test_util.py", ".github/workflows/ci.yml", "scripts/check_x.py"])
+def test_paths_docs_build_does_not_read_skip_it(path: str) -> None:
+    assert "docs-build" not in fg.plan_steps([path], fg.Selection())
 
 
 def test_src_round_runs_typecheck_examples_notebooks_and_docs_build(repo) -> None:
@@ -330,3 +378,75 @@ def test_local_durations_override_ci_ones_and_merge_across_runs(git_repo: Path) 
     assert fg.load_durations(git_repo) == {"t.py::a": 4.0, "t.py::b": 1.0, "t.py::c": 2.0}
     fg.record_durations(git_repo / "missing.xml", git_repo)  # a run that wrote no report changes nothing
     assert fg.load_durations(git_repo)["t.py::a"] == 4.0
+
+
+# --------------------------------------------------------------------------- main()
+
+
+class _Members:
+    """Stands in for every member command; git still runs for real."""
+
+    def __init__(self, monkeypatch: pytest.MonkeyPatch, fail: str | None = None) -> None:
+        self.calls: list[list[str]] = []
+        real = subprocess.run
+
+        def run(cmd, *args, **kwargs):
+            if cmd[0] == "git":
+                return real(cmd, *args, **kwargs)
+            self.calls.append(list(cmd))
+            return subprocess.CompletedProcess(cmd, 1 if fail is not None and fail in cmd else 0)
+
+        monkeypatch.setattr(fg.subprocess, "run", run)
+
+    @property
+    def members(self) -> list[str]:
+        return [c[2] if c[0] == "hatch" else "tests" for c in self.calls]
+
+
+def _green(root: Path) -> str:
+    tree = fg.worktree_tree(root)
+    fg.record_green(tree, root)
+    return tree
+
+
+def test_main_records_green_only_when_every_member_passes(git_repo: Path, monkeypatch) -> None:
+    tree0 = _green(git_repo)
+    (git_repo / "notes.md").write_text("x\n", encoding="utf-8")
+    failing = _Members(monkeypatch, fail="lint")
+    assert fg.main([], git_repo) == 1
+    assert failing.members == ["preflight", "lint"]
+    assert fg.green_tree(git_repo) == tree0
+
+    passing = _Members(monkeypatch)
+    assert fg.main([], git_repo) == 0
+    assert "docs-build" in passing.members
+    assert fg.green_tree(git_repo) == fg.worktree_tree(git_repo) != tree0
+
+
+def test_main_runs_nothing_when_nothing_changed_unless_full(git_repo: Path, monkeypatch) -> None:
+    _green(git_repo)
+    members = _Members(monkeypatch)
+    assert fg.main([], git_repo) == 0
+    assert members.calls == []
+    assert fg.main(["--full"], git_repo) == 0
+    assert members.members == list(fg.STEP_ORDER)
+
+
+def test_main_plan_runs_nothing_and_records_nothing(git_repo: Path, monkeypatch) -> None:
+    tree0 = _green(git_repo)
+    (git_repo / "notes.md").write_text("x\n", encoding="utf-8")
+    members = _Members(monkeypatch)
+    assert fg.main(["--plan"], git_repo) == 0
+    assert members.calls == []
+    assert fg.green_tree(git_repo) == tree0
+
+
+def test_main_with_base_never_records_green(git_repo: Path, monkeypatch) -> None:
+    # A --base run checks only base..worktree; recording it would drop green..base for good.
+    tree0 = _green(git_repo)
+    (git_repo / "a.txt").write_text("committed change\n", encoding="utf-8")
+    _git(git_repo, "commit", "-qam", "c")
+    (git_repo / "notes.md").write_text("x\n", encoding="utf-8")
+    _Members(monkeypatch)
+    assert fg.main(["--base", "HEAD"], git_repo) == 0
+    assert fg.green_tree(git_repo) == tree0

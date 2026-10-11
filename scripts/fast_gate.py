@@ -40,7 +40,7 @@ Usage::
     hatch run fast                 # select, run, record green on success
     hatch run fast --plan          # print the plan and the reason per path; run nothing
     hatch run fast --full          # every member, full Stage-1 suite
-    hatch run fast --base <rev>    # diff against a revision instead of the last green run
+    hatch run fast --base <rev>    # diff against a revision instead; records no green run
 
 ``RS_FAST_GATE=full`` forces ``--full``. Exit code: the first failing member's.
 """
@@ -64,6 +64,7 @@ ROOT = Path(__file__).resolve().parent.parent
 STATE_NAME = "rs-fast-gate.json"
 FULL = "FULL"
 CONFORMANCE = "tests/backends/conformance/"
+E2E = "tests/e2e/"
 SCRIPTS_TESTS = "tests/scripts/"
 # A selection above this share of the suite's estimated time runs the suite.
 CUTOFF = 0.5
@@ -105,8 +106,12 @@ TOOLING_KEYS = (
     "tool.coverage",
     "tool.codespell",
 )
-DOCS_BUILD_PREFIXES = ("docs-src/", "src/", "scripts/mkdocs_hooks.py", "scripts/docs/", "examples/snippets/")
-DOCS_BUILD_FILES = frozenset({"mkdocs.yml", "pyproject.toml", "CHANGELOG.md", "README.md", "FEATURES.md"})
+# What `mkdocs build --strict` reads: mkdocstrings over src/; scripts/gen_pages.py
+# renders all of sdd/ and examples/, copies assets/ and scans every tracked .md
+# for dual pages; pymdownx.snippets includes files from docs-src/, examples/,
+# benchmarks/ and README.md (every `--8<--` target, grepped 2026-10-11).
+DOCS_BUILD_PREFIXES = ("docs-src/", "src/", "sdd/", "examples/", "assets/", "benchmarks/", "scripts/docs/")
+DOCS_BUILD_FILES = frozenset({"mkdocs.yml", "pyproject.toml", "scripts/gen_pages.py", "scripts/mkdocs_hooks.py"})
 
 
 # --------------------------------------------------------------------------- import graph
@@ -256,7 +261,10 @@ class Selection:
         return not (self.full or self.targets or self.conformance_ids or self.node_ids)
 
     def add(self, target: str, reason: str) -> None:
-        self.targets.setdefault(target, reason)
+        # addopts ignores tests/e2e and `all` never runs it, but an explicit
+        # target bypasses --ignore, so it is never named.
+        if not target.startswith(E2E):
+            self.targets.setdefault(target, reason)
 
     def add_ids(self, ids: set[str], reason: str) -> None:
         for i in sorted(ids):
@@ -265,6 +273,11 @@ class Selection:
 
 def _is_test_file(p: str) -> bool:
     return p.startswith("tests/") and p.rsplit("/", 1)[-1].startswith("test_") and p.endswith(".py")
+
+
+def suite_files(repo: Repo) -> list[str]:
+    """The test files the full Stage-1 run collects: every test file outside ``tests/e2e/``."""
+    return [f for f in repo.files if _is_test_file(f) and not f.startswith(E2E)]
 
 
 def _toml(text: str | None) -> dict:
@@ -399,7 +412,6 @@ def select_tests(repo: Repo, changes: list[tuple[str, str]], pyproject_keys: set
                     continue
                 if backs:
                     add_backends(backs, f"{p}: reaches {', '.join(sorted(backs))}")
-                    sel.add("tests/e2e/", f"{p}: backend source")
                 add_dependents(p, f"{p}: imports it")
                 # Whole-tree generators and text readers of src/ live in tests/scripts/.
                 sel.add(SCRIPTS_TESTS, f"{p}: tests/scripts reads src/")
@@ -427,8 +439,8 @@ def select_tests(repo: Repo, changes: list[tuple[str, str]], pyproject_keys: set
             for t in EXAMPLE_TESTS:
                 sel.add(t, f"{p}: example")
             sel.add(SCRIPTS_TESTS, f"{p}: tests/scripts reads examples/")
-        elif p.startswith("tests/"):
-            # Data files read by tests: their directory's tests.
+        elif p.startswith("tests/") and not p.endswith(".md"):
+            # Data files read by tests: their directory's tests. A README is docs (next rule).
             sel.add(p.rsplit("/", 1)[0] + "/", f"{p}: test data")
         else:
             # scripts/, docs, specs, skills, CI files: read by tests/scripts/.
@@ -497,7 +509,10 @@ def plan_steps(paths: list[str], sel: Selection) -> dict[str, str]:
                 "",
             )
         elif step == "docs-build":
-            reason = next((p for p in paths if p in DOCS_BUILD_FILES or p.startswith(DOCS_BUILD_PREFIXES)), "")
+            reason = next(
+                (p for p in paths if p in DOCS_BUILD_FILES or p.startswith(DOCS_BUILD_PREFIXES) or p.endswith(".md")),
+                "",
+            )
         if reason:
             out[step] = reason
     return out
@@ -719,7 +734,7 @@ def _print_plan(
     print(f"fast-gate: run {', '.join(steps)}" + (f"; skip {', '.join(skipped)}" if skipped else ""))
 
 
-def main(argv: list[str] | None = None) -> int:
+def main(argv: list[str] | None = None, root: Path = ROOT) -> int:
     ap = argparse.ArgumentParser(description=(__doc__ or "").split("\n", 1)[0])
     ap.add_argument("--plan", action="store_true", help="print the plan and exit")
     ap.add_argument("--full", action="store_true", help="run every member and the full Stage-1 suite")
@@ -727,17 +742,17 @@ def main(argv: list[str] | None = None) -> int:
     args = ap.parse_args(argv)
     force_full = args.full or os.environ.get("RS_FAST_GATE", "").lower() == "full"
 
-    head = worktree_tree()
+    head = worktree_tree(root)
     if args.base:
-        base, base_desc = _git(["rev-parse", f"{args.base}^{{tree}}"]).strip(), args.base
-    elif (green := green_tree()) is not None:
+        base, base_desc = _git(["rev-parse", f"{args.base}^{{tree}}"], root).strip(), args.base
+    elif (green := green_tree(root)) is not None:
         base, base_desc = green, "the last green run"
     else:
-        base, base_desc = merge_base_tree(), "the merge base with master (no green run recorded)"
+        base, base_desc = merge_base_tree(root), "the merge base with master (no green run recorded)"
     if base is None:
         force_full, base_desc = True, "nothing (no base found)"
 
-    changes = [] if base is None else diff_trees(base, head)
+    changes = [] if base is None else diff_trees(base, head, root)
     if not changes and not force_full:
         print(f"fast-gate: nothing changed since {base_desc}; nothing to run.")
         return 0
@@ -751,14 +766,16 @@ def main(argv: list[str] | None = None) -> int:
     else:
         keys = None
         if "pyproject.toml" in paths and base is not None:
-            keys = changed_pyproject_keys(blob_text(base, "pyproject.toml"), blob_text(head, "pyproject.toml"))
-        repo = Repo.from_disk()
+            keys = changed_pyproject_keys(
+                blob_text(base, "pyproject.toml", root), blob_text(head, "pyproject.toml", root)
+            )
+        repo = Repo.from_disk(root)
         sel = select_tests(repo, changes, keys)
         if not sel.full and not sel.empty:
-            sel.node_ids = last_failed()
+            sel.node_ids = last_failed(root)
         steps = plan_steps(paths, sel)
         if "tests" in steps and not sel.full:
-            selected_seconds, suite = estimate(sel, load_durations(), [f for f in repo.files if _is_test_file(f)])
+            selected_seconds, suite = estimate(sel, load_durations(root), suite_files(repo))
             share = selected_seconds / suite if suite else 1.0
             if share > CUTOFF:
                 sel.full_reasons.append(f"selection is ~{share:.0%} of the suite, above {CUTOFF:.0%}")
@@ -767,7 +784,7 @@ def main(argv: list[str] | None = None) -> int:
         return 0
 
     serial = not sel.full and selected_seconds < SERIAL_BELOW_SECONDS
-    junit = _git_path(JUNIT_NAME)
+    junit = _git_path(JUNIT_NAME, root)
     for step in STEP_ORDER:
         if step not in steps:
             continue
@@ -775,13 +792,17 @@ def main(argv: list[str] | None = None) -> int:
         for cmd in cmds:
             print(f"fast-gate: {step}: {' '.join(cmd)}", flush=True)
             junit.unlink(missing_ok=True)
-            rc = subprocess.run(cmd, cwd=ROOT, check=False).returncode
+            rc = subprocess.run(cmd, cwd=root, check=False).returncode
             if step == "tests":
-                record_durations(junit)
+                record_durations(junit, root)
             if rc != 0:
                 print(f"fast-gate: {step} failed (exit {rc}); later members not run.", flush=True)
                 return rc
-    record_green(head)
+    if args.base:
+        # Only base..worktree was checked; recording would drop green..base from every later run.
+        print(f"fast-gate: green against {args.base}; the last green run's record is unchanged.")
+        return 0
+    record_green(head, root)
     print("fast-gate: green; recorded this tree as the new base.")
     return 0
 

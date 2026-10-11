@@ -31,13 +31,13 @@ narrow with `-k` / a node id.
 | **2** | Docker (Azurite, moto, MinIO, sftp) | Stage 1 **plus** emulator-backed conformance | `hatch run test` (probes for Docker), or `--stage=2` |
 | **3** | a real cloud account + opt-in env var | Stage 2 **plus** `live`-marked tests against the real service | `--stage=3 -m live` + the backend's `RS_TEST_LIVE_*` flag (recipes below) |
 
-`hatch run all` uses `test-cov-s1` deliberately: the pre-commit gate never
-requires Docker. The 95% coverage floor (`test-cov-strict`) lives in CI and the
+The pre-commit gate, `hatch run fast`, runs Stage 1 only, without coverage, and
+`hatch run all` uses `test-cov-s1`: neither requires Docker. The 95% coverage floor (`test-cov-strict`) lives in CI and the
 publish workflow, where Azurite is up; do not substitute it locally (see
 [CLAUDE.md § Coverage gate](../CLAUDE.md#coverage-gate)).
 
 The gate runs against the editable install, so do not mutate the working tree
-while one is in flight (a background `hatch run all`, a watch loop). Concurrent
+while one is in flight (a background `hatch run fast` or `all`, a watch loop). Concurrent
 edits or a `git stash` feed the running gate a tree it never saw whole, producing
 failures that vanish on a clean re-run. To check whether a fix is load-bearing,
 prove the failure in isolation (revert the fix, run, observe), not by editing

@@ -28,6 +28,9 @@ expected_ripples:
   - CONTRIBUTING.md
 surprising_ripples:
   - sdd/process-budget.json
+  - sdd/TESTING-RUNBOOK.md
+  - sdd/specs/050-doc-graph-model.md
+  - tests/README.md
   - sdd/rfcs/rfc-0019-two-speed-test-gate.md
   - sdd/backlog/id-266-two-speed-ci-gate.md
   - scripts/gen_gate_inventory.py

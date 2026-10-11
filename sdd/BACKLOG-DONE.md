@@ -303,7 +303,7 @@ if evidence changes; these are retired.
   Chosen and built: `scripts/fast_gate.py` selects against the last green
   run's tree, not the PR's whole diff, judged on net time saved with CI's full
   gate as the barrier. Replayed over 1,099 commits of 155 PRs it runs the full
-  suite on 8.2% and models a third of `all`'s time;
+  suite on 8.3% and models 40% of `all`'s time;
   [report](research/bk-403-fast-gate/report.md). Tests:
   `tests/scripts/test_fast_gate.py`. Trace:
   [bk-403-fast-gate](traces/bk-403-fast-gate.yml). Detail:

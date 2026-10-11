@@ -17,30 +17,32 @@ than zero misses, make the local gate cheap enough to run on every round?
 
 ## Answer
 
-**Yes on this history: replayed per commit, it runs the full suite on 8.2% of
-gate runs, and the modelled gate costs a third of running `all` every time.**
+**Yes on this history: replayed per commit, it runs the full suite on 8.3% of
+gate runs, and the modelled gate costs 40% of running `all` every time.**
 The maintainer set the bar before the build: misses are allowed, because CI's
 full gate runs on every PR push and catches them one round later.
 
 | Unit | Units | Full suite | Median modelled gate | Sum vs `all` every time |
 | --- | --- | --- | --- | --- |
-| One gate run per commit | 1,099 | 90 (8.2%) | 48.4 s | 33.0% |
-| One gate run per PR (Phase 0's unit) | 155 | 37 (23.9%) | 49.0 s | 45.4% |
+| One gate run per commit | 1,099 | 91 (8.3%) | 66.8 s | 39.9% |
+| One gate run per PR (Phase 0's unit) | 155 | 37 (23.9%) | 68.1 s | 50.6% |
 
 Derivation: `replay.py 2026-08-09 results/replay.jsonl` over the 155 PRs merged
 since 2026-08-09 (`gh pr list --search "merged:>=2026-08-09"`), their branch
 commits from `refs/pull/*/head`, then `summarize.py results/replay.jsonl`. The
 full gate is 206.7 s, one measured run of each `all` member on the Windows dev
-box (`replay.py` `STEP_SECONDS`). Phase 0's 72.6% is a different window and rule
-set, so the table compares units, not selectors.
+box (`replay.py` `STEP_SECONDS`). Selected shares come from the gate's own
+estimate, which reads this checkout's local timing record, so a rerun after
+other local runs moves them by a few points. Phase 0's 72.6% is a different
+window and rule set, so the table compares units, not selectors.
 
 **The unit is what changed the answer.** A review round edits a few files, so
 it narrows even when the PR as a whole touched `pyproject.toml` or a base module.
 Those were the two largest causes of falling back to the full suite in Phase 0.
 
 **What still runs everything, per commit** (`summarize.py`, first reason per
-unit): `pyproject.toml` dependency or pytest keys 19, `_stream.py` 14, a
-selection above half the suite 13, `_backend.py` 12, `_errors.py` 7,
+unit): `pyproject.toml` dependency or pytest keys 19, a selection above half
+the suite 14, `_stream.py` 14, `_backend.py` 12, `_errors.py` 7,
 `_cassettes.py` 5. Every `src/` module the root conftest or the fixture
 registry imports is full, and those are honest: any test can break.
 
@@ -54,7 +56,8 @@ ideas, each measured above or below:
   recorded in the git directory. A rerun with nothing changed runs nothing.
 - **Member routing.** The cheap members always run; `typecheck`,
   `examples`, `notebooks` and `docs-build` (17.8 s) run only for paths they
-  read. Local failures concentrate in the always-on members: of 95 `hatch run
+  read; for `docs-build` that is any `.md` file and all of `sdd/`, because
+  `scripts/gen_pages.py` renders them, so most rounds still pay for it. Local failures concentrate in the always-on members: of 95 `hatch run
   all` calls in the week of local transcripts that survived (2026-10-04 to
   10-11), 27 failed, and about 25 of those failed in a generator or lint check,
   not in a test (`gen_graph --check` 8, `check_capability_parity` 5,
@@ -93,7 +96,9 @@ worker pays. The maintainer set `RS_TEST_WORKERS=12`; the launcher's default
 The maintainer chose `fast` everywhere to try it and inspect. What to inspect:
 
 - **Misses**: a PR push whose `fast` run was green and whose CI run went red
-  on a Stage-1 test failure. Each one is the path whose rule to widen.
+  on a Stage-1 test failure. Each one is a case to analyze, not a rule to
+  change: a rule is widened only if the analysis of the misses shows that it
+  pays for itself.
 - **Time saved**: gate wall time per round against the 206.7 s of `all`.
 
 Misses the rules accept by design: a test that reads a changed file as text
