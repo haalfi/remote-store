@@ -14,6 +14,8 @@ audience:
 co_shipped_items:
   - BK-417
 surprising_ripples:
+  - scripts/fast_gate.py
+  - sdd/research/token-usage/report.md
   - sdd/research/token-usage/gates.py
   - sdd/research/token-usage/prep_cost.py
   - sdd/research/token-usage/route_baseline.py
@@ -143,3 +145,24 @@ phases:
         extract: >-
           Own-fix sweep: the first rewrite dropped calls without a timestamp, which the string
           compare had kept as before the cut; restored in route_baseline and tokkit --until
+  - id: fix
+    name: Review fix pass (PR 1122, round 2)
+    steps:
+      - file: sdd/research/token-usage/tokkit.py
+        section: "plan_end"
+        read_type: gate
+        extract: "plan_end took an approval from the review loop; now bounded by pr_idx, both cases seen failing first"
+      - file: sdd/research/token-usage/report.md
+        section: "Reproducing"
+        read_type: reference
+        outcome: misleading
+        extract: >-
+          Its tokkit.py report rows stopped reproducing at this PR's head. The kit as of eff7953bb
+          reproduces run_a_final, run_b_final and run_b_plan field for field (scratch run, compared
+          key by key), so the section is pinned to that commit at the maintainer's choice
+      - file: scripts/fast_gate.py
+        section: "DAFNY_ORACLE_DIR comment"
+        read_type: verify
+        extract: >-
+          "The one directory ... on sys.path" became false with the kit's two test modules; the
+          enumeration (Grep sys.path.insert under tests/) now names both

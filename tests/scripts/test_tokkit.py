@@ -187,6 +187,38 @@ class TestPhases:
         s = _report(tmp_path, snap, "--pr", "7")
         assert s["plan_end_call"] == 1
 
+    @pytest.mark.parametrize(
+        ("dropped", "plan_end", "phases"),
+        [
+            # No approval before PR open at all: one unsplit phase, not a cut in the review loop.
+            (
+                (_ts(1), _ts(6)),
+                None,
+                {"orient, plan and build (no plan approval found)": 7, "review loop (after PR open)": 2},
+            ),
+            # A question answered before PR open and a plan approved only after it: the question.
+            (
+                (_ts(6),),
+                1,
+                {
+                    "orient + plan (to plan approval)": 1,
+                    "build (plan approval to PR open)": 6,
+                    "review loop (after PR open)": 2,
+                },
+            ),
+        ],
+        ids=["only-after-pr", "question-before-plan-after"],
+    )
+    def test_an_approval_after_pr_open_does_not_end_orient(self, kit, tmp_path, dropped, plan_end, phases):
+        transcripts, snap = kit
+        records = [r for r in _run_b_shaped() if r.get("timestamp") not in dropped]
+        # The plan is approved only during the review loop, after call 8.
+        _write(transcripts, [*records, _result("p2", 14, APPROVED)])
+        _cache_pr(snap, 7, "2026-10-10T14:11:00Z")
+        s = _report(tmp_path, snap, "--pr", "7")
+        assert s["plan_end_call"] == plan_end
+        assert {k: v["calls"] for k, v in s["phases"].items() if k != "subagents"} == phases
+
     def test_without_pr_there_is_no_review_phase_and_the_report_says_why(self, kit, tmp_path):
         transcripts, snap = kit
         _write(transcripts, _run_b_shaped())

@@ -70,8 +70,11 @@ STATE_NAME = "rs-fast-gate.json"
 FULL = "FULL"
 CONFORMANCE = "tests/backends/conformance/"
 E2E = "tests/e2e/"
-# The one directory outside src/ and scripts/ a test puts on sys.path
-# (tests/backends/dafny/_helpers.py; every `sys.path.insert` under tests/, grepped 2026-10-11).
+# The directories outside src/ and scripts/ a test puts on sys.path, by every
+# `sys.path.insert` under tests/ (grepped 2026-10-11): this one
+# (tests/backends/dafny/_helpers.py), and sdd/research/token-usage/
+# (tests/scripts/test_tokkit.py, test_token_kit_cuts.py), whose changes reach
+# tests/scripts/ through select_tests' last branch.
 DAFNY_ORACLE_DIR = "sdd/formal/MemoryBackend-py/"
 SCRIPTS_TESTS = "tests/scripts/"
 # A selection above this share of the suite's estimated time runs the suite.

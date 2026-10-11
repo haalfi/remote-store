@@ -15,7 +15,7 @@ report hold prompts and paths: they stay out of the repo.
 Token sizes use ``_common.COEF`` (calibrate.py), dollars ``_common.PRICE``,
 units ``_common.W``. The report's phases split the main session at its plan
 approval (the result of the first approved ``ExitPlanMode``, else of the first
-answered ``AskUserQuestion``) and at the creation of the PR ``--pr`` names,
+answered ``AskUserQuestion``, before the PR opened) and at the creation of the PR ``--pr`` names,
 read once with ``gh`` and cached as ``pr-<N>.json`` in the snapshot. Without
 ``--pr`` there is no review-loop phase and no related review session. Claude
 Code's ``pr-link`` records are listed as events only: it links a session by
@@ -381,10 +381,13 @@ def pr_created(number: int, dest: Path) -> str:
 when = cm.when
 
 
-def plan_end(events):
-    """(call index, how): the call after the first approved plan, else after the first answered dialog."""
+def plan_end(events, pr_idx=None):
+    """(call index, how): the call after the first approved plan, else after the first answered dialog.
+
+    Only approvals before the PR opened count: a dialog in the review loop is not the plan's.
+    """
     for kind, how in (("plan-approved", "ExitPlanMode"), ("question-answered", "AskUserQuestion")):
-        e = next((e for e in events if e["kind"] == kind), None)
+        e = next((e for e in events if e["kind"] == kind and (pr_idx is None or e["idx"] <= pr_idx)), None)
         if e:
             return e["idx"], how
     return None, None
@@ -456,7 +459,7 @@ def cmd_report(args):
             [*me, {"ts": created, "kind": "pr-open", "detail": f"PR #{args.pr}", "idx": pr_idx}],
             key=lambda e: (e["idx"] is None, e["idx"] or 0),
         )
-    plan_idx, plan_by = plan_end(me)
+    plan_idx, plan_by = plan_end(me, pr_idx)
 
     def phase_of(c):
         if pr_idx is not None and c["idx"] >= pr_idx:

@@ -321,7 +321,7 @@ if evidence changes; these are retired.
 - [x] **BK-424 — The token kit dates a run's phases from records that can point at the wrong event**
   spec: — · effort: S · audience: contributor.tooling
   `tokkit.py report` now ends orient + plan at the first approved `ExitPlanMode`
-  (else the first answered `AskUserQuestion`), and starts the review loop at
+  (else the first answered `AskUserQuestion`) before the PR opened, and starts the review loop at
   the `createdAt` of the PR `--pr` names, read once with `gh` and cached in the
   snapshot; `pr-link` records are listed as events only. Commits and pushes
   run as `git -C <dir>` count. Every time cut the kit takes (`tokkit.py`
