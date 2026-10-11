@@ -318,6 +318,27 @@ if evidence changes; these are retired.
   [bk-403-fast-gate](traces/bk-403-fast-gate.yml). Detail:
   [dossier](backlog/bk-404-selected-tests-hatch-target.md).
 
+- [x] **BK-424 — The token kit dates a run's phases from records that can point at the wrong event**
+  spec: — · effort: S · audience: contributor.tooling
+  `tokkit.py report` now ends orient + plan at the first approved `ExitPlanMode`
+  (else the first answered `AskUserQuestion`), and starts the review loop at
+  the `createdAt` of the PR `--pr` names, read once with `gh` and cached in the
+  snapshot; `pr-link` records are listed as events only. Commits and pushes
+  run as `git -C <dir>` count, and `--until` compares times, not strings. On
+  run B's build session the split is 43 / 50 / 2 calls; the research record's
+  hand cut at plan approval counted 44, because as strings `13:58:24.977Z`
+  sorts before `13:58:24Z`. Tests: `tests/scripts/test_tokkit.py`. Trace:
+  [bk-424](traces/bk-424-tokkit-phase-dating.yml).
+
+- [x] **BK-417 — `report-token-usage` undercounts tool results about 1.7 times and leaves out the prefix and hidden thinking**
+  spec: — · effort: S · audience: contributor.tooling
+  `scripts/report_token_usage.py` sizes tool results and trace exposure at
+  0.421 tokens per character instead of 1/4, and ranks the session prefix and
+  hidden thinking (output beyond visible text and tool input, 0.947 of it kept)
+  with the tool results, all from
+  [`calibration.json`](research/token-usage/results/calibration.json). Shipped
+  with BK-424; trace [bk-424](traces/bk-424-tokkit-phase-dating.yml).
+
 - [x] **BK-430 — A review loop may close prose on a check that cannot fail, and no standing rule weighs a cheaper delivery by its defects**
   spec: — · effort: M · audience: contributor.process
   [ADR-0045](adrs/0045-close-on-a-check-that-can-fail.md), amending ADR-0033

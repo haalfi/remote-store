@@ -2,7 +2,7 @@
 
     python tokkit.py find   [--since ISO]            # list candidate sessions
     python tokkit.py live   --session SID [--every N] # one line per event while it runs
-    python tokkit.py report --session SID [--md OUT]  # snapshot + full analysis
+    python tokkit.py report --session SID [--pr N] [--md OUT]  # snapshot + full analysis
 
 The session may live in any of the transcript folders
 ``_common.default_transcripts`` finds for ``--repo-root`` (a ``/ship``
@@ -13,19 +13,26 @@ transcripts after ``cleanupPeriodDays`` (30 by default). Snapshots and the
 report hold prompts and paths: they stay out of the repo.
 
 Token sizes use ``_common.COEF`` (calibrate.py), dollars ``_common.PRICE``,
-units ``_common.W``. The report's phases split the main session at its first
-Edit or Write and at its first ``pr-link`` record, and lists review rounds by
-the subagents each round spawned.
+units ``_common.W``. The report's phases split the main session at its plan
+approval (the result of the first approved ``ExitPlanMode``, else of the first
+answered ``AskUserQuestion``) and at the creation of the PR ``--pr`` names,
+read once with ``gh`` and cached as ``pr-<N>.json`` in the snapshot. Without
+``--pr`` there is no review-loop phase and no related review session. Claude
+Code's ``pr-link`` records are listed as events only: it links a session by
+branch name, so a reused branch name links another PR. The report lists review
+rounds by the subagents each round spawned.
 """
 
 from __future__ import annotations
 
 import argparse
 import collections
+import datetime as dt
 import json
 import re
 import shutil
 import statistics as st
+import subprocess
 import sys
 import time
 from pathlib import Path
@@ -98,13 +105,21 @@ def transcript_files(main: Path):
     return files
 
 
+# git's options before the subcommand (`git -C <dir> commit`); a value may be quoted.
+_GIT_GLOBAL = re.compile(
+    r"^git((?:\s+(?:-[Cc]\s+(?:\"[^\"]*\"|'[^']*'|\S+)|--(?:git-dir|work-tree|namespace)(?:=\S+|\s+\S+)"
+    r"|--no-pager|--paginate|-[pP]|--bare|--no-replace-objects|--literal-pathspecs))*)(?=\s|$)"
+)
+
+
 def bash_cat(cmd: str) -> str:
     c = re.sub(r"^(\w+=\S+\s+)+", "", " ".join(str(cmd).split()))
+    c = _GIT_GLOBAL.sub("git", c, count=1)
     m = re.match(r"hatch run (?:python )?(?:-m )?([\w\-./]+)", c)
     if m:
         return "hatch run " + m.group(1)
     for pre in ("gh pr", "gh api", "gh run", "git diff", "git log", "git show", "git commit", "git push", "git"):
-        if c.startswith(pre):
+        if c == pre or c.startswith(pre + " "):
             return pre
     if "pytest" in c[:40]:
         return "pytest"
@@ -168,13 +183,15 @@ def parse_file(path: Path):
         except json.JSONDecodeError:
             continue
         t, ts = r.get("type"), r.get("timestamp")
+        # Claude Code links a session to a PR by branch name, so a reused branch name links the
+        # wrong PR (run B): a link is an event, never the PR's opening (that is --pr's createdAt).
         if t == "pr-link" and not any(
-            e["kind"] == "pr-open" and e["detail"] == f"PR #{r.get('prNumber')}" for e in events
+            e["kind"] == "pr-link" and e["detail"] == f"PR #{r.get('prNumber')}" for e in events
         ):
             events.append(
                 {
                     "ts": r.get("timestamp") or (calls[-1]["ts"] if calls else None),
-                    "kind": "pr-open",
+                    "kind": "pr-link",
                     "detail": f"PR #{r.get('prNumber')}",
                     "idx": len(calls),
                 }
@@ -205,7 +222,15 @@ def parse_file(path: Path):
                         cat, det = tools.get(b.get("tool_use_id"), ("?", ""))
                         txt = b.get("content")
                         n = chars(txt)
-                        spilled = "persisted-output" in (txt if isinstance(txt, str) else json.dumps(txt))
+                        flat = txt if isinstance(txt, str) else json.dumps(txt)
+                        spilled = "persisted-output" in flat
+                        # A rejected plan or a dismissed dialog comes back as an error result.
+                        if not b.get("is_error") and (
+                            (cat == "ExitPlanMode" and "approved" in flat)
+                            or (cat == "AskUserQuestion" and "answered" in flat)
+                        ):
+                            kind = "plan-approved" if cat == "ExitPlanMode" else "question-answered"
+                            events.append({"ts": ts, "kind": kind, "detail": "", "idx": len(calls)})
                         pending.append(
                             (f"result:{cat}", det + (" [spilled]" if spilled else ""), n * COEF["tool_result"])
                         )
@@ -261,7 +286,7 @@ def parse_file(path: Path):
                     pending.append((f"tool_input:{cat}", det, len(json.dumps(b.get("input"))) * COEF["assistant"]))
                     if cat == "Agent":
                         events.append({"ts": ts, "kind": "agent-spawn", "detail": det, "idx": len(calls)})
-                    if cat == "Bash" and det in ("git commit", "git push"):
+                    if cat in ("Bash", "PowerShell") and det in ("git commit", "git push"):
                         events.append({"ts": ts, "kind": det, "detail": "", "idx": len(calls)})
                     if cat == "Skill":
                         events.append({"ts": ts, "kind": "skill", "detail": det, "idx": len(calls)})
@@ -339,6 +364,34 @@ def carried(calls, items):
     return out, det
 
 
+def pr_created(number: int, dest: Path) -> str:
+    """The PR's ``createdAt`` from GitHub, cached as ``pr-<N>.json`` in the snapshot so a re-run is offline."""
+    cache = dest / f"pr-{number}.json"
+    if not cache.exists():
+        out = subprocess.run(
+            ["gh", "pr", "view", str(number), "--json", "number,createdAt"],
+            capture_output=True,
+            text=True,
+            check=True,
+            cwd=ARGS.repo_root,
+        ).stdout
+        cache.write_text(out, encoding="utf-8")
+    return json.loads(cache.read_text(encoding="utf-8"))["createdAt"]
+
+
+def when(ts: str) -> dt.datetime:
+    return dt.datetime.fromisoformat(ts.replace("Z", "+00:00"))
+
+
+def plan_end(events):
+    """(call index, how): the call after the first approved plan, else after the first answered dialog."""
+    for kind, how in (("plan-approved", "ExitPlanMode"), ("question-answered", "AskUserQuestion")):
+        e = next((e for e in events if e["kind"] == kind), None)
+        if e:
+            return e["idx"], how
+    return None, None
+
+
 def cmd_report(args):
     main = locate(args.session)
     dest = snapshot(main)
@@ -349,7 +402,8 @@ def cmd_report(args):
     def load(f):
         calls, items, events = parse_file(f)
         if args.until:
-            calls = [x for x in calls if (x["ts"] or "") <= args.until]
+            # As times, not strings: "13:58:24.977Z" <= "13:58:24Z" holds as text.
+            calls = [x for x in calls if x["ts"] and when(x["ts"]) <= when(args.until)]
             items = [i for i in items if i["enter"] < len(calls)]
             events = [e for e in events if e["idx"] < len(calls)]
         return calls, items, events
@@ -358,15 +412,14 @@ def cmd_report(args):
     mc, mi, me = parsed[main]
     # Review/fix rounds a /ship loop runs as their own sessions (e.g. a forked /rvw-pr <PR>),
     # and the fresh session /ship § Resume at the PR runs the loop in (/ship resume <PR>).
-    prs = {e["detail"].split("#")[1] for e in me if e["kind"] == "pr-open"}
     start = first_ts(main) or ""
     related = []
-    for d in project_dirs():
+    for d in project_dirs() if args.pr else []:
         for cand in d.glob("*.jsonl"):
             if cand == main or (first_ts(cand) or "") < start:
                 continue
             fp = first_prompt(cand)
-            if any(re.search(rf"/(rvw-pr|fix-pr|ship\b.*\bresume)\b.*\b{pr}\b", fp) for pr in prs):
+            if re.search(rf"/(rvw-pr|fix-pr|ship\b.*\bresume)\b.*\b{args.pr}\b", fp):
                 related.append(cand)
                 snapshot(cand)
                 for rf in transcript_files(cand):
@@ -398,18 +451,36 @@ def cmd_report(args):
         ("input", "input"),
     ):
         p(f"| {name} | {tot[k]:,} | {W[k] * tot[k] / U * 100:.1f}% |")
-    # phases of the main session
-    pr = next((e for e in me if e["kind"] == "pr-open"), None)
-    first_edit = next((c["idx"] for c in mc if any(x.startswith(("Edit", "Write")) for x in c["emits"])), None)
+    # phases of the main session, cut at the work's own milestones
+    created = pr_created(args.pr, dest) if args.pr else None
+    pr_idx = next((c["idx"] for c in mc if created and c["ts"] and when(c["ts"]) >= when(created)), None)
+    if created:
+        me = sorted(
+            [*me, {"ts": created, "kind": "pr-open", "detail": f"PR #{args.pr}", "idx": pr_idx}],
+            key=lambda e: (e["idx"] is None, e["idx"] or 0),
+        )
+    plan_idx, plan_by = plan_end(me)
 
     def phase_of(c):
-        if pr and c["idx"] >= pr["idx"]:
+        if pr_idx is not None and c["idx"] >= pr_idx:
             return "3 review loop (after PR open)"
-        if first_edit is not None and c["idx"] >= first_edit:
-            return "2 build (first edit to PR open)"
-        return "1 orient + plan (before first edit)"
+        if plan_idx is None:
+            return "1 orient, plan and build (no plan approval found)"
+        if c["idx"] >= plan_idx:
+            return "2 build (plan approval to PR open)"
+        return "1 orient + plan (to plan approval)"
 
     p("\n## Main session by phase\n")
+    p(
+        f"Plan approval: {f'call {plan_idx} ({plan_by})' if plan_by else 'none found'}. "
+        + (
+            f"PR #{args.pr} created {created}: "
+            + (f"call {pr_idx}." if pr_idx is not None else "after this session's last call.")
+            if created
+            else "No PR given: pass --pr <N> to split off the review loop and include its review sessions."
+        )
+        + "\n"
+    )
     p("| Phase | Calls | Units | Share of all units | Mean ctx |\n| --- | ---: | ---: | ---: | ---: |")
     ph = collections.defaultdict(list)
     for c in mc:
@@ -501,8 +572,11 @@ def cmd_report(args):
             "units_m": round(U / 1e6, 2),
             "usd_estimate": round(usd, 2),
             "units_pct_by_class": {k: round(W[k] * tot[k] / U * 100, 1) for k in W},
-            "first_edit_call": first_edit,
-            "pr_open_call": pr["idx"] if pr else None,
+            "plan_end_call": plan_idx,
+            "plan_end_by": plan_by,
+            "pr": args.pr,
+            "pr_created": created,
+            "pr_open_call": pr_idx,
             "compaction_calls": [e["idx"] for e in me if e["kind"] == "compaction"],
             "phases": {
                 k.split(" ", 1)[1]: {
@@ -593,6 +667,9 @@ def main(argv=None):
     rp.add_argument("--md", default=None)
     rp.add_argument("--json", default=None, help="also write an aggregated, ID-free summary to this .json path")
     rp.add_argument("--until", default=None, help="ISO timestamp: ignore calls after it, in every transcript")
+    rp.add_argument(
+        "--pr", type=int, default=None, help="the PR the session opened: its createdAt starts the review loop"
+    )
     args = ap.parse_args(argv)
     args.repo_root = args.repo_root.resolve()
     args.snapshots = args.snapshots or args.repo_root / "tmp" / "token-kit" / "runs"

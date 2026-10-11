@@ -4,13 +4,13 @@ Two sections, from two sources:
 
 1. **Transcripts** (local): reads Claude Code session transcripts
    (``*.jsonl``) and prints, per transcript, the API usage totals and a
-   price-weighted split, then the tool results that cost most across all of
+   price-weighted split, then the context items that cost most across all of
    them. A directory is scanned recursively, so subagent transcripts count
    as their own rows. Skipped with a note when the default directory is
    absent.
 2. **Trace reads** (in the repo): ranks the files that ``sdd/traces/*.yml``
    steps read, by the number of traces reading each, its gate steps, its
-   size on disk (bytes / 4) and their product, the token **exposure** of
+   size on disk in tokens (bytes x 0.421) and their product, the token **exposure** of
    reading it whole in every trace that read it.
 
 Two figures per transcript need a definition:
@@ -23,9 +23,13 @@ Two figures per transcript need a definition:
   ratios Anthropic's pricing page lists for every current model; absolute
   prices are left out because they differ per model and change.
 
-A tool result's **carried** cost is its size (characters / 4) times the API
-calls left in its transcript, since every later call re-reads it from cache.
-It ranks reads by what they cost the session, not by their size alone.
+A tool result's **carried** cost is its size (characters x 0.421, the
+calibration in ``_RESULT_TOKENS_PER_CHAR``) times the API calls left in its
+transcript, since every later call re-reads it from cache. It ranks reads by
+what they cost the session, not by their size alone. Two more items rank with
+them: the **session prefix**, carried by every call, and **hidden thinking**,
+a call's output tokens beyond its visible text and tool input, of which 0.947
+stays in context for the calls after it.
 
 Run with::
 
@@ -58,9 +62,12 @@ What this report does NOT catch
 ===============================
 State the bound, per [Rule 7](../sdd/DRIFT-RULES.md#miss-rate):
 
-* **Tool-result sizes are estimates.** Characters / 4 approximates tokens;
-  the API reports usage per call, not per content block, so exact
-  attribution is impossible from a transcript.
+* **Tool-result sizes are estimates.** The characters-per-token rates are
+  one regression's fit over this repo's sessions since 2026-08-14
+  (``calibration.json``, generated 2026-10-09), not a tokenizer; the API reports usage per call,
+  not per content block, so exact attribution is impossible from a
+  transcript. Hidden thinking is the remainder of a call's output after its
+  visible part, so an error in the visible estimate moves it.
 * **Carried cost ignores compaction.** After ``/compact`` a result is no
   longer re-read, but the transcript still counts it to the last call, so
   carried cost is an upper bound for compacted sessions.
@@ -83,8 +90,9 @@ State the bound, per [Rule 7](../sdd/DRIFT-RULES.md#miss-rate):
 Drift-gate::
 
     kind:       report
-    surfaces:   token usage, price-weighted cost split and costliest tool results per
-        Claude Code session transcript; files read across sdd/traces with size and exposure
+    surfaces:   token usage, price-weighted cost split and costliest carried context (tool results,
+        session prefix, hidden thinking) per Claude Code session transcript; files read across
+        sdd/traces with size and exposure
     domain:     process
 """
 
@@ -108,6 +116,13 @@ from _trace_corpus import iter_trace_files, load_trace  # noqa: E402
 
 # Relative price per token class; see module docstring.
 _WEIGHTS = {"input": 1.0, "write_5m": 1.25, "write_1h": 2.0, "read": 0.1, "output": 5.0}
+# Tokens per character, and context tokens kept per hidden output token, from a
+# regression of context growth over 3,667 consecutive-call pairs (R² 0.91):
+# sdd/research/token-usage/results/calibration.json, keys `tokens_per_char`
+# (`tool_result`, `assistant_visible`) and `context_per_hidden_output_token`.
+_RESULT_TOKENS_PER_CHAR = 0.421
+_VISIBLE_TOKENS_PER_CHAR = 0.318
+_HIDDEN_KEPT = 0.947
 # First matching input key names a tool call's target.
 _TARGET_KEYS = ("file_path", "command", "pattern", "skill", "subagent_type", "url", "query")
 
@@ -120,11 +135,19 @@ class Session:
     tokens: Counter[str] = field(default_factory=Counter)
     # target -> (estimated tokens, carried tokens)
     results: dict[str, list[int]] = field(default_factory=dict)
+    # Output tokens not shown as text or tool input, and their carried tokens.
+    hidden: int = 0
+    hidden_carried: int = 0
     bad_lines: int = 0
 
     @property
     def units(self) -> float:
         return sum(_WEIGHTS[k] * n for k, n in self.tokens.items())
+
+    @property
+    def prefix_carried(self) -> int:
+        """Every call re-reads the prefix, the first included."""
+        return self.prefix * self.calls
 
 
 def default_dir(repo: Path = _REPO) -> Path:
@@ -165,6 +188,9 @@ def parse(lines: list[str], name: str) -> Session:
     targets: dict[str, str] = {}
     # (target, estimated tokens, call index at which it entered the context)
     pending: list[tuple[str, int, int]] = []
+    # Per call: output tokens, and visible characters over all its records.
+    output: list[int] = []
+    visible: list[int] = []
     for line in lines:
         try:
             rec = json.loads(line)
@@ -188,6 +214,8 @@ def parse(lines: list[str], name: str) -> Session:
                 )
             s.calls += 1
             _add_usage(s.tokens, usage)
+            output.append(usage.get("output_tokens", 0))
+            visible.append(0)
         content = msg.get("content")
         if not isinstance(content, list):
             continue
@@ -196,13 +224,23 @@ def parse(lines: list[str], name: str) -> Session:
                 continue
             if block.get("type") == "tool_use":
                 targets[block.get("id", "")] = _target(block.get("name", "?"), block.get("input"))
+                if visible:
+                    visible[-1] += len(json.dumps(block.get("input")))
+            elif block.get("type") == "text" and msg.get("role") == "assistant" and visible:
+                visible[-1] += len(block.get("text", ""))
             elif block.get("type") == "tool_result":
                 target = targets.get(block.get("tool_use_id", ""), "?")
-                pending.append((target, _chars(block.get("content")) // 4, s.calls))
+                pending.append((target, round(_chars(block.get("content")) * _RESULT_TOKENS_PER_CHAR), s.calls))
     for target, est, at in pending:
         row = s.results.setdefault(target, [0, 0])
         row[0] += est
         row[1] += est * (s.calls - at)
+    carried = 0.0
+    for i, (out, chars) in enumerate(zip(output, visible, strict=True)):
+        hidden = max(0, out - round(chars * _VISIBLE_TOKENS_PER_CHAR))
+        s.hidden += hidden
+        carried += _HIDDEN_KEPT * hidden * (s.calls - i - 1)
+    s.hidden_carried = round(carried)
     return s
 
 
@@ -220,7 +258,7 @@ class FileReads:
     traces: set[str] = field(default_factory=set)
     steps: int = 0
     gates: int = 0
-    size: int = 0  # bytes / 4, 0 when not a file
+    size: int = 0  # estimated tokens of reading it whole, 0 when not a file
 
     @property
     def exposure(self) -> int:
@@ -279,7 +317,7 @@ def trace_reads(traces: Path, repo: Path) -> tuple[list[FileReads], int, int]:
             row.gates += step.get("read_type") == "gate"
     for row in rows.values():
         f = repo / row.path
-        row.size = f.stat().st_size // 4 if f.is_file() else 0
+        row.size = round(f.stat().st_size * _RESULT_TOKENS_PER_CHAR) if f.is_file() else 0
     return list(rows.values()), read, bad
 
 
@@ -356,14 +394,18 @@ def _print_transcripts(root: Path, top: int) -> None:
     total: dict[str, list[int]] = {}
     for s in sessions:
         for target, (est, carried) in s.results.items():
-            row = total.setdefault(target, [0, 0])
+            row = total.setdefault(f"`{target.replace('|', '/')}`", [0, 0])
             row[0] += est
             row[1] += carried
-    print(f"\nTop {top} tool results by carried tokens (size x later calls), all transcripts:\n")
-    print("| Carried | Size | Tool target |")
+    # Ranked with the tool results: 22.3% and 11.8% of re-read context over 3,738 calls
+    # (sdd/research/token-usage/results/composition.json, `shares_pct`).
+    total["*session prefix*"] = [sum(s.prefix for s in sessions), sum(s.prefix_carried for s in sessions)]
+    total["*hidden thinking*"] = [sum(s.hidden for s in sessions), sum(s.hidden_carried for s in sessions)]
+    print(f"\nTop {top} context items by carried tokens (size x later calls), all transcripts:\n")
+    print("| Carried | Size | Context item |")
     print("| ---: | ---: | --- |")
-    for target, (est, carried) in sorted(total.items(), key=lambda kv: kv[1][1], reverse=True)[:top]:
-        print(f"| {carried:,} | {est:,} | `{target.replace('|', '/')}` |")
+    for item, (est, carried) in sorted(total.items(), key=lambda kv: kv[1][1], reverse=True)[:top]:
+        print(f"| {carried:,} | {est:,} | {item} |")
     bad = sum(s.bad_lines for s in sessions)
     if bad:
         print(f"\n{bad} line(s) were not JSON and were skipped.")
