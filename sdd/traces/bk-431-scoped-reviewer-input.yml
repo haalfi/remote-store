@@ -183,3 +183,25 @@ phases:
           Consequences named the wrong mechanism: recorded as ADR-0046, which
           amends that bullet. Solo /rvw-pr passes could edit before BK-431.
         outcome: ok
+      - file: "(probe) forked skill, agent: reviewer, no allowed-tools"
+        section: "asked to Write tmp/bk431-probe2.txt; skill deleted after"
+        read_type: verify
+        extract: >-
+          The fork listed exactly reviewer.md's ten tools (Read, Grep, Glob,
+          Bash and the six GitHub tools), had no Write or Edit, and Glob found
+          no tmp/bk431-probe2.txt afterwards. So agent: supplies a fork's
+          tools, as ADR-0046 states (A/B round 4 asked for this probe).
+          Whether agent: and allowed-tools combine was not probed; rvw-pr's
+          two lists are identical, so it does not arise there.
+        outcome: ok
+      - file: "(A/B, round 4) PR #1125 at 4ffed321b, same setup"
+        section: "units and findings"
+        read_type: verify
+        extract: >-
+          Old 21 calls, 437,882 units, 3 findings; new 29 calls, 386,867
+          units, 2 findings, both shared with the old (ADR-0046's unprobed
+          agent: claim; ADR-0035 lacking its inline Amended-by note). The
+          old pass alone found ADR-0046 pointing at /ship for the open
+          decision that lives in BACKLOG. The new pass ran backlog-show by
+          Bash in the main tree, outside its permitted Bash uses.
+        outcome: ok

@@ -28,7 +28,9 @@ and no `agent:` line was asked to write `tmp/bk431-probe.txt`. It listed `Write`
 was on disk with the requested content
 ([trace](../traces/bk-431-scoped-reviewer-input.yml)). So `allowed-tools`
 pre-approves; it withholds nothing. Before BK-431, a solo `/rvw-pr` pass could
-edit files, and the protection ADR-0035 described did not exist.
+edit files, and the protection ADR-0035 described did not exist. A second
+probe, a forked skill with `agent: reviewer`, listed exactly that agent's ten
+tools, had no `Write` or `Edit`, and left no file behind.
 
 ## Decision
 
@@ -39,9 +41,10 @@ edit files, and the protection ADR-0035 described did not exist.
   *Reverse if* Claude Code makes `allowed-tools` restrict a forked skill,
   measured the same way.
 
-Which agent carries the restriction, and whether a smaller reviewer input is
-kept, is BK-431's open decision, recorded in `.claude/skills/ship/SKILL.md` §
-Reviewer permissions and decided by a measured delivery.
+Which agent carries the restriction today is stated in
+`.claude/skills/ship/SKILL.md` § Reviewer permissions. Whether that smaller
+reviewer input is kept is BK-431's open decision in `sdd/BACKLOG.md`, decided by
+a measured delivery.
 
 ## Consequences
 

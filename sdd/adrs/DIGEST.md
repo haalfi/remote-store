@@ -1451,9 +1451,10 @@ row coverage is operational contract and lives in
   *Reverse if* Claude Code makes `allowed-tools` restrict a forked skill,
   measured the same way.
 
-Which agent carries the restriction, and whether a smaller reviewer input is
-kept, is BK-431's open decision, recorded in `.claude/skills/ship/SKILL.md` §
-Reviewer permissions and decided by a measured delivery.
+Which agent carries the restriction today is stated in
+`.claude/skills/ship/SKILL.md` § Reviewer permissions. Whether that smaller
+reviewer input is kept is BK-431's open decision in `sdd/BACKLOG.md`, decided by
+a measured delivery.
 
 > amends ADR-0035 (clause).
 
