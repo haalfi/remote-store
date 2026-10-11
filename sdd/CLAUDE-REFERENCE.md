@@ -535,13 +535,13 @@ trace step (`/pr` verifies a trace exists, `/fix-pr` updates it).
   `git diff origin/<BASE>...HEAD --name-only`, then run the matching target. Fix
   failures, re-run until clean.
     - **Touches `src/`, `tests/`, `examples/`, `scripts/`, `infra/*.py`,
-      `.claude/hooks/`, `sdd/rfcs/rfc-0015-{findings,rounds}.py`,
+      `.claude/hooks/`, the `sdd/` scripts in CI's `HOOKS_PAT`,
       `pyproject.toml`, or `.python-version`** → run `hatch run fast`, the
-      members of `all` the change can affect (`scripts/fast_gate.py`). The two
-      RFC-0015 scripts ride with `.claude/hooks/` below: they are pinned by
+      members of `all` the change can affect (`scripts/fast_gate.py`). The
+      `sdd/` scripts ride with `.claude/hooks/` below: they are pinned by
       `tests/scripts/` and gated in CI by the same `hooks` output. Other
-      `sdd/rfcs/*.py` have no test and are not listed. All but
-      `.claude/hooks/` and the RFC-0015 scripts are the test-bearing and
+      `sdd/` scripts have no test and are not listed. All but
+      `.claude/hooks/` and the `sdd/` scripts are the test-bearing and
       interpreter-defining members of CI's `CODE_PAT`;
       `scripts/` is among them because its guards live under `tests/scripts/`, which
       only the suite runs (a `scripts/`-only diff must still run it).

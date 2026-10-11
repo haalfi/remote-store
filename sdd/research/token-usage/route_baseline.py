@@ -26,12 +26,21 @@ from __future__ import annotations
 
 import argparse
 from pathlib import Path
+from typing import TYPE_CHECKING
 
 import _common as c
 import tokkit
 
+if TYPE_CHECKING:
+    from datetime import datetime
 
-def split(snapshot: Path, start: int, checkpoint: str | None) -> dict:
+
+def before(x: dict, cut: datetime) -> bool:
+    """A call at or before the cut, compared as times like ``tokkit.py report --until``; one without a time is."""
+    return not x["ts"] or c.when(x["ts"]) <= cut
+
+
+def split(snapshot: Path, start: int, checkpoint: datetime | None) -> dict:
     main = snapshot / f"{snapshot.name}.jsonl"
     files = tokkit.transcript_files(main)
     parsed = {f: tokkit.parse_file(f) for f in files}
@@ -71,26 +80,22 @@ def split(snapshot: Path, start: int, checkpoint: str | None) -> dict:
         "earlier_route_units_m": round((total - route_main - route_sub) / 1e6, 2),
     }
     if checkpoint:
-        after = total - sum(x["units"] for f in files for x in parsed[f][0] if (x["ts"] or "") <= checkpoint)
+        after = total - sum(x["units"] for f in files for x in parsed[f][0] if before(x, checkpoint))
         out["checkpoint"] = {
-            "until": checkpoint,
+            "until": c.iso(checkpoint),
             "units_m": round((total - after) / 1e6, 2),
             "after_units_m": round(after / 1e6, 2),
-            "first_main_call_after": next((x["idx"] for x in mc if (x["ts"] or "") > checkpoint), None),
+            "first_main_call_after": next((x["idx"] for x in mc if not before(x, checkpoint)), None),
             # The route's units minus the cut's "after" units, from unrounded sums, and the two
             # parts that make it up: route calls before the cut, less earlier-route subagent
             # work after it (part of "after", not of the route).
             "route_minus_after_m": round((route_main + route_sub - after) / 1e6, 2),
             "route_main_units_before_cut_m": round(
-                sum(x["units"] for x in mc[start:] if (x["ts"] or "") <= checkpoint) / 1e6, 2
+                sum(x["units"] for x in mc[start:] if before(x, checkpoint)) / 1e6, 2
             ),
             "earlier_subagent_units_after_m": round(
                 sum(
-                    x["units"]
-                    for cs in subs
-                    if (cs[0]["ts"] or "") < start_ts
-                    for x in cs
-                    if (x["ts"] or "") > checkpoint
+                    x["units"] for cs in subs if (cs[0]["ts"] or "") < start_ts for x in cs if not before(x, checkpoint)
                 )
                 / 1e6,
                 2,
@@ -103,7 +108,9 @@ def main(argv=None) -> int:
     ap = c.parser(__doc__, data=False)
     ap.add_argument("--snapshot", type=Path, required=True, help="tokkit snapshot folder <snapshots>/<session id>")
     ap.add_argument("--route-start-call", type=int, required=True, help="first main-session call of the route")
-    ap.add_argument("--checkpoint", default=None, help="ISO timestamp of a tokkit --until cut to reconcile with")
+    ap.add_argument(
+        "--checkpoint", type=c.when, default=None, help="ISO timestamp of a tokkit --until cut to reconcile with"
+    )
     ap.add_argument("--name", default="route", help="result file name, without .json")
     args = c.resolve(ap.parse_args(argv))
     tokkit.ARGS = argparse.Namespace(repo_root=args.repo_root)
@@ -111,7 +118,7 @@ def main(argv=None) -> int:
     payload = split(snapshot, args.route_start_call, args.checkpoint)
     payload["derivation"] = (
         f"route_baseline.py --snapshot <snapshots>/<sid> --route-start-call {args.route_start_call}"
-        + (f" --checkpoint {args.checkpoint}" if args.checkpoint else "")
+        + (f" --checkpoint {c.iso(args.checkpoint)}" if args.checkpoint else "")
         + f" --name {args.name}"
     )
     c.write_result(

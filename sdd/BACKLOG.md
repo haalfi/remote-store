@@ -892,14 +892,6 @@ CHANGELOG the release body is built from — say what is actually true.
   `bk-403-testmon-poc/srcreads.py`). A selector built on the comment would
   drop the directory. Open decision: none.
 
-- [ ] **BK-417 — `report-token-usage` undercounts tool results about 1.7 times and leaves out the prefix and hidden thinking**
-  spec: — · effort: S · audience: contributor.tooling
-  A regression of context growth over 3,667 consecutive-call pairs (R² 0.91) puts
-  tool results at about 2.4 characters per token, where the script assumes 4, and
-  keeps hidden thinking in context at about 0.95 tokens per output token. Its carried
-  ranking omits the session prefix and thinking, about a third of re-read context.
-  Open decision: none. Derivation: [`calibration.json`](research/token-usage/results/calibration.json).
-
 ---
 
 <a id="gate-cost"></a>
@@ -983,14 +975,6 @@ sessions work is measured before it becomes process.
   78 over 37 transcripts before it. Re-walk the transcripts about 30 days after
   #1099 merges, by [BK-414's dossier](backlog/bk-414-sdd-lookup.md) § Acceptance
   measure. Open decision: keep, change or remove the pointers, by that result.
-
-- [ ] **BK-424 — The token kit dates a run's phases from records that can point at the wrong event**
-  spec: — · effort: S · audience: contributor.tooling
-  On run B, `tokkit.py` took PR open from a `pr-link` record Claude Code wrote
-  for another PR whose branch name the worktree reused, missed commits run as
-  `git -C <dir>`, and ended the orient phase at a probe script's write
-  ([research record](research/token-usage/report.md) § Learnings). Open
-  decision: date phases from the PR's creation and the plan approval instead.
 
 - [ ] **BK-431 — Review subagents pay the session prefix again, and no smaller reviewer input is tested**
   spec: — · effort: M · audience: contributor.process, contributor.tooling

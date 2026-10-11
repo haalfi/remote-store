@@ -776,6 +776,12 @@ local paths and are never committed. Every script takes `--repo-root`,
 `scripts/report_token_usage.py`'s `default_dir` computes, plus worktree
 siblings (`_common.default_transcripts`).
 
+The rows for `tokkit.py`, `gates.py`, `prep_cost.py` and `route_baseline.py`
+ran those scripts before BK-424 changed how they cut phases and times; run
+them as of `eff7953bb` (`git show eff7953bb:sdd/research/token-usage/<script>`,
+with `_common.py`, and `tokkit.py` for `route_baseline.py`). That copy reproduces `run_a_final.json`, `run_b_final.json`
+and `run_b_plan.json` field for field; the other rows were not re-run.
+
 | Result file | Script | Inputs |
 | --- | --- | --- |
 | *(extract, not committed)* | `extract.py --since 2026-08-14` | transcripts |
