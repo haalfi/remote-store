@@ -237,7 +237,8 @@ pipx install hatch
 pip install --user hatch
 
 # Run any hatch script — .venv/ is auto-built on first invocation:
-hatch run all    # or run individual steps:
+hatch run fast   # the checks your change since the last green run can affect
+hatch run all    # every check; or run individual steps:
 hatch run lint
 hatch run typecheck
 hatch run test-cov         # coverage variants — see pyproject.toml comments for which to use when
@@ -540,7 +541,7 @@ Documentation, examples, and metadata live in many places. Use these to keep the
 - **New backend**: see [§ Adding a New Backend](#adding-a-new-backend) above.
 - **New extension**: see [§ Adding an Extension](#adding-an-extension) above (12-step checklist).
 - **New Store method / cross-reference validation**: see the ripple-check table in `sdd/CLAUDE-REFERENCE.md`.
-- **Pre-PR validation**: run the [PR validation gates](sdd/CLAUDE-REFERENCE.md#pr-validation-gates) — `hatch run all` for a code change, or the lighter `hatch run lint` + `hatch run docs-gate` for a docs/specs-only change — then verify CHANGELOG and BACKLOG are updated and check the ripple-check table in `sdd/CLAUDE-REFERENCE.md`. Running `hatch run all` is always a safe superset if you would rather not classify the diff.
+- **Pre-PR validation**: run the [PR validation gates](sdd/CLAUDE-REFERENCE.md#pr-validation-gates) — `hatch run fast` for a code change, or the lighter `hatch run lint` + `hatch run docs-gate` for a docs/specs-only change — then verify CHANGELOG and BACKLOG are updated and check the ripple-check table in `sdd/CLAUDE-REFERENCE.md`. `fast` runs only what the change since its last green run can affect; CI runs every check on the PR, and `hatch run all` runs them locally.
 
 <a id="release"></a>
 ## Release
@@ -549,7 +550,7 @@ Documentation, examples, and metadata live in many places. Use these to keep the
 
 - [ ] Master is clean: `git status` shows no uncommitted changes
 - [ ] CI is green on master: `ci.yml` (lint, typecheck, the tiered test jobs, examples, docs, package) **and** the `ci-full.yml` full live-backend matrix on every supported interpreter — the full live-backend guarantee runs in `ci-full.yml`, not `ci.yml`
-- [ ] `hatch run all` passes **locally** (constituent scripts in `pyproject.toml`; the pre-commit gate variant deliberately does not enforce the 95% floor — CI does)
+- [ ] `hatch run all` passes **locally** (constituent scripts in `pyproject.toml`; `all` deliberately does not enforce the 95% floor — CI does)
 - [ ] `## Release Blockers` in `sdd/BACKLOG.md` has no open item. Any open `BL-` item, `[ ]` or `[~]`, stops the release until it moves to `BACKLOG-DONE.md`; that section's Promise states the rule and the ID prefix table says what earns `BL-`
 - [ ] No open `[~]` items shipping in this release in `sdd/BACKLOG.md` — complete and move to `BACKLOG-DONE.md`, or defer (`[ ]`). **One shape neither remedy covers, and a third disposition for it:** an item whose remaining work is a step of *this* release that can only run after the tag exists — updating a downstream package channel from the published artifact is the standing example — can neither be completed (the step has not happened) nor honestly deferred (the rest of it shipped). Ship that item `[~]`, and record in its body why neither remedy fits and what closes it. Deliberately narrow: an item that *could* be finished or deferred takes one of the first two, and "it is nearly done" is not this case
 - [ ] `hatch run report-trace-outcomes` read, and the open trace-outcome revisit item in [`sdd/BACKLOG.md`](sdd/BACKLOG.md) closed against it — that item names the successor which becomes the next release's ticket, and states what to record: the corpus totals (the report keeps no history, so that line is the baseline the following release differences against), the references selected, and a decision of act, defer, or accept for each. A report, never a gate: nothing here blocks the release, but the decision is written down rather than remembered

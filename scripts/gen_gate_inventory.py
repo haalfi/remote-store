@@ -111,7 +111,8 @@ _WIRING_SOURCES: tuple[str, ...] = (
 )
 
 # Gate homes not derivable from ci.yml's `hatch run` steps: `hatch run all` is
-# the local pre-commit gate named in CLAUDE.md § Dev commands, and a
+# the set of members the local pre-commit gate (`hatch run fast`, CLAUDE.md
+# § Dev commands) runs when a change can affect them, and a
 # `.pre-commit-config.yaml` hook blocks the commit, so both enforce. A target
 # reached by neither is still reported, named by itself and classified advisory.
 LOCAL_GATE_TARGET = "all"

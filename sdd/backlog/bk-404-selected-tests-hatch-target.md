@@ -66,3 +66,10 @@ push, the target replaces `all`; which skills run it there (`/ship`,
   measured falls back to FULL on 72.6% of code PRs
   ([report](../research/bk-403-phase-0/report.md)). The
   prescription above waits for a selector that passes.
+- **2026-10-11, closed: `hatch run fast`.** The maintainer chose it for every
+  gate run a skill makes, `/pr` included, rather than rounds only: CI's full
+  gate runs on every PR push, so a local `all` adds no barrier CI lacks. That
+  answers R3's "but only one" by replacing `all` in the PR validation gates
+  rather than adding a third branch; `all` stays for the release checklist.
+  An experiment to inspect in use
+  ([report § Revisit](../research/bk-403-fast-gate/report.md#revisit)).

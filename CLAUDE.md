@@ -75,7 +75,7 @@ When working on a backlog item, maintain `sdd/traces/<id>-<slug>.yml` as you wor
 ## Dev commands
 
 Scripts are defined in `pyproject.toml` under `[tool.hatch.envs.default.scripts]`.
-Run `hatch run` to list them. `hatch run all` is the pre-commit gate.
+Run `hatch run` to list them. `hatch run fast` is the pre-commit gate.
 
 Claude-specific shell constraints:
 

@@ -13,4 +13,5 @@ at the authority for each kind of test question.
 | Work on the **async** test tree | [`tests/aio/README.md`](aio/README.md) |
 
 Quick start: `hatch run test-cov-s1` runs the no-Docker Stage 1 suite. `hatch
-run all` is the pre-commit gate. See the runbook for stages 2 and 3.
+run fast` is the pre-commit gate; `hatch run all` runs every check. See the
+runbook for stages 2 and 3.

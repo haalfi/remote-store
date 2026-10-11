@@ -349,7 +349,7 @@ test = [
 ]
 # Coverage variants. `test-cov` reports coverage with no floor — everyday
 # local feedback. `test-cov-s1` is Stage-1 only (no Docker probe), no floor;
-# wired into `hatch run all` so the pre-commit gate never requires Docker.
+# wired into `hatch run all` so that full local run never requires Docker.
 # `test-cov-strict` adds `--cov-fail-under=95` and lives in CI / the publish
 # workflow; needs Azurite running locally (Stage-2 Azure-backend fixtures
 # contribute the coverage that makes the 95% floor reachable).
@@ -582,6 +582,11 @@ pre-commit-install = "pre-commit install"
 # Requires Docker Desktop; not included in 'all' (CI uses setup-dafny-action natively)
 verify-formal = "bash scripts/dafny_verify.sh"
 all = ["preflight", "lint", "format-check", "typecheck", "test-cov-s1", "examples", "notebooks", "check-links", "docs-check", "docs-build"]
+# The pre-commit gate (CLAUDE.md § Dev commands): the members of `all` that the
+# change since the last green run can affect, with tests selected by path
+# (BK-403, BK-404). CI's full run on every PR push is the merge barrier; `all`
+# stays for releases. Rules and flags: the scripts/fast_gate.py docstring.
+fast = "python scripts/fast_gate.py {args}"
 
 [tool.hatch.build.targets.wheel]
 packages = ["src/remote_store"]

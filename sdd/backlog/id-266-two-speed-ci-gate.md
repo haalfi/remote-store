@@ -87,6 +87,15 @@ non-selecting lane: D5's FULL row alone fires on 59 of the 106 code PRs, and
 `tooling-tests` has readers in nearly every `.py` edit (report § What the run
 found in RFC-0019 itself).
 
+**BK-403 and BK-404 closed (2026-10-11).** A selector exists,
+`scripts/fast_gate.py`, judged per gate run against the last green tree, and
+every skill's local gate now runs it
+([report](../research/bk-403-fast-gate/report.md)). Two consequences here:
+the local gate now leans on CI's full run per push, so a CI fast lane needs a
+full run before merge (RFC-0019 D1's `merge-candidate` lane), and the `/ship`
+edit no longer has a BK-404 edit to sequence with. Whether the CI lane reuses
+the selector, whose base is a local record CI does not have, is open.
+
 **Open decision for the ADR:** the primary leg's tier in the fast lane
 (RFC-0019 Open Questions 1; the draft-lane wording below predates it).
 Stage 2 keeps ADR-0043's per-PR live-backend guarantee; Stage 1 is cheaper but

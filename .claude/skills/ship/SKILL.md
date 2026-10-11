@@ -20,7 +20,7 @@ consolidate-and-decide review instead of an open-ended loop.
 
 The loop is the dominant cost: each round is one or more reviewer passes — from
 round 3 a panel, one of whose members runs the code rather than reading it — plus
-a fix pass and a full `hatch run all`, and the close can append up to three more
+a fix pass and a `hatch run fast`, and the close can append up to three more
 passes (unprimed, whole-file, measuring), never the same reviewer twice. Costs
 are recorded per delivery in
 [ADR-0033](../../../sdd/adrs/0033-ship-convergence-driven-review.md) (pre-panel
@@ -155,10 +155,9 @@ before the plan is approved.
 
 ## Step 3: Build and open the PR
 
-Implement, delegating to domain experts where the work is theirs. Then
-`hatch run all` green; commit with the item ID prefix and push; run
-[`/pr`](../pr/SKILL.md), which owns the validation gates, the trace gate and the
-template.
+Implement, delegating to domain experts where the work is theirs. Then commit
+with the item ID prefix and run [`/pr`](../pr/SKILL.md), which pushes and owns
+the validation gates (`hatch run fast`), the trace gate and the template.
 
 **The PR body states what changed and why, not what to doubt.** Every unprimed
 reviewer — round 1, each odd panel's unprimed member, the closing gate's unprimed
@@ -615,15 +614,15 @@ accepting every finding degrades the work, so verify before fixing.
 
 ### Close each round
 
-`hatch run all` green → commit → push → **check CI** → reply to **every** thread
+`hatch run fast` green → commit → push → **check CI** → reply to **every** thread
 and resolve it → remove the round's review worktree. Use
 [`/fix-pr`](../fix-pr/SKILL.md)'s comment-fetch and thread-resolve mechanics and
 its Rules — a fix pass here owes what its Step 3 and Rules require, exactly as
 one run under that skill does. Never start the next round against unpushed
 code: the reviewer would target stale lines.
 
-**The local gate does not stand in for CI, and cannot.** `hatch run all` is a
-Stage-1, no-Docker variant on one interpreter; the CI matrix runs Docker-gated
+**The local gate does not stand in for CI, and cannot.** `hatch run fast` is a
+Stage-1, no-Docker selection on one interpreter; the CI matrix runs Docker-gated
 lanes and interpreters it never touches, so a whole class of failure is invisible
 to it by construction. Read the PR's checks after each push (`gh pr checks <N>`,
 or `pull_request_read` with `get_check_runs`). **A red check is a finding for the
