@@ -19,15 +19,14 @@ expected_ripples:
   - sdd/adrs/DIGEST.md
   - sdd/process-budget.json
   - sdd/backlog/bk-384-rfc-0015-graduation-measurement.md
-surprising_ripples:
   - sdd/backlogid.json
+surprising_ripples:
   - .claude/skills/rvw-pr/SKILL.md
 orient:
   - items: [BK-430]
     verdict: constrains
     evidence: >-
-      Filed in open PR #1118 (bk-430-research-follow-ups), after this orient
-      ran; its open decision now reads "proposals 2 and 3 as standing rules.
+      Filed by PR #1118 after this orient ran, merged before this PR; its open decision now reads "proposals 2 and 3 as standing rules.
       BK-425 overlaps: when a check covers a row". Proposal 3 (a check counts
       only if it can return the claim false) bears on when a row is covered;
       proposal 2 (never target spend alone: weigh a cheaper delivery by its
@@ -166,5 +165,6 @@ phases:
         section: "BK"
         read_type: verify
         extract: >-
-          The hatch run rewrote BK 423 to 425; master already carries BK-424 and
-          BK-425 (#1114, #1117) without the bump, so 425 is the true high-water mark
+          BK 423 to 425: the file holds the highest ID per prefix in
+          BACKLOG-DONE.md (scripts/gen_backlogid.py docstring), and closing
+          BK-425 raised it. I first misread it as an open-item high-water mark
