@@ -133,6 +133,26 @@ class TestBashCategory:
     def test_git_global_options_do_not_hide_the_subcommand(self, command, expected):
         assert tokkit.bash_cat(command) == expected
 
+    @pytest.mark.parametrize(
+        ("command", "expected"),
+        [
+            # A /rvw-pr pass under a review root runs every command in it (rvw-pr § Review root).
+            ("env -C tmp/review/abc hatch run ref-show x", "hatch run ref-show"),
+            ('env -C "K:/a b/wt" git diff origin/master...HEAD', "git diff"),
+            ("env -C tmp/review/abc GIT_PAGER=cat gh pr view 7", "gh pr"),
+            (
+                'python -c "import os, subprocess, sys; os.chdir(sys.argv[1]); '
+                'raise SystemExit(subprocess.call(sys.argv[2:]))" tmp/review/abc hatch run backlog-show BK-1',
+                "hatch run backlog-show",
+            ),
+            # Without a directory change the launcher is the command itself.
+            ("env FOO=1", "env"),
+            ('python -c "print(1)"', "python"),
+        ],
+    )
+    def test_a_review_root_launcher_does_not_hide_the_command(self, command, expected):
+        assert tokkit.bash_cat(command) == expected
+
 
 class TestEvents:
     def test_commit_and_push_via_git_dash_c_are_events_in_bash_and_powershell(self, kit):
@@ -387,11 +407,13 @@ class TestSubagents:
         _write(transcripts, _run_b_shaped())
         _subagent(transcripts, "aaa111", "reviewer", "round 1", _reviewer_records())
         (snap / SID).mkdir(parents=True, exist_ok=True)
-        (snap / SID / "pr-7-files.json").write_text(json.dumps({"files": [{"path": "src/x.py"}]}), encoding="utf-8")
+        (snap / SID / "pr-7-files.json").write_text(json.dumps(["src/x.py"]), encoding="utf-8")
         s = self._run(tmp_path, snap, "--pr", "7", "--calls")
         (row,) = s["subagents"]
         assert (row["agent"], row["type"], row["description"], row["calls"]) == ("aaa111", "reviewer", "round 1", 3)
         pct = row["context_pct"]
+        # What the estimates leave unexplained is a class of its own, so the split is whole.
+        assert sum(pct.values()) == pytest.approx(100, abs=0.5)
         # The PR file entered one call earlier than the process file, so it is carried longer.
         assert pct["pr"] > pct["process"] > 0
         assert pct["read"] == 0
@@ -417,20 +439,27 @@ class TestSubagents:
         rows = self._run(tmp_path, snap, "--agent", "bbb")["subagents"]
         assert [(r["agent"], r["type"]) for r in rows] == [("bbb222", "general-purpose")]
 
-    def test_pr_files_are_fetched_once_with_gh_and_cached(self, kit, tmp_path, monkeypatch):
+    def test_pr_files_are_walked_page_by_page_once_and_cached(self, kit, tmp_path, monkeypatch):
+        # `gh pr view --json files` stops at 100 files; the REST endpoint pages past it.
         transcripts, snap = kit
         _write(transcripts, _run_b_shaped())
         _subagent(transcripts, "aaa111", "reviewer", "round 1", _reviewer_records())
+        pages = {1: [f"a/{i}.py" for i in range(100)], 2: ["src/x.py"]}
         calls = []
 
         def fake_run(cmd, **kw):
             calls.append(cmd)
-            return argparse.Namespace(stdout=json.dumps({"files": [{"path": "src/x.py"}]}))
+            page = int(cmd[2].rsplit("page=", 1)[1])
+            return argparse.Namespace(stdout=json.dumps(pages.get(page, [])))
 
         monkeypatch.setattr(tokkit.subprocess, "run", fake_run)
+        (row,) = self._run(tmp_path, snap, "--pr", "7")["subagents"]
         self._run(tmp_path, snap, "--pr", "7")
-        self._run(tmp_path, snap, "--pr", "7")
-        assert calls == [["gh", "pr", "view", "7", "--json", "files"]]
+        assert len(calls) == 2  # pages 1 and 2, the second short; the re-run reads the cache
+        assert calls[0][:2] == ["gh", "api"]
+        assert "pulls/7/files?per_page=100&page=1" in calls[0][2]
+        assert row["context_pct"]["pr"] > 0  # src/x.py sat on page 2
+        assert len(json.loads((snap / SID / "pr-7-files.json").read_text(encoding="utf-8"))) == 101
 
 
 class TestPrCreation:

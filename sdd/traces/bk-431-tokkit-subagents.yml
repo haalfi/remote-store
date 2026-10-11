@@ -45,8 +45,7 @@ phases:
           Units and calls match the scratch scripts' figures for seven passes.
           Round 4's old pass reads 22 calls and 459,441 units against the 21
           and 437,882 recorded in bk-431-scoped-reviewer-input, which had read
-          its transcript before the pass finished; that trace and the
-          roadmap are corrected. Old passes carry 10.5 to 12.7% process
+          its transcript before the pass finished; that trace is corrected. Old passes carry 10.5 to 12.7% process
           files (master's rvw-pr read as instructions from a side checkout),
           new passes 0.6 to 2.6% (their rvw-pr is the PR's, counted as pr).
         outcome: ok
@@ -57,4 +56,19 @@ phases:
           Mutations seen failing: filing every non-checkout path as outside
           failed three TestNormPath cases; counting a side checkout's copy of
           a changed file as the PR failed two TestSubClass cases.
+        outcome: ok
+  - id: fix
+    name: Fix
+    steps:
+      - file: sdd/research/token-usage/tokkit.py
+        section: "bash_cat; pr_files; cmd_subagents"
+        read_type: verify
+        extract: >-
+          PR #1126 review: a command under `env -C <dir>` or the python chdir
+          launcher was classed by the launcher (now by what it ran: four
+          TestBashCategory cases seen failing first); the split dropped what
+          the estimates leave unexplained (now its own class: summed to 202.1%
+          with it zeroed); `gh pr view --json files` stops at 100 files (now a
+          page walk over `gh api`: stopping after page 1 missed page 2's file).
+          A real run on PR #1125 read its 14 files through the walk.
         outcome: ok

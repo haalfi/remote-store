@@ -27,10 +27,12 @@ rounds by the subagents each round spawned.
 ID contains the given text) into calls, first-call context, final context, units
 and what its carried context is made of: the prefix, process files (``.claude/``,
 ``CLAUDE.md``, the ``sdd/`` authority docs, ADRs, the trace schema, and the
-``ref-*``/``backlog-*`` lookups), the PR (its changed files, read from ``gh`` once
-and cached as ``pr-<N>-files.json``, and ``gh pr``/``gh api``/``git diff``
-output), spilled outputs read back, other reads, searches, other Bash, and the
-rest. The classes are this kit's reading of a path, not Claude Code's. ``--calls``
+``ref-*``/``backlog-*`` lookups), the PR (its changed files, walked page by page
+from ``gh api`` once and cached as ``pr-<N>-files.json``, and ``gh pr``/``gh
+api``/``git diff`` output), spilled outputs read back, other reads, searches,
+other Bash, everything else the estimates size, and what they leave unexplained,
+so the classes sum to the context. They are this kit's reading of a path, not
+Claude Code's; a command run under ``env -C <dir>`` is classed by what it ran. ``--calls``
 also lists each subagent's tool calls in order with their result size, which is
 how BK-431 explained why two review passes found different defects.
 """
@@ -123,8 +125,14 @@ _GIT_GLOBAL = re.compile(
 )
 
 
+# A command run in another directory (rvw-pr § Review root): `env -C <dir>`, or the python
+# chdir launcher where `env` lacks -C. The command that follows is what the call ran.
+_CHDIR = re.compile(r"^(?:env\s+-C\s+|python3?\s+-c\s+\"[^\"]*os\.chdir[^\"]*\"\s+)(?:\"[^\"]*\"|'[^']*'|\S+)\s+")
+
+
 def bash_cat(cmd: str) -> str:
-    c = re.sub(r"^(\w+=\S+\s+)+", "", " ".join(str(cmd).split()))
+    c = _CHDIR.sub("", " ".join(str(cmd).split()), count=1)
+    c = re.sub(r"^(\w+=\S+\s+)+", "", c)
     c = _GIT_GLOBAL.sub("git", c, count=1)
     m = re.match(r"hatch run (?:python )?(?:-m )?([\w\-./]+)", c)
     if m:
@@ -619,22 +627,39 @@ def cmd_report(args):
 _PROCESS_FILES = re.compile(
     r"^(\.claude/|CLAUDE\.md$|CONTRIBUTING\.md$|sdd/(adrs/|traces/_schema\.yml$|[0-9A-Z][\w-]*\.md$))"
 )
-SUB_CLASSES = ("prefix", "process", "pr", "spilled", "read", "search", "bash", "other")
+SUB_CLASSES = ("prefix", "process", "pr", "spilled", "read", "search", "bash", "other", "unexplained")
 
 
 def pr_files(number: int, dest: Path) -> set[str]:
-    """The PR's changed paths from GitHub, cached as ``pr-<N>-files.json`` in the snapshot."""
+    """The PR's changed paths from GitHub, cached as ``pr-<N>-files.json`` in the snapshot.
+
+    ``gh pr view --json files`` stops at 100 files, so the REST endpoint is walked page by
+    page until a short page, as rvw-pr's posting count walks its comments."""
     cache = dest / f"pr-{number}-files.json"
     if not cache.exists():
-        out = subprocess.run(
-            ["gh", "pr", "view", str(number), "--json", "files"],
-            capture_output=True,
-            text=True,
-            check=True,
-            cwd=ARGS.repo_root,
-        ).stdout
-        cache.write_text(out, encoding="utf-8")
-    return {f["path"] for f in json.loads(cache.read_text(encoding="utf-8"))["files"]}
+        paths: list[str] = []
+        page = 1
+        while True:
+            out = subprocess.run(
+                [
+                    "gh",
+                    "api",
+                    f"repos/{{owner}}/{{repo}}/pulls/{number}/files?per_page=100&page={page}",
+                    "--jq",
+                    "[.[].filename]",
+                ],
+                capture_output=True,
+                text=True,
+                check=True,
+                cwd=ARGS.repo_root,
+            ).stdout
+            got = json.loads(out)
+            paths += got
+            if len(got) < 100:
+                break
+            page += 1
+        cache.write_text(json.dumps(paths), encoding="utf-8")
+    return set(json.loads(cache.read_text(encoding="utf-8")))
 
 
 def sub_class(kind: str, detail: str, changed: set[str]) -> str:
@@ -711,6 +736,8 @@ def cmd_subagents(args):
         for (kind, d), v in det.items():
             split[sub_class(kind, d, changed)] += v
         split["other"] += out["thinking (hidden)"]
+        # What the size estimates do not account for, as `report` shows it: the split stays whole.
+        split["unexplained"] = sumctx - sum(split.values())
         rows.append(
             {
                 "agent": f.stem.removeprefix("agent-"),
