@@ -238,17 +238,14 @@ goes unnamed.
 enforced.** Everything below cites it rather than restating it; a second copy of
 this reasoning is the failure the sibling-sweep rule exists to catch.
 
-- **What `/rvw-pr`'s `allowed-tools` frontmatter gives.** No `Edit`, no `Write`,
-  no agent-spawning tool. It does grant `Bash`, so it is **not** a read-only
-  guarantee.
-- **The spawn path loses it.** A general `Agent` told to read
-  `rvw-pr/SKILL.md` keeps its own full tool set, and no spawnable
-  `subagent_type` closes the gap — the repo's agents declare no tool restriction
-  and the built-in read-only types keep `Bash`, which can mutate the review
-  worktree the round's passes share. So panel members get the read-only and
-  analyze-only constraints **restated in every prompt**. Enforcement by
-  instruction is weaker than the frontmatter it stands in for, and that is the
-  reason solo passes take the direct route instead.
+- **Every pass runs as the [`reviewer`](../../agents/reviewer.md) agent**: a
+  solo pass through `/rvw-pr`'s `agent: reviewer` frontmatter, a panel member
+  spawned with `subagent_type: reviewer`. Its `tools:` list has no `Edit`, no
+  `Write`, no agent-spawning tool. It does have `Bash`, which can mutate the
+  review worktree the round's passes share, so it is **not** a read-only
+  guarantee: panel members still get the read-only and analyze-only
+  constraints **restated in every prompt**, and the tree check below binds
+  every pass.
 - **No reviewer reads the working tree the fixer edits.** After each push the
   orchestrator adds a worktree at the pushed commit, and every pass of that
   round — panel member, solo pass, each of the closing gate's appended passes —
@@ -349,8 +346,8 @@ one's findings however they run) but that **each pass certifies a different
 moment**: fix anything between them and the earlier passes attested to a state
 that no longer exists, so the gates they discharged are undischarged.
 
-**Solo passes invoke [`/rvw-pr`](../rvw-pr/SKILL.md) directly**, which keeps the
-frontmatter instead of restating it as an instruction — see
+**Solo passes invoke [`/rvw-pr`](../rvw-pr/SKILL.md) directly**, which
+substitutes the arguments and runs the pass as the `reviewer` agent — see
 [Reviewer permissions](#reviewer-permissions) for what that is worth and why the
 tree check still binds.
 
@@ -361,9 +358,11 @@ treats only the remainder as reviewer context; without that parse the mode word
 would be read as a claim to verify. An unprimed pass gets the number and the
 root alone.
 
-**Panels spawn `Agent`s**, because `/rvw-pr` cannot form one. Each prompt
-instructs the member to read and execute `.claude/skills/rvw-pr/SKILL.md`, and
-must carry what the spawn path does not supply:
+**Panels spawn `Agent`s with `subagent_type: reviewer`**, because `/rvw-pr`
+cannot form one; a member spawned as any other type carries editing tools.
+Each prompt instructs the member to read and execute
+`.claude/skills/rvw-pr/SKILL.md`, and must carry what the spawn path does not
+supply:
 
 - **The PR number.** Read as a file, `rvw-pr/SKILL.md` still contains a literal
   `$ARGUMENTS`; only slash invocation substitutes it. Without the number the
@@ -373,8 +372,9 @@ must carry what the spawn path does not supply:
   reads the main tree, which is the tree the fixer edits and the one thing the
   round must not certify ([Reviewer permissions](#reviewer-permissions)).
 - **The word `analyze-only`**, which selects the mode above.
-- **For the measuring member, the word `measuring`**, which opens `rvw-pr`'s
-  bounded execution set. Without it that skill permits `Bash` only for its
+- **For the measuring member, the word `measuring`**, which sends it to
+  [`rvw-pr/measuring.md`](../rvw-pr/measuring.md) and its bounded execution
+  set. Without it that skill permits `Bash` only for its
   content reads (`gh`, and the pinned diff under a root) and its own Step 4
   count, and the member cannot run the thing it exists to run. A solo measuring pass carries the word too.
 - **The read-only constraint, restated**, per
@@ -489,7 +489,7 @@ under that root.
 
 **Measuring does not endanger the tree check.** Running the gate is safe; what
 would break it is regenerating a baseline or moving the checked-out revision, and
-`rvw-pr`'s measuring-pass block forbids both, states the bound, and carries the
+[`rvw-pr/measuring.md`](../rvw-pr/measuring.md) forbids both, states the bound, and carries the
 measurement behind it. Read it there.
 
 This is the axis that separated the productive rounds in the third delivery.

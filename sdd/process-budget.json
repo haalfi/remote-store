@@ -3,12 +3,12 @@
   "globs": [
     "CLAUDE.md",
     ".claude/output-styles/*.md",
-    ".claude/skills/*/SKILL.md",
+    ".claude/skills/*/*.md",
     ".claude/agents/*.md",
     "sdd/CLAUDE-REFERENCE.md",
     "sdd/traces/_schema.yml"
   ],
-  "total": 295228,
+  "total": 297494,
   "files": {
     "CLAUDE.md": 17421,
     ".claude/output-styles/interview.md": 2105,
@@ -16,18 +16,21 @@
     ".claude/skills/drift/SKILL.md": 23728,
     ".claude/skills/fix-pr/SKILL.md": 14545,
     ".claude/skills/mutation/SKILL.md": 5984,
-    ".claude/skills/orchestrate/SKILL.md": 26091,
+    ".claude/skills/orchestrate/SKILL.md": 26099,
     ".claude/skills/pr/SKILL.md": 5425,
     ".claude/skills/preview/SKILL.md": 955,
     ".claude/skills/release/SKILL.md": 4114,
-    ".claude/skills/rvw-pr/SKILL.md": 30702,
-    ".claude/skills/ship/SKILL.md": 53929,
+    ".claude/skills/rvw-pr/measuring.md": 5397,
+    ".claude/skills/rvw-pr/posting.md": 4971,
+    ".claude/skills/rvw-pr/SKILL.md": 21567,
+    ".claude/skills/ship/SKILL.md": 53894,
     ".claude/agents/documentation-expert.md": 6390,
     ".claude/agents/extension-expert.md": 1670,
+    ".claude/agents/reviewer.md": 1071,
     ".claude/agents/sdd-expert.md": 1726,
     ".claude/agents/store-backend-expert.md": 1820,
     ".claude/agents/testing-expert.md": 1602,
-    "sdd/CLAUDE-REFERENCE.md": 63731,
+    "sdd/CLAUDE-REFERENCE.md": 63720,
     "sdd/traces/_schema.yml": 31935
   },
   "raises": [
@@ -42,6 +45,12 @@
       "from": 294945,
       "to": 295265,
       "reason": "ADR-0045 clauses, per file against master (CRLF as LF): /fix-pr Steps 2 and 3 +296, CLAUDE.md seventh /ship record +126, /orchestrate Steps 6 and 7 +96, /ship -198 net (its two partial copies of the /fix-pr obligations became pointers, which outweighs its new clauses)"
+    },
+    {
+      "item": "BK-431",
+      "from": 295228,
+      "to": 297494,
+      "reason": "rvw-pr split by mode plus the reviewer agent: glob widened to .claude/skills/*/*.md so the split files stay measured; SKILL.md 30702 -> 21567 (what every pass reads), measuring.md 5397 and posting.md 4971 (read only by a measuring or a posting pass), reviewer.md 1071, /ship and /orchestrate links -27 net; CLAUDE-REFERENCE.md -11 was already off its recorded size on master"
     }
   ]
 }

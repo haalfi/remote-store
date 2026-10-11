@@ -1,0 +1,112 @@
+id: BK-431
+title: "Review subagents pay the session prefix again, and no smaller reviewer input is tested"
+trigger: >-
+  Research proposal 5 (research-token-spend-means.md § 6) and report § 9
+  hypothesis 3: run B's 11 review-loop subagents were 34.6% of its units, each
+  paying a session prefix before working and re-reading the same process files.
+source_items:
+  - BK-431
+audience:
+  - contributor.process
+  - contributor.tooling
+decisions:
+  - sdd/decisions/c09288d7-a16e-487a-afcc-be52197f7119.jsonl
+orient:
+  - items: [BK-346]
+    verdict: unrelated
+    evidence: >-
+      Its dossier names .claude/skills/rvw-pr/SKILL.md for the ripple-check
+      rows reviewers apply; BK-346 changes what six rows ask, not how much a
+      reviewer reads to apply them, so neither item changes the other.
+  - items: [ID-266, ID-268]
+    verdict: unrelated
+    evidence: >-
+      Both share .claude/skills/ship/SKILL.md, for the CI lane per push
+      (ID-266) and the close's trace paste (ID-268); neither touches what a
+      review subagent is spawned as or reads.
+phases:
+  - id: orient
+    name: Orient
+    steps:
+      - file: sdd/research/research-token-spend-means.md
+        section: "§ 2; § 4; § 5; § 6 proposal 5"
+        read_type: reference
+        extract: >-
+          Proposal 5: a smaller, scoped reviewer input is the next ordering
+          control to test; every subagent pays a prefix of about 53k tokens.
+        outcome: ok
+      - file: sdd/research/token-usage/report.md
+        section: "§ 3; § 9 row 3; § Run B; § Learnings"
+        read_type: reference
+        extract: >-
+          Hypothesis 3's test is per subagent: prefix, shared process files,
+          PR-specific reads. Run B's 11 review subagents: 312 calls, 5.19 M
+          units, 34.6% of the run.
+        outcome: ok
+      - file: .claude/skills/ship/SKILL.md
+        section: "Roles; Reviewer permissions; Running a round; Every scoped brief"
+        read_type: gate
+        extract: >-
+          Panel members are spawned as Agents told to read and execute
+          rvw-pr/SKILL.md; no spawnable subagent_type restricts tools, so the
+          read-only constraint is restated per prompt.
+        outcome: ok
+      - file: .claude/skills/rvw-pr/SKILL.md
+        section: whole
+        read_type: gate
+        extract: >-
+          30,702 bytes (wc -c). Every pass reads it whole, including the
+          measuring block (non-measuring passes) and Step 4 posting
+          (analyze-only members, which skip Step 4).
+        outcome: ok
+      - file: K:/Code/sandbox/token-kit/runs/4b0278bb-bdf1-40a2-bfdb-7f645ce7a779
+        section: "11 subagent transcripts of run B's resumed session"
+        read_type: verify
+        extract: >-
+          Split with tokkit.parse_file/carried (scratch script): of 34.4 M
+          carried context tokens, prefix 39.4%, PR content 18.7%, process
+          files 13.0% (rvw-pr/SKILL.md 11.6%: 8.5% main-tree path, 3.1%
+          review-snapshot path), searches 4.4%, execution 2.9%. All 11 were
+          general-purpose agents (meta.json agentType); first-call context
+          42.9k to 43.9k.
+        outcome: ok
+      - file: "(probe) Agent prefix by subagent_type"
+        section: "one-word reply, no tools, this session"
+        read_type: verify
+        extract: >-
+          Subagent total tokens: general-purpose 39,876, sdd-expert 40,138,
+          Explore 16,805. A custom agent with tools Read, Grep, Glob, Bash
+          could not be probed: a .claude/agents/ file written in this
+          worktree mid-session was refused as an unknown agent type.
+        outcome: ok
+      - file: "(docs) code.claude.com/docs/en/sub-agents; /docs/en/skills"
+        section: "Frontmatter reference; Available tools; Built-in subagents; Which subagent type runs the fork"
+        read_type: reference
+        extract: >-
+          tools: is an allowlist, unlisted MCP tools excluded; custom agents
+          load CLAUDE.md, Explore and Plan skip it; a context: fork skill
+          picks its subagent with agent:. Whether unlisted tools' schemas
+          leave the prefix, and whether deferred MCP tools load in such an
+          agent, are not documented. The docs say agent files are watched
+          mid-session, which the probe above contradicts in a worktree.
+        outcome: unclear
+  - id: implement
+    name: Implement
+    steps:
+      - file: sdd/process-budget.json
+        section: "globs; raises"
+        read_type: gate
+        extract: >-
+          The glob .claude/skills/*/SKILL.md would not measure split files,
+          so it widens to .claude/skills/*/*.md; check-process-budget then
+          reports +2266 net, SKILL.md 30702 -> 21567 bytes, recorded as a
+          raise under BK-431.
+        outcome: ok
+      - file: .claude/skills/orchestrate/SKILL.md
+        section: "Reviewer selection (measuring reviewer)"
+        read_type: verify
+        extract: >-
+          Two links bind its measuring reviewer to rvw-pr's allowlist and
+          base-branch recipe; both now point at rvw-pr/measuring.md.
+          /orchestrate's spawn type is unchanged (plan: one path measured).
+        outcome: ok
