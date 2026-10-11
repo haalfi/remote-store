@@ -11583,7 +11583,9 @@ and the median wall-clock share is 100%, against targets of at most 30% and
 <code>hatch run fast</code>, which judges each gate run's diff against the last green tree
 rather than a PR's whole diff
 (<a href="https://github.com/haalfi/remote-store/blob/master/sdd/research/bk-403-fast-gate/report.md">report</a>). Its local part supersedes
-this RFC's; the CI lane (ID-266) stays open, and D5's rules are not what ships.</p>
+this RFC's; the CI lane (ID-266) stays open, and D5's rules are not what ships.
+<strong>2026-10-11, BK-408:</strong> Phases 2 and 3 now exit on net time saved, not zero
+escapes (§ Roadmap); Phase 0's row is kept as run.</p>
 <p><em>Superseded framing:</em> this RFC sought approval for Phase 0 and a limited local
 pilot, and treated the target architecture below as the direction rather than a
 build order.</p>
@@ -12354,9 +12356,10 @@ passed.
 - nondeterministic failure;
 - failure in a job the selector does not represent;
 - failure only the full coverage gate finds.</p>
-<p>Zero-escape exit criteria count only deterministic, selector-reachable
-escapes (the first two classes). The others are reported, and routed to
-their own owners.</p>
+<p>Phase 0's zero-miss exit counts, and the Phase 2 and 3 exits (§ Roadmap)
+cost against the time the selection saves, only deterministic,
+selector-reachable escapes (the first two classes). The others are
+reported, and routed to their own owners.</p>
 <p><strong>A class other than the first two needs evidence</strong>, or a judgment call
 could argue a real miss away:
 - <em>environment-only</em>: the same test fails on the base commit in the same
@@ -12453,13 +12456,13 @@ Phase 3 adds PR-workflow jobs that only log.</p>
 <td><strong>2. Shape</strong></td>
 <td>Use the pilot, then add precision</td>
 <td>Fast target used for real rounds; escape log against the later full result, classified; the D7 coverage cross-check as a scheduled <code>ci-full.yml</code> job; then layer 2 (hubs, import-time scan, registry consumers), transitive layer 3 and notebook parsing, each added only after the cross-check job is in place and reports no gap</td>
-<td>A pilot length fixed beforehand with 0 deterministic, selector-reachable escapes; each precision layer kept only if it lowers the measured share without a cross-check gap; cut-off set by measurement</td>
+<td>A pilot length fixed beforehand, judged on net time saved (below); each precision layer kept only if it lowers the measured share without a cross-check gap; cut-off set by measurement</td>
 </tr>
 <tr>
 <td><strong>3. CI shadow</strong></td>
 <td>Validate the CI lane without risk</td>
 <td>Fast lane computes and logs its selection while the full lane still runs on every push; escapes compared and classified automatically; fallback rate reported</td>
-<td>A shadow period fixed beforehand with 0 deterministic, selector-reachable escapes; time saved and fallback rate measured</td>
+<td>A shadow period fixed beforehand, judged on net time saved (below)</td>
 </tr>
 <tr>
 <td><strong>4. Finalize</strong></td>
@@ -12469,6 +12472,31 @@ Phase 3 adds PR-workflow jobs that only log.</p>
 </tr>
 </tbody>
 </table>
+<p><strong>Phases 2 and 3 exit on net time saved, not on zero escapes.</strong> The fast lane
+is not the merge barrier: D1 and D2 put the full run on the merge head, so an
+escape costs a later red full run and its fix, not a defect on <code>master</code>. A zero
+bar fits a barrier; meeting it is what D5's import graph and reader inventory
+are for, and a lane that may miss needs neither
+(<a href="https://github.com/haalfi/remote-store/blob/master/sdd/research/bk-403-phase-0/bucket-rules.md#accepted-misses">bucket rules § Accepted misses</a>).
+Both criteria are fixed in the phase's plan before it starts, as Phase 0's
+targets were:</p>
+<ul>
+<li><strong>Saving:</strong> the median estimated wall-clock share over every unit in the
+  period, a FULL fallback counted as 100%, meets the plan's target. A median
+  over selected units alone would pass by construction under the cut-off.</li>
+<li><strong>Net of escapes:</strong> the deterministic, selector-reachable escapes (D7.4),
+  each at the cost the plan sets, sum to less than the time the selection
+  saved over the same units. Where a full run still follows every push, as
+  for Phase 2 while CI runs the full gate per push, an escape shows one round
+  later and costs one extra full run. Phase 3 shadows the switched-on lane,
+  where the full run comes only at <code>merge-candidate</code> (D1; Open Questions 5),
+  so its plan prices an escape as found at the close: at least a fix pass, its
+  re-review and another full run.</li>
+</ul>
+<p>Phase 0's row keeps the zero-miss exit it was run and stopped against. The
+bar follows the local gate's
+(<a href="https://github.com/haalfi/remote-store/blob/master/sdd/research/bk-403-fast-gate/report.md">report</a>) and the bucket rules'
+(<a href="https://github.com/haalfi/remote-store/blob/master/sdd/research/bk-403-phase-0/bucket-rules.md#next-step">§ Next step</a>).</p>
 <p>The selection-free speedups (BUG-301, BK-401, BK-400) are a separate track.
 They make the full lane cheaper, which every PR still passes at least once.</p>
 <h2 id="alternatives-considered">Alternatives Considered<a class="headerlink" href="#alternatives-considered" title="Permanent link">&para;</a></h2>
