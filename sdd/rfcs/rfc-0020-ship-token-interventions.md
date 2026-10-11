@@ -21,6 +21,13 @@ alone was followed by a round that re-read its fix, owed for a code fix
 clause. The maintainer judged the two regressions #1113 has and #1093 avoids
 not must-fix; they are open follow-ups on #1113.
 
+**Phase 0 is the last phase run (recorded 2026-10-11).** Phase 2 confirms rule (c)'s gain, so it lapses with
+rule (c). BK-423 was decided after the run and extends
+[`CLAUDE.md` principle 9](../../CLAUDE.md#principles) to claims of extent, and
+BK-418 moved to `BACKLOG-DONE.md` with
+[`research-token-spend-means.md`](../research/research-token-spend-means.md)
+as its outcome.
+
 ## Summary
 
 **A `/ship` delivery spends most of its tokens after the PR opens, and the
@@ -231,7 +238,8 @@ the whole effort.**
 | **1. Amend** | Put rule (c) into process, if kept | One ADR amending the five clauses under [Proposal](#proposal); `/ship` carrying rule (c); #1101 closed. If not kept: #1101 closes and the report records why | The ADR accepted and `/ship` carrying rule (c), or #1101 closed |
 | **2. Confirm** | Check the gain on deliveries that are not BUG-280 | The next two `/ship` deliveries, measured with the same metrics | Rounds and units no worse than run B's on both; otherwise reopen |
 
-BK-423 is decided after run B is scored, whichever way Phase 0 goes.
+BK-423 is decided after run B is scored, whichever way Phase 0 goes. (It was:
+adopted into principle 9; see Status.)
 
 ## Alternatives Considered
 
@@ -283,4 +291,4 @@ is on one skill and, if rule (c) is kept, one ADR.**
   [0037](../adrs/0037-whole-file-gate-and-derived-figures.md).
 - [RFC-0019](rfc-0019-two-speed-test-gate.md): the Phase 0 pattern this RFC
   follows.
-- Backlog: BK-418 (this RFC), BK-423 (held until run B is scored).
+- Backlog: BK-418 (this RFC; done), BK-423 (done: principle 9).

@@ -201,7 +201,7 @@ fixed/resolved, skipped with reasons, the fix shape per must-fix finding and
 the mutation per added test (Step 3), per finding the class swept and per fix
 the sibling descriptions swept — each with what it caught, because a sweep
 that found nothing reads exactly like one that never ran — the enumeration
-behind any fix to a quantified claim, and any changed surface the gate never
+behind any fix to a claim of extent, and any changed surface the gate never
 executed.
 
 ## Rules
@@ -230,19 +230,13 @@ executed.
   why the check is yours: a false "I swept X" in a reply survives to the end of
   the loop and beyond
   ([ADR-0037 § Context](../../../sdd/adrs/0037-whole-file-gate-and-derived-figures.md#context)).
-- **A fix to a quantified claim is scoped to the quantifier, not to the
-  finding.** When the artifact under repair says "every X", "all but Y", or
-  "each of these", the fix covers that extent and the reply states the
-  enumeration — how many there are, and that you counted rather than assumed.
-  Closing a finding to exactly its own wording leaves the rest of the class
-  open and reads, to every later reviewer, as though it were closed. A
-  divergence list claiming "every operation except the two deletes" needs an
-  item scoped to every operation except the two deletes, not to whichever
-  subset a reviewer happened to measure — that gap was caught, closed to its
-  own wording, and caught again three rounds later in the same sentence.
-  When the quantified claim is about behaviour this PR leaves alone and the
-  change does not rely on it, its extent is not yours to complete:
-  delete it (Step 3, shape 2).
+- **A fix to a claim of extent is scoped to the extent, not to the finding.**
+  Principle 9 owed the enumeration at writing time; a finding means it was not
+  run, or a later edit broke the claim. Run it now: the fix covers the whole
+  extent and the reply states the enumeration. A fix to the finding's own
+  wording leaves the class open while it reads as closed. A claim about
+  behaviour this PR leaves alone and does not rely on is not yours to
+  complete: delete it (Step 3, shape 2).
 - Sweep your own fixes the same way: a fix changes a thing, and every other
   description of that thing — docstring, comment, spec table, guide — is now
   suspect. The class sweep above fires on a review finding; nothing but this
