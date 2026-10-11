@@ -119,6 +119,9 @@ repeat-site check and the CI check are operational contract and live in
   read-only guarantee — that frontmatter grants `Bash` — and what covers the
   `Bash` residue is the unchanged-`HEAD` and clean-tree check every pass
   carries. `Agent` spawning remains for panels, which `/rvw-pr` cannot form.
+  *Amended by [ADR-0046](0046-review-tools-come-from-the-agent.md):*
+  `allowed-tools` withholds nothing; a pass lacks a tool only when its agent's
+  `tools:` list omits it.
 - **Negative:** a measuring member costs more than a reading one. It runs code,
   which means environment setup, gate time, and a longer round.
 - **Negative:** it also widens a reviewer's tool surface. `/rvw-pr` confined

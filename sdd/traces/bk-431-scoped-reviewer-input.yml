@@ -1,0 +1,254 @@
+id: BK-431
+title: "Review subagents pay the session prefix again, and no smaller reviewer input is tested"
+trigger: >-
+  Research proposal 5 (research-token-spend-means.md § 6) and report § 9
+  hypothesis 3: run B's 11 review-loop subagents were 34.6% of its units, each
+  paying a session prefix before working and re-reading the same process files.
+source_items:
+  - BK-431
+audience:
+  - contributor.process
+  - contributor.tooling
+decisions:
+  - sdd/decisions/c09288d7-a16e-487a-afcc-be52197f7119.jsonl
+orient:
+  - items: [BK-346]
+    verdict: unrelated
+    evidence: >-
+      Its dossier names .claude/skills/rvw-pr/SKILL.md for the ripple-check
+      rows reviewers apply; BK-346 changes what six rows ask, not how much a
+      reviewer reads to apply them, so neither item changes the other.
+  - items: [ID-266, ID-268]
+    verdict: unrelated
+    evidence: >-
+      Both share .claude/skills/ship/SKILL.md, for the CI lane per push
+      (ID-266) and the close's trace paste (ID-268); neither touches what a
+      review subagent is spawned as or reads.
+phases:
+  - id: orient
+    name: Orient
+    steps:
+      - file: sdd/research/research-token-spend-means.md
+        section: "§ 2; § 4; § 5; § 6 proposal 5"
+        read_type: reference
+        extract: >-
+          Proposal 5: a smaller, scoped reviewer input is the next ordering
+          control to test; every subagent pays a prefix of about 53k tokens.
+        outcome: ok
+      - file: sdd/research/token-usage/report.md
+        section: "§ 3; § 9 row 3; § Run B; § Learnings"
+        read_type: reference
+        extract: >-
+          Hypothesis 3's test is per subagent: prefix, shared process files,
+          PR-specific reads. Run B's 11 review subagents: 312 calls, 5.19 M
+          units, 34.6% of the run.
+        outcome: ok
+      - file: .claude/skills/ship/SKILL.md
+        section: "Roles; Reviewer permissions; Running a round; Every scoped brief"
+        read_type: gate
+        extract: >-
+          Panel members are spawned as Agents told to read and execute
+          rvw-pr/SKILL.md; no spawnable subagent_type restricts tools, so the
+          read-only constraint is restated per prompt.
+        outcome: ok
+      - file: .claude/skills/rvw-pr/SKILL.md
+        section: whole
+        read_type: gate
+        extract: >-
+          30,702 bytes (wc -c). Every pass reads it whole, including the
+          measuring block (non-measuring passes) and Step 4 posting
+          (analyze-only members, which skip Step 4).
+        outcome: ok
+      - file: "(transcripts) run B's resumed /ship session, snapshot kept outside the repo"
+        section: "its 11 subagent transcripts, read with tokkit.py's parse_file and carried"
+        read_type: verify
+        extract: >-
+          Split with tokkit.parse_file/carried (scratch script): of 34.4 M
+          carried context tokens, prefix 39.4%, PR content 18.7%, process
+          files 13.0% (rvw-pr/SKILL.md 11.6%: 8.5% main-tree path, 3.1%
+          review-snapshot path), searches 4.4%, execution 2.9%. All 11 were
+          general-purpose agents (meta.json agentType); first-call context
+          42.9k to 43.9k.
+        outcome: ok
+      - file: "(probe) Agent prefix by subagent_type"
+        section: "one-word reply, no tools, this session"
+        read_type: verify
+        extract: >-
+          Subagent total tokens: general-purpose 39,876, sdd-expert 40,138,
+          Explore 16,805. A custom agent with tools Read, Grep, Glob, Bash
+          could not be probed: a .claude/agents/ file written in this
+          worktree mid-session was refused as an unknown agent type.
+        outcome: ok
+      - file: "(docs) code.claude.com/docs/en/sub-agents; /docs/en/skills"
+        section: "Frontmatter reference; Available tools; Built-in subagents; Which subagent type runs the fork"
+        read_type: reference
+        extract: >-
+          tools: is an allowlist, unlisted MCP tools excluded; custom agents
+          load CLAUDE.md, Explore and Plan skip it; a context: fork skill
+          picks its subagent with agent:, which supplies the fork's tools,
+          while allowed-tools "grants tools without prompts" for the invoking
+          turn (skills page, Frontmatter reference); so ADR-0035 §
+          Consequences, which credits allowed-tools with withholding Edit and
+          Write, may name the wrong mechanism; the docs leave the fork case
+          open (probed below). Whether unlisted tools' schemas
+          leave the prefix, and whether deferred MCP tools load in such an
+          agent, are not documented. The docs say agent files are watched
+          mid-session: the throwaway file above was refused on the call right
+          after the one that wrote it, while the committed reviewer.md was listed later in
+          the same session, so pickup came with a delay, not at once.
+        outcome: unclear
+  - id: implement
+    name: Implement
+    steps:
+      - file: sdd/process-budget.json
+        section: "globs; raises"
+        read_type: gate
+        extract: >-
+          The glob .claude/skills/*/SKILL.md would not measure split files,
+          so it widens to .claude/skills/*/*.md; check-process-budget then
+          reports +2266 net, SKILL.md 30702 -> 21567 bytes, recorded as a
+          raise under BK-431.
+        outcome: ok
+      - file: .claude/skills/orchestrate/SKILL.md
+        section: "Reviewer selection (measuring reviewer)"
+        read_type: verify
+        extract: >-
+          Two links bind its measuring reviewer to rvw-pr's allowlist and
+          base-branch recipe; both now point at rvw-pr/measuring.md.
+          /orchestrate's spawn type is unchanged (plan: one path measured).
+        outcome: ok
+      - file: "(probe) reviewer agent at commit 2b89e4a9b"
+        section: "same one-word probe; a ToolSearch-then-call probe"
+        read_type: verify
+        extract: >-
+          Once the committed .claude/agents/reviewer.md was listed as an
+          agent type later in this session, the probe's subagent total was
+          reviewer 19,809 against general-purpose 39,923, both spawned in
+          the same session: 20,114 fewer tokens before any work. A reviewer
+          loaded mcp__MCP_DOCKER__pull_request_read through ToolSearch and
+          returned PR #1113's title, matching `gh pr view 1113 --json
+          title`, so solo passes keep agent: reviewer. wc -c rvw-pr:
+          SKILL.md 21,567, measuring.md 5,397, posting.md 4,971.
+        outcome: ok
+      - file: "(A/B) PR #1125 at 8a5e31960, analyze-only, unprimed, one run each"
+        section: "general-purpose on master's rvw-pr vs reviewer on the split rvw-pr"
+        read_type: verify
+        extract: >-
+          tokkit.parse_file over both subagent transcripts: old 26 calls,
+          first context 39,861, units 455,780, rvw-pr read tokens 22,641, 3
+          findings; new 28 calls, first context 19,713, units 348,421,
+          rvw-pr read tokens 9,356, 1 finding. The new finding is a subset of
+          the old pass's first (measuring.md's reader claim); the old pass
+          also found posting.md's same claim, a stale "header block above"
+          pointer and "only" beside the tool list, all fixed. The cheaper
+          pass found less here; one run each cannot separate the input from
+          run-to-run variance, which is what the next measured delivery
+          decides (ADR-0045).
+        outcome: ok
+      - file: "(A/B, round 2) PR #1125 at c6d33baa4, same setup"
+        section: "both transcripts' tool calls listed in order and compared"
+        read_type: verify
+        extract: >-
+          Old 19 calls, 354,303 units, 2 findings; new 32 calls, 388,089
+          units, 1 finding. Both found /ship's spawn rule contradicting its
+          persona staffing; only the old pass found the backlog's unscoped
+          "every pass". The call lists of both rounds show: per call the new
+          pass carries about 20k fewer tokens, but calls per pass (19 to 32)
+          decide the total; the old pass read the PR's rvw-pr/SKILL.md as a
+          subject, which for the new pass was its own instructions, and
+          fetched the PR body, which neither skill asks for; the new pass's
+          six empty DOMAIN:/roster searches followed reviewer.md's
+          persona/ADR-0036 text, now moved into /ship.
+        outcome: ok
+      - file: "(A/B, round 3) PR #1125 at 9e8bc0664, same setup"
+        section: "both transcripts' tool calls listed in order and compared"
+        read_type: verify
+        extract: >-
+          Old 24 calls, 461,062 units, 1 finding; new 20 calls, 290,214
+          units, 3 findings, none shared. The old pass again read the PR's
+          rvw-pr/SKILL.md as a subject (call 12) and found its finding there;
+          the new pass read the trace and the budget script whole and found
+          the stale budget map, the shared lens menu staffing /orchestrate
+          and ADR-0035's mechanism claim. Both fetched the PR body this
+          round. Over three rounds: old 1,271,145 units and 6 findings, new
+          1,026,724 units (19% fewer) and 5, of which 2 matched an old one.
+        outcome: ok
+      - file: "(probe) forked skill, allowed-tools: Read, no agent:"
+        section: "asked to Write tmp/bk431-probe.txt; skill deleted after"
+        read_type: verify
+        extract: >-
+          The fork listed Write, Edit, Agent and Bash among its tools, the
+          Write succeeded, and Read of tmp/bk431-probe.txt returned "probe".
+          allowed-tools withholds nothing in a fork, so ADR-0035 §
+          Consequences named the wrong mechanism: recorded as ADR-0046, which
+          amends that bullet. Solo /rvw-pr passes could edit before BK-431.
+        outcome: ok
+      - file: "(probe) forked skill, agent: reviewer, no allowed-tools"
+        section: "asked to Write tmp/bk431-probe2.txt; skill deleted after"
+        read_type: verify
+        extract: >-
+          The fork listed exactly reviewer.md's ten tools (Read, Grep, Glob,
+          Bash and the six GitHub tools), had no Write or Edit, and Glob found
+          no tmp/bk431-probe2.txt afterwards. So agent: supplies a fork's
+          tools, as ADR-0046 states (A/B round 4 asked for this probe).
+          Whether agent: and allowed-tools combine was not probed; rvw-pr's
+          two lists are identical, so it does not arise there.
+        outcome: ok
+      - file: "(A/B, round 4) PR #1125 at 4ffed321b, same setup"
+        section: "units and findings"
+        read_type: verify
+        extract: >-
+          Old 21 calls, 437,882 units, 3 findings; new 29 calls, 386,867
+          units, 2 findings, both shared with the old (ADR-0046's unprobed
+          agent: claim; ADR-0035 lacking its inline Amended-by note). The
+          old pass alone found ADR-0046 pointing at /ship for the open
+          decision that lives in BACKLOG. The new pass ran backlog-show by
+          Bash in the main tree, outside its permitted Bash uses.
+        outcome: ok
+review:
+  # Derived by `hatch run ship-report 1125 --trace-block-only` at head e1ffa91.
+  # Do not hand-edit, except a newly required field per sdd/traces/_schema.yml
+  # section review: RFC-0015 D4 makes this script the only producer.
+  derivation: "hatch run ship-report 1125 --trace-block-only"
+  pr: 1125
+  review_rounds: 6
+  submissions: 1
+  findings: 2
+  by_round:
+    - round: 1
+      findings: 2
+      origin: {original: 2}
+      triage: {must-fix: 2}
+      duration_hours: 0.04
+  by_file:
+    - path: ".claude/skills/rvw-pr/SKILL.md"
+      findings: 1
+    - path: ".claude/skills/ship/SKILL.md"
+      findings: 1
+  untouched_files:
+    - ".claude/agents/reviewer.md"
+    - ".claude/skills/orchestrate/SKILL.md"
+    - ".claude/skills/rvw-pr/measuring.md"
+    - ".claude/skills/rvw-pr/posting.md"
+    - "CLAUDE.md"
+    - "sdd/BACKLOG.md"
+    - "sdd/adrs/0035-vary-method-not-model.md"
+    - "sdd/adrs/0046-review-tools-come-from-the-agent.md"
+    - "sdd/adrs/DIGEST.md"
+    - "sdd/decisions/c09288d7-a16e-487a-afcc-be52197f7119.jsonl"
+    - "sdd/process-budget.json"
+    - "sdd/traces/bk-431-scoped-reviewer-input.yml"
+  review_driven_commits:
+    - sha: "6b7251a"
+      subject: "fix: address PR #1125 review"
+    - sha: "c6d33ba"
+      subject: "BK-431: Fix the A/B review's findings; record old vs new reviewer"
+    - sha: "9e8bc06"
+      subject: "BK-431: Persona-staffed members keep their type; trim reviewer.md"
+    - sha: "bda8eef"
+      subject: "BK-431: Fix the round-3 A/B findings; re-lock the budget map"
+    - sha: "4ffed32"
+      subject: "BK-431: ADR-0046, a review pass's tools come from its agent"
+    - sha: "e1ffa91"
+      subject: "BK-431: Probe agent: reviewer in a fork; mark ADR-0035's amended bullet"
+  ci: {verdict: GREEN, failed: 0, pending: 0}

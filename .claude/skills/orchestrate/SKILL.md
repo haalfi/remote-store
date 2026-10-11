@@ -144,7 +144,7 @@ one is in
 
    **Run only the allowlisted set, and write only under `tmp/`.** No permission
    gate does not mean no bound: `/rvw-pr`'s
-   [allowlist](../rvw-pr/SKILL.md) is the single home for which commands are
+   [allowlist](../rvw-pr/measuring.md) is the single home for which commands are
    safe, and it is a fact about `pyproject.toml` — that no suffix or args-shape
    rule identifies a writing alias, proved by two live counterexamples — so it
    holds identically for a reviewer spawned from here. Read it there and obey it
@@ -169,7 +169,7 @@ one is in
    below — it is absent from `git diff HEAD` and from `--untracked-files=all`
    alike. If
    `worktree remove` fails on a stale entry, `git worktree prune` then retry.
-   [`/rvw-pr`](../rvw-pr/SKILL.md)'s measuring block carries the same three
+   [`/rvw-pr`'s measuring block](../rvw-pr/measuring.md) carries the same three
    commands for a *different* reason — there the checked-out revision is the
    pushed state `/ship` certifies, here it is uncommitted work that has never
    been saved anywhere. Deliberately a second copy rather than a link: sending a

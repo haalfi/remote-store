@@ -976,9 +976,9 @@ sessions work is measured before it becomes process.
   #1099 merges, by [BK-414's dossier](backlog/bk-414-sdd-lookup.md) § Acceptance
   measure. Open decision: keep, change or remove the pointers, by that result.
 
-- [ ] **BK-431 — Review subagents pay the session prefix again, and no smaller reviewer input is tested**
+- [~] **BK-431 — Review subagents pay the session prefix again, and no smaller reviewer input is tested**
   spec: — · effort: M · audience: contributor.process, contributor.tooling
-  A subagent pays about 53k tokens of prefix before it works, and review
-  subagents re-read the same process files ([report](research/token-usage/report.md) § Learnings, § 9 hypothesis 3).
-  Run B's 11 review-loop subagents were 34.6% of its units (§ Run B, phase table).
-  Open decision: [proposal 5](research/research-token-spend-means.md#6-proposals), a scoped reviewer input, measured on a delivery as run B was.
+  Run B's 11 review subagents (34.6% of its units) carried the prefix as 39% of their context, `rvw-pr/SKILL.md` 11.6%
+  and the PR itself 18.7% ([trace](traces/bk-431-scoped-reviewer-input.yml)). Done: `/ship`'s passes run as the `reviewer`
+  agent unless a persona staffs the lens (prefix probe 19.8k against 39.9k tokens), and `rvw-pr` keeps its measuring and posting rules in files a non-measuring, analyze-only pass skips.
+  Open decision: keep or drop that input, by the next `/ship` delivery measured as run B was ([proposal 5](research/research-token-spend-means.md#6-proposals)).

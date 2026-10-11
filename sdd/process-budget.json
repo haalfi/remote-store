@@ -3,31 +3,34 @@
   "globs": [
     "CLAUDE.md",
     ".claude/output-styles/*.md",
-    ".claude/skills/*/SKILL.md",
+    ".claude/skills/*/*.md",
     ".claude/agents/*.md",
     "sdd/CLAUDE-REFERENCE.md",
     "sdd/traces/_schema.yml"
   ],
-  "total": 295228,
+  "total": 297938,
   "files": {
-    "CLAUDE.md": 17421,
+    "CLAUDE.md": 17528,
     ".claude/output-styles/interview.md": 2105,
     ".claude/skills/audit/SKILL.md": 1355,
     ".claude/skills/drift/SKILL.md": 23728,
     ".claude/skills/fix-pr/SKILL.md": 14545,
     ".claude/skills/mutation/SKILL.md": 5984,
-    ".claude/skills/orchestrate/SKILL.md": 26091,
+    ".claude/skills/orchestrate/SKILL.md": 26099,
     ".claude/skills/pr/SKILL.md": 5425,
     ".claude/skills/preview/SKILL.md": 955,
     ".claude/skills/release/SKILL.md": 4114,
-    ".claude/skills/rvw-pr/SKILL.md": 30702,
-    ".claude/skills/ship/SKILL.md": 53929,
+    ".claude/skills/rvw-pr/measuring.md": 5482,
+    ".claude/skills/rvw-pr/posting.md": 5030,
+    ".claude/skills/rvw-pr/SKILL.md": 21827,
+    ".claude/skills/ship/SKILL.md": 54143,
     ".claude/agents/documentation-expert.md": 6390,
     ".claude/agents/extension-expert.md": 1670,
+    ".claude/agents/reviewer.md": 755,
     ".claude/agents/sdd-expert.md": 1726,
     ".claude/agents/store-backend-expert.md": 1820,
     ".claude/agents/testing-expert.md": 1602,
-    "sdd/CLAUDE-REFERENCE.md": 63731,
+    "sdd/CLAUDE-REFERENCE.md": 63720,
     "sdd/traces/_schema.yml": 31935
   },
   "raises": [
@@ -42,6 +45,36 @@
       "from": 294945,
       "to": 295265,
       "reason": "ADR-0045 clauses, per file against master (CRLF as LF): /fix-pr Steps 2 and 3 +296, CLAUDE.md seventh /ship record +126, /orchestrate Steps 6 and 7 +96, /ship -198 net (its two partial copies of the /fix-pr obligations became pointers, which outweighs its new clauses)"
+    },
+    {
+      "item": "BK-431",
+      "from": 295228,
+      "to": 297494,
+      "reason": "rvw-pr split by mode plus the reviewer agent: glob widened to .claude/skills/*/*.md so the split files stay measured; SKILL.md 30702 -> 21567 (what every pass reads), measuring.md 5397 and posting.md 4971 (skipped by a non-measuring, analyze-only pass), reviewer.md 1071, /ship and /orchestrate links -27 net; CLAUDE-REFERENCE.md -11 was already off its recorded size on master"
+    },
+    {
+      "item": "BK-431",
+      "from": 297494,
+      "to": 297568,
+      "reason": "PR #1125 review: rvw-pr frontmatter names reviewer.md's tools: as the binding list (+132); /ship's false extent clause about other agent types deleted (-58)"
+    },
+    {
+      "item": "BK-431",
+      "from": 297568,
+      "to": 297759,
+      "reason": "PR #1125 A/B review (old vs new reviewer, analyze-only): measuring.md and posting.md headers name both readers each (+85, +59); SKILL.md search-discipline pointer to measuring.md and ToolSearch caveat (+47)"
+    },
+    {
+      "item": "BK-431",
+      "from": 297759,
+      "to": 297831,
+      "reason": "PR #1125 A/B round 3: analyze-only passes keep Step 4's Comment rules (rvw-pr), /ship's lens menu scopes its reviewer staffing to /ship; also re-locks the map after reviewer.md was trimmed to its pointer"
+    },
+    {
+      "item": "BK-431",
+      "from": 297831,
+      "to": 297938,
+      "reason": "CLAUDE.md: ADR-0046 joins the /ship records (seven to eight), as ADR-0045 did (+107)"
     }
   ]
 }
