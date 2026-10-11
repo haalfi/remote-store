@@ -8,7 +8,7 @@
     "sdd/CLAUDE-REFERENCE.md",
     "sdd/traces/_schema.yml"
   ],
-  "total": 297759,
+  "total": 297831,
   "files": {
     "CLAUDE.md": 17421,
     ".claude/output-styles/interview.md": 2105,
@@ -22,11 +22,11 @@
     ".claude/skills/release/SKILL.md": 4114,
     ".claude/skills/rvw-pr/measuring.md": 5482,
     ".claude/skills/rvw-pr/posting.md": 5030,
-    ".claude/skills/rvw-pr/SKILL.md": 21746,
-    ".claude/skills/ship/SKILL.md": 53836,
+    ".claude/skills/rvw-pr/SKILL.md": 21827,
+    ".claude/skills/ship/SKILL.md": 54143,
     ".claude/agents/documentation-expert.md": 6390,
     ".claude/agents/extension-expert.md": 1670,
-    ".claude/agents/reviewer.md": 1071,
+    ".claude/agents/reviewer.md": 755,
     ".claude/agents/sdd-expert.md": 1726,
     ".claude/agents/store-backend-expert.md": 1820,
     ".claude/agents/testing-expert.md": 1602,
@@ -63,6 +63,12 @@
       "from": 297568,
       "to": 297759,
       "reason": "PR #1125 A/B review (old vs new reviewer, analyze-only): measuring.md and posting.md headers name both readers each (+85, +59); SKILL.md search-discipline pointer to measuring.md and ToolSearch caveat (+47)"
+    },
+    {
+      "item": "BK-431",
+      "from": 297759,
+      "to": 297831,
+      "reason": "PR #1125 A/B round 3: analyze-only passes keep Step 4's Comment rules (rvw-pr), /ship's lens menu scopes its reviewer staffing to /ship; also re-locks the map after reviewer.md was trimmed to its pointer"
     }
   ]
 }

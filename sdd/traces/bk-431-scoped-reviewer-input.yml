@@ -85,7 +85,11 @@ phases:
         extract: >-
           tools: is an allowlist, unlisted MCP tools excluded; custom agents
           load CLAUDE.md, Explore and Plan skip it; a context: fork skill
-          picks its subagent with agent:. Whether unlisted tools' schemas
+          picks its subagent with agent:, which supplies the fork's tools,
+          while allowed-tools "grants tools without prompts" for the invoking
+          turn (skills page, Frontmatter reference); so ADR-0035 §
+          Consequences, which credits allowed-tools with withholding Edit and
+          Write, names the wrong mechanism. Whether unlisted tools' schemas
           leave the prefix, and whether deferred MCP tools load in such an
           agent, are not documented. The docs say agent files are watched
           mid-session: the throwaway file above was refused on the call right
@@ -154,4 +158,17 @@ phases:
           fetched the PR body, which neither skill asks for; the new pass's
           six empty DOMAIN:/roster searches followed reviewer.md's
           persona/ADR-0036 text, now moved into /ship.
+        outcome: ok
+      - file: "(A/B, round 3) PR #1125 at 9e8bc0664, same setup"
+        section: "both transcripts' tool calls listed in order and compared"
+        read_type: verify
+        extract: >-
+          Old 24 calls, 461,062 units, 1 finding; new 20 calls, 290,214
+          units, 3 findings, none shared. The old pass again read the PR's
+          rvw-pr/SKILL.md as a subject (call 12) and found its finding there;
+          the new pass read the trace and the budget script whole and found
+          the stale budget map, the shared lens menu staffing /orchestrate
+          and ADR-0035's mechanism claim. Both fetched the PR body this
+          round. Over three rounds: old 1,271,145 units and 6 findings, new
+          1,026,724 units (19% fewer) and 5, of which 2 matched an old one.
         outcome: ok

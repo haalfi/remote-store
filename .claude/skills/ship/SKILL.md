@@ -326,7 +326,7 @@ root and tool constraints.
 GitHub allows one pending review per user per PR, so concurrent members running
 `rvw-pr`'s posting step would cross-contaminate one pending review and drop
 findings while that skill's verification still reads success. Panel members run
-`rvw-pr` in **analyze-only mode**: Steps 0–3, Step 4 skipped, Step 5's report —
+`rvw-pr` in **analyze-only mode**: Steps 0–3, Step 4's posting skipped, Step 5's report —
 `Subject:` line included, which the Stop rule's clean-round check needs — plus
 consolidated findings as the final message. The orchestrator merges, dedups (two
 members reporting one defect is one finding), posts the round as one review
@@ -460,7 +460,8 @@ menu by link rather than copying it.
   contains any of it**, so a roster cannot aim at it and a reviewer staffed by
   domain will not look — 9 of PR #954's 12 findings landed here
   ([ADR-0036 § Context](../../../sdd/adrs/0036-reviewers-by-subject-and-method.md#context)).
-  Staff it with the `reviewer` agent. Ask what a *reader* of the changed instruction
+  Under `/ship`, staff it with the `reviewer` agent; `/orchestrate` staffs per its
+  own Step 4. Ask what a *reader* of the changed instruction
   would be permitted to do, not whether it reads well: the recurring defect is an
   obligation written without the permission that makes it executable.
 - **Premise.** Every claim the PR makes about behaviour that already exists — in
