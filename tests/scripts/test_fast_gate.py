@@ -12,6 +12,7 @@ import importlib.util
 import json
 import subprocess
 import sys
+import tomllib
 from pathlib import Path
 
 import pytest
@@ -41,6 +42,8 @@ sources = ["src/remote_store/backends/_local.py"]
 sources = ["src/remote_store/backends/_s3.py", "src/remote_store/backends/_s3_base.py"]
 [backend.s3_pyarrow]
 sources = ["src/remote_store/backends/_s3_pyarrow.py"]
+[backend.dafny]
+sources = ["tests/backends/dafny/_helpers.py"]
 """
 FIXTURES_TOML = """
 [fixture.local]
@@ -54,6 +57,9 @@ backend = "s3"
 stage = 3
 [fixture.s3_pyarrow_moto]
 backend = "s3_pyarrow"
+stage = 1
+[fixture.dafny_oracle]
+backend = "dafny"
 stage = 1
 """
 
@@ -87,6 +93,9 @@ FILES = {
     "tests/_helpers_x.py": "from tests.test_util import X\n",
     "tests/test_uses_helper.py": "from tests._helpers_x import X\n",
     "tests/scripts/test_tool.py": "def test_t(): ...\n",
+    # The oracle backend's source lives under tests/ and loads sdd/formal/MemoryBackend-py via sys.path.
+    "tests/backends/dafny/_helpers.py": "from remote_store._util import X\n",
+    "tests/backends/dafny/test_oracle.py": "def test_o(): ...\n",
 }
 
 
@@ -146,6 +155,7 @@ def test_shared_helper_selects_every_backend_reaching_it_without_stage_2_or_3_id
 def test_module_every_backend_reaches_is_full() -> None:
     files = dict(FILES)
     files["src/remote_store/backends/_local.py"] = "from remote_store._util import X\n"
+    # s3, s3_pyarrow and the dafny oracle already reach _util; local makes it every backend.
     sel = _select(fg.Repo(files), "src/remote_store/_util.py")
     assert sel.full
     assert "every backend" in sel.full_reasons[0]
@@ -184,6 +194,26 @@ def test_package_init_and_deleted_src_module_are_full(repo) -> None:
 def test_root_conftest_and_fixture_infrastructure_are_full(repo) -> None:
     assert _select(repo, "tests/conftest.py").full
     assert _select(repo, "tests/backends/fixtures/local.py").full
+
+
+@pytest.mark.parametrize(
+    "path",
+    [
+        "sdd/formal/MemoryBackend-py/module_.py",  # the compiled oracle _helpers.py puts on sys.path
+        "tests/backends/dafny/_helpers.py",  # a backend source outside src/
+    ],
+)
+def test_dafny_oracle_changes_select_its_conformance_cells_and_tests(repo, path: str) -> None:
+    sel = _select(repo, path)
+    assert not sel.full
+    assert set(sel.conformance_ids) == {"dafny_oracle"}
+    assert "tests/backends/dafny/" in sel.targets
+
+
+def test_step_order_is_alls_member_order() -> None:
+    scripts = tomllib.loads((_SCRIPT.parents[1] / "pyproject.toml").read_text(encoding="utf-8"))
+    members = scripts["tool"]["hatch"]["envs"]["default"]["scripts"]["all"]
+    assert list(fg.STEP_ORDER) == ["tests" if m == "test-cov-s1" else m for m in members]
 
 
 def test_markdown_under_tests_is_docs_not_test_data(repo) -> None:
@@ -443,7 +473,7 @@ def test_main_plan_runs_nothing_and_records_nothing(git_repo: Path, monkeypatch)
 
 def _suite_repo(root: Path, lastfailed: dict[str, bool] | None = None) -> None:
     """Three test files whose recorded seconds are 1, 1 and 18, recorded green."""
-    (root / "tests").mkdir()
+    (root / "tests").mkdir(exist_ok=True)
     for name in ("test_a", "test_b", "test_c"):
         (root / "tests" / f"{name}.py").write_text("def test_x(): ...\n", encoding="utf-8")
     durations = {"tests/test_a.py::test_x": 1.0, "tests/test_b.py::test_x": 1.0, "tests/test_c.py::test_x": 18.0}
@@ -481,14 +511,30 @@ def test_small_selection_runs_serially_on_its_target_only(git_repo: Path, monkey
     assert [a for a in cmd if a.startswith("tests/")] == ["tests/test_a.py"]
 
 
-def test_last_failed_tests_join_the_selection_unless_their_file_is_gone(git_repo: Path, monkeypatch) -> None:
-    _suite_repo(git_repo, {"tests/test_b.py::test_x": True, "tests/test_gone.py::test_x": True})
-    assert fg.last_failed(git_repo) == ["tests/test_b.py::test_x"]
+def test_last_failed_files_join_the_selection_only_when_the_full_run_collects_them(git_repo: Path, monkeypatch) -> None:
+    # A node id that does not collect at Stage 1 makes pytest exit 4 ("not found"), so
+    # failures are re-run by file: a stage-2 param id, a renamed test, an e2e or a
+    # benchmark node must not reach the command as a node id.
+    (git_repo / "tests" / "e2e").mkdir(parents=True)
+    (git_repo / "tests" / "e2e" / "test_e.py").write_text("def test_x(): ...\n", encoding="utf-8")
+    (git_repo / "benchmarks").mkdir()
+    (git_repo / "benchmarks" / "test_bench.py").write_text("def test_x(): ...\n", encoding="utf-8")
+    _suite_repo(
+        git_repo,
+        {
+            "tests/test_b.py::test_x[azurite]": True,
+            "tests/test_b.py::test_renamed_away": True,
+            "tests/test_gone.py::test_x": True,
+            "tests/e2e/test_e.py::test_x": True,
+            "benchmarks/test_bench.py::test_x": True,
+        },
+    )
+    assert fg.last_failed(git_repo) == ["tests/test_b.py"]
     (git_repo / "tests" / "test_a.py").write_text("def test_x(): assert 1\n", encoding="utf-8")
     members = _Members(monkeypatch)
     assert fg.main([], git_repo) == 0
     [cmd] = _test_commands(members)
-    assert [a for a in cmd if a.startswith("tests/")] == ["tests/test_a.py", "tests/test_b.py::test_x"]
+    assert [a for a in cmd if a.startswith(("tests/", "benchmarks/"))] == ["tests/test_a.py", "tests/test_b.py"]
 
 
 def test_main_with_base_never_records_green(git_repo: Path, monkeypatch) -> None:

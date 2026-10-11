@@ -63,7 +63,9 @@ ideas, each measured above or below:
   not in a test (`gen_graph --check` 8, `check_capability_parity` 5,
   `gen_graph_viz --check` 4, `gen_backlogid --check` 4, ruff 3; a transcript
   scan, not committed).
-- **Failure history.** The tests that failed last run are always added.
+- **Failure history.** The test files with a failure last run are always
+  added. By file, not node id: a node id the Stage-1 run does not collect
+  makes pytest exit 4.
 - **Self-calibrating estimate.** CI's `.test_durations_pass1` has no
   `tests/scripts/` entries, which are 146.7 of 755.3 summed seconds locally
   (`junit_times.py` over one Stage-1 run). The gate records its own JUnit

@@ -20,8 +20,9 @@ record lives in the checkout's git directory, so each worktree keeps its own.
 Which members run (``plan_steps``): ``preflight``, ``lint``, ``format-check``,
 ``docs-check`` and ``check-links`` always, being cheap and where local failures
 concentrate; ``typecheck``, ``examples``, ``notebooks`` and ``docs-build`` only
-for paths they read; tests by ``select_tests``. Members run in that order and
-stop at the first failure, like ``all``.
+for paths they read; tests by ``select_tests``. Members run in ``all``'s order
+(``STEP_ORDER``, its test member being ``test-cov-s1``) and stop at the first
+failure, like ``all``.
 
 Which tests (``select_tests``): the first matching rule per changed path, the
 union over paths, any FULL winning. A FULL rule covers what everything imports
@@ -29,8 +30,10 @@ union over paths, any FULL winning. A FULL rule covers what everything imports
 modules those import, dependency and pytest configuration). A ``src/`` module
 selects the test files that import it transitively, plus conformance and the
 backend's own directory for every backend whose sources reach it; reaching
-every backend is FULL. Docs, specs and scripts select ``tests/scripts/``, whose
-tests read them. The tests that failed last time are always added. A selection
+every backend is FULL. A backend source outside ``src/`` and the compiled Dafny
+oracle select that backend the same way. Docs, specs and scripts select
+``tests/scripts/``, whose tests read them. The test files with a failure last
+time are always added, by file (``last_failed``). A selection
 estimated above half the suite's time runs the full Stage-1 suite instead; the
 estimate prefers this checkout's own timings, recorded from every test run
 (``record_durations``), over CI's ``.test_durations_pass1``.
@@ -65,6 +68,9 @@ STATE_NAME = "rs-fast-gate.json"
 FULL = "FULL"
 CONFORMANCE = "tests/backends/conformance/"
 E2E = "tests/e2e/"
+# The one directory outside src/ and scripts/ a test puts on sys.path
+# (tests/backends/dafny/_helpers.py; every `sys.path.insert` under tests/, grepped 2026-10-11).
+DAFNY_ORACLE_DIR = "sdd/formal/MemoryBackend-py/"
 SCRIPTS_TESTS = "tests/scripts/"
 # A selection above this share of the suite's estimated time runs the suite.
 CUTOFF = 0.5
@@ -250,7 +256,6 @@ class Selection:
     full_reasons: list[str] = field(default_factory=list)
     targets: dict[str, str] = field(default_factory=dict)  # path -> first reason
     conformance_ids: dict[str, str] = field(default_factory=dict)  # fixture id -> first reason
-    node_ids: list[str] = field(default_factory=list)  # last-failed tests
 
     @property
     def full(self) -> bool:
@@ -258,7 +263,7 @@ class Selection:
 
     @property
     def empty(self) -> bool:
-        return not (self.full or self.targets or self.conformance_ids or self.node_ids)
+        return not (self.full or self.targets or self.conformance_ids)
 
     def add(self, target: str, reason: str) -> None:
         # addopts ignores tests/e2e and `all` never runs it, but an explicit
@@ -385,6 +390,11 @@ def select_tests(repo: Repo, changes: list[tuple[str, str]], pyproject_keys: set
         return n
 
     for status, p in changes:
+        # A backend source outside src/ (the Dafny oracle's tests/backends/dafny/_helpers.py)
+        # is not reached through src/, and the registry loads it with importlib.
+        own = {b for b, srcs in repo.backend_sources.items() if p in srcs and not p.startswith("src/")}
+        if own:
+            add_backends(own, f"{p}: backend source")
         if p in FULL_PATHS or p.startswith("infra/") and p.endswith(".py"):
             sel.full_reasons.append(f"{p}: everything depends on it")
         elif p == "pyproject.toml":
@@ -443,6 +453,8 @@ def select_tests(repo: Repo, changes: list[tuple[str, str]], pyproject_keys: set
             # Data files read by tests: their directory's tests. A README is docs (next rule).
             sel.add(p.rsplit("/", 1)[0] + "/", f"{p}: test data")
         else:
+            if p.startswith(DAFNY_ORACLE_DIR):
+                add_backends({"dafny"} & repo.backend_sources.keys(), f"{p}: compiled Dafny oracle")
             # scripts/, docs, specs, skills, CI files: read by tests/scripts/.
             sel.add(SCRIPTS_TESTS, f"{p}: tests/scripts reads it")
     return sel
@@ -459,8 +471,8 @@ STEP_ORDER = (
     "tests",
     "examples",
     "notebooks",
-    "docs-check",
     "check-links",
+    "docs-check",
     "docs-build",
 )
 ALWAYS = frozenset({"preflight", "lint", "format-check", "docs-check", "check-links"})
@@ -663,7 +675,7 @@ def estimate(sel: Selection, durations: dict[str, float], test_files: list[str])
     for node, secs in durations.items():
         path = node.split("::", 1)[0]
         per_file[path] += secs
-        if (path.startswith(CONFORMANCE) and ids and any(i in node for i in ids)) or node in sel.node_ids:
+        if path.startswith(CONFORMANCE) and ids and any(i in node for i in ids):
             picked[path] += secs
     recorded = sorted(per_file.values())
     fallback = recorded[len(recorded) // 2] if recorded else 1.0
@@ -679,11 +691,18 @@ def estimate(sel: Selection, durations: dict[str, float], test_files: list[str])
 
 
 def last_failed(root: Path = ROOT) -> list[str]:
+    """Test files with a failure in pytest's last-failed cache that the full Stage-1 run collects.
+
+    By file, not node id: a node id that does not collect at Stage 1 (a Stage-2
+    parameter, a test renamed since) makes pytest exit 4, and other suites
+    (``tests/e2e/``, ``benchmarks/``) write the same cache.
+    """
     try:
         data = json.loads((root / ".pytest_cache/v/cache/lastfailed").read_text(encoding="utf-8"))
     except (OSError, ValueError):
         return []
-    return sorted(n for n in data if (root / n.split("::", 1)[0]).exists())
+    files = {n.split("::", 1)[0] for n in data}
+    return sorted(f for f in files if _is_test_file(f) and not f.startswith(E2E) and (root / f).is_file())
 
 
 def pytest_commands(sel: Selection, serial: bool, junit: Path | None = None) -> list[list[str]]:
@@ -697,7 +716,6 @@ def pytest_commands(sel: Selection, serial: bool, junit: Path | None = None) -> 
         return [base]
     cmds = []
     plain = sorted(sel.targets)
-    plain += [n for n in sel.node_ids if not any(n.startswith(t) for t in plain)]
     if plain:
         cmds.append([*base, *plain])
     if sel.conformance_ids and not any(CONFORMANCE.startswith(t) for t in sel.targets):
@@ -728,8 +746,6 @@ def _print_plan(
             print(f"  {t}  <- {r}")
         if sel.conformance_ids:
             print(f"  {CONFORMANCE} -k {' or '.join(sorted(sel.conformance_ids))}")
-        for n in sel.node_ids:
-            print(f"  {n}  <- failed last run")
     skipped = [s for s in STEP_ORDER if s not in steps]
     print(f"fast-gate: run {', '.join(steps)}" + (f"; skip {', '.join(skipped)}" if skipped else ""))
 
@@ -772,7 +788,8 @@ def main(argv: list[str] | None = None, root: Path = ROOT) -> int:
         repo = Repo.from_disk(root)
         sel = select_tests(repo, changes, keys)
         if not sel.full and not sel.empty:
-            sel.node_ids = last_failed(root)
+            for f in last_failed(root):
+                sel.add(f, f"{f}: failed last run")
         steps = plan_steps(paths, sel)
         if "tests" in steps and not sel.full:
             selected_seconds, suite = estimate(sel, load_durations(root), suite_files(repo))
