@@ -222,6 +222,13 @@ def test_markdown_under_tests_is_docs_not_test_data(repo) -> None:
     assert "tests/backends/s3/" in _select(repo, "tests/backends/s3/data.json").targets
 
 
+def test_nested_fixture_data_selects_the_nearest_folder_with_tests(repo) -> None:
+    # tests/scripts/fixtures/<x>/ holds no test file; its readers live in tests/scripts/.
+    assert set(_select(repo, "tests/scripts/fixtures/record_decision/live-pre.json").targets) == {"tests/scripts/"}
+    # The same rule serves a helper module nothing imports statically.
+    assert set(_select(repo, "tests/scripts/fixtures/gen_helper.py").targets) == {"tests/scripts/"}
+
+
 def test_docs_specs_and_ci_files_select_tooling_tests_only(repo) -> None:
     sel = _select(repo, "sdd/BACKLOG.md", "docs-src/index.md", ".github/workflows/ci.yml", "scripts/x.py")
     assert not sel.full
@@ -295,11 +302,13 @@ def test_empty_selection_skips_the_test_member() -> None:
     assert "tests" not in fg.plan_steps(["x.md"], fg.Selection())
 
 
-def test_conformance_ids_run_as_their_own_invocation() -> None:
+def test_conformance_ids_run_as_their_own_invocation(tmp_path: Path) -> None:
+    (tmp_path / "tests").mkdir()
+    (tmp_path / "tests" / "test_a.py").write_text("", encoding="utf-8")
     sel = fg.Selection()
     sel.add("tests/test_a.py", "r")
     sel.add_ids({"local", "s3_moto"}, "r")
-    cmds = fg.pytest_commands(sel, serial=True)
+    cmds = fg.pytest_commands(sel, serial=True, root=tmp_path)
     assert len(cmds) == 2
     assert cmds[0][-1] == "tests/test_a.py"
     assert cmds[0][cmds[0].index("-n") + 1] == "0"
@@ -416,7 +425,7 @@ def test_local_durations_override_ci_ones_and_merge_across_runs(git_repo: Path) 
 class _Members:
     """Stands in for every member command; git still runs for real."""
 
-    def __init__(self, monkeypatch: pytest.MonkeyPatch, fail: str | None = None) -> None:
+    def __init__(self, monkeypatch: pytest.MonkeyPatch, fail: str | None = None, tests_exit: int | None = None) -> None:
         self.calls: list[list[str]] = []
         real = subprocess.run
 
@@ -424,6 +433,8 @@ class _Members:
             if cmd[0] == "git":
                 return real(cmd, *args, **kwargs)
             self.calls.append(list(cmd))
+            if tests_exit is not None and cmd[0] != "hatch":
+                return subprocess.CompletedProcess(cmd, tests_exit)
             return subprocess.CompletedProcess(cmd, 1 if fail is not None and fail in cmd else 0)
 
         monkeypatch.setattr(fg.subprocess, "run", run)
@@ -535,6 +546,52 @@ def test_last_failed_files_join_the_selection_only_when_the_full_run_collects_th
     assert fg.main([], git_repo) == 0
     [cmd] = _test_commands(members)
     assert [a for a in cmd if a.startswith(("tests/", "benchmarks/"))] == ["tests/test_a.py", "tests/test_b.py"]
+
+
+def test_selected_run_collecting_nothing_passes_and_records_green(git_repo: Path, monkeypatch) -> None:
+    # A file whose every test is marked live collects nothing at Stage 1: pytest exits 5.
+    _suite_repo(git_repo)
+    (git_repo / "tests" / "test_a.py").write_text("def test_x(): assert 1\n", encoding="utf-8")
+    _Members(monkeypatch, tests_exit=5)
+    assert fg.main([], git_repo) == 0
+    assert fg.green_tree(git_repo) == fg.worktree_tree(git_repo)
+
+
+def test_full_run_collecting_nothing_still_fails(git_repo: Path, monkeypatch) -> None:
+    _suite_repo(git_repo)
+    _Members(monkeypatch, tests_exit=5)
+    assert fg.main(["--full"], git_repo) == 5
+
+
+def test_targets_that_no_longer_exist_are_dropped(tmp_path: Path) -> None:
+    # A missing path is a pytest usage error (exit 4); a moved test directory must not cause one.
+    (tmp_path / "tests" / "kept").mkdir(parents=True)
+    sel = fg.Selection()
+    sel.add("tests/kept/", "r")
+    sel.add("tests/moved/", "r")
+    [cmd] = fg.pytest_commands(sel, serial=True, root=tmp_path)
+    assert [a for a in cmd if a.startswith("tests/")] == ["tests/kept/"]
+    gone = fg.Selection()
+    gone.add("tests/moved/", "r")
+    assert fg.pytest_commands(gone, serial=True, root=tmp_path) == []
+
+
+def test_first_run_without_a_record_diffs_against_the_merge_base(git_repo: Path, monkeypatch, capsys) -> None:
+    _git(git_repo, "branch", "-M", "master")
+    (git_repo / "notes.md").write_text("x\n", encoding="utf-8")
+    _Members(monkeypatch)
+    assert fg.main(["--plan"], git_repo) == 0
+    out = capsys.readouterr().out
+    assert "since the merge base with master" in out
+    assert "A notes.md" in out
+
+
+def test_first_run_with_no_base_at_all_runs_everything(git_repo: Path, monkeypatch, capsys) -> None:
+    _git(git_repo, "branch", "-M", "trunk")  # neither origin/master nor master exists
+    members = _Members(monkeypatch)
+    assert fg.main([], git_repo) == 0
+    assert "no base found" in capsys.readouterr().out
+    assert members.members == list(fg.STEP_ORDER)
 
 
 def test_main_with_base_never_records_green(git_repo: Path, monkeypatch) -> None:

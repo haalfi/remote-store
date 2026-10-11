@@ -85,7 +85,7 @@ def evaluate(base: str, head: str, durations: dict[str, float], total: float) ->
     steps = fg.plan_steps(paths, sel)
     share = 0.0
     if "tests" in steps:
-        test_files = [f for f in repo.files if fg._is_test_file(f)]
+        test_files = fg.suite_files(repo)
         if sel.full:
             share = 1.0
         else:

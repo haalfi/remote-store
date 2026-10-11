@@ -24,8 +24,8 @@ full gate runs on every PR push and catches them one round later.
 
 | Unit | Units | Full suite | Median modelled gate | Sum vs `all` every time |
 | --- | --- | --- | --- | --- |
-| One gate run per commit | 1,099 | 91 (8.3%) | 66.8 s | 39.9% |
-| One gate run per PR (Phase 0's unit) | 155 | 37 (23.9%) | 68.1 s | 50.6% |
+| One gate run per commit | 1,099 | 91 (8.3%) | 66.9 s | 39.9% |
+| One gate run per PR (Phase 0's unit) | 155 | 37 (23.9%) | 68.2 s | 50.7% |
 
 Derivation: `replay.py 2026-08-09 results/replay.jsonl` over the 155 PRs merged
 since 2026-08-09 (`gh pr list --search "merged:>=2026-08-09"`), their branch

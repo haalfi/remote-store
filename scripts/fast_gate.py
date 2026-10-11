@@ -46,6 +46,8 @@ Usage::
     hatch run fast --base <rev>    # diff against a revision instead; records no green run
 
 ``RS_FAST_GATE=full`` forces ``--full``. Exit code: the first failing member's.
+A selected test run that collects nothing (pytest exit 5, e.g. a file marked
+``live``) does not fail; a full run that collects nothing does.
 """
 
 from __future__ import annotations
@@ -77,6 +79,8 @@ CUTOFF = 0.5
 # Below this many summed test seconds a selection runs in one process: starting
 # xdist workers, each collecting its own copy of the selection, costs more.
 SERIAL_BELOW_SECONDS = 20.0
+# pytest's exit code when it collected nothing (ExitCode.NO_TESTS_COLLECTED).
+NO_TESTS_COLLECTED = 5
 DURATIONS_NAME = "rs-fast-gate-durations.json"
 JUNIT_NAME = "rs-fast-gate-junit.xml"
 
@@ -280,6 +284,18 @@ def _is_test_file(p: str) -> bool:
     return p.startswith("tests/") and p.rsplit("/", 1)[-1].startswith("test_") and p.endswith(".py")
 
 
+def nearest_test_dir(repo: Repo, path: str) -> str:
+    """The closest folder above ``path`` that holds a test file, ``tests/`` at worst.
+
+    A fixture folder (``tests/scripts/fixtures/<x>/``) holds no test; its
+    readers sit in a folder above it, and an empty selection collects nothing.
+    """
+    d = path.rsplit("/", 1)[0]
+    while d != "tests" and not any(_is_test_file(f) and f.startswith(d + "/") for f in repo.files):
+        d = d.rsplit("/", 1)[0]
+    return d + "/"
+
+
 def suite_files(repo: Repo) -> list[str]:
     """The test files the full Stage-1 run collects: every test file outside ``tests/e2e/``."""
     return [f for f in repo.files if _is_test_file(f) and not f.startswith(E2E)]
@@ -444,14 +460,14 @@ def select_tests(repo: Repo, changes: list[tuple[str, str]], pyproject_keys: set
             add_dependents(p, f"{p}: imports it")
         elif p.startswith("tests/") and p.endswith(".py"):
             if add_dependents(p, f"{p}: imports it") == 0:
-                sel.add(p.rsplit("/", 1)[0] + "/", f"{p}: helper with no static importer")
+                sel.add(nearest_test_dir(repo, p), f"{p}: helper with no static importer")
         elif p.startswith("examples/"):
             for t in EXAMPLE_TESTS:
                 sel.add(t, f"{p}: example")
             sel.add(SCRIPTS_TESTS, f"{p}: tests/scripts reads examples/")
         elif p.startswith("tests/") and not p.endswith(".md"):
-            # Data files read by tests: their directory's tests. A README is docs (next rule).
-            sel.add(p.rsplit("/", 1)[0] + "/", f"{p}: test data")
+            # Data files read by tests: the nearest folder holding tests. A README is docs (next rule).
+            sel.add(nearest_test_dir(repo, p), f"{p}: test data")
         else:
             if p.startswith(DAFNY_ORACLE_DIR):
                 add_backends({"dafny"} & repo.backend_sources.keys(), f"{p}: compiled Dafny oracle")
@@ -705,8 +721,12 @@ def last_failed(root: Path = ROOT) -> list[str]:
     return sorted(f for f in files if _is_test_file(f) and not f.startswith(E2E) and (root / f).is_file())
 
 
-def pytest_commands(sel: Selection, serial: bool, junit: Path | None = None) -> list[list[str]]:
-    """Launcher invocations for the selection; conformance by fixture id runs separately, as ``-k`` is global."""
+def pytest_commands(sel: Selection, serial: bool, junit: Path | None = None, root: Path = ROOT) -> list[list[str]]:
+    """Launcher invocations for the selection; conformance by fixture id runs separately, as ``-k`` is global.
+
+    A target that no longer exists (a test directory moved since the last green
+    run) is dropped: pytest answers a missing path with a usage error, exit 4.
+    """
     base = [sys.executable, "scripts/run_tests.py", "-p", "no:benchmark", "--stage=1"]
     if serial:
         base += ["-n", "0"]
@@ -715,7 +735,7 @@ def pytest_commands(sel: Selection, serial: bool, junit: Path | None = None) -> 
     if sel.full:
         return [base]
     cmds = []
-    plain = sorted(sel.targets)
+    plain = sorted(t for t in sel.targets if (root / t).exists())
     if plain:
         cmds.append([*base, *plain])
     if sel.conformance_ids and not any(CONFORMANCE.startswith(t) for t in sel.targets):
@@ -805,13 +825,17 @@ def main(argv: list[str] | None = None, root: Path = ROOT) -> int:
     for step in STEP_ORDER:
         if step not in steps:
             continue
-        cmds = pytest_commands(sel, serial, junit) if step == "tests" else [["hatch", "run", step]]
+        cmds = pytest_commands(sel, serial, junit, root) if step == "tests" else [["hatch", "run", step]]
         for cmd in cmds:
             print(f"fast-gate: {step}: {' '.join(cmd)}", flush=True)
             junit.unlink(missing_ok=True)
             rc = subprocess.run(cmd, cwd=root, check=False).returncode
             if step == "tests":
                 record_durations(junit, root)
+                if rc == NO_TESTS_COLLECTED and not sel.full:
+                    # A selection whose every test is deselected (a file marked `live`) has nothing to fail.
+                    print("fast-gate: tests: the selection collected no test at Stage 1.", flush=True)
+                    rc = 0
             if rc != 0:
                 print(f"fast-gate: {step} failed (exit {rc}); later members not run.", flush=True)
                 return rc
