@@ -27,6 +27,8 @@ Tracked as **BK-403**, with the design for BK-404 (local target) and ID-266
 rather than a PR's whole diff
 ([report](../research/bk-403-fast-gate/report.md)). Its local part supersedes
 this RFC's; the CI lane (ID-266) stays open, and D5's rules are not what ships.
+**2026-10-11, BK-408:** Phases 2 and 3 now exit on net time saved, not zero
+escapes (§ Roadmap); Phase 0's row is kept as run.
 
 *Superseded framing:* this RFC sought approval for Phase 0 and a limited local
 pilot, and treated the target architecture below as the direction rather than a
@@ -633,9 +635,10 @@ none of which selects anything.**
     - failure in a job the selector does not represent;
     - failure only the full coverage gate finds.
 
-    Zero-escape exit criteria count only deterministic, selector-reachable
-    escapes (the first two classes). The others are reported, and routed to
-    their own owners.
+    Phase 0's zero-miss exit counts, and the Phase 2 and 3 exits (§ Roadmap)
+    cost against the time the selection saves, only deterministic,
+    selector-reachable escapes (the first two classes). The others are
+    reported, and routed to their own owners.
 
     **A class other than the first two needs evidence**, or a judgment call
     could argue a real miss away:
@@ -717,9 +720,35 @@ The targets for these are written into the Phase 0 plan before the run.
 | --- | --- | --- | --- |
 | **0. Validate** | Decide whether to build, from evidence | Throwaway selector under `sdd/research/` with the pilot rule set, and the precision layers prototyped beside it; extended text-reader inventory; seed run through the PoC driver; replay of historical PR diffs and of past red CI runs, including auxiliary jobs; the metrics above for both rule sets; the core-module list derived (every-backend modules plus modules with import-time effects) | The text-reader table passes D5 layer 4's two-method agreement (runtime union across default and randomised order, plus the static scan including subprocess targets); 0 seed misses, every seed's pinned mode met, and 0 deterministic, selector-reachable historical misses; the saving meets its predefined target. **Stop is judged on the precision rule set**, the target design, if typical diffs still fall back to FULL or select close to the full suite under it. The pilot narrows no `src/` edit by construction (D5), so its fallback rate is reported, not used to stop |
 | **1. Pilot** | Production selector with the pilot rule set, local only | ADR for the local part; selector (stdlib only) with the pilot rows, fixture allowlist, per-job flags and structured output; registry allowlist; seed and mapping-completeness unit tests; local fast target. BK-404 stays open until its skill edits land (Open Questions 4) | Seeds and the mapping test green in CI; the fallback rate recorded from the first real rounds |
-| **2. Shape** | Use the pilot, then add precision | Fast target used for real rounds; escape log against the later full result, classified; the D7 coverage cross-check as a scheduled `ci-full.yml` job; then layer 2 (hubs, import-time scan, registry consumers), transitive layer 3 and notebook parsing, each added only after the cross-check job is in place and reports no gap | A pilot length fixed beforehand with 0 deterministic, selector-reachable escapes; each precision layer kept only if it lowers the measured share without a cross-check gap; cut-off set by measurement |
-| **3. CI shadow** | Validate the CI lane without risk | Fast lane computes and logs its selection while the full lane still runs on every push; escapes compared and classified automatically; fallback rate reported | A shadow period fixed beforehand with 0 deterministic, selector-reachable escapes; time saved and fallback rate measured |
+| **2. Shape** | Use the pilot, then add precision | Fast target used for real rounds; escape log against the later full result, classified; the D7 coverage cross-check as a scheduled `ci-full.yml` job; then layer 2 (hubs, import-time scan, registry consumers), transitive layer 3 and notebook parsing, each added only after the cross-check job is in place and reports no gap | A pilot length fixed beforehand, judged on net time saved (below); each precision layer kept only if it lowers the measured share without a cross-check gap; cut-off set by measurement |
+| **3. CI shadow** | Validate the CI lane without risk | Fast lane computes and logs its selection while the full lane still runs on every push; escapes compared and classified automatically; fallback rate reported | A shadow period fixed beforehand, judged on net time saved (below) |
 | **4. Finalize** | Switch it on and make it maintainable | ADR amending ADR-0043; `ci.yml` triggers, label clearing, `gate-fast`, `merge-gate` status; the single-poster lint check; branch protection moved to `merge-gate` with the Actions app as expected source; classifier migration with a history replay proving identical class outputs; runbook in `sdd/CI-OPERATIONS.md`; BK-403 closed. ID-266 stays open until its skill edits land (Open Questions 4) | Every row of D2's status-lifecycle table verified on a real PR |
+
+**Phases 2 and 3 exit on net time saved, not on zero escapes.** The fast lane
+is not the merge barrier: D1 and D2 put the full run on the merge head, so an
+escape costs a later red full run and its fix, not a defect on `master`. A zero
+bar fits a barrier; meeting it is what D5's import graph and reader inventory
+are for, and a lane that may miss needs neither
+([bucket rules § Accepted misses](../research/bk-403-phase-0/bucket-rules.md#accepted-misses)).
+Both criteria are fixed in the phase's plan before it starts, as Phase 0's
+targets were:
+
+- **Saving:** the median estimated wall-clock share over every unit in the
+  period, a FULL fallback counted as 100%, meets the plan's target. A median
+  over selected units alone would pass by construction under the cut-off.
+- **Net of escapes:** the deterministic, selector-reachable escapes (D7.4),
+  each at the cost the plan sets, sum to less than the time the selection
+  saved over the same units. Where a full run still follows every push, as
+  for Phase 2 while CI runs the full gate per push, an escape shows one round
+  later and costs one extra full run. Phase 3 shadows the switched-on lane,
+  where the full run comes only at `merge-candidate` (D1; Open Questions 5),
+  so its plan prices an escape as found at the close: at least a fix pass, its
+  re-review and another full run.
+
+Phase 0's row keeps the zero-miss exit it was run and stopped against. The
+bar follows the local gate's
+([report](../research/bk-403-fast-gate/report.md)) and the bucket rules'
+([§ Next step](../research/bk-403-phase-0/bucket-rules.md#next-step)).
 
 The selection-free speedups (BUG-301, BK-401, BK-400) are a separate track.
 They make the full lane cheaper, which every PR still passes at least once.

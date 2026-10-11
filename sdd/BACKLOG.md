@@ -926,13 +926,6 @@ coverage floor.
   BUG-315, `CODE_PAT` covers `infra/*.py` only. Not in BUG-306's list, which is
   files `tests/scripts/` reads. Open decision: which class, at what CI cost.
 
-- [ ] **BK-408 — RFC-0019 judges its fast lane by merge-gate exit criteria, so a redrafted selector must reach zero escapes**
-  spec: — · effort: S · audience: contributor.process, infra.test
-  RFC-0019 § Roadmap exits Phases 0, 2 and 3 on "0 deterministic, selector-reachable"
-  misses or escapes, yet D1–D2 make the merge-head full gate the barrier. That bar pushed D5 to an
-  import graph and reader inventory; the [bucket rules](research/bk-403-phase-0/bucket-rules.md)
-  judge on net time saved instead. Open decision: amend those exits before RFC-0019 is redrafted.
-
 - [ ] **ID-266 — Every in-progress PR push runs the full pre-merge CI gate**
   spec: — · effort: L · audience: infra.ci, contributor.process
   `ci.yml` runs the whole gate on every PR push, including each `/ship` round

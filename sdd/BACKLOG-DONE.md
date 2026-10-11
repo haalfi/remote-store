@@ -298,6 +298,15 @@ if evidence changes; these are retired.
 
 ## Unreleased
 
+- [x] **BK-408 — RFC-0019 judges its fast lane by merge-gate exit criteria, so a redrafted selector must reach zero escapes**
+  spec: — · effort: S · audience: contributor.process, infra.test
+  RFC-0019 § Roadmap now exits Phases 2 and 3 on net time saved: a saving
+  target fixed in the phase plan, and deterministic, selector-reachable escapes
+  below the time saved, each priced by when it surfaces: one full run in
+  Phase 2, a close-time fix and full run in Phase 3. The merge-head full gate
+  stays the barrier (D1, D2). Phase 0's zero-miss row is kept as run. Trace:
+  [bk-408](traces/bk-408-rfc-0019-exit-criteria.yml).
+
 - [x] **BK-403 — No change-scoped test selector has been chosen for this suite; one of three candidates is measured**
   spec: — · effort: M · audience: infra.test, contributor.tooling
   Chosen and built: `scripts/fast_gate.py` selects against the last green
