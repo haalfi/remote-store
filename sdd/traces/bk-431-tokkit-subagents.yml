@@ -1,0 +1,60 @@
+id: BK-431
+title: "The token kit splits each subagent's context, so a review pass can be measured"
+trigger: >-
+  PR #1125 measured its review subagents with session-scratch scripts that
+  hard-coded paths and IDs; order step 2 of the token-spend roadmap needs the
+  same measurement from the committed kit.
+source_items:
+  - BK-431
+audience:
+  - contributor.tooling
+decisions:
+  - sdd/decisions/c09288d7-a16e-487a-afcc-be52197f7119.jsonl
+orient:
+  - items: [BK-366, BUG-318]
+    verdict: unrelated
+    evidence: >-
+      `hatch run backlog-find "token-usage" --dossiers` finds them through
+      other scripts in the folder (ship_era.py, delete_pending_probe.py) whose
+      results they cite; neither uses tokkit.py, and `backlog-find "tokkit"
+      --dossiers` matches no dossier.
+phases:
+  - id: implement
+    name: Implement
+    steps:
+      - file: sdd/research/token-usage/tokkit.py
+        section: "module docstring; norm_path; parse_file; carried; pr_created; main"
+        read_type: reference
+        extract: >-
+          Subcommands share the snapshot and the PR lookup cached in it;
+          carried() already gives per-item carried tokens. norm_path filed a
+          relative path (tmp/oldskill/...) as <outside>, which hid a side
+          checkout's reads from any class.
+        outcome: ok
+      - file: tests/scripts/test_tokkit.py
+        section: "fixtures; TestPrCreation"
+        read_type: reference
+        extract: >-
+          Synthetic transcripts under tmp_path and a monkeypatched
+          default_transcripts; gh is faked through subprocess.run.
+        outcome: ok
+      - file: "(run) tokkit.py subagents on session c09288d7, --pr 1125"
+        section: "the eight A/B review passes of PR #1125"
+        read_type: verify
+        extract: >-
+          Units and calls match the scratch scripts' figures for seven passes.
+          Round 4's old pass reads 22 calls and 459,441 units against the 21
+          and 437,882 recorded in bk-431-scoped-reviewer-input, which had read
+          its transcript before the pass finished; that trace and the
+          roadmap are corrected. Old passes carry 10.5 to 12.7% process
+          files (master's rvw-pr read as instructions from a side checkout),
+          new passes 0.6 to 2.6% (their rvw-pr is the PR's, counted as pr).
+        outcome: ok
+      - file: tests/scripts/test_tokkit.py
+        section: "TestNormPath; TestSubClass; TestSubagents"
+        read_type: verify
+        extract: >-
+          Mutations seen failing: filing every non-checkout path as outside
+          failed three TestNormPath cases; counting a side checkout's copy of
+          a changed file as the PR failed two TestSubClass cases.
+        outcome: ok

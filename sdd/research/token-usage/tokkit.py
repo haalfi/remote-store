@@ -3,6 +3,7 @@
     python tokkit.py find   [--since ISO]            # list candidate sessions
     python tokkit.py live   --session SID [--every N] # one line per event while it runs
     python tokkit.py report --session SID [--pr N] [--md OUT]  # snapshot + full analysis
+    python tokkit.py subagents --session SID [--pr N] [--agent ID] [--calls]  # per subagent
 
 The session may live in any of the transcript folders
 ``_common.default_transcripts`` finds for ``--repo-root`` (a ``/ship``
@@ -21,6 +22,17 @@ read once with ``gh`` and cached as ``pr-<N>.json`` in the snapshot. Without
 Code's ``pr-link`` records are listed as events only: it links a session by
 branch name, so a reused branch name links another PR. The report lists review
 rounds by the subagents each round spawned.
+
+``subagents`` splits each subagent of the session (``--agent`` keeps those whose
+ID contains the given text) into calls, first-call context, final context, units
+and what its carried context is made of: the prefix, process files (``.claude/``,
+``CLAUDE.md``, the ``sdd/`` authority docs, ADRs, the trace schema, and the
+``ref-*``/``backlog-*`` lookups), the PR (its changed files, read from ``gh`` once
+and cached as ``pr-<N>-files.json``, and ``gh pr``/``gh api``/``git diff``
+output), spilled outputs read back, other reads, searches, other Bash, and the
+rest. The classes are this kit's reading of a path, not Claude Code's. ``--calls``
+also lists each subagent's tool calls in order with their result size, which is
+how BK-431 explained why two review passes found different defects.
 """
 
 from __future__ import annotations
@@ -132,7 +144,10 @@ def norm_path(p: str) -> str:
     if re.search(r"Temp/claude", p):
         return "<scratch>"
     m = re.search(rf"{re.escape(ARGS.repo_root.name)}(?:/\.claude/worktrees/[^/]+)?/(.*)$", p)
-    p = m.group(1) if m else "<outside>/" + p[-50:]
+    if m:
+        p = m.group(1)
+    elif re.match(r"^([A-Za-z]:|/|~)", p):  # a relative path is already relative to the checkout
+        p = "<outside>/" + p[-50:]
     m = re.match(r"tmp/review/[0-9a-f]+/(.*)", p)
     return ("<review-snapshot>/" + m.group(1)) if m else p
 
@@ -600,6 +615,146 @@ def cmd_report(args):
         cm.write_result(Path(args.json).parent, Path(args.json).stem, "tokkit", {"main transcript": main}, summary)
 
 
+# ----------------------------------------------------------------- subagents
+_PROCESS_FILES = re.compile(
+    r"^(\.claude/|CLAUDE\.md$|CONTRIBUTING\.md$|sdd/(adrs/|traces/_schema\.yml$|[0-9A-Z][\w-]*\.md$))"
+)
+SUB_CLASSES = ("prefix", "process", "pr", "spilled", "read", "search", "bash", "other")
+
+
+def pr_files(number: int, dest: Path) -> set[str]:
+    """The PR's changed paths from GitHub, cached as ``pr-<N>-files.json`` in the snapshot."""
+    cache = dest / f"pr-{number}-files.json"
+    if not cache.exists():
+        out = subprocess.run(
+            ["gh", "pr", "view", str(number), "--json", "files"],
+            capture_output=True,
+            text=True,
+            check=True,
+            cwd=ARGS.repo_root,
+        ).stdout
+        cache.write_text(out, encoding="utf-8")
+    return {f["path"] for f in json.loads(cache.read_text(encoding="utf-8"))["files"]}
+
+
+def sub_class(kind: str, detail: str, changed: set[str]) -> str:
+    """Which part of a subagent's carried context one item is (see the module docstring)."""
+    # A review worktree holds the PR's head; another checkout under tmp/ (a base worktree,
+    # an old skill copy) holds the same paths at another commit, so it is never the PR.
+    path = detail.removesuffix(" [spilled]")
+    head = path.removeprefix("<review-snapshot>/")
+    side = re.sub(r"^tmp/[\w.-]+/", "", path) if path.startswith("tmp/") else None
+    if kind == "result:Read":
+        if path.startswith("<tool-results>"):
+            return "spilled"
+        if side is None and head in changed:
+            return "pr"
+        return "process" if _PROCESS_FILES.match(side or head) else "read"
+    if kind in ("result:Bash", "result:PowerShell"):
+        if detail.startswith(("gh pr", "gh api", "git diff")):
+            return "pr"
+        if detail.startswith(("hatch run ref-", "hatch run backlog-")):
+            return "process"
+        return "bash"
+    if kind in ("result:Grep", "result:Glob"):
+        return "search"
+    if kind == "user_meta" and detail.startswith("skill-body:"):
+        return "process"
+    return "other"
+
+
+def tool_calls(path: Path) -> list[dict]:
+    """A transcript's tool calls in order: tool, target and result size in characters."""
+    uses, sizes, order = {}, {}, []
+    for line in path.read_text(encoding="utf-8", errors="replace").splitlines():
+        try:
+            r = json.loads(line)
+        except json.JSONDecodeError:
+            continue
+        m = r.get("message")
+        if not isinstance(m, dict) or not isinstance(m.get("content"), list):
+            continue
+        for b in m["content"]:
+            if not isinstance(b, dict):
+                continue
+            if b.get("type") == "tool_use":
+                raw = b.get("input")
+                inp: dict = raw if isinstance(raw, dict) else {}
+                name, det = tool_label(b.get("name", "?"), inp)
+                if name == "Read" and (inp.get("offset") or inp.get("limit")):
+                    det += f" [{inp.get('offset', 0)}+{inp.get('limit', '')}]"
+                if name in ("Grep", "Glob") and inp.get("path"):
+                    det += f" @ {norm_path(inp['path'])}"
+                uses[b.get("id")] = (name, det)
+                order.append(b.get("id"))
+            elif b.get("type") == "tool_result":
+                sizes[b.get("tool_use_id")] = chars(b.get("content"))
+    return [{"tool": uses[t][0], "target": uses[t][1], "result_chars": sizes.get(t, 0)} for t in order]
+
+
+def cmd_subagents(args):
+    main = locate(args.session)
+    dest = snapshot(main)
+    changed = pr_files(args.pr, dest) if args.pr else set()
+    rows = []
+    for f in transcript_files(main)[1:]:
+        if args.agent and not any(a in f.stem for a in args.agent):
+            continue
+        calls, items, _ = parse_file(f)
+        if not calls:
+            continue
+        meta = f.with_name(f.stem + ".meta.json")
+        meta = json.loads(meta.read_text(encoding="utf-8")) if meta.exists() else {}
+        sumctx = sum(c["ctx"] for c in calls)
+        out, det = carried(calls, items)
+        split = collections.Counter({"prefix": calls[0]["ctx"] * len(calls)})
+        for (kind, d), v in det.items():
+            split[sub_class(kind, d, changed)] += v
+        split["other"] += out["thinking (hidden)"]
+        rows.append(
+            {
+                "agent": f.stem.removeprefix("agent-"),
+                "type": meta.get("agentType", "?"),
+                "description": meta.get("description", ""),
+                "calls": len(calls),
+                "first_ctx": calls[0]["ctx"],
+                "final_ctx": calls[-1]["ctx"],
+                "units": round(sum(c["units"] for c in calls)),
+                "context_pct": {k: round(split[k] / sumctx * 100, 1) for k in SUB_CLASSES},
+                **({"tool_calls": tool_calls(f)} if args.calls else {}),
+            }
+        )
+    lines = [f"# Subagents of session {main.stem}\n"]
+    if args.pr:
+        lines.append(f"PR #{args.pr}: {len(changed)} changed files count as `pr`.\n")
+    lines.append(
+        "| Agent | Type | Description | Calls | First ctx | Final ctx | Units | "
+        + " | ".join(SUB_CLASSES)
+        + " |\n| --- | --- | --- | ---: | ---: | ---: | ---: | "
+        + " | ".join("---:" for _ in SUB_CLASSES)
+        + " |"
+    )
+    for r in rows:
+        lines.append(
+            f"| {r['agent'][:12]} | {r['type']} | {r['description'][:40]} | {r['calls']} | {r['first_ctx']:,} | "
+            f"{r['final_ctx']:,} | {r['units']:,} | "
+            + " | ".join(f"{r['context_pct'][k]}%" for k in SUB_CLASSES)
+            + " |"
+        )
+    for r in rows if args.calls else []:
+        lines.append(f"\n## {r['agent']} ({r['type']}): {r['description']}\n")
+        lines += [
+            f"{i:3} {c['tool']:6} {c['result_chars']:8,}c  {c['target']}" for i, c in enumerate(r["tool_calls"], 1)
+        ]
+    text = "\n".join(lines)
+    print(text)
+    if args.json:
+        Path(args.json).parent.mkdir(parents=True, exist_ok=True)
+        Path(args.json).write_text(
+            json.dumps({"session": main.stem, "pr": args.pr, "subagents": rows}), encoding="utf-8"
+        )
+
+
 def rounds_of(mc, me, files, parsed):
     """Review rounds as the main-session calls that spawned subagents, with what each round cost.
 
@@ -675,11 +830,17 @@ def main(argv=None):
     rp.add_argument(
         "--pr", type=int, default=None, help="the PR the session opened: its createdAt starts the review loop"
     )
+    sa = sp.add_parser("subagents")
+    sa.add_argument("--session", required=True)
+    sa.add_argument("--pr", type=int, default=None, help="the reviewed PR: its changed files count as `pr`")
+    sa.add_argument("--agent", action="append", default=None, help="keep subagents whose ID contains this; repeatable")
+    sa.add_argument("--calls", action="store_true", help="also list each subagent's tool calls in order")
+    sa.add_argument("--json", default=None, help="also write the rows to this .json path")
     args = ap.parse_args(argv)
     args.repo_root = args.repo_root.resolve()
     args.snapshots = args.snapshots or args.repo_root / "tmp" / "token-kit" / "runs"
     ARGS = args
-    {"find": cmd_find, "live": cmd_live, "report": cmd_report}[args.cmd](args)
+    {"find": cmd_find, "live": cmd_live, "report": cmd_report, "subagents": cmd_subagents}[args.cmd](args)
 
 
 if __name__ == "__main__":
