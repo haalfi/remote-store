@@ -98,12 +98,11 @@ the selector, whose base is a local record CI does not have, is open.
 Whichever it is, BK-408 set the bar its shadow phase meets: net time saved,
 not zero escapes (RFC-0019 § Roadmap).
 
-**Parked on measurement (2026-10-11).** Over 2026-07-11 to 2026-10-11 a fast
-lane could have saved at most 2.9 h, against 7.5 h of waiting at merge that
-it leaves in place
-([report](../research/id-266-ci-wait/report.md)). Re-measure on 2027-01-11
-with the report's scripts; its § Revisit says when to reopen and when to
-decide against.
+**Measured (2026-10-11).** Over 2026-07-11 to 2026-10-11 a fast lane could
+have saved at most 8.7 h of waiting on in-progress runs, before its own run
+time and the escapes it moves to the close; it leaves 7.5 h of waiting at
+merge in place ([report](../research/id-266-ci-wait/report.md)). The report's
+scripts re-measure any later window.
 
 **Open decision for the ADR:** the primary leg's tier in the fast lane
 (RFC-0019 Open Questions 1; the draft-lane wording below predates it).

@@ -1,8 +1,9 @@
-"""Fetch every ``ci.yml`` pull_request run and every merged PR as JSON.
+"""Fetch every ``ci.yml`` pull_request run, every merged PR and, for PRs merged
+since a date, each comment, review reply and review as JSON.
 
 Throwaway research (ID-266). Needs an authenticated ``gh``.
 
-Usage: python sdd/research/id-266-ci-wait/fetch.py tmp/ci-wait
+Usage: python sdd/research/id-266-ci-wait/fetch.py tmp/ci-wait 2026-07-11
 """
 
 import json
@@ -19,7 +20,7 @@ def gh_json(args: list[str]):
 
 
 def main() -> None:
-    outdir = Path(sys.argv[1])
+    outdir, since = Path(sys.argv[1]), sys.argv[2]
     outdir.mkdir(parents=True, exist_ok=True)
     # The runs endpoint caps each query at 1000 results, so walk back in time
     # with created=<oldest until a window comes back short.
@@ -55,7 +56,24 @@ def main() -> None:
         ["pr", "list", "-R", REPO, "--state", "merged", "--limit", "5000", "--json", "number,headRefName,mergedAt"]
     )
     (outdir / "prs.json").write_text(json.dumps(prs, indent=1), encoding="utf-8")
-    print(f"runs={len(keep)} merged_prs={len(prs)}")
+    # PR activity a session leaves after reading CI: /ship replies to threads
+    # after its CI check, before the next push (ship SKILL § Close each round).
+    activity: list = []
+    for p in prs:
+        if p["mergedAt"] < since:
+            continue
+        n = p["number"]
+        for kind, path, key in (
+            ("comment", f"repos/{REPO}/issues/{n}/comments", "created_at"),
+            ("reply", f"repos/{REPO}/pulls/{n}/comments", "created_at"),
+            ("review", f"repos/{REPO}/pulls/{n}/reviews", "submitted_at"),
+        ):
+            for page in gh_json(["api", "--paginate", "--slurp", f"{path}?per_page=100"]):
+                for c in page:
+                    if c.get(key) and not c["user"]["login"].endswith("[bot]"):
+                        activity.append({"branch": p["headRefName"], "kind": kind, "at": c[key]})
+    (outdir / "activity.json").write_text(json.dumps(activity, indent=1), encoding="utf-8")
+    print(f"runs={len(keep)} merged_prs={len(prs)} activity={len(activity)}")
 
 
 if __name__ == "__main__":
