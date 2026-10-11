@@ -306,7 +306,7 @@ reason in § 4: it saved no round.
 "never" are where the scope findings come from; principle 9 already makes a
 figure name its derivation before it is written, and the same order would
 remove the cases the next round would otherwise list
-([BK-423](../BACKLOG-DONE.md)).
+([BK-423](../BACKLOG.md)).
 
 **5. Keep the review on what the review needs.** The untested hypotheses in
 [report § 9](token-usage/report.md#9-hypotheses) point the same way: every

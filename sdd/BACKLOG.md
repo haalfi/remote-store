@@ -1025,17 +1025,17 @@ sessions work is measured before it becomes process.
   rounds never raised #1113's two regressions run A had caught ([report](research/token-usage/report.md#the-two-deliveries-compared) § Learnings).
   Open decision: [proposal 9](research/research-token-spend-means.md#6-proposals), a handoff the loop converges against, each row covered or waived.
 
-- [ ] **BK-430 — A review loop may close prose on a check that cannot fail, and nothing weighs a cheaper delivery by its defects**
+- [ ] **BK-430 — A review loop may close prose on a check that cannot fail, and no standing rule weighs a cheaper delivery by its defects**
   spec: — · effort: M · audience: contributor.process
-  Four of run B's ten prose closes ran a check that could not have shown the claim
-  false, and its loop ended with two regressions run A had caught, at a quarter of
-  its units; a later pass fixed one and documented the other ([report](research/token-usage/report.md#rule-c-against-the-decision-rule) § Rule (c), § The two deliveries compared). The outcome check lived only in
-  RFC-0020's decision rule; the falsifiable-check clause was missing even from rule (c), which is not on master.
-  Open decision: [proposals 2 and 3](research/research-token-spend-means.md#6-proposals) as standing rules, or folded into BK-425.
+  Four of run B's ten prose closes ran a check that could not have shown the claim false, and run B, at a quarter of
+  run A's units, closed its loop with two regressions run A's PR had avoided ([report](research/token-usage/report.md#run-b-ship-bug-280-on-the-means) § Run B, § Rule (c), § The two deliveries compared);
+  before #1113 merged, one was fixed and the other left to BUG-318 ([BUG-280's done entry](BACKLOG-DONE.md)). RFC-0020's decision rule judged
+  run B by its defects as well as its spend, for that run alone; rule (c), not on master, lacked the falsifiable-check clause.
+  Open decision: [proposals 2 and 3](research/research-token-spend-means.md#6-proposals) as standing rules. BK-425 overlaps: when a check covers a row.
 
-- [ ] **BK-431 — Every review subagent pays a full session prefix, and no smaller reviewer input is tested**
+- [ ] **BK-431 — Review subagents pay the session prefix again, and no smaller reviewer input is tested**
   spec: — · effort: M · audience: contributor.process, contributor.tooling
   A subagent pays about 53k tokens of prefix before it works, and review
   subagents re-read the same process files ([report](research/token-usage/report.md) § Learnings, § 9 hypothesis 3).
-  Run B's 11 subagents were 34.6% of its units (§ Run B, phase table).
+  Run B's 11 review-loop subagents were 34.6% of its units (§ Run B, phase table).
   Open decision: [proposal 5](research/research-token-spend-means.md#6-proposals), a scoped reviewer input, measured on a delivery as run B was.
