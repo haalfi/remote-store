@@ -23,7 +23,7 @@ not must-fix; they are open follow-ups on #1113.
 
 **Phase 0 is the last phase run (recorded 2026-10-11).** Phase 2 confirms rule (c)'s gain, so it lapses with
 rule (c). BK-423 was decided after the run and extends
-[`CLAUDE.md` principle 9](../../CLAUDE.md#principles) to quantifiers, and
+[`CLAUDE.md` principle 9](../../CLAUDE.md#principles) to claims of extent, and
 BK-418 moved to `BACKLOG-DONE.md` with
 [`research-token-spend-means.md`](../research/research-token-spend-means.md)
 as its outcome.

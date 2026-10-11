@@ -300,16 +300,17 @@ if evidence changes; these are retired.
 
 - [x] **BK-423 — A universal quantifier in process prose owes no enumeration until a reviewer refutes it**
   spec: — · effort: S · audience: contributor.process
-  [`CLAUDE.md` principle 9](../CLAUDE.md#principles) now covers "every", "all"
-  and "never": the enumeration, or the query or link that yields it, is run
+  [`CLAUDE.md` principle 9](../CLAUDE.md#principles) now covers claims of
+  extent ("every", "all", "never", "only", a list given as complete; not
+  instructions): the enumeration, or the query or link that yields it, is run
   before the claim is written, as for a figure. Its artifact list now names
   docstrings and code comments, where run B's cases below sat. Evidence: SCOPE findings are 91
   of 321 long-loop prose findings, and two of run B's four closes whose check
   could not fail were on claims of extent: "a subfolder is never skipped", and
   `_stat_entry`'s docstring naming one of the cases that return `None` (#1113's
   round 3 and 4 findings; [report](research/token-usage/report.md) § 5,
-  § Run B). `/fix-pr`'s quantifier rule stays as the fix-time half, cut so
-  the process budget fell (295,438 to 295,326 bytes,
+  § Run B). `/fix-pr`'s rule, renamed to claims of extent, stays as the
+  fix-time half, cut so the process budget fell (295,438 to 295,263 bytes,
   `scripts/check_process_budget.py`). Trace:
   [bk-423](traces/bk-423-quantifier-enumeration.yml).
 

@@ -399,7 +399,7 @@ orchestrator fixes directly.
    [`CONTENT-RULES.md` Rule 8](../../../sdd/CONTENT-RULES.md#change-details-what-it-changes)),
    or filing — and never a rationale; the finding's
    class, not only the lines it names; the sibling descriptions of your own
-   changes; a fix to a quantified claim scoped to the quantifier. Step 3's
+   changes; a fix to a claim of extent scoped to the extent. Step 3's
    six-line triage bullet is satisfiable here because the reviewer contract
    above asks for those lines on every prose finding. This step has no reply
    to name the shape in, so the shape per fix, and the mutation per added
