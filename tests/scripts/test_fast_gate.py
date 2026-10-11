@@ -339,7 +339,7 @@ def git_repo(tmp_path: Path) -> Path:
     _git(tmp_path, "config", "user.email", "t@example.com")
     _git(tmp_path, "config", "user.name", "t")
     _git(tmp_path, "config", "commit.gpgsign", "false")
-    (tmp_path / ".gitignore").write_text("ignored.txt\n", encoding="utf-8")
+    (tmp_path / ".gitignore").write_text("ignored.txt\n.pytest_cache/\n", encoding="utf-8")
     (tmp_path / "a.txt").write_text("a\n", encoding="utf-8")
     _git(tmp_path, "add", ".")
     _git(tmp_path, "commit", "-q", "-m", "init")
@@ -439,6 +439,56 @@ def test_main_plan_runs_nothing_and_records_nothing(git_repo: Path, monkeypatch)
     assert fg.main(["--plan"], git_repo) == 0
     assert members.calls == []
     assert fg.green_tree(git_repo) == tree0
+
+
+def _suite_repo(root: Path, lastfailed: dict[str, bool] | None = None) -> None:
+    """Three test files whose recorded seconds are 1, 1 and 18, recorded green."""
+    (root / "tests").mkdir()
+    for name in ("test_a", "test_b", "test_c"):
+        (root / "tests" / f"{name}.py").write_text("def test_x(): ...\n", encoding="utf-8")
+    durations = {"tests/test_a.py::test_x": 1.0, "tests/test_b.py::test_x": 1.0, "tests/test_c.py::test_x": 18.0}
+    (root / ".test_durations_pass1").write_text(json.dumps(durations), encoding="utf-8")
+    if lastfailed is not None:
+        cache = root / ".pytest_cache" / "v" / "cache"
+        cache.mkdir(parents=True)
+        (cache / "lastfailed").write_text(json.dumps(lastfailed), encoding="utf-8")
+    _green(root)
+
+
+def _test_commands(members: _Members) -> list[list[str]]:
+    return [c for c in members.calls if c[0] != "hatch"]
+
+
+def test_selection_above_half_the_suite_runs_it_whole_and_in_parallel(git_repo: Path, monkeypatch) -> None:
+    # test_c is 18 of 20 recorded seconds: 90% is over the cutoff, so FULL, which is never serial.
+    _suite_repo(git_repo)
+    (git_repo / "tests" / "test_c.py").write_text("def test_x(): assert 1\n", encoding="utf-8")
+    members = _Members(monkeypatch)
+    assert fg.main([], git_repo) == 0
+    [cmd] = _test_commands(members)
+    assert "-n" not in cmd
+    assert not any(a.startswith("tests/") for a in cmd)
+
+
+def test_small_selection_runs_serially_on_its_target_only(git_repo: Path, monkeypatch) -> None:
+    # test_a is 1 of 20 recorded seconds: 5%, under the cutoff and under SERIAL_BELOW_SECONDS.
+    _suite_repo(git_repo)
+    (git_repo / "tests" / "test_a.py").write_text("def test_x(): assert 1\n", encoding="utf-8")
+    members = _Members(monkeypatch)
+    assert fg.main([], git_repo) == 0
+    [cmd] = _test_commands(members)
+    assert cmd[cmd.index("-n") + 1] == "0"
+    assert [a for a in cmd if a.startswith("tests/")] == ["tests/test_a.py"]
+
+
+def test_last_failed_tests_join_the_selection_unless_their_file_is_gone(git_repo: Path, monkeypatch) -> None:
+    _suite_repo(git_repo, {"tests/test_b.py::test_x": True, "tests/test_gone.py::test_x": True})
+    assert fg.last_failed(git_repo) == ["tests/test_b.py::test_x"]
+    (git_repo / "tests" / "test_a.py").write_text("def test_x(): assert 1\n", encoding="utf-8")
+    members = _Members(monkeypatch)
+    assert fg.main([], git_repo) == 0
+    [cmd] = _test_commands(members)
+    assert [a for a in cmd if a.startswith("tests/")] == ["tests/test_a.py", "tests/test_b.py::test_x"]
 
 
 def test_main_with_base_never_records_green(git_repo: Path, monkeypatch) -> None:
