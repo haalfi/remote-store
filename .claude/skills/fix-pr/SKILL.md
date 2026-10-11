@@ -131,6 +131,10 @@ the shape:
   behaviour it pins, see the assertion fail, and name the mutation and the
   assertion that fired in the reply. A test seen passing has shown nothing
   about its power.
+- **Any other check cited as a close could have failed**; the reply names the
+  result that would have refuted the claim. A wording or shape check closes
+  nothing about content
+  ([ADR-0045](../../../sdd/adrs/0045-close-on-a-check-that-can-fail.md)).
 - **A reviewer's figure or attribution is a claim to re-derive, never a fact to
   carry.** Run the derivation before writing the number down.
 - **A measured claim is bounded by its instrument, and says so.** A fact

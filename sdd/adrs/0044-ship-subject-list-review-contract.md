@@ -55,6 +55,8 @@ saving only while its reviewers still reach what the change touches
   waives one: the session that wants to stop is not the one to decide what it
   may leave unreviewed. *Reverse if* covering rows adds rounds across a
   meaningful sample of deliveries without changing what ships.
+  *Amended by [ADR-0045](0045-close-on-a-check-that-can-fail.md):* the method
+  that covers a row must be one that could have found the row's risk.
 
 The row shape, the brief item and the dialog are operational contract and live
 in `.claude/skills/ship/SKILL.md`.

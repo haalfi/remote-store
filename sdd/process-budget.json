@@ -8,20 +8,20 @@
     "sdd/CLAUDE-REFERENCE.md",
     "sdd/traces/_schema.yml"
   ],
-  "total": 294945,
+  "total": 295249,
   "files": {
-    "CLAUDE.md": 17294,
+    "CLAUDE.md": 17420,
     ".claude/output-styles/interview.md": 2105,
     ".claude/skills/audit/SKILL.md": 1355,
     ".claude/skills/drift/SKILL.md": 23728,
-    ".claude/skills/fix-pr/SKILL.md": 14249,
+    ".claude/skills/fix-pr/SKILL.md": 14501,
     ".claude/skills/mutation/SKILL.md": 5984,
     ".claude/skills/orchestrate/SKILL.md": 25993,
     ".claude/skills/pr/SKILL.md": 5425,
     ".claude/skills/preview/SKILL.md": 955,
     ".claude/skills/release/SKILL.md": 4114,
     ".claude/skills/rvw-pr/SKILL.md": 30702,
-    ".claude/skills/ship/SKILL.md": 54126,
+    ".claude/skills/ship/SKILL.md": 54052,
     ".claude/agents/documentation-expert.md": 6390,
     ".claude/agents/extension-expert.md": 1670,
     ".claude/agents/sdd-expert.md": 1726,
@@ -36,6 +36,12 @@
       "from": 293333,
       "to": 295438,
       "reason": "measured set widened to .claude/output-styles/, which settings.json loads into every session (PR #1110 review)"
+    },
+    {
+      "item": "BK-430",
+      "from": 294945,
+      "to": 295249,
+      "reason": "ADR-0045 clause in /fix-pr Step 3 (a close's check could have failed) and the seventh /ship record in CLAUDE.md; /ship's copy of the Step 3 list cut to a pointer offsets 74 bytes"
     }
   ]
 }
