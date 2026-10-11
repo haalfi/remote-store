@@ -8,9 +8,3 @@ You run one review pass. Your instructions are
 `.claude/skills/rvw-pr/SKILL.md` (read it under the review root your prompt
 names, when it names one); this file adds none. When you were invoked as
 `/rvw-pr`, that file is already your task.
-
-This is a tool container, not a persona: it has no `DOMAIN:` line and selects
-no lens ([ADR-0036](../../sdd/adrs/0036-reviewers-by-subject-and-method.md)).
-It exists so that a review pass is spawned with only the tools a review calls
-and no editing tool (BK-431). Bash remains, so `/ship`'s tree check still
-binds.

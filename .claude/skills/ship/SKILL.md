@@ -219,8 +219,8 @@ measured to pay, and the axis that was — reading versus executing — is the
 measuring member below
 ([ADR-0035 § Decision](../../../sdd/adrs/0035-vary-method-not-model.md#decision)).
 A domain persona **staffs** a lens, it never selects one: pick it when the lens
-sits inside one domain and its foundation docs help, `general-purpose` otherwise,
-which is the normal case for a lens spanning domains or aimed at the surface no
+sits inside one domain and its foundation docs help, the `reviewer` agent
+otherwise, which is the normal case for a lens spanning domains or aimed at the surface no
 persona owns
 ([ADR-0036 § Decision](../../../sdd/adrs/0036-reviewers-by-subject-and-method.md#decision)).
 
@@ -238,14 +238,16 @@ goes unnamed.
 enforced.** Everything below cites it rather than restating it; a second copy of
 this reasoning is the failure the sibling-sweep rule exists to catch.
 
-- **Every pass runs as the [`reviewer`](../../agents/reviewer.md) agent**: a
-  solo pass through `/rvw-pr`'s `agent: reviewer` frontmatter, a panel member
-  spawned with `subagent_type: reviewer`. Its `tools:` list has no `Edit`, no
+- **Every pass not staffed by a persona runs as the
+  [`reviewer`](../../agents/reviewer.md) agent**: a solo pass through
+  `/rvw-pr`'s `agent: reviewer` frontmatter, a panel member spawned with
+  `subagent_type: reviewer`. That agent is a tool container, not a persona: no
+  `DOMAIN:` line, no lens (BK-431). Its `tools:` list has no `Edit`, no
   `Write`, no agent-spawning tool. It does have `Bash`, which can mutate the
   review worktree the round's passes share, so it is **not** a read-only
-  guarantee: panel members still get the read-only and analyze-only
-  constraints **restated in every prompt**, and the tree check below binds
-  every pass.
+  guarantee. A member a persona staffs keeps that persona's full tool set.
+  So every panel member gets the read-only and analyze-only constraints
+  **restated in its prompt**, and the tree check below binds every pass.
 - **No reviewer reads the working tree the fixer edits.** After each push the
   orchestrator adds a worktree at the pushed commit, and every pass of that
   round — panel member, solo pass, each of the closing gate's appended passes —
@@ -358,8 +360,8 @@ treats only the remainder as reviewer context; without that parse the mode word
 would be read as a claim to verify. An unprimed pass gets the number and the
 root alone.
 
-**Panels spawn `Agent`s with `subagent_type: reviewer`**, because `/rvw-pr`
-cannot form one. Each prompt instructs the member to read and execute
+**Panels spawn `Agent`s**, because `/rvw-pr` cannot form one, with
+`subagent_type: reviewer` unless a persona staffs the member's lens. Each prompt instructs the member to read and execute
 `.claude/skills/rvw-pr/SKILL.md`, and must carry what the spawn path does not
 supply:
 
@@ -428,10 +430,10 @@ menu by link rather than copying it.
   CONTENT-RULES-clean and still leaves a reader unable to act, which no lens
   judging correctness can see.
   **Assume the self-administered form and brief for it.** The block's step 2
-  spawns a fresh reader; assume no member can — no reviewer here has an
+  spawns a fresh reader; assume no member can — a `reviewer` member has no
   agent-spawning tool ([Reviewer permissions](#reviewer-permissions)), and
-  nesting from a panel member, or from an `/orchestrate` reviewer that is a plain
-  subagent with a full tool set, is not established either. So brief the member
+  nesting from a persona-staffed member, or from an `/orchestrate` reviewer that
+  is a plain subagent with a full tool set, is not established either. So brief the member
   to self-administer and **label it as such**,
   which the block already requires; never to attempt the spawn and report what it
   could not do. A brief citing the spawn step is this file's inert-obligation
@@ -458,7 +460,7 @@ menu by link rather than copying it.
   contains any of it**, so a roster cannot aim at it and a reviewer staffed by
   domain will not look — 9 of PR #954's 12 findings landed here
   ([ADR-0036 § Context](../../../sdd/adrs/0036-reviewers-by-subject-and-method.md#context)).
-  Staff it with `general-purpose`. Ask what a *reader* of the changed instruction
+  Staff it with the `reviewer` agent. Ask what a *reader* of the changed instruction
   would be permitted to do, not whether it reads well: the recurring defect is an
   obligation written without the permission that makes it executable.
 - **Premise.** Every claim the PR makes about behaviour that already exists — in

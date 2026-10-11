@@ -140,3 +140,18 @@ phases:
           run-to-run variance, which is what the next measured delivery
           decides (ADR-0045).
         outcome: ok
+      - file: "(A/B, round 2) PR #1125 at c6d33baa4, same setup"
+        section: "both transcripts' tool calls listed in order and compared"
+        read_type: verify
+        extract: >-
+          Old 19 calls, 354,303 units, 2 findings; new 32 calls, 388,089
+          units, 1 finding. Both found /ship's spawn rule contradicting its
+          persona staffing; only the old pass found the backlog's unscoped
+          "every pass". The call lists of both rounds show: per call the new
+          pass carries about 20k fewer tokens, but calls per pass (19 to 32)
+          decide the total; the old pass read the PR's rvw-pr/SKILL.md as a
+          subject, which for the new pass was its own instructions, and
+          fetched the PR body, which neither skill asks for; the new pass's
+          six empty DOMAIN:/roster searches followed reviewer.md's
+          persona/ADR-0036 text, now moved into /ship.
+        outcome: ok
