@@ -133,6 +133,26 @@ class TestBashCategory:
     def test_git_global_options_do_not_hide_the_subcommand(self, command, expected):
         assert tokkit.bash_cat(command) == expected
 
+    @pytest.mark.parametrize(
+        ("command", "expected"),
+        [
+            # A /rvw-pr pass under a review root runs every command in it (rvw-pr § Review root).
+            ("env -C tmp/review/abc hatch run ref-show x", "hatch run ref-show"),
+            ('env -C "K:/a b/wt" git diff origin/master...HEAD', "git diff"),
+            ("env -C tmp/review/abc GIT_PAGER=cat gh pr view 7", "gh pr"),
+            (
+                'python -c "import os, subprocess, sys; os.chdir(sys.argv[1]); '
+                'raise SystemExit(subprocess.call(sys.argv[2:]))" tmp/review/abc hatch run backlog-show BK-1',
+                "hatch run backlog-show",
+            ),
+            # Without a directory change the launcher is the command itself.
+            ("env FOO=1", "env"),
+            ('python -c "print(1)"', "python"),
+        ],
+    )
+    def test_a_review_root_launcher_does_not_hide_the_command(self, command, expected):
+        assert tokkit.bash_cat(command) == expected
+
 
 class TestEvents:
     def test_commit_and_push_via_git_dash_c_are_events_in_bash_and_powershell(self, kit):
@@ -299,6 +319,147 @@ class TestRelatedSessions:
         _cache_pr(snap, 6, "2026-10-10T13:00:00Z")
         s = _report(tmp_path, snap, *extra)
         assert (s["transcripts"], s["calls"]) == (1, 9)
+
+
+class TestNormPath:
+    @pytest.mark.parametrize(
+        ("path", "expected"),
+        [
+            # A relative path is already relative to the checkout (BK-431's side-by-side runs).
+            ("tmp/oldskill/.claude/skills/rvw-pr/SKILL.md", "tmp/oldskill/.claude/skills/rvw-pr/SKILL.md"),
+            ("tmp/review/4ffed32/CLAUDE.md", "<review-snapshot>/CLAUDE.md"),
+            ("sdd/BACKLOG.md", "sdd/BACKLOG.md"),
+            ("C:/elsewhere/notes.md", "<outside>/C:/elsewhere/notes.md"),
+            ("/etc/hosts", "<outside>//etc/hosts"),
+        ],
+    )
+    def test_relative_paths_stay_in_the_checkout_and_absolute_ones_outside_it_do_not(self, kit, path, expected):
+        assert tokkit.norm_path(path) == expected
+
+    def test_an_absolute_path_inside_the_checkout_is_made_relative(self, kit, tmp_path):
+        assert tokkit.norm_path(f"{tmp_path}/tmp/review/abc123/sdd/x.md".replace("\\", "/")) == (
+            "<review-snapshot>/sdd/x.md"
+        )
+
+
+class TestSubClass:
+    CHANGED = {".claude/skills/rvw-pr/SKILL.md", "src/x.py"}
+
+    @pytest.mark.parametrize(
+        ("kind", "detail", "expected"),
+        [
+            # The PR's head, read from the review worktree, is the PR whatever the file is.
+            ("result:Read", "<review-snapshot>/.claude/skills/rvw-pr/SKILL.md", "pr"),
+            ("result:Read", "src/x.py", "pr"),
+            # The same path in another checkout is another commit: a process file, not the PR.
+            ("result:Read", "tmp/oldskill/.claude/skills/rvw-pr/SKILL.md", "process"),
+            ("result:Read", "tmp/base/src/x.py", "read"),
+            ("result:Read", "<review-snapshot>/sdd/adrs/0035-vary-method-not-model.md", "process"),
+            ("result:Read", "sdd/CLAUDE-REFERENCE.md", "process"),
+            ("result:Read", "sdd/traces/_schema.yml", "process"),
+            ("result:Read", "sdd/traces/bk-431-scoped-reviewer-input.yml", "read"),
+            ("result:Read", "CLAUDE.md", "process"),
+            ("result:Read", "<tool-results>", "spilled"),
+            ("result:Bash", "git diff", "pr"),
+            ("result:Bash", "gh pr", "pr"),
+            ("result:Bash", "hatch run ref-show", "process"),
+            ("result:Bash", "hatch run backlog-show", "process"),
+            ("result:Bash", "hatch run fast", "bash"),
+            ("result:Grep", "rvw-pr", "search"),
+            ("user_meta", "skill-body:rvw-pr", "process"),
+            ("tool_input:Read", "src/x.py", "other"),
+        ],
+    )
+    def test_each_item_lands_in_one_class(self, kind, detail, expected):
+        assert tokkit.sub_class(kind, detail, self.CHANGED) == expected
+
+
+def _subagent(transcripts: Path, aid: str, agent_type: str, desc: str, records: list[dict]) -> None:
+    sub = transcripts / SID / "subagents"
+    sub.mkdir(parents=True, exist_ok=True)
+    (sub / f"agent-{aid}.jsonl").write_text("\n".join(json.dumps(r) for r in records), encoding="utf-8")
+    (sub / f"agent-{aid}.meta.json").write_text(
+        json.dumps({"agentType": agent_type, "description": desc}), encoding="utf-8"
+    )
+
+
+def _reviewer_records() -> list[dict]:
+    """Three calls: read the PR's file, read a process file, finish."""
+    return [
+        {"type": "user", "timestamp": _ts(30), "message": {"role": "user", "content": "review 7"}},
+        _call(200, 30, _use("r1", "Read", file_path="src/x.py")),
+        _result("r1", 30, "x" * 2400),
+        _call(201, 31, _use("r2", "Read", file_path="CLAUDE.md", offset=10, limit=20)),
+        _result("r2", 31, "y" * 2400),
+        _call(202, 32),
+    ]
+
+
+class TestSubagents:
+    def _run(self, tmp_path, snap, *extra) -> dict:
+        out = tmp_path / "out" / "subagents.json"
+        argv = ["--repo-root", str(tmp_path), "--snapshots", str(snap), "subagents", "--session", SID]
+        tokkit.main([*argv, "--json", str(out), *extra])
+        return json.loads(out.read_text(encoding="utf-8"))
+
+    def test_rows_split_each_subagents_context_and_list_its_calls(self, kit, tmp_path):
+        transcripts, snap = kit
+        _write(transcripts, _run_b_shaped())
+        _subagent(transcripts, "aaa111", "reviewer", "round 1", _reviewer_records())
+        (snap / SID).mkdir(parents=True, exist_ok=True)
+        (snap / SID / "pr-7-files.json").write_text(json.dumps(["src/x.py"]), encoding="utf-8")
+        s = self._run(tmp_path, snap, "--pr", "7", "--calls")
+        (row,) = s["subagents"]
+        assert (row["agent"], row["type"], row["description"], row["calls"]) == ("aaa111", "reviewer", "round 1", 3)
+        pct = row["context_pct"]
+        # What the estimates leave unexplained is a class of its own, so the split is whole.
+        assert sum(pct.values()) == pytest.approx(100, abs=0.5)
+        # The PR file entered one call earlier than the process file, so it is carried longer.
+        assert pct["pr"] > pct["process"] > 0
+        assert pct["read"] == 0
+        assert [(c["tool"], c["target"], c["result_chars"]) for c in row["tool_calls"]] == [
+            ("Read", "src/x.py", 2400),
+            ("Read", "CLAUDE.md [10+20]", 2400),
+        ]
+
+    def test_without_pr_the_changed_files_are_ordinary_reads(self, kit, tmp_path):
+        transcripts, snap = kit
+        _write(transcripts, _run_b_shaped())
+        _subagent(transcripts, "aaa111", "reviewer", "round 1", _reviewer_records())
+        (row,) = self._run(tmp_path, snap)["subagents"]
+        assert row["context_pct"]["pr"] == 0
+        assert row["context_pct"]["read"] > 0
+        assert "tool_calls" not in row
+
+    def test_agent_keeps_only_the_named_subagents(self, kit, tmp_path):
+        transcripts, snap = kit
+        _write(transcripts, _run_b_shaped())
+        _subagent(transcripts, "aaa111", "reviewer", "new", _reviewer_records())
+        _subagent(transcripts, "bbb222", "general-purpose", "old", _reviewer_records())
+        rows = self._run(tmp_path, snap, "--agent", "bbb")["subagents"]
+        assert [(r["agent"], r["type"]) for r in rows] == [("bbb222", "general-purpose")]
+
+    def test_pr_files_are_walked_page_by_page_once_and_cached(self, kit, tmp_path, monkeypatch):
+        # `gh pr view --json files` stops at 100 files; the REST endpoint pages past it.
+        transcripts, snap = kit
+        _write(transcripts, _run_b_shaped())
+        _subagent(transcripts, "aaa111", "reviewer", "round 1", _reviewer_records())
+        pages = {1: [f"a/{i}.py" for i in range(100)], 2: ["src/x.py"]}
+        calls = []
+
+        def fake_run(cmd, **kw):
+            calls.append(cmd)
+            page = int(cmd[2].rsplit("page=", 1)[1])
+            return argparse.Namespace(stdout=json.dumps(pages.get(page, [])))
+
+        monkeypatch.setattr(tokkit.subprocess, "run", fake_run)
+        (row,) = self._run(tmp_path, snap, "--pr", "7")["subagents"]
+        self._run(tmp_path, snap, "--pr", "7")
+        assert len(calls) == 2  # pages 1 and 2, the second short; the re-run reads the cache
+        assert calls[0][:2] == ["gh", "api"]
+        assert "pulls/7/files?per_page=100&page=1" in calls[0][2]
+        assert row["context_pct"]["pr"] > 0  # src/x.py sat on page 2
+        assert len(json.loads((snap / SID / "pr-7-files.json").read_text(encoding="utf-8"))) == 101
 
 
 class TestPrCreation:

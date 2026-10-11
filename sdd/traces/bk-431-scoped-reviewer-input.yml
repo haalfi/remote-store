@@ -198,7 +198,9 @@ phases:
         section: "units and findings"
         read_type: verify
         extract: >-
-          Old 21 calls, 437,882 units, 3 findings; new 29 calls, 386,867
+          Old 22 calls, 459,441 units, 3 findings (corrected by
+          bk-431-tokkit-subagents: 21 calls and 437,882 were read from the
+          transcript before that pass had finished); new 29 calls, 386,867
           units, 2 findings, both shared with the old (ADR-0046's unprobed
           agent: claim; ADR-0035 lacking its inline Amended-by note). The
           old pass alone found ADR-0046 pointing at /ship for the open
