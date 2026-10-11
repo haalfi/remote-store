@@ -535,8 +535,7 @@ trace step (`/pr` verifies a trace exists, `/fix-pr` updates it).
   `git diff origin/<BASE>...HEAD --name-only`, then run the matching target. Fix
   failures, re-run until clean.
     - **Touches `src/`, `tests/`, `examples/`, `scripts/`, `infra/*.py`,
-      `.claude/hooks/`, `sdd/rfcs/rfc-0015-{findings,rounds}.py`,
-      `sdd/research/token-usage/*.py`,
+      `.claude/hooks/`, the `sdd/` scripts in CI's `HOOKS_PAT`,
       `pyproject.toml`, or `.python-version`** → run `hatch run fast`, the
       members of `all` the change can affect (`scripts/fast_gate.py`). The
       `sdd/` scripts ride with `.claude/hooks/` below: they are pinned by

@@ -112,7 +112,10 @@ phases:
       - file: sdd/CLAUDE-REFERENCE.md
         section: "PR validation gates"
         read_type: verify
-        extract: "Mechanical-gate path list mirrors HOOKS_PAT (the kit as sdd/research/token-usage/*.py after the fix pass); 45 bytes cut in the same paragraph to stay inside the process budget"
+        extract: >-
+          Mechanical-gate path list: after the rebase onto #1120 it names "the sdd/ scripts in CI's
+          HOOKS_PAT" instead of copying the paths, which keeps one list and the process budget
+          (295,217 of 295,228 bytes, hatch run check-process-budget)
       - file: sdd/BACKLOG.md
         section: "How this file works / Completing work"
         read_type: verify
