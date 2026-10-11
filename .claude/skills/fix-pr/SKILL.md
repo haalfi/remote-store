@@ -93,7 +93,7 @@ Build work list from **all four sources** (see table above):
 
 For each actionable item note: file, line, category (Bug/Spec/Test/Consistency/Ripple/Perf/Security), what to change.
 
-**Be critical.** Verify each claim against the code — comments can be wrong or already fixed. Skip bad suggestions with a reason, don't blindly apply them.
+**Be critical.** Verify each claim against the code — comments can be wrong or already fixed. Skip bad suggestions with evidence that could have shown them right (ADR-0045), don't blindly apply them.
 
 ## Step 3: Fix
 

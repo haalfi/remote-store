@@ -62,7 +62,8 @@ what it ships.
 
 Where each clause sits in the triage table, the fix-pass obligations and the
 row coverage is operational contract and lives in
-`.claude/skills/ship/SKILL.md` and `.claude/skills/fix-pr/SKILL.md`.
+`.claude/skills/ship/SKILL.md`, `.claude/skills/fix-pr/SKILL.md` and
+`.claude/skills/orchestrate/SKILL.md`.
 
 ## Consequences
 

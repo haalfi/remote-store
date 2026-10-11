@@ -310,8 +310,8 @@ if evidence changes; these are retired.
   could not fail, and run B closed its loop with two regressions run A had
   avoided, one fixed before #1113 merged
   ([report](research/token-usage/report.md#rule-c-against-the-decision-rule)).
-  Process files raised 294,945 to 295,293 bytes after `/ship`'s copy of the
-  Step 3 list became a pointer (`scripts/check_process_budget.py`). Trace:
+  Process files raised 294,945 to 295,265 bytes after `/ship`'s two copies of
+  the `/fix-pr` obligations became pointers (`scripts/check_process_budget.py`). Trace:
   [bk-430](traces/bk-430-falsifiable-checks.yml).
 
 - [x] **BK-425 — `/ship`'s handoff tells the review what was built, not what it must cover**

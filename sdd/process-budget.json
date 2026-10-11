@@ -8,20 +8,20 @@
     "sdd/CLAUDE-REFERENCE.md",
     "sdd/traces/_schema.yml"
   ],
-  "total": 295293,
+  "total": 295265,
   "files": {
     "CLAUDE.md": 17420,
     ".claude/output-styles/interview.md": 2105,
     ".claude/skills/audit/SKILL.md": 1355,
     ".claude/skills/drift/SKILL.md": 23728,
-    ".claude/skills/fix-pr/SKILL.md": 14501,
+    ".claude/skills/fix-pr/SKILL.md": 14545,
     ".claude/skills/mutation/SKILL.md": 5984,
-    ".claude/skills/orchestrate/SKILL.md": 26044,
+    ".claude/skills/orchestrate/SKILL.md": 26089,
     ".claude/skills/pr/SKILL.md": 5425,
     ".claude/skills/preview/SKILL.md": 955,
     ".claude/skills/release/SKILL.md": 4114,
     ".claude/skills/rvw-pr/SKILL.md": 30702,
-    ".claude/skills/ship/SKILL.md": 54045,
+    ".claude/skills/ship/SKILL.md": 53928,
     ".claude/agents/documentation-expert.md": 6390,
     ".claude/agents/extension-expert.md": 1670,
     ".claude/agents/sdd-expert.md": 1726,
@@ -40,8 +40,8 @@
     {
       "item": "BK-430",
       "from": 294945,
-      "to": 295293,
-      "reason": "ADR-0045 clauses, per file against master by this script's per-file deltas: /fix-pr Step 3 +252, CLAUDE.md seventh /ship record +126, /orchestrate Step 7 report +51, /ship -81 net (its copy of the Step 3 list cut to a pointer saves 442; its new clauses add 361)"
+      "to": 295265,
+      "reason": "ADR-0045 clauses, per file against master (CRLF as LF): /fix-pr Steps 2 and 3 +296, CLAUDE.md seventh /ship record +126, /orchestrate Steps 6 and 7 +96, /ship -198 net (its two partial copies of the /fix-pr obligations became pointers, which outweighs its new clauses)"
     }
   ]
 }

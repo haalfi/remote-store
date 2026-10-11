@@ -605,7 +605,7 @@ pointer to the item that owns it, unless the change relies on it
 Must-fix takes (1) to (4), as the table says. *Write a rationale* is not a
 shape. The fix-shape column is required, and the
 fix pass owes everything [`/fix-pr`](../fix-pr/SKILL.md) Step 3 lists under the
-shapes; that list is the one copy. The evidence is
+shapes. The evidence is
 [RFC-0015 D2](../../../sdd/rfcs/rfc-0015-ship-two-surfaces.md): every one of the
 four failures it maps was the fixer writing something it had not run, and the
 measuring member catching it one round later.
@@ -618,9 +618,8 @@ accepting every finding degrades the work, so verify before fixing.
 `hatch run all` green → commit → push → **check CI** → reply to **every** thread
 and resolve it → remove the round's review worktree. Use
 [`/fix-pr`](../fix-pr/SKILL.md)'s comment-fetch and thread-resolve mechanics and
-its Rules — a fix pass here owes the finding's class, the sibling sweep of its own
-changes, the fix shape per must-fix reply and the mutation per added test exactly
-as one run under that skill does. Never start the next round against unpushed
+its Rules — a fix pass here owes what its Step 3 and Rules require, exactly as
+one run under that skill does. Never start the next round against unpushed
 code: the reviewer would target stale lines.
 
 **The local gate does not stand in for CI, and cannot.** `hatch run all` is a
@@ -683,7 +682,7 @@ unprimed pass. A PR making no such claim satisfies it vacuously, exactly as a
 round that fixed nothing satisfies the fix-pass clause.
 
 **Nor on a subject-list row nobody took up.** Run B of `/ship BUG-280`
-converged in five rounds with two regressions run A had caught, a link
+ended after five rounds with two regressions run A had caught, a link
 into a locked folder and a Windows delete-pending state: no row named them and
 no round had to reach a `not reached` one
 ([report § The two deliveries compared](../../../sdd/research/token-usage/report.md#the-two-deliveries-compared)).

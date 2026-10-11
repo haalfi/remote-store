@@ -102,7 +102,7 @@ phases:
       - file: scripts/check_process_budget.py
         section: "module docstring"
         read_type: gate
-        extract: "Budget at 294945 of 294945; /ship's copy of the /fix-pr Step 3 list cut to a pointer saves 442 against 361 of new /ship clauses (tmp/bk430_bytes.py, not committed), remainder +348 raised under BK-430 after the review round"
+        extract: "Budget at 294945 of 294945; after two review rounds /ship's two partial copies of the /fix-pr obligations are pointers (/ship -198 net), and the remaining +320 (fix-pr +296, CLAUDE.md +126, orchestrate +96) is raised under BK-430; per-file sizes against origin/master with CRLF counted as LF"
         outcome: ok
   - id: verify
     name: Verify
