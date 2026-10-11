@@ -1023,4 +1023,4 @@ sessions work is measured before it becomes process.
   only or not reached and lists the author's doubts, but no round must take up a
   not-reached row or the platforms and edge cases the change touches. Run B's five
   rounds never raised #1113's two regressions run A had caught ([report](research/token-usage/report.md#the-two-deliveries-compared) § Learnings).
-  Open decision: research proposal 9, a handoff the loop converges against, each row covered or waived.
+  Open decision: [proposal 9](research/research-token-spend-means.md#6-proposals), a handoff the loop converges against, each row covered or waived.

@@ -2,7 +2,7 @@
 <!-- doc: repo-only -->
 
 **Date:** 2026-10-09, extended 2026-10-10 with run B, the cost of the means and § Learnings
-**Backlog items:** BK-418, BK-424
+**Backlog items:** BK-418, BK-424, BK-425
 **Status:** Point-in-time snapshot per [`sdd/000-process.md` § Document types](../../000-process.md#document-types). It ports, re-runs and corrects an analysis done in a scratch session on 2026-10-09. Every figure names the result file it comes from, as `[file: key]` under `results/`. § Reproducing says which script and inputs produced each file. BK-418 tracked the interventions it motivates, and closed on 2026-10-11. [`token-spend-analysis.html`](token-spend-analysis.html) shows the same figures as a page; where the two differ, this record wins. [`research-token-spend-means.md`](../research-token-spend-means.md) argues what this evidence means: that a delivery costs what it carries, and the controls that cut it fix an order.
 
 ## Question
@@ -740,6 +740,7 @@ holding its figures.
   delete-pending case that run A's round 7 had measured, nor a link into a
   locked folder (§ The two deliveries compared). Fewer rounds is only a saving
   when the reviewers still reach the platform and edge cases the change touches.
+  This is filed as BK-425.
 - A fix pass breeds findings: a behaviour change made in round 3 caused most of
   round 4. Re-planning by the divergence check, not patching, ended it.
 - Items filed during the loop draw findings in the next round; keep a mid-loop
