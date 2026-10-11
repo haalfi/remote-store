@@ -8,9 +8,9 @@
     "sdd/CLAUDE-REFERENCE.md",
     "sdd/traces/_schema.yml"
   ],
-  "total": 297831,
+  "total": 297938,
   "files": {
-    "CLAUDE.md": 17421,
+    "CLAUDE.md": 17528,
     ".claude/output-styles/interview.md": 2105,
     ".claude/skills/audit/SKILL.md": 1355,
     ".claude/skills/drift/SKILL.md": 23728,
@@ -69,6 +69,12 @@
       "from": 297759,
       "to": 297831,
       "reason": "PR #1125 A/B round 3: analyze-only passes keep Step 4's Comment rules (rvw-pr), /ship's lens menu scopes its reviewer staffing to /ship; also re-locks the map after reviewer.md was trimmed to its pointer"
+    },
+    {
+      "item": "BK-431",
+      "from": 297831,
+      "to": 297938,
+      "reason": "CLAUDE.md: ADR-0046 joins the /ship records (seven to eight), as ADR-0045 did (+107)"
     }
   ]
 }

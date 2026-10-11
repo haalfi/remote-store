@@ -2,7 +2,7 @@
 
 <!-- doc: repo-only -->
 
-Compiled from 45 ADR(s) by `scripts/gen_adr_digest.py`. Do not edit by hand; run `hatch run gen-adr-digest`.
+Compiled from 46 ADR(s) by `scripts/gen_adr_digest.py`. Do not edit by hand; run `hatch run gen-adr-digest`.
 
 ## Proposed
 
@@ -1441,6 +1441,21 @@ row coverage is operational contract and lives in
 `.claude/skills/orchestrate/SKILL.md`.
 
 > amends ADR-0033, ADR-0044 (clause).
+
+### [ADR-0046](0046-review-tools-come-from-the-agent.md): A Review Pass's Tools Come From Its Agent, Not From `allowed-tools`
+
+- **Where a review pass must lack a tool, the restriction is the spawned
+  agent's `tools:` list.** A skill's `allowed-tools` is never cited as one: it
+  only spares the prompt for the tools it names. A skill that forks names its
+  agent with `agent:`, and that agent's `tools:` is what the pass gets.
+  *Reverse if* Claude Code makes `allowed-tools` restrict a forked skill,
+  measured the same way.
+
+Which agent carries the restriction, and whether a smaller reviewer input is
+kept, is BK-431's open decision, recorded in `.claude/skills/ship/SKILL.md` §
+Reviewer permissions and decided by a measured delivery.
+
+> amends ADR-0035 (clause).
 
 ## Superseded
 

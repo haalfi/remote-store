@@ -981,4 +981,4 @@ sessions work is measured before it becomes process.
   Run B's 11 review subagents (34.6% of its units) carried the prefix as 39% of their context, `rvw-pr/SKILL.md` 11.6%
   and the PR itself 18.7% ([trace](traces/bk-431-scoped-reviewer-input.yml)). Done: `/ship`'s passes run as the `reviewer`
   agent unless a persona staffs the lens (prefix probe 19.8k against 39.9k tokens), and `rvw-pr` keeps its measuring and posting rules in files a non-measuring, analyze-only pass skips.
-  Open decision: keep or drop that input, by the next `/ship` delivery measured as run B was ([proposal 5](research/research-token-spend-means.md#6-proposals)); its record also supersedes ADR-0035 § Consequences' `allowed-tools` mechanism.
+  Open decision: keep or drop that input, by the next `/ship` delivery measured as run B was ([proposal 5](research/research-token-spend-means.md#6-proposals)).

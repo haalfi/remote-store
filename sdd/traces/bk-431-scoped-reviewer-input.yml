@@ -89,7 +89,8 @@ phases:
           while allowed-tools "grants tools without prompts" for the invoking
           turn (skills page, Frontmatter reference); so ADR-0035 §
           Consequences, which credits allowed-tools with withholding Edit and
-          Write, names the wrong mechanism. Whether unlisted tools' schemas
+          Write, may name the wrong mechanism; the docs leave the fork case
+          open (probed below). Whether unlisted tools' schemas
           leave the prefix, and whether deferred MCP tools load in such an
           agent, are not documented. The docs say agent files are watched
           mid-session: the throwaway file above was refused on the call right
@@ -171,4 +172,14 @@ phases:
           and ADR-0035's mechanism claim. Both fetched the PR body this
           round. Over three rounds: old 1,271,145 units and 6 findings, new
           1,026,724 units (19% fewer) and 5, of which 2 matched an old one.
+        outcome: ok
+      - file: "(probe) forked skill, allowed-tools: Read, no agent:"
+        section: "asked to Write tmp/bk431-probe.txt; skill deleted after"
+        read_type: verify
+        extract: >-
+          The fork listed Write, Edit, Agent and Bash among its tools, the
+          Write succeeded, and Read of tmp/bk431-probe.txt returned "probe".
+          allowed-tools withholds nothing in a fork, so ADR-0035 §
+          Consequences named the wrong mechanism: recorded as ADR-0046, which
+          amends that bullet. Solo /rvw-pr passes could edit before BK-431.
         outcome: ok
