@@ -117,7 +117,7 @@ only change run B scores.**
 
 - **BK-423**, a quantifier rule at authoring time, is held until run B is
   scored, because it acts on the findings rule (c) targets.
-- **A smaller reviewer input** (the report's hypotheses 3 and 4: what every
+- **A smaller reviewer input** (the report's hypothesis 3: what every
   reviewer re-reads) was left out by the maintainer and stays a candidate for a
   later RFC.
 
