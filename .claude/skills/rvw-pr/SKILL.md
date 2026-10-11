@@ -115,7 +115,7 @@ Read PR **content** via `gh` CLI when available; fall back to MCP when `gh` is a
 
 **One pinned exception, metadata only, for a measuring pass.** When the invoking prompt says **measuring** *and* the brief is to verify a claim about what the comments endpoint returns, you may fetch `path`, `pull_request_review_id`, the presence of `in_reply_to_id`, and counts — **never `body`, never `user`, never any comment text**. The reasoning is Step 4's, extended: a path and a count carry no content, so they prime nobody, and the prohibition above exists to stop a reviewer *reading the conversation* rather than to stop it counting rows. State in your Step 5 report exactly which fields you fetched.
 
-This existed for [`/ship`](../ship/SKILL.md) brief requirement 3, which once shipped a two-call `gh api` recipe over that endpoint whose behavioural claims a measuring pass had to execute. **That antecedent is gone**: requirement 3 now runs `hatch run ship-report`, whose claims are pinned by guards under `tests/scripts/`, and `/ship` states that *no reviewer runs `ship-report`* — it reads comment bodies, which this step forbids, and it is not on the measuring allowlist above.
+Its first user, a `gh api` recipe in [`/ship`](../ship/SKILL.md) brief requirement 3, is gone: that requirement now runs `hatch run ship-report`, which no reviewer runs (it reads comment bodies and is not on the allowlist above).
 
 **The carve-out is kept, narrowed to what still needs it.** A measuring member may still be briefed to verify something *about* the comments endpoint — a paging claim, a row count, a per-file distribution — and the permission has to exist before the obligation can. What it may never do is run an instrument that reads comment text on the reviewer's behalf. **A measuring member is never the unprimed pass**, so no unprimed guarantee is spent here; and the bound stays narrow deliberately, because a reviewer that reads one comment body has read the conversation whatever it was counting.
 
@@ -259,7 +259,12 @@ If a user-supplied **claim** was evaluated and rejected, add:
 Rejected user input: "<claim>" — <reason for rejection>
 ```
 A **brief** is never reported here: it directed the review rather than asserting
-anything, so there is nothing to accept or reject (Step 2).
+anything, so there is nothing to accept or reject (Step 2). But if it assigns
+you `/ship` subject-list rows, report each, reached or not, since silence is not
+coverage:
+```
+Row: <row> — <verdict>, by <reading | running: what>
+```
 
 Then **stop**. Do not wait for feedback or user input.
 

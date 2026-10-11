@@ -304,13 +304,15 @@ if evidence changes; these are retired.
   ([ADR-0044](adrs/0044-ship-subject-list-review-contract.md), amending
   ADR-0033): each row names its platforms and edge cases, risk and mark, scoped
   briefs carry the uncovered rows, and the loop stops only when every row is
-  covered or the user waived it in one dialog. Evidence: run B's five rounds
+  covered or the user waived it in one dialog; `/rvw-pr` Step 5 reports each
+  assigned row on a `Row:` line. Evidence: run B's five rounds
   never raised #1113's two regressions run A had caught, a link into a locked
   folder and the Windows delete-pending state
   ([report](research/token-usage/report.md#the-two-deliveries-compared));
   [proposal 9](research/research-token-spend-means.md#6-proposals). Cuts in
-  `/ship` paid for the growth (295,263 to 295,252 bytes,
-  `scripts/check_process_budget.py`). Trace:
+  `/ship` and `/rvw-pr` paid for the growth (295,263 to 295,025 bytes,
+  `scripts/check_process_budget.py`). BK-430 (proposals 2 and 3) overlaps:
+  a covering check that cannot fail is its question, left open there. Trace:
   [bk-425](traces/bk-425-handoff-review-contract.yml).
 
 - [x] **BK-423 — A universal quantifier in process prose owes no enumeration until a reviewer refutes it**

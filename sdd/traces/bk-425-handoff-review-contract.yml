@@ -21,9 +21,17 @@ expected_ripples:
   - sdd/backlog/bk-384-rfc-0015-graduation-measurement.md
 surprising_ripples:
   - sdd/backlogid.json
-  - sdd/research/research-token-spend-means.md
-  - sdd/research/token-usage/report.md
+  - .claude/skills/rvw-pr/SKILL.md
 orient:
+  - items: [BK-430]
+    verdict: constrains
+    evidence: >-
+      Filed in open PR #1118 (bk-430-research-follow-ups), after this orient
+      ran; its open decision is "proposals 2 and 3 as standing rules, or
+      folded into BK-425". Proposal 2 (a check counts only if it could have
+      failed) bears on when a row is covered; proposal 3 (weigh a cheaper
+      delivery by its defects) measures outcomes, not coverage. Not folded:
+      the agreed scope stands and BK-430 keeps its decision.
   - items: [BK-384]
     verdict: constrains
     evidence: >-
@@ -129,7 +137,27 @@ phases:
       - file: scripts/check_process_budget.py
         section: "(run)"
         read_type: verify
-        extract: "ship/SKILL.md 54463 to 54352 (-111), CLAUDE.md 17194 to 17294 (+100), total 295263 to 295252"
+        extract: >-
+          Against origin/master's sdd/process-budget.json, after the round-1 fix:
+          ship/SKILL.md 54463 to 54206, rvw-pr/SKILL.md 30783 to 30702,
+          CLAUDE.md 17194 to 17294, total 295263 to 295025
+      - file: sdd/000-process.md
+        section: "Document types (Research row)"
+        read_type: verify
+        outcome: misleading
+        extract: >-
+          I added status pointers (BK-425 adopted) to the research record and
+          report; the Research row makes them point-in-time snapshots, changed
+          only for factual errors. A peer session flagged it; both restored to
+          master, PR #1118 owns reverting earlier pointers. My miss: I followed
+          BK-423's precedent instead of the row.
+      - file: .claude/skills/rvw-pr/SKILL.md
+        section: "Step 5"
+        read_type: verify
+        extract: >-
+          Round 1 (#1119): coverage needed a place in the reviewer's report
+          (fixed with Row: lines) and the mark vs coverage needed relating
+          (fixed in § Enumerate; width and ceiling now read uncovered rows)
       - file: sdd/backlogid.json
         section: "BK"
         read_type: verify

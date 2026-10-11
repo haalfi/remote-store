@@ -134,7 +134,10 @@ words; the Pre-work rows are a cross-check, never the source, since some answer
 a neighbouring question ([BK-346](../../../sdd/BACKLOG.md)). Keep the list
 current: it sizes panels and briefs, and it is **the review's contract**
 ([ADR-0044](../../../sdd/adrs/0044-ship-subject-list-review-contract.md)): the
-loop ends only when every row is covered or the user waived it (Stop rule).
+loop ends only when every row is covered or the user waived it (Stop rule). The
+mark is the author's evidence; coverage is the loop's. A row is covered only by
+a review pass reporting on it (brief item 4), whatever its mark, and the
+orchestrator records that pass against the row.
 
 The third delivery was scoped by where a symptom was reported, and a capable
 backend the new clause bound by *specification* went unnamed for six rounds
@@ -222,8 +225,8 @@ persona owns
 
 Width is a judgement, not a formula: a quiet round keeps the next narrow — a panel
 of one scoped member is still a round, though from round 3 an odd round's
-unprimed sibling always rides along — and a broad diff, a loud round, or subjects
-still `not reached` widen it. Width follows the subject set, not the file list:
+unprimed sibling always rides along — and a broad diff, a loud round, or uncovered
+rows widen it. Width follows the subject set, not the file list:
 sizing a panel by the diff's breadth is how a bound subject the diff never touched
 goes unnamed.
 
@@ -566,7 +569,8 @@ are not substitutes.
    half (BK-384), not a reason to widen a permission.
 
 4. **The uncovered subject-list rows assigned to this member**; each open row
-   goes to some member of the round. A row is covered when a pass reports its verdict on the row and how it got there;
+   goes to some member of the round. A row is covered when a pass reports its
+   verdict on the row and how it got there, on `/rvw-pr` Step 5's `Row:` lines;
    a row whose risk is behaviour is covered only by running it, by a measuring
    member or a CI lane that executes it.
 
@@ -707,8 +711,8 @@ clause, nor any row: it gets the PR number and the root alone, so no brief, no
   that is the stop rule's six clauses, and they bind independently.
 - **Ceiling: 5 finding-rounds, and it is soft.** On reaching it, escalate to the
   user **with the evidence, not the count**: findings per round with their
-  character, the severity trend, what the last round found, and which subjects are
-  still `not reached`. The count triggers the escalation; it is not what the
+  character, the severity trend, what the last round found, and which rows are
+  still uncovered. The count triggers the escalation; it is not what the
   decision is made on, and a bare "five rounds elapsed, continue?" hands the user
   the one number the loop already knows is a poor termination signal. Both
   escalations in the third delivery found more than the round before them, and the
@@ -742,12 +746,7 @@ which dropped the model axis and added the measuring member; and
 [ADR-0037](../../../sdd/adrs/0037-whole-file-gate-and-derived-figures.md) the
 fourth (PR #956), which added the whole-file gate after a converged, CI-green loop
 left defects in all eight files a single whole-file read then had to touch. Read
-all four before tuning any of the above: they are the evidence that finding counts
-plateau while severity keeps falling, that consecutive rounds each found defects
-in the previous round's fixes, that scoped rounds leave unnamed surface
-unexamined, that what separated the productive rounds was method rather than
-reviewer identity, and that a clean round is silent about everything outside the
-hunks it read.
+all four before tuning any of the above.
 
 **Reviewer *selection* is not in that set** —
 [ADR-0036](../../../sdd/adrs/0036-reviewers-by-subject-and-method.md) decides it,
