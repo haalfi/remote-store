@@ -25,6 +25,48 @@ expected_ripples:
 surprising_ripples:
   - sdd/specs/003-backend-adapter-contract.md
   - sdd/backlog/bk-390-rfc-0017-spec-amendments.md
+  - sdd/backlog/bk-394-memory-drivers-accept-adr-0042.md
+co_shipped_items:
+  - BK-399
+decisions:
+  - sdd/decisions/928fc3d9-dfbb-4d87-b779-7281d8006272.jsonl
+# The kernel PR's orient (2026-10-11); the planning PRs predate the key.
+orient:
+  - items: [BK-399]
+    verdict: constrains
+    evidence: >-
+      Its open decision is this PR's: BK-389's dossier decision 6 says what a
+      listing yields for a stored backslash key "is BK-399's, decided in this
+      item's kernel PR", and BK-395's dossier § Outcome leaves it open, so the
+      kernel's listing path must encode an answer.
+  - items: [BK-394, BK-398]
+    verdict: constrains
+    evidence: >-
+      BK-394's dossier decision 2 makes the kernel public there, so this PR
+      exports nothing; its item 4 keeps every spec amendment but BK-389's
+      item 8 clauses. BK-398 lands before BK-394 and "not before this item's
+      kernel PR" (BK-389 decision 6, Clauses checked).
+  - items: [BK-345]
+    verdict: constrains
+    evidence: >-
+      BK-345's dossier § Correction (2026-10-02): the absent-container answers
+      per Op "is now a fake-driver kernel cell in BK-389"; the registry gate
+      stays BK-345's from D3 step 2.
+  - items: [BUG-276, BUG-293]
+    verdict: constrains
+    evidence: >-
+      BUG-276's dossier § Decision: "synthesise", the kernel's ERR-009 floor;
+      RFC-0017 D2: "a RemoteStoreError already typed passes through untouched
+      (BUG-293)". The kernel encodes both once; the per-site Azure, S3 and
+      SFTP fixes stay on those items.
+  - items: [BUG-257, BUG-245, BUG-255, BUG-260, BUG-318, BUG-319, BUG-298, ID-247, ID-260, ID-262, ID-245]
+    verdict: unrelated
+    evidence: >-
+      Defects and gates on classes that migrate at later D3 steps (RFC-0017
+      D3 table); the kernel's shape answers them at their step (BUG-257 by
+      decision 1 at step 7, BUG-245 by OQ5 at step 3), and a fake-driver
+      kernel changes no cell of theirs. BUG-298 is pattern_to_regex's
+      anchoring, which the kernel does not call.
 # PR #1055's block (the planning PR, merged as c4466b05c) is in master's history:
 # git show c4466b05c:sdd/traces/bk-389-kernel-step-1.yml
 review:
@@ -408,3 +450,93 @@ phases:
         section: "§ ID prefixes, #1056 round 10"
         read_type: verify
         extract: "the closing panel found that the split-out item's ID- prefix reads as not committed to, while BK-389 depends on it, so ID-264 was renamed BK-396 (maintainer's decision); the same round corrected my 'round 2 to 9' range against commit a20d5ade4 (round 1 found the atomicity defect), relabelled the candidate section as condensed from 40151bc rather than moved verbatim, and restored the BE-013 rationale its stat-only rule rests on"
+  - id: orient
+    name: Orient (kernel PR)
+    steps:
+      - file: sdd/backlog/bk-389-kernel-step-1-memory.md
+        section: "(full)"
+        read_type: gate
+        extract: "decisions 1 to 8 and items 1 to 3 and 8: the kernel PR's whole scope"
+      - file: sdd/rfcs/rfc-0017-contract-kernel-over-thin-drivers.md
+        section: "D1, D2, D3, D6, D7, Impact (Testing, Amendments), Open Questions"
+        read_type: gate
+        extract: "the Driver protocol and ten Supports* protocols; what the kernel owns; the Testing roster"
+      - file: sdd/adrs/0042-contract-kernel-over-thin-drivers.md
+        section: "(full)"
+        read_type: reference
+        extract: "stays Proposed through this PR; BK-394 accepts it"
+      - file: sdd/backlog/bk-394-memory-drivers-accept-adr-0042.md
+        section: "(full)"
+        read_type: reference
+        extract: "the boundary: export, the other spec amendments and the Memory drivers are BK-394's"
+      - file: sdd/backlog/bk-345-absent-container-conformance.md
+        section: "Correction (2026-10-02)"
+        read_type: reference
+        extract: "the absent-container answers per Op are kernel cells here"
+      - file: sdd/backlog/bug-276-empty-base-class-message.md
+        section: "Decision (2026-09-29)"
+        read_type: reference
+        extract: "synthesise a message from the exception class"
+      - file: sdd/backlog/bk-395-kernel-key-rule-addressing.md
+        section: "Outcome"
+        read_type: reference
+        extract: "BK-399 left open: the listing answer for a stored backslash key"
+      - file: sdd/CLAUDE-REFERENCE.md
+        section: "Ripple-check > Pre-work index"
+        read_type: gate
+        extract: "Spec section, Store or Backend ABC, Dependency (unasync, dev-only) and New test file rows"
+  - id: implement
+    name: Build the kernel (kernel PR)
+    steps:
+      - file: src/remote_store/_backend.py
+        section: "(full)"
+        read_type: verify
+        extract: "the 27 members the kernel implements; read_seekable's spool default reused for drivers without ranged reads"
+      - file: src/remote_store/aio/_async_backend.py
+        section: "(full)"
+        read_type: verify
+        extract: "the async surface; no read_seekable or open_atomic, aclose not close"
+      - file: sdd/specs/003-backend-adapter-contract.md
+        section: "BE-017, BE-020, BE-021, BE-024, BE-025, BE-029"
+        read_type: gate
+        extract: "where BE-030, BE-031 and the in-place amendments sit; BE-029 § Out of scope leaves the root delete_folder undefined"
+      - file: sdd/rfcs/rfc-0017-delete-folder-measure.py
+        section: "Kernel, ScriptedDriver, enum_rows, MemoryDriver, ImplicitTreeDriver"
+        read_type: verify
+        extract: "the decided model the delete_folder port is checked against cell by cell, the 88-cell enum included"
+      - file: src/remote_store/_stream.py
+        section: "_ErrorMappingStream, _safe_wrap"
+        read_type: reference
+        extract: "the caught set (OSError, EOFError, also_catch) is the sync stream's bound; the async read was first written wider, then matched to it"
+      - file: src/remote_store/backends/_flat_ns.py
+        section: "_addressable_segments; module imports"
+        read_type: reference
+        extract: "importing it runs backends/__init__, which would make the kernel import every backend; restated instead"
+      - file: tests/backends/conformance/test_health_probe_declared.py
+        section: "subclass selection"
+        read_type: verify
+        extract: "selects concrete, non-underscore Backend subclasses; the kernel classes override check_health, so they pass"
+      - file: sdd/TESTING.md
+        section: "Test Subpackage Placement; Rules"
+        read_type: gate
+        extract: "src/remote_store/_kernel/ maps to tests/_kernel/ (TEST-010)"
+      - file: sdd/specs/048-testing-architecture.md
+        section: "TEST-010"
+        read_type: reference
+        extract: "1:1 subpackage rule; no exemption needed for the kernel"
+  - id: verify
+    name: Verify the kernel (kernel PR)
+    steps:
+      - file: tests/_kernel/test_kernel.py
+        section: "first run"
+        read_type: verify
+        extract: "two real gaps on the first run: a native folder_stats cannot omit BE-030's keys (clause narrowed to a driver obligation), and the async read mapped every Exception where the sync stream maps its caught set only (runtimes aligned)"
+      - file: sdd/specs/003-backend-adapter-contract.md
+        section: "BE-031 primitives"
+        read_type: verify
+        extract: "my first draft dropped RFC-0017 D1's 'where folder objects exist' from delete_tree's refusal; a flat delete_tree is a prefix delete"
+        outcome: ok
+      - file: src/remote_store/_kernel/_async/kernel.py
+        section: "14 mutations at load-bearing points"
+        read_type: verify
+        extract: "13 killed; the survivor was a dead branch inherited from the model (on_way in _df_stands, unreachable since the walk tolerates NotFound first), removed"

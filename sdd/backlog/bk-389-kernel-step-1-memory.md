@@ -234,6 +234,12 @@ every case. RFC-0017 carries the same answers at the question each settles.
      Memory cells and BUG-300 for SQLBlob). The refusal covers input keys
      only: what a listing yields for a stored key holding a backslash that
      another tool wrote is BK-399's, decided in this item's kernel PR.
+     [Decided 2026-10-11, the maintainer through the interview, the
+     recommended option: a listed key the rule would refuse or rewrite is
+     **omitted** from every listing, `glob` and the folder aggregate, and
+     logged. Folding names another node and raising makes every sibling
+     unlistable; it stays reachable through addressing and `unwrap()`. A
+     driver aggregating natively owes the same omission. BE-030 states it.]
    - **`glob(pattern)` takes the pipeline segment-wise over the whole
      pattern.** Order: the capability first (a driver without `SupportsGlob`
      declares no `GLOB`, so `CapabilityNotSupported` as BE-024 states,
@@ -682,3 +688,43 @@ below is this, run with `hatch run python`: for each of `""`, `"."`, `"./"`,
 **What it does not include.** The Memory drivers and everything step 1 makes
 true (BK-394); step 2 onward (RFC-0017 D3); the spec amendments of later steps
 (BK-390).
+
+## As landed (2026-10-11, the kernel PR)
+
+Where it lives: `src/remote_store/_kernel/`, unexported. `_async/driver.py`
+and `_async/kernel.py` are the source; `_sync/driver.py` and `_sync/kernel.py`
+are generated from them by `scripts/gen_sync_kernel.py` (unasync's token pass,
+then ruff), whose `--check` runs in `preflight`; `_async/_io.py` and
+`_sync/_io.py` are the hand-written seam (stream and content shapes);
+`backend.py` and `aio_backend.py` hold each runtime's own members. Spec 003
+gained BE-030 (key rule, BK-399's answer), BE-031 (`delete_folder`) and
+BE-017's aggregation sentence (moved from BK-394 at the maintainer's
+decision, so the kernel's cells trace to a clause). Tests: `tests/_kernel/`,
+every cell in both runtimes; the `delete_folder` cells run the real kernel
+and `rfc-0017-delete-folder-measure.py`'s decided `Kernel` side by side,
+the 88-cell `enum` product included.
+
+Choices the decisions above left open, as built:
+
+- **Driver records.** `put` returns a `PutResult` without a path, so no driver
+  builds a `RemotePath` (decision 6's "result path before the commit").
+  `get_range` returns `bytes`. `copy` and `SupportsAtomicMove.move` take
+  `overwrite`; `SupportsRename` declares `rename_replaces`.
+- **Construction** refuses, with `ValueError`, a driver with folder objects and
+  no `remove_folder`, and D1's four capability-consistency checks. A driver
+  with `parents == "explicit"` and no `ensure_parents` is not refused; writes
+  under a missing folder then fail on its wire.
+- **Absent container.** The kernel reads it as `NotFound` for every `Op` but
+  `write`, `write_atomic`, `open_atomic`, `probe`, the identity scopes and
+  `close`, which keep `classify`'s answer. On `parents == "none"`,
+  `delete_folder`'s determinant listing reads a `NotFound` as empty, where the
+  model's flat drivers absorb the container's 404 themselves (BE-013).
+- **Move and copy** on a driver with `ensure_parents` stat the source first,
+  so a missing source creates no destination folders (BE-018's order).
+- **Streams.** Both runtimes catch `(OSError, EOFError, *stream_catch)` in
+  `read`; outside that set an error propagates unmapped in both, as
+  `_ErrorMappingStream` does today (SIO-012). A first draft mapped every
+  `Exception` on the async side only.
+- **`_flat_ns._addressable_segments` is restated, not imported:** importing it
+  runs `remote_store.backends.__init__`, which imports every backend, and the
+  backends will subclass the kernel.

@@ -7,6 +7,7 @@ This project follows [Semantic Versioning](https://semver.org/). Pre-1.0, minor 
 
 ## [Unreleased]
 
+- BK-399: A stored key holding a backslash has no kernel answer, so migration may strand it
 - BUG-320: Nested lists indented for GitHub render flattened on the docs site
 - BUG-280: `LocalBackend`'s three listing methods leak a raw `PermissionError`
 - BUG-317: pymdown-extensions 12.2 breaks the docs build, so every docs job fails

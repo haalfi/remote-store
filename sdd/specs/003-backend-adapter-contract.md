@@ -160,7 +160,8 @@ for exactly this reason.
 the cells below only where the root's own answer is wrong, and a present root
 often answers correctly by observation, so the order is unpinned there on every
 row. It matters once the container is absent, which no conformance fixture
-arranges (tracked: BK-345, and BK-389's fake-driver cells for the kernel); the
+arranges (tracked: BK-345; for a class on the kernel the fake-driver cells in
+`tests/_kernel/` observe it, BE-020 ranked first); the
 backends that can lose theirs pin it per backend.
 
 **BE-020 outranks this check.** On a backend with `close_is_terminal = True`,
@@ -311,7 +312,10 @@ So a backslash-only key is **not** refused by this clause. It is the milder
 failure of the two — on a POSIX namespace it lands a file named `\` inside the
 container rather than occupying it — and it is stated here rather than closed,
 because closing it costs the addressing contract. A backend wanting to refuse it
-must do so without widening the predicate its addressing depends on.
+must do so without widening the predicate its addressing depends on. A class on
+the kernel does exactly that: [BE-030](#be-030-key-rule-on-the-kernel) refuses a
+backslash on every operation, as a validation rule rather than a root rule, while
+its addressing passes the key raw.
 
 **The obligation this leaves is a normative one: within a backend, whether a key
 names a node and *which* node it names are decided by one predicate.** Both ways
@@ -355,7 +359,9 @@ destination that does not exist. A clause whose scope depends on a per-namespace
 reachability argument is a clause that is wrong on the namespace nobody checked.
 
 **Out of scope:** `delete_folder("")`, which is governed at the `Store` layer
-(STORE-002) — backend behaviour for it is undefined by this clause. Note
+(STORE-002) — backend behaviour for it is undefined by this clause, except on a
+class on the kernel, where [BE-031](#be-031-delete_folder-on-the-kernel) refuses
+it with `InvalidPath`. Note
 `delete("")` is **not** out of scope — it is a file-shaped operation on a folder,
 and the row above governs it.
 
@@ -635,6 +641,7 @@ discharged structurally. Verified in `MemoryBackend.dfy`. See ID-151.
 **Raises:** `NotFound` if the path does not exist. `InvalidPath` if the path names a file (wrong type — use `get_file_info` instead). See BE-021.
 **Flat-namespace backends are not exempt** (BK-324): when the prefix listing comes back empty they probe the exact key and raise `InvalidPath` rather than `NotFound`. See [BE-021](#be-021-error-mapping) for the shared error-path rule and its cost model.
 **Root:** `get_folder_info("")` aggregates over the whole store rather than raising — see BE-029.
+**`modified_at` on a class on the kernel:** the latest known modification time of any file under the folder, recursively. A file whose time is the unknown sentinel (`datetime.min` in UTC, `FileInfo.modified_at`'s "cannot know") is skipped, and a folder with no known time answers `None`. The kernel computes it over a listing; a driver that aggregates natively returns the same value. Backends not on the kernel are outside this sentence.
 **Formal coverage:** `get_folder_info()` is modelled in `sdd/formal/BackendContract.dfy` as `GetFolderInfo` with postconditions `IsFile → InvalidPath`, `!PathExists → NotFound`, `IsDir → Ok`, `file_count == |ChildFiles(fs, path)|`, and `total_size == SumSizes(fs, ChildFiles(fs, path))`, each under BE-020's `Live()` guard; since BK-388 also an absent-container clause (BE-021 § Reach): the root aggregates to zero, any other path is `NotFound`. Verified in `MemoryBackend.dfy`. Property-based aggregate coverage against the compiled Dafny oracle lives in `tests/test_pbt_folder_info_aggregates.py`. See ID-130, ID-134, ID-187.
 
 ### BE-018: move()
@@ -1239,6 +1246,7 @@ follow them, as `LocalBackend`'s do.
 **Invariant:** `native_path(path)` converts a backend-relative key to the backend-native path. The inverse of `to_key()`: `backend.to_key(backend.native_path(key)) == key`. The default implementation is the identity function — backends with a native root **must** override.
 **Root spellings:** `native_path("")` and `native_path(".")` return the same value, the bare backend root (BE-029). The round-trip identity therefore returns the canonical root key — `to_key(native_path("."))` is `""` — since one native path cannot invert to two spellings. Every non-root key **in canonical form** round-trips verbatim; a non-canonical one need not, and for the same reason — `native_path` normalises, and one address cannot invert to the several keys that produced it. Every lossy class is one `WellFormedPath` (PATH-002 through PATH-008) already excludes, though not every exclusion is lossy — `".."` segments and null bytes are excluded and do round-trip verbatim. The lossy ones are: a redundant `"."` segment, an empty segment (leading, trailing or doubled slash), and on backends that fold it, a backslash. Measured on `GraphBackend`, `native_path("a/./b")`, `native_path("dir/")`, `native_path("a//b")` and `native_path("/a")` each invert to the canonical key rather than the caller's spelling. So the identity is exact over the keys `to_key` produces and over every canonical key, and lossy over the wider set a caller holding a `Backend` directly may hand `native_path`. The identity-default implementation normalises both root spellings for the same reason.
 **Postconditions:** Pure, deterministic, total (never raises). The returned path is usable with the native handle from `unwrap()`.
+**On the kernel:** a class on the kernel normalises a key before its driver addresses it and passes a refused key raw, so a non-canonical key inverts to its canonical form and a `..` or null-byte key round-trips verbatim; the rule is [BE-030](#be-030-key-rule-on-the-kernel)'s **Addressing stays total**.
 **Overrides:** `LocalBackend` (prepends root dir), `S3Backend` (prepends bucket), `S3PyArrowBackend` (prepends bucket), `SFTPBackend` (prepends base_path), `AzureBackend` (prepends container).
 **Example:** `S3PyArrowBackend(bucket="lake").native_path("data/file.parquet")` returns `"lake/data/file.parquet"`.
 **See also:** [001-store-api.md](001-store-api.md) (STORE-015), [014-pyarrow-filesystem-adapter.md](014-pyarrow-filesystem-adapter.md) (PA-010 Tier 1).
@@ -1254,6 +1262,7 @@ follow them, as `LocalBackend`'s do.
 **Invariant:** `glob(pattern)` matches files against a glob pattern. Non-abstract — the default implementation raises `CapabilityNotSupported`. Backends with native glob support override this and declare `Capability.GLOB`.
 **Postconditions:** Returns only files (not folders). Paths in returned `FileInfo` objects are backend-relative (same convention as `list_files`).
 **Raises:** `CapabilityNotSupported` if the backend lacks `GLOB`.
+**On the kernel:** a class on the kernel refuses and normalises the pattern by the rule and order [BE-030](#be-030-key-rule-on-the-kernel) states, so the driver receives a canonical pattern.
 **See also:** [018-glob.md](018-glob.md) (GLOB-003 through GLOB-005), [ADR-0009](../adrs/0009-glob-three-tier-design.md).
 
 ### BE-027: Capability-Gated Methods (Graph IR Metadata)
@@ -1323,3 +1332,173 @@ concurrency conformance lane tests against.
 **See also:** [001-store-api.md](001-store-api.md) (STORE-007),
 [013-memory-backend.md](013-memory-backend.md) (MEM-025/026),
 [029-async-store-backend-api.md](029-async-store-backend-api.md) (ASYNC-094).
+
+---
+
+## Contract kernel
+
+The clauses below bind a **class on the kernel**: a backend implemented as the
+contract kernel (`DriverBackend` / `AsyncDriverBackend`, private until the first
+backend migrates) over a driver of wire primitives, per
+[RFC-0017](../rfcs/rfc-0017-contract-kernel-over-thin-drivers.md) D1 and D2 and
+[ADR-0042](../adrs/0042-contract-kernel-over-thin-drivers.md). Each states, once,
+an answer the other clauses of this spec leave to the backend. A backend not on
+the kernel is unaffected by them. The decisions behind them, with their
+measurements, are recorded in BK-389's dossier, decisions 6 and 8.
+
+### BE-030: Key Rule on the Kernel
+
+**Invariant:** a class on the kernel validates and normalises every key before
+its driver sees it, and decides the root on the result. A driver receives only
+canonical keys: no leading `/`, no empty, `.` or `..` segment, no null byte, no
+backslash, and `""` for the root.
+
+**Pipeline, per operation**, in this order:
+
+1. The closed guard (BE-020), when the driver declares `close_is_terminal`.
+2. Refusals, raising `InvalidPath`: a key starting with `/`, a `..` segment, a
+   null byte, a backslash.
+3. Normalisation: empty and `.` segments are dropped, so `//`, `/./` and a
+   trailing `/` fold and every root spelling becomes `""`.
+4. The root check on the canonical key, where `""` is the root.
+5. The driver, with the canonical key. For a write the result's path is built
+   from that key **before** the driver commits, so no key the kernel accepts can
+   fail after the bytes land.
+
+For a key passing step 2, a canonical `""` is exactly BE-029's "addresses the
+root" predicate, so every operation gets the wide predicate: the write side and
+the `move`/`copy` destination as BE-029 requires, and the read side and the
+source as BE-008 permits.
+
+| Key class (examples) | Probes: `exists`, `is_file`, `is_folder` | File-shaped: `read`, `read_bytes`, `read_seekable`, `get_file_info`, `delete`, `move`/`copy` source | Write-shaped: `write`, `write_atomic`, `open_atomic`, `move`/`copy` destination | Folder-shaped: `list_files`, `list_folders`, `iter_children`, `get_folder_info` | `delete_folder` |
+|---|---|---|---|---|---|
+| root (`""`, `"."`, `"./"`, `".//"`, `"./."`) | the root's answer (BE-029) | `InvalidPath` | `InvalidPath` | the root folder | `InvalidPath`, refused before the driver |
+| `/`-led (`"/"`, `"/./"`, `"/f"`) | `InvalidPath` | `InvalidPath` | `InvalidPath` | `InvalidPath` | `InvalidPath` |
+| `..` segment (`"d/../f"`) | `InvalidPath` | `InvalidPath` | `InvalidPath` | `InvalidPath` | `InvalidPath` |
+| null byte | `InvalidPath` | `InvalidPath` | `InvalidPath` | `InvalidPath` | `InvalidPath` |
+| backslash (`"d\\f"`, `"\\"`) | `InvalidPath` | `InvalidPath` | `InvalidPath` | `InvalidPath` | `InvalidPath` |
+| non-canonical (`"d//f"`, `"d/./f"`, `"d/"`) | the canonical key's answer | the canonical key's answer | the canonical key's answer | the canonical key's answer | the canonical key's answer |
+| canonical (`"f"`, `"d/f"`) | passed through | passed through | passed through | passed through | passed through |
+
+The `InvalidPath` of a refused probe is a refusal of the key, not a traversal
+answer, so BE-004's "never raises `NotFound`" is unaffected.
+
+**Addressing stays total** (BE-025). `native_path(key)` and `resolve(key)` run
+no closed guard and never raise for the key: a key passing step 2 is normalised
+and the driver receives the canonical key; a key step 2 refuses reaches the
+driver raw. `resolve(key).key` is the caller's `key`, and its `native_path` is
+the kernel's `native_path(key)`. `to_key` is forwarded unchanged.
+
+**A listing never presents a key the rule would refuse or rewrite.** An entry or
+common prefix a driver lists whose key is not canonical (one another tool stored,
+such as `a\b`) is omitted from `list_files`, `list_folders`, `iter_children`,
+`glob` and the `get_folder_info` aggregate, and the omission is logged. A driver
+that aggregates natively computes that aggregate itself, so it owes the same
+omission (BE-017: it returns the value the kernel would). Folding it
+would name another node (`a\b` as `a/b`), which is BE-029's withdrawn fold;
+raising would make every sibling unlistable. The entry stays reachable through
+addressing and `unwrap()`. A recursive `delete_folder` over a folder holding one
+therefore cannot empty it and answers `DirectoryNotEmpty` (BE-031).
+
+**`glob(pattern)` takes the rule segment-wise over the whole pattern.** Order:
+the capability first (a driver without native glob declares no `GLOB`, so
+`CapabilityNotSupported`, closed or not, since capability data is not a live
+operation); then the closed guard; then step 2's refusals over the raw pattern;
+then step 3 for every segment, wildcard characters untouched inside their
+segments, with one addition: a raw pattern ending in `/` keeps that trailing `/`
+when anything remains, since in a pattern it selects directories only. A
+canonical `""` names the root, a folder, and yields nothing. Worked examples:
+`"./d/*.csv"`, `"d//*.csv"` and `"d/./*.csv"` reach the driver as `"d/*.csv"`;
+`"d/*//"` as `"d/*/"`; `"d/*/."` as `"d/*"`; `"/d/*.csv"`, `"*/../x"` and
+`"d\\*.csv"` raise `InvalidPath`.
+
+**Conformance:** fake-driver kernel cells in `tests/kernel/`, run against both
+runtimes; Memory's cells arrive with its migration.
+
+### BE-031: `delete_folder` on the Kernel
+
+**Invariant:** a class on the kernel removes folders through two driver
+primitives with refusal obligations of their own, and sequences them, with its
+error-path probes, in one place.
+
+**Primitives.**
+
+- `remove_folder(key)` removes an empty folder and refuses anything else (a
+  non-empty folder, a file, an absent key) **without removing it**, in one step
+  where the wire has one (`rmdir`, a lock). A driver whose `parents` is
+  `"explicit"` or `"implicit"`, which has folder objects, MUST provide it; the
+  kernel refuses to construct over one that does not. It is never called when
+  `parents == "none"`.
+- `delete_tree(key)`, optional, removes a folder's whole tree. Where folder
+  objects exist it refuses a file or an absent key without removing anything,
+  and a wire whose tree delete also removes a file item checks first and
+  documents that race. With `parents == "none"` it removes what lies under the
+  prefix and leaves a file named by the key itself.
+
+**`stat` and `list_page` take `follow_links`**, default `True`. `delete_folder`
+alone calls both with `False`, a view in which a link (dangling or not, or a
+Windows junction) is a non-folder entry. So a link at `key` answers
+`InvalidPath`, and a link below it is deleted as an entry, never traversed.
+
+**The probe rule.** A refusal that is a typed `NotFound` or an untyped
+`RemoteStoreError` gets the error-path probes: one `stat`, then, for a folder
+still present and where the call can answer `DirectoryNotEmpty`, one
+`list_page(key, delimiter="/", limit=1)`. They replace the refusal with the key's
+state: absent → `NotFound` (to which `missing_ok` applies), a file or link →
+`InvalidPath`, a non-empty folder → `DirectoryNotEmpty`. When they do not
+replace it, because a probe raised (its exception chained) or they found a
+folder they cannot type further, the refusal stands, and `missing_ok` applies to
+it when it is a `NotFound`: BE-021's fail-open rule. Every other typed refusal
+(`PermissionDenied`, `BackendUnavailable`, ...) passes through unprobed, since it
+says nothing about the key. A `delete_tree` refusal gets the `stat` probe only.
+
+**The sequence.**
+
+- *Folder objects, `recursive=False`:* `remove_folder(key)`, with no probe
+  before it.
+- *Folder objects, `recursive=True`, with `delete_tree`:* `delete_tree(key)`.
+- *Folder objects, `recursive=True`, without it (the walk):* `list_page(prefix,
+  delimiter="/")` down the tree, then every file deleted, then `remove_folder`
+  deepest first and `key` last. On the way, a refusal goes through the probe
+  rule for its own entry with two differences: an absent outcome is tolerated
+  (the entry is already gone), and a file `delete` whose probe finds a file keeps
+  its own refusal. A refusal of `key`'s own listing goes through the probe rule
+  for `key`; a subfolder listing answering `NotFound` is tolerated. Only the
+  calls on `key` itself apply `missing_ok`.
+- *`parents == "none"`:* list first, `stat` only after an empty listing. A
+  non-recursive call lists `limit=1` with `delimiter="/"`; a recursive one lists
+  with `delimiter=None`, `limit=1` before `delete_tree`, or paged without
+  `delete_tree`, deleting each listed file and tolerating a `NotFound` on one.
+  The listing is the determinant and fails closed, except that a `NotFound`
+  from it is an empty listing: an absent prefix, or an absent container, holds
+  nothing (BE-013). After an empty listing, `stat`: a file → `InvalidPath`,
+  anything else → `NotFound`, to which `missing_ok` applies; a raising `stat`
+  leaves the empty listing's `NotFound` (fail-open). After a non-empty listing a
+  refusal passes through unprobed.
+
+| Key state, folder objects | `recursive=False` | `recursive=True` |
+|---|---|---|
+| empty folder | removed | removed |
+| folder holding files, or only an empty folder | `DirectoryNotEmpty` | removed |
+| file, or a link | `InvalidPath` | `InvalidPath`, nothing removed |
+| absent, or under a file (`f/x`) | `NotFound` | `NotFound` |
+
+| Key state, `parents == "none"` | `recursive=False` | `recursive=True` |
+|---|---|---|
+| files under the prefix | `DirectoryNotEmpty` | removed |
+| file `f`, nothing under it | `InvalidPath` | `InvalidPath` |
+| a file and a prefix both | `DirectoryNotEmpty` | the files under it removed, the file kept |
+| absent, or under a file (`f/x`) | `NotFound` | `NotFound` |
+
+**A recursive delete may answer `DirectoryNotEmpty`** on a walk, when a writer
+adds under the tree mid-walk, or when an entry the listing omits (BE-030) stays
+behind. BE-013 lists the error for `recursive=False` and forbids it nowhere else.
+
+**The root.** `delete_folder` on any root spelling raises `InvalidPath` before
+the driver is called (BE-030's table), never reaching `remove_folder`,
+`delete_tree` or the walk. BE-029 leaves the root `delete_folder` undefined for
+backends in general; for a class on the kernel this clause defines it.
+
+**Conformance:** fake-driver kernel cells in `tests/kernel/`, which enumerate the
+probe rule's condition space (refusal × `stat` outcome × listing outcome ×
+`missing_ok`, per context).

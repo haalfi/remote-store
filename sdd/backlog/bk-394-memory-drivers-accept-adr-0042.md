@@ -100,7 +100,10 @@ labelled **(was … , absorbed here)**, which is the absorption form
    - spec 003 BE-017: the folder `modified_at` rule above [BK-389's item 3,
      and RFC-0017 D3; nothing above in this file states it], sentinel and
      `None` included, with a note that `GraphBackend` answers its folder
-     item's own time until step 7 migrates it (BK-390).
+     item's own time until step 7 migrates it (BK-390). [Corrected
+     2026-10-11, BK-389's kernel PR: the rule itself landed there, scoped to a
+     class on the kernel, because the kernel's cells trace to it; what is
+     left here is the Graph note.]
    - spec 029: the async surface and `AsyncDriver`.
    - specs 007 and 022, kernel half: `write_atomic` and temp-and-promote as
      kernel behaviour over `put_is_atomic`, `open_write` and `rename`.

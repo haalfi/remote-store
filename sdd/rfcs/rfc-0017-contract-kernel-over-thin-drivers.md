@@ -871,7 +871,9 @@ and its answer keeps `classify`.
   as a kernel/driver placement per clause, which the list at filing omitted),
   the kernel half
   of 007 and 022, the Memory drivers' rows of 007 and 022, spec 026's PING-002
-  and PING-008, spec 003's BE-017 folder `modified_at` rule, the
+  and PING-008, spec 003's BE-017 note that `GraphBackend` answers its folder
+  item's own time until step 7 (the rule itself landed with BK-389's kernel
+  PR, whose cells trace to it), the
   custom-backend guide with its `partial-capabilities`
   region, `check_custom_backend_guide.py`, and the landing page's snippet.
   With the later D3 step that makes each true (BK-390): the rest of the specs

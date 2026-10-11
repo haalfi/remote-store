@@ -298,6 +298,25 @@ if evidence changes; these are retired.
 
 ## Unreleased
 
+- [x] **BK-389 — RFC-0017's kernel does not exist, so no backend can migrate onto it**
+  spec: BE-017, BE-020, BE-021, BE-024, BE-025, BE-029, BE-030, BE-031, ERR-001, ERR-009, DEPTH-003, PING-002 · effort: L · audience: library.maintainer, infra.test
+  The contract kernel, private under `src/remote_store/_kernel/`: the async
+  core and driver protocols, the sync twin `scripts/gen_sync_kernel.py`
+  generates with `unasync` (`--check` in `preflight`), and each runtime's own
+  layer. Spec 003 gains BE-030 (key rule), BE-031 (`delete_folder`) and
+  BE-017's aggregation rule. Tests: `tests/_kernel/`, both runtimes, the
+  `delete_folder` cells checked against BK-396's decided model. Remainder:
+  BK-394. Trace: [bk-389](traces/bk-389-kernel-step-1.yml). Detail:
+  [dossier](backlog/bk-389-kernel-step-1-memory.md).
+
+- [x] **BK-399 — A stored key holding a backslash has no kernel answer, so migration may strand it**
+  spec: BE-025, BE-029, BE-030 · effort: S · audience: library.maintainer, user.api
+  Decided in BK-389's kernel PR and encoded there: a listed key the key rule
+  would refuse or rewrite is omitted from every listing, `glob` and the
+  folder aggregate, and logged; it stays reachable through addressing and
+  `unwrap()`. BE-030 states it; BK-389's dossier, decision 6, records it.
+  Reaches users when a class migrates (BK-394 for Memory).
+
 - [x] **BK-408 — RFC-0019 judges its fast lane by merge-gate exit criteria, so a redrafted selector must reach zero escapes**
   spec: — · effort: S · audience: contributor.process, infra.test
   RFC-0019 § Roadmap now exits Phases 2 and 3 on net time saved: a saving

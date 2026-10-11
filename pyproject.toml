@@ -303,6 +303,10 @@ python = "3.13"
 # real optional-dependencies extra rather than an env-only `dependencies` entry
 # so the two mutation workflows can install the same pin via `.[mutate]`.
 features = ["dev", "docs", "bench", "mutate"]
+# Env-only, not an extra: a code generator the package never imports at runtime.
+# scripts/gen_sync_kernel.py derives the sync contract kernel from the async one
+# (RFC-0017 D6); the `--check` lane in `preflight` needs it.
+dependencies = ["unasync==0.6.0"]
 # The uv installer honours UV_SYSTEM_PYTHON=1 (set workflow-wide in CI) and then
 # syncs these features into the system Python, not .venv. A job that runs hatch
 # sets UV_SYSTEM_PYTHON=0 (BK-411); tests/scripts/test_workflow_hatch_uv_system.py
@@ -318,7 +322,7 @@ features = ["dev", "docs", "bench", "mutate"]
 # preflight` in the `lint` job (BK-269), so the script list is the single source.
 # Every entry is offline by construction; `check-support-windows` below is the
 # one support-window mechanism that reaches PyPI and so is deliberately absent.
-preflight = ["python scripts/check_hatch_python.py", "python scripts/gen_graph.py --check", "python scripts/check_api_docs.py", "python scripts/check_docstring_parity.py", "python scripts/gen_features.py --check", "python scripts/gen_graph_viz.py --check", "python scripts/gen_adr_digest.py --check", "python scripts/drift_check.py render-docs --check", "python scripts/gen_python_support.py --check", "python scripts/check_process_budget.py"]
+preflight = ["python scripts/check_hatch_python.py", "python scripts/gen_graph.py --check", "python scripts/check_api_docs.py", "python scripts/check_docstring_parity.py", "python scripts/gen_features.py --check", "python scripts/gen_graph_viz.py --check", "python scripts/gen_adr_digest.py --check", "python scripts/drift_check.py render-docs --check", "python scripts/gen_python_support.py --check", "python scripts/check_process_budget.py", "python scripts/gen_sync_kernel.py --check"]
 lint = ["ruff check src/ tests/ examples/ scripts/", "python scripts/check_test_assertions.py tests", "python scripts/check_mock_spec.py tests", "python scripts/check_test_placement.py tests", "python scripts/check_tla_no_emdash.py", "python scripts/check_formal_trace.py", "python scripts/check_capability_parity.py", "python scripts/check_spec_marks.py", "python scripts/check_docs_framework.py", "python scripts/gen_backlogid.py --check", "python scripts/check_rst_roles.py", "python scripts/check_infra_settings.py", "python scripts/check_no_tracker_refs.py", "python scripts/check_breaking_migration_link.py", "python scripts/check_ci_inventory.py", "python scripts/check_traces.py", "python scripts/check_readthedocs_python.py", "python scripts/check_backend_order.py", "python scripts/check_conda_recipe_pins.py", "python scripts/gen_conda_feedstock.py --check", "python scripts/check_ripple_parity.py", "python scripts/check_changelog_unreleased.py", "python scripts/check_custom_backend_guide.py", "python scripts/check_ci_full_matrix.py", "python scripts/check_dafny_twin_parity.py", "python scripts/check_sdd_index.py", "python scripts/gen_gate_inventory.py --check", "python scripts/check_no_retrospective.py"]
 format = "ruff format src/ tests/ examples/ scripts/"
 format-check = "ruff format --check src/ tests/ examples/ scripts/"
@@ -417,6 +421,8 @@ gen-graph-viz = "python scripts/gen_graph_viz.py {args}"
 gen-graph-viz-check = "python scripts/gen_graph_viz.py --check"
 gen-backlogid = "python scripts/gen_backlogid.py {args}"
 gen-backlogid-check = "python scripts/gen_backlogid.py --check"
+gen-sync-kernel = "python scripts/gen_sync_kernel.py {args}"
+gen-sync-kernel-check = "python scripts/gen_sync_kernel.py --check"
 gen-adr-digest = "python scripts/gen_adr_digest.py {args}"
 gen-adr-digest-check = "python scripts/gen_adr_digest.py --check"
 gen-api-check = "python scripts/check_api_docs.py"
@@ -805,6 +811,12 @@ extend-exclude = ["sdd/formal/*-py"]
 [tool.ruff.lint]
 select = ["E", "F", "W", "I", "UP", "B", "BLE", "SIM", "TCH", "PT"]
 ignore = ["UP045"]
+
+[tool.ruff.lint.per-file-ignores]
+# Generated from `_async/` by scripts/gen_sync_kernel.py. The async source cannot
+# use `yield from` (not allowed in an async generator), so its sync twin keeps the
+# explicit loop; rewriting it here would make the generated file a hand edit.
+"src/remote_store/_kernel/_sync/{driver,kernel}.py" = ["UP028"]
 
 [tool.ruff.lint.flake8-pytest-style]
 # Note: ruff PT011 only resolves builtin/stdlib names; custom exception names

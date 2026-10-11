@@ -285,23 +285,6 @@ failure it was.
   BK-395's addressing rule adds both Memory classes at BK-394. Open decision:
   none; amend all three to BE-025's non-canonical exception.
 
-- [ ] **BK-399 — A stored key holding a backslash has no kernel answer, so migration may strand it**
-  spec: BE-025, BE-029 · effort: S · audience: library.maintainer, user.api
-  BK-395 refuses a backslash on every operation, but a key another tool wrote
-  (`a\b`) is still listed, folded to `a/b` by `RemotePath` (a stored `"\\"`
-  makes Memory's whole listing raise), then no operation reaches it; only
-  addressing still yields its native address. Open decision: what a listing
-  yields for it and how it is reached; BK-389 decides.
-
-- [ ] **BK-389 — RFC-0017's kernel does not exist, so no backend can migrate onto it**
-  spec: BE-017, BE-020, BE-021, BE-024, BE-025, BE-029, ERR-001, ERR-009, DEPTH-003, PING-002, AW-001, SAW-003 · effort: L · audience: library.maintainer, infra.test
-  D3 step 1's first PR: the async kernel and its `unasync` sync twin, private,
-  with a fake-driver suite and the spec 003 clauses it traces to, under the
-  Proposed ADR-0042; BK-394 lands Memory on it. After the v0.33.0 tag. Needs BK-388.
-  Open decision: BK-399's stored backslash keys; the rest are in the dossier's
-  § Decisions (`delete_folder`'s from BK-396, the key rule's from BK-395).
-  Detail: [dossier](backlog/bk-389-kernel-step-1-memory.md)
-
 - [ ] **BK-394 — No backend runs on RFC-0017's kernel, so ADR-0042 stays Proposed**
   spec: BE-017, BE-020, BE-021, BE-029, ERR-001, ERR-009, DEPTH-003, ASYNC-001, AW-001, SAW-003, SAW-012, PING-002, PING-008, NPR-020, MEM-DS-005, MEM-013, MEM-014, MEM-015, MEM-018, MEM-020 · effort: L · audience: library.maintainer, user.api_docs, contributor.process
   ADR-0042 is accepted only with the first backend on the new design: the two
@@ -322,7 +305,7 @@ failure it was.
   spec: BE-021 · effort: M · audience: infra.test
   BE-021's absent-container rule is verified only by per-backend suites, so a
   new backend that can delete passes CI without meeting it, as `GraphBackend`
-  did until BUG-248. Its kernel half lands in BK-389; what stays here is the
+  did until BUG-248. Its kernel half landed in BK-389; what stays here is the
   gate, as per-driver `container_absent` cells from D3 step 2. Open decision:
   none of its own; depends on ID-244 (§ 2) for the seeding hook, and on BK-394.
   Detail: [dossier](backlog/bk-345-absent-container-conformance.md)
@@ -348,7 +331,7 @@ no clause of the contract ships unexercised.
   spec: GLOB-007, GLOB-010, GLOB-011, GLOB-012, GLOB-014 · effort: S · audience: user.api, library.maintainer
   On master, `glob_files` matches `d/a.csv` for `"./d/*.csv"`, `"d//*.csv"`
   and `"d/*/."` on a `GLOB` store (Local) but answers `[]` on the raw-pattern
-  fallback (Memory). BK-389's kernel rule (§ 1) keeps the `GLOB` side. Open
+  fallback (Memory). The kernel's pattern rule (BE-030) keeps the `GLOB` side. Open
   decision: a leading `/`, which `Store.glob`'s root prepend (GLOB-007) makes
   depend on `root_path` on the `GLOB` side; refuse, strip, or change GLOB-007.
   Detail: [dossier](backlog/bk-405-ext-glob-fallback-tier-split.md)
