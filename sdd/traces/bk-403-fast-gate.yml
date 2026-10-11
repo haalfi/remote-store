@@ -155,3 +155,78 @@ phases:
         section: "Ripple-check / Backlog item touched; New test file"
         read_type: verify
         extract: "Trace, done entries linking dossiers; os_sensitive on the git-driving test file"
+review:
+  # Derived by `hatch run ship-report 1120 --trace-block-only` at head 99efd0b.
+  # Do not hand-edit, except a newly required field per sdd/traces/_schema.yml
+  # section review: RFC-0015 D4 makes this script the only producer.
+  derivation: "hatch run ship-report 1120 --trace-block-only"
+  pr: 1120
+  review_rounds: 5
+  submissions: 4
+  findings: 12
+  by_round:
+    - round: 1
+      findings: 5
+      origin: {original: 4, unclassifiable-file: 1}
+      triage: {must-fix: 5}
+      duration_hours: 0.19
+    - round: 2
+      findings: 1
+      origin: {original: 1}
+      triage: {must-fix: 1}
+      duration_hours: 0.07
+    - round: 3
+      findings: 3
+      origin: {original: 3}
+      triage: {must-fix: 3}
+      duration_hours: 0.95
+    - round: 4
+      findings: 3
+      origin: {original: 2, unclassifiable-file: 1}
+      triage: {must-fix: 3}
+      duration_hours: 0.23
+  by_file:
+    - path: "scripts/fast_gate.py"
+      findings: 8
+    - path: "tests/scripts/test_fast_gate.py"
+      findings: 2
+    - path: "CLAUDE.md"
+      findings: 1
+    - path: "sdd/research/bk-403-fast-gate/report.md"
+      findings: 1
+  untouched_files:
+    - ".claude/skills/orchestrate/SKILL.md"
+    - ".claude/skills/ship/SKILL.md"
+    - "CONTRIBUTING.md"
+    - "pyproject.toml"
+    - "scripts/gen_gate_inventory.py"
+    - "sdd/BACKLOG-DONE.md"
+    - "sdd/BACKLOG.md"
+    - "sdd/CLAUDE-REFERENCE.md"
+    - "sdd/TESTING-RUNBOOK.md"
+    - "sdd/backlog/bk-403-test-selector-evaluation.md"
+    - "sdd/backlog/bk-404-selected-tests-hatch-target.md"
+    - "sdd/backlog/id-266-two-speed-ci-gate.md"
+    - "sdd/decisions/001b9759-69f9-4d4e-a7c1-916f63a61dcf.jsonl"
+    - "sdd/process-budget.json"
+    - "sdd/research/bk-403-fast-gate/junit_times.py"
+    - "sdd/research/bk-403-fast-gate/replay.py"
+    - "sdd/research/bk-403-fast-gate/results/replay.jsonl"
+    - "sdd/research/bk-403-fast-gate/summarize.py"
+    - "sdd/research/bk-403-fast-gate/time_workers.py"
+    - "sdd/rfcs/rfc-0019-two-speed-test-gate.md"
+    - "sdd/specs/050-doc-graph-model.md"
+    - "sdd/traces/bk-403-fast-gate.yml"
+    - "tests/README.md"
+  review_driven_commits:
+    - sha: "c614f72"
+      subject: "fix: address PR #1120 review"
+    - sha: "b904ea4"
+      subject: "BK-403: Test the cutoff fallback, serial choice and last-failed filter"
+    - sha: "3750a15"
+      subject: "BK-403: Lock in the process budget after rebasing onto BK-430"
+    - sha: "50c6e46"
+      subject: "fix: address PR #1120 review"
+    - sha: "99efd0b"
+      subject: "fix: address PR #1120 review"
+  ci: {verdict: PENDING, failed: 0, pending: 18}
