@@ -103,3 +103,33 @@ phases:
           re-review and a full run in Phase 3. D7.4 again scopes the
           counted classes to Phase 0's exit as well.
         outcome: ok
+review:
+  # Derived by `hatch run ship-report 1123 --trace-block-only` at head 548f250.
+  # Do not hand-edit, except a newly required field per sdd/traces/_schema.yml
+  # section review: RFC-0015 D4 makes this script the only producer.
+  derivation: "hatch run ship-report 1123 --trace-block-only"
+  pr: 1123
+  review_rounds: 2
+  submissions: 1
+  findings: 1
+  by_round:
+    - round: 1
+      findings: 1
+      origin: {original: 1}
+      triage: {must-fix: 1}
+      duration_hours: 0.02
+  by_file:
+    - path: "sdd/rfcs/rfc-0019-two-speed-test-gate.md"
+      findings: 1
+  untouched_files:
+    - "sdd/BACKLOG-DONE.md"
+    - "sdd/BACKLOG.md"
+    - "sdd/backlog/id-266-two-speed-ci-gate.md"
+    - "sdd/decisions/67d5f4bd-4337-4e02-9780-f77cb10cb456.jsonl"
+    - "sdd/traces/bk-408-rfc-0019-exit-criteria.yml"
+  review_driven_commits:
+    - sha: "905b672"
+      subject: "BK-408: price escapes by when they surface, per phase"
+    - sha: "548f250"
+      subject: "Merge origin/master into bk-408-rfc-0019-exit-criteria"
+  ci: {verdict: GREEN, failed: 0, pending: 0}
